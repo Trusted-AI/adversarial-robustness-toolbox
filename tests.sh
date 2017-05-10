@@ -1,1 +1,1 @@
-nosetests --nologcapture src/*/*unittest.py
+python -m unittest discover src/ -p '*_unittest.py'

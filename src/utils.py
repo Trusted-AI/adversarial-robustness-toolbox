@@ -1,7 +1,6 @@
 from __future__ import absolute_import
 
 from keras.datasets.cifar import load_batch
-from keras.utils.data_utils import get_file
 from keras import backend as K
 
 import numpy as np
