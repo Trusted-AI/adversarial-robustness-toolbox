@@ -1,5 +1,6 @@
 from __future__ import absolute_import
 
+import config
 from cleverhans.utils import conv_2d
 
 from keras.models import Sequential

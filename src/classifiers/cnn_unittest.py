@@ -5,6 +5,7 @@ from keras.utils import np_utils
 
 import tensorflow as tf
 
+import config
 from cleverhans.utils_tf import model_train,model_eval
 
 from src.classifiers import cnn
