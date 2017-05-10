@@ -35,14 +35,13 @@ class TestCNNModel(unittest.TestCase):
         x = tf.placeholder(tf.float32, shape=(None,im_shape[0],im_shape[1],im_shape[2]))
         y = tf.placeholder(tf.float32, shape=(None,NB_CLASSES))
 
-        model = cnn.cnn_model(im_shape)
+        model = cnn.cnn_model(im_shape,act="brelu")
         predictions = model(x)
 
         def evaluate():
             # Evaluate the accuracy of the CIFAR10 model on legitimate test examples
             eval_params = {'batch_size': BATCH_SIZE}
             accuracy = model_eval(session,x,y,predictions,X_test,Y_test,args=eval_params)
-            print('Test accuracy on legitimate test examples: ' + str(accuracy))
 
         train_params = {
             'nb_epochs': 1,
