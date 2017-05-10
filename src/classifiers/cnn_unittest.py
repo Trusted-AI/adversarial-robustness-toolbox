@@ -8,7 +8,7 @@ import tensorflow as tf
 
 from cleverhans.utils_tf import model_train,model_eval
 
-import cnn
+from src.classifiers import cnn
 
 class TestCNNModel(unittest.TestCase):
 

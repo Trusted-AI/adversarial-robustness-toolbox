@@ -22,6 +22,7 @@ def cnn_model(input_shape, logits=False, input_ph=None, nb_filters=64, nb_classe
     # Return
         CNN model
     """
+
     model = Sequential()
 
     layers = [conv_2d(nb_filters, (8, 8), (2, 2), "same", input_shape=input_shape),
