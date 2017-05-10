@@ -1,7 +1,6 @@
 import unittest
 
 import keras
-from keras.datasets import cifar10
 from keras.utils import np_utils
 
 import tensorflow as tf
@@ -9,6 +8,7 @@ import tensorflow as tf
 from cleverhans.utils_tf import model_train,model_eval
 
 from src.classifiers import cnn
+from src.utils import load_cifar10
 
 class TestCNNModel(unittest.TestCase):
 
@@ -23,7 +23,7 @@ class TestCNNModel(unittest.TestCase):
         keras.backend.set_session(session)
 
         # get CIFAR10
-        (X_train, Y_train), (X_test, Y_test) = cifar10.load_data()
+        (X_train, Y_train), (X_test, Y_test) = load_cifar10()
         X_train, Y_train, X_test, Y_test = X_train[:NB_TRAIN], Y_train[:NB_TRAIN], X_test[:NB_TEST], Y_test[:NB_TEST]
 
         # convert class vectors to binary class matrices
