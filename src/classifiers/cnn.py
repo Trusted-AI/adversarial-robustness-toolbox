@@ -8,6 +8,12 @@ from layers.activations import BoundedReLU
 
 
 def activation(act):
+    """ Creates and returns the Layer object corresponding to `act` activation function
+    
+    :param str act: name of the activation function
+    :return: 
+    :rtype: keras.Layer
+    """
     if act in ['relu']:
         return Activation(act)
     elif act == 'brelu':
@@ -16,22 +22,20 @@ def activation(act):
         raise Exception("Activation function not supported.")
 
 def cnn_model(input_shape, act='relu', logits=False, input_ph=None, nb_filters=64, nb_classes=10):
-    """
-    Returns a CNN model using Keras sequential model
+    """Returns a ConvolutionalNeuralNetwork model using Keras sequential model
     
-    # Arguments
-        input_shape (tuple): shape of the input images
-        act (string): type of the intermediate activation functions
-        logits: If set to False, returns a Keras model, otherwise will also
-                    return logits tensor
-        input_ph: The TensorFlow tensor for the input
-                    (needed if returning logits)
-                    ("ph" stands for placeholder but it need not actually be a
-                    placeholder)
-        nb_filters: number of convolutional filters per layer
-        nb_classes: the number of output classes
-    # Return
-        CNN model
+    :param tuple input_shape: shape of the input images
+    :param str act: type of the intermediate activation functions
+    :param bool logits: If set to False, returns a Keras model, otherwise will also
+                return logits tensor
+    :param input_ph: The TensorFlow tensor for the input
+                (needed if returning logits)
+                ("ph" stands for placeholder but it need not actually be a
+                placeholder)
+    :param int nb_filters: number of convolutional filters per layer
+    :param int nb_classes: the number of output classes
+    :return: CNN model
+    :rtype: keras.model
     """
 
     model = Sequential()

@@ -12,7 +12,6 @@ class TestCNNModel(unittest.TestCase):
     def test_cifar(self):
 
         BATCH_SIZE = 10
-        NB_CLASSES = 10
         NB_TRAIN = 1000
         NB_TEST = 100
 

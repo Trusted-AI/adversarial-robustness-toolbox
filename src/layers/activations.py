@@ -2,19 +2,15 @@ from keras import backend as K
 from keras.engine import Layer
 
 class BoundedReLU(Layer):
+
+
     """Bounded Rectified Linear Unit.
     `f(x) = alpha * x for x < 0`,
     `f(x) = x for x >= 0`,
     `f(x) = 0 for x > max_value.`
-    # Input shape
-        Arbitrary. Use the keyword argument `input_shape`
-        (tuple of integers, does not include the samples axis)
-        when using this layer as the first layer in a model.
-    # Output shape
-        Same shape as the input.
-    # Arguments
-        alpha (float): >= 0, Negative slope coefficient.
-        max_value (float): > 0, Maximal value of the function
+    :param tuple input_shape: when using this layer as the first layer in a model.
+    :param float alpha: >= 0, Negative slope coefficient
+    :param float max_value: > 0, Maximal value of the function
         
     """
 
