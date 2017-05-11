@@ -24,9 +24,6 @@ class TestCNNModel(unittest.TestCase):
 
         im_shape = X_train[0].shape
 
-        # x = tf.placeholder(tf.float32, shape=(None,im_shape[0],im_shape[1],im_shape[2]))
-        # y = tf.placeholder(tf.float32, shape=(None,NB_CLASSES))
-
         model = cnn.cnn_model(im_shape,act="brelu")
 
         model.compile(loss='categorical_crossentropy', optimizer='adam', metrics=['accuracy'])
@@ -53,9 +50,6 @@ class TestCNNModel(unittest.TestCase):
         X_train, Y_train, X_test, Y_test = X_train[:NB_TRAIN], Y_train[:NB_TRAIN], X_test[:NB_TEST], Y_test[:NB_TEST]
 
         im_shape = X_train[0].shape
-
-        # x = tf.placeholder(tf.float32, shape=(None,im_shape[0],im_shape[1],im_shape[2]))
-        # y = tf.placeholder(tf.float32, shape=(None,NB_CLASSES))
 
         model = cnn.cnn_model(im_shape,act="relu")
 
