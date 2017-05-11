@@ -7,7 +7,7 @@ class BoundedReLU(Layer):
     """Bounded Rectified Linear Unit.
     `f(x) = alpha * x for x < 0`,
     `f(x) = x for x >= 0`,
-    `f(x) = 0 for x > max_value.`
+    `f(x) = max_value for x > max_value/alpha.`
     :param tuple input_shape: when using this layer as the first layer in a model.
     :param float alpha: >= 0, Negative slope coefficient
     :param float max_value: > 0, Maximal value of the function
