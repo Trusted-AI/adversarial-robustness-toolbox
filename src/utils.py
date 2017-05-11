@@ -10,8 +10,8 @@ import os
 def load_cifar10():
     """Loads CIFAR10 dataset from config.CIFAR10_PATH.
 
-    # Returns
-        (tuple of numpy.ndarray), (tuple of numpy.ndarray): `(x_train, y_train), (x_test, y_test)`.
+    :return: `(x_train, y_train), (x_test, y_test)`
+    :rtype: tuple of numpy.ndarray), (tuple of numpy.ndarray)
     """
 
     from config import CIFAR10_PATH
@@ -46,8 +46,8 @@ def load_mnist():
 
     """Loads MNIST dataset from config.MNIST_PATH
     
-    :return: 
-        (tuple of numpy.ndarray), (tuple of numpy.ndarray): `(x_train, y_train), (x_test, y_test)`.
+    :return: `(x_train, y_train), (x_test, y_test)`
+    :rtype: tuple of numpy.ndarray), (tuple of numpy.ndarray)
     """
     from config import MNIST_PATH
 
@@ -70,11 +70,11 @@ def load_mnist():
 def preprocess(x,y,nb_classes=10,max_value=255):
     """ Scales `x` to [0,1] and converts `y` to class matrices.
     
-    :param x: 
-    :param y: 
-    :param nb_classes:
-    :param max_value:
-    :return: 
+    :param x: array of instances
+    :param y: array of labels
+    :param int nb_classes: 
+    :param int max_value: original maximal pixel value
+    :return: x,y
     """
 
     x = x.astype('float32') / max_value
