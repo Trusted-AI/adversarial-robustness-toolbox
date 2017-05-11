@@ -1,8 +1,7 @@
-from __future__ import absolute_import
+from keras import backend as K
 
 from keras.datasets.cifar import load_batch
-from keras.datasets.mnist import load_data
-from keras import backend as K
+from keras.utils import np_utils
 
 import numpy as np
 import os
@@ -38,13 +37,16 @@ def load_cifar10():
         x_train = x_train.transpose(0, 2, 3, 1)
         x_test = x_test.transpose(0, 2, 3, 1)
 
+    x_train,y_train = preprocess(x_train,y_train)
+    x_test,y_test = preprocess(x_test,y_test)
+
     return (x_train, y_train), (x_test, y_test)
 
 def load_mnist():
 
     """Loads MNIST dataset from config.MNIST_PATH
     
-    :# Returns
+    :return: 
         (tuple of numpy.ndarray), (tuple of numpy.ndarray): `(x_train, y_train), (x_test, y_test)`.
     """
     from config import MNIST_PATH
@@ -60,7 +62,22 @@ def load_mnist():
     x_train = np.expand_dims(x_train,axis=3)
     x_test = np.expand_dims(x_test,axis=3)
 
-    x_train = x_train.astype('float32')/255
-    x_test = x_test.astype('float32')/255
+    x_train, y_train = preprocess(x_train, y_train)
+    x_test, y_test = preprocess(x_test, y_test)
 
     return (x_train, y_train), (x_test, y_test)
+
+def preprocess(x,y,nb_classes=10,max_value=255):
+    """ Scales `x` to [0,1] and converts `y` to class matrices.
+    
+    :param x: 
+    :param y: 
+    :param nb_classes:
+    :param max_value:
+    :return: 
+    """
+
+    x = x.astype('float32') / max_value
+    y = np_utils.to_categorical(y,nb_classes)
+
+    return x,y
