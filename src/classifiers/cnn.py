@@ -4,7 +4,7 @@ from cleverhans.utils import conv_2d
 from keras.models import Sequential
 from keras.layers import Dense, Activation, Flatten
 
-from layers.activations import BoundedReLU
+from src.layers.activations import BoundedReLU
 
 
 def activation(act):
