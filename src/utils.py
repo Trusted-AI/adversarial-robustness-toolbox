@@ -1,6 +1,7 @@
 from __future__ import absolute_import
 
 from keras.datasets.cifar import load_batch
+from keras.datasets.mnist import load_data
 from keras import backend as K
 
 import numpy as np
@@ -8,10 +9,10 @@ import os
 
 
 def load_cifar10():
-    """Loads CIFAR10 dataset.
+    """Loads CIFAR10 dataset from config.CIFAR10_PATH.
 
     # Returns
-        Tuple of Numpy arrays: `(x_train, y_train), (x_test, y_test)`.
+        (tuple of numpy.ndarray), (tuple of numpy.ndarray): `(x_train, y_train), (x_test, y_test)`.
     """
 
     from config import CIFAR10_PATH
@@ -36,5 +37,30 @@ def load_cifar10():
     if K.image_data_format() == 'channels_last':
         x_train = x_train.transpose(0, 2, 3, 1)
         x_test = x_test.transpose(0, 2, 3, 1)
+
+    return (x_train, y_train), (x_test, y_test)
+
+def load_mnist():
+
+    """Loads MNIST dataset from config.MNIST_PATH
+    
+    :# Returns
+        (tuple of numpy.ndarray), (tuple of numpy.ndarray): `(x_train, y_train), (x_test, y_test)`.
+    """
+    from config import MNIST_PATH
+
+    f = np.load(MNIST_PATH)
+    x_train = f['x_train']
+    y_train = f['y_train']
+    x_test = f['x_test']
+    y_test = f['y_test']
+    f.close()
+
+    # add channel axis
+    x_train = np.expand_dims(x_train,axis=3)
+    x_test = np.expand_dims(x_test,axis=3)
+
+    x_train = x_train.astype('float32')/255
+    x_test = x_test.astype('float32')/255
 
     return (x_train, y_train), (x_test, y_test)
