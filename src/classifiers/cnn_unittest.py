@@ -89,21 +89,21 @@ class TestCNNModel(unittest.TestCase):
 
         im_shape = X_train[0].shape
 
-        model = cnn.cnn_model(im_shape, act="relu")
+        model = cnn.cnn_model(im_shape, act="brelu")
 
         model.compile(**comp_params)
 
         # Fit the model
         model.fit(X_train, Y_train, epochs=1, batch_size=BATCH_SIZE)
 
-        path = "./tests/save/cnn"
+        path = "./tests/save/cnn/"
         # test saving
         cnn.save_model(model,path,comp_params)
 
-        self.assertTrue(os.path.isfile(path + ".json"))
-        self.assertTrue(os.path.getsize(path + ".json") > 0)
-        self.assertTrue(os.path.isfile(path + ".h5"))
-        self.assertTrue(os.path.getsize(path + ".h5") > 0)
+        self.assertTrue(os.path.isfile(path + "model.json"))
+        self.assertTrue(os.path.getsize(path + "model.json") > 0)
+        self.assertTrue(os.path.isfile(path + "weights.h5"))
+        self.assertTrue(os.path.getsize(path + "weights.h5") > 0)
 
         #test loading
         loaded_model = cnn.load_model(path)
