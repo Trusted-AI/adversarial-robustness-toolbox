@@ -54,7 +54,7 @@ def load_mnist():
     """
     from config import MNIST_PATH
 
-    f = np.load(MNIST_PATH)
+    f = np.load(os.path.join(MNIST_PATH, 'mnist.npz'))
     x_train = f['x_train']
     y_train = f['y_train']
     x_test = f['x_test']
