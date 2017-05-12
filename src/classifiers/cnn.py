@@ -63,6 +63,13 @@ def cnn_model(input_shape, act='relu', logits=False, input_ph=None, nb_filters=6
         return model
 
 def save_model(model,filename="./model",comp_param=None):
+    """ Saves model in the given location
+    
+    :param model: model to save
+    :param str filename: filename (no ext)
+    :param dict comp_param: optional compilation parameters
+    :return: None
+    """
     make_directory(filename.rsplit('/', 1)[0])
     # serialize model to JSON
     model_json = model.to_json()
@@ -76,6 +83,11 @@ def save_model(model,filename="./model",comp_param=None):
             json.dump(comp_param,fp)
 
 def load_model(filename):
+    """ Loads a model from given location and tries to compile it
+    
+    :param filename: file to load the model from
+    :return: keras sequential model 
+    """
     # load json and create model
     with open(filename + ".json", "r") as json_file:
         model_json = json_file.read()
