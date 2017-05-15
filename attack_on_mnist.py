@@ -7,7 +7,7 @@ from keras.callbacks import ModelCheckpoint,TensorBoard
 import tensorflow as tf
 
 from cleverhans.attacks import fgsm
-from cleverhans.utils_tf import model_train, model_eval, batch_eval
+from cleverhans.utils_tf import batch_eval
 
 from src.classifiers import cnn
 from src.utils import load_mnist,make_directory
@@ -16,7 +16,10 @@ BATCH_SIZE = 128
 NB_EPOCHS = 20
 VAL_SPLIT = 0.1
 ACT="brelu"
+BATCH_NORM = True
 FILEPATH = "./temp/mnist/{}/".format(ACT)
+if BATCH_NORM:
+    FILEPATH += "batchnorm/"
 
 comp_params = {"loss":'categorical_crossentropy',
                "optimizer":'adam',
@@ -34,8 +37,7 @@ im_shape = X_train[0].shape
 session = tf.Session()
 K.set_session(session)
 
-# learn with bounded relu
-model = cnn.cnn_model(im_shape,act=ACT)
+model = cnn.cnn_model(im_shape,act=ACT,bnorm=BATCH_NORM)
 
 # Fit the model
 model.compile(**comp_params)
@@ -49,7 +51,7 @@ monitor = TensorBoard(log_dir=FILEPATH+'/logs',write_graph=False)
 
 callbacks_list = [checkpoint,monitor]
 
-history = model.fit(X_train,Y_train,validation_split=VAL_SPLIT,epochs=NB_EPOCHS,batch_size=BATCH_SIZE,callbacks=callbacks_list)
+model.fit(X_train,Y_train,validation_split=VAL_SPLIT,epochs=NB_EPOCHS,batch_size=BATCH_SIZE,callbacks=callbacks_list)
 
 scores = model.evaluate(X_test,Y_test)
 
