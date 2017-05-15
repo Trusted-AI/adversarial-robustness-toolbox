@@ -13,10 +13,10 @@ from src.classifiers import cnn
 from src.utils import load_mnist,make_directory
 
 BATCH_SIZE = 128
-NB_EPOCHS = 20
+NB_EPOCHS = 1
 VAL_SPLIT = 0.1
 ACT="brelu"
-BATCH_NORM = True
+BATCH_NORM = False
 FILEPATH = "./temp/mnist/{}/".format(ACT)
 if BATCH_NORM:
     FILEPATH += "batchnorm/"
