@@ -7,8 +7,9 @@ from keras.layers import Dense,Activation,Flatten,Conv2D
 from src.layers.activations import BoundedReLU
 from src.utils import make_directory
 
+custom_objects = {'BoundedReLU':BoundedReLU}
 
-def activation(act):
+def activation(act,**kwargs):
     """ Creates and returns the Layer object corresponding to `act` activation function
     
     :param str act: name of the activation function
@@ -18,11 +19,11 @@ def activation(act):
     if act in ['relu']:
         return Activation(act)
     elif act == 'brelu':
-        return BoundedReLU()
+        return BoundedReLU(**kwargs)
     else:
         raise Exception("Activation function not supported.")
 
-def cnn_model(input_shape, act='relu', logits=False, input_ph=None, nb_filters=64, nb_classes=10):
+def cnn_model(input_shape, act='relu', logits=False, input_ph=None, nb_filters=64, nb_classes=10, act_params={}):
     """Returns a ConvolutionalNeuralNetwork model using Keras sequential model
     
     :param tuple input_shape: shape of the input images
@@ -42,11 +43,11 @@ def cnn_model(input_shape, act='relu', logits=False, input_ph=None, nb_filters=6
     model = Sequential()
 
     layers = [Conv2D(nb_filters,(8, 8),strides=(2, 2),padding="same",input_shape=input_shape),
-              activation(act),
+              activation(act,**act_params),
               Conv2D((nb_filters * 2),(6, 6),strides=(2, 2),padding="valid"),
-              activation(act),
+              activation(act,**act_params),
               Conv2D((nb_filters * 2),(5, 5),strides=(1, 1),padding="valid"),
-              activation(act),
+              activation(act,**act_params),
               Flatten(),
               Dense(nb_classes)]
 
@@ -92,7 +93,7 @@ def load_model(filepath,weightsname="weights.h5"):
     with open(filepath + "model.json", "r") as json_file:
         model_json = json_file.read()
 
-    model = model_from_json(model_json,custom_objects={'BoundedReLU':BoundedReLU})
+    model = model_from_json(model_json,custom_objects=custom_objects)
     # load weights into new model
     model.load_weights(filepath + weightsname)
     # try to load comp param and compile model

@@ -71,6 +71,34 @@ class TestCNNModel(unittest.TestCase):
 
         print("\naccuracy: %.2f%%" % (scores[1] * 100))
 
+    def test_cnn_brelu(self):
+
+        BATCH_SIZE = 10
+        NB_TRAIN = 1000
+        NB_TEST = 100
+
+        session = tf.Session()
+        keras.backend.set_session(session)
+
+        # get MNIST
+        (X_train, Y_train), (X_test, Y_test) = load_mnist()
+        X_train, Y_train, X_test, Y_test = X_train[:NB_TRAIN], Y_train[:NB_TRAIN], X_test[:NB_TEST], Y_test[:NB_TEST]
+
+        im_shape = X_train[0].shape
+
+        model = cnn.cnn_model(im_shape,act="brelu", act_params={"alpha": 1, "max_value": 2})
+
+        model.compile(loss='categorical_crossentropy', optimizer='adam', metrics=['accuracy'])
+
+        # Fit the model
+        model.fit(X_train,Y_train,epochs=1,batch_size=BATCH_SIZE)
+
+        act_config = model.layers[1].get_config()
+
+        self.assertEquals(act_config["alpha"],1)
+        self.assertEquals(act_config["max_value"],2)
+
+
     def test_save_load_model(self):
         BATCH_SIZE = 10
         NB_TRAIN = 100
