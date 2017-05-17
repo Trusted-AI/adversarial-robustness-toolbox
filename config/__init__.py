@@ -3,7 +3,7 @@ import sys
 
 import configparser
 
-__all__ = ['config_dict', 'MNIST_PATH', 'CIFAR10_PATH']
+__all__ = ['config_dict', 'MNIST_PATH', 'CIFAR10_PATH', 'DATA_PATH']
 
 config_file = os.path.join(os.path.dirname(__file__), 'config.ini')
 parser = configparser.ConfigParser()
@@ -27,3 +27,4 @@ for key in config_dict:
 
 MNIST_PATH = os.path.abspath(os.path.expanduser(config_dict['mnist_path']))
 CIFAR10_PATH = os.path.abspath(os.path.expanduser(config_dict['cifar10_path']))
+DATA_PATH = os.path.abspath(os.path.expanduser(config_dict['data_path']))
