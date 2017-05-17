@@ -9,7 +9,7 @@ from keras.callbacks import ModelCheckpoint,TensorBoard
 
 import tensorflow as tf
 
-from cleverhans.attacks import fgsm
+from cleverhans.attacks import FastGradientMethod
 from cleverhans.utils_tf import batch_eval
 
 from src.classifiers import cnn
@@ -69,11 +69,6 @@ cnn.save_model(model,SAVE_MODEL,comp_params)
 model = cnn.load_model(SAVE_MODEL,"best-weights.h5")
 
 # ATTACK
-#Define input TF placeholder
-x = tf.placeholder(tf.float32, shape=(None,im_shape[0],im_shape[1],im_shape[2]))
-
-predictions = model(x)
-
 adv_results = {"adv_accuracies":[],
                "eps_values": [e/10 for e in range(11)]}
 
@@ -81,11 +76,9 @@ with open(SAVE_ADV + "readme.txt", "w") as wfile:
     wfile.write("Model used for crafting the adversarial examples is in " + SAVE_MODEL)
 
 for eps in adv_results["eps_values"]:
-    # craft adversarials with Fast Gradient Sign Method (FGSM)
-    adv_x = fgsm(x, predictions, eps=eps)
 
-    eval_params = {'batch_size': BATCH_SIZE}
-    X_test_adv = batch_eval(session, [x], [adv_x], [X_test], args=eval_params)
+    adv_crafter = FastGradientMethod(model=model, sess=session)
+    X_test_adv = adv_crafter.generate_np(x_val=X_test,eps=eps,ord=np.inf)
 
     np.save(SAVE_ADV + "eps%.2f.npy" % (eps), X_test_adv[0])
 
