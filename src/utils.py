@@ -1,10 +1,11 @@
+import argparse
+import numpy as np
+import os
+
 from keras import backend as K
 
 from keras.datasets.cifar import load_batch
 from keras.utils import np_utils
-
-import numpy as np
-import os
 
 def make_directory(dir_path):
     if not os.path.exists(dir_path):
@@ -84,3 +85,30 @@ def preprocess(x,y,nb_classes=10,max_value=255):
     y = np_utils.to_categorical(y,nb_classes)
 
     return x,y
+
+# ------------------------------------------------------------------- ARG PARSER
+
+
+def get_args(prog,nb_epochs=1,batch_size=128,val_split=0.1,act="relu",adv_method="fgsm",load=None,save=False,verbose=False):
+
+    parser = argparse.ArgumentParser(prog=prog,formatter_class=argparse.ArgumentDefaultsHelpFormatter)
+
+    # optional arguments
+    parser.add_argument("-e", "--epochs", type=int, dest='nb_epochs', default=nb_epochs,
+                        help='number of epochs for training the classifier')
+    parser.add_argument("-b", "--batchsize", type=int, dest='batch_size', default=batch_size,
+                        help='size of the batches')
+    parser.add_argument("-r", "--valsplit", type=float, dest='val_split', default=val_split,
+                        help='ratio of training sample used for validation')
+    parser.add_argument("-f", "--act", type=str, dest='act', default=act, choices=["relu","brelu"],
+                        help='choice of activation function')
+    parser.add_argument("-a", "--adv", type=str, dest='adv_method', default=adv_method, choices=["fgsm"],
+                        help='choice of attacker')
+    parser.add_argument("-l", "--load", type=str, dest='load', default=load,
+                        help='if not None, the classifier if loaded from `load` directory.')
+    parser.add_argument("-s", "--save", dest='save', action="store_true",
+                        help='if set, the classifier and the adversarial examples are saved.')
+    parser.add_argument("-v", "--verbose", dest='verbose', action="store_true",
+                        help='if set, verbose mode')
+
+    return parser.parse_args()
