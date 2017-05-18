@@ -89,7 +89,7 @@ for eps in adv_results["eps_values"]:
     X_test_adv = adv_crafter.generate_np(x_val=X_test, eps=eps, ord=np.inf)
 
     if args.save:
-        np.save(SAVE_ADV + "eps%.2f.npy" % (eps), X_test_adv[0])
+        np.save(SAVE_ADV + "eps%.2f.npy" % (eps), X_test_adv)
 
     scores = model.evaluate(X_test_adv, Y_test, verbose=args.verbose)
 
