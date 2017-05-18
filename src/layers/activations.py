@@ -22,7 +22,7 @@ class BoundedReLU(Layer):
         self.max_value = K.cast_to_floatx(max_value)
 
     def call(self, inputs):
-        return K.relu(inputs,alpha=self.alpha,max_value=self.max_value)
+        return K.relu(inputs, alpha=self.alpha, max_value=self.max_value)
 
     def get_config(self):
         config = {'alpha':self.alpha, 'max_value':self.max_value}

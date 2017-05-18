@@ -23,7 +23,7 @@ def load_cifar10():
     num_train_samples = 50000
 
     x_train = np.zeros((num_train_samples, 3, 32, 32), dtype='uint8')
-    y_train = np.zeros((num_train_samples,), dtype='uint8')
+    y_train = np.zeros((num_train_samples, ), dtype='uint8')
 
     for i in range(1, 6):
         fpath = os.path.join(CIFAR10_PATH, 'data_batch_' + str(i))
@@ -63,15 +63,15 @@ def load_mnist():
     f.close()
 
     # add channel axis
-    x_train = np.expand_dims(x_train,axis=3)
-    x_test = np.expand_dims(x_test,axis=3)
+    x_train = np.expand_dims(x_train, axis=3)
+    x_test = np.expand_dims(x_test, axis=3)
 
     x_train, y_train = preprocess(x_train, y_train)
     x_test, y_test = preprocess(x_test, y_test)
 
     return (x_train, y_train), (x_test, y_test)
 
-def preprocess(x,y,nb_classes=10,max_value=255):
+def preprocess(x, y, nb_classes=10, max_value=255):
     """ Scales `x` to [0,1] and converts `y` to class matrices.
     
     :param x: array of instances
@@ -81,17 +81,17 @@ def preprocess(x,y,nb_classes=10,max_value=255):
     :return: x,y
     """
 
-    x = x.astype('float32') / max_value
-    y = np_utils.to_categorical(y,nb_classes)
+    x = x.astype('float32')/max_value
+    y = np_utils.to_categorical(y, nb_classes)
 
-    return x,y
+    return x, y
 
 # ------------------------------------------------------------------- ARG PARSER
 
 
-def get_args(prog,nb_epochs=1,batch_size=128,val_split=0.1,act="relu",adv_method="fgsm",load=None,save=False,verbose=False):
+def get_args(prog, nb_epochs=1, batch_size=128, val_split=0.1, act="relu", adv_method="fgsm", load=None, save=False, verbose=False):
 
-    parser = argparse.ArgumentParser(prog=prog,formatter_class=argparse.ArgumentDefaultsHelpFormatter)
+    parser = argparse.ArgumentParser(prog=prog, formatter_class=argparse.ArgumentDefaultsHelpFormatter)
 
     # optional arguments
     parser.add_argument("-e", "--epochs", type=int, dest='nb_epochs', default=nb_epochs,
@@ -112,3 +112,10 @@ def get_args(prog,nb_epochs=1,batch_size=128,val_split=0.1,act="relu",adv_method
                         help='if set, verbose mode')
 
     return parser.parse_args()
+
+
+def get_verbose_print(verbose):
+    if verbose:
+        return print
+    else:
+        return lambda *a, **k: None

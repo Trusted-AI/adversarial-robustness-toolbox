@@ -66,7 +66,7 @@ def cnn_model(input_shape, act='relu', bnorm=False, logits=False, input_ph=None,
     else:
         return model
 
-def save_model(model,filepath="./model/",comp_param=None):
+def save_model(model, filepath="./model/", comp_param=None):
     """ Saves model in the given location
     
     :param model: model to save
@@ -84,21 +84,21 @@ def save_model(model,filepath="./model/",comp_param=None):
     # save compilation params to json
     if comp_param:
         with open(filepath+'comp_par.json', 'w') as fp:
-            json.dump(comp_param,fp)
+            json.dump(comp_param, fp)
 
-def load_model(filepath,weightsname="weights.h5"):
+def load_model(filepath, weightsname="weights.h5"):
     """ Loads a model from given location and tries to compile it
     
     :param filepath: file to load the model from
     :return: keras sequential model 
     """
     # load json and create model
-    with open(filepath + "model.json", "r") as json_file:
+    with open(filepath+"model.json", "r") as json_file:
         model_json = json_file.read()
 
-    model = model_from_json(model_json,custom_objects=custom_objects)
+    model = model_from_json(model_json, custom_objects=custom_objects)
     # load weights into new model
-    model.load_weights(filepath + weightsname)
+    model.load_weights(filepath+weightsname)
     # try to load comp param and compile model
     try:
         with open(filepath+'comp_par.json', 'r') as fp:

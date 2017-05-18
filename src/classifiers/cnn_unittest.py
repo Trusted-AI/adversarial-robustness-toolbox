@@ -33,7 +33,7 @@ class TestCNNModel(unittest.TestCase):
 
         im_shape = X_train[0].shape
 
-        model = cnn.cnn_model(im_shape,act="brelu")
+        model = cnn.cnn_model(im_shape, act="brelu")
 
         model.compile(loss='categorical_crossentropy', optimizer='adam', metrics=['accuracy'])
 
@@ -60,14 +60,14 @@ class TestCNNModel(unittest.TestCase):
 
         im_shape = X_train[0].shape
 
-        model = cnn.cnn_model(im_shape,act="relu")
+        model = cnn.cnn_model(im_shape, act="relu")
 
         model.compile(loss='categorical_crossentropy', optimizer='adam', metrics=['accuracy'])
 
         # Fit the model
-        model.fit(X_train,Y_train,epochs=1,batch_size=BATCH_SIZE)
+        model.fit(X_train, Y_train, epochs=1, batch_size=BATCH_SIZE)
 
-        scores = model.evaluate(X_test,Y_test)
+        scores = model.evaluate(X_test, Y_test)
 
         print("\naccuracy: %.2f%%" % (scores[1] * 100))
 
@@ -91,12 +91,12 @@ class TestCNNModel(unittest.TestCase):
         model.compile(loss='categorical_crossentropy', optimizer='adam', metrics=['accuracy'])
 
         # Fit the model
-        model.fit(X_train,Y_train,epochs=1,batch_size=BATCH_SIZE)
+        model.fit(X_train, Y_train, epochs=1, batch_size=BATCH_SIZE)
 
         act_config = model.layers[1].get_config()
 
-        self.assertEquals(act_config["alpha"],1)
-        self.assertEquals(act_config["max_value"],2)
+        self.assertEquals(act_config["alpha"], 1)
+        self.assertEquals(act_config["max_value"], 2)
 
     def test_cnn_batchnorm(self):
 
@@ -122,7 +122,7 @@ class TestCNNModel(unittest.TestCase):
 
         bnorm_layer = model.layers[2]
 
-        self.assertIsInstance(bnorm_layer,keras.layers.normalization.BatchNormalization)
+        self.assertIsInstance(bnorm_layer, keras.layers.normalization.BatchNormalization)
 
 
     def test_save_load_model(self):
@@ -152,7 +152,7 @@ class TestCNNModel(unittest.TestCase):
 
         path = "./tests/save/cnn/"
         # test saving
-        cnn.save_model(model,path,comp_params)
+        cnn.save_model(model, path, comp_params)
 
         self.assertTrue(os.path.isfile(path + "model.json"))
         self.assertTrue(os.path.getsize(path + "model.json") > 0)
@@ -165,7 +165,7 @@ class TestCNNModel(unittest.TestCase):
         scores = model.evaluate(X_test, Y_test)
         scores_loaded = loaded_model.evaluate(X_test, Y_test)
 
-        self.assertAlmostEqual(scores,scores_loaded)
+        self.assertAlmostEqual(scores, scores_loaded)
 
 if __name__ == '__main__':
     unittest.main()

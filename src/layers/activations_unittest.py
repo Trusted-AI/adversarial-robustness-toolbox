@@ -11,10 +11,10 @@ class TestBoundedReLU(unittest.TestCase):
 
     def test_output(self):
 
-        x = np.random.uniform(-2,2,size=(1,100))
+        x = np.random.uniform(-2, 2, size=(1, 100))
 
         model = Sequential()
-        layer = activations.BoundedReLU(input_shape=(100,))
+        layer = activations.BoundedReLU(input_shape=(100, ))
         model.add(layer)
 
         # model.outputs = [layer.output]
@@ -25,7 +25,7 @@ class TestBoundedReLU(unittest.TestCase):
         self.assertTrue(np.all(y <= 1))
 
         model = Sequential()
-        layer = activations.BoundedReLU(alpha=0.1,max_value=0.5,input_shape=(100,))
+        layer = activations.BoundedReLU(alpha=0.1, max_value=0.5, input_shape=(100, ))
         model.add(layer)
 
         # model.outputs = [layer.output]
