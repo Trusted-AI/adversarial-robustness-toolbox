@@ -1,4 +1,5 @@
 import json
+import os
 import warnings
 
 from keras.models import Sequential,model_from_json
@@ -10,7 +11,8 @@ from src.utils import make_directory
 
 custom_objects = {'BoundedReLU':BoundedReLU}
 
-def activation(act,**kwargs):
+
+def activation(act, **kwargs):
     """ Creates and returns the Layer object corresponding to `act` activation function
     
     :param str act: name of the activation function
@@ -23,6 +25,7 @@ def activation(act,**kwargs):
         return BoundedReLU(**kwargs)
     else:
         raise Exception("Activation function not supported.")
+
 
 def cnn_model(input_shape, act='relu', bnorm=False, logits=False, input_ph=None, nb_filters=64, nb_classes=10, act_params={}):
     """Returns a ConvolutionalNeuralNetwork model using Keras sequential model
@@ -45,9 +48,9 @@ def cnn_model(input_shape, act='relu', bnorm=False, logits=False, input_ph=None,
 
     model = Sequential()
 
-    layers = [Conv2D(nb_filters,(8, 8),strides=(2, 2),padding="same",input_shape=input_shape),
-              Conv2D((nb_filters * 2),(6, 6),strides=(2, 2),padding="valid"),
-              Conv2D((nb_filters * 2),(5, 5),strides=(1, 1),padding="valid"),
+    layers = [Conv2D(nb_filters, (8, 8), strides=(2, 2), padding="same", input_shape=input_shape),
+              Conv2D((nb_filters * 2), (6, 6), strides=(2, 2), padding="valid"),
+              Conv2D((nb_filters * 2), (5, 5), strides=(1, 1), padding="valid"),
               Flatten()]
 
     for layer in layers:
@@ -65,6 +68,7 @@ def cnn_model(input_shape, act='relu', bnorm=False, logits=False, input_ph=None,
         return model, logits_tensor
     else:
         return model
+
 
 def save_model(model, filepath="./model/", comp_param=None):
     """ Saves model in the given location
@@ -86,22 +90,24 @@ def save_model(model, filepath="./model/", comp_param=None):
         with open(filepath+'comp_par.json', 'w') as fp:
             json.dump(comp_param, fp)
 
+
 def load_model(filepath, weightsname="weights.h5"):
     """ Loads a model from given location and tries to compile it
     
-    :param filepath: file to load the model from
+    :param filepath: folder to load the model from (full path)
+    :param weightsname: name of the file containing the weights
     :return: keras sequential model 
     """
     # load json and create model
-    with open(filepath+"model.json", "r") as json_file:
+    with open(os.path.join(filepath, "model.json"), "r") as json_file:
         model_json = json_file.read()
 
     model = model_from_json(model_json, custom_objects=custom_objects)
     # load weights into new model
-    model.load_weights(filepath+weightsname)
+    model.load_weights(os.path.join(filepath, weightsname))
     # try to load comp param and compile model
     try:
-        with open(filepath+'comp_par.json', 'r') as fp:
+        with open(os.path.join(filepath, 'comp_par.json'), 'r') as fp:
             comp_par = json.load(fp)
             model.compile(**comp_par)
     except OSError:
