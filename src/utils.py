@@ -1,15 +1,17 @@
 import argparse
 import numpy as np
 import os
+import sys
 
 from keras import backend as K
-
 from keras.datasets.cifar import load_batch
 from keras.utils import np_utils
+
 
 def make_directory(dir_path):
     if not os.path.exists(dir_path):
         os.makedirs(dir_path)
+
 
 def load_cifar10():
     """Loads CIFAR10 dataset from config.CIFAR10_PATH.
@@ -46,6 +48,7 @@ def load_cifar10():
 
     return (x_train, y_train), (x_test, y_test)
 
+
 def load_mnist():
 
     """Loads MNIST dataset from config.MNIST_PATH
@@ -71,6 +74,7 @@ def load_mnist():
 
     return (x_train, y_train), (x_test, y_test)
 
+
 def preprocess(x, y, nb_classes=10, max_value=255):
     """ Scales `x` to [0,1] and converts `y` to class matrices.
     
@@ -86,6 +90,7 @@ def preprocess(x, y, nb_classes=10, max_value=255):
 
     return x, y
 
+
 def set_group_permissions(filename, group="drl-dwl"):
     import shutil, stat
     shutil.chown(filename, user=None, group=group)
@@ -98,22 +103,32 @@ def set_group_permissions(filename, group="drl-dwl"):
 def get_args(prog, nb_epochs=1, batch_size=128, val_split=0.1, act="relu", adv_method="fgsm", load=None, save=False, verbose=False):
 
     parser = argparse.ArgumentParser(prog=prog, formatter_class=argparse.ArgumentDefaultsHelpFormatter)
+    script_name = sys.argv[0]
 
-    # optional arguments
-    parser.add_argument("-e", "--epochs", type=int, dest='nb_epochs', default=nb_epochs,
-                        help='number of epochs for training the classifier')
-    parser.add_argument("-b", "--batchsize", type=int, dest='batch_size', default=batch_size,
-                        help='size of the batches')
-    parser.add_argument("-r", "--valsplit", type=float, dest='val_split', default=val_split,
-                        help='ratio of training sample used for validation')
-    parser.add_argument("-f", "--act", type=str, dest='act', default=act, choices=["relu","brelu"],
-                        help='choice of activation function')
-    parser.add_argument("-a", "--adv", type=str, dest='adv_method', default=adv_method, choices=["fgsm"],
-                        help='choice of attacker')
-    parser.add_argument("-l", "--load", type=str, dest='load', default=load,
-                        help='if not None, the classifier if loaded from `load` directory.')
-    parser.add_argument("-s", "--save", dest='save', action="store_true",
-                        help='if set, the classifier and the adversarial examples are saved.')
+    # Optional arguments
+    if script_name == 'train.py':
+        parser.add_argument("-e", "--epochs", type=int, dest='nb_epochs', default=nb_epochs,
+                            help='number of epochs for training the classifier')
+        parser.add_argument("-f", "--act", type=str, dest='act', default=act, choices=["relu","brelu"],
+                            help='choice of activation function')
+        parser.add_argument("-b", "--batchsize", type=int, dest='batch_size', default=batch_size,
+                            help='size of the batches')
+        parser.add_argument("-r", "--valsplit", type=float, dest='val_split', default=val_split,
+                            help='ratio of training sample used for validation')
+        parser.add_argument("-s", "--save", dest='save', action="store_true",
+                            help='if set, the classifier is saved.')
+    elif script_name == 'test.py':
+        parser.add_argument("-l", "--load", type=str, dest='load', default=load,
+                            help='if not None, the classifier if loaded from `load` directory.')
+    elif script_name == 'generate_adversarial.py':
+        parser.add_argument("-l", "--load", type=str, dest='load', default=load,
+                            help='if not None, the classifier if loaded from `load` directory.')
+        parser.add_argument("-a", "--adv", type=str, dest='adv_method', default=adv_method, choices=["fgsm"],
+                            help='choice of attacker')
+        parser.add_argument("-s", "--save", dest='save', action="store_true",
+                            help='if set, the adversarial examples are saved.')
+    else:
+        raise ValueError("Parser not defined for script '%s'" % __file__)
     parser.add_argument("-v", "--verbose", dest='verbose', action="store_true",
                         help='if set, verbose mode')
 
