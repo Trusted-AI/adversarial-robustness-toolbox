@@ -86,6 +86,12 @@ def preprocess(x, y, nb_classes=10, max_value=255):
 
     return x, y
 
+def set_group_permissions(filename, group="drl-dwl"):
+    import shutil, stat
+    shutil.chown(filename, user=None, group=group)
+
+    os.chmod(filename, 0o774)
+
 # ------------------------------------------------------------------- ARG PARSER
 
 
