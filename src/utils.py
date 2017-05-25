@@ -92,7 +92,7 @@ def preprocess(x, y, nb_classes=10, max_value=255):
 
 
 def set_group_permissions(filename, group="drl-dwl"):
-    import shutil, stat
+    import shutil
     shutil.chown(filename, user=None, group=group)
 
     os.chmod(filename, 0o774)
