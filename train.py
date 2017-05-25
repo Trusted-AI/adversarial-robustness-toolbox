@@ -26,47 +26,41 @@ im_shape = X_train[0].shape
 session = tf.Session()
 K.set_session(session)
 
-if args.load:
-    MODEL_PATH = os.path.join(os.path.abspath(args.load), "")
+MODEL_PATH = os.path.join(os.path.abspath(DATA_PATH), "classifiers", "mnist", "cnn", args.act, "")
+model = cnn.cnn_model(im_shape, act=args.act, bnorm=False)
 
+# Fit the model
+
+model.compile(**comp_params)
+
+if args.save:
+
+    make_directory(MODEL_PATH)
+
+    # Save best model weights
+    # checkpoint = ModelCheckpoint(os.path.join(FILEPATH,"best-weights.{epoch:02d}-{val_acc:.2f}.h5"),
+    #                              monitor='val_acc', verbose=1, save_best_only=True, mode='max')
+    checkpoint = ModelCheckpoint(os.path.join(MODEL_PATH, "best-weights.h5"), monitor='val_acc', verbose=1,
+                                 save_best_only=True, mode='max')
+
+    # Remote monitor
+    monitor = TensorBoard(log_dir=os.path.join(MODEL_PATH, 'logs'), write_graph=False)
+
+    callbacks_list = [checkpoint, monitor]
+else:
+    callbacks_list = []
+
+model.fit(X_train, Y_train, verbose=2*int(args.verbose), validation_split=args.val_split, epochs=args.nb_epochs,
+          batch_size=args.batch_size, callbacks=callbacks_list)
+
+if args.save:
+    cnn.save_model(model, MODEL_PATH, comp_params)
+    # Load model with best validation score
     model = cnn.load_model(MODEL_PATH, "best-weights.h5")
 
-else:
-    MODEL_PATH = os.path.join(os.path.abspath(DATA_PATH), "classifiers", "mnist", "cnn", args.act, "")
-    model = cnn.cnn_model(im_shape, act=args.act, bnorm=False)
-
-    # Fit the model
-
-    model.compile(**comp_params)
-
-    if args.save:
-
-        make_directory(MODEL_PATH)
-
-        # Save best model weights
-        # checkpoint = ModelCheckpoint(os.path.join(FILEPATH,"best-weights.{epoch:02d}-{val_acc:.2f}.h5"),
-        #                              monitor='val_acc', verbose=1, save_best_only=True, mode='max')
-        checkpoint = ModelCheckpoint(os.path.join(MODEL_PATH, "best-weights.h5"), monitor='val_acc', verbose=1,
-                                     save_best_only=True, mode='max')
-
-        # Remote monitor
-        monitor = TensorBoard(log_dir=os.path.join(MODEL_PATH, 'logs'), write_graph=False)
-
-        callbacks_list = [checkpoint, monitor]
-    else:
-        callbacks_list = []
-
-    model.fit(X_train, Y_train, verbose=2*int(args.verbose), validation_split=args.val_split, epochs=args.nb_epochs,
-              batch_size=args.batch_size, callbacks=callbacks_list)
-
-    if args.save:
-        cnn.save_model(model, MODEL_PATH, comp_params)
-        # Load model with best validation score
-        model = cnn.load_model(MODEL_PATH, "best-weights.h5")
-
-        # Change files' group and permissions if on ccc
-        if config_dict['profile'] == "CLUSTER":
-            set_group_permissions(MODEL_PATH)
+    # Change files' group and permissions if on ccc
+    if config_dict['profile'] == "CLUSTER":
+        set_group_permissions(MODEL_PATH)
 
 scores = model.evaluate(X_test, Y_test, verbose=args.verbose)
 v_print("\naccuracy: %.2f%%" % (scores[1] * 100))
