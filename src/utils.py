@@ -125,11 +125,11 @@ def get_args(prog, nb_epochs=1, batch_size=128, val_split=0.1, act="relu", adv_m
             parser.add_argument("-n", "--nbinstances", type=int, dest='nb_instances', default=nb_instances,
                                 help='number of supplementary instances per true example')
     elif script_name == 'test.py':
-        parser.add_argument("-l", "--load", type=str, dest='load', default=load,
-                            help='if not None, the classifier if loaded from `load` directory.')
-    elif script_name == 'generate_adversarial.py':
         parser.add_argument("load", type=str, dest='load', default=load,
-                            help='if not None, the classifier if loaded from `load` directory.')
+                            help='if not None, the classifier is loaded from `load` directory.')
+    elif script_name == 'generate_adversarial.py':
+        parser.add_argument("-l", "--load", type=str, dest='load', default=load,
+                            help='if not None, the classifier is loaded from `load` directory.')
         parser.add_argument("-a", "--adv", type=str, dest='adv_method', default=adv_method, choices=["fgsm"],
                             help='choice of attacker')
         parser.add_argument("-s", "--save", dest='save', action="store_true",
