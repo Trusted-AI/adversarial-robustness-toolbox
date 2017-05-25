@@ -100,13 +100,14 @@ def set_group_permissions(filename, group="drl-dwl"):
 # ------------------------------------------------------------------- ARG PARSER
 
 
-def get_args(prog, nb_epochs=1, batch_size=128, val_split=0.1, act="relu", adv_method="fgsm", load=None, save=False, verbose=False):
+def get_args(prog, nb_epochs=1, batch_size=128, val_split=0.1, act="relu", adv_method="fgsm", std_dev=0.1,
+             nb_instances=1, load=None, save=False, verbose=False):
 
     parser = argparse.ArgumentParser(prog=prog, formatter_class=argparse.ArgumentDefaultsHelpFormatter)
     script_name = sys.argv[0]
 
     # Optional arguments
-    if script_name == 'train.py':
+    if script_name.startswith('train'):
         parser.add_argument("-e", "--epochs", type=int, dest='nb_epochs', default=nb_epochs,
                             help='number of epochs for training the classifier')
         parser.add_argument("-f", "--act", type=str, dest='act', default=act, choices=["relu","brelu"],
@@ -117,6 +118,12 @@ def get_args(prog, nb_epochs=1, batch_size=128, val_split=0.1, act="relu", adv_m
                             help='ratio of training sample used for validation')
         parser.add_argument("-s", "--save", dest='save', action="store_true",
                             help='if set, the classifier is saved.')
+
+        if script_name == "train_with_noise.py":
+            parser.add_argument("-d", "--stdev", type=float, dest='std_dev', default=std_dev,
+                                help='standard deviation of the distributions')
+            parser.add_argument("-n", "--nbinstances", type=int, dest='nb_instances', default=nb_instances,
+                                help='number of supplementary instances per true example')
     elif script_name == 'test.py':
         parser.add_argument("-l", "--load", type=str, dest='load', default=load,
                             help='if not None, the classifier if loaded from `load` directory.')

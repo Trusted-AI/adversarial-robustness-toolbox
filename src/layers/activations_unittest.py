@@ -28,8 +28,6 @@ class TestBoundedReLU(unittest.TestCase):
         layer = activations.BoundedReLU(alpha=0.1, max_value=0.5, input_shape=(100, ))
         model.add(layer)
 
-        # model.outputs = [layer.output]
-
         y = model.predict(x)
 
         min_y = np.min(x)*0.1
