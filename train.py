@@ -1,12 +1,12 @@
 import os
 
-from config import DATA_PATH
+from config import DATA_PATH, config_dict
 import keras.backend as K
 from keras.callbacks import ModelCheckpoint, TensorBoard
 import tensorflow as tf
 
 from src.classifiers import cnn
-from src.utils import get_args, get_verbose_print, load_mnist, make_directory
+from src.utils import get_args, get_verbose_print, load_mnist, make_directory, set_group_permissions
 
 # --------------------------------------------------------------------------------------------------- SETTINGS
 args = get_args(__file__)
@@ -63,6 +63,10 @@ else:
         cnn.save_model(model, MODEL_PATH, comp_params)
         # Load model with best validation score
         model = cnn.load_model(MODEL_PATH, "best-weights.h5")
+
+        # Change files' group and permissions if on ccc
+        if config_dict['profile'] == "CLUSTER":
+            set_group_permissions(MODEL_PATH)
 
 scores = model.evaluate(X_test, Y_test, verbose=args.verbose)
 v_print("\naccuracy: %.2f%%" % (scores[1] * 100))
