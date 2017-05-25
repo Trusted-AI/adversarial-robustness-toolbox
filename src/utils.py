@@ -128,7 +128,7 @@ def get_args(prog, nb_epochs=1, batch_size=128, val_split=0.1, act="relu", adv_m
         parser.add_argument("-l", "--load", type=str, dest='load', default=load,
                             help='if not None, the classifier if loaded from `load` directory.')
     elif script_name == 'generate_adversarial.py':
-        parser.add_argument("-l", "--load", type=str, dest='load', default=load,
+        parser.add_argument("load", type=str, dest='load', default=load,
                             help='if not None, the classifier if loaded from `load` directory.')
         parser.add_argument("-a", "--adv", type=str, dest='adv_method', default=adv_method, choices=["fgsm"],
                             help='choice of attacker')
