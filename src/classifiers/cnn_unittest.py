@@ -156,7 +156,8 @@ class TestCNNModel(unittest.TestCase):
         # test saving
         cnn.save_model(model, path, comp_params)
 
-        set_group_permissions_rec(path, group="wheel")
+        if config_dict["profile"] == "CLUSTER":
+            set_group_permissions_rec(path)
 
         self.assertTrue(os.path.isfile(path + "model.json"))
         self.assertTrue(os.path.getsize(path + "model.json") > 0)
