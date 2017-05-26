@@ -40,15 +40,15 @@ scores = model.evaluate(X_test, Y_test, verbose=args.verbose)
 v_print("\naccuracy on test: %.2f%%" % (scores[1] * 100))
 
 # get adversarial examples
-ADV_PATH = os.path.join(DATA_PATH, "adversarial", "mnist", "fgsm", "cnn", "relu", "")
+ADV_PATH = os.path.join(DATA_PATH, "adversarial", "mnist", "cnn", "relu", "fgsm", "")
 
 for eps in range(1, 11):
-    X = np.load(ADV_PATH + "eps%.2f_train.npy" % eps/10)
+    X = np.load(ADV_PATH + "eps%.2f_train.npy" % (eps/10))
 
     scores = model.evaluate(X, Y_train, verbose=args.verbose)
-    v_print("\naccuracy on train adversarial with  %.2f% eps: %.2f%%" % (eps/10, scores[1] * 100))
+    v_print("\naccuracy on train adversarial with  %.2f eps: %.2f%%" % (eps/10, scores[1] * 100))
 
-    X = np.load(ADV_PATH + "eps%.2f_test.npy" % eps/10)
+    X = np.load(ADV_PATH + "eps%.2f_test.npy" % (eps/10))
 
     scores = model.evaluate(X, Y_test, verbose=args.verbose)
-    v_print("\naccuracy on test adversarial with %.2f% eps: %.2f%%" % (eps/10, scores[1] * 100))
+    v_print("\naccuracy on test adversarial with %.2f eps: %.2f%%" % (eps/10, scores[1] * 100))
