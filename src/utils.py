@@ -101,7 +101,7 @@ def set_group_permissions(filename, group="drl-dwl"):
 
 
 def get_args(prog, nb_epochs=1, batch_size=128, val_split=0.1, act="relu", adv_method="fgsm", std_dev=0.1,
-             nb_instances=1, save=False, verbose=False):
+             nb_instances=1, save=None, verbose=False):
 
     parser = argparse.ArgumentParser(prog=prog, formatter_class=argparse.ArgumentDefaultsHelpFormatter)
     script_name = sys.argv[0]
@@ -132,8 +132,8 @@ def get_args(prog, nb_epochs=1, batch_size=128, val_split=0.1, act="relu", adv_m
 
         parser.add_argument("-a", "--adv", type=str, dest='adv_method', default=adv_method, choices=["fgsm"],
                             help='choice of attacker')
-        parser.add_argument("-s", "--save", dest='save', action="store_true",
-                            help='if set, the adversarial examples are saved.')
+        parser.add_argument("-s", "--save", dest='save', type=str,
+                            help='the path where the adversarial examples are saved.')
     else:
         raise ValueError("Parser not defined for script '%s'" % __file__)
     parser.add_argument("-v", "--verbose", dest='verbose', action="store_true",

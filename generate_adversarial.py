@@ -26,11 +26,12 @@ MODEL_PATH = os.path.abspath(args.load)
 model = cnn.load_model(MODEL_PATH, "best-weights.h5")
 
 # Generate adversarial examples on loaded model
-adv_results = {"adv_accuracies": [],
+adv_results = {"train_adv_accuracies": [],
+               "test_adv_accuracies": [],
                "eps_values": [e/10 for e in range(1, 11)]}
 
 if args.save:
-    SAVE_ADV = os.path.join(DATA_PATH, "adversarial", "mnist", args.adv_method, "cnn", args.act, "")
+    SAVE_ADV = os.path.abspath(args.save)
     make_directory(SAVE_ADV)
 
     with open(SAVE_ADV + "readme.txt", "w") as wfile:
@@ -38,15 +39,22 @@ if args.save:
 
 for eps in adv_results["eps_values"]:
     adv_crafter = FastGradientMethod(model=model, sess=session)
-    X_test_adv = adv_crafter.generate_np(x_val=X_train, eps=eps, ord=np.inf)
+    X_train_adv = adv_crafter.generate_np(x_val=X_train, eps=eps, ord=np.inf)
 
-    if args.save:
-        np.save(SAVE_ADV + "eps%.2f_train.npy" % eps, X_test_adv)
+    scores = model.evaluate(X_train_adv, Y_train, verbose=args.verbose)
+    adv_results["train_adv_accuracies"].append(scores[1]*100)
+
+    v_print("\naccuracy on train adversarials with %2.1f epsilon: %.2f%%" % (eps, scores[1] * 100))
+
+    adv_crafter = FastGradientMethod(model=model, sess=session)
+    X_test_adv = adv_crafter.generate_np(x_val=X_test, eps=eps, ord=np.inf)
 
     scores = model.evaluate(X_test_adv, Y_test, verbose=args.verbose)
-    adv_results["adv_accuracies"].append(scores[1]*100)
+    adv_results["test_adv_accuracies"].append(scores[1] * 100)
 
-    v_print("\naccuracy on adversarials with %2.1f epsilon: %.2f%%" % (eps, scores[1] * 100))
+    if args.save:
+        np.save(SAVE_ADV + "eps%.2f_train.npy" % eps, X_train_adv)
+        np.save(SAVE_ADV + "eps%.2f_test.npy" % eps, X_test_adv)
 
 if args.save:
     # with open(os.path.join(MODEL_PATH, args.adv_method + "-adv-acc.json"), "w") as json_file:
