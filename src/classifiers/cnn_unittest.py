@@ -10,7 +10,7 @@ import keras
 import tensorflow as tf
 
 from src.classifiers import cnn
-from src.utils import load_cifar10, load_mnist, make_directory, set_group_permissions
+from src.utils import load_cifar10, load_mnist, make_directory, set_group_permissions_rec
 
 class TestCNNModel(unittest.TestCase):
 
@@ -156,8 +156,7 @@ class TestCNNModel(unittest.TestCase):
         # test saving
         cnn.save_model(model, path, comp_params)
 
-        if config_dict['profile'] == "CLUSTER":
-            set_group_permissions(path)
+        set_group_permissions_rec(path, group="wheel")
 
         self.assertTrue(os.path.isfile(path + "model.json"))
         self.assertTrue(os.path.getsize(path + "model.json") > 0)

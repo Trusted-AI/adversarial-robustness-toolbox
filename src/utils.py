@@ -90,6 +90,12 @@ def preprocess(x, y, nb_classes=10, max_value=255):
 
     return x, y
 
+def set_group_permissions_rec(path, group="drl-dwl"):
+    for root, _, files in os.walk(path):
+        set_group_permissions(root, group)
+
+        for f in files:
+            set_group_permissions(os.path.join(root, f), group)
 
 def set_group_permissions(filename, group="drl-dwl"):
     import shutil

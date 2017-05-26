@@ -8,7 +8,7 @@ from keras.callbacks import ModelCheckpoint, TensorBoard
 import tensorflow as tf
 
 from src.classifiers import cnn
-from src.utils import get_args, get_verbose_print, load_mnist, make_directory, set_group_permissions
+from src.utils import get_args, get_verbose_print, load_mnist, make_directory, set_group_permissions_rec
 
 # --------------------------------------------------------------------------------------------------- SETTINGS
 args = get_args(__file__)
@@ -30,7 +30,7 @@ session = tf.Session()
 K.set_session(session)
 
 MODEL_PATH = os.path.join(os.path.abspath(DATA_PATH), "classifiers", "mnist", "cnn", args.act, "gaussian",
-                          "stdev%.2f" % args.std_dev, "pert-insts%d" % args.nb_instances, "")
+                          "stdev%.2f" % args.std_dev, "", "pert-insts%d" % args.nb_instances, "")
 
 model = cnn.cnn_model(im_shape, act=args.act, bnorm=False)
 
@@ -67,7 +67,7 @@ if args.save:
 
     # Change files' group and permissions if on ccc
     if config_dict['profile'] == "CLUSTER":
-        set_group_permissions(MODEL_PATH)
+        set_group_permissions_rec(MODEL_PATH)
 
 scores = model.evaluate(X_test, Y_test, verbose=args.verbose)
 v_print("\naccuracy: %.2f%%" % (scores[1] * 100))
