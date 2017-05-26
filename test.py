@@ -26,7 +26,6 @@ K.set_session(session)
 # Load classification model
 MODEL_PATH = os.path.abspath(args.load)
 model = cnn.load_model(MODEL_PATH, "best-weights.h5")
-
 # ------------------------------------------------------------------------------------------------------- TEST
 # get MNIST
 (X_train, Y_train), (X_test, Y_test) = load_mnist()
@@ -40,7 +39,7 @@ scores = model.evaluate(X_test, Y_test, verbose=args.verbose)
 v_print("\naccuracy on test: %.2f%%" % (scores[1] * 100))
 
 # get adversarial examples
-ADV_PATH = os.path.join(DATA_PATH, "adversarial", "mnist", "cnn", "relu", "fgsm", "")
+ADV_PATH = os.path.join(DATA_PATH, "adversarial", "mnist", "fgsm", "cnn", "relu", "")
 
 for eps in range(1, 11):
     X = np.load(ADV_PATH + "eps%.2f_train.npy" % (eps/10))

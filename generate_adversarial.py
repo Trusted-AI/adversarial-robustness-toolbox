@@ -31,7 +31,7 @@ adv_results = {"train_adv_accuracies": [],
                "eps_values": [e/10 for e in range(1, 11)]}
 
 if args.save:
-    SAVE_ADV = os.path.abspath(args.save)
+    SAVE_ADV = os.path.join(os.path.abspath(args.save), "")
     make_directory(SAVE_ADV)
 
     with open(SAVE_ADV + "readme.txt", "w") as wfile:
