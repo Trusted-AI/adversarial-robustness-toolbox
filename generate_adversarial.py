@@ -39,7 +39,7 @@ if args.save:
 
 for eps in adv_results["eps_values"]:
     adv_crafter = FastGradientMethod(model=model, sess=session)
-    X_train_adv = adv_crafter.generate_np(x_val=X_train, eps=eps, ord=np.inf)
+    X_train_adv = adv_crafter.generate_np(x_val=X_train, eps=eps, ord=np.inf, clip_min=0., clip_max=1.)
 
     scores = model.evaluate(X_train_adv, Y_train, verbose=args.verbose)
     adv_results["train_adv_accuracies"].append(scores[1]*100)
