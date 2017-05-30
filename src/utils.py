@@ -8,6 +8,12 @@ from keras.datasets.cifar import load_batch
 from keras.utils import np_utils
 
 
+def get_label_conf(y_vec):
+    assert len(y_vec.shape) == 2
+
+    confs, labels = np.amax(y_vec, axis=1), np.argmax(y_vec, axis=1)
+    return confs, labels
+
 def make_directory(dir_path):
     if not os.path.exists(dir_path):
         os.makedirs(dir_path)
