@@ -18,6 +18,13 @@ def make_directory(dir_path):
     if not os.path.exists(dir_path):
         os.makedirs(dir_path)
 
+def get_npy_files(path):
+    """ generator """
+    for root, _, files in os.walk(path):
+        for file in files:
+            if file.endswith(".npy"):
+                yield os.path.join(root, file)
+
 
 def load_cifar10():
     """Loads CIFAR10 dataset from config.CIFAR10_PATH.
