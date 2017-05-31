@@ -29,32 +29,44 @@ MODEL_PATH = os.path.abspath(args.load)
 model = cnn.load_model(MODEL_PATH, "best-weights.h5")
 
 # ------------------------------------------------------------------------------------------------------- TEST
-results = {}
 
-# get MNIST
+# retrieve previous results for classifier
+try:
+    with open(os.path.join(MODEL_PATH, "accuracies.json"), "r") as json_file:
+        results = json.load(json_file)
+except:
+    results = {}
+
+already_tested = results.keys()
+
+# get dataset
 (X_train, Y_train), (X_test, Y_test) = load_mnist()
 
-# Test on true train instances
-scores = model.evaluate(X_train, Y_train, verbose=args.verbose)
-v_print("\naccuracy on train: %.2f%%" % (scores[1] * 100))
-results["train_accuracy"] = scores[1] * 100
+if "train_accuracy" not in already_tested:
+    # Test on true train instances
+    scores = model.evaluate(X_train, Y_train, verbose=args.verbose)
+    v_print("\naccuracy on train: %.2f%%" % (scores[1] * 100))
+    results["train_accuracy"] = scores[1] * 100
 
-# Test on true test instances
-scores = model.evaluate(X_test, Y_test, verbose=args.verbose)
-v_print("\naccuracy on test: %.2f%%" % (scores[1] * 100))
-results["test_accuracy"] = scores[1] * 10
+if "test_accuracy" not in already_tested:
+    # Test on true test instances
+    scores = model.evaluate(X_test, Y_test, verbose=args.verbose)
+    v_print("\naccuracy on test: %.2f%%" % (scores[1] * 100))
+    results["test_accuracy"] = scores[1] * 10
 
 # get adversarial examples
 ADV_PATH = os.path.join(DATA_PATH, "adversarial", "mnist")
 
 for filepath in get_npy_files(ADV_PATH):
 
-    X = np.load(filepath)
-    Y = Y_train if "_train" in filepath else Y_test
+    if filepath not in already_tested:
 
-    scores = model.evaluate(X, Y, verbose=args.verbose)
-    v_print("\naccuracy on %s: %.2f%%" % (filepath, scores[1] * 100))
-    results[filepath] = scores[1]*100
+        X = np.load(filepath)
+        Y = Y_train if "_train" in filepath else Y_test
+
+        scores = model.evaluate(X, Y, verbose=args.verbose)
+        v_print("\naccuracy on %s: %.2f%%" % (filepath, scores[1] * 100))
+        results[filepath] = scores[1]*100
 
 with open(os.path.join(MODEL_PATH, "accuracies.json"), "w") as json_file:
     json.dump(results, json_file)

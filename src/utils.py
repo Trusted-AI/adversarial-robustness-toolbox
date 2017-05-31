@@ -120,7 +120,7 @@ def set_group_permissions(filename, group="drl-dwl"):
 
 
 def get_args(prog, nb_epochs=1, batch_size=128, val_split=0.1, act="relu", adv_method="fgsm", std_dev=0.1,
-             nb_instances=1, save=None, verbose=False):
+             nb_instances=1, dataset="mnist", save=None, verbose=False):
 
     parser = argparse.ArgumentParser(prog=prog, formatter_class=argparse.ArgumentDefaultsHelpFormatter)
     script_name = sys.argv[0]
@@ -143,8 +143,11 @@ def get_args(prog, nb_epochs=1, batch_size=128, val_split=0.1, act="relu", adv_m
                                 help='standard deviation of the distributions')
             parser.add_argument("-n", "--nbinstances", type=int, dest='nb_instances', default=nb_instances,
                                 help='number of supplementary instances per true example')
-    elif script_name == 'test.py':
+    elif script_name.startswith('test'):
         parser.add_argument("load", type=str, help='the classifier is loaded from `load` directory.')
+
+        # parser.add_argument("-d", "--dataset", type=str, dest='dataset', default=dataset,
+        #                     help='either the path or name of the dataset the classifier is tested on.')
 
     elif script_name == 'generate_adversarial.py':
         parser.add_argument("load", type=str, help='the classifier is loaded from `load` directory.')
