@@ -1,4 +1,4 @@
-from config import DATA_PATH
+from config import DATA_PATH, config_dict
 
 import json
 import numpy as np
@@ -8,7 +8,7 @@ import keras.backend as K
 import tensorflow as tf
 
 from src.classifiers import cnn
-from src.utils import get_args, get_verbose_print, load_mnist, get_npy_files
+from src.utils import get_args, get_verbose_print, load_mnist, get_npy_files, set_group_permissions_rec
 
 # --------------------------------------------------------------------------------------------------- SETTINGS
 args = get_args(__file__)
@@ -26,6 +26,7 @@ K.set_session(session)
 
 # Load classification model
 MODEL_PATH = os.path.abspath(args.load)
+OUTPUT_PATH = os.path.join(MODEL_PATH, "accuracies.json")
 model = cnn.load_model(MODEL_PATH, "best-weights.h5")
 
 # ------------------------------------------------------------------------------------------------------- TEST
@@ -68,5 +69,8 @@ for filepath in get_npy_files(ADV_PATH):
         v_print("\naccuracy on %s: %.2f%%" % (filepath, scores[1] * 100))
         results[filepath] = scores[1]*100
 
-with open(os.path.join(MODEL_PATH, "accuracies.json"), "w") as json_file:
+with open(OUTPUT_PATH, "w") as json_file:
     json.dump(results, json_file)
+
+if config_dict['profile'] == "CLUSTER":
+    set_group_permissions_rec(OUTPUT_PATH)
