@@ -7,8 +7,6 @@ import numpy as np
 import keras.backend as K
 import tensorflow as tf
 
-from cleverhans.attacks import FastGradientMethod
-
 from src.classifiers import cnn
 from src.attackers import perturbations
 
@@ -46,7 +44,7 @@ class TestMinimalPerturbations(unittest.TestCase):
     def test_mnist(self):
 
         BATCH_SIZE = 10
-        NB_TRAIN = 1000
+        NB_TRAIN = 100
 
         session = tf.Session()
         K.set_session(session)
@@ -64,15 +62,27 @@ class TestMinimalPerturbations(unittest.TestCase):
         model.fit(X_train, Y_train, epochs=1, batch_size=BATCH_SIZE)
 
         # Compute minimal perturbations
-        emp_robust = perturbations.empirical_robustness(X_train, model, FastGradientMethod, session, eps_step=0.05,
-                                                    clip_max=0., clip_min=1.)
+        params = {"eps_step":1.1,
+                  "clip_min":0.,
+                  "clip_max":1.}
 
-        self.assertTrue(isinstance(emp_robust, float))
-
-        emp_robust = perturbations.empirical_robustness(X_train, model, FastGradientMethod, session, eps_step=1.1,
-                                                        clip_max=0., clip_min=1.)
+        emp_robust = perturbations.empirical_robustness(X_train, model, session, "fgsm", params)
 
         self.assertEqual(emp_robust, 0.)
+
+        params = {"eps_step": 0.05,
+                  "clip_min": 0.,
+                  "clip_max": 1.}
+        emp_robust_fsgm = perturbations.empirical_robustness(X_train, model, session, "fgsm", params)
+
+        self.assertTrue(isinstance(emp_robust_fsgm, float))
+
+        params = {"theta": 1.,
+                  "gamma": 0.01,
+                  "clip_min": 0.,
+                  "clip_max": 1.}
+        emp_robust_jsma = perturbations.empirical_robustness(X_train, model, session, "jsma", params)
+        self.assertLessEqual(emp_robust_jsma, 1.)
 
 if __name__ == '__main__':
     unittest.main()

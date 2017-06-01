@@ -18,6 +18,13 @@ def make_directory(dir_path):
     if not os.path.exists(dir_path):
         os.makedirs(dir_path)
 
+def get_npy_files(path):
+    """ generator """
+    for root, _, files in os.walk(path):
+        for file in files:
+            if file.endswith(".npy"):
+                yield os.path.join(root, file)
+
 
 def load_cifar10():
     """Loads CIFAR10 dataset from config.CIFAR10_PATH.
@@ -113,7 +120,7 @@ def set_group_permissions(filename, group="drl-dwl"):
 
 
 def get_args(prog, nb_epochs=1, batch_size=128, val_split=0.1, act="relu", adv_method="fgsm", std_dev=0.1,
-             nb_instances=1, save=None, verbose=False):
+             nb_instances=1, dataset="mnist", save=None, verbose=False):
 
     parser = argparse.ArgumentParser(prog=prog, formatter_class=argparse.ArgumentDefaultsHelpFormatter)
     script_name = sys.argv[0]
@@ -130,13 +137,15 @@ def get_args(prog, nb_epochs=1, batch_size=128, val_split=0.1, act="relu", adv_m
                             help='ratio of training sample used for validation')
         parser.add_argument("-s", "--save", dest='save', action="store_true",
                             help='if set, the classifier is saved.')
+        parser.add_argument("-d", "--dataset", type=str, dest='dataset', default=dataset,
+                            help='either the path or name of the dataset the classifier is tested on.')
 
         if script_name == "train_with_noise.py":
             parser.add_argument("-d", "--stdev", type=float, dest='std_dev', default=std_dev,
                                 help='standard deviation of the distributions')
             parser.add_argument("-n", "--nbinstances", type=int, dest='nb_instances', default=nb_instances,
                                 help='number of supplementary instances per true example')
-    elif script_name == 'test.py':
+    elif script_name.startswith('test'):
         parser.add_argument("load", type=str, help='the classifier is loaded from `load` directory.')
 
     elif script_name == 'generate_adversarial.py':
