@@ -137,6 +137,8 @@ def get_args(prog, nb_epochs=1, batch_size=128, val_split=0.1, act="relu", adv_m
                             help='ratio of training sample used for validation')
         parser.add_argument("-s", "--save", dest='save', action="store_true",
                             help='if set, the classifier is saved.')
+        parser.add_argument("-d", "--dataset", type=str, dest='dataset', default=dataset,
+                            help='either the path or name of the dataset the classifier is tested on.')
 
         if script_name == "train_with_noise.py":
             parser.add_argument("-d", "--stdev", type=float, dest='std_dev', default=std_dev,
@@ -145,9 +147,6 @@ def get_args(prog, nb_epochs=1, batch_size=128, val_split=0.1, act="relu", adv_m
                                 help='number of supplementary instances per true example')
     elif script_name.startswith('test'):
         parser.add_argument("load", type=str, help='the classifier is loaded from `load` directory.')
-
-        # parser.add_argument("-d", "--dataset", type=str, dest='dataset', default=dataset,
-        #                     help='either the path or name of the dataset the classifier is tested on.')
 
     elif script_name == 'generate_adversarial.py':
         parser.add_argument("load", type=str, help='the classifier is loaded from `load` directory.')
