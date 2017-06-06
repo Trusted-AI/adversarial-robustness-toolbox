@@ -7,12 +7,26 @@ from keras import backend as K
 from keras.datasets.cifar import load_batch
 from keras.utils import np_utils
 
+import tensorflow as tf
 
 def get_label_conf(y_vec):
     assert len(y_vec.shape) == 2
 
     confs, labels = np.amax(y_vec, axis=1), np.argmax(y_vec, axis=1)
     return confs, labels
+
+def get_labels_tf_tensor(preds):
+    preds_max = tf.reduce_max(preds, 1, keep_dims=True)
+    y = tf.to_float(tf.equal(preds, preds_max))
+    y = y / tf.reduce_sum(y, 1, keep_dims=True)
+
+    return y
+
+def get_labels_np_array(preds):
+    preds_max = np.max(preds)
+    y = (preds == preds_max).astype(float)
+
+    return y
 
 def make_directory(dir_path):
     if not os.path.exists(dir_path):
