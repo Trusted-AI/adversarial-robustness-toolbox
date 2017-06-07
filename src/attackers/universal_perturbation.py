@@ -7,8 +7,22 @@ from src.attackers.attack import Attack, model_loss, clip_perturbation
 from src.attackers.deepfool import DeepFool
 from src.utils import get_labels_tf_tensor, get_labels_np_array
 
-def universal_perturbation(x_val, model, session, delta=0.2, max_iter=50, eps=10, p=np.inf, max_method_iter=50,
-                           clip_min=None, clip_max=None, verbose=1):
+attacks_dict = {"deepfool": DeepFool}
+
+def get_attack(a_name, model, session, params=None):
+    try:
+        a_instance = attacks_dict[a_name](model, session)
+
+        if params:
+            a_instance.set_params(**params)
+
+        return a_instance
+    
+    except KeyError:
+        raise NotImplementedError("{} attack not supported".format(a_name))
+
+def universal_perturbation(x_val, model, session, attacker, attacker_params=None, delta=0.2, max_iter=50, eps=10,
+                           p=np.inf, max_method_iter=50, verbose=1):
 
     # init universal perturbation
     v = 0
@@ -24,8 +38,7 @@ def universal_perturbation(x_val, model, session, delta=0.2, max_iter=50, eps=10
     loss = model_loss(y, model(xi_op), mean=False)
     grad_xi, = tf.gradients(loss, xi_op)
 
-    attacker = DeepFool(model, session)
-    attacker.set_params(clip_min=clip_min, clip_max=clip_max, verbose=0)
+    attacker = get_attack(attacker, model, session, attacker_params)
 
     true_y = model.predict(x_val)
 

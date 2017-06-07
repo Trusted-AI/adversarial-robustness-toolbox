@@ -28,7 +28,10 @@ class TestUniversalPerturbation(unittest.TestCase):
         scores = model.evaluate(X_test, Y_test)
         print("\naccuracy on test set: %.2f%%" % (scores[1] * 100))
 
-        v, nb_iter, f_rate = universal_perturbation(X_train, model, session, clip_min=0., clip_max=1.)
+        attack_params = {"verbose": 0,
+                         "clip_min": 0.,
+                         "clip_max": 1.}
+        v, nb_iter, f_rate = universal_perturbation(X_train, model, session, "deepfool", attack_params)
         self.assertTrue((f_rate >= 0.2) or (nb_iter == 50), "{} {}".format(f_rate, nb_iter))
 
         x_test_adv = X_test + v

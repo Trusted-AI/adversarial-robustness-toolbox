@@ -1,6 +1,44 @@
 from abc import ABCMeta
+
+import numpy as np
 import tensorflow as tf
 
+def model_loss(y, model, mean=True):
+    """
+    Define loss of TF graph
+    :param y: correct labels
+    :param model: output of the model
+    :param mean: boolean indicating whether should return mean of loss
+                 or vector of losses for each input of the batch
+    :return: return mean of loss if True, otherwise return vector with per
+             sample loss
+    """
+
+    op = model.op
+    if "softmax" in str(op).lower():
+        logits, = op.inputs
+    else:
+        logits = model
+
+    if mean:
+        logits = tf.reduce_mean(logits)
+    return logits
+
+def clip_perturbation(v, eps, p):
+
+    # SUPPORTS only p = 2 and p = Inf for now
+    if p == 2:
+
+        v *= min(1, eps/np.linalg.norm(v, axis=(1, 2)))
+
+    elif p == np.inf:
+
+        v = np.sign(v) * np.minimum(abs(v), eps)
+
+    else:
+         raise NotImplementedError('Values of p different from 2 and Inf are currently not supported...')
+
+    return v
 
 class Attack:
     """
