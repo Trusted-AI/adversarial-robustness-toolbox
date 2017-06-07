@@ -3,30 +3,8 @@ from keras.utils.generic_utils import Progbar
 import numpy as np
 import tensorflow as tf
 
-from src.attackers.attack import Attack
+from src.attackers.attack import Attack, model_loss
 from src.utils import get_labels_tf_tensor
-
-
-def model_loss(y, model, mean=True):
-    """
-    Define loss of TF graph
-    :param y: correct labels
-    :param model: output of the model
-    :param mean: boolean indicating whether should return mean of loss
-                 or vector of losses for each input of the batch
-    :return: return mean of loss if True, otherwise return vector with per
-             sample loss
-    """
-
-    op = model.op
-    if "softmax" in str(op).lower():
-        logits, = op.inputs
-    else:
-        logits = model
-
-    if mean:
-        logits = tf.reduce_mean(logits)
-    return logits
 
 
 class DeepFool(Attack):
@@ -66,6 +44,7 @@ class DeepFool(Attack):
 
         for j, x in enumerate(x_adv):
             xi = x[None, ...]
+
             f, grd = self.sess.run([self.model(xi_op), grad_xi], feed_dict={xi_op: xi})
             fk_hat = np.argmax(f[0])
 
@@ -104,7 +83,7 @@ class DeepFool(Attack):
 
             progress_bar.update(current=j, values=[("perturbation", abs(np.average(r)))])
 
-        return x_adv
+        return x_adv, nb_iter
 
     def set_params(self, max_iter=50, clip_min=None, clip_max=None, verbose=1):
         assert (type(max_iter) == int) and max_iter > 0
