@@ -28,7 +28,7 @@ class TestDeepFool(unittest.TestCase):
 
         df = DeepFool(model, sess=session)
         df.set_params(clip_min=0., clip_max=1.)
-        x_test_adv, _ = df.generate(X_test)
+        x_test_adv = df.generate(X_test)
         self.assertFalse((X_test == x_test_adv).all())
 
         y_pred = get_labels_np_array(model.predict(x_test_adv))

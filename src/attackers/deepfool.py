@@ -83,7 +83,7 @@ class DeepFool(Attack):
 
             progress_bar.update(current=j, values=[("perturbation", abs(np.average(r)))])
 
-        return x_adv, nb_iter
+        return x_adv
 
     def set_params(self, max_iter=50, clip_min=None, clip_max=None, verbose=1):
         assert (type(max_iter) == int) and max_iter > 0
