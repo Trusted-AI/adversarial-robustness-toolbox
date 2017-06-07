@@ -149,8 +149,9 @@ def get_args(prog, nb_epochs=1, batch_size=128, val_split=0.1, act="relu", adv_m
                             help='size of the batches')
         parser.add_argument("-r", "--valsplit", type=float, dest='val_split', default=val_split,
                             help='ratio of training sample used for validation')
-        parser.add_argument("-s", "--save", dest='save', action="store_true",
-                            help='if set, the classifier is saved.')
+        parser.add_argument("-s", "--save", nargs='?', type=str, dest='save',
+                            help='if set, the classifier is saved; if an argument is provided, it is used as path to'
+                                 'store the model ')
         parser.add_argument("-d", "--dataset", type=str, dest='dataset', default=dataset,
                             help='either the path or name of the dataset the classifier is tested on.')
 

@@ -29,8 +29,8 @@ im_shape = X_train[0].shape
 session = tf.Session()
 K.set_session(session)
 
-MODEL_PATH = os.path.join(os.path.abspath(DATA_PATH), "classifiers", "mnist", "cnn", args.act, "gaussian",
-                          "stdev%.2f" % args.std_dev, "", "pert-insts%d" % args.nb_instances, "")
+MODEL_PATH = args.save if args.save is not None else os.path.join(os.path.abspath(DATA_PATH), "classifiers", "mnist",
+                       "cnn", args.act, "gaussian", "stdev%.2f" % args.std_dev, "", "pert-insts%d" % args.nb_instances)
 
 model = cnn.cnn_model(im_shape, act=args.act, bnorm=False)
 
@@ -38,7 +38,7 @@ model = cnn.cnn_model(im_shape, act=args.act, bnorm=False)
 
 model.compile(**comp_params)
 
-if args.save:
+if args.save is not None:
 
     make_directory(MODEL_PATH)
 
@@ -60,7 +60,7 @@ y_gau_perts = np.tile(Y_train, (args.nb_instances, 1))
 model.fit(np.vstack((X_train, x_gau_perts)), np.vstack((Y_train, y_gau_perts)), verbose=2*int(args.verbose),
           validation_split=args.val_split, epochs=args.nb_epochs, batch_size=args.batch_size, callbacks=callbacks_list)
 
-if args.save:
+if args.save is not None:
     cnn.save_model(model, MODEL_PATH, comp_params)
     # Load model with best validation score
     model = cnn.load_model(MODEL_PATH, "best-weights.h5")

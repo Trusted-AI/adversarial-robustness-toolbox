@@ -3,6 +3,7 @@ import os
 from config import DATA_PATH, config_dict
 import keras.backend as K
 from keras.callbacks import ModelCheckpoint, TensorBoard
+import numpy as np
 import tensorflow as tf
 
 from src.classifiers import cnn
@@ -32,15 +33,14 @@ im_shape = X_train[0].shape
 session = tf.Session()
 K.set_session(session)
 
-MODEL_PATH = os.path.join(os.path.abspath(DATA_PATH), "classifiers", "mnist", "cnn", args.act, "")
+MODEL_PATH = args.save if args.save is not None else os.path.join(os.path.abspath(DATA_PATH), "classifiers", "mnist",
+                                                                  "cnn", args.act, "")
 model = cnn.cnn_model(im_shape, act=args.act, bnorm=False)
 
 # Fit the model
-
 model.compile(**comp_params)
 
-if args.save:
-
+if args.save is not None:
     make_directory(MODEL_PATH)
 
     # Save best model weights
@@ -59,7 +59,7 @@ else:
 model.fit(X_train, Y_train, verbose=2*int(args.verbose), validation_split=args.val_split, epochs=args.nb_epochs,
           batch_size=args.batch_size, callbacks=callbacks_list)
 
-if args.save:
+if args.save is not None:
     cnn.save_model(model, MODEL_PATH, comp_params)
     # Load model with best validation score
     model = cnn.load_model(MODEL_PATH, "best-weights.h5")
