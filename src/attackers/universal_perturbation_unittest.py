@@ -3,7 +3,7 @@ import unittest
 import keras.backend as k
 import tensorflow as tf
 
-from src.attackers.universal_perturbation import universal_perturbation
+from src.attackers.universal_perturbation import UniversalPerturbation
 from src.classifiers import cnn
 from src.utils import load_mnist, get_label_conf
 
@@ -31,11 +31,13 @@ class TestUniversalPerturbation(unittest.TestCase):
         attack_params = {"verbose": 0,
                          "clip_min": 0.,
                          "clip_max": 1.}
-        v, nb_iter, f_rate = universal_perturbation(X_train, model, session, "deepfool", attack_params)
-        self.assertTrue((f_rate >= 0.2) or (nb_iter == 50), "{} {}".format(f_rate, nb_iter))
 
-        x_test_adv = X_test + v
-        x_train_adv = X_train + v
+        attack = UniversalPerturbation(model, session)
+        x_train_adv = attack.generate(X_train, "deepfool", attack_params)
+        self.assertTrue((attack.fooling_rate >= 0.2) or attack.converged)
+
+        x_test_adv = X_test + attack.v
+
         self.assertFalse((X_test == x_test_adv).all())
 
         _, train_y_pred = get_label_conf(model.predict(x_train_adv))
