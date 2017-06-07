@@ -3,26 +3,6 @@ from abc import ABCMeta
 import numpy as np
 import tensorflow as tf
 
-def model_loss(y, model, mean=True):
-    """
-    Define loss of TF graph
-    :param y: correct labels
-    :param model: output of the model
-    :param mean: boolean indicating whether should return mean of loss
-                 or vector of losses for each input of the batch
-    :return: return mean of loss if True, otherwise return vector with per
-             sample loss
-    """
-
-    op = model.op
-    if "softmax" in str(op).lower():
-        logits, = op.inputs
-    else:
-        logits = model
-
-    if mean:
-        logits = tf.reduce_mean(logits)
-    return logits
 
 def clip_perturbation(v, eps, p):
 
@@ -36,15 +16,37 @@ def clip_perturbation(v, eps, p):
         v = np.sign(v) * np.minimum(abs(v), eps)
 
     else:
-         raise NotImplementedError('Values of p different from 2 and Inf are currently not supported...')
+        raise NotImplementedError('Values of p different from 2 and Inf are currently not supported...')
 
     return v
+
+
+def get_logits(model, mean=True):
+    """
+    Define loss of TF graph
+    :param model: output of the model
+    :param mean: boolean indicating whether should return mean of loss
+                 or vector of losses for each input of the batch
+    :return: return mean of loss if True, otherwise return vector with per sample logits
+    """
+
+    op = model.op
+    if "softmax" in str(op).lower():
+        logits, = op.inputs
+    else:
+        logits = model
+
+    if mean:
+        logits = tf.reduce_mean(logits)
+    return logits
+
 
 class Attack:
     """
     Abstract base class for all attack classes. Adapted from cleverhans (https://github.com/openai/cleverhans).
     """
     __metaclass__ = ABCMeta
+    attack_params = ['model', 'session']
 
     def __init__(self, model, sess=None):
         """
@@ -53,14 +55,14 @@ class Attack:
         :param sess: The tf session to run graphs in.
         """
         if not hasattr(model, '__call__'):
-            raise ValueError("model argument must be a function that returns "
-                             "the symbolic output when given an input tensor.")
+            raise ValueError("Model argument must be a function that returns the symbolic output when given an input"
+                             "tensor.")
 
         self.model = model
         self.sess = sess
         self.inf_loop = False
 
-    def generate_graph(self, x):
+    def generate_graph(self, x, **kwargs):
         """
         Generate the attack's symbolic graph for adversarial examples. This method should be overridden in any child
         class that implements an attack that is expressable symbolically. Otherwise, it will wrap the numerical
@@ -71,6 +73,7 @@ class Attack:
         """
         if not self.inf_loop:
             self.inf_loop = True
+            self.set_params(**kwargs)
             graph = tf.py_func(self.generate, [x], tf.float32)
             self.inf_loop = False
             return graph
@@ -87,29 +90,24 @@ class Attack:
         """
         if not self.inf_loop:
             self.inf_loop = True
+            self.set_params(**kwargs)
             input_shape = list(x_val.shape)
             input_shape[0] = None
             self._x = tf.placeholder(tf.float32, shape=input_shape)
-            self._x_adv = self.generate_graph(self._x, **kwargs)
+            self._x_adv = self.generate_graph(self._x)
             self.inf_loop = False
         else:
             raise NotImplementedError("No symbolic or numeric implementation of attack.")
 
         return self.sess.run(self._x_adv, feed_dict={self._x: x_val})
 
-    def _params_have_changed(self, **kwargs):
-        """
-        
-        :param kwargs: 
-        :return: True if any of the parameters in kwargs is different from the values set in the attack
-        """
-
-        return False
-
-    def set_params(self, params=None):
+    def set_params(self, **kwargs):
         """
         Take in a dictionary of parameters and apply attack-specific checks before saving them as attributes.
-        :param params: a dictionary of attack-specific parameters
+        :param kwargs: a dictionary of attack-specific parameters
         :return: True when parsing was successful
         """
+        for key, value in kwargs.items():
+            if key in self.attack_params:
+                setattr(self, key, value)
         return True

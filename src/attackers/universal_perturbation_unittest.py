@@ -30,10 +30,11 @@ class TestUniversalPerturbation(unittest.TestCase):
 
         attack_params = {"verbose": 0,
                          "clip_min": 0.,
-                         "clip_max": 1.}
+                         "clip_max": 1.,
+                         "attacker": "deepfool"}
 
         attack = UniversalPerturbation(model, session)
-        x_train_adv = attack.generate(X_train, "deepfool", attack_params)
+        x_train_adv = attack.generate(X_train, **attack_params)
         self.assertTrue((attack.fooling_rate >= 0.2) or attack.converged)
 
         x_test_adv = X_test + attack.v

@@ -1,24 +1,26 @@
 from keras.utils.generic_utils import Progbar
-
 import numpy as np
 import tensorflow as tf
 
-from src.attackers.attack import Attack, model_loss
-from src.utils import get_labels_tf_tensor
+from src.attackers.attack import Attack, get_logits
 
 
 class DeepFool(Attack):
     """
-    
+    Implementation of the attack from Moosavi-Dezfooli et al. (2015).
+    Paper link: https://arxiv.org/abs/1511.04599
     """
-    def __init__(self, model, sess=None):
+    attack_params = ['max_iter', 'clip_min', 'clip_max', 'verbose']
+
+    def __init__(self, model, sess=None, max_iter=50, clip_min=None, clip_max=None, verbose=1):
         """
         Create a DeepFool attack instance.
         :param model: A function that takes a symbolic input and returns the
                       symbolic output for the model's predictions.
         """
         super(DeepFool, self).__init__(model, sess)
-        self.set_params()
+        params = {'max_iter': max_iter, 'clip_min': clip_min, 'clip_max': clip_max, 'verbose': verbose}
+        self.set_params(**params)
 
     def generate(self, x_val, **kwargs):
         """
@@ -26,20 +28,16 @@ class DeepFool(Attack):
         :param x_val: (required) A Numpy array with the original inputs.
         :return: A Numpy array holding the adversarial examples.
         """
+        self.set_params(**kwargs)
+
         dims = list(x_val.shape)
         dims[0] = None
         xi_op = tf.placeholder(dtype=tf.float32, shape=dims)
-
-        # Using model predictions as ground truth to avoid label leaking
-        y = get_labels_tf_tensor(self.model(xi_op))
-
-        # Compute loss
-        loss = model_loss(y, self.model(xi_op), mean=False)
+        loss = get_logits(self.model(xi_op), mean=False)
         grad_xi, = tf.gradients(loss, xi_op)
-
         x_adv = x_val.copy()
 
-        # progress bar
+        # Progress bar
         progress_bar = Progbar(target=len(x_val), verbose=self.verbose)
 
         for j, x in enumerate(x_adv):
@@ -67,7 +65,7 @@ class DeepFool(Attack):
                 l = value.argmin(fill_value=np.inf)
                 r = np.abs(f_diff[0, l]) / pow(np.linalg.norm(grad_diff[0, l]), 2) * grad_diff[0]
 
-                # add perturbation and clip result
+                # Add perturbation and clip result
                 xi += r
 
                 if self.clip_min or self.clip_max:
@@ -85,10 +83,10 @@ class DeepFool(Attack):
 
         return x_adv
 
-    def set_params(self, max_iter=50, clip_min=None, clip_max=None, verbose=1):
-        assert (type(max_iter) == int) and max_iter > 0
+    def set_params(self, **kwargs):
+        super(DeepFool, self).set_params(**kwargs)
 
-        self.max_iter = max_iter
-        self.clip_min = clip_min
-        self.clip_max = clip_max
-        self.verbose = verbose
+        if type(self.max_iter) is not int or self.max_iter <= 0:
+            raise ValueError("The number of iterations must be a positive integer.")
+
+        return True
