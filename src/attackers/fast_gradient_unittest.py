@@ -6,7 +6,7 @@ import tensorflow as tf
 
 from src.attackers.fast_gradient import FastGradientMethod
 from src.classifiers import cnn
-from src.utils import load_mnist, get_label_conf
+from src.utils import load_mnist, get_labels_np_array
 
 
 class TestFastGradientMethod(unittest.TestCase):
@@ -34,7 +34,7 @@ class TestFastGradientMethod(unittest.TestCase):
         attack_params = {"verbose": 0,
                          "clip_min": 0.,
                          "clip_max": 1.,
-                         "eps": .5}
+                         "eps": 1.}
 
         attack = FastGradientMethod(model, session)
         X_train_adv = attack.generate(X_train, **attack_params)
@@ -43,16 +43,45 @@ class TestFastGradientMethod(unittest.TestCase):
         self.assertFalse((X_train == X_train_adv).all())
         self.assertFalse((X_test == X_test_adv).all())
 
-        _, train_y_pred = get_label_conf(model.predict(X_train_adv))
-        _, test_y_pred = get_label_conf(model.predict(X_test_adv))
+        train_y_pred = get_labels_np_array(model.predict(X_train_adv))
+        test_y_pred = get_labels_np_array(model.predict(X_test_adv))
 
-        self.assertFalse(np.all(Y_train == train_y_pred))
-        self.assertFalse(np.all(Y_test == test_y_pred))
+        self.assertFalse((Y_train == train_y_pred).all())
+        self.assertFalse((Y_test == test_y_pred).all())
 
         scores = model.evaluate(X_train_adv, Y_train)
         print('\naccuracy on adversarial train examples: %.2f%%' % (scores[1] * 100))
 
         scores = model.evaluate(X_test_adv, Y_test)
+        print('\naccuracy on adversarial test examples: %.2f%%' % (scores[1] * 100))
+
+        # test minimal perturbations
+        attack_params = {"verbose": 0,
+                         "clip_min": 0.,
+                         "clip_max": 1.,
+                         "minimal": True,
+                         "eps_step": .1,
+                         "eps_max": 1.}
+
+        X_train_adv_min = attack.generate(X_train, **attack_params)
+        X_test_adv_min = attack.generate(X_test, **attack_params)
+
+        self.assertFalse((X_train_adv_min == X_train_adv).all())
+        self.assertFalse((X_test_adv_min == X_test_adv).all())
+
+        self.assertFalse((X_train == X_train_adv_min).all())
+        self.assertFalse((X_test == X_test_adv_min).all())
+
+        train_y_pred = get_labels_np_array(model.predict(X_train_adv_min))
+        test_y_pred = get_labels_np_array(model.predict(X_test_adv_min))
+
+        self.assertFalse((Y_train == train_y_pred).all())
+        self.assertFalse((Y_test == test_y_pred).all())
+
+        scores = model.evaluate(X_train_adv_min, Y_train)
+        print('\naccuracy on adversarial train examples: %.2f%%' % (scores[1] * 100))
+
+        scores = model.evaluate(X_test_adv_min, Y_test)
         print('\naccuracy on adversarial test examples: %.2f%%' % (scores[1] * 100))
 
 

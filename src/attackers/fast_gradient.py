@@ -4,7 +4,7 @@ import numpy as np
 import tensorflow as tf
 
 from src.attackers.attack import Attack
-
+from src.utils import get_labels_tf_tensor
 
 class FastGradientMethod(Attack):
     """
@@ -12,9 +12,9 @@ class FastGradientMethod(Attack):
     Gradient Sign Method"). This implementation extends the attack to other norms, and is therefore called the Fast
     Gradient Method. Paper link: https://arxiv.org/abs/1412.6572
     """
-    attack_params = ['eps', 'ord', 'y', 'clip_min', 'clip_max']
+    attack_params = ['ord', 'y', 'y_val', 'clip_min', 'clip_max']
 
-    def __init__(self, model, sess=None, eps=0.3, ord=np.inf, y=None, clip_min=None, clip_max=None):
+    def __init__(self, model, sess=None, ord=np.inf, y=None, clip_min=None, clip_max=None):
         """
         Create a FastGradientMethod instance.
         :param eps: (optional float) attack step size (input variation)
@@ -28,10 +28,10 @@ class FastGradientMethod(Attack):
         """
         super(FastGradientMethod, self).__init__(model, sess)
 
-        kwargs = {'eps': eps, 'ord': ord, 'clip_min': clip_min, 'clip_max': clip_max, 'y': y}
+        kwargs = {'ord': ord, 'clip_min': clip_min, 'clip_max': clip_max, 'y': y}
         self.set_params(**kwargs)
 
-    def generate_graph(self, x, **kwargs):
+    def generate_graph(self, x, eps=0.3, **kwargs):
         """
         Generate symbolic graph for adversarial examples and return.
         :param x: The model's symbolic inputs.
@@ -49,8 +49,36 @@ class FastGradientMethod(Attack):
         """
         self.set_params(**kwargs)
 
-        return fgm(x, self.model(x), y=self.y, eps=self.eps, ord=self.ord,
+        return fgm(x, self.model(x), y=self.y, eps=eps, ord=self.ord,
                    clip_min=self.clip_min, clip_max=self.clip_max)
+
+    def minimal_perturbations(self, x, eps_step=0.1, eps_max=1., **kwargs):
+
+        prev_y = tf.argmax(self.model(x), 1)
+        eps = eps_step
+        adv_x_op = x
+
+        while eps < eps_max:
+
+            # adversarial crafting
+            curr_adv_x_op = self.generate_graph(x, eps=eps, **kwargs)
+            curr_adv_y = tf.argmax(self.model(curr_adv_x_op), 1)
+
+            # update
+            adv_x_op = tf.where(tf.equal(prev_y, curr_adv_y), adv_x_op, curr_adv_x_op)
+
+            eps += eps_step
+            prev_y = tf.argmax(self.model(adv_x_op), 1)
+
+        else:
+            curr_adv_y = prev_y
+
+        # perturbed the instances that did not get their class changed
+        if eps == eps_max:
+            curr_adv_x_op = self.generate_graph(x, eps=eps, **kwargs)
+            adv_x_op = tf.where(tf.equal(prev_y, curr_adv_y), curr_adv_x_op, adv_x_op)
+
+        return adv_x_op
 
     def generate(self, x_val, **kwargs):
         """
@@ -68,23 +96,27 @@ class FastGradientMethod(Attack):
         :param clip_min: (optional float) Minimum input component value
         :param clip_max: (optional float) Maximum input component value
         """
-        self.set_params(**kwargs)
 
-        # Generate this attack's graph if it hasn't been done previously
-        if not hasattr(self, "_x"):
-            input_shape = list(x_val.shape)
-            input_shape[0] = None
-            self._x = tf.placeholder(tf.float32, shape=input_shape)
-            self._x_adv = self.generate_graph(self._x)
+        input_shape = list(x_val.shape)
+        input_shape[0] = None
+        self._x = tf.placeholder(tf.float32, shape=input_shape)
 
-        # Run symbolic graph without or with true labels
-        if 'y_val' not in kwargs or kwargs['y_val'] is None:
+        if "minimal" in kwargs and kwargs["minimal"]:
+            self._x_adv = self.minimal_perturbations(self._x, **kwargs)
             feed_dict = {self._x: x_val}
+
         else:
-            # Verify label placeholder was given in params if using true labels
-            if self.y is None:
-                raise Exception("True labels given but label placeholder not given.")
-            feed_dict = {self._x: x_val, self.y: kwargs['y_val']}
+            self._x_adv = self.generate_graph(self._x, **kwargs)
+
+            # Run symbolic graph without or with true labels
+            if 'y_val' not in kwargs or kwargs['y_val'] is None:
+                feed_dict = {self._x: x_val}
+            else:
+                # Verify label placeholder was given in params if using true labels
+                if self.y is None:
+                    raise Exception("True labels given but label placeholder not given.")
+                feed_dict = {self._x: x_val, self.y: kwargs['y_val']}
+
         return self.sess.run(self._x_adv, feed_dict=feed_dict)
 
     def set_params(self, **kwargs):
