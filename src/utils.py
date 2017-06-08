@@ -18,12 +18,12 @@ def get_label_conf(y_vec):
 def get_labels_tf_tensor(preds):
     preds_max = tf.reduce_max(preds, 1, keep_dims=True)
     y = tf.to_float(tf.equal(preds, preds_max))
-    y = y / tf.reduce_sum(y, 1, keep_dims=True)
+    y /= tf.reduce_sum(y, 1, keep_dims=True)
 
     return y
 
 def get_labels_np_array(preds):
-    preds_max = np.max(preds)
+    preds_max = np.amax(preds, axis=1, keepdims=True)
     y = (preds == preds_max).astype(float)
 
     return y
