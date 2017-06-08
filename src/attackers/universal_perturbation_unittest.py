@@ -5,7 +5,7 @@ import tensorflow as tf
 
 from src.attackers.universal_perturbation import UniversalPerturbation
 from src.classifiers import cnn
-from src.utils import load_mnist, get_label_conf
+from src.utils import load_mnist, get_labels_np_array
 
 
 class TestUniversalPerturbation(unittest.TestCase):
@@ -41,8 +41,8 @@ class TestUniversalPerturbation(unittest.TestCase):
 
         self.assertFalse((X_test == x_test_adv).all())
 
-        _, train_y_pred = get_label_conf(model.predict(x_train_adv))
-        _, test_y_pred = get_label_conf(model.predict(x_test_adv))
+        train_y_pred = get_labels_np_array(model.predict(x_train_adv))
+        test_y_pred = get_labels_np_array(model.predict(x_test_adv))
 
         self.assertFalse((Y_test == test_y_pred).all())
         self.assertFalse((Y_train == train_y_pred).all())

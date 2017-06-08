@@ -54,7 +54,6 @@ class UniversalPerturbation(Attack):
 
         # Compute loss and gradients
         loss = get_logits(self.model(xi_op), mean=False)
-        grad_xi, = tf.gradients(loss, xi_op)
 
         attacker = self._get_attack(self.attacker, self.attacker_params)
 
@@ -69,7 +68,7 @@ class UniversalPerturbation(Attack):
             for j, x in enumerate(x_val[rnd_idx]):
                 xi = x[None, ...]
 
-                f_xi, _ = self.sess.run([self.model(xi_op), grad_xi], feed_dict={xi_op: xi+v})
+                f_xi = self.sess.run([self.model(xi_op)], feed_dict={xi_op: xi+v})
                 fk_i_hat = np.argmax(f_xi[0])
 
                 fk_hat = np.argmax(true_y[rnd_idx][j])
@@ -79,7 +78,7 @@ class UniversalPerturbation(Attack):
                     # Compute adversarial perturbation
                     adv_xi = attacker.generate(xi+v)
 
-                    adv_f_xi, _ = self.sess.run([self.model(xi_op), grad_xi], feed_dict={xi_op: adv_xi})
+                    adv_f_xi = self.sess.run([self.model(xi_op)], feed_dict={xi_op: adv_xi})
                     adv_fk_i_hat = np.argmax(adv_f_xi[0])
 
                     # if the class has changed, update v
