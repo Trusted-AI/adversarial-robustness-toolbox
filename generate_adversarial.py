@@ -1,3 +1,5 @@
+from config import config_dict
+
 import json
 import numpy as np
 import os
