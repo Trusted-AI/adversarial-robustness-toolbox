@@ -1,13 +1,13 @@
-from config import DATA_PATH, config_dict
-
 import json
 import numpy as np
 import os
 
-from cleverhans.attacks import FastGradientMethod
 import keras.backend as K
 import tensorflow as tf
 
+from src.attackers.deepfool import DeepFool
+from src.attackers.fast_gradient import FastGradientMethod
+from src.attackers.universal_perturbation import UniversalPerturbation
 from src.classifiers import cnn
 from src.utils import get_args, get_verbose_print, load_mnist, make_directory, set_group_permissions_rec
 
@@ -34,27 +34,52 @@ if args.save:
     SAVE_ADV = os.path.join(os.path.abspath(args.save), "")
     make_directory(SAVE_ADV)
 
-    with open(SAVE_ADV + "readme.txt", "w") as wfile:
+    with open(os.path.join(SAVE_ADV, "readme.txt"), "w") as wfile:
         wfile.write("Model used for crafting the adversarial examples is in " + MODEL_PATH)
 
-for eps in adv_results["eps_values"]:
+if args.adv_method == 'fgsm':
     adv_crafter = FastGradientMethod(model=model, sess=session)
-    X_train_adv = adv_crafter.generate_np(x_val=X_train, eps=eps, ord=np.inf, clip_min=0., clip_max=1.)
+    for eps in adv_results["eps_values"]:
+        X_train_adv = adv_crafter.generate(x_val=X_train, eps=eps, ord=np.inf, clip_min=0., clip_max=1.)
+
+        scores = model.evaluate(X_train_adv, Y_train, verbose=args.verbose)
+        adv_results["train_adv_accuracies"].append(scores[1]*100)
+
+        v_print("\naccuracy on train adversarials with %2.1f epsilon: %.2f%%" % (eps, scores[1] * 100))
+
+        X_test_adv = adv_crafter.generate(x_val=X_test)
+
+        scores = model.evaluate(X_test_adv, Y_test, verbose=args.verbose)
+        adv_results["test_adv_accuracies"].append(scores[1] * 100)
+
+        if args.save:
+            np.save(SAVE_ADV + "eps%.2f_train.npy" % eps, X_train_adv)
+            np.save(SAVE_ADV + "eps%.2f_test.npy" % eps, X_test_adv)
+
+elif args.adv_method in ['deepfool', 'universal']:
+    if args.adv_method == 'deepfool':
+        adv_crafter = DeepFool(model, session, clip_min=0., clip_max=1.)
+    else:
+        adv_crafter = UniversalPerturbation(model, session, p=np.inf)
+    X_train_adv = adv_crafter.generate(x_val=X_train)
 
     scores = model.evaluate(X_train_adv, Y_train, verbose=args.verbose)
-    adv_results["train_adv_accuracies"].append(scores[1]*100)
+    adv_results["train_adv_accuracies"].append(scores[1] * 100)
 
-    v_print("\naccuracy on train adversarials with %2.1f epsilon: %.2f%%" % (eps, scores[1] * 100))
+    v_print("\naccuracy on train adversarials: %.2f%%" % (scores[1] * 100))
 
-    adv_crafter = FastGradientMethod(model=model, sess=session)
-    X_test_adv = adv_crafter.generate_np(x_val=X_test, eps=eps, ord=np.inf)
+    X_test_adv = adv_crafter.generate(x_val=X_test)
 
     scores = model.evaluate(X_test_adv, Y_test, verbose=args.verbose)
     adv_results["test_adv_accuracies"].append(scores[1] * 100)
 
     if args.save:
-        np.save(SAVE_ADV + "eps%.2f_train.npy" % eps, X_train_adv)
-        np.save(SAVE_ADV + "eps%.2f_test.npy" % eps, X_test_adv)
+        np.save(os.path.join(SAVE_ADV, "train.npy"), X_train_adv)
+        np.save(os.path.join(SAVE_ADV, "test.npy"), X_test_adv)
+
+else:
+    raise ValueError('%s is not a valid attack method.' % args.adv_method)
+
 
 if args.save:
     # with open(os.path.join(MODEL_PATH, args.adv_method + "-adv-acc.json"), "w") as json_file:

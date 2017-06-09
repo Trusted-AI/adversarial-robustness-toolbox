@@ -5,11 +5,12 @@ import numpy.linalg as LA
 
 from src.attackers.fast_gradient import FastGradientMethod
 
-supported_methods = { "fgsm": {"class": FastGradientMethod,
-                               "params": {"eps_step": 0.1, "eps_max": 1., "clip_min": 0., "clip_max": 1.}},
+supported_methods = {"fgsm": {"class": FastGradientMethod,
+                              "params": {"eps_step": 0.1, "eps_max": 1., "clip_min": 0., "clip_max": 1.}},
                       # "jsma": {"class": SaliencyMapMethod,
                       #          "params": {"theta": 1., "gamma": 0.01, "clip_min": 0., "clip_max": 1.}}
                       }
+
 
 def get_crafter(method, model, session, params=None):
 
@@ -24,6 +25,7 @@ def get_crafter(method, model, session, params=None):
         crafter.set_params(**supported_methods[method]["params"])
 
     return crafter
+
 
 def empirical_robustness(x, model, sess, method_name, method_params=None):
     """ Computes the Empirical Robustness of a `model` over the sample `x` for a given adversarial crafting method 

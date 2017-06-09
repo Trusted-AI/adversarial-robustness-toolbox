@@ -15,10 +15,6 @@ args = get_args(__file__)
 
 v_print = get_verbose_print(args.verbose)
 
-comp_params = {"loss": 'categorical_crossentropy',
-               "optimizer": 'adam',
-               "metrics": ['accuracy']}
-
 # --------------------------------------------------------------------------------------------- GET CLASSIFIER
 
 session = tf.Session()

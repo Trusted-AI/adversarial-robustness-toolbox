@@ -9,11 +9,13 @@ from keras.utils import np_utils
 
 import tensorflow as tf
 
+
 def get_label_conf(y_vec):
     assert len(y_vec.shape) == 2
 
     confs, labels = np.amax(y_vec, axis=1), np.argmax(y_vec, axis=1)
     return confs, labels
+
 
 def get_labels_tf_tensor(preds):
     preds_max = tf.reduce_max(preds, 1, keep_dims=True)
@@ -22,15 +24,18 @@ def get_labels_tf_tensor(preds):
 
     return y
 
+
 def get_labels_np_array(preds):
     preds_max = np.amax(preds, axis=1, keepdims=True)
     y = (preds == preds_max).astype(float)
 
     return y
 
+
 def make_directory(dir_path):
     if not os.path.exists(dir_path):
         os.makedirs(dir_path)
+
 
 def get_npy_files(path):
     """ generator """
@@ -117,12 +122,14 @@ def preprocess(x, y, nb_classes=10, max_value=255):
 
     return x, y
 
+
 def set_group_permissions_rec(path, group="drl-dwl"):
     for root, _, files in os.walk(path):
         set_group_permissions(root, group)
 
         for f in files:
             set_group_permissions(os.path.join(root, f), group)
+
 
 def set_group_permissions(filename, group="drl-dwl"):
     import shutil
@@ -143,7 +150,7 @@ def get_args(prog, nb_epochs=1, batch_size=128, val_split=0.1, act="relu", adv_m
     if script_name.startswith('train'):
         parser.add_argument("-e", "--epochs", type=int, dest='nb_epochs', default=nb_epochs,
                             help='number of epochs for training the classifier')
-        parser.add_argument("-f", "--act", type=str, dest='act', default=act, choices=["relu","brelu"],
+        parser.add_argument("-f", "--act", type=str, dest='act', default=act, choices=["relu", "brelu"],
                             help='choice of activation function')
         parser.add_argument("-b", "--batchsize", type=int, dest='batch_size', default=batch_size,
                             help='size of the batches')
@@ -166,7 +173,8 @@ def get_args(prog, nb_epochs=1, batch_size=128, val_split=0.1, act="relu", adv_m
     elif script_name == 'generate_adversarial.py':
         parser.add_argument("load", type=str, help='the classifier is loaded from `load` directory.')
 
-        parser.add_argument("-a", "--adv", type=str, dest='adv_method', default=adv_method, choices=["fgsm"],
+        parser.add_argument("-a", "--adv", type=str, dest='adv_method', default=adv_method,
+                            choices=["fgsm", "deepfool", "universal"],
                             help='choice of attacker')
         parser.add_argument("-s", "--save", dest='save', type=str,
                             help='the path where the adversarial examples are saved.')

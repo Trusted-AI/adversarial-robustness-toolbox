@@ -4,12 +4,13 @@ import numpy as np
 import tensorflow as tf
 
 from src.attackers.attack import Attack
-from src.utils import get_labels_tf_tensor
+
 
 class FastGradientMethod(Attack):
     """
     This attack was originally implemented by Goodfellow et al. (2015) with the infinity norm (and is known as the "Fast
-    Gradient Sign Method"). This implementation extends the attack to other norms, and is therefore called the Fast
+    Gradient Sign Method"). This implementation is inspired by the one in Cleverhans
+    (https://github.com/tensorflow/cleverhans) which extends the attack to other norms, and is therefore called the Fast
     Gradient Method. Paper link: https://arxiv.org/abs/1412.6572
     """
     attack_params = ['ord', 'y', 'y_val', 'clip_min', 'clip_max']
