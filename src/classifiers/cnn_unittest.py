@@ -10,6 +10,7 @@ import keras
 import tensorflow as tf
 
 from src.classifiers import cnn
+from src.classifiers.utils import save_model, load_model
 from src.utils import load_cifar10, load_mnist, make_directory, set_group_permissions_rec
 
 class TestCNNModel(unittest.TestCase):
@@ -154,7 +155,7 @@ class TestCNNModel(unittest.TestCase):
 
         path = "./tests/save/cnn/"
         # test saving
-        cnn.save_model(model, path, comp_params)
+        save_model(model, path, comp_params)
 
         if config_dict["profile"] == "CLUSTER":
             set_group_permissions_rec(path)
@@ -165,7 +166,7 @@ class TestCNNModel(unittest.TestCase):
         self.assertTrue(os.path.getsize(path + "weights.h5") > 0)
 
         #test loading
-        loaded_model = cnn.load_model(path)
+        loaded_model = load_model(path)
 
         scores = model.evaluate(X_test, Y_test)
         scores_loaded = loaded_model.evaluate(X_test, Y_test)

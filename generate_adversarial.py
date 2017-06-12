@@ -8,7 +8,7 @@ from cleverhans.attacks import FastGradientMethod
 import keras.backend as K
 import tensorflow as tf
 
-from src.classifiers import cnn
+from src.classifiers,utils import load_model
 from src.utils import get_args, get_verbose_print, load_mnist, make_directory, set_group_permissions_rec
 
 # --------------------------------------------------------------------------------------------------- SETTINGS
@@ -23,7 +23,7 @@ K.set_session(session)
 
 # Load classification model
 MODEL_PATH = os.path.abspath(args.load)
-model = cnn.load_model(MODEL_PATH, "best-weights.h5")
+model = load_model(MODEL_PATH, "best-weights.h5")
 
 # Generate adversarial examples on loaded model
 adv_results = {"train_adv_accuracies": [],

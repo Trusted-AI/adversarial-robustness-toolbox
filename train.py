@@ -7,6 +7,7 @@ import numpy as np
 import tensorflow as tf
 
 from src.classifiers import cnn
+from src.classifiers,utils import save_model, load_model
 from src.utils import get_args, get_verbose_print, load_mnist, make_directory, set_group_permissions_rec
 
 # --------------------------------------------------------------------------------------------------- SETTINGS
@@ -60,9 +61,9 @@ model.fit(X_train, Y_train, verbose=2*int(args.verbose), validation_split=args.v
           batch_size=args.batch_size, callbacks=callbacks_list)
 
 if args.save is not None:
-    cnn.save_model(model, MODEL_PATH, comp_params)
+    save_model(model, MODEL_PATH, comp_params)
     # Load model with best validation score
-    model = cnn.load_model(MODEL_PATH, "best-weights.h5")
+    model = load_model(MODEL_PATH, "best-weights.h5")
 
     # Change files' group and permissions if on ccc
     if config_dict['profile'] == "CLUSTER":
