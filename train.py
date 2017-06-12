@@ -7,7 +7,7 @@ import numpy as np
 import tensorflow as tf
 
 from src.classifiers import cnn
-from src.classifiers,utils import save_model, load_model
+from src.classifiers.utils import save_model, load_model
 from src.utils import get_args, get_verbose_print, load_mnist, make_directory, set_group_permissions_rec
 
 # --------------------------------------------------------------------------------------------------- SETTINGS
