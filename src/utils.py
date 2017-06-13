@@ -1,5 +1,6 @@
 import argparse
 import numpy as np
+import random
 import os
 import sys
 
@@ -105,6 +106,36 @@ def load_mnist():
     x_test, y_test = preprocess(x_test, y_test)
 
     return (x_train, y_train), (x_test, y_test)
+
+def create_class_pairs(x, y, classes=10, pos=1, neg=0):
+    """ Returns a positive and a negative pair per point of x, w.r.t. its class, and their corresponding scores."""
+
+    pairs = []
+    scores = []
+
+    classes_idx = [np.where(y == i)[0] for i in range(classes)]
+
+    for d in range(classes):
+
+        nb = len(classes_idx[d])
+
+        for i in range(nb):
+
+            j = random.randrange(0, nb)
+            z1, z2 = classes_idx[d][i], classes_idx[d][j]
+            pairs += [[x[z1], x[z2]]]
+            scores += [pos]
+
+            dn = (d + random.randrange(1, classes)) % classes
+            size = len(classes_idx[dn])
+            if size > 0:
+                j = random.randrange(0, size)
+                z1, z2 = classes_idx[d][i], classes_idx[dn][j]
+                pairs += [[x[z1], x[z2]]]
+
+                scores += [neg]
+
+    return np.array(pairs), np.array(scores)
 
 
 def preprocess(x, y, nb_classes=10, max_value=255):
