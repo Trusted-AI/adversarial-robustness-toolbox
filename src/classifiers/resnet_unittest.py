@@ -9,8 +9,8 @@ import keras
 
 import tensorflow as tf
 
-from src.classifiers import resnet
-from src.classifiers.utils import save_model, load_model
+from src.classifiers.resnet import ResNet
+from src.classifiers.utils import save_classifier, load_classifier
 from src.utils import load_cifar10, load_mnist, make_directory, set_group_permissions_rec
 
 class TestResNetModel(unittest.TestCase):
@@ -30,20 +30,24 @@ class TestResNetModel(unittest.TestCase):
         session = tf.Session()
         keras.backend.set_session(session)
 
+        comp_params = {"loss": 'categorical_crossentropy',
+                       "optimizer": 'adam',
+                       "metrics": ['accuracy']}
+
         # get CIFAR10
         (X_train, Y_train), (X_test, Y_test) = load_cifar10()
         X_train, Y_train, X_test, Y_test = X_train[:NB_TRAIN], Y_train[:NB_TRAIN], X_test[:NB_TEST], Y_test[:NB_TEST]
 
         im_shape = X_train[0].shape
 
-        model = resnet.resnet_model(input_shape=im_shape)
+        classifier = ResNet(input_shape=im_shape)
 
-        model.compile(loss='categorical_crossentropy', optimizer='adam', metrics=['accuracy'])
+        classifier.compile(comp_params)
 
-        # Fit the model
-        model.fit(X_train, Y_train, epochs=2, batch_size=BATCH_SIZE)
+        # Fit the classifier
+        classifier.fit(X_train, Y_train, epochs=2, batch_size=BATCH_SIZE)
 
-        scores = model.evaluate(X_test, Y_test)
+        scores = classifier.evaluate(X_test, Y_test)
 
         print("\naccuracy: %.2f%%" % (scores[1] * 100))
 
@@ -57,20 +61,24 @@ class TestResNetModel(unittest.TestCase):
         session = tf.Session()
         keras.backend.set_session(session)
 
+        comp_params = {"loss": 'categorical_crossentropy',
+                       "optimizer": 'adam',
+                       "metrics": ['accuracy']}
+
         # get MNIST
         (X_train, Y_train), (X_test, Y_test) = load_mnist()
         X_train, Y_train, X_test, Y_test = X_train[:NB_TRAIN], Y_train[:NB_TRAIN], X_test[:NB_TEST], Y_test[:NB_TEST]
 
         im_shape = X_train[0].shape
 
-        model = resnet.resnet_model(input_shape=im_shape)
+        classifier = ResNet(input_shape=im_shape)
 
-        model.compile(loss='categorical_crossentropy', optimizer='adam', metrics=['accuracy'])
+        classifier.compile(comp_params)
 
-        # Fit the model
-        model.fit(X_train, Y_train, epochs=2, batch_size=BATCH_SIZE)
+        # Fit the classifier
+        classifier.fit(X_train, Y_train, epochs=2, batch_size=BATCH_SIZE)
 
-        scores = model.evaluate(X_test, Y_test)
+        scores = classifier.evaluate(X_test, Y_test)
 
         print("\naccuracy: %.2f%%" % (scores[1] * 100))
 
@@ -93,16 +101,16 @@ class TestResNetModel(unittest.TestCase):
 
         im_shape = X_train[0].shape
 
-        model = resnet.resnet_model(input_shape=im_shape)
+        classifier = ResNet(input_shape=im_shape)
 
-        model.compile(**comp_params)
+        classifier.compile(comp_params)
 
-        # Fit the model
-        model.fit(X_train, Y_train, epochs=1, batch_size=BATCH_SIZE)
+        # Fit the classifier
+        classifier.fit(X_train, Y_train, epochs=1, batch_size=BATCH_SIZE)
 
         path = "./tests/save/cnn/"
         # test saving
-        save_model(model, path, comp_params)
+        save_classifier(classifier, path)
 
         if config_dict["profile"] == "CLUSTER":
             set_group_permissions_rec(path)
@@ -113,10 +121,10 @@ class TestResNetModel(unittest.TestCase):
         self.assertTrue(os.path.getsize(path + "weights.h5") > 0)
 
         #test loading
-        loaded_model = load_model(path)
+        loaded_classifier = load_classifier(path)
 
-        scores = model.evaluate(X_test, Y_test)
-        scores_loaded = loaded_model.evaluate(X_test, Y_test)
+        scores = classifier.evaluate(X_test, Y_test)
+        scores_loaded = loaded_classifier.evaluate(X_test, Y_test)
 
         self.assertAlmostEqual(scores, scores_loaded)
 
