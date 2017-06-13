@@ -7,7 +7,7 @@ import os
 import keras.backend as K
 import tensorflow as tf
 
-from src.classifiers.utils import load_model
+from src.classifiers.utils import load_classifier
 from src.utils import get_args, get_verbose_print, load_mnist, get_npy_files, set_group_permissions_rec
 
 # --------------------------------------------------------------------------------------------------- SETTINGS
@@ -20,10 +20,10 @@ v_print = get_verbose_print(args.verbose)
 session = tf.Session()
 K.set_session(session)
 
-# Load classification model
+# Load classification classifier
 MODEL_PATH = os.path.abspath(args.load)
 OUTPUT_PATH = os.path.join(MODEL_PATH, "accuracies.json")
-model = load_model(MODEL_PATH, "best-weights.h5")
+classifier = load_classifier(MODEL_PATH, "best-weights.h5")
 
 # ------------------------------------------------------------------------------------------------------- TEST
 
@@ -41,13 +41,13 @@ already_tested = results.keys()
 
 if "train_accuracy" not in already_tested:
     # Test on true train instances
-    scores = model.evaluate(X_train, Y_train, verbose=args.verbose)
+    scores = classifier.evaluate(X_train, Y_train, verbose=args.verbose)
     v_print("\naccuracy on train: %.2f%%" % (scores[1] * 100))
     results["train_accuracy"] = scores[1] * 100
 
 if "test_accuracy" not in already_tested:
     # Test on true test instances
-    scores = model.evaluate(X_test, Y_test, verbose=args.verbose)
+    scores = classifier.evaluate(X_test, Y_test, verbose=args.verbose)
     v_print("\naccuracy on test: %.2f%%" % (scores[1] * 100))
     results["test_accuracy"] = scores[1] * 10
 
@@ -61,7 +61,7 @@ for filepath in get_npy_files(ADV_PATH):
         X = np.load(filepath)
         Y = Y_train if "_train" in filepath else Y_test
 
-        scores = model.evaluate(X, Y, verbose=args.verbose)
+        scores = classifier.evaluate(X, Y, verbose=args.verbose)
         v_print("\naccuracy on %s: %.2f%%" % (filepath, scores[1] * 100))
         results[filepath] = scores[1]*100
 

@@ -8,7 +8,7 @@ import keras.backend as K
 from keras.applications.vgg16 import VGG16
 import tensorflow as tf
 
-from src.attackers.perturbations import fgsm_minimal_perturbations
+from src.attackers.fast_gradient import FastGradientMethod
 
 PATH = "./imagenet/"
 
@@ -19,6 +19,14 @@ session = tf.Session()
 K.set_session(session)
 
 model = VGG16()
+
+attack = FastGradientMethod(model, session)
+
+attack_params = {"clip_min": 0.,
+                 "clip_max": 255,
+                 "minimal": True,
+                 "eps_step": 9,
+                 "eps_max": 100.}
 
 for file in os.listdir(PATH):
 
@@ -31,7 +39,7 @@ for file in os.listdir(PATH):
 
         X = np.expand_dims(img, axis=0)
 
-        pert = fgsm_minimal_perturbations(X, model, session, eps_step=9, eps_max=100, params={"clip_max":255})
+        adv = attack.generate(X, **attack_params)
 
-        misc.imsave(filename.replace(".jpg", "_adv.jpg"), (X + pert)[0])
-        misc.imsave(filename.replace(".jpg", "_pert.jpg"), pert[0])
+        misc.imsave(filename.replace(".jpg", "_adv.jpg"), adv[0])
+        misc.imsave(filename.replace(".jpg", "_pert.jpg"), (adv - X)[0])

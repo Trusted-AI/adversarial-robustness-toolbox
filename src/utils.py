@@ -216,7 +216,7 @@ def get_args(prog, nb_epochs=1, batch_size=128, val_split=0.1, act="relu", adv_m
                             help='either the path or name of the dataset the classifier is tested on.')
 
         if script_name == "train_with_noise.py":
-            parser.add_argument("-d", "--stdev", type=float, dest='std_dev', default=std_dev,
+            parser.add_argument("-t", "--stdev", type=float, dest='std_dev', default=std_dev,
                                 help='standard deviation of the distributions')
             parser.add_argument("-n", "--nbinstances", type=int, dest='nb_instances', default=nb_instances,
                                 help='number of supplementary instances per true example')
