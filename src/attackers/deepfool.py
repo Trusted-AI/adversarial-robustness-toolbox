@@ -28,7 +28,7 @@ class DeepFool(Attack):
         :param x_val: (required) A Numpy array with the original inputs.
         :return: A Numpy array holding the adversarial examples.
         """
-        self.set_params(**kwargs)
+        assert self.set_params(**kwargs)
 
         dims = list(x_val.shape)
         dims[0] = None

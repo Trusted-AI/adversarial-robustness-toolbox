@@ -54,7 +54,14 @@ class FastGradientMethod(Attack):
                    clip_min=self.clip_min, clip_max=self.clip_max)
 
     def minimal_perturbations(self, x, eps_step=0.1, eps_max=1., **kwargs):
-
+        """
+        Iteratively compute the minimal perturbation necessary to make the class prediction change.
+        :param x: (required) A Numpy array with the original inputs.
+        :param eps_step: (optional float) The increase in the perturbation for each iteration
+        :param eps_max: (optional float) The maximum accepted perturbation
+        :param kwargs: Other parameters to send to generate_graph
+        :return: A Numpy array holding the adversarial examples.
+        """
         prev_y = tf.argmax(self.model(x), 1)
         eps = eps_step
         adv_x_op = x
@@ -86,13 +93,10 @@ class FastGradientMethod(Attack):
         Generate adversarial samples and return them in a Numpy array.
         :param x_val: (required) A Numpy array with the original inputs.
         :param eps: (required float) attack step size (input variation)
-        :param ord: (optional) Order of the norm (mimics Numpy).
-                    Possible values: np.inf, 1 or 2.
-        :param y: (optional) A placeholder for the model labels. Only provide
-                  this parameter if you'd like to use true labels when crafting
-                  adversarial samples. Otherwise, model predictions are used as
-                  labels to avoid the "label leaking" effect (explained in this
-                  paper: https://arxiv.org/abs/1611.01236). Default is None.
+        :param ord: (optional) Order of the norm (mimics Numpy). Possible values: np.inf, 1 or 2.
+        :param y: (optional) A placeholder for the model labels. Only provide this parameter if you'd like to use true
+                  labels when crafting adversarial samples. Otherwise, model predictions are used as labels to avoid the
+                  "label leaking" effect (explained in this paper: https://arxiv.org/abs/1611.01236). Default is None.
                   Labels should be one-hot-encoded.
         :param clip_min: (optional float) Minimum input component value
         :param clip_max: (optional float) Maximum input component value
@@ -107,6 +111,9 @@ class FastGradientMethod(Attack):
             feed_dict = {self._x: x_val}
 
         else:
+            # Parse and save attack-specific parameters
+            assert self.set_params(**kwargs)
+
             self._x_adv = self.generate_graph(self._x, **kwargs)
 
             # Run symbolic graph without or with true labels

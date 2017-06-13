@@ -11,6 +11,28 @@ from keras.utils import np_utils
 import tensorflow as tf
 
 
+def random_targets(gt, nb_classes):
+    """
+    Take in the correct labels for each sample and randomly choose target
+    labels from the others
+    :param gt: the correct labels
+    :param nb_classes: The number of classes for this model
+    :return: A numpy array holding the randomly-selected target classes
+    """
+    if len(gt.shape) > 1:
+        gt = np.argmax(gt, axis=1)
+
+    result = np.zeros(gt.shape)
+
+    for class_ind in range(nb_classes):
+        other_classes = list(range(nb_classes))
+        other_classes.remove(class_ind)
+        in_cl = gt == class_ind
+        result[in_cl] = np.random.choice(other_classes)
+
+    return np_utils.to_categorical(np.asarray(result), nb_classes)
+
+
 def get_label_conf(y_vec):
     assert len(y_vec.shape) == 2
 
