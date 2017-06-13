@@ -9,7 +9,7 @@ import keras
 
 import tensorflow as tf
 
-from src.classifiers import resnet, cnn
+from src.classifiers import resnet
 from src.classifiers.utils import save_model, load_model
 from src.utils import load_cifar10, load_mnist, make_directory, set_group_permissions_rec
 

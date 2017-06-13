@@ -39,8 +39,7 @@ def identity_block(input_tensor, kernel_size, filters, stage, block):
     x = BatchNormalization(axis=bn_axis, name=bn_name_base + '2a')(x)
     x = Activation('relu')(x)
 
-    x = Conv2D(filters2, kernel_size,
-               padding='same', name=conv_name_base + '2b')(x)
+    x = Conv2D(filters2, kernel_size, padding='same', name=conv_name_base + '2b')(x)
     x = BatchNormalization(axis=bn_axis, name=bn_name_base + '2b')(x)
     x = Activation('relu')(x)
 
@@ -76,21 +75,18 @@ def conv_block(input_tensor, kernel_size, filters, stage, block, strides=(2, 2))
     conv_name_base = 'res' + str(stage) + block + '_branch'
     bn_name_base = 'bn' + str(stage) + block + '_branch'
 
-    x = Conv2D(filters1, (1, 1), strides=strides,
-               name=conv_name_base + '2a')(input_tensor)
+    x = Conv2D(filters1, (1, 1), strides=strides, name=conv_name_base + '2a')(input_tensor)
     x = BatchNormalization(axis=bn_axis, name=bn_name_base + '2a')(x)
     x = Activation('relu')(x)
 
-    x = Conv2D(filters2, kernel_size, padding='same',
-               name=conv_name_base + '2b')(x)
+    x = Conv2D(filters2, kernel_size, padding='same', name=conv_name_base + '2b')(x)
     x = BatchNormalization(axis=bn_axis, name=bn_name_base + '2b')(x)
     x = Activation('relu')(x)
 
     x = Conv2D(filters3, (1, 1), name=conv_name_base + '2c')(x)
     x = BatchNormalization(axis=bn_axis, name=bn_name_base + '2c')(x)
 
-    shortcut = Conv2D(filters3, (1, 1), strides=strides,
-                      name=conv_name_base + '1')(input_tensor)
+    shortcut = Conv2D(filters3, (1, 1), strides=strides, name=conv_name_base + '1')(input_tensor)
     shortcut = BatchNormalization(axis=bn_axis, name=bn_name_base + '1')(shortcut)
 
     x = layers.add([x, shortcut])
@@ -98,7 +94,7 @@ def conv_block(input_tensor, kernel_size, filters, stage, block, strides=(2, 2))
     return x
 
 
-def resnet_model(input_shape, act='relu', bnorm=False, logits=False, input_ph=None, nb_filters=64, nb_classes=10, act_params={}):
+def resnet_model(input_shape, include_end=True, act='relu', bnorm=False, input_ph=None, nb_filters=64, nb_classes=10, act_params={}):
 
     img_input = Input(shape=input_shape)
 
@@ -121,15 +117,10 @@ def resnet_model(input_shape, act='relu', bnorm=False, logits=False, input_ph=No
     x = Flatten()(x)
     x = Dense(nb_classes)(x)
 
-    if logits:
-        logits_tensor = x
-
-    x = Activation('softmax')(x)
+    if include_end:
+        x = Activation('softmax')(x)
 
     # Create model.
     model = Model(img_input, x, name='resnet')
 
-    if logits:
-        return model, logits_tensor
-    else:
-        return model
+    return model
