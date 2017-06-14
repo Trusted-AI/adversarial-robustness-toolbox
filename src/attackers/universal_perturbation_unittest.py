@@ -4,7 +4,7 @@ import keras.backend as k
 import tensorflow as tf
 
 from src.attackers.universal_perturbation import UniversalPerturbation
-from src.classifiers import cnn
+from src.classifiers.cnn import CNN
 from src.utils import load_mnist, get_labels_np_array
 
 
@@ -14,6 +14,10 @@ class TestUniversalPerturbation(unittest.TestCase):
         session = tf.Session()
         k.set_session(session)
 
+        comp_params = {"loss": 'categorical_crossentropy',
+                       "optimizer": 'adam',
+                       "metrics": ['accuracy']}
+
         # get MNIST
         batch_size, nb_train, nb_test = 100, 100, 10
         (X_train, Y_train), (X_test, Y_test) = load_mnist()
@@ -22,10 +26,10 @@ class TestUniversalPerturbation(unittest.TestCase):
         im_shape = X_train[0].shape
 
         # get classifier
-        model = cnn.cnn_model(im_shape, act="relu")
-        model.compile(loss='categorical_crossentropy', optimizer='adam', metrics=['accuracy'])
-        model.fit(X_train, Y_train, epochs=1, batch_size=batch_size, verbose=0)
-        scores = model.evaluate(X_test, Y_test)
+        classifier = CNN(im_shape, act="relu")
+        classifier.compile(comp_params)
+        classifier.fit(X_train, Y_train, epochs=1, batch_size=batch_size, verbose=0)
+        scores = classifier.evaluate(X_test, Y_test)
         print("\naccuracy on test set: %.2f%%" % (scores[1] * 100))
 
         attack_params = {"verbose": 0,
@@ -33,7 +37,7 @@ class TestUniversalPerturbation(unittest.TestCase):
                          "clip_max": 1.,
                          "attacker": "deepfool"}
 
-        attack = UniversalPerturbation(model, session)
+        attack = UniversalPerturbation(classifier.model, session)
         x_train_adv = attack.generate(X_train, **attack_params)
         self.assertTrue((attack.fooling_rate >= 0.2) or attack.converged)
 
@@ -41,16 +45,16 @@ class TestUniversalPerturbation(unittest.TestCase):
 
         self.assertFalse((X_test == x_test_adv).all())
 
-        train_y_pred = get_labels_np_array(model.predict(x_train_adv))
-        test_y_pred = get_labels_np_array(model.predict(x_test_adv))
+        train_y_pred = get_labels_np_array(classifier.predict(x_train_adv))
+        test_y_pred = get_labels_np_array(classifier.predict(x_test_adv))
 
         self.assertFalse((Y_test == test_y_pred).all())
         self.assertFalse((Y_train == train_y_pred).all())
 
-        scores = model.evaluate(x_train_adv, Y_train)
+        scores = classifier.evaluate(x_train_adv, Y_train)
         print('\naccuracy on adversarial train examples: %.2f%%' % (scores[1] * 100))
 
-        scores = model.evaluate(x_test_adv, Y_test)
+        scores = classifier.evaluate(x_test_adv, Y_test)
         print('\naccuracy on adversarial test examples: %.2f%%' % (scores[1] * 100))
 
 if __name__ == '__main__':
