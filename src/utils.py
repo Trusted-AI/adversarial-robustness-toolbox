@@ -231,10 +231,11 @@ def get_args(prog, classifier="cnn", nb_epochs=1, batch_size=128, val_split=0.1,
         parser.add_argument("-a", "--adv", type=str, dest='adv_method', default=adv_method,
                             choices=["fgsm", "deepfool", "universal"],
                             help='choice of attacker')
-        parser.add_argument("-s", "--save", dest='save', type=str,
-                            help='the path where the adversarial examples are saved.')
+        parser.add_argument("-s", "--save", type=str, dest='save',
+                            help='if set, the adversarial examples are saved')
     else:
         raise ValueError("Parser not defined for script '%s'" % __file__)
+
     parser.add_argument("-v", "--verbose", dest='verbose', action="store_true",
                         help='if set, verbose mode')
 
