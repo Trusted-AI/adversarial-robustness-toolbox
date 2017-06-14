@@ -20,7 +20,7 @@ v_print = get_verbose_print(args.verbose)
 
 # get MNIST
 (X_train, Y_train), (X_test, Y_test) = load_mnist()
-# X_train, Y_train, X_test, Y_test = X_train[:1000], Y_train[:1000], X_test[:1000], Y_test[:1000]
+# X_train, Y_train, X_test, Y_test = X_train[:100], Y_train[:100], X_test[:100], Y_test[:100]
 
 
 session = tf.Session()
@@ -31,7 +31,7 @@ MODEL_PATH = os.path.join(os.path.abspath(args.load), "")
 classifier = load_classifier(MODEL_PATH, "best-weights.h5")
 
 if args.save:
-    SAVE_ADV = os.path.join(os.path.abspath(args.save), "")
+    SAVE_ADV = os.path.join(os.path.abspath(args.save), args.adv_method, "")
     make_directory(SAVE_ADV)
 
     with open(os.path.join(SAVE_ADV, "readme.txt"), "w") as wfile:
@@ -57,7 +57,8 @@ elif args.adv_method in ['deepfool', 'universal']:
     if args.adv_method == 'deepfool':
         adv_crafter = DeepFool(classifier.model, session, clip_min=0., clip_max=1.)
     else:
-        adv_crafter = UniversalPerturbation(classifier.model, session, p=np.inf, clip_min=0., clip_max=1.)
+        adv_crafter = UniversalPerturbation(classifier.model, session, p=np.inf,
+                                            attacker_params={'clip_min':0., 'clip_max':1.})
 
     X_train_adv = adv_crafter.generate(x_val=X_train)
     X_test_adv = adv_crafter.generate(x_val=X_test)

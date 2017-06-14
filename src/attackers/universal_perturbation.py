@@ -15,7 +15,7 @@ class UniversalPerturbation(Attack):
     attacks_dict = {"deepfool": DeepFool}
     attack_params = ['attacker', 'attacker_params', 'delta', 'max_iter', 'eps', 'p', 'max_method_iter', 'verbose']
 
-    def __init__(self, model, sess=None, attacker='DeepFool', attacker_params=None, delta=0.2, max_iter=50, eps=10,
+    def __init__(self, model, sess=None, attacker='deepfool', attacker_params=None, delta=0.2, max_iter=50, eps=10,
                  p=np.inf, max_method_iter=50, verbose=1):
         super(UniversalPerturbation, self).__init__(model, sess)
         kwargs = {'attacker': attacker,
