@@ -25,7 +25,7 @@ class TestVirtualAdversarial(unittest.TestCase):
 
         # get classifier
         classifier = CNN(im_shape, act="relu")
-        classifier.compile(loss='categorical_crossentropy', optimizer='adam', metrics=['accuracy'])
+        classifier.compile(comp_params)
         classifier.fit(X_train, Y_train, epochs=1, batch_size=batch_size, verbose=0)
         scores = classifier.evaluate(X_test, Y_test)
         print("\naccuracy on test set: %.2f%%" % (scores[1] * 100))
