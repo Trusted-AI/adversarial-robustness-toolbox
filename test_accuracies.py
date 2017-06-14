@@ -21,7 +21,7 @@ session = tf.Session()
 K.set_session(session)
 
 # Load classification classifier
-MODEL_PATH = os.path.abspath(args.load)
+MODEL_PATH = os.path.join(os.path.abspath(args.load), "")
 OUTPUT_PATH = os.path.join(MODEL_PATH, "accuracies.json")
 classifier = load_classifier(MODEL_PATH, "best-weights.h5")
 
