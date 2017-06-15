@@ -12,7 +12,7 @@ class VirtualAdversarialMethod(Attack):
     """
     attack_params = ['eps', 'max_iter', 'xi', 'clip_min', 'clip_max']
 
-    def __init__(self, model, sess=None, eps=2.0, max_iter=1, xi=1e-6, clip_min=None, clip_max=None):
+    def __init__(self, model, sess=None, eps=10, max_iter=1, xi=1e-6, clip_min=None, clip_max=None):
         super(VirtualAdversarialMethod, self).__init__(model, sess)
 
         kwargs = {'eps': eps, 'max_iter': max_iter, 'xi': xi, 'clip_min': clip_min, 'clip_max': clip_max}
