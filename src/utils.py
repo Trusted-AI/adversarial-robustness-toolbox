@@ -202,7 +202,7 @@ def get_args(prog, classifier="cnn", nb_epochs=1, batch_size=128, val_split=0.1,
     # Optional arguments
     if script_name.startswith('train'):
         parser.add_argument("-c", "--classifier", type=str, dest='classifier', default=classifier,
-                            choices = ["cnn", "resnet"], help='number of epochs for training the classifier')
+                            choices = ["cnn", "resnet"], help='choice of classifier')
         parser.add_argument("-e", "--epochs", type=int, dest='nb_epochs', default=nb_epochs,
                             help='number of epochs for training the classifier')
         parser.add_argument("-f", "--act", type=str, dest='act', default=act, choices=["relu", "brelu"],

@@ -20,8 +20,8 @@ v_print = get_verbose_print(args.verbose)
 session = tf.Session()
 K.set_session(session)
 
-# Load classification classifier
-MODEL_PATH = os.path.join(os.path.abspath(args.load), "")
+# Load classifier
+MODEL_PATH = os.path.abspath(args.load)
 OUTPUT_PATH = os.path.join(MODEL_PATH, "accuracies.json")
 classifier = load_classifier(MODEL_PATH, "best-weights.h5")
 
@@ -59,7 +59,7 @@ for filepath in get_npy_files(ADV_PATH):
     if filepath not in already_tested:
 
         X = np.load(filepath)
-        Y = Y_train if "_train" in filepath else Y_test
+        Y = Y_train if "train" in filepath else Y_test
 
         scores = classifier.evaluate(X, Y, verbose=args.verbose)
         v_print("\naccuracy on %s: %.2f%%" % (filepath, scores[1] * 100))

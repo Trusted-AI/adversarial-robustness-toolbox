@@ -31,7 +31,7 @@ MODEL_PATH = os.path.join(os.path.abspath(args.load), "")
 classifier = load_classifier(MODEL_PATH, "best-weights.h5")
 
 if args.save:
-    SAVE_ADV = os.path.join(os.path.abspath(args.save), args.adv_method, "")
+    SAVE_ADV = os.path.join(os.path.abspath(args.save), args.adv_method)
     make_directory(SAVE_ADV)
 
     with open(os.path.join(SAVE_ADV, "readme.txt"), "w") as wfile:
@@ -49,8 +49,8 @@ if args.adv_method == 'fgsm':
         X_test_adv = adv_crafter.generate(x_val=X_test)
 
         if args.save:
-            np.save(SAVE_ADV + "eps%.2f_train.npy" % eps, X_train_adv)
-            np.save(SAVE_ADV + "eps%.2f_test.npy" % eps, X_test_adv)
+            np.save(os.path.join(SAVE_ADV, "eps%.2f_train.npy" % eps), X_train_adv)
+            np.save(os.path.join(SAVE_ADV, "eps%.2f_test.npy" % eps), X_test_adv)
 
 elif args.adv_method in ['deepfool', 'universal']:
 
