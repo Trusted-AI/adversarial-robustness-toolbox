@@ -7,7 +7,7 @@ from src.attackers.attack import Attack
 
 class VirtualAdversarialMethod(Attack):
     """
-    This attack was originally proposed by Miyato et al. (2016) and was used for virtual adversarial training.
+    This attack was originally proposed by Miyato et al. (2015) and was used for virtual adversarial training.
     Paper link: https://arxiv.org/abs/1507.00677
     """
     attack_params = ['eps', 'max_iter', 'xi', 'clip_min', 'clip_max']

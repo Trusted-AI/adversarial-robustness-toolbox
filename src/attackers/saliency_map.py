@@ -11,7 +11,7 @@ from src.attackers.attack import Attack
 class SaliencyMapMethod(Attack):
     """
     The Jacobian-based Saliency Map Method (Papernot et al. 2016). Adapted from Cleverhans.
-    Paper link: https://arxiv.org/pdf/1511.07528.pdf
+    Paper link: https://arxiv.org/abs/1511.07528
     """
     attack_params = ['theta', 'gamma', 'nb_classes', 'max_iter', 'clip_min', 'clip_max', 'y']
 

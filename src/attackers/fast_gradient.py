@@ -8,7 +8,7 @@ from src.attackers.attack import Attack
 
 class FastGradientMethod(Attack):
     """
-    This attack was originally implemented by Goodfellow et al. (2015) with the infinity norm (and is known as the "Fast
+    This attack was originally implemented by Goodfellow et al. (2014) with the infinity norm (and is known as the "Fast
     Gradient Sign Method"). This implementation is inspired by the one in Cleverhans
     (https://github.com/tensorflow/cleverhans) which extends the attack to other norms, and is therefore called the Fast
     Gradient Method. Paper link: https://arxiv.org/abs/1412.6572
