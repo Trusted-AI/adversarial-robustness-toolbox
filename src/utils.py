@@ -187,7 +187,10 @@ def set_group_permissions_rec(path, group="drl-dwl"):
         set_group_permissions(root, group)
 
         for f in files:
-            set_group_permissions(os.path.join(root, f), group)
+            try:
+                set_group_permissions(os.path.join(root, f), group)
+            except:
+                pass
 
 
 def set_group_permissions(filename, group="drl-dwl"):
