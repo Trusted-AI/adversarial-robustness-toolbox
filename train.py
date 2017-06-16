@@ -9,7 +9,7 @@ import tensorflow as tf
 from src.classifiers.cnn import CNN
 from src.classifiers.resnet import ResNet
 from src.classifiers.utils import save_classifier, load_classifier
-from src.utils import get_args, get_verbose_print, load_mnist, make_directory, set_group_permissions_rec
+from src.utils import get_args, get_verbose_print, load_mnist, make_directory, set_group_permissions_rec, load_cifar10
 
 # --------------------------------------------------------------------------------------------------- SETTINGS
 args = get_args(__file__)
@@ -29,7 +29,7 @@ if os.path.isfile(args.dataset):
     X_train = np.load(args.dataset)
     Y_train = Y_train if "train" in args.dataset else Y_test
 
-# X_train, Y_train, X_test, Y_test = X_train[:1000], Y_train[:1000], X_test[:1000], Y_test[:1000]
+X_train, Y_train, X_test, Y_test = X_train[:1000], Y_train[:1000], X_test[:1000], Y_test[:1000]
 im_shape = X_train[0].shape
 
 session = tf.Session()
@@ -38,10 +38,10 @@ K.set_session(session)
 if args.save is not False:
 
     if args.save:
-        MODEL_PATH = os.path.join(os.path.abspath(args.save), "")
+        MODEL_PATH = os.path.abspath(args.save)
 
     else:
-        MODEL_PATH = os.path.join(os.path.abspath(DATA_PATH), "classifiers", "mnist", args.classifier, args.act, "")
+        MODEL_PATH = os.path.join(os.path.abspath(DATA_PATH), "classifiers", "mnist", args.classifier, args.act)
 
     v_print("Classifier saved in", MODEL_PATH)
 
@@ -76,6 +76,7 @@ classifier.fit(X_train, Y_train, verbose=2*int(args.verbose), validation_split=a
 if args.save is not False:
     save_classifier(classifier, MODEL_PATH)
     # Load model with best validation score
+
     classifier = load_classifier(MODEL_PATH, "best-weights.h5")
 
     # Change files' group and permissions if on ccc

@@ -21,21 +21,21 @@ def save_classifier(classifier, file_path="./model/"):
     """
     make_directory(file_path.rsplit('/', 1)[0])
     # save classifier params
-    with open(file_path + 'params.json', 'w') as fp:
+    with open(os.path.join(file_path, 'params.json'), 'w') as fp:
         params = {"class_name": type(classifier).__name__}
         json.dump(params, fp)
 
     # serialize model to JSON
-    with open(file_path + "model.json", "w") as json_file:
+    with open(os.path.join(file_path, "model.json"), "w") as json_file:
         model_json = classifier.model.to_json()
         json_file.write(model_json)
 
     # serialize weights to HDF5
-    classifier.model.save_weights(file_path + "weights.h5")
+    classifier.model.save_weights(os.path.join(file_path, "weights.h5"))
 
     # save compilation params to json
     if classifier.comp_param:
-        with open(file_path + 'comp_par.json', 'w') as fp:
+        with open(os.path.join(file_path, 'comp_par.json'), 'w') as fp:
             json.dump(classifier.comp_param, fp)
 
 def load_classifier(file_path, weights_name="weights.h5"):

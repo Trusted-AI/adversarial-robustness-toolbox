@@ -6,7 +6,7 @@ import sys
 
 from keras import backend as K
 from keras.datasets.cifar import load_batch
-from keras.utils import np_utils
+from keras.utils import np_utils, data_utils
 
 import tensorflow as tf
 
@@ -77,18 +77,21 @@ def load_cifar10():
 
     from config import CIFAR10_PATH
 
+    path = data_utils.get_file('cifar-10-batches-py', untar=True, cache_subdir=CIFAR10_PATH,
+                               origin='http://www.cs.toronto.edu/~kriz/cifar-10-python.tar.gz')
+
     num_train_samples = 50000
 
     x_train = np.zeros((num_train_samples, 3, 32, 32), dtype='uint8')
     y_train = np.zeros((num_train_samples, ), dtype='uint8')
 
     for i in range(1, 6):
-        fpath = os.path.join(CIFAR10_PATH, 'data_batch_' + str(i))
+        fpath = os.path.join(path, 'data_batch_' + str(i))
         data, labels = load_batch(fpath)
         x_train[(i - 1) * 10000: i * 10000, :, :, :] = data
         y_train[(i - 1) * 10000: i * 10000] = labels
 
-    fpath = os.path.join(CIFAR10_PATH, 'test_batch')
+    fpath = os.path.join(path, 'test_batch')
     x_test, y_test = load_batch(fpath)
 
     y_train = np.reshape(y_train, (len(y_train), 1))
@@ -113,7 +116,10 @@ def load_mnist():
     """
     from config import MNIST_PATH
 
-    f = np.load(os.path.join(MNIST_PATH, 'mnist.npz'))
+    path = data_utils.get_file('mnist.npz', cache_subdir=MNIST_PATH,
+                               origin='https://s3.amazonaws.com/img-datasets/mnist.npz')
+
+    f = np.load(path)
     x_train = f['x_train']
     y_train = f['y_train']
     x_test = f['x_test']
@@ -202,7 +208,7 @@ def get_args(prog, classifier="cnn", nb_epochs=1, batch_size=128, val_split=0.1,
     # Optional arguments
     if script_name.startswith('train'):
         parser.add_argument("-c", "--classifier", type=str, dest='classifier', default=classifier,
-                            choices = ["cnn", "resnet"], help='number of epochs for training the classifier')
+                            choices = ["cnn", "resnet"], help='choice of classifier')
         parser.add_argument("-e", "--epochs", type=int, dest='nb_epochs', default=nb_epochs,
                             help='number of epochs for training the classifier')
         parser.add_argument("-f", "--act", type=str, dest='act', default=act, choices=["relu", "brelu"],
@@ -211,7 +217,7 @@ def get_args(prog, classifier="cnn", nb_epochs=1, batch_size=128, val_split=0.1,
                             help='size of the batches')
         parser.add_argument("-r", "--valsplit", type=float, dest='val_split', default=val_split,
                             help='ratio of training sample used for validation')
-        parser.add_argument("-s", "--save", nargs='?', type=str, dest='save', default=None,
+        parser.add_argument("-s", "--save", nargs='?', type=str, dest='save', default=save,
                             help='if set, the classifier is saved; if an argument is provided, it is used as path to'
                                  'store the model ')
         parser.add_argument("-d", "--dataset", type=str, dest='dataset', default=dataset,
