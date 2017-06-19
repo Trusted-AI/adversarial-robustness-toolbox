@@ -59,7 +59,7 @@ for filepath in get_npy_files(ADV_PATH):
     if filepath not in already_tested:
 
         X = np.load(filepath)
-        Y = Y_train if "train" in filepath else Y_test
+        Y = Y_train if "train.npy" in filepath else Y_test
 
         scores = classifier.evaluate(X, Y, verbose=args.verbose)
         v_print("\naccuracy on %s: %.2f%%" % (filepath, scores[1] * 100))
