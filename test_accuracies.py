@@ -49,7 +49,7 @@ if "test_accuracy" not in already_tested:
     # Test on true test instances
     scores = classifier.evaluate(X_test, Y_test, verbose=args.verbose)
     v_print("\naccuracy on test: %.2f%%" % (scores[1] * 100))
-    results["test_accuracy"] = scores[1] * 10
+    results["test_accuracy"] = scores[1] * 100
 
 # get adversarial examples
 ADV_PATH = os.path.join(DATA_PATH, "adversarial", "mnist")
