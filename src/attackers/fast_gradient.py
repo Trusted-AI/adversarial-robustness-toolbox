@@ -111,8 +111,6 @@ class FastGradientMethod(Attack):
             feed_dict = {self._x: x_val}
 
         else:
-            # Parse and save attack-specific parameters
-            assert self.set_params(**kwargs)
 
             self._x_adv = self.generate_graph(self._x, **kwargs)
 
