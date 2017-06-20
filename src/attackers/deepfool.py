@@ -29,12 +29,14 @@ class DeepFool(Attack):
         :return: A Numpy array holding the adversarial examples.
         """
         assert self.set_params(**kwargs)
-
         dims = list(x_val.shape)
         dims[0] = None
+        nb_classes = self.model.output_shape[1]
+
         xi_op = tf.placeholder(dtype=tf.float32, shape=dims)
         loss = get_logits(self.model(xi_op), mean=False)
-        grad_xi, = tf.gradients(loss, xi_op)
+        losses = [tf.slice(loss, [0, i], [1, 1]) for i in range(nb_classes)]
+        grads = [tf.gradients(losses[i], xi_op) for i in range(nb_classes)]
         x_adv = x_val.copy()
 
         # Progress bar
@@ -43,27 +45,26 @@ class DeepFool(Attack):
         for j, x in enumerate(x_adv):
             xi = x[None, ...]
 
-            f, grd = self.sess.run([self.model(xi_op), grad_xi], feed_dict={xi_op: xi})
-            fk_hat = np.argmax(f[0])
-
+            f = self.sess.run(self.model(xi_op), feed_dict={xi_op: xi})[0]
+            grd = [self.sess.run(grads[i], feed_dict={xi_op: xi})[0] for i in range(nb_classes)]
+            fk_hat = np.argmax(f)
             fk_i_hat = fk_hat
-            f_xi = f[0, fk_hat]
-            grd_xi = grd[0, fk_hat]
 
             nb_iter = 0
 
             while (fk_i_hat == fk_hat) and (nb_iter < self.max_iter):
 
-                grad_diff = grd - grd_xi
-                f_diff = f - f_xi
+                grad_diff = grd[fk_hat] - grd
+                f_diff = f[fk_hat] - f
 
-                # Masking time
-                mask = [0] * f.shape[1]
+                # Masking true label
+                mask = [0] * nb_classes
                 mask[fk_hat] = 1
-                value = np.ma.array(abs(f_diff) / pow(np.linalg.norm(grad_diff), 2), mask=mask)
+                value = np.ma.array(abs(f_diff)/pow(np.linalg.norm(grad_diff.reshape(nb_classes, -1), axis=1), 2),
+                                    mask=mask)
 
                 l = value.argmin(fill_value=np.inf)
-                r = np.abs(f_diff[0, l]) / pow(np.linalg.norm(grad_diff[0, l]), 2) * grad_diff[0]
+                r = np.abs(f_diff[l])/pow(np.linalg.norm(grad_diff[l].reshape(1, -1), axis=1), 2) * grad_diff[l]
 
                 # Add perturbation and clip result
                 xi += r
@@ -72,14 +73,13 @@ class DeepFool(Attack):
                     np.clip(xi, self.clip_min, self.clip_max, xi)
 
                 # Recompute prediction for new xi
-                f, grd = self.sess.run([self.model(xi_op), grad_xi], feed_dict={xi_op: xi})
-                fk_i_hat = np.argmax(f[0])
-                grd_xi = grd[0, fk_i_hat]
-                f_xi = f[0, fk_i_hat]
+                f = self.sess.run(self.model(xi_op), feed_dict={xi_op: xi})[0]
+                grd = [self.sess.run(grads[i], feed_dict={xi_op: xi})[0] for i in range(nb_classes)]
+                fk_i_hat = np.argmax(f)
 
                 nb_iter += 1
 
-            progress_bar.update(current=j, values=[("perturbation", abs(np.average(r)))])
+            progress_bar.update(current=j, values=[("perturbation", abs(np.linalg.norm(r.reshape(1, -1), axis=1)))])
 
         return x_adv
 
