@@ -1,6 +1,6 @@
 import config
 import numpy as np
-import os
+import os, sys
 from scipy import misc
 from PIL import Image
 
@@ -8,38 +8,49 @@ import keras.backend as K
 from keras.applications.vgg16 import VGG16
 import tensorflow as tf
 
+from src.attackers.deepfool import DeepFool
 from src.attackers.fast_gradient import FastGradientMethod
+from src.attackers.universal_perturbation import UniversalPerturbation
 
 PATH = "./imagenet/"
 
-width = 224
-height = 224
+WIDTH = 224
+HEIGHT = 224
+
+adv_method = sys.args[1]
+assert adv_method in ["fgsm", "deepfool", "universal"]
 
 session = tf.Session()
 K.set_session(session)
 
 model = VGG16()
 
-attack = FastGradientMethod(model, session)
-
 attack_params = {"clip_min": 0.,
                  "clip_max": 255,
                  "minimal": True,
-                 "eps_step": 9,
+                 "eps_step": 1,
                  "eps_max": 100.}
 
-for file in os.listdir(PATH):
+if adv_method == "fgsm":
+    attack = FastGradientMethod(model, session)
+elif adv_method == "deepfool":
+    attack = DeepFool(model, session)
+else:
+    attack = UniversalPerturbation(model, session, p=np.inf, attacker_params=attack_params)
 
-    if file.endswith(".jpg") and (not "adv" in file or "pert" in file):
+with open(os.path.join(PATH, "pic_ids.txt"), "r") as infile:
 
-        filename = os.path.join(PATH, file)\
+    for file in infile:
 
-        img = Image.open(filename)
-        img = img.resize((width, height), Image.ANTIALIAS)
+        img = Image.open(file)
+        img = img.resize((WIDTH, HEIGHT), Image.ANTIALIAS)
 
         X = np.expand_dims(img, axis=0)
 
         adv = attack.generate(X, **attack_params)
 
-        misc.imsave(filename.replace(".jpg", "_adv.jpg"), adv[0])
-        misc.imsave(filename.replace(".jpg", "_pert.jpg"), (adv - X)[0])
+        img_name = file.split("/")[-1]
+        misc.imsave(os.path.join(PATH, img_name.replace(".jpg", adv_method+"_adv.jpg")), adv[0])
+        misc.imsave(os.path.join(PATH, img_name.replace(".jpg", adv_method+"_pert.jpg")), (adv - X)[0])
+
+        break
