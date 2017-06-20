@@ -74,7 +74,8 @@ class FastGradientMethod(Attack):
             curr_adv_y = tf.argmax(self.model(curr_adv_x_op), 1)
 
             # update
-            adv_x_op = tf.where(tf.equal(prev_y, curr_adv_y), adv_x_op, curr_adv_x_op)
+            mask = tf.equal(prev_y, curr_adv_y)
+            adv_x_op = tf.where(mask, adv_x_op, curr_adv_x_op)
 
             eps += eps_step
             prev_y = tf.argmax(self.model(adv_x_op), 1)
