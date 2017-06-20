@@ -62,9 +62,10 @@ class FastGradientMethod(Attack):
         :param kwargs: Other parameters to send to generate_graph
         :return: A Numpy array holding the adversarial examples.
         """
-        prev_y = tf.argmax(self.model(x), 1)
+        y = tf.argmax(self.model(x), 1)
         eps = eps_step
         adv_x_op = x
+        prev_y = y
 
         while eps < eps_max:
 
@@ -84,7 +85,7 @@ class FastGradientMethod(Attack):
         # perturbed the instances that did not get their class changed
         if eps == eps_max:
             curr_adv_x_op = self.generate_graph(x, eps=eps, **kwargs)
-            adv_x_op = tf.where(tf.equal(prev_y, curr_adv_y), curr_adv_x_op, adv_x_op)
+            adv_x_op = tf.where(tf.equal(y, curr_adv_y), curr_adv_x_op, adv_x_op)
 
         return adv_x_op
 
