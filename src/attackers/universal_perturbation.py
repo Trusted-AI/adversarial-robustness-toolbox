@@ -15,7 +15,7 @@ class UniversalPerturbation(Attack):
     attacks_dict = {"deepfool": DeepFool}
     attack_params = ['attacker', 'attacker_params', 'delta', 'max_iter', 'eps', 'p', 'max_method_iter', 'verbose']
 
-    def __init__(self, model, sess=None, attacker='deepfool', attacker_params=None, delta=0.2, max_iter=50, eps=10,
+    def __init__(self, model, sess=None, attacker='deepfool', attacker_params=None, delta=0.2, max_iter=5, eps=10,
                  p=np.inf, max_method_iter=50, verbose=1):
         super(UniversalPerturbation, self).__init__(model, sess)
         kwargs = {'attacker': attacker,
@@ -68,15 +68,15 @@ class UniversalPerturbation(Attack):
             for j, x in enumerate(x_val[rnd_idx]):
                 xi = x[None, ...]
 
-                f_xi = self.sess.run([self.model(xi_op)], feed_dict={xi_op: xi+v})
-                fk_i_hat = np.argmax(f_xi[0])
+                f_xi = self.sess.run(self.model(xi_op), feed_dict={xi_op: xi+v})
+                fk_i_hat = np.argmax(f_xi)
 
                 fk_hat = np.argmax(true_y[rnd_idx][j])
 
                 if fk_i_hat == fk_hat:
 
                     # Compute adversarial perturbation
-                    adv_xi = attacker.generate(xi+v)
+                    adv_xi = attacker.generate(np.expand_dims(x+v, 0))
 
                     adv_f_xi = self.sess.run([self.model(xi_op)], feed_dict={xi_op: adv_xi})
                     adv_fk_i_hat = np.argmax(adv_f_xi[0])

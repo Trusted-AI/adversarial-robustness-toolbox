@@ -19,7 +19,7 @@ class TestUniversalPerturbation(unittest.TestCase):
                        "metrics": ['accuracy']}
 
         # get MNIST
-        batch_size, nb_train, nb_test = 100, 100, 10
+        batch_size, nb_train, nb_test = 10, 10, 10
         (X_train, Y_train), (X_test, Y_test) = load_mnist()
         X_train, Y_train = X_train[:nb_train], Y_train[:nb_train]
         X_test, Y_test = X_test[:nb_test], Y_test[:nb_test]
@@ -37,7 +37,7 @@ class TestUniversalPerturbation(unittest.TestCase):
                          "clip_max": 1.,
                          "attacker": "deepfool"}
 
-        attack = UniversalPerturbation(classifier.model, session)
+        attack = UniversalPerturbation(classifier.model, session, attacker_params={"max_iter":5})
         x_train_adv = attack.generate(X_train, **attack_params)
         self.assertTrue((attack.fooling_rate >= 0.2) or attack.converged)
 

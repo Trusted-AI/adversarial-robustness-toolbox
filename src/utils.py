@@ -234,6 +234,11 @@ def get_args(prog, classifier="cnn", nb_epochs=1, batch_size=128, val_split=0.1,
     elif script_name.startswith('test'):
         parser.add_argument("load", type=str, help='the classifier is loaded from `load` directory.')
 
+        if "empirical" in script_name:
+            parser.add_argument("-a", "--adv", type=str, dest='adv_method', default=adv_method,
+                                choices=["fgsm", "deepfool", "universal"],
+                                help='choice of attacker')
+
     elif script_name == 'generate_adversarial.py':
         parser.add_argument("load", type=str, help='the classifier is loaded from `load` directory.')
 
