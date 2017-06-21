@@ -12,6 +12,8 @@ from src.attackers.deepfool import DeepFool
 from src.attackers.fast_gradient import FastGradientMethod
 from src.attackers.universal_perturbation import UniversalPerturbation
 
+from src.utils import make_directory
+
 PATH = "./imagenet/"
 
 WIDTH = 224
@@ -65,8 +67,11 @@ for i,file in enumerate(lines):
 
 advs = attack.generate(X, **attack_params)
 
+save_path = os.path.join(PATH, adv_method)
+make_directory(save_path)
+
 for adv, file in zip(advs, lines):
-    img_name = file.split("/")[-2] + "_" + file.split("/")[-1]
-    misc.imsave(os.path.join(PATH, img_name.replace(".jpg", adv_method + "_adv.jpg")), adv)
+    img_name = file.split("/")[-1]
+    misc.imsave(os.path.join(save_path, img_name.replace(".jpg", "_adv.jpg")), adv)
 
 # misc.imsave(os.path.join(PATH, "universal.jpg"), (adv - X[0])[0])
