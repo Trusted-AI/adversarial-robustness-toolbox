@@ -62,7 +62,7 @@ def identity_block(input_tensor, kernel_size, filters, stage, block, bnorm):
 class ResNet(Classifier):
 
     def __init__(self, input_shape=None, include_end=True, act='relu', bnorm=False, input_ph=None, nb_filters=64,
-                 nb_classes=10, act_params={}, model=None):
+                 nb_classes=10, act_params={}, model=None, defences=None):
 
         """Instantiates a ConvolutionalNeuralNetwork model using Keras sequential model
 
@@ -81,7 +81,7 @@ class ResNet(Classifier):
         :rtype: keras.model
         """
 
-        super(ResNet, self).__init__()
+        super(ResNet, self).__init__(defences)
 
         if model:
             self.model = model

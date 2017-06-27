@@ -1,23 +1,34 @@
 from abc import ABCMeta
 
 from keras.layers import Activation
-from src.layers.activations import BoundedReLU
-
 from sklearn.base import BaseEstimator
+
+from src.defences.preprocessings import label_smoothing
+from src.layers.activations import BoundedReLU
 
 class Classifier(BaseEstimator):
 
     __metaclass__ = ABCMeta
 
-    def __init__(self):
+    def __init__(self, defences=None):
         self.comp_param = None
+
+        if defences:
+            self.parse_defences(defences)
 
     def compile(self, comp_param):
         self.comp_param = comp_param
         self.model.compile(**comp_param)
 
     def fit(self, inputs_val, outputs_val, **kwargs):
-        self.model.fit(inputs_val, outputs_val, **kwargs)
+
+        if self.labsmooth:
+            y = label_smoothing(outputs_val)
+
+        else:
+            y = outputs_val
+
+        self.model.fit(inputs_val, y, **kwargs)
 
     def predict(self, y_val, **kwargs):
         return self.model.predict(y_val, **kwargs)
@@ -38,3 +49,15 @@ class Classifier(BaseEstimator):
             return BoundedReLU(**kwargs)
         else:
             raise Exception("Activation function not supported.")
+
+    def parse_defences(self, defences):
+
+        if "labsmooth" in defences:
+            self.labsmooth = True
+        else:
+            self.labsmooth = False
+
+        if "featsqueeze" in defences:
+            self.featsqueeze = True
+        else:
+            self.featsqueeze = False

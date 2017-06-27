@@ -35,26 +35,31 @@ im_shape = X_train[0].shape
 session = tf.Session()
 K.set_session(session)
 
+if args.classifier == "cnn":
+    classifier = CNN(im_shape, act=args.act, bnorm=False, defences=args.defences)
+
+elif args.classifier == "resnet":
+    classifier = ResNet(im_shape, act=args.act, bnorm=False, defences=args.defences)
+
+# Fit the classifier
+classifier.compile(comp_params)
+
 if args.save is not False:
 
     if args.save:
         MODEL_PATH = os.path.abspath(args.save)
 
     else:
-        MODEL_PATH = os.path.join(os.path.abspath(DATA_PATH), "classifiers", args.dataset, args.classifier, args.act)
+
+        if args.defences:
+            defences = "-".join(args.defences)
+        else:
+            defences = ""
+        MODEL_PATH = os.path.join(os.path.abspath(DATA_PATH), "classifiers", args.dataset, args.classifier, args.act,
+                                  defences)
 
     v_print("Classifier saved in", MODEL_PATH)
 
-if args.classifier == "cnn":
-    classifier = CNN(im_shape, act=args.act, bnorm=False)
-
-elif args.classifier == "resnet":
-    classifier = ResNet(im_shape, act=args.act, bnorm=False)
-
-# Fit the classifier
-classifier.compile(comp_params)
-
-if args.save is not False:
     make_directory(MODEL_PATH)
 
     # Save best classifier weights

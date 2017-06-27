@@ -7,7 +7,7 @@ from src.classifiers.classifier import Classifier
 class CNN(Classifier):
 
     def __init__(self, input_shape=None, include_end=True, act='relu', bnorm=False, input_ph=None, nb_filters=64,
-                 nb_classes=10, act_params={}, model=None):
+                 nb_classes=10, act_params={}, model=None, defences=None):
 
         """Instantiates a ConvolutionalNeuralNetwork model using Keras sequential model
         
@@ -26,7 +26,7 @@ class CNN(Classifier):
         :rtype: keras.model
         """
 
-        super(CNN, self).__init__()
+        super(CNN, self).__init__(defences)
 
         if model:
             self.model = model
