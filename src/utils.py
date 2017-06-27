@@ -135,6 +135,17 @@ def load_mnist():
 
     return (x_train, y_train), (x_test, y_test)
 
+def load_dataset(name):
+
+    if "mnist" in name:
+        return load_mnist()
+
+    elif "cifar10" in name:
+        return load_cifar10()
+
+    else:
+        raise NotImplementedError("There is no loader for {} dataset".format(name))
+
 def create_class_pairs(x, y, classes=10, pos=1, neg=0):
     """ Returns a positive and a negative pair per point of x, w.r.t. its class, and their corresponding scores."""
 
@@ -202,7 +213,7 @@ def set_group_permissions(filename, group="drl-dwl"):
 # ------------------------------------------------------------------- ARG PARSER
 
 
-def get_args(prog, classifier="cnn", nb_epochs=1, batch_size=128, val_split=0.1, act="relu", adv_method="fgsm", std_dev=0.1,
+def get_args(prog, classifier="cnn", nb_epochs=20, batch_size=128, val_split=0.1, act="relu", adv_method="fgsm", std_dev=0.1,
              nb_instances=1, dataset="mnist", save=False, verbose=False):
 
     parser = argparse.ArgumentParser(prog=prog, formatter_class=argparse.ArgumentDefaultsHelpFormatter)

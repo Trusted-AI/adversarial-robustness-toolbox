@@ -9,7 +9,7 @@ import tensorflow as tf
 from src.classifiers.cnn import CNN
 from src.classifiers.resnet import ResNet
 from src.classifiers.utils import save_classifier, load_classifier
-from src.utils import get_args, get_verbose_print, load_mnist, make_directory, set_group_permissions_rec, load_cifar10
+from src.utils import get_args, get_verbose_print, load_dataset, make_directory, set_group_permissions_rec
 
 # --------------------------------------------------------------------------------------------------- SETTINGS
 args = get_args(__file__)
@@ -22,14 +22,14 @@ comp_params = {"loss": 'categorical_crossentropy',
 
 # --------------------------------------------------------------------------------------------- GET CLASSIFIER
 
-# get MNIST
-(X_train, Y_train), (X_test, Y_test) = load_mnist()
+# get dataset
+(X_train, Y_train), (X_test, Y_test) = load_dataset(args.dataset)
 
 if os.path.isfile(args.dataset):
     X_train = np.load(args.dataset)
     Y_train = Y_train if "train.npy" in args.dataset else Y_test
 
-# X_train, Y_train, X_test, Y_test = X_train[:1000], Y_train[:1000], X_test[:1000], Y_test[:1000]
+X_train, Y_train, X_test, Y_test = X_train[:1000], Y_train[:1000], X_test[:1000], Y_test[:1000]
 im_shape = X_train[0].shape
 
 session = tf.Session()
@@ -41,7 +41,7 @@ if args.save is not False:
         MODEL_PATH = os.path.abspath(args.save)
 
     else:
-        MODEL_PATH = os.path.join(os.path.abspath(DATA_PATH), "classifiers", "mnist", args.classifier, args.act)
+        MODEL_PATH = os.path.join(os.path.abspath(DATA_PATH), "classifiers", args.dataset, args.classifier, args.act)
 
     v_print("Classifier saved in", MODEL_PATH)
 
