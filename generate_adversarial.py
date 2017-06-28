@@ -12,14 +12,14 @@ from src.attackers.fast_gradient import FastGradientMethod
 from src.attackers.universal_perturbation import UniversalPerturbation
 from src.classifiers.utils import load_classifier
 
-from src.utils import get_args, get_verbose_print, load_mnist, make_directory, set_group_permissions_rec
+from src.utils import get_args, get_verbose_print, load_dataset, make_directory, set_group_permissions_rec
 
 # --------------------------------------------------------------------------------------------------- SETTINGS
 args = get_args(__file__)
 v_print = get_verbose_print(args.verbose)
 
-# get MNIST
-(X_train, Y_train), (X_test, Y_test) = load_mnist()
+# get dataset
+(X_train, Y_train), (X_test, Y_test) = load_dataset(args.dataset)
 # X_train, Y_train, X_test, Y_test = X_train[:100], Y_train[:100], X_test[:100], Y_test[:100]
 
 
