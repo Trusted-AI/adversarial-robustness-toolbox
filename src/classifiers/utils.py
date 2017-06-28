@@ -22,7 +22,7 @@ def save_classifier(classifier, file_path="./model/"):
     make_directory(file_path.rsplit('/', 1)[0])
     # save classifier params
     with open(os.path.join(file_path, 'params.json'), 'w') as fp:
-        params = {"class_name": type(classifier).__name__}
+        params = {"class_name": type(classifier).__name__, "defences": classifier.defences}
         json.dump(params, fp)
 
     # serialize model to JSON
@@ -55,7 +55,13 @@ def load_classifier(file_path, weights_name="weights.h5"):
 
     with open(os.path.join(file_path, "params.json"), "r") as json_file:
         params_json = json.load(json_file)
-    classifier = globals()[params_json["class_name"]](model=model)
+
+    if "defences" in params_json.keys():
+        defences = params_json["defences"]
+    else:
+        defences = None
+
+    classifier = globals()[params_json["class_name"]](model=model, defences=defences)
 
     # load weights into new model
     classifier.model.load_weights(os.path.join(file_path, weights_name))
