@@ -29,14 +29,14 @@ if os.path.isfile(args.dataset):
     X_train = np.load(args.dataset)
     Y_train = Y_train if "train.npy" in args.dataset else Y_test
 
-X_train, Y_train, X_test, Y_test = X_train[:1000], Y_train[:1000], X_test[:1000], Y_test[:1000]
+# X_train, Y_train, X_test, Y_test = X_train[:1000], Y_train[:1000], X_test[:1000], Y_test[:1000]
 im_shape = X_train[0].shape
 
 session = tf.Session()
 K.set_session(session)
 
 if args.classifier == "cnn":
-    classifier = CNN(im_shape, act=args.act, bnorm=False, defences=args.defences)
+    classifier = CNN(im_shape, act=args.act, bnorm=False, defences=args.defences, dataset=args.dataset)
 
 elif args.classifier == "resnet":
     classifier = ResNet(im_shape, act=args.act, bnorm=False, defences=args.defences)
