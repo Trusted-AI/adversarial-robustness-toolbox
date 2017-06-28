@@ -48,7 +48,7 @@ else:
                      "clip_max": 255,
                      "minimal": True,
                      "eps_step": 1,
-                     "eps_max": 100.}
+                     "eps_max": 10.}
 
 
     attack = FastGradientMethod(model, session)
