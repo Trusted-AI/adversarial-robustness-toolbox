@@ -8,7 +8,7 @@ import keras.backend as K
 import tensorflow as tf
 
 from src.classifiers.utils import load_classifier
-from src.utils import get_args, get_verbose_print, load_mnist, get_npy_files, set_group_permissions_rec
+from src.utils import get_args, get_verbose_print, load_dataset, get_npy_files, set_group_permissions_rec
 
 # --------------------------------------------------------------------------------------------------- SETTINGS
 args = get_args(__file__)
@@ -37,7 +37,7 @@ except:
 already_tested = results.keys()
 
 # get dataset
-(X_train, Y_train), (X_test, Y_test) = load_mnist()
+(X_train, Y_train), (X_test, Y_test) = load_dataset(args.dataset)
 
 if "train_accuracy" not in already_tested:
     # Test on true train instances
@@ -52,7 +52,7 @@ if "test_accuracy" not in already_tested:
     results["test_accuracy"] = scores[1] * 100
 
 # get adversarial examples
-ADV_PATH = os.path.join(DATA_PATH, "adversarial", "mnist")
+ADV_PATH = os.path.join(DATA_PATH, "adversarial", args.dataset)
 
 for filepath in get_npy_files(ADV_PATH):
 

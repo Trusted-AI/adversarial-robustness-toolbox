@@ -234,10 +234,8 @@ def get_args(prog, classifier="cnn", nb_epochs=20, batch_size=128, val_split=0.1
         parser.add_argument("-s", "--save", nargs='?', type=str, dest='save', default=save,
                             help='if set, the classifier is saved; if an argument is provided, it is used as path to'
                                  'store the model ')
-        parser.add_argument("-d", "--dataset", type=str, dest='dataset', default=dataset,
-                            help='either the path or name of the dataset the classifier is tested on.')
         parser.add_argument("-z", "--defences", dest='defences', nargs="*", default=None,
-                            choices=["labsmooth", "featsqueeze"], help='list of basic defences.')
+                             help='list of basic defences.')
 
         if script_name == "train_with_noise.py":
             parser.add_argument("-t", "--stdev", type=float, dest='std_dev', default=std_dev,
@@ -263,6 +261,8 @@ def get_args(prog, classifier="cnn", nb_epochs=20, batch_size=128, val_split=0.1
     else:
         raise ValueError("Parser not defined for script '%s'" % __file__)
 
+    parser.add_argument("-d", "--dataset", type=str, dest='dataset', default=dataset,
+                        help='either the path or name of the dataset the classifier is tested/trained on.')
     parser.add_argument("-v", "--verbose", dest='verbose', action="store_true",
                         help='if set, verbose mode')
 
