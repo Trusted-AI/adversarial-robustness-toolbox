@@ -9,6 +9,7 @@ import tensorflow as tf
 
 from src.attackers.deepfool import DeepFool
 from src.attackers.fast_gradient import FastGradientMethod
+from src.attackers.saliency_map import SaliencyMapMethod
 from src.attackers.universal_perturbation import UniversalPerturbation
 from src.classifiers.utils import load_classifier
 
@@ -20,7 +21,7 @@ v_print = get_verbose_print(args.verbose)
 
 # get dataset
 (X_train, Y_train), (X_test, Y_test) = load_dataset(args.load)
-# X_train, Y_train, X_test, Y_test = X_train[:100], Y_train[:100], X_test[:100], Y_test[:100]
+# X_train, Y_train, X_test, Y_test = X_train[:10], Y_train[:10], X_test[:10], Y_test[:10]
 
 
 session = tf.Session()
@@ -52,10 +53,12 @@ if args.adv_method == 'fgsm':
             np.save(os.path.join(SAVE_ADV, "eps%.2f_train.npy" % eps), X_train_adv)
             np.save(os.path.join(SAVE_ADV, "eps%.2f_test.npy" % eps), X_test_adv)
 
-elif args.adv_method in ['deepfool', 'universal']:
+elif args.adv_method in ['deepfool', 'universal', 'jsma']:
 
     if args.adv_method == 'deepfool':
         adv_crafter = DeepFool(classifier.model, session, clip_min=0., clip_max=1.)
+    if args.adv_method == 'jsma':
+        adv_crafter = SaliencyMapMethod(classifier.model, sess=session, clip_min=0., clip_max=1., gamma=1., theta=0.1)
     else:
         adv_crafter = UniversalPerturbation(classifier.model, session, p=np.inf,
                                             attacker_params={'clip_min':0., 'clip_max':1.})
