@@ -17,7 +17,7 @@ class SaliencyMapMethod(Attack):
     """
     attack_params = ['theta', 'gamma', 'nb_classes', 'max_iter', 'clip_min', 'clip_max', 'y']
 
-    def __init__(self, model, sess=None, theta=1., gamma=np.inf, nb_classes=10, clip_min=0., clip_max=1., y=None):
+    def __init__(self, model, sess=None, theta=1., gamma=1., nb_classes=10, clip_min=0., clip_max=1., y=None):
         """
         Create a SaliencyMapMethod instance.
 

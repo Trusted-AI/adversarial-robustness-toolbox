@@ -254,7 +254,7 @@ def get_args(prog, classifier="cnn", nb_epochs=20, batch_size=128, val_split=0.1
         parser.add_argument("load", type=str, help='the classifier is loaded from `load` directory.')
 
         parser.add_argument("-a", "--adv", type=str, dest='adv_method', default=adv_method,
-                            choices=["fgsm", "deepfool", "universal"],
+                            choices=["fgsm", "deepfool", "universal", "jsma"],
                             help='choice of attacker')
         parser.add_argument("-s", "--save", type=str, dest='save',
                             help='if set, the adversarial examples are saved')
