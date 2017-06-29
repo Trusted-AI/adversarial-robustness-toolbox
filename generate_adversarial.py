@@ -19,7 +19,7 @@ args = get_args(__file__)
 v_print = get_verbose_print(args.verbose)
 
 # get dataset
-(X_train, Y_train), (X_test, Y_test) = load_dataset(args.dataset)
+(X_train, Y_train), (X_test, Y_test) = load_dataset(args.load)
 # X_train, Y_train, X_test, Y_test = X_train[:100], Y_train[:100], X_test[:100], Y_test[:100]
 
 

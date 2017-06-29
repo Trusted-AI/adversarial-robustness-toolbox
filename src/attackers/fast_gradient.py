@@ -1,7 +1,11 @@
 from config import config_dict
-from cleverhans.attacks_tf import fgm
+
 import numpy as np
 import tensorflow as tf
+
+from keras import backend as K
+
+from cleverhans.attacks_tf import fgm
 
 from src.attackers.attack import Attack
 
@@ -118,12 +122,12 @@ class FastGradientMethod(Attack):
 
             # Run symbolic graph without or with true labels
             if 'y_val' not in kwargs or kwargs['y_val'] is None:
-                feed_dict = {self._x: x_val}
+                feed_dict = {self._x: x_val, K.learning_phase(): 0}
             else:
                 # Verify label placeholder was given in params if using true labels
                 if self.y is None:
                     raise Exception("True labels given but label placeholder not given.")
-                feed_dict = {self._x: x_val, self.y: kwargs['y_val']}
+                feed_dict = {self._x: x_val, self.y: kwargs['y_val'], K.learning_phase(): 0}
 
         return self.sess.run(self._x_adv, feed_dict=feed_dict)
 
