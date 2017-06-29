@@ -2,6 +2,8 @@ from __future__ import absolute_import
 
 from config import config_dict
 from cleverhans.attacks_tf import jacobian_graph, jsma
+from keras import backend as K
+
 import numpy as np
 import tensorflow as tf
 
@@ -79,7 +81,7 @@ class SaliencyMapMethod(Attack):
 
         # Run symbolic graph without or with true labels
         if 'y_val' not in kwargs or kwargs['y_val'] is None:
-            feed_dict = {self._x: x_val}
+            feed_dict = {self._x: x_val, K.learning_phase(): 0}
         else:
             if self.y is None:
                 raise Exception("This attack was instantiated untargeted.")
@@ -90,7 +92,7 @@ class SaliencyMapMethod(Attack):
                     nb_targets = 1
                 if nb_targets != len(x_val):
                     raise Exception("Specify exactly one target per input.")
-            feed_dict = {self._x: x_val, self.y: kwargs['y_val']}
+            feed_dict = {self._x: x_val, self.y: kwargs['y_val'], K.learning_phase(): 0}
         return self.sess.run(self._x_adv, feed_dict=feed_dict)
 
     def set_params(self, **kwargs):

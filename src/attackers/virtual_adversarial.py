@@ -1,4 +1,7 @@
 from config import config_dict
+
+from keras import backend as K
+
 from cleverhans.attacks_tf import vatm
 import tensorflow as tf
 
@@ -50,7 +53,7 @@ class VirtualAdversarialMethod(Attack):
         self._x = tf.placeholder(tf.float32, shape=input_shape)
         self._x_adv = self.compute_graph(self._x, **kwargs)
 
-        return self.sess.run(self._x_adv, feed_dict={self._x: x_val})
+        return self.sess.run(self._x_adv, feed_dict={self._x: x_val, K.learning_phase(): 0})
 
     def parse_params(self, **kwargs):
         """

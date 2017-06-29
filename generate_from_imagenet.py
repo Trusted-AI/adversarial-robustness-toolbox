@@ -6,6 +6,7 @@ from PIL import Image
 
 import keras.backend as K
 from keras.applications.vgg16 import VGG16
+from keras.applications.resnet50 import ResNet50
 import tensorflow as tf
 
 from src.attackers.deepfool import DeepFool
@@ -20,18 +21,21 @@ WIDTH = 224
 HEIGHT = 224
 
 adv_method = sys.argv[1]
+
 assert adv_method in ["fgsm", "deepfool", "universal"]
 
 session = tf.Session()
 K.set_session(session)
 
-model = VGG16()
+# model = VGG16()
+model = ResNet50()
+
+save_path = os.path.join(PATH, adv_method)
 
 if adv_method == "universal":
 
     attack_params = {"clip_min": 0.,
-                     "clip_max": 255,
-                     "minimal": True}
+                     "clip_max": 255}
 
     attack = UniversalPerturbation(model, session, p=np.inf, attacker_params=attack_params)
 
@@ -44,12 +48,24 @@ elif adv_method == "deepfool":
 
 else:
 
-    attack_params = {"clip_min": 0.,
-                     "clip_max": 255,
-                     "minimal": True,
-                     "eps_step": 1,
-                     "eps_max": 10.}
+    try:
+        eps = int(sys.argv[2])
 
+        attack_params = {"clip_min": 0.,
+                         "clip_max": 255,
+                         "eps": eps}
+
+        save_path = os.path.join(save_path, "eps%d" % eps)
+
+    except:
+
+        attack_params = {"clip_min": 0.,
+                         "clip_max": 255,
+                         "minimal": True,
+                         "eps_step": 1,
+                         "eps_max": 30}
+
+        save_path = os.path.join(save_path, "minimal")
 
     attack = FastGradientMethod(model, session)
 
@@ -67,11 +83,8 @@ for i,file in enumerate(lines):
 
 advs = attack.generate(X, **attack_params)
 
-save_path = os.path.join(PATH, adv_method)
 make_directory(save_path)
 
 for adv, file in zip(advs, lines):
     img_name = file.split("/")[-1]
     misc.imsave(os.path.join(save_path, img_name.replace(".jpg", "_adv.jpg")), adv)
-
-# misc.imsave(os.path.join(PATH, "universal.jpg"), (adv - X[0])[0])
