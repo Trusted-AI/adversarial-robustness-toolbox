@@ -1,4 +1,6 @@
+from keras import backend as K
 from keras.utils.generic_utils import Progbar
+
 import numpy as np
 import tensorflow as tf
 
@@ -45,8 +47,8 @@ class DeepFool(Attack):
         for j, x in enumerate(x_adv):
             xi = x[None, ...]
 
-            f = self.sess.run(self.model(xi_op), feed_dict={xi_op: xi})[0]
-            grd = [self.sess.run(grads[i], feed_dict={xi_op: xi})[0] for i in range(nb_classes)]
+            f = self.sess.run(self.model(xi_op), feed_dict={xi_op: xi, K.learning_phase(): 0})[0]
+            grd = [self.sess.run(grads[i], feed_dict={xi_op: xi, K.learning_phase(): 0})[0] for i in range(nb_classes)]
             fk_hat = np.argmax(f)
             fk_i_hat = fk_hat
 
@@ -73,8 +75,8 @@ class DeepFool(Attack):
                     np.clip(xi, self.clip_min, self.clip_max, xi)
 
                 # Recompute prediction for new xi
-                f = self.sess.run(self.model(xi_op), feed_dict={xi_op: xi})[0]
-                grd = [self.sess.run(grads[i], feed_dict={xi_op: xi})[0] for i in range(nb_classes)]
+                f = self.sess.run(self.model(xi_op), feed_dict={xi_op: xi, K.learning_phase(): 0})[0]
+                grd = [self.sess.run(grads[i], feed_dict={xi_op: xi, K.learning_phase(): 0})[0] for i in range(nb_classes)]
                 fk_i_hat = np.argmax(f)
 
                 nb_iter += 1

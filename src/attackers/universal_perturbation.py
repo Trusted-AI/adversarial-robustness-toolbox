@@ -3,6 +3,8 @@ import random
 import numpy as np
 import tensorflow as tf
 
+from keras import backend as K
+
 from src.attackers.attack import Attack, get_logits, clip_perturbation
 from src.attackers.deepfool import DeepFool
 
@@ -68,7 +70,7 @@ class UniversalPerturbation(Attack):
             for j, x in enumerate(x_val[rnd_idx]):
                 xi = x[None, ...]
 
-                f_xi = self.sess.run(self.model(xi_op), feed_dict={xi_op: xi+v})
+                f_xi = self.sess.run(self.model(xi_op), feed_dict={xi_op: xi+v, K.learning_phase(): 0})
                 fk_i_hat = np.argmax(f_xi)
 
                 fk_hat = np.argmax(true_y[rnd_idx][j])
@@ -78,7 +80,7 @@ class UniversalPerturbation(Attack):
                     # Compute adversarial perturbation
                     adv_xi = attacker.generate(np.expand_dims(x+v, 0))
 
-                    adv_f_xi = self.sess.run([self.model(xi_op)], feed_dict={xi_op: adv_xi})
+                    adv_f_xi = self.sess.run([self.model(xi_op)], feed_dict={xi_op: adv_xi, K.learning_phase(): 0})
                     adv_fk_i_hat = np.argmax(adv_f_xi[0])
 
                     # if the class has changed, update v
