@@ -114,7 +114,7 @@ class FastGradientMethod(Attack):
 
         if "minimal" in kwargs and kwargs["minimal"]:
             self._x_adv = self.minimal_perturbations(self._x, **kwargs)
-            feed_dict = {self._x: x_val}
+            feed_dict = {self._x: x_val, K.learning_phase(): 0}
 
         else:
 
