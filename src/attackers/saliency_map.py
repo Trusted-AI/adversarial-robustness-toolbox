@@ -1,13 +1,13 @@
 from __future__ import absolute_import
 
 from config import config_dict
-from cleverhans.attacks_tf import jacobian_graph, jsma
+from cleverhans.attacks_tf import jsma
 from keras import backend as K
 
 import numpy as np
 import tensorflow as tf
 
-from src.attackers.attack import Attack
+from src.attackers.attack import Attack, class_derivative
 
 
 class SaliencyMapMethod(Attack):
@@ -17,7 +17,7 @@ class SaliencyMapMethod(Attack):
     """
     attack_params = ['theta', 'gamma', 'nb_classes', 'max_iter', 'clip_min', 'clip_max', 'y']
 
-    def __init__(self, model, sess=None, theta=1., gamma=1., nb_classes=10, clip_min=0., clip_max=1., y=None):
+    def __init__(self, model, sess=None, theta=0.1, gamma=1., nb_classes=10, clip_min=0., clip_max=1., y=None):
         """
         Create a SaliencyMapMethod instance.
 
@@ -45,7 +45,7 @@ class SaliencyMapMethod(Attack):
 
         # Define Jacobian graph wrt to this input placeholder
         preds = self.model(x)
-        grads = jacobian_graph(preds, x, self.nb_classes)
+        grads = class_derivative(preds, x, self.nb_classes)
 
         # Define appropriate graph (targeted / random target labels)
         if self.y is not None:
