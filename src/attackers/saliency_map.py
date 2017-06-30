@@ -39,7 +39,7 @@ class SaliencyMapMethod(Attack):
                   'y': y}
         self.set_params(**kwargs)
 
-    def compute_graph(self, x, **kwargs):
+    def generate_graph(self, x, **kwargs):
         # Parse and save attack-specific parameters
         assert self.set_params(**kwargs)
 
@@ -77,7 +77,7 @@ class SaliencyMapMethod(Attack):
         input_shape = list(x_val.shape)
         input_shape[0] = None
         self._x = tf.placeholder(tf.float32, shape=input_shape)
-        self._x_adv = self.compute_graph(self._x, **kwargs)
+        self._x_adv = self.generate_graph(self._x, **kwargs)
 
         # Run symbolic graph without or with true labels
         if 'y_val' not in kwargs or kwargs['y_val'] is None:
