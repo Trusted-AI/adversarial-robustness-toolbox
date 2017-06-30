@@ -31,7 +31,7 @@ class TestVirtualAdversarial(unittest.TestCase):
         print("\naccuracy on test set: %.2f%%" % (scores[1] * 100))
 
         df = VirtualAdversarialMethod(classifier.model, sess=session, clip_min=0., clip_max=1.)
-        x_test_adv = df.generate(X_test)
+        x_test_adv = df.generate(X_test, eps=0.1)
         self.assertFalse((X_test == x_test_adv).all())
 
         y_pred = get_labels_np_array(classifier.predict(x_test_adv))

@@ -31,7 +31,7 @@ class TestSaliencyMap(unittest.TestCase):
         print("\naccuracy on test set: %.2f%%" % (scores[1] * 100))
 
         df = SaliencyMapMethod(classifier.model, sess=session)
-        df.set_params(clip_min=0., clip_max=1., gamma=.3)
+        df.set_params(clip_min=0., clip_max=1., gamma=.1)
         x_test_adv = df.generate(X_test)
         self.assertFalse((X_test == x_test_adv).all())
 

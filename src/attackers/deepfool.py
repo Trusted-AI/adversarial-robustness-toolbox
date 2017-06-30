@@ -4,7 +4,7 @@ from keras.utils.generic_utils import Progbar
 import numpy as np
 import tensorflow as tf
 
-from src.attackers.attack import Attack, get_logits
+from src.attackers.attack import Attack, get_logits, class_derivative
 
 
 class DeepFool(Attack):
@@ -36,9 +36,9 @@ class DeepFool(Attack):
         nb_classes = self.model.output_shape[1]
 
         xi_op = tf.placeholder(dtype=tf.float32, shape=dims)
+
         loss = get_logits(self.model(xi_op), mean=False)
-        losses = [tf.slice(loss, [0, i], [1, 1]) for i in range(nb_classes)]
-        grads = [tf.gradients(losses[i], xi_op) for i in range(nb_classes)]
+        grads = class_derivative(loss, xi_op, nb_classes)
         x_adv = x_val.copy()
 
         # Progress bar

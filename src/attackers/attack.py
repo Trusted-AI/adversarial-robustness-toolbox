@@ -40,6 +40,19 @@ def get_logits(model, mean=True):
         logits = tf.reduce_mean(logits)
     return logits
 
+def class_derivative(preds, x, classes=10):
+    """
+    Computes per class derivatives.
+    :param preds: the model's logits
+    :param x: the input placeholder
+    :param classes: the number of classes the model has
+    :return: (list) class derivatives
+    """
+
+    grads = [tf.gradients(preds[:, i], x) for i in range(classes)]
+
+    return grads
+
 
 class Attack:
     """

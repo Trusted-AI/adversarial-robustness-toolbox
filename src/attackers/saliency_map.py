@@ -1,13 +1,13 @@
 from __future__ import absolute_import
 
 from config import config_dict
-from cleverhans.attacks_tf import jacobian_graph, jsma
+from cleverhans.attacks_tf import jsma
 from keras import backend as K
 
 import numpy as np
 import tensorflow as tf
 
-from src.attackers.attack import Attack
+from src.attackers.attack import Attack, class_derivative
 
 
 class SaliencyMapMethod(Attack):
@@ -17,7 +17,7 @@ class SaliencyMapMethod(Attack):
     """
     attack_params = ['theta', 'gamma', 'nb_classes', 'max_iter', 'clip_min', 'clip_max', 'y']
 
-    def __init__(self, model, sess=None, theta=1., gamma=1., nb_classes=10, clip_min=0., clip_max=1., y=None):
+    def __init__(self, model, sess=None, theta=0.1, gamma=1., nb_classes=10, clip_min=0., clip_max=1., y=None):
         """
         Create a SaliencyMapMethod instance.
 
@@ -39,13 +39,13 @@ class SaliencyMapMethod(Attack):
                   'y': y}
         self.set_params(**kwargs)
 
-    def compute_graph(self, x, **kwargs):
+    def generate_graph(self, x, **kwargs):
         # Parse and save attack-specific parameters
         assert self.set_params(**kwargs)
 
         # Define Jacobian graph wrt to this input placeholder
         preds = self.model(x)
-        grads = jacobian_graph(preds, x, self.nb_classes)
+        grads = class_derivative(preds, x, self.nb_classes)
 
         # Define appropriate graph (targeted / random target labels)
         if self.y is not None:
@@ -77,7 +77,7 @@ class SaliencyMapMethod(Attack):
         input_shape = list(x_val.shape)
         input_shape[0] = None
         self._x = tf.placeholder(tf.float32, shape=input_shape)
-        self._x_adv = self.compute_graph(self._x, **kwargs)
+        self._x_adv = self.generate_graph(self._x, **kwargs)
 
         # Run symbolic graph without or with true labels
         if 'y_val' not in kwargs or kwargs['y_val'] is None:

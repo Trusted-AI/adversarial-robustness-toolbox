@@ -1,6 +1,5 @@
 from config import config_dict
 
-import json
 import numpy as np
 import os
 
@@ -11,6 +10,7 @@ from src.attackers.deepfool import DeepFool
 from src.attackers.fast_gradient import FastGradientMethod
 from src.attackers.saliency_map import SaliencyMapMethod
 from src.attackers.universal_perturbation import UniversalPerturbation
+from src.attackers.virtual_adversarial import VirtualAdversarialMethod
 from src.classifiers.utils import load_classifier
 
 from src.utils import get_args, get_verbose_print, load_dataset, make_directory, set_group_permissions_rec
@@ -22,7 +22,6 @@ v_print = get_verbose_print(args.verbose)
 # get dataset
 (X_train, Y_train), (X_test, Y_test) = load_dataset(args.load)
 # X_train, Y_train, X_test, Y_test = X_train[:10], Y_train[:10], X_test[:10], Y_test[:10]
-
 
 session = tf.Session()
 K.set_session(session)
@@ -40,20 +39,23 @@ if args.save:
 
     v_print("Adversarials crafted with", args.adv_method, "on", MODEL_PATH, "will be saved in", SAVE_ADV)
 
-if args.adv_method == 'fgsm':
+if args.adv_method in ['fgsm', "vat"]:
 
-    adv_crafter = FastGradientMethod(model=classifier.model, sess=session)
+    if args.adv_method == "fgsm":
+        adv_crafter = FastGradientMethod(model=classifier.model, sess=session)
+    else:
+        adv_crafter = VirtualAdversarialMethod(classifier.model, sess=session)
 
     for eps in [e / 10 for e in range(1, 11)]:
 
-        X_train_adv = adv_crafter.generate(x_val=X_train, eps=eps, ord=np.inf, clip_min=0., clip_max=1.)
-        X_test_adv = adv_crafter.generate(x_val=X_test, eps=eps, ord=np.inf, clip_min=0., clip_max=1.)
+        X_train_adv = adv_crafter.generate(x_val=X_train, eps=eps, clip_min=0., clip_max=1.)
+        X_test_adv = adv_crafter.generate(x_val=X_test, eps=eps, clip_min=0., clip_max=1.)
 
         if args.save:
             np.save(os.path.join(SAVE_ADV, "eps%.2f_train.npy" % eps), X_train_adv)
             np.save(os.path.join(SAVE_ADV, "eps%.2f_test.npy" % eps), X_test_adv)
 
-elif args.adv_method in ['deepfool', 'universal', 'jsma']:
+else:
 
     if args.adv_method == 'deepfool':
         adv_crafter = DeepFool(classifier.model, session, clip_min=0., clip_max=1.)
@@ -69,9 +71,6 @@ elif args.adv_method in ['deepfool', 'universal', 'jsma']:
     if args.save:
         np.save(os.path.join(SAVE_ADV, "train.npy"), X_train_adv)
         np.save(os.path.join(SAVE_ADV, "test.npy"), X_test_adv)
-
-else:
-    raise ValueError('%s is not a valid attack method.' % args.adv_method)
 
 
 if args.save:

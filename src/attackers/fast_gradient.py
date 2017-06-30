@@ -22,7 +22,6 @@ class FastGradientMethod(Attack):
     def __init__(self, model, sess=None, ord=np.inf, y=None, clip_min=None, clip_max=None):
         """
         Create a FastGradientMethod instance.
-        :param eps: (optional float) attack step size (input variation)
         :param ord: (optional) Order of the norm (mimics Numpy). Possible values: np.inf, 1 or 2.
         :param y: (optional) A placeholder for the model labels. Only provide this parameter if you'd like to use true
                   labels when crafting adversarial samples. Otherwise, model predictions are used as labels to avoid the
@@ -137,7 +136,6 @@ class FastGradientMethod(Attack):
         before saving them as attributes.
 
         Attack-specific parameters:
-        :param eps: (optional float) attack step size (input variation)
         :param ord: (optional) Order of the norm (mimics Numpy). Possible values: np.inf, 1 or 2.
         :param y: (optional) A placeholder for the model labels. Only provide this parameter if you'd like to use true
                   labels when crafting adversarial samples. Otherwise, model predictions are used as labels to avoid the
