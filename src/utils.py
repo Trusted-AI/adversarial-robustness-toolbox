@@ -10,7 +10,6 @@ from keras.utils import np_utils, data_utils
 
 import tensorflow as tf
 
-
 def random_targets(gt, nb_classes):
     """
     Take in the correct labels for each sample and randomly choose target
@@ -30,10 +29,54 @@ def random_targets(gt, nb_classes):
         in_cl = gt == class_ind
         result[in_cl] = np.random.choice(other_classes)
 
-    return np_utils.to_categorical(np.asarray(result), nb_classes)
+    return np_utils.to_categorical(result, nb_classes)
+
+def create_class_pairs(x, y, classes=10, pos=1, neg=0):
+    """ Returns a positive and a negative pair per point of x, w.r.t. its class, and their corresponding scores.
+    
+    :param x: (np.ndarray) sample of points, with M nb of instances as first dimension
+    :param y: (np.ndarray) vector of labels, with M nb of instances as first dimension
+    :param classes: (int) number of classes
+    :param pos: (float) score affected to the positive pairs (couple of similar points)
+    :param neg: (float) score attected to the negative pairs (couple of dissimilar points)
+    :return: (np.ndarray, np.ndarray) M times classes pairs of points and corresponding scores
+    
+    """
+
+    pairs = []
+    scores = []
+
+    classes_idx = [np.where(y == i)[0] for i in range(classes)]
+
+    for d in range(classes):
+
+        nb = len(classes_idx[d])
+
+        for i in range(nb):
+
+            j = random.randrange(0, nb)
+            z1, z2 = classes_idx[d][i], classes_idx[d][j]
+            pairs += [[x[z1], x[z2]]]
+            scores += [pos]
+
+            dn = (d + random.randrange(1, classes)) % classes
+            size = len(classes_idx[dn])
+            if size > 0:
+                j = random.randrange(0, size)
+                z1, z2 = classes_idx[d][i], classes_idx[dn][j]
+                pairs += [[x[z1], x[z2]]]
+
+                scores += [neg]
+
+    return np.array(pairs), np.array(scores)
 
 
 def get_label_conf(y_vec):
+    """
+    Returns the confidence and the label of the most probable class given a vector of class confidences
+    :param y_vec: (np.ndarray) vector of class confidences, nb of intances as first dimension
+    :return: (np.ndarray, np.ndarray) confidences and labels
+    """
     assert len(y_vec.shape) == 2
 
     confs, labels = np.amax(y_vec, axis=1), np.argmax(y_vec, axis=1)
@@ -41,6 +84,13 @@ def get_label_conf(y_vec):
 
 
 def get_labels_tf_tensor(preds):
+    """
+    Returns the label of the most probable class given a tensor of class confidences.
+    See get_labels_np_array() for numpy version
+    
+    :param preds: (tf.tensor) tensor of class confidences, nb of intances as first dimension
+    :return: (tf.tensor) labels
+    """
     preds_max = tf.reduce_max(preds, 1, keep_dims=True)
     y = tf.to_float(tf.equal(preds, preds_max))
     y /= tf.reduce_sum(y, 1, keep_dims=True)
@@ -49,24 +99,35 @@ def get_labels_tf_tensor(preds):
 
 
 def get_labels_np_array(preds):
+    """
+    Returns the label of the most probable class given a array of class confidences.
+    See get_labels_tf_tensor() for tensorflow version
+
+    :param preds: (np.ndarray) array of class confidences, nb of intances as first dimension
+    :return: (np.ndarray) labels
+    """
     preds_max = np.amax(preds, axis=1, keepdims=True)
     y = (preds == preds_max).astype(float)
 
     return y
 
 
-def make_directory(dir_path):
-    if not os.path.exists(dir_path):
-        os.makedirs(dir_path)
+def preprocess(x, y, nb_classes=10, max_value=255):
+    """ Scales `x` to [0,1] and converts `y` to class categorical confidences.
 
+    :param x: array of instances
+    :param y: array of labels
+    :param int nb_classes: 
+    :param int max_value: original maximal pixel value
+    :return: x,y
+    """
 
-def get_npy_files(path):
-    """ generator """
-    for root, _, files in os.walk(path):
-        for file in files:
-            if file.endswith(".npy"):
-                yield os.path.join(root, file)
+    x = x.astype('float32') / max_value
+    y = np_utils.to_categorical(y, nb_classes)
 
+    return x, y
+
+# -------------------------------------------------------------------------------------------------------- IO FUNCTIONS
 
 def load_cifar10():
     """Loads CIFAR10 dataset from config.CIFAR10_PATH.
@@ -136,6 +197,11 @@ def load_mnist():
     return (x_train, y_train), (x_test, y_test)
 
 def load_dataset(name):
+    """
+    Loads the original dataset corresponding to name.
+    :param name: (str) name or path of the dataset
+    :return: `(x_train, y_train), (x_test, y_test)`
+    """
 
     if "mnist" in name:
         return load_mnist()
@@ -146,52 +212,28 @@ def load_dataset(name):
     else:
         raise NotImplementedError("There is no loader for {} dataset".format(name))
 
-def create_class_pairs(x, y, classes=10, pos=1, neg=0):
-    """ Returns a positive and a negative pair per point of x, w.r.t. its class, and their corresponding scores."""
-
-    pairs = []
-    scores = []
-
-    classes_idx = [np.where(y == i)[0] for i in range(classes)]
-
-    for d in range(classes):
-
-        nb = len(classes_idx[d])
-
-        for i in range(nb):
-
-            j = random.randrange(0, nb)
-            z1, z2 = classes_idx[d][i], classes_idx[d][j]
-            pairs += [[x[z1], x[z2]]]
-            scores += [pos]
-
-            dn = (d + random.randrange(1, classes)) % classes
-            size = len(classes_idx[dn])
-            if size > 0:
-                j = random.randrange(0, size)
-                z1, z2 = classes_idx[d][i], classes_idx[dn][j]
-                pairs += [[x[z1], x[z2]]]
-
-                scores += [neg]
-
-    return np.array(pairs), np.array(scores)
+def make_directory(dir_path):
+    """
+    Creates the specified tree of directories if needed.
+    :param dir_path: (str) directory or file path
+    :return: None
+    """
+    if not os.path.exists(dir_path):
+        os.makedirs(dir_path)
 
 
-def preprocess(x, y, nb_classes=10, max_value=255):
-    """ Scales `x` to [0,1] and converts `y` to class matrices.
-    
-    :param x: array of instances
-    :param y: array of labels
-    :param int nb_classes: 
-    :param int max_value: original maximal pixel value
-    :return: x,y
+def get_npy_files(path):
+    """
+    generator
+    Returns all the npy files in path subdirectories.
+    :param path: (str) directory path
+    :return: (str) paths
     """
 
-    x = x.astype('float32')/max_value
-    y = np_utils.to_categorical(y, nb_classes)
-
-    return x, y
-
+    for root, _, files in os.walk(path):
+        for file in files:
+            if file.endswith(".npy"):
+                yield os.path.join(root, file)
 
 def set_group_permissions_rec(path, group="drl-dwl"):
     for root, _, files in os.walk(path):
@@ -213,8 +255,8 @@ def set_group_permissions(filename, group="drl-dwl"):
 # ------------------------------------------------------------------- ARG PARSER
 
 
-def get_args(prog, classifier="cnn", nb_epochs=20, batch_size=128, val_split=0.1, act="relu", adv_method="fgsm", std_dev=0.1,
-             nb_instances=1, dataset="mnist", save=False, verbose=False):
+def get_args(prog, classifier="cnn", nb_epochs=20, batch_size=128, val_split=0.1, act="relu", adv_method="fgsm",
+             std_dev=0.1, nb_instances=1, dataset="mnist", save=False, verbose=False):
 
     parser = argparse.ArgumentParser(prog=prog, formatter_class=argparse.ArgumentDefaultsHelpFormatter)
     script_name = sys.argv[0]
@@ -268,8 +310,12 @@ def get_args(prog, classifier="cnn", nb_epochs=20, batch_size=128, val_split=0.1
 
     return parser.parse_args()
 
-
 def get_verbose_print(verbose):
+    """
+    Sets verbose mode.
+    :param verbose: (bool) True for verbose, False for quiet
+    :return: (function) printing function
+    """
     if verbose:
         return print
     else:
