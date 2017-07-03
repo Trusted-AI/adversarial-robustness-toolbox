@@ -27,7 +27,7 @@ comp_params = {"loss": 'categorical_crossentropy',
 
 # get adversarials
 ADV_PATH = os.path.join(os.path.abspath(DATA_PATH), "adversarial", args.dataset, args.classifier, args.act)
-X_train_adv = np.load(os.path.join(ADV_PATH, "fgsm", "eps0.30_train.npy"))
+X_train_adv = np.load(args.adv_path)
 Y_train_adv = Y_train
 
 # data augmentation
