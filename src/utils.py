@@ -284,6 +284,10 @@ def get_args(prog, classifier="cnn", nb_epochs=20, batch_size=128, val_split=0.1
                                 help='standard deviation of the distributions')
             parser.add_argument("-n", "--nbinstances", type=int, dest='nb_instances', default=nb_instances,
                                 help='number of supplementary instances per true example')
+
+        if script_name == "train_adversarially.py":
+            parser.add_argument("adv_path", type=str, help='path to the dataset for data augmentation training.')
+
     elif script_name.startswith('test'):
         parser.add_argument("load", type=str, help='the classifier is loaded from `load` directory.')
 
