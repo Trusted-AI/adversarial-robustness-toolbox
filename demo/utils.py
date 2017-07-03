@@ -71,4 +71,9 @@ def data_augmentation(x, y, type="gaussian", nb_instances=1, eps=0.3, **kwargs):
         x_aug = adv_crafter.generate(x_val=x, eps=eps)
         y_aug = y.copy()
 
+    # elif type == "jsma":
+    #
+
+    x_aug = np.clip(x_aug, (-1,-1), (1, 1))
+
     return x_aug, y_aug
