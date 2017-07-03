@@ -34,8 +34,8 @@ Y_train_adv = Y_train
 X_train = np.append(X_train, X_train_adv, axis=0)
 Y_train = np.append(Y_train, Y_train_adv, axis=0)
 
-# X_train, Y_train, X_test, Y_test = X_train[:1000], Y_train[:1000], X_test[:1000], Y_test[:1000]
-im_shape = X_train[0].shape
+X_train, Y_train, X_test, Y_test = X_train[:1000], Y_train[:1000], X_test[:1000], Y_test[:1000]
+# im_shape = X_train[0].shape
 
 session = tf.Session()
 K.set_session(session)
