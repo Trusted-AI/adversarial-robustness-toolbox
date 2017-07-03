@@ -27,7 +27,7 @@ comp_params = {"loss": 'categorical_crossentropy',
 
 # get adversarials
 ADV_PATH = os.path.join(os.path.abspath(DATA_PATH), "adversarial", args.dataset, args.classifier, args.act)
-X_train_adv = np.load(args.adv_path)
+X_train_adv = np.load(os.path.join(ADV_PATH, args.adv_path))
 Y_train_adv = Y_train
 
 # data augmentation
@@ -61,7 +61,7 @@ if args.save is not False:
         else:
             defences = ""
         MODEL_PATH = os.path.join(os.path.abspath(DATA_PATH), "classifiers", args.dataset, args.classifier, args.act,
-                                  "adv-trained", defences)
+                                  "adv-trained", args.adv_path, defences)
 
     v_print("Classifier saved in", MODEL_PATH)
 
