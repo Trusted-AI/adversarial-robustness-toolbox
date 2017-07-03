@@ -8,6 +8,7 @@ from keras.models import Sequential
 from keras.utils import np_utils
 
 from sklearn.datasets import make_moons, make_circles, make_swiss_roll
+from sklearn.preprocessing import MinMaxScaler
 
 module_path = os.path.abspath(os.path.join('..'))
 if module_path not in sys.path:
@@ -43,6 +44,7 @@ def get_toyset(name, nb_instances=20, noise=None, factor=0.6, rnd_state=None):
     indices = random.sample(range(nb_instances*10), nb_instances)
     X, Y = X[indices], Y[indices]
 
+    X = MinMaxScaler((-1, 1)).fit_transform(X)
     y_cat = np_utils.to_categorical(Y, 2)
 
     return X, Y, y_cat
@@ -85,6 +87,6 @@ def data_augmentation(x, y, type="gaussian", nb_instances=1, eps=0.3, **kwargs):
     # elif type == "jsma":
     #
 
-    x_aug = np.clip(x_aug, (-1,-1), (1, 1))
+    x_aug = np.clip(x_aug, (x[:, 0].min(), x[:, 1].min()), (x[:, 0].max(), x[:, 1].max()))
 
     return x_aug, y_aug
