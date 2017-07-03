@@ -27,15 +27,15 @@ comp_params = {"loss": 'categorical_crossentropy',
 
 # get adversarials
 ADV_PATH = os.path.join(os.path.abspath(DATA_PATH), "adversarial", args.dataset, args.classifier, args.act)
-X_train_adv = np.load(args.adv_path)
+X_train_adv = np.load(os.path.join(ADV_PATH, args.adv_path))
 Y_train_adv = Y_train
 
 # data augmentation
 X_train = np.append(X_train, X_train_adv, axis=0)
 Y_train = np.append(Y_train, Y_train_adv, axis=0)
 
-X_train, Y_train, X_test, Y_test = X_train[:1000], Y_train[:1000], X_test[:1000], Y_test[:1000]
-# im_shape = X_train[0].shape
+# X_train, Y_train, X_test, Y_test = X_train[:1000], Y_train[:1000], X_test[:1000], Y_test[:1000]
+im_shape = X_train[0].shape
 
 session = tf.Session()
 K.set_session(session)
@@ -61,7 +61,7 @@ if args.save is not False:
         else:
             defences = ""
         MODEL_PATH = os.path.join(os.path.abspath(DATA_PATH), "classifiers", args.dataset, args.classifier, args.act,
-                                  "adv-trained", defences)
+                                  "adv-trained", args.adv_path, defences)
 
     v_print("Classifier saved in", MODEL_PATH)
 
