@@ -1,4 +1,5 @@
 import random
+import sys
 
 import numpy as np
 import matplotlib.pyplot as plt
@@ -8,7 +9,7 @@ import tensorflow as tf
 
 from utils import *
 
-M = 20 # nb instances of original dataset
+M = 40 # nb instances of original dataset
 H = .02  # step size in the mesh
 EPOCHS = 100 # nb training epochs
 EPS = 0.3 # scale of the perturbations
@@ -22,7 +23,8 @@ session = tf.Session()
 K.set_session(session)
 
 # get dataset
-X, Y_labels, Y_cat = get_toyset("moons", nb_instances=M, rnd_state=r)
+dataset = sys.argv[1]
+X, Y_labels, Y_cat = get_toyset(dataset, nb_instances=M, rnd_state=r)
 
 # create a mesh to plot in
 x_min,x_max = X[:, 0].min() - 0.2, X[:, 0].max() + 0.2

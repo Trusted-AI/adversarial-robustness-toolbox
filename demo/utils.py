@@ -7,7 +7,7 @@ from keras.layers import Dense, Dropout
 from keras.models import Sequential
 from keras.utils import np_utils
 
-from sklearn.datasets import make_moons, make_circles
+from sklearn.datasets import make_moons, make_circles, make_swiss_roll
 
 module_path = os.path.abspath(os.path.join('..'))
 if module_path not in sys.path:
@@ -25,6 +25,17 @@ def get_toyset(name, nb_instances=20, noise=None, factor=0.6, rnd_state=None):
 
     elif name == "circles":
         X, Y = make_circles(n_samples=nb_instances*10, noise=noise, factor=factor, random_state=rnd_state)
+
+    elif name == "swissroll":
+
+        X1,_ = make_swiss_roll(n_samples=nb_instances*5, noise=0)
+        Y1 = np.ones((nb_instances*5,))
+
+        X2 = np.random.uniform([-1, -1], high=[1, 1], size=(nb_instances*5, 2))
+        Y2 = np.zeros((nb_instances*5,))
+
+        X = np.r_[X1[:, ::2]/15, X2]
+        Y = np.r_[Y1, Y2]
 
     else:
         raise NotImplementedError("unknown dataset")
