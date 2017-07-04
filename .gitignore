@@ -93,3 +93,4 @@ ENV/
 
 # ignore pictures
 *.jpg
+demo/pics/*
