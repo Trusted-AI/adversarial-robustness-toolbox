@@ -54,9 +54,6 @@ class UniversalPerturbation(Attack):
         dims[0] = None
         xi_op = tf.placeholder(dtype=tf.float32, shape=dims)
 
-        # Compute loss and gradients
-        loss = get_logits(self.model(xi_op), mean=False)
-
         attacker = self._get_attack(self.attacker, self.attacker_params)
 
         true_y = self.model.predict(x_val)
