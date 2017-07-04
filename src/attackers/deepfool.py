@@ -48,7 +48,8 @@ class DeepFool(Attack):
             xi = x[None, ...]
 
             f = self.sess.run(self.model(xi_op), feed_dict={xi_op: xi, K.learning_phase(): 0})[0]
-            grd = [self.sess.run(grads[i], feed_dict={xi_op: xi, K.learning_phase(): 0})[0] for i in range(nb_classes)]
+            grd = self.sess.run(grads, feed_dict={xi_op: xi, K.learning_phase(): 0})
+            grd = [g[0] for g in grd]
             fk_hat = np.argmax(f)
             fk_i_hat = fk_hat
 
@@ -76,7 +77,8 @@ class DeepFool(Attack):
 
                 # Recompute prediction for new xi
                 f = self.sess.run(self.model(xi_op), feed_dict={xi_op: xi, K.learning_phase(): 0})[0]
-                grd = [self.sess.run(grads[i], feed_dict={xi_op: xi, K.learning_phase(): 0})[0] for i in range(nb_classes)]
+                grd = self.sess.run(grads, feed_dict={xi_op: xi, K.learning_phase(): 0})
+                grd = [g[0] for g in grd]
                 fk_i_hat = np.argmax(f)
 
                 nb_iter += 1
