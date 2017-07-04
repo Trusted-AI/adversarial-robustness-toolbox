@@ -16,7 +16,7 @@ H = .02  # step size in the mesh
 EPOCHS = 100 # nb training epochs
 EPS = 0.3 # scale of the perturbations
 
-STRATEGIES = ["original", "uniform", "gaussian", "fgm", "vat"]
+STRATEGIES = ["original", "uniform", "gaussian", "fgm", "vat", "jsma"]
 
 r = np.random.RandomState(17)
 random.seed(17)
