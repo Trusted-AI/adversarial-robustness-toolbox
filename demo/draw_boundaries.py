@@ -63,7 +63,7 @@ for i,s in enumerate(STRATEGIES):
         model.compile(**{"loss": 'categorical_crossentropy', "optimizer": 'adam', "metrics": ['accuracy']})
         model.fit(X_train, Y_train, verbose=0, batch_size=M // 10, epochs=EPOCHS)
 
-    plt.title(s)
+    plt.title(s, fontsize=35)
 
     confs_grid = model.predict(np.c_[xx.ravel(), yy.ravel()])
 
@@ -83,8 +83,8 @@ for i,s in enumerate(STRATEGIES):
         plt.scatter(X_aug[reds, 0], X_aug[reds, 1], edgecolor="black", s=20, cmap=cm, marker="o", c=colors[1])
         plt.scatter(X_aug[blues, 0], X_aug[blues, 1], edgecolor="black", s=20, cmap=cm, marker="^", c=colors[0])
 
-    train_acc = model.evaluate(X, Y_cat, verbose=0)
-    plt.xlabel("train accuracy = %d%%" % (train_acc[1] * 100))
+    # train_acc = model.evaluate(X, Y_cat, verbose=0)
+    # plt.xlabel("train accuracy = %d%%" % (train_acc[1] * 100))
 
     save_fig("{}_{}".format(dataset,s))
 
