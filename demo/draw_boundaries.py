@@ -16,7 +16,7 @@ H = .02  # step size in the mesh
 EPOCHS = 100 # nb training epochs
 EPS = 0.3 # scale of the perturbations
 
-STRATEGIES = ["original", "uniform", "gaussian", "fgm", "vat"]
+STRATEGIES = ["original", "uniform", "gaussian", "fgm", "vat", "jsma"]
 
 r = np.random.RandomState(17)
 random.seed(17)
@@ -42,11 +42,12 @@ model_original.fit(X, Y_cat, verbose=0, batch_size=M // 10, epochs=EPOCHS)
 colors = [(1, 1, 1), (0.5, 0.6, 1)]
 cm = LinearSegmentedColormap.from_list('twocolor', colors, N=100)
 
-plt.figure()
 reds = Y_labels == 1
 blues = Y_labels == 0
 
 for i,s in enumerate(STRATEGIES):
+
+    plt.figure(i)
 
     if s == "original":
         model = model_original
@@ -62,8 +63,7 @@ for i,s in enumerate(STRATEGIES):
         model.compile(**{"loss": 'categorical_crossentropy', "optimizer": 'adam', "metrics": ['accuracy']})
         model.fit(X_train, Y_train, verbose=0, batch_size=M // 10, epochs=EPOCHS)
 
-    plt.subplot(2, 3, i+1, aspect='equal')
-    plt.title("{} results".format(s))
+    plt.title(s)
 
     confs_grid = model.predict(np.c_[xx.ravel(), yy.ravel()])
 
@@ -75,6 +75,7 @@ for i,s in enumerate(STRATEGIES):
     y_grid = confs_grid[:, 0].reshape(xx.shape)
     plt.contour(xx, yy, y_grid, colors='grey', linewidths=1, origin='lower')
 
+    # draw points
     plt.scatter(X[reds, 0], X[reds, 1], edgecolor="black", cmap=cm, s=60, marker="o", c=colors[1])
     plt.scatter(X[blues, 0], X[blues, 1], edgecolor="black", cmap=cm, s=60, marker="^", c=colors[0])
 
@@ -85,6 +86,6 @@ for i,s in enumerate(STRATEGIES):
     train_acc = model.evaluate(X, Y_cat, verbose=0)
     plt.xlabel("train accuracy = %d%%" % (train_acc[1] * 100))
 
-plt.subplots_adjust(0.02, 0.10, 0.98, 0.94, 0.45, 0.35)
+    save_fig("{}_{}".format(dataset,s))
 
 plt.show()

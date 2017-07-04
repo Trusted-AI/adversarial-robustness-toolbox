@@ -3,6 +3,8 @@ import os
 import random
 import sys
 
+import matplotlib.pyplot as plt
+
 from keras.layers import Dense, Dropout
 from keras.models import Sequential
 from keras.utils import np_utils
@@ -15,7 +17,20 @@ if module_path not in sys.path:
     sys.path.append(module_path)
 
 from src.attackers.fast_gradient import FastGradientMethod
+from src.attackers.saliency_map import SaliencyMapMethod
 from src.attackers.virtual_adversarial import VirtualAdversarialMethod
+from src.utils import make_directory
+
+# -------------------------------------------------------------------------------------------------------- IO FUNCTIONS
+
+def save_fig(filename,fig_id=None,output_dir="pics/",format="pdf"):
+
+    if fig_id:
+        plt.figure(fig_id)
+
+    make_directory(output_dir)
+
+    plt.savefig(os.path.join(output_dir, filename+"."+format))
 
 # -------------------------------------------------------------------------------------------------------- TOY DATASETS
 
@@ -30,12 +45,14 @@ def get_toyset(name, nb_instances=20, noise=None, factor=0.6, rnd_state=None):
     elif name == "swissroll":
 
         X1,_ = make_swiss_roll(n_samples=nb_instances*5, noise=0)
+        X1 = X1[:, ::2]
         Y1 = np.ones((nb_instances*5,))
 
-        X2 = np.random.uniform([-1, -1], high=[1, 1], size=(nb_instances*5, 2))
+        X2 = np.random.uniform([X1[:, 0].min(), X1[:, 1].min()], high=[X1[:, 0].max(), X1[:, 1].max()],
+                               size=(nb_instances*5, 2))
         Y2 = np.zeros((nb_instances*5,))
 
-        X = np.r_[X1[:, ::2]/15, X2]
+        X = np.r_[X1, X2]
         Y = np.r_[Y1, Y2]
 
     else:
@@ -62,7 +79,7 @@ def simple_nn(nb_units=64):
 
     return model
 
-def data_augmentation(x, y, type="gaussian", nb_instances=1, eps=0.3, **kwargs):
+def data_augmentation(x, y, type="gaussian", nb_instances=10, eps=0.3, **kwargs):
 
     if type == "uniform":
         x_aug = np.random.uniform(low=[-eps, -eps], high=[eps, eps], size=(nb_instances,) + x.shape)
@@ -84,8 +101,10 @@ def data_augmentation(x, y, type="gaussian", nb_instances=1, eps=0.3, **kwargs):
         x_aug = adv_crafter.generate(x_val=x, eps=eps)
         y_aug = y.copy()
 
-    # elif type == "jsma":
-    #
+    elif type == "jsma":
+        adv_crafter = SaliencyMapMethod(model=kwargs["model"], sess=kwargs["session"], gamma=1., theta=0.1)
+        x_aug = adv_crafter.generate(x_val=x, eps=eps, nb_classes=2)
+        y_aug = y.copy()
 
     x_aug = np.clip(x_aug, (x[:, 0].min(), x[:, 1].min()), (x[:, 0].max(), x[:, 1].max()))
 
