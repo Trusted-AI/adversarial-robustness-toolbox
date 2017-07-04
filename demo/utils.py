@@ -3,6 +3,8 @@ import os
 import random
 import sys
 
+import matplotlib.pyplot as plt
+
 from keras.layers import Dense, Dropout
 from keras.models import Sequential
 from keras.utils import np_utils
@@ -17,6 +19,18 @@ if module_path not in sys.path:
 from src.attackers.fast_gradient import FastGradientMethod
 from src.attackers.saliency_map import SaliencyMapMethod
 from src.attackers.virtual_adversarial import VirtualAdversarialMethod
+from src.utils import make_directory
+
+# -------------------------------------------------------------------------------------------------------- IO FUNCTIONS
+
+def save_fig(filename,fig_id=None,output_dir="pics/",format="pdf"):
+
+    if fig_id:
+        plt.figure(fig_id)
+
+    make_directory(output_dir)
+
+    plt.savefig(os.path.join(output_dir, filename+"."+format))
 
 # -------------------------------------------------------------------------------------------------------- TOY DATASETS
 
