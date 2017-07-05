@@ -9,7 +9,7 @@ import keras.backend as K
 import tensorflow as tf
 
 from src.classifiers.cnn import CNN
-from src.metrics import empirical_robustness
+from src.metrics import empirical_robustness, mmd_metric
 
 from src.utils import load_mnist
 
@@ -65,6 +65,16 @@ class TestMinimalPerturbations(unittest.TestCase):
 
         # Fit the classifier
         classifier.fit(X_train, Y_train, epochs=1, batch_size=BATCH_SIZE)
+
+
+        # Compute mmd between data_samples and adv_samples
+        params = {"eps_step": 1.,
+                  "eps_max": 1.,
+                  "clip_min": None,
+                  "clip_max": None}
+        emp_robust = mmd_metric(X_train, classifier.model, session, "fgsm", params)
+        #self.assertAlmostEqual(emp_robust*LA.norm(X_train), 1., emp_robust**LA.norm(X_train))
+
 
         # Compute minimal perturbations
         params = {"eps_step":1.1,
