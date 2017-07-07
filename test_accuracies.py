@@ -58,12 +58,16 @@ for filepath in get_npy_files(ADV_PATH):
 
     if filepath not in already_tested:
 
-        X = np.load(filepath)
-        Y = Y_train if "train.npy" in filepath else Y_test
+        try:
+            X = np.load(filepath)
+            Y = Y_train if "train.npy" in filepath else Y_test
 
-        scores = classifier.evaluate(X, Y, verbose=args.verbose)
-        v_print("\naccuracy on %s: %.2f%%" % (filepath, scores[1] * 100))
-        results[filepath] = scores[1]*100
+            scores = classifier.evaluate(X, Y, verbose=args.verbose)
+            v_print("\naccuracy on %s: %.2f%%" % (filepath, scores[1] * 100))
+            results[filepath] = scores[1]*100
+
+        except:
+            print("couldn't test on", filepath)
 
 with open(OUTPUT_PATH, "w") as json_file:
     json.dump(results, json_file)
