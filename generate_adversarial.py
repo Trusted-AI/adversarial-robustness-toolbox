@@ -76,8 +76,8 @@ else:
         np.save(os.path.join(SAVE_ADV, "test.npy"), X_test_adv)
 
 
-if args.save:
-
-    # Change files' group and permissions if on ccc
-    if config_dict['profile'] == "CLUSTER":
-        set_group_permissions_rec(MODEL_PATH)
+# if args.save:
+#
+#     # Change files' group and permissions if on ccc
+#     if config_dict['profile'] == "CLUSTER":
+#         set_group_permissions_rec(MODEL_PATH)

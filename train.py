@@ -85,9 +85,9 @@ if args.save is not False:
 
     classifier = load_classifier(MODEL_PATH, "best-weights.h5")
 
-    # Change files' group and permissions if on ccc
-    if config_dict['profile'] == "CLUSTER":
-        set_group_permissions_rec(MODEL_PATH)
+    # # Change files' group and permissions if on ccc
+    # if config_dict['profile'] == "CLUSTER":
+    #     set_group_permissions_rec(MODEL_PATH)
 
 scores = classifier.evaluate(X_test, Y_test, verbose=args.verbose)
 v_print("\naccuracy: %.2f%%" % (scores[1] * 100))
