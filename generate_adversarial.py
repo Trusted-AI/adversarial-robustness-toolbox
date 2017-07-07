@@ -41,12 +41,15 @@ if args.save:
 
 if args.adv_method in ['fgsm', "vat"]:
 
+    eps_ranges = {'fgsm': [e / 10 for e in range(1, 11)],
+                  'vat': [1.5, 2.1, 5, 7, 10]}
+
     if args.adv_method == "fgsm":
         adv_crafter = FastGradientMethod(model=classifier.model, sess=session)
     else:
         adv_crafter = VirtualAdversarialMethod(classifier.model, sess=session)
 
-    for eps in [e / 10 for e in range(1, 11)]:
+    for eps in eps_ranges[args.adv_method]:
 
         X_train_adv = adv_crafter.generate(x_val=X_train, eps=eps, clip_min=0., clip_max=1.)
         X_test_adv = adv_crafter.generate(x_val=X_test, eps=eps, clip_min=0., clip_max=1.)
