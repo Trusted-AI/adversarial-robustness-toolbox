@@ -53,9 +53,10 @@ def empirical_robustness(x, model, sess, method_name, method_params=None):
 def kernel_rbf(x,y,sigma=0.1):
     """Computes the kernel 
 
-    :param x:
-    :param y:
+    :param x: a tensor object or a numpy array
+    :param y: a tensor object or a numpy array
 
+    returns: a tensor object
     """
     norms_x = tf.reduce_sum(x ** 2, 1)[:, None] # axis = [1] for later tf vrsions
     norms_y = tf.reduce_sum(y ** 2, 1)[None, :]
@@ -64,10 +65,14 @@ def kernel_rbf(x,y,sigma=0.1):
 
 
 def mmd(x_data,y_data,sess,sigma=0.1):
-    """ Computes mmd between x and y for a given kerbel
-    :param x:
-    :param y:
+    """ Computes Maximum Mean Disrepancy between x and y
+
+    :param x_data: numpy array
+    :param y_data: numpy array
+
+    returns: a float value corresponding to mmd(x_data,y_data)
     """
+    assert x_data.shape[0]==y_daya.shape[0]
     x_data = x_data.reshape(x_data.shape[0],np.prod(x_data.shape[1:]))
     y_data = y_data.reshape(y_data.shape[0],np.prod(y_data.shape[1:]))
     x = tf.placeholder(tf.float32, shape=x_data.shape)
@@ -79,8 +84,46 @@ def mmd(x_data,y_data,sess,sigma=0.1):
 
 
 def mmd_metric(x, model, sess, method_name, method_params=None):
-
+    """ 
+    
+    """
     crafter = get_crafter(method_name, model, sess, method_params)
     adv_x = crafter.generate(x, minimal=True, **method_params)
 
     return mmd(x,adv_x,sess)
+
+
+def nn_dist(x, model, x_train,  sess, method_name, method_params=None):
+    """
+    Nearest Neighbour distance
+    """
+    crafter = get_crafter(method_name, model, sess, method_params)
+    adv_x = crafter.generate(x, minimal=True, **method_params)
+
+    min_dist = tf.reduce_min(kernel_rbf(x,x_train),reduce_indices=1)
+    avg_mean_dist = tf.reduce_min(min_dist)
+    return sess.run(avg_mean_dist)
+
+def stoch_preds(x,model,sess):
+    """
+    TODO 
+    """
+    y = model(x)
+    if x.shape[0] <= 100:
+        pass
+    else:
+        #run batch
+        pass
+
+def mc_drop(x, model, sess, method_name, method_params=None):
+
+    '''
+    TODO
+    droptout at test time for the crafted adversarial examples
+    '''
+   
+    crafter = get_crafter(method_name, model, sess, method_params)
+    adv_x = crafter.generate(x, minimal=True, **method_params)
+
+    pass
+    
