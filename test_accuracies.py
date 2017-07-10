@@ -31,8 +31,11 @@ classifier = load_classifier(MODEL_PATH, "best-weights.h5")
 try:
     with open(os.path.join(MODEL_PATH, "accuracies.json"), "r") as json_file:
         results = json.load(json_file)
+
+        results_timestamp = os.path.getmtime(os.path.join(MODEL_PATH, "accuracies.json"))
 except:
     results = {}
+    results_timestamp = 0
 
 already_tested = results.keys()
 
@@ -56,7 +59,10 @@ ADV_PATH = os.path.join(DATA_PATH, "adversarial", args.dataset)
 
 for filepath in get_npy_files(ADV_PATH):
 
-    if filepath not in already_tested:
+    file_timestamp = os.path.getmtime(filepath)
+
+    # if not tested yet or tested on a previous version
+    if filepath not in already_tested or file_timestamp > results_timestamp:
 
         try:
             X = np.load(filepath)
