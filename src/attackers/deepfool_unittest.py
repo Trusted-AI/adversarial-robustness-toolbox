@@ -1,10 +1,11 @@
 import keras.backend as k
 import tensorflow as tf
 import unittest
+import numpy as np
 
 from src.attackers.deepfool import DeepFool
 from src.classifiers.cnn import CNN
-from src.utils import load_mnist, get_labels_np_array
+from src.utils import load_mnist, get_labels_np_array, get_label_conf
 
 
 class TestDeepFool(unittest.TestCase):
@@ -35,7 +36,7 @@ class TestDeepFool(unittest.TestCase):
         x_test_adv = df.generate(X_test)
         self.assertFalse((X_test == x_test_adv).all())
 
-        y_pred = get_labels_np_array(classifier.predict(x_test_adv))
+        y_pred = np.argmax(classifier.predict(x_test_adv), axis=1)
 
         self.assertFalse((Y_test == y_pred).all())
 

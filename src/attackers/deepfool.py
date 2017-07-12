@@ -14,7 +14,7 @@ class DeepFool(Attack):
     """
     attack_params = ['max_iter', 'clip_min', 'clip_max', 'verbose']
 
-    def __init__(self, model, sess=None, max_iter=50, clip_min=None, clip_max=None, verbose=1):
+    def __init__(self, model, sess=None, max_iter=100, clip_min=None, clip_max=None, verbose=1):
         """
         Create a DeepFool attack instance.
         :param model: A function that takes a symbolic input and returns the
@@ -57,33 +57,36 @@ class DeepFool(Attack):
 
             while (fk_i_hat == fk_hat) and (nb_iter < self.max_iter):
 
-                grad_diff = grd[fk_hat] - grd
-                f_diff = f[fk_hat] - f
+                grad_diff = grd - grd[fk_hat]
+                f_diff = f - f[fk_hat]
 
                 # Masking true label
                 mask = [0] * nb_classes
                 mask[fk_hat] = 1
-                value = np.ma.array(abs(f_diff)/pow(np.linalg.norm(grad_diff.reshape(nb_classes, -1), axis=1), 2),
-                                    mask=mask)
+                value = np.ma.array(np.abs(f_diff)/np.linalg.norm(grad_diff.flatten()), mask=mask)
 
                 l = value.argmin(fill_value=np.inf)
-                r = np.abs(f_diff[l])/pow(np.linalg.norm(grad_diff[l].reshape(1, -1), axis=1), 2) * grad_diff[l]
+                r = (abs(f_diff[l])/pow(np.linalg.norm(grad_diff[l]), 2)) * grad_diff[l]
 
                 # Add perturbation and clip result
                 xi += r
 
                 if self.clip_min or self.clip_max:
-                    np.clip(xi, self.clip_min, self.clip_max, xi)
+                    xi = np.clip(xi, self.clip_min, self.clip_max)
 
                 # Recompute prediction for new xi
                 f = self.sess.run(self.model(xi_op), feed_dict={xi_op: xi, K.learning_phase(): 0})[0]
                 grd = self.sess.run(grads, feed_dict={xi_op: xi, K.learning_phase(): 0})
                 grd = [g[0] for g in grd]
                 fk_i_hat = np.argmax(f)
+                # print(fk_i_hat, fk_hat)
 
                 nb_iter += 1
 
-            progress_bar.update(current=j, values=[("perturbation", abs(np.linalg.norm(r.reshape(1, -1), axis=1)))])
+            x_adv[j] = xi[0]
+
+            progress_bar.update(current=j, values=[("perturbation", abs(np.linalg.norm((x_val[j]-r).flatten())))])
+            print(fk_i_hat, fk_hat, np.argmax(self.model.predict(x_adv[j][None, ...])), nb_iter)
 
         return x_adv
 
