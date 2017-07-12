@@ -62,7 +62,7 @@ else:
 
     if args.adv_method == 'deepfool':
         adv_crafter = DeepFool(classifier.model, session, clip_min=0., clip_max=1.)
-    if args.adv_method == 'jsma':
+    elif args.adv_method == 'jsma':
         adv_crafter = SaliencyMapMethod(classifier.model, sess=session, clip_min=0., clip_max=1., gamma=1., theta=0.1)
     else:
         adv_crafter = UniversalPerturbation(classifier.model, session, p=np.inf,

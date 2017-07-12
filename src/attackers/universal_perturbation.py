@@ -68,20 +68,22 @@ class UniversalPerturbation(Attack):
                 xi = x[None, ...]
 
                 f_xi = self.sess.run(self.model(xi_op), feed_dict={xi_op: xi+v, K.learning_phase(): 0})
-                fk_i_hat = np.argmax(f_xi)
+                fk_i_hat = np.argmax(f_xi[0])
 
                 fk_hat = np.argmax(true_y[rnd_idx][j])
 
                 if fk_i_hat == fk_hat:
 
                     # Compute adversarial perturbation
-                    adv_xi = attacker.generate(np.expand_dims(x+v, 0))
+                    adv_xi = attacker.generate(np.expand_dims(x, 0) + v)
 
-                    adv_f_xi = self.sess.run([self.model(xi_op)], feed_dict={xi_op: adv_xi, K.learning_phase(): 0})
+                    adv_f_xi = self.sess.run(self.model(xi_op), feed_dict={xi_op: adv_xi, K.learning_phase(): 0})
                     adv_fk_i_hat = np.argmax(adv_f_xi[0])
 
                     # if the class has changed, update v
                     if fk_i_hat != adv_fk_i_hat:
+                        print(fk_i_hat, adv_fk_i_hat)
+
                         v += adv_xi - xi
 
                         # Project on l_p ball

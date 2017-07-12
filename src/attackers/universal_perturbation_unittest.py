@@ -37,9 +37,9 @@ class TestUniversalPerturbation(unittest.TestCase):
                          "clip_max": 1.,
                          "attacker": "deepfool"}
 
-        attack = UniversalPerturbation(classifier.model, session, attacker_params={"max_iter":5})
+        attack = UniversalPerturbation(classifier.model, session, attacker_params={"max_iter":50})
         x_train_adv = attack.generate(X_train, **attack_params)
-        self.assertTrue((attack.fooling_rate >= 0.2) or attack.converged)
+        self.assertTrue((attack.fooling_rate >= 0.2) or not attack.converged)
 
         x_test_adv = X_test + attack.v
 
