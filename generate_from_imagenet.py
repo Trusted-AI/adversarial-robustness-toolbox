@@ -67,7 +67,6 @@ else:
 
         save_path = os.path.join(save_path, "minimal")
 
-
     attack = FastGradientMethod(model, session)
 
 with open(os.path.join(PATH, "pic_ids.txt"), "r") as infile:

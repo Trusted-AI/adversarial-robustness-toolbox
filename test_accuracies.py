@@ -72,8 +72,8 @@ for filepath in get_npy_files(ADV_PATH):
             v_print("\naccuracy on %s: %.2f%%" % (filepath, scores[1] * 100))
             results[filepath] = scores[1]*100
 
-        except:
-            print("couldn't test on", filepath)
+        except Exception as e:
+            print(e, filepath)
 
 with open(OUTPUT_PATH, "w") as json_file:
     json.dump(results, json_file)

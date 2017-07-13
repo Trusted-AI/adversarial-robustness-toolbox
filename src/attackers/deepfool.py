@@ -63,7 +63,7 @@ class DeepFool(Attack):
                 # Masking true label
                 mask = [0] * nb_classes
                 mask[fk_hat] = 1
-                value = np.ma.array(np.abs(f_diff)/np.linalg.norm(grad_diff.flatten()), mask=mask)
+                value = np.ma.array(np.abs(f_diff)/np.linalg.norm(grad_diff.reshape(nb_classes, -1), axis=1), mask=mask)
 
                 l = value.argmin(fill_value=np.inf)
                 r = (abs(f_diff[l])/pow(np.linalg.norm(grad_diff[l]), 2)) * grad_diff[l]
@@ -85,8 +85,8 @@ class DeepFool(Attack):
 
             x_adv[j] = xi[0]
 
-            progress_bar.update(current=j, values=[("perturbation", abs(np.linalg.norm((x_val[j]-r).flatten())))])
-            print(fk_i_hat, fk_hat, np.argmax(self.model.predict(x_adv[j][None, ...])), nb_iter)
+            progress_bar.update(current=j, values=[("perturbation", abs(np.linalg.norm((x_adv[j]-x_val[j]).flatten())))])
+            # print(fk_i_hat, fk_hat, np.argmax(self.model.predict(x_adv[j][None, ...])), nb_iter)
 
         return x_adv
 

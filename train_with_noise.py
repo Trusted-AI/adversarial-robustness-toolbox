@@ -38,7 +38,7 @@ if args.save is not False:
         MODEL_PATH = os.path.abspath(args.save)
 
     else:
-        MODEL_PATH = os.path.join(os.path.abspath(DATA_PATH), "classifiers", "mnist", args.classifier, args.act,
+        MODEL_PATH = os.path.join(os.path.abspath(DATA_PATH), "classifiers", args.dataset, args.classifier, args.act,
                                   "gaussian", "stdev%.2f" % args.std_dev, "pert-insts%d" % args.nb_instances)
 
     v_print("Classifier saved in", MODEL_PATH)
