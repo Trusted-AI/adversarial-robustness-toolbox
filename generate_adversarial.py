@@ -46,7 +46,7 @@ if args.adv_method in ['fgsm', "vat", "rnd_fgsm"]:
                   'rnd_fgsm': [e / 10 for e in range(1, 11)],
                   'vat': [1.5, 2.1, 5, 7, 10]}
 
-    if args.adv_method in ["fgsm", "rnd"]:
+    if args.adv_method in ["fgsm", "rnd_fgsm"]:
         adv_crafter = FastGradientMethod(model=classifier.model, sess=session)
     else:
         adv_crafter = VirtualAdversarialMethod(classifier.model, sess=session)
