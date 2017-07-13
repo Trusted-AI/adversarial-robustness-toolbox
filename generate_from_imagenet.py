@@ -13,7 +13,7 @@ from src.attackers.deepfool import DeepFool
 from src.attackers.fast_gradient import FastGradientMethod
 from src.attackers.universal_perturbation import UniversalPerturbation
 
-from src.utils import make_directory
+from src.utils import make_directory, get_label_conf
 
 PATH = "./imagenet/"
 
@@ -85,6 +85,10 @@ advs = attack.generate(X, **attack_params)
 
 make_directory(save_path)
 
-for adv, file in zip(advs, lines):
+for i, (adv, file) in enumerate(zip(advs, lines)):
     img_name = file.split("/")[-1]
     misc.imsave(os.path.join(save_path, img_name.replace(".jpg", "_adv.jpg")), adv)
+    misc.imsave(os.path.join(save_path, img_name.replace(".jpg", "_pert.jpg")), X[i] - adv)
+
+    print("original", get_label_conf(model.predict(X[i][None, ...])))
+    print("adversarial", get_label_conf(model.predict(adv[None, ...])))

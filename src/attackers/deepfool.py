@@ -32,6 +32,7 @@ class DeepFool(Attack):
         """
         assert self.set_params(**kwargs)
         dims = list(x_val.shape)
+        nb_instances = dims[0]
         dims[0] = None
         nb_classes = self.model.output_shape[1]
 
@@ -86,7 +87,14 @@ class DeepFool(Attack):
             x_adv[j] = xi[0]
 
             progress_bar.update(current=j, values=[("perturbation", abs(np.linalg.norm((x_adv[j]-x_val[j]).flatten())))])
-            # print(fk_i_hat, fk_hat, np.argmax(self.model.predict(x_adv[j][None, ...])), nb_iter)
+
+        true_y = self.model.predict(x_val)
+        adv_y = self.model.predict(x_adv)
+        fooling_rate = np.sum(true_y != adv_y) / nb_instances
+
+        self.fooling_rate = fooling_rate
+        self.converged = (nb_iter < self.max_iter)
+        self.v = np.mean(np.abs(np.linalg.norm((x_adv-x_val).reshape(nb_instances, -1), axis=1)))
 
         return x_adv
 
