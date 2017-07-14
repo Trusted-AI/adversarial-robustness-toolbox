@@ -47,7 +47,7 @@ def empirical_robustness(x, model, sess, method_name, method_params=None):
 
     assert perts_norm.shape == (len(x), ), perts_norm.shape
 
-    return np.mean(perts_norm/LA.norm(x))
+    return np.mean(perts_norm/LA.norm(x.reshape(x.shape[0], -1), ord=crafter.ord, axis=1))
 
 
 def kernel_rbf(x,y,sigma=0.1):

@@ -70,7 +70,7 @@ class FastGradientMethod(Attack):
         adv_x_op = x
         prev_y = y
 
-        while eps < eps_max:
+        while eps <= eps_max:
 
             # adversarial crafting
             curr_adv_x_op = self.generate_graph(x, eps=eps, **kwargs)
@@ -83,13 +83,13 @@ class FastGradientMethod(Attack):
             eps += eps_step
             prev_y = tf.argmax(self.model(adv_x_op), 1)
 
-        else:
-            curr_adv_y = prev_y
+        # else:
+        #     curr_adv_y = prev_y
 
-        # perturbed the instances that did not get their class changed
-        if eps == eps_max:
-            curr_adv_x_op = self.generate_graph(x, eps=eps, **kwargs)
-            adv_x_op = tf.where(tf.equal(y, curr_adv_y), curr_adv_x_op, adv_x_op)
+        # # perturbed the instances that did not get their class changed
+        # if eps == eps_max:
+        #     curr_adv_x_op = self.generate_graph(x, eps=eps, **kwargs)
+        #     adv_x_op = tf.where(tf.equal(y, curr_adv_y), curr_adv_x_op, adv_x_op)
 
         return adv_x_op
 
