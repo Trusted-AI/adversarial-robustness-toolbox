@@ -63,6 +63,20 @@ def kernel_rbf(x,y,sigma=0.1):
     dists = norms_x - 2 * tf.matmul(x, y, transpose_b=True) + norms_y
     return tf.exp(-(1.0/(2.0*sigma)*dists))
 
+def euclidean_dist(x,y):
+    """Computes the kernel 
+
+    :param x: a tensor object or a numpy array
+    :param y: a tensor object or a numpy array
+
+    returns: a tensor object
+    """
+    norms_x = tf.reduce_sum(x ** 2, 1)[:, None] # axis = [1] for later tf vrsions
+    norms_y = tf.reduce_sum(y ** 2, 1)[None, :]
+    dists = norms_x - 2 * tf.matmul(x, y, transpose_b=True) + norms_y
+    return dists 
+
+
 
 def mmd(x_data,y_data,sess,sigma=0.1):
     """ Computes Maximum Mean Disrepancy between x and y
@@ -93,16 +107,27 @@ def mmd_metric(x, model, sess, method_name, method_params=None):
     return mmd(x,adv_x,sess)
 
 
-def nn_dist(x, model, x_train,  sess, method_name, method_params=None):
+def nearest_nieghbour_dist(x, y_true, model, x_train,  sess, method_name, method_params=None):
     """
     Nearest Neighbour distance
     """
+    # craft the adversarial examples
     crafter = get_crafter(method_name, model, sess, method_params)
-    adv_x = crafter.generate(x, minimal=True, **method_params)
+    adv_x = crafter.generate(x, minimal=True,**method_params)
 
-    min_dist = tf.reduce_min(kernel_rbf(x,x_train),reduce_indices=1)
-    avg_mean_dist = tf.reduce_min(min_dist)
-    return sess.run(avg_mean_dist)
+    # predict the labels for adversarial examples
+    y_pred = model.predict(adv_x,verbose=0)
+
+    
+    adv_x_ = adv_x.reshape(adv_x.shape[0],np.prod(adv_x.shape[1:]))
+    x_  = x_train.reshape(x_train.shape[0],np.prod(x_train.shape[1:]))
+    dists = euclidean_dist(adv_x_,x_)
+
+    dists = np.min(sess.run(dists),1)/LA.norm(x.reshape(x.shape[0], -1), ord=2, axis=1)
+    avg_nn_dist = np.average(dists,
+            weights=((np.argmax(y_pred,axis=1) != np.argmax(y_true,axis=1))))
+
+    return avg_nn_dist
 
 def stoch_preds(x,model,sess):
     """
