@@ -56,7 +56,7 @@ class FastGradientMethod(Attack):
         return fgm(x, self.model(x), y=self.y, eps=eps, ord=self.ord,
                    clip_min=self.clip_min, clip_max=self.clip_max)
 
-    def minimal_perturbations(self, x, eps_step=0.1, eps_max=1., **kwargs):
+    def minimal_perturbations(self, x, x_val, eps_step=0.1, eps_max=1., **kwargs):
         """
         Iteratively compute the minimal perturbation necessary to make the class prediction change.
         :param x: (required) A Numpy array with the original inputs.
@@ -65,33 +65,28 @@ class FastGradientMethod(Attack):
         :param kwargs: Other parameters to send to generate_graph
         :return: A Numpy array holding the adversarial examples.
         """
-        y = tf.argmax(self.model(x), 1)
-        eps = eps_step
-        adv_x_op = x
-        prev_y = y
+        y = np.argmax(self.model.predict(x_val), 1)
+        adv_x = x_val.copy()
 
-        while eps <= eps_max:
+        curr_indexes = np.arange(len(x_val))
+        eps = eps_step
+
+        while len(curr_indexes) != 0 and eps <= eps_max:
 
             # adversarial crafting
-            curr_adv_x_op = self.generate_graph(x, eps=eps, **kwargs)
-            curr_adv_y = tf.argmax(self.model(curr_adv_x_op), 1)
+            adv_x_op = self.generate_graph(x, eps=eps, **kwargs)
+            adv_y = tf.argmax(self.model(adv_x_op), 1)
+
+            feed_dict = {x: x_val[curr_indexes], K.learning_phase(): 0}
+            new_adv_x, new_y = self.sess.run([adv_x_op, adv_y], feed_dict=feed_dict)
 
             # update
-            mask = tf.equal(prev_y, curr_adv_y)
-            adv_x_op = tf.where(mask, adv_x_op, curr_adv_x_op)
+            adv_x[curr_indexes] = new_adv_x
+            curr_indexes = np.where(y[curr_indexes] == new_y)[0]
 
             eps += eps_step
-            prev_y = tf.argmax(self.model(adv_x_op), 1)
 
-        # else:
-        #     curr_adv_y = prev_y
-
-        # # perturbed the instances that did not get their class changed
-        # if eps == eps_max:
-        #     curr_adv_x_op = self.generate_graph(x, eps=eps, **kwargs)
-        #     adv_x_op = tf.where(tf.equal(y, curr_adv_y), curr_adv_x_op, adv_x_op)
-
-        return adv_x_op
+        return adv_x
 
     def generate(self, x_val, **kwargs):
         """
@@ -112,8 +107,7 @@ class FastGradientMethod(Attack):
         self._x = tf.placeholder(tf.float32, shape=input_shape)
 
         if "minimal" in kwargs and kwargs["minimal"]:
-            self._x_adv = self.minimal_perturbations(self._x, **kwargs)
-            feed_dict = {self._x: x_val, K.learning_phase(): 0}
+            return self.minimal_perturbations(self._x, x_val, **kwargs)
 
         else:
 
