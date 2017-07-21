@@ -296,7 +296,7 @@ def get_args(prog, classifier="cnn", nb_epochs=20, batch_size=128, val_split=0.1
                                 choices=["fgsm", "deepfool", "universal"],
                                 help='choice of attacker')
 
-    elif script_name == 'generate_adversarial.py':
+    elif script_name in ['generate_adversarial.py', "generate_batch.py"]:
         parser.add_argument("load", type=str, help='the classifier is loaded from `load` directory.')
 
         parser.add_argument("-a", "--adv", type=str, dest='adv_method', default=adv_method,
@@ -304,6 +304,7 @@ def get_args(prog, classifier="cnn", nb_epochs=20, batch_size=128, val_split=0.1
                             help='choice of attacker')
         parser.add_argument("-s", "--save", type=str, dest='save',
                             help='if set, the adversarial examples are saved')
+        parser.add_argument("batch_idx", type=int, help='index of the batch to use.')
     else:
         raise ValueError("Parser not defined for script '%s'" % __file__)
 
