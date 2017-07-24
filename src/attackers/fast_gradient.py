@@ -19,7 +19,7 @@ class FastGradientMethod(Attack):
     """
     attack_params = ['ord', 'y', 'y_val', 'clip_min', 'clip_max']
 
-    def __init__(self, model, sess=None, ord=np.inf, y=None, clip_min=None, clip_max=None):
+    def __init__(self, classifier, sess=None, ord=np.inf, y=None, clip_min=None, clip_max=None):
         """
         Create a FastGradientMethod instance.
         :param ord: (optional) Order of the norm (mimics Numpy). Possible values: np.inf, 1 or 2.
@@ -30,7 +30,7 @@ class FastGradientMethod(Attack):
         :param clip_min: (optional float) Minimum input component value
         :param clip_max: (optional float) Maximum input component value
         """
-        super(FastGradientMethod, self).__init__(model, sess)
+        super(FastGradientMethod, self).__init__(classifier, sess)
 
         kwargs = {'ord': ord, 'clip_min': clip_min, 'clip_max': clip_max, 'y': y}
         self.set_params(**kwargs)
@@ -53,7 +53,7 @@ class FastGradientMethod(Attack):
         """
         self.set_params(**kwargs)
 
-        return fgm(x, self.model(x), y=self.y, eps=eps, ord=self.ord,
+        return fgm(x, self._get_predictions(x, log=False), y=self.y, eps=eps, ord=self.ord,
                    clip_min=self.clip_min, clip_max=self.clip_max)
 
     def minimal_perturbations(self, x, x_val, eps_step=0.1, eps_max=1., **kwargs):

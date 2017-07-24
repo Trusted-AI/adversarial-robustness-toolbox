@@ -13,10 +13,10 @@ supported_methods = {"fgsm": {"class": FastGradientMethod,
                       }
 
 
-def get_crafter(method, model, session, params=None):
+def get_crafter(method, classifier, session, params=None):
 
     try:
-        crafter = supported_methods[method]["class"](model, sess=session)
+        crafter = supported_methods[method]["class"](classifier, sess=session)
     except:
         raise NotImplementedError("{} crafting method not supported.".format(method))
 
@@ -28,19 +28,19 @@ def get_crafter(method, model, session, params=None):
     return crafter
 
 
-def empirical_robustness(x, model, sess, method_name, method_params=None):
-    """ Computes the Empirical Robustness of a `model` over the sample `x` for a given adversarial crafting method 
+def empirical_robustness(x, classifier, sess, method_name, method_params=None):
+    """ Computes the Empirical Robustness of a `classifier` over the sample `x` for a given adversarial crafting method 
     `method_name`, following https://arxiv.org/abs/1511.04599
     
     :param x: 
-    :param model: 
+    :param classifier: 
     :param method_name: 
     :param sess: 
     :param method_params: 
     :return: 
     """
 
-    crafter = get_crafter(method_name, model, sess, method_params)
+    crafter = get_crafter(method_name, classifier, sess, method_params)
     adv_x = crafter.generate(x, minimal=True, **method_params)
 
     perts_norm = LA.norm((adv_x-x).reshape(x.shape[0], -1), ord=crafter.ord, axis=1)
@@ -97,26 +97,26 @@ def mmd(x_data,y_data,sess,sigma=0.1):
     return sess.run(mmd, feed_dict = {x:x_data, y:y_data})
 
 
-def mmd_metric(x, model, sess, method_name, method_params=None):
+def mmd_metric(x, classifier, sess, method_name, method_params=None):
     """ 
     
     """
-    crafter = get_crafter(method_name, model, sess, method_params)
+    crafter = get_crafter(method_name, classifier, sess, method_params)
     adv_x = crafter.generate(x, minimal=True, **method_params)
 
     return mmd(x,adv_x,sess)
 
 
-def nearest_nieghbour_dist(x, y_true, model, x_train,  sess, method_name, method_params=None):
+def nearest_nieghbour_dist(x, y_true, classifier, x_train,  sess, method_name, method_params=None):
     """
     Nearest Neighbour distance
     """
     # craft the adversarial examples
-    crafter = get_crafter(method_name, model, sess, method_params)
+    crafter = get_crafter(method_name, classifier, sess, method_params)
     adv_x = crafter.generate(x, minimal=True,**method_params)
 
     # predict the labels for adversarial examples
-    y_pred = model.predict(adv_x,verbose=0)
+    y_pred = classifier.predict(adv_x,verbose=0)
 
     
     adv_x_ = adv_x.reshape(adv_x.shape[0],np.prod(adv_x.shape[1:]))
@@ -129,25 +129,25 @@ def nearest_nieghbour_dist(x, y_true, model, x_train,  sess, method_name, method
 
     return avg_nn_dist
 
-def stoch_preds(x,model,sess):
+def stoch_preds(x,classifier,sess):
     """
     TODO 
     """
-    y = model(x)
+    y = classifier(x)
     if x.shape[0] <= 100:
         pass
     else:
         #run batch
         pass
 
-def mc_drop(x, model, sess, method_name, method_params=None):
+def mc_drop(x, classifier, sess, method_name, method_params=None):
 
     '''
     TODO
     droptout at test time for the crafted adversarial examples
     '''
    
-    crafter = get_crafter(method_name, model, sess, method_params)
+    crafter = get_crafter(method_name, classifier, sess, method_params)
     adv_x = crafter.generate(x, minimal=True, **method_params)
 
     pass
