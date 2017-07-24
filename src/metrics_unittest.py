@@ -81,21 +81,21 @@ class TestMinimalPerturbations(unittest.TestCase):
                   "clip_min":0.,
                   "clip_max":1.}
 
-        emp_robust = empirical_robustness(X_train, classifier.model, session, "fgsm", params)
+        emp_robust = empirical_robustness(X_train, classifier, session, "fgsm", params)
         self.assertEqual(emp_robust, 0.)
 
         params = {"eps_step": 1.,
                   "eps_max": 1.,
                   "clip_min": None,
                   "clip_max": None}
-        emp_robust = empirical_robustness(X_train, classifier.model, session, "fgsm", params)
+        emp_robust = empirical_robustness(X_train, classifier, session, "fgsm", params)
         self.assertAlmostEqual(emp_robust, 1., 3)
 
         params = {"eps_step": 0.1,
                   "eps_max": 0.2,
                   "clip_min": None,
                   "clip_max": None}
-        emp_robust = empirical_robustness(X_train, classifier.model, session, "fgsm", params)
+        emp_robust = empirical_robustness(X_train, classifier, session, "fgsm", params)
         self.assertLessEqual(emp_robust, 0.2)
 
         # params = {"theta": 1.,

@@ -72,11 +72,11 @@ if args.adv_method in ['fgsm', "vat", "rnd_fgsm"]:
 else:
 
     if args.adv_method == 'deepfool':
-        adv_crafter = DeepFool(classifier.model, session, clip_min=0., clip_max=1.)
+        adv_crafter = DeepFool(classifier, session, clip_min=0., clip_max=1.)
     elif args.adv_method == 'jsma':
-        adv_crafter = SaliencyMapMethod(classifier.model, sess=session, clip_min=0., clip_max=1., gamma=1., theta=0.1)
+        adv_crafter = SaliencyMapMethod(classifier, sess=session, clip_min=0., clip_max=1., gamma=1., theta=0.1)
     else:
-        adv_crafter = UniversalPerturbation(classifier.model, session, p=np.inf,
+        adv_crafter = UniversalPerturbation(classifier, session, p=np.inf,
                                             attacker_params={'clip_min':0., 'clip_max':1.})
 
     X_train_adv = adv_crafter.generate(x_val=X_train)

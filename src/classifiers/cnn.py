@@ -40,7 +40,7 @@ def cifar10_layers(input_shape, nb_filters):
 class CNN(Classifier):
 
     def __init__(self, input_shape=None, include_end=True, act='relu', bnorm=False, input_ph=None, nb_filters=64,
-                 nb_classes=10, act_params={}, model=None, defences=None, dataset="mnist"):
+                 nb_classes=10, act_params={}, model=None, defences=None, preproc=None, dataset="mnist"):
 
         """Instantiates a ConvolutionalNeuralNetwork model using Keras sequential model
         
@@ -59,13 +59,9 @@ class CNN(Classifier):
         :rtype: keras.model
         """
 
-        super(CNN, self).__init__(defences)
+        if model is None:
 
-        if model:
-            self.model = model
-
-        else:
-            self.model = Sequential(name='cnn')
+            model = Sequential(name='cnn')
 
             if "mnist" in dataset:
                 layers = mnist_layers(input_shape, nb_filters)
@@ -76,13 +72,15 @@ class CNN(Classifier):
             for layer in layers:
 
                 if layer == "activation":
-                    self.model.add(self.get_activation(act, **act_params))
+                    model.add(self.get_activation(act, **act_params))
                     if bnorm:
-                        self.model.add(BatchNormalization())
+                        model.add(BatchNormalization())
                 else:
-                    self.model.add(layer)
+                    model.add(layer)
 
-            self.model.add(Dense(nb_classes))
+            model.add(Dense(nb_classes))
 
             if include_end:
-                self.model.add(Activation('softmax'))
+                model.add(Activation('softmax'))
+
+        super(CNN, self).__init__(model, defences, preproc)

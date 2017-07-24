@@ -53,9 +53,9 @@ if args.adv_method in ['fgsm', "vat", "rnd_fgsm"]:
                   'vat': [1.5, 2.1, 5, 7, 10]}
 
     if args.adv_method in ["fgsm", "rnd_fgsm"]:
-        adv_crafter = FastGradientMethod(model=classifier.model, sess=session)
+        adv_crafter = FastGradientMethod(model=classifier, sess=session)
     else:
-        adv_crafter = VirtualAdversarialMethod(classifier.model, sess=session)
+        adv_crafter = VirtualAdversarialMethod(classifier, sess=session)
 
     for eps in eps_ranges[args.adv_method]:
 
@@ -74,11 +74,11 @@ if args.adv_method in ['fgsm', "vat", "rnd_fgsm"]:
 else:
 
     if args.adv_method == 'deepfool':
-        adv_crafter = DeepFool(classifier.model, session, clip_min=0., clip_max=1.)
+        adv_crafter = DeepFool(classifier, session, clip_min=0., clip_max=1.)
     elif args.adv_method == 'jsma':
-        adv_crafter = SaliencyMapMethod(classifier.model, sess=session, clip_min=0., clip_max=1., gamma=1., theta=0.1)
+        adv_crafter = SaliencyMapMethod(classifier, sess=session, clip_min=0., clip_max=1., gamma=1., theta=0.1)
     else:
-        adv_crafter = UniversalPerturbation(classifier.model, session, p=np.inf,
+        adv_crafter = UniversalPerturbation(classifier, session, p=np.inf,
                                             attacker_params={'clip_min':0., 'clip_max':1.})
 
     X_test_adv = adv_crafter.generate(x_val=X_test)

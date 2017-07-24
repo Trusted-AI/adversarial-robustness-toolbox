@@ -18,7 +18,7 @@ class TestDeepFool(unittest.TestCase):
                        "metrics": ['accuracy']}
 
         # get MNIST
-        batch_size, nb_train, nb_test = 100, 1000, 10
+        batch_size, nb_train, nb_test = 100, 1000, 11
         (X_train, Y_train), (X_test, Y_test) = load_mnist()
         X_train, Y_train = X_train[:nb_train], Y_train[:nb_train]
         X_test, Y_test = X_test[:nb_test], Y_test[:nb_test]
@@ -31,12 +31,13 @@ class TestDeepFool(unittest.TestCase):
         scores = classifier.evaluate(X_test, Y_test)
         print("\naccuracy on test set: %.2f%%" % (scores[1] * 100))
 
-        df = DeepFool(classifier.model, sess=session)
+        df = DeepFool(classifier, sess=session)
         df.set_params(clip_min=0., clip_max=1.)
         x_test_adv = df.generate(X_test)
+
         self.assertFalse((X_test == x_test_adv).all())
 
-        y_pred = np.argmax(classifier.predict(x_test_adv), axis=1)
+        y_pred = classifier.predict(x_test_adv)
 
         self.assertFalse((Y_test == y_pred).all())
 

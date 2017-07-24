@@ -20,26 +20,6 @@ def clip_perturbation(v, eps, p):
 
     return v
 
-
-def get_logits(model, mean=True):
-    """
-    Define loss of TF graph
-    :param model: output of the model
-    :param mean: boolean indicating whether should return mean of loss
-                 or vector of losses for each input of the batch
-    :return: return mean of loss if True, otherwise return vector with per sample logits
-    """
-
-    op = model.op
-    if "softmax" in str(op).lower():
-        logits, = op.inputs
-    else:
-        logits = model
-
-    if mean:
-        logits = tf.reduce_mean(logits)
-    return logits
-
 def class_derivative(preds, x, classes=10):
     """
     Computes per class derivatives.
@@ -59,19 +39,17 @@ class Attack:
     Abstract base class for all attack classes. Adapted from cleverhans (https://github.com/openai/cleverhans).
     """
     __metaclass__ = ABCMeta
-    attack_params = ['model', 'session']
+    attack_params = ['classifier', 'session']
 
-    def __init__(self, model, sess=None):
+    def __init__(self, classifier, sess=None):
         """
         :param model: A function that takes a symbolic input and returns the symbolic output for the model's
                       predictions.
         :param sess: The tf session to run graphs in.
         """
-        if not hasattr(model, '__call__'):
-            raise ValueError("Model argument must be a function that returns the symbolic output when given an input"
-                             "tensor.")
 
-        self.model = model
+        self.classifier = classifier
+        self.model = classifier.model
         self.sess = sess
         self.inf_loop = False
 
@@ -124,3 +102,31 @@ class Attack:
             if key in self.attack_params:
                 setattr(self, key, value)
         return True
+
+    def _get_predictions(self, x_op, log=True, mean=False):
+
+        if self.classifier._preproc is not None:
+
+            # 'RGB'->'BGR'
+            x_op = x_op[:, :, :, ::-1]
+            # Zero-center by mean pixel
+
+            t0 = 103.939 * tf.ones_like(x_op[:,:,:,:1])
+            t1 = 116.779 * tf.ones_like(x_op[:,:,:,:1])
+            t2 = 123.68 * tf.ones_like(x_op[:,:,:,:1])
+
+            x_op = tf.subtract(x_op, tf.concat([t0, t1, t2], 3))
+            # x_op[:, :, :, 0] -= 103.939
+            # x_op[:, :, :, 1] -= 116.779
+            # x_op[:, :, :, 2] -= 123.68
+
+        op = self.model(x_op).op
+        if log and "softmax" in str(op).lower():
+            logits, = op.inputs
+        else:
+            logits = self.model(x_op)
+
+        if mean:
+            logits = tf.reduce_mean(logits)
+
+        return logits

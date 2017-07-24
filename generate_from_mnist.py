@@ -40,22 +40,22 @@ if adv_method == "universal":
     attack_params = {"clip_min": 0.,
                      "clip_max": 1}
 
-    attack_on_our = UniversalPerturbation(our_classifier.model, session, p=np.inf, attacker_params=attack_params)
-    attack_on_basic = UniversalPerturbation(basic_classifier.model, session, p=np.inf, attacker_params=attack_params)
+    attack_on_our = UniversalPerturbation(our_classifier, session, p=np.inf, attacker_params=attack_params)
+    attack_on_basic = UniversalPerturbation(basic_classifier, session, p=np.inf, attacker_params=attack_params)
 
 elif adv_method == "deepfool":
 
     attack_params = {"clip_min": 0.,
                      "clip_max": 1,}
 
-    attack_on_our = DeepFool(our_classifier.model, session, max_iter=10, verbose=2)
-    attack_on_basic = DeepFool(basic_classifier.model, session, max_iter=10, verbose=2)
+    attack_on_our = DeepFool(our_classifier, session, max_iter=10, verbose=2)
+    attack_on_basic = DeepFool(basic_classifier, session, max_iter=10, verbose=2)
 
 elif adv_method == "jsma":
 
     attack_params = {}
-    attack_on_our = SaliencyMapMethod(our_classifier.model, sess=session, clip_min=0., clip_max=1., gamma=1., theta=0.1)
-    attack_on_basic = SaliencyMapMethod(basic_classifier.model, sess=session, clip_min=0., clip_max=1., gamma=1., theta=0.1)
+    attack_on_our = SaliencyMapMethod(our_classifier, sess=session, clip_min=0., clip_max=1., gamma=1., theta=0.1)
+    attack_on_basic = SaliencyMapMethod(basic_classifier, sess=session, clip_min=0., clip_max=1., gamma=1., theta=0.1)
 
 
 else:
@@ -80,8 +80,8 @@ else:
         save_path = os.path.join(save_path, "minimal")
 
 
-    attack_on_our = FastGradientMethod(our_classifier.model, session)
-    attack_on_basic = FastGradientMethod(basic_classifier.model, session)
+    attack_on_our = FastGradientMethod(our_classifier, session)
+    attack_on_basic = FastGradientMethod(basic_classifier, session)
 
 save_path_our = os.path.join(save_path, "gaussian_brelu")
 make_directory(save_path_our)

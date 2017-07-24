@@ -5,7 +5,7 @@ import tensorflow as tf
 
 from keras import backend as K
 
-from src.attackers.attack import Attack, get_logits, clip_perturbation
+from src.attackers.attack import Attack, clip_perturbation
 from src.attackers.deepfool import DeepFool
 
 
@@ -32,7 +32,7 @@ class UniversalPerturbation(Attack):
 
     def _get_attack(self, a_name, params=None):
         try:
-            a_instance = self.attacks_dict[a_name](self.model, self.sess)
+            a_instance = self.attacks_dict[a_name](self.classifier, self.sess)
 
             if params:
                 a_instance.set_params(**params)
