@@ -3,7 +3,9 @@ import random
 import numpy as np
 import tensorflow as tf
 
-from src.attackers.attack import Attack, get_logits, clip_perturbation
+from keras import backend as K
+
+from src.attackers.attack import Attack, clip_perturbation
 from src.attackers.deepfool import DeepFool
 
 
@@ -15,7 +17,7 @@ class UniversalPerturbation(Attack):
     attacks_dict = {"deepfool": DeepFool}
     attack_params = ['attacker', 'attacker_params', 'delta', 'max_iter', 'eps', 'p', 'max_method_iter', 'verbose']
 
-    def __init__(self, model, sess=None, attacker='deepfool', attacker_params=None, delta=0.2, max_iter=50, eps=10,
+    def __init__(self, model, sess=None, attacker='deepfool', attacker_params=None, delta=0.2, max_iter=5, eps=10,
                  p=np.inf, max_method_iter=50, verbose=1):
         super(UniversalPerturbation, self).__init__(model, sess)
         kwargs = {'attacker': attacker,
@@ -30,7 +32,7 @@ class UniversalPerturbation(Attack):
 
     def _get_attack(self, a_name, params=None):
         try:
-            a_instance = self.attacks_dict[a_name](self.model, self.sess)
+            a_instance = self.attacks_dict[a_name](self.classifier, self.sess)
 
             if params:
                 a_instance.set_params(**params)
@@ -52,9 +54,6 @@ class UniversalPerturbation(Attack):
         dims[0] = None
         xi_op = tf.placeholder(dtype=tf.float32, shape=dims)
 
-        # Compute loss and gradients
-        loss = get_logits(self.model(xi_op), mean=False)
-
         attacker = self._get_attack(self.attacker, self.attacker_params)
 
         true_y = self.model.predict(x_val)
@@ -68,7 +67,7 @@ class UniversalPerturbation(Attack):
             for j, x in enumerate(x_val[rnd_idx]):
                 xi = x[None, ...]
 
-                f_xi = self.sess.run([self.model(xi_op)], feed_dict={xi_op: xi+v})
+                f_xi = self.sess.run(self.model(xi_op), feed_dict={xi_op: xi+v, K.learning_phase(): 0})
                 fk_i_hat = np.argmax(f_xi[0])
 
                 fk_hat = np.argmax(true_y[rnd_idx][j])
@@ -76,13 +75,15 @@ class UniversalPerturbation(Attack):
                 if fk_i_hat == fk_hat:
 
                     # Compute adversarial perturbation
-                    adv_xi = attacker.generate(xi+v)
+                    adv_xi = attacker.generate(np.expand_dims(x, 0) + v)
 
-                    adv_f_xi = self.sess.run([self.model(xi_op)], feed_dict={xi_op: adv_xi})
+                    adv_f_xi = self.sess.run(self.model(xi_op), feed_dict={xi_op: adv_xi, K.learning_phase(): 0})
                     adv_fk_i_hat = np.argmax(adv_f_xi[0])
 
                     # if the class has changed, update v
                     if fk_i_hat != adv_fk_i_hat:
+                        print(fk_i_hat, adv_fk_i_hat)
+
                         v += adv_xi - xi
 
                         # Project on l_p ball

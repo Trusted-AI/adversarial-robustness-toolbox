@@ -9,7 +9,7 @@ import keras.backend as K
 import tensorflow as tf
 
 from src.classifiers.cnn import CNN
-from src.metrics import empirical_robustness
+from src.metrics import empirical_robustness, mmd_metric
 
 from src.utils import load_mnist
 
@@ -66,20 +66,37 @@ class TestMinimalPerturbations(unittest.TestCase):
         # Fit the classifier
         classifier.fit(X_train, Y_train, epochs=1, batch_size=BATCH_SIZE)
 
+
+        # # Compute mmd between data_samples and adv_samples
+        # params = {"eps_step": 1.,
+        #           "eps_max": 1.,
+        #           "clip_min": None,
+        #           "clip_max": None}
+        # emp_robust = mmd_metric(X_train, classifier.model, session, "fgsm", params)
+        # #self.assertAlmostEqual(emp_robust*LA.norm(X_train), 1., emp_robust**LA.norm(X_train))
+
+
         # Compute minimal perturbations
         params = {"eps_step":1.1,
                   "clip_min":0.,
                   "clip_max":1.}
 
-        emp_robust = empirical_robustness(X_train, classifier.model, session, "fgsm", params)
+        emp_robust = empirical_robustness(X_train, classifier, session, "fgsm", params)
         self.assertEqual(emp_robust, 0.)
 
         params = {"eps_step": 1.,
                   "eps_max": 1.,
                   "clip_min": None,
                   "clip_max": None}
-        emp_robust = empirical_robustness(X_train, classifier.model, session, "fgsm", params)
-        self.assertAlmostEqual(emp_robust*LA.norm(X_train), 1., emp_robust**LA.norm(X_train))
+        emp_robust = empirical_robustness(X_train, classifier, session, "fgsm", params)
+        self.assertAlmostEqual(emp_robust, 1., 3)
+
+        params = {"eps_step": 0.1,
+                  "eps_max": 0.2,
+                  "clip_min": None,
+                  "clip_max": None}
+        emp_robust = empirical_robustness(X_train, classifier, session, "fgsm", params)
+        self.assertLessEqual(emp_robust, 0.2)
 
         # params = {"theta": 1.,
         #           "gamma": 0.01,

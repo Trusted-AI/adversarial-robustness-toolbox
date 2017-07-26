@@ -1,8 +1,10 @@
+from keras import backend as K
 from keras.utils.generic_utils import Progbar
+
 import numpy as np
 import tensorflow as tf
 
-from src.attackers.attack import Attack, get_logits
+from src.attackers.attack import Attack, class_derivative
 
 
 class DeepFool(Attack):
@@ -12,13 +14,13 @@ class DeepFool(Attack):
     """
     attack_params = ['max_iter', 'clip_min', 'clip_max', 'verbose']
 
-    def __init__(self, model, sess=None, max_iter=50, clip_min=None, clip_max=None, verbose=1):
+    def __init__(self, classifier, sess=None, max_iter=100, clip_min=None, clip_max=None, verbose=1):
         """
         Create a DeepFool attack instance.
-        :param model: A function that takes a symbolic input and returns the
-                      symbolic output for the model's predictions.
+        :param classifier: A function that takes a symbolic input and returns the
+                      symbolic output for the classifier's predictions.
         """
-        super(DeepFool, self).__init__(model, sess)
+        super(DeepFool, self).__init__(classifier, sess)
         params = {'max_iter': max_iter, 'clip_min': clip_min, 'clip_max': clip_max, 'verbose': verbose}
         self.set_params(**params)
 
@@ -29,12 +31,15 @@ class DeepFool(Attack):
         :return: A Numpy array holding the adversarial examples.
         """
         assert self.set_params(**kwargs)
-
         dims = list(x_val.shape)
+        nb_instances = dims[0]
         dims[0] = None
+        nb_classes = self.model.output_shape[1]
+
         xi_op = tf.placeholder(dtype=tf.float32, shape=dims)
-        loss = get_logits(self.model(xi_op), mean=False)
-        grad_xi, = tf.gradients(loss, xi_op)
+
+        loss = self._get_predictions(xi_op, log=True)
+        grads = class_derivative(loss, xi_op, nb_classes)
         x_adv = x_val.copy()
 
         # Progress bar
@@ -43,43 +48,53 @@ class DeepFool(Attack):
         for j, x in enumerate(x_adv):
             xi = x[None, ...]
 
-            f, grd = self.sess.run([self.model(xi_op), grad_xi], feed_dict={xi_op: xi})
-            fk_hat = np.argmax(f[0])
-
+            f = self.sess.run(self.model(xi_op), feed_dict={xi_op: xi, K.learning_phase(): 0})[0]
+            grd = self.sess.run(grads, feed_dict={xi_op: xi, K.learning_phase(): 0})
+            grd = [g[0] for g in grd]
+            fk_hat = np.argmax(f)
             fk_i_hat = fk_hat
-            f_xi = f[0, fk_hat]
-            grd_xi = grd[0, fk_hat]
 
             nb_iter = 0
 
             while (fk_i_hat == fk_hat) and (nb_iter < self.max_iter):
 
-                grad_diff = grd - grd_xi
-                f_diff = f - f_xi
+                grad_diff = grd - grd[fk_hat]
+                f_diff = f - f[fk_hat]
 
-                # Masking time
-                mask = [0] * f.shape[1]
+                # Masking true label
+                mask = [0] * nb_classes
                 mask[fk_hat] = 1
-                value = np.ma.array(abs(f_diff) / pow(np.linalg.norm(grad_diff), 2), mask=mask)
+                value = np.ma.array(np.abs(f_diff)/np.linalg.norm(grad_diff.reshape(nb_classes, -1), axis=1), mask=mask)
 
                 l = value.argmin(fill_value=np.inf)
-                r = np.abs(f_diff[0, l]) / pow(np.linalg.norm(grad_diff[0, l]), 2) * grad_diff[0]
+                r = (abs(f_diff[l])/pow(np.linalg.norm(grad_diff[l]), 2)) * grad_diff[l]
 
                 # Add perturbation and clip result
                 xi += r
 
                 if self.clip_min or self.clip_max:
-                    np.clip(xi, self.clip_min, self.clip_max, xi)
+                    xi = np.clip(xi, self.clip_min, self.clip_max)
 
                 # Recompute prediction for new xi
-                f, grd = self.sess.run([self.model(xi_op), grad_xi], feed_dict={xi_op: xi})
-                fk_i_hat = np.argmax(f[0])
-                grd_xi = grd[0, fk_i_hat]
-                f_xi = f[0, fk_i_hat]
+                f = self.sess.run(self.model(xi_op), feed_dict={xi_op: xi, K.learning_phase(): 0})[0]
+                grd = self.sess.run(grads, feed_dict={xi_op: xi, K.learning_phase(): 0})
+                grd = [g[0] for g in grd]
+                fk_i_hat = np.argmax(f)
+                # print(fk_i_hat, fk_hat)
 
                 nb_iter += 1
 
-            progress_bar.update(current=j, values=[("perturbation", abs(np.average(r)))])
+            x_adv[j] = xi[0]
+
+            progress_bar.update(current=j, values=[("perturbation", abs(np.linalg.norm((x_adv[j]-x_val[j]).flatten())))])
+
+        true_y = self.model.predict(x_val)
+        adv_y = self.model.predict(x_adv)
+        fooling_rate = np.sum(true_y != adv_y) / nb_instances
+
+        self.fooling_rate = fooling_rate
+        self.converged = (nb_iter < self.max_iter)
+        self.v = np.mean(np.abs(np.linalg.norm((x_adv-x_val).reshape(nb_instances, -1), axis=1)))
 
         return x_adv
 
