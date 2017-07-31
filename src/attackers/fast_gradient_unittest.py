@@ -40,7 +40,7 @@ class TestFastGradientMethod(unittest.TestCase):
                          "clip_max": 1.,
                          "eps": 1.}
 
-        attack = FastGradientMethod(classifier.model, session)
+        attack = FastGradientMethod(classifier, session)
         X_train_adv = attack.generate(X_train, **attack_params)
         X_test_adv = attack.generate(X_test, **attack_params)
 

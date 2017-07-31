@@ -4,7 +4,7 @@ from keras.utils.generic_utils import Progbar
 import numpy as np
 import tensorflow as tf
 
-from src.attackers.attack import Attack, get_logits, class_derivative
+from src.attackers.attack import Attack, class_derivative
 
 
 class DeepFool(Attack):
@@ -14,13 +14,13 @@ class DeepFool(Attack):
     """
     attack_params = ['max_iter', 'clip_min', 'clip_max', 'verbose']
 
-    def __init__(self, model, sess=None, max_iter=100, clip_min=None, clip_max=None, verbose=1):
+    def __init__(self, classifier, sess=None, max_iter=100, clip_min=None, clip_max=None, verbose=1):
         """
         Create a DeepFool attack instance.
-        :param model: A function that takes a symbolic input and returns the
-                      symbolic output for the model's predictions.
+        :param classifier: A function that takes a symbolic input and returns the
+                      symbolic output for the classifier's predictions.
         """
-        super(DeepFool, self).__init__(model, sess)
+        super(DeepFool, self).__init__(classifier, sess)
         params = {'max_iter': max_iter, 'clip_min': clip_min, 'clip_max': clip_max, 'verbose': verbose}
         self.set_params(**params)
 
@@ -38,7 +38,7 @@ class DeepFool(Attack):
 
         xi_op = tf.placeholder(dtype=tf.float32, shape=dims)
 
-        loss = get_logits(self.model(xi_op), mean=False)
+        loss = self._get_predictions(xi_op, log=True)
         grads = class_derivative(loss, xi_op, nb_classes)
         x_adv = x_val.copy()
 
