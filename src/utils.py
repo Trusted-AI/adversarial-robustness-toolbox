@@ -304,7 +304,7 @@ def get_args(prog, classifier="cnn", nb_epochs=20, batch_size=128, val_split=0.1
                             help='choice of attacker')
         parser.add_argument("-s", "--save", type=str, dest='save',
                             help='if set, the adversarial examples are saved')
-        parser.add_argument("batch_idx", type=int, help='index of the batch to use.')
+        # parser.add_argument("batch_idx", type=int, help='index of the batch to use.')
     else:
         raise ValueError("Parser not defined for script '%s'" % __file__)
 
