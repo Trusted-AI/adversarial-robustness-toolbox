@@ -1,4 +1,5 @@
 import numpy as np
+import tensorflow as tf
 
 def label_smoothing(y_val, max_value=0.9):
 
@@ -22,3 +23,14 @@ def feature_squeezing(x_val, bit_depth=8):
     squeezed_x = np.rint(x_val*max_value) / max_value
 
     return squeezed_x
+
+def tf_feature_squeezing(x, bit_depth=8):
+    """ feature squeezing on placeholders """
+
+    assert 60 > bit_depth > 0
+
+    max_value = int(2 ** bit_depth - 1)
+
+    x = tf.rint(x * max_value) / max_value
+
+    return x

@@ -1,8 +1,9 @@
 import unittest
 
 import numpy as np
+import tensorflow as tf
 
-from src.defences.preprocessings import label_smoothing, feature_squeezing
+from src.defences.preprocessings import *
 
 class TestLabelSmoothing(unittest.TestCase):
 
@@ -63,6 +64,19 @@ class TestFeatureSqueezing(unittest.TestCase):
         self.assertFalse(np.logical_and(0. < squeezed_x, squeezed_x < 0.33).any())
         self.assertFalse(np.logical_and(0.34 < squeezed_x, squeezed_x < 0.66).any())
         self.assertFalse(np.logical_and(0.67 < squeezed_x, squeezed_x < 1.).any())
+
+    def test_tf_squeezing(self):
+
+        sess = tf.Session()
+
+        M, N = 10, 2
+
+        x = tf.ones((M, N))
+
+        for depth in range(1,10):
+            with self.subTest("bit depth = {}".format(depth)):
+                squeezed_x = sess.run(tf_feature_squeezing(x, depth))
+                self.assertTrue((squeezed_x == 1).all())
 
 if __name__ == '__main__':
     unittest.main()
