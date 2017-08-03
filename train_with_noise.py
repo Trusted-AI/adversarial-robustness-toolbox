@@ -4,7 +4,7 @@ import os
 import numpy as np
 
 import keras.backend as K
-from keras.callbacks import ModelCheckpoint, TensorBoard
+from keras.callbacks import ModelCheckpoint, TensorBoard, EarlyStopping
 import tensorflow as tf
 
 from src.classifiers.cnn import CNN
@@ -66,6 +66,8 @@ if args.save is not False:
     callbacks_list = [checkpoint, monitor]
 else:
     callbacks_list = []
+
+callbacks_list.append(EarlyStopping(monitor='val_acc', min_delta=0, patience=5, verbose=1, mode='max'))
 
 # generate gaussian perturbed instances
 x_gau_perts = np.random.normal(X_train, scale=args.std_dev, size=(args.nb_instances, )+X_train.shape)

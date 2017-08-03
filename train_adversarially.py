@@ -2,7 +2,7 @@ import os
 
 from config import DATA_PATH, config_dict
 import keras.backend as K
-from keras.callbacks import ModelCheckpoint, TensorBoard
+from keras.callbacks import ModelCheckpoint, TensorBoard, EarlyStopping
 import numpy as np
 import tensorflow as tf
 
@@ -79,6 +79,8 @@ if args.save is not False:
     callbacks_list = [checkpoint, monitor]
 else:
     callbacks_list = []
+
+callbacks_list.append(EarlyStopping(monitor='val_acc', min_delta=0, patience=5, verbose=1, mode='max'))
 
 classifier.fit(X_train, Y_train, verbose=2*int(args.verbose), validation_split=args.val_split, epochs=args.nb_epochs,
           batch_size=args.batch_size, callbacks=callbacks_list)

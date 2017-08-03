@@ -2,7 +2,7 @@ import os
 
 from config import DATA_PATH, config_dict
 import keras.backend as K
-from keras.callbacks import ModelCheckpoint, TensorBoard
+from keras.callbacks import ModelCheckpoint, TensorBoard, EarlyStopping
 import numpy as np
 import tensorflow as tf
 
@@ -29,7 +29,7 @@ if os.path.isfile(args.dataset):
     X_train = np.load(args.dataset)
     Y_train = Y_train if "train.npy" in args.dataset else Y_test
 
-#X_train, Y_train, X_test, Y_test = X_train[:1000], Y_train[:1000], X_test[:1000], Y_test[:1000]
+# X_train, Y_train, X_test, Y_test = X_train[:1000], Y_train[:1000], X_test[:1000], Y_test[:1000]
 
 im_shape = X_train[0].shape
 
@@ -75,6 +75,8 @@ if args.save is not False:
     callbacks_list = [checkpoint, monitor]
 else:
     callbacks_list = []
+
+callbacks_list.append(EarlyStopping(monitor='val_acc', min_delta=0, patience=5, verbose=1, mode='max'))
 
 classifier.fit(X_train, Y_train, verbose=2*int(args.verbose), validation_split=args.val_split, epochs=args.nb_epochs,
           batch_size=args.batch_size, callbacks=callbacks_list)
