@@ -42,14 +42,14 @@ if args.save:
 
 if args.adv_method in ['fgsm', "vat", "rnd_fgsm"]:
 
-    eps_ranges = {'fgsm': [e / 10 for e in range(1, 11)],
+    eps_ranges = {'fgsm': [e / 100 for e in range(1, 10)],
                   'rnd_fgsm': [e / 10 for e in range(1, 11)],
                   'vat': [1.5, 2.1, 5, 7, 10]}
 
     if args.adv_method in ["fgsm", "rnd_fgsm"]:
-        adv_crafter = FastGradientMethod(model=classifier.model, sess=session)
+        adv_crafter = FastGradientMethod(classifier, sess=session)
     else:
-        adv_crafter = VirtualAdversarialMethod(classifier.model, sess=session)
+        adv_crafter = VirtualAdversarialMethod(classifier, sess=session)
 
     for eps in eps_ranges[args.adv_method]:
 
