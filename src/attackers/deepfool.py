@@ -38,7 +38,7 @@ class DeepFool(Attack):
 
         xi_op = tf.placeholder(dtype=tf.float32, shape=dims)
 
-        loss = self._get_predictions(xi_op, log=True)
+        loss = self.classifier._get_predictions(xi_op, log=True)
         grads = class_derivative(loss, xi_op, nb_classes)
         x_adv = x_val.copy()
 

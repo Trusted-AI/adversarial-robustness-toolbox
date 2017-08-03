@@ -20,13 +20,11 @@ def mnist_layers(input_shape, nb_filters):
 
 def cifar10_layers(input_shape, nb_filters):
 
-    print("cifar")
-
     layers = [Conv2D(nb_filters // 2, (3, 3), padding="same", input_shape=input_shape),
               "activation",
               MaxPooling2D(pool_size=(2, 2)),
               Dropout(0.5),
-              Conv2D(nb_filters, (3, 3), padding="same"),
+              Conv2D(nb_filters, (3, 3), padding="valid"),
               "activation",
               MaxPooling2D(pool_size=(2, 2)),
               Dropout(0.5),

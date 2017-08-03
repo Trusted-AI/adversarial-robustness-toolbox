@@ -2,8 +2,9 @@ import re
 
 from keras.layers import Activation
 from sklearn.base import BaseEstimator
+import tensorflow as tf
 
-from src.defences.preprocessings import label_smoothing, feature_squeezing
+from src.defences.preprocessings import label_smoothing, feature_squeezing, tf_feature_squeezing
 from src.layers.activations import BoundedReLU
 
 class Classifier(BaseEstimator):
@@ -97,7 +98,7 @@ class Classifier(BaseEstimator):
 
                     try:
                         self.bit_depth = int(d[-1])
-                        print(self.bit_depth)
+
                     except:
                         raise ValueError("You must specify the bit depth for feature squeezing: featsqueeze[1-8]")
 
@@ -109,3 +110,32 @@ class Classifier(BaseEstimator):
             return self._preproc(x.copy())
         else:
             return x
+
+    def _get_predictions(self, x_op, log=True, mean=False):
+
+        # if self.feature_squeeze:
+        #     x_op = tf_feature_squeezing(x_op, self.bit_depth)
+
+        if self._preproc is not None:
+
+            # 'RGB'->'BGR'
+            x_op = x_op[:, :, :, ::-1]
+            # Zero-center by mean pixel
+
+            t0 = 103.939 * tf.ones_like(x_op[:,:,:,:1])
+            t1 = 116.779 * tf.ones_like(x_op[:,:,:,:1])
+            t2 = 123.68 * tf.ones_like(x_op[:,:,:,:1])
+
+            x_op = tf.subtract(x_op, tf.concat([t0, t1, t2], 3))
+
+        logits = self.model(x_op)
+
+        if log:
+            op = logits.op
+            if "softmax" in str(op).lower():
+                logits, = op.inputs
+
+        if mean:
+            logits = tf.reduce_mean(logits)
+
+        return logits

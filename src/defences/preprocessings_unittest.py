@@ -71,11 +71,21 @@ class TestFeatureSqueezing(unittest.TestCase):
 
         M, N = 10, 2
 
+        # with tensors
         x = tf.ones((M, N))
 
         for depth in range(1,10):
             with self.subTest("bit depth = {}".format(depth)):
                 squeezed_x = sess.run(tf_feature_squeezing(x, depth))
+                self.assertTrue((squeezed_x == 1).all())
+
+        # with placeholders
+        x = np.ones((M, N))
+
+        x_op = tf.placeholder(tf.float32, shape=[None, 2])
+        for depth in range(1,10):
+            with self.subTest("bit depth = {}".format(depth)):
+                squeezed_x = sess.run(tf_feature_squeezing(x_op, depth), feed_dict={x_op: x})
                 self.assertTrue((squeezed_x == 1).all())
 
 if __name__ == '__main__':

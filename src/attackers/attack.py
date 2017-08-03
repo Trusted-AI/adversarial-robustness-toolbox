@@ -102,31 +102,3 @@ class Attack:
             if key in self.attack_params:
                 setattr(self, key, value)
         return True
-
-    def _get_predictions(self, x_op, log=True, mean=False):
-
-        if self.classifier._preproc is not None:
-
-            # 'RGB'->'BGR'
-            x_op = x_op[:, :, :, ::-1]
-            # Zero-center by mean pixel
-
-            t0 = 103.939 * tf.ones_like(x_op[:,:,:,:1])
-            t1 = 116.779 * tf.ones_like(x_op[:,:,:,:1])
-            t2 = 123.68 * tf.ones_like(x_op[:,:,:,:1])
-
-            x_op = tf.subtract(x_op, tf.concat([t0, t1, t2], 3))
-            # x_op[:, :, :, 0] -= 103.939
-            # x_op[:, :, :, 1] -= 116.779
-            # x_op[:, :, :, 2] -= 123.68
-
-        op = self.model(x_op).op
-        if log and "softmax" in str(op).lower():
-            logits, = op.inputs
-        else:
-            logits = self.model(x_op)
-
-        if mean:
-            logits = tf.reduce_mean(logits)
-
-        return logits

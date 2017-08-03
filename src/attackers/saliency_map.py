@@ -44,7 +44,7 @@ class SaliencyMapMethod(Attack):
         assert self.set_params(**kwargs)
 
         # Define Jacobian graph wrt to this input placeholder
-        preds = self._get_predictions(x, log=False)
+        preds = self.classifier._get_predictions(x, log=False)
         grads = class_derivative(preds, x, self.nb_classes)
 
         # Define appropriate graph (targeted / random target labels)

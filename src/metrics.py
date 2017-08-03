@@ -71,12 +71,12 @@ def empirical_robustness(x, classifier, sess, method_name, method_params=None):
     adv_x = crafter.generate(x, minimal=True, **method_params)
 
     # predict the labels for adversarial examples
-    y = model.predict(x,verbose=0)
-    y_pred = model.predict(adv_x,verbose=0)
+    y = classifier.predict(x,verbose=0)
+    y_pred = classifier.predict(adv_x,verbose=0)
 
     idxs = ((np.argmax(y_pred,axis=1) != np.argmax(y,axis=1)))
-    assert np.sum(idxs) != 0.0
-    print(np.sum(idxs))
+    if np.sum(idxs) == 0.0:
+        return 0
 
     perts_norm = LA.norm((adv_x-x).reshape(x.shape[0], -1), ord=crafter.ord, axis=1)
     perts_norm = perts_norm[idxs]
@@ -147,20 +147,20 @@ def nearest_nieghbour_dist(x, y_true, classifier, x_train,  sess, method_name, m
     """
     
     # craft the adversarial examples
-    crafter = get_crafter(method_name, model, sess, method_params)
+    crafter = get_crafter(method_name, classifier, sess, method_params)
     adv_x = crafter.generate(x.copy(), minimal=True,**method_params)
 
     # predict the labels for adversarial examples
     
-    y_pred = model.predict(adv_x,verbose=0) 
-    y_pred_2 = model.predict(x,verbose=0) 
+    y_pred = classifier.predict(adv_x,verbose=0)
+    y_pred_2 = classifier.predict(x,verbose=0)
     idxs = ((np.argmax(y_pred,axis=1) == np.argmax(y,axis=1)))
     idxs2 = ((np.argmax(y_pred,axis=1) == np.argmax(y_pred_2,axis=1)))
     print('Flips wrt: true ',np.sum(idxs),' pred ',np.sum(idxs2))
     
-    return model.evaluate(adv_x,y)[1]*100
+    return classifier.evaluate(adv_x,y)[1]*100
 
-def nearest_nieghbour_dist(x, model, x_train,  sess, method_name, method_params=None):
+def nearest_nieghbour_dist(x, classifier, x_train,  sess, method_name, method_params=None):
 
     """
     Nearest Neighbour distance
@@ -180,7 +180,7 @@ def nearest_nieghbour_dist(x, model, x_train,  sess, method_name, method_params=
     return avg_nn_dist
 
 
-def nearest_nieghbour_dist_df(x,adv_x, model, x_train,  sess):
+def nearest_nieghbour_dist_df(x,adv_x, classifier, x_train,  sess):
 
     """
     Nearest Neighbour distance
@@ -188,8 +188,8 @@ def nearest_nieghbour_dist_df(x,adv_x, model, x_train,  sess):
 
 
     # predict the labels for adversarial examples
-    y = model.predict(x,verbose=0)
-    y_pred = model.predict(adv_x,verbose=0)
+    y = classifier.predict(x,verbose=0)
+    y_pred = classifier.predict(adv_x,verbose=0)
  
     adv_x_ = adv_x.reshape(adv_x.shape[0],np.prod(adv_x.shape[1:]))
     x_  = x_train.reshape(x_train.shape[0],np.prod(x_train.shape[1:]))
