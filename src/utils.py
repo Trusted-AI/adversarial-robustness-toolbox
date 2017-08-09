@@ -6,6 +6,7 @@ import sys
 
 from keras import backend as K
 from keras.datasets.cifar import load_batch
+from keras.preprocessing import image
 from keras.utils import np_utils, data_utils
 
 import tensorflow as tf
@@ -196,6 +197,37 @@ def load_mnist():
 
     return (x_train, y_train), (x_test, y_test)
 
+def load_imagenet():
+
+    from config import IMAGENET_PATH
+
+    class_id = IMAGENET_PATH.split("/")[-1]
+
+    with open("imagenet/label_ids.txt", "r") as f_input:
+
+        for line in f_input:
+            pieces = line.split()
+
+            if pieces[0] == class_id:
+                label = int(pieces[1])
+                break
+
+    dataset = list()
+
+    for root, _, files in os.walk(IMAGENET_PATH):
+        for file in files:
+            if file.endswith(".jpg"):
+                img = image.load_img(os.path.join(root, file), target_size=(224, 224))
+                dataset.append(image.img_to_array(img))
+
+    dataset = np.asarray(dataset)
+    y = np_utils.to_categorical(np.asarray([label]*len(dataset)), 1000)
+
+    x_train, x_test = dataset[:2], dataset[0:]
+    y_train, y_test = y[:2], y[0:]
+
+    return (x_train, y_train), (x_test, y_test)
+
 def load_dataset(name):
     """
     Loads the original dataset corresponding to name.
@@ -208,6 +240,9 @@ def load_dataset(name):
 
     elif "cifar10" in name:
         return load_cifar10()
+
+    elif "imagenet" in name:
+        return load_imagenet()
 
     else:
         raise NotImplementedError("There is no loader for {} dataset".format(name))
@@ -254,12 +289,30 @@ def set_group_permissions(filename, group="drl-dwl"):
 
 # ------------------------------------------------------------------- ARG PARSER
 
-
 def get_args(prog, classifier="cnn", nb_epochs=20, batch_size=128, val_split=0.1, act="relu", adv_method="fgsm",
-             std_dev=0.1, nb_instances=1, dataset="mnist", save=False, verbose=False):
+             std_dev=0.1, nb_instances=1, dataset="mnist", save=False, verbose=False, options=None):
 
     parser = argparse.ArgumentParser(prog=prog, formatter_class=argparse.ArgumentDefaultsHelpFormatter)
     script_name = sys.argv[0]
+
+    option_dict = {
+        "c": {"flags" : ["-c", "--classifier"], "kwargs": { "type":str, "dest":'classifier', "default":classifier,
+                            "choices ": ["cnn", "resnet"], "help":'choice of classifier'}},
+        "e": {"flags": ["-e", "--epochs"], "kwargs": {"type": int, "dest": 'nb_epochs', "default": nb_epochs,
+                                                      "help": 'number of epochs for training the classifier'}},
+        "r": {"flags": ["-r", "--valsplit"], "kwargs": {"type":float, "dest":'val_split', "default":val_split,
+                                                        "help":'ratio of training sample used for validation'}},
+        "s": {"flags": ["-s", "--save"], "kwargs": {"nargs":'?', "type":str, "dest":'save', "default":save,
+                                                    "help":'if set, the classifier is saved; if an argument is provided'
+                                                    'it is used as path to store the model '}},
+        "t": {"flags": ["-t", "--stdev"], "kwargs": {"type":float, "dest":'std_dev', "default":std_dev,
+                                                     "help":'standard deviation of the distributions'}},
+        "n": {"flags": ["-n", "--nbinstances"], "kwargs": {"type":int, "dest":'nb_instances', "default":nb_instances,
+                                                           "help":'number of supplementary instances per true example'}}
+    }
+
+    for o in options:
+        parser.add_argument(*option_dict[o]["flags"], **option_dict[o]["kwargs"])
 
     # Optional arguments
     if script_name.startswith('train'):
@@ -305,8 +358,6 @@ def get_args(prog, classifier="cnn", nb_epochs=20, batch_size=128, val_split=0.1
         parser.add_argument("-s", "--save", type=str, dest='save',
                             help='if set, the adversarial examples are saved')
         # parser.add_argument("batch_idx", type=int, help='index of the batch to use.')
-    else:
-        raise ValueError("Parser not defined for script '%s'" % __file__)
 
     parser.add_argument("-d", "--dataset", type=str, dest='dataset', default=dataset,
                         help='either the path or name of the dataset the classifier is tested/trained on.')
