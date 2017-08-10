@@ -225,9 +225,13 @@ def load_imagenet():
 
     dataset = np.asarray(dataset)
     y = np_utils.to_categorical(np.asarray([label]*len(dataset)), 1000)
-
-    x_train, x_test = dataset[:2], dataset[0:]
-    y_train, y_test = y[:2], y[0:]
+    
+    try:
+        x_train, x_test = dataset[:700], dataset[700:]
+        y_train, y_test = y[:700], y[700:]
+    except:
+	x_train, x_test = dataset[:2], dataset[0:]
+        y_train, y_test = y[:2], y[0:]
 
     return (x_train, y_train), (x_test, y_test)
 
