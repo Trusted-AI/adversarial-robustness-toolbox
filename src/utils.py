@@ -225,12 +225,12 @@ def load_imagenet():
 
     dataset = np.asarray(dataset)
     y = np_utils.to_categorical(np.asarray([label]*len(dataset)), 1000)
-    
+
     try:
         x_train, x_test = dataset[:700], dataset[700:]
         y_train, y_test = y[:700], y[700:]
     except:
-	x_train, x_test = dataset[:2], dataset[0:]
+        x_train, x_test = dataset[:2], dataset[0:]
         y_train, y_test = y[:2], y[0:]
 
     return (x_train, y_train), (x_test, y_test)
@@ -318,8 +318,8 @@ def get_args(prog, classifier="cnn", nb_epochs=20, batch_size=128, val_split=0.1
                                                            "help":'number of supplementary instances per true example'}}
     }
 
-    for o in options:
-        parser.add_argument(*option_dict[o]["flags"], **option_dict[o]["kwargs"])
+#     for o in options:
+#         parser.add_argument(*option_dict[o]["flags"], **option_dict[o]["kwargs"])
 
     # Optional arguments
     if script_name.startswith('train'):
