@@ -1,4 +1,5 @@
 import argparse
+import json
 import numpy as np
 import random
 import os
@@ -8,6 +9,7 @@ from keras import backend as K
 from keras.datasets.cifar import load_batch
 from keras.preprocessing import image
 from keras.utils import np_utils, data_utils
+from keras.utils.data_utils import get_file
 
 import tensorflow as tf
 
@@ -201,16 +203,17 @@ def load_imagenet():
 
     from config import IMAGENET_PATH
 
+    CLASS_INDEX_PATH = 'https://s3.amazonaws.com/deep-learning-models/image-models/imagenet_class_index.json'
+
     class_id = IMAGENET_PATH.split("/")[-1]
 
-    with open("imagenet/label_ids.txt", "r") as f_input:
+    fpath = get_file('imagenet_class_index.json', CLASS_INDEX_PATH, cache_subdir='models')
+    CLASS_INDEX = json.load(open(fpath))
 
-        for line in f_input:
-            pieces = line.split()
-
-            if pieces[0] == class_id:
-                label = int(pieces[1])
-                break
+    for k,v in CLASS_INDEX.items():
+        if v[0] == class_id:
+            label = k
+            break
 
     dataset = list()
 
