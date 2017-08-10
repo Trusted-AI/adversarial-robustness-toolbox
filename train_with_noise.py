@@ -44,7 +44,7 @@ if args.save is not False:
     v_print("Classifier saved in", MODEL_PATH)
 
 if args.classifier == "cnn":
-    classifier = CNN(im_shape, act=args.act, bnorm=False)
+    classifier = CNN(im_shape, act=args.act, bnorm=False, dataset=args.dataset)
 
 elif args.classifier == "resnet":
     classifier = ResNet(im_shape, act=args.act, bnorm=False)
