@@ -12,7 +12,7 @@ from src.classifiers.utils import save_classifier, load_classifier
 from src.utils import get_args, get_verbose_print, load_dataset, make_directory, set_group_permissions_rec
 
 # --------------------------------------------------------------------------------------------------- SETTINGS
-args = get_args(__file__)
+args = get_args(__file__, load_sample=True, options="bcdefrsvz")
 
 v_print = get_verbose_print(args.verbose)
 
@@ -91,9 +91,9 @@ if args.save is not False:
 
     classifier = load_classifier(MODEL_PATH, "best-weights.h5")
 
-    # # Change files' group and permissions if on ccc
-    # if config_dict['profile'] == "CLUSTER":
-    #     set_group_permissions_rec(MODEL_PATH)
+    # Change files' group and permissions if on ccc
+    if config_dict['profile'] == "CLUSTER":
+        set_group_permissions_rec(MODEL_PATH)
 
 scores = classifier.evaluate(X_test, Y_test, verbose=args.verbose)
 v_print("\naccuracy: %.2f%%" % (scores[1] * 100))

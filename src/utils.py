@@ -296,80 +296,60 @@ def set_group_permissions(filename, group="drl-dwl"):
 
 # ------------------------------------------------------------------- ARG PARSER
 
-def get_args(prog, classifier="cnn", nb_epochs=20, batch_size=128, val_split=0.1, act="relu", adv_method="fgsm",
-             std_dev=0.1, nb_instances=1, dataset="mnist", save=False, verbose=False, options=None):
+def get_args(prog, load_classifier=False, load_sample=False, per_batch=False, options=""):
 
     parser = argparse.ArgumentParser(prog=prog, formatter_class=argparse.ArgumentDefaultsHelpFormatter)
-    script_name = sys.argv[0]
 
     option_dict = {
-        "c": {"flags" : ["-c", "--classifier"], "kwargs": { "type":str, "dest":'classifier', "default":classifier,
-                            "choices ": ["cnn", "resnet"], "help":'choice of classifier'}},
-        "e": {"flags": ["-e", "--epochs"], "kwargs": {"type": int, "dest": 'nb_epochs', "default": nb_epochs,
+        "a": {"flags": ["-a", "--adv"],
+              "kwargs": {"type":str, "dest":'adv_method', "default": "fgsm",
+                         "choices":["fgsm", "deepfool", "universal"], "help":'choice of attacker'}},
+        "b": {"flags": ["-b", "--batchsize"],
+              "kwargs": {"type": int, "dest": 'batch_size', "default": 128, "help": 'size of the batches'}},
+        "c": {"flags" : ["-c", "--classifier"],
+              "kwargs": { "type":str, "dest":'classifier', "default":"cnn", "choices": ["cnn", "resnet"],
+                          "help":'choice of classifier'}},
+        "d": {"flags": ["-d", "--dataset"],
+              "kwargs": {"type":str, "dest":'dataset', "default":"mnist",
+                        "help":'either the path or name of the dataset the classifier is tested/trained on.'}},
+        "e": {"flags": ["-e", "--epochs"],
+              "kwargs": {"type": int, "dest": 'nb_epochs', "default": 20,
                                                       "help": 'number of epochs for training the classifier'}},
-        "r": {"flags": ["-r", "--valsplit"], "kwargs": {"type":float, "dest":'val_split', "default":val_split,
+        "f": {"flags": ["-f", "--act"],
+              "kwargs": {"type": str, "dest": 'act', "default": "relu", "choices": ["relu", "brelu"],
+                         "help": 'choice of activation function'}},
+        "n": {"flags": ["-n", "--nbinstances"],
+              "kwargs": {"type": int, "dest": 'nb_instances', "default": 1,
+                         "help": 'number of supplementary instances per true example'}},
+        "r": {"flags": ["-r", "--valsplit"],
+              "kwargs": {"type":float, "dest":'val_split', "default": 0.1,
                                                         "help":'ratio of training sample used for validation'}},
-        "s": {"flags": ["-s", "--save"], "kwargs": {"nargs":'?', "type":str, "dest":'save', "default":save,
+        "s": {"flags": ["-s", "--save"],
+              "kwargs": {"nargs":'?', "type":str, "dest":'save', "default": False,
                                                     "help":'if set, the classifier is saved; if an argument is provided'
                                                     'it is used as path to store the model '}},
-        "t": {"flags": ["-t", "--stdev"], "kwargs": {"type":float, "dest":'std_dev', "default":std_dev,
+        "t": {"flags": ["-t", "--stdev"],
+              "kwargs": {"type":float, "dest":'std_dev', "default": 0.1,
                                                      "help":'standard deviation of the distributions'}},
-        "n": {"flags": ["-n", "--nbinstances"], "kwargs": {"type":int, "dest":'nb_instances', "default":nb_instances,
-                                                           "help":'number of supplementary instances per true example'}}
+        "v": {"flags": ["-v", "--verbose"],
+              "kwargs": {"dest":'verbose', "action":"store_true", "help":'if set, verbose mode'}},
+        "z": {"flags": ["-z", "--defences"],
+              "kwargs": {"dest":'defences', "nargs":"*", "default": None, "help":'list of basic defences.'}},
     }
 
-#     for o in options:
-#         parser.add_argument(*option_dict[o]["flags"], **option_dict[o]["kwargs"])
-
-    # Optional arguments
-    if script_name.startswith('train'):
-        parser.add_argument("-c", "--classifier", type=str, dest='classifier', default=classifier,
-                            choices = ["cnn", "resnet"], help='choice of classifier')
-        parser.add_argument("-e", "--epochs", type=int, dest='nb_epochs', default=nb_epochs,
-                            help='number of epochs for training the classifier')
-        parser.add_argument("-f", "--act", type=str, dest='act', default=act, choices=["relu", "brelu"],
-                            help='choice of activation function')
-        parser.add_argument("-b", "--batchsize", type=int, dest='batch_size', default=batch_size,
-                            help='size of the batches')
-        parser.add_argument("-r", "--valsplit", type=float, dest='val_split', default=val_split,
-                            help='ratio of training sample used for validation')
-        parser.add_argument("-s", "--save", nargs='?', type=str, dest='save', default=save,
-                            help='if set, the classifier is saved; if an argument is provided, it is used as path to'
-                                 'store the model ')
-        parser.add_argument("-z", "--defences", dest='defences', nargs="*", default=None,
-                             help='list of basic defences.')
-
-        if script_name == "train_with_noise.py":
-            parser.add_argument("-t", "--stdev", type=float, dest='std_dev', default=std_dev,
-                                help='standard deviation of the distributions')
-            parser.add_argument("-n", "--nbinstances", type=int, dest='nb_instances', default=nb_instances,
-                                help='number of supplementary instances per true example')
-
-        if script_name == "train_adversarially.py":
-            parser.add_argument("adv_path", type=str, help='path to the dataset for data augmentation training.')
-
-    elif script_name.startswith('test'):
+    # add required arguments
+    if load_classifier:
         parser.add_argument("load", type=str, help='the classifier is loaded from `load` directory.')
 
-        if "empirical" in script_name:
-            parser.add_argument("-a", "--adv", type=str, dest='adv_method', default=adv_method,
-                                choices=["fgsm", "deepfool", "universal"],
-                                help='choice of attacker')
+    if load_sample:
+        parser.add_argument("adv_path", type=str, help='path to the dataset for data augmentation training.')
 
-    elif script_name in ['generate_adversarial.py', "generate_batch.py"]:
-        parser.add_argument("load", type=str, help='the classifier is loaded from `load` directory.')
+    if per_batch:
+        parser.add_argument("batch_idx", type=int, help='index of the batch to use.')
 
-        parser.add_argument("-a", "--adv", type=str, dest='adv_method', default=adv_method,
-                            choices=["fgsm", "deepfool", "universal", "jsma", "vat", "rnd_fgsm"],
-                            help='choice of attacker')
-        parser.add_argument("-s", "--save", type=str, dest='save',
-                            help='if set, the adversarial examples are saved')
-        # parser.add_argument("batch_idx", type=int, help='index of the batch to use.')
-
-    parser.add_argument("-d", "--dataset", type=str, dest='dataset', default=dataset,
-                        help='either the path or name of the dataset the classifier is tested/trained on.')
-    parser.add_argument("-v", "--verbose", dest='verbose', action="store_true",
-                        help='if set, verbose mode')
+    # add optional arguments
+    for o in options:
+        parser.add_argument(*option_dict[o]["flags"], **option_dict[o]["kwargs"])
 
     return parser.parse_args()
 

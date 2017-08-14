@@ -13,13 +13,11 @@ from src.attackers.universal_perturbation import UniversalPerturbation
 
 from src.classifiers.utils import load_classifier
 
-from src.utils import make_directory, get_label_conf, load_dataset
+from src.utils import get_args, make_directory, get_label_conf, load_dataset
+
+args = get_args(__file__, options="a")
 
 PATH = "./mnist/"
-
-adv_method = sys.argv[1]
-
-assert adv_method in ["fgsm", "deepfool", "universal", "jsma"]
 
 session = tf.Session()
 K.set_session(session)
@@ -33,9 +31,9 @@ our_classifier = load_classifier(os.path.join(DATA_PATH, "classifiers", "mnist",
                                               "stdev0.30", "pert-insts10"), "best-weights.h5")
 basic_classifier = load_classifier(os.path.join(DATA_PATH, "classifiers", "mnist", "cnn", "relu"), "best-weights.h5")
 
-save_path = os.path.join(PATH, adv_method)
+save_path = os.path.join(PATH, args.adv_method)
 
-if adv_method == "universal":
+if args.adv_method == "universal":
 
     attack_params = {"clip_min": 0.,
                      "clip_max": 1}
@@ -43,7 +41,7 @@ if adv_method == "universal":
     attack_on_our = UniversalPerturbation(our_classifier, session, p=np.inf, attacker_params=attack_params)
     attack_on_basic = UniversalPerturbation(basic_classifier, session, p=np.inf, attacker_params=attack_params)
 
-elif adv_method == "deepfool":
+elif args.adv_method == "deepfool":
 
     attack_params = {"clip_min": 0.,
                      "clip_max": 1,}
@@ -51,7 +49,7 @@ elif adv_method == "deepfool":
     attack_on_our = DeepFool(our_classifier, session, max_iter=10, verbose=2)
     attack_on_basic = DeepFool(basic_classifier, session, max_iter=10, verbose=2)
 
-elif adv_method == "jsma":
+elif args.adv_method == "jsma":
 
     attack_params = {}
     attack_on_our = SaliencyMapMethod(our_classifier, sess=session, clip_min=0., clip_max=1., gamma=1., theta=0.1)

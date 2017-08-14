@@ -11,7 +11,7 @@ from src.classifiers.utils import load_classifier
 from src.utils import get_args, get_verbose_print, load_dataset, get_npy_files, set_group_permissions_rec
 
 # --------------------------------------------------------------------------------------------------- SETTINGS
-args = get_args(__file__)
+args = get_args(__file__, load_classifier=True, options="dsv")
 
 v_print = get_verbose_print(args.verbose)
 

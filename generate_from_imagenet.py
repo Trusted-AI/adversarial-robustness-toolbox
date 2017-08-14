@@ -2,7 +2,6 @@ import config
 import numpy as np
 import os, sys
 from scipy import misc
-from PIL import Image
 
 import keras.backend as K
 from keras.applications.vgg16 import VGG16, preprocess_input
@@ -16,13 +15,11 @@ from src.attackers.saliency_map import SaliencyMapMethod
 from src.attackers.universal_perturbation import UniversalPerturbation
 from src.classifiers.classifier import Classifier
 
-from src.utils import make_directory, get_label_conf
+from src.utils import get_args, make_directory, get_label_conf
 
 PATH = "./imagenet/"
 
-adv_method = sys.argv[1]
-
-assert adv_method in ["fgsm", "deepfool", "universal", "jsma"]
+args = get_args(__file__, options="a")
 
 session = tf.Session()
 K.set_session(session)
@@ -32,23 +29,23 @@ model = VGG16()
 
 classifier = Classifier(model, preproc=preprocess_input)
 
-save_path = os.path.join(PATH, adv_method)
+save_path = os.path.join(PATH, args.adv_method)
 
-if adv_method == "universal":
+if args.adv_method == "universal":
 
     attack_params = {"clip_min": 0.,
                      "clip_max": 255}
 
     attack = UniversalPerturbation(classifier, session, p=np.inf, attacker_params=attack_params)
 
-elif adv_method == "deepfool":
+elif args.adv_method == "deepfool":
 
     attack_params = {"clip_min": 0.,
                      "clip_max": 255,}
 
     attack = DeepFool(classifier, session, max_iter=1, verbose=2)
 
-elif adv_method == "jsma":
+elif args.adv_method == "jsma":
     attack_params = {}
     attack = SaliencyMapMethod(classifier, sess=session, clip_min=0., clip_max=255, gamma=10/255, theta=1)
 

@@ -16,7 +16,7 @@ from src.classifiers.utils import load_classifier
 from src.utils import get_args, get_verbose_print, load_dataset, make_directory, set_group_permissions_rec
 
 # --------------------------------------------------------------------------------------------------- SETTINGS
-args = get_args(__file__)
+args = get_args(__file__, load_classifier=True, per_batch=True, options="asv")
 v_print = get_verbose_print(args.verbose)
 alpha = 0.05 # constant for random perturbation
 

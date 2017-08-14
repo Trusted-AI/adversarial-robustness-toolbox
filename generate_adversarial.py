@@ -16,7 +16,7 @@ from src.classifiers.utils import load_classifier
 from src.utils import get_args, get_verbose_print, load_dataset, make_directory, set_group_permissions_rec
 
 # --------------------------------------------------------------------------------------------------- SETTINGS
-args = get_args(__file__)
+args = get_args(__file__, load_classifier=True, options="asv")
 v_print = get_verbose_print(args.verbose)
 alpha = 0.05 # constant for random perturbation
 
@@ -87,8 +87,8 @@ else:
         np.save(os.path.join(SAVE_ADV, "test.npy"), X_test_adv)
 
 
-# if args.save:
-#
-#     # Change files' group and permissions if on ccc
-#     if config_dict['profile'] == "CLUSTER":
-#         set_group_permissions_rec(MODEL_PATH)
+if args.save:
+
+    # Change files' group and permissions if on ccc
+    if config_dict['profile'] == "CLUSTER":
+        set_group_permissions_rec(MODEL_PATH)
