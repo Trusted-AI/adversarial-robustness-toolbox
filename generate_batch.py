@@ -6,6 +6,7 @@ import os, sys
 import keras.backend as K
 import tensorflow as tf
 
+from src.attackers.carlini import CarliniL2Method
 from src.attackers.deepfool import DeepFool
 from src.attackers.fast_gradient import FastGradientMethod
 from src.attackers.saliency_map import SaliencyMapMethod
@@ -77,6 +78,8 @@ else:
         adv_crafter = DeepFool(classifier, session, clip_min=0., clip_max=1.)
     elif args.adv_method == 'jsma':
         adv_crafter = SaliencyMapMethod(classifier, sess=session, clip_min=0., clip_max=1., gamma=1., theta=0.1)
+    elif args.adv_method == 'carlini':
+        adv_crafter = CarliniL2Method(classifier, sess=session, targeted=False, confidence=2.3)
     else:
         adv_crafter = UniversalPerturbation(classifier, session, p=np.inf,
                                             attacker_params={'clip_min':0., 'clip_max':1.})
