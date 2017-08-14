@@ -303,7 +303,7 @@ def get_args(prog, load_classifier=False, load_sample=False, per_batch=False, op
     option_dict = {
         "a": {"flags": ["-a", "--adv"],
               "kwargs": {"type":str, "dest":'adv_method', "default": "fgsm",
-                         "choices":["fgsm", "deepfool", "universal"], "help":'choice of attacker'}},
+                         "choices":["fgsm", "deepfool", "universal", "jsma", "vat", "carlini", "rnd_fgsm"], "help":'choice of attacker'}},
         "b": {"flags": ["-b", "--batchsize"],
               "kwargs": {"type": int, "dest": 'batch_size', "default": 128, "help": 'size of the batches'}},
         "c": {"flags" : ["-c", "--classifier"],
