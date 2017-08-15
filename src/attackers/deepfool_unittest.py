@@ -19,7 +19,7 @@ class TestDeepFool(unittest.TestCase):
 
         # get MNIST
         batch_size, nb_train, nb_test = 100, 1000, 11
-        (X_train, Y_train), (X_test, Y_test) = load_mnist()
+        (X_train, Y_train), (X_test, Y_test), _, _ = load_mnist()
         X_train, Y_train = X_train[:nb_train], Y_train[:nb_train]
         X_test, Y_test = X_test[:nb_test], Y_test[:nb_test]
         im_shape = X_train[0].shape

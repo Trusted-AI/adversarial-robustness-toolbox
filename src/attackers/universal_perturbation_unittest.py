@@ -20,7 +20,7 @@ class TestUniversalPerturbation(unittest.TestCase):
 
         # get MNIST
         batch_size, nb_train, nb_test = 10, 10, 10
-        (X_train, Y_train), (X_test, Y_test) = load_mnist()
+        (X_train, Y_train), (X_test, Y_test), _, _ = load_mnist()
         X_train, Y_train = X_train[:nb_train], Y_train[:nb_train]
         X_test, Y_test = X_test[:nb_test], Y_test[:nb_test]
         im_shape = X_train[0].shape
@@ -32,12 +32,12 @@ class TestUniversalPerturbation(unittest.TestCase):
         scores = classifier.evaluate(X_test, Y_test)
         print("\naccuracy on test set: %.2f%%" % (scores[1] * 100))
 
-        attack_params = {"verbose": 0,
+        attack_params = {"verbose": 2,
                          "clip_min": 0.,
-                         "clip_max": 1.,
+                         "clip_max": 1,
                          "attacker": "deepfool"}
 
-        attack = UniversalPerturbation(classifier, session, attacker_params={"max_iter":50})
+        attack = UniversalPerturbation(classifier, session)
         x_train_adv = attack.generate(X_train, **attack_params)
         self.assertTrue((attack.fooling_rate >= 0.2) or not attack.converged)
 

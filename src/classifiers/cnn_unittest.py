@@ -31,12 +31,12 @@ class TestCNNModel(unittest.TestCase):
         keras.backend.set_session(session)
 
         # get CIFAR10
-        (X_train, Y_train), (X_test, Y_test) = load_cifar10()
+        (X_train, Y_train), (X_test, Y_test), _, _ = load_cifar10()
         X_train, Y_train, X_test, Y_test = X_train[:NB_TRAIN], Y_train[:NB_TRAIN], X_test[:NB_TEST], Y_test[:NB_TEST]
 
         im_shape = X_train[0].shape
 
-        classifier = CNN(im_shape, act="brelu")
+        classifier = CNN(im_shape, act="brelu", dataset="cifar10")
 
         classifier.compile({'loss':'categorical_crossentropy', 'optimizer':'adam', 'metrics':['accuracy']})
 
@@ -58,7 +58,7 @@ class TestCNNModel(unittest.TestCase):
         keras.backend.set_session(session)
 
         # get MNIST
-        (X_train, Y_train), (X_test, Y_test) = load_mnist()
+        (X_train, Y_train), (X_test, Y_test), _, _ = load_mnist()
         X_train, Y_train, X_test, Y_test = X_train[:NB_TRAIN], Y_train[:NB_TRAIN], X_test[:NB_TEST], Y_test[:NB_TEST]
 
         im_shape = X_train[0].shape
@@ -84,7 +84,7 @@ class TestCNNModel(unittest.TestCase):
         keras.backend.set_session(session)
 
         # get MNIST
-        (X_train, Y_train), (X_test, Y_test) = load_mnist()
+        (X_train, Y_train), (X_test, Y_test), _, _ = load_mnist()
         X_train, Y_train, X_test, Y_test = X_train[:NB_TRAIN], Y_train[:NB_TRAIN], X_test[:NB_TEST], Y_test[:NB_TEST]
 
         im_shape = X_train[0].shape
@@ -111,7 +111,7 @@ class TestCNNModel(unittest.TestCase):
         keras.backend.set_session(session)
 
         # get MNIST
-        (X_train, Y_train), (X_test, Y_test) = load_mnist()
+        (X_train, Y_train), (X_test, Y_test), _, _ = load_mnist()
         X_train, Y_train, X_test, Y_test = X_train[:NB_TRAIN], Y_train[:NB_TRAIN], X_test[:NB_TEST], Y_test[:NB_TEST]
 
         im_shape = X_train[0].shape
@@ -141,7 +141,7 @@ class TestCNNModel(unittest.TestCase):
         keras.backend.set_session(session)
 
         # get MNIST
-        (X_train, Y_train), (X_test, Y_test) = load_mnist()
+        (X_train, Y_train), (X_test, Y_test), _, _ = load_mnist()
         X_train, Y_train, X_test, Y_test = X_train[:NB_TRAIN], Y_train[:NB_TRAIN], X_test[:NB_TEST], Y_test[:NB_TEST]
 
         im_shape = X_train[0].shape
@@ -183,7 +183,7 @@ class TestCNNModel(unittest.TestCase):
         keras.backend.set_session(session)
 
         # get MNIST
-        (X_train, Y_train), (X_test, Y_test) = load_mnist()
+        (X_train, Y_train), (X_test, Y_test), _, _ = load_mnist()
         X_train, Y_train, X_test, Y_test = X_train[:NB_TRAIN], Y_train[:NB_TRAIN], X_test[:NB_TEST], Y_test[:NB_TEST]
 
         im_shape = X_train[0].shape

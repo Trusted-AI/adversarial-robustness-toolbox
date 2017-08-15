@@ -35,7 +35,7 @@ class TestResNetModel(unittest.TestCase):
                        "metrics": ['accuracy']}
 
         # get CIFAR10
-        (X_train, Y_train), (X_test, Y_test) = load_cifar10()
+        (X_train, Y_train), (X_test, Y_test), _, _ = load_cifar10()
         X_train, Y_train, X_test, Y_test = X_train[:NB_TRAIN], Y_train[:NB_TRAIN], X_test[:NB_TEST], Y_test[:NB_TEST]
 
         im_shape = X_train[0].shape
@@ -66,7 +66,7 @@ class TestResNetModel(unittest.TestCase):
                        "metrics": ['accuracy']}
 
         # get MNIST
-        (X_train, Y_train), (X_test, Y_test) = load_mnist()
+        (X_train, Y_train), (X_test, Y_test), _, _ = load_mnist()
         X_train, Y_train, X_test, Y_test = X_train[:NB_TRAIN], Y_train[:NB_TRAIN], X_test[:NB_TEST], Y_test[:NB_TEST]
 
         im_shape = X_train[0].shape
@@ -96,7 +96,7 @@ class TestResNetModel(unittest.TestCase):
         keras.backend.set_session(session)
 
         # get MNIST
-        (X_train, Y_train), (X_test, Y_test) = load_mnist()
+        (X_train, Y_train), (X_test, Y_test), _, _ = load_mnist()
         X_train, Y_train, X_test, Y_test = X_train[:NB_TRAIN], Y_train[:NB_TRAIN], X_test[:NB_TEST], Y_test[:NB_TEST]
 
         im_shape = X_train[0].shape

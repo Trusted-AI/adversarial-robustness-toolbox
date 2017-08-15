@@ -22,7 +22,7 @@ class TestCarliniL2(unittest.TestCase):
 
         # get MNIST
         batch_size, nb_train, nb_test = 100, 1000, 10
-        (X_train, Y_train), (X_test, Y_test) = load_mnist()
+        (X_train, Y_train), (X_test, Y_test), _, _ = load_mnist()
         X_train, Y_train = X_train[:nb_train], Y_train[:nb_train]
         X_test, Y_test = X_test[:nb_test], Y_test[:nb_test]
         im_shape = X_train[0].shape
@@ -34,14 +34,14 @@ class TestCarliniL2(unittest.TestCase):
         scores = classifier.evaluate(X_test, Y_test)
         print("\naccuracy on test set: %.2f%%" % (scores[1] * 100))
 
-        df = CarliniL2Method(classifier, sess=session, targeted=True, max_iterations=100, binary_search_steps=2,
+        df = CarliniL2Method(classifier, sess=session, targeted=False, max_iterations=100, binary_search_steps=2,
                              learning_rate=1e-2, initial_const=1)
         params = {'y_val': random_targets(Y_test, classifier.model.get_output_shape_at(-1)[-1])}
         x_test_adv = df.generate(X_test, **params)
         self.assertFalse((X_test == x_test_adv).all())
 
         y_pred = get_labels_np_array(classifier.predict(x_test_adv))
-        # self.assertFalse((Y_test == y_pred).all())
+        self.assertFalse((Y_test == y_pred).all())
 
         scores = classifier.evaluate(x_test_adv, Y_test)
         print('\naccuracy on adversarial examples: %.2f%%' % (scores[1] * 100))
