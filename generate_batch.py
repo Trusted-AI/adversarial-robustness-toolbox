@@ -23,7 +23,7 @@ alpha = 0.05 # constant for random perturbation
 
 assert args.batch_idx < 10
 # get dataset
-(_, _), (X_test, Y_test) = load_dataset(args.load)
+(_, _), (X_test, Y_test), MIN, MAX = load_dataset(args.load)
 M = len(X_test)
 batch_size = M // 10
 
@@ -61,7 +61,7 @@ if args.adv_method in ['fgsm', "vat", "rnd_fgsm"]:
     for eps in eps_ranges[args.adv_method]:
 
         if args.adv_method == "rnd_fgsm":
-            x_test = np.clip(X_test + alpha * np.sign(np.random.randn(*X_test.shape)), 0.0, 1.0)
+            x_test = np.clip(X_test + alpha * np.sign(np.random.randn(*X_test.shape)), MIN, MAX)
             e = eps - alpha
         else:
             x_test = X_test
@@ -75,14 +75,14 @@ if args.adv_method in ['fgsm', "vat", "rnd_fgsm"]:
 else:
 
     if args.adv_method == 'deepfool':
-        adv_crafter = DeepFool(classifier, session, clip_min=0., clip_max=1.)
+        adv_crafter = DeepFool(classifier, session, clip_min=MIN, clip_max=MAX)
     elif args.adv_method == 'jsma':
-        adv_crafter = SaliencyMapMethod(classifier, sess=session, clip_min=0., clip_max=1., gamma=1., theta=0.1)
+        adv_crafter = SaliencyMapMethod(classifier, sess=session, clip_min=MIN, clip_max=MAX, gamma=MAX, theta=0.1)
     elif args.adv_method == 'carlini':
         adv_crafter = CarliniL2Method(classifier, sess=session, targeted=False, confidence=2.3)
     else:
         adv_crafter = UniversalPerturbation(classifier, session, p=np.inf,
-                                            attacker_params={'clip_min':0., 'clip_max':1.})
+                                            attacker_params={'clip_min':MIN, 'clip_max':MAX})
 
     X_test_adv = adv_crafter.generate(x_val=X_test)
 

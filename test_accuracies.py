@@ -40,7 +40,7 @@ except:
 already_tested = results.keys()
 
 # get dataset
-(X_train, Y_train), (X_test, Y_test) = load_dataset(MODEL_PATH)
+(X_train, Y_train), (X_test, Y_test), _, _ = load_dataset(MODEL_PATH)
 
 if "train_accuracy" not in already_tested:
     # Test on true train instances

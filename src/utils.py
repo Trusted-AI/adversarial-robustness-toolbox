@@ -140,6 +140,7 @@ def load_cifar10():
     """
 
     from config import CIFAR10_PATH
+    MIN, MAX = 0., 1.
 
     path = data_utils.get_file('cifar-10-batches-py', untar=True, cache_subdir=CIFAR10_PATH,
                                origin='http://www.cs.toronto.edu/~kriz/cifar-10-python.tar.gz')
@@ -168,7 +169,7 @@ def load_cifar10():
     x_train,y_train = preprocess(x_train,y_train)
     x_test,y_test = preprocess(x_test,y_test)
 
-    return (x_train, y_train), (x_test, y_test)
+    return (x_train, y_train), (x_test, y_test), MIN, MAX
 
 
 def load_mnist():
@@ -179,6 +180,7 @@ def load_mnist():
     :rtype: tuple of numpy.ndarray), (tuple of numpy.ndarray)
     """
     from config import MNIST_PATH
+    MIN, MAX = 0., 1.
 
     path = data_utils.get_file('mnist.npz', cache_subdir=MNIST_PATH,
                                origin='https://s3.amazonaws.com/img-datasets/mnist.npz')
@@ -197,11 +199,12 @@ def load_mnist():
     x_train, y_train = preprocess(x_train, y_train)
     x_test, y_test = preprocess(x_test, y_test)
 
-    return (x_train, y_train), (x_test, y_test)
+    return (x_train, y_train), (x_test, y_test), MIN, MAX
 
 def load_imagenet():
 
     from config import IMAGENET_PATH
+    MIN, MAX = 0., 255.
 
     CLASS_INDEX_PATH = 'https://s3.amazonaws.com/deep-learning-models/image-models/imagenet_class_index.json'
 
@@ -233,7 +236,7 @@ def load_imagenet():
         x_train, x_test = dataset[:2], dataset[0:]
         y_train, y_test = y[:2], y[0:]
 
-    return (x_train, y_train), (x_test, y_test)
+    return (x_train, y_train), (x_test, y_test), MIN, MAX
 
 def load_dataset(name):
     """
@@ -303,7 +306,8 @@ def get_args(prog, load_classifier=False, load_sample=False, per_batch=False, op
     option_dict = {
         "a": {"flags": ["-a", "--adv"],
               "kwargs": {"type":str, "dest":'adv_method', "default": "fgsm",
-                         "choices":["fgsm", "deepfool", "universal", "jsma", "vat", "carlini", "rnd_fgsm"], "help":'choice of attacker'}},
+                         "choices":["fgsm", "deepfool", "universal", "jsma", "vat", "carlini", "rnd_fgsm"],
+                         "help":'choice of attacker'}},
         "b": {"flags": ["-b", "--batchsize"],
               "kwargs": {"type": int, "dest": 'batch_size', "default": 128, "help": 'size of the batches'}},
         "c": {"flags" : ["-c", "--classifier"],

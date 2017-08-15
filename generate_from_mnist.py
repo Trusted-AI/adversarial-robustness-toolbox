@@ -23,7 +23,7 @@ session = tf.Session()
 K.set_session(session)
 
 # get dataset
-_, (X, Y) = load_dataset("mnist")
+_, (X, Y), _, _ = load_dataset("mnist")
 X, Y = X[:1], Y[:1]
 
 # load cnn classifier

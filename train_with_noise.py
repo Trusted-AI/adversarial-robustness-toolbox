@@ -24,7 +24,7 @@ comp_params = {"loss": 'categorical_crossentropy',
 # --------------------------------------------------------------------------------------------- GET CLASSIFIER
 
 # get dataset
-(X_train, Y_train), (X_test, Y_test) = load_dataset(args.dataset)
+(X_train, Y_train), (X_test, Y_test), _, _ = load_dataset(args.dataset)
 # X_train, Y_train, X_test, Y_test = X_train[:1000], Y_train[:1000], X_test[:1000], Y_test[:1000]
 
 im_shape = X_train[0].shape

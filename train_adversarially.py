@@ -23,12 +23,12 @@ comp_params = {"loss": 'categorical_crossentropy',
 # --------------------------------------------------------------------------------------------- GET CLASSIFIER
 
 # get original dataset
-(X_train, Y_train), (X_test, Y_test) = load_dataset(args.dataset)
+(X_train, Y_train), (X_test, Y_test), _, _ = load_dataset(args.dataset)
 
 # get adversarials
 ADV_PATH = os.path.join(os.path.abspath(DATA_PATH), "adversarial", args.dataset, args.classifier, args.act)
 X_train_adv = np.load(os.path.join(ADV_PATH, args.adv_path))
-Y_train_adv = Y_train
+Y_train_adv = Y_train if "train.npy" in args.dataset else Y_test
 
 # data augmentation
 X_train = np.append(X_train, X_train_adv, axis=0)

@@ -23,7 +23,7 @@ comp_params = {"loss": 'categorical_crossentropy',
 # --------------------------------------------------------------------------------------------- GET CLASSIFIER
 
 # get dataset
-(X_train, Y_train), (X_test, Y_test) = load_dataset(args.dataset)
+(X_train, Y_train), (X_test, Y_test), _, _ = load_dataset(args.load)
 
 if os.path.isfile(args.dataset):
     X_train = np.load(args.dataset)

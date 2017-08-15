@@ -27,7 +27,7 @@ comp_params = {"loss": 'categorical_crossentropy',
 # --------------------------------------------------------------------------------------------- GET CLASSIFIER
 
 # get dataset
-(X_train, Y_train), (X_test, Y_test) = load_dataset("imagenet")
+(X_train, Y_train), (X_test, Y_test), _, _ = load_dataset("imagenet")
 im_shape = X_train[0].shape
 
 model = VGG16()
