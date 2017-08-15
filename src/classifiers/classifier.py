@@ -82,6 +82,17 @@ class Classifier(BaseEstimator):
         else:
             raise Exception("Activation function not supported.")
 
+    def get_logits(self, x_op, log=True):
+
+        logits = self.model(x_op)
+
+        if log:
+            op = logits.op
+            if "softmax" in str(op).lower():
+                logits, = op.inputs
+
+        return logits
+
     def _parse_defences(self, defences):
 
         self.label_smooth = False
@@ -128,12 +139,7 @@ class Classifier(BaseEstimator):
 
             x_op = tf.subtract(x_op, tf.concat([t0, t1, t2], 3))
 
-        logits = self.model(x_op)
-
-        if log:
-            op = logits.op
-            if "softmax" in str(op).lower():
-                logits, = op.inputs
+        logits = self.get_logits(x_op, log)
 
         if mean:
             logits = tf.reduce_mean(logits)

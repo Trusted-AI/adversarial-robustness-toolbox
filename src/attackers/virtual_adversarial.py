@@ -34,7 +34,7 @@ class VirtualAdversarialMethod(Attack):
         # Parse and save attack-specific parameters
         assert self.set_params(**kwargs)
 
-        return vatm(self.model, x, self.classifier._get_predictions(x, log=False), eps=eps, num_iterations=self.max_iter, xi=self.xi,
+        return vatm(self.classifier, x, self.classifier._get_predictions(x, log=False), eps=eps, num_iterations=self.max_iter, xi=self.xi,
                     clip_min=self.clip_min, clip_max=self.clip_max)
 
     def generate(self, x_val, eps=0.1, **kwargs):
