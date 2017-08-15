@@ -20,7 +20,7 @@ class CarliniL2Method(Attack):
     attack_params = ['batch_size', 'confidence', 'targeted', 'learning_rate', 'binary_search_steps', 'max_iterations',
                      'abort_early', 'initial_const', 'clip_min', 'clip_max', 'num_labels']
 
-    def __init__(self, classifier, sess, batch_size=1, confidence=0, targeted=True, learning_rate=5e-3,
+    def __init__(self, classifier, sess, batch_size=10, confidence=2.3, targeted=True, learning_rate=5e-3,
                  binary_search_steps=5, max_iterations=1000, abort_early=True, initial_const=1e-2, clip_min=0,
                  clip_max=1):
         """
