@@ -7,6 +7,7 @@ from keras.optimizers import SGD
 
 from src.classifiers.classifier import Classifier
 from src.classifiers.cnn import CNN
+from src.classifiers.bnn import BNN
 from src.classifiers.resnet import ResNet
 from src.layers.activations import BoundedReLU
 from src.utils import make_directory
