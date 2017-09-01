@@ -43,7 +43,7 @@ if args.save:
 
 if args.adv_method in ['fgsm', "vat", "rnd_fgsm"]:
 
-    eps_ranges = {'fgsm': [e / 100 for e in range(1, 10)],
+    eps_ranges = {'fgsm': [e / 10 for e in range(1, 11)],
                   'rnd_fgsm': [e / 10 for e in range(1, 11)],
                   'vat': [1.5, 2.1, 5, 7, 10]}
 
@@ -75,9 +75,9 @@ else:
     if args.adv_method == 'deepfool':
         adv_crafter = DeepFool(classifier, session, clip_min=MIN, clip_max=MAX)
     elif args.adv_method == 'jsma':
-        adv_crafter = SaliencyMapMethod(classifier, sess=session, clip_min=MIN, clip_max=MAX, gamma=MAX, theta=0.1)
+        adv_crafter = SaliencyMapMethod(classifier, sess=session, clip_min=MIN, clip_max=MAX, gamma=1, theta=MAX)
     elif args.adv_method == 'carlini':
-        adv_crafter = CarliniL2Method(classifier, sess=session, targeted=False, confidence=2.3)
+        adv_crafter = CarliniL2Method(classifier, sess=session, targeted=False, confidence=10)
     else:
         adv_crafter = UniversalPerturbation(classifier, session, p=np.inf,
                                             attacker_params={'clip_min':MIN, 'clip_max':MAX})
