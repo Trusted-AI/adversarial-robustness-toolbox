@@ -73,6 +73,7 @@ class SaliencyMapMethod(Attack):
         """
         # Parse and save attack-specific parameters
         assert self.set_params(**kwargs)
+        K.set_learning_phase(0)
 
         input_shape = list(x_val.shape)
         input_shape[0] = None
@@ -81,7 +82,7 @@ class SaliencyMapMethod(Attack):
 
         # Run symbolic graph without or with true labels
         if 'y_val' not in kwargs or kwargs['y_val'] is None:
-            feed_dict = {self._x: x_val, K.learning_phase(): 0}
+            feed_dict = {self._x: x_val}
         else:
             if self.y is None:
                 raise Exception("This attack was instantiated untargeted.")
@@ -92,7 +93,7 @@ class SaliencyMapMethod(Attack):
                     nb_targets = 1
                 if nb_targets != len(x_val):
                     raise Exception("Specify exactly one target per input.")
-            feed_dict = {self._x: x_val, self.y: kwargs['y_val'], K.learning_phase(): 0}
+            feed_dict = {self._x: x_val, self.y: kwargs['y_val']}
         return self.sess.run(self._x_adv, feed_dict=feed_dict)
 
     def set_params(self, **kwargs):
