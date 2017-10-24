@@ -7,6 +7,7 @@ import numpy as np
 import tensorflow as tf
 
 from src.classifiers.cnn import CNN
+from src.classifiers.mlp import MLP
 from src.classifiers.resnet import ResNet
 from src.classifiers.utils import save_classifier, load_classifier
 from src.utils import get_args, get_verbose_print, load_dataset, make_directory, set_group_permissions_rec
@@ -38,9 +39,10 @@ K.set_session(session)
 
 if args.classifier == "cnn":
     classifier = CNN(im_shape, act=args.act, bnorm=False, defences=args.defences, dataset=args.dataset)
-
 elif args.classifier == "resnet":
     classifier = ResNet(im_shape, act=args.act, bnorm=False, defences=args.defences)
+elif args.classifier == "mlp":
+    classifier = MLP(im_shape, act=args.act, bnorm=False, defences=args.defences, dataset=args.dataset)
 
 # Fit the classifier
 classifier.compile(comp_params)
@@ -79,7 +81,7 @@ else:
 callbacks_list.append(EarlyStopping(monitor='val_acc', min_delta=0, patience=5, verbose=1, mode='max'))
 
 classifier.fit(X_train, Y_train, verbose=2*int(args.verbose), validation_split=args.val_split, epochs=args.nb_epochs,
-          batch_size=args.batch_size, callbacks=callbacks_list)
+               batch_size=args.batch_size, callbacks=callbacks_list)
 
 if args.save is not False:
     save_classifier(classifier, MODEL_PATH)

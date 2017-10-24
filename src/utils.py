@@ -311,7 +311,7 @@ def get_args(prog, load_classifier=False, load_sample=False, per_batch=False, op
         "b": {"flags": ["-b", "--batchsize"],
               "kwargs": {"type": int, "dest": 'batch_size', "default": 128, "help": 'size of the batches'}},
         "c": {"flags" : ["-c", "--classifier"],
-              "kwargs": { "type":str, "dest":'classifier', "default":"cnn", "choices": ["cnn", "resnet"],
+              "kwargs": { "type":str, "dest":'classifier', "default":"cnn", "choices": ["cnn", "resnet", "mlp"],
                           "help":'choice of classifier'}},
         "d": {"flags": ["-d", "--dataset"],
               "kwargs": {"type":str, "dest":'dataset', "default":"mnist",

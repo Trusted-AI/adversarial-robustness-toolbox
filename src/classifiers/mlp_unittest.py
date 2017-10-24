@@ -72,8 +72,8 @@ class TestMLPModel(unittest.TestCase):
         # Fit the classifier
         classifier.fit(X_train, Y_train, epochs=1, batch_size=BATCH_SIZE)
         act_config = classifier.model.layers[2].get_config()
-        self.assertEquals(act_config["alpha"], 1)
-        self.assertEquals(act_config["max_value"], 2)
+        self.assertEqual(act_config["alpha"], 1)
+        self.assertEqual(act_config["max_value"], 2)
 
     def test_mlp_batchnorm(self):
         session = tf.Session()
