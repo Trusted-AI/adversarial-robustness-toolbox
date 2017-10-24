@@ -13,6 +13,7 @@ from keras.utils.data_utils import get_file
 
 import tensorflow as tf
 
+
 def random_targets(gt, nb_classes):
     """
     Take in the correct labels for each sample and randomly choose target
@@ -33,6 +34,7 @@ def random_targets(gt, nb_classes):
         result[in_cl] = np.random.choice(other_classes)
 
     return np_utils.to_categorical(result, nb_classes)
+
 
 def create_class_pairs(x, y, classes=10, pos=1, neg=0):
     """ Returns a positive and a negative pair per point of x, w.r.t. its class, and their corresponding scores.
@@ -132,15 +134,15 @@ def preprocess(x, y, nb_classes=10, max_value=255):
 
 # -------------------------------------------------------------------------------------------------------- IO FUNCTIONS
 
+
 def load_cifar10():
     """Loads CIFAR10 dataset from config.CIFAR10_PATH.
 
-    :return: `(x_train, y_train), (x_test, y_test)`
+    :return: (x_train, y_train), (x_test, y_test), min, max
     :rtype: tuple of numpy.ndarray), (tuple of numpy.ndarray)
     """
-
     from config import CIFAR10_PATH
-    MIN, MAX = 0., 1.
+    min_, max_ = 0., 1.
 
     path = data_utils.get_file('cifar-10-batches-py', untar=True, cache_subdir=CIFAR10_PATH,
                                origin='http://www.cs.toronto.edu/~kriz/cifar-10-python.tar.gz')
@@ -166,21 +168,20 @@ def load_cifar10():
         x_train = x_train.transpose(0, 2, 3, 1)
         x_test = x_test.transpose(0, 2, 3, 1)
 
-    x_train,y_train = preprocess(x_train,y_train)
-    x_test,y_test = preprocess(x_test,y_test)
+    x_train, y_train = preprocess(x_train, y_train)
+    x_test, y_test = preprocess(x_test, y_test)
 
-    return (x_train, y_train), (x_test, y_test), MIN, MAX
+    return (x_train, y_train), (x_test, y_test), min_, max_
 
 
 def load_mnist():
-
     """Loads MNIST dataset from config.MNIST_PATH
     
-    :return: `(x_train, y_train), (x_test, y_test)`
+    :return: (x_train, y_train), (x_test, y_test), min, max
     :rtype: tuple of numpy.ndarray), (tuple of numpy.ndarray)
     """
     from config import MNIST_PATH
-    MIN, MAX = 0., 1.
+    min_, max_ = 0., 1.
 
     path = data_utils.get_file('mnist.npz', cache_subdir=MNIST_PATH,
                                origin='https://s3.amazonaws.com/img-datasets/mnist.npz')
@@ -199,21 +200,26 @@ def load_mnist():
     x_train, y_train = preprocess(x_train, y_train)
     x_test, y_test = preprocess(x_test, y_test)
 
-    return (x_train, y_train), (x_test, y_test), MIN, MAX
+    return (x_train, y_train), (x_test, y_test), min_, max_
+
 
 def load_imagenet():
+    """Loads Imagenet dataset from config.IMAGENET_PATH
 
+        :return: (x_train, y_train), (x_test, y_test), min, max
+        :rtype: tuple of numpy.ndarray), (tuple of numpy.ndarray)
+        """
     from config import IMAGENET_PATH
-    MIN, MAX = 0., 255.
+    min_, max_ = 0., 255.
 
-    CLASS_INDEX_PATH = 'https://s3.amazonaws.com/deep-learning-models/image-models/imagenet_class_index.json'
+    class_index_path = 'https://s3.amazonaws.com/deep-learning-models/image-models/imagenet_class_index.json'
 
     class_id = IMAGENET_PATH.split("/")[-1]
 
-    fpath = get_file('imagenet_class_index.json', CLASS_INDEX_PATH, cache_subdir='models')
-    CLASS_INDEX = json.load(open(fpath))
+    fpath = get_file('imagenet_class_index.json', class_index_path, cache_subdir='models')
+    class_index = json.load(open(fpath))
 
-    for k,v in CLASS_INDEX.items():
+    for k, v in class_index.items():
         if v[0] == class_id:
             label = k
             break
@@ -236,7 +242,8 @@ def load_imagenet():
         x_train, x_test = dataset[:2], dataset[0:]
         y_train, y_test = y[:2], y[0:]
 
-    return (x_train, y_train), (x_test, y_test), MIN, MAX
+    return (x_train, y_train), (x_test, y_test), min_, max_
+
 
 def load_dataset(name):
     """
@@ -256,6 +263,7 @@ def load_dataset(name):
 
     else:
         raise NotImplementedError("There is no loader for {} dataset".format(name))
+
 
 def make_directory(dir_path):
     """
@@ -280,6 +288,7 @@ def get_npy_files(path):
             if file.endswith(".npy"):
                 yield os.path.join(root, file)
 
+
 def set_group_permissions_rec(path, group="drl-dwl"):
     for root, _, files in os.walk(path):
         set_group_permissions(root, group)
@@ -299,26 +308,35 @@ def set_group_permissions(filename, group="drl-dwl"):
 
 # ------------------------------------------------------------------- ARG PARSER
 
-def get_args(prog, load_classifier=False, load_sample=False, per_batch=False, options=""):
 
+def get_args(prog, load_classifier=False, load_sample=False, per_batch=False, options=""):
+    """
+    Parser for all scripts
+    :param prog: name of the script calling the function
+    :param load_classifier: bool, load a model, default False
+    :param load_sample: bool, load (adversarial) data for training, default False
+    :param per_batch: bool, load data in batches, default False
+    :param options:
+    :return: parsed arguments
+    """
     parser = argparse.ArgumentParser(prog=prog, formatter_class=argparse.ArgumentDefaultsHelpFormatter)
 
     option_dict = {
         "a": {"flags": ["-a", "--adv"],
-              "kwargs": {"type":str, "dest":'adv_method', "default": "fgsm",
-                         "choices":["fgsm", "deepfool", "universal", "jsma", "vat", "carlini", "rnd_fgsm"],
-                         "help":'choice of attacker'}},
+              "kwargs": {"type": str, "dest": 'adv_method', "default": "fgsm",
+                         "choices": ["fgsm", "deepfool", "universal", "jsma", "vat", "carlini", "rnd_fgsm"],
+                         "help": 'choice of attacker'}},
         "b": {"flags": ["-b", "--batchsize"],
               "kwargs": {"type": int, "dest": 'batch_size', "default": 128, "help": 'size of the batches'}},
-        "c": {"flags" : ["-c", "--classifier"],
-              "kwargs": { "type":str, "dest":'classifier', "default":"cnn", "choices": ["cnn", "resnet", "mlp"],
-                          "help":'choice of classifier'}},
+        "c": {"flags": ["-c", "--classifier"],
+              "kwargs": {"type": str, "dest": 'classifier', "default": "cnn", "choices": ["cnn", "resnet", "mlp"],
+                         "help": 'choice of classifier'}},
         "d": {"flags": ["-d", "--dataset"],
-              "kwargs": {"type":str, "dest":'dataset', "default":"mnist",
-                        "help":'either the path or name of the dataset the classifier is tested/trained on.'}},
+              "kwargs": {"type": str, "dest": 'dataset', "default": "mnist",
+                         "help": 'either the path or name of the dataset the classifier is tested/trained on.'}},
         "e": {"flags": ["-e", "--epochs"],
               "kwargs": {"type": int, "dest": 'nb_epochs', "default": 20,
-                                                      "help": 'number of epochs for training the classifier'}},
+                         "help": 'number of epochs for training the classifier'}},
         "f": {"flags": ["-f", "--act"],
               "kwargs": {"type": str, "dest": 'act', "default": "relu", "choices": ["relu", "brelu"],
                          "help": 'choice of activation function'}},
@@ -326,22 +344,22 @@ def get_args(prog, load_classifier=False, load_sample=False, per_batch=False, op
               "kwargs": {"type": int, "dest": 'nb_instances', "default": 1,
                          "help": 'number of supplementary instances per true example'}},
         "r": {"flags": ["-r", "--valsplit"],
-              "kwargs": {"type":float, "dest":'val_split', "default": 0.1,
-                                                        "help":'ratio of training sample used for validation'}},
+              "kwargs": {"type": float, "dest": 'val_split', "default": 0.1,
+                         "help": 'ratio of training sample used for validation'}},
         "s": {"flags": ["-s", "--save"],
-              "kwargs": {"nargs":'?', "type":str, "dest":'save', "default": False,
-                                                    "help":'if set, the classifier is saved; if an argument is provided'
-                                                    'it is used as path to store the model '}},
+              "kwargs": {"nargs": '?', "type": str, "dest": 'save', "default": False,
+                         "help": 'if set, the classifier is saved; if an argument is provided it is used as path to'
+                                 'store the model '}},
         "t": {"flags": ["-t", "--stdev"],
-              "kwargs": {"type":float, "dest":'std_dev', "default": 0.1,
-                                                     "help":'standard deviation of the distributions'}},
+              "kwargs": {"type": float, "dest": 'std_dev', "default": 0.1,
+                         "help": 'standard deviation of the distributions'}},
         "v": {"flags": ["-v", "--verbose"],
-              "kwargs": {"dest":'verbose', "action":"store_true", "help":'if set, verbose mode'}},
+              "kwargs": {"dest": 'verbose', "action": "store_true", "help": 'if set, verbose mode'}},
         "z": {"flags": ["-z", "--defences"],
-              "kwargs": {"dest":'defences', "nargs":"*", "default": None, "help":'list of basic defences.'}},
+              "kwargs": {"dest": 'defences', "nargs": "*", "default": None, "help": 'list of basic defences.'}},
     }
 
-    # add required arguments
+    # Add required arguments
     if load_classifier:
         parser.add_argument("load", type=str, help='the classifier is loaded from `load` directory.')
 
@@ -351,11 +369,12 @@ def get_args(prog, load_classifier=False, load_sample=False, per_batch=False, op
     if per_batch:
         parser.add_argument("batch_idx", type=int, help='index of the batch to use.')
 
-    # add optional arguments
+    # Add optional arguments
     for o in options:
         parser.add_argument(*option_dict[o]["flags"], **option_dict[o]["kwargs"])
 
     return parser.parse_args()
+
 
 def get_verbose_print(verbose):
     """
