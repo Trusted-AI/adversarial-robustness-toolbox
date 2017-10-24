@@ -17,13 +17,12 @@ from src.classifiers.utils import load_classifier
 from src.utils import get_args, get_verbose_print, load_dataset, make_directory, set_group_permissions_rec
 
 # --------------------------------------------------------------------------------------------------- SETTINGS
-args = get_args(__file__, load_classifier=True, options="asv")
+args = get_args(__file__, load_classifier=True, options="adsv")
 v_print = get_verbose_print(args.verbose)
 alpha = 0.05 # constant for random perturbation
 
 # get dataset
-(X_train, Y_train), (X_test, Y_test), MIN, MAX = load_dataset(args.load)
-# X_train, Y_train, X_test, Y_test = X_train[:10], Y_train[:10], X_test[:10], Y_test[:10]
+(X_train, Y_train), (X_test, Y_test), MIN, MAX = load_dataset(args.dataset)
 
 session = tf.Session()
 K.set_session(session)

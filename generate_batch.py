@@ -17,13 +17,13 @@ from src.classifiers.utils import load_classifier
 from src.utils import get_args, get_verbose_print, load_dataset, make_directory, set_group_permissions_rec
 
 # --------------------------------------------------------------------------------------------------- SETTINGS
-args = get_args(__file__, load_classifier=True, per_batch=True, options="asv")
+args = get_args(__file__, load_classifier=True, per_batch=True, options="adsv")
 v_print = get_verbose_print(args.verbose)
 alpha = 0.05 # constant for random perturbation
 
 assert args.batch_idx < 10
 # get dataset
-(_, _), (X_test, Y_test), MIN, MAX = load_dataset(args.load)
+(_, _), (X_test, Y_test), MIN, MAX = load_dataset(args.dataset)
 M = len(X_test)
 batch_size = M // 10
 
