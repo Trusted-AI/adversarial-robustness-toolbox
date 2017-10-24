@@ -6,7 +6,7 @@ import shutil
 import keras
 import tensorflow as tf
 
-from src.classifiers.cnn import CNN
+from src.classifiers.mlp import MLP
 from src.classifiers.utils import save_classifier, load_classifier
 from src.utils import load_cifar10, load_mnist, make_directory, set_group_permissions_rec
 
@@ -15,7 +15,7 @@ NB_TRAIN = 1000
 NB_TEST = 100
 
 
-class TestCNNModel(unittest.TestCase):
+class TestMLPModel(unittest.TestCase):
 
     def setUp(self):
         make_directory("./tests/")
@@ -23,7 +23,7 @@ class TestCNNModel(unittest.TestCase):
     def tearDown(self):
         shutil.rmtree("./tests/")
 
-    def test_cifar(self):
+    def test_mlp_cifar(self):
         session = tf.Session()
         keras.backend.set_session(session)
 
@@ -32,7 +32,7 @@ class TestCNNModel(unittest.TestCase):
         X_train, Y_train, X_test, Y_test = X_train[:NB_TRAIN], Y_train[:NB_TRAIN], X_test[:NB_TEST], Y_test[:NB_TEST]
         im_shape = X_train[0].shape
 
-        classifier = CNN(im_shape, act="brelu", dataset="cifar10")
+        classifier = MLP(im_shape, act="brelu", dataset="cifar10")
         classifier.compile({'loss': 'categorical_crossentropy', 'optimizer': 'adam', 'metrics': ['accuracy']})
 
         # Fit the classifier
@@ -40,7 +40,7 @@ class TestCNNModel(unittest.TestCase):
         scores = classifier.evaluate(X_test, Y_test)
         print("\naccuracy: %.2f%%" % (scores[1] * 100))
 
-    def test_mnist(self):
+    def test_mlp_mnist(self):
         session = tf.Session()
         keras.backend.set_session(session)
 
@@ -49,7 +49,7 @@ class TestCNNModel(unittest.TestCase):
         X_train, Y_train, X_test, Y_test = X_train[:NB_TRAIN], Y_train[:NB_TRAIN], X_test[:NB_TEST], Y_test[:NB_TEST]
         im_shape = X_train[0].shape
 
-        classifier = CNN(im_shape, act="relu")
+        classifier = MLP(im_shape, act="relu")
         classifier.compile({'loss': 'categorical_crossentropy', 'optimizer': 'adam', 'metrics': ['accuracy']})
 
         # Fit the classifier
@@ -57,7 +57,7 @@ class TestCNNModel(unittest.TestCase):
         scores = classifier.evaluate(X_test, Y_test)
         print("\naccuracy: %.2f%%" % (scores[1] * 100))
 
-    def test_cnn_brelu(self):
+    def test_mlp_brelu(self):
         session = tf.Session()
         keras.backend.set_session(session)
 
@@ -66,16 +66,16 @@ class TestCNNModel(unittest.TestCase):
         X_train, Y_train, X_test, Y_test = X_train[:NB_TRAIN], Y_train[:NB_TRAIN], X_test[:NB_TEST], Y_test[:NB_TEST]
         im_shape = X_train[0].shape
 
-        classifier = CNN(im_shape, act="brelu", act_params={"alpha": 1, "max_value": 2})
+        classifier = MLP(im_shape, act="brelu", act_params={"alpha": 1, "max_value": 2})
         classifier.compile({'loss': 'categorical_crossentropy', 'optimizer': 'adam', 'metrics': ['accuracy']})
 
         # Fit the classifier
         classifier.fit(X_train, Y_train, epochs=1, batch_size=BATCH_SIZE)
-        act_config = classifier.model.layers[1].get_config()
-        self.assertEqual(act_config["alpha"], 1)
-        self.assertEqual(act_config["max_value"], 2)
+        act_config = classifier.model.layers[2].get_config()
+        self.assertEquals(act_config["alpha"], 1)
+        self.assertEquals(act_config["max_value"], 2)
 
-    def test_cnn_batchnorm(self):
+    def test_mlp_batchnorm(self):
         session = tf.Session()
         keras.backend.set_session(session)
 
@@ -84,15 +84,15 @@ class TestCNNModel(unittest.TestCase):
         X_train, Y_train, X_test, Y_test = X_train[:NB_TRAIN], Y_train[:NB_TRAIN], X_test[:NB_TEST], Y_test[:NB_TEST]
         im_shape = X_train[0].shape
 
-        classifier = CNN(im_shape, act="relu", bnorm=True)
+        classifier = MLP(im_shape, act='relu', bnorm=True)
         classifier.compile({'loss': 'categorical_crossentropy', 'optimizer': 'adam', 'metrics': ['accuracy']})
 
         # Fit the classifier
         classifier.fit(X_train, Y_train, epochs=1, batch_size=BATCH_SIZE)
-        bnorm_layer = classifier.model.layers[2]
+        bnorm_layer = classifier.model.layers[3]
         self.assertIsInstance(bnorm_layer, keras.layers.normalization.BatchNormalization)
 
-    def test_save_load_cnn(self):
+    def test_save_load_mlp(self):
         NB_TRAIN = 100
         NB_TEST = 10
 
@@ -108,14 +108,16 @@ class TestCNNModel(unittest.TestCase):
         X_train, Y_train, X_test, Y_test = X_train[:NB_TRAIN], Y_train[:NB_TRAIN], X_test[:NB_TEST], Y_test[:NB_TEST]
         im_shape = X_train[0].shape
 
-        classifier = CNN(im_shape, act="brelu")
+        classifier = MLP(im_shape, act="brelu")
         classifier.compile(comp_params)
 
         # Fit the classifier
         classifier.fit(X_train, Y_train, epochs=1, batch_size=BATCH_SIZE)
-        path = "./tests/save/cnn/"
+        path = "./tests/save/mlp/"
+
         # Test saving
         save_classifier(classifier, path)
+
         if config_dict["profile"] == "CLUSTER":
             set_group_permissions_rec(path)
 
@@ -139,7 +141,7 @@ class TestCNNModel(unittest.TestCase):
         X_train, Y_train, X_test, Y_test = X_train[:NB_TRAIN], Y_train[:NB_TRAIN], X_test[:NB_TEST], Y_test[:NB_TEST]
         im_shape = X_train[0].shape
 
-        classifier = CNN(im_shape, act="relu", defences=["featsqueeze1"])
+        classifier = MLP(im_shape, act="relu", defences=["featsqueeze1"])
         classifier.compile({'loss': 'categorical_crossentropy', 'optimizer': 'adam', 'metrics': ['accuracy']})
 
         # Fit the classifier

@@ -6,20 +6,21 @@ from keras.models import model_from_json
 from keras.optimizers import SGD
 
 from src.classifiers.classifier import Classifier
-from src.classifiers.cnn import CNN
 from src.classifiers.bnn import BNN
+from src.classifiers.cnn import CNN
+from src.classifiers.mlp import MLP
 from src.classifiers.resnet import ResNet
 from src.layers.activations import BoundedReLU
 from src.utils import make_directory
 
 custom_objects = {'BoundedReLU': BoundedReLU}
 
+
 def save_classifier(classifier, file_path="./model/"):
     """ Saves classifier in the given location
 
     :param classifier: model to save
     :param str file_path: path to file
-    :param dict comp_param: optional compilation parameters
     :return: None
     """
     make_directory(file_path.rsplit('/', 1)[0])
@@ -47,6 +48,7 @@ def save_classifier(classifier, file_path="./model/"):
                            "metrics": ['accuracy']}, fp)
                 fp.truncate()
 
+
 def load_classifier(file_path, weights_name="weights.h5"):
     """ Loads a classifier from given location and tries to compile it
 
@@ -61,7 +63,6 @@ def load_classifier(file_path, weights_name="weights.h5"):
     model = model_from_json(model_json, custom_objects=custom_objects)
 
     # load params to decide what classifier to create
-
     with open(os.path.join(file_path, "params.json"), "r") as json_file:
         params_json = json.load(json_file)
 

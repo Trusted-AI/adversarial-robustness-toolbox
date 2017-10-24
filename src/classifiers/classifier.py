@@ -4,8 +4,9 @@ from keras.layers import Activation
 from sklearn.base import BaseEstimator
 import tensorflow as tf
 
-from src.defences.preprocessings import label_smoothing, feature_squeezing, tf_feature_squeezing
+from src.defences.preprocessing import label_smoothing, feature_squeezing, tf_feature_squeezing
 from src.layers.activations import BoundedReLU
+
 
 class Classifier(BaseEstimator):
 
@@ -23,7 +24,7 @@ class Classifier(BaseEstimator):
         elif preproc is None:
             self._preproc = None
         else:
-            raise Exception("preproc must be a callable.")
+            raise Exception("Preprocessing must be a callable.")
 
     def compile(self, comp_param):
         self.comp_param = comp_param

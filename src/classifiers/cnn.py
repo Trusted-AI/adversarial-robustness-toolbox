@@ -5,6 +5,7 @@ from keras.layers.normalization import BatchNormalization
 
 from src.classifiers.classifier import Classifier
 
+
 def mnist_layers(input_shape, nb_filters):
 
     layers = [Conv2D(nb_filters, (8, 8), strides=(2, 2), padding="same", input_shape=input_shape),
@@ -35,6 +36,7 @@ def cifar10_layers(input_shape, nb_filters):
 
     return layers
 
+
 class CNN(Classifier):
 
     def __init__(self, input_shape=None, include_end=True, act='relu', bnorm=False, input_ph=None, nb_filters=64,
@@ -53,14 +55,13 @@ class CNN(Classifier):
         :param int nb_filters: number of convolutional filters per layer
         :param int nb_classes: the number of output classes
         :param dict act_params: dict of params for activation layers
-        :param str 
-        :rtype: keras.model
+        :rtype: keras.model object
         """
 
         if model is None:
 
             model = Sequential(name='cnn')
-
+            layers = []
             if "mnist" in dataset:
                 layers = mnist_layers(input_shape, nb_filters)
 
