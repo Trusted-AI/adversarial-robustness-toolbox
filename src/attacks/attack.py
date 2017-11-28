@@ -5,33 +5,32 @@ import tensorflow as tf
 
 
 def clip_perturbation(v, eps, p):
-
-    # SUPPORTS only p = 2 and p = Inf for now
+    """
+    Clip the values in v if their L_p norm is larger than eps.
+    :param v: array of perturbations to clip
+    :param eps: maximum norm allowed
+    :param p: L_p norm to use for clipping. Only p = 2 and p = Inf supported for now
+    :return: clipped values of v
+    """
     if p == 2:
-
-        v *= min(1, eps/np.linalg.norm(v, axis=(1, 2)))
-
+        v *= min(1., eps/np.linalg.norm(v, axis=(1, 2)))
     elif p == np.inf:
-
         v = np.sign(v) * np.minimum(abs(v), eps)
-
     else:
-        raise NotImplementedError('Values of p different from 2 and Inf are currently not supported...')
+        raise NotImplementedError('Values of p different from 2 and Inf are currently not supported.')
 
     return v
 
-def class_derivative(preds, x, classes=10):
+
+def class_derivative(preds, x, num_labels=10):
     """
     Computes per class derivatives.
     :param preds: the model's logits
     :param x: the input placeholder
-    :param classes: the number of classes the model has
+    :param num_labels: the number of classes the model has
     :return: (list) class derivatives
     """
-
-    grads = [tf.gradients(preds[:, i], x) for i in range(classes)]
-
-    return grads
+    return [tf.gradients(preds[:, i], x) for i in range(num_labels)]
 
 
 class Attack:

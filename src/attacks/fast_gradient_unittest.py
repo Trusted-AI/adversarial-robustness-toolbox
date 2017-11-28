@@ -1,16 +1,14 @@
 import unittest
 
 import keras.backend as k
-import numpy as np
 import tensorflow as tf
 
-from src.attackers.fast_gradient import FastGradientMethod
+from src.attacks.fast_gradient import FastGradientMethod
 from src.classifiers.cnn import CNN
 from src.utils import load_mnist, get_labels_np_array
 
 
 class TestFastGradientMethod(unittest.TestCase):
-
     def test_mnist(self):
         session = tf.Session()
         k.set_session(session)

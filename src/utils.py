@@ -1,36 +1,34 @@
 import argparse
 import json
-import numpy as np
 import random
 import os
-import sys
 
 from keras import backend as K
 from keras.datasets.cifar import load_batch
 from keras.preprocessing import image
 from keras.utils import np_utils, data_utils
 from keras.utils.data_utils import get_file
-
+import numpy as np
 import tensorflow as tf
 
 
-def random_targets(gt, nb_classes):
+def random_targets(labels, nb_classes):
     """
-    Take in the correct labels for each sample and randomly choose target
-    labels from the others
-    :param gt: the correct labels
+    Take in the correct labels for each sample and randomly choose target labels from the others
+    
+    :param labels: the correct labels
     :param nb_classes: The number of classes for this model
     :return: A numpy array holding the randomly-selected target classes
     """
-    if len(gt.shape) > 1:
-        gt = np.argmax(gt, axis=1)
+    if len(labels.shape) > 1:
+        labels = np.argmax(labels, axis=1)
 
-    result = np.zeros(gt.shape)
+    result = np.zeros(labels.shape)
 
     for class_ind in range(nb_classes):
         other_classes = list(range(nb_classes))
         other_classes.remove(class_ind)
-        in_cl = gt == class_ind
+        in_cl = labels == class_ind
         result[in_cl] = np.random.choice(other_classes)
 
     return np_utils.to_categorical(result, nb_classes)
@@ -43,22 +41,18 @@ def create_class_pairs(x, y, classes=10, pos=1, neg=0):
     :param y: (np.ndarray) vector of labels, with M nb of instances as first dimension
     :param classes: (int) number of classes
     :param pos: (float) score affected to the positive pairs (couple of similar points)
-    :param neg: (float) score attected to the negative pairs (couple of dissimilar points)
+    :param neg: (float) score affected to the negative pairs (couple of dissimilar points)
     :return: (np.ndarray, np.ndarray) M times classes pairs of points and corresponding scores
-    
     """
 
     pairs = []
     scores = []
-
     classes_idx = [np.where(y == i)[0] for i in range(classes)]
 
     for d in range(classes):
-
         nb = len(classes_idx[d])
 
         for i in range(nb):
-
             j = random.randrange(0, nb)
             z1, z2 = classes_idx[d][i], classes_idx[d][j]
             pairs += [[x[z1], x[z2]]]
@@ -70,7 +64,6 @@ def create_class_pairs(x, y, classes=10, pos=1, neg=0):
                 j = random.randrange(0, size)
                 z1, z2 = classes_idx[d][i], classes_idx[dn][j]
                 pairs += [[x[z1], x[z2]]]
-
                 scores += [neg]
 
     return np.array(pairs), np.array(scores)
@@ -79,7 +72,7 @@ def create_class_pairs(x, y, classes=10, pos=1, neg=0):
 def get_label_conf(y_vec):
     """
     Returns the confidence and the label of the most probable class given a vector of class confidences
-    :param y_vec: (np.ndarray) vector of class confidences, nb of intances as first dimension
+    :param y_vec: (np.ndarray) vector of class confidences, nb of instances as first dimension
     :return: (np.ndarray, np.ndarray) confidences and labels
     """
     assert len(y_vec.shape) == 2
@@ -108,7 +101,7 @@ def get_labels_np_array(preds):
     Returns the label of the most probable class given a array of class confidences.
     See get_labels_tf_tensor() for tensorflow version
 
-    :param preds: (np.ndarray) array of class confidences, nb of intances as first dimension
+    :param preds: (np.ndarray) array of class confidences, nb of instances as first dimension
     :return: (np.ndarray) labels
     """
     preds_max = np.amax(preds, axis=1, keepdims=True)
@@ -122,11 +115,10 @@ def preprocess(x, y, nb_classes=10, max_value=255):
 
     :param x: array of instances
     :param y: array of labels
-    :param int nb_classes: 
-    :param int max_value: original maximal pixel value
-    :return: x,y
+    :param nb_classes: int, number of classes
+    :param max_value: int, original maximal pixel value
+    :return: rescaled values of x, y
     """
-
     x = x.astype('float32') / max_value
     y = np_utils.to_categorical(y, nb_classes)
 
@@ -136,10 +128,10 @@ def preprocess(x, y, nb_classes=10, max_value=255):
 
 
 def load_cifar10():
-    """Loads CIFAR10 dataset from config.CIFAR10_PATH.
+    """Loads CIFAR10 dataset from config.CIFAR10_PATH or download it if necessary.
 
     :return: (x_train, y_train), (x_test, y_test), min, max
-    :rtype: tuple of numpy.ndarray), (tuple of numpy.ndarray)
+    :rtype: (tuple of numpy.ndarray), (tuple of numpy.ndarray), float, float
     """
     from config import CIFAR10_PATH
     min_, max_ = 0., 1.
@@ -160,7 +152,6 @@ def load_cifar10():
 
     fpath = os.path.join(path, 'test_batch')
     x_test, y_test = load_batch(fpath)
-
     y_train = np.reshape(y_train, (len(y_train), 1))
     y_test = np.reshape(y_test, (len(y_test), 1))
 
@@ -175,10 +166,10 @@ def load_cifar10():
 
 
 def load_mnist():
-    """Loads MNIST dataset from config.MNIST_PATH
+    """Loads MNIST dataset from config.MNIST_PATH or download it if necessary.
     
     :return: (x_train, y_train), (x_test, y_test), min, max
-    :rtype: tuple of numpy.ndarray), (tuple of numpy.ndarray)
+    :rtype: tuple of numpy.ndarray), (tuple of numpy.ndarray), float, float
     """
     from config import MNIST_PATH
     min_, max_ = 0., 1.
@@ -196,7 +187,6 @@ def load_mnist():
     # add channel axis
     x_train = np.expand_dims(x_train, axis=3)
     x_test = np.expand_dims(x_test, axis=3)
-
     x_train, y_train = preprocess(x_train, y_train)
     x_test, y_test = preprocess(x_test, y_test)
 
@@ -206,14 +196,13 @@ def load_mnist():
 def load_imagenet():
     """Loads Imagenet dataset from config.IMAGENET_PATH
 
-        :return: (x_train, y_train), (x_test, y_test), min, max
-        :rtype: tuple of numpy.ndarray), (tuple of numpy.ndarray)
-        """
+    :return: (x_train, y_train), (x_test, y_test), min, max
+    :rtype: tuple of numpy.ndarray), (tuple of numpy.ndarray), float, float
+    """
     from config import IMAGENET_PATH
     min_, max_ = 0., 255.
 
     class_index_path = 'https://s3.amazonaws.com/deep-learning-models/image-models/imagenet_class_index.json'
-
     class_id = IMAGENET_PATH.split("/")[-1]
 
     fpath = get_file('imagenet_class_index.json', class_index_path, cache_subdir='models')
@@ -225,7 +214,6 @@ def load_imagenet():
             break
 
     dataset = list()
-
     for root, _, files in os.walk(IMAGENET_PATH):
         for file in files:
             if file.endswith(".jpg"):
@@ -277,8 +265,7 @@ def make_directory(dir_path):
 
 def get_npy_files(path):
     """
-    generator
-    Returns all the npy files in path subdirectories.
+    Generator returning all the npy files in path subdirectories.
     :param path: (str) directory path
     :return: (str) paths
     """
@@ -287,24 +274,6 @@ def get_npy_files(path):
         for file in files:
             if file.endswith(".npy"):
                 yield os.path.join(root, file)
-
-
-def set_group_permissions_rec(path, group="drl-dwl"):
-    for root, _, files in os.walk(path):
-        set_group_permissions(root, group)
-
-        for f in files:
-            try:
-                set_group_permissions(os.path.join(root, f), group)
-            except:
-                pass
-
-
-def set_group_permissions(filename, group="drl-dwl"):
-    import shutil
-    shutil.chown(filename, user=None, group=group)
-
-    os.chmod(filename, 0o774)
 
 # ------------------------------------------------------------------- ARG PARSER
 

@@ -1,4 +1,3 @@
-from keras.constraints import maxnorm
 from keras.models import Sequential, model_from_json
 from keras.layers import Dense, Activation, Flatten, Conv2D, MaxPooling2D, Dropout
 from keras.layers.normalization import BatchNormalization
@@ -38,7 +37,9 @@ def cifar10_layers(input_shape, nb_filters):
 
 
 class CNN(Classifier):
-
+    """
+    Implementation of a convolutional neural network using Keras sequential model
+    """
     def __init__(self, input_shape=None, include_end=True, act='relu', bnorm=False, input_ph=None, nb_filters=64,
                  nb_classes=10, act_params={}, model=None, defences=None, preproc=None, dataset="mnist"):
 
@@ -59,7 +60,6 @@ class CNN(Classifier):
         """
 
         if model is None:
-
             model = Sequential(name='cnn')
             layers = []
             if "mnist" in dataset:

@@ -8,7 +8,7 @@ import keras.backend as K
 import tensorflow as tf
 
 from src.classifiers.utils import load_classifier
-from src.utils import get_args, get_verbose_print, load_dataset, get_npy_files, set_group_permissions_rec
+from src.utils import get_args, get_verbose_print, load_dataset, get_npy_files
 
 # --------------------------------------------------------------------------------------------------- SETTINGS
 args = get_args(__file__, load_classifier=True, options="dsv")
@@ -77,6 +77,3 @@ for filepath in get_npy_files(ADV_PATH):
 
 with open(OUTPUT_PATH, "w") as json_file:
     json.dump(results, json_file)
-
-if config_dict['profile'] == "CLUSTER":
-    set_group_permissions_rec(OUTPUT_PATH)

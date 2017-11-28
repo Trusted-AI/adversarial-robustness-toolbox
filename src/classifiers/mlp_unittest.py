@@ -8,7 +8,7 @@ import tensorflow as tf
 
 from src.classifiers.mlp import MLP
 from src.classifiers.utils import save_classifier, load_classifier
-from src.utils import load_cifar10, load_mnist, make_directory, set_group_permissions_rec
+from src.utils import load_cifar10, load_mnist, make_directory
 
 BATCH_SIZE = 10
 NB_TRAIN = 1000
@@ -117,9 +117,6 @@ class TestMLPModel(unittest.TestCase):
 
         # Test saving
         save_classifier(classifier, path)
-
-        if config_dict["profile"] == "CLUSTER":
-            set_group_permissions_rec(path)
 
         self.assertTrue(os.path.isfile(path + "model.json"))
         self.assertTrue(os.path.getsize(path + "model.json") > 0)

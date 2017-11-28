@@ -1,10 +1,10 @@
-from keras import backend as K
+from keras import backend as k
 from keras.utils.generic_utils import Progbar
 
 import numpy as np
 import tensorflow as tf
 
-from src.attackers.attack import Attack, class_derivative
+from src.attacks.attack import Attack, class_derivative
 
 
 class DeepFool(Attack):
@@ -17,8 +17,13 @@ class DeepFool(Attack):
     def __init__(self, classifier, sess=None, max_iter=100, clip_min=None, clip_max=None, verbose=1):
         """
         Create a DeepFool attack instance.
-        :param classifier: A function that takes a symbolic input and returns the
-                      symbolic output for the classifier's predictions.
+        :param classifier: A function that takes a symbolic input and returns the symbolic output for the classifier's
+        predictions.
+        :param sess: The tf session to run graphs in.
+        :param max_iter: (integer) The maximum number of iterations.
+        :param clip_min: (optional float) Minimum input component value.
+        :param clip_max: (optional float) Maximum input component value.
+        :param verbose: (optional boolean)
         """
         super(DeepFool, self).__init__(classifier, sess)
         params = {'max_iter': max_iter, 'clip_min': clip_min, 'clip_max': clip_max, 'verbose': verbose}
@@ -35,7 +40,6 @@ class DeepFool(Attack):
         nb_instances = dims[0]
         dims[0] = None
         nb_classes = self.model.output_shape[1]
-
         xi_op = tf.placeholder(dtype=tf.float32, shape=dims)
 
         loss = self.classifier._get_predictions(xi_op, log=True)
@@ -48,8 +52,8 @@ class DeepFool(Attack):
         for j, x in enumerate(x_adv):
             xi = x[None, ...]
 
-            f = self.sess.run(self.model(xi_op), feed_dict={xi_op: xi, K.learning_phase(): 0})[0]
-            grd = self.sess.run(grads, feed_dict={xi_op: xi, K.learning_phase(): 0})
+            f = self.sess.run(self.model(xi_op), feed_dict={xi_op: xi, k.learning_phase(): 0})[0]
+            grd = self.sess.run(grads, feed_dict={xi_op: xi, k.learning_phase(): 0})
             grd = [g[0] for g in grd]
             fk_hat = np.argmax(f)
             fk_i_hat = fk_hat
@@ -76,8 +80,8 @@ class DeepFool(Attack):
                     xi = np.clip(xi, self.clip_min, self.clip_max)
 
                 # Recompute prediction for new xi
-                f = self.sess.run(self.model(xi_op), feed_dict={xi_op: xi, K.learning_phase(): 0})[0]
-                grd = self.sess.run(grads, feed_dict={xi_op: xi, K.learning_phase(): 0})
+                f = self.sess.run(self.model(xi_op), feed_dict={xi_op: xi, k.learning_phase(): 0})[0]
+                grd = self.sess.run(grads, feed_dict={xi_op: xi, k.learning_phase(): 0})
                 grd = [g[0] for g in grd]
                 fk_i_hat = np.argmax(f)
                 # print(fk_i_hat, fk_hat)
@@ -99,6 +103,15 @@ class DeepFool(Attack):
         return x_adv
 
     def set_params(self, **kwargs):
+        """Take in a dictionary of parameters and applies attack-specific checks before saving them as attributes.
+
+        Attack-specific parameters:
+        :param max_iter: (integer) The maximum number of iterations.
+        :param clip_min: (optional float) Minimum input component value.
+        :param clip_max: (optional float) Maximum input component value.
+        :param verbose: (optional boolean)
+        """
+        # Save attack-specific parameters
         super(DeepFool, self).set_params(**kwargs)
 
         if type(self.max_iter) is not int or self.max_iter <= 0:

@@ -1,8 +1,8 @@
 # -*- coding: utf-8 -*-
-''' Code adapted from https://github.com/fchollet/deep-learning-models
-'''
+# Code adapted from https://github.com/fchollet/deep-learning-models
 from __future__ import print_function
 
+import keras.backend as k
 from keras.layers import Input
 from keras import layers
 from keras.layers import Dense
@@ -12,25 +12,23 @@ from keras.layers import Conv2D
 from keras.layers import MaxPooling2D
 from keras.layers import BatchNormalization
 from keras.models import Model
-import keras.backend as K
 
 from src.classifiers.classifier import Classifier
 
+
 def identity_block(input_tensor, kernel_size, filters, stage, block, bnorm):
-    """The identity block is the block that has no conv layer at shortcut.
+    """The identity block is the block that has no conv layer at shortcut
 
-    # Arguments
-        input_tensor: input tensor
-        kernel_size: defualt 3, the kernel size of middle conv layer at main path
-        filters: list of integers, the filterss of 3 conv layer at main path
-        stage: integer, current stage label, used for generating layer names
-        block: 'a','b'..., current block label, used for generating layer names
-
-    # Returns
-        Output tensor for the block.
+    :param input_tensor: input tensor
+    :param kernel_size: (default 3) the kernel size of middle conv layer at main path
+    :param filters: list of integers, the filterss of 3 conv layer at main path
+    :param stage: integer, current stage label, used for generating layer names
+    :param block: 'a','b'..., current block label, used for generating layer names
+    :param bnorm: (boolean) True for batch normalization
+    :return: Output tensor for the block.
     """
     filters1, filters2, filters3 = filters
-    if K.image_data_format() == 'channels_last':
+    if k.image_data_format() == 'channels_last':
         bn_axis = 3
     else:
         bn_axis = 1
@@ -50,21 +48,19 @@ def identity_block(input_tensor, kernel_size, filters, stage, block, bnorm):
     x = Activation('relu')(x)
 
     x = Conv2D(filters3, (1, 1), name=conv_name_base + '2c')(x)
-
     if bnorm:
         x = BatchNormalization(axis=bn_axis, name=bn_name_base + '2c')(x)
-
     x = layers.add([x, input_tensor])
     x = Activation('relu')(x)
 
     return x
 
-class ResNet(Classifier):
 
+class ResNet(Classifier):
+    """Instantiates a ResNet model using Keras sequential model."""
     def __init__(self, input_shape=None, include_end=True, act='relu', bnorm=False, input_ph=None, nb_filters=64,
                  nb_classes=10, act_params={}, model=None, defences=None, preproc=None):
-
-        """Instantiates a ConvolutionalNeuralNetwork model using Keras sequential model
+        """Instantiates a ResNet model using Keras sequential model
 
         :param tuple input_shape: shape of the input images
         :param bool include_end: whether to include a softmax layer at the end or not
@@ -80,12 +76,9 @@ class ResNet(Classifier):
         :param str 
         :rtype: keras.model
         """
-
         if model is None:
-
             img_input = Input(shape=input_shape)
-
-            if K.image_data_format() == 'channels_last':
+            if k.image_data_format() == 'channels_last':
                 bn_axis = 3
             else:
                 bn_axis = 1
@@ -103,9 +96,7 @@ class ResNet(Classifier):
                 x = BatchNormalization(axis=bn_axis, name='bn_conv2')(x)
 
             x = Activation('relu')(x)
-
             x = identity_block(x, 3, [nb_filters, nb_filters, nb_filters * 2], stage=2, block='a', bnorm=bnorm)
-
             x = MaxPooling2D((3, 3), name='max_pool')(x)
             x = Flatten()(x)
             x = Dense(nb_classes)(x)
@@ -113,7 +104,7 @@ class ResNet(Classifier):
             if include_end:
                 x = Activation('softmax')(x)
 
-            # Create model.
+            # Create model
             model = Model(img_input, x, name='resnet')
 
         super(ResNet, self).__init__(model, defences, preproc)
