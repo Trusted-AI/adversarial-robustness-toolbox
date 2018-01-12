@@ -72,13 +72,6 @@ class TestFeatureSqueezing(unittest.TestCase):
                 squeezed_x = sess.run(tf_feature_squeezing(x_op, depth), feed_dict={x_op: x})
                 self.assertTrue((squeezed_x == 1).all())
 
-        grad = tf.gradients(tf.round(x_op), x_op)
-        grad_val = sess.run(grad, feed_dict={x_op: x})
-        print(grad_val.shape)
-
-        grad = tf.gradients(tf_feature_squeezing(x_op, 1), x_op)
-        grad_val = sess.run(grad, feed_dict={x_op: x})
-        print(grad_val.shape)
 
 if __name__ == '__main__':
     unittest.main()
