@@ -1,7 +1,7 @@
 import os
 
 from config import DATA_PATH, config_dict
-import keras.backend as K
+import keras.backend as k
 from keras.callbacks import ModelCheckpoint, TensorBoard, EarlyStopping
 import numpy as np
 import tensorflow as tf
@@ -23,19 +23,16 @@ comp_params = {"loss": 'categorical_crossentropy',
 
 # --------------------------------------------------------------------------------------------- GET CLASSIFIER
 
-# get dataset
+# Get dataset
 (X_train, Y_train), (X_test, Y_test), _, _ = load_dataset(args.dataset)
 
 if os.path.isfile(args.dataset):
     X_train = np.load(args.dataset)
     Y_train = Y_train if "train.npy" in args.dataset else Y_test
-
-# X_train, Y_train, X_test, Y_test = X_train[:1000], Y_train[:1000], X_test[:1000], Y_test[:1000]
-
 im_shape = X_train[0].shape
 
 session = tf.Session()
-K.set_session(session)
+k.set_session(session)
 
 if args.classifier == "cnn":
     classifier = CNN(im_shape, act=args.act, bnorm=False, defences=args.defences, dataset=args.dataset)
@@ -48,12 +45,9 @@ elif args.classifier == "mlp":
 classifier.compile(comp_params)
 
 if args.save is not False:
-
     if args.save:
         MODEL_PATH = os.path.abspath(args.save)
-
     else:
-
         if args.defences:
             defences = "-".join(args.defences)
         else:
@@ -62,7 +56,6 @@ if args.save is not False:
                                   defences)
 
     v_print("Classifier saved in", MODEL_PATH)
-
     make_directory(MODEL_PATH)
 
     # Save best classifier weights
@@ -73,7 +66,6 @@ if args.save is not False:
 
     # Remote monitor
     monitor = TensorBoard(log_dir=os.path.join(MODEL_PATH, 'logs'), write_graph=False)
-
     callbacks_list = [checkpoint, monitor]
 else:
     callbacks_list = []
@@ -85,8 +77,8 @@ classifier.fit(X_train, Y_train, verbose=2*int(args.verbose), validation_split=a
 
 if args.save is not False:
     save_classifier(classifier, MODEL_PATH)
-    # Load model with best validation score
 
+    # Load model with best validation score
     classifier = load_classifier(MODEL_PATH, "best-weights.h5")
 
     # # Change files' group and permissions if on ccc

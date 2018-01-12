@@ -5,7 +5,6 @@ import warnings
 from keras.models import model_from_json
 from keras.optimizers import SGD
 
-from src.classifiers.classifier import Classifier
 from src.classifiers.bnn import BNN
 from src.classifiers.cnn import CNN
 from src.classifiers.mlp import MLP
@@ -17,27 +16,26 @@ custom_objects = {'BoundedReLU': BoundedReLU}
 
 
 def save_classifier(classifier, file_path="./model/"):
-    """ Saves classifier in the given location
+    """Saves classifier in the given location
 
-    :param classifier: model to save
-    :param str file_path: path to file
-    :return: None
+    :param classifier: Model to save
+    :param str file_path: Path to file
     """
     make_directory(file_path.rsplit('/', 1)[0])
-    # save classifier params
+    # Save classifier params
     with open(os.path.join(file_path, 'params.json'), 'w') as fp:
         params = {"class_name": type(classifier).__name__, "defences": classifier.defences}
         json.dump(params, fp)
 
-    # serialize model to JSON
+    # Serialize model to JSON
     with open(os.path.join(file_path, "model.json"), "w") as json_file:
         model_json = classifier.model.to_json()
         json_file.write(model_json)
 
-    # serialize weights to HDF5
+    # Serialize weights to HDF5
     classifier.model.save_weights(os.path.join(file_path, "weights.h5"))
 
-    # save compilation params to json
+    # Save compilation params to json
     if classifier.comp_param:
         with open(os.path.join(file_path, 'comp_par.json'), 'w') as fp:
             try:
@@ -50,19 +48,18 @@ def save_classifier(classifier, file_path="./model/"):
 
 
 def load_classifier(file_path, weights_name="weights.h5"):
-    """ Loads a classifier from given location and tries to compile it
+    """Loads a classifier from given location and tries to compile it
 
     :param file_path: folder to load the model from (full path)
     :param weights_name: name of the file containing the weights
     :return: Classifier
     """
-
-    # load json and create model
+    # Load json and create model
     with open(os.path.join(file_path, "model.json"), "r") as json_file:
         model_json = json_file.read()
     model = model_from_json(model_json, custom_objects=custom_objects)
 
-    # load params to decide what classifier to create
+    # Load params to decide what classifier to create
     with open(os.path.join(file_path, "params.json"), "r") as json_file:
         params_json = json.load(json_file)
 
@@ -73,10 +70,10 @@ def load_classifier(file_path, weights_name="weights.h5"):
 
     classifier = globals()[params_json["class_name"]](model=model, defences=defences)
 
-    # load weights into new model
+    # Load weights into new model
     classifier.model.load_weights(os.path.join(file_path, weights_name))
 
-    # try to load comp param and compile model
+    # Try to load compilation parameters and compile model
     try:
         with open(os.path.join(file_path, 'comp_par.json'), 'r') as fp:
             classifier.comp_par = json.load(fp)

@@ -1,17 +1,17 @@
 from config import config_dict
 
 import numpy as np
-import os, sys
+import os
 
-import keras.backend as K
+import keras.backend as k
 import tensorflow as tf
 
-from src.attackers.carlini import CarliniL2Method
-from src.attackers.deepfool import DeepFool
-from src.attackers.fast_gradient import FastGradientMethod
-from src.attackers.saliency_map import SaliencyMapMethod
-from src.attackers.universal_perturbation import UniversalPerturbation
-from src.attackers.virtual_adversarial import VirtualAdversarialMethod
+from src.attacks.carlini import CarliniL2Method
+from src.attacks.deepfool import DeepFool
+from src.attacks.fast_gradient import FastGradientMethod
+from src.attacks.saliency_map import SaliencyMapMethod
+from src.attacks.universal_perturbation import UniversalPerturbation
+from src.attacks.virtual_adversarial import VirtualAdversarialMethod
 from src.classifiers.utils import load_classifier
 
 from src.utils import get_args, get_verbose_print, load_dataset, make_directory, set_group_permissions_rec
@@ -19,20 +19,20 @@ from src.utils import get_args, get_verbose_print, load_dataset, make_directory,
 # --------------------------------------------------------------------------------------------------- SETTINGS
 args = get_args(__file__, load_classifier=True, per_batch=True, options="adsv")
 v_print = get_verbose_print(args.verbose)
-alpha = 0.05 # constant for random perturbation
+alpha = 0.05  # constant for random perturbation
 
 assert args.batch_idx < 10
-# get dataset
-(_, _), (X_test, Y_test), MIN, MAX = load_dataset(args.dataset)
+# Get dataset
+(_, _), (X_test, Y_test), min_, max_ = load_dataset(args.dataset)
 M = len(X_test)
 batch_size = M // 10
 
-begin = batch_size*args.batch_idx
+begin = batch_size * args.batch_idx
 end = min(batch_size + begin, M)
 X_test, Y_test = X_test[begin:end], Y_test[begin:end]
 
 session = tf.Session()
-K.set_session(session)
+k.set_session(session)
 
 # Load classification model
 MODEL_PATH = os.path.join(os.path.abspath(args.load), "")
@@ -59,15 +59,14 @@ if args.adv_method in ['fgsm', "vat", "rnd_fgsm"]:
         adv_crafter = VirtualAdversarialMethod(classifier, sess=session)
 
     for eps in eps_ranges[args.adv_method]:
-
         if args.adv_method == "rnd_fgsm":
-            x_test = np.clip(X_test + alpha * np.sign(np.random.randn(*X_test.shape)), MIN, MAX)
+            x_test = np.clip(X_test + alpha * np.sign(np.random.randn(*X_test.shape)), min_, max_)
             e = eps - alpha
         else:
             x_test = X_test
             e = eps
 
-        X_test_adv = adv_crafter.generate(x_val=x_test, eps=e, clip_min=MIN, clip_max=MAX)
+        X_test_adv = adv_crafter.generate(x_val=x_test, eps=e, clip_min=min_, clip_max=max_)
 
         if args.save:
             np.save(os.path.join(SAVE_ADV, "eps%.2f_test.npy" % eps), X_test_adv)
@@ -75,20 +74,19 @@ if args.adv_method in ['fgsm', "vat", "rnd_fgsm"]:
 else:
 
     if args.adv_method == 'deepfool':
-        adv_crafter = DeepFool(classifier, session, clip_min=MIN, clip_max=MAX)
+        adv_crafter = DeepFool(classifier, session, clip_min=min_, clip_max=max_)
     elif args.adv_method == 'jsma':
-        adv_crafter = SaliencyMapMethod(classifier, sess=session, clip_min=MIN, clip_max=MAX, gamma=1, theta=MAX)
+        adv_crafter = SaliencyMapMethod(classifier, sess=session, clip_min=min_, clip_max=max_, gamma=1, theta=max_)
     elif args.adv_method == 'carlini':
         adv_crafter = CarliniL2Method(classifier, sess=session, targeted=False, confidence=10)
     else:
         adv_crafter = UniversalPerturbation(classifier, session, p=np.inf,
-                                            attacker_params={'clip_min':MIN, 'clip_max':MAX})
+                                            attacker_params={'clip_min':min_, 'clip_max':max_})
 
     X_test_adv = adv_crafter.generate(x_val=X_test)
 
     if args.save:
         np.save(os.path.join(SAVE_ADV, "test.npy"), X_test_adv)
-
 
 if args.save:
 

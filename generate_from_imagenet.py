@@ -1,34 +1,29 @@
 import config
+import os
+import sys
+
+import keras.backend as k
+from keras.applications.vgg16 import VGG16, preprocess_input
+from keras.preprocessing import image
 import numpy as np
-import os, sys
+import tensorflow as tf
 from scipy import misc
 
-import keras.backend as K
-from keras.applications.vgg16 import VGG16, preprocess_input
-# from keras.applications.resnet50 import ResNet50, preprocess_input
-from keras.preprocessing import image
-import tensorflow as tf
-
-from src.attackers.deepfool import DeepFool
-from src.attackers.fast_gradient import FastGradientMethod
-from src.attackers.saliency_map import SaliencyMapMethod
-from src.attackers.universal_perturbation import UniversalPerturbation
+from src.attacks.deepfool import DeepFool
+from src.attacks.fast_gradient import FastGradientMethod
+from src.attacks.saliency_map import SaliencyMapMethod
+from src.attacks.universal_perturbation import UniversalPerturbation
 from src.classifiers.classifier import Classifier
-
 from src.utils import get_args, make_directory, get_label_conf
 
 PATH = "./imagenet/"
-
 args = get_args(__file__, options="a")
 
 session = tf.Session()
-K.set_session(session)
+k.set_session(session)
 
 model = VGG16()
-# model = ResNet50()
-
 classifier = Classifier(model, preproc=preprocess_input)
-
 save_path = os.path.join(PATH, args.adv_method)
 
 if args.adv_method == "universal":
@@ -41,7 +36,7 @@ if args.adv_method == "universal":
 elif args.adv_method == "deepfool":
 
     attack_params = {"clip_min": 0.,
-                     "clip_max": 255,}
+                     "clip_max": 255}
 
     attack = DeepFool(classifier, session, max_iter=1, verbose=2)
 
@@ -77,18 +72,16 @@ with open(os.path.join(PATH, "pic_ids.txt"), "r") as infile:
 
 X = np.empty((len(lines), 224, 224, 3))
 
-for i,file in enumerate(lines):
-    img = image.load_img(file, target_size=(224, 224))
+for i, file_ in enumerate(lines):
+    img = image.load_img(file_, target_size=(224, 224))
     x = image.img_to_array(img)
-
     X[i] = x.copy()
 
 advs = attack.generate(X, **attack_params)
-
 make_directory(save_path)
 
-for i, (adv, file) in enumerate(zip(advs, lines)):
-    img_name = file.split("/")[-1]
+for i, (adv, file_) in enumerate(zip(advs, lines)):
+    img_name = file_.split("/")[-1]
     misc.imsave(os.path.join(save_path, img_name.replace(".jpg", "_adv.jpg")), adv)
     misc.imsave(os.path.join(save_path, img_name.replace(".jpg", "_pert.jpg")), X[i] - adv)
 

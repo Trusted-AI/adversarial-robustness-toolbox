@@ -1,12 +1,13 @@
 import os
 
 from config import DATA_PATH, config_dict
-import keras.backend as K
+import keras.backend as k
 from keras.callbacks import ModelCheckpoint, TensorBoard, EarlyStopping
 import numpy as np
 import tensorflow as tf
 
 from src.classifiers.cnn import CNN
+from src.classifiers.mlp import MLP
 from src.classifiers.resnet import ResNet
 from src.classifiers.utils import save_classifier, load_classifier
 from src.utils import get_args, get_verbose_print, load_dataset, make_directory, set_group_permissions_rec
@@ -38,24 +39,22 @@ Y_train = np.append(Y_train, Y_train_adv, axis=0)
 im_shape = X_train[0].shape
 
 session = tf.Session()
-K.set_session(session)
+k.set_session(session)
 
 if args.classifier == "cnn":
     classifier = CNN(im_shape, act=args.act, bnorm=False, defences=args.defences, dataset=args.dataset)
-
 elif args.classifier == "resnet":
     classifier = ResNet(im_shape, act=args.act, bnorm=False, defences=args.defences)
+elif args.classifier == "mlp":
+    classifier = MLP(im_shape, act=args.act, bnorm=False, defences=args.defences, dataset=args.dataset)
 
 # Fit the classifier
 classifier.compile(comp_params)
 
 if args.save is not False:
-
     if args.save:
         MODEL_PATH = os.path.abspath(args.save)
-
     else:
-
         if args.defences:
             defences = "-".join(args.defences)
         else:
@@ -64,7 +63,6 @@ if args.save is not False:
                                   "adv-trained", args.adv_path, defences)
 
     v_print("Classifier saved in", MODEL_PATH)
-
     make_directory(MODEL_PATH)
 
     # Save best classifier weights
@@ -75,7 +73,6 @@ if args.save is not False:
 
     # Remote monitor
     monitor = TensorBoard(log_dir=os.path.join(MODEL_PATH, 'logs'), write_graph=False)
-
     callbacks_list = [checkpoint, monitor]
 else:
     callbacks_list = []

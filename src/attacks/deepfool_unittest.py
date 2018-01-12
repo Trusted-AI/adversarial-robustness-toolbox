@@ -2,12 +2,12 @@ import keras.backend as k
 import tensorflow as tf
 import unittest
 
-from src.attackers.virtual_adversarial import VirtualAdversarialMethod
+from src.attacks.deepfool import DeepFool
 from src.classifiers.cnn import CNN
-from src.utils import load_mnist, get_labels_np_array
+from src.utils import load_mnist, get_labels_np_array, get_label_conf
 
 
-class TestVirtualAdversarial(unittest.TestCase):
+class TestDeepFool(unittest.TestCase):
     def test_mnist(self):
         session = tf.Session()
         k.set_session(session)
@@ -17,7 +17,7 @@ class TestVirtualAdversarial(unittest.TestCase):
                        "metrics": ['accuracy']}
 
         # get MNIST
-        batch_size, nb_train, nb_test = 100, 1000, 100
+        batch_size, nb_train, nb_test = 100, 1000, 11
         (X_train, Y_train), (X_test, Y_test), _, _ = load_mnist()
         X_train, Y_train = X_train[:nb_train], Y_train[:nb_train]
         X_test, Y_test = X_test[:nb_test], Y_test[:nb_test]
@@ -30,11 +30,11 @@ class TestVirtualAdversarial(unittest.TestCase):
         scores = classifier.evaluate(X_test, Y_test)
         print("\naccuracy on test set: %.2f%%" % (scores[1] * 100))
 
-        df = VirtualAdversarialMethod(classifier, sess=session, clip_min=0., clip_max=1.)
-        x_test_adv = df.generate(X_test, eps=1)
+        df = DeepFool(classifier, sess=session)
+        df.set_params(clip_min=0., clip_max=1.)
+        x_test_adv = df.generate(X_test)
         self.assertFalse((X_test == x_test_adv).all())
-
-        y_pred = get_labels_np_array(classifier.predict(x_test_adv))
+        y_pred = classifier.predict(x_test_adv)
         self.assertFalse((Y_test == y_pred).all())
 
         scores = classifier.evaluate(x_test_adv, Y_test)

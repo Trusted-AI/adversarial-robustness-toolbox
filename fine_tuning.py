@@ -1,14 +1,11 @@
 import os
 
 from config import DATA_PATH, config_dict
-import keras.backend as K
 
 from keras.applications.vgg16 import VGG16, preprocess_input
 from keras.callbacks import ModelCheckpoint, TensorBoard
 from keras.optimizers import SGD
-
 import numpy as np
-import tensorflow as tf
 
 from src.classifiers.classifier import Classifier
 from src.classifiers.utils import save_classifier, load_classifier
@@ -26,32 +23,26 @@ comp_params = {"loss": 'categorical_crossentropy',
 
 # --------------------------------------------------------------------------------------------- GET CLASSIFIER
 
-# get dataset
+# Get dataset
 (X_train, Y_train), (X_test, Y_test), _, _ = load_dataset("imagenet")
 im_shape = X_train[0].shape
 
-model = VGG16()
-
-classifier = Classifier(model, preproc=preprocess_input)
-
 # Fit the classifier
+model = VGG16()
+classifier = Classifier(model, preproc=preprocess_input)
 classifier.compile(comp_params)
 
 scores = classifier.evaluate(X_test, Y_test, verbose=args.verbose)
 v_print("\naccuracy: %.2f%%" % (scores[1] * 100))
 
 if args.save is not False:
-
     if args.save:
         MODEL_PATH = os.path.abspath(args.save)
-
     else:
-
         MODEL_PATH = os.path.join(os.path.abspath(DATA_PATH), "classifiers", "imagenet", "vgg16", "gaussian", 
                                   "stdev%.2f" % args.std_dev, "pert-insts%d" % args.nb_instances)
 
     v_print("Classifier saved in", MODEL_PATH)
-
     make_directory(MODEL_PATH)
 
     # Save best classifier weights
@@ -62,23 +53,22 @@ if args.save is not False:
 
     # Remote monitor
     monitor = TensorBoard(log_dir=os.path.join(MODEL_PATH, 'logs'), write_graph=False)
-
     callbacks_list = [checkpoint, monitor]
 else:
     callbacks_list = []
 
-# generate gaussian perturbed instances
-x_gau_perts = np.random.normal(X_train, scale=args.std_dev, size=(args.nb_instances, )+X_train.shape)
+# Generate Gaussian perturbed instances
+x_gau_perts = np.random.normal(X_train, scale=args.std_dev, size=(args.nb_instances,) + X_train.shape)
 x_gau_perts = x_gau_perts.reshape(-1, *im_shape)
 y_gau_perts = np.tile(Y_train, (args.nb_instances, 1))
 
 classifier.fit(np.vstack((X_train, x_gau_perts)), np.vstack((Y_train, y_gau_perts)), verbose=2*int(args.verbose),
-          validation_split=args.val_split, epochs=5, batch_size=batch_size, callbacks=callbacks_list)
+               validation_split=args.val_split, epochs=5, batch_size=batch_size, callbacks=callbacks_list)
 
 if args.save is not False:
     save_classifier(classifier, MODEL_PATH)
-    # Load model with best validation score
 
+    # Load model with best validation score
     classifier = load_classifier(MODEL_PATH, "best-weights.h5")
 
     # # Change files' group and permissions if on ccc

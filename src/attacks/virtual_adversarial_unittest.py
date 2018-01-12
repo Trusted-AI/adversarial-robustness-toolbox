@@ -1,15 +1,13 @@
-import unittest
-
 import keras.backend as k
 import tensorflow as tf
+import unittest
 
-from src.attackers.universal_perturbation import UniversalPerturbation
+from src.attacks.virtual_adversarial import VirtualAdversarialMethod
 from src.classifiers.cnn import CNN
 from src.utils import load_mnist, get_labels_np_array
 
 
-class TestUniversalPerturbation(unittest.TestCase):
-
+class TestVirtualAdversarial(unittest.TestCase):
     def test_mnist(self):
         session = tf.Session()
         k.set_session(session)
@@ -19,7 +17,7 @@ class TestUniversalPerturbation(unittest.TestCase):
                        "metrics": ['accuracy']}
 
         # get MNIST
-        batch_size, nb_train, nb_test = 10, 10, 10
+        batch_size, nb_train, nb_test = 100, 1000, 100
         (X_train, Y_train), (X_test, Y_test), _, _ = load_mnist()
         X_train, Y_train = X_train[:nb_train], Y_train[:nb_train]
         X_test, Y_test = X_test[:nb_test], Y_test[:nb_test]
@@ -32,30 +30,15 @@ class TestUniversalPerturbation(unittest.TestCase):
         scores = classifier.evaluate(X_test, Y_test)
         print("\naccuracy on test set: %.2f%%" % (scores[1] * 100))
 
-        attack_params = {"verbose": 2,
-                         "clip_min": 0.,
-                         "clip_max": 1,
-                         "attacker": "deepfool"}
-
-        attack = UniversalPerturbation(classifier, session)
-        x_train_adv = attack.generate(X_train, **attack_params)
-        self.assertTrue((attack.fooling_rate >= 0.2) or not attack.converged)
-
-        x_test_adv = X_test + attack.v
-
+        df = VirtualAdversarialMethod(classifier, sess=session, clip_min=0., clip_max=1.)
+        x_test_adv = df.generate(X_test, eps=1)
         self.assertFalse((X_test == x_test_adv).all())
 
-        train_y_pred = get_labels_np_array(classifier.predict(x_train_adv))
-        test_y_pred = get_labels_np_array(classifier.predict(x_test_adv))
-
-        self.assertFalse((Y_test == test_y_pred).all())
-        self.assertFalse((Y_train == train_y_pred).all())
-
-        scores = classifier.evaluate(x_train_adv, Y_train)
-        print('\naccuracy on adversarial train examples: %.2f%%' % (scores[1] * 100))
+        y_pred = get_labels_np_array(classifier.predict(x_test_adv))
+        self.assertFalse((Y_test == y_pred).all())
 
         scores = classifier.evaluate(x_test_adv, Y_test)
-        print('\naccuracy on adversarial test examples: %.2f%%' % (scores[1] * 100))
+        print('\naccuracy on adversarial examples: %.2f%%' % (scores[1] * 100))
 
 if __name__ == '__main__':
     unittest.main()

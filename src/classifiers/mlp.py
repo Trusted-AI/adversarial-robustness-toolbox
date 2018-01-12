@@ -1,6 +1,6 @@
-from keras.models import Sequential
 from keras.layers import Dense, Activation, Flatten
 from keras.layers.normalization import BatchNormalization
+from keras.models import Sequential
 
 from src.classifiers.classifier import Classifier
 
@@ -35,8 +35,8 @@ class MLP(Classifier):
     """
     def __init__(self, input_shape=None, include_end=True, act='relu', bnorm=False, input_ph=None, nb_classes=10,
                  act_params={}, model=None, defences=None, preproc=None, dataset="mnist"):
-        """
-        Instantiate an MLP using Keras Sequential model
+        """Instantiate an MLP using Keras Sequential model
+
         :param input_shape: tuple, shape of the input images
         :param include_end: bool, True if a softmax layer is to be included at the end
         :param act: string, activation function
@@ -58,6 +58,8 @@ class MLP(Classifier):
                 layers = mnist_layers(input_shape)
             elif "cifar10" in dataset:
                 layers = cifar10_layers(input_shape)
+            elif "stl10" in dataset:
+                raise NotImplementedError("No CNN architecture is defined for dataset '{0}'.".format(dataset))
 
             for layer in layers:
                 if layer == "activation":

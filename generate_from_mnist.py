@@ -1,28 +1,26 @@
 from config import DATA_PATH
+import os
+import sys
+
+import keras.backend as k
 import numpy as np
-import os, sys
+import tensorflow as tf
 from scipy import misc
 
-import keras.backend as K
-import tensorflow as tf
-
-from src.attackers.deepfool import DeepFool
-from src.attackers.fast_gradient import FastGradientMethod
-from src.attackers.saliency_map import SaliencyMapMethod
-from src.attackers.universal_perturbation import UniversalPerturbation
-
+from src.attacks.deepfool import DeepFool
+from src.attacks.fast_gradient import FastGradientMethod
+from src.attacks.saliency_map import SaliencyMapMethod
+from src.attacks.universal_perturbation import UniversalPerturbation
 from src.classifiers.utils import load_classifier
-
 from src.utils import get_args, make_directory, get_label_conf, load_dataset
 
 args = get_args(__file__, options="a")
-
 PATH = "./mnist/"
 
 session = tf.Session()
-K.set_session(session)
+k.set_session(session)
 
-# get dataset
+# Get dataset
 _, (X, Y), _, _ = load_dataset("mnist")
 X, Y = X[:1], Y[:1]
 
@@ -44,7 +42,7 @@ if args.adv_method == "universal":
 elif args.adv_method == "deepfool":
 
     attack_params = {"clip_min": 0.,
-                     "clip_max": 1,}
+                     "clip_max": 1}
 
     attack_on_our = DeepFool(our_classifier, session, max_iter=10, verbose=2)
     attack_on_basic = DeepFool(basic_classifier, session, max_iter=10, verbose=2)
@@ -77,7 +75,6 @@ else:
 
         save_path = os.path.join(save_path, "minimal")
 
-
     attack_on_our = FastGradientMethod(our_classifier, session)
     attack_on_basic = FastGradientMethod(basic_classifier, session)
 
@@ -89,7 +86,6 @@ make_directory(save_path_basic)
 advs_on_our = attack_on_our.generate(X, **attack_params)
 print(advs_on_our)
 advs_on_basic = attack_on_basic.generate(X, **attack_params)
-
 make_directory(save_path)
 
 for i, (adv_our, adv_basic) in enumerate(zip(advs_on_our, advs_on_basic)):

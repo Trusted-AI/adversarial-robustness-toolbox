@@ -1,12 +1,10 @@
+from config import config_dict
+
 import keras.backend as k
-import numpy as np
 import tensorflow as tf
 import unittest
 
-from config import config_dict
-from cleverhans.model import CallableModelWrapper
-
-from src.attackers.carlini import CarliniL2Method
+from src.attacks.carlini import CarliniL2Method
 from src.classifiers.cnn import CNN
 from src.utils import load_mnist, get_labels_np_array, random_targets
 
