@@ -71,6 +71,8 @@ class BNN(Classifier):
                 layers = mnist_layers(input_shape, nb_filters)
             elif "cifar10" in dataset:
                 layers = cifar10_layers(input_shape, nb_filters)
+            elif "stl10" in dataset:
+                raise NotImplementedError("No BNN architecture is defined for dataset '{0}'.".format(dataset))
 
             # Check if at least one of the layers is Dropout
             assert ('Dropout' in [layer.__class__.__name__ for layer in layers])

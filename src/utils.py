@@ -82,8 +82,7 @@ def get_label_conf(y_vec):
 
 
 def get_labels_tf_tensor(preds):
-    """
-    Returns the label of the most probable class given a tensor of class confidences.
+    """Returns the label of the most probable class given a tensor of class confidences.
     See get_labels_np_array() for numpy version
     
     :param preds: (tf.tensor) tensor of class confidences, nb of intances as first dimension
@@ -97,8 +96,7 @@ def get_labels_tf_tensor(preds):
 
 
 def get_labels_np_array(preds):
-    """
-    Returns the label of the most probable class given a array of class confidences.
+    """Returns the label of the most probable class given a array of class confidences.
     See get_labels_tf_tensor() for tensorflow version
 
     :param preds: (np.ndarray) array of class confidences, nb of instances as first dimension
@@ -111,7 +109,7 @@ def get_labels_np_array(preds):
 
 
 def preprocess(x, y, nb_classes=10, max_value=255):
-    """ Scales `x` to [0,1] and converts `y` to class categorical confidences.
+    """Scales `x` to [0,1] and converts `y` to class categorical confidences.
 
     :param x: array of instances
     :param y: array of labels
@@ -128,7 +126,7 @@ def preprocess(x, y, nb_classes=10, max_value=255):
 
 
 def load_cifar10():
-    """Loads CIFAR10 dataset from config.CIFAR10_PATH or download it if necessary.
+    """Loads CIFAR10 dataset from config.CIFAR10_PATH or downloads it if necessary.
 
     :return: (x_train, y_train), (x_test, y_test), min, max
     :rtype: (tuple of numpy.ndarray), (tuple of numpy.ndarray), float, float
@@ -141,8 +139,8 @@ def load_cifar10():
 
     num_train_samples = 50000
 
-    x_train = np.zeros((num_train_samples, 3, 32, 32), dtype='uint8')
-    y_train = np.zeros((num_train_samples, ), dtype='uint8')
+    x_train = np.zeros((num_train_samples, 3, 32, 32), dtype=np.uint8)
+    y_train = np.zeros((num_train_samples, ), dtype=np.uint8)
 
     for i in range(1, 6):
         fpath = os.path.join(path, 'data_batch_' + str(i))
@@ -166,7 +164,7 @@ def load_cifar10():
 
 
 def load_mnist():
-    """Loads MNIST dataset from config.MNIST_PATH or download it if necessary.
+    """Loads MNIST dataset from config.MNIST_PATH or downloads it if necessary.
     
     :return: (x_train, y_train), (x_test, y_test), min, max
     :rtype: tuple of numpy.ndarray), (tuple of numpy.ndarray), float, float
@@ -184,7 +182,7 @@ def load_mnist():
     y_test = f['y_test']
     f.close()
 
-    # add channel axis
+    # Add channel axis
     x_train = np.expand_dims(x_train, axis=3)
     x_test = np.expand_dims(x_test, axis=3)
     x_train, y_train = preprocess(x_train, y_train)
@@ -215,13 +213,13 @@ def load_imagenet():
 
     dataset = list()
     for root, _, files in os.walk(IMAGENET_PATH):
-        for file in files:
-            if file.endswith(".jpg"):
-                img = image.load_img(os.path.join(root, file), target_size=(224, 224))
+        for file_ in files:
+            if file_.endswith(".jpg"):
+                img = image.load_img(os.path.join(root, file_), target_size=(224, 224))
                 dataset.append(image.img_to_array(img))
 
     dataset = np.asarray(dataset)
-    y = np_utils.to_categorical(np.asarray([label]*len(dataset)), 1000)
+    y = np_utils.to_categorical(np.asarray([label] * len(dataset)), 1000)
 
     try:
         x_train, x_test = dataset[:700], dataset[700:]
@@ -229,6 +227,45 @@ def load_imagenet():
     except:
         x_train, x_test = dataset[:2], dataset[0:]
         y_train, y_test = y[:2], y[0:]
+
+    return (x_train, y_train), (x_test, y_test), min_, max_
+
+
+def load_stl():
+    """Loads the STL-10 dataset from config.STL10_PATH or downloads it if necessary.
+
+    :return: (x_train, y_train), (x_test, y_test), min, max
+    :rtype: tuple of numpy.ndarray), (tuple of numpy.ndarray), float, float
+    """
+    from config import STL10_PATH
+    min_, max_ = 0., 1.
+
+    # Download and extract data if needed
+    path = data_utils.get_file('stl10_binary', cache_subdir=STL10_PATH, untar=True,
+                               origin='https://ai.stanford.edu/~acoates/stl10/stl10_binary.tar.gz')
+
+    with open(os.path.join(path, 'train_X.bin'), 'rb') as f:
+        x_train = np.fromfile(f, dtype=np.uint8)
+        x_train = np.reshape(x_train, (-1, 3, 96, 96))
+
+    with open(os.path.join(path, 'test_X.bin'), 'rb') as f:
+        x_test = np.fromfile(f, dtype=np.uint8)
+        x_test = np.reshape(x_test, (-1, 3, 96, 96))
+
+    if K.image_data_format() == 'channels_last':
+        x_train = x_train.transpose(0, 2, 3, 1)
+        x_test = x_test.transpose(0, 2, 3, 1)
+
+    with open(os.path.join(path, 'train_y.bin'), 'rb') as f:
+        y_train = np.fromfile(f, dtype=np.uint8)
+        y_train -= 1
+
+    with open(os.path.join(path, 'test_y.bin'), 'rb') as f:
+        y_test = np.fromfile(f, dtype=np.uint8)
+        y_test -= 1
+
+    x_train, y_train = preprocess(x_train, y_train)
+    x_test, y_test = preprocess(x_test, y_test)
 
     return (x_train, y_train), (x_test, y_test), min_, max_
 
@@ -242,15 +279,14 @@ def load_dataset(name):
 
     if "mnist" in name:
         return load_mnist()
-
     elif "cifar10" in name:
         return load_cifar10()
-
     elif "imagenet" in name:
         return load_imagenet()
-
+    elif "stl10" in name:
+        return load_stl()
     else:
-        raise NotImplementedError("There is no loader for {} dataset".format(name))
+        raise NotImplementedError("There is no loader for dataset '{}'.".format(name))
 
 
 def make_directory(dir_path):
@@ -271,9 +307,9 @@ def get_npy_files(path):
     """
 
     for root, _, files in os.walk(path):
-        for file in files:
-            if file.endswith(".npy"):
-                yield os.path.join(root, file)
+        for file_ in files:
+            if file_.endswith(".npy"):
+                yield os.path.join(root, file_)
 
 # ------------------------------------------------------------------- ARG PARSER
 
@@ -318,7 +354,7 @@ def get_args(prog, load_classifier=False, load_sample=False, per_batch=False, op
         "s": {"flags": ["-s", "--save"],
               "kwargs": {"nargs": '?', "type": str, "dest": 'save', "default": False,
                          "help": 'if set, the classifier is saved; if an argument is provided it is used as path to'
-                                 'store the model '}},
+                                 ' store the model'}},
         "t": {"flags": ["-t", "--stdev"],
               "kwargs": {"type": float, "dest": 'std_dev', "default": 0.1,
                          "help": 'standard deviation of the distributions'}},

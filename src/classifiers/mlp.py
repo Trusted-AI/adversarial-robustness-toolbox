@@ -58,6 +58,8 @@ class MLP(Classifier):
                 layers = mnist_layers(input_shape)
             elif "cifar10" in dataset:
                 layers = cifar10_layers(input_shape)
+            elif "stl10" in dataset:
+                raise NotImplementedError("No CNN architecture is defined for dataset '{0}'.".format(dataset))
 
             for layer in layers:
                 if layer == "activation":

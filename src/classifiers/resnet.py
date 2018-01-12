@@ -59,7 +59,7 @@ def identity_block(input_tensor, kernel_size, filters, stage, block, bnorm):
 class ResNet(Classifier):
     """Instantiates a ResNet model using Keras sequential model."""
     def __init__(self, input_shape=None, include_end=True, act='relu', bnorm=False, input_ph=None, nb_filters=64,
-                 nb_classes=10, act_params={}, model=None, defences=None, preproc=None):
+                 nb_classes=10, act_params={}, model=None, defences=None, preproc=None, dataset='mnist'):
         """Instantiates a ResNet model using Keras sequential model
 
         :param tuple input_shape: shape of the input images
@@ -77,6 +77,9 @@ class ResNet(Classifier):
         :rtype: keras.model
         """
         if model is None:
+            if 'mnist' not in dataset:
+                raise NotImplementedError("No ResNet architecture is defined for dataset '{0}'.".format(dataset))
+
             img_input = Input(shape=input_shape)
             if k.image_data_format() == 'channels_last':
                 bn_axis = 3

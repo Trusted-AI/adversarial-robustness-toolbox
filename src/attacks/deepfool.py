@@ -57,11 +57,9 @@ class DeepFool(Attack):
             grd = [g[0] for g in grd]
             fk_hat = np.argmax(f)
             fk_i_hat = fk_hat
-
             nb_iter = 0
 
-            while (fk_i_hat == fk_hat) and (nb_iter < self.max_iter):
-
+            while fk_i_hat == fk_hat and nb_iter < self.max_iter:
                 grad_diff = grd - grd[fk_hat]
                 f_diff = f - f[fk_hat]
 
@@ -75,7 +73,6 @@ class DeepFool(Attack):
 
                 # Add perturbation and clip result
                 xi += r
-
                 if self.clip_min or self.clip_max:
                     xi = np.clip(xi, self.clip_min, self.clip_max)
 
@@ -84,12 +81,10 @@ class DeepFool(Attack):
                 grd = self.sess.run(grads, feed_dict={xi_op: xi, k.learning_phase(): 0})
                 grd = [g[0] for g in grd]
                 fk_i_hat = np.argmax(f)
-                # print(fk_i_hat, fk_hat)
 
                 nb_iter += 1
 
             x_adv[j] = xi[0]
-
             progress_bar.update(current=j, values=[("perturbation", abs(np.linalg.norm((x_adv[j]-x_val[j]).flatten())))])
 
         true_y = self.model.predict(x_val)

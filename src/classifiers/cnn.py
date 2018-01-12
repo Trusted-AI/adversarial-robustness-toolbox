@@ -58,15 +58,16 @@ class CNN(Classifier):
         :param dict act_params: dict of params for activation layers
         :rtype: keras.model object
         """
-
         if model is None:
             model = Sequential(name='cnn')
             layers = []
+
             if "mnist" in dataset:
                 layers = mnist_layers(input_shape, nb_filters)
-
             elif "cifar10" in dataset:
                 layers = cifar10_layers(input_shape, nb_filters)
+            elif "stl10" in dataset:
+                raise NotImplementedError("No CNN architecture is defined for dataset '{0}'.".format(dataset))
 
             for layer in layers:
 

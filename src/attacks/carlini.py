@@ -16,7 +16,7 @@ class CarliniL2Method(Attack):
     (https://github.com/carlini/nn_robust_attacks). Paper link: https://arxiv.org/pdf/1608.04644.pdf
     """
     attack_params = ['batch_size', 'confidence', 'targeted', 'learning_rate', 'binary_search_steps', 'max_iterations',
-                     'abort_early', 'initial_const', 'clip_min', 'clip_max', 'num_labels']
+                     'abort_early', 'initial_const', 'clip_min', 'clip_max']
 
     def __init__(self, classifier, sess, batch_size=10, confidence=2.3, targeted=True, learning_rate=5e-3,
                  binary_search_steps=5, max_iterations=1000, abort_early=True, initial_const=1e-2, clip_min=0,
@@ -100,7 +100,6 @@ class CarliniL2Method(Attack):
                the initial constant is not important.
         :param clip_min: (optional float) Minimum input component value.
         :param clip_max: (optional float) Maximum input component value.
-        :param num_labels: The number of classes the model has.
         """
         # Save attack-specific parameters
         super(CarliniL2Method, self).set_params(**kwargs)
