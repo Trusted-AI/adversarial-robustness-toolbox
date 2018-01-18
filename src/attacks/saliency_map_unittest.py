@@ -2,7 +2,7 @@ import keras.backend as k
 import tensorflow as tf
 import unittest
 
-from src.attackers.saliency_map import SaliencyMapMethod
+from src.attacks.saliency_map import SaliencyMapMethod
 from src.classifiers.cnn import CNN
 from src.utils import load_mnist, get_labels_np_array
 
@@ -18,7 +18,7 @@ class TestSaliencyMap(unittest.TestCase):
 
         # get MNIST
         batch_size, nb_train, nb_test = 100, 1000, 100
-        (X_train, Y_train), (X_test, Y_test) = load_mnist()
+        (X_train, Y_train), (X_test, Y_test), _, _ = load_mnist()
         X_train, Y_train = X_train[:nb_train], Y_train[:nb_train]
         X_test, Y_test = X_test[:nb_test], Y_test[:nb_test]
         im_shape = X_train[0].shape

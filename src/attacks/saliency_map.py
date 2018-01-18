@@ -2,12 +2,12 @@ from __future__ import absolute_import
 
 from config import config_dict
 from cleverhans.attacks_tf import jsma
-from keras import backend as K
+from keras import backend as k
 
 import numpy as np
 import tensorflow as tf
 
-from src.attackers.attack import Attack, class_derivative
+from src.attacks.attack import Attack, class_derivative
 
 
 class SaliencyMapMethod(Attack):
@@ -44,7 +44,7 @@ class SaliencyMapMethod(Attack):
         assert self.set_params(**kwargs)
 
         # Define Jacobian graph wrt to this input placeholder
-        preds = self._get_predictions(x, log=False)
+        preds = self.classifier._get_predictions(x, log=False)
         grads = class_derivative(preds, x, self.nb_classes)
 
         # Define appropriate graph (targeted / random target labels)
@@ -73,6 +73,7 @@ class SaliencyMapMethod(Attack):
         """
         # Parse and save attack-specific parameters
         assert self.set_params(**kwargs)
+        k.set_learning_phase(0)
 
         input_shape = list(x_val.shape)
         input_shape[0] = None
@@ -81,7 +82,7 @@ class SaliencyMapMethod(Attack):
 
         # Run symbolic graph without or with true labels
         if 'y_val' not in kwargs or kwargs['y_val'] is None:
-            feed_dict = {self._x: x_val, K.learning_phase(): 0}
+            feed_dict = {self._x: x_val}
         else:
             if self.y is None:
                 raise Exception("This attack was instantiated untargeted.")
@@ -91,14 +92,13 @@ class SaliencyMapMethod(Attack):
                 else:
                     nb_targets = 1
                 if nb_targets != len(x_val):
-                    raise Exception("Specify exactly one target per input.")
-            feed_dict = {self._x: x_val, self.y: kwargs['y_val'], K.learning_phase(): 0}
+                    raise Exception("Specify exactly one target class per input.")
+            feed_dict = {self._x: x_val, self.y: kwargs['y_val']}
         return self.sess.run(self._x_adv, feed_dict=feed_dict)
 
     def set_params(self, **kwargs):
         """
-        Take in a dictionary of parameters and applies attack-specific checks
-        before saving them as attributes.
+        Take in a dictionary of parameters and applies attack-specific checks before saving them as attributes.
 
         Attack-specific parameters:
         :param theta: (optional float) Perturbation introduced to modified
@@ -125,7 +125,7 @@ class SaliencyMapMethod(Attack):
         :param gamma: a float between 0 - 1 indicating the maximum distortion percentage
         :param clip_min: minimum value for components of the example returned
         :param clip_max: maximum value for components of the example returned
-        :param nb_classes: number of model output clSasses
+        :param nb_classes: number of model output classes
         :param y: target class for sample input
         :return: adversarial examples
         """
@@ -144,7 +144,6 @@ class SaliencyMapMethod(Attack):
             else:
                 target = y[ind]
 
-            X_adv[ind], _, _ = jsma(self.sess, x, pred, grads, val, np.argmax(target),
-                                    theta, gamma, clip_min, clip_max)
+            X_adv[ind], _, _ = jsma(self.sess, x, pred, grads, val, np.argmax(target), theta, gamma, clip_min, clip_max)
 
         return np.asarray(X_adv, dtype=np.float32)

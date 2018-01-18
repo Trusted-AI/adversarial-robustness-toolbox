@@ -5,33 +5,32 @@ import tensorflow as tf
 
 
 def clip_perturbation(v, eps, p):
-
-    # SUPPORTS only p = 2 and p = Inf for now
+    """
+    Clip the values in v if their L_p norm is larger than eps.
+    :param v: array of perturbations to clip
+    :param eps: maximum norm allowed
+    :param p: L_p norm to use for clipping. Only p = 2 and p = Inf supported for now
+    :return: clipped values of v
+    """
     if p == 2:
-
-        v *= min(1, eps/np.linalg.norm(v, axis=(1, 2)))
-
+        v *= min(1., eps/np.linalg.norm(v, axis=(1, 2)))
     elif p == np.inf:
-
         v = np.sign(v) * np.minimum(abs(v), eps)
-
     else:
-        raise NotImplementedError('Values of p different from 2 and Inf are currently not supported...')
+        raise NotImplementedError('Values of p different from 2 and Inf are currently not supported.')
 
     return v
 
-def class_derivative(preds, x, classes=10):
+
+def class_derivative(preds, x, num_labels=10):
     """
     Computes per class derivatives.
     :param preds: the model's logits
     :param x: the input placeholder
-    :param classes: the number of classes the model has
+    :param num_labels: the number of classes the model has
     :return: (list) class derivatives
     """
-
-    grads = [tf.gradients(preds[:, i], x) for i in range(classes)]
-
-    return grads
+    return [tf.gradients(preds[:, i], x) for i in range(num_labels)]
 
 
 class Attack:
@@ -43,7 +42,7 @@ class Attack:
 
     def __init__(self, classifier, sess=None):
         """
-        :param model: A function that takes a symbolic input and returns the symbolic output for the model's
+        :param classifier: A function that takes a symbolic input and returns the symbolic output for the model's
                       predictions.
         :param sess: The tf session to run graphs in.
         """
@@ -102,31 +101,3 @@ class Attack:
             if key in self.attack_params:
                 setattr(self, key, value)
         return True
-
-    def _get_predictions(self, x_op, log=True, mean=False):
-
-        if self.classifier._preproc is not None:
-
-            # 'RGB'->'BGR'
-            x_op = x_op[:, :, :, ::-1]
-            # Zero-center by mean pixel
-
-            t0 = 103.939 * tf.ones_like(x_op[:,:,:,:1])
-            t1 = 116.779 * tf.ones_like(x_op[:,:,:,:1])
-            t2 = 123.68 * tf.ones_like(x_op[:,:,:,:1])
-
-            x_op = tf.subtract(x_op, tf.concat([t0, t1, t2], 3))
-            # x_op[:, :, :, 0] -= 103.939
-            # x_op[:, :, :, 1] -= 116.779
-            # x_op[:, :, :, 2] -= 123.68
-
-        op = self.model(x_op).op
-        if log and "softmax" in str(op).lower():
-            logits, = op.inputs
-        else:
-            logits = self.model(x_op)
-
-        if mean:
-            logits = tf.reduce_mean(logits)
-
-        return logits

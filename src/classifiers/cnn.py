@@ -1,9 +1,9 @@
-from keras.constraints import maxnorm
 from keras.models import Sequential, model_from_json
 from keras.layers import Dense, Activation, Flatten, Conv2D, MaxPooling2D, Dropout
 from keras.layers.normalization import BatchNormalization
 
 from src.classifiers.classifier import Classifier
+
 
 def mnist_layers(input_shape, nb_filters):
 
@@ -20,13 +20,11 @@ def mnist_layers(input_shape, nb_filters):
 
 def cifar10_layers(input_shape, nb_filters):
 
-    print("cifar")
-
     layers = [Conv2D(nb_filters // 2, (3, 3), padding="same", input_shape=input_shape),
               "activation",
               MaxPooling2D(pool_size=(2, 2)),
               Dropout(0.5),
-              Conv2D(nb_filters, (3, 3), padding="same"),
+              Conv2D(nb_filters, (3, 3), padding="valid"),
               "activation",
               MaxPooling2D(pool_size=(2, 2)),
               Dropout(0.5),
@@ -37,8 +35,11 @@ def cifar10_layers(input_shape, nb_filters):
 
     return layers
 
-class CNN(Classifier):
 
+class CNN(Classifier):
+    """
+    Implementation of a convolutional neural network using Keras sequential model
+    """
     def __init__(self, input_shape=None, include_end=True, act='relu', bnorm=False, input_ph=None, nb_filters=64,
                  nb_classes=10, act_params={}, model=None, defences=None, preproc=None, dataset="mnist"):
 
@@ -55,19 +56,18 @@ class CNN(Classifier):
         :param int nb_filters: number of convolutional filters per layer
         :param int nb_classes: the number of output classes
         :param dict act_params: dict of params for activation layers
-        :param str 
-        :rtype: keras.model
+        :rtype: keras.model object
         """
-
         if model is None:
-
             model = Sequential(name='cnn')
+            layers = []
 
             if "mnist" in dataset:
                 layers = mnist_layers(input_shape, nb_filters)
-
             elif "cifar10" in dataset:
                 layers = cifar10_layers(input_shape, nb_filters)
+            elif "stl10" in dataset:
+                raise NotImplementedError("No CNN architecture is defined for dataset '{0}'.".format(dataset))
 
             for layer in layers:
 
