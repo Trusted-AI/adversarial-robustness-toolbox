@@ -68,3 +68,8 @@ Detailed instructions for each script are available by typing
 ```python
 python3 <script_name> -h
 ```
+
+Some examples of how to use Nemesis when writing your own code can be found in the `examples` folder. See `examples/README.md` for more information about what each example does. To run an example, use the following command:
+```bash
+python3 examples/<example_name>.py
+```
