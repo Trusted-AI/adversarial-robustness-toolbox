@@ -1,6 +1,6 @@
 # -*- coding: utf-8 -*-
 """Trains a convolutional neural network on the CIFAR-10 dataset, then generated adversarial images using the
-Carlini & Wagner method and retrains the network on the training set augmented with the adversarial images.
+DeepFool attack and retrains the network on the training set augmented with the adversarial images.
 
 Gets to 56.80% accuracy on the adversarial samples after data augmentation over 10 epochs.
 """
