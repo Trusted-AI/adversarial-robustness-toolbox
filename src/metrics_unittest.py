@@ -1,7 +1,9 @@
 # from config import config_dict
+from __future__ import absolute_import, division, print_function
+
 import unittest
 
-import keras.backend as K
+import keras.backend as k
 import tensorflow as tf
 
 from src.classifiers.cnn import CNN
@@ -16,7 +18,7 @@ NB_TEST = 100
 class TestMinimalPerturbation(unittest.TestCase):
     # def test_cifar(self):
     #     session = tf.Session()
-    #     K.set_session(session)
+    #     k.set_session(session)
     #
     #     # get CIFAR10
     #     (X_train, Y_train), (X_test, Y_test), _, _ = load_cifar10()
@@ -33,7 +35,7 @@ class TestMinimalPerturbation(unittest.TestCase):
 
     def test_emp_robustness_mnist(self):
         session = tf.Session()
-        K.set_session(session)
+        k.set_session(session)
 
         comp_params = {"loss": 'categorical_crossentropy',
                        "optimizer": 'adam',

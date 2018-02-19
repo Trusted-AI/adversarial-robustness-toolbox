@@ -1,3 +1,5 @@
+from __future__ import absolute_import, division, print_function
+
 from keras import backend as k
 from keras.utils.generic_utils import Progbar
 

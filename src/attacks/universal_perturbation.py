@@ -1,9 +1,9 @@
-import random
+from __future__ import absolute_import, division, print_function
 
 import keras.backend as k
 import numpy as np
+import random
 import tensorflow as tf
-
 
 from src.attacks.attack import Attack, clip_perturbation
 from src.attacks.deepfool import DeepFool

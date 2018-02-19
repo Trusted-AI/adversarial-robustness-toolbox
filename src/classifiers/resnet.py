@@ -1,16 +1,10 @@
 # -*- coding: utf-8 -*-
 # Code adapted from https://github.com/fchollet/deep-learning-models
-from __future__ import print_function
+from __future__ import absolute_import, division, print_function
 
 import keras.backend as k
-from keras.layers import Input
 from keras import layers
-from keras.layers import Dense
-from keras.layers import Activation
-from keras.layers import Flatten
-from keras.layers import Conv2D
-from keras.layers import MaxPooling2D
-from keras.layers import BatchNormalization
+from keras.layers import Activation, BatchNormalization, Conv2D, Dense, Flatten, Input, MaxPooling2D
 from keras.models import Model
 
 from src.classifiers.classifier import Classifier

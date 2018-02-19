@@ -1,4 +1,5 @@
 """ Code adapted from https://github.com/fchollet/keras/blob/master/examples/mnist_siamese_graph.py"""
+from __future__ import absolute_import, division, print_function
 
 from keras.models import Model
 from keras.layers import Input, Lambda

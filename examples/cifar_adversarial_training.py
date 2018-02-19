@@ -4,7 +4,8 @@ DeepFool attack and retrains the network on the training set augmented with the 
 
 Gets to 56.80% accuracy on the adversarial samples after data augmentation over 10 epochs.
 """
-from __future__ import print_function
+from __future__ import absolute_import, division, print_function
+
 from os.path import abspath
 import sys
 sys.path.append(abspath('.'))
