@@ -1,22 +1,27 @@
-from __future__ import absolute_import, division, print_function
+from __future__ import absolute_import, division, print_function, unicode_literals
 
+import abc
 import re
-from abc import ABCMeta
+import sys
 
 from keras.layers import Activation
-from sklearn.base import BaseEstimator
 import tensorflow as tf
 
 from src.defences.preprocessing import label_smoothing, feature_squeezing, tf_feature_squeezing
 from src.layers.activations import BoundedReLU
 
 
-class Classifier(BaseEstimator):
+# Ensure compatibility with Python 2 and 3 when using ABCMeta
+if sys.version_info >= (3, 4):
+    ABC = abc.ABC
+else:
+    ABC = abc.ABCMeta('ABC', (), {})
+
+
+class Classifier(ABC):
     """
     Abstract base class for all classifiers.
     """
-    __metaclass__ = ABCMeta
-
     def __init__(self, model, defences=None, preproc=None):
         """
         Create a classifier object
@@ -67,6 +72,7 @@ class Classifier(BaseEstimator):
 
         x = self._preprocess(x)
         self.model.fit(x, y, **kwargs)
+        self.is_fitted = True
 
     def predict(self, x_val, **kwargs):
         """Perform prediction using a fitted classifier.
