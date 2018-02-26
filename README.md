@@ -11,6 +11,7 @@ Nemesis contains implementations of the following attacks:
 * Jacobian Saliency Map ([Papernot et al., 2016](https://arxiv.org/abs/1511.07528))
 * Universal Perturbation ([Moosavi-Dezfooli et al., 2016](https://arxiv.org/abs/1610.08401))
 * Virtual Adversarial Method ([Moosavi-Dezfooli et al., 2015](https://arxiv.org/abs/1507.00677))
+* C&amp;W Attack ([Carlini and Wagner, 2016](https://arxiv.org/abs/1608.04644))
 
 The following defense methods are also supported:
 * Feature squeezing ([Xu et al., 2017](http://arxiv.org/abs/1704.01155))
