@@ -1,3 +1,5 @@
+from __future__ import absolute_import, division, print_function
+
 from keras.layers import Dense, Activation, Flatten
 from keras.layers.normalization import BatchNormalization
 from keras.models import Sequential

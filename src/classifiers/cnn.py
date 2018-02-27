@@ -1,3 +1,5 @@
+from __future__ import absolute_import, division, print_function
+
 from keras.models import Sequential, model_from_json
 from keras.layers import Dense, Activation, Flatten, Conv2D, MaxPooling2D, Dropout
 from keras.layers.normalization import BatchNormalization

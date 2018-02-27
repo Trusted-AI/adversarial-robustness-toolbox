@@ -1,3 +1,5 @@
+from __future__ import absolute_import, division, print_function
+
 from config import config_dict
 
 import unittest
@@ -128,7 +130,7 @@ class TestCNNModel(unittest.TestCase):
         scores_loaded = loaded_classifier.evaluate(X_test, Y_test)
         self.assertAlmostEqual(scores, scores_loaded)
 
-    def test_defences(self):
+    def test_feat_squeeze(self):
         session = tf.Session()
         keras.backend.set_session(session)
 
@@ -138,6 +140,24 @@ class TestCNNModel(unittest.TestCase):
         im_shape = X_train[0].shape
 
         classifier = CNN(im_shape, act="relu", defences=["featsqueeze1"])
+        classifier.compile({'loss': 'categorical_crossentropy', 'optimizer': 'adam', 'metrics': ['accuracy']})
+
+        # Fit the classifier
+        classifier.fit(X_train, Y_train, epochs=1, batch_size=BATCH_SIZE)
+        scores = classifier.evaluate(X_test, Y_test)
+        print("\naccuracy: %.2f%%" % (scores[1] * 100))
+
+    def test_label_smooth(self):
+
+        session = tf.Session()
+        keras.backend.set_session(session)
+
+        # get MNIST
+        (X_train, Y_train), (X_test, Y_test), _, _ = load_mnist()
+        X_train, Y_train, X_test, Y_test = X_train[:NB_TRAIN], Y_train[:NB_TRAIN], X_test[:NB_TEST], Y_test[:NB_TEST]
+        im_shape = X_train[0].shape
+
+        classifier = CNN(im_shape, act="relu", defences=["labsmooth"])
         classifier.compile({'loss': 'categorical_crossentropy', 'optimizer': 'adam', 'metrics': ['accuracy']})
 
         # Fit the classifier

@@ -9,7 +9,6 @@ from scipy.special import gammainc
 from functools import reduce
 
 from src.attacks.fast_gradient import FastGradientMethod
-from src.defences.preprocessing import feature_squeezing
 
 
 supported_methods = {
@@ -84,7 +83,7 @@ def euclidean_dist(x, y):
     norms_x = tf.reduce_sum(x ** 2, 1)[:, None]  # axis = [1] for later tf versions
     norms_y = tf.reduce_sum(y ** 2, 1)[None, :]
     dists = norms_x - 2 * tf.matmul(x, y, transpose_b=True) + norms_y
-    return dists 
+    return dists
 
 
 def mmd(x_data, y_data, sess, sigma=0.1):
@@ -236,8 +235,8 @@ def clever_t(x, classifier, target_class, n_b, n_s, r, sess, c_init=1):
         np.clip(sample_xs, 0, 1, out=sample_xs)
 
         # Preprocess data if it is supported in the classifier
-        if classifier.feature_squeeze:
-            sample_xs = feature_squeezing(sample_xs, classifier.bit_depth)
+        if hasattr(classifier, 'feature_squeeze'):
+            sample_xs = classifier.feature_squeeze(sample_xs)
         sample_xs = classifier._preprocess(sample_xs)
 
         # Compute gradients
@@ -259,8 +258,8 @@ def clever_t(x, classifier, target_class, n_b, n_s, r, sess, c_init=1):
 
     # Compute g_x0
     x0 = np.array([x])
-    if classifier.feature_squeeze:
-        x0 = feature_squeezing(x0, classifier.bit_depth)
+    if hasattr(classifier, 'feature_squeeze'):
+        x0 = classifier.feature_squeeze(x0)
     x0 = classifier._preprocess(x0)
     g_x0 = sess.run(g_x, feed_dict={imgs: x0, pred_class_ph: pred_class,
                                     target_class_ph: target_class})
@@ -315,45 +314,3 @@ def _random_sphere(m, n, r):
     A = A * (np.tile(base, (n,1))).T
 
     return A
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
