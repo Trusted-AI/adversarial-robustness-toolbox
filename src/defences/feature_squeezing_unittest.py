@@ -1,32 +1,11 @@
-from __future__ import absolute_import, division, print_function
+from __future__ import absolute_import, division, print_function, unicode_literals
 
 import unittest
 
 import numpy as np
 import tensorflow as tf
 
-from src.defences.preprocessing import feature_squeezing, label_smoothing, tf_feature_squeezing
-
-
-class TestLabelSmoothing(unittest.TestCase):
-    def test_default(self):
-        m, n = 1000, 20
-        y = np.zeros((m, n))
-        y[(range(m), np.random.choice(range(n), m))] = 1.
-
-        smooth_y = label_smoothing(y)
-        self.assertTrue(np.isclose(np.sum(smooth_y, axis=1), np.ones(m)).all())
-        self.assertTrue((np.max(smooth_y, axis=1) == np.ones(m)*0.9).all())
-
-    def test_customizing(self):
-        m, n = 1000, 20
-        y = np.zeros((m, n))
-        y[(range(m), np.random.choice(range(n), m))] = 1.
-
-        smooth_y = label_smoothing(y, max_value=1./n)
-        self.assertTrue(np.isclose(np.sum(smooth_y, axis=1), np.ones(m)).all())
-        self.assertTrue((np.max(smooth_y, axis=1) == np.ones(m) / n).all())
-        self.assertTrue(np.isclose(smooth_y, np.ones((m, n)) / n).all())
+from src.defences.feature_squeezing import FeatureSqueezing
 
 
 class TestFeatureSqueezing(unittest.TestCase):
@@ -36,7 +15,8 @@ class TestFeatureSqueezing(unittest.TestCase):
 
         for depth in range(1,50):
             with self.subTest("bit depth = {}".format(depth)):
-                squeezed_x = feature_squeezing(x, depth)
+                preproc = FeatureSqueezing()
+                squeezed_x = preproc(x, depth)
                 self.assertTrue((squeezed_x == 1).all())
 
     def test_random(self):
@@ -45,11 +25,12 @@ class TestFeatureSqueezing(unittest.TestCase):
         x_zero = np.where(x < 0.5)
         x_one = np.where(x >= 0.5)
 
-        squeezed_x = feature_squeezing(x, 1)
+        preproc = FeatureSqueezing()
+        squeezed_x = preproc(x, 1)
         self.assertTrue((squeezed_x[x_zero] == 0.).all())
         self.assertTrue((squeezed_x[x_one] == 1.).all())
 
-        squeezed_x = feature_squeezing(x, 2)
+        squeezed_x = preproc(x, 2)
         self.assertFalse(np.logical_and(0. < squeezed_x, squeezed_x < 0.33).any())
         self.assertFalse(np.logical_and(0.34 < squeezed_x, squeezed_x < 0.66).any())
         self.assertFalse(np.logical_and(0.67 < squeezed_x, squeezed_x < 1.).any())
@@ -59,10 +40,11 @@ class TestFeatureSqueezing(unittest.TestCase):
         m, n = 10, 2
         sess = tf.Session()
         x = tf.ones((m, n))
+        fs = FeatureSqueezing()
 
         for depth in range(1, 10):
             with self.subTest("bit depth = {}".format(depth)):
-                squeezed_x = sess.run(tf_feature_squeezing(x, depth))
+                squeezed_x = sess.run(fs._tf_predict(x, depth))
                 self.assertTrue((squeezed_x == 1).all())
 
         # With placeholders
@@ -71,7 +53,7 @@ class TestFeatureSqueezing(unittest.TestCase):
         x_op = tf.placeholder(tf.float32, shape=[None, 2])
         for depth in range(1, 10):
             with self.subTest("bit depth = {}".format(depth)):
-                squeezed_x = sess.run(tf_feature_squeezing(x_op, depth), feed_dict={x_op: x})
+                squeezed_x = sess.run(fs._tf_predict(x_op, depth), feed_dict={x_op: x})
                 self.assertTrue((squeezed_x == 1).all())
 
 
