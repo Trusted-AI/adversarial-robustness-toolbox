@@ -5,7 +5,6 @@ import warnings
 from keras.models import model_from_json
 from keras.optimizers import SGD
 
-from src.classifiers.bnn import BNN
 from src.classifiers.cnn import CNN
 from src.classifiers.mlp import MLP
 from src.classifiers.resnet import ResNet
