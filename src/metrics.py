@@ -167,7 +167,7 @@ def clever_u(x, classifier, n_b, n_s, r, sess, c_init=1):
     :param r: maximum perturbation
     :param sess:
     :param c_init: initialization of Weibull distribution
-    :return: CLEVER score
+    :return: a tuple of 3 CLEVER scores, corresponding to norm 1, 2, inf.
     """
     # Get a list of untargeted classes
     y_pred = classifier.predict(np.array([x]))
@@ -183,7 +183,7 @@ def clever_u(x, classifier, n_b, n_s, r, sess, c_init=1):
         score2_list.append(s2)
         score8_list.append(s8)
 
-    return np.min(score1_list), np.min(score2_list), np.min(score8_list)
+    return tuple((np.min(score1_list), np.min(score2_list), np.min(score8_list)))
 
 
 def clever_t(x, classifier, target_class, n_b, n_s, r, sess, c_init=1):
@@ -198,7 +198,7 @@ def clever_t(x, classifier, target_class, n_b, n_s, r, sess, c_init=1):
     :param r: maximum perturbation
     :param sess:
     :param c_init: initialization of Weibull distribution
-    :return: CLEVER score
+    :return: a tuple of 3 CLEVER scores, corresponding to norm 1, 2, inf.
     """
     # Check if the targeted class is different from the predicted class
     y_pred = classifier.predict(np.array([x]))
@@ -270,7 +270,7 @@ def clever_t(x, classifier, target_class, n_b, n_s, r, sess, c_init=1):
     s2 = np.min([-g_x0[0] / loc2, r])
     s1 = np.min([-g_x0[0] / loc8, r])
 
-    return s1, s2, s8
+    return tuple((s1, s2, s8))
 
 
 def _build_g_gradient(x, classifier, pred_class, target_class):
