@@ -3,7 +3,8 @@
 
 With 5 epochs of training, gets to 98.89% accuracy on the test data and 65.40% on the adversarial examples.
 """
-from __future__ import print_function
+from __future__ import absolute_import, division, print_function
+
 from os.path import abspath
 import sys
 sys.path.append(abspath('.'))

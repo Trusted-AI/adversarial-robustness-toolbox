@@ -1,4 +1,6 @@
-from keras import backend as K
+from __future__ import absolute_import, division, print_function
+
+from keras import backend as k
 from keras.engine import Layer
 
 
@@ -18,11 +20,11 @@ class BoundedReLU(Layer):
         assert max_value > 0., "max_value must be positive"
         super(BoundedReLU, self).__init__(**kwargs)
         self.supports_masking = True
-        self.alpha = K.cast_to_floatx(alpha)
-        self.max_value = K.cast_to_floatx(max_value)
+        self.alpha = k.cast_to_floatx(alpha)
+        self.max_value = k.cast_to_floatx(max_value)
 
     def call(self, inputs):
-        return K.relu(inputs, alpha=self.alpha, max_value=self.max_value)
+        return k.relu(inputs, alpha=self.alpha, max_value=self.max_value)
 
     def get_config(self):
         """Get the parameters of the object"""
