@@ -34,7 +34,7 @@ class TestNewtonFool(unittest.TestCase):
 
         # Attack
         nf = NewtonFool(classifier, sess=session)
-        nf.set_params(max_iter=10)
+        nf.set_params(max_iter=20)
         x_test_adv = nf.generate(X_test)
         self.assertFalse((X_test == x_test_adv).all())
 
@@ -49,7 +49,7 @@ class TestNewtonFool(unittest.TestCase):
         print("\nAccuracy on test set: %.2f%%" % (scores1[1] * 100))
         scores2 = classifier.evaluate(x_test_adv, Y_test)
         print('\nAccuracy on adversarial examples: %.2f%%' % (scores2[1] * 100))
-        self.assertTrue(scores1[1] >= scores2[1])
+        self.assertTrue(scores1[1] != scores2[1])
 
 
 if __name__ == '__main__':
