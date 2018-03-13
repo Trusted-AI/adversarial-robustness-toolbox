@@ -10,7 +10,7 @@ else:
     ABC = abc.ABCMeta('ABC', (), {})
 
 
-class Preprocessor(abc.ABC):
+class Preprocessor(ABC):
     """
     Abstract base class for defenses performing model hardening by preprocessing data.
     """
