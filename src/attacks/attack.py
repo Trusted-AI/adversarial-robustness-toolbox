@@ -44,7 +44,7 @@ else:
 
 class Attack(ABC):
     """
-    Abstract base class for all attack classes. Adapted from cleverhans (https://github.com/openai/cleverhans).
+    Abstract base class for all attack classes.
     """
     attack_params = ['classifier', 'session']
 
