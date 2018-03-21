@@ -122,6 +122,7 @@ class FastGradientMethod(Attack):
                   Labels should be one-hot-encoded.
         :param clip_min: (optional float) Minimum input component value
         :param clip_max: (optional float) Maximum input component value
+        :return: A Numpy array holding the adversarial examples.
         """
 
         input_shape = list(x_val.shape)
