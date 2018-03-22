@@ -1,12 +1,15 @@
-from __future__ import absolute_import, division, print_function
-
 import config
 
 import numpy as np
 import numpy.linalg as la
 import tensorflow as tf
+from scipy.stats import weibull_min
+from scipy.optimize import fmin as scipy_optimizer
+from scipy.special import gammainc
+from functools import reduce
 
 from src.attacks.fast_gradient import FastGradientMethod
+
 
 supported_methods = {
     "fgsm": {"class": FastGradientMethod, "params": {"eps_step": 0.1, "eps_max": 1., "clip_min": 0., "clip_max": 1.}},
@@ -80,7 +83,7 @@ def euclidean_dist(x, y):
     norms_x = tf.reduce_sum(x ** 2, 1)[:, None]  # axis = [1] for later tf versions
     norms_y = tf.reduce_sum(y ** 2, 1)[None, :]
     dists = norms_x - 2 * tf.matmul(x, y, transpose_b=True) + norms_y
-    return dists 
+    return dists
 
 
 def mmd(x_data, y_data, sess, sigma=0.1):
@@ -151,3 +154,163 @@ def loss_sensitivity(x, classifier, sess):
     res = la.norm(res.reshape(res.shape[0], -1), ord=2, axis=1)
 
     return np.mean(res)
+
+
+def clever_u(x, classifier, n_b, n_s, r, sess, c_init=1):
+    """
+    Compute CLEVER score for un-targeted attack.
+    https://arxiv.org/abs/1801.10578
+    :param x: one data example
+    :param classifier: K-class classifier
+    :param n_b: batch size
+    :param n_s: number of examples per batch
+    :param r: maximum perturbation
+    :param sess:
+    :param c_init: initialization of Weibull distribution
+    :return: CLEVER score
+    """
+    # Get a list of untargeted classes
+    y_pred = classifier.predict(np.array([x]))
+    pred_class = np.argmax(y_pred, axis=1)[0]
+    num_class = np.shape(y_pred)[1]
+    untarget_classes = [i for i in range(num_class) if i != pred_class]
+
+    # Compute CLEVER score for each untargeted class
+    score1_list, score2_list, score8_list = [], [], []
+    for j in untarget_classes:
+        s1, s2, s8 = clever_t(x, classifier, j, n_b, n_s, r, sess, c_init)
+        score1_list.append(s1)
+        score2_list.append(s2)
+        score8_list.append(s8)
+
+    return np.min(score1_list), np.min(score2_list), np.min(score8_list)
+
+
+def clever_t(x, classifier, target_class, n_b, n_s, r, sess, c_init=1):
+    """
+    Compute CLEVER score for targeted attack.
+    https://arxiv.org/abs/1801.10578
+    :param x: one data example
+    :param classifier: K-class classifier
+    :param target_class:
+    :param n_b: batch size
+    :param n_s: number of examples per batch
+    :param r: maximum perturbation
+    :param sess:
+    :param c_init: initialization of Weibull distribution
+    :return: CLEVER score
+    """
+    # Check if the targeted class is different from the predicted class
+    y_pred = classifier.predict(np.array([x]))
+    pred_class = np.argmax(y_pred, axis=1)[0]
+    if target_class == pred_class:
+        raise ValueError("The targeted class is the predicted class!")
+
+    # Define placeholders for computing g gradients
+    shape = [None]
+    shape.extend(x.shape)
+    imgs = tf.placeholder(shape=shape, dtype=tf.float32)
+    pred_class_ph = tf.placeholder(dtype=tf.int32, shape=[])
+    target_class_ph = tf.placeholder(dtype=tf.int32, shape=[])
+
+    # Define tensors for g gradients
+    grad_norm_1, grad_norm_2, grad_norm_8, g_x = _build_g_gradient(
+        imgs, classifier, pred_class_ph, target_class_ph)
+
+    # Some auxiliary vars
+    set1, set2, set8 = [], [], []
+    dim = reduce(lambda x, y: x * y, x.shape, 1)
+    shape = [n_s]
+    shape.extend(x.shape)
+
+    # Compute predicted class
+    y_pred = classifier.predict(np.array([x]))
+    pred_class = np.argmax(y_pred, axis=1)[0]
+
+    # Loop over n_b batches
+    for i in range(n_b):
+        # Random generation of data points
+        sample_xs0 = np.reshape(_random_sphere(m=n_s, n=dim, r=r), shape)
+        sample_xs = sample_xs0 + np.repeat(np.array([x]), n_s, 0)
+        np.clip(sample_xs, 0, 1, out=sample_xs)
+
+        # Preprocess data if it is supported in the classifier
+        if hasattr(classifier, 'feature_squeeze'):
+            sample_xs = classifier.feature_squeeze(sample_xs)
+        sample_xs = classifier._preprocess(sample_xs)
+
+        # Compute gradients
+        max_gn1, max_gn2, max_gn8 = sess.run(
+            [grad_norm_1, grad_norm_2, grad_norm_8],
+            feed_dict={imgs: sample_xs, pred_class_ph: pred_class,
+                       target_class_ph: target_class})
+        set1.append(max_gn1)
+        set2.append(max_gn2)
+        set8.append(max_gn8)
+
+    # Maximum likelihood estimation for max gradient norms
+    [_, loc1, _] = weibull_min.fit(-np.array(set1), c_init,
+                                   optimizer=scipy_optimizer)
+    [_, loc2, _] = weibull_min.fit(-np.array(set2), c_init,
+                                   optimizer=scipy_optimizer)
+    [_, loc8, _] = weibull_min.fit(-np.array(set8), c_init,
+                                   optimizer=scipy_optimizer)
+
+    # Compute g_x0
+    x0 = np.array([x])
+    if hasattr(classifier, 'feature_squeeze'):
+        x0 = classifier.feature_squeeze(x0)
+    x0 = classifier._preprocess(x0)
+    g_x0 = sess.run(g_x, feed_dict={imgs: x0, pred_class_ph: pred_class,
+                                    target_class_ph: target_class})
+
+    # Compute scores
+    # Note q = p / (p-1)
+    s8 = np.min([-g_x0[0] / loc1, r])
+    s2 = np.min([-g_x0[0] / loc2, r])
+    s1 = np.min([-g_x0[0] / loc8, r])
+
+    return s1, s2, s8
+
+
+def _build_g_gradient(x, classifier, pred_class, target_class):
+    """
+    Build tensors of g gradient.
+    :param x:
+    :param classifier:
+    :param pred_class:
+    :param target_class:
+    :return: max gradient norms
+    """
+    # Get predict values
+    y_pred = classifier.model(x)
+    pred_val = y_pred[:, pred_class]
+    target_val = y_pred[:, target_class]
+    g_x = pred_val - target_val
+
+    # Get the gradient op
+    grad_op = tf.gradients(g_x, x)[0]
+
+    # Compute the gradient norm
+    grad_op_rs = tf.reshape(grad_op, (tf.shape(grad_op)[0], -1))
+    grad_norm_1 = tf.reduce_max(tf.norm(grad_op_rs, ord=1, axis=1))
+    grad_norm_2 = tf.reduce_max(tf.norm(grad_op_rs, ord=2, axis=1))
+    grad_norm_8 = tf.reduce_max(tf.norm(grad_op_rs, ord=np.inf, axis=1))
+
+    return grad_norm_1, grad_norm_2, grad_norm_8, g_x
+
+
+def _random_sphere(m, n, r):
+    """
+    Generate randomly m n-dimension points with radius r and 0-center.
+    :param m: number of random data points
+    :param n: dimension
+    :param r: radius
+    :return:
+    """
+    A = np.random.randn(m, n)
+    s2 = np.sum(A**2, axis=1)
+    base = gammainc(n/2, s2/2)**(1/n) * r / np.sqrt(s2)
+    A = A * (np.tile(base, (n,1))).T
+
+    return A

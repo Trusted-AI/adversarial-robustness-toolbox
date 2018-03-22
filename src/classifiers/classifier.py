@@ -1,22 +1,28 @@
-from __future__ import absolute_import, division, print_function
+from __future__ import absolute_import, division, print_function, unicode_literals
 
+import abc
 import re
-from abc import ABCMeta
+import sys
 
 from keras.layers import Activation
-from sklearn.base import BaseEstimator
 import tensorflow as tf
 
-from src.defences.preprocessing import label_smoothing, feature_squeezing, tf_feature_squeezing
+from src.defences.feature_squeezing import FeatureSqueezing
+from src.defences.label_smoothing import LabelSmoothing
 from src.layers.activations import BoundedReLU
 
 
-class Classifier(BaseEstimator):
+# Ensure compatibility with Python 2 and 3 when using ABCMeta
+if sys.version_info >= (3, 4):
+    ABC = abc.ABC
+else:
+    ABC = abc.ABCMeta(str('ABC'), (), {})
+
+
+class Classifier(ABC):
     """
     Abstract base class for all classifiers.
     """
-    __metaclass__ = ABCMeta
-
     def __init__(self, model, defences=None, preproc=None):
         """
         Create a classifier object
@@ -54,19 +60,20 @@ class Classifier(BaseEstimator):
         :param kwargs: Other parameters
         """
         # Apply label smoothing if option is set
-        if self.label_smooth:
-            y = label_smoothing(outputs_val)
+        if hasattr(self, 'label_smooth'):
+            _, y = self.label_smooth(None, outputs_val)
         else:
             y = outputs_val
 
         # Apply feature squeezing if option is set
-        if self.feature_squeeze:
-            x = feature_squeezing(inputs_val, self.bit_depth)
+        if hasattr(self, 'feature_squeeze'):
+            x = self.feature_squeeze(inputs_val)
         else:
             x = inputs_val
 
         x = self._preprocess(x)
         self.model.fit(x, y, **kwargs)
+        self.is_fitted = True
 
     def predict(self, x_val, **kwargs):
         """Perform prediction using a fitted classifier.
@@ -75,8 +82,8 @@ class Classifier(BaseEstimator):
         :param kwargs: Other parameters
         :return: Predictions for test set
         """
-        if self.feature_squeeze:
-            x = feature_squeezing(x_val, self.bit_depth)
+        if hasattr(self, 'feature_squeeze'):
+            x = self.feature_squeeze(x_val)
 
         else:
             x = x_val
@@ -93,8 +100,8 @@ class Classifier(BaseEstimator):
         :return: The accuracy of the model on (x_val, y_val)
         :rtype: float
         """
-        if self.feature_squeeze:
-            x = feature_squeezing(x_val, self.bit_depth)
+        if hasattr(self, 'feature_squeeze'):
+            x = self.feature_squeeze(x_val)
         else:
             x = x_val
 
@@ -137,8 +144,6 @@ class Classifier(BaseEstimator):
 
         :param defences: (string) names of the defences to add, supports "featsqueeze[1-8]" and "labsmooth"
         """
-        self.label_smooth = False
-        self.feature_squeeze = False
         self.defences = defences
 
         if defences:
@@ -147,16 +152,15 @@ class Classifier(BaseEstimator):
             for d in defences:
                 # Add feature squeezing
                 if pattern.match(d):
-                    self.feature_squeeze = True
-
                     try:
-                        self.bit_depth = int(d[-1])
+                        bit_depth = int(d[-1])
+                        self.feature_squeeze = FeatureSqueezing(bit_depth=bit_depth)
                     except:
                         raise ValueError("You must specify the bit depth for feature squeezing: featsqueeze[1-8]")
 
                 # Add label smoothing
                 if d == "labsmooth":
-                    self.label_smooth = True
+                    self.label_smooth = LabelSmoothing()
 
     def _preprocess(self, x):
         """Apply preprocessing to x

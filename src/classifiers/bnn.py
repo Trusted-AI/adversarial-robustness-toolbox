@@ -14,7 +14,6 @@ import numpy as np
 
 from src.classifiers.classifier import Classifier
 from src.layers.activations import BoundedReLU
-from src.defences.preprocessing import feature_squeezing
 custom_objects = {'BoundedReLU': BoundedReLU}
 
 
@@ -129,7 +128,7 @@ class BNN(Classifier):
 
     def predict(self, x_val, **kwargs):
         if self.feature_squeeze:
-            x = feature_squeezing(x_val, self.bit_depth)
+            x = self.feature_squeezing(x_val)
         else:
             x = x_val
 
@@ -141,7 +140,7 @@ class BNN(Classifier):
     def evaluate(self, x_val, y_val, **kwargs):
         # TODO include other metrics in evaluate and perform evaluate with _mc_preds
         if self.feature_squeeze:
-            x = feature_squeezing(x_val, self.bit_depth)
+            x = self.feature_squeezing(x_val)
         else:
             x = x_val
 
