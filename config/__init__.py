@@ -10,6 +10,18 @@ else:
     import ConfigParser as cp
 
 
+def config_to_dict(section):
+    dict = {}
+    options = parser.options(section)
+    for option in options:
+        try:
+            dict[option] = parser.get(section, option)
+        except:
+            print("exception on %s!" % option)
+            dict[option] = None
+    return dict
+
+
 __all__ = ['config_dict', 'MNIST_PATH', 'CIFAR10_PATH', 'IMAGENET_PATH', 'STL10_PATH', 'DATA_PATH']
 
 config_file = join(dirname(__file__), 'config.ini')
@@ -22,13 +34,19 @@ else:
 
 # Generate config dictionary
 config_dict = dict()
-config_dict.update(parser['DEFAULT'])
+if sys.version_info >= (3, 0):
+    config_dict.update(parser['DEFAULT'])
+else:
+    config_dict['profile'] = parser.get('DEFAULT', 'profile')
 
-profile = config_dict['profile'] = config_dict.get('profile', 'profile1')
+profile = config_dict['profile'] = config_dict.get('profile')
 
 # Load the configuration for the current profile
 if parser.has_section(profile):
-    config_dict.update(parser[profile])
+    if sys.version_info >= (3, 0):
+        config_dict.update(parser[profile])
+    else:
+        config_dict.update(config_to_dict(profile))
 
 # Add configured paths to PYTHONPATH
 for key in config_dict:
