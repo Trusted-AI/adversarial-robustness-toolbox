@@ -1,9 +1,6 @@
 sudo: required
 dist: trusty
 language: python
-python:
-  - "2.7"
-  - "3.5"
 matrix:
   include:
       - python: 2.7
@@ -50,7 +47,6 @@ install:
       pip install https://storage.googleapis.com/tensorflow/linux/cpu/tensorflow-1.1.0-cp35-cp35m-linux_x86_64.whl;
     fi
   - pip install keras
-  # Run setup
   - conda install libgcc
   - export LD_LIBRARY_PATH=$LD_LIBRARY_PATH:/home/travis/miniconda/envs/test-environment/lib
 

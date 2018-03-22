@@ -14,8 +14,11 @@ __all__ = ['config_dict', 'MNIST_PATH', 'CIFAR10_PATH', 'IMAGENET_PATH', 'STL10_
 
 config_file = join(dirname(__file__), 'config.ini')
 parser = cp.ConfigParser()
-with open(config_file, mode='rt') as f:
-    parser.read_file(f)
+if sys.version_info >= (3, 0):
+    with open(config_file, mode='rt') as f:
+        parser.read_file(f)
+else:
+    parser.read(config_file)
 
 # Generate config dictionary
 config_dict = dict()
