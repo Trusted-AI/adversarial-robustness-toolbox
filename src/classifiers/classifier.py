@@ -16,7 +16,7 @@ from src.layers.activations import BoundedReLU
 if sys.version_info >= (3, 4):
     ABC = abc.ABC
 else:
-    ABC = abc.ABCMeta('ABC', (), {})
+    ABC = abc.ABCMeta(str('ABC'), (), {})
 
 
 class Classifier(ABC):
@@ -83,7 +83,7 @@ class Classifier(ABC):
         :return: Predictions for test set
         """
         if hasattr(self, 'feature_squeeze'):
-            x = self.feature_squeeze(x_val, self.bit_depth)
+            x = self.feature_squeeze(x_val)
 
         else:
             x = x_val

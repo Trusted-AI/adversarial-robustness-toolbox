@@ -39,12 +39,12 @@ def class_derivative(preds, x, num_labels=10):
 if sys.version_info >= (3, 4):
     ABC = abc.ABC
 else:
-    ABC = abc.ABCMeta('ABC', (), {})
+    ABC = abc.ABCMeta(str('ABC'), (), {})
 
 
 class Attack(ABC):
     """
-    Abstract base class for all attack classes. Adapted from cleverhans (https://github.com/openai/cleverhans).
+    Abstract base class for all attack classes.
     """
     attack_params = ['classifier', 'session']
 

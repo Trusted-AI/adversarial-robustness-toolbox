@@ -74,12 +74,12 @@ class TestMinimalPerturbation(unittest.TestCase):
         emp_robust = empirical_robustness(X_train, classifier, session, "fgsm", params)
         self.assertLessEqual(emp_robust, 0.2)
 
-        params = {"theta": 1.,
-                  "gamma": 0.01,
-                  "clip_min": 0.,
-                  "clip_max": 1.}
-        emp_robust_jsma = empirical_robustness(X_train, classifier, session, "jsma", params)
-        self.assertLessEqual(emp_robust_jsma, 1.)
+        # params = {"theta": 1.,
+        #           "gamma": 0.01,
+        #           "clip_min": 0.,
+        #           "clip_max": 1.}
+        # emp_robust_jsma = empirical_robustness(X_train, classifier, session, "jsma", params)
+        # self.assertLessEqual(emp_robust_jsma, 1.)
 
 
 #########################################
@@ -201,4 +201,3 @@ class TestClever(unittest.TestCase):
 
 if __name__ == '__main__':
     unittest.main()
-

@@ -7,10 +7,10 @@ import sys
 if sys.version_info >= (3, 4):
     ABC = abc.ABC
 else:
-    ABC = abc.ABCMeta('ABC', (), {})
+    ABC = abc.ABCMeta(str('ABC'), (), {})
 
 
-class Preprocessor(abc.ABC):
+class Preprocessor(ABC):
     """
     Abstract base class for defenses performing model hardening by preprocessing data.
     """
