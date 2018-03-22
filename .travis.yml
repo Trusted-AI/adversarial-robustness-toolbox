@@ -37,20 +37,18 @@ before_install:
   - conda info -a
 
 install:
-- conda create -q -n test-environment python=$TRAVIS_PYTHON_VERSION numpy scipy matplotlib pandas h5py
-- source activate test-environment
-  - conda create -q -n test-environment python=$TRAVIS_PYTHON_VERSION
+  - conda create -q -n test-environment python=$TRAVIS_PYTHON_VERSION numpy scipy matplotlib pandas h5py
   - source activate test-environment
   # Install TensorFlow
   - if [[ "$TRAVIS_PYTHON_VERSION" == "2.7" && "$TENSORFLOW_V" == "1.4.1" ]]; then
-        pip install https://storage.googleapis.com/tensorflow/linux/cpu/tensorflow-1.4.1-cp27-none-linux_x86_64.whl;
-      elif [[ "$TRAVIS_PYTHON_VERSION" == "2.7" && "$TENSORFLOW_V" == "1.1.0" ]]; then
-        pip install https://storage.googleapis.com/tensorflow/linux/cpu/tensorflow-1.1.0-cp27-none-linux_x86_64.whl;
-      elif [[ "$TRAVIS_PYTHON_VERSION" == "3.5" && "$TENSORFLOW_V" == "1.4.1" ]]; then
-        pip install https://storage.googleapis.com/tensorflow/linux/cpu/tensorflow-1.4.1-cp35-cp35m-linux_x86_64.whl;
-      elif [[ "$TRAVIS_PYTHON_VERSION" == "3.5" && "$TENSORFLOW_V" == "1.1.0" ]]; then
-        pip install https://storage.googleapis.com/tensorflow/linux/cpu/tensorflow-1.1.0-cp35-cp35m-linux_x86_64.whl;
-  fi
+      pip install https://storage.googleapis.com/tensorflow/linux/cpu/tensorflow-1.4.1-cp27-none-linux_x86_64.whl;
+    elif [[ "$TRAVIS_PYTHON_VERSION" == "2.7" && "$TENSORFLOW_V" == "1.1.0" ]]; then
+      pip install https://storage.googleapis.com/tensorflow/linux/cpu/tensorflow-1.1.0-cp27-none-linux_x86_64.whl;
+    elif [[ "$TRAVIS_PYTHON_VERSION" == "3.5" && "$TENSORFLOW_V" == "1.4.1" ]]; then
+      pip install https://storage.googleapis.com/tensorflow/linux/cpu/tensorflow-1.4.1-cp35-cp35m-linux_x86_64.whl;
+    elif [[ "$TRAVIS_PYTHON_VERSION" == "3.5" && "$TENSORFLOW_V" == "1.1.0" ]]; then
+      pip install https://storage.googleapis.com/tensorflow/linux/cpu/tensorflow-1.1.0-cp35-cp35m-linux_x86_64.whl;
+    fi
   - pip install keras
   # Run setup
   - conda install libgcc
