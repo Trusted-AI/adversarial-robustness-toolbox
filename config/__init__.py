@@ -3,12 +3,17 @@ from __future__ import absolute_import, division, print_function
 from os.path import abspath, dirname, expanduser, join
 import sys
 
-import configparser
+# Ensure compatibility with Python 2 and 3 when using ConfigParser
+if sys.version_info >= (3, 0):
+    import configparser as cp
+else:
+    import ConfigParser as cp
+
 
 __all__ = ['config_dict', 'MNIST_PATH', 'CIFAR10_PATH', 'IMAGENET_PATH', 'STL10_PATH', 'DATA_PATH']
 
 config_file = join(dirname(__file__), 'config.ini')
-parser = configparser.ConfigParser()
+parser = cp.ConfigParser()
 with open(config_file, mode='rt') as f:
     parser.read_file(f)
 

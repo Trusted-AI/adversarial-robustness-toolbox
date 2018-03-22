@@ -89,6 +89,7 @@ class FastGradientMethod(Attack):
         :param kwargs: Other parameters to send to generate_graph
         :return: A Numpy array holding the adversarial examples.
         """
+        k.set_learning_phase(0)
         y = np.argmax(self.model.predict(x_val), 1)
         adv_x = x_val.copy()
 
@@ -100,8 +101,7 @@ class FastGradientMethod(Attack):
             adv_x_op = self.generate_graph(x, eps=eps, **kwargs)
             adv_y = tf.argmax(self.model(adv_x_op), 1)
 
-            feed_dict = {x: x_val[curr_indexes], k.learning_phase(): 0}
-            new_adv_x, new_y = self.sess.run([adv_x_op, adv_y], feed_dict=feed_dict)
+            new_adv_x, new_y = self.sess.run([adv_x_op, adv_y], {x: x_val[curr_indexes]})
 
             # Update
             adv_x[curr_indexes] = new_adv_x
@@ -128,6 +128,7 @@ class FastGradientMethod(Attack):
         input_shape = list(x_val.shape)
         input_shape[0] = None
         self._x = tf.placeholder(tf.float32, shape=input_shape)
+        k.set_learning_phase(0)
 
         if "minimal" in kwargs and kwargs["minimal"]:
             return self.minimal_perturbations(self._x, x_val, **kwargs)
@@ -136,12 +137,12 @@ class FastGradientMethod(Attack):
 
         # Run symbolic graph without or with true labels
         if 'y_val' not in kwargs or kwargs['y_val'] is None:
-            feed_dict = {self._x: x_val, k.learning_phase(): 0}
+            feed_dict = {self._x: x_val}
         else:
             # Verify label placeholder was given in params if using true labels
             if self.y is None:
                 raise Exception("True labels given but label placeholder not given.")
-            feed_dict = {self._x: x_val, self.y: kwargs['y_val'], k.learning_phase(): 0}
+            feed_dict = {self._x: x_val, self.y: kwargs['y_val']}
 
         return self.sess.run(self._x_adv, feed_dict=feed_dict)
 

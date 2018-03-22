@@ -1,4 +1,6 @@
-# Nemesis (v1.0.0)
+# Nemesis (v0.1)
+[![Build Status](https://travis.ibm.com/Maria-Irina-Nicolae/nemesis.svg?token=gRzs7KGtxQXDzQo1SRTx&branch=dev)](https://travis.ibm.com/Maria-Irina-Nicolae/nemesis)
+
 This is a library dedicated to **adversarial machine learning**. Its purpose is to allow rapid crafting and analysis of attacks and defense methods for machine learning models. Nemesis provides an implementation for many state-of-the-art methods for attacking and defending classifiers.
 
 The library is still under development. Feedback, bug reports and extension requests are highly appreciated.
@@ -62,7 +64,7 @@ The library contains three main scripts for:
 * testing model accuracy on different test sets using (`test_accuracies.py`)
 
 Detailed instructions for each script are available by typing
-```python
+```bash
 python3 <script_name> -h
 ```
 
