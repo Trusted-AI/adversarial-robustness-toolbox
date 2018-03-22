@@ -17,7 +17,7 @@ def config_to_dict(section):
         try:
             dict[option] = parser.get(section, option)
         except:
-            print("exception on %s!" % option)
+            print('Exception on configuration option %s!' % option)
             dict[option] = None
     return dict
 
