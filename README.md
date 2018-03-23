@@ -1,4 +1,4 @@
-# Nemesis (v0.1)
+# Adversarial Robustness Toolbox (ART v0.1)
 [![Build Status](https://travis.com/IBM/adversarial-robustness-toolbox.svg?token=gRzs7KGtxQXDzQo1SRTx&branch=master)](https://travis.com/IBM/adversarial-robustness-toolbox)
 
 This is a library dedicated to **adversarial machine learning**. Its purpose is to allow rapid crafting and analysis of attacks and defense methods for machine learning models. Nemesis provides an implementation for many state-of-the-art methods for attacking and defending classifiers.
@@ -7,7 +7,7 @@ The library is still under development. Feedback, bug reports and extension requ
 
 ## Supported attack and defense methods
 
-Nemesis contains implementations of the following attacks:
+The Adversarial Robustness Toolbox contains implementations of the following attacks:
 * Deep Fool ([Moosavi-Dezfooli et al., 2015](https://arxiv.org/abs/1511.04599))
 * Fast Gradient Method ([Goodfellow et al., 2014](https://arxiv.org/abs/1412.6572))
 * Jacobian Saliency Map ([Papernot et al., 2016](https://arxiv.org/abs/1511.07528))
@@ -25,9 +25,9 @@ The following defense methods are also supported:
 
 ## Setup
 
-Nemesis is designed to run with Python 3 (and most likely Python 2 with small changes). You can either download the source code of Nemesis or clone the repository in your directory of choice:
+The Adversarial Robustness Toolbox is designed to run with Python 3 (and most likely Python 2 with small changes). You can either download the source code or clone the repository in your directory of choice:
 ```bash
-git clone https://github.ibm.com/Maria-Irina-Nicolae/nemesis
+git clone https://github.com/IBM/adversarial-robustness-toolbox
 ```
 
 To install the project dependencies, use the requirements file:
@@ -35,12 +35,12 @@ To install the project dependencies, use the requirements file:
 pip install .
 ```
 
-The library comes with a basic set of unit tests. To check your install, you can run all the unit tests by calling in the Nemesis folder:
+The library comes with a basic set of unit tests. To check your install, you can run all the unit tests by calling in the library folder:
 ```bash
 bash run_tests.sh
 ```
 
-The configuration file `config/config.ini` allows to set custom paths for data. By default, data is downloaded in the `nemesis/data` folder as follows:
+The configuration file `config/config.ini` allows to set custom paths for data. By default, data is downloaded in the `data` folder as follows:
 
 ```text
 [DEFAULT]
@@ -55,7 +55,7 @@ stl10_path=./data/stl-10
 
 If the datasets are not present at the indicated path, loading them will also download the data.
 
-## Running Nemesis
+## Running scripts
 
 The library contains three main scripts for:
 * training a classifier using (`train.py`)
