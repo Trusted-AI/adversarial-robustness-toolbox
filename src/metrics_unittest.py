@@ -26,7 +26,6 @@ import numpy as np
 from src.classifiers.cnn import CNN
 from src.metrics import empirical_robustness
 from src.utils import load_mnist, load_cifar10
-from src.metrics import clever_t, clever_u
 from src.classifiers.classifier import Classifier
 
 BATCH_SIZE = 10
