@@ -1,10 +1,11 @@
-from config import DATA_PATH, config_dict
+from __future__ import absolute_import, division, print_function
 
-import json
-import numpy as np
+from config import DATA_PATH, config_dict
 import os
 
-import keras.backend as K
+import json
+import keras.backend as k
+import numpy as np
 import tensorflow as tf
 
 from src.classifiers.utils import load_classifier
@@ -12,13 +13,12 @@ from src.utils import get_args, get_verbose_print, load_dataset, get_npy_files
 
 # --------------------------------------------------------------------------------------------------- SETTINGS
 args = get_args(__file__, load_classifier=True, options="dsv")
-
 v_print = get_verbose_print(args.verbose)
 
 # --------------------------------------------------------------------------------------------- GET CLASSIFIER
 
 session = tf.Session()
-K.set_session(session)
+k.set_session(session)
 
 # Load classifier
 MODEL_PATH = os.path.abspath(args.load)
@@ -27,7 +27,7 @@ classifier = load_classifier(MODEL_PATH, "best-weights.h5")
 
 # ------------------------------------------------------------------------------------------------------- TEST
 
-# retrieve previous results for classifier
+# Retrieve previous results for classifier
 try:
     with open(os.path.join(MODEL_PATH, "accuracies.json"), "r") as json_file:
         results = json.load(json_file)
@@ -39,7 +39,7 @@ except:
 
 already_tested = results.keys()
 
-# get dataset
+# Get dataset
 (X_train, Y_train), (X_test, Y_test), _, _ = load_dataset(MODEL_PATH)
 
 if "train_accuracy" not in already_tested:
@@ -54,16 +54,14 @@ if "test_accuracy" not in already_tested:
     v_print("\naccuracy on test: %.2f%%" % (scores[1] * 100))
     results["test_accuracy"] = scores[1] * 100
 
-# get adversarial examples
+# Get adversarial examples
 ADV_PATH = os.path.join(DATA_PATH, "adversarial", args.dataset)
 
 for filepath in get_npy_files(ADV_PATH):
-
     file_timestamp = os.path.getmtime(filepath)
 
     # if not tested yet or tested on a previous version
     if filepath not in already_tested or file_timestamp > results_timestamp:
-
         try:
             X = np.load(filepath)
             Y = Y_train if "train.npy" in filepath else Y_test

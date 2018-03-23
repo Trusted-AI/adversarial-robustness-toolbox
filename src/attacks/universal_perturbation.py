@@ -1,9 +1,9 @@
-import random
+from __future__ import absolute_import, division, print_function
 
 import keras.backend as k
 import numpy as np
+import random
 import tensorflow as tf
-
 
 from src.attacks.attack import Attack, clip_perturbation
 from src.attacks.deepfool import DeepFool
@@ -58,6 +58,7 @@ class UniversalPerturbation(Attack):
 
     def generate(self, x_val, **kwargs):
         self.set_params(**kwargs)
+        k.set_learning_phase(0)
 
         # init universal perturbation
         v = 0
@@ -80,7 +81,7 @@ class UniversalPerturbation(Attack):
             for j, x in enumerate(x_val[rnd_idx]):
                 xi = x[None, ...]
 
-                f_xi = self.sess.run(self.model(xi_op), feed_dict={xi_op: xi + v, k.learning_phase(): 0})
+                f_xi = self.sess.run(self.model(xi_op), feed_dict={xi_op: xi + v})
                 fk_i_hat = np.argmax(f_xi[0])
                 fk_hat = np.argmax(true_y[rnd_idx][j])
 
@@ -88,7 +89,7 @@ class UniversalPerturbation(Attack):
 
                     # Compute adversarial perturbation
                     adv_xi = attacker.generate(np.expand_dims(x, 0) + v)
-                    adv_f_xi = self.sess.run(self.model(xi_op), feed_dict={xi_op: adv_xi, k.learning_phase(): 0})
+                    adv_f_xi = self.sess.run(self.model(xi_op), feed_dict={xi_op: adv_xi})
                     adv_fk_i_hat = np.argmax(adv_f_xi[0])
 
                     # If the class has changed, update v
@@ -113,7 +114,8 @@ class UniversalPerturbation(Attack):
         return adv_x
 
     def set_params(self, **kwargs):
-        """Take in a dictionary of parameters and applies attack-specific checks before saving them as attributes.
+        """
+        Take in a dictionary of parameters and applies attack-specific checks before saving them as attributes.
 
         Attack-specific parameters:
         :param classifier: A function that takes a symbolic input and returns the symbolic output for the classifier's

@@ -1,6 +1,5 @@
-from config import config_dict
+from __future__ import absolute_import, division, print_function, unicode_literals
 
-from cleverhans.attacks_tf import fgm
 from keras import backend as k
 import numpy as np
 import tensorflow as tf
@@ -11,31 +10,31 @@ from src.attacks.attack import Attack
 class FastGradientMethod(Attack):
     """
     This attack was originally implemented by Goodfellow et al. (2015) with the infinity norm (and is known as the "Fast
-    Gradient Sign Method"). This implementation is inspired by the one in Cleverhans
-    (https://github.com/tensorflow/cleverhans) which extends the attack to other norms, and is therefore called the Fast
+    Gradient Sign Method"). This implementation extends the attack to other norms, and is therefore called the Fast
     Gradient Method. Paper link: https://arxiv.org/abs/1412.6572
     """
-    attack_params = ['ord', 'y', 'y_val', 'clip_min', 'clip_max']
+    attack_params = ['ord', 'y', 'y_val', 'targeted', 'clip_min', 'clip_max']
 
-    def __init__(self, classifier, sess=None, ord=np.inf, y=None, clip_min=None, clip_max=None):
+    def __init__(self, classifier, sess=None, ord=np.inf, y=None, targeted=False, clip_min=None, clip_max=None):
         """Create a FastGradientMethod instance.
-        :param ord: (optional) Order of the norm (mimics Numpy). Possible values: np.inf, 1 or 2.
+        :param ord: (optional) Order of the norm. Possible values: np.inf, 1 or 2.
         :param y: (optional) A placeholder for the model labels. Only provide this parameter if you'd like to use true
                   labels when crafting adversarial samples. Otherwise, model predictions are used as labels to avoid the
                   "label leaking" effect (explained in this paper: https://arxiv.org/abs/1611.01236). Default is None.
                   Labels should be one-hot-encoded.
+        :param targeted: (optional boolean) Should the attack target one specific class
         :param clip_min: (optional float) Minimum input component value
         :param clip_max: (optional float) Maximum input component value
         """
         super(FastGradientMethod, self).__init__(classifier, sess)
 
-        kwargs = {'ord': ord, 'clip_min': clip_min, 'clip_max': clip_max, 'y': y}
+        kwargs = {'ord': ord, 'targeted': targeted, 'clip_min': clip_min, 'clip_max': clip_max, 'y': y}
         self.set_params(**kwargs)
 
-    def generate_graph(self, x, eps=0.3, **kwargs):
+    def generate_graph(self, x, eps, **kwargs):
         """Generate symbolic graph for adversarial examples and return.
         :param x: The model's symbolic inputs.
-        :param eps: (optional float) attack step size (input variation)
+        :param eps: (optional tf.placeholder) The placeholder for input variation (noise amplitude)
         :param ord: (optional) Order of the norm (mimics Numpy). Possible values: np.inf, 1 or 2.
         :param y: (optional) A placeholder for the model labels. Only provide this parameter if you'd like to use true
                   labels when crafting adversarial samples. Otherwise, model predictions are used as labels to avoid the
@@ -46,11 +45,43 @@ class FastGradientMethod(Attack):
         """
         self.set_params(**kwargs)
 
-        return fgm(x, self.classifier._get_predictions(x, log=False), y=self.y, eps=eps, ord=self.ord,
-                   clip_min=self.clip_min, clip_max=self.clip_max)
+        preds = self.classifier._get_predictions(x, log=False)
+
+        if not hasattr(self, 'y') or self.y is None:
+            # Use model predictions as correct outputs
+            preds_max = tf.reduce_max(preds, 1, keep_dims=True)
+            y = tf.to_float(tf.equal(preds, preds_max))
+            y = tf.stop_gradient(y)
+        else:
+            y = self.y
+        y = y / tf.reduce_sum(y, 1, keep_dims=True)
+
+        loss = tf.nn.softmax_cross_entropy_with_logits(logits=preds, labels=y)
+        if self.targeted:
+            loss = -loss
+        grad, = tf.gradients(loss, x)
+
+        # Apply norm bound
+        if self.ord == np.inf:
+            grad = tf.sign(grad)
+        elif self.ord == 1:
+            ind = list(range(1, len(x.get_shape())))
+            grad = grad / tf.reduce_sum(tf.abs(grad), reduction_indices=ind, keep_dims=True)
+        elif self.ord == 2:
+            ind = list(range(1, len(x.get_shape())))
+            grad = grad / tf.sqrt(tf.reduce_sum(tf.square(grad), reduction_indices=ind, keep_dims=True))
+
+        # Apply perturbation and clip
+        x_adv_op = x + eps * grad
+        if self.clip_min is not None and self.clip_max is not None:
+            x_adv_op = tf.clip_by_value(x_adv_op, self.clip_min, self.clip_max)
+
+        return x_adv_op
 
     def minimal_perturbations(self, x, x_val, eps_step=0.1, eps_max=1., **kwargs):
-        """Iteratively compute the minimal perturbation necessary to make the class prediction change.
+        """Iteratively compute the minimal perturbation necessary to make the class prediction change. Stop when the
+        first adversarial example was found.
+
         :param x: (required) A placeholder for the input.
         :param x_val: (required) A Numpy array with the original inputs.
         :param eps_step: (optional float) The increase in the perturbation for each iteration
@@ -58,25 +89,24 @@ class FastGradientMethod(Attack):
         :param kwargs: Other parameters to send to generate_graph
         :return: A Numpy array holding the adversarial examples.
         """
+        k.set_learning_phase(0)
         y = np.argmax(self.model.predict(x_val), 1)
         adv_x = x_val.copy()
 
-        curr_indexes = np.arange(len(x_val))
-        eps = eps_step
+        curr_indexes = np.arange(len(adv_x))
+        eps = tf.placeholder(tf.float32, None)
+        adv_x_op = self.generate_graph(x, eps, **kwargs)
+        adv_y = tf.argmax(self.model(adv_x_op), 1)
+        eps_val = eps_step
 
-        while len(curr_indexes) != 0 and eps <= eps_max:
-            # adversarial crafting
-            adv_x_op = self.generate_graph(x, eps=eps, **kwargs)
-            adv_y = tf.argmax(self.model(adv_x_op), 1)
+        while len(curr_indexes) != 0 and eps_val <= eps_max:
+            # Adversarial crafting
+            new_adv_x, new_y = self.sess.run([adv_x_op, adv_y], {x: x_val[curr_indexes], eps: eps_val})
 
-            feed_dict = {x: x_val[curr_indexes], k.learning_phase(): 0}
-            new_adv_x, new_y = self.sess.run([adv_x_op, adv_y], feed_dict=feed_dict)
-
-            # update
+            # Update
             adv_x[curr_indexes] = new_adv_x
             curr_indexes = np.where(y[curr_indexes] == new_y)[0]
-
-            eps += eps_step
+            eps_val += eps_step
 
         return adv_x
 
@@ -91,25 +121,28 @@ class FastGradientMethod(Attack):
                   Labels should be one-hot-encoded.
         :param clip_min: (optional float) Minimum input component value
         :param clip_max: (optional float) Maximum input component value
+        :return: A Numpy array holding the adversarial examples.
         """
 
-        input_shape = list(x_val.shape)
-        input_shape[0] = None
+        input_shape = [None] + list(x_val.shape[1:])
         self._x = tf.placeholder(tf.float32, shape=input_shape)
+        k.set_learning_phase(0)
 
+        # Return adversarial examples computed with minimal perturbation if option is active
         if "minimal" in kwargs and kwargs["minimal"]:
             return self.minimal_perturbations(self._x, x_val, **kwargs)
 
+        # Generate computation graph
         self._x_adv = self.generate_graph(self._x, **kwargs)
 
         # Run symbolic graph without or with true labels
         if 'y_val' not in kwargs or kwargs['y_val'] is None:
-            feed_dict = {self._x: x_val, k.learning_phase(): 0}
+            feed_dict = {self._x: x_val}
         else:
             # Verify label placeholder was given in params if using true labels
             if self.y is None:
                 raise Exception("True labels given but label placeholder not given.")
-            feed_dict = {self._x: x_val, self.y: kwargs['y_val'], k.learning_phase(): 0}
+            feed_dict = {self._x: x_val, self.y: kwargs['y_val']}
 
         return self.sess.run(self._x_adv, feed_dict=feed_dict)
 

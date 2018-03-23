@@ -1,9 +1,11 @@
+from __future__ import absolute_import, division, print_function
+
 import argparse
 import json
 import random
 import os
 
-from keras import backend as K
+from keras import backend as k
 from keras.datasets.cifar import load_batch
 from keras.preprocessing import image
 from keras.utils import np_utils, data_utils
@@ -153,7 +155,7 @@ def load_cifar10():
     y_train = np.reshape(y_train, (len(y_train), 1))
     y_test = np.reshape(y_test, (len(y_test), 1))
 
-    if K.image_data_format() == 'channels_last':
+    if k.image_data_format() == 'channels_last':
         x_train = x_train.transpose(0, 2, 3, 1)
         x_test = x_test.transpose(0, 2, 3, 1)
 
@@ -252,7 +254,7 @@ def load_stl():
         x_test = np.fromfile(f, dtype=np.uint8)
         x_test = np.reshape(x_test, (-1, 3, 96, 96))
 
-    if K.image_data_format() == 'channels_last':
+    if k.image_data_format() == 'channels_last':
         x_train = x_train.transpose(0, 2, 3, 1)
         x_test = x_test.transpose(0, 2, 3, 1)
 
@@ -310,6 +312,24 @@ def get_npy_files(path):
         for file_ in files:
             if file_.endswith(".npy"):
                 yield os.path.join(root, file_)
+
+
+def set_group_permissions_rec(path, group="drl-dwl"):
+    for root, _, files in os.walk(path):
+        set_group_permissions(root, group)
+
+        for f in files:
+            try:
+                set_group_permissions(os.path.join(root, f), group)
+            except:
+                pass
+
+
+def set_group_permissions(filename, group="drl-dwl"):
+    import shutil
+    shutil.chown(filename, user=None, group=group)
+
+    os.chmod(filename, 0o774)
 
 # ------------------------------------------------------------------- ARG PARSER
 

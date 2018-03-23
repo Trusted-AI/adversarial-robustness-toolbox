@@ -3,13 +3,14 @@ from __future__ import absolute_import, division, print_function
 import keras.backend as k
 import tensorflow as tf
 import unittest
+import numpy as np
 
-from src.attacks.deepfool import DeepFool
+from src.attacks.newtonfool import NewtonFool
 from src.classifiers.cnn import CNN
 from src.utils import load_mnist, get_labels_np_array, get_label_conf
 
 
-class TestDeepFool(unittest.TestCase):
+class TestNewtonFool(unittest.TestCase):
     def test_mnist(self):
         session = tf.Session()
         k.set_session(session)
@@ -28,19 +29,28 @@ class TestDeepFool(unittest.TestCase):
         # get classifier
         classifier = CNN(im_shape, act="relu")
         classifier.compile(comp_params)
-        classifier.fit(X_train, Y_train, epochs=1, batch_size=batch_size, verbose=0)
-        scores = classifier.evaluate(X_test, Y_test)
-        print("\naccuracy on test set: %.2f%%" % (scores[1] * 100))
+        classifier.fit(X_train, Y_train, epochs=1, batch_size=batch_size,
+                       verbose=0)
 
-        df = DeepFool(classifier, sess=session)
-        df.set_params(clip_min=0., clip_max=1.)
-        x_test_adv = df.generate(X_test)
+        # Attack
+        nf = NewtonFool(classifier, sess=session)
+        nf.set_params(max_iter=20)
+        x_test_adv = nf.generate(X_test)
         self.assertFalse((X_test == x_test_adv).all())
-        y_pred = classifier.predict(x_test_adv)
-        self.assertFalse((Y_test == y_pred).all())
 
-        scores = classifier.evaluate(x_test_adv, Y_test)
-        print('\naccuracy on adversarial examples: %.2f%%' % (scores[1] * 100))
+        y_pred = classifier.predict(X_test)
+        y_pred_adv = classifier.predict(x_test_adv)
+        y_pred_bool = y_pred.max(axis=1, keepdims=1) == y_pred
+        y_pred_max = y_pred.max(axis=1)
+        y_pred_adv_max = y_pred_adv[y_pred_bool]
+        self.assertTrue((y_pred_max >= y_pred_adv_max).all())
+
+        scores1 = classifier.evaluate(X_test, Y_test)
+        print("\nAccuracy on test set: %.2f%%" % (scores1[1] * 100))
+        scores2 = classifier.evaluate(x_test_adv, Y_test)
+        print('\nAccuracy on adversarial examples: %.2f%%' % (scores2[1] * 100))
+        self.assertTrue(scores1[1] != scores2[1])
+
 
 if __name__ == '__main__':
     unittest.main()
