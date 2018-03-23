@@ -25,22 +25,22 @@ class TestMLPModel(unittest.TestCase):
     def tearDown(self):
         shutil.rmtree("./tests/")
 
-    def test_mlp_cifar(self):
-        session = tf.Session()
-        keras.backend.set_session(session)
-
-        # get CIFAR10
-        (X_train, Y_train), (X_test, Y_test), _, _ = load_cifar10()
-        X_train, Y_train, X_test, Y_test = X_train[:NB_TRAIN], Y_train[:NB_TRAIN], X_test[:NB_TEST], Y_test[:NB_TEST]
-        im_shape = X_train[0].shape
-
-        classifier = MLP(im_shape, act="brelu", dataset="cifar10")
-        classifier.compile({'loss': 'categorical_crossentropy', 'optimizer': 'adam', 'metrics': ['accuracy']})
-
-        # Fit the classifier
-        classifier.fit(X_train, Y_train, epochs=1, batch_size=BATCH_SIZE)
-        scores = classifier.evaluate(X_test, Y_test)
-        print("\naccuracy: %.2f%%" % (scores[1] * 100))
+    # def test_mlp_cifar(self):
+    #     session = tf.Session()
+    #     keras.backend.set_session(session)
+    #
+    #     # get CIFAR10
+    #     (X_train, Y_train), (X_test, Y_test), _, _ = load_cifar10()
+    #     X_train, Y_train, X_test, Y_test = X_train[:NB_TRAIN], Y_train[:NB_TRAIN], X_test[:NB_TEST], Y_test[:NB_TEST]
+    #     im_shape = X_train[0].shape
+    #
+    #     classifier = MLP(im_shape, act="brelu", dataset="cifar10")
+    #     classifier.compile({'loss': 'categorical_crossentropy', 'optimizer': 'adam', 'metrics': ['accuracy']})
+    #
+    #     # Fit the classifier
+    #     classifier.fit(X_train, Y_train, epochs=1, batch_size=BATCH_SIZE)
+    #     scores = classifier.evaluate(X_test, Y_test)
+    #     print("\naccuracy: %.2f%%" % (scores[1] * 100))
 
     def test_mlp_mnist(self):
         session = tf.Session()

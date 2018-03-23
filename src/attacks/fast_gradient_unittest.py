@@ -83,10 +83,10 @@ class TestFastGradientMethod(unittest.TestCase):
         self.assertFalse((Y_test == test_y_pred).all())
 
         scores = classifier.evaluate(X_train_adv_min, Y_train)
-        print('\naccuracy on adversarial train examples: %.2f%%' % (scores[1] * 100))
+        print('\naccuracy on adversarial train examples with minimal perturbation: %.2f%%' % (scores[1] * 100))
 
         scores = classifier.evaluate(X_test_adv_min, Y_test)
-        print('\naccuracy on adversarial test examples: %.2f%%' % (scores[1] * 100))
+        print('\naccuracy on adversarial test examples with minimal perturbation: %.2f%%' % (scores[1] * 100))
 
     def test_with_preprocessing(self):
 

@@ -38,6 +38,8 @@ class DeepFool(Attack):
         :return: A Numpy array holding the adversarial examples.
         """
         assert self.set_params(**kwargs)
+        k.set_learning_phase(0)
+
         dims = list(x_val.shape)
         nb_instances = dims[0]
         dims[0] = None
@@ -54,9 +56,8 @@ class DeepFool(Attack):
         for j, x in enumerate(x_adv):
             xi = x[None, ...]
 
-            f = self.sess.run(self.model(xi_op), feed_dict={xi_op: xi, k.learning_phase(): 0})[0]
-            grd = self.sess.run(grads, feed_dict={xi_op: xi, k.learning_phase(): 0})
-            grd = [g[0] for g in grd]
+            f, grd = self.sess.run([self.model(xi_op), grads], {xi_op: xi})
+            f, grd = f[0], [g[0] for g in grd]
             fk_hat = np.argmax(f)
             fk_i_hat = fk_hat
             nb_iter = 0
@@ -79,9 +80,9 @@ class DeepFool(Attack):
                     xi = np.clip(xi, self.clip_min, self.clip_max)
 
                 # Recompute prediction for new xi
-                f = self.sess.run(self.model(xi_op), feed_dict={xi_op: xi, k.learning_phase(): 0})[0]
-                grd = self.sess.run(grads, feed_dict={xi_op: xi, k.learning_phase(): 0})
-                grd = [g[0] for g in grd]
+
+                f, grd = self.sess.run([self.model(xi_op), grads], {xi_op: xi})
+                f, grd = f[0], [g[0] for g in grd]
                 fk_i_hat = np.argmax(f)
 
                 nb_iter += 1

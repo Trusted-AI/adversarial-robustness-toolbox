@@ -31,10 +31,10 @@ class FastGradientMethod(Attack):
         kwargs = {'ord': ord, 'targeted': targeted, 'clip_min': clip_min, 'clip_max': clip_max, 'y': y}
         self.set_params(**kwargs)
 
-    def generate_graph(self, x, eps=0.3, **kwargs):
+    def generate_graph(self, x, eps, **kwargs):
         """Generate symbolic graph for adversarial examples and return.
         :param x: The model's symbolic inputs.
-        :param eps: (optional float) attack step size (input variation)
+        :param eps: (optional tf.placeholder) The placeholder for input variation (noise amplitude)
         :param ord: (optional) Order of the norm (mimics Numpy). Possible values: np.inf, 1 or 2.
         :param y: (optional) A placeholder for the model labels. Only provide this parameter if you'd like to use true
                   labels when crafting adversarial samples. Otherwise, model predictions are used as labels to avoid the
@@ -89,25 +89,24 @@ class FastGradientMethod(Attack):
         :param kwargs: Other parameters to send to generate_graph
         :return: A Numpy array holding the adversarial examples.
         """
+        k.set_learning_phase(0)
         y = np.argmax(self.model.predict(x_val), 1)
         adv_x = x_val.copy()
 
-        curr_indexes = np.arange(len(x_val))
-        eps = eps_step
+        curr_indexes = np.arange(len(adv_x))
+        eps = tf.placeholder(tf.float32, None)
+        adv_x_op = self.generate_graph(x, eps, **kwargs)
+        adv_y = tf.argmax(self.model(adv_x_op), 1)
+        eps_val = eps_step
 
-        while len(curr_indexes) != 0 and eps <= eps_max:
+        while len(curr_indexes) != 0 and eps_val <= eps_max:
             # Adversarial crafting
-            adv_x_op = self.generate_graph(x, eps=eps, **kwargs)
-            adv_y = tf.argmax(self.model(adv_x_op), 1)
-
-            feed_dict = {x: x_val[curr_indexes], k.learning_phase(): 0}
-            new_adv_x, new_y = self.sess.run([adv_x_op, adv_y], feed_dict=feed_dict)
+            new_adv_x, new_y = self.sess.run([adv_x_op, adv_y], {x: x_val[curr_indexes], eps: eps_val})
 
             # Update
             adv_x[curr_indexes] = new_adv_x
             curr_indexes = np.where(y[curr_indexes] == new_y)[0]
-
-            eps += eps_step
+            eps_val += eps_step
 
         return adv_x
 
@@ -125,23 +124,25 @@ class FastGradientMethod(Attack):
         :return: A Numpy array holding the adversarial examples.
         """
 
-        input_shape = list(x_val.shape)
-        input_shape[0] = None
+        input_shape = [None] + list(x_val.shape[1:])
         self._x = tf.placeholder(tf.float32, shape=input_shape)
+        k.set_learning_phase(0)
 
+        # Return adversarial examples computed with minimal perturbation if option is active
         if "minimal" in kwargs and kwargs["minimal"]:
             return self.minimal_perturbations(self._x, x_val, **kwargs)
 
+        # Generate computation graph
         self._x_adv = self.generate_graph(self._x, **kwargs)
 
         # Run symbolic graph without or with true labels
         if 'y_val' not in kwargs or kwargs['y_val'] is None:
-            feed_dict = {self._x: x_val, k.learning_phase(): 0}
+            feed_dict = {self._x: x_val}
         else:
             # Verify label placeholder was given in params if using true labels
             if self.y is None:
                 raise Exception("True labels given but label placeholder not given.")
-            feed_dict = {self._x: x_val, self.y: kwargs['y_val'], k.learning_phase(): 0}
+            feed_dict = {self._x: x_val, self.y: kwargs['y_val']}
 
         return self.sess.run(self._x_adv, feed_dict=feed_dict)
 
