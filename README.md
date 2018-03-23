@@ -1,5 +1,5 @@
 # Adversarial Robustness Toolbox (ART v0.1)
-[![Build Status](https://travis.com/IBM/adversarial-robustness-toolbox.svg?token=gRzs7KGtxQXDzQo1SRTx&branch=master)](https://travis.com/IBM/adversarial-robustness-toolbox)
+[![Build Status](https://travis-ci.org/IBM/adversarial-robustness-toolbox.svg?branch=master)](https://travis-ci.org/IBM/adversarial-robustness-toolbox)
 
 This is a library dedicated to **adversarial machine learning**. Its purpose is to allow rapid crafting and analysis of attacks and defense methods for machine learning models. Nemesis provides an implementation for many state-of-the-art methods for attacking and defending classifiers.
 
