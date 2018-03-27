@@ -1,12 +1,11 @@
 from __future__ import absolute_import, division, print_function, unicode_literals
 
-import numpy as np
 from scipy import ndimage
 
 from src.defences.preprocessor import Preprocessor
 
 
-class LocalSpatialSmoothing(Preprocessor):
+class SpatialSmoothing(Preprocessor):
     """
     Implement the local spatial smoothing defence approach.
     Defence method from https://arxiv.org/abs/1704.01155.
@@ -50,7 +49,7 @@ class LocalSpatialSmoothing(Preprocessor):
         :param window_size: (int) The size of the sliding window.
         """
         # Save attack-specific parameters
-        super(LocalSpatialSmoothing, self).set_params(**kwargs)
+        super(SpatialSmoothing, self).set_params(**kwargs)
 
         if type(self.window_size) is not int or self.window_size <= 0:
             raise ValueError("Sliding window size must be a positive integer")
