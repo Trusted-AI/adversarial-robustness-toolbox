@@ -23,7 +23,7 @@ class TFClassifier(Classifier):
         :param train: the train/objective function tensor for fitting
         :param sess: tensorflow session
         """
-        super(Classifier, self).__init__(clip_values)
+        super().__init__(clip_values)
         self._nb_classes = logits.get_shape()[-1]
         self._input_ph = input_ph
         self._logits = logits
@@ -71,13 +71,15 @@ class TFClassifier(Classifier):
             # Train for one epoch
             for m in range(num_batch):
                 if m < num_batch - 1:
-                    m_batch = inputs[ind[m*batch_size:(m+1)*batch_size]]
+                    i_batch = inputs[ind[m * batch_size:(m+1) * batch_size]]
+                    o_batch = outputs[ind[m * batch_size:(m + 1) * batch_size]]
                 else:
-                    m_batch = inputs[ind[m*batch_size:]]
+                    i_batch = inputs[ind[m*batch_size:]]
+                    o_batch = outputs[ind[m * batch_size:]]
 
                 # Run train step
                 self._sess.run(self._train, feed_dict={
-                    self._input_ph:m_batch, self._output_ph: outputs})
+                    self._input_ph:i_batch, self._output_ph: o_batch})
 
     def nb_classes(self):
         """
@@ -101,7 +103,7 @@ class TFClassifier(Classifier):
 
         # Get the gradient graph
         grads = [tf.gradients(preds[:, i], self._input_ph)
-                 for i in range(len(labels))]
+                 for i in range(self._nb_classes)]
 
         # Compute the gradients and return
         grds = self._sess.run(grads, feed_dict={self._input_ph: inputs})
