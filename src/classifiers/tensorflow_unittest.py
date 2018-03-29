@@ -31,10 +31,10 @@ class TestTFClassifier(unittest.TestCase):
         self._logits = tf.layers.dense(fc, 10)
 
         # Train operator
-        loss = tf.reduce_mean(tf.losses.softmax_cross_entropy(
+        self._loss = tf.reduce_mean(tf.losses.softmax_cross_entropy(
             logits=self._logits, onehot_labels=self._output_ph))
         optimizer = tf.train.AdamOptimizer(learning_rate=0.01)
-        self._train = optimizer.minimize(loss)
+        self._train = optimizer.minimize(self._loss)
 
         # Tensorflow session and initialization
         self._sess = tf.Session()
@@ -47,10 +47,11 @@ class TestTFClassifier(unittest.TestCase):
         X_test, Y_test = X_test[:NB_TEST], Y_test[:NB_TEST]
 
         # Test fit and predict
-        tfc = TFClassifier(None, self._input_ph, self._logits, True,
-                           self._output_ph, self._train, self._sess)
+        tfc = TFClassifier(None, self._input_ph, self._logits,
+                           True, self._output_ph, self._train,
+                           self._loss, self._sess)
 
-        tfc.fit(X_train, Y_train, batch_size=100, num_epoch=2)
+        tfc.fit(X_train, Y_train, batch_size=100, nb_epochs=2)
         preds = tfc.predict(X_test)
         preds_class = np.argmax(preds, axis=1)
         trues_class = np.argmax(Y_test, axis=1)
@@ -66,19 +67,32 @@ class TestTFClassifier(unittest.TestCase):
 
         self.assertTrue(tfc.nb_classes() == 10)
 
-    def test_gradients(self):
+    def test_class_gradient(self):
         # Get MNIST
         (X_train, Y_train), (X_test, Y_test), _, _ = load_mnist()
         X_train, Y_train  = X_train[:NB_TRAIN], Y_train[:NB_TRAIN]
         X_test, Y_test = X_test[:NB_TEST], Y_test[:NB_TEST]
 
-        # Test gradients
-        tfc = TFClassifier(None, self._input_ph, self._logits, True,
-                           self._output_ph, self._train, self._sess)
-        trues_class = np.argmax(Y_test, axis=1)
-        grads = tfc.gradients(X_test, trues_class)
+        # Test gradient
+        tfc = TFClassifier(None, self._input_ph, self._logits,
+                           True, None, None, None, self._sess)
+        grads = tfc.class_gradient(X_test[0])
 
-        self.assertTrue(np.array(grads.shape==(10, 20, 28, 28, 1)).all())
+        self.assertTrue(np.array(grads.shape==(10, 28, 28, 1)).all())
+        self.assertTrue(np.sum(grads) != 0)
+
+    def test_loss_gradient(self):
+        # Get MNIST
+        (X_train, Y_train), (X_test, Y_test), _, _ = load_mnist()
+        X_train, Y_train  = X_train[:NB_TRAIN], Y_train[:NB_TRAIN]
+        X_test, Y_test = X_test[:NB_TEST], Y_test[:NB_TEST]
+
+        # Test gradient
+        tfc = TFClassifier(None, self._input_ph, self._logits, True,
+                           self._output_ph, None, self._loss, self._sess)
+        grads = tfc.loss_gradient(X_test[0], Y_test[0])
+
+        self.assertTrue(np.array(grads.shape==(28, 28, 1)).all())
         self.assertTrue(np.sum(grads) != 0)
 
 
