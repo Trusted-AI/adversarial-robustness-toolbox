@@ -25,14 +25,14 @@ class TestLocalSpatialSmoothing(unittest.TestCase):
         # Start to test
         preprocess = SpatialSmoothing()
         smoothed_x = preprocess(x, 3)
-        self.assertTrue((smoothed_x==np.array(
+        self.assertTrue((smoothed_x == np.array(
             [[[[2], [3], [3]], [[4], [5], [6]], [[5], [6], [6]]]])).all())
 
         smoothed_x = preprocess(x, 1)
-        self.assertTrue((smoothed_x==x).all())
+        self.assertTrue((smoothed_x == x).all())
 
         smoothed_x = preprocess(x, 2)
-        self.assertTrue((smoothed_x==np.array(
+        self.assertTrue((smoothed_x == np.array(
             [[[[1], [2], [3]], [[7], [7], [8]], [[7], [7], [8]]]])).all())
 
 

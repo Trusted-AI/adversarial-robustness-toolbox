@@ -20,7 +20,7 @@ class SpatialSmoothing(Preprocessor):
         self.is_fitted = True
         self.set_params(window_size=window_size)
 
-    def __call__(self, x_val, window_size=3):
+    def __call__(self, x_val, window_size=None):
         """
         Apply local spatial smoothing to sample x_val.
         :param x_val: (np.ndarray) Sample to smooth. `x_val` is supposed to
@@ -29,8 +29,10 @@ class SpatialSmoothing(Preprocessor):
         :return: Smoothed sample
         :rtype: np.ndarray
         """
-        self.set_params(window_size=window_size)
-        size = (1, window_size, window_size, 1)
+        if window_size is not None:
+            self.set_params(window_size=window_size)
+
+        size = (1, self.window_size, self.window_size, 1)
         result = ndimage.filters.median_filter(x_val, size=size, mode="reflect")
 
         return result
@@ -55,9 +57,3 @@ class SpatialSmoothing(Preprocessor):
             raise ValueError("Sliding window size must be a positive integer")
 
         return True
-
-
-
-
-
-
