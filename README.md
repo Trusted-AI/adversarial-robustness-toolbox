@@ -1,4 +1,6 @@
-# Nemesis (v1.0.0)
+# Nemesis (v0.1)
+[![Build Status](https://travis.ibm.com/Maria-Irina-Nicolae/nemesis.svg?token=gRzs7KGtxQXDzQo1SRTx&branch=dev)](https://travis.ibm.com/Maria-Irina-Nicolae/nemesis)
+
 This is a library dedicated to **adversarial machine learning**. Its purpose is to allow rapid crafting and analysis of attacks and defense methods for machine learning models. Nemesis provides an implementation for many state-of-the-art methods for attacking and defending classifiers.
 
 The library is still under development. Feedback, bug reports and extension requests are highly appreciated.
@@ -12,16 +14,16 @@ Nemesis contains implementations of the following attacks:
 * Universal Perturbation ([Moosavi-Dezfooli et al., 2016](https://arxiv.org/abs/1610.08401))
 * Virtual Adversarial Method ([Moosavi-Dezfooli et al., 2015](https://arxiv.org/abs/1507.00677))
 * C&amp;W Attack ([Carlini and Wagner, 2016](https://arxiv.org/abs/1608.04644))
+* NewtonFool ([Jang et al., 2017](http://doi.acm.org/10.1145/3134600.3134635))
 
 The following defense methods are also supported:
 * Feature squeezing ([Xu et al., 2017](http://arxiv.org/abs/1704.01155))
+* Spatial smoothing ([Xu et al., 2017](http://arxiv.org/abs/1704.01155))
 * Label smoothing (Warde-Farley and Goodfellow, 2016)
 * Adversarial training ([Szegedy et al., 2013](http://arxiv.org/abs/1312.6199))
 * Virtual adversarial training ([Miyato et al., 2017](https://arxiv.org/abs/1704.03976))
 
 ## Setup
-
-### Requirements
 
 Nemesis is designed to run with Python 3 (and most likely Python 2 with small changes). You can either download the source code of Nemesis or clone the repository in your directory of choice:
 ```bash
@@ -30,33 +32,29 @@ git clone https://github.ibm.com/Maria-Irina-Nicolae/nemesis
 
 To install the project dependencies, use the requirements file:
 ```bash
-pip install -r requirements.txt
+pip install .
 ```
 
-You will additionally need to download [Cleverhans](https://github.com/tensorflow/cleverhans).
+The library comes with a basic set of unit tests. To check your install, you can run all the unit tests by calling in the Nemesis folder:
+```bash
+bash run_tests.sh
+```
 
-### Installation
-
-Nemesis is linked against Cleverhans through the configuration file `config/config.ini`. When installing Nemesis on your local machine, you need to set the appropriate paths and the `LOCAL` configuration profile as follows:
+The configuration file `config/config.ini` allows to set custom paths for data. By default, data is downloaded in the `nemesis/data` folder as follows:
 
 ```text
 [DEFAULT]
 profile=LOCAL
 
 [LOCAL]
-data_path=/local/path/here
-mnist_path=/local/path/here
-cifar10_path=/local/path/here
-stl10_path=/local/path/here
-cleverhans_path=/local/path/here
+data_path=./data
+mnist_path=./data/mnist
+cifar10_path=./data/cifar-10
+stl10_path=./data/stl-10
 ```
 
 If the datasets are not present at the indicated path, loading them will also download the data.
 
-The library comes with a basic set of unit tests. To check that the installation has succeeded, you can run all the unit tests by calling in the Nemesis folder:
-```bash
-bash run_tests.sh
-```
 
 ## Running Nemesis
 
@@ -66,7 +64,7 @@ The library contains three main scripts for:
 * testing model accuracy on different test sets using (`test_accuracies.py`)
 
 Detailed instructions for each script are available by typing
-```python
+```bash
 python3 <script_name> -h
 ```
 

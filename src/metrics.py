@@ -1,3 +1,7 @@
+"""
+Module implementing varying metrics for assessing model robustness. These fall mainly under two categories:
+attack-dependent and attack-independent.
+"""
 import config
 
 import numpy as np
@@ -10,7 +14,7 @@ from functools import reduce
 
 from src.attacks.fast_gradient import FastGradientMethod
 
-
+# TODO add all other implemented attacks
 supported_methods = {
     "fgsm": {"class": FastGradientMethod, "params": {"eps_step": 0.1, "eps_max": 1., "clip_min": 0., "clip_max": 1.}},
     # "jsma": {"class": SaliencyMapMethod, "params": {"theta": 1., "gamma": 0.01, "clip_min": 0., "clip_max": 1.}}
@@ -32,15 +36,22 @@ def get_crafter(method, classifier, session, params=None):
 
 
 def empirical_robustness(x, classifier, sess, method_name, method_params=None):
-    """Compute the Empirical Robustness of a classifier object over the sample x for a given adversarial crafting
-    method `method_name`, following https://arxiv.org/abs/1511.04599
+    """Compute the Empirical Robustness of a classifier object over the sample `x` for a given adversarial crafting
+    method `attack`. This is equivalent to computing the minimal perturbation that the attacker must introduce for a
+    successful attack. Paper link: https://arxiv.org/abs/1511.04599
     
-    :param x: tensor of input points
-    :param classifier: classifier object
+    :param x: Data sample of shape that can be fed into `classifier`
+    :type x: `np.ndarray`
+    :param classifier: A trained model
+    :type classifier: :class:`Classifier`
+    :param sess: The session for the computation
+    :type sess: `tf.Session`
     :param method_name: adversarial attack name
-    :param sess: tf session
-    :param method_params: params specific to the adversarial attack
-    :return: a float corresponding to the average empirical robustness
+    :type method_name: `str`
+    :param method_params: Parameters specific to the adversarial attack
+    :type method_params: `dict`
+    :return: The average empirical robustness computed on `x`
+    :rtype: `float`
     """
     crafter = get_crafter(method_name, classifier, sess, method_params)
     adv_x = crafter.generate(x, minimal=True, **method_params)
@@ -108,14 +119,23 @@ def mmd(x_data, y_data, sess, sigma=0.1):
 
 def nearest_neighbour_dist(x, classifier, x_train, sess, method_name, method_params=None):
     """
-    (Average) Nearest neighbour distance between the sets x and x_train
-    :param x: Tensor of input points (usually, test set, clean examples)
-    :param classifier: Classifier object
-    :param x_train: Tensor of points (usually, training set, clean examples)
-    :param sess: tf session
-    :param method_name: Adversarial attack name
-    :param method_params: Params specific to the adversarial attack
-    :return: A float corresponding to the average distance.
+    Compute the (average) nearest neighbour distance between the sets `x` and `x_train`: for each point in `x`,
+    measure the Euclidean distance to its closest point in `x_train`, then average over all points.
+
+    :param x: Data sample of shape that can be fed into `classifier`
+    :type x: `np.ndarray`
+    :param classifier: A trained model
+    :type classifier: :class:`Classifier`
+    :param x_train: Reference data sample to be considered as neighbors
+    :type x_train: `np.ndarray`
+    :param sess: The session for the computation
+    :type sess: `tf.Session`
+    :param method_name: adversarial attack name
+    :type method_name: `str`
+    :param method_params: Parameters specific to the adversarial attack
+    :type method_params: `dict`
+    :return: The average nearest neighbors distance
+    :rtype: `float`
     """
     # Craft the adversarial examples
     crafter = get_crafter(method_name, classifier, sess, method_params)
@@ -137,13 +157,18 @@ def nearest_neighbour_dist(x, classifier, x_train, sess, method_name, method_par
 
 
 def loss_sensitivity(x, classifier, sess):
-    """Local loss sensitivity estimated through the gradients of the loss at points in x, as defined in
+    """
+    Local loss sensitivity estimated through the gradients of the loss at points in `x`, as defined in
     https://arxiv.org/pdf/1706.05394.pdf.
 
-    :param x: Tensor of input points
-    :param classifier: Classifier object
-    :param sess: tf session
-    :return: A float corresponding to the average loss sensitivity.
+    :param x: Data sample of shape that can be fed into `classifier`
+    :type x: `np.ndarray`
+    :param classifier: A trained model
+    :type classifier: :class:`Classifier`
+    :param sess: The session for the computation
+    :type sess: `tf.Session`
+    :return: The average loss sensitivity of the model
+    :rtype: `float`
     """
     x_op = tf.placeholder(dtype=tf.float32, shape=list(x.shape))
     y_pred = classifier.predict(x)
@@ -158,16 +183,24 @@ def loss_sensitivity(x, classifier, sess):
 
 def clever_u(x, classifier, n_b, n_s, r, sess, c_init=1):
     """
-    Compute CLEVER score for un-targeted attack.
-    https://arxiv.org/abs/1801.10578
-    :param x: one data example
-    :param classifier: K-class classifier
-    :param n_b: batch size
-    :param n_s: number of examples per batch
-    :param r: maximum perturbation
-    :param sess:
+    Compute CLEVER score for an untargeted attack. Paper link: https://arxiv.org/abs/1801.10578
+
+    :param x: One input sample
+    :type x: `np.ndarray`
+    :param classifier: A trained model.
+    :type classifier: :class:`Classifier`
+    :param n_b: Batch size
+    :type n_b: `int`
+    :param n_s: Number of examples per batch
+    :type n_s: `int`
+    :param r: Maximum perturbation
+    :type r: `float`
+    :param sess: The session to run graphs in
+    :type sess: `tf.Session`
     :param c_init: initialization of Weibull distribution
-    :return: CLEVER score
+    :type c_init: `float`
+    :return: A tuple of 3 CLEVER scores, corresponding to norms 1, 2 and np.inf
+    :rtype: `tuple`
     """
     # Get a list of untargeted classes
     y_pred = classifier.predict(np.array([x]))
@@ -188,17 +221,26 @@ def clever_u(x, classifier, n_b, n_s, r, sess, c_init=1):
 
 def clever_t(x, classifier, target_class, n_b, n_s, r, sess, c_init=1):
     """
-    Compute CLEVER score for targeted attack.
-    https://arxiv.org/abs/1801.10578
-    :param x: one data example
-    :param classifier: K-class classifier
-    :param target_class:
-    :param n_b: batch size
-    :param n_s: number of examples per batch
-    :param r: maximum perturbation
-    :param sess:
-    :param c_init: initialization of Weibull distribution
-    :return: CLEVER score
+    Compute CLEVER score for a targeted attack. Paper link: https://arxiv.org/abs/1801.10578
+
+    :param x: One input sample
+    :type x: `np.ndarray`
+    :param classifier: A trained model
+    :type classifier: :class:`Classifier`
+    :param target_class: Targeted class
+    :type target_class: `int`
+    :param n_b: Batch size
+    :type n_b: `int`
+    :param n_s: Number of examples per batch
+    :type n_s: `int`
+    :param r: Maximum perturbation
+    :type r: `float`
+    :param sess: The session to run graphs in
+    :type sess: `tf.Session`
+    :param c_init: Initialization of Weibull distribution
+    :type c_init: `float`
+    :return: A tuple of 3 CLEVER scores, corresponding to norms 1, 2 and np.inf
+    :rtype: `tuple`
     """
     # Check if the targeted class is different from the predicted class
     y_pred = classifier.predict(np.array([x]))
@@ -214,12 +256,11 @@ def clever_t(x, classifier, target_class, n_b, n_s, r, sess, c_init=1):
     target_class_ph = tf.placeholder(dtype=tf.int32, shape=[])
 
     # Define tensors for g gradients
-    grad_norm_1, grad_norm_2, grad_norm_8, g_x = _build_g_gradient(
-        imgs, classifier, pred_class_ph, target_class_ph)
+    grad_norm_1, grad_norm_2, grad_norm_8, g_x = _build_g_gradient(imgs, classifier, pred_class_ph, target_class_ph)
 
     # Some auxiliary vars
     set1, set2, set8 = [], [], []
-    dim = reduce(lambda x, y: x * y, x.shape, 1)
+    dim = reduce(lambda x_, y: x_ * y, x.shape, 1)
     shape = [n_s]
     shape.extend(x.shape)
 
@@ -249,12 +290,9 @@ def clever_t(x, classifier, target_class, n_b, n_s, r, sess, c_init=1):
         set8.append(max_gn8)
 
     # Maximum likelihood estimation for max gradient norms
-    [_, loc1, _] = weibull_min.fit(-np.array(set1), c_init,
-                                   optimizer=scipy_optimizer)
-    [_, loc2, _] = weibull_min.fit(-np.array(set2), c_init,
-                                   optimizer=scipy_optimizer)
-    [_, loc8, _] = weibull_min.fit(-np.array(set8), c_init,
-                                   optimizer=scipy_optimizer)
+    [_, loc1, _] = weibull_min.fit(-np.array(set1), c_init, optimizer=scipy_optimizer)
+    [_, loc2, _] = weibull_min.fit(-np.array(set2), c_init, optimizer=scipy_optimizer)
+    [_, loc8, _] = weibull_min.fit(-np.array(set8), c_init, optimizer=scipy_optimizer)
 
     # Compute g_x0
     x0 = np.array([x])
@@ -275,12 +313,18 @@ def clever_t(x, classifier, target_class, n_b, n_s, r, sess, c_init=1):
 
 def _build_g_gradient(x, classifier, pred_class, target_class):
     """
-    Build tensors of g gradient.
-    :param x:
-    :param classifier:
-    :param pred_class:
-    :param target_class:
-    :return: max gradient norms
+    Build tensors of gradient `g`.
+
+    :param x: One input sample
+    :type x: `np.ndarray`
+    :param classifier: A trained model
+    :type classifier: :class:`Classifier`
+    :param pred_class: Predicted class
+    :type pred_class: `int`
+    :param target_class: Target class
+    :type target_class: `int`
+    :return: Max gradient norms
+    :rtype: `tuple`
     """
     # Get predict values
     y_pred = classifier.model(x)
@@ -302,15 +346,20 @@ def _build_g_gradient(x, classifier, pred_class, target_class):
 
 def _random_sphere(m, n, r):
     """
-    Generate randomly m n-dimension points with radius r and 0-center.
-    :param m: number of random data points
-    :param n: dimension
-    :param r: radius
-    :return:
-    """
-    A = np.random.randn(m, n)
-    s2 = np.sum(A**2, axis=1)
-    base = gammainc(n/2, s2/2)**(1/n) * r / np.sqrt(s2)
-    A = A * (np.tile(base, (n,1))).T
+    Generate randomly `m x n`-dimension points with radius `r` and centered around 0.
 
-    return A
+    :param m: Number of random data points
+    :type m: `int`
+    :param n: Dimension
+    :type n: `int`
+    :param r: Radius
+    :type r: `float`
+    :return: The generated random sphere
+    :rtype: `np.ndarray`
+    """
+    a = np.random.randn(m, n)
+    s2 = np.sum(a**2, axis=1)
+    base = gammainc(n/2, s2/2)**(1/n) * r / np.sqrt(s2)
+    a = a * (np.tile(base, (n, 1))).T
+
+    return a

@@ -1,6 +1,4 @@
-from __future__ import absolute_import, division, print_function
-
-from config import config_dict
+from __future__ import absolute_import, division, print_function, unicode_literals
 
 import keras.backend as k
 import tensorflow as tf
