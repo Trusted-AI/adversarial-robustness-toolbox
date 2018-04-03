@@ -11,20 +11,31 @@ class TFClassifier(Classifier):
     """
     This class implements a classifier with the Tensorflow framework.
     """
-    def __init__(self, clip_values, input_ph, logits, use_logits=True,
-                 output_ph=None, train=None, loss=None, sess=None):
+    def __init__(self, clip_values, input_ph, logits, use_logits=True, output_ph=None, train=None, loss=None,
+                 sess=None):
         """
-        Initialization specificly for the Tensorflow-based implementation.
-        :param clip_values: (min, max) values for inputs
-        :param input_ph: the input placeholder
-        :param logits: the logits layer
-        :param use_logits: (bool) whether to use logits for computing gradients
-        :param output_ph: the output placeholder
-        :param train: the train tensor for fitting, including an optimizer
-        :param loss: the loss function for which to compute gradients
-        :param sess: tensorflow session
+        Initialization specifically for the Tensorflow-based implementation.
+
+         :param clip_values: Tuple of the form `(min, max)` representing the minimum and maximum values allowed
+               for features.
+        :type clip_values: `tuple`
+        :param input_ph: The input placeholder.
+        :type input_ph: `tf.Placeholder`
+        :param logits: The logits layer of the model.
+        :type logits: `tf.Tensor`
+        :param use_logits: `True` if the output of the model are the logits.
+        :type use_logits: `bool`
+        :param output_ph: The output layer of the model. Use this parameter only of `use_logits` is `False`.
+        :type output_ph: `tf.Tensor`
+        :param train: The train tensor for fitting, including an optimizer. Use this parameter only when training the
+               model.
+        :type train: `tf.Tensor`
+        :param loss: The loss function for which to compute gradients.
+        :type loss: `tf.Tensor`
+        :param sess: Computation session.
+        :type sess: `tf.Session`
         """
-        super().__init__(clip_values)
+        super(TFClassifier, self).__init__(clip_values)
         self._nb_classes = logits.get_shape()[-1]
         self._input_ph = input_ph
         self._logits = logits
@@ -40,9 +51,12 @@ class TFClassifier(Classifier):
 
     def predict(self, inputs):
         """
-        Do prediction for the model.
-        :param inputs:
-        :return: the prediction results
+        Perform prediction for a batch of inputs.
+
+        :param inputs: Test set.
+        :type inputs: `np.ndarray`
+        :return: Array of predictions of shape `(nb_inputs, self.nb_classes)`.
+        :rtype: `np.ndarray`
         """
         preds = tf.nn.softmax(self._logits)
         results = self._sess.run(preds, feed_dict={self._input_ph: inputs})
@@ -51,11 +65,17 @@ class TFClassifier(Classifier):
 
     def fit(self, inputs, outputs, batch_size=128, nb_epochs=10):
         """
-        Fit the model by training.
-        :param inputs: the input images
-        :param outputs: the outputs put directly into the output_ph phaceholder
-        :param batch_size: mini batch size
-        :param nb_epochs: number of epoches for training
+        Fit the classifier on the training set `(inputs, outputs)`.
+
+        :param inputs: Training data.
+        :type inputs: `np.ndarray`
+        :param outputs: Labels.
+        :type outputs: `np.ndarray`
+        :param batch_size: Size of batches.
+        :type batch_size: `int`
+        :param nb_epochs: Number of epochs to use for trainings.
+        :type nb_epochs: `int`
+        :return: `None`
         """
         # Check if train and output_ph available
         if self._train is None or self._output_ph is None:
@@ -83,18 +103,14 @@ class TFClassifier(Classifier):
                 self._sess.run(self._train, feed_dict={
                     self._input_ph:i_batch, self._output_ph: o_batch})
 
-    def nb_classes(self):
-        """
-        Return the number of output classes.
-        :return: number of output classes
-        """
-        return self._nb_classes
-
     def class_gradient(self, input):
         """
-        Compute the gradient of the logits/softmax layer wrt one input.
-        :param input: one single input image
-        :return: a numpy array containing gradient
+        Compute per-class derivatives w.r.t. `input`.
+
+        :param input: One sample input with shape as expected by the model.
+        :type input: `np.ndarray`
+        :return: Array of gradients of input features w.r.t. each class in the form `(self.nb_classes, input_shape)`
+        :rtype: `np.ndarray`
         """
         # Get the function for the derivatives
         if not self._use_logits:
@@ -115,10 +131,14 @@ class TFClassifier(Classifier):
 
     def loss_gradient(self, input, label):
         """
-        Compute the gradient of the loss function wrt one input.
-        :param input: one single input image
-        :param label: the ground true label of the input image
-        :return: a numpy array containing gradient
+        Compute the gradient of the loss function w.r.t. `input`.
+
+        :param input: One sample input with shape as expected by the model.
+        :type input: `np.ndarray`
+        :param label: Correct label.
+        :type label: `int`
+        :return: Array of gradients of the same shape as `input`.
+        :rtype: `np.ndarray`
         """
         # Check if loss available
         if self._loss is None:
@@ -133,7 +153,3 @@ class TFClassifier(Classifier):
             self._output_ph: np.array([label])})
 
         return grds
-
-
-
-

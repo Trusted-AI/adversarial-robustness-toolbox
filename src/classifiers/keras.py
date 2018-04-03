@@ -14,9 +14,13 @@ class KerasClassifier(Classifier):
         """
         Create a `Classifier` instance from a Keras model. Assumes the `model` passed as argument is compiled.
 
-        :param clip_values: (tuple) Input range of values in the form (min, max)
-        :param model: (k.Sequential) Keras model
-        :param use_logits: (optional bool, default True) True if the output of the model are the logits
+        :param clip_values: Tuple of the form `(min, max)` representing the minimum and maximum values allowed
+               for features.
+        :type clip_values: `tuple`
+        :param model: Keras model
+        :type model: `keras.models.Sequential`
+        :param use_logits: True if the output of the model are the logits
+        :type use_logits: `bool`
         """
         # TODO Handle compilation?
         # TODO Generalize loss function?
@@ -59,16 +63,55 @@ class KerasClassifier(Classifier):
         self._preds = k.function([self._input], [preds])
 
     def loss_gradient(self, input, label):
+        """
+        Compute the gradient of the loss function w.r.t. `input`.
+
+        :param input: One sample input with shape as expected by the model.
+        :type input: `np.ndarray`
+        :param label: Correct label.
+        :type label: `int`
+        :return: Array of gradients of the same shape as `input`.
+        :rtype: `np.ndarray`
+        """
         return self._loss_grads([input, label])
 
     def class_gradient(self, input):
+        """
+        Compute per-class derivatives w.r.t. `input`.
+
+        :param input: One sample input with shape as expected by the model.
+        :type input: `np.ndarray`
+        :return: Array of gradients of input features w.r.t. each class in the form `(self.nb_classes, input_shape)`
+        :rtype: `np.ndarray`
+        """
         return np.array(self._class_grads([input]))
 
     def predict(self, inputs):
+        """
+        Perform prediction for a batch of inputs.
+
+        :param inputs: Test set.
+        :type inputs: `np.ndarray`
+        :return: Array of predictions of shape `(nb_inputs, self.nb_classes)`.
+        :rtype: `np.ndarray`
+        """
         k.set_learning_phase(0)
         return self._preds([inputs])[0]
 
-    def fit(self, inputs, outputs, batch_size=128, nb_epochs=10):
+    def fit(self, inputs, outputs, batch_size=128, nb_epochs=20):
+        """
+        Fit the classifier on the training set `(inputs, outputs)`.
+
+        :param inputs: Training data.
+        :type inputs: `np.ndarray`
+        :param outputs: Labels.
+        :type outputs: `np.ndarray`
+        :param batch_size: Size of batches.
+        :type batch_size: `int`
+        :param nb_epochs: Number of epochs to use for trainings.
+        :type nb_epochs: `int`
+        :return: `None`
+        """
         k.set_learning_phase(1)
         gen = generator(inputs, outputs, batch_size)
         self._model.fit_generator(gen, steps_per_epoch=inputs.shape[0] / batch_size, epochs=nb_epochs)
@@ -77,11 +120,15 @@ class KerasClassifier(Classifier):
 def generator(data, labels, batch_size=128):
     """
     Minimal data generator for batching large datasets.
-    :param data: (np.ndarray)
-    :param labels: (np.ndarray) The labels for `data`. The first dimension has to match the first dimension of `data`.
-    :param batch_size: (optional int) The batch size.
+
+    :param data: The data sample to batch.
+    :type data: `np.ndarray`
+    :param labels: The labels for `data`. The first dimension has to match the first dimension of `data`.
+    :type labels: `np.ndarray`
+    :param batch_size: The size of the batches to produce.
+    :type batch_size: `int`
     :return: A batch of size `batch_size` of random samples from `(data, labels)`
-    :rtype: tuple(np.ndarray, np.ndarray)
+    :rtype: `tuple(np.ndarray, np.ndarray)`
     """
     while True:
         indices = np.random.randint(data.shape[0], size=batch_size)

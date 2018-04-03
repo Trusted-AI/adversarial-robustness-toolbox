@@ -12,12 +12,16 @@ else:
 
 
 class Classifier(ABC):
+    """
+    Base class for all classifiers.
+    """
     def __init__(self, clip_values):
         """
         Initialize a `Classifier` object.
 
-        :param clip_values: (tuple) Tuple of the form `(min, max)` representing the minimum and maximum values allowed
-        for features.
+        :param clip_values: Tuple of the form `(min, max)` representing the minimum and maximum values allowed
+               for features.
+        :type clip_values: `tuple`
         """
         self._clip_values = clip_values
 
@@ -25,7 +29,8 @@ class Classifier(ABC):
         """
         Perform prediction for a batch of inputs.
 
-        :param inputs: (np.ndarray) Test set.
+        :param inputs: Test set.
+        :type inputs: `np.ndarray`
         :return: Array of predictions of shape `(nb_inputs, self.nb_classes)`.
         :rtype: `np.ndarray`
         """
@@ -36,17 +41,24 @@ class Classifier(ABC):
         """
         Fit the classifier on the training set `(inputs, outputs)`.
 
-        :param inputs: (np.ndarray) Training data.
-        :param outputs: (np.ndarray) Labels.
-        :param batch_size: (optinal int, default 128) Size of batches.
-        :param nb_epochs: (optinal int, default 20) Number of epochs.
+        :param inputs: Training data.
+        :type inputs: `np.ndarray`
+        :param outputs: Labels.
+        :type outputs: `np.ndarray`
+        :param batch_size: Size of batches.
+        :type batch_size: `int`
+        :param nb_epochs: Number of epochs to use for trainings.
+        :type nb_epochs: `int`
+        :return: `None`
         """
         raise NotImplementedError
 
     def nb_classes(self):
         """
+        Return the number of output classes.
+
         :return: Number of classes in the data.
-        :rtype: int
+        :rtype: `int`
         """
         return self._nb_classes
 
@@ -62,8 +74,9 @@ class Classifier(ABC):
         """
         Compute per-class derivatives w.r.t. `input`.
 
-        :param input: (np.ndarray) One sample input with shape as expected by the model.
-        :return: Array of gradients of input features w.r.t. each class in the form `[self.nb_classes, input_shape]`
+        :param input: One sample input with shape as expected by the model.
+        :type input: `np.ndarray`
+        :return: Array of gradients of input features w.r.t. each class in the form `(self.nb_classes, input_shape)`
         :rtype: `np.ndarray`
         """
         raise NotImplementedError
@@ -73,8 +86,10 @@ class Classifier(ABC):
         """
         Compute the gradient of the loss function w.r.t. `input`.
 
-        :param input: (np.ndarray) One sample input with shape as expected by the model.
+        :param input: One sample input with shape as expected by the model.
+        :type input: `np.ndarray`
         :param label: Correct label.
+        :type label: `int`
         :return: Array of gradients of the same shape as `input`.
         :rtype: `np.ndarray`
         """

@@ -3,6 +3,5 @@ Classifier API for applying all attacks. Use the :class:`Classifier` wrapper to 
 preexisting model.
 """
 from src.classifiers.classifier import Classifier
-from src.classifiers.cnn import CNN
-from src.classifiers.mlp import MLP
-from src.classifiers.resnet import ResNet
+from src.classifiers.keras import KerasClassifier
+from src.classifiers.tensorflow import TFClassifier
