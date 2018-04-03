@@ -15,20 +15,20 @@
 # AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT,
 # TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 # SOFTWARE.
+"""
+Module implementing varying metrics for assessing model robustness. These fall mainly under two categories:
+attack-dependent and attack-independent.
+"""
 
 import config
 
 import numpy as np
 import numpy.linalg as la
 import tensorflow as tf
-from scipy.stats import weibull_min
-from scipy.optimize import fmin as scipy_optimizer
-from scipy.special import gammainc
-from functools import reduce
 
 from src.attacks.fast_gradient import FastGradientMethod
 
-
+# TODO add all other implemented attacks
 supported_methods = {
     "fgsm": {"class": FastGradientMethod, "params": {"eps_step": 0.1, "eps_max": 1., "clip_min": 0., "clip_max": 1.}},
     # "jsma": {"class": SaliencyMapMethod, "params": {"theta": 1., "gamma": 0.01, "clip_min": 0., "clip_max": 1.}}
@@ -50,15 +50,22 @@ def get_crafter(method, classifier, session, params=None):
 
 
 def empirical_robustness(x, classifier, sess, method_name, method_params=None):
-    """Compute the Empirical Robustness of a classifier object over the sample x for a given adversarial crafting
-    method `method_name`, following https://arxiv.org/abs/1511.04599
+    """Compute the Empirical Robustness of a classifier object over the sample `x` for a given adversarial crafting
+    method `attack`. This is equivalent to computing the minimal perturbation that the attacker must introduce for a
+    successful attack. Paper link: https://arxiv.org/abs/1511.04599
     
-    :param x: tensor of input points
-    :param classifier: classifier object
+    :param x: Data sample of shape that can be fed into `classifier`
+    :type x: `np.ndarray`
+    :param classifier: A trained model
+    :type classifier: :class:`Classifier`
+    :param sess: The session for the computation
+    :type sess: `tf.Session`
     :param method_name: adversarial attack name
-    :param sess: tf session
-    :param method_params: params specific to the adversarial attack
-    :return: a float corresponding to the average empirical robustness
+    :type method_name: `str`
+    :param method_params: Parameters specific to the adversarial attack
+    :type method_params: `dict`
+    :return: The average empirical robustness computed on `x`
+    :rtype: `float`
     """
     crafter = get_crafter(method_name, classifier, sess, method_params)
     adv_x = crafter.generate(x, minimal=True, **method_params)
@@ -126,14 +133,23 @@ def mmd(x_data, y_data, sess, sigma=0.1):
 
 def nearest_neighbour_dist(x, classifier, x_train, sess, method_name, method_params=None):
     """
-    (Average) Nearest neighbour distance between the sets x and x_train
-    :param x: Tensor of input points (usually, test set, clean examples)
-    :param classifier: Classifier object
-    :param x_train: Tensor of points (usually, training set, clean examples)
-    :param sess: tf session
-    :param method_name: Adversarial attack name
-    :param method_params: Params specific to the adversarial attack
-    :return: A float corresponding to the average distance.
+    Compute the (average) nearest neighbour distance between the sets `x` and `x_train`: for each point in `x`,
+    measure the Euclidean distance to its closest point in `x_train`, then average over all points.
+
+    :param x: Data sample of shape that can be fed into `classifier`
+    :type x: `np.ndarray`
+    :param classifier: A trained model
+    :type classifier: :class:`Classifier`
+    :param x_train: Reference data sample to be considered as neighbors
+    :type x_train: `np.ndarray`
+    :param sess: The session for the computation
+    :type sess: `tf.Session`
+    :param method_name: adversarial attack name
+    :type method_name: `str`
+    :param method_params: Parameters specific to the adversarial attack
+    :type method_params: `dict`
+    :return: The average nearest neighbors distance
+    :rtype: `float`
     """
     # Craft the adversarial examples
     crafter = get_crafter(method_name, classifier, sess, method_params)
@@ -155,13 +171,18 @@ def nearest_neighbour_dist(x, classifier, x_train, sess, method_name, method_par
 
 
 def loss_sensitivity(x, classifier, sess):
-    """Local loss sensitivity estimated through the gradients of the loss at points in x, as defined in
+    """
+    Local loss sensitivity estimated through the gradients of the loss at points in `x`, as defined in
     https://arxiv.org/pdf/1706.05394.pdf.
 
-    :param x: Tensor of input points
-    :param classifier: Classifier object
-    :param sess: tf session
-    :return: A float corresponding to the average loss sensitivity.
+    :param x: Data sample of shape that can be fed into `classifier`
+    :type x: `np.ndarray`
+    :param classifier: A trained model
+    :type classifier: :class:`Classifier`
+    :param sess: The session for the computation
+    :type sess: `tf.Session`
+    :return: The average loss sensitivity of the model
+    :rtype: `float`
     """
     x_op = tf.placeholder(dtype=tf.float32, shape=list(x.shape))
     y_pred = classifier.predict(x)

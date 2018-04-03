@@ -15,6 +15,9 @@
 # AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT,
 # TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 # SOFTWARE.
+"""
+Module providing convenience functions.
+"""
 from __future__ import absolute_import, division, print_function
 
 import argparse
@@ -33,11 +36,14 @@ import tensorflow as tf
 
 def random_targets(labels, nb_classes):
     """
-    Take in the correct labels for each sample and randomly choose target labels from the others
+    Given a set of correct labels, randomly choose target labels different from the original ones.
     
-    :param labels: the correct labels
+    :param labels: The correct labels
+    :type labels: `np.ndarray`
     :param nb_classes: The number of classes for this model
-    :return: A numpy array holding the randomly-selected target classes
+    :type nb_classes: `int`
+    :return: An array holding the randomly-selected target classes
+    :rtype: `np.ndarray`
     """
     if len(labels.shape) > 1:
         labels = np.argmax(labels, axis=1)
@@ -128,13 +134,18 @@ def get_labels_np_array(preds):
 
 
 def preprocess(x, y, nb_classes=10, max_value=255):
-    """Scales `x` to [0,1] and converts `y` to class categorical confidences.
+    """Scales `x` to [0, 1] and converts `y` to class categorical confidences.
 
-    :param x: array of instances
-    :param y: array of labels
-    :param nb_classes: int, number of classes
-    :param max_value: int, original maximal pixel value
-    :return: rescaled values of x, y
+    :param x: Data instances
+    :type x: `np.ndarray`
+    :param y: Labels
+    :type y: `np.ndarray`
+    :param nb_classes: Number of classes in dataset
+    :type nb_classes: `int`
+    :param max_value: Original maximum allowed value for features
+    :type max_value: `int`
+    :return: rescaled values of `x`, `y`
+    :rtype: `tuple`
     """
     x = x.astype('float32') / max_value
     y = np_utils.to_categorical(y, nb_classes)
@@ -291,9 +302,13 @@ def load_stl():
 
 def load_dataset(name):
     """
-    Loads the original dataset corresponding to name.
-    :param name: (str) name or path of the dataset
-    :return: `(x_train, y_train), (x_test, y_test)`
+    Loads or downloads the dataset corresponding to `name`. Options are: `mnist`, `cifar10`, `imagenet` and `stl10`.
+
+    :param name: Name of the dataset
+    :type name: `str`
+    :return: The dataset separated in training and test sets as `(x_train, y_train), (x_test, y_test)`
+    :rtype: `tuple`
+    :raises NotImplementedError: If the dataset is unknown.
     """
 
     if "mnist" in name:

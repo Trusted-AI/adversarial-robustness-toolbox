@@ -35,10 +35,14 @@ class SaliencyMapMethod(Attack):
         """
         Create a SaliencyMapMethod instance.
 
-        Attack-specific parameters:
-        :param theta: (optional float) Perturbation introduced to each modified feature (can be positive or negative)
-        :param gamma: (optional float) Maximum percentage of perturbed features (between 0 and 1)
-        :param clip_min: (optional float) Minimum component value for clipping
+        :param theta: Perturbation introduced to each modified feature per step (can be positive or negative)
+        :type theta: `float`
+        :param gamma: Maximum percentage of perturbed features (between 0 and 1)
+        :type gamma: `float`
+        :param clip_min: Minimum input component value.
+        :type clip_min: `float`
+        :param clip_max: Maximum input component value.
+        :type clip_max: `float`
         """
         super(SaliencyMapMethod, self).__init__(model, sess)
         kwargs = {'theta': theta,
@@ -49,15 +53,22 @@ class SaliencyMapMethod(Attack):
 
     def generate(self, x_val, **kwargs):
         """
-        Generate adversarial samples and return them in a Numpy array.
+        Generate adversarial samples and return them in an array.
 
-        :param x_val: (required) A Numpy array with the original inputs.
-        :param y_val: (optional) Target values if the attack is targeted
-        :param theta: (optional float) Perturbation introduced to each modified feature (can be positive or negative)
-        :param gamma: (optional float) Maximum percentage of perturbed features (between 0 and 1)
-        :param clip_min: (optional float) Minimum component value for clipping
-        :param clip_max: (optional float) Maximum component value for clipping
-        :return: A Numpy array holding the adversarial examples.
+        :param x_val: An array with the original inputs to be attacked.
+        :type x_val: `np.ndarray`
+        :param y_val: Target values if the attack is targeted
+        :type y_val: `np.ndarray`
+        :param theta: Perturbation introduced to each modified feature per step (can be positive or negative)
+        :type theta: `float`
+        :param gamma: Maximum percentage of perturbed features (between 0 and 1)
+        :type gamma: `float`
+        :param clip_min: Minimum input component value.
+        :type clip_min: `float`
+        :param clip_max: Maximum input component value.
+        :type clip_max: `float`
+        :return: An array holding the adversarial examples.
+        :rtype: `np.ndarray`
         """
         # Parse and save attack-specific parameters
         assert self.set_params(**kwargs)
@@ -133,12 +144,14 @@ class SaliencyMapMethod(Attack):
         """
         Take in a dictionary of parameters and applies attack-specific checks before saving them as attributes.
 
-        Attack-specific parameters:
-        :param theta: (optional float) Perturbation introduced to modified components (can be positive or negative)
-        :param gamma: (optional float) Maximum percentage of perturbed features
-        :param nb_classes: (optional int) Number of model output classes
-        :param clip_min: (optional float) Minimum component value for clipping
-        :param clip_max: (optional float) Maximum component value for clipping
+        :param theta: Perturbation introduced to each modified feature per step (can be positive or negative)
+        :type theta: `float`
+        :param gamma: Maximum percentage of perturbed features (between 0 and 1)
+        :type gamma: `float`
+        :param clip_min: Minimum input component value.
+        :type clip_min: `float`
+        :param clip_max: Maximum input component value.
+        :type clip_max: `float`
         """
         # Save attack-specific parameters
         super(SaliencyMapMethod, self).set_params(**kwargs)
@@ -153,10 +166,14 @@ class SaliencyMapMethod(Attack):
         Compute the saliency map of `x`. Return the top 2 coefficients in `search_space` that maximize / minimize
         the saliency map.
 
-        :param x: (np.ndarray) One input sample
+        :param x: One input sample
+        :type x: `np.ndarray`
         :param target: Target class for `x`
-        :param search_space: (set) The set of valid pairs of feature indices to search
-        :return: (tuple) Tuple of the two indices to be changed; each represents a feature from the flattened input
+        :type target: `int`
+        :param search_space: The set of valid pairs of feature indices to search
+        :type search_space: `set(tuple)`
+        :return: The top 2 coefficients in `search_space` that maximize / minimize the saliency map
+        :rtype: `tuple`
         """
         grads_val = self.sess.run(self._grads, feed_dict={self._x: x})
         grads_val = np.array([np.reshape(g[0], self._nb_features) for g in grads_val])

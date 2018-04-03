@@ -20,7 +20,7 @@ from __future__ import absolute_import, division, print_function, unicode_litera
 import numpy as np
 import tensorflow as tf
 
-from src.attacks.attack import Attack, class_derivative
+from src.attacks.attack import Attack
 
 
 class VirtualAdversarialMethod(Attack):
@@ -34,32 +34,45 @@ class VirtualAdversarialMethod(Attack):
         """
         Create a VirtualAdversarialMethod instance.
 
-        :param classifier: A function that takes a symbolic input and returns the symbolic output for the classifier's
-        predictions.
-        :param sess: The tf session to run graphs in
-        :param eps: (optional float) the epsilon (max input variation parameter)
-        :param finite_diff: (optional float) The finite difference parameter
-        :param max_iter: (optional integer) The maximum number of iterations
-        :param clip_min: (optional float) Minimum input component value
-        :param clip_max: (optional float) Maximum input component value
+        :param classifier: A trained model.
+        :type classifier: :class:`Classifier`
+        :param sess: The session to run graphs in.
+        :type sess: `tf.Session`
+        :param eps: Attack step (max input variation).
+        :type eps: `float`
+        :param finite_diff: The finite difference parameter.
+        :type finite_diff: `float`
+        :param max_iter: The maximum number of iterations.
+        :type max_iter: `int`
+        :param clip_min: Minimum input component value.
+        :type clip_min: `float`
+        :param clip_max: Maximum input component value.
+        :type clip_max: `float`
         """
         super(VirtualAdversarialMethod, self).__init__(classifier, sess)
 
-        kwargs = {'finite_diff': finite_diff, 'eps': eps, 'max_iter': max_iter, 'clip_min': clip_min, 'clip_max': clip_max}
+        kwargs = {'finite_diff': finite_diff, 'eps': eps, 'max_iter': max_iter, 'clip_min': clip_min,
+                  'clip_max': clip_max}
         self.set_params(**kwargs)
 
     def generate(self, x_val, **kwargs):
         """
-        Generate adversarial samples and return them in a Numpy array.
+        Generate adversarial samples and return them in an array.
 
-        :param x_val: (required) A Numpy array with the original inputs
-        :param eps: (optional float) the epsilon (max input variation parameter)
-        :param finite_diff: (optional float) The finite difference parameter
-        :param max_iter: (optinal integer) The maximum number of iterations
-        :param clip_min: (optional float) Minimum input component value
-        :param clip_max: (optional float) Maximum input component value
-        :return: A Numpy array holding the adversarial examples
-        :rtype: np.ndarray
+        :param x_val: An array with the original inputs to be attacked.
+        :type x_val: `np.ndarray`
+        :param eps: Attack step (max input variation).
+        :type eps: `float`
+        :param finite_diff: The finite difference parameter.
+        :type finite_diff: `float`
+        :param max_iter: The maximum number of iterations.
+        :type max_iter: `int`
+        :param clip_min: Minimum input component value.
+        :type clip_min: `float`
+        :param clip_max: Maximum input component value.
+        :type clip_max: `float`
+        :return: An array holding the adversarial examples.
+        :rtype: `np.ndarray`
         """
         # TODO Consider computing attack for a batch of samples at a time (no for loop)
         # Parse and save attack-specific parameters
@@ -98,9 +111,10 @@ class VirtualAdversarialMethod(Attack):
         """
         Apply L_2 batch normalization on `x`.
 
-        :param x: (np.ndarray) The input array to normalize
-        :return: The nornmalized version of `x`
-        :rtype: np.ndarray
+        :param x: The input array to normalize.
+        :type x: `np.ndarray`
+        :return: The normalized version of `x`.
+        :rtype: `np.ndarray`
         """
         tol = 1e-12
         dims = x.shape
@@ -117,12 +131,16 @@ class VirtualAdversarialMethod(Attack):
         """
         Take in a dictionary of parameters and applies attack-specific checks before saving them as attributes.
 
-        Attack-specific parameters:
-        :param eps: (optional float) the epsilon (max input variation parameter)
-        :param finite_diff: (optional float) The finite difference parameter
-        :param max_iter: (optional integer) The maximum number of iterations
-        :param clip_min: (optional float) Minimum input component value
-        :param clip_max: (optional float) Maximum input component value
+        :param eps: Attack step (max input variation).
+        :type eps: `float`
+        :param finite_diff: The finite difference parameter.
+        :type finite_diff: `float`
+        :param max_iter: The maximum number of iterations.
+        :type max_iter: `int`
+        :param clip_min: Minimum input component value.
+        :type clip_min: `float`
+        :param clip_max: Maximum input component value.
+        :type clip_max: `float`
         """
         # Save attack-specific parameters
         super(VirtualAdversarialMethod, self).set_params(**kwargs)

@@ -22,7 +22,7 @@ from keras.engine import Layer
 
 
 class BoundedReLU(Layer):
-    """Bounded Rectified Linear Unit.
+    """Bounded Rectified Linear Unit, defined as:
     `f(x) = alpha * x for x < 0`,
     `f(x) = x for x >= 0`,
     `f(x) = max_value for x > max_value.`
@@ -30,9 +30,12 @@ class BoundedReLU(Layer):
     def __init__(self, alpha=0., max_value=1., **kwargs):
         """
 
-        :param alpha: float >= 0, negative slope coefficient for leaky ReLU
-        :param max_value: float, > 0, maximal value of the function
+        :param alpha: Negative slope coefficient for leaky ReLU (positive value)
+        :type alpha: `float`
+        :param max_value: Maximum value of the function (strictly positive)
+        :type max_value: `float`
         :param kwargs: input_shape: when using this layer as the first layer in a model.
+        :type kwargs: `dict`
         """
         assert max_value > 0., "max_value must be positive"
         super(BoundedReLU, self).__init__(**kwargs)
@@ -44,7 +47,11 @@ class BoundedReLU(Layer):
         return k.relu(inputs, alpha=self.alpha, max_value=self.max_value)
 
     def get_config(self):
-        """Get the parameters of the object"""
+        """Get the parameters of the object
+
+        :return: Dictionary of parameters and values
+        :rtype: `dict`
+        """
         config = {'alpha': self.alpha, 'max_value': self.max_value}
         base_config = super(BoundedReLU, self).get_config()
         return dict(list(base_config.items()) + list(config.items()))

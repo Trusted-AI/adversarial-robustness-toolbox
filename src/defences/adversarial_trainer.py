@@ -32,9 +32,11 @@ class AdversarialTrainer:
         """
         Create an AdversarialTrainer instance.
 
-        :param classifier: (Classifier) model to train adversarially
-        :param attacks: (Attack or list(Attack) or dict(Attack: dict(string: sequence)))
-            {fgsm: {'eps': .1, 'clip_min': 0}, 'deepfool': {...}}
+        :param classifier: model to train adversarially
+        :type classifier: :class:`Classifier`
+        :param attacks: attacks to use for data augmentation in adversarial training
+        :type attacks: :class:`Attack` or `list(Attack)` or `dict(Attack: dict(string: sequence))`.
+            E.g. `{fgsm: {'eps': .1, 'clip_min': 0}, 'deepfool': {...}}`
         """
         # TODO add Sequence support for attack parameters
         self.classifier = classifier
@@ -49,10 +51,13 @@ class AdversarialTrainer:
         Train a model adversarially. Each attack specified when creating the AdversarialTrainer is applied to all
         samples in the dataset, and only the successful ones (on the source model) are kept for data augmentation.
 
-        :param x_val: (np.ndarray) Training set
-        :param y_val: (np.ndarray) Labels
-        :param kwargs: (dict) Dictionary of parameters to be passed on to the fit method of the classifier
-        :return: None
+        :param x_val: Training set
+        :type x_val: `np.ndarray`
+        :param y_val: Labels
+        :type y_val: `np.ndarray`
+        :param kwargs: Dictionary of parameters to be passed on to the `fit` method of the classifier
+        :type kwargs: `dict`
+        :return: `None`
         """
         x_augmented = list(x_val.copy())
         y_augmented = list(y_val.copy())
@@ -86,8 +91,11 @@ class AdversarialTrainer:
         Perform prediction using the adversarially trained classifier.
 
         :param x_val: Test set
+        :type x_val: `np.ndarray`
         :param kwargs: Other parameters
+        :type kwargs: `dict`
         :return: Predictions for test set
+        :rtype: `np.ndarray`
         """
         if check_is_fitted(self, ['x', 'y']):
             return self.classifier.predict(x_val, **kwargs)

@@ -25,6 +25,8 @@ import tensorflow as tf
 from src.attacks.attack import Attack, clip_perturbation
 from src.attacks.deepfool import DeepFool
 
+# TODO Import other attacks
+
 
 class UniversalPerturbation(Attack):
     """
@@ -38,17 +40,25 @@ class UniversalPerturbation(Attack):
     def __init__(self, classifier, sess=None, attacker='deepfool', attacker_params=None, delta=0.2, max_iter=5, eps=10,
                  p=np.inf, max_method_iter=50, verbose=1):
         """
-        :param classifier: A function that takes a symbolic input and returns the symbolic output for the classifier's
-        predictions.
-        :param sess: The tf session to run graphs in.
-        :param attacker: Attack method to use. Default is 'deepfool'.
-        :param attacker_params:
+        :param classifier: A trained model.
+        :type classifier: :class:`Classifier`
+        :param sess: The session to run graphs in.
+        :type sess: `tf.Session`
+        :param attacker: Adversarial attack name. Default is 'deepfool'.
+        :type attacker: `str`
+        :param attacker_params: Parameters specific to the adversarial attack.
+        :type attacker_params: `dict`
         :param delta: (float, default 0.2)
-        :param max_iter: (integer) The maximum number of iterations for universal perturbation.
-        :param eps: (optional float) attack step size (input variation)
-        :param p: (optional, default np.inf) L_p norm for the maximum perturbation allowed
-        :param max_method_iter: (integer) The maximum number of iterations for the attack method.
-        :param verbose: (optional boolean)
+        :param max_iter: The maximum number of iterations for computing universal perturbation.
+        :type max_iter: `int`
+        :param eps: Attack step size (input variation)
+        :type eps: `float`
+        :param p: Order of the norm. Possible values: np.inf, 1 or 2 (default is np.inf)
+        :type p: `int`
+        :param max_method_iter: The maximum number of iterations for the attack method (if it applies)
+        :type max_method_iter: `int`
+        :param verbose: For status updates in progress bar.
+        :type verbose: `bool`
         """
         super(UniversalPerturbation, self).__init__(classifier, sess)
         kwargs = {'attacker': attacker,
@@ -74,10 +84,33 @@ class UniversalPerturbation(Attack):
             raise NotImplementedError("{} attack not supported".format(a_name))
 
     def generate(self, x_val, **kwargs):
+        """
+        Generate adversarial samples and return them in an array.
+
+        :param x_val: An array with the original inputs.
+        :type x_val: `np.ndarray`
+        :param attacker: Adversarial attack name. Default is 'deepfool'.
+        :type attacker: `str`
+        :param attacker_params: Parameters specific to the adversarial attack.
+        :type attacker_params: `dict`
+        :param delta: (float, default 0.2)
+        :param max_iter: The maximum number of iterations for computing universal perturbation.
+        :type max_iter: `int`
+        :param eps: Attack step size (input variation)
+        :type eps: `float`
+        :param p: Order of the norm. Possible values: np.inf, 1 or 2 (default is np.inf)
+        :type p: `int`
+        :param max_method_iter: The maximum number of iterations for the attack method (if it applies)
+        :type max_method_iter: `int`
+        :param verbose: For status updates in progress bar.
+        :type verbose: `bool`
+        :return: An array holding the adversarial examples.
+        :rtype: `np.ndarray`
+        """
         self.set_params(**kwargs)
         k.set_learning_phase(0)
 
-        # init universal perturbation
+        # Init universal perturbation
         v = 0
         fooling_rate = 0.0
 
@@ -111,8 +144,6 @@ class UniversalPerturbation(Attack):
 
                     # If the class has changed, update v
                     if fk_i_hat != adv_fk_i_hat:
-                        print(fk_i_hat, adv_fk_i_hat)
-
                         v += adv_xi - xi
 
                         # Project on L_p ball
@@ -134,17 +165,20 @@ class UniversalPerturbation(Attack):
         """
         Take in a dictionary of parameters and applies attack-specific checks before saving them as attributes.
 
-        Attack-specific parameters:
-        :param classifier: A function that takes a symbolic input and returns the symbolic output for the classifier's
-        predictions.
-        :param sess: The tf session to run graphs in.
-        :param attacker: Attack method to use. Default is 'deepfool'.
-        :param attacker_params:
+        :param attacker: Adversarial attack name. Default is 'deepfool'.
+        :type attacker: `str`
+        :param attacker_params: Parameters specific to the adversarial attack.
+        :type attacker_params: `dict`
         :param delta: (float, default 0.2)
-        :param max_iter: (integer) The maximum number of iterations for universal perturbation.
-        :param eps: (optional float) attack step size (input variation)
-        :param p: (optional, default np.inf) L_p norm for the maximum perturbation allowed
-        :param max_method_iter: (integer) The maximum number of iterations for the attack method.
-        :param verbose: (optional boolean)
+        :param max_iter: The maximum number of iterations for computing universal perturbation.
+        :type max_iter: `int`
+        :param eps: Attack step size (input variation)
+        :type eps: `float`
+        :param p: Order of the norm. Possible values: np.inf, 1 or 2 (default is np.inf)
+        :type p: `int`
+        :param max_method_iter: The maximum number of iterations for the attack method (if it applies)
+        :type max_method_iter: `int`
+        :param verbose: For status updates in progress bar.
+        :type verbose: `bool`
         """
         super(UniversalPerturbation, self).set_params(**kwargs)

@@ -20,7 +20,7 @@ The Adversarial Robustness Toolbox contains implementations of the following att
 The following defense methods are also supported:
 * Feature squeezing ([Xu et al., 2017](http://arxiv.org/abs/1704.01155))
 * Spatial smoothing ([Xu et al., 2017](http://arxiv.org/abs/1704.01155))
-* Label smoothing (Warde-Farley and Goodfellow, 2016)
+* Label smoothing ([Warde-Farley and Goodfellow, 2016](https://pdfs.semanticscholar.org/b5ec/486044c6218dd41b17d8bba502b32a12b91a.pdf))
 * Adversarial training ([Szegedy et al., 2013](http://arxiv.org/abs/1312.6199))
 * Virtual adversarial training ([Miyato et al., 2017](https://arxiv.org/abs/1704.03976))
 
@@ -68,7 +68,10 @@ Detailed instructions for each script are available by typing
 python3 <script_name> -h
 ```
 
-Some examples of how to use Nemesis when writing your own code can be found in the `examples` folder. See `examples/README.md` for more information about what each example does. To run an example, use the following command:
+## Documentation
+Documentation is available [here](https://adversarial-robustness-toolbox.readthedocs.io/).
+
+Some examples of how to use the toolbox when writing your own code can be found in the `examples` folder. See `examples/README.md` for more information about what each example does. To run an example, use the following command:
 ```bash
 python3 examples/<example_name>.py
 ```

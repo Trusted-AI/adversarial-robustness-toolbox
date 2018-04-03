@@ -36,13 +36,19 @@ class DeepFool(Attack):
     def __init__(self, classifier, sess=None, max_iter=100, clip_min=None, clip_max=None, verbose=1):
         """
         Create a DeepFool attack instance.
-        :param classifier: A function that takes a symbolic input and returns the symbolic output for the classifier's
-        predictions.
-        :param sess: The tf session to run graphs in.
-        :param max_iter: (integer) The maximum number of iterations.
-        :param clip_min: (optional float) Minimum input component value.
-        :param clip_max: (optional float) Maximum input component value.
-        :param verbose: (optional boolean)
+
+        :param classifier: A trained model.
+        :type classifier: :class:`Classifier`
+        :param sess: The session to run graphs in.
+        :type sess: `tf.Session`
+        :param max_iter: The maximum number of iterations.
+        :type max_iter: `int`
+        :param clip_min: Minimum input component value.
+        :type clip_min: `float`
+        :param clip_max: Maximum input component value.
+        :type clip_max: `float`
+        :param verbose: For status updates in progress bar.
+        :type verbose: `bool`
         """
         super(DeepFool, self).__init__(classifier, sess)
         params = {'max_iter': max_iter, 'clip_min': clip_min, 'clip_max': clip_max, 'verbose': verbose}
@@ -50,9 +56,18 @@ class DeepFool(Attack):
 
     def generate(self, x_val, **kwargs):
         """
-        Generate adversarial samples and return them in a Numpy array.
-        :param x_val: (required) A Numpy array with the original inputs.
-        :return: A Numpy array holding the adversarial examples.
+        Generate adversarial samples and return them in an array.
+
+        :param x_val: An array with the original inputs to be attacked.
+        :type x_val: `np.ndarray`
+        :param max_iter: The maximum number of iterations.
+        :type max_iter: `int`
+        :param clip_min: Minimum input component value.
+        :type clip_min: `float`
+        :param clip_max: Maximum input component value.
+        :type clip_max: `float`
+        :return: An array holding the adversarial examples.
+        :rtype: `np.ndarray`
         """
         assert self.set_params(**kwargs)
         k.set_learning_phase(0)
@@ -120,11 +135,14 @@ class DeepFool(Attack):
     def set_params(self, **kwargs):
         """Take in a dictionary of parameters and applies attack-specific checks before saving them as attributes.
 
-        Attack-specific parameters:
-        :param max_iter: (integer) The maximum number of iterations.
-        :param clip_min: (optional float) Minimum input component value.
-        :param clip_max: (optional float) Maximum input component value.
-        :param verbose: (optional boolean)
+        :param max_iter: The maximum number of iterations.
+        :type max_iter: `int`
+        :param clip_min: Minimum input component value.
+        :type clip_min: `float`
+        :param clip_max: Maximum input component value.
+        :type clip_max: `float`
+        :param verbose: For status updates in progress bar.
+        :type verbose: `bool`
         """
         # Save attack-specific parameters
         super(DeepFool, self).set_params(**kwargs)

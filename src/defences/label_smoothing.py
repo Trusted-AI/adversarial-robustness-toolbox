@@ -31,7 +31,11 @@ class LabelSmoothing(Preprocessor):
     def __init__(self, max_value=.9):
         """
         Create an instance of label smoothing.
+
+        :param max_value: Value to affect to correct label
+        :type max_value: `float`
         """
+        super(LabelSmoothing, self).__init__()
         self.is_fitted = True
         self.set_params(max_value=max_value)
 
@@ -39,10 +43,14 @@ class LabelSmoothing(Preprocessor):
         """
         Apply label smoothing.
 
-        :param x_val: (np.ndarray) Input data, will not be modified by this method
-        :param y_val: (np.ndarray) Original vector of label probabilities (one-vs-rest)
-        :param max_value: (float) Value to affect to correct label
-        :return: (np.ndarray, np.ndarray) Unmodified input data and the vector of smooth probabilities as labels
+        :param x_val: Input data, will not be modified by this method
+        :type x_val: `np.ndarray`
+        :param y_val: Original vector of label probabilities (one-vs-rest)
+        :type y_val: `np.ndarray`
+        :param max_value: Value to affect to correct label
+        :type max_value: `float`
+        :return: Unmodified input data and the vector of smooth probabilities as correct labels
+        :rtype: `(np.ndarray, np.ndarray)`
         """
         self.set_params(max_value=max_value)
 
@@ -62,7 +70,8 @@ class LabelSmoothing(Preprocessor):
         """Take in a dictionary of parameters and applies defense-specific checks before saving them as attributes.
 
         Defense-specific parameters:
-        :param max_value: (float) Value to affect to correct label
+        :param max_value: Value to affect to correct label
+        :type max_value: `float`
         """
         # Save attack-specific parameters
         super(LabelSmoothing, self).set_params(**kwargs)

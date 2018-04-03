@@ -42,10 +42,14 @@ class Classifier(ABC):
     """
     def __init__(self, model, defences=None, preproc=None):
         """
-        Create a classifier object
+        Create a classifier object.
+
         :param model: Model object
-        :param defences: (optional string) Defences to be applied to the model
-        :param preproc: (optional string) Preprocessing to be applied to the data
+        :type model: `keras.Sequential`
+        :param defences: Defences to be applied to the model
+        :type defences: `list(str)`
+        :param preproc: Preprocessing to be applied to the data
+        :type preproc: `callable`
         """
         if not hasattr(model, '__call__'):
             raise ValueError(
@@ -65,6 +69,7 @@ class Classifier(ABC):
         """Compile model using given parameters.
 
         :param comp_param: Compilation parameters
+        :type comp_param: `dict`
         """
         self.comp_param = comp_param
         self.model.compile(**comp_param)
@@ -73,8 +78,12 @@ class Classifier(ABC):
         """Fit the classifier on the training set (inputs_val, outputs_val)
 
         :param inputs_val: Training set
+        :type inputs_val: `np.ndarray`
         :param outputs_val: Labels
+        :type outputs_val: `np.ndarray`
         :param kwargs: Other parameters
+        :type kwargs: `dict`
+        :return: `None`
         """
         # Apply label smoothing if option is set
         if hasattr(self, 'label_smooth'):
@@ -96,8 +105,11 @@ class Classifier(ABC):
         """Perform prediction using a fitted classifier.
 
         :param x_val: Test set
+        :type x_val: `np.ndarray`
         :param kwargs: Other parameters
+        :type kwargs: `dict`
         :return: Predictions for test set
+        :rtype: `np.ndarray`
         """
         if hasattr(self, 'feature_squeeze'):
             x = self.feature_squeeze(x_val)
@@ -112,9 +124,12 @@ class Classifier(ABC):
         """Evaluate the classifier on the test set (x_val, y_val)
 
         :param x_val: Test set
+        :type x_val: `np.ndarray`
         :param y_val: True labels for test set
+        :type y_val: `np.ndarray`
         :param kwargs: Other parameters
-        :return: The accuracy of the model on (x_val, y_val)
+        :type kwargs: `dict`
+        :return: The accuracy of the model on `(x_val, y_val)`
         :rtype: float
         """
         if hasattr(self, 'feature_squeeze'):
@@ -143,7 +158,8 @@ class Classifier(ABC):
     def get_logits(self, x_op, log=True):
         """Returns the logits layer
 
-        :param x_op:
+        :param x_op: Input placeholder
+        :type x_op: `tf.Tensor`
         :param log: (optional boolean, default True)
         :return:
         """
@@ -180,7 +196,7 @@ class Classifier(ABC):
                     self.label_smooth = LabelSmoothing()
 
     def _preprocess(self, x):
-        """Apply preprocessing to x
+        """Apply preprocessing to x.
 
         :param x: Data to preprocess
         :return: Data after processing

@@ -17,13 +17,14 @@
 # SOFTWARE.
 from __future__ import absolute_import, division, print_function
 
-from keras import backend as k
 from keras.utils.generic_utils import Progbar
 
 import numpy as np
 import tensorflow as tf
 
 from src.attacks.attack import Attack, class_derivative
+
+# TODO Add parameters `clip_min` and `clip_max`
 
 
 class NewtonFool(Attack):
@@ -36,11 +37,17 @@ class NewtonFool(Attack):
     def __init__(self, classifier, sess, max_iter=100, eta=0.01, verbose=1):
         """
         Create a NewtonFool attack instance.
-        :param classifier: An object of classifier.
-        :param sess: The tf session to run graphs in.
-        :param max_iter: (integer) The maximum number of iterations.
+
+        :param classifier: A trained model.
+        :type classifier: :class:`Classifier`
+        :param sess: The session to run graphs in.
+        :type sess: `tf.Session`
+        :param max_iter: The maximum number of iterations.
+        :type max_iter: `int`
         :param eta: (float) The eta coefficient.
-        :param verbose: (optional boolean)
+        :type eta: `float`
+        :param verbose: For status updates in progress bar.
+        :type verbose: `bool`
         """
         super(NewtonFool, self).__init__(classifier, sess)
         params = {"max_iter": max_iter, "eta": eta, "verbose": verbose}
@@ -49,8 +56,11 @@ class NewtonFool(Attack):
     def generate(self, x_val, **kwargs):
         """
         Generate adversarial samples and return them in a Numpy array.
-        :param x_val: (required) A Numpy array with the original inputs.
-        :return: A Numpy array holding the adversarial examples.
+
+        :param x_val: An array with the original inputs to be attacked.
+        :type x_val: `np.ndarray`
+        :return: An array holding the adversarial examples.
+        :rtype: `np.ndarray`
         """
         assert self.set_params(**kwargs)
         dims = list(x_val.shape)
@@ -97,19 +107,20 @@ class NewtonFool(Attack):
 
             # Return the adversarial example
             x_adv[j] = xi[0]
-            progress_bar.update(current=j, values=[("perturbation", abs(
-                np.linalg.norm((x_adv[j] - x_val[j]).flatten())))])
+            progress_bar.update(current=j, values=[("perturbation",
+                                                    abs(np.linalg.norm((x_adv[j] - x_val[j]).flatten())))])
 
         return x_adv
 
     def set_params(self, **kwargs):
-        """Take in a dictionary of parameters and applies attack-specific
-        checks before saving them as attributes.
+        """Take in a dictionary of parameters and applies attack-specific checks before saving them as attributes.
 
-        Attack-specific parameters:
-        :param max_iter: (integer) The maximum number of iterations.
-        :param eta: (float) The eta coefficient.
-        :param verbose: (optional boolean)
+        :param max_iter: The maximum number of iterations.
+        :type max_iter: `int`
+        :param eta: The eta coefficient.
+        :type eta: `float`
+        :param verbose: For status updates in progress bar.
+        :type verbose: `bool`
         """
         # Save attack-specific parameters
         super(NewtonFool, self).set_params(**kwargs)
@@ -141,6 +152,7 @@ class NewtonFool(Attack):
     def _compute_pert(self, theta, grads, norm_grad):
         """
         Function to compute the pertubation at each step.
+
         :param theta: theta value at the current step.
         :param grads: gradient values at the attacked class.
         :param norm_grad: norm of gradient values at the attacked class.
@@ -151,5 +163,3 @@ class NewtonFool(Attack):
         result = nom / float(denom)
 
         return result
-
-

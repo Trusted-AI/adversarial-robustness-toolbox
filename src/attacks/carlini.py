@@ -23,9 +23,9 @@ from keras.utils.np_utils import to_categorical
 from keras.utils.generic_utils import Progbar
 import tensorflow as tf
 
-import warnings
-
 from src.attacks.attack import Attack
+
+# TODO Rename attack parameter to `max_iter`
 
 
 class CarliniL2Method(Attack):
@@ -43,22 +43,33 @@ class CarliniL2Method(Attack):
                  clip_max=1, verbose=1):
         """
         Create a Carlini L_2 attack instance.
-        :param classifier: A function that takes a symbolic input and returns the symbolic output for the classifier's
-        predictions.
-        :param sess: The tf session to run graphs in.
+
+        :param classifier: A trained model.
+        :type classifier: :class:`Classifier`
+        :param sess: The session to run graphs in.
+        :type sess: `tf.Session`
         :param confidence: Confidence of adversarial examples: a higher value produces examples that are farther away, 
                from the original input, but classified with higher confidence as the target class.
-        :param targeted: (optional boolean) should the attack target one specific class
+        :type confidence: `float`
+        :param targeted: Should the attack target one specific class
+        :type targeted: `bool`
         :param learning_rate: The learning rate for the attack algorithm. Smaller values produce better results but are
                slower to converge.
-        :param binary_search_steps: (optional positive integer) number of times to adjust constant with binary search
-        :param max_iterations: (integer) The maximum number of iterations.
-        :param initial_const: (optional float, positive) The initial trade-off constant c to use to tune the relative
-               importance of distance and confidence. If binary_search_steps is large,
-               the initial constant is not important. The default value 1e-4 is suggested in Carlini and Wagner (2016).
-        :param clip_min: (optional float) Minimum input component value.
-        :param clip_max: (optional float) Maximum input component value.
-        :param verbose: (optional boolean) For status updates in progress bar.
+        :type learning_rate: `float`
+        :param binary_search_steps: number of times to adjust constant with binary search (positive value)
+        :type binary_search_steps: `int`
+        :param max_iterations: The maximum number of iterations.
+        :type max_iterations: `int`
+        :param initial_const: The initial trade-off constant `c` to use to tune the relative importance of distance and
+               confidence. If `binary_search_steps` is large, the initial constant is not important. The default
+               value 1e-4 is suggested in Carlini and Wagner (2016).
+        :type initial_const: `float`
+        :param clip_min: Minimum input component value.
+        :type clip_min: `float`
+        :param clip_max: Maximum input component value.
+        :type clip_max: `float`
+        :param verbose: For status updates in progress bar.
+        :type verbose: `bool`
         """
         super(CarliniL2Method, self).__init__(classifier, sess)
             
@@ -166,11 +177,15 @@ class CarliniL2Method(Attack):
                 
     def generate(self, x_val, **kwargs):
         """
-        Generate adversarial samples and return them in a Numpy array.
-        :param x_val:
-        :param y_val: If self.targeted is true, then y_val represents the target labels. If self.targeted is false,
-                      then targets are the original class labels.
-        :return: A Numpy array holding the adversarial examples.
+        Generate adversarial samples and return them in an array.
+
+        :param x_val: An array with the original inputs to be attacked.
+        :type x_val: `np.ndarray`
+        :param y_val: If `self.targeted` is true, then `y_val` represents the target labels. Otherwise,
+                      the targets are the original class labels.
+        :type y_val: `np.ndarray`
+        :return: An array holding the adversarial examples.
+        :rtype: `np.ndarray`
         """
         
         # Parse and save attack-specific parameters
@@ -270,19 +285,28 @@ class CarliniL2Method(Attack):
     def set_params(self, **kwargs):
         """Take in a dictionary of parameters and applies attack-specific checks before saving them as attributes.
 
-        Attack-specific parameters:
         :param confidence: Confidence of adversarial examples: a higher value produces examples that are farther away, 
                from the original input, but classified with higher confidence as the target class.
-        :param targeted: (optional boolean) should the attack target one specific class
+        :type confidence: `float`
+        :param targeted: Should the attack target one specific class
+        :type targetd: `bool`
         :param learning_rate: The learning rate for the attack algorithm. Smaller values produce better results but are
                slower to converge.
-        :param binary_search_steps: (optional positive integer) number of times to adjust the constant with binary search
-        :param max_iterations: (integer) The maximum number of iterations.
+        :type learning_rate: `float`
+        :param binary_search_steps: number of times to adjust constant with binary search (positive value)
+        :type binary_search_steps: `int`
+        :param max_iterations: The maximum number of iterations.
+        :type max_iterations: `int`
         :param initial_const: (optional float, positive) The initial trade-off constant c to use to tune the relative
                importance of distance and confidence. If binary_search_steps is large,
                the initial constant is not important. The default value 1e-4 is suggested in Carlini and Wagner (2016).
-        :param clip_min: (optional float) Minimum input component value.
-        :param clip_max: (optional float) Maximum input component value.
+        :type initial_const: `float`
+        :param clip_min: Minimum input component value.
+        :type clip_min: `float`
+        :param clip_max: Maximum input component value.
+        :type clip_max: `float`
+        :param verbose: For status updates in progress bar.
+        :type verbose: `bool`
         """
         # Save attack-specific parameters
         super(CarliniL2Method, self).set_params(**kwargs)

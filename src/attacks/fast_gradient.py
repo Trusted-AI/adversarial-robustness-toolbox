@@ -33,16 +33,28 @@ class FastGradientMethod(Attack):
     attack_params = ['ord', 'eps', 'y', 'y_val', 'targeted', 'clip_min', 'clip_max']
 
     def __init__(self, classifier, sess=None, ord=np.inf, eps=.3, y=None, targeted=False, clip_min=0, clip_max=1):
-        """Create a FastGradientMethod instance.
-        :param ord: (optional) Order of the norm. Possible values: np.inf, 1 or 2.
-        :param eps: (required float) attack step size (input variation)
-        :param y: (optional) A placeholder for the model labels. Only provide this parameter if you'd like to use true
+        """
+        Create a FastGradientMethod instance.
+
+        :param classifier: A trained model.
+        :type classifier: :class:`Classifier`
+        :param sess: The session to run graphs in.
+        :type sess: `tf.Session`
+        :param ord: Order of the norm. Possible values: np.inf, 1 or 2.
+        :type ord: `int`
+        :param eps: Attack step size (input variation)
+        :type eps: `float`
+        :param y: A placeholder for the model labels. Only provide this parameter if you'd like to use true
                   labels when crafting adversarial samples. Otherwise, model predictions are used as labels to avoid the
-                  "label leaking" effect (explained in this paper: https://arxiv.org/abs/1611.01236). Default is None.
+                  "label leaking" effect (explained in this paper: https://arxiv.org/abs/1611.01236). Default is `None`.
                   Labels should be one-hot-encoded.
-        :param targeted: (optional boolean) Should the attack target one specific class
-        :param clip_min: (optional float) Minimum input component value
-        :param clip_max: (optional float) Maximum input component value
+        :type y: `np.ndarray`
+        :param targeted: Should the attack target one specific class
+        :type targeted: `bool`
+        :param clip_min: Minimum input component value.
+        :type clip_min: `float`
+        :param clip_max: Maximum input component value.
+        :type clip_max: `float`
         """
         super(FastGradientMethod, self).__init__(classifier, sess)
 
@@ -50,16 +62,26 @@ class FastGradientMethod(Attack):
         self.set_params(**kwargs)
 
     def generate_graph(self, x_op, eps_op, **kwargs):
-        """Generate symbolic graph for adversarial examples and return.
+        """
+        Generate symbolic graph for adversarial examples and return.
+
         :param x_op: The model's symbolic inputs.
-        :param eps_op: (optional tf.placeholder) The placeholder for input variation (noise amplitude)
-        :param ord: (optional) Order of the norm (mimics Numpy). Possible values: np.inf, 1 or 2.
+        :type x_op: `tf.Placeholder`
+        :param eps_op: The placeholder for input variation (noise amplitude)
+        :type eps_op: `tf.Placeholder`
+        :param ord: Order of the norm (mimics Numpy). Possible values: np.inf, 1 or 2.
+        :type ord: `int`
         :param y: (optional) A placeholder for the model labels. Only provide this parameter if you'd like to use true
                   labels when crafting adversarial samples. Otherwise, model predictions are used as labels to avoid the
-                  "label leaking" effect (explained in this paper: https://arxiv.org/abs/1611.01236). Default is None.
+                  "label leaking" effect (explained in this paper: https://arxiv.org/abs/1611.01236). Default is `None`.
                   Labels should be one-hot-encoded.
-        :param clip_min: (optional float) Minimum input component value
-        :param clip_max: (optional float) Maximum input component value
+        :type y: `np.ndarray`
+        :param clip_min: Minimum input component value.
+        :type clip_min: `float`
+        :param clip_max: Maximum input component value.
+        :type clip_max: `float`
+        :return: The computation graph for producing adversarial examples.
+        :rtype: `tf.Tensor`
         """
         self.set_params(**kwargs)
 
@@ -100,12 +122,18 @@ class FastGradientMethod(Attack):
         """Iteratively compute the minimal perturbation necessary to make the class prediction change. Stop when the
         first adversarial example was found.
 
-        :param x: (required) A placeholder for the input.
-        :param x_val: (required) A Numpy array with the original inputs.
-        :param eps_step: (optional float) The increase in the perturbation for each iteration
-        :param eps_max: (optional float) The maximum accepted perturbation
-        :param kwargs: Other parameters to send to generate_graph
-        :return: A Numpy array holding the adversarial examples.
+        :param x: A placeholder for the input.
+        :type x: `tf.Placeholder`
+        :param x_val: An array with the original inputs.
+        :type x_val: `np.ndarray`
+        :param eps_step: The increase in the perturbation for each iteration
+        :type eps_step: `float`
+        :param eps_max: The maximum accepted perturbation
+        :type eps_max: `float`
+        :param kwargs: Other parameters to send to `generate_graph`
+        :type kwargs: `dict`
+        :return: An array holding the adversarial examples.
+        :rtype: `np.ndarray`
         """
         k.set_learning_phase(0)
         y = np.argmax(self.model.predict(x_val), 1)
@@ -129,17 +157,25 @@ class FastGradientMethod(Attack):
         return adv_x
 
     def generate(self, x_val, **kwargs):
-        """Generate adversarial samples and return them in a Numpy array.
-        :param x_val: (required) A Numpy array with the original inputs.
-        :param eps: (required float) attack step size (input variation)
-        :param ord: (optional) Order of the norm (mimics Numpy). Possible values: np.inf, 1 or 2.
-        :param y: (optional) A placeholder for the model labels. Only provide this parameter if you'd like to use true
+        """Generate adversarial samples and return them in an array.
+
+        :param x_val: An array with the original inputs.
+        :type x_val: `np.ndarray`
+        :param eps: Attack step size (input variation)
+        :type eps: `float`
+        :param ord: Order of the norm (mimics Numpy). Possible values: np.inf, 1 or 2.
+        :type ord: `int`
+        :param y: A placeholder for the model labels. Only provide this parameter if you'd like to use true
                   labels when crafting adversarial samples. Otherwise, model predictions are used as labels to avoid the
                   "label leaking" effect (explained in this paper: https://arxiv.org/abs/1611.01236). Default is None.
                   Labels should be one-hot-encoded.
-        :param clip_min: (optional float) Minimum input component value
-        :param clip_max: (optional float) Maximum input component value
-        :return: A Numpy array holding the adversarial examples.
+        :type y: `np.ndarray`
+        :param clip_min: Minimum input component value.
+        :type clip_min: `float`
+        :param clip_max: Maximum input component value.
+        :type clip_max: `float`
+        :return: An array holding the adversarial examples.
+        :rtype: `np.ndarray`
         """
 
         input_shape = [None] + list(x_val.shape[1:])
@@ -169,15 +205,21 @@ class FastGradientMethod(Attack):
         """Take in a dictionary of parameters and applies attack-specific checks
         before saving them as attributes.
 
-        Attack-specific parameters:
-        :param ord: (optional) Order of the norm (mimics Numpy). Possible values: np.inf, 1 or 2.
-        :param eps: (required float) attack step size (input variation)
+        :param ord: Order of the norm. Possible values: np.inf, 1 or 2.
+        :type ord: `int`
+        :param eps: Attack step size (input variation)
+        :type eps: `float`
         :param y: (optional) A placeholder for the model labels. Only provide this parameter if you'd like to use true
                   labels when crafting adversarial samples. Otherwise, model predictions are used as labels to avoid the
                   "label leaking" effect (explained in this paper: https://arxiv.org/abs/1611.01236). Default is None.
                   Labels should be one-hot-encoded.
-        :param clip_min: (optional float) Minimum input component value
-        :param clip_max: (optional float) Maximum input component value
+        :type y: `np.ndarray`
+        :param targeted: Should the attack target one specific class
+        :type targeted: `bool`
+        :param clip_min: Minimum input component value.
+        :type clip_min: `float`
+        :param clip_max: Maximum input component value.
+        :type clip_max: `float`
         """
         # Save attack-specific parameters
         super(FastGradientMethod, self).set_params(**kwargs)

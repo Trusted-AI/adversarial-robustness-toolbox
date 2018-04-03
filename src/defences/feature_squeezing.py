@@ -18,7 +18,7 @@
 from __future__ import absolute_import, division, print_function, unicode_literals
 
 import numpy as np
-from tensorflow import rint
+import tensorflow as tf
 
 from src.defences.preprocessor import Preprocessor
 
@@ -33,49 +33,58 @@ class FeatureSqueezing(Preprocessor):
         """
         Create an instance of feature squeezing.
 
-        :param bit_depth: (int) The number of bits to encode data on
+        :param bit_depth: The number of bits to encode data on
+        :type bit_depth: `int`
         """
+        super(FeatureSqueezing, self).__init__()
         self.is_fitted = True
         self.set_params(bit_depth=bit_depth)
 
-    def __call__(self, x_val, bit_depth=8):
+    def __call__(self, x_val, bit_depth=None):
         """
-        Apply feature squeezing to sample x_val.
+        Apply feature squeezing to sample `x_val`.
 
-        :param x_val: (np.ndarray) Sample to squeeze. `x_val` values are supposed to be in the range [0,1]
-        :param bit_depth: (int) The number of bits to encode data on
+        :param x_val: Sample to squeeze. `x_val` values are supposed to be in the range [0,1]
+        :type x_val: `np.ndarrray`
+        :param bit_depth: The number of bits to encode data on
+        :type bit_depth: `int`
         :return: Squeezed sample
-        :rtype: np.ndarray
+        :rtype: `np.ndarray`
         """
-        self.set_params(bit_depth=bit_depth)
+        if bit_depth is not None:
+            self.set_params(bit_depth=bit_depth)
 
-        max_value = int(2 ** bit_depth - 1)
+        max_value = np.rint(2 ** self.bit_depth - 1)
         return np.rint(x_val * max_value) / max_value
 
     def fit(self, x_val, y_val=None, **kwargs):
         """No parameters to learn for this method; do nothing."""
         pass
 
-    def _tf_predict(self, x, bit_depth=8):
+    def _tf_predict(self, x, bit_depth=None):
         """
-        Apply feature squeezing on tf.Tensor.
+        Apply feature squeezing on `tf.Tensor`.
 
-        :param x: (tf.Tensor) Sample to squeeze. Values are supposed to be in the range [0,1]
-        :param bit_depth: (int) The number of bits to encode data on
+        :param x: Sample to squeeze. Values are supposed to be in the range [0,1]
+        :type x: `tf.Tensor`
+        :param bit_depth: The number of bits to encode data on
+        :type bit_depth: `int`
         :return: Squeezed sample
         :rtype: tf.Tensor
         """
-        self.set_params(bit_depth=bit_depth)
+        if bit_depth is not None:
+            self.set_params(bit_depth=bit_depth)
 
-        max_value = int(2 ** bit_depth - 1)
-        x = rint(x * max_value) / max_value
+        max_value = int(2 ** self.bit_depth - 1)
+        x = tf.rint(x * max_value) / max_value
         return x
 
     def set_params(self, **kwargs):
         """Take in a dictionary of parameters and applies defense-specific checks before saving them as attributes.
 
         Defense-specific parameters:
-        :param bit_depth: (int) The number of bits to encode data on
+        :param bit_depth: The number of bits to encode data on
+        :type bit_depth: `int`
         """
         # Save attack-specific parameters
         super(FeatureSqueezing, self).set_params(**kwargs)
