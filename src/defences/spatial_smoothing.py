@@ -7,27 +7,30 @@ from src.defences.preprocessor import Preprocessor
 
 class SpatialSmoothing(Preprocessor):
     """
-    Implement the local spatial smoothing defence approach.
-    Defence method from https://arxiv.org/abs/1704.01155.
+    Implement the local spatial smoothing defence approach. Defence method from https://arxiv.org/abs/1704.01155.
     """
     params = ["window_size"]
 
     def __init__(self, window_size=3):
         """
         Create an instance of local spatial smoothing.
-        :param window_size: (int) The size of the sliding window.
+
+        :param window_size: The size of the sliding window.
+        :type window_size: `int`
         """
         self.is_fitted = True
         self.set_params(window_size=window_size)
 
     def __call__(self, x_val, window_size=None):
         """
-        Apply local spatial smoothing to sample x_val.
-        :param x_val: (np.ndarray) Sample to smooth. `x_val` is supposed to
-        have shape (batch_size, width, height, depth).
-        :param window_size: (int) The size of the sliding window.
+        Apply local spatial smoothing to sample `x_val`.
+
+        :param x_val: Sample to smooth with shape `(batch_size, width, height, depth)`.
+        :type x_val: `np.ndarray`
+        :param window_size: The size of the sliding window.
+        :type window_size: `int`
         :return: Smoothed sample
-        :rtype: np.ndarray
+        :rtype: `np.ndarray`
         """
         if window_size is not None:
             self.set_params(window_size=window_size)
@@ -47,8 +50,9 @@ class SpatialSmoothing(Preprocessor):
         """
         Take in a dictionary of parameters and applies defense-specific checks
         before saving them as attributes.
-        Defense-specific parameters:
-        :param window_size: (int) The size of the sliding window.
+
+        :param window_size: The size of the sliding window.
+        :type window_size: `int`
         """
         # Save attack-specific parameters
         super(SpatialSmoothing, self).set_params(**kwargs)
