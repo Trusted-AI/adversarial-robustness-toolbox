@@ -70,27 +70,28 @@ class Classifier(ABC):
         return self._clip_values
 
     @abc.abstractmethod
-    def class_gradient(self, input):
+    def class_gradient(self, inputs):
         """
         Compute per-class derivatives w.r.t. `input`.
 
-        :param input: One sample input with shape as expected by the model.
-        :type input: `np.ndarray`
-        :return: Array of gradients of input features w.r.t. each class in the form `(self.nb_classes, input_shape)`
+        :param inputs: Sample input with shape as expected by the model.
+        :type inputs: `np.ndarray`
+        :return: Array of gradients of input features w.r.t. each class in the form
+                 `(batch_size, nb_classes, input_shape)`.
         :rtype: `np.ndarray`
         """
         raise NotImplementedError
 
     @abc.abstractmethod
-    def loss_gradient(self, input, label):
+    def loss_gradient(self, inputs, labels):
         """
-        Compute the gradient of the loss function w.r.t. `input`.
+        Compute the gradient of the loss function w.r.t. `inputs`.
 
-        :param input: One sample input with shape as expected by the model.
-        :type input: `np.ndarray`
-        :param label: Correct label.
-        :type label: `int`
-        :return: Array of gradients of the same shape as `input`.
+        :param inputs: Sample input with shape as expected by the model.
+        :type inputs: `np.ndarray`
+        :param labels: Correct labels, one-vs-rest encoding.
+        :type labels: `np.ndarray`
+        :return: Array of gradients of the same shape as the inputs.
         :rtype: `np.ndarray`
         """
         raise NotImplementedError

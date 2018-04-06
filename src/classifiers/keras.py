@@ -22,7 +22,6 @@ class KerasClassifier(Classifier):
         :param use_logits: True if the output of the model are the logits
         :type use_logits: `bool`
         """
-        # TODO Handle compilation?
         # TODO Generalize loss function?
         super(KerasClassifier, self).__init__(clip_values)
 
@@ -32,7 +31,7 @@ class KerasClassifier(Classifier):
         _, self._nb_classes = k.int_shape(model.output)
 
         # Get predictions and loss function
-        label_ph = k.placeholder(shape=(1,))
+        label_ph = k.placeholder(shape=(None,))
         if not use_logits:
             if k.backend() == 'tensorflow':
                 preds, = self._output.op.inputs
@@ -40,13 +39,12 @@ class KerasClassifier(Classifier):
             else:
                 loss = k.sparse_categorical_crossentropy(label_ph, self._output, from_logits=use_logits)
 
-                # Convert predictions to logits
+                # Convert predictions to logits for consistency with the other cases
                 eps = 10e-8
                 preds = k.log(k.clip(self._output, eps, 1. - eps))
         else:
             preds = self._output
             loss = k.sparse_categorical_crossentropy(label_ph, self._output, from_logits=use_logits)
-        loss = k.squeeze(loss, axis=0)
         loss_grads = k.gradients(loss, self._input)
 
         if k.backend() == 'tensorflow':
@@ -62,29 +60,30 @@ class KerasClassifier(Classifier):
         self._class_grads = k.function([self._input], class_grads)
         self._preds = k.function([self._input], [preds])
 
-    def loss_gradient(self, input, label):
+    def loss_gradient(self, inputs, labels):
         """
-        Compute the gradient of the loss function w.r.t. `input`.
+        Compute the gradient of the loss function w.r.t. `inputs`.
 
-        :param input: One sample input with shape as expected by the model.
-        :type input: `np.ndarray`
-        :param label: Correct label.
-        :type label: `int`
-        :return: Array of gradients of the same shape as `input`.
+        :param inputs: Sample input with shape as expected by the model.
+        :type inputs: `np.ndarray`
+        :param labels: Correct labels, one-vs-rest encoding.
+        :type labels: `np.ndarray`
+        :return: Array of gradients of the same shape as the inputs.
         :rtype: `np.ndarray`
         """
-        return self._loss_grads([input, label])
+        return self._loss_grads([inputs, np.argmax(labels, axis=1)])[0]
 
-    def class_gradient(self, input):
+    def class_gradient(self, inputs):
         """
         Compute per-class derivatives w.r.t. `input`.
 
-        :param input: One sample input with shape as expected by the model.
-        :type input: `np.ndarray`
-        :return: Array of gradients of input features w.r.t. each class in the form `(self.nb_classes, input_shape)`
+        :param inputs: Sample input with shape as expected by the model.
+        :type inputs: `np.ndarray`
+        :return: Array of gradients of input features w.r.t. each class in the form
+                 `(batch_size, nb_classes, input_shape)`.
         :rtype: `np.ndarray`
         """
-        return np.array(self._class_grads([input]))
+        return np.array(self._class_grads([inputs]))
 
     def predict(self, inputs):
         """
