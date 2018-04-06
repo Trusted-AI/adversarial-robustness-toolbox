@@ -64,8 +64,8 @@ if args.adv_method in ['fgsm', "vat", "rnd_fgsm"]:
             x_test = X_test
             e = eps
 
-        X_train_adv = adv_crafter.generate(x_val=x_train, eps=e, clip_min=min_, clip_max=max_)
-        X_test_adv = adv_crafter.generate(x_val=x_test, eps=e, clip_min=min_, clip_max=max_)
+        X_train_adv = adv_crafter.generate(x=x_train, eps=e, clip_min=min_, clip_max=max_)
+        X_test_adv = adv_crafter.generate(x=x_test, eps=e, clip_min=min_, clip_max=max_)
 
         if args.save:
             np.save(os.path.join(SAVE_ADV, "eps%.2f_train.npy" % eps), X_train_adv)
@@ -82,8 +82,8 @@ else:
         adv_crafter = UniversalPerturbation(classifier, session, p=np.inf,
                                             attacker_params={'clip_min': min_, 'clip_max': max_})
 
-    X_train_adv = adv_crafter.generate(x_val=X_train)
-    X_test_adv = adv_crafter.generate(x_val=X_test)
+    X_train_adv = adv_crafter.generate(x=X_train)
+    X_test_adv = adv_crafter.generate(x=X_test)
 
     if args.save:
         np.save(os.path.join(SAVE_ADV, "train.npy"), X_train_adv)

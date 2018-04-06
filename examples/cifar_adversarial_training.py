@@ -43,9 +43,9 @@ print('Create DeepFool attack')
 epsilon = .1  # Maximum perturbation
 adv_crafter = DeepFool(classifier, sess=session)
 print('Craft training examples')
-x_train_adv = adv_crafter.generate(x_val=x_train, eps=epsilon, clip_min=min_, clip_max=max_)
+x_train_adv = adv_crafter.generate(x=x_train, eps=epsilon, clip_min=min_, clip_max=max_)
 print('Craft test examples')
-x_test_adv = adv_crafter.generate(x_val=x_test, eps=epsilon, clip_min=min_, clip_max=max_)
+x_test_adv = adv_crafter.generate(x=x_test, eps=epsilon, clip_min=min_, clip_max=max_)
 
 # Evaluate the classifier on the adversarial samples
 scores = classifier.evaluate(x_test, y_test)

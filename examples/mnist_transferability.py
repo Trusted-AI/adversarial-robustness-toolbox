@@ -39,8 +39,8 @@ source.fit(x_train, y_train, validation_split=.1, epochs=5, batch_size=128)
 # Craft adversarial samples with DeepFool
 epsilon = .1  # Maximum perturbation
 adv_crafter = DeepFool(source, sess=session)
-x_train_adv = adv_crafter.generate(x_val=x_train, eps=epsilon, clip_min=min_, clip_max=max_)
-x_test_adv = adv_crafter.generate(x_val=x_test, eps=epsilon, clip_min=min_, clip_max=max_)
+x_train_adv = adv_crafter.generate(x=x_train, eps=epsilon, clip_min=min_, clip_max=max_)
+x_test_adv = adv_crafter.generate(x=x_test, eps=epsilon, clip_min=min_, clip_max=max_)
 
 # Construct and train a convolutional neural network
 target = CNN(im_shape, act='relu', dataset='mnist')

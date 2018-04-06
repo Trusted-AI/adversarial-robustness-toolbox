@@ -40,7 +40,7 @@ print("\nTest loss: %.2f%%\nTest accuracy: %.2f%%" % (scores[0], scores[1] * 100
 # Craft adversarial samples with FGSM
 epsilon = .1  # Maximum perturbation
 adv_crafter = FastGradientMethod(classifier, sess=session)
-x_test_adv = adv_crafter.generate(x_val=x_test, eps=epsilon, clip_min=min_, clip_max=max_)
+x_test_adv = adv_crafter.generate(x=x_test, eps=epsilon, clip_min=min_, clip_max=max_)
 
 # Evaluate the classifier on the adversarial examples
 scores = classifier.evaluate(x_test_adv, y_test)
