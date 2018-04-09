@@ -17,7 +17,7 @@ class TFClassifier(Classifier):
         """
         Initialization specifically for the Tensorflow-based implementation.
 
-         :param clip_values: Tuple of the form `(min, max)` representing the minimum and maximum values allowed
+        :param clip_values: Tuple of the form `(min, max)` representing the minimum and maximum values allowed
                for features.
         :type clip_values: `tuple`
         :param input_ph: The input placeholder.
@@ -39,12 +39,13 @@ class TFClassifier(Classifier):
         :type sess: `tf.Session`
         """
         super(TFClassifier, self).__init__(clip_values)
-        self._nb_classes = logits.get_shape()[-1]
+        self._nb_classes = int(logits.get_shape()[-1])
         self._input_ph = input_ph
         self._logits = logits
         self._use_logits = use_logits
         self._output_ph = output_ph
         self._train = train
+        self._learning = learning
         self._loss = loss
         self._learning = learning
 
@@ -62,8 +63,17 @@ class TFClassifier(Classifier):
         :return: Array of predictions of shape `(nb_inputs, self.nb_classes)`.
         :rtype: `np.ndarray`
         """
-        preds = tf.nn.softmax(self._logits)
-        results = self._sess.run(preds, feed_dict={self._input_ph: inputs})
+        # Get the function for the predictions
+        if not self._use_logits:
+            preds = tf.nn.softmax(self._logits)
+        else:
+            preds = self._logits
+
+        if self._learning is None:
+            results = self._sess.run(preds, feed_dict={self._input_ph: inputs})
+        else:
+            results = self._sess.run(preds, feed_dict={self._input_ph: inputs,
+                                                       self._learning: False})
 
         return results
 
@@ -104,8 +114,14 @@ class TFClassifier(Classifier):
                     o_batch = outputs[ind[m * batch_size:]]
 
                 # Run train step
-                self._sess.run(self._train, feed_dict={
-                    self._input_ph:i_batch, self._output_ph: o_batch})
+                if self._learning is None:
+                    self._sess.run(self._train, feed_dict={
+                        self._input_ph:i_batch, self._output_ph: o_batch})
+                else:
+                    self._sess.run(self._train, feed_dict={
+                        self._input_ph:i_batch,
+                        self._output_ph: o_batch,
+                        self._learning: True})
 
     def class_gradient(self, inputs):
         """
@@ -153,8 +169,10 @@ class TFClassifier(Classifier):
         grads = tf.gradients(self._loss, self._input_ph)[0]
 
         # Compute the gradient and return
-        [grds] = self._sess.run(grads, feed_dict={
-            self._input_ph: np.array([input]),
-            self._output_ph: np.array([label])})
+        grds = self._sess.run(grads, feed_dict={self._input_ph: inputs,
+                                                  self._output_ph: labels})
 
         return grds
+
+
+
