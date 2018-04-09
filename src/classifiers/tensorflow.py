@@ -11,7 +11,8 @@ class TFClassifier(Classifier):
     """
     This class implements a classifier with the Tensorflow framework.
     """
-    def __init__(self, clip_values, input_ph, logits, use_logits=True, output_ph=None, train=None, loss=None,
+    def __init__(self, clip_values, input_ph, logits, use_logits=True,
+                 output_ph=None, train=None, loss=None, learning=None,
                  sess=None):
         """
         Initialization specifically for the Tensorflow-based implementation.
@@ -32,6 +33,8 @@ class TFClassifier(Classifier):
         :type train: `tf.Tensor`
         :param loss: The loss function for which to compute gradients.
         :type loss: `tf.Tensor`
+        :param learning: The placeholder to indicate if the model is training.
+        :type learning: `tf.Placeholder` of type bool.
         :param sess: Computation session.
         :type sess: `tf.Session`
         """
@@ -43,6 +46,7 @@ class TFClassifier(Classifier):
         self._output_ph = output_ph
         self._train = train
         self._loss = loss
+        self._learning = learning
 
         if sess is None:
             self._sess = tf.get_default_session()
@@ -103,13 +107,14 @@ class TFClassifier(Classifier):
                 self._sess.run(self._train, feed_dict={
                     self._input_ph:i_batch, self._output_ph: o_batch})
 
-    def class_gradient(self, input):
+    def class_gradient(self, inputs):
         """
-        Compute per-class derivatives w.r.t. `input`.
+        Compute per-class derivatives w.r.t. `inputs`.
 
-        :param input: One sample input with shape as expected by the model.
-        :type input: `np.ndarray`
-        :return: Array of gradients of input features w.r.t. each class in the form `(self.nb_classes, input_shape)`
+        :param inputs: Sample input with shape as expected by the model.
+        :type inputs: `np.ndarray`
+        :return: Array of gradients of input features w.r.t. each class in the form
+                 `(batch_size, nb_classes, input_shape)`.
         :rtype: `np.ndarray`
         """
         # Get the function for the derivatives
@@ -119,25 +124,25 @@ class TFClassifier(Classifier):
             preds = self._logits
 
         # Get the gradient graph
-        grads = [tf.squeeze(tf.gradients(preds[:, i], self._input_ph)[0], 0)
+        grads = [tf.gradients(preds[:, i], self._input_ph)[0]
                  for i in range(self._nb_classes)]
 
         # Compute the gradient and return
-        grds = self._sess.run(grads, feed_dict={
-            self._input_ph: np.array([input])})
-        grds = np.array([g for g in grds])
+        grds = self._sess.run(grads, feed_dict={self._input_ph: inputs})
+        shape = [-1, self._nb_classes] + list(inputs.shape)[1:]
+        grds = np.reshape(np.array(grds), shape)
 
         return grds
 
-    def loss_gradient(self, input, label):
+    def loss_gradient(self, inputs, labels):
         """
-        Compute the gradient of the loss function w.r.t. `input`.
+        Compute the gradient of the loss function w.r.t. `inputs`.
 
-        :param input: One sample input with shape as expected by the model.
-        :type input: `np.ndarray`
-        :param label: Correct label.
-        :type label: `int`
-        :return: Array of gradients of the same shape as `input`.
+        :param inputs: Sample input with shape as expected by the model.
+        :type inputs: `np.ndarray`
+        :param labels: Correct labels, one-vs-rest encoding.
+        :type labels: `np.ndarray`
+        :return: Array of gradients of the same shape as the inputs.
         :rtype: `np.ndarray`
         """
         # Check if loss available
