@@ -57,9 +57,6 @@ class NewtonFool(Attack):
                 score = self.classifier.predict(np.array([ex]))[0][l]
 
                 # Compute the gradients and norm
-                ttt = self.classifier.class_gradient(np.array([ex]))
-                print(ttt.shape)
-                print("Hereeeee")
                 grads = self.classifier.class_gradient(np.array([ex]))[0][l]
                 norm_grad = np.linalg.norm(np.reshape(grads, [-1]))
 
