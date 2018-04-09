@@ -27,35 +27,40 @@ class NewtonFool(Attack):
         params = {"max_iter": max_iter, "eta": eta}
         self.set_params(**params)
 
-    def generate(self, x_val, **kwargs):
+    def generate(self, x, **kwargs):
         """
         Generate adversarial samples and return them in a Numpy array.
 
-        :param x_val: An array with the original inputs to be attacked.
-        :type x_val: `np.ndarray`
+        :param x: An array with the original inputs to be attacked.
+        :type x: `np.ndarray`
+        :param kwargs: Attack-specific parameters used by child classes.
+        :type kwargs: `dict`
         :return: An array holding the adversarial examples.
         :rtype: `np.ndarray`
         """
         assert self.set_params(**kwargs)
         nb_classes = self.classifier.nb_classes()
-        x_adv = x_val.copy()
+        x_adv = x.copy()
 
         # Initialize variables
-        y_pred = self.classifier.predict(x_val)
+        y_pred = self.classifier.predict(x)
         pred_class = np.argmax(y_pred, axis=1)
 
         # Main algorithm for each example
-        for j, x in enumerate(x_adv):
-            norm_x0 = np.linalg.norm(np.reshape(x, [-1]))
+        for j, ex in enumerate(x_adv):
+            norm_x0 = np.linalg.norm(np.reshape(ex, [-1]))
             l = pred_class[j]
 
             # Main loop of the algorithm
             for i in range(self.max_iter):
                 # Compute score
-                score = self.classifier.predict(np.array([x]))[0][l]
+                score = self.classifier.predict(np.array([ex]))[0][l]
 
                 # Compute the gradients and norm
-                grads = self.classifier.class_gradient(x)[l]
+                ttt = self.classifier.class_gradient(np.array([ex]))
+                print(ttt.shape)
+                print("Hereeeee")
+                grads = self.classifier.class_gradient(np.array([ex]))[0][l]
                 norm_grad = np.linalg.norm(np.reshape(grads, [-1]))
 
                 # Theta
@@ -66,12 +71,13 @@ class NewtonFool(Attack):
                 di = self._compute_pert(theta, grads, norm_grad)
 
                 # Update xi and pertubation
-                x += di
+                ex += di
 
         return x_adv
 
     def set_params(self, **kwargs):
-        """Take in a dictionary of parameters and applies attack-specific checks before saving them as attributes.
+        """Take in a dictionary of parameters and applies attack-specific
+        checks before saving them as attributes.
 
         :param max_iter: The maximum number of iterations.
         :type max_iter: `int`

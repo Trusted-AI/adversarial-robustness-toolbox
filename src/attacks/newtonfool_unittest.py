@@ -22,9 +22,6 @@ class TestNewtonFool(unittest.TestCase):
         First test with the TFClassifier.
         :return:
         """
-        # Initialize a tf session
-        session = tf.Session()
-
         # Build a TFClassifier
         # Define input and output placeholders
         self._input_ph = tf.placeholder(tf.float32, shape=[None, 28, 28, 1])
@@ -46,7 +43,7 @@ class TestNewtonFool(unittest.TestCase):
 
         # Tensorflow session and initialization
         self._sess = tf.Session()
-        self._sess.run(tf.group(tf.global_variables_initializer()))
+        self._sess.run(tf.global_variables_initializer())
 
         # Get MNIST
         batch_size, nb_train, nb_test = 100, 1000, 20
@@ -101,7 +98,6 @@ class TestNewtonFool(unittest.TestCase):
                       metrics=['accuracy'])
 
         k.set_learning_phase(1)
-        print(x_train.shape)
         model.fit(x_train, y_train, batch_size=batch_size, epochs=1)
 
         # Get classifier
@@ -124,3 +120,6 @@ class TestNewtonFool(unittest.TestCase):
 
 if __name__ == '__main__':
     unittest.main()
+
+
+
