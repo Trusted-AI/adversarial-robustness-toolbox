@@ -1,7 +1,6 @@
 :mod:`src.attacks`
 ==================
 .. automodule:: src.attacks
-.. autosummary::
 
 Carlini and Wagner Attack
 -------------------------
@@ -28,8 +27,8 @@ NewtonFool
 .. autoclass:: NewtonFool
    :members:
 
-Universarsal Perturbation Attack
---------------------------------
+Universal Perturbation Attack
+-----------------------------
 .. autoclass:: UniversalPerturbation
    :members:
 
