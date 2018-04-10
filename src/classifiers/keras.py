@@ -83,7 +83,7 @@ class KerasClassifier(Classifier):
                  `(batch_size, nb_classes, input_shape)`.
         :rtype: `np.ndarray`
         """
-        return np.array(self._class_grads([inputs]))
+        return np.swapaxes(np.array(self._class_grads([inputs])), 0, 1)
 
     def predict(self, inputs):
         """
