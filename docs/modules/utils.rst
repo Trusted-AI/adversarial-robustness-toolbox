@@ -1,8 +1,15 @@
 :mod:`src.utils`
 ================
 .. automodule:: src.utils
-Functions
----------
-.. autofunction:: random_targets
-.. autofunction:: preprocess
+
+Load Dataset
+------------
 .. autofunction:: load_dataset
+
+Random Targets
+--------------
+.. autofunction:: random_targets
+
+Preprocess
+----------
+.. autofunction:: preprocess
