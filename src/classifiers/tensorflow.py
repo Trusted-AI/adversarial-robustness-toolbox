@@ -11,9 +11,8 @@ class TFClassifier(Classifier):
     """
     This class implements a classifier with the Tensorflow framework.
     """
-    def __init__(self, clip_values, input_ph, logits, use_logits=True,
-                 output_ph=None, train=None, loss=None, learning=None,
-                 sess=None):
+    def __init__(self, clip_values, input_ph, logits, use_logits=True, output_ph=None, train=None, loss=None,
+                 learning=None, sess=None):
         """
         Initialization specifically for the Tensorflow-based implementation.
 
@@ -48,16 +47,22 @@ class TFClassifier(Classifier):
         self._loss = loss
         self._learning = learning
 
+        if sess is None:
+            self._sess = tf.get_default_session()
+        else:
+            self._sess = sess
+
         # Get the function for the predictions
         if not self._use_logits:
             self._preds = tf.nn.softmax(self._logits)
         else:
             self._preds = self._logits
 
-        if sess is None:
-            self._sess = tf.get_default_session()
-        else:
-            self._sess = sess
+        # Get the gradients graph
+        if self._loss is not None:
+            self._loss_grads = tf.gradients(self._loss, self._input_ph)[0]
+
+        self._class_grads = [tf.gradients(self._preds[:, i], self._input_ph)[0] for i in range(self._nb_classes)]
 
     def predict(self, inputs):
         """
@@ -69,11 +74,9 @@ class TFClassifier(Classifier):
         :rtype: `np.ndarray`
         """
         if self._learning is None:
-            results = self._sess.run(self._preds,
-                                     feed_dict={self._input_ph: inputs})
+            results = self._sess.run(self._preds, feed_dict={self._input_ph: inputs})
         else:
-            results = self._sess.run(self._preds,
-                feed_dict={self._input_ph: inputs, self._learning: False})
+            results = self._sess.run(self._preds, feed_dict={self._input_ph: inputs, self._learning: False})
 
         return results
 
@@ -93,8 +96,7 @@ class TFClassifier(Classifier):
         """
         # Check if train and output_ph available
         if self._train is None or self._output_ph is None:
-            raise ValueError("Need the train and the output placeholder to"
-                             " train the model")
+            raise ValueError("Need the training objective and the output placeholder to train the model.")
 
         num_batch = int(np.ceil(len(inputs) / batch_size))
         ind = np.arange(len(inputs))
@@ -116,10 +118,10 @@ class TFClassifier(Classifier):
                 # Run train step
                 if self._learning is None:
                     self._sess.run(self._train, feed_dict={
-                        self._input_ph:i_batch, self._output_ph: o_batch})
+                        self._input_ph: i_batch, self._output_ph: o_batch})
                 else:
                     self._sess.run(self._train, feed_dict={
-                        self._input_ph:i_batch,
+                        self._input_ph: i_batch,
                         self._output_ph: o_batch,
                         self._learning: True})
 
@@ -133,12 +135,8 @@ class TFClassifier(Classifier):
                  `(batch_size, nb_classes, input_shape)`.
         :rtype: `np.ndarray`
         """
-        # Get the gradient graph
-        grads = [tf.gradients(self._preds[:, i], self._input_ph)[0]
-                 for i in range(self._nb_classes)]
-
         # Compute the gradient and return
-        grds = self._sess.run(grads, feed_dict={self._input_ph: inputs})
+        grds = self._sess.run(self._class_grads, feed_dict={self._input_ph: inputs})
         grds = np.swapaxes(np.array(grds), 0, 1)
 
         return grds
@@ -155,17 +153,10 @@ class TFClassifier(Classifier):
         :rtype: `np.ndarray`
         """
         # Check if loss available
-        if self._loss is None:
-            raise ValueError("Need the loss function to compute gradient")
-
-        # Get the gradient graph
-        grads = tf.gradients(self._loss, self._input_ph)[0]
+        if not hasattr(self, '_loss_grads') or self._loss_grads is None:
+            raise ValueError("Need the loss function to compute the loss gradient.")
 
         # Compute the gradient and return
-        grds = self._sess.run(grads, feed_dict={self._input_ph: inputs,
-                                                  self._output_ph: labels})
+        grds = self._sess.run(self._loss_grads, feed_dict={self._input_ph: inputs, self._output_ph: labels})
 
         return grds
-
-
-
