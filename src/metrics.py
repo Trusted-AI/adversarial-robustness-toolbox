@@ -170,10 +170,13 @@ def loss_sensitivity(x, classifier, sess):
     :return: The average loss sensitivity of the model
     :rtype: `float`
     """
+    from src.attacks.attack import class_derivative
+
     x_op = tf.placeholder(dtype=tf.float32, shape=list(x.shape))
     y_pred = classifier.predict(x)
     indices = np.argmax(y_pred, axis=1)
-    grads = [tf.gradients(classifier.model(x_op)[:, i], x_op) for i in range(10)]
+    grads = class_derivative(classifier._get_predictions(x_op, log=True), x_op,
+                             classifier.model.get_output_shape_at(0)[1])
     res = sess.run(grads, feed_dict={x_op: x})
     res = np.asarray([r[0] for r in res])[indices, list(range(x.shape[0]))]
     res = la.norm(res.reshape(res.shape[0], -1), ord=2, axis=1)
