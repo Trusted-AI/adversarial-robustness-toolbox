@@ -25,12 +25,14 @@ class Classifier(ABC):
         """
         self._clip_values = clip_values
 
-    def predict(self, inputs):
+    def predict(self, inputs, logits=False):
         """
         Perform prediction for a batch of inputs.
 
         :param inputs: Test set.
         :type inputs: `np.ndarray`
+        :param logits: `True` if the prediction should be done at the logits layer.
+        :type logits: `bool`
         :return: Array of predictions of shape `(nb_inputs, self.nb_classes)`.
         :rtype: `np.ndarray`
         """
@@ -53,6 +55,7 @@ class Classifier(ABC):
         """
         raise NotImplementedError
 
+    @property
     def nb_classes(self):
         """
         Return the number of output classes.
@@ -62,6 +65,17 @@ class Classifier(ABC):
         """
         return self._nb_classes
 
+    @property
+    def input_shape(self):
+        """
+        Return the shape of one input.
+
+        :return: Shape of one input for the classifier.
+        :rtype: `tuple`
+        """
+        return self._input_shape
+
+    @property
     def clip_values(self):
         """
         :return: Tuple of the form `(min, max)` representing the minimum and maximum values allowed for features.
@@ -70,12 +84,14 @@ class Classifier(ABC):
         return self._clip_values
 
     @abc.abstractmethod
-    def class_gradient(self, inputs):
+    def class_gradient(self, inputs, logits=False):
         """
         Compute per-class derivatives w.r.t. `input`.
 
         :param inputs: Sample input with shape as expected by the model.
         :type inputs: `np.ndarray`
+        :param logits: `True` if the prediction should be done at the logits layer.
+        :type logits: `bool`
         :return: Array of gradients of input features w.r.t. each class in the form
                  `(batch_size, nb_classes, input_shape)`.
         :rtype: `np.ndarray`
