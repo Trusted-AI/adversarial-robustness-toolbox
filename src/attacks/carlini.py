@@ -8,44 +8,47 @@ import tensorflow as tf
 
 from src.attacks.attack import Attack
 
-# TODO Rename attack parameter to `max_iter`
-
 
 class CarliniL2Method(Attack):
     """
-    The L_2 optimized attack of Carlini and Wagner (2016). This attack is the most efficient and should be used as
-    the primary attack to evaluate potential defenses (wrt to the L_0 and L_inf attacks). This implementation is 
-    inspired by the one in Cleverhans, which reproduces the authors' original code
-    (https://github.com/carlini/nn_robust_attacks). Paper link: https://arxiv.org/pdf/1608.04644.pdf
+    The L_2 optimized attack of Carlini and Wagner (2016). This attack is
+    the most efficient and should be used as the primary attack to evaluate
+    potential defenses (wrt to the L_0 and L_inf attacks). This implementation
+    is inspired by the one in Cleverhans, which reproduces the authors'
+    original code (https://github.com/carlini/nn_robust_attacks).
+    Paper link: https://arxiv.org/pdf/1608.04644.pdf
     """
-    attack_params = ['confidence', 'targeted', 'learning_rate', 'binary_search_steps', 'max_iterations',
-                     'initial_const', 'clip_min', 'clip_max', 'verbose']
+    attack_params = ['confidence', 'targeted', 'learning_rate', 'max_iter',
+                     'binary_search_steps', 'initial_const', 'clip_min',
+                     'clip_max', 'verbose']
 
-    def __init__(self, classifier, sess, confidence=5.0, targeted=True, learning_rate=1e-4,
-                 binary_search_steps=25, max_iterations=1000, initial_const=1e-4, clip_min=0,
-                 clip_max=1, verbose=1):
+    def __init__(self, classifier, confidence=5.0, targeted=True,
+                 learning_rate=1e-4, binary_search_steps=25, max_iter=1000,
+                 initial_const=1e-4, clip_min=0, clip_max=1, verbose=1):
         """
         Create a Carlini L_2 attack instance.
 
         :param classifier: A trained model.
         :type classifier: :class:`Classifier`
-        :param sess: The session to run graphs in.
-        :type sess: `tf.Session`
-        :param confidence: Confidence of adversarial examples: a higher value produces examples that are farther away, 
-               from the original input, but classified with higher confidence as the target class.
+        :param confidence: Confidence of adversarial examples: a higher value
+               produces examples that are farther away, from the original
+               input, but classified with higher confidence as the target class.
         :type confidence: `float`
-        :param targeted: Should the attack target one specific class
+        :param targeted: Should the attack target one specific class.
         :type targeted: `bool`
-        :param learning_rate: The learning rate for the attack algorithm. Smaller values produce better results but are
-               slower to converge.
+        :param learning_rate: The learning rate for the attack algorithm.
+               Smaller values produce better results but are slower to converge.
         :type learning_rate: `float`
-        :param binary_search_steps: number of times to adjust constant with binary search (positive value)
+        :param binary_search_steps: number of times to adjust constant with
+               binary search (positive value).
         :type binary_search_steps: `int`
-        :param max_iterations: The maximum number of iterations.
-        :type max_iterations: `int`
-        :param initial_const: The initial trade-off constant `c` to use to tune the relative importance of distance and
-               confidence. If `binary_search_steps` is large, the initial constant is not important. The default
-               value 1e-4 is suggested in Carlini and Wagner (2016).
+        :param max_iter: The maximum number of iterations.
+        :type max_iter: `int`
+        :param initial_const: The initial trade-off constant `c` to use to
+               tune the relative importance of distance and confidence. If
+               `binary_search_steps` is large, the initial constant is not
+               important. The default value 1e-4 is suggested in Carlini
+               and Wagner (2016).
         :type initial_const: `float`
         :param clip_min: Minimum input component value.
         :type clip_min: `float`
@@ -54,13 +57,18 @@ class CarliniL2Method(Attack):
         :param verbose: For status updates in progress bar.
         :type verbose: `bool`
         """
-        super(CarliniL2Method, self).__init__(classifier, sess)
+        # Because the Carlini L_2 attack uses logits for computation,
+        # we force the input classifier must have use_logit=True.
+        if not classifier._use_logits:
+            raise ValueError("The input classifier must have use_logit=True")
+
+        super(CarliniL2Method, self).__init__(classifier)
             
         kwargs = {'confidence': confidence,
                   'targeted': targeted,
                   'learning_rate': learning_rate,
                   'binary_search_steps': binary_search_steps,
-                  'max_iterations': max_iterations,
+                  'max_iter': max_iter,
                   'initial_const': initial_const,
                   'clip_min': clip_min,
                   'clip_max': clip_max,
@@ -72,16 +80,15 @@ class CarliniL2Method(Attack):
         # Abort binary search for c if it exceeds this threshold (suggested in
         # Carlini and Wagner (2016)):
         self._c_upper_bound = 10e10
-        # Smooth arguments of arctanh by multiplying with this constant to avoid
-        # division by zero:
+        # Smooth arguments of arctanh by multiplying with this constant to
+        # avoid division by zero:
         self._tanh_smoother = 0.999999
                            
         # Next we are going to create a number of Tf variables and operations.
-        # We are doing this in the constructor in order to not repeat this everytime
-        # we want to create an attack for a specific input. 
-                
-        shape = classifier.model.get_input_shape_at(0)[1:]
-        num_labels = classifier.model.get_output_shape_at(-1)[-1]
+        # We are doing this in the constructor in order to not repeat this
+        # everytime we want to create an attack for a specific input.
+        shape = classifier.input_shape()
+        num_labels = classifier.nb_classes()
                 
         # Create variable for perturbation in the tanh space.
         # This is the variable wrt to which the loss function is minimized.
