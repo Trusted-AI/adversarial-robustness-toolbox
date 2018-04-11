@@ -17,7 +17,7 @@ class TestNewtonFool(unittest.TestCase):
     """
     A unittest class for testing the NewtonFool attack.
     """
-    def est_tfclassifier(self):
+    def test_tfclassifier(self):
         """
         First test with the TFClassifier.
         :return:

@@ -23,6 +23,11 @@ class NewtonFool(Attack):
         :param eta: The eta coefficient.
         :type eta: `float`
         """
+        # Because the NewtonFool attack use softmax output for computing,
+        # we force the input classifier must have use_logit=False.
+        if classifier._use_logits:
+            raise ValueError("The input classifier must have use_logit=False")
+
         super(NewtonFool, self).__init__(classifier)
         params = {"max_iter": max_iter, "eta": eta}
         self.set_params(**params)
