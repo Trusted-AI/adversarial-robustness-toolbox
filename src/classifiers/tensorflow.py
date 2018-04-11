@@ -145,8 +145,7 @@ class TFClassifier(Classifier):
 
         # Compute the gradient and return
         grds = self._sess.run(grads, feed_dict={self._input_ph: inputs})
-        shape = [-1, self._nb_classes] + list(inputs.shape)[1:]
-        grds = np.reshape(np.array(grds), shape)
+        grds = np.swapaxes(np.array(grds), 0, 1)
 
         return grds
 
