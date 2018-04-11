@@ -30,8 +30,11 @@ setup(name='Adversarial Robustness Toolbox',
                         'Keras',
                         'scipy',
                         'matplotlib',
-                        'tensorflow',
                         'setuptools'],
+      extras_require={
+        "tf": ["tensorflow<=1.5.0"],
+        "tf_gpu": ["tensorflow-gpu<=1.5.0"],
+      },
       # extras_require={
           # 'tests': ['pytest',
           #           'pytest-pep8',
