@@ -52,9 +52,8 @@ class TestNewtonFool(unittest.TestCase):
         x_test, y_test = x_test[:nb_test], y_test[:nb_test]
 
         # Train the classifier
-        tfc = TFClassifier(None, self._input_ph, self._logits, False,
-                           self._output_ph, self._train, self._loss,
-                           None, self._sess)
+        tfc = TFClassifier(None, self._input_ph, self._logits, False, self._output_ph, self._train, self._loss, None,
+                           self._sess)
         tfc.fit(x_train, y_train, batch_size=batch_size, nb_epochs=1)
 
         # Attack
@@ -87,8 +86,7 @@ class TestNewtonFool(unittest.TestCase):
 
         # Create simple CNN
         model = Sequential()
-        model.add(Conv2D(4, kernel_size=(5, 5), activation='relu',
-                         input_shape=(28, 28, 1)))
+        model.add(Conv2D(4, kernel_size=(5, 5), activation='relu', input_shape=(28, 28, 1)))
         model.add(MaxPooling2D(pool_size=(2, 2)))
         model.add(Flatten())
         model.add(Dense(10, activation='softmax'))
@@ -120,6 +118,3 @@ class TestNewtonFool(unittest.TestCase):
 
 if __name__ == '__main__':
     unittest.main()
-
-
-

@@ -16,7 +16,7 @@ from src.utils import load_mnist, get_labels_np_array
 
 BATCH_SIZE = 10
 NB_TRAIN = 100
-NB_TEST = 10
+NB_TEST = 11
 
 
 class TestFastGradientMethod(unittest.TestCase):
@@ -50,7 +50,7 @@ class TestFastGradientMethod(unittest.TestCase):
         scores = self.classifier_k._model.evaluate(x_train, y_train)
         print("\n[Keras, MNIST] Accuracy on training set: %.2f%%" % (scores[1] * 100))
         scores = self.classifier_k._model.evaluate(x_test, y_test)
-        print("\n[Keras, MNIST]Accuracy on test set: %.2f%%" % (scores[1] * 100))
+        print("\n[Keras, MNIST] Accuracy on test set: %.2f%%" % (scores[1] * 100))
 
         # Create basic CNN on MNIST using TensorFlow
         labels_tf = tf.placeholder(tf.float32, [None, 10])
@@ -213,10 +213,6 @@ class TestFastGradientMethod(unittest.TestCase):
         dense = tf.layers.dense(inputs=pool2_flat, units=1024, activation=tf.nn.relu)
         dropout = tf.layers.dropout(inputs=dense, rate=0.4, training=mode == tf.estimator.ModeKeys.TRAIN)
         logits = tf.layers.dense(inputs=dropout, units=10)
-
-        predictions = {"classes": tf.argmax(input=logits, axis=1),
-                       "probabilities": tf.nn.softmax(logits, name="softmax_tensor")
-                       }
 
         loss = tf.losses.softmax_cross_entropy(onehot_labels=labels, logits=logits)
         return logits, loss

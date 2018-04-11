@@ -12,7 +12,7 @@ from src.classifiers.keras import KerasClassifier
 from src.utils import load_cifar10, load_mnist, make_directory
 
 BATCH_SIZE = 10
-NB_TRAIN = 1000
+NB_TRAIN = 500
 NB_TEST = 100
 
 
@@ -58,13 +58,29 @@ class TestKerasClassifier(unittest.TestCase):
     def test_fit(self):
         labels = np.argmax(self.mnist[1][1], axis=1)
         classifier = KerasClassifier((0, 1), self.model_mnist, use_logits=False)
-        scores = np.sum(np.argmax(classifier.predict(self.mnist[1][0]), axis=1) == labels) / NB_TEST
+        acc = np.sum(np.argmax(classifier.predict(self.mnist[1][0]), axis=1) == labels) / NB_TEST
         # print(np.argmax(classifier.predict(self.mnist[1][0]), axis=1))
-        print("\naccuracy: %.2f%%" % (scores * 100))
+        print("\naccuracy: %.2f%%" % (acc * 100))
 
         classifier.fit(self.mnist[0][0], self.mnist[0][1], batch_size=BATCH_SIZE, nb_epochs=1)
-        scores2 = np.sum(np.argmax(classifier.predict(self.mnist[1][0]), axis=1) == labels) / NB_TEST
+        acc2 = np.sum(np.argmax(classifier.predict(self.mnist[1][0]), axis=1) == labels) / NB_TEST
         # print(np.argmax(classifier.predict(self.mnist[1][0]), axis=1))
-        print("\naccuracy: %.2f%%" % (scores2 * 100))
+        print("\naccuracy: %.2f%%" % (acc2 * 100))
 
-        self.assertTrue(scores2 >= scores)
+        self.assertTrue(acc2 >= acc)
+
+    def test_shapes(self):
+        x_test, y_test = self.mnist[1]
+        classifier = KerasClassifier((0, 1), self.model_mnist)
+
+        preds = classifier.predict(self.mnist[1][0])
+        self.assertTrue(preds.shape == y_test.shape)
+
+        nb_classes = classifier.nb_classes()
+        self.assertTrue(nb_classes == 10)
+
+        class_grads = classifier.class_gradient(x_test[:11])
+        self.assertTrue(class_grads.shape == tuple([11, 10] + list(x_test[1].shape)))
+
+        loss_grads = classifier.loss_gradient(x_test[:11], y_test[:11])
+        self.assertTrue(loss_grads.shape == x_test[:11].shape)
