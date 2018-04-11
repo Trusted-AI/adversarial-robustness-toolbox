@@ -5,4 +5,4 @@ scipy
 sphinx
 sphinx-autobuild
 sphinx_rtd_theme
-tensorflow==1.5
+tensorflow==1.4
