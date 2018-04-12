@@ -7,9 +7,6 @@ import warnings
 from keras.models import model_from_json
 from keras.optimizers import SGD
 
-from src.classifiers.cnn import CNN
-from src.classifiers.mlp import MLP
-from src.classifiers.resnet import ResNet
 from src.layers.activations import BoundedReLU
 from src.utils import make_directory
 
@@ -55,6 +52,11 @@ def load_classifier(file_path, weights_name="weights.h5"):
     :param weights_name: name of the file containing the weights
     :return: Classifier
     """
+    from src.classifiers.bnn import BNN
+    from src.classifiers.cnn import CNN
+    from src.classifiers.mlp import MLP
+    from src.classifiers.resnet import ResNet
+
     # Load json and create model
     with open(os.path.join(file_path, "model.json"), "r") as json_file:
         model_json = json_file.read()

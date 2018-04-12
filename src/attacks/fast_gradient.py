@@ -211,7 +211,8 @@ class FastGradientMethod(Attack):
         if self.ord not in [np.inf, int(1), int(2)]:
             raise ValueError("Norm order must be either np.inf, 1, or 2.")
 
-        if self.eps <= self.clip_min or self.eps > self.clip_max:
-            raise ValueError('The amount of perturbation has to be in the data range.')
+        if self.clip_min is not None and self.clip_max is not None:
+            if self.eps <= self.clip_min or self.eps > self.clip_max:
+                raise ValueError('The amount of perturbation has to be in the data range.')
 
         return True
