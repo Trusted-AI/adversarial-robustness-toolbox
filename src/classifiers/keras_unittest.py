@@ -76,8 +76,7 @@ class TestKerasClassifier(unittest.TestCase):
         preds = classifier.predict(self.mnist[1][0])
         self.assertTrue(preds.shape == y_test.shape)
 
-        nb_classes = classifier.nb_classes()
-        self.assertTrue(nb_classes == 10)
+        self.assertTrue(classifier.nb_classes == 10)
 
         class_grads = classifier.class_gradient(x_test[:11])
         self.assertTrue(class_grads.shape == tuple([11, 10] + list(x_test[1].shape)))
