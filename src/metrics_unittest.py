@@ -1,7 +1,8 @@
-# from config import config_dict
+from __future__ import absolute_import, division, print_function, unicode_literals
+
 import unittest
 
-import keras.backend as K
+import keras.backend as k
 import tensorflow as tf
 import numpy as np
 
@@ -36,7 +37,7 @@ class TestMinimalPerturbation(unittest.TestCase):
 
     def test_emp_robustness_mnist(self):
         session = tf.Session()
-        K.set_session(session)
+        k.set_session(session)
 
         comp_params = {"loss": 'categorical_crossentropy',
                        "optimizer": 'adam',
@@ -108,7 +109,7 @@ class TestClever(unittest.TestCase):
         print("Unit test for the targeted version with simplified data.")
         # Define session & params
         session = tf.Session()
-        K.set_session(session)
+        k.set_session(session)
 
         # Get classifier
         classifier = TestClassifier()
@@ -129,7 +130,7 @@ class TestClever(unittest.TestCase):
         print("Unit test for the untargeted version with simplified data.")
         # Define session & params
         session = tf.Session()
-        K.set_session(session)
+        k.set_session(session)
 
         # Get classifier
         classifier = TestClassifier()
@@ -150,7 +151,7 @@ class TestClever(unittest.TestCase):
         print("Test if the targeted version works on a true classifier/data")
         # Define session & params
         session = tf.Session()
-        K.set_session(session)
+        k.set_session(session)
 
         comp_params = {"loss": 'categorical_crossentropy', "optimizer": 'adam',
                        "metrics": ['accuracy']}
@@ -178,7 +179,7 @@ class TestClever(unittest.TestCase):
         print("Test if the untargeted version works on a true classifier/data")
         # Define session & params
         session = tf.Session()
-        K.set_session(session)
+        k.set_session(session)
 
         comp_params = {"loss": 'categorical_crossentropy', "optimizer": 'adam',
                        "metrics": ['accuracy']}
