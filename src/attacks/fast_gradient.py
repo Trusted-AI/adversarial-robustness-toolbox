@@ -118,9 +118,9 @@ class FastGradientMethod(Attack):
 
         # Check if order of the norm is acceptable given current implementation
         if self.norm not in [np.inf, int(1), int(2)]:
-            raise ValueError("Norm order must be either `np.inf`, 1, or 2.")
+            raise ValueError('Norm order must be either `np.inf`, 1, or 2.')
 
-        clip_min, clip_max = self.classifier.clip_values()
+        clip_min, clip_max = self.classifier.clip_values
         if self.eps <= clip_min or self.eps > clip_max:
             raise ValueError('The amount of perturbation has to be in the data range.')
 
@@ -142,7 +142,7 @@ class FastGradientMethod(Attack):
         assert x.shape == grad.shape
 
         # Apply perturbation and clip
-        clip_min, clip_max = self.classifier.clip_values()
+        clip_min, clip_max = self.classifier.clip_values
         x_adv = x + eps * grad
         x_adv = np.clip(x_adv, clip_min, clip_max)
 

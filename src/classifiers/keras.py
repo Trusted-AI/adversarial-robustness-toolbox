@@ -29,6 +29,7 @@ class KerasClassifier(Classifier):
         self._input = model.input
         self._output = model.output
         _, self._nb_classes = k.int_shape(model.output)
+        self._input_shape = k.int_shape(model.input)[1:]
 
         # Get predictions and loss function
         label_ph = k.placeholder(shape=(None,))
@@ -52,11 +53,14 @@ class KerasClassifier(Classifier):
         elif k.backend() == 'cntk':
             raise NotImplementedError('Only TensorFlow and Theano support is provided for Keras.')
 
-        class_grads = [k.gradients(self._output[:, i], self._input)[0] for i in range(self._nb_classes)]
+        # Compute gradient per class, with and without the softmax activation
+        class_grads_logits = [k.gradients(self._output[:, i], self._input)[0] for i in range(self._nb_classes)]
+        class_grads = [k.gradients(k.softmax(self._output[:, i]), self._input)[0] for i in range(self._nb_classes)]
 
         # Set loss, grads and prediction functions
         self._loss = k.function([self._input], [loss])
         self._loss_grads = k.function([self._input, label_ph], [loss_grads])
+        self._class_grads_logits = k.function([self._input], class_grads_logits)
         self._class_grads = k.function([self._input], class_grads)
         self._preds = k.function([self._input], [preds])
 
@@ -73,29 +77,40 @@ class KerasClassifier(Classifier):
         """
         return self._loss_grads([inputs, np.argmax(labels, axis=1)])[0]
 
-    def class_gradient(self, inputs):
+    def class_gradient(self, inputs, logits=False):
         """
         Compute per-class derivatives w.r.t. `input`.
 
         :param inputs: Sample input with shape as expected by the model.
         :type inputs: `np.ndarray`
+        :param logits: `True` if the prediction should be done at the logits layer.
+        :type logits: `bool`
         :return: Array of gradients of input features w.r.t. each class in the form
                  `(batch_size, nb_classes, input_shape)`.
         :rtype: `np.ndarray`
         """
-        return np.swapaxes(np.array(self._class_grads([inputs])), 0, 1)
+        if logits:
+            return np.swapaxes(np.array(self._class_grads_logits([inputs])), 0, 1)
+        else:
+            return np.swapaxes(np.array(self._class_grads([inputs])), 0, 1)
 
-    def predict(self, inputs):
+    def predict(self, inputs, logits=False):
         """
         Perform prediction for a batch of inputs.
 
         :param inputs: Test set.
         :type inputs: `np.ndarray`
+        :param logits: `True` if the prediction should be done at the logits layer.
+        :type logits: `bool`
         :return: Array of predictions of shape `(nb_inputs, self.nb_classes)`.
         :rtype: `np.ndarray`
         """
         k.set_learning_phase(0)
-        return self._preds([inputs])[0]
+        preds = self._preds([inputs])[0]
+        if not logits:
+            # TODO check axis and shapes
+            preds = np.exp(preds) / np.sum(np.exp(preds), axis=0)
+        return preds
 
     def fit(self, inputs, outputs, batch_size=128, nb_epochs=20):
         """

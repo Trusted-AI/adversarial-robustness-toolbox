@@ -48,12 +48,11 @@ class VirtualAdversarialMethod(Attack):
         # TODO Consider computing attack for a batch of samples at a time (no for loop)
         # Parse and save attack-specific parameters
         assert self.set_params(**kwargs)
-        clip_min, clip_max = self.classifier.clip_values()
+        clip_min, clip_max = self.classifier.clip_values
 
         x_adv = np.copy(x)
         dims = list(x.shape[1:])
-        # TODO check that this is not for logit layer
-        preds = self.classifier.predict(x_adv)
+        preds = self.classifier.predict(x_adv, logits=False)
 
         for ind, val in enumerate(x_adv):
             d = np.random.randn(*dims)
