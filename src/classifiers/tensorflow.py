@@ -72,7 +72,8 @@ class TFClassifier(Classifier):
         """
         # Create feed_dict
         fd = {self._input_ph: inputs}
-        if self._learning is not None: fd[self._learning] = False
+        if self._learning is not None:
+            fd[self._learning] = False
 
         # Run prediction
         if logits:

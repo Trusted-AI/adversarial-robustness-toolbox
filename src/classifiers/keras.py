@@ -108,8 +108,9 @@ class KerasClassifier(Classifier):
         k.set_learning_phase(0)
         preds = self._preds([inputs])[0]
         if not logits:
-            # TODO check axis and shapes
-            preds = np.exp(preds) / np.sum(np.exp(preds), axis=0)
+            exp = np.exp(preds - np.max(preds, axis=1, keepdims=True))
+            preds = exp / np.sum(exp, axis=1, keepdims=True)
+
         return preds
 
     def fit(self, inputs, outputs, batch_size=128, nb_epochs=20):
