@@ -15,9 +15,9 @@ from numpy import append
 import tensorflow as tf
 import keras.backend as k
 
-from src.attacks.deepfool import DeepFool
-from src.classifiers.cnn import CNN
-from src.utils import load_dataset
+from art.attacks.deepfool import DeepFool
+from art.classifiers.cnn import CNN
+from art.utils import load_dataset
 
 
 # Get session

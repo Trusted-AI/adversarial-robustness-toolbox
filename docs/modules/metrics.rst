@@ -1,6 +1,6 @@
-:mod:`src.metrics`
+:mod:`art.metrics`
 ==================
-.. automodule:: src.metrics
+.. automodule:: art.metrics
 
 Loss Sensitivity
 ----------------

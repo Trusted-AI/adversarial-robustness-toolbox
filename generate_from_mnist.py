@@ -9,12 +9,12 @@ import numpy as np
 import tensorflow as tf
 from scipy import misc
 
-from src.attacks.deepfool import DeepFool
-from src.attacks.fast_gradient import FastGradientMethod
-from src.attacks.saliency_map import SaliencyMapMethod
-from src.attacks.universal_perturbation import UniversalPerturbation
-from src.classifiers.utils import load_classifier
-from src.utils import get_args, make_directory, get_label_conf, load_dataset
+from art.attacks.deepfool import DeepFool
+from art.attacks.fast_gradient import FastGradientMethod
+from art.attacks.saliency_map import SaliencyMapMethod
+from art.attacks.universal_perturbation import UniversalPerturbation
+from art.classifiers.utils import load_classifier
+from art.utils import get_args, make_directory, get_label_conf, load_dataset
 
 args = get_args(__file__, options="a")
 PATH = "./mnist/"

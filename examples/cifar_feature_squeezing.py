@@ -10,8 +10,8 @@ import sys
 sys.path.append(abspath('.'))
 from config import config_dict
 
-from src.classifiers.cnn import CNN
-from src.utils import load_dataset
+from art.classifiers.cnn import CNN
+from art.utils import load_dataset
 
 # Read CIFAR10 dataset
 (x_train, y_train), (x_test, y_test), _, _ = load_dataset('cifar10')
