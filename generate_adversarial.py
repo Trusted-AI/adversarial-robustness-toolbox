@@ -25,15 +25,14 @@ import os
 import keras.backend as k
 import tensorflow as tf
 
-from src.attacks.carlini import CarliniL2Method
-from src.attacks.deepfool import DeepFool
-from src.attacks.fast_gradient import FastGradientMethod
-from src.attacks.saliency_map import SaliencyMapMethod
-from src.attacks.universal_perturbation import UniversalPerturbation
-from src.attacks.virtual_adversarial import VirtualAdversarialMethod
-from src.classifiers.utils import load_classifier
-
-from src.utils import get_args, get_verbose_print, load_dataset, make_directory
+from art.attacks.carlini import CarliniL2Method
+from art.attacks.deepfool import DeepFool
+from art.attacks.fast_gradient import FastGradientMethod
+from art.attacks.saliency_map import SaliencyMapMethod
+from art.attacks.universal_perturbation import UniversalPerturbation
+from art.attacks.virtual_adversarial import VirtualAdversarialMethod
+from art.classifiers.utils import load_classifier
+from art.utils import get_args, get_verbose_print, load_dataset, make_directory
 
 # --------------------------------------------------------------------------------------------------- SETTINGS
 args = get_args(__file__, load_classifier=True, options="adsv")

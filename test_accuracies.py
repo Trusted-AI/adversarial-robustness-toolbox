@@ -25,8 +25,8 @@ import keras.backend as k
 import numpy as np
 import tensorflow as tf
 
-from src.classifiers.utils import load_classifier
-from src.utils import get_args, get_verbose_print, load_dataset, get_npy_files
+from art.classifiers.utils import load_classifier
+from art.utils import get_args, get_verbose_print, load_dataset, get_npy_files
 
 # --------------------------------------------------------------------------------------------------- SETTINGS
 args = get_args(__file__, load_classifier=True, options="dsv")

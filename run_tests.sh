@@ -1,2 +1,2 @@
 #!/usr/bin/env bash
-python -m unittest discover src/ -p '*_unittest.py'
+python -m unittest discover art/ -p '*_unittest.py'

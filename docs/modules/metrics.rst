@@ -1,6 +1,6 @@
-:mod:`src.metrics`
+:mod:`art.metrics`
 ==================
-.. automodule:: src.metrics
+.. automodule:: art.metrics
 
 Loss Sensitivity
 ----------------
@@ -13,8 +13,3 @@ Empirical Robustness
 Distance to nearest neighbors
 -----------------------------
 .. autofunction:: nearest_neighbour_dist
-
-CLEVER
-------
-.. autofunction:: clever_u
-.. autofunction:: clever_t

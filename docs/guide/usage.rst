@@ -22,4 +22,4 @@ See `examples/README.md` for more information about what each example does. To r
 
    python3 examples/<example_name>.py
 
-.. _GitHub: https:github.com/IBM/adversarial-robustness-toolbox
+.. _GitHub: https://github.com/IBM/adversarial-robustness-toolbox
