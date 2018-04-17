@@ -7,8 +7,7 @@ from src.attacks.attack import Attack
 
 class NewtonFool(Attack):
     """
-    Implementation of the attack from Uyeong Jang et al. (2017).
-    Paper link: http://doi.acm.org/10.1145/3134600.3134635
+    Implementation of the attack from Uyeong Jang et al. (2017). Paper link: http://doi.acm.org/10.1145/3134600.3134635
     """
     attack_params = ["max_iter", "eta"]
 
@@ -23,11 +22,6 @@ class NewtonFool(Attack):
         :param eta: The eta coefficient.
         :type eta: `float`
         """
-        # Because the NewtonFool attack use softmax output for computing,
-        # we force the input classifier must have use_logit=False.
-        if classifier._use_logits:
-            raise ValueError("The input classifier must have use_logit=False")
-
         super(NewtonFool, self).__init__(classifier)
         params = {"max_iter": max_iter, "eta": eta}
         self.set_params(**params)
@@ -44,11 +38,11 @@ class NewtonFool(Attack):
         :rtype: `np.ndarray`
         """
         assert self.set_params(**kwargs)
-        nb_classes = self.classifier.nb_classes()
+        nb_classes = self.classifier.nb_classes
         x_adv = x.copy()
 
         # Initialize variables
-        y_pred = self.classifier.predict(x)
+        y_pred = self.classifier.predict(x, logits=False)
         pred_class = np.argmax(y_pred, axis=1)
 
         # Main algorithm for each example
@@ -59,27 +53,30 @@ class NewtonFool(Attack):
             # Main loop of the algorithm
             for i in range(self.max_iter):
                 # Compute score
-                score = self.classifier.predict(np.array([ex]))[0][l]
+                print(self.classifier.predict(np.array([ex]), logits=True))
+                score = self.classifier.predict(np.array([ex]), logits=False)[0][l]
+                print(score)
 
                 # Compute the gradients and norm
-                grads = self.classifier.class_gradient(np.array([ex]))[0][l]
+                grads = self.classifier.class_gradient(np.array([ex]), logits=False)[0][l]
+                #print(grads)
                 norm_grad = np.linalg.norm(np.reshape(grads, [-1]))
 
                 # Theta
-                theta = self._compute_theta(norm_x0, score, norm_grad,
-                                            nb_classes)
+                theta = self._compute_theta(norm_x0, score, norm_grad, nb_classes)
+                print(theta)
 
                 # Pertubation
                 di = self._compute_pert(theta, grads, norm_grad)
 
                 # Update xi and pertubation
                 ex += di
+                #print(ex)
 
         return x_adv
 
     def set_params(self, **kwargs):
-        """Take in a dictionary of parameters and applies attack-specific
-        checks before saving them as attributes.
+        """Take in a dictionary of parameters and applies attack-specific checks before saving them as attributes.
 
         :param max_iter: The maximum number of iterations.
         :type max_iter: `int`
@@ -90,8 +87,7 @@ class NewtonFool(Attack):
         super(NewtonFool, self).set_params(**kwargs)
 
         if type(self.max_iter) is not int or self.max_iter <= 0:
-            raise ValueError("The number of iterations must be a "
-                             "positive integer.")
+            raise ValueError("The number of iterations must be a positive integer.")
 
         if type(self.eta) is not float or self.eta <= 0:
             raise ValueError("The eta coefficient must be a positive float.")
