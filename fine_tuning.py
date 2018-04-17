@@ -9,9 +9,9 @@ from keras.callbacks import ModelCheckpoint, TensorBoard
 from keras.optimizers import SGD
 import numpy as np
 
-from src.classifiers.classifier import Classifier
-from src.classifiers.utils import save_classifier, load_classifier
-from src.utils import get_args, get_verbose_print, load_dataset, make_directory, set_group_permissions_rec
+from art.classifiers.classifier import Classifier
+from art.classifiers.utils import save_classifier, load_classifier
+from art.utils import get_args, get_verbose_print, load_dataset, make_directory, set_group_permissions_rec
 
 # --------------------------------------------------------------------------------------------------- SETTINGS
 args = get_args(__file__, options="stnr")

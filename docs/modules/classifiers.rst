@@ -1,11 +1,14 @@
-:mod:`src.classifiers`
+:mod:`art.classifiers`
 ======================
-.. automodule:: src.classifiers
+.. automodule:: art.classifiers
 
-Supported models
-----------------
+Base Class
+----------
 .. autoclass:: Classifier
    :members:
+
+Custom Architectures
+--------------------
 .. autoclass:: CNN
    :members:
 .. autoclass:: MLP

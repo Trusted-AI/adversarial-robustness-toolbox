@@ -9,11 +9,11 @@ import keras.backend as k
 from keras.callbacks import ModelCheckpoint, TensorBoard, EarlyStopping
 import tensorflow as tf
 
-from src.classifiers.cnn import CNN
-from src.classifiers.mlp import MLP
-from src.classifiers.resnet import ResNet
-from src.classifiers.utils import save_classifier, load_classifier
-from src.utils import get_args, get_verbose_print, load_dataset, make_directory, set_group_permissions_rec
+from art.classifiers.cnn import CNN
+from art.classifiers.mlp import MLP
+from art.classifiers.resnet import ResNet
+from art.classifiers.utils import save_classifier, load_classifier
+from art.utils import get_args, get_verbose_print, load_dataset, make_directory, set_group_permissions_rec
 
 # --------------------------------------------------------------------------------------------------- SETTINGS
 args = get_args(__file__, options="bcdefnrstvz")

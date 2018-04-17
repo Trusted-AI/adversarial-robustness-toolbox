@@ -16,10 +16,10 @@ module_path = os.path.abspath(os.path.join('..'))
 if module_path not in sys.path:
     sys.path.append(module_path)
 
-from src.attackers.fast_gradient import FastGradientMethod
-from src.attackers.saliency_map import SaliencyMapMethod
-from src.attackers.virtual_adversarial import VirtualAdversarialMethod
-from src.utils import make_directory
+from art.attackers.fast_gradient import FastGradientMethod
+from art.attackers.saliency_map import SaliencyMapMethod
+from art.attackers.virtual_adversarial import VirtualAdversarialMethod
+from art.utils import make_directory
 
 # -------------------------------------------------------------------------------------------------------- IO FUNCTIONS
 
