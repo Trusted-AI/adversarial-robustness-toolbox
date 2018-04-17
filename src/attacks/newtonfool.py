@@ -59,8 +59,9 @@ class NewtonFool(Attack):
 
                 # Compute the gradients and norm
                 grads = self.classifier.class_gradient(np.array([ex]), logits=False)[0][l]
-                #print(grads)
+                print(grads)
                 norm_grad = np.linalg.norm(np.reshape(grads, [-1]))
+                print("Norm", norm_grad)
 
                 # Theta
                 theta = self._compute_theta(norm_x0, score, norm_grad, nb_classes)
@@ -68,6 +69,7 @@ class NewtonFool(Attack):
 
                 # Pertubation
                 di = self._compute_pert(theta, grads, norm_grad)
+                print("DIIIII", di)
 
                 # Update xi and pertubation
                 ex += di

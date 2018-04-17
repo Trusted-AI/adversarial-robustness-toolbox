@@ -68,9 +68,6 @@ class TestNewtonFool(unittest.TestCase):
         y_pred_adv_max = y_pred_adv[y_pred_bool]
         self.assertTrue((y_pred_max >= y_pred_adv_max).all())
 
-        #print(x_test, x_test_adv)
-        #self.assertFalse(True)
-
     def test_krclassifier(self):
         """
         Second test with the KerasClassifier.
@@ -102,22 +99,24 @@ class TestNewtonFool(unittest.TestCase):
 
         print(krc.predict(x_test))
         print(krc.predict(x_test, logits=True))
+        grads = krc.class_gradient(x_test, logits=False)
+        import numpy as np
+        print("min is: ", np.min(grads), ", max is: ", np.max(grads))
 
         self.assertFalse(True)
-        # Attack
-        # k.set_learning_phase(0)
-        # nf = NewtonFool(krc)
-        # nf.set_params(max_iter=1)
-        # x_test_adv = nf.generate(x_test)
-        # self.assertFalse((x_test == x_test_adv).all())
-        #
-        # y_pred = krc.predict(x_test)
-        # y_pred_adv = krc.predict(x_test_adv)
-        # y_pred_bool = y_pred.max(axis=1, keepdims=1) == y_pred
-        # y_pred_max = y_pred.max(axis=1)
-        # y_pred_adv_max = y_pred_adv[y_pred_bool]
-        # #print(x_test, x_test_adv)
-        # self.assertTrue((y_pred_max >= y_pred_adv_max).all())
+#         # Attack
+#         nf = NewtonFool(krc)
+#         nf.set_params(max_iter=1)
+#         x_test_adv = nf.generate(x_test)
+#         self.assertFalse((x_test == x_test_adv).all())
+#
+#         y_pred = krc.predict(x_test)
+#         y_pred_adv = krc.predict(x_test_adv)
+#         y_pred_bool = y_pred.max(axis=1, keepdims=1) == y_pred
+#         y_pred_max = y_pred.max(axis=1)
+#         y_pred_adv_max = y_pred_adv[y_pred_bool]
+#         #print(x_test, x_test_adv)
+#         self.assertTrue((y_pred_max >= y_pred_adv_max).all())
 
 
 if __name__ == '__main__':
