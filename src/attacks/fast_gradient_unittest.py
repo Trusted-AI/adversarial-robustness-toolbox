@@ -62,8 +62,8 @@ class TestFastGradientMethod(unittest.TestCase):
         optimizer_tf = tf.train.GradientDescentOptimizer(.5)
         train_tf = optimizer_tf.minimize(loss_tf)
 
-        self.classifier_tf = TFClassifier((0, 1), inputs_tf, logits_tf, use_logits=False, loss=loss_tf,
-                                          train=train_tf, output_ph=labels_tf, sess=sess)
+        self.classifier_tf = TFClassifier((0, 1), inputs_tf, logits_tf, loss=loss_tf, train=train_tf,
+                                          output_ph=labels_tf, sess=sess)
         self.classifier_tf.fit(x_train, y_train, nb_epochs=1, batch_size=BATCH_SIZE)
 
         scores = get_labels_np_array(self.classifier_tf.predict(x_train))

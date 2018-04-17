@@ -38,7 +38,6 @@ class DeepFool(Attack):
         """
         assert self.set_params(**kwargs)
         clip_min, clip_max = self.classifier.clip_values
-        nb_classes = self.classifier.nb_classes
         x_adv = x.copy()
 
         for j, val in enumerate(x_adv):
@@ -56,10 +55,10 @@ class DeepFool(Attack):
                 f_diff = f - f[fk_hat]
 
                 # Masking true label
-                mask = [0] * nb_classes
+                mask = [0] * self.classifier.nb_classes
                 mask[fk_hat] = 1
-                value = np.ma.array(np.abs(f_diff) / np.linalg.norm(grad_diff.reshape(nb_classes, -1), axis=1),
-                                    mask=mask)
+                value = np.ma.array(np.abs(f_diff) / np.linalg.norm(grad_diff.reshape(self.classifier.nb_classes, -1),
+                                                                    axis=1), mask=mask)
 
                 l = value.argmin(fill_value=np.inf)
                 r = (abs(f_diff[l]) / pow(np.linalg.norm(grad_diff[l]), 2)) * grad_diff[l]
