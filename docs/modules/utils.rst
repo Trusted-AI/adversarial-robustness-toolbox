@@ -1,6 +1,6 @@
-:mod:`src.utils`
+:mod:`art.utils`
 ================
-.. automodule:: src.utils
+.. automodule:: art.utils
 
 Load Dataset
 ------------

@@ -1,6 +1,6 @@
-:mod:`src.defences`
+:mod:`art.defences`
 ===================
-.. automodule:: src.defences
+.. automodule:: art.defences
 
 Feature Squeezing
 -----------------

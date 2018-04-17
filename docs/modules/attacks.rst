@@ -1,7 +1,6 @@
-:mod:`src.attacks`
+:mod:`art.attacks`
 ==================
-.. automodule:: src.attacks
-.. autosummary::
+.. automodule:: art.attacks
 
 Carlini and Wagner Attack
 -------------------------
@@ -38,7 +37,7 @@ Virtual Adversarial Method
 .. autoclass:: VirtualAdversarialMethod
    :members:
 
-Base class
+Base Class
 ----------
 .. autoclass:: Attack
    :members:
