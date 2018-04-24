@@ -15,10 +15,10 @@ from config import config_dict
 import tensorflow as tf
 import keras.backend as k
 
-from src.attacks.deepfool import DeepFool
-from src.classifiers.cnn import CNN
-from src.classifiers.resnet import ResNet
-from src.utils import load_dataset
+from art.attacks.deepfool import DeepFool
+from art.classifiers.cnn import CNN
+from art.classifiers.resnet import ResNet
+from art.utils import load_dataset
 
 # Get session
 session = tf.Session()

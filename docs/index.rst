@@ -23,7 +23,7 @@ The Adversarial Robustness Toolbox contains implementations of the following att
 * Jacobian Saliency Map (`Papernot et al., 2016`_)
 * Universal Perturbation (`Moosavi-Dezfooli et al., 2016`_)
 * Virtual Adversarial Method (`Moosavi-Dezfooli et al., 2015b`_)
-* C&amp;W Attack (`Carlini and Wagner, 2016`_)
+* C&W Attack (`Carlini and Wagner, 2016`_)
 * NewtonFool (`Jang et al., 2017`_)
 
 The following defense methods are also supported:

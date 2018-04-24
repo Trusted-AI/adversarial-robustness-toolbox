@@ -1,6 +1,7 @@
-:mod:`src.layers`
+:mod:`art.layers`
 =================
-.. automodule:: src.layers
+.. automodule:: art.layers
+
 Custom layers
 -------------
 .. autoclass:: BoundedReLU
