@@ -17,7 +17,7 @@ class TestNewtonFool(unittest.TestCase):
     """
     A unittest class for testing the NewtonFool attack.
     """
-    def est_tfclassifier(self):
+    def test_tfclassifier(self):
         """
         First test with the TFClassifier.
         :return:
@@ -45,7 +45,7 @@ class TestNewtonFool(unittest.TestCase):
         self._sess.run(tf.global_variables_initializer())
 
         # Get MNIST
-        batch_size, nb_train, nb_test = 100, 1000, 20
+        batch_size, nb_train, nb_test = 100, 1000, 10
         (x_train, y_train), (x_test, y_test), _, _ = load_mnist()
         x_train, y_train = x_train[:nb_train], y_train[:nb_train]
         x_test, y_test = x_test[:nb_test], y_test[:nb_test]
@@ -78,7 +78,7 @@ class TestNewtonFool(unittest.TestCase):
         k.set_session(session)
 
         # Get MNIST
-        batch_size, nb_train, nb_test = 100, 1000, 1
+        batch_size, nb_train, nb_test = 100, 1000, 10
         (x_train, y_train), (x_test, y_test), _, _ = load_mnist()
         x_train, y_train = x_train[:nb_train], y_train[:nb_train]
         x_test, y_test = x_test[:nb_test], y_test[:nb_test]
@@ -97,27 +97,21 @@ class TestNewtonFool(unittest.TestCase):
         krc = KerasClassifier((0, 1), model, use_logits=False)
         krc.fit(x_train, y_train, batch_size=batch_size, nb_epochs=2)
 
-        print(krc.predict(x_test))
-        print(krc.predict(x_test, logits=True))
-        grads = krc.class_gradient(x_test, logits=False)
-        import numpy as np
-        print("min is: ", np.min(grads), ", max is: ", np.max(grads))
+        # Attack
+        nf = NewtonFool(krc)
+        nf.set_params(max_iter=5)
+        x_test_adv = nf.generate(x_test)
+        self.assertFalse((x_test == x_test_adv).all())
 
-        self.assertFalse(True)
-#         # Attack
-#         nf = NewtonFool(krc)
-#         nf.set_params(max_iter=1)
-#         x_test_adv = nf.generate(x_test)
-#         self.assertFalse((x_test == x_test_adv).all())
-#
-#         y_pred = krc.predict(x_test)
-#         y_pred_adv = krc.predict(x_test_adv)
-#         y_pred_bool = y_pred.max(axis=1, keepdims=1) == y_pred
-#         y_pred_max = y_pred.max(axis=1)
-#         y_pred_adv_max = y_pred_adv[y_pred_bool]
-#         #print(x_test, x_test_adv)
-#         self.assertTrue((y_pred_max >= y_pred_adv_max).all())
+        y_pred = krc.predict(x_test)
+        y_pred_adv = krc.predict(x_test_adv)
+        y_pred_bool = y_pred.max(axis=1, keepdims=1) == y_pred
+        y_pred_max = y_pred.max(axis=1)
+        y_pred_adv_max = y_pred_adv[y_pred_bool]
+        self.assertTrue((y_pred_max >= y_pred_adv_max).all())
 
 
 if __name__ == '__main__':
     unittest.main()
+
+

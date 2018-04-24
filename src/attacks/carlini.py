@@ -17,10 +17,10 @@ class CarliniL2Method(Attack):
     Paper link: https://arxiv.org/pdf/1608.04644.pdf
     """
     attack_params = ['confidence', 'targeted', 'learning_rate', 'max_iter', 'binary_search_steps', 'initial_const',
-                     'clip_min', 'clip_max', 'verbose']
+                     'decay']
 
     def __init__(self, classifier, confidence=5.0, targeted=True, learning_rate=1e-4, binary_search_steps=25,
-                 max_iter=1000, initial_const=1e-4):
+                 max_iter=1000, initial_const=1e-4, decay=0.):
         """
         Create a Carlini L_2 attack instance.
 
@@ -42,6 +42,8 @@ class CarliniL2Method(Attack):
                 confidence. If `binary_search_steps` is large, the initial constant is not important. The default value
                 1e-4 is suggested in Carlini and Wagner (2016).
         :type initial_const: `float`
+        :param decay: Coefficient for learning rate decay.
+        :type decay: `float`
         """
         super(CarliniL2Method, self).__init__(classifier)
             
@@ -51,6 +53,7 @@ class CarliniL2Method(Attack):
                   'binary_search_steps': binary_search_steps,
                   'max_iter': max_iter,
                   'initial_const': initial_const,
+                  'decay': decay
                   }
         assert self.set_params(**kwargs)
         
@@ -67,14 +70,14 @@ class CarliniL2Method(Attack):
                 
         # Create variable for perturbation in the tanh space. This is the variable wrt to which the loss function is
         # minimized. Also create operator for initializing this variable.
-        perturbation_tanh = tf.Variable(np.zeros(shape), dtype=np.float32, name='perturbation_tanh')       
+        perturbation_tanh = tf.Variable(np.zeros(shape), dtype=np.float32, name='perturbation_tanh')
         self._init_perturbation_tanh = tf.variables_initializer([perturbation_tanh])
                     
         # Next we define the loss function that we are going to minimize.
         # 1) external inputs to the loss function:
         image_tanh = tf.Variable(np.zeros(shape), dtype=tf.float32, name='image_tanh')
         target = tf.Variable(np.zeros(num_labels), dtype=tf.float32, name='target')
-        c = tf.Variable(np.zeros(1), dtype=tf.float32, name='c')
+        c = tf.Variable(0, dtype=tf.float32, name='c')
 
         # 2) the resulting adversarial image. Note that the optimization is performed in tanh space to keep the
         #    adversarial images bounded from clip_min and clip_max. To avoid division by zero (which occurs if
@@ -82,7 +85,7 @@ class CarliniL2Method(Attack):
         #    transformation, we need to divide by _tanh_smoother. It appears this is what Carlini and Wagner
         #    (2016) are alluding to in their footnote 8. However, it is not clear how their proposed trick
         #    ("instead of scaling by 1/2 we cale by 1/2 + eps") would actually work.
-        self._adv_image = tf.tanh(image_tanh + perturbation_tanh)      
+        self._adv_image = tf.tanh(image_tanh + perturbation_tanh)
         self._adv_image = (self._adv_image / self._tanh_smoother + 1) / 2
         (clip_min, clip_max) = classifier.clip_values
         self._adv_image = self._adv_image * (clip_max - clip_min) + clip_min
@@ -91,7 +94,7 @@ class CarliniL2Method(Attack):
         self._z = tf.placeholder(dtype=tf.float32, shape=[num_labels], name='logits')
 
         # 4) compute squared l2 distance between original and adversarial image. Need to transform original image from
-        # arctanh space first.
+        #    arctanh space first.
         image = (tf.tanh(image_tanh) / self._tanh_smoother + 1) / 2
         image = image * (clip_max - clip_min) + clip_min
         self._l2dist = tf.reduce_sum(tf.square(self._adv_image - image))
@@ -115,23 +118,23 @@ class CarliniL2Method(Attack):
         # 6) combine loss terms:
         self._loss = c * loss + self._l2dist
 
-        # 7) Setup the optimizer and create operator to initialize optimizer variables:
-        optimizer = tf.train.AdamOptimizer(self.learning_rate)
-        
-        vars_without_optimizer = tf.global_variables()
-        self._minimize_loss = optimizer.minimize(self._loss, var_list=[perturbation_tanh])
-        optimizer_vars = [x for x in tf.global_variables() if x not in vars_without_optimizer]
+        # 7) compute partial gradients:
+        self._grad_l2z = tf.gradients(self._loss, self._z)[0]
 
-        self._init_optimizer = tf.variables_initializer(optimizer_vars)
-               
-        # 8) Create operators to assign values to external inputs of the loss function:
+        # 8) create operators to assign values to external inputs of the loss function:
         self._image_tanh = tf.placeholder(tf.float32, shape, name='image_tanh')
         self._target = tf.placeholder(tf.float32, num_labels, name='target')
-        self._c = tf.placeholder(tf.float32, 1, name='c')
+        self._c = tf.placeholder(tf.float32, name='c')
 
         self._assign_image_tanh = image_tanh.assign(self._image_tanh)
         self._assign_target = target.assign(self._target)
         self._assign_c = c.assign(self._c)
+
+        # Create a gradient placeholder, a decayed learning rate placeholder and an operator to update the pertubation
+        self._grad_l2p = tf.placeholder(tf.float32, shape, name='grad_l2p')
+        self._lr = tf.placeholder(tf.float32, name='decayed_learning_rate')
+        update = perturbation_tanh - self._lr * self._grad_l2p
+        self._update_pert = perturbation_tanh.assign(update)
 
         # Finally create a tf session
         self._sess = tf.Session()
@@ -173,10 +176,7 @@ class CarliniL2Method(Attack):
             # Assign the external inputs to the loss function:
             self._sess.run(self._assign_image_tanh, {self._image_tanh: ex})
             self._sess.run(self._assign_target, {self._target: target})
-                                           
-            # Initialize perturbation in tanh space:
-            self._sess.run(self._init_perturbation_tanh)
-            
+
             # Initialize binary search:
             c = self.initial_const
             c_lower_bound = 0
@@ -189,25 +189,31 @@ class CarliniL2Method(Attack):
             for _ in range(self.binary_search_steps):
                 attack_success = False
                 loss_prev = sys.float_info.max
+                lr = self.learning_rate
                 
-                # Initalize the optimizer:
-                self._sess.run(self._init_optimizer)
+                # Initialize perturbation in tanh space:
+                self._sess.run(self._init_perturbation_tanh)
 
-                # Assign constant c of the loss function:                
-                self._sess.run(self._assign_c, {self._c: np.array([c])})
+                # Assign constant c of the loss function:
+                self._sess.run(self._assign_c, {self._c: c})
                
-                for _ in range(self.max_iter):
-                    # Perform one update of the optimizer:
+                for it in range(self.max_iter):
+                    # Collect current loss and l2 distance and compute gradients:
                     adv_image = self._sess.run(self._adv_image)
                     z = self.classifier.predict(np.array([adv_image]), logits=True)[0]
-                    _ = self._sess.run(self._minimize_loss, {self._z: z})
-                    
-                    # Collect current loss and l2 distance:
-                    loss, l2dist = self._sess.run([self._loss, self._l2dist])
-        
+                    loss, l2dist, grad_l2z = self._sess.run([self._loss, self._l2dist, self._grad_l2z], {self._z: z})
+                    grad_z2p = self.classifier.class_gradient(np.array([adv_image]), logits=True)[0]
+                    grad_l2p = np.zeros(shape=self.classifier.input_shape)
+                    for i in range(self.classifier.nb_classes):
+                        grad_l2p += grad_z2p[i] * grad_l2z[i]
+
+                    # Update the pertubation with decayed learning rate
+                    lr *= (1. / (1. + self.decay * it))
+                    self._sess.run(self._update_pert, {self._grad_l2p: grad_l2p, self._lr: lr})
+
                     # Check whether last attack was successful:
                     # Attack success criterion: first term of the loss function is <= 0
-                    last_attack_success = loss[0]-l2dist <= 0                                         
+                    last_attack_success = loss-l2dist <= 0
                     attack_success = attack_success or last_attack_success
                     
                     if last_attack_success and l2dist < best_l2dist:
@@ -215,9 +221,9 @@ class CarliniL2Method(Attack):
                         best_adv_image =  self._sess.run(self._adv_image)
                                        
                     # Check simple stopping criterion:
-                    if loss[0] > loss_prev:
+                    if loss > loss_prev:
                         break
-                    loss_prev = loss[0]
+                    loss_prev = loss
 
                 # Update binary search:
                 if attack_success:
@@ -258,6 +264,8 @@ class CarliniL2Method(Attack):
                importance of distance and confidence. If binary_search_steps is large,
                the initial constant is not important. The default value 1e-4 is suggested in Carlini and Wagner (2016).
         :type initial_const: `float`
+        :param decay: Coefficient for learning rate decay.
+        :type decay: `float`
         """
         # Save attack-specific parameters
         super(CarliniL2Method, self).set_params(**kwargs)
@@ -269,3 +277,6 @@ class CarliniL2Method(Attack):
             raise ValueError("The number of iterations must be a positive integer.")
 
         return True
+
+
+
