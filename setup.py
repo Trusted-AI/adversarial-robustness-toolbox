@@ -19,7 +19,7 @@ from setuptools import setup
 from setuptools import find_packages
 
 
-setup(name='Adversarial Robustness Toolbox',
+setup(name='adversarial_robustness_toolbox',
       version='0.1',
       description='IBM Adversarial machine learning toolbox',
       author='Irina Nicolae',
