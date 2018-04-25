@@ -13,3 +13,8 @@ Empirical Robustness
 Distance to nearest neighbors
 -----------------------------
 .. autofunction:: nearest_neighbour_dist
+
+CLEVER
+------
+.. autofunction:: clever_u
+.. autofunction:: clever_t
