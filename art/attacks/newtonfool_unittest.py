@@ -1,9 +1,8 @@
-from __future__ import absolute_import, division, print_function
+from __future__ import absolute_import, division, print_function, unicode_literals
 
 import unittest
 
 import keras
-import keras.backend as k
 from keras.models import Sequential
 from keras.layers import Dense, Flatten, Conv2D, MaxPooling2D
 import tensorflow as tf
@@ -74,10 +73,6 @@ class TestNewtonFool(unittest.TestCase):
         Second test with the KerasClassifier.
         :return:
         """
-        # Initialize a tf session
-        session = tf.Session()
-        k.set_session(session)
-
         # Get MNIST
         batch_size, nb_train, nb_test = 100, 1000, 10
         (x_train, y_train), (x_test, y_test), _, _ = load_mnist()
