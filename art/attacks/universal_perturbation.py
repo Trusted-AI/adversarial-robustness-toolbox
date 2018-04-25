@@ -1,4 +1,4 @@
-from __future__ import absolute_import, division, print_function
+from __future__ import absolute_import, division, print_function, unicode_literals
 
 import numpy as np
 import random
@@ -11,12 +11,12 @@ class UniversalPerturbation(Attack):
     Implementation of the attack from Moosavi-Dezfooli et al. (2016). Computes a fixed perturbation to be applied to all
     future inputs. To this end, it can use any adversarial attack method. Paper link: https://arxiv.org/abs/1610.08401
     """
-    attacks_dict = {'carlini': 'src.attacks.carlini.CarliniL2Method',
-                    'deepfool': 'src.attacks.deepfool.DeepFool',
-                    'fgsm':'src.attacks.fast_gradient.FastGradientMethod',
-                    'newtonfool': 'src.attacks.newtonfool.NewtonFool',
-                    'jsma': 'src.attacks.saliency_map.SaliencyMapMethod',
-                    'vat': 'src.attacks.virtual_adversarial.VirtualAdversarialMethod'
+    attacks_dict = {'carlini': 'art.attacks.carlini.CarliniL2Method',
+                    'deepfool': 'art.attacks.deepfool.DeepFool',
+                    'fgsm': 'art.attacks.fast_gradient.FastGradientMethod',
+                    'newtonfool': 'art.attacks.newtonfool.NewtonFool',
+                    'jsma': 'art.attacks.saliency_map.SaliencyMapMethod',
+                    'vat': 'art.attacks.virtual_adversarial.VirtualAdversarialMethod'
                     }
     attack_params = ['attacker', 'attacker_params', 'delta', 'max_iter', 'eps', 'p']
 
