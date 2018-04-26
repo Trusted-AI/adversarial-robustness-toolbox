@@ -42,41 +42,6 @@ def random_targets(labels, nb_classes):
     return np_utils.to_categorical(result, nb_classes)
 
 
-def create_class_pairs(x, y, classes=10, pos=1, neg=0):
-    """ Returns a positive and a negative pair per point of x, w.r.t. its class, and their corresponding scores.
-    
-    :param x: (np.ndarray) sample of points, with M nb of instances as first dimension
-    :param y: (np.ndarray) vector of labels, with M nb of instances as first dimension
-    :param classes: (int) number of classes
-    :param pos: (float) score affected to the positive pairs (couple of similar points)
-    :param neg: (float) score affected to the negative pairs (couple of dissimilar points)
-    :return: (np.ndarray, np.ndarray) M times classes pairs of points and corresponding scores
-    """
-
-    pairs = []
-    scores = []
-    classes_idx = [np.where(y == i)[0] for i in range(classes)]
-
-    for d in range(classes):
-        nb = len(classes_idx[d])
-
-        for i in range(nb):
-            j = random.randrange(0, nb)
-            z1, z2 = classes_idx[d][i], classes_idx[d][j]
-            pairs += [[x[z1], x[z2]]]
-            scores += [pos]
-
-            dn = (d + random.randrange(1, classes)) % classes
-            size = len(classes_idx[dn])
-            if size > 0:
-                j = random.randrange(0, size)
-                z1, z2 = classes_idx[d][i], classes_idx[dn][j]
-                pairs += [[x[z1], x[z2]]]
-                scores += [neg]
-
-    return np.array(pairs), np.array(scores)
-
-
 def get_label_conf(y_vec):
     """
     Returns the confidence and the label of the most probable class given a vector of class confidences
@@ -87,20 +52,6 @@ def get_label_conf(y_vec):
 
     confs, labels = np.amax(y_vec, axis=1), np.argmax(y_vec, axis=1)
     return confs, labels
-
-
-def get_labels_tf_tensor(preds):
-    """Returns the label of the most probable class given a tensor of class confidences.
-    See get_labels_np_array() for numpy version
-    
-    :param preds: (tf.tensor) tensor of class confidences, nb of intances as first dimension
-    :return: (tf.tensor) labels
-    """
-    preds_max = tf.reduce_max(preds, 1, keep_dims=True)
-    y = tf.to_float(tf.equal(preds, preds_max))
-    y /= tf.reduce_sum(y, 1, keep_dims=True)
-
-    return y
 
 
 def get_labels_np_array(preds):
@@ -331,16 +282,16 @@ def get_npy_files(path):
 
 def set_group_permissions_rec(path, group="drl-dwl"):
     for root, _, files in os.walk(path):
-        set_group_permissions(root, group)
+        _set_group_permissions(root, group)
 
         for f in files:
             try:
-                set_group_permissions(os.path.join(root, f), group)
+                _set_group_permissions(os.path.join(root, f), group)
             except:
                 pass
 
 
-def set_group_permissions(filename, group="drl-dwl"):
+def _set_group_permissions(filename, group="drl-dwl"):
     import shutil
     shutil.chown(filename, user=None, group=group)
 
