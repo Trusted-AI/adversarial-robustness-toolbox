@@ -69,7 +69,6 @@ def load_classifier(file_path, weights_name="weights.h5"):
     :param weights_name: name of the file containing the weights
     :return: Classifier
     """
-    from art.classifiers.bnn import BNN
     from art.classifiers.cnn import CNN
     from art.classifiers.mlp import MLP
     from art.classifiers.resnet import ResNet
