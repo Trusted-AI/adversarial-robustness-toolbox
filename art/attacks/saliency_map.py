@@ -100,9 +100,8 @@ class SaliencyMapMethod(Attack):
                         search_space.discard(feature_ind)
 
                 # Recompute model prediction
-                current_pred = np.argmax(self.classifier.predict(val), axis=1)
+                current_pred = np.argmax(self.classifier.predict(np.reshape(val, dims)), axis=1)
                 nb_iter += 1
-            x_adv[ind] = val
 
         x_adv = np.reshape(x_adv, x.shape)
         return x_adv
@@ -138,7 +137,6 @@ class SaliencyMapMethod(Attack):
         :return: The top 2 coefficients in `search_space` that maximize / minimize the saliency map
         :rtype: `tuple`
         """
-        # TODO check that `logits` should be False
         grads = self.classifier.class_gradient(x, logits=False)
         grads = np.reshape(grads, (-1, self._nb_features))
 
