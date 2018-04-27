@@ -52,12 +52,12 @@ class TestUniversalPerturbation(unittest.TestCase):
         x_test, y_test = x_test[:nb_test], y_test[:nb_test]
 
         # Train the classifier
-        tfc = TFClassifier(None, self._input_ph, self._logits, self._output_ph,
+        tfc = TFClassifier((0, 1), self._input_ph, self._logits, self._output_ph,
                            self._train, self._loss, None, self._sess)
         tfc.fit(x_train, y_train, batch_size=batch_size, nb_epochs=2)
 
         # Attack
-        attack_params = {"attacker": "newtonfool", "attacker_params": {"max_iter": 20}}
+        attack_params = {"attacker": "vat", "attacker_params": {"max_iter": 20}}
         up = UniversalPerturbation(tfc)
         x_train_adv = up.generate(x_train, **attack_params)
         self.assertTrue((up.fooling_rate >= 0.2) or not up.converged)
@@ -100,7 +100,7 @@ class TestUniversalPerturbation(unittest.TestCase):
         krc.fit(x_train, y_train, batch_size=batch_size, nb_epochs=2)
 
         # Attack
-        attack_params = {"attacker": "newtonfool", "attacker_params": {"max_iter": 20}}
+        attack_params = {"attacker": "vat", "attacker_params": {"max_iter": 20}}
         up = UniversalPerturbation(krc)
         x_train_adv = up.generate(x_train, **attack_params)
         self.assertTrue((up.fooling_rate >= 0.2) or not up.converged)

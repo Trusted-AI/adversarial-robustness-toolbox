@@ -185,7 +185,7 @@ def loss_sensitivity(x, classifier, sess):
     return np.mean(res)
 
 
-def clever_u(x, classifier, n_b, n_s, r, sess, c_init=1):
+def clever_u(x, classifier, n_b, n_s, r, norm, c_init=1, pool_factor=10):
     """
     Compute CLEVER score for an untargeted attack. Paper link: https://arxiv.org/abs/1801.10578
 
@@ -199,31 +199,30 @@ def clever_u(x, classifier, n_b, n_s, r, sess, c_init=1):
     :type n_s: `int`
     :param r: Maximum perturbation
     :type r: `float`
-    :param sess: The session to run graphs in
-    :type sess: `tf.Session`
+    :param norm: Current support: 1, 2, np.inf
+    :type norm: `int`
     :param c_init: initialization of Weibull distribution
     :type c_init: `float`
-    :return: A tuple of 3 CLEVER scores, corresponding to norms 1, 2 and np.inf
-    :rtype: `tuple`
+    :param pool_factor: The factor to create a pool of random samples with size pool_factor x n_s
+    :type pool_factor: `int`
+    :return: CLEVER score
+    :rtype: `float`
     """
     # Get a list of untargeted classes
-    y_pred = classifier.predict(np.array([x]))
+    y_pred = classifier.predict(np.array([x]), logits=False)
     pred_class = np.argmax(y_pred, axis=1)[0]
-    num_class = np.shape(y_pred)[1]
-    untarget_classes = [i for i in range(num_class) if i != pred_class]
+    untarget_classes = [i for i in range(classifier.nb_classes) if i != pred_class]
 
     # Compute CLEVER score for each untargeted class
-    score1_list, score2_list, score8_list = [], [], []
+    score_list = []
     for j in untarget_classes:
-        s1, s2, s8 = clever_t(x, classifier, j, n_b, n_s, r, sess, c_init)
-        score1_list.append(s1)
-        score2_list.append(s2)
-        score8_list.append(s8)
+        s = clever_t(x, classifier, j, n_b, n_s, r, norm, c_init, pool_factor)
+        score_list.append(s)
 
-    return np.min(score1_list), np.min(score2_list), np.min(score8_list)
+    return np.min(score_list)
 
 
-def clever_t(x, classifier, target_class, n_b, n_s, r, sess, c_init=1):
+def clever_t(x, classifier, target_class, n_b, n_s, r, norm, c_init=1, pool_factor=10):
     """
     Compute CLEVER score for a targeted attack. Paper link: https://arxiv.org/abs/1801.10578
 
@@ -239,118 +238,100 @@ def clever_t(x, classifier, target_class, n_b, n_s, r, sess, c_init=1):
     :type n_s: `int`
     :param r: Maximum perturbation
     :type r: `float`
-    :param sess: The session to run graphs in
-    :type sess: `tf.Session`
+    :param norm: Current support: 1, 2, np.inf
+    :type norm: `int`
     :param c_init: Initialization of Weibull distribution
     :type c_init: `float`
-    :return: A tuple of 3 CLEVER scores, corresponding to norms 1, 2 and np.inf
-    :rtype: `tuple`
+    :param pool_factor: The factor to create a pool of random samples with size pool_factor x n_s
+    :type pool_factor: `int`
+    :return: CLEVER score
+    :rtype: `float`
     """
     # Check if the targeted class is different from the predicted class
-    y_pred = classifier.predict(np.array([x]))
+    y_pred = classifier.predict(np.array([x]), logits=False)
     pred_class = np.argmax(y_pred, axis=1)[0]
+    print(pred_class, target_class)
     if target_class == pred_class:
-        raise ValueError("The targeted class is the predicted class!")
+        raise ValueError("The targeted class is the predicted class")
 
-    # Define placeholders for computing g gradients
-    shape = [None]
-    shape.extend(x.shape)
-    imgs = tf.placeholder(shape=shape, dtype=tf.float32)
-    pred_class_ph = tf.placeholder(dtype=tf.int32, shape=[])
-    target_class_ph = tf.placeholder(dtype=tf.int32, shape=[])
+    # Check if pool_factor is smaller than 1
+    if pool_factor < 1:
+        raise ValueError("The pool_factor must be larger than 1")
 
-    # Define tensors for g gradients
-    grad_norm_1, grad_norm_2, grad_norm_8, g_x = _build_g_gradient(imgs, classifier, pred_class_ph, target_class_ph)
+    # Change norm since q = p / (p-1)
+    if norm == 1:
+        norm = np.inf
+    elif norm == np.inf:
+        norm = 1
+    elif norm != 2:
+        raise ValueError("Norm {} not supported".format(norm))
 
     # Some auxiliary vars
-    set1, set2, set8 = [], [], []
+    grad_norm_set = []
     dim = reduce(lambda x_, y: x_ * y, x.shape, 1)
-    shape = [n_s]
+    shape = [pool_factor * n_s]
     shape.extend(x.shape)
 
-    # Compute predicted class
-    y_pred = classifier.predict(np.array([x]))
-    pred_class = np.argmax(y_pred, axis=1)[0]
+    # Generate a pool of samples
+    rand_pool = np.reshape(_random_sphere(m=pool_factor * n_s, n=dim, r=r, norm=norm), shape)
+    rand_pool += np.repeat(np.array([x]), pool_factor * n_s, 0)
+    np.clip(rand_pool, classifier.clip_values[0], classifier.clip_values[1], out=rand_pool)
 
     # Loop over n_b batches
     for i in range(n_b):
         # Random generation of data points
-        sample_xs0 = np.reshape(_random_sphere(m=n_s, n=dim, r=r), shape)
-        sample_xs = sample_xs0 + np.repeat(np.array([x]), n_s, 0)
-        np.clip(sample_xs, 0, 1, out=sample_xs)
-
-        # Preprocess data if it is supported in the classifier
-        if hasattr(classifier, 'feature_squeeze'):
-            sample_xs = classifier.feature_squeeze(sample_xs)
-        sample_xs = classifier._preprocess(sample_xs)
+        sample_xs = rand_pool[np.random.choice(pool_factor * n_s, n_s)]
 
         # Compute gradients
-        max_gn1, max_gn2, max_gn8 = sess.run(
-            [grad_norm_1, grad_norm_2, grad_norm_8],
-            feed_dict={imgs: sample_xs, pred_class_ph: pred_class,
-                       target_class_ph: target_class})
-        set1.append(max_gn1)
-        set2.append(max_gn2)
-        set8.append(max_gn8)
+        grads = classifier.class_gradient(sample_xs, logits=False)
+        grad = grads[:, pred_class] - grads[:, target_class]
+        grad = np.reshape(grad, (n_s, -1))
+        grad_norm = np.max(np.linalg.norm(grad, ord=norm, axis=1))
+        grad_norm_set.append(grad_norm)
 
     # Maximum likelihood estimation for max gradient norms
-    [_, loc1, _] = weibull_min.fit(-np.array(set1), c_init, optimizer=scipy_optimizer)
-    [_, loc2, _] = weibull_min.fit(-np.array(set2), c_init, optimizer=scipy_optimizer)
-    [_, loc8, _] = weibull_min.fit(-np.array(set8), c_init, optimizer=scipy_optimizer)
+    [_, loc, _] = weibull_min.fit(-np.array(grad_norm_set), c_init, optimizer=scipy_optimizer)
 
-    # Compute g_x0
-    x0 = np.array([x])
-    if hasattr(classifier, 'feature_squeeze'):
-        x0 = classifier.feature_squeeze(x0)
-    x0 = classifier._preprocess(x0)
-    g_x0 = sess.run(g_x, feed_dict={imgs: x0, pred_class_ph: pred_class,
-                                    target_class_ph: target_class})
+    # Compute function value
+    values = classifier.predict(np.array([x]), logits=False)
+    value = values[:, pred_class] - values[:, target_class]
 
     # Compute scores
-    # Note q = p / (p-1)
-    s8 = np.min([-g_x0[0] / loc1, r])
-    s2 = np.min([-g_x0[0] / loc2, r])
-    s1 = np.min([-g_x0[0] / loc8, r])
+    s = np.min([-value[0] / loc, r])
 
-    return s1, s2, s8
+    return s
 
 
-def _build_g_gradient(x, classifier, pred_class, target_class):
-    """
-    Build tensors of gradient `g`.
-
-    :param x: One input sample
-    :type x: `np.ndarray`
-    :param classifier: A trained model
-    :type classifier: :class:`Classifier`
-    :param pred_class: Predicted class
-    :type pred_class: `int`
-    :param target_class: Target class
-    :type target_class: `int`
-    :return: Max gradient norms
-    :rtype: `tuple`
-    """
-    # Get predict values
-    y_pred = classifier.model(x)
-    pred_val = y_pred[:, pred_class]
-    target_val = y_pred[:, target_class]
-    g_x = pred_val - target_val
-
-    # Get the gradient op
-    grad_op = tf.gradients(g_x, x)[0]
-
-    # Compute the gradient norm
-    grad_op_rs = tf.reshape(grad_op, (tf.shape(grad_op)[0], -1))
-    grad_norm_1 = tf.reduce_max(tf.norm(grad_op_rs, ord=1, axis=1))
-    grad_norm_2 = tf.reduce_max(tf.norm(grad_op_rs, ord=2, axis=1))
-    grad_norm_8 = tf.reduce_max(tf.norm(grad_op_rs, ord=np.inf, axis=1))
-
-    return grad_norm_1, grad_norm_2, grad_norm_8, g_x
-
-
-def _random_sphere(m, n, r):
+def _random_sphere(m, n, r, norm):
     """
     Generate randomly `m x n`-dimension points with radius `r` and centered around 0.
+
+    :param m: Number of random data points
+    :type m: `int`
+    :param n: Dimension
+    :type n: `int`
+    :param r: Radius
+    :type r: `float`
+    :param norm: Current support: 1, 2, np.inf
+    :type norm: `int`
+    :return: The generated random sphere
+    :rtype: `np.ndarray`
+    """
+    if norm == 1:
+        res = _l1_random(m, n, r)
+    elif norm == 2:
+        res = _l2_random(m, n, r)
+    elif norm == np.inf:
+        res = _linf_random(m, n, r)
+    else:
+        raise NotImplementedError("Norm {} not supported".format(norm))
+
+    return res
+
+
+def _l2_random(m, n, r):
+    """
+    Generate randomly `m x n`-dimension points with radius `r` in norm 2 and centered around 0.
 
     :param m: Number of random data points
     :type m: `int`
@@ -363,7 +344,50 @@ def _random_sphere(m, n, r):
     """
     a = np.random.randn(m, n)
     s2 = np.sum(a**2, axis=1)
-    base = gammainc(n/2, s2/2)**(1/n) * r / np.sqrt(s2)
+    base = gammainc(n/2.0, s2/2.0)**(1/n) * r / np.sqrt(s2)
     a = a * (np.tile(base, (n, 1))).T
 
     return a
+
+
+def _l1_random(m, n, r):
+    """
+    Generate randomly `m x n`-dimension points with radius `r` in norm 1 and centered around 0.
+
+    :param m: Number of random data points
+    :type m: `int`
+    :param n: Dimension
+    :type n: `int`
+    :param r: Radius
+    :type r: `float`
+    :return: The generated random sphere
+    :rtype: `np.ndarray`
+    """
+    A = np.zeros(shape=(m, n+1))
+    A[:, -1] = np.sqrt(np.random.uniform(0, r**2, m))
+
+    for i in range(m):
+        A[i, 1:-1] = np.sort(np.random.uniform(0, A[i, -1], n-1))
+
+    X = (A[:, 1:] - A[:, :-1]) * np.random.choice([-1, 1], (m, n))
+
+    return X
+
+
+def _linf_random(m, n, r):
+    """
+    Generate randomly `m x n`-dimension points with radius `r` in inf norm and centered around 0.
+
+    :param m: Number of random data points
+    :type m: `int`
+    :param n: Dimension
+    :type n: `int`
+    :param r: Radius
+    :type r: `float`
+    :return: The generated random sphere
+    :rtype: `np.ndarray`
+    """
+    return np.random.uniform(float(-r), float(r), (m, n))
+
+
+
