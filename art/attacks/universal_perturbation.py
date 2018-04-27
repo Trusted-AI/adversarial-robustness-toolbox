@@ -1,4 +1,4 @@
-from __future__ import absolute_import, division, print_function
+from __future__ import absolute_import, division, print_function, unicode_literals
 
 import numpy as np
 import random
@@ -13,7 +13,7 @@ class UniversalPerturbation(Attack):
     """
     attacks_dict = {'carlini': 'art.attacks.carlini.CarliniL2Method',
                     'deepfool': 'art.attacks.deepfool.DeepFool',
-                    'fgsm':'art.attacks.fast_gradient.FastGradientMethod',
+                    'fgsm': 'art.attacks.fast_gradient.FastGradientMethod',
                     'newtonfool': 'art.attacks.newtonfool.NewtonFool',
                     'jsma': 'art.attacks.saliency_map.SaliencyMapMethod',
                     'vat': 'art.attacks.virtual_adversarial.VirtualAdversarialMethod'

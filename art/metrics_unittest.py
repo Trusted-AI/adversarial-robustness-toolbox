@@ -6,12 +6,10 @@ import tensorflow as tf
 import keras
 import keras.backend as k
 from keras.models import Sequential
-from keras.layers import Lambda
 from keras.layers import Dense, Flatten, Conv2D, MaxPooling2D
 import numpy as np
 
-from art.metrics import empirical_robustness
-from art.utils import load_mnist, load_cifar10
+from art.utils import load_mnist
 from art.metrics import clever_t, clever_u
 from art.classifiers.tensorflow import TFClassifier
 from art.classifiers.keras import KerasClassifier
@@ -228,23 +226,25 @@ class TestClever(unittest.TestCase):
 
         # Get the classifier
         tfc = self._create_tfclassifier()
-        tfc.fit(x_train, y_train, batch_size=batch_size, nb_epochs=2)
+        tfc.fit(x_train, y_train, batch_size=batch_size, nb_epochs=1)
 
         # Test targeted clever
-        res0 = clever_t(x_test[-1], tfc, 2, 5, 10, 5, norm=1, pool_factor=3)
-        res1 = clever_t(x_test[-1], tfc, 2, 5, 10, 5, norm=2, pool_factor=3)
-        res2 = clever_t(x_test[-1], tfc, 2, 5, 10, 5, norm=np.inf, pool_factor=3)
-
-        self.assertGreater(res0, res1)
-        self.assertGreater(res1, res2)
+        res0 = clever_t(x_test[-1], tfc, 2, 10, 5, 5, norm=1, pool_factor=3)
+        res1 = clever_t(x_test[-1], tfc, 2, 10, 5, 5, norm=2, pool_factor=3)
+        res2 = clever_t(x_test[-1], tfc, 2, 10, 5, 5, norm=np.inf, pool_factor=3)
+        print("Target tf: ", res0, res1, res2)
+        self.assertFalse(res0 == res1)
+        self.assertFalse(res1 == res2)
+        self.assertFalse(res2 == res0)
 
         # Test untargeted clever
-        res0 = clever_u(x_test[-1], tfc, 5, 10, 5, norm=1, pool_factor=3)
-        res1 = clever_u(x_test[-1], tfc, 5, 10, 5, norm=2, pool_factor=3)
-        res2 = clever_u(x_test[-1], tfc, 5, 10, 5, norm=np.inf, pool_factor=3)
-
-        self.assertGreater(res0, res1)
-        self.assertGreater(res1, res2)
+        res0 = clever_u(x_test[-1], tfc, 10, 5, 5, norm=1, pool_factor=3)
+        res1 = clever_u(x_test[-1], tfc, 10, 5, 5, norm=2, pool_factor=3)
+        res2 = clever_u(x_test[-1], tfc, 10, 5, 5, norm=np.inf, pool_factor=3)
+        print("Untarget tf: ", res0, res1, res2)
+        self.assertFalse(res0 == res1)
+        self.assertFalse(res1 == res2)
+        self.assertFalse(res2 == res0)
 
     def test_clever_kr(self):
         """
@@ -259,23 +259,25 @@ class TestClever(unittest.TestCase):
 
         # Get the classifier
         krc = self._create_krclassifier()
-        krc.fit(x_train, y_train, batch_size=batch_size, nb_epochs=2)
+        krc.fit(x_train, y_train, batch_size=batch_size, nb_epochs=1)
 
         # Test targeted clever
-        res0 = clever_t(x_test[-1], krc, 2, 5, 10, 5, norm=1, pool_factor=3)
-        res1 = clever_t(x_test[-1], krc, 2, 5, 10, 5, norm=2, pool_factor=3)
-        res2 = clever_t(x_test[-1], krc, 2, 5, 10, 5, norm=np.inf, pool_factor=3)
-
-        self.assertGreater(res0, res1)
-        self.assertGreater(res1, res2)
+        res0 = clever_t(x_test[-1], krc, 2, 10, 5, 5, norm=1, pool_factor=3)
+        res1 = clever_t(x_test[-1], krc, 2, 10, 5, 5, norm=2, pool_factor=3)
+        res2 = clever_t(x_test[-1], krc, 2, 10, 5, 5, norm=np.inf, pool_factor=3)
+        print("Target kr: ", res0, res1, res2)
+        self.assertFalse(res0 == res1)
+        self.assertFalse(res1 == res2)
+        self.assertFalse(res2 == res0)
 
         # Test untargeted clever
-        res0 = clever_u(x_test[-1], krc, 5, 10, 5, norm=1, pool_factor=3)
-        res1 = clever_u(x_test[-1], krc, 5, 10, 5, norm=2, pool_factor=3)
-        res2 = clever_u(x_test[-1], krc, 5, 10, 5, norm=np.inf, pool_factor=3)
-
-        self.assertGreater(res0, res1)
-        self.assertGreater(res1, res2)
+        res0 = clever_u(x_test[-1], krc, 10, 5, 5, norm=1, pool_factor=3)
+        res1 = clever_u(x_test[-1], krc, 10, 5, 5, norm=2, pool_factor=3)
+        res2 = clever_u(x_test[-1], krc, 10, 5, 5, norm=np.inf, pool_factor=3)
+        print("UnTarget kr: ", res0, res1, res2)
+        self.assertFalse(res0 == res1)
+        self.assertFalse(res1 == res2)
+        self.assertFalse(res2 == res0)
 
 
 if __name__ == '__main__':

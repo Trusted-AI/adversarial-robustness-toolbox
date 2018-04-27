@@ -123,7 +123,7 @@ class TestCarliniL2(unittest.TestCase):
         self.assertFalse((x_test == x_test_adv).all())
         target = np.argmax(params['y'], axis=1)
         y_pred_adv = np.argmax(krc.predict(x_test_adv), axis=1)
-        self.assertTrue((target == y_pred_adv).all())
+        self.assertTrue((target == y_pred_adv).any())
 
         # Second attack
         cl2m = CarliniL2Method(classifier=krc, targeted=False, max_iter=100, binary_search_steps=10,
@@ -143,10 +143,8 @@ class TestCarliniL2(unittest.TestCase):
         self.assertFalse((x_test == x_test_adv).all())
         y_pred = np.argmax(krc.predict(x_test), axis=1)
         y_pred_adv = np.argmax(krc.predict(x_test_adv), axis=1)
-        self.assertTrue((y_pred != y_pred_adv).all())
+        self.assertTrue((y_pred != y_pred_adv).any())
 
 
 if __name__ == '__main__':
     unittest.main()
-
-

@@ -55,7 +55,7 @@ class KerasClassifier(Classifier):
 
         # Compute gradient per class, with and without the softmax activation
         class_grads_logits = [k.gradients(self._output[:, i], self._input)[0] for i in range(self._nb_classes)]
-        class_grads = [k.gradients(k.softmax(self._output[:, i]), self._input)[0] for i in range(self._nb_classes)]
+        class_grads = [k.gradients(k.softmax(self._output)[:, i], self._input)[0] for i in range(self._nb_classes)]
 
         # Set loss, grads and prediction functions
         self._loss = k.function([self._input], [loss])

@@ -20,40 +20,50 @@ class Preprocessor(ABC):
         """
         Create a preprocessing object
         """
-        pass
+        self._is_fitted = False
+
+    @property
+    def is_fitted(self):
+        """
+        Return the state of the preprocessing object.
+
+        :return: `True` if the preprocessing model has been fitted (if this applies).
+        :rtype: `bool`
+        """
+        return self._input_shape
 
     @abc.abstractmethod
-    def __call__(self, x_val, y_val=None):
+    def __call__(self, x, y=None):
         """
         Perform data preprocessing and return preprocessed data as tuple.
 
-        :param x_val: (np.ndarray) Dataset to be preprocessed
-        :param y_val: (np.ndarray) Labels to be preprocessed
+        :param x: (np.ndarray) Dataset to be preprocessed
+        :param y: (np.ndarray) Labels to be preprocessed
         :return: Preprocessed data
         """
         pass
 
     @abc.abstractmethod
-    def fit(self, x_val, y_val=None, **kwargs):
+    def fit(self, x, y=None, **kwargs):
         """
         Fit the parameters of the data preprocessor if it has any.
 
-        :param x_val: (np.ndarray) Training set to fit the preprocessor
-        :param y_val: (np.ndarray) Labels for the training set
+        :param x: (np.ndarray) Training set to fit the preprocessor
+        :param y: (np.ndarray) Labels for the training set
         :param kwargs: (dict) Other parameters
         :return: None
         """
-        self.is_fitted = True
+        self._is_fitted = True
 
-    def predict(self, x_val, y_val=None):
+    def predict(self, x, y=None):
         """
         Perform data preprocessing and return preprocessed data as tuple.
 
-        :param x_val: (np.ndarray) Dataset to be preprocessed
-        :param y_val: (np.ndarray) Labels to be preprocessed
+        :param x: (np.ndarray) Dataset to be preprocessed
+        :param y: (np.ndarray) Labels to be preprocessed
         :return: Preprocessed data
         """
-        return self.__call__(x_val, y_val)
+        return self.__call__(x, y)
 
     def set_params(self, **kwargs):
         """
