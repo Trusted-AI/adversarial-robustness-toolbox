@@ -21,130 +21,122 @@ supported_methods = {
     }
 
 
-def get_crafter(method, classifier, session, params=None):
+def get_crafter(classifier, attack, params=None):
     try:
-        crafter = supported_methods[method]["class"](classifier, sess=session)
+        crafter = supported_methods[attack]["class"](classifier)
     except:
-        raise NotImplementedError("{} crafting method not supported.".format(method))
+        raise NotImplementedError("{} crafting method not supported.".format(attack))
 
     if params:
         crafter.set_params(**params)
-    else:
-        crafter.set_params(**supported_methods[method]["params"])
+    # else:
+    #     # Use default params
+    #     crafter.set_params(**supported_methods[method]["params"])
 
     return crafter
 
 
-def empirical_robustness(x, classifier, sess, method_name, method_params=None):
+def empirical_robustness(classifier, x, attack_name, attack_params=None):
     """Compute the Empirical Robustness of a classifier object over the sample `x` for a given adversarial crafting
     method `attack`. This is equivalent to computing the minimal perturbation that the attacker must introduce for a
     successful attack. Paper link: https://arxiv.org/abs/1511.04599
-    
-    :param x: Data sample of shape that can be fed into `classifier`
-    :type x: `np.ndarray`
+
     :param classifier: A trained model
     :type classifier: :class:`Classifier`
-    :param sess: The session for the computation
-    :type sess: `tf.Session`
-    :param method_name: adversarial attack name
-    :type method_name: `str`
-    :param method_params: Parameters specific to the adversarial attack
-    :type method_params: `dict`
+    :param x: Data sample of shape that can be fed into `classifier`
+    :type x: `np.ndarray`
+    :param attack_name: adversarial attack name
+    :type attack_name: `str`
+    :param attack_params: Parameters specific to the adversarial attack
+    :type attack_params: `dict`
     :return: The average empirical robustness computed on `x`
     :rtype: `float`
     """
-    crafter = get_crafter(method_name, classifier, sess, method_params)
-    adv_x = crafter.generate(x, minimal=True, **method_params)
+    crafter = get_crafter(classifier, attack_name, attack_params)
+    adv_x = crafter.generate(x, minimal=True, **attack_params)
 
     # Predict the labels for adversarial examples
-    y = classifier.predict(x, verbose=0)
-    y_pred = classifier.predict(adv_x, verbose=0)
+    y = classifier.predict(x)
+    y_pred = classifier.predict(adv_x)
 
     idxs = (np.argmax(y_pred, axis=1) != np.argmax(y, axis=1))
     if np.sum(idxs) == 0.0:
         return 0
 
-    perts_norm = la.norm((adv_x - x).reshape(x.shape[0], -1), ord=crafter.ord, axis=1)
+    norm_type = 2
+    if hasattr(crafter, 'norm'):
+        norm_type = crafter.norm
+    perts_norm = la.norm((adv_x - x).reshape(x.shape[0], -1), ord=norm_type, axis=1)
     perts_norm = perts_norm[idxs]
 
-    return np.mean(perts_norm / la.norm(x[idxs].reshape(np.sum(idxs), -1), ord=crafter.ord, axis=1))
+    return np.mean(perts_norm / la.norm(x[idxs].reshape(np.sum(idxs), -1), ord=norm_type, axis=1))
 
 
-def nearest_neighbour_dist(x, classifier, x_train, sess, method_name, method_params=None):
+# def nearest_neighbour_dist(classifier, x, x_ref, attack_name, attack_params=None):
+#     """
+#     Compute the (average) nearest neighbour distance between the sets `x` and `x_train`: for each point in `x`,
+#     measure the Euclidean distance to its closest point in `x_train`, then average over all points.
+#
+#     :param classifier: A trained model
+#     :type classifier: :class:`Classifier`
+#     :param x: Data sample of shape that can be fed into `classifier`
+#     :type x: `np.ndarray`
+#     :param x_ref: Reference data sample to be considered as neighbors
+#     :type x_ref: `np.ndarray`
+#     :param attack_name: adversarial attack name
+#     :type attack_name: `str`
+#     :param attack_params: Parameters specific to the adversarial attack
+#     :type attack_params: `dict`
+#     :return: The average nearest neighbors distance
+#     :rtype: `float`
+#     """
+#     # Craft the adversarial examples
+#     crafter = get_crafter(classifier, attack_name, attack_params)
+#     adv_x = crafter.generate(x, minimal=True)
+#
+#     # Predict the labels for adversarial examples
+#     y = classifier.predict(x)
+#     y_pred = classifier.predict(adv_x)
+#
+#     adv_x_ = adv_x.reshape(adv_x.shape[0], np.prod(adv_x.shape[1:]))
+#     x_ = x_ref.reshape(x_ref.shape[0], np.prod(x_ref.shape[1:]))
+#     dists = la.norm(adv_x_ - x_, axis=1)
+#
+#     # TODO check if following computation is correct ?
+#     dists = np.min(dists, axis=1) / la.norm(x.reshape(x.shape[0], -1), ord=2, axis=1)
+#     idxs = (np.argmax(y_pred, axis=1) != np.argmax(y, axis=1))
+#     avg_nn_dist = np.mean(dists[idxs])
+#
+#     return avg_nn_dist
+
+
+def loss_sensitivity(classifier, x):
     """
-    Compute the (average) nearest neighbour distance between the sets `x` and `x_train`: for each point in `x`,
-    measure the Euclidean distance to its closest point in `x_train`, then average over all points.
-
-    :param x: Data sample of shape that can be fed into `classifier`
-    :type x: `np.ndarray`
-    :param classifier: A trained model
-    :type classifier: :class:`Classifier`
-    :param x_train: Reference data sample to be considered as neighbors
-    :type x_train: `np.ndarray`
-    :param sess: The session for the computation
-    :type sess: `tf.Session`
-    :param method_name: adversarial attack name
-    :type method_name: `str`
-    :param method_params: Parameters specific to the adversarial attack
-    :type method_params: `dict`
-    :return: The average nearest neighbors distance
-    :rtype: `float`
-    """
-    # Craft the adversarial examples
-    crafter = get_crafter(method_name, classifier, sess, method_params)
-    adv_x = crafter.generate(x, minimal=True, **method_params)
-
-    # Predict the labels for adversarial examples
-    y = classifier.predict(x, verbose=0)
-    y_pred = classifier.predict(adv_x, verbose=0)
-
-    adv_x_ = adv_x.reshape(adv_x.shape[0], np.prod(adv_x.shape[1:]))
-    x_ = x_train.reshape(x_train.shape[0], np.prod(x_train.shape[1:]))
-    dists = la.norm(adv_x_ - x_)
-
-    dists = np.min(sess.run(dists), 1) / la.norm(x.reshape(x.shape[0], -1), ord=2, axis=1)
-    idxs = (np.argmax(y_pred, axis=1) != np.argmax(y, axis=1))
-    avg_nn_dist = np.mean(dists[idxs])
-
-    return avg_nn_dist
-
-
-def loss_sensitivity(x, classifier, sess):
-    """
-    Local loss sensitivity estimated through the gradients of the loss at points in `x`, as defined in
+    Local loss sensitivity estimated through the gradients of the prediction at points in `x`, as defined in
     https://arxiv.org/pdf/1706.05394.pdf.
 
-    :param x: Data sample of shape that can be fed into `classifier`
-    :type x: `np.ndarray`
     :param classifier: A trained model
     :type classifier: :class:`Classifier`
-    :param sess: The session for the computation
-    :type sess: `tf.Session`
+    :param x: Data sample of shape that can be fed into `classifier`
+    :type x: `np.ndarray`
     :return: The average loss sensitivity of the model
     :rtype: `float`
     """
-    from art.attacks.attack import class_derivative
+    y_pred = np.argmax(classifier.predict(x), axis=1)
+    grads = classifier.class_gradient(x, logits=True)[list(range(x.shape[0])), y_pred]
+    norm = la.norm(grads.reshape(grads.shape[0], -1), ord=2, axis=1)
 
-    x_op = tf.placeholder(dtype=tf.float32, shape=list(x.shape))
-    y_pred = classifier.predict(x)
-    indices = np.argmax(y_pred, axis=1)
-    grads = class_derivative(classifier._get_predictions(x_op, log=True), x_op,
-                             classifier.model.get_output_shape_at(0)[1])
-    res = sess.run(grads, feed_dict={x_op: x})
-    res = np.asarray([r[0] for r in res])[indices, list(range(x.shape[0]))]
-    res = la.norm(res.reshape(res.shape[0], -1), ord=2, axis=1)
-
-    return np.mean(res)
+    return np.mean(norm)
 
 
-def clever_u(x, classifier, n_b, n_s, r, sess, c_init=1):
+def clever_u(classifier, x, n_b, n_s, r, sess, c_init=1):
     """
     Compute CLEVER score for an untargeted attack. Paper link: https://arxiv.org/abs/1801.10578
 
-    :param x: One input sample
-    :type x: `np.ndarray`
     :param classifier: A trained model.
     :type classifier: :class:`Classifier`
+    :param x: One input sample
+    :type x: `np.ndarray`
     :param n_b: Batch size
     :type n_b: `int`
     :param n_s: Number of examples per batch
@@ -175,14 +167,14 @@ def clever_u(x, classifier, n_b, n_s, r, sess, c_init=1):
     return np.min(score1_list), np.min(score2_list), np.min(score8_list)
 
 
-def clever_t(x, classifier, target_class, n_b, n_s, r, sess, c_init=1):
+def clever_t(classifier, x, target_class, n_b, n_s, r, sess, c_init=1):
     """
     Compute CLEVER score for a targeted attack. Paper link: https://arxiv.org/abs/1801.10578
 
-    :param x: One input sample
-    :type x: `np.ndarray`
     :param classifier: A trained model
     :type classifier: :class:`Classifier`
+    :param x: One input sample
+    :type x: `np.ndarray`
     :param target_class: Targeted class
     :type target_class: `int`
     :param n_b: Batch size
