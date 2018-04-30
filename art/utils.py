@@ -5,7 +5,6 @@ from __future__ import absolute_import, division, print_function, unicode_litera
 
 import argparse
 import json
-import random
 import os
 
 from keras import backend as k
@@ -14,7 +13,6 @@ from keras.preprocessing import image
 from keras.utils import np_utils, data_utils
 from keras.utils.data_utils import get_file
 import numpy as np
-import tensorflow as tf
 
 
 def random_targets(labels, nb_classes):
