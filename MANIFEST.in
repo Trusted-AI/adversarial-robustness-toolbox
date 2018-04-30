@@ -1,0 +1,6 @@
+include *.md
+include CODE_OF_CONDUCT
+include LICENSE
+graft docs
+graft examples
+graft config
