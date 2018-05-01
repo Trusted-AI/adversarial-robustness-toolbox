@@ -94,11 +94,14 @@ class TestMetrics(unittest.TestCase):
 #########################################
 # This part is the unit test for Clever.#
 #########################################
+
+
 class TestClever(unittest.TestCase):
     """
     Unittest for Clever metrics.
     """
-    def _create_tfclassifier(self):
+    @staticmethod
+    def _create_tfclassifier():
         """
         To create a simple TFClassifier for testing.
         :return:
@@ -129,7 +132,8 @@ class TestClever(unittest.TestCase):
 
         return tfc
 
-    def _create_krclassifier(self):
+    @staticmethod
+    def _create_krclassifier():
         """
         To create a simple KerasClassifier for testing.
         :return:
@@ -222,6 +226,3 @@ class TestClever(unittest.TestCase):
 
 if __name__ == '__main__':
     unittest.main()
-
-
-
