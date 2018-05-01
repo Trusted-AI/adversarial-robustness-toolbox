@@ -40,10 +40,13 @@ class DeepFool(Attack):
         clip_min, clip_max = self.classifier.clip_values
         x_adv = x.copy()
 
+        # Pick a small scalar to avoid division by 0
+        tol = 10e-8
+
         for j, val in enumerate(x_adv):
             xj = val[None, ...]
 
-            # TODO move prediction outside of for loop; add batching if `x` is too large
+            # TODO move prediction outside of for loop; add batching if `x` is too large?
             f = self.classifier.predict(xj)[0]
             grd = self.classifier.class_gradient(xj, logits=False)[0]
             fk_hat = np.argmax(f)
@@ -57,8 +60,8 @@ class DeepFool(Attack):
                 # Masking true label
                 mask = [0] * self.classifier.nb_classes
                 mask[fk_hat] = 1
-                value = np.ma.array(np.abs(f_diff) / np.linalg.norm(grad_diff.reshape(self.classifier.nb_classes, -1),
-                                                                    axis=1), mask=mask)
+                norm = np.linalg.norm(grad_diff.reshape(self.classifier.nb_classes, -1), axis=1) + tol
+                value = np.ma.array(np.abs(f_diff) / norm, mask=mask)
 
                 l = value.argmin(fill_value=np.inf)
                 r = (abs(f_diff[l]) / pow(np.linalg.norm(grad_diff[l]), 2)) * grad_diff[l]

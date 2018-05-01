@@ -57,7 +57,8 @@ class TestUniversalPerturbation(unittest.TestCase):
         tfc.fit(x_train, y_train, batch_size=batch_size, nb_epochs=2)
 
         # Attack
-        attack_params = {"attacker": "vat", "attacker_params": {"max_iter": 20}}
+        # TODO Launch with all possible attacks
+        attack_params = {"attacker": "newtonfool", "attacker_params": {"max_iter": 20}}
         up = UniversalPerturbation(tfc)
         x_train_adv = up.generate(x_train, **attack_params)
         self.assertTrue((up.fooling_rate >= 0.2) or not up.converged)
@@ -100,7 +101,8 @@ class TestUniversalPerturbation(unittest.TestCase):
         krc.fit(x_train, y_train, batch_size=batch_size, nb_epochs=2)
 
         # Attack
-        attack_params = {"attacker": "vat", "attacker_params": {"max_iter": 20}}
+        # TODO Launch with all possible attacks
+        attack_params = {"attacker": "newtonfool", "attacker_params": {"max_iter": 20}}
         up = UniversalPerturbation(krc)
         x_train_adv = up.generate(x_train, **attack_params)
         self.assertTrue((up.fooling_rate >= 0.2) or not up.converged)
