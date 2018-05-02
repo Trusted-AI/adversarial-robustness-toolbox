@@ -7,11 +7,9 @@ Base Class
 .. autoclass:: Classifier
    :members:
 
-Custom Architectures
---------------------
-.. autoclass:: CNN
+Concrete Model Wrappers
+-----------------------
+.. autoclass:: KerasClassifier
    :members:
-.. autoclass:: MLP
-   :members:
-.. autoclass:: ResNet
+.. autoclass:: TFClassifier
    :members:

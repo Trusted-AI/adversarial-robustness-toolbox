@@ -93,17 +93,17 @@ def data_augmentation(x, y, type="gaussian", nb_instances=10, eps=0.3, **kwargs)
 
     elif type == "fgm":
         adv_crafter = FastGradientMethod(model=kwargs["model"], sess=kwargs["session"], ord=2)
-        x_aug = adv_crafter.generate(x_val=x, eps=eps)
+        x_aug = adv_crafter.generate(x=x, eps=eps)
         y_aug = y.copy()
 
     elif type == "vat":
         adv_crafter = VirtualAdversarialMethod(model=kwargs["model"], sess=kwargs["session"])
-        x_aug = adv_crafter.generate(x_val=x, eps=eps)
+        x_aug = adv_crafter.generate(x=x, eps=eps)
         y_aug = y.copy()
 
     elif type == "jsma":
         adv_crafter = SaliencyMapMethod(model=kwargs["model"], sess=kwargs["session"], gamma=1., theta=0.1)
-        x_aug = adv_crafter.generate(x_val=x, eps=eps, nb_classes=2)
+        x_aug = adv_crafter.generate(x=x, eps=eps, nb_classes=2)
         y_aug = y.copy()
 
     x_aug = np.clip(x_aug, (x[:, 0].min(), x[:, 1].min()), (x[:, 0].max(), x[:, 1].max()))
