@@ -62,7 +62,7 @@ class FastGradientMethod(Attack):
 
             # Update
             adv_x[active_indices] = current_x
-            active_indices = np.where(np.argmax(y[active_indices], axis=1) == np.argmax(adv_preds, axis=1))
+            active_indices = np.where(np.argmax(y[active_indices], axis=1) == np.argmax(adv_preds, axis=1))[0]
             current_eps += eps_step
 
         return adv_x
@@ -127,23 +127,34 @@ class FastGradientMethod(Attack):
         return True
 
     def _compute(self, x, y, eps):
-        # Get gradient wrt loss; invert it if attack is targeted
-        grad = self.classifier.loss_gradient(x, y) * (1 - 2 * int(self.targeted))
+        x_adv = x.copy()
 
-        # Apply norm bound
-        if self.norm == np.inf:
-            grad = np.sign(grad)
-        elif self.norm == 1:
-            ind = tuple(range(1, len(x.shape)))
-            grad = grad / np.sum(np.abs(grad), axis=ind, keepdims=True)
-        elif self.norm == 2:
-            ind = tuple(range(1, len(x.shape)))
-            grad = grad / np.sqrt(np.sum(np.square(grad), axis=ind, keepdims=True))
-        assert x.shape == grad.shape
+        # Pick a small scalar to avoid division by 0
+        tol = 10e-8
 
-        # Apply perturbation and clip
-        clip_min, clip_max = self.classifier.clip_values
-        x_adv = x + eps * grad
-        x_adv = np.clip(x_adv, clip_min, clip_max)
+        # Compute perturbation with implicit batching
+        batch_size = 128
+        for batch_id in range(x_adv.shape[0] // batch_size + 1):
+            batch = x_adv[batch_id * batch_size: (batch_id + 1) * batch_size]
+            batch_labels = y[batch_id * batch_size: (batch_id + 1) * batch_size]
+
+            # Get gradient wrt loss; invert it if attack is targeted
+            grad = self.classifier.loss_gradient(batch, batch_labels) * (1 - 2 * int(self.targeted))
+
+            # Apply norm bound
+            if self.norm == np.inf:
+                grad = np.sign(grad)
+            elif self.norm == 1:
+                ind = tuple(range(1, len(x.shape)))
+                grad = grad / (np.sum(np.abs(grad), axis=ind, keepdims=True) + tol)
+            elif self.norm == 2:
+                ind = tuple(range(1, len(x.shape)))
+                grad = grad / (np.sqrt(np.sum(np.square(grad), axis=ind, keepdims=True)) + tol)
+            assert batch.shape == grad.shape
+
+            # Apply perturbation and clip
+            clip_min, clip_max = self.classifier.clip_values
+            batch = batch + eps * grad
+            x_adv[batch_id * batch_size: (batch_id + 1) * batch_size] = np.clip(batch, clip_min, clip_max)
 
         return x_adv
