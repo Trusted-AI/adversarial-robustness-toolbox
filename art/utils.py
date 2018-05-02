@@ -7,11 +7,11 @@ import argparse
 import json
 import os
 
-from keras import backend as k
-from keras.datasets.cifar import load_batch
-from keras.preprocessing import image
-from keras.utils import data_utils
-from keras.utils.data_utils import get_file
+# from keras import backend as k
+# from keras.datasets.cifar import load_batch
+# from keras.preprocessing import image
+# from keras.utils import data_utils
+# from keras.utils.data_utils import get_file
 import numpy as np
 
 
@@ -112,10 +112,13 @@ def load_cifar10():
     :rtype: (tuple of numpy.ndarray), (tuple of numpy.ndarray), float, float
     """
     from config import CIFAR10_PATH
+    from keras.datasets.cifar import load_batch
+    from keras.utils.data_utils import get_file
+
     min_, max_ = 0., 1.
 
-    path = data_utils.get_file('cifar-10-batches-py', untar=True, cache_subdir=CIFAR10_PATH,
-                               origin='http://www.cs.toronto.edu/~kriz/cifar-10-python.tar.gz')
+    path = get_file('cifar-10-batches-py', untar=True, cache_subdir=CIFAR10_PATH,
+                    origin='http://www.cs.toronto.edu/~kriz/cifar-10-python.tar.gz')
 
     num_train_samples = 50000
 
@@ -150,10 +153,11 @@ def load_mnist():
     :rtype: tuple of numpy.ndarray), (tuple of numpy.ndarray), float, float
     """
     from config import MNIST_PATH
+    from keras.utils.data_utils import get_file
+
     min_, max_ = 0., 1.
 
-    path = data_utils.get_file('mnist.npz', cache_subdir=MNIST_PATH,
-                               origin='https://s3.amazonaws.com/img-datasets/mnist.npz')
+    path = get_file('mnist.npz', cache_subdir=MNIST_PATH, origin='https://s3.amazonaws.com/img-datasets/mnist.npz')
 
     f = np.load(path)
     x_train = f['x_train']
@@ -178,6 +182,9 @@ def load_imagenet():
     :rtype: tuple of numpy.ndarray), (tuple of numpy.ndarray), float, float
     """
     from config import IMAGENET_PATH
+    from keras.preprocessing import image
+    from keras.utils.data_utils import get_file
+
     min_, max_ = 0., 255.
 
     class_index_path = 'https://s3.amazonaws.com/deep-learning-models/image-models/imagenet_class_index.json'
@@ -218,11 +225,13 @@ def load_stl():
     :rtype: tuple of numpy.ndarray), (tuple of numpy.ndarray), float, float
     """
     from config import STL10_PATH
+    from keras.utils.data_utils import get_file
+
     min_, max_ = 0., 1.
 
     # Download and extract data if needed
-    path = data_utils.get_file('stl10_binary', cache_subdir=STL10_PATH, untar=True,
-                               origin='https://ai.stanford.edu/~acoates/stl10/stl10_binary.tar.gz')
+    path = get_file('stl10_binary', cache_subdir=STL10_PATH, untar=True,
+                    origin='https://ai.stanford.edu/~acoates/stl10/stl10_binary.tar.gz')
 
     with open(os.path.join(path, 'train_X.bin'), 'rb') as f:
         x_train = np.fromfile(f, dtype=np.uint8)

@@ -8,8 +8,8 @@ import numpy as np
 import unittest
 import shutil
 
-from art.classifiers.keras import KerasClassifier
-from art.utils import load_cifar10, load_mnist, make_directory
+from art.classifiers import KerasClassifier
+from art.utils import load_mnist, make_directory
 
 BATCH_SIZE = 10
 NB_TRAIN = 500
@@ -20,8 +20,6 @@ class TestKerasClassifier(unittest.TestCase):
 
     def setUp(self):
         k.set_learning_phase(1)
-
-        make_directory("./tests/")
 
         # Get MNIST
         (x_train, y_train), (x_test, y_test), _, _ = load_mnist()
@@ -46,9 +44,6 @@ class TestKerasClassifier(unittest.TestCase):
         model.fit(x_train, y_train, batch_size=BATCH_SIZE, epochs=1)
         self.model_mnist = model
 
-    def tearDown(self):
-        shutil.rmtree("./tests/")
-
     # def test_logits(self):
     #     classifier = KerasClassifier((0, 1), self.model_mnist, use_logits=True)
 
@@ -59,13 +54,11 @@ class TestKerasClassifier(unittest.TestCase):
         labels = np.argmax(self.mnist[1][1], axis=1)
         classifier = KerasClassifier((0, 1), self.model_mnist, use_logits=False)
         acc = np.sum(np.argmax(classifier.predict(self.mnist[1][0]), axis=1) == labels) / NB_TEST
-        # print(np.argmax(classifier.predict(self.mnist[1][0]), axis=1))
-        print("\naccuracy: %.2f%%" % (acc * 100))
+        print("\nAccuracy: %.2f%%" % (acc * 100))
 
         classifier.fit(self.mnist[0][0], self.mnist[0][1], batch_size=BATCH_SIZE, nb_epochs=1)
         acc2 = np.sum(np.argmax(classifier.predict(self.mnist[1][0]), axis=1) == labels) / NB_TEST
-        # print(np.argmax(classifier.predict(self.mnist[1][0]), axis=1))
-        print("\naccuracy: %.2f%%" % (acc2 * 100))
+        print("\nAccuracy: %.2f%%" % (acc2 * 100))
 
         self.assertTrue(acc2 >= acc)
 

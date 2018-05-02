@@ -5,7 +5,7 @@ import unittest
 import tensorflow as tf
 import numpy as np
 
-from art.classifiers.tensorflow import TFClassifier
+from art.classifiers import TFClassifier
 from art.utils import load_mnist
 
 

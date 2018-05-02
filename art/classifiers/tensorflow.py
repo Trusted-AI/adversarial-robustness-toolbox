@@ -1,10 +1,9 @@
 from __future__ import absolute_import, division, print_function, unicode_literals
 
-import tensorflow as tf
 import numpy as np
 import random
 
-from art.classifiers.classifier import Classifier
+from art.classifiers import Classifier
 
 
 class TFClassifier(Classifier):
@@ -34,6 +33,8 @@ class TFClassifier(Classifier):
         :param sess: Computation session.
         :type sess: `tf.Session`
         """
+        import tensorflow as tf
+
         super(TFClassifier, self).__init__(clip_values)
         self._nb_classes = int(logits.get_shape()[-1])
         self._input_shape = tuple(input_ph.get_shape()[1:])
@@ -70,6 +71,8 @@ class TFClassifier(Classifier):
         :return: Array of predictions of shape `(nb_inputs, self.nb_classes)`.
         :rtype: `np.ndarray`
         """
+        import tensorflow as tf
+
         # Create feed_dict
         fd = {self._input_ph: inputs}
         if self._learning is not None:

@@ -1,9 +1,8 @@
 from __future__ import absolute_import, division, print_function, unicode_literals
 
-import keras.backend as k
 import numpy as np
 
-from art.classifiers.classifier import Classifier
+from art.classifiers import Classifier
 
 
 class KerasClassifier(Classifier):
@@ -22,6 +21,8 @@ class KerasClassifier(Classifier):
         :param use_logits: True if the output of the model are the logits
         :type use_logits: `bool`
         """
+        import keras.backend as k
+
         # TODO Generalize loss function?
         super(KerasClassifier, self).__init__(clip_values)
 
@@ -105,6 +106,8 @@ class KerasClassifier(Classifier):
         :return: Array of predictions of shape `(nb_inputs, self.nb_classes)`.
         :rtype: `np.ndarray`
         """
+        import keras.backend as k
+
         k.set_learning_phase(0)
         preds = self._preds([inputs])[0]
         if not logits:
@@ -127,6 +130,8 @@ class KerasClassifier(Classifier):
         :type nb_epochs: `int`
         :return: `None`
         """
+        import keras.backend as k
+
         k.set_learning_phase(1)
         gen = generator(inputs, outputs, batch_size)
         self._model.fit_generator(gen, steps_per_epoch=inputs.shape[0] / batch_size, epochs=nb_epochs)
