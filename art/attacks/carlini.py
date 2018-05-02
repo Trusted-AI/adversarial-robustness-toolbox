@@ -3,10 +3,10 @@ from __future__ import absolute_import, division, print_function, unicode_litera
 import sys
 
 import numpy as np
-from keras.utils.np_utils import to_categorical
 import tensorflow as tf
 
 from art.attacks.attack import Attack
+from art.utils import to_categorical
 
 
 class CarliniL2Method(Attack):
@@ -153,7 +153,7 @@ class CarliniL2Method(Attack):
         """
         # Parse and save attack-specific parameters
         params_cpy = dict(kwargs)
-        y = params_cpy.pop('y', None)
+        y = params_cpy.pop(str('y'), None)
         
         # Assert that, if attack is targeted, y_val is provided:
         assert not (self.targeted and y is None)
@@ -161,7 +161,7 @@ class CarliniL2Method(Attack):
         # No labels provided, use model prediction as correct class
         if y is None:
             y = np.argmax(self.classifier.predict(inputs=x, logits=False), axis=1)
-            y = to_categorical(y, num_classes=self.classifier.nb_classes)
+            y = to_categorical(y, self.classifier.nb_classes)
 
         # Images to be attacked:
         x_adv = x.copy()
@@ -277,6 +277,3 @@ class CarliniL2Method(Attack):
             raise ValueError("The number of iterations must be a positive integer.")
 
         return True
-
-
-

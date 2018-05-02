@@ -10,9 +10,27 @@ import os
 from keras import backend as k
 from keras.datasets.cifar import load_batch
 from keras.preprocessing import image
-from keras.utils import np_utils, data_utils
+from keras.utils import data_utils
 from keras.utils.data_utils import get_file
 import numpy as np
+
+
+def to_categorical(labels, nb_classes=None):
+    """Convert an array of labels to binary class matrix.
+
+    :param labels: An array of integer labels of shape `(nb_samples,)`
+    :type labels: `np.ndarray`
+    :param nb_classes: The number of classes (possible labels)
+    :type nb_classes: `int`
+    :return: A binary matrix representation of `y` in the shape `(nb_samples, nb_classes)`
+    :rtype: `np.ndarray`
+    """
+    labels = np.array(labels, dtype=np.int32)
+    if not nb_classes:
+        nb_classes = np.max(labels) + 1
+    categorical = np.zeros((labels.shape[0], nb_classes), dtype=np.float32)
+    categorical[np.arange(labels.shape[0]), labels] = 1
+    return categorical
 
 
 def random_targets(labels, nb_classes):
@@ -37,7 +55,7 @@ def random_targets(labels, nb_classes):
         in_cl = labels == class_ind
         result[in_cl] = np.random.choice(other_classes)
 
-    return np_utils.to_categorical(result, nb_classes)
+    return to_categorical(result, nb_classes)
 
 
 def get_label_conf(y_vec):
@@ -80,7 +98,7 @@ def preprocess(x, y, nb_classes=10, max_value=255):
     :rtype: `tuple`
     """
     x = x.astype('float32') / max_value
-    y = np_utils.to_categorical(y, nb_classes)
+    y = to_categorical(y, nb_classes)
 
     return x, y
 
@@ -181,7 +199,7 @@ def load_imagenet():
                 dataset.append(image.img_to_array(img))
 
     dataset = np.asarray(dataset)
-    y = np_utils.to_categorical(np.asarray([label] * len(dataset)), 1000)
+    y = to_categorical(np.asarray([label] * len(dataset)), 1000)
 
     try:
         x_train, x_test = dataset[:700], dataset[700:]
