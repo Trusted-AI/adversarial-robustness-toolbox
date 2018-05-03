@@ -13,10 +13,9 @@ class TestFeatureSqueezing(unittest.TestCase):
         x = np.ones((m, n))
 
         for depth in range(1, 50):
-            with self.subTest("bit depth = {}".format(depth)):
-                preproc = FeatureSqueezing()
-                squeezed_x = preproc(x, bit_depth=depth)
-                self.assertTrue((squeezed_x == 1).all())
+            preproc = FeatureSqueezing()
+            squeezed_x = preproc(x, bit_depth=depth)
+            self.assertTrue((squeezed_x == 1).all())
 
     def test_random(self):
         m, n = 1000, 20
