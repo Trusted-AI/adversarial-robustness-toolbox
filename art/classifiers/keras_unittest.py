@@ -6,10 +6,9 @@ from keras.models import Sequential
 from keras.layers import Dense, Activation, Flatten, Conv2D, MaxPooling2D, Dropout
 import numpy as np
 import unittest
-import shutil
 
 from art.classifiers import KerasClassifier
-from art.utils import load_mnist, make_directory
+from art.utils import load_mnist
 
 BATCH_SIZE = 10
 NB_TRAIN = 500

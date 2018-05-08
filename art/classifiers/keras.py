@@ -9,7 +9,7 @@ class KerasClassifier(Classifier):
     """
     The supported backends for Keras are TensorFlow and Theano.
     """
-    def __init__(self, clip_values, model, use_logits=False):
+    def __init__(self, clip_values, model, use_logits=False, defences=None):
         """
         Create a `Classifier` instance from a Keras model. Assumes the `model` passed as argument is compiled.
 
@@ -20,11 +20,13 @@ class KerasClassifier(Classifier):
         :type model: `keras.models.Sequential`
         :param use_logits: True if the output of the model are the logits
         :type use_logits: `bool`
+        :param defences: Defences to be activated with the classifier.
+        :type defences: `str` or `list(str)`
         """
         import keras.backend as k
 
         # TODO Generalize loss function?
-        super(KerasClassifier, self).__init__(clip_values)
+        super(KerasClassifier, self).__init__(clip_values, defences)
 
         self._model = model
         self._input = model.input
@@ -107,8 +109,11 @@ class KerasClassifier(Classifier):
         :rtype: `np.ndarray`
         """
         import keras.backend as k
-
         k.set_learning_phase(0)
+
+        # Apply defences
+        inputs = self._apply_defences_predict(inputs)
+
         preds = self._preds([inputs])[0]
         if not logits:
             exp = np.exp(preds - np.max(preds, axis=1, keepdims=True))
@@ -131,8 +136,11 @@ class KerasClassifier(Classifier):
         :return: `None`
         """
         import keras.backend as k
-
         k.set_learning_phase(1)
+
+        # Apply defences
+        inputs, outputs = self._apply_defences_fit(inputs, outputs)
+
         gen = generator(inputs, outputs, batch_size)
         self._model.fit_generator(gen, steps_per_epoch=inputs.shape[0] / batch_size, epochs=nb_epochs)
 

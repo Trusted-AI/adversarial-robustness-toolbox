@@ -60,7 +60,7 @@ class TestFastGradientMethod(unittest.TestCase):
 
     def _test_backend_mnist(self, classifier):
         # Get MNIST
-        (x_train, y_train), (x_test, y_test), _, _ = load_mnist()
+        (x_train, y_train), (x_test, y_test) = self.mnist
         x_train, y_train = x_train[:NB_TRAIN], y_train[:NB_TRAIN]
         x_test, y_test = x_test[:NB_TEST], y_test[:NB_TEST]
 
@@ -130,49 +130,36 @@ class TestFastGradientMethod(unittest.TestCase):
         acc = np.sum(np.argmax(test_y_pred, axis=1) == np.argmax(y_test, axis=1)) / y_test.shape[0]
         print('\nAccuracy on adversarial test examples with L2 norm: %.2f%%' % (acc * 100))
 
-    # def test_with_preprocessing(self):
-    #
-    #     session = tf.Session()
-    #     k.set_session(session)
-    #
-    #     comp_params = {"loss": 'categorical_crossentropy',
-    #                    "optimizer": 'adam',
-    #                    "metrics": ['accuracy']}
-    #
-    #     # get MNIST
-    #     batch_size, nb_train, nb_test = 100, 1000, 100
-    #     (X_train, Y_train), (X_test, Y_test), _, _ = load_mnist()
-    #     X_train, Y_train = X_train[:nb_train], Y_train[:nb_train]
-    #     X_test, Y_test = X_test[:nb_test], Y_test[:nb_test]
-    #     im_shape = X_train[0].shape
-    #
-    #     # get classifier
-    #     classifier = CNN(im_shape, act="relu", defences=["featsqueeze1"])
-    #     classifier.compile(comp_params)
-    #     classifier.fit(X_train, Y_train, epochs=1, batch_size=batch_size)
-    #     scores = classifier.evaluate(X_train, Y_train)
-    #     print("\naccuracy on training set: %.2f%%" % (scores[1] * 100))
-    #     scores = classifier.evaluate(X_test, Y_test)
-    #     print("\naccuracy on test set: %.2f%%" % (scores[1] * 100))
-    #
-    #     attack = FastGradientMethod(classifier, eps=1)
-    #     X_train_adv = attack.generate(X_train)
-    #     X_test_adv = attack.generate(X_test)
-    #
-    #     self.assertFalse((X_train == X_train_adv).all())
-    #     self.assertFalse((X_test == X_test_adv).all())
-    #
-    #     train_y_pred = get_labels_np_array(classifier.predict(X_train_adv))
-    #     test_y_pred = get_labels_np_array(classifier.predict(X_test_adv))
-    #
-    #     self.assertFalse((Y_train == train_y_pred).all())
-    #     self.assertFalse((Y_test == test_y_pred).all())
-    #
-    #     scores = classifier.evaluate(X_train_adv, Y_train)
-    #     print('\naccuracy on adversarial train examples: %.2f%%' % (scores[1] * 100))
-    #
-    #     scores = classifier.evaluate(X_test_adv, Y_test)
-    #     print('\naccuracy on adversarial test examples: %.2f%%' % (scores[1] * 100))
+    def test_with_defences(self):
+        # Get MNIST
+        (x_train, y_train), (x_test, y_test) = self.mnist
+        x_train, y_train = x_train[:NB_TRAIN], y_train[:NB_TRAIN]
+        x_test, y_test = x_test[:NB_TEST], y_test[:NB_TEST]
+
+        # Get the ready-trained Keras model
+        model = self.classifier_k._model
+        classifier = KerasClassifier((0, 1), model, defences='featsqueeze1')
+
+        attack = FastGradientMethod(classifier, eps=1)
+        x_train_adv = attack.generate(x_train)
+        x_test_adv = attack.generate(x_test)
+
+        self.assertFalse((x_train == x_train_adv).all())
+        self.assertFalse((x_test == x_test_adv).all())
+
+        train_y_pred = get_labels_np_array(classifier.predict(x_train_adv))
+        test_y_pred = get_labels_np_array(classifier.predict(x_test_adv))
+
+        self.assertFalse((y_train == train_y_pred).all())
+        self.assertFalse((y_test == test_y_pred).all())
+
+        preds = classifier.predict(x_train_adv)
+        acc = np.sum(np.argmax(preds, axis=1) == np.argmax(y_train, axis=1)) / y_train.shape[0]
+        print('\nAccuracy on adversarial train examples with feature squeezing: %.2f%%' % (acc * 100))
+
+        preds = classifier.predict(x_test_adv)
+        acc = np.sum(np.argmax(preds, axis=1) == np.argmax(y_test, axis=1)) / y_test.shape[0]
+        print('\naccuracy on adversarial test examples: %.2f%%' % (acc * 100))
 
     @staticmethod
     def _cnn_mnist_tf(input_shape):

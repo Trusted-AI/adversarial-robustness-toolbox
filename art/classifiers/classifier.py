@@ -3,6 +3,8 @@ from __future__ import absolute_import, division, print_function, unicode_litera
 import abc
 import sys
 
+# TODO Add tests for defences on classifier
+
 # Ensure compatibility with Python 2 and 3 when using ABCMeta
 if sys.version_info >= (3, 4):
     ABC = abc.ABC
@@ -14,7 +16,7 @@ class Classifier(ABC):
     """
     Base class for all classifiers.
     """
-    def __init__(self, clip_values):
+    def __init__(self, clip_values, defences=None):
         """
         Initialize a `Classifier` object.
 
@@ -23,6 +25,7 @@ class Classifier(ABC):
         :type clip_values: `tuple`
         """
         self._clip_values = clip_values
+        self._parse_defences(defences)
 
     def predict(self, inputs, logits=False):
         """
@@ -110,3 +113,54 @@ class Classifier(ABC):
         :rtype: `np.ndarray`
         """
         raise NotImplementedError
+
+    def _parse_defences(self, defences):
+        self.defences = defences
+
+        if defences:
+            import re
+            pattern = re.compile("featsqueeze[1-8]?")
+
+            for d in defences:
+                if pattern.match(d):
+                    try:
+                        from art.defences import FeatureSqueezing
+
+                        bit_depth = int(d[-1])
+                        self.feature_squeeze = FeatureSqueezing(bit_depth=bit_depth)
+                    except:
+                        raise ValueError('You must specify the bit depth for feature squeezing: featsqueeze[1-8]')
+
+                # Add label smoothing
+                if d == 'labsmooth':
+                    from art.defences import LabelSmoothing
+                    self.label_smooth = LabelSmoothing()
+
+                # Add spatial smoothing
+                if d == 'smooth':
+                    from art.defences import SpatialSmoothing
+                    self.smooth = SpatialSmoothing()
+
+    def _apply_defences_fit(self, inputs, outputs):
+        # Apply label smoothing if option is set
+        if hasattr(self, 'label_smooth'):
+            _, outputs = self.label_smooth(None, outputs)
+        else:
+            outputs = outputs
+
+        # Apply feature squeezing if option is set
+        if hasattr(self, 'feature_squeeze'):
+            inputs = self.feature_squeeze(inputs)
+
+        return inputs, outputs
+
+    def _apply_defences_predict(self, inputs):
+        # Apply feature squeezing if option is set
+        if hasattr(self, 'feature_squeeze'):
+            inputs = self.feature_squeeze(inputs)
+
+        # Apply inputs smoothing if option is set
+        if hasattr(self, 'smooth'):
+            inputs = self.smooth(inputs)
+
+        return inputs

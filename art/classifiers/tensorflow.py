@@ -10,7 +10,8 @@ class TFClassifier(Classifier):
     """
     This class implements a classifier with the Tensorflow framework.
     """
-    def __init__(self, clip_values, input_ph, logits, output_ph=None, train=None, loss=None, learning=None, sess=None):
+    def __init__(self, clip_values, input_ph, logits, output_ph=None, train=None, loss=None, learning=None, sess=None,
+                 defences=None):
         """
         Initialization specifically for the Tensorflow-based implementation.
 
@@ -32,6 +33,8 @@ class TFClassifier(Classifier):
         :type learning: `tf.Placeholder` of type bool.
         :param sess: Computation session.
         :type sess: `tf.Session`
+        :param defences: Defences to be activated with the classifier.
+        :type defences: `str` or `list(str)`
         """
         import tensorflow as tf
 
@@ -73,6 +76,9 @@ class TFClassifier(Classifier):
         """
         import tensorflow as tf
 
+        # Apply defences
+        inputs = self._apply_defences_predict(inputs)
+
         # Create feed_dict
         fd = {self._input_ph: inputs}
         if self._learning is not None:
@@ -103,6 +109,9 @@ class TFClassifier(Classifier):
         # Check if train and output_ph available
         if self._train is None or self._output_ph is None:
             raise ValueError("Need the training objective and the output placeholder to train the model.")
+
+        # Apply defences
+        inputs, outputs = self._apply_defences_fit(inputs, outputs)
 
         num_batch = int(np.ceil(len(inputs) / batch_size))
         ind = np.arange(len(inputs))
