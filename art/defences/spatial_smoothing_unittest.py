@@ -14,10 +14,9 @@ class TestLocalSpatialSmoothing(unittest.TestCase):
 
         # Start to test
         for window_size in range(1, 20):
-            with self.subTest("Sliding window size = {}".format(window_size)):
-                preprocess = SpatialSmoothing()
-                smoothed_x = preprocess(x, window_size)
-                self.assertTrue((smoothed_x == 1).all())
+            preprocess = SpatialSmoothing()
+            smoothed_x = preprocess(x, window_size)
+            self.assertTrue((smoothed_x == 1).all())
 
     def test_fix(self):
         x = np.array([[[[1], [2], [3]], [[7], [8], [9]], [[4], [5], [6]]]])

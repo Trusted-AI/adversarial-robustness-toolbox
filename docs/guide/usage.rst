@@ -1,17 +1,3 @@
-Running scripts
-===============
-The library contains three main scripts for:
-
-* training a classifier using (`train.py`)
-* crafting adversarial examples on a trained model through (`generate_adversarial.py`)
-* testing model accuracy on different test sets using (`test_accuracies.py`)
-
-Detailed instructions for each script are available by typing
-
-.. code-block:: bash
-
-   python3 <script_name> -h
-
 Examples
 ========
 

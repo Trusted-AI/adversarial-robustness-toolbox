@@ -1,52 +1,85 @@
 # -*- coding: utf-8 -*-
-"""Trains a ResNet on the MNIST dataset, then generates adversarial images using DeepFool
-and attacks a classic convolutional neural network (CNN) trained on MNIST with them. This is to show how to perform a
-black-box attack.
-
-The CNN obtains 98.57% accuracy on the adversarial samples when models are fitted for 5 epochs.
+"""Trains a CNN on the MNIST dataset using the Keras backend, then generates adversarial images using DeepFool
+and uses them to attack a CNN trained on MNIST using TensorFlow. This is to show how to perform a
+black-box attack: the attack never has access to the parameters of the TensorFlow model.
 """
 from __future__ import absolute_import, division, print_function
 
 from os.path import abspath
 import sys
 sys.path.append(abspath('.'))
-from config import config_dict
 
-import tensorflow as tf
+import keras
 import keras.backend as k
+from keras.models import Sequential
+from keras.layers import Dense, Flatten, Conv2D, MaxPooling2D, Activation, Dropout
+import numpy as np
+import tensorflow as tf
 
 from art.attacks.deepfool import DeepFool
-from art.classifiers.cnn import CNN
-from art.classifiers.resnet import ResNet
-from art.utils import load_dataset
+from art.classifiers import KerasClassifier, TFClassifier
+from art.utils import load_mnist
+
+
+def cnn_mnist_tf(input_shape):
+    labels_tf = tf.placeholder(tf.float32, [None, 10])
+    inputs_tf = tf.placeholder(tf.float32, [None] + list(input_shape))
+
+    # Define the tensorflow graph
+    conv = tf.layers.conv2d(inputs_tf, 4, 5, activation=tf.nn.relu)
+    conv = tf.layers.max_pooling2d(conv, 2, 2)
+    fc = tf.contrib.layers.flatten(conv)
+
+    # Logits layer
+    logits = tf.layers.dense(fc, 10)
+
+    # Train operator
+    loss = tf.reduce_mean(tf.losses.softmax_cross_entropy(logits=logits, onehot_labels=labels_tf))
+    optimizer = tf.train.AdamOptimizer(learning_rate=0.01)
+    train_tf = optimizer.minimize(loss)
+
+    sess = tf.Session()
+    sess.run(tf.global_variables_initializer())
+
+    classifier = TFClassifier((0, 1), inputs_tf, logits, loss=loss, train=train_tf, output_ph=labels_tf, sess=sess)
+    return classifier
+
+
+def cnn_mnist_k(input_shape):
+    # Create simple CNN
+    model = Sequential()
+    model.add(Conv2D(4, kernel_size=(5, 5), activation='relu', input_shape=input_shape))
+    model.add(MaxPooling2D(pool_size=(2, 2)))
+    model.add(Flatten())
+    model.add(Dense(10, activation='softmax'))
+
+    model.compile(loss=keras.losses.categorical_crossentropy, optimizer=keras.optimizers.Adam(lr=0.01),
+                  metrics=['accuracy'])
+
+    classifier = KerasClassifier((0, 1), model, use_logits=False)
+    return classifier
 
 # Get session
 session = tf.Session()
 k.set_session(session)
 
 # Read MNIST dataset
-(x_train, y_train), (x_test, y_test), min_, max_ = load_dataset('mnist')
-im_shape = x_train[0].shape
+(x_train, y_train), (x_test, y_test), min_, max_ = load_mnist()
 
-# Construct and train a Resnet convolutional neural network
-comp_params = {'loss': 'categorical_crossentropy',
-               'optimizer': 'adam',
-               'metrics': ['accuracy']}
-source = ResNet(im_shape, act='relu')
-source.compile(comp_params)
-source.fit(x_train, y_train, validation_split=.1, epochs=5, batch_size=128)
+# Construct and train a convolutional neural network on MNIST using Keras
+source = cnn_mnist_k(x_train.shape[1:])
+source.fit(x_train, y_train, nb_epochs=5, batch_size=128)
 
 # Craft adversarial samples with DeepFool
-epsilon = .1  # Maximum perturbation
-adv_crafter = DeepFool(source, sess=session)
-x_train_adv = adv_crafter.generate(x_val=x_train, eps=epsilon, clip_min=min_, clip_max=max_)
-x_test_adv = adv_crafter.generate(x_val=x_test, eps=epsilon, clip_min=min_, clip_max=max_)
+adv_crafter = DeepFool(source)
+x_train_adv = adv_crafter.generate(x_train)
+x_test_adv = adv_crafter.generate(x_test)
 
 # Construct and train a convolutional neural network
-target = CNN(im_shape, act='relu', dataset='mnist')
-target.compile(comp_params)
-target.fit(x_train, y_train, validation_split=.1, epochs=5, batch_size=128)
+target = cnn_mnist_tf(x_train.shape[1:])
+target.fit(x_train, y_train, nb_epochs=5, batch_size=128)
 
 # Evaluate the CNN on the adversarial samples
-scores = target.evaluate(x_test, y_test)
-print("\nLoss on adversarial samples: %.2f%%\nAccuracy on adversarial samples: %.2f%%" % (scores[0], scores[1] * 100))
+preds = target.predict(x_test_adv)
+acc = np.sum(preds == np.argmax(y_test, axis=1)) / y_test.shape[0]
+print("\nAccuracy on adversarial samples: %.2f%%" % (acc * 100))
