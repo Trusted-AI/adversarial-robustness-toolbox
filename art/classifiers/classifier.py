@@ -3,8 +3,6 @@ from __future__ import absolute_import, division, print_function, unicode_litera
 import abc
 import sys
 
-# TODO Add tests for defences on classifier
-
 # Ensure compatibility with Python 2 and 3 when using ABCMeta
 if sys.version_info >= (3, 4):
     ABC = abc.ABC
@@ -25,7 +23,6 @@ class Classifier(ABC):
         :type clip_values: `tuple`
         """
         self._clip_values = clip_values
-        self._parse_defences(defences)
 
     def predict(self, inputs, logits=False):
         """
