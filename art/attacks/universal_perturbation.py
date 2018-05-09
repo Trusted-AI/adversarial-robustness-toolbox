@@ -104,7 +104,7 @@ class UniversalPerturbation(Attack):
 
                     # If the class has changed, update v
                     if fk_i_hat != adv_fk_i_hat:
-                        v += adv_xi - xi - v
+                        v += adv_xi - xi
 
                         # Project on L_p ball
                         v = self._clip_perturbation(v, self.eps, self.p)
