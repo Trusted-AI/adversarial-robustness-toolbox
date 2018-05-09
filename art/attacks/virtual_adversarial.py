@@ -94,7 +94,6 @@ class VirtualAdversarialMethod(Attack):
         dims = x.shape
 
         x = x.flatten()
-        x /= np.max(np.abs(x)) + tol
         inverse = (np.sum(x**2) + np.sqrt(tol)) ** -.5
         x = x * inverse
         x = np.reshape(x, dims)
