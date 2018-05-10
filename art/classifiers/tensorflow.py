@@ -38,7 +38,7 @@ class TFClassifier(Classifier):
         """
         import tensorflow as tf
 
-        super(TFClassifier, self).__init__(clip_values)
+        super(TFClassifier, self).__init__(clip_values, defences)
         self._nb_classes = int(logits.get_shape()[-1])
         self._input_shape = tuple(input_ph.get_shape()[1:])
         self._input_ph = input_ph
@@ -178,4 +178,3 @@ class TFClassifier(Classifier):
         grds = self._sess.run(self._loss_grads, feed_dict={self._input_ph: inputs, self._output_ph: labels})
 
         return grds
-
