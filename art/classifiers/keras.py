@@ -18,8 +18,10 @@ class KerasClassifier(Classifier):
         :type clip_values: `tuple`
         :param model: Keras model
         :type model: `keras.models.Sequential`
-        :param use_logits: True if the output of the model are the logits
+        :param use_logits: True if the output of the model are the logits.
         :type use_logits: `bool`
+        :param defences: Defences to be activated with the classifier.
+        :type defences: `str` or `list(str)`
         """
         import keras.backend as k
 
