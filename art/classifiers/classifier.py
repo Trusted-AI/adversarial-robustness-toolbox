@@ -17,12 +17,12 @@ class Classifier(ABC):
     def __init__(self, clip_values, defences=None):
         """
         Initialize a `Classifier` object.
-
         :param clip_values: Tuple of the form `(min, max)` representing the minimum and maximum values allowed
                for features.
         :type clip_values: `tuple`
         """
         self._clip_values = clip_values
+        self._parse_defences(defences)
 
     def predict(self, inputs, logits=False):
         """
