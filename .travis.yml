@@ -44,4 +44,4 @@ install:
 
 script:
   - mkdir ./data
-  - python -m unittest discover art/ -p '*_unittest.py'
+  - travis wait 30 python -m unittest discover art/ -p '*_unittest.py'
