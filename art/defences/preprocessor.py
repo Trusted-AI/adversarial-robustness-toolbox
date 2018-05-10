@@ -30,7 +30,7 @@ class Preprocessor(ABC):
         :return: `True` if the preprocessing model has been fitted (if this applies).
         :rtype: `bool`
         """
-        return self._input_shape
+        return self._is_fitted
 
     @abc.abstractmethod
     def __call__(self, x, y=None):
