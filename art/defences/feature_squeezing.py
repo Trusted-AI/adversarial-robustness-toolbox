@@ -18,7 +18,6 @@
 from __future__ import absolute_import, division, print_function, unicode_literals
 
 import numpy as np
-import tensorflow as tf
 
 from art.defences.preprocessor import Preprocessor
 
@@ -37,47 +36,30 @@ class FeatureSqueezing(Preprocessor):
         :type bit_depth: `int`
         """
         super(FeatureSqueezing, self).__init__()
-        self.is_fitted = True
+        self._is_fitted = True
         self.set_params(bit_depth=bit_depth)
 
-    def __call__(self, x_val, bit_depth=None):
+    def __call__(self, x, y=None, bit_depth=None):
         """
-        Apply feature squeezing to sample `x_val`.
+        Apply feature squeezing to sample `x`.
 
-        :param x_val: Sample to squeeze. `x_val` values are supposed to be in the range [0,1]
-        :type x_val: `np.ndarrray`
+        :param x: Sample to squeeze. `x` values are supposed to be in the range [0,1]
+        :type x: `np.ndarrray`
         :param bit_depth: The number of bits to encode data on
         :type bit_depth: `int`
         :return: Squeezed sample
         :rtype: `np.ndarray`
         """
+        # TODO Extend to data in any range of values
         if bit_depth is not None:
             self.set_params(bit_depth=bit_depth)
 
         max_value = np.rint(2 ** self.bit_depth - 1)
-        return np.rint(x_val * max_value) / max_value
+        return np.rint(x * max_value) / max_value
 
-    def fit(self, x_val, y_val=None, **kwargs):
+    def fit(self, x, y=None, **kwargs):
         """No parameters to learn for this method; do nothing."""
         pass
-
-    def _tf_predict(self, x, bit_depth=None):
-        """
-        Apply feature squeezing on `tf.Tensor`.
-
-        :param x: Sample to squeeze. Values are supposed to be in the range [0,1]
-        :type x: `tf.Tensor`
-        :param bit_depth: The number of bits to encode data on
-        :type bit_depth: `int`
-        :return: Squeezed sample
-        :rtype: tf.Tensor
-        """
-        if bit_depth is not None:
-            self.set_params(bit_depth=bit_depth)
-
-        max_value = int(2 ** self.bit_depth - 1)
-        x = tf.rint(x * max_value) / max_value
-        return x
 
     def set_params(self, **kwargs):
         """Take in a dictionary of parameters and applies defense-specific checks before saving them as attributes.
@@ -89,7 +71,7 @@ class FeatureSqueezing(Preprocessor):
         # Save attack-specific parameters
         super(FeatureSqueezing, self).set_params(**kwargs)
 
-        if type(self.bit_depth) is not int or self.bit_depth <= 0 or self.bit_depth > 60:
-            raise ValueError("The bit depth must be between 1 and 60.")
+        if type(self.bit_depth) is not int or self.bit_depth <= 0 or self.bit_depth > 64:
+            raise ValueError("The bit depth must be between 1 and 64.")
 
         return True

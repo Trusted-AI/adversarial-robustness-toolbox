@@ -55,22 +55,10 @@ stl10_path=./data/stl-10
 
 If the datasets are not present at the indicated path, loading them will also download the data.
 
-## Running scripts
+## Running Nemesis
 
-The library contains three main scripts for:
-* training a classifier using (`train.py`)
-* crafting adversarial examples on a trained model through (`generate_adversarial.py`)
-* testing model accuracy on different test sets using (`test_accuracies.py`)
+Some examples of how to use Nemesis when writing your own code can be found in the `examples` folder. See `examples/README.md` for more information about what each example does. To run an example, use the following command:
 
-Detailed instructions for each script are available by typing
-```bash
-python3 <script_name> -h
-```
-
-## Documentation
-Documentation is available [here](https://adversarial-robustness-toolbox.readthedocs.io/).
-
-Some examples of how to use the toolbox when writing your own code can be found in the `examples` folder. See `examples/README.md` for more information about what each example does. To run an example, use the following command:
 ```bash
 python3 examples/<example_name>.py
 ```

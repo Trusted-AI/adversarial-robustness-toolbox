@@ -1,24 +1,23 @@
 sudo: required
 dist: trusty
 language: python
+env:
 matrix:
   include:
       - python: 2.7
-        env:
-          - KERAS_BACKEND=tensorflow
-          - TENSORFLOW_V=1.4.1
+        env: KERAS_BACKEND=tensorflow TENSORFLOW_V=1.5.1
       - python: 2.7
-        env:
-          - KERAS_BACKEND=tensorflow
-          - TENSORFLOW_V=1.1.0
+        env: KERAS_BACKEND=tensorflow TENSORFLOW_V=1.6.0
+      - python: 2.7
+        env: KERAS_BACKEND=tensorflow TENSORFLOW_V=1.7.0
       - python: 3.5
-        env:
-          - KERAS_BACKEND=tensorflow
-          - TENSORFLOW_V=1.1.0
+        env: KERAS_BACKEND=tensorflow TENSORFLOW_V=1.5.1
       - python: 3.5
-        env:
-          - KERAS_BACKEND=tensorflow
-          - TENSORFLOW_V=1.4.1
+        env: KERAS_BACKEND=tensorflow TENSORFLOW_V=1.6.0
+      - python: 3.5
+        env: KERAS_BACKEND=tensorflow TENSORFLOW_V=1.7.0
+  exclude:
+      - env:
 
 before_install:
   - if [[ "$TRAVIS_PYTHON_VERSION" == "2.7" ]]; then
@@ -37,15 +36,7 @@ install:
   - conda create -q -n test-environment python=$TRAVIS_PYTHON_VERSION numpy scipy matplotlib pandas h5py
   - source activate test-environment
   # Install TensorFlow
-  - if [[ "$TRAVIS_PYTHON_VERSION" == "2.7" && "$TENSORFLOW_V" == "1.4.1" ]]; then
-      pip install https://storage.googleapis.com/tensorflow/linux/cpu/tensorflow-1.4.1-cp27-none-linux_x86_64.whl;
-    elif [[ "$TRAVIS_PYTHON_VERSION" == "2.7" && "$TENSORFLOW_V" == "1.1.0" ]]; then
-      pip install https://storage.googleapis.com/tensorflow/linux/cpu/tensorflow-1.1.0-cp27-none-linux_x86_64.whl;
-    elif [[ "$TRAVIS_PYTHON_VERSION" == "3.5" && "$TENSORFLOW_V" == "1.4.1" ]]; then
-      pip install https://storage.googleapis.com/tensorflow/linux/cpu/tensorflow-1.4.1-cp35-cp35m-linux_x86_64.whl;
-    elif [[ "$TRAVIS_PYTHON_VERSION" == "3.5" && "$TENSORFLOW_V" == "1.1.0" ]]; then
-      pip install https://storage.googleapis.com/tensorflow/linux/cpu/tensorflow-1.1.0-cp35-cp35m-linux_x86_64.whl;
-    fi
+  - if [[ "$TENSORFLOW_V" != "" ]]; then pip install tensorflow==${TENSORFLOW_V}; fi
   - pip install keras
   - conda install libgcc
   - export LD_LIBRARY_PATH=$LD_LIBRARY_PATH:/home/travis/miniconda/envs/test-environment/lib

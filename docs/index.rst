@@ -49,7 +49,7 @@ The following defense methods are also supported:
    modules/attacks
    modules/classifiers
    modules/defences
-   modules/layers
+   modules/detection
    modules/metrics
    modules/utils
 

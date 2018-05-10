@@ -46,36 +46,33 @@ class AdversarialTrainer:
             attacks = {a: {} for a in attacks}
         self.attacks = attacks
 
-    def fit(self, x_val, y_val, **kwargs):
+    def fit(self, x, y, **kwargs):
         """
         Train a model adversarially. Each attack specified when creating the AdversarialTrainer is applied to all
         samples in the dataset, and only the successful ones (on the source model) are kept for data augmentation.
 
-        :param x_val: Training set
-        :type x_val: `np.ndarray`
-        :param y_val: Labels
-        :type y_val: `np.ndarray`
+        :param x: Training set
+        :type x: `np.ndarray`
+        :param y: Labels
+        :type y: `np.ndarray`
         :param kwargs: Dictionary of parameters to be passed on to the `fit` method of the classifier
         :type kwargs: `dict`
         :return: `None`
         """
-        x_augmented = list(x_val.copy())
-        y_augmented = list(y_val.copy())
+        x_augmented = list(x.copy())
+        y_augmented = list(y.copy())
 
         # Generate adversarial samples for each attack
         for i, attack in enumerate(self.attacks):
-            # Fit the classifier to be used for the attack if needed
-            if hasattr(attack.classifier, 'is_fitted'):
-                if not attack.classifier.is_fitted:
-                    attack.classifier.fit(x_val, y_val, **kwargs)
-            else:
-                attack.classifier.fit(x_val, y_val, **kwargs)
+            # Fit the classifier to be used for the attack
+            # TODO Do not refit classifier if already fitted
+            attack.classifier.fit(x, y, **kwargs)
 
             # Predict new labels for the adversarial samples generated
-            x_adv = attack.generate(x_val, **self.attacks[attack])
+            x_adv = attack.generate(x, **self.attacks[attack])
             y_pred = get_labels_np_array(attack.classifier.predict(x_adv))
-            x_adv = x_adv[np.argmax(y_pred, axis=1) != np.argmax(y_val, axis=1)]
-            y_adv = y_pred[np.argmax(y_pred, axis=1) != np.argmax(y_val, axis=1)]
+            x_adv = x_adv[np.argmax(y_pred, axis=1) != np.argmax(y, axis=1)]
+            y_adv = y_pred[np.argmax(y_pred, axis=1) != np.argmax(y, axis=1)]
 
             # Only add successful attacks to augmented dataset
             x_augmented.extend(list(x_adv))
@@ -86,16 +83,15 @@ class AdversarialTrainer:
         self.x = x_augmented
         self.y = y_augmented
 
-    def predict(self, x_val, **kwargs):
+    def predict(self, x, **kwargs):
         """
         Perform prediction using the adversarially trained classifier.
 
-        :param x_val: Test set
-        :type x_val: `np.ndarray`
+        :param x: Test set
+        :type x: `np.ndarray`
         :param kwargs: Other parameters
         :type kwargs: `dict`
         :return: Predictions for test set
         :rtype: `np.ndarray`
         """
-        if check_is_fitted(self, ['x', 'y']):
-            return self.classifier.predict(x_val, **kwargs)
+        return self.classifier.predict(x, **kwargs)

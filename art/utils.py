@@ -22,16 +22,32 @@ from __future__ import absolute_import, division, print_function, unicode_litera
 
 import argparse
 import json
-import random
 import os
 
-from keras import backend as k
-from keras.datasets.cifar import load_batch
-from keras.preprocessing import image
-from keras.utils import np_utils, data_utils
-from keras.utils.data_utils import get_file
+# from keras import backend as k
+# from keras.datasets.cifar import load_batch
+# from keras.preprocessing import image
+# from keras.utils import data_utils
+# from keras.utils.data_utils import get_file
 import numpy as np
-import tensorflow as tf
+
+
+def to_categorical(labels, nb_classes=None):
+    """Convert an array of labels to binary class matrix.
+
+    :param labels: An array of integer labels of shape `(nb_samples,)`
+    :type labels: `np.ndarray`
+    :param nb_classes: The number of classes (possible labels)
+    :type nb_classes: `int`
+    :return: A binary matrix representation of `y` in the shape `(nb_samples, nb_classes)`
+    :rtype: `np.ndarray`
+    """
+    labels = np.array(labels, dtype=np.int32)
+    if not nb_classes:
+        nb_classes = np.max(labels) + 1
+    categorical = np.zeros((labels.shape[0], nb_classes), dtype=np.float32)
+    categorical[np.arange(labels.shape[0]), labels] = 1
+    return categorical
 
 
 def random_targets(labels, nb_classes):
@@ -56,42 +72,7 @@ def random_targets(labels, nb_classes):
         in_cl = labels == class_ind
         result[in_cl] = np.random.choice(other_classes)
 
-    return np_utils.to_categorical(result, nb_classes)
-
-
-def create_class_pairs(x, y, classes=10, pos=1, neg=0):
-    """ Returns a positive and a negative pair per point of x, w.r.t. its class, and their corresponding scores.
-    
-    :param x: (np.ndarray) sample of points, with M nb of instances as first dimension
-    :param y: (np.ndarray) vector of labels, with M nb of instances as first dimension
-    :param classes: (int) number of classes
-    :param pos: (float) score affected to the positive pairs (couple of similar points)
-    :param neg: (float) score affected to the negative pairs (couple of dissimilar points)
-    :return: (np.ndarray, np.ndarray) M times classes pairs of points and corresponding scores
-    """
-
-    pairs = []
-    scores = []
-    classes_idx = [np.where(y == i)[0] for i in range(classes)]
-
-    for d in range(classes):
-        nb = len(classes_idx[d])
-
-        for i in range(nb):
-            j = random.randrange(0, nb)
-            z1, z2 = classes_idx[d][i], classes_idx[d][j]
-            pairs += [[x[z1], x[z2]]]
-            scores += [pos]
-
-            dn = (d + random.randrange(1, classes)) % classes
-            size = len(classes_idx[dn])
-            if size > 0:
-                j = random.randrange(0, size)
-                z1, z2 = classes_idx[d][i], classes_idx[dn][j]
-                pairs += [[x[z1], x[z2]]]
-                scores += [neg]
-
-    return np.array(pairs), np.array(scores)
+    return to_categorical(result, nb_classes)
 
 
 def get_label_conf(y_vec):
@@ -104,20 +85,6 @@ def get_label_conf(y_vec):
 
     confs, labels = np.amax(y_vec, axis=1), np.argmax(y_vec, axis=1)
     return confs, labels
-
-
-def get_labels_tf_tensor(preds):
-    """Returns the label of the most probable class given a tensor of class confidences.
-    See get_labels_np_array() for numpy version
-    
-    :param preds: (tf.tensor) tensor of class confidences, nb of intances as first dimension
-    :return: (tf.tensor) labels
-    """
-    preds_max = tf.reduce_max(preds, 1, keep_dims=True)
-    y = tf.to_float(tf.equal(preds, preds_max))
-    y /= tf.reduce_sum(y, 1, keep_dims=True)
-
-    return y
 
 
 def get_labels_np_array(preds):
@@ -148,7 +115,7 @@ def preprocess(x, y, nb_classes=10, max_value=255):
     :rtype: `tuple`
     """
     x = x.astype('float32') / max_value
-    y = np_utils.to_categorical(y, nb_classes)
+    y = to_categorical(y, nb_classes)
 
     return x, y
 
@@ -162,10 +129,13 @@ def load_cifar10():
     :rtype: (tuple of numpy.ndarray), (tuple of numpy.ndarray), float, float
     """
     from config import CIFAR10_PATH
+    from keras.datasets.cifar import load_batch
+    from keras.utils.data_utils import get_file
+
     min_, max_ = 0., 1.
 
-    path = data_utils.get_file('cifar-10-batches-py', untar=True, cache_subdir=CIFAR10_PATH,
-                               origin='http://www.cs.toronto.edu/~kriz/cifar-10-python.tar.gz')
+    path = get_file('cifar-10-batches-py', untar=True, cache_subdir=CIFAR10_PATH,
+                    origin='http://www.cs.toronto.edu/~kriz/cifar-10-python.tar.gz')
 
     num_train_samples = 50000
 
@@ -200,10 +170,11 @@ def load_mnist():
     :rtype: tuple of numpy.ndarray), (tuple of numpy.ndarray), float, float
     """
     from config import MNIST_PATH
+    from keras.utils.data_utils import get_file
+
     min_, max_ = 0., 1.
 
-    path = data_utils.get_file('mnist.npz', cache_subdir=MNIST_PATH,
-                               origin='https://s3.amazonaws.com/img-datasets/mnist.npz')
+    path = get_file('mnist.npz', cache_subdir=MNIST_PATH, origin='https://s3.amazonaws.com/img-datasets/mnist.npz')
 
     f = np.load(path)
     x_train = f['x_train']
@@ -228,6 +199,9 @@ def load_imagenet():
     :rtype: tuple of numpy.ndarray), (tuple of numpy.ndarray), float, float
     """
     from config import IMAGENET_PATH
+    from keras.preprocessing import image
+    from keras.utils.data_utils import get_file
+
     min_, max_ = 0., 255.
 
     class_index_path = 'https://s3.amazonaws.com/deep-learning-models/image-models/imagenet_class_index.json'
@@ -249,7 +223,7 @@ def load_imagenet():
                 dataset.append(image.img_to_array(img))
 
     dataset = np.asarray(dataset)
-    y = np_utils.to_categorical(np.asarray([label] * len(dataset)), 1000)
+    y = to_categorical(np.asarray([label] * len(dataset)), 1000)
 
     try:
         x_train, x_test = dataset[:700], dataset[700:]
@@ -268,11 +242,13 @@ def load_stl():
     :rtype: tuple of numpy.ndarray), (tuple of numpy.ndarray), float, float
     """
     from config import STL10_PATH
+    from keras.utils.data_utils import get_file
+
     min_, max_ = 0., 1.
 
     # Download and extract data if needed
-    path = data_utils.get_file('stl10_binary', cache_subdir=STL10_PATH, untar=True,
-                               origin='https://ai.stanford.edu/~acoates/stl10/stl10_binary.tar.gz')
+    path = get_file('stl10_binary', cache_subdir=STL10_PATH, untar=True,
+                    origin='https://ai.stanford.edu/~acoates/stl10/stl10_binary.tar.gz')
 
     with open(os.path.join(path, 'train_X.bin'), 'rb') as f:
         x_train = np.fromfile(f, dtype=np.uint8)
@@ -348,16 +324,16 @@ def get_npy_files(path):
 
 def set_group_permissions_rec(path, group="drl-dwl"):
     for root, _, files in os.walk(path):
-        set_group_permissions(root, group)
+        _set_group_permissions(root, group)
 
         for f in files:
             try:
-                set_group_permissions(os.path.join(root, f), group)
+                _set_group_permissions(os.path.join(root, f), group)
             except:
                 pass
 
 
-def set_group_permissions(filename, group="drl-dwl"):
+def _set_group_permissions(filename, group="drl-dwl"):
     import shutil
     shutil.chown(filename, user=None, group=group)
 

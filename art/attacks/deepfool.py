@@ -15,15 +15,11 @@
 # AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT,
 # TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 # SOFTWARE.
-from __future__ import absolute_import, division, print_function
-
-from keras import backend as k
-from keras.utils.generic_utils import Progbar
+from __future__ import absolute_import, division, print_function, unicode_literals
 
 import numpy as np
-import tensorflow as tf
 
-from art.attacks.attack import Attack, class_derivative
+from art.attacks.attack import Attack
 
 
 class DeepFool(Attack):
@@ -31,65 +27,45 @@ class DeepFool(Attack):
     Implementation of the attack from Moosavi-Dezfooli et al. (2015).
     Paper link: https://arxiv.org/abs/1511.04599
     """
-    attack_params = ['max_iter', 'clip_min', 'clip_max', 'verbose']
+    attack_params = ['max_iter']
 
-    def __init__(self, classifier, sess=None, max_iter=100, clip_min=None, clip_max=None, verbose=1):
+    def __init__(self, classifier, max_iter=100):
         """
         Create a DeepFool attack instance.
 
         :param classifier: A trained model.
         :type classifier: :class:`Classifier`
-        :param sess: The session to run graphs in.
-        :type sess: `tf.Session`
         :param max_iter: The maximum number of iterations.
         :type max_iter: `int`
-        :param clip_min: Minimum input component value.
-        :type clip_min: `float`
-        :param clip_max: Maximum input component value.
-        :type clip_max: `float`
-        :param verbose: For status updates in progress bar.
-        :type verbose: `bool`
         """
-        super(DeepFool, self).__init__(classifier, sess)
-        params = {'max_iter': max_iter, 'clip_min': clip_min, 'clip_max': clip_max, 'verbose': verbose}
+        super(DeepFool, self).__init__(classifier)
+        params = {'max_iter': max_iter}
         self.set_params(**params)
 
-    def generate(self, x_val, **kwargs):
+    def generate(self, x, **kwargs):
         """
         Generate adversarial samples and return them in an array.
 
-        :param x_val: An array with the original inputs to be attacked.
-        :type x_val: `np.ndarray`
+        :param x: An array with the original inputs to be attacked.
+        :type x: `np.ndarray`
         :param max_iter: The maximum number of iterations.
         :type max_iter: `int`
-        :param clip_min: Minimum input component value.
-        :type clip_min: `float`
-        :param clip_max: Maximum input component value.
-        :type clip_max: `float`
         :return: An array holding the adversarial examples.
         :rtype: `np.ndarray`
         """
         assert self.set_params(**kwargs)
-        k.set_learning_phase(0)
+        clip_min, clip_max = self.classifier.clip_values
+        x_adv = x.copy()
 
-        dims = list(x_val.shape)
-        nb_instances = dims[0]
-        dims[0] = None
-        nb_classes = self.model.output_shape[1]
-        xi_op = tf.placeholder(dtype=tf.float32, shape=dims)
+        # Pick a small scalar to avoid division by 0
+        tol = 10e-8
 
-        loss = self.classifier._get_predictions(xi_op, log=True)
-        grads = class_derivative(loss, xi_op, nb_classes)
-        x_adv = x_val.copy()
+        for j, val in enumerate(x_adv):
+            xj = val[None, ...]
 
-        # Progress bar
-        progress_bar = Progbar(target=len(x_val), verbose=self.verbose)
-
-        for j, x in enumerate(x_adv):
-            xi = x[None, ...]
-
-            f, grd = self.sess.run([self.model(xi_op), grads], {xi_op: xi})
-            f, grd = f[0], [g[0] for g in grd]
+            # TODO move prediction outside of for loop; add batching if `x` is too large?
+            f = self.classifier.predict(xj)[0]
+            grd = self.classifier.class_gradient(xj, logits=False)[0]
             fk_hat = np.argmax(f)
             fk_i_hat = fk_hat
             nb_iter = 0
@@ -99,36 +75,25 @@ class DeepFool(Attack):
                 f_diff = f - f[fk_hat]
 
                 # Masking true label
-                mask = [0] * nb_classes
+                mask = [0] * self.classifier.nb_classes
                 mask[fk_hat] = 1
-                value = np.ma.array(np.abs(f_diff)/np.linalg.norm(grad_diff.reshape(nb_classes, -1), axis=1), mask=mask)
+                norm = np.linalg.norm(grad_diff.reshape(self.classifier.nb_classes, -1), axis=1) + tol
+                value = np.ma.array(np.abs(f_diff) / norm, mask=mask)
 
                 l = value.argmin(fill_value=np.inf)
-                r = (abs(f_diff[l])/pow(np.linalg.norm(grad_diff[l]), 2)) * grad_diff[l]
+                r = (abs(f_diff[l]) / pow(np.linalg.norm(grad_diff[l]), 2)) * grad_diff[l]
 
                 # Add perturbation and clip result
-                xi += r
-                if self.clip_min or self.clip_max:
-                    xi = np.clip(xi, self.clip_min, self.clip_max)
+                xj = np.clip(xj + r, clip_min, clip_max)
 
-                # Recompute prediction for new xi
-
-                f, grd = self.sess.run([self.model(xi_op), grads], {xi_op: xi})
-                f, grd = f[0], [g[0] for g in grd]
+                # Recompute prediction for new xj
+                f = self.classifier.predict(xj)[0]
+                grd = self.classifier.class_gradient(xj, logits=False)[0]
                 fk_i_hat = np.argmax(f)
 
                 nb_iter += 1
 
-            x_adv[j] = xi[0]
-            progress_bar.update(current=j, values=[("perturbation", abs(np.linalg.norm((x_adv[j]-x_val[j]).flatten())))])
-
-        true_y = self.model.predict(x_val)
-        adv_y = self.model.predict(x_adv)
-        fooling_rate = np.sum(true_y != adv_y) / nb_instances
-
-        self.fooling_rate = fooling_rate
-        self.converged = (nb_iter < self.max_iter)
-        self.v = np.mean(np.abs(np.linalg.norm((x_adv-x_val).reshape(nb_instances, -1), axis=1)))
+            x_adv[j] = xj[0]
 
         return x_adv
 
@@ -137,12 +102,6 @@ class DeepFool(Attack):
 
         :param max_iter: The maximum number of iterations.
         :type max_iter: `int`
-        :param clip_min: Minimum input component value.
-        :type clip_min: `float`
-        :param clip_max: Maximum input component value.
-        :type clip_max: `float`
-        :param verbose: For status updates in progress bar.
-        :type verbose: `bool`
         """
         # Save attack-specific parameters
         super(DeepFool, self).set_params(**kwargs)

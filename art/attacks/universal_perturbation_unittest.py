@@ -15,64 +15,123 @@
 # AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT,
 # TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 # SOFTWARE.
-from __future__ import absolute_import, division, print_function
+from __future__ import absolute_import, division, print_function, unicode_literals
 
-import unittest
-
-import keras.backend as k
 import tensorflow as tf
+import unittest
+import numpy as np
+import keras
+import keras.backend as k
+from keras.models import Sequential
+from keras.layers import Dense, Flatten, Conv2D, MaxPooling2D
 
 from art.attacks.universal_perturbation import UniversalPerturbation
-from art.classifiers.cnn import CNN
-from art.utils import load_mnist, get_labels_np_array
+from art.classifiers.tensorflow import TFClassifier
+from art.classifiers.keras import KerasClassifier
+from art.utils import load_mnist
 
 
 class TestUniversalPerturbation(unittest.TestCase):
-    def test_mnist(self):
+    """
+    A unittest class for testing the UniversalPerturbation attack.
+    """
+    def test_tfclassifier(self):
+        """
+        First test with the TFClassifier.
+        :return:
+        """
+        # Build a TFClassifier
+        # Define input and output placeholders
+        self._input_ph = tf.placeholder(tf.float32, shape=[None, 28, 28, 1])
+        self._output_ph = tf.placeholder(tf.int32, shape=[None, 10])
+
+        # Define the tensorflow graph
+        conv = tf.layers.conv2d(self._input_ph, 4, 5, activation=tf.nn.relu)
+        conv = tf.layers.max_pooling2d(conv, 2, 2)
+        fc = tf.contrib.layers.flatten(conv)
+
+        # Logits layer
+        self._logits = tf.layers.dense(fc, 10)
+
+        # Train operator
+        self._loss = tf.reduce_mean(tf.losses.softmax_cross_entropy(logits=self._logits, onehot_labels=self._output_ph))
+        optimizer = tf.train.AdamOptimizer(learning_rate=0.01)
+        self._train = optimizer.minimize(self._loss)
+
+        # Tensorflow session and initialization
+        self._sess = tf.Session()
+        self._sess.run(tf.global_variables_initializer())
+
+        # Get MNIST
+        batch_size, nb_train, nb_test = 10, 10, 10
+        (x_train, y_train), (x_test, y_test), _, _ = load_mnist()
+        x_train, y_train = x_train[:nb_train], y_train[:nb_train]
+        x_test, y_test = x_test[:nb_test], y_test[:nb_test]
+
+        # Train the classifier
+        tfc = TFClassifier((0, 1), self._input_ph, self._logits, self._output_ph,
+                           self._train, self._loss, None, self._sess)
+        tfc.fit(x_train, y_train, batch_size=batch_size, nb_epochs=2)
+
+        # Attack
+        # TODO Launch with all possible attacks
+        attack_params = {"attacker": "newtonfool", "attacker_params": {"max_iter": 20}}
+        up = UniversalPerturbation(tfc)
+        x_train_adv = up.generate(x_train, **attack_params)
+        self.assertTrue((up.fooling_rate >= 0.2) or not up.converged)
+
+        x_test_adv = x_test + up.v
+        self.assertFalse((x_test == x_test_adv).all())
+
+        train_y_pred = np.argmax(tfc.predict(x_train_adv), axis=1)
+        test_y_pred = np.argmax(tfc.predict(x_test_adv), axis=1)
+        self.assertFalse((np.argmax(y_test, axis=1) == test_y_pred).all())
+        self.assertFalse((np.argmax(y_train, axis=1) == train_y_pred).all())
+
+    def test_krclassifier(self):
+        """
+        Second test with the KerasClassifier.
+        :return:
+        """
+        # Initialize a tf session
         session = tf.Session()
         k.set_session(session)
 
-        comp_params = {"loss": 'categorical_crossentropy',
-                       "optimizer": 'adam',
-                       "metrics": ['accuracy']}
-
-        # get MNIST
+        # Get MNIST
         batch_size, nb_train, nb_test = 10, 10, 10
-        (X_train, Y_train), (X_test, Y_test), _, _ = load_mnist()
-        X_train, Y_train = X_train[:nb_train], Y_train[:nb_train]
-        X_test, Y_test = X_test[:nb_test], Y_test[:nb_test]
-        im_shape = X_train[0].shape
+        (x_train, y_train), (x_test, y_test), _, _ = load_mnist()
+        x_train, y_train = x_train[:nb_train], y_train[:nb_train]
+        x_test, y_test = x_test[:nb_test], y_test[:nb_test]
 
-        # get classifier
-        classifier = CNN(im_shape, act="relu")
-        classifier.compile(comp_params)
-        classifier.fit(X_train, Y_train, epochs=1, batch_size=batch_size, verbose=0)
-        scores = classifier.evaluate(X_test, Y_test)
-        print("\naccuracy on test set: %.2f%%" % (scores[1] * 100))
+        # Create simple CNN
+        model = Sequential()
+        model.add(Conv2D(4, kernel_size=(5, 5), activation='relu', input_shape=(28, 28, 1)))
+        model.add(MaxPooling2D(pool_size=(2, 2)))
+        model.add(Flatten())
+        model.add(Dense(10, activation='softmax'))
 
-        attack_params = {"verbose": 2,
-                         "clip_min": 0.,
-                         "clip_max": 1,
-                         "attacker": "deepfool"}
+        model.compile(loss=keras.losses.categorical_crossentropy, optimizer=keras.optimizers.Adam(lr=0.01),
+                      metrics=['accuracy'])
 
-        attack = UniversalPerturbation(classifier, session)
-        x_train_adv = attack.generate(X_train, **attack_params)
-        self.assertTrue((attack.fooling_rate >= 0.2) or not attack.converged)
+        # Get classifier
+        krc = KerasClassifier((0, 1), model, use_logits=False)
+        krc.fit(x_train, y_train, batch_size=batch_size, nb_epochs=2)
 
-        x_test_adv = X_test + attack.v
-        self.assertFalse((X_test == x_test_adv).all())
+        # Attack
+        # TODO Launch with all possible attacks
+        attack_params = {"attacker": "newtonfool", "attacker_params": {"max_iter": 20}}
+        up = UniversalPerturbation(krc)
+        x_train_adv = up.generate(x_train, **attack_params)
+        self.assertTrue((up.fooling_rate >= 0.2) or not up.converged)
 
-        train_y_pred = get_labels_np_array(classifier.predict(x_train_adv))
-        test_y_pred = get_labels_np_array(classifier.predict(x_test_adv))
+        x_test_adv = x_test + up.v
+        self.assertFalse((x_test == x_test_adv).all())
 
-        self.assertFalse((Y_test == test_y_pred).all())
-        self.assertFalse((Y_train == train_y_pred).all())
+        train_y_pred = np.argmax(krc.predict(x_train_adv), axis=1)
+        test_y_pred = np.argmax(krc.predict(x_test_adv), axis=1)
+        self.assertFalse((np.argmax(y_test, axis=1) == test_y_pred).all())
+        self.assertFalse((np.argmax(y_train, axis=1) == train_y_pred).all())
 
-        scores = classifier.evaluate(x_train_adv, Y_train)
-        print('\naccuracy on adversarial train examples: %.2f%%' % (scores[1] * 100))
-
-        scores = classifier.evaluate(x_test_adv, Y_test)
-        print('\naccuracy on adversarial test examples: %.2f%%' % (scores[1] * 100))
 
 if __name__ == '__main__':
     unittest.main()

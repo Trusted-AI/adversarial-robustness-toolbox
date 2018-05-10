@@ -36,17 +36,17 @@ class LabelSmoothing(Preprocessor):
         :type max_value: `float`
         """
         super(LabelSmoothing, self).__init__()
-        self.is_fitted = True
+        self._is_fitted = True
         self.set_params(max_value=max_value)
 
-    def __call__(self, x_val, y_val, max_value=0.9):
+    def __call__(self, x, y, max_value=0.9):
         """
         Apply label smoothing.
 
-        :param x_val: Input data, will not be modified by this method
-        :type x_val: `np.ndarray`
-        :param y_val: Original vector of label probabilities (one-vs-rest)
-        :type y_val: `np.ndarray`
+        :param x: Input data, will not be modified by this method
+        :type x: `np.ndarray`
+        :param y: Original vector of label probabilities (one-vs-rest)
+        :type y: `np.ndarray`
         :param max_value: Value to affect to correct label
         :type max_value: `float`
         :return: Unmodified input data and the vector of smooth probabilities as correct labels
@@ -54,15 +54,15 @@ class LabelSmoothing(Preprocessor):
         """
         self.set_params(max_value=max_value)
 
-        min_value = (1 - max_value) / (y_val.shape[1] - 1)
+        min_value = (1 - max_value) / (y.shape[1] - 1)
         assert max_value >= min_value
 
-        smooth_y = y_val.copy()
+        smooth_y = y.copy()
         smooth_y[smooth_y == 1.] = max_value
         smooth_y[smooth_y == 0.] = min_value
-        return x_val, smooth_y
+        return x, smooth_y
 
-    def fit(self, x_val, y_val=None, **kwargs):
+    def fit(self,  x, y=None, **kwargs):
         """No parameters to learn for this method; do nothing."""
         pass
 

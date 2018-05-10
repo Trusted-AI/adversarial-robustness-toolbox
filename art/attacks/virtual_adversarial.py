@@ -18,7 +18,6 @@
 from __future__ import absolute_import, division, print_function, unicode_literals
 
 import numpy as np
-import tensorflow as tf
 
 from art.attacks.attack import Attack
 
@@ -28,86 +27,78 @@ class VirtualAdversarialMethod(Attack):
     This attack was originally proposed by Miyato et al. (2016) and was used for virtual adversarial training.
     Paper link: https://arxiv.org/abs/1507.00677
     """
-    attack_params = ['eps', 'finite_diff', 'max_iter', 'clip_min', 'clip_max']
+    attack_params = ['eps', 'finite_diff', 'max_iter']
 
-    def __init__(self, classifier, sess=None, max_iter=1, finite_diff=1e-6, eps=.1, clip_min=0., clip_max=1.):
+    def __init__(self, classifier, max_iter=1, finite_diff=1e-6, eps=.1):
         """
         Create a VirtualAdversarialMethod instance.
 
         :param classifier: A trained model.
         :type classifier: :class:`Classifier`
-        :param sess: The session to run graphs in.
-        :type sess: `tf.Session`
         :param eps: Attack step (max input variation).
         :type eps: `float`
         :param finite_diff: The finite difference parameter.
         :type finite_diff: `float`
         :param max_iter: The maximum number of iterations.
         :type max_iter: `int`
-        :param clip_min: Minimum input component value.
-        :type clip_min: `float`
-        :param clip_max: Maximum input component value.
-        :type clip_max: `float`
         """
-        super(VirtualAdversarialMethod, self).__init__(classifier, sess)
+        super(VirtualAdversarialMethod, self).__init__(classifier)
 
-        kwargs = {'finite_diff': finite_diff, 'eps': eps, 'max_iter': max_iter, 'clip_min': clip_min,
-                  'clip_max': clip_max}
+        kwargs = {'finite_diff': finite_diff, 'eps': eps, 'max_iter': max_iter}
         self.set_params(**kwargs)
 
-    def generate(self, x_val, **kwargs):
+    def generate(self, x, **kwargs):
         """
         Generate adversarial samples and return them in an array.
 
-        :param x_val: An array with the original inputs to be attacked.
-        :type x_val: `np.ndarray`
+        :param x: An array with the original inputs to be attacked.
+        :type x: `np.ndarray`
         :param eps: Attack step (max input variation).
         :type eps: `float`
         :param finite_diff: The finite difference parameter.
         :type finite_diff: `float`
         :param max_iter: The maximum number of iterations.
         :type max_iter: `int`
-        :param clip_min: Minimum input component value.
-        :type clip_min: `float`
-        :param clip_max: Maximum input component value.
-        :type clip_max: `float`
         :return: An array holding the adversarial examples.
         :rtype: `np.ndarray`
         """
         # TODO Consider computing attack for a batch of samples at a time (no for loop)
         # Parse and save attack-specific parameters
         assert self.set_params(**kwargs)
+        clip_min, clip_max = self.classifier.clip_values
 
-        x_adv = np.copy(x_val)
-        dims = [None] + list(x_val.shape[1:])
-        self._x = tf.placeholder(tf.float32, shape=dims)
-        dims[0] = 1
-        self._preds = self.classifier._get_predictions(self._x, log=False)
-        preds_val = self.sess.run(self._preds, {self._x: x_adv})
+        x_adv = np.copy(x)
+        dims = list(x.shape[1:])
+        preds = self.classifier.predict(x_adv, logits=False)
 
         for ind, val in enumerate(x_adv):
-            d = np.random.randn(*dims[1:])
-            e = np.random.randn(*dims[1:])
+            d = np.random.randn(*dims)
+            
             for _ in range(self.max_iter):
-                d = self.finite_diff * self._normalize(d)
-                e = self.finite_diff * self._normalize(e)
-                preds_val_d = self.sess.run(self._preds, {self._x: [val + d]})[0]
-                preds_val_e = self.sess.run(self._preds, {self._x: [val + e]})[0]
-
-                # Compute KL divergence between logits
+                d = self._normalize(d)
+                preds_new = self.classifier.predict((val + d)[None, ...], logits=False)
+                
                 from scipy.stats import entropy
-                kl_div1 = entropy(preds_val[ind], preds_val_d)
-                kl_div2 = entropy(preds_val[ind], preds_val_e)
-                d = (kl_div1 - kl_div2) / np.abs(d - e)
+                kl_div1 = entropy(preds[ind], preds_new[0])
+                
+                # TODO remove for loop
+                d_new = d
+                for i in range(*dims):
+                    d[i] += self.finite_diff
+                    preds_new = self.classifier.predict((val + d)[None, ...], logits=False)
+                    kl_div2 = entropy(preds[ind], preds_new[0])                    
+                    d_new[i] = (kl_div2-kl_div1)/self.finite_diff
+                    d[i] -= self.finite_diff
+                d = d_new
 
             # Apply perturbation and clip
-            val += self.eps * self._normalize(d)
-            if self.clip_min is not None or self.clip_max is not None:
-                val = np.clip(val, self.clip_min, self.clip_max)
+            val = np.clip(val + self.eps * self._normalize(d), clip_min, clip_max)
+            x_adv[ind] = val
 
         return x_adv
 
-    def _normalize(self, x):
+    @staticmethod
+    def _normalize(x):
         """
         Apply L_2 batch normalization on `x`.
 
@@ -120,7 +111,6 @@ class VirtualAdversarialMethod(Attack):
         dims = x.shape
 
         x = x.flatten()
-        x /= np.max(np.abs(x)) + tol
         inverse = (np.sum(x**2) + np.sqrt(tol)) ** -.5
         x = x * inverse
         x = np.reshape(x, dims)
@@ -137,10 +127,6 @@ class VirtualAdversarialMethod(Attack):
         :type finite_diff: `float`
         :param max_iter: The maximum number of iterations.
         :type max_iter: `int`
-        :param clip_min: Minimum input component value.
-        :type clip_min: `float`
-        :param clip_max: Maximum input component value.
-        :type clip_max: `float`
         """
         # Save attack-specific parameters
         super(VirtualAdversarialMethod, self).set_params(**kwargs)

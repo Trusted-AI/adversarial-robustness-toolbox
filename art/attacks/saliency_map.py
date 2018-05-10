@@ -17,11 +17,9 @@
 # SOFTWARE.
 from __future__ import absolute_import, division, print_function, unicode_literals
 
-from keras import backend as k
 import numpy as np
-import tensorflow as tf
 
-from art.attacks.attack import Attack, class_derivative
+from art.attacks.attack import Attack
 
 
 class SaliencyMapMethod(Attack):
@@ -29,82 +27,69 @@ class SaliencyMapMethod(Attack):
     Implementation of the Jacobian-based Saliency Map Attack (Papernot et al. 2016).
     Paper link: https://arxiv.org/pdf/1511.07528.pdf
     """
-    attack_params = ['theta', 'gamma', 'clip_min', 'clip_max']
+    attack_params = ['theta', 'gamma']
 
-    def __init__(self, model, sess=None, theta=0.1, gamma=1., clip_min=0., clip_max=1.):
+    def __init__(self, classifier, theta=0.1, gamma=1.):
         """
         Create a SaliencyMapMethod instance.
 
-        :param theta: Perturbation introduced to each modified feature per step (can be positive or negative)
+        :param classifier: A trained model.
+        :type classifier: :class:`Classifier`
+        :param theta: Perturbation introduced to each modified feature per step (can be positive or negative).
         :type theta: `float`
-        :param gamma: Maximum percentage of perturbed features (between 0 and 1)
+        :param gamma: Maximum percentage of perturbed features (between 0 and 1).
         :type gamma: `float`
-        :param clip_min: Minimum input component value.
-        :type clip_min: `float`
-        :param clip_max: Maximum input component value.
-        :type clip_max: `float`
         """
-        super(SaliencyMapMethod, self).__init__(model, sess)
-        kwargs = {'theta': theta,
-                  'gamma': gamma,
-                  'clip_min': clip_min,
-                  'clip_max': clip_max}
+        super(SaliencyMapMethod, self).__init__(classifier)
+        kwargs = {
+            'theta': theta,
+            'gamma': gamma
+            }
         self.set_params(**kwargs)
 
-    def generate(self, x_val, **kwargs):
+    def generate(self, x, **kwargs):
         """
         Generate adversarial samples and return them in an array.
 
-        :param x_val: An array with the original inputs to be attacked.
-        :type x_val: `np.ndarray`
-        :param y_val: Target values if the attack is targeted
-        :type y_val: `np.ndarray`
+        :param x: An array with the original inputs to be attacked.
+        :type x: `np.ndarray`
+        :param y: Target values if the attack is targeted
+        :type y: `np.ndarray`
         :param theta: Perturbation introduced to each modified feature per step (can be positive or negative)
         :type theta: `float`
         :param gamma: Maximum percentage of perturbed features (between 0 and 1)
         :type gamma: `float`
-        :param clip_min: Minimum input component value.
-        :type clip_min: `float`
-        :param clip_max: Maximum input component value.
-        :type clip_max: `float`
         :return: An array holding the adversarial examples.
         :rtype: `np.ndarray`
         """
         # Parse and save attack-specific parameters
         assert self.set_params(**kwargs)
-        k.set_learning_phase(0)
+        clip_min, clip_max = self.classifier.clip_values
 
         # Initialize variables
-        dims = [None] + list(x_val.shape[1:])
-        self._x = tf.placeholder(tf.float32, shape=dims)
-        dims[0] = 1
-        x_adv = np.copy(x_val)
-        self._nb_features = np.product(x_adv.shape[1:])
-        self._nb_classes = self.model.output_shape[1]
-        x_adv = np.reshape(x_adv, (-1, self._nb_features))
-        preds = self.sess.run(tf.argmax(self.classifier.model(self._x), axis=1), {self._x: x_val})
-
-        loss = self.classifier._get_predictions(self._x, log=False)
-        self._grads = class_derivative(loss, self._x, self._nb_classes)
+        dims = [1] + list(x.shape[1:])
+        self._nb_features = np.product(dims)
+        x_adv = np.reshape(np.copy(x), (-1, self._nb_features))
+        preds = np.argmax(self.classifier.predict(x), axis=1)
 
         # Set number of iterations w.r.t. the total perturbation allowed
         max_iter = np.floor(self._nb_features * self.gamma / 2)
 
         # Determine target classes for attack
-        if 'y_val' not in kwargs or kwargs[str('y_val')] is None:
+        if 'y' not in kwargs or kwargs[str('y')] is None:
             # Randomly choose target from the incorrect classes for each sample
             from art.utils import random_targets
-            targets = np.argmax(random_targets(preds, self._nb_classes), axis=1)
+            targets = np.argmax(random_targets(preds, self.classifier.nb_classes), axis=1)
         else:
-            targets = kwargs[str('y_val')]
+            targets = kwargs[str('y')]
 
         # Generate the adversarial samples
         for ind, val in enumerate(x_adv):
             # Initialize the search space; optimize to remove features that can't be changed
             if self.theta > 0:
-                search_space = set([i for i in range(self._nb_features) if val[i] < self.clip_max])
+                search_space = set([i for i in range(self._nb_features) if val[i] < clip_max])
             else:
-                search_space = set([i for i in range(self._nb_features) if val[i] > self.clip_min])
+                search_space = set([i for i in range(self._nb_features) if val[i] > clip_min])
 
             nb_iter = 0
             current_pred = preds[ind]
@@ -117,15 +102,14 @@ class SaliencyMapMethod(Attack):
                 if feat1 == feat2 == 0:
                     break
 
-                # Prepare update
+                # Prepare update depending of theta
                 if self.theta > 0:
-                    clip_func, clip_value = np.minimum, self.clip_max
+                    clip_func, clip_value = np.minimum, clip_max
                 else:
-                    clip_func, clip_value = np.maximum, self.clip_min
+                    clip_func, clip_value = np.maximum, clip_min
 
                 # Update adversarial example
                 for feature_ind in [feat1, feat2]:
-                    # unraveled_ind = np.unravel_index(feature_ind, dims)
                     val[feature_ind] = clip_func(clip_value, val[feature_ind] + self.theta)
 
                     # Remove indices from search space if max/min values were reached
@@ -133,11 +117,10 @@ class SaliencyMapMethod(Attack):
                         search_space.discard(feature_ind)
 
                 # Recompute model prediction
-                current_pred = self.sess.run(tf.argmax(self.classifier.model(self._x), axis=1),
-                                             {self._x: np.reshape(val, dims)})
+                current_pred = np.argmax(self.classifier.predict(np.reshape(val, dims)), axis=1)
                 nb_iter += 1
 
-        x_adv = np.reshape(x_adv, x_val.shape)
+        x_adv = np.reshape(x_adv, x.shape)
         return x_adv
 
     def set_params(self, **kwargs):
@@ -148,16 +131,12 @@ class SaliencyMapMethod(Attack):
         :type theta: `float`
         :param gamma: Maximum percentage of perturbed features (between 0 and 1)
         :type gamma: `float`
-        :param clip_min: Minimum input component value.
-        :type clip_min: `float`
-        :param clip_max: Maximum input component value.
-        :type clip_max: `float`
         """
         # Save attack-specific parameters
         super(SaliencyMapMethod, self).set_params(**kwargs)
 
         if self.gamma < 0 or self.gamma > 1:
-            raise ValueError("The total perturbation must be between 0 and 1.")
+            raise ValueError("The total perturbation percentage `gamma` must be between 0 and 1.")
 
         return True
 
@@ -175,14 +154,14 @@ class SaliencyMapMethod(Attack):
         :return: The top 2 coefficients in `search_space` that maximize / minimize the saliency map
         :rtype: `tuple`
         """
-        grads_val = self.sess.run(self._grads, feed_dict={self._x: x})
-        grads_val = np.array([np.reshape(g[0], self._nb_features) for g in grads_val])
+        grads = self.classifier.class_gradient(x, logits=False)
+        grads = np.reshape(grads, (-1, self._nb_features))
 
         # Compute grads for target class and sum of gradients for all other classes
-        grads_target = grads_val[target]
-        other_mask = list(range(self._nb_classes))
+        grads_target = grads[target]
+        other_mask = list(range(self.classifier.nb_classes))
         other_mask.remove(target)
-        grads_others = np.sum(grads_val[other_mask, :], axis=0)
+        grads_others = np.sum(grads[other_mask, :], axis=0)
 
         # Remove gradients for already used features
         used_features = list(set(range(self._nb_features)) - search_space)
