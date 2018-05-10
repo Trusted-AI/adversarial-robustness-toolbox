@@ -3,6 +3,8 @@ from __future__ import absolute_import, division, print_function, unicode_litera
 import abc
 import sys
 
+# TODO Add tests for defences on classifier
+
 # Ensure compatibility with Python 2 and 3 when using ABCMeta
 if sys.version_info >= (3, 4):
     ABC = abc.ABC
@@ -20,6 +22,8 @@ class Classifier(ABC):
         :param clip_values: Tuple of the form `(min, max)` representing the minimum and maximum values allowed
                for features.
         :type clip_values: `tuple`
+        :param defences: Defences to be activated with the classifier.
+        :type defences: `str` or `list(str)`
         """
         self._clip_values = clip_values
         self._parse_defences(defences)
