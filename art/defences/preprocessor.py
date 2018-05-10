@@ -37,38 +37,34 @@ class Preprocessor(ABC):
         """
         Perform data preprocessing and return preprocessed data as tuple.
 
-        :param x: (np.ndarray) Dataset to be preprocessed
-        :param y: (np.ndarray) Labels to be preprocessed
+        :param x: Dataset to be preprocessed.
+        :type x: `np.ndarray`
+        :param y: Labels to be preprocessed.
+        :type y: `np.ndarray`
         :return: Preprocessed data
         """
-        pass
+        raise NotImplementedError
 
     @abc.abstractmethod
     def fit(self, x, y=None, **kwargs):
         """
         Fit the parameters of the data preprocessor if it has any.
 
-        :param x: (np.ndarray) Training set to fit the preprocessor
-        :param y: (np.ndarray) Labels for the training set
-        :param kwargs: (dict) Other parameters
+        :param x: Training set to fit the preprocessor.
+        :type x: `np.ndarray`
+        :param y: Labels for the training set.
+        :type y: `np.ndarray`
+        :param kwargs: Other parameters.
+        :type kwargs: `dict`
         :return: None
         """
         self._is_fitted = True
 
-    def predict(self, x, y=None):
-        """
-        Perform data preprocessing and return preprocessed data as tuple.
-
-        :param x: (np.ndarray) Dataset to be preprocessed
-        :param y: (np.ndarray) Labels to be preprocessed
-        :return: Preprocessed data
-        """
-        return self.__call__(x, y)
-
     def set_params(self, **kwargs):
         """
         Take in a dictionary of parameters and apply checks before saving them as attributes.
-        :return: True when parsing was successful
+
+        :return: `True` when parsing was successful
         """
         for key, value in kwargs.items():
             if key in self.params:
