@@ -36,6 +36,9 @@ class PyTorchClassifier(Classifier):
         self._model = model
         self._loss = loss
 
+        # Store the logit layer
+        self._logit_layer = len(list(model.modules())) - 2 if use_logits else len(list(model.modules())) - 3
+
     def predict(self, inputs, logits=False):
         """
         Perform prediction for a batch of inputs.
@@ -50,25 +53,16 @@ class PyTorchClassifier(Classifier):
         # Set test phase
         self._model.train(False)
 
+        # Apply defences
+        inputs = self._apply_defences_predict(inputs)
+
         # Run prediction
-        if logits:
-            results = self._sess.run(self._logits, feed_dict=fd)
-        else:
-            results = self._sess.run(tf.nn.softmax(self._logits), feed_dict=fd)
+        preds = self._forward_at(inputs, self._logit_layer)
+        if not logits:
+            exp = np.exp(preds - np.max(preds, axis=1, keepdims=True))
+            preds = exp / np.sum(exp, axis=1, keepdims=True)
 
-        return results
-
-    def _forward_at(self, inputs, layer):
-        """
-        Compute the forward at a specific layer.
-
-        :param inputs: Input data.
-        :type inputs: `np.ndarray`
-        :param layer: The layer where to get the forward results.
-        :type layer: `int`
-        :return: The forward results at the layer.
-        :rtype: `np.ndarray`
-        """
+        return preds
 
     def fit(self, inputs, outputs, batch_size=128, nb_epochs=10):
         """
@@ -153,4 +147,22 @@ class PyTorchClassifier(Classifier):
         grds = self._sess.run(self._loss_grads, feed_dict={self._input_ph: inputs, self._output_ph: labels})
 
         return grds
+
+    def _forward_at(self, inputs, layer):
+        """
+        Compute the forward at a specific layer.
+
+        :param inputs: Input data.
+        :type inputs: `np.ndarray`
+        :param layer: The layer where to get the forward results.
+        :type layer: `int`
+        :return: The forward results at the layer.
+        :rtype: `np.ndarray`
+        """
+        results = inputs
+        for l in list(self._model.modules())[1:layer + 2]:
+            results = l(results)
+
+        return results
+
 
