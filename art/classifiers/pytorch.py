@@ -10,7 +10,7 @@ class PyTorchClassifier(Classifier):
     """
     This class implements a classifier with the PyTorch framework.
     """
-    def __init__(self, clip_values, model, loss, input_shape, use_logits=False, defences=None):
+    def __init__(self, clip_values, model, loss, optimizer, input_shape, use_logits=False, defences=None):
         """
         Initialization specifically for the PyTorch-based implementation.
 
@@ -21,6 +21,8 @@ class PyTorchClassifier(Classifier):
         :type model: `torch.nn.Module`
         :param loss: The loss function for which to compute gradients for training.
         :type loss: `torch.nn.modules.loss._Loss`
+        :param optimizer: The optimizer used to train the classifier.
+        :type optimizer: `torch.optim.Optimizer`
         :param input_shape: Shape of the input.
         :type input_shape: `tuple`
         :param use_logits: True if the output of the model are the logits
@@ -28,13 +30,12 @@ class PyTorchClassifier(Classifier):
         :param defences: Defences to be activated with the classifier.
         :type defences: `str` or `list(str)`
         """
-        import torch
-
         super(PyTorchClassifier, self).__init__(clip_values, defences)
         self._nb_classes = list(model.modules())[-1 if use_logits else -2].out_features
         self._input_shape = input_shape
         self._model = model
         self._loss = loss
+        self._optimizer = optimizer
 
         # Store the logit layer
         self._logit_layer = len(list(model.modules())) - 2 if use_logits else len(list(model.modules())) - 3
@@ -78,9 +79,11 @@ class PyTorchClassifier(Classifier):
         :type nb_epochs: `int`
         :return: `None`
         """
-        # Check if train and output_ph available
-        if self._train is None or self._output_ph is None:
-            raise ValueError("Need the training objective and the output placeholder to train the model.")
+        # Set train phase
+        self._model.train(True)
+
+        # Apply defences
+        inputs, outputs = self._apply_defences_fit(inputs, outputs)
 
         num_batch = int(np.ceil(len(inputs) / batch_size))
         ind = np.arange(len(inputs))
@@ -99,12 +102,14 @@ class PyTorchClassifier(Classifier):
                     i_batch = inputs[ind[m*batch_size:]]
                     o_batch = outputs[ind[m * batch_size:]]
 
-                # Run train step
-                if self._learning is None:
-                    self._sess.run(self._train, feed_dict={self._input_ph: i_batch, self._output_ph: o_batch})
-                else:
-                    self._sess.run(self._train, feed_dict={self._input_ph: i_batch, self._output_ph: o_batch,
-                                                           self._learning: True})
+                # Zero the parameter gradients
+                self._optimizer.zero_grad()
+
+                # Actual training
+                m_batch = self._model(i_batch)
+                loss = self._loss(m_batch, o_batch)
+                loss.backward()
+                self._optimizer.step()
 
     def class_gradient(self, inputs, logits=False):
         """
