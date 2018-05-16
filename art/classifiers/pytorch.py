@@ -2,6 +2,7 @@ from __future__ import absolute_import, division, print_function, unicode_litera
 
 import numpy as np
 import random
+import torch
 
 from art.classifiers.classifier import Classifier
 
@@ -58,7 +59,7 @@ class PyTorchClassifier(Classifier):
         inputs = self._apply_defences_predict(inputs)
 
         # Run prediction
-        preds = self._forward_at(inputs, self._logit_layer)
+        preds = self._forward_at(torch.from_numpy(inputs), self._logit_layer).detach().numpy()
         if not logits:
             exp = np.exp(preds - np.max(preds, axis=1, keepdims=True))
             preds = exp / np.sum(exp, axis=1, keepdims=True)
@@ -96,11 +97,11 @@ class PyTorchClassifier(Classifier):
             # Train for one epoch
             for m in range(num_batch):
                 if m < num_batch - 1:
-                    i_batch = inputs[ind[m * batch_size:(m + 1) * batch_size]]
-                    o_batch = outputs[ind[m * batch_size:(m + 1) * batch_size]]
+                    i_batch = torch.from_numpy(inputs[ind[m * batch_size:(m + 1) * batch_size]])
+                    o_batch = torch.from_numpy(outputs[ind[m * batch_size:(m + 1) * batch_size]])
                 else:
-                    i_batch = inputs[ind[m*batch_size:]]
-                    o_batch = outputs[ind[m * batch_size:]]
+                    i_batch = torch.from_numpy(inputs[ind[m*batch_size:]])
+                    o_batch = torch.from_numpy(outputs[ind[m * batch_size:]])
 
                 # Zero the parameter gradients
                 self._optimizer.zero_grad()
@@ -123,11 +124,23 @@ class PyTorchClassifier(Classifier):
                  `(batch_size, nb_classes, input_shape)`.
         :rtype: `np.ndarray`
         """
+        # Convert the inputs to Tensors
+        x = torch.from_numpy(inputs)
+        x.requires_grad = True
+
         # Compute the gradient and return
-        if logits:
-            grds = self._sess.run(self._logit_class_grads, feed_dict={self._input_ph: inputs})
-        else:
-            grds = self._sess.run(self._class_grads, feed_dict={self._input_ph: inputs})
+        # Run prediction
+        preds = self._forward_at(x, self._logit_layer)
+        if not logits:
+            preds = torch.nn.Softmax()(preds)
+
+        # Compute the gradient
+        grds = []
+        self._model.zero_grad()
+        for i in range(self.nb_classes):
+            x.grad.data.zero_()
+            torch.autograd.backward(preds[:, i], torch.FloatTensor([1] * len(preds[:, 0])), retain_graph=True)
+            grds.append(x.grad.numpy().copy())
 
         grds = np.swapaxes(np.array(grds), 0, 1)
 
@@ -144,12 +157,10 @@ class PyTorchClassifier(Classifier):
         :return: Array of gradients of the same shape as the inputs.
         :rtype: `np.ndarray`
         """
-        # Check if loss available
-        if not hasattr(self, '_loss_grads') or self._loss_grads is None:
-            raise ValueError("Need the loss function to compute the loss gradient.")
 
         # Compute the gradient and return
-        grds = self._sess.run(self._loss_grads, feed_dict={self._input_ph: inputs, self._output_ph: labels})
+        loss = self._loss(m_batch, o_batch)
+        loss.backward()
 
         return grds
 
@@ -162,7 +173,7 @@ class PyTorchClassifier(Classifier):
         :param layer: The layer where to get the forward results.
         :type layer: `int`
         :return: The forward results at the layer.
-        :rtype: `np.ndarray`
+        :rtype: `torch.Tensor`
         """
         results = inputs
         for l in list(self._model.modules())[1:layer + 2]:
