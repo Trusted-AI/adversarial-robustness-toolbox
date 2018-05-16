@@ -114,10 +114,16 @@ class KerasClassifier(Classifier):
         # Apply defences
         inputs = self._apply_defences_predict(inputs)
 
-        preds = self._preds([inputs])[0]
-        if not logits:
-            exp = np.exp(preds - np.max(preds, axis=1, keepdims=True))
-            preds = exp / np.sum(exp, axis=1, keepdims=True)
+        # Run predictions with batching
+        batch_size = 512
+        preds = np.zeros((inputs.shape[0], self.nb_classes), dtype=np.float32)
+        for b in range(inputs.shape[0] // batch_size + 1):
+            begin, end = b * batch_size,  min((b + 1) * batch_size, inputs.shape[0])
+            preds[begin:end] = self._preds([inputs[begin:end]])[0]
+
+            if not logits:
+                exp = np.exp(preds[begin:end] - np.max(preds[begin:end], axis=1, keepdims=True))
+                preds[begin:end] = exp / np.sum(exp, axis=1, keepdims=True)
 
         return preds
 
@@ -141,13 +147,13 @@ class KerasClassifier(Classifier):
         # Apply defences
         inputs, outputs = self._apply_defences_fit(inputs, outputs)
 
-        gen = generator(inputs, outputs, batch_size)
+        gen = generator_fit(inputs, outputs, batch_size)
         self._model.fit_generator(gen, steps_per_epoch=inputs.shape[0] / batch_size, epochs=nb_epochs)
 
 
-def generator(data, labels, batch_size=128):
+def generator_fit(data, labels, batch_size=128):
     """
-    Minimal data generator for batching large datasets.
+    Minimal data generator for randomly batching large datasets.
 
     :param data: The data sample to batch.
     :type data: `np.ndarray`
