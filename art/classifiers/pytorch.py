@@ -41,6 +41,10 @@ class PyTorchClassifier(Classifier):
         # Store the logit layer
         self._logit_layer = len(list(model.modules())) - 2 if use_logits else len(list(model.modules())) - 3
 
+        # Use GPU if possible
+        device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
+        self._model.to(device)
+
     def predict(self, inputs, logits=False):
         """
         Perform prediction for a batch of inputs.
@@ -52,11 +56,11 @@ class PyTorchClassifier(Classifier):
         :return: Array of predictions of shape `(nb_inputs, self.nb_classes)`.
         :rtype: `np.ndarray`
         """
-        # Set test phase
-        self._model.train(False)
-
         # Apply defences
         inputs = self._apply_defences_predict(inputs)
+
+        # Set test phase
+        self._model.train(False)
 
         # Run prediction
         preds = self._forward_at(torch.from_numpy(inputs), self._logit_layer).detach().numpy()
@@ -80,11 +84,11 @@ class PyTorchClassifier(Classifier):
         :type nb_epochs: `int`
         :return: `None`
         """
-        # Set train phase
-        self._model.train(True)
-
         # Apply defences
         inputs, outputs = self._apply_defences_fit(inputs, outputs)
+
+        # Set train phase
+        self._model.train(True)
 
         num_batch = int(np.ceil(len(inputs) / batch_size))
         ind = np.arange(len(inputs))
