@@ -157,10 +157,24 @@ class PyTorchClassifier(Classifier):
         :return: Array of gradients of the same shape as the inputs.
         :rtype: `np.ndarray`
         """
+        # Convert the inputs to Tensors
+        inputs_t = torch.from_numpy(inputs)
+        inputs_t.requires_grad = True
+
+        # Convert the labels to Tensors
+        labels_t = torch.from_numpy(labels)
 
         # Compute the gradient and return
-        loss = self._loss(m_batch, o_batch)
+        m_output = self._model(inputs_t)
+        loss = self._loss(m_output, labels_t)
+
+        # Clean gradients
+        self._model.zero_grad()
+        inputs_t.grad.data.zero_()
+
+        # Compute gradients
         loss.backward()
+        grds = inputs_t.grad.numpy().copy()
 
         return grds
 
