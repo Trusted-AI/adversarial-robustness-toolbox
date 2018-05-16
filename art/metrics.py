@@ -201,14 +201,6 @@ def clever_t(classifier, x, target_class, n_b, n_s, r, norm, c_init=1, pool_fact
     if pool_factor < 1:
         raise ValueError("The pool_factor must be larger than 1")
 
-    # Change norm since q = p / (p-1)
-    if norm == 1:
-        norm = np.inf
-    elif norm == np.inf:
-        norm = 1
-    elif norm != 2:
-        raise ValueError("Norm {} not supported".format(norm))
-
     # Some auxiliary vars
     grad_norm_set = []
     dim = reduce(lambda x_, y: x_ * y, x.shape, 1)
@@ -219,6 +211,14 @@ def clever_t(classifier, x, target_class, n_b, n_s, r, norm, c_init=1, pool_fact
     rand_pool = np.reshape(_random_sphere(m=pool_factor * n_s, n=dim, r=r, norm=norm), shape)
     rand_pool += np.repeat(np.array([x]), pool_factor * n_s, 0)
     np.clip(rand_pool, classifier.clip_values[0], classifier.clip_values[1], out=rand_pool)
+
+    # Change norm since q = p / (p-1)
+    if norm == 1:
+        norm = np.inf
+    elif norm == np.inf:
+        norm = 1
+    elif norm != 2:
+        raise ValueError("Norm {} not supported".format(norm))
 
     # Loop over n_b batches
     for i in range(n_b):
