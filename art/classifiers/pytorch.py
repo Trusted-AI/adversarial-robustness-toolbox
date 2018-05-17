@@ -11,14 +11,14 @@ class PyTorchClassifier(Classifier):
     """
     This class implements a classifier with the PyTorch framework.
     """
-    def __init__(self, clip_values, model, loss, optimizer, input_shape, use_logits=False, defences=None):
+    def __init__(self, clip_values, model, loss, optimizer, input_shape, output_shape, defences=None):
         """
         Initialization specifically for the PyTorch-based implementation.
 
         :param clip_values: Tuple of the form `(min, max)` representing the minimum and maximum values allowed
                for features.
         :type clip_values: `tuple`
-        :param model: PyTorch model.
+        :param model: PyTorch model. The forward function of the model must return a tuple (logit output, output).
         :type model: `torch.nn.Module`
         :param loss: The loss function for which to compute gradients for training.
         :type loss: `torch.nn.modules.loss._Loss`
@@ -26,20 +26,21 @@ class PyTorchClassifier(Classifier):
         :type optimizer: `torch.optim.Optimizer`
         :param input_shape: Shape of the input.
         :type input_shape: `tuple`
-        :param use_logits: True if the output of the model are the logits
-        :type use_logits: `bool`
+        :param output_shape: Shape of the output.
+        :type output_shape: `tuple`
         :param defences: Defences to be activated with the classifier.
         :type defences: `str` or `list(str)`
         """
         super(PyTorchClassifier, self).__init__(clip_values, defences)
-        self._nb_classes = list(model.modules())[-1 if use_logits else -2].out_features
+        #self._nb_classes = list(model.modules())[-1 if use_logits else -2].out_features
+        self._nb_classes = output_shape[0]
         self._input_shape = input_shape
         self._model = model
         self._loss = loss
         self._optimizer = optimizer
 
-        # Store the logit layer
-        self._logit_layer = len(list(model.modules())) - 2 if use_logits else len(list(model.modules())) - 3
+        ## Store the logit layer
+        #self._logit_layer = len(list(model.modules())) - 2 if use_logits else len(list(model.modules())) - 3
 
         # Use GPU if possible
         device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
@@ -63,10 +64,16 @@ class PyTorchClassifier(Classifier):
         self._model.train(False)
 
         # Run prediction
-        preds = self._forward_at(torch.from_numpy(inputs), self._logit_layer).detach().numpy()
-        if not logits:
-            exp = np.exp(preds - np.max(preds, axis=1, keepdims=True))
-            preds = exp / np.sum(exp, axis=1, keepdims=True)
+        # preds = self._forward_at(torch.from_numpy(inputs), self._logit_layer).detach().numpy()
+        # if not logits:
+        #     exp = np.exp(preds - np.max(preds, axis=1, keepdims=True))
+        #     preds = exp / np.sum(exp, axis=1, keepdims=True)
+        (logit_output, output) = self._model(torch.from_numpy(inputs))
+
+        if logits:
+            preds = logit_output.detach().numpy()
+        else:
+            preds = output.detach().numpy()
 
         return preds
 
@@ -111,7 +118,7 @@ class PyTorchClassifier(Classifier):
                 self._optimizer.zero_grad()
 
                 # Actual training
-                m_batch = self._model(i_batch)
+                (_, m_batch) = self._model(i_batch)
                 loss = self._loss(m_batch, o_batch)
                 loss.backward()
                 self._optimizer.step()
@@ -134,9 +141,16 @@ class PyTorchClassifier(Classifier):
 
         # Compute the gradient and return
         # Run prediction
-        preds = self._forward_at(x, self._logit_layer)
-        if not logits:
-            preds = torch.nn.Softmax()(preds)
+        (logit_output, output) = self._model(x)
+
+        if logits:
+            preds = logit_output
+        else:
+            preds = output
+
+        # preds = self._forward_at(x, self._logit_layer)
+        # if not logits:
+        #     preds = torch.nn.Softmax()(preds)
 
         # Compute the gradient
         grds = []
@@ -169,7 +183,7 @@ class PyTorchClassifier(Classifier):
         labels_t = torch.from_numpy(labels)
 
         # Compute the gradient and return
-        m_output = self._model(inputs_t)
+        (_, m_output) = self._model(inputs_t)
         loss = self._loss(m_output, labels_t)
 
         # Clean gradients
@@ -182,21 +196,26 @@ class PyTorchClassifier(Classifier):
 
         return grds
 
-    def _forward_at(self, inputs, layer):
-        """
-        Compute the forward at a specific layer.
-
-        :param inputs: Input data.
-        :type inputs: `np.ndarray`
-        :param layer: The layer where to get the forward results.
-        :type layer: `int`
-        :return: The forward results at the layer.
-        :rtype: `torch.Tensor`
-        """
-        results = inputs
-        for l in list(self._model.modules())[1:layer + 2]:
-            results = l(results)
-
-        return results
+    # def _forward_at(self, inputs, layer):
+    #     """
+    #     Compute the forward at a specific layer.
+    #
+    #     :param inputs: Input data.
+    #     :type inputs: `np.ndarray`
+    #     :param layer: The layer where to get the forward results.
+    #     :type layer: `int`
+    #     :return: The forward results at the layer.
+    #     :rtype: `torch.Tensor`
+    #     """
+    #     print(layer)
+    #     results = inputs
+    #     for l in list(self._model.modules())[1:layer + 2]:
+    #         print(l)
+    #
+    #         results = l(results)
+    #
+    #         print(results.shape)
+    #
+    #     return results
 
 
