@@ -156,9 +156,9 @@ class PyTorchClassifier(Classifier):
         grds = []
         self._model.zero_grad()
         for i in range(self.nb_classes):
-            x.grad.data.zero_()
             torch.autograd.backward(preds[:, i], torch.FloatTensor([1] * len(preds[:, 0])), retain_graph=True)
             grds.append(x.grad.numpy().copy())
+            x.grad.data.zero_()
 
         grds = np.swapaxes(np.array(grds), 0, 1)
 
@@ -188,7 +188,7 @@ class PyTorchClassifier(Classifier):
 
         # Clean gradients
         self._model.zero_grad()
-        inputs_t.grad.data.zero_()
+        #inputs_t.grad.data.zero_()
 
         # Compute gradients
         loss.backward()
