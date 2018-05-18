@@ -24,7 +24,7 @@ class SpatialSmoothing(Preprocessor):
 
     def __call__(self, x, window_size=None):
         """
-        Apply local spatial smoothing to sample `x_val`.
+        Apply local spatial smoothing to sample `x`.
 
         :param x: Sample to smooth with shape `(batch_size, width, height, depth)`.
         :type x: `np.ndarray`

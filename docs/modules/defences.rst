@@ -25,3 +25,9 @@ Adversarial Training
 .. autoclass:: AdversarialTrainer
    :members:
    :special-members:
+
+Gaussian Data Augmentation
+--------------------------
+.. autoclass:: GaussianAugmentation
+   :members:
+   :special-members:

@@ -56,17 +56,23 @@ class VirtualAdversarialMethod(Attack):
 
         for ind, val in enumerate(x_adv):
             d = np.random.randn(*dims)
-            e = np.random.randn(*dims)
+            
             for _ in range(self.max_iter):
-                d = self.finite_diff * self._normalize(d)
-                e = self.finite_diff * self._normalize(e)
-                preds_new = self.classifier.predict(np.stack((val + d, val + e)))
-
-                # Compute KL divergence between logits
+                d = self._normalize(d)
+                preds_new = self.classifier.predict((val + d)[None, ...], logits=False)
+                
                 from scipy.stats import entropy
                 kl_div1 = entropy(preds[ind], preds_new[0])
-                kl_div2 = entropy(preds[ind], preds_new[1])
-                d = (kl_div1 - kl_div2) / np.abs(d - e)
+                
+                # TODO remove for loop
+                d_new = d
+                for i in range(*dims):
+                    d[i] += self.finite_diff
+                    preds_new = self.classifier.predict((val + d)[None, ...], logits=False)
+                    kl_div2 = entropy(preds[ind], preds_new[0])                    
+                    d_new[i] = (kl_div2-kl_div1)/self.finite_diff
+                    d[i] -= self.finite_diff
+                d = d_new
 
             # Apply perturbation and clip
             val = np.clip(val + self.eps * self._normalize(d), clip_min, clip_max)
@@ -88,7 +94,6 @@ class VirtualAdversarialMethod(Attack):
         dims = x.shape
 
         x = x.flatten()
-        x /= np.max(np.abs(x)) + tol
         inverse = (np.sum(x**2) + np.sqrt(tol)) ** -.5
         x = x * inverse
         x = np.reshape(x, dims)

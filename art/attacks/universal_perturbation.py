@@ -81,6 +81,7 @@ class UniversalPerturbation(Attack):
         # Instantiate the middle attacker and get the predicted labels
         attacker = self._get_attack(self.attacker, self.attacker_params)
         pred_y = self.classifier.predict(x, logits=False)
+        pred_y_max = np.argmax(pred_y, axis=1)
 
         # Start to generate the adversarial examples
         nb_iter = 0
@@ -92,19 +93,19 @@ class UniversalPerturbation(Attack):
             for j, ex in enumerate(x[rnd_idx]):
                 xi = ex[None, ...]
 
-                f_xi = self.classifier.predict(xi + v, logits=False)
+                f_xi = self.classifier.predict(xi + v, logits=True)
                 fk_i_hat = np.argmax(f_xi[0])
                 fk_hat = np.argmax(pred_y[rnd_idx][j])
 
                 if fk_i_hat == fk_hat:
                     # Compute adversarial perturbation
                     adv_xi = attacker.generate(xi + v)
-                    adv_f_xi = self.classifier.predict(adv_xi, logits=False)
+                    adv_f_xi = self.classifier.predict(adv_xi, logits=True)
                     adv_fk_i_hat = np.argmax(adv_f_xi[0])
 
                     # If the class has changed, update v
                     if fk_i_hat != adv_fk_i_hat:
-                        v += adv_xi - xi - v
+                        v += adv_xi - xi
 
                         # Project on L_p ball
                         v = self._clip_perturbation(v, self.eps, self.p)
@@ -112,10 +113,8 @@ class UniversalPerturbation(Attack):
 
             # Compute the error rate
             adv_x = x + v
-            adv_y = self.classifier.predict(adv_x, logits=False)
-            adv_y_max = np.argmax(adv_y, axis=1)
-            pred_y_max = np.argmax(pred_y, axis=1)
-            fooling_rate = np.sum(pred_y_max != adv_y_max) / float(nb_instances)
+            adv_y = np.argmax(self.classifier.predict(adv_x, logits=False))
+            fooling_rate = np.sum(pred_y_max != adv_y) / nb_instances
 
         self.fooling_rate = fooling_rate
         self.converged = (nb_iter < self.max_iter)
@@ -213,4 +212,3 @@ class UniversalPerturbation(Attack):
         class_module = getattr(module, sub_mods[-1])
 
         return class_module
-
