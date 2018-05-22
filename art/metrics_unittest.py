@@ -24,76 +24,76 @@ NB_TRAIN = 100
 NB_TEST = 100
 
 
-# class TestMetrics(unittest.TestCase):
-#     def test_emp_robustness_mnist(self):
-#         # Get MNIST
-#         (x_train, y_train), (_, _), _, _ = load_mnist()
-#         x_train, y_train = x_train[:NB_TRAIN], y_train[:NB_TRAIN]
-#
-#         # Get classifier
-#         classifier = self._cnn_mnist_k([28, 28, 1])
-#         classifier.fit(x_train, y_train, batch_size=BATCH_SIZE, nb_epochs=2)
-#
-#         # Compute minimal perturbations
-#         params = {"eps_step": 1.1,
-#                   "clip_min": 0.,
-#                   "clip_max": 1.}
-#
-#         emp_robust = empirical_robustness(classifier, x_train, str('fgsm'), params)
-#         self.assertEqual(emp_robust, 0.)
-#
-#         params = {"eps_step": 1.,
-#                   "eps_max": 1.,
-#                   "clip_min": None,
-#                   "clip_max": None}
-#         emp_robust = empirical_robustness(classifier, x_train, str('fgsm'), params)
-#         self.assertAlmostEqual(emp_robust, 1., 3)
-#
-#         params = {"eps_step": 0.1,
-#                   "eps_max": 0.2,
-#                   "clip_min": None,
-#                   "clip_max": None}
-#         emp_robust = empirical_robustness(classifier, x_train, str('fgsm'), params)
-#         self.assertLessEqual(emp_robust, 0.21)
-#
-#     def test_loss_sensitivity(self):
-#         # Get MNIST
-#         (x_train, y_train), (_, _), _, _ = load_mnist()
-#         x_train, y_train = x_train[:NB_TRAIN], y_train[:NB_TRAIN]
-#
-#         # Get classifier
-#         classifier = self._cnn_mnist_k([28, 28, 1])
-#         classifier.fit(x_train, y_train, batch_size=BATCH_SIZE, nb_epochs=2)
-#
-#         l = loss_sensitivity(classifier, x_train)
-#         self.assertGreaterEqual(l, 0)
-#
-#     # def testNearestNeighborDist(self):
-#     #     # Get MNIST
-#     #     (x_train, y_train), (_, _), _, _ = load_mnist()
-#     #     x_train, y_train = x_train[:NB_TRAIN], y_train[:NB_TRAIN]
-#     #
-#     #     # Get classifier
-#     #     classifier = self._cnn_mnist_k([28, 28, 1])
-#     #     classifier.fit(x_train, y_train, batch_size=BATCH_SIZE, nb_epochs=2)
-#     #
-#     #     dist = nearest_neighbour_dist(classifier, x_train, x_train, str('fgsm'))
-#     #     self.assertGreaterEqual(dist, 0)
-#
-#     @staticmethod
-#     def _cnn_mnist_k(input_shape):
-#         # Create simple CNN
-#         model = Sequential()
-#         model.add(Conv2D(4, kernel_size=(5, 5), activation='relu', input_shape=input_shape))
-#         model.add(MaxPooling2D(pool_size=(2, 2)))
-#         model.add(Flatten())
-#         model.add(Dense(10, activation='softmax'))
-#
-#         model.compile(loss=keras.losses.categorical_crossentropy, optimizer=keras.optimizers.Adam(lr=0.01),
-#                       metrics=['accuracy'])
-#
-#         classifier = KerasClassifier((0, 1), model, use_logits=False)
-#         return classifier
+class TestMetrics(unittest.TestCase):
+    def test_emp_robustness_mnist(self):
+        # Get MNIST
+        (x_train, y_train), (_, _), _, _ = load_mnist()
+        x_train, y_train = x_train[:NB_TRAIN], y_train[:NB_TRAIN]
+
+        # Get classifier
+        classifier = self._cnn_mnist_k([28, 28, 1])
+        classifier.fit(x_train, y_train, batch_size=BATCH_SIZE, nb_epochs=2)
+
+        # Compute minimal perturbations
+        params = {"eps_step": 1.1,
+                  "clip_min": 0.,
+                  "clip_max": 1.}
+
+        emp_robust = empirical_robustness(classifier, x_train, str('fgsm'), params)
+        self.assertEqual(emp_robust, 0.)
+
+        params = {"eps_step": 1.,
+                  "eps_max": 1.,
+                  "clip_min": None,
+                  "clip_max": None}
+        emp_robust = empirical_robustness(classifier, x_train, str('fgsm'), params)
+        self.assertAlmostEqual(emp_robust, 1., 3)
+
+        params = {"eps_step": 0.1,
+                  "eps_max": 0.2,
+                  "clip_min": None,
+                  "clip_max": None}
+        emp_robust = empirical_robustness(classifier, x_train, str('fgsm'), params)
+        self.assertLessEqual(emp_robust, 0.21)
+
+    def test_loss_sensitivity(self):
+        # Get MNIST
+        (x_train, y_train), (_, _), _, _ = load_mnist()
+        x_train, y_train = x_train[:NB_TRAIN], y_train[:NB_TRAIN]
+
+        # Get classifier
+        classifier = self._cnn_mnist_k([28, 28, 1])
+        classifier.fit(x_train, y_train, batch_size=BATCH_SIZE, nb_epochs=2)
+
+        l = loss_sensitivity(classifier, x_train)
+        self.assertGreaterEqual(l, 0)
+
+    # def testNearestNeighborDist(self):
+    #     # Get MNIST
+    #     (x_train, y_train), (_, _), _, _ = load_mnist()
+    #     x_train, y_train = x_train[:NB_TRAIN], y_train[:NB_TRAIN]
+    #
+    #     # Get classifier
+    #     classifier = self._cnn_mnist_k([28, 28, 1])
+    #     classifier.fit(x_train, y_train, batch_size=BATCH_SIZE, nb_epochs=2)
+    #
+    #     dist = nearest_neighbour_dist(classifier, x_train, x_train, str('fgsm'))
+    #     self.assertGreaterEqual(dist, 0)
+
+    @staticmethod
+    def _cnn_mnist_k(input_shape):
+        # Create simple CNN
+        model = Sequential()
+        model.add(Conv2D(4, kernel_size=(5, 5), activation='relu', input_shape=input_shape))
+        model.add(MaxPooling2D(pool_size=(2, 2)))
+        model.add(Flatten())
+        model.add(Dense(10, activation='softmax'))
+
+        model.compile(loss=keras.losses.categorical_crossentropy, optimizer=keras.optimizers.Adam(lr=0.01),
+                      metrics=['accuracy'])
+
+        classifier = KerasClassifier((0, 1), model, use_logits=False)
+        return classifier
 
 #########################################
 # This part is the unit test for Clever.#
@@ -300,68 +300,6 @@ class TestClever(unittest.TestCase):
 
 if __name__ == '__main__':
     unittest.main()
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
 
 
 
