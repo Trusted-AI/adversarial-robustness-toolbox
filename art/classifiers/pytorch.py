@@ -68,7 +68,7 @@ class PyTorchClassifier(Classifier):
         # if not logits:
         #     exp = np.exp(preds - np.max(preds, axis=1, keepdims=True))
         #     preds = exp / np.sum(exp, axis=1, keepdims=True)
-        (logit_output, output) = self._model(torch.from_numpy(inputs))
+        (logit_output, output) = self._model(torch.from_numpy(inputs).float())
 
         if logits:
             preds = logit_output.detach().numpy()
@@ -114,6 +114,9 @@ class PyTorchClassifier(Classifier):
                     i_batch = torch.from_numpy(inputs[ind[m*batch_size:]])
                     o_batch = torch.from_numpy(outputs[ind[m * batch_size:]])
 
+                # Cast to float
+                i_batch = i_batch.float()
+
                 # Zero the parameter gradients
                 self._optimizer.zero_grad()
 
@@ -137,6 +140,7 @@ class PyTorchClassifier(Classifier):
         """
         # Convert the inputs to Tensors
         x = torch.from_numpy(inputs)
+        x = x.float()
         x.requires_grad = True
 
         # Compute the gradient and return
@@ -177,6 +181,7 @@ class PyTorchClassifier(Classifier):
         """
         # Convert the inputs to Tensors
         inputs_t = torch.from_numpy(inputs)
+        inputs_t = inputs_t.float()
         inputs_t.requires_grad = True
 
         # Convert the labels to Tensors
@@ -217,5 +222,8 @@ class PyTorchClassifier(Classifier):
     #         print(results.shape)
     #
     #     return results
+
+
+
 
 
