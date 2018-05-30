@@ -240,7 +240,11 @@ class CarliniL2Method(Attack):
                 # Abort binary search if c exceeds upper bound:
                 if c > self._c_upper_bound:
                     break
-            
+
+            # Transform best_adv_image back into tanh space if attack is failed
+            if (best_adv_image == ex).all():
+                best_adv_image = (np.tanh(best_adv_image) / self._tanh_smoother + 1) / 2
+
             x_adv[j] = best_adv_image
 
         return x_adv
