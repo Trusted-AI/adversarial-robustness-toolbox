@@ -274,10 +274,14 @@ class CarliniL2Method(Attack):
         # Save attack-specific parameters
         super(CarliniL2Method, self).set_params(**kwargs)
             
-        if type(self.binary_search_steps) is not int or self.binary_search_steps <= 0:
-            raise ValueError("The number of binary search steps must be a positive integer.")
+        if type(self.binary_search_steps) is not int or self.binary_search_steps < 0:
+            raise ValueError("The number of binary search steps must be a non-negative integer.")
 
-        if type(self.max_iter) is not int or self.max_iter <= 0:
-            raise ValueError("The number of iterations must be a positive integer.")
+        if type(self.max_iter) is not int or self.max_iter < 0:
+            raise ValueError("The number of iterations must be a non-negative integer.")
 
         return True
+
+
+
+

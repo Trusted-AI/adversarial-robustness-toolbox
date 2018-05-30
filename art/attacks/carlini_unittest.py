@@ -81,8 +81,8 @@ class TestCarliniL2(unittest.TestCase):
                                learning_rate=2e-2, initial_const=3, decay=1e-2)
         params = {'y': random_targets(y_test, tfc.nb_classes)}
         x_test_adv = cl2m.generate(x_test, **params)
-        self.assertTrue((x_test_adv <= 1).all())
-        self.assertTrue((x_test_adv >= 0).all())
+        self.assertTrue((x_test_adv <= 1.0001 ).all())
+        self.assertTrue((x_test_adv >= -0.0001 ).all())
         np.testing.assert_almost_equal(x_test, x_test_adv, 3)
 
     def test_tfclassifier(self):
@@ -129,8 +129,9 @@ class TestCarliniL2(unittest.TestCase):
         params = {'y': random_targets(y_test, tfc.nb_classes)}
         x_test_adv = cl2m.generate(x_test, **params)
         self.assertFalse((x_test == x_test_adv).all())
-        self.assertTrue((x_test_adv <= 1).all())
-        self.assertTrue((x_test_adv >= 0).all())
+        #print(x_test_adv)
+        self.assertTrue((x_test_adv <= 1.0001).all())
+        self.assertTrue((x_test_adv >= -0.0001).all())
         target = np.argmax(params['y'], axis=1)
         y_pred_adv = np.argmax(tfc.predict(x_test_adv), axis=1)
         self.assertTrue((target == y_pred_adv).all())
@@ -141,8 +142,8 @@ class TestCarliniL2(unittest.TestCase):
         params = {'y': random_targets(y_test, tfc.nb_classes)}
         x_test_adv = cl2m.generate(x_test, **params)
         self.assertFalse((x_test == x_test_adv).all())
-        self.assertTrue((x_test_adv <= 1).all())
-        self.assertTrue((x_test_adv >= 0).all())
+        self.assertTrue((x_test_adv <= 1.0001).all())
+        self.assertTrue((x_test_adv >= -0.0001).all())
         target = np.argmax(params['y'], axis=1)
         y_pred_adv = np.argmax(tfc.predict(x_test_adv), axis=1)
         self.assertTrue((target != y_pred_adv).all())
@@ -153,8 +154,8 @@ class TestCarliniL2(unittest.TestCase):
         params = {}
         x_test_adv = cl2m.generate(x_test, **params)
         self.assertFalse((x_test == x_test_adv).all())
-        self.assertTrue((x_test_adv <= 1).all())
-        self.assertTrue((x_test_adv >= 0).all())
+        self.assertTrue((x_test_adv <= 1.0001).all())
+        self.assertTrue((x_test_adv >= -0.0001).all())
         y_pred = np.argmax(tfc.predict(x_test), axis=1)
         y_pred_adv = np.argmax(tfc.predict(x_test_adv), axis=1)
         self.assertTrue((y_pred != y_pred_adv).all())
@@ -194,8 +195,8 @@ class TestCarliniL2(unittest.TestCase):
         params = {'y': random_targets(y_test, krc.nb_classes)}
         x_test_adv = cl2m.generate(x_test, **params)
         self.assertFalse((x_test == x_test_adv).all())
-        self.assertTrue((x_test_adv <= 1).all())
-        self.assertTrue((x_test_adv >= 0).all())
+        self.assertTrue((x_test_adv <= 1.0001).all())
+        self.assertTrue((x_test_adv >= -0.0001).all())
         target = np.argmax(params['y'], axis=1)
         y_pred_adv = np.argmax(krc.predict(x_test_adv), axis=1)
         self.assertTrue((target == y_pred_adv).any())
@@ -206,8 +207,8 @@ class TestCarliniL2(unittest.TestCase):
         params = {'y': random_targets(y_test, krc.nb_classes)}
         x_test_adv = cl2m.generate(x_test, **params)
         self.assertFalse((x_test == x_test_adv).all())
-        self.assertTrue((x_test_adv <= 1).all())
-        self.assertTrue((x_test_adv >= 0).all())
+        self.assertTrue((x_test_adv <= 1.0001).all())
+        self.assertTrue((x_test_adv >= -0.0001).all())
         target = np.argmax(params['y'], axis=1)
         y_pred_adv = np.argmax(krc.predict(x_test_adv), axis=1)
         self.assertTrue((target != y_pred_adv).all())
@@ -218,8 +219,8 @@ class TestCarliniL2(unittest.TestCase):
         params = {}
         x_test_adv = cl2m.generate(x_test, **params)
         self.assertFalse((x_test == x_test_adv).all())
-        self.assertTrue((x_test_adv <= 1).all())
-        self.assertTrue((x_test_adv >= 0).all())
+        self.assertTrue((x_test_adv <= 1.0001).all())
+        self.assertTrue((x_test_adv >= -0.0001).all())
         y_pred = np.argmax(krc.predict(x_test), axis=1)
         y_pred_adv = np.argmax(krc.predict(x_test_adv), axis=1)
         self.assertTrue((y_pred != y_pred_adv).any())
@@ -255,8 +256,8 @@ class TestCarliniL2(unittest.TestCase):
         params = {'y': random_targets(y_test, ptc.nb_classes)}
         x_test_adv = cl2m.generate(x_test, **params)
         self.assertFalse((x_test == x_test_adv).all())
-        self.assertTrue((x_test_adv <= 1).all())
-        self.assertTrue((x_test_adv >= 0).all())
+        self.assertTrue((x_test_adv <= 1.0001).all())
+        self.assertTrue((x_test_adv >= -0.0001).all())
         target = np.argmax(params['y'], axis=1)
         y_pred_adv = np.argmax(ptc.predict(x_test_adv), axis=1)
         self.assertTrue((target == y_pred_adv).any())
@@ -267,8 +268,8 @@ class TestCarliniL2(unittest.TestCase):
         params = {'y': random_targets(y_test, ptc.nb_classes)}
         x_test_adv = cl2m.generate(x_test, **params)
         self.assertFalse((x_test == x_test_adv).all())
-        self.assertTrue((x_test_adv <= 1).all())
-        self.assertTrue((x_test_adv >= 0).all())
+        self.assertTrue((x_test_adv <= 1.0001).all())
+        self.assertTrue((x_test_adv >= -0.0001).all())
         target = np.argmax(params['y'], axis=1)
         y_pred_adv = np.argmax(ptc.predict(x_test_adv), axis=1)
         self.assertTrue((target != y_pred_adv).all())
@@ -279,8 +280,8 @@ class TestCarliniL2(unittest.TestCase):
         params = {}
         x_test_adv = cl2m.generate(x_test, **params)
         self.assertFalse((x_test == x_test_adv).all())
-        self.assertTrue((x_test_adv <= 1).all())
-        self.assertTrue((x_test_adv >= 0).all())
+        self.assertTrue((x_test_adv <= 1.0001).all())
+        self.assertTrue((x_test_adv >= -0.0001).all())
         y_pred = np.argmax(ptc.predict(x_test), axis=1)
         y_pred_adv = np.argmax(ptc.predict(x_test_adv), axis=1)
         self.assertTrue((y_pred != y_pred_adv).any())
