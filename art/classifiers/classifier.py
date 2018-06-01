@@ -113,14 +113,14 @@ class Classifier(ABC):
         raise NotImplementedError
 
     @abc.abstractmethod
-    def loss_gradient(self, x, labels):
+    def loss_gradient(self, x, y):
         """
         Compute the gradient of the loss function w.r.t. `x`.
 
         :param x: Sample input with shape as expected by the model.
         :type x: `np.ndarray`
-        :param labels: Correct labels, one-vs-rest encoding.
-        :type labels: `np.ndarray`
+        :param y: Correct labels, one-vs-rest encoding.
+        :type y: `np.ndarray`
         :return: Array of gradients of the same shape as `x`.
         :rtype: `np.ndarray`
         """

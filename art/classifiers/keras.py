@@ -69,18 +69,18 @@ class KerasClassifier(Classifier):
         self._class_grads = k.function([self._input], class_grads)
         self._preds = k.function([self._input], [preds])
 
-    def loss_gradient(self, x, labels):
+    def loss_gradient(self, x, y):
         """
         Compute the gradient of the loss function w.r.t. `x`.
 
         :param x: Sample input with shape as expected by the model.
         :type x: `np.ndarray`
-        :param labels: Correct labels, one-vs-rest encoding.
-        :type labels: `np.ndarray`
+        :param y: Correct labels, one-vs-rest encoding.
+        :type y: `np.ndarray`
         :return: Array of gradients of the same shape as `x`.
         :rtype: `np.ndarray`
         """
-        return self._loss_grads([x, np.argmax(labels, axis=1)])[0]
+        return self._loss_grads([x, np.argmax(y, axis=1)])[0]
 
     def class_gradient(self, x, logits=False):
         """

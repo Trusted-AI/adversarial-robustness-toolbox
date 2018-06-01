@@ -170,14 +170,14 @@ class PyTorchClassifier(Classifier):
 
         return grds
 
-    def loss_gradient(self, x, labels):
+    def loss_gradient(self, x, y):
         """
         Compute the gradient of the loss function w.r.t. `x`.
 
         :param x: Sample input with shape as expected by the model.
         :type x: `np.ndarray`
-        :param labels: Correct labels, one-vs-rest encoding.
-        :type labels: `np.ndarray`
+        :param y: Correct labels, one-vs-rest encoding.
+        :type y: `np.ndarray`
         :return: Array of gradients of the same shape as `x`.
         :rtype: `np.ndarray`
         """
@@ -187,7 +187,7 @@ class PyTorchClassifier(Classifier):
         inputs_t.requires_grad = True
 
         # Convert the labels to Tensors
-        labels_t = torch.from_numpy(labels)
+        labels_t = torch.from_numpy(y)
 
         # Compute the gradient and return
         (_, m_output) = self._model(inputs_t)
