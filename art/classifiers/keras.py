@@ -58,15 +58,10 @@ class KerasClassifier(Classifier):
         elif k.backend() == 'cntk':
             raise NotImplementedError('Only TensorFlow and Theano support is provided for Keras.')
 
-        # Compute gradient per class, with and without the softmax activation
-        class_grads_logits = [k.gradients(preds[:, i], self._input)[0] for i in range(self._nb_classes)]
-        class_grads = [k.gradients(k.softmax(preds)[:, i], self._input)[0] for i in range(self._nb_classes)]
-
         # Set loss, grads and prediction functions
+        self._preds_op = preds
         self._loss = k.function([self._input], [loss])
         self._loss_grads = k.function([self._input, label_ph], [loss_grads])
-        self._class_grads_logits = k.function([self._input], class_grads_logits)
-        self._class_grads = k.function([self._input], class_grads)
         self._preds = k.function([self._input], [preds])
 
     def loss_gradient(self, x, y):
@@ -95,8 +90,12 @@ class KerasClassifier(Classifier):
         :rtype: `np.ndarray`
         """
         if logits:
+            if not hasattr(self, '_class_grads_logits'):
+                self._init_class_grads(logits=True)
             return np.swapaxes(np.array(self._class_grads_logits([x])), 0, 1)
         else:
+            if not hasattr(self, '_class_grads'):
+                self._init_class_grads(logits=False)
             return np.swapaxes(np.array(self._class_grads([x])), 0, 1)
 
     def predict(self, x, logits=False):
@@ -151,6 +150,17 @@ class KerasClassifier(Classifier):
 
         gen = generator_fit(x, y, batch_size)
         self._model.fit_generator(gen, steps_per_epoch=x.shape[0] / batch_size, epochs=nb_epochs)
+
+    def _init_class_grads(self, logits=False):
+        import keras.backend as k
+
+        # Compute gradient per class, with and without the softmax activation
+        if logits:
+            class_grads_logits = [k.gradients(self._preds_op[:, i], self._input)[0] for i in range(self.nb_classes)]
+            self._class_grads_logits = k.function([self._input], class_grads_logits)
+        else:
+            class_grads = [k.gradients(k.softmax(self._preds_op)[:, i], self._input)[0] for i in range(self.nb_classes)]
+            self._class_grads = k.function([self._input], class_grads)
 
 
 def generator_fit(x, y, batch_size=128):

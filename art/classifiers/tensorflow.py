@@ -60,11 +60,6 @@ class TFClassifier(Classifier):
         if self._loss is not None:
             self._loss_grads = tf.gradients(self._loss, self._input_ph)[0]
 
-        # Get the class gradients graph
-        self._logit_class_grads = [tf.gradients(self._logits[:, i], self._input_ph)[0] for i in range(self._nb_classes)]
-        self._class_grads = [tf.gradients(tf.nn.softmax(self._logits)[:, i], self._input_ph)[0]
-                             for i in range(self._nb_classes)]
-
     def predict(self, x, logits=False):
         """
         Perform prediction for a batch of inputs.
@@ -153,8 +148,12 @@ class TFClassifier(Classifier):
         """
         # Compute the gradient and return
         if logits:
+            if not hasattr(self, '_logit_class_grads'):
+                self._init_class_grads(logits=True)
             grds = self._sess.run(self._logit_class_grads, feed_dict={self._input_ph: x})
         else:
+            if not hasattr(self, '_class_grads'):
+                self._init_class_grads(logits=False)
             grds = self._sess.run(self._class_grads, feed_dict={self._input_ph: x})
 
         grds = np.swapaxes(np.array(grds), 0, 1)
@@ -180,3 +179,14 @@ class TFClassifier(Classifier):
         grds = self._sess.run(self._loss_grads, feed_dict={self._input_ph: x, self._output_ph: y})
 
         return grds
+
+    def _init_class_grads(self, logits=False):
+        import tensorflow as tf
+
+        # Construct the class gradients graph
+        if logits:
+            self._logit_class_grads = [tf.gradients(self._logits[:, i], self._input_ph)[0]
+                                       for i in range(self._nb_classes)]
+        else:
+            self._class_grads = [tf.gradients(tf.nn.softmax(self._logits)[:, i], self._input_ph)[0]
+                                 for i in range(self._nb_classes)]
