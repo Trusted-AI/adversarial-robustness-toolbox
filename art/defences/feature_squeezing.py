@@ -45,7 +45,7 @@ class FeatureSqueezing(Preprocessor):
         pass
 
     def set_params(self, **kwargs):
-        """Take in a dictionary of parameters and applies defense-specific checks before saving them as attributes.
+        """Take in a dictionary of parameters and applies defence-specific checks before saving them as attributes.
 
         Defense-specific parameters:
         :param bit_depth: The number of bits to encode data on

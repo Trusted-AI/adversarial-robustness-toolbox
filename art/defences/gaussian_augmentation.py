@@ -72,7 +72,7 @@ class GaussianAugmentation(Preprocessor):
 
     def set_params(self, **kwargs):
         """
-        Take in a dictionary of parameters and applies defense-specific checks before saving them as attributes.
+        Take in a dictionary of parameters and applies defence-specific checks before saving them as attributes.
 
         :param sigma: Standard deviation of Gaussian noise to be added.
         :type sigma: `float`
