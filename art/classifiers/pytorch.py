@@ -11,7 +11,7 @@ class PyTorchClassifier(Classifier):
     """
     This class implements a classifier with the PyTorch framework.
     """
-    def __init__(self, clip_values, model, loss, optimizer, input_shape, output_shape, defences=None):
+    def __init__(self, clip_values, model, loss, optimizer, input_shape, output_shape, channel_index=1, defences=None):
         """
         Initialization specifically for the PyTorch-based implementation.
 
@@ -28,37 +28,39 @@ class PyTorchClassifier(Classifier):
         :type input_shape: `tuple`
         :param output_shape: Shape of the output.
         :type output_shape: `tuple`
+        :param channel_index: Index of the axis in data containing the color channels or features.
+        :type channel_index: `int`
         :param defences: Defences to be activated with the classifier.
         :type defences: `str` or `list(str)`
         """
-        super(PyTorchClassifier, self).__init__(clip_values, defences)
-        #self._nb_classes = list(model.modules())[-1 if use_logits else -2].out_features
+        super(PyTorchClassifier, self).__init__(clip_values, channel_index, defences)
+        # self._nb_classes = list(model.modules())[-1 if use_logits else -2].out_features
         self._nb_classes = output_shape[0]
         self._input_shape = input_shape
         self._model = model
         self._loss = loss
         self._optimizer = optimizer
 
-        ## Store the logit layer
-        #self._logit_layer = len(list(model.modules())) - 2 if use_logits else len(list(model.modules())) - 3
+        # # Store the logit layer
+        # self._logit_layer = len(list(model.modules())) - 2 if use_logits else len(list(model.modules())) - 3
 
         # Use GPU if possible
         device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
         self._model.to(device)
 
-    def predict(self, inputs, logits=False):
+    def predict(self, x, logits=False):
         """
         Perform prediction for a batch of inputs.
 
-        :param inputs: Test set.
-        :type inputs: `np.ndarray`
+        :param x: Test set.
+        :type x: `np.ndarray`
         :param logits: `True` if the prediction should be done at the logits layer.
         :type logits: `bool`
         :return: Array of predictions of shape `(nb_inputs, self.nb_classes)`.
         :rtype: `np.ndarray`
         """
         # Apply defences
-        inputs = self._apply_defences_predict(inputs)
+        x = self._apply_defences_predict(x)
 
         # Set test phase
         self._model.train(False)
@@ -68,7 +70,7 @@ class PyTorchClassifier(Classifier):
         # if not logits:
         #     exp = np.exp(preds - np.max(preds, axis=1, keepdims=True))
         #     preds = exp / np.sum(exp, axis=1, keepdims=True)
-        (logit_output, output) = self._model(torch.from_numpy(inputs))
+        (logit_output, output) = self._model(torch.from_numpy(x))
 
         if logits:
             preds = logit_output.detach().numpy()
@@ -77,14 +79,14 @@ class PyTorchClassifier(Classifier):
 
         return preds
 
-    def fit(self, inputs, outputs, batch_size=128, nb_epochs=10):
+    def fit(self, x, y, batch_size=128, nb_epochs=10):
         """
-        Fit the classifier on the training set `(inputs, outputs)`.
+        Fit the classifier on the training set `(x, y)`.
 
-        :param inputs: Training data.
-        :type inputs: `np.ndarray`
-        :param outputs: Labels.
-        :type outputs: `np.ndarray`
+        :param x: Training data.
+        :type x: `np.ndarray`
+        :param y: Labels.
+        :type y: `np.ndarray`
         :param batch_size: Size of batches.
         :type batch_size: `int`
         :param nb_epochs: Number of epochs to use for trainings.
@@ -92,13 +94,13 @@ class PyTorchClassifier(Classifier):
         :return: `None`
         """
         # Apply defences
-        inputs, outputs = self._apply_defences_fit(inputs, outputs)
+        x, y = self._apply_defences_fit(x, y)
 
         # Set train phase
         self._model.train(True)
 
-        num_batch = int(np.ceil(len(inputs) / batch_size))
-        ind = np.arange(len(inputs))
+        num_batch = int(np.ceil(len(x) / batch_size))
+        ind = np.arange(len(x))
 
         # Start training
         for _ in range(nb_epochs):
@@ -108,11 +110,11 @@ class PyTorchClassifier(Classifier):
             # Train for one epoch
             for m in range(num_batch):
                 if m < num_batch - 1:
-                    i_batch = torch.from_numpy(inputs[ind[m * batch_size:(m + 1) * batch_size]])
-                    o_batch = torch.from_numpy(outputs[ind[m * batch_size:(m + 1) * batch_size]])
+                    i_batch = torch.from_numpy(x[ind[m * batch_size:(m + 1) * batch_size]])
+                    o_batch = torch.from_numpy(y[ind[m * batch_size:(m + 1) * batch_size]])
                 else:
-                    i_batch = torch.from_numpy(inputs[ind[m*batch_size:]])
-                    o_batch = torch.from_numpy(outputs[ind[m * batch_size:]])
+                    i_batch = torch.from_numpy(x[ind[m * batch_size:]])
+                    o_batch = torch.from_numpy(y[ind[m * batch_size:]])
 
                 # Zero the parameter gradients
                 self._optimizer.zero_grad()
@@ -123,12 +125,12 @@ class PyTorchClassifier(Classifier):
                 loss.backward()
                 self._optimizer.step()
 
-    def class_gradient(self, inputs, logits=False):
+    def class_gradient(self, x, logits=False):
         """
-        Compute per-class derivatives w.r.t. `input`.
+        Compute per-class derivatives w.r.t. `x`.
 
-        :param inputs: Sample input with shape as expected by the model.
-        :type inputs: `np.ndarray`
+        :param x: Sample input with shape as expected by the model.
+        :type x: `np.ndarray`
         :param logits: `True` if the prediction should be done at the logits layer.
         :type logits: `bool`
         :return: Array of gradients of input features w.r.t. each class in the form
@@ -136,7 +138,7 @@ class PyTorchClassifier(Classifier):
         :rtype: `np.ndarray`
         """
         # Convert the inputs to Tensors
-        x = torch.from_numpy(inputs)
+        x = torch.from_numpy(x)
         x.requires_grad = True
 
         # Compute the gradient and return
@@ -164,19 +166,19 @@ class PyTorchClassifier(Classifier):
 
         return grds
 
-    def loss_gradient(self, inputs, labels):
+    def loss_gradient(self, x, labels):
         """
-        Compute the gradient of the loss function w.r.t. `inputs`.
+        Compute the gradient of the loss function w.r.t. `x`.
 
-        :param inputs: Sample input with shape as expected by the model.
-        :type inputs: `np.ndarray`
+        :param x: Sample input with shape as expected by the model.
+        :type x: `np.ndarray`
         :param labels: Correct labels, one-vs-rest encoding.
         :type labels: `np.ndarray`
-        :return: Array of gradients of the same shape as the inputs.
+        :return: Array of gradients of the same shape as `x`.
         :rtype: `np.ndarray`
         """
         # Convert the inputs to Tensors
-        inputs_t = torch.from_numpy(inputs)
+        inputs_t = torch.from_numpy(x)
         inputs_t.requires_grad = True
 
         # Convert the labels to Tensors
