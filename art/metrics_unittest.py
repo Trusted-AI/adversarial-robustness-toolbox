@@ -113,7 +113,7 @@ class Model(nn.Module):
         logit_output = self.fc(x)
         output = F.softmax(logit_output, dim=1)
 
-        return (logit_output, output)
+        return logit_output, output
 
 
 class TestClever(unittest.TestCase):
@@ -300,7 +300,3 @@ class TestClever(unittest.TestCase):
 
 if __name__ == '__main__':
     unittest.main()
-
-
-
-

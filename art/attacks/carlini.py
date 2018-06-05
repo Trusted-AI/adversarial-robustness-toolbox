@@ -12,7 +12,7 @@ from art.utils import to_categorical
 class CarliniL2Method(Attack):
     """
     The L_2 optimized attack of Carlini and Wagner (2016). This attack is the most efficient and should be used as the
-    primary attack to evaluate potential defenses (wrt the L_0 and L_inf attacks). This implementation is inspired by
+    primary attack to evaluate potential defences (wrt the L_0 and L_inf attacks). This implementation is inspired by
     the one in Cleverhans, which reproduces the authors' original code (https://github.com/carlini/nn_robust_attacks).
     Paper link: https://arxiv.org/pdf/1608.04644.pdf
     """
@@ -160,7 +160,7 @@ class CarliniL2Method(Attack):
                 
         # No labels provided, use model prediction as correct class
         if y is None:
-            y = np.argmax(self.classifier.predict(inputs=x, logits=False), axis=1)
+            y = np.argmax(self.classifier.predict(x, logits=False), axis=1)
             y = to_categorical(y, self.classifier.nb_classes)
 
         # Images to be attacked:

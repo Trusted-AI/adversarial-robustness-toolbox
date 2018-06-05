@@ -9,7 +9,7 @@ class KerasClassifier(Classifier):
     """
     The supported backends for Keras are TensorFlow and Theano.
     """
-    def __init__(self, clip_values, model, use_logits=False, defences=None):
+    def __init__(self, clip_values, model, use_logits=False, channel_index=3, defences=None):
         """
         Create a `Classifier` instance from a Keras model. Assumes the `model` passed as argument is compiled.
 
@@ -20,13 +20,15 @@ class KerasClassifier(Classifier):
         :type model: `keras.models.Sequential`
         :param use_logits: True if the output of the model are the logits.
         :type use_logits: `bool`
+        :param channel_index: Index of the axis in data containing the color channels or features.
+        :type channel_index: `int`
         :param defences: Defences to be activated with the classifier.
         :type defences: `str` or `list(str)`
         """
         import keras.backend as k
 
         # TODO Generalize loss function?
-        super(KerasClassifier, self).__init__(clip_values, defences)
+        super(KerasClassifier, self).__init__(clip_values, channel_index, defences)
 
         self._model = model
         self._input = model.input
@@ -67,25 +69,25 @@ class KerasClassifier(Classifier):
         self._class_grads = k.function([self._input], class_grads)
         self._preds = k.function([self._input], [preds])
 
-    def loss_gradient(self, inputs, labels):
+    def loss_gradient(self, x, y):
         """
-        Compute the gradient of the loss function w.r.t. `inputs`.
+        Compute the gradient of the loss function w.r.t. `x`.
 
-        :param inputs: Sample input with shape as expected by the model.
-        :type inputs: `np.ndarray`
-        :param labels: Correct labels, one-vs-rest encoding.
-        :type labels: `np.ndarray`
-        :return: Array of gradients of the same shape as the inputs.
+        :param x: Sample input with shape as expected by the model.
+        :type x: `np.ndarray`
+        :param y: Correct labels, one-vs-rest encoding.
+        :type y: `np.ndarray`
+        :return: Array of gradients of the same shape as `x`.
         :rtype: `np.ndarray`
         """
-        return self._loss_grads([inputs, np.argmax(labels, axis=1)])[0]
+        return self._loss_grads([x, np.argmax(y, axis=1)])[0]
 
-    def class_gradient(self, inputs, logits=False):
+    def class_gradient(self, x, logits=False):
         """
-        Compute per-class derivatives w.r.t. `input`.
+        Compute per-class derivatives w.r.t. `x`.
 
-        :param inputs: Sample input with shape as expected by the model.
-        :type inputs: `np.ndarray`
+        :param x: Sample input with shape as expected by the model.
+        :type x: `np.ndarray`
         :param logits: `True` if the prediction should be done at the logits layer.
         :type logits: `bool`
         :return: Array of gradients of input features w.r.t. each class in the form
@@ -93,16 +95,16 @@ class KerasClassifier(Classifier):
         :rtype: `np.ndarray`
         """
         if logits:
-            return np.swapaxes(np.array(self._class_grads_logits([inputs])), 0, 1)
+            return np.swapaxes(np.array(self._class_grads_logits([x])), 0, 1)
         else:
-            return np.swapaxes(np.array(self._class_grads([inputs])), 0, 1)
+            return np.swapaxes(np.array(self._class_grads([x])), 0, 1)
 
-    def predict(self, inputs, logits=False):
+    def predict(self, x, logits=False):
         """
         Perform prediction for a batch of inputs.
 
-        :param inputs: Test set.
-        :type inputs: `np.ndarray`
+        :param x: Test set.
+        :type x: `np.ndarray`
         :param logits: `True` if the prediction should be done at the logits layer.
         :type logits: `bool`
         :return: Array of predictions of shape `(nb_inputs, self.nb_classes)`.
@@ -112,14 +114,14 @@ class KerasClassifier(Classifier):
         k.set_learning_phase(0)
 
         # Apply defences
-        inputs = self._apply_defences_predict(inputs)
+        x = self._apply_defences_predict(x)
 
         # Run predictions with batching
         batch_size = 512
-        preds = np.zeros((inputs.shape[0], self.nb_classes), dtype=np.float32)
-        for b in range(inputs.shape[0] // batch_size + 1):
-            begin, end = b * batch_size,  min((b + 1) * batch_size, inputs.shape[0])
-            preds[begin:end] = self._preds([inputs[begin:end]])[0]
+        preds = np.zeros((x.shape[0], self.nb_classes), dtype=np.float32)
+        for b in range(x.shape[0] // batch_size + 1):
+            begin, end = b * batch_size,  min((b + 1) * batch_size, x.shape[0])
+            preds[begin:end] = self._preds([x[begin:end]])[0]
 
             if not logits:
                 exp = np.exp(preds[begin:end] - np.max(preds[begin:end], axis=1, keepdims=True))
@@ -127,14 +129,14 @@ class KerasClassifier(Classifier):
 
         return preds
 
-    def fit(self, inputs, outputs, batch_size=128, nb_epochs=20):
+    def fit(self, x, y, batch_size=128, nb_epochs=20):
         """
-        Fit the classifier on the training set `(inputs, outputs)`.
+        Fit the classifier on the training set `(x, y)`.
 
-        :param inputs: Training data.
-        :type inputs: `np.ndarray`
-        :param outputs: Labels.
-        :type outputs: `np.ndarray`
+        :param x: Training data.
+        :type x: `np.ndarray`
+        :param y: Labels.
+        :type y: `np.ndarray`
         :param batch_size: Size of batches.
         :type batch_size: `int`
         :param nb_epochs: Number of epochs to use for trainings.
@@ -145,25 +147,25 @@ class KerasClassifier(Classifier):
         k.set_learning_phase(1)
 
         # Apply defences
-        inputs, outputs = self._apply_defences_fit(inputs, outputs)
+        x, y = self._apply_defences_fit(x, y)
 
-        gen = generator_fit(inputs, outputs, batch_size)
-        self._model.fit_generator(gen, steps_per_epoch=inputs.shape[0] / batch_size, epochs=nb_epochs)
+        gen = generator_fit(x, y, batch_size)
+        self._model.fit_generator(gen, steps_per_epoch=x.shape[0] / batch_size, epochs=nb_epochs)
 
 
-def generator_fit(data, labels, batch_size=128):
+def generator_fit(x, y, batch_size=128):
     """
     Minimal data generator for randomly batching large datasets.
 
-    :param data: The data sample to batch.
-    :type data: `np.ndarray`
-    :param labels: The labels for `data`. The first dimension has to match the first dimension of `data`.
-    :type labels: `np.ndarray`
+    :param x: The data sample to batch.
+    :type x: `np.ndarray`
+    :param y: The labels for `x`. The first dimension has to match the first dimension of `x`.
+    :type y: `np.ndarray`
     :param batch_size: The size of the batches to produce.
     :type batch_size: `int`
-    :return: A batch of size `batch_size` of random samples from `(data, labels)`
+    :return: A batch of size `batch_size` of random samples from `(x, y)`
     :rtype: `tuple(np.ndarray, np.ndarray)`
     """
     while True:
-        indices = np.random.randint(data.shape[0], size=batch_size)
-        yield data[indices], labels[indices]
+        indices = np.random.randint(x.shape[0], size=batch_size)
+        yield x[indices], y[indices]

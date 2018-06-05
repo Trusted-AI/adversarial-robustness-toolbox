@@ -49,8 +49,7 @@ class SpatialSmoothing(Preprocessor):
 
     def set_params(self, **kwargs):
         """
-        Take in a dictionary of parameters and applies defense-specific checks
-        before saving them as attributes.
+        Take in a dictionary of parameters and applies defence-specific checks before saving them as attributes.
 
         :param window_size: The size of the sliding window.
         :type window_size: `int`

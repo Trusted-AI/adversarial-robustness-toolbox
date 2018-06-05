@@ -1,5 +1,5 @@
 """
-Module implementing multiple types of defenses against adversarial attacks.
+Module implementing multiple types of defences against adversarial attacks.
 """
 from art.defences.adversarial_trainer import AdversarialTrainer
 from art.defences.feature_squeezing import FeatureSqueezing
