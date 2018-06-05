@@ -31,6 +31,7 @@ class GaussianAugmentation(Preprocessor):
         :type x: `np.ndarray`
         :param y: Labels for the sample. If this argument is provided, it will be augmented with the corresponded
                   original labels of each sample point.
+        :type y: `np.ndarray`
         :param sigma: Standard deviation of Gaussian noise to be added.
         :type sigma: `float`
         :param ratio: Percentage of data augmentation. E.g. for a ratio of 1, the size of the dataset will double.
