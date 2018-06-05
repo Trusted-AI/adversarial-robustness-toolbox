@@ -22,12 +22,14 @@ class SpatialSmoothing(Preprocessor):
         self._is_fitted = True
         self.set_params(window_size=window_size)
 
-    def __call__(self, x, window_size=None):
+    def __call__(self, x, y=None, window_size=None):
         """
-        Apply local spatial smoothing to sample `x_val`.
+        Apply local spatial smoothing to sample `x`.
 
         :param x: Sample to smooth with shape `(batch_size, width, height, depth)`.
         :type x: `np.ndarray`
+        :param y: Labels of the sample `x`. This function does not affect them in any way.
+        :type y: `np.ndarray`
         :param window_size: The size of the sliding window.
         :type window_size: `int`
         :return: Smoothed sample
@@ -49,8 +51,7 @@ class SpatialSmoothing(Preprocessor):
 
     def set_params(self, **kwargs):
         """
-        Take in a dictionary of parameters and applies defense-specific checks
-        before saving them as attributes.
+        Take in a dictionary of parameters and applies defence-specific checks before saving them as attributes.
 
         :param window_size: The size of the sliding window.
         :type window_size: `int`

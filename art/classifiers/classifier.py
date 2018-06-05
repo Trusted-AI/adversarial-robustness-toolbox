@@ -33,24 +33,27 @@ class Classifier(ABC):
     """
     Base class for all classifiers.
     """
-    def __init__(self, clip_values, defences=None):
+    def __init__(self, clip_values, channel_index, defences=None):
         """
         Initialize a `Classifier` object.
         :param clip_values: Tuple of the form `(min, max)` representing the minimum and maximum values allowed
                for features.
         :type clip_values: `tuple`
+        :param channel_index: Index of the axis in data containing the color channels or features.
+        :type channel_index: `int`
         :param defences: Defences to be activated with the classifier.
         :type defences: `str` or `list(str)`
         """
         self._clip_values = clip_values
+        self._channel_index = channel_index
         self._parse_defences(defences)
 
-    def predict(self, inputs, logits=False):
+    def predict(self, x, logits=False):
         """
         Perform prediction for a batch of inputs.
 
-        :param inputs: Test set.
-        :type inputs: `np.ndarray`
+        :param x: Test set.
+        :type x: `np.ndarray`
         :param logits: `True` if the prediction should be done at the logits layer.
         :type logits: `bool`
         :return: Array of predictions of shape `(nb_inputs, self.nb_classes)`.
@@ -59,14 +62,14 @@ class Classifier(ABC):
         raise NotImplementedError
 
     @abc.abstractmethod
-    def fit(self, inputs, outputs, batch_size=128, nb_epochs=20):
+    def fit(self, x, y, batch_size=128, nb_epochs=20):
         """
-        Fit the classifier on the training set `(inputs, outputs)`.
+        Fit the classifier on the training set `(x, y)`.
 
-        :param inputs: Training data.
-        :type inputs: `np.ndarray`
-        :param outputs: Labels.
-        :type outputs: `np.ndarray`
+        :param x: Training data.
+        :type x: `np.ndarray`
+        :param y: Labels.
+        :type y: `np.ndarray`
         :param batch_size: Size of batches.
         :type batch_size: `int`
         :param nb_epochs: Number of epochs to use for trainings.
@@ -103,13 +106,21 @@ class Classifier(ABC):
         """
         return self._clip_values
 
-    @abc.abstractmethod
-    def class_gradient(self, inputs, logits=False):
+    @property
+    def channel_index(self):
         """
-        Compute per-class derivatives w.r.t. `input`.
+        :return: Index of the axis in data containing the color channels or features.
+        :rtype `int`
+        """
+        return self._channel_index
 
-        :param inputs: Sample input with shape as expected by the model.
-        :type inputs: `np.ndarray`
+    @abc.abstractmethod
+    def class_gradient(self, x, logits=False):
+        """
+        Compute per-class derivatives w.r.t. `x`.
+
+        :param x: Sample input with shape as expected by the model.
+        :type x: `np.ndarray`
         :param logits: `True` if the prediction should be done at the logits layer.
         :type logits: `bool`
         :return: Array of gradients of input features w.r.t. each class in the form
@@ -119,15 +130,15 @@ class Classifier(ABC):
         raise NotImplementedError
 
     @abc.abstractmethod
-    def loss_gradient(self, inputs, labels):
+    def loss_gradient(self, x, y):
         """
-        Compute the gradient of the loss function w.r.t. `inputs`.
+        Compute the gradient of the loss function w.r.t. `x`.
 
-        :param inputs: Sample input with shape as expected by the model.
-        :type inputs: `np.ndarray`
-        :param labels: Correct labels, one-vs-rest encoding.
-        :type labels: `np.ndarray`
-        :return: Array of gradients of the same shape as the inputs.
+        :param x: Sample input with shape as expected by the model.
+        :type x: `np.ndarray`
+        :param y: Correct labels, one-vs-rest encoding.
+        :type y: `np.ndarray`
+        :return: Array of gradients of the same shape as `x`.
         :rtype: `np.ndarray`
         """
         raise NotImplementedError
@@ -159,26 +170,24 @@ class Classifier(ABC):
                     from art.defences import SpatialSmoothing
                     self.smooth = SpatialSmoothing()
 
-    def _apply_defences_fit(self, inputs, outputs):
+    def _apply_defences_fit(self, x, y):
         # Apply label smoothing if option is set
         if hasattr(self, 'label_smooth'):
-            _, outputs = self.label_smooth(None, outputs)
-        else:
-            outputs = outputs
+            _, y = self.label_smooth(None, y)
 
         # Apply feature squeezing if option is set
         if hasattr(self, 'feature_squeeze'):
-            inputs = self.feature_squeeze(inputs)
+            x = self.feature_squeeze(x)
 
-        return inputs, outputs
+        return x, y
 
-    def _apply_defences_predict(self, inputs):
+    def _apply_defences_predict(self, x):
         # Apply feature squeezing if option is set
         if hasattr(self, 'feature_squeeze'):
-            inputs = self.feature_squeeze(inputs)
+            x = self.feature_squeeze(x)
 
         # Apply inputs smoothing if option is set
         if hasattr(self, 'smooth'):
-            inputs = self.smooth(inputs)
+            x = self.smooth(x)
 
-        return inputs
+        return x

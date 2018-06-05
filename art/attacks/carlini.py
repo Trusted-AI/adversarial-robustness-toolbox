@@ -29,7 +29,7 @@ from art.utils import to_categorical
 class CarliniL2Method(Attack):
     """
     The L_2 optimized attack of Carlini and Wagner (2016). This attack is the most efficient and should be used as the
-    primary attack to evaluate potential defenses (wrt the L_0 and L_inf attacks). This implementation is inspired by
+    primary attack to evaluate potential defences (wrt the L_0 and L_inf attacks). This implementation is inspired by
     the one in Cleverhans, which reproduces the authors' original code (https://github.com/carlini/nn_robust_attacks).
     Paper link: https://arxiv.org/pdf/1608.04644.pdf
     """
@@ -177,7 +177,7 @@ class CarliniL2Method(Attack):
                 
         # No labels provided, use model prediction as correct class
         if y is None:
-            y = np.argmax(self.classifier.predict(inputs=x, logits=False), axis=1)
+            y = np.argmax(self.classifier.predict(x, logits=False), axis=1)
             y = to_categorical(y, self.classifier.nb_classes)
 
         # Images to be attacked:
@@ -257,7 +257,11 @@ class CarliniL2Method(Attack):
                 # Abort binary search if c exceeds upper bound:
                 if c > self._c_upper_bound:
                     break
-            
+
+            # Transform best_adv_image back into tanh space if attack is failed
+            if (best_adv_image == ex).all():
+                best_adv_image = (np.tanh(best_adv_image) / self._tanh_smoother + 1) / 2
+
             x_adv[j] = best_adv_image
 
         return x_adv
@@ -287,10 +291,10 @@ class CarliniL2Method(Attack):
         # Save attack-specific parameters
         super(CarliniL2Method, self).set_params(**kwargs)
             
-        if type(self.binary_search_steps) is not int or self.binary_search_steps <= 0:
-            raise ValueError("The number of binary search steps must be a positive integer.")
+        if type(self.binary_search_steps) is not int or self.binary_search_steps < 0:
+            raise ValueError("The number of binary search steps must be a non-negative integer.")
 
-        if type(self.max_iter) is not int or self.max_iter <= 0:
-            raise ValueError("The number of iterations must be a positive integer.")
+        if type(self.max_iter) is not int or self.max_iter < 0:
+            raise ValueError("The number of iterations must be a non-negative integer.")
 
         return True

@@ -23,11 +23,32 @@ import keras
 from keras.models import Sequential
 from keras.layers import Dense, Flatten, Conv2D, MaxPooling2D
 import tensorflow as tf
+import numpy as np
+import torch.nn as nn
+import torch.nn.functional as F
+import torch.optim as optim
 
 from art.attacks.newtonfool import NewtonFool
 from art.classifiers.tensorflow import TFClassifier
 from art.classifiers.keras import KerasClassifier
+from art.classifiers.pytorch import PyTorchClassifier
 from art.utils import load_mnist
+
+
+class Model(nn.Module):
+    def __init__(self):
+        super(Model, self).__init__()
+        self.conv = nn.Conv2d(1, 16, 5)
+        self.pool = nn.MaxPool2d(2, 2)
+        self.fc = nn.Linear(2304, 10)
+
+    def forward(self, x):
+        x = self.pool(F.relu(self.conv(x)))
+        x = x.view(-1, 2304)
+        logit_output = self.fc(x)
+        output = F.softmax(logit_output, dim=1)
+
+        return logit_output, output
 
 
 class TestNewtonFool(unittest.TestCase):
@@ -118,6 +139,44 @@ class TestNewtonFool(unittest.TestCase):
 
         y_pred = krc.predict(x_test)
         y_pred_adv = krc.predict(x_test_adv)
+        y_pred_bool = y_pred.max(axis=1, keepdims=1) == y_pred
+        y_pred_max = y_pred.max(axis=1)
+        y_pred_adv_max = y_pred_adv[y_pred_bool]
+        self.assertTrue((y_pred_max >= y_pred_adv_max).all())
+
+    def test_ptclassifier(self):
+        """
+        Third test with the PyTorchClassifier.
+        :return:
+        """
+        # Get MNIST
+        batch_size, nb_train, nb_test = 100, 1000, 10
+        (x_train, y_train), (x_test, y_test), _, _ = load_mnist()
+        x_train, y_train = x_train[:nb_train], np.argmax(y_train[:nb_train], axis=1)
+        x_test, y_test = x_test[:nb_test], np.argmax(y_test[:nb_test], axis=1)
+        x_train = np.swapaxes(x_train, 1, 3)
+        x_test = np.swapaxes(x_test, 1, 3)
+
+        # Create simple CNN
+        # Define the network
+        model = Model()
+
+        # Define a loss function and optimizer
+        loss_fn = nn.CrossEntropyLoss()
+        optimizer = optim.Adam(model.parameters(), lr=0.01)
+
+        # Get classifier
+        ptc = PyTorchClassifier((0, 1), model, loss_fn, optimizer, (1, 28, 28), (10,))
+        ptc.fit(x_train, y_train, batch_size=batch_size, nb_epochs=1)
+
+        # Attack
+        nf = NewtonFool(ptc)
+        nf.set_params(max_iter=5)
+        x_test_adv = nf.generate(x_test)
+        self.assertFalse((x_test == x_test_adv).all())
+
+        y_pred = ptc.predict(x_test)
+        y_pred_adv = ptc.predict(x_test_adv)
         y_pred_bool = y_pred.max(axis=1, keepdims=1) == y_pred
         y_pred_max = y_pred.max(axis=1)
         y_pred_adv_max = y_pred_adv[y_pred_bool]

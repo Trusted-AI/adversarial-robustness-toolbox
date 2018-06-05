@@ -59,6 +59,7 @@ class NewtonFool(Attack):
         x_adv = x.copy()
 
         # Initialize variables
+        clip_min, clip_max = self.classifier.clip_values
         y_pred = self.classifier.predict(x, logits=False)
         pred_class = np.argmax(y_pred, axis=1)
 
@@ -84,6 +85,9 @@ class NewtonFool(Attack):
 
                 # Update xi and pertubation
                 ex += di
+
+            # Apply clip
+            x_adv[j] = np.clip(ex, clip_min, clip_max)
 
         return x_adv
 

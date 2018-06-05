@@ -35,10 +35,10 @@ class UniversalPerturbation(Attack):
                     'jsma': 'art.attacks.saliency_map.SaliencyMapMethod',
                     'vat': 'art.attacks.virtual_adversarial.VirtualAdversarialMethod'
                     }
-    attack_params = ['attacker', 'attacker_params', 'delta', 'max_iter', 'eps', 'p']
+    attack_params = ['attacker', 'attacker_params', 'delta', 'max_iter', 'eps', 'norm']
 
     def __init__(self, classifier, attacker='deepfool', attacker_params=None, delta=0.2, max_iter=20, eps=10.0,
-                 p=np.inf):
+                 norm=np.inf):
         """
         :param classifier: A trained model.
         :type classifier: :class:`Classifier`
@@ -53,8 +53,8 @@ class UniversalPerturbation(Attack):
         :type max_iter: `int`
         :param eps: Attack step size (input variation)
         :type eps: `float`
-        :param p: Order of the norm. Possible values: np.inf, 2 (default is np.inf)
-        :type p: `int`
+        :param norm: Order of the norm. Possible values: np.inf, 2 (default is np.inf)
+        :type norm: `int`
         """
         super(UniversalPerturbation, self).__init__(classifier)
         kwargs = {'attacker': attacker,
@@ -62,7 +62,7 @@ class UniversalPerturbation(Attack):
                   'delta': delta,
                   'max_iter': max_iter,
                   'eps': eps,
-                  'p': p
+                  'norm': norm
                   }
         self.set_params(**kwargs)
 
@@ -83,8 +83,8 @@ class UniversalPerturbation(Attack):
         :type max_iter: `int`
         :param eps: Attack step size (input variation)
         :type eps: `float`
-        :param p: Order of the norm. Possible values: np.inf, 2 (default is np.inf)
-        :type p: `int`
+        :param norm: Order of the norm. Possible values: np.inf, 2 (default is np.inf)
+        :type norm: `int`
         :return: An array holding the adversarial examples.
         :rtype: `np.ndarray`
         """
@@ -125,7 +125,7 @@ class UniversalPerturbation(Attack):
                         v += adv_xi - xi
 
                         # Project on L_p ball
-                        v = self._clip_perturbation(v, self.eps, self.p)
+                        v = self._clip_perturbation(v, self.eps, self.norm)
             nb_iter += 1
 
             # Compute the error rate
@@ -154,8 +154,8 @@ class UniversalPerturbation(Attack):
         :type max_iter: `int`
         :param eps: Attack step size (input variation)
         :type eps: `float`
-        :param p: Order of the norm. Possible values: np.inf, 2 (default is np.inf)
-        :type p: `int`
+        :param norm: Order of the norm. Possible values: np.inf, 2 (default is np.inf)
+        :type norm: `int`
         """
         super(UniversalPerturbation, self).set_params(**kwargs)
 
@@ -170,7 +170,7 @@ class UniversalPerturbation(Attack):
 
         return True
 
-    def _clip_perturbation(self, v, eps, p):
+    def _clip_perturbation(self, v, eps, norm):
         """
         Clip the values in v if their L_p norm is larger than eps.
 
@@ -178,17 +178,17 @@ class UniversalPerturbation(Attack):
         :type v: `np.ndarray`
         :param eps: maximum norm allowed.
         :type eps: `float`
-        :param p: L_p norm to use for clipping. Only p = 2 and p = Inf supported for now.
-        :type p: `int`
+        :param norm: L_p norm to use for clipping. Only `norm == 2` and `norm == np.inf` supported for now.
+        :type norm: `int`
         :return: clipped values of v
         :rtype: `np.ndarray`
         """
-        if p == 2:
+        if norm == 2:
             v *= min(1., eps/np.linalg.norm(v, axis=(1, 2)))
-        elif p == np.inf:
+        elif norm == np.inf:
             v = np.sign(v) * np.minimum(abs(v), eps)
         else:
-            raise NotImplementedError('Values of p different from 2 and Inf are currently not supported.')
+            raise NotImplementedError('Values of `norm` different from 2 and `np.inf` are currently not supported.')
 
         return v
 

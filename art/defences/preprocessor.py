@@ -29,7 +29,7 @@ else:
 
 class Preprocessor(ABC):
     """
-    Abstract base class for defenses performing model hardening by preprocessing data.
+    Abstract base class for defences performing model hardening by preprocessing data.
     """
     params = []
 

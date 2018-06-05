@@ -29,6 +29,7 @@ class SaliencyMapMethod(Attack):
     """
     attack_params = ['theta', 'gamma']
 
+    # TODO Add parameter logits?
     def __init__(self, classifier, theta=0.1, gamma=1.):
         """
         Create a SaliencyMapMethod instance.
@@ -63,7 +64,7 @@ class SaliencyMapMethod(Attack):
         :rtype: `np.ndarray`
         """
         # Parse and save attack-specific parameters
-        assert self.set_params(**kwargs)
+        self.set_params(**kwargs)
         clip_min, clip_max = self.classifier.clip_values
 
         # Initialize variables
@@ -135,7 +136,7 @@ class SaliencyMapMethod(Attack):
         # Save attack-specific parameters
         super(SaliencyMapMethod, self).set_params(**kwargs)
 
-        if self.gamma < 0 or self.gamma > 1:
+        if self.gamma <= 0 or self.gamma > 1:
             raise ValueError("The total perturbation percentage `gamma` must be between 0 and 1.")
 
         return True

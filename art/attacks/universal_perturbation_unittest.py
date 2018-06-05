@@ -24,11 +24,31 @@ import keras
 import keras.backend as k
 from keras.models import Sequential
 from keras.layers import Dense, Flatten, Conv2D, MaxPooling2D
+import torch.nn as nn
+import torch.nn.functional as F
+import torch.optim as optim
 
 from art.attacks.universal_perturbation import UniversalPerturbation
 from art.classifiers.tensorflow import TFClassifier
 from art.classifiers.keras import KerasClassifier
+from art.classifiers.pytorch import PyTorchClassifier
 from art.utils import load_mnist
+
+
+class Model(nn.Module):
+    def __init__(self):
+        super(Model, self).__init__()
+        self.conv = nn.Conv2d(1, 16, 5)
+        self.pool = nn.MaxPool2d(2, 2)
+        self.fc = nn.Linear(2304, 10)
+
+    def forward(self, x):
+        x = self.pool(F.relu(self.conv(x)))
+        x = x.view(-1, 2304)
+        logit_output = self.fc(x)
+        output = F.softmax(logit_output, dim=1)
+
+        return logit_output, output
 
 
 class TestUniversalPerturbation(unittest.TestCase):
@@ -131,6 +151,46 @@ class TestUniversalPerturbation(unittest.TestCase):
         test_y_pred = np.argmax(krc.predict(x_test_adv), axis=1)
         self.assertFalse((np.argmax(y_test, axis=1) == test_y_pred).all())
         self.assertFalse((np.argmax(y_train, axis=1) == train_y_pred).all())
+
+    def test_ptclassifier(self):
+        """
+        Third test with the PyTorchClassifier.
+        :return:
+        """
+        # Get MNIST
+        batch_size, nb_train, nb_test = 100, 1000, 10
+        (x_train, y_train), (x_test, y_test), _, _ = load_mnist()
+        x_train, y_train = x_train[:nb_train], np.argmax(y_train[:nb_train], axis=1)
+        x_test, y_test = x_test[:nb_test], np.argmax(y_test[:nb_test], axis=1)
+        x_train = np.swapaxes(x_train, 1, 3)
+        x_test = np.swapaxes(x_test, 1, 3)
+
+        # Create simple CNN
+        # Define the network
+        model = Model()
+
+        # Define a loss function and optimizer
+        loss_fn = nn.CrossEntropyLoss()
+        optimizer = optim.Adam(model.parameters(), lr=0.01)
+
+        # Get classifier
+        ptc = PyTorchClassifier((0, 1), model, loss_fn, optimizer, (1, 28, 28), (10,))
+        ptc.fit(x_train, y_train, batch_size=batch_size, nb_epochs=1)
+
+        # Attack
+        # TODO Launch with all possible attacks
+        attack_params = {"attacker": "newtonfool", "attacker_params": {"max_iter": 20}}
+        up = UniversalPerturbation(ptc)
+        x_train_adv = up.generate(x_train, **attack_params)
+        self.assertTrue((up.fooling_rate >= 0.2) or not up.converged)
+
+        x_test_adv = x_test + up.v
+        self.assertFalse((x_test == x_test_adv).all())
+
+        train_y_pred = np.argmax(ptc.predict(x_train_adv), axis=1)
+        test_y_pred = np.argmax(ptc.predict(x_test_adv), axis=1)
+        self.assertFalse((y_test == test_y_pred).all())
+        self.assertFalse((y_train == train_y_pred).all())
 
 
 if __name__ == '__main__':

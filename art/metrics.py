@@ -153,7 +153,7 @@ def clever_u(classifier, x, n_b, n_s, r, norm, c_init=1, pool_factor=10):
     :rtype: `float`
     """
     # Get a list of untargeted classes
-    y_pred = classifier.predict(np.array([x]), logits=False)
+    y_pred = classifier.predict(np.array([x]), logits=True)
     pred_class = np.argmax(y_pred, axis=1)[0]
     untarget_classes = [i for i in range(classifier.nb_classes) if i != pred_class]
 
@@ -192,7 +192,7 @@ def clever_t(classifier, x, target_class, n_b, n_s, r, norm, c_init=1, pool_fact
     :rtype: `float`
     """
     # Check if the targeted class is different from the predicted class
-    y_pred = classifier.predict(np.array([x]), logits=False)
+    y_pred = classifier.predict(np.array([x]), logits=True)
     pred_class = np.argmax(y_pred, axis=1)[0]
     if target_class == pred_class:
         raise ValueError("The targeted class is the predicted class")
@@ -200,14 +200,6 @@ def clever_t(classifier, x, target_class, n_b, n_s, r, norm, c_init=1, pool_fact
     # Check if pool_factor is smaller than 1
     if pool_factor < 1:
         raise ValueError("The pool_factor must be larger than 1")
-
-    # Change norm since q = p / (p-1)
-    if norm == 1:
-        norm = np.inf
-    elif norm == np.inf:
-        norm = 1
-    elif norm != 2:
-        raise ValueError("Norm {} not supported".format(norm))
 
     # Some auxiliary vars
     grad_norm_set = []
@@ -220,13 +212,21 @@ def clever_t(classifier, x, target_class, n_b, n_s, r, norm, c_init=1, pool_fact
     rand_pool += np.repeat(np.array([x]), pool_factor * n_s, 0)
     np.clip(rand_pool, classifier.clip_values[0], classifier.clip_values[1], out=rand_pool)
 
+    # Change norm since q = p / (p-1)
+    if norm == 1:
+        norm = np.inf
+    elif norm == np.inf:
+        norm = 1
+    elif norm != 2:
+        raise ValueError("Norm {} not supported".format(norm))
+
     # Loop over n_b batches
     for i in range(n_b):
         # Random generation of data points
         sample_xs = rand_pool[np.random.choice(pool_factor * n_s, n_s)]
 
         # Compute gradients
-        grads = classifier.class_gradient(sample_xs, logits=False)
+        grads = classifier.class_gradient(sample_xs, logits=True)
         if np.isnan(grads).any():
             raise Exception("The classifier results NaN gradients")
 
@@ -239,7 +239,7 @@ def clever_t(classifier, x, target_class, n_b, n_s, r, norm, c_init=1, pool_fact
     [_, loc, _] = weibull_min.fit(-np.array(grad_norm_set), c_init, optimizer=scipy_optimizer)
 
     # Compute function value
-    values = classifier.predict(np.array([x]), logits=False)
+    values = classifier.predict(np.array([x]), logits=True)
     value = values[:, pred_class] - values[:, target_class]
 
     # Compute scores

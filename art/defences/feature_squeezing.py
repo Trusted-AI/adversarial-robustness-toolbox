@@ -45,6 +45,8 @@ class FeatureSqueezing(Preprocessor):
 
         :param x: Sample to squeeze. `x` values are supposed to be in the range [0,1]
         :type x: `np.ndarrray`
+        :param y: Labels of the sample `x`. This function does not affect them in any way.
+        :type y: `np.ndarray`
         :param bit_depth: The number of bits to encode data on
         :type bit_depth: `int`
         :return: Squeezed sample
@@ -62,7 +64,7 @@ class FeatureSqueezing(Preprocessor):
         pass
 
     def set_params(self, **kwargs):
-        """Take in a dictionary of parameters and applies defense-specific checks before saving them as attributes.
+        """Take in a dictionary of parameters and applies defence-specific checks before saving them as attributes.
 
         Defense-specific parameters:
         :param bit_depth: The number of bits to encode data on
