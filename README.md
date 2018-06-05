@@ -3,7 +3,7 @@
 
 This is a library dedicated to **adversarial machine learning**. Its purpose is to allow rapid crafting and analysis of attacks and defense methods for machine learning models. The Adversarial Robustness Toolbox provides an implementation for many state-of-the-art methods for attacking and defending classifiers.
 
-The library is still under development. Feedback, bug reports and extension requests are highly appreciated.
+The library is still under development. Feedback, bug reports and extensions are highly appreciated. Get in touch with us on [Slack](https://ibm-art.slack.com) (invite [here]( https://join.slack.com/t/ibm-art/shared_invite/enQtMzczOTgyODUyMzU1LTFmNmI1NmM5Mjk4YjdjOTc0ZjU1ODQ5MTFlMzFhNjE3MDc5ZDFmYmQzNDZjMjY4ZDA4NjU2Yjk2MmQ4OGVhMDg))!
 
 ## Supported attack and defense methods
 
@@ -55,9 +55,9 @@ stl10_path=./data/stl-10
 
 If the datasets are not present at the indicated path, loading them will also download the data.
 
-## Running Nemesis
+## Running ART
 
-Some examples of how to use Nemesis when writing your own code can be found in the `examples` folder. See `examples/README.md` for more information about what each example does. To run an example, use the following command:
+Some examples of how to use ART when writing your own code can be found in the `examples` folder. See `examples/README.md` for more information about what each example does. To run an example, use the following command:
 
 ```bash
 python3 examples/<example_name>.py
