@@ -35,3 +35,7 @@ class TestGaussianAugmentation(unittest.TestCase):
         self.assertTrue(new_x.shape[0] == new_y.shape[0] == 8)
         self.assertTrue(new_x.shape[1:] == x.shape[1:])
         self.assertTrue(new_y.shape[1:] == y.shape[1:])
+
+
+if __name__ == '__main__':
+    unittest.main()

@@ -11,7 +11,7 @@ class TFClassifier(Classifier):
     This class implements a classifier with the Tensorflow framework.
     """
     def __init__(self, clip_values, input_ph, logits, output_ph=None, train=None, loss=None, learning=None, sess=None,
-                 defences=None):
+                 channel_index=3, defences=None):
         """
         Initialization specifically for the Tensorflow-based implementation.
 
@@ -33,12 +33,14 @@ class TFClassifier(Classifier):
         :type learning: `tf.Placeholder` of type bool.
         :param sess: Computation session.
         :type sess: `tf.Session`
+        :param channel_index: Index of the axis in data containing the color channels or features.
+        :type channel_index: `int`
         :param defences: Defences to be activated with the classifier.
         :type defences: `str` or `list(str)`
         """
         import tensorflow as tf
 
-        super(TFClassifier, self).__init__(clip_values, defences)
+        super(TFClassifier, self).__init__(clip_values, channel_index, defences)
         self._nb_classes = int(logits.get_shape()[-1])
         self._input_shape = tuple(input_ph.get_shape()[1:])
         self._input_ph = input_ph
@@ -58,17 +60,12 @@ class TFClassifier(Classifier):
         if self._loss is not None:
             self._loss_grads = tf.gradients(self._loss, self._input_ph)[0]
 
-        # Get the class gradients graph
-        self._logit_class_grads = [tf.gradients(self._logits[:, i], self._input_ph)[0] for i in range(self._nb_classes)]
-        self._class_grads = [tf.gradients(tf.nn.softmax(self._logits)[:, i], self._input_ph)[0]
-                             for i in range(self._nb_classes)]
-
-    def predict(self, inputs, logits=False):
+    def predict(self, x, logits=False):
         """
         Perform prediction for a batch of inputs.
 
-        :param inputs: Test set.
-        :type inputs: `np.ndarray`
+        :param x: Test set.
+        :type x: `np.ndarray`
         :param logits: `True` if the prediction should be done at the logits layer.
         :type logits: `bool`
         :return: Array of predictions of shape `(nb_inputs, self.nb_classes)`.
@@ -77,10 +74,10 @@ class TFClassifier(Classifier):
         import tensorflow as tf
 
         # Apply defences
-        inputs = self._apply_defences_predict(inputs)
+        x = self._apply_defences_predict(x)
 
         # Create feed_dict
-        fd = {self._input_ph: inputs}
+        fd = {self._input_ph: x}
         if self._learning is not None:
             fd[self._learning] = False
 
@@ -92,14 +89,14 @@ class TFClassifier(Classifier):
 
         return results
 
-    def fit(self, inputs, outputs, batch_size=128, nb_epochs=10):
+    def fit(self, x, y, batch_size=128, nb_epochs=10):
         """
-        Fit the classifier on the training set `(inputs, outputs)`.
+        Fit the classifier on the training set `(x, y)`.
 
-        :param inputs: Training data.
-        :type inputs: `np.ndarray`
-        :param outputs: Labels.
-        :type outputs: `np.ndarray`
+        :param x: Training data.
+        :type x: `np.ndarray`
+        :param y: Labels.
+        :type y: `np.ndarray`
         :param batch_size: Size of batches.
         :type batch_size: `int`
         :param nb_epochs: Number of epochs to use for trainings.
@@ -111,10 +108,10 @@ class TFClassifier(Classifier):
             raise ValueError("Need the training objective and the output placeholder to train the model.")
 
         # Apply defences
-        inputs, outputs = self._apply_defences_fit(inputs, outputs)
+        x, y = self._apply_defences_fit(x, y)
 
-        num_batch = int(np.ceil(len(inputs) / batch_size))
-        ind = np.arange(len(inputs))
+        num_batch = int(np.ceil(len(x) / batch_size))
+        ind = np.arange(len(x))
 
         # Start training
         for _ in range(nb_epochs):
@@ -124,11 +121,11 @@ class TFClassifier(Classifier):
             # Train for one epoch
             for m in range(num_batch):
                 if m < num_batch - 1:
-                    i_batch = inputs[ind[m * batch_size:(m + 1) * batch_size]]
-                    o_batch = outputs[ind[m * batch_size:(m + 1) * batch_size]]
+                    i_batch = x[ind[m * batch_size:(m + 1) * batch_size]]
+                    o_batch = y[ind[m * batch_size:(m + 1) * batch_size]]
                 else:
-                    i_batch = inputs[ind[m*batch_size:]]
-                    o_batch = outputs[ind[m * batch_size:]]
+                    i_batch = x[ind[m * batch_size:]]
+                    o_batch = y[ind[m * batch_size:]]
 
                 # Run train step
                 if self._learning is None:
@@ -137,12 +134,12 @@ class TFClassifier(Classifier):
                     self._sess.run(self._train, feed_dict={self._input_ph: i_batch, self._output_ph: o_batch,
                                                            self._learning: True})
 
-    def class_gradient(self, inputs, logits=False):
+    def class_gradient(self, x, logits=False):
         """
-        Compute per-class derivatives w.r.t. `input`.
+        Compute per-class derivatives w.r.t. `x`.
 
-        :param inputs: Sample input with shape as expected by the model.
-        :type inputs: `np.ndarray`
+        :param x: Sample input with shape as expected by the model.
+        :type x: `np.ndarray`
         :param logits: `True` if the prediction should be done at the logits layer.
         :type logits: `bool`
         :return: Array of gradients of input features w.r.t. each class in the form
@@ -151,23 +148,27 @@ class TFClassifier(Classifier):
         """
         # Compute the gradient and return
         if logits:
-            grds = self._sess.run(self._logit_class_grads, feed_dict={self._input_ph: inputs})
+            if not hasattr(self, '_logit_class_grads'):
+                self._init_class_grads(logits=True)
+            grds = self._sess.run(self._logit_class_grads, feed_dict={self._input_ph: x})
         else:
-            grds = self._sess.run(self._class_grads, feed_dict={self._input_ph: inputs})
+            if not hasattr(self, '_class_grads'):
+                self._init_class_grads(logits=False)
+            grds = self._sess.run(self._class_grads, feed_dict={self._input_ph: x})
 
         grds = np.swapaxes(np.array(grds), 0, 1)
 
         return grds
 
-    def loss_gradient(self, inputs, labels):
+    def loss_gradient(self, x, y):
         """
-        Compute the gradient of the loss function w.r.t. `inputs`.
+        Compute the gradient of the loss function w.r.t. `x`.
 
-        :param inputs: Sample input with shape as expected by the model.
-        :type inputs: `np.ndarray`
-        :param labels: Correct labels, one-vs-rest encoding.
-        :type labels: `np.ndarray`
-        :return: Array of gradients of the same shape as the inputs.
+        :param x: Sample input with shape as expected by the model.
+        :type x: `np.ndarray`
+        :param y: Correct labels, one-vs-rest encoding.
+        :type y: `np.ndarray`
+        :return: Array of gradients of the same shape as `x`.
         :rtype: `np.ndarray`
         """
         # Check if loss available
@@ -175,6 +176,17 @@ class TFClassifier(Classifier):
             raise ValueError("Need the loss function to compute the loss gradient.")
 
         # Compute the gradient and return
-        grds = self._sess.run(self._loss_grads, feed_dict={self._input_ph: inputs, self._output_ph: labels})
+        grds = self._sess.run(self._loss_grads, feed_dict={self._input_ph: x, self._output_ph: y})
 
         return grds
+
+    def _init_class_grads(self, logits=False):
+        import tensorflow as tf
+
+        # Construct the class gradients graph
+        if logits:
+            self._logit_class_grads = [tf.gradients(self._logits[:, i], self._input_ph)[0]
+                                       for i in range(self._nb_classes)]
+        else:
+            self._class_grads = [tf.gradients(tf.nn.softmax(self._logits)[:, i], self._input_ph)[0]
+                                 for i in range(self._nb_classes)]
