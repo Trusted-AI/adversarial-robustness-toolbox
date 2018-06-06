@@ -52,7 +52,8 @@ class TFClassifier(Classifier):
 
         # Assign session
         if sess is None:
-            self._sess = tf.get_default_session()
+            # self._sess = tf.get_default_session()
+            raise ValueError("A session cannot be None.")
         else:
             self._sess = sess
 
