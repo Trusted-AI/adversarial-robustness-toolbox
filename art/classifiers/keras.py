@@ -9,7 +9,7 @@ class KerasClassifier(Classifier):
     """
     The supported backends for Keras are TensorFlow and Theano.
     """
-    def __init__(self, clip_values, model, use_logits=False, channel_index=3, defences=None):
+    def __init__(self, clip_values, model, use_logits=False, channel_index=3, defences=None, custom_activation=False):
         """
         Create a `Classifier` instance from a Keras model. Assumes the `model` passed as argument is compiled.
 
@@ -38,19 +38,23 @@ class KerasClassifier(Classifier):
 
         # Get predictions and loss function
         label_ph = k.placeholder(shape=(None,))
-        if not use_logits:
-            if k.backend() == 'tensorflow':
-                preds, = self._output.op.inputs
-                loss = k.sparse_categorical_crossentropy(label_ph, preds, from_logits=True)
-            else:
-                loss = k.sparse_categorical_crossentropy(label_ph, self._output, from_logits=use_logits)
-
-                # Convert predictions to logits for consistency with the other cases
-                eps = 10e-8
-                preds = k.log(k.clip(self._output, eps, 1. - eps))
-        else:
+        if custom_activation:
             preds = self._output
             loss = k.sparse_categorical_crossentropy(label_ph, self._output, from_logits=use_logits)
+        else:
+            if not use_logits:
+                if k.backend() == 'tensorflow':
+                    preds, = self._output.op.inputs
+                    loss = k.sparse_categorical_crossentropy(label_ph, preds, from_logits=True)
+                else:
+                    loss = k.sparse_categorical_crossentropy(label_ph, self._output, from_logits=use_logits)
+
+                    # Convert predictions to logits for consistency with the other cases
+                    eps = 10e-8
+                    preds = k.log(k.clip(self._output, eps, 1. - eps))
+            else:
+                preds = self._output
+                loss = k.sparse_categorical_crossentropy(label_ph, self._output, from_logits=use_logits)
         loss_grads = k.gradients(loss, self._input)
 
         if k.backend() == 'tensorflow':
