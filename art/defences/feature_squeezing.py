@@ -28,6 +28,8 @@ class FeatureSqueezing(Preprocessor):
 
         :param x: Sample to squeeze. `x` values are supposed to be in the range [0,1]
         :type x: `np.ndarrray`
+        :param y: Labels of the sample `x`. This function does not affect them in any way.
+        :type y: `np.ndarray`
         :param bit_depth: The number of bits to encode data on
         :type bit_depth: `int`
         :return: Squeezed sample
