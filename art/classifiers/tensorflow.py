@@ -22,7 +22,7 @@ class TFClassifier(Classifier):
         :type input_ph: `tf.Placeholder`
         :param logits: The logits layer of the model.
         :type logits: `tf.Tensor`
-        :param output_ph: The output layer of the model. Use this parameter only of `use_logits` is `False`.
+        :param output_ph: The output layer of the model. Use this parameter only if `use_logits` is `False`.
         :type output_ph: `tf.Tensor`
         :param train: The train tensor for fitting, including an optimizer. Use this parameter only when training the
                model.
