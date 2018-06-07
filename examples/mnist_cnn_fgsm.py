@@ -47,6 +47,6 @@ adv_crafter = FastGradientMethod(classifier)
 x_test_adv = adv_crafter.generate(x=x_test, eps=epsilon)
 
 # Evaluate the classifier on the adversarial examples
-scores = np.argmax(classifier.predict(x_test_adv), axis=1)
+preds = np.argmax(classifier.predict(x_test_adv), axis=1)
 acc = np.sum(preds == np.argmax(y_test, axis=1)) / y_test.shape[0]
 print("\nTest accuracy on adversarial sample: %.2f%%" % (acc * 100))
