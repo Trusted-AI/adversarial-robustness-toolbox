@@ -11,7 +11,7 @@ class PyTorchClassifier(Classifier):
     """
     This class implements a classifier with the PyTorch framework.
     """
-    def __init__(self, clip_values, model, loss, optimizer, input_shape, output_shape, channel_index=1, defences=None):
+    def __init__(self, clip_values, model, loss, optimizer, input_shape, nb_classes, channel_index=1, defences=None):
         """
         Initialization specifically for the PyTorch-based implementation.
 
@@ -26,8 +26,8 @@ class PyTorchClassifier(Classifier):
         :type optimizer: `torch.optim.Optimizer`
         :param input_shape: Shape of the input.
         :type input_shape: `tuple`
-        :param output_shape: Shape of the output.
-        :type output_shape: `tuple`
+        :param nb_classes: The number of classes of the model.
+        :type nb_classes: `int`
         :param channel_index: Index of the axis in data containing the color channels or features.
         :type channel_index: `int`
         :param defences: Defences to be activated with the classifier.
@@ -35,7 +35,7 @@ class PyTorchClassifier(Classifier):
         """
         super(PyTorchClassifier, self).__init__(clip_values, channel_index, defences)
         # self._nb_classes = list(model.modules())[-1 if use_logits else -2].out_features
-        self._nb_classes = output_shape[0]
+        self._nb_classes = nb_classes
         self._input_shape = input_shape
         self._model = model
         self._loss = loss

@@ -149,7 +149,7 @@ class TestNewtonFool(unittest.TestCase):
         optimizer = optim.Adam(model.parameters(), lr=0.01)
 
         # Get classifier
-        ptc = PyTorchClassifier((0, 1), model, loss_fn, optimizer, (1, 28, 28), (10,))
+        ptc = PyTorchClassifier((0, 1), model, loss_fn, optimizer, (1, 28, 28), 10)
         ptc.fit(x_train, y_train, batch_size=batch_size, nb_epochs=1)
 
         # Attack

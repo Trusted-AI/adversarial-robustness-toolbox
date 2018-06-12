@@ -47,8 +47,8 @@ class DeepFool(Attack):
             xj = val[None, ...]
 
             # TODO move prediction outside of for loop; add batching if `x` is too large?
-            f = self.classifier.predict(xj)[0]
-            grd = self.classifier.class_gradient(xj, logits=False)[0]
+            f = self.classifier.predict(xj, logits=True)[0]
+            grd = self.classifier.class_gradient(xj, logits=True)[0]
             fk_hat = np.argmax(f)
             fk_i_hat = fk_hat
             nb_iter = 0
@@ -70,8 +70,8 @@ class DeepFool(Attack):
                 xj = np.clip(xj + r, clip_min, clip_max)
 
                 # Recompute prediction for new xj
-                f = self.classifier.predict(xj)[0]
-                grd = self.classifier.class_gradient(xj, logits=False)[0]
+                f = self.classifier.predict(xj, logits=True)[0]
+                grd = self.classifier.class_gradient(xj, logits=True)[0]
                 fk_i_hat = np.argmax(f)
 
                 nb_iter += 1
