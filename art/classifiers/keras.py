@@ -17,7 +17,7 @@ class KerasClassifier(Classifier):
                for features.
         :type clip_values: `tuple`
         :param model: Keras model
-        :type model: `keras.models.Sequential`
+        :type model: `keras.models.Model`
         :param use_logits: True if the output of the model are the logits.
         :type use_logits: `bool`
         :param channel_index: Index of the axis in data containing the color channels or features.

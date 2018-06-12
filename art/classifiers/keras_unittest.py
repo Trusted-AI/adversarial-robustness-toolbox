@@ -18,6 +18,20 @@ NB_TEST = 100
 class TestKerasClassifier(unittest.TestCase):
 
     def setUp(self):
+        import requests
+        import tempfile
+        import os
+
+        # Temporary folder for tests
+        self.test_dir = tempfile.mkdtemp()
+
+        # Download one ImageNet pic for tests
+        url = 'http://farm1.static.flickr.com/163/381342603_81db58bea4.jpg'
+        result = requests.get(url, stream=True)
+        if result.status_code == 200:
+            image = result.raw.read()
+            open(os.path.join(self.test_dir, 'test.jpg'), 'wb').write(image)
+
         k.set_learning_phase(1)
 
         # Get MNIST
@@ -42,6 +56,10 @@ class TestKerasClassifier(unittest.TestCase):
 
         model.fit(x_train, y_train, batch_size=BATCH_SIZE, epochs=1)
         self.model_mnist = model
+
+    def tearDown(self):
+        import shutil
+        shutil.rmtree(self.test_dir)
 
     # def test_logits(self):
     #     classifier = KerasClassifier((0, 1), self.model_mnist, use_logits=True)
@@ -75,3 +93,20 @@ class TestKerasClassifier(unittest.TestCase):
 
         loss_grads = classifier.loss_gradient(x_test[:11], y_test[:11])
         self.assertTrue(loss_grads.shape == x_test[:11].shape)
+
+    def test_resnet(self):
+        import os
+
+        from keras.applications.resnet50 import ResNet50, decode_predictions
+        from keras.preprocessing.image import load_img, img_to_array
+
+        keras.backend.set_learning_phase(0)
+        model = ResNet50(weights='imagenet')
+        classifier = KerasClassifier((0, 255), model)
+
+        # Load image from file
+        image = img_to_array(load_img(os.path.join(self.test_dir, 'test.jpg'), target_size=(224, 224)))
+        image = image.reshape((1, image.shape[0], image.shape[1], image.shape[2]))
+
+        label = decode_predictions(classifier.predict(image))[0][0]
+        self.assertEqual(label[1], 'Weimaraner')
