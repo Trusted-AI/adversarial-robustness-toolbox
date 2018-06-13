@@ -129,7 +129,7 @@ def loss_sensitivity(classifier, x):
     return np.mean(norm)
 
 
-def clever(classifier, x, n_b, n_s, r, norm, target=None, c_init=1, pool_factor=10):
+def clever(classifier, x, n_b, n_s, r, norm, target=None, target_sort=False, c_init=1, pool_factor=10):
     """
     Compute CLEVER score for an untargeted attack. Paper link: https://arxiv.org/abs/1801.10578
 
@@ -147,6 +147,8 @@ def clever(classifier, x, n_b, n_s, r, norm, target=None, c_init=1, pool_factor=
     :type norm: `int`
     :param target: Class or classes to target. If `None`, targets all classes
     :type target: `int` or iterable of `int`
+    :parm target_sort: Should the target classes be sorted in prediction order
+    :type target: `bool` When `True` and `target` is `None`, sort results
     :param c_init: initialization of Weibull distribution
     :type c_init: `float`
     :param pool_factor: The factor to create a pool of random samples with size pool_factor x n_s
@@ -159,10 +161,14 @@ def clever(classifier, x, n_b, n_s, r, norm, target=None, c_init=1, pool_factor=
     pred_class = np.argmax(y_pred, axis=1)[0]
     if target is None:
         # Get a list of untargeted classes
-        target_classes = [i for i in range(classifier.nb_classes) if i != pred_class]
-    if type(target) == type(0):
+        if target_sort:
+            target_classes = np.argsort(y_pred)[0][:-1]
+        else:
+            target_classes = [i for i in range(classifier.nb_classes) if i != pred_class]
+    elif isinstance(target, (int, np.integer)):
         target_classes = [target]
     else:
+        # Assume it's iterable
         target_classes = target
     score_list = []
     for j in target_classes:
