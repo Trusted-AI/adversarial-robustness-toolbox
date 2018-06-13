@@ -114,6 +114,7 @@ def load_cifar10():
     from config import CIFAR10_PATH
     from keras.datasets.cifar import load_batch
     from keras.utils.data_utils import get_file
+    import keras.backend as k
 
     min_, max_ = 0., 1.
 
