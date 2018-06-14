@@ -24,11 +24,6 @@ import argparse
 import json
 import os
 
-# from keras import backend as k
-# from keras.datasets.cifar import load_batch
-# from keras.preprocessing import image
-# from keras.utils import data_utils
-# from keras.utils.data_utils import get_file
 import numpy as np
 
 
@@ -125,10 +120,11 @@ def preprocess(x, y, nb_classes=10, max_value=255):
 def load_cifar10():
     """Loads CIFAR10 dataset from config.CIFAR10_PATH or downloads it if necessary.
 
-    :return: (x_train, y_train), (x_test, y_test), min, max
-    :rtype: (tuple of numpy.ndarray), (tuple of numpy.ndarray), float, float
+    :return: `(x_train, y_train), (x_test, y_test), min, max`
+    :rtype: `(np.ndarray, np.ndarray), (np.ndarray, np.ndarray), float, float`
     """
     from config import CIFAR10_PATH
+    import keras.backend as k
     from keras.datasets.cifar import load_batch
     from keras.utils.data_utils import get_file
 
@@ -166,8 +162,8 @@ def load_cifar10():
 def load_mnist():
     """Loads MNIST dataset from config.MNIST_PATH or downloads it if necessary.
     
-    :return: (x_train, y_train), (x_test, y_test), min, max
-    :rtype: tuple of numpy.ndarray), (tuple of numpy.ndarray), float, float
+    :return: `(x_train, y_train), (x_test, y_test), min, max`
+    :rtype: `(np.ndarray, np.ndarray), (np.ndarray, np.ndarray), float, float`
     """
     from config import MNIST_PATH
     from keras.utils.data_utils import get_file
@@ -195,8 +191,8 @@ def load_mnist():
 def load_imagenet():
     """Loads Imagenet dataset from config.IMAGENET_PATH
 
-    :return: (x_train, y_train), (x_test, y_test), min, max
-    :rtype: tuple of numpy.ndarray), (tuple of numpy.ndarray), float, float
+    :return: `(x_train, y_train), (x_test, y_test), min, max`
+    :rtype: `(np.ndarray, np.ndarray), (np.ndarray, np.ndarray), float, float`
     """
     from config import IMAGENET_PATH
     from keras.preprocessing import image
@@ -238,10 +234,13 @@ def load_imagenet():
 def load_stl():
     """Loads the STL-10 dataset from config.STL10_PATH or downloads it if necessary.
 
-    :return: (x_train, y_train), (x_test, y_test), min, max
-    :rtype: tuple of numpy.ndarray), (tuple of numpy.ndarray), float, float
+    :return: `(x_train, y_train), (x_test, y_test), min, max`
+    :rtype: `(np.ndarray, np.ndarray), (np.ndarray, np.ndarray), float, float`
     """
+    from os.path import join
+
     from config import STL10_PATH
+    import keras.backend as k
     from keras.utils.data_utils import get_file
 
     min_, max_ = 0., 1.
@@ -250,11 +249,11 @@ def load_stl():
     path = get_file('stl10_binary', cache_subdir=STL10_PATH, untar=True,
                     origin='https://ai.stanford.edu/~acoates/stl10/stl10_binary.tar.gz')
 
-    with open(os.path.join(path, 'train_X.bin'), 'rb') as f:
+    with open(join(path, str('train_X.bin')), str('rb')) as f:
         x_train = np.fromfile(f, dtype=np.uint8)
         x_train = np.reshape(x_train, (-1, 3, 96, 96))
 
-    with open(os.path.join(path, 'test_X.bin'), 'rb') as f:
+    with open(join(path, str('test_X.bin')), str('rb')) as f:
         x_test = np.fromfile(f, dtype=np.uint8)
         x_test = np.reshape(x_test, (-1, 3, 96, 96))
 
@@ -262,11 +261,11 @@ def load_stl():
         x_train = x_train.transpose(0, 2, 3, 1)
         x_test = x_test.transpose(0, 2, 3, 1)
 
-    with open(os.path.join(path, 'train_y.bin'), 'rb') as f:
+    with open(join(path, str('train_y.bin')), str('rb')) as f:
         y_train = np.fromfile(f, dtype=np.uint8)
         y_train -= 1
 
-    with open(os.path.join(path, 'test_y.bin'), 'rb') as f:
+    with open(join(path, str('test_y.bin')), str('rb')) as f:
         y_test = np.fromfile(f, dtype=np.uint8)
         y_test -= 1
 
@@ -282,8 +281,8 @@ def load_dataset(name):
 
     :param name: Name of the dataset
     :type name: `str`
-    :return: The dataset separated in training and test sets as `(x_train, y_train), (x_test, y_test)`
-    :rtype: `tuple`
+    :return: The dataset separated in training and test sets as `(x_train, y_train), (x_test, y_test), min, max`
+    :rtype: `(np.ndarray, np.ndarray), (np.ndarray, np.ndarray), float, float`
     :raises NotImplementedError: If the dataset is unknown.
     """
 
