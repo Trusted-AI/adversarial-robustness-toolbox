@@ -41,7 +41,7 @@ def to_categorical(labels, nb_classes=None):
     if not nb_classes:
         nb_classes = np.max(labels) + 1
     categorical = np.zeros((labels.shape[0], nb_classes), dtype=np.float32)
-    categorical[np.arange(labels.shape[0]), labels] = 1
+    categorical[np.arange(labels.shape[0]), np.squeeze(labels)] = 1
     return categorical
 
 
