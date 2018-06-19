@@ -1,6 +1,6 @@
 include *.md
 include CODE_OF_CONDUCT
 include LICENSE
+recursive-include examples *.py *.ini
 graft docs
 graft examples
-graft config
