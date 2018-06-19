@@ -18,10 +18,14 @@
 from setuptools import setup
 from setuptools import find_packages
 
+with open("README.md", "r") as fh:
+    long_description = fh.read()
 
 setup(name='adversarial_robustness_toolbox',
-      version='0.1',
+      version='0.2.0',
       description='IBM Adversarial machine learning toolbox',
+      long_description=long_description,
+      long_description_content_type="text/markdown",
       author='Irina Nicolae',
       author_email='maria-irina.nicolae@ibm.com',
       url='https://github.com/IBM/adversarial-robustness-toolbox',
