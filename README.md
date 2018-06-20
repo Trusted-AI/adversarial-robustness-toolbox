@@ -22,6 +22,7 @@ The following defense methods are also supported:
 * Label smoothing ([Warde-Farley and Goodfellow, 2016](https://pdfs.semanticscholar.org/b5ec/486044c6218dd41b17d8bba502b32a12b91a.pdf))
 * Adversarial training ([Szegedy et al., 2013](http://arxiv.org/abs/1312.6199))
 * Virtual adversarial training ([Miyato et al., 2017](https://arxiv.org/abs/1704.03976))
+* Gaussian data augmentation ([Zantedeschi et al., 2017](https://arxiv.org/abs/1707.06728))
 
 ## Setup
 
