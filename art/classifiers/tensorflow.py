@@ -191,3 +191,98 @@ class TFClassifier(Classifier):
         else:
             self._class_grads = [tf.gradients(tf.nn.softmax(self._logits)[:, i], self._input_ph)[0]
                                  for i in range(self._nb_classes)]
+
+    def _get_layers(self):
+        """
+        Return the hidden layers in the model, if applicable.
+
+        :return: The hidden layers in the model, input and output layers excluded.
+        :rtype: `list`
+        """
+        import tensorflow as tf
+
+        # Get the computational graph
+        with self._sess.graph.as_default():
+            graph = tf.get_default_graph()
+
+        # Get the list of operators and heuristically filter them
+        tmp_list = []
+        ops = graph.get_operations()
+
+        for i, op in enumerate(ops):
+            filter_cond = ((op.values()) and (not op.values()[0].get_shape() == None) and (
+                len(op.values()[0].get_shape().as_list()) > 1) and (
+                op.values()[0].get_shape().as_list()[0] is None) and (
+                op.values()[0].get_shape().as_list()[1] is not None) and (
+                not op.values()[0].name.startswith("gradients")) and (
+                not op.values()[0].name.startswith("softmax_cross_entropy_loss")) and (
+                not op.type == "Placeholder"))
+
+            if filter_cond:
+                tmp_list.append(op.values()[0].name)
+
+        # Shorten the list
+        if len(tmp_list) == 0:
+            return tmp_list
+
+        result = [tmp_list[-1]]
+        for name in reversed(tmp_list[:-1]):
+            if (result[0].split("/")[0] != name.split("/")[0]):
+                result = [name] + result
+
+        return result
+
+    @property
+    def get_layers(self):
+        """
+        Return the hidden layers in the model, if applicable.
+
+        :return: The hidden layers in the model, input and output layers excluded.
+        :rtype: `list`
+
+        .. warning:: `get_layers` tries to infer the internal structure of the model.
+                     This feature comes with no guarantees on the correctness of the result.
+                     The intended order of the layers tries to match their order in the model, but this is not
+                     guaranteed either.
+        """
+        return self._layer_names
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
