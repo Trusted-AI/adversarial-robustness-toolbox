@@ -57,6 +57,9 @@ class TFClassifier(Classifier):
         else:
             self._sess = sess
 
+        # Get the internal layer
+        self._layer_names = self._get_layers()
+
         # Get the loss gradients graph
         if self._loss is not None:
             self._loss_grads = tf.gradients(self._loss, self._input_ph)[0]
@@ -246,6 +249,53 @@ class TFClassifier(Classifier):
                      guaranteed either.
         """
         return self._layer_names
+
+    def get_activations(self, x, layer):
+        """
+        Return the output of the specified layer for input `x`. `layer` is specified by layer index (between 0 and
+        `nb_layers - 1`) or by name. The number of layers can be determined by counting the results returned by
+        calling `get_layers()`.
+
+        :param x: Input for computing the activations.
+        :type x: `np.ndarray`
+        :param layer: Layer for computing the activations
+        :type layer: `int` or `str`
+        :return: The output of `layer`, where the first dimension is the batch size corresponding to `x`.
+        :rtype: `np.ndarray`
+        """
+        import tensorflow as tf
+
+        # Get the computational graph
+        with self._sess.graph.as_default():
+            graph = tf.get_default_graph()
+
+        if type(layer) is str:
+            if not layer in self._layer_names:
+                raise ValueError("Layer name %s not supported to get from the graph" % layer)
+            layer_tensor = graph.get_tensor_by_name(layer)
+
+        elif type(layer) is int:
+            layer_tensor = graph.get_tensor_by_name(self._layer_names[layer])
+
+        else:
+            raise TypeError("Layer must be of type str or int")
+
+        # Get activations
+        # Apply defences
+        x = self._apply_defences_predict(x)
+
+        # Create feed_dict
+        fd = {self._input_ph: x}
+        if self._learning is not None:
+            fd[self._learning] = False
+
+        # Run prediction
+        result = self._sess.run(layer_tensor, feed_dict=fd)
+
+        return result
+
+
+
 
 
 
