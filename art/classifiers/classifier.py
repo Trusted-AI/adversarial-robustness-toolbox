@@ -174,3 +174,28 @@ class Classifier(ABC):
             x = self.smooth(x)
 
         return x
+
+    @abc.abstractmethod
+    def get_activations(self, x, layer):
+        """
+        Return the output of the specified layer for input `x`. `layer` is specified by layer index (between 0 and
+        `nb_layers - 1`) or by name.
+
+        :param x: Input for computing the activations.
+        :type x: `np.ndarray`
+        :param layer: Layer for computing the activations
+        :type layer: `int` or `str`
+        :return: The output of `layer`, where the first dimension is the batch size corresponding to `x`.
+        :rtype: `np.ndarray`
+        """
+        raise NotImplementedError
+
+    @property
+    def nb_layers(self):
+        """
+        Return the number of layers in the model, if applicable.
+
+        :return: Number of layers in the model, including the input and output layers.
+        :rtype: `int`
+        """
+        raise NotImplementedError
