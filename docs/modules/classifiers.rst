@@ -11,5 +11,7 @@ Concrete Model Wrappers
 -----------------------
 .. autoclass:: KerasClassifier
    :members:
+.. autoclass:: PyTorchClassifier
+   :members:
 .. autoclass:: TFClassifier
    :members:
