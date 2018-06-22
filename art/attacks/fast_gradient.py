@@ -3,6 +3,7 @@ from __future__ import absolute_import, division, print_function, unicode_litera
 import numpy as np
 
 from art.attacks.attack import Attack
+from art.utils import get_labels_np_array
 
 
 class FastGradientMethod(Attack):
@@ -15,7 +16,7 @@ class FastGradientMethod(Attack):
 
     def __init__(self, classifier, norm=np.inf, eps=.3, targeted=False):
         """
-        Create a FastGradientMethod instance.
+        Create a :class:`FastGradientMethod` instance.
 
         :param classifier: A trained model.
         :type classifier: :class:`Classifier`
@@ -43,8 +44,6 @@ class FastGradientMethod(Attack):
         :type eps_step: `float`
         :param eps_max: The maximum accepted perturbation
         :type eps_max: `float`
-        :param kwargs: Other parameters to send to `generate_graph`
-        :type kwargs: `dict`
         :return: An array holding the adversarial examples
         :rtype: `np.ndarray`
         """
@@ -74,8 +73,8 @@ class FastGradientMethod(Attack):
         :type x: `np.ndarray`
         :param eps: Attack step size (input variation)
         :type eps: `float`
-        :param ord: Order of the norm (mimics Numpy). Possible values: np.inf, 1 or 2.
-        :type ord: `int`
+        :param norm: Order of the norm (mimics Numpy). Possible values: np.inf, 1 or 2.
+        :type norm: `int`
         :param y: The labels for the data `x`. Only provide this parameter if you'd like to use true
                   labels when crafting adversarial samples. Otherwise, model predictions are used as labels to avoid the
                   "label leaking" effect (explained in this paper: https://arxiv.org/abs/1611.01236). Default is `None`.
@@ -90,8 +89,12 @@ class FastGradientMethod(Attack):
         self.set_params(**kwargs)
 
         if 'y' not in kwargs or kwargs[str('y')] is None:
+            # Throw error if attack is targeted, but no targets are provided
+            if self.targeted:
+                raise ValueError('Target labels `y` need to be provided for a targeted attack.')
+
             # Use model predictions as correct outputs
-            y = self.classifier.predict(x)
+            y = get_labels_np_array(self.classifier.predict(x))
         else:
             y = kwargs[str('y')]
         y = y / np.sum(y, axis=1, keepdims=True)
@@ -120,10 +123,8 @@ class FastGradientMethod(Attack):
         if self.norm not in [np.inf, int(1), int(2)]:
             raise ValueError('Norm order must be either `np.inf`, 1, or 2.')
 
-        clip_min, clip_max = self.classifier.clip_values
-        if self.eps <= clip_min or self.eps > clip_max:
-            raise ValueError('The amount of perturbation has to be in the data range.')
-
+        if self.eps <= 0:
+            raise ValueError('The perturbation size `eps` has to be positive.')
         return True
 
     def _compute(self, x, y, eps):
