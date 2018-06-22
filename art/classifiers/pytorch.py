@@ -87,7 +87,7 @@ class PyTorchClassifier(Classifier):
 
         :param x: Training data.
         :type x: `np.ndarray`
-        :param y: Labels.
+        :param y: Labels, one-vs-rest encoding.
         :type y: `np.ndarray`
         :param batch_size: Size of batches.
         :type batch_size: `int`
