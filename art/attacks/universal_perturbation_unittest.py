@@ -143,8 +143,8 @@ class TestUniversalPerturbation(unittest.TestCase):
         # Get MNIST
         batch_size, nb_train, nb_test = 100, 1000, 10
         (x_train, y_train), (x_test, y_test), _, _ = load_mnist()
-        x_train, y_train = x_train[:nb_train], np.argmax(y_train[:nb_train], axis=1)
-        x_test, y_test = x_test[:nb_test], np.argmax(y_test[:nb_test], axis=1)
+        x_train, y_train = x_train[:nb_train], y_train[:nb_train]
+        x_test, y_test = x_test[:nb_test], y_test[:nb_test]
         x_train = np.swapaxes(x_train, 1, 3)
         x_test = np.swapaxes(x_test, 1, 3)
 
@@ -172,8 +172,8 @@ class TestUniversalPerturbation(unittest.TestCase):
 
         train_y_pred = np.argmax(ptc.predict(x_train_adv), axis=1)
         test_y_pred = np.argmax(ptc.predict(x_test_adv), axis=1)
-        self.assertFalse((y_test == test_y_pred).all())
-        self.assertFalse((y_train == train_y_pred).all())
+        self.assertFalse((np.argmax(y_test, axis=1) == test_y_pred).all())
+        self.assertFalse((np.argmax(y_train, axis=1) == train_y_pred).all())
 
 
 if __name__ == '__main__':

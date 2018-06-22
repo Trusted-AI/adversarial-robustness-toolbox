@@ -46,8 +46,8 @@ class TestPyTorchClassifier(unittest.TestCase):
     def test_fit_predict(self):
         # Get MNIST
         (x_train, y_train), (x_test, y_test), _, _ = load_mnist()
-        x_train, y_train = x_train[:NB_TRAIN], np.argmax(y_train[:NB_TRAIN], axis=1)
-        x_test, y_test = x_test[:NB_TEST], np.argmax(y_test[:NB_TEST], axis=1)
+        x_train, y_train = x_train[:NB_TRAIN], y_train[:NB_TRAIN]
+        x_test, y_test = x_test[:NB_TEST], y_test[:NB_TEST]
         x_train = np.swapaxes(x_train, 1, 3)
         x_test = np.swapaxes(x_test, 1, 3)
 
@@ -56,8 +56,7 @@ class TestPyTorchClassifier(unittest.TestCase):
 
         ptc.fit(x_train, y_train, batch_size=100, nb_epochs=1)
         preds = ptc.predict(x_test)
-        preds_class = np.argmax(preds, axis=1)
-        acc = np.sum(preds_class == y_test) / len(y_test)
+        acc = np.sum(np.argmax(preds, axis=1) == np.argmax(y_test, axis=1)) / len(y_test)
         print("\nAccuracy: %.2f%%" % (acc * 100))
         self.assertGreater(acc, 0.1)
 
@@ -87,7 +86,7 @@ class TestPyTorchClassifier(unittest.TestCase):
     def test_loss_gradient(self):
         # Get MNIST
         (_, _), (x_test, y_test), _, _ = load_mnist()
-        x_test, y_test = x_test[:NB_TEST], np.argmax(y_test[:NB_TEST], axis=1)
+        x_test, y_test = x_test[:NB_TEST], y_test[:NB_TEST]
         x_test = np.swapaxes(x_test, 1, 3)
 
         # Test gradient

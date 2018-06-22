@@ -99,6 +99,7 @@ class PyTorchClassifier(Classifier):
 
         # Apply defences
         x, y = self._apply_defences_fit(x, y)
+        y = np.argmax(y, axis=1)
 
         # Set train phase
         self._model.train(True)
@@ -188,14 +189,14 @@ class PyTorchClassifier(Classifier):
         :rtype: `np.ndarray`
         """
         import torch
-        
+
         # Convert the inputs to Tensors
         inputs_t = torch.from_numpy(x)
         inputs_t = inputs_t.float()
         inputs_t.requires_grad = True
 
         # Convert the labels to Tensors
-        labels_t = torch.from_numpy(y)
+        labels_t = torch.from_numpy(np.argmax(y, axis=1))
 
         # Compute the gradient and return
         (_, m_output) = self._model(inputs_t)

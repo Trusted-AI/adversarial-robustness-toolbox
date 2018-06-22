@@ -71,7 +71,7 @@ class TestVirtualAdversarial(unittest.TestCase):
         # Create basic PyTorch model
         self.classifier_py = self._cnn_mnist_py()
         x_train, x_test = np.swapaxes(x_train, 1, 3), np.swapaxes(x_test, 1, 3)
-        self.classifier_py.fit(x_train, np.argmax(y_train, axis=1), nb_epochs=2, batch_size=BATCH_SIZE)
+        self.classifier_py.fit(x_train, y_train, nb_epochs=2, batch_size=BATCH_SIZE)
 
         scores = get_labels_np_array(self.classifier_py.predict(x_train))
         acc = np.sum(np.argmax(scores, axis=1) == np.argmax(y_train, axis=1)) / y_train.shape[0]

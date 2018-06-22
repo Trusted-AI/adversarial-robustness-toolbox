@@ -233,7 +233,7 @@ class TestCarliniL2(unittest.TestCase):
         # Get MNIST
         batch_size, nb_train, nb_test = 100, 500, 5
         (x_train, y_train), (x_test, y_test), _, _ = load_mnist()
-        x_train, y_train = x_train[:nb_train], np.argmax(y_train[:nb_train], axis=1)
+        x_train, y_train = x_train[:nb_train], y_train[:nb_train]
         x_test, y_test = x_test[:nb_test], y_test[:nb_test]
         x_train = np.swapaxes(x_train, 1, 3)
         x_test = np.swapaxes(x_test, 1, 3)
