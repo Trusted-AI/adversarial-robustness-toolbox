@@ -2,7 +2,6 @@ from __future__ import absolute_import, division, print_function, unicode_litera
 
 import numpy as np
 import random
-import torch
 
 from art.classifiers.classifier import Classifier
 
@@ -45,6 +44,7 @@ class PyTorchClassifier(Classifier):
         # self._logit_layer = len(list(model.modules())) - 2 if use_logits else len(list(model.modules())) - 3
 
         # Use GPU if possible
+        import torch
         device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
         self._model.to(device)
 
@@ -59,6 +59,8 @@ class PyTorchClassifier(Classifier):
         :return: Array of predictions of shape `(nb_inputs, self.nb_classes)`.
         :rtype: `np.ndarray`
         """
+        import torch
+
         # Apply defences
         x = self._apply_defences_predict(x)
 
@@ -93,6 +95,8 @@ class PyTorchClassifier(Classifier):
         :type nb_epochs: `int`
         :return: `None`
         """
+        import torch
+
         # Apply defences
         x, y = self._apply_defences_fit(x, y)
 
@@ -140,6 +144,8 @@ class PyTorchClassifier(Classifier):
                  `(batch_size, nb_classes, input_shape)`.
         :rtype: `np.ndarray`
         """
+        import torch
+
         # Convert the inputs to Tensors
         x = torch.from_numpy(x)
         x = x.float()
@@ -181,6 +187,8 @@ class PyTorchClassifier(Classifier):
         :return: Array of gradients of the same shape as `x`.
         :rtype: `np.ndarray`
         """
+        import torch
+        
         # Convert the inputs to Tensors
         inputs_t = torch.from_numpy(x)
         inputs_t = inputs_t.float()
