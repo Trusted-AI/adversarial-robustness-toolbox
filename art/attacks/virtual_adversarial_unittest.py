@@ -55,7 +55,6 @@ class TestVirtualAdversarial(unittest.TestCase):
         print("\n[Keras, MNIST] Accuracy on training set: %.2f%%" % (scores[1] * 100))
         scores = self.classifier_k._model.evaluate(x_test, y_test)
         print("\n[Keras, MNIST] Accuracy on test set: %.2f%%" % (scores[1] * 100))
-        print(np.argmax(self.classifier_k.predict(x_test), axis=1))
 
         # Create basic CNN on MNIST using TensorFlow
         self.classifier_tf = self._cnn_mnist_tf([28, 28, 1])
@@ -111,7 +110,6 @@ class TestVirtualAdversarial(unittest.TestCase):
         self.assertFalse((x_test == x_test_adv).all())
 
         y_pred = get_labels_np_array(classifier.predict(x_test_adv))
-        print(np.argmax(y_pred, axis=1))
         self.assertFalse((y_test == y_pred).all())
 
         acc = np.sum(np.argmax(y_pred, axis=1) == np.argmax(y_test, axis=1)) / y_test.shape[0]
