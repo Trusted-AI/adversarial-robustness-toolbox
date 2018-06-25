@@ -129,6 +129,56 @@ def loss_sensitivity(classifier, x):
     return np.mean(norm)
 
 
+def clever(classifier, x, n_b, n_s, r, norm, target=None, target_sort=False, c_init=1, pool_factor=10):
+    """
+    Compute CLEVER score for an untargeted attack. Paper link: https://arxiv.org/abs/1801.10578
+
+    :param classifier: A trained model.
+    :type classifier: :class:`Classifier`
+    :param x: One input sample
+    :type x: `np.ndarray`
+    :param n_b: Batch size
+    :type n_b: `int`
+    :param n_s: Number of examples per batch
+    :type n_s: `int`
+    :param r: Maximum perturbation
+    :type r: `float`
+    :param norm: Current support: 1, 2, np.inf
+    :type norm: `int`
+    :param target: Class or classes to target. If `None`, targets all classes
+    :type target: `int` or iterable of `int`
+    :parm target_sort: Should the target classes be sorted in prediction order
+    :type target: `bool` When `True` and `target` is `None`, sort results
+    :param c_init: initialization of Weibull distribution
+    :type c_init: `float`
+    :param pool_factor: The factor to create a pool of random samples with size pool_factor x n_s
+    :type pool_factor: `int`
+    :return: CLEVER score
+    :rtype: array of `float`. None if target classes is predicted
+    """
+    # Find the predicted class first
+    y_pred = classifier.predict(np.array([x]), logits=False)
+    pred_class = np.argmax(y_pred, axis=1)[0]
+    if target is None:
+        # Get a list of untargeted classes
+        if target_sort:
+            target_classes = np.argsort(y_pred)[0][:-1]
+        else:
+            target_classes = [i for i in range(classifier.nb_classes) if i != pred_class]
+    elif isinstance(target, (int, np.integer)):
+        target_classes = [target]
+    else:
+        # Assume it's iterable
+        target_classes = target
+    score_list = []
+    for j in target_classes:
+        if j == pred_class:
+            score_list.append(None)
+            continue
+        s = clever_t(classifier, x, j, n_b, n_s, r, norm, c_init, pool_factor)
+        score_list.append(s)
+    return np.array(score_list)
+
 def clever_u(classifier, x, n_b, n_s, r, norm, c_init=1, pool_factor=10):
     """
     Compute CLEVER score for an untargeted attack. Paper link: https://arxiv.org/abs/1801.10578
