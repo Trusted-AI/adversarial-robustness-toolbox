@@ -2,8 +2,8 @@ from __future__ import absolute_import, division, print_function, unicode_litera
 
 import keras
 import keras.backend as k
-from keras.models import Sequential
-from keras.layers import Dense, Activation, Flatten, Conv2D, MaxPooling2D, Dropout
+from keras.models import Sequential, Model
+from keras.layers import Dense, Activation, Flatten, Conv2D, MaxPooling2D, Dropout, Input, Flatten
 import numpy as np
 import unittest
 
@@ -18,20 +18,6 @@ NB_TEST = 100
 class TestKerasClassifier(unittest.TestCase):
 
     def setUp(self):
-        import requests
-        import tempfile
-        import os
-
-        # Temporary folder for tests
-        self.test_dir = tempfile.mkdtemp()
-
-        # Download one ImageNet pic for tests
-        url = 'http://farm1.static.flickr.com/163/381342603_81db58bea4.jpg'
-        result = requests.get(url, stream=True)
-        if result.status_code == 200:
-            image = result.raw.read()
-            open(os.path.join(self.test_dir, 'test.jpg'), 'wb').write(image)
-
         k.set_learning_phase(1)
 
         # Get MNIST
@@ -57,15 +43,42 @@ class TestKerasClassifier(unittest.TestCase):
         model.fit(x_train, y_train, batch_size=BATCH_SIZE, epochs=1)
         self.model_mnist = model
 
-    def tearDown(self):
-        import shutil
-        shutil.rmtree(self.test_dir)
-
     # def test_logits(self):
     #     classifier = KerasClassifier((0, 1), self.model_mnist, use_logits=True)
 
     # def test_probabilities(self):
     #     classifier = KerasClassifier((0, 1), self.model_mnist, use_logits=False)
+
+    def functional_model(self):
+        k.set_learning_phase(1)
+
+        # # Get MNIST
+        # (x_train, y_train), (x_test, y_test), _, _ = load_mnist()
+        # x_train, y_train, x_test, y_test = x_train[:NB_TRAIN], y_train[:NB_TRAIN], x_test[:NB_TEST], y_test[:NB_TEST]
+        # self.mnist = ((x_train, y_train), (x_test, y_test))
+        # im_shape = x_train[0].shape
+
+        # Create basic CNN on MNIST; architecture from Keras examples
+        # model = Sequential()
+        in_layer = Input(shape=(28,28,1))
+
+
+        layer = Conv2D(32, kernel_size=(3, 3), activation='relu')(in_layer)
+        layer = Conv2D(64, (3, 3), activation='relu')(layer)
+        layer = MaxPooling2D(pool_size=(2, 2))(layer)
+        layer = Dropout(0.25)(layer)
+        layer = Flatten()(layer)
+        layer = Dense(128, activation='relu')(layer)
+        layer = Dropout(0.5)(layer)
+        out_layer = Dense(10, activation='softmax')(layer)
+
+        model = Model(inputs=[in_layer], outputs=(out_layer,))
+
+        model.compile(loss=keras.losses.categorical_crossentropy, optimizer=keras.optimizers.Adadelta(),
+                      metrics=['accuracy'])
+        ((x_train, y_train), (x_test, y_test)) = self.mnist
+        model.fit(x_train, y_train, batch_size=BATCH_SIZE, epochs=1)
+        return model
 
     def test_fit(self):
         labels = np.argmax(self.mnist[1][1], axis=1)
@@ -93,20 +106,7 @@ class TestKerasClassifier(unittest.TestCase):
 
         loss_grads = classifier.loss_gradient(x_test[:11], y_test[:11])
         self.assertTrue(loss_grads.shape == x_test[:11].shape)
-
-    def test_resnet(self):
-        import os
-
-        from keras.applications.resnet50 import ResNet50, decode_predictions
-        from keras.preprocessing.image import load_img, img_to_array
-
-        keras.backend.set_learning_phase(0)
-        model = ResNet50(weights='imagenet')
-        classifier = KerasClassifier((0, 255), model)
-
-        # Load image from file
-        image = img_to_array(load_img(os.path.join(self.test_dir, 'test.jpg'), target_size=(224, 224)))
-        image = image.reshape((1, image.shape[0], image.shape[1], image.shape[2]))
-
-        label = decode_predictions(classifier.predict(image))[0][0]
-        self.assertEqual(label[1], 'Weimaraner')
+    def test_functional_model(self):
+        # Need to update the functional_model code to produce a model with more than one input and output layers...
+        m = self.functional_model()
+        keras_model = KerasClassifier((0,1), m, output_layer=1)

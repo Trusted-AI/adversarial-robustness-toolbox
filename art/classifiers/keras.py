@@ -9,7 +9,7 @@ class KerasClassifier(Classifier):
     """
     The supported backends for Keras are TensorFlow and Theano.
     """
-    def __init__(self, clip_values, model, use_logits=False, channel_index=3, defences=None):
+    def __init__(self, clip_values, model, use_logits=False, channel_index=3, defences=None, input_layer=0, output_layer=0):
         """
         Create a `Classifier` instance from a Keras model. Assumes the `model` passed as argument is compiled.
 
@@ -31,10 +31,18 @@ class KerasClassifier(Classifier):
         super(KerasClassifier, self).__init__(clip_values, channel_index, defences)
 
         self._model = model
-        self._input = model.input
-        self._output = model.output
-        _, self._nb_classes = k.int_shape(model.output)
-        self._input_shape = k.int_shape(model.input)[1:]
+        if hasattr(model, 'input'):
+            self._input = model.input
+        else:
+            self._input = model.inputs[input_layer]
+
+        if hasattr(model, 'output'):
+            self._output = model.output
+        else:
+            self._output = model.outputs[output_layer]
+
+        _, self._nb_classes = k.int_shape(self._output)
+        self._input_shape = k.int_shape(self._input)[1:]
 
         # Get predictions and loss function
         label_ph = k.placeholder(shape=(None,))
