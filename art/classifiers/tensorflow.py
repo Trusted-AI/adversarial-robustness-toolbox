@@ -54,9 +54,13 @@ class TFClassifier(Classifier):
 
         # Assign session
         if sess is None:
-            self._sess = tf.get_default_session()
+            # self._sess = tf.get_default_session()
+            raise ValueError("A session cannot be None.")
         else:
             self._sess = sess
+
+        # Get the internal layer
+        self._layer_names = self._get_layers()
 
         # Get the loss gradients graph
         if self._loss is not None:
@@ -193,6 +197,46 @@ class TFClassifier(Classifier):
             self._class_grads = [tf.gradients(tf.nn.softmax(self._logits)[:, i], self._input_ph)[0]
                                  for i in range(self._nb_classes)]
 
+    def _get_layers(self):
+        """
+        Return the hidden layers in the model, if applicable.
+
+        :return: The hidden layers in the model, input and output layers excluded.
+        :rtype: `list`
+        """
+        import tensorflow as tf
+
+        # Get the computational graph
+        with self._sess.graph.as_default():
+            graph = tf.get_default_graph()
+
+        # Get the list of operators and heuristically filter them
+        tmp_list = []
+        ops = graph.get_operations()
+
+        for i, op in enumerate(ops):
+            filter_cond = ((op.values()) and (not op.values()[0].get_shape() == None) and (
+                len(op.values()[0].get_shape().as_list()) > 1) and (
+                op.values()[0].get_shape().as_list()[0] is None) and (
+                op.values()[0].get_shape().as_list()[1] is not None) and (
+                not op.values()[0].name.startswith("gradients")) and (
+                not op.values()[0].name.startswith("softmax_cross_entropy_loss")) and (
+                not op.type == "Placeholder"))
+
+            if filter_cond:
+                tmp_list.append(op.values()[0].name)
+
+        # Shorten the list
+        if len(tmp_list) == 0:
+            return tmp_list
+
+        result = [tmp_list[-1]]
+        for name in reversed(tmp_list[:-1]):
+            if (result[0].split("/")[0] != name.split("/")[0]):
+                result = [name] + result
+
+        return result
+
     @property
     def get_layers(self):
         """
@@ -206,7 +250,7 @@ class TFClassifier(Classifier):
                      The intended order of the layers tries to match their order in the model, but this is not
                      guaranteed either.
         """
-        raise NotImplementedError
+        return self._layer_names
 
     def get_activations(self, x, layer):
         """
@@ -221,4 +265,37 @@ class TFClassifier(Classifier):
         :return: The output of `layer`, where the first dimension is the batch size corresponding to `x`.
         :rtype: `np.ndarray`
         """
-        raise NotImplementedError
+        import tensorflow as tf
+
+        # Get the computational graph
+        with self._sess.graph.as_default():
+            graph = tf.get_default_graph()
+
+        if type(layer) is str:
+            if not layer in self._layer_names:
+                raise ValueError("Layer name %s not supported to get from the graph" % layer)
+            layer_tensor = graph.get_tensor_by_name(layer)
+
+        elif type(layer) is int:
+            layer_tensor = graph.get_tensor_by_name(self._layer_names[layer])
+
+        else:
+            raise TypeError("Layer must be of type str or int")
+
+        # Get activations
+        # Apply defences
+        x = self._apply_defences_predict(x)
+
+        # Create feed_dict
+        fd = {self._input_ph: x}
+        if self._learning is not None:
+            fd[self._learning] = False
+
+        # Run prediction
+        result = self._sess.run(layer_tensor, feed_dict=fd)
+
+        return result
+
+
+
+
