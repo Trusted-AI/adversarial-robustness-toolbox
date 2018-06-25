@@ -12,9 +12,7 @@ import torch.nn.functional as F
 import torch.optim as optim
 
 from art.attacks.newtonfool import NewtonFool
-from art.classifiers.tensorflow import TFClassifier
-from art.classifiers.keras import KerasClassifier
-from art.classifiers.pytorch import PyTorchClassifier
+from art.classifiers import KerasClassifier, PyTorchClassifier, TFClassifier
 from art.utils import load_mnist
 
 
@@ -135,8 +133,8 @@ class TestNewtonFool(unittest.TestCase):
         # Get MNIST
         batch_size, nb_train, nb_test = 100, 1000, 10
         (x_train, y_train), (x_test, y_test), _, _ = load_mnist()
-        x_train, y_train = x_train[:nb_train], np.argmax(y_train[:nb_train], axis=1)
-        x_test, y_test = x_test[:nb_test], np.argmax(y_test[:nb_test], axis=1)
+        x_train, y_train = x_train[:nb_train], y_train[:nb_train]
+        x_test, y_test = x_test[:nb_test], y_test[:nb_test]
         x_train = np.swapaxes(x_train, 1, 3)
         x_test = np.swapaxes(x_test, 1, 3)
 
