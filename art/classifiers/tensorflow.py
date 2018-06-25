@@ -22,12 +22,14 @@ class TFClassifier(Classifier):
         :type input_ph: `tf.Placeholder`
         :param logits: The logits layer of the model.
         :type logits: `tf.Tensor`
-        :param output_ph: The output layer of the model.
+        :param output_ph: The labels placeholder of the model. This parameter is necessary when training the model and
+               when computing gradients w.r.t. the loss function.
         :type output_ph: `tf.Tensor`
         :param train: The train tensor for fitting, including an optimizer. Use this parameter only when training the
                model.
         :type train: `tf.Tensor`
-        :param loss: The loss function for which to compute gradients.
+        :param loss: The loss function for which to compute gradients. This parameter is necessary when training the
+               model and when computing gradients w.r.t. the loss function.
         :type loss: `tf.Tensor`
         :param learning: The placeholder to indicate if the model is training.
         :type learning: `tf.Placeholder` of type bool.
@@ -176,8 +178,8 @@ class TFClassifier(Classifier):
         :rtype: `np.ndarray`
         """
         # Check if loss available
-        if not hasattr(self, '_loss_grads') or self._loss_grads is None:
-            raise ValueError("Need the loss function to compute the loss gradient.")
+        if not hasattr(self, '_loss_grads') or self._loss_grads is None or self._output_ph is None:
+            raise ValueError("Need the loss function and the labels placeholder to compute the loss gradient.")
 
         # Compute the gradient and return
         grds = self._sess.run(self._loss_grads, feed_dict={self._input_ph: x, self._output_ph: y})
@@ -293,5 +295,7 @@ class TFClassifier(Classifier):
         result = self._sess.run(layer_tensor, feed_dict=fd)
 
         return result
+
+
 
 
