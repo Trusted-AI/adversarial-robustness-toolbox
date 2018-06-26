@@ -106,7 +106,6 @@ class TestTFClassifier(unittest.TestCase):
         tfc = TFClassifier((0, 1), self._input_ph, self._logits, self._output_ph,
                            self._train, self._loss, None, self._sess)
         layer_names = tfc.get_layers
-        print(layer_names)
         self.assertTrue(layer_names == ['conv2d/Relu:0', 'max_pooling2d/MaxPool:0',
                                         'Flatten/flatten/Reshape:0', 'dense/BiasAdd:0'])
 
@@ -124,5 +123,3 @@ class TestTFClassifier(unittest.TestCase):
 
 if __name__ == '__main__':
     unittest.main()
-
-
