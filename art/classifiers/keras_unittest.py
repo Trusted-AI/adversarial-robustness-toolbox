@@ -14,7 +14,6 @@ BATCH_SIZE = 10
 NB_TRAIN = 500
 NB_TEST = 100
 
-
 class TestKerasClassifier(unittest.TestCase):
 
     def setUp(self):
@@ -68,19 +67,7 @@ class TestKerasClassifier(unittest.TestCase):
     #     classifier = KerasClassifier((0, 1), self.model_mnist, use_logits=False)
 
     def functional_model(self):
-        k.set_learning_phase(1)
-
-        # # Get MNIST
-        # (x_train, y_train), (x_test, y_test), _, _ = load_mnist()
-        # x_train, y_train, x_test, y_test = x_train[:NB_TRAIN], y_train[:NB_TRAIN], x_test[:NB_TEST], y_test[:NB_TEST]
-        # self.mnist = ((x_train, y_train), (x_test, y_test))
-        # im_shape = x_train[0].shape
-
-        # Create basic CNN on MNIST; architecture from Keras examples
-        # model = Sequential()
         in_layer = Input(shape=(28,28,1))
-
-
         layer = Conv2D(32, kernel_size=(3, 3), activation='relu')(in_layer)
         layer = Conv2D(64, (3, 3), activation='relu')(layer)
         layer = MaxPooling2D(pool_size=(2, 2))(layer)
@@ -90,12 +77,22 @@ class TestKerasClassifier(unittest.TestCase):
         layer = Dropout(0.5)(layer)
         out_layer = Dense(10, activation='softmax')(layer)
 
-        model = Model(inputs=[in_layer], outputs=(out_layer,))
+        in_layer_2 = Input(shape=(28,28,1))
+        layer = Conv2D(32, kernel_size=(3, 3), activation='relu')(in_layer_2)
+        layer = Conv2D(64, (3, 3), activation='relu')(layer)
+        layer = MaxPooling2D(pool_size=(2, 2))(layer)
+        layer = Dropout(0.25)(layer)
+        layer = Flatten()(layer)
+        layer = Dense(128, activation='relu')(layer)
+        layer = Dropout(0.5)(layer)
+        out_layer_2 = Dense(10, activation='softmax')(layer)
+
+        model = Model(inputs=[in_layer,in_layer_2], outputs=[out_layer,out_layer_2])
 
         model.compile(loss=keras.losses.categorical_crossentropy, optimizer=keras.optimizers.Adadelta(),
-                      metrics=['accuracy'])
+                      metrics=['accuracy'], loss_weights=[1., 1.0])
         ((x_train, y_train), (x_test, y_test)) = self.mnist
-        model.fit(x_train, y_train, batch_size=BATCH_SIZE, epochs=1)
+        # model.fit((x_train, x_train), (y_train, y_train), batch_size=BATCH_SIZE, epochs=1)
         return model
 
     def test_fit(self):
@@ -124,10 +121,11 @@ class TestKerasClassifier(unittest.TestCase):
 
         loss_grads = classifier.loss_gradient(x_test[:11], y_test[:11])
         self.assertTrue(loss_grads.shape == x_test[:11].shape)
+
     def test_functional_model(self):
         # Need to update the functional_model code to produce a model with more than one input and output layers...
         m = self.functional_model()
-        keras_model = KerasClassifier((0,1), m, outpu
+        keras_model = KerasClassifier((0,1), m, input_layer=1, output_layer=1)
 
     def test_resnet(self):
         import os

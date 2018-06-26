@@ -36,15 +36,15 @@ class KerasClassifier(Classifier):
                                               preprocessing=preprocessing)
 
         self._model = model
-        if hasattr(model, 'input'):
-            self._input = model.input
-        else:
+        if hasattr(model, 'inputs'):
             self._input = model.inputs[input_layer]
-
-        if hasattr(model, 'output'):
-            self._output = model.output
         else:
+            self._input = model.input
+
+        if hasattr(model, 'outputs'):
             self._output = model.outputs[output_layer]
+        else:
+            self._output = model.output
 
         _, self._nb_classes = k.int_shape(self._output)
         self._input_shape = k.int_shape(self._input)[1:]
