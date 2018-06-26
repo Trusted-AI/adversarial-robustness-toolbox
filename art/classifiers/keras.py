@@ -9,7 +9,7 @@ class KerasClassifier(Classifier):
     """
     The supported backends for Keras are TensorFlow and Theano.
     """
-    def __init__(self, clip_values, model, use_logits=False, channel_index=3, defences=None):
+    def __init__(self, clip_values, model, use_logits=False, channel_index=3, defences=None, preprocessing=(0, 1)):
         """
         Create a `Classifier` instance from a Keras model. Assumes the `model` passed as argument is compiled.
 
@@ -17,18 +17,23 @@ class KerasClassifier(Classifier):
                for features.
         :type clip_values: `tuple`
         :param model: Keras model
-        :type model: `keras.models.Sequential`
+        :type model: `keras.models.Model`
         :param use_logits: True if the output of the model are the logits.
         :type use_logits: `bool`
         :param channel_index: Index of the axis in data containing the color channels or features.
         :type channel_index: `int`
         :param defences: Defences to be activated with the classifier.
         :type defences: `str` or `list(str)`
+        :param preprocessing: Tuple of the form `(substractor, divider)` of floats or `np.ndarray` of values to be
+               used for data preprocessing. The first value will be substracted from the input. The input will then
+               be divided by the second one.
+        :type preprocessing: `tuple`
         """
         import keras.backend as k
 
         # TODO Generalize loss function?
-        super(KerasClassifier, self).__init__(clip_values, channel_index, defences)
+        super(KerasClassifier, self).__init__(clip_values=clip_values, channel_index=channel_index, defences=defences,
+                                              preprocessing=preprocessing)
 
         self._model = model
         self._input = model.input
@@ -75,7 +80,12 @@ class KerasClassifier(Classifier):
         :return: Array of gradients of the same shape as `x`.
         :rtype: `np.ndarray`
         """
-        return self._loss_grads([x, np.argmax(y, axis=1)])[0]
+        x_ = self._apply_processing(x)
+        grads = self._loss_grads([x_, np.argmax(y, axis=1)])[0]
+        grads = self._apply_processing_gradient(grads)
+        assert grads.shape == x_.shape
+
+        return grads
 
     def class_gradient(self, x, logits=False):
         """
@@ -89,14 +99,20 @@ class KerasClassifier(Classifier):
                  `(batch_size, nb_classes, input_shape)`.
         :rtype: `np.ndarray`
         """
+        x_ = self._apply_processing(x)
         if logits:
             if not hasattr(self, '_class_grads_logits'):
                 self._init_class_grads(logits=True)
-            return np.swapaxes(np.array(self._class_grads_logits([x])), 0, 1)
+            grads = np.swapaxes(np.array(self._class_grads_logits([x_])), 0, 1)
         else:
             if not hasattr(self, '_class_grads'):
                 self._init_class_grads(logits=False)
-            return np.swapaxes(np.array(self._class_grads([x])), 0, 1)
+            grads = np.swapaxes(np.array(self._class_grads([x_])), 0, 1)
+
+        grads = self._apply_processing_gradient(grads)
+        assert grads.shape == (x_.shape[0], self.nb_classes) + self.input_shape
+
+        return grads
 
     def predict(self, x, logits=False):
         """
@@ -113,14 +129,15 @@ class KerasClassifier(Classifier):
         k.set_learning_phase(0)
 
         # Apply defences
-        x = self._apply_defences_predict(x)
+        x_ = self._apply_processing(x)
+        x_ = self._apply_defences_predict(x_)
 
         # Run predictions with batching
         batch_size = 512
-        preds = np.zeros((x.shape[0], self.nb_classes), dtype=np.float32)
-        for b in range(x.shape[0] // batch_size + 1):
-            begin, end = b * batch_size,  min((b + 1) * batch_size, x.shape[0])
-            preds[begin:end] = self._preds([x[begin:end]])[0]
+        preds = np.zeros((x_.shape[0], self.nb_classes), dtype=np.float32)
+        for b in range(x_.shape[0] // batch_size + 1):
+            begin, end = b * batch_size,  min((b + 1) * batch_size, x_.shape[0])
+            preds[begin:end] = self._preds([x_[begin:end]])[0]
 
             if not logits:
                 exp = np.exp(preds[begin:end] - np.max(preds[begin:end], axis=1, keepdims=True))
@@ -134,7 +151,7 @@ class KerasClassifier(Classifier):
 
         :param x: Training data.
         :type x: `np.ndarray`
-        :param y: Labels.
+        :param y: Labels, one-vs-rest encoding.
         :type y: `np.ndarray`
         :param batch_size: Size of batches.
         :type batch_size: `int`
@@ -145,11 +162,42 @@ class KerasClassifier(Classifier):
         import keras.backend as k
         k.set_learning_phase(1)
 
-        # Apply defences
-        x, y = self._apply_defences_fit(x, y)
+        # Apply preprocessing and defences
+        x_ = self._apply_processing(x)
+        x_, y_ = self._apply_defences_fit(x_, y)
 
-        gen = generator_fit(x, y, batch_size)
-        self._model.fit_generator(gen, steps_per_epoch=x.shape[0] / batch_size, epochs=nb_epochs)
+        gen = generator_fit(x_, y_, batch_size)
+        self._model.fit_generator(gen, steps_per_epoch=x_.shape[0] / batch_size, epochs=nb_epochs)
+
+    @property
+    def get_layers(self):
+        """
+        Return the hidden layers in the model, if applicable.
+
+        :return: The hidden layers in the model, input and output layers excluded.
+        :rtype: `list`
+
+        .. warning:: `get_layers` tries to infer the internal structure of the model.
+                     This feature comes with no guarantees on the correctness of the result.
+                     The intended order of the layers tries to match their order in the model, but this is not
+                     guaranteed either.
+        """
+        raise NotImplementedError
+
+    def get_activations(self, x, layer):
+        """
+        Return the output of the specified layer for input `x`. `layer` is specified by layer index (between 0 and
+        `nb_layers - 1`) or by name. The number of layers can be determined by counting the results returned by
+        calling `get_layers()`.
+
+        :param x: Input for computing the activations.
+        :type x: `np.ndarray`
+        :param layer: Layer for computing the activations
+        :type layer: `int` or `str`
+        :return: The output of `layer`, where the first dimension is the batch size corresponding to `x`.
+        :rtype: `np.ndarray`
+        """
+        raise NotImplementedError
 
     def _init_class_grads(self, logits=False):
         import keras.backend as k

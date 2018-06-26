@@ -28,7 +28,7 @@ class Model(nn.Module):
         logit_output = self.fc(x)
         output = F.softmax(logit_output, dim=1)
 
-        return (logit_output, output)
+        return logit_output, output
 
 
 class TestPyTorchClassifier(unittest.TestCase):
@@ -46,29 +46,28 @@ class TestPyTorchClassifier(unittest.TestCase):
     def test_fit_predict(self):
         # Get MNIST
         (x_train, y_train), (x_test, y_test), _, _ = load_mnist()
-        x_train, y_train = x_train[:NB_TRAIN], np.argmax(y_train[:NB_TRAIN], axis=1)
-        x_test, y_test = x_test[:NB_TEST], np.argmax(y_test[:NB_TEST], axis=1)
+        x_train, y_train = x_train[:NB_TRAIN], y_train[:NB_TRAIN]
+        x_test, y_test = x_test[:NB_TEST], y_test[:NB_TEST]
         x_train = np.swapaxes(x_train, 1, 3)
         x_test = np.swapaxes(x_test, 1, 3)
 
         # Test fit and predict
-        ptc = PyTorchClassifier(None, self._model, self._loss_fn, self._optimizer, (1, 28, 28), (10,))
+        ptc = PyTorchClassifier((0, 1), self._model, self._loss_fn, self._optimizer, (1, 28, 28), 10)
 
         ptc.fit(x_train, y_train, batch_size=100, nb_epochs=1)
         preds = ptc.predict(x_test)
-        preds_class = np.argmax(preds, axis=1)
-        acc = np.sum(preds_class == y_test) / len(y_test)
+        acc = np.sum(np.argmax(preds, axis=1) == np.argmax(y_test, axis=1)) / len(y_test)
         print("\nAccuracy: %.2f%%" % (acc * 100))
         self.assertGreater(acc, 0.1)
 
     def test_nb_classes(self):
         # Start to test
-        ptc = PyTorchClassifier(None, self._model, self._loss_fn, self._optimizer, (1, 28, 28), (10,))
+        ptc = PyTorchClassifier((0, 1), self._model, self._loss_fn, self._optimizer, (1, 28, 28), 10)
         self.assertTrue(ptc.nb_classes == 10)
 
     def test_input_shape(self):
         # Start to test
-        ptc = PyTorchClassifier(None, self._model, self._loss_fn, self._optimizer, (1, 28, 28), (10,))
+        ptc = PyTorchClassifier((0, 1), self._model, self._loss_fn, self._optimizer, (1, 28, 28), 10)
         self.assertTrue(np.array(ptc.input_shape == (1, 28, 28)).all())
 
     def test_class_gradient(self):
@@ -78,7 +77,7 @@ class TestPyTorchClassifier(unittest.TestCase):
         x_test = np.swapaxes(x_test, 1, 3)
 
         # Test gradient
-        ptc = PyTorchClassifier(None, self._model, self._loss_fn, self._optimizer, (1, 28, 28), (10,))
+        ptc = PyTorchClassifier((0, 1), self._model, self._loss_fn, self._optimizer, (1, 28, 28), 10)
         grads = ptc.class_gradient(x_test)
 
         self.assertTrue(np.array(grads.shape == (NB_TEST, 10, 1, 28, 28)).all())
@@ -87,11 +86,11 @@ class TestPyTorchClassifier(unittest.TestCase):
     def test_loss_gradient(self):
         # Get MNIST
         (_, _), (x_test, y_test), _, _ = load_mnist()
-        x_test, y_test = x_test[:NB_TEST], np.argmax(y_test[:NB_TEST], axis=1)
+        x_test, y_test = x_test[:NB_TEST], y_test[:NB_TEST]
         x_test = np.swapaxes(x_test, 1, 3)
 
         # Test gradient
-        ptc = PyTorchClassifier(None, self._model, self._loss_fn, self._optimizer, (1, 28, 28), (10,))
+        ptc = PyTorchClassifier((0, 1), self._model, self._loss_fn, self._optimizer, (1, 28, 28), 10)
         grads = ptc.loss_gradient(x_test, y_test)
 
         self.assertTrue(np.array(grads.shape == (NB_TEST, 1, 28, 28)).all())
