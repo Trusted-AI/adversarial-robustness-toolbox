@@ -37,11 +37,11 @@ install:
   - source activate test-environment
   # Install TensorFlow
   - if [[ "$TENSORFLOW_V" != "" ]]; then pip install tensorflow==${TENSORFLOW_V}; fi
-  - pip install keras
+  - pip install -e .[tests]
   - conda install libgcc
   - export LD_LIBRARY_PATH=$LD_LIBRARY_PATH:/home/travis/miniconda/envs/test-environment/lib
   - export PYTHONPATH=".":$PYTHONPATH
 
 script:
-  - mkdir ./data
+  - mkdir ~/data
   - python -m unittest discover art/ -p '*_unittest.py'
