@@ -4,7 +4,7 @@ from setuptools import find_packages
 with open("README.md", "r") as fh:
     long_description = fh.read()
 
-install_requires = ['h5py'
+install_requires = ['h5py',
                     'numpy',
                     'scipy',
                     'Keras',
