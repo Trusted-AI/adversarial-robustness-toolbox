@@ -43,6 +43,7 @@ class Classifier(ABC):
                              'the model inputs.')
         self._preprocessing = preprocessing
 
+    @abc.abstractmethod
     def predict(self, x, logits=False):
         """
         Perform prediction for a batch of inputs.
@@ -223,10 +224,10 @@ class Classifier(ABC):
 
         sub, div = self._preprocessing
         sub = np.asarray(sub, dtype=x.dtype)
-        div = np.asarray(div, x.dtype)
+        div = np.asarray(div, dtype=x.dtype)
 
         res = x - sub
-        res /= div
+        res = res / div
 
         return res
 
