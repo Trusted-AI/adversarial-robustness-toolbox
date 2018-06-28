@@ -69,6 +69,9 @@ class KerasClassifier(Classifier):
         self._loss_grads = k.function([self._input, label_ph], [loss_grads])
         self._preds = k.function([self._input], [preds])
 
+        # Get the internal layer
+        self._layer_names = self._get_layers()
+
     def loss_gradient(self, x, y):
         """
         Compute the gradient of the loss function w.r.t. `x`.
@@ -170,25 +173,25 @@ class KerasClassifier(Classifier):
         self._model.fit_generator(gen, steps_per_epoch=x_.shape[0] / batch_size, epochs=nb_epochs)
 
     @property
-    def get_layers(self):
+    def layer_names(self):
         """
         Return the hidden layers in the model, if applicable.
 
         :return: The hidden layers in the model, input and output layers excluded.
         :rtype: `list`
 
-        .. warning:: `get_layers` tries to infer the internal structure of the model.
+        .. warning:: `layer_names` tries to infer the internal structure of the model.
                      This feature comes with no guarantees on the correctness of the result.
                      The intended order of the layers tries to match their order in the model, but this is not
                      guaranteed either.
         """
-        raise NotImplementedError
+        return self._layer_names
 
     def get_activations(self, x, layer):
         """
         Return the output of the specified layer for input `x`. `layer` is specified by layer index (between 0 and
         `nb_layers - 1`) or by name. The number of layers can be determined by counting the results returned by
-        calling `get_layers()`.
+        calling `layer_names`.
 
         :param x: Input for computing the activations.
         :type x: `np.ndarray`
@@ -197,7 +200,33 @@ class KerasClassifier(Classifier):
         :return: The output of `layer`, where the first dimension is the batch size corresponding to `x`.
         :rtype: `np.ndarray`
         """
-        raise NotImplementedError
+        import keras.backend as k
+        k.set_learning_phase(0)
+
+        if type(layer) is str:
+            if layer not in self._layer_names:
+                raise ValueError('Layer name %s is not part of the graph.' % layer)
+            layer_name = layer
+        elif type(layer) is int:
+            if layer < 0 or layer >= len(self._layer_names):
+                raise ValueError('Layer index %d is outside of range (0 to %d included).'
+                                 % (layer, len(self._layer_names) - 1))
+            layer_name = self._layer_names[layer]
+        else:
+            raise TypeError('Layer must be of type `str` or `int`.')
+
+        layer_output = self._model.get_layer(layer_name).output
+        output_func = k.function([self._input], [layer_output])
+
+        # Apply preprocessing and defences
+        if x.shape == self.input_shape:
+            x_ = np.expand_dims(x, 0)
+        else:
+            x_ = x
+        x_ = self._apply_processing(x_)
+        x_ = self._apply_defences_predict(x_)
+
+        return output_func([x_])[0]
 
     def _init_class_grads(self, logits=False):
         import keras.backend as k
@@ -209,6 +238,18 @@ class KerasClassifier(Classifier):
         else:
             class_grads = [k.gradients(k.softmax(self._preds_op)[:, i], self._input)[0] for i in range(self.nb_classes)]
             self._class_grads = k.function([self._input], class_grads)
+
+    def _get_layers(self):
+        """
+        Return the hidden layers in the model, if applicable.
+
+        :return: The hidden layers in the model, input and output layers excluded.
+        :rtype: `list`
+        """
+        from keras.engine.topology import InputLayer
+
+        layer_names = [layer.name for layer in self._model.layer_names[:-1] if not isinstance(layer, InputLayer)]
+        return layer_names
 
 
 def generator_fit(x, y, batch_size=128):
