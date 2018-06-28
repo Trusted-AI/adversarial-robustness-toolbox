@@ -16,8 +16,8 @@ class CarliniL2Method(Attack):
     the one in Cleverhans, which reproduces the authors' original code (https://github.com/carlini/nn_robust_attacks).
     Paper link: https://arxiv.org/pdf/1608.04644.pdf
     """
-    attack_params = ['confidence', 'targeted', 'learning_rate', 'max_iter', 'binary_search_steps', 'initial_const',
-                     'decay']
+    attack_params = Attack.attack_params + ['confidence', 'targeted', 'learning_rate', 'max_iter',
+                                            'binary_search_steps', 'initial_const', 'decay']
 
     def __init__(self, classifier, confidence=5.0, targeted=True, learning_rate=1e-4, binary_search_steps=25,
                  max_iter=1000, initial_const=1e-4, decay=0.):
