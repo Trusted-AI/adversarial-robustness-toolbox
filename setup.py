@@ -1,26 +1,34 @@
 from setuptools import setup
 from setuptools import find_packages
 
+with open("README.md", "r") as fh:
+    long_description = fh.read()
+
+install_requires = ['h5py',
+                    'numpy',
+                    'scipy',
+                    'Keras',
+                    'matplotlib',
+                    'setuptools']
+
+tests_require = ['tensorflow',
+                 'Keras',
+                 'torch']
 
 setup(name='Adversarial Robustness Toolbox',
       version='0.1',
       description='IBM Adversarial machine learning toolbox',
+      long_description=long_description,
+      long_description_content_type='text/markdown',
       author='Irina Nicolae',
       author_email='maria-irina.nicolae@ibm.com',
       url='https://github.com/ririnicolae/adversarial-robustness-toolbox',
       license='MIT',
-      install_requires=['h5py',
-                        'Keras',
-                        'scipy',
-                        'matplotlib',
-                        'tensorflow',
-                        'setuptools'],
-      # extras_require={
-          # 'tests': ['pytest',
-          #           'pytest-pep8',
-          #           'pytest-xdist',
-          #           'pytest-cov'],
-      # },
+      install_requires=install_requires,
+      tests_require=tests_require,
+      extras_require={
+          'tests': tests_require,
+      },
       classifiers=[
             'Development Status :: 3 - Alpha',
             'Intended Audience :: Developers',

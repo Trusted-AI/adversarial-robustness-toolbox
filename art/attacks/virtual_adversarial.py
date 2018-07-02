@@ -10,7 +10,7 @@ class VirtualAdversarialMethod(Attack):
     This attack was originally proposed by Miyato et al. (2016) and was used for virtual adversarial training.
     Paper link: https://arxiv.org/abs/1507.00677
     """
-    attack_params = ['eps', 'finite_diff', 'max_iter']
+    attack_params = Attack.attack_params + ['eps', 'finite_diff', 'max_iter']
 
     def __init__(self, classifier, max_iter=1, finite_diff=1e-6, eps=.1):
         """

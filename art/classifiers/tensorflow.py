@@ -229,7 +229,7 @@ class TFClassifier(Classifier):
         tmp_list = []
         ops = graph.get_operations()
 
-        for i, op in enumerate(ops):
+        for op in ops:
             filter_cond = ((op.values()) and (not op.values()[0].get_shape() == None) and (
                 len(op.values()[0].get_shape().as_list()) > 1) and (
                 op.values()[0].get_shape().as_list()[0] is None) and (
@@ -253,14 +253,14 @@ class TFClassifier(Classifier):
         return result
 
     @property
-    def get_layers(self):
+    def layer_names(self):
         """
         Return the hidden layers in the model, if applicable.
 
         :return: The hidden layers in the model, input and output layers excluded.
         :rtype: `list`
 
-        .. warning:: `get_layers` tries to infer the internal structure of the model.
+        .. warning:: `layer_names` tries to infer the internal structure of the model.
                      This feature comes with no guarantees on the correctness of the result.
                      The intended order of the layers tries to match their order in the model, but this is not
                      guaranteed either.
@@ -271,7 +271,7 @@ class TFClassifier(Classifier):
         """
         Return the output of the specified layer for input `x`. `layer` is specified by layer index (between 0 and
         `nb_layers - 1`) or by name. The number of layers can be determined by counting the results returned by
-        calling `get_layers()`.
+        calling `layer_names`.
 
         :param x: Input for computing the activations.
         :type x: `np.ndarray`
@@ -288,14 +288,14 @@ class TFClassifier(Classifier):
 
         if type(layer) is str:
             if layer not in self._layer_names:
-                raise ValueError("Layer name %s not supported to get from the graph" % layer)
+                raise ValueError("Layer name %s is not part of the graph." % layer)
             layer_tensor = graph.get_tensor_by_name(layer)
 
         elif type(layer) is int:
             layer_tensor = graph.get_tensor_by_name(self._layer_names[layer])
 
         else:
-            raise TypeError("Layer must be of type str or int")
+            raise TypeError("Layer must be of type `str` or `int`.")
 
         # Get activations
         # Apply preprocessing and defences

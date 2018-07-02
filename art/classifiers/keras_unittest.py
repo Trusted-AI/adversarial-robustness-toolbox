@@ -45,10 +45,8 @@ class TestKerasClassifier(unittest.TestCase):
         model.add(Conv2D(32, kernel_size=(3, 3), activation='relu', input_shape=im_shape))
         model.add(Conv2D(64, (3, 3), activation='relu'))
         model.add(MaxPooling2D(pool_size=(2, 2)))
-        model.add(Dropout(0.25))
         model.add(Flatten())
         model.add(Dense(128, activation='relu'))
-        model.add(Dropout(0.5))
         model.add(Dense(10, activation='softmax'))
 
         model.compile(loss=keras.losses.categorical_crossentropy, optimizer=keras.optimizers.Adadelta(),
@@ -93,6 +91,24 @@ class TestKerasClassifier(unittest.TestCase):
 
         loss_grads = classifier.loss_gradient(x_test[:11], y_test[:11])
         self.assertTrue(loss_grads.shape == x_test[:11].shape)
+
+    def test_layers(self):
+        # Get MNIST
+        (_, _), (x_test, _), _, _ = load_mnist()
+        x_test = x_test[:NB_TEST]
+
+        classifier = KerasClassifier((0, 1), model=self.model_mnist)
+        self.assertEqual(len(classifier.layer_names), 5)
+
+        layer_names = classifier.layer_names
+        for i, name in enumerate(layer_names):
+            if 'dropout' not in name:
+                act_i = classifier.get_activations(x_test, i)
+                act_name = classifier.get_activations(x_test, name)
+                self.assertAlmostEqual(np.sum(act_name - act_i), 0)
+
+        self.assertTrue(classifier.get_activations(x_test, 0).shape == (NB_TEST, 26, 26, 32))
+        self.assertTrue(classifier.get_activations(x_test, 4).shape == (NB_TEST, 128))
 
     def test_resnet(self):
         import os

@@ -10,6 +10,34 @@ import os
 import numpy as np
 
 
+def projection(v, eps, p):
+    """
+    Clip the values in `v` if their L_p norm is larger than `eps`.
+
+    :param v: Array of perturbations to clip.
+    :type v: `np.ndarray`
+    :param eps: Maximum norm allowed.
+    :type eps: `float`
+    :param p: L_p norm to use for clipping. Only 1, 2 and `np.Inf` supported for now.
+    :type p: `int`
+    :return: Clipped values of `v`
+    :rtype: `np.ndarray`
+    """
+    # Pick a small scalar to avoid division by 0
+    tol = 10e-8
+
+    if p == 2:
+        v *= eps / max(1., np.linalg.norm(v, axis=(1, 2)) + tol)
+    elif p == 1:
+        v *= eps / max(1., np.linalg.norm(v, axis=(1, 2), ord=1) + tol)
+    elif p == np.inf:
+        v = np.sign(v) * np.minimum(abs(v), eps)
+    else:
+        raise NotImplementedError('Values of `p` different from 1, 2 and `np.inf` are currently not supported.')
+
+    return v
+
+
 def to_categorical(labels, nb_classes=None):
     """Convert an array of labels to binary class matrix.
 

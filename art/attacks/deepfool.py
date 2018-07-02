@@ -10,7 +10,7 @@ class DeepFool(Attack):
     Implementation of the attack from Moosavi-Dezfooli et al. (2015).
     Paper link: https://arxiv.org/abs/1511.04599
     """
-    attack_params = ['max_iter']
+    attack_params = Attack.attack_params + ['max_iter']
 
     def __init__(self, classifier, max_iter=100):
         """

@@ -12,7 +12,7 @@ class FastGradientMethod(Attack):
     Gradient Sign Method"). This implementation extends the attack to other norms, and is therefore called the Fast
     Gradient Method. Paper link: https://arxiv.org/abs/1412.6572
     """
-    attack_params = ['norm', 'eps', 'targeted']
+    attack_params = Attack.attack_params + ['norm', 'eps', 'targeted']
 
     def __init__(self, classifier, norm=np.inf, eps=.3, targeted=False):
         """
@@ -29,8 +29,9 @@ class FastGradientMethod(Attack):
         """
         super(FastGradientMethod, self).__init__(classifier)
 
-        kwargs = {'norm': norm, 'eps': eps, 'targeted': targeted}
-        self.set_params(**kwargs)
+        self.norm = norm
+        self.eps = eps
+        self.targeted = targeted
 
     def _minimal_perturbation(self, x, y, eps_step=0.1, eps_max=1., **kwargs):
         """Iteratively compute the minimal perturbation necessary to make the class prediction change. Stop when the
@@ -128,15 +129,15 @@ class FastGradientMethod(Attack):
         return True
 
     def _compute(self, x, y, eps):
-        x_adv = x.copy()
+        adv_x = x.copy()
 
         # Pick a small scalar to avoid division by 0
         tol = 10e-8
 
         # Compute perturbation with implicit batching
         batch_size = 128
-        for batch_id in range(x_adv.shape[0] // batch_size + 1):
-            batch = x_adv[batch_id * batch_size: (batch_id + 1) * batch_size]
+        for batch_id in range(adv_x.shape[0] // batch_size + 1):
+            batch = adv_x[batch_id * batch_size: (batch_id + 1) * batch_size]
             batch_labels = y[batch_id * batch_size: (batch_id + 1) * batch_size]
 
             # Get gradient wrt loss; invert it if attack is targeted
@@ -156,6 +157,6 @@ class FastGradientMethod(Attack):
             # Apply perturbation and clip
             clip_min, clip_max = self.classifier.clip_values
             batch = batch + eps * grad
-            x_adv[batch_id * batch_size: (batch_id + 1) * batch_size] = np.clip(batch, clip_min, clip_max)
+            adv_x[batch_id * batch_size: (batch_id + 1) * batch_size] = np.clip(batch, clip_min, clip_max)
 
-        return x_adv
+        return adv_x
