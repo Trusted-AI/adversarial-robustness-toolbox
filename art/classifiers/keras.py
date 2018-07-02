@@ -248,7 +248,7 @@ class KerasClassifier(Classifier):
         """
         from keras.engine.topology import InputLayer
 
-        layer_names = [layer.name for layer in self._model.layer_names[:-1] if not isinstance(layer, InputLayer)]
+        layer_names = [layer.name for layer in self._model.layers[:-1] if not isinstance(layer, InputLayer)]
         return layer_names
 
 
