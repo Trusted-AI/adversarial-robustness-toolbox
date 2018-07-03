@@ -113,7 +113,8 @@ class PyTorchClassifier(Classifier):
         # if not logits:
         #     exp = np.exp(preds - np.max(preds, axis=1, keepdims=True))
         #     preds = exp / np.sum(exp, axis=1, keepdims=True)
-        (logit_output, output) = self._model(torch.from_numpy(x).float())
+        model_outputs = self._model(torch.from_numpy(x).float())
+        (logit_output, output) = (model_outputs[-2], model_outputs[-1])
 
         if logits:
             preds = logit_output.detach().numpy()
