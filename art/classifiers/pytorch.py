@@ -197,7 +197,8 @@ class PyTorchClassifier(Classifier):
 
         # Compute the gradient and return
         # Run prediction
-        (logit_output, output) = self._model(x)
+        model_outputs = self._model(x)
+        (logit_output, output) = (model_outputs[-2], model_outputs[-1])
 
         if logits:
             preds = logit_output
