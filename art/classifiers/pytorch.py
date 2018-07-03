@@ -19,17 +19,37 @@ class PyTorchClassifier(Classifier):
             """
             Initialization by storing the input model and a list of its modules.
 
-            :param model:
+            :param model: PyTorch model. The forward function of the model must return the logit output.
+            :type model: is instance of `torch.nn.Module`
             """
-            self._modules = modules
+            self._model = model
 
         def forward(self, x):
+            """
+            This is where we get outputs from the input model.
+
+            :param x: Input data.
+            :type x: `torch.Tensor`
+            :return: a list of output layers, where the last 2 layers are logit and final outputs.
+            :rtype: `list`
+            """
+            if type(self._model) is nn.Sequential:
+
+            elif isinstance(self._model, nn.Module):
+                
+
+            else:
+                raise TypeError("The input model must be a child of nn.Module")
+
             outputs = []
             for name, module in self.submodule._modules.items():
                 x = module(x)
                 if name in self.extracted_layers:
                     outputs += [x]
             return outputs + [x]
+
+
+
     def __init__(self, clip_values, model, loss, optimizer, input_shape, nb_classes, channel_index=1, defences=None):
         """
         Initialization specifically for the PyTorch-based implementation.
@@ -38,7 +58,7 @@ class PyTorchClassifier(Classifier):
                for features.
         :type clip_values: `tuple`
         :param model: PyTorch model. The forward function of the model must return the logit output.
-        :type model: `torch.nn.Module`
+        :type model: is instance of `torch.nn.Module`
         :param loss: The loss function for which to compute gradients for training.
         :type loss: `torch.nn.modules.loss._Loss`
         :param optimizer: The optimizer used to train the classifier.
