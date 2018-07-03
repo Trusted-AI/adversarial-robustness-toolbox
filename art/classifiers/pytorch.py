@@ -11,13 +11,13 @@ class PyTorchClassifier(Classifier):
     """
     This class implements a classifier with the PyTorch framework.
     """
-    class SequentialWrapper(nn.Module):
+    class ModelWrapper(nn.Module):
         """
-        This is a wrapper for the input model if it is of nn.Sequential type.
+        This is a wrapper for the input model.
         """
         def __init__(self, model):
             """
-            Initialization by storing the input model and a list of its modules.
+            Initialization by storing the input model.
 
             :param model: PyTorch model. The forward function of the model must return the logit output.
             :type model: is instance of `torch.nn.Module`
@@ -77,7 +77,7 @@ class PyTorchClassifier(Classifier):
         # self._nb_classes = list(model.modules())[-1 if use_logits else -2].out_features
         self._nb_classes = nb_classes
         self._input_shape = input_shape
-        self._model = model
+        self._model = self.ModelWrapper(model)
         self._loss = loss
         self._optimizer = optimizer
 
