@@ -60,7 +60,8 @@ class PyTorchClassifier(Classifier):
         :type clip_values: `tuple`
         :param model: PyTorch model. The forward function of the model must return the logit output.
         :type model: is instance of `torch.nn.Module`
-        :param loss: The loss function for which to compute gradients for training.
+        :param loss: The loss function for which to compute gradients for training. The target label must be raw
+               categorical, i.e. not converted to one-hot encoding.
         :type loss: `torch.nn.modules.loss._Loss`
         :param optimizer: The optimizer used to train the classifier.
         :type optimizer: `torch.optim.Optimizer`
@@ -170,8 +171,8 @@ class PyTorchClassifier(Classifier):
                 self._optimizer.zero_grad()
 
                 # Actual training
-                (_, m_batch) = self._model(i_batch)
-                loss = self._loss(m_batch, o_batch)
+                model_outputs = self._model(i_batch)
+                loss = self._loss(model_outputs[-1], o_batch)
                 loss.backward()
                 self._optimizer.step()
 
