@@ -33,22 +33,23 @@ class PyTorchClassifier(Classifier):
             :return: a list of output layers, where the last 2 layers are logit and final outputs.
             :rtype: `list`
             """
+            result = []
             if type(self._model) is nn.Sequential:
+                for _, module in self._model._modules.items():
+                    x = module(x)
+                    result.append(x)
 
             elif isinstance(self._model, nn.Module):
-                
+                x = self._model(x)
+                result.append(x)
 
             else:
                 raise TypeError("The input model must be a child of nn.Module")
 
-            outputs = []
-            for name, module in self.submodule._modules.items():
-                x = module(x)
-                if name in self.extracted_layers:
-                    outputs += [x]
-            return outputs + [x]
+            output_layer = nn.Softmax(x)
+            result.append(output_layer)
 
-
+            return result
 
     def __init__(self, clip_values, model, loss, optimizer, input_shape, nb_classes, channel_index=1, defences=None):
         """
