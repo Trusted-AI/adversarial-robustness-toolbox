@@ -11,73 +11,6 @@ class PyTorchClassifier(Classifier):
     """
     This class implements a classifier with the PyTorch framework.
     """
-    class ModelWrapper(nn.Module):
-        """
-        This is a wrapper for the input model.
-        """
-        def __init__(self, model):
-            """
-            Initialization by storing the input model.
-
-            :param model: PyTorch model. The forward function of the model must return the logit output.
-            :type model: is instance of `torch.nn.Module`
-            """
-            self._model = model
-
-        def forward(self, x):
-            """
-            This is where we get outputs from the input model.
-
-            :param x: Input data.
-            :type x: `torch.Tensor`
-            :return: a list of output layers, where the last 2 layers are logit and final outputs.
-            :rtype: `list`
-            """
-            result = []
-            if type(self._model) is nn.Sequential:
-                for _, module in self._model._modules.items():
-                    x = module(x)
-                    result.append(x)
-
-            elif isinstance(self._model, nn.Module):
-                x = self._model(x)
-                result.append(x)
-
-            else:
-                raise TypeError("The input model must be a child of nn.Module")
-
-            output_layer = nn.Softmax(x)
-            result.append(output_layer)
-
-            return result
-
-        @property
-        def get_layers(self):
-            """
-            Return the hidden layers in the model, if applicable.
-
-            :return: The hidden layers in the model, input and output layers excluded.
-            :rtype: `list`
-
-            .. warning:: `get_layers` tries to infer the internal structure of the model.
-                         This feature comes with no guarantees on the correctness of the result.
-                         The intended order of the layers tries to match their order in the model, but this is not
-                         guaranteed either. In addition, the function can only infer the internal layers if the input
-                         model is of type `nn.Sequential`, otherwise, it will only return the logit layer.
-            """
-            result = []
-            if type(self._model) is nn.Sequential:
-                for name, module in self._model._modules.items():
-                    result.append(name + "_" + str(module))
-
-            elif isinstance(self._model, nn.Module):
-                result.append("logit_layer")
-
-            else:
-                raise TypeError("The input model must be a child of nn.Module")
-
-            return result
-
     def __init__(self, clip_values, model, loss, optimizer, input_shape, nb_classes, channel_index=1, defences=None):
         """
         Initialization specifically for the PyTorch-based implementation.
@@ -105,12 +38,12 @@ class PyTorchClassifier(Classifier):
         # self._nb_classes = list(model.modules())[-1 if use_logits else -2].out_features
         self._nb_classes = nb_classes
         self._input_shape = input_shape
-        self._model = self.ModelWrapper(model)
+        self._model = ModelWrapper(model)
         self._loss = loss
         self._optimizer = optimizer
 
         # Get the internal layers
-        self._layer_names = self._model._get_layers
+        self._layer_names = self._model.get_layers
 
         # # Store the logit layer
         # self._logit_layer = len(list(model.modules())) - 2 if use_logits else len(list(model.modules())) - 3
@@ -361,6 +294,74 @@ class PyTorchClassifier(Classifier):
     #
     #     return results
 
+class ModelWrapper(nn.Module):
+    """
+    This is a wrapper for the input model.
+    """
+    def __init__(self, model):
+        """
+        Initialization by storing the input model.
+
+        :param model: PyTorch model. The forward function of the model must return the logit output.
+        :type model: is instance of `torch.nn.Module`
+        """
+        super(ModelWrapper, self).__init__()
+        self._model = model
+
+    def forward(self, x):
+        """
+        This is where we get outputs from the input model.
+
+        :param x: Input data.
+        :type x: `torch.Tensor`
+        :return: a list of output layers, where the last 2 layers are logit and final outputs.
+        :rtype: `list`
+        """
+        result = []
+        if type(self._model) is nn.Sequential:
+            for _, module in self._model._modules.items():
+                x = module(x)
+                result.append(x)
+
+        elif isinstance(self._model, nn.Module):
+            x = self._model(x)
+            result.append(x)
+
+        else:
+            raise TypeError("The input model must be a child of nn.Module")
+
+        import torch.nn.functional as F
+        output_layer = F.softmax(x, dim=1)
+        result.append(output_layer)
+
+        return result
+
+    @property
+    def get_layers(self):
+        """
+        Return the hidden layers in the model, if applicable.
+
+        :return: The hidden layers in the model, input and output layers excluded.
+        :rtype: `list`
+
+        .. warning:: `get_layers` tries to infer the internal structure of the model.
+                     This feature comes with no guarantees on the correctness of the result.
+                     The intended order of the layers tries to match their order in the model, but this is not
+                     guaranteed either. In addition, the function can only infer the internal layers if the input
+                     model is of type `nn.Sequential`, otherwise, it will only return the logit layer.
+        """
+        result = []
+        if type(self._model) is nn.Sequential:
+            for name, module in self._model._modules.items():
+                result.append(name + "_" + str(module))
+
+        elif isinstance(self._model, nn.Module):
+            result.append("logit_layer")
+
+        else:
+            raise TypeError("The input model must be a child of nn.Module")
+
+        return result
 
 
 
