@@ -67,8 +67,8 @@ class PyTorchClassifier(Classifier):
             """
             result = []
             if type(self._model) is nn.Sequential:
-                for _, module in self._model._modules.items():
-                    result.append(str(module))
+                for name, module in self._model._modules.items():
+                    result.append(name + "_" + str(module))
 
             elif isinstance(self._model, nn.Module):
                 result.append("logit_layer")
@@ -315,7 +315,29 @@ class PyTorchClassifier(Classifier):
         :return: The output of `layer`, where the first dimension is the batch size corresponding to `x`.
         :rtype: `np.ndarray`
         """
-        raise NotImplementedError
+        import torch
+
+        # Apply defences
+        x = self._apply_defences_predict(x)
+
+        # Set test phase
+        self._model.train(False)
+
+        # Run prediction
+        model_outputs = self._model(torch.from_numpy(x).float())[:-1]
+
+        if type(layer) is str:
+            if not layer in self._layer_names:
+                raise ValueError("Layer name %s not supported" % layer)
+            layer_index = self._layer_names.index(layer)
+
+        elif type(layer) is int:
+            layer_index = layer
+
+        else:
+            raise TypeError("Layer must be of type str or int")
+
+        return model_outputs[layer_index]
 
     # def _forward_at(self, inputs, layer):
     #     """
@@ -338,3 +360,9 @@ class PyTorchClassifier(Classifier):
     #         print(results.shape)
     #
     #     return results
+
+
+
+
+
+
