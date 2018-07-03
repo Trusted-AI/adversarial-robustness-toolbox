@@ -1,6 +1,7 @@
 from __future__ import absolute_import, division, print_function, unicode_literals
 
 import numpy as np
+import torch.nn as nn
 import random
 
 from art.classifiers.classifier import Classifier
@@ -10,6 +11,25 @@ class PyTorchClassifier(Classifier):
     """
     This class implements a classifier with the PyTorch framework.
     """
+    class SequentialWrapper(nn.Module):
+        """
+        This is a wrapper for the input model if it is of nn.Sequential type.
+        """
+        def __init__(self, model):
+            """
+            Initialization by storing the input model and a list of its modules.
+
+            :param model:
+            """
+            self._modules = modules
+
+        def forward(self, x):
+            outputs = []
+            for name, module in self.submodule._modules.items():
+                x = module(x)
+                if name in self.extracted_layers:
+                    outputs += [x]
+            return outputs + [x]
     def __init__(self, clip_values, model, loss, optimizer, input_shape, nb_classes, channel_index=1, defences=None):
         """
         Initialization specifically for the PyTorch-based implementation.
@@ -17,7 +37,7 @@ class PyTorchClassifier(Classifier):
         :param clip_values: Tuple of the form `(min, max)` representing the minimum and maximum values allowed
                for features.
         :type clip_values: `tuple`
-        :param model: PyTorch model. The forward function of the model must return a tuple (logit output, output).
+        :param model: PyTorch model. The forward function of the model must return the logit output.
         :type model: `torch.nn.Module`
         :param loss: The loss function for which to compute gradients for training.
         :type loss: `torch.nn.modules.loss._Loss`
