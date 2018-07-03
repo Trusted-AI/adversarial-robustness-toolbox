@@ -59,7 +59,7 @@ class TFClassifier(Classifier):
         else:
             self._sess = sess
 
-        # Get the internal layer
+        # Get the internal layers
         self._layer_names = self._get_layers()
 
         # Get the loss gradients graph

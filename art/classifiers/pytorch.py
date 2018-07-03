@@ -51,6 +51,33 @@ class PyTorchClassifier(Classifier):
 
             return result
 
+        @property
+        def get_layers(self):
+            """
+            Return the hidden layers in the model, if applicable.
+
+            :return: The hidden layers in the model, input and output layers excluded.
+            :rtype: `list`
+
+            .. warning:: `get_layers` tries to infer the internal structure of the model.
+                         This feature comes with no guarantees on the correctness of the result.
+                         The intended order of the layers tries to match their order in the model, but this is not
+                         guaranteed either. In addition, the function can only infer the internal layers if the input
+                         model is of type `nn.Sequential`, otherwise, it will only return the logit layer.
+            """
+            result = []
+            if type(self._model) is nn.Sequential:
+                for _, module in self._model._modules.items():
+                    result.append(str(module))
+
+            elif isinstance(self._model, nn.Module):
+                result.append("logit_layer")
+
+            else:
+                raise TypeError("The input model must be a child of nn.Module")
+
+            return result
+
     def __init__(self, clip_values, model, loss, optimizer, input_shape, nb_classes, channel_index=1, defences=None):
         """
         Initialization specifically for the PyTorch-based implementation.
@@ -81,6 +108,9 @@ class PyTorchClassifier(Classifier):
         self._model = self.ModelWrapper(model)
         self._loss = loss
         self._optimizer = optimizer
+
+        # Get the internal layers
+        self._layer_names = self._model._get_layers
 
         # # Store the logit layer
         # self._logit_layer = len(list(model.modules())) - 2 if use_logits else len(list(model.modules())) - 3
@@ -243,8 +273,8 @@ class PyTorchClassifier(Classifier):
         labels_t = torch.from_numpy(np.argmax(y, axis=1))
 
         # Compute the gradient and return
-        (_, m_output) = self._model(inputs_t)
-        loss = self._loss(m_output, labels_t)
+        model_outputs = self._model(inputs_t)
+        loss = self._loss(model_outputs[-1], labels_t)
 
         # Clean gradients
         self._model.zero_grad()
@@ -267,9 +297,10 @@ class PyTorchClassifier(Classifier):
         .. warning:: `get_layers` tries to infer the internal structure of the model.
                      This feature comes with no guarantees on the correctness of the result.
                      The intended order of the layers tries to match their order in the model, but this is not
-                     guaranteed either.
+                     guaranteed either. In addition, the function can only infer the internal layers if the input
+                     model is of type `nn.Sequential`, otherwise, it will only return the logit layer.
         """
-        raise NotImplementedError
+        return self._layer_names
 
     def get_activations(self, x, layer):
         """
