@@ -130,6 +130,34 @@ class TestPyTorchClassifier(unittest.TestCase):
         self.assertTrue(np.array(grads.shape == (NB_TEST, 1, 28, 28)).all())
         self.assertTrue(np.sum(grads) != 0)
 
+    def test_layers(self):
+        # Get MNIST
+        (x_train, y_train), (x_test, y_test), _, _ = load_mnist()
+        x_train, y_train = x_train[:NB_TRAIN], y_train[:NB_TRAIN]
+        x_test, y_test = x_test[:NB_TEST], y_test[:NB_TEST]
+        x_test = np.swapaxes(x_test, 1, 3)
+
+        # Create model
+        model, loss_fn, optimizer = self._model_setup_sequential()
+
+        # Test and get layers
+        ptc = PyTorchClassifier((0, 1), model, loss_fn, optimizer, (1, 28, 28), 10)
+        layer_names = ptc.get_layers
+        print(layer_names)
+        self.assertTrue(layer_names == ['0_Conv2d(1, 16, kernel_size=(5, 5), stride=(1, 1))', '1_ReLU()',
+                                        '2_MaxPool2d(kernel_size=2, stride=2, padding=0, dilation=1, ceil_mode=False)',
+                                        '3_Flatten()', '4_Linear(in_features=2304, out_features=10, bias=True)'])
+
+        for i, name in enumerate(layer_names):
+            act_i = ptc.get_activations(x_test, i)
+            act_name = ptc.get_activations(x_test, name)
+            self.assertTrue(np.sum(act_name-act_i) == 0)
+
+        self.assertTrue(ptc.get_activations(x_test, 0).shape == (20, 24, 24, 16))
+        self.assertTrue(ptc.get_activations(x_test, 1).shape == (20, 12, 12, 16))
+        self.assertTrue(ptc.get_activations(x_test, 2).shape == (20, 2304))
+        self.assertTrue(ptc.get_activations(x_test, 3).shape == (20, 10))
+
 
 if __name__ == '__main__':
     unittest.main()
