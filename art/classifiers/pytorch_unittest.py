@@ -83,14 +83,19 @@ class TestPyTorchClassifier(unittest.TestCase):
         self.assertGreater(acc, 0.1)
 
     def test_nb_classes(self):
-        
+        # Create model
+        model, loss_fn, optimizer = self._model_setup_module()
+
         # Start to test
-        ptc = PyTorchClassifier((0, 1), self._model, self._loss_fn, self._optimizer, (1, 28, 28), 10)
+        ptc = PyTorchClassifier((0, 1), model, loss_fn, optimizer, (1, 28, 28), 10)
         self.assertTrue(ptc.nb_classes == 10)
 
     def test_input_shape(self):
+        # Create model
+        model, loss_fn, optimizer = self._model_setup_module()
+
         # Start to test
-        ptc = PyTorchClassifier((0, 1), self._model, self._loss_fn, self._optimizer, (1, 28, 28), 10)
+        ptc = PyTorchClassifier((0, 1), model, loss_fn, optimizer, (1, 28, 28), 10)
         self.assertTrue(np.array(ptc.input_shape == (1, 28, 28)).all())
 
     def test_class_gradient(self):
@@ -99,8 +104,11 @@ class TestPyTorchClassifier(unittest.TestCase):
         x_test = x_test[:NB_TEST]
         x_test = np.swapaxes(x_test, 1, 3)
 
+        # Create model
+        model, loss_fn, optimizer = self._model_setup_module()
+
         # Test gradient
-        ptc = PyTorchClassifier((0, 1), self._model, self._loss_fn, self._optimizer, (1, 28, 28), 10)
+        ptc = PyTorchClassifier((0, 1), model, loss_fn, optimizer, (1, 28, 28), 10)
         grads = ptc.class_gradient(x_test)
 
         self.assertTrue(np.array(grads.shape == (NB_TEST, 10, 1, 28, 28)).all())
@@ -112,8 +120,11 @@ class TestPyTorchClassifier(unittest.TestCase):
         x_test, y_test = x_test[:NB_TEST], y_test[:NB_TEST]
         x_test = np.swapaxes(x_test, 1, 3)
 
+        # Create model
+        model, loss_fn, optimizer = self._model_setup_module()
+
         # Test gradient
-        ptc = PyTorchClassifier((0, 1), self._model, self._loss_fn, self._optimizer, (1, 28, 28), 10)
+        ptc = PyTorchClassifier((0, 1), model, loss_fn, optimizer, (1, 28, 28), 10)
         grads = ptc.loss_gradient(x_test, y_test)
 
         self.assertTrue(np.array(grads.shape == (NB_TEST, 1, 28, 28)).all())
