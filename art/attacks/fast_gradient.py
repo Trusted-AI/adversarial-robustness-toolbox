@@ -58,10 +58,10 @@ class FastGradientMethod(Attack):
         while len(active_indices) != 0 and current_eps <= eps_max:
             # Adversarial crafting
             current_x = self._compute(x[active_indices], y[active_indices], current_eps)
-            adv_preds = self.classifier.predict(adv_x)
 
             # Update
             adv_x[active_indices] = current_x
+            adv_preds = self.classifier.predict(adv_x)
             active_indices = np.where(np.argmax(y[active_indices], axis=1) == np.argmax(adv_preds, axis=1))[0]
             current_eps += eps_step
 
