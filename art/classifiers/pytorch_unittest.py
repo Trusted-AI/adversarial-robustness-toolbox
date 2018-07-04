@@ -26,22 +26,42 @@ class Model(nn.Module):
         x = self.pool(F.relu(self.conv(x)))
         x = x.view(-1, 2304)
         logit_output = self.fc(x)
-        #output = F.softmax(logit_output, dim=1)
 
         return logit_output
+
+
+class Flatten(nn.Module):
+    def forward(self, x):
+        ...: N, C, H, W = x.size()  # read in N, C, H, W
+
+    ...:
+    return x.view(N, -1)
 
 
 class TestPyTorchClassifier(unittest.TestCase):
     """
     This class tests the functionalities of the PyTorch-based classifier.
     """
-    def setUp(self):
+    def _model_setup_module(self):
         # Define the network
-        self._model = Model()
+        model = Model()
 
         # Define a loss function and optimizer
-        self._loss_fn = nn.CrossEntropyLoss()
-        self._optimizer = optim.Adam(self._model.parameters(), lr=0.01)
+        loss_fn = nn.CrossEntropyLoss()
+        optimizer = optim.Adam(model.parameters(), lr=0.01)
+
+        return model, loss_fn, optimizer
+
+    def _model_setup_sequential(self):
+        # Define the network
+        model = Model()
+
+        # Define a loss function and optimizer
+        loss_fn = nn.CrossEntropyLoss()
+        optimizer = optim.Adam(model.parameters(), lr=0.01)
+
+        return model, loss_fn, optimizer
+
 
     def test_fit_predict(self):
         # Get MNIST
@@ -99,6 +119,165 @@ class TestPyTorchClassifier(unittest.TestCase):
 
 if __name__ == '__main__':
     unittest.main()
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 
 
