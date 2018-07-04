@@ -74,7 +74,7 @@ class TestPyTorchClassifier(unittest.TestCase):
         model, loss_fn, optimizer = self._model_setup_module()
 
         # Test fit and predict
-        ptc = PyTorchClassifier((0, 1), self._model, self._loss_fn, self._optimizer, (1, 28, 28), 10)
+        ptc = PyTorchClassifier((0, 1), model, loss_fn, optimizer, (1, 28, 28), 10)
 
         ptc.fit(x_train, y_train, batch_size=100, nb_epochs=1)
         preds = ptc.predict(x_test)
@@ -83,6 +83,7 @@ class TestPyTorchClassifier(unittest.TestCase):
         self.assertGreater(acc, 0.1)
 
     def test_nb_classes(self):
+        
         # Start to test
         ptc = PyTorchClassifier((0, 1), self._model, self._loss_fn, self._optimizer, (1, 28, 28), 10)
         self.assertTrue(ptc.nb_classes == 10)
@@ -121,47 +122,6 @@ class TestPyTorchClassifier(unittest.TestCase):
 
 if __name__ == '__main__':
     unittest.main()
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
 
 
 
