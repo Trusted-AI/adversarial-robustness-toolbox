@@ -32,10 +32,10 @@ class Model(nn.Module):
 
 class Flatten(nn.Module):
     def forward(self, x):
-        ...: N, C, H, W = x.size()  # read in N, C, H, W
+        N, _, _, _  = x.size()
+        result = x.view(N, -1)
 
-    ...:
-    return x.view(N, -1)
+        return result
 
 
 class TestPyTorchClassifier(unittest.TestCase):
@@ -54,7 +54,7 @@ class TestPyTorchClassifier(unittest.TestCase):
 
     def _model_setup_sequential(self):
         # Define the network
-        model = Model()
+        model = nn.Sequential(nn.Conv2d(1, 16, 5), nn.MaxPool2d(2, 2))
 
         # Define a loss function and optimizer
         loss_fn = nn.CrossEntropyLoss()
@@ -119,163 +119,6 @@ class TestPyTorchClassifier(unittest.TestCase):
 
 if __name__ == '__main__':
     unittest.main()
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
 
 
 
