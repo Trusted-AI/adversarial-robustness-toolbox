@@ -54,14 +54,13 @@ class TestPyTorchClassifier(unittest.TestCase):
 
     def _model_setup_sequential(self):
         # Define the network
-        model = nn.Sequential(nn.Conv2d(1, 16, 5), nn.MaxPool2d(2, 2))
+        model = nn.Sequential(nn.Conv2d(1, 16, 5), nn.ReLU(), nn.MaxPool2d(2, 2), Flatten(), nn.Linear(2304, 10))
 
         # Define a loss function and optimizer
         loss_fn = nn.CrossEntropyLoss()
         optimizer = optim.Adam(model.parameters(), lr=0.01)
 
         return model, loss_fn, optimizer
-
 
     def test_fit_predict(self):
         # Get MNIST
@@ -70,6 +69,9 @@ class TestPyTorchClassifier(unittest.TestCase):
         x_test, y_test = x_test[:NB_TEST], y_test[:NB_TEST]
         x_train = np.swapaxes(x_train, 1, 3)
         x_test = np.swapaxes(x_test, 1, 3)
+
+        # Create model
+        model, loss_fn, optimizer = self._model_setup_module()
 
         # Test fit and predict
         ptc = PyTorchClassifier((0, 1), self._model, self._loss_fn, self._optimizer, (1, 28, 28), 10)
@@ -119,6 +121,45 @@ class TestPyTorchClassifier(unittest.TestCase):
 
 if __name__ == '__main__':
     unittest.main()
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 
 
