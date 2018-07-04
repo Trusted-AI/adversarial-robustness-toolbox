@@ -24,7 +24,7 @@ class PyTorchClassifier(Classifier):
         :type loss: `torch.nn.modules.loss._Loss`
         :param optimizer: The optimizer used to train the classifier.
         :type optimizer: `torch.optim.Optimizer`
-        :param input_shape: Shape of the input.
+        :param input_shape: The shape of one input instance.
         :type input_shape: `tuple`
         :param nb_classes: The number of classes of the model.
         :type nb_classes: `int`
