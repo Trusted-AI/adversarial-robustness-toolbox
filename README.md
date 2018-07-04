@@ -3,7 +3,7 @@
 
 This is a library dedicated to **adversarial machine learning**. Its purpose is to allow rapid crafting and analysis of attacks and defense methods for machine learning models. The Adversarial Robustness Toolbox provides an implementation for many state-of-the-art methods for attacking and defending classifiers.
 
-The library is still under development. Feedback, bug reports and extensions are highly appreciated. Get in touch with us on [Slack](https://ibm-art.slack.com) (invite [here]( https://join.slack.com/t/ibm-art/shared_invite/enQtMzczOTgyODUyMzU1LTFmNmI1NmM5Mjk4YjdjOTc0ZjU1ODQ5MTFlMzFhNjE3MDc5ZDFmYmQzNDZjMjY4ZDA4NjU2Yjk2MmQ4OGVhMDg))!
+The library is still under development. Feedback, bug reports and extensions are highly appreciated. Get in touch with us on [Slack](https://ibm-art.slack.com) (invite [here](https://join.slack.com/t/ibm-art/shared_invite/enQtMzkyOTkyODE4NzM4LTlkMWY3MzgyZDA4ZDdiNzUzY2NhMjc5YmFhZTYzZGYwNDM4YTE1ODhhNDYyNmFlMGFjNWY4ODgyM2EwYTFjYTc))!
 
 ## Supported attack and defense methods
 
