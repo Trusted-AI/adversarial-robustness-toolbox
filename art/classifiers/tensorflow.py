@@ -67,6 +67,9 @@ class TFClassifier(Classifier):
         # Get the internal layer
         self._layer_names = self._get_layers()
 
+        # Must be set here for the softmax output
+        self._probs = tf.nn.softmax(logits)
+
         # Get the loss gradients graph
         if self._loss is not None:
             self._loss_grads = tf.gradients(self._loss, self._input_ph)[0]
@@ -97,7 +100,7 @@ class TFClassifier(Classifier):
         if logits:
             results = self._sess.run(self._logits, feed_dict=fd)
         else:
-            results = self._sess.run(tf.nn.softmax(self._logits), feed_dict=fd)
+            results = self._sess.run(self._probs, feed_dict=fd)
 
         return results
 
