@@ -136,12 +136,15 @@ class TestPyTorchClassifier(unittest.TestCase):
         x_train, y_train = x_train[:NB_TRAIN], y_train[:NB_TRAIN]
         x_test, y_test = x_test[:NB_TEST], y_test[:NB_TEST]
         x_test = np.swapaxes(x_test, 1, 3)
+        x_train = np.swapaxes(x_train, 1, 3)
 
         # Create model
         model, loss_fn, optimizer = self._model_setup_sequential()
 
         # Test and get layers
         ptc = PyTorchClassifier((0, 1), model, loss_fn, optimizer, (1, 28, 28), 10)
+        ptc.fit(x_train, y_train, batch_size=100, nb_epochs=1)
+
         layer_names = ptc.get_layers
         print(layer_names)
         self.assertTrue(layer_names == ['0_Conv2d(1, 16, kernel_size=(5, 5), stride=(1, 1))', '1_ReLU()',
@@ -152,11 +155,13 @@ class TestPyTorchClassifier(unittest.TestCase):
             act_i = ptc.get_activations(x_test, i)
             act_name = ptc.get_activations(x_test, name)
             self.assertTrue(np.sum(act_name-act_i) == 0)
+            print(act_i)
 
-        self.assertTrue(ptc.get_activations(x_test, 0).shape == (20, 24, 24, 16))
-        self.assertTrue(ptc.get_activations(x_test, 1).shape == (20, 12, 12, 16))
-        self.assertTrue(ptc.get_activations(x_test, 2).shape == (20, 2304))
-        self.assertTrue(ptc.get_activations(x_test, 3).shape == (20, 10))
+        self.assertTrue(ptc.get_activations(x_test, 0).shape == (20, 16, 24, 24))
+        self.assertTrue(ptc.get_activations(x_test, 1).shape == (20, 16, 24, 24))
+        self.assertTrue(ptc.get_activations(x_test, 2).shape == (20, 16, 12, 12))
+        self.assertTrue(ptc.get_activations(x_test, 3).shape == (20, 2304))
+        self.assertTrue(ptc.get_activations(x_test, 4).shape == (20, 10))
 
 
 if __name__ == '__main__':

@@ -270,7 +270,7 @@ class PyTorchClassifier(Classifier):
         else:
             raise TypeError("Layer must be of type str or int")
 
-        return model_outputs[layer_index]
+        return model_outputs[layer_index].detach().numpy()
 
     # def _forward_at(self, inputs, layer):
     #     """
