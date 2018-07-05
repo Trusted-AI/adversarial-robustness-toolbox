@@ -10,7 +10,7 @@ class SaliencyMapMethod(Attack):
     Implementation of the Jacobian-based Saliency Map Attack (Papernot et al. 2016).
     Paper link: https://arxiv.org/pdf/1511.07528.pdf
     """
-    attack_params = ['theta', 'gamma']
+    attack_params = Attack.attack_params + ['theta', 'gamma']
 
     # TODO Add parameter logits?
     def __init__(self, classifier, theta=0.1, gamma=1.):

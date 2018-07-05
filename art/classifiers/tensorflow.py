@@ -11,7 +11,7 @@ class TFClassifier(Classifier):
     This class implements a classifier with the Tensorflow framework.
     """
     def __init__(self, clip_values, input_ph, logits, output_ph=None, train=None, loss=None, learning=None, sess=None,
-                 channel_index=3, defences=None):
+                 channel_index=3, defences=None, preprocessing=(0, 1)):
         """
         Initialization specifically for the Tensorflow-based implementation.
 
@@ -39,10 +39,15 @@ class TFClassifier(Classifier):
         :type channel_index: `int`
         :param defences: Defences to be activated with the classifier.
         :type defences: `str` or `list(str)`
+        :param preprocessing: Tuple of the form `(substractor, divider)` of floats or `np.ndarray` of values to be
+               used for data preprocessing. The first value will be substracted from the input. The input will then
+               be divided by the second one.
+        :type preprocessing: `tuple`
         """
         import tensorflow as tf
 
-        super(TFClassifier, self).__init__(clip_values, channel_index, defences)
+        super(TFClassifier, self).__init__(clip_values=clip_values, channel_index=channel_index, defences=defences,
+                                           preprocessing=preprocessing)
         self._nb_classes = int(logits.get_shape()[-1])
         self._input_shape = tuple(input_ph.get_shape()[1:])
         self._input_ph = input_ph
@@ -62,6 +67,9 @@ class TFClassifier(Classifier):
         # Get the internal layers
         self._layer_names = self._get_layers()
 
+        # Must be set here for the softmax output
+        self._probs = tf.nn.softmax(logits)
+
         # Get the loss gradients graph
         if self._loss is not None:
             self._loss_grads = tf.gradients(self._loss, self._input_ph)[0]
@@ -80,10 +88,11 @@ class TFClassifier(Classifier):
         import tensorflow as tf
 
         # Apply defences
-        x = self._apply_defences_predict(x)
+        x_ = self._apply_processing(x)
+        x_ = self._apply_defences_predict(x_)
 
         # Create feed_dict
-        fd = {self._input_ph: x}
+        fd = {self._input_ph: x_}
         if self._learning is not None:
             fd[self._learning] = False
 
@@ -91,7 +100,7 @@ class TFClassifier(Classifier):
         if logits:
             results = self._sess.run(self._logits, feed_dict=fd)
         else:
-            results = self._sess.run(tf.nn.softmax(self._logits), feed_dict=fd)
+            results = self._sess.run(self._probs, feed_dict=fd)
 
         return results
 
@@ -114,10 +123,11 @@ class TFClassifier(Classifier):
             raise ValueError("Need the training objective and the output placeholder to train the model.")
 
         # Apply defences
-        x, y = self._apply_defences_fit(x, y)
+        x_ = self._apply_processing(x)
+        x_, y_ = self._apply_defences_fit(x_, y)
 
-        num_batch = int(np.ceil(len(x) / batch_size))
-        ind = np.arange(len(x))
+        num_batch = int(np.ceil(len(x_) / batch_size))
+        ind = np.arange(len(x_))
 
         # Start training
         for _ in range(nb_epochs):
@@ -127,11 +137,11 @@ class TFClassifier(Classifier):
             # Train for one epoch
             for m in range(num_batch):
                 if m < num_batch - 1:
-                    i_batch = x[ind[m * batch_size:(m + 1) * batch_size]]
-                    o_batch = y[ind[m * batch_size:(m + 1) * batch_size]]
+                    i_batch = x_[ind[m * batch_size:(m + 1) * batch_size]]
+                    o_batch = y_[ind[m * batch_size:(m + 1) * batch_size]]
                 else:
-                    i_batch = x[ind[m * batch_size:]]
-                    o_batch = y[ind[m * batch_size:]]
+                    i_batch = x_[ind[m * batch_size:]]
+                    o_batch = y_[ind[m * batch_size:]]
 
                 # Run train step
                 if self._learning is None:
@@ -152,17 +162,21 @@ class TFClassifier(Classifier):
                  `(batch_size, nb_classes, input_shape)`.
         :rtype: `np.ndarray`
         """
+        x_ = self._apply_processing(x)
+
         # Compute the gradient and return
         if logits:
             if not hasattr(self, '_logit_class_grads'):
                 self._init_class_grads(logits=True)
-            grds = self._sess.run(self._logit_class_grads, feed_dict={self._input_ph: x})
+            grds = self._sess.run(self._logit_class_grads, feed_dict={self._input_ph: x_})
         else:
             if not hasattr(self, '_class_grads'):
                 self._init_class_grads(logits=False)
-            grds = self._sess.run(self._class_grads, feed_dict={self._input_ph: x})
+            grds = self._sess.run(self._class_grads, feed_dict={self._input_ph: x_})
 
         grds = np.swapaxes(np.array(grds), 0, 1)
+        grds = self._apply_processing_gradient(grds)
+        assert grds.shape == (x_.shape[0], self.nb_classes) + self.input_shape
 
         return grds
 
@@ -177,12 +191,16 @@ class TFClassifier(Classifier):
         :return: Array of gradients of the same shape as `x`.
         :rtype: `np.ndarray`
         """
+        x_ = self._apply_processing(x)
+
         # Check if loss available
         if not hasattr(self, '_loss_grads') or self._loss_grads is None or self._output_ph is None:
             raise ValueError("Need the loss function and the labels placeholder to compute the loss gradient.")
 
         # Compute the gradient and return
-        grds = self._sess.run(self._loss_grads, feed_dict={self._input_ph: x, self._output_ph: y})
+        grds = self._sess.run(self._loss_grads, feed_dict={self._input_ph: x_, self._output_ph: y})
+        grds = self._apply_processing_gradient(grds)
+        assert grds.shape == x_.shape
 
         return grds
 
@@ -214,7 +232,7 @@ class TFClassifier(Classifier):
         tmp_list = []
         ops = graph.get_operations()
 
-        for i, op in enumerate(ops):
+        for op in ops:
             filter_cond = ((op.values()) and (not op.values()[0].get_shape() == None) and (
                 len(op.values()[0].get_shape().as_list()) > 1) and (
                 op.values()[0].get_shape().as_list()[0] is None) and (
@@ -232,20 +250,20 @@ class TFClassifier(Classifier):
 
         result = [tmp_list[-1]]
         for name in reversed(tmp_list[:-1]):
-            if (result[0].split("/")[0] != name.split("/")[0]):
+            if result[0].split("/")[0] != name.split("/")[0]:
                 result = [name] + result
 
         return result
 
     @property
-    def get_layers(self):
+    def layer_names(self):
         """
         Return the hidden layers in the model, if applicable.
 
         :return: The hidden layers in the model, input and output layers excluded.
         :rtype: `list`
 
-        .. warning:: `get_layers` tries to infer the internal structure of the model.
+        .. warning:: `layer_names` tries to infer the internal structure of the model.
                      This feature comes with no guarantees on the correctness of the result.
                      The intended order of the layers tries to match their order in the model, but this is not
                      guaranteed either.
@@ -256,7 +274,7 @@ class TFClassifier(Classifier):
         """
         Return the output of the specified layer for input `x`. `layer` is specified by layer index (between 0 and
         `nb_layers - 1`) or by name. The number of layers can be determined by counting the results returned by
-        calling `get_layers()`.
+        calling `layer_names`.
 
         :param x: Input for computing the activations.
         :type x: `np.ndarray`
@@ -272,22 +290,23 @@ class TFClassifier(Classifier):
             graph = tf.get_default_graph()
 
         if type(layer) is str:
-            if not layer in self._layer_names:
-                raise ValueError("Layer name %s not supported to get from the graph" % layer)
+            if layer not in self._layer_names:
+                raise ValueError("Layer name %s is not part of the graph." % layer)
             layer_tensor = graph.get_tensor_by_name(layer)
 
         elif type(layer) is int:
             layer_tensor = graph.get_tensor_by_name(self._layer_names[layer])
 
         else:
-            raise TypeError("Layer must be of type str or int")
+            raise TypeError("Layer must be of type `str` or `int`.")
 
         # Get activations
-        # Apply defences
-        x = self._apply_defences_predict(x)
+        # Apply preprocessing and defences
+        x_ = self._apply_processing(x)
+        x_ = self._apply_defences_predict(x_)
 
         # Create feed_dict
-        fd = {self._input_ph: x}
+        fd = {self._input_ph: x_}
         if self._learning is not None:
             fd[self._learning] = False
 
@@ -295,7 +314,3 @@ class TFClassifier(Classifier):
         result = self._sess.run(layer_tensor, feed_dict=fd)
 
         return result
-
-
-
-

@@ -145,7 +145,7 @@ class TestPyTorchClassifier(unittest.TestCase):
         ptc = PyTorchClassifier((0, 1), model, loss_fn, optimizer, (1, 28, 28), 10)
         ptc.fit(x_train, y_train, batch_size=100, nb_epochs=1)
 
-        layer_names = ptc.get_layers
+        layer_names = ptc.layer_names
         print(layer_names)
         self.assertTrue(layer_names == ['0_Conv2d(1, 16, kernel_size=(5, 5), stride=(1, 1))', '1_ReLU()',
                                         '2_MaxPool2d(kernel_size=2, stride=2, padding=0, dilation=1, ceil_mode=False)',
@@ -166,6 +166,7 @@ class TestPyTorchClassifier(unittest.TestCase):
 
 if __name__ == '__main__':
     unittest.main()
+
 
 
 

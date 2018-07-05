@@ -11,7 +11,8 @@ class PyTorchClassifier(Classifier):
     """
     This class implements a classifier with the PyTorch framework.
     """
-    def __init__(self, clip_values, model, loss, optimizer, input_shape, nb_classes, channel_index=1, defences=None):
+    def __init__(self, clip_values, model, loss, optimizer, input_shape, nb_classes, channel_index=1, defences=None,
+                 preprocessing=(0, 1)):
         """
         Initialization specifically for the PyTorch-based implementation.
 
@@ -25,7 +26,7 @@ class PyTorchClassifier(Classifier):
         :type loss: `torch.nn.modules.loss._Loss`
         :param optimizer: The optimizer used to train the classifier.
         :type optimizer: `torch.optim.Optimizer`
-        :param input_shape: Shape of the input.
+        :param input_shape: The shape of one input instance.
         :type input_shape: `tuple`
         :param nb_classes: The number of classes of the model.
         :type nb_classes: `int`
@@ -33,8 +34,14 @@ class PyTorchClassifier(Classifier):
         :type channel_index: `int`
         :param defences: Defences to be activated with the classifier.
         :type defences: `str` or `list(str)`
+        :param preprocessing: Tuple of the form `(substractor, divider)` of floats or `np.ndarray` of values to be
+               used for data preprocessing. The first value will be substracted from the input. The input will then
+               be divided by the second one.
+        :type preprocessing: `tuple`
         """
-        super(PyTorchClassifier, self).__init__(clip_values, channel_index, defences)
+        super(PyTorchClassifier, self).__init__(clip_values=clip_values, channel_index=channel_index, defences=defences,
+                                                preprocessing=preprocessing)
+
         # self._nb_classes = list(model.modules())[-1 if use_logits else -2].out_features
         self._nb_classes = nb_classes
         self._input_shape = input_shape
@@ -67,7 +74,8 @@ class PyTorchClassifier(Classifier):
         import torch
 
         # Apply defences
-        x = self._apply_defences_predict(x)
+        x_ = self._apply_processing(x)
+        x_ = self._apply_defences_predict(x_)
 
         # Set test phase
         self._model.train(False)
@@ -104,14 +112,15 @@ class PyTorchClassifier(Classifier):
         import torch
 
         # Apply defences
-        x, y = self._apply_defences_fit(x, y)
-        y = np.argmax(y, axis=1)
+        x_ = self._apply_processing(x)
+        x_, y_ = self._apply_defences_fit(x_, y)
+        y_ = np.argmax(y_, axis=1)
 
         # Set train phase
         self._model.train(True)
 
-        num_batch = int(np.ceil(len(x) / batch_size))
-        ind = np.arange(len(x))
+        num_batch = int(np.ceil(len(x_) / batch_size))
+        ind = np.arange(len(x_))
 
         # Start training
         for _ in range(nb_epochs):
@@ -121,11 +130,11 @@ class PyTorchClassifier(Classifier):
             # Train for one epoch
             for m in range(num_batch):
                 if m < num_batch - 1:
-                    i_batch = torch.from_numpy(x[ind[m * batch_size:(m + 1) * batch_size]])
-                    o_batch = torch.from_numpy(y[ind[m * batch_size:(m + 1) * batch_size]])
+                    i_batch = torch.from_numpy(x_[ind[m * batch_size:(m + 1) * batch_size]])
+                    o_batch = torch.from_numpy(y_[ind[m * batch_size:(m + 1) * batch_size]])
                 else:
-                    i_batch = torch.from_numpy(x[ind[m * batch_size:]])
-                    o_batch = torch.from_numpy(y[ind[m * batch_size:]])
+                    i_batch = torch.from_numpy(x_[ind[m * batch_size:]])
+                    o_batch = torch.from_numpy(y_[ind[m * batch_size:]])
 
                 # Cast to float
                 i_batch = i_batch.float()
@@ -154,13 +163,13 @@ class PyTorchClassifier(Classifier):
         import torch
 
         # Convert the inputs to Tensors
-        x = torch.from_numpy(x)
-        x = x.float()
-        x.requires_grad = True
+        x_ = torch.from_numpy(self._apply_processing(x))
+        x_ = x_.float()
+        x_.requires_grad = True
 
         # Compute the gradient and return
         # Run prediction
-        model_outputs = self._model(x)
+        model_outputs = self._model(x_)
         (logit_output, output) = (model_outputs[-2], model_outputs[-1])
 
         if logits:
@@ -168,7 +177,7 @@ class PyTorchClassifier(Classifier):
         else:
             preds = output
 
-        # preds = self._forward_at(x, self._logit_layer)
+        # preds = self._forward_at(x_, self._logit_layer)
         # if not logits:
         #     preds = torch.nn.Softmax()(preds)
 
@@ -177,10 +186,12 @@ class PyTorchClassifier(Classifier):
         self._model.zero_grad()
         for i in range(self.nb_classes):
             torch.autograd.backward(preds[:, i], torch.FloatTensor([1] * len(preds[:, 0])), retain_graph=True)
-            grds.append(x.grad.numpy().copy())
-            x.grad.data.zero_()
+            grds.append(x_.grad.numpy().copy())
+            x_.grad.data.zero_()
 
         grds = np.swapaxes(np.array(grds), 0, 1)
+        grds = self._apply_processing_gradient(grds)
+        assert grds.shape == (x_.shape[0], self.nb_classes) + self.input_shape
 
         return grds
 
@@ -198,7 +209,7 @@ class PyTorchClassifier(Classifier):
         import torch
 
         # Convert the inputs to Tensors
-        inputs_t = torch.from_numpy(x)
+        inputs_t = torch.from_numpy(self._apply_processing(x))
         inputs_t = inputs_t.float()
         inputs_t.requires_grad = True
 
@@ -216,18 +227,20 @@ class PyTorchClassifier(Classifier):
         # Compute gradients
         loss.backward()
         grds = inputs_t.grad.numpy().copy()
+        grds = self._apply_processing_gradient(grds)
+        assert grds.shape == x.shape
 
         return grds
 
     @property
-    def get_layers(self):
+    def layer_names(self):
         """
         Return the hidden layers in the model, if applicable.
 
         :return: The hidden layers in the model, input and output layers excluded.
         :rtype: `list`
 
-        .. warning:: `get_layers` tries to infer the internal structure of the model.
+        .. warning:: `layer_names` tries to infer the internal structure of the model.
                      This feature comes with no guarantees on the correctness of the result.
                      The intended order of the layers tries to match their order in the model, but this is not
                      guaranteed either. In addition, the function can only infer the internal layers if the input
@@ -239,7 +252,7 @@ class PyTorchClassifier(Classifier):
         """
         Return the output of the specified layer for input `x`. `layer` is specified by layer index (between 0 and
         `nb_layers - 1`) or by name. The number of layers can be determined by counting the results returned by
-        calling `get_layers()`.
+        calling `layer_names`.
 
         :param x: Input for computing the activations.
         :type x: `np.ndarray`

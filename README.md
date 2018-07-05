@@ -2,13 +2,14 @@
 
 This is a library dedicated to **adversarial machine learning**. Its purpose is to allow rapid crafting and analysis of attacks and defense methods for machine learning models. Nemesis provides an implementation for many state-of-the-art methods for attacking and defending classifiers.
 
-The library is still under development. Feedback, bug reports and extension requests are highly appreciated.
+The library is still under development. Feedback, bug reports and extensions are highly appreciated.
 
 ## Supported attack and defense methods
 
 Nemesis contains implementations of the following attacks:
-* Deep Fool ([Moosavi-Dezfooli et al., 2015](https://arxiv.org/abs/1511.04599))
+* DeepFool ([Moosavi-Dezfooli et al., 2015](https://arxiv.org/abs/1511.04599))
 * Fast Gradient Method ([Goodfellow et al., 2014](https://arxiv.org/abs/1412.6572))
+* Basic Iterative Method ([Kurakin et al., 2016](https://arxiv.org/abs/1607.02533))
 * Jacobian Saliency Map ([Papernot et al., 2016](https://arxiv.org/abs/1511.07528))
 * Universal Perturbation ([Moosavi-Dezfooli et al., 2016](https://arxiv.org/abs/1610.08401))
 * Virtual Adversarial Method ([Moosavi-Dezfooli et al., 2015](https://arxiv.org/abs/1507.00677))
@@ -18,9 +19,10 @@ Nemesis contains implementations of the following attacks:
 The following defense methods are also supported:
 * Feature squeezing ([Xu et al., 2017](http://arxiv.org/abs/1704.01155))
 * Spatial smoothing ([Xu et al., 2017](http://arxiv.org/abs/1704.01155))
-* Label smoothing (Warde-Farley and Goodfellow, 2016)
+* Label smoothing ([Warde-Farley and Goodfellow, 2016](https://pdfs.semanticscholar.org/b5ec/486044c6218dd41b17d8bba502b32a12b91a.pdf))
 * Adversarial training ([Szegedy et al., 2013](http://arxiv.org/abs/1312.6199))
 * Virtual adversarial training ([Miyato et al., 2017](https://arxiv.org/abs/1704.03976))
+* Gaussian data augmentation ([Zantedeschi et al., 2017](https://arxiv.org/abs/1707.06728))
 
 ## Setup
 
