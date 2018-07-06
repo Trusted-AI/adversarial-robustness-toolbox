@@ -1,4 +1,4 @@
-# Nemesis (v0.1)
+# Nemesis (v0.2.2)
 
 This is a library dedicated to **adversarial machine learning**. Its purpose is to allow rapid crafting and analysis of attacks and defense methods for machine learning models. Nemesis provides an implementation for many state-of-the-art methods for attacking and defending classifiers.
 
