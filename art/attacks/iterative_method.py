@@ -12,9 +12,9 @@ class BasicIterativeMethod(FastGradientMethod):
     attack aims for the least likely class (the prediction with the lowest score) for each input.
     Paper link: https://arxiv.org/abs/1607.02533
     """
-    attack_params = FastGradientMethod.attack_params + ['eps_step']
+    attack_params = FastGradientMethod.attack_params + ['eps_step', 'max_iter']
 
-    def __init__(self, classifier, norm=np.inf, eps=.3, eps_step=0.1):
+    def __init__(self, classifier, norm=np.inf, eps=.3, eps_step=0.1, max_iter=20):
         """
         Create a :class:`BasicIterativeMethod` instance.
 
@@ -32,6 +32,10 @@ class BasicIterativeMethod(FastGradientMethod):
         if eps_step > eps:
             raise ValueError('The iteration step `eps_step` has to be smaller than the total attack `eps`.')
         self.eps_step = eps_step
+
+        if max_iter <= 0:
+            raise ValueError('The number of iterations `max_iter` has to be a positive integer.')
+        self.max_iter = int(max_iter)
 
     def generate(self, x, **kwargs):
         """
@@ -56,10 +60,7 @@ class BasicIterativeMethod(FastGradientMethod):
         targets = to_categorical(np.argmin(self.classifier.predict(x), axis=1), nb_classes=self.classifier.nb_classes)
         active_indices = range(len(adv_x))
 
-        # Set max iterations with heuristic from original paper
-        nb_iter, max_iter = 0, int(min(self.eps + 4. * self.eps_step, 1.25 * self.eps))
-
-        while len(active_indices) != 0 and nb_iter < max_iter:
+        for _ in range(self.max_iter):
             # Adversarial crafting
             adv_x[active_indices] = self._compute(adv_x[active_indices], targets[active_indices], self.eps_step)
             noise = projection(adv_x[active_indices] - x[active_indices], self.eps, self.norm)
@@ -68,7 +69,10 @@ class BasicIterativeMethod(FastGradientMethod):
 
             # Update active indices
             active_indices = np.where(targets[active_indices] != np.argmax(adv_preds, axis=1))[0]
-            nb_iter += 1
+
+            # Stop if no more indices left to explore
+            if len(active_indices) == 0:
+                break
 
         return adv_x
 
@@ -88,5 +92,8 @@ class BasicIterativeMethod(FastGradientMethod):
 
         if self.eps_step > self.eps:
             raise ValueError('The iteration step `eps_step` has to be smaller than the total attack `eps`.')
+
+        if self.max_iter <= 0:
+            raise ValueError('The number of iterations `max_iter` has to be a positive integer.')
 
         return True
