@@ -384,5 +384,3 @@ def _linf_random(m, n, r):
     :rtype: `np.ndarray`
     """
     return np.random.uniform(float(-r), float(r), (m, n))
-
-
