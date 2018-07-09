@@ -386,4 +386,3 @@ def _linf_random(m, n, r):
     return np.random.uniform(float(-r), float(r), (m, n))
 
 
-
