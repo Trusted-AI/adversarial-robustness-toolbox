@@ -64,13 +64,13 @@ class FastGradientMethod(Attack):
             # Get current predictions
             active_indices = np.arange(len(batch))
             current_eps = eps_step
-                        
+            
             while len(active_indices) != 0 and current_eps <= eps_max:
                 # Adversarial crafting
-                current_x = self._apply_perturbation(batch[active_indices], perturbation, current_eps)
+                current_x = self._apply_perturbation(x, perturbation, current_eps)
 
                 # Update
-                batch[active_indices] = current_x
+                batch[active_indices] = current_x[active_indices]
                 adv_preds = self.classifier.predict(batch)
                 active_indices = np.where(np.argmax(batch_labels, axis=1) == np.argmax(adv_preds, axis=1))[0]
                 current_eps += eps_step
@@ -151,10 +151,10 @@ class FastGradientMethod(Attack):
         if self.norm == np.inf:
             grad = np.sign(grad)
         elif self.norm == 1:
-            ind = tuple(range(1, len(x.shape)))
+            ind = tuple(range(1, len(batch.shape)))
             grad = grad / (np.sum(np.abs(grad), axis=ind, keepdims=True) + tol)
         elif self.norm == 2:
-            ind = tuple(range(1, len(x.shape)))
+            ind = tuple(range(1, len(batch.shape)))
             grad = grad / (np.sqrt(np.sum(np.square(grad), axis=ind, keepdims=True)) + tol)
         assert batch.shape == grad.shape
         
@@ -162,8 +162,7 @@ class FastGradientMethod(Attack):
     
     def _apply_perturbation(self, batch, perturbation, eps):
         clip_min, clip_max = self.classifier.clip_values
-        batch = batch + eps * perturbation
-        return np.clip(batch, clip_min, clip_max)
+        return np.clip(batch + eps * perturbation, clip_min, clip_max)
     
     def _compute(self, x, y, eps):
         adv_x = x.copy()
