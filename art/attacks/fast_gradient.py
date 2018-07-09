@@ -168,10 +168,10 @@ class FastGradientMethod(Attack):
         return np.clip(batch + eps * perturbation, clip_min, clip_max)
     
     def _compute(self, x, y, eps, random_init):
-        if rand_init:
+        if random_init:
             n = x.shape[0]
             m = np.prod(x.shape[1:])
-            adv_x = x.copy() + random_sphere(n, m, eps, norm).reshape(x.shape)
+            adv_x = x.copy() + random_sphere(n, m, eps, self.norm).reshape(x.shape)
         else:
             adv_x = x.copy()
 
