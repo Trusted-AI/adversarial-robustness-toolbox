@@ -3,7 +3,7 @@ from __future__ import absolute_import, division, print_function, unicode_litera
 import numpy as np
 
 from art.attacks.attack import Attack
-from art.utils import get_labels_np_array
+from art.utils import get_labels_np_array, random_sphere
 
 
 class FastGradientMethod(Attack):
@@ -14,7 +14,7 @@ class FastGradientMethod(Attack):
     """
     attack_params = Attack.attack_params + ['norm', 'eps', 'targeted']
 
-    def __init__(self, classifier, norm=np.inf, eps=.3, targeted=False):
+    def __init__(self, classifier, norm=np.inf, eps=.3, targeted=False, random_init=False):
         """
         Create a :class:`FastGradientMethod` instance.
 
@@ -26,12 +26,15 @@ class FastGradientMethod(Attack):
         :type eps: `float`
         :param targeted: Should the attack target one specific class
         :type targeted: `bool`
+        :param random_init: Whether to start at the original input or a random point within the epsilon ball
+        :type random_init: `bool`
         """
         super(FastGradientMethod, self).__init__(classifier)
 
         self.norm = norm
         self.eps = eps
         self.targeted = targeted
+        self.random_init = random_init
 
     def _minimal_perturbation(self, x, y, eps_step=0.1, eps_max=1., **kwargs):
         """Iteratively compute the minimal perturbation necessary to make the class prediction change. Stop when the
@@ -116,7 +119,7 @@ class FastGradientMethod(Attack):
         if 'minimal' in kwargs and kwargs[str('minimal')]:
             return self._minimal_perturbation(x, y, **kwargs)
 
-        return self._compute(x, y, self.eps)
+        return self._compute(x, y, self.eps, self.random_init)
 
     def set_params(self, **kwargs):
         """
@@ -164,8 +167,13 @@ class FastGradientMethod(Attack):
         clip_min, clip_max = self.classifier.clip_values
         return np.clip(batch + eps * perturbation, clip_min, clip_max)
     
-    def _compute(self, x, y, eps):
-        adv_x = x.copy()
+    def _compute(self, x, y, eps, random_init):
+        if rand_init:
+            n = x.shape[0]
+            m = np.prod(x.shape[1:])
+            adv_x = x.copy() + random_sphere(n, m, eps, norm).reshape(x.shape)
+        else:
+            adv_x = x.copy()
 
         # Compute perturbation with implicit batching
         batch_size = 128

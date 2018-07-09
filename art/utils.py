@@ -39,7 +39,7 @@ def projection(v, eps, p):
 
     return v
 
-def random_sphere(m, n, r, norm):
+def random_sphere(shape, r, norm):
     """
     Generate randomly `m x n`-dimension points with radius `r` and centered around 0.
 
@@ -54,7 +54,6 @@ def random_sphere(m, n, r, norm):
     :return: The generated random sphere
     :rtype: `np.ndarray`
     """
-    
     if norm == 1:
         A = np.zeros(shape=(m, n+1))
         A[:, -1] = np.sqrt(np.random.uniform(0, r**2, m))
