@@ -27,17 +27,20 @@ def projection(v, eps, p):
     """
     # Pick a small scalar to avoid division by 0
     tol = 10e-8
-
-    if p == 2:
-        v *= eps / max(1., np.linalg.norm(v, axis=(1, 2)) + tol)
-    elif p == 1:
-        v *= eps / max(1., np.linalg.norm(v, axis=(1, 2), ord=1) + tol)
-    elif p == np.inf:
-        v = np.sign(v) * np.minimum(abs(v), eps)
+    if p == np.inf:
+        return np.sign(v) * np.minimum(abs(v), eps)
     else:
-        raise NotImplementedError('Values of `p` different from 1, 2 and `np.inf` are currently not supported.')
-
-    return v
+        reshape_dim = (v.shape[0], np.prod(v.shape[1:]))
+        if p == 1:
+            norm = np.linalg.norm(v.reshape(reshape_dim), axis=1, ord=1)
+        elif p == 2:
+            norm = np.linalg.norm(v.reshape(reshape_dim), axis=1)
+        else:
+            raise NotImplementedError('Values of `p` different from 1, 2 and `np.inf` are currently not supported.')
+        norm = eps / np.clip(norm, tol, norm)
+        norm = np.clip(norm, norm, 1.0)
+        expand_dim = tuple([v.shape[0]] + [1]*len(v.shape[1:]))
+        return v * norm.reshape(expand_dim)
 
 def random_sphere(m, n, r, norm):
     """
