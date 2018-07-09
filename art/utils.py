@@ -39,7 +39,7 @@ def projection(v, eps, p):
 
     return v
 
-def random_sphere(shape, r, norm):
+def random_sphere(m, n, r, norm):
     """
     Generate randomly `m x n`-dimension points with radius `r` and centered around 0.
 
