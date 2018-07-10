@@ -74,6 +74,8 @@ def random_sphere(m, n, r, norm):
         res= np.random.uniform(float(-r), float(r), (m, n))
     else:
         raise NotImplementedError("Norm {} not supported".format(norm))
+    
+    return res
 
 def to_categorical(labels, nb_classes=None):
     """
