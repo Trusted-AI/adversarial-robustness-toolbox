@@ -14,7 +14,7 @@ from scipy.special import gammainc
 
 def projection(v, eps, p):
     """
-    Clip the values in `v` if their L_p norm is larger than `eps`.
+    Project the values in `v` on the L_p norm ball of size `eps`.
 
     :param v: Array of perturbations to clip.
     :type v: `np.ndarray`
@@ -22,25 +22,24 @@ def projection(v, eps, p):
     :type eps: `float`
     :param p: L_p norm to use for clipping. Only 1, 2 and `np.Inf` supported for now.
     :type p: `int`
-    :return: Clipped values of `v`
+    :return: Values of `v` after projection.
     :rtype: `np.ndarray`
     """
     # Pick a small scalar to avoid division by 0
     tol = 10e-8
-    if p == np.inf:
-        return np.sign(v) * np.minimum(abs(v), eps)
+    v_ = v.reshape((v.shape[0], -1))
+
+    if p == 2:
+        v_ = v_ * min(1., eps / (np.linalg.norm(v, axis=1) + tol))
+    elif p == 1:
+        v_ = v_ * min(1., eps / (np.linalg.norm(v, axis=1, ord=1) + tol))
+    elif p == np.inf:
+        v_ = np.sign(v) * np.minimum(abs(v), eps)
     else:
-        reshape_dim = (v.shape[0], np.prod(v.shape[1:]))
-        if p == 1:
-            norm = np.linalg.norm(v.reshape(reshape_dim), axis=1, ord=1)
-        elif p == 2:
-            norm = np.linalg.norm(v.reshape(reshape_dim), axis=1)
-        else:
-            raise NotImplementedError('Values of `p` different from 1, 2 and `np.inf` are currently not supported.')
-        norm = eps / np.clip(norm, tol, norm)
-        norm = np.clip(norm, norm, 1.0)
-        expand_dim = tuple([v.shape[0]] + [1]*len(v.shape[1:]))
-        return v * norm.reshape(expand_dim)
+        raise NotImplementedError('Values of `p` different from 1, 2 and `np.inf` are currently not supported.')
+
+    v = v_.reshape(v.shape)
+    return v
 
 def random_sphere(m, n, r, norm):
     """
@@ -75,10 +74,9 @@ def random_sphere(m, n, r, norm):
     else:
         raise NotImplementedError("Norm {} not supported".format(norm))
 
-    return res
-
 def to_categorical(labels, nb_classes=None):
-    """Convert an array of labels to binary class matrix.
+    """
+    Convert an array of labels to binary class matrix.
 
     :param labels: An array of integer labels of shape `(nb_samples,)`
     :type labels: `np.ndarray`
