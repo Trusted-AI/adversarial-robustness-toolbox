@@ -30,9 +30,10 @@ def projection(v, eps, p):
     v_ = v.reshape((v.shape[0], -1))
 
     if p == 2:
-        v_ = v_ * min(1., eps / (np.linalg.norm(v, axis=1) + tol))
+        # The transposes here ensures the broadcast works correctly
+        v_ = (v_.T * (eps / np.linalg.norm(v_, axis=1).clip(tol)).clip(max=1.0)).T
     elif p == 1:
-        v_ = v_ * min(1., eps / (np.linalg.norm(v, axis=1, ord=1) + tol))
+        v_ = (v_.T * (eps / np.sum(np.abs(v_), axis=1).clip(tol)).clip(max=1.0)).T
     elif p == np.inf:
         v_ = np.sign(v) * np.minimum(abs(v), eps)
     else:
