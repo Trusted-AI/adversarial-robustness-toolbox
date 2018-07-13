@@ -9,7 +9,7 @@ from keras.models import Sequential
 from keras.layers import Dense, Flatten, Conv2D, MaxPooling2D
 import numpy as np
 import torch.nn as nn
-import torch.nn.functional as F
+import torch.nn.functional as f
 import torch.optim as optim
 
 from art.classifiers.tensorflow import TFClassifier
@@ -108,12 +108,11 @@ class Model(nn.Module):
         self.fc = nn.Linear(2304, 10)
 
     def forward(self, x):
-        x = self.pool(F.relu(self.conv(x)))
+        x = self.pool(f.relu(self.conv(x)))
         x = x.view(-1, 2304)
         logit_output = self.fc(x)
-        output = F.softmax(logit_output, dim=1)
 
-        return logit_output, output
+        return logit_output
 
 
 class TestClever(unittest.TestCase):
@@ -183,7 +182,6 @@ class TestClever(unittest.TestCase):
         To create a simple PyTorchClassifier for testing.
         :return:
         """
-        # Create simple CNN
         # Define the network
         model = Model()
 
@@ -257,7 +255,7 @@ class TestClever(unittest.TestCase):
         res0 = clever_u(krc, x_test[-1], 10, 5, 5, norm=1, pool_factor=3)
         res1 = clever_u(krc, x_test[-1], 10, 5, 5, norm=2, pool_factor=3)
         res2 = clever_u(krc, x_test[-1], 10, 5, 5, norm=np.inf, pool_factor=3)
-        print("UnTarget kr: ", res0, res1, res2)
+        print("Untarget kr: ", res0, res1, res2)
         self.assertNotEqual(res0, res1)
         self.assertNotEqual(res1, res2)
         self.assertNotEqual(res2, res0)
@@ -270,7 +268,7 @@ class TestClever(unittest.TestCase):
         # Get MNIST
         batch_size, nb_train, nb_test = 100, 1000, 10
         (x_train, y_train), (x_test, y_test), _, _ = load_mnist()
-        x_train, y_train = x_train[:nb_train], np.argmax(y_train[:nb_train], axis=1)
+        x_train, y_train = x_train[:nb_train], y_train[:nb_train]
         x_test, y_test = x_test[:nb_test], y_test[:nb_test]
         x_train = np.swapaxes(x_train, 1, 3)
         x_test = np.swapaxes(x_test, 1, 3)
