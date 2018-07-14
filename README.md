@@ -63,3 +63,6 @@ Some examples of how to use ART when writing your own code can be found in the `
 ```bash
 python3 examples/<example_name>.py
 ```
+# Using Jupyter Notebooks to run ART
+
+We have also created a sample Jupyter notebook in [Fabric for Deep Learning (FfDL)](https://github.com/IBM/FfDL) repository which shows you how to launch training using FfDL, and then invoke ART to find model vulnerabilities. Find more details in the [pattern here](https://developer.ibm.com/code/patterns/integrate-adversarial-attacks-model-training-pipeline/)
