@@ -28,11 +28,11 @@ def projection(v, eps, p):
     v_ = v.reshape((v.shape[0], -1))
 
     if p == 2:
-        v_ = v_ * min(1., eps / (np.linalg.norm(v, axis=1) + tol))
+        v_ = v_ * np.expand_dims(np.minimum(1., eps / (np.linalg.norm(v_, axis=1) + tol)), axis=1)
     elif p == 1:
-        v_ = v_ * min(1., eps / (np.linalg.norm(v, axis=1, ord=1) + tol))
+        v_ = v_ * np.expand_dims(np.minimum(1., eps / (np.linalg.norm(v_, axis=1, ord=1) + tol)), axis=1)
     elif p == np.inf:
-        v_ = np.sign(v) * np.minimum(abs(v), eps)
+        v_ = np.sign(v) * np.minimum(abs(v_), eps)
     else:
         raise NotImplementedError('Values of `p` different from 1, 2 and `np.inf` are currently not supported.')
 
