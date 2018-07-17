@@ -57,7 +57,7 @@ class FastGradientMethod(Attack):
         # Compute perturbation with implicit batching
         batch_size = 128
         for batch_id in range(adv_x.shape[0] // batch_size + 1):
-            batch_index_1, batch_index_2 = batch_id * batch_size, (batch_id + 1) * batch_size
+            batch_index_1, batch_index_2 = batch_id * batch_size, min((batch_id + 1) * batch_size, x.shape[0])
             batch = adv_x[batch_index_1:batch_index_2]
             batch_labels = y[batch_index_1:batch_index_2]
 
@@ -70,7 +70,7 @@ class FastGradientMethod(Attack):
             
             while len(active_indices) != 0 and current_eps <= eps_max:
                 # Adversarial crafting
-                current_x = self._apply_perturbation(x, perturbation, current_eps)
+                current_x = self._apply_perturbation(x[batch_index_1:batch_index_2], perturbation, current_eps)
 
                 # Update
                 batch[active_indices] = current_x[active_indices]
@@ -103,8 +103,9 @@ class FastGradientMethod(Attack):
         :rtype: `np.ndarray`
         """
         self.set_params(**kwargs)
+        params_cpy = dict(kwargs)
 
-        if 'y' not in kwargs or kwargs[str('y')] is None:
+        if 'y' not in params_cpy or params_cpy[str('y')] is None:
             # Throw error if attack is targeted, but no targets are provided
             if self.targeted:
                 raise ValueError('Target labels `y` need to be provided for a targeted attack.')
@@ -112,12 +113,12 @@ class FastGradientMethod(Attack):
             # Use model predictions as correct outputs
             y = get_labels_np_array(self.classifier.predict(x))
         else:
-            y = kwargs[str('y')]
+            y = params_cpy.pop(str('y'))
         y = y / np.sum(y, axis=1, keepdims=True)
 
         # Return adversarial examples computed with minimal perturbation if option is active
-        if 'minimal' in kwargs and kwargs[str('minimal')]:
-            return self._minimal_perturbation(x, y, **kwargs)
+        if 'minimal' in params_cpy and params_cpy[str('minimal')]:
+            return self._minimal_perturbation(x, y, **params_cpy)
 
         return self._compute(x, y, self.eps, self.random_init)
 
