@@ -3,7 +3,7 @@ from __future__ import absolute_import, division, print_function, unicode_litera
 import numpy as np
 
 from art.attacks import FastGradientMethod
-from art.utils import to_categorical
+from art.utils import to_categorical, get_labels_np_array
 
 
 class BasicIterativeMethod(FastGradientMethod):
@@ -14,7 +14,7 @@ class BasicIterativeMethod(FastGradientMethod):
     """
     attack_params = FastGradientMethod.attack_params + ['eps_step', 'max_iter']
 
-    def __init__(self, classifier, norm=np.inf, eps=.3, eps_step=0.1, max_iter=20):
+    def __init__(self, classifier, norm=np.inf, eps=.3, eps_step=0.1, max_iter=20, targeted=False, random_init=False):
         """
         Create a :class:`BasicIterativeMethod` instance.
 
@@ -26,8 +26,12 @@ class BasicIterativeMethod(FastGradientMethod):
         :type eps: `float`
         :param eps_step: Attack step size (input variation) at each iteration.
         :type eps_step: `float`
+        :param targeted: Should the attack target one specific class
+        :type targeted: `bool`
+        :param random_init: Whether to start at the original input or a random point within the epsilon ball
+        :type random_init: `bool`
         """
-        super(BasicIterativeMethod, self).__init__(classifier, norm=norm, eps=eps, targeted=True)
+        super(BasicIterativeMethod, self).__init__(classifier, norm=norm, eps=eps, targeted=targeted,random_init=random_init)
 
         if eps_step > eps:
             raise ValueError('The iteration step `eps_step` has to be smaller than the total attack `eps`.')
@@ -57,19 +61,29 @@ class BasicIterativeMethod(FastGradientMethod):
 
         # Choose least likely class as target prediction for the attack
         adv_x = x.copy()
-        targets = to_categorical(np.argmin(self.classifier.predict(x), axis=1), nb_classes=self.classifier.nb_classes)
+        if 'y' not in kwargs or kwargs[str('y')] is None:
+            # Throw error if attack is targeted, but no targets are provided
+            if self.targeted:
+                raise ValueError('Target labels `y` need to be provided for a targeted attack.')
+
+            # Use model predictions as correct outputs
+            y = self.classifier.predict(x)
+        else:
+            y = kwargs[str('y')]
+        y = y / np.sum(y, axis=1, keepdims=True)
+        
+        targets = to_categorical(y, nb_classes=self.classifier.nb_classes)
         active_indices = range(len(adv_x))
 
         for _ in range(self.max_iter):
             # Adversarial crafting
-            adv_x[active_indices] = self._compute(adv_x[active_indices], targets[active_indices], self.eps_step)
+            adv_x[active_indices] = self._compute(adv_x[active_indices], targets[active_indices], self.eps_step, self.random_init)
             noise = projection(adv_x[active_indices] - x[active_indices], self.eps, self.norm)
             adv_x[active_indices] = x[active_indices] + noise
-            adv_preds = self.classifier.predict(adv_x)
+            adv_preds = self.classifier.predict(adv_x[active_indices])
 
             # Update active indices
-            active_indices = np.where(targets[active_indices] != np.argmax(adv_preds, axis=1))[0]
-
+            active_indices = np.where(np.argmax(targets[active_indices],axis=1) != np.argmax(adv_preds, axis=1))[0]
             # Stop if no more indices left to explore
             if len(active_indices) == 0:
                 break
