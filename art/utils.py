@@ -34,12 +34,13 @@ def projection(v, eps, p):
     elif p == 1:
         v_ = v_ * np.expand_dims(np.minimum(1., eps / (np.linalg.norm(v_, axis=1, ord=1) + tol)), axis=1)
     elif p == np.inf:
-        v_ = np.sign(v) * np.minimum(abs(v_), eps)
+        v_ = np.sign(v_) * np.minimum(abs(v_), eps)
     else:
         raise NotImplementedError('Values of `p` different from 1, 2 and `np.inf` are currently not supported.')
 
     v = v_.reshape(v.shape)
     return v
+
 
 def random_sphere(m, n, r, norm):
     """
