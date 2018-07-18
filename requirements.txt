@@ -3,3 +3,5 @@ Keras
 matplotlib
 scipy
 tensorflow
+mxnet
+requests
