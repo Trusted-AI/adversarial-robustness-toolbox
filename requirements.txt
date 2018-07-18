@@ -6,5 +6,4 @@ matplotlib
 scipy
 tensorflow
 mxnet
-pytorch
 requests

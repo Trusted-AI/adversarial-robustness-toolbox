@@ -33,7 +33,9 @@ before_install:
   - conda info -a
 
 install: 
-  - conda install -q -n test-environment python=$TRAVIS_PYTHON_VERSION --yes --file requirements.txt
+  - conda create -q -n test-environment python=$TRAVIS_PYTHON_VERSION --yes --file requirements.txt
+  # Can't specify channels in requirements.txt for conda
+  - conda install -y pytorch torchvision -c pytorch
   - source activate test-environment
   # Install TensorFlow
   - if [[ "$TENSORFLOW_V" != "" ]]; then pip install tensorflow==${TENSORFLOW_V}; fi
