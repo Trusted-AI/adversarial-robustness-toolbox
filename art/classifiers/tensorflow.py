@@ -298,7 +298,7 @@ class TFClassifier(Classifier):
             layer_tensor = graph.get_tensor_by_name(self._layer_names[layer])
 
         else:
-            raise TypeError("Layer must be of type `str` or `int`. Received '%s'", layer))
+            raise TypeError("Layer must be of type `str` or `int`. Received '%s'", layer)
 
         # Get activations
         # Apply preprocessing and defences
