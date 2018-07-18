@@ -289,7 +289,7 @@ class TFClassifier(Classifier):
         with self._sess.graph.as_default():
             graph = tf.get_default_graph()
 
-        if type(layer) is str:
+        if isinstance(layer, basestring):
             if layer not in self._layer_names:
                 raise ValueError("Layer name %s is not part of the graph." % layer)
             layer_tensor = graph.get_tensor_by_name(layer)
