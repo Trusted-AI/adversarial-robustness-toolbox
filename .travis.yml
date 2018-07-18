@@ -32,8 +32,8 @@ before_install:
   - conda update -q conda
   - conda info -a
 
-install:
-  - conda create -q -n test-environment python=$TRAVIS_PYTHON_VERSION numpy scipy matplotlib pandas h5py
+install: 
+  - conda install -q -n test-environment python=$TRAVIS_PYTHON_VERSION --yes --file requirements.txt
   - source activate test-environment
   # Install TensorFlow
   - if [[ "$TENSORFLOW_V" != "" ]]; then pip install tensorflow==${TENSORFLOW_V}; fi

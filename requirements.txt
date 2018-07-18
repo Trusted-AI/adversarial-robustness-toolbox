@@ -1,7 +1,10 @@
+numpy
 h5py
-Keras
+keras
+pandas
 matplotlib
 scipy
 tensorflow
 mxnet
+pytorch
 requests
