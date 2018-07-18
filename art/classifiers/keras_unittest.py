@@ -120,12 +120,10 @@ class TestKerasClassifier(unittest.TestCase):
         loss_grads = classifier.loss_gradient(x_test[:11], y_test[:11])
         self.assertTrue(loss_grads.shape == x_test[:11].shape)
 
-<<<<<<< HEAD
     def test_functional_model(self):
         # Need to update the functional_model code to produce a model with more than one input and output layers...
         m = self.functional_model()
         keras_model = KerasClassifier((0,1), m, input_layer=1, output_layer=1)
-=======
     def test_layers(self):
         # Get MNIST
         (_, _), (x_test, _), _, _ = load_mnist()
@@ -143,7 +141,6 @@ class TestKerasClassifier(unittest.TestCase):
 
         self.assertTrue(classifier.get_activations(x_test, 0).shape == (NB_TEST, 26, 26, 32))
         self.assertTrue(classifier.get_activations(x_test, 4).shape == (NB_TEST, 128))
->>>>>>> origin/dev
 
     def test_resnet(self):
         import os
