@@ -43,6 +43,7 @@ class Classifier(ABC):
                              'the model inputs.')
         self._preprocessing = preprocessing
 
+    @abc.abstractmethod
     def predict(self, x, logits=False):
         """
         Perform prediction for a batch of inputs.
@@ -139,14 +140,14 @@ class Classifier(ABC):
         raise NotImplementedError
 
     @property
-    def get_layers(self):
+    def layer_names(self):
         """
         Return the hidden layers in the model, if applicable.
 
         :return: The hidden layers in the model, input and output layers excluded.
         :rtype: `list`
 
-        .. warning:: `get_layers` tries to infer the internal structure of the model.
+        .. warning:: `layer_names` tries to infer the internal structure of the model.
                      This feature comes with no guarantees on the correctness of the result.
                      The intended order of the layers tries to match their order in the model, but this is not
                      guaranteed either.
@@ -158,7 +159,7 @@ class Classifier(ABC):
         """
         Return the output of the specified layer for input `x`. `layer` is specified by layer index (between 0 and
         `nb_layers - 1`) or by name. The number of layers can be determined by counting the results returned by
-        calling `get_layers()`.
+        calling `layer_names`.
 
         :param x: Input for computing the activations.
         :type x: `np.ndarray`
@@ -223,10 +224,10 @@ class Classifier(ABC):
 
         sub, div = self._preprocessing
         sub = np.asarray(sub, dtype=x.dtype)
-        div = np.asarray(div, x.dtype)
+        div = np.asarray(div, dtype=x.dtype)
 
         res = x - sub
-        res /= div
+        res = res / div
 
         return res
 

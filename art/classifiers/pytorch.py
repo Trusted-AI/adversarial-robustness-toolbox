@@ -18,13 +18,14 @@ class PyTorchClassifier(Classifier):
         :param clip_values: Tuple of the form `(min, max)` representing the minimum and maximum values allowed
                for features.
         :type clip_values: `tuple`
-        :param model: PyTorch model. The forward function of the model must return a tuple (logit output, output).
-        :type model: `torch.nn.Module`
-        :param loss: The loss function for which to compute gradients for training.
+        :param model: PyTorch model. The forward function of the model must return the logit output.
+        :type model: is instance of `torch.nn.Module`
+        :param loss: The loss function for which to compute gradients for training. The target label must be raw
+               categorical, i.e. not converted to one-hot encoding.
         :type loss: `torch.nn.modules.loss._Loss`
         :param optimizer: The optimizer used to train the classifier.
         :type optimizer: `torch.optim.Optimizer`
-        :param input_shape: Shape of the input.
+        :param input_shape: The shape of one input instance.
         :type input_shape: `tuple`
         :param nb_classes: The number of classes of the model.
         :type nb_classes: `int`
@@ -43,9 +44,12 @@ class PyTorchClassifier(Classifier):
         # self._nb_classes = list(model.modules())[-1 if use_logits else -2].out_features
         self._nb_classes = nb_classes
         self._input_shape = input_shape
-        self._model = model
+        self._model = PyTorchClassifier.ModelWrapper(model)
         self._loss = loss
         self._optimizer = optimizer
+
+        # Get the internal layers
+        self._layer_names = self._model.get_layers
 
         # # Store the logit layer
         # self._logit_layer = len(list(model.modules())) - 2 if use_logits else len(list(model.modules())) - 3
@@ -80,7 +84,8 @@ class PyTorchClassifier(Classifier):
         # if not logits:
         #     exp = np.exp(preds - np.max(preds, axis=1, keepdims=True))
         #     preds = exp / np.sum(exp, axis=1, keepdims=True)
-        (logit_output, output) = self._model(torch.from_numpy(x_).float())
+        model_outputs = self._model(torch.from_numpy(x_).float())
+        (logit_output, output) = (model_outputs[-2], model_outputs[-1])
 
         if logits:
             preds = logit_output.detach().numpy()
@@ -137,8 +142,8 @@ class PyTorchClassifier(Classifier):
                 self._optimizer.zero_grad()
 
                 # Actual training
-                (_, m_batch) = self._model(i_batch)
-                loss = self._loss(m_batch, o_batch)
+                model_outputs = self._model(i_batch)
+                loss = self._loss(model_outputs[-1], o_batch)
                 loss.backward()
                 self._optimizer.step()
 
@@ -163,7 +168,8 @@ class PyTorchClassifier(Classifier):
 
         # Compute the gradient and return
         # Run prediction
-        (logit_output, output) = self._model(x_)
+        model_outputs = self._model(x_)
+        (logit_output, output) = (model_outputs[-2], model_outputs[-1])
 
         if logits:
             preds = logit_output
@@ -210,8 +216,8 @@ class PyTorchClassifier(Classifier):
         labels_t = torch.from_numpy(np.argmax(y, axis=1))
 
         # Compute the gradient and return
-        (_, m_output) = self._model(inputs_t)
-        loss = self._loss(m_output, labels_t)
+        model_outputs = self._model(inputs_t)
+        loss = self._loss(model_outputs[-1], labels_t)
 
         # Clean gradients
         self._model.zero_grad()
@@ -226,25 +232,26 @@ class PyTorchClassifier(Classifier):
         return grds
 
     @property
-    def get_layers(self):
+    def layer_names(self):
         """
         Return the hidden layers in the model, if applicable.
 
         :return: The hidden layers in the model, input and output layers excluded.
         :rtype: `list`
 
-        .. warning:: `get_layers` tries to infer the internal structure of the model.
+        .. warning:: `layer_names` tries to infer the internal structure of the model.
                      This feature comes with no guarantees on the correctness of the result.
                      The intended order of the layers tries to match their order in the model, but this is not
-                     guaranteed either.
+                     guaranteed either. In addition, the function can only infer the internal layers if the input
+                     model is of type `nn.Sequential`, otherwise, it will only return the logit layer.
         """
-        raise NotImplementedError
+        return self._layer_names
 
     def get_activations(self, x, layer):
         """
         Return the output of the specified layer for input `x`. `layer` is specified by layer index (between 0 and
         `nb_layers - 1`) or by name. The number of layers can be determined by counting the results returned by
-        calling `get_layers()`.
+        calling `layer_names`.
 
         :param x: Input for computing the activations.
         :type x: `np.ndarray`
@@ -253,7 +260,29 @@ class PyTorchClassifier(Classifier):
         :return: The output of `layer`, where the first dimension is the batch size corresponding to `x`.
         :rtype: `np.ndarray`
         """
-        raise NotImplementedError
+        import torch
+
+        # Apply defences
+        x = self._apply_defences_predict(x)
+
+        # Set test phase
+        self._model.train(False)
+
+        # Run prediction
+        model_outputs = self._model(torch.from_numpy(x).float())[:-1]
+
+        if type(layer) is str:
+            if layer not in self._layer_names:
+                raise ValueError("Layer name %s not supported" % layer)
+            layer_index = self._layer_names.index(layer)
+
+        elif type(layer) is int:
+            layer_index = layer
+
+        else:
+            raise TypeError("Layer must be of type str or int")
+
+        return model_outputs[layer_index].detach().numpy()
 
     # def _forward_at(self, inputs, layer):
     #     """
@@ -276,3 +305,77 @@ class PyTorchClassifier(Classifier):
     #         print(results.shape)
     #
     #     return results
+
+    import torch.nn as nn
+
+    class ModelWrapper(nn.Module):
+        """
+        This is a wrapper for the input model.
+        """
+        def __init__(self, model):
+            """
+            Initialization by storing the input model.
+
+            :param model: PyTorch model. The forward function of the model must return the logit output.
+            :type model: is instance of `torch.nn.Module`
+            """
+            super(PyTorchClassifier.ModelWrapper, self).__init__()
+            self._model = model
+
+        def forward(self, x):
+            """
+            This is where we get outputs from the input model.
+
+            :param x: Input data.
+            :type x: `torch.Tensor`
+            :return: a list of output layers, where the last 2 layers are logit and final outputs.
+            :rtype: `list`
+            """
+            import torch.nn as nn
+
+            result = []
+            if type(self._model) is nn.Sequential:
+                for _, module_ in self._model._modules.items():
+                    x = module_(x)
+                    result.append(x)
+
+            elif isinstance(self._model, nn.Module):
+                x = self._model(x)
+                result.append(x)
+
+            else:
+                raise TypeError("The input model must inherit from `nn.Module`.")
+
+            output_layer = nn.functional.softmax(x, dim=1)
+            result.append(output_layer)
+
+            return result
+
+        @property
+        def get_layers(self):
+            """
+            Return the hidden layers in the model, if applicable.
+
+            :return: The hidden layers in the model, input and output layers excluded.
+            :rtype: `list`
+
+            .. warning:: `get_layers` tries to infer the internal structure of the model.
+                         This feature comes with no guarantees on the correctness of the result.
+                         The intended order of the layers tries to match their order in the model, but this is not
+                         guaranteed either. In addition, the function can only infer the internal layers if the input
+                         model is of type `nn.Sequential`, otherwise, it will only return the logit layer.
+            """
+            import torch.nn as nn
+
+            result = []
+            if type(self._model) is nn.Sequential:
+                for name, module_ in self._model._modules.items():
+                    result.append(name + "_" + str(module_))
+
+            elif isinstance(self._model, nn.Module):
+                result.append("logit_layer")
+
+            else:
+                raise TypeError("The input model must inherit from `nn.Module`.")
+
+            return result

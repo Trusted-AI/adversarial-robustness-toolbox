@@ -32,9 +32,8 @@ class Model(nn.Module):
         x = self.pool(f.relu(self.conv(x)))
         x = x.view(-1, 2304)
         logit_output = self.fc(x)
-        output = f.softmax(logit_output, dim=1)
 
-        return logit_output, output
+        return logit_output
 
 
 class TestFastGradientMethod(unittest.TestCase):

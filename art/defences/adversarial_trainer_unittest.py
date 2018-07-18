@@ -11,7 +11,7 @@ import tensorflow as tf
 
 from art.attacks import FastGradientMethod, DeepFool
 from art.classifiers import TFClassifier, KerasClassifier
-from art.defences.adversarial_trainer import AdversarialTrainer
+from art.defences import AdversarialTrainer, StaticAdversarialTrainer
 from art.utils import load_mnist, get_labels_np_array
 
 BATCH_SIZE = 10
@@ -19,11 +19,7 @@ NB_TRAIN = 100
 NB_TEST = 11
 
 
-class TestAdversarialTrainer(unittest.TestCase):
-    """
-    Test cases for the AdversarialTrainer class.
-    """
-
+class TestBase(unittest.TestCase):
     def setUp(self):
         k.set_learning_phase(1)
 
@@ -52,100 +48,6 @@ class TestAdversarialTrainer(unittest.TestCase):
         acc = np.sum(np.argmax(scores, axis=1) == np.argmax(y_test, axis=1)) / y_test.shape[0]
         print('\n[TF, MNIST] Accuracy on test set: %.2f%%' % (acc * 100))
 
-    def test_one_attack_mnist(self):
-        """
-        Test the adversarial trainer using one FGSM attacker. The source and target models of the attack
-        are two CNNs on MNIST (TensorFlow and Keras backends). The test cast check if accuracy on adversarial samples
-        increases after adversarially training the model.
-
-        :return: None
-        """
-        (x_train, y_train), (x_test, y_test) = self.mnist
-
-        # Get source and target classifiers
-        classifier_src = self.classifier_k
-        classifier_tgt = self.classifier_tf
-
-        # Create FGSM attacker
-        adv = FastGradientMethod(classifier_src)
-        x_adv = adv.generate(x_test)
-        preds = classifier_tgt.predict(x_adv)
-        acc = np.sum(np.argmax(preds, axis=1) == np.argmax(y_test, axis=1)) / x_adv.shape[0]
-
-        # Perform adversarial training
-        adv_trainer = AdversarialTrainer(classifier_tgt, adv)
-        adv_trainer.fit(x_train, y_train, nb_epochs=1)
-
-        # Evaluate that accuracy on adversarial sample has improved
-        preds_adv_trained = adv_trainer.classifier.predict(x_adv)
-        acc_adv_trained = np.sum(np.argmax(preds_adv_trained, axis=1) == np.argmax(y_test, axis=1)) / x_adv.shape[0]
-        print('\nAccuracy before adversarial training: %.2f%%' % (acc * 100))
-        print('\nAccuracy after adversarial training: %.2f%%' % (acc_adv_trained * 100))
-
-    def test_multi_attack_mnist(self):
-        """
-        Test the adversarial trainer using two attackers: FGSM and DeepFool. The source and target models of the attack
-        are two CNNs on MNIST trained for 5 epochs. FGSM and DeepFool both generate the attack images on the same
-        source classifier. The test cast check if accuracy on adversarial samples increases
-        after adversarially training the model.
-
-        :return: None
-        """
-        (x_train, y_train), (x_test, y_test) = self.mnist
-
-        # Get source and target classifiers
-        classifier_tgt = self.classifier_k
-        classifier_src = self.classifier_tf
-
-        # Create FGSM and DeepFool attackers
-        adv1 = FastGradientMethod(classifier_src)
-        adv2 = DeepFool(classifier_src)
-        x_adv = np.vstack((adv1.generate(x_test), adv2.generate(x_test)))
-        y_adv = np.vstack((y_test, y_test))
-        preds = classifier_tgt.predict(x_adv)
-        acc = np.sum(np.argmax(preds, axis=1) == np.argmax(y_adv, axis=1)) / y_adv.shape[0]
-
-        # Perform adversarial training
-        adv_trainer = AdversarialTrainer(classifier_tgt, [adv1, adv2])
-        params = {'nb_epochs': 2, 'batch_size': BATCH_SIZE}
-        adv_trainer.fit(x_train, y_train, **params)
-
-        # Evaluate that accuracy on adversarial sample has improved
-        preds_adv_trained = adv_trainer.classifier.predict(x_adv)
-        acc_adv_trained = np.sum(np.argmax(preds_adv_trained, axis=1) == np.argmax(y_adv, axis=1)) / y_adv.shape[0]
-        print('\nAccuracy before adversarial training: %.2f%%' % (acc * 100))
-        print('\nAccuracy after adversarial training: %.2f%%' % (acc_adv_trained * 100))
-
-    def test_shared_model_mnist(self):
-        """
-        Test the adversarial trainer using one FGSM attacker. The source and target models of the attack are the same
-        CNN on MNIST trained for 5 epochs. The test cast check if accuracy on adversarial samples increases
-        after adversarially training the model.
-
-        :return: None
-        """
-        (x_train, y_train), (x_test, y_test) = self.mnist
-
-        # Create and fit classifier
-        params = {'nb_epochs': 2, 'batch_size': BATCH_SIZE}
-        classifier = self.classifier_k
-
-        # Create FGSM attacker
-        adv = FastGradientMethod(classifier)
-        x_adv = adv.generate(x_test)
-        preds = classifier.predict(x_adv)
-        acc = np.sum(np.argmax(preds, axis=1) == np.argmax(y_test, axis=1)) / y_test.shape[0]
-
-        # Perform adversarial training
-        adv_trainer = AdversarialTrainer(classifier, adv)
-        adv_trainer.fit(x_train, y_train, **params)
-
-        # Evaluate that accuracy on adversarial sample has improved
-        preds_adv_trained = adv_trainer.classifier.predict(x_adv)
-        acc_adv_trained = np.sum(np.argmax(preds_adv_trained, axis=1) == np.argmax(y_test, axis=1)) / y_test.shape[0]
-        print('\nAccuracy before adversarial training: %.2f%%' % (acc * 100))
-        print('\nAccuracy after adversarial training: %.2f%%' % (acc_adv_trained * 100))
-
     @staticmethod
     def _cnn_mnist_tf(input_shape):
         labels_tf = tf.placeholder(tf.float32, [None, 10])
@@ -167,7 +69,8 @@ class TestAdversarialTrainer(unittest.TestCase):
         sess = tf.Session()
         sess.run(tf.global_variables_initializer())
 
-        classifier = TFClassifier((0, 1), inputs_tf, logits, loss=loss, train=train_tf, output_ph=labels_tf, sess=sess)
+        classifier = TFClassifier((0, 1), inputs_tf, logits, loss=loss, train=train_tf, output_ph=labels_tf,
+                                  sess=sess)
         return classifier
 
     @staticmethod
@@ -184,3 +87,170 @@ class TestAdversarialTrainer(unittest.TestCase):
 
         classifier = KerasClassifier((0, 1), model, use_logits=False)
         return classifier
+
+
+class TestAdversarialTrainer(TestBase):
+    """
+    Test cases for the AdversarialTrainer class.
+    """
+    def test_classifier_match(self):
+        attack = FastGradientMethod(self.classifier_k)
+        adv_trainer = AdversarialTrainer(self.classifier_k, attack)
+
+        self.assertEqual(len(adv_trainer.attacks), 1)
+        self.assertEqual(adv_trainer.attacks[0].classifier, adv_trainer.classifier)
+
+    def test_fit_predict(self):
+        (x_train, y_train), (x_test, y_test) = self.mnist
+
+        attack = FastGradientMethod(self.classifier_k)
+        x_test_adv = attack.generate(x_test)
+        preds = np.argmax(self.classifier_k.predict(x_test_adv), axis=1)
+        acc = np.sum(preds == np.argmax(y_test, axis=1)) / NB_TEST
+
+        adv_trainer = AdversarialTrainer(self.classifier_k, attack)
+        adv_trainer.fit(x_train, y_train, nb_epochs=2, batch_size=128)
+
+        preds_new = np.argmax(adv_trainer.predict(x_test_adv), axis=1)
+        acc_new = np.sum(preds_new == np.argmax(y_test, axis=1)) / NB_TEST
+        self.assertTrue(acc_new >= acc)
+
+        print('\nAccuracy before adversarial training: %.2f%%' % (acc * 100))
+        print('\nAccuracy after adversarial training: %.2f%%' % (acc_new * 100))
+
+    def test_transfer(self):
+        (x_train, y_train), (x_test, y_test) = self.mnist
+
+        attack = DeepFool(self.classifier_tf)
+        x_test_adv = attack.generate(x_test)
+        preds = np.argmax(self.classifier_k.predict(x_test_adv), axis=1)
+        acc = np.sum(preds == np.argmax(y_test, axis=1)) / NB_TEST
+
+        adv_trainer = AdversarialTrainer(self.classifier_k, attack)
+        adv_trainer.fit(x_train, y_train, nb_epochs=2, batch_size=6)
+
+        preds_new = np.argmax(adv_trainer.predict(x_test_adv), axis=1)
+        acc_new = np.sum(preds_new == np.argmax(y_test, axis=1)) / NB_TEST
+        self.assertTrue(acc_new >= acc)
+
+        print('\nAccuracy before adversarial training: %.2f%%' % (acc * 100))
+        print('\nAccuracy after adversarial training: %.2f%%' % (acc_new * 100))
+
+    def test_two_attacks(self):
+        (x_train, y_train), (x_test, y_test) = self.mnist
+
+        attack1 = FastGradientMethod(self.classifier_k)
+        attack2 = DeepFool(self.classifier_tf)
+        x_test_adv = attack1.generate(x_test)
+        preds = np.argmax(self.classifier_k.predict(x_test_adv), axis=1)
+        acc = np.sum(preds == np.argmax(y_test, axis=1)) / NB_TEST
+
+        adv_trainer = AdversarialTrainer(self.classifier_k, attacks=[attack1, attack2])
+        adv_trainer.fit(x_train, y_train, nb_epochs=2, batch_size=128)
+
+        preds_new = np.argmax(adv_trainer.predict(x_test_adv), axis=1)
+        acc_new = np.sum(preds_new == np.argmax(y_test, axis=1)) / NB_TEST
+        self.assertTrue(acc_new >= acc)
+
+        print('\nAccuracy before adversarial training: %.2f%%' % (acc * 100))
+        print('\nAccuracy after adversarial training: %.2f%%' % (acc_new * 100))
+
+
+class TestStaticAdversarialTrainer(TestBase):
+    """
+    Test cases for the StaticAdversarialTrainer class.
+    """
+
+    def test_one_attack_mnist(self):
+        """
+        Test the adversarial trainer using one FGSM attacker. The source and target models of the attack
+        are two CNNs on MNIST (TensorFlow and Keras backends). The test cast check if accuracy on adversarial samples
+        increases after adversarially training the model.
+
+        :return: None
+        """
+        (x_train, y_train), (x_test, y_test) = self.mnist
+
+        # Get source and target classifiers
+        classifier_src = self.classifier_k
+        classifier_tgt = self.classifier_tf
+
+        # Create FGSM attacker
+        adv = FastGradientMethod(classifier_src)
+        x_adv = adv.generate(x_test)
+        preds = classifier_tgt.predict(x_adv)
+        acc = np.sum(np.argmax(preds, axis=1) == np.argmax(y_test, axis=1)) / x_adv.shape[0]
+
+        # Perform adversarial training
+        adv_trainer = StaticAdversarialTrainer(classifier_tgt, adv)
+        adv_trainer.fit(x_train, y_train, nb_epochs=1)
+
+        # Evaluate that accuracy on adversarial sample has improved
+        preds_adv_trained = adv_trainer.classifier.predict(x_adv)
+        acc_adv_trained = np.sum(np.argmax(preds_adv_trained, axis=1) == np.argmax(y_test, axis=1)) / x_adv.shape[0]
+        print('\nAccuracy before adversarial training: %.2f%%' % (acc * 100))
+        print('\nAccuracy after adversarial training: %.2f%%' % (acc_adv_trained * 100))
+
+    def test_multi_attack_mnist(self):
+        """
+        Test the adversarial trainer using two attackers: FGSM and DeepFool. The source and target models of the attack
+        are two CNNs on MNIST trained for 2 epochs. FGSM and DeepFool both generate the attack images on the same
+        source classifier. The test cast check if accuracy on adversarial samples increases
+        after adversarially training the model.
+
+        :return: None
+        """
+        (x_train, y_train), (x_test, y_test) = self.mnist
+
+        # Get source and target classifiers
+        classifier_tgt = self.classifier_k
+        classifier_src = self.classifier_tf
+
+        # Create FGSM and DeepFool attackers
+        adv1 = FastGradientMethod(classifier_src)
+        adv2 = DeepFool(classifier_src)
+        x_adv = np.vstack((adv1.generate(x_test), adv2.generate(x_test)))
+        y_adv = np.vstack((y_test, y_test))
+        preds = classifier_tgt.predict(x_adv)
+        acc = np.sum(np.argmax(preds, axis=1) == np.argmax(y_adv, axis=1)) / y_adv.shape[0]
+
+        # Perform adversarial training
+        adv_trainer = StaticAdversarialTrainer(classifier_tgt, [adv1, adv2])
+        params = {'nb_epochs': 2, 'batch_size': BATCH_SIZE}
+        adv_trainer.fit(x_train, y_train, **params)
+
+        # Evaluate that accuracy on adversarial sample has improved
+        preds_adv_trained = adv_trainer.classifier.predict(x_adv)
+        acc_adv_trained = np.sum(np.argmax(preds_adv_trained, axis=1) == np.argmax(y_adv, axis=1)) / y_adv.shape[0]
+        print('\nAccuracy before adversarial training: %.2f%%' % (acc * 100))
+        print('\nAccuracy after adversarial training: %.2f%%' % (acc_adv_trained * 100))
+
+    def test_shared_model_mnist(self):
+        """
+        Test the adversarial trainer using one FGSM attacker. The source and target models of the attack are the same
+        CNN on MNIST trained for 2 epochs. The test cast check if accuracy on adversarial samples increases
+        after adversarially training the model.
+
+        :return: None
+        """
+        (x_train, y_train), (x_test, y_test) = self.mnist
+
+        # Create and fit classifier
+        params = {'nb_epochs': 2, 'batch_size': BATCH_SIZE}
+        classifier = self.classifier_k
+
+        # Create FGSM attacker
+        adv = FastGradientMethod(classifier)
+        x_adv = adv.generate(x_test)
+        preds = classifier.predict(x_adv)
+        acc = np.sum(np.argmax(preds, axis=1) == np.argmax(y_test, axis=1)) / y_test.shape[0]
+
+        # Perform adversarial training
+        adv_trainer = StaticAdversarialTrainer(classifier, adv)
+        adv_trainer.fit(x_train, y_train, **params)
+
+        # Evaluate that accuracy on adversarial sample has improved
+        preds_adv_trained = adv_trainer.classifier.predict(x_adv)
+        acc_adv_trained = np.sum(np.argmax(preds_adv_trained, axis=1) == np.argmax(y_test, axis=1)) / y_test.shape[0]
+        print('\nAccuracy before adversarial training: %.2f%%' % (acc * 100))
+        print('\nAccuracy after adversarial training: %.2f%%' % (acc_adv_trained * 100))

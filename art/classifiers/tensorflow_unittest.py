@@ -98,21 +98,21 @@ class TestTFClassifier(unittest.TestCase):
 
     def test_layers(self):
         # Get MNIST
-        (x_train, y_train), (x_test, y_test), _, _ = load_mnist()
-        x_train, y_train = x_train[:NB_TRAIN], y_train[:NB_TRAIN]
+        (_, _), (x_test, y_test), _, _ = load_mnist()
         x_test, y_test = x_test[:NB_TEST], y_test[:NB_TEST]
 
         # Test and get layers
         tfc = TFClassifier((0, 1), self._input_ph, self._logits, self._output_ph,
                            self._train, self._loss, None, self._sess)
-        layer_names = tfc.get_layers
+        layer_names = tfc.layer_names
+        print(layer_names)
         self.assertTrue(layer_names == ['conv2d/Relu:0', 'max_pooling2d/MaxPool:0',
                                         'Flatten/flatten/Reshape:0', 'dense/BiasAdd:0'])
 
         for i, name in enumerate(layer_names):
             act_i = tfc.get_activations(x_test, i)
             act_name = tfc.get_activations(x_test, name)
-            self.assertTrue(np.sum(act_name-act_i) == 0)
+            self.assertAlmostEqual(np.sum(act_name - act_i), 0)
 
         self.assertTrue(tfc.get_activations(x_test, 0).shape == (20, 24, 24, 16))
         self.assertTrue(tfc.get_activations(x_test, 1).shape == (20, 12, 12, 16))

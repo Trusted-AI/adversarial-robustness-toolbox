@@ -29,9 +29,8 @@ class Model(nn.Module):
         x = self.pool(F.relu(self.conv(x)))
         x = x.view(-1, 2304)
         logit_output = self.fc(x)
-        output = F.softmax(logit_output, dim=1)
 
-        return logit_output, output
+        return logit_output
 
 
 class TestCarliniL2(unittest.TestCase):

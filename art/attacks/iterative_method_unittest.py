@@ -12,13 +12,13 @@ import torch.nn as nn
 import torch.nn.functional as f
 import torch.optim as optim
 
-from art.attacks.virtual_adversarial import VirtualAdversarialMethod
+from art.attacks.iterative_method import BasicIterativeMethod
 from art.classifiers import KerasClassifier, PyTorchClassifier, TFClassifier
 from art.utils import load_mnist, get_labels_np_array
 
 BATCH_SIZE = 10
 NB_TRAIN = 100
-NB_TEST = 10
+NB_TEST = 11
 
 
 class Model(nn.Module):
@@ -36,7 +36,7 @@ class Model(nn.Module):
         return logit_output
 
 
-class TestVirtualAdversarial(unittest.TestCase):
+class TestIterativeAttack(unittest.TestCase):
 
     def setUp(self):
         k.set_learning_phase(1)
@@ -101,18 +101,27 @@ class TestVirtualAdversarial(unittest.TestCase):
 
     def _test_backend_mnist(self, classifier):
         # Get MNIST
-        (_, _), (x_test, y_test) = self.mnist
-        x_test, y_test = x_test[:NB_TEST], y_test[:NB_TEST]
+        (x_train, y_train), (x_test, y_test) = self.mnist
 
-        df = VirtualAdversarialMethod(classifier)
-        x_test_adv = df.generate(x_test, eps=1)
+        # Test BIM with np.inf norm
+        attack = BasicIterativeMethod(classifier, eps=1, eps_step=0.1)
+        x_train_adv = attack.generate(x_train)
+        x_test_adv = attack.generate(x_test)
+
+        self.assertFalse((x_train == x_train_adv).all())
         self.assertFalse((x_test == x_test_adv).all())
 
-        y_pred = get_labels_np_array(classifier.predict(x_test_adv))
-        self.assertFalse((y_test == y_pred).all())
+        train_y_pred = get_labels_np_array(classifier.predict(x_train_adv))
+        test_y_pred = get_labels_np_array(classifier.predict(x_test_adv))
 
-        acc = np.sum(np.argmax(y_pred, axis=1) == np.argmax(y_test, axis=1)) / y_test.shape[0]
-        print('\nAccuracy on adversarial examples: %.2f%%' % (acc * 100))
+        self.assertFalse((y_train == train_y_pred).all())
+        self.assertFalse((y_test == test_y_pred).all())
+
+        acc = np.sum(np.argmax(train_y_pred, axis=1) == np.argmax(y_train, axis=1)) / y_train.shape[0]
+        print('\nAccuracy on adversarial train examples: %.2f%%' % (acc * 100))
+
+        acc = np.sum(np.argmax(test_y_pred, axis=1) == np.argmax(y_test, axis=1)) / y_test.shape[0]
+        print('\nAccuracy on adversarial test examples: %.2f%%' % (acc * 100))
 
     @staticmethod
     def _cnn_mnist_tf(input_shape):
@@ -135,7 +144,8 @@ class TestVirtualAdversarial(unittest.TestCase):
         sess = tf.Session()
         sess.run(tf.global_variables_initializer())
 
-        classifier = TFClassifier((0, 1), inputs_tf, logits, loss=loss, train=train_tf, output_ph=labels_tf, sess=sess)
+        classifier = TFClassifier((0, 1), inputs_tf, logits, loss=loss, train=train_tf, output_ph=labels_tf,
+                                  sess=sess)
         return classifier
 
     @staticmethod
