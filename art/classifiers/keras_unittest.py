@@ -71,7 +71,7 @@ class TestKerasClassifier(unittest.TestCase):
         acc = np.sum(np.argmax(classifier.predict(self.mnist[1][0]), axis=1) == labels) / NB_TEST
         print("\nAccuracy: %.2f%%" % (acc * 100))
 
-        classifier.fit(self.mnist[0][0], self.mnist[0][1], batch_size=BATCH_SIZE, nb_epochs=1)
+        classifier.fit(self.mnist[0][0], self.mnist[0][1], batch_size=BATCH_SIZE, nb_epochs=5)
         acc2 = np.sum(np.argmax(classifier.predict(self.mnist[1][0]), axis=1) == labels) / NB_TEST
         print("\nAccuracy: %.2f%%" % (acc2 * 100))
 
