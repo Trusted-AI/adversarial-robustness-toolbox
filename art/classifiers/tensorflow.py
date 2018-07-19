@@ -2,9 +2,9 @@ from __future__ import absolute_import, division, print_function, unicode_litera
 
 import numpy as np
 import random
+import six
 
 from art.classifiers import Classifier
-
 
 class TFClassifier(Classifier):
     """
@@ -289,7 +289,7 @@ class TFClassifier(Classifier):
         with self._sess.graph.as_default():
             graph = tf.get_default_graph()
 
-        if isinstance(layer, basestring):
+        if isinstance(layer, six.string_types): # basestring for Python 2 (str, unicode) support
             if layer not in self._layer_names:
                 raise ValueError("Layer name %s is not part of the graph." % layer)
             layer_tensor = graph.get_tensor_by_name(layer)
