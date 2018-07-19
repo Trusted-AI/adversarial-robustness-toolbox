@@ -4,6 +4,6 @@ keras
 pandas
 matplotlib
 scipy
-tensorflow
 mxnet
 requests
+six
