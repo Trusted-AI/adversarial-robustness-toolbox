@@ -1,5 +1,7 @@
 from __future__ import absolute_import, division, print_function, unicode_literals
 
+import logging
+
 import tensorflow as tf
 import numpy as np
 import unittest
@@ -17,6 +19,9 @@ from art.classifiers.keras import KerasClassifier
 from art.classifiers.pytorch import PyTorchClassifier
 from art.utils import load_mnist, random_targets
 
+logging.basicConfig(format='%(levelname)s %(asctime)s %(funcName)s:%(lineno)d %(message)s')
+logger = logging.getLogger(__file__)
+logger.setLevel(logging.DEBUG)
 
 class Model(nn.Module):
     def __init__(self):
@@ -123,7 +128,7 @@ class TestCarliniL2(unittest.TestCase):
         tfc.fit(x_train, y_train, batch_size=batch_size, nb_epochs=2)
 
         # First attack
-        cl2m = CarliniL2Method(classifier=tfc, targeted=True, max_iter=10, binary_search_steps=10,
+        cl2m = CarliniL2Method(classifier=tfc, targeted=True, max_iter=20, binary_search_steps=10,
                                learning_rate=2e-2, initial_const=3, decay=1e-2)
         params = {'y': random_targets(y_test, tfc.nb_classes)}
         x_test_adv = cl2m.generate(x_test, **params)
@@ -133,6 +138,8 @@ class TestCarliniL2(unittest.TestCase):
         self.assertTrue((x_test_adv >= -0.0001).all())
         target = np.argmax(params['y'], axis=1)
         y_pred_adv = np.argmax(tfc.predict(x_test_adv), axis=1)
+        logger.info("CW2 Target: %s", target)
+        logger.info("CW2 Actual: %s", y_pred_adv)
         self.assertTrue((target == y_pred_adv).all())
 
         # Second attack
