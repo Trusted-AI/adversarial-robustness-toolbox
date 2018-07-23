@@ -11,3 +11,9 @@ black-box attack: the attack never has access to the parameters of the TensorFlo
 [cifar_adversarial_training.py](cifar_adversarial_training.py)
 Trains a convolutional neural network on the CIFAR-10 dataset, then generates adversarial images using the
 DeepFool attack and retrains the network on the training set augmented with the adversarial images.
+
+## Using Jupyter Notebooks to run ART
+
+We have also created a sample Jupyter notebook in [Fabric for Deep Learning](https://github.com/IBM/FfDL) repository which shows you how to launch training using FfDL, and then invoke ART to find model vulnerabilities. Fabric for Deep Learning (FfDL, pronounced fiddle) is a Deep Learning Platform offering TensorFlow, Caffe, PyTorch etc. as a Service on Kubernetes
+
+Find more details in the [code pattern here](https://developer.ibm.com/code/patterns/integrate-adversarial-attacks-model-training-pipeline/)
