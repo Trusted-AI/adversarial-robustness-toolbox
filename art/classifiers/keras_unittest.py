@@ -55,6 +55,9 @@ class TestKerasClassifier(unittest.TestCase):
         model.fit(x_train, y_train, batch_size=BATCH_SIZE, epochs=1)
         self.model_mnist = model
 
+    @classmethod
+    def tearDownClass(cls):
+        k.clear_session()
     def tearDown(self):
         import shutil
         shutil.rmtree(self.test_dir)

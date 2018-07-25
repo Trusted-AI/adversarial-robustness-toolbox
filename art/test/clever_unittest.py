@@ -27,9 +27,6 @@ def get_trained_mnist(nb_epochs=2):
     """
     Get a simple trained MNIST model to run tests on
     """
-    # Initialize a tf session
-    session = tf.Session()
-    k.set_session(session)
 
     # Get MNIST
     batch_size, nb_train, nb_test = 100, 500, 5
@@ -53,6 +50,13 @@ def get_trained_mnist(nb_epochs=2):
     return krc
 
 class TestCleverL2(unittest.TestCase):
+    def setUp(self):
+        pass
+    @classmethod
+    def tearDownClass(cls):
+        k.clear_session()
+    def tearDown(self):
+        session.close()
     # def __init__(self, *args, **kwargs):
     #     (x_train, y_train), (self.x_test, self.y_test), _, _ = load_mnist()
     #     self.model = get_trained_mnist()
