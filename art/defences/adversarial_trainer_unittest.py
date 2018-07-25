@@ -28,12 +28,7 @@ class TestBase(unittest.TestCase):
         TestBase.sess.close()
     @classmethod
     def setUpClass(cls):
-        import os
         k.clear_session()
-        # print("%s.setUp %d" % (__file__, os.getpid()))
-        # if TestBase.mnist is not None:
-        #     return
-        # print("Traingin...")
         k.set_learning_phase(1)
 
         # Get MNIST
@@ -63,7 +58,6 @@ class TestBase(unittest.TestCase):
 
     @staticmethod
     def _cnn_mnist_tf(input_shape):
-        print("_cnn_mnist_tf %s" % str(input_shape))
         labels_tf = tf.placeholder(tf.float32, [None, 10])
         inputs_tf = tf.placeholder(tf.float32, [None] + list(input_shape))
 
@@ -89,7 +83,6 @@ class TestBase(unittest.TestCase):
 
     @staticmethod
     def _cnn_mnist_k(input_shape):
-        print("_cnn_mnist_k %s" % str(input_shape))
         # Create simple CNN
         model = Sequential()
         model.add(Conv2D(4, kernel_size=(5, 5), activation='relu', input_shape=input_shape))
@@ -109,8 +102,6 @@ class TestAdversarialTrainer(TestBase):
     Test cases for the AdversarialTrainer class.
     """
     def test_classifier_match(self):
-    # def foobar(self):
-        print("test_classifier_match")
         attack = FastGradientMethod(self.classifier_k)
         adv_trainer = AdversarialTrainer(self.classifier_k, attack)
 
@@ -118,8 +109,6 @@ class TestAdversarialTrainer(TestBase):
         self.assertEqual(adv_trainer.attacks[0].classifier, adv_trainer.classifier)
 
     def test_fit_predict(self):
-    # def baz(self):
-        print("test_fit_predict")
         (x_train, y_train), (x_test, y_test) = self.mnist
 
         attack = FastGradientMethod(self.classifier_k)
@@ -138,8 +127,6 @@ class TestAdversarialTrainer(TestBase):
         print('\nAccuracy after adversarial training: %.2f%%' % (acc_new * 100))
 
     def test_transfer(self):
-    # def bar(self):
-        print("test_transfer")
         (x_train, y_train), (x_test, y_test) = self.mnist
 
         attack = DeepFool(self.classifier_tf)
@@ -158,8 +145,6 @@ class TestAdversarialTrainer(TestBase):
         print('\nAccuracy after adversarial training: %.2f%%' % (acc_new * 100))
 
     def test_two_attacks(self):
-    # def foo(self):
-        print("test_two_attacks")
         (x_train, y_train), (x_test, y_test) = self.mnist
 
         attack1 = FastGradientMethod(self.classifier_k)
