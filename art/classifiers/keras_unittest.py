@@ -16,7 +16,9 @@ NB_TEST = 100
 
 
 class TestKerasClassifier(unittest.TestCase):
-
+    @classmethod
+    def setUpClass(cls):
+        k.clear_session()
     def setUp(self):
         import requests
         import tempfile
