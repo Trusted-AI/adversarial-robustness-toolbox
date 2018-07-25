@@ -81,7 +81,7 @@ class TestCarliniL2(unittest.TestCase):
         tfc.fit(x_train, y_train, batch_size=batch_size, nb_epochs=2)
 
         # Failure attack
-        cl2m = CarliniL2Method(classifier=tfc, targeted=True, max_iter=0, binary_search_steps=0,
+        cl2m = CarliniL2Method(classifier=tfc, targeted=True, max_iter=100, binary_search_steps=0,
                                learning_rate=2e-2, initial_const=3, decay=1e-2)
         params = {'y': random_targets(y_test, tfc.nb_classes)}
         x_test_adv = cl2m.generate(x_test, **params)
@@ -128,7 +128,7 @@ class TestCarliniL2(unittest.TestCase):
         tfc.fit(x_train, y_train, batch_size=batch_size, nb_epochs=2)
 
         # First attack
-        cl2m = CarliniL2Method(classifier=tfc, targeted=True, max_iter=20, binary_search_steps=10,
+        cl2m = CarliniL2Method(classifier=tfc, targeted=True, max_iter=100, binary_search_steps=10,
                                learning_rate=2e-2, initial_const=3, decay=1e-2)
         params = {'y': random_targets(y_test, tfc.nb_classes)}
         x_test_adv = cl2m.generate(x_test, **params)
@@ -143,7 +143,7 @@ class TestCarliniL2(unittest.TestCase):
         self.assertTrue((target == y_pred_adv).all())
 
         # Second attack
-        cl2m = CarliniL2Method(classifier=tfc, targeted=False, max_iter=10, binary_search_steps=10,
+        cl2m = CarliniL2Method(classifier=tfc, targeted=False, max_iter=100, binary_search_steps=10,
                                learning_rate=2e-2, initial_const=3, decay=1e-2)
         params = {'y': random_targets(y_test, tfc.nb_classes)}
         x_test_adv = cl2m.generate(x_test, **params)
@@ -155,7 +155,7 @@ class TestCarliniL2(unittest.TestCase):
         self.assertTrue((target != y_pred_adv).all())
 
         # Third attack
-        cl2m = CarliniL2Method(classifier=tfc, targeted=False, max_iter=10, binary_search_steps=10,
+        cl2m = CarliniL2Method(classifier=tfc, targeted=False, max_iter=100, binary_search_steps=10,
                                learning_rate=2e-2, initial_const=3, decay=1e-2)
         params = {}
         x_test_adv = cl2m.generate(x_test, **params)
@@ -196,7 +196,7 @@ class TestCarliniL2(unittest.TestCase):
         krc.fit(x_train, y_train, batch_size=batch_size, nb_epochs=2)
 
         # First attack
-        cl2m = CarliniL2Method(classifier=krc, targeted=True, max_iter=10, binary_search_steps=10,
+        cl2m = CarliniL2Method(classifier=krc, targeted=True, max_iter=100, binary_search_steps=10,
                                learning_rate=2e-2, initial_const=3, decay=1e-2)
         params = {'y': random_targets(y_test, krc.nb_classes)}
         x_test_adv = cl2m.generate(x_test, **params)
@@ -208,7 +208,7 @@ class TestCarliniL2(unittest.TestCase):
         self.assertTrue((target == y_pred_adv).any())
 
         # Second attack
-        cl2m = CarliniL2Method(classifier=krc, targeted=False, max_iter=10, binary_search_steps=10,
+        cl2m = CarliniL2Method(classifier=krc, targeted=False, max_iter=100, binary_search_steps=10,
                                learning_rate=2e-2, initial_const=3, decay=1e-2)
         params = {'y': random_targets(y_test, krc.nb_classes)}
         x_test_adv = cl2m.generate(x_test, **params)
@@ -220,7 +220,7 @@ class TestCarliniL2(unittest.TestCase):
         self.assertTrue((target != y_pred_adv).all())
 
         # Third attack
-        cl2m = CarliniL2Method(classifier=krc, targeted=False, max_iter=10, binary_search_steps=10,
+        cl2m = CarliniL2Method(classifier=krc, targeted=False, max_iter=100, binary_search_steps=10,
                                learning_rate=2e-2, initial_const=3, decay=1e-2)
         params = {}
         x_test_adv = cl2m.generate(x_test, **params)
