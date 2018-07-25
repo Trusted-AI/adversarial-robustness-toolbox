@@ -210,18 +210,18 @@ class TestClever(unittest.TestCase):
         tfc.fit(x_train, y_train, batch_size=batch_size, nb_epochs=1)
 
         # Test targeted clever
-        res0 = clever_t(tfc, x_test[-1], 2, 10, 5, 5, norm=1, pool_factor=3)
+        res0 = clever_t(tfc, x_test[-1], 2, 10, 5, 10, norm=1, pool_factor=3)
         res1 = clever_t(tfc, x_test[-1], 2, 10, 5, 5, norm=2, pool_factor=3)
-        res2 = clever_t(tfc, x_test[-1], 2, 10, 5, 5, norm=np.inf, pool_factor=3)
+        res2 = clever_t(tfc, x_test[-1], 2, 10, 5, 0.3, norm=np.inf, pool_factor=3)
         print("Target tf: ", res0, res1, res2)
         self.assertFalse(res0 == res1)
         self.assertFalse(res1 == res2)
         self.assertFalse(res2 == res0)
 
         # Test untargeted clever
-        res0 = clever_u(tfc, x_test[-1], 10, 5, 5, norm=1, pool_factor=3)
+        res0 = clever_u(tfc, x_test[-1], 10, 5, 10, norm=1, pool_factor=3)
         res1 = clever_u(tfc, x_test[-1], 10, 5, 5, norm=2, pool_factor=3)
-        res2 = clever_u(tfc, x_test[-1], 10, 5, 5, norm=np.inf, pool_factor=3)
+        res2 = clever_u(tfc, x_test[-1], 10, 5, 0.3, norm=np.inf, pool_factor=3)
         print("Untarget tf: ", res0, res1, res2)
         self.assertFalse(res0 == res1)
         self.assertFalse(res1 == res2)
