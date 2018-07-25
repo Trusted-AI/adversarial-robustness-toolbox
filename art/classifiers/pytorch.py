@@ -272,7 +272,7 @@ class PyTorchClassifier(Classifier):
         # Run prediction
         model_outputs = self._model(torch.from_numpy(x).float())[:-1]
 
-       if isinstance(layer, six.string_types):
+        if isinstance(layer, six.string_types):
             if layer not in self._layer_names:
                 raise ValueError("Layer name %s not supported" % layer)
             layer_index = self._layer_names.index(layer)
