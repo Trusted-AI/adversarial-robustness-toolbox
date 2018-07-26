@@ -1,5 +1,6 @@
 from __future__ import absolute_import, division, print_function, unicode_literals
 
+import six
 import numpy as np
 
 from art.classifiers import Classifier
@@ -203,7 +204,7 @@ class KerasClassifier(Classifier):
         import keras.backend as k
         k.set_learning_phase(0)
 
-        if type(layer) is str:
+        if isinstance(layer, six.string_types):
             if layer not in self._layer_names:
                 raise ValueError('Layer name %s is not part of the graph.' % layer)
             layer_name = layer
