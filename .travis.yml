@@ -42,8 +42,8 @@ install:
   - source activate test-environment
   # Install TensorFlow
   # - if [[ "$TENSORFLOW_V" != "" ]]; then pip install tensorflow==${TENSORFLOW_V}; fi
-  - pip install -r requirements.txt
-  - pip install -r test_requirements.txt
+  - pip install -q -r requirements.txt
+  - pip install -q -r test_requirements.txt
   - pip install -e .[tests] | cat
   - conda install libgcc
   - export LD_LIBRARY_PATH=$LD_LIBRARY_PATH:/home/travis/miniconda/envs/test-environment/lib
