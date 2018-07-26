@@ -19,6 +19,7 @@ class TestKerasClassifier(unittest.TestCase):
     @classmethod
     def setUpClass(cls):
         k.clear_session()
+
     def setUp(self):
         import requests
         import tempfile
@@ -60,6 +61,7 @@ class TestKerasClassifier(unittest.TestCase):
     @classmethod
     def tearDownClass(cls):
         k.clear_session()
+
     def tearDown(self):
         import shutil
         shutil.rmtree(self.test_dir)

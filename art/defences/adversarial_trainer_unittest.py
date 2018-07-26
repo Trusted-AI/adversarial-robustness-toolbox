@@ -23,9 +23,11 @@ class TestBase(unittest.TestCase):
     mnist = None
     classifier_k = None
     classifier_tf = None
+
     @classmethod
     def tearDownClass(cls):
         TestBase.sess.close()
+
     @classmethod
     def setUpClass(cls):
         k.clear_session()

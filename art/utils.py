@@ -16,6 +16,7 @@ logging.basicConfig(format='%(levelname)s %(asctime)s %(funcName)s:%(lineno)d %(
 logger = logging.getLogger(__file__)
 logger.setLevel(logging.DEBUG)
 
+
 def projection(v, eps, p):
     """
     Project the values in `v` on the L_p norm ball of size `eps`.
@@ -80,6 +81,7 @@ def random_sphere(m, n, r, norm):
         raise NotImplementedError("Norm {} not supported".format(norm))
     
     return res
+
 
 def to_categorical(labels, nb_classes=None):
     """

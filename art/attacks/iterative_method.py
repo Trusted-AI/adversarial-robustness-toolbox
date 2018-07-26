@@ -9,6 +9,7 @@ logging.basicConfig(format='%(levelname)s %(asctime)s %(funcName)s:%(lineno)d %(
 logger = logging.getLogger(__file__)
 logger.setLevel(logging.DEBUG)
 
+
 class BasicIterativeMethod(FastGradientMethod):
     """
     The Basic Iterative Method is the iterative version of FGM and FGSM. If target labels are not specified, the

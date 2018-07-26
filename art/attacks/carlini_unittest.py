@@ -23,6 +23,7 @@ logging.basicConfig(format='%(levelname)s %(asctime)s %(funcName)s:%(lineno)d %(
 logger = logging.getLogger(__file__)
 logger.setLevel(logging.DEBUG)
 
+
 class Model(nn.Module):
     def __init__(self):
         super(Model, self).__init__()

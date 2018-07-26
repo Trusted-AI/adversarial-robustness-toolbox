@@ -6,6 +6,7 @@ import six
 
 from art.classifiers import Classifier
 
+
 class TFClassifier(Classifier):
     """
     This class implements a classifier with the Tensorflow framework.

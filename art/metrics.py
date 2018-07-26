@@ -180,6 +180,7 @@ def clever(classifier, x, n_b, n_s, r, norm, target=None, target_sort=False, c_i
         score_list.append(s)
     return np.array(score_list)
 
+
 def clever_u(classifier, x, n_b, n_s, r, norm, c_init=1, pool_factor=10):
     """
     Compute CLEVER score for an untargeted attack. Paper link: https://arxiv.org/abs/1801.10578

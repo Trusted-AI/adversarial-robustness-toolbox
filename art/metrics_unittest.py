@@ -27,6 +27,7 @@ r_l1 = 40
 r_l2 = 2
 r_li = 0.1
 
+
 class TestMetrics(unittest.TestCase):
     def test_emp_robustness_mnist(self):
         # Get MNIST
