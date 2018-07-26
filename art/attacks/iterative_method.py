@@ -1,13 +1,8 @@
 from __future__ import absolute_import, division, print_function, unicode_literals
-import logging
 import numpy as np
 
 from art.attacks import FastGradientMethod
 from art.utils import to_categorical, get_labels_np_array
-
-logging.basicConfig(format='%(levelname)s %(asctime)s %(funcName)s:%(lineno)d %(message)s')
-logger = logging.getLogger(__file__)
-logger.setLevel(logging.DEBUG)
 
 
 class BasicIterativeMethod(FastGradientMethod):
@@ -74,7 +69,6 @@ class BasicIterativeMethod(FastGradientMethod):
             y = self.classifier.predict(x)
         else:
             y = kwargs[str('y')]
-        logger.debug("y shape %s", y.shape)
         y = np.argmax(y, axis=1)
 
         targets = to_categorical(y, nb_classes=self.classifier.nb_classes)

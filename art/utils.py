@@ -6,15 +6,9 @@ from __future__ import absolute_import, division, print_function, unicode_litera
 import argparse
 import json
 import os
-import logging
 
 import numpy as np
-
 from scipy.special import gammainc
-
-logging.basicConfig(format='%(levelname)s %(asctime)s %(funcName)s:%(lineno)d %(message)s')
-logger = logging.getLogger(__file__)
-logger.setLevel(logging.DEBUG)
 
 
 def projection(v, eps, p):
@@ -94,7 +88,6 @@ def to_categorical(labels, nb_classes=None):
     :return: A binary matrix representation of `y` in the shape `(nb_samples, nb_classes)`
     :rtype: `np.ndarray`
     """
-    logger.debug("Changing sizes %s->%s", labels.shape, nb_classes)
     labels = np.array(labels, dtype=np.int32)
     if not nb_classes:
         nb_classes = np.max(labels) + 1

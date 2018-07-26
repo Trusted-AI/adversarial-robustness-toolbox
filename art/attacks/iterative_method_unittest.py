@@ -16,11 +16,6 @@ from art.attacks.iterative_method import BasicIterativeMethod
 from art.classifiers import KerasClassifier, PyTorchClassifier, TFClassifier
 from art.utils import load_mnist, get_labels_np_array
 
-import logging
-
-logging.basicConfig(format='%(levelname)s %(asctime)s %(funcName)s:%(lineno)d %(message)s')
-logger = logging.getLogger(__file__)
-logger.setLevel(logging.INFO)
 
 BATCH_SIZE = 10
 NB_TRAIN = 100
@@ -93,7 +88,7 @@ class TestIterativeAttack(unittest.TestCase):
                     'pytorch': self.classifier_py}
 
         for _, classifier in backends.items():
-            logger.info("Current backend %s", _)
+            print("Current backend %s" % _)
             if _ == 'pytorch':
                 self._swap_axes()
             self._test_backend_mnist(classifier)
@@ -112,7 +107,7 @@ class TestIterativeAttack(unittest.TestCase):
 
         # Test BIM with np.inf norm
         attack = BasicIterativeMethod(classifier, eps=1, eps_step=0.1)
-        logger.info("x_train shape: %s", str(x_train.shape))
+        print("x_train shape: %s" % str(x_train.shape))
         x_train_adv = attack.generate(x_train)
         x_test_adv = attack.generate(x_test)
 
