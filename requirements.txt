@@ -1,11 +1,6 @@
 numpy
 h5py
 keras
-pandas
-matplotlib
 scipy
-mxnet
-requests
 six
 Pillow
-tensorflow
