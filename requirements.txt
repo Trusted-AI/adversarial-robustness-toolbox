@@ -8,3 +8,4 @@ mxnet
 requests
 six
 Pillow
+tensorflow
