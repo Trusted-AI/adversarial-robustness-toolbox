@@ -123,7 +123,7 @@ class TestAdversarialTrainer(TestBase):
 
         preds_new = np.argmax(adv_trainer.predict(x_test_adv), axis=1)
         acc_new = np.sum(preds_new == np.argmax(y_test, axis=1)) / NB_TEST
-        # self.assertTrue(acc_new >= acc)
+        self.assertTrue(acc_new >= acc * 0.9)
 
         print('\nAccuracy before adversarial training: %.2f%%' % (acc * 100))
         print('\nAccuracy after adversarial training: %.2f%%' % (acc_new * 100))
@@ -141,7 +141,7 @@ class TestAdversarialTrainer(TestBase):
 
         preds_new = np.argmax(adv_trainer.predict(x_test_adv), axis=1)
         acc_new = np.sum(preds_new == np.argmax(y_test, axis=1)) / NB_TEST
-        # self.assertTrue(acc_new >= acc)
+        self.assertTrue(acc_new >= acc * 0.9)
 
         print('\nAccuracy before adversarial training: %.2f%%' % (acc * 100))
         print('\nAccuracy after adversarial training: %.2f%%' % (acc_new * 100))
@@ -161,7 +161,7 @@ class TestAdversarialTrainer(TestBase):
         preds_new = np.argmax(adv_trainer.predict(x_test_adv), axis=1)
         acc_new = np.sum(preds_new == np.argmax(y_test, axis=1)) / NB_TEST
         # No reason to assert the newer accuracy is higher. It might go down slightly
-        # self.assertTrue(acc_new >= acc)
+        self.assertTrue(acc_new >= acc * 0.9)
 
         print('\nAccuracy before adversarial training: %.2f%%' % (acc * 100))
         print('\nAccuracy after adversarial training: %.2f%%' % (acc_new * 100))
@@ -265,3 +265,4 @@ class TestStaticAdversarialTrainer(TestBase):
         acc_adv_trained = np.sum(np.argmax(preds_adv_trained, axis=1) == np.argmax(y_test, axis=1)) / y_test.shape[0]
         print('\nAccuracy before adversarial training: %.2f%%' % (acc * 100))
         print('\nAccuracy after adversarial training: %.2f%%' % (acc_adv_trained * 100))
+
