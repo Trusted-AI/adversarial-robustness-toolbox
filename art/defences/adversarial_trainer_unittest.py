@@ -119,11 +119,11 @@ class TestAdversarialTrainer(TestBase):
         acc = np.sum(preds == np.argmax(y_test, axis=1)) / NB_TEST
 
         adv_trainer = AdversarialTrainer(self.classifier_k, attack)
-        adv_trainer.fit(x_train, y_train, nb_epochs=2, batch_size=128)
+        adv_trainer.fit(x_train, y_train, nb_epochs=5, batch_size=128)
 
         preds_new = np.argmax(adv_trainer.predict(x_test_adv), axis=1)
         acc_new = np.sum(preds_new == np.argmax(y_test, axis=1)) / NB_TEST
-        self.assertTrue(acc_new >= acc * 0.9)
+        self.assertGreaterEqual(acc_new, acc * 0.9)
 
         print('\nAccuracy before adversarial training: %.2f%%' % (acc * 100))
         print('\nAccuracy after adversarial training: %.2f%%' % (acc_new * 100))
@@ -141,7 +141,7 @@ class TestAdversarialTrainer(TestBase):
 
         preds_new = np.argmax(adv_trainer.predict(x_test_adv), axis=1)
         acc_new = np.sum(preds_new == np.argmax(y_test, axis=1)) / NB_TEST
-        self.assertTrue(acc_new >= acc * 0.9)
+        self.assertGreaterEqual(acc_new, acc * 0.9)
 
         print('\nAccuracy before adversarial training: %.2f%%' % (acc * 100))
         print('\nAccuracy after adversarial training: %.2f%%' % (acc_new * 100))
@@ -156,12 +156,12 @@ class TestAdversarialTrainer(TestBase):
         acc = np.sum(preds == np.argmax(y_test, axis=1)) / NB_TEST
 
         adv_trainer = AdversarialTrainer(self.classifier_k, attacks=[attack1, attack2])
-        adv_trainer.fit(x_train, y_train, nb_epochs=2, batch_size=128)
+        adv_trainer.fit(x_train, y_train, nb_epochs=5, batch_size=128)
 
         preds_new = np.argmax(adv_trainer.predict(x_test_adv), axis=1)
         acc_new = np.sum(preds_new == np.argmax(y_test, axis=1)) / NB_TEST
         # No reason to assert the newer accuracy is higher. It might go down slightly
-        self.assertTrue(acc_new >= acc * 0.9)
+        self.assertGreaterEqual(acc_new, acc * 0.9)
 
         print('\nAccuracy before adversarial training: %.2f%%' % (acc * 100))
         print('\nAccuracy after adversarial training: %.2f%%' % (acc_new * 100))
