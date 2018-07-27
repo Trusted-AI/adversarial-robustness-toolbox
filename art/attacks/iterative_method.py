@@ -64,14 +64,11 @@ class BasicIterativeMethod(FastGradientMethod):
             # Throw error if attack is targeted, but no targets are provided
             if self.targeted:
                 raise ValueError('Target labels `y` need to be provided for a targeted attack.')
-
             # Use model predictions as correct outputs
-            y = self.classifier.predict(x)
+            targets = get_labels_np_array(self.classifier.predict(x))
         else:
-            y = kwargs[str('y')]
-        y = np.argmax(y, axis=1)
-
-        targets = to_categorical(y, nb_classes=self.classifier.nb_classes)
+            y = kwargs['y']
+            targets = to_categorical(y, nb_classes=self.classifier.nb_classes)
         active_indices = range(len(adv_x))
 
         for _ in range(self.max_iter):
