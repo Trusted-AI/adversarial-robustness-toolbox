@@ -1,5 +1,5 @@
-tensorflow
 keras
-torch
 mxnet
 requests
+torch
+tensorflow
