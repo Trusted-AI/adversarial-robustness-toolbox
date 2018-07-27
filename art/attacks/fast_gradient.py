@@ -12,7 +12,7 @@ class FastGradientMethod(Attack):
     Gradient Sign Method"). This implementation extends the attack to other norms, and is therefore called the Fast
     Gradient Method. Paper link: https://arxiv.org/abs/1412.6572
     """
-    attack_params = Attack.attack_params + ['norm', 'eps', 'targeted']
+    attack_params = Attack.attack_params + ['norm', 'eps', 'targeted', 'random_init']
 
     def __init__(self, classifier, norm=np.inf, eps=.3, targeted=False, random_init=False):
         """
@@ -99,6 +99,8 @@ class FastGradientMethod(Attack):
         :param minimal: `True` if only the minimal perturbation should be computed. In that case, use `eps_step` for the
                         step size and `eps_max` for the total allowed perturbation.
         :type minimal: `bool`
+        :param random_init: Whether to start at the original input or a random point within the epsilon ball
+        :type random_init: `bool`
         :return: An array holding the adversarial examples.
         :rtype: `np.ndarray`
         """
