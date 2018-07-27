@@ -8,7 +8,6 @@ import json
 import os
 
 import numpy as np
-
 from scipy.special import gammainc
 
 
@@ -76,6 +75,7 @@ def random_sphere(m, n, r, norm):
         raise NotImplementedError("Norm {} not supported".format(norm))
     
     return res
+
 
 def to_categorical(labels, nb_classes=None):
     """

@@ -2,6 +2,7 @@ from __future__ import absolute_import, division, print_function, unicode_litera
 
 import numpy as np
 import random
+import six
 
 from art.classifiers.classifier import Classifier
 
@@ -271,12 +272,12 @@ class PyTorchClassifier(Classifier):
         # Run prediction
         model_outputs = self._model(torch.from_numpy(x).float())[:-1]
 
-        if type(layer) is str:
+        if isinstance(layer, six.string_types):
             if layer not in self._layer_names:
                 raise ValueError("Layer name %s not supported" % layer)
             layer_index = self._layer_names.index(layer)
 
-        elif type(layer) is int:
+        elif isinstance(layer, (int, np.integer)):
             layer_index = layer
 
         else:

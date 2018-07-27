@@ -27,9 +27,6 @@ def get_trained_mnist(nb_epochs=2):
     """
     Get a simple trained MNIST model to run tests on
     """
-    # Initialize a tf session
-    session = tf.Session()
-    k.set_session(session)
 
     # Get MNIST
     batch_size, nb_train, nb_test = 100, 500, 5
@@ -53,9 +50,16 @@ def get_trained_mnist(nb_epochs=2):
     return krc
 
 class TestCleverL2(unittest.TestCase):
-    # def __init__(self, *args, **kwargs):
-    #     (x_train, y_train), (self.x_test, self.y_test), _, _ = load_mnist()
-    #     self.model = get_trained_mnist()
+    def setUp(self):
+        pass
+
+    @classmethod
+    def tearDownClass(cls):
+        k.clear_session()
+
+    def tearDown(self):
+        session.close()
+
     def test_mnist_building(self):
         (x_train, y_train), (x_test, y_test), _, _ = load_mnist()
         model = get_trained_mnist(2)
@@ -63,12 +67,14 @@ class TestCleverL2(unittest.TestCase):
 
         accuracy = np.sum(np.argmax(y_pred, axis=1) == np.argmax(y_test, axis=1)) / len(y_test)
         print("Testing mnist accuracy",accuracy)
+
     def test_clever_l2_no_target(self):
         (x_train, y_train), (x_test, y_test), _, _ = load_mnist()
         model = get_trained_mnist()
         scores = clever(model, x_test[0], 5, 5, 3, 2, target=None, c_init=1, pool_factor=10)
         print("Clever Scores for n-1 classes",scores,scores.shape)
         assert(scores.shape == (model.nb_classes-1,))
+
     def test_clever_l2_no_target_sorted(self):
         (x_train, y_train), (x_test, y_test), _, _ = load_mnist()
         model = get_trained_mnist()
@@ -76,15 +82,18 @@ class TestCleverL2(unittest.TestCase):
         print("Clever Scores for n-1 classes",scores,scores.shape)
         # Should approx. be in decreasing value
         assert(scores.shape == (model.nb_classes-1,))
+
     def test_clever_l2_same_target(self):
         (x_train, y_train), (x_test, y_test), _, _ = load_mnist()
         model = get_trained_mnist()
         scores = clever(model, x_test[0], 5, 5, 3, 2, target=np.argmax(model.predict(x_test[:1])), c_init=1, pool_factor=10)
         print("Clever Scores for the predicted class should be None",scores)
         assert(scores[0] is None)
+
     def test_clever_t_l2(self):
         # clever_t(classifier, x, target_class, n_b, n_s, r, norm, c_init=1, pool_factor=10):
         pass
+
     def test_clever_u_l2(self):
         #  clever_u(classifier, x, n_b, n_s, r, norm, c_init=1, pool_factor=10):
         pass

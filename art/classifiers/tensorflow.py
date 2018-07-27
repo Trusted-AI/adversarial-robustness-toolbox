@@ -2,6 +2,7 @@ from __future__ import absolute_import, division, print_function, unicode_litera
 
 import numpy as np
 import random
+import six
 
 from art.classifiers import Classifier
 
@@ -289,16 +290,16 @@ class TFClassifier(Classifier):
         with self._sess.graph.as_default():
             graph = tf.get_default_graph()
 
-        if type(layer) is str:
+        if isinstance(layer, six.string_types): # basestring for Python 2 (str, unicode) support
             if layer not in self._layer_names:
                 raise ValueError("Layer name %s is not part of the graph." % layer)
             layer_tensor = graph.get_tensor_by_name(layer)
 
-        elif type(layer) is int:
+        elif isinstance(layer, (int, np.integer)):
             layer_tensor = graph.get_tensor_by_name(self._layer_names[layer])
 
         else:
-            raise TypeError("Layer must be of type `str` or `int`.")
+            raise TypeError("Layer must be of type `str` or `int`. Received '%s'", layer)
 
         # Get activations
         # Apply preprocessing and defences
