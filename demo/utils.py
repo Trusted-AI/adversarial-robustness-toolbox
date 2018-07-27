@@ -23,6 +23,7 @@ from art.utils import make_directory
 
 # -------------------------------------------------------------------------------------------------------- IO FUNCTIONS
 
+
 def save_fig(filename,fig_id=None,output_dir="pics/",format="pdf"):
 
     if fig_id:
@@ -33,6 +34,7 @@ def save_fig(filename,fig_id=None,output_dir="pics/",format="pdf"):
     plt.savefig(os.path.join(output_dir, filename+"."+format))
 
 # -------------------------------------------------------------------------------------------------------- TOY DATASETS
+
 
 def get_toyset(name, nb_instances=20, noise=None, factor=0.6, rnd_state=None):
 
@@ -68,6 +70,7 @@ def get_toyset(name, nb_instances=20, noise=None, factor=0.6, rnd_state=None):
 
 # ------------------------------------------------------------------------------------------------------ LEARNING UTILS
 
+
 def simple_nn(nb_units=64):
     # as first layer in a sequential model:
     model = Sequential()
@@ -78,6 +81,7 @@ def simple_nn(nb_units=64):
     model.add(Dense(2, activation='softmax'))
 
     return model
+
 
 def data_augmentation(x, y, type="gaussian", nb_instances=10, eps=0.3, **kwargs):
 

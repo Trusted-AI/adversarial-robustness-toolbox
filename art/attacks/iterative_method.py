@@ -1,5 +1,4 @@
 from __future__ import absolute_import, division, print_function, unicode_literals
-
 import numpy as np
 
 from art.attacks import FastGradientMethod
@@ -65,14 +64,11 @@ class BasicIterativeMethod(FastGradientMethod):
             # Throw error if attack is targeted, but no targets are provided
             if self.targeted:
                 raise ValueError('Target labels `y` need to be provided for a targeted attack.')
-
             # Use model predictions as correct outputs
-            y = self.classifier.predict(x)
+            targets = get_labels_np_array(self.classifier.predict(x))
         else:
-            y = kwargs[str('y')]
-        y = y / np.sum(y, axis=1, keepdims=True)
-        
-        targets = to_categorical(y, nb_classes=self.classifier.nb_classes)
+            y = kwargs['y']
+            targets = to_categorical(y, nb_classes=self.classifier.nb_classes)
         active_indices = range(len(adv_x))
 
         for _ in range(self.max_iter):

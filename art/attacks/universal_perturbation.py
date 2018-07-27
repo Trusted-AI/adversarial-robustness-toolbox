@@ -187,7 +187,7 @@ class UniversalPerturbation(Attack):
         :return: The class `module`.
         :rtype: `module`
         """
-        sub_mods = class_name.split(sep=".")
+        sub_mods = class_name.split(".")
         module_ = __import__(".".join(sub_mods[:-1]), fromlist=sub_mods[-1])
         class_module = getattr(module_, sub_mods[-1])
 

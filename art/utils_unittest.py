@@ -39,7 +39,6 @@ class TestUtils(unittest.TestCase):
         self.assertEqual(x.shape, x_proj.shape)
         self.assertEqual(x_proj.min(), -1.0)
         self.assertEqual(x_proj.max(), 1.0)
-        
 
     def test_random_sphere(self):
         x = random_sphere(10, 10, 1, 1)
@@ -119,6 +118,7 @@ class TestUtils(unittest.TestCase):
         self.assertEqual(Y.shape, (y.shape[0], 20))
         self.assertEqual(X.max(), 1.0)
         self.assertEqual(X.min(), 0)
+
 
 if __name__ == '__main__':
     unittest.main()
