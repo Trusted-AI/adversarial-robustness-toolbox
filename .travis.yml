@@ -47,5 +47,4 @@ install:
   - export PYTHONPATH=".":$PYTHONPATH
 
 script:
-  - mkdir ~/.art/data
   - python -m unittest discover art/ -p '*_unittest.py'
