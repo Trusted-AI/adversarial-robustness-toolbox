@@ -1,5 +1,6 @@
 from __future__ import absolute_import, division, print_function, unicode_literals
 
+import six
 import numpy as np
 
 from art.classifiers import Classifier
@@ -228,7 +229,7 @@ class MXClassifier(Classifier):
         """
         from mxnet import nd
 
-        if type(layer) is str:
+        if isinstance(layer, six.string_types):
             if layer not in self._layer_names:
                 raise ValueError('Layer name %s is not part of the model.' % layer)
             layer_ind = self._layer_names.index(layer)

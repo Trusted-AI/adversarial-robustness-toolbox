@@ -2,8 +2,8 @@ from __future__ import absolute_import, division, print_function, unicode_litera
 
 import keras
 import keras.backend as k
-from keras.models import Sequential
-from keras.layers import Dense, Activation, Flatten, Conv2D, MaxPooling2D, Dropout
+from keras.models import Sequential, Model
+from keras.layers import Dense, Activation, Flatten, Conv2D, MaxPooling2D, Dropout, Input, Flatten
 import numpy as np
 import unittest
 
@@ -14,8 +14,10 @@ BATCH_SIZE = 10
 NB_TRAIN = 500
 NB_TEST = 100
 
-
 class TestKerasClassifier(unittest.TestCase):
+    @classmethod
+    def setUpClass(cls):
+        k.clear_session()
 
     def setUp(self):
         import requests
@@ -55,6 +57,10 @@ class TestKerasClassifier(unittest.TestCase):
         model.fit(x_train, y_train, batch_size=BATCH_SIZE, epochs=1)
         self.model_mnist = model
 
+    @classmethod
+    def tearDownClass(cls):
+        k.clear_session()
+
     def tearDown(self):
         import shutil
         shutil.rmtree(self.test_dir)
@@ -65,13 +71,42 @@ class TestKerasClassifier(unittest.TestCase):
     # def test_probabilities(self):
     #     classifier = KerasClassifier((0, 1), self.model_mnist, use_logits=False)
 
+    def functional_model(self):
+        in_layer = Input(shape=(28,28,1), name="input0")
+        layer = Conv2D(32, kernel_size=(3, 3), activation='relu')(in_layer)
+        layer = Conv2D(64, (3, 3), activation='relu')(layer)
+        layer = MaxPooling2D(pool_size=(2, 2))(layer)
+        layer = Dropout(0.25)(layer)
+        layer = Flatten()(layer)
+        layer = Dense(128, activation='relu')(layer)
+        layer = Dropout(0.5)(layer)
+        out_layer = Dense(10, activation='softmax', name="output0")(layer)
+
+        in_layer_2 = Input(shape=(28,28,1), name="input1")
+        layer = Conv2D(32, kernel_size=(3, 3), activation='relu')(in_layer_2)
+        layer = Conv2D(64, (3, 3), activation='relu')(layer)
+        layer = MaxPooling2D(pool_size=(2, 2))(layer)
+        layer = Dropout(0.25)(layer)
+        layer = Flatten()(layer)
+        layer = Dense(128, activation='relu')(layer)
+        layer = Dropout(0.5)(layer)
+        out_layer_2 = Dense(10, activation='softmax', name="output1")(layer)
+
+        model = Model(inputs=[in_layer,in_layer_2], outputs=[out_layer,out_layer_2])
+
+        model.compile(loss=keras.losses.categorical_crossentropy, optimizer=keras.optimizers.Adadelta(),
+                      metrics=['accuracy'], loss_weights=[1., 1.0])
+        ((x_train, y_train), (x_test, y_test)) = self.mnist
+        # model.fit((x_train, x_train), (y_train, y_train), batch_size=BATCH_SIZE, epochs=1)
+        return model
+
     def test_fit(self):
         labels = np.argmax(self.mnist[1][1], axis=1)
         classifier = KerasClassifier((0, 1), self.model_mnist, use_logits=False)
         acc = np.sum(np.argmax(classifier.predict(self.mnist[1][0]), axis=1) == labels) / NB_TEST
         print("\nAccuracy: %.2f%%" % (acc * 100))
 
-        classifier.fit(self.mnist[0][0], self.mnist[0][1], batch_size=BATCH_SIZE, nb_epochs=1)
+        classifier.fit(self.mnist[0][0], self.mnist[0][1], batch_size=BATCH_SIZE, nb_epochs=5)
         acc2 = np.sum(np.argmax(classifier.predict(self.mnist[1][0]), axis=1) == labels) / NB_TEST
         print("\nAccuracy: %.2f%%" % (acc2 * 100))
 
@@ -91,6 +126,16 @@ class TestKerasClassifier(unittest.TestCase):
 
         loss_grads = classifier.loss_gradient(x_test[:11], y_test[:11])
         self.assertTrue(loss_grads.shape == x_test[:11].shape)
+
+    def test_functional_model(self):
+        # Need to update the functional_model code to produce a model with more than one input and output layers...
+        m = self.functional_model()
+        keras_model = KerasClassifier((0,1), m, input_layer=1, output_layer=1)
+        self.assertTrue(keras_model._input.name, "input1")
+        self.assertTrue(keras_model._output.name, "output1")
+        keras_model = KerasClassifier((0,1), m, input_layer=0, output_layer=0)
+        self.assertTrue(keras_model._input.name, "input0")
+        self.assertTrue(keras_model._output.name, "output0")
 
     def test_layers(self):
         # Get MNIST

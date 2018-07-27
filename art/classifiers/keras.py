@@ -1,5 +1,6 @@
 from __future__ import absolute_import, division, print_function, unicode_literals
 
+import six
 import numpy as np
 
 from art.classifiers import Classifier
@@ -9,7 +10,7 @@ class KerasClassifier(Classifier):
     """
     The supported backends for Keras are TensorFlow and Theano.
     """
-    def __init__(self, clip_values, model, use_logits=False, channel_index=3, defences=None, preprocessing=(0, 1)):
+    def __init__(self, clip_values, model, use_logits=False, channel_index=3, defences=None, preprocessing=(0, 1), input_layer=0, output_layer=0):
         """
         Create a `Classifier` instance from a Keras model. Assumes the `model` passed as argument is compiled.
 
@@ -28,6 +29,12 @@ class KerasClassifier(Classifier):
                used for data preprocessing. The first value will be substracted from the input. The input will then
                be divided by the second one.
         :type preprocessing: `tuple`
+        :param input_layer: Which layer to consider as the Input when the model
+               has multple input layers
+        :type input_layer: `int`
+        :param out_layer: Which layer to consider as the Output when the model
+               has multple output layers
+        :type out_layer: `int`
         """
         import keras.backend as k
 
@@ -36,10 +43,18 @@ class KerasClassifier(Classifier):
                                               preprocessing=preprocessing)
 
         self._model = model
-        self._input = model.input
-        self._output = model.output
-        _, self._nb_classes = k.int_shape(model.output)
-        self._input_shape = k.int_shape(model.input)[1:]
+        if hasattr(model, 'inputs'):
+            self._input = model.inputs[input_layer]
+        else:
+            self._input = model.input
+
+        if hasattr(model, 'outputs'):
+            self._output = model.outputs[output_layer]
+        else:
+            self._output = model.output
+
+        _, self._nb_classes = k.int_shape(self._output)
+        self._input_shape = k.int_shape(self._input)[1:]
 
         # Get predictions and loss function
         label_ph = k.placeholder(shape=(None,))
@@ -203,7 +218,7 @@ class KerasClassifier(Classifier):
         import keras.backend as k
         k.set_learning_phase(0)
 
-        if type(layer) is str:
+        if isinstance(layer, six.string_types):
             if layer not in self._layer_names:
                 raise ValueError('Layer name %s is not part of the graph.' % layer)
             layer_name = layer

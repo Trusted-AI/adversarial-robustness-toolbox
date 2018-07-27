@@ -13,6 +13,7 @@ from scipy.special import gammainc
 from functools import reduce
 
 from art.attacks.fast_gradient import FastGradientMethod
+from art.utils import random_sphere
 
 # TODO add all other implemented attacks
 supported_methods = {
@@ -179,6 +180,7 @@ def clever(classifier, x, n_b, n_s, r, norm, target=None, target_sort=False, c_i
         score_list.append(s)
     return np.array(score_list)
 
+
 def clever_u(classifier, x, n_b, n_s, r, norm, c_init=1, pool_factor=10):
     """
     Compute CLEVER score for an untargeted attack. Paper link: https://arxiv.org/abs/1801.10578
@@ -258,7 +260,7 @@ def clever_t(classifier, x, target_class, n_b, n_s, r, norm, c_init=1, pool_fact
     shape.extend(x.shape)
 
     # Generate a pool of samples
-    rand_pool = np.reshape(_random_sphere(m=pool_factor * n_s, n=dim, r=r, norm=norm), shape)
+    rand_pool = np.reshape(random_sphere(m=pool_factor * n_s, n=dim, r=r, norm=norm), shape)
     rand_pool += np.repeat(np.array([x]), pool_factor * n_s, 0)
     np.clip(rand_pool, classifier.clip_values[0], classifier.clip_values[1], out=rand_pool)
 
@@ -296,94 +298,3 @@ def clever_t(classifier, x, target_class, n_b, n_s, r, norm, c_init=1, pool_fact
     s = np.min([-value[0] / loc, r])
 
     return s
-
-
-def _random_sphere(m, n, r, norm):
-    """
-    Generate randomly `m x n`-dimension points with radius `r` and centered around 0.
-
-    :param m: Number of random data points
-    :type m: `int`
-    :param n: Dimension
-    :type n: `int`
-    :param r: Radius
-    :type r: `float`
-    :param norm: Current support: 1, 2, np.inf
-    :type norm: `int`
-    :return: The generated random sphere
-    :rtype: `np.ndarray`
-    """
-    if norm == 1:
-        res = _l1_random(m, n, r)
-    elif norm == 2:
-        res = _l2_random(m, n, r)
-    elif norm == np.inf:
-        res = _linf_random(m, n, r)
-    else:
-        raise NotImplementedError("Norm {} not supported".format(norm))
-
-    return res
-
-
-def _l2_random(m, n, r):
-    """
-    Generate randomly `m x n`-dimension points with radius `r` in norm 2 and centered around 0.
-
-    :param m: Number of random data points
-    :type m: `int`
-    :param n: Dimension
-    :type n: `int`
-    :param r: Radius
-    :type r: `float`
-    :return: The generated random sphere
-    :rtype: `np.ndarray`
-    """
-    a = np.random.randn(m, n)
-    s2 = np.sum(a**2, axis=1)
-    base = gammainc(n/2.0, s2/2.0)**(1/n) * r / np.sqrt(s2)
-    a = a * (np.tile(base, (n, 1))).T
-
-    return a
-
-
-def _l1_random(m, n, r):
-    """
-    Generate randomly `m x n`-dimension points with radius `r` in norm 1 and centered around 0.
-
-    :param m: Number of random data points
-    :type m: `int`
-    :param n: Dimension
-    :type n: `int`
-    :param r: Radius
-    :type r: `float`
-    :return: The generated random sphere
-    :rtype: `np.ndarray`
-    """
-    A = np.zeros(shape=(m, n+1))
-    A[:, -1] = np.sqrt(np.random.uniform(0, r**2, m))
-
-    for i in range(m):
-        A[i, 1:-1] = np.sort(np.random.uniform(0, A[i, -1], n-1))
-
-    X = (A[:, 1:] - A[:, :-1]) * np.random.choice([-1, 1], (m, n))
-
-    return X
-
-
-def _linf_random(m, n, r):
-    """
-    Generate randomly `m x n`-dimension points with radius `r` in inf norm and centered around 0.
-
-    :param m: Number of random data points
-    :type m: `int`
-    :param n: Dimension
-    :type n: `int`
-    :param r: Radius
-    :type r: `float`
-    :return: The generated random sphere
-    :rtype: `np.ndarray`
-    """
-    return np.random.uniform(float(-r), float(r), (m, n))
-
-
-

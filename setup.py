@@ -7,16 +7,20 @@ with open("README.md", "r") as fh:
 install_requires = ['h5py',
                     'numpy',
                     'scipy',
-                    'Keras',
-                    'matplotlib',
+                    'keras',
+                    'tensorflow',
+                    'six',
                     'setuptools']
 
-tests_require = ['tensorflow',
-                 'Keras',
+tests_require = ['mxnet'
+                 'keras',
+                 'Pillow',
+                 'requests'
+                 'tensorflow',
                  'torch']
 
 setup(name='Adversarial Robustness Toolbox',
-      version='0.1',
+      version='0.2.2',
       description='IBM Adversarial machine learning toolbox',
       long_description=long_description,
       long_description_content_type='text/markdown',

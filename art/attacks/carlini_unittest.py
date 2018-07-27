@@ -76,7 +76,7 @@ class TestCarliniL2(unittest.TestCase):
         tfc.fit(x_train, y_train, batch_size=batch_size, nb_epochs=2)
 
         # Failure attack
-        cl2m = CarliniL2Method(classifier=tfc, targeted=True, max_iter=0, binary_search_steps=0,
+        cl2m = CarliniL2Method(classifier=tfc, targeted=True, max_iter=10, binary_search_steps=0,
                                learning_rate=2e-2, initial_const=3, decay=1e-2)
         params = {'y': random_targets(y_test, tfc.nb_classes)}
         x_test_adv = cl2m.generate(x_test, **params)
@@ -133,7 +133,10 @@ class TestCarliniL2(unittest.TestCase):
         self.assertTrue((x_test_adv >= -0.0001).all())
         target = np.argmax(params['y'], axis=1)
         y_pred_adv = np.argmax(tfc.predict(x_test_adv), axis=1)
-        self.assertTrue((target == y_pred_adv).all())
+        print("CW2 Target: %s" % target)
+        print("CW2 Actual: %s" % y_pred_adv)
+        print("CW2 Success Rate: %f" % (sum(target == y_pred_adv)/float(len(target))))
+        self.assertTrue((target == y_pred_adv).any())
 
         # Second attack
         cl2m = CarliniL2Method(classifier=tfc, targeted=False, max_iter=10, binary_search_steps=10,
@@ -145,6 +148,9 @@ class TestCarliniL2(unittest.TestCase):
         self.assertTrue((x_test_adv >= -0.0001).all())
         target = np.argmax(params['y'], axis=1)
         y_pred_adv = np.argmax(tfc.predict(x_test_adv), axis=1)
+        print("CW2 Target: %s" % target)
+        print("CW2 Actual: %s" % y_pred_adv)
+        print("CW2 Success Rate: %f" % (sum(target != y_pred_adv)/float(len(target))))
         self.assertTrue((target != y_pred_adv).all())
 
         # Third attack
@@ -157,6 +163,9 @@ class TestCarliniL2(unittest.TestCase):
         self.assertTrue((x_test_adv >= -0.0001).all())
         y_pred = np.argmax(tfc.predict(x_test), axis=1)
         y_pred_adv = np.argmax(tfc.predict(x_test_adv), axis=1)
+        print("CW2 Target: %s" % y_pred)
+        print("CW2 Actual: %s" % y_pred_adv)
+        print("CW2 Success Rate: %f" % (sum(y_pred != y_pred_adv)/float(len(y_pred))))
         self.assertTrue((y_pred != y_pred_adv).all())
 
     def test_krclassifier(self):
@@ -198,6 +207,9 @@ class TestCarliniL2(unittest.TestCase):
         self.assertTrue((x_test_adv >= -0.0001).all())
         target = np.argmax(params['y'], axis=1)
         y_pred_adv = np.argmax(krc.predict(x_test_adv), axis=1)
+        print("CW2 Target: %s" % target)
+        print("CW2 Actual: %s" % y_pred_adv)
+        print("CW2 Success Rate: %f" % (sum(target == y_pred_adv)/float(len(target))))
         self.assertTrue((target == y_pred_adv).any())
 
         # Second attack
@@ -210,6 +222,9 @@ class TestCarliniL2(unittest.TestCase):
         self.assertTrue((x_test_adv >= -0.0001).all())
         target = np.argmax(params['y'], axis=1)
         y_pred_adv = np.argmax(krc.predict(x_test_adv), axis=1)
+        print("CW2 Target: %s" % target)
+        print("CW2 Actual: %s" % y_pred_adv)
+        print("CW2 Success Rate: %f" % (sum(target != y_pred_adv)/float(len(target))))
         self.assertTrue((target != y_pred_adv).all())
 
         # Third attack
@@ -222,6 +237,9 @@ class TestCarliniL2(unittest.TestCase):
         self.assertTrue((x_test_adv >= -0.0001).all())
         y_pred = np.argmax(krc.predict(x_test), axis=1)
         y_pred_adv = np.argmax(krc.predict(x_test_adv), axis=1)
+        print("CW2 Target: %s" % y_pred)
+        print("CW2 Actual: %s" % y_pred_adv)
+        print("CW2 Success Rate: %f" % (sum(y_pred != y_pred_adv)/float(len(y_pred))))
         self.assertTrue((y_pred != y_pred_adv).any())
 
     def test_ptclassifier(self):
@@ -250,7 +268,7 @@ class TestCarliniL2(unittest.TestCase):
         ptc.fit(x_train, y_train, batch_size=batch_size, nb_epochs=1)
 
         # First attack
-        cl2m = CarliniL2Method(classifier=ptc, targeted=True, max_iter=100, binary_search_steps=10,
+        cl2m = CarliniL2Method(classifier=ptc, targeted=True, max_iter=10, binary_search_steps=10,
                                learning_rate=2e-2, initial_const=3, decay=1e-2)
         params = {'y': random_targets(y_test, ptc.nb_classes)}
         x_test_adv = cl2m.generate(x_test, **params)
@@ -259,10 +277,13 @@ class TestCarliniL2(unittest.TestCase):
         self.assertTrue((x_test_adv >= -0.0001).all())
         target = np.argmax(params['y'], axis=1)
         y_pred_adv = np.argmax(ptc.predict(x_test_adv), axis=1)
+        print("CW2 Target: %s" % target)
+        print("CW2 Actual: %s" % y_pred_adv)
+        print("CW2 Success Rate: %f" % (sum(target == y_pred_adv)/float(len(target))))
         self.assertTrue((target == y_pred_adv).any())
 
         # Second attack
-        cl2m = CarliniL2Method(classifier=ptc, targeted=False, max_iter=100, binary_search_steps=10,
+        cl2m = CarliniL2Method(classifier=ptc, targeted=False, max_iter=10, binary_search_steps=10,
                                learning_rate=2e-2, initial_const=3, decay=1e-2)
         params = {'y': random_targets(y_test, ptc.nb_classes)}
         x_test_adv = cl2m.generate(x_test, **params)
@@ -271,10 +292,13 @@ class TestCarliniL2(unittest.TestCase):
         self.assertTrue((x_test_adv >= -0.0001).all())
         target = np.argmax(params['y'], axis=1)
         y_pred_adv = np.argmax(ptc.predict(x_test_adv), axis=1)
-        self.assertTrue((target != y_pred_adv).all())
+        print("CW2 Target: %s" % target)
+        print("CW2 Actual: %s" % y_pred_adv)
+        print("CW2 Success Rate: %f" % (sum(target != y_pred_adv)/float(len(target))))
+        self.assertTrue((target != y_pred_adv).any())
 
         # Third attack
-        cl2m = CarliniL2Method(classifier=ptc, targeted=False, max_iter=100, binary_search_steps=10,
+        cl2m = CarliniL2Method(classifier=ptc, targeted=False, max_iter=10, binary_search_steps=10,
                                learning_rate=2e-2, initial_const=3, decay=1e-2)
         params = {}
         x_test_adv = cl2m.generate(x_test, **params)
@@ -283,6 +307,9 @@ class TestCarliniL2(unittest.TestCase):
         self.assertTrue((x_test_adv >= -0.0001).all())
         y_pred = np.argmax(ptc.predict(x_test), axis=1)
         y_pred_adv = np.argmax(ptc.predict(x_test_adv), axis=1)
+        print("CW2 Target: %s" % y_pred)
+        print("CW2 Actual: %s" % y_pred_adv)
+        print("CW2 Success Rate: %f" % (sum(y_pred != y_pred_adv)/float(len(y_pred))))
         self.assertTrue((y_pred != y_pred_adv).any())
 
 

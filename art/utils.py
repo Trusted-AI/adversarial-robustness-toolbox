@@ -8,6 +8,7 @@ import json
 import os
 
 import numpy as np
+from scipy.special import gammainc
 
 
 def projection(v, eps, p):
@@ -32,12 +33,48 @@ def projection(v, eps, p):
     elif p == 1:
         v_ = v_ * np.expand_dims(np.minimum(1., eps / (np.linalg.norm(v_, axis=1, ord=1) + tol)), axis=1)
     elif p == np.inf:
-        v_ = np.sign(v) * np.minimum(abs(v_), eps)
+        v_ = np.sign(v_) * np.minimum(abs(v_), eps)
     else:
         raise NotImplementedError('Values of `p` different from 1, 2 and `np.inf` are currently not supported.')
 
     v = v_.reshape(v.shape)
     return v
+
+
+def random_sphere(m, n, r, norm):
+    """
+    Generate randomly `m x n`-dimension points with radius `r` and centered around 0.
+
+    :param m: Number of random data points
+    :type m: `int`
+    :param n: Dimension
+    :type n: `int`
+    :param r: Radius
+    :type r: `float`
+    :param norm: Current support: 1, 2, np.inf
+    :type norm: `int`
+    :return: The generated random sphere
+    :rtype: `np.ndarray`
+    """
+    if norm == 1:
+        A = np.zeros(shape=(m, n+1))
+        A[:, -1] = np.sqrt(np.random.uniform(0, r**2, m))
+
+        for i in range(m):
+            A[i, 1:-1] = np.sort(np.random.uniform(0, A[i, -1], n-1))
+
+        res = (A[:, 1:] - A[:, :-1]) * np.random.choice([-1, 1], (m, n))
+    elif norm == 2:
+        a = np.random.randn(m, n)
+        s2 = np.sum(a**2, axis=1)
+        base = gammainc(n/2.0, s2/2.0)**(1/n) * r / np.sqrt(s2)
+        res = a * (np.tile(base, (n, 1))).T
+    elif norm == np.inf:
+        res= np.random.uniform(float(-r), float(r), (m, n))
+    else:
+        raise NotImplementedError("Norm {} not supported".format(norm))
+    
+    return res
 
 
 def to_categorical(labels, nb_classes=None):
