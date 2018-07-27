@@ -72,7 +72,7 @@ class TestKerasClassifier(unittest.TestCase):
     #     classifier = KerasClassifier((0, 1), self.model_mnist, use_logits=False)
 
     def functional_model(self):
-        in_layer = Input(shape=(28,28,1))
+        in_layer = Input(shape=(28,28,1), name="input0")
         layer = Conv2D(32, kernel_size=(3, 3), activation='relu')(in_layer)
         layer = Conv2D(64, (3, 3), activation='relu')(layer)
         layer = MaxPooling2D(pool_size=(2, 2))(layer)
@@ -80,9 +80,9 @@ class TestKerasClassifier(unittest.TestCase):
         layer = Flatten()(layer)
         layer = Dense(128, activation='relu')(layer)
         layer = Dropout(0.5)(layer)
-        out_layer = Dense(10, activation='softmax')(layer)
+        out_layer = Dense(10, activation='softmax', name="output0")(layer)
 
-        in_layer_2 = Input(shape=(28,28,1))
+        in_layer_2 = Input(shape=(28,28,1), name="input1")
         layer = Conv2D(32, kernel_size=(3, 3), activation='relu')(in_layer_2)
         layer = Conv2D(64, (3, 3), activation='relu')(layer)
         layer = MaxPooling2D(pool_size=(2, 2))(layer)
@@ -90,7 +90,7 @@ class TestKerasClassifier(unittest.TestCase):
         layer = Flatten()(layer)
         layer = Dense(128, activation='relu')(layer)
         layer = Dropout(0.5)(layer)
-        out_layer_2 = Dense(10, activation='softmax')(layer)
+        out_layer_2 = Dense(10, activation='softmax', name="output1")(layer)
 
         model = Model(inputs=[in_layer,in_layer_2], outputs=[out_layer,out_layer_2])
 
@@ -131,6 +131,12 @@ class TestKerasClassifier(unittest.TestCase):
         # Need to update the functional_model code to produce a model with more than one input and output layers...
         m = self.functional_model()
         keras_model = KerasClassifier((0,1), m, input_layer=1, output_layer=1)
+        self.assertTrue(keras_model._input.name, "input1")
+        self.assertTrue(keras_model._output.name, "output1")
+        keras_model = KerasClassifier((0,1), m, input_layer=0, output_layer=0)
+        self.assertTrue(keras_model._input.name, "input0")
+        self.assertTrue(keras_model._output.name, "output0")
+
     def test_layers(self):
         # Get MNIST
         (_, _), (x_test, _), _, _ = load_mnist()

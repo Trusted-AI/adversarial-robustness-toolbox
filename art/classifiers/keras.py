@@ -29,6 +29,12 @@ class KerasClassifier(Classifier):
                used for data preprocessing. The first value will be substracted from the input. The input will then
                be divided by the second one.
         :type preprocessing: `tuple`
+        :param input_layer: Which layer to consider as the Input when the model
+               has multple input layers
+        :type input_layer: `int`
+        :param out_layer: Which layer to consider as the Output when the model
+               has multple output layers
+        :type out_layer: `int`
         """
         import keras.backend as k
 
