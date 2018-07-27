@@ -111,7 +111,7 @@ class Classifier(ABC):
         return self._channel_index
 
     @abc.abstractmethod
-    def class_gradient(self, x, logits=False):
+    def class_gradient(self, x, idx=None, logits=False):
         """
         Compute per-class derivatives w.r.t. `x`.
 
