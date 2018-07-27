@@ -3,4 +3,4 @@ h5py
 keras
 scipy
 six
-Pillow
+tensorflow
