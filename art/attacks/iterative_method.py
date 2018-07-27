@@ -67,8 +67,7 @@ class BasicIterativeMethod(FastGradientMethod):
             # Use model predictions as correct outputs
             targets = get_labels_np_array(self.classifier.predict(x))
         else:
-            y = kwargs['y']
-            targets = to_categorical(y, nb_classes=self.classifier.nb_classes)
+            targets = kwargs['y']
         active_indices = range(len(adv_x))
 
         for _ in range(self.max_iter):
