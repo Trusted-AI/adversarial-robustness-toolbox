@@ -111,12 +111,14 @@ class Classifier(ABC):
         return self._channel_index
 
     @abc.abstractmethod
-    def class_gradient(self, x, idx=None, logits=False):
+    def class_gradient(self, x, label=None, logits=False):
         """
         Compute per-class derivatives w.r.t. `x`.
 
         :param x: Sample input with shape as expected by the model.
         :type x: `np.ndarray`
+        :param label: Index of a specific per-class derivative
+        :type label: `int`
         :param logits: `True` if the prediction should be done at the logits layer.
         :type logits: `bool`
         :return: Array of gradients of input features w.r.t. each class in the form

@@ -147,14 +147,14 @@ class TFClassifier(Classifier):
                     self._sess.run(self._train, feed_dict={self._input_ph: i_batch, self._output_ph: o_batch,
                                                            self._learning: True})
 
-    def class_gradient(self, x, idx=None, logits=False):
+    def class_gradient(self, x, label=None, logits=False):
         """
         Compute per-class derivatives w.r.t. `x`.
 
         :param x: Sample input with shape as expected by the model.
         :type x: `np.ndarray`
-        :param idx: Index of a specific per-class derivative
-        :type idx: `int`
+        :param label: Index of a specific per-class derivative
+        :type label: `int`
         :param logits: `True` if the prediction should be done at the logits layer.
         :type logits: `bool`
         :return: Array of gradients of input features w.r.t. each class in the form
@@ -162,17 +162,17 @@ class TFClassifier(Classifier):
         :rtype: `np.ndarray`
         """
         
-        assert((idx is None) or (idx in range(self._nb_classes)))
-        self._init_class_grads(idx=idx, logits=logits)
+        assert((label is None) or (label in range(self._nb_classes)))
+        self._init_class_grads(label=label, logits=logits)
         
         x_ = self._apply_processing(x)
 
         # Compute the gradient and return        
-        if not idx is None:
+        if not label is None:
             if logits:
-                grads = self._sess.run(self._logit_class_grads_idx[idx], feed_dict={self._input_ph: x_})
+                grads = self._sess.run(self._logit_class_grads[label], feed_dict={self._input_ph: x_})
             else:
-                grads = self._sess.run(self._class_grads_idx[idx], feed_dict={self._input_ph: x_})
+                grads = self._sess.run(self._class_grads[label], feed_dict={self._input_ph: x_})
 
             grads = grads[None,...] 
             grads = np.swapaxes(np.array(grads), 0, 1)
@@ -214,32 +214,35 @@ class TFClassifier(Classifier):
 
         return grds
 
-    def _init_class_grads(self, idx=None, logits=False):
+    def _init_class_grads(self, label=None, logits=False):
         import tensorflow as tf
 
+        if logits:
+            if not hasattr(self, '_logit_class_grads'):       
+                self._logit_class_grads = [None for i in range(self.nb_classes)]
+        else:
+            if not hasattr(self, '_class_grads'):       
+                self._class_grads = [None for i in range(self.nb_classes)]
+                       
         # Construct the class gradients graph
-        if not idx is None:
-            if logits:
-                if not hasattr(self, '_logit_class_grads_idx'):
-                    self._logit_class_grads_idx = [None for i in range(self.nb_classes)]
-                
-                if self._logit_class_grads_idx[idx] is None:
-                    self._class_grads_logits_idx[idx] = tf.gradients(self._logits[:, idx], self._input_ph)[0]
-            else:
-                if not hasattr(self, '_class_grads_idx'):
-                    self._class_grads_idx = [None for i in range(self.nb_classes)]
-                
-                if self._class_grads_idx[idx] is None:
-                    self._class_grads_idx[idx] = tf.gradients(tf.nn.softmax(self._logits)[:, idx], self._input_ph)[0]               
+        if not label is None:
+            if logits:                
+                if self._logit_class_grads[label] is None:
+                    self._class_grads_logits[label] = tf.gradients(self._logits[:, label], self._input_ph)[0]
+            else:                
+                if self._class_grads[label] is None:
+                    self._class_grads[label] = tf.gradients(tf.nn.softmax(self._logits)[:, label], self._input_ph)[0]               
         else:
             if logits:
-                if not hasattr(self, '_logit_class_grads'):  
-                    self._logit_class_grads = [tf.gradients(self._logits[:, i], self._input_ph)[0]
-                                               for i in range(self._nb_classes)] 
+                if None in self._logit_class_grads:
+                    self._logit_class_grads = [tf.gradients(self._logits[:, i], self._input_ph)[0] 
+                                               if self._logit_class_grads[i] is None else self._logit_class_grads[i] 
+                                               for i in range(self._nb_classes)]                     
             else:
-                if not hasattr(self, '_class_grads'):
-                    self._class_grads = [tf.gradients(tf.nn.softmax(self._logits)[:, i], self._input_ph)[0]
-                                         for i in range(self._nb_classes)]
+                if None in self._class_grads:
+                    self._class_grads = [tf.gradients(tf.nn.softmax(self._logits)[:, i], self._input_ph)[0] 
+                                         if self._class_grads[i] is None else self._class_grads[i] 
+                                         for i in range(self._nb_classes)]          
 
     def _get_layers(self):
         """
