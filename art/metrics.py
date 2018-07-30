@@ -6,10 +6,8 @@ from __future__ import absolute_import, division, print_function, unicode_litera
 
 import numpy as np
 import numpy.linalg as la
-import tensorflow as tf
 from scipy.stats import weibull_min
 from scipy.optimize import fmin as scipy_optimizer
-from scipy.special import gammainc
 from functools import reduce
 
 from art.attacks.fast_gradient import FastGradientMethod
@@ -148,8 +146,9 @@ def clever(classifier, x, n_b, n_s, r, norm, target=None, target_sort=False, c_i
     :type norm: `int`
     :param target: Class or classes to target. If `None`, targets all classes
     :type target: `int` or iterable of `int`
-    :parm target_sort: Should the target classes be sorted in prediction order
-    :type target: `bool` When `True` and `target` is `None`, sort results
+    :param target_sort: Should the target classes be sorted in prediction order. When `True` and `target` is `None`,
+           sort results.
+    :type target_sort: `bool`
     :param c_init: initialization of Weibull distribution
     :type c_init: `float`
     :param pool_factor: The factor to create a pool of random samples with size pool_factor x n_s
@@ -260,7 +259,7 @@ def clever_t(classifier, x, target_class, n_b, n_s, r, norm, c_init=1, pool_fact
     shape.extend(x.shape)
 
     # Generate a pool of samples
-    rand_pool = np.reshape(random_sphere(m=pool_factor * n_s, n=dim, r=r, norm=norm), shape)
+    rand_pool = np.reshape(random_sphere(nb_points=pool_factor * n_s, nb_dims=dim, radius=r, norm=norm), shape)
     rand_pool += np.repeat(np.array([x]), pool_factor * n_s, 0)
     np.clip(rand_pool, classifier.clip_values[0], classifier.clip_values[1], out=rand_pool)
 
