@@ -27,39 +27,39 @@ The following defense methods are also supported:
 
 ## Setup
 
-Nemesis is designed to run with Python 3 (and most likely Python 2 with small changes). You can either download the source code of Nemesis or clone the repository in your directory of choice:
+The toolbox is designed to run with Python 2 and 3. You can either download the source code or clone the repository in your directory of choice:
 ```bash
-git clone https://github.ibm.com/Maria-Irina-Nicolae/nemesis
+git clone https://github.ibm.com/nemesis/nemesis
 ```
 
-To install the project dependencies, use the requirements file:
+To install the project using `pip`, do the following in the project folder:
 ```bash
 pip install .
 ```
 
-The library comes with a basic set of unit tests. To check your install, you can run all the unit tests by calling in the Nemesis folder:
+The library comes with a basic set of unit tests. To check your install, you can run all the unit tests by calling the test script in the install folder:
 ```bash
 bash run_tests.sh
 ```
 
-The configuration file `config/config.ini` allows to set custom paths for data. By default, data is downloaded in the `nemesis/data` folder as follows:
+## Running ART
 
-```text
-[DEFAULT]
-profile=LOCAL
-
-[LOCAL]
-data_path=./data
-mnist_path=./data/mnist
-cifar10_path=./data/cifar-10
-stl10_path=./data/stl-10
-```
-
-If the datasets are not present at the indicated path, loading them will also download the data.
-
-## Running Nemesis
-
-Some examples of how to use Nemesis when writing your own code can be found in the `examples` folder. See `examples/README.md` for more information about what each example does. To run an example, use the following command:
+Some examples of how to use ART when writing your own code can be found in the `examples` folder. See `examples/README.md` for more information about what each example does. To run an example, use the following command:
 ```bash
-python3 examples/<example_name>.py
+python examples/<example_name>.py
 ```
+
+## Citing ART
+
+If you use ART for research, please consider citing the following reference paper:
+```
+@article{art2018,
+    title = {Adversarial Robustness Toolbox v0.2.2},
+    author = {Nicolae, Maria-Irina and Sinn, Mathieu and Tran, Minh~Ngoc and Rawat, Ambrish and Wistuba, Martin and Zantedeschi, Valentina and Molloy, Ian and Edwards, Ben},
+    journal = {CoRR},
+    volume = {1807.01069}
+    year = {2018},
+    url = {https://arxiv.org/pdf/1807.01069}
+}
+```
+
