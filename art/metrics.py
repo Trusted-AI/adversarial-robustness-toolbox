@@ -128,7 +128,8 @@ def loss_sensitivity(classifier, x):
     return np.mean(norm)
 
 
-def clever(classifier, x, n_b, n_s, r, norm, target=None, target_sort=False, c_init=1, pool_factor=10):
+def clever(classifier, x, nb_batches, batch_size, radius, norm, target=None, target_sort=False, c_init=1,
+           pool_factor=10):
     """
     Compute CLEVER score for an untargeted attack. Paper link: https://arxiv.org/abs/1801.10578
 
@@ -136,12 +137,12 @@ def clever(classifier, x, n_b, n_s, r, norm, target=None, target_sort=False, c_i
     :type classifier: :class:`Classifier`
     :param x: One input sample
     :type x: `np.ndarray`
-    :param n_b: Batch size
-    :type n_b: `int`
-    :param n_s: Number of examples per batch
-    :type n_s: `int`
-    :param r: Maximum perturbation
-    :type r: `float`
+    :param nb_batches: Number of repetitions of the estimate
+    :type nb_batches: `int`
+    :param batch_size: Number of random examples to sample per batch
+    :type batch_size: `int`
+    :param radius: Radius of the maximum perturbation
+    :type radius: `float`
     :param norm: Current support: 1, 2, np.inf
     :type norm: `int`
     :param target: Class or classes to target. If `None`, targets all classes
@@ -175,12 +176,12 @@ def clever(classifier, x, n_b, n_s, r, norm, target=None, target_sort=False, c_i
         if j == pred_class:
             score_list.append(None)
             continue
-        s = clever_t(classifier, x, j, n_b, n_s, r, norm, c_init, pool_factor)
+        s = clever_t(classifier, x, j, nb_batches, batch_size, radius, norm, c_init, pool_factor)
         score_list.append(s)
     return np.array(score_list)
 
 
-def clever_u(classifier, x, n_b, n_s, r, norm, c_init=1, pool_factor=10):
+def clever_u(classifier, x, nb_batches, batch_size, radius, norm, c_init=1, pool_factor=10):
     """
     Compute CLEVER score for an untargeted attack. Paper link: https://arxiv.org/abs/1801.10578
 
@@ -188,12 +189,12 @@ def clever_u(classifier, x, n_b, n_s, r, norm, c_init=1, pool_factor=10):
     :type classifier: :class:`Classifier`
     :param x: One input sample
     :type x: `np.ndarray`
-    :param n_b: Batch size
-    :type n_b: `int`
-    :param n_s: Number of examples per batch
-    :type n_s: `int`
-    :param r: Maximum perturbation
-    :type r: `float`
+    :param nb_batches: Number of repetitions of the estimate
+    :type nb_batches: `int`
+    :param batch_size: Number of random examples to sample per batch
+    :type batch_size: `int`
+    :param radius: Radius of the maximum perturbation
+    :type radius: `float`
     :param norm: Current support: 1, 2, np.inf
     :type norm: `int`
     :param c_init: initialization of Weibull distribution
@@ -211,13 +212,13 @@ def clever_u(classifier, x, n_b, n_s, r, norm, c_init=1, pool_factor=10):
     # Compute CLEVER score for each untargeted class
     score_list = []
     for j in untarget_classes:
-        s = clever_t(classifier, x, j, n_b, n_s, r, norm, c_init, pool_factor)
+        s = clever_t(classifier, x, j, nb_batches, batch_size, radius, norm, c_init, pool_factor)
         score_list.append(s)
 
     return np.min(score_list)
 
 
-def clever_t(classifier, x, target_class, n_b, n_s, r, norm, c_init=1, pool_factor=10):
+def clever_t(classifier, x, target_class, nb_batches, batch_size, radius, norm, c_init=1, pool_factor=10):
     """
     Compute CLEVER score for a targeted attack. Paper link: https://arxiv.org/abs/1801.10578
 
@@ -227,12 +228,12 @@ def clever_t(classifier, x, target_class, n_b, n_s, r, norm, c_init=1, pool_fact
     :type x: `np.ndarray`
     :param target_class: Targeted class
     :type target_class: `int`
-    :param n_b: Batch size
-    :type n_b: `int`
-    :param n_s: Number of examples per batch
-    :type n_s: `int`
-    :param r: Maximum perturbation
-    :type r: `float`
+    :param nb_batches: Number of repetitions of the estimate
+    :type nb_batches: `int`
+    :param batch_size: Number of random examples to sample per batch
+    :type batch_size: `int`
+    :param radius: Radius of the maximum perturbation
+    :type radius: `float`
     :param norm: Current support: 1, 2, np.inf
     :type norm: `int`
     :param c_init: Initialization of Weibull distribution
@@ -255,12 +256,12 @@ def clever_t(classifier, x, target_class, n_b, n_s, r, norm, c_init=1, pool_fact
     # Some auxiliary vars
     grad_norm_set = []
     dim = reduce(lambda x_, y: x_ * y, x.shape, 1)
-    shape = [pool_factor * n_s]
+    shape = [pool_factor * batch_size]
     shape.extend(x.shape)
 
     # Generate a pool of samples
-    rand_pool = np.reshape(random_sphere(nb_points=pool_factor * n_s, nb_dims=dim, radius=r, norm=norm), shape)
-    rand_pool += np.repeat(np.array([x]), pool_factor * n_s, 0)
+    rand_pool = np.reshape(random_sphere(nb_points=pool_factor * batch_size, nb_dims=dim, radius=radius, norm=norm), shape)
+    rand_pool += np.repeat(np.array([x]), pool_factor * batch_size, 0)
     np.clip(rand_pool, classifier.clip_values[0], classifier.clip_values[1], out=rand_pool)
 
     # Change norm since q = p / (p-1)
@@ -271,10 +272,10 @@ def clever_t(classifier, x, target_class, n_b, n_s, r, norm, c_init=1, pool_fact
     elif norm != 2:
         raise ValueError("Norm {} not supported".format(norm))
 
-    # Loop over n_b batches
-    for i in range(n_b):
+    # Loop over the batches
+    for i in range(nb_batches):
         # Random generation of data points
-        sample_xs = rand_pool[np.random.choice(pool_factor * n_s, n_s)]
+        sample_xs = rand_pool[np.random.choice(pool_factor * batch_size, batch_size)]
 
         # Compute gradients
         grads = classifier.class_gradient(sample_xs, logits=True)
@@ -282,7 +283,7 @@ def clever_t(classifier, x, target_class, n_b, n_s, r, norm, c_init=1, pool_fact
             raise Exception("The classifier results NaN gradients")
 
         grad = grads[:, pred_class] - grads[:, target_class]
-        grad = np.reshape(grad, (n_s, -1))
+        grad = np.reshape(grad, (batch_size, -1))
         grad_norm = np.max(np.linalg.norm(grad, ord=norm, axis=1))
         grad_norm_set.append(grad_norm)
 
@@ -294,6 +295,6 @@ def clever_t(classifier, x, target_class, n_b, n_s, r, norm, c_init=1, pool_fact
     value = values[:, pred_class] - values[:, target_class]
 
     # Compute scores
-    s = np.min([-value[0] / loc, r])
+    s = np.min([-value[0] / loc, radius])
 
     return s
