@@ -1,11 +1,10 @@
 from __future__ import absolute_import, division, print_function, unicode_literals
 
 import unittest
-import os
 import keras.backend as k
 import keras
 from keras.models import Sequential
-from keras.layers import Dense, Activation, Flatten, Conv2D, MaxPooling2D, Dropout
+from keras.layers import Dense, Flatten, Conv2D, MaxPooling2D
 import numpy as np
 import tensorflow as tf
 
@@ -17,7 +16,7 @@ from art.utils import load_mnist, get_labels_np_array
 BATCH_SIZE = 10
 NB_TRAIN = 100
 NB_TEST = 11
-accuracy_drop = 0.0 # The unit tests are too inaccurate
+accuracy_drop = 0.0  # The unit tests are too inaccurate
 
 
 class TestBase(unittest.TestCase):
@@ -267,3 +266,6 @@ class TestStaticAdversarialTrainer(TestBase):
         print('\nAccuracy before adversarial training: %.2f%%' % (acc * 100))
         print('\nAccuracy after adversarial training: %.2f%%' % (acc_adv_trained * 100))
 
+
+if __name__ == '__main__':
+    unittest.main()
