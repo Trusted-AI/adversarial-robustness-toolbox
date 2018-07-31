@@ -74,7 +74,7 @@ class SaliencyMapMethod(Attack):
 
             current_pred = preds[ind]
             target = targets[ind]
-            all_feat = set([])
+            all_feat = set()
             
             while current_pred != target and len(all_feat)/self._nb_features <= self.gamma and bool(search_space):
                 # Compute saliency map
