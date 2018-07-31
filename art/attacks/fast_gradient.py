@@ -3,7 +3,7 @@ from __future__ import absolute_import, division, print_function, unicode_litera
 import numpy as np
 
 from art.attacks.attack import Attack
-from art.utils import get_labels_np_array
+from art.utils import get_labels_np_array, random_sphere
 
 
 class FastGradientMethod(Attack):
@@ -12,9 +12,9 @@ class FastGradientMethod(Attack):
     Gradient Sign Method"). This implementation extends the attack to other norms, and is therefore called the Fast
     Gradient Method. Paper link: https://arxiv.org/abs/1412.6572
     """
-    attack_params = Attack.attack_params + ['norm', 'eps', 'targeted']
+    attack_params = Attack.attack_params + ['norm', 'eps', 'targeted', 'random_init']
 
-    def __init__(self, classifier, norm=np.inf, eps=.3, targeted=False):
+    def __init__(self, classifier, norm=np.inf, eps=.3, targeted=False, random_init=False):
         """
         Create a :class:`FastGradientMethod` instance.
 
@@ -26,12 +26,15 @@ class FastGradientMethod(Attack):
         :type eps: `float`
         :param targeted: Should the attack target one specific class
         :type targeted: `bool`
+        :param random_init: Whether to start at the original input or a random point within the epsilon ball
+        :type random_init: `bool`
         """
         super(FastGradientMethod, self).__init__(classifier)
 
         self.norm = norm
         self.eps = eps
         self.targeted = targeted
+        self.random_init = random_init
 
     def _minimal_perturbation(self, x, y, eps_step=0.1, eps_max=1., **kwargs):
         """Iteratively compute the minimal perturbation necessary to make the class prediction change. Stop when the
@@ -54,7 +57,7 @@ class FastGradientMethod(Attack):
         # Compute perturbation with implicit batching
         batch_size = 128
         for batch_id in range(adv_x.shape[0] // batch_size + 1):
-            batch_index_1, batch_index_2 = batch_id * batch_size, (batch_id + 1) * batch_size
+            batch_index_1, batch_index_2 = batch_id * batch_size, min((batch_id + 1) * batch_size, x.shape[0])
             batch = adv_x[batch_index_1:batch_index_2]
             batch_labels = y[batch_index_1:batch_index_2]
 
@@ -67,7 +70,7 @@ class FastGradientMethod(Attack):
             
             while len(active_indices) != 0 and current_eps <= eps_max:
                 # Adversarial crafting
-                current_x = self._apply_perturbation(x, perturbation, current_eps)
+                current_x = self._apply_perturbation(x[batch_index_1:batch_index_2], perturbation, current_eps)
 
                 # Update
                 batch[active_indices] = current_x[active_indices]
@@ -96,12 +99,15 @@ class FastGradientMethod(Attack):
         :param minimal: `True` if only the minimal perturbation should be computed. In that case, use `eps_step` for the
                         step size and `eps_max` for the total allowed perturbation.
         :type minimal: `bool`
+        :param random_init: Whether to start at the original input or a random point within the epsilon ball
+        :type random_init: `bool`
         :return: An array holding the adversarial examples.
         :rtype: `np.ndarray`
         """
         self.set_params(**kwargs)
+        params_cpy = dict(kwargs)
 
-        if 'y' not in kwargs or kwargs[str('y')] is None:
+        if 'y' not in params_cpy or params_cpy[str('y')] is None:
             # Throw error if attack is targeted, but no targets are provided
             if self.targeted:
                 raise ValueError('Target labels `y` need to be provided for a targeted attack.')
@@ -109,14 +115,14 @@ class FastGradientMethod(Attack):
             # Use model predictions as correct outputs
             y = get_labels_np_array(self.classifier.predict(x))
         else:
-            y = kwargs[str('y')]
+            y = params_cpy.pop(str('y'))
         y = y / np.sum(y, axis=1, keepdims=True)
 
         # Return adversarial examples computed with minimal perturbation if option is active
-        if 'minimal' in kwargs and kwargs[str('minimal')]:
-            return self._minimal_perturbation(x, y, **kwargs)
+        if 'minimal' in params_cpy and params_cpy[str('minimal')]:
+            return self._minimal_perturbation(x, y, **params_cpy)
 
-        return self._compute(x, y, self.eps)
+        return self._compute(x, y, self.eps, self.random_init)
 
     def set_params(self, **kwargs):
         """
@@ -164,8 +170,13 @@ class FastGradientMethod(Attack):
         clip_min, clip_max = self.classifier.clip_values
         return np.clip(batch + eps * perturbation, clip_min, clip_max)
     
-    def _compute(self, x, y, eps):
-        adv_x = x.copy()
+    def _compute(self, x, y, eps, random_init):
+        if random_init:
+            n = x.shape[0]
+            m = np.prod(x.shape[1:])
+            adv_x = x.copy() + random_sphere(n, m, eps, self.norm).reshape(x.shape)
+        else:
+            adv_x = x.copy()
 
         # Compute perturbation with implicit batching
         batch_size = 128

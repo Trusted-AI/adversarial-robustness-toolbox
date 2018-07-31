@@ -1,5 +1,6 @@
 from __future__ import absolute_import, division, print_function, unicode_literals
 
+import six
 import numpy as np
 
 from art.classifiers import Classifier
@@ -136,20 +137,27 @@ class MXClassifier(Classifier):
 
         return preds.asnumpy()
 
-    def class_gradient(self, x, logits=False):
+    def class_gradient(self, x, label=None, logits=False):
         """
         Compute per-class derivatives w.r.t. `x`.
 
         :param x: Sample input with shape as expected by the model.
         :type x: `np.ndarray`
+        :param label: Index of a specific per-class derivative. If `None`, then gradients for all
+                      classes will be computed.
+        :type label: `int`
         :param logits: `True` if the prediction should be done at the logits layer.
         :type logits: `bool`
         :return: Array of gradients of input features w.r.t. each class in the form
-                 `(batch_size, nb_classes, input_shape)`.
+                 `(batch_size, nb_classes, input_shape)` when computing for all classes, otherwise shape becomes
+                 `(batch_size, 1, input_shape)` when `label` parameter is specified.
         :rtype: `np.ndarray`
         """
         raise NotImplementedError
         # from mxnet import autograd, nd
+        #
+        # if label is not None and label not in range(self._nb_classes):
+        #     raise ValueError('Label %s is out of range.' % label)
         #
         # x_ = self._apply_processing(x)
         # x_ = nd.array(x_, ctx=self._ctx)
@@ -228,7 +236,7 @@ class MXClassifier(Classifier):
         """
         from mxnet import nd
 
-        if type(layer) is str:
+        if isinstance(layer, six.string_types):
             if layer not in self._layer_names:
                 raise ValueError('Layer name %s is not part of the model.' % layer)
             layer_ind = self._layer_names.index(layer)

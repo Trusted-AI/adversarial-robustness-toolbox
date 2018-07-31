@@ -23,7 +23,7 @@ The Adversarial Robustness Toolbox contains implementations of the following att
 * Basic Iterative Method (`Kurakin et al., 2016`_)
 * Jacobian saliency map (`Papernot et al., 2016`_)
 * Universal perturbation (`Moosavi-Dezfooli et al., 2016`_)
-* Virtual adversarial method (`Miyato et al., 2017`_)
+* Virtual adversarial method (`Miyato et al., 2015`_)
 * C&W attack (`Carlini and Wagner, 2016`_)
 * NewtonFool (`Jang et al., 2017`_)
 
@@ -33,7 +33,7 @@ The following defense methods are also supported:
 * Spatial smoothing (`Xu et al., 2017`_)
 * Label smoothing (`Warde-Farley and Goodfellow, 2016`_)
 * Adversarial training (`Szegedy et al., 2013`_)
-* Virtual adversarial training (`Miyato et al., 2017`_)
+* Virtual adversarial training (`Miyato et al., 2015`_)
 * Gaussian data augmentation (`Zantedeschi et al., 2017`_)
 
 
@@ -74,5 +74,5 @@ Indices and tables
 .. _Xu et al., 2017: http://arxiv.org/abs/1704.01155
 .. _Warde-Farley and Goodfellow, 2016: https://pdfs.semanticscholar.org/b5ec/486044c6218dd41b17d8bba502b32a12b91a.pdf
 .. _Szegedy et al., 2013: http://arxiv.org/abs/1312.6199
-.. _Miyato et al., 2017: https://arxiv.org/abs/1507.00677
+.. _Miyato et al., 2015: https://arxiv.org/abs/1507.00677
 .. _Zantedeschi et al., 2017: https://arxiv.org/abs/1707.06728
