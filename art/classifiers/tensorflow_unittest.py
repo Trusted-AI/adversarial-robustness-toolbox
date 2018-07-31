@@ -38,6 +38,9 @@ class TestTFClassifier(unittest.TestCase):
         # Tensorflow session and initialization
         self._sess = tf.Session()
         self._sess.run(tf.global_variables_initializer())
+    
+    def tearDown(self):
+        self._sess.close()
 
     def test_fit_predict(self):
         # Get MNIST

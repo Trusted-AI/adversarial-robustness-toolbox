@@ -32,8 +32,8 @@ class Model(nn.Module):
 
 class Flatten(nn.Module):
     def forward(self, x):
-        N, _, _, _  = x.size()
-        result = x.view(N, -1)
+        n, _, _, _ = x.size()
+        result = x.view(n, -1)
 
         return result
 
@@ -114,6 +114,22 @@ class TestPyTorchClassifier(unittest.TestCase):
         self.assertTrue(np.array(grads.shape == (NB_TEST, 10, 1, 28, 28)).all())
         self.assertTrue(np.sum(grads) != 0)
 
+    def test_class_gradient_target(self):
+        # Get MNIST
+        (_, _), (x_test, y_test), _, _ = load_mnist()
+        x_test = x_test[:NB_TEST]
+        x_test = np.swapaxes(x_test, 1, 3)
+
+        # Create model
+        model, loss_fn, optimizer = self._model_setup_module()
+
+        # Test gradient
+        ptc = PyTorchClassifier((0, 1), model, loss_fn, optimizer, (1, 28, 28), 10)
+        grads = ptc.class_gradient(x_test, label=3)
+
+        self.assertTrue(np.array(grads.shape == (NB_TEST, 1, 1, 28, 28)).all())
+        self.assertTrue(np.sum(grads) != 0)
+
     def test_loss_gradient(self):
         # Get MNIST
         (_, _), (x_test, y_test), _, _ = load_mnist()
@@ -146,7 +162,6 @@ class TestPyTorchClassifier(unittest.TestCase):
         ptc.fit(x_train, y_train, batch_size=100, nb_epochs=1)
 
         layer_names = ptc.layer_names
-        print(layer_names)
         self.assertTrue(layer_names == ['0_Conv2d(1, 16, kernel_size=(5, 5), stride=(1, 1))', '1_ReLU()',
                                         '2_MaxPool2d(kernel_size=2, stride=2, padding=0, dilation=1, ceil_mode=False)',
                                         '3_Flatten()', '4_Linear(in_features=2304, out_features=10, bias=True)'])
@@ -155,7 +170,6 @@ class TestPyTorchClassifier(unittest.TestCase):
             act_i = ptc.get_activations(x_test, i)
             act_name = ptc.get_activations(x_test, name)
             self.assertTrue(np.sum(act_name-act_i) == 0)
-            print(act_i)
 
         self.assertTrue(ptc.get_activations(x_test, 0).shape == (20, 16, 24, 24))
         self.assertTrue(ptc.get_activations(x_test, 1).shape == (20, 16, 24, 24))
@@ -166,9 +180,3 @@ class TestPyTorchClassifier(unittest.TestCase):
 
 if __name__ == '__main__':
     unittest.main()
-
-
-
-
-
-

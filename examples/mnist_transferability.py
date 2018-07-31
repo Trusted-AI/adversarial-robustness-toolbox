@@ -81,5 +81,5 @@ target.fit(x_train, y_train, nb_epochs=5, batch_size=128)
 
 # Evaluate the CNN on the adversarial samples
 preds = target.predict(x_test_adv)
-acc = np.sum(preds == np.argmax(y_test, axis=1)) / y_test.shape[0]
+acc = np.sum(np.equal(np.argmax(preds, axis=1), np.argmax(y_test, axis=1))) / y_test.shape[0]
 print("\nAccuracy on adversarial samples: %.2f%%" % (acc * 100))
