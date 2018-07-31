@@ -198,7 +198,7 @@ class Classifier(ABC):
                 # Add spatial smoothing
                 if d == 'smooth':
                     from art.defences import SpatialSmoothing
-                    self.smooth = SpatialSmoothing()
+                    self.smooth = SpatialSmoothing(channel_index=self.channel_index)
 
     def _apply_defences_fit(self, x, y):
         # Apply label smoothing if option is set

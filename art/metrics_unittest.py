@@ -2,20 +2,18 @@ from __future__ import absolute_import, division, print_function, unicode_litera
 
 import unittest
 
-import tensorflow as tf
 import keras
 import keras.backend as k
 from keras.models import Sequential
 from keras.layers import Dense, Flatten, Conv2D, MaxPooling2D
 import numpy as np
+import tensorflow as tf
 import torch.nn as nn
 import torch.nn.functional as f
 import torch.optim as optim
 
-from art.classifiers.tensorflow import TFClassifier
-from art.classifiers.keras import KerasClassifier
-from art.classifiers.pytorch import PyTorchClassifier
-from art.metrics import empirical_robustness, clever_t, clever_u, loss_sensitivity
+from art.classifiers import KerasClassifier, PyTorchClassifier, TFClassifier
+from art.metrics import empirical_robustness, clever_t, clever_u, clever, loss_sensitivity
 from art.utils import load_mnist
 
 
@@ -299,6 +297,42 @@ class TestClever(unittest.TestCase):
         self.assertFalse(res0 == res1)
         self.assertFalse(res1 == res2)
         self.assertFalse(res2 == res0)
+
+    def test_clever_l2_no_target(self):
+        batch_size, nb_train, nb_test = 100, 500, 10
+        (x_train, y_train), (x_test, y_test), _, _ = load_mnist()
+
+        # Get the classifier
+        krc = self._create_krclassifier()
+        krc.fit(x_train, y_train, batch_size=batch_size, nb_epochs=2)
+
+        scores = clever(krc, x_test[0], 5, 5, 3, 2, target=None, c_init=1, pool_factor=10)
+        print("Clever Scores for n-1 classes", scores, scores.shape)
+        self.assertTrue(scores.shape == (krc.nb_classes-1,))
+
+    def test_clever_l2_no_target_sorted(self):
+        batch_size, nb_train, nb_test = 100, 500, 10
+        (x_train, y_train), (x_test, y_test), _, _ = load_mnist()
+
+        # Get the classifier
+        krc = self._create_krclassifier()
+        krc.fit(x_train, y_train, batch_size=batch_size, nb_epochs=2)
+
+        scores = clever(krc, x_test[0], 5, 5, 3, 2, target=None, target_sort=True, c_init=1, pool_factor=10)
+        print("Clever scores for n-1 classes", scores, scores.shape)
+        # Should approx. be in decreasing value
+        self.assertTrue(scores.shape == (krc.nb_classes-1,))
+
+    def test_clever_l2_same_target(self):
+        batch_size, nb_train, nb_test = 100, 500, 10
+        (x_train, y_train), (x_test, y_test), _, _ = load_mnist()
+
+        # Get the classifier
+        krc = self._create_krclassifier()
+        krc.fit(x_train, y_train, batch_size=batch_size, nb_epochs=2)
+
+        scores = clever(krc, x_test[0], 5, 5, 3, 2, target=np.argmax(krc.predict(x_test[:1])), c_init=1, pool_factor=10)
+        self.assertIsNone(scores[0], msg='Clever scores for the predicted class should be `None`.')
 
 
 if __name__ == '__main__':

@@ -10,7 +10,8 @@ class KerasClassifier(Classifier):
     """
     The supported backends for Keras are TensorFlow and Theano.
     """
-    def __init__(self, clip_values, model, use_logits=False, channel_index=3, defences=None, preprocessing=(0, 1), input_layer=0, output_layer=0):
+    def __init__(self, clip_values, model, use_logits=False, channel_index=3, defences=None, preprocessing=(0, 1),
+                 input_layer=0, output_layer=0):
         """
         Create a `Classifier` instance from a Keras model. Assumes the `model` passed as argument is compiled.
 
@@ -29,12 +30,10 @@ class KerasClassifier(Classifier):
                used for data preprocessing. The first value will be substracted from the input. The input will then
                be divided by the second one.
         :type preprocessing: `tuple`
-        :param input_layer: Which layer to consider as the Input when the model
-               has multple input layers
+        :param input_layer: Which layer to consider as the Input when the model has multple input layers.
         :type input_layer: `int`
-        :param out_layer: Which layer to consider as the Output when the model
-               has multple output layers
-        :type out_layer: `int`
+        :param output_layer: Which layer to consider as the Output when the model has multiple output layers.
+        :type output_layer: `int`
         """
         import keras.backend as k
 
