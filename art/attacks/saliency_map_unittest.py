@@ -14,7 +14,7 @@ import torch.optim as optim
 
 from art.attacks.saliency_map import SaliencyMapMethod
 from art.classifiers import KerasClassifier, PyTorchClassifier, TFClassifier
-from art.utils import load_mnist, get_labels_np_array
+from art.utils import load_mnist, get_labels_np_array, to_categorical
 
 # TODO add test with gamma < 1
 
@@ -132,7 +132,8 @@ class TestSaliencyMap(unittest.TestCase):
 
         # Perform attack
         df = SaliencyMapMethod(classifier, theta=1)
-        x_test_adv = df.generate(x_test, y=targets)
+        x_test_adv = df.generate(x_test, y=to_categorical(targets, nb_classes))
+        
         self.assertFalse((x_test == x_test_adv).all())
         self.assertFalse((0. == x_test_adv).all())
 
