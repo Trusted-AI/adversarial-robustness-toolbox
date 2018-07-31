@@ -116,7 +116,8 @@ class KerasClassifier(Classifier):
         :param logits: `True` if the prediction should be done at the logits layer.
         :type logits: `bool`
         :return: Array of gradients of input features w.r.t. each class in the form
-                 `(batch_size, nb_classes, input_shape)`.
+                 `(batch_size, nb_classes, input_shape)` when computing for all classes, otherwise shape becomes
+                 `(batch_size, 1, input_shape)` when `label` parameter is specified.
         :rtype: `np.ndarray`
         """
         
