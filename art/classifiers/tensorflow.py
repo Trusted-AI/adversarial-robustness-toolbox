@@ -2,6 +2,7 @@ from __future__ import absolute_import, division, print_function, unicode_litera
 
 import numpy as np
 import random
+import six
 
 from art.classifiers import Classifier
 
@@ -150,35 +151,52 @@ class TFClassifier(Classifier):
                     self._sess.run(self._train, feed_dict={self._input_ph: i_batch, self._output_ph: o_batch,
                                                            self._learning: True})
 
-    def class_gradient(self, x, logits=False):
+    def class_gradient(self, x, label=None, logits=False):
         """
         Compute per-class derivatives w.r.t. `x`.
 
         :param x: Sample input with shape as expected by the model.
         :type x: `np.ndarray`
+        :param label: Index of a specific per-class derivative. If `None`, then gradients for all
+                      classes will be computed.
+        :type label: `int`
         :param logits: `True` if the prediction should be done at the logits layer.
         :type logits: `bool`
         :return: Array of gradients of input features w.r.t. each class in the form
-                 `(batch_size, nb_classes, input_shape)`.
+                 `(batch_size, nb_classes, input_shape)` when computing for all classes, otherwise shape becomes
+                 `(batch_size, 1, input_shape)` when `label` parameter is specified.
         :rtype: `np.ndarray`
         """
+        
+        if label is not None and label not in range(self._nb_classes):           
+            raise ValueError('Label %s is out of range.' % label)
+            
+        self._init_class_grads(label=label, logits=logits)
+        
         x_ = self._apply_processing(x)
 
-        # Compute the gradient and return
-        if logits:
-            if not hasattr(self, '_logit_class_grads'):
-                self._init_class_grads(logits=True)
-            grds = self._sess.run(self._logit_class_grads, feed_dict={self._input_ph: x_})
+        # Compute the gradient and return        
+        if label is not None:
+            if logits:
+                grads = self._sess.run(self._logit_class_grads[label], feed_dict={self._input_ph: x_})
+            else:
+                grads = self._sess.run(self._class_grads[label], feed_dict={self._input_ph: x_})
+
+            grads = grads[None,...] 
+            grads = np.swapaxes(np.array(grads), 0, 1)
+            grads = self._apply_processing_gradient(grads)
+            assert grads.shape == (x_.shape[0], 1) + self.input_shape
         else:
-            if not hasattr(self, '_class_grads'):
-                self._init_class_grads(logits=False)
-            grds = self._sess.run(self._class_grads, feed_dict={self._input_ph: x_})
+            if logits:
+                grads = self._sess.run(self._logit_class_grads, feed_dict={self._input_ph: x_})
+            else:
+                grads = self._sess.run(self._class_grads, feed_dict={self._input_ph: x_})
 
-        grds = np.swapaxes(np.array(grds), 0, 1)
-        grds = self._apply_processing_gradient(grds)
-        assert grds.shape == (x_.shape[0], self.nb_classes) + self.input_shape
+            grads = np.swapaxes(np.array(grads), 0, 1)
+            grads = self._apply_processing_gradient(grads)
+            assert grads.shape == (x_.shape[0], self.nb_classes) + self.input_shape
 
-        return grds
+        return grads
 
     def loss_gradient(self, x, y):
         """
@@ -204,16 +222,35 @@ class TFClassifier(Classifier):
 
         return grds
 
-    def _init_class_grads(self, logits=False):
+    def _init_class_grads(self, label=None, logits=False):
         import tensorflow as tf
 
-        # Construct the class gradients graph
         if logits:
-            self._logit_class_grads = [tf.gradients(self._logits[:, i], self._input_ph)[0]
-                                       for i in range(self._nb_classes)]
+            if not hasattr(self, '_logit_class_grads'):       
+                self._logit_class_grads = [None for i in range(self.nb_classes)]
         else:
-            self._class_grads = [tf.gradients(tf.nn.softmax(self._logits)[:, i], self._input_ph)[0]
-                                 for i in range(self._nb_classes)]
+            if not hasattr(self, '_class_grads'):       
+                self._class_grads = [None for i in range(self.nb_classes)]
+                       
+        # Construct the class gradients graph
+        if label is not None:
+            if logits:                
+                if self._logit_class_grads[label] is None:
+                    self._class_grads_logits[label] = tf.gradients(self._logits[:, label], self._input_ph)[0]
+            else:                
+                if self._class_grads[label] is None:
+                    self._class_grads[label] = tf.gradients(tf.nn.softmax(self._logits)[:, label], self._input_ph)[0]               
+        else:
+            if logits:
+                if None in self._logit_class_grads:
+                    self._logit_class_grads = [tf.gradients(self._logits[:, i], self._input_ph)[0] 
+                                               if self._logit_class_grads[i] is None else self._logit_class_grads[i] 
+                                               for i in range(self._nb_classes)]                     
+            else:
+                if None in self._class_grads:
+                    self._class_grads = [tf.gradients(tf.nn.softmax(self._logits)[:, i], self._input_ph)[0] 
+                                         if self._class_grads[i] is None else self._class_grads[i] 
+                                         for i in range(self._nb_classes)]          
 
     def _get_layers(self):
         """
@@ -289,16 +326,16 @@ class TFClassifier(Classifier):
         with self._sess.graph.as_default():
             graph = tf.get_default_graph()
 
-        if type(layer) is str:
+        if isinstance(layer, six.string_types): # basestring for Python 2 (str, unicode) support
             if layer not in self._layer_names:
                 raise ValueError("Layer name %s is not part of the graph." % layer)
             layer_tensor = graph.get_tensor_by_name(layer)
 
-        elif type(layer) is int:
+        elif isinstance(layer, (int, np.integer)):
             layer_tensor = graph.get_tensor_by_name(self._layer_names[layer])
 
         else:
-            raise TypeError("Layer must be of type `str` or `int`.")
+            raise TypeError("Layer must be of type `str` or `int`. Received '%s'", layer)
 
         # Get activations
         # Apply preprocessing and defences

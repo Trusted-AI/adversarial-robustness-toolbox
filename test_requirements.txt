@@ -1,0 +1,6 @@
+keras
+mxnet
+Pillow
+requests
+torch
+tensorflow

@@ -1,5 +1,6 @@
 from __future__ import absolute_import, division, print_function, unicode_literals
 
+import six
 import numpy as np
 
 from art.classifiers import Classifier
@@ -9,7 +10,8 @@ class KerasClassifier(Classifier):
     """
     The supported backends for Keras are TensorFlow and Theano.
     """
-    def __init__(self, clip_values, model, use_logits=False, channel_index=3, defences=None, preprocessing=(0, 1)):
+    def __init__(self, clip_values, model, use_logits=False, channel_index=3, defences=None, preprocessing=(0, 1),
+                 input_layer=0, output_layer=0):
         """
         Create a `Classifier` instance from a Keras model. Assumes the `model` passed as argument is compiled.
 
@@ -28,6 +30,10 @@ class KerasClassifier(Classifier):
                used for data preprocessing. The first value will be substracted from the input. The input will then
                be divided by the second one.
         :type preprocessing: `tuple`
+        :param input_layer: Which layer to consider as the Input when the model has multple input layers.
+        :type input_layer: `int`
+        :param output_layer: Which layer to consider as the Output when the model has multiple output layers.
+        :type output_layer: `int`
         """
         import keras.backend as k
 
@@ -36,10 +42,18 @@ class KerasClassifier(Classifier):
                                               preprocessing=preprocessing)
 
         self._model = model
-        self._input = model.input
-        self._output = model.output
-        _, self._nb_classes = k.int_shape(model.output)
-        self._input_shape = k.int_shape(model.input)[1:]
+        if hasattr(model, 'inputs'):
+            self._input = model.inputs[input_layer]
+        else:
+            self._input = model.input
+
+        if hasattr(model, 'outputs'):
+            self._output = model.outputs[output_layer]
+        else:
+            self._output = model.output
+
+        _, self._nb_classes = k.int_shape(self._output)
+        self._input_shape = k.int_shape(self._input)[1:]
 
         # Get predictions and loss function
         label_ph = k.placeholder(shape=(None,))
@@ -96,21 +110,24 @@ class KerasClassifier(Classifier):
 
         :param x: Sample input with shape as expected by the model.
         :type x: `np.ndarray`
-        :param label: Index of a specific per-class derivative
+        :param label: Index of a specific per-class derivative. If `None`, then gradients for all
+                      classes will be computed.
         :type label: `int`
         :param logits: `True` if the prediction should be done at the logits layer.
         :type logits: `bool`
         :return: Array of gradients of input features w.r.t. each class in the form
-                 `(batch_size, nb_classes, input_shape)`.
+                 `(batch_size, nb_classes, input_shape)` when computing for all classes, otherwise shape becomes
+                 `(batch_size, 1, input_shape)` when `label` parameter is specified.
         :rtype: `np.ndarray`
         """
-            
-        assert((label is None) or (label in range(self._nb_classes)))
+        if label is not None and label not in range(self._nb_classes):           
+            raise ValueError('Label %s is out of range.' % label)
+        
         self._init_class_grads(label=label, logits=logits)
                 
         x_ = self._apply_processing(x)
         
-        if not label is None:
+        if label is not None:
             if logits:
                 grads = np.swapaxes(np.array(self._class_grads_logits_idx[label]([x_])), 0, 1)
             else:
@@ -215,7 +232,7 @@ class KerasClassifier(Classifier):
         import keras.backend as k
         k.set_learning_phase(0)
 
-        if type(layer) is str:
+        if isinstance(layer, six.string_types):
             if layer not in self._layer_names:
                 raise ValueError('Layer name %s is not part of the graph.' % layer)
             layer_name = layer
@@ -244,7 +261,7 @@ class KerasClassifier(Classifier):
         import keras.backend as k
         k.set_learning_phase(0)
 
-        if not label is None:
+        if label is not None:
             if logits:
                 if not hasattr(self, '_class_grads_logits_idx'):
                     self._class_grads_logits_idx = [None for i in range(self.nb_classes)]
@@ -261,12 +278,14 @@ class KerasClassifier(Classifier):
                     self._class_grads_idx[label] = k.function([self._input], class_grads)               
         else:
             if logits:
-                if not hasattr(self, '_class_grads_logits'):                   
-                    class_grads_logits = [k.gradients(self._preds_op[:, i], self._input)[0] for i in range(self.nb_classes)]
+                if not hasattr(self, '_class_grads_logits'):
+                    class_grads_logits = [k.gradients(self._preds_op[:, i], self._input)[0] 
+                                          for i in range(self.nb_classes)]
                     self._class_grads_logits = k.function([self._input], class_grads_logits)
             else:
                 if not hasattr(self, '_class_grads'):
-                    class_grads = [k.gradients(k.softmax(self._preds_op)[:, i], self._input)[0] for i in range(self.nb_classes)]
+                    class_grads = [k.gradients(k.softmax(self._preds_op)[:, i], self._input)[0] 
+                                   for i in range(self.nb_classes)]
                     self._class_grads = k.function([self._input], class_grads)
 
     def _get_layers(self):

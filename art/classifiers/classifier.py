@@ -117,12 +117,14 @@ class Classifier(ABC):
 
         :param x: Sample input with shape as expected by the model.
         :type x: `np.ndarray`
-        :param label: Index of a specific per-class derivative
+        :param label: Index of a specific per-class derivative. If `None`, then gradients for all
+                      classes will be computed.
         :type label: `int`
         :param logits: `True` if the prediction should be done at the logits layer.
         :type logits: `bool`
         :return: Array of gradients of input features w.r.t. each class in the form
-                 `(batch_size, nb_classes, input_shape)`.
+                 `(batch_size, nb_classes, input_shape)` when computing for all classes, otherwise shape becomes
+                 `(batch_size, 1, input_shape)` when `label` parameter is specified.
         :rtype: `np.ndarray`
         """
         raise NotImplementedError
@@ -197,7 +199,7 @@ class Classifier(ABC):
                 # Add spatial smoothing
                 if d == 'smooth':
                     from art.defences import SpatialSmoothing
-                    self.smooth = SpatialSmoothing()
+                    self.smooth = SpatialSmoothing(channel_index=self.channel_index)
 
     def _apply_defences_fit(self, x, y):
         # Apply label smoothing if option is set
