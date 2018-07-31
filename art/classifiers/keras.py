@@ -119,7 +119,7 @@ class KerasClassifier(Classifier):
                  `(batch_size, nb_classes, input_shape)` when computing for all classes, otherwise shape becomes
                  `(batch_size, 1, input_shape)` when `label` parameter is specified.
         :rtype: `np.ndarray`
-        ""
+        """
         if label is not None and label not in range(self._nb_classes):           
             raise ValueError('Label %s is out of range.' % label)
         

@@ -5,7 +5,7 @@ import sys
 import numpy as np
 
 from art.attacks.attack import Attack
-from art.utils import to_categorical
+from art.utils import get_labels_np_array, to_categorical
 
 
 class CarliniL2Method(Attack):
@@ -94,7 +94,10 @@ class CarliniL2Method(Attack):
         :type y: `np.ndarray`
         :return: An array holding the adversarial examples.
         :rtype: `np.ndarray`
-        """
+        """        
+        x_adv = x.copy()
+        (clip_min, clip_max) = self.classifier.clip_values
+        
         # Parse and save attack-specific parameters
         params_cpy = dict(kwargs)
         y = params_cpy.pop(str('y'), None)
@@ -104,11 +107,7 @@ class CarliniL2Method(Attack):
                 
         # No labels provided, use model prediction as correct class
         if y is None:
-            y = np.argmax(self.classifier.predict(x, logits=False), axis=1)
-            y = to_categorical(y, self.classifier.nb_classes)
-
-        x_adv = x.copy()
-        (clip_min, clip_max) = self.classifier.clip_values
+            y = get_labels_np_array(self.classifier.predict(x, logits=False))
         
         for j, (ex, target) in enumerate(zip(x_adv, y)):
             image = ex.copy()
