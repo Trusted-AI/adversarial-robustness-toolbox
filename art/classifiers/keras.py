@@ -96,7 +96,8 @@ class KerasClassifier(Classifier):
 
         :param x: Sample input with shape as expected by the model.
         :type x: `np.ndarray`
-        :param label: Index of a specific per-class derivative
+        :param label: Index of a specific per-class derivative. If `None`, then gradients for all
+                      classes will be computed.
         :type label: `int`
         :param logits: `True` if the prediction should be done at the logits layer.
         :type logits: `bool`
@@ -104,13 +105,15 @@ class KerasClassifier(Classifier):
                  `(batch_size, nb_classes, input_shape)`.
         :rtype: `np.ndarray`
         """
-            
-        assert((label is None) or (label in range(self._nb_classes)))
+        
+        if label is not None and label not in range(self._nb_classes):           
+            raise ValueError('Label %s is out of range.' % label)
+        
         self._init_class_grads(label=label, logits=logits)
                 
         x_ = self._apply_processing(x)
         
-        if not label is None:
+        if label is not None:
             if logits:
                 grads = np.swapaxes(np.array(self._class_grads_logits_idx[label]([x_])), 0, 1)
             else:
@@ -244,7 +247,7 @@ class KerasClassifier(Classifier):
         import keras.backend as k
         k.set_learning_phase(0)
 
-        if not label is None:
+        if label is not None:
             if logits:
                 if not hasattr(self, '_class_grads_logits_idx'):
                     self._class_grads_logits_idx = [None for i in range(self.nb_classes)]
@@ -262,11 +265,13 @@ class KerasClassifier(Classifier):
         else:
             if logits:
                 if not hasattr(self, '_class_grads_logits'):                   
-                    class_grads_logits = [k.gradients(self._preds_op[:, i], self._input)[0] for i in range(self.nb_classes)]
+                    class_grads_logits = [k.gradients(self._preds_op[:, i], self._input)[0] 
+                                          for i in range(self.nb_classes)]
                     self._class_grads_logits = k.function([self._input], class_grads_logits)
             else:
                 if not hasattr(self, '_class_grads'):
-                    class_grads = [k.gradients(k.softmax(self._preds_op)[:, i], self._input)[0] for i in range(self.nb_classes)]
+                    class_grads = [k.gradients(k.softmax(self._preds_op)[:, i], self._input)[0] 
+                                   for i in range(self.nb_classes)]
                     self._class_grads = k.function([self._input], class_grads)
 
     def _get_layers(self):

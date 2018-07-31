@@ -117,7 +117,8 @@ class Classifier(ABC):
 
         :param x: Sample input with shape as expected by the model.
         :type x: `np.ndarray`
-        :param label: Index of a specific per-class derivative
+        :param label: Index of a specific per-class derivative. If `None`, then gradients for all
+                      classes will be computed.
         :type label: `int`
         :param logits: `True` if the prediction should be done at the logits layer.
         :type logits: `bool`

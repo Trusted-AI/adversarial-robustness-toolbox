@@ -153,7 +153,8 @@ class TFClassifier(Classifier):
 
         :param x: Sample input with shape as expected by the model.
         :type x: `np.ndarray`
-        :param label: Index of a specific per-class derivative
+        :param label: Index of a specific per-class derivative. If `None`, then gradients for all
+                      classes will be computed.
         :type label: `int`
         :param logits: `True` if the prediction should be done at the logits layer.
         :type logits: `bool`
@@ -162,13 +163,15 @@ class TFClassifier(Classifier):
         :rtype: `np.ndarray`
         """
         
-        assert((label is None) or (label in range(self._nb_classes)))
+        if label is not None and label not in range(self._nb_classes):           
+            raise ValueError('Label %s is out of range.' % label)
+            
         self._init_class_grads(label=label, logits=logits)
         
         x_ = self._apply_processing(x)
 
         # Compute the gradient and return        
-        if not label is None:
+        if label is not None:
             if logits:
                 grads = self._sess.run(self._logit_class_grads[label], feed_dict={self._input_ph: x_})
             else:
@@ -225,7 +228,7 @@ class TFClassifier(Classifier):
                 self._class_grads = [None for i in range(self.nb_classes)]
                        
         # Construct the class gradients graph
-        if not label is None:
+        if label is not None:
             if logits:                
                 if self._logit_class_grads[label] is None:
                     self._class_grads_logits[label] = tf.gradients(self._logits[:, label], self._input_ph)[0]
