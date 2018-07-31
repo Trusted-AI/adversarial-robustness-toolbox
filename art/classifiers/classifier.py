@@ -208,14 +208,14 @@ class Classifier(ABC):
 
         # Apply feature squeezing if option is set
         if hasattr(self, 'feature_squeeze'):
-            x = self.feature_squeeze(x)
+            x = self.feature_squeeze(x, clip_values=self.clip_values)
 
         return x, y
 
     def _apply_defences_predict(self, x):
         # Apply feature squeezing if option is set
         if hasattr(self, 'feature_squeeze'):
-            x = self.feature_squeeze(x)
+            x = self.feature_squeeze(x, clip_values=self.clip_values)
 
         # Apply inputs smoothing if option is set
         if hasattr(self, 'smooth'):
