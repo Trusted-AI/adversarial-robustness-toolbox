@@ -148,12 +148,15 @@ class PyTorchClassifier(Classifier):
                 loss.backward()
                 self._optimizer.step()
 
-    def class_gradient(self, x, logits=False):
+    def class_gradient(self, x, label=None, logits=False):
         """
         Compute per-class derivatives w.r.t. `x`.
 
         :param x: Sample input with shape as expected by the model.
         :type x: `np.ndarray`
+        :param label: Index of a specific per-class derivative. If `None`, then gradients for all
+                      classes will be computed.
+        :type label: `int`
         :param logits: `True` if the prediction should be done at the logits layer.
         :type logits: `bool`
         :return: Array of gradients of input features w.r.t. each class in the form
