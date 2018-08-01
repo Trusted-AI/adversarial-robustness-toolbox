@@ -167,7 +167,7 @@ class BinaryActivationDetector(Detector):
                  Return variable has the same `batch_size` (first dimension) as `x`.
         :rtype: `np.ndarray`
         """
-        return self._detector.predict(x)
+        return self._detector.predict(self._classifier.get_activations(x, self._layer_name))
         
 
         
