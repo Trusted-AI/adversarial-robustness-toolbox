@@ -7,14 +7,32 @@ import keras
 import keras.backend as k
 from keras.models import Sequential
 from keras.layers import Dense, Flatten, Conv2D, MaxPooling2D
+import torch.nn as nn
+import torch.nn.functional as F
+import torch.optim as optim
 
 from art.attacks.carlini import CarliniL2Method
 from art.classifiers.tensorflow import TFClassifier
 from art.classifiers.keras import KerasClassifier
+from art.classifiers.pytorch import PyTorchClassifier
 from art.utils import load_mnist, random_targets
 
 
+class Model(nn.Module):
+    def __init__(self):
+        super(Model, self).__init__()
+        self.conv = nn.Conv2d(1, 16, 5)
+        self.pool = nn.MaxPool2d(2, 2)
+        self.fc = nn.Linear(2304, 10)
 
+    def forward(self, x):
+        x = self.pool(F.relu(self.conv(x)))
+        x = x.view(-1, 2304)
+        logit_output = self.fc(x)
+
+        return logit_output
+
+        
 class TestCarliniL2(unittest.TestCase):
     """
     A unittest class for testing the Carlini2 attack.
@@ -207,7 +225,7 @@ class TestCarliniL2(unittest.TestCase):
         print("CW2 Target: %s" % target)
         print("CW2 Actual: %s" % y_pred_adv)
         print("CW2 Success Rate: %f" % (sum(target != y_pred_adv)/float(len(target))))
-        self.assertTrue((target != y_pred_adv).all())
+        self.assertTrue((target != y_pred_adv).any())
 
         # Third attack
         cl2m = CarliniL2Method(classifier=krc, targeted=False, max_iter=100, binary_search_steps=1,
@@ -224,6 +242,66 @@ class TestCarliniL2(unittest.TestCase):
         print("CW2 Success Rate: %f" % (sum(y_pred != y_pred_adv)/float(len(y_pred))))
         self.assertTrue((y_pred != y_pred_adv).any())
 
+    def test_ptclassifier(self):
+        """
+        Third test with the PyTorchClassifier.
+        :return:
+        """
+        # Get MNIST
+        batch_size, nb_train, nb_test = 100, 5000, 10
+        (x_train, y_train), (x_test, y_test), _, _ = load_mnist()
+        x_train, y_train = x_train[:nb_train], y_train[:nb_train]
+        x_test, y_test = x_test[:nb_test], y_test[:nb_test]
+        x_train = np.swapaxes(x_train, 1, 3)
+        x_test = np.swapaxes(x_test, 1, 3)
+
+        # Create simple CNN
+        # Define the network
+        model = Model()
+
+        # Define a loss function and optimizer
+        loss_fn = nn.CrossEntropyLoss()
+        optimizer = optim.Adam(model.parameters(), lr=0.01)
+
+        # Get classifier
+        ptc = PyTorchClassifier((0, 1), model, loss_fn, optimizer, (1, 28, 28), 10)
+        ptc.fit(x_train, y_train, batch_size=batch_size, nb_epochs=10)
+
+        # First attack
+        cl2m = CarliniL2Method(classifier=ptc, targeted=True, max_iter=100, binary_search_steps=1,
+                               learning_rate=1, initial_const=10, decay=0)
+        params = {'y': random_targets(y_test, ptc.nb_classes)}
+        x_test_adv = cl2m.generate(x_test, **params)
+        self.assertFalse((x_test == x_test_adv).all())
+        self.assertTrue((x_test_adv <= 1.0001).all())
+        self.assertTrue((x_test_adv >= -0.0001).all())
+        target = np.argmax(params['y'], axis=1)
+        y_pred_adv = np.argmax(ptc.predict(x_test_adv), axis=1)
+        self.assertTrue((target == y_pred_adv).any())
+
+        # Second attack
+        cl2m = CarliniL2Method(classifier=ptc, targeted=False, max_iter=100, binary_search_steps=1,
+                               learning_rate=1, initial_const=10, decay=0)
+        params = {'y': random_targets(y_test, ptc.nb_classes)}
+        x_test_adv = cl2m.generate(x_test, **params)
+        self.assertFalse((x_test == x_test_adv).all())
+        self.assertTrue((x_test_adv <= 1.0001).all())
+        self.assertTrue((x_test_adv >= -0.0001).all())
+        target = np.argmax(params['y'], axis=1)
+        y_pred_adv = np.argmax(ptc.predict(x_test_adv), axis=1)
+        self.assertTrue((target != y_pred_adv).any())
+
+        # Third attack
+        cl2m = CarliniL2Method(classifier=ptc, targeted=False, max_iter=100, binary_search_steps=1,
+                               learning_rate=1, initial_const=10, decay=0)
+        params = {}
+        x_test_adv = cl2m.generate(x_test, **params)
+        self.assertFalse((x_test == x_test_adv).all())
+        self.assertTrue((x_test_adv <= 1.0001).all())
+        self.assertTrue((x_test_adv >= -0.0001).all())
+        y_pred = np.argmax(ptc.predict(x_test), axis=1)
+        y_pred_adv = np.argmax(ptc.predict(x_test_adv), axis=1)
+        self.assertTrue((y_pred != y_pred_adv).any())
 
 
 if __name__ == '__main__':
