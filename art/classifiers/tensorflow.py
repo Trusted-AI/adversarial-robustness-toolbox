@@ -236,7 +236,7 @@ class TFClassifier(Classifier):
         if label is not None:
             if logits:                
                 if self._logit_class_grads[label] is None:
-                    self._class_grads_logits[label] = tf.gradients(self._logits[:, label], self._input_ph)[0]
+                    self._logit_class_grads[label] = tf.gradients(self._logits[:, label], self._input_ph)[0]
             else:                
                 if self._class_grads[label] is None:
                     self._class_grads[label] = tf.gradients(tf.nn.softmax(self._logits)[:, label], self._input_ph)[0]               
