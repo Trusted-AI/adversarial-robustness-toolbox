@@ -50,7 +50,7 @@ class TestBinaryInputDetector(unittest.TestCase):
         classifier.fit(x_train, y_train, nb_epochs=5, batch_size=128)
         
         # Generate adversarial samples:
-        attacker = FastGradientMethod(classifier, eps=0.01)
+        attacker = FastGradientMethod(classifier, eps=0.1)
         x_train_adv = attacker.generate(x_train[:nb_train])
         x_test_adv = attacker.generate(x_test[:nb_test])
         
@@ -119,7 +119,7 @@ class TestBinaryActivationDetector(unittest.TestCase):
         classifier.fit(x_train[:nb_train], y_train[:nb_train], nb_epochs=5, batch_size=128)
         
         # Generate adversarial samples:
-        attacker = FastGradientMethod(classifier, eps=0.01)
+        attacker = FastGradientMethod(classifier, eps=0.1)
         x_train_adv = attacker.generate(x_train[:nb_train])
         x_test_adv = attacker.generate(x_test[:nb_test])
         
