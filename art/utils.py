@@ -73,7 +73,7 @@ def random_sphere(nb_points, nb_dims, radius, norm):
         res = np.random.uniform(float(-radius), float(radius), (nb_points, nb_dims))
     else:
         raise NotImplementedError("Norm {} not supported".format(norm))
-    
+
     return res
 
 
@@ -100,7 +100,7 @@ def random_targets(labels, nb_classes):
     """
     Given a set of correct labels, randomly choose target labels different from the original ones. These can be
     one-hot encoded or integers.
-    
+
     :param labels: The correct labels
     :type labels: `np.ndarray`
     :param nb_classes: The number of classes for this model
@@ -213,7 +213,7 @@ def load_cifar10():
 
 def load_mnist():
     """Loads MNIST dataset from `DATA_PATH` or downloads it if necessary.
-    
+
     :return: `(x_train, y_train), (x_test, y_test), min, max`
     :rtype: `(np.ndarray, np.ndarray), (np.ndarray, np.ndarray), float, float`
     """
@@ -239,6 +239,27 @@ def load_mnist():
 
     return (x_train, y_train), (x_test, y_test), min_, max_
 
+def load_mnist_raw():
+    """Loads MNIST dataset from config.MNIST_PATH or downloads it if necessary.
+
+    :return: (x_train, y_train), (x_test, y_test), min, max
+    :rtype: tuple of numpy.ndarray), (tuple of numpy.ndarray), float, float
+    """
+    from config import MNIST_PATH
+    from keras.utils.data_utils import get_file
+
+    min_, max_ = 0., 1.
+
+    path = get_file('mnist.npz', cache_subdir=MNIST_PATH, origin='https://s3.amazonaws.com/img-datasets/mnist.npz')
+
+    f = np.load(path)
+    x_train = f['x_train']
+    y_train = f['y_train']
+    x_test = f['x_test']
+    y_test = f['y_test']
+    f.close()
+
+    return (x_train, y_train), (x_test, y_test), min_, max_
 
 def load_imagenet():
     """Loads Imagenet dataset from `DATA_PATH`.
