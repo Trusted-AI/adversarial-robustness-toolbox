@@ -28,7 +28,7 @@ class TestBinaryInputDetector(unittest.TestCase):
         k.set_session(session)
 
         # Get MNIST
-        batch_size, nb_train, nb_test = 100, 5000, 10
+        batch_size, nb_train, nb_test = 100, 1000, 10
         (x_train, y_train), (x_test, y_test), _, _ = load_mnist()
         x_train, y_train = x_train[:nb_train], y_train[:nb_train]
         x_test, y_test = x_test[:nb_test], y_test[:nb_test]
@@ -70,7 +70,7 @@ class TestBinaryInputDetector(unittest.TestCase):
         
         # Create detector and train it:
         detector = BinaryInputDetector(KerasClassifier((0, 1), model, use_logits=False))
-        detector.fit(x_train_detector, y_train_detector, nb_epochs=3, batch_size=128)
+        detector.fit(x_train_detector, y_train_detector, nb_epochs=2, batch_size=128)
         
         # Apply detector on clean and adversarial test data:
         test_detection = np.argmax(detector(x_test), axis=1)
@@ -97,7 +97,7 @@ class TestBinaryActivationDetector(unittest.TestCase):
         k.set_session(session)
 
         # Get MNIST
-        batch_size, nb_train, nb_test = 100, 5000, 10
+        batch_size, nb_train, nb_test = 100, 1000, 10
         (x_train, y_train), (x_test, y_test), _, _ = load_mnist()
         x_train, y_train = x_train[:nb_train], y_train[:nb_train]
         x_test, y_test = x_test[:nb_test], y_test[:nb_test]
@@ -145,7 +145,7 @@ class TestBinaryActivationDetector(unittest.TestCase):
         detector = BinaryActivationDetector(classifier=classifier,
                                             detector=KerasClassifier((0, 1), model, use_logits=False), 
                                             layer=0)
-        detector.fit(x_train_detector, y_train_detector, nb_epochs=3, batch_size=128)
+        detector.fit(x_train_detector, y_train_detector, nb_epochs=2, batch_size=128)
         
         # Apply detector on clean and adversarial test data:
         test_detection = np.argmax(detector(x_test), axis=1)
