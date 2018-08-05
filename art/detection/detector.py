@@ -155,7 +155,7 @@ class BinaryActivationDetector(Detector):
         :type kwargs: `dict`
         :return: None
         """
-        x_activations = self._classifier._get_activations(x, self._layer_name)
+        x_activations = self._classifier.get_activations(x, self._layer_name)
         self._detector.fit(x_activations, y, **kwargs)
         self._is_fitted = True
      
@@ -169,7 +169,7 @@ class BinaryActivationDetector(Detector):
                  Return variable has the same `batch_size` (first dimension) as `x`.
         :rtype: `np.ndarray`
         """
-        return self._detector.predict(self._classifier._get_activations(x, self._layer_name))
+        return self._detector.predict(self._classifier.get_activations(x, self._layer_name))
         
 
         

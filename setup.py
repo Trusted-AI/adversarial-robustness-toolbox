@@ -10,7 +10,8 @@ install_requires = ['h5py',
                     'keras',
                     'tensorflow',
                     'six',
-                    'setuptools']
+                    'setuptools',
+                    'scikit-learn']
 
 tests_require = ['mxnet'
                  'keras',
