@@ -66,7 +66,7 @@ def random_sphere(nb_points, nb_dims, radius, norm):
         res = (a[:, 1:] - a[:, :-1]) * np.random.choice([-1, 1], (nb_points, nb_dims))
     elif norm == 2:
         a = np.random.randn(nb_points, nb_dims)
-        s2 = np.sum(a**2, axis=1)
+        s2 = np.sum(a ** 2, axis=1)
         base = gammainc(nb_dims / 2.0, s2 / 2.0) ** (1 / nb_dims) * radius / np.sqrt(s2)
         res = a * (np.tile(base, (nb_dims, 1))).T
     elif norm == np.inf:
@@ -166,6 +166,7 @@ def preprocess(x, y, nb_classes=10, max_value=255):
 
     return x, y
 
+
 # -------------------------------------------------------------------------------------------------------- IO FUNCTIONS
 
 
@@ -188,7 +189,7 @@ def load_cifar10():
     num_train_samples = 50000
 
     x_train = np.zeros((num_train_samples, 3, 32, 32), dtype=np.uint8)
-    y_train = np.zeros((num_train_samples, ), dtype=np.uint8)
+    y_train = np.zeros((num_train_samples,), dtype=np.uint8)
 
     for i in range(1, 6):
         fpath = os.path.join(path, 'data_batch_' + str(i))
@@ -239,18 +240,19 @@ def load_mnist():
 
     return (x_train, y_train), (x_test, y_test), min_, max_
 
+
 def load_mnist_raw():
     """Loads MNIST dataset from config.MNIST_PATH or downloads it if necessary.
 
-    :return: (x_train, y_train), (x_test, y_test), min, max
-    :rtype: tuple of numpy.ndarray), (tuple of numpy.ndarray), float, float
+    :return: `(x_train, y_train), (x_test, y_test), min, max`
+    :rtype: `(np.ndarray, np.ndarray), (np.ndarray, np.ndarray), float, float`
     """
-    from config import MNIST_PATH
     from keras.utils.data_utils import get_file
+    from art import DATA_PATH
 
     min_, max_ = 0., 1.
 
-    path = get_file('mnist.npz', cache_subdir=MNIST_PATH, origin='https://s3.amazonaws.com/img-datasets/mnist.npz')
+    path = get_file('mnist.npz', cache_subdir=DATA_PATH, origin='https://s3.amazonaws.com/img-datasets/mnist.npz')
 
     f = np.load(path)
     x_train = f['x_train']
@@ -260,6 +262,7 @@ def load_mnist_raw():
     f.close()
 
     return (x_train, y_train), (x_test, y_test), min_, max_
+
 
 def load_imagenet():
     """Loads Imagenet dataset from `DATA_PATH`.
@@ -409,6 +412,7 @@ def _set_group_permissions(filename, group="drl-dwl"):
     shutil.chown(filename, user=None, group=group)
 
     os.chmod(filename, 0o774)
+
 
 # ------------------------------------------------------------------- ARG PARSER
 

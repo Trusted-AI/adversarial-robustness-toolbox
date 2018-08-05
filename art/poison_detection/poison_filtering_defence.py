@@ -10,15 +10,15 @@ else:
     ABC = abc.ABCMeta(str('ABC'), (), {})
 
 
-class PoisonFilteringDefense(ABC):
+class PoisonFilteringDefence(ABC):
     """
-    Base class for all poison filtering defenses
+    Base class for all poison filtering defences
     """
-    defense_params = ['classifier']
+    defence_params = ['classifier']
 
     def __init__(self, classifier, x_train, y_train, verbose=True):
         """
-        Create an ActivationDefense object with the provided classifier
+        Create an ActivationDefence object with the provided classifier
 
         :param classifier: model evaluated for poison
         :type classifier: :class:`Classifier`
@@ -38,19 +38,20 @@ class PoisonFilteringDefense(ABC):
     def detect_poison(self, **kwargs):
         """
         Detects poison
-        :param kwargs: Attack-specific parameters used by child classes.
+
+        :param kwargs: Defence-specific parameters used by child classes.
         :type kwargs: `dict`
         :return: `list` with items identified as poison
         """
         raise NotImplementedError
 
     @abc.abstractmethod
-    def evaluate_defense(self, is_clean, **kwargs):
+    def evaluate_defence(self, is_clean, **kwargs):
         """
-        Evaluates the defense given the
+        Evaluates the defence given the
 
         :param is_clean: 1-D array where is_clean[i]=1 means x_train[i] is clean and is_clean[i]=0 that it's poison.
-        :param kwargs: Attack-specific parameters used by child classes.
+        :param kwargs: Defence-specific parameters used by child classes.
         :type kwargs: `dict`
         :return: JSON object with confusion matrix
         """
@@ -60,11 +61,22 @@ class PoisonFilteringDefense(ABC):
         """
         Take in a dictionary of parameters and apply attack-specific checks before saving them as attributes.
 
-        :param kwargs: a dictionary of attack-specific parameters
+        :param kwargs: a dictionary of defence-specific parameters
         :type kwargs: `dict`
         :return: `True` when parsing was successful
         """
         for key, value in kwargs.items():
-            if key in self.defense_params:
+            if key in self.defence_params:
                 setattr(self, key, value)
         return True
+
+    def get_params(self):
+        """
+        Returns dictionary of parameters used to run defence
+
+        :return: `dict`
+        """
+        dictionary = {}
+        for param in self.defence_params:
+            dictionary.update({param: getattr(self, param)})
+        return dictionary

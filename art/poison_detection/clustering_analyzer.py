@@ -15,6 +15,7 @@ class ClusteringAnalyzer(ABC):
     """
       Base class for all methodologies implemented to analyze clusters and determine whether they are poisonous
     """
+
     def __init__(self):
         """
         Constructor
@@ -24,19 +25,25 @@ class ClusteringAnalyzer(ABC):
     def analyze_clusters(self, separated_clusters, **kwargs):
         """
         Analyzes the provided clusters
+
         :param separated_clusters: list where separated_clusters[i] is the cluster assignments for the ith class
-        :param kwargs:
+        :type `list`
+        :param kwargs: a dictionary of cluster-analysis-specific parameters
+        :type kwargs: `dict`
         :return:
         """
         raise NotImplementedError
 
-
     def assign_class(self, clusters, clean_clusters, poison_clusters):
         """
         Determines whether each data point in the class is in a clean or poisonous cluster
+
         :param clusters: clusters[i] indicates which cluster the i'th data point is in
+        :type clusters: `list`
         :param clean_clusters: list containing the clusters designated as clean
+        :type clean_clusters: `list`
         :param poison_clusters: list containing the clusters designated as poisonous
+        :type poison_clusters `list`
         :return: assigned_clean: assigned_clean[i] is a boolean indicating whether the ith data point is clean
         """
         assigned_clean = np.empty(np.shape(clusters))

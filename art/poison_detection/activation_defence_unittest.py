@@ -6,19 +6,14 @@ from keras.models import Sequential
 from keras.layers import Dense, Flatten, Conv2D, MaxPooling2D, Activation, Dropout
 import numpy as np
 
-from art.poison_detection import ActivationDefense
+from art.poison_detection import ActivationDefence
 from art.classifiers import KerasClassifier
-from art.utils import load_dataset, load_mnist_raw
-
-from os.path import abspath
-import sys
-
-sys.path.append(abspath('.'))
+from art.utils import load_dataset
 
 
-class TestActivationDefense(unittest.TestCase):
+class TestActivationDefence(unittest.TestCase):
 
-    # python -m unittest discover art/ -p 'activation_defense_unittest.py'
+    # python -m unittest discover art/ -p 'activation_defence_unittest.py'
 
     def setUp(self):
 
@@ -42,7 +37,7 @@ class TestActivationDefense(unittest.TestCase):
         self.classifier = KerasClassifier((min_, max_), model=model)
         self.classifier.fit(self.x_train, self.y_train, nb_epochs=1, batch_size=128)
 
-        self.defense = ActivationDefense(self.classifier, self.x_train, self.y_train)
+        self.defence = ActivationDefence(self.classifier, self.x_train, self.y_train)
 
     # def tearDown(self):
     #     self.classifier.dispose()
@@ -51,28 +46,28 @@ class TestActivationDefense(unittest.TestCase):
 
     @unittest.expectedFailure
     def test_wrong_parameters_1(self):
-        self.defense.set_params(n_clusters=0)
+        self.defence.set_params(n_clusters=0)
 
     @unittest.expectedFailure
     def test_wrong_parameters_2(self):
-        self.defense.set_params(clustering_method='what')
+        self.defence.set_params(clustering_method='what')
 
     @unittest.expectedFailure
     def test_wrong_parameters_3(self):
-        self.defense.set_params(reduce='what')
+        self.defence.set_params(reduce='what')
 
     @unittest.expectedFailure
     def test_wrong_parameters_4(self):
-        self.defense.set_params(cluster_analysis='what')
+        self.defence.set_params(cluster_analysis='what')
 
     def test_activations(self):
-        activations = self.defense.get_activations()
+        activations = self.defence._get_activations()
         self.assertEqual(len(self.x_train), len(activations))
 
     def test_output_clusters(self):
         n_classes = self.classifier.nb_classes
         for n_clusters in range(2, 5):
-            clusters_by_class, red_activations_by_class = self.defense.cluster_activations(n_clusters=n_clusters)
+            clusters_by_class, red_activations_by_class = self.defence.cluster_activations(n_clusters=n_clusters)
 
             # Verify expected number of classes
             self.assertEqual(np.shape(clusters_by_class)[0], n_classes)
@@ -87,7 +82,7 @@ class TestActivationDefense(unittest.TestCase):
 
     def test_detect_poison(self):
 
-        confidence_level, is_clean_lst = self.defense.detect_poison(n_clusters=2,
+        confidence_level, is_clean_lst = self.defence.detect_poison(n_clusters=2,
                                                                     ndims=10,
                                                                     reduce='PCA')
         sum_clean1 = sum(is_clean_lst)
@@ -96,10 +91,10 @@ class TestActivationDefense(unittest.TestCase):
         self.assertEqual(len(self.x_train), len(is_clean_lst))
         self.assertEqual(len(self.x_train), len(confidence_level))
         # Test right number of clusters
-        found_clusters = len(np.unique(self.defense.clusters_by_class[0]))
+        found_clusters = len(np.unique(self.defence.clusters_by_class[0]))
         self.assertEqual(found_clusters, 2)
 
-        confidence_level, is_clean_lst = self.defense.detect_poison(n_clusters=3,
+        confidence_level, is_clean_lst = self.defence.detect_poison(n_clusters=3,
                                                                     ndims=10,
                                                                     reduce='PCA',
                                                                     cluster_analysis='distance'
@@ -107,19 +102,19 @@ class TestActivationDefense(unittest.TestCase):
         self.assertEqual(len(self.x_train), len(is_clean_lst))
         self.assertEqual(len(self.x_train), len(confidence_level))
         # Test change of state to new number of clusters:
-        found_clusters = len(np.unique(self.defense.clusters_by_class[0]))
+        found_clusters = len(np.unique(self.defence.clusters_by_class[0]))
         self.assertEqual(found_clusters, 3)
         # Test clean data has changed
         sum_clean2 = sum(is_clean_lst)
         self.assertNotEqual(sum_clean1, sum_clean2)
 
-        confidence_level, is_clean_lst = self.defense.detect_poison(n_clusters=2,
+        confidence_level, is_clean_lst = self.defence.detect_poison(n_clusters=2,
                                                                     ndims=10,
                                                                     reduce='PCA',
                                                                     cluster_analysis='distance'
                                                                     )
         sum_dist = sum(is_clean_lst)
-        confidence_level, is_clean_lst = self.defense.detect_poison(n_clusters=2,
+        confidence_level, is_clean_lst = self.defence.detect_poison(n_clusters=2,
                                                                     ndims=10,
                                                                     reduce='PCA',
                                                                     cluster_analysis='smaller'
@@ -128,7 +123,7 @@ class TestActivationDefense(unittest.TestCase):
         self.assertNotEqual(sum_dist, sum_size)
 
     def test_analyze_cluster(self):
-        dist_clean_by_class = self.defense.analyze_clusters(cluster_analysis='distance')
+        dist_clean_by_class = self.defence.analyze_clusters(cluster_analysis='distance')
 
         n_classes = self.classifier.nb_classes
         self.assertEqual(n_classes, len(dist_clean_by_class))
@@ -139,7 +134,7 @@ class TestActivationDefense(unittest.TestCase):
             n_dp += len(dist_clean_by_class[i])
         self.assertEqual(len(self.x_train), n_dp)
 
-        sz_clean_by_class = self.defense.analyze_clusters(cluster_analysis='smaller')
+        sz_clean_by_class = self.defence.analyze_clusters(cluster_analysis='smaller')
         n_classes = self.classifier.nb_classes
         self.assertEqual(n_classes, len(sz_clean_by_class))
         # Check right amount of data

@@ -18,6 +18,7 @@ class ClusteringHandler:
                             clustering_method='KMeans'):
         """
         Clusters activations and returns two arrays
+
         1) separated_clusters: where separated_clusters[i] is a 1D array indicating which cluster each datapoint
         in the class has been assigned
         2) separated_reduced_activations: activations with dimensionality reduced using the specified reduce method
@@ -41,14 +42,12 @@ class ClusteringHandler:
         elif reduce == 'PCA':
             projector = PCA(n_components=ndims)
         else:
-            print(reduce + " dimensionality reduction method not supported.")
-            return
+            raise ValueError(reduce + " dimensionality reduction method not supported.")
 
         if clustering_method == 'KMeans':
             clusterer = KMeans(n_clusters=n_clusters)
         else:
-            print(clustering_method + " clustering method not supported.")
-            return
+            raise ValueError(clustering_method + " clustering method not supported.")
 
         for i, ac in enumerate(separated_activations):
             # apply dimensionality reduction
@@ -63,8 +62,6 @@ class ClusteringHandler:
 
             # get cluster assignments
             clusters = clusterer.fit_predict(reduced_activations)
-
-            # clusters = np.array(clusters)
 
             separated_clusters.append(clusters)
 

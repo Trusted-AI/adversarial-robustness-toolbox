@@ -18,12 +18,13 @@ class GroundTruthEvaluator:
     def analyze_correctness(self, assigned_clean_by_class, is_clean_by_class, verbose=True):
         """
         For each training sample, determine whether the activation clustering method was correct.
+
         :param assigned_clean_by_class: Result of clustering
         :type assigned_clean_by_class `list`
         :param is_clean_by_class: is clean separated by class
         :type is_clean_by_class `list`
         :param verbose: when True method prints details
-        :type: `bool`
+        :type verbose: `bool`
         :return: Two variables are returned:
                  1) all_errors_by_class[i]: an array indicating the correctness of each assignment
                  in the ith class. Such that:
@@ -84,6 +85,7 @@ class GroundTruthEvaluator:
     def get_confusion_matrix(self, values, verbose):
         """
         Prints and returns a json object that contains the confusion matrix for each class
+
         :param values: Array indicating the correctness of each assignment in the ith class
         :type values `array`
         :param verbose: when True method prints details
@@ -147,6 +149,7 @@ class GroundTruthEvaluator:
     def calculate_and_print(self, numerator, denominator, name, verbose):
         """
         Computes and prints the rates based on the denominator provided
+
         :param numerator: number used to compute the rate
         :type numerator `int`
         :param denominator: number used to compute the rate

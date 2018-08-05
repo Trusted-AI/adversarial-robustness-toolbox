@@ -20,8 +20,14 @@ class DistanceAnalyzer(ClusteringAnalyzer):
 
     def analyze_clusters(self, separated_clusters, **kwargs):
         """
+        Analyze clusters to determine level of suspiciousness of poison.
+
         :param separated_clusters: list where separated_clusters[i] is the cluster assignments for the ith class
-        :param separated_activations: list where seperated_poison_bools[i] is a 1D array of [0,1] for [poison,clean]
+        :type separated_clusters: `list`
+        :param separated_activations: list where separated_activations[i] is a 1D array of [0,1] for [poison,clean]
+        :type separated_clusters: `list`
+        :param kwargs: a dictionary of analysis-specific parameters
+        :type kwargs: `dict`
         :return: all_assignments: array where all_assignments[i] is a 1D array indicating whether a given data point
         was true positive = 0, true negative = 1, false positive = 2, or false negative = 3
         """
@@ -43,8 +49,8 @@ class DistanceAnalyzer(ClusteringAnalyzer):
             cluster0_distance = np.linalg.norm(cluster0_center - cluster_centers[i])
             cluster1_distance = np.linalg.norm(cluster1_center - cluster_centers[i])
 
-            cluster0_isPoison = False
-            cluster1_isPoison = False
+            cluster0_is_poison = False
+            cluster1_is_poison = False
 
             for k, center in enumerate(cluster_centers):
                 if k == i:
@@ -53,15 +59,15 @@ class DistanceAnalyzer(ClusteringAnalyzer):
                     cluster0_distance_to_k = np.linalg.norm(cluster0_center - center)
                     cluster1_distance_to_k = np.linalg.norm(cluster1_center - center)
                     if cluster0_distance_to_k < cluster0_distance and cluster1_distance_to_k > cluster1_distance:
-                        cluster0_isPoison = True
+                        cluster0_is_poison = True
                     if cluster1_distance_to_k < cluster1_distance and cluster0_distance_to_k > cluster0_distance:
-                        cluster1_isPoison = True
+                        cluster1_is_poison = True
 
             poison_clusters = []
 
-            if cluster0_isPoison:
+            if cluster0_is_poison:
                 poison_clusters.append(0)
-            if cluster1_isPoison:
+            if cluster1_is_poison:
                 poison_clusters.append(1)
 
             clean_clusters = list(set(np.unique(clusters)) - set(poison_clusters))
@@ -75,7 +81,8 @@ class DistanceAnalyzer(ClusteringAnalyzer):
     def set_params(self, **kwargs):
         """
         Take in a dictionary of parameters and applies specific checks before saving them as attributes.
-        :param separated_activations: list where seperated_poison_bools[i] is a 1D array of [0,1] for [poison,clean]
+
+        :param separated_activations: list where separated_activations[i] is a 1D array of [0,1] for [poison,clean]
+        :type separated_activations: `list`
         """
-        # Save defense-specific parameters
         super(DistanceAnalyzer, self).set_params(**kwargs)
