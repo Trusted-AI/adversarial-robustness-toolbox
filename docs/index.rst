@@ -53,6 +53,7 @@ The following defense methods are also supported:
    modules/defences
    modules/detection
    modules/metrics
+   modules/poison_detection
    modules/utils
 
 

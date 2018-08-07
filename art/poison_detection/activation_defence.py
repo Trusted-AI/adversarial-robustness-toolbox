@@ -49,10 +49,12 @@ class ActivationDefence(PoisonFilteringDefence):
         """
         Returns confusion matrix.
 
-        :param is_clean: ground truth, where is_clean[i]=1 means that x_train[i] is clean and is_clean[i]=0 means x_train[i] is poisonous
+        :param is_clean: ground truth, where is_clean[i]=1 means that x_train[i] is clean and is_clean[i]=0 means
+                         x_train[i] is poisonous
         :type is_clean: :class `list`
         :param kwargs: a dictionary of defence-specific parameters
         :type kwargs: `dict`
+        :return: JSON object with confusion matrix
         """
         self.set_params(**kwargs)
 
@@ -76,9 +78,9 @@ class ActivationDefence(PoisonFilteringDefence):
 
         :param kwargs: a dictionary of detection-specific parameters
         :type kwargs: `dict`
-        :returns 1) confidence_level,
-                 2) is_clean_lst : type List[int], where is_clean_lst[i]=1 means that x_train[i]
-        there is clean and is_clean_lst[i]=0, means that x_train[i] was classified as poison
+        :return: 1) confidence_level, 2) is_clean_lst : type List[int], where is_clean_lst[i]=1 means that x_train[i]
+                there is clean and is_clean_lst[i]=0, means that x_train[i] was classified as poison
+        :rtype: `tuple`
         """
         self.set_params(**kwargs)
 
