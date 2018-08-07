@@ -4,3 +4,4 @@ keras
 scipy
 six
 tensorflow
+scikit-learn
