@@ -79,7 +79,7 @@ class BinaryInputDetector(Detector):
         Create a `Detector` instance which performs binary classification on input data.
 
         :param detector: The detector architecture to be trained and applied for the binary classification.
-        :type classifier: `art.classifier.Classifier`
+        :type detector: `art.classifier.Classifier`
         """
         self._detector = detector
         self._is_fitted = False
@@ -170,7 +170,3 @@ class BinaryActivationDetector(Detector):
         :rtype: `np.ndarray`
         """
         return self._detector.predict(self._classifier.get_activations(x, self._layer_name))
-        
-
-        
-    
