@@ -160,10 +160,14 @@ class PyTorchClassifier(Classifier):
         :param logits: `True` if the prediction should be done at the logits layer.
         :type logits: `bool`
         :return: Array of gradients of input features w.r.t. each class in the form
-                 `(batch_size, nb_classes, input_shape)`.
+                 `(batch_size, nb_classes, input_shape)` when computing for all classes, otherwise shape becomes
+                 `(batch_size, 1, input_shape)` when `label` parameter is specified.
         :rtype: `np.ndarray`
         """
         import torch
+
+        if label is not None and label not in range(self._nb_classes):
+            raise ValueError('Label %s is out of range.' % label)
 
         # Convert the inputs to Tensors
         x_ = torch.from_numpy(self._apply_processing(x))
@@ -185,16 +189,25 @@ class PyTorchClassifier(Classifier):
         #     preds = torch.nn.Softmax()(preds)
 
         # Compute the gradient
-        grds = []
-        self._model.zero_grad()
-        for i in range(self.nb_classes):
-            torch.autograd.backward(preds[:, i], torch.FloatTensor([1] * len(preds[:, 0])), retain_graph=True)
-            grds.append(x_.grad.numpy().copy())
+        if label is not None:
+            self._model.zero_grad()
+            torch.autograd.backward(preds[:, label], torch.FloatTensor([1] * len(preds[:, 0])), retain_graph=True)
+            grds = x_.grad.numpy().copy()
             x_.grad.data.zero_()
 
-        grds = np.swapaxes(np.array(grds), 0, 1)
-        grds = self._apply_processing_gradient(grds)
-        assert grds.shape == (x_.shape[0], self.nb_classes) + self.input_shape
+            grds = np.expand_dims(self._apply_processing_gradient(grds), axis=1)
+            assert grds.shape == (x_.shape[0], 1) + self.input_shape
+        else:
+            grds = []
+            self._model.zero_grad()
+            for i in range(self.nb_classes):
+                torch.autograd.backward(preds[:, i], torch.FloatTensor([1] * len(preds[:, 0])), retain_graph=True)
+                grds.append(x_.grad.numpy().copy())
+                x_.grad.data.zero_()
+
+            grds = np.swapaxes(np.array(grds), 0, 1)
+            grds = self._apply_processing_gradient(grds)
+            assert grds.shape == (x_.shape[0], self.nb_classes) + self.input_shape
 
         return grds
 
@@ -225,7 +238,7 @@ class PyTorchClassifier(Classifier):
 
         # Clean gradients
         self._model.zero_grad()
-        #inputs_t.grad.data.zero_()
+        # inputs_t.grad.data.zero_()
 
         # Compute gradients
         loss.backward()

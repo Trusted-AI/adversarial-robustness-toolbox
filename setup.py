@@ -10,7 +10,8 @@ install_requires = ['h5py',
                     'keras',
                     'tensorflow',
                     'six',
-                    'setuptools']
+                    'setuptools',
+                    'scikit-learn']
 
 tests_require = ['mxnet'
                  'keras',
@@ -20,7 +21,7 @@ tests_require = ['mxnet'
                  'torch']
 
 setup(name='Adversarial Robustness Toolbox',
-      version='0.2.2',
+      version='0.3.0',
       description='IBM Adversarial machine learning toolbox',
       long_description=long_description,
       long_description_content_type='text/markdown',

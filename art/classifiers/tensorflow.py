@@ -163,7 +163,8 @@ class TFClassifier(Classifier):
         :param logits: `True` if the prediction should be done at the logits layer.
         :type logits: `bool`
         :return: Array of gradients of input features w.r.t. each class in the form
-                 `(batch_size, nb_classes, input_shape)`.
+                 `(batch_size, nb_classes, input_shape)` when computing for all classes, otherwise shape becomes
+                 `(batch_size, 1, input_shape)` when `label` parameter is specified.
         :rtype: `np.ndarray`
         """
         
@@ -235,7 +236,7 @@ class TFClassifier(Classifier):
         if label is not None:
             if logits:                
                 if self._logit_class_grads[label] is None:
-                    self._class_grads_logits[label] = tf.gradients(self._logits[:, label], self._input_ph)[0]
+                    self._logit_class_grads[label] = tf.gradients(self._logits[:, label], self._input_ph)[0]
             else:                
                 if self._class_grads[label] is None:
                     self._class_grads[label] = tf.gradients(tf.nn.softmax(self._logits)[:, label], self._input_ph)[0]               

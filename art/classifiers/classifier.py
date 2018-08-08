@@ -106,7 +106,7 @@ class Classifier(ABC):
     def channel_index(self):
         """
         :return: Index of the axis in data containing the color channels or features.
-        :rtype `int`
+        :rtype: `int`
         """
         return self._channel_index
 
@@ -123,7 +123,8 @@ class Classifier(ABC):
         :param logits: `True` if the prediction should be done at the logits layer.
         :type logits: `bool`
         :return: Array of gradients of input features w.r.t. each class in the form
-                 `(batch_size, nb_classes, input_shape)`.
+                 `(batch_size, nb_classes, input_shape)` when computing for all classes, otherwise shape becomes
+                 `(batch_size, 1, input_shape)` when `label` parameter is specified.
         :rtype: `np.ndarray`
         """
         raise NotImplementedError
@@ -207,14 +208,14 @@ class Classifier(ABC):
 
         # Apply feature squeezing if option is set
         if hasattr(self, 'feature_squeeze'):
-            x = self.feature_squeeze(x)
+            x = self.feature_squeeze(x, clip_values=self.clip_values)
 
         return x, y
 
     def _apply_defences_predict(self, x):
         # Apply feature squeezing if option is set
         if hasattr(self, 'feature_squeeze'):
-            x = self.feature_squeeze(x)
+            x = self.feature_squeeze(x, clip_values=self.clip_values)
 
         # Apply inputs smoothing if option is set
         if hasattr(self, 'smooth'):

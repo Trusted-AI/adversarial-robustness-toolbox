@@ -116,10 +116,10 @@ class KerasClassifier(Classifier):
         :param logits: `True` if the prediction should be done at the logits layer.
         :type logits: `bool`
         :return: Array of gradients of input features w.r.t. each class in the form
-                 `(batch_size, nb_classes, input_shape)`.
+                 `(batch_size, nb_classes, input_shape)` when computing for all classes, otherwise shape becomes
+                 `(batch_size, 1, input_shape)` when `label` parameter is specified.
         :rtype: `np.ndarray`
         """
-        
         if label is not None and label not in range(self._nb_classes):           
             raise ValueError('Label %s is out of range.' % label)
         
@@ -278,7 +278,7 @@ class KerasClassifier(Classifier):
                     self._class_grads_idx[label] = k.function([self._input], class_grads)               
         else:
             if logits:
-                if not hasattr(self, '_class_grads_logits'):                   
+                if not hasattr(self, '_class_grads_logits'):
                     class_grads_logits = [k.gradients(self._preds_op[:, i], self._input)[0] 
                                           for i in range(self.nb_classes)]
                     self._class_grads_logits = k.function([self._input], class_grads_logits)
