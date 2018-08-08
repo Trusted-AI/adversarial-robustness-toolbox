@@ -10,10 +10,9 @@ from scipy.stats import weibull_min
 from scipy.optimize import fmin as scipy_optimizer
 from functools import reduce
 
-from art.attacks.fast_gradient import FastGradientMethod
-from art.utils import random_sphere
+from art.attacks import FastGradientMethod
+from art.utils import random_sphere, get_labels_np_array
 
-# TODO add all other implemented attacks
 supported_methods = {
     "fgsm": {"class": FastGradientMethod, "params": {"eps_step": 0.1, "eps_max": 1., "clip_min": 0., "clip_max": 1.}},
     # "jsma": {"class": SaliencyMapMethod, "params": {"theta": 1., "gamma": 0.01, "clip_min": 0., "clip_max": 1.}}
@@ -28,9 +27,6 @@ def get_crafter(classifier, attack, params=None):
 
     if params:
         crafter.set_params(**params)
-    # else:
-    #     # Use default params
-    #     crafter.set_params(**supported_methods[method]["params"])
 
     return crafter
 
@@ -52,7 +48,8 @@ def empirical_robustness(classifier, x, attack_name, attack_params=None):
     :rtype: `float`
     """
     crafter = get_crafter(classifier, attack_name, attack_params)
-    adv_x = crafter.generate(x, minimal=True, **attack_params)
+    attack_params['minimal'] = True
+    adv_x = crafter.generate(x, **attack_params)
 
     # Predict the labels for adversarial examples
     y = classifier.predict(x)
@@ -109,7 +106,7 @@ def empirical_robustness(classifier, x, attack_name, attack_params=None):
 #     return avg_nn_dist
 
 
-def loss_sensitivity(classifier, x):
+def loss_sensitivity(classifier, x, y):
     """
     Local loss sensitivity estimated through the gradients of the prediction at points in `x`, as defined in
     https://arxiv.org/pdf/1706.05394.pdf.
@@ -118,11 +115,13 @@ def loss_sensitivity(classifier, x):
     :type classifier: :class:`Classifier`
     :param x: Data sample of shape that can be fed into `classifier`
     :type x: `np.ndarray`
+    :param y: Labels for sample `x`, one-hot encoded.
+    :type y: `np.ndarray`
     :return: The average loss sensitivity of the model
     :rtype: `float`
     """
-    y_pred = np.argmax(classifier.predict(x), axis=1)
-    grads = classifier.class_gradient(x, logits=True)[list(range(x.shape[0])), y_pred]
+    grads = classifier.loss_gradient(x, y)
+    print(grads.shape)
     norm = la.norm(grads.reshape(grads.shape[0], -1), ord=2, axis=1)
 
     return np.mean(norm)
