@@ -5,13 +5,13 @@ env:
 matrix:
   include:
       - python: 2.7
-        env: KERAS_BACKEND=tensorflow TENSORFLOW_V=1.5.1
+        env: KERAS_BACKEND=tensorflow TENSORFLOW_V=1.5.0
       - python: 2.7
         env: KERAS_BACKEND=tensorflow TENSORFLOW_V=1.6.0
       - python: 2.7
         env: KERAS_BACKEND=tensorflow TENSORFLOW_V=1.7.0
       - python: 3.5
-        env: KERAS_BACKEND=tensorflow TENSORFLOW_V=1.5.1
+        env: KERAS_BACKEND=tensorflow TENSORFLOW_V=1.5.0
       - python: 3.5
         env: KERAS_BACKEND=tensorflow TENSORFLOW_V=1.6.0
       - python: 3.5
@@ -25,23 +25,26 @@ before_install:
     else
       wget https://repo.continuum.io/miniconda/Miniconda3-latest-Linux-x86_64.sh -O miniconda.sh;
     fi
+  - sed -i "s/tensorflow/tensorflow==${TENSORFLOW_V}/" requirements.txt
+  - sed -i "s/tensorflow/tensorflow==${TENSORFLOW_V}/" test_requirements.txt
   - bash miniconda.sh -b -p $HOME/miniconda
   - export PATH="$HOME/miniconda/bin:$PATH"
   - hash -r
   - conda config --set always_yes yes --set changeps1 no
+  - conda config --add channels pytorch
   - conda update -q conda
   - conda info -a
 
-install:
-  - conda create -q -n test-environment python=$TRAVIS_PYTHON_VERSION numpy scipy matplotlib pandas h5py
+install: 
+  - conda create -q -n test-environment python=$TRAVIS_PYTHON_VERSION --yes --file requirements.txt
+  # Can't specify channels in requirements.txt for conda
+  # - conda install -y pytorch -c pytorch
   - source activate test-environment
-  # Install TensorFlow
-  - if [[ "$TENSORFLOW_V" != "" ]]; then pip install tensorflow==${TENSORFLOW_V}; fi
-  - pip install keras
+  - pip install -q -r test_requirements.txt
+#  - pip install -e .[tests] | cat
   - conda install libgcc
   - export LD_LIBRARY_PATH=$LD_LIBRARY_PATH:/home/travis/miniconda/envs/test-environment/lib
   - export PYTHONPATH=".":$PYTHONPATH
 
 script:
-  - mkdir ./data
   - python -m unittest discover art/ -p '*_unittest.py'

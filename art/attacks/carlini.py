@@ -20,10 +20,9 @@ from __future__ import absolute_import, division, print_function, unicode_litera
 import sys
 
 import numpy as np
-import tensorflow as tf
 
 from art.attacks.attack import Attack
-from art.utils import to_categorical
+from art.utils import get_labels_np_array, to_categorical
 
 
 class CarliniL2Method(Attack):
@@ -33,8 +32,8 @@ class CarliniL2Method(Attack):
     the one in Cleverhans, which reproduces the authors' original code (https://github.com/carlini/nn_robust_attacks).
     Paper link: https://arxiv.org/pdf/1608.04644.pdf
     """
-    attack_params = ['confidence', 'targeted', 'learning_rate', 'max_iter', 'binary_search_steps', 'initial_const',
-                     'decay']
+    attack_params = Attack.attack_params + ['confidence', 'targeted', 'learning_rate', 'max_iter',
+                                            'binary_search_steps', 'initial_const', 'decay']
 
     def __init__(self, classifier, confidence=5.0, targeted=True, learning_rate=1e-4, binary_search_steps=25,
                  max_iter=1000, initial_const=1e-4, decay=0.):
@@ -79,83 +78,28 @@ class CarliniL2Method(Attack):
         self._c_upper_bound = 10e10
         # Smooth arguments of arctanh by multiplying with this constant to avoid division by zero:
         self._tanh_smoother = 0.999999
-                           
-        # Next we are going to create a number of Tf variables and operations. We are doing this in the constructor in
-        # order to not repeat this everytime we want to create an attack for a specific input.
-        shape = classifier.input_shape
-        num_labels = classifier.nb_classes
-                
-        # Create variable for perturbation in the tanh space. This is the variable wrt to which the loss function is
-        # minimized. Also create operator for initializing this variable.
-        perturbation_tanh = tf.Variable(np.zeros(shape), dtype=np.float32, name='perturbation_tanh')
-        self._init_perturbation_tanh = tf.variables_initializer([perturbation_tanh])
-                    
-        # Next we define the loss function that we are going to minimize.
-        # 1) external inputs to the loss function:
-        image_tanh = tf.Variable(np.zeros(shape), dtype=tf.float32, name='image_tanh')
-        target = tf.Variable(np.zeros(num_labels), dtype=tf.float32, name='target')
-        c = tf.Variable(0, dtype=tf.float32, name='c')
-
-        # 2) the resulting adversarial image. Note that the optimization is performed in tanh space to keep the
-        #    adversarial images bounded from clip_min and clip_max. To avoid division by zero (which occurs if
-        #    arguments of arctanh are +1 or -1), we multiply arguments with _tanh_smoother. Here, in the inverse
-        #    transformation, we need to divide by _tanh_smoother. It appears this is what Carlini and Wagner
-        #    (2016) are alluding to in their footnote 8. However, it is not clear how their proposed trick
-        #    ("instead of scaling by 1/2 we cale by 1/2 + eps") would actually work.
-        self._adv_image = tf.tanh(image_tanh + perturbation_tanh)
-        self._adv_image = (self._adv_image / self._tanh_smoother + 1) / 2
-        (clip_min, clip_max) = classifier.clip_values
-        self._adv_image = self._adv_image * (clip_max - clip_min) + clip_min
-               
-        # 3) consider model logits Z for the adversarial image, temporarily as a placeholder:
-        self._z = tf.placeholder(dtype=tf.float32, shape=[num_labels], name='logits')
-
-        # 4) compute squared l2 distance between original and adversarial image. Need to transform original image from
-        #    arctanh space first.
-        image = (tf.tanh(image_tanh) / self._tanh_smoother + 1) / 2
-        image = image * (clip_max - clip_min) + clip_min
-        self._l2dist = tf.reduce_sum(tf.square(self._adv_image - image))
-                                    
-        # 5) Compute logit of the target, and maximum logit over all other classes:
-        z_target = tf.reduce_sum(self._z * target)
-        z_other = tf.reduce_max(self._z * (1 - target))
+    
+    def loss(self, x, x_adv, target, c):
+        l2dist = np.sum(np.square(x-x_adv))        
+        z = self.classifier.predict(np.array([x_adv]), logits=True)[0]
+        z_target = np.sum(z * target)
+        z_other = np.max(z * (1 - target))
         
         # The following differs from the exact definition given in Carlini and Wagner (2016). There (page 9, left
         # column, last equation), the maximum is taken over Z_other - Z_target (or Z_target - Z_other respectively)
         # and -confidence. However, it doesn't seem that that would have the desired effect (loss term is <= 0 if and
         # only if the difference between the logit of the target and any other class differs by at least confidence).
         # Hence the rearrangement here.
+        
         if self.targeted:
             # if targeted, optimize for making the target class most likely
-            loss = tf.maximum(z_other - z_target + self.confidence, 0)
+            loss = max(z_other - z_target + self.confidence, 0)
         else:
             # if untargeted, optimize for making any other class most likely
-            loss = tf.maximum(z_target - z_other + self.confidence, 0)
+            loss = max(z_target - z_other + self.confidence, 0)
 
-        # 6) combine loss terms:
-        self._loss = c * loss + self._l2dist
-
-        # 7) compute partial gradients:
-        self._grad_l2z = tf.gradients(self._loss, self._z)[0]
-
-        # 8) create operators to assign values to external inputs of the loss function:
-        self._image_tanh = tf.placeholder(tf.float32, shape, name='image_tanh')
-        self._target = tf.placeholder(tf.float32, num_labels, name='target')
-        self._c = tf.placeholder(tf.float32, name='c')
-
-        self._assign_image_tanh = image_tanh.assign(self._image_tanh)
-        self._assign_target = target.assign(self._target)
-        self._assign_c = c.assign(self._c)
-
-        # Create a gradient placeholder, a decayed learning rate placeholder and an operator to update the pertubation
-        self._grad_l2p = tf.placeholder(tf.float32, shape, name='grad_l2p')
-        self._lr = tf.placeholder(tf.float32, name='decayed_learning_rate')
-        update = perturbation_tanh - self._lr * self._grad_l2p
-        self._update_pert = perturbation_tanh.assign(update)
-
-        # Finally create a tf session
-        self._sess = tf.Session()
-
+        return z, l2dist, c*loss + l2dist
+    
     def generate(self, x, **kwargs):
         """
         Generate adversarial samples and return them in an array.
@@ -167,7 +111,10 @@ class CarliniL2Method(Attack):
         :type y: `np.ndarray`
         :return: An array holding the adversarial examples.
         :rtype: `np.ndarray`
-        """
+        """        
+        x_adv = x.copy()
+        (clip_min, clip_max) = self.classifier.clip_values
+        
         # Parse and save attack-specific parameters
         params_cpy = dict(kwargs)
         y = params_cpy.pop(str('y'), None)
@@ -177,22 +124,20 @@ class CarliniL2Method(Attack):
                 
         # No labels provided, use model prediction as correct class
         if y is None:
-            y = np.argmax(self.classifier.predict(x, logits=False), axis=1)
-            y = to_categorical(y, self.classifier.nb_classes)
-
-        # Images to be attacked:
-        x_adv = x.copy()
-
-        # Transform images to tanh space:
-        (clip_min, clip_max) = self.classifier.clip_values
-        x_adv = np.clip(x_adv, clip_min, clip_max)
-        x_adv = (x_adv - clip_min) / (clip_max - clip_min)
-        x_adv = np.arctanh(((x_adv * 2) - 1) * self._tanh_smoother)
-
+            y = get_labels_np_array(self.classifier.predict(x, logits=False))
+        
         for j, (ex, target) in enumerate(zip(x_adv, y)):
-            # Assign the external inputs to the loss function:
-            self._sess.run(self._assign_image_tanh, {self._image_tanh: ex})
-            self._sess.run(self._assign_target, {self._target: target})
+            image = ex.copy()
+            
+            # The optimization is performed in tanh space to keep the
+            # adversarial images bounded from clip_min and clip_max. To avoid division by zero (which occurs if
+            # arguments of arctanh are +1 or -1), we multiply arguments with _tanh_smoother. 
+            # It appears this is what Carlini and Wagner
+            # (2016) are alluding to in their footnote 8. However, it is not clear how their proposed trick
+            # ("instead of scaling by 1/2 we cale by 1/2 + eps") would actually work.
+            image_tanh = np.clip(image, clip_min, clip_max)
+            image_tanh = (image_tanh - clip_min) / (clip_max - clip_min)
+            image_tanh = np.arctanh(((image_tanh * 2) - 1) * self._tanh_smoother)
 
             # Initialize binary search:
             c = self.initial_const
@@ -201,46 +146,51 @@ class CarliniL2Method(Attack):
 
             # Initialize placeholders for best l2 distance and attack found so far
             best_l2dist = sys.float_info.max
-            best_adv_image = ex
-
+            best_adv_image = image
+            
             for _ in range(self.binary_search_steps):
                 attack_success = False
                 loss_prev = sys.float_info.max
                 lr = self.learning_rate
                 
                 # Initialize perturbation in tanh space:
-                self._sess.run(self._init_perturbation_tanh)
-
-                # Assign constant c of the loss function:
-                self._sess.run(self._assign_c, {self._c: c})
+                perturbation_tanh = np.zeros(image_tanh.shape)
                
                 for it in range(self.max_iter):
-                    # Collect current loss and l2 distance and compute gradients:
-                    adv_image = self._sess.run(self._adv_image)
-                    z = self.classifier.predict(np.array([adv_image]), logits=True)[0]
-                    loss, l2dist, grad_l2z = self._sess.run([self._loss, self._l2dist, self._grad_l2z], {self._z: z})
-                    grad_z2p = self.classifier.class_gradient(np.array([adv_image]), logits=True)[0]
-                    grad_l2p = np.zeros(shape=self.classifier.input_shape)
-                    for i in range(self.classifier.nb_classes):
-                        grad_l2p += grad_z2p[i] * grad_l2z[i]
-
-                    # Update the pertubation with decayed learning rate
-                    lr *= (1. / (1. + self.decay * it))
-                    self._sess.run(self._update_pert, {self._grad_l2p: grad_l2p, self._lr: lr})
-
-                    # Check whether last attack was successful:
-                    # Attack success criterion: first term of the loss function is <= 0
+                    # First transform current adversarial sample from tanh to original space:        
+                    adv_image = image_tanh + perturbation_tanh
+                    adv_image = (np.tanh(adv_image) / self._tanh_smoother + 1) / 2
+                    adv_image = adv_image * (clip_max - clip_min) + clip_min
+                                        
+                    # Collect current logits, loss and l2 distance.
+                    z, l2dist, loss = self.loss(image, adv_image, target, c)
                     last_attack_success = loss-l2dist <= 0
                     attack_success = attack_success or last_attack_success
                     
-                    if last_attack_success and l2dist < best_l2dist:
-                        best_l2dist = l2dist
-                        best_adv_image =  self._sess.run(self._adv_image)
-                                       
-                    # Check simple stopping criterion:
-                    if loss > loss_prev:
+                    if last_attack_success:
+                        if l2dist < best_l2dist:
+                            best_l2dist = l2dist
+                            best_adv_image =  adv_image 
                         break
-                    loss_prev = loss
+                    #elif loss >= loss_prev:
+                    #    break
+                    else:                       
+                        if self.targeted:
+                            i_sub, i_add = np.argmax(target), np.argmax(z * (1 - target))
+                        else:
+                            i_add, i_sub = np.argmax(target), np.argmax(z * (1 - target))
+                        
+                        grad_l2p = self.classifier.class_gradient(np.array([adv_image]), label=i_add, logits=True)[0]
+                        grad_l2p -= self.classifier.class_gradient(np.array([adv_image]), label=i_sub, logits=True)[0]
+                        grad_l2p *= c
+                        grad_l2p += 2*(adv_image-image)
+                        grad_l2p *= (clip_max - clip_min) 
+                        grad_l2p *= (1-np.square(np.tanh(image_tanh + perturbation_tanh)))/(2*self._tanh_smoother)
+                        
+                        # Update the pertubation with decayed learning rate
+                        lr *= (1. / (1. + self.decay * it))
+                        perturbation_tanh -= lr*grad_l2p[0]         
+                        loss_prev = loss
 
                 # Update binary search:
                 if attack_success:
@@ -257,10 +207,6 @@ class CarliniL2Method(Attack):
                 # Abort binary search if c exceeds upper bound:
                 if c > self._c_upper_bound:
                     break
-
-            # Transform best_adv_image back into tanh space if attack is failed
-            if (best_adv_image == ex).all():
-                best_adv_image = (np.tanh(best_adv_image) / self._tanh_smoother + 1) / 2
 
             x_adv[j] = best_adv_image
 

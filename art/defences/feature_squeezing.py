@@ -32,32 +32,38 @@ class FeatureSqueezing(Preprocessor):
         """
         Create an instance of feature squeezing.
 
-        :param bit_depth: The number of bits to encode data on
+        :param bit_depth: The number of bits per channel for encoding the data.
         :type bit_depth: `int`
         """
         super(FeatureSqueezing, self).__init__()
         self._is_fitted = True
         self.set_params(bit_depth=bit_depth)
 
-    def __call__(self, x, y=None, bit_depth=None):
+    def __call__(self, x, y=None, bit_depth=None, clip_values=(0, 1)):
         """
         Apply feature squeezing to sample `x`.
 
-        :param x: Sample to squeeze. `x` values are supposed to be in the range [0,1]
+        :param x: Sample to squeeze. `x` values are expected to be in the data range provided by `clip_values`.
         :type x: `np.ndarrray`
         :param y: Labels of the sample `x`. This function does not affect them in any way.
         :type y: `np.ndarray`
-        :param bit_depth: The number of bits to encode data on
+        :param bit_depth: The number of bits per channel for encoding the data.
         :type bit_depth: `int`
         :return: Squeezed sample
         :rtype: `np.ndarray`
         """
-        # TODO Extend to data in any range of values
         if bit_depth is not None:
             self.set_params(bit_depth=bit_depth)
 
+        x_ = x - clip_values[0]
+        if clip_values[1] != 0:
+            x_ = x_ / clip_values[1]
+
         max_value = np.rint(2 ** self.bit_depth - 1)
-        return np.rint(x * max_value) / max_value
+        res = (np.rint(x_ * max_value) / max_value) * (clip_values[1] - clip_values[0]) + clip_values[0]
+        assert (res <= clip_values[1]).all() and (res >= clip_values[0]).all()
+
+        return res
 
     def fit(self, x, y=None, **kwargs):
         """No parameters to learn for this method; do nothing."""
@@ -67,7 +73,7 @@ class FeatureSqueezing(Preprocessor):
         """Take in a dictionary of parameters and applies defence-specific checks before saving them as attributes.
 
         Defense-specific parameters:
-        :param bit_depth: The number of bits to encode data on
+        :param bit_depth: The number of bits per channel for encoding the data.
         :type bit_depth: `int`
         """
         # Save attack-specific parameters

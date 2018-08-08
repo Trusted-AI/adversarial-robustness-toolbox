@@ -1,8 +1,7 @@
-tensorflow==1.5
+numpy
 h5py
-Keras
-matplotlib
+keras
 scipy
-sphinx
-sphinx-autobuild
-sphinx_rtd_theme
+six
+tensorflow
+scikit-learn

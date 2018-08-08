@@ -94,3 +94,13 @@ ENV/
 # ignore pictures
 *.jpg
 demo/pics/*
+
+# ignore local config
+*config.ini
+
+# Things TF might pull when testing
+*.gz
+*.npy
+*.npz
+*.ipynb
+.DS_Store

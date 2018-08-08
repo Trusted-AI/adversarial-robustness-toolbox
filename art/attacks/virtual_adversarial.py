@@ -27,7 +27,7 @@ class VirtualAdversarialMethod(Attack):
     This attack was originally proposed by Miyato et al. (2016) and was used for virtual adversarial training.
     Paper link: https://arxiv.org/abs/1507.00677
     """
-    attack_params = ['eps', 'finite_diff', 'max_iter']
+    attack_params = Attack.attack_params + ['eps', 'finite_diff', 'max_iter']
 
     def __init__(self, classifier, max_iter=1, finite_diff=1e-6, eps=.1):
         """
@@ -82,13 +82,14 @@ class VirtualAdversarialMethod(Attack):
                 kl_div1 = entropy(preds[ind], preds_new[0])
                 
                 # TODO remove for loop
-                d_new = d
-                for i in range(*dims):
-                    d[i] += self.finite_diff
+                d_new = np.zeros_like(d)
+                array_iter = np.nditer(d, op_flags=['readwrite'], flags=['multi_index'])
+                for x in array_iter:
+                    x[...] += self.finite_diff
                     preds_new = self.classifier.predict((val + d)[None, ...], logits=False)
                     kl_div2 = entropy(preds[ind], preds_new[0])                    
-                    d_new[i] = (kl_div2-kl_div1)/self.finite_diff
-                    d[i] -= self.finite_diff
+                    d_new[array_iter.multi_index] = (kl_div2 - kl_div1) / self.finite_diff
+                    x[...] -= self.finite_diff
                 d = d_new
 
             # Apply perturbation and clip

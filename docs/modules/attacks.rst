@@ -17,6 +17,11 @@ Fast Gradient Method
 .. autoclass:: FastGradientMethod
    :members:
 
+Basic Iterative Method
+----------------------
+.. autoclass:: BasicIterativeMethod
+   :members:
+
 Jacobian Saliency Map Attack
 ----------------------------
 .. autoclass:: SaliencyMapMethod

@@ -46,11 +46,10 @@ class Model(nn.Module):
         x = self.pool(F.relu(self.conv(x)))
         x = x.view(-1, 2304)
         logit_output = self.fc(x)
-        output = F.softmax(logit_output, dim=1)
 
-        return logit_output, output
+        return logit_output
 
-
+        
 class TestCarliniL2(unittest.TestCase):
     """
     A unittest class for testing the Carlini2 attack.
@@ -83,7 +82,7 @@ class TestCarliniL2(unittest.TestCase):
         self._sess.run(tf.global_variables_initializer())
 
         # Get MNIST
-        batch_size, nb_train, nb_test = 100, 1000, 10
+        batch_size, nb_train, nb_test = 100, 5000, 10
         (x_train, y_train), (x_test, y_test), _, _ = load_mnist()
         x_train, y_train = x_train[:nb_train], y_train[:nb_train]
         x_test, y_test = x_test[:nb_test], y_test[:nb_test]
@@ -91,11 +90,11 @@ class TestCarliniL2(unittest.TestCase):
         # Train the classifier
         tfc = TFClassifier((0, 1), self._input_ph, self._logits, self._output_ph,
                            self._train, self._loss, None, self._sess)
-        tfc.fit(x_train, y_train, batch_size=batch_size, nb_epochs=2)
+        tfc.fit(x_train, y_train, batch_size=batch_size, nb_epochs=10)
 
         # Failure attack
         cl2m = CarliniL2Method(classifier=tfc, targeted=True, max_iter=0, binary_search_steps=0,
-                               learning_rate=2e-2, initial_const=3, decay=1e-2)
+                               learning_rate=0, initial_const=1, decay=0)
         params = {'y': random_targets(y_test, tfc.nb_classes)}
         x_test_adv = cl2m.generate(x_test, **params)
         self.assertTrue((x_test_adv <= 1.0001 ).all())
@@ -130,7 +129,7 @@ class TestCarliniL2(unittest.TestCase):
         self._sess.run(tf.global_variables_initializer())
 
         # Get MNIST
-        batch_size, nb_train, nb_test = 100, 500, 5
+        batch_size, nb_train, nb_test = 100, 5000, 10
         (x_train, y_train), (x_test, y_test), _, _ = load_mnist()
         x_train, y_train = x_train[:nb_train], y_train[:nb_train]
         x_test, y_test = x_test[:nb_test], y_test[:nb_test]
@@ -138,11 +137,11 @@ class TestCarliniL2(unittest.TestCase):
         # Train the classifier
         tfc = TFClassifier((0, 1), self._input_ph, self._logits, self._output_ph,
                            self._train, self._loss, None, self._sess)
-        tfc.fit(x_train, y_train, batch_size=batch_size, nb_epochs=2)
+        tfc.fit(x_train, y_train, batch_size=batch_size, nb_epochs=10)
 
         # First attack
-        cl2m = CarliniL2Method(classifier=tfc, targeted=True, max_iter=10, binary_search_steps=10,
-                               learning_rate=2e-2, initial_const=3, decay=1e-2)
+        cl2m = CarliniL2Method(classifier=tfc, targeted=True, max_iter=100, binary_search_steps=1,
+                               learning_rate=1, initial_const=10, decay=0)
         params = {'y': random_targets(y_test, tfc.nb_classes)}
         x_test_adv = cl2m.generate(x_test, **params)
         self.assertFalse((x_test == x_test_adv).all())
@@ -151,11 +150,14 @@ class TestCarliniL2(unittest.TestCase):
         self.assertTrue((x_test_adv >= -0.0001).all())
         target = np.argmax(params['y'], axis=1)
         y_pred_adv = np.argmax(tfc.predict(x_test_adv), axis=1)
-        self.assertTrue((target == y_pred_adv).all())
+        print("CW2 Target: %s" % target)
+        print("CW2 Actual: %s" % y_pred_adv)
+        print("CW2 Success Rate: %f" % (sum(target == y_pred_adv)/float(len(target))))
+        self.assertTrue((target == y_pred_adv).any())
 
         # Second attack
-        cl2m = CarliniL2Method(classifier=tfc, targeted=False, max_iter=10, binary_search_steps=10,
-                               learning_rate=2e-2, initial_const=3, decay=1e-2)
+        cl2m = CarliniL2Method(classifier=tfc, targeted=False, max_iter=100, binary_search_steps=1,
+                               learning_rate=1, initial_const=10, decay=0)
         params = {'y': random_targets(y_test, tfc.nb_classes)}
         x_test_adv = cl2m.generate(x_test, **params)
         self.assertFalse((x_test == x_test_adv).all())
@@ -163,11 +165,14 @@ class TestCarliniL2(unittest.TestCase):
         self.assertTrue((x_test_adv >= -0.0001).all())
         target = np.argmax(params['y'], axis=1)
         y_pred_adv = np.argmax(tfc.predict(x_test_adv), axis=1)
-        self.assertTrue((target != y_pred_adv).all())
+        print("CW2 Target: %s" % target)
+        print("CW2 Actual: %s" % y_pred_adv)
+        print("CW2 Success Rate: %f" % (sum(target != y_pred_adv)/float(len(target))))
+        self.assertTrue((target != y_pred_adv).any())
 
         # Third attack
-        cl2m = CarliniL2Method(classifier=tfc, targeted=False, max_iter=10, binary_search_steps=10,
-                               learning_rate=2e-2, initial_const=3, decay=1e-2)
+        cl2m = CarliniL2Method(classifier=tfc, targeted=False, max_iter=100, binary_search_steps=1,
+                               learning_rate=1, initial_const=10, decay=0)
         params = {}
         x_test_adv = cl2m.generate(x_test, **params)
         self.assertFalse((x_test == x_test_adv).all())
@@ -175,7 +180,10 @@ class TestCarliniL2(unittest.TestCase):
         self.assertTrue((x_test_adv >= -0.0001).all())
         y_pred = np.argmax(tfc.predict(x_test), axis=1)
         y_pred_adv = np.argmax(tfc.predict(x_test_adv), axis=1)
-        self.assertTrue((y_pred != y_pred_adv).all())
+        print("CW2 Target: %s" % y_pred)
+        print("CW2 Actual: %s" % y_pred_adv)
+        print("CW2 Success Rate: %f" % (sum(y_pred != y_pred_adv)/float(len(y_pred))))
+        self.assertTrue((y_pred != y_pred_adv).any())
 
     def test_krclassifier(self):
         """
@@ -187,7 +195,7 @@ class TestCarliniL2(unittest.TestCase):
         k.set_session(session)
 
         # Get MNIST
-        batch_size, nb_train, nb_test = 100, 500, 5
+        batch_size, nb_train, nb_test = 100, 5000, 10
         (x_train, y_train), (x_test, y_test), _, _ = load_mnist()
         x_train, y_train = x_train[:nb_train], y_train[:nb_train]
         x_test, y_test = x_test[:nb_test], y_test[:nb_test]
@@ -204,11 +212,11 @@ class TestCarliniL2(unittest.TestCase):
 
         # Get classifier
         krc = KerasClassifier((0, 1), model, use_logits=False)
-        krc.fit(x_train, y_train, batch_size=batch_size, nb_epochs=2)
+        krc.fit(x_train, y_train, batch_size=batch_size, nb_epochs=10)
 
         # First attack
-        cl2m = CarliniL2Method(classifier=krc, targeted=True, max_iter=10, binary_search_steps=10,
-                               learning_rate=2e-2, initial_const=3, decay=1e-2)
+        cl2m = CarliniL2Method(classifier=krc, targeted=True, max_iter=100, binary_search_steps=1,
+                               learning_rate=1, initial_const=10, decay=0)
         params = {'y': random_targets(y_test, krc.nb_classes)}
         x_test_adv = cl2m.generate(x_test, **params)
         self.assertFalse((x_test == x_test_adv).all())
@@ -216,11 +224,14 @@ class TestCarliniL2(unittest.TestCase):
         self.assertTrue((x_test_adv >= -0.0001).all())
         target = np.argmax(params['y'], axis=1)
         y_pred_adv = np.argmax(krc.predict(x_test_adv), axis=1)
+        print("CW2 Target: %s" % target)
+        print("CW2 Actual: %s" % y_pred_adv)
+        print("CW2 Success Rate: %f" % (sum(target == y_pred_adv)/float(len(target))))
         self.assertTrue((target == y_pred_adv).any())
 
         # Second attack
-        cl2m = CarliniL2Method(classifier=krc, targeted=False, max_iter=10, binary_search_steps=10,
-                               learning_rate=2e-2, initial_const=3, decay=1e-2)
+        cl2m = CarliniL2Method(classifier=krc, targeted=False, max_iter=100, binary_search_steps=1,
+                               learning_rate=1, initial_const=10, decay=0)
         params = {'y': random_targets(y_test, krc.nb_classes)}
         x_test_adv = cl2m.generate(x_test, **params)
         self.assertFalse((x_test == x_test_adv).all())
@@ -228,11 +239,14 @@ class TestCarliniL2(unittest.TestCase):
         self.assertTrue((x_test_adv >= -0.0001).all())
         target = np.argmax(params['y'], axis=1)
         y_pred_adv = np.argmax(krc.predict(x_test_adv), axis=1)
-        self.assertTrue((target != y_pred_adv).all())
+        print("CW2 Target: %s" % target)
+        print("CW2 Actual: %s" % y_pred_adv)
+        print("CW2 Success Rate: %f" % (sum(target != y_pred_adv)/float(len(target))))
+        self.assertTrue((target != y_pred_adv).any())
 
         # Third attack
-        cl2m = CarliniL2Method(classifier=krc, targeted=False, max_iter=10, binary_search_steps=10,
-                               learning_rate=2e-2, initial_const=3, decay=1e-2)
+        cl2m = CarliniL2Method(classifier=krc, targeted=False, max_iter=100, binary_search_steps=1,
+                               learning_rate=1, initial_const=10, decay=0)
         params = {}
         x_test_adv = cl2m.generate(x_test, **params)
         self.assertFalse((x_test == x_test_adv).all())
@@ -240,6 +254,9 @@ class TestCarliniL2(unittest.TestCase):
         self.assertTrue((x_test_adv >= -0.0001).all())
         y_pred = np.argmax(krc.predict(x_test), axis=1)
         y_pred_adv = np.argmax(krc.predict(x_test_adv), axis=1)
+        print("CW2 Target: %s" % y_pred)
+        print("CW2 Actual: %s" % y_pred_adv)
+        print("CW2 Success Rate: %f" % (sum(y_pred != y_pred_adv)/float(len(y_pred))))
         self.assertTrue((y_pred != y_pred_adv).any())
 
     def test_ptclassifier(self):
@@ -248,9 +265,9 @@ class TestCarliniL2(unittest.TestCase):
         :return:
         """
         # Get MNIST
-        batch_size, nb_train, nb_test = 100, 1000, 10
+        batch_size, nb_train, nb_test = 100, 5000, 10
         (x_train, y_train), (x_test, y_test), _, _ = load_mnist()
-        x_train, y_train = x_train[:nb_train], np.argmax(y_train[:nb_train], axis=1)
+        x_train, y_train = x_train[:nb_train], y_train[:nb_train]
         x_test, y_test = x_test[:nb_test], y_test[:nb_test]
         x_train = np.swapaxes(x_train, 1, 3)
         x_test = np.swapaxes(x_test, 1, 3)
@@ -264,12 +281,12 @@ class TestCarliniL2(unittest.TestCase):
         optimizer = optim.Adam(model.parameters(), lr=0.01)
 
         # Get classifier
-        ptc = PyTorchClassifier((0, 1), model, loss_fn, optimizer, (1, 28, 28), (10,))
-        ptc.fit(x_train, y_train, batch_size=batch_size, nb_epochs=1)
+        ptc = PyTorchClassifier((0, 1), model, loss_fn, optimizer, (1, 28, 28), 10)
+        ptc.fit(x_train, y_train, batch_size=batch_size, nb_epochs=10)
 
         # First attack
-        cl2m = CarliniL2Method(classifier=ptc, targeted=True, max_iter=100, binary_search_steps=10,
-                               learning_rate=2e-2, initial_const=3, decay=1e-2)
+        cl2m = CarliniL2Method(classifier=ptc, targeted=True, max_iter=100, binary_search_steps=1,
+                               learning_rate=1, initial_const=10, decay=0)
         params = {'y': random_targets(y_test, ptc.nb_classes)}
         x_test_adv = cl2m.generate(x_test, **params)
         self.assertFalse((x_test == x_test_adv).all())
@@ -280,8 +297,8 @@ class TestCarliniL2(unittest.TestCase):
         self.assertTrue((target == y_pred_adv).any())
 
         # Second attack
-        cl2m = CarliniL2Method(classifier=ptc, targeted=False, max_iter=100, binary_search_steps=10,
-                               learning_rate=2e-2, initial_const=3, decay=1e-2)
+        cl2m = CarliniL2Method(classifier=ptc, targeted=False, max_iter=100, binary_search_steps=1,
+                               learning_rate=1, initial_const=10, decay=0)
         params = {'y': random_targets(y_test, ptc.nb_classes)}
         x_test_adv = cl2m.generate(x_test, **params)
         self.assertFalse((x_test == x_test_adv).all())
@@ -289,11 +306,11 @@ class TestCarliniL2(unittest.TestCase):
         self.assertTrue((x_test_adv >= -0.0001).all())
         target = np.argmax(params['y'], axis=1)
         y_pred_adv = np.argmax(ptc.predict(x_test_adv), axis=1)
-        self.assertTrue((target != y_pred_adv).all())
+        self.assertTrue((target != y_pred_adv).any())
 
         # Third attack
-        cl2m = CarliniL2Method(classifier=ptc, targeted=False, max_iter=100, binary_search_steps=10,
-                               learning_rate=2e-2, initial_const=3, decay=1e-2)
+        cl2m = CarliniL2Method(classifier=ptc, targeted=False, max_iter=100, binary_search_steps=1,
+                               learning_rate=1, initial_const=10, decay=0)
         params = {}
         x_test_adv = cl2m.generate(x_test, **params)
         self.assertFalse((x_test == x_test_adv).all())

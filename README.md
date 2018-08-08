@@ -1,4 +1,4 @@
-# Adversarial Robustness Toolbox (ART v0.1)
+# Adversarial Robustness Toolbox (ART v0.3.0)
 [![GitHub version](https://badge.fury.io/gh/IBM%2Fadversarial-robustness-toolbox.svg)](https://badge.fury.io/gh/IBM%2Fadversarial-robustness-toolbox) [![Documentation Status](https://readthedocs.org/projects/adversarial-robustness-toolbox/badge/?version=latest)](http://adversarial-robustness-toolbox.readthedocs.io/en/latest/?badge=latest)
 
 This is a library dedicated to **adversarial machine learning**. Its purpose is to allow rapid crafting and analysis of attacks and defense methods for machine learning models. The Adversarial Robustness Toolbox provides an implementation for many state-of-the-art methods for attacking and defending classifiers.
@@ -7,12 +7,13 @@ The library is still under development. Feedback, bug reports and extensions are
 
 ## Supported attack and defense methods
 
-The Adversarial Robustness Toolbox contains implementations of the following attacks:
-* Deep Fool ([Moosavi-Dezfooli et al., 2015](https://arxiv.org/abs/1511.04599))
+The library contains implementations of the following attacks:
+* DeepFool ([Moosavi-Dezfooli et al., 2015](https://arxiv.org/abs/1511.04599))
 * Fast Gradient Method ([Goodfellow et al., 2014](https://arxiv.org/abs/1412.6572))
+* Basic Iterative Method ([Kurakin et al., 2016](https://arxiv.org/abs/1607.02533))
 * Jacobian Saliency Map ([Papernot et al., 2016](https://arxiv.org/abs/1511.07528))
 * Universal Perturbation ([Moosavi-Dezfooli et al., 2016](https://arxiv.org/abs/1610.08401))
-* Virtual Adversarial Method ([Moosavi-Dezfooli et al., 2015](https://arxiv.org/abs/1507.00677))
+* Virtual Adversarial Method ([Miyato et al., 2015](https://arxiv.org/abs/1507.00677))
 * C&amp;W Attack ([Carlini and Wagner, 2016](https://arxiv.org/abs/1608.04644))
 * NewtonFool ([Jang et al., 2017](http://doi.acm.org/10.1145/3134600.3134635))
 
@@ -21,45 +22,58 @@ The following defense methods are also supported:
 * Spatial smoothing ([Xu et al., 2017](http://arxiv.org/abs/1704.01155))
 * Label smoothing ([Warde-Farley and Goodfellow, 2016](https://pdfs.semanticscholar.org/b5ec/486044c6218dd41b17d8bba502b32a12b91a.pdf))
 * Adversarial training ([Szegedy et al., 2013](http://arxiv.org/abs/1312.6199))
-* Virtual adversarial training ([Miyato et al., 2017](https://arxiv.org/abs/1704.03976))
+* Virtual adversarial training ([Miyato et al., 2015](https://arxiv.org/abs/1507.00677))
 * Gaussian data augmentation ([Zantedeschi et al., 2017](https://arxiv.org/abs/1707.06728))
 
 ## Setup
 
-The Adversarial Robustness Toolbox is designed to run with Python 3 (and most likely Python 2 with small changes). You can either download the source code or clone the repository in your directory of choice:
+### Installation with `pip`
+
+The toolbox is designed to run with Python 2 and 3.
+The library can be installed from the PyPi repository using `pip`:
+
+```bash
+pip install adversarial-robustness-toolbox
+```
+
+### Manual installation
+
+For the most recent version of the library, either download the source code or clone the repository in your directory of choice:
+
 ```bash
 git clone https://github.com/IBM/adversarial-robustness-toolbox
 ```
 
-To install the project dependencies, use the requirements file:
+To install ART, do the following in the project folder:
 ```bash
 pip install .
 ```
 
-The library comes with a basic set of unit tests. To check your install, you can run all the unit tests by calling in the library folder:
+The library comes with a basic set of unit tests. To check your install, you can run all the unit tests by calling the test script in the install folder:
+
 ```bash
 bash run_tests.sh
 ```
 
-The configuration file `config/config.ini` allows to set custom paths for data. By default, data is downloaded in the `data` folder as follows:
-
-```text
-[DEFAULT]
-profile=LOCAL
-
-[LOCAL]
-data_path=./data
-mnist_path=./data/mnist
-cifar10_path=./data/cifar-10
-stl10_path=./data/stl-10
-```
-
-If the datasets are not present at the indicated path, loading them will also download the data.
-
 ## Running ART
 
 Some examples of how to use ART when writing your own code can be found in the `examples` folder. See `examples/README.md` for more information about what each example does. To run an example, use the following command:
-
 ```bash
-python3 examples/<example_name>.py
+python examples/<example_name>.py
+```
+
+The `notebooks` folder contains Jupyter notebooks with detailed walkthroughs of some usage scenarios. 
+
+## Citing ART
+
+If you use ART for research, please consider citing the following reference paper:
+```
+@article{art2018,
+    title = {Adversarial Robustness Toolbox v0.3.0},
+    author = {Nicolae, Maria-Irina and Sinn, Mathieu and Tran, Minh~Ngoc and Rawat, Ambrish and Wistuba, Martin and Zantedeschi, Valentina and Baracaldo, Nathalie and Chen, Bryant and Ludwig, Heiko and Molloy, Ian and Edwards, Ben},
+    journal = {CoRR},
+    volume = {1807.01069}
+    year = {2018},
+    url = {https://arxiv.org/pdf/1807.01069}
+}
 ```

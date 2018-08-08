@@ -21,8 +21,24 @@ from setuptools import find_packages
 with open("README.md", "r") as fh:
     long_description = fh.read()
 
-setup(name='adversarial_robustness_toolbox',
-      version='0.2.2',
+install_requires = ['h5py',
+                    'numpy',
+                    'scipy',
+                    'keras',
+                    'tensorflow',
+                    'six',
+                    'setuptools',
+                    'scikit-learn']
+
+tests_require = ['mxnet'
+                 'keras',
+                 'Pillow',
+                 'requests'
+                 'tensorflow',
+                 'torch']
+
+setup(name='Adversarial Robustness Toolbox',
+      version='0.3.0',
       description='IBM Adversarial machine learning toolbox',
       long_description=long_description,
       long_description_content_type='text/markdown',
@@ -30,21 +46,11 @@ setup(name='adversarial_robustness_toolbox',
       author_email='maria-irina.nicolae@ibm.com',
       url='https://github.com/IBM/adversarial-robustness-toolbox',
       license='MIT',
-      install_requires=['h5py',
-                        'Keras',
-                        'scipy',
-                        'matplotlib',
-                        'setuptools'],
+      install_requires=install_requires,
+      tests_require=tests_require,
       extras_require={
-        "tf": ["tensorflow<=1.5.0"],
-        "tf_gpu": ["tensorflow-gpu<=1.5.0"],
+          'tests': tests_require,
       },
-      # extras_require={
-          # 'tests': ['pytest',
-          #           'pytest-pep8',
-          #           'pytest-xdist',
-          #           'pytest-cov'],
-      # },
       classifiers=[
             'Development Status :: 3 - Alpha',
             'Intended Audience :: Developers',

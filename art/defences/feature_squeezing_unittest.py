@@ -50,6 +50,13 @@ class TestFeatureSqueezing(unittest.TestCase):
         self.assertFalse(np.logical_and(0.34 < squeezed_x, squeezed_x < 0.66).any())
         self.assertFalse(np.logical_and(0.67 < squeezed_x, squeezed_x < 1.).any())
 
+    def test_data_range(self):
+        x = np.arange(5)
+        preproc = FeatureSqueezing()
+        squeezed_x = preproc(x, bit_depth=2, clip_values=(0, 4))
+        self.assertTrue(np.array_equal(x, np.arange(5)))
+        self.assertTrue(np.allclose(squeezed_x, [0, 1.33, 2.67, 2.67, 4], atol=1e-1))
+
 
 if __name__ == '__main__':
     unittest.main()

@@ -26,7 +26,7 @@ class NewtonFool(Attack):
     """
     Implementation of the attack from Uyeong Jang et al. (2017). Paper link: http://doi.acm.org/10.1145/3134600.3134635
     """
-    attack_params = ["max_iter", "eta"]
+    attack_params = Attack.attack_params + ["max_iter", "eta"]
 
     def __init__(self, classifier, max_iter=100, eta=0.01):
         """
@@ -126,7 +126,8 @@ class NewtonFool(Attack):
 
         return result
 
-    def _compute_pert(self, theta, grads, norm_grad):
+    @staticmethod
+    def _compute_pert(theta, grads, norm_grad):
         """
         Function to compute the pertubation at each step.
 

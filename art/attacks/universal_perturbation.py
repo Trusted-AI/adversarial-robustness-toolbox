@@ -21,6 +21,7 @@ import numpy as np
 import random
 
 from art.attacks.attack import Attack
+from art.utils import projection
 
 
 class UniversalPerturbation(Attack):
@@ -35,7 +36,7 @@ class UniversalPerturbation(Attack):
                     'jsma': 'art.attacks.saliency_map.SaliencyMapMethod',
                     'vat': 'art.attacks.virtual_adversarial.VirtualAdversarialMethod'
                     }
-    attack_params = ['attacker', 'attacker_params', 'delta', 'max_iter', 'eps', 'norm']
+    attack_params = Attack.attack_params + ['attacker', 'attacker_params', 'delta', 'max_iter', 'eps', 'norm']
 
     def __init__(self, classifier, attacker='deepfool', attacker_params=None, delta=0.2, max_iter=20, eps=10.0,
                  norm=np.inf):
@@ -83,7 +84,7 @@ class UniversalPerturbation(Attack):
         :type max_iter: `int`
         :param eps: Attack step size (input variation)
         :type eps: `float`
-        :param norm: Order of the norm. Possible values: np.inf, 2 (default is np.inf)
+        :param norm: Order of the norm. Possible values: np.inf, 1 and 2 (default is np.inf).
         :type norm: `int`
         :return: An array holding the adversarial examples.
         :rtype: `np.ndarray`
@@ -125,7 +126,7 @@ class UniversalPerturbation(Attack):
                         v += adv_xi - xi
 
                         # Project on L_p ball
-                        v = self._clip_perturbation(v, self.eps, self.norm)
+                        v = projection(v, self.eps, self.norm)
             nb_iter += 1
 
             # Compute the error rate
@@ -170,28 +171,6 @@ class UniversalPerturbation(Attack):
 
         return True
 
-    def _clip_perturbation(self, v, eps, norm):
-        """
-        Clip the values in v if their L_p norm is larger than eps.
-
-        :param v: array of perturbations to clip.
-        :type v: `np.ndarray`
-        :param eps: maximum norm allowed.
-        :type eps: `float`
-        :param norm: L_p norm to use for clipping. Only `norm == 2` and `norm == np.inf` supported for now.
-        :type norm: `int`
-        :return: clipped values of v
-        :rtype: `np.ndarray`
-        """
-        if norm == 2:
-            v *= min(1., eps/np.linalg.norm(v, axis=(1, 2)))
-        elif norm == np.inf:
-            v = np.sign(v) * np.minimum(abs(v), eps)
-        else:
-            raise NotImplementedError('Values of `norm` different from 2 and `np.inf` are currently not supported.')
-
-        return v
-
     def _get_attack(self, a_name, params=None):
         """
         Get an attack object from its name.
@@ -215,17 +194,18 @@ class UniversalPerturbation(Attack):
         except KeyError:
             raise NotImplementedError("{} attack not supported".format(a_name))
 
-    def _get_class(self, class_name):
+    @staticmethod
+    def _get_class(class_name):
         """
         Get a class module from its name.
 
-        :param class_name: full name of a class.
+        :param class_name: Full name of a class.
         :type class_name: `str`
-        :return: class module.
+        :return: The class `module`.
         :rtype: `module`
         """
-        sub_mods = class_name.split(sep=".")
-        module = __import__(".".join(sub_mods[:-1]), fromlist=sub_mods[-1])
-        class_module = getattr(module, sub_mods[-1])
+        sub_mods = class_name.split(".")
+        module_ = __import__(".".join(sub_mods[:-1]), fromlist=sub_mods[-1])
+        class_module = getattr(module_, sub_mods[-1])
 
         return class_module

@@ -46,9 +46,8 @@ class Model(nn.Module):
         x = self.pool(F.relu(self.conv(x)))
         x = x.view(-1, 2304)
         logit_output = self.fc(x)
-        output = F.softmax(logit_output, dim=1)
 
-        return logit_output, output
+        return logit_output
 
 
 class TestUniversalPerturbation(unittest.TestCase):
@@ -160,8 +159,8 @@ class TestUniversalPerturbation(unittest.TestCase):
         # Get MNIST
         batch_size, nb_train, nb_test = 100, 1000, 10
         (x_train, y_train), (x_test, y_test), _, _ = load_mnist()
-        x_train, y_train = x_train[:nb_train], np.argmax(y_train[:nb_train], axis=1)
-        x_test, y_test = x_test[:nb_test], np.argmax(y_test[:nb_test], axis=1)
+        x_train, y_train = x_train[:nb_train], y_train[:nb_train]
+        x_test, y_test = x_test[:nb_test], y_test[:nb_test]
         x_train = np.swapaxes(x_train, 1, 3)
         x_test = np.swapaxes(x_test, 1, 3)
 
@@ -174,7 +173,7 @@ class TestUniversalPerturbation(unittest.TestCase):
         optimizer = optim.Adam(model.parameters(), lr=0.01)
 
         # Get classifier
-        ptc = PyTorchClassifier((0, 1), model, loss_fn, optimizer, (1, 28, 28), (10,))
+        ptc = PyTorchClassifier((0, 1), model, loss_fn, optimizer, (1, 28, 28), 10)
         ptc.fit(x_train, y_train, batch_size=batch_size, nb_epochs=1)
 
         # Attack
@@ -189,8 +188,8 @@ class TestUniversalPerturbation(unittest.TestCase):
 
         train_y_pred = np.argmax(ptc.predict(x_train_adv), axis=1)
         test_y_pred = np.argmax(ptc.predict(x_test_adv), axis=1)
-        self.assertFalse((y_test == test_y_pred).all())
-        self.assertFalse((y_train == train_y_pred).all())
+        self.assertFalse((np.argmax(y_test, axis=1) == test_y_pred).all())
+        self.assertFalse((np.argmax(y_train, axis=1) == train_y_pred).all())
 
 
 if __name__ == '__main__':

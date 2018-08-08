@@ -25,10 +25,78 @@ import json
 import os
 
 import numpy as np
+from scipy.special import gammainc
+
+
+def projection(v, eps, p):
+    """
+    Project the values in `v` on the L_p norm ball of size `eps`.
+
+    :param v: Array of perturbations to clip.
+    :type v: `np.ndarray`
+    :param eps: Maximum norm allowed.
+    :type eps: `float`
+    :param p: L_p norm to use for clipping. Only 1, 2 and `np.Inf` supported for now.
+    :type p: `int`
+    :return: Values of `v` after projection.
+    :rtype: `np.ndarray`
+    """
+    # Pick a small scalar to avoid division by 0
+    tol = 10e-8
+    v_ = v.reshape((v.shape[0], -1))
+
+    if p == 2:
+        v_ = v_ * np.expand_dims(np.minimum(1., eps / (np.linalg.norm(v_, axis=1) + tol)), axis=1)
+    elif p == 1:
+        v_ = v_ * np.expand_dims(np.minimum(1., eps / (np.linalg.norm(v_, axis=1, ord=1) + tol)), axis=1)
+    elif p == np.inf:
+        v_ = np.sign(v_) * np.minimum(abs(v_), eps)
+    else:
+        raise NotImplementedError('Values of `p` different from 1, 2 and `np.inf` are currently not supported.')
+
+    v = v_.reshape(v.shape)
+    return v
+
+
+def random_sphere(nb_points, nb_dims, radius, norm):
+    """
+    Generate randomly `m x n`-dimension points with radius `r` and centered around 0.
+
+    :param nb_points: Number of random data points
+    :type nb_points: `int`
+    :param nb_dims: Dimensionality
+    :type nb_dims: `int`
+    :param radius: Radius
+    :type radius: `float`
+    :param norm: Current support: 1, 2, np.inf
+    :type norm: `int`
+    :return: The generated random sphere
+    :rtype: `np.ndarray`
+    """
+    if norm == 1:
+        a = np.zeros(shape=(nb_points, nb_dims + 1))
+        a[:, -1] = np.sqrt(np.random.uniform(0, radius ** 2, nb_points))
+
+        for i in range(nb_points):
+            a[i, 1:-1] = np.sort(np.random.uniform(0, a[i, -1], nb_dims - 1))
+
+        res = (a[:, 1:] - a[:, :-1]) * np.random.choice([-1, 1], (nb_points, nb_dims))
+    elif norm == 2:
+        a = np.random.randn(nb_points, nb_dims)
+        s2 = np.sum(a ** 2, axis=1)
+        base = gammainc(nb_dims / 2.0, s2 / 2.0) ** (1 / nb_dims) * radius / np.sqrt(s2)
+        res = a * (np.tile(base, (nb_dims, 1))).T
+    elif norm == np.inf:
+        res = np.random.uniform(float(-radius), float(radius), (nb_points, nb_dims))
+    else:
+        raise NotImplementedError("Norm {} not supported".format(norm))
+
+    return res
 
 
 def to_categorical(labels, nb_classes=None):
-    """Convert an array of labels to binary class matrix.
+    """
+    Convert an array of labels to binary class matrix.
 
     :param labels: An array of integer labels of shape `(nb_samples,)`
     :type labels: `np.ndarray`
@@ -47,13 +115,14 @@ def to_categorical(labels, nb_classes=None):
 
 def random_targets(labels, nb_classes):
     """
-    Given a set of correct labels, randomly choose target labels different from the original ones.
-    
+    Given a set of correct labels, randomly choose target labels different from the original ones. These can be
+    one-hot encoded or integers.
+
     :param labels: The correct labels
     :type labels: `np.ndarray`
     :param nb_classes: The number of classes for this model
     :type nb_classes: `int`
-    :return: An array holding the randomly-selected target classes
+    :return: An array holding the randomly-selected target classes, one-hot encoded.
     :rtype: `np.ndarray`
     """
     if len(labels.shape) > 1:
@@ -114,6 +183,7 @@ def preprocess(x, y, nb_classes=10, max_value=255):
 
     return x, y
 
+
 # -------------------------------------------------------------------------------------------------------- IO FUNCTIONS
 
 
@@ -123,20 +193,20 @@ def load_cifar10():
     :return: `(x_train, y_train), (x_test, y_test), min, max`
     :rtype: `(np.ndarray, np.ndarray), (np.ndarray, np.ndarray), float, float`
     """
-    from config import CIFAR10_PATH
     import keras.backend as k
     from keras.datasets.cifar import load_batch
     from keras.utils.data_utils import get_file
+    from art import DATA_PATH
 
     min_, max_ = 0., 1.
 
-    path = get_file('cifar-10-batches-py', untar=True, cache_subdir=CIFAR10_PATH,
+    path = get_file('cifar-10-batches-py', untar=True, cache_subdir=DATA_PATH,
                     origin='http://www.cs.toronto.edu/~kriz/cifar-10-python.tar.gz')
 
     num_train_samples = 50000
 
     x_train = np.zeros((num_train_samples, 3, 32, 32), dtype=np.uint8)
-    y_train = np.zeros((num_train_samples, ), dtype=np.uint8)
+    y_train = np.zeros((num_train_samples,), dtype=np.uint8)
 
     for i in range(1, 6):
         fpath = os.path.join(path, 'data_batch_' + str(i))
@@ -160,17 +230,17 @@ def load_cifar10():
 
 
 def load_mnist():
-    """Loads MNIST dataset from config.MNIST_PATH or downloads it if necessary.
-    
+    """Loads MNIST dataset from `DATA_PATH` or downloads it if necessary.
+
     :return: `(x_train, y_train), (x_test, y_test), min, max`
     :rtype: `(np.ndarray, np.ndarray), (np.ndarray, np.ndarray), float, float`
     """
-    from config import MNIST_PATH
     from keras.utils.data_utils import get_file
+    from art import DATA_PATH
 
     min_, max_ = 0., 1.
 
-    path = get_file('mnist.npz', cache_subdir=MNIST_PATH, origin='https://s3.amazonaws.com/img-datasets/mnist.npz')
+    path = get_file('mnist.npz', cache_subdir=DATA_PATH, origin='https://s3.amazonaws.com/img-datasets/mnist.npz')
 
     f = np.load(path)
     x_train = f['x_train']
@@ -188,20 +258,43 @@ def load_mnist():
     return (x_train, y_train), (x_test, y_test), min_, max_
 
 
-def load_imagenet():
-    """Loads Imagenet dataset from config.IMAGENET_PATH
+def load_mnist_raw():
+    """Loads MNIST dataset from config.MNIST_PATH or downloads it if necessary.
 
     :return: `(x_train, y_train), (x_test, y_test), min, max`
     :rtype: `(np.ndarray, np.ndarray), (np.ndarray, np.ndarray), float, float`
     """
-    from config import IMAGENET_PATH
+    from keras.utils.data_utils import get_file
+    from art import DATA_PATH
+
+    min_, max_ = 0., 1.
+
+    path = get_file('mnist.npz', cache_subdir=DATA_PATH, origin='https://s3.amazonaws.com/img-datasets/mnist.npz')
+
+    f = np.load(path)
+    x_train = f['x_train']
+    y_train = f['y_train']
+    x_test = f['x_test']
+    y_test = f['y_test']
+    f.close()
+
+    return (x_train, y_train), (x_test, y_test), min_, max_
+
+
+def load_imagenet():
+    """Loads Imagenet dataset from `DATA_PATH`.
+
+    :return: `(x_train, y_train), (x_test, y_test), min, max`
+    :rtype: `(np.ndarray, np.ndarray), (np.ndarray, np.ndarray), float, float`
+    """
     from keras.preprocessing import image
     from keras.utils.data_utils import get_file
+    from art import DATA_PATH
 
     min_, max_ = 0., 255.
 
     class_index_path = 'https://s3.amazonaws.com/deep-learning-models/image-models/imagenet_class_index.json'
-    class_id = IMAGENET_PATH.split("/")[-1]
+    class_id = DATA_PATH.split("/")[-1]
 
     fpath = get_file('imagenet_class_index.json', class_index_path, cache_subdir='models')
     class_index = json.load(open(fpath))
@@ -212,7 +305,7 @@ def load_imagenet():
             break
 
     dataset = list()
-    for root, _, files in os.walk(IMAGENET_PATH):
+    for root, _, files in os.walk(DATA_PATH):
         for file_ in files:
             if file_.endswith(".jpg"):
                 img = image.load_img(os.path.join(root, file_), target_size=(224, 224))
@@ -238,15 +331,14 @@ def load_stl():
     :rtype: `(np.ndarray, np.ndarray), (np.ndarray, np.ndarray), float, float`
     """
     from os.path import join
-
-    from config import STL10_PATH
     import keras.backend as k
     from keras.utils.data_utils import get_file
+    from art import DATA_PATH
 
     min_, max_ = 0., 1.
 
     # Download and extract data if needed
-    path = get_file('stl10_binary', cache_subdir=STL10_PATH, untar=True,
+    path = get_file('stl10_binary', cache_subdir=DATA_PATH, untar=True,
                     origin='https://ai.stanford.edu/~acoates/stl10/stl10_binary.tar.gz')
 
     with open(join(path, str('train_X.bin')), str('rb')) as f:
@@ -337,6 +429,7 @@ def _set_group_permissions(filename, group="drl-dwl"):
     shutil.chown(filename, user=None, group=group)
 
     os.chmod(filename, 0o774)
+
 
 # ------------------------------------------------------------------- ARG PARSER
 

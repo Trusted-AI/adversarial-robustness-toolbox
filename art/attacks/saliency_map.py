@@ -27,7 +27,7 @@ class SaliencyMapMethod(Attack):
     Implementation of the Jacobian-based Saliency Map Attack (Papernot et al. 2016).
     Paper link: https://arxiv.org/pdf/1511.07528.pdf
     """
-    attack_params = ['theta', 'gamma']
+    attack_params = Attack.attack_params + ['theta', 'gamma']
 
     # TODO Add parameter logits?
     def __init__(self, classifier, theta=0.1, gamma=1.):
@@ -73,16 +73,13 @@ class SaliencyMapMethod(Attack):
         x_adv = np.reshape(np.copy(x), (-1, self._nb_features))
         preds = np.argmax(self.classifier.predict(x), axis=1)
 
-        # Set number of iterations w.r.t. the total perturbation allowed
-        max_iter = np.floor(self._nb_features * self.gamma / 2)
-
         # Determine target classes for attack
         if 'y' not in kwargs or kwargs[str('y')] is None:
             # Randomly choose target from the incorrect classes for each sample
             from art.utils import random_targets
             targets = np.argmax(random_targets(preds, self.classifier.nb_classes), axis=1)
         else:
-            targets = kwargs[str('y')]
+            targets = np.argmax(kwargs[str('y')], axis=1)
 
         # Generate the adversarial samples
         for ind, val in enumerate(x_adv):
@@ -92,17 +89,20 @@ class SaliencyMapMethod(Attack):
             else:
                 search_space = set([i for i in range(self._nb_features) if val[i] > clip_min])
 
-            nb_iter = 0
             current_pred = preds[ind]
-
-            while current_pred != targets[ind] and nb_iter < max_iter and bool(search_space):
+            target = targets[ind]
+            all_feat = set()
+            
+            while current_pred != target and len(all_feat)/self._nb_features <= self.gamma and bool(search_space):
                 # Compute saliency map
-                feat1, feat2 = self._saliency_map(np.reshape(val, dims), targets[ind], search_space)
+                feat1, feat2 = self._saliency_map(np.reshape(val, dims), target, search_space)
 
                 # Move on to next examples if there are no more features to change
                 if feat1 == feat2 == 0:
                     break
-
+                
+                all_feat = all_feat.union(set([feat1, feat2]))
+            
                 # Prepare update depending of theta
                 if self.theta > 0:
                     clip_func, clip_value = np.minimum, clip_max
@@ -119,9 +119,9 @@ class SaliencyMapMethod(Attack):
 
                 # Recompute model prediction
                 current_pred = np.argmax(self.classifier.predict(np.reshape(val, dims)), axis=1)
-                nb_iter += 1
-
+            
         x_adv = np.reshape(x_adv, x.shape)
+
         return x_adv
 
     def set_params(self, **kwargs):
@@ -155,7 +155,36 @@ class SaliencyMapMethod(Attack):
         :return: The top 2 coefficients in `search_space` that maximize / minimize the saliency map
         :rtype: `tuple`
         """
-        grads = self.classifier.class_gradient(x, logits=False)
+        grads = self.classifier.class_gradient(x, label=target, logits=False)
+        grads = np.reshape(grads, (-1, self._nb_features))[0]
+
+        # Remove gradients for already used features
+        used_features = list(set(range(self._nb_features)) - search_space)
+        coeff = 2 * int(self.theta > 0) - 1
+        grads[used_features] = - np.max(np.abs(grads)) * coeff
+        
+        if self.theta > 0:
+            ind = np.argpartition(grads, -2)[-2:]
+        else:
+            ind = np.argpartition(-grads, -2)[-2:]
+        
+        return tuple(ind)
+        
+    def _saliency_map_logits(self, x, target, search_space):
+        """
+        Compute the saliency map of `x`. Return the top 2 coefficients in `search_space` that maximize / minimize
+        the saliency map.
+
+        :param x: One input sample
+        :type x: `np.ndarray`
+        :param target: Target class for `x`
+        :type target: `int`
+        :param search_space: The set of valid pairs of feature indices to search
+        :type search_space: `set(tuple)`
+        :return: The top 2 coefficients in `search_space` that maximize / minimize the saliency map
+        :rtype: `tuple`
+        """
+        grads = self.classifier.class_gradient(x, logits=True)
         grads = np.reshape(grads, (-1, self._nb_features))
 
         # Compute grads for target class and sum of gradients for all other classes
