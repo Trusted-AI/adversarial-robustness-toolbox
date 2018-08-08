@@ -106,7 +106,7 @@ class Classifier(ABC):
     def channel_index(self):
         """
         :return: Index of the axis in data containing the color channels or features.
-        :rtype `int`
+        :rtype: `int`
         """
         return self._channel_index
 

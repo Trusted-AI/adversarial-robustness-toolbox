@@ -121,7 +121,6 @@ def loss_sensitivity(classifier, x, y):
     :rtype: `float`
     """
     grads = classifier.loss_gradient(x, y)
-    print(grads.shape)
     norm = la.norm(grads.reshape(grads.shape[0], -1), ord=2, axis=1)
 
     return np.mean(norm)

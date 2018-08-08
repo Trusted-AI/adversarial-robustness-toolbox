@@ -1,13 +1,13 @@
-# Adversarial Robustness Toolbox (ART v0.2.2)
+# Adversarial Robustness Toolbox (ART v0.3.0)
 [![Build Status](https://travis.ibm.com/nemesis/nemesis.svg?token=gRzs7KGtxQXDzQo1SRTx&branch=dev)](https://travis.ibm.com/nemesis/nemesis)
 
-This is a library dedicated to **adversarial machine learning**. Its purpose is to allow rapid crafting and analysis of attacks and defense methods for machine learning models. Nemesis provides an implementation for many state-of-the-art methods for attacking and defending classifiers.
+This is a library dedicated to **adversarial machine learning**. Its purpose is to allow rapid crafting and analysis of attacks and defense methods for machine learning models. ART provides an implementation for many state-of-the-art methods for attacking and defending classifiers.
 
 The library is still under development. Feedback, bug reports and extensions are highly appreciated.
 
 ## Supported attack and defense methods
 
-Nemesis contains implementations of the following attacks:
+The library contains implementations of the following attacks:
 * DeepFool ([Moosavi-Dezfooli et al., 2015](https://arxiv.org/abs/1511.04599))
 * Fast Gradient Method ([Goodfellow et al., 2014](https://arxiv.org/abs/1412.6572))
 * Basic Iterative Method ([Kurakin et al., 2016](https://arxiv.org/abs/1607.02533))
@@ -27,12 +27,24 @@ The following defense methods are also supported:
 
 ## Setup
 
-The toolbox is designed to run with Python 2 and 3. You can either download the source code or clone the repository in your directory of choice:
+### Installation with `pip`
+
+The toolbox is designed to run with Python 2 and 3.
+The library can be installed from the PyPi repository using `pip`:
+
+```bash
+pip install adversarial-robustness-toolbox
+```
+
+### Manual installation
+
+For the most recent version of the library, either download the source code or clone the repository in your directory of choice:
+
 ```bash
 git clone https://github.ibm.com/nemesis/nemesis
 ```
 
-To install the project using `pip`, do the following in the project folder:
+To install ART, do the following in the project folder:
 ```bash
 pip install .
 ```
@@ -49,17 +61,18 @@ Some examples of how to use ART when writing your own code can be found in the `
 python examples/<example_name>.py
 ```
 
+The `notebooks` folder contains Jupyter notebooks with detailed walkthroughs of some usage scenarios. 
+
 ## Citing ART
 
 If you use ART for research, please consider citing the following reference paper:
 ```
 @article{art2018,
-    title = {Adversarial Robustness Toolbox v0.2.2},
-    author = {Nicolae, Maria-Irina and Sinn, Mathieu and Tran, Minh~Ngoc and Rawat, Ambrish and Wistuba, Martin and Zantedeschi, Valentina and Molloy, Ian and Edwards, Ben},
+    title = {Adversarial Robustness Toolbox v0.3.0},
+    author = {Nicolae, Maria-Irina and Sinn, Mathieu and Tran, Minh~Ngoc and Rawat, Ambrish and Wistuba, Martin and Zantedeschi, Valentina and Baracaldo, Nathalie and Chen, Bryant and Ludwig, Heiko and Molloy, Ian and Edwards, Ben},
     journal = {CoRR},
     volume = {1807.01069}
     year = {2018},
     url = {https://arxiv.org/pdf/1807.01069}
 }
 ```
-
