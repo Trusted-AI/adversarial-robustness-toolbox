@@ -111,13 +111,14 @@ class CarliniL2Method(Attack):
         :type y: `np.ndarray`
         :return: An array holding the adversarial examples.
         :rtype: `np.ndarray`
-        """        
+        """
         x_adv = x.copy()
         (clip_min, clip_max) = self.classifier.clip_values
         
         # Parse and save attack-specific parameters
         params_cpy = dict(kwargs)
         y = params_cpy.pop(str('y'), None)
+        self.set_params(**params_cpy)
         
         # Assert that, if attack is targeted, y_val is provided:
         assert not (self.targeted and y is None)
