@@ -2,26 +2,28 @@ from __future__ import absolute_import, division, print_function, unicode_litera
 
 import unittest
 
-import tensorflow as tf
 import keras
 import keras.backend as k
 from keras.models import Sequential
 from keras.layers import Dense, Flatten, Conv2D, MaxPooling2D
 import numpy as np
+import tensorflow as tf
 import torch.nn as nn
-import torch.nn.functional as F
+import torch.nn.functional as f
 import torch.optim as optim
 
-from art.classifiers.tensorflow import TFClassifier
-from art.classifiers.keras import KerasClassifier
-from art.classifiers.pytorch import PyTorchClassifier
-from art.metrics import empirical_robustness, clever_t, clever_u, loss_sensitivity
+from art.classifiers import KerasClassifier, PyTorchClassifier, TFClassifier
+from art.metrics import empirical_robustness, clever_t, clever_u, clever, loss_sensitivity
 from art.utils import load_mnist
 
 
 BATCH_SIZE = 10
 NB_TRAIN = 100
 NB_TEST = 100
+
+r_l1 = 40
+r_l2 = 2
+r_li = 0.1
 
 
 class TestMetrics(unittest.TestCase):
@@ -35,24 +37,17 @@ class TestMetrics(unittest.TestCase):
         classifier.fit(x_train, y_train, batch_size=BATCH_SIZE, nb_epochs=2)
 
         # Compute minimal perturbations
-        params = {"eps_step": 1.1,
-                  "clip_min": 0.,
-                  "clip_max": 1.}
-
+        params = {"eps_step": 1.1}
         emp_robust = empirical_robustness(classifier, x_train, str('fgsm'), params)
         self.assertEqual(emp_robust, 0.)
 
         params = {"eps_step": 1.,
-                  "eps_max": 1.,
-                  "clip_min": None,
-                  "clip_max": None}
+                  "eps_max": 1.}
         emp_robust = empirical_robustness(classifier, x_train, str('fgsm'), params)
         self.assertAlmostEqual(emp_robust, 1., 3)
 
         params = {"eps_step": 0.1,
-                  "eps_max": 0.2,
-                  "clip_min": None,
-                  "clip_max": None}
+                  "eps_max": 0.2}
         emp_robust = empirical_robustness(classifier, x_train, str('fgsm'), params)
         self.assertLessEqual(emp_robust, 0.21)
 
@@ -65,7 +60,7 @@ class TestMetrics(unittest.TestCase):
         classifier = self._cnn_mnist_k([28, 28, 1])
         classifier.fit(x_train, y_train, batch_size=BATCH_SIZE, nb_epochs=2)
 
-        l = loss_sensitivity(classifier, x_train)
+        l = loss_sensitivity(classifier, x_train, y_train)
         self.assertGreaterEqual(l, 0)
 
     # def testNearestNeighborDist(self):
@@ -108,12 +103,11 @@ class Model(nn.Module):
         self.fc = nn.Linear(2304, 10)
 
     def forward(self, x):
-        x = self.pool(F.relu(self.conv(x)))
+        x = self.pool(f.relu(self.conv(x)))
         x = x.view(-1, 2304)
         logit_output = self.fc(x)
-        output = F.softmax(logit_output, dim=1)
 
-        return logit_output, output
+        return logit_output
 
 
 class TestClever(unittest.TestCase):
@@ -183,7 +177,6 @@ class TestClever(unittest.TestCase):
         To create a simple PyTorchClassifier for testing.
         :return:
         """
-        # Create simple CNN
         # Define the network
         model = Model()
 
@@ -192,7 +185,7 @@ class TestClever(unittest.TestCase):
         optimizer = optim.Adam(model.parameters(), lr=0.01)
 
         # Get classifier
-        ptc = PyTorchClassifier((0, 1), model, loss_fn, optimizer, (1, 28, 28), (10,))
+        ptc = PyTorchClassifier((0, 1), model, loss_fn, optimizer, (1, 28, 28), 10)
 
         return ptc
 
@@ -211,19 +204,20 @@ class TestClever(unittest.TestCase):
         tfc = self._create_tfclassifier()
         tfc.fit(x_train, y_train, batch_size=batch_size, nb_epochs=1)
 
+        # TODO Need to configure r 
         # Test targeted clever
-        res0 = clever_t(tfc, x_test[-1], 2, 10, 5, 5, norm=1, pool_factor=3)
-        res1 = clever_t(tfc, x_test[-1], 2, 10, 5, 5, norm=2, pool_factor=3)
-        res2 = clever_t(tfc, x_test[-1], 2, 10, 5, 5, norm=np.inf, pool_factor=3)
+        res0 = clever_t(tfc, x_test[-1], 2, 10, 5, r_l1, norm=1, pool_factor=3)
+        res1 = clever_t(tfc, x_test[-1], 2, 10, 5, r_l2, norm=2, pool_factor=3)
+        res2 = clever_t(tfc, x_test[-1], 2, 10, 5, r_li, norm=np.inf, pool_factor=3)
         print("Target tf: ", res0, res1, res2)
         self.assertFalse(res0 == res1)
         self.assertFalse(res1 == res2)
         self.assertFalse(res2 == res0)
 
         # Test untargeted clever
-        res0 = clever_u(tfc, x_test[-1], 10, 5, 5, norm=1, pool_factor=3)
-        res1 = clever_u(tfc, x_test[-1], 10, 5, 5, norm=2, pool_factor=3)
-        res2 = clever_u(tfc, x_test[-1], 10, 5, 5, norm=np.inf, pool_factor=3)
+        res0 = clever_u(tfc, x_test[-1], 10, 5, r_l1, norm=1, pool_factor=3)
+        res1 = clever_u(tfc, x_test[-1], 10, 5, r_l2, norm=2, pool_factor=3)
+        res2 = clever_u(tfc, x_test[-1], 10, 5, r_li, norm=np.inf, pool_factor=3)
         print("Untarget tf: ", res0, res1, res2)
         self.assertFalse(res0 == res1)
         self.assertFalse(res1 == res2)
@@ -245,19 +239,19 @@ class TestClever(unittest.TestCase):
         krc.fit(x_train, y_train, batch_size=batch_size, nb_epochs=1)
 
         # Test targeted clever
-        res0 = clever_t(krc, x_test[-1], 2, 10, 5, 5, norm=1, pool_factor=3)
-        res1 = clever_t(krc, x_test[-1], 2, 10, 5, 5, norm=2, pool_factor=3)
-        res2 = clever_t(krc, x_test[-1], 2, 10, 5, 5, norm=np.inf, pool_factor=3)
+        res0 = clever_t(krc, x_test[-1], 2, 10, 5, r_l1, norm=1, pool_factor=3)
+        res1 = clever_t(krc, x_test[-1], 2, 10, 5, r_l2, norm=2, pool_factor=3)
+        res2 = clever_t(krc, x_test[-1], 2, 10, 5, r_li, norm=np.inf, pool_factor=3)
         print("Target kr: ", res0, res1, res2)
         self.assertNotEqual(res0, res1)
         self.assertNotEqual(res1, res2)
         self.assertNotEqual(res2, res0)
 
         # Test untargeted clever
-        res0 = clever_u(krc, x_test[-1], 10, 5, 5, norm=1, pool_factor=3)
-        res1 = clever_u(krc, x_test[-1], 10, 5, 5, norm=2, pool_factor=3)
-        res2 = clever_u(krc, x_test[-1], 10, 5, 5, norm=np.inf, pool_factor=3)
-        print("UnTarget kr: ", res0, res1, res2)
+        res0 = clever_u(krc, x_test[-1], 10, 5, r_l1, norm=1, pool_factor=3)
+        res1 = clever_u(krc, x_test[-1], 10, 5, r_l2, norm=2, pool_factor=3)
+        res2 = clever_u(krc, x_test[-1], 10, 5, r_li, norm=np.inf, pool_factor=3)
+        print("Untarget kr: ", res0, res1, res2)
         self.assertNotEqual(res0, res1)
         self.assertNotEqual(res1, res2)
         self.assertNotEqual(res2, res0)
@@ -270,7 +264,7 @@ class TestClever(unittest.TestCase):
         # Get MNIST
         batch_size, nb_train, nb_test = 100, 1000, 10
         (x_train, y_train), (x_test, y_test), _, _ = load_mnist()
-        x_train, y_train = x_train[:nb_train], np.argmax(y_train[:nb_train], axis=1)
+        x_train, y_train = x_train[:nb_train], y_train[:nb_train]
         x_test, y_test = x_test[:nb_test], y_test[:nb_test]
         x_train = np.swapaxes(x_train, 1, 3)
         x_test = np.swapaxes(x_test, 1, 3)
@@ -280,22 +274,58 @@ class TestClever(unittest.TestCase):
         ptc.fit(x_train, y_train, batch_size=batch_size, nb_epochs=1)
 
         # Test targeted clever
-        res0 = clever_t(ptc, x_test[-1], 2, 10, 5, 5, norm=1, pool_factor=3)
-        res1 = clever_t(ptc, x_test[-1], 2, 10, 5, 5, norm=2, pool_factor=3)
-        res2 = clever_t(ptc, x_test[-1], 2, 10, 5, 5, norm=np.inf, pool_factor=3)
+        res0 = clever_t(ptc, x_test[-1], 2, 10, 5, r_l1, norm=1, pool_factor=3)
+        res1 = clever_t(ptc, x_test[-1], 2, 10, 5, r_l2, norm=2, pool_factor=3)
+        res2 = clever_t(ptc, x_test[-1], 2, 10, 5, r_li, norm=np.inf, pool_factor=3)
         print("Target pt: ", res0, res1, res2)
         self.assertFalse(res0 == res1)
         self.assertFalse(res1 == res2)
         self.assertFalse(res2 == res0)
 
         # Test untargeted clever
-        res0 = clever_u(ptc, x_test[-1], 10, 5, 5, norm=1, pool_factor=3)
-        res1 = clever_u(ptc, x_test[-1], 10, 5, 5, norm=2, pool_factor=3)
-        res2 = clever_u(ptc, x_test[-1], 10, 5, 5, norm=np.inf, pool_factor=3)
+        res0 = clever_u(ptc, x_test[-1], 10, 5, r_l1, norm=1, pool_factor=3)
+        res1 = clever_u(ptc, x_test[-1], 10, 5, r_l2, norm=2, pool_factor=3)
+        res2 = clever_u(ptc, x_test[-1], 10, 5, r_li, norm=np.inf, pool_factor=3)
         print("Untarget pt: ", res0, res1, res2)
         self.assertFalse(res0 == res1)
         self.assertFalse(res1 == res2)
         self.assertFalse(res2 == res0)
+
+    # def test_clever_l2_no_target(self):
+    #     batch_size, nb_train, nb_test = 100, 500, 10
+    #     (x_train, y_train), (x_test, y_test), _, _ = load_mnist()
+    #
+    #     # Get the classifier
+    #     krc = self._create_krclassifier()
+    #     krc.fit(x_train, y_train, batch_size=batch_size, nb_epochs=2)
+    #
+    #     scores = clever(krc, x_test[0], 5, 5, 3, 2, target=None, c_init=1, pool_factor=10)
+    #     print("Clever Scores for n-1 classes", scores, scores.shape)
+    #     self.assertTrue(scores.shape == (krc.nb_classes-1,))
+    #
+    # def test_clever_l2_no_target_sorted(self):
+    #     batch_size, nb_train, nb_test = 100, 500, 10
+    #     (x_train, y_train), (x_test, y_test), _, _ = load_mnist()
+    #
+    #     # Get the classifier
+    #     krc = self._create_krclassifier()
+    #     krc.fit(x_train, y_train, batch_size=batch_size, nb_epochs=2)
+    #
+    #     scores = clever(krc, x_test[0], 5, 5, 3, 2, target=None, target_sort=True, c_init=1, pool_factor=10)
+    #     print("Clever scores for n-1 classes", scores, scores.shape)
+    #     # Should approx. be in decreasing value
+    #     self.assertTrue(scores.shape == (krc.nb_classes-1,))
+    #
+    # def test_clever_l2_same_target(self):
+    #     batch_size, nb_train, nb_test = 100, 500, 10
+    #     (x_train, y_train), (x_test, y_test), _, _ = load_mnist()
+    #
+    #     # Get the classifier
+    #     krc = self._create_krclassifier()
+    #     krc.fit(x_train, y_train, batch_size=batch_size, nb_epochs=2)
+    #
+    #     scores = clever(krc, x_test[0], 5, 5, 3, 2, target=np.argmax(krc.predict(x_test[:1])), c_init=1, pool_factor=10)
+    #     self.assertIsNone(scores[0], msg='Clever scores for the predicted class should be `None`.')
 
 
 if __name__ == '__main__':

@@ -23,21 +23,28 @@ class TestLocalSpatialSmoothing(unittest.TestCase):
 
         # Start to test
         preprocess = SpatialSmoothing()
-        smoothed_x = preprocess(x, 3)
-        self.assertTrue((smoothed_x == np.array(
+        smooth_x = preprocess(x, window_size=3)
+        self.assertTrue((smooth_x == np.array(
             [[[[2], [3], [3]], [[4], [5], [6]], [[5], [6], [6]]]])).all())
 
-        smoothed_x = preprocess(x, 1)
-        self.assertTrue((smoothed_x == x).all())
+        smooth_x = preprocess(x, window_size=1)
+        self.assertTrue((smooth_x == x).all())
 
-        smoothed_x = preprocess(x, 2)
-        self.assertTrue((smoothed_x == np.array(
+        smooth_x = preprocess(x, window_size=2)
+        self.assertTrue((smooth_x == np.array(
             [[[[1], [2], [3]], [[7], [7], [8]], [[7], [7], [8]]]])).all())
+
+    def test_channels(self):
+        x = np.arange(9).reshape(1, 1, 3, 3)
+        preprocess = SpatialSmoothing(channel_index=1)
+        smooth_x = preprocess(x)
+
+        new_x = np.arange(9).reshape(1, 3, 3, 1)
+        preprocess = SpatialSmoothing()
+        new_smooth_x = preprocess(new_x)
+
+        self.assertTrue((smooth_x[0, 0] == new_smooth_x[0, :, :, 0]).all())
 
 
 if __name__ == '__main__':
     unittest.main()
-
-
-
-
