@@ -281,49 +281,6 @@ def load_mnist_raw():
     return (x_train, y_train), (x_test, y_test), min_, max_
 
 
-def load_imagenet():
-    """Loads Imagenet dataset from `DATA_PATH`.
-
-    :return: `(x_train, y_train), (x_test, y_test), min, max`
-    :rtype: `(np.ndarray, np.ndarray), (np.ndarray, np.ndarray), float, float`
-    """
-    from keras.preprocessing import image
-    from keras.utils.data_utils import get_file
-    from art import DATA_PATH
-
-    min_, max_ = 0., 255.
-
-    class_index_path = 'https://s3.amazonaws.com/deep-learning-models/image-models/imagenet_class_index.json'
-    class_id = DATA_PATH.split("/")[-1]
-
-    fpath = get_file('imagenet_class_index.json', class_index_path, cache_subdir='models')
-    class_index = json.load(open(fpath))
-
-    for k, v in class_index.items():
-        if v[0] == class_id:
-            label = k
-            break
-
-    dataset = list()
-    for root, _, files in os.walk(DATA_PATH):
-        for file_ in files:
-            if file_.endswith(".jpg"):
-                img = image.load_img(os.path.join(root, file_), target_size=(224, 224))
-                dataset.append(image.img_to_array(img))
-
-    dataset = np.asarray(dataset)
-    y = to_categorical(np.asarray([label] * len(dataset)), 1000)
-
-    try:
-        x_train, x_test = dataset[:700], dataset[700:]
-        y_train, y_test = y[:700], y[700:]
-    except:
-        x_train, x_test = dataset[:2], dataset[0:]
-        y_train, y_test = y[:2], y[0:]
-
-    return (x_train, y_train), (x_test, y_test), min_, max_
-
-
 def load_stl():
     """Loads the STL-10 dataset from config.STL10_PATH or downloads it if necessary.
 
@@ -369,7 +326,7 @@ def load_stl():
 
 def load_dataset(name):
     """
-    Loads or downloads the dataset corresponding to `name`. Options are: `mnist`, `cifar10`, `imagenet` and `stl10`.
+    Loads or downloads the dataset corresponding to `name`. Options are: `mnist`, `cifar10` and `stl10`.
 
     :param name: Name of the dataset
     :type name: `str`
@@ -382,8 +339,6 @@ def load_dataset(name):
         return load_mnist()
     elif "cifar10" in name:
         return load_cifar10()
-    elif "imagenet" in name:
-        return load_imagenet()
     elif "stl10" in name:
         return load_stl()
     else:
