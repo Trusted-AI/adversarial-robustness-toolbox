@@ -61,7 +61,7 @@ class KerasClassifier(Classifier):
             if k.backend() == 'tensorflow':
                 if logits == None:
                     preds, = self._output.op.inputs
-                else
+                else:
                     preds = logits
                 #loss = k.sparse_categorical_crossentropy(label_ph, preds, from_logits=True)
                 loss = k.sparse_categorical_crossentropy(label_ph, self._output, from_logits=use_logits)  # TS: What's the case this doesn't work?
