@@ -25,7 +25,7 @@ class ReverseSigmoid(NetworkManipulator):
             return KerasClassifier(m._clip_values, manipulated_model, use_logits=False,
                                    channel_index=m._channel_index, defences=m.defences,
                                    preprocessing=m._preprocessing, input_layer=input_layer,
-                                   output_layer=output_layer, logits=m._model.layers[-1].input)
+                                   output_layer=output_layer, custom_activation=True)
         else:
             raise NotImplementedError
 

@@ -11,7 +11,7 @@ class KerasClassifier(Classifier):
     The supported backends for Keras are TensorFlow and Theano.
     """
     def __init__(self, clip_values, model, use_logits=False, channel_index=3, defences=None, preprocessing=(0, 1),
-                 input_layer=0, output_layer=0, logits=None):
+                 input_layer=0, output_layer=0, custom_activation=True):
         """
         Create a `Classifier` instance from a Keras model. Assumes the `model` passed as argument is compiled.
 
@@ -54,17 +54,18 @@ class KerasClassifier(Classifier):
 
         _, self._nb_classes = k.int_shape(self._output)
         self._input_shape = k.int_shape(self._input)[1:]
+        self._custom_activation = custom_activation
 
         # Get predictions and loss function
         label_ph = k.placeholder(shape=(None,))
         if not use_logits:
             if k.backend() == 'tensorflow':
-                if logits == None:
-                    preds, = self._output.op.inputs
+                if custom_activation:
+                    preds = self._output
+                    loss = k.sparse_categorical_crossentropy(label_ph, preds, from_logits=False)
                 else:
-                    preds = logits
-                #loss = k.sparse_categorical_crossentropy(label_ph, preds, from_logits=True)
-                loss = k.sparse_categorical_crossentropy(label_ph, self._output, from_logits=use_logits)  # TS: What's the case this doesn't work?
+                    preds, = self._output.op.inputs
+                    loss = k.sparse_categorical_crossentropy(label_ph, preds, from_logits=True)
             else:
                 loss = k.sparse_categorical_crossentropy(label_ph, self._output, from_logits=use_logits)
 
@@ -75,10 +76,7 @@ class KerasClassifier(Classifier):
                 else:
                     preds = logits
         else:
-            if logits == None:
-                preds = self._output
-            else:
-                preds = logits
+            preds = self._output
             loss = k.sparse_categorical_crossentropy(label_ph, self._output, from_logits=use_logits)
         loss_grads = k.gradients(loss, self._input)
 
@@ -181,7 +179,7 @@ class KerasClassifier(Classifier):
             begin, end = b * batch_size,  min((b + 1) * batch_size, x_.shape[0])
             preds[begin:end] = self._preds([x_[begin:end]])[0]
 
-            if not logits:
+            if not logits and not self._custom_activation:
                 exp = np.exp(preds[begin:end] - np.max(preds[begin:end], axis=1, keepdims=True))
                 preds[begin:end] = exp / np.sum(exp, axis=1, keepdims=True)
 
