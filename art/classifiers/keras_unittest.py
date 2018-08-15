@@ -3,7 +3,7 @@ from __future__ import absolute_import, division, print_function, unicode_litera
 import keras
 import keras.backend as k
 from keras.models import Sequential, Model
-from keras.layers import Dense, Activation, Flatten, Conv2D, MaxPooling2D, Dropout, Input, Flatten
+from keras.layers import Dense, Conv2D, MaxPooling2D, Dropout, Input, Flatten
 import numpy as np
 import unittest
 
@@ -14,32 +14,17 @@ BATCH_SIZE = 10
 NB_TRAIN = 500
 NB_TEST = 100
 
+
 class TestKerasClassifier(unittest.TestCase):
     @classmethod
     def setUpClass(cls):
         k.clear_session()
-
-    def setUp(self):
-        import requests
-        import tempfile
-        import os
-
-        # Temporary folder for tests
-        self.test_dir = tempfile.mkdtemp()
-
-        # Download one ImageNet pic for tests
-        url = 'http://farm1.static.flickr.com/163/381342603_81db58bea4.jpg'
-        result = requests.get(url, stream=True)
-        if result.status_code == 200:
-            image = result.raw.read()
-            open(os.path.join(self.test_dir, 'test.jpg'), 'wb').write(image)
-
         k.set_learning_phase(1)
 
         # Get MNIST
         (x_train, y_train), (x_test, y_test), _, _ = load_mnist()
         x_train, y_train, x_test, y_test = x_train[:NB_TRAIN], y_train[:NB_TRAIN], x_test[:NB_TEST], y_test[:NB_TEST]
-        self.mnist = ((x_train, y_train), (x_test, y_test))
+        cls.mnist = ((x_train, y_train), (x_test, y_test))
         im_shape = x_train[0].shape
 
         # Create basic CNN on MNIST; architecture from Keras examples
@@ -55,15 +40,28 @@ class TestKerasClassifier(unittest.TestCase):
                       metrics=['accuracy'])
 
         model.fit(x_train, y_train, batch_size=BATCH_SIZE, epochs=1)
-        self.model_mnist = model
+        cls.model_mnist = model
+
+        import requests
+        import tempfile
+        import os
+
+        # Temporary folder for tests
+        cls.test_dir = tempfile.mkdtemp()
+
+        # Download one ImageNet pic for tests
+        url = 'http://farm1.static.flickr.com/163/381342603_81db58bea4.jpg'
+        result = requests.get(url, stream=True)
+        if result.status_code == 200:
+            image = result.raw.read()
+            open(os.path.join(cls.test_dir, 'test.jpg'), 'wb').write(image)
 
     @classmethod
     def tearDownClass(cls):
         k.clear_session()
 
-    def tearDown(self):
         import shutil
-        shutil.rmtree(self.test_dir)
+        shutil.rmtree(cls.test_dir)
 
     # def test_logits(self):
     #     classifier = KerasClassifier((0, 1), self.model_mnist, use_logits=True)
