@@ -62,16 +62,25 @@ class TestMXClassifier(unittest.TestCase):
         classifier = MXClassifier((0, 1), self._model, (1, 28, 28), 10, self._trainer)
         self.assertEqual(classifier.input_shape, (1, 28, 28))
 
-    # def test_class_gradient(self):
-    #     # Get MNIST
-    #     (_, _), (x_test, _) = self._mnist
-    #
-    #     # Create classifier
-    #     classifier = MXClassifier((0, 1), self._model, (1, 28, 28), 10, self._trainer)
-    #     grads = classifier.class_gradient(x_test)
-    #
-    #     self.assertTrue(np.array(grads.shape == (NB_TEST, 10, 1, 28, 28)).all())
-    #     self.assertTrue(np.sum(grads) != 0)
+    def test_class_gradient(self):
+        # Get MNIST
+        (_, _), (x_test, _) = self._mnist
+
+        # Create classifier
+        classifier = MXClassifier((0, 1), self._model, (1, 28, 28), 10, self._trainer)
+
+        # Test class grads for all classes
+        grads_all = classifier.class_gradient(x_test)
+        self.assertTrue(np.array(grads_all.shape == (NB_TEST, 10, 1, 28, 28)).all())
+        self.assertTrue(np.sum(grads_all) != 0)
+
+        # Test class grads for specified label
+        grads = classifier.class_gradient(x_test, label=3)
+        self.assertTrue(np.array(grads.shape == (NB_TEST, 1, 1, 28, 28)).all())
+        self.assertTrue(np.sum(grads) != 0)
+
+        # Assert gradient computed for the same class on same input are equal
+        self.assertAlmostEqual(np.sum(grads_all[:, 3] - grads), 0, places=6)
 
     def test_loss_gradient(self):
         # Get MNIST
