@@ -11,3 +11,6 @@ black-box attack: the attack never has access to the parameters of the TensorFlo
 [cifar_adversarial_training.py](cifar_adversarial_training.py)
 Trains a convolutional neural network on the CIFAR-10 dataset, then generates adversarial images using the
 DeepFool attack and retrains the network on the training set augmented with the adversarial images.
+
+[mnist_poison_detection.py](mnist_poison_detection.py)
+Generates a backdoor for MNIST dataset, then trains a convolutional neural network on the poisoned dataset and runs activation defence to find poison.
