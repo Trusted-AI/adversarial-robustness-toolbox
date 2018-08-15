@@ -1,9 +1,3 @@
-"""
-This defines the abstract class for a model stealing attack.
-Author: Taesung Lee
-Email: taesung.lee@ibm.com
-"""
-
 from __future__ import absolute_import, division, print_function, unicode_literals
 
 import abc

@@ -7,7 +7,8 @@ from art.classifiers import KerasClassifier
 class ReverseSigmoid(NetworkManipulator):
     def __call__(self, m, max_perturb=1.0, scale=0.1, input_layer=0, output_layer=0):
         """
-        Perform data preprocessing and return preprocessed data as tuple.
+        Build a protected model with the reverse sigmoid layer.
+        This is an implementation of 'Defending Against Model Stealing Attacks Using Deceptive Perturbations' (https://arxiv.org/abs/1806.00054).
 
         :param m: Classifier to be manipulated.
         :type m: `Classifier`
