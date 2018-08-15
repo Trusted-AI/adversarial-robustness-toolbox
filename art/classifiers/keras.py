@@ -11,7 +11,7 @@ class KerasClassifier(Classifier):
     The supported backends for Keras are TensorFlow and Theano.
     """
     def __init__(self, clip_values, model, use_logits=False, channel_index=3, defences=None, preprocessing=(0, 1),
-                 input_layer=0, output_layer=0, custom_activation=True):
+                 input_layer=0, output_layer=0, custom_activation=False):
         """
         Create a `Classifier` instance from a Keras model. Assumes the `model` passed as argument is compiled.
 
