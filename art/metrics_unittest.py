@@ -204,7 +204,7 @@ class TestClever(unittest.TestCase):
         tfc = self._create_tfclassifier()
         tfc.fit(x_train, y_train, batch_size=batch_size, nb_epochs=1)
 
-        # TODO Need to configure r 
+        # TODO Need to configure r
         # Test targeted clever
         res0 = clever_t(tfc, x_test[-1], 2, 10, 5, r_l1, norm=1, pool_factor=3)
         res1 = clever_t(tfc, x_test[-1], 2, 10, 5, r_l2, norm=2, pool_factor=3)

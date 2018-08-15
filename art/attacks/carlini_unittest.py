@@ -35,7 +35,7 @@ class Model(nn.Module):
 
         return logit_output
 
-        
+
 class TestCarliniL2(unittest.TestCase):
     """
     A unittest class for testing the Carlini2 attack.

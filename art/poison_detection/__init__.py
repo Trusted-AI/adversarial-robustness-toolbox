@@ -12,4 +12,3 @@ from art.poison_detection.distance_analyzer import DistanceAnalyzer
 from art.poison_detection.size_analyzer import SizeAnalyzer
 
 from art.poison_detection.ground_truth_evaluator import GroundTruthEvaluator
-

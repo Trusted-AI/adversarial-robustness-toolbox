@@ -133,7 +133,7 @@ class TestSaliencyMap(unittest.TestCase):
         # Perform attack
         df = SaliencyMapMethod(classifier, theta=1)
         x_test_adv = df.generate(x_test, y=to_categorical(targets, nb_classes))
-        
+
         self.assertFalse((x_test == x_test_adv).all())
         self.assertFalse((0. == x_test_adv).all())
 

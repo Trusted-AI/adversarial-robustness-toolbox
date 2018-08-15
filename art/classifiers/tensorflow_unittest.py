@@ -2,8 +2,9 @@ from __future__ import absolute_import, division, print_function, unicode_litera
 
 import unittest
 
-import tensorflow as tf
 import numpy as np
+import tensorflow as tf
+import six
 
 from art.classifiers import TFClassifier
 from art.utils import load_mnist
@@ -98,7 +99,7 @@ class TestTFClassifier(unittest.TestCase):
 
         # Test and get layers
         layer_names = self.classifier.layer_names
-        # print(layer_names)
+        print(layer_names)
         self.assertTrue(layer_names == ['conv2d/Relu:0', 'max_pooling2d/MaxPool:0',
                                         'Flatten/flatten/Reshape:0', 'dense/BiasAdd:0'])
 
