@@ -26,7 +26,7 @@ class TestBase(unittest.TestCase):
 
     @classmethod
     def tearDownClass(cls):
-        TestBase.sess.close()
+        cls.sess.close()
 
     @classmethod
     def setUpClass(cls):

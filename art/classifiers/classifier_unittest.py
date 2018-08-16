@@ -10,7 +10,7 @@ class ClassifierInstance(Classifier):
     def __init__(self, clip_values, channel_index=1):
         super(ClassifierInstance, self).__init__(clip_values=clip_values, channel_index=channel_index)
 
-    def class_gradient(self, x, logits=False):
+    def class_gradient(self, x, label=None, logits=False):
         pass
 
     def fit(self, x, y, batch_size=128, nb_epochs=20):

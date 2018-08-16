@@ -258,7 +258,8 @@ def clever_t(classifier, x, target_class, nb_batches, batch_size, radius, norm, 
     shape.extend(x.shape)
 
     # Generate a pool of samples
-    rand_pool = np.reshape(random_sphere(nb_points=pool_factor * batch_size, nb_dims=dim, radius=radius, norm=norm), shape)
+    rand_pool = np.reshape(random_sphere(nb_points=pool_factor * batch_size, nb_dims=dim, radius=radius, norm=norm),
+                           shape)
     rand_pool += np.repeat(np.array([x]), pool_factor * batch_size, 0)
     np.clip(rand_pool, classifier.clip_values[0], classifier.clip_values[1], out=rand_pool)
 
