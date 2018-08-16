@@ -25,6 +25,7 @@ class TestTFClassifier(unittest.TestCase):
         x_test, y_test = x_test[:NB_TEST], y_test[:NB_TEST]
         cls.mnist = (x_train, y_train), (x_test, y_test)
 
+    def setUp(self):
         # Define input and output placeholders
         input_ph = tf.placeholder(tf.float32, shape=[None, 28, 28, 1])
         output_ph = tf.placeholder(tf.int32, shape=[None, 10])
@@ -43,36 +44,37 @@ class TestTFClassifier(unittest.TestCase):
         train = optimizer.minimize(loss)
 
         # Tensorflow session and initialization
-        cls.sess = tf.Session()
-        cls.sess.run(tf.global_variables_initializer())
+        self.sess = tf.Session()
+        self.sess.run(tf.global_variables_initializer())
 
-        # Create classifier and fit
-        tfc = TFClassifier((0, 1), input_ph, logits, output_ph, train, loss, None, cls.sess)
-        tfc.fit(x_train, y_train, batch_size=100, nb_epochs=2)
-        cls.classifier = tfc
-
-    @classmethod
-    def tearDownClass(cls):
-        cls.sess.close()
+        # Create classifier
+        self.classifier = TFClassifier((0, 1), input_ph, logits, output_ph, train, loss, None, self.sess)
+    
+    def tearDown(self):
+        self.sess.close()
 
     def test_fit_predict(self):
         # Get MNIST
-        (_, _), (x_test, y_test) = self.mnist
+        (x_train, y_train), (x_test, y_test) = self.mnist
 
+        # Test fit and predict
+        self.classifier.fit(x_train, y_train, batch_size=100, nb_epochs=1)
         preds = self.classifier.predict(x_test)
         preds_class = np.argmax(preds, axis=1)
-        true_class = np.argmax(y_test, axis=1)
-        acc = np.sum(preds_class == true_class) / len(true_class)
+        trues_class = np.argmax(y_test, axis=1)
+        acc = np.sum(preds_class == trues_class) / len(trues_class)
 
         print("\nAccuracy: %.2f%%" % (acc * 100))
         self.assertGreater(acc, 0.1)
         tf.reset_default_graph()
 
     def test_nb_classes(self):
+        # Start to test
         self.assertTrue(self.classifier.nb_classes == 10)
         tf.reset_default_graph()
 
     def test_input_shape(self):
+        # Start to test
         self.assertTrue(np.array(self.classifier.input_shape == (28, 28, 1)).all())
         tf.reset_default_graph()
 
@@ -82,6 +84,7 @@ class TestTFClassifier(unittest.TestCase):
 
         # Test gradient
         grads = self.classifier.class_gradient(x_test)
+
         self.assertTrue(np.array(grads.shape == (NB_TEST, 10, 28, 28, 1)).all())
         self.assertTrue(np.sum(grads) != 0)
         tf.reset_default_graph()
@@ -92,6 +95,7 @@ class TestTFClassifier(unittest.TestCase):
 
         # Test gradient
         grads = self.classifier.loss_gradient(x_test, y_test)
+
         self.assertTrue(np.array(grads.shape == (NB_TEST, 28, 28, 1)).all())
         self.assertTrue(np.sum(grads) != 0)
         tf.reset_default_graph()
@@ -102,6 +106,7 @@ class TestTFClassifier(unittest.TestCase):
 
         # Test and get layers
         layer_names = self.classifier.layer_names
+        print(layer_names)
         self.assertTrue(layer_names == ['conv2d/Relu:0', 'max_pooling2d/MaxPool:0',
                                         'Flatten/flatten/Reshape:0', 'dense/BiasAdd:0'])
 
