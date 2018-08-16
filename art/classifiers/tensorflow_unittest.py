@@ -4,7 +4,6 @@ import unittest
 
 import numpy as np
 import tensorflow as tf
-import six
 
 from art.classifiers import TFClassifier
 from art.utils import load_mnist
@@ -67,13 +66,15 @@ class TestTFClassifier(unittest.TestCase):
 
         print("\nAccuracy: %.2f%%" % (acc * 100))
         self.assertGreater(acc, 0.1)
-        # tf.reset_default_graph()
+        tf.reset_default_graph()
 
     def test_nb_classes(self):
         self.assertTrue(self.classifier.nb_classes == 10)
+        tf.reset_default_graph()
 
     def test_input_shape(self):
         self.assertTrue(np.array(self.classifier.input_shape == (28, 28, 1)).all())
+        tf.reset_default_graph()
 
     def test_class_gradient(self):
         # Get MNIST
@@ -83,6 +84,7 @@ class TestTFClassifier(unittest.TestCase):
         grads = self.classifier.class_gradient(x_test)
         self.assertTrue(np.array(grads.shape == (NB_TEST, 10, 28, 28, 1)).all())
         self.assertTrue(np.sum(grads) != 0)
+        tf.reset_default_graph()
 
     def test_loss_gradient(self):
         # Get MNIST
@@ -92,6 +94,7 @@ class TestTFClassifier(unittest.TestCase):
         grads = self.classifier.loss_gradient(x_test, y_test)
         self.assertTrue(np.array(grads.shape == (NB_TEST, 28, 28, 1)).all())
         self.assertTrue(np.sum(grads) != 0)
+        tf.reset_default_graph()
 
     def test_layers(self):
         # Get MNIST
@@ -99,7 +102,6 @@ class TestTFClassifier(unittest.TestCase):
 
         # Test and get layers
         layer_names = self.classifier.layer_names
-        print(layer_names)
         self.assertTrue(layer_names == ['conv2d/Relu:0', 'max_pooling2d/MaxPool:0',
                                         'Flatten/flatten/Reshape:0', 'dense/BiasAdd:0'])
 
@@ -112,6 +114,7 @@ class TestTFClassifier(unittest.TestCase):
         self.assertTrue(self.classifier.get_activations(x_test, 1).shape == (20, 12, 12, 16))
         self.assertTrue(self.classifier.get_activations(x_test, 2).shape == (20, 2304))
         self.assertTrue(self.classifier.get_activations(x_test, 3).shape == (20, 10))
+        tf.reset_default_graph()
 
 
 if __name__ == '__main__':
