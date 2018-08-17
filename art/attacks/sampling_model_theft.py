@@ -44,7 +44,7 @@ class SamplingModelTheft(ModelTheft):
         """
         x = self.x
         num_samples = x.shape[0]
-        x = np.concatenate([x] * (int)math.ceil(budget / num_samples), axis=0)[:budget]
+        x = np.concatenate([x] * (int)(math.ceil(budget / num_samples)), axis=0)[:budget]
         if self.query_datagen != None:
             x = self.query_datagen(x)
         y = model.predict(x)
