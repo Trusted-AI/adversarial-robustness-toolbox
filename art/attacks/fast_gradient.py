@@ -58,8 +58,8 @@ class FastGradientMethod(Attack):
         adv_x = x.copy()
 
         # Compute perturbation with implicit batching
-        for batch_id in range(adv_x.shape[0] // self.batch_size + 1):
-            batch_index_1, batch_index_2 = batch_id * self.batch_size, min((batch_id + 1) * self.batch_size, x.shape[0])
+        for batch_id in range(int(np.ceil(adv_x.shape[0] / float(self.batch_size)))):
+            batch_index_1, batch_index_2 = batch_id * self.batch_size, (batch_id + 1) * self.batch_size
             batch = adv_x[batch_index_1:batch_index_2]
             batch_labels = y[batch_index_1:batch_index_2]
 
@@ -189,7 +189,7 @@ class FastGradientMethod(Attack):
             adv_x = x.copy()
 
         # Compute perturbation with implicit batching
-        for batch_id in range(adv_x.shape[0] // self.batch_size + 1):
+        for batch_id in range(int(np.ceil(adv_x.shape[0] / float(self.batch_size)))):
             batch_index_1, batch_index_2 = batch_id * self.batch_size, (batch_id + 1) * self.batch_size
             batch = adv_x[batch_index_1:batch_index_2]
             batch_labels = y[batch_index_1:batch_index_2]

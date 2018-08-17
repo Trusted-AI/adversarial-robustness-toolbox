@@ -82,8 +82,8 @@ class TestFastGradientMethod(unittest.TestCase):
 
     def test_mnist(self):
         # Define all backends to test
-        backends = {'keras': self.classifier_k,
-                    'tf': self.classifier_tf,
+        backends = {#'keras': self.classifier_k,
+                    #'tf': self.classifier_tf,
                     'pytorch': self.classifier_py}
 
         for _, classifier in backends.items():
@@ -105,8 +105,8 @@ class TestFastGradientMethod(unittest.TestCase):
 
         # Test FGSM with np.inf norm
         attack = FastGradientMethod(classifier, eps=1)
-        x_test_adv = attack.generate(x_test)
-        x_train_adv = attack.generate(x_train)
+        x_test_adv = attack.generate(x_test, **{'batch_size': 2})
+        x_train_adv = attack.generate(x_train, **{'batch_size': 4})
 
         self.assertFalse((x_train == x_train_adv).all())
         self.assertFalse((x_test == x_test_adv).all())
