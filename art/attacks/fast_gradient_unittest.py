@@ -82,8 +82,8 @@ class TestFastGradientMethod(unittest.TestCase):
 
     def test_mnist(self):
         # Define all backends to test
-        backends = {#'keras': self.classifier_k,
-                    #'tf': self.classifier_tf,
+        backends = {'keras': self.classifier_k,
+                    'tf': self.classifier_tf,
                     'pytorch': self.classifier_py}
 
         for _, classifier in backends.items():
