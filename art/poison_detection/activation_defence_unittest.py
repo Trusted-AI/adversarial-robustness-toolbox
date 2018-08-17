@@ -20,28 +20,30 @@ from __future__ import absolute_import, division, print_function, unicode_litera
 import unittest
 import keras.backend as k
 from keras.models import Sequential
-from keras.layers import Dense, Flatten, Conv2D, MaxPooling2D, Activation, Dropout
+from keras.layers import Dense, Flatten, Conv2D, MaxPooling2D, Dropout
 import numpy as np
 
 from art.poison_detection import ActivationDefence
 from art.classifiers import KerasClassifier
-from art.utils import load_dataset
+from art.utils import load_mnist
+
+NB_TRAIN, NB_TEST, BATCH_SIZE = 300, 10, 128
 
 
 class TestActivationDefence(unittest.TestCase):
 
     # python -m unittest discover art/ -p 'activation_defence_unittest.py'
 
-    def setUp(self):
+    @classmethod
+    def setUpClass(cls):
 
-        (self.x_train, self.y_train), (x_test, y_test), min_, max_ = load_dataset(str('mnist'))
-        self.x_train = self.x_train[:300]
-        self.y_train = self.y_train[:300]
+        (x_train, y_train), (x_test, y_test), _, _ = load_mnist()
+        x_train, y_train = x_train[:NB_TRAIN], y_train[:NB_TRAIN]
+        cls.mnist = (x_train, y_train), (x_test, y_test)
 
         k.set_learning_phase(1)
         model = Sequential()
-        model.add(Conv2D(32, kernel_size=(3, 3), activation='relu',
-                         input_shape=self.x_train.shape[1:]))
+        model.add(Conv2D(32, kernel_size=(3, 3), activation='relu', input_shape=x_train.shape[1:]))
         model.add(Conv2D(64, (3, 3), activation='relu'))
         model.add(MaxPooling2D(pool_size=(2, 2)))
         model.add(Dropout(0.25))
@@ -51,15 +53,10 @@ class TestActivationDefence(unittest.TestCase):
         model.add(Dense(10, activation='softmax'))
         model.compile(loss='categorical_crossentropy', optimizer='adam', metrics=['accuracy'])
 
-        self.classifier = KerasClassifier((min_, max_), model=model)
-        self.classifier.fit(self.x_train, self.y_train, nb_epochs=1, batch_size=128)
+        cls.classifier = KerasClassifier((0, 1), model=model)
+        cls.classifier.fit(x_train, y_train, nb_epochs=2, batch_size=128)
 
-        self.defence = ActivationDefence(self.classifier, self.x_train, self.y_train)
-
-    # def tearDown(self):
-    #     self.classifier.dispose()
-    #     self.x_train.dispose()
-    #     self.y_train.dispose()
+        cls.defence = ActivationDefence(cls.classifier, x_train, y_train)
 
     @unittest.expectedFailure
     def test_wrong_parameters_1(self):
@@ -78,10 +75,14 @@ class TestActivationDefence(unittest.TestCase):
         self.defence.set_params(cluster_analysis='what')
 
     def test_activations(self):
+        (x_train, _), (_, _) = self.mnist
         activations = self.defence._get_activations()
-        self.assertEqual(len(self.x_train), len(activations))
+        self.assertEqual(len(x_train), len(activations))
 
     def test_output_clusters(self):
+        # Get MNIST
+        (x_train, _), (_, _) = self.mnist
+
         n_classes = self.classifier.nb_classes
         for n_clusters in range(2, 5):
             clusters_by_class, red_activations_by_class = self.defence.cluster_activations(n_clusters=n_clusters)
@@ -95,51 +96,48 @@ class TestActivationDefence(unittest.TestCase):
             n_dp = 0
             for i in range(0, n_classes):
                 n_dp += len(clusters_by_class[i])
-            self.assertEqual(len(self.x_train), n_dp)
+            self.assertEqual(len(x_train), n_dp)
 
     def test_detect_poison(self):
+        # Get MNIST
+        (x_train, _), (_, _) = self.mnist
 
-        confidence_level, is_clean_lst = self.defence.detect_poison(n_clusters=2,
-                                                                    ndims=10,
-                                                                    reduce='PCA')
+        confidence_level, is_clean_lst = self.defence.detect_poison(n_clusters=2, ndims=10, reduce='PCA')
         sum_clean1 = sum(is_clean_lst)
 
         # Check number of items in is_clean
-        self.assertEqual(len(self.x_train), len(is_clean_lst))
-        self.assertEqual(len(self.x_train), len(confidence_level))
+        self.assertEqual(len(x_train), len(is_clean_lst))
+        self.assertEqual(len(x_train), len(confidence_level))
+
         # Test right number of clusters
         found_clusters = len(np.unique(self.defence.clusters_by_class[0]))
         self.assertEqual(found_clusters, 2)
 
-        confidence_level, is_clean_lst = self.defence.detect_poison(n_clusters=3,
-                                                                    ndims=10,
-                                                                    reduce='PCA',
-                                                                    cluster_analysis='distance'
-                                                                    )
-        self.assertEqual(len(self.x_train), len(is_clean_lst))
-        self.assertEqual(len(self.x_train), len(confidence_level))
+        confidence_level, is_clean_lst = self.defence.detect_poison(n_clusters=3, ndims=10, reduce='PCA',
+                                                                    cluster_analysis='distance')
+        self.assertEqual(len(x_train), len(is_clean_lst))
+        self.assertEqual(len(x_train), len(confidence_level))
+
         # Test change of state to new number of clusters:
         found_clusters = len(np.unique(self.defence.clusters_by_class[0]))
         self.assertEqual(found_clusters, 3)
+
         # Test clean data has changed
         sum_clean2 = sum(is_clean_lst)
         self.assertNotEqual(sum_clean1, sum_clean2)
 
-        confidence_level, is_clean_lst = self.defence.detect_poison(n_clusters=2,
-                                                                    ndims=10,
-                                                                    reduce='PCA',
-                                                                    cluster_analysis='distance'
-                                                                    )
+        confidence_level, is_clean_lst = self.defence.detect_poison(n_clusters=2, ndims=10, reduce='PCA',
+                                                                    cluster_analysis='distance')
         sum_dist = sum(is_clean_lst)
-        confidence_level, is_clean_lst = self.defence.detect_poison(n_clusters=2,
-                                                                    ndims=10,
-                                                                    reduce='PCA',
-                                                                    cluster_analysis='smaller'
-                                                                    )
+        confidence_level, is_clean_lst = self.defence.detect_poison(n_clusters=2, ndims=10, reduce='PCA',
+                                                                    cluster_analysis='smaller')
         sum_size = sum(is_clean_lst)
         self.assertNotEqual(sum_dist, sum_size)
 
     def test_analyze_cluster(self):
+        # Get MNIST
+        (x_train, _), (_, _) = self.mnist
+
         dist_clean_by_class = self.defence.analyze_clusters(cluster_analysis='distance')
 
         n_classes = self.classifier.nb_classes
@@ -149,11 +147,12 @@ class TestActivationDefence(unittest.TestCase):
         n_dp = 0
         for i in range(0, n_classes):
             n_dp += len(dist_clean_by_class[i])
-        self.assertEqual(len(self.x_train), n_dp)
+        self.assertEqual(len(x_train), n_dp)
 
         sz_clean_by_class = self.defence.analyze_clusters(cluster_analysis='smaller')
         n_classes = self.classifier.nb_classes
         self.assertEqual(n_classes, len(sz_clean_by_class))
+
         # Check right amount of data
         n_dp = 0
         sum_sz = 0
@@ -163,7 +162,7 @@ class TestActivationDefence(unittest.TestCase):
             n_dp += len(sz_clean_by_class[i])
             sum_sz += sum(sz_clean_by_class[i])
             sum_dis += sum(dist_clean_by_class[i])
-        self.assertEqual(len(self.x_train), n_dp)
+        self.assertEqual(len(x_train), n_dp)
 
         # Very unlikely that they are the same
         self.assertNotEqual(sum_dis, sum_sz, msg='This is very unlikely to happen... there may be an error')

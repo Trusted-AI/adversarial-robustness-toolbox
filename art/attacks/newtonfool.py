@@ -136,8 +136,10 @@ class NewtonFool(Attack):
         :param norm_grad: norm of gradient values at the attacked class.
         :return: pertubation.
         """
+        # Pick a small scalar to avoid division by 0
+        tol = 10e-8
         nom = -theta * grads
-        denom = norm_grad**2
+        denom = norm_grad**2 if norm_grad > tol else tol
         result = nom / float(denom)
 
         return result

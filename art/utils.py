@@ -348,6 +348,7 @@ def load_dataset(name):
 def make_directory(dir_path):
     """
     Creates the specified tree of directories if needed.
+
     :param dir_path: (str) directory or file path
     :return: None
     """
@@ -358,6 +359,7 @@ def make_directory(dir_path):
 def get_npy_files(path):
     """
     Generator returning all the npy files in path subdirectories.
+
     :param path: (str) directory path
     :return: (str) paths
     """
@@ -366,24 +368,6 @@ def get_npy_files(path):
         for file_ in files:
             if file_.endswith(".npy"):
                 yield os.path.join(root, file_)
-
-
-def set_group_permissions_rec(path, group="drl-dwl"):
-    for root, _, files in os.walk(path):
-        _set_group_permissions(root, group)
-
-        for f in files:
-            try:
-                _set_group_permissions(os.path.join(root, f), group)
-            except:
-                pass
-
-
-def _set_group_permissions(filename, group="drl-dwl"):
-    import shutil
-    shutil.chown(filename, user=None, group=group)
-
-    os.chmod(filename, 0o774)
 
 
 # ------------------------------------------------------------------- ARG PARSER

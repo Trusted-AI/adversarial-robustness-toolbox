@@ -56,6 +56,7 @@ class AdversarialTrainer:
             raise ValueError('The `ratio` of adversarial samples in each batch has to be between 0 and 1.')
         self.ratio = ratio
 
+        self._precomputed_adv_samples = []
         self.x_augmented, self.y_augmented = None, None
 
     def fit(self, x, y, batch_size=128, nb_epochs=20):
@@ -103,7 +104,7 @@ class AdversarialTrainer:
                     labels_batch = np.argmax(y_batch, axis=1)
                     x_adv = attack.generate(x_batch[adv_ids])
                     y_adv = np.argmax(attack.classifier.predict(x_adv), axis=1)
-                    selected = np.array(y_adv != labels_batch)
+                    selected = np.array(y_adv != labels_batch[adv_ids])
 
                     x_batch[adv_ids][selected] = x_adv[selected]
 

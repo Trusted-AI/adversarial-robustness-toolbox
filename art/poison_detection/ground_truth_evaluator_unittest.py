@@ -25,23 +25,23 @@ import pprint
 
 
 class TestGroundTruth(unittest.TestCase):
+    @classmethod
+    def setUpClass(cls):
+        cls.evaluator = GroundTruthEvaluator()
+        cls.n_classes = 3
+        cls.n_dp = 10
+        cls.n_dp_mix = 5
 
-    def setUp(self):
-        self.evaluator = GroundTruthEvaluator()
-        self.n_classes = 3
-        self.n_dp = 10
-        self.n_dp_mix = 5
+        cls.is_clean_all_clean = [[] for _ in range(cls.n_classes)]
+        cls.is_clean_all_poison = [[] for _ in range(cls.n_classes)]
+        cls.is_clean_mixed = [[] for _ in range(cls.n_classes)]
+        cls.is_clean_comp_mix = [[] for _ in range(cls.n_classes)]
 
-        self.is_clean_all_clean = [[] for i in range(self.n_classes)]
-        self.is_clean_all_poison = [[] for i in range(self.n_classes)]
-        self.is_clean_mixed = [[] for i in range(self.n_classes)]
-        self.is_clean_comp_mix = [[] for i in range(self.n_classes)]
-
-        for i in range(self.n_classes):
-            self.is_clean_all_clean[i] = [1] * self.n_dp
-            self.is_clean_all_poison[i] = [0] * self.n_dp
-            self.is_clean_mixed[i] = [1, 0, 0, 1, 0, 1, 1, 1, 0, 0]
-            self.is_clean_comp_mix[i] = [0, 1, 1, 0, 1, 0, 0, 0, 1, 1]
+        for i in range(cls.n_classes):
+            cls.is_clean_all_clean[i] = [1] * cls.n_dp
+            cls.is_clean_all_poison[i] = [0] * cls.n_dp
+            cls.is_clean_mixed[i] = [1, 0, 0, 1, 0, 1, 1, 1, 0, 0]
+            cls.is_clean_comp_mix[i] = [0, 1, 1, 0, 1, 0, 0, 0, 1, 1]
 
     def test_analyze_correct_all_clean(self):
         # perfect detection all data is actually clean:
@@ -176,7 +176,6 @@ class TestGroundTruth(unittest.TestCase):
             for item in errors_by_class[i]:
                 self.assertEqual(item, 3)
 
-
     def test_analyze_fully_misclassified_rev(self):
         # Completely wrong
         # order parameters: analyze_correctness(assigned_clean_by_class, is_clean_by_class)
@@ -210,4 +209,3 @@ class TestGroundTruth(unittest.TestCase):
             # all errors_by_class should be 3 (all_errors_by_class[i] = 2 if marked poison, is clean)
             for item in errors_by_class[i]:
                 self.assertEqual(item, 2)
-

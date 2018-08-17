@@ -31,25 +31,28 @@ class ClusteringHandler:
         Constructor
         """
 
-    def cluster_activations(self, separated_activations, n_clusters=2, ndims=10, reduce='FastICA',
+    @staticmethod
+    def cluster_activations(separated_activations, n_clusters=2, ndims=10, reduce='FastICA',
                             clustering_method='KMeans'):
         """
-        Clusters activations and returns two arrays
-
+        Clusters activations and returns two arrays.
         1) separated_clusters: where separated_clusters[i] is a 1D array indicating which cluster each datapoint
         in the class has been assigned
         2) separated_reduced_activations: activations with dimensionality reduced using the specified reduce method
-        :param separated_activations:  list where separated_activations[i] is a np matrix for the ith class where
+
+        :param separated_activations: list where separated_activations[i] is a np matrix for the ith class where
         each row corresponds to activations for a given data point
-        :type: separated_activations `list`
+        :type separated_activations: `list`
         :param n_clusters: number of clusters (defaults to 2 for poison/clean)
-        :type n_clusters `int`
+        :type n_clusters: `int`
         :param ndims: number of dimensions to reduce activation to via PCA
-        :type ndims `int`
+        :type ndims: `int`
         :param reduce: Method to perform dimensionality reduction, default is FastICA
-        :type reduce `str`
+        :type reduce: `str`
         :param clustering_method: Clustering method to use, default is KMeans
+        :type clustering_method: `str`
         :return: separated_clusters, separated_reduced_activations
+        :rtype: `tuple`
         """
         separated_clusters = []
         separated_reduced_activations = []
@@ -67,7 +70,7 @@ class ClusteringHandler:
             raise ValueError(clustering_method + " clustering method not supported.")
 
         for i, ac in enumerate(separated_activations):
-            # apply dimensionality reduction
+            # Apply dimensionality reduction
             n_activations = np.shape(ac)[1]
             if n_activations > ndims:
                 reduced_activations = projector.fit_transform(ac)
@@ -77,9 +80,8 @@ class ClusteringHandler:
                 reduced_activations = ac
             separated_reduced_activations.append(reduced_activations)
 
-            # get cluster assignments
+            # Get cluster assignments
             clusters = clusterer.fit_predict(reduced_activations)
-
             separated_clusters.append(clusters)
 
         return separated_clusters, separated_reduced_activations

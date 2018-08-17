@@ -92,7 +92,7 @@ class Detector(ABC):
 class BinaryInputDetector(Detector):
 
     def __init__(self, detector):
-        """        
+        """
         Create a `Detector` instance which performs binary classification on input data.
 
         :param detector: The detector architecture to be trained and applied for the binary classification.
@@ -100,7 +100,7 @@ class BinaryInputDetector(Detector):
         """
         self._detector = detector
         self._is_fitted = False
-    
+
     def fit(self, x, y, **kwargs):
         """
         Fit the detector using training data.
@@ -115,7 +115,7 @@ class BinaryInputDetector(Detector):
         """
         self._detector.fit(x, y, **kwargs)
         self._is_fitted = True
-     
+
     def __call__(self, x):
         """
         Perform detection of adversarial data and return prediction as tuple.
@@ -127,12 +127,12 @@ class BinaryInputDetector(Detector):
         :rtype: `np.ndarray`
         """
         return self._detector.predict(x)
-        
+
 
 class BinaryActivationDetector(Detector):
 
     def __init__(self, classifier, detector, layer):
-        """        
+        """
         Create a `Detector` instance which performs binary classification on activation information.
 
         :param classifier: The classifier of which the activation information is to be used for detection.
@@ -144,7 +144,7 @@ class BinaryActivationDetector(Detector):
         """
         self._classifier = classifier
         self._detector = detector
-        
+
         # Ensure that layer is well-defined:
         if type(layer) is str:
             if layer not in classifier.layer_names:
@@ -157,9 +157,9 @@ class BinaryActivationDetector(Detector):
             self._layer_name = classifier.layer_names[layer]
         else:
             raise TypeError('Layer must be of type `str` or `int`.')
-           
+
         self._is_fitted = False
-    
+
     def fit(self, x, y, **kwargs):
         """
         Fit the detector using training data.
@@ -175,7 +175,7 @@ class BinaryActivationDetector(Detector):
         x_activations = self._classifier.get_activations(x, self._layer_name)
         self._detector.fit(x_activations, y, **kwargs)
         self._is_fitted = True
-     
+
     def __call__(self, x):
         """
         Perform detection of adversarial data and return prediction as tuple.

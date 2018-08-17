@@ -59,7 +59,6 @@ class PyTorchClassifier(Classifier):
         super(PyTorchClassifier, self).__init__(clip_values=clip_values, channel_index=channel_index, defences=defences,
                                                 preprocessing=preprocessing)
 
-        # self._nb_classes = list(model.modules())[-1 if use_logits else -2].out_features
         self._nb_classes = nb_classes
         self._input_shape = input_shape
         self._model = PyTorchClassifier.ModelWrapper(model)
@@ -74,8 +73,8 @@ class PyTorchClassifier(Classifier):
 
         # Use GPU if possible
         import torch
-        device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
-        self._model.to(device)
+        self._device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
+        self._model.to(self._device)
 
     def predict(self, x, logits=False):
         """
@@ -102,13 +101,14 @@ class PyTorchClassifier(Classifier):
         # if not logits:
         #     exp = np.exp(preds - np.max(preds, axis=1, keepdims=True))
         #     preds = exp / np.sum(exp, axis=1, keepdims=True)
-        model_outputs = self._model(torch.from_numpy(x_).float())
+
+        model_outputs = self._model(torch.from_numpy(x_).to(self._device).float())
         (logit_output, output) = (model_outputs[-2], model_outputs[-1])
 
         if logits:
-            preds = logit_output.detach().numpy()
+            preds = logit_output.detach().cpu().numpy()
         else:
-            preds = output.detach().numpy()
+            preds = output.detach().cpu().numpy()
 
         return preds
 
@@ -147,11 +147,11 @@ class PyTorchClassifier(Classifier):
             # Train for one epoch
             for m in range(num_batch):
                 if m < num_batch - 1:
-                    i_batch = torch.from_numpy(x_[ind[m * batch_size:(m + 1) * batch_size]])
-                    o_batch = torch.from_numpy(y_[ind[m * batch_size:(m + 1) * batch_size]])
+                    i_batch = torch.from_numpy(x_[ind[m * batch_size:(m + 1) * batch_size]]).to(self._device)
+                    o_batch = torch.from_numpy(y_[ind[m * batch_size:(m + 1) * batch_size]]).to(self._device)
                 else:
-                    i_batch = torch.from_numpy(x_[ind[m * batch_size:]])
-                    o_batch = torch.from_numpy(y_[ind[m * batch_size:]])
+                    i_batch = torch.from_numpy(x_[ind[m * batch_size:]]).to(self._device)
+                    o_batch = torch.from_numpy(y_[ind[m * batch_size:]]).to(self._device)
 
                 # Cast to float
                 i_batch = i_batch.float()
@@ -187,7 +187,7 @@ class PyTorchClassifier(Classifier):
             raise ValueError('Label %s is out of range.' % label)
 
         # Convert the inputs to Tensors
-        x_ = torch.from_numpy(self._apply_processing(x))
+        x_ = torch.from_numpy(self._apply_processing(x)).to(self._device)
         x_ = x_.float()
         x_.requires_grad = True
 
@@ -208,8 +208,8 @@ class PyTorchClassifier(Classifier):
         # Compute the gradient
         if label is not None:
             self._model.zero_grad()
-            torch.autograd.backward(preds[:, label], torch.FloatTensor([1] * len(preds[:, 0])), retain_graph=True)
-            grds = x_.grad.numpy().copy()
+            torch.autograd.backward(preds[:, label], torch.Tensor([1.] * len(preds[:, 0])), retain_graph=True)
+            grds = x_.grad.cpu().numpy().copy()
             x_.grad.data.zero_()
 
             grds = np.expand_dims(self._apply_processing_gradient(grds), axis=1)
@@ -218,8 +218,8 @@ class PyTorchClassifier(Classifier):
             grds = []
             self._model.zero_grad()
             for i in range(self.nb_classes):
-                torch.autograd.backward(preds[:, i], torch.FloatTensor([1] * len(preds[:, 0])), retain_graph=True)
-                grds.append(x_.grad.numpy().copy())
+                torch.autograd.backward(preds[:, i], torch.Tensor([1.] * len(preds[:, 0])), retain_graph=True)
+                grds.append(x_.grad.cpu().numpy().copy())
                 x_.grad.data.zero_()
 
             grds = np.swapaxes(np.array(grds), 0, 1)
@@ -242,12 +242,12 @@ class PyTorchClassifier(Classifier):
         import torch
 
         # Convert the inputs to Tensors
-        inputs_t = torch.from_numpy(self._apply_processing(x))
+        inputs_t = torch.from_numpy(self._apply_processing(x)).to(self._device)
         inputs_t = inputs_t.float()
         inputs_t.requires_grad = True
 
         # Convert the labels to Tensors
-        labels_t = torch.from_numpy(np.argmax(y, axis=1))
+        labels_t = torch.from_numpy(np.argmax(y, axis=1)).to(self._device)
 
         # Compute the gradient and return
         model_outputs = self._model(inputs_t)
@@ -259,7 +259,7 @@ class PyTorchClassifier(Classifier):
 
         # Compute gradients
         loss.backward()
-        grds = inputs_t.grad.numpy().copy()
+        grds = inputs_t.grad.cpu().numpy().copy()
         grds = self._apply_processing_gradient(grds)
         assert grds.shape == x.shape
 
@@ -303,7 +303,7 @@ class PyTorchClassifier(Classifier):
         self._model.train(False)
 
         # Run prediction
-        model_outputs = self._model(torch.from_numpy(x).float())[:-1]
+        model_outputs = self._model(torch.from_numpy(x).to(self._device).float())[:-1]
 
         if isinstance(layer, six.string_types):
             if layer not in self._layer_names:
@@ -316,7 +316,7 @@ class PyTorchClassifier(Classifier):
         else:
             raise TypeError("Layer must be of type str or int")
 
-        return model_outputs[layer_index].detach().numpy()
+        return model_outputs[layer_index].detach().cpu().numpy()
 
     # def _forward_at(self, inputs, layer):
     #     """
@@ -398,8 +398,8 @@ class PyTorchClassifier(Classifier):
                 .. warning:: `get_layers` tries to infer the internal structure of the model.
                              This feature comes with no guarantees on the correctness of the result.
                              The intended order of the layers tries to match their order in the model, but this is not
-                             guaranteed either. In addition, the function can only infer the internal layers if the input
-                             model is of type `nn.Sequential`, otherwise, it will only return the logit layer.
+                             guaranteed either. In addition, the function can only infer the internal layers if the
+                             input model is of type `nn.Sequential`, otherwise, it will only return the logit layer.
                 """
                 import torch.nn as nn
 

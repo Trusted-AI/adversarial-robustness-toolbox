@@ -22,11 +22,10 @@ import unittest
 import keras
 import keras.backend as k
 from keras.models import Sequential
-from keras.layers import Dense, Activation, Flatten, Conv2D, MaxPooling2D, Dropout
+from keras.layers import Dense, Flatten, Conv2D, MaxPooling2D
 import numpy as np
 import tensorflow as tf
 import torch.nn as nn
-import torch.nn.functional as f
 import torch.optim as optim
 
 from art.attacks.virtual_adversarial import VirtualAdversarialMethod
@@ -46,6 +45,8 @@ class Model(nn.Module):
         self.fc = nn.Linear(2304, 10)
 
     def forward(self, x):
+        import torch.nn.functional as f
+
         x = self.pool(f.relu(self.conv(x)))
         x = x.view(-1, 2304)
         logit_output = self.fc(x)
@@ -54,46 +55,46 @@ class Model(nn.Module):
 
 
 class TestVirtualAdversarial(unittest.TestCase):
-
-    def setUp(self):
+    @classmethod
+    def setUpClass(cls):
         k.set_learning_phase(1)
 
         # Get MNIST
         (x_train, y_train), (x_test, y_test), _, _ = load_mnist()
         x_train, y_train, x_test, y_test = x_train[:NB_TRAIN], y_train[:NB_TRAIN], x_test[:NB_TEST], y_test[:NB_TEST]
-        self.mnist = ((x_train, y_train), (x_test, y_test))
+        cls.mnist = (x_train, y_train), (x_test, y_test)
 
         # Keras classifier
-        self.classifier_k = self._cnn_mnist_k([28, 28, 1])
-        self.classifier_k.fit(x_train, y_train, batch_size=BATCH_SIZE, nb_epochs=2)
+        cls.classifier_k = cls._cnn_mnist_k([28, 28, 1])
+        cls.classifier_k.fit(x_train, y_train, batch_size=BATCH_SIZE, nb_epochs=2)
 
-        scores = self.classifier_k._model.evaluate(x_train, y_train)
+        scores = cls.classifier_k._model.evaluate(x_train, y_train)
         print("\n[Keras, MNIST] Accuracy on training set: %.2f%%" % (scores[1] * 100))
-        scores = self.classifier_k._model.evaluate(x_test, y_test)
+        scores = cls.classifier_k._model.evaluate(x_test, y_test)
         print("\n[Keras, MNIST] Accuracy on test set: %.2f%%" % (scores[1] * 100))
 
         # Create basic CNN on MNIST using TensorFlow
-        self.classifier_tf = self._cnn_mnist_tf([28, 28, 1])
-        self.classifier_tf.fit(x_train, y_train, nb_epochs=2, batch_size=BATCH_SIZE)
+        cls.classifier_tf = cls._cnn_mnist_tf([28, 28, 1])
+        cls.classifier_tf.fit(x_train, y_train, nb_epochs=2, batch_size=BATCH_SIZE)
 
-        scores = get_labels_np_array(self.classifier_tf.predict(x_train))
+        scores = get_labels_np_array(cls.classifier_tf.predict(x_train))
         acc = np.sum(np.argmax(scores, axis=1) == np.argmax(y_train, axis=1)) / y_train.shape[0]
         print('\n[TF, MNIST] Accuracy on training set: %.2f%%' % (acc * 100))
 
-        scores = get_labels_np_array(self.classifier_tf.predict(x_test))
+        scores = get_labels_np_array(cls.classifier_tf.predict(x_test))
         acc = np.sum(np.argmax(scores, axis=1) == np.argmax(y_test, axis=1)) / y_test.shape[0]
         print('\n[TF, MNIST] Accuracy on test set: %.2f%%' % (acc * 100))
 
         # Create basic PyTorch model
-        self.classifier_py = self._cnn_mnist_py()
+        cls.classifier_py = cls._cnn_mnist_py()
         x_train, x_test = np.swapaxes(x_train, 1, 3), np.swapaxes(x_test, 1, 3)
-        self.classifier_py.fit(x_train, y_train, nb_epochs=2, batch_size=BATCH_SIZE)
+        cls.classifier_py.fit(x_train, y_train, nb_epochs=2, batch_size=BATCH_SIZE)
 
-        scores = get_labels_np_array(self.classifier_py.predict(x_train))
+        scores = get_labels_np_array(cls.classifier_py.predict(x_train))
         acc = np.sum(np.argmax(scores, axis=1) == np.argmax(y_train, axis=1)) / y_train.shape[0]
         print('\n[PyTorch, MNIST] Accuracy on training set: %.2f%%' % (acc * 100))
 
-        scores = get_labels_np_array(self.classifier_py.predict(x_test))
+        scores = get_labels_np_array(cls.classifier_py.predict(x_test))
         acc = np.sum(np.argmax(scores, axis=1) == np.argmax(y_test, axis=1)) / y_test.shape[0]
         print('\n[PyTorch, MNIST] Accuracy on test set: %.2f%%' % (acc * 100))
 
@@ -114,7 +115,7 @@ class TestVirtualAdversarial(unittest.TestCase):
         (x_train, y_train), (x_test, y_test) = self.mnist
         x_train = np.swapaxes(x_train, 1, 3)
         x_test = np.swapaxes(x_test, 1, 3)
-        self.mnist = ((x_train, y_train), (x_test, y_test))
+        self.mnist = (x_train, y_train), (x_test, y_test)
 
     def _test_backend_mnist(self, classifier):
         # Get MNIST

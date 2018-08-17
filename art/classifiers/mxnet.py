@@ -170,30 +170,43 @@ class MXClassifier(Classifier):
                  `(batch_size, 1, input_shape)` when `label` parameter is specified.
         :rtype: `np.ndarray`
         """
-        raise NotImplementedError
-        # from mxnet import autograd, nd
-        #
-        # if label is not None and label not in range(self._nb_classes):
-        #     raise ValueError('Label %s is out of range.' % label)
-        #
-        # x_ = self._apply_processing(x)
-        # x_ = nd.array(x_, ctx=self._ctx)
-        #
-        # for i in range(self.nb_classes):
-        #     x_.attach_grad()
-        #     with autograd.record(train_mode=False):
-        #         if logits is True:
-        #             preds = self._model(x_)
-        #         else:
-        #             preds = self._model(x_).softmax()
-        #
-        #     preds[:, 0].backward(retain_graph=True, train_mode=False)
-        #     # print(i, x_.grad.asnumpy().shape)
-        #     # exit()
-        # grads = np.swapaxes(grads.asnumpy(), 0, 1)
-        # grads = self._apply_processing_gradient(grads)
-        #
-        # return grads
+        from mxnet import autograd, nd
+
+        if label is not None and label not in range(self._nb_classes):
+            raise ValueError('Label %s is out of range.' % label)
+
+        x_ = self._apply_processing(x)
+        x_ = nd.array(x_, ctx=self._ctx)
+        x_.attach_grad()
+
+        if label is not None:
+            with autograd.record(train_mode=False):
+                if logits is True:
+                    preds = self._model(x_)
+                else:
+                    preds = self._model(x_).softmax()
+                class_slice = preds[:, label]
+
+            class_slice.backward()
+            grads = np.expand_dims(x_.grad.asnumpy(), axis=1)
+        else:
+            with autograd.record(train_mode=False):
+                if logits is True:
+                    preds = self._model(x_)
+                else:
+                    preds = self._model(x_).softmax()
+                class_slices = [preds[:, i] for i in range(self.nb_classes)]
+
+            grads = []
+            for slice_ in class_slices:
+                slice_.backward(retain_graph=True)
+                grad = x_.grad.asnumpy()
+                grads.append(grad)
+            grads = np.swapaxes(np.array(grads), 0, 1)
+
+        grads = self._apply_processing_gradient(grads)
+
+        return grads
 
     def loss_gradient(self, x, y):
         """

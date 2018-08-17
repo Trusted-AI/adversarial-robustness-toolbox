@@ -25,14 +25,13 @@ import keras.backend as k
 from keras.models import Sequential
 from keras.layers import Dense, Flatten, Conv2D, MaxPooling2D
 import torch.nn as nn
-import torch.nn.functional as F
 import torch.optim as optim
 
 from art.attacks.universal_perturbation import UniversalPerturbation
-from art.classifiers.tensorflow import TFClassifier
-from art.classifiers.keras import KerasClassifier
-from art.classifiers.pytorch import PyTorchClassifier
+from art.classifiers import KerasClassifier, PyTorchClassifier, TFClassifier
 from art.utils import load_mnist
+
+BATCH_SIZE, NB_TRAIN, NB_TEST = 100, 1000, 10
 
 
 class Model(nn.Module):
@@ -43,7 +42,9 @@ class Model(nn.Module):
         self.fc = nn.Linear(2304, 10)
 
     def forward(self, x):
-        x = self.pool(F.relu(self.conv(x)))
+        import torch.nn.functional as f
+
+        x = self.pool(f.relu(self.conv(x)))
         x = x.view(-1, 2304)
         logit_output = self.fc(x)
 
@@ -54,6 +55,14 @@ class TestUniversalPerturbation(unittest.TestCase):
     """
     A unittest class for testing the UniversalPerturbation attack.
     """
+    @classmethod
+    def setUpClass(cls):
+        # Get MNIST
+        (x_train, y_train), (x_test, y_test), _, _ = load_mnist()
+        x_train, y_train = x_train[:NB_TRAIN], y_train[:NB_TRAIN]
+        x_test, y_test = x_test[:NB_TEST], y_test[:NB_TEST]
+        cls.mnist = (x_train, y_train), (x_test, y_test)
+
     def test_tfclassifier(self):
         """
         First test with the TFClassifier.
@@ -61,36 +70,32 @@ class TestUniversalPerturbation(unittest.TestCase):
         """
         # Build a TFClassifier
         # Define input and output placeholders
-        self._input_ph = tf.placeholder(tf.float32, shape=[None, 28, 28, 1])
-        self._output_ph = tf.placeholder(tf.int32, shape=[None, 10])
+        input_ph = tf.placeholder(tf.float32, shape=[None, 28, 28, 1])
+        output_ph = tf.placeholder(tf.int32, shape=[None, 10])
 
         # Define the tensorflow graph
-        conv = tf.layers.conv2d(self._input_ph, 4, 5, activation=tf.nn.relu)
+        conv = tf.layers.conv2d(input_ph, 4, 5, activation=tf.nn.relu)
         conv = tf.layers.max_pooling2d(conv, 2, 2)
         fc = tf.contrib.layers.flatten(conv)
 
         # Logits layer
-        self._logits = tf.layers.dense(fc, 10)
+        logits = tf.layers.dense(fc, 10)
 
         # Train operator
-        self._loss = tf.reduce_mean(tf.losses.softmax_cross_entropy(logits=self._logits, onehot_labels=self._output_ph))
+        loss = tf.reduce_mean(tf.losses.softmax_cross_entropy(logits=logits, onehot_labels=output_ph))
         optimizer = tf.train.AdamOptimizer(learning_rate=0.01)
-        self._train = optimizer.minimize(self._loss)
+        train = optimizer.minimize(loss)
 
         # Tensorflow session and initialization
-        self._sess = tf.Session()
-        self._sess.run(tf.global_variables_initializer())
+        sess = tf.Session()
+        sess.run(tf.global_variables_initializer())
 
         # Get MNIST
-        batch_size, nb_train, nb_test = 10, 10, 10
-        (x_train, y_train), (x_test, y_test), _, _ = load_mnist()
-        x_train, y_train = x_train[:nb_train], y_train[:nb_train]
-        x_test, y_test = x_test[:nb_test], y_test[:nb_test]
+        (x_train, y_train), (x_test, y_test) = self.mnist
 
         # Train the classifier
-        tfc = TFClassifier((0, 1), self._input_ph, self._logits, self._output_ph,
-                           self._train, self._loss, None, self._sess)
-        tfc.fit(x_train, y_train, batch_size=batch_size, nb_epochs=2)
+        tfc = TFClassifier((0, 1), input_ph, logits, output_ph, train, loss, None, sess)
+        tfc.fit(x_train, y_train, batch_size=BATCH_SIZE, nb_epochs=2)
 
         # Attack
         # TODO Launch with all possible attacks
@@ -117,10 +122,7 @@ class TestUniversalPerturbation(unittest.TestCase):
         k.set_session(session)
 
         # Get MNIST
-        batch_size, nb_train, nb_test = 10, 10, 10
-        (x_train, y_train), (x_test, y_test), _, _ = load_mnist()
-        x_train, y_train = x_train[:nb_train], y_train[:nb_train]
-        x_test, y_test = x_test[:nb_test], y_test[:nb_test]
+        (x_train, y_train), (x_test, y_test) = self.mnist
 
         # Create simple CNN
         model = Sequential()
@@ -134,7 +136,7 @@ class TestUniversalPerturbation(unittest.TestCase):
 
         # Get classifier
         krc = KerasClassifier((0, 1), model, use_logits=False)
-        krc.fit(x_train, y_train, batch_size=batch_size, nb_epochs=2)
+        krc.fit(x_train, y_train, batch_size=BATCH_SIZE, nb_epochs=2)
 
         # Attack
         # TODO Launch with all possible attacks
@@ -157,10 +159,7 @@ class TestUniversalPerturbation(unittest.TestCase):
         :return:
         """
         # Get MNIST
-        batch_size, nb_train, nb_test = 100, 1000, 10
-        (x_train, y_train), (x_test, y_test), _, _ = load_mnist()
-        x_train, y_train = x_train[:nb_train], y_train[:nb_train]
-        x_test, y_test = x_test[:nb_test], y_test[:nb_test]
+        (x_train, y_train), (x_test, y_test) = self.mnist
         x_train = np.swapaxes(x_train, 1, 3)
         x_test = np.swapaxes(x_test, 1, 3)
 
@@ -174,7 +173,7 @@ class TestUniversalPerturbation(unittest.TestCase):
 
         # Get classifier
         ptc = PyTorchClassifier((0, 1), model, loss_fn, optimizer, (1, 28, 28), 10)
-        ptc.fit(x_train, y_train, batch_size=batch_size, nb_epochs=1)
+        ptc.fit(x_train, y_train, batch_size=BATCH_SIZE, nb_epochs=1)
 
         # Attack
         # TODO Launch with all possible attacks

@@ -92,17 +92,17 @@ class SaliencyMapMethod(Attack):
             current_pred = preds[ind]
             target = targets[ind]
             all_feat = set()
-            
-            while current_pred != target and len(all_feat)/self._nb_features <= self.gamma and bool(search_space):
+
+            while current_pred != target and len(all_feat) / self._nb_features <= self.gamma and bool(search_space):
                 # Compute saliency map
                 feat1, feat2 = self._saliency_map(np.reshape(val, dims), target, search_space)
 
                 # Move on to next examples if there are no more features to change
                 if feat1 == feat2 == 0:
                     break
-                
+
                 all_feat = all_feat.union(set([feat1, feat2]))
-            
+
                 # Prepare update depending of theta
                 if self.theta > 0:
                     clip_func, clip_value = np.minimum, clip_max
@@ -119,7 +119,7 @@ class SaliencyMapMethod(Attack):
 
                 # Recompute model prediction
                 current_pred = np.argmax(self.classifier.predict(np.reshape(val, dims)), axis=1)
-            
+
         x_adv = np.reshape(x_adv, x.shape)
 
         return x_adv
@@ -161,15 +161,15 @@ class SaliencyMapMethod(Attack):
         # Remove gradients for already used features
         used_features = list(set(range(self._nb_features)) - search_space)
         coeff = 2 * int(self.theta > 0) - 1
-        grads[used_features] = - np.max(np.abs(grads)) * coeff
-        
+        grads[used_features] = -np.inf * coeff
+
         if self.theta > 0:
             ind = np.argpartition(grads, -2)[-2:]
         else:
             ind = np.argpartition(-grads, -2)[-2:]
-        
+
         return tuple(ind)
-        
+
     def _saliency_map_logits(self, x, target, search_space):
         """
         Compute the saliency map of `x`. Return the top 2 coefficients in `search_space` that maximize / minimize

@@ -42,73 +42,58 @@ class TestPyTorchClassifier(unittest.TestCase):
     """
     This class tests the functionalities of the PyTorch-based classifier.
     """
-    def _model_setup_module(self):
-        # Define the network
-        model = Model()
-
-        # Define a loss function and optimizer
-        loss_fn = nn.CrossEntropyLoss()
-        optimizer = optim.Adam(model.parameters(), lr=0.01)
-
-        return model, loss_fn, optimizer
-
-    def _model_setup_sequential(self):
-        # Define the network
-        model = nn.Sequential(nn.Conv2d(1, 16, 5), nn.ReLU(), nn.MaxPool2d(2, 2), Flatten(), nn.Linear(2304, 10))
-
-        # Define a loss function and optimizer
-        loss_fn = nn.CrossEntropyLoss()
-        optimizer = optim.Adam(model.parameters(), lr=0.01)
-
-        return model, loss_fn, optimizer
-
-    def test_fit_predict(self):
+    @classmethod
+    def setUpClass(cls):
         # Get MNIST
         (x_train, y_train), (x_test, y_test), _, _ = load_mnist()
         x_train, y_train = x_train[:NB_TRAIN], y_train[:NB_TRAIN]
         x_test, y_test = x_test[:NB_TEST], y_test[:NB_TEST]
         x_train = np.swapaxes(x_train, 1, 3)
         x_test = np.swapaxes(x_test, 1, 3)
+        cls.mnist = (x_train, y_train), (x_test, y_test)
 
-        # Create model
-        model, loss_fn, optimizer = self._model_setup_module()
+        # Define the network
+        model = nn.Sequential(nn.Conv2d(1, 16, 5), nn.ReLU(), nn.MaxPool2d(2, 2), Flatten(), nn.Linear(2304, 10))
 
-        # Test fit and predict
-        ptc = PyTorchClassifier((0, 1), model, loss_fn, optimizer, (1, 28, 28), 10)
+        # Define a loss function and optimizer
+        loss_fn = nn.CrossEntropyLoss()
+        optimizer = optim.Adam(model.parameters(), lr=0.01)
+        classifier = PyTorchClassifier((0, 1), model, loss_fn, optimizer, (1, 28, 28), 10)
+        classifier.fit(x_train, y_train, batch_size=100, nb_epochs=2)
+        cls.seq_classifier = classifier
 
-        ptc.fit(x_train, y_train, batch_size=100, nb_epochs=1)
-        preds = ptc.predict(x_test)
+        # Define the network
+        model = Model()
+        loss_fn = nn.CrossEntropyLoss()
+        optimizer = optim.Adam(model.parameters(), lr=0.01)
+        classifier2 = PyTorchClassifier((0, 1), model, loss_fn, optimizer, (1, 28, 28), 10)
+        classifier2.fit(x_train, y_train, batch_size=100, nb_epochs=2)
+        cls.module_classifier = classifier2
+
+    def test_fit_predict(self):
+        # Get MNIST
+        (_, _), (x_test, y_test) = self.mnist
+
+        # Test predict
+        preds = self.module_classifier.predict(x_test)
         acc = np.sum(np.argmax(preds, axis=1) == np.argmax(y_test, axis=1)) / len(y_test)
         print("\nAccuracy: %.2f%%" % (acc * 100))
         self.assertGreater(acc, 0.1)
 
     def test_nb_classes(self):
-        # Create model
-        model, loss_fn, optimizer = self._model_setup_module()
-
-        # Start to test
-        ptc = PyTorchClassifier((0, 1), model, loss_fn, optimizer, (1, 28, 28), 10)
+        ptc = self.module_classifier
         self.assertTrue(ptc.nb_classes == 10)
 
     def test_input_shape(self):
-        # Create model
-        model, loss_fn, optimizer = self._model_setup_module()
-
-        # Start to test
-        ptc = PyTorchClassifier((0, 1), model, loss_fn, optimizer, (1, 28, 28), 10)
+        ptc = self.module_classifier
         self.assertTrue(np.array(ptc.input_shape == (1, 28, 28)).all())
 
     def test_class_gradient(self):
         # Get MNIST
-        (_, _), (x_test, y_test), _, _ = load_mnist()
-        x_test = x_test[:NB_TEST]
-        x_test = np.swapaxes(x_test, 1, 3)
-
-        # Create model
-        model, loss_fn, optimizer = self._model_setup_module()
+        (_, _), (x_test, y_test) = self.mnist
 
         # Test gradient
-        ptc = PyTorchClassifier((0, 1), model, loss_fn, optimizer, (1, 28, 28), 10)
+        ptc = self.module_classifier
         grads = ptc.class_gradient(x_test)
 
         self.assertTrue(np.array(grads.shape == (NB_TEST, 10, 1, 28, 28)).all())
@@ -116,15 +101,10 @@ class TestPyTorchClassifier(unittest.TestCase):
 
     def test_class_gradient_target(self):
         # Get MNIST
-        (_, _), (x_test, y_test), _, _ = load_mnist()
-        x_test = x_test[:NB_TEST]
-        x_test = np.swapaxes(x_test, 1, 3)
-
-        # Create model
-        model, loss_fn, optimizer = self._model_setup_module()
+        (_, _), (x_test, y_test) = self.mnist
 
         # Test gradient
-        ptc = PyTorchClassifier((0, 1), model, loss_fn, optimizer, (1, 28, 28), 10)
+        ptc = self.module_classifier
         grads = ptc.class_gradient(x_test, label=3)
 
         self.assertTrue(np.array(grads.shape == (NB_TEST, 1, 1, 28, 28)).all())
@@ -132,15 +112,10 @@ class TestPyTorchClassifier(unittest.TestCase):
 
     def test_loss_gradient(self):
         # Get MNIST
-        (_, _), (x_test, y_test), _, _ = load_mnist()
-        x_test, y_test = x_test[:NB_TEST], y_test[:NB_TEST]
-        x_test = np.swapaxes(x_test, 1, 3)
-
-        # Create model
-        model, loss_fn, optimizer = self._model_setup_module()
+        (_, _), (x_test, y_test) = self.mnist
 
         # Test gradient
-        ptc = PyTorchClassifier((0, 1), model, loss_fn, optimizer, (1, 28, 28), 10)
+        ptc = self.module_classifier
         grads = ptc.loss_gradient(x_test, y_test)
 
         self.assertTrue(np.array(grads.shape == (NB_TEST, 1, 28, 28)).all())
@@ -148,20 +123,12 @@ class TestPyTorchClassifier(unittest.TestCase):
 
     def test_layers(self):
         # Get MNIST
-        (x_train, y_train), (x_test, y_test), _, _ = load_mnist()
-        x_train, y_train = x_train[:NB_TRAIN], y_train[:NB_TRAIN]
-        x_test, y_test = x_test[:NB_TEST], y_test[:NB_TEST]
-        x_test = np.swapaxes(x_test, 1, 3)
-        x_train = np.swapaxes(x_train, 1, 3)
-
-        # Create model
-        model, loss_fn, optimizer = self._model_setup_sequential()
+        (_, _), (x_test, y_test) = self.mnist
 
         # Test and get layers
-        ptc = PyTorchClassifier((0, 1), model, loss_fn, optimizer, (1, 28, 28), 10)
-        ptc.fit(x_train, y_train, batch_size=100, nb_epochs=1)
+        ptc = self.seq_classifier
 
-        layer_names = ptc.layer_names
+        layer_names = self.seq_classifier.layer_names
         self.assertTrue(layer_names == ['0_Conv2d(1, 16, kernel_size=(5, 5), stride=(1, 1))', '1_ReLU()',
                                         '2_MaxPool2d(kernel_size=2, stride=2, padding=0, dilation=1, ceil_mode=False)',
                                         '3_Flatten()', '4_Linear(in_features=2304, out_features=10, bias=True)'])
