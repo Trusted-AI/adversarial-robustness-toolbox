@@ -76,7 +76,7 @@ class SaliencyMapMethod(Attack):
             target = targets[ind]
             all_feat = set()
 
-            while current_pred != target and len(all_feat)/self._nb_features <= self.gamma and bool(search_space):
+            while current_pred != target and len(all_feat) / self._nb_features <= self.gamma and bool(search_space):
                 # Compute saliency map
                 feat1, feat2 = self._saliency_map(np.reshape(val, dims), target, search_space)
 
@@ -144,7 +144,7 @@ class SaliencyMapMethod(Attack):
         # Remove gradients for already used features
         used_features = list(set(range(self._nb_features)) - search_space)
         coeff = 2 * int(self.theta > 0) - 1
-        grads[used_features] = - np.max(np.abs(grads)) * coeff
+        grads[used_features] = -np.inf * coeff
 
         if self.theta > 0:
             ind = np.argpartition(grads, -2)[-2:]
