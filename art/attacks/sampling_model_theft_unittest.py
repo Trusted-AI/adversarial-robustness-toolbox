@@ -56,7 +56,7 @@ class TestSamplingModelTheft(unittest.TestCase):
             width_shift_range=0.2,
             height_shift_range=0.2,
             horizontal_flip=False)
-        datagen.fit(x_train,y_train)
+        datagen.fit(x_train)
         fit_datagen = lambda x,y: datagen.flow(x,y)
         att = SamplingModelTheft(x_test, fit_datagen=fit_datagen)
         k1 = att.steal(k0,k1,10000, epochs=5)
