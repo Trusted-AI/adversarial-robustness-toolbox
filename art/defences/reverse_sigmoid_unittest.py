@@ -10,7 +10,7 @@ from art.defences.reverse_sigmoid import ReverseSigmoid
 from art.classifiers import KerasClassifier
 
 
-class TestLocalSpatialSmoothing(unittest.TestCase):
+class TestReverseSigmoid(unittest.TestCase):
     def test_keras_reverse_sigmoid(self):
         xval = np.array([[0, 1.0, 0, 0, 0]])
         x = Input([5])

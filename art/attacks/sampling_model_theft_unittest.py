@@ -8,6 +8,7 @@ from art.defences import ReverseSigmoid
 import keras
 from keras.models import Sequential
 from keras.layers import Dense, Input, Activation, Conv2D, MaxPooling2D, Flatten, Dropout
+from keras.preprocessing.image import ImageDataGenerator
 from art.utils import load_dataset
 import numpy as np
 
@@ -47,7 +48,16 @@ class TestSamplingModelTheft(unittest.TestCase):
                 Dense(10, activation='softmax')])
         m1.compile(loss='categorical_crossentropy', optimizer='adam', metrics=['accuracy'])
         k1 = KerasClassifier((min_, max_), model=m1)
-        att = SamplingModelTheft(x_test)
+
+        datagen = ImageDataGenerator(
+            featurewise_center=True,
+            featurewise_std_normalization=True,
+            rotation_range=0,
+            width_shift_range=0.2,
+            height_shift_range=0.2,
+            horizontal_flip=False)
+        fit_datagen = lambda x,y: datagen.flow(x,y)
+        att = SamplingModelTheft(x_test, fit_datagen=fit_datagen)
         k1 = att.steal(k0,k1,10000, epochs=5)
         
         y0 = k0.predict(x_train)

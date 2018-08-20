@@ -5,33 +5,33 @@ from art.classifiers import KerasClassifier
 
 
 class ReverseSigmoid(NetworkManipulator):
-    def __call__(self, m, max_perturb=1.0, scale=0.1, input_layer=0, output_layer=0):
+    def __call__(self, classifier, max_perturb=1.0, scale=0.1, input_layer=0, output_layer=0):
         """
         Build a protected model with the reverse sigmoid layer.
         This is an implementation of 'Defending Against Model Stealing Attacks Using Deceptive Perturbations' (https://arxiv.org/abs/1806.00054).
 
-        :param m: Classifier to be manipulated.
-        :type m: `Classifier`
-        :return: Manipulated model
+        :param classifier: Classifier to be manipulated.
+        :type classifier: `Classifier`
+        :return: A manipulated model derived from the given model. While the given model will be unchanged, its component can be used in the manipulated model, and hence the manipulated model will be updated if the given model is updated, which does not break the ReverseSigmoid defense.
         """
-        if isinstance(m, KerasClassifier):
+        if isinstance(classifier, KerasClassifier):
             from keras.layers import Lambda
             from keras.models import Model
-            _model = m._model
+            _model = classifier._model
             # x = [Input(i) for i in _model.inputs]
             x = _model.inputs
             y = _model(x)
-            y = Lambda(lambda z: ReverseSigmoid.keras_reverse_sigmoid_addition(z, max_perturb, scale))(y)
+            y = Lambda(lambda z: ReverseSigmoid.__keras_reverse_sigmoid_addition(z, max_perturb, scale))(y)
             manipulated_model = Model(inputs = x, outputs = y)
-            return KerasClassifier(m._clip_values, manipulated_model, use_logits=False,
-                                   channel_index=m._channel_index, defences=m.defences,
-                                   preprocessing=m._preprocessing, input_layer=input_layer,
+            return KerasClassifier(classifier._clip_values, manipulated_model, use_logits=False,
+                                   channel_index=classifier._channel_index, defences=classifier.defences,
+                                   preprocessing=classifier._preprocessing, input_layer=input_layer,
                                    output_layer=output_layer, custom_activation=True)
         else:
             raise NotImplementedError
 
     @staticmethod
-    def keras_reverse_sigmoid_addition(x, max_perturb, scale):
+    def __keras_reverse_sigmoid_addition(x, max_perturb, scale):
         import keras.backend as K
         import numpy as np
         if x.shape[-1] == 1:  # Binary classifier, with one sigmoid logit.

@@ -99,8 +99,12 @@ class TestKerasClassifier(unittest.TestCase):
         return model
 
     def test_fit(self):
+        self.__test_fit(custom_activation=False)
+        self.__test_fit(custom_activation=True)
+
+    def __test_fit(self, custom_activation=False):
         labels = np.argmax(self.mnist[1][1], axis=1)
-        classifier = KerasClassifier((0, 1), self.model_mnist, use_logits=False)
+        classifier = KerasClassifier((0, 1), self.model_mnist, use_logits=False, custom_activation=custom_activation)
         acc = np.sum(np.argmax(classifier.predict(self.mnist[1][0]), axis=1) == labels) / NB_TEST
         print("\nAccuracy: %.2f%%" % (acc * 100))
 
@@ -111,8 +115,12 @@ class TestKerasClassifier(unittest.TestCase):
         self.assertTrue(acc2 >= acc)
 
     def test_shapes(self):
+        self.__test_shapes(custom_activation=True)
+        self.__test_shapes(custom_activation=False)
+
+    def __test_shapes(self, custom_activation=False):
         x_test, y_test = self.mnist[1]
-        classifier = KerasClassifier((0, 1), self.model_mnist)
+        classifier = KerasClassifier((0, 1), self.model_mnist, custom_activation=custom_activation)
 
         preds = classifier.predict(self.mnist[1][0])
         self.assertTrue(preds.shape == y_test.shape)
@@ -126,21 +134,29 @@ class TestKerasClassifier(unittest.TestCase):
         self.assertTrue(loss_grads.shape == x_test[:11].shape)
 
     def test_functional_model(self):
+        self.__test_functional_model(custom_activation=True)
+        self.__test_functional_model(custom_activation=False)
+
+    def __test_functional_model(self, custom_activation=True):
         # Need to update the functional_model code to produce a model with more than one input and output layers...
         m = self.functional_model()
-        keras_model = KerasClassifier((0, 1), m, input_layer=1, output_layer=1)
+        keras_model = KerasClassifier((0, 1), m, input_layer=1, output_layer=1, custom_activation=custom_activation)
         self.assertTrue(keras_model._input.name, "input1")
         self.assertTrue(keras_model._output.name, "output1")
-        keras_model = KerasClassifier((0, 1), m, input_layer=0, output_layer=0)
+        keras_model = KerasClassifier((0, 1), m, input_layer=0, output_layer=0, custom_activation=custom_activation)
         self.assertTrue(keras_model._input.name, "input0")
         self.assertTrue(keras_model._output.name, "output0")
 
     def test_layers(self):
+        self.__test_layers(custom_activation=False)
+        self.__test_layers(custom_activation=True)
+       
+    def __test_layers(self, custom_activation=False):
         # Get MNIST
         (_, _), (x_test, _), _, _ = load_mnist()
         x_test = x_test[:NB_TEST]
 
-        classifier = KerasClassifier((0, 1), model=self.model_mnist)
+        classifier = KerasClassifier((0, 1), model=self.model_mnist, custom_activation=custom_activation)
         self.assertEqual(len(classifier.layer_names), 5)
 
         layer_names = classifier.layer_names
@@ -154,6 +170,10 @@ class TestKerasClassifier(unittest.TestCase):
         self.assertTrue(classifier.get_activations(x_test, 4).shape == (NB_TEST, 128))
 
     def test_resnet(self):
+        self.__test_resnet(custom_activation=False)
+        self.__test_resnet(custom_activation=True)
+
+    def __test_resnet(self, custom_activation=False):
         import os
 
         from keras.applications.resnet50 import ResNet50, decode_predictions
@@ -161,7 +181,7 @@ class TestKerasClassifier(unittest.TestCase):
 
         keras.backend.set_learning_phase(0)
         model = ResNet50(weights='imagenet')
-        classifier = KerasClassifier((0, 255), model)
+        classifier = KerasClassifier((0, 255), model, custom_activation=custom_activation)
 
         # Load image from file
         image = img_to_array(load_img(os.path.join(self.test_dir, 'test.jpg'), target_size=(224, 224)))
@@ -169,3 +189,4 @@ class TestKerasClassifier(unittest.TestCase):
 
         label = decode_predictions(classifier.predict(image))[0][0]
         self.assertEqual(label[1], 'Weimaraner')
+

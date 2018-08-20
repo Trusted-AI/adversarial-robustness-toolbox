@@ -8,7 +8,7 @@ from art.attacks.model_theft import ModelTheft
 
 class SamplingModelTheft(ModelTheft):
     """
-    The model theft attack using a set of natural samples to the network.
+    The model theft attack using a set of natural samples to the network as used in https://arxiv.org/abs/1806.00054.
     """
     attack_params = ModelTheft.attack_params + ['x', 'query_datagen', 'fit_datagen']
 
@@ -18,10 +18,10 @@ class SamplingModelTheft(ModelTheft):
 
         :param x: Input samples to a model that the attacker can use.
         :type x: `numpy.array`
-        :param query_datagen: A function taking a set of input and generating new/similar inputs.
-        :type query_datagen: `function`
-        :param fit_datagen: A generator function taking a set of input and generating new/similar inputs.
-        :type fit_datagen: `function`
+        :param query_datagen: A callable, applied before querying, taking a set of input `x` and generating a sequence of new/similar input `x'`. It should be able to generate an indefinite length sequence.
+        :type query_datagen: `Callable`
+        :param fit_datagen: A callable, applied after querying and during the training, taking a set of input and output (x, y) and generating a sequence of new/similar input and output (x', y). It should be able to generate an indefinite length sequence.
+        :type fit_datagen: `Callable`
         """
         self.query_datagen = None
         self.fit_datagen = None
@@ -43,15 +43,41 @@ class SamplingModelTheft(ModelTheft):
         :type budget: `int`
         """
         x = self.x
-        num_samples = x.shape[0]
-        x = np.concatenate([x] * (int)(math.ceil(budget / num_samples)), axis=0)[:budget]
+        num_samples = 0
+        #x = np.concatenate([x] * (int)(math.ceil(budget / num_samples)), axis=0)[:budget]
         if self.query_datagen != None:
-            x = self.query_datagen(x)
-        y = model.predict(x)
-        if self.fit_datagen != None and isinstance(stolen_model, KerasClassifier):
-            stolen_model._model.fit_generator(query_datagen(x,y), batch_size=batch_size, epochs=epochs)
+            xlist = []
+            ylist = []
+            for xi in self.query_datagen(x):
+                yi = model.predict(xi)
+                xlist.append(xi)
+                ylist.append(yi)
+                num_samples += xi.shape[0]
+                if num_samples >= budget:
+                    break
+            x = np.concatenate(xlist, axis=0)
+            y = np.concatenate(ylist, axis=0)
         else:
-            stolen_model.fit(x,y, batch_size=batch_size, nb_epochs=epochs)
+            y = model.predict(x)
+        x = x[:budget]
+        y = y[:budget]
+        
+        output_fit_datagen = self.fit_datagen(x,y)
+        for epoch in range(epochs):
+            xlist = []
+            ylist = []
+            num_samples = 0
+            for xi, yi in output_fit_datagen:
+                xlist.append(xi)
+                ylist.append(yi)
+                num_samples += xi.shape[0]
+                if num_samples >= budget:
+                    break
+            xt = np.concatenate(xlist, axis=0)
+            yt = np.concatenate(ylist, axis=0)
+            xt = x[:budget]
+            yt = y[:budget]
+            stolen_model.fit(xt, yt, batch_size=batch_size, nb_epochs=1)
         return stolen_model
 
 
@@ -60,10 +86,10 @@ class SamplingModelTheft(ModelTheft):
 
         :param x: Input samples to a model that the attacker can use.
         :type x: `numpy.array`
-        :param query_datagen: A function taking a set of input and generating new/similar inputs.
-        :type query_datagen: `function`
-        :param fit_datagen: A generator function taking a set of input and generating new/similar inputs.
-        :type fit_datagen: `function`
+        :param query_datagen: A callable, applied before querying, taking a set of input `x` and generating a sequence of new/similar input `x'`. It should be able to generate an indefinite length sequence.
+        :type query_datagen: `Callable`
+        :param fit_datagen: A callable, applied after querying and during the training, taking a set of input and output (x, y) and generating a sequence of new/similar input and output (x', y). It should be able to generate an indefinite length sequence.
+        :type fit_datagen: `Callable`
         """
         # Save attack-specific parameters
         super(SamplingModelTheft, self).set_params(**kwargs)
@@ -71,8 +97,8 @@ class SamplingModelTheft(ModelTheft):
         if type(self.x) is not np.ndarray:
             raise ValueError("Input x must be a numpy.ndarray.")
         if self.fit_datagen and not callable(self.fit_datagen):
-            raise ValueError("Input fit_datagen should be a function from input to new input")
+            raise ValueError("Input fit_datagen should be a Callable from input to new input")
         if self.query_datagen and not callable(self.query_datagen):
-            raise ValueError("Input query_datagen should be a query function from input to new input")
+            raise ValueError("Input query_datagen should be a Callable from input to new input")
 
         return True

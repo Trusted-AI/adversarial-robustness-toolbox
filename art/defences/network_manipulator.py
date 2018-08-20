@@ -17,13 +17,13 @@ class NetworkManipulator(ABC):
     params = []
 
     @abc.abstractmethod
-    def __call__(self, m):
+    def __call__(self, classifier):
         """
         Perform data preprocessing and return preprocessed data as tuple.
 
-        :param m: Classifier to be manipulated.
-        :type m: `Classifier`
-        :return: Manipulated model
+        :param classifier: Classifier to be manipulated.
+        :type classifier: `Classifier`
+        :return: A manipulated model derived from the given model. While the given model will be unchanged, its component can be used in the manipulated model, and hence the manipulated model will be updated if the given model is updated.
         """
         raise NotImplementedError
 

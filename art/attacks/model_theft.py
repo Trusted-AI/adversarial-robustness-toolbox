@@ -22,16 +22,17 @@ class ModelTheft(ABC):
 
     def steal(self, model, stolen_model, budget, **kwargs):
         """
-        Generate adversarial examples and return them as an array. This method should be overridden by all concrete
-        attack implementations.
+        Query a given model to replicate it.
 
         :param model: An original model to steal.
         :type model: `Classifier`
-        :param model: An untrained model to update with stealing.
-        :type model: `Classifier`
+        :param stolen_model: An untrained model to update with stealing.
+        :type stolen_model: `Classifier`
+        :param budget: The number of queries that the attacker can use.
+        :type budget: `int`
         :param kwargs: Attack-specific parameters used by child classes.
         :type kwargs: `dict`
-        :return: A stolen models.
+        :return: A stolen model.
         :rtype: `Classifier`
         """
         raise NotImplementedError

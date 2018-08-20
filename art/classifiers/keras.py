@@ -34,6 +34,8 @@ class KerasClassifier(Classifier):
         :type input_layer: `int`
         :param output_layer: Which layer to consider as the Output when the model has multiple output layers.
         :type output_layer: `int`
+        :param custom_activation: True if the model uses the last activation other than softmax and requires to use the output probability rather than the logits by attacks.
+        :type custom_activation: `bool`
         """
         import keras.backend as k
 
@@ -71,10 +73,7 @@ class KerasClassifier(Classifier):
 
                 # Convert predictions to logits for consistency with the other cases
                 eps = 10e-8
-                if logits == None:
-                    preds = k.log(k.clip(self._output, eps, 1. - eps))
-                else:
-                    preds = logits
+                preds = k.log(k.clip(self._output, eps, 1. - eps))
         else:
             preds = self._output
             loss = k.sparse_categorical_crossentropy(label_ph, self._output, from_logits=use_logits)

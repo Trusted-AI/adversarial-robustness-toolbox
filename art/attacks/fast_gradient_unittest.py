@@ -170,12 +170,16 @@ class TestFastGradientMethod(unittest.TestCase):
         print('\nAccuracy on adversarial test examples with L2 norm: %.2f%%' % (acc * 100))
 
     def test_with_defences(self):
+        self._test_with_defences(custom_activation=False)
+        self._test_with_defences(custom_activation=True)
+
+    def _test_with_defences(self, custom_activation=False):
         # Get MNIST
         (x_train, y_train), (x_test, y_test) = self.mnist
 
         # Get the ready-trained Keras model
         model = self.classifier_k._model
-        classifier = KerasClassifier((0, 1), model, defences='featsqueeze1')
+        classifier = KerasClassifier((0, 1), model, defences='featsqueeze1', custom_activation=custom_activation)
 
         attack = FastGradientMethod(classifier, eps=1)
         x_train_adv = attack.generate(x_train)
@@ -223,7 +227,7 @@ class TestFastGradientMethod(unittest.TestCase):
         return classifier
 
     @staticmethod
-    def _cnn_mnist_k(input_shape):
+    def _cnn_mnist_k(input_shape, custom_activation=False):
         # Create simple CNN
         model = Sequential()
         model.add(Conv2D(4, kernel_size=(5, 5), activation='relu', input_shape=input_shape))
@@ -234,7 +238,7 @@ class TestFastGradientMethod(unittest.TestCase):
         model.compile(loss=keras.losses.categorical_crossentropy, optimizer=keras.optimizers.Adam(lr=0.01),
                       metrics=['accuracy'])
 
-        classifier = KerasClassifier((0, 1), model, use_logits=False)
+        classifier = KerasClassifier((0, 1), model, use_logits=False, custom_activation=custom_activation)
         return classifier
 
     @staticmethod
