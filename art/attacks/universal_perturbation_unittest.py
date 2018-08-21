@@ -14,7 +14,7 @@ from art.attacks.universal_perturbation import UniversalPerturbation
 from art.classifiers import KerasClassifier, PyTorchClassifier, TFClassifier
 from art.utils import load_mnist
 
-BATCH_SIZE, NB_TRAIN, NB_TEST = 100, 1000, 10
+BATCH_SIZE, NB_TRAIN, NB_TEST = 100, 500, 10
 
 
 class Model(nn.Module):
@@ -82,7 +82,7 @@ class TestUniversalPerturbation(unittest.TestCase):
 
         # Attack
         # TODO Launch with all possible attacks
-        attack_params = {"attacker": "newtonfool", "attacker_params": {"max_iter": 20}}
+        attack_params = {"attacker": "newtonfool", "attacker_params": {"max_iter": 5}}
         up = UniversalPerturbation(tfc)
         x_train_adv = up.generate(x_train, **attack_params)
         self.assertTrue((up.fooling_rate >= 0.2) or not up.converged)
@@ -123,7 +123,7 @@ class TestUniversalPerturbation(unittest.TestCase):
 
         # Attack
         # TODO Launch with all possible attacks
-        attack_params = {"attacker": "newtonfool", "attacker_params": {"max_iter": 20}}
+        attack_params = {"attacker": "newtonfool", "attacker_params": {"max_iter": 5}}
         up = UniversalPerturbation(krc)
         x_train_adv = up.generate(x_train, **attack_params)
         self.assertTrue((up.fooling_rate >= 0.2) or not up.converged)
@@ -160,7 +160,7 @@ class TestUniversalPerturbation(unittest.TestCase):
 
         # Attack
         # TODO Launch with all possible attacks
-        attack_params = {"attacker": "newtonfool", "attacker_params": {"max_iter": 20}}
+        attack_params = {"attacker": "newtonfool", "attacker_params": {"max_iter": 5}}
         up = UniversalPerturbation(ptc)
         x_train_adv = up.generate(x_train, **attack_params)
         self.assertTrue((up.fooling_rate >= 0.2) or not up.converged)

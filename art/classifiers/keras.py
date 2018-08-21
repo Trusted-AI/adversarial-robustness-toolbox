@@ -146,7 +146,7 @@ class KerasClassifier(Classifier):
 
         return grads
 
-    def predict(self, x, logits=False):
+    def predict(self, x, logits=False, batch_size=128):
         """
         Perform prediction for a batch of inputs.
 
@@ -154,6 +154,8 @@ class KerasClassifier(Classifier):
         :type x: `np.ndarray`
         :param logits: `True` if the prediction should be done at the logits layer.
         :type logits: `bool`
+        :param batch_size: Size of batches.
+        :type batch_size: `int`
         :return: Array of predictions of shape `(nb_inputs, self.nb_classes)`.
         :rtype: `np.ndarray`
         """
@@ -165,9 +167,8 @@ class KerasClassifier(Classifier):
         x_ = self._apply_defences_predict(x_)
 
         # Run predictions with batching
-        batch_size = 512
         preds = np.zeros((x_.shape[0], self.nb_classes), dtype=np.float32)
-        for b in range(x_.shape[0] // batch_size + 1):
+        for b in range(int(np.ceil(x_.shape[0] / float(batch_size)))):
             begin, end = b * batch_size,  min((b + 1) * batch_size, x_.shape[0])
             preds[begin:end] = self._preds([x_[begin:end]])[0]
 
