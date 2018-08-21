@@ -131,7 +131,7 @@ class MXClassifier(Classifier):
             with autograd.record(train_mode=False):
                 preds = self._model(x_batch)
 
-            if logits is True:
+            if logits is False:
                 preds = preds.softmax()
 
         # preds = np.empty((x.shape[0], self.nb_classes), dtype=float)
