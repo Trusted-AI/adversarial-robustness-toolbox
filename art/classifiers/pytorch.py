@@ -128,7 +128,7 @@ class PyTorchClassifier(Classifier):
         # Set train phase
         self._model.train(True)
 
-        num_batch = int(np.ceil(len(x_) / batch_size))
+        num_batch = int(np.ceil(len(x_) / float(batch_size)))
         ind = np.arange(len(x_))
 
         # Start training
@@ -138,12 +138,8 @@ class PyTorchClassifier(Classifier):
 
             # Train for one epoch
             for m in range(num_batch):
-                if m < num_batch - 1:
-                    i_batch = torch.from_numpy(x_[ind[m * batch_size:(m + 1) * batch_size]]).to(self._device)
-                    o_batch = torch.from_numpy(y_[ind[m * batch_size:(m + 1) * batch_size]]).to(self._device)
-                else:
-                    i_batch = torch.from_numpy(x_[ind[m * batch_size:]]).to(self._device)
-                    o_batch = torch.from_numpy(y_[ind[m * batch_size:]]).to(self._device)
+                i_batch = torch.from_numpy(x_[ind[m * batch_size:(m + 1) * batch_size]]).to(self._device)
+                o_batch = torch.from_numpy(y_[ind[m * batch_size:(m + 1) * batch_size]]).to(self._device)
 
                 # Cast to float
                 i_batch = i_batch.float()
