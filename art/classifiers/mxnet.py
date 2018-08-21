@@ -134,14 +134,6 @@ class MXClassifier(Classifier):
             if logits is False:
                 preds = preds.softmax()
 
-        # preds = np.empty((x.shape[0], self.nb_classes), dtype=float)
-        # pred_iter = mx.io.NDArrayIter(data=x_, batch_size=128)
-        # if logits is True:
-        #     for preds_i, i, batch in mod.iter_predict(pred_iter):
-        #         pred_label = preds_i[0].asnumpy()
-        # else:
-        #     for preds_i, i, batch in mod.iter_predict(pred_iter):
-        #         pred_label = preds_i[0].softmax().asnumpy()
             results[begin:end] = preds.asnumpy()
 
         return results
