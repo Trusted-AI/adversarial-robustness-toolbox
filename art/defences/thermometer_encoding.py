@@ -1,6 +1,9 @@
 from __future__ import absolute_import, division, print_function, unicode_literals
 
+import numpy as np
+
 from art.defences.preprocessor import Preprocessor
+from art.utils import to_categorical
 
 
 class ThermometerEncoding(Preprocessor):
@@ -36,6 +39,33 @@ class ThermometerEncoding(Preprocessor):
         if num_space is not None:
             self.set_params(num_space=num_space)
 
+        result = []
+        for c in range(x.shape[-1]):
+            result.append(self._perchannel(x[:, :, :, c]))
+
+        result = np.concatenate(result, axis=3)
+
+        return result
+
+    def _perchannel(self, x):
+        """
+        Apply thermometer encoding to one channel.
+
+        :param x: Sample to encode with shape `(batch_size, width, height)`.
+        :type x: `np.ndarray`
+        :return: Encoded sample with shape `(batch_size, width, height, num_space)`.
+        :rtype: `np.ndarray`
+        """
+        pos = np.zeros(shape=x.shape)
+        for i in range(1, self.num_space):
+            pos[x > float(i) / self.num_space] += 1
+
+        onehot_rep = to_categorical(pos.reshape(-1), self.num_space)
+
+        for i in reversed(range(1, self.num_space)):
+            onehot_rep[:, i] += np.sum(onehot_rep[:, :i], axis=1)
+
+        result = onehot_rep.reshape(list(x.shape) + [self.num_space])
 
         return result
 
