@@ -9,42 +9,32 @@ from art.defences.thermometer_encoding import ThermometerEncoding
 
 class TestThermometerEncoding(unittest.TestCase):
     def test_all(self):
-        m, n = 10, 2
-        x = np.ones((1, m, n, 3))
+        # Test data
+        x = np.array([[[[0.2, 0.6, 0.8], [0.9, 0.4, 0.3], [0.2, 0.8, 0.5]],
+                      [[0.2, 0.6, 0.8], [0.9, 0.4, 0.3], [0.2, 0.8, 0.5]]],
+                      [[[0.2, 0.6, 0.8], [0.9, 0.4, 0.3], [0.2, 0.8, 0.5]],
+                      [[0.2, 0.6, 0.8], [0.9, 0.4, 0.3], [0.2, 0.8, 0.5]]]])
 
-        # Start to test
-        for window_size in range(1, 20):
-            preprocess = SpatialSmoothing()
-            smoothed_x = preprocess(x, window_size)
-            self.assertTrue((smoothed_x == 1).all())
+        # Create an instance of ThermometerEncoding
+        thencoder = ThermometerEncoding(num_space=4)
 
-    def test_fix(self):
-        x = np.array([[[[1], [2], [3]], [[7], [8], [9]], [[4], [5], [6]]]])
+        # Preprocess
+        pp_x = thencoder(x)
 
-        # Start to test
-        preprocess = SpatialSmoothing()
-        smooth_x = preprocess(x, window_size=3)
-        self.assertTrue((smooth_x == np.array(
-            [[[[2], [3], [3]], [[4], [5], [6]], [[5], [6], [6]]]])).all())
+        # Test
+        self.assertTrue(pp_x.shape == (2, 2, 3, 12))
 
-        smooth_x = preprocess(x, window_size=1)
-        self.assertTrue((smooth_x == x).all())
-
-        smooth_x = preprocess(x, window_size=2)
-        self.assertTrue((smooth_x == np.array(
-            [[[[1], [2], [3]], [[7], [7], [8]], [[7], [7], [8]]]])).all())
-
-    def test_channels(self):
-        x = np.arange(9).reshape(1, 1, 3, 3)
-        preprocess = SpatialSmoothing(channel_index=1)
-        smooth_x = preprocess(x)
-
-        new_x = np.arange(9).reshape(1, 3, 3, 1)
-        preprocess = SpatialSmoothing()
-        new_smooth_x = preprocess(new_x)
-
-        self.assertTrue((smooth_x[0, 0] == new_smooth_x[0, :, :, 0]).all())
+        true_value = np.array([[[[1, 1, 1, 1, 0, 0, 1, 1, 0, 0, 0, 1], [0, 0, 0, 1, 0, 1, 1, 1, 0, 1, 1, 1],
+                                [1, 1, 1, 1, 0, 0, 0, 1, 0, 1, 1, 1]], [[1, 1, 1, 1, 0, 0, 1, 1, 0, 0, 0, 1],
+                                [0, 0, 0, 1, 0, 1, 1, 1, 0, 1, 1, 1], [1, 1, 1, 1, 0, 0, 0, 1, 0, 1, 1, 1]]],
+                                [[[1, 1, 1, 1, 0, 0, 1, 1, 0, 0, 0, 1], [0, 0, 0, 1, 0, 1, 1, 1, 0, 1, 1, 1],
+                                [1, 1, 1, 1, 0, 0, 0, 1, 0, 1, 1, 1]], [[1, 1, 1, 1, 0, 0, 1, 1, 0, 0, 0, 1],
+                                [0, 0, 0, 1, 0, 1, 1, 1, 0, 1, 1, 1], [1, 1, 1, 1, 0, 0, 0, 1, 0, 1, 1, 1]]]])
+        self.assertTrue((pp_x == true_value).all())
 
 
 if __name__ == '__main__':
     unittest.main()
+
+
+
