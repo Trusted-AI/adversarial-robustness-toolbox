@@ -12,9 +12,9 @@ class FastGradientMethod(Attack):
     Gradient Sign Method"). This implementation extends the attack to other norms, and is therefore called the Fast
     Gradient Method. Paper link: https://arxiv.org/abs/1412.6572
     """
-    attack_params = Attack.attack_params + ['norm', 'eps', 'targeted', 'random_init']
+    attack_params = Attack.attack_params + ['norm', 'eps', 'targeted', 'random_init', 'batch_size']
 
-    def __init__(self, classifier, norm=np.inf, eps=.3, targeted=False, random_init=False):
+    def __init__(self, classifier, norm=np.inf, eps=.3, targeted=False, random_init=False, batch_size=128):
         """
         Create a :class:`FastGradientMethod` instance.
 
@@ -28,6 +28,8 @@ class FastGradientMethod(Attack):
         :type targeted: `bool`
         :param random_init: Whether to start at the original input or a random point within the epsilon ball
         :type random_init: `bool`
+        :param batch_size: Batch size
+        :type batch_size: `int`
         """
         super(FastGradientMethod, self).__init__(classifier)
 
@@ -35,6 +37,7 @@ class FastGradientMethod(Attack):
         self.eps = eps
         self.targeted = targeted
         self.random_init = random_init
+        self.batch_size = batch_size
 
     def _minimal_perturbation(self, x, y, eps_step=0.1, eps_max=1., **kwargs):
         """Iteratively compute the minimal perturbation necessary to make the class prediction change. Stop when the
@@ -55,9 +58,8 @@ class FastGradientMethod(Attack):
         adv_x = x.copy()
 
         # Compute perturbation with implicit batching
-        batch_size = 128
-        for batch_id in range(adv_x.shape[0] // batch_size + 1):
-            batch_index_1, batch_index_2 = batch_id * batch_size, min((batch_id + 1) * batch_size, x.shape[0])
+        for batch_id in range(int(np.ceil(adv_x.shape[0] / float(self.batch_size)))):
+            batch_index_1, batch_index_2 = batch_id * self.batch_size, (batch_id + 1) * self.batch_size
             batch = adv_x[batch_index_1:batch_index_2]
             batch_labels = y[batch_index_1:batch_index_2]
 
@@ -101,6 +103,8 @@ class FastGradientMethod(Attack):
         :type minimal: `bool`
         :param random_init: Whether to start at the original input or a random point within the epsilon ball
         :type random_init: `bool`
+        :param batch_size: Batch size
+        :type batch_size: `int`
         :return: An array holding the adversarial examples.
         :rtype: `np.ndarray`
         """
@@ -134,6 +138,8 @@ class FastGradientMethod(Attack):
         :type eps: `float`
         :param targeted: Should the attack target one specific class
         :type targeted: `bool`
+        :param batch_size: Batch size
+        :type batch_size: `int`
         """
         # Save attack-specific parameters
         super(FastGradientMethod, self).set_params(**kwargs)
@@ -144,6 +150,10 @@ class FastGradientMethod(Attack):
 
         if self.eps <= 0:
             raise ValueError('The perturbation size `eps` has to be positive.')
+
+        if self.batch_size <= 0:
+            raise ValueError('The batch size `batch_size` has to be positive.')
+
         return True
 
     def _compute_perturbation(self, batch, batch_labels):
@@ -179,9 +189,8 @@ class FastGradientMethod(Attack):
             adv_x = x.copy()
 
         # Compute perturbation with implicit batching
-        batch_size = 128
-        for batch_id in range(adv_x.shape[0] // batch_size + 1):
-            batch_index_1, batch_index_2 = batch_id * batch_size, (batch_id + 1) * batch_size
+        for batch_id in range(int(np.ceil(adv_x.shape[0] / float(self.batch_size)))):
+            batch_index_1, batch_index_2 = batch_id * self.batch_size, (batch_id + 1) * self.batch_size
             batch = adv_x[batch_index_1:batch_index_2]
             batch_labels = y[batch_index_1:batch_index_2]
 

@@ -15,7 +15,7 @@ class ClusteringHandler:
         """
 
     @staticmethod
-    def cluster_activations(separated_activations, n_clusters=2, ndims=10, reduce='FastICA',
+    def cluster_activations(separated_activations, nb_clusters=2, nb_dims=10, reduce='FastICA',
                             clustering_method='KMeans'):
         """
         Clusters activations and returns two arrays.
@@ -26,10 +26,10 @@ class ClusteringHandler:
         :param separated_activations: list where separated_activations[i] is a np matrix for the ith class where
         each row corresponds to activations for a given data point
         :type separated_activations: `list`
-        :param n_clusters: number of clusters (defaults to 2 for poison/clean)
-        :type n_clusters: `int`
-        :param ndims: number of dimensions to reduce activation to via PCA
-        :type ndims: `int`
+        :param nb_clusters: number of clusters (defaults to 2 for poison/clean)
+        :type nb_clusters: `int`
+        :param nb_dims: number of dimensions to reduce activation to via PCA
+        :type nb_dims: `int`
         :param reduce: Method to perform dimensionality reduction, default is FastICA
         :type reduce: `str`
         :param clustering_method: Clustering method to use, default is KMeans
@@ -41,25 +41,25 @@ class ClusteringHandler:
         separated_reduced_activations = []
 
         if reduce == 'FastICA':
-            projector = FastICA(n_components=ndims, max_iter=1000, tol=0.005)
+            projector = FastICA(n_components=nb_dims, max_iter=1000, tol=0.005)
         elif reduce == 'PCA':
-            projector = PCA(n_components=ndims)
+            projector = PCA(n_components=nb_dims)
         else:
             raise ValueError(reduce + " dimensionality reduction method not supported.")
 
         if clustering_method == 'KMeans':
-            clusterer = KMeans(n_clusters=n_clusters)
+            clusterer = KMeans(n_clusters=nb_clusters)
         else:
             raise ValueError(clustering_method + " clustering method not supported.")
 
         for i, ac in enumerate(separated_activations):
             # Apply dimensionality reduction
-            n_activations = np.shape(ac)[1]
-            if n_activations > ndims:
+            nb_activations = np.shape(ac)[1]
+            if nb_activations > nb_dims:
                 reduced_activations = projector.fit_transform(ac)
             else:
-                print("Dimensionality of activations = %i less than ndims = %i. Not applying dimensionality "
-                      "reduction..." % (n_activations, ndims))
+                print("Dimensionality of activations = %i less than nb_dims = %i. Not applying dimensionality "
+                      "reduction..." % (nb_activations, nb_dims))
                 reduced_activations = ac
             separated_reduced_activations.append(reduced_activations)
 
