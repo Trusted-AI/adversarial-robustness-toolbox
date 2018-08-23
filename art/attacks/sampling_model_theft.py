@@ -5,7 +5,6 @@ import math
 
 from art.attacks.model_theft import ModelTheft
 
-
 class SamplingModelTheft(ModelTheft):
     """
     The model theft attack using a set of natural samples to the network as used in https://arxiv.org/abs/1806.00054.
@@ -24,13 +23,18 @@ class SamplingModelTheft(ModelTheft):
         :type fit_datagen: `Callable`
         """
         self.query_datagen = None
-        self.fit_datagen = None
+        self.fit_datagen = None 
         super(SamplingModelTheft, self).__init__()
         kwargs = {'x': x,
                   'query_datagen': query_datagen,
                   'fit_datagen': fit_datagen
                   }
         assert self.set_params(**kwargs)
+
+    @staticmethod
+    def _identity_datagen(x,y):
+        while True:
+            yield x,y
 
     def steal(self, model, stolen_model, budget, epochs=20, batch_size=128):
         """
@@ -100,5 +104,7 @@ class SamplingModelTheft(ModelTheft):
             raise ValueError("Input fit_datagen should be a Callable from input to new input")
         if self.query_datagen and not callable(self.query_datagen):
             raise ValueError("Input query_datagen should be a Callable from input to new input")
+        if self.fit_datagen == None:
+            self.fit_datagen = SamplingModelTheft._identity_datagen
 
         return True
