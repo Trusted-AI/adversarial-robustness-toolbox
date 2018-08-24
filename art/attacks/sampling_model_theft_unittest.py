@@ -35,7 +35,7 @@ class TestSamplingModelTheft(unittest.TestCase):
                 Dense(10, activation='softmax')])
         m0.compile(loss='categorical_crossentropy', optimizer='adam', metrics=['accuracy'])
         k0 = KerasClassifier((min_, max_), model=m0)
-        k0.fit(x_train, y_train, nb_epochs=5, batch_size=128)
+        k0.fit(x_train, y_train, nb_epochs=3, batch_size=128)
         
         m1 = Sequential([
                 Conv2D(32, kernel_size=(3, 3), activation='relu', input_shape=x_train.shape[1:]),
@@ -59,7 +59,7 @@ class TestSamplingModelTheft(unittest.TestCase):
         datagen.fit(x_train)
         fit_datagen = lambda x,y: datagen.flow(x,y)
         att = SamplingModelTheft(x_test, fit_datagen=fit_datagen)
-        k1 = att.steal(k0,k1,10000, epochs=5)
+        k1 = att.steal(k0,k1,2000, epochs=5)
         
         y0 = k0.predict(x_train)
         y1 = k1.predict(x_train)
