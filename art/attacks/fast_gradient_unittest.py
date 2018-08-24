@@ -14,7 +14,7 @@ import torch.optim as optim
 
 from art.attacks.fast_gradient import FastGradientMethod
 from art.classifiers import KerasClassifier, PyTorchClassifier, TFClassifier
-from art.utils import load_mnist, get_labels_np_array
+from art.utils import to_categorical, load_mnist, get_labels_np_array
 
 BATCH_SIZE = 10
 NB_TRAIN = 100
