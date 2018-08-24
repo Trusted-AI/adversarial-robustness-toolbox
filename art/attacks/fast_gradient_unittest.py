@@ -248,6 +248,46 @@ class TestFastGradientMethod(unittest.TestCase):
         # Get classifier
         classifier = PyTorchClassifier((0, 1), model, loss_fn, optimizer, (1, 28, 28), 10)
         return classifier
+    
+    def _test_mnist_targeted(self, classifier):
+        # Get MNIST
+        (x_train, y_train), (x_test, y_test) = self.mnist
+
+        # Test FGSM with np.inf norm
+        attack = FastGradientMethod(classifier, eps=1.0, targeted=True)
+        #y_train_adv = to_categorical((np.argmax(y_train, axis=1) + 1)  % 10, 10)
+        y_test_adv = to_categorical((np.argmax(y_test, axis=1) + 1)  % 10, 10)
+
+
+        x_test_adv = attack.generate(x_test, minimal=True, eps_step=0.01, eps=1.0, y=y_test_adv)
+        # x_train_adv = attack.generate(x_train, minimal=True, eps_step=0.01, y=y_train_adv)
+
+        # self.assertFalse((x_train == x_train_adv).all())
+        self.assertFalse((x_test == x_test_adv).all())
+
+        # train_y_pred = get_labels_np_array(classifier.predict(x_train_adv))
+        test_y_pred = get_labels_np_array(classifier.predict(x_test_adv))
+
+        print(np.argmax(y_test_adv, axis=1))
+        print(np.argmax(test_y_pred, axis=1))
+
+        # self.assertEqual(y_train_adv.shape, train_y_pred.shape)
+        self.assertEqual(y_test_adv.shape, test_y_pred.shape)
+        # self.assertTrue((y_train_adv == train_y_pred).all())
+        self.assertTrue((y_test_adv == test_y_pred).all())
+    
+    def test_mnist_targeted(self):
+        # Define all backends to test
+        backends = {'keras': self.classifier_k,
+                    'tf': self.classifier_tf,
+                    'pytorch': self.classifier_py}
+
+        for _, classifier in backends.items():
+            if _ == 'pytorch':
+                self._swap_axes()
+            self._test_mnist_targeted(classifier)
+            if _ == 'pytorch':
+                self._swap_axes()
 
 
 if __name__ == '__main__':
