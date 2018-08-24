@@ -100,7 +100,7 @@ class TestKerasClassifier(unittest.TestCase):
 
     def test_fit(self):
         self._test_fit(custom_activation=False)
-        #self._test_fit(custom_activation=True)
+        self._test_fit(custom_activation=True)
 
     def _test_fit(self, custom_activation=False):
         labels = np.argmax(self.mnist[1][1], axis=1)
@@ -171,7 +171,7 @@ class TestKerasClassifier(unittest.TestCase):
 
     def test_resnet(self):
         self._test_resnet(custom_activation=False)
-        #self._test_resnet(custom_activation=True)
+        self._test_resnet(custom_activation=True)
 
     def _test_resnet(self, custom_activation=False):
         import os
