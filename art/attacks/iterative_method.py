@@ -83,7 +83,7 @@ class BasicIterativeMethod(FastGradientMethod):
             noise = projection(adv_x[active_indices] - x[active_indices], self.eps, self.norm)
             adv_x[active_indices] = x[active_indices] + noise
             adv_preds = self.classifier.predict(adv_x[active_indices])
-            print(len(active_indices))
+
             # Update active indices
             if self.targeted:
                 active_subindices = np.where(target_labels[active_indices] != np.argmax(adv_preds, axis=1))[0]
