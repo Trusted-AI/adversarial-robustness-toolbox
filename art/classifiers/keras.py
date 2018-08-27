@@ -34,7 +34,8 @@ class KerasClassifier(Classifier):
         :type input_layer: `int`
         :param output_layer: Which layer to consider as the Output when the model has multiple output layers.
         :type output_layer: `int`
-        :param custom_activation: True if the model uses the last activation other than softmax and requires to use the output probability rather than the logits by attacks.
+        :param custom_activation: True if the model uses the last activation other than softmax and requires to use the
+               output probability rather than the logits by attacks.
         :type custom_activation: `bool`
         """
         import keras.backend as k
