@@ -82,7 +82,7 @@ class TestUtils(unittest.TestCase):
         self.assertEqual(c.shape, y.shape)
         self.assertEqual(l.shape, y.shape)
 
-        self.assertTrue(np.all(l == y)) 
+        self.assertTrue(np.all(l == y))
         self.assertTrue(np.allclose(c, 0.99, atol=1e-2))
 
     def test_get_labels_np_array(self):

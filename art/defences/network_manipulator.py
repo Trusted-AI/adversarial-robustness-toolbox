@@ -23,10 +23,11 @@ class NetworkManipulator(ABC):
 
         :param classifier: Classifier to be manipulated.
         :type classifier: `Classifier`
-        :return: A manipulated model derived from the given model. While the given model will be unchanged, its component can be used in the manipulated model, and hence the manipulated model will be updated if the given model is updated.
+        :return: A manipulated model derived from the given model. While the given model will be unchanged, its
+                 component can be used in the manipulated model, and hence the manipulated model will be updated if the
+                 given model is updated.
         """
         raise NotImplementedError
-
 
     def set_params(self, **kwargs):
         """
@@ -38,6 +39,3 @@ class NetworkManipulator(ABC):
             if key in self.params:
                 setattr(self, key, value)
         return True
-
-
-

@@ -37,7 +37,6 @@ class ModelTheft(ABC):
         """
         raise NotImplementedError
 
-
     def set_params(self, **kwargs):
         """
         Take in a dictionary of parameters and apply attack-specific checks before saving them as attributes.
@@ -50,4 +49,3 @@ class ModelTheft(ABC):
             if key in self.attack_params:
                 setattr(self, key, value)
         return True
-
