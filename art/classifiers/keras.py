@@ -3,27 +3,24 @@ from __future__ import absolute_import, division, print_function, unicode_litera
 import six
 import numpy as np
 
-from art.classifiers import Classifier
+from art.classifiers.classifier import Classifier, ImageClassifier, TextClassifier
 
 
 class KerasClassifier(Classifier):
     """
     The supported backends for Keras are TensorFlow and Theano.
     """
-    def __init__(self, clip_values, model, use_logits=False, channel_index=3, defences=None, preprocessing=(0, 1),
-                 input_layer=0, output_layer=0):
+    def __init__(self, model, loss, use_logits=False, defences=None, preprocessing=(0, 1), input_layer=0,
+                 output_layer=0):
         """
         Create a `Classifier` instance from a Keras model. Assumes the `model` passed as argument is compiled.
 
-        :param clip_values: Tuple of the form `(min, max)` representing the minimum and maximum values allowed
-               for features.
-        :type clip_values: `tuple`
         :param model: Keras model
         :type model: `keras.models.Model`
+        :param loss: Loss function between true and predicted labels (encoded as one-hot)
+        :type loss: `Callable`
         :param use_logits: True if the output of the model are the logits.
         :type use_logits: `bool`
-        :param channel_index: Index of the axis in data containing the color channels or features.
-        :type channel_index: `int`
         :param defences: Defences to be activated with the classifier.
         :type defences: `str` or `list(str)`
         :param preprocessing: Tuple of the form `(substractor, divider)` of floats or `np.ndarray` of values to be
@@ -36,10 +33,9 @@ class KerasClassifier(Classifier):
         :type output_layer: `int`
         """
         import keras.backend as k
+        print('init KerasClassifier')
 
-        # TODO Generalize loss function?
-        super(KerasClassifier, self).__init__(clip_values=clip_values, channel_index=channel_index, defences=defences,
-                                              preprocessing=preprocessing)
+        super(KerasClassifier, self).__init__(defences=defences, preprocessing=preprocessing)
 
         self._model = model
         if hasattr(model, 'inputs'):
@@ -53,24 +49,23 @@ class KerasClassifier(Classifier):
             self._output = model.output
 
         _, self._nb_classes = k.int_shape(self._output)
-        self._input_shape = k.int_shape(self._input)[1:]
 
         # Get predictions and loss function
-        label_ph = k.placeholder(shape=(None,))
+        label_ph = k.placeholder(shape=self._output.shape)
         if not use_logits:
             if k.backend() == 'tensorflow':
                 preds, = self._output.op.inputs
-                loss = k.sparse_categorical_crossentropy(label_ph, preds, from_logits=True)
+                loss_ = loss(label_ph, preds, from_logits=True)
             else:
-                loss = k.sparse_categorical_crossentropy(label_ph, self._output, from_logits=use_logits)
+                loss_ = loss(label_ph, self._output, from_logits=use_logits)
 
                 # Convert predictions to logits for consistency with the other cases
                 eps = 10e-8
                 preds = k.log(k.clip(self._output, eps, 1. - eps))
         else:
             preds = self._output
-            loss = k.sparse_categorical_crossentropy(label_ph, self._output, from_logits=use_logits)
-        loss_grads = k.gradients(loss, self._input)
+            loss_ = loss(label_ph, self._output, from_logits=use_logits)
+        loss_grads = k.gradients(loss_, self._input)
 
         if k.backend() == 'tensorflow':
             loss_grads = loss_grads[0]
@@ -79,9 +74,14 @@ class KerasClassifier(Classifier):
 
         # Set loss, grads and prediction functions
         self._preds_op = preds
-        self._loss = k.function([self._input], [loss])
-        self._loss_grads = k.function([self._input, label_ph], [loss_grads])
+        self._loss_op = loss_
+        self._loss = k.function([self._input], [loss_])
         self._preds = k.function([self._input], [preds])
+
+        try:
+            self._loss_grads = k.function([self._input, label_ph], [loss_grads])
+        except TypeError:
+            pass
 
         # Get the internal layer
         self._layer_names = self._get_layers()
@@ -98,7 +98,7 @@ class KerasClassifier(Classifier):
         :rtype: `np.ndarray`
         """
         x_ = self._apply_processing(x)
-        grads = self._loss_grads([x_, np.argmax(y, axis=1)])[0]
+        grads = self._loss_grads([x_, y])[0]
         grads = self._apply_processing_gradient(grads)
         assert grads.shape == x_.shape
 
@@ -300,6 +300,109 @@ class KerasClassifier(Classifier):
 
         layer_names = [layer.name for layer in self._model.layers[:-1] if not isinstance(layer, InputLayer)]
         return layer_names
+
+
+class KerasImageClassifier(ImageClassifier, KerasClassifier):
+    def __init__(self, clip_values, model, loss, use_logits=False, channel_index=3, defences=None, preprocessing=(0, 1),
+                 input_layer=0, output_layer=0):
+        """
+        Create a :class:`KerasImageClassifier` instance from a Keras model. Assumes the `model` passed as argument is
+        compiled.
+
+        :param clip_values: Tuple of the form `(min, max)` representing the minimum and maximum values allowed
+               for features.
+        :type clip_values: `tuple`
+        :param model: Keras model
+        :type model: `keras.models.Model`
+        :param loss: Loss function between true and predicted labels (encoded as one-hot)
+        :type loss: `Callable`
+        :param use_logits: True if the output of the model are the logits.
+        :type use_logits: `bool`
+        :param channel_index: Index of the axis in data containing the color channels or features.
+        :type channel_index: `int`
+        :param defences: Defences to be activated with the classifier.
+        :type defences: `str` or `list(str)`
+        :param preprocessing: Tuple of the form `(substractor, divider)` of floats or `np.ndarray` of values to be
+               used for data preprocessing. The first value will be substracted from the input. The input will then
+               be divided by the second one.
+        :type preprocessing: `tuple`
+        :param input_layer: Which layer to consider as the Input when the model has multple input layers.
+        :type input_layer: `int`
+        :param output_layer: Which layer to consider as the Output when the model has multiple output layers.
+        :type output_layer: `int`
+        """
+        import keras.backend as k
+        print('init KerasImageClassifier')
+
+        ImageClassifier.__init__(self, clip_values=clip_values, channel_index=channel_index, defences=defences,
+                                 preprocessing=preprocessing)
+
+        KerasClassifier.__init__(self, model=model, loss=loss, use_logits=use_logits, defences=defences,
+                                 preprocessing=preprocessing, input_layer=input_layer, output_layer=output_layer)
+
+        self._input_shape = k.int_shape(self._input)[1:]
+        self._channel_index = channel_index
+
+
+class KerasTextClassifier(TextClassifier, KerasClassifier):
+    """
+    Create a :class:`KerasTextClassifier` instance from a Keras model. Assumes the `model` passed as argument is
+    compiled.
+    """
+    def __init__(self, model, loss, use_logits=False, defences=None, preprocessing=(0, 1), embedding_layer=0,
+                 input_layer=0, output_layer=0):
+        """
+        Note: `Embedding` layers in Keras can only be used as first layer in model.
+
+        :param model:
+        :param loss:
+        :param use_logits:
+        :param defences:
+        :param preprocessing:
+        :param embedding_layer:
+        :param input_layer:
+        :param output_layer:
+        """
+        import keras.backend as k
+        print('init KerasTextClassifier')
+
+        TextClassifier.__init__(self, defences=defences, preprocessing=preprocessing)
+
+        KerasClassifier.__init__(self, model=model, loss=loss, use_logits=use_logits, defences=defences,
+                                 preprocessing=preprocessing, input_layer=input_layer, output_layer=output_layer)
+
+        if type(embedding_layer) is int:
+            embedding_name = self._layer_names[embedding_layer]
+        else:
+            raise ValueError('Expected `int` for `embedding_layer`, got %s.' % str(type(embedding_layer)))
+
+        self._embedding = self._model.get_layer(embedding_name)
+        self._embedding_from_input = k.function([self._embedding.input], [self._embedding.output])
+        self._preds_from_embedding = k.function([self._embedding.input], [self._preds_op])
+
+        if not hasattr(self, '_loss_grads') or self._loss_grads is None:
+            label_ph = k.placeholder(shape=self._output.shape)
+            loss_grads = k.gradients(self._loss_op, self._embedding.output)
+
+            if k.backend() == 'tensorflow':
+                loss_grads = loss_grads[0]
+            elif k.backend() == 'cntk':
+                raise NotImplementedError('Only TensorFlow and Theano support is provided for Keras.')
+
+            self._loss_grads = k.function([self._input, label_ph], [loss_grads])
+
+    def predict_from_embedding(self, x_emb, batch_size):
+        return self._preds_from_embedding([x_emb])[0]
+
+    def to_embedding(self, x):
+        # TODO add batching
+        return self._embedding_from_input([x])[0]
+
+    def to_text(self, x):
+        pass
+
+    def to_id(self, x):
+        pass
 
 
 def generator_fit(x, y, batch_size=128):
