@@ -11,6 +11,18 @@ import numpy as np
 from scipy.special import gammainc
 
 
+def cosine(x1, x2):
+    from art.utils import projection
+
+    x1_norm = projection(x1, eps=1., p=2)
+    if x2 is x1:
+        x2_norm = x1_norm
+    else:
+        x2_norm = projection(x2, eps=1., p=2)
+
+    return np.inner(x1_norm, x2_norm)
+
+
 def projection(v, eps, p):
     """
     Project the values in `v` on the L_p norm ball of size `eps`.
@@ -305,6 +317,29 @@ def load_stl():
     x_test, y_test = preprocess(x_test, y_test)
 
     return (x_train, y_train), (x_test, y_test), min_, max_
+
+
+def load_imdb(nb_words, max_length, index_from=0):
+    # TODO add loading options
+    from keras.utils.data_utils import get_file
+    from art import DATA_PATH
+    from keras.datasets import imdb
+    from keras.preprocessing import sequence
+
+    # Download data if needed
+    # path = get_file('imdb.npz', cache_subdir=DATA_PATH, origin='https://s3.amazonaws.com/text-datasets/imdb.npz')
+    # f = np.load(path)
+    # x_train, y_train = f['x_train'], f['y_train']
+    # x_test, y_test = f['x_test'], f['y_test']
+    # f.close()
+    (x_train, y_train), (x_test, y_test) = imdb.load_data(num_words=nb_words, index_from=index_from)
+
+    # Truncate and pad input sequences
+    x_train = sequence.pad_sequences(x_train, maxlen=max_length, padding='pre')
+    x_test = sequence.pad_sequences(x_test, maxlen=max_length, padding='pre')
+    word_index = imdb.get_word_index()
+
+    return (x_train, y_train), (x_test, y_test), word_index
 
 
 def load_dataset(name):
