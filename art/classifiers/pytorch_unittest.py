@@ -7,7 +7,7 @@ import torch.nn.functional as F
 import torch.optim as optim
 import numpy as np
 
-from art.classifiers.pytorch import PyTorchClassifier
+from art.classifiers.pytorch import PyTorchImageClassifier, PyTorchTextClassifier
 from art.utils import load_mnist
 
 
@@ -38,7 +38,7 @@ class Flatten(nn.Module):
         return result
 
 
-class TestPyTorchClassifier(unittest.TestCase):
+class TestPyTorchImageClassifier(unittest.TestCase):
     """
     This class tests the functionalities of the PyTorch-based classifier.
     """
@@ -58,7 +58,7 @@ class TestPyTorchClassifier(unittest.TestCase):
         # Define a loss function and optimizer
         loss_fn = nn.CrossEntropyLoss()
         optimizer = optim.Adam(model.parameters(), lr=0.01)
-        classifier = PyTorchClassifier((0, 1), model, loss_fn, optimizer, (1, 28, 28), 10)
+        classifier = PyTorchImageClassifier((0, 1), model, loss_fn, optimizer, (1, 28, 28), 10)
         classifier.fit(x_train, y_train, batch_size=100, nb_epochs=2)
         cls.seq_classifier = classifier
 
@@ -66,7 +66,7 @@ class TestPyTorchClassifier(unittest.TestCase):
         model = Model()
         loss_fn = nn.CrossEntropyLoss()
         optimizer = optim.Adam(model.parameters(), lr=0.01)
-        classifier2 = PyTorchClassifier((0, 1), model, loss_fn, optimizer, (1, 28, 28), 10)
+        classifier2 = PyTorchImageClassifier((0, 1), model, loss_fn, optimizer, (1, 28, 28), 10)
         classifier2.fit(x_train, y_train, batch_size=100, nb_epochs=2)
         cls.module_classifier = classifier2
 

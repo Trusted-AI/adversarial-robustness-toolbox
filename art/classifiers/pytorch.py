@@ -4,21 +4,17 @@ import numpy as np
 import random
 import six
 
-from art.classifiers.classifier import Classifier
+from art.classifiers.classifier import Classifier, ImageClassifier, TextClassifier
 
 
 class PyTorchClassifier(Classifier):
     """
     This class implements a classifier with the PyTorch framework.
     """
-    def __init__(self, clip_values, model, loss, optimizer, input_shape, nb_classes, channel_index=1, defences=None,
-                 preprocessing=(0, 1)):
+    def __init__(self, model, loss, optimizer, nb_classes, defences=None, preprocessing=(0, 1)):
         """
         Initialization specifically for the PyTorch-based implementation.
 
-        :param clip_values: Tuple of the form `(min, max)` representing the minimum and maximum values allowed
-               for features.
-        :type clip_values: `tuple`
         :param model: PyTorch model. The forward function of the model must return the logit output.
         :type model: is instance of `torch.nn.Module`
         :param loss: The loss function for which to compute gradients for training. The target label must be raw
@@ -26,12 +22,8 @@ class PyTorchClassifier(Classifier):
         :type loss: `torch.nn.modules.loss._Loss`
         :param optimizer: The optimizer used to train the classifier.
         :type optimizer: `torch.optim.Optimizer`
-        :param input_shape: The shape of one input instance.
-        :type input_shape: `tuple`
         :param nb_classes: The number of classes of the model.
         :type nb_classes: `int`
-        :param channel_index: Index of the axis in data containing the color channels or features.
-        :type channel_index: `int`
         :param defences: Defences to be activated with the classifier.
         :type defences: `str` or `list(str)`
         :param preprocessing: Tuple of the form `(substractor, divider)` of floats or `np.ndarray` of values to be
@@ -39,11 +31,9 @@ class PyTorchClassifier(Classifier):
                be divided by the second one.
         :type preprocessing: `tuple`
         """
-        super(PyTorchClassifier, self).__init__(clip_values=clip_values, channel_index=channel_index, defences=defences,
-                                                preprocessing=preprocessing)
+        super(PyTorchClassifier, self).__init__(defences=defences, preprocessing=preprocessing)
 
         self._nb_classes = nb_classes
-        self._input_shape = input_shape
         self._model = PyTorchClassifier.ModelWrapper(model)
         self._loss = loss
         self._optimizer = optimizer
@@ -406,3 +396,50 @@ class PyTorchClassifier(Classifier):
 
     except ImportError:
         raise ImportError('Could not find PyTorch (`torch`) installation.')
+
+
+class PyTorchImageClassifier(ImageClassifier, PyTorchClassifier):
+    def __init__(self, clip_values, model, loss, optimizer, input_shape, nb_classes, channel_index=1, defences=None,
+                 preprocessing=(0, 1)):
+        """
+        Initialization specifically for the PyTorch-based implementation.
+
+        :param clip_values: Tuple of the form `(min, max)` representing the minimum and maximum values allowed
+               for features.
+        :type clip_values: `tuple`
+        :param model: PyTorch model. The forward function of the model must return the logit output.
+        :type model: is instance of `torch.nn.Module`
+        :param loss: The loss function for which to compute gradients for training. The target label must be raw
+               categorical, i.e. not converted to one-hot encoding.
+        :type loss: `torch.nn.modules.loss._Loss`
+        :param optimizer: The optimizer used to train the classifier.
+        :type optimizer: `torch.optim.Optimizer`
+        :param input_shape: The shape of one input instance.
+        :type input_shape: `tuple`
+        :param nb_classes: The number of classes of the model.
+        :type nb_classes: `int`
+        :param channel_index: Index of the axis in data containing the color channels or features.
+        :type channel_index: `int`
+        :param defences: Defences to be activated with the classifier.
+        :type defences: `str` or `list(str)`
+        :param preprocessing: Tuple of the form `(substractor, divider)` of floats or `np.ndarray` of values to be
+               used for data preprocessing. The first value will be substracted from the input. The input will then
+               be divided by the second one.
+        :type preprocessing: `tuple`
+        """
+
+        ImageClassifier.__init__(self, clip_values=clip_values, channel_index=channel_index, defences=defences,
+                                 preprocessing=preprocessing)
+        PyTorchClassifier.__init__(self, model=model, loss=loss, optimizer=optimizer, nb_classes=nb_classes,
+                                   defences=None, preprocessing=(0, 1))
+
+        self._input_shape = input_shape
+
+
+class PyTorchTextClassifier(TextClassifier, PyTorchClassifier):
+    def __init__(self, model, loss, optimizer, nb_classes, defences=None, preprocessing=(0, 1)):
+
+        TextClassifier.__init__(self, defences=defences, preprocessing=preprocessing)
+
+        PyTorchClassifier.__init__(self, model=model, loss=loss, optimizer=optimizer, nb_classes=nb_classes,
+                                   defences=None, preprocessing=(0, 1))

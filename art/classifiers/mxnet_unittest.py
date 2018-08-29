@@ -5,14 +5,14 @@ from mxnet.gluon import nn
 import numpy as np
 import unittest
 
-from art.classifiers import MXClassifier
+from art.classifiers.mxnet import MXImageClassifier, MXTextClassifier
 from art.utils import load_mnist
 
 NB_TRAIN = 1000
 NB_TEST = 20
 
 
-class TestMXClassifier(unittest.TestCase):
+class TestMXImageClassifier(unittest.TestCase):
     @classmethod
     def setUpClass(cls):
         # Get MNIST
@@ -42,7 +42,7 @@ class TestMXClassifier(unittest.TestCase):
         trainer = gluon.Trainer(net.collect_params(), 'sgd', {'learning_rate': 0.1})
 
         # Fit classifier
-        classifier = MXClassifier((0, 1), net, (1, 28, 28), 10, trainer)
+        classifier = MXImageClassifier((0, 1), net, (1, 28, 28), 10, trainer)
         classifier.fit(x_train, y_train, batch_size=128, nb_epochs=2)
         cls.classifier = classifier
 
@@ -92,8 +92,8 @@ class TestMXClassifier(unittest.TestCase):
         (_, _), (x_test, _) = self.mnist
 
         # Create classifier
-        classifier_preproc = MXClassifier((0, 1), self.classifier._model, (1, 28, 28), 10, self.classifier._optimizer,
-                                          preprocessing=(1, 2))
+        classifier_preproc = MXImageClassifier((0, 1), self.classifier._model, (1, 28, 28), 10,
+                                               self.classifier._optimizer, preprocessing=(1, 2))
 
         preds = self.classifier.predict((x_test - 1.) / 2)
         preds_preproc = classifier_preproc.predict(x_test)
@@ -115,6 +115,9 @@ class TestMXClassifier(unittest.TestCase):
     #     self.assertTrue(self.classifier.get_activations(x_test, 0).shape == (NB_TEST, 6, 24, 24))
     #     self.assertTrue(self.classifier.get_activations(x_test, 4).shape == (NB_TEST, 784))
 
+
+class TestMXTextClassifier(unittest.TestCase):
+    pass
 
 if __name__ == '__main__':
     unittest.main()

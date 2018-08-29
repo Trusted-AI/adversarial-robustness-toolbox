@@ -5,7 +5,7 @@ import unittest
 import numpy as np
 import tensorflow as tf
 
-from art.classifiers import TFClassifier
+from art.classifiers.tensorflow import TFImageClassifier, TFTextClassifier
 from art.utils import load_mnist
 
 
@@ -13,7 +13,7 @@ NB_TRAIN = 1000
 NB_TEST = 20
 
 
-class TestTFClassifier(unittest.TestCase):
+class TestTFImageClassifier(unittest.TestCase):
     """
     This class tests the functionalities of the Tensorflow-based classifier.
     """
@@ -48,7 +48,7 @@ class TestTFClassifier(unittest.TestCase):
         self.sess.run(tf.global_variables_initializer())
 
         # Create classifier
-        self.classifier = TFClassifier((0, 1), input_ph, logits, output_ph, train, loss, None, self.sess)
+        self.classifier = TFImageClassifier((0, 1), input_ph, logits, output_ph, train, loss, None, self.sess)
     
     def tearDown(self):
         self.sess.close()

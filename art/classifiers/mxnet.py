@@ -3,23 +3,17 @@ from __future__ import absolute_import, division, print_function, unicode_litera
 import six
 import numpy as np
 
-from art.classifiers import Classifier
+from art.classifiers.classifier import Classifier, ImageClassifier, TextClassifier
 
 
 class MXClassifier(Classifier):
-    def __init__(self, clip_values, model, input_shape, nb_classes, optimizer=None, ctx=None, channel_index=1,
-                 defences=None, preprocessing=(0, 1)):
+    def __init__(self, model, nb_classes, optimizer=None, ctx=None, defences=None, preprocessing=(0, 1)):
         """
         Initialize an `MXClassifier` object. Assumes the `model` passed as parameter is a Gluon model and that the
         loss function is the softmax cross-entropy.
 
-        :param clip_values: Tuple of the form `(min, max)` representing the minimum and maximum values allowed
-               for features.
-        :type clip_values: `tuple`
         :param model: The model with logits as expected output.
         :type model: `mxnet.gluon.Block`
-        :param input_shape: The shape of one input instance.
-        :type input_shape: `tuple`
         :param nb_classes: The number of classes of the model.
         :type nb_classes: `int`
         :param optimizer: The optimizer used to train the classifier. This parameter is not required if no training is
@@ -27,8 +21,6 @@ class MXClassifier(Classifier):
         :type optimizer: `mxnet.gluon.Trainer`
         :param ctx: The device on which the model runs (CPU or GPU). If not provided, CPU is assumed.
         :type ctx: `mxnet.context.Context`
-        :param channel_index: Index of the axis in data containing the color channels or features.
-        :type channel_index: `int`
         :param defences: Defences to be activated with the classifier.
         :type defences: `str` or `list(str)`
         :param preprocessing: Tuple of the form `(substractor, divider)` of floats or `np.ndarray` of values to be
@@ -38,12 +30,10 @@ class MXClassifier(Classifier):
         """
         import mxnet as mx
 
-        super(MXClassifier, self).__init__(clip_values=clip_values, channel_index=channel_index, defences=defences,
-                                           preprocessing=preprocessing)
+        super(MXClassifier, self).__init__(defences=defences, preprocessing=preprocessing)
 
         self._model = model
         self._nb_classes = nb_classes
-        self._input_shape = input_shape
         self._device = ctx
         self._optimizer = optimizer
 
@@ -286,3 +276,69 @@ class MXClassifier(Classifier):
 
         layer_names = [layer.name for layer in self._model[:-1]]
         return layer_names
+
+
+class MXImageClassifier(ImageClassifier, MXClassifier):
+    def __init__(self, clip_values, model, input_shape, nb_classes, optimizer=None, ctx=None, channel_index=1,
+                 defences=None, preprocessing=(0, 1)):
+        """
+        Initialize an :class:`MXImageClassifier` object. Assumes the `model` passed as parameter is a Gluon model.
+
+        :param clip_values: Tuple of the form `(min, max)` representing the minimum and maximum values allowed
+               for features.
+        :type clip_values: `tuple`
+        :param model: The model with logits as expected output.
+        :type model: `mxnet.gluon.Block`
+        :param input_shape: The shape of one input instance.
+        :type input_shape: `tuple`
+        :param nb_classes: The number of classes of the model.
+        :type nb_classes: `int`
+        :param optimizer: The optimizer used to train the classifier. This parameter is not required if no training is
+               used.
+        :type optimizer: `mxnet.gluon.Trainer`
+        :param ctx: The device on which the model runs (CPU or GPU). If not provided, CPU is assumed.
+        :type ctx: `mxnet.context.Context`
+        :param channel_index: Index of the axis in data containing the color channels or features.
+        :type channel_index: `int`
+        :param defences: Defences to be activated with the classifier.
+        :type defences: `str` or `list(str)`
+        :param preprocessing: Tuple of the form `(substractor, divider)` of floats or `np.ndarray` of values to be
+               used for data preprocessing. The first value will be substracted from the input. The input will then
+               be divided by the second one.
+        :type preprocessing: `tuple`
+        """
+        ImageClassifier.__init__(self, clip_values=clip_values, channel_index=channel_index, defences=defences,
+                                 preprocessing=preprocessing)
+        MXClassifier.__init__(self, model=model, nb_classes=nb_classes, optimizer=optimizer, ctx=ctx, defences=defences,
+                              preprocessing=preprocessing)
+
+        self._input_shape = input_shape
+        self._channel_index = channel_index
+
+
+class MXTextClassifier(TextClassifier, MXClassifier):
+    def __init__(self, model, nb_classes, optimizer=None, ctx=None, defences=None, preprocessing=(0, 1)):
+        """
+        Initialize an :class:`MXTextClassifier` object. Assumes the `model` passed as parameter is a Gluon.
+
+        :param model: The model with logits as expected output.
+        :type model: `mxnet.gluon.Block`
+        :param nb_classes: The number of classes of the model.
+        :type nb_classes: `int`
+        :param optimizer: The optimizer used to train the classifier. This parameter is not required if no training is
+               used.
+        :type optimizer: `mxnet.gluon.Trainer`
+        :param ctx: The device on which the model runs (CPU or GPU). If not provided, CPU is assumed.
+        :type ctx: `mxnet.context.Context`
+        :param defences: Defences to be activated with the classifier.
+        :type defences: `str` or `list(str)`
+        :param preprocessing: Tuple of the form `(substractor, divider)` of floats or `np.ndarray` of values to be
+               used for data preprocessing. The first value will be substracted from the input. The input will then
+               be divided by the second one.
+        :type preprocessing: `tuple`
+        """
+
+        TextClassifier.__init__(self, defences=defences, preprocessing=preprocessing)
+
+        MXClassifier.__init__(self, model=model, nb_classes=nb_classes, optimizer=optimizer, ctx=ctx, defences=defences,
+                              preprocessing=preprocessing)
