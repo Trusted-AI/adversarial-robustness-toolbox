@@ -14,16 +14,12 @@ else:
 
 class Classifier(ABC):
     """
-    Base class for all classifiers.
+    Base abstract class for all classifiers.
     """
-    def __init__(self, clip_values, channel_index, defences=None, preprocessing=(0, 1)):
+    def __init__(self, defences=None, preprocessing=(0, 1)):
         """
-        Initialize a `Classifier` object.
-        :param clip_values: Tuple of the form `(min, max)` representing the minimum and maximum values allowed
-               for features.
-        :type clip_values: `tuple`
-        :param channel_index: Index of the axis in data containing the color channels or features.
-        :type channel_index: `int`
+        Initialize a :class:`Classifier` object.
+
         :param defences: Defences to be activated with the classifier.
         :type defences: `str` or `list(str)`
         :param preprocessing: Tuple of the form `(substractor, divider)` of floats or `np.ndarray` of values to be
@@ -31,11 +27,7 @@ class Classifier(ABC):
                be divided by the second one.
         :type preprocessing: `tuple`
         """
-        if len(clip_values) != 2:
-            raise ValueError('`clip_values` should be a tuple of 2 floats containing the allowed data range.')
-        self._clip_values = clip_values
-
-        self._channel_index = channel_index
+        print('init Classifier')
         self._parse_defences(defences)
 
         if len(preprocessing) != 2:
@@ -85,32 +77,6 @@ class Classifier(ABC):
         :rtype: `int`
         """
         return self._nb_classes
-
-    @property
-    def input_shape(self):
-        """
-        Return the shape of one input.
-
-        :return: Shape of one input for the classifier.
-        :rtype: `tuple`
-        """
-        return self._input_shape
-
-    @property
-    def clip_values(self):
-        """
-        :return: Tuple of the form `(min, max)` representing the minimum and maximum values allowed for features.
-        :rtype: `tuple`
-        """
-        return self._clip_values
-
-    @property
-    def channel_index(self):
-        """
-        :return: Index of the axis in data containing the color channels or features.
-        :rtype: `int`
-        """
-        return self._channel_index
 
     @abc.abstractmethod
     def class_gradient(self, x, label=None, logits=False):
@@ -244,3 +210,89 @@ class Classifier(ABC):
         div = np.asarray(div, dtype=grad.dtype)
         res = grad / div
         return res
+
+
+class ImageClassifier(Classifier):
+    def __init__(self, clip_values, channel_index, defences=None, preprocessing=(0, 1)):
+        """
+        Initialize a `Classifier` object.
+
+        :param clip_values: Tuple of the form `(min, max)` representing the minimum and maximum values allowed
+               for features.
+        :type clip_values: `tuple`
+        :param channel_index: Index of the axis in data containing the color channels or features.
+        :type channel_index: `int`
+        :param defences: Defences to be activated with the classifier.
+        :type defences: `str` or `list(str)`
+        :param preprocessing: Tuple of the form `(substractor, divider)` of floats or `np.ndarray` of values to be
+               used for data preprocessing. The first value will be substracted from the input. The input will then
+               be divided by the second one.
+        :type preprocessing: `tuple`
+        """
+        print('init ImageClassifier')
+        Classifier.__init__(self, defences=defences, preprocessing=preprocessing)
+
+        if len(clip_values) != 2:
+            raise ValueError('`clip_values` should be a tuple of 2 floats containing the allowed data range.')
+        self._clip_values = clip_values
+
+        self._channel_index = channel_index
+
+    @property
+    def input_shape(self):
+        """
+        Return the shape of one input.
+
+        :return: Shape of one input for the classifier.
+        :rtype: `tuple`
+        """
+        return self._input_shape
+
+    @property
+    def clip_values(self):
+        """
+        :return: Tuple of the form `(min, max)` representing the minimum and maximum values allowed for features.
+        :rtype: `tuple`
+        """
+        return self._clip_values
+
+    @property
+    def channel_index(self):
+        """
+        :return: Index of the axis in data containing the color channels or features.
+        :rtype: `int`
+        """
+        return self._channel_index
+
+
+class TextClassifier(Classifier):
+
+    def __init__(self, defences=None, preprocessing=(0, 1)):
+        """
+        Initialize a :class:`TextClassifier` object.
+
+        :param defences: Defences to be activated with the classifier.
+        :type defences: `str` or `list(str)`
+        :param preprocessing: Tuple of the form `(substractor, divider)` of floats or `np.ndarray` of values to be
+               used for data preprocessing. The first value will be substracted from the input. The input will then
+               be divided by the second one.
+        :type preprocessing: `tuple`
+        """
+        print('init TextClassifier')
+        Classifier.__init__(self, defences=defences, preprocessing=preprocessing)
+
+    def word_gradient(self, x):
+        raise NotImplementedError
+
+    def predict_from_embedding(self, x_emb, batch_size):
+        # TODO new function or new parameter in predict?
+        raise NotImplementedError
+
+    def to_embedding(self, x):
+        raise NotImplementedError
+
+    def to_text(self, x):
+        raise NotImplementedError
+
+    def to_id(self, x):
+        raise NotImplementedError
