@@ -281,8 +281,23 @@ class TextClassifier(Classifier):
         print('init TextClassifier')
         Classifier.__init__(self, defences=defences, preprocessing=preprocessing)
 
-    def word_gradient(self, x):
-        raise NotImplementedError
+    def word_gradient(self, x, y):
+        """
+        Compute the gradient of the loss function w.r.t. each word.
+
+        :param x: Sample input with shape as expected by the model.
+        :type x: `np.ndarray`
+        :param y: Correct labels, one-vs-rest encoding.
+        :type y: `np.ndarray`
+        :return: Array of gradients of shape [batch_size, nb_words].
+        :rtype: `np.ndarray`
+        """
+        import numpy as np
+
+        grad = self.loss_gradient(x, y)
+        # TODO what is the proper way to sum them?
+        grad = np.sum(np.abs(grad), axis=2)
+        return grad
 
     def predict_from_embedding(self, x_emb, batch_size):
         # TODO new function or new parameter in predict?
@@ -292,6 +307,7 @@ class TextClassifier(Classifier):
         raise NotImplementedError
 
     def to_text(self, x):
+        # TODO then we need word mapping in classifier
         raise NotImplementedError
 
     def to_id(self, x):
