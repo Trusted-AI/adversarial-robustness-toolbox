@@ -266,7 +266,12 @@ class ImageClassifier(Classifier):
 
 
 class TextClassifier(Classifier):
-
+    """
+    This is the base abstract class for all text classification models. It is an extension of the base
+    :class:`Classifier`. Its current form assumes that the text embedding is part of the classifier and that the inputs
+    are word or character indices resulting from a mapping of text to indices. This mapping is supposed to be external
+    of the classifier.
+    """
     def __init__(self, defences=None, preprocessing=(0, 1)):
         """
         Initialize a :class:`TextClassifier` object.
@@ -278,12 +283,12 @@ class TextClassifier(Classifier):
                be divided by the second one.
         :type preprocessing: `tuple`
         """
-        print('init TextClassifier')
         Classifier.__init__(self, defences=defences, preprocessing=preprocessing)
 
     def word_gradient(self, x, y):
         """
-        Compute the gradient of the loss function w.r.t. each word.
+        Compute the gradient of the loss function w.r.t. each word. The gradient of a word is computed as the L_1 norm
+        of the loss gradients of its embedding.
 
         :param x: Sample input with shape as expected by the model.
         :type x: `np.ndarray`
@@ -295,20 +300,46 @@ class TextClassifier(Classifier):
         import numpy as np
 
         grad = self.loss_gradient(x, y)
-        # TODO what is the proper way to sum them?
         grad = np.sum(np.abs(grad), axis=2)
         return grad
 
-    def predict_from_embedding(self, x_emb, batch_size):
-        # TODO new function or new parameter in predict?
+    def predict_from_embedding(self, x_emb, logits=False, batch_size=128):
+        """
+        Perform prediction for a batch of inputs in embedding form.
+
+        :param x_emb: Array of inputs in embedding form, often shaped as `(batch_size, input_length, embedding_size)`.
+        :type x_emb: `np.ndarray`
+        :param logits: `True` if the prediction should be done at the logits layer.
+        :type logits: `bool`
+        :param batch_size: Size of batches.
+        :type batch_size: `int`
+        :return: Array of predictions of shape `(nb_inputs, self.nb_classes)`.
+        :rtype: `np.ndarray`
+        """
         raise NotImplementedError
 
     def to_embedding(self, x):
+        """
+        Convert the received classifier input `x` from token (words or characters) indices to embeddings.
+
+        :param x: Sample input with shape as expected by the model.
+        :type x: `np.ndarray`
+        :return: Embedding form of sample `x`.
+        :rtype: `np.ndarray`
+        """
         raise NotImplementedError
 
-    def to_text(self, x):
-        # TODO then we need word mapping in classifier
-        raise NotImplementedError
+    def to_id(self, x_emb, strategy='nearest', metric='cosine'):
+        """
+        Convert the received input from embedding space to classifier input (most often, token indices).
 
-    def to_id(self, x):
+        :param x_emb: Array of inputs in embedding form, often shaped as `(batch_size, input_length, embedding_size)`.
+        :type x_emb: `np.ndarray`
+        :param strategy: Strategy from mapping from embedding space back to input space.
+        :type strategy: `str` or `Callable`
+        :param metric: Metric to be used in the embedding space when determining vocabulary token proximity.
+        :type metric: `str` or `Callable`
+        :return: Array of token indices for sample `x_emb`.
+        :rtype: `np.ndarray`
+        """
         raise NotImplementedError
