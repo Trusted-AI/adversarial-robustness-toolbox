@@ -14,7 +14,7 @@ import torch.optim as optim
 
 from art.attacks.fast_gradient import FastGradientMethod
 from art.classifiers import KerasClassifier, PyTorchClassifier, TFClassifier
-from art.utils import load_mnist, get_labels_np_array
+from art.utils import to_categorical, load_mnist, get_labels_np_array
 
 BATCH_SIZE = 10
 NB_TRAIN = 100
@@ -170,12 +170,16 @@ class TestFastGradientMethod(unittest.TestCase):
         print('\nAccuracy on adversarial test examples with L2 norm: %.2f%%' % (acc * 100))
 
     def test_with_defences(self):
+        self._test_with_defences(custom_activation=False)
+        self._test_with_defences(custom_activation=True)
+
+    def _test_with_defences(self, custom_activation=False):
         # Get MNIST
         (x_train, y_train), (x_test, y_test) = self.mnist
 
         # Get the ready-trained Keras model
         model = self.classifier_k._model
-        classifier = KerasClassifier((0, 1), model, defences='featsqueeze1')
+        classifier = KerasClassifier((0, 1), model, defences='featsqueeze1', custom_activation=custom_activation)
 
         attack = FastGradientMethod(classifier, eps=1)
         x_train_adv = attack.generate(x_train)
@@ -223,7 +227,7 @@ class TestFastGradientMethod(unittest.TestCase):
         return classifier
 
     @staticmethod
-    def _cnn_mnist_k(input_shape):
+    def _cnn_mnist_k(input_shape, custom_activation=False):
         # Create simple CNN
         model = Sequential()
         model.add(Conv2D(4, kernel_size=(5, 5), activation='relu', input_shape=input_shape))
@@ -234,7 +238,7 @@ class TestFastGradientMethod(unittest.TestCase):
         model.compile(loss=keras.losses.categorical_crossentropy, optimizer=keras.optimizers.Adam(lr=0.01),
                       metrics=['accuracy'])
 
-        classifier = KerasClassifier((0, 1), model, use_logits=False)
+        classifier = KerasClassifier((0, 1), model, use_logits=False, custom_activation=custom_activation)
         return classifier
 
     @staticmethod
@@ -248,6 +252,44 @@ class TestFastGradientMethod(unittest.TestCase):
         # Get classifier
         classifier = PyTorchClassifier((0, 1), model, loss_fn, optimizer, (1, 28, 28), 10)
         return classifier
+    
+    def _test_mnist_targeted(self, classifier):
+        # Get MNIST
+        (x_train, y_train), (x_test, y_test) = self.mnist
+
+        # Test FGSM with np.inf norm
+        attack = FastGradientMethod(classifier, eps=1.0, targeted=True)
+        
+        pred_sort = classifier.predict(x_test).argsort(axis=1)
+        y_test_adv = np.zeros((x_test.shape[0],10))
+        for i in range(x_test.shape[0]):
+            y_test_adv[i,pred_sort[i,-2]] = 1.0
+
+
+        x_test_adv = attack.generate(x_test, minimal=True, eps_step=0.01, eps=1.0, y=y_test_adv)
+
+        self.assertFalse((x_test == x_test_adv).all())
+
+        test_y_pred = get_labels_np_array(classifier.predict(x_test_adv))
+
+        print(np.argmax(y_test_adv, axis=1))
+        print(np.argmax(test_y_pred, axis=1))
+
+        self.assertEqual(y_test_adv.shape, test_y_pred.shape)
+        self.assertTrue((y_test_adv == test_y_pred).sum() >= x_test.shape[0]//2)
+    
+    def test_mnist_targeted(self):
+        # Define all backends to test
+        backends = {'keras': self.classifier_k,
+                    'tf': self.classifier_tf,
+                    'pytorch': self.classifier_py}
+
+        for _, classifier in backends.items():
+            if _ == 'pytorch':
+                self._swap_axes()
+            self._test_mnist_targeted(classifier)
+            if _ == 'pytorch':
+                self._swap_axes()
 
 
 if __name__ == '__main__':
