@@ -119,6 +119,16 @@ class TestUtils(unittest.TestCase):
         self.assertEqual(x_.max(), 1.0)
         self.assertEqual(x_.min(), 0)
 
+    def test_cosine(self):
+        from art.utils import cosine
+
+        x = np.array([1, 2])
+        y = np.array([10, 20])
+        z = np.array([-1, -2])
+
+        self.assertAlmostEqual(cosine(x, y), 1)
+        self.assertAlmostEqual(cosine(x, z), -1)
+
 
 if __name__ == '__main__':
     unittest.main()

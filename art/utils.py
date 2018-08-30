@@ -12,15 +12,27 @@ from scipy.special import gammainc
 
 
 def cosine(x1, x2):
-    from art.utils import projection
+    """
+    Compute and return the cosine similarity between two vectors `x1` and `x2`.
 
-    x1_norm = projection(x1, eps=1., p=2)
+    :param x1: Vector of values.
+    :type x1: `np.ndarray`
+    :param x2: Vector of values of same shape as `x1`.
+    :type x2: `np.ndarray`
+    :return: Cosine similarity between `x1` and `x2`.
+    :rtype: `float`
+    """
+    assert x1.shape == x2.shape
+
+    from numpy.linalg import norm
+
+    x1_norm = x1 / norm(x1)
     if x2 is x1:
         x2_norm = x1_norm
     else:
-        x2_norm = projection(x2, eps=1., p=2)
+        x2_norm = x2 / norm(x2)
 
-    return np.inner(x1_norm, x2_norm)
+    return np.dot(x1_norm, x2_norm)
 
 
 def projection(v, eps, p):
