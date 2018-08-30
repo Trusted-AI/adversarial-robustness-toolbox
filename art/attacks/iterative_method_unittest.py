@@ -142,9 +142,6 @@ class TestIterativeAttack(unittest.TestCase):
 
         test_y_pred = get_labels_np_array(classifier.predict(x_test_adv))
 
-        print(np.argmax(y_test_adv, axis=1))
-        print(np.argmax(test_y_pred, axis=1))
-
         self.assertEqual(y_test_adv.shape, test_y_pred.shape)
         # This doesn't work all the time, espeically with small networks
         self.assertTrue((y_test_adv == test_y_pred).sum() >= x_test.shape[0]//2)

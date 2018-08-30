@@ -16,6 +16,7 @@ class BasicIterativeMethod(FastGradientMethod):
     def __init__(self, classifier, norm=np.inf, eps=.3, eps_step=0.1, max_iter=20, targeted=False, random_init=False):
         """
         Create a :class:`BasicIterativeMethod` instance.
+
         :param classifier: A trained model.
         :type classifier: :class:`Classifier`
         :param norm: Order of the norm. Possible values: np.inf, 1 or 2.
@@ -43,6 +44,7 @@ class BasicIterativeMethod(FastGradientMethod):
     def generate(self, x, **kwargs):
         """
         Generate adversarial samples and return them in an array.
+        
         :param x: An array with the original inputs.
         :type x: `np.ndarray`
         :param norm: Order of the norm. Possible values: np.inf, 1 or 2.
@@ -101,6 +103,7 @@ class BasicIterativeMethod(FastGradientMethod):
     def set_params(self, **kwargs):
         """
         Take in a dictionary of parameters and applies attack-specific checks before saving them as attributes.
+       
         :param norm: Order of the norm. Possible values: np.inf, 1 or 2.
         :type norm: `int`
         :param eps: Maximum perturbation that the attacker can introduce.
