@@ -10,8 +10,7 @@ class KerasClassifier(Classifier):
     """
     The supported backends for Keras are TensorFlow and Theano.
     """
-    def __init__(self, model, loss, use_logits=False, defences=None, preprocessing=(0, 1), input_layer=0,
-                 output_layer=0):
+    def __init__(self, model, loss, use_logits=False, input_layer=0, output_layer=0):
         """
         Create a `Classifier` instance from a Keras model. Assumes the `model` passed as argument is compiled.
 
@@ -21,21 +20,14 @@ class KerasClassifier(Classifier):
         :type loss: `Callable`
         :param use_logits: True if the output of the model are the logits.
         :type use_logits: `bool`
-        :param defences: Defences to be activated with the classifier.
-        :type defences: `str` or `list(str)`
-        :param preprocessing: Tuple of the form `(substractor, divider)` of floats or `np.ndarray` of values to be
-               used for data preprocessing. The first value will be substracted from the input. The input will then
-               be divided by the second one.
-        :type preprocessing: `tuple`
-        :param input_layer: Which layer to consider as the Input when the model has multple input layers.
+        :param input_layer: Which layer to consider as the input when the model has multiple input layers.
         :type input_layer: `int`
-        :param output_layer: Which layer to consider as the Output when the model has multiple output layers.
+        :param output_layer: Which layer to consider as the output when the model has multiple output layers.
         :type output_layer: `int`
         """
         import keras.backend as k
-        print('init KerasClassifier')
 
-        super(KerasClassifier, self).__init__(defences=defences, preprocessing=preprocessing)
+        super(KerasClassifier, self).__init__()
 
         self._model = model
         if hasattr(model, 'inputs'):
@@ -326,19 +318,18 @@ class KerasImageClassifier(ImageClassifier, KerasClassifier):
                used for data preprocessing. The first value will be substracted from the input. The input will then
                be divided by the second one.
         :type preprocessing: `tuple`
-        :param input_layer: Which layer to consider as the Input when the model has multple input layers.
+        :param input_layer: Which layer to consider as the input when the model has multiple input layers.
         :type input_layer: `int`
-        :param output_layer: Which layer to consider as the Output when the model has multiple output layers.
+        :param output_layer: Which layer to consider as the output when the model has multiple output layers.
         :type output_layer: `int`
         """
         import keras.backend as k
-        print('init KerasImageClassifier')
 
         ImageClassifier.__init__(self, clip_values=clip_values, channel_index=channel_index, defences=defences,
                                  preprocessing=preprocessing)
 
-        KerasClassifier.__init__(self, model=model, loss=loss, use_logits=use_logits, defences=defences,
-                                 preprocessing=preprocessing, input_layer=input_layer, output_layer=output_layer)
+        KerasClassifier.__init__(self, model=model, loss=loss, use_logits=use_logits, input_layer=input_layer,
+                                 output_layer=output_layer)
 
         self._input_shape = k.int_shape(self._input)[1:]
         self._channel_index = channel_index
@@ -346,30 +337,32 @@ class KerasImageClassifier(ImageClassifier, KerasClassifier):
 
 class KerasTextClassifier(TextClassifier, KerasClassifier):
     """
-    Create a :class:`KerasTextClassifier` instance from a Keras model. Assumes the `model` passed as argument is
-    compiled.
+    Class providing an implementation for integrating text models from Keras.
     """
-    def __init__(self, model, loss, use_logits=False, defences=None, preprocessing=(0, 1), embedding_layer=0,
-                 input_layer=0, output_layer=0):
+    def __init__(self, model, loss, ids, use_logits=False, embedding_layer=0, input_layer=0, output_layer=0):
         """
-        Note: `Embedding` layers in Keras can only be used as first layer in model.
+        Create a :class:`KerasTextClassifier` instance from a Keras model. Assumes the `model` passed as argument is
+        compiled.
 
-        :param model:
-        :param loss:
-        :param use_logits:
-        :param defences:
-        :param preprocessing:
-        :param embedding_layer:
-        :param input_layer:
-        :param output_layer:
+        :param model: Keras model
+        :type model: `keras.models.Model`
+        :param loss: Loss function between true and predicted labels (encoded as one-hot)
+        :type loss: `Callable`
+        :param use_logits: True if the output of the model are the logits.
+        :type use_logits: `bool`
+        :param embedding_layer: Which layer to consider as providing the embedding of the vocabulary. When using the
+               Keras `Embedding` layer, this can only be the first layer in the model.
+        :type embedding_layer: `int`
+        :param input_layer: Which layer to consider as the input when the model has multiple input layers.
+        :type input_layer: `int`
+        :param output_layer: Which layer to consider as the output when the model has multiple output layers.
+        :type output_layer: `int`
         """
         import keras.backend as k
-        print('init KerasTextClassifier')
 
-        TextClassifier.__init__(self, defences=defences, preprocessing=preprocessing)
-
-        KerasClassifier.__init__(self, model=model, loss=loss, use_logits=use_logits, defences=defences,
-                                 preprocessing=preprocessing, input_layer=input_layer, output_layer=output_layer)
+        TextClassifier.__init__(self)
+        KerasClassifier.__init__(self, model=model, loss=loss, use_logits=use_logits, input_layer=input_layer,
+                                 output_layer=output_layer)
 
         if type(embedding_layer) is int:
             embedding_name = self._layer_names[embedding_layer]
@@ -377,8 +370,9 @@ class KerasTextClassifier(TextClassifier, KerasClassifier):
             raise ValueError('Expected `int` for `embedding_layer`, got %s.' % str(type(embedding_layer)))
 
         self._embedding = self._model.get_layer(embedding_name)
-        self._embedding_from_input = k.function([self._embedding.input], [self._embedding.output])
-        self._preds_from_embedding = k.function([self._embedding.input], [self._preds_op])
+        self._embedding_from_input = k.function([self._input], [self._embedding.output])
+        self._preds_from_embedding = k.function([self._embedding.output], [self._preds_op])
+        self._ids = ids
 
         if not hasattr(self, '_loss_grads') or self._loss_grads is None:
             label_ph = k.placeholder(shape=self._output.shape)
@@ -391,18 +385,82 @@ class KerasTextClassifier(TextClassifier, KerasClassifier):
 
             self._loss_grads = k.function([self._input, label_ph], [loss_grads])
 
-    def predict_from_embedding(self, x_emb, batch_size):
-        return self._preds_from_embedding([x_emb])[0]
+    def predict_from_embedding(self, x_emb, logits=False, batch_size=128):
+        """
+        Perform prediction for a batch of inputs in embedding form.
+
+        :param x_emb: Array of inputs in embedding form, often shaped as `(batch_size, input_length, embedding_size)`.
+        :type x_emb: `np.ndarray`
+        :param logits: `True` if the prediction should be done at the logits layer.
+        :type logits: `bool`
+        :param batch_size: Size of batches.
+        :type batch_size: `int`
+        :return: Array of predictions of shape `(nb_inputs, self.nb_classes)`.
+        :rtype: `np.ndarray`
+        """
+        import keras.backend as k
+        k.set_learning_phase(0)
+
+        # Run predictions with batching
+        preds = np.zeros((x_emb.shape[0], self.nb_classes), dtype=np.float32)
+        for b in range(int(np.ceil(x_emb.shape[0] / float(batch_size)))):
+            begin, end = b * batch_size,  min((b + 1) * batch_size, x_emb.shape[0])
+            preds[begin:end] = self._preds_from_embedding([x_emb[begin:end]])[0]
+
+            if not logits:
+                exp = np.exp(preds[begin:end] - np.max(preds[begin:end], axis=1, keepdims=True))
+                preds[begin:end] = exp / np.sum(exp, axis=1, keepdims=True)
+
+        return preds
 
     def to_embedding(self, x):
-        # TODO add batching
-        return self._embedding_from_input([x])[0]
+        """
+        Convert the received classifier input `x` from token (words or characters) indices to embeddings.
 
-    def to_text(self, x):
-        pass
+        :param x: Sample input with shape as expected by the model.
+        :type x: `np.ndarray`
+        :return: Embedding form of sample `x`.
+        :rtype: `np.ndarray`
+        """
+        import keras.backend as k
+        k.set_learning_phase(0)
 
-    def to_id(self, x):
-        pass
+        return self._embedding_from_input([x])
+
+    def to_id(self, x_emb, strategy='nearest', metric='cosine'):
+        """
+        Convert the received input from embedding space to classifier input (most often, token indices).
+
+        :param x_emb: Array of inputs in embedding form, often shaped as `(batch_size, input_length, embedding_size)`.
+        :type x_emb: `np.ndarray`
+        :param strategy: Strategy from mapping from embedding space back to input space.
+        :type strategy: `str` or `Callable`
+        :param metric: Metric to be used in the embedding space when determining vocabulary token proximity.
+        :type metric: `str` or `Callable`
+        :return: Array of token indices for sample `x_emb`.
+        :rtype: `np.ndarray`
+        """
+        import keras.backend as k
+        k.set_learning_phase(0)
+
+        if strategy != 'nearest':
+            raise ValueError('Nearest neighbor is currently the only supported strategy for mapping embeddings to '
+                             'valid tokens.')
+
+        if metric == 'cosine':
+            from art.utils import cosine
+
+            embeddings = self.to_embedding(self._ids)
+
+            neighbors = []
+            for x in x_emb:
+                metric = [cosine(emb, x) for emb in embeddings]
+                neighbors.append(self._ids[int(np.argpartition(metric, -1)[-1])])
+        else:
+            raise ValueError('Cosine similarity is currently the only supported metric for mapping embeddings to '
+                             'valid tokens.')
+
+        return np.array(neighbors)
 
 
 def generator_fit(x, y, batch_size=128):

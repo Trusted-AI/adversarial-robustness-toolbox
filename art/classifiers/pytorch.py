@@ -11,7 +11,7 @@ class PyTorchClassifier(Classifier):
     """
     This class implements a classifier with the PyTorch framework.
     """
-    def __init__(self, model, loss, optimizer, nb_classes, defences=None, preprocessing=(0, 1)):
+    def __init__(self, model, loss, optimizer, nb_classes):
         """
         Initialization specifically for the PyTorch-based implementation.
 
@@ -24,14 +24,8 @@ class PyTorchClassifier(Classifier):
         :type optimizer: `torch.optim.Optimizer`
         :param nb_classes: The number of classes of the model.
         :type nb_classes: `int`
-        :param defences: Defences to be activated with the classifier.
-        :type defences: `str` or `list(str)`
-        :param preprocessing: Tuple of the form `(substractor, divider)` of floats or `np.ndarray` of values to be
-               used for data preprocessing. The first value will be substracted from the input. The input will then
-               be divided by the second one.
-        :type preprocessing: `tuple`
         """
-        super(PyTorchClassifier, self).__init__(defences=defences, preprocessing=preprocessing)
+        super(PyTorchClassifier, self).__init__()
 
         self._nb_classes = nb_classes
         self._model = PyTorchClassifier.ModelWrapper(model)
@@ -430,16 +424,13 @@ class PyTorchImageClassifier(ImageClassifier, PyTorchClassifier):
 
         ImageClassifier.__init__(self, clip_values=clip_values, channel_index=channel_index, defences=defences,
                                  preprocessing=preprocessing)
-        PyTorchClassifier.__init__(self, model=model, loss=loss, optimizer=optimizer, nb_classes=nb_classes,
-                                   defences=None, preprocessing=(0, 1))
+        PyTorchClassifier.__init__(self, model=model, loss=loss, optimizer=optimizer, nb_classes=nb_classes)
 
         self._input_shape = input_shape
 
 
 class PyTorchTextClassifier(TextClassifier, PyTorchClassifier):
-    def __init__(self, model, loss, optimizer, nb_classes, defences=None, preprocessing=(0, 1)):
+    def __init__(self, model, loss, optimizer, nb_classes):
 
-        TextClassifier.__init__(self, defences=defences, preprocessing=preprocessing)
-
-        PyTorchClassifier.__init__(self, model=model, loss=loss, optimizer=optimizer, nb_classes=nb_classes,
-                                   defences=None, preprocessing=(0, 1))
+        TextClassifier.__init__(self)
+        PyTorchClassifier.__init__(self, model=model, loss=loss, optimizer=optimizer, nb_classes=nb_classes)

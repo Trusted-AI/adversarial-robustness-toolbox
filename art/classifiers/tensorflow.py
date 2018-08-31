@@ -11,8 +11,7 @@ class TFClassifier(Classifier):
     """
     This class implements a classifier with the Tensorflow framework.
     """
-    def __init__(self, input_ph, logits, output_ph=None, train=None, loss=None, learning=None, sess=None, defences=None,
-                 preprocessing=(0, 1)):
+    def __init__(self, input_ph, logits, output_ph=None, train=None, loss=None, learning=None, sess=None):
         """
         Initialization specifically for the Tensorflow-based implementation.
 
@@ -33,16 +32,10 @@ class TFClassifier(Classifier):
         :type learning: `tf.Placeholder` of type bool.
         :param sess: Computation session.
         :type sess: `tf.Session`
-        :param defences: Defences to be activated with the classifier.
-        :type defences: `str` or `list(str)`
-        :param preprocessing: Tuple of the form `(substractor, divider)` of floats or `np.ndarray` of values to be
-               used for data preprocessing. The first value will be substracted from the input. The input will then
-               be divided by the second one.
-        :type preprocessing: `tuple`
         """
         import tensorflow as tf
 
-        super(TFClassifier, self).__init__(defences=defences, preprocessing=preprocessing)
+        super(TFClassifier, self).__init__()
         self._nb_classes = int(logits.get_shape()[-1])
         self._input_shape = tuple(input_ph.get_shape()[1:])
         self._input_ph = input_ph
@@ -390,12 +383,11 @@ class TFImageClassifier(ImageClassifier, TFClassifier):
                                  preprocessing=preprocessing)
 
         TFClassifier.__init__(self, input_ph=input_ph, logits=logits, output_ph=output_ph, train=train, loss=loss,
-                              learning=learning, sess=sess, defences=defences, preprocessing=preprocessing)
+                              learning=learning, sess=sess)
 
 
 class TFTextClassifier(TextClassifier, TFClassifier):
-    def __init__(self, input_ph, logits, output_ph=None, train=None, loss=None, learning=None, sess=None, defences=None,
-                 preprocessing=(0, 1)):
+    def __init__(self, input_ph, logits, output_ph=None, train=None, loss=None, learning=None, sess=None):
         """
 
         :param input_ph: The input placeholder.
@@ -415,14 +407,8 @@ class TFTextClassifier(TextClassifier, TFClassifier):
         :type learning: `tf.Placeholder` of type bool.
         :param sess: Computation session.
         :type sess: `tf.Session`
-        :param defences: Defences to be activated with the classifier.
-        :type defences: `str` or `list(str)`
-        :param preprocessing: Tuple of the form `(substractor, divider)` of floats or `np.ndarray` of values to be
-               used for data preprocessing. The first value will be substracted from the input. The input will then
-               be divided by the second one.
-        :type preprocessing: `tuple`
         """
-        TextClassifier.__init__(self, defences=defences, preprocessing=preprocessing)
+        TextClassifier.__init__(self)
 
         TFClassifier.__init__(self, input_ph=input_ph, logits=logits, output_ph=output_ph, train=train, loss=loss,
-                              learning=learning, sess=sess, defences=defences, preprocessing=preprocessing)
+                              learning=learning, sess=sess)

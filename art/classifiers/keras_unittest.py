@@ -208,7 +208,8 @@ class TestKerasTextClassifier(unittest.TestCase):
     def test_fit_predict(self):
         (x_train, y_train), (x_test, y_test) = self.imdb
 
-        classifier = KerasTextClassifier(model=self.model, loss=k.binary_crossentropy, use_logits=False)
+        classifier = KerasTextClassifier(model=self.model, ids=self.word_ids, loss=k.binary_crossentropy,
+                                         use_logits=False)
         acc = np.sum(np.argmax(classifier.predict(x_test), axis=1) == y_test) / x_test.shape[0]
         print('\nAccuracy: %.2f%%' % (acc * 100))
 
