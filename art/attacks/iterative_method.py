@@ -44,7 +44,7 @@ class BasicIterativeMethod(FastGradientMethod):
     def generate(self, x, **kwargs):
         """
         Generate adversarial samples and return them in an array.
-
+        
         :param x: An array with the original inputs.
         :type x: `np.ndarray`
         :param norm: Order of the norm. Possible values: np.inf, 1 or 2.
@@ -87,7 +87,11 @@ class BasicIterativeMethod(FastGradientMethod):
             adv_preds = self.classifier.predict(adv_x[active_indices])
 
             # Update active indices
-            active_subindices = np.where(target_labels[active_indices] != np.argmax(adv_preds, axis=1))[0]
+            if self.targeted:
+                active_subindices = np.where(target_labels[active_indices] != np.argmax(adv_preds, axis=1))[0]
+            else:
+                active_subindices = np.where(target_labels[active_indices] == np.argmax(adv_preds, axis=1))[0]
+            
             active_indices = [active_indices[i] for i in active_subindices]
 
             # Stop if no more indices left to explore
@@ -99,7 +103,7 @@ class BasicIterativeMethod(FastGradientMethod):
     def set_params(self, **kwargs):
         """
         Take in a dictionary of parameters and applies attack-specific checks before saving them as attributes.
-
+       
         :param norm: Order of the norm. Possible values: np.inf, 1 or 2.
         :type norm: `int`
         :param eps: Maximum perturbation that the attacker can introduce.
