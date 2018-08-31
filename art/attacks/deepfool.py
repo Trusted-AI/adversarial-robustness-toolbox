@@ -81,7 +81,7 @@ class DeepFool(Attack):
                 value = np.ma.array(np.abs(f_diff) / norm, mask=mask)
 
                 l = value.argmin(fill_value=np.inf)
-                r = (abs(f_diff[l]) / pow(np.linalg.norm(grad_diff[l]), 2)) * grad_diff[l]
+                r = (abs(f_diff[l]) / (pow(np.linalg.norm(grad_diff[l]), 2) + tol)) * grad_diff[l]
 
                 # Add perturbation and clip result
                 xj = np.clip(xj + r, clip_min, clip_max)
