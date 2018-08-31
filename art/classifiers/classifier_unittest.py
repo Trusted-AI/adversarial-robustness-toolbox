@@ -3,10 +3,10 @@ from __future__ import absolute_import, division, print_function, unicode_litera
 import numpy as np
 import unittest
 
-from art.classifiers import Classifier
+from art.classifiers.classifier import ImageClassifier
 
 
-class ClassifierInstance(Classifier):
+class ClassifierInstance(ImageClassifier):
     def __init__(self, clip_values, channel_index=1):
         super(ClassifierInstance, self).__init__(clip_values=clip_values, channel_index=channel_index)
 
@@ -22,7 +22,7 @@ class ClassifierInstance(Classifier):
     def loss_gradient(self, x, y):
         pass
 
-    def predict(self, x, logits=False):
+    def predict(self, x, logits=False, batch_size=128):
         pass
 
 

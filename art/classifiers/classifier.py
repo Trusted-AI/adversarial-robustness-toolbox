@@ -16,24 +16,11 @@ class Classifier(ABC):
     """
     Base abstract class for all classifiers.
     """
-    def __init__(self, defences=None, preprocessing=(0, 1)):
+    def __init__(self):
         """
         Initialize a :class:`Classifier` object.
-
-        :param defences: Defences to be activated with the classifier.
-        :type defences: `str` or `list(str)`
-        :param preprocessing: Tuple of the form `(substractor, divider)` of floats or `np.ndarray` of values to be
-               used for data preprocessing. The first value will be substracted from the input. The input will then
-               be divided by the second one.
-        :type preprocessing: `tuple`
         """
-        print('init Classifier')
-        self._parse_defences(defences)
-
-        if len(preprocessing) != 2:
-            raise ValueError('`preprocessing` should be a tuple of 2 floats with the substract and divide values for'
-                             'the model inputs.')
-        self._preprocessing = preprocessing
+        pass
 
     @abc.abstractmethod
     def predict(self, x, logits=False, batch_size=128):
@@ -142,6 +129,65 @@ class Classifier(ABC):
         """
         raise NotImplementedError
 
+
+class ImageClassifier(Classifier):
+    def __init__(self, clip_values, channel_index, defences=None, preprocessing=(0, 1)):
+        """
+        Initialize a `Classifier` object.
+
+        :param clip_values: Tuple of the form `(min, max)` representing the minimum and maximum values allowed
+               for features.
+        :type clip_values: `tuple`
+        :param channel_index: Index of the axis in data containing the color channels or features.
+        :type channel_index: `int`
+        :param defences: Defences to be activated with the classifier.
+        :type defences: `str` or `list(str)`
+        :param preprocessing: Tuple of the form `(substractor, divider)` of floats or `np.ndarray` of values to be
+               used for data preprocessing. The first value will be substracted from the input. The input will then
+               be divided by the second one.
+        :type preprocessing: `tuple`
+        """
+        Classifier.__init__(self)
+
+        self._parse_defences(defences)
+
+        if len(preprocessing) != 2:
+            raise ValueError('`preprocessing` should be a tuple of 2 floats with the substract and divide values for'
+                             'the model inputs.')
+        self._preprocessing = preprocessing
+
+        if len(clip_values) != 2:
+            raise ValueError('`clip_values` should be a tuple of 2 floats containing the allowed data range.')
+        self._clip_values = clip_values
+
+        self._channel_index = channel_index
+
+    @property
+    def input_shape(self):
+        """
+        Return the shape of one input.
+
+        :return: Shape of one input for the classifier.
+        :rtype: `tuple`
+        """
+        return self._input_shape
+
+    @property
+    def clip_values(self):
+        """
+        :return: Tuple of the form `(min, max)` representing the minimum and maximum values allowed for features.
+        :rtype: `tuple`
+        """
+        return self._clip_values
+
+    @property
+    def channel_index(self):
+        """
+        :return: Index of the axis in data containing the color channels or features.
+        :rtype: `int`
+        """
+        return self._channel_index
+
     def _parse_defences(self, defences):
         self.defences = defences
 
@@ -212,59 +258,6 @@ class Classifier(ABC):
         return res
 
 
-class ImageClassifier(Classifier):
-    def __init__(self, clip_values, channel_index, defences=None, preprocessing=(0, 1)):
-        """
-        Initialize a `Classifier` object.
-
-        :param clip_values: Tuple of the form `(min, max)` representing the minimum and maximum values allowed
-               for features.
-        :type clip_values: `tuple`
-        :param channel_index: Index of the axis in data containing the color channels or features.
-        :type channel_index: `int`
-        :param defences: Defences to be activated with the classifier.
-        :type defences: `str` or `list(str)`
-        :param preprocessing: Tuple of the form `(substractor, divider)` of floats or `np.ndarray` of values to be
-               used for data preprocessing. The first value will be substracted from the input. The input will then
-               be divided by the second one.
-        :type preprocessing: `tuple`
-        """
-        print('init ImageClassifier')
-        Classifier.__init__(self, defences=defences, preprocessing=preprocessing)
-
-        if len(clip_values) != 2:
-            raise ValueError('`clip_values` should be a tuple of 2 floats containing the allowed data range.')
-        self._clip_values = clip_values
-
-        self._channel_index = channel_index
-
-    @property
-    def input_shape(self):
-        """
-        Return the shape of one input.
-
-        :return: Shape of one input for the classifier.
-        :rtype: `tuple`
-        """
-        return self._input_shape
-
-    @property
-    def clip_values(self):
-        """
-        :return: Tuple of the form `(min, max)` representing the minimum and maximum values allowed for features.
-        :rtype: `tuple`
-        """
-        return self._clip_values
-
-    @property
-    def channel_index(self):
-        """
-        :return: Index of the axis in data containing the color channels or features.
-        :rtype: `int`
-        """
-        return self._channel_index
-
-
 class TextClassifier(Classifier):
     """
     This is the base abstract class for all text classification models. It is an extension of the base
@@ -272,18 +265,11 @@ class TextClassifier(Classifier):
     are word or character indices resulting from a mapping of text to indices. This mapping is supposed to be external
     of the classifier.
     """
-    def __init__(self, defences=None, preprocessing=(0, 1)):
+    def __init__(self):
         """
         Initialize a :class:`TextClassifier` object.
-
-        :param defences: Defences to be activated with the classifier.
-        :type defences: `str` or `list(str)`
-        :param preprocessing: Tuple of the form `(substractor, divider)` of floats or `np.ndarray` of values to be
-               used for data preprocessing. The first value will be substracted from the input. The input will then
-               be divided by the second one.
-        :type preprocessing: `tuple`
         """
-        Classifier.__init__(self, defences=defences, preprocessing=preprocessing)
+        Classifier.__init__(self)
 
     def word_gradient(self, x, y):
         """
@@ -343,3 +329,18 @@ class TextClassifier(Classifier):
         :rtype: `np.ndarray`
         """
         raise NotImplementedError
+
+    def _parse_defences(self, defences):
+        pass
+
+    def _apply_defences_fit(self, x, y):
+        return x, y
+
+    def _apply_defences_predict(self, x):
+        return x
+
+    def _apply_processing(self, x):
+        return x
+
+    def _apply_processing_gradient(self, grad):
+        return grad
