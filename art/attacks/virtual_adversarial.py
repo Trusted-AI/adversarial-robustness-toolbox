@@ -70,6 +70,7 @@ class VirtualAdversarialMethod(Attack):
         x_adv = np.copy(x)
         dims = list(x.shape[1:])
         preds = self.classifier.predict(x_adv, logits=False)
+        tol = 1e-10
 
         for ind, val in enumerate(x_adv):
             d = np.random.randn(*dims)
@@ -88,7 +89,7 @@ class VirtualAdversarialMethod(Attack):
                     x[...] += self.finite_diff
                     preds_new = self.classifier.predict((val + d)[None, ...], logits=False)
                     kl_div2 = entropy(preds[ind], preds_new[0])
-                    d_new[array_iter.multi_index] = (kl_div2 - kl_div1) / self.finite_diff
+                    d_new[array_iter.multi_index] = (kl_div2 - kl_div1) / (self.finite_diff + tol)
                     x[...] -= self.finite_diff
                 d = d_new
 
@@ -108,11 +109,11 @@ class VirtualAdversarialMethod(Attack):
         :return: The normalized version of `x`.
         :rtype: `np.ndarray`
         """
-        tol = 1e-12
+        tol = 1e-10
         dims = x.shape
 
         x = x.flatten()
-        inverse = (np.sum(x**2) + np.sqrt(tol)) ** -.5
+        inverse = (np.sum(x**2) + tol) ** -.5
         x = x * inverse
         x = np.reshape(x, dims)
 
