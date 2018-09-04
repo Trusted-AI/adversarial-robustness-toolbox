@@ -176,27 +176,45 @@ class PyTorchClassifier(Classifier):
             preds = output
 
         # Compute the gradient
-        if label is not None:
-            self._model.zero_grad()
-            torch.autograd.backward(preds[:, label], torch.Tensor([1.] * len(preds[:, 0])), retain_graph=True)
-            grds = x_.grad.cpu().numpy().copy()
-            x_.grad.data.zero_()
-
-            grds = np.expand_dims(self._apply_processing_gradient(grds), axis=1)
-            assert grds.shape == (x_.shape[0], 1) + self.input_shape
-        else:
-            grds = []
-            self._model.zero_grad()
+        self._model.zero_grad()
+        if label is None:
+            grads = []
             for i in range(self.nb_classes):
                 torch.autograd.backward(preds[:, i], torch.Tensor([1.] * len(preds[:, 0])), retain_graph=True)
-                grds.append(x_.grad.cpu().numpy().copy())
+                grads.append(x_.grad.cpu().numpy().copy())
                 x_.grad.data.zero_()
 
-            grds = np.swapaxes(np.array(grds), 0, 1)
-            grds = self._apply_processing_gradient(grds)
-            assert grds.shape == (x_.shape[0], self.nb_classes) + self.input_shape
+            grads = np.swapaxes(np.array(grads), 0, 1)
+            grads = self._apply_processing_gradient(grads)
+            assert grads.shape == (x_.shape[0], self.nb_classes) + self.input_shape
 
-        return grds
+        elif type(label) is int:
+            torch.autograd.backward(preds[:, label], torch.Tensor([1.] * len(preds[:, 0])), retain_graph=True)
+            grads = x_.grad.cpu().numpy().copy()
+            x_.grad.data.zero_()
+
+            grads = np.expand_dims(grads, axis=1)
+            grads = self._apply_processing_gradient(grads)
+            assert grads.shape == (x_.shape[0], 1) + self.input_shape
+
+        else:
+            unique_label = list(np.unique(label))
+            grads = []
+            for i in unique_label:
+                torch.autograd.backward(preds[:, i], torch.Tensor([1.] * len(preds[:, 0])), retain_graph=True)
+                grads.append(x_.grad.cpu().numpy().copy())
+                x_.grad.data.zero_()
+
+            grads = np.swapaxes(np.array(grads), 0, 1)
+            lst = [unique_label.index(i) for i in label]
+            grads = grads[np.arange(len(grads)), lst]
+
+            grads = grads[None, ...]
+            grads = np.swapaxes(np.array(grads), 0, 1)
+            grads = self._apply_processing_gradient(grads)
+            assert grads.shape == (x_.shape[0], 1) + self.input_shape
+
+        return grads
 
     def loss_gradient(self, x, y):
         """
