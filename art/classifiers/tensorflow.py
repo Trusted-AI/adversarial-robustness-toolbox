@@ -242,7 +242,7 @@ class TFClassifier(Classifier):
                     self._logit_class_grads[label] = tf.gradients(self._logits[:, label], self._input_ph)[0]
             else:
                 if self._class_grads[label] is None:
-                    self._class_grads[label] = tf.gradients(tf.nn.softmax(self._logits)[:, label], self._input_ph)[0]
+                    self._class_grads[label] = tf.gradients(self._probs[:, label], self._input_ph)[0]
 
         else:
             if logits:
@@ -252,7 +252,7 @@ class TFClassifier(Classifier):
             else:
                 for l in np.unique(label):
                     if self._class_grads[l] is None:
-                        self._class_grads[l] = tf.gradients(tf.nn.softmax(self._logits)[:, l], self._input_ph)[0]
+                        self._class_grads[l] = tf.gradients(self._probs[:, l], self._input_ph)[0]
 
     def _get_layers(self):
         """
