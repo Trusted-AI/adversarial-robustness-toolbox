@@ -145,7 +145,7 @@ class PyTorchClassifier(Classifier):
         :type x: `np.ndarray`
         :param label: Index of a specific per-class derivative. If `None`, then gradients for all
                       classes will be computed.
-        :type label: `int`
+        :type label: `int` or `numpy.ndarray`
         :param logits: `True` if the prediction should be done at the logits layer.
         :type logits: `bool`
         :return: Array of gradients of input features w.r.t. each class in the form
@@ -155,7 +155,9 @@ class PyTorchClassifier(Classifier):
         """
         import torch
 
-        if label is not None and label not in range(self._nb_classes):
+        if not ((label is None) or (type(label) is int and label in range(self._nb_classes)) or (
+            type(label) is np.ndarray and len(label.shape) == 1 and (label < self._nb_classes).all()
+            and label.shape[0] == x.shape[0])):
             raise ValueError('Label %s is out of range.' % label)
 
         # Convert the inputs to Tensors
@@ -172,10 +174,6 @@ class PyTorchClassifier(Classifier):
             preds = logit_output
         else:
             preds = output
-
-        # preds = self._forward_at(x_, self._logit_layer)
-        # if not logits:
-        #     preds = torch.nn.Softmax()(preds)
 
         # Compute the gradient
         if label is not None:
