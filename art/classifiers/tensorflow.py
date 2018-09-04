@@ -149,7 +149,7 @@ class TFClassifier(Classifier):
         :type x: `np.ndarray`
         :param label: Index of a specific per-class derivative. If `None`, then gradients for all
                       classes will be computed.
-        :type label: `int`
+        :type label: `int` or `numpy.ndarray`
         :param logits: `True` if the prediction should be done at the logits layer.
         :type logits: `bool`
         :return: Array of gradients of input features w.r.t. each class in the form
@@ -167,7 +167,17 @@ class TFClassifier(Classifier):
         x_ = self._apply_processing(x)
 
         # Compute the gradient and return
-        if label is not None:
+        if label is None:
+            if logits:
+                grads = self._sess.run(self._logit_class_grads, feed_dict={self._input_ph: x_})
+            else:
+                grads = self._sess.run(self._class_grads, feed_dict={self._input_ph: x_})
+
+            grads = np.swapaxes(np.array(grads), 0, 1)
+            grads = self._apply_processing_gradient(grads)
+            assert grads.shape == (x_.shape[0], self.nb_classes) + self.input_shape
+
+        elif type(label) is int:
             if logits:
                 grads = self._sess.run(self._logit_class_grads[label], feed_dict={self._input_ph: x_})
             else:
@@ -177,15 +187,23 @@ class TFClassifier(Classifier):
             grads = np.swapaxes(np.array(grads), 0, 1)
             grads = self._apply_processing_gradient(grads)
             assert grads.shape == (x_.shape[0], 1) + self.input_shape
-        else:
-            if logits:
-                grads = self._sess.run(self._logit_class_grads, feed_dict={self._input_ph: x_})
-            else:
-                grads = self._sess.run(self._class_grads, feed_dict={self._input_ph: x_})
 
+        else:
+            unique_label = list(np.unique(label))
+            if logits:
+                grads = self._sess.run([self._logit_class_grads[l] for l in unique_label],
+                                       feed_dict={self._input_ph: x_})
+            else:
+                grads = self._sess.run([self._class_grads[l] for l in unique_label],
+                                       feed_dict={self._input_ph: x_})
+
+            lst = [unique_label.index(i) for i in label]
+            grads = grads[np.arange(len(grads)), lst]
+
+            grads = grads[None, ...]
             grads = np.swapaxes(np.array(grads), 0, 1)
             grads = self._apply_processing_gradient(grads)
-            assert grads.shape == (x_.shape[0], self.nb_classes) + self.input_shape
+            assert grads.shape == (x_.shape[0], 1) + self.input_shape
 
         return grads
 
@@ -214,6 +232,16 @@ class TFClassifier(Classifier):
         return grds
 
     def _init_class_grads(self, label=None, logits=False):
+        """
+        Add more operations to the tensorflow graph to compute class gradients.
+
+        :param label: Index of a specific per-class derivative. If `None`, then gradients for all
+                      classes will be computed.
+        :type label: `int` or `numpy.ndarray`
+        :param logits: `True` if the prediction should be done at the logits layer.
+        :type logits: `bool`
+        :return: `None`
+        """
         import tensorflow as tf
 
         if logits:
@@ -232,7 +260,7 @@ class TFClassifier(Classifier):
                                                for i in range(self._nb_classes)]
             else:
                 if None in self._class_grads:
-                    self._class_grads = [tf.gradients(tf.nn.softmax(self._logits)[:, i], self._input_ph)[0]
+                    self._class_grads = [tf.gradients(self._probs[:, i], self._input_ph)[0]
                                          if self._class_grads[i] is None else self._class_grads[i]
                                          for i in range(self._nb_classes)]
 
