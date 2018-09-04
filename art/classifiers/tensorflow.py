@@ -157,8 +157,8 @@ class TFClassifier(Classifier):
                  `(batch_size, 1, input_shape)` when `label` parameter is specified.
         :rtype: `np.ndarray`
         """
-
-        if label is not None and label not in range(self._nb_classes):
+        if not ((label is None) or (type(label) is int and label in range(self._nb_classes)) or (
+            type(label) is np.ndarray and len(label.shape) == 1 and (label < self._nb_classes).all())):
             raise ValueError('Label %s is out of range.' % label)
 
         self._init_class_grads(label=label, logits=logits)
@@ -223,14 +223,7 @@ class TFClassifier(Classifier):
                 self._class_grads = [None for _ in range(self.nb_classes)]
 
         # Construct the class gradients graph
-        if label is not None:
-            if logits:
-                if self._logit_class_grads[label] is None:
-                    self._logit_class_grads[label] = tf.gradients(self._logits[:, label], self._input_ph)[0]
-            else:
-                if self._class_grads[label] is None:
-                    self._class_grads[label] = tf.gradients(tf.nn.softmax(self._logits)[:, label], self._input_ph)[0]
-        else:
+        if label is None:
             if logits:
                 if None in self._logit_class_grads:
                     self._logit_class_grads = [tf.gradients(self._logits[:, i], self._input_ph)[0]
@@ -241,6 +234,20 @@ class TFClassifier(Classifier):
                     self._class_grads = [tf.gradients(tf.nn.softmax(self._logits)[:, i], self._input_ph)[0]
                                          if self._class_grads[i] is None else self._class_grads[i]
                                          for i in range(self._nb_classes)]
+
+        elif type(label) is int:
+            if logits:
+                if self._logit_class_grads[label] is None:
+                    self._logit_class_grads[label] = tf.gradients(self._logits[:, label], self._input_ph)[0]
+            else:
+                if self._class_grads[label] is None:
+                    self._class_grads[label] = tf.gradients(tf.nn.softmax(self._logits)[:, label], self._input_ph)[0]
+
+        else:
+            if logits:
+                
+            else:
+
 
     def _get_layers(self):
         """
