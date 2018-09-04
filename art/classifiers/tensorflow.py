@@ -197,6 +197,7 @@ class TFClassifier(Classifier):
                 grads = self._sess.run([self._class_grads[l] for l in unique_label],
                                        feed_dict={self._input_ph: x_})
 
+            grads = np.swapaxes(np.array(grads), 0, 1)
             lst = [unique_label.index(i) for i in label]
             grads = grads[np.arange(len(grads)), lst]
 
