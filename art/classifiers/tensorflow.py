@@ -158,7 +158,8 @@ class TFClassifier(Classifier):
         :rtype: `np.ndarray`
         """
         if not ((label is None) or (type(label) is int and label in range(self._nb_classes)) or (
-            type(label) is np.ndarray and len(label.shape) == 1 and (label < self._nb_classes).all())):
+            type(label) is np.ndarray and len(label.shape) == 1 and (label < self._nb_classes).all()
+            and label.shape[0] == x.shape[0])):
             raise ValueError('Label %s is out of range.' % label)
 
         self._init_class_grads(label=label, logits=logits)
@@ -245,9 +246,13 @@ class TFClassifier(Classifier):
 
         else:
             if logits:
-                
+                for l in np.unique(label):
+                    if self._logit_class_grads[l] is None:
+                        self._logit_class_grads[l] = tf.gradients(self._logits[:, l], self._input_ph)[0]
             else:
-
+                for l in np.unique(label):
+                    if self._class_grads[l] is None:
+                        self._class_grads[l] = tf.gradients(tf.nn.softmax(self._logits)[:, l], self._input_ph)[0]
 
     def _get_layers(self):
         """
