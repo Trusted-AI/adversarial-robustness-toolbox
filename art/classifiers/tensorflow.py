@@ -37,7 +37,6 @@ class TFClassifier(Classifier):
 
         super(TFClassifier, self).__init__()
         self._nb_classes = int(logits.get_shape()[-1])
-        self._input_shape = tuple(input_ph.get_shape()[1:])
         self._input_ph = input_ph
         self._logits = logits
         self._output_ph = output_ph
@@ -426,6 +425,8 @@ class TFImageClassifier(ImageClassifier, TFClassifier):
         TFClassifier.__init__(self, input_ph=input_ph, logits=logits, output_ph=output_ph, train=train, loss=loss,
                               learning=learning, sess=sess)
 
+        self._input_shape = tuple(input_ph.get_shape()[1:])
+
 
 class TFTextClassifier(TextClassifier, TFClassifier):
     def __init__(self, input_ph, logits, output_ph=None, train=None, loss=None, learning=None, sess=None):
@@ -453,3 +454,25 @@ class TFTextClassifier(TextClassifier, TFClassifier):
 
         TFClassifier.__init__(self, input_ph=input_ph, logits=logits, output_ph=output_ph, train=train, loss=loss,
                               learning=learning, sess=sess)
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
