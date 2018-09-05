@@ -231,10 +231,12 @@ class TFClassifier(Classifier):
 
         return grds
 
-    def _init_class_grads(self, label=None, logits=False):
+    def _gen_init_class_grads(self, input_tensor, label=None, logits=False):
         """
         Add more operations to the tensorflow graph to compute class gradients.
 
+        :param input_tensor: Compute class gradient wrt input_tensor.
+        :type input_tensor: `tf.Tensor`
         :param label: Index of a specific per-class derivative. If `None`, then gradients for all
                       classes will be computed.
         :type label: `int` or `numpy.ndarray`
@@ -255,32 +257,32 @@ class TFClassifier(Classifier):
         if label is None:
             if logits:
                 if None in self._logit_class_grads:
-                    self._logit_class_grads = [tf.gradients(self._logits[:, i], self._input_ph)[0]
+                    self._logit_class_grads = [tf.gradients(self._logits[:, i], input_tensor)[0]
                                                if self._logit_class_grads[i] is None else self._logit_class_grads[i]
                                                for i in range(self._nb_classes)]
             else:
                 if None in self._class_grads:
-                    self._class_grads = [tf.gradients(self._probs[:, i], self._input_ph)[0]
+                    self._class_grads = [tf.gradients(self._probs[:, i], input_tensor)[0]
                                          if self._class_grads[i] is None else self._class_grads[i]
                                          for i in range(self._nb_classes)]
 
         elif type(label) is int:
             if logits:
                 if self._logit_class_grads[label] is None:
-                    self._logit_class_grads[label] = tf.gradients(self._logits[:, label], self._input_ph)[0]
+                    self._logit_class_grads[label] = tf.gradients(self._logits[:, label], input_tensor)[0]
             else:
                 if self._class_grads[label] is None:
-                    self._class_grads[label] = tf.gradients(self._probs[:, label], self._input_ph)[0]
+                    self._class_grads[label] = tf.gradients(self._probs[:, label], input_tensor)[0]
 
         else:
             if logits:
                 for l in np.unique(label):
                     if self._logit_class_grads[l] is None:
-                        self._logit_class_grads[l] = tf.gradients(self._logits[:, l], self._input_ph)[0]
+                        self._logit_class_grads[l] = tf.gradients(self._logits[:, l], input_tensor)[0]
             else:
                 for l in np.unique(label):
                     if self._class_grads[l] is None:
-                        self._class_grads[l] = tf.gradients(self._probs[:, l], self._input_ph)[0]
+                        self._class_grads[l] = tf.gradients(self._probs[:, l], input_tensor)[0]
 
     def _get_layers(self):
         """
@@ -427,6 +429,18 @@ class TFImageClassifier(ImageClassifier, TFClassifier):
 
         self._input_shape = tuple(input_ph.get_shape()[1:])
 
+    def _init_class_grads(self, label=None, logits=False):
+        """
+        Add more operations to the tensorflow graph to compute class gradients.
+
+        :param label: Index of a specific per-class derivative. If `None`, then gradients for all
+                      classes will be computed.
+        :type label: `int` or `numpy.ndarray`
+        :param logits: `True` if the prediction should be done at the logits layer.
+        :type logits: `bool`
+        :return: `None`
+        """
+        self._gen_init_class_grads(input_tensor=self._input_ph, label=label, logits=logits)
 
 
 class TFTextClassifier(TextClassifier, TFClassifier):
@@ -467,6 +481,19 @@ class TFTextClassifier(TextClassifier, TFClassifier):
         # Get the loss gradients graph
         if self._loss is not None:
             self._loss_grads = tf.gradients(self._loss, self._embedding_layer)[0]
+
+    def _init_class_grads(self, label=None, logits=False):
+        """
+        Add more operations to the tensorflow graph to compute class gradients.
+
+        :param label: Index of a specific per-class derivative. If `None`, then gradients for all
+                      classes will be computed.
+        :type label: `int` or `numpy.ndarray`
+        :param logits: `True` if the prediction should be done at the logits layer.
+        :type logits: `bool`
+        :return: `None`
+        """
+        self._gen_init_class_grads(input_tensor=self._embedding_layer, label=label, logits=logits)
 
 
 
