@@ -484,6 +484,9 @@ class TFTextClassifier(TextClassifier, TFClassifier):
         # Define function for embedding prediction
         self._preds_from_embedding = tf.keras.backend.function([self._embedding_layer], [self._logits])
 
+        # Define function for embedding convertion
+        self._embedding_from_input = tf.keras.backend.function([self._input_ph], [self._embedding_layer])
+
     def _init_class_grads(self, label=None, logits=False):
         """
         Add more operations to the tensorflow graph to compute class gradients.
@@ -575,8 +578,8 @@ class TFTextClassifier(TextClassifier, TFClassifier):
         :return: Embedding form of sample `x`.
         :rtype: `np.ndarray`
         """
-        import keras.backend as k
-        k.set_learning_phase(0)
+        import tensorflow as tf
+        tf.keras.backend.set_learning_phase(0)
 
         return self._embedding_from_input([x])
 
