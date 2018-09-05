@@ -428,14 +428,19 @@ class TFImageClassifier(ImageClassifier, TFClassifier):
         self._input_shape = tuple(input_ph.get_shape()[1:])
 
 
+
 class TFTextClassifier(TextClassifier, TFClassifier):
-    def __init__(self, input_ph, logits, output_ph=None, train=None, loss=None, learning=None, sess=None):
+    def __init__(self, input_ph, logits, embedding_layer, output_ph=None, train=None, loss=None, learning=None,
+                 sess=None):
         """
+        Create a :class:`TFTextClassifier` instance from a Tensorflow model.
 
         :param input_ph: The input placeholder.
         :type input_ph: `tf.Placeholder`
         :param logits: The logits layer of the model.
         :type logits: `tf.Tensor`
+        :param embedding_layer: Which layer to consider as providing the embedding of the vocabulary.
+        :type embedding_layer: `tf.Tensor`
         :param output_ph: The labels placeholder of the model. This parameter is necessary when training the model and
                when computing gradients w.r.t. the loss function.
         :type output_ph: `tf.Tensor`
@@ -450,10 +455,19 @@ class TFTextClassifier(TextClassifier, TFClassifier):
         :param sess: Computation session.
         :type sess: `tf.Session`
         """
+        import tensorflow as tf
+
         TextClassifier.__init__(self)
 
         TFClassifier.__init__(self, input_ph=input_ph, logits=logits, output_ph=output_ph, train=train, loss=loss,
                               learning=learning, sess=sess)
+
+        self._embedding_layer = embedding_layer
+
+        # Get the loss gradients graph
+        if self._loss is not None:
+            self._loss_grads = tf.gradients(self._loss, self._embedding_layer)[0]
+
 
 
 
