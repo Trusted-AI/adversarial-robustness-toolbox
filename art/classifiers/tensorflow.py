@@ -481,6 +481,9 @@ class TFTextClassifier(TextClassifier, TFClassifier):
         if self._loss is not None:
             self._loss_grads = tf.gradients(self._loss, self._embedding_layer)[0]
 
+        # Define function for embedding prediction
+        self._preds_from_embedding = tf.keras.backend.function([self._embedding_layer], [self._logits])
+
     def _init_class_grads(self, label=None, logits=False):
         """
         Add more operations to the tensorflow graph to compute class gradients.
@@ -535,33 +538,33 @@ class TFTextClassifier(TextClassifier, TFClassifier):
     #
     #     return result
 
-    # def predict_from_embedding(self, x_emb, logits=False, batch_size=128):
-    #     """
-    #     Perform prediction for a batch of inputs in embedding form.
-    #
-    #     :param x_emb: Array of inputs in embedding form, often shaped as `(batch_size, input_length, embedding_size)`.
-    #     :type x_emb: `np.ndarray`
-    #     :param logits: `True` if the prediction should be done at the logits layer.
-    #     :type logits: `bool`
-    #     :param batch_size: Size of batches.
-    #     :type batch_size: `int`
-    #     :return: Array of predictions of shape `(nb_inputs, self.nb_classes)`.
-    #     :rtype: `np.ndarray`
-    #     """
-    #     import keras.backend as k
-    #     k.set_learning_phase(0)
-    #
-    #     # Run predictions with batching
-    #     preds = np.zeros((x_emb.shape[0], self.nb_classes), dtype=np.float32)
-    #     for b in range(int(np.ceil(x_emb.shape[0] / float(batch_size)))):
-    #         begin, end = b * batch_size,  min((b + 1) * batch_size, x_emb.shape[0])
-    #         preds[begin:end] = self._preds_from_embedding([x_emb[begin:end]])[0]
-    #
-    #         if not logits:
-    #             exp = np.exp(preds[begin:end] - np.max(preds[begin:end], axis=1, keepdims=True))
-    #             preds[begin:end] = exp / np.sum(exp, axis=1, keepdims=True)
-    #
-    #     return preds
+    def predict_from_embedding(self, x_emb, logits=False, batch_size=128):
+        """
+        Perform prediction for a batch of inputs in embedding form.
+
+        :param x_emb: Array of inputs in embedding form, often shaped as `(batch_size, input_length, embedding_size)`.
+        :type x_emb: `np.ndarray`
+        :param logits: `True` if the prediction should be done at the logits layer.
+        :type logits: `bool`
+        :param batch_size: Size of batches.
+        :type batch_size: `int`
+        :return: Array of predictions of shape `(nb_inputs, self.nb_classes)`.
+        :rtype: `np.ndarray`
+        """
+        import tensorflow as tf
+        tf.keras.backend.set_learning_phase(0)
+
+        # Run predictions with batching
+        preds = np.zeros((x_emb.shape[0], self.nb_classes), dtype=np.float32)
+        for b in range(int(np.ceil(x_emb.shape[0] / float(batch_size)))):
+            begin, end = b * batch_size,  min((b + 1) * batch_size, x_emb.shape[0])
+            preds[begin:end] = self._preds_from_embedding([x_emb[begin:end]])[0]
+
+            if not logits:
+                exp = np.exp(preds[begin:end] - np.max(preds[begin:end], axis=1, keepdims=True))
+                preds[begin:end] = exp / np.sum(exp, axis=1, keepdims=True)
+
+        return preds
 
     def to_embedding(self, x):
         """
