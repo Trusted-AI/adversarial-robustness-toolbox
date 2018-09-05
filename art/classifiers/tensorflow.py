@@ -284,46 +284,6 @@ class TFClassifier(Classifier):
                     if self._class_grads[l] is None:
                         self._class_grads[l] = tf.gradients(self._probs[:, l], input_tensor)[0]
 
-    def _get_layers(self):
-        """
-        Return the hidden layers in the model, if applicable.
-
-        :return: The hidden layers in the model, input and output layers excluded.
-        :rtype: `list`
-        """
-        import tensorflow as tf
-
-        # Get the computational graph
-        with self._sess.graph.as_default():
-            graph = tf.get_default_graph()
-
-        # Get the list of operators and heuristically filter them
-        tmp_list = []
-        ops = graph.get_operations()
-
-        for op in ops:
-            filter_cond = ((op.values()) and (not op.values()[0].get_shape() == None) and (
-                len(op.values()[0].get_shape().as_list()) > 1) and (
-                op.values()[0].get_shape().as_list()[0] is None) and (
-                op.values()[0].get_shape().as_list()[1] is not None) and (
-                not op.values()[0].name.startswith("gradients")) and (
-                not op.values()[0].name.startswith("softmax_cross_entropy_loss")) and (
-                not op.type == "Placeholder"))
-
-            if filter_cond:
-                tmp_list.append(op.values()[0].name)
-
-        # Shorten the list
-        if len(tmp_list) == 0:
-            return tmp_list
-
-        result = [tmp_list[-1]]
-        for name in reversed(tmp_list[:-1]):
-            if result[0].split("/")[0] != name.split("/")[0]:
-                result = [name] + result
-
-        return result
-
     @property
     def layer_names(self):
         """
@@ -420,7 +380,6 @@ class TFImageClassifier(ImageClassifier, TFClassifier):
                be divided by the second one.
         :type preprocessing: `tuple`
         """
-
         ImageClassifier.__init__(self, clip_values=clip_values, channel_index=channel_index, defences=defences,
                                  preprocessing=preprocessing)
 
@@ -441,6 +400,46 @@ class TFImageClassifier(ImageClassifier, TFClassifier):
         :return: `None`
         """
         self._gen_init_class_grads(input_tensor=self._input_ph, label=label, logits=logits)
+
+    def _get_layers(self):
+        """
+        Return the hidden layers in the model, if applicable.
+
+        :return: The hidden layers in the model, input and output layers excluded.
+        :rtype: `list`
+        """
+        import tensorflow as tf
+
+        # Get the computational graph
+        with self._sess.graph.as_default():
+            graph = tf.get_default_graph()
+
+        # Get the list of operators and heuristically filter them
+        tmp_list = []
+        ops = graph.get_operations()
+
+        for op in ops:
+            filter_cond = ((op.values()) and (not op.values()[0].get_shape() == None) and (
+                len(op.values()[0].get_shape().as_list()) > 1) and (
+                op.values()[0].get_shape().as_list()[0] is None) and (
+                op.values()[0].get_shape().as_list()[1] is not None) and (
+                not op.values()[0].name.startswith("gradients")) and (
+                not op.values()[0].name.startswith("softmax_cross_entropy_loss")) and (
+                not op.type == "Placeholder"))
+
+            if filter_cond:
+                tmp_list.append(op.values()[0].name)
+
+        # Shorten the list
+        if len(tmp_list) == 0:
+            return tmp_list
+
+        result = [tmp_list[-1]]
+        for name in reversed(tmp_list[:-1]):
+            if result[0].split("/")[0] != name.split("/")[0]:
+                result = [name] + result
+
+        return result
 
 
 class TFTextClassifier(TextClassifier, TFClassifier):
@@ -495,6 +494,46 @@ class TFTextClassifier(TextClassifier, TFClassifier):
         """
         self._gen_init_class_grads(input_tensor=self._embedding_layer, label=label, logits=logits)
 
+    ###Todo: change the filter condition for text.
+    # def _get_layers(self):
+    #     """
+    #     Return the hidden layers in the model, if applicable.
+    #
+    #     :return: The hidden layers in the model, input and output layers excluded.
+    #     :rtype: `list`
+    #     """
+    #     import tensorflow as tf
+    #
+    #     # Get the computational graph
+    #     with self._sess.graph.as_default():
+    #         graph = tf.get_default_graph()
+    #
+    #     # Get the list of operators and heuristically filter them
+    #     tmp_list = []
+    #     ops = graph.get_operations()
+    #
+    #     for op in ops:
+    #         filter_cond = ((op.values()) and (not op.values()[0].get_shape() == None) and (
+    #             len(op.values()[0].get_shape().as_list()) > 1) and (
+    #             op.values()[0].get_shape().as_list()[0] is None) and (
+    #             op.values()[0].get_shape().as_list()[1] is not None) and (
+    #             not op.values()[0].name.startswith("gradients")) and (
+    #             not op.values()[0].name.startswith("softmax_cross_entropy_loss")) and (
+    #             not op.type == "Placeholder"))
+    #
+    #         if filter_cond:
+    #             tmp_list.append(op.values()[0].name)
+    #
+    #     # Shorten the list
+    #     if len(tmp_list) == 0:
+    #         return tmp_list
+    #
+    #     result = [tmp_list[-1]]
+    #     for name in reversed(tmp_list[:-1]):
+    #         if result[0].split("/")[0] != name.split("/")[0]:
+    #             result = [name] + result
+    #
+    #     return result
 
 
 
