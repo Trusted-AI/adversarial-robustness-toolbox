@@ -136,6 +136,61 @@ class TestTFImageClassifier(unittest.TestCase):
         tf.reset_default_graph()
 
 
+class TestTFTextClassifier(unittest.TestCase):
+    @classmethod
+    def setUpClass(cls):
+        k.clear_session()
+        k.set_learning_phase(1)
+
+        # Load IMDB
+        (x_train, y_train), (x_test, y_test), ids = load_imdb(nb_words=1000, max_length=500)
+        # id_to_word = {value: key for key, value in ids.items()}
+
+        x_train, y_train, x_test, y_test = x_train[:NB_TRAIN], y_train[:NB_TRAIN], x_test[:NB_TEST], y_test[:NB_TEST]
+        cls.imdb = (x_train, y_train), (x_test, y_test)
+        cls.word_ids = ids
+
+        # Create basic word model on IMDB
+        model = Sequential()
+        model.add(Embedding(1000, 32, input_length=500))
+        model.add(Conv1D(filters=16, kernel_size=3))
+        model.add(LeakyReLU(alpha=.2))
+        model.add(MaxPooling1D())
+        model.add(Flatten())
+        model.add(Dense(units=100))
+        model.add(LeakyReLU(alpha=.2))
+        model.add(Dense(units=1, activation='sigmoid'))
+
+        # Compile, fit and store model in class
+        model.compile(loss='binary_crossentropy', optimizer='adam', metrics=['accuracy'])
+        model.fit(x_train, y_train, epochs=2, batch_size=BATCH_SIZE)
+        cls.model = model
+
+    @classmethod
+    def tearDownClass(cls):
+        k.clear_session()
+
+    def test_fit_predict(self):
+        (x_train, y_train), (x_test, y_test) = self.imdb
+
+        classifier = KerasTextClassifier(model=self.model, ids=self.word_ids, loss=k.binary_crossentropy,
+                                         use_logits=False)
+        acc = np.sum(np.argmax(classifier.predict(x_test), axis=1) == y_test) / x_test.shape[0]
+        print('\nAccuracy: %.2f%%' % (acc * 100))
+
+        classifier.fit(x_train, y_train, nb_epochs=1, batch_size=BATCH_SIZE)
+        acc2 = np.sum(np.argmax(classifier.predict(x_test), axis=1) == y_test) / x_test.shape[0]
+        print("\nAccuracy: %.2f%%" % (acc2 * 100))
+
+        self.assertTrue(acc2 >= acc)
+
+    def test_embedding(self):
+        return
+        # (x_train, y_train), (x_test, y_test) = self.imdb
+        #
+        # classifier = KerasTextClassifier(model=self.model, loss=k.binary_crossentropy, use_logits=False)
+
+
 if __name__ == '__main__':
     unittest.main()
 
