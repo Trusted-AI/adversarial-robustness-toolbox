@@ -443,7 +443,7 @@ class TFImageClassifier(ImageClassifier, TFClassifier):
 
 
 class TFTextClassifier(TextClassifier, TFClassifier):
-    def __init__(self, input_ph, logits, embedding_layer, output_ph=None, train=None, loss=None, learning=None,
+    def __init__(self, input_ph, logits, embedding_layer, ids, output_ph=None, train=None, loss=None, learning=None,
                  sess=None):
         """
         Create a :class:`TFTextClassifier` instance from a Tensorflow model.
@@ -454,6 +454,8 @@ class TFTextClassifier(TextClassifier, TFClassifier):
         :type logits: `tf.Tensor`
         :param embedding_layer: Which layer to consider as providing the embedding of the vocabulary.
         :type embedding_layer: `tf.Tensor`
+        :param ids: List of ids in the vocabulary.
+        :type ids: `list`
         :param output_ph: The labels placeholder of the model. This parameter is necessary when training the model and
                when computing gradients w.r.t. the loss function.
         :type output_ph: `tf.Tensor`
@@ -476,6 +478,7 @@ class TFTextClassifier(TextClassifier, TFClassifier):
                               learning=learning, sess=sess)
 
         self._embedding_layer = embedding_layer
+        self._ids = ids
 
         # Get the loss gradients graph
         if self._loss is not None:
@@ -596,9 +599,6 @@ class TFTextClassifier(TextClassifier, TFClassifier):
         :return: Array of token indices for sample `x_emb`.
         :rtype: `np.ndarray`
         """
-        import keras.backend as k
-        k.set_learning_phase(0)
-
         if strategy != 'nearest':
             raise ValueError('Nearest neighbor is currently the only supported strategy for mapping embeddings to '
                              'valid tokens.')
@@ -606,17 +606,54 @@ class TFTextClassifier(TextClassifier, TFClassifier):
         if metric == 'cosine':
             from art.utils import cosine
 
-            embeddings = self.to_embedding(self._ids)
+            v_size = len(self._ids)
+            if v_size % x_emb.shape[1] > 0:
+                for _ in range(x_emb.shape[1] - (v_size % x_emb.shape[1])):
+                    self._ids.append(self._ids[0])
+            embeddings = self.to_embedding(np.reshape(np.array(self._ids), (-1, x_emb.shape[1])))
+            embeddings = np.reshape(embeddings, (-1, x_emb.shape[2]))[:v_size]
+            self._ids = self._ids[:v_size]
 
             neighbors = []
             for x in x_emb:
-                metric = [cosine(emb, x) for emb in embeddings]
-                neighbors.append(self._ids[int(np.argpartition(metric, -1)[-1])])
+                for emb_x in x:
+                    metric = [cosine(emb, emb_x) for emb in embeddings]
+                    neighbors.append(self._ids[int(np.argpartition(metric, -1)[-1])])
         else:
             raise ValueError('Cosine similarity is currently the only supported metric for mapping embeddings to '
                              'valid tokens.')
 
-        return np.array(neighbors)
+        return np.reshape(np.array(neighbors), (-1, x_emb.shape[1]))
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 
 
