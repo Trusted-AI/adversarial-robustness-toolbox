@@ -503,47 +503,45 @@ class TFTextClassifier(TextClassifier, TFClassifier):
         """
         self._gen_init_class_grads(input_tensor=self._embedding_layer, label=label, logits=logits)
 
-    ###Todo: change the filter condition for text.
     def _get_layers(self):
-        return []
-    #     """
-    #     Return the hidden layers in the model, if applicable.
-    #
-    #     :return: The hidden layers in the model, input and output layers excluded.
-    #     :rtype: `list`
-    #     """
-    #     import tensorflow as tf
-    #
-    #     # Get the computational graph
-    #     with self._sess.graph.as_default():
-    #         graph = tf.get_default_graph()
-    #
-    #     # Get the list of operators and heuristically filter them
-    #     tmp_list = []
-    #     ops = graph.get_operations()
-    #
-    #     for op in ops:
-    #         filter_cond = ((op.values()) and (not op.values()[0].get_shape() == None) and (
-    #             len(op.values()[0].get_shape().as_list()) > 1) and (
-    #             op.values()[0].get_shape().as_list()[0] is None) and (
-    #             op.values()[0].get_shape().as_list()[1] is not None) and (
-    #             not op.values()[0].name.startswith("gradients")) and (
-    #             not op.values()[0].name.startswith("softmax_cross_entropy_loss")) and (
-    #             not op.type == "Placeholder"))
-    #
-    #         if filter_cond:
-    #             tmp_list.append(op.values()[0].name)
-    #
-    #     # Shorten the list
-    #     if len(tmp_list) == 0:
-    #         return tmp_list
-    #
-    #     result = [tmp_list[-1]]
-    #     for name in reversed(tmp_list[:-1]):
-    #         if result[0].split("/")[0] != name.split("/")[0]:
-    #             result = [name] + result
-    #
-    #     return result
+        """
+        Return the hidden layers in the model, if applicable.
+
+        :return: The hidden layers in the model, input and output layers excluded.
+        :rtype: `list`
+        """
+        import tensorflow as tf
+
+        # Get the computational graph
+        with self._sess.graph.as_default():
+            graph = tf.get_default_graph()
+
+        # Get the list of operators and heuristically filter them
+        tmp_list = []
+        ops = graph.get_operations()
+
+        for op in ops:
+            filter_cond = ((op.values()) and (not op.values()[0].get_shape() == None) and (
+                len(op.values()[0].get_shape().as_list()) > 1) and (
+                op.values()[0].get_shape().as_list()[0] is None) and (
+                op.values()[0].get_shape().as_list()[1] is not None) and (
+                not op.values()[0].name.startswith("gradients")) and (
+                not op.values()[0].name.startswith("softmax_cross_entropy_loss")) and (
+                not op.type == "Placeholder") and (len(op.values()[0].name.split("/")) < 4))
+
+            if filter_cond:
+                tmp_list.append(op.values()[0].name)
+
+        # Shorten the list
+        if len(tmp_list) == 0:
+            return tmp_list
+
+        result = [tmp_list[-1]]
+        for name in reversed(tmp_list[:-1]):
+            if result[0].split("/")[0] != name.split("/")[0]:
+                result = [name] + result
+
+        return result
 
     def predict_from_embedding(self, x_emb, logits=False, batch_size=128):
         """

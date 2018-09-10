@@ -7,6 +7,7 @@ import tensorflow as tf
 
 from art.classifiers.tensorflow import TFImageClassifier, TFTextClassifier
 from art.utils import load_mnist, load_imdb
+from art.utils import to_categorical
 
 
 NB_TRAIN = 1000
@@ -161,7 +162,6 @@ class TestTFTextClassifier(unittest.TestCase):
 
         # Logits layer
         logits = tf.layers.dense(lkrelu2, units=2)
-        print(lkrelu2.shape, logits.shape)
 
         # Train operator
         loss = tf.reduce_mean(tf.losses.softmax_cross_entropy(logits=logits, onehot_labels=output_ph))
@@ -182,6 +182,8 @@ class TestTFTextClassifier(unittest.TestCase):
 
     def test_fit_predict(self):
         (x_train, y_train), (x_test, y_test) = self.imdb
+        y_train = to_categorical(y_train, nb_classes=2)
+        y_test = to_categorical(y_test, nb_classes=2)
 
         acc1 = np.sum(np.argmax(self.classifier.predict(x_test), axis=1) == y_test) / x_test.shape[0]
         print('\nAccuracy: %.2f%%' % (acc1 * 100))
