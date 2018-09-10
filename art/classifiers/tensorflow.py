@@ -504,7 +504,8 @@ class TFTextClassifier(TextClassifier, TFClassifier):
         self._gen_init_class_grads(input_tensor=self._embedding_layer, label=label, logits=logits)
 
     ###Todo: change the filter condition for text.
-    # def _get_layers(self):
+    def _get_layers(self):
+        return []
     #     """
     #     Return the hidden layers in the model, if applicable.
     #
