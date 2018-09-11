@@ -199,11 +199,6 @@ class TestTFTextClassifier(unittest.TestCase):
         self.assertTrue(self.classifier.nb_classes == 2)
         tf.reset_default_graph()
 
-    def test_input_shape(self):
-        # Start to test
-        self.assertTrue(np.array(self.classifier.input_shape == (500)).all())
-        tf.reset_default_graph()
-
     def test_class_gradient(self):
         # Get IMDB
         (_, _), (x_test, y_test) = self.imdb
@@ -250,8 +245,9 @@ class TestTFTextClassifier(unittest.TestCase):
         # Test and get layers
         layer_names = self.classifier.layer_names
         print(layer_names)
-        self.assertTrue(layer_names == ['conv2d/Relu:0', 'max_pooling2d/MaxPool:0',
-                                        'Flatten/flatten/Reshape:0', 'dense/BiasAdd:0'])
+        self.assertTrue(layer_names == ['embedding/Gather:0', 'conv1d/BiasAdd:0', 'leaky_re_lu/sub:0',
+                                        'max_pooling1d/Squeeze:0', 'flatten/Reshape:0', 'dense/BiasAdd:0',
+                                        'leaky_re_lu_2/sub:0', 'dense_2/BiasAdd:0'])
 
         for i, name in enumerate(layer_names):
             act_i = self.classifier.get_activations(x_test, i)
@@ -266,10 +262,15 @@ class TestTFTextClassifier(unittest.TestCase):
         print(self.classifier.get_activations(x_test, 5).shape)
         print(self.classifier.get_activations(x_test, 6).shape)
         print(self.classifier.get_activations(x_test, 7).shape)
-        self.assertTrue(self.classifier.get_activations(x_test, 0).shape == (20, 24, 24, 16))
-        self.assertTrue(self.classifier.get_activations(x_test, 1).shape == (20, 12, 12, 16))
-        self.assertTrue(self.classifier.get_activations(x_test, 2).shape == (20, 2304))
-        self.assertTrue(self.classifier.get_activations(x_test, 3).shape == (20, 10))
+        self.assertTrue(self.classifier.get_activations(x_test, 0).shape == (20, 500, 32))
+        self.assertTrue(self.classifier.get_activations(x_test, 1).shape == (20, 498, 16))
+        self.assertTrue(self.classifier.get_activations(x_test, 2).shape == (20, 498, 16))
+        self.assertTrue(self.classifier.get_activations(x_test, 3).shape == (20, 249, 16))
+        self.assertTrue(self.classifier.get_activations(x_test, 4).shape == (20, 3984))
+        self.assertTrue(self.classifier.get_activations(x_test, 5).shape == (20, 100))
+        self.assertTrue(self.classifier.get_activations(x_test, 6).shape == (20, 100))
+        self.assertTrue(self.classifier.get_activations(x_test, 7).shape == (20, 2))
+
         tf.reset_default_graph()
 
 

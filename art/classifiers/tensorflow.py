@@ -43,7 +43,6 @@ class TFClassifier(Classifier):
         self._train = train
         self._loss = loss
         self._learning = learning
-        self._input_shape = tuple(input_ph.get_shape()[1:])
 
         # Assign session
         if sess is None:
@@ -175,7 +174,6 @@ class TFClassifier(Classifier):
 
             grads = np.swapaxes(np.array(grads), 0, 1)
             grads = self._apply_processing_gradient(grads)
-            assert grads.shape == (x_.shape[0], self.nb_classes) + self.input_shape
 
         elif type(label) is int:
             if logits:
@@ -186,7 +184,6 @@ class TFClassifier(Classifier):
             grads = grads[None, ...]
             grads = np.swapaxes(np.array(grads), 0, 1)
             grads = self._apply_processing_gradient(grads)
-            assert grads.shape == (x_.shape[0], 1) + self.input_shape
 
         else:
             unique_label = list(np.unique(label))
@@ -204,7 +201,6 @@ class TFClassifier(Classifier):
             grads = grads[None, ...]
             grads = np.swapaxes(np.array(grads), 0, 1)
             grads = self._apply_processing_gradient(grads)
-            assert grads.shape == (x_.shape[0], 1) + self.input_shape
 
         return grads
 
@@ -228,7 +224,6 @@ class TFClassifier(Classifier):
         # Compute the gradient and return
         grds = self._sess.run(self._loss_grads, feed_dict={self._input_ph: x_, self._output_ph: y})
         grds = self._apply_processing_gradient(grds)
-        assert grds.shape == x_.shape
 
         return grds
 
@@ -386,6 +381,8 @@ class TFImageClassifier(ImageClassifier, TFClassifier):
 
         TFClassifier.__init__(self, input_ph=input_ph, logits=logits, output_ph=output_ph, train=train, loss=loss,
                               learning=learning, sess=sess)
+
+        self._input_shape = tuple(input_ph.get_shape()[1:])
 
     def _init_class_grads(self, label=None, logits=False):
         """
