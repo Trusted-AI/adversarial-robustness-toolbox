@@ -579,7 +579,7 @@ class TFTextClassifier(TextClassifier, TFClassifier):
         import tensorflow as tf
         tf.keras.backend.set_learning_phase(0)
 
-        return self._embedding_from_input([x])
+        return self._embedding_from_input([x])[0]
 
     def to_id(self, x_emb, strategy='nearest', metric='cosine'):
         """
