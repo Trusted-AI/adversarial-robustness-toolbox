@@ -205,44 +205,47 @@ class TestTFTextClassifier(unittest.TestCase):
         tf.reset_default_graph()
 
     def test_class_gradient(self):
-        # Get MNIST
-        (_, _), (x_test, y_test) = self.mnist
+        # Get IMDB
+        (_, _), (x_test, y_test) = self.imdb
+        y_test = to_categorical(y_test, nb_classes=2)
 
         # Test all gradients label = None
         grads = self.classifier.class_gradient(x_test)
 
-        self.assertTrue(np.array(grads.shape == (NB_TEST, 10, 28, 28, 1)).all())
+        self.assertTrue(np.array(grads.shape == (NB_TEST, 2, 500, 32)).all())
         self.assertTrue(np.sum(grads) != 0)
 
         # Test 1 gradient label = 5
-        grads = self.classifier.class_gradient(x_test, label=5)
+        grads = self.classifier.class_gradient(x_test, label=1)
 
-        self.assertTrue(np.array(grads.shape == (NB_TEST, 1, 28, 28, 1)).all())
+        self.assertTrue(np.array(grads.shape == (NB_TEST, 1, 500, 32)).all())
         self.assertTrue(np.sum(grads) != 0)
 
         # Test a set of gradients label = array
-        label = np.random.randint(5, size=NB_TEST)
+        label = np.random.randint(2, size=NB_TEST)
         grads = self.classifier.class_gradient(x_test, label=label)
 
-        self.assertTrue(np.array(grads.shape == (NB_TEST, 1, 28, 28, 1)).all())
+        self.assertTrue(np.array(grads.shape == (NB_TEST, 1, 500, 32)).all())
         self.assertTrue(np.sum(grads) != 0)
 
         tf.reset_default_graph()
 
     def test_loss_gradient(self):
-        # Get MNIST
-        (_, _), (x_test, y_test) = self.mnist
+        # Get IMDB
+        (_, _), (x_test, y_test) = self.imdb
+        y_test = to_categorical(y_test, nb_classes=2)
 
         # Test gradient
         grads = self.classifier.loss_gradient(x_test, y_test)
 
-        self.assertTrue(np.array(grads.shape == (NB_TEST, 28, 28, 1)).all())
+        self.assertTrue(np.array(grads.shape == (NB_TEST, 500, 32)).all())
         self.assertTrue(np.sum(grads) != 0)
         tf.reset_default_graph()
 
     def test_layers(self):
-        # Get MNIST
-        (_, _), (x_test, y_test) = self.mnist
+        # Get IMDB
+        (_, _), (x_test, y_test) = self.imdb
+        y_test = to_categorical(y_test, nb_classes=2)
 
         # Test and get layers
         layer_names = self.classifier.layer_names
@@ -255,6 +258,14 @@ class TestTFTextClassifier(unittest.TestCase):
             act_name = self.classifier.get_activations(x_test, name)
             self.assertAlmostEqual(np.sum(act_name - act_i), 0)
 
+        print(self.classifier.get_activations(x_test, 0).shape)
+        print(self.classifier.get_activations(x_test, 1).shape)
+        print(self.classifier.get_activations(x_test, 2).shape)
+        print(self.classifier.get_activations(x_test, 3).shape)
+        print(self.classifier.get_activations(x_test, 4).shape)
+        print(self.classifier.get_activations(x_test, 5).shape)
+        print(self.classifier.get_activations(x_test, 6).shape)
+        print(self.classifier.get_activations(x_test, 7).shape)
         self.assertTrue(self.classifier.get_activations(x_test, 0).shape == (20, 24, 24, 16))
         self.assertTrue(self.classifier.get_activations(x_test, 1).shape == (20, 12, 12, 16))
         self.assertTrue(self.classifier.get_activations(x_test, 2).shape == (20, 2304))
