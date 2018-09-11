@@ -185,18 +185,21 @@ class TestTFTextClassifier(unittest.TestCase):
         y_train = to_categorical(y_train, nb_classes=2)
         y_test = to_categorical(y_test, nb_classes=2)
 
-        acc1 = np.sum(np.argmax(self.classifier.predict(x_test), axis=1) == y_test) / x_test.shape[0]
+        acc1 = np.sum(np.argmax(self.classifier.predict(x_test), axis=1) == np.argmax(y_test, axis=1)) / x_test.shape[0]
         print('\nAccuracy: %.2f%%' % (acc1 * 100))
 
         self.classifier.fit(x_train, y_train, nb_epochs=1, batch_size=10)
-        acc2 = np.sum(np.argmax(self.classifier.predict(x_test), axis=1) == y_test) / x_test.shape[0]
+        acc2 = np.sum(np.argmax(self.classifier.predict(x_test), axis=1) == np.argmax(y_test, axis=1)) / x_test.shape[0]
         print("\nAccuracy: %.2f%%" % (acc2 * 100))
 
         self.assertTrue(acc2 >= acc1)
 
+        tf.reset_default_graph()
+
     def test_nb_classes(self):
         # Start to test
         self.assertTrue(self.classifier.nb_classes == 2)
+
         tf.reset_default_graph()
 
     def test_class_gradient(self):
@@ -235,6 +238,7 @@ class TestTFTextClassifier(unittest.TestCase):
 
         self.assertTrue(np.array(grads.shape == (NB_TEST, 500, 32)).all())
         self.assertTrue(np.sum(grads) != 0)
+
         tf.reset_default_graph()
 
     def test_layers(self):
@@ -273,12 +277,31 @@ class TestTFTextClassifier(unittest.TestCase):
 
         tf.reset_default_graph()
 
-
     def test_embedding(self):
-        return
-        # (x_train, y_train), (x_test, y_test) = self.imdb
-        #
-        # classifier = KerasTextClassifier(model=self.model, loss=k.binary_crossentropy, use_logits=False)
+        # Get IMDB
+        (x_train, y_train), (x_test, y_test) = self.imdb
+        y_train = to_categorical(y_train, nb_classes=2)
+
+        # Test to embedding
+        x_emb = self.classifier.to_embedding(x_test)
+        self.assertTrue(x_emb.shape == (NB_TEST, 500, 32))
+
+        # Test to id
+        x_id = self.classifier.to_id(x_emb)
+        print(x_id)
+        self.assertTrue((x_id == x_test).all())
+
+        # Test predict_from_embedding
+        acc1 = np.sum(np.argmax(self.classifier.predict_from_embedding(x_emb), axis=1) == y_test) / x_test.shape[0]
+        print('\nAccuracy: %.2f%%' % (acc1 * 100))
+
+        self.classifier.fit(x_train, y_train, nb_epochs=1, batch_size=10)
+        acc2 = np.sum(np.argmax(self.classifier.predict_from_embedding(x_emb), axis=1) == y_test) / x_test.shape[0]
+        print("\nAccuracy: %.2f%%" % (acc2 * 100))
+
+        self.assertTrue(acc2 >= acc1)
+
+        tf.reset_default_graph()
 
 
 if __name__ == '__main__':
