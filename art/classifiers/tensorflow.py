@@ -43,6 +43,7 @@ class TFClassifier(Classifier):
         self._train = train
         self._loss = loss
         self._learning = learning
+        self._input_shape = tuple(input_ph.get_shape()[1:])
 
         # Assign session
         if sess is None:
@@ -385,8 +386,6 @@ class TFImageClassifier(ImageClassifier, TFClassifier):
 
         TFClassifier.__init__(self, input_ph=input_ph, logits=logits, output_ph=output_ph, train=train, loss=loss,
                               learning=learning, sess=sess)
-
-        self._input_shape = tuple(input_ph.get_shape()[1:])
 
     def _init_class_grads(self, label=None, logits=False):
         """
