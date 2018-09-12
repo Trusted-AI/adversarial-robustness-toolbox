@@ -467,6 +467,92 @@ class PyTorchTextClassifier(TextClassifier, PyTorchClassifier):
     def _inti_grads(self):
         return self._embedding_layer
 
+    def predict_from_embedding(self, x_emb, logits=False, batch_size=128):
+        """
+        Perform prediction for a batch of inputs in embedding form.
+
+        :param x_emb: Array of inputs in embedding form, often shaped as `(batch_size, input_length, embedding_size)`.
+        :type x_emb: `np.ndarray`
+        :param logits: `True` if the prediction should be done at the logits layer.
+        :type logits: `bool`
+        :param batch_size: Size of batches.
+        :type batch_size: `int`
+        :return: Array of predictions of shape `(nb_inputs, self.nb_classes)`.
+        :rtype: `np.ndarray`
+        """
+        import tensorflow as tf
+        tf.keras.backend.set_learning_phase(0)
+
+        # Run predictions with batching
+        preds = np.zeros((x_emb.shape[0], self.nb_classes), dtype=np.float32)
+        for b in range(int(np.ceil(x_emb.shape[0] / float(batch_size)))):
+            begin, end = b * batch_size,  min((b + 1) * batch_size, x_emb.shape[0])
+            preds[begin:end] = self._preds_from_embedding([x_emb[begin:end]])[0]
+
+            if not logits:
+                exp = np.exp(preds[begin:end] - np.max(preds[begin:end], axis=1, keepdims=True))
+                preds[begin:end] = exp / np.sum(exp, axis=1, keepdims=True)
+
+        return preds
+
+    def to_embedding(self, x):
+        """
+        Convert the received classifier input `x` from token (words or characters) indices to embeddings.
+
+        :param x: Sample input with shape as expected by the model.
+        :type x: `np.ndarray`
+        :return: Embedding form of sample `x`.
+        :rtype: `np.ndarray`
+        """
+        import torch
+
+        # Convert the inputs to Tensors
+        inputs_t = torch.from_numpy(self._apply_processing(x)).to(self._device)
+
+        # Compute embeddings
+        model_outputs = self._model(inputs_t)
+
+        return model_outputs[self._embedding_layer].cpu().detach().numpy()
+
+    def to_id(self, x_emb, strategy='nearest', metric='cosine'):
+        """
+        Convert the received input from embedding space to classifier input (most often, token indices).
+
+        :param x_emb: Array of inputs in embedding form, often shaped as `(batch_size, input_length, embedding_size)`.
+        :type x_emb: `np.ndarray`
+        :param strategy: Strategy from mapping from embedding space back to input space.
+        :type strategy: `str` or `Callable`
+        :param metric: Metric to be used in the embedding space when determining vocabulary token proximity.
+        :type metric: `str` or `Callable`
+        :return: Array of token indices for sample `x_emb`.
+        :rtype: `np.ndarray`
+        """
+        if strategy != 'nearest':
+            raise ValueError('Nearest neighbor is currently the only supported strategy for mapping embeddings to '
+                             'valid tokens.')
+
+        if metric == 'cosine':
+            from art.utils import cosine
+
+            v_size = len(self._ids)
+            if v_size % x_emb.shape[1] > 0:
+                for _ in range(x_emb.shape[1] - (v_size % x_emb.shape[1])):
+                    self._ids.append(self._ids[0])
+            embeddings = self.to_embedding(np.reshape(np.array(self._ids), (-1, x_emb.shape[1])))
+            embeddings = np.reshape(embeddings, (-1, x_emb.shape[2]))[:v_size]
+            self._ids = self._ids[:v_size]
+
+            neighbors = []
+            for x in x_emb:
+                for emb_x in x:
+                    metric = [cosine(emb, emb_x) for emb in embeddings]
+                    neighbors.append(self._ids[int(np.argpartition(metric, -1)[-1])])
+        else:
+            raise ValueError('Cosine similarity is currently the only supported metric for mapping embeddings to '
+                             'valid tokens.')
+
+        return np.reshape(np.array(neighbors), (-1, x_emb.shape[1]))
+
 
 
 
