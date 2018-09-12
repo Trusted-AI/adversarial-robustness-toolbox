@@ -433,7 +433,7 @@ class PyTorchImageClassifier(ImageClassifier, PyTorchClassifier):
 
 
 class PyTorchTextClassifier(TextClassifier, PyTorchClassifier):
-    def __init__(self, model, embedding_layer, loss, optimizer, nb_classes):
+    def __init__(self, model, embedding_layer, ids, loss, optimizer, nb_classes):
         """
         Create a :class:`PyTorchTextClassifier` instance from a Pytorch model.
 
@@ -441,6 +441,8 @@ class PyTorchTextClassifier(TextClassifier, PyTorchClassifier):
         :type model: is instance of `torch.nn.Module`
         :param embedding_layer: Which layer to consider as providing the embedding of the vocabulary.
         :type embedding_layer: `int`
+        :param ids: List of ids in the vocabulary.
+        :type ids: `list`
         :param loss: The loss function for which to compute gradients for training. The target label must be raw
                categorical, i.e. not converted to one-hot encoding.
         :type loss: `torch.nn.modules.loss._Loss`
@@ -460,6 +462,7 @@ class PyTorchTextClassifier(TextClassifier, PyTorchClassifier):
                                                                                          len(self._layer_names) - 1))
 
         self._embedding_layer = embedding_layer
+        self._ids = ids
 
     def _inti_grads(self):
         return self._embedding_layer
