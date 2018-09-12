@@ -83,7 +83,7 @@ class CarliniL2Method(Attack):
         l2dist = np.sum(np.square(x-x_adv))        
         z = self.classifier.predict(np.array([x_adv]), logits=True)[0]
         z_target = np.sum(z * target)
-        z_other = np.max(z * (1 - target))
+        z_other = np.max(z * (1 - target) + (np.min(z)-1)*target)
         
         # The following differs from the exact definition given in Carlini and Wagner (2016). There (page 9, left
         # column, last equation), the maximum is taken over Z_other - Z_target (or Z_target - Z_other respectively)
@@ -124,9 +124,9 @@ class CarliniL2Method(Attack):
         :type target: `np.ndarray`
         """  
         if self.targeted:
-            i_sub, i_add = np.argmax(target), np.argmax(z * (1 - target))
+            i_sub, i_add = np.argmax(target), np.argmax(z * (1 - target) + (np.min(z)-1)*target)
         else:
-            i_add, i_sub = np.argmax(target), np.argmax(z * (1 - target))
+            i_add, i_sub = np.argmax(target), np.argmax(z * (1 - target) + (np.min(z)-1)*target)
         
         loss_gradient = self.classifier.class_gradient(np.array([x_adv]), label=i_add, logits=True)[0]
         loss_gradient -= self.classifier.class_gradient(np.array([x_adv]), label=i_sub, logits=True)[0]
@@ -258,7 +258,8 @@ class CarliniL2Method(Attack):
                         doubling = 0
                         while loss <= prev_loss and doubling < self.max_doubling:  
                             prev_loss = loss
-                            lr *= 2          
+                            lr *= 2     
+                            doubling += 1
                             new_adv_image_tanh = adv_image_tanh + lr*perturbation_tanh
                             new_adv_image = self._tanh_to_original(new_adv_image_tanh, clip_min, clip_max)
                             _, l2dist, loss = self._loss(image, new_adv_image, target, c)
