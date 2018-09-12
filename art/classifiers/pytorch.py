@@ -130,7 +130,7 @@ class PyTorchClassifier(Classifier):
 
     def class_gradient(self, x, label=None, logits=False):
         """
-        Compute per-class derivatives w.r.t. `x`.
+        Compute per-class derivatives.
 
         :param x: Sample input with shape as expected by the model.
         :type x: `np.ndarray`
@@ -216,7 +216,7 @@ class PyTorchClassifier(Classifier):
 
     def loss_gradient(self, x, y):
         """
-        Compute the gradient of the loss function w.r.t. `x`.
+        Compute the gradient of the loss function.
 
         :param x: Sample input with shape as expected by the model.
         :type x: `np.ndarray`
@@ -229,25 +229,34 @@ class PyTorchClassifier(Classifier):
 
         # Convert the inputs to Tensors
         inputs_t = torch.from_numpy(self._apply_processing(x)).to(self._device)
-        inputs_t = inputs_t.float()
-        inputs_t.requires_grad = True
 
         # Convert the labels to Tensors
         labels_t = torch.from_numpy(np.argmax(y, axis=1)).to(self._device)
 
+        # Compute gradient wrt what
+        layer_idx = self._inti_grads()
+
         # Compute the gradient and return
         model_outputs = self._model(inputs_t)
+
+        # Set where to get gradient
+        if layer_idx >= 0:
+            model_outputs[layer_idx].requires_grad = True
+            input_grad = model_outputs[layer_idx]
+        else:
+            inputs_t.requires_grad = True
+            input_grad = inputs_t
+
+        # Set where to get gradient from
         loss = self._loss(model_outputs[-1], labels_t)
 
         # Clean gradients
         self._model.zero_grad()
-        # inputs_t.grad.data.zero_()
 
         # Compute gradients
         loss.backward()
-        grds = inputs_t.grad.cpu().numpy().copy()
+        grds = input_grad.grad.cpu().numpy().copy()
         grds = self._apply_processing_gradient(grds)
-        assert grds.shape == x.shape
 
         return grds
 
@@ -455,7 +464,7 @@ class PyTorchTextClassifier(TextClassifier, PyTorchClassifier):
     def _inti_grads(self):
         return self._embedding_layer
 
-    
+
 
 
 

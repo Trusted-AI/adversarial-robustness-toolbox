@@ -142,7 +142,7 @@ class TFClassifier(Classifier):
 
     def class_gradient(self, x, label=None, logits=False):
         """
-        Compute per-class derivatives w.r.t. `x`.
+        Compute per-class derivatives.
 
         :param x: Sample input with shape as expected by the model.
         :type x: `np.ndarray`
@@ -206,7 +206,7 @@ class TFClassifier(Classifier):
 
     def loss_gradient(self, x, y):
         """
-        Compute the gradient of the loss function w.r.t. `x`.
+        Compute the gradient of the loss function.
 
         :param x: Sample input with shape as expected by the model.
         :type x: `np.ndarray`
