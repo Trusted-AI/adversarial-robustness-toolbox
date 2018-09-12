@@ -480,18 +480,11 @@ class PyTorchTextClassifier(TextClassifier, PyTorchClassifier):
         :return: Array of predictions of shape `(nb_inputs, self.nb_classes)`.
         :rtype: `np.ndarray`
         """
-        import tensorflow as tf
-        tf.keras.backend.set_learning_phase(0)
+        # Convert to ids
+        x_ids = self.to_id(x_emb)
 
-        # Run predictions with batching
-        preds = np.zeros((x_emb.shape[0], self.nb_classes), dtype=np.float32)
-        for b in range(int(np.ceil(x_emb.shape[0] / float(batch_size)))):
-            begin, end = b * batch_size,  min((b + 1) * batch_size, x_emb.shape[0])
-            preds[begin:end] = self._preds_from_embedding([x_emb[begin:end]])[0]
-
-            if not logits:
-                exp = np.exp(preds[begin:end] - np.max(preds[begin:end], axis=1, keepdims=True))
-                preds[begin:end] = exp / np.sum(exp, axis=1, keepdims=True)
+        # Run prediction
+        preds = self.predict(x=x_ids, logits=logits, batch_size=batch_size)
 
         return preds
 
