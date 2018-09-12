@@ -345,7 +345,7 @@ class TFImageClassifier(ImageClassifier, TFClassifier):
     def __init__(self, clip_values, input_ph, logits, output_ph=None, train=None, loss=None, learning=None, sess=None,
                  channel_index=3, defences=None, preprocessing=(0, 1)):
         """
-        Initialize a :class:`TFImageClassifier` based on a Tensorflow image model.
+        Create a :class:`TFImageClassifier` based on a Tensorflow image model.
 
         :param clip_values: Tuple of the form `(min, max)` representing the minimum and maximum values allowed
                for features.

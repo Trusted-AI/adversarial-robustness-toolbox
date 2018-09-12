@@ -35,9 +35,6 @@ class PyTorchClassifier(Classifier):
         # Get the internal layers
         self._layer_names = self._model.get_layers
 
-        # # Store the logit layer
-        # self._logit_layer = len(list(model.modules())) - 2 if use_logits else len(list(model.modules())) - 3
-
         # Use GPU if possible
         import torch
         self._device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
@@ -64,12 +61,6 @@ class PyTorchClassifier(Classifier):
 
         # Set test phase
         self._model.train(False)
-
-        # Run prediction
-        # preds = self._forward_at(torch.from_numpy(inputs), self._logit_layer).detach().numpy()
-        # if not logits:
-        #     exp = np.exp(preds - np.max(preds, axis=1, keepdims=True))
-        #     preds = exp / np.sum(exp, axis=1, keepdims=True)
 
         # Run prediction with batch processing
         results = np.zeros((x_.shape[0], self.nb_classes), dtype=np.float32)
@@ -162,14 +153,24 @@ class PyTorchClassifier(Classifier):
 
         # Convert the inputs to Tensors
         x_ = torch.from_numpy(self._apply_processing(x)).to(self._device)
-        x_ = x_.float()
-        x_.requires_grad = True
+
+        # Compute gradient wrt what
+        layer_idx = self._inti_grads()
 
         # Compute the gradient and return
         # Run prediction
         model_outputs = self._model(x_)
-        (logit_output, output) = (model_outputs[-2], model_outputs[-1])
 
+        # Set where to get gradient
+        if layer_idx >= 0:
+            model_outputs[layer_idx].requires_grad = True
+            input_grad = model_outputs[layer_idx]
+        else:
+            x_.requires_grad = True
+            input_grad = x_
+
+        # Set where to get gradient from
+        (logit_output, output) = (model_outputs[-2], model_outputs[-1])
         if logits:
             preds = logit_output
         else:
@@ -181,29 +182,27 @@ class PyTorchClassifier(Classifier):
             grads = []
             for i in range(self.nb_classes):
                 torch.autograd.backward(preds[:, i], torch.Tensor([1.] * len(preds[:, 0])), retain_graph=True)
-                grads.append(x_.grad.cpu().numpy().copy())
-                x_.grad.data.zero_()
+                grads.append(input_grad.grad.cpu().numpy().copy())
+                input_grad.grad.data.zero_()
 
             grads = np.swapaxes(np.array(grads), 0, 1)
             grads = self._apply_processing_gradient(grads)
-            assert grads.shape == (x_.shape[0], self.nb_classes) + self.input_shape
 
         elif type(label) is int:
             torch.autograd.backward(preds[:, label], torch.Tensor([1.] * len(preds[:, 0])), retain_graph=True)
-            grads = x_.grad.cpu().numpy().copy()
-            x_.grad.data.zero_()
+            grads = input_grad.grad.cpu().numpy().copy()
+            input_grad.grad.data.zero_()
 
             grads = np.expand_dims(grads, axis=1)
             grads = self._apply_processing_gradient(grads)
-            assert grads.shape == (x_.shape[0], 1) + self.input_shape
 
         else:
             unique_label = list(np.unique(label))
             grads = []
             for i in unique_label:
                 torch.autograd.backward(preds[:, i], torch.Tensor([1.] * len(preds[:, 0])), retain_graph=True)
-                grads.append(x_.grad.cpu().numpy().copy())
-                x_.grad.data.zero_()
+                grads.append(input_grad.grad.cpu().numpy().copy())
+                input_grad.grad.data.zero_()
 
             grads = np.swapaxes(np.array(grads), 0, 1)
             lst = [unique_label.index(i) for i in label]
@@ -212,7 +211,6 @@ class PyTorchClassifier(Classifier):
             grads = grads[None, ...]
             grads = np.swapaxes(np.array(grads), 0, 1)
             grads = self._apply_processing_gradient(grads)
-            assert grads.shape == (x_.shape[0], 1) + self.input_shape
 
         return grads
 
@@ -291,7 +289,7 @@ class PyTorchClassifier(Classifier):
         self._model.train(False)
 
         # Run prediction
-        model_outputs = self._model(torch.from_numpy(x).to(self._device).float())[:-1]
+        model_outputs = self._model(torch.from_numpy(self._apply_processing(x)).to(self._device).float())[:-1]
 
         if isinstance(layer, six.string_types):
             if layer not in self._layer_names:
@@ -306,28 +304,6 @@ class PyTorchClassifier(Classifier):
 
         return model_outputs[layer_index].detach().cpu().numpy()
 
-    # def _forward_at(self, inputs, layer):
-    #     """
-    #     Compute the forward at a specific layer.
-    #
-    #     :param inputs: Input data.
-    #     :type inputs: `np.ndarray`
-    #     :param layer: The layer where to get the forward results.
-    #     :type layer: `int`
-    #     :return: The forward results at the layer.
-    #     :rtype: `torch.Tensor`
-    #     """
-    #     print(layer)
-    #     results = inputs
-    #     for l in list(self._model.modules())[1:layer + 2]:
-    #         print(l)
-    #
-    #         results = l(results)
-    #
-    #         print(results.shape)
-    #
-    #     return results
-
     try:
         import torch.nn as nn
 
@@ -335,7 +311,6 @@ class PyTorchClassifier(Classifier):
             """
             This is a wrapper for the input model.
             """
-
             def __init__(self, model):
                 """
                 Initialization by storing the input model.
@@ -412,7 +387,7 @@ class PyTorchImageClassifier(ImageClassifier, PyTorchClassifier):
     def __init__(self, clip_values, model, loss, optimizer, input_shape, nb_classes, channel_index=1, defences=None,
                  preprocessing=(0, 1)):
         """
-        Initialization specifically for the PyTorch-based implementation.
+        Create a :class:`PyTorchImageClassifier` instance from a Pytorch model.
 
         :param clip_values: Tuple of the form `(min, max)` representing the minimum and maximum values allowed
                for features.
@@ -444,9 +419,54 @@ class PyTorchImageClassifier(ImageClassifier, PyTorchClassifier):
 
         self._input_shape = input_shape
 
+    def _inti_grads(self):
+        return -1
+
 
 class PyTorchTextClassifier(TextClassifier, PyTorchClassifier):
-    def __init__(self, model, loss, optimizer, nb_classes):
+    def __init__(self, model, embedding_layer, loss, optimizer, nb_classes):
+        """
+        Create a :class:`PyTorchTextClassifier` instance from a Pytorch model.
 
+        :param model: PyTorch model. The forward function of the model must return the logit output.
+        :type model: is instance of `torch.nn.Module`
+        :param embedding_layer: Which layer to consider as providing the embedding of the vocabulary.
+        :type embedding_layer: `int`
+        :param loss: The loss function for which to compute gradients for training. The target label must be raw
+               categorical, i.e. not converted to one-hot encoding.
+        :type loss: `torch.nn.modules.loss._Loss`
+        :param optimizer: The optimizer used to train the classifier.
+        :type optimizer: `torch.optim.Optimizer`
+        :param nb_classes: The number of classes of the model.
+        :type nb_classes: `int`
+        """
         TextClassifier.__init__(self)
         PyTorchClassifier.__init__(self, model=model, loss=loss, optimizer=optimizer, nb_classes=nb_classes)
+
+        if type(embedding_layer) is not int:
+            raise ValueError('Expected `int` for `embedding_layer`, got %s.' % str(type(embedding_layer)))
+
+        if embedding_layer not in range(len(self._layer_names)):
+            raise ValueError("Embedding layer %d is out of range (0 to %d included)." % (embedding_layer,
+                                                                                         len(self._layer_names) - 1))
+
+        self._embedding_layer = embedding_layer
+
+    def _inti_grads(self):
+        return self._embedding_layer
+
+    
+
+
+
+
+
+
+
+
+
+
+
+
+
+
