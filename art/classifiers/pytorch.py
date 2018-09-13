@@ -116,9 +116,6 @@ class PyTorchClassifier(Classifier):
                 i_batch = torch.from_numpy(x_[ind[m * batch_size:(m + 1) * batch_size]]).to(self._device)
                 o_batch = torch.from_numpy(y_[ind[m * batch_size:(m + 1) * batch_size]]).to(self._device)
 
-                # Cast to float
-                i_batch = i_batch.float()
-
                 # Zero the parameter gradients
                 self._optimizer.zero_grad()
 
@@ -305,7 +302,7 @@ class PyTorchClassifier(Classifier):
         self._model.train(False)
 
         # Run prediction
-        model_outputs = self._model(torch.from_numpy(self._apply_processing(x)).to(self._device).float())[:-1]
+        model_outputs = self._model(torch.from_numpy(self._apply_processing(x)).to(self._device))[:-1]
 
         if isinstance(layer, six.string_types):
             if layer not in self._layer_names:
