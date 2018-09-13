@@ -13,7 +13,7 @@ from art.utils import to_categorical
 
 
 NB_TRAIN = 1000
-NB_TEST = 2
+NB_TEST = 5
 
 
 class Model(nn.Module):
@@ -204,7 +204,7 @@ class TestTFTextClassifier(unittest.TestCase):
         # Start to test
         self.assertTrue(self.classifier.nb_classes == 2)
 
-    def est_class_gradient(self):
+    def test_class_gradient(self):
         # Get IMDB
         (_, _), (x_test, y_test) = self.imdb
         y_test = to_categorical(y_test, nb_classes=2)
@@ -235,7 +235,6 @@ class TestTFTextClassifier(unittest.TestCase):
 
         # Test gradient
         grads = self.classifier.loss_gradient(x_test, y_test)
-        print(grads.shape)
 
         self.assertTrue(np.array(grads.shape == (NB_TEST, 500, 32)).all())
         self.assertTrue(np.sum(grads) != 0)
@@ -266,7 +265,7 @@ class TestTFTextClassifier(unittest.TestCase):
         self.assertTrue(self.classifier.get_activations(x_test, 2).shape == (NB_TEST, 8))
         self.assertTrue(self.classifier.get_activations(x_test, 3).shape == (NB_TEST, 2))
 
-    def est_embedding(self):
+    def test_embedding(self):
         # Get IMDB
         (x_train, y_train), (x_test, y_test) = self.imdb
         y_train = to_categorical(y_train, nb_classes=2)
