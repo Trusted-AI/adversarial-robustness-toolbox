@@ -112,17 +112,6 @@ class TestPyTorchImageClassifier(unittest.TestCase):
         self.assertTrue(np.array(grads.shape == (NB_TEST, 1, 1, 28, 28)).all())
         self.assertTrue(np.sum(grads) != 0)
 
-    def test_class_gradient_target(self):
-        # Get MNIST
-        (_, _), (x_test, y_test) = self.mnist
-
-        # Test gradient
-        ptc = self.module_classifier
-        grads = ptc.class_gradient(x_test, label=3)
-
-        self.assertTrue(np.array(grads.shape == (NB_TEST, 1, 1, 28, 28)).all())
-        self.assertTrue(np.sum(grads) != 0)
-
     def test_loss_gradient(self):
         # Get MNIST
         (_, _), (x_test, y_test) = self.mnist
@@ -156,6 +145,26 @@ class TestPyTorchImageClassifier(unittest.TestCase):
         self.assertTrue(ptc.get_activations(x_test, 2).shape == (20, 16, 12, 12))
         self.assertTrue(ptc.get_activations(x_test, 3).shape == (20, 2304))
         self.assertTrue(ptc.get_activations(x_test, 4).shape == (20, 10))
+
+
+##################################################################################################
+##Test Text
+##################################################################################################
+class TextModel(nn.Module):
+    def __init__(self):
+        super(TextModel, self).__init__()
+
+        self.embeddings = nn.Embedding(1000, 32)
+        self.linear1 = nn.Linear(16000, 8)
+        self.linear2 = nn.Linear(8, 2)
+
+    def forward(self, inputs):
+        embeds = self.embeddings(inputs).view((-1, 16000))
+        out = F.relu(self.linear1(embeds))
+        out = self.linear2(out)
+
+        return out
+
 
 
 if __name__ == '__main__':

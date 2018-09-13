@@ -69,7 +69,7 @@ class PyTorchClassifier(Classifier):
             # Batch indexes
             begin, end = m * batch_size, min((m + 1) * batch_size, x_.shape[0])
 
-            model_outputs = self._model(torch.from_numpy(x_[begin:end]).to(self._device).float())
+            model_outputs = self._model(torch.from_numpy(x_[begin:end]).to(self._device))
             (logit_output, output) = (model_outputs[-2], model_outputs[-1])
 
             if logits:
