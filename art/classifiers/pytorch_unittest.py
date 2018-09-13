@@ -166,6 +166,170 @@ class TextModel(nn.Module):
         return out
 
 
+class TestTFTextClassifier(unittest.TestCase):
+    @classmethod
+    def setUpClass(cls):
+        # Load IMDB
+        (x_train, y_train), (x_test, y_test), ids = load_imdb(nb_words=1000, max_length=500)
+        ids = list(ids.values())
+        ids = [0] + [id for id in ids if id < 1000]
+
+        x_train, y_train, x_test, y_test = x_train[:NB_TRAIN], y_train[:NB_TRAIN], x_test[:NB_TEST], y_test[:NB_TEST]
+        cls.imdb = (x_train, y_train), (x_test, y_test)
+        cls.word_ids = ids
+
+        # Define input and output placeholders
+        input_ph = tf.placeholder(tf.int32, shape=[None, 500])
+        output_ph = tf.placeholder(tf.int32, shape=[None, 2])
+
+        # Define the tensorflow graph
+        embedding_layer = tf.keras.layers.Embedding(1000, 32, input_length=500)(input_ph)
+        conv_1d = tf.keras.layers.Conv1D(filters=16, kernel_size=3)(embedding_layer)
+        lkrelu1 = tf.keras.layers.LeakyReLU(alpha=.2)(conv_1d)
+        mp = tf.keras.layers.MaxPool1D()(lkrelu1)
+        flatten = tf.layers.flatten(mp)
+        dense = tf.layers.dense(flatten, units=100)
+        lkrelu2 = tf.keras.layers.LeakyReLU(alpha=.2)(dense)
+
+        # Logits layer
+        logits = tf.layers.dense(lkrelu2, units=2)
+
+        # Train operator
+        loss = tf.reduce_mean(tf.losses.softmax_cross_entropy(logits=logits, onehot_labels=output_ph))
+        optimizer = tf.train.AdamOptimizer(learning_rate=0.01)
+        train = optimizer.minimize(loss)
+
+        # Tensorflow session and initialization
+        cls.sess = tf.Session()
+        cls.sess.run(tf.global_variables_initializer())
+
+        # Create classifier
+        cls.classifier = TFTextClassifier(input_ph, logits, embedding_layer, ids, output_ph, train, loss, None,
+                                          cls.sess)
+
+    @classmethod
+    def tearDownClass(cls):
+        cls.sess.close()
+        tf.reset_default_graph()
+
+    def test_fit_predict(self):
+        (x_train, y_train), (x_test, y_test) = self.imdb
+        y_train = to_categorical(y_train, nb_classes=2)
+        y_test = to_categorical(y_test, nb_classes=2)
+
+        acc1 = np.sum(np.argmax(self.classifier.predict(x_test), axis=1) == np.argmax(y_test, axis=1)) / x_test.shape[0]
+        print('\nAccuracy: %.2f%%' % (acc1 * 100))
+
+        self.classifier.fit(x_train, y_train, nb_epochs=1, batch_size=10)
+        acc2 = np.sum(np.argmax(self.classifier.predict(x_test), axis=1) == np.argmax(y_test, axis=1)) / x_test.shape[0]
+        print("\nAccuracy: %.2f%%" % (acc2 * 100))
+
+        self.assertTrue(acc2 >= acc1)
+
+    def test_nb_classes(self):
+        # Start to test
+        self.assertTrue(self.classifier.nb_classes == 2)
+
+    def test_class_gradient(self):
+        # Get IMDB
+        (_, _), (x_test, y_test) = self.imdb
+        y_test = to_categorical(y_test, nb_classes=2)
+
+        # Test all gradients label = None
+        grads = self.classifier.class_gradient(x_test)
+
+        self.assertTrue(np.array(grads.shape == (NB_TEST, 2, 500, 32)).all())
+        self.assertTrue(np.sum(grads) != 0)
+
+        # Test 1 gradient label = 5
+        grads = self.classifier.class_gradient(x_test, label=1)
+
+        self.assertTrue(np.array(grads.shape == (NB_TEST, 1, 500, 32)).all())
+        self.assertTrue(np.sum(grads) != 0)
+
+        # Test a set of gradients label = array
+        label = np.random.randint(2, size=NB_TEST)
+        grads = self.classifier.class_gradient(x_test, label=label)
+
+        self.assertTrue(np.array(grads.shape == (NB_TEST, 1, 500, 32)).all())
+        self.assertTrue(np.sum(grads) != 0)
+
+    def test_loss_gradient(self):
+        # Get IMDB
+        (_, _), (x_test, y_test) = self.imdb
+        y_test = to_categorical(y_test, nb_classes=2)
+
+        # Test gradient
+        grads = self.classifier.loss_gradient(x_test, y_test)
+
+        self.assertTrue(np.array(grads.shape == (NB_TEST, 500, 32)).all())
+        self.assertTrue(np.sum(grads) != 0)
+
+    def test_layers(self):
+        # Get IMDB
+        (_, _), (x_test, y_test) = self.imdb
+        y_test = to_categorical(y_test, nb_classes=2)
+
+        # Test and get layers
+        layer_names = self.classifier.layer_names
+        print(layer_names)
+        self.assertTrue(layer_names == ['embedding/Gather:0', 'conv1d/BiasAdd:0', 'leaky_re_lu/sub:0',
+                                        'max_pooling1d/Squeeze:0', 'flatten/Reshape:0', 'dense/BiasAdd:0',
+                                        'leaky_re_lu_2/sub:0', 'dense_2/BiasAdd:0'])
+
+        for i, name in enumerate(layer_names):
+            act_i = self.classifier.get_activations(x_test, i)
+            act_name = self.classifier.get_activations(x_test, name)
+            self.assertAlmostEqual(np.sum(act_name - act_i), 0)
+
+        print(self.classifier.get_activations(x_test, 0).shape)
+        print(self.classifier.get_activations(x_test, 1).shape)
+        print(self.classifier.get_activations(x_test, 2).shape)
+        print(self.classifier.get_activations(x_test, 3).shape)
+        print(self.classifier.get_activations(x_test, 4).shape)
+        print(self.classifier.get_activations(x_test, 5).shape)
+        print(self.classifier.get_activations(x_test, 6).shape)
+        print(self.classifier.get_activations(x_test, 7).shape)
+        self.assertTrue(self.classifier.get_activations(x_test, 0).shape == (NB_TEST, 500, 32))
+        self.assertTrue(self.classifier.get_activations(x_test, 1).shape == (NB_TEST, 498, 16))
+        self.assertTrue(self.classifier.get_activations(x_test, 2).shape == (NB_TEST, 498, 16))
+        self.assertTrue(self.classifier.get_activations(x_test, 3).shape == (NB_TEST, 249, 16))
+        self.assertTrue(self.classifier.get_activations(x_test, 4).shape == (NB_TEST, 3984))
+        self.assertTrue(self.classifier.get_activations(x_test, 5).shape == (NB_TEST, 100))
+        self.assertTrue(self.classifier.get_activations(x_test, 6).shape == (NB_TEST, 100))
+        self.assertTrue(self.classifier.get_activations(x_test, 7).shape == (NB_TEST, 2))
+
+    def test_embedding(self):
+        # Get IMDB
+        (x_train, y_train), (x_test, y_test) = self.imdb
+        y_train = to_categorical(y_train, nb_classes=2)
+
+        # Test to embedding
+        x_emb = self.classifier.to_embedding(x_test)
+        self.assertTrue(x_emb.shape == (NB_TEST, 500, 32))
+
+        # Test predict_from_embedding
+        acc1 = np.sum(np.argmax(self.classifier.predict_from_embedding(x_emb), axis=1) == y_test) / x_test.shape[0]
+        print('\nAccuracy: %.2f%%' % (acc1 * 100))
+
+        #self.classifier.fit(x_train, y_train, nb_epochs=1, batch_size=10)
+        acc2 = np.sum(np.argmax(self.classifier.predict_from_embedding(x_emb), axis=1) == y_test) / x_test.shape[0]
+        print("\nAccuracy: %.2f%%" % (acc2 * 100))
+
+        self.assertTrue(acc2 >= acc1)
+
+        # Test to id
+        x_id = self.classifier.to_id(x_emb)
+        print(x_id, x_test)
+        self.assertTrue((x_id == x_test).all())
+
 
 if __name__ == '__main__':
     unittest.main()
+
+
+
+
+
+
+
