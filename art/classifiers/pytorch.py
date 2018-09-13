@@ -150,10 +150,11 @@ class PyTorchClassifier(Classifier):
 
         # Convert the inputs to Tensors
         x_ = torch.from_numpy(self._apply_processing(x)).to(self._device)
-        x_.requires_grad = True
 
         # Compute gradient wrt what
         layer_idx = self._inti_grads()
+        if layer_idx < 0:
+            x_.requires_grad = True
 
         # Compute the gradient and return
         # Run prediction
@@ -232,6 +233,8 @@ class PyTorchClassifier(Classifier):
 
         # Compute gradient wrt what
         layer_idx = self._inti_grads()
+        if layer_idx < 0:
+            inputs_t.requires_grad = True
 
         # Compute the gradient and return
         model_outputs = self._model(inputs_t)
