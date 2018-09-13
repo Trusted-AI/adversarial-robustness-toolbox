@@ -226,7 +226,6 @@ class PyTorchClassifier(Classifier):
 
         # Convert the inputs to Tensors
         inputs_t = torch.from_numpy(self._apply_processing(x)).to(self._device)
-        inputs_t.requires_grad = True
 
         # Convert the labels to Tensors
         labels_t = torch.from_numpy(np.argmax(y, axis=1)).to(self._device)
@@ -349,6 +348,7 @@ class PyTorchClassifier(Classifier):
                 if type(self._model) is nn.Sequential:
                     for _, module_ in self._model._modules.items():
                         x = module_(x)
+                        #x.retain_grad()
                         result.append(x)
 
                 elif isinstance(self._model, nn.Module):
