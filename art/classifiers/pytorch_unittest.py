@@ -8,7 +8,7 @@ import torch.optim as optim
 import numpy as np
 
 from art.classifiers.pytorch import PyTorchImageClassifier, PyTorchTextClassifier
-from art.utils import load_mnist
+from art.utils import load_mnist, load_imdb
 
 
 NB_TRAIN = 1000
@@ -178,39 +178,13 @@ class TestTFTextClassifier(unittest.TestCase):
         cls.imdb = (x_train, y_train), (x_test, y_test)
         cls.word_ids = ids
 
-        # Define input and output placeholders
-        input_ph = tf.placeholder(tf.int32, shape=[None, 500])
-        output_ph = tf.placeholder(tf.int32, shape=[None, 2])
-
-        # Define the tensorflow graph
-        embedding_layer = tf.keras.layers.Embedding(1000, 32, input_length=500)(input_ph)
-        conv_1d = tf.keras.layers.Conv1D(filters=16, kernel_size=3)(embedding_layer)
-        lkrelu1 = tf.keras.layers.LeakyReLU(alpha=.2)(conv_1d)
-        mp = tf.keras.layers.MaxPool1D()(lkrelu1)
-        flatten = tf.layers.flatten(mp)
-        dense = tf.layers.dense(flatten, units=100)
-        lkrelu2 = tf.keras.layers.LeakyReLU(alpha=.2)(dense)
-
-        # Logits layer
-        logits = tf.layers.dense(lkrelu2, units=2)
-
-        # Train operator
-        loss = tf.reduce_mean(tf.losses.softmax_cross_entropy(logits=logits, onehot_labels=output_ph))
-        optimizer = tf.train.AdamOptimizer(learning_rate=0.01)
-        train = optimizer.minimize(loss)
-
-        # Tensorflow session and initialization
-        cls.sess = tf.Session()
-        cls.sess.run(tf.global_variables_initializer())
+        # Define the network
+        model = TextModel()
+        loss_fn = nn.CrossEntropyLoss()
+        optimizer = optim.Adam(model.parameters(), lr=0.01)
 
         # Create classifier
-        cls.classifier = TFTextClassifier(input_ph, logits, embedding_layer, ids, output_ph, train, loss, None,
-                                          cls.sess)
-
-    @classmethod
-    def tearDownClass(cls):
-        cls.sess.close()
-        tf.reset_default_graph()
+        cls.classifier = PyTorchTextClassifier(model, 0, ids, loss_fn, optimizer, 2)
 
     def test_fit_predict(self):
         (x_train, y_train), (x_test, y_test) = self.imdb
