@@ -153,6 +153,7 @@ class PyTorchClassifier(Classifier):
 
         # Convert the inputs to Tensors
         x_ = torch.from_numpy(self._apply_processing(x)).to(self._device)
+        x_.requires_grad = True
 
         # Compute gradient wrt what
         layer_idx = self._inti_grads()
@@ -163,10 +164,8 @@ class PyTorchClassifier(Classifier):
 
         # Set where to get gradient
         if layer_idx >= 0:
-            model_outputs[layer_idx].requires_grad = True
             input_grad = model_outputs[layer_idx]
         else:
-            x_.requires_grad = True
             input_grad = x_
 
         # Set where to get gradient from
@@ -177,32 +176,33 @@ class PyTorchClassifier(Classifier):
             preds = output
 
         # Compute the gradient
+        grads = []
+
+        def save_grad():
+            def hook(grad):
+                grads.append(grad.cpu().numpy().copy())
+                grad.data.zero_()
+            return hook
+        input_grad.register_hook(save_grad())
+
         self._model.zero_grad()
         if label is None:
-            grads = []
             for i in range(self.nb_classes):
                 torch.autograd.backward(preds[:, i], torch.Tensor([1.] * len(preds[:, 0])), retain_graph=True)
-                grads.append(input_grad.grad.cpu().numpy().copy())
-                input_grad.grad.data.zero_()
 
             grads = np.swapaxes(np.array(grads), 0, 1)
             grads = self._apply_processing_gradient(grads)
 
         elif type(label) is int:
             torch.autograd.backward(preds[:, label], torch.Tensor([1.] * len(preds[:, 0])), retain_graph=True)
-            grads = input_grad.grad.cpu().numpy().copy()
-            input_grad.grad.data.zero_()
 
-            grads = np.expand_dims(grads, axis=1)
+            grads = np.swapaxes(np.array(grads), 0, 1)
             grads = self._apply_processing_gradient(grads)
 
         else:
             unique_label = list(np.unique(label))
-            grads = []
             for i in unique_label:
                 torch.autograd.backward(preds[:, i], torch.Tensor([1.] * len(preds[:, 0])), retain_graph=True)
-                grads.append(input_grad.grad.cpu().numpy().copy())
-                input_grad.grad.data.zero_()
 
             grads = np.swapaxes(np.array(grads), 0, 1)
             lst = [unique_label.index(i) for i in label]
@@ -229,6 +229,7 @@ class PyTorchClassifier(Classifier):
 
         # Convert the inputs to Tensors
         inputs_t = torch.from_numpy(self._apply_processing(x)).to(self._device)
+        inputs_t.requires_grad = True
 
         # Convert the labels to Tensors
         labels_t = torch.from_numpy(np.argmax(y, axis=1)).to(self._device)
@@ -241,10 +242,8 @@ class PyTorchClassifier(Classifier):
 
         # Set where to get gradient
         if layer_idx >= 0:
-            model_outputs[layer_idx].requires_grad = True
             input_grad = model_outputs[layer_idx]
         else:
-            inputs_t.requires_grad = True
             input_grad = inputs_t
 
         # Set where to get gradient from
@@ -254,9 +253,17 @@ class PyTorchClassifier(Classifier):
         self._model.zero_grad()
 
         # Compute gradients
+        grads = []
+
+        def save_grad():
+            def hook(grad):
+                grads.append(grad.cpu().numpy().copy())
+                grad.data.zero_()
+            return hook
+        input_grad.register_hook(save_grad())
+
         loss.backward()
-        grds = input_grad.grad.cpu().numpy().copy()
-        grds = self._apply_processing_gradient(grds)
+        grds = self._apply_processing_gradient(grads[0])
 
         return grds
 
