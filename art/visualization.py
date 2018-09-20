@@ -10,14 +10,12 @@ import cv2
 import os.path
 
 
-def create_sprite(images, f_name):
+def create_sprite(images):
     """
-    Creates a sprite of provided images and saves it in DATA_PATH with file name f_name
+    Creates a sprite of provided images
 
     :param images: Images to construct the sprite.
     :type images: `np.array`
-    :param f_name: File name of the sprite containing extension e.g., my_sprite.jpg, my_sprite.png, images/my_sprite.png
-    :type f_name: `str`
     :return:
     """
 
@@ -47,9 +45,7 @@ def create_sprite(images, f_name):
     images = images.reshape((n * images.shape[1], n * images.shape[3]) + images.shape[4:])
     sprite = (images * 255).astype(np.uint8)
 
-    # Save image
-    save_image(sprite, f_name)
-    return
+    return sprite
 
 
 def convert_to_rgb(images):

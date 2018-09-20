@@ -67,9 +67,10 @@ class TestVisualization(unittest.TestCase):
         n = 100
         x = x[:n]
 
+        sprite = create_sprite(x)
         f_name = 'test_sprite_mnist.png'
-        create_sprite(x, f_name)
         path = os.path.join(DATA_PATH, f_name)
+        save_image(sprite, path)
         self.assertTrue(os.path.isfile(path))
         # import matplotlib.pyplot as plt
         # plt.show(path)
@@ -81,9 +82,10 @@ class TestVisualization(unittest.TestCase):
         n = 500
         x = x[:n]
 
+        sprite = create_sprite(x)
         f_name = 'test_cifar.jpg'
-        create_sprite(x, f_name)
         path = os.path.join(DATA_PATH, f_name)
+        save_image(sprite, path)
         self.assertTrue(os.path.isfile(path))
         # import matplotlib.pyplot as plt
         # plt.show(path)

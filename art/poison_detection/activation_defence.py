@@ -1,11 +1,14 @@
 from __future__ import absolute_import, division, print_function, unicode_literals
 
 import numpy as np
+import os.path
+
 from art.poison_detection.poison_filtering_defence import PoisonFilteringDefence
 from art.poison_detection.clustering_handler import ClusteringHandler
 from art.poison_detection.size_analyzer import SizeAnalyzer
 from art.poison_detection.distance_analyzer import DistanceAnalyzer
 from art.poison_detection.ground_truth_evaluator import GroundTruthEvaluator
+from art.visualization import create_sprite, save_image
 
 
 class ActivationDefence(PoisonFilteringDefence):
@@ -152,6 +155,38 @@ class ActivationDefence(PoisonFilteringDefence):
             self.assigned_clean_by_class = analyzer.analyze_clusters(self.clusters_by_class,
                                                                      separated_activations=self.red_activations_by_class)
         return self.assigned_clean_by_class
+
+    def visualize_clusters(self, x_raw, folder='.', **kwargs):
+        """
+        This function that stores a sprite (mosaic) per cluster in DATA_PATH.
+
+        :param kwargs: a dictionary of cluster-analysis-specific parameters
+        :type kwargs: `dict`
+        :param x_raw: Images used to train the classifier (before pre-processing)
+        :param folder: Directory where the sprites will be saved inside DATA_PATH folder
+        :return: None
+        """
+        self.set_params(**kwargs)
+
+        if len(self.clusters_by_class) == 0:
+            self.cluster_activations()
+
+        x_raw_by_class = self._segment_by_class(x_raw, self.y_train)
+        x_raw_by_cluster = [[[] for x in range(self.nb_clusters)] for y in range(self.classifier.nb_classes)]
+
+        # Get all data in x_raw in the right cluster
+        for n_class, cluster in enumerate(self.clusters_by_class):
+            for j, assigned_cluster in enumerate(cluster):
+                x_raw_by_cluster[n_class][assigned_cluster].append(x_raw_by_class[n_class][j])
+
+        # Now create sprites:
+        for i, class_i in enumerate(x_raw_by_cluster):
+            for j, images_cluster in enumerate(class_i):
+                title = 'Class_' + str(i) + '_cluster_' + str(j) + '_clusterSize_' + str(len(images_cluster))
+                f_name = title + '.png'
+                f_name = os.path.join(folder, f_name)
+                sprite = create_sprite(images_cluster)
+                save_image(sprite, f_name)
 
     def set_params(self, **kwargs):
         """
