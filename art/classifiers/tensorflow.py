@@ -156,9 +156,10 @@ class TFClassifier(Classifier):
                  `(batch_size, 1, input_shape)` when `label` parameter is specified.
         :rtype: `np.ndarray`
         """
-        if not ((label is None) or (type(label) is int and label in range(self._nb_classes)) or (
-            type(label) is np.ndarray and len(label.shape) == 1 and (label < self._nb_classes).all()
-            and label.shape[0] == x.shape[0])):
+        # Check value of label for computing gradients
+        if not (label is None or (type(label) is int and label in range(self._nb_classes))
+                or (type(label) is np.ndarray and len(label.shape) == 1 and (label < self._nb_classes).all()
+                    and label.shape[0] == x.shape[0])):
             raise ValueError('Label %s is out of range.' % label)
 
         self._init_class_grads(label=label, logits=logits)
@@ -167,6 +168,7 @@ class TFClassifier(Classifier):
 
         # Compute the gradient and return
         if label is None:
+            # Compute the gradients w.r.t. all classes
             if logits:
                 grads = self._sess.run(self._logit_class_grads, feed_dict={self._input_ph: x_})
             else:
@@ -176,6 +178,7 @@ class TFClassifier(Classifier):
             grads = self._apply_processing_gradient(grads)
 
         elif type(label) is int:
+            # Compute the gradients only w.r.t. the provided label
             if logits:
                 grads = self._sess.run(self._logit_class_grads[label], feed_dict={self._input_ph: x_})
             else:
@@ -186,6 +189,7 @@ class TFClassifier(Classifier):
             grads = self._apply_processing_gradient(grads)
 
         else:
+            # For each sample, compute the gradients w.r.t. the indicated target class (possibly distinct)
             unique_label = list(np.unique(label))
             if logits:
                 grads = self._sess.run([self._logit_class_grads[l] for l in unique_label],
@@ -196,10 +200,8 @@ class TFClassifier(Classifier):
 
             grads = np.swapaxes(np.array(grads), 0, 1)
             lst = [unique_label.index(i) for i in label]
-            grads = grads[np.arange(len(grads)), lst]
+            grads = np.expand_dims(grads[np.arange(len(grads)), lst], axis=1)
 
-            grads = grads[None, ...]
-            grads = np.swapaxes(np.array(grads), 0, 1)
             grads = self._apply_processing_gradient(grads)
 
         return grads
@@ -619,18 +621,3 @@ class TFTextClassifier(TextClassifier, TFClassifier):
                              'valid tokens.')
 
         return np.reshape(np.array(neighbors), (-1, x_emb.shape[1]))
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-

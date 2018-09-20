@@ -237,7 +237,7 @@ class TestTFTextClassifier(unittest.TestCase):
 
         # Test and get layers
         layer_names = self.classifier.layer_names
-        print(layer_names)
+        # print(layer_names)
         self.assertTrue(layer_names == ['embedding/Gather:0', 'conv1d/BiasAdd:0', 'leaky_re_lu/sub:0',
                                         'max_pooling1d/Squeeze:0', 'flatten/Reshape:0', 'dense/BiasAdd:0',
                                         'leaky_re_lu_2/sub:0', 'dense_2/BiasAdd:0'])
@@ -247,14 +247,14 @@ class TestTFTextClassifier(unittest.TestCase):
             act_name = self.classifier.get_activations(x_test, name)
             self.assertAlmostEqual(np.sum(act_name - act_i), 0)
 
-        print(self.classifier.get_activations(x_test, 0).shape)
-        print(self.classifier.get_activations(x_test, 1).shape)
-        print(self.classifier.get_activations(x_test, 2).shape)
-        print(self.classifier.get_activations(x_test, 3).shape)
-        print(self.classifier.get_activations(x_test, 4).shape)
-        print(self.classifier.get_activations(x_test, 5).shape)
-        print(self.classifier.get_activations(x_test, 6).shape)
-        print(self.classifier.get_activations(x_test, 7).shape)
+        # print(self.classifier.get_activations(x_test, 0).shape)
+        # print(self.classifier.get_activations(x_test, 1).shape)
+        # print(self.classifier.get_activations(x_test, 2).shape)
+        # print(self.classifier.get_activations(x_test, 3).shape)
+        # print(self.classifier.get_activations(x_test, 4).shape)
+        # print(self.classifier.get_activations(x_test, 5).shape)
+        # print(self.classifier.get_activations(x_test, 6).shape)
+        # print(self.classifier.get_activations(x_test, 7).shape)
         self.assertTrue(self.classifier.get_activations(x_test, 0).shape == (NB_TEST, 500, 32))
         self.assertTrue(self.classifier.get_activations(x_test, 1).shape == (NB_TEST, 498, 16))
         self.assertTrue(self.classifier.get_activations(x_test, 2).shape == (NB_TEST, 498, 16))
@@ -277,23 +277,11 @@ class TestTFTextClassifier(unittest.TestCase):
         acc1 = np.sum(np.argmax(self.classifier.predict_from_embedding(x_emb), axis=1) == y_test) / x_test.shape[0]
         print('\nAccuracy: %.2f%%' % (acc1 * 100))
 
-        #self.classifier.fit(x_train, y_train, nb_epochs=1, batch_size=10)
-        acc2 = np.sum(np.argmax(self.classifier.predict_from_embedding(x_emb), axis=1) == y_test) / x_test.shape[0]
-        print("\nAccuracy: %.2f%%" % (acc2 * 100))
-
-        self.assertTrue(acc2 >= acc1)
-
         # Test to id
         x_id = self.classifier.to_id(x_emb)
-        print(x_id, x_test)
+        # print(x_id, x_test)
         self.assertTrue((x_id == x_test).all())
 
 
 if __name__ == '__main__':
     unittest.main()
-
-
-
-
-
-
