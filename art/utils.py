@@ -212,6 +212,46 @@ def load_cifar10():
     return (x_train, y_train), (x_test, y_test), min_, max_
 
 
+def load_cifar10_raw():
+    """Loads raw CIFAR10 dataset from config.CIFAR10_PATH or downloads it if necessary.
+    Returns unprocessed images.
+
+    :return: `(x_train, y_train), (x_test, y_test), min, max`
+    :rtype: `(np.ndarray, np.ndarray), (np.ndarray, np.ndarray), float, float`
+    """
+    import keras.backend as k
+    from keras.datasets.cifar import load_batch
+    from keras.utils.data_utils import get_file
+    from art import DATA_PATH
+
+    min_, max_ = 0., 1.
+
+    path = get_file('cifar-10-batches-py', untar=True, cache_subdir=DATA_PATH,
+                    origin='http://www.cs.toronto.edu/~kriz/cifar-10-python.tar.gz')
+
+    num_train_samples = 50000
+
+    x_train = np.zeros((num_train_samples, 3, 32, 32), dtype=np.uint8)
+    y_train = np.zeros((num_train_samples,), dtype=np.uint8)
+
+    for i in range(1, 6):
+        fpath = os.path.join(path, 'data_batch_' + str(i))
+        data, labels = load_batch(fpath)
+        x_train[(i - 1) * 10000: i * 10000, :, :, :] = data
+        y_train[(i - 1) * 10000: i * 10000] = labels
+
+    fpath = os.path.join(path, 'test_batch')
+    x_test, y_test = load_batch(fpath)
+    y_train = np.reshape(y_train, (len(y_train), 1))
+    y_test = np.reshape(y_test, (len(y_test), 1))
+
+    if k.image_data_format() == 'channels_last':
+        x_train = x_train.transpose(0, 2, 3, 1)
+        x_test = x_test.transpose(0, 2, 3, 1)
+
+    return (x_train, y_train), (x_test, y_test), min_, max_
+
+
 def load_mnist():
     """Loads MNIST dataset from `DATA_PATH` or downloads it if necessary.
 
@@ -243,6 +283,7 @@ def load_mnist():
 
 def load_mnist_raw():
     """Loads MNIST dataset from config.MNIST_PATH or downloads it if necessary.
+    Returns unprocessed images
 
     :return: `(x_train, y_train), (x_test, y_test), min, max`
     :rtype: `(np.ndarray, np.ndarray), (np.ndarray, np.ndarray), float, float`
@@ -259,6 +300,7 @@ def load_mnist_raw():
     y_train = f['y_train']
     x_test = f['x_test']
     y_test = f['y_test']
+
     f.close()
 
     return (x_train, y_train), (x_test, y_test), min_, max_
