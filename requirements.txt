@@ -5,4 +5,4 @@ scipy
 six
 tensorflow
 scikit-learn
-opencv-python
+opencv
