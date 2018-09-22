@@ -219,10 +219,11 @@ class CarliniL2Method(Attack):
             best_l2dist = sys.float_info.max
             best_adv_image = image
             
+            lr = self.learning_rate
+            
             for _ in range(self.binary_search_steps):
                 attack_success = False
                 loss_prev = sys.float_info.max
-                lr = self.learning_rate
                 
                 # Initialize perturbation in tanh space:
                 perturbation_tanh = np.zeros(image_tanh.shape)
