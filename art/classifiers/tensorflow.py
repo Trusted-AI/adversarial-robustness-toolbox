@@ -537,7 +537,7 @@ class TFTextClassifier(TextClassifier, TFClassifier):
             if result[0].split("/")[0] != name.split("/")[0]:
                 result = [name] + result
 
-        return result
+        return result[1:]
 
     def predict_from_embedding(self, x_emb, logits=False, batch_size=128):
         """

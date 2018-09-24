@@ -151,20 +151,9 @@ class PyTorchClassifier(Classifier):
         # Convert the inputs to Tensors
         x_ = torch.from_numpy(self._apply_processing(x)).to(self._device)
 
-        # Compute gradient wrt what
-        layer_idx = self._inti_grads()
-        if layer_idx < 0:
-            x_.requires_grad = True
-
         # Compute the gradient and return
         # Run prediction
         model_outputs = self._model(x_)
-
-        # Set where to get gradient
-        if layer_idx >= 0:
-            input_grad = model_outputs[layer_idx]
-        else:
-            input_grad = x_
 
         # Set where to get gradient from
         (logit_output, output) = (model_outputs[-2], model_outputs[-1])
@@ -175,13 +164,6 @@ class PyTorchClassifier(Classifier):
 
         # Compute the gradient
         grads = []
-
-        def save_grad():
-            def hook(grad):
-                grads.append(grad.cpu().numpy().copy())
-                grad.data.zero_()
-            return hook
-        input_grad.register_hook(save_grad())
 
         self._model.zero_grad()
         if label is None:
@@ -232,7 +214,7 @@ class PyTorchClassifier(Classifier):
         labels_t = torch.from_numpy(np.argmax(y, axis=1)).to(self._device)
 
         # Compute gradient wrt what
-        layer_idx = self._inti_grads()
+        layer_idx = self._init_grads()
         if layer_idx < 0:
             inputs_t.requires_grad = True
 
@@ -435,7 +417,7 @@ class PyTorchImageClassifier(ImageClassifier, PyTorchClassifier):
 
         self._input_shape = input_shape
 
-    def _inti_grads(self):
+    def _init_grads(self):
         return -1
 
 
@@ -471,7 +453,7 @@ class PyTorchTextClassifier(TextClassifier, PyTorchClassifier):
         self._embedding_layer = embedding_layer
         self._ids = ids
 
-    def _inti_grads(self):
+    def _init_grads(self):
         return self._embedding_layer
 
     def predict_from_embedding(self, x_emb, logits=False, batch_size=128):
@@ -514,44 +496,6 @@ class PyTorchTextClassifier(TextClassifier, PyTorchClassifier):
 
         return model_outputs[self._embedding_layer].cpu().detach().numpy()
 
-    def to_id(self, x_emb, strategy='nearest', metric='cosine'):
-        """
-        Convert the received input from embedding space to classifier input (most often, token indices).
-
-        :param x_emb: Array of inputs in embedding form, often shaped as `(batch_size, input_length, embedding_size)`.
-        :type x_emb: `np.ndarray`
-        :param strategy: Strategy from mapping from embedding space back to input space.
-        :type strategy: `str` or `Callable`
-        :param metric: Metric to be used in the embedding space when determining vocabulary token proximity.
-        :type metric: `str` or `Callable`
-        :return: Array of token indices for sample `x_emb`.
-        :rtype: `np.ndarray`
-        """
-        if strategy != 'nearest':
-            raise ValueError('Nearest neighbor is currently the only supported strategy for mapping embeddings to '
-                             'valid tokens.')
-
-        if metric == 'cosine':
-            from art.utils import cosine
-
-            v_size = len(self._ids)
-            if v_size % x_emb.shape[1] > 0:
-                for _ in range(x_emb.shape[1] - (v_size % x_emb.shape[1])):
-                    self._ids.append(self._ids[0])
-            embeddings = self.to_embedding(np.reshape(np.array(self._ids), (-1, x_emb.shape[1])))
-            embeddings = np.reshape(embeddings, (-1, x_emb.shape[2]))[:v_size]
-            self._ids = self._ids[:v_size]
-
-            neighbors = []
-            for x in x_emb:
-                for emb_x in x:
-                    metric = [cosine(emb, emb_x) for emb in embeddings]
-                    neighbors.append(self._ids[int(np.argpartition(metric, -1)[-1])])
-        else:
-            raise ValueError('Cosine similarity is currently the only supported metric for mapping embeddings to '
-                             'valid tokens.')
-
-        return np.reshape(np.array(neighbors), (-1, x_emb.shape[1]))
 
 
 
