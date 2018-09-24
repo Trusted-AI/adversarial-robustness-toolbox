@@ -14,7 +14,7 @@ from keras.layers import Dense, Flatten, Conv2D, MaxPooling2D, Activation, Dropo
 import numpy as np
 
 from art.classifiers import KerasClassifier
-from art.utils import load_mnist_raw, preprocess
+from art.utils import load_mnist, preprocess
 from art.poison_detection import ActivationDefence
 import pprint
 
@@ -22,7 +22,7 @@ import pprint
 
 def main():
     # Read MNIST dataset (x_raw contains the original images):
-    (x_raw, y_raw), (x_raw_test, y_raw_test), min_, max_ = load_mnist_raw()
+    (x_raw, y_raw), (x_raw_test, y_raw_test), min_, max_ = load_mnist(raw=True)
 
     n_train = np.shape(x_raw)[0]
     num_selection = 5000

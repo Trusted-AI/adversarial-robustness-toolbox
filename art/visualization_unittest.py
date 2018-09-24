@@ -4,7 +4,7 @@ import unittest
 import os.path
 import numpy as np
 
-from art.utils import load_mnist_raw, load_cifar10_raw
+from art.utils import load_mnist, load_cifar10
 from art.visualization import create_sprite, convert_to_rgb, save_image
 from art import DATA_PATH
 
@@ -14,7 +14,7 @@ from art import DATA_PATH
 class TestVisualization(unittest.TestCase):
 
     def test_save_image(self):
-        (x, _), (_, _), _, _ = load_mnist_raw()
+        (x, _), (_, _), _, _ = load_mnist(raw=True)
 
         f_name = 'image1.png'
         save_image(x[0], f_name)
@@ -47,7 +47,7 @@ class TestVisualization(unittest.TestCase):
 
     def test_convert_gray_to_rgb(self):
         # Get MNIST
-        (x, _), (_, _), _, _ = load_mnist_raw()
+        (x, _), (_, _), _, _ = load_mnist(raw=True)
         n = 100
         x = x[:n]
 
@@ -63,7 +63,7 @@ class TestVisualization(unittest.TestCase):
 
     def test_sprites_gray(self):
         # Get MNIST
-        (x, _), (_, _), _, _ = load_mnist_raw()
+        (x, _), (_, _), _, _ = load_mnist(raw=True)
         n = 100
         x = x[:n]
 
@@ -72,13 +72,11 @@ class TestVisualization(unittest.TestCase):
         path = os.path.join(DATA_PATH, f_name)
         save_image(sprite, path)
         self.assertTrue(os.path.isfile(path))
-        # import matplotlib.pyplot as plt
-        # plt.show(path)
 
         os.remove(path)  # Remove data added
 
     def test_sprites_color(self):
-        (x, _), (_, _), _, _ = load_cifar10_raw()
+        (x, _), (_, _), _, _ = load_cifar10(raw=True)
         n = 500
         x = x[:n]
 
@@ -87,8 +85,6 @@ class TestVisualization(unittest.TestCase):
         path = os.path.join(DATA_PATH, f_name)
         save_image(sprite, path)
         self.assertTrue(os.path.isfile(path))
-        # import matplotlib.pyplot as plt
-        # plt.show(path)
 
         os.remove(path)  # Remove data added
 
