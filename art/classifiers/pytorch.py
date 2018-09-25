@@ -152,17 +152,19 @@ class PyTorchClassifier(Classifier):
         x_ = torch.from_numpy(self._apply_processing(x)).to(self._device)
 
         # Compute gradient wrt what
-        # TODO
-
-
+        layer_idx = self._init_grads()
+        if layer_idx < 0:
+            x_.requires_grad = True
 
         # Compute the gradient and return
         # Run prediction
         model_outputs = self._model(x_)
 
         # Set where to get gradient
-        # TODO
-
+        if layer_idx >= 0:
+            input_grad = model_outputs[layer_idx]
+        else:
+            input_grad = x_
 
         # Set where to get gradient from
         (logit_output, output) = (model_outputs[-2], model_outputs[-1])
