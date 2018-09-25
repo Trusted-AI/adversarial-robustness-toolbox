@@ -18,8 +18,8 @@ class CarliniL2Method(Attack):
     attack_params = Attack.attack_params + ['confidence', 'targeted', 'learning_rate', 'max_iter',
                                             'binary_search_steps', 'initial_const', 'max_halving', 'max_doubling']
 
-    def __init__(self, classifier, confidence=5.0, targeted=True, learning_rate=1e-4, binary_search_steps=10,
-                 max_iter=2, initial_const=1e-4, max_halving=10, max_doubling=10):
+    def __init__(self, classifier, confidence=0.0, targeted=True, learning_rate=0.01, binary_search_steps=10,
+                 max_iter=10, initial_const=0.01, max_halving=5, max_doubling=5):
         """
         Create a Carlini L_2 attack instance.
 
@@ -154,7 +154,7 @@ class CarliniL2Method(Attack):
         # To avoid division by zero (which occurs if arguments of arctanh are +1 or -1),
         # we multiply arguments with _tanh_smoother. It appears this is what Carlini and Wagner
         # (2016) are alluding to in their footnote 8. However, it is not clear how their proposed trick
-        # ("instead of scaling by 1/2 we scale by 1/2 + eps") would actually work.    
+        # ("instead of scaling by 1/2 we scale by 1/2 + eps") works in detail.    
         x_tanh = np.clip(x_original, clip_min, clip_max)
         x_tanh = (x_tanh - clip_min) / (clip_max - clip_min)
         x_tanh = np.arctanh(((x_tanh * 2) - 1) * self._tanh_smoother)
@@ -244,7 +244,6 @@ class CarliniL2Method(Attack):
                     # first, halve the learning rate until perturbation actually decreases the loss:                      
                     prev_loss = loss
                     halving = 0
-                    max_halving = 10
                     while loss >= prev_loss and loss-l2dist > 0 and halving < self.max_halving: 
                         new_adv_image_tanh = adv_image_tanh + lr*perturbation_tanh
                         new_adv_image = self._tanh_to_original(new_adv_image_tanh, clip_min, clip_max)
