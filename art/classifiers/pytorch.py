@@ -151,9 +151,18 @@ class PyTorchClassifier(Classifier):
         # Convert the inputs to Tensors
         x_ = torch.from_numpy(self._apply_processing(x)).to(self._device)
 
+        # Compute gradient wrt what
+        # TODO
+
+
+
         # Compute the gradient and return
         # Run prediction
         model_outputs = self._model(x_)
+
+        # Set where to get gradient
+        # TODO
+
 
         # Set where to get gradient from
         (logit_output, output) = (model_outputs[-2], model_outputs[-1])
@@ -164,6 +173,13 @@ class PyTorchClassifier(Classifier):
 
         # Compute the gradient
         grads = []
+
+        def save_grad():
+            def hook(grad):
+                grads.append(grad.cpu().numpy().copy())
+                grad.data.zero_()
+            return hook
+        input_grad.register_hook(save_grad())
 
         self._model.zero_grad()
         if label is None:
