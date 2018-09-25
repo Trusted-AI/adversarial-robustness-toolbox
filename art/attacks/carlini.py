@@ -47,7 +47,7 @@ class CarliniL2Method(Attack):
         :type max_doubling: `int`
         """
         super(CarliniL2Method, self).__init__(classifier)
-            
+
         kwargs = {'confidence': confidence,
                   'targeted': targeted,
                   'learning_rate': learning_rate,
@@ -58,7 +58,7 @@ class CarliniL2Method(Attack):
                   'max_doubling': max_doubling
                   }
         assert self.set_params(**kwargs)
-        
+
         # There are internal hyperparameters:
         # Abort binary search for c if it exceeds this threshold (suggested in Carlini and Wagner (2016)):
         self._c_upper_bound = 10e10
@@ -90,7 +90,7 @@ class CarliniL2Method(Attack):
         # and -confidence. However, it doesn't seem that that would have the desired effect (loss term is <= 0 if and
         # only if the difference between the logit of the target and any other class differs by at least confidence).
         # Hence the rearrangement here.
-        
+
         if self.targeted:
             # if targeted, optimize for making the target class most likely
             loss = max(z_other - z_target + self.confidence, 0)
@@ -190,22 +190,22 @@ class CarliniL2Method(Attack):
         """        
         x_adv = x.copy()
         (clip_min, clip_max) = self.classifier.clip_values
-        
+
         # Parse and save attack-specific parameters
         params_cpy = dict(kwargs)
         y = params_cpy.pop(str('y'), None)
         self.set_params(**params_cpy)
-        
+
         # Assert that, if attack is targeted, y_val is provided:
         assert not (self.targeted and y is None)
-                
+
         # No labels provided, use model prediction as correct class
         if y is None:
             y = get_labels_np_array(self.classifier.predict(x, logits=False))
-        
+
         for j, (ex, target) in enumerate(zip(x_adv, y)):
             image = ex.copy()
-            
+
             # The optimization is performed in tanh space to keep the
             # adversarial images bounded from clip_min and clip_max. 
             image_tanh = self._original_to_tanh(image, clip_min, clip_max)
@@ -217,8 +217,7 @@ class CarliniL2Method(Attack):
 
             # Initialize placeholders for best l2 distance and attack found so far
             best_l2dist = sys.float_info.max
-            best_adv_image = image
-            
+            best_adv_image = image            
             lr = self.learning_rate
             
             for _ in range(self.binary_search_steps):
@@ -286,7 +285,7 @@ class CarliniL2Method(Attack):
                     else:
                         c = c + (c - c_lower_bound) / 2
                     c_lower_bound = c_old
-                            
+
                 # Abort binary search if c exceeds upper bound:
                 if c > self._c_upper_bound:
                     break
@@ -294,11 +293,11 @@ class CarliniL2Method(Attack):
             x_adv[j] = best_adv_image
 
         return x_adv
-            
+
     def set_params(self, **kwargs):
         """Take in a dictionary of parameters and applies attack-specific checks before saving them as attributes.
 
-        :param confidence: Confidence of adversarial examples: a higher value produces examples that are farther away, 
+        :param confidence: Confidence of adversarial examples: a higher value produces examples that are farther away,
                from the original input, but classified with higher confidence as the target class.
         :type confidence: `float`
         :param targeted: Should the attack target one specific class
@@ -321,7 +320,7 @@ class CarliniL2Method(Attack):
         """
         # Save attack-specific parameters
         super(CarliniL2Method, self).set_params(**kwargs)
-            
+
         if type(self.binary_search_steps) is not int or self.binary_search_steps < 0:
             raise ValueError("The number of binary search steps must be a non-negative integer.")
 

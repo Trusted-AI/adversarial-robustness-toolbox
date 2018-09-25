@@ -12,13 +12,13 @@ else:
 
 class PoisonFilteringDefence(ABC):
     """
-    Base class for all poison filtering defences
+    Base class for all poison filtering defences.
     """
     defence_params = ['classifier']
 
     def __init__(self, classifier, x_train, y_train, verbose=True):
         """
-        Create an ActivationDefence object with the provided classifier
+        Create an :class:`ActivationDefence` object with the provided classifier.
 
         :param classifier: model evaluated for poison
         :type classifier: :class:`Classifier`
@@ -37,7 +37,7 @@ class PoisonFilteringDefence(ABC):
     @abc.abstractmethod
     def detect_poison(self, **kwargs):
         """
-        Detects poison
+        Detect poison.
 
         :param kwargs: Defence-specific parameters used by child classes.
         :type kwargs: `dict`
@@ -48,7 +48,7 @@ class PoisonFilteringDefence(ABC):
     @abc.abstractmethod
     def evaluate_defence(self, is_clean, **kwargs):
         """
-        Evaluates the defence given the
+        Evaluate the defence given the labels specifying if the data is poisoned or not.
 
         :param is_clean: 1-D array where is_clean[i]=1 means x_train[i] is clean and is_clean[i]=0 that it's poison.
         :param kwargs: Defence-specific parameters used by child classes.
@@ -72,7 +72,7 @@ class PoisonFilteringDefence(ABC):
 
     def get_params(self):
         """
-        Returns dictionary of parameters used to run defence
+        Returns dictionary of parameters used to run defence.
 
         :return: `dict`
         """
