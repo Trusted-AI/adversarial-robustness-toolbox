@@ -6,7 +6,6 @@ from __future__ import absolute_import, division, print_function, unicode_litera
 from art import DATA_PATH
 
 import numpy as np
-import cv2
 import os.path
 
 
@@ -57,11 +56,15 @@ def convert_to_rgb(images):
     :return: rgb_images
     """
     s = np.shape(images)
+    if not ((len(s) == 4 and s[-1] == 1) or len(s) == 3):
+        raise ValueError('Unexpected shape for grayscale images:' + str(s))
 
-    rgb_images = np.zeros(shape=(s[0], s[1], s[2], 3))
-    for i, img in enumerate(images):
-        new_image = cv2.cvtColor(img, cv2.COLOR_GRAY2RGB)
-        rgb_images[i] = new_image
+    if s[-1] == 1:
+        # Squeeze channel axis if it exists
+        rgb_images = np.squeeze(images, axis=-1)
+    else:
+        rgb_images = images
+    rgb_images = np.stack((rgb_images,) * 3, axis=-1)
 
     return rgb_images
 
@@ -71,13 +74,15 @@ def save_image(image, f_name):
     Saves image into a file inside DATA_PATH with the name f_name
 
     :param image: Image to be saved
+    :type image: `np.ndarray`
     :param f_name: File name containing extension e.g., my_img.jpg, my_img.png, my_images/my_img.png
     :type f_name: `str`
-    :return:
+    :return: `None`
     """
     file_name = os.path.join(DATA_PATH, f_name)
     if not os.path.exists(os.path.split(file_name)[0]):
         os.makedirs(os.path.split(file_name)[0])
 
-    cv2.imwrite(file_name, image)
+    import scipy.misc
+    scipy.misc.toimage(image, cmin=0.0, cmax=int(np.max(image))).save(file_name)
     print("Image saved to ", file_name)
