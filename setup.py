@@ -30,10 +30,10 @@ install_requires = ['h5py',
                     'setuptools',
                     'scikit-learn']
 
-tests_require = ['mxnet'
+tests_require = ['mxnet',
                  'keras',
                  'Pillow',
-                 'requests'
+                 'requests',
                  'tensorflow',
                  'torch']
 
