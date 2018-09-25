@@ -8,7 +8,7 @@ sys.path.append(abspath('.'))
 
 import keras.backend as k
 from keras.models import Sequential
-from keras.layers import Dense, Flatten, Conv2D, MaxPooling2D, Activation, Dropout
+from keras.layers import Dense, Flatten, Conv2D, MaxPooling2D, Dropout
 import numpy as np
 
 from art.attacks.fast_gradient import FastGradientMethod
