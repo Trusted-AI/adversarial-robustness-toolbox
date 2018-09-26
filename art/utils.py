@@ -4,11 +4,13 @@ Module providing convenience functions.
 from __future__ import absolute_import, division, print_function, unicode_literals
 
 import argparse
-import json
+import logging
 import os
 
 import numpy as np
 from scipy.special import gammainc
+
+logger = logging.getLogger(__name__)
 
 
 def projection(v, eps, p):
