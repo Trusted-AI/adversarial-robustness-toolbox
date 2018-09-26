@@ -33,7 +33,7 @@ class PyTorchClassifier(Classifier):
         self._optimizer = optimizer
 
         # Get the internal layers
-        self._layer_names = self._model.get_layers
+        self._layer_names = self._get_layer_names()
 
         # Use GPU if possible
         import torch
@@ -282,43 +282,6 @@ class PyTorchClassifier(Classifier):
         """
         return self._layer_names
 
-    def get_activations(self, x, layer):
-        """
-        Return the output of the specified layer for input `x`. `layer` is specified by layer index (between 0 and
-        `nb_layers - 1`) or by name. The number of layers can be determined by counting the results returned by
-        calling `layer_names`.
-
-        :param x: Input for computing the activations.
-        :type x: `np.ndarray`
-        :param layer: Layer for computing the activations
-        :type layer: `int` or `str`
-        :return: The output of `layer`, where the first dimension is the batch size corresponding to `x`.
-        :rtype: `np.ndarray`
-        """
-        import torch
-
-        # Apply defences
-        x = self._apply_defences_predict(x)
-
-        # Set test phase
-        self._model.train(False)
-
-        # Run prediction
-        model_outputs = self._model(torch.from_numpy(self._apply_processing(x)).to(self._device))[:-1]
-
-        if isinstance(layer, six.string_types):
-            if layer not in self._layer_names:
-                raise ValueError("Layer name %s not supported" % layer)
-            layer_index = self._layer_names.index(layer)
-
-        elif isinstance(layer, (int, np.integer)):
-            layer_index = layer
-
-        else:
-            raise TypeError("Layer must be of type str or int")
-
-        return model_outputs[layer_index].detach().cpu().numpy()
-
     try:
         import torch.nn as nn
 
@@ -436,7 +399,49 @@ class PyTorchImageClassifier(ImageClassifier, PyTorchClassifier):
         self._input_shape = input_shape
 
     def _init_grads(self):
+
         return -1
+
+    def _get_layer_names(self):
+
+        return self._model.get_layers
+
+    def get_activations(self, x, layer):
+        """
+        Return the output of the specified layer for input `x`. `layer` is specified by layer index (between 0 and
+        `nb_layers - 1`) or by name. The number of layers can be determined by counting the results returned by
+        calling `layer_names`.
+
+        :param x: Input for computing the activations.
+        :type x: `np.ndarray`
+        :param layer: Layer for computing the activations
+        :type layer: `int` or `str`
+        :return: The output of `layer`, where the first dimension is the batch size corresponding to `x`.
+        :rtype: `np.ndarray`
+        """
+        import torch
+
+        # Apply defences
+        x = self._apply_defences_predict(x)
+
+        # Set test phase
+        self._model.train(False)
+
+        # Run prediction
+        model_outputs = self._model(torch.from_numpy(self._apply_processing(x)).to(self._device))[:-1]
+
+        if isinstance(layer, six.string_types):
+            if layer not in self._layer_names:
+                raise ValueError("Layer name %s not supported" % layer)
+            layer_index = self._layer_names.index(layer)
+
+        elif isinstance(layer, (int, np.integer)):
+            layer_index = layer
+
+        else:
+            raise TypeError("Layer must be of type str or int")
+
+        return model_outputs[layer_index].detach().cpu().numpy()
 
 
 class PyTorchTextClassifier(TextClassifier, PyTorchClassifier):
@@ -472,7 +477,52 @@ class PyTorchTextClassifier(TextClassifier, PyTorchClassifier):
         self._ids = ids
 
     def _init_grads(self):
+
         return self._embedding_layer
+
+    def _get_layer_names(self):
+        result = self._model.get_layers
+        result = [result[i] for i in range(len(result)) if i != self._embedding_layer]
+
+        return result
+
+    def get_activations(self, x, layer):
+        """
+        Return the output of the specified layer for input `x`. `layer` is specified by layer index (between 0 and
+        `nb_layers - 1`) or by name. The number of layers can be determined by counting the results returned by
+        calling `layer_names`.
+
+        :param x: Input for computing the activations.
+        :type x: `np.ndarray`
+        :param layer: Layer for computing the activations
+        :type layer: `int` or `str`
+        :return: The output of `layer`, where the first dimension is the batch size corresponding to `x`.
+        :rtype: `np.ndarray`
+        """
+        import torch
+
+        # Apply defences
+        x = self._apply_defences_predict(x)
+
+        # Set test phase
+        self._model.train(False)
+
+        # Run prediction
+        model_outputs = self._model(torch.from_numpy(self._apply_processing(x)).to(self._device))[:-1]
+        model_outputs = [model_outputs[i] for i in range(len(model_outputs)) if i != self._embedding_layer]
+
+        if isinstance(layer, six.string_types):
+            if layer not in self._layer_names:
+                raise ValueError("Layer name %s not supported" % layer)
+            layer_index = self._layer_names.index(layer)
+
+        elif isinstance(layer, (int, np.integer)):
+            layer_index = layer
+
+        else:
+            raise TypeError("Layer must be of type str or int")
+
+        return model_outputs[layer_index].detach().cpu().numpy()
 
     def predict_from_embedding(self, x_emb, logits=False, batch_size=128):
         """
