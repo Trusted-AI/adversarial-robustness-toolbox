@@ -247,8 +247,7 @@ class TestTFTextClassifier(unittest.TestCase):
         # Test and get layers
         layer_names = self.classifier.layer_names
         print(layer_names)
-        self.assertTrue(layer_names == ['0_Embedding(1000, 32)', '1_Flatten()',
-                                        '2_Linear(in_features=16000, out_features=8, bias=True)',
+        self.assertTrue(layer_names == ['1_Flatten()', '2_Linear(in_features=16000, out_features=8, bias=True)',
                                         '3_Linear(in_features=8, out_features=2, bias=True)'])
 
         for i, name in enumerate(layer_names):
@@ -259,11 +258,9 @@ class TestTFTextClassifier(unittest.TestCase):
         print(self.classifier.get_activations(x_test, 0).shape)
         print(self.classifier.get_activations(x_test, 1).shape)
         print(self.classifier.get_activations(x_test, 2).shape)
-        print(self.classifier.get_activations(x_test, 3).shape)
-        self.assertTrue(self.classifier.get_activations(x_test, 0).shape == (NB_TEST, 500, 32))
-        self.assertTrue(self.classifier.get_activations(x_test, 1).shape == (NB_TEST, 16000))
-        self.assertTrue(self.classifier.get_activations(x_test, 2).shape == (NB_TEST, 8))
-        self.assertTrue(self.classifier.get_activations(x_test, 3).shape == (NB_TEST, 2))
+        self.assertTrue(self.classifier.get_activations(x_test, 0).shape == (NB_TEST, 16000))
+        self.assertTrue(self.classifier.get_activations(x_test, 1).shape == (NB_TEST, 8))
+        self.assertTrue(self.classifier.get_activations(x_test, 2).shape == (NB_TEST, 2))
 
     def test_embedding(self):
         # Get IMDB
