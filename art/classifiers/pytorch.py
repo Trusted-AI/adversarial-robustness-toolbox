@@ -514,7 +514,44 @@ class PyTorchTextClassifier(TextClassifier, PyTorchClassifier):
 
         return model_outputs[self._embedding_layer].cpu().detach().numpy()
 
+    def to_id(self, x_emb, strategy='nearest', metric='cosine'):
+        """
+        Convert the received input from embedding space to classifier input (most often, token indices).
 
+        :param x_emb: Array of inputs in embedding form, often shaped as `(batch_size, input_length, embedding_size)`.
+        :type x_emb: `np.ndarray`
+        :param strategy: Strategy from mapping from embedding space back to input space.
+        :type strategy: `str` or `Callable`
+        :param metric: Metric to be used in the embedding space when determining vocabulary token proximity.
+        :type metric: `str` or `Callable`
+        :return: Array of token indices for sample `x_emb`.
+        :rtype: `np.ndarray`
+        """
+        if strategy != 'nearest':
+            raise ValueError('Nearest neighbor is currently the only supported strategy for mapping embeddings to '
+                             'valid tokens.')
+
+        if metric == 'cosine':
+            from art.utils import cosine
+
+            v_size = len(self._ids)
+            if v_size % x_emb.shape[1] > 0:
+                for _ in range(x_emb.shape[1] - (v_size % x_emb.shape[1])):
+                    self._ids.append(self._ids[0])
+            embeddings = self.to_embedding(np.reshape(np.array(self._ids), (-1, x_emb.shape[1])))
+            embeddings = np.reshape(embeddings, (-1, x_emb.shape[2]))[:v_size]
+            self._ids = self._ids[:v_size]
+
+            neighbors = []
+            for x in x_emb:
+                for emb_x in x:
+                    metric = [cosine(emb, emb_x) for emb in embeddings]
+                    neighbors.append(self._ids[int(np.argpartition(metric, -1)[-1])])
+        else:
+            raise ValueError('Cosine similarity is currently the only supported metric for mapping embeddings to '
+                             'valid tokens.')
+
+        return np.reshape(np.array(neighbors), (-1, x_emb.shape[1]))
 
 
 
