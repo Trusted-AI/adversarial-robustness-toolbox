@@ -1,6 +1,11 @@
 import os
 
 import json
+import logging
+
+# Set default logging handler to avoid "No handler found" warnings
+logger = logging.getLogger(__name__)
+logger.addHandler(logging.NullHandler())
 
 _folder = os.path.expanduser('~')
 if not os.access(_folder, os.W_OK):
@@ -19,8 +24,7 @@ if not os.path.exists(_folder):
     try:
         os.makedirs(_folder)
     except OSError:
-        # Log warning here
-        pass
+        logger.warning('Unable to create folder for configuration file.', exc_info=True)
 
 if not os.path.exists(_config_path):
     # Generate default config
@@ -30,8 +34,7 @@ if not os.path.exists(_config_path):
         with open(_config_path, 'w') as f:
             f.write(json.dumps(_config, indent=4))
     except IOError:
-        # Log warning here
-        pass
+        logger.warning('Unable to create configuration file.', exc_info=True)
 
 if 'DATA_PATH' in _config:
     DATA_PATH = _config['DATA_PATH']
