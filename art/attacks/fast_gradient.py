@@ -1,9 +1,13 @@
 from __future__ import absolute_import, division, print_function, unicode_literals
 
+import logging
+
 import numpy as np
 
 from art.attacks.attack import Attack
 from art.utils import get_labels_np_array, random_sphere
+
+logger = logging.getLogger(__name__)
 
 
 class FastGradientMethod(Attack):
@@ -120,6 +124,7 @@ class FastGradientMethod(Attack):
                 raise ValueError('Target labels `y` need to be provided for a targeted attack.')
 
             # Use model predictions as correct outputs
+            logger.info('Using model predictions as correct labels for FGM.')
             y = get_labels_np_array(self.classifier.predict(x))
         else:
             y = params_cpy.pop(str('y'))
@@ -127,9 +132,19 @@ class FastGradientMethod(Attack):
 
         # Return adversarial examples computed with minimal perturbation if option is active
         if 'minimal' in params_cpy and params_cpy[str('minimal')]:
-            return self._minimal_perturbation(x, y, **params_cpy)
+            logger.info('Performing minimal perturbation FGM.')
+            x_adv = self._minimal_perturbation(x, y, **params_cpy)
+        else:
+            x_adv = self._compute(x, y, self.eps, self.random_init)
 
-        return self._compute(x, y, self.eps, self.random_init)
+        adv_preds = np.argmax(self.classifier.predict(x_adv), axis=1)
+        if self.targeted:
+            rate = np.sum(adv_preds == np.argmax(y, axis=1)) / x_adv.shape[0]
+        else:
+            rate = np.sum(adv_preds != np.argmax(y, axis=1)) / x_adv.shape[0]
+        logger.info('Success rate of FGM attack: %.2f%%', rate)
+
+        return x_adv
 
     def set_params(self, **kwargs):
         """
