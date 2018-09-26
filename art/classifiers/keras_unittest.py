@@ -58,7 +58,9 @@ class TestKerasClassifier(unittest.TestCase):
         result = requests.get(url, stream=True)
         if result.status_code == 200:
             image = result.raw.read()
-            open(os.path.join(cls.test_dir, 'test.jpg'), 'wb').write(image)
+            f = open(os.path.join(cls.test_dir, 'test.jpg'), 'wb')
+            f.write(image)
+            f.close()
 
     @classmethod
     def tearDownClass(cls):
