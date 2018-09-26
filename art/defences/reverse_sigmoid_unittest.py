@@ -1,5 +1,6 @@
 from __future__ import absolute_import, division, print_function, unicode_literals
 
+import logging
 import unittest
 
 import numpy as np
@@ -8,6 +9,8 @@ from keras.layers import Input, Activation
 
 from art.classifiers import KerasClassifier
 from art.defences.reverse_sigmoid import ReverseSigmoid
+
+logger = logging.getLogger(__name__)
 
 
 class TestReverseSigmoid(unittest.TestCase):
