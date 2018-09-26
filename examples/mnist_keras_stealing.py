@@ -3,9 +3,9 @@ An example of stealing and protecting a Keras classifier on MNIST.
 """
 from __future__ import absolute_import, division, print_function, unicode_literals
 
-from keras.models import Sequential
-from keras.layers import Dense, Conv2D, MaxPooling2D, Flatten, Dropout
 import numpy as np
+from keras.layers import Dense, Conv2D, MaxPooling2D, Flatten, Dropout
+from keras.models import Sequential
 
 from art.attacks import SamplingModelTheft
 from art.classifiers import KerasClassifier

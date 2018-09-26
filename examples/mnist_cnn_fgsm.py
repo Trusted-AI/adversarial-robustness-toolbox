@@ -2,8 +2,9 @@
 """Trains a convolutional neural network on the MNIST dataset, then attacks it with the FGSM attack."""
 from __future__ import absolute_import, division, print_function, unicode_literals
 
-from os.path import abspath
 import sys
+from os.path import abspath
+
 sys.path.append(abspath('.'))
 
 import keras.backend as k

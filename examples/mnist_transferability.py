@@ -5,8 +5,9 @@ black-box attack: the attack never has access to the parameters of the TensorFlo
 """
 from __future__ import absolute_import, division, print_function
 
-from os.path import abspath
 import sys
+from os.path import abspath
+
 sys.path.append(abspath('.'))
 
 import keras

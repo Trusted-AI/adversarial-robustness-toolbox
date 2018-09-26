@@ -3,14 +3,14 @@
  and runs activation defence to find poison."""
 from __future__ import absolute_import, division, print_function, unicode_literals
 
-from os.path import abspath
 import sys
+from os.path import abspath
 
 sys.path.append(abspath('.'))
 
 import keras.backend as k
 from keras.models import Sequential
-from keras.layers import Dense, Flatten, Conv2D, MaxPooling2D, Activation, Dropout
+from keras.layers import Dense, Flatten, Conv2D, MaxPooling2D, Dropout
 import numpy as np
 
 from art.classifiers import KerasClassifier
