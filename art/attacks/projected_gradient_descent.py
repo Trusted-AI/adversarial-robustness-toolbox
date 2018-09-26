@@ -37,5 +37,3 @@ class ProjectedGradientDescent(BasicIterativeMethod):
                                                    random_init=random_init)
 
         self._project = True
-
-    
