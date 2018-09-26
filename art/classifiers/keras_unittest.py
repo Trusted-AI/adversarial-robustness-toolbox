@@ -1,14 +1,18 @@
 from __future__ import absolute_import, division, print_function, unicode_literals
 
+import logging
+import unittest
+
 import keras
 import keras.backend as k
-from keras.models import Sequential, Model
-from keras.layers import Dense, Conv2D, MaxPooling2D, Dropout, Input, Flatten
 import numpy as np
-import unittest
+from keras.layers import Dense, Conv2D, MaxPooling2D, Dropout, Input, Flatten
+from keras.models import Sequential, Model
 
 from art.classifiers import KerasClassifier
 from art.utils import load_mnist
+
+logger = logging.getLogger(__name__)
 
 BATCH_SIZE = 10
 NB_TRAIN = 500
@@ -106,11 +110,11 @@ class TestKerasClassifier(unittest.TestCase):
         labels = np.argmax(self.mnist[1][1], axis=1)
         classifier = KerasClassifier((0, 1), self.model_mnist, use_logits=False, custom_activation=custom_activation)
         acc = np.sum(np.argmax(classifier.predict(self.mnist[1][0]), axis=1) == labels) / NB_TEST
-        print("\nAccuracy: %.2f%%" % (acc * 100))
+        logger.info('Accuracy: %.2f%%', (acc * 100))
 
         classifier.fit(self.mnist[0][0], self.mnist[0][1], batch_size=BATCH_SIZE, nb_epochs=2)
         acc2 = np.sum(np.argmax(classifier.predict(self.mnist[1][0]), axis=1) == labels) / NB_TEST
-        print("\nAccuracy: %.2f%%" % (acc2 * 100))
+        logger.info('Accuracy: %.2f%%', (acc2 * 100))
 
         self.assertTrue(acc2 >= .9 * acc)
 

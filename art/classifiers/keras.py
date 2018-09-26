@@ -1,14 +1,18 @@
 from __future__ import absolute_import, division, print_function, unicode_literals
 
-import six
+import logging
+
 import numpy as np
+import six
 
 from art.classifiers import Classifier
+
+logger = logging.getLogger(__name__)
 
 
 class KerasClassifier(Classifier):
     """
-    The supported backends for Keras are TensorFlow and Theano.
+    Wrapper class for importing Keras models. The supported backends for Keras are TensorFlow and Theano.
     """
     def __init__(self, clip_values, model, use_logits=False, channel_index=3, defences=None, preprocessing=(0, 1),
                  input_layer=0, output_layer=0, custom_activation=False):
@@ -58,6 +62,8 @@ class KerasClassifier(Classifier):
         _, self._nb_classes = k.int_shape(self._output)
         self._input_shape = k.int_shape(self._input)[1:]
         self._custom_activation = custom_activation
+        logger.debug('Inferred %i classes and %s as input shape for Keras classifier.', self.nb_classes,
+                    str(self.input_shape))
 
         # Get predictions and loss function
         label_ph = k.placeholder(shape=(None,))
@@ -271,6 +277,7 @@ class KerasClassifier(Classifier):
         k.set_learning_phase(0)
 
         if label is not None:
+            logger.debug('Computing class gradients for class %i.', label)
             if logits:
                 if not hasattr(self, '_class_grads_logits_idx'):
                     self._class_grads_logits_idx = [None for _ in range(self.nb_classes)]
@@ -286,6 +293,7 @@ class KerasClassifier(Classifier):
                     class_grads = [k.gradients(k.softmax(self._preds_op)[:, label], self._input)[0]]
                     self._class_grads_idx[label] = k.function([self._input], class_grads)
         else:
+            logger.debug('Computing class gradients for all %i classes.', self.nb_classes)
             if logits:
                 if not hasattr(self, '_class_grads_logits'):
                     class_grads_logits = [k.gradients(self._preds_op[:, i], self._input)[0]
@@ -307,6 +315,8 @@ class KerasClassifier(Classifier):
         from keras.engine.topology import InputLayer
 
         layer_names = [layer.name for layer in self._model.layers[:-1] if not isinstance(layer, InputLayer)]
+        logger.info('Inferred %i hidden layers on Keras classifier.', len(layer_names))
+
         return layer_names
 
 
