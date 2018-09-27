@@ -19,7 +19,6 @@ from art.poison_detection import ActivationDefence
 import pprint
 
 
-
 def main():
     # Read MNIST dataset (x_raw contains the original images):
     (x_raw, y_raw), (x_raw_test, y_raw_test), min_, max_ = load_mnist(raw=True)
@@ -91,9 +90,7 @@ def main():
     # End-to-end method:
     print("------------------- Results using size metric -------------------")
     print(defence.get_params())
-    confidence_level, is_clean_lst = defence.detect_poison(n_clusters=2,
-                                                           ndims=10,
-                                                           reduce="PCA")
+    defence.detect_poison(n_clusters=2, ndims=10, reduce="PCA")
 
     # Evaluate method when ground truth is known:
     is_clean = (is_poison_train == 0)
@@ -105,30 +102,22 @@ def main():
     print("Visualize clusters")
     defence.visualize_clusters(x_train, 'mnist_poison_demo')
 
-
-
     # Try again using distance analysis this time:
     print("------------------- Results using distance metric -------------------")
     print(defence.get_params())
-    confidence_level, is_clean_lst = defence.detect_poison(n_clusters=2,
-                                                           ndims=10,
-                                                           reduce="PCA",
-                                                           cluster_analysis='distance'
-                                                           )
+    defence.detect_poison(n_clusters=2, ndims=10, reduce="PCA", cluster_analysis='distance')
     confusion_matrix = defence.evaluate_defence(is_clean)
     print("Evaluation defence results for distance-based metric: ")
     pprint.pprint(confusion_matrix)
 
-    # # # Other ways to invoke the defence:
-    clusters_by_class, red_activations_by_class = defence.cluster_activations(n_clusters=2,
-                                                    ndims=10,
-                                                    reduce='PCA')
+    # Other ways to invoke the defence:
+    defence.cluster_activations(n_clusters=2, ndims=10, reduce='PCA')
 
-    distance_clean_by_class = defence.analyze_clusters(cluster_analysis='distance')
-    confusion_matrix = defence.evaluate_defence(is_clean)
+    defence.analyze_clusters(cluster_analysis='distance')
+    defence.evaluate_defence(is_clean)
 
-    size_clean_by_class = defence.analyze_clusters(cluster_analysis='smaller')
-    confusion_matrix = defence.evaluate_defence(is_clean)
+    defence.analyze_clusters(cluster_analysis='smaller')
+    defence.evaluate_defence(is_clean)
 
     print("done :) ")
 
