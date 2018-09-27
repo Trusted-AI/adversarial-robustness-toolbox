@@ -40,7 +40,9 @@ class BasicIterativeMethod(FastGradientMethod):
         if max_iter <= 0:
             raise ValueError('The number of iterations `max_iter` has to be a positive integer.')
         self.max_iter = int(max_iter)
-
+        
+        self._project = False
+        
     def generate(self, x, **kwargs):
         """
         Generate adversarial samples and return them in an array.
@@ -76,27 +78,14 @@ class BasicIterativeMethod(FastGradientMethod):
         else:
             targets = kwargs['y']
         target_labels = np.argmax(targets, axis=1)
-        active_indices = range(len(adv_x))
 
-        for _ in range(self.max_iter):
+        for i in range(self.max_iter):
             # Adversarial crafting
-            adv_x[active_indices] = self._compute(adv_x[active_indices], targets[active_indices], self.eps_step,
-                                                  self.random_init)
-            noise = projection(adv_x[active_indices] - x[active_indices], self.eps, self.norm)
-            adv_x[active_indices] = x[active_indices] + noise
-            adv_preds = self.classifier.predict(adv_x[active_indices])
-
-            # Update active indices
-            if self.targeted:
-                active_subindices = np.where(target_labels[active_indices] != np.argmax(adv_preds, axis=1))[0]
-            else:
-                active_subindices = np.where(target_labels[active_indices] == np.argmax(adv_preds, axis=1))[0]
+            adv_x = self._compute(adv_x, targets, self.eps_step, self.random_init and i==0)
             
-            active_indices = [active_indices[i] for i in active_subindices]
-
-            # Stop if no more indices left to explore
-            if len(active_indices) == 0:
-                break
+            if self._project:
+                noise = projection(adv_x - x, self.eps, self.norm)               
+                adv_x = x + noise
 
         return adv_x
 
