@@ -16,7 +16,7 @@ from art.attacks import CarliniL2Method
 from art.classifiers import KerasClassifier, PyTorchClassifier, TFClassifier
 from art.utils import load_mnist, random_targets
 
-logger = logging.getLogger(__name__)
+logger = logging.getLogger('testLogger')
 
 BATCH_SIZE, NB_TRAIN, NB_TEST = 100, 5000, 10
 

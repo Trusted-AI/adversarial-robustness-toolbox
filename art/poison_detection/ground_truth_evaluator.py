@@ -2,7 +2,6 @@ from __future__ import absolute_import, division, print_function, unicode_litera
 
 import json
 import logging
-import sys
 
 import numpy as np
 
@@ -66,8 +65,7 @@ class GroundTruthEvaluator:
                 elif assignment == clean and bl == poison:
                     errors.append(3)
                 else:
-                    print("ERROR: analyze_correctness entered wrong class")
-                    sys.exit()
+                    raise Exception('Analyze_correctness entered wrong class')
 
             errors = np.asarray(errors)
             logger.debug('-------------------%d---------------', class_i)

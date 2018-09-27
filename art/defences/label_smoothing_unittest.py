@@ -7,7 +7,7 @@ import numpy as np
 
 from art.defences.label_smoothing import LabelSmoothing
 
-logger = logging.getLogger(__name__)
+logger = logging.getLogger('testLogger')
 
 
 class TestLabelSmoothing(unittest.TestCase):

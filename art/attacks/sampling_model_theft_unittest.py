@@ -12,7 +12,7 @@ from art.attacks import SamplingModelTheft
 from art.classifiers import KerasClassifier
 from art.utils import load_dataset
 
-logger = logging.getLogger(__name__)
+logger = logging.getLogger('testLogger')
 
 BATCH_SIZE, NB_TRAIN, NB_TEST = 100, 1000, 10
 

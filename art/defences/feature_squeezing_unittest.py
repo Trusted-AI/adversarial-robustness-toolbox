@@ -7,7 +7,7 @@ import numpy as np
 
 from art.defences.feature_squeezing import FeatureSqueezing
 
-logger = logging.getLogger(__name__)
+logger = logging.getLogger('testLogger')
 
 
 class TestFeatureSqueezing(unittest.TestCase):

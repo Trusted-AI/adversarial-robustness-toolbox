@@ -15,7 +15,7 @@ from art.attacks.newtonfool import NewtonFool
 from art.classifiers import KerasClassifier, PyTorchClassifier, TFClassifier
 from art.utils import load_mnist
 
-logger = logging.getLogger(__name__)
+logger = logging.getLogger('testLogger')
 
 BATCH_SIZE, NB_TRAIN, NB_TEST = 100, 1000, 10
 

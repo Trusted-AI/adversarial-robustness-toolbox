@@ -7,7 +7,7 @@ import numpy as np
 
 from art.defences.thermometer_encoding import ThermometerEncoding
 
-logger = logging.getLogger(__name__)
+logger = logging.getLogger('testLogger')
 
 
 class TestThermometerEncoding(unittest.TestCase):

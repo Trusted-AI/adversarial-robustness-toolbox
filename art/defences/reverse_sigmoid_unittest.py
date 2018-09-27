@@ -10,7 +10,7 @@ from keras.layers import Input, Activation
 from art.classifiers import KerasClassifier
 from art.defences.reverse_sigmoid import ReverseSigmoid
 
-logger = logging.getLogger(__name__)
+logger = logging.getLogger('testLogger')
 
 
 class TestReverseSigmoid(unittest.TestCase):

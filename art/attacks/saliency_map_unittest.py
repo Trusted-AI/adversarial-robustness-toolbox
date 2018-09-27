@@ -17,7 +17,7 @@ from art.attacks.saliency_map import SaliencyMapMethod
 from art.classifiers import KerasClassifier, PyTorchClassifier, TFClassifier
 from art.utils import load_mnist, get_labels_np_array, to_categorical
 
-logger = logging.getLogger(__name__)
+logger = logging.getLogger('testLogger')
 
 # TODO add test with gamma < 1
 

@@ -7,7 +7,7 @@ import unittest
 
 from art.poison_detection.ground_truth_evaluator import GroundTruthEvaluator
 
-logger = logging.getLogger(__name__)
+logger = logging.getLogger('testLogger')
 
 
 class TestGroundTruth(unittest.TestCase):

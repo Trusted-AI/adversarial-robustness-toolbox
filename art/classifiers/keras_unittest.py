@@ -12,7 +12,7 @@ from keras.models import Sequential, Model
 from art.classifiers import KerasClassifier
 from art.utils import load_mnist
 
-logger = logging.getLogger(__name__)
+logger = logging.getLogger('testLogger')
 
 BATCH_SIZE = 10
 NB_TRAIN = 500

@@ -8,7 +8,7 @@ import numpy as np
 from art.utils import load_mnist, projection, random_sphere, to_categorical
 from art.utils import random_targets, get_label_conf, get_labels_np_array, preprocess
 
-logger = logging.getLogger(__name__)
+logger = logging.getLogger('testLogger')
 
 BATCH_SIZE = 10
 NB_TRAIN = 100

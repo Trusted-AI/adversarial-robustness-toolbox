@@ -7,7 +7,7 @@ import numpy as np
 
 from art.defences.gaussian_augmentation import GaussianAugmentation
 
-logger = logging.getLogger(__name__)
+logger = logging.getLogger('testLogger')
 
 
 class TestGaussianAugmentation(unittest.TestCase):

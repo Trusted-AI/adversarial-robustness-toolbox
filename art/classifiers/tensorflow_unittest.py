@@ -9,7 +9,7 @@ import tensorflow as tf
 from art.classifiers import TFClassifier
 from art.utils import load_mnist
 
-logger = logging.getLogger(__name__)
+logger = logging.getLogger('testLogger')
 
 
 NB_TRAIN = 1000

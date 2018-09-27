@@ -15,7 +15,7 @@ from art.classifiers.keras import KerasClassifier
 from art.detection.detector import BinaryInputDetector, BinaryActivationDetector
 from art.utils import load_mnist
 
-logger = logging.getLogger(__name__)
+logger = logging.getLogger('testLogger')
 
 BATCH_SIZE, NB_TRAIN, NB_TEST = 100, 1000, 10
 

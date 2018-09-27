@@ -10,13 +10,12 @@ from art import DATA_PATH
 from art.utils import load_mnist, load_cifar10
 from art.visualization import create_sprite, convert_to_rgb, save_image
 
-logger = logging.getLogger(__name__)
+logger = logging.getLogger('testLogger')
 
 
 # python -m unittest discover art/ -p 'visualization_unittest.py'
 
 class TestVisualization(unittest.TestCase):
-
     def test_save_image(self):
         (x, _), (_, _), _, _ = load_mnist(raw=True)
 
@@ -37,17 +36,17 @@ class TestVisualization(unittest.TestCase):
         save_image(x[3], f_name_with_dir)
         path = os.path.join(DATA_PATH, f_name_with_dir)
         self.assertTrue(os.path.isfile(path))
-        # os.remove(path)
-        # os.rmdir(os.path.split(path)[0])  # Remove also test folder
+        os.remove(path)
+        os.rmdir(os.path.split(path)[0])  # Remove also test folder
 
         folder = os.path.join('images123456', 'inner')
         f_name_with_dir = os.path.join(folder, 'image4.png')
         save_image(x[3], f_name_with_dir)
         path_nested = os.path.join(DATA_PATH, f_name_with_dir)
         self.assertTrue(os.path.isfile(path_nested))
-        # os.remove(path_nested)
-        # os.rmdir(os.path.split(path_nested)[0])  # Remove inner test folder
-        # os.rmdir(os.path.split(path)[0])  # Remove also test folder
+        os.remove(path_nested)
+        os.rmdir(os.path.split(path_nested)[0])  # Remove inner test folder
+        os.rmdir(os.path.split(path)[0])  # Remove also test folder
 
     def test_convert_gray_to_rgb(self):
         # Get MNIST

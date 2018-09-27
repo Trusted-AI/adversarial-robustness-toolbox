@@ -7,7 +7,7 @@ import numpy as np
 
 from art.defences.spatial_smoothing import SpatialSmoothing
 
-logger = logging.getLogger(__name__)
+logger = logging.getLogger('testLogger')
 
 
 class TestLocalSpatialSmoothing(unittest.TestCase):

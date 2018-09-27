@@ -11,7 +11,7 @@ import torch.optim as optim
 from art.classifiers.pytorch import PyTorchClassifier
 from art.utils import load_mnist
 
-logger = logging.getLogger(__name__)
+logger = logging.getLogger('testLogger')
 
 
 NB_TRAIN = 1000

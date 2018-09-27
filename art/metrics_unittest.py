@@ -17,7 +17,7 @@ from art.classifiers import KerasClassifier, PyTorchClassifier, TFClassifier
 from art.metrics import empirical_robustness, clever_t, clever_u, clever, loss_sensitivity
 from art.utils import load_mnist
 
-logger = logging.getLogger(__name__)
+logger = logging.getLogger('testLogger')
 
 BATCH_SIZE = 10
 NB_TRAIN = 100
@@ -314,7 +314,7 @@ class TestClever(unittest.TestCase):
         krc.fit(x_train, y_train, batch_size=batch_size, nb_epochs=2)
 
         scores = clever(krc, x_test[0], 5, 5, 3, 2, target=None, target_sort=True, c_init=1, pool_factor=10)
-        logger.info("Clever scores for n-1 classes: %f %s", scores, str(scores.shape))
+        logger.info("Clever scores for n-1 classes: %s %s", str(scores), str(scores.shape))
         # Should approx. be in decreasing value
         self.assertTrue(scores.shape == (krc.nb_classes-1,))
 

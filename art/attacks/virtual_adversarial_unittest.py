@@ -16,7 +16,7 @@ from art.attacks.virtual_adversarial import VirtualAdversarialMethod
 from art.classifiers import KerasClassifier, PyTorchClassifier, TFClassifier
 from art.utils import load_mnist, get_labels_np_array
 
-logger = logging.getLogger(__name__)
+logger = logging.getLogger('testLogger')
 
 BATCH_SIZE = 10
 NB_TRAIN = 100
