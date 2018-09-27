@@ -14,6 +14,8 @@ from art.utils import load_mnist, load_imdb
 BATCH_SIZE = 10
 NB_TRAIN = 500
 NB_TEST = 100
+EMB_SIZE = 32
+MAX_LENGTH = 500
 
 
 class TestKerasImageClassifier(unittest.TestCase):
@@ -63,12 +65,6 @@ class TestKerasImageClassifier(unittest.TestCase):
         import shutil
         shutil.rmtree(cls.test_dir)
 
-    # def test_logits(self):
-    #     classifier = KerasClassifier((0, 1), self.model_mnist, use_logits=True)
-
-    # def test_probabilities(self):
-    #     classifier = KerasClassifier((0, 1), self.model_mnist, use_logits=False)
-
     @staticmethod
     def functional_model():
         in_layer = Input(shape=(28, 28, 1), name="input0")
@@ -110,6 +106,11 @@ class TestKerasImageClassifier(unittest.TestCase):
 
         self.assertTrue(acc2 >= acc)
 
+    def test_nb_classes(self):
+        classifier = KerasImageClassifier((0, 1), self.model_mnist, loss=k.categorical_crossentropy, use_logits=False)
+
+        self.assertTrue(classifier.nb_classes == 10)
+
     def test_shapes(self):
         x_test, y_test = self.mnist[1]
         classifier = KerasImageClassifier((0, 1), self.model_mnist, loss=k.categorical_crossentropy)
@@ -125,8 +126,41 @@ class TestKerasImageClassifier(unittest.TestCase):
         loss_grads = classifier.loss_gradient(x_test[:11], y_test[:11])
         self.assertTrue(loss_grads.shape == x_test[:11].shape)
 
+    def test_class_gradient(self):
+        (_, _), (x_test, y_test) = self.mnist
+        classifier = KerasImageClassifier((0, 1), self.model_mnist, loss=k.categorical_crossentropy)
+
+        # Test all gradients label
+        grads = classifier.class_gradient(x_test)
+
+        self.assertTrue(np.array(grads.shape == (NB_TEST, 10, 28, 28, 1)).all())
+        self.assertTrue(np.sum(grads) != 0)
+
+        # Test 1 gradient label = 5
+        grads = classifier.class_gradient(x_test, label=5)
+
+        self.assertTrue(np.array(grads.shape == (NB_TEST, 1, 28, 28, 1)).all())
+        self.assertTrue(np.sum(grads) != 0)
+
+        # Test a set of gradients label = array
+        label = np.random.randint(5, size=NB_TEST)
+        grads = classifier.class_gradient(x_test, label=label)
+
+        self.assertTrue(np.array(grads.shape == (NB_TEST, 1, 28, 28, 1)).all())
+        self.assertTrue(np.sum(grads) != 0)
+
+    def test_loss_gradient(self):
+        (_, _), (x_test, y_test) = self.mnist
+        classifier = KerasImageClassifier((0, 1), self.model_mnist, loss=k.categorical_crossentropy)
+
+        # Test gradient
+        grads = classifier.loss_gradient(x_test, y_test)
+
+        self.assertTrue(np.array(grads.shape == (NB_TEST, 28, 28, 1)).all())
+        self.assertTrue(np.sum(grads) != 0)
+
     def test_functional_model(self):
-        # Need to update the functional_model code to produce a model with more than one input and output layers...
+        # Need to update the functional_model code to produce a model with more than one input and output layers
         m = self.functional_model()
         keras_model = KerasImageClassifier((0, 1), m, loss=k.categorical_crossentropy, input_layer=1, output_layer=1)
         self.assertTrue(keras_model._input.name, "input1")
@@ -178,16 +212,17 @@ class TestKerasTextClassifier(unittest.TestCase):
         k.set_learning_phase(1)
 
         # Load IMDB
-        (x_train, y_train), (x_test, y_test), ids = load_imdb(nb_words=1000, max_length=500)
-        # id_to_word = {value: key for key, value in ids.items()}
+        (x_train, y_train), (x_test, y_test), ids = load_imdb(nb_words=1000, max_length=MAX_LENGTH)
 
         x_train, y_train, x_test, y_test = x_train[:NB_TRAIN], y_train[:NB_TRAIN], x_test[:NB_TEST], y_test[:NB_TEST]
         cls.imdb = (x_train, y_train), (x_test, y_test)
+
+        ids = [value for key, value in ids.items()]
         cls.word_ids = ids
 
         # Create basic word model on IMDB
         model = Sequential()
-        model.add(Embedding(1000, 32, input_length=500))
+        model.add(Embedding(1000, EMB_SIZE, input_length=MAX_LENGTH))
         model.add(Conv1D(filters=16, kernel_size=3))
         model.add(LeakyReLU(alpha=.2))
         model.add(MaxPooling1D())
@@ -219,8 +254,62 @@ class TestKerasTextClassifier(unittest.TestCase):
 
         self.assertTrue(acc2 >= acc)
 
+    def test_nb_classes(self):
+        classifier = KerasTextClassifier(model=self.model, ids=self.word_ids, loss=k.binary_crossentropy)
+        self.assertTrue(classifier.nb_classes == 2)
+
     def test_embedding(self):
-        return
-        # (x_train, y_train), (x_test, y_test) = self.imdb
-        #
-        # classifier = KerasTextClassifier(model=self.model, loss=k.binary_crossentropy, use_logits=False)
+        (_, _), (x_test, y_test) = self.imdb
+
+        classifier = KerasTextClassifier(model=self.model, ids=self.word_ids, loss=k.binary_crossentropy)
+        emb_test = classifier.to_embedding(x_test[:5])
+
+        recovered_ids = classifier.to_id(emb_test)
+        self.assertTrue(np.array_equal(x_test[:5], recovered_ids))
+
+        pred_emb = classifier.predict_from_embedding(emb_test)
+        pred = classifier.predict(x_test[:5])
+        self.assertTrue(np.array_equal(pred_emb, pred))
+
+    def test_shapes(self):
+        (_, _), (x_test, y_test) = self.imdb
+        y_test = np.expand_dims(y_test, axis=1)
+
+        classifier = KerasTextClassifier(model=self.model, ids=self.word_ids, loss=k.binary_crossentropy)
+
+        preds = classifier.predict(x_test)
+        preds_logits = classifier.predict(x_test, logits=True)
+        self.assertTrue(preds.shape == y_test.shape)
+        self.assertTrue(preds.shape == preds_logits.shape)
+
+        word_grads = classifier.word_gradient(x_test[:11], y_test[:11])
+        self.assertTrue(word_grads.shape == (11, MAX_LENGTH))
+
+    def test_loss_gradient(self):
+        # Get IMDB
+        (_, _), (x_test, y_test) = self.imdb
+        y_test = np.expand_dims(y_test, axis=1)
+
+        # Test gradient
+        classifier = KerasTextClassifier(model=self.model, ids=self.word_ids, loss=k.binary_crossentropy)
+        grads = classifier.loss_gradient(x_test, y_test)
+
+        self.assertTrue(grads.shape == (NB_TEST, 500, 32))
+        self.assertTrue(np.sum(grads) != 0)
+
+    def test_layers(self):
+        # Get IMDB
+        (_, _), (x_test, y_test) = self.imdb
+
+        classifier = KerasTextClassifier(model=self.model, ids=self.word_ids, loss=k.binary_crossentropy)
+        self.assertEqual(len(classifier.layer_names), 6)
+
+        layer_names = classifier.layer_names
+        for i, name in enumerate(layer_names):
+            act_i = classifier.get_activations(x_test, i)
+            act_name = classifier.get_activations(x_test, name)
+            self.assertAlmostEqual(np.sum(act_name - act_i), 0)
+
+
+if __name__ == '__main__':
+    unittest.main()

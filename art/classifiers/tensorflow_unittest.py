@@ -277,12 +277,16 @@ class TestTFTextClassifier(unittest.TestCase):
 
         # Test to id
         x_id = self.classifier.to_id(x_emb)
-        print(x_id, x_test)
+        # print(x_id, x_test)
         self.assertTrue((x_id == x_test).all())
 
 
 if __name__ == '__main__':
     unittest.main()
+
+
+
+
 
 
 

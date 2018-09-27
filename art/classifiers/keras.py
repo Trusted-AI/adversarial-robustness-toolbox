@@ -41,6 +41,9 @@ class KerasClassifier(Classifier):
             self._output = model.output
 
         _, self._nb_classes = k.int_shape(self._output)
+        # Treat binary classification separately
+        if self._nb_classes == 1:
+            self._nb_classes = 2
 
         # Get predictions and loss function
         label_ph = k.placeholder(shape=self._output.shape)
@@ -67,6 +70,7 @@ class KerasClassifier(Classifier):
         # Set loss, grads and prediction functions
         self._preds_op = preds
         self._loss_op = loss_
+        self._label_op = label_ph
         self._loss = k.function([self._input], [loss_])
         self._preds = k.function([self._input], [preds])
 
@@ -92,7 +96,6 @@ class KerasClassifier(Classifier):
         x_ = self._apply_processing(x)
         grads = self._loss_grads([x_, y])[0]
         grads = self._apply_processing_gradient(grads)
-        assert grads.shape == x_.shape
 
         return grads
 
@@ -109,17 +112,30 @@ class KerasClassifier(Classifier):
         :type logits: `bool`
         :return: Array of gradients of input features w.r.t. each class in the form
                  `(batch_size, nb_classes, input_shape)` when computing for all classes, otherwise shape becomes
-                 `(batch_size, 1, input_shape)` when `label` parameter is specified.
+                 `(batch_size, 1, input_shape)` when the `label` parameter is specified.
         :rtype: `np.ndarray`
         """
-        if label is not None and label not in range(self._nb_classes):
+        # Check value of label for computing gradients
+        if not (label is None or (type(label) is int and label in range(self.nb_classes))
+                or (type(label) is np.ndarray and len(label.shape) == 1 and (label < self.nb_classes).all()
+                    and label.shape[0] == x.shape[0])):
             raise ValueError('Label %s is out of range.' % label)
 
         self._init_class_grads(label=label, logits=logits)
 
         x_ = self._apply_processing(x)
 
-        if label is not None:
+        if label is None:
+            # Compute the gradients w.r.t. all classes
+            if logits:
+                grads = np.swapaxes(np.array(self._class_grads_logits([x_])), 0, 1)
+            else:
+                grads = np.swapaxes(np.array(self._class_grads([x_])), 0, 1)
+
+            grads = self._apply_processing_gradient(grads)
+
+        elif type(label) is int:
+            # Compute the gradients only w.r.t. the provided label
             if logits:
                 grads = np.swapaxes(np.array(self._class_grads_logits_idx[label]([x_])), 0, 1)
             else:
@@ -127,14 +143,19 @@ class KerasClassifier(Classifier):
 
             grads = self._apply_processing_gradient(grads)
             assert grads.shape == (x_.shape[0], 1) + self.input_shape
+
         else:
+            # For each sample, compute the gradients w.r.t. the indicated target class (possibly distinct)
+            unique_label = list(np.unique(label))
             if logits:
-                grads = np.swapaxes(np.array(self._class_grads_logits([x_])), 0, 1)
+                grads = np.array([self._class_grads_logits_idx[l]([x_]) for l in unique_label])
             else:
-                grads = np.swapaxes(np.array(self._class_grads([x_])), 0, 1)
+                grads = np.array([self._class_grads_idx[l]([x_]) for l in unique_label])
+            grads = np.swapaxes(np.squeeze(grads, axis=1), 0, 1)
+            lst = [unique_label.index(i) for i in label]
+            grads = np.expand_dims(grads[np.arange(len(grads)), lst], axis=1)
 
             grads = self._apply_processing_gradient(grads)
-            assert grads.shape == (x_.shape[0], self.nb_classes) + self.input_shape
 
         return grads
 
@@ -159,7 +180,7 @@ class KerasClassifier(Classifier):
         x_ = self._apply_defences_predict(x_)
 
         # Run predictions with batching
-        preds = np.zeros((x_.shape[0], self.nb_classes), dtype=np.float32)
+        preds = np.zeros((x_.shape[0], *self._output.shape[1:]))
         for b in range(int(np.ceil(x_.shape[0] / float(batch_size)))):
             begin, end = b * batch_size,  min((b + 1) * batch_size, x_.shape[0])
             preds[begin:end] = self._preds([x_[begin:end]])[0]
@@ -241,45 +262,54 @@ class KerasClassifier(Classifier):
         output_func = k.function([self._input], [layer_output])
 
         # Apply preprocessing and defences
-        if x.shape == self.input_shape:
-            x_ = np.expand_dims(x, 0)
-        else:
-            x_ = x
         x_ = self._apply_processing(x_)
         x_ = self._apply_defences_predict(x_)
 
         return output_func([x_])[0]
 
-    def _init_class_grads(self, label=None, logits=False):
+    def _gen_init_class_grads(self, input_tensor, label=None, logits=False):
         import keras.backend as k
         k.set_learning_phase(0)
 
-        if label is not None:
-            if logits:
-                if not hasattr(self, '_class_grads_logits_idx'):
-                    self._class_grads_logits_idx = [None for _ in range(self.nb_classes)]
-
-                if self._class_grads_logits_idx[label] is None:
-                    class_grads_logits = [k.gradients(self._preds_op[:, label], self._input)[0]]
-                    self._class_grads_logits_idx[label] = k.function([self._input], class_grads_logits)
-            else:
-                if not hasattr(self, '_class_grads_idx'):
-                    self._class_grads_idx = [None for _ in range(self.nb_classes)]
-
-                if self._class_grads_idx[label] is None:
-                    class_grads = [k.gradients(k.softmax(self._preds_op)[:, label], self._input)[0]]
-                    self._class_grads_idx[label] = k.function([self._input], class_grads)
+        if len(self._output.shape) == 2:
+            nb_outputs = self._output.shape[1]
         else:
+            raise ValueError('Unexpected output shape for classification in Keras model.')
+
+        if label is None:
             if logits:
                 if not hasattr(self, '_class_grads_logits'):
-                    class_grads_logits = [k.gradients(self._preds_op[:, i], self._input)[0]
-                                          for i in range(self.nb_classes)]
-                    self._class_grads_logits = k.function([self._input], class_grads_logits)
+                    class_grads_logits = [k.gradients(self._preds_op[:, i], input_tensor)[0]
+                                          for i in range(nb_outputs)]
+                    self._class_grads_logits = k.function([input_tensor], class_grads_logits)
             else:
                 if not hasattr(self, '_class_grads'):
-                    class_grads = [k.gradients(k.softmax(self._preds_op)[:, i], self._input)[0]
-                                   for i in range(self.nb_classes)]
-                    self._class_grads = k.function([self._input], class_grads)
+                    class_grads = [k.gradients(k.softmax(self._preds_op)[:, i], input_tensor)[0]
+                                   for i in range(nb_outputs)]
+                    self._class_grads = k.function([input_tensor], class_grads)
+
+        else:
+            if type(label) is int:
+                unique_labels = [label]
+            else:
+                unique_labels = np.unique(label)
+
+            if logits:
+                if not hasattr(self, '_class_grads_logits_idx'):
+                    self._class_grads_logits_idx = [None for _ in range(nb_outputs)]
+
+                for l in unique_labels:
+                    if self._class_grads_logits_idx[l] is None:
+                        class_grads_logits = [k.gradients(self._preds_op[:, l], input_tensor)[0]]
+                        self._class_grads_logits_idx[l] = k.function([input_tensor], class_grads_logits)
+            else:
+                if not hasattr(self, '_class_grads_idx'):
+                    self._class_grads_idx = [None for _ in range(nb_outputs)]
+
+                for l in unique_labels:
+                    if self._class_grads_idx[l] is None:
+                        class_grads = [k.gradients(k.softmax(self._preds_op)[:, l], input_tensor)[0]]
+                        self._class_grads_idx[l] = k.function([input_tensor], class_grads)
 
     def _get_layers(self):
         """
@@ -288,9 +318,10 @@ class KerasClassifier(Classifier):
         :return: The hidden layers in the model, input and output layers excluded.
         :rtype: `list`
         """
-        from keras.engine.topology import InputLayer
+        from keras.layers import InputLayer, Embedding
 
-        layer_names = [layer.name for layer in self._model.layers[:-1] if not isinstance(layer, InputLayer)]
+        layer_names = [layer.name for layer in self._model.layers[:-1]
+                       if not isinstance(layer, InputLayer) and not isinstance(layer, Embedding)]
         return layer_names
 
 
@@ -334,6 +365,9 @@ class KerasImageClassifier(ImageClassifier, KerasClassifier):
         self._input_shape = k.int_shape(self._input)[1:]
         self._channel_index = channel_index
 
+    def _init_class_grads(self, label=None, logits=False):
+        self._gen_init_class_grads(input_tensor=self._input, label=label, logits=logits)
+
 
 class KerasTextClassifier(TextClassifier, KerasClassifier):
     """
@@ -365,17 +399,16 @@ class KerasTextClassifier(TextClassifier, KerasClassifier):
                                  output_layer=output_layer)
 
         if type(embedding_layer) is int:
-            embedding_name = self._layer_names[embedding_layer]
+            embedding = self._model.layers[embedding_layer]
         else:
             raise ValueError('Expected `int` for `embedding_layer`, got %s.' % str(type(embedding_layer)))
 
-        self._embedding = self._model.get_layer(embedding_name)
+        self._embedding = embedding
         self._embedding_from_input = k.function([self._input], [self._embedding.output])
         self._preds_from_embedding = k.function([self._embedding.output], [self._preds_op])
         self._ids = ids
 
         if not hasattr(self, '_loss_grads') or self._loss_grads is None:
-            label_ph = k.placeholder(shape=self._output.shape)
             loss_grads = k.gradients(self._loss_op, self._embedding.output)
 
             if k.backend() == 'tensorflow':
@@ -383,7 +416,7 @@ class KerasTextClassifier(TextClassifier, KerasClassifier):
             elif k.backend() == 'cntk':
                 raise NotImplementedError('Only TensorFlow and Theano support is provided for Keras.')
 
-            self._loss_grads = k.function([self._input, label_ph], [loss_grads])
+            self._loss_grads = k.function([self._input, self._label_op], [loss_grads])
 
     def predict_from_embedding(self, x_emb, logits=False, batch_size=128):
         """
@@ -402,7 +435,7 @@ class KerasTextClassifier(TextClassifier, KerasClassifier):
         k.set_learning_phase(0)
 
         # Run predictions with batching
-        preds = np.zeros((x_emb.shape[0], self.nb_classes), dtype=np.float32)
+        preds = np.zeros((x_emb.shape[0], *self._output.shape[1:]), dtype=np.float32)
         for b in range(int(np.ceil(x_emb.shape[0] / float(batch_size)))):
             begin, end = b * batch_size,  min((b + 1) * batch_size, x_emb.shape[0])
             preds[begin:end] = self._preds_from_embedding([x_emb[begin:end]])[0]
@@ -425,7 +458,7 @@ class KerasTextClassifier(TextClassifier, KerasClassifier):
         import keras.backend as k
         k.set_learning_phase(0)
 
-        return self._embedding_from_input([x])
+        return self._embedding_from_input([x])[0]
 
     def to_id(self, x_emb, strategy='nearest', metric='cosine'):
         """
@@ -454,13 +487,17 @@ class KerasTextClassifier(TextClassifier, KerasClassifier):
 
             neighbors = []
             for x in x_emb:
-                metric = [cosine(emb, x) for emb in embeddings]
-                neighbors.append(self._ids[int(np.argpartition(metric, -1)[-1])])
+                for token in x:
+                    metric = [cosine(emb, token) for emb in embeddings]
+                    neighbors.append(self._ids[int(np.argpartition(metric, -1)[-1])])
         else:
             raise ValueError('Cosine similarity is currently the only supported metric for mapping embeddings to '
                              'valid tokens.')
 
-        return np.array(neighbors)
+        return np.reshape(np.array(neighbors), x_emb.shape[:-1])
+
+    def _init_class_grads(self, label=None, logits=False):
+        self._gen_init_class_grads(input_tensor=self._embedding, label=label, logits=logits)
 
 
 def generator_fit(x, y, batch_size=128):
