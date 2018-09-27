@@ -46,7 +46,7 @@ class BasicIterativeMethod(FastGradientMethod):
     def generate(self, x, **kwargs):
         """
         Generate adversarial samples and return them in an array.
-
+        
         :param x: An array with the original inputs.
         :type x: `np.ndarray`
         :param norm: Order of the norm. Possible values: np.inf, 1 or 2.
@@ -86,13 +86,13 @@ class BasicIterativeMethod(FastGradientMethod):
             if self._project:
                 noise = projection(adv_x - x, self.eps, self.norm)               
                 adv_x = x + noise
-            
+
         return adv_x
 
     def set_params(self, **kwargs):
         """
         Take in a dictionary of parameters and applies attack-specific checks before saving them as attributes.
-
+       
         :param norm: Order of the norm. Possible values: np.inf, 1 or 2.
         :type norm: `int`
         :param eps: Maximum perturbation that the attacker can introduce.

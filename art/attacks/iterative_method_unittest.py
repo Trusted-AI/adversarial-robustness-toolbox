@@ -14,7 +14,7 @@ import torch.optim as optim
 
 from art.attacks.iterative_method import BasicIterativeMethod
 from art.classifiers import KerasClassifier, PyTorchClassifier, TFClassifier
-from art.utils import load_mnist, get_labels_np_array
+from art.utils import to_categorical, load_mnist, get_labels_np_array
 
 
 BATCH_SIZE = 10
@@ -123,7 +123,42 @@ class TestIterativeAttack(unittest.TestCase):
 
         acc = np.sum(np.argmax(test_y_pred, axis=1) == np.argmax(y_test, axis=1)) / y_test.shape[0]
         print('\nAccuracy on adversarial test examples: %.2f%%' % (acc * 100))
+        
+        
+    def _test_mnist_targeted(self, classifier):
+        # Get MNIST
+        (x_train, y_train), (x_test, y_test) = self.mnist
 
+        # Test FGSM with np.inf norm
+        attack = BasicIterativeMethod(classifier, eps=1.0, eps_step=0.1, targeted=True)
+        #y_test_adv = to_categorical((np.argmax(y_test, axis=1) + 1)  % 10, 10)
+        pred_sort = classifier.predict(x_test).argsort(axis=1)
+        y_test_adv = np.zeros((x_test.shape[0],10))
+        for i in range(x_test.shape[0]):
+            y_test_adv[i,pred_sort[i,-2]] = 1.0
+        x_test_adv = attack.generate(x_test, eps_step=0.01, eps=1.0, y=y_test_adv)
+
+        self.assertFalse((x_test == x_test_adv).all())
+
+        test_y_pred = get_labels_np_array(classifier.predict(x_test_adv))
+
+        self.assertEqual(y_test_adv.shape, test_y_pred.shape)
+        # This doesn't work all the time, espeically with small networks
+        self.assertTrue((y_test_adv == test_y_pred).sum() >= x_test.shape[0]//2)
+    
+    def test_mnist_targeted(self):
+        # Define all backends to test
+        backends = {'keras': self.classifier_k,
+                    'tf': self.classifier_tf,
+                    'pytorch': self.classifier_py}
+
+        for _, classifier in backends.items():
+            if _ == 'pytorch':
+                self._swap_axes()
+            self._test_mnist_targeted(classifier)
+            if _ == 'pytorch':
+                self._swap_axes()
+   
     @staticmethod
     def _cnn_mnist_tf(input_shape):
         labels_tf = tf.placeholder(tf.float32, [None, 10])

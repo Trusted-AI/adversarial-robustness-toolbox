@@ -14,7 +14,7 @@ from keras.layers import Dense, Flatten, Conv2D, MaxPooling2D, Activation, Dropo
 import numpy as np
 
 from art.classifiers import KerasClassifier
-from art.utils import load_mnist_raw, preprocess
+from art.utils import load_mnist, preprocess
 from art.poison_detection import ActivationDefence
 import pprint
 
@@ -22,7 +22,7 @@ import pprint
 
 def main():
     # Read MNIST dataset (x_raw contains the original images):
-    (x_raw, y_raw), (x_raw_test, y_raw_test), min_, max_ = load_mnist_raw()
+    (x_raw, y_raw), (x_raw_test, y_raw_test), min_, max_ = load_mnist(raw=True)
 
     n_train = np.shape(x_raw)[0]
     num_selection = 5000
@@ -68,7 +68,7 @@ def main():
 
     classifier = KerasClassifier((min_, max_), model=model)
 
-    classifier.fit(x_train, y_train, nb_epochs=2, batch_size=128)
+    classifier.fit(x_train, y_train, nb_epochs=30, batch_size=128)
 
     # Evaluate the classifier on the test set
     preds = np.argmax(classifier.predict(x_test), axis=1)
@@ -94,11 +94,18 @@ def main():
     confidence_level, is_clean_lst = defence.detect_poison(n_clusters=2,
                                                            ndims=10,
                                                            reduce="PCA")
+
     # Evaluate method when ground truth is known:
     is_clean = (is_poison_train == 0)
     confusion_matrix = defence.evaluate_defence(is_clean)
     print("Evaluation defence results for size-based metric: ")
     pprint.pprint(confusion_matrix)
+
+    # Visualize clusters:
+    print("Visualize clusters")
+    defence.visualize_clusters(x_train, 'mnist_poison_demo')
+
+
 
     # Try again using distance analysis this time:
     print("------------------- Results using distance metric -------------------")

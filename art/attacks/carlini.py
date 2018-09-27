@@ -5,7 +5,7 @@ import sys
 import numpy as np
 
 from art.attacks.attack import Attack
-from art.utils import get_labels_np_array, to_categorical
+from art.utils import get_labels_np_array
 
 
 class CarliniL2Method(Attack):
