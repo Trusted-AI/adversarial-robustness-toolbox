@@ -13,7 +13,7 @@ from art.utils import to_categorical
 
 
 NB_TRAIN = 1000
-NB_TEST = 5
+NB_TEST = 20
 
 
 class Model(nn.Module):

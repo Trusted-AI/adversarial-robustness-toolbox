@@ -32,9 +32,6 @@ class PyTorchClassifier(Classifier):
         self._loss = loss
         self._optimizer = optimizer
 
-        # Get the internal layers
-        self._layer_names = self._get_layer_names()
-
         # Use GPU if possible
         import torch
         self._device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
@@ -391,12 +388,14 @@ class PyTorchImageClassifier(ImageClassifier, PyTorchClassifier):
                be divided by the second one.
         :type preprocessing: `tuple`
         """
-
         ImageClassifier.__init__(self, clip_values=clip_values, channel_index=channel_index, defences=defences,
                                  preprocessing=preprocessing)
         PyTorchClassifier.__init__(self, model=model, loss=loss, optimizer=optimizer, nb_classes=nb_classes)
 
         self._input_shape = input_shape
+
+        # Get the internal layers
+        self._layer_names = self._get_layer_names()
 
     def _init_grads(self):
 
@@ -463,18 +462,26 @@ class PyTorchTextClassifier(TextClassifier, PyTorchClassifier):
         :param nb_classes: The number of classes of the model.
         :type nb_classes: `int`
         """
-        TextClassifier.__init__(self)
-        PyTorchClassifier.__init__(self, model=model, loss=loss, optimizer=optimizer, nb_classes=nb_classes)
+        import torch.nn as nn
+
+        if type(model) is not nn.Sequential:
+            raise NotImplementedError("Only a text classifier of type `torch.nn.Sequential` is supported.")
 
         if type(embedding_layer) is not int:
             raise ValueError('Expected `int` for `embedding_layer`, got %s.' % str(type(embedding_layer)))
 
-        if embedding_layer not in range(len(self._layer_names)):
-            raise ValueError("Embedding layer %d is out of range (0 to %d included)." % (embedding_layer,
-                                                                                         len(self._layer_names) - 1))
+        TextClassifier.__init__(self)
+        PyTorchClassifier.__init__(self, model=model, loss=loss, optimizer=optimizer, nb_classes=nb_classes)
 
         self._embedding_layer = embedding_layer
         self._ids = ids
+
+        # Get the internal layers
+        self._layer_names = self._get_layer_names()
+
+        if embedding_layer not in range(len(self._layer_names)):
+            raise ValueError("Embedding layer %d is out of range (0 to %d included)." % (embedding_layer,
+                                                                                         len(self._layer_names) - 1))
 
     def _init_grads(self):
 
