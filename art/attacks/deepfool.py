@@ -1,8 +1,12 @@
 from __future__ import absolute_import, division, print_function, unicode_literals
 
+import logging
+
 import numpy as np
 
 from art.attacks.attack import Attack
+
+logger = logging.getLogger(__name__)
 
 
 class DeepFool(Attack):
@@ -81,6 +85,10 @@ class DeepFool(Attack):
                 nb_iter += 1
 
             x_adv[j] = np.clip(x[j] + (1 + self.epsilon) * (xj[0] - x[j]), clip_min, clip_max)
+
+        preds = np.argmax(self.classifier.predict(x), axis=1)
+        preds_adv = np.argmax(self.classifier.predict(x_adv), axis=1)
+        logger.info('Success rate of DeepFool attack: %.2f%%', (np.sum(preds != preds_adv) / x.shape[0]))
 
         return x_adv
 

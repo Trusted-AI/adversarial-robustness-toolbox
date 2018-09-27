@@ -1,8 +1,12 @@
 from __future__ import absolute_import, division, print_function, unicode_literals
+
+import logging
+
 import numpy as np
 
 from art.attacks import BasicIterativeMethod
-from art.utils import to_categorical, get_labels_np_array
+
+logger = logging.getLogger(__name__)
 
 
 class ProjectedGradientDescent(BasicIterativeMethod):
@@ -14,7 +18,7 @@ class ProjectedGradientDescent(BasicIterativeMethod):
     This is the attack proposed by Madry et al. for adversarial training.
     Paper link: https://arxiv.org/abs/1706.06083
     """
-    attack_params = BasicIterativeMethod.attack_params + ['eps_step', 'max_iter']
+    attack_params = BasicIterativeMethod.attack_params
 
     def __init__(self, classifier, norm=np.inf, eps=.3, eps_step=0.1, max_iter=20, targeted=False, random_init=False):
         """
@@ -33,7 +37,7 @@ class ProjectedGradientDescent(BasicIterativeMethod):
         :param random_init: Whether to start at the original input or a random point within the epsilon ball
         :type random_init: `bool`
         """
-        super(ProjectedGradientDescent, self).__init__(classifier, norm=norm, eps=eps, targeted=targeted,
-                                                   random_init=random_init)
+        super(ProjectedGradientDescent, self).__init__(classifier, norm=norm, eps=eps, eps_step=eps_step,
+                                                       max_iter=max_iter, targeted=targeted, random_init=random_init)
 
         self._project = True

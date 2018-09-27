@@ -1,10 +1,14 @@
 from __future__ import absolute_import, division, print_function, unicode_literals
 
-import numpy as np
+import logging
 import random
+
+import numpy as np
 import six
 
 from art.classifiers.classifier import Classifier
+
+logger = logging.getLogger(__name__)
 
 
 class PyTorchClassifier(Classifier):
@@ -401,6 +405,7 @@ class PyTorchClassifier(Classifier):
 
                 else:
                     raise TypeError("The input model must inherit from `nn.Module`.")
+                logger.info('Inferred %i hidden layers on PyTorch classifier.', len(result))
 
                 return result
 

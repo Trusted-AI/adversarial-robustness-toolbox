@@ -3,26 +3,30 @@ Module providing visualization functions.
 """
 from __future__ import absolute_import, division, print_function, unicode_literals
 
-from art import DATA_PATH
+import logging
+import os.path
 
 import numpy as np
-import os.path
+
+from art import DATA_PATH
+
+logger = logging.getLogger(__name__)
 
 
 def create_sprite(images):
     """
-    Creates a sprite of provided images
+    Creates a sprite of provided images.
 
     :param images: Images to construct the sprite.
     :type images: `np.array`
-    :return:
+    :return: An image array containing the sprite.
+    :rtype: `np.ndarray`
     """
 
     shape = np.shape(images)
 
     if len(shape) < 3 or len(shape) > 4:
-        raise ValueError(
-            "Images provided for sprite have wrong dimensions " + str(len(shape)))
+        raise ValueError('Images provided for sprite have wrong dimensions ' + str(len(shape)))
 
     if len(shape) == 3:
         # Check to see if it's mnist type of images and add axis to show image is gray-scale
@@ -34,13 +38,11 @@ def create_sprite(images):
         images = convert_to_rgb(images)
 
     n = int(np.ceil(np.sqrt(images.shape[0])))
-    padding = ((0, n ** 2 - images.shape[0]), (0, 0),
-               (0, 0)) + ((0, 0),) * (images.ndim - 3)
-    images = np.pad(images, padding, mode='constant',
-                    constant_values=0)
-    # Tile the individual thumbnails into an image.
-    images = images.reshape((n, n) + images.shape[1:]).transpose((0, 2, 1, 3)
-                                                                 + tuple(range(4, images.ndim + 1)))
+    padding = ((0, n ** 2 - images.shape[0]), (0, 0), (0, 0)) + ((0, 0),) * (images.ndim - 3)
+    images = np.pad(images, padding, mode='constant', constant_values=0)
+
+    # Tile the individual thumbnails into an image
+    images = images.reshape((n, n) + images.shape[1:]).transpose((0, 2, 1, 3) + tuple(range(4, images.ndim + 1)))
     images = images.reshape((n * images.shape[1], n * images.shape[3]) + images.shape[4:])
     sprite = (images * 255).astype(np.uint8)
 
@@ -49,11 +51,13 @@ def create_sprite(images):
 
 def convert_to_rgb(images):
     """
-    Converts gray scale images to RGB. It changes NxHxWx1 to a NxHxWx3 tensor,
-    where N is the number of figures, H is the high and W the width
+    Converts grayscale images to RGB. It changes NxHxWx1 to a NxHxWx3 array, where N is the number of figures,
+    H is the high and W the width.
 
-    :param images: Gray scale images NxHxWx1
-    :return: rgb_images
+    :param images: Grayscale images of shape (NxHxWx1).
+    :type images: `np.ndarray`
+    :return: Images in RGB format of shape (NxHxWx3).
+    :rtype: `np.ndarray`
     """
     s = np.shape(images)
     if not ((len(s) == 4 and s[-1] == 1) or len(s) == 3):
@@ -71,7 +75,7 @@ def convert_to_rgb(images):
 
 def save_image(image, f_name):
     """
-    Saves image into a file inside DATA_PATH with the name f_name
+    Saves image into a file inside `DATA_PATH` with the name `f_name`.
 
     :param image: Image to be saved
     :type image: `np.ndarray`
@@ -83,6 +87,7 @@ def save_image(image, f_name):
     if not os.path.exists(os.path.split(file_name)[0]):
         os.makedirs(os.path.split(file_name)[0])
 
-    import scipy.misc
-    scipy.misc.toimage(image, cmin=0.0, cmax=int(np.max(image))).save(file_name)
-    print("Image saved to ", file_name)
+    from PIL import Image
+    im = Image.fromarray(image)
+    im.save(file_name)
+    logger.info('Image saved to %s.', file_name)

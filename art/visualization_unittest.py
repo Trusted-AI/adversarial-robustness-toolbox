@@ -1,18 +1,21 @@
 from __future__ import absolute_import, division, print_function, unicode_literals
 
-import unittest
+import logging
 import os.path
+import unittest
+
 import numpy as np
 
+from art import DATA_PATH
 from art.utils import load_mnist, load_cifar10
 from art.visualization import create_sprite, convert_to_rgb, save_image
-from art import DATA_PATH
+
+logger = logging.getLogger('testLogger')
 
 
 # python -m unittest discover art/ -p 'visualization_unittest.py'
 
 class TestVisualization(unittest.TestCase):
-
     def test_save_image(self):
         (x, _), (_, _), _, _ = load_mnist(raw=True)
 

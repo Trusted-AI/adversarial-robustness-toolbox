@@ -1,8 +1,13 @@
 from __future__ import absolute_import, division, print_function, unicode_literals
+
+import logging
+
 import numpy as np
 
 from art.attacks import FastGradientMethod
-from art.utils import to_categorical, get_labels_np_array
+from art.utils import get_labels_np_array
+
+logger = logging.getLogger(__name__)
 
 
 class BasicIterativeMethod(FastGradientMethod):
@@ -81,11 +86,18 @@ class BasicIterativeMethod(FastGradientMethod):
 
         for i in range(self.max_iter):
             # Adversarial crafting
-            adv_x = self._compute(adv_x, targets, self.eps_step, self.random_init and i==0)
+            adv_x = self._compute(adv_x, targets, self.eps_step, self.random_init and i == 0)
             
             if self._project:
                 noise = projection(adv_x - x, self.eps, self.norm)               
                 adv_x = x + noise
+
+        adv_preds = np.argmax(self.classifier.predict(adv_x), axis=1)
+        if self.targeted:
+            rate = np.sum(adv_preds == target_labels) / adv_x.shape[0]
+        else:
+            rate = np.sum(adv_preds != target_labels) / adv_x.shape[0]
+        logger.info('Success rate of BIM attack: %.2f%%', rate)
 
         return adv_x
 

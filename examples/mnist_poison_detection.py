@@ -3,21 +3,20 @@
  and runs activation defence to find poison."""
 from __future__ import absolute_import, division, print_function, unicode_literals
 
-from os.path import abspath
 import sys
+from os.path import abspath
 
 sys.path.append(abspath('.'))
 
 import keras.backend as k
 from keras.models import Sequential
-from keras.layers import Dense, Flatten, Conv2D, MaxPooling2D, Activation, Dropout
+from keras.layers import Dense, Flatten, Conv2D, MaxPooling2D, Dropout
 import numpy as np
 
 from art.classifiers import KerasClassifier
 from art.utils import load_mnist, preprocess
 from art.poison_detection import ActivationDefence
 import pprint
-
 
 
 def main():
@@ -91,9 +90,7 @@ def main():
     # End-to-end method:
     print("------------------- Results using size metric -------------------")
     print(defence.get_params())
-    confidence_level, is_clean_lst = defence.detect_poison(n_clusters=2,
-                                                           ndims=10,
-                                                           reduce="PCA")
+    defence.detect_poison(n_clusters=2, ndims=10, reduce="PCA")
 
     # Evaluate method when ground truth is known:
     is_clean = (is_poison_train == 0)
@@ -105,30 +102,22 @@ def main():
     print("Visualize clusters")
     defence.visualize_clusters(x_train, 'mnist_poison_demo')
 
-
-
     # Try again using distance analysis this time:
     print("------------------- Results using distance metric -------------------")
     print(defence.get_params())
-    confidence_level, is_clean_lst = defence.detect_poison(n_clusters=2,
-                                                           ndims=10,
-                                                           reduce="PCA",
-                                                           cluster_analysis='distance'
-                                                           )
+    defence.detect_poison(n_clusters=2, ndims=10, reduce="PCA", cluster_analysis='distance')
     confusion_matrix = defence.evaluate_defence(is_clean)
     print("Evaluation defence results for distance-based metric: ")
     pprint.pprint(confusion_matrix)
 
-    # # # Other ways to invoke the defence:
-    clusters_by_class, red_activations_by_class = defence.cluster_activations(n_clusters=2,
-                                                    ndims=10,
-                                                    reduce='PCA')
+    # Other ways to invoke the defence:
+    defence.cluster_activations(n_clusters=2, ndims=10, reduce='PCA')
 
-    distance_clean_by_class = defence.analyze_clusters(cluster_analysis='distance')
-    confusion_matrix = defence.evaluate_defence(is_clean)
+    defence.analyze_clusters(cluster_analysis='distance')
+    defence.evaluate_defence(is_clean)
 
-    size_clean_by_class = defence.analyze_clusters(cluster_analysis='smaller')
-    confusion_matrix = defence.evaluate_defence(is_clean)
+    defence.analyze_clusters(cluster_analysis='smaller')
+    defence.evaluate_defence(is_clean)
 
     print("done :) ")
 

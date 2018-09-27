@@ -1,5 +1,6 @@
 from __future__ import absolute_import, division, print_function, unicode_literals
 
+import logging
 import unittest
 
 import numpy as np
@@ -7,6 +8,8 @@ import tensorflow as tf
 
 from art.classifiers import TFClassifier
 from art.utils import load_mnist
+
+logger = logging.getLogger('testLogger')
 
 
 NB_TRAIN = 1000
@@ -64,7 +67,7 @@ class TestTFClassifier(unittest.TestCase):
         trues_class = np.argmax(y_test, axis=1)
         acc = np.sum(preds_class == trues_class) / len(trues_class)
 
-        print("\nAccuracy: %.2f%%" % (acc * 100))
+        logger.info('Accuracy after fitting: %.2f%%', (acc * 100))
         self.assertGreater(acc, 0.1)
         tf.reset_default_graph()
 
@@ -106,7 +109,7 @@ class TestTFClassifier(unittest.TestCase):
 
         # Test and get layers
         layer_names = self.classifier.layer_names
-        print(layer_names)
+        logger.debug(layer_names)
         self.assertTrue(layer_names == ['conv2d/Relu:0', 'max_pooling2d/MaxPool:0',
                                         'Flatten/flatten/Reshape:0', 'dense/BiasAdd:0'])
 

@@ -1,10 +1,14 @@
 from __future__ import absolute_import, division, print_function, unicode_literals
 
+import logging
 from types import MethodType
+
 import numpy as np
 
 from art.classifiers import KerasClassifier
 from art.defences.network_manipulator import NetworkManipulator
+
+logger = logging.getLogger(__name__)
 
 
 class ReverseSigmoid(NetworkManipulator):
@@ -25,6 +29,7 @@ class ReverseSigmoid(NetworkManipulator):
         """
         if streamlined:
             if isinstance(classifier, KerasClassifier):
+                logger.info('Using Keras specific code for the reverse sigmoid defence.')
                 from keras.layers import Lambda
                 from keras.models import Model
                 _model = classifier._model
@@ -40,6 +45,7 @@ class ReverseSigmoid(NetworkManipulator):
                 raise NotImplementedError("End-to-end network integration of the defense is implemented only for"
                                           "Keras.")
         else:  # Note that the Numpy version makes in-place change to the given classifier.
+            logger.info('Using Numpy computation for the reverse sigmoid defence.')
             classifier._predict = classifier.predict
             classifier.predict = MethodType(lambda self, x, logits=False:
                                             ReverseSigmoid._numpy_reverse_sigmoid_addition(
