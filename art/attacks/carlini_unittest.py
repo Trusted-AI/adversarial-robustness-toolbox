@@ -138,7 +138,7 @@ class TestCarliniL2(unittest.TestCase):
         y_pred_adv = np.argmax(tfc.predict(x_test_adv), axis=1)
         logger.debug('CW2 Target: %s', target)
         logger.debug('CW2 Actual: %s', y_pred_adv)
-        logger.info('CW2 Success Rate: %.2f%%', (sum(target == y_pred_adv) / float(len(target))))
+        logger.info('CW2 Success Rate: %.2f', (sum(target == y_pred_adv) / float(len(target))))
         self.assertTrue((target == y_pred_adv).any())
 
         # Second attack
@@ -151,7 +151,7 @@ class TestCarliniL2(unittest.TestCase):
         y_pred_adv = np.argmax(tfc.predict(x_test_adv), axis=1)
         logger.debug('CW2 Target: %s', target)
         logger.debug('CW2 Actual: %s', y_pred_adv)
-        logger.info('CW2 Success Rate: %.2f%%', (sum(target == y_pred_adv) / float(len(target))))
+        logger.info('CW2 Success Rate: %.2f', (sum(target == y_pred_adv) / float(len(target))))
         self.assertTrue((target != y_pred_adv).any())
 
         # Third attack
@@ -165,7 +165,7 @@ class TestCarliniL2(unittest.TestCase):
         y_pred_adv = np.argmax(tfc.predict(x_test_adv), axis=1)
         logger.debug('CW2 Target: %s', y_pred)
         logger.debug('CW2 Actual: %s', y_pred_adv)
-        logger.info('CW2 Success Rate: %.2f%%', (sum(y_pred != y_pred_adv) / float(len(y_pred))))
+        logger.info('CW2 Success Rate: %.2f', (sum(y_pred != y_pred_adv) / float(len(y_pred))))
         self.assertTrue((y_pred != y_pred_adv).any())
 
     def test_krclassifier(self):
@@ -205,7 +205,7 @@ class TestCarliniL2(unittest.TestCase):
         y_pred_adv = np.argmax(krc.predict(x_test_adv), axis=1)
         logger.debug('CW2 Target: %s', target)
         logger.debug('CW2 Actual: %s', y_pred_adv)
-        logger.info('CW2 Success Rate: %.2f%%', (sum(target == y_pred_adv) / float(len(target))))
+        logger.info('CW2 Success Rate: %.2f', (sum(target == y_pred_adv) / float(len(target))))
         self.assertTrue((target == y_pred_adv).any())
 
         # Second attack
@@ -218,7 +218,7 @@ class TestCarliniL2(unittest.TestCase):
         y_pred_adv = np.argmax(krc.predict(x_test_adv), axis=1)
         logger.debug('CW2 Target: %s', target)
         logger.debug('CW2 Actual: %s', y_pred_adv)
-        logger.info('CW2 Success Rate: %.2f%%', (sum(target != y_pred_adv) / float(len(target))))
+        logger.info('CW2 Success Rate: %.2f', (sum(target != y_pred_adv) / float(len(target))))
         self.assertTrue((target != y_pred_adv).any())
 
         # Third attack
@@ -232,7 +232,7 @@ class TestCarliniL2(unittest.TestCase):
         y_pred_adv = np.argmax(krc.predict(x_test_adv), axis=1)
         logger.debug('CW2 Target: %s', y_pred)
         logger.debug('CW2 Actual: %s', y_pred_adv)
-        logger.info('CW2 Success Rate: %.2f%%', (sum(y_pred != y_pred_adv) / float(len(y_pred))))
+        logger.info('CW2 Success Rate: %.2f', (sum(y_pred != y_pred_adv) / float(len(y_pred))))
         self.assertTrue((y_pred != y_pred_adv).any())
 
     def test_ptclassifier(self):
