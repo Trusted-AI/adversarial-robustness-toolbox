@@ -44,6 +44,11 @@ class CarliniL2Method(Attack):
         :param decay: Coefficient for learning rate decay.
         :type decay: `float`
         """
+        from art.classifiers import ImageClassifier
+
+        if not isinstance(classifier, ImageClassifier):
+            raise TypeError('The Carlini&Wagner attack is only supported for image classifiers.')
+
         super(CarliniL2Method, self).__init__(classifier)
 
         kwargs = {'confidence': confidence,
@@ -54,7 +59,7 @@ class CarliniL2Method(Attack):
                   'initial_const': initial_const,
                   'decay': decay
                   }
-        assert self.set_params(**kwargs)
+        self.set_params(**kwargs)
 
         # There are internal hyperparameters:
         # Abort binary search for c if it exceeds this threshold (suggested in Carlini and Wagner (2016)):

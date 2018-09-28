@@ -25,6 +25,11 @@ class VirtualAdversarialMethod(Attack):
         :param max_iter: The maximum number of iterations.
         :type max_iter: `int`
         """
+        from art.classifiers import ImageClassifier
+
+        if not isinstance(classifier, ImageClassifier):
+            raise TypeError('The virtual adversarial method is only supported for image classifiers.')
+
         super(VirtualAdversarialMethod, self).__init__(classifier)
 
         kwargs = {'finite_diff': finite_diff, 'eps': eps, 'max_iter': max_iter}

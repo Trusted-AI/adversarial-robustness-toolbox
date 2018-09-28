@@ -10,7 +10,7 @@ from keras.layers import Dense, Flatten, Conv2D, MaxPooling2D
 
 from art.detection.detector import BinaryInputDetector, BinaryActivationDetector
 from art.attacks.fast_gradient import FastGradientMethod
-from art.classifiers.keras import KerasClassifier
+from art.classifiers.keras import KerasImageClassifier
 from art.utils import load_mnist
 
 BATCH_SIZE, NB_TRAIN, NB_TEST = 100, 1000, 10
@@ -48,7 +48,7 @@ class TestBinaryInputDetector(unittest.TestCase):
                       metrics=['accuracy'])
 
         # Create classifier and train it:
-        classifier = KerasClassifier((0, 1), model, use_logits=False)
+        classifier = KerasImageClassifier((0, 1), model, use_logits=False)
         classifier.fit(x_train, y_train, nb_epochs=5, batch_size=128)
 
         # Generate adversarial samples:
@@ -71,7 +71,7 @@ class TestBinaryInputDetector(unittest.TestCase):
                       metrics=['accuracy'])
 
         # Create detector and train it:
-        detector = BinaryInputDetector(KerasClassifier((0, 1), model, use_logits=False))
+        detector = BinaryInputDetector(KerasImageClassifier((0, 1), model, use_logits=False))
         detector.fit(x_train_detector, y_train_detector, nb_epochs=2, batch_size=128)
 
         # Apply detector on clean and adversarial test data:
@@ -116,7 +116,7 @@ class TestBinaryActivationDetector(unittest.TestCase):
                       metrics=['accuracy'])
 
         # Create classifier and train it:
-        classifier = KerasClassifier((0, 1), model, use_logits=False)
+        classifier = KerasImageClassifier((0, 1), model, use_logits=False)
         classifier.fit(x_train[:NB_TRAIN], y_train[:NB_TRAIN], nb_epochs=5, batch_size=128)
 
         # Generate adversarial samples:
@@ -144,7 +144,7 @@ class TestBinaryActivationDetector(unittest.TestCase):
         # Create detector and train it.
         # Detector consider activations at layer=0:
         detector = BinaryActivationDetector(classifier=classifier,
-                                            detector=KerasClassifier((0, 1), model, use_logits=False),
+                                            detector=KerasImageClassifier((0, 1), model, use_logits=False),
                                             layer=0)
         detector.fit(x_train_detector, y_train_detector, nb_epochs=2, batch_size=128)
 

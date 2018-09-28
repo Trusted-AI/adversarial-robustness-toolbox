@@ -11,7 +11,7 @@ import torch.nn as nn
 import torch.optim as optim
 
 from art.attacks.universal_perturbation import UniversalPerturbation
-from art.classifiers import KerasClassifier, PyTorchClassifier, TFClassifier
+from art.classifiers import KerasImageClassifier, PyTorchImageClassifier, TFImageClassifier
 from art.utils import load_mnist
 
 BATCH_SIZE, NB_TRAIN, NB_TEST = 100, 500, 10
@@ -77,7 +77,7 @@ class TestUniversalPerturbation(unittest.TestCase):
         (x_train, y_train), (x_test, y_test) = self.mnist
 
         # Train the classifier
-        tfc = TFClassifier((0, 1), input_ph, logits, output_ph, train, loss, None, sess)
+        tfc = TFImageClassifier((0, 1), input_ph, logits, output_ph, train, loss, None, sess)
         tfc.fit(x_train, y_train, batch_size=BATCH_SIZE, nb_epochs=2)
 
         # Attack
@@ -118,7 +118,7 @@ class TestUniversalPerturbation(unittest.TestCase):
                       metrics=['accuracy'])
 
         # Get classifier
-        krc = KerasClassifier((0, 1), model, use_logits=False)
+        krc = KerasImageClassifier((0, 1), model, use_logits=False)
         krc.fit(x_train, y_train, batch_size=BATCH_SIZE, nb_epochs=2)
 
         # Attack
@@ -155,7 +155,7 @@ class TestUniversalPerturbation(unittest.TestCase):
         optimizer = optim.Adam(model.parameters(), lr=0.01)
 
         # Get classifier
-        ptc = PyTorchClassifier((0, 1), model, loss_fn, optimizer, (1, 28, 28), 10)
+        ptc = PyTorchImageClassifier((0, 1), model, loss_fn, optimizer, (1, 28, 28), 10)
         ptc.fit(x_train, y_train, batch_size=BATCH_SIZE, nb_epochs=1)
 
         # Attack

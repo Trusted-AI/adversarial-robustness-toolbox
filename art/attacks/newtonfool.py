@@ -22,6 +22,11 @@ class NewtonFool(Attack):
         :param eta: The eta coefficient.
         :type eta: `float`
         """
+        from art.classifiers import ImageClassifier
+
+        if not isinstance(classifier, ImageClassifier):
+            raise TypeError('NewtonFool is only supported for image classifiers.')
+
         super(NewtonFool, self).__init__(classifier)
         params = {"max_iter": max_iter, "eta": eta}
         self.set_params(**params)

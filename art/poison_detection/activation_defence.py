@@ -31,6 +31,11 @@ class ActivationDefence(PoisonFilteringDefence):
         :param verbose: When True prints more information
         :type verbose: `bool`
         """
+        from art.classifiers import ImageClassifier
+
+        if not isinstance(classifier, ImageClassifier):
+            raise TypeError('The activation defence against poisoning is only supported for image classifiers.')
+
         super(ActivationDefence, self).__init__(classifier, x_train, y_train, verbose)
         kwargs = {'nb_clusters': 2, 'clustering_method': "KMeans", 'nb_dims': 10, 'reduce': 'PCA',
                   'cluster_analysis': "smaller"}

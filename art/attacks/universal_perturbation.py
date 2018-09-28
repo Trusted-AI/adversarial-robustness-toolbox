@@ -40,6 +40,11 @@ class UniversalPerturbation(Attack):
         :param norm: Order of the norm. Possible values: np.inf, 2 (default is np.inf)
         :type norm: `int`
         """
+        from art.classifiers import ImageClassifier
+
+        if not isinstance(classifier, ImageClassifier):
+            raise TypeError('The universal perturbation attack is only supported for image classifiers.')
+
         super(UniversalPerturbation, self).__init__(classifier)
         kwargs = {'attacker': attacker,
                   'attacker_params': attacker_params,

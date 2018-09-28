@@ -261,7 +261,10 @@ def clever_t(classifier, x, target_class, nb_batches, batch_size, radius, norm, 
     rand_pool = np.reshape(random_sphere(nb_points=pool_factor * batch_size, nb_dims=dim, radius=radius, norm=norm),
                            shape)
     rand_pool += np.repeat(np.array([x]), pool_factor * batch_size, 0)
-    np.clip(rand_pool, classifier.clip_values[0], classifier.clip_values[1], out=rand_pool)
+
+    from art.classifiers import ImageClassifier
+    if isinstance(classifier, ImageClassifier):
+        np.clip(rand_pool, classifier.clip_values[0], classifier.clip_values[1], out=rand_pool)
 
     # Change norm since q = p / (p-1)
     if norm == 1:

@@ -9,7 +9,7 @@ import numpy as np
 import tensorflow as tf
 
 from art.attacks import FastGradientMethod, DeepFool
-from art.classifiers import TFClassifier, KerasClassifier
+from art.classifiers import TFImageClassifier, KerasImageClassifier
 from art.defences import AdversarialTrainer, StaticAdversarialTrainer
 from art.utils import load_mnist, get_labels_np_array
 
@@ -79,7 +79,7 @@ class TestBase(unittest.TestCase):
         TestBase.sess = tf.Session()
         TestBase.sess.run(tf.global_variables_initializer())
 
-        classifier = TFClassifier((0, 1), inputs_tf, logits, loss=loss, train=train_tf, output_ph=labels_tf,
+        classifier = TFImageClassifier((0, 1), inputs_tf, logits, loss=loss, train=train_tf, output_ph=labels_tf,
                                   sess=TestBase.sess)
         return classifier
 
@@ -95,7 +95,7 @@ class TestBase(unittest.TestCase):
         model.compile(loss=keras.losses.categorical_crossentropy, optimizer=keras.optimizers.Adam(lr=0.01),
                       metrics=['accuracy'])
 
-        classifier = KerasClassifier((0, 1), model, use_logits=False)
+        classifier = KerasImageClassifier((0, 1), model, use_logits=False)
         return classifier
 
 

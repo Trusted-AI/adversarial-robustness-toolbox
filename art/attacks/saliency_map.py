@@ -24,6 +24,11 @@ class SaliencyMapMethod(Attack):
         :param gamma: Maximum percentage of perturbed features (between 0 and 1).
         :type gamma: `float`
         """
+        from art.classifiers import ImageClassifier
+
+        if not isinstance(classifier, ImageClassifier):
+            raise TypeError('JSMA is only supported for image classifiers.')
+
         super(SaliencyMapMethod, self).__init__(classifier)
         kwargs = {
             'theta': theta,

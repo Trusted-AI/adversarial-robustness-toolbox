@@ -30,6 +30,11 @@ class BasicIterativeMethod(FastGradientMethod):
         :param random_init: Whether to start at the original input or a random point within the epsilon ball
         :type random_init: `bool`
         """
+        from art.classifiers import ImageClassifier
+
+        if not isinstance(classifier, ImageClassifier):
+            raise TypeError('BIM is only supported for image classifiers.')
+
         super(BasicIterativeMethod, self).__init__(classifier, norm=norm, eps=eps, targeted=targeted,
                                                    random_init=random_init)
 

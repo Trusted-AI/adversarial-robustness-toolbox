@@ -12,7 +12,7 @@ import torch.nn as nn
 import torch.nn.functional as f
 import torch.optim as optim
 
-from art.classifiers import KerasClassifier, PyTorchClassifier, TFClassifier
+from art.classifiers import KerasImageClassifier, PyTorchImageClassifier, TFImageClassifier
 from art.metrics import empirical_robustness, clever_t, clever_u, clever, loss_sensitivity
 from art.utils import load_mnist
 
@@ -84,10 +84,9 @@ class TestMetrics(unittest.TestCase):
         model.add(Flatten())
         model.add(Dense(10, activation='softmax'))
 
-        model.compile(loss=keras.losses.categorical_crossentropy, optimizer=keras.optimizers.Adam(lr=0.01),
-                      metrics=['accuracy'])
+        model.compile(loss=k.categorical_crossentropy, optimizer=keras.optimizers.Adam(lr=0.01), metrics=['accuracy'])
 
-        classifier = KerasClassifier((0, 1), model, use_logits=False)
+        classifier = KerasImageClassifier((0, 1), model, use_logits=False)
         return classifier
 
 #########################################
@@ -142,7 +141,7 @@ class TestClever(unittest.TestCase):
         sess.run(tf.global_variables_initializer())
 
         # Create the classifier
-        tfc = TFClassifier((0, 1), input_ph, logits, output_ph, train, loss, None, sess)
+        tfc = TFImageClassifier((0, 1), input_ph, logits, output_ph, train, loss, None, sess)
 
         return tfc
 
@@ -167,7 +166,7 @@ class TestClever(unittest.TestCase):
                       metrics=['accuracy'])
 
         # Get the classifier
-        krc = KerasClassifier((0, 1), model, use_logits=False)
+        krc = KerasImageClassifier((0, 1), model, use_logits=False)
 
         return krc
 
@@ -185,7 +184,7 @@ class TestClever(unittest.TestCase):
         optimizer = optim.Adam(model.parameters(), lr=0.01)
 
         # Get classifier
-        ptc = PyTorchClassifier((0, 1), model, loss_fn, optimizer, (1, 28, 28), 10)
+        ptc = PyTorchImageClassifier((0, 1), model, loss_fn, optimizer, (1, 28, 28), 10)
 
         return ptc
 

@@ -31,6 +31,11 @@ class FastGradientMethod(Attack):
         :param batch_size: Batch size
         :type batch_size: `int`
         """
+        from art.classifiers import ImageClassifier
+
+        if not isinstance(classifier, ImageClassifier):
+            raise TypeError('FGM is only supported for image classifiers.')
+
         super(FastGradientMethod, self).__init__(classifier)
 
         self.norm = norm

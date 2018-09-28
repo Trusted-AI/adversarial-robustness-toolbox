@@ -7,7 +7,7 @@ from keras.layers import Dense, Flatten, Conv2D, MaxPooling2D, Dropout
 import numpy as np
 
 from art.poison_detection import ActivationDefence
-from art.classifiers import KerasClassifier
+from art.classifiers import KerasImageClassifier
 from art.utils import load_mnist
 
 NB_TRAIN, NB_TEST, BATCH_SIZE = 300, 10, 128
@@ -36,7 +36,7 @@ class TestActivationDefence(unittest.TestCase):
         model.add(Dense(10, activation='softmax'))
         model.compile(loss='categorical_crossentropy', optimizer='adam', metrics=['accuracy'])
 
-        cls.classifier = KerasClassifier((0, 1), model=model)
+        cls.classifier = KerasImageClassifier((0, 1), model=model)
         cls.classifier.fit(x_train, y_train, nb_epochs=2, batch_size=128)
 
         cls.defence = ActivationDefence(cls.classifier, x_train, y_train)

@@ -21,6 +21,11 @@ class DeepFool(Attack):
         :param max_iter: The maximum number of iterations.
         :type max_iter: `int`
         """
+        from art.classifiers import ImageClassifier
+
+        if not isinstance(classifier, ImageClassifier):
+            raise TypeError('DeepFool is only supported for image classifiers.')
+
         super(DeepFool, self).__init__(classifier)
         params = {'max_iter': max_iter}
         self.set_params(**params)

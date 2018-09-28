@@ -11,9 +11,7 @@ import torch.nn as nn
 import torch.optim as optim
 
 from art.attacks.carlini import CarliniL2Method
-from art.classifiers.tensorflow import TFClassifier
-from art.classifiers.keras import KerasClassifier
-from art.classifiers.pytorch import PyTorchClassifier
+from art.classifiers import TFImageClassifier, KerasImageClassifier, PyTorchImageClassifier
 from art.utils import load_mnist, random_targets
 
 BATCH_SIZE, NB_TRAIN, NB_TEST = 100, 5000, 10
@@ -79,7 +77,7 @@ class TestCarliniL2(unittest.TestCase):
         (x_train, y_train), (x_test, y_test) = self.mnist
 
         # Train the classifier
-        tfc = TFClassifier((0, 1), input_ph, logits, output_ph, train, loss, None, sess)
+        tfc = TFImageClassifier((0, 1), input_ph, logits, output_ph, train, loss, None, sess)
         tfc.fit(x_train, y_train, batch_size=BATCH_SIZE, nb_epochs=10)
 
         # Failure attack
@@ -172,7 +170,7 @@ class TestCarliniL2(unittest.TestCase):
 
     def test_krclassifier(self):
         """
-        Second test with the KerasClassifier.
+        Second test with the KerasImageClassifier.
         :return:
         """
         # Initialize a tf session
@@ -193,7 +191,7 @@ class TestCarliniL2(unittest.TestCase):
                       metrics=['accuracy'])
 
         # Get classifier
-        krc = KerasClassifier((0, 1), model, use_logits=False)
+        krc = KerasImageClassifier((0, 1), model, use_logits=False)
         krc.fit(x_train, y_train, batch_size=BATCH_SIZE, nb_epochs=10)
 
         # First attack
@@ -259,7 +257,7 @@ class TestCarliniL2(unittest.TestCase):
         optimizer = optim.Adam(model.parameters(), lr=0.01)
 
         # Get classifier
-        ptc = PyTorchClassifier((0, 1), model, loss_fn, optimizer, (1, 28, 28), 10)
+        ptc = PyTorchImageClassifier((0, 1), model, loss_fn, optimizer, (1, 28, 28), 10)
         ptc.fit(x_train, y_train, batch_size=BATCH_SIZE, nb_epochs=10)
 
         # First attack

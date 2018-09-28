@@ -13,7 +13,7 @@ import torch.nn.functional as f
 import torch.optim as optim
 
 from art.attacks.fast_gradient import FastGradientMethod
-from art.classifiers import KerasClassifier, PyTorchClassifier, TFClassifier
+from art.classifiers import KerasImageClassifier, PyTorchImageClassifier, TFImageClassifier
 from art.utils import load_mnist, get_labels_np_array
 
 BATCH_SIZE = 10
@@ -219,7 +219,7 @@ class TestFastGradientMethod(unittest.TestCase):
         sess = tf.Session()
         sess.run(tf.global_variables_initializer())
 
-        classifier = TFClassifier((0, 1), inputs_tf, logits, loss=loss, train=train_tf, output_ph=labels_tf, sess=sess)
+        classifier = TFImageClassifier((0, 1), inputs_tf, logits, loss=loss, train=train_tf, output_ph=labels_tf, sess=sess)
         return classifier
 
     @staticmethod
@@ -234,7 +234,7 @@ class TestFastGradientMethod(unittest.TestCase):
         model.compile(loss=keras.losses.categorical_crossentropy, optimizer=keras.optimizers.Adam(lr=0.01),
                       metrics=['accuracy'])
 
-        classifier = KerasClassifier((0, 1), model, use_logits=False)
+        classifier = KerasImageClassifier((0, 1), model, use_logits=False)
         return classifier
 
     @staticmethod
@@ -246,7 +246,7 @@ class TestFastGradientMethod(unittest.TestCase):
         optimizer = optim.Adam(model.parameters(), lr=0.01)
 
         # Get classifier
-        classifier = PyTorchClassifier((0, 1), model, loss_fn, optimizer, (1, 28, 28), 10)
+        classifier = PyTorchImageClassifier((0, 1), model, loss_fn, optimizer, (1, 28, 28), 10)
         return classifier
 
 
