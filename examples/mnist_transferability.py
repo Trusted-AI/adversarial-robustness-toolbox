@@ -5,14 +5,15 @@ black-box attack: the attack never has access to the parameters of the TensorFlo
 """
 from __future__ import absolute_import, division, print_function
 
-from os.path import abspath
 import sys
+from os.path import abspath
+
 sys.path.append(abspath('.'))
 
 import keras
 import keras.backend as k
 from keras.models import Sequential
-from keras.layers import Dense, Flatten, Conv2D, MaxPooling2D, Activation, Dropout
+from keras.layers import Dense, Flatten, Conv2D, MaxPooling2D
 import numpy as np
 import tensorflow as tf
 

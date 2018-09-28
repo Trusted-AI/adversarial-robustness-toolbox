@@ -1,17 +1,21 @@
 from __future__ import absolute_import, division, print_function, unicode_literals
 
-import six
+import logging
+
 import numpy as np
+import six
 
 from art.classifiers import Classifier
+
+logger = logging.getLogger(__name__)
 
 
 class KerasClassifier(Classifier):
     """
-    The supported backends for Keras are TensorFlow and Theano.
+    Wrapper class for importing Keras models. The supported backends for Keras are TensorFlow and Theano.
     """
     def __init__(self, clip_values, model, use_logits=False, channel_index=3, defences=None, preprocessing=(0, 1),
-                 input_layer=0, output_layer=0):
+                 input_layer=0, output_layer=0, custom_activation=False):
         """
         Create a `Classifier` instance from a Keras model. Assumes the `model` passed as argument is compiled.
 
@@ -34,6 +38,9 @@ class KerasClassifier(Classifier):
         :type input_layer: `int`
         :param output_layer: Which layer to consider as the Output when the model has multiple output layers.
         :type output_layer: `int`
+        :param custom_activation: True if the model uses the last activation other than softmax and requires to use the
+               output probability rather than the logits by attacks.
+        :type custom_activation: `bool`
         """
         import keras.backend as k
 
@@ -54,13 +61,20 @@ class KerasClassifier(Classifier):
 
         _, self._nb_classes = k.int_shape(self._output)
         self._input_shape = k.int_shape(self._input)[1:]
+        self._custom_activation = custom_activation
+        logger.debug('Inferred %i classes and %s as input shape for Keras classifier.', self.nb_classes,
+                    str(self.input_shape))
 
         # Get predictions and loss function
         label_ph = k.placeholder(shape=(None,))
         if not use_logits:
             if k.backend() == 'tensorflow':
-                preds, = self._output.op.inputs
-                loss = k.sparse_categorical_crossentropy(label_ph, preds, from_logits=True)
+                if custom_activation:
+                    preds = self._output
+                    loss = k.sparse_categorical_crossentropy(label_ph, preds, from_logits=False)
+                else:
+                    preds, = self._output.op.inputs
+                    loss = k.sparse_categorical_crossentropy(label_ph, preds, from_logits=True)
             else:
                 loss = k.sparse_categorical_crossentropy(label_ph, self._output, from_logits=use_logits)
 
@@ -146,7 +160,7 @@ class KerasClassifier(Classifier):
 
         return grads
 
-    def predict(self, x, logits=False):
+    def predict(self, x, logits=False, batch_size=128):
         """
         Perform prediction for a batch of inputs.
 
@@ -154,6 +168,8 @@ class KerasClassifier(Classifier):
         :type x: `np.ndarray`
         :param logits: `True` if the prediction should be done at the logits layer.
         :type logits: `bool`
+        :param batch_size: Size of batches.
+        :type batch_size: `int`
         :return: Array of predictions of shape `(nb_inputs, self.nb_classes)`.
         :rtype: `np.ndarray`
         """
@@ -165,13 +181,12 @@ class KerasClassifier(Classifier):
         x_ = self._apply_defences_predict(x_)
 
         # Run predictions with batching
-        batch_size = 512
         preds = np.zeros((x_.shape[0], self.nb_classes), dtype=np.float32)
-        for b in range(x_.shape[0] // batch_size + 1):
+        for b in range(int(np.ceil(x_.shape[0] / float(batch_size)))):
             begin, end = b * batch_size,  min((b + 1) * batch_size, x_.shape[0])
             preds[begin:end] = self._preds([x_[begin:end]])[0]
 
-            if not logits:
+            if not logits and not self._custom_activation:
                 exp = np.exp(preds[begin:end] - np.max(preds[begin:end], axis=1, keepdims=True))
                 preds[begin:end] = exp / np.sum(exp, axis=1, keepdims=True)
 
@@ -262,6 +277,7 @@ class KerasClassifier(Classifier):
         k.set_learning_phase(0)
 
         if label is not None:
+            logger.debug('Computing class gradients for class %i.', label)
             if logits:
                 if not hasattr(self, '_class_grads_logits_idx'):
                     self._class_grads_logits_idx = [None for _ in range(self.nb_classes)]
@@ -277,6 +293,7 @@ class KerasClassifier(Classifier):
                     class_grads = [k.gradients(k.softmax(self._preds_op)[:, label], self._input)[0]]
                     self._class_grads_idx[label] = k.function([self._input], class_grads)
         else:
+            logger.debug('Computing class gradients for all %i classes.', self.nb_classes)
             if logits:
                 if not hasattr(self, '_class_grads_logits'):
                     class_grads_logits = [k.gradients(self._preds_op[:, i], self._input)[0]
@@ -298,6 +315,8 @@ class KerasClassifier(Classifier):
         from keras.engine.topology import InputLayer
 
         layer_names = [layer.name for layer in self._model.layers[:-1] if not isinstance(layer, InputLayer)]
+        logger.info('Inferred %i hidden layers on Keras classifier.', len(layer_names))
+
         return layer_names
 
 

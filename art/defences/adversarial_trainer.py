@@ -1,6 +1,10 @@
 from __future__ import absolute_import, division, print_function, unicode_literals
 
+import logging
+
 import numpy as np
+
+logger = logging.getLogger(__name__)
 
 
 class AdversarialTrainer:
@@ -56,20 +60,27 @@ class AdversarialTrainer:
         :type nb_epochs: `int`
         :return: `None`
         """
+        logger.info('Performing adversarial training using %i attacks.', len(self.attacks))
         nb_batches = int(np.ceil(len(x) / batch_size))
         nb_adv = int(np.ceil(self.ratio * batch_size))
         ind = np.arange(len(x))
         attack_id = 0
 
         # Precompute adversarial samples for transferred attacks
+        logged = False
         self._precomputed_adv_samples = []
         for attack in self.attacks:
             if attack.classifier != self.classifier:
+                if not logged:
+                    logger.info('Precomputing transferred adversarial samples.')
+                    logged = True
                 self._precomputed_adv_samples.append(attack.generate(x))
             else:
                 self._precomputed_adv_samples.append(None)
 
-        for _ in range(nb_epochs):
+        for e in range(nb_epochs):
+            logger.info('Adversarial training epoch %i/%i', e, nb_epochs)
+
             # Shuffle the examples
             np.random.shuffle(ind)
 
@@ -141,11 +152,13 @@ class StaticAdversarialTrainer(AdversarialTrainer):
         labels = np.argmax(y, axis=1)
 
         # Generate adversarial samples for each attack
-        for attack in self.attacks:
+        for i, attack in enumerate(self.attacks):
+            logger.info('Generating adversarial samples from attack: %i/%i.', i, len(self.attacks))
             # Predict new labels for the adversarial samples generated
             x_adv = attack.generate(x)
             y_pred = np.argmax(attack.classifier.predict(x_adv), axis=1)
             selected = np.array(labels != y_pred)
+            logger.info('%i successful samples generated.', len(selected))
 
             # Only add successful attacks to augmented dataset
             x_augmented.extend(list(x_adv[selected]))
