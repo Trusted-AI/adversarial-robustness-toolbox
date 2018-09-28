@@ -10,14 +10,12 @@ class KerasClassifier(Classifier):
     """
     The supported backends for Keras are TensorFlow and Theano.
     """
-    def __init__(self, model, loss, use_logits=False, input_layer=0, output_layer=0):
+    def __init__(self, model, use_logits=False, input_layer=0, output_layer=0):
         """
         Create a `Classifier` instance from a Keras model. Assumes the `model` passed as argument is compiled.
 
         :param model: Keras model
         :type model: `keras.models.Model`
-        :param loss: Loss function between true and predicted labels (encoded as one-hot)
-        :type loss: `Callable`
         :param use_logits: True if the output of the model are the logits.
         :type use_logits: `bool`
         :param input_layer: Which layer to consider as the input when the model has multiple input layers.
@@ -47,19 +45,24 @@ class KerasClassifier(Classifier):
 
         # Get predictions and loss function
         label_ph = k.placeholder(shape=self._output.shape)
+        if isinstance(self._model.loss, str):
+            loss_function = getattr(k, self._model.loss)
+        else:
+            loss_function = self._model.loss
+
         if not use_logits:
             if k.backend() == 'tensorflow':
                 preds, = self._output.op.inputs
-                loss_ = loss(label_ph, preds, from_logits=True)
+                loss_ = loss_function(label_ph, preds, from_logits=True)
             else:
-                loss_ = loss(label_ph, self._output, from_logits=use_logits)
+                loss_ = loss_function(label_ph, self._output, from_logits=use_logits)
 
                 # Convert predictions to logits for consistency with the other cases
                 eps = 10e-8
                 preds = k.log(k.clip(self._output, eps, 1. - eps))
         else:
             preds = self._output
-            loss_ = loss(label_ph, self._output, from_logits=use_logits)
+            loss_ = loss_function(label_ph, self._output, from_logits=use_logits)
         loss_grads = k.gradients(loss_, self._input)
 
         if k.backend() == 'tensorflow':
@@ -262,7 +265,7 @@ class KerasClassifier(Classifier):
         output_func = k.function([self._input], [layer_output])
 
         # Apply preprocessing and defences
-        x_ = self._apply_processing(x_)
+        x_ = self._apply_processing(x)
         x_ = self._apply_defences_predict(x_)
 
         return output_func([x_])[0]
@@ -326,7 +329,7 @@ class KerasClassifier(Classifier):
 
 
 class KerasImageClassifier(ImageClassifier, KerasClassifier):
-    def __init__(self, clip_values, model, loss, use_logits=False, channel_index=3, defences=None, preprocessing=(0, 1),
+    def __init__(self, clip_values, model, use_logits=False, channel_index=3, defences=None, preprocessing=(0, 1),
                  input_layer=0, output_layer=0):
         """
         Create a :class:`KerasImageClassifier` instance from a Keras model. Assumes the `model` passed as argument is
@@ -337,8 +340,6 @@ class KerasImageClassifier(ImageClassifier, KerasClassifier):
         :type clip_values: `tuple`
         :param model: Keras model
         :type model: `keras.models.Model`
-        :param loss: Loss function between true and predicted labels (encoded as one-hot)
-        :type loss: `Callable`
         :param use_logits: True if the output of the model are the logits.
         :type use_logits: `bool`
         :param channel_index: Index of the axis in data containing the color channels or features.
@@ -359,7 +360,7 @@ class KerasImageClassifier(ImageClassifier, KerasClassifier):
         ImageClassifier.__init__(self, clip_values=clip_values, channel_index=channel_index, defences=defences,
                                  preprocessing=preprocessing)
 
-        KerasClassifier.__init__(self, model=model, loss=loss, use_logits=use_logits, input_layer=input_layer,
+        KerasClassifier.__init__(self, model=model, use_logits=use_logits, input_layer=input_layer,
                                  output_layer=output_layer)
 
         self._input_shape = k.int_shape(self._input)[1:]
@@ -373,15 +374,13 @@ class KerasTextClassifier(TextClassifier, KerasClassifier):
     """
     Class providing an implementation for integrating text models from Keras.
     """
-    def __init__(self, model, loss, ids, use_logits=False, embedding_layer=0, input_layer=0, output_layer=0):
+    def __init__(self, model, ids, use_logits=False, embedding_layer=0, input_layer=0, output_layer=0):
         """
         Create a :class:`KerasTextClassifier` instance from a Keras model. Assumes the `model` passed as argument is
         compiled.
 
         :param model: Keras model
         :type model: `keras.models.Model`
-        :param loss: Loss function between true and predicted labels (encoded as one-hot)
-        :type loss: `Callable`
         :param use_logits: True if the output of the model are the logits.
         :type use_logits: `bool`
         :param embedding_layer: Which layer to consider as providing the embedding of the vocabulary. When using the
@@ -395,7 +394,7 @@ class KerasTextClassifier(TextClassifier, KerasClassifier):
         import keras.backend as k
 
         TextClassifier.__init__(self)
-        KerasClassifier.__init__(self, model=model, loss=loss, use_logits=use_logits, input_layer=input_layer,
+        KerasClassifier.__init__(self, model=model, use_logits=use_logits, input_layer=input_layer,
                                  output_layer=output_layer)
 
         if type(embedding_layer) is int:
