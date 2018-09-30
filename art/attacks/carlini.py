@@ -38,8 +38,8 @@ class CarliniL2Method(Attack):
         :param max_iter: The maximum number of iterations.
         :type max_iter: `int`
         :param initial_const: The initial trade-off constant `c` to use to tune the relative importance of distance and
-                confidence. If `binary_search_steps` is large, the initial constant is not important. The default value
-                1e-4 is suggested in Carlini and Wagner (2016).
+                confidence. If `binary_search_steps` is large, the initial constant is not important, as discussed in
+                Carlini and Wagner (2016).
         :type initial_const: `float`
         :param max_halving: Maximum number of halving steps in the line search optimization.
         :type max_halving: `int`
@@ -221,8 +221,6 @@ class CarliniL2Method(Attack):
             lr = self.learning_rate
             
             for _ in range(self.binary_search_steps):
-                attack_success = False
-                loss_prev = sys.float_info.max
                 
                 # Initialize perturbation in tanh space:
                 perturbation_tanh = np.zeros(image_tanh.shape)
