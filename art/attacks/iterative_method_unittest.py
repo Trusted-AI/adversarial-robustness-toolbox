@@ -1,21 +1,23 @@
 from __future__ import absolute_import, division, print_function, unicode_literals
 
+import logging
 import unittest
 
 import keras
 import keras.backend as k
-from keras.models import Sequential
-from keras.layers import Dense, Activation, Flatten, Conv2D, MaxPooling2D, Dropout
 import numpy as np
 import tensorflow as tf
 import torch.nn as nn
 import torch.nn.functional as f
 import torch.optim as optim
+from keras.layers import Dense, Flatten, Conv2D, MaxPooling2D
+from keras.models import Sequential
 
 from art.attacks.iterative_method import BasicIterativeMethod
 from art.classifiers import KerasClassifier, PyTorchClassifier, TFClassifier
 from art.utils import load_mnist, get_labels_np_array
 
+logger = logging.getLogger('testLogger')
 
 BATCH_SIZE = 10
 NB_TRAIN = 100
@@ -52,9 +54,9 @@ class TestIterativeAttack(unittest.TestCase):
         cls.classifier_k.fit(x_train, y_train, batch_size=BATCH_SIZE, nb_epochs=2)
 
         scores = cls.classifier_k._model.evaluate(x_train, y_train)
-        print("\n[Keras, MNIST] Accuracy on training set: %.2f%%" % (scores[1] * 100))
+        logger.info('[Keras, MNIST] Accuracy on training set: %.2f%%', (scores[1] * 100))
         scores = cls.classifier_k._model.evaluate(x_test, y_test)
-        print("\n[Keras, MNIST] Accuracy on test set: %.2f%%" % (scores[1] * 100))
+        logger.info('[Keras, MNIST] Accuracy on test set: %.2f%%', (scores[1] * 100))
 
         # Create basic CNN on MNIST using TensorFlow
         cls.classifier_tf = cls._cnn_mnist_tf([28, 28, 1])
@@ -62,11 +64,11 @@ class TestIterativeAttack(unittest.TestCase):
 
         scores = get_labels_np_array(cls.classifier_tf.predict(x_train))
         acc = np.sum(np.argmax(scores, axis=1) == np.argmax(y_train, axis=1)) / y_train.shape[0]
-        print('\n[TF, MNIST] Accuracy on training set: %.2f%%' % (acc * 100))
+        logger.info('[TF, MNIST] Accuracy on training set: %.2f%%', (acc * 100))
 
         scores = get_labels_np_array(cls.classifier_tf.predict(x_test))
         acc = np.sum(np.argmax(scores, axis=1) == np.argmax(y_test, axis=1)) / y_test.shape[0]
-        print('\n[TF, MNIST] Accuracy on test set: %.2f%%' % (acc * 100))
+        logger.info('[TF, MNIST] Accuracy on test set: %.2f%%', (acc * 100))
 
         # Create basic PyTorch model
         cls.classifier_py = cls._cnn_mnist_py()
@@ -75,11 +77,11 @@ class TestIterativeAttack(unittest.TestCase):
 
         scores = get_labels_np_array(cls.classifier_py.predict(x_train))
         acc = np.sum(np.argmax(scores, axis=1) == np.argmax(y_train, axis=1)) / y_train.shape[0]
-        print('\n[PyTorch, MNIST] Accuracy on training set: %.2f%%' % (acc * 100))
+        logger.info('[PyTorch, MNIST] Accuracy on training set: %.2f%%', (acc * 100))
 
         scores = get_labels_np_array(cls.classifier_py.predict(x_test))
         acc = np.sum(np.argmax(scores, axis=1) == np.argmax(y_test, axis=1)) / y_test.shape[0]
-        print('\n[PyTorch, MNIST] Accuracy on test set: %.2f%%' % (acc * 100))
+        logger.info('[PyTorch, MNIST] Accuracy on test set: %.2f%%', (acc * 100))
 
     def test_mnist(self):
         # Define all backends to test
@@ -119,11 +121,45 @@ class TestIterativeAttack(unittest.TestCase):
         self.assertFalse((y_test == test_y_pred).all())
 
         acc = np.sum(np.argmax(train_y_pred, axis=1) == np.argmax(y_train, axis=1)) / y_train.shape[0]
-        print('\nAccuracy on adversarial train examples: %.2f%%' % (acc * 100))
+        logger.info('Accuracy on adversarial train examples: %.2f%%', (acc * 100))
 
         acc = np.sum(np.argmax(test_y_pred, axis=1) == np.argmax(y_test, axis=1)) / y_test.shape[0]
-        print('\nAccuracy on adversarial test examples: %.2f%%' % (acc * 100))
+        logger.info('Accuracy on adversarial test examples: %.2f%%', (acc * 100))
 
+    def _test_mnist_targeted(self, classifier):
+        # Get MNIST
+        (_, _), (x_test, y_test) = self.mnist
+
+        # Test FGSM with np.inf norm
+        attack = BasicIterativeMethod(classifier, eps=1.0, eps_step=0.1, targeted=True)
+        # y_test_adv = to_categorical((np.argmax(y_test, axis=1) + 1)  % 10, 10)
+        pred_sort = classifier.predict(x_test).argsort(axis=1)
+        y_test_adv = np.zeros((x_test.shape[0], 10))
+        for i in range(x_test.shape[0]):
+            y_test_adv[i, pred_sort[i, -2]] = 1.0
+        x_test_adv = attack.generate(x_test, eps_step=0.01, eps=1.0, y=y_test_adv)
+
+        self.assertFalse((x_test == x_test_adv).all())
+
+        test_y_pred = get_labels_np_array(classifier.predict(x_test_adv))
+
+        self.assertEqual(y_test_adv.shape, test_y_pred.shape)
+        # This doesn't work all the time, especially with small networks
+        self.assertTrue((y_test_adv == test_y_pred).sum() >= x_test.shape[0]//2)
+    
+    def test_mnist_targeted(self):
+        # Define all backends to test
+        backends = {'keras': self.classifier_k,
+                    'tf': self.classifier_tf,
+                    'pytorch': self.classifier_py}
+
+        for _, classifier in backends.items():
+            if _ == 'pytorch':
+                self._swap_axes()
+            self._test_mnist_targeted(classifier)
+            if _ == 'pytorch':
+                self._swap_axes()
+   
     @staticmethod
     def _cnn_mnist_tf(input_shape):
         labels_tf = tf.placeholder(tf.float32, [None, 10])

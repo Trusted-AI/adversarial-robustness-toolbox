@@ -4,11 +4,13 @@ Module providing convenience functions.
 from __future__ import absolute_import, division, print_function, unicode_literals
 
 import argparse
-import json
+import logging
 import os
 
 import numpy as np
 from scipy.special import gammainc
+
+logger = logging.getLogger(__name__)
 
 
 def projection(v, eps, p):
@@ -170,9 +172,11 @@ def preprocess(x, y, nb_classes=10, max_value=255):
 # -------------------------------------------------------------------------------------------------------- IO FUNCTIONS
 
 
-def load_cifar10():
+def load_cifar10(raw=False):
     """Loads CIFAR10 dataset from config.CIFAR10_PATH or downloads it if necessary.
 
+    :param raw: `True` if no preprocessing should be applied to the data. Otherwise, data is normalized to 1.
+    :type raw: `bool`
     :return: `(x_train, y_train), (x_test, y_test), min, max`
     :rtype: `(np.ndarray, np.ndarray), (np.ndarray, np.ndarray), float, float`
     """
@@ -206,22 +210,25 @@ def load_cifar10():
         x_train = x_train.transpose(0, 2, 3, 1)
         x_test = x_test.transpose(0, 2, 3, 1)
 
-    x_train, y_train = preprocess(x_train, y_train)
-    x_test, y_test = preprocess(x_test, y_test)
+    min_, max_ = 0, 255
+    if not raw:
+        min_, max_ = 0., 1.
+        x_train, y_train = preprocess(x_train, y_train)
+        x_test, y_test = preprocess(x_test, y_test)
 
     return (x_train, y_train), (x_test, y_test), min_, max_
 
 
-def load_mnist():
+def load_mnist(raw=False):
     """Loads MNIST dataset from `DATA_PATH` or downloads it if necessary.
 
+    :param raw: `True` if no preprocessing should be applied to the data. Otherwise, data is normalized to 1.
+    :type raw: `bool`
     :return: `(x_train, y_train), (x_test, y_test), min, max`
     :rtype: `(np.ndarray, np.ndarray), (np.ndarray, np.ndarray), float, float`
     """
     from keras.utils.data_utils import get_file
     from art import DATA_PATH
-
-    min_, max_ = 0., 1.
 
     path = get_file('mnist.npz', cache_subdir=DATA_PATH, origin='https://s3.amazonaws.com/img-datasets/mnist.npz')
 
@@ -233,33 +240,13 @@ def load_mnist():
     f.close()
 
     # Add channel axis
-    x_train = np.expand_dims(x_train, axis=3)
-    x_test = np.expand_dims(x_test, axis=3)
-    x_train, y_train = preprocess(x_train, y_train)
-    x_test, y_test = preprocess(x_test, y_test)
-
-    return (x_train, y_train), (x_test, y_test), min_, max_
-
-
-def load_mnist_raw():
-    """Loads MNIST dataset from config.MNIST_PATH or downloads it if necessary.
-
-    :return: `(x_train, y_train), (x_test, y_test), min, max`
-    :rtype: `(np.ndarray, np.ndarray), (np.ndarray, np.ndarray), float, float`
-    """
-    from keras.utils.data_utils import get_file
-    from art import DATA_PATH
-
-    min_, max_ = 0., 1.
-
-    path = get_file('mnist.npz', cache_subdir=DATA_PATH, origin='https://s3.amazonaws.com/img-datasets/mnist.npz')
-
-    f = np.load(path)
-    x_train = f['x_train']
-    y_train = f['y_train']
-    x_test = f['x_test']
-    y_test = f['y_test']
-    f.close()
+    min_, max_ = 0, 255
+    if not raw:
+        min_, max_ = 0., 1.
+        x_train = np.expand_dims(x_train, axis=3)
+        x_test = np.expand_dims(x_test, axis=3)
+        x_train, y_train = preprocess(x_train, y_train)
+        x_test, y_test = preprocess(x_test, y_test)
 
     return (x_train, y_train), (x_test, y_test), min_, max_
 

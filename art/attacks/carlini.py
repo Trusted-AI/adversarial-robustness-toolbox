@@ -1,11 +1,14 @@
 from __future__ import absolute_import, division, print_function, unicode_literals
 
+import logging
 import sys
 
 import numpy as np
 
 from art.attacks.attack import Attack
-from art.utils import get_labels_np_array, to_categorical
+from art.utils import get_labels_np_array
+
+logger = logging.getLogger(__name__)
 
 
 class CarliniL2Method(Attack):
@@ -197,7 +200,8 @@ class CarliniL2Method(Attack):
         self.set_params(**params_cpy)
 
         # Assert that, if attack is targeted, y_val is provided:
-        assert not (self.targeted and y is None)
+        if self.targeted and y is None:
+            raise ValueError('Target labels `y` need to be provided for a targeted attack.')
 
         # No labels provided, use model prediction as correct class
         if y is None:
@@ -289,6 +293,14 @@ class CarliniL2Method(Attack):
                     break
 
             x_adv[j] = best_adv_image
+
+        adv_preds = np.argmax(self.classifier.predict(x_adv), axis=1)
+        if self.targeted:
+            rate = np.sum(adv_preds == np.argmax(y, axis=1)) / x_adv.shape[0]
+        else:
+            preds = np.argmax(self.classifier.predict(x), axis=1)
+            rate = np.sum(adv_preds != preds) / x_adv.shape[0]
+        logger.info('Success rate of C&W attack: %.2f%%', rate)
 
         return x_adv
 

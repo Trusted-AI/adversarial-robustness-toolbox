@@ -1,5 +1,6 @@
 from __future__ import absolute_import, division, print_function, unicode_literals
 
+import logging
 import unittest
 
 import numpy as np
@@ -7,6 +8,7 @@ import numpy as np
 from art.utils import load_mnist, projection, random_sphere, to_categorical
 from art.utils import random_targets, get_label_conf, get_labels_np_array, preprocess
 
+logger = logging.getLogger('testLogger')
 
 BATCH_SIZE = 10
 NB_TRAIN = 100
@@ -17,6 +19,7 @@ class TestUtils(unittest.TestCase):
     def test_projection(self):
         # Get MNIST
         (x, _), (_, _), _, _ = load_mnist()
+
         # Probably don't need to test everything
         x = x[:100]
         t = tuple(range(1, len(x.shape)))
@@ -82,7 +85,7 @@ class TestUtils(unittest.TestCase):
         self.assertEqual(c.shape, y.shape)
         self.assertEqual(l.shape, y.shape)
 
-        self.assertTrue(np.all(l == y)) 
+        self.assertTrue(np.all(l == y))
         self.assertTrue(np.allclose(c, 0.99, atol=1e-2))
 
     def test_get_labels_np_array(self):
