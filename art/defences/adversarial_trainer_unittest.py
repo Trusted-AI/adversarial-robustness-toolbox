@@ -169,8 +169,7 @@ class TestAdversarialTrainer(TestBase):
 
         logger.info('Accuracy before adversarial training: %.2f%%', (acc * 100))
         logger.info('\nAccuracy after adversarial training: %.2f%%', (acc_new * 100))
-        
-    
+
     def test_targeted_attack_error(self):
         """
         Test the adversarial trainer using a targeted attack, which will currently result in a
@@ -178,8 +177,7 @@ class TestAdversarialTrainer(TestBase):
 
         :return: None
         """
-        
-        (x_train, y_train), (x_test, y_test) = self.mnist
+        (x_train, y_train), (_, _) = self.mnist
         params = {'nb_epochs': 2, 'batch_size': BATCH_SIZE}
 
         classifier = self.classifier_k
@@ -294,14 +292,14 @@ class TestStaticAdversarialTrainer(TestBase):
 
         :return: None
         """
-        
-        (x_train, y_train), (x_test, y_test) = self.mnist
+        (x_train, y_train), (_, _) = self.mnist
         params = {'nb_epochs': 2, 'batch_size': BATCH_SIZE}
 
         classifier = self.classifier_k
         adv = FastGradientMethod(classifier, targeted=True)
         adv_trainer = StaticAdversarialTrainer(classifier, attacks=adv)
         self.assertRaises(NotImplementedError, adv_trainer.fit, x_train, y_train, **params)
+
 
 if __name__ == '__main__':
     unittest.main()

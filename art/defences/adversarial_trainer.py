@@ -15,7 +15,9 @@ class AdversarialTrainer:
     training on all adversarial data and other common setups. If multiple attacks are specified, they are rotated
     for each batch. If the specified attacks have as target a different model, then the attack is transferred. The
     `ratio` determines how many of the clean samples in each batch are replaced with their adversarial counterpart.
-    When the attack targets the current classifier, only successful adversarial samples are used.
+
+     .. warning:: Both successful and unsuccessful adversarial samples are used for training. In the case of
+                  unbounded attacks (e.g., DeepFool), this can result in invalid (very noisy) samples being included.
     """
     def __init__(self, classifier, attacks, ratio=.5):
         """
@@ -71,7 +73,7 @@ class AdversarialTrainer:
         self._precomputed_adv_samples = []
         for attack in self.attacks:
             if 'targeted' in attack.attack_params:
-                if attack.targeted:                       
+                if attack.targeted:
                     raise NotImplementedError("Adversarial training with targeted attacks is \
                                                currently not implemented")
 
@@ -153,7 +155,7 @@ class StaticAdversarialTrainer(AdversarialTrainer):
 
         # Generate adversarial samples for each attack
         for i, attack in enumerate(self.attacks):
-            if 'targeted' in attack.attack_params and attack.targeted:                       
+            if 'targeted' in attack.attack_params and attack.targeted:
                     raise NotImplementedError("Adversarial training with targeted attacks is \
                                                currently not implemented")
 
