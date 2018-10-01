@@ -64,8 +64,13 @@ class AdversarialTrainer:
         # Precompute adversarial samples for transferred attacks
         self._precomputed_adv_samples = []
         for attack in self.attacks:
+            if 'targeted' in attack.attack_params:
+                if attack.targeted:                       
+                    raise NotImplementedError("Adversarial training with targeted attacks is \
+                                               currently not implemented")
+                                               
             if attack.classifier != self.classifier:
-                self._precomputed_adv_samples.append(attack.generate(x))
+                self._precomputed_adv_samples.append(attack.generate(x, y=y))
             else:
                 self._precomputed_adv_samples.append(None)
 
@@ -84,7 +89,7 @@ class AdversarialTrainer:
 
                 # If source and target models are the same, craft fresh adversarial samples
                 if attack.classifier == self.classifier:
-                    x_batch[adv_ids] = attack.generate(x_batch[adv_ids])
+                    x_batch[adv_ids] = attack.generate(x_batch[adv_ids], y=y_batch[adv_ids])
 
                 # Otherwise, use precomputed adversarial samples
                 else:
@@ -137,8 +142,13 @@ class StaticAdversarialTrainer(AdversarialTrainer):
 
         # Generate adversarial samples for each attack
         for attack in self.attacks:
+            if 'targeted' in attack.attack_params:
+                if attack.targeted:                       
+                    raise NotImplementedError("Adversarial training with targeted attacks is \
+                                               currently not implemented")
+                                               
             # Predict new labels for the adversarial samples generated
-            x_adv = attack.generate(x)
+            x_adv = attack.generate(x, y=y)
             y_pred = np.argmax(attack.classifier.predict(x_adv), axis=1)
             selected = np.array(labels != y_pred)
 
