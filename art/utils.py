@@ -124,6 +124,21 @@ def random_targets(labels, nb_classes):
     return to_categorical(result, nb_classes)
 
 
+def least_likely_class(x, classifier):
+    """
+    Compute the least likely class predictions for sample `x`. This strategy for choosing attack targets was used in
+    (Kurakin et al., 2016). See https://arxiv.org/abs/1607.02533.
+
+    :param x: A data sample of shape accepted by `classifier`.
+    :type x: `np.ndarray`
+    :param classifier: The classifier used for computing predictions.
+    :type classifier: `Classifier`
+    :return: Least-likely class predicted by `classifier` for sample `x` in one-hot encoding.
+    :rtype: `np.ndarray`
+    """
+    return to_categorical(np.argmin(classifier.predict(x), axis=1), nb_classes=classifier.nb_classes)
+
+
 def get_label_conf(y_vec):
     """
     Returns the confidence and the label of the most probable class given a vector of class confidences
