@@ -1,20 +1,24 @@
 from __future__ import absolute_import, division, print_function, unicode_literals
 
-import tensorflow as tf
+import logging
 import unittest
-import numpy as np
+
 import keras
 import keras.backend as k
-from keras.models import Sequential
-from keras.layers import Dense, Flatten, Conv2D, MaxPooling2D
+import numpy as np
+import tensorflow as tf
 import torch.nn as nn
 import torch.optim as optim
+from keras.layers import Dense, Flatten, Conv2D, MaxPooling2D
+from keras.models import Sequential
 
 from art.attacks.universal_perturbation import UniversalPerturbation
 from art.classifiers import KerasClassifier, PyTorchClassifier, TFClassifier
 from art.utils import load_mnist
 
-BATCH_SIZE, NB_TRAIN, NB_TEST = 100, 1000, 10
+logger = logging.getLogger('testLogger')
+
+BATCH_SIZE, NB_TRAIN, NB_TEST = 100, 500, 10
 
 
 class Model(nn.Module):
@@ -82,7 +86,7 @@ class TestUniversalPerturbation(unittest.TestCase):
 
         # Attack
         # TODO Launch with all possible attacks
-        attack_params = {"attacker": "newtonfool", "attacker_params": {"max_iter": 20}}
+        attack_params = {"attacker": "newtonfool", "attacker_params": {"max_iter": 5}}
         up = UniversalPerturbation(tfc)
         x_train_adv = up.generate(x_train, **attack_params)
         self.assertTrue((up.fooling_rate >= 0.2) or not up.converged)
@@ -123,7 +127,7 @@ class TestUniversalPerturbation(unittest.TestCase):
 
         # Attack
         # TODO Launch with all possible attacks
-        attack_params = {"attacker": "newtonfool", "attacker_params": {"max_iter": 20}}
+        attack_params = {"attacker": "newtonfool", "attacker_params": {"max_iter": 5}}
         up = UniversalPerturbation(krc)
         x_train_adv = up.generate(x_train, **attack_params)
         self.assertTrue((up.fooling_rate >= 0.2) or not up.converged)
@@ -160,7 +164,7 @@ class TestUniversalPerturbation(unittest.TestCase):
 
         # Attack
         # TODO Launch with all possible attacks
-        attack_params = {"attacker": "newtonfool", "attacker_params": {"max_iter": 20}}
+        attack_params = {"attacker": "newtonfool", "attacker_params": {"max_iter": 5}}
         up = UniversalPerturbation(ptc)
         x_train_adv = up.generate(x_train, **attack_params)
         self.assertTrue((up.fooling_rate >= 0.2) or not up.converged)

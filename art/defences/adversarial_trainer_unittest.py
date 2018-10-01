@@ -1,17 +1,21 @@
 from __future__ import absolute_import, division, print_function, unicode_literals
 
+import logging
 import unittest
-import keras.backend as k
+
 import keras
-from keras.models import Sequential
-from keras.layers import Dense, Flatten, Conv2D, MaxPooling2D
+import keras.backend as k
 import numpy as np
 import tensorflow as tf
+from keras.layers import Dense, Flatten, Conv2D, MaxPooling2D
+from keras.models import Sequential
 
 from art.attacks import FastGradientMethod, DeepFool
 from art.classifiers import TFClassifier, KerasClassifier
 from art.defences import AdversarialTrainer, StaticAdversarialTrainer
 from art.utils import load_mnist, get_labels_np_array
+
+logger = logging.getLogger('testLogger')
 
 BATCH_SIZE = 10
 NB_TRAIN = 100
@@ -42,9 +46,9 @@ class TestBase(unittest.TestCase):
         TestBase.classifier_k.fit(x_train, y_train, nb_epochs=2, batch_size=BATCH_SIZE)
 
         scores = TestBase.classifier_k._model.evaluate(x_train, y_train)
-        print("\n[Keras, MNIST] Accuracy on training set: %.2f%%" % (scores[1] * 100))
+        logger.info('[Keras, MNIST] Accuracy on training set: %.2f%%', (scores[1] * 100))
         scores = TestBase.classifier_k._model.evaluate(x_test, y_test)
-        print("\n[Keras, MNIST] Accuracy on test set: %.2f%%" % (scores[1] * 100))
+        logger.info('[Keras, MNIST] Accuracy on test set: %.2f%%', (scores[1] * 100))
 
         # Create basic CNN on MNIST using TensorFlow
         TestBase.classifier_tf = TestBase._cnn_mnist_tf(x_train.shape[1:])
@@ -52,11 +56,11 @@ class TestBase(unittest.TestCase):
 
         scores = get_labels_np_array(TestBase.classifier_tf.predict(x_train))
         acc = np.sum(np.argmax(scores, axis=1) == np.argmax(y_train, axis=1)) / y_train.shape[0]
-        print('\n[TF, MNIST] Accuracy on training set: %.2f%%' % (acc * 100))
+        logger.info('[TF, MNIST] Accuracy on training set: %.2f%%', (acc * 100))
 
         scores = get_labels_np_array(TestBase.classifier_tf.predict(x_test))
         acc = np.sum(np.argmax(scores, axis=1) == np.argmax(y_test, axis=1)) / y_test.shape[0]
-        print('\n[TF, MNIST] Accuracy on test set: %.2f%%' % (acc * 100))
+        logger.info('[TF, MNIST] Accuracy on test set: %.2f%%', (acc * 100))
 
     @staticmethod
     def _cnn_mnist_tf(input_shape):
@@ -125,8 +129,8 @@ class TestAdversarialTrainer(TestBase):
         acc_new = np.sum(preds_new == np.argmax(y_test, axis=1)) / NB_TEST
         self.assertGreaterEqual(acc_new, acc * accuracy_drop)
 
-        print('\nAccuracy before adversarial training: %.2f%%' % (acc * 100))
-        print('\nAccuracy after adversarial training: %.2f%%' % (acc_new * 100))
+        logger.info('Accuracy before adversarial training: %.2f%%', (acc * 100))
+        logger.info('Accuracy after adversarial training: %.2f%%', (acc_new * 100))
 
     def test_transfer(self):
         (x_train, y_train), (x_test, y_test) = self.mnist
@@ -143,8 +147,8 @@ class TestAdversarialTrainer(TestBase):
         acc_new = np.sum(preds_new == np.argmax(y_test, axis=1)) / NB_TEST
         self.assertGreaterEqual(acc_new, acc * accuracy_drop)
 
-        print('\nAccuracy before adversarial training: %.2f%%' % (acc * 100))
-        print('\nAccuracy after adversarial training: %.2f%%' % (acc_new * 100))
+        logger.info('Accuracy before adversarial training: %.2f%%', (acc * 100))
+        logger.info('Accuracy after adversarial training: %.2f%%', (acc_new * 100))
 
     def test_two_attacks(self):
         (x_train, y_train), (x_test, y_test) = self.mnist
@@ -163,8 +167,8 @@ class TestAdversarialTrainer(TestBase):
         # No reason to assert the newer accuracy is higher. It might go down slightly
         self.assertGreaterEqual(acc_new, acc * accuracy_drop)
 
-        print('\nAccuracy before adversarial training: %.2f%%' % (acc * 100))
-        print('\nAccuracy after adversarial training: %.2f%%' % (acc_new * 100))
+        logger.info('Accuracy before adversarial training: %.2f%%', (acc * 100))
+        logger.info('\nAccuracy after adversarial training: %.2f%%', (acc_new * 100))
         
     
     def test_targeted_attack_error(self):
@@ -182,7 +186,6 @@ class TestAdversarialTrainer(TestBase):
         adv = FastGradientMethod(classifier, targeted=True)
         adv_trainer = AdversarialTrainer(classifier, attacks=adv)
         self.assertRaises(NotImplementedError, adv_trainer.fit, x_train, y_train, **params)
-
 
 
 class TestStaticAdversarialTrainer(TestBase):
@@ -217,8 +220,8 @@ class TestStaticAdversarialTrainer(TestBase):
         # Evaluate that accuracy on adversarial sample has improved
         preds_adv_trained = adv_trainer.classifier.predict(x_adv)
         acc_adv_trained = np.sum(np.argmax(preds_adv_trained, axis=1) == np.argmax(y_test, axis=1)) / x_adv.shape[0]
-        print('\nAccuracy before adversarial training: %.2f%%' % (acc * 100))
-        print('\nAccuracy after adversarial training: %.2f%%' % (acc_adv_trained * 100))
+        logger.info('Accuracy before adversarial training: %.2f%%', (acc * 100))
+        logger.info('Accuracy after adversarial training: %.2f%%', (acc_adv_trained * 100))
 
     def test_multi_attack_mnist(self):
         """
@@ -251,8 +254,8 @@ class TestStaticAdversarialTrainer(TestBase):
         # Evaluate that accuracy on adversarial sample has improved
         preds_adv_trained = adv_trainer.classifier.predict(x_adv)
         acc_adv_trained = np.sum(np.argmax(preds_adv_trained, axis=1) == np.argmax(y_adv, axis=1)) / y_adv.shape[0]
-        print('\nAccuracy before adversarial training: %.2f%%' % (acc * 100))
-        print('\nAccuracy after adversarial training: %.2f%%' % (acc_adv_trained * 100))
+        logger.info('Accuracy before adversarial training: %.2f%%', (acc * 100))
+        logger.info('Accuracy after adversarial training: %.2f%%', (acc_adv_trained * 100))
 
     def test_shared_model_mnist(self):
         """
@@ -281,8 +284,8 @@ class TestStaticAdversarialTrainer(TestBase):
         # Evaluate that accuracy on adversarial sample has improved
         preds_adv_trained = adv_trainer.classifier.predict(x_adv)
         acc_adv_trained = np.sum(np.argmax(preds_adv_trained, axis=1) == np.argmax(y_test, axis=1)) / y_test.shape[0]
-        print('\nAccuracy before adversarial training: %.2f%%' % (acc * 100))
-        print('\nAccuracy after adversarial training: %.2f%%' % (acc_adv_trained * 100))
+        logger.info('Accuracy before adversarial training: %.2f%%', (acc * 100))
+        logger.info('Accuracy after adversarial training: %.2f%%', (acc_adv_trained * 100))
 
     def test_targeted_attack_error(self):
         """

@@ -1,17 +1,21 @@
 from __future__ import absolute_import, division, print_function, unicode_literals
 
-import tensorflow as tf
-import numpy as np
+import logging
 import unittest
+
 import keras
 import keras.backend as k
-from keras.models import Sequential
+import numpy as np
+import tensorflow as tf
 from keras.layers import Dense, Flatten, Conv2D, MaxPooling2D
+from keras.models import Sequential
 
-from art.detection.detector import BinaryInputDetector, BinaryActivationDetector
 from art.attacks.fast_gradient import FastGradientMethod
 from art.classifiers.keras import KerasClassifier
+from art.detection.detector import BinaryInputDetector, BinaryActivationDetector
 from art.utils import load_mnist
+
+logger = logging.getLogger('testLogger')
 
 BATCH_SIZE, NB_TRAIN, NB_TEST = 100, 1000, 10
 
@@ -81,6 +85,8 @@ class TestBinaryInputDetector(unittest.TestCase):
         # Assert there is at least one true positive and negative:
         nb_true_positives = len(np.where(test_adv_detection == 1)[0])
         nb_true_negatives = len(np.where(test_detection == 0)[0])
+        logger.debug('Number of true positives detected: %i', nb_true_positives)
+        logger.debug('Number of true negatives detected: %i', nb_true_negatives)
         self.assertTrue(nb_true_positives > 0)
         self.assertTrue(nb_true_negatives > 0)
 
@@ -155,6 +161,8 @@ class TestBinaryActivationDetector(unittest.TestCase):
         # Assert there is at least one true positive and negative:
         nb_true_positives = len(np.where(test_adv_detection == 1)[0])
         nb_true_negatives = len(np.where(test_detection == 0)[0])
+        logger.debug('Number of true positives detected: %i', nb_true_positives)
+        logger.debug('Number of true negatives detected: %i', nb_true_negatives)
         self.assertTrue(nb_true_positives > 0)
         self.assertTrue(nb_true_negatives > 0)
 
