@@ -1,7 +1,9 @@
+import json
+import logging
+import logging.config
 import os
 
-import json
-import logging.config
+from numpy import float32
 
 LOGGING = {
     'version': 1,
@@ -34,6 +36,7 @@ LOGGING = {
     }
 }
 logging.config.dictConfig(LOGGING)
+logger = logging.getLogger(__name__)
 
 _folder = os.path.expanduser('~')
 if not os.access(_folder, os.W_OK):
@@ -66,3 +69,5 @@ if not os.path.exists(_config_path):
 
 if 'DATA_PATH' in _config:
     DATA_PATH = _config['DATA_PATH']
+
+NUMPY_DTYPE = float32
