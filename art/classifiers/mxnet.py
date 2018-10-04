@@ -1,12 +1,19 @@
 from __future__ import absolute_import, division, print_function, unicode_literals
 
-import six
+import logging
+
 import numpy as np
+import six
 
 from art.classifiers import Classifier
 
+logger = logging.getLogger(__name__)
+
 
 class MXClassifier(Classifier):
+    """
+    Wrapper class for importing MXNet Gluon model.
+    """
     def __init__(self, clip_values, model, input_shape, nb_classes, optimizer=None, ctx=None, channel_index=1,
                  defences=None, preprocessing=(0, 1)):
         """
@@ -283,6 +290,7 @@ class MXClassifier(Classifier):
         :return: The hidden layers in the model, input and output layers excluded.
         :rtype: `list`
         """
-
         layer_names = [layer.name for layer in self._model[:-1]]
+        logger.info('Inferred %i hidden layers on MXNet classifier.', len(layer_names))
+
         return layer_names

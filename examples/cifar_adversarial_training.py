@@ -4,8 +4,9 @@ DeepFool attack and retrains the network on the training set augmented with the 
 """
 from __future__ import absolute_import, division, print_function, unicode_literals
 
-from os.path import abspath
 import sys
+from os.path import abspath
+
 sys.path.append(abspath('.'))
 
 import keras.backend as k

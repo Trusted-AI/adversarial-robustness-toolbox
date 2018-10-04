@@ -1,10 +1,14 @@
 from __future__ import absolute_import, division, print_function, unicode_literals
 
-import numpy as np
+import logging
 import random
+
+import numpy as np
 import six
 
 from art.classifiers import Classifier
+
+logger = logging.getLogger(__name__)
 
 
 class TFClassifier(Classifier):
@@ -292,6 +296,7 @@ class TFClassifier(Classifier):
         for name in reversed(tmp_list[:-1]):
             if result[0].split("/")[0] != name.split("/")[0]:
                 result = [name] + result
+        logger.info('Inferred %i hidden layers on TensorFlow classifier.', len(result))
 
         return result
 

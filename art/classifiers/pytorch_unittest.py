@@ -1,14 +1,17 @@
 from __future__ import absolute_import, division, print_function, unicode_literals
 
+import logging
 import unittest
 
+import numpy as np
 import torch.nn as nn
 import torch.nn.functional as F
 import torch.optim as optim
-import numpy as np
 
 from art.classifiers.pytorch import PyTorchClassifier
 from art.utils import load_mnist
+
+logger = logging.getLogger('testLogger')
 
 
 NB_TRAIN = 1000
@@ -77,7 +80,7 @@ class TestPyTorchClassifier(unittest.TestCase):
         # Test predict
         preds = self.module_classifier.predict(x_test)
         acc = np.sum(np.argmax(preds, axis=1) == np.argmax(y_test, axis=1)) / len(y_test)
-        print("\nAccuracy: %.2f%%" % (acc * 100))
+        logger.info('Accuracy after fitting: %.2f%%', (acc * 100))
         self.assertGreater(acc, 0.1)
 
     def test_nb_classes(self):
