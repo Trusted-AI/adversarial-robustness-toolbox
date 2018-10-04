@@ -17,11 +17,15 @@
 # SOFTWARE.
 from __future__ import absolute_import, division, print_function, unicode_literals
 
-import numpy as np
+import logging
 import random
+
+import numpy as np
 
 from art.attacks.attack import Attack
 from art.utils import projection
+
+logger = logging.getLogger(__name__)
 
 
 class UniversalPerturbation(Attack):
@@ -89,7 +93,9 @@ class UniversalPerturbation(Attack):
         :return: An array holding the adversarial examples.
         :rtype: `np.ndarray`
         """
-        assert self.set_params(**kwargs)
+        logger.info('Computing universal perturbation based on %s attack.', self.attacker)
+
+        self.set_params(**kwargs)
 
         # Init universal perturbation
         v = 0
@@ -137,6 +143,7 @@ class UniversalPerturbation(Attack):
         self.fooling_rate = fooling_rate
         self.converged = (nb_iter < self.max_iter)
         self.v = v
+        logger.info('Success rate of universal perturbation attack: %.2f%%', fooling_rate)
 
         return adv_x
 

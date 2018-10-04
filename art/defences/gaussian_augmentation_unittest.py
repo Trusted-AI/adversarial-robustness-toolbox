@@ -17,11 +17,14 @@
 # SOFTWARE.
 from __future__ import absolute_import, division, print_function, unicode_literals
 
+import logging
 import unittest
 
 import numpy as np
 
 from art.defences.gaussian_augmentation import GaussianAugmentation
+
+logger = logging.getLogger('testLogger')
 
 
 class TestGaussianAugmentation(unittest.TestCase):

@@ -1,17 +1,38 @@
+# MIT License
+#
+# Copyright (C) IBM Corporation 2018
+#
+# Permission is hereby granted, free of charge, to any person obtaining a copy of this software and associated
+# documentation files (the "Software"), to deal in the Software without restriction, including without limitation the
+# rights to use, copy, modify, merge, publish, distribute, sublicense, and/or sell copies of the Software, and to permit
+# persons to whom the Software is furnished to do so, subject to the following conditions:
+#
+# The above copyright notice and this permission notice shall be included in all copies or substantial portions of the
+# Software.
+#
+# THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE
+# WARRANTIES OF MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+# AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT,
+# TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
+# SOFTWARE.
 """
 Module implementing varying metrics for assessing model robustness. These fall mainly under two categories:
 attack-dependent and attack-independent.
 """
 from __future__ import absolute_import, division, print_function, unicode_literals
 
-import numpy as np
-import numpy.linalg as la
-from scipy.stats import weibull_min
-from scipy.optimize import fmin as scipy_optimizer
+import logging
 from functools import reduce
 
+import numpy as np
+import numpy.linalg as la
+from scipy.optimize import fmin as scipy_optimizer
+from scipy.stats import weibull_min
+
 from art.attacks import FastGradientMethod
-from art.utils import random_sphere, get_labels_np_array
+from art.utils import random_sphere
+
+logger = logging.getLogger(__name__)
 
 supported_methods = {
     "fgsm": {"class": FastGradientMethod, "params": {"eps_step": 0.1, "eps_max": 1., "clip_min": 0., "clip_max": 1.}},
@@ -245,11 +266,11 @@ def clever_t(classifier, x, target_class, nb_batches, batch_size, radius, norm, 
     y_pred = classifier.predict(np.array([x]), logits=True)
     pred_class = np.argmax(y_pred, axis=1)[0]
     if target_class == pred_class:
-        raise ValueError("The targeted class is the predicted class")
+        raise ValueError("The targeted class is the predicted class.")
 
     # Check if pool_factor is smaller than 1
     if pool_factor < 1:
-        raise ValueError("The pool_factor must be larger than 1")
+        raise ValueError("The `pool_factor` must be larger than 1.")
 
     # Some auxiliary vars
     grad_norm_set = []
@@ -279,7 +300,7 @@ def clever_t(classifier, x, target_class, nb_batches, batch_size, radius, norm, 
         # Compute gradients
         grads = classifier.class_gradient(sample_xs, logits=True)
         if np.isnan(grads).any():
-            raise Exception("The classifier results NaN gradients")
+            raise Exception("The classifier results NaN gradients.")
 
         grad = grads[:, pred_class] - grads[:, target_class]
         grad = np.reshape(grad, (batch_size, -1))

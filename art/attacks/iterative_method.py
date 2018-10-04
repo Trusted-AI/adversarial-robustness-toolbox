@@ -16,10 +16,15 @@
 # TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 # SOFTWARE.
 from __future__ import absolute_import, division, print_function, unicode_literals
+
+import logging
+
 import numpy as np
 
 from art.attacks import FastGradientMethod
-from art.utils import to_categorical, get_labels_np_array
+from art.utils import get_labels_np_array
+
+logger = logging.getLogger(__name__)
 
 
 class BasicIterativeMethod(FastGradientMethod):
@@ -57,11 +62,13 @@ class BasicIterativeMethod(FastGradientMethod):
         if max_iter <= 0:
             raise ValueError('The number of iterations `max_iter` has to be a positive integer.')
         self.max_iter = int(max_iter)
-
+        
+        self._project = False
+        
     def generate(self, x, **kwargs):
         """
         Generate adversarial samples and return them in an array.
-
+        
         :param x: An array with the original inputs.
         :type x: `np.ndarray`
         :param norm: Order of the norm. Possible values: np.inf, 1 or 2.
@@ -93,30 +100,28 @@ class BasicIterativeMethod(FastGradientMethod):
         else:
             targets = kwargs['y']
         target_labels = np.argmax(targets, axis=1)
-        active_indices = range(len(adv_x))
 
-        for _ in range(self.max_iter):
+        for i in range(self.max_iter):
             # Adversarial crafting
-            adv_x[active_indices] = self._compute(adv_x[active_indices], targets[active_indices], self.eps_step,
-                                                  self.random_init)
-            noise = projection(adv_x[active_indices] - x[active_indices], self.eps, self.norm)
-            adv_x[active_indices] = x[active_indices] + noise
-            adv_preds = self.classifier.predict(adv_x[active_indices])
+            adv_x = self._compute(adv_x, targets, self.eps_step, self.random_init and i == 0)
+            
+            if self._project:
+                noise = projection(adv_x - x, self.eps, self.norm)               
+                adv_x = x + noise
 
-            # Update active indices
-            active_subindices = np.where(target_labels[active_indices] != np.argmax(adv_preds, axis=1))[0]
-            active_indices = [active_indices[i] for i in active_subindices]
-
-            # Stop if no more indices left to explore
-            if len(active_indices) == 0:
-                break
+        adv_preds = np.argmax(self.classifier.predict(adv_x), axis=1)
+        if self.targeted:
+            rate = np.sum(adv_preds == target_labels) / adv_x.shape[0]
+        else:
+            rate = np.sum(adv_preds != target_labels) / adv_x.shape[0]
+        logger.info('Success rate of BIM attack: %.2f%%', rate)
 
         return adv_x
 
     def set_params(self, **kwargs):
         """
         Take in a dictionary of parameters and applies attack-specific checks before saving them as attributes.
-
+       
         :param norm: Order of the norm. Possible values: np.inf, 1 or 2.
         :type norm: `int`
         :param eps: Maximum perturbation that the attacker can introduce.

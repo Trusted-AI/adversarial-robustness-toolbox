@@ -1,4 +1,4 @@
-# ART Examples
+# Adversarial Robustness Toolbox examples
 
 [mnist_cnn_fgsm.py](mnist_cnn_fgsm.py)
 Trains a convolutional neural network on MNIST, then crafts FGSM attack examples on it.

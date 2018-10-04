@@ -17,12 +17,15 @@
 # SOFTWARE.
 from __future__ import absolute_import, division, print_function, unicode_literals
 
+import logging
 import sys
 
 import numpy as np
 
 from art.attacks.attack import Attack
-from art.utils import get_labels_np_array, to_categorical
+from art.utils import get_labels_np_array
+
+logger = logging.getLogger(__name__)
 
 
 class CarliniL2Method(Attack):
@@ -33,10 +36,10 @@ class CarliniL2Method(Attack):
     Paper link: https://arxiv.org/pdf/1608.04644.pdf
     """
     attack_params = Attack.attack_params + ['confidence', 'targeted', 'learning_rate', 'max_iter',
-                                            'binary_search_steps', 'initial_const', 'decay']
+                                            'binary_search_steps', 'initial_const', 'max_halving', 'max_doubling']
 
-    def __init__(self, classifier, confidence=5.0, targeted=True, learning_rate=1e-4, binary_search_steps=25,
-                 max_iter=1000, initial_const=1e-4, decay=0.):
+    def __init__(self, classifier, confidence=0.0, targeted=True, learning_rate=0.01, binary_search_steps=10,
+                 max_iter=10, initial_const=0.01, max_halving=5, max_doubling=5):
         """
         Create a Carlini L_2 attack instance.
 
@@ -55,11 +58,13 @@ class CarliniL2Method(Attack):
         :param max_iter: The maximum number of iterations.
         :type max_iter: `int`
         :param initial_const: The initial trade-off constant `c` to use to tune the relative importance of distance and
-                confidence. If `binary_search_steps` is large, the initial constant is not important. The default value
-                1e-4 is suggested in Carlini and Wagner (2016).
+                confidence. If `binary_search_steps` is large, the initial constant is not important, as discussed in
+                Carlini and Wagner (2016).
         :type initial_const: `float`
-        :param decay: Coefficient for learning rate decay.
-        :type decay: `float`
+        :param max_halving: Maximum number of halving steps in the line search optimization.
+        :type max_halving: `int`
+        :param max_doubling: Maximum number of doubling steps in the line search optimization.
+        :type max_doubling: `int`
         """
         super(CarliniL2Method, self).__init__(classifier)
 
@@ -69,7 +74,8 @@ class CarliniL2Method(Attack):
                   'binary_search_steps': binary_search_steps,
                   'max_iter': max_iter,
                   'initial_const': initial_const,
-                  'decay': decay
+                  'max_halving': max_halving,
+                  'max_doubling': max_doubling
                   }
         assert self.set_params(**kwargs)
 
@@ -78,13 +84,27 @@ class CarliniL2Method(Attack):
         self._c_upper_bound = 10e10
         # Smooth arguments of arctanh by multiplying with this constant to avoid division by zero:
         self._tanh_smoother = 0.999999
+    
+    def _loss(self, x, x_adv, target, c):    
+        """
+        Compute the objective function value.
 
-    def loss(self, x, x_adv, target, c):
-        l2dist = np.sum(np.square(x-x_adv))
+        :param x: An array with the original input.
+        :type x: `np.ndarray`
+        :param x_adv: An array with the adversarial input.
+        :type x_adv: `np.ndarray`
+        :param target: An array with the target class (one-hot encoded).
+        :type target: `np.ndarray`
+        :param c: Weight of the loss term aiming for classification as target.
+        :type c: `float`
+        :return: A tuple holding the current logits, l2 distance and overall loss.
+        :rtype: `(float, float, float)`
+        """    
+        l2dist = np.sum(np.square(x-x_adv))        
         z = self.classifier.predict(np.array([x_adv]), logits=True)[0]
         z_target = np.sum(z * target)
-        z_other = np.max(z * (1 - target))
-
+        z_other = np.max(z * (1 - target) + (np.min(z)-1)*target)
+        
         # The following differs from the exact definition given in Carlini and Wagner (2016). There (page 9, left
         # column, last equation), the maximum is taken over Z_other - Z_target (or Z_target - Z_other respectively)
         # and -confidence. However, it doesn't seem that that would have the desired effect (loss term is <= 0 if and
@@ -99,7 +119,83 @@ class CarliniL2Method(Attack):
             loss = max(z_target - z_other + self.confidence, 0)
 
         return z, l2dist, c*loss + l2dist
+    
+    def _loss_gradient(self, z, target, x, x_adv, x_adv_tanh, c, clip_min, clip_max):  
+        """
+        Compute the gradient of the loss function.
 
+        :param z: An array with the current logits.
+        :type z: `np.ndarray`
+        :param target: An array with the target class (one-hot encoded).
+        :type target: `np.ndarray`
+        :param x: An array with the original input.
+        :type x: `np.ndarray`
+        :param x_adv: An array with the adversarial input.
+        :type x_adv: `np.ndarray`
+        :param x_adv_tanh: An array with the adversarial input in tanh space.
+        :type x_adv_tanh: `np.ndarray`
+        :param c: Weight of the loss term aiming for classification as target.
+        :type c: `float`
+        :param clip_min: Minimum clipping value.
+        :type clip_min: `float`
+        :param clip_max: Maximum clipping value.
+        :type clip_max: `float`
+        :return: An array with the gradient of the loss function.
+        :type target: `np.ndarray`
+        """  
+        if self.targeted:
+            i_sub, i_add = np.argmax(target), np.argmax(z * (1 - target) + (np.min(z)-1)*target)
+        else:
+            i_add, i_sub = np.argmax(target), np.argmax(z * (1 - target) + (np.min(z)-1)*target)
+        
+        loss_gradient = self.classifier.class_gradient(np.array([x_adv]), label=i_add, logits=True)[0]
+        loss_gradient -= self.classifier.class_gradient(np.array([x_adv]), label=i_sub, logits=True)[0]
+        loss_gradient *= c
+        loss_gradient += 2*(x_adv - x)
+        loss_gradient *= (clip_max - clip_min) 
+        loss_gradient *= (1-np.square(np.tanh(x_adv_tanh)))/(2*self._tanh_smoother)
+        
+        return loss_gradient[0]
+                        
+    
+    def _original_to_tanh(self, x_original, clip_min, clip_max):
+        """
+        Transform input from original to tanh space.
+
+        :param x_original: An array with the input to be transformed.
+        :type x_original: `np.ndarray`
+        :param clip_min: Minimum clipping value.
+        :type clip_min: `float`
+        :param clip_max: Maximum clipping value.
+        :type clip_max: `float`
+        :return: An array holding the transformed input.
+        :rtype: `np.ndarray`
+        """    
+        # To avoid division by zero (which occurs if arguments of arctanh are +1 or -1),
+        # we multiply arguments with _tanh_smoother. It appears this is what Carlini and Wagner
+        # (2016) are alluding to in their footnote 8. However, it is not clear how their proposed trick
+        # ("instead of scaling by 1/2 we scale by 1/2 + eps") works in detail.    
+        x_tanh = np.clip(x_original, clip_min, clip_max)
+        x_tanh = (x_tanh - clip_min) / (clip_max - clip_min)
+        x_tanh = np.arctanh(((x_tanh * 2) - 1) * self._tanh_smoother)
+        return x_tanh
+        
+    def _tanh_to_original(self, x_tanh, clip_min, clip_max):
+        """
+        Transform input from tanh to original space.
+
+        :param x_tanh: An array with the input to be transformed.
+        :type x_tanh: `np.ndarray`
+        :param clip_min: Minimum clipping value.
+        :type clip_min: `float`
+        :param clip_max: Maximum clipping value.
+        :type clip_max: `float`
+        :return: An array holding the transformed input.
+        :rtype: `np.ndarray`
+        """        
+        x_original = (np.tanh(x_tanh) / self._tanh_smoother + 1) / 2
+        return x_original * (clip_max - clip_min) + clip_min
+    
     def generate(self, x, **kwargs):
         """
         Generate adversarial samples and return them in an array.
@@ -111,7 +207,7 @@ class CarliniL2Method(Attack):
         :type y: `np.ndarray`
         :return: An array holding the adversarial examples.
         :rtype: `np.ndarray`
-        """
+        """        
         x_adv = x.copy()
         (clip_min, clip_max) = self.classifier.clip_values
 
@@ -121,7 +217,8 @@ class CarliniL2Method(Attack):
         self.set_params(**params_cpy)
 
         # Assert that, if attack is targeted, y_val is provided:
-        assert not (self.targeted and y is None)
+        if self.targeted and y is None:
+            raise ValueError('Target labels `y` need to be provided for a targeted attack.')
 
         # No labels provided, use model prediction as correct class
         if y is None:
@@ -131,14 +228,8 @@ class CarliniL2Method(Attack):
             image = ex.copy()
 
             # The optimization is performed in tanh space to keep the
-            # adversarial images bounded from clip_min and clip_max. To avoid division by zero (which occurs if
-            # arguments of arctanh are +1 or -1), we multiply arguments with _tanh_smoother.
-            # It appears this is what Carlini and Wagner
-            # (2016) are alluding to in their footnote 8. However, it is not clear how their proposed trick
-            # ("instead of scaling by 1/2 we cale by 1/2 + eps") would actually work.
-            image_tanh = np.clip(image, clip_min, clip_max)
-            image_tanh = (image_tanh - clip_min) / (clip_max - clip_min)
-            image_tanh = np.arctanh(((image_tanh * 2) - 1) * self._tanh_smoother)
+            # adversarial images bounded from clip_min and clip_max. 
+            image_tanh = self._original_to_tanh(image, clip_min, clip_max)
 
             # Initialize binary search:
             c = self.initial_const
@@ -147,54 +238,63 @@ class CarliniL2Method(Attack):
 
             # Initialize placeholders for best l2 distance and attack found so far
             best_l2dist = sys.float_info.max
-            best_adv_image = image
-
+            best_adv_image = image            
+            lr = self.learning_rate
+            
             for _ in range(self.binary_search_steps):
-                attack_success = False
-                loss_prev = sys.float_info.max
-                lr = self.learning_rate
-
+                
                 # Initialize perturbation in tanh space:
                 perturbation_tanh = np.zeros(image_tanh.shape)
-
-                for it in range(self.max_iter):
-                    # First transform current adversarial sample from tanh to original space:
-                    adv_image = image_tanh + perturbation_tanh
-                    adv_image = (np.tanh(adv_image) / self._tanh_smoother + 1) / 2
-                    adv_image = adv_image * (clip_max - clip_min) + clip_min
-
-                    # Collect current logits, loss and l2 distance.
-                    z, l2dist, loss = self.loss(image, adv_image, target, c)
-                    last_attack_success = loss-l2dist <= 0
-                    attack_success = attack_success or last_attack_success
-
-                    if last_attack_success:
-                        if l2dist < best_l2dist:
-                            best_l2dist = l2dist
-                            best_adv_image = adv_image
+                adv_image = image
+                adv_image_tanh = image_tanh
+                z, l2dist, loss = self._loss(image, adv_image, target, c)
+                attack_success = (loss-l2dist <= 0)
+               
+                for it in range(self.max_iter):                   
+                    if attack_success:
                         break
-                    # elif loss >= loss_prev:
-                    #    break
-                    else:
-                        if self.targeted:
-                            i_sub, i_add = np.argmax(target), np.argmax(z * (1 - target))
-                        else:
-                            i_add, i_sub = np.argmax(target), np.argmax(z * (1 - target))
-
-                        grad_l2p = self.classifier.class_gradient(np.array([adv_image]), label=i_add, logits=True)[0]
-                        grad_l2p -= self.classifier.class_gradient(np.array([adv_image]), label=i_sub, logits=True)[0]
-                        grad_l2p *= c
-                        grad_l2p += 2 * (adv_image - image)
-                        grad_l2p *= (clip_max - clip_min)
-                        grad_l2p *= (1 - np.square(np.tanh(image_tanh + perturbation_tanh))) / (2 * self._tanh_smoother)
-
-                        # Update the pertubation with decayed learning rate
-                        lr *= (1. / (1. + self.decay * it))
-                        perturbation_tanh -= lr * grad_l2p[0]
-                        loss_prev = loss
-
-                # Update binary search:
+                    
+                    # compute gradient:
+                    perturbation_tanh = -self._loss_gradient(z, target, image, adv_image, adv_image_tanh, 
+                                                             c, clip_min, clip_max)
+                    
+                    # perform line search to optimize perturbation                     
+                    # first, halve the learning rate until perturbation actually decreases the loss:                      
+                    prev_loss = loss
+                    halving = 0
+                    while loss >= prev_loss and loss-l2dist > 0 and halving < self.max_halving: 
+                        new_adv_image_tanh = adv_image_tanh + lr*perturbation_tanh
+                        new_adv_image = self._tanh_to_original(new_adv_image_tanh, clip_min, clip_max)
+                        _, l2dist, loss = self._loss(image, new_adv_image, target, c)
+                        lr /= 2
+                        halving += 1                        
+                    lr *= 2
+                    
+                    # if no halving was actually required, double the learning rate as long as this
+                    # decreases the loss:
+                    if halving == 1:
+                        doubling = 0
+                        while loss <= prev_loss and doubling < self.max_doubling:  
+                            prev_loss = loss
+                            lr *= 2     
+                            doubling += 1
+                            new_adv_image_tanh = adv_image_tanh + lr*perturbation_tanh
+                            new_adv_image = self._tanh_to_original(new_adv_image_tanh, clip_min, clip_max)
+                            _, l2dist, loss = self._loss(image, new_adv_image, target, c)
+                        lr /= 2
+                    
+                    # apply the optimal learning rate that was found and update the loss:
+                    adv_image_tanh = adv_image_tanh + lr*perturbation_tanh
+                    adv_image = self._tanh_to_original(adv_image_tanh, clip_min, clip_max)
+                    z, l2dist, loss = self._loss(image, adv_image, target, c)                    
+                    attack_success = (loss-l2dist <= 0)
+                
+                # Update depending on attack success:
                 if attack_success:
+                    if l2dist < best_l2dist:
+                        best_l2dist = l2dist
+                        best_adv_image =  adv_image 
+                        
                     c_double = False
                     c = (c_lower_bound + c) / 2
                 else:
@@ -210,6 +310,14 @@ class CarliniL2Method(Attack):
                     break
 
             x_adv[j] = best_adv_image
+
+        adv_preds = np.argmax(self.classifier.predict(x_adv), axis=1)
+        if self.targeted:
+            rate = np.sum(adv_preds == np.argmax(y, axis=1)) / x_adv.shape[0]
+        else:
+            preds = np.argmax(self.classifier.predict(x), axis=1)
+            rate = np.sum(adv_preds != preds) / x_adv.shape[0]
+        logger.info('Success rate of C&W attack: %.2f%%', rate)
 
         return x_adv
 
@@ -232,8 +340,10 @@ class CarliniL2Method(Attack):
                importance of distance and confidence. If binary_search_steps is large,
                the initial constant is not important. The default value 1e-4 is suggested in Carlini and Wagner (2016).
         :type initial_const: `float`
-        :param decay: Coefficient for learning rate decay.
-        :type decay: `float`
+        :param max_halving: Maximum number of halving steps in the line search optimization.
+        :type max_halving: `int`
+        :param max_doubling: Maximum number of doubling steps in the line search optimization.
+        :type max_doubling: `int`
         """
         # Save attack-specific parameters
         super(CarliniL2Method, self).set_params(**kwargs)
@@ -243,5 +353,11 @@ class CarliniL2Method(Attack):
 
         if type(self.max_iter) is not int or self.max_iter < 0:
             raise ValueError("The number of iterations must be a non-negative integer.")
+            
+        if type(self.max_halving) is not int or self.max_halving < 1:
+            raise ValueError("The number of halving steps must be an integer greater than zero.")
+            
+        if type(self.max_doubling) is not int or self.max_doubling < 1:
+            raise ValueError("The number of doubling steps must be an integer greater than zero.")
 
         return True

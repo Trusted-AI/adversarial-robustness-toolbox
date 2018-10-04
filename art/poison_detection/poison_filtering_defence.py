@@ -33,7 +33,7 @@ class PoisonFilteringDefence(ABC):
     """
     defence_params = ['classifier']
 
-    def __init__(self, classifier, x_train, y_train, verbose=True):
+    def __init__(self, classifier, x_train, y_train):
         """
         Create an :class:`ActivationDefence` object with the provided classifier.
 
@@ -43,13 +43,10 @@ class PoisonFilteringDefence(ABC):
         :type x_train: :class:`numpy.ndarray`
         :param y_train: labels used to train `classifier`
         :type y_train: :class:`numpy.ndarray`
-        :param verbose: When True prints more information
-        :type verbose: `bool`
         """
         self.classifier = classifier
         self.x_train = x_train
         self.y_train = y_train
-        self.verbose = verbose
 
     @abc.abstractmethod
     def detect_poison(self, **kwargs):

@@ -17,9 +17,13 @@
 # SOFTWARE.
 from __future__ import absolute_import, division, print_function, unicode_literals
 
+import logging
+
 import numpy as np
 
 from art.attacks.attack import Attack
+
+logger = logging.getLogger(__name__)
 
 
 class DeepFool(Attack):
@@ -27,9 +31,9 @@ class DeepFool(Attack):
     Implementation of the attack from Moosavi-Dezfooli et al. (2015).
     Paper link: https://arxiv.org/abs/1511.04599
     """
-    attack_params = Attack.attack_params + ['max_iter']
+    attack_params = Attack.attack_params + ['max_iter', 'epsilon']
 
-    def __init__(self, classifier, max_iter=100):
+    def __init__(self, classifier, max_iter=100, epsilon=1e-6):
         """
         Create a DeepFool attack instance.
 
@@ -37,9 +41,11 @@ class DeepFool(Attack):
         :type classifier: :class:`Classifier`
         :param max_iter: The maximum number of iterations.
         :type max_iter: `int`
+        :param epsilon: Overshoot parameter.
+        :type epsilon: `float`
         """
         super(DeepFool, self).__init__(classifier)
-        params = {'max_iter': max_iter}
+        params = {'max_iter': max_iter, 'epsilon': epsilon}
         self.set_params(**params)
 
     def generate(self, x, **kwargs):
@@ -50,6 +56,8 @@ class DeepFool(Attack):
         :type x: `np.ndarray`
         :param max_iter: The maximum number of iterations.
         :type max_iter: `int`
+        :param epsilon: Overshoot parameter.
+        :type epsilon: `float`
         :return: An array holding the adversarial examples.
         :rtype: `np.ndarray`
         """
@@ -93,7 +101,11 @@ class DeepFool(Attack):
 
                 nb_iter += 1
 
-            x_adv[j] = xj[0]
+            x_adv[j] = np.clip(x[j] + (1 + self.epsilon) * (xj[0] - x[j]), clip_min, clip_max)
+
+        preds = np.argmax(self.classifier.predict(x), axis=1)
+        preds_adv = np.argmax(self.classifier.predict(x_adv), axis=1)
+        logger.info('Success rate of DeepFool attack: %.2f%%', (np.sum(preds != preds_adv) / x.shape[0]))
 
         return x_adv
 
@@ -109,4 +121,8 @@ class DeepFool(Attack):
         if type(self.max_iter) is not int or self.max_iter <= 0:
             raise ValueError("The number of iterations must be a positive integer.")
 
+        if self.epsilon < 0:
+            raise ValueError("The overshoot parameter must not be negative.")
+
         return True
+

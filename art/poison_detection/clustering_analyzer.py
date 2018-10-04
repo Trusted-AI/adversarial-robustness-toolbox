@@ -19,6 +19,7 @@ from __future__ import absolute_import, division, print_function, unicode_litera
 
 import abc
 import sys
+
 import numpy as np
 
 # Ensure compatibility with Python 2 and 3 when using ABCMeta
@@ -51,7 +52,8 @@ class ClusteringAnalyzer(ABC):
         """
         raise NotImplementedError
 
-    def assign_class(self, clusters, clean_clusters, poison_clusters):
+    @staticmethod
+    def assign_class(clusters, clean_clusters, poison_clusters):
         """
         Determines whether each data point in the class is in a clean or poisonous cluster
 

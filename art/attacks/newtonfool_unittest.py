@@ -17,19 +17,22 @@
 # SOFTWARE.
 from __future__ import absolute_import, division, print_function, unicode_literals
 
+import logging
 import unittest
 
 import keras
-from keras.models import Sequential
-from keras.layers import Dense, Flatten, Conv2D, MaxPooling2D
-import tensorflow as tf
 import numpy as np
+import tensorflow as tf
 import torch.nn as nn
 import torch.optim as optim
+from keras.layers import Dense, Flatten, Conv2D, MaxPooling2D
+from keras.models import Sequential
 
 from art.attacks.newtonfool import NewtonFool
 from art.classifiers import KerasClassifier, PyTorchClassifier, TFClassifier
 from art.utils import load_mnist
+
+logger = logging.getLogger('testLogger')
 
 BATCH_SIZE, NB_TRAIN, NB_TEST = 100, 1000, 10
 

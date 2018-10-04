@@ -18,7 +18,10 @@
 from __future__ import absolute_import, division, print_function, unicode_literals
 
 import abc
+import logging
 import sys
+
+logger = logging.getLogger(__name__)
 
 
 # Ensure compatibility with Python 2 and 3 when using ABCMeta
@@ -90,16 +93,19 @@ class Detector(ABC):
 
 
 class BinaryInputDetector(Detector):
-
+    """
+    Binary detector of adversarial samples coming from evasion attacks. The detector uses an architecture provided by
+    the user and trains it on data labeled as clean (label 0) or adversarial (label 1).
+    """
     def __init__(self, detector):
         """
-        Create a `Detector` instance which performs binary classification on input data.
+        Create a `BinaryInputDetector` instance which performs binary classification on input data.
 
         :param detector: The detector architecture to be trained and applied for the binary classification.
         :type detector: `art.classifier.Classifier`
         """
+        super(BinaryInputDetector, self).__init__()
         self._detector = detector
-        self._is_fitted = False
 
     def fit(self, x, y, **kwargs):
         """
@@ -130,18 +136,23 @@ class BinaryInputDetector(Detector):
 
 
 class BinaryActivationDetector(Detector):
-
+    """
+    Binary detector of adversarial samples coming from evasion attacks. The detector uses an architecture provided by
+    the user and is trained on the values of the activations of a classifier at a given layer.
+    """
     def __init__(self, classifier, detector, layer):
         """
-        Create a `Detector` instance which performs binary classification on activation information.
+        Create a `BinaryActivationDetector` instance which performs binary classification on activation information.
+        The shape of the input of the detector has to match that of the output of the chosen layer.
 
         :param classifier: The classifier of which the activation information is to be used for detection.
         :type classifier: `art.classifier.Classifier`
         :param detector: The detector architecture to be trained and applied for the binary classification.
-        :type classifier: `art.classifier.Classifier`
-        :param layer: Layer for computing the activations
+        :type detector: `art.classifier.Classifier`
+        :param layer: Layer for computing the activations to use for training the detector.
         :type layer: `int` or `str`
         """
+        super(BinaryActivationDetector, self).__init__()
         self._classifier = classifier
         self._detector = detector
 

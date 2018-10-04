@@ -17,22 +17,24 @@
 # SOFTWARE.
 from __future__ import absolute_import, division, print_function, unicode_literals
 
-import numpy as np
-import sys
 import json
+import logging
+
+import numpy as np
+
+logger = logging.getLogger(__name__)
 
 
 class GroundTruthEvaluator:
     """
     Class to evaluate the performance of the poison detection method.
     """
-
     def __init__(self):
         """
         Evaluates ground truth constructor
         """
 
-    def analyze_correctness(self, assigned_clean_by_class, is_clean_by_class, verbose=True):
+    def analyze_correctness(self, assigned_clean_by_class, is_clean_by_class):
         """
         For each training sample, determine whether the activation clustering method was correct.
 
@@ -40,8 +42,6 @@ class GroundTruthEvaluator:
         :type assigned_clean_by_class `list`
         :param is_clean_by_class: is clean separated by class
         :type is_clean_by_class `list`
-        :param verbose: when True method prints details
-        :type verbose: `bool`
         :return: Two variables are returned:
                  1) all_errors_by_class[i]: an array indicating the correctness of each assignment
                  in the ith class. Such that:
@@ -57,8 +57,7 @@ class GroundTruthEvaluator:
         clean = 1
         dic_json = {}
 
-        if verbose:
-            print("\nError rates per class:")
+        logger.debug("Error rates per class:")
         for class_i, (assigned_clean, is_clean) in enumerate(zip(assigned_clean_by_class, is_clean_by_class)):
             errors = []
             for j, (assignment, bl) in enumerate(zip(assigned_clean, is_clean)):
@@ -83,14 +82,12 @@ class GroundTruthEvaluator:
                 elif assignment == clean and bl == poison:
                     errors.append(3)
                 else:
-                    print("ERROR: analyze_correctness entered wrong class")
-                    sys.exit()
+                    raise Exception('Analyze_correctness entered wrong class')
 
             errors = np.asarray(errors)
-            if verbose:
-                print('-------------------%d---------------' % class_i)
+            logger.debug('-------------------%d---------------', class_i)
             key_i = "class_" + str(class_i)
-            matrix_i = self.get_confusion_matrix(errors, verbose)
+            matrix_i = self.get_confusion_matrix(errors)
             dic_json.update({key_i: matrix_i})
             all_errors_by_class.append(errors)
 
@@ -99,14 +96,12 @@ class GroundTruthEvaluator:
 
         return all_errors_by_class, conf_matrix_json
 
-    def get_confusion_matrix(self, values, verbose):
+    def get_confusion_matrix(self, values):
         """
-        Prints and returns a json object that contains the confusion matrix for each class
+        Computes and returns a json object that contains the confusion matrix for each class.
 
         :param values: Array indicating the correctness of each assignment in the ith class
         :type values `array`
-        :param verbose: when True method prints details
-        :type: `bool`
         :return: Json object with confusion matrix per-class
         """
         dic_class = {}
@@ -117,44 +112,32 @@ class GroundTruthEvaluator:
 
         tp = self.calculate_and_print(true_positive,
                                       true_positive + false_negative,
-                                      "true-positive rate",
-                                      verbose)
+                                      "true-positive rate")
         tn = self.calculate_and_print(true_negative,
                                       false_positive + true_negative,
-                                      "true-negative rate",
-                                      verbose)
+                                      "true-negative rate")
         fp = self.calculate_and_print(false_positive,
                                       false_positive + true_negative,
-                                      "false-positive rate",
-                                      verbose)
+                                      "false-positive rate")
         fn = self.calculate_and_print(false_negative,
                                       true_positive + false_negative,
-                                      "false-negative rate",
-                                      verbose)
+                                      "false-negative rate")
 
-        dic_tp = dict(rate=round(tp, 2), numerator=true_positive,
-                      denominator=(true_positive + false_negative))
+        dic_tp = dict(rate=round(tp, 2), numerator=true_positive, denominator=(true_positive + false_negative))
         if (true_positive + false_negative) == 0:
-            dic_tp = dict(rate='N/A', numerator=true_positive,
-                          denominator=(true_positive + false_negative))
+            dic_tp = dict(rate='N/A', numerator=true_positive, denominator=(true_positive + false_negative))
 
-        dic_tn = dict(rate=round(tn, 2), numerator=true_negative,
-                      denominator=(false_positive + true_negative))
+        dic_tn = dict(rate=round(tn, 2), numerator=true_negative, denominator=(false_positive + true_negative))
         if (false_positive + true_negative) == 0:
-            dic_tn = dict(rate='N/A', numerator=true_negative,
-                          denominator=(false_positive + true_negative))
+            dic_tn = dict(rate='N/A', numerator=true_negative, denominator=(false_positive + true_negative))
 
-        dic_fp = dict(rate=round(fp, 2), numerator=false_positive,
-                      denominator=(false_positive + true_negative))
+        dic_fp = dict(rate=round(fp, 2), numerator=false_positive, denominator=(false_positive + true_negative))
         if (false_positive + true_negative) == 0:
-            dic_fp = dict(rate='N/A', numerator=false_positive,
-                          denominator=(false_positive + true_negative))
+            dic_fp = dict(rate='N/A', numerator=false_positive, denominator=(false_positive + true_negative))
 
-        dic_fn = dict(rate=round(fn, 2), numerator=false_negative,
-                      denominator=(true_positive + false_negative))
+        dic_fn = dict(rate=round(fn, 2), numerator=false_negative, denominator=(true_positive + false_negative))
         if (true_positive + false_negative) == 0:
-            dic_fn = dict(rate='N/A', numerator=false_negative,
-                          denominator=(true_positive + false_negative))
+            dic_fn = dict(rate='N/A', numerator=false_negative, denominator=(true_positive + false_negative))
 
         dic_class.update(dict(TruePositive=dic_tp))
         dic_class.update(dict(TrueNegative=dic_tn))
@@ -163,9 +146,10 @@ class GroundTruthEvaluator:
 
         return dic_class
 
-    def calculate_and_print(self, numerator, denominator, name, verbose):
+    @staticmethod
+    def calculate_and_print(numerator, denominator, name):
         """
-        Computes and prints the rates based on the denominator provided
+        Computes and prints the rates based on the denominator provided.
 
         :param numerator: number used to compute the rate
         :type numerator `int`
@@ -173,15 +157,12 @@ class GroundTruthEvaluator:
         :type denominator `int`
         :param name: Rate name being computed e.g., false-positive rate
         :type name `str`
-        :param verbose: when True method prints details
-        :type: `bool`
         :return: Computed rate
         """
         try:
             res = 100 * (numerator / float(denominator))
-            if verbose:
-                print("%s: %d/%d=%.3g" % (name, numerator, denominator, res))
+            logger.debug("%s: %d/%d=%.3g", name, numerator, denominator, res)
             return res
         except Exception as e:
-            print("%s: couldn't calculate %d/%d" % (name, numerator, denominator))
+            logger.debug("%s: couldn't calculate %d/%d", name, numerator, denominator)
             return 0

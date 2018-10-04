@@ -1,10 +1,14 @@
 from __future__ import absolute_import, division, print_function, unicode_literals
 
-import numpy as np
+import logging
 import random
+
+import numpy as np
 import six
 
 from art.classifiers import Classifier
+
+logger = logging.getLogger(__name__)
 
 
 class TFClassifier(Classifier):
@@ -75,7 +79,7 @@ class TFClassifier(Classifier):
         if self._loss is not None:
             self._loss_grads = tf.gradients(self._loss, self._input_ph)[0]
 
-    def predict(self, x, logits=False):
+    def predict(self, x, logits=False, batch_size=128):
         """
         Perform prediction for a batch of inputs.
 
@@ -83,25 +87,32 @@ class TFClassifier(Classifier):
         :type x: `np.ndarray`
         :param logits: `True` if the prediction should be done at the logits layer.
         :type logits: `bool`
+        :param batch_size: Size of batches.
+        :type batch_size: `int`
         :return: Array of predictions of shape `(nb_inputs, self.nb_classes)`.
         :rtype: `np.ndarray`
         """
-        import tensorflow as tf
-
         # Apply defences
         x_ = self._apply_processing(x)
         x_ = self._apply_defences_predict(x_)
 
-        # Create feed_dict
-        fd = {self._input_ph: x_}
-        if self._learning is not None:
-            fd[self._learning] = False
+        # Run prediction with batch processing
+        results = np.zeros((x_.shape[0], self.nb_classes), dtype=np.float32)
+        num_batch = int(np.ceil(len(x_) / float(batch_size)))
+        for m in range(num_batch):
+            # Batch indexes
+            begin, end = m * batch_size, min((m + 1) * batch_size, x_.shape[0])
 
-        # Run prediction
-        if logits:
-            results = self._sess.run(self._logits, feed_dict=fd)
-        else:
-            results = self._sess.run(self._probs, feed_dict=fd)
+            # Create feed_dict
+            fd = {self._input_ph: x_[begin:end]}
+            if self._learning is not None:
+                fd[self._learning] = False
+
+            # Run prediction
+            if logits:
+                results[begin:end] = self._sess.run(self._logits, feed_dict=fd)
+            else:
+                results[begin:end] = self._sess.run(self._probs, feed_dict=fd)
 
         return results
 
@@ -127,7 +138,7 @@ class TFClassifier(Classifier):
         x_ = self._apply_processing(x)
         x_, y_ = self._apply_defences_fit(x_, y)
 
-        num_batch = int(np.ceil(len(x_) / batch_size))
+        num_batch = int(np.ceil(len(x_) / float(batch_size)))
         ind = np.arange(len(x_))
 
         # Start training
@@ -137,12 +148,8 @@ class TFClassifier(Classifier):
 
             # Train for one epoch
             for m in range(num_batch):
-                if m < num_batch - 1:
-                    i_batch = x_[ind[m * batch_size:(m + 1) * batch_size]]
-                    o_batch = y_[ind[m * batch_size:(m + 1) * batch_size]]
-                else:
-                    i_batch = x_[ind[m * batch_size:]]
-                    o_batch = y_[ind[m * batch_size:]]
+                i_batch = x_[ind[m * batch_size:(m + 1) * batch_size]]
+                o_batch = y_[ind[m * batch_size:(m + 1) * batch_size]]
 
                 # Run train step
                 if self._learning is None:
@@ -289,6 +296,7 @@ class TFClassifier(Classifier):
         for name in reversed(tmp_list[:-1]):
             if result[0].split("/")[0] != name.split("/")[0]:
                 result = [name] + result
+        logger.info('Inferred %i hidden layers on TensorFlow classifier.', len(result))
 
         return result
 

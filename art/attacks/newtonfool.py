@@ -17,9 +17,13 @@
 # SOFTWARE.
 from __future__ import absolute_import, division, print_function, unicode_literals
 
+import logging
+
 import numpy as np
 
 from art.attacks.attack import Attack
+
+logger = logging.getLogger(__name__)
 
 
 class NewtonFool(Attack):
@@ -54,7 +58,7 @@ class NewtonFool(Attack):
         :return: An array holding the adversarial examples.
         :rtype: `np.ndarray`
         """
-        assert self.set_params(**kwargs)
+        self.set_params(**kwargs)
         nb_classes = self.classifier.nb_classes
         x_adv = x.copy()
 
@@ -88,6 +92,10 @@ class NewtonFool(Attack):
 
             # Apply clip
             x_adv[j] = np.clip(ex, clip_min, clip_max)
+
+        preds = np.argmax(self.classifier.predict(x), axis=1)
+        preds_adv = np.argmax(self.classifier.predict(x_adv), axis=1)
+        logger.info('Success rate of NewtonFool attack: %.2f%%', (np.sum(preds != preds_adv) / x.shape[0]))
 
         return x_adv
 

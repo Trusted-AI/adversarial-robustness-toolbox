@@ -17,15 +17,19 @@
 # SOFTWARE.
 from __future__ import absolute_import, division, print_function, unicode_literals
 
+import logging
 import unittest
-import keras.backend as k
-from keras.models import Sequential
-from keras.layers import Dense, Flatten, Conv2D, MaxPooling2D, Dropout
-import numpy as np
 
-from art.poison_detection import ActivationDefence
+import keras.backend as k
+import numpy as np
+from keras.layers import Dense, Flatten, Conv2D, MaxPooling2D, Dropout
+from keras.models import Sequential
+
 from art.classifiers import KerasClassifier
+from art.poison_detection import ActivationDefence
 from art.utils import load_mnist
+
+logger = logging.getLogger('testLogger')
 
 NB_TRAIN, NB_TEST, BATCH_SIZE = 300, 10, 128
 
@@ -60,7 +64,7 @@ class TestActivationDefence(unittest.TestCase):
 
     @unittest.expectedFailure
     def test_wrong_parameters_1(self):
-        self.defence.set_params(n_clusters=0)
+        self.defence.set_params(nb_clusters=0)
 
     @unittest.expectedFailure
     def test_wrong_parameters_2(self):
@@ -84,14 +88,14 @@ class TestActivationDefence(unittest.TestCase):
         (x_train, _), (_, _) = self.mnist
 
         n_classes = self.classifier.nb_classes
-        for n_clusters in range(2, 5):
-            clusters_by_class, red_activations_by_class = self.defence.cluster_activations(n_clusters=n_clusters)
+        for nb_clusters in range(2, 5):
+            clusters_by_class, red_activations_by_class = self.defence.cluster_activations(nb_clusters=nb_clusters)
 
             # Verify expected number of classes
             self.assertEqual(np.shape(clusters_by_class)[0], n_classes)
             # Check we get the expected number of clusters:
             found_clusters = len(np.unique(clusters_by_class[0]))
-            self.assertEqual(found_clusters, n_clusters)
+            self.assertEqual(found_clusters, nb_clusters)
             # Check right amount of data
             n_dp = 0
             for i in range(0, n_classes):
@@ -102,7 +106,7 @@ class TestActivationDefence(unittest.TestCase):
         # Get MNIST
         (x_train, _), (_, _) = self.mnist
 
-        confidence_level, is_clean_lst = self.defence.detect_poison(n_clusters=2, ndims=10, reduce='PCA')
+        confidence_level, is_clean_lst = self.defence.detect_poison(nb_clusters=2, nb_dims=10, reduce='PCA')
         sum_clean1 = sum(is_clean_lst)
 
         # Check number of items in is_clean
@@ -113,7 +117,7 @@ class TestActivationDefence(unittest.TestCase):
         found_clusters = len(np.unique(self.defence.clusters_by_class[0]))
         self.assertEqual(found_clusters, 2)
 
-        confidence_level, is_clean_lst = self.defence.detect_poison(n_clusters=3, ndims=10, reduce='PCA',
+        confidence_level, is_clean_lst = self.defence.detect_poison(nb_clusters=3, nb_dims=10, reduce='PCA',
                                                                     cluster_analysis='distance')
         self.assertEqual(len(x_train), len(is_clean_lst))
         self.assertEqual(len(x_train), len(confidence_level))
@@ -126,10 +130,10 @@ class TestActivationDefence(unittest.TestCase):
         sum_clean2 = sum(is_clean_lst)
         self.assertNotEqual(sum_clean1, sum_clean2)
 
-        confidence_level, is_clean_lst = self.defence.detect_poison(n_clusters=2, ndims=10, reduce='PCA',
+        confidence_level, is_clean_lst = self.defence.detect_poison(nb_clusters=2, nb_dims=10, reduce='PCA',
                                                                     cluster_analysis='distance')
         sum_dist = sum(is_clean_lst)
-        confidence_level, is_clean_lst = self.defence.detect_poison(n_clusters=2, ndims=10, reduce='PCA',
+        confidence_level, is_clean_lst = self.defence.detect_poison(nb_clusters=2, nb_dims=10, reduce='PCA',
                                                                     cluster_analysis='smaller')
         sum_size = sum(is_clean_lst)
         self.assertNotEqual(sum_dist, sum_size)

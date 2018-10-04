@@ -17,11 +17,14 @@
 # SOFTWARE.
 from __future__ import absolute_import, division, print_function, unicode_literals
 
+import json
+import logging
+import pprint
 import unittest
+
 from art.poison_detection.ground_truth_evaluator import GroundTruthEvaluator
 
-import json
-import pprint
+logger = logging.getLogger('testLogger')
 
 
 class TestGroundTruth(unittest.TestCase):

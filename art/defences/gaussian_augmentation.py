@@ -17,7 +17,11 @@
 # SOFTWARE.
 from __future__ import absolute_import, division, print_function, unicode_literals
 
+import logging
+
 from art.defences.preprocessor import Preprocessor
+
+logger = logging.getLogger(__name__)
 
 
 class GaussianAugmentation(Preprocessor):
@@ -67,6 +71,8 @@ class GaussianAugmentation(Preprocessor):
         if params:
             self.set_params(**params)
 
+        logger.info('Original dataset size: %d', x.shape[0])
+
         # Select indices to augment
         import numpy as np
         size = int(x.shape[0] * self.ratio)
@@ -75,6 +81,7 @@ class GaussianAugmentation(Preprocessor):
         # Generate noisy samples
         x_aug = np.random.normal(x[indices], scale=self.sigma, size=(size,) + x[indices].shape[1:])
         x_aug = np.vstack((x, x_aug))
+        logger.info('Augmented dataset size: %d', x_aug.shape[0])
 
         if y is not None:
             y_aug = np.concatenate((y, y[indices]))

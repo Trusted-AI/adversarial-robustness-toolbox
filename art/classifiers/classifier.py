@@ -61,7 +61,7 @@ class Classifier(ABC):
         self._preprocessing = preprocessing
 
     @abc.abstractmethod
-    def predict(self, x, logits=False):
+    def predict(self, x, logits=False, batch_size=128):
         """
         Perform prediction for a batch of inputs.
 
@@ -69,6 +69,8 @@ class Classifier(ABC):
         :type x: `np.ndarray`
         :param logits: `True` if the prediction should be done at the logits layer.
         :type logits: `bool`
+        :param batch_size: Size of batches.
+        :type batch_size: `int`
         :return: Array of predictions of shape `(nb_inputs, self.nb_classes)`.
         :rtype: `np.ndarray`
         """

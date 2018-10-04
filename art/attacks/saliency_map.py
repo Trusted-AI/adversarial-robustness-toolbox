@@ -17,9 +17,13 @@
 # SOFTWARE.
 from __future__ import absolute_import, division, print_function, unicode_literals
 
+import logging
+
 import numpy as np
 
 from art.attacks.attack import Attack
+
+logger = logging.getLogger(__name__)
 
 
 class SaliencyMapMethod(Attack):
@@ -121,6 +125,9 @@ class SaliencyMapMethod(Attack):
                 current_pred = np.argmax(self.classifier.predict(np.reshape(val, dims)), axis=1)
 
         x_adv = np.reshape(x_adv, x.shape)
+        preds = np.argmax(self.classifier.predict(x), axis=1)
+        preds_adv = np.argmax(self.classifier.predict(x_adv), axis=1)
+        logger.info('Success rate of JSMA attack: %.2f%%', (np.sum(preds != preds_adv) / x.shape[0]))
 
         return x_adv
 

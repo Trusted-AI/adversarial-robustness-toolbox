@@ -17,20 +17,23 @@
 # SOFTWARE.
 from __future__ import absolute_import, division, print_function, unicode_literals
 
+import logging
 import unittest
 
 import keras
 import keras.backend as k
-from keras.models import Sequential
-from keras.layers import Dense, Flatten, Conv2D, MaxPooling2D
 import numpy as np
 import tensorflow as tf
 import torch.nn as nn
 import torch.optim as optim
+from keras.layers import Dense, Flatten, Conv2D, MaxPooling2D
+from keras.models import Sequential
 
 from art.attacks.virtual_adversarial import VirtualAdversarialMethod
 from art.classifiers import KerasClassifier, PyTorchClassifier, TFClassifier
 from art.utils import load_mnist, get_labels_np_array
+
+logger = logging.getLogger('testLogger')
 
 BATCH_SIZE = 10
 NB_TRAIN = 100
@@ -69,9 +72,9 @@ class TestVirtualAdversarial(unittest.TestCase):
         cls.classifier_k.fit(x_train, y_train, batch_size=BATCH_SIZE, nb_epochs=2)
 
         scores = cls.classifier_k._model.evaluate(x_train, y_train)
-        print("\n[Keras, MNIST] Accuracy on training set: %.2f%%" % (scores[1] * 100))
+        logging.info('[Keras, MNIST] Accuracy on training set: %.2f%%', (scores[1] * 100))
         scores = cls.classifier_k._model.evaluate(x_test, y_test)
-        print("\n[Keras, MNIST] Accuracy on test set: %.2f%%" % (scores[1] * 100))
+        logging.info('[Keras, MNIST] Accuracy on test set: %.2f%%', (scores[1] * 100))
 
         # Create basic CNN on MNIST using TensorFlow
         cls.classifier_tf = cls._cnn_mnist_tf([28, 28, 1])
@@ -79,11 +82,11 @@ class TestVirtualAdversarial(unittest.TestCase):
 
         scores = get_labels_np_array(cls.classifier_tf.predict(x_train))
         acc = np.sum(np.argmax(scores, axis=1) == np.argmax(y_train, axis=1)) / y_train.shape[0]
-        print('\n[TF, MNIST] Accuracy on training set: %.2f%%' % (acc * 100))
+        logging.info('[TF, MNIST] Accuracy on training set: %.2f%%', (acc * 100))
 
         scores = get_labels_np_array(cls.classifier_tf.predict(x_test))
         acc = np.sum(np.argmax(scores, axis=1) == np.argmax(y_test, axis=1)) / y_test.shape[0]
-        print('\n[TF, MNIST] Accuracy on test set: %.2f%%' % (acc * 100))
+        logging.info('[TF, MNIST] Accuracy on test set: %.2f%%', (acc * 100))
 
         # Create basic PyTorch model
         cls.classifier_py = cls._cnn_mnist_py()
@@ -92,11 +95,11 @@ class TestVirtualAdversarial(unittest.TestCase):
 
         scores = get_labels_np_array(cls.classifier_py.predict(x_train))
         acc = np.sum(np.argmax(scores, axis=1) == np.argmax(y_train, axis=1)) / y_train.shape[0]
-        print('\n[PyTorch, MNIST] Accuracy on training set: %.2f%%' % (acc * 100))
+        logging.info('[PyTorch, MNIST] Accuracy on training set: %.2f%%', (acc * 100))
 
         scores = get_labels_np_array(cls.classifier_py.predict(x_test))
         acc = np.sum(np.argmax(scores, axis=1) == np.argmax(y_test, axis=1)) / y_test.shape[0]
-        print('\n[PyTorch, MNIST] Accuracy on test set: %.2f%%' % (acc * 100))
+        logging.info('[PyTorch, MNIST] Accuracy on test set: %.2f%%', (acc * 100))
 
     def test_mnist(self):
         # Define all backends to test
@@ -130,7 +133,7 @@ class TestVirtualAdversarial(unittest.TestCase):
         self.assertFalse((y_test == y_pred).all())
 
         acc = np.sum(np.argmax(y_pred, axis=1) == np.argmax(y_test, axis=1)) / y_test.shape[0]
-        print('\nAccuracy on adversarial examples: %.2f%%' % (acc * 100))
+        logging.info('Accuracy on adversarial examples: %.2f%%', (acc * 100))
 
     @staticmethod
     def _cnn_mnist_tf(input_shape):

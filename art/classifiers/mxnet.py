@@ -17,13 +17,20 @@
 # SOFTWARE.
 from __future__ import absolute_import, division, print_function, unicode_literals
 
-import six
+import logging
+
 import numpy as np
+import six
 
 from art.classifiers import Classifier
 
+logger = logging.getLogger(__name__)
+
 
 class MXClassifier(Classifier):
+    """
+    Wrapper class for importing MXNet Gluon model.
+    """
     def __init__(self, clip_values, model, input_shape, nb_classes, optimizer=None, ctx=None, channel_index=1,
                  defences=None, preprocessing=(0, 1)):
         """
@@ -116,7 +123,7 @@ class MXClassifier(Classifier):
                 # Update parameters
                 self._optimizer.step(batch_size)
 
-    def predict(self, x, logits=False):
+    def predict(self, x, logits=False, batch_size=128):
         """
         Perform prediction for a batch of inputs.
 
@@ -124,6 +131,8 @@ class MXClassifier(Classifier):
         :type x: `np.ndarray`
         :param logits: `True` if the prediction should be done at the logits layer.
         :type logits: `bool`
+        :param batch_size: Size of batches.
+        :type batch_size: `int`
         :return: Array of predictions of shape `(nb_inputs, self.nb_classes)`.
         :rtype: `np.ndarray`
         """
@@ -133,26 +142,25 @@ class MXClassifier(Classifier):
         x_ = self._apply_processing(x)
         x_ = self._apply_defences_predict(x_)
 
-        # Predict
-        # TODO add batching?
-        x_ = nd.array(x_, ctx=self._ctx)
-        x_.attach_grad()
-        with autograd.record(train_mode=False):
-            preds = self._model(x_)
+        # Run prediction with batch processing
+        results = np.zeros((x_.shape[0], self.nb_classes), dtype=np.float32)
+        num_batch = int(np.ceil(len(x_) / float(batch_size)))
+        for m in range(num_batch):
+            # Batch indexes
+            begin, end = m * batch_size, min((m + 1) * batch_size, x_.shape[0])
 
-        if logits is True:
-            preds = preds.softmax()
+            # Predict
+            x_batch = nd.array(x_[begin:end], ctx=self._ctx)
+            x_batch.attach_grad()
+            with autograd.record(train_mode=False):
+                preds = self._model(x_batch)
 
-        # preds = np.empty((x.shape[0], self.nb_classes), dtype=float)
-        # pred_iter = mx.io.NDArrayIter(data=x_, batch_size=128)
-        # if logits is True:
-        #     for preds_i, i, batch in mod.iter_predict(pred_iter):
-        #         pred_label = preds_i[0].asnumpy()
-        # else:
-        #     for preds_i, i, batch in mod.iter_predict(pred_iter):
-        #         pred_label = preds_i[0].softmax().asnumpy()
+            if logits is False:
+                preds = preds.softmax()
 
-        return preds.asnumpy()
+            results[begin:end] = preds.asnumpy()
+
+        return results
 
     def class_gradient(self, x, label=None, logits=False):
         """
@@ -299,6 +307,7 @@ class MXClassifier(Classifier):
         :return: The hidden layers in the model, input and output layers excluded.
         :rtype: `list`
         """
-
         layer_names = [layer.name for layer in self._model[:-1]]
+        logger.info('Inferred %i hidden layers on MXNet classifier.', len(layer_names))
+
         return layer_names
