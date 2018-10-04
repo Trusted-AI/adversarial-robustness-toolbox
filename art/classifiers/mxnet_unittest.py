@@ -8,12 +8,14 @@ from mxnet import init, gluon
 from mxnet.gluon import nn
 
 from art.classifiers.mxnet import MXImageClassifier, MXTextClassifier
-from art.utils import load_mnist
+from art.utils import load_mnist, load_imdb
 
 logger = logging.getLogger('testLogger')
 
 NB_TRAIN = 1000
 NB_TEST = 20
+EMB_SIZE = 32
+MAX_LENGTH = 500
 
 
 class TestMXImageClassifier(unittest.TestCase):
@@ -121,7 +123,64 @@ class TestMXImageClassifier(unittest.TestCase):
 
 
 class TestMXTextClassifier(unittest.TestCase):
-    pass
+    @classmethod
+    def setUpClass(cls):
+        # Load IMDB
+        (x_train, y_train), (x_test, y_test), ids = load_imdb(nb_words=1001, max_length=MAX_LENGTH)
+
+        x_train, y_train, x_test, y_test = x_train[:NB_TRAIN], y_train[:NB_TRAIN], x_test[:NB_TEST], y_test[:NB_TEST]
+        cls.imdb = (x_train, y_train), (x_test, y_test)
+
+        ids = [value for key, value in ids.items()]
+        cls.word_ids = ids
+
+        # Create a simple CNN
+        net = nn.Sequential()
+        with net.name_scope():
+            net.add(
+                nn.Embedding(input_dim=1001, output_dim=EMB_SIZE),
+                nn.Conv1D(channels=16, kernel_size=3),
+                nn.LeakyReLU(alpha=.2),
+                nn.MaxPool1D(),
+                nn.Flatten(),
+                nn.Dense(100),
+                nn.LeakyReLU(alpha=.2),
+                nn.Dense(1, activation='sigmoid')
+            )
+        net.initialize(init=init.Xavier())
+
+        # Create optimizer
+        trainer = gluon.Trainer(net.collect_params(), 'sgd', {'learning_rate': 0.1})
+
+        # Fit classifier
+        classifier = MXTextClassifier(model=net, nb_classes=2, ids=ids, optimizer=trainer)
+        classifier.fit(x_train, y_train, batch_size=128, nb_epochs=2)
+        cls.classifier = classifier
+
+    def test_predict(self):
+        (_, _), (x_test, y_test) = self.imdb
+        y_test = np.expand_dims(y_test, axis=1)
+
+        # TODO fix model output shape for prediction
+        preds = self.classifier.predict(x_test)
+        acc = np.sum(np.argmax(preds, axis=1) == np.argmax(y_test, axis=1)) / len(y_test)
+        print("\nAccuracy: %.2f%%" % (acc * 100))
+        self.assertGreater(acc, 0.1)
+
+    def test_nb_classes(self):
+        self.assertEqual(self.classifier.nb_classes, 2)
+
+    def test_loss_gradient(self):
+        # Get IMDB
+        (_, _), (x_test, y_test) = self.imdb
+        y_test = np.expand_dims(y_test, axis=1)
+
+        # Compute loss gradients
+        grads = self.classifier.loss_gradient(x_test, y_test)
+
+        self.assertTrue(grads.shape == (NB_TEST, 500, 32))
+        self.assertTrue(np.sum(grads) != 0)
+
 
 if __name__ == '__main__':
     unittest.main()

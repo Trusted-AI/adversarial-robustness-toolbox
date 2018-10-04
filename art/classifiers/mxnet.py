@@ -61,14 +61,15 @@ class MXClassifier(Classifier):
         :return: `None`
         """
         if self._optimizer is None:
-            raise ValueError()
+            raise ValueError('Need the optimizer to fit the model.')
 
         from mxnet import autograd, nd
 
         # Apply preprocessing and defences
         x_ = self._apply_processing(x)
         x_, y_ = self._apply_defences_fit(x_, y)
-        y_ = np.argmax(y_, axis=1)
+        if len(y_.shape) == 2:
+            y_ = np.argmax(y_, axis=1)
 
         nb_batch = int(np.ceil(len(x_) / batch_size))
         ind = np.arange(len(x_))
@@ -110,7 +111,7 @@ class MXClassifier(Classifier):
         x_ = self._apply_defences_predict(x_)
 
         # Run prediction with batch processing
-        results = np.zeros((x_.shape[0], self.nb_classes), dtype=np.float32)
+        results = None
         num_batch = int(np.ceil(len(x_) / float(batch_size)))
         for m in range(num_batch):
             # Batch indexes
@@ -125,6 +126,8 @@ class MXClassifier(Classifier):
             if logits is False:
                 preds = preds.softmax()
 
+            if m == 0:
+                results = np.zeros((x_.shape[0], *preds.shape[1:]), dtype=np.float32)
             results[begin:end] = preds.asnumpy()
 
         return results
@@ -207,7 +210,7 @@ class MXClassifier(Classifier):
         with autograd.record(train_mode=False):
             preds = self._model(x_)
             loss = loss(preds, y_)
-            loss.backward()
+        loss.backward()
         grads = x_.grad.asnumpy()
         grads = self._apply_processing_gradient(grads)
         assert grads.shape == x.shape
@@ -257,11 +260,7 @@ class MXClassifier(Classifier):
             raise TypeError('Layer must be of type `str` or `int`.')
 
         # Apply preprocessing and defences
-        if x.shape == self.input_shape:
-            x_ = np.expand_dims(x, 0)
-        else:
-            x_ = x
-        x_ = self._apply_processing(x_)
+        x_ = self._apply_processing(x)
         x_ = self._apply_defences_predict(x_)
 
         # Compute activations
@@ -321,7 +320,7 @@ class MXImageClassifier(ImageClassifier, MXClassifier):
 
 
 class MXTextClassifier(TextClassifier, MXClassifier):
-    def __init__(self, model, nb_classes, ids, optimizer=None, ctx=None):
+    def __init__(self, model, nb_classes, ids, embedding_layer=0, optimizer=None, ctx=None):
         """
         Initialize an :class:`MXTextClassifier` object. Assumes the `model` passed as parameter is a Gluon.
 
@@ -329,6 +328,9 @@ class MXTextClassifier(TextClassifier, MXClassifier):
         :type model: `mxnet.gluon.Block`
         :param nb_classes: The number of classes of the model.
         :type nb_classes: `int`
+        :param embedding_layer: Which layer to consider as providing the embedding of the vocabulary. When using the
+               Keras `Embedding` layer, this can only be the first layer in the model.
+        :type embedding_layer: `int`
         :param optimizer: The optimizer used to train the classifier. This parameter is not required if no training is
                used.
         :type optimizer: `mxnet.gluon.Trainer`
@@ -339,7 +341,36 @@ class MXTextClassifier(TextClassifier, MXClassifier):
         TextClassifier.__init__(self)
         MXClassifier.__init__(self, model=model, nb_classes=nb_classes, optimizer=optimizer, ctx=ctx)
 
+        self._embedding = self._model[embedding_layer]
         self._ids = ids
+
+    def loss_gradient(self, x, y):
+        """
+        Compute the gradient of the loss function w.r.t. `x`.
+
+        :param x: Sample input with shape as expected by the model.
+        :type x: `np.ndarray`
+        :param y: Correct labels, one-vs-rest encoding.
+        :type y: `np.ndarray`
+        :return: Array of gradients of the same shape as `x`.
+        :rtype: `np.ndarray`
+        """
+        from mxnet import autograd, gluon, nd
+
+        x_ = nd.array(x, ctx=self._ctx)
+        y_ = nd.array([np.argmax(y, axis=1)]).T
+
+        loss = gluon.loss.SoftmaxCrossEntropyLoss()
+        with autograd.record(train_mode=False):
+            emb = self._model[0](x_)
+            preds = self._model(x_)
+            loss = loss(preds, y_)
+        emb.backward()
+        grads = self._model[0].weight.grad().asnumpy()
+        grads = self._apply_processing_gradient(grads)
+        print(grads.shape)
+
+        return grads
 
     def predict_from_embedding(self, x_emb, logits=False, batch_size=128):
         """
@@ -353,21 +384,34 @@ class MXTextClassifier(TextClassifier, MXClassifier):
         :type batch_size: `int`
         :return: Array of predictions of shape `(nb_inputs, self.nb_classes)`.
         :rtype: `np.ndarray`
+
+        TODO
+        .. warning:: `predict_from_embedding` is an approximate prediction for MXNet due to limitations of the
+                     framework. This function will return the prediction for the closest token in the vocabulary
+                     to the specified embedding points under cosine similarity.
         """
-        import keras.backend as k
-        k.set_learning_phase(0)
+        raise NotImplementedError
+        from mxnet import autograd, nd
 
-        # Run predictions with batching
-        preds = np.zeros((x_emb.shape[0], self.nb_classes), dtype=np.float32)
-        for b in range(int(np.ceil(x_emb.shape[0] / float(batch_size)))):
-            begin, end = b * batch_size,  min((b + 1) * batch_size, x_emb.shape[0])
-            preds[begin:end] = self._preds_from_embedding([x_emb[begin:end]])[0]
+        # Run prediction with batch processing
+        results = np.zeros((x_emb.shape[0], self.nb_classes), dtype=np.float32)
+        num_batch = int(np.ceil(len(x_emb) / float(batch_size)))
+        for m in range(num_batch):
+            # Batch indexes
+            begin, end = m * batch_size, min((m + 1) * batch_size, x_emb.shape[0])
 
-            if not logits:
-                exp = np.exp(preds[begin:end] - np.max(preds[begin:end], axis=1, keepdims=True))
-                preds[begin:end] = exp / np.sum(exp, axis=1, keepdims=True)
+            # Predict
+            x_batch = nd.array(x_emb[begin:end], ctx=self._ctx)
+            x_batch.attach_grad()
+            with autograd.record(train_mode=False):
+                preds = self._model(x_batch)
 
-        return preds
+            if logits is False:
+                preds = preds.softmax()
+
+            results[begin:end] = preds.asnumpy()
+
+        return results
 
     def to_embedding(self, x):
         """
@@ -378,8 +422,7 @@ class MXTextClassifier(TextClassifier, MXClassifier):
         :return: Embedding form of sample `x`.
         :rtype: `np.ndarray`
         """
-
-        return self._embedding_from_input([x])
+        return self._embedding(x)
 
     def to_id(self, x_emb, strategy='nearest', metric='cosine'):
         """

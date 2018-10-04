@@ -352,6 +352,7 @@ def load_imdb(nb_words, max_length, index_from=0):
     x_train = sequence.pad_sequences(x_train, maxlen=max_length, padding='pre')
     x_test = sequence.pad_sequences(x_test, maxlen=max_length, padding='pre')
     word_index = imdb.get_word_index()
+    word_index = {key: value-1 for key, value in word_index.items() if value <= nb_words + index_from}
 
     return (x_train, y_train), (x_test, y_test), word_index
 

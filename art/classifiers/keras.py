@@ -512,12 +512,18 @@ class KerasTextClassifier(TextClassifier, KerasClassifier):
         if metric == 'cosine':
             from art.utils import cosine
 
-            embeddings = self.to_embedding(self._ids)
+            v_size = len(self._ids)
+            if v_size % x_emb.shape[1] > 0:
+                for _ in range(x_emb.shape[1] - (v_size % x_emb.shape[1])):
+                    self._ids.append(self._ids[0])
+            embeddings = self.to_embedding(np.reshape(np.array(self._ids), (-1, x_emb.shape[1])))
+            embeddings = np.reshape(embeddings, (-1, x_emb.shape[2]))[:v_size]
+            self._ids = self._ids[:v_size]
 
             neighbors = []
             for x in x_emb:
-                for token in x:
-                    metric = [cosine(emb, token) for emb in embeddings]
+                for emb_x in x:
+                    metric = [cosine(emb, emb_x) for emb in embeddings]
                     neighbors.append(self._ids[int(np.argpartition(metric, -1)[-1])])
         else:
             raise ValueError('Cosine similarity is currently the only supported metric for mapping embeddings to '
