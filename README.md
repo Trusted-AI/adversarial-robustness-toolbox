@@ -7,23 +7,32 @@ The library is still under development. Feedback, bug reports and extensions are
 
 ## Supported attack and defense methods
 
-The library contains implementations of the following attacks:
+The library contains implementations of the following **evasion attacks**:
 * DeepFool ([Moosavi-Dezfooli et al., 2015](https://arxiv.org/abs/1511.04599))
 * Fast Gradient Method ([Goodfellow et al., 2014](https://arxiv.org/abs/1412.6572))
 * Basic Iterative Method ([Kurakin et al., 2016](https://arxiv.org/abs/1607.02533))
+* Projected Gradient Descent ([Madry et al., 2017](https://arxiv.org/abs/1706.06083))
 * Jacobian Saliency Map ([Papernot et al., 2016](https://arxiv.org/abs/1511.07528))
 * Universal Perturbation ([Moosavi-Dezfooli et al., 2016](https://arxiv.org/abs/1610.08401))
 * Virtual Adversarial Method ([Miyato et al., 2015](https://arxiv.org/abs/1507.00677))
 * C&amp;W Attack ([Carlini and Wagner, 2016](https://arxiv.org/abs/1608.04644))
 * NewtonFool ([Jang et al., 2017](http://doi.acm.org/10.1145/3134600.3134635))
 
-The following defense methods are also supported:
+The following **defence** methods are also supported:
 * Feature squeezing ([Xu et al., 2017](http://arxiv.org/abs/1704.01155))
 * Spatial smoothing ([Xu et al., 2017](http://arxiv.org/abs/1704.01155))
 * Label smoothing ([Warde-Farley and Goodfellow, 2016](https://pdfs.semanticscholar.org/b5ec/486044c6218dd41b17d8bba502b32a12b91a.pdf))
 * Adversarial training ([Szegedy et al., 2013](http://arxiv.org/abs/1312.6199))
 * Virtual adversarial training ([Miyato et al., 2015](https://arxiv.org/abs/1507.00677))
 * Gaussian data augmentation ([Zantedeschi et al., 2017](https://arxiv.org/abs/1707.06728))
+* Thermometer encoding ([Buckman et al., 2018](https://openreview.net/forum?id=S18Su--CW))
+
+ART also implements **detection** methods of adversarial samples:
+* Basic detector based on inputs
+* Detector trained on the activations of a specific layer
+
+The following **detector of poisoning attacks** is also supported:
+* Detector based on activations analysis
 
 ## Setup
 
