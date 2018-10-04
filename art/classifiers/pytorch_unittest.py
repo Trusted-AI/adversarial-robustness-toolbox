@@ -1,15 +1,18 @@
 from __future__ import absolute_import, division, print_function, unicode_literals
 
+import logging
 import unittest
 
+import numpy as np
 import torch.nn as nn
 import torch.nn.functional as F
 import torch.optim as optim
-import numpy as np
 
 from art.classifiers.pytorch import PyTorchImageClassifier, PyTorchTextClassifier
 from art.utils import load_mnist, load_imdb
 from art.utils import to_categorical
+
+logger = logging.getLogger('testLogger')
 
 
 NB_TRAIN = 1000
@@ -78,7 +81,7 @@ class TestPyTorchImageClassifier(unittest.TestCase):
         # Test predict
         preds = self.module_classifier.predict(x_test)
         acc = np.sum(np.argmax(preds, axis=1) == np.argmax(y_test, axis=1)) / len(y_test)
-        print("\nAccuracy: %.2f%%" % (acc * 100))
+        logger.info('Accuracy after fitting: %.2f%%', (acc * 100))
         self.assertGreater(acc, 0.1)
 
     def test_nb_classes(self):
@@ -196,7 +199,7 @@ class TestTFTextClassifier(unittest.TestCase):
 
         self.classifier.fit(x_train, y_train, nb_epochs=1, batch_size=10)
         acc = np.sum(np.argmax(self.classifier.predict(x_test), axis=1) == np.argmax(y_test, axis=1)) / x_test.shape[0]
-        print("\nAccuracy: %.2f%%" % (acc * 100))
+        logger.info('Accuracy: %.2f%%', (acc * 100))
 
         self.assertTrue(acc >= 0)
 
@@ -246,7 +249,7 @@ class TestTFTextClassifier(unittest.TestCase):
 
         # Test and get layers
         layer_names = self.classifier.layer_names
-        print(layer_names)
+        logger.debug(str(layer_names))
         self.assertTrue(layer_names == ['1_Flatten()', '2_Linear(in_features=16000, out_features=8, bias=True)',
                                         '3_Linear(in_features=8, out_features=2, bias=True)'])
 
@@ -255,9 +258,9 @@ class TestTFTextClassifier(unittest.TestCase):
             act_name = self.classifier.get_activations(x_test, name)
             self.assertAlmostEqual(np.sum(act_name - act_i), 0)
 
-        print(self.classifier.get_activations(x_test, 0).shape)
-        print(self.classifier.get_activations(x_test, 1).shape)
-        print(self.classifier.get_activations(x_test, 2).shape)
+        logger.debug(str(self.classifier.get_activations(x_test, 0).shape))
+        logger.debug(str(self.classifier.get_activations(x_test, 1).shape))
+        logger.debug(str(self.classifier.get_activations(x_test, 2).shape))
         self.assertTrue(self.classifier.get_activations(x_test, 0).shape == (NB_TEST, 16000))
         self.assertTrue(self.classifier.get_activations(x_test, 1).shape == (NB_TEST, 8))
         self.assertTrue(self.classifier.get_activations(x_test, 2).shape == (NB_TEST, 2))
@@ -273,12 +276,12 @@ class TestTFTextClassifier(unittest.TestCase):
 
         # Test predict_from_embedding
         acc = np.sum(np.argmax(self.classifier.predict_from_embedding(x_emb), axis=1) == y_test) / x_test.shape[0]
-        print('\nAccuracy: %.2f%%' % (acc * 100))
+        logger.info('Accuracy: %.2f%%', (acc * 100))
         self.assertTrue(acc >= 0)
 
         # Test to id
         x_id = self.classifier.to_id(x_emb)
-        print(x_id, x_test)
+        logger.debug('%s %s', str(x_id), str(x_test))
         self.assertTrue((x_id == x_test).all())
 
 

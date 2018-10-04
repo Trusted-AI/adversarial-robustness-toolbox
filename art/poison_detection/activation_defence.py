@@ -1,11 +1,17 @@
 from __future__ import absolute_import, division, print_function, unicode_literals
 
+import logging
+import os.path
+
 import numpy as np
-from art.poison_detection.poison_filtering_defence import PoisonFilteringDefence
-from art.poison_detection.clustering_handler import ClusteringHandler
-from art.poison_detection.size_analyzer import SizeAnalyzer
+
 from art.poison_detection.distance_analyzer import DistanceAnalyzer
 from art.poison_detection.ground_truth_evaluator import GroundTruthEvaluator
+from art.poison_detection.poison_filtering_defence import PoisonFilteringDefence
+from art.poison_detection.size_analyzer import SizeAnalyzer
+from art.visualization import create_sprite, save_image
+
+logger = logging.getLogger(__name__)
 
 
 class ActivationDefence(PoisonFilteringDefence):
@@ -18,7 +24,7 @@ class ActivationDefence(PoisonFilteringDefence):
     valid_analysis = ['smaller', 'distance']
     TOO_SMALL_ACTIVATIONS = 32  # Threshold used to print a warning when activations are not enough
 
-    def __init__(self, classifier, x_train, y_train, verbose=True):
+    def __init__(self, classifier, x_train, y_train):
         """
         Create an :class:ActivationDefence object with the provided classifier.
 
@@ -28,15 +34,13 @@ class ActivationDefence(PoisonFilteringDefence):
         :type x_train: `np.ndarray`
         :param y_train: labels used to train `classifier`
         :type y_train: `np.ndarray`
-        :param verbose: When True prints more information
-        :type verbose: `bool`
         """
         from art.classifiers import ImageClassifier
 
         if not isinstance(classifier, ImageClassifier):
             raise TypeError('The activation defence against poisoning is only supported for image classifiers.')
 
-        super(ActivationDefence, self).__init__(classifier, x_train, y_train, verbose)
+        super(ActivationDefence, self).__init__(classifier, x_train, y_train)
         kwargs = {'nb_clusters': 2, 'clustering_method': "KMeans", 'nb_dims': 10, 'reduce': 'PCA',
                   'cluster_analysis': "smaller"}
         self.set_params(**kwargs)
@@ -73,8 +77,7 @@ class ActivationDefence(PoisonFilteringDefence):
         # Now check ground truth:
         self.is_clean_by_class = self._segment_by_class(is_clean, self.y_train)
         self.errors_by_class, conf_matrix_json = self.evaluator.analyze_correctness(self.assigned_clean_by_class,
-                                                                                    self.is_clean_by_class,
-                                                                                    verbose=self.verbose)
+                                                                                    self.is_clean_by_class)
         return conf_matrix_json
 
     def detect_poison(self, **kwargs):
@@ -126,8 +129,7 @@ class ActivationDefence(PoisonFilteringDefence):
             activations = self._get_activations()
             self.activations_by_class = self._segment_by_class(activations, self.y_train)
 
-        my_clust = ClusteringHandler()
-        [self.clusters_by_class, self.red_activations_by_class] = my_clust.cluster_activations(
+        [self.clusters_by_class, self.red_activations_by_class] = cluster_activations(
             self.activations_by_class,
             nb_clusters=self.nb_clusters,
             nb_dims=self.nb_dims,
@@ -157,6 +159,38 @@ class ActivationDefence(PoisonFilteringDefence):
             self.assigned_clean_by_class = analyzer.analyze_clusters(self.clusters_by_class,
                                                                      separated_activations=self.red_activations_by_class)
         return self.assigned_clean_by_class
+
+    def visualize_clusters(self, x_raw, folder='.', **kwargs):
+        """
+        This function that stores a sprite (mosaic) per cluster in DATA_PATH.
+
+        :param kwargs: a dictionary of cluster-analysis-specific parameters
+        :type kwargs: `dict`
+        :param x_raw: Images used to train the classifier (before pre-processing)
+        :param folder: Directory where the sprites will be saved inside DATA_PATH folder
+        :return: None
+        """
+        self.set_params(**kwargs)
+
+        if len(self.clusters_by_class) == 0:
+            self.cluster_activations()
+
+        x_raw_by_class = self._segment_by_class(x_raw, self.y_train)
+        x_raw_by_cluster = [[[] for x in range(self.nb_clusters)] for y in range(self.classifier.nb_classes)]
+
+        # Get all data in x_raw in the right cluster
+        for n_class, cluster in enumerate(self.clusters_by_class):
+            for j, assigned_cluster in enumerate(cluster):
+                x_raw_by_cluster[n_class][assigned_cluster].append(x_raw_by_class[n_class][j])
+
+        # Now create sprites:
+        for i, class_i in enumerate(x_raw_by_cluster):
+            for j, images_cluster in enumerate(class_i):
+                title = 'Class_' + str(i) + '_cluster_' + str(j) + '_clusterSize_' + str(len(images_cluster))
+                f_name = title + '.png'
+                f_name = os.path.join(folder, f_name)
+                sprite = create_sprite(images_cluster)
+                save_image(sprite, f_name)
 
     def set_params(self, **kwargs):
         """
@@ -195,7 +229,7 @@ class ActivationDefence(PoisonFilteringDefence):
         """
         Find activations from :class:Classifier
         """
-        print('Getting activations..')
+        logger.info('Getting activations')
 
         nb_layers = len(self.classifier.layer_names)
         activations = self.classifier.get_activations(self.x_train, layer=nb_layers - 1)
@@ -204,8 +238,8 @@ class ActivationDefence(PoisonFilteringDefence):
         nodes_last_layer = np.shape(activations)[1]
 
         if nodes_last_layer <= self.TOO_SMALL_ACTIVATIONS:
-            print("WARNING: Number of activations in last layer is too small... method may not work properly. "
-                  "Size: " + str(nodes_last_layer))
+            logger.warning("Number of activations in last hidden layer is too small. Method may not work properly. "
+                           "Size: %s", str(nodes_last_layer))
         return activations
 
     def _segment_by_class(self, data, features):
@@ -229,3 +263,60 @@ class ActivationDefence(PoisonFilteringDefence):
             by_class[assigned].append(data[indx])
 
         return [np.asarray(i) for i in by_class]
+
+
+def cluster_activations(separated_activations, nb_clusters=2, nb_dims=10, reduce='FastICA', clustering_method='KMeans'):
+    """
+    Clusters activations and returns two arrays.
+    1) separated_clusters: where separated_clusters[i] is a 1D array indicating which cluster each datapoint
+    in the class has been assigned
+    2) separated_reduced_activations: activations with dimensionality reduced using the specified reduce method
+
+    :param separated_activations: list where separated_activations[i] is a np matrix for the ith class where
+    each row corresponds to activations for a given data point
+    :type separated_activations: `list`
+    :param nb_clusters: number of clusters (defaults to 2 for poison/clean)
+    :type nb_clusters: `int`
+    :param nb_dims: number of dimensions to reduce activation to via PCA
+    :type nb_dims: `int`
+    :param reduce: Method to perform dimensionality reduction, default is FastICA
+    :type reduce: `str`
+    :param clustering_method: Clustering method to use, default is KMeans
+    :type clustering_method: `str`
+    :return: separated_clusters, separated_reduced_activations
+    :rtype: `tuple`
+    """
+    from sklearn.cluster import KMeans
+    from sklearn.decomposition import FastICA, PCA
+
+    separated_clusters = []
+    separated_reduced_activations = []
+
+    if reduce == 'FastICA':
+        projector = FastICA(n_components=nb_dims, max_iter=1000, tol=0.005)
+    elif reduce == 'PCA':
+        projector = PCA(n_components=nb_dims)
+    else:
+        raise ValueError(reduce + " dimensionality reduction method not supported.")
+
+    if clustering_method == 'KMeans':
+        clusterer = KMeans(n_clusters=nb_clusters)
+    else:
+        raise ValueError(clustering_method + " clustering method not supported.")
+
+    for i, ac in enumerate(separated_activations):
+        # Apply dimensionality reduction
+        nb_activations = np.shape(ac)[1]
+        if nb_activations > nb_dims:
+            reduced_activations = projector.fit_transform(ac)
+        else:
+            logger.info("Dimensionality of activations = %i less than nb_dims = %i. Not applying dimensionality "
+                        "reduction.", nb_activations, nb_dims)
+            reduced_activations = ac
+        separated_reduced_activations.append(reduced_activations)
+
+        # Get cluster assignments
+        clusters = clusterer.fit_predict(reduced_activations)
+        separated_clusters.append(clusters)
+
+    return separated_clusters, separated_reduced_activations

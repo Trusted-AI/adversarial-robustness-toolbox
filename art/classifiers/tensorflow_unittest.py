@@ -1,5 +1,6 @@
 from __future__ import absolute_import, division, print_function, unicode_literals
 
+import logging
 import unittest
 
 import numpy as np
@@ -8,6 +9,8 @@ import tensorflow as tf
 from art.classifiers.tensorflow import TFImageClassifier, TFTextClassifier
 from art.utils import load_mnist, load_imdb
 from art.utils import to_categorical
+
+logger = logging.getLogger('testLogger')
 
 
 NB_TRAIN = 1000
@@ -68,7 +71,7 @@ class TestTFImageClassifier(unittest.TestCase):
         trues_class = np.argmax(y_test, axis=1)
         acc = np.sum(preds_class == trues_class) / len(trues_class)
 
-        print("\nAccuracy: %.2f%%" % (acc * 100))
+        logger.info('Accuracy after fitting: %.2f%%', (acc * 100))
         self.assertGreater(acc, 0.1)
 
     def test_nb_classes(self):
@@ -118,7 +121,7 @@ class TestTFImageClassifier(unittest.TestCase):
 
         # Test and get layers
         layer_names = self.classifier.layer_names
-        print(layer_names)
+        logger.debug(layer_names)
         self.assertTrue(layer_names == ['conv2d/Relu:0', 'max_pooling2d/MaxPool:0',
                                         'Flatten/flatten/Reshape:0', 'dense/BiasAdd:0'])
 

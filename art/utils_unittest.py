@@ -1,12 +1,14 @@
 from __future__ import absolute_import, division, print_function, unicode_literals
 
+import logging
 import unittest
 
 import numpy as np
 
-from art.utils import load_mnist, projection, random_sphere, to_categorical
+from art.utils import load_mnist, projection, random_sphere, to_categorical, least_likely_class
 from art.utils import random_targets, get_label_conf, get_labels_np_array, preprocess
 
+logger = logging.getLogger('testLogger')
 
 BATCH_SIZE = 10
 NB_TRAIN = 100
@@ -17,6 +19,7 @@ class TestUtils(unittest.TestCase):
     def test_projection(self):
         # Get MNIST
         (x, _), (_, _), _, _ = load_mnist()
+
         # Probably don't need to test everything
         x = x[:100]
         t = tuple(range(1, len(x.shape)))
@@ -71,6 +74,25 @@ class TestUtils(unittest.TestCase):
         random_y = random_targets(y_, 10)
         self.assertTrue(np.all(y != random_y.argmax(axis=1)))
 
+    def test_least_likely_class(self):
+        class DummyClassifier():
+            @property
+            def nb_classes(self):
+                return 4
+
+            def predict(self, x):
+                fake_preds = [0.1, 0.2, 0.05, 0.65]
+                return np.array([fake_preds] * x.shape[0])
+
+        batch_size = 5
+        x = np.random.rand(batch_size, 10, 10, 1)
+        classifier = DummyClassifier()
+        preds = least_likely_class(x, classifier)
+        self.assertTrue(preds.shape == (batch_size, classifier.nb_classes))
+
+        expected_preds = np.array([[0, 0, 1, 0]] * batch_size)
+        self.assertTrue((preds == expected_preds).all())
+
     def test_get_label_conf(self):
         y = np.array([3, 1, 4, 1, 5, 9])
         y_ = to_categorical(y)
@@ -82,7 +104,7 @@ class TestUtils(unittest.TestCase):
         self.assertEqual(c.shape, y.shape)
         self.assertEqual(l.shape, y.shape)
 
-        self.assertTrue(np.all(l == y)) 
+        self.assertTrue(np.all(l == y))
         self.assertTrue(np.allclose(c, 0.99, atol=1e-2))
 
     def test_get_labels_np_array(self):

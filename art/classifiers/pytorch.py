@@ -1,10 +1,14 @@
 from __future__ import absolute_import, division, print_function, unicode_literals
 
-import numpy as np
+import logging
 import random
+
+import numpy as np
 import six
 
 from art.classifiers.classifier import Classifier, ImageClassifier, TextClassifier
+
+logger = logging.getLogger(__name__)
 
 
 class PyTorchClassifier(Classifier):
@@ -140,7 +144,7 @@ class PyTorchClassifier(Classifier):
         """
         import torch
 
-        if not ((label is None) or (type(label) is int and label in range(self._nb_classes)) or (
+        if not ((label is None) or (isinstance(label, (int, np.integer)) and label in range(self._nb_classes)) or (
             type(label) is np.ndarray and len(label.shape) == 1 and (label < self._nb_classes).all()
             and label.shape[0] == x.shape[0])):
             raise ValueError('Label %s is out of range.' % label)
@@ -188,7 +192,7 @@ class PyTorchClassifier(Classifier):
             grads = np.swapaxes(np.array(grads), 0, 1)
             grads = self._apply_processing_gradient(grads)
 
-        elif type(label) is int:
+        elif isinstance(label, (int, np.integer)):
             torch.autograd.backward(preds[:, label], torch.Tensor([1.] * len(preds[:, 0])), retain_graph=True)
 
             grads = np.swapaxes(np.array(grads), 0, 1)
@@ -352,6 +356,7 @@ class PyTorchClassifier(Classifier):
 
                 else:
                     raise TypeError("The input model must inherit from `nn.Module`.")
+                logger.info('Inferred %i hidden layers on PyTorch classifier.', len(result))
 
                 return result
 

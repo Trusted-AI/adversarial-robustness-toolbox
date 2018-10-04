@@ -1,14 +1,18 @@
 from __future__ import absolute_import, division, print_function, unicode_literals
 
+import logging
 import unittest
-import keras.backend as k
-from keras.models import Sequential
-from keras.layers import Dense, Flatten, Conv2D, MaxPooling2D, Dropout
-import numpy as np
 
-from art.poison_detection import ActivationDefence
+import keras.backend as k
+import numpy as np
+from keras.layers import Dense, Flatten, Conv2D, MaxPooling2D, Dropout
+from keras.models import Sequential
+
 from art.classifiers import KerasImageClassifier
+from art.poison_detection import ActivationDefence
 from art.utils import load_mnist
+
+logger = logging.getLogger('testLogger')
 
 NB_TRAIN, NB_TEST, BATCH_SIZE = 300, 10, 128
 

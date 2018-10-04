@@ -1,12 +1,19 @@
 from __future__ import absolute_import, division, print_function, unicode_literals
 
-import six
+import logging
+
 import numpy as np
+import six
 
 from art.classifiers.classifier import Classifier, ImageClassifier, TextClassifier
 
+logger = logging.getLogger(__name__)
+
 
 class MXClassifier(Classifier):
+    """
+    Wrapper class for importing MXNet Gluon model.
+    """
     def __init__(self, model, nb_classes, optimizer=None, ctx=None):
         """
         Initialize an `MXClassifier` object. Assumes the `model` passed as parameter is a Gluon model and that the
@@ -140,8 +147,11 @@ class MXClassifier(Classifier):
         """
         from mxnet import autograd, nd
 
-        if label is not None and label not in range(self._nb_classes):
-            raise ValueError('Label %s is out of range.' % label)
+        # Check value of label for computing gradients
+        if not (label is None or (isinstance(label, (int, np.integer)) and label in range(self.nb_classes))
+                or (type(label) is np.ndarray and len(label.shape) == 1 and (label < self.nb_classes).all()
+                    and label.shape[0] == x.shape[0])):
+            raise ValueError('Label %s is out of range.' % str(label))
 
         x_ = self._apply_processing(x)
         x_ = nd.array(x_, ctx=self._ctx)
@@ -267,8 +277,9 @@ class MXClassifier(Classifier):
         :return: The hidden layers in the model, input and output layers excluded.
         :rtype: `list`
         """
-
         layer_names = [layer.name for layer in self._model[:-1]]
+        logger.info('Inferred %i hidden layers on MXNet classifier.', len(layer_names))
+
         return layer_names
 
 

@@ -1,18 +1,22 @@
 from __future__ import absolute_import, division, print_function, unicode_literals
 
-import tensorflow as tf
+import logging
 import unittest
-import numpy as np
+
 import keras
 import keras.backend as k
-from keras.models import Sequential
-from keras.layers import Dense, Flatten, Conv2D, MaxPooling2D
+import numpy as np
+import tensorflow as tf
 import torch.nn as nn
 import torch.optim as optim
+from keras.layers import Dense, Flatten, Conv2D, MaxPooling2D
+from keras.models import Sequential
 
 from art.attacks.universal_perturbation import UniversalPerturbation
 from art.classifiers import KerasImageClassifier, PyTorchImageClassifier, TFImageClassifier
 from art.utils import load_mnist
+
+logger = logging.getLogger('testLogger')
 
 BATCH_SIZE, NB_TRAIN, NB_TEST = 100, 500, 10
 

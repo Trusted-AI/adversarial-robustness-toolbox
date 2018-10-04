@@ -1,9 +1,13 @@
 from __future__ import absolute_import, division, print_function, unicode_literals
 
-import numpy as np
+import logging
 import unittest
 
-from art.classifiers.classifier import ImageClassifier
+import numpy as np
+
+from art.classifiers import ImageClassifier
+
+logger = logging.getLogger('testLogger')
 
 
 class ClassifierInstance(ImageClassifier):

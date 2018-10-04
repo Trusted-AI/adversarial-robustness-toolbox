@@ -1,5 +1,6 @@
 from __future__ import absolute_import, division, print_function, unicode_literals
 
+import logging
 import unittest
 
 import keras
@@ -16,6 +17,7 @@ from art.classifiers import KerasImageClassifier, PyTorchImageClassifier, TFImag
 from art.metrics import empirical_robustness, clever_t, clever_u, clever, loss_sensitivity
 from art.utils import load_mnist
 
+logger = logging.getLogger('testLogger')
 
 BATCH_SIZE = 10
 NB_TRAIN = 100
@@ -208,7 +210,7 @@ class TestClever(unittest.TestCase):
         res0 = clever_t(tfc, x_test[-1], 2, 10, 5, r_l1, norm=1, pool_factor=3)
         res1 = clever_t(tfc, x_test[-1], 2, 10, 5, r_l2, norm=2, pool_factor=3)
         res2 = clever_t(tfc, x_test[-1], 2, 10, 5, r_li, norm=np.inf, pool_factor=3)
-        print("Target tf: ", res0, res1, res2)
+        logger.info("Targeted TensorFlow: %f %f %f", res0, res1, res2)
         self.assertFalse(res0 == res1)
         self.assertFalse(res1 == res2)
         self.assertFalse(res2 == res0)
@@ -217,7 +219,7 @@ class TestClever(unittest.TestCase):
         res0 = clever_u(tfc, x_test[-1], 10, 5, r_l1, norm=1, pool_factor=3)
         res1 = clever_u(tfc, x_test[-1], 10, 5, r_l2, norm=2, pool_factor=3)
         res2 = clever_u(tfc, x_test[-1], 10, 5, r_li, norm=np.inf, pool_factor=3)
-        print("Untarget tf: ", res0, res1, res2)
+        logger.info("Untargeted TensorFlow: %f %f %f", res0, res1, res2)
         self.assertFalse(res0 == res1)
         self.assertFalse(res1 == res2)
         self.assertFalse(res2 == res0)
@@ -241,7 +243,7 @@ class TestClever(unittest.TestCase):
         res0 = clever_t(krc, x_test[-1], 2, 10, 5, r_l1, norm=1, pool_factor=3)
         res1 = clever_t(krc, x_test[-1], 2, 10, 5, r_l2, norm=2, pool_factor=3)
         res2 = clever_t(krc, x_test[-1], 2, 10, 5, r_li, norm=np.inf, pool_factor=3)
-        print("Target kr: ", res0, res1, res2)
+        logger.info("Targeted Keras: %f %f %f", res0, res1, res2)
         self.assertNotEqual(res0, res1)
         self.assertNotEqual(res1, res2)
         self.assertNotEqual(res2, res0)
@@ -250,7 +252,7 @@ class TestClever(unittest.TestCase):
         res0 = clever_u(krc, x_test[-1], 10, 5, r_l1, norm=1, pool_factor=3)
         res1 = clever_u(krc, x_test[-1], 10, 5, r_l2, norm=2, pool_factor=3)
         res2 = clever_u(krc, x_test[-1], 10, 5, r_li, norm=np.inf, pool_factor=3)
-        print("Untarget kr: ", res0, res1, res2)
+        logger.info("Untargeted Keras: %f %f %f", res0, res1, res2)
         self.assertNotEqual(res0, res1)
         self.assertNotEqual(res1, res2)
         self.assertNotEqual(res2, res0)
@@ -276,7 +278,7 @@ class TestClever(unittest.TestCase):
         res0 = clever_t(ptc, x_test[-1], 2, 10, 5, r_l1, norm=1, pool_factor=3)
         res1 = clever_t(ptc, x_test[-1], 2, 10, 5, r_l2, norm=2, pool_factor=3)
         res2 = clever_t(ptc, x_test[-1], 2, 10, 5, r_li, norm=np.inf, pool_factor=3)
-        print("Target pt: ", res0, res1, res2)
+        logger.info("Targeted PyTorch: %f %f %f", res0, res1, res2)
         self.assertFalse(res0 == res1)
         self.assertFalse(res1 == res2)
         self.assertFalse(res2 == res0)
@@ -285,7 +287,7 @@ class TestClever(unittest.TestCase):
         res0 = clever_u(ptc, x_test[-1], 10, 5, r_l1, norm=1, pool_factor=3)
         res1 = clever_u(ptc, x_test[-1], 10, 5, r_l2, norm=2, pool_factor=3)
         res2 = clever_u(ptc, x_test[-1], 10, 5, r_li, norm=np.inf, pool_factor=3)
-        print("Untarget pt: ", res0, res1, res2)
+        logger.info("Untargeted PyTorch: %f %f %f", res0, res1, res2)
         self.assertFalse(res0 == res1)
         self.assertFalse(res1 == res2)
         self.assertFalse(res2 == res0)
@@ -299,7 +301,7 @@ class TestClever(unittest.TestCase):
         krc.fit(x_train, y_train, batch_size=batch_size, nb_epochs=2)
 
         scores = clever(krc, x_test[0], 5, 5, 3, 2, target=None, c_init=1, pool_factor=10)
-        print("Clever Scores for n-1 classes", scores, scores.shape)
+        logger.info("Clever scores for n-1 classes: %s %s", str(scores), str(scores.shape))
         self.assertTrue(scores.shape == (krc.nb_classes-1,))
 
     def test_clever_l2_no_target_sorted(self):
@@ -311,7 +313,7 @@ class TestClever(unittest.TestCase):
         krc.fit(x_train, y_train, batch_size=batch_size, nb_epochs=2)
 
         scores = clever(krc, x_test[0], 5, 5, 3, 2, target=None, target_sort=True, c_init=1, pool_factor=10)
-        print("Clever scores for n-1 classes", scores, scores.shape)
+        logger.info("Clever scores for n-1 classes: %s %s", str(scores), str(scores.shape))
         # Should approx. be in decreasing value
         self.assertTrue(scores.shape == (krc.nb_classes-1,))
 

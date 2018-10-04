@@ -1,16 +1,20 @@
 from __future__ import absolute_import, division, print_function, unicode_literals
 
-import six
+import logging
+
 import numpy as np
+import six
 
 from art.classifiers.classifier import Classifier, ImageClassifier, TextClassifier
+
+logger = logging.getLogger(__name__)
 
 
 class KerasClassifier(Classifier):
     """
-    The supported backends for Keras are TensorFlow and Theano.
+    Wrapper class for importing Keras models. The supported backends for Keras are TensorFlow and Theano.
     """
-    def __init__(self, model, use_logits=False, input_layer=0, output_layer=0):
+    def __init__(self, model, use_logits=False, input_layer=0, output_layer=0, custom_activation=False):
         """
         Create a `Classifier` instance from a Keras model. Assumes the `model` passed as argument is compiled.
 
@@ -22,6 +26,9 @@ class KerasClassifier(Classifier):
         :type input_layer: `int`
         :param output_layer: Which layer to consider as the output when the model has multiple output layers.
         :type output_layer: `int`
+        :param custom_activation: True if the model uses the last activation other than softmax and requires to use the
+               output probability rather than the logits by attacks.
+        :type custom_activation: `bool`
         """
         import keras.backend as k
 
@@ -42,18 +49,29 @@ class KerasClassifier(Classifier):
         # Treat binary classification separately
         if self._nb_classes == 1:
             self._nb_classes = 2
+        logger.debug('Inferred %i classes for Keras classifier.', self.nb_classes)
+
+        self._custom_activation = custom_activation
 
         # Get predictions and loss function
         label_ph = k.placeholder(shape=self._output.shape)
-        if isinstance(self._model.loss, str):
-            loss_function = getattr(k, self._model.loss)
+        if not hasattr(self._model, 'loss'):
+            logger.warning('Keras model has no loss set. Trying to use `sparse_categorical_crossentropy`.')
+            loss_function = k.sparse_categorical_crossentropy
         else:
-            loss_function = self._model.loss
+            if isinstance(self._model.loss, str):
+                loss_function = getattr(k, self._model.loss)
+            else:
+                loss_function = getattr(k, self._model.loss.__name__)
 
         if not use_logits:
             if k.backend() == 'tensorflow':
-                preds, = self._output.op.inputs
-                loss_ = loss_function(label_ph, preds, from_logits=True)
+                if custom_activation:
+                    preds = self._output
+                    loss_ = loss_function(label_ph, preds, from_logits=False)
+                else:
+                    preds, = self._output.op.inputs
+                    loss_ = loss_function(label_ph, preds, from_logits=True)
             else:
                 loss_ = loss_function(label_ph, self._output, from_logits=use_logits)
 
@@ -119,10 +137,10 @@ class KerasClassifier(Classifier):
         :rtype: `np.ndarray`
         """
         # Check value of label for computing gradients
-        if not (label is None or (type(label) is int and label in range(self.nb_classes))
+        if not (label is None or (isinstance(label, (int, np.integer)) and label in range(self.nb_classes))
                 or (type(label) is np.ndarray and len(label.shape) == 1 and (label < self.nb_classes).all()
                     and label.shape[0] == x.shape[0])):
-            raise ValueError('Label %s is out of range.' % label)
+            raise ValueError('Label %s is out of range.' % str(label))
 
         self._init_class_grads(label=label, logits=logits)
 
@@ -137,7 +155,7 @@ class KerasClassifier(Classifier):
 
             grads = self._apply_processing_gradient(grads)
 
-        elif type(label) is int:
+        elif isinstance(label, (int, np.integer)):
             # Compute the gradients only w.r.t. the provided label
             if logits:
                 grads = np.swapaxes(np.array(self._class_grads_logits_idx[label]([x_])), 0, 1)
@@ -188,7 +206,7 @@ class KerasClassifier(Classifier):
             begin, end = b * batch_size,  min((b + 1) * batch_size, x_.shape[0])
             preds[begin:end] = self._preds([x_[begin:end]])[0]
 
-            if not logits:
+            if not logits and not self._custom_activation:
                 exp = np.exp(preds[begin:end] - np.max(preds[begin:end], axis=1, keepdims=True))
                 preds[begin:end] = exp / np.sum(exp, axis=1, keepdims=True)
 
@@ -280,6 +298,7 @@ class KerasClassifier(Classifier):
             raise ValueError('Unexpected output shape for classification in Keras model.')
 
         if label is None:
+            logger.debug('Computing class gradients for all %i classes.', self.nb_classes)
             if logits:
                 if not hasattr(self, '_class_grads_logits'):
                     class_grads_logits = [k.gradients(self._preds_op[:, i], input_tensor)[0]
@@ -294,8 +313,10 @@ class KerasClassifier(Classifier):
         else:
             if type(label) is int:
                 unique_labels = [label]
+                logger.debug('Computing class gradients for class %i.', label)
             else:
                 unique_labels = np.unique(label)
+                logger.debug('Computing class gradients for classes %s.', str(unique_labels))
 
             if logits:
                 if not hasattr(self, '_class_grads_logits_idx'):
@@ -325,12 +346,14 @@ class KerasClassifier(Classifier):
 
         layer_names = [layer.name for layer in self._model.layers[:-1]
                        if not isinstance(layer, InputLayer) and not isinstance(layer, Embedding)]
+        logger.info('Inferred %i hidden layers on Keras classifier.', len(layer_names))
+
         return layer_names
 
 
 class KerasImageClassifier(ImageClassifier, KerasClassifier):
     def __init__(self, clip_values, model, use_logits=False, channel_index=3, defences=None, preprocessing=(0, 1),
-                 input_layer=0, output_layer=0):
+                 input_layer=0, output_layer=0, custom_activation=False):
         """
         Create a :class:`KerasImageClassifier` instance from a Keras model. Assumes the `model` passed as argument is
         compiled.
@@ -354,6 +377,9 @@ class KerasImageClassifier(ImageClassifier, KerasClassifier):
         :type input_layer: `int`
         :param output_layer: Which layer to consider as the output when the model has multiple output layers.
         :type output_layer: `int`
+        :param custom_activation: True if the model uses the last activation other than softmax and requires to use the
+               output probability rather than the logits by attacks.
+        :type custom_activation: `bool`
         """
         import keras.backend as k
 
@@ -361,7 +387,7 @@ class KerasImageClassifier(ImageClassifier, KerasClassifier):
                                  preprocessing=preprocessing)
 
         KerasClassifier.__init__(self, model=model, use_logits=use_logits, input_layer=input_layer,
-                                 output_layer=output_layer)
+                                 output_layer=output_layer, custom_activation=custom_activation)
 
         self._input_shape = k.int_shape(self._input)[1:]
         self._channel_index = channel_index
@@ -374,7 +400,8 @@ class KerasTextClassifier(TextClassifier, KerasClassifier):
     """
     Class providing an implementation for integrating text models from Keras.
     """
-    def __init__(self, model, ids, use_logits=False, embedding_layer=0, input_layer=0, output_layer=0):
+    def __init__(self, model, ids, use_logits=False, embedding_layer=0, input_layer=0, output_layer=0,
+                 custom_activation=False):
         """
         Create a :class:`KerasTextClassifier` instance from a Keras model. Assumes the `model` passed as argument is
         compiled.
@@ -390,12 +417,15 @@ class KerasTextClassifier(TextClassifier, KerasClassifier):
         :type input_layer: `int`
         :param output_layer: Which layer to consider as the output when the model has multiple output layers.
         :type output_layer: `int`
+        :param custom_activation: True if the model uses the last activation other than softmax and requires to use the
+               output probability rather than the logits by attacks.
+        :type custom_activation: `bool`
         """
         import keras.backend as k
 
         TextClassifier.__init__(self)
         KerasClassifier.__init__(self, model=model, use_logits=use_logits, input_layer=input_layer,
-                                 output_layer=output_layer)
+                                 output_layer=output_layer, custom_activation=custom_activation)
 
         if type(embedding_layer) is int:
             embedding = self._model.layers[embedding_layer]

@@ -1,10 +1,14 @@
 from __future__ import absolute_import, division, print_function, unicode_literals
 
-import numpy as np
+import logging
 import random
+
+import numpy as np
 import six
 
 from art.classifiers.classifier import Classifier, ImageClassifier, TextClassifier
+
+logger = logging.getLogger(__name__)
 
 
 class TFClassifier(Classifier):
@@ -157,7 +161,7 @@ class TFClassifier(Classifier):
         :rtype: `np.ndarray`
         """
         # Check value of label for computing gradients
-        if not (label is None or (type(label) is int and label in range(self._nb_classes))
+        if not (label is None or (isinstance(label, (int, np.integer)) and label in range(self.nb_classes))
                 or (type(label) is np.ndarray and len(label.shape) == 1 and (label < self._nb_classes).all()
                     and label.shape[0] == x.shape[0])):
             raise ValueError('Label %s is out of range.' % label)
@@ -177,7 +181,7 @@ class TFClassifier(Classifier):
             grads = np.swapaxes(np.array(grads), 0, 1)
             grads = self._apply_processing_gradient(grads)
 
-        elif type(label) is int:
+        elif isinstance(label, (int, np.integer)):
             # Compute the gradients only w.r.t. the provided label
             if logits:
                 grads = self._sess.run(self._logit_class_grads[label], feed_dict={self._input_ph: x_})
@@ -281,6 +285,45 @@ class TFClassifier(Classifier):
                 for l in np.unique(label):
                     if self._class_grads[l] is None:
                         self._class_grads[l] = tf.gradients(self._probs[:, l], input_tensor)[0]
+
+    def _get_layers(self):
+        """
+        Return the hidden layers in the model, if applicable.
+
+        :return: The hidden layers in the model, input and output layers excluded.
+        :rtype: `list`
+        """
+        import tensorflow as tf
+
+        # Get the computational graph
+        with self._sess.graph.as_default():
+            graph = tf.get_default_graph()
+
+        # Get the list of operators and heuristically filter them
+        tmp_list = []
+        ops = graph.get_operations()
+
+        for op in ops:
+            filter_cond = ((op.values()) and (not op.values()[0].get_shape() == None) and (
+                len(op.values()[0].get_shape().as_list()) > 1) and (
+                op.values()[0].get_shape().as_list()[0] is None) and (
+                op.values()[0].get_shape().as_list()[1] is not None) and (
+                not op.values()[0].name.startswith("gradients")) and (
+                not op.values()[0].name.startswith("softmax_cross_entropy_loss")) and (
+                not op.type == "Placeholder"))
+
+            if filter_cond:
+                tmp_list.append(op.values()[0].name)
+
+        # Shorten the list
+        if len(tmp_list) == 0:
+            return tmp_list
+
+        result = [tmp_list[-1]]
+        for name in reversed(tmp_list[:-1]):
+            if result[0].split("/")[0] != name.split("/")[0]:
+                result = [name] + result
+        logger.info('Inferred %i hidden layers on TensorFlow classifier.', len(result))
 
     @property
     def layer_names(self):

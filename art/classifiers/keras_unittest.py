@@ -1,15 +1,19 @@
 from __future__ import absolute_import, division, print_function, unicode_literals
 
+import logging
+import unittest
+
 import keras
 import keras.backend as k
-from keras.models import Sequential, Model
-from keras.layers import Dense, Conv1D, Conv2D, MaxPooling1D, MaxPooling2D, Dropout, Input, Flatten, Embedding, LeakyReLU
 import numpy as np
-import unittest
+from keras.layers import Dense, Conv1D, Conv2D, MaxPooling1D, MaxPooling2D, Dropout, Input, Flatten
+from keras.layers import Embedding, LeakyReLU
+from keras.models import Sequential, Model
 
 from art.classifiers.keras import KerasImageClassifier, KerasTextClassifier
 from art.utils import load_mnist, load_imdb
 
+logger = logging.getLogger('testLogger')
 
 BATCH_SIZE = 10
 NB_TRAIN = 500
@@ -56,7 +60,9 @@ class TestKerasImageClassifier(unittest.TestCase):
         result = requests.get(url, stream=True)
         if result.status_code == 200:
             image = result.raw.read()
-            open(os.path.join(cls.test_dir, 'test.jpg'), 'wb').write(image)
+            f = open(os.path.join(cls.test_dir, 'test.jpg'), 'wb')
+            f.write(image)
+            f.close()
 
     @classmethod
     def tearDownClass(cls):
@@ -95,16 +101,21 @@ class TestKerasImageClassifier(unittest.TestCase):
         return model
 
     def test_fit(self):
+        self._test_fit(custom_activation=False)
+        self._test_fit(custom_activation=True)
+
+    def _test_fit(self, custom_activation=False):
         labels = np.argmax(self.mnist[1][1], axis=1)
-        classifier = KerasImageClassifier((0, 1), self.model_mnist, use_logits=False)
+        classifier = KerasImageClassifier((0, 1), self.model_mnist, use_logits=False,
+                                          custom_activation=custom_activation)
         acc = np.sum(np.argmax(classifier.predict(self.mnist[1][0]), axis=1) == labels) / NB_TEST
-        print("\nAccuracy: %.2f%%" % (acc * 100))
+        logger.info('Accuracy: %.2f%%', (acc * 100))
 
-        classifier.fit(self.mnist[0][0], self.mnist[0][1], batch_size=BATCH_SIZE, nb_epochs=5)
+        classifier.fit(self.mnist[0][0], self.mnist[0][1], batch_size=BATCH_SIZE, nb_epochs=2)
         acc2 = np.sum(np.argmax(classifier.predict(self.mnist[1][0]), axis=1) == labels) / NB_TEST
-        print("\nAccuracy: %.2f%%" % (acc2 * 100))
+        logger.info('Accuracy: %.2f%%', (acc2 * 100))
 
-        self.assertTrue(acc2 >= acc)
+        self.assertTrue(acc2 >= .9 * acc)
 
     def test_nb_classes(self):
         classifier = KerasImageClassifier((0, 1), self.model_mnist, use_logits=False)
@@ -112,8 +123,12 @@ class TestKerasImageClassifier(unittest.TestCase):
         self.assertTrue(classifier.nb_classes == 10)
 
     def test_shapes(self):
+        self._test_shapes(custom_activation=True)
+        self._test_shapes(custom_activation=False)
+
+    def _test_shapes(self, custom_activation=False):
         x_test, y_test = self.mnist[1]
-        classifier = KerasImageClassifier((0, 1), self.model_mnist)
+        classifier = KerasImageClassifier((0, 1), self.model_mnist, custom_activation=custom_activation)
 
         preds = classifier.predict(self.mnist[1][0])
         self.assertTrue(preds.shape == y_test.shape)
@@ -160,21 +175,32 @@ class TestKerasImageClassifier(unittest.TestCase):
         self.assertTrue(np.sum(grads) != 0)
 
     def test_functional_model(self):
-        # Need to update the functional_model code to produce a model with more than one input and output layers
+        self._test_functional_model(custom_activation=True)
+        self._test_functional_model(custom_activation=False)
+
+    def _test_functional_model(self, custom_activation=True):
+        # Need to update the functional_model code to produce a model with more than one input and output layers...
         m = self.functional_model()
-        keras_model = KerasImageClassifier((0, 1), m, input_layer=1, output_layer=1)
+        keras_model = KerasImageClassifier((0, 1), m, input_layer=1, output_layer=1,
+                                           custom_activation=custom_activation)
         self.assertTrue(keras_model._input.name, "input1")
         self.assertTrue(keras_model._output.name, "output1")
-        keras_model = KerasImageClassifier((0, 1), m, input_layer=0, output_layer=0)
+
+        keras_model = KerasImageClassifier((0, 1), m, input_layer=0, output_layer=0,
+                                           custom_activation=custom_activation)
         self.assertTrue(keras_model._input.name, "input0")
         self.assertTrue(keras_model._output.name, "output0")
 
     def test_layers(self):
+        self._test_layers(custom_activation=False)
+        self._test_layers(custom_activation=True)
+
+    def _test_layers(self, custom_activation=False):
         # Get MNIST
         (_, _), (x_test, _), _, _ = load_mnist()
         x_test = x_test[:NB_TEST]
 
-        classifier = KerasImageClassifier((0, 1), model=self.model_mnist)
+        classifier = KerasImageClassifier((0, 1), model=self.model_mnist, custom_activation=custom_activation)
         self.assertEqual(len(classifier.layer_names), 5)
 
         layer_names = classifier.layer_names
@@ -188,6 +214,10 @@ class TestKerasImageClassifier(unittest.TestCase):
         self.assertTrue(classifier.get_activations(x_test, 4).shape == (NB_TEST, 128))
 
     def test_resnet(self):
+        self._test_resnet(custom_activation=False)
+        self._test_resnet(custom_activation=True)
+
+    def _test_resnet(self, custom_activation=False):
         import os
 
         from keras.applications.resnet50 import ResNet50, decode_predictions
@@ -195,7 +225,7 @@ class TestKerasImageClassifier(unittest.TestCase):
 
         keras.backend.set_learning_phase(0)
         model = ResNet50(weights='imagenet')
-        classifier = KerasImageClassifier((0, 255), model, k.categorical_crossentropy)
+        classifier = KerasImageClassifier((0, 255), model, custom_activation=custom_activation)
 
         # Load image from file
         image = img_to_array(load_img(os.path.join(self.test_dir, 'test.jpg'), target_size=(224, 224)))
@@ -245,11 +275,11 @@ class TestKerasTextClassifier(unittest.TestCase):
 
         classifier = KerasTextClassifier(model=self.model, ids=self.word_ids, use_logits=False)
         acc = np.sum(np.argmax(classifier.predict(x_test), axis=1) == y_test) / x_test.shape[0]
-        print('\nAccuracy: %.2f%%' % (acc * 100))
+        logger.info('Accuracy: %.2f%%', (acc * 100))
 
         classifier.fit(x_train, y_train, nb_epochs=1, batch_size=BATCH_SIZE)
         acc2 = np.sum(np.argmax(classifier.predict(x_test), axis=1) == y_test) / x_test.shape[0]
-        print("\nAccuracy: %.2f%%" % (acc2 * 100))
+        logger.info('Accuracy: %.2f%%', (acc2 * 100))
 
         self.assertTrue(acc2 >= acc)
 
