@@ -85,7 +85,7 @@ def main():
     print("\nClean test set accuracy: %.2f%%" % (acc * 100))
 
     # Calling poisoning defence:
-    defence = ActivationDefence(classifier, x_train, y_train, verbose=True)
+    defence = ActivationDefence(classifier, x_train, y_train)
 
     # End-to-end method:
     print("------------------- Results using size metric -------------------")
