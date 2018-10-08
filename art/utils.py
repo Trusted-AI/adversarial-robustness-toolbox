@@ -217,8 +217,6 @@ def load_cifar10(raw=False):
     from keras.utils.data_utils import get_file
     from art import DATA_PATH
 
-    min_, max_ = 0., 1.
-
     path = get_file('cifar-10-batches-py', untar=True, cache_subdir=DATA_PATH,
                     origin='http://www.cs.toronto.edu/~kriz/cifar-10-python.tar.gz')
 
