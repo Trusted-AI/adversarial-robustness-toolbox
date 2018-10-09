@@ -14,6 +14,7 @@ from scipy.stats import weibull_min
 
 from art.attacks import FastGradientMethod
 from art.utils import random_sphere
+from art import NUMPY_DTYPE
 
 logger = logging.getLogger(__name__)
 
@@ -265,6 +266,7 @@ def clever_t(classifier, x, target_class, nb_batches, batch_size, radius, norm, 
     rand_pool = np.reshape(random_sphere(nb_points=pool_factor * batch_size, nb_dims=dim, radius=radius, norm=norm),
                            shape)
     rand_pool += np.repeat(np.array([x]), pool_factor * batch_size, 0)
+    rand_pool = rand_pool.astype(NUMPY_DTYPE)
 
     from art.classifiers import ImageClassifier
     if isinstance(classifier, ImageClassifier):
