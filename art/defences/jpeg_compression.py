@@ -67,13 +67,14 @@ class JpegCompression(Preprocessor):
         :type channel_index: `int`
         """
         # Save defense-specific parameters
-        super(SpatialSmoothing, self).set_params(**kwargs)
+        super(JpegCompression, self).set_params(**kwargs)
 
-        if type(self.window_size) is not int or self.window_size <= 0:
-            raise ValueError('Sliding window size must be a positive integer.')
+        if type(self.quality) is not int or self.quality <= 0 or self.quality > 100:
+            raise ValueError('Image quality must be a positive integer and smaller than 101.')
 
         if type(self.channel_index) is not int or self.channel_index <= 0:
-            raise ValueError('Data channel for smoothing must be a positive integer. The batch dimension is not a'
-                             'valid channel.')
+            raise ValueError('Data channel must be a positive integer. The batch dimension is not a valid channel.')
 
         return True
+
+

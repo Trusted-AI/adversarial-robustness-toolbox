@@ -86,7 +86,7 @@ class ThermometerEncoding(Preprocessor):
         :param num_space: Number of evenly spaced levels within [0, 1].
         :type num_space: `int`
         """
-        # Save attack-specific parameters
+        # Save defense-specific parameters
         super(ThermometerEncoding, self).set_params(**kwargs)
 
         if type(self.num_space) is not int or self.num_space <= 0:
