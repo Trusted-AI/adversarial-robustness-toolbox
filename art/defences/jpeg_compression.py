@@ -2,8 +2,6 @@ from __future__ import absolute_import, division, print_function, unicode_litera
 
 import logging
 
-from scipy import ndimage
-
 from art.defences.preprocessor import Preprocessor
 
 logger = logging.getLogger(__name__)
@@ -11,28 +9,28 @@ logger = logging.getLogger(__name__)
 
 class JpegCompression(Preprocessor):
     """
-    Implement the local spatial smoothing defence approach. Defence method from https://arxiv.org/abs/1704.01155.
+    Implement the jpeg compression defence approach.
     """
-    params = ['window_size', 'channel_index']
+    params = ['quality', 'channel_index']
 
-    def __init__(self, window_size=3, channel_index=3):
+    def __init__(self, quality=50, channel_index=3):
         """
-        Create an instance of local spatial smoothing.
+        Create an instance of jpeg compression.
 
-        :param window_size: The size of the sliding window.
-        :type window_size: `int`
+        :param quality: The image quality, on a scale from 1 (worst) to 95 (best). Values above 95 should be avoided.
+        :type quality: `int`
         :param channel_index: Index of the axis in data containing the color channels or features.
         :type channel_index: `int`
         """
-        super(SpatialSmoothing, self).__init__()
+        super(JpegCompression, self).__init__()
         self._is_fitted = True
-        self.set_params(window_size=window_size, channel_index=channel_index)
+        self.set_params(quality=quality, channel_index=channel_index)
 
-    def __call__(self, x, y=None, window_size=None):
+    def __call__(self, x, y=None, quality=None):
         """
-        Apply local spatial smoothing to sample `x`.
+        Apply jpeg compression to sample `x`.
 
-        :param x: Sample to smooth with shape `(batch_size, width, height, depth)`.
+        :param x: Sample to compress with shape `(batch_size, width, height, depth)`.
         :type x: `np.ndarray`
         :param y: Labels of the sample `x`. This function does not affect them in any way.
         :type y: `np.ndarray`
@@ -63,12 +61,12 @@ class JpegCompression(Preprocessor):
         """
         Take in a dictionary of parameters and applies defence-specific checks before saving them as attributes.
 
-        :param window_size: The size of the sliding window.
-        :type window_size: `int`
+        :param quality: The image quality, on a scale from 1 (worst) to 95 (best). Values above 95 should be avoided.
+        :type quality: `int`
         :param channel_index: Index of the axis in data containing the color channels or features.
         :type channel_index: `int`
         """
-        # Save attack-specific parameters
+        # Save defense-specific parameters
         super(SpatialSmoothing, self).set_params(**kwargs)
 
         if type(self.window_size) is not int or self.window_size <= 0:
