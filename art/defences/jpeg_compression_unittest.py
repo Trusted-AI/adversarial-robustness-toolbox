@@ -18,7 +18,7 @@ class TestJpegCompression(unittest.TestCase):
         x = np.reshape(mnist.test.images[0:2], (-1, 28, 28, 1))
         preprocess = JpegCompression()
         compressed_x = preprocess(x, quality=70)
-        self.assertTrue((compressed_x.shape == x.shape).all())
+        self.assertTrue((compressed_x.shape == x.shape))
         self.assertTrue((compressed_x <= 1.0).all())
         self.assertTrue((compressed_x >= 0.0).all())
 
@@ -27,7 +27,7 @@ class TestJpegCompression(unittest.TestCase):
         x = train_features[:2] / 255.0
         preprocess = JpegCompression()
         compressed_x = preprocess(x, quality=80)
-        self.assertTrue((compressed_x.shape == x.shape).all())
+        self.assertTrue((compressed_x.shape == x.shape))
         self.assertTrue((compressed_x <= 1.0).all())
         self.assertTrue((compressed_x >= 0.0).all())
 
@@ -37,7 +37,7 @@ class TestJpegCompression(unittest.TestCase):
         x = np.swapaxes(x, 1, 3)
         preprocess = JpegCompression(channel_index=1)
         compressed_x = preprocess(x, quality=80)
-        self.assertTrue((compressed_x.shape == x.shape).all())
+        self.assertTrue((compressed_x.shape == x.shape))
         self.assertTrue((compressed_x <= 1.0).all())
         self.assertTrue((compressed_x >= 0.0).all())
 

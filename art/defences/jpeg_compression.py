@@ -52,15 +52,20 @@ class JpegCompression(Preprocessor):
         # Swap channel index
         if self.channel_index < 3:
             x_ = np.swapaxes(x, self.channel_index, 3)
+        else:
+            x_ = x.copy()
 
         # Convert into `uint8`
         x_ = x_ * 255
         x_ = x_.astype("uint8")
 
+        # Convert to 'L' mode
+        if x_.shape[-1] == 1:
+            x_ = np.reshape(x_, x_.shape[:-1])
+
         # Compress one image per time
         for i, xi in enumerate(x_):
-            if xi.shape[-1] == 1:
-                xi = np.reshape(xi, xi.shape[:-1])
+            if len(xi.shape) == 2:
                 xi = Image.fromarray(xi, mode='L')
             elif xi.shape[-1] == 3:
                 xi = Image.fromarray(xi, mode='RGB')
