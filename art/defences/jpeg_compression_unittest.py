@@ -3,51 +3,47 @@ from __future__ import absolute_import, division, print_function, unicode_litera
 import logging
 import unittest
 
+from tensorflow.examples.tutorials.mnist import input_data
+from keras.datasets import cifar10
 import numpy as np
 
-from art.defences.spatial_smoothing import SpatialSmoothing
+from art.defences.jpeg_compression import JpegCompression
 
 logger = logging.getLogger('testLogger')
 
 
-class TestLocalSpatialSmoothing(unittest.TestCase):
-    def test_ones(self):
-        m, n = 10, 2
-        x = np.ones((1, m, n, 3))
+class TestJpegCompression(unittest.TestCase):
+    def test_one_channel(self):
+        mnist = input_data.read_data_sets("tmp/MNIST_data/")
+        x = np.reshape(mnist.test.images[0:2], (-1, 28, 28, 1))
+        preprocess = JpegCompression()
+        compressed_x = preprocess(x, quality=70)
+        self.assertTrue((compressed_x.shape == x.shape).all())
+        self.assertTrue((compressed_x <= 1.0).all())
+        self.assertTrue((compressed_x >= 0.0).all())
 
-        # Start to test
-        for window_size in range(1, 20):
-            preprocess = SpatialSmoothing()
-            smoothed_x = preprocess(x, window_size)
-            self.assertTrue((smoothed_x == 1).all())
+    def test_three_channels(self):
+        (train_features, train_labels), (test_data, test_label) = cifar10.load_data()
+        x = train_features[:2] / 255.0
+        preprocess = JpegCompression()
+        compressed_x = preprocess(x, quality=80)
+        self.assertTrue((compressed_x.shape == x.shape).all())
+        self.assertTrue((compressed_x <= 1.0).all())
+        self.assertTrue((compressed_x >= 0.0).all())
 
-    def test_fix(self):
-        x = np.array([[[[1], [2], [3]], [[7], [8], [9]], [[4], [5], [6]]]])
-
-        # Start to test
-        preprocess = SpatialSmoothing()
-        smooth_x = preprocess(x, window_size=3)
-        self.assertTrue((smooth_x == np.array(
-            [[[[2], [3], [3]], [[4], [5], [6]], [[5], [6], [6]]]])).all())
-
-        smooth_x = preprocess(x, window_size=1)
-        self.assertTrue((smooth_x == x).all())
-
-        smooth_x = preprocess(x, window_size=2)
-        self.assertTrue((smooth_x == np.array(
-            [[[[1], [2], [3]], [[7], [7], [8]], [[7], [7], [8]]]])).all())
-
-    def test_channels(self):
-        x = np.arange(9).reshape(1, 1, 3, 3)
-        preprocess = SpatialSmoothing(channel_index=1)
-        smooth_x = preprocess(x)
-
-        new_x = np.arange(9).reshape(1, 3, 3, 1)
-        preprocess = SpatialSmoothing()
-        new_smooth_x = preprocess(new_x)
-
-        self.assertTrue((smooth_x[0, 0] == new_smooth_x[0, :, :, 0]).all())
+    def test_channel_index(self):
+        (train_features, train_labels), (test_data, test_label) = cifar10.load_data()
+        x = train_features[:2] / 255.0
+        x = np.swapaxes(x, 1, 3)
+        preprocess = JpegCompression(channel_index=1)
+        compressed_x = preprocess(x, quality=80)
+        self.assertTrue((compressed_x.shape == x.shape).all())
+        self.assertTrue((compressed_x <= 1.0).all())
+        self.assertTrue((compressed_x >= 0.0).all())
 
 
 if __name__ == '__main__':
     unittest.main()
+
+
+

@@ -1,14 +1,13 @@
 from __future__ import absolute_import, division, print_function, unicode_literals
 
 from io import BytesIO
-
 import logging
+
 import numpy as np
 from PIL import Image
 
 from art.defences.preprocessor import Preprocessor
 from art import NUMPY_DTYPE
-
 
 logger = logging.getLogger(__name__)
 
