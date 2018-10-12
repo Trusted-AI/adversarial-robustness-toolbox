@@ -5,6 +5,7 @@ import sys
 
 import numpy as np
 
+from art import NUMPY_DTYPE
 from art.attacks.attack import Attack
 from art.utils import get_labels_np_array
 
@@ -83,10 +84,10 @@ class CarliniL2Method(Attack):
         :return: A tuple holding the current logits, l2 distance and overall loss.
         :rtype: `(float, float, float)`
         """    
-        l2dist = np.sum(np.square(x-x_adv))        
-        z = self.classifier.predict(np.array([x_adv]), logits=True)[0]
+        l2dist = np.sum(np.square(x - x_adv))
+        z = self.classifier.predict(np.array([x_adv], dtype=NUMPY_DTYPE), logits=True)[0]
         z_target = np.sum(z * target)
-        z_other = np.max(z * (1 - target) + (np.min(z)-1)*target)
+        z_other = np.max(z * (1 - target) + (np.min(z) - 1) * target)
         
         # The following differs from the exact definition given in Carlini and Wagner (2016). There (page 9, left
         # column, last equation), the maximum is taken over Z_other - Z_target (or Z_target - Z_other respectively)
@@ -127,20 +128,21 @@ class CarliniL2Method(Attack):
         :type target: `np.ndarray`
         """  
         if self.targeted:
-            i_sub, i_add = np.argmax(target), np.argmax(z * (1 - target) + (np.min(z)-1)*target)
+            i_sub, i_add = np.argmax(target), np.argmax(z * (1 - target) + (np.min(z) - 1) * target)
         else:
-            i_add, i_sub = np.argmax(target), np.argmax(z * (1 - target) + (np.min(z)-1)*target)
+            i_add, i_sub = np.argmax(target), np.argmax(z * (1 - target) + (np.min(z) - 1) * target)
         
-        loss_gradient = self.classifier.class_gradient(np.array([x_adv]), label=i_add, logits=True)[0]
-        loss_gradient -= self.classifier.class_gradient(np.array([x_adv]), label=i_sub, logits=True)[0]
+        loss_gradient = self.classifier.class_gradient(np.array([x_adv], dtype=NUMPY_DTYPE), label=i_add,
+                                                       logits=True)[0]
+        loss_gradient -= self.classifier.class_gradient(np.array([x_adv], dtype=NUMPY_DTYPE), label=i_sub,
+                                                        logits=True)[0]
         loss_gradient *= c
-        loss_gradient += 2*(x_adv - x)
+        loss_gradient += 2 * (x_adv - x)
         loss_gradient *= (clip_max - clip_min) 
-        loss_gradient *= (1-np.square(np.tanh(x_adv_tanh)))/(2*self._tanh_smoother)
+        loss_gradient *= (1 - np.square(np.tanh(x_adv_tanh))) / (2 * self._tanh_smoother)
         
         return loss_gradient[0]
-                        
-    
+
     def _original_to_tanh(self, x_original, clip_min, clip_max):
         """
         Transform input from original to tanh space.
@@ -191,7 +193,7 @@ class CarliniL2Method(Attack):
         :return: An array holding the adversarial examples.
         :rtype: `np.ndarray`
         """        
-        x_adv = x.copy()
+        x_adv = x.copy().astype(NUMPY_DTYPE)
         (clip_min, clip_max) = self.classifier.clip_values
 
         # Parse and save attack-specific parameters
@@ -227,11 +229,10 @@ class CarliniL2Method(Attack):
             for _ in range(self.binary_search_steps):
                 
                 # Initialize perturbation in tanh space:
-                perturbation_tanh = np.zeros(image_tanh.shape)
                 adv_image = image
                 adv_image_tanh = image_tanh
                 z, l2dist, loss = self._loss(image, adv_image, target, c)
-                attack_success = (loss-l2dist <= 0)
+                attack_success = (loss - l2dist <= 0)
                
                 for it in range(self.max_iter):                   
                     if attack_success:
@@ -245,8 +246,8 @@ class CarliniL2Method(Attack):
                     # first, halve the learning rate until perturbation actually decreases the loss:                      
                     prev_loss = loss
                     halving = 0
-                    while loss >= prev_loss and loss-l2dist > 0 and halving < self.max_halving: 
-                        new_adv_image_tanh = adv_image_tanh + lr*perturbation_tanh
+                    while loss >= prev_loss and loss - l2dist > 0 and halving < self.max_halving:
+                        new_adv_image_tanh = adv_image_tanh + lr * perturbation_tanh
                         new_adv_image = self._tanh_to_original(new_adv_image_tanh, clip_min, clip_max)
                         _, l2dist, loss = self._loss(image, new_adv_image, target, c)
                         lr /= 2
@@ -261,22 +262,22 @@ class CarliniL2Method(Attack):
                             prev_loss = loss
                             lr *= 2     
                             doubling += 1
-                            new_adv_image_tanh = adv_image_tanh + lr*perturbation_tanh
+                            new_adv_image_tanh = adv_image_tanh + lr * perturbation_tanh
                             new_adv_image = self._tanh_to_original(new_adv_image_tanh, clip_min, clip_max)
                             _, l2dist, loss = self._loss(image, new_adv_image, target, c)
                         lr /= 2
                     
                     # apply the optimal learning rate that was found and update the loss:
-                    adv_image_tanh = adv_image_tanh + lr*perturbation_tanh
+                    adv_image_tanh = adv_image_tanh + lr * perturbation_tanh
                     adv_image = self._tanh_to_original(adv_image_tanh, clip_min, clip_max)
                     z, l2dist, loss = self._loss(image, adv_image, target, c)                    
-                    attack_success = (loss-l2dist <= 0)
+                    attack_success = (loss - l2dist <= 0)
                 
                 # Update depending on attack success:
                 if attack_success:
                     if l2dist < best_l2dist:
                         best_l2dist = l2dist
-                        best_adv_image =  adv_image 
+                        best_adv_image = adv_image
                         
                     c_double = False
                     c = (c_lower_bound + c) / 2
