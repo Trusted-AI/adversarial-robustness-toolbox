@@ -84,6 +84,8 @@ class KerasClassifier(Classifier):
         else:
             preds = self._output
             loss = k.sparse_categorical_crossentropy(label_ph, self._output, from_logits=use_logits)
+        if preds == self._input:  # recent Tensorflow version does not allow a model with an output same as the input.
+            preds = k.identity(preds)
         loss_grads = k.gradients(loss, self._input)
 
         if k.backend() == 'tensorflow':
