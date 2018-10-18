@@ -170,7 +170,7 @@ class TestPyTorchImageClassifier(unittest.TestCase):
 #         return out
 
 
-class TestTFTextClassifier(unittest.TestCase):
+class TestPyTorchTextClassifier(unittest.TestCase):
     @classmethod
     def setUpClass(cls):
         # Load IMDB
@@ -245,7 +245,6 @@ class TestTFTextClassifier(unittest.TestCase):
     def test_layers(self):
         # Get IMDB
         (_, _), (x_test, y_test) = self.imdb
-        y_test = to_categorical(y_test, nb_classes=2)
 
         # Test and get layers
         layer_names = self.classifier.layer_names
@@ -267,8 +266,7 @@ class TestTFTextClassifier(unittest.TestCase):
 
     def test_embedding(self):
         # Get IMDB
-        (x_train, y_train), (x_test, y_test) = self.imdb
-        y_train = to_categorical(y_train, nb_classes=2)
+        (_, _), (x_test, y_test) = self.imdb
 
         # Test to embedding
         x_emb = self.classifier.to_embedding(x_test)
@@ -287,10 +285,3 @@ class TestTFTextClassifier(unittest.TestCase):
 
 if __name__ == '__main__':
     unittest.main()
-
-
-
-
-
-
-
