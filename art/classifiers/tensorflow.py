@@ -372,7 +372,7 @@ class TFClassifier(Classifier):
         :return: None
         """
         import os
-        from tensorflow.train import Saver
+        import tensorflow as tf
 
         if path is None:
             from art import DATA_PATH
@@ -383,6 +383,6 @@ class TFClassifier(Classifier):
         if not os.path.exists(folder):
             os.makedirs(folder)
 
-        saver = Saver()
+        saver = tf.train.Saver()
         saver.save(self._sess, full_path)
         logger.info('Model saved in path: %s.', full_path)
