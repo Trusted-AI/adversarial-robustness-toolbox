@@ -26,7 +26,10 @@ class ClassifierInstance(Classifier):
     def loss_gradient(self, x, y):
         pass
 
-    def predict(self, x, logits=False):
+    def predict(self, x, logits=False, batch_size=128):
+        pass
+
+    def save(self, filename, path=None):
         pass
 
 

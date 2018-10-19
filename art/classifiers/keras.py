@@ -343,7 +343,7 @@ class KerasClassifier(Classifier):
         if not os.path.exists(folder):
             os.makedirs(folder)
 
-        self._model.save(full_path)
+        self._model.save(str(full_path))
         logger.info('Model saved in path: %s.', full_path)
 
 
