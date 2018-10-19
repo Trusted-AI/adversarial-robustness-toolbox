@@ -195,3 +195,15 @@ class TestKerasClassifier(unittest.TestCase):
 
         label = decode_predictions(classifier.predict(image))[0][0]
         self.assertEqual(label[1], 'Weimaraner')
+
+    def test_save(self):
+        import os
+
+        path = 'tmp'
+        filename = 'model.h5'
+        classifier = KerasClassifier((0, 1), model=self.model_mnist)
+        classifier.save(filename, path=path)
+        self.assertTrue(os.path.isfile(os.path.join(path, filename)))
+
+        # Remove saved file
+        os.remove(os.path.join(path, filename))

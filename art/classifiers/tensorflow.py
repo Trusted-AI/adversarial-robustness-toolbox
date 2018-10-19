@@ -359,3 +359,30 @@ class TFClassifier(Classifier):
         result = self._sess.run(layer_tensor, feed_dict=fd)
 
         return result
+
+    def save(self, filename, path=None):
+        """
+        Save a model to file in the format specific to the backend framework. For TensorFlow, .ckpt is used.
+
+        :param filename: Name of the file where to store the model.
+        :type filename: `str`
+        :param path: Path of the folder where to store the model. If no path is specified, the model will be stored in
+                     the default data location of the library `DATA_PATH`.
+        :type path: `str`
+        :return: None
+        """
+        import os
+        from tensorflow.train import Saver
+
+        if path is None:
+            from art import DATA_PATH
+            full_path = os.path.join(DATA_PATH, filename)
+        else:
+            full_path = os.path.join(path, filename)
+        folder = os.path.split(full_path)[0]
+        if not os.path.exists(folder):
+            os.makedirs(folder)
+
+        saver = Saver()
+        saver.save(self._sess, full_path)
+        logger.info('Model saved in path: %s.', full_path)

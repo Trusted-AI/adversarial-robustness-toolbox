@@ -310,6 +310,19 @@ class PyTorchClassifier(Classifier):
 
         return model_outputs[layer_index].detach().cpu().numpy()
 
+    def save(self, filename, path=None):
+        """
+        Save a model to file in the format specific to the backend framework.
+
+        :param filename: Name of the file where to store the model.
+        :type filename: `str`
+        :param path: Path of the folder where to store the model. If no path is specified, the model will be stored in
+                     the default data location of the library `DATA_PATH`.
+        :type path: `str`
+        :return: None
+        """
+        raise NotImplementedError
+
     # def _forward_at(self, inputs, layer):
     #     """
     #     Compute the forward at a specific layer.

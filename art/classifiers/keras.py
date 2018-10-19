@@ -321,6 +321,31 @@ class KerasClassifier(Classifier):
 
         return layer_names
 
+    def save(self, filename, path=None):
+        """
+        Save a model to file in the format specific to the backend framework. For Keras, .h5 format is used.
+
+        :param filename: Name of the file where to store the model.
+        :type filename: `str`
+        :param path: Path of the folder where to store the model. If no path is specified, the model will be stored in
+                     the default data location of the library `DATA_PATH`.
+        :type path: `str`
+        :return: None
+        """
+        import os
+
+        if path is None:
+            from art import DATA_PATH
+            full_path = os.path.join(DATA_PATH, filename)
+        else:
+            full_path = os.path.join(path, filename)
+        folder = os.path.split(full_path)[0]
+        if not os.path.exists(folder):
+            os.makedirs(folder)
+
+        self._model.save(full_path)
+        logger.info('Model saved in path: %s.', full_path)
+
 
 def generator_fit(x, y, batch_size=128):
     """

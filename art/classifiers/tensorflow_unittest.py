@@ -124,6 +124,20 @@ class TestTFClassifier(unittest.TestCase):
         self.assertTrue(self.classifier.get_activations(x_test, 3).shape == (20, 10))
         tf.reset_default_graph()
 
+    def test_save(self):
+        import os
+        import re
+
+        path = 'tmp'
+        filename = 'model.ckpt'
+        self.classifier.save(filename, path=path)
+        self.assertTrue(os.path.isfile(os.path.join(path, filename + '.meta')))
+        self.assertTrue(os.path.isfile(os.path.join(path, filename + '.index')))
+
+        # Remove saved files
+        for f in os.listdir(path):
+            if re.search(filename, f):
+                os.remove(os.path.join(path, f))
 
 if __name__ == '__main__':
     unittest.main()
