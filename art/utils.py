@@ -384,7 +384,7 @@ def get_file(filename, url, path=None, extract=False):
     """
     Downloads a file from a URL if it not already in the cache. The file at indicated by `url` is downloaded to the
     path `path` (default is ~/.art/data). and given the name `filename`. Files in tar, tar.gz, tar.bz, and zip formats
-    can also be extracted.
+    can also be extracted. This is a simplified version of the function with the same name in Keras.
 
     :param filename: Name of the file.
     :type filename: `str`
@@ -399,9 +399,9 @@ def get_file(filename, url, path=None, extract=False):
     """
     if path is None:
         from art import DATA_PATH
-        path_ = os.path.join(os.path.expanduser(DATA_PATH), filename)
+        path_ = os.path.expanduser(DATA_PATH)
     else:
-        path_ = os.path.join(os.path.expanduser(path), filename)
+        path_ = os.path.expanduser(path)
     if not os.access(path_, os.W_OK):
         path_ = os.path.join('/tmp', '.art')
     if not os.path.exists(path_):
@@ -435,8 +435,9 @@ def get_file(filename, url, path=None, extract=False):
             raise
 
     if extract:
-        if not os.path.exists(full_path):
+        if not os.path.exists(extract_path):
             _extract(full_path, path_)
+        return extract_path
 
     return full_path
 
