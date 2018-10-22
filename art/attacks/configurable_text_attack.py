@@ -18,9 +18,9 @@ class TextFGSM:
         return True
 
     def __call__(self, classifier, x, y):
-        x_embed = classifier.to_embedding(x)
-        x_embed_adv = x_embed + \
-                      self.eps * classifier.loss_gradient(np.expand_dims(x, axis=0), np.expand_dims(y, axis=0))[0]
+        batch_x = np.expand_dims(x, axis=0)
+        x_embed = classifier.to_embedding(batch_x)
+        x_embed_adv = x_embed + self.eps * classifier.loss_gradient(batch_x, np.expand_dims(y, axis=0))[0]
         return x_embed_adv
 
 
