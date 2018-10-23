@@ -96,12 +96,11 @@ class TotalVarMin(Preprocessor):
         z = x.copy()
 
         for i in range(x.shape[2]):
-
             res = minimize(self._loss_func, z[:, :, i].flatten(), (x[:, :, i], mask[:, :, i], self.norm, self.lam),
-                           method=self.solver, jac=tv_l2_dx, options={'maxiter': self.maxiter}).x
-            x_opt[:, :, i] = np.reshape(res, x_opt[:, :, i].shape)
+                           method=self.solver, jac=self._deri_loss_func, options={'maxiter': self.maxiter})
+            z[:, :, i] = np.reshape(res.x, z[:, :, i].shape)
 
-        return x_
+        return z
 
     def _loss_func(self, z, x, mask, norm, lam):
         """
@@ -201,9 +200,9 @@ class TotalVarMin(Preprocessor):
             logger.error('Probability must be between 0 and 1.')
             raise ValueError('Probability must be between 0 and 1.')
 
-        if not(self.norm == 1 or self.norm == 2 or self.norm == np.inf):
-            logger.error('Current support only 1, 2, np.inf.')
-            raise ValueError('Current support only 1, 2, np.inf.')
+        if type(self.norm) is not int or self.norm <= 0:
+            logger.error('Norm must be a positive integer.')
+            raise ValueError('Norm must be a positive integer.')
 
         if not(self.solver == 'L-BFGS-B' or self.solver == 'CG' or self.solver == 'Newton-CG'):
             logger.error('Current support only L-BFGS-B, CG, Newton-CG.')
@@ -214,6 +213,8 @@ class TotalVarMin(Preprocessor):
             raise ValueError('Number of iterations must be a positive integer.')
 
         return True
+
+
 
 
 
