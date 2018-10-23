@@ -18,13 +18,13 @@ class TotalVarMin(Preprocessor):
     """
     params = ['prob', 'norm', 'lam', 'solver', 'maxiter']
 
-    def __init__(self, prob=0.5, norm=2, lam=0.01, solver='L-BFGS-B', maxiter=10):
+    def __init__(self, prob=0.3, norm=2, lam=0.5, solver='L-BFGS-B', maxiter=10):
         """
         Create an instance of total variance minimization.
 
         :param prob: Probability of the Bernoulli distribution.
         :type prob: `float`
-        :param norm: Current support: 1, 2, np.inf
+        :param norm: The norm (positive integer).
         :type norm: `int`
         :param lam: The lambda parameter in the objective function.
         :type lam: `float`
@@ -47,7 +47,7 @@ class TotalVarMin(Preprocessor):
         :type y: `np.ndarray`
         :param prob: Probability of the Bernoulli distribution.
         :type prob: `float`
-        :param norm: Current support: 1, 2, np.inf
+        :param norm: The norm (positive integer).
         :type norm: `int`
         :param lam: The lambda parameter in the objective function.
         :type lam: `float`
@@ -114,7 +114,7 @@ class TotalVarMin(Preprocessor):
         :type x: `np.ndarray`
         :param mask: A matrix that decides which points are kept.
         :type mask: `np.ndarray`
-        :param norm: Current support: 1, 2, np.inf
+        :param norm: The norm (positive integer).
         :type norm: `int`
         :param lam: The lambda parameter in the objective function.
         :type lam: `float`
@@ -138,7 +138,7 @@ class TotalVarMin(Preprocessor):
         :type x: `np.ndarray`
         :param mask: A matrix that decides which points are kept.
         :type mask: `np.ndarray`
-        :param norm: Current support: 1, 2, np.inf
+        :param norm: The norm (positive integer).
         :type norm: `int`
         :param lam: The lambda parameter in the objective function.
         :type lam: `float`
@@ -147,6 +147,7 @@ class TotalVarMin(Preprocessor):
         """
         # First compute the derivative of the first component of the loss function
         nor1 = np.sqrt(np.power(z - x.flatten(), 2).dot(mask.flatten()))
+        if nor1 < 1e-6: nor1 = 1e-6
         der1 = ((z - x.flatten()) * mask.flatten()) / (nor1 * 1.0)
 
         # Then compute the derivative of the second component of the loss function
@@ -158,6 +159,8 @@ class TotalVarMin(Preprocessor):
         else:
             z_d1_norm = np.power(np.linalg.norm(z[1:, :] - z[:-1, :], norm, axis=1), norm - 1)
             z_d2_norm = np.power(np.linalg.norm(z[:, 1:] - z[:, :-1], norm, axis=0), norm - 1)
+            z_d1_norm[z_d1_norm < 1e-6] = 1e-6
+            z_d2_norm[z_d2_norm < 1e-6] = 1e-6
             z_d1_norm = np.repeat(z_d1_norm[:, np.newaxis], z.shape[1], axis=1)
             z_d2_norm = np.repeat(z_d2_norm[np.newaxis, :], z.shape[0], axis=0)
             z_d1 = norm * np.power(z[1:, :] - z[:-1, :], norm - 1) / z_d1_norm
@@ -187,7 +190,7 @@ class TotalVarMin(Preprocessor):
 
         :param prob: Probability of the Bernoulli distribution.
         :type prob: `float`
-        :param norm: Current support: 1, 2, np.inf
+        :param norm: The norm (positive integer).
         :type norm: `int`
         :param lam: The lambda parameter in the objective function.
         :type lam: `float`
