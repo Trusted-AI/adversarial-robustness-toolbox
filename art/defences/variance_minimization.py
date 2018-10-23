@@ -80,7 +80,7 @@ class TotalVarMin(Preprocessor):
             mask = (np.random.rand(xi.shape[0], xi.shape[1], xi.shape[2]) < self.prob).astype('int')
             x_[i] = self._minimize(xi, mask)
 
-        return x_
+        return x_.astype(NUMPY_DTYPE)
 
     def _minimize(self, x, mask):
         """
