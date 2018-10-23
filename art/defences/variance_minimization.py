@@ -3,6 +3,7 @@ from __future__ import absolute_import, division, print_function, unicode_litera
 import logging
 
 import numpy as np
+from scipy.optimize import minimize
 
 from art.defences.preprocessor import Preprocessor
 from art import NUMPY_DTYPE
@@ -82,36 +83,48 @@ class TotalVarMin(Preprocessor):
         return x_
 
     def _minimize(self, x, mask):
-        x_ = x.copy()
+        """
+        Minimize the total variance objective function.
 
-        if self.norm == 1 or self.norm == 2:
-                for i in range(img.shape[2]):
-                    options = {'disp': verbose, 'maxiter': maxiter}
-                    res = minimize(
-                        tv_l2, x_opt[:, :, i], (img[:, :, i], w[:, :, i], lam, p),
-                        method=solver, jac=tv_l2_dx, options=options).x
-                    x_opt[:, :, i] = np.reshape(res, x_opt[:, :, i].shape)
+        :param x: Original image.
+        :type x: `np.ndarray`
+        :param mask: A matrix that decides which points are kept.
+        :type mask: `np.ndarray`
+        :return: A new image.
+        :rtype: `np.ndarray`
+        """
+        z = x.copy()
 
-        else:
-            x_opt = np.copy(img)
-            if solver == 'L-BFGS-B' or solver == 'CG' or solver == 'Newton-CG':
-                for i in range(img.shape[2]):
-                    options = {'disp': verbose, 'maxiter': maxiter}
-                    lower = img[:, :, i] - tau
-                    upper = img[:, :, i] + tau
-                    lower[w[:, :, i] < 1e-6] = 0
-                    upper[w[:, :, i] < 1e-6] = 1
-                    bounds = np.array([lower.flatten(), upper.flatten()]).transpose()
-                    res = minimize(
-                        tv_inf, x_opt[:, :, i], (img[:, :, i], lam, p, tau),
-                        method=solver, bounds=bounds, jac=tv_inf_dx, options=options).x
-                    x_opt[:, :, i] = np.reshape(res, x_opt[:, :, i].shape)
-            else:
-                print('unsupported solver ' + solver)
-                exit()
-            return x_opt
+        for i in range(x.shape[2]):
 
+            res = minimize(self._loss_func, z[:, :, i].flatten(), (x[:, :, i], mask[:, :, i], self.norm, self.lam),
+                           method=self.solver, jac=tv_l2_dx, options={'maxiter': self.maxiter}).x
+            x_opt[:, :, i] = np.reshape(res, x_opt[:, :, i].shape)
 
+        return x_
+
+    def _loss_func(self, z, x, mask, norm, lam):
+        """
+        Loss function to be minimized.
+
+        :param z: Initial guess.
+        :type z: `np.ndarray`
+        :param x: Original image.
+        :type x: `np.ndarray`
+        :param mask: A matrix that decides which points are kept.
+        :type mask: `np.ndarray`
+        :param norm: Current support: 1, 2, np.inf
+        :type norm: `int`
+        :param lam: The lambda parameter in the objective function.
+        :type lam: `float`
+        :return: Loss value.
+        :rtype: `float`
+        """
+        res = np.linalg.norm((z - x.flatten()).dot(mask.flatten()), 2)
+        res += lam * np.linalg.norm(z[1:, :] - z[:-1, :], norm, axis=1).sum()
+        res += lam * np.linalg.norm(z[:, 1:] - z[:, :-1], norm, axis=0).sum()
+
+        return res
 
 
     def fit(self, x, y=None, **kwargs):
