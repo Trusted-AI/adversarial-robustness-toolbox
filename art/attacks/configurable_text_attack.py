@@ -21,7 +21,7 @@ class TextFGSM:
         batch_x = np.expand_dims(x, axis=0)
         x_embed = classifier.to_embedding(batch_x)
         x_embed_adv = x_embed + self.eps * classifier.loss_gradient(batch_x, np.expand_dims(y, axis=0))[0]
-        return x_embed_adv
+        return x_embed_adv[0]
 
 
 class TemporalHeadScore:
