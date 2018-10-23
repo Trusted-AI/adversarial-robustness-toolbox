@@ -120,11 +120,43 @@ class TotalVarMin(Preprocessor):
         :return: Loss value.
         :rtype: `float`
         """
-        res = np.linalg.norm((z - x.flatten()).dot(mask.flatten()), 2)
+        res = np.sqrt(np.power(z - x.flatten(), 2).dot(mask.flatten()))
         res += lam * np.linalg.norm(z[1:, :] - z[:-1, :], norm, axis=1).sum()
         res += lam * np.linalg.norm(z[:, 1:] - z[:, :-1], norm, axis=0).sum()
 
         return res
+
+    def _deri_loss_func(self, z, x, mask, norm, lam):
+        """
+        Derivative of loss function to be minimized.
+
+        :param z: Initial guess.
+        :type z: `np.ndarray`
+        :param x: Original image.
+        :type x: `np.ndarray`
+        :param mask: A matrix that decides which points are kept.
+        :type mask: `np.ndarray`
+        :param norm: Current support: 1, 2, np.inf
+        :type norm: `int`
+        :param lam: The lambda parameter in the objective function.
+        :type lam: `float`
+        :return: Derivative value.
+        :rtype: `float`
+        """
+        # First compute the derivative of the first component of the loss function
+        norm = np.sqrt(np.power(z - x.flatten(), 2).dot(mask.flatten()))
+        der1 = ((z - x.flatten()) * mask.flatten()) / (norm * 1.0)
+
+        # Then compute the derivative of the second component of the loss function
+        
+
+
+        der2 = lam *
+
+
+        return df.flatten() + lam * tv_dx(x, p).flatten()
+
+
 
 
     def fit(self, x, y=None, **kwargs):
