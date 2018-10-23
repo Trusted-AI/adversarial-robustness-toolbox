@@ -37,7 +37,7 @@ class TotalVarMin(Preprocessor):
         self._is_fitted = True
         self.set_params(prob=prob, norm=norm, lam=lam, solver=solver, maxiter=maxiter)
 
-    def __call__(self, x, y=None, prob=None, norm=None, lam=None, solver=None, maxiter=None):
+    def __call__(self, x, y=None, prob=None, norm=None, lam=None, solver=None, maxiter=None, clip_values=(0, 1)):
         """
         Apply total variance minimization to sample `x`.
 
@@ -80,6 +80,8 @@ class TotalVarMin(Preprocessor):
             mask = (np.random.rand(xi.shape[0], xi.shape[1], xi.shape[2]) < self.prob).astype('int')
             x_[i] = self._minimize(xi, mask)
 
+        x_ = np.clip(x_, clip_values[0], clip_values[1])
+
         return x_.astype(NUMPY_DTYPE)
 
     def _minimize(self, x, mask):
@@ -120,6 +122,7 @@ class TotalVarMin(Preprocessor):
         :rtype: `float`
         """
         res = np.sqrt(np.power(z - x.flatten(), 2).dot(mask.flatten()))
+        z = np.reshape(z, x.shape)
         res += lam * np.linalg.norm(z[1:, :] - z[:-1, :], norm, axis=1).sum()
         res += lam * np.linalg.norm(z[:, 1:] - z[:, :-1], norm, axis=0).sum()
 
