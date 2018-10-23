@@ -6,6 +6,7 @@ import numpy as np
 
 from art.defences.preprocessor import Preprocessor
 from art.utils import to_categorical
+from art import NUMPY_DTYPE
 
 logger = logging.getLogger(__name__)
 
@@ -27,7 +28,7 @@ class ThermometerEncoding(Preprocessor):
         self._is_fitted = True
         self.set_params(num_space=num_space)
 
-    def __call__(self, x, y=None, num_space=None):
+    def __call__(self, x, y=None, num_space=None, clip_values=(0, 1)):
         """
         Apply thermometer encoding to sample `x`.
 
@@ -48,8 +49,9 @@ class ThermometerEncoding(Preprocessor):
             result.append(self._perchannel(x[:, :, :, c]))
 
         result = np.concatenate(result, axis=3)
+        result = np.clip(result, clip_values[0], clip_values[1])
 
-        return result
+        return result.astype(NUMPY_DTYPE)
 
     def _perchannel(self, x):
         """
@@ -90,9 +92,11 @@ class ThermometerEncoding(Preprocessor):
         super(ThermometerEncoding, self).set_params(**kwargs)
 
         if type(self.num_space) is not int or self.num_space <= 0:
+            logger.error('Number of evenly spaced levels must be a positive integer.')
             raise ValueError('Number of evenly spaced levels must be a positive integer.')
 
         return True
+
 
 
 
