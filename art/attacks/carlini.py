@@ -14,10 +14,10 @@ logger = logging.getLogger(__name__)
 
 class CarliniL2Method(Attack):
     """
-    The L_2 optimized attack of Carlini and Wagner (2016). This attack is the most efficient and should be used as the
-    primary attack to evaluate potential defences (wrt the L_0 and L_inf attacks). This implementation is inspired by
-    the one in Cleverhans, which reproduces the authors' original code (https://github.com/carlini/nn_robust_attacks).
-    Paper link: https://arxiv.org/pdf/1608.04644.pdf
+    The L_2 optimized attack of Carlini and Wagner (2016). This attack is among the most effective and should be used
+    among the primary attacks to evaluate potential defences. A major difference wrt to the original implementation 
+    (https://github.com/carlini/nn_robust_attacks) is that we use line search in the optimization of the attack
+    objective. Paper link: https://arxiv.org/pdf/1608.04644.pdf
     """
     attack_params = Attack.attack_params + ['confidence', 'targeted', 'learning_rate', 'max_iter',
                                             'binary_search_steps', 'initial_const', 'max_halving', 'max_doubling']
@@ -209,8 +209,9 @@ class CarliniL2Method(Attack):
         if y is None:
             y = get_labels_np_array(self.classifier.predict(x, logits=False))
 
-        for j, (ex, target) in enumerate(zip(x_adv, y)):
-            image = ex.copy()
+        for j, (ex, target) in enumerate(zip(x_adv, y)):        
+            logger.debug('Processing sample %i out of %i' % (j, x_adv.shape[0]))
+            image = ex.copy().astype(NUMPY_DTYPE)
 
             # The optimization is performed in tanh space to keep the
             # adversarial images bounded from clip_min and clip_max. 
@@ -223,10 +224,11 @@ class CarliniL2Method(Attack):
 
             # Initialize placeholders for best l2 distance and attack found so far
             best_l2dist = sys.float_info.max
-            best_adv_image = image            
-            lr = self.learning_rate
+            best_adv_image = image 
             
-            for _ in range(self.binary_search_steps):
+            for bss in range(self.binary_search_steps):           
+                lr = self.learning_rate
+                logger.debug('Binary search step %i out of %i (c==%f)' % (bss, self.binary_search_steps, c))
                 
                 # Initialize perturbation in tanh space:
                 adv_image = image
@@ -234,11 +236,17 @@ class CarliniL2Method(Attack):
                 z, l2dist, loss = self._loss(image, adv_image, target, c)
                 attack_success = (loss - l2dist <= 0)
                
-                for it in range(self.max_iter):                   
+                for it in range(self.max_iter):  
+                    logger.debug('Iteration step %i out of %i' % (it, self.max_iter))
+                    logger.debug('Total Loss: %f', loss)
+                    logger.debug('L2Dist: %f', l2dist)
+                    logger.debug('Margin Loss: %f', loss-l2dist)
+                    
                     if attack_success:
                         break
                     
                     # compute gradient:
+                    logger.debug('Compute loss gradient')
                     perturbation_tanh = -self._loss_gradient(z, target, image, adv_image, adv_image_tanh, 
                                                              c, clip_min, clip_max)
                     
@@ -247,9 +255,13 @@ class CarliniL2Method(Attack):
                     prev_loss = loss
                     halving = 0
                     while loss >= prev_loss and loss - l2dist > 0 and halving < self.max_halving:
+                        logger.debug('Apply gradient with learning rate %f (halving=%i)' % (lr, halving))
                         new_adv_image_tanh = adv_image_tanh + lr * perturbation_tanh
                         new_adv_image = self._tanh_to_original(new_adv_image_tanh, clip_min, clip_max)
-                        _, l2dist, loss = self._loss(image, new_adv_image, target, c)
+                        _, l2dist, loss = self._loss(image, new_adv_image, target, c) 
+                        logger.debug('New Total Loss: %f', loss)
+                        logger.debug('New L2Dist: %f', l2dist)
+                        logger.debug('New Margin Loss: %f', loss-l2dist)                        
                         lr /= 2
                         halving += 1                        
                     lr *= 2
@@ -261,12 +273,17 @@ class CarliniL2Method(Attack):
                         while loss <= prev_loss and doubling < self.max_doubling:  
                             prev_loss = loss
                             lr *= 2     
+                            logger.debug('Apply gradient with learning rate %f (doubling=%i)' % (lr, doubling))
                             doubling += 1
                             new_adv_image_tanh = adv_image_tanh + lr * perturbation_tanh
                             new_adv_image = self._tanh_to_original(new_adv_image_tanh, clip_min, clip_max)
-                            _, l2dist, loss = self._loss(image, new_adv_image, target, c)
+                            _, l2dist, loss = self._loss(image, new_adv_image, target, c)                            
+                            logger.debug('New Total Loss: %f', loss)
+                            logger.debug('New L2Dist: %f', l2dist)
+                            logger.debug('New Margin Loss: %f', loss-l2dist)              
                         lr /= 2
                     
+                    logger.debug('Finally apply gradient with learning rate %f', lr)
                     # apply the optimal learning rate that was found and update the loss:
                     adv_image_tanh = adv_image_tanh + lr * perturbation_tanh
                     adv_image = self._tanh_to_original(adv_image_tanh, clip_min, clip_max)
@@ -275,7 +292,9 @@ class CarliniL2Method(Attack):
                 
                 # Update depending on attack success:
                 if attack_success:
+                    logger.debug('Margin Loss <= 0 --> Attack Success!')
                     if l2dist < best_l2dist:
+                        logger.debug('New best L2Dist: %f (previous=%f)' % (l2dist, best_l2dist))
                         best_l2dist = l2dist
                         best_adv_image = adv_image
                         
@@ -301,7 +320,7 @@ class CarliniL2Method(Attack):
         else:
             preds = np.argmax(self.classifier.predict(x), axis=1)
             rate = np.sum(adv_preds != preds) / x_adv.shape[0]
-        logger.info('Success rate of C&W attack: %.2f%%', rate)
+        logger.info('Success rate of C&W attack: %.2f%%', 100*rate)
 
         return x_adv
 
