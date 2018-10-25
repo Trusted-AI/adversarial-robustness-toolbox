@@ -6,6 +6,9 @@ import unittest
 import keras.backend as k
 import numpy as np
 import tensorflow as tf
+# import torch.nn as nn
+# import torch.nn.functional as f
+# import torch.optim as optim
 from keras.layers import Embedding, Conv1D, LeakyReLU, MaxPooling1D, Dense, Flatten
 from keras.models import Sequential
 
@@ -28,13 +31,13 @@ MAX_LENGTH = 500
 #         self.fc = nn.Linear(2304, 10)
 #
 #     def forward(self, x):
-#         x = self.pool(F.relu(self.conv(x)))
+#         x = self.pool(f.relu(self.conv(x)))
 #         x = x.view(-1, 2304)
 #         logit_output = self.fc(x)
 #
 #         return logit_output
-
-
+#
+#
 # class PtFlatten(nn.Module):
 #     def forward(self, x):
 #         n = x.size()
@@ -45,7 +48,7 @@ class TestConfigurableTextAttack(unittest.TestCase):
     @classmethod
     def setUpClass(cls):
         from art.utils import load_imdb, to_categorical
-        from art.classifiers import KerasTextClassifier, TFTextClassifier
+        from art.classifiers import KerasTextClassifier, TFTextClassifier, PyTorchTextClassifier
 
         k.clear_session()
         k.set_learning_phase(1)
@@ -129,8 +132,8 @@ class TestConfigurableTextAttack(unittest.TestCase):
         from art.attacks.configurable_text_attack import TextFGSM, loss_gradient_score
 
         (_, _), (x_test, y_test) = self.imdb
-        models = {'Keras': self.classifier_k, 'TF': self.classifier_tf}
-        for backend, model in models.items():
+        models = [('TF', self.classifier_tf), ('Keras', self.classifier_k)]
+        for backend, model in models:
             logger.info('Text FGSM attack on %s', backend)
             attack = ConfigurableTextAttack(classifier=model, nb_changes=2, transform=TextFGSM(eps=200),
                                             score=loss_gradient_score, stop_condition=check_prediction_change)
@@ -141,10 +144,10 @@ class TestConfigurableTextAttack(unittest.TestCase):
         from art.attacks.configurable_text_attack import TextFGSM, TemporalHeadScore
 
         (_, _), (x_test, y_test) = self.imdb
-        models = {'Keras': self.classifier_k, 'TF': self.classifier_tf}
+        models = [('TF', self.classifier_tf), ('Keras', self.classifier_k)]
         scorer = TemporalHeadScore()
 
-        for backend, model in models.items():
+        for backend, model in models:
             logger.info('Text head score attack on %s', backend)
 
             attack = ConfigurableTextAttack(classifier=model, nb_changes=2, score=scorer, transform=TextFGSM(eps=200),
@@ -156,10 +159,10 @@ class TestConfigurableTextAttack(unittest.TestCase):
         from art.attacks.configurable_text_attack import CombinedScore, TextFGSM
 
         (_, _), (x_test, y_test) = self.imdb
-        models = {'Keras': self.classifier_k, 'TF': self.classifier_tf}
+        models = [('TF', self.classifier_tf), ('Keras', self.classifier_k)]
         scorer = CombinedScore()
 
-        for backend, model in models.items():
+        for backend, model in models:
             logger.info('Text combined score attack on %s', backend)
             attack = ConfigurableTextAttack(classifier=model, nb_changes=2, score=scorer, transform=TextFGSM(eps=1000),
                                             stop_condition=check_prediction_change)
