@@ -10,7 +10,16 @@ logger = logging.getLogger(__name__)
 
 
 class TextFGSM:
+    """
+    Fast gradient sign method (FGSM) for text to be used as transformation strategy in the configurable text attack.
+    """
     def __init__(self, eps):
+        """
+        Create a :class:`TextFGSM` transformation instance.
+
+        :param eps: Attack step size (input variation).
+        :type eps: `float`
+        """
         self.eps = eps
 
     @property
@@ -18,24 +27,46 @@ class TextFGSM:
         return True
 
     def __call__(self, classifier, x, y):
+        """
+        Apply FGSM attack on each component of `x`.
+
+        :param classifier: A trained text model.
+        :type classifier: :class:`TextClassifier`
+        :param x: Individual sample.
+        :type x: `np.ndarray`
+        :param y: Label for sample `x` in one-hot encoding.
+        :type y: `np.ndarray`
+        :return: The adversarial counterpart of `x`.
+        :rtype: `np.ndarray`
+        """
         batch_x = np.expand_dims(x, axis=0)
         x_embed = classifier.to_embedding(batch_x)
-        x_embed_adv = x_embed + self.eps * classifier.loss_gradient(batch_x, np.expand_dims(y, axis=0))[0]
+        x_embed_adv = x_embed + self.eps * classifier.loss_gradient(batch_x, np.expand_dims(y, axis=0))
         return x_embed_adv[0]
 
 
 class TemporalHeadScore:
+    """
+    Compute the temporal head score as described in https://arxiv.org/pdf/1801.04354
+    """
     @property
     def uses_embedding(self):
         return False
 
     def __call__(self, classifier, x, y, null_token=0):
         """
+        Compute the temporal head score for each token in `x` and model `classifier`.
 
-        :param classifier:
-        :param x:
-        :param null_token:
-        :return:
+        :param classifier: A trained text model.
+        :type classifier: :class:`TextClassifier`
+        :param x: Individual sample.
+        :type x: `np.ndarray`
+        :param y: Label for sample `x` in one-hot encoding.
+        :type y: `np.ndarray`
+        :param null_token: The index of the null token.
+        :type null_token: `int`
+        :return: The combined score.
+        :rtype: `float`
         """
         # Create modified input
         x_padding = null_token * np.ones(x.shape)
@@ -64,17 +95,27 @@ class TemporalHeadScore:
 
 
 class TemporalTailScore:
+    """
+    Compute the temporal tail score as described in https://arxiv.org/pdf/1801.04354
+    """
     @property
     def uses_embedding(self):
         return False
 
     def __call__(self, classifier, x, y, null_token=0):
         """
+        Compute the temporal tail score for each token in `x` and model `classifier`.
 
-        :param classifier:
-        :param x:
-        :param null_token:
-        :return:
+        :param classifier: A trained text model.
+        :type classifier: :class:`TextClassifier`
+        :param x: Individual sample.
+        :type x: `np.ndarray`
+        :param y: Label for sample `x` in one-hot encoding.
+        :type y: `np.ndarray`
+        :param null_token: The index of the null token.
+        :type null_token: `int`
+        :return: The combined score.
+        :rtype: `float`
         """
         # Create modified input
         x_padding = null_token * np.ones(x.shape)
@@ -104,9 +145,15 @@ class TemporalTailScore:
 
 class CombinedScore:
     """
-
+    Compute the combined values of the temporal head and tail scores as described in https://arxiv.org/pdf/1801.04354
     """
     def __init__(self, lamb=1.):
+        """
+        Create a :class:`CombinedScore` instance.
+
+        :param lamb: The weight of the tail score (considering the head score has weight 1).
+        :type lamb: `float`
+        """
         self.lamb = lamb
         self.head_score = TemporalHeadScore()
         self.tail_score = TemporalTailScore()
@@ -116,16 +163,34 @@ class CombinedScore:
         return False
 
     def __call__(self, classifier, x, y, null_token=0):
+        """
+        Compute the combined temporal head and tail score for each token in `x` and model `classifier`.
+
+        :param classifier: A trained text model.
+        :type classifier: :class:`TextClassifier`
+        :param x: Individual sample.
+        :type x: `np.ndarray`
+        :param y: Label for sample `x` in one-hot encoding.
+        :type y: `np.ndarray`
+        :param null_token: The index of the null token.
+        :type null_token: `int`
+        :return: The combined score.
+        :rtype: `float`
+        """
         return self.head_score(classifier, x, None, null_token) + \
                self.lamb * self.tail_score(classifier, x, None, null_token)
 
 
 def loss_gradient_score(classifier, x, y):
     """
+    Score the tokens in `x` with the values of the loss gradient.
 
-    :param classifier:
-    :param x:
-    :param y:
+    :param classifier: A trained text model.
+    :type classifier: :class:`TextClassifier`
+    :param x: Individual sample.
+    :type x: `np.ndarray`
+    :param y: Label for sample `x` in one-hot encoding.
+    :type y: `np.ndarray`
     :return:
     """
     return classifier.word_gradient(np.expand_dims(x, axis=0), np.expand_dims(y, axis=0))[0]
@@ -135,10 +200,14 @@ def check_prediction_change(classifier, x, x_adv):
     """
     Compare two individual samples and return true if `classifier` provides different predictions.
 
-    :param classifier:
-    :param x:
-    :param x_adv:
-    :return:
+    :param classifier: A trained text model.
+    :type classifier: :class:`TextClassifier`
+    :param x: Individual sample to compare.
+    :type x: `np.ndarray`
+    :param x_adv: A second individual sample to compare to the first one.
+    :type x_adv: `np.ndarray`
+    :return: `True` if the label prediction of `classifier` has changed between `x` and `x_adv`.
+    :rtype: `bool`
     """
     pred = np.argmax(classifier.predict(np.expand_dims(x, axis=0)))
     pred_adv = np.argmax(classifier.predict(np.expand_dims(x_adv, axis=0)))
@@ -147,11 +216,28 @@ def check_prediction_change(classifier, x, x_adv):
 
 class ConfigurableTextAttack(Attack):
     """
-    TODO
+    This class represents a generic text attack strategy.
     """
     attack_params = Attack.attack_params + ['stop_condition', 'score', 'transform', 'nb_changes']
 
     def __init__(self, classifier, transform, score, stop_condition, nb_changes=1):
+        """
+        Create a :class:`ConfigurableTextAttack` instance.
+
+        :param classifier: A trained text model to be attacked.
+        :type classifier: :class:`TextClassifier`
+        :param transform: A callable strategy for transforming tokens. This should have a property `uses_embedding` set
+                          to true if the transformation is performed in the embedding space of the model.
+        :type transform: `Callable`
+        :param score: A callable strategy for scoring tokens. This order is subsequently used to determine the priority
+                      for changing the tokens as part of the attack.
+        :type score: `Callable`
+        :param stop_condition: A callable returning true if the stopping condition of the attack has been fulfilled.
+        :type stop_condition: `Callable`
+        :param nb_changes: Number of maximum changes allowed for each input. Each change usually corresponds with the
+                           displacement of one token.
+        :type nb_changes: `int`
+        """
         from art.classifiers import TextClassifier
 
         if not isinstance(classifier, TextClassifier):
@@ -163,10 +249,13 @@ class ConfigurableTextAttack(Attack):
 
     def generate(self, x, **kwargs):
         """
+         Generate adversarial samples and return them in an array.
 
-        :param x:
+        :param x: An array with the original inputs to be attacked.
+        :type x: `np.ndarray`
         :param kwargs:
-        :return:
+        :return: An array holding the adversarial examples of the same shape as input `x`.
+        :rtype: `np.ndarray`
         """
         from art.utils import get_labels_np_array
 
@@ -184,7 +273,6 @@ class ConfigurableTextAttack(Attack):
             transform_values = self.transform(self.classifier, input_, preds[i])
 
             for j, token_pos in enumerate(prioritized_tokens):
-                # TODO otherwise, detect automatically if the transform operates in the embedding space
                 if hasattr(self.transform, 'uses_embedding') and self.transform.uses_embedding:
                     input_emb[token_pos, :] = transform_values[token_pos]
                     old_token = input_[token_pos]
@@ -209,6 +297,18 @@ class ConfigurableTextAttack(Attack):
     def set_params(self, **kwargs):
         """
         Take in a dictionary of parameters and applies attack-specific checks before saving them as attributes.
+
+        :param transform: A callable strategy for transforming tokens. This should have a property `uses_embedding` set
+                          to true if the transformation is performed in the embedding space of the model.
+        :type transform: `Callable`
+        :param score: A callable strategy for scoring tokens. This order is subsequently used to determine the priority
+                      for changing the tokens as part of the attack.
+        :type score: `Callable`
+        :param stop_condition: A callable returning true if the stopping condition of the attack has been fulfilled.
+        :type stop_condition: `Callable`
+        :param nb_changes: Number of maximum changes allowed for each input. Each change usually corresponds with the
+                           displacement of one token.
+        :type nb_changes: `int`
         """
         # Save attack-specific parameters
         super(ConfigurableTextAttack, self).set_params(**kwargs)
