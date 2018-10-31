@@ -193,7 +193,7 @@ class CarliniL2Method(Attack):
         :return: An array holding the adversarial examples.
         :rtype: `np.ndarray`
         """        
-        x_adv = x.copy().astype(NUMPY_DTYPE)
+        x_adv = x.astype(NUMPY_DTYPE)
         (clip_min, clip_max) = self.classifier.clip_values
 
         # Parse and save attack-specific parameters
