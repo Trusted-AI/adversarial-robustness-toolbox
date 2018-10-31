@@ -14,10 +14,10 @@ logger = logging.getLogger(__name__)
 
 class CarliniL2Method(Attack):
     """
-    The L_2 optimized attack of Carlini and Wagner (2016). This attack is the most efficient and should be used as the
-    primary attack to evaluate potential defences (wrt the L_0 and L_inf attacks). This implementation is inspired by
-    the one in Cleverhans, which reproduces the authors' original code (https://github.com/carlini/nn_robust_attacks).
-    Paper link: https://arxiv.org/pdf/1608.04644.pdf
+    The L_2 optimized attack of Carlini and Wagner (2016). This attack is among the most effective and should be used
+    among the primary attacks to evaluate potential defences. A major difference wrt to the original implementation 
+    (https://github.com/carlini/nn_robust_attacks) is that we use line search in the optimization of the attack
+    objective. Paper link: https://arxiv.org/pdf/1608.04644.pdf
     """
     attack_params = Attack.attack_params + ['confidence', 'targeted', 'learning_rate', 'max_iter',
                                             'binary_search_steps', 'initial_const', 'max_halving', 'max_doubling']
@@ -193,7 +193,7 @@ class CarliniL2Method(Attack):
         :return: An array holding the adversarial examples.
         :rtype: `np.ndarray`
         """        
-        x_adv = x.copy().astype(NUMPY_DTYPE)
+        x_adv = x.astype(NUMPY_DTYPE)
         (clip_min, clip_max) = self.classifier.clip_values
 
         # Parse and save attack-specific parameters
@@ -209,7 +209,8 @@ class CarliniL2Method(Attack):
         if y is None:
             y = get_labels_np_array(self.classifier.predict(x, logits=False))
 
-        for j, (ex, target) in enumerate(zip(x_adv, y)):
+        for j, (ex, target) in enumerate(zip(x_adv, y)):        
+            logger.debug('Processing sample %i out of %i', j, x_adv.shape[0])
             image = ex.copy()
 
             # The optimization is performed in tanh space to keep the
@@ -223,62 +224,98 @@ class CarliniL2Method(Attack):
 
             # Initialize placeholders for best l2 distance and attack found so far
             best_l2dist = sys.float_info.max
-            best_adv_image = image            
-            lr = self.learning_rate
+            best_adv_image = image 
             
-            for _ in range(self.binary_search_steps):
+            for bss in range(self.binary_search_steps):           
+                lr = self.learning_rate
+                logger.debug('Binary search step %i out of %i (c==%f)', bss, self.binary_search_steps, c)
                 
                 # Initialize perturbation in tanh space:
                 adv_image = image
                 adv_image_tanh = image_tanh
                 z, l2dist, loss = self._loss(image, adv_image, target, c)
                 attack_success = (loss - l2dist <= 0)
+                overall_attack_success = attack_success
                
-                for it in range(self.max_iter):                   
+                for it in range(self.max_iter):  
+                    logger.debug('Iteration step %i out of %i', it, self.max_iter)
+                    logger.debug('Total Loss: %f', loss)
+                    logger.debug('L2Dist: %f', l2dist)
+                    logger.debug('Margin Loss: %f', loss-l2dist)
+                    
                     if attack_success:
-                        break
+                        logger.debug('Margin Loss <= 0 --> Attack Success!')
+                        if l2dist < best_l2dist:
+                            logger.debug('New best L2Dist: %f (previous=%f)', l2dist, best_l2dist)
+                            best_l2dist = l2dist
+                            best_adv_image = adv_image
                     
                     # compute gradient:
+                    logger.debug('Compute loss gradient')
                     perturbation_tanh = -self._loss_gradient(z, target, image, adv_image, adv_image_tanh, 
                                                              c, clip_min, clip_max)
                     
                     # perform line search to optimize perturbation                     
                     # first, halve the learning rate until perturbation actually decreases the loss:                      
                     prev_loss = loss
+                    best_loss = loss
+                    best_lr = 0
+                    
                     halving = 0
-                    while loss >= prev_loss and loss - l2dist > 0 and halving < self.max_halving:
+                    while loss >= prev_loss and halving < self.max_halving:
+                        logger.debug('Apply gradient with learning rate %f (halving=%i)', lr, halving)
                         new_adv_image_tanh = adv_image_tanh + lr * perturbation_tanh
                         new_adv_image = self._tanh_to_original(new_adv_image_tanh, clip_min, clip_max)
-                        _, l2dist, loss = self._loss(image, new_adv_image, target, c)
+                        _, l2dist, loss = self._loss(image, new_adv_image, target, c) 
+                        logger.debug('New Total Loss: %f', loss)
+                        logger.debug('New L2Dist: %f', l2dist)
+                        logger.debug('New Margin Loss: %f', loss-l2dist)      
+                        if loss < best_loss:
+                            best_loss = loss
+                            best_lr = lr
                         lr /= 2
                         halving += 1                        
                     lr *= 2
                     
                     # if no halving was actually required, double the learning rate as long as this
                     # decreases the loss:
-                    if halving == 1:
+                    if halving == 1 and loss <= prev_loss:
                         doubling = 0
                         while loss <= prev_loss and doubling < self.max_doubling:  
                             prev_loss = loss
                             lr *= 2     
+                            logger.debug('Apply gradient with learning rate %f (doubling=%i)', lr, doubling)
                             doubling += 1
                             new_adv_image_tanh = adv_image_tanh + lr * perturbation_tanh
                             new_adv_image = self._tanh_to_original(new_adv_image_tanh, clip_min, clip_max)
-                            _, l2dist, loss = self._loss(image, new_adv_image, target, c)
+                            _, l2dist, loss = self._loss(image, new_adv_image, target, c)                            
+                            logger.debug('New Total Loss: %f', loss)
+                            logger.debug('New L2Dist: %f', l2dist)
+                            logger.debug('New Margin Loss: %f', loss-l2dist)     
+                            if loss < best_loss:
+                                best_loss = loss
+                                best_lr = lr            
                         lr /= 2
                     
-                    # apply the optimal learning rate that was found and update the loss:
-                    adv_image_tanh = adv_image_tanh + lr * perturbation_tanh
-                    adv_image = self._tanh_to_original(adv_image_tanh, clip_min, clip_max)
+                    if best_lr >0:
+                        logger.debug('Finally apply gradient with learning rate %f', best_lr)
+                        # apply the optimal learning rate that was found and update the loss:
+                        adv_image_tanh = adv_image_tanh + best_lr * perturbation_tanh
+                        adv_image = self._tanh_to_original(adv_image_tanh, clip_min, clip_max)
+                        
                     z, l2dist, loss = self._loss(image, adv_image, target, c)                    
                     attack_success = (loss - l2dist <= 0)
+                    overall_attack_success = overall_attack_success or attack_success
                 
                 # Update depending on attack success:
                 if attack_success:
+                    logger.debug('Margin Loss <= 0 --> Attack Success!')
                     if l2dist < best_l2dist:
+                        logger.debug('New best L2Dist: %f (previous=%f)', l2dist, best_l2dist)
                         best_l2dist = l2dist
                         best_adv_image = adv_image
-                        
+                
+                if overall_attack_success:
                     c_double = False
                     c = (c_lower_bound + c) / 2
                 else:
@@ -301,7 +338,7 @@ class CarliniL2Method(Attack):
         else:
             preds = np.argmax(self.classifier.predict(x), axis=1)
             rate = np.sum(adv_preds != preds) / x_adv.shape[0]
-        logger.info('Success rate of C&W attack: %.2f%%', rate)
+        logger.info('Success rate of C&W attack: %.2f%%', 100*rate)
 
         return x_adv
 
