@@ -21,6 +21,7 @@ class TestTotalVarMin(unittest.TestCase):
         self.assertTrue((preprocessed_x.shape == x.shape))
         self.assertTrue((preprocessed_x <= 1.0).all())
         self.assertTrue((preprocessed_x >= 0.0).all())
+        self.assertFalse((preprocessed_x == x).all())
 
     def test_three_channels(self):
         (train_features, train_labels), (_, _) = cifar10.load_data()
@@ -30,6 +31,7 @@ class TestTotalVarMin(unittest.TestCase):
         self.assertTrue((preprocessed_x.shape == x.shape))
         self.assertTrue((preprocessed_x <= 1.0).all())
         self.assertTrue((preprocessed_x >= 0.0).all())
+        self.assertFalse((preprocessed_x == x).all())
 
 
 if __name__ == '__main__':
