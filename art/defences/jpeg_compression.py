@@ -31,7 +31,7 @@ class JpegCompression(Preprocessor):
         self._is_fitted = True
         self.set_params(quality=quality, channel_index=channel_index)
 
-    def __call__(self, x, y=None, quality=None):
+    def __call__(self, x, y=None, quality=None, clip_values=(0, 1)):
         """
         Apply jpeg compression to sample `x`.
 
@@ -91,6 +91,8 @@ class JpegCompression(Preprocessor):
         # Swap channel index
         if self.channel_index < 3:
             x_ = np.swapaxes(x_, self.channel_index, 3)
+
+        x_ = np.clip(x_, clip_values[0], clip_values[1])
 
         return x_
 
