@@ -120,8 +120,9 @@ class JpegCompression(Preprocessor):
 
         if type(self.channel_index) is not int or self.channel_index <= 0:
             logger.error('Data channel must be a positive integer. The batch dimension is not a valid channel.')
-            raise ValueError('Data channel must be a positive integer. The batch dimension is not a valid channel.')
+            raise ValueError('Image quality must be a positive integer and smaller than 101.')
 
         return True
+
 
 
