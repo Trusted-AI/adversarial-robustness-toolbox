@@ -59,6 +59,7 @@ class ActivationDefence(PoisonFilteringDefence):
         :param kwargs: a dictionary of defence-specific parameters
         :type kwargs: `dict`
         :return: JSON object with confusion matrix
+        :rtype: `jsonObject`
         """
         self.set_params(**kwargs)
 
@@ -139,7 +140,8 @@ class ActivationDefence(PoisonFilteringDefence):
 
         :param kwargs: a dictionary of cluster-analysis-specific parameters
         :type kwargs: `dict`
-        :return: Assigned_clean_by_class, an array of arrays that contains what data points where classified as clean.
+        :return: assigned_clean_by_class, an array of arrays that contains what data points where classified as clean.
+        :rtype: `ndarray`
         """
         self.set_params(**kwargs)
 
@@ -169,8 +171,9 @@ class ActivationDefence(PoisonFilteringDefence):
         :param kwargs: a dictionary of cluster-analysis-specific parameters
         :type kwargs: `dict`
 
-        :return: Array with sprite images sprites_by_class, where sprites_by_class[i][j] contains the sprite of
+        :return: sprites_by_class: Array with sprite images sprites_by_class, where sprites_by_class[i][j] contains the sprite of
         class i cluster j.
+        :rtype: sprites_by_class: `ndarray`
         """
         self.set_params(**kwargs)
 

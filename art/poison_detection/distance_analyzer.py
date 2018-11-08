@@ -34,7 +34,8 @@ class DistanceAnalyzer(ClusteringAnalyzer):
         :param kwargs: a dictionary of analysis-specific parameters
         :type kwargs: `dict`
         :return: all_assigned_clean: array where all_assigned_clean[i] is a 1D boolean array indicating whether
-        a given data point was determined to be clean (as opposed to poisonous)
+        a given data point was determined to be clean (as opposed to poisonous).
+        :rtype: all_assigned_clean `ndarray`
         """
         self.set_params(**kwargs)
 

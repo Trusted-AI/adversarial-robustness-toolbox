@@ -107,13 +107,16 @@ def main():
     sprites_by_class = defence.visualize_clusters(x_train, 'mnist_poison_demo')
     # Show plots for clusters of class 5
     n_class = 5
-    import matplotlib.pyplot as plt
-    plt.imshow(sprites_by_class[n_class][0])
-    plt.title("Class " + str(n_class) + " cluster: 0")
-    plt.show()
-    plt.imshow(sprites_by_class[n_class][1])
-    plt.title("Class " + str(n_class) + " cluster: 1")
-    plt.show()
+    try:
+        import matplotlib.pyplot as plt
+        plt.imshow(sprites_by_class[n_class][0])
+        plt.title("Class " + str(n_class) + " cluster: 0")
+        plt.show()
+        plt.imshow(sprites_by_class[n_class][1])
+        plt.title("Class " + str(n_class) + " cluster: 1")
+        plt.show()
+    except:
+        print("matplotlib not installed. For this reason, cluster visualization was not displayed")
 
     # Try again using distance analysis this time:
     print("------------------- Results using distance metric -------------------")
@@ -252,6 +255,7 @@ def add_pattern_bd(x, distance=2, pixel_value=1):
     else:
         raise RuntimeError('Do not support numpy arrays of shape ' + str(shape))
     return x
+
 
 if __name__ == '__main__':
     main()
