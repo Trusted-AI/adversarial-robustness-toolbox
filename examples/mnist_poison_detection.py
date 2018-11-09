@@ -17,6 +17,7 @@ from art.classifiers import KerasClassifier
 from art.utils import load_mnist, preprocess
 from art.poison_detection import ActivationDefence
 import pprint
+import json
 
 
 def main():
@@ -96,11 +97,26 @@ def main():
     is_clean = (is_poison_train == 0)
     confusion_matrix = defence.evaluate_defence(is_clean)
     print("Evaluation defence results for size-based metric: ")
-    pprint.pprint(confusion_matrix)
+    jsonObject = json.loads(confusion_matrix)
+    for label in jsonObject:
+        print(label)
+        pprint.pprint(jsonObject[label])
 
     # Visualize clusters:
     print("Visualize clusters")
-    defence.visualize_clusters(x_train, 'mnist_poison_demo')
+    sprites_by_class = defence.visualize_clusters(x_train, 'mnist_poison_demo')
+    # Show plots for clusters of class 5
+    n_class = 5
+    try:
+        import matplotlib.pyplot as plt
+        plt.imshow(sprites_by_class[n_class][0])
+        plt.title("Class " + str(n_class) + " cluster: 0")
+        plt.show()
+        plt.imshow(sprites_by_class[n_class][1])
+        plt.title("Class " + str(n_class) + " cluster: 1")
+        plt.show()
+    except:
+        print("matplotlib not installed. For this reason, cluster visualization was not displayed")
 
     # Try again using distance analysis this time:
     print("------------------- Results using distance metric -------------------")
@@ -108,7 +124,10 @@ def main():
     defence.detect_poison(n_clusters=2, ndims=10, reduce="PCA", cluster_analysis='distance')
     confusion_matrix = defence.evaluate_defence(is_clean)
     print("Evaluation defence results for distance-based metric: ")
-    pprint.pprint(confusion_matrix)
+    jsonObject = json.loads(confusion_matrix)
+    for label in jsonObject:
+        print(label)
+        pprint.pprint(jsonObject[label])
 
     # Other ways to invoke the defence:
     defence.cluster_activations(n_clusters=2, ndims=10, reduce='PCA')
