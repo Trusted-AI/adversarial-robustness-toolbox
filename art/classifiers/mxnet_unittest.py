@@ -81,6 +81,13 @@ class TestMXClassifier(unittest.TestCase):
         # Assert gradient computed for the same class on same input are equal
         self.assertAlmostEqual(np.sum(grads_all[:, 3] - grads), 0, places=6)
 
+        # Test a set of gradients label = array
+        labels = np.random.randint(5, size=NB_TEST)
+        grads = self.classifier.class_gradient(x_test, label=labels)
+
+        self.assertTrue(np.array(grads.shape == (NB_TEST, 1, 1, 28, 28)).all())
+        self.assertTrue(np.sum(grads) != 0)
+
     def test_loss_gradient(self):
         # Get MNIST
         (_, _), (x_test, y_test) = self.mnist
