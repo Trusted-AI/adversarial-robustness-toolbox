@@ -116,3 +116,39 @@ class MeanClassDist(Feature):
         return np.stack(dists_).T
 
 
+class AttentionMap(Feature):
+    """
+    This feature estimates the pixels with highest influence on the prediction.
+    """
+    def __init__(self, classifier, window_width = 8, strides = 4):
+        """
+
+        :param classifier: ART classifier
+        :param window_width: width of the grey-path window
+        :param strides: stride for the runnning window
+        """
+        super().__init__(classifier)
+        self.window_width = window_width
+        self.strides = strides
+
+    def extract(self, x):
+        """
+        :param x: Sample input with shape as expected by the model.
+        :return: mean class distance for the activations at layer=layer_id
+        :rtype: `np.ndarray`
+        """
+        predictions = []
+        for image in x:
+            images = []
+            for i in range(0, image.shape[0], self.strides):
+                for j in range(0, image.shape[1], self.strides):
+                    img = np.copy(image)
+                    start_x = np.maximum(0, i - self.window_width + 1)
+                    end_x = np.minimum(image.shape[0], i + self.window_width)
+                    start_y = np.maximum(0, j - self.window_width + 1)
+                    end_y = np.minimum(image.shape[1], j + self.window_width)
+                    img[start_x:end_x,start_y:end_y,:] = 0.5
+                    images.append(img)
+            predictions.append(self.classifier.predict(np.array(images)))
+        return np.array(predictions).reshape((x.shape[0], np.arange(0, image.shape[0], self.strides).shape[0], np.arange(0, image.shape[1], self.strides).shape[0], -1))
+
