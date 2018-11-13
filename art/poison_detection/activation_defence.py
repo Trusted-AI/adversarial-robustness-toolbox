@@ -59,6 +59,7 @@ class ActivationDefence(PoisonFilteringDefence):
         :param kwargs: a dictionary of defence-specific parameters
         :type kwargs: `dict`
         :return: JSON object with confusion matrix
+        :rtype: `jsonObject`
         """
         self.set_params(**kwargs)
 
@@ -139,7 +140,8 @@ class ActivationDefence(PoisonFilteringDefence):
 
         :param kwargs: a dictionary of cluster-analysis-specific parameters
         :type kwargs: `dict`
-        :return: Assigned_clean_by_class, an array of arrays that contains what data points where classified as clean.
+        :return: assigned_clean_by_class, an array of arrays that contains what data points where classified as clean.
+        :rtype: `ndarray`
         """
         self.set_params(**kwargs)
 
@@ -155,15 +157,23 @@ class ActivationDefence(PoisonFilteringDefence):
                                                                      separated_activations=self.red_activations_by_class)
         return self.assigned_clean_by_class
 
-    def visualize_clusters(self, x_raw, folder='.', **kwargs):
+    def visualize_clusters(self, x_raw, save=True, folder='.', **kwargs):
         """
-        This function that stores a sprite (mosaic) per cluster in DATA_PATH.
+        This function creates the sprite/mosaic visualization for clusters. When save=True,
+        it also stores a sprite (mosaic) per cluster in DATA_PATH.
 
+        :param x_raw: Images used to train the classifier (before pre-processing)
+        :type x_raw: `np.darray`
+        :param save: Boolean specifying if image should be saved
+        :type  save: `bool`
+        :param folder: Directory where the sprites will be saved inside DATA_PATH folder
+        :type folder: `str`
         :param kwargs: a dictionary of cluster-analysis-specific parameters
         :type kwargs: `dict`
-        :param x_raw: Images used to train the classifier (before pre-processing)
-        :param folder: Directory where the sprites will be saved inside DATA_PATH folder
-        :return: None
+
+        :return: sprites_by_class: Array with sprite images sprites_by_class, where sprites_by_class[i][j] contains the sprite of
+        class i cluster j.
+        :rtype: sprites_by_class: `ndarray`
         """
         self.set_params(**kwargs)
 
@@ -179,13 +189,18 @@ class ActivationDefence(PoisonFilteringDefence):
                 x_raw_by_cluster[n_class][assigned_cluster].append(x_raw_by_class[n_class][j])
 
         # Now create sprites:
+        sprites_by_class = [[[] for x in range(self.nb_clusters)] for y in range(self.classifier.nb_classes)]
         for i, class_i in enumerate(x_raw_by_cluster):
             for j, images_cluster in enumerate(class_i):
                 title = 'Class_' + str(i) + '_cluster_' + str(j) + '_clusterSize_' + str(len(images_cluster))
                 f_name = title + '.png'
                 f_name = os.path.join(folder, f_name)
                 sprite = create_sprite(images_cluster)
-                save_image(sprite, f_name)
+                if save:
+                    save_image(sprite, f_name)
+                sprites_by_class[i][j] = sprite
+
+        return sprites_by_class
 
     def set_params(self, **kwargs):
         """
