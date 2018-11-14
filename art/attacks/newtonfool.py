@@ -69,6 +69,7 @@ class NewtonFool(Attack):
 
                 # Compute the gradients and norm
                 grads = self.classifier.class_gradient(batch, label=l, logits=False)
+                grads = np.squeeze(grads, axis=1)
                 norm_grad = np.linalg.norm(np.reshape(grads, (batch.shape[0], -1)), axis=1)
 
                 # Theta
