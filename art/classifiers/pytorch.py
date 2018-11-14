@@ -225,13 +225,15 @@ class PyTorchClassifier(Classifier):
         self._model.zero_grad()
         if label is None:
             for i in range(self.nb_classes):
-                torch.autograd.backward(preds[:, i], torch.Tensor([1.] * len(preds[:, 0])), retain_graph=True)
+                torch.autograd.backward(preds[:, i], torch.Tensor([1.] * len(preds[:, 0])).to(self._device),
+                                        retain_graph=True)
 
             grads = np.swapaxes(np.array(grads), 0, 1)
             grads = self._apply_processing_gradient(grads)
 
         elif isinstance(label, (int, np.integer)):
-            torch.autograd.backward(preds[:, label], torch.Tensor([1.] * len(preds[:, 0])), retain_graph=True)
+            torch.autograd.backward(preds[:, label], torch.Tensor([1.] * len(preds[:, 0])).to(self._device),
+                                    retain_graph=True)
 
             grads = np.swapaxes(np.array(grads), 0, 1)
             grads = self._apply_processing_gradient(grads)
@@ -239,7 +241,8 @@ class PyTorchClassifier(Classifier):
         else:
             unique_label = list(np.unique(label))
             for i in unique_label:
-                torch.autograd.backward(preds[:, i], torch.Tensor([1.] * len(preds[:, 0])), retain_graph=True)
+                torch.autograd.backward(preds[:, i], torch.Tensor([1.] * len(preds[:, 0])).to(self._device),
+                                        retain_graph=True)
 
             grads = np.swapaxes(np.array(grads), 0, 1)
             lst = [unique_label.index(i) for i in label]
