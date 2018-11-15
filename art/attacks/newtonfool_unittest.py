@@ -17,7 +17,7 @@ from art.utils import load_mnist
 
 logger = logging.getLogger('testLogger')
 
-BATCH_SIZE, NB_TRAIN, NB_TEST = 100, 1000, 10000
+BATCH_SIZE, NB_TRAIN, NB_TEST = 100, 1000, 100
 
 
 class Model(nn.Module):
@@ -85,7 +85,7 @@ class TestNewtonFool(unittest.TestCase):
 
         # Attack
         import time
-        nf = NewtonFool(tfc, max_iter=50)
+        nf = NewtonFool(tfc, max_iter=5)
 
         print("Test Tensorflow....")
         starttime = time.clock()
@@ -98,15 +98,15 @@ class TestNewtonFool(unittest.TestCase):
         endtime = time.clock()
         print(10, endtime - starttime)
 
-        starttime = time.clock()
-        x_test_adv = nf.generate(x_test, batch_size=100)
-        endtime = time.clock()
-        print(100, endtime - starttime)
-
-        starttime = time.clock()
-        x_test_adv = nf.generate(x_test, batch_size=1000)
-        endtime = time.clock()
-        print(1000, endtime - starttime)
+        # starttime = time.clock()
+        # x_test_adv = nf.generate(x_test, batch_size=100)
+        # endtime = time.clock()
+        # print(100, endtime - starttime)
+        #
+        # starttime = time.clock()
+        # x_test_adv = nf.generate(x_test, batch_size=1000)
+        # endtime = time.clock()
+        # print(1000, endtime - starttime)
 
         self.assertFalse((x_test == x_test_adv).all())
 
@@ -141,7 +141,7 @@ class TestNewtonFool(unittest.TestCase):
 
         # Attack
         import time
-        nf = NewtonFool(krc, max_iter=50)
+        nf = NewtonFool(krc, max_iter=5)
 
         print("Test Keras....")
         starttime = time.clock()
@@ -154,15 +154,15 @@ class TestNewtonFool(unittest.TestCase):
         endtime = time.clock()
         print(10, endtime - starttime)
 
-        starttime = time.clock()
-        x_test_adv = nf.generate(x_test, batch_size=100)
-        endtime = time.clock()
-        print(100, endtime - starttime)
-
-        starttime = time.clock()
-        x_test_adv = nf.generate(x_test, batch_size=1000)
-        endtime = time.clock()
-        print(1000, endtime - starttime)
+        # starttime = time.clock()
+        # x_test_adv = nf.generate(x_test, batch_size=100)
+        # endtime = time.clock()
+        # print(100, endtime - starttime)
+        #
+        # starttime = time.clock()
+        # x_test_adv = nf.generate(x_test, batch_size=1000)
+        # endtime = time.clock()
+        # print(1000, endtime - starttime)
 
         self.assertFalse((x_test == x_test_adv).all())
 
@@ -196,7 +196,7 @@ class TestNewtonFool(unittest.TestCase):
 
         # Attack
         import time
-        nf = NewtonFool(ptc, max_iter=50)
+        nf = NewtonFool(ptc, max_iter=5)
 
         print("Test Pytorch....")
         starttime = time.clock()
@@ -209,15 +209,15 @@ class TestNewtonFool(unittest.TestCase):
         endtime = time.clock()
         print(10, endtime - starttime)
 
-        starttime = time.clock()
-        x_test_adv = nf.generate(x_test, batch_size=100)
-        endtime = time.clock()
-        print(100, endtime - starttime)
-
-        starttime = time.clock()
-        x_test_adv = nf.generate(x_test, batch_size=1000)
-        endtime = time.clock()
-        print(1000, endtime - starttime)
+        # starttime = time.clock()
+        # x_test_adv = nf.generate(x_test, batch_size=100)
+        # endtime = time.clock()
+        # print(100, endtime - starttime)
+        #
+        # starttime = time.clock()
+        # x_test_adv = nf.generate(x_test, batch_size=1000)
+        # endtime = time.clock()
+        # print(1000, endtime - starttime)
 
         self.assertFalse((x_test == x_test_adv).all())
 
