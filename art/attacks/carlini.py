@@ -34,8 +34,8 @@ class CarliniL2Method(Attack):
         :type confidence: `float`
         :param targeted: Should the attack target one specific class.
         :type targeted: `bool`
-        :param learning_rate: The learning rate for the attack algorithm. Smaller values produce better results but are
-                slower to converge.
+        :param learning_rate: The initial learning rate for the attack algorithm. Smaller values produce better results
+                but are slower to converge.
         :type learning_rate: `float`
         :param binary_search_steps: number of times to adjust constant with binary search (positive value).
         :type binary_search_steps: `int`
@@ -349,7 +349,7 @@ class CarliniL2Method(Attack):
                from the original input, but classified with higher confidence as the target class.
         :type confidence: `float`
         :param targeted: Should the attack target one specific class
-        :type targetd: `bool`
+        :type targeted: `bool`
         :param learning_rate: The learning rate for the attack algorithm. Smaller values produce better results but are
                slower to converge.
         :type learning_rate: `float`
@@ -371,6 +371,307 @@ class CarliniL2Method(Attack):
 
         if type(self.binary_search_steps) is not int or self.binary_search_steps < 0:
             raise ValueError("The number of binary search steps must be a non-negative integer.")
+
+        if type(self.max_iter) is not int or self.max_iter < 0:
+            raise ValueError("The number of iterations must be a non-negative integer.")
+            
+        if type(self.max_halving) is not int or self.max_halving < 1:
+            raise ValueError("The number of halving steps must be an integer greater than zero.")
+            
+        if type(self.max_doubling) is not int or self.max_doubling < 1:
+            raise ValueError("The number of doubling steps must be an integer greater than zero.")
+
+        return True
+
+
+class CarliniL0Method(Attack):
+    """
+    This is a modified version of the L_2 optimized attack of Carlini and Wagner (2016). It controls the L_0
+    norm, i.e. the maximum perturbation applied to each pixel.
+    """
+    attack_params = Attack.attack_params + ['confidence', 'targeted', 'learning_rate', 'max_iter',
+                                            'max_halving', 'max_doubling', 'eps']
+
+    def __init__(self, classifier, confidence=0.0, targeted=True, learning_rate=0.01,
+                 max_iter=10, max_halving=5, max_doubling=5, eps=0.3):
+        """
+        Create a Carlini L_0 attack instance.
+
+        :param classifier: A trained model.
+        :type classifier: :class:`Classifier`
+        :param confidence: Confidence of adversarial examples: a higher value produces examples that are farther away,
+                from the original input, but classified with higher confidence as the target class.
+        :type confidence: `float`
+        :param targeted: Should the attack target one specific class.
+        :type targeted: `bool`
+        :param learning_rate: The initial learning rate for the attack algorithm. Smaller values produce better 
+                results but are slower to converge.
+        :type learning_rate: `float`
+        :param max_iter: The maximum number of iterations.
+        :type max_iter: `int`
+        :param max_halving: Maximum number of halving steps in the line search optimization.
+        :type max_halving: `int`
+        :param max_doubling: Maximum number of doubling steps in the line search optimization.
+        :type max_doubling: `int`
+        :param eps: An upper bound for the L_0 norm of the adversarial perturbation.
+        :type eps: `float`
+        """
+        super(CarliniL0Method, self).__init__(classifier)
+
+        kwargs = {'confidence': confidence,
+                  'targeted': targeted,
+                  'learning_rate': learning_rate,
+                  'max_iter': max_iter,
+                  'max_halving': max_halving,
+                  'max_doubling': max_doubling,
+                  'eps': eps
+                  }
+        assert self.set_params(**kwargs)
+
+        # There is one internal hyperparameter:
+        # Smooth arguments of arctanh by multiplying with this constant to avoid division by zero:
+        self._tanh_smoother = 0.999999
+    
+    def _loss(self, x_adv, target):    
+        """
+        Compute the objective function value.
+
+        :param x_adv: An array with the adversarial input.
+        :type x_adv: `np.ndarray`
+        :param target: An array with the target class (one-hot encoded).
+        :type target: `np.ndarray`
+        :return: A tuple holding the current logits and overall loss.
+        :rtype: `(float, float)`
+        """    
+        z = self.classifier.predict(np.array([x_adv], dtype=NUMPY_DTYPE), logits=True)[0]
+        z_target = np.sum(z * target)
+        z_other = np.max(z * (1 - target) + (np.min(z) - 1) * target)
+        
+        if self.targeted:
+            # if targeted, optimize for making the target class most likely
+            loss = max(z_other - z_target + self.confidence, 0)
+        else:
+            # if untargeted, optimize for making any other class most likely
+            loss = max(z_target - z_other + self.confidence, 0)
+
+        return z, loss
+    
+    def _loss_gradient(self, z, target, x_adv, x_adv_tanh, clip_min, clip_max):  
+        """
+        Compute the gradient of the loss function.
+
+        :param z: An array with the current logits.
+        :type z: `np.ndarray`
+        :param target: An array with the target class (one-hot encoded).
+        :type target: `np.ndarray`
+        :param x_adv: An array with the adversarial input.
+        :type x_adv: `np.ndarray`
+        :param x_adv_tanh: An array with the adversarial input in tanh space.
+        :type x_adv_tanh: `np.ndarray`
+        :param clip_min: Minimum clipping values.
+        :type clip_min: `np.ndarray`
+        :param clip_max: Maximum clipping values.
+        :type clip_max: `np.ndarray`
+        :return: An array with the gradient of the loss function.
+        :type target: `np.ndarray`
+        """  
+        if self.targeted:
+            i_sub, i_add = np.argmax(target), np.argmax(z * (1 - target) + (np.min(z) - 1) * target)
+        else:
+            i_add, i_sub = np.argmax(target), np.argmax(z * (1 - target) + (np.min(z) - 1) * target)
+        
+        loss_gradient = self.classifier.class_gradient(np.array([x_adv], dtype=NUMPY_DTYPE), label=i_add,
+                                                       logits=True)[0]
+        loss_gradient -= self.classifier.class_gradient(np.array([x_adv], dtype=NUMPY_DTYPE), label=i_sub,
+                                                        logits=True)[0]
+                                                        
+        loss_gradient *= (clip_max - clip_min) 
+        loss_gradient *= (1 - np.square(np.tanh(x_adv_tanh))) / (2 * self._tanh_smoother)
+        
+        return loss_gradient[0]
+
+    def _original_to_tanh(self, x_original, clip_min, clip_max):
+        """
+        Transform input from original to tanh space.
+
+        :param x_original: An array with the input to be transformed.
+        :type x_original: `np.ndarray`
+        :param clip_min: Minimum clipping values.
+        :type clip_min: `np.ndarray`
+        :param clip_max: Maximum clipping values.
+        :type clip_max: `np.ndarray`
+        :return: An array holding the transformed input.
+        :rtype: `np.ndarray`
+        """    
+        x_tanh = np.clip(x_original, clip_min, clip_max)
+        x_tanh = (x_tanh - clip_min) / (clip_max - clip_min)
+        x_tanh = np.arctanh(((x_tanh * 2) - 1) * self._tanh_smoother)
+        return x_tanh
+        
+    def _tanh_to_original(self, x_tanh, clip_min, clip_max):
+        """
+        Transform input from tanh to original space.
+
+        :param x_tanh: An array with the input to be transformed.
+        :type x_tanh: `np.ndarray`
+        :param clip_min: Minimum clipping values.
+        :type clip_min: `np.ndarray`
+        :param clip_max: Maximum clipping values.
+        :type clip_max: `np.ndarray`
+        :return: An array holding the transformed input.
+        :rtype: `np.ndarray`
+        """        
+        x_original = (np.tanh(x_tanh) / self._tanh_smoother + 1) / 2
+        return x_original * (clip_max - clip_min) + clip_min
+    
+    def generate(self, x, **kwargs):
+        """
+        Generate adversarial samples and return them in an array.
+
+        :param x: An array with the original inputs to be attacked.
+        :type x: `np.ndarray`
+        :param y: If `self.targeted` is true, then `y_val` represents the target labels. Otherwise, the targets are
+                the original class labels.
+        :type y: `np.ndarray`
+        :return: An array holding the adversarial examples.
+        :rtype: `np.ndarray`
+        """        
+        x_adv = x.astype(NUMPY_DTYPE)
+
+        # Parse and save attack-specific parameters
+        params_cpy = dict(kwargs)
+        y = params_cpy.pop(str('y'), None)
+        self.set_params(**params_cpy)
+
+        # Assert that, if attack is targeted, y_val is provided:
+        if self.targeted and y is None:
+            raise ValueError('Target labels `y` need to be provided for a targeted attack.')
+
+        # No labels provided, use model prediction as correct class
+        if y is None:
+            y = get_labels_np_array(self.classifier.predict(x, logits=False))
+
+        for j, (ex, target) in enumerate(zip(x_adv, y)):        
+            logger.debug('Processing sample %i out of %i', j, x_adv.shape[0])
+                        
+            image = ex.copy()
+                       
+            (clip_min_per_pixel, clip_max_per_pixel) = self.classifier.clip_values
+            clip_min = np.clip(image - self.eps, clip_min_per_pixel, clip_max_per_pixel)
+            clip_max = np.clip(image + self.eps, clip_min_per_pixel, clip_max_per_pixel)           
+                               
+            # The optimization is performed in tanh space to keep the
+            # adversarial images bounded from clip_min and clip_max. 
+            image_tanh = self._original_to_tanh(image, clip_min, clip_max)
+                                       
+            # Initialize perturbation in tanh space:
+            adv_image = image
+            adv_image_tanh = image_tanh
+            z, loss = self._loss(image, adv_image, target)
+            attack_success = (loss <= 0)
+            
+            # Initialize learning rate:
+            lr = self.learning_rate
+                               
+            for it in range(self.max_iter):  
+                logger.debug('Iteration step %i out of %i', it, self.max_iter)
+                logger.debug('Loss: %f', loss)
+                    
+                if attack_success:
+                    break
+                                                      
+                # compute gradient:
+                logger.debug('Compute loss gradient')
+                perturbation_tanh = -self._loss_gradient(z, target, image, adv_image, adv_image_tanh, 
+                                                         clip_min, clip_max)
+                    
+                # perform line search to optimize perturbation                     
+                # first, halve the learning rate until perturbation actually decreases the loss:                      
+                prev_loss = loss
+                best_loss = loss
+                best_lr = 0
+                    
+                halving = 0
+                while loss >= prev_loss and halving < self.max_halving:
+                    logger.debug('Apply gradient with learning rate %f (halving=%i)', lr, halving)
+                    new_adv_image_tanh = adv_image_tanh + lr * perturbation_tanh
+                    new_adv_image = self._tanh_to_original(new_adv_image_tanh, clip_min, clip_max)
+                    _, loss = self._loss(image, new_adv_image, target) 
+                    logger.debug('New Loss: %f', loss)      
+                    if loss < best_loss:
+                        best_loss = loss
+                        best_lr = lr
+                    lr /= 2
+                    halving += 1                        
+                lr *= 2
+                    
+                # if no halving was actually required, double the learning rate as long as this
+                # decreases the loss:
+                if halving == 1 and loss <= prev_loss:
+                    doubling = 0
+                    while loss <= prev_loss and doubling < self.max_doubling:  
+                        prev_loss = loss
+                        lr *= 2     
+                        logger.debug('Apply gradient with learning rate %f (doubling=%i)', lr, doubling)
+                        doubling += 1
+                        new_adv_image_tanh = adv_image_tanh + lr * perturbation_tanh
+                        new_adv_image = self._tanh_to_original(new_adv_image_tanh, clip_min, clip_max)
+                        _, loss = self._loss(image, new_adv_image, target)                            
+                        logger.debug('New Loss: %f', loss)   
+                        if loss < best_loss:
+                            best_loss = loss
+                            best_lr = lr            
+                    lr /= 2
+                    
+                if best_lr > 0:
+                    logger.debug('Finally apply gradient with learning rate %f', best_lr)
+                    # apply the optimal learning rate that was found and update the loss:
+                    adv_image_tanh = adv_image_tanh + best_lr * perturbation_tanh
+                    adv_image = self._tanh_to_original(adv_image_tanh, clip_min, clip_max)
+                    
+                z, loss = self._loss(image, adv_image, target)                    
+                attack_success = (loss <= 0)
+                
+            # Update depending on attack success:
+            if attack_success:
+                logger.debug('Margin Loss <= 0 --> Attack Success!')
+                x_adv[j] = adv_image
+                                       
+        adv_preds = np.argmax(self.classifier.predict(x_adv), axis=1)
+        if self.targeted:
+            rate = np.sum(adv_preds == np.argmax(y, axis=1)) / x_adv.shape[0]
+        else:
+            preds = np.argmax(self.classifier.predict(x), axis=1)
+            rate = np.sum(adv_preds != preds) / x_adv.shape[0]
+        logger.info('Success rate of C&W attack: %.2f%%', 100*rate)
+
+        return x_adv
+
+    def set_params(self, **kwargs):
+        """Take in a dictionary of parameters and applies attack-specific checks before saving them as attributes.
+
+        :param confidence: Confidence of adversarial examples: a higher value produces examples that are farther away,
+               from the original input, but classified with higher confidence as the target class.
+        :type confidence: `float`
+        :param targeted: Should the attack target one specific class
+        :type targeted: `bool`
+        :param learning_rate: The learning rate for the attack algorithm. Smaller values produce better results but are
+               slower to converge.
+        :type learning_rate: `float`
+        :param max_iter: The maximum number of iterations.
+        :type max_iter: `int`
+        :param max_halving: Maximum number of halving steps in the line search optimization.
+        :type max_halving: `int`
+        :param max_doubling: Maximum number of doubling steps in the line search optimization.
+        :type max_doubling: `int`
+        :param eps: An upper bound for the L_0 norm of the adversarial perturbation.
+        :type eps: `float`
+        """
+        # Save attack-specific parameters
+        super(CarliniL0Method, self).set_params(**kwargs)
+
+        if self.eps <= 0:
+            raise ValueError("The eps parameter must be strictly positive.")
 
         if type(self.max_iter) is not int or self.max_iter < 0:
             raise ValueError("The number of iterations must be a non-negative integer.")
