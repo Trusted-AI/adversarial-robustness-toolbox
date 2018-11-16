@@ -22,6 +22,11 @@ Basic Iterative Method
 .. autoclass:: BasicIterativeMethod
    :members:
 
+Projected Gradient Descent
+--------------------------
+.. autoclass:: ProjectedGradientDescent
+   :members:
+
 Jacobian Saliency Map Attack
 ----------------------------
 .. autoclass:: SaliencyMapMethod
@@ -32,8 +37,8 @@ NewtonFool
 .. autoclass:: NewtonFool
    :members:
 
-Universarsal Perturbation Attack
---------------------------------
+Universal Perturbation Attack
+-----------------------------
 .. autoclass:: UniversalPerturbation
    :members:
 

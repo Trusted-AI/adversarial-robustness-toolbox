@@ -16,7 +16,8 @@ logger = logging.getLogger(__name__)
 
 class ActivationDefence(PoisonFilteringDefence):
     """
-    Class performing Activation Analysis Defence
+    Method from [Chen et al., 2018] performing poisoning detection based on activations clustering.
+    Paper link: https://arxiv.org/abs/1811.03728
     """
     defence_params = ['nb_clusters', 'clustering_method', 'nb_dims', 'reduce', 'cluster_analysis']
     valid_clustering = ['KMeans']
@@ -141,7 +142,7 @@ class ActivationDefence(PoisonFilteringDefence):
         :param kwargs: a dictionary of cluster-analysis-specific parameters
         :type kwargs: `dict`
         :return: assigned_clean_by_class, an array of arrays that contains what data points where classified as clean.
-        :rtype: `ndarray`
+        :rtype: `np.ndarray`
         """
         self.set_params(**kwargs)
 
@@ -170,10 +171,9 @@ class ActivationDefence(PoisonFilteringDefence):
         :type folder: `str`
         :param kwargs: a dictionary of cluster-analysis-specific parameters
         :type kwargs: `dict`
-
-        :return: sprites_by_class: Array with sprite images sprites_by_class, where sprites_by_class[i][j] contains the sprite of
-        class i cluster j.
-        :rtype: sprites_by_class: `ndarray`
+        :return: sprites_by_class: Array with sprite images sprites_by_class, where sprites_by_class[i][j] contains the
+                 sprite of class i cluster j.
+        :rtype: sprites_by_class: `np.ndarray`
         """
         self.set_params(**kwargs)
 
@@ -210,7 +210,7 @@ class ActivationDefence(PoisonFilteringDefence):
         :param nb_clusters: Number of clusters to be produced. Should be greater than 2.
         :type nb_clusters: `int`
         :param clustering_method: Clustering method to use
-        :type clustering_method: `string`
+        :type clustering_method: `str`
         :param nb_dims: Number of dimensions to project on
         :type nb_dims: `int`
         :param reduce: Reduction technique
@@ -237,7 +237,7 @@ class ActivationDefence(PoisonFilteringDefence):
 
     def _get_activations(self):
         """
-        Find activations from :class:Classifier
+        Find activations from :class:`Classifier`
         """
         logger.info('Getting activations')
 
