@@ -85,12 +85,24 @@ class TestTFClassifier(unittest.TestCase):
         # Get MNIST
         (_, _), (x_test, y_test) = self.mnist
 
-        # Test gradient
+        # Test all gradients label = None
         grads = self.classifier.class_gradient(x_test)
 
         self.assertTrue(np.array(grads.shape == (NB_TEST, 10, 28, 28, 1)).all())
         self.assertTrue(np.sum(grads) != 0)
-        tf.reset_default_graph()
+
+        # Test 1 gradient label = 5
+        grads = self.classifier.class_gradient(x_test, label=5)
+
+        self.assertTrue(np.array(grads.shape == (NB_TEST, 1, 28, 28, 1)).all())
+        self.assertTrue(np.sum(grads) != 0)
+
+        # Test a set of gradients label = array
+        label = np.random.randint(5, size=NB_TEST)
+        grads = self.classifier.class_gradient(x_test, label=label)
+
+        self.assertTrue(np.array(grads.shape == (NB_TEST, 1, 28, 28, 1)).all())
+        self.assertTrue(np.sum(grads) != 0)
 
     def test_loss_gradient(self):
         # Get MNIST
@@ -124,6 +136,20 @@ class TestTFClassifier(unittest.TestCase):
         self.assertTrue(self.classifier.get_activations(x_test, 3).shape == (20, 10))
         tf.reset_default_graph()
 
+    def test_save(self):
+        import os
+        import re
+
+        path = 'tmp'
+        filename = 'model.ckpt'
+        self.classifier.save(filename, path=path)
+        self.assertTrue(os.path.isfile(os.path.join(path, filename + '.meta')))
+        self.assertTrue(os.path.isfile(os.path.join(path, filename + '.index')))
+
+        # Remove saved files
+        for f in os.listdir(path):
+            if re.search(filename, f):
+                os.remove(os.path.join(path, f))
 
 if __name__ == '__main__':
     unittest.main()

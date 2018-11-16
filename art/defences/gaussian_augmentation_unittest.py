@@ -39,6 +39,13 @@ class TestGaussianAugmentation(unittest.TestCase):
         self.assertTrue(new_x.shape[1:] == x.shape[1:])
         self.assertTrue(new_y.shape[1:] == y.shape[1:])
 
+    def test_no_augmentation(self):
+        x = np.arange(12).reshape((4, 3))
+        ga = GaussianAugmentation(augmentation=False)
+        new_x = ga(x)
+        self.assertTrue(x.shape == new_x.shape)
+        self.assertFalse((x == new_x).all())
+
 
 if __name__ == '__main__':
     unittest.main()

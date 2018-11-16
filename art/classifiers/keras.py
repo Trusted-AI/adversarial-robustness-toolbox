@@ -84,6 +84,8 @@ class KerasClassifier(Classifier):
         else:
             preds = self._output
             loss = k.sparse_categorical_crossentropy(label_ph, self._output, from_logits=use_logits)
+        if preds == self._input:  # recent Tensorflow version does not allow a model with an output same as the input.
+            preds = k.identity(preds)
         loss_grads = k.gradients(loss, self._input)
 
         if k.backend() == 'tensorflow':
@@ -124,9 +126,11 @@ class KerasClassifier(Classifier):
 
         :param x: Sample input with shape as expected by the model.
         :type x: `np.ndarray`
-        :param label: Index of a specific per-class derivative. If `None`, then gradients for all
-                      classes will be computed.
-        :type label: `int`
+        :param label: Index of a specific per-class derivative. If an integer is provided, the gradient of that class
+                      output is computed for all samples. If multiple values as provided, the first dimension should
+                      match the batch size of `x`, and each value will be used as target for its corresponding sample in
+                      `x`. If `None`, then gradients for all classes will be computed for each sample.
+        :type label: `int` or `list`
         :param logits: `True` if the prediction should be done at the logits layer.
         :type logits: `bool`
         :return: Array of gradients of input features w.r.t. each class in the form
@@ -134,14 +138,27 @@ class KerasClassifier(Classifier):
                  `(batch_size, 1, input_shape)` when `label` parameter is specified.
         :rtype: `np.ndarray`
         """
-        if label is not None and label not in range(self._nb_classes):
-            raise ValueError('Label %s is out of range.' % label)
+        # Check value of label for computing gradients
+        if not (label is None or (isinstance(label, (int, np.integer)) and label in range(self.nb_classes))
+                or (type(label) is np.ndarray and len(label.shape) == 1 and (label < self.nb_classes).all()
+                    and label.shape[0] == x.shape[0])):
+            raise ValueError('Label %s is out of range.' % str(label))
 
         self._init_class_grads(label=label, logits=logits)
 
         x_ = self._apply_processing(x)
 
-        if label is not None:
+        if label is None:
+            # Compute the gradients w.r.t. all classes
+            if logits:
+                grads = np.swapaxes(np.array(self._class_grads_logits([x_])), 0, 1)
+            else:
+                grads = np.swapaxes(np.array(self._class_grads([x_])), 0, 1)
+
+            grads = self._apply_processing_gradient(grads)
+
+        elif isinstance(label, (int, np.integer)):
+            # Compute the gradients only w.r.t. the provided label
             if logits:
                 grads = np.swapaxes(np.array(self._class_grads_logits_idx[label]([x_])), 0, 1)
             else:
@@ -149,14 +166,19 @@ class KerasClassifier(Classifier):
 
             grads = self._apply_processing_gradient(grads)
             assert grads.shape == (x_.shape[0], 1) + self.input_shape
+
         else:
+            # For each sample, compute the gradients w.r.t. the indicated target class (possibly distinct)
+            unique_label = list(np.unique(label))
             if logits:
-                grads = np.swapaxes(np.array(self._class_grads_logits([x_])), 0, 1)
+                grads = np.array([self._class_grads_logits_idx[l]([x_]) for l in unique_label])
             else:
-                grads = np.swapaxes(np.array(self._class_grads([x_])), 0, 1)
+                grads = np.array([self._class_grads_idx[l]([x_]) for l in unique_label])
+            grads = np.swapaxes(np.squeeze(grads, axis=1), 0, 1)
+            lst = [unique_label.index(i) for i in label]
+            grads = np.expand_dims(grads[np.arange(len(grads)), lst], axis=1)
 
             grads = self._apply_processing_gradient(grads)
-            assert grads.shape == (x_.shape[0], self.nb_classes) + self.input_shape
 
         return grads
 
@@ -276,34 +298,48 @@ class KerasClassifier(Classifier):
         import keras.backend as k
         k.set_learning_phase(0)
 
-        if label is not None:
-            logger.debug('Computing class gradients for class %i.', label)
-            if logits:
-                if not hasattr(self, '_class_grads_logits_idx'):
-                    self._class_grads_logits_idx = [None for _ in range(self.nb_classes)]
-
-                if self._class_grads_logits_idx[label] is None:
-                    class_grads_logits = [k.gradients(self._preds_op[:, label], self._input)[0]]
-                    self._class_grads_logits_idx[label] = k.function([self._input], class_grads_logits)
-            else:
-                if not hasattr(self, '_class_grads_idx'):
-                    self._class_grads_idx = [None for _ in range(self.nb_classes)]
-
-                if self._class_grads_idx[label] is None:
-                    class_grads = [k.gradients(k.softmax(self._preds_op)[:, label], self._input)[0]]
-                    self._class_grads_idx[label] = k.function([self._input], class_grads)
+        if len(self._output.shape) == 2:
+            nb_outputs = self._output.shape[1]
         else:
+            raise ValueError('Unexpected output shape for classification in Keras model.')
+
+        if label is None:
             logger.debug('Computing class gradients for all %i classes.', self.nb_classes)
             if logits:
                 if not hasattr(self, '_class_grads_logits'):
                     class_grads_logits = [k.gradients(self._preds_op[:, i], self._input)[0]
-                                          for i in range(self.nb_classes)]
+                                          for i in range(nb_outputs)]
                     self._class_grads_logits = k.function([self._input], class_grads_logits)
             else:
                 if not hasattr(self, '_class_grads'):
                     class_grads = [k.gradients(k.softmax(self._preds_op)[:, i], self._input)[0]
-                                   for i in range(self.nb_classes)]
+                                   for i in range(nb_outputs)]
                     self._class_grads = k.function([self._input], class_grads)
+
+        else:
+            if type(label) is int:
+                unique_labels = [label]
+                logger.debug('Computing class gradients for class %i.', label)
+            else:
+                unique_labels = np.unique(label)
+                logger.debug('Computing class gradients for classes %s.', str(unique_labels))
+
+            if logits:
+                if not hasattr(self, '_class_grads_logits_idx'):
+                    self._class_grads_logits_idx = [None for _ in range(nb_outputs)]
+
+                for l in unique_labels:
+                    if self._class_grads_logits_idx[l] is None:
+                        class_grads_logits = [k.gradients(self._preds_op[:, l], self._input)[0]]
+                        self._class_grads_logits_idx[l] = k.function([self._input], class_grads_logits)
+            else:
+                if not hasattr(self, '_class_grads_idx'):
+                    self._class_grads_idx = [None for _ in range(nb_outputs)]
+
+                for l in unique_labels:
+                    if self._class_grads_idx[l] is None:
+                        class_grads = [k.gradients(k.softmax(self._preds_op)[:, l], self._input)[0]]
+                        self._class_grads_idx[l] = k.function([self._input], class_grads)
 
     def _get_layers(self):
         """
@@ -318,6 +354,31 @@ class KerasClassifier(Classifier):
         logger.info('Inferred %i hidden layers on Keras classifier.', len(layer_names))
 
         return layer_names
+
+    def save(self, filename, path=None):
+        """
+        Save a model to file in the format specific to the backend framework. For Keras, .h5 format is used.
+
+        :param filename: Name of the file where to store the model.
+        :type filename: `str`
+        :param path: Path of the folder where to store the model. If no path is specified, the model will be stored in
+                     the default data location of the library `DATA_PATH`.
+        :type path: `str`
+        :return: None
+        """
+        import os
+
+        if path is None:
+            from art import DATA_PATH
+            full_path = os.path.join(DATA_PATH, filename)
+        else:
+            full_path = os.path.join(path, filename)
+        folder = os.path.split(full_path)[0]
+        if not os.path.exists(folder):
+            os.makedirs(folder)
+
+        self._model.save(str(full_path))
+        logger.info('Model saved in path: %s.', full_path)
 
 
 def generator_fit(x, y, batch_size=128):

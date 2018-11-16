@@ -139,6 +139,39 @@ class TestKerasClassifier(unittest.TestCase):
         loss_grads = classifier.loss_gradient(x_test[:11], y_test[:11])
         self.assertTrue(loss_grads.shape == x_test[:11].shape)
 
+    def test_class_gradient(self):
+        (_, _), (x_test, y_test) = self.mnist
+        classifier = KerasClassifier((0, 1), self.model_mnist)
+
+        # Test all gradients label
+        grads = classifier.class_gradient(x_test)
+
+        self.assertTrue(np.array(grads.shape == (NB_TEST, 10, 28, 28, 1)).all())
+        self.assertTrue(np.sum(grads) != 0)
+
+        # Test 1 gradient label = 5
+        grads = classifier.class_gradient(x_test, label=5)
+
+        self.assertTrue(np.array(grads.shape == (NB_TEST, 1, 28, 28, 1)).all())
+        self.assertTrue(np.sum(grads) != 0)
+
+        # Test a set of gradients label = array
+        label = np.random.randint(5, size=NB_TEST)
+        grads = classifier.class_gradient(x_test, label=label)
+
+        self.assertTrue(np.array(grads.shape == (NB_TEST, 1, 28, 28, 1)).all())
+        self.assertTrue(np.sum(grads) != 0)
+
+    def test_loss_gradient(self):
+        (_, _), (x_test, y_test) = self.mnist
+        classifier = KerasClassifier((0, 1), self.model_mnist)
+
+        # Test gradient
+        grads = classifier.loss_gradient(x_test, y_test)
+
+        self.assertTrue(np.array(grads.shape == (NB_TEST, 28, 28, 1)).all())
+        self.assertTrue(np.sum(grads) != 0)
+
     def test_functional_model(self):
         self._test_functional_model(custom_activation=True)
         self._test_functional_model(custom_activation=False)
@@ -195,3 +228,15 @@ class TestKerasClassifier(unittest.TestCase):
 
         label = decode_predictions(classifier.predict(image))[0][0]
         self.assertEqual(label[1], 'Weimaraner')
+
+    def test_save(self):
+        import os
+
+        path = 'tmp'
+        filename = 'model.h5'
+        classifier = KerasClassifier((0, 1), model=self.model_mnist)
+        classifier.save(filename, path=path)
+        self.assertTrue(os.path.isfile(os.path.join(path, filename)))
+
+        # Remove saved file
+        os.remove(os.path.join(path, filename))

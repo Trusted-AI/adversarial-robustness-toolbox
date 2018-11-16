@@ -22,20 +22,20 @@ class TestLocalSpatialSmoothing(unittest.TestCase):
             self.assertTrue((smoothed_x == 1).all())
 
     def test_fix(self):
-        x = np.array([[[[1], [2], [3]], [[7], [8], [9]], [[4], [5], [6]]]])
+        x = np.array([[[[0.1], [0.2], [0.3]], [[0.7], [0.8], [0.9]], [[0.4], [0.5], [0.6]]]]).astype(np.float32)
 
         # Start to test
         preprocess = SpatialSmoothing()
         smooth_x = preprocess(x, window_size=3)
         self.assertTrue((smooth_x == np.array(
-            [[[[2], [3], [3]], [[4], [5], [6]], [[5], [6], [6]]]])).all())
+            [[[[0.2], [0.3], [0.3]], [[0.4], [0.5], [0.6]], [[0.5], [0.6], [0.6]]]]).astype(np.float32)).all())
 
         smooth_x = preprocess(x, window_size=1)
         self.assertTrue((smooth_x == x).all())
 
         smooth_x = preprocess(x, window_size=2)
         self.assertTrue((smooth_x == np.array(
-            [[[[1], [2], [3]], [[7], [7], [8]], [[7], [7], [8]]]])).all())
+            [[[[0.1], [0.2], [0.3]], [[0.7], [0.7], [0.8]], [[0.7], [0.7], [0.8]]]]).astype(np.float32)).all())
 
     def test_channels(self):
         x = np.arange(9).reshape(1, 1, 3, 3)
@@ -51,3 +51,4 @@ class TestLocalSpatialSmoothing(unittest.TestCase):
 
 if __name__ == '__main__':
     unittest.main()
+

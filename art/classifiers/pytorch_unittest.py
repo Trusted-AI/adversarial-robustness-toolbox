@@ -95,11 +95,24 @@ class TestPyTorchClassifier(unittest.TestCase):
         # Get MNIST
         (_, _), (x_test, y_test) = self.mnist
 
-        # Test gradient
+        # Test all gradients label = None
         ptc = self.module_classifier
         grads = ptc.class_gradient(x_test)
 
         self.assertTrue(np.array(grads.shape == (NB_TEST, 10, 1, 28, 28)).all())
+        self.assertTrue(np.sum(grads) != 0)
+
+        # Test 1 gradient label = 5
+        grads = ptc.class_gradient(x_test, label=5)
+
+        self.assertTrue(np.array(grads.shape == (NB_TEST, 1, 1, 28, 28)).all())
+        self.assertTrue(np.sum(grads) != 0)
+
+        # Test a set of gradients label = array
+        label = np.random.randint(5, size=NB_TEST)
+        grads = ptc.class_gradient(x_test, label=label)
+
+        self.assertTrue(np.array(grads.shape == (NB_TEST, 1, 1, 28, 28)).all())
         self.assertTrue(np.sum(grads) != 0)
 
     def test_class_gradient_target(self):

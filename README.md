@@ -26,13 +26,15 @@ The following **defence** methods are also supported:
 * Virtual adversarial training ([Miyato et al., 2015](https://arxiv.org/abs/1507.00677))
 * Gaussian data augmentation ([Zantedeschi et al., 2017](https://arxiv.org/abs/1707.06728))
 * Thermometer encoding ([Buckman et al., 2018](https://openreview.net/forum?id=S18Su--CW))
+* Total variance minimization ([Guo et al., 2018](https://openreview.net/forum?id=SyJ7ClWCb))
+* JPEG compression ([Dziugaite et al., 2016](https://arxiv.org/abs/1608.00853))
 
 ART also implements **detection** methods of adversarial samples:
 * Basic detector based on inputs
 * Detector trained on the activations of a specific layer
 
 The following **detector of poisoning attacks** is also supported:
-* Detector based on activations analysis
+* Detector based on activations analysis ([Chen et al., 2018](https://arxiv.org/abs/1811.03728))
 
 ## Setup
 
