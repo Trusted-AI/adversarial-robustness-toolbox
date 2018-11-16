@@ -7,7 +7,7 @@ import numpy as np
 
 from art import NUMPY_DTYPE
 from art.attacks.attack import Attack
-from art.utils import get_labels_np_array, random_sphere
+from art.utils import get_labels_np_array
 
 logger = logging.getLogger(__name__)
 
@@ -404,8 +404,8 @@ class CarliniL0Method(Attack):
         :type confidence: `float`
         :param targeted: Should the attack target one specific class.
         :type targeted: `bool`
-        :param learning_rate: The initial learning rate for the attack algorithm. Smaller values produce better results but are
-                slower to converge.
+        :param learning_rate: The initial learning rate for the attack algorithm. Smaller values produce better 
+                results but are slower to converge.
         :type learning_rate: `float`
         :param max_iter: The maximum number of iterations.
         :type max_iter: `int`
@@ -432,12 +432,10 @@ class CarliniL0Method(Attack):
         # Smooth arguments of arctanh by multiplying with this constant to avoid division by zero:
         self._tanh_smoother = 0.999999
     
-    def _loss(self, x, x_adv, target):    
+    def _loss(self, x_adv, target):    
         """
         Compute the objective function value.
 
-        :param x: An array with the original input.
-        :type x: `np.ndarray`
         :param x_adv: An array with the adversarial input.
         :type x_adv: `np.ndarray`
         :param target: An array with the target class (one-hot encoded).
@@ -458,7 +456,7 @@ class CarliniL0Method(Attack):
 
         return z, loss
     
-    def _loss_gradient(self, z, target, x, x_adv, x_adv_tanh, clip_min, clip_max):  
+    def _loss_gradient(self, z, target, x_adv, x_adv_tanh, clip_min, clip_max):  
         """
         Compute the gradient of the loss function.
 
@@ -466,8 +464,6 @@ class CarliniL0Method(Attack):
         :type z: `np.ndarray`
         :param target: An array with the target class (one-hot encoded).
         :type target: `np.ndarray`
-        :param x: An array with the original input.
-        :type x: `np.ndarray`
         :param x_adv: An array with the adversarial input.
         :type x_adv: `np.ndarray`
         :param x_adv_tanh: An array with the adversarial input in tanh space.
@@ -507,7 +503,6 @@ class CarliniL0Method(Attack):
         :return: An array holding the transformed input.
         :rtype: `np.ndarray`
         """    
-        # 
         x_tanh = np.clip(x_original, clip_min, clip_max)
         x_tanh = (x_tanh - clip_min) / (clip_max - clip_min)
         x_tanh = np.arctanh(((x_tanh * 2) - 1) * self._tanh_smoother)
@@ -542,7 +537,6 @@ class CarliniL0Method(Attack):
         :rtype: `np.ndarray`
         """        
         x_adv = x.astype(NUMPY_DTYPE)
-        #random_init = False
 
         # Parse and save attack-specific parameters
         params_cpy = dict(kwargs)
@@ -564,8 +558,7 @@ class CarliniL0Method(Attack):
                        
             (clip_min_per_pixel, clip_max_per_pixel) = self.classifier.clip_values
             clip_min = np.clip(image - self.eps, clip_min_per_pixel, clip_max_per_pixel)
-            clip_max = np.clip(image + self.eps, clip_min_per_pixel, clip_max_per_pixel)
-            
+            clip_max = np.clip(image + self.eps, clip_min_per_pixel, clip_max_per_pixel)           
                                
             # The optimization is performed in tanh space to keep the
             # adversarial images bounded from clip_min and clip_max. 
@@ -630,7 +623,7 @@ class CarliniL0Method(Attack):
                             best_lr = lr            
                     lr /= 2
                     
-                if best_lr >0:
+                if best_lr > 0:
                     logger.debug('Finally apply gradient with learning rate %f', best_lr)
                     # apply the optimal learning rate that was found and update the loss:
                     adv_image_tanh = adv_image_tanh + best_lr * perturbation_tanh
@@ -643,8 +636,7 @@ class CarliniL0Method(Attack):
             if attack_success:
                 logger.debug('Margin Loss <= 0 --> Attack Success!')
                 x_adv[j] = adv_image
-                           
-            
+                                       
         adv_preds = np.argmax(self.classifier.predict(x_adv), axis=1)
         if self.targeted:
             rate = np.sum(adv_preds == np.argmax(y, axis=1)) / x_adv.shape[0]
