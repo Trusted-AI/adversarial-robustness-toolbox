@@ -47,6 +47,7 @@ class SizeAnalyzer(ClusteringAnalyzer):
         :type kwargs: `dict`
         :return: all_assigned_clean: array where all_assigned_clean[i] is a 1D boolean array indicating whether
         a given data point was determined to be clean (as opposed to poisonous)
+        :rtype: all_assigned_clean: `ndarray`
         """
         all_assigned_clean = []
 

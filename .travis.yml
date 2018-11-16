@@ -9,12 +9,16 @@ matrix:
         env: KERAS_BACKEND=tensorflow TENSORFLOW_V=1.6.0
       - python: 2.7
         env: KERAS_BACKEND=tensorflow TENSORFLOW_V=1.7.0
+      - python: 2.7
+        env: KERAS_BACKEND=tensorflow TENSORFLOW_V=1.10.0
       - python: 3.5
         env: KERAS_BACKEND=tensorflow TENSORFLOW_V=1.5.0
       - python: 3.5
         env: KERAS_BACKEND=tensorflow TENSORFLOW_V=1.6.0
       - python: 3.5
         env: KERAS_BACKEND=tensorflow TENSORFLOW_V=1.7.0
+      - python: 3.5
+        env: KERAS_BACKEND=tensorflow TENSORFLOW_V=1.10.0
   exclude:
       - env:
 

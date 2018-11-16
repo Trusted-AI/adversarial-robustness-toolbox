@@ -101,8 +101,9 @@ def save_image(image, f_name):
     :return: `None`
     """
     file_name = os.path.join(DATA_PATH, f_name)
-    if not os.path.exists(os.path.split(file_name)[0]):
-        os.makedirs(os.path.split(file_name)[0])
+    folder = os.path.split(file_name)[0]
+    if not os.path.exists(folder):
+        os.makedirs(folder)
 
     from PIL import Image
     im = Image.fromarray(image)

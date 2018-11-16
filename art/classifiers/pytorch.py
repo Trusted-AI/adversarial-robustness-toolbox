@@ -80,6 +80,9 @@ class PyTorchClassifier(Classifier):
         self._device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
         self._model.to(self._device)
 
+    def _init_grads(self):
+        return -1
+
     def predict(self, x, logits=False, batch_size=128):
         """
         Perform prediction for a batch of inputs.
@@ -180,9 +183,11 @@ class PyTorchClassifier(Classifier):
 
         :param x: Sample input with shape as expected by the model.
         :type x: `np.ndarray`
-        :param label: Index of a specific per-class derivative. If `None`, then gradients for all
-                      classes will be computed.
-        :type label: `int`
+        :param label: Index of a specific per-class derivative. If an integer is provided, the gradient of that class
+                      output is computed for all samples. If multiple values as provided, the first dimension should
+                      match the batch size of `x`, and each value will be used as target for its corresponding sample in
+                      `x`. If `None`, then gradients for all classes will be computed for each sample.
+        :type label: `int` or `list`
         :param logits: `True` if the prediction should be done at the logits layer.
         :type logits: `bool`
         :return: Array of gradients of input features w.r.t. each class in the form
@@ -192,50 +197,79 @@ class PyTorchClassifier(Classifier):
         """
         import torch
 
-        if label is not None and label not in range(self._nb_classes):
+        if not ((label is None) or (isinstance(label, (int, np.integer)) and label in range(self._nb_classes)) or (
+                                type(label) is np.ndarray and len(label.shape) == 1 and (label < self._nb_classes).all()
+                and label.shape[0] == x.shape[0])):
             raise ValueError('Label %s is out of range.' % label)
 
         # Convert the inputs to Tensors
         x_ = torch.from_numpy(self._apply_processing(x)).to(self._device)
-        x_ = x_.float()
-        x_.requires_grad = True
+
+        # Compute gradient wrt what
+        layer_idx = self._init_grads()
+        if layer_idx < 0:
+            x_.requires_grad = True
 
         # Compute the gradient and return
         # Run prediction
         model_outputs = self._model(x_)
-        (logit_output, output) = (model_outputs[-2], model_outputs[-1])
 
+        # Set where to get gradient
+        if layer_idx >= 0:
+            input_grad = model_outputs[layer_idx]
+        else:
+            input_grad = x_
+
+        # Set where to get gradient from
+        (logit_output, output) = (model_outputs[-2], model_outputs[-1])
         if logits:
             preds = logit_output
         else:
             preds = output
 
-        # preds = self._forward_at(x_, self._logit_layer)
-        # if not logits:
-        #     preds = torch.nn.Softmax()(preds)
-
         # Compute the gradient
-        if label is not None:
-            self._model.zero_grad()
-            torch.autograd.backward(preds[:, label], torch.Tensor([1.] * len(preds[:, 0])), retain_graph=True)
-            grds = x_.grad.cpu().numpy().copy()
-            x_.grad.data.zero_()
+        grads = []
 
-            grds = np.expand_dims(self._apply_processing_gradient(grds), axis=1)
-            assert grds.shape == (x_.shape[0], 1) + self.input_shape
-        else:
-            grds = []
-            self._model.zero_grad()
+        def save_grad():
+            def hook(grad):
+                grads.append(grad.cpu().numpy().copy())
+                grad.data.zero_()
+
+            return hook
+
+        input_grad.register_hook(save_grad())
+
+        self._model.zero_grad()
+        if label is None:
             for i in range(self.nb_classes):
-                torch.autograd.backward(preds[:, i], torch.Tensor([1.] * len(preds[:, 0])), retain_graph=True)
-                grds.append(x_.grad.cpu().numpy().copy())
-                x_.grad.data.zero_()
+                torch.autograd.backward(preds[:, i], torch.Tensor([1.] * len(preds[:, 0])).to(self._device),
+                                        retain_graph=True)
 
-            grds = np.swapaxes(np.array(grds), 0, 1)
-            grds = self._apply_processing_gradient(grds)
-            assert grds.shape == (x_.shape[0], self.nb_classes) + self.input_shape
+            grads = np.swapaxes(np.array(grads), 0, 1)
+            grads = self._apply_processing_gradient(grads)
 
-        return grds
+        elif isinstance(label, (int, np.integer)):
+            torch.autograd.backward(preds[:, label], torch.Tensor([1.] * len(preds[:, 0])).to(self._device),
+                                    retain_graph=True)
+
+            grads = np.swapaxes(np.array(grads), 0, 1)
+            grads = self._apply_processing_gradient(grads)
+
+        else:
+            unique_label = list(np.unique(label))
+            for i in unique_label:
+                torch.autograd.backward(preds[:, i], torch.Tensor([1.] * len(preds[:, 0])).to(self._device),
+                                        retain_graph=True)
+
+            grads = np.swapaxes(np.array(grads), 0, 1)
+            lst = [unique_label.index(i) for i in label]
+            grads = grads[np.arange(len(grads)), lst]
+
+            grads = grads[None, ...]
+            grads = np.swapaxes(np.array(grads), 0, 1)
+            grads = self._apply_processing_gradient(grads)
+
+        return grads
 
     def loss_gradient(self, x, y):
         """
@@ -326,6 +360,19 @@ class PyTorchClassifier(Classifier):
             raise TypeError("Layer must be of type str or int")
 
         return model_outputs[layer_index].detach().cpu().numpy()
+
+    def save(self, filename, path=None):
+        """
+        Save a model to file in the format specific to the backend framework.
+
+        :param filename: Name of the file where to store the model.
+        :type filename: `str`
+        :param path: Path of the folder where to store the model. If no path is specified, the model will be stored in
+                     the default data location of the library `DATA_PATH`.
+        :type path: `str`
+        :return: None
+        """
+        raise NotImplementedError
 
     # def _forward_at(self, inputs, layer):
     #     """

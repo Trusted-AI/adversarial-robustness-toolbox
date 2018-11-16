@@ -65,7 +65,6 @@ class FeatureSqueezing(Preprocessor):
 
         max_value = np.rint(2 ** self.bit_depth - 1)
         res = (np.rint(x_ * max_value) / max_value) * (clip_values[1] - clip_values[0]) + clip_values[0]
-        assert (res <= clip_values[1]).all() and (res >= clip_values[0]).all()
 
         return res
 

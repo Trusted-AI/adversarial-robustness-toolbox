@@ -50,8 +50,9 @@ class DistanceAnalyzer(ClusteringAnalyzer):
         :type separated_clusters: `list`
         :param kwargs: a dictionary of analysis-specific parameters
         :type kwargs: `dict`
-        :return: all_assignments: array where all_assignments[i] is a 1D array indicating whether a given data point
-        was true positive = 0, true negative = 1, false positive = 2, or false negative = 3
+        :return: all_assigned_clean: array where all_assigned_clean[i] is a 1D boolean array indicating whether
+        a given data point was determined to be clean (as opposed to poisonous).
+        :rtype: all_assigned_clean `ndarray`
         """
         self.set_params(**kwargs)
 

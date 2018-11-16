@@ -1,4 +1,5 @@
 keras
+h5py
 mxnet
 Pillow
 requests

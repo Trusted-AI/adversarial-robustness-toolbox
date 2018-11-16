@@ -136,9 +136,11 @@ class Classifier(ABC):
 
         :param x: Sample input with shape as expected by the model.
         :type x: `np.ndarray`
-        :param label: Index of a specific per-class derivative. If `None`, then gradients for all
-                      classes will be computed.
-        :type label: `int`
+        :param label: Index of a specific per-class derivative. If an integer is provided, the gradient of that class
+                      output is computed for all samples. If multiple values as provided, the first dimension should
+                      match the batch size of `x`, and each value will be used as target for its corresponding sample in
+                      `x`. If `None`, then gradients for all classes will be computed for each sample.
+        :type label: `int` or `list`
         :param logits: `True` if the prediction should be done at the logits layer.
         :type logits: `bool`
         :return: Array of gradients of input features w.r.t. each class in the form
@@ -190,6 +192,20 @@ class Classifier(ABC):
         :type layer: `int` or `str`
         :return: The output of `layer`, where the first dimension is the batch size corresponding to `x`.
         :rtype: `np.ndarray`
+        """
+        raise NotImplementedError
+
+    @abc.abstractmethod
+    def save(self, filename, path=None):
+        """
+        Save a model to file in the format specific to the backend framework.
+
+        :param filename: Name of the file where to store the model.
+        :type filename: `str`
+        :param path: Path of the folder where to store the model. If no path is specified, the model will be stored in
+                     the default data location of the library `DATA_PATH`.
+        :type path: `str`
+        :return: None
         """
         raise NotImplementedError
 

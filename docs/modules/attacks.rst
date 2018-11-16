@@ -22,6 +22,11 @@ Basic Iterative Method
 .. autoclass:: BasicIterativeMethod
    :members:
 
+Projected Gradient Descent
+--------------------------
+.. autoclass:: ProjectedGradientDescent
+   :members:
+
 Jacobian Saliency Map Attack
 ----------------------------
 .. autoclass:: SaliencyMapMethod

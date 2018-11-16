@@ -25,7 +25,6 @@ import logging
 import os
 
 import numpy as np
-from scipy.special import gammainc
 
 logger = logging.getLogger(__name__)
 
@@ -84,6 +83,8 @@ def random_sphere(nb_points, nb_dims, radius, norm):
 
         res = (a[:, 1:] - a[:, :-1]) * np.random.choice([-1, 1], (nb_points, nb_dims))
     elif norm == 2:
+        from scipy.special import gammainc
+
         a = np.random.randn(nb_points, nb_dims)
         s2 = np.sum(a ** 2, axis=1)
         base = gammainc(nb_dims / 2.0, s2 / 2.0) ** (1 / nb_dims) * radius / np.sqrt(s2)
@@ -169,8 +170,8 @@ def get_label_conf(y_vec):
 
 
 def get_labels_np_array(preds):
-    """Returns the label of the most probable class given a array of class confidences.
-    See get_labels_tf_tensor() for tensorflow version
+    """
+    Returns the label of the most probable class given a array of class confidences.
 
     :param preds: (np.ndarray) array of class confidences, nb of instances as first dimension
     :return: (np.ndarray) labels
@@ -212,13 +213,35 @@ def load_cifar10(raw=False):
     :return: `(x_train, y_train), (x_test, y_test), min, max`
     :rtype: `(np.ndarray, np.ndarray), (np.ndarray, np.ndarray), float, float`
     """
-    import keras.backend as k
-    from keras.datasets.cifar import load_batch
-    from keras.utils.data_utils import get_file
+    def load_batch(fpath):
+        """
+        Utility function for loading CIFAR batches, as written in Keras.
+
+        :param fpath: Full path to the batch file.
+        :return: `(data, labels)`
+        """
+        import sys
+        from six.moves import cPickle
+
+        with open(fpath, 'rb') as f:
+            if sys.version_info < (3,):
+                d = cPickle.load(f)
+            else:
+                d = cPickle.load(f, encoding='bytes')
+                d_decoded = {}
+                for k, v in d.items():
+                    d_decoded[k.decode('utf8')] = v
+                d = d_decoded
+        data = d['data']
+        labels = d['labels']
+
+        data = data.reshape(data.shape[0], 3, 32, 32)
+        return data, labels
+
     from art import DATA_PATH
 
-    path = get_file('cifar-10-batches-py', untar=True, cache_subdir=DATA_PATH,
-                    origin='http://www.cs.toronto.edu/~kriz/cifar-10-python.tar.gz')
+    path = get_file('cifar-10-batches-py', extract=True, path=DATA_PATH,
+                    url='http://www.cs.toronto.edu/~kriz/cifar-10-python.tar.gz')
 
     num_train_samples = 50000
 
@@ -236,9 +259,9 @@ def load_cifar10(raw=False):
     y_train = np.reshape(y_train, (len(y_train), 1))
     y_test = np.reshape(y_test, (len(y_test), 1))
 
-    if k.image_data_format() == 'channels_last':
-        x_train = x_train.transpose(0, 2, 3, 1)
-        x_test = x_test.transpose(0, 2, 3, 1)
+    # Set channels last
+    x_train = x_train.transpose(0, 2, 3, 1)
+    x_test = x_test.transpose(0, 2, 3, 1)
 
     min_, max_ = 0, 255
     if not raw:
@@ -257,10 +280,9 @@ def load_mnist(raw=False):
     :return: `(x_train, y_train), (x_test, y_test), min, max`
     :rtype: `(np.ndarray, np.ndarray), (np.ndarray, np.ndarray), float, float`
     """
-    from keras.utils.data_utils import get_file
     from art import DATA_PATH
 
-    path = get_file('mnist.npz', cache_subdir=DATA_PATH, origin='https://s3.amazonaws.com/img-datasets/mnist.npz')
+    path = get_file('mnist.npz', path=DATA_PATH, url='https://s3.amazonaws.com/img-datasets/mnist.npz')
 
     f = np.load(path)
     x_train = f['x_train']
@@ -282,21 +304,20 @@ def load_mnist(raw=False):
 
 
 def load_stl():
-    """Loads the STL-10 dataset from config.STL10_PATH or downloads it if necessary.
+    """
+    Loads the STL-10 dataset from `DATA_PATH` or downloads it if necessary.
 
     :return: `(x_train, y_train), (x_test, y_test), min, max`
     :rtype: `(np.ndarray, np.ndarray), (np.ndarray, np.ndarray), float, float`
     """
     from os.path import join
-    import keras.backend as k
-    from keras.utils.data_utils import get_file
     from art import DATA_PATH
 
     min_, max_ = 0., 1.
 
     # Download and extract data if needed
-    path = get_file('stl10_binary', cache_subdir=DATA_PATH, untar=True,
-                    origin='https://ai.stanford.edu/~acoates/stl10/stl10_binary.tar.gz')
+    path = get_file('stl10_binary', path=DATA_PATH, extract=True,
+                    url='https://ai.stanford.edu/~acoates/stl10/stl10_binary.tar.gz')
 
     with open(join(path, str('train_X.bin')), str('rb')) as f:
         x_train = np.fromfile(f, dtype=np.uint8)
@@ -306,9 +327,9 @@ def load_stl():
         x_test = np.fromfile(f, dtype=np.uint8)
         x_test = np.reshape(x_test, (-1, 3, 96, 96))
 
-    if k.image_data_format() == 'channels_last':
-        x_train = x_train.transpose(0, 2, 3, 1)
-        x_test = x_test.transpose(0, 2, 3, 1)
+    # Set channel last
+    x_train = x_train.transpose(0, 2, 3, 1)
+    x_test = x_test.transpose(0, 2, 3, 1)
 
     with open(join(path, str('train_y.bin')), str('rb')) as f:
         y_train = np.fromfile(f, dtype=np.uint8)
@@ -343,6 +364,99 @@ def load_dataset(name):
         return load_stl()
     else:
         raise NotImplementedError("There is no loader for dataset '{}'.".format(name))
+
+
+def _extract(full_path, path):
+    import tarfile
+    import zipfile
+    import shutil
+
+    if full_path.endswith('tar'):
+        if tarfile.is_tarfile(full_path):
+            archive =  tarfile.open(full_path, "r:")
+    elif full_path.endswith('tar.gz'):
+        if tarfile.is_tarfile(full_path):
+            archive = tarfile.open(full_path, "r:gz")
+    elif full_path.endswith('zip'):
+        if zipfile.is_zipfile(full_path):
+            archive = zipfile.ZipFile(full_path)
+        else:
+            return False
+    else:
+        return False
+
+    try:
+        archive.extractall(path)
+    except (tarfile.TarError, RuntimeError, KeyboardInterrupt):
+        if os.path.exists(path):
+            if os.path.isfile(path):
+                os.remove(path)
+            else:
+                shutil.rmtree(path)
+        raise
+    return True
+
+
+def get_file(filename, url, path=None, extract=False):
+    """
+    Downloads a file from a URL if it not already in the cache. The file at indicated by `url` is downloaded to the
+    path `path` (default is ~/.art/data). and given the name `filename`. Files in tar, tar.gz, tar.bz, and zip formats
+    can also be extracted. This is a simplified version of the function with the same name in Keras.
+
+    :param filename: Name of the file.
+    :type filename: `str`
+    :param url: Download URL.
+    :type url: `str`
+    :param path: Folder to store the download. If not specified, `~/.art/data` is used instead.
+    :type: `str`
+    :param extract: If true, tries to extract the archive.
+    :type extract: `bool`
+    :return: Path to the downloaded file.
+    :rtype: `str`
+    """
+    if path is None:
+        from art import DATA_PATH
+        path_ = os.path.expanduser(DATA_PATH)
+    else:
+        path_ = os.path.expanduser(path)
+    if not os.access(path_, os.W_OK):
+        path_ = os.path.join('/tmp', '.art')
+    if not os.path.exists(path_):
+        os.makedirs(path_)
+
+    if extract:
+        extract_path = os.path.join(path_, filename)
+        full_path = extract_path + '.tar.gz'
+    else:
+        full_path = os.path.join(path_, filename)
+
+    # Determine if dataset needs downloading
+    download = not os.path.exists(full_path)
+
+    if download:
+        logger.info('Downloading data from %s', url)
+        error_msg = 'URL fetch failure on {}: {} -- {}'
+        try:
+            try:
+                from six.moves.urllib.error import HTTPError, URLError
+                from six.moves.urllib.request import urlretrieve
+
+                urlretrieve(url, full_path)
+            except HTTPError as e:
+                raise Exception(error_msg.format(url, e.code, e.msg))
+            except URLError as e:
+                raise Exception(error_msg.format(url, e.errno, e.reason))
+        except (Exception, KeyboardInterrupt):
+            if os.path.exists(full_path):
+                os.remove(full_path)
+            raise
+
+    if extract:
+        if not os.path.exists(extract_path):
+            _extract(full_path, path_)
+        return extract_path
+
+    return full_path
 
 
 def make_directory(dir_path):

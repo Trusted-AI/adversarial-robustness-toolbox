@@ -19,9 +19,11 @@ from __future__ import absolute_import, division, print_function, unicode_litera
 
 import logging
 
+import numpy as np
 from scipy import ndimage
 
 from art.defences.preprocessor import Preprocessor
+from art import NUMPY_DTYPE
 
 logger = logging.getLogger(__name__)
 
@@ -45,7 +47,7 @@ class SpatialSmoothing(Preprocessor):
         self._is_fitted = True
         self.set_params(window_size=window_size, channel_index=channel_index)
 
-    def __call__(self, x, y=None, window_size=None):
+    def __call__(self, x, y=None, window_size=None, clip_values=(0, 1)):
         """
         Apply local spatial smoothing to sample `x`.
 
@@ -67,8 +69,9 @@ class SpatialSmoothing(Preprocessor):
         size = tuple(size)
 
         result = ndimage.filters.median_filter(x, size=size, mode="reflect")
+        result = np.clip(result, clip_values[0], clip_values[1])
 
-        return result
+        return result.astype(NUMPY_DTYPE)
 
     def fit(self, x, y=None, **kwargs):
         """
@@ -89,10 +92,16 @@ class SpatialSmoothing(Preprocessor):
         super(SpatialSmoothing, self).set_params(**kwargs)
 
         if type(self.window_size) is not int or self.window_size <= 0:
+            logger.error('Sliding window size must be a positive integer.')
             raise ValueError('Sliding window size must be a positive integer.')
 
         if type(self.channel_index) is not int or self.channel_index <= 0:
+            logger.error('Data channel for smoothing must be a positive integer. The batch dimension is not a'
+                         'valid channel.')
             raise ValueError('Data channel for smoothing must be a positive integer. The batch dimension is not a'
                              'valid channel.')
 
         return True
+
+
+

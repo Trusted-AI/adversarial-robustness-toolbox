@@ -26,27 +26,33 @@ logger = logging.getLogger(__name__)
 
 class GaussianAugmentation(Preprocessor):
     """
-    Perform Gaussian augmentation on a dataset.
+    Add Gaussian noise to a dataset in one of two ways: either add noise to each sample (keeping the size of the
+    original dataset) or perform augmentation by keeping all original samples and adding noisy counterparts.
     """
-    params = ['sigma', 'ratio']
+    params = ['sigma', 'augmentation', 'ratio']
 
-    def __init__(self, sigma=1., ratio=1.):
+    def __init__(self, sigma=1., augmentation=True, ratio=1.):
         """
         Initialize a Gaussian augmentation object.
 
         :param sigma: Standard deviation of Gaussian noise to be added.
         :type sigma: `float`
+        :param augmentation: If true, perform dataset augmentation using `ratio`, otherwise replace samples with noisy
+                            counterparts.
+        :type augmentation: `bool`
         :param ratio: Percentage of data augmentation. E.g. for a rate of 1, the size of the dataset will double.
+                      If `augmentation` is false, `ratio` value is ignored.
         :type ratio: `float`
         """
         super(GaussianAugmentation, self).__init__()
         self._is_fitted = True
-        self.set_params(sigma=sigma, ratio=ratio)
+        self.set_params(sigma=sigma, augmentation=augmentation, ratio=ratio)
 
-    def __call__(self, x, y=None, sigma=None, ratio=None):
+    def __call__(self, x, y=None, sigma=None, augmentation=None, ratio=None):
         """
-        Augment the sample `(x, y)` with Gaussian noise. The result is an extended dataset containing the original
-        sample, as well as the newly created noisy samples.
+        Augment the sample `(x, y)` with Gaussian noise. The result is either an extended dataset containing the original
+        sample, as well as the newly created noisy samples (augmentation=True) or just the noisy counterparts to the
+        original samples.
 
         :param x: Sample to augment with shape `(batch_size, width, height, depth)`.
         :type x: `np.ndarray`
@@ -55,6 +61,9 @@ class GaussianAugmentation(Preprocessor):
         :type y: `np.ndarray`
         :param sigma: Standard deviation of Gaussian noise to be added.
         :type sigma: `float`
+        :param augmentation: If true, perform dataset augmentation using `ratio`, otherwise replace samples with noisy
+                            counterparts.
+        :type augmentation: `bool`
         :param ratio: Percentage of data augmentation. E.g. for a ratio of 1, the size of the dataset will double.
         :type ratio: `float`
         :return: The augmented dataset and (if provided) corresponding labels.
@@ -64,6 +73,9 @@ class GaussianAugmentation(Preprocessor):
         params = {}
         if sigma is not None:
             params['sigma'] = sigma
+
+        if augmentation is not None:
+            params['augmentation'] = augmentation
 
         if ratio is not None:
             params['ratio'] = ratio
@@ -75,13 +87,17 @@ class GaussianAugmentation(Preprocessor):
 
         # Select indices to augment
         import numpy as np
-        size = int(x.shape[0] * self.ratio)
-        indices = np.random.randint(0, x.shape[0], size=size)
+        if self.augmentation:
+            size = int(x.shape[0] * self.ratio)
+            indices = np.random.randint(0, x.shape[0], size=size)
 
-        # Generate noisy samples
-        x_aug = np.random.normal(x[indices], scale=self.sigma, size=(size,) + x[indices].shape[1:])
-        x_aug = np.vstack((x, x_aug))
-        logger.info('Augmented dataset size: %d', x_aug.shape[0])
+            # Generate noisy samples
+            x_aug = np.random.normal(x[indices], scale=self.sigma, size=(size,) + x[indices].shape[1:])
+            x_aug = np.vstack((x, x_aug))
+            logger.info('Augmented dataset size: %d', x_aug.shape[0])
+        else:
+            x_aug = np.random.normal(x, scale=self.sigma, size=x.shape)
+            logger.info('Created %i samples with Gaussian noise.')
 
         if y is not None:
             y_aug = np.concatenate((y, y[indices]))
@@ -101,13 +117,16 @@ class GaussianAugmentation(Preprocessor):
 
         :param sigma: Standard deviation of Gaussian noise to be added.
         :type sigma: `float`
+        :param augmentation: If true, perform dataset augmentation using `ratio`, otherwise replace samples with noisy
+                            counterparts.
+        :type augmentation: `bool`
         :param ratio: Percentage of data augmentation. E.g. for a ratio of 1, the size of the dataset will double.
         :type ratio: `float`
         """
         # Save attack-specific parameters
         super(GaussianAugmentation, self).set_params(**kwargs)
 
-        if self.ratio <= 0:
+        if self.augmentation and self.ratio <= 0:
             raise ValueError("The augmentation ratio must be positive.")
 
         return True
