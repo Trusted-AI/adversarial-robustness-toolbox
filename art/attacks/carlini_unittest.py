@@ -336,7 +336,7 @@ class TestCarliniL0(unittest.TestCase):
         tfc.fit(x_train, y_train, batch_size=BATCH_SIZE, nb_epochs=10)
 
         # Failure attack
-        cl0m = CarliniL0Method(classifier=tfc, targeted=True, max_iter=0, learning_rate=0, eps=0.3)
+        cl0m = CarliniL0Method(classifier=tfc, targeted=True, max_iter=0, learning_rate=0, eps=0.5)
         params = {'y': random_targets(y_test, tfc.nb_classes)}
         x_test_adv = cl0m.generate(x_test, **params)
         self.assertTrue((x_test_adv <= 1.0001).all())
@@ -507,7 +507,7 @@ class TestCarliniL0(unittest.TestCase):
         ptc.fit(x_train, y_train, batch_size=BATCH_SIZE, nb_epochs=10)
 
         # First attack
-        cl0m = CarliniL0Method(classifier=ptc, targeted=True, max_iter=10, eps=0.3)
+        cl0m = CarliniL0Method(classifier=ptc, targeted=True, max_iter=10, eps=0.5)
         params = {'y': random_targets(y_test, ptc.nb_classes)}
         x_test_adv = cl0m.generate(x_test, **params)
         self.assertFalse((x_test == x_test_adv).all())
@@ -518,7 +518,7 @@ class TestCarliniL0(unittest.TestCase):
         self.assertTrue((target == y_pred_adv).any())
 
         # Second attack
-        cl0m = CarliniL0Method(classifier=ptc, targeted=False, max_iter=10, eps=0.3)
+        cl0m = CarliniL0Method(classifier=ptc, targeted=False, max_iter=10, eps=0.5)
         params = {'y': random_targets(y_test, ptc.nb_classes)}
         x_test_adv = cl0m.generate(x_test, **params)
         self.assertTrue((x_test_adv <= 1.0001).all())
@@ -528,7 +528,7 @@ class TestCarliniL0(unittest.TestCase):
         self.assertTrue((target != y_pred_adv).any())
 
         # Third attack
-        cl0m = CarliniL0Method(classifier=ptc, targeted=False, max_iter=10, eps=0.3)
+        cl0m = CarliniL0Method(classifier=ptc, targeted=False, max_iter=10, eps=0.5)
         params = {}
         x_test_adv = cl0m.generate(x_test, **params)
         self.assertFalse((x_test == x_test_adv).all())
