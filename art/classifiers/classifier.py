@@ -76,10 +76,10 @@ class Classifier(ABC):
         """
         raise NotImplementedError
 
-    @abc.abstractmethod
     def fit_generator(self, generator, nb_epochs=20):
         """
-        Fit the classifier using the generator `gen` that yields batches as specified.
+        Fit the classifier using the generator `gen` that yields batches as specified. Framework implementations can
+        provide framework-specific versions of this function to speed-up computation.
 
         :param generator: Batch generator providing `(x, y)` for each epoch.
         :type generator: `DataGenerator`
