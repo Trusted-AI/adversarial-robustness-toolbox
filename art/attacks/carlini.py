@@ -20,10 +20,11 @@ class CarliniL2Method(Attack):
     objective. Paper link: https://arxiv.org/pdf/1608.04644.pdf
     """
     attack_params = Attack.attack_params + ['confidence', 'targeted', 'learning_rate', 'max_iter',
-                                            'binary_search_steps', 'initial_const', 'max_halving', 'max_doubling']
+                                            'binary_search_steps', 'initial_const', 'max_halving', 'max_doubling',
+                                            'batch_size']
 
     def __init__(self, classifier, confidence=0.0, targeted=True, learning_rate=0.01, binary_search_steps=10,
-                 max_iter=10, initial_const=0.01, max_halving=5, max_doubling=5):
+                 max_iter=10, initial_const=0.01, max_halving=5, max_doubling=5, batch_size=128):
         """
         Create a Carlini L_2 attack instance.
 
@@ -49,6 +50,8 @@ class CarliniL2Method(Attack):
         :type max_halving: `int`
         :param max_doubling: Maximum number of doubling steps in the line search optimization.
         :type max_doubling: `int`
+        :param batch_size: Internal size of batches on which adversarial samples are generated.
+        :type batch_size: `int`
         """
         super(CarliniL2Method, self).__init__(classifier)
 
@@ -59,7 +62,8 @@ class CarliniL2Method(Attack):
                   'max_iter': max_iter,
                   'initial_const': initial_const,
                   'max_halving': max_halving,
-                  'max_doubling': max_doubling
+                  'max_doubling': max_doubling,
+                  'batch_size': batch_size
                   }
         assert self.set_params(**kwargs)
 
@@ -84,10 +88,10 @@ class CarliniL2Method(Attack):
         :return: A tuple holding the current logits, l2 distance and overall loss.
         :rtype: `(float, float, float)`
         """    
-        l2dist = np.sum(np.square(x - x_adv))
-        z = self.classifier.predict(np.array([x_adv], dtype=NUMPY_DTYPE), logits=True)[0]
-        z_target = np.sum(z * target)
-        z_other = np.max(z * (1 - target) + (np.min(z) - 1) * target)
+        l2dist = np.sum(np.square(x - x_adv).reshape(x.shape[0], -1), axis=1)
+        z = self.classifier.predict(np.array(x_adv, dtype=NUMPY_DTYPE), logits=True)
+        z_target = np.sum(z * target, axis=1)
+        z_other = np.max(z * (1 - target) + (np.min(z, axis=1) - 1)[:,np.newaxis] * target, axis=1)
         
         # The following differs from the exact definition given in Carlini and Wagner (2016). There (page 9, left
         # column, last equation), the maximum is taken over Z_other - Z_target (or Z_target - Z_other respectively)
@@ -97,10 +101,10 @@ class CarliniL2Method(Attack):
 
         if self.targeted:
             # if targeted, optimize for making the target class most likely
-            loss = max(z_other - z_target + self.confidence, 0)
+            loss = np.maximum(z_other - z_target + self.confidence, np.zeros(x.shape[0]))
         else:
             # if untargeted, optimize for making any other class most likely
-            loss = max(z_target - z_other + self.confidence, 0)
+            loss = np.maximum(z_target - z_other + self.confidence, np.zeros(x.shape[0]))
 
         return z, l2dist, c*loss + l2dist
     
@@ -128,9 +132,11 @@ class CarliniL2Method(Attack):
         :type target: `np.ndarray`
         """  
         if self.targeted:
-            i_sub, i_add = np.argmax(target), np.argmax(z * (1 - target) + (np.min(z) - 1) * target)
+            i_sub = np.argmax(target, axis=1)
+            i_add = np.argmax(z * (1 - target) + (np.min(z, axis=1) - 1)[:,np.newaxis] * target, axis=1)
         else:
-            i_add, i_sub = np.argmax(target), np.argmax(z * (1 - target) + (np.min(z) - 1) * target)
+            i_add = np.argmax(target, axis=1)
+            i_sub = np.argmax(z * (1 - target) + (np.min(z, axis=1) - 1)[:,np.newaxis] * target, axis=1)
         
         loss_gradient = self.classifier.class_gradient(np.array([x_adv], dtype=NUMPY_DTYPE), label=i_add,
                                                        logits=True)[0]
@@ -209,30 +215,36 @@ class CarliniL2Method(Attack):
         if y is None:
             y = get_labels_np_array(self.classifier.predict(x, logits=False))
 
-        for j, (ex, target) in enumerate(zip(x_adv, y)):        
-            logger.debug('Processing sample %i out of %i', j, x_adv.shape[0])
-            image = ex.copy()
+        # Compute perturbation with implicit batching
+        nb_batches = int(np.ceil(x_adv.shape[0] / float(self.batch_size)))
+        for batch_id in range(nb_batches):
+            logger.debug('Processing batch %i out of %i', batch_id, nb_batches)
+            
+            batch_index_1, batch_index_2 = batch_id * self.batch_size, (batch_id + 1) * self.batch_size
+            x_batch = x_adv[batch_index_1:batch_index_2].copy()
+            y_batch = y[batch_index_1:batch_index_2]
 
             # The optimization is performed in tanh space to keep the
             # adversarial images bounded from clip_min and clip_max. 
-            image_tanh = self._original_to_tanh(image, clip_min, clip_max)
+            x_batch_tanh = self._original_to_tanh(x_batch, clip_min, clip_max)
 
             # Initialize binary search:
-            c = self.initial_const
-            c_lower_bound = 0
-            c_double = True
+            c = self.initial_const * np.ones(x_batch.shape[0])
+            c_lower_bound = np.zeros(x_batch.shape[0])
+            c_double = np.ones(x_batch.shape[0])
 
             # Initialize placeholders for best l2 distance and attack found so far
-            best_l2dist = sys.float_info.max
-            best_adv_image = image 
+            best_l2dist = sys.float_info.max * np.ones(x_batch.shape[0])
+            best_x_adv_batch = x_batch 
             
             for bss in range(self.binary_search_steps):           
-                lr = self.learning_rate
+                lr = self.learning_rate * np.ones(x_batch.shape[0])
                 logger.debug('Binary search step %i out of %i (c==%f)', bss, self.binary_search_steps, c)
                 
                 # Initialize perturbation in tanh space:
-                adv_image = image
-                adv_image_tanh = image_tanh
+                x_adv_batch = x_batch
+                x_adv_batch_tanh = x_batch_tanh
+                
                 z, l2dist, loss = self._loss(image, adv_image, target, c)
                 attack_success = (loss - l2dist <= 0)
                 overall_attack_success = attack_success
@@ -365,6 +377,8 @@ class CarliniL2Method(Attack):
         :type max_halving: `int`
         :param max_doubling: Maximum number of doubling steps in the line search optimization.
         :type max_doubling: `int`
+        :param batch_size: Internal size of batches on which adversarial samples are generated.
+        :type batch_size: `int`
         """
         # Save attack-specific parameters
         super(CarliniL2Method, self).set_params(**kwargs)
@@ -381,6 +395,9 @@ class CarliniL2Method(Attack):
         if type(self.max_doubling) is not int or self.max_doubling < 1:
             raise ValueError("The number of doubling steps must be an integer greater than zero.")
 
+        if type(self.batch_size) is not int or self.batch_size < 1:
+            raise ValueError("The batch size must be an integer greater than zero.")
+            
         return True
 
 
