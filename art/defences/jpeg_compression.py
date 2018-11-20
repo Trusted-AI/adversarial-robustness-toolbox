@@ -14,7 +14,8 @@ logger = logging.getLogger(__name__)
 
 class JpegCompression(Preprocessor):
     """
-    Implement the jpeg compression defence approach.
+    Implement the jpeg compression defence approach. Some related papers: https://arxiv.org/pdf/1705.02900.pdf,
+    https://arxiv.org/abs/1608.00853
     """
     params = ['quality', 'channel_index']
 
@@ -31,7 +32,7 @@ class JpegCompression(Preprocessor):
         self._is_fitted = True
         self.set_params(quality=quality, channel_index=channel_index)
 
-    def __call__(self, x, y=None, quality=None):
+    def __call__(self, x, y=None, quality=None, clip_values=(0, 1)):
         """
         Apply jpeg compression to sample `x`.
 
@@ -92,6 +93,8 @@ class JpegCompression(Preprocessor):
         if self.channel_index < 3:
             x_ = np.swapaxes(x_, self.channel_index, 3)
 
+        x_ = np.clip(x_, clip_values[0], clip_values[1])
+
         return x_
 
     def fit(self, x, y=None, **kwargs):
@@ -113,11 +116,14 @@ class JpegCompression(Preprocessor):
         super(JpegCompression, self).set_params(**kwargs)
 
         if type(self.quality) is not int or self.quality <= 0 or self.quality > 100:
+            logger.error('Image quality must be a positive integer and smaller than 101.')
             raise ValueError('Image quality must be a positive integer and smaller than 101.')
 
         if type(self.channel_index) is not int or self.channel_index <= 0:
-            raise ValueError('Data channel must be a positive integer. The batch dimension is not a valid channel.')
+            logger.error('Data channel must be a positive integer. The batch dimension is not a valid channel.')
+            raise ValueError('Image quality must be a positive integer and smaller than 101.')
 
         return True
+
 
 

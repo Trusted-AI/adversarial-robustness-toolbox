@@ -599,8 +599,7 @@ class CarliniL0Method(Attack):
                                                       
                 # compute gradient:
                 logger.debug('Compute loss gradient')
-                perturbation_tanh = -self._loss_gradient(z, target, adv_image, adv_image_tanh, 
-                                                         clip_min, clip_max)
+                perturbation_tanh = -self._loss_gradient(z, target, adv_image, adv_image_tanh, clip_min, clip_max)
                     
                 # perform line search to optimize perturbation                     
                 # first, halve the learning rate until perturbation actually decreases the loss:                      
@@ -613,7 +612,7 @@ class CarliniL0Method(Attack):
                     logger.debug('Apply gradient with learning rate %f (halving=%i)', lr, halving)
                     new_adv_image_tanh = adv_image_tanh + lr * perturbation_tanh
                     new_adv_image = self._tanh_to_original(new_adv_image_tanh, clip_min, clip_max)
-                    _, loss = self._loss(new_adv_image, target) 
+                    _, loss = self._loss(new_adv_image, target)
                     logger.debug('New Loss: %f', loss)      
                     if loss < best_loss:
                         best_loss = loss
@@ -633,7 +632,7 @@ class CarliniL0Method(Attack):
                         doubling += 1
                         new_adv_image_tanh = adv_image_tanh + lr * perturbation_tanh
                         new_adv_image = self._tanh_to_original(new_adv_image_tanh, clip_min, clip_max)
-                        _, loss = self._loss(new_adv_image, target)                            
+                        _, loss = self._loss(new_adv_image, target)
                         logger.debug('New Loss: %f', loss)   
                         if loss < best_loss:
                             best_loss = loss
@@ -645,8 +644,7 @@ class CarliniL0Method(Attack):
                     # apply the optimal learning rate that was found and update the loss:
                     adv_image_tanh = adv_image_tanh + best_lr * perturbation_tanh
                     adv_image = self._tanh_to_original(adv_image_tanh, clip_min, clip_max)
-                    
-                z, loss = self._loss(adv_image, target)                    
+                z, loss = self._loss(adv_image, target)
                 attack_success = (loss <= 0)
                 
             # Update depending on attack success:
