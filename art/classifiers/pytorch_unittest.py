@@ -83,6 +83,32 @@ class TestPyTorchClassifier(unittest.TestCase):
         logger.info('Accuracy after fitting: %.2f%%', (acc * 100))
         self.assertGreater(acc, 0.1)
 
+    def test_fit_generator(self):
+        import torch
+        from torch.utils.data import DataLoader
+        from art.data_generators import PyTorchDataGenerator
+
+        (x_train, y_train), (x_test, y_test) = self.mnist
+        acc = np.sum(np.argmax(self.module_classifier.predict(x_test), axis=1) == np.argmax(y_test, axis=1)) / NB_TEST
+        logger.info('Accuracy: %.2f%%', (acc * 100))
+
+        # Create tensors from data
+        x_train_tens = torch.from_numpy(x_train)
+        x_train_tens = x_train_tens.float()
+        y_train_tens = torch.from_numpy(y_train)
+
+        # Create PyTorch dataset and loader
+        dataset = torch.utils.data.TensorDataset(x_train_tens, y_train_tens)
+        data_loader = DataLoader(dataset=dataset, batch_size=5, shuffle=True)
+        data_gen = PyTorchDataGenerator(data_loader)
+
+        # Fit model with generator
+        self.module_classifier.fit_generator(data_gen, nb_epochs=2)
+        acc2 = np.sum(np.argmax(self.module_classifier.predict(x_test), axis=1) == np.argmax(y_test, axis=1)) / NB_TEST
+        logger.info('Accuracy: %.2f%%', (acc * 100))
+
+        self.assertTrue(acc2 >= .8 * acc)
+
     def test_nb_classes(self):
         ptc = self.module_classifier
         self.assertTrue(ptc.nb_classes == 10)
