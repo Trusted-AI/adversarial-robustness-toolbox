@@ -44,7 +44,6 @@ class KerasClassifier(Classifier):
         """
         import keras.backend as k
 
-        # TODO Generalize loss function?
         super(KerasClassifier, self).__init__(clip_values=clip_values, channel_index=channel_index, defences=defences,
                                               preprocessing=preprocessing)
 
@@ -237,6 +236,34 @@ class KerasClassifier(Classifier):
 
         gen = generator_fit(x_, y_, batch_size)
         self._model.fit_generator(gen, steps_per_epoch=x_.shape[0] / batch_size, epochs=nb_epochs)
+
+    def fit_generator(self, generator, nb_epochs=20):
+        """
+        Fit the classifier using the generator that yields batches as specified.
+
+        :param generator: Batch generator providing `(x, y)` for each epoch. If the generator can be used for native
+                          training in Keras, it will.
+        :type generator: `DataGenerator`
+        :param nb_epochs: Number of epochs to use for trainings.
+        :type nb_epochs: `int`
+        :return: `None`
+        """
+        import keras.backend as k
+        from art.data_generators import KerasDataGenerator
+
+        k.set_learning_phase(1)
+
+        # Try to use the generator as a Keras native generator, otherwise use it through the `DataGenerator` interface
+        # TODO Testing for preprocessing defenses is currently hardcoded; this should be improved (add property)
+        if isinstance(generator, KerasDataGenerator) and \
+                (hasattr(self, 'label_smooth') or hasattr(self, 'feature_squeeze')):
+            try:
+                self._model.fit_generator(generator.generator, epochs=nb_epochs)
+            except ValueError:
+                logger.info('Unable to use data generator as Keras generator. Now treating as framework-independent.')
+                super(KerasClassifier, self).fit_generator(generator, nb_epochs=nb_epochs)
+        else:
+            super(KerasClassifier, self).fit_generator(generator, nb_epochs=nb_epochs)
 
     @property
     def layer_names(self):
