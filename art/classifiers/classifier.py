@@ -95,6 +95,12 @@ class Classifier(ABC):
 
         for _ in range(nb_epochs):
             x, y = generator.get_batch()
+
+            # Apply preprocessing and defences
+            x = self._apply_processing(x)
+            x, y = self._apply_defences_fit(x, y)
+
+            # Fit for current batch
             self.fit(x, y, nb_epochs=1, batch_size=len(x))
 
     @property
