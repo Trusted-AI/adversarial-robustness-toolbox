@@ -256,7 +256,7 @@ class KerasClassifier(Classifier):
         # Try to use the generator as a Keras native generator, otherwise use it through the `DataGenerator` interface
         # TODO Testing for preprocessing defenses is currently hardcoded; this should be improved (add property)
         if isinstance(generator, KerasDataGenerator) and \
-                (hasattr(self, 'label_smooth') or hasattr(self, 'feature_squeeze')):
+                not (hasattr(self, 'label_smooth') or hasattr(self, 'feature_squeeze')):
             try:
                 self._model.fit_generator(generator.generator, epochs=nb_epochs)
             except ValueError:
