@@ -76,6 +76,27 @@ class Classifier(ABC):
         """
         raise NotImplementedError
 
+    def fit_generator(self, generator, nb_epochs=20):
+        """
+        Fit the classifier using the generator `gen` that yields batches as specified. Framework implementations can
+        provide framework-specific versions of this function to speed-up computation.
+
+        :param generator: Batch generator providing `(x, y)` for each epoch.
+        :type generator: `DataGenerator`
+        :param nb_epochs: Number of epochs to use for trainings.
+        :type nb_epochs: `int`
+        :return: `None`
+        """
+        from art.data_generators import DataGenerator
+
+        if not isinstance(generator, DataGenerator):
+            raise ValueError('Expected instance of `DataGenerator` for `fit_generator`, got %s instead.'
+                             % str(type(generator)))
+
+        for _ in range(nb_epochs):
+            x, y = generator.get_batch()
+            self.fit(x, y, nb_epochs=1, batch_size=len(x))
+
     @property
     def nb_classes(self):
         """
@@ -119,9 +140,11 @@ class Classifier(ABC):
 
         :param x: Sample input with shape as expected by the model.
         :type x: `np.ndarray`
-        :param label: Index of a specific per-class derivative. If `None`, then gradients for all
-                      classes will be computed.
-        :type label: `int`
+        :param label: Index of a specific per-class derivative. If an integer is provided, the gradient of that class
+                      output is computed for all samples. If multiple values as provided, the first dimension should
+                      match the batch size of `x`, and each value will be used as target for its corresponding sample in
+                      `x`. If `None`, then gradients for all classes will be computed for each sample.
+        :type label: `int` or `list`
         :param logits: `True` if the prediction should be done at the logits layer.
         :type logits: `bool`
         :return: Array of gradients of input features w.r.t. each class in the form
