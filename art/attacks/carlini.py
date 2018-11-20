@@ -138,16 +138,19 @@ class CarliniL2Method(Attack):
             i_add = np.argmax(target, axis=1)
             i_sub = np.argmax(z * (1 - target) + (np.min(z, axis=1) - 1)[:,np.newaxis] * target, axis=1)
         
-        loss_gradient = self.classifier.class_gradient(np.array([x_adv], dtype=NUMPY_DTYPE), label=i_add,
-                                                       logits=True)[0]
-        loss_gradient -= self.classifier.class_gradient(np.array([x_adv], dtype=NUMPY_DTYPE), label=i_sub,
-                                                        logits=True)[0]
-        loss_gradient *= c
+        loss_gradient = self.classifier.class_gradient(np.array(x_adv, dtype=NUMPY_DTYPE), label=i_add, logits=True)
+        loss_gradient -= self.classifier.class_gradient(np.array(x_adv, dtype=NUMPY_DTYPE), label=i_sub, logits=True)
+        loss_gradient = loss_gradient.reshape(x.shape)
+        
+        c_mult = c
+        for _ in range(x.shape[-1]):
+            c_mult = c_mult[:,np.newaxis]
+        loss_gradient *= c_mult
         loss_gradient += 2 * (x_adv - x)
         loss_gradient *= (clip_max - clip_min) 
         loss_gradient *= (1 - np.square(np.tanh(x_adv_tanh))) / (2 * self._tanh_smoother)
         
-        return loss_gradient[0]
+        return loss_gradient
 
     def _original_to_tanh(self, x_original, clip_min, clip_max):
         """
@@ -245,69 +248,105 @@ class CarliniL2Method(Attack):
                 x_adv_batch = x_batch
                 x_adv_batch_tanh = x_batch_tanh
                 
-                z, l2dist, loss = self._loss(image, adv_image, target, c)
+                z, l2dist, loss = self._loss(x_batch, x_adv_batch, y_batch, c)
                 attack_success = (loss - l2dist <= 0)
                 overall_attack_success = attack_success
                
                 for it in range(self.max_iter):  
                     logger.debug('Iteration step %i out of %i', it, self.max_iter)
-                    logger.debug('Total Loss: %f', loss)
-                    logger.debug('L2Dist: %f', l2dist)
-                    logger.debug('Margin Loss: %f', loss-l2dist)
-                    
-                    if attack_success:
-                        logger.debug('Margin Loss <= 0 --> Attack Success!')
-                        if l2dist < best_l2dist:
-                            logger.debug('New best L2Dist: %f (previous=%f)', l2dist, best_l2dist)
-                            best_l2dist = l2dist
-                            best_adv_image = adv_image
-                    
+                    logger.debug('Average Loss: %f', np.mean(loss))
+                    logger.debug('Average L2Dist: %f', np.mean(l2dist))
+                    logger.debug('Average Margin Loss: %f', np.mean(loss-l2dist))
+                                       
+                    logger.debug('Current number of succeeded attacks: %i out of %i', int(np.sum(attack_success)),
+                                                                                      len(attack_success))
+                        
+                    improved_adv = attack_success & (l2dist < best_l2dist) 
+                    logger.debug('Number of improved L2 distances: %i', int(np.sum(improved_adv)))     
+                    best_l2dist = l2dist[improved_adv]
+                    best_x_adv_batch = x_adv_batch[improved_adv]
+                                       
                     # compute gradient:
                     logger.debug('Compute loss gradient')
-                    perturbation_tanh = -self._loss_gradient(z, target, image, adv_image, adv_image_tanh, 
+                    perturbation_tanh = -self._loss_gradient(z, y_batch, x_batch, x_adv_batch, x_adv_batch_tanh, 
                                                              c, clip_min, clip_max)
                     
                     # perform line search to optimize perturbation                     
                     # first, halve the learning rate until perturbation actually decreases the loss:                      
                     prev_loss = loss
                     best_loss = loss
-                    best_lr = 0
+                    best_lr = np.zeros(x_batch.shape[0])
+                    halving = np.zeros(x_batch.shape[0])
                     
-                    halving = 0
-                    while loss >= prev_loss and halving < self.max_halving:
-                        logger.debug('Apply gradient with learning rate %f (halving=%i)', lr, halving)
-                        new_adv_image_tanh = adv_image_tanh + lr * perturbation_tanh
-                        new_adv_image = self._tanh_to_original(new_adv_image_tanh, clip_min, clip_max)
-                        _, l2dist, loss = self._loss(image, new_adv_image, target, c) 
-                        logger.debug('New Total Loss: %f', loss)
-                        logger.debug('New L2Dist: %f', l2dist)
-                        logger.debug('New Margin Loss: %f', loss-l2dist)      
-                        if loss < best_loss:
-                            best_loss = loss
-                            best_lr = lr
-                        lr /= 2
-                        halving += 1                        
+                    for h in range(self.max_halving):
+                        logger.debug('Perform halving iteration %i out of %i', h, self.max_halving)
+                        do_halving = (loss >= prev_loss)
+                        logger.debug('Halving to be performed on %i samples', int(np.sum(do_halving)))
+                        new_x_adv_batch_tanh = x_adv_batch_tanh[do_halving] + lr[do_halving] 
+                                                                            * perturbation_tanh[do_halving]
+                        new_x_adv_batch = self._tanh_to_original(new_x_adv_batch_tanh, clip_min, clip_max)                        
+                        _, l2dist[do_halving], loss[do_halving] = self._loss(x_batch, new_x_adv_batch, y_batch, c) 
+                        logger.debug('New Average Loss: %f', np.mean(loss))
+                        logger.debug('New Average L2Dist: %f', np.mean(l2dist))
+                        logger.debug('New Average Margin Loss: %f', np.mean(loss-l2dist))
+                        best_loss[loss < best_loss] = loss
+                        best_lr[loss < best_loss] = lr[loss < best_loss]
+                        lr[do_halving] /= 2
+                        halving[do_halving] += 1
                     lr *= 2
+                    
+                    #halving = np.ones(x_batch.shape[0])
+                    #while loss >= prev_loss and halving < self.max_halving:
+                    #    logger.debug('Apply gradient with learning rate %f (halving=%i)', lr, halving)
+                    #    new_adv_image_tanh = adv_image_tanh + lr * perturbation_tanh
+                    #    new_adv_image = self._tanh_to_original(new_adv_image_tanh, clip_min, clip_max)
+                    #    _, l2dist, loss = self._loss(image, new_adv_image, target, c) 
+                    #    logger.debug('New Total Loss: %f', loss)
+                    #    logger.debug('New L2Dist: %f', l2dist)
+                    #    logger.debug('New Margin Loss: %f', loss-l2dist)      
+                    #    if loss < best_loss:
+                    #        best_loss = loss
+                    #        best_lr = lr
+                    #    lr /= 2
+                    #    halving += 1                        
+                    #lr *= 2
                     
                     # if no halving was actually required, double the learning rate as long as this
                     # decreases the loss:
-                    if halving == 1 and loss <= prev_loss:
-                        doubling = 0
-                        while loss <= prev_loss and doubling < self.max_doubling:  
-                            prev_loss = loss
-                            lr *= 2     
-                            logger.debug('Apply gradient with learning rate %f (doubling=%i)', lr, doubling)
-                            doubling += 1
-                            new_adv_image_tanh = adv_image_tanh + lr * perturbation_tanh
-                            new_adv_image = self._tanh_to_original(new_adv_image_tanh, clip_min, clip_max)
-                            _, l2dist, loss = self._loss(image, new_adv_image, target, c)                            
-                            logger.debug('New Total Loss: %f', loss)
-                            logger.debug('New L2Dist: %f', l2dist)
-                            logger.debug('New Margin Loss: %f', loss-l2dist)     
-                            if loss < best_loss:
-                                best_loss = loss
-                                best_lr = lr            
-                        lr /= 2
+                    for d in range(self.max_doubling):
+                        logger.debug('Perform doubling iteration %i out of %i', d, self.max_doubling)
+                        do_doubling = (halving == 1) & (loss <= prev_loss)                        
+                        logger.debug('Doubling to be performed on %i samples', int(np.sum(do_doubling)))                       
+                        lr[do_doubling] *= 2                        
+                        new_x_adv_batch_tanh = x_adv_batch_tanh[do_doubling] + lr[do_doubling] 
+                                                                            * perturbation_tanh[do_doubling]
+                        new_x_adv_batch = self._tanh_to_original(new_x_adv_batch_tanh, clip_min, clip_max)                        
+                        _, l2dist[do_doubling], loss[do_doubling] = self._loss(x_batch, new_x_adv_batch, y_batch, c) 
+                        logger.debug('New Average Loss: %f', np.mean(loss))
+                        logger.debug('New Average L2Dist: %f', np.mean(l2dist))
+                        logger.debug('New Average Margin Loss: %f', np.mean(loss-l2dist))
+                        best_loss[loss < best_loss] = loss
+                        best_lr[loss < best_loss] = lr[loss < best_loss]
+                        
+                    lr[halving == 1] /= 2
+                                           
+                    #if halving == 1 and loss <= prev_loss:
+                    #    doubling = 0
+                    #    while loss <= prev_loss and doubling < self.max_doubling:  
+                    #        prev_loss = loss
+                    #        lr *= 2     
+                    #        logger.debug('Apply gradient with learning rate %f (doubling=%i)', lr, doubling)
+                    #        doubling += 1
+                    #        new_adv_image_tanh = adv_image_tanh + lr * perturbation_tanh
+                    #        new_adv_image = self._tanh_to_original(new_adv_image_tanh, clip_min, clip_max)
+                    #        _, l2dist, loss = self._loss(image, new_adv_image, target, c)                            
+                    #        logger.debug('New Total Loss: %f', loss)
+                    #        logger.debug('New L2Dist: %f', l2dist)
+                    #        logger.debug('New Margin Loss: %f', loss-l2dist)     
+                    #        if loss < best_loss:
+                    #            best_loss = loss
+                    #            best_lr = lr            
+                    #    lr /= 2
                     
                     if best_lr >0:
                         logger.debug('Finally apply gradient with learning rate %f', best_lr)
