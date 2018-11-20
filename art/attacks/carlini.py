@@ -627,7 +627,6 @@ class CarliniL0Method(Attack):
                     # apply the optimal learning rate that was found and update the loss:
                     adv_image_tanh = adv_image_tanh + best_lr * perturbation_tanh
                     adv_image = self._tanh_to_original(adv_image_tanh, clip_min, clip_max)
-                    
                 z, loss = self._loss(adv_image, target)
                 attack_success = (loss <= 0)
                 
