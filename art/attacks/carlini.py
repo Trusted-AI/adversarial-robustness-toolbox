@@ -72,7 +72,117 @@ class CarliniL2Method(Attack):
         self._c_upper_bound = 10e10
         # Smooth arguments of arctanh by multiplying with this constant to avoid division by zero:
         self._tanh_smoother = 0.999999
+
+    def _loss_old(self, x, x_adv, target, c):    
+        """
+        Compute the objective function value.
+        :param x: An array with the original input.
+        :type x: `np.ndarray`
+        :param x_adv: An array with the adversarial input.
+        :type x_adv: `np.ndarray`
+        :param target: An array with the target class (one-hot encoded).
+        :type target: `np.ndarray`
+        :param c: Weight of the loss term aiming for classification as target.
+        :type c: `float`
+        :return: A tuple holding the current logits, l2 distance and overall loss.
+        :rtype: `(float, float, float)`
+        """    
+        l2dist = np.sum(np.square(x - x_adv))
+        z = self.classifier.predict(np.array([x_adv], dtype=NUMPY_DTYPE), logits=True)[0]
+        z_target = np.sum(z * target)
+        z_other = np.max(z * (1 - target) + (np.min(z) - 1) * target)
+        
+        # The following differs from the exact definition given in Carlini and Wagner (2016). There (page 9, left
+        # column, last equation), the maximum is taken over Z_other - Z_target (or Z_target - Z_other respectively)
+        # and -confidence. However, it doesn't seem that that would have the desired effect (loss term is <= 0 if and
+        # only if the difference between the logit of the target and any other class differs by at least confidence).
+        # Hence the rearrangement here.
+
+        if self.targeted:
+            # if targeted, optimize for making the target class most likely
+            loss = max(z_other - z_target + self.confidence, 0)
+        else:
+            # if untargeted, optimize for making any other class most likely
+            loss = max(z_target - z_other + self.confidence, 0)
+
+        return z, l2dist, c*loss + l2dist
     
+    def _loss_gradient_old(self, z, target, x, x_adv, x_adv_tanh, c, clip_min, clip_max):  
+        """
+        Compute the gradient of the loss function.
+        :param z: An array with the current logits.
+        :type z: `np.ndarray`
+        :param target: An array with the target class (one-hot encoded).
+        :type target: `np.ndarray`
+        :param x: An array with the original input.
+        :type x: `np.ndarray`
+        :param x_adv: An array with the adversarial input.
+        :type x_adv: `np.ndarray`
+        :param x_adv_tanh: An array with the adversarial input in tanh space.
+        :type x_adv_tanh: `np.ndarray`
+        :param c: Weight of the loss term aiming for classification as target.
+        :type c: `float`
+        :param clip_min: Minimum clipping value.
+        :type clip_min: `float`
+        :param clip_max: Maximum clipping value.
+        :type clip_max: `float`
+        :return: An array with the gradient of the loss function.
+        :type target: `np.ndarray`
+        """  
+        if self.targeted:
+            i_sub, i_add = np.argmax(target), np.argmax(z * (1 - target) + (np.min(z) - 1) * target)
+        else:
+            i_add, i_sub = np.argmax(target), np.argmax(z * (1 - target) + (np.min(z) - 1) * target)
+        
+        loss_gradient = self.classifier.class_gradient(np.array([x_adv], dtype=NUMPY_DTYPE), label=i_add,
+                                                       logits=True)[0]
+        loss_gradient -= self.classifier.class_gradient(np.array([x_adv], dtype=NUMPY_DTYPE), label=i_sub,
+                                                        logits=True)[0]
+        loss_gradient *= c
+        loss_gradient += 2 * (x_adv - x)
+        loss_gradient *= (clip_max - clip_min) 
+        loss_gradient *= (1 - np.square(np.tanh(x_adv_tanh))) / (2 * self._tanh_smoother)
+        
+        return loss_gradient[0]
+
+    def _original_to_tanh_old(self, x_original, clip_min, clip_max):
+        """
+        Transform input from original to tanh space.
+        :param x_original: An array with the input to be transformed.
+        :type x_original: `np.ndarray`
+        :param clip_min: Minimum clipping value.
+        :type clip_min: `float`
+        :param clip_max: Maximum clipping value.
+        :type clip_max: `float`
+        :return: An array holding the transformed input.
+        :rtype: `np.ndarray`
+        """    
+        # To avoid division by zero (which occurs if arguments of arctanh are +1 or -1),
+        # we multiply arguments with _tanh_smoother. It appears this is what Carlini and Wagner
+        # (2016) are alluding to in their footnote 8. However, it is not clear how their proposed trick
+        # ("instead of scaling by 1/2 we scale by 1/2 + eps") works in detail.    
+        x_tanh = np.clip(x_original, clip_min, clip_max)
+        x_tanh = (x_tanh - clip_min) / (clip_max - clip_min)
+        x_tanh = np.arctanh(((x_tanh * 2) - 1) * self._tanh_smoother)
+        return x_tanh
+        
+    def _tanh_to_original_old(self, x_tanh, clip_min, clip_max):
+        """
+        Transform input from tanh to original space.
+        :param x_tanh: An array with the input to be transformed.
+        :type x_tanh: `np.ndarray`
+        :param clip_min: Minimum clipping value.
+        :type clip_min: `float`
+        :param clip_max: Maximum clipping value.
+        :type clip_max: `float`
+        :return: An array holding the transformed input.
+        :rtype: `np.ndarray`
+        """        
+        x_original = (np.tanh(x_tanh) / self._tanh_smoother + 1) / 2
+        return x_original * (clip_max - clip_min) + clip_min
+
+
+        
     def _loss(self, x, x_adv, target, c):    
         """
         Compute the objective function value.
@@ -234,14 +344,14 @@ class CarliniL2Method(Attack):
             # Initialize binary search:
             c = self.initial_const * np.ones(x_batch.shape[0])
             c_lower_bound = np.zeros(x_batch.shape[0])
-            c_double = np.ones(x_batch.shape[0])
+            c_double = (np.ones(x_batch.shape[0]) > 0)
 
             # Initialize placeholders for best l2 distance and attack found so far
             best_l2dist = sys.float_info.max * np.ones(x_batch.shape[0])
-            best_x_adv_batch = x_batch 
+            best_x_adv_batch = x_batch.copy()
             
             for bss in range(self.binary_search_steps):  
-                logger.debug('Binary search step %i out of %i (c==%f)', bss, self.binary_search_steps, c)
+                logger.debug('Binary search step %i out of %i (c_mean==%f)', bss, self.binary_search_steps, np.mean(c))
                 nb_active = int(np.sum(c < self._c_upper_bound))
                 logger.debug('Number of samples with c < _c_upper_bound: %i out of %i', nb_active, x_batch.shape[0])
                 if nb_active == 0:
@@ -250,8 +360,8 @@ class CarliniL2Method(Attack):
                 lr = self.learning_rate * np.ones(x_batch.shape[0])
                                 
                 # Initialize perturbation in tanh space:
-                x_adv_batch = x_batch
-                x_adv_batch_tanh = x_batch_tanh
+                x_adv_batch = x_batch.copy()
+                x_adv_batch_tanh = x_batch_tanh.copy()
                 
                 z, l2dist, loss = self._loss(x_batch, x_adv_batch, y_batch, c)
                 attack_success = (loss - l2dist <= 0)
@@ -265,27 +375,23 @@ class CarliniL2Method(Attack):
                                        
                     logger.debug('Current number of succeeded attacks: %i out of %i', int(np.sum(attack_success)),
                                                                                       len(attack_success))
-                                                                                                                                                    
+                    
+                    #logger.debug('len(attack_success): %i', len(attack_success))
+                    #logger.debug('len(l2dist): %i', len(l2dist))
+                    #logger.debug('len(best_l2dist): %i', len(best_l2dist))
+                    
                     improved_adv = attack_success & (l2dist < best_l2dist) 
-                    logger.debug('Number of improved L2 distances: %i', int(np.sum(improved_adv)))     
-                    best_l2dist = l2dist[improved_adv]
-                    best_x_adv_batch = x_adv_batch[improved_adv]
+                    logger.debug('Number of improved L2 distances: %i', int(np.sum(improved_adv))) 
+                    if np.sum(improved_adv) > 0:
+                        best_l2dist[improved_adv] = l2dist[improved_adv]
+                        best_x_adv_batch[improved_adv] = x_adv_batch[improved_adv]
                     
                     active = (c < self._c_upper_bound) & (lr > 0)
                     nb_active = int(np.sum(active))
                     logger.debug('Number of samples with c < _c_upper_bound and lr > 0: %i out of %i', 
                                  nb_active, x_batch.shape[0])
                     if nb_active == 0:
-                        break
-                        
-                    x_batch_active = x_batch[active]
-                    y_batch_active = y_batch[active]
-                    x_adv_batch_active = x_adv_batch[active]
-                    x_adv_batch_tanh_active = x_adv_batch_tanh[active]
-                    z_active = z[active]
-                    l2dist_active = l2dist[active]
-                    loss_active = loss[active]
-                    c_active = c[active]                 
+                        break                                                         
               
                     # compute gradient:
                     logger.debug('Compute loss gradient')
@@ -295,30 +401,61 @@ class CarliniL2Method(Attack):
                     
                     # perform line search to optimize perturbation                     
                     # first, halve the learning rate until perturbation actually decreases the loss:                      
-                    prev_loss = loss
-                    best_loss = loss
+                    prev_loss = loss.copy()
+                    best_loss = loss.copy()
                     best_lr = np.zeros(x_batch.shape[0])
                     halving = np.zeros(x_batch.shape[0])
                     
                     for h in range(self.max_halving):
                         logger.debug('Perform halving iteration %i out of %i', h, self.max_halving)
                         do_halving = (loss[active] >= prev_loss[active])
-                        logger.debug('Halving to be performed on %i samples', int(np.sum(do_halving)))
-                        new_x_adv_batch_tanh = x_adv_batch_tanh[active][do_halving] + lr[active][do_halving] 
-                                                                            * perturbation_tanh[do_halving]
+                        logger.debug('Halving to be performed on %i samples', int(np.sum(do_halving)))                       
+                        if np.sum(do_halving) == 0:
+                            break                        
+                        
+                        logger.debug('lr: ' + str(lr))
+                        lr_mult = lr[active[do_halving]]
+                        for _ in range(x.shape[-1]):
+                            lr_mult = lr_mult[:,np.newaxis]   
+                            
+                        #logger.debug('np.linalg.norm(lr_mult): %f', np.linalg.norm(lr_mult))
+                        #logger.debug('np.linalg.norm(perturbation_tanh): %f', np.linalg.norm(perturbation_tanh))
+                        new_x_adv_batch_tanh = x_adv_batch_tanh[active[do_halving]] + \
+                                               lr_mult * perturbation_tanh[do_halving]
+                        #logger.debug('np.linalg.norm(DIFF x_adv_batch_tanh): %f', np.linalg.norm(new_x_adv_batch_tanh - x_adv_batch_tanh[active][do_halving]))
                         new_x_adv_batch = self._tanh_to_original(new_x_adv_batch_tanh, clip_min, clip_max)                        
-                        _, l2dist[active][do_halving], loss[active][do_halving] = self._loss(
-                                                                                     x_batch[active][do_halving], 
-                                                                                     new_x_adv_batch, 
-                                                                                     y_batch[active][do_halving], 
-                                                                                     c[active][do_halving]) 
+                        _, l2dist[active & do_halving], loss[active & do_halving] = self._loss( 
+                                                                                              x_batch[active & do_halving], 
+                                                                                              new_x_adv_batch, 
+                                                                                              y_batch[active & do_halving], 
+                                                                                              c[active & do_halving]) 
+                        
+                        #logger.debug('np.linalg.norm(DIFF loss): %f', np.linalg.norm(loss[active][do_halving] - new_loss))
+                        #logger.debug('new_l2dist: ' + str(new_l2dist))
+                        #logger.debug('new_loss: ' + str(new_loss))
+                                      
+                        #l2dist[active][do_halving] = new_l2dist
+                        #loss[active][do_halving] = new_loss
+                        #logger.debug('new_l2dist: ' + str(new_l2dist))
+                        #logger.debug('new_loss: ' + str(new_loss))
+                        #logger.debug('l2dist: ' + str(l2dist[active][do_halving]))
+                        #logger.debug('loss: ' + str(loss[active][do_halving]))
+                        #logger.debug('l2dist: ' + str(l2dist))
+                        
+                        
+                        #logger.debug('np.linalg.norm(DIFF loss): %f', np.linalg.norm(loss[active][do_halving] - new_loss))
                         logger.debug('New Average Loss: %f', np.mean(loss))
                         logger.debug('New Average L2Dist: %f', np.mean(l2dist))
                         logger.debug('New Average Margin Loss: %f', np.mean(loss-l2dist))
-                        best_loss[loss < best_loss] = loss
+                        
+                        logger.debug('loss: ' + str(loss))
+                        logger.debug('prev_loss: ' + str(prev_loss))
+                        logger.debug('best_loss: ' + str(best_loss))
+                        
                         best_lr[loss < best_loss] = lr[loss < best_loss]
-                        lr[active][do_halving] /= 2
-                        halving[active][do_halving] += 1
+                        best_loss[loss < best_loss] = loss[loss < best_loss]
+                        lr[active[do_halving]] /= 2
+                        halving[active[do_halving]] += 1
                     lr[active] *= 2
                     
                     #halving = np.ones(x_batch.shape[0])
@@ -341,22 +478,29 @@ class CarliniL2Method(Attack):
                     # decreases the loss:
                     for d in range(self.max_doubling):
                         logger.debug('Perform doubling iteration %i out of %i', d, self.max_doubling)
-                        do_doubling = (halving[active] == 1) & (loss[active] <= prev_loss[active])                        
-                        logger.debug('Doubling to be performed on %i samples', int(np.sum(do_doubling)))                       
-                        lr[active][do_doubling] *= 2                        
-                        new_x_adv_batch_tanh = x_adv_batch_tanh[active][do_doubling] + lr[active][do_doubling] 
-                                                                            * perturbation_tanh[do_doubling]
+                        do_doubling = (halving[active] == 1) & (loss[active] <= best_loss[active]) 
+                        logger.debug('Doubling to be performed on %i samples', int(np.sum(do_doubling)))  
+                        if np.sum(do_doubling) == 0:
+                            break                        
+                        lr[active[do_doubling]] *= 2  
+                        
+                        lr_mult = lr[active[do_doubling]]
+                        for _ in range(x.shape[-1]):
+                            lr_mult = lr_mult[:,np.newaxis]  
+                            
+                        new_x_adv_batch_tanh = x_adv_batch_tanh[active[do_doubling]] + \
+                                               lr_mult * perturbation_tanh[do_doubling]
                         new_x_adv_batch = self._tanh_to_original(new_x_adv_batch_tanh, clip_min, clip_max)                        
-                        _, l2dist[active][do_doubling], loss[active][do_doubling] = self._loss(
-                                                                                       x_batch[active][do_dubling], 
+                        _, l2dist[active[do_doubling]], loss[active[do_doubling]] = self._loss(
+                                                                                       x_batch[active[do_doubling]], 
                                                                                        new_x_adv_batch, 
-                                                                                       y_batch[active][do_doubling], 
-                                                                                       c[active][do_doubling]) 
+                                                                                       y_batch[active[do_doubling]], 
+                                                                                       c[active[do_doubling]]) 
                         logger.debug('New Average Loss: %f', np.mean(loss))
                         logger.debug('New Average L2Dist: %f', np.mean(l2dist))
                         logger.debug('New Average Margin Loss: %f', np.mean(loss-l2dist))
-                        best_loss[loss < best_loss] = loss
                         best_lr[loss < best_loss] = lr[loss < best_loss]
+                        best_loss[loss < best_loss] = loss[loss < best_loss]
                         
                     lr[halving == 1] /= 2
                                            
@@ -381,17 +525,23 @@ class CarliniL2Method(Attack):
                     update_adv = (best_lr[active] > 0)
                     logger.debug('Number of adversarial samples to be finally updated: %i', int(np.sum(update_adv)))
                     
-                    x_adv_batch_tanh[active][update_adv] = x_adv_batch_tanh[active][update_adv] + best_lr[update_adv] 
-                                                            * perturbation_tanh[update_adv]
-                    x_adv_batch[active][update_adv] = self._tanh_to_original(x_adv_batch_tanh[active][update_adv], 
-                                                                             clip_min, clip_max)
-                    z[active][update_adv], l2dist[active][update_adv], loss[active][update_adv] = self._loss(
-                                                                                     x_batch[active][update_adv], 
-                                                                                     x_adv_batch[active][update_adv], 
-                                                                                     y_batch[active][update_adv], 
-                                                                                     c[active][update_adv])                    
-                    attack_success = (loss - l2dist <= 0)
-                    overall_attack_success = overall_attack_success | attack_success    
+                    if np.sum(update_adv) > 0:
+                        best_lr_mult = best_lr[update_adv]
+                        for _ in range(x.shape[-1]):
+                            best_lr_mult = best_lr_mult[:,np.newaxis]  
+                                
+                                
+                        x_adv_batch_tanh[active[update_adv]] = x_adv_batch_tanh[active[update_adv]] + \
+                                                               best_lr_mult * perturbation_tanh[update_adv]
+                        x_adv_batch[active[update_adv]] = self._tanh_to_original(x_adv_batch_tanh[active[update_adv]], 
+                                                                                 clip_min, clip_max)
+                        z[active[update_adv]], l2dist[active[update_adv]], loss[active[update_adv]] = self._loss(
+                                                                                      x_batch[active[update_adv]], 
+                                                                                      x_adv_batch[active[update_adv]], 
+                                                                                      y_batch[active[update_adv]], 
+                                                                                      c[active[update_adv]])                    
+                        attack_success = (loss - l2dist <= 0)
+                        overall_attack_success = overall_attack_success | attack_success    
                     
                     #if best_lr >0:
                     #    logger.debug('Finally apply gradient with learning rate %f', best_lr)
@@ -405,9 +555,11 @@ class CarliniL2Method(Attack):
                 
                 # Update depending on attack success:
                 improved_adv = attack_success & (l2dist < best_l2dist) 
-                logger.debug('Number of improved L2 distances: %i', int(np.sum(improved_adv)))     
-                best_l2dist = l2dist[improved_adv]
-                best_x_adv_batch = x_adv_batch[improved_adv]
+                logger.debug('Number of improved L2 distances: %i', int(np.sum(improved_adv)))  
+                
+                if np.sum(improved_adv) > 0:
+                    best_l2dist[improved_adv] = l2dist[improved_adv]
+                    best_x_adv_batch[improved_adv] = x_adv_batch[improved_adv]
                                        
                 #if attack_success:
                 #    logger.debug('Margin Loss <= 0 --> Attack Success!')
