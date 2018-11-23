@@ -168,6 +168,47 @@ class TestCarliniL2(unittest.TestCase):
         logger.info('CW2 Success Rate: %.2f', (sum(y_pred != y_pred_adv) / float(len(y_pred))))
         self.assertTrue((y_pred != y_pred_adv).any())
 
+        # First attack without batching
+        cl2mwob = CarliniL2Method(classifier=tfc, targeted=True, max_iter=10, batch_size=1)
+        params = {'y': random_targets(y_test, tfc.nb_classes)}
+        x_test_adv = cl2mwob.generate(x_test, **params)
+        self.assertFalse((x_test == x_test_adv).all())
+        self.assertTrue((x_test_adv <= 1.0001).all())
+        self.assertTrue((x_test_adv >= -0.0001).all())
+        target = np.argmax(params['y'], axis=1)
+        y_pred_adv = np.argmax(tfc.predict(x_test_adv), axis=1)
+        logger.debug('CW2 Target: %s', target)
+        logger.debug('CW2 Actual: %s', y_pred_adv)
+        logger.info('CW2 Success Rate: %.2f', (sum(target == y_pred_adv) / float(len(target))))
+        self.assertTrue((target == y_pred_adv).any())
+
+        # Second attack without batching
+        cl2mwob = CarliniL2Method(classifier=tfc, targeted=False, max_iter=10, batch_size=1)
+        params = {'y': random_targets(y_test, tfc.nb_classes)}
+        x_test_adv = cl2mwob.generate(x_test, **params)
+        self.assertTrue((x_test_adv <= 1.0001).all())
+        self.assertTrue((x_test_adv >= -0.0001).all())
+        target = np.argmax(params['y'], axis=1)
+        y_pred_adv = np.argmax(tfc.predict(x_test_adv), axis=1)
+        logger.debug('CW2 Target: %s', target)
+        logger.debug('CW2 Actual: %s', y_pred_adv)
+        logger.info('CW2 Success Rate: %.2f', (sum(target == y_pred_adv) / float(len(target))))
+        self.assertTrue((target != y_pred_adv).any())
+
+        # Third attack without batching
+        cl2m = CarliniL2Method(classifier=tfc, targeted=False, max_iter=10, batch_size=1)
+        params = {}
+        x_test_adv = cl2mwob.generate(x_test, **params)
+        self.assertFalse((x_test == x_test_adv).all())
+        self.assertTrue((x_test_adv <= 1.0001).all())
+        self.assertTrue((x_test_adv >= -0.0001).all())
+        y_pred = np.argmax(tfc.predict(x_test), axis=1)
+        y_pred_adv = np.argmax(tfc.predict(x_test_adv), axis=1)
+        logger.debug('CW2 Target: %s', y_pred)
+        logger.debug('CW2 Actual: %s', y_pred_adv)
+        logger.info('CW2 Success Rate: %.2f', (sum(y_pred != y_pred_adv) / float(len(y_pred))))
+        self.assertTrue((y_pred != y_pred_adv).any())
+        
     def test_krclassifier(self):
         """
         Second test with the KerasClassifier.
@@ -418,6 +459,47 @@ class TestCarliniL0(unittest.TestCase):
         logger.info('CW0 Success Rate: %.2f', (sum(y_pred != y_pred_adv) / float(len(y_pred))))
         self.assertTrue((y_pred != y_pred_adv).any())
 
+        # First attack without batching
+        cl0mwob = CarliniL0Method(classifier=tfc, targeted=True, max_iter=10, eps=0.5, batch_size=1)
+        params = {'y': random_targets(y_test, tfc.nb_classes)}
+        x_test_adv = cl0mwob.generate(x_test, **params)
+        self.assertFalse((x_test == x_test_adv).all())
+        self.assertTrue((x_test_adv <= 1.0001).all())
+        self.assertTrue((x_test_adv >= -0.0001).all())
+        target = np.argmax(params['y'], axis=1)
+        y_pred_adv = np.argmax(tfc.predict(x_test_adv), axis=1)
+        logger.debug('CW0 Target: %s', target)
+        logger.debug('CW0 Actual: %s', y_pred_adv)
+        logger.info('CW0 Success Rate: %.2f', (sum(target == y_pred_adv) / float(len(target))))
+        self.assertTrue((target == y_pred_adv).any())
+
+        # Second attack without batching
+        cl0mwob = CarliniL0Method(classifier=tfc, targeted=False, max_iter=10, eps=0.5, batch_size=1)
+        params = {'y': random_targets(y_test, tfc.nb_classes)}
+        x_test_adv = cl0mwob.generate(x_test, **params)
+        self.assertTrue((x_test_adv <= 1.0001).all())
+        self.assertTrue((x_test_adv >= -0.0001).all())
+        target = np.argmax(params['y'], axis=1)
+        y_pred_adv = np.argmax(tfc.predict(x_test_adv), axis=1)
+        logger.debug('CW0 Target: %s', target)
+        logger.debug('CW0 Actual: %s', y_pred_adv)
+        logger.info('CW0 Success Rate: %.2f', (sum(target != y_pred_adv) / float(len(target))))
+        self.assertTrue((target != y_pred_adv).any())
+
+        # Third attack without batching
+        cl0mwob = CarliniL0Method(classifier=tfc, targeted=False, max_iter=10, eps=0.5, batch_size=1)
+        params = {}
+        x_test_adv = cl0mwob.generate(x_test, **params)
+        self.assertFalse((x_test == x_test_adv).all())
+        self.assertTrue((x_test_adv <= 1.0001).all())
+        self.assertTrue((x_test_adv >= -0.0001).all())
+        y_pred = np.argmax(tfc.predict(x_test), axis=1)
+        y_pred_adv = np.argmax(tfc.predict(x_test_adv), axis=1)
+        logger.debug('CW0 Target: %s', y_pred)
+        logger.debug('CW0 Actual: %s', y_pred_adv)
+        logger.info('CW0 Success Rate: %.2f', (sum(y_pred != y_pred_adv) / float(len(y_pred))))
+        self.assertTrue((y_pred != y_pred_adv).any())
+        
     def test_krclassifier(self):
         """
         Second test with the KerasClassifier.
