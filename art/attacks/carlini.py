@@ -1,7 +1,6 @@
 from __future__ import absolute_import, division, print_function, unicode_literals
 
 import logging
-import sys
 
 import numpy as np
 
@@ -138,8 +137,8 @@ class CarliniL2Method(Attack):
             i_add = np.argmax(target, axis=1)
             i_sub = np.argmax(z * (1 - target) + (np.min(z, axis=1) - 1)[:,np.newaxis] * target, axis=1)
                         
-        loss_gradient = self.classifier.class_gradient(np.array(x_adv, dtype=NUMPY_DTYPE), label=i_add, logits=True)
-        loss_gradient -= self.classifier.class_gradient(np.array(x_adv, dtype=NUMPY_DTYPE), label=i_sub, logits=True)
+        loss_gradient = self.classifier.class_gradient(x_adv, label=i_add, logits=True)
+        loss_gradient -= self.classifier.class_gradient(x_adv, label=i_sub, logits=True)
         loss_gradient = loss_gradient.reshape(x.shape)
         
         c_mult = c
@@ -225,7 +224,7 @@ class CarliniL2Method(Attack):
             logger.debug('Processing batch %i out of %i', batch_id, nb_batches)
             
             batch_index_1, batch_index_2 = batch_id * self.batch_size, (batch_id + 1) * self.batch_size
-            x_batch = x_adv[batch_index_1:batch_index_2].copy()
+            x_batch = x_adv[batch_index_1:batch_index_2]
             y_batch = y[batch_index_1:batch_index_2]
 
             # The optimization is performed in tanh space to keep the
@@ -238,7 +237,7 @@ class CarliniL2Method(Attack):
             c_double = (np.ones(x_batch.shape[0]) > 0)
 
             # Initialize placeholders for best l2 distance and attack found so far
-            best_l2dist = sys.float_info.max * np.ones(x_batch.shape[0])
+            best_l2dist = np.inf * np.ones(x_batch.shape[0])
             best_x_adv_batch = x_batch.copy()
             
             for bss in range(self.binary_search_steps):  
@@ -554,8 +553,8 @@ class CarliniL0Method(Attack):
             i_add = np.argmax(target, axis=1)
             i_sub = np.argmax(z * (1 - target) + (np.min(z, axis=1) - 1)[:,np.newaxis] * target, axis=1)
                 
-        loss_gradient = self.classifier.class_gradient(np.array(x_adv, dtype=NUMPY_DTYPE), label=i_add, logits=True)
-        loss_gradient -= self.classifier.class_gradient(np.array(x_adv, dtype=NUMPY_DTYPE), label=i_sub, logits=True)
+        loss_gradient = self.classifier.class_gradient(x_adv, label=i_add, logits=True)
+        loss_gradient -= self.classifier.class_gradient(x_adv, label=i_sub, logits=True)
         loss_gradient = loss_gradient.reshape(x_adv.shape)
                 
         loss_gradient *= (clip_max - clip_min) 
@@ -630,7 +629,7 @@ class CarliniL0Method(Attack):
             logger.debug('Processing batch %i out of %i', batch_id, nb_batches)
             
             batch_index_1, batch_index_2 = batch_id * self.batch_size, (batch_id + 1) * self.batch_size
-            x_batch = x_adv[batch_index_1:batch_index_2].copy()
+            x_batch = x_adv[batch_index_1:batch_index_2]
             y_batch = y[batch_index_1:batch_index_2]
 
             (clip_min_per_pixel, clip_max_per_pixel) = self.classifier.clip_values
