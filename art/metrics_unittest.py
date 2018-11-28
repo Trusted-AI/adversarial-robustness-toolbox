@@ -1,23 +1,23 @@
 from __future__ import absolute_import, division, print_function, unicode_literals
 
+import logging
 import unittest
 
-import tensorflow as tf
 import keras
 import keras.backend as k
 from keras.models import Sequential
 from keras.layers import Dense, Flatten, Conv2D, MaxPooling2D
 import numpy as np
+import tensorflow as tf
 import torch.nn as nn
 import torch.nn.functional as f
 import torch.optim as optim
 
-from art.classifiers.tensorflow import TFClassifier
-from art.classifiers.keras import KerasClassifier
-from art.classifiers.pytorch import PyTorchClassifier
-from art.metrics import empirical_robustness, clever_t, clever_u, loss_sensitivity
-from art.utils import load_mnist
+from art.classifiers import KerasClassifier, PyTorchClassifier, TFClassifier
+from art.metrics import empirical_robustness, clever_t, clever_u, clever, loss_sensitivity
+from art.utils import load_mnist, master_seed
 
+logger = logging.getLogger('testLogger')
 
 BATCH_SIZE = 10
 NB_TRAIN = 100
@@ -29,6 +29,10 @@ r_li = 0.1
 
 
 class TestMetrics(unittest.TestCase):
+    def setUp(self):
+        # Set master seed
+        master_seed(42)
+
     def test_emp_robustness_mnist(self):
         # Get MNIST
         (x_train, y_train), (_, _), _, _ = load_mnist()
@@ -39,24 +43,17 @@ class TestMetrics(unittest.TestCase):
         classifier.fit(x_train, y_train, batch_size=BATCH_SIZE, nb_epochs=2)
 
         # Compute minimal perturbations
-        params = {"eps_step": 1.1,
-                  "clip_min": 0.,
-                  "clip_max": 1.}
-
+        params = {"eps_step": 1.1}
         emp_robust = empirical_robustness(classifier, x_train, str('fgsm'), params)
         self.assertEqual(emp_robust, 0.)
 
         params = {"eps_step": 1.,
-                  "eps_max": 1.,
-                  "clip_min": None,
-                  "clip_max": None}
+                  "eps_max": 1.}
         emp_robust = empirical_robustness(classifier, x_train, str('fgsm'), params)
         self.assertAlmostEqual(emp_robust, 1., 3)
 
         params = {"eps_step": 0.1,
-                  "eps_max": 0.2,
-                  "clip_min": None,
-                  "clip_max": None}
+                  "eps_max": 0.2}
         emp_robust = empirical_robustness(classifier, x_train, str('fgsm'), params)
         self.assertLessEqual(emp_robust, 0.21)
 
@@ -69,7 +66,7 @@ class TestMetrics(unittest.TestCase):
         classifier = self._cnn_mnist_k([28, 28, 1])
         classifier.fit(x_train, y_train, batch_size=BATCH_SIZE, nb_epochs=2)
 
-        l = loss_sensitivity(classifier, x_train)
+        l = loss_sensitivity(classifier, x_train, y_train)
         self.assertGreaterEqual(l, 0)
 
     # def testNearestNeighborDist(self):
@@ -123,6 +120,10 @@ class TestClever(unittest.TestCase):
     """
     Unittest for Clever metrics.
     """
+    def setUp(self):
+        # Set master seed
+        master_seed(42)
+
     @staticmethod
     def _create_tfclassifier():
         """
@@ -213,12 +214,12 @@ class TestClever(unittest.TestCase):
         tfc = self._create_tfclassifier()
         tfc.fit(x_train, y_train, batch_size=batch_size, nb_epochs=1)
 
-        # TODO Need to configure r 
+        # TODO Need to configure r
         # Test targeted clever
         res0 = clever_t(tfc, x_test[-1], 2, 10, 5, r_l1, norm=1, pool_factor=3)
         res1 = clever_t(tfc, x_test[-1], 2, 10, 5, r_l2, norm=2, pool_factor=3)
         res2 = clever_t(tfc, x_test[-1], 2, 10, 5, r_li, norm=np.inf, pool_factor=3)
-        print("Target tf: ", res0, res1, res2)
+        logger.info("Targeted TensorFlow: %f %f %f", res0, res1, res2)
         self.assertFalse(res0 == res1)
         self.assertFalse(res1 == res2)
         self.assertFalse(res2 == res0)
@@ -227,7 +228,7 @@ class TestClever(unittest.TestCase):
         res0 = clever_u(tfc, x_test[-1], 10, 5, r_l1, norm=1, pool_factor=3)
         res1 = clever_u(tfc, x_test[-1], 10, 5, r_l2, norm=2, pool_factor=3)
         res2 = clever_u(tfc, x_test[-1], 10, 5, r_li, norm=np.inf, pool_factor=3)
-        print("Untarget tf: ", res0, res1, res2)
+        logger.info("Untargeted TensorFlow: %f %f %f", res0, res1, res2)
         self.assertFalse(res0 == res1)
         self.assertFalse(res1 == res2)
         self.assertFalse(res2 == res0)
@@ -251,7 +252,7 @@ class TestClever(unittest.TestCase):
         res0 = clever_t(krc, x_test[-1], 2, 10, 5, r_l1, norm=1, pool_factor=3)
         res1 = clever_t(krc, x_test[-1], 2, 10, 5, r_l2, norm=2, pool_factor=3)
         res2 = clever_t(krc, x_test[-1], 2, 10, 5, r_li, norm=np.inf, pool_factor=3)
-        print("Target kr: ", res0, res1, res2)
+        logger.info("Targeted Keras: %f %f %f", res0, res1, res2)
         self.assertNotEqual(res0, res1)
         self.assertNotEqual(res1, res2)
         self.assertNotEqual(res2, res0)
@@ -260,7 +261,7 @@ class TestClever(unittest.TestCase):
         res0 = clever_u(krc, x_test[-1], 10, 5, r_l1, norm=1, pool_factor=3)
         res1 = clever_u(krc, x_test[-1], 10, 5, r_l2, norm=2, pool_factor=3)
         res2 = clever_u(krc, x_test[-1], 10, 5, r_li, norm=np.inf, pool_factor=3)
-        print("Untarget kr: ", res0, res1, res2)
+        logger.info("Untargeted Keras: %f %f %f", res0, res1, res2)
         self.assertNotEqual(res0, res1)
         self.assertNotEqual(res1, res2)
         self.assertNotEqual(res2, res0)
@@ -286,7 +287,7 @@ class TestClever(unittest.TestCase):
         res0 = clever_t(ptc, x_test[-1], 2, 10, 5, r_l1, norm=1, pool_factor=3)
         res1 = clever_t(ptc, x_test[-1], 2, 10, 5, r_l2, norm=2, pool_factor=3)
         res2 = clever_t(ptc, x_test[-1], 2, 10, 5, r_li, norm=np.inf, pool_factor=3)
-        print("Target pt: ", res0, res1, res2)
+        logger.info("Targeted PyTorch: %f %f %f", res0, res1, res2)
         self.assertFalse(res0 == res1)
         self.assertFalse(res1 == res2)
         self.assertFalse(res2 == res0)
@@ -295,10 +296,46 @@ class TestClever(unittest.TestCase):
         res0 = clever_u(ptc, x_test[-1], 10, 5, r_l1, norm=1, pool_factor=3)
         res1 = clever_u(ptc, x_test[-1], 10, 5, r_l2, norm=2, pool_factor=3)
         res2 = clever_u(ptc, x_test[-1], 10, 5, r_li, norm=np.inf, pool_factor=3)
-        print("Untarget pt: ", res0, res1, res2)
+        logger.info("Untargeted PyTorch: %f %f %f", res0, res1, res2)
         self.assertFalse(res0 == res1)
         self.assertFalse(res1 == res2)
         self.assertFalse(res2 == res0)
+
+    def test_clever_l2_no_target(self):
+        batch_size, nb_train, nb_test = 100, 500, 10
+        (x_train, y_train), (x_test, y_test), _, _ = load_mnist()
+
+        # Get the classifier
+        krc = self._create_krclassifier()
+        krc.fit(x_train, y_train, batch_size=batch_size, nb_epochs=2)
+
+        scores = clever(krc, x_test[0], 5, 5, 3, 2, target=None, c_init=1, pool_factor=10)
+        logger.info("Clever scores for n-1 classes: %f %s", scores, str(scores.shape))
+        self.assertTrue(scores.shape == (krc.nb_classes-1,))
+
+    def test_clever_l2_no_target_sorted(self):
+        batch_size, nb_train, nb_test = 100, 500, 10
+        (x_train, y_train), (x_test, y_test), _, _ = load_mnist()
+
+        # Get the classifier
+        krc = self._create_krclassifier()
+        krc.fit(x_train, y_train, batch_size=batch_size, nb_epochs=2)
+
+        scores = clever(krc, x_test[0], 5, 5, 3, 2, target=None, target_sort=True, c_init=1, pool_factor=10)
+        logger.info("Clever scores for n-1 classes: %s %s", str(scores), str(scores.shape))
+        # Should approx. be in decreasing value
+        self.assertTrue(scores.shape == (krc.nb_classes-1,))
+
+    def test_clever_l2_same_target(self):
+        batch_size, nb_train, nb_test = 100, 500, 10
+        (x_train, y_train), (x_test, y_test), _, _ = load_mnist()
+
+        # Get the classifier
+        krc = self._create_krclassifier()
+        krc.fit(x_train, y_train, batch_size=batch_size, nb_epochs=2)
+
+        scores = clever(krc, x_test[0], 5, 5, 3, 2, target=np.argmax(krc.predict(x_test[:1])), c_init=1, pool_factor=10)
+        self.assertIsNone(scores[0], msg='Clever scores for the predicted class should be `None`.')
 
 
 if __name__ == '__main__':

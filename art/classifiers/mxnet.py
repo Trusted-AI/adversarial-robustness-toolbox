@@ -1,12 +1,20 @@
 from __future__ import absolute_import, division, print_function, unicode_literals
 
-import six
+import logging
+
 import numpy as np
+import six
 
 from art.classifiers import Classifier
 
+logger = logging.getLogger(__name__)
+# TODO Perform explicit casting to np.float32?
+
 
 class MXClassifier(Classifier):
+    """
+    Wrapper class for importing MXNet Gluon model.
+    """
     def __init__(self, clip_values, model, input_shape, nb_classes, optimizer=None, ctx=None, channel_index=1,
                  defences=None, preprocessing=(0, 1)):
         """
@@ -70,7 +78,7 @@ class MXClassifier(Classifier):
         :return: `None`
         """
         if self._optimizer is None:
-            raise ValueError()
+            raise ValueError('An MXNet optimizer is required for fitting the model.')
 
         from mxnet import autograd, nd
 
@@ -88,8 +96,8 @@ class MXClassifier(Classifier):
 
             # Train for one epoch
             for m in range(nb_batch):
-                x_batch = nd.array(x_[ind[m * batch_size:(m + 1) * batch_size]])
-                y_batch = nd.array(y_[ind[m * batch_size:(m + 1) * batch_size]])
+                x_batch = nd.array(x_[ind[m * batch_size:(m + 1) * batch_size]]).as_in_context(self._ctx)
+                y_batch = nd.array(y_[ind[m * batch_size:(m + 1) * batch_size]]).as_in_context(self._ctx)
 
                 with autograd.record(train_mode=True):
                     preds = self._model(x_batch)
@@ -99,7 +107,40 @@ class MXClassifier(Classifier):
                 # Update parameters
                 self._optimizer.step(batch_size)
 
-    def predict(self, x, logits=False):
+    def fit_generator(self, generator, nb_epochs=20):
+        """
+        Fit the classifier using the generator that yields batches as specified.
+
+        :param generator: Batch generator providing `(x, y)` for each epoch.
+        :type generator: `DataGenerator`
+        :param nb_epochs: Number of epochs to use for trainings.
+        :type nb_epochs: `int`
+        :return: `None`
+        """
+        from mxnet import autograd, nd
+        from art.data_generators import MXDataGenerator
+
+        if isinstance(generator, MXDataGenerator) and \
+                not (hasattr(self, 'label_smooth') or hasattr(self, 'feature_squeeze')):
+            # Train directly in MXNet
+            for _ in range(nb_epochs):
+                for x_batch, y_batch in generator.data_loader:
+                    x_batch = nd.array(x_batch).as_in_context(self._ctx)
+                    y_batch = np.argmax(y_batch, axis=1)
+                    y_batch = nd.array(y_batch).as_in_context(self._ctx)
+
+                    with autograd.record(train_mode=True):
+                        preds = self._model(x_batch)
+                        loss = nd.softmax_cross_entropy(preds, y_batch)
+                    loss.backward()
+
+                    # Update parameters
+                    self._optimizer.step(x_batch.shape[0])
+        else:
+            # Fit a generic data generator through the API
+            super(MXClassifier, self).fit_generator(generator, nb_epochs=nb_epochs)
+
+    def predict(self, x, logits=False, batch_size=128):
         """
         Perform prediction for a batch of inputs.
 
@@ -107,6 +148,8 @@ class MXClassifier(Classifier):
         :type x: `np.ndarray`
         :param logits: `True` if the prediction should be done at the logits layer.
         :type logits: `bool`
+        :param batch_size: Size of batches.
+        :type batch_size: `int`
         :return: Array of predictions of shape `(nb_inputs, self.nb_classes)`.
         :rtype: `np.ndarray`
         """
@@ -116,60 +159,105 @@ class MXClassifier(Classifier):
         x_ = self._apply_processing(x)
         x_ = self._apply_defences_predict(x_)
 
-        # Predict
-        # TODO add batching?
-        x_ = nd.array(x_, ctx=self._ctx)
-        x_.attach_grad()
-        with autograd.record(train_mode=False):
-            preds = self._model(x_)
+        # Run prediction with batch processing
+        results = np.zeros((x_.shape[0], self.nb_classes), dtype=np.float32)
+        num_batch = int(np.ceil(len(x_) / float(batch_size)))
+        for m in range(num_batch):
+            # Batch indexes
+            begin, end = m * batch_size, min((m + 1) * batch_size, x_.shape[0])
 
-        if logits is True:
-            preds = preds.softmax()
+            # Predict
+            x_batch = nd.array(x_[begin:end], ctx=self._ctx)
+            x_batch.attach_grad()
+            with autograd.record(train_mode=False):
+                preds = self._model(x_batch)
 
-        # preds = np.empty((x.shape[0], self.nb_classes), dtype=float)
-        # pred_iter = mx.io.NDArrayIter(data=x_, batch_size=128)
-        # if logits is True:
-        #     for preds_i, i, batch in mod.iter_predict(pred_iter):
-        #         pred_label = preds_i[0].asnumpy()
-        # else:
-        #     for preds_i, i, batch in mod.iter_predict(pred_iter):
-        #         pred_label = preds_i[0].softmax().asnumpy()
+            if logits is False:
+                preds = preds.softmax()
 
-        return preds.asnumpy()
+            results[begin:end] = preds.asnumpy()
 
-    def class_gradient(self, x, logits=False):
+        return results
+
+    def class_gradient(self, x, label=None, logits=False):
         """
         Compute per-class derivatives w.r.t. `x`.
 
         :param x: Sample input with shape as expected by the model.
         :type x: `np.ndarray`
+        :param label: Index of a specific per-class derivative. If an integer is provided, the gradient of that class
+                      output is computed for all samples. If multiple values as provided, the first dimension should
+                      match the batch size of `x`, and each value will be used as target for its corresponding sample in
+                      `x`. If `None`, then gradients for all classes will be computed for each sample.
+        :type label: `int` or `list`
         :param logits: `True` if the prediction should be done at the logits layer.
         :type logits: `bool`
         :return: Array of gradients of input features w.r.t. each class in the form
-                 `(batch_size, nb_classes, input_shape)`.
+                 `(batch_size, nb_classes, input_shape)` when computing for all classes, otherwise shape becomes
+                 `(batch_size, 1, input_shape)` when `label` parameter is specified.
         :rtype: `np.ndarray`
         """
-        raise NotImplementedError
-        # from mxnet import autograd, nd
-        #
-        # x_ = self._apply_processing(x)
-        # x_ = nd.array(x_, ctx=self._ctx)
-        #
-        # for i in range(self.nb_classes):
-        #     x_.attach_grad()
-        #     with autograd.record(train_mode=False):
-        #         if logits is True:
-        #             preds = self._model(x_)
-        #         else:
-        #             preds = self._model(x_).softmax()
-        #
-        #     preds[:, 0].backward(retain_graph=True, train_mode=False)
-        #     # print(i, x_.grad.asnumpy().shape)
-        #     # exit()
-        # grads = np.swapaxes(grads.asnumpy(), 0, 1)
-        # grads = self._apply_processing_gradient(grads)
-        #
-        # return grads
+        from mxnet import autograd, nd
+
+        # Check value of label for computing gradients
+        if not (label is None or (isinstance(label, (int, np.integer)) and label in range(self.nb_classes))
+                or (type(label) is np.ndarray and len(label.shape) == 1 and (label < self.nb_classes).all()
+                    and label.shape[0] == x.shape[0])):
+            raise ValueError('Label %s is out of range.' % str(label))
+
+        x_ = self._apply_processing(x)
+        x_ = nd.array(x_, ctx=self._ctx)
+        x_.attach_grad()
+
+        if label is None:
+            with autograd.record(train_mode=False):
+                if logits is True:
+                    preds = self._model(x_)
+                else:
+                    preds = self._model(x_).softmax()
+                class_slices = [preds[:, i] for i in range(self.nb_classes)]
+
+            grads = []
+            for slice_ in class_slices:
+                slice_.backward(retain_graph=True)
+                grad = x_.grad.asnumpy()
+                grads.append(grad)
+            grads = np.swapaxes(np.array(grads), 0, 1)
+        elif isinstance(label, (int, np.integer)):
+            with autograd.record(train_mode=False):
+                if logits is True:
+                    preds = self._model(x_)
+                else:
+                    preds = self._model(x_).softmax()
+                class_slice = preds[:, label]
+
+            class_slice.backward()
+            grads = np.expand_dims(x_.grad.asnumpy(), axis=1)
+        else:
+            unique_labels = list(np.unique(label))
+
+            with autograd.record(train_mode=False):
+                if logits is True:
+                    preds = self._model(x_)
+                else:
+                    preds = self._model(x_).softmax()
+                class_slices = [preds[:, i] for i in unique_labels]
+
+            grads = []
+            for slice_ in class_slices:
+                slice_.backward(retain_graph=True)
+                grad = x_.grad.asnumpy()
+                grads.append(grad)
+
+            grads = np.swapaxes(np.array(grads), 0, 1)
+            lst = [unique_labels.index(i) for i in label]
+            grads = grads[np.arange(len(grads)), lst]
+            grads = np.expand_dims(grads, axis=1)
+            grads = self._apply_processing_gradient(grads)
+
+        grads = self._apply_processing_gradient(grads)
+
+        return grads
 
     def loss_gradient(self, x, y):
         """
@@ -192,7 +280,8 @@ class MXClassifier(Classifier):
         with autograd.record(train_mode=False):
             preds = self._model(x_)
             loss = loss(preds, y_)
-            loss.backward()
+
+        loss.backward()
         grads = x_.grad.asnumpy()
         grads = self._apply_processing_gradient(grads)
         assert grads.shape == x.shape
@@ -255,6 +344,19 @@ class MXClassifier(Classifier):
 
         return preds.asnumpy()
 
+    def save(self, filename, path=None):
+        """
+        Save a model to file in the format specific to the backend framework.
+
+        :param filename: Name of the file where to store the model.
+        :type filename: `str`
+        :param path: Path of the folder where to store the model. If no path is specified, the model will be stored in
+                     the default data location of the library `DATA_PATH`.
+        :type path: `str`
+        :return: None
+        """
+        raise NotImplementedError
+
     def _get_layers(self):
         """
         Return the hidden layers in the model, if applicable.
@@ -262,6 +364,7 @@ class MXClassifier(Classifier):
         :return: The hidden layers in the model, input and output layers excluded.
         :rtype: `list`
         """
-
         layer_names = [layer.name for layer in self._model[:-1]]
+        logger.info('Inferred %i hidden layers on MXNet classifier.', len(layer_names))
+
         return layer_names

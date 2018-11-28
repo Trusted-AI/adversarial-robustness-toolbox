@@ -1,13 +1,21 @@
 from __future__ import absolute_import, division, print_function, unicode_literals
 
+import logging
 import unittest
 
 import numpy as np
 
 from art.defences.feature_squeezing import FeatureSqueezing
+from art.utils import master_seed
+
+logger = logging.getLogger('testLogger')
 
 
 class TestFeatureSqueezing(unittest.TestCase):
+    def setUp(self):
+        # Set master seed
+        master_seed(1234)
+
     def test_ones(self):
         m, n = 10, 2
         x = np.ones((m, n))
@@ -32,6 +40,13 @@ class TestFeatureSqueezing(unittest.TestCase):
         self.assertFalse(np.logical_and(0. < squeezed_x, squeezed_x < 0.33).any())
         self.assertFalse(np.logical_and(0.34 < squeezed_x, squeezed_x < 0.66).any())
         self.assertFalse(np.logical_and(0.67 < squeezed_x, squeezed_x < 1.).any())
+
+    def test_data_range(self):
+        x = np.arange(5)
+        preproc = FeatureSqueezing()
+        squeezed_x = preproc(x, bit_depth=2, clip_values=(0, 4))
+        self.assertTrue(np.array_equal(x, np.arange(5)))
+        self.assertTrue(np.allclose(squeezed_x, [0, 1.33, 2.67, 2.67, 4], atol=1e-1))
 
 
 if __name__ == '__main__':

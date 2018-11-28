@@ -1,10 +1,14 @@
 from __future__ import absolute_import, division, print_function, unicode_literals
 
-import numpy as np
+import logging
 import random
+
+import numpy as np
 import six
 
 from art.classifiers import Classifier
+
+logger = logging.getLogger(__name__)
 
 
 class TFClassifier(Classifier):
@@ -75,7 +79,7 @@ class TFClassifier(Classifier):
         if self._loss is not None:
             self._loss_grads = tf.gradients(self._loss, self._input_ph)[0]
 
-    def predict(self, x, logits=False):
+    def predict(self, x, logits=False, batch_size=128):
         """
         Perform prediction for a batch of inputs.
 
@@ -83,25 +87,32 @@ class TFClassifier(Classifier):
         :type x: `np.ndarray`
         :param logits: `True` if the prediction should be done at the logits layer.
         :type logits: `bool`
+        :param batch_size: Size of batches.
+        :type batch_size: `int`
         :return: Array of predictions of shape `(nb_inputs, self.nb_classes)`.
         :rtype: `np.ndarray`
         """
-        import tensorflow as tf
-
         # Apply defences
         x_ = self._apply_processing(x)
         x_ = self._apply_defences_predict(x_)
 
-        # Create feed_dict
-        fd = {self._input_ph: x_}
-        if self._learning is not None:
-            fd[self._learning] = False
+        # Run prediction with batch processing
+        results = np.zeros((x_.shape[0], self.nb_classes), dtype=np.float32)
+        num_batch = int(np.ceil(len(x_) / float(batch_size)))
+        for m in range(num_batch):
+            # Batch indexes
+            begin, end = m * batch_size, min((m + 1) * batch_size, x_.shape[0])
 
-        # Run prediction
-        if logits:
-            results = self._sess.run(self._logits, feed_dict=fd)
-        else:
-            results = self._sess.run(self._probs, feed_dict=fd)
+            # Create feed_dict
+            fd = {self._input_ph: x_[begin:end]}
+            if self._learning is not None:
+                fd[self._learning] = False
+
+            # Run prediction
+            if logits:
+                results[begin:end] = self._sess.run(self._logits, feed_dict=fd)
+            else:
+                results[begin:end] = self._sess.run(self._probs, feed_dict=fd)
 
         return results
 
@@ -127,7 +138,7 @@ class TFClassifier(Classifier):
         x_ = self._apply_processing(x)
         x_, y_ = self._apply_defences_fit(x_, y)
 
-        num_batch = int(np.ceil(len(x_) / batch_size))
+        num_batch = int(np.ceil(len(x_) / float(batch_size)))
         ind = np.arange(len(x_))
 
         # Start training
@@ -137,12 +148,8 @@ class TFClassifier(Classifier):
 
             # Train for one epoch
             for m in range(num_batch):
-                if m < num_batch - 1:
-                    i_batch = x_[ind[m * batch_size:(m + 1) * batch_size]]
-                    o_batch = y_[ind[m * batch_size:(m + 1) * batch_size]]
-                else:
-                    i_batch = x_[ind[m * batch_size:]]
-                    o_batch = y_[ind[m * batch_size:]]
+                i_batch = x_[ind[m * batch_size:(m + 1) * batch_size]]
+                o_batch = y_[ind[m * batch_size:(m + 1) * batch_size]]
 
                 # Run train step
                 if self._learning is None:
@@ -151,35 +158,87 @@ class TFClassifier(Classifier):
                     self._sess.run(self._train, feed_dict={self._input_ph: i_batch, self._output_ph: o_batch,
                                                            self._learning: True})
 
-    def class_gradient(self, x, logits=False):
+    def fit_generator(self, generator, nb_epochs=20):
+        """
+        Fit the classifier using the generator that yields batches as specified.
+
+        :param generator: Batch generator providing `(x, y)` for each epoch. If the generator can be used for native
+                          training in TensorFlow, it will.
+        :type generator: `DataGenerator`
+        :param nb_epochs: Number of epochs to use for trainings.
+        :type nb_epochs: `int`
+        :return: `None`
+        """
+        # TODO Implement TF-specific version
+        super(TFClassifier, self).fit_generator(generator, nb_epochs=nb_epochs)
+
+    def class_gradient(self, x, label=None, logits=False):
         """
         Compute per-class derivatives w.r.t. `x`.
 
         :param x: Sample input with shape as expected by the model.
         :type x: `np.ndarray`
+        :param label: Index of a specific per-class derivative. If an integer is provided, the gradient of that class
+                      output is computed for all samples. If multiple values as provided, the first dimension should
+                      match the batch size of `x`, and each value will be used as target for its corresponding sample in
+                      `x`. If `None`, then gradients for all classes will be computed for each sample.
+        :type label: `int` or `list`
         :param logits: `True` if the prediction should be done at the logits layer.
         :type logits: `bool`
         :return: Array of gradients of input features w.r.t. each class in the form
-                 `(batch_size, nb_classes, input_shape)`.
+                 `(batch_size, nb_classes, input_shape)` when computing for all classes, otherwise shape becomes
+                 `(batch_size, 1, input_shape)` when `label` parameter is specified.
         :rtype: `np.ndarray`
         """
+        # Check value of label for computing gradients
+        if not (label is None or (isinstance(label, (int, np.integer)) and label in range(self.nb_classes))
+                or (type(label) is np.ndarray and len(label.shape) == 1 and (label < self._nb_classes).all()
+                    and label.shape[0] == x.shape[0])):
+            raise ValueError('Label %s is out of range.' % label)
+
+        self._init_class_grads(label=label, logits=logits)
+
         x_ = self._apply_processing(x)
 
         # Compute the gradient and return
-        if logits:
-            if not hasattr(self, '_logit_class_grads'):
-                self._init_class_grads(logits=True)
-            grds = self._sess.run(self._logit_class_grads, feed_dict={self._input_ph: x_})
+        if label is None:
+            # Compute the gradients w.r.t. all classes
+            if logits:
+                grads = self._sess.run(self._logit_class_grads, feed_dict={self._input_ph: x_})
+            else:
+                grads = self._sess.run(self._class_grads, feed_dict={self._input_ph: x_})
+
+            grads = np.swapaxes(np.array(grads), 0, 1)
+            grads = self._apply_processing_gradient(grads)
+
+        elif isinstance(label, (int, np.integer)):
+            # Compute the gradients only w.r.t. the provided label
+            if logits:
+                grads = self._sess.run(self._logit_class_grads[label], feed_dict={self._input_ph: x_})
+            else:
+                grads = self._sess.run(self._class_grads[label], feed_dict={self._input_ph: x_})
+
+            grads = grads[None, ...]
+            grads = np.swapaxes(np.array(grads), 0, 1)
+            grads = self._apply_processing_gradient(grads)
+
         else:
-            if not hasattr(self, '_class_grads'):
-                self._init_class_grads(logits=False)
-            grds = self._sess.run(self._class_grads, feed_dict={self._input_ph: x_})
+            # For each sample, compute the gradients w.r.t. the indicated target class (possibly distinct)
+            unique_label = list(np.unique(label))
+            if logits:
+                grads = self._sess.run([self._logit_class_grads[l] for l in unique_label],
+                                       feed_dict={self._input_ph: x_})
+            else:
+                grads = self._sess.run([self._class_grads[l] for l in unique_label],
+                                       feed_dict={self._input_ph: x_})
 
-        grds = np.swapaxes(np.array(grds), 0, 1)
-        grds = self._apply_processing_gradient(grds)
-        assert grds.shape == (x_.shape[0], self.nb_classes) + self.input_shape
+            grads = np.swapaxes(np.array(grads), 0, 1)
+            lst = [unique_label.index(i) for i in label]
+            grads = np.expand_dims(grads[np.arange(len(grads)), lst], axis=1)
 
-        return grds
+            grads = self._apply_processing_gradient(grads)
+
+        return grads
 
     def loss_gradient(self, x, y):
         """
@@ -205,16 +264,46 @@ class TFClassifier(Classifier):
 
         return grds
 
-    def _init_class_grads(self, logits=False):
+    def _init_class_grads(self, label=None, logits=False):
         import tensorflow as tf
 
-        # Construct the class gradients graph
         if logits:
-            self._logit_class_grads = [tf.gradients(self._logits[:, i], self._input_ph)[0]
-                                       for i in range(self._nb_classes)]
+            if not hasattr(self, '_logit_class_grads'):
+                self._logit_class_grads = [None for _ in range(self.nb_classes)]
         else:
-            self._class_grads = [tf.gradients(tf.nn.softmax(self._logits)[:, i], self._input_ph)[0]
-                                 for i in range(self._nb_classes)]
+            if not hasattr(self, '_class_grads'):
+                self._class_grads = [None for _ in range(self.nb_classes)]
+
+        # Construct the class gradients graph
+        if label is None:
+            if logits:
+                if None in self._logit_class_grads:
+                    self._logit_class_grads = [tf.gradients(self._logits[:, i], self._input_ph)[0]
+                                               if self._logit_class_grads[i] is None else self._logit_class_grads[i]
+                                               for i in range(self._nb_classes)]
+            else:
+                if None in self._class_grads:
+                    self._class_grads = [tf.gradients(self._probs[:, i], self._input_ph)[0]
+                                         if self._class_grads[i] is None else self._class_grads[i]
+                                         for i in range(self._nb_classes)]
+
+        elif type(label) is int:
+            if logits:
+                if self._logit_class_grads[label] is None:
+                    self._logit_class_grads[label] = tf.gradients(self._logits[:, label], self._input_ph)[0]
+            else:
+                if self._class_grads[label] is None:
+                    self._class_grads[label] = tf.gradients(self._probs[:, label], self._input_ph)[0]
+
+        else:
+            if logits:
+                for l in np.unique(label):
+                    if self._logit_class_grads[l] is None:
+                        self._logit_class_grads[l] = tf.gradients(self._logits[:, l], self._input_ph)[0]
+            else:
+                for l in np.unique(label):
+                    if self._class_grads[l] is None:
+                        self._class_grads[l] = tf.gradients(self._probs[:, l], self._input_ph)[0]
 
     def _get_layers(self):
         """
@@ -253,6 +342,7 @@ class TFClassifier(Classifier):
         for name in reversed(tmp_list[:-1]):
             if result[0].split("/")[0] != name.split("/")[0]:
                 result = [name] + result
+        logger.info('Inferred %i hidden layers on TensorFlow classifier.', len(result))
 
         return result
 
@@ -290,7 +380,7 @@ class TFClassifier(Classifier):
         with self._sess.graph.as_default():
             graph = tf.get_default_graph()
 
-        if isinstance(layer, six.string_types): # basestring for Python 2 (str, unicode) support
+        if isinstance(layer, six.string_types):  # basestring for Python 2 (str, unicode) support
             if layer not in self._layer_names:
                 raise ValueError("Layer name %s is not part of the graph." % layer)
             layer_tensor = graph.get_tensor_by_name(layer)
@@ -315,3 +405,30 @@ class TFClassifier(Classifier):
         result = self._sess.run(layer_tensor, feed_dict=fd)
 
         return result
+
+    def save(self, filename, path=None):
+        """
+        Save a model to file in the format specific to the backend framework. For TensorFlow, .ckpt is used.
+
+        :param filename: Name of the file where to store the model.
+        :type filename: `str`
+        :param path: Path of the folder where to store the model. If no path is specified, the model will be stored in
+                     the default data location of the library `DATA_PATH`.
+        :type path: `str`
+        :return: None
+        """
+        import os
+        import tensorflow as tf
+
+        if path is None:
+            from art import DATA_PATH
+            full_path = os.path.join(DATA_PATH, filename)
+        else:
+            full_path = os.path.join(path, filename)
+        folder = os.path.split(full_path)[0]
+        if not os.path.exists(folder):
+            os.makedirs(folder)
+
+        saver = tf.train.Saver()
+        saver.save(self._sess, full_path)
+        logger.info('Model saved in path: %s.', full_path)

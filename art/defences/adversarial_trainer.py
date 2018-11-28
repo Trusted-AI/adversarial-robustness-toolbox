@@ -1,6 +1,10 @@
 from __future__ import absolute_import, division, print_function, unicode_literals
 
+import logging
+
 import numpy as np
+
+logger = logging.getLogger(__name__)
 
 
 class AdversarialTrainer:
@@ -11,7 +15,9 @@ class AdversarialTrainer:
     training on all adversarial data and other common setups. If multiple attacks are specified, they are rotated
     for each batch. If the specified attacks have as target a different model, then the attack is transferred. The
     `ratio` determines how many of the clean samples in each batch are replaced with their adversarial counterpart.
-    When the attack targets the current classifier, only successful adversarial samples are used.
+
+     .. warning:: Both successful and unsuccessful adversarial samples are used for training. In the case of
+                  unbounded attacks (e.g., DeepFool), this can result in invalid (very noisy) samples being included.
     """
     def __init__(self, classifier, attacks, ratio=.5):
         """
@@ -39,6 +45,7 @@ class AdversarialTrainer:
             raise ValueError('The `ratio` of adversarial samples in each batch has to be between 0 and 1.')
         self.ratio = ratio
 
+        self._precomputed_adv_samples = []
         self.x_augmented, self.y_augmented = None, None
 
     def fit(self, x, y, batch_size=128, nb_epochs=20):
@@ -55,26 +62,38 @@ class AdversarialTrainer:
         :type nb_epochs: `int`
         :return: `None`
         """
+        logger.info('Performing adversarial training using %i attacks.', len(self.attacks))
         nb_batches = int(np.ceil(len(x) / batch_size))
         nb_adv = int(np.ceil(self.ratio * batch_size))
         ind = np.arange(len(x))
         attack_id = 0
 
         # Precompute adversarial samples for transferred attacks
+        logged = False
         self._precomputed_adv_samples = []
         for attack in self.attacks:
+            if 'targeted' in attack.attack_params:
+                if attack.targeted:
+                    raise NotImplementedError("Adversarial training with targeted attacks is \
+                                               currently not implemented")
+
             if attack.classifier != self.classifier:
-                self._precomputed_adv_samples.append(attack.generate(x))
+                if not logged:
+                    logger.info('Precomputing transferred adversarial samples.')
+                    logged = True
+                self._precomputed_adv_samples.append(attack.generate(x, y=y))
             else:
                 self._precomputed_adv_samples.append(None)
 
-        for _ in range(nb_epochs):
+        for e in range(nb_epochs):
+            logger.info('Adversarial training epoch %i/%i', e, nb_epochs)
+
             # Shuffle the examples
             np.random.shuffle(ind)
 
             for batch_id in range(nb_batches):
                 # Create batch data
-                x_batch = x[ind[batch_id * batch_size:min((batch_id + 1) * batch_size, x.shape[0])]]
+                x_batch = x[ind[batch_id * batch_size:min((batch_id + 1) * batch_size, x.shape[0])]].copy()
                 y_batch = y[ind[batch_id * batch_size:min((batch_id + 1) * batch_size, x.shape[0])]]
 
                 # Choose indices to replace with adversarial samples
@@ -83,12 +102,7 @@ class AdversarialTrainer:
 
                 # If source and target models are the same, craft fresh adversarial samples
                 if attack.classifier == self.classifier:
-                    labels_batch = np.argmax(y_batch, axis=1)
-                    x_adv = attack.generate(x_batch[adv_ids])
-                    y_adv = np.argmax(attack.classifier.predict(x_adv), axis=1)
-                    selected = np.array(y_adv != labels_batch)
-
-                    x_batch[adv_ids][selected] = x_adv[selected]
+                    x_batch[adv_ids] = attack.generate(x_batch[adv_ids], y=y_batch[adv_ids])
 
                 # Otherwise, use precomputed adversarial samples
                 else:
@@ -140,11 +154,17 @@ class StaticAdversarialTrainer(AdversarialTrainer):
         labels = np.argmax(y, axis=1)
 
         # Generate adversarial samples for each attack
-        for attack in self.attacks:
+        for i, attack in enumerate(self.attacks):
+            if 'targeted' in attack.attack_params and attack.targeted:
+                    raise NotImplementedError("Adversarial training with targeted attacks is \
+                                               currently not implemented")
+
+            logger.info('Generating adversarial samples from attack: %i/%i.', i, len(self.attacks))
             # Predict new labels for the adversarial samples generated
-            x_adv = attack.generate(x)
+            x_adv = attack.generate(x, y=y)
             y_pred = np.argmax(attack.classifier.predict(x_adv), axis=1)
             selected = np.array(labels != y_pred)
+            logger.info('%i successful samples generated.', len(selected))
 
             # Only add successful attacks to augmented dataset
             x_augmented.extend(list(x_adv[selected]))

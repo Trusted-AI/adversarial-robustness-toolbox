@@ -4,11 +4,60 @@ Module providing convenience functions.
 from __future__ import absolute_import, division, print_function, unicode_literals
 
 import argparse
-import json
+import logging
 import os
 
 import numpy as np
-from scipy.special import gammainc
+
+logger = logging.getLogger(__name__)
+
+
+def master_seed(seed):
+    """
+    Set the seed for all random number generators used in the library. This ensures experiments reproducibility and
+    stable testing.
+
+    :param seed: The value to be seeded in the random number generators.
+    :type seed: `int`
+    """
+    import numbers
+    import random
+
+    if not isinstance(seed, numbers.Integral):
+        raise TypeError('The seed for random number generators has to be an integer.')
+
+    # Set Python seed
+    random.seed(seed)
+
+    # Set Numpy seed
+    np.random.seed(seed)
+
+    # Now try to set seed for all specific frameworks
+    try:
+        import tensorflow as tf
+
+        logger.info('Setting random seed for TensorFlow.')
+        tf.set_random_seed(seed)
+    except ImportError:
+        logger.info('Could not set random seed for TensorFlow.')
+
+    try:
+        import mxnet as mx
+
+        logger.info('Setting random seed for MXNet.')
+        mx.random.seed(seed)
+    except ImportError:
+        logger.info('Could not set random seed for MXNet.')
+
+    try:
+        import torch
+
+        logger.info('Setting random seed for PyTorch.')
+        torch.manual_seed(seed)
+        if torch.cuda.is_available():
+            torch.cuda.manual_seed_all(seed)
+    except ImportError:
+        logger.info('Could not set random seed for PyTorch')
 
 
 def projection(v, eps, p):
@@ -41,39 +90,41 @@ def projection(v, eps, p):
     return v
 
 
-def random_sphere(m, n, r, norm):
+def random_sphere(nb_points, nb_dims, radius, norm):
     """
     Generate randomly `m x n`-dimension points with radius `r` and centered around 0.
 
-    :param m: Number of random data points
-    :type m: `int`
-    :param n: Dimension
-    :type n: `int`
-    :param r: Radius
-    :type r: `float`
+    :param nb_points: Number of random data points
+    :type nb_points: `int`
+    :param nb_dims: Dimensionality
+    :type nb_dims: `int`
+    :param radius: Radius
+    :type radius: `float`
     :param norm: Current support: 1, 2, np.inf
     :type norm: `int`
     :return: The generated random sphere
     :rtype: `np.ndarray`
     """
     if norm == 1:
-        A = np.zeros(shape=(m, n+1))
-        A[:, -1] = np.sqrt(np.random.uniform(0, r**2, m))
+        a = np.zeros(shape=(nb_points, nb_dims + 1))
+        a[:, -1] = np.sqrt(np.random.uniform(0, radius ** 2, nb_points))
 
-        for i in range(m):
-            A[i, 1:-1] = np.sort(np.random.uniform(0, A[i, -1], n-1))
+        for i in range(nb_points):
+            a[i, 1:-1] = np.sort(np.random.uniform(0, a[i, -1], nb_dims - 1))
 
-        res = (A[:, 1:] - A[:, :-1]) * np.random.choice([-1, 1], (m, n))
+        res = (a[:, 1:] - a[:, :-1]) * np.random.choice([-1, 1], (nb_points, nb_dims))
     elif norm == 2:
-        a = np.random.randn(m, n)
-        s2 = np.sum(a**2, axis=1)
-        base = gammainc(n/2.0, s2/2.0)**(1/n) * r / np.sqrt(s2)
-        res = a * (np.tile(base, (n, 1))).T
+        from scipy.special import gammainc
+
+        a = np.random.randn(nb_points, nb_dims)
+        s2 = np.sum(a ** 2, axis=1)
+        base = gammainc(nb_dims / 2.0, s2 / 2.0) ** (1 / nb_dims) * radius / np.sqrt(s2)
+        res = a * (np.tile(base, (nb_dims, 1))).T
     elif norm == np.inf:
-        res= np.random.uniform(float(-r), float(r), (m, n))
+        res = np.random.uniform(float(-radius), float(radius), (nb_points, nb_dims))
     else:
         raise NotImplementedError("Norm {} not supported".format(norm))
-    
+
     return res
 
 
@@ -98,13 +149,14 @@ def to_categorical(labels, nb_classes=None):
 
 def random_targets(labels, nb_classes):
     """
-    Given a set of correct labels, randomly choose target labels different from the original ones.
-    
+    Given a set of correct labels, randomly choose target labels different from the original ones. These can be
+    one-hot encoded or integers.
+
     :param labels: The correct labels
     :type labels: `np.ndarray`
     :param nb_classes: The number of classes for this model
     :type nb_classes: `int`
-    :return: An array holding the randomly-selected target classes
+    :return: An array holding the randomly-selected target classes, one-hot encoded.
     :rtype: `np.ndarray`
     """
     if len(labels.shape) > 1:
@@ -121,6 +173,21 @@ def random_targets(labels, nb_classes):
     return to_categorical(result, nb_classes)
 
 
+def least_likely_class(x, classifier):
+    """
+    Compute the least likely class predictions for sample `x`. This strategy for choosing attack targets was used in
+    (Kurakin et al., 2016). See https://arxiv.org/abs/1607.02533.
+
+    :param x: A data sample of shape accepted by `classifier`.
+    :type x: `np.ndarray`
+    :param classifier: The classifier used for computing predictions.
+    :type classifier: `Classifier`
+    :return: Least-likely class predicted by `classifier` for sample `x` in one-hot encoding.
+    :rtype: `np.ndarray`
+    """
+    return to_categorical(np.argmin(classifier.predict(x), axis=1), nb_classes=classifier.nb_classes)
+
+
 def get_label_conf(y_vec):
     """
     Returns the confidence and the label of the most probable class given a vector of class confidences
@@ -134,8 +201,8 @@ def get_label_conf(y_vec):
 
 
 def get_labels_np_array(preds):
-    """Returns the label of the most probable class given a array of class confidences.
-    See get_labels_tf_tensor() for tensorflow version
+    """
+    Returns the label of the most probable class given a array of class confidences.
 
     :param preds: (np.ndarray) array of class confidences, nb of instances as first dimension
     :return: (np.ndarray) labels
@@ -165,29 +232,52 @@ def preprocess(x, y, nb_classes=10, max_value=255):
 
     return x, y
 
+
 # -------------------------------------------------------------------------------------------------------- IO FUNCTIONS
 
 
-def load_cifar10():
+def load_cifar10(raw=False):
     """Loads CIFAR10 dataset from config.CIFAR10_PATH or downloads it if necessary.
 
+    :param raw: `True` if no preprocessing should be applied to the data. Otherwise, data is normalized to 1.
+    :type raw: `bool`
     :return: `(x_train, y_train), (x_test, y_test), min, max`
     :rtype: `(np.ndarray, np.ndarray), (np.ndarray, np.ndarray), float, float`
     """
-    from config import CIFAR10_PATH
-    import keras.backend as k
-    from keras.datasets.cifar import load_batch
-    from keras.utils.data_utils import get_file
+    def load_batch(fpath):
+        """
+        Utility function for loading CIFAR batches, as written in Keras.
 
-    min_, max_ = 0., 1.
+        :param fpath: Full path to the batch file.
+        :return: `(data, labels)`
+        """
+        import sys
+        from six.moves import cPickle
 
-    path = get_file('cifar-10-batches-py', untar=True, cache_subdir=CIFAR10_PATH,
-                    origin='http://www.cs.toronto.edu/~kriz/cifar-10-python.tar.gz')
+        with open(fpath, 'rb') as f:
+            if sys.version_info < (3,):
+                d = cPickle.load(f)
+            else:
+                d = cPickle.load(f, encoding='bytes')
+                d_decoded = {}
+                for k, v in d.items():
+                    d_decoded[k.decode('utf8')] = v
+                d = d_decoded
+        data = d['data']
+        labels = d['labels']
+
+        data = data.reshape(data.shape[0], 3, 32, 32)
+        return data, labels
+
+    from art import DATA_PATH
+
+    path = get_file('cifar-10-batches-py', extract=True, path=DATA_PATH,
+                    url='http://www.cs.toronto.edu/~kriz/cifar-10-python.tar.gz')
 
     num_train_samples = 50000
 
     x_train = np.zeros((num_train_samples, 3, 32, 32), dtype=np.uint8)
-    y_train = np.zeros((num_train_samples, ), dtype=np.uint8)
+    y_train = np.zeros((num_train_samples,), dtype=np.uint8)
 
     for i in range(1, 6):
         fpath = os.path.join(path, 'data_batch_' + str(i))
@@ -200,28 +290,30 @@ def load_cifar10():
     y_train = np.reshape(y_train, (len(y_train), 1))
     y_test = np.reshape(y_test, (len(y_test), 1))
 
-    if k.image_data_format() == 'channels_last':
-        x_train = x_train.transpose(0, 2, 3, 1)
-        x_test = x_test.transpose(0, 2, 3, 1)
+    # Set channels last
+    x_train = x_train.transpose(0, 2, 3, 1)
+    x_test = x_test.transpose(0, 2, 3, 1)
 
-    x_train, y_train = preprocess(x_train, y_train)
-    x_test, y_test = preprocess(x_test, y_test)
+    min_, max_ = 0, 255
+    if not raw:
+        min_, max_ = 0., 1.
+        x_train, y_train = preprocess(x_train, y_train)
+        x_test, y_test = preprocess(x_test, y_test)
 
     return (x_train, y_train), (x_test, y_test), min_, max_
 
 
-def load_mnist():
-    """Loads MNIST dataset from config.MNIST_PATH or downloads it if necessary.
-    
+def load_mnist(raw=False):
+    """Loads MNIST dataset from `DATA_PATH` or downloads it if necessary.
+
+    :param raw: `True` if no preprocessing should be applied to the data. Otherwise, data is normalized to 1.
+    :type raw: `bool`
     :return: `(x_train, y_train), (x_test, y_test), min, max`
     :rtype: `(np.ndarray, np.ndarray), (np.ndarray, np.ndarray), float, float`
     """
-    from config import MNIST_PATH
-    from keras.utils.data_utils import get_file
+    from art import DATA_PATH
 
-    min_, max_ = 0., 1.
-
-    path = get_file('mnist.npz', cache_subdir=MNIST_PATH, origin='https://s3.amazonaws.com/img-datasets/mnist.npz')
+    path = get_file('mnist.npz', path=DATA_PATH, url='https://s3.amazonaws.com/img-datasets/mnist.npz')
 
     f = np.load(path)
     x_train = f['x_train']
@@ -231,74 +323,32 @@ def load_mnist():
     f.close()
 
     # Add channel axis
-    x_train = np.expand_dims(x_train, axis=3)
-    x_test = np.expand_dims(x_test, axis=3)
-    x_train, y_train = preprocess(x_train, y_train)
-    x_test, y_test = preprocess(x_test, y_test)
-
-    return (x_train, y_train), (x_test, y_test), min_, max_
-
-
-def load_imagenet():
-    """Loads Imagenet dataset from config.IMAGENET_PATH
-
-    :return: `(x_train, y_train), (x_test, y_test), min, max`
-    :rtype: `(np.ndarray, np.ndarray), (np.ndarray, np.ndarray), float, float`
-    """
-    from config import IMAGENET_PATH
-    from keras.preprocessing import image
-    from keras.utils.data_utils import get_file
-
-    min_, max_ = 0., 255.
-
-    class_index_path = 'https://s3.amazonaws.com/deep-learning-models/image-models/imagenet_class_index.json'
-    class_id = IMAGENET_PATH.split("/")[-1]
-
-    fpath = get_file('imagenet_class_index.json', class_index_path, cache_subdir='models')
-    class_index = json.load(open(fpath))
-
-    for k, v in class_index.items():
-        if v[0] == class_id:
-            label = k
-            break
-
-    dataset = list()
-    for root, _, files in os.walk(IMAGENET_PATH):
-        for file_ in files:
-            if file_.endswith(".jpg"):
-                img = image.load_img(os.path.join(root, file_), target_size=(224, 224))
-                dataset.append(image.img_to_array(img))
-
-    dataset = np.asarray(dataset)
-    y = to_categorical(np.asarray([label] * len(dataset)), 1000)
-
-    try:
-        x_train, x_test = dataset[:700], dataset[700:]
-        y_train, y_test = y[:700], y[700:]
-    except:
-        x_train, x_test = dataset[:2], dataset[0:]
-        y_train, y_test = y[:2], y[0:]
+    min_, max_ = 0, 255
+    if not raw:
+        min_, max_ = 0., 1.
+        x_train = np.expand_dims(x_train, axis=3)
+        x_test = np.expand_dims(x_test, axis=3)
+        x_train, y_train = preprocess(x_train, y_train)
+        x_test, y_test = preprocess(x_test, y_test)
 
     return (x_train, y_train), (x_test, y_test), min_, max_
 
 
 def load_stl():
-    """Loads the STL-10 dataset from config.STL10_PATH or downloads it if necessary.
+    """
+    Loads the STL-10 dataset from `DATA_PATH` or downloads it if necessary.
 
     :return: `(x_train, y_train), (x_test, y_test), min, max`
     :rtype: `(np.ndarray, np.ndarray), (np.ndarray, np.ndarray), float, float`
     """
     from os.path import join
-
-    from config import STL10_PATH
-    import keras.backend as k
-    from keras.utils.data_utils import get_file
+    from art import DATA_PATH
 
     min_, max_ = 0., 1.
 
     # Download and extract data if needed
-    path = get_file('stl10_binary', cache_subdir=STL10_PATH, untar=True,
-                    origin='https://ai.stanford.edu/~acoates/stl10/stl10_binary.tar.gz')
+    path = get_file('stl10_binary', path=DATA_PATH, extract=True,
+                    url='https://ai.stanford.edu/~acoates/stl10/stl10_binary.tar.gz')
 
     with open(join(path, str('train_X.bin')), str('rb')) as f:
         x_train = np.fromfile(f, dtype=np.uint8)
@@ -308,9 +358,9 @@ def load_stl():
         x_test = np.fromfile(f, dtype=np.uint8)
         x_test = np.reshape(x_test, (-1, 3, 96, 96))
 
-    if k.image_data_format() == 'channels_last':
-        x_train = x_train.transpose(0, 2, 3, 1)
-        x_test = x_test.transpose(0, 2, 3, 1)
+    # Set channel last
+    x_train = x_train.transpose(0, 2, 3, 1)
+    x_test = x_test.transpose(0, 2, 3, 1)
 
     with open(join(path, str('train_y.bin')), str('rb')) as f:
         y_train = np.fromfile(f, dtype=np.uint8)
@@ -328,7 +378,7 @@ def load_stl():
 
 def load_dataset(name):
     """
-    Loads or downloads the dataset corresponding to `name`. Options are: `mnist`, `cifar10`, `imagenet` and `stl10`.
+    Loads or downloads the dataset corresponding to `name`. Options are: `mnist`, `cifar10` and `stl10`.
 
     :param name: Name of the dataset
     :type name: `str`
@@ -341,17 +391,109 @@ def load_dataset(name):
         return load_mnist()
     elif "cifar10" in name:
         return load_cifar10()
-    elif "imagenet" in name:
-        return load_imagenet()
     elif "stl10" in name:
         return load_stl()
     else:
         raise NotImplementedError("There is no loader for dataset '{}'.".format(name))
 
 
+def _extract(full_path, path):
+    import tarfile
+    import zipfile
+    import shutil
+
+    if full_path.endswith('tar'):
+        if tarfile.is_tarfile(full_path):
+            archive =  tarfile.open(full_path, "r:")
+    elif full_path.endswith('tar.gz'):
+        if tarfile.is_tarfile(full_path):
+            archive = tarfile.open(full_path, "r:gz")
+    elif full_path.endswith('zip'):
+        if zipfile.is_zipfile(full_path):
+            archive = zipfile.ZipFile(full_path)
+        else:
+            return False
+    else:
+        return False
+
+    try:
+        archive.extractall(path)
+    except (tarfile.TarError, RuntimeError, KeyboardInterrupt):
+        if os.path.exists(path):
+            if os.path.isfile(path):
+                os.remove(path)
+            else:
+                shutil.rmtree(path)
+        raise
+    return True
+
+
+def get_file(filename, url, path=None, extract=False):
+    """
+    Downloads a file from a URL if it not already in the cache. The file at indicated by `url` is downloaded to the
+    path `path` (default is ~/.art/data). and given the name `filename`. Files in tar, tar.gz, tar.bz, and zip formats
+    can also be extracted. This is a simplified version of the function with the same name in Keras.
+
+    :param filename: Name of the file.
+    :type filename: `str`
+    :param url: Download URL.
+    :type url: `str`
+    :param path: Folder to store the download. If not specified, `~/.art/data` is used instead.
+    :type: `str`
+    :param extract: If true, tries to extract the archive.
+    :type extract: `bool`
+    :return: Path to the downloaded file.
+    :rtype: `str`
+    """
+    if path is None:
+        from art import DATA_PATH
+        path_ = os.path.expanduser(DATA_PATH)
+    else:
+        path_ = os.path.expanduser(path)
+    if not os.access(path_, os.W_OK):
+        path_ = os.path.join('/tmp', '.art')
+    if not os.path.exists(path_):
+        os.makedirs(path_)
+
+    if extract:
+        extract_path = os.path.join(path_, filename)
+        full_path = extract_path + '.tar.gz'
+    else:
+        full_path = os.path.join(path_, filename)
+
+    # Determine if dataset needs downloading
+    download = not os.path.exists(full_path)
+
+    if download:
+        logger.info('Downloading data from %s', url)
+        error_msg = 'URL fetch failure on {}: {} -- {}'
+        try:
+            try:
+                from six.moves.urllib.error import HTTPError, URLError
+                from six.moves.urllib.request import urlretrieve
+
+                urlretrieve(url, full_path)
+            except HTTPError as e:
+                raise Exception(error_msg.format(url, e.code, e.msg))
+            except URLError as e:
+                raise Exception(error_msg.format(url, e.errno, e.reason))
+        except (Exception, KeyboardInterrupt):
+            if os.path.exists(full_path):
+                os.remove(full_path)
+            raise
+
+    if extract:
+        if not os.path.exists(extract_path):
+            _extract(full_path, path_)
+        return extract_path
+
+    return full_path
+
+
 def make_directory(dir_path):
     """
     Creates the specified tree of directories if needed.
+
     :param dir_path: (str) directory or file path
     :return: None
     """
@@ -362,6 +504,7 @@ def make_directory(dir_path):
 def get_npy_files(path):
     """
     Generator returning all the npy files in path subdirectories.
+
     :param path: (str) directory path
     :return: (str) paths
     """
@@ -371,23 +514,6 @@ def get_npy_files(path):
             if file_.endswith(".npy"):
                 yield os.path.join(root, file_)
 
-
-def set_group_permissions_rec(path, group="drl-dwl"):
-    for root, _, files in os.walk(path):
-        _set_group_permissions(root, group)
-
-        for f in files:
-            try:
-                _set_group_permissions(os.path.join(root, f), group)
-            except:
-                pass
-
-
-def _set_group_permissions(filename, group="drl-dwl"):
-    import shutil
-    shutil.chown(filename, user=None, group=group)
-
-    os.chmod(filename, 0o774)
 
 # ------------------------------------------------------------------- ARG PARSER
 

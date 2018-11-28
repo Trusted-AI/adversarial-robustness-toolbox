@@ -44,7 +44,7 @@ class Classifier(ABC):
         self._preprocessing = preprocessing
 
     @abc.abstractmethod
-    def predict(self, x, logits=False):
+    def predict(self, x, logits=False, batch_size=128):
         """
         Perform prediction for a batch of inputs.
 
@@ -52,6 +52,8 @@ class Classifier(ABC):
         :type x: `np.ndarray`
         :param logits: `True` if the prediction should be done at the logits layer.
         :type logits: `bool`
+        :param batch_size: Size of batches.
+        :type batch_size: `int`
         :return: Array of predictions of shape `(nb_inputs, self.nb_classes)`.
         :rtype: `np.ndarray`
         """
@@ -73,6 +75,33 @@ class Classifier(ABC):
         :return: `None`
         """
         raise NotImplementedError
+
+    def fit_generator(self, generator, nb_epochs=20):
+        """
+        Fit the classifier using the generator `gen` that yields batches as specified. Framework implementations can
+        provide framework-specific versions of this function to speed-up computation.
+
+        :param generator: Batch generator providing `(x, y)` for each epoch.
+        :type generator: `DataGenerator`
+        :param nb_epochs: Number of epochs to use for trainings.
+        :type nb_epochs: `int`
+        :return: `None`
+        """
+        from art.data_generators import DataGenerator
+
+        if not isinstance(generator, DataGenerator):
+            raise ValueError('Expected instance of `DataGenerator` for `fit_generator`, got %s instead.'
+                             % str(type(generator)))
+
+        for _ in range(nb_epochs):
+            x, y = generator.get_batch()
+
+            # Apply preprocessing and defences
+            x = self._apply_processing(x)
+            x, y = self._apply_defences_fit(x, y)
+
+            # Fit for current batch
+            self.fit(x, y, nb_epochs=1, batch_size=len(x))
 
     @property
     def nb_classes(self):
@@ -106,21 +135,27 @@ class Classifier(ABC):
     def channel_index(self):
         """
         :return: Index of the axis in data containing the color channels or features.
-        :rtype `int`
+        :rtype: `int`
         """
         return self._channel_index
 
     @abc.abstractmethod
-    def class_gradient(self, x, logits=False):
+    def class_gradient(self, x, label=None, logits=False):
         """
         Compute per-class derivatives w.r.t. `x`.
 
         :param x: Sample input with shape as expected by the model.
         :type x: `np.ndarray`
+        :param label: Index of a specific per-class derivative. If an integer is provided, the gradient of that class
+                      output is computed for all samples. If multiple values as provided, the first dimension should
+                      match the batch size of `x`, and each value will be used as target for its corresponding sample in
+                      `x`. If `None`, then gradients for all classes will be computed for each sample.
+        :type label: `int` or `list`
         :param logits: `True` if the prediction should be done at the logits layer.
         :type logits: `bool`
         :return: Array of gradients of input features w.r.t. each class in the form
-                 `(batch_size, nb_classes, input_shape)`.
+                 `(batch_size, nb_classes, input_shape)` when computing for all classes, otherwise shape becomes
+                 `(batch_size, 1, input_shape)` when `label` parameter is specified.
         :rtype: `np.ndarray`
         """
         raise NotImplementedError
@@ -170,6 +205,20 @@ class Classifier(ABC):
         """
         raise NotImplementedError
 
+    @abc.abstractmethod
+    def save(self, filename, path=None):
+        """
+        Save a model to file in the format specific to the backend framework.
+
+        :param filename: Name of the file where to store the model.
+        :type filename: `str`
+        :param path: Path of the folder where to store the model. If no path is specified, the model will be stored in
+                     the default data location of the library `DATA_PATH`.
+        :type path: `str`
+        :return: None
+        """
+        raise NotImplementedError
+
     def _parse_defences(self, defences):
         self.defences = defences
 
@@ -195,7 +244,7 @@ class Classifier(ABC):
                 # Add spatial smoothing
                 if d == 'smooth':
                     from art.defences import SpatialSmoothing
-                    self.smooth = SpatialSmoothing()
+                    self.smooth = SpatialSmoothing(channel_index=self.channel_index)
 
     def _apply_defences_fit(self, x, y):
         # Apply label smoothing if option is set
@@ -204,14 +253,14 @@ class Classifier(ABC):
 
         # Apply feature squeezing if option is set
         if hasattr(self, 'feature_squeeze'):
-            x = self.feature_squeeze(x)
+            x = self.feature_squeeze(x, clip_values=self.clip_values)
 
         return x, y
 
     def _apply_defences_predict(self, x):
         # Apply feature squeezing if option is set
         if hasattr(self, 'feature_squeeze'):
-            x = self.feature_squeeze(x)
+            x = self.feature_squeeze(x, clip_values=self.clip_values)
 
         # Apply inputs smoothing if option is set
         if hasattr(self, 'smooth'):
