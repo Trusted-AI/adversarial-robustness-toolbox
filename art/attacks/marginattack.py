@@ -110,6 +110,7 @@ class MarginAttack(Attack):
         
         # number of final restoration iterations
         final_restore_iters = 20
+        target_scan_iters = 20
         
         # attack batches
         for batch_id, _x, _y in zip(xrange(len(x)), x, y):
@@ -131,22 +132,12 @@ class MarginAttack(Attack):
                 # constraint and constraint gradient
                 if self.targeted:
                     # targeted attack: largest (non-adv) class - adv class
-                    c1 = f[idx, _largest_class] - f[idx, _y] - self.offset
-                    c1_mask = 2 * np.float32(c1 > 0) - 1
-                    c = c1 *  c1_mask\
-                        + self._box_constraint(_x, clip_min, clip_max)
-                    c_grd = np.reshape(c1_mask, [-1]+[1] * (x_ndim-1)) \
-                            * (grd[idx, _largest_class, ...] - grd[idx, _y, ...]) \
-                            + self._box_constraint_grd(_x, clip_min, clip_max)
+                    c = f[idx, _largest_class] - f[idx, _y] - self.offset
+                    c_grd = grd[idx, _largest_class, ...] - grd[idx, _y, ...]
                 else:
                     # nontargeted attack: labeled class - largest (non-labeled) class
-                    c1 = f[idx, _y] - f[idx, _largest_class] - self.offset
-                    c1_mask = 2 * np.float32(c1 > 0) - 1
-                    c = c1 * c1_mask \
-                        + self._box_constraint(_x, clip_min, clip_max)
-                    c_grd = np.reshape(c1_mask, [-1]+[1] * (x_ndim-1)) \
-                            * (grd[idx, _y, ...] - grd[idx, _largest_class, ...]) \
-                            + self._box_constraint_grd(_x, clip_min, clip_max)
+                    c = f[idx, _y] - f[idx, _largest_class] - self.offset
+                    c_grd = grd[idx, _y, ...] - grd[idx, _largest_class, ...]
 
                 # output training information
                 if self.verbose:
@@ -163,28 +154,28 @@ class MarginAttack(Attack):
                     
                     print('Batch {}, before iteration {}: average constraint = {}, average perturbation = {}'.format(batch_id, _it, c_mean, dist_mean))
                 
-                # compute s
-                if self.metric == 'L2':
-                    s = c_grd
-                    # set the unfeasible directions to 0
-                    s[np.logical_and(_x <= clip_min, s > 0)] = 0
-                    s[np.logical_and(_x >= clip_max, s < 0)] = 0
-                elif self.metric == 'Linf':
-                    s = np.sign(c_grd)
-                    # set the unfeasible directions to 0
-                    s[np.logical_and(_x <= clip_min, s > 0)] = 0
-                    s[np.logical_and(_x >= clip_max, s < 0)] = 0
-                elif self.metric == 'L1':
-                    _c_grd = np.reshape(c_grd, [c_grd.shape[0], -1])
-                    _x_flat = np.reshape(_x, [c_grd.shape[0], -1])
-                    # set the unfeasible directions to 0
-                    _c_grd[np.logical_and(_x_flat <= clip_min, _c_grd > 0)] = 0
-                    _c_grd[np.logical_and(_x_flat >= clip_max, _c_grd < 0)] = 0
-                    max_idx = np.argmax(np.absolute(_c_grd), axis=1)
-                    s = np.zeros(_c_grd.shape, dtype = float)
-                    s[idx, max_idx] = (_c_grd[idx, max_idx])
-                    s = np.reshape(s, c_grd.shape)
-                s_normalized = s / np.sum(c_grd * s, axis = tuple(range(1, x_ndim)), keepdims=True)
+                # # compute s
+                # if self.metric == 'L2':
+                #     s = c_grd
+                #     # set the unfeasible directions to 0
+                #     s[np.logical_and(_x <= clip_min, s > 0)] = 0
+                #     s[np.logical_and(_x >= clip_max, s < 0)] = 0
+                # elif self.metric == 'Linf':
+                #     s = np.sign(c_grd)
+                #     # set the unfeasible directions to 0
+                #     s[np.logical_and(_x <= clip_min, s > 0)] = 0
+                #     s[np.logical_and(_x >= clip_max, s < 0)] = 0
+                # elif self.metric == 'L1':
+                #     _c_grd = np.reshape(c_grd, [c_grd.shape[0], -1])
+                #     _x_flat = np.reshape(_x, [c_grd.shape[0], -1])
+                #     # set the unfeasible directions to 0
+                #     _c_grd[np.logical_and(_x_flat <= clip_min, _c_grd > 0)] = 0
+                #     _c_grd[np.logical_and(_x_flat >= clip_max, _c_grd < 0)] = 0
+                #     max_idx = np.argmax(np.absolute(_c_grd), axis=1)
+                #     s = np.zeros(_c_grd.shape, dtype = float)
+                #     s[idx, max_idx] = (_c_grd[idx, max_idx])
+                #     s = np.reshape(s, c_grd.shape)
+                # s_normalized = s / np.sum(c_grd * s, axis = tuple(range(1, x_ndim)), keepdims=True)
                 
                 if _it % 2 == 0 or self.max_iter - _it <= final_restore_iters :
                     # even iterations: restoration step
@@ -246,33 +237,372 @@ class MarginAttack(Attack):
 
         return True
     
-    def _box_constraint(self, x, clip_min, clip_max):
-        """
-        Implement the barrier function for box constraint
-        """
-        
-        x_clip_min = clip_min - x
-        x_clip_max = x - clip_max
-        c = np.mean(0.5 * x_clip_min ** 2 * np.float32(np.logical_and(x_clip_min > 0, x_clip_min <= 1)) +
-                    (x_clip_min - 0.5) * np.float32(x_clip_min > 1) +
-                    0.5 * x_clip_max ** 2 * np.float32(np.logical_and(x_clip_max > 0, x_clip_max <= 1)) +
-                    (x_clip_max - 0.5) * np.float32(x_clip_max > 1),
-                    axis = tuple(range(1, x.ndim)))
-        return c
     
-    def _box_constraint_grd(self, x, clip_min, clip_max):
+    def _restore_move(self, x0, x_original, y, y_onehot):
+        ''' Performs restoration move.
         
-        """
-        Implement the derivative of barrier function for box constraint
-        """
+        Args:
+        feed_dict - feed_dict needed to run the tensors and operations
+        '''
         
-        x_clip_min = clip_min - x
-        x_clip_max = x - clip_max
-        c = (-x_clip_min * np.float32(np.logical_and(x_clip_min > 0, x_clip_min <= 1)) -
-            1.0 * np.float32(x_clip_min > 1) +
-            x_clip_max * np.float32(np.logical_and(x_clip_max > 0, x_clip_max <= 1)) +
-            1.0 * np.float32(x_clip_max > 1)) \
-            / float(x[0].size)
+        # find the largest incorrect class
+        f = self.classifier.predict(x0, logits=True)
+        incorrect_class = np.argmax(f, axis=-1)
         
-        return c
+        # compute the constraint and its gradient
+        grd_correct = self.classifier.class_gradient(x0, y, logits=True)
+        grd_incorrect = self.classifier.class_gradient(x0, incorrect_class,
+                                                           logits=True)
+        f_correct = f[range(self.batch_size), y]
+        f_incorrect = f[range(self.batch_size), incorrect_class]
+        if self.targeted:
+            c = f_incorrect - f_correct - self.offset
+            c_grad = grd_incorrect - grd_correct
+        else:
+            c = f_correct - f_incorrect - self.offset
+            c_grad = grd_correct - grd_incorrect
+            
+        # solve the constrained optimization problem
+        b = -c * self.restore_lr
+        x = self._min_norm(x0, c_grad, b=b,
+                           x_original=x_original)
+        return x
+    
+    def _restore_move_scan(self, x0, x_original, y, y_onehot)
+    ''' Performs restoration move.
+        
+        Args:
+        feed_dict - feed_dict needed to run the tensors and operations
+        '''
+        
+        
+        # find the top incorrect classes
+        top_adv = 9
+        f = self.classifier.predict(x0, logits=True)
+        incorrect_class = np.argpartition(f + np.log(y_onehot), 
+                                          f.shape[-1] - top_adv, 
+                                          axis=1)[:, -top_adv:]
+        
+        # for each incorrect classes, perform the restoration move, 
+        # pick the one with smallest perturbation
+        xs = []
+        dists = []
+        grd_correct = self.classifier.class_gradient(x0, y, logits=True)
+        f_correct = f[range(self.batch_size), y]
+        for i in xrange(top_adv):
+            # compute the constraint and its gradient
+            grd_incorrect = self.classifier.class_gradient(x0, incorrect_class[:, i],
+                                                           logits=True)
+            f_incorrect = f[range(self.batch_size), incorrect_class[:, i]]
+            
+            if self.targeted:
+                c = f_incorrect - f_correct - self.offset
+                c_grad = grd_incorrect - grd_correct
+            else:
+                c = f_correct - f_incorrect - self.offset
+                c_grad = grd_correct - grd_incorrect
+
+            # solve the constrained optimization problem
+            b = -c * self.restore_lr
+            _x = self._min_norm(x0, c_grad, b=b,
+                                x_original=x_original)
+            # evaluate the distance
+            if self.metric == 'L2':
+                _dist = np.sum((_x-x0)**2, axis=tuple(range(1, x0.ndim)))
+            elif self.metric == 'Linfinity':
+                _dist = np.amax(np.absolute(_x-x0), axis=tuple(range(1, x0.ndim)))
+            elif self.metric == 'L1':
+                _dist = np.sum(np.absolute(_x-x0), axis=tuple(range(1, x0.ndim)))
+            xs.append(_x)
+            dists.append(_dist)
+        
+        # find the smallest perturbation
+        best_class = np.argmin(np.stack(dists, axis=0), axis=0)
+        x = np.stack(xs, axis=0)[best_class, 
+                                 range(x0.shape[0]), ...]
+        feed_dict.pop(self.incorrect_class)
+
+        return x
+    
+    def _project_move(self, x_original, x1):
+        ''' Performs restoration move.
+        
+        Args:
+        feed_dict - feed_dict needed to run the tensors and operations
+        '''
+        
+        # find the largest incorrect class
+        f = self.classifier.predict(x1, logits=True)
+        incorrect_class = np.argmax(f, axis=-1)
+        
+        # compute the constraint and its gradient
+        grd_correct = self.classifier.class_gradient(x1, y, logits=True)
+        grd_incorrect = self.classifier.class_gradient(x1, incorrect_class,
+                                                           logits=True)
+        f_correct = f[range(self.batch_size), y]
+        f_incorrect = f[range(self.batch_size), incorrect_class]
+        if self.targeted:
+            c = f_incorrect - f_correct - self.offset
+            c_grad = grd_incorrect - grd_correct
+        else:
+            c = f_correct - f_incorrect - self.offset
+            c_grad = grd_correct - grd_incorrect
+        
+        # solve the constrained optimization problem
+        x = self._min_norm_nobound(x_original, c_grad, x1 = x1)
+        
+        return x
+
+    def _project_move3(self, x_original, x1):
+        ''' Performs restoration move.
+        
+        Args:
+        feed_dict - feed_dict needed to run the tensors and operations
+        '''
+        
+        # find the largest incorrect class
+        f = self.classifier.predict(x1, logits=True)
+        incorrect_class = np.argmax(f, axis=-1)
+        
+        # compute the constraint and its gradient
+        grd_correct = self.classifier.class_gradient(x1, y, logits=True)
+        grd_incorrect = self.classifier.class_gradient(x1, incorrect_class,
+                                                           logits=True)
+        f_correct = f[range(self.batch_size), y]
+        f_incorrect = f[range(self.batch_size), incorrect_class]
+        if self.targeted:
+            c = f_incorrect - f_correct - self.offset
+            c_grad = grd_incorrect - grd_correct
+        else:
+            c = f_correct - f_incorrect - self.offset
+            c_grad = grd_correct - grd_incorrect
+        
+        # perform a gradient descent on d(x - x_original) over x
+        if self.metric == 'L2':
+            x1 = x1 - self.project_lr * self.project_lr_ratio * \
+                 c_grad / np.sqrt(np.sum(c_grad**2, axis = (1,2,3), keepdims=True))
+            x0 = x1 - (x1 - x_original) * self.project_lr
+        elif self.metric == 'Linfinity':
+            dinf = np.amax(np.absolute(x1 - x_original), 
+                           axis = tuple(range(1, x1.ndim)),
+                           keepdims = True)
+            dinf_target = (1 - self.project_lr) * dinf
+            x0 = x_original + np.clip(x1 - np.sign(c_grad) * self.project_lr * self.project_lr_ratio\
+                                      - x_original, -dinf_target, dinf_target)
+#             x0 = x_original + np.clip(x1 - np.reshape(np.greater(c, 0.0), [-1] + [1] * (x1.ndim-1)) \
+#                                       * np.sign(c_grad) * self.project_lr - x_original,
+#                                       -dinf_target, dinf_target)
+
+#             x0 = np.clip(x0, self.input_min, self.input_max)
+        
+        
+        return x0
+    
+    def _min_norm(self, x0, c_grad, x1 = None, b = 0, x_min = None, x_max = None,
+                  x_original = None):
+        ''' This method solves the following constrained optimization problem:
+        
+        min_x d(x - x0)
+        s.t. c_grad.transpose() * (x - x1) = b
+             x_min[i] <= x[i] <= x_max[i]
+        
+        if x1 is None, set to x0
+        
+        The size of x0, x1, c_grad, x_min and x_max is (num_tokens, ...)
+        The size of b should be (num_tokens,)
+        
+        :param x0: the vector from which the distance is computed.
+        :type x0: `np.ndarray`
+        :param c_grad: the normal direction of the constraint plane.
+        :type c_grad: `np.ndarray`
+        :param x1: a vector on the constraint plane.
+        :type x1: `np.ndarray`
+        :param b: the intercept of the constraint plane.
+        :type b: `np.ndaaray`
+        :param x_min: the lower bound of each pixel
+        :type x_min: `np.ndarray`
+        :param x_max: the upper bound of each pixel
+        :type x_max: `np.ndarray`
+        :param x_original: a bool numpy array the same size as x0 specifying which dimension is binding
+        "type x_original: `np.ndarray`
+        '''
+        
+        
+        # dimension information
+        ndim = x0.ndim
+        num_tokens = x0.shape[0]
+        x_mask = np.zeros(x0.shape) # 1 - hit upper bound, -1 - hit lower ound, 0 - neither
+        
+        # reshape b
+        if b is 0:
+            b = np.array([0]).reshape((-1,) + (1,) * (ndim-1))
+        else:
+            b = b.reshape((-1,) + (1,) * (ndim-1))
+            
+        # assign x_min and x_max
+        if x_min is None:
+            x_min = self.input_min * np.ones(x0.shape)
+        if x_max is None:
+            x_max = self.input_max * np.ones(x0.shape)
+        
+        # compute the s vector
+        if self.metric == 'L2':
+            s = c_grad
+        elif self.metric == 'Linfinity':
+            c_grad_abs = np.absolute(c_grad)
+
+            if x_original is not None:
+                # determine binding dimension s
+                diff = np.absolute(x0 - x_original)
+                diff_max = np.max(diff,
+                                  axis = tuple(range(1, ndim)),
+                                  keepdims=True)
+                nonbinding = (diff < 0.99 * diff_max)
+                
+                # for binding dimensions, assign the maximum c_grad;
+                # for non-binding dimensions, assign c_grad
+                c_grad_max = np.max(np.absolute(c_grad),
+                                    axis = tuple(range(1, ndim)),
+                                    keepdims=True)
+                s = np.sign(c_grad) * c_grad_max * 0.1
+#                 s[nonbinding] = c_grad[nonbinding]
+            else:
+                s = np.sign(c_grad)
+        elif self.metric == 'L1':
+            _c_grd = np.reshape(c_grad, (num_tokens, -1))
+            max_idx = np.argmax(np.absolute(_c_grd), axis=1)
+            s = np.zeros(_c_grd.shape, dtype = float)
+            s[idx, max_idx] = (_c_grd[idx, max_idx])
+            s = np.reshape(s, c_grad.shape)
+        
+        num_iters = 5
+        for it in xrange(num_iters):
+            # compute the tentative solution
+            if x1 is None:
+                x_tent = x0 + s * b /\
+                                  np.sum(c_grad * s,
+                                         axis = tuple(range(1, ndim)),
+                                         keepdims=True)
+            else:
+                x_tent = x0 + s * (np.sum(c_grad * (x1 - x0),
+                                          axis = tuple(range(1, ndim)),
+                                          keepdims=True) + b)/\
+                                  np.sum(c_grad * s,
+                                         axis = tuple(range(1, ndim)),
+                                         keepdims=True)
+                    
+            # check if tentative solution hit the bounds
+            _x_mask = (np.logical_and(x_tent > x_max, x_mask == 0)).astype(int) -\
+                      (np.logical_and(x_tent < x_min, x_mask == 0)).astype(int)
+                
+            # update the optimization problem
+            if it < num_iters-1:
+                if x1 is None:
+                    b = b + np.sum(((x0 - x_max) * (_x_mask == 1).astype(int) +
+                                    (x0 - self.input_min) * (_x_mask == -1).astype(int)) * c_grad,
+                                   axis = tuple(range(1, ndim)),
+                                   keepdims=True)
+                else:
+                    b = b + np.sum(((x1 - x_max) * (_x_mask == 1).astype(int) +
+                                    (x1 - self.input_min) * (_x_mask == -1).astype(int)) * c_grad,
+                                   axis = tuple(range(1, ndim)),
+                                   keepdims=True)
+                    
+                c_grad[_x_mask != 0] = 0
+                if self.metric == 'L1':
+                    _c_grd = np.reshape(c_grad, (num_tokens, -1))
+                    max_idx = np.argmax(np.absolute(_c_grd), axis=1)
+                    s = np.zeros(_c_grd.shape, dtype = float)
+                    s[idx, max_idx] = (_c_grd[idx, max_idx])
+                    s = np.reshape(s, c_grad.shape)
+                else:
+                    s[_x_mask != 0] = 0
+                
+            x_mask += _x_mask
+                    
+        # return the final answer
+        x = x_tent
+        x[x_mask == 1] = x_max[x_mask == 1]
+        x[x_mask == -1] = x_min[x_mask == -1]        
+        
+        return x
+    
+    def _min_norm_nobound(self, x0, c_grad, x1 = None, b = 0,
+                          x_original = None):
+        ''' This function solves the following constrained optimization problem:
+        
+        min_x d(x - x0)
+        s.t. c_grad.transpose() * (x - x1) = b
+             x_min <= x[i] <= x_max
+        
+        if x1 is None, set to x0
+        
+        The size of x0, x1, c_grad, x_min and x_max is (num_tokens, ...)
+        The size of b should be (num_tokens,)
+        
+        x_original - a bool numpy array the same size as x0 specifying which dimension is binding
+        '''
+        
+        
+        # dimension information
+        ndim = x0.ndim
+        num_tokens = x0.shape[0]
+        x_mask = np.zeros(x0.shape) # 1 - hit upper bound, -1 - hit lower ound, 0 - neither
+        
+        # reshape b
+        if b is 0:
+            b = np.array([0]).reshape((-1,) + (1,) * (ndim-1))
+        else:
+            b = b.reshape((-1,) + (1,) * (ndim-1))
+        
+        # compute the s vector
+        if self.metric == 'L2':
+            s = c_grad
+        elif self.metric == 'Linfinity':
+            c_grad_abs = np.absolute(c_grad)
+
+            if x_original is not None:
+                # determine binding dimension s
+                diff = np.absolute(x0 - x_original)
+                diff_max = np.max(diff,
+                                  axis = tuple(range(1, ndim)),
+                                  keepdims=True)
+                nonbinding = (diff < 0.99 * diff_max)
+                
+                # for binding dimensions, assign the maximum c_grad;
+                # for non-binding dimensions, assign c_grad
+                c_grad_max = np.max(np.absolute(c_grad),
+                                    axis = tuple(range(1, ndim)),
+                                    keepdims=True)
+                s = np.sign(c_grad) * c_grad_max * 0.1
+#                 s[nonbinding] = c_grad[nonbinding]
+            else:
+                s = np.sign(c_grad)
+        elif self.metric == 'L1':
+            _c_grd = np.reshape(c_grad, (num_tokens, -1))
+            max_idx = np.argmax(np.absolute(_c_grd), axis=1)
+            s = np.zeros(_c_grd.shape, dtype = float)
+            s[idx, max_idx] = (_c_grd[idx, max_idx])
+            s = np.reshape(s, c_grad.shape)
+        
+
+        # compute the tentative solution
+        if x1 is None:
+            x_tent = x0 + s * b /\
+                              np.sum(c_grad * s,
+                                     axis = tuple(range(1, ndim)),
+                                     keepdims=True)
+        else:
+            x_tent = x0 + s * (np.sum(c_grad * (x1 - x0),
+                                      axis = tuple(range(1, ndim)),
+                                      keepdims=True) + b)/\
+                              np.sum(c_grad * s,
+                                     axis = tuple(range(1, ndim)),
+                                     keepdims=True)
+
+                    
+        # return the final answer
+        x = x_tent     
+        
+        return x
             
