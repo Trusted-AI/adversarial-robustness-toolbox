@@ -10,7 +10,7 @@ from keras.layers import Dense, Conv2D, MaxPooling2D, Dropout, Input, Flatten
 from keras.models import Sequential, Model
 
 from art.classifiers import KerasClassifier
-from art.utils import load_mnist
+from art.utils import load_mnist, master_seed
 
 logger = logging.getLogger('testLogger')
 
@@ -69,11 +69,9 @@ class TestKerasClassifier(unittest.TestCase):
         import shutil
         shutil.rmtree(cls.test_dir)
 
-    # def test_logits(self):
-    #     classifier = KerasClassifier((0, 1), self.model_mnist, use_logits=True)
-
-    # def test_probabilities(self):
-    #     classifier = KerasClassifier((0, 1), self.model_mnist, use_logits=False)
+    def setUp(self):
+        # Set master seed
+        master_seed(1234)
 
     @staticmethod
     def functional_model():
@@ -119,6 +117,27 @@ class TestKerasClassifier(unittest.TestCase):
         logger.info('Accuracy: %.2f%%', (acc2 * 100))
 
         self.assertTrue(acc2 >= .9 * acc)
+
+    def test_fit_generator(self):
+        self._test_fit_generator(custom_activation=False)
+        self._test_fit_generator(custom_activation=True)
+
+    def _test_fit_generator(self, custom_activation=False):
+        from art.classifiers.keras import generator_fit
+        from art.data_generators import KerasDataGenerator
+
+        labels = np.argmax(self.mnist[1][1], axis=1)
+        classifier = KerasClassifier((0, 1), self.model_mnist, use_logits=False, custom_activation=custom_activation)
+        acc = np.sum(np.argmax(classifier.predict(self.mnist[1][0]), axis=1) == labels) / NB_TEST
+        logger.info('Accuracy: %.2f%%', (acc * 100))
+
+        gen = generator_fit(self.mnist[0][0], self.mnist[0][1], batch_size=BATCH_SIZE)
+        data_gen = KerasDataGenerator(generator=gen)
+        classifier.fit_generator(generator=data_gen, nb_epochs=2)
+        acc2 = np.sum(np.argmax(classifier.predict(self.mnist[1][0]), axis=1) == labels) / NB_TEST
+        logger.info('Accuracy: %.2f%%', (acc2 * 100))
+
+        self.assertTrue(acc2 >= .8 * acc)
 
     def test_shapes(self):
         self._test_shapes(custom_activation=True)

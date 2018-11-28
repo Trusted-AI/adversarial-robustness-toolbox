@@ -15,7 +15,7 @@ import torch.optim as optim
 
 from art.classifiers import KerasClassifier, PyTorchClassifier, TFClassifier
 from art.metrics import empirical_robustness, clever_t, clever_u, clever, loss_sensitivity
-from art.utils import load_mnist
+from art.utils import load_mnist, master_seed
 
 logger = logging.getLogger('testLogger')
 
@@ -29,6 +29,10 @@ r_li = 0.1
 
 
 class TestMetrics(unittest.TestCase):
+    def setUp(self):
+        # Set master seed
+        master_seed(42)
+
     def test_emp_robustness_mnist(self):
         # Get MNIST
         (x_train, y_train), (_, _), _, _ = load_mnist()
@@ -116,6 +120,10 @@ class TestClever(unittest.TestCase):
     """
     Unittest for Clever metrics.
     """
+    def setUp(self):
+        # Set master seed
+        master_seed(42)
+
     @staticmethod
     def _create_tfclassifier():
         """

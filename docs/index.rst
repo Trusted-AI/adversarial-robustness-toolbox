@@ -16,11 +16,12 @@ The library is still under development. Feedback, bug reports and extensions are
 Supported Attack and Defense Methods
 ------------------------------------
 
-The Adversarial Robustness Toolbox contains implementations of the following attacks:
+The Adversarial Robustness Toolbox contains implementations of the following evasion attacks:
 
 * DeepFool (`Moosavi-Dezfooli et al., 2015`_)
 * Fast gradient method (`Goodfellow et al., 2014`_)
-* Basic Iterative Method (`Kurakin et al., 2016`_)
+* Basic iterative method (`Kurakin et al., 2016`_)
+* Projected gradient descent (`Madry et al., 2017`_)
 * Jacobian saliency map (`Papernot et al., 2016`_)
 * Universal perturbation (`Moosavi-Dezfooli et al., 2016`_)
 * Virtual adversarial method (`Miyato et al., 2015`_)
@@ -35,6 +36,17 @@ The following defense methods are also supported:
 * Adversarial training (`Szegedy et al., 2013`_)
 * Virtual adversarial training (`Miyato et al., 2015`_)
 * Gaussian data augmentation (`Zantedeschi et al., 2017`_)
+* Thermometer encoding (`Buckman et al., 2018`_)
+* Total variance minimization (`Guo et al., 2018`_)
+* JPEG compression (`Dziugaite et al., 2016`_)
+
+ART also implements detection methods of adversarial samples:
+
+* Basic detector based on inputs
+* Detector trained on the activations of a specific layer
+
+The following detector of poisoning attacks is also supported:
+* Detector based on activations analysis (`Chen et al., 2018`_)
 
 
 .. toctree::
@@ -68,6 +80,7 @@ Indices and tables
 .. _Moosavi-Dezfooli et al., 2015: https://arxiv.org/abs/1511.04599
 .. _Goodfellow et al., 2014: https://arxiv.org/abs/1412.6572
 .. _Kurakin et al., 2016: https://arxiv.org/abs/1607.02533
+.. _Madry et al., 2017: https://arxiv.org/abs/1706.06083
 .. _Papernot et al., 2016: https://arxiv.org/abs/1511.07528
 .. _Moosavi-Dezfooli et al., 2016: https://arxiv.org/abs/1610.08401
 .. _Carlini and Wagner, 2016: https://arxiv.org/abs/1608.04644
@@ -77,3 +90,7 @@ Indices and tables
 .. _Szegedy et al., 2013: http://arxiv.org/abs/1312.6199
 .. _Miyato et al., 2015: https://arxiv.org/abs/1507.00677
 .. _Zantedeschi et al., 2017: https://arxiv.org/abs/1707.06728
+.. _Buckman et al., 2018: https://openreview.net/forum?id=S18Su--CW
+.. _Guo et al., 2018: https://openreview.net/forum?id=SyJ7ClWCb
+.. _Dziugaite et al., 2016: https://arxiv.org/abs/1608.00853
+.. _Chen et al., 2018: https://arxiv.org/abs/1811.03728

@@ -13,11 +13,11 @@ from keras.models import Sequential
 
 from art.attacks.newtonfool import NewtonFool
 from art.classifiers import KerasClassifier, PyTorchClassifier, TFClassifier
-from art.utils import load_mnist
+from art.utils import load_mnist, master_seed
 
 logger = logging.getLogger('testLogger')
 
-BATCH_SIZE, NB_TRAIN, NB_TEST = 100, 1000, 10
+BATCH_SIZE, NB_TRAIN, NB_TEST = 100, 1000, 100
 
 
 class Model(nn.Module):
@@ -48,6 +48,10 @@ class TestNewtonFool(unittest.TestCase):
         x_train, y_train = x_train[:NB_TRAIN], y_train[:NB_TRAIN]
         x_test, y_test = x_test[:NB_TEST], y_test[:NB_TEST]
         cls.mnist = (x_train, y_train), (x_test, y_test)
+
+    def setUp(self):
+        # Set master seed
+        master_seed(1234)
 
     def test_tfclassifier(self):
         """
@@ -84,8 +88,30 @@ class TestNewtonFool(unittest.TestCase):
         tfc.fit(x_train, y_train, batch_size=BATCH_SIZE, nb_epochs=2)
 
         # Attack
+        import time
         nf = NewtonFool(tfc, max_iter=5)
-        x_test_adv = nf.generate(x_test)
+
+        print("Test Tensorflow....")
+        starttime = time.clock()
+        x_test_adv = nf.generate(x_test, batch_size=1)
+        endtime = time.clock()
+        print(1, endtime - starttime)
+
+        starttime = time.clock()
+        x_test_adv = nf.generate(x_test, batch_size=10)
+        endtime = time.clock()
+        print(10, endtime - starttime)
+
+        # starttime = time.clock()
+        # x_test_adv = nf.generate(x_test, batch_size=100)
+        # endtime = time.clock()
+        # print(100, endtime - starttime)
+        #
+        # starttime = time.clock()
+        # x_test_adv = nf.generate(x_test, batch_size=1000)
+        # endtime = time.clock()
+        # print(1000, endtime - starttime)
+
         self.assertFalse((x_test == x_test_adv).all())
 
         y_pred = tfc.predict(x_test)
@@ -118,8 +144,30 @@ class TestNewtonFool(unittest.TestCase):
         krc.fit(x_train, y_train, batch_size=BATCH_SIZE, nb_epochs=2)
 
         # Attack
+        import time
         nf = NewtonFool(krc, max_iter=5)
-        x_test_adv = nf.generate(x_test)
+
+        print("Test Keras....")
+        starttime = time.clock()
+        x_test_adv = nf.generate(x_test, batch_size=1)
+        endtime = time.clock()
+        print(1, endtime - starttime)
+
+        starttime = time.clock()
+        x_test_adv = nf.generate(x_test, batch_size=10)
+        endtime = time.clock()
+        print(10, endtime - starttime)
+
+        # starttime = time.clock()
+        # x_test_adv = nf.generate(x_test, batch_size=100)
+        # endtime = time.clock()
+        # print(100, endtime - starttime)
+        #
+        # starttime = time.clock()
+        # x_test_adv = nf.generate(x_test, batch_size=1000)
+        # endtime = time.clock()
+        # print(1000, endtime - starttime)
+
         self.assertFalse((x_test == x_test_adv).all())
 
         y_pred = krc.predict(x_test)
@@ -151,8 +199,30 @@ class TestNewtonFool(unittest.TestCase):
         ptc.fit(x_train, y_train, batch_size=BATCH_SIZE, nb_epochs=1)
 
         # Attack
+        import time
         nf = NewtonFool(ptc, max_iter=5)
-        x_test_adv = nf.generate(x_test)
+
+        print("Test Pytorch....")
+        starttime = time.clock()
+        x_test_adv = nf.generate(x_test, batch_size=1)
+        endtime = time.clock()
+        print(1, endtime - starttime)
+
+        starttime = time.clock()
+        x_test_adv = nf.generate(x_test, batch_size=10)
+        endtime = time.clock()
+        print(10, endtime - starttime)
+
+        # starttime = time.clock()
+        # x_test_adv = nf.generate(x_test, batch_size=100)
+        # endtime = time.clock()
+        # print(100, endtime - starttime)
+        #
+        # starttime = time.clock()
+        # x_test_adv = nf.generate(x_test, batch_size=1000)
+        # endtime = time.clock()
+        # print(1000, endtime - starttime)
+
         self.assertFalse((x_test == x_test_adv).all())
 
         y_pred = ptc.predict(x_test)

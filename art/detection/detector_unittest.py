@@ -14,7 +14,7 @@ from art.attacks.fast_gradient import FastGradientMethod
 from art.classifiers.keras import KerasClassifier
 from art.detection.detector import BinaryInputDetector, BinaryActivationDetector, FeatureBasedDetector
 from art.detection.features import MeanClassDist
-from art.utils import load_mnist
+from art.utils import load_mnist, master_seed
 
 logger = logging.getLogger('testLogger')
 
@@ -25,6 +25,10 @@ class TestBinaryInputDetector(unittest.TestCase):
     """
     A unittest class for testing the binary input detector.
     """
+    def setUp(self):
+        # Set master seed
+        master_seed(1234)
+
     def test_binary_input_detector(self):
         """
         Test the binary input detector end-to-end.
@@ -96,6 +100,10 @@ class TestBinaryActivationDetector(unittest.TestCase):
     """
     A unittest class for testing the binary activation detector.
     """
+    def setUp(self):
+        # Set master seed
+        master_seed(1234)
+
     def test_binary_activation_detector(self):
         """
         Test the binary activation detector end-to-end.
