@@ -42,6 +42,10 @@ class DistanceAnalyzer(ClusteringAnalyzer):
         all_assigned_clean = []
         cluster_centers = []
 
+        nb_classes = len(separated_clusters)
+        nb_clusters = len(np.unique(separated_clusters[0]))
+        summary_poison_clusters = [[[] for x in range(nb_clusters)] for y in range(nb_classes)]
+
         # assign centers
         for t, activations in enumerate(self.separated_activations):
             cluster_centers.append(np.median(activations, axis=0))
@@ -73,8 +77,15 @@ class DistanceAnalyzer(ClusteringAnalyzer):
 
             if cluster0_is_poison:
                 poison_clusters.append(0)
+                summary_poison_clusters[i][0] = 1
+            else:
+                summary_poison_clusters[i][0] = 0
+
             if cluster1_is_poison:
                 poison_clusters.append(1)
+                summary_poison_clusters[i][1] = 1
+            else:
+                summary_poison_clusters[i][1] = 0
 
             clean_clusters = list(set(np.unique(clusters)) - set(poison_clusters))
             assigned_clean = self.assign_class(clusters, clean_clusters, poison_clusters)
@@ -82,7 +93,7 @@ class DistanceAnalyzer(ClusteringAnalyzer):
 
         all_assigned_clean = np.asarray(all_assigned_clean)
 
-        return all_assigned_clean
+        return all_assigned_clean, summary_poison_clusters
 
     def set_params(self, **kwargs):
         """
