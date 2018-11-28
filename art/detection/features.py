@@ -15,24 +15,25 @@ else:
 class Feature(ABC):
     """
     Base class for features
-
-    Objects instantiated for this class can be used to extract features for a given classifier
-    and a set of inages
     """
 
     def __init__(self, classifier):
         """
+        Initialize a `Feature` object.
+        :param classifier: classification model for which the features will be extracted
+        :type classifier: class:`Classifier`
 
-        :param classifier: ART classifier
         """
         self.classifier = classifier
 
     @abc.abstractmethod
     def extract(self, x):
         """
+        Extracts features for a set of inputs
 
-        :param x: Sample input with shape as expected by the model.
-        :return: extracted features
+        :param x: sample input with shape as expected by the model.
+        :type x: `np.ndarray`
+        :return: extracted features for the inputs x
         :rtype: `np.ndarray`
         """
         return NotImplementedError
@@ -40,35 +41,44 @@ class Feature(ABC):
 
 class SaliencyMap(Feature):
     """
-    Estimate the pixels with highest influence on the prediction.
+    Compute the saliency-map for a given sample `x` when classified by a classifier.
+    Paper link: https://arxiv.org/abs/1312.6034
     """
     def __init__(self, classifier):
         """
-        :param classifier: ART classifier
+        :param classifier: classification model for which the features will be extracted
+        :type classifier: class:`Classifier`
         """
         super().__init__(classifier)
 
     def extract(self, x):
         """
 
-        :param x: Sample input with shape as expected by the model.
-        :return: returns saliencey map
+        :param x: sample input with shape as expected by the model
+        :type x: `np.ndarray`
+        :return: saliencey map for the provided sample
         :rtype: `np.ndarray`
         """
         return np.max(np.abs(self.classifier.class_gradient(x, label=None,logits=False)), axis = 1)
 
 class MeanClassDist(Feature):
     """
-    Mean euclidean distances to samples for different class
+    Mean euclidean distances between features for a given layer.
+    They are computed with respect to samples for different class from a given set of labelled images
     """
+
     def __init__(self,classifier,x,y,layerid=0,batch_size=32):
         """
-
-        :param classifier: ART classifier
-        :param x: a training set with respect to which the mean class distance is to be computed
-        :param y: labels for the set x
-        :param layerid: (optional) layer-id with respect to which the predictions are to be computed
+        :param classifier: classification model for which the features will be extracted
+        :type classifier: class:`Classifier`
+        :param x: a set samples with respect to which the mean class distance is to be computed
+        :type x: `np.ndarray`
+        :param y: labels for the sample set x
+        :type y: `np.ndarray`
+        :param layerid: (optional) layer-id with respect to which the features are to be computed
+        :type layerid: `int`
         :param batch_size: (optional) batch_size for computing activations
+        :type batch_size: `int`
         """
 
         super().__init__(classifier)
@@ -93,11 +103,11 @@ class MeanClassDist(Feature):
 
 
 
-
     def extract(self,x):
         """
-        :param x: Sample input with shape as expected by the model.
-        :return: mean class distance for the activations at layer=layer_id
+        :param x: sample input with shape as expected by the model.
+        :type x: `np.ndarray`
+        :return: extracted features for the inputs x
         :rtype: `np.ndarray`
         """
 
@@ -122,10 +132,12 @@ class AttentionMap(Feature):
     """
     def __init__(self, classifier, window_width = 8, strides = 4):
         """
-
-        :param classifier: ART classifier
+        :param classifier: classification model for which the features will be extracted
+        :type classifier: class:`Classifier`
         :param window_width: width of the grey-path window
+        :type window_width: `int`
         :param strides: stride for the runnning window
+        :type strides: `int`
         """
         super().__init__(classifier)
         self.window_width = window_width
@@ -133,8 +145,9 @@ class AttentionMap(Feature):
 
     def extract(self, x):
         """
-        :param x: Sample input with shape as expected by the model.
-        :return: mean class distance for the activations at layer=layer_id
+        :param x: sample input with shape as expected by the model.
+        :type x: `np.ndarray`
+        :return: extracted features for the inputs x
         :rtype: `np.ndarray`
         """
         predictions = []
@@ -152,3 +165,54 @@ class AttentionMap(Feature):
             predictions.append(self.classifier.predict(np.array(images)))
         return np.array(predictions).reshape((x.shape[0], np.arange(0, image.shape[0], self.strides).shape[0], np.arange(0, image.shape[1], self.strides).shape[0], -1))
 
+class KNNPreds(Feature):
+    """
+    K Nearest Neighbour prediction
+    """
+    def __init__(self,classifier,x,y,layerid,batch_size=32,n_neighbors=50):
+        """
+        :param classifier: classification model for which the features will be extracted
+        :type classifier: class:`Classifier`
+        :param x: a set samples with respect to which the mean class distance is to be computed
+        :type x: `np.ndarray`
+        :param y: labels for the sample set x
+        :type y: `np.ndarray`
+        :param layerid: (optional) layer-id with respect to which the features are to be computed
+        :type layerid: `int`
+        :param batch_size: (optional) batch_size for computing activations
+        :type batch_size: `int`
+        """
+        from sklearn.neighbors import KNeighborsClassifier
+
+        super().__init__(classifier)
+
+        if len(y.shape) > 1:
+            y = y.ravel()
+        self.layerid = layerid
+        layer_output = []
+
+        for b in range(x.shape[0] // batch_size + 1):
+            begin, end = b * batch_size, min((b + 1) * batch_size, x.shape[0])
+            layer_output.append(self.classifier.get_activations(x[begin:end], self.layerid))
+
+        layer_output = np.concatenate(layer_output,axis=0)
+
+        layer_output = layer_output.reshape(layer_output.shape[0],-1)
+
+        self.neigh = KNeighborsClassifier(n_neighbors=n_neighbors)
+        self.neigh.fit(layer_output, y)
+
+
+
+    def extract(self,x):
+        """
+        :param x: sample input with shape as expected by the model.
+        :type x: `np.ndarray`
+        :return: extracted features for the inputs x
+        :rtype: `np.ndarray`
+        """
+
+        layer_output = self.classifier.get_activations(x, layer=self.layerid)
+        layer_output = layer_output.reshape(layer_output.shape[0],-1)
+
+        return self.neigh.predict_proba(layer_output)
