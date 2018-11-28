@@ -8,7 +8,7 @@ from mxnet import init, gluon
 from mxnet.gluon import nn
 
 from art.classifiers import MXClassifier
-from art.utils import load_mnist
+from art.utils import load_mnist, master_seed
 
 logger = logging.getLogger('testLogger')
 
@@ -49,6 +49,10 @@ class TestMXClassifier(unittest.TestCase):
         classifier = MXClassifier((0, 1), net, (1, 28, 28), 10, trainer)
         classifier.fit(x_train, y_train, batch_size=128, nb_epochs=2)
         cls.classifier = classifier
+
+    def setUp(self):
+        # Set master seed
+        master_seed(1234)
 
     def test_fit_predict(self):
         (_, _), (x_test, y_test) = self.mnist

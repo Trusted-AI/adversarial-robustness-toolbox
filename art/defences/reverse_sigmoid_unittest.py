@@ -9,11 +9,16 @@ from keras.layers import Input, Activation
 
 from art.classifiers import KerasClassifier
 from art.defences.reverse_sigmoid import ReverseSigmoid
+from art.utils import master_seed
 
 logger = logging.getLogger('testLogger')
 
 
 class TestReverseSigmoid(unittest.TestCase):
+    def setUp(self):
+        # Set master seed
+        master_seed(1234)
+
     def test_keras_reverse_sigmoid(self):
         self._test_keras_reverse_sigmoid(streamlined=True)
         self._test_keras_reverse_sigmoid(streamlined=False)

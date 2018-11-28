@@ -7,7 +7,7 @@ import numpy as np
 import tensorflow as tf
 
 from art.classifiers import TFClassifier
-from art.utils import load_mnist
+from art.utils import load_mnist, master_seed
 
 logger = logging.getLogger('testLogger')
 
@@ -29,6 +29,9 @@ class TestTFClassifier(unittest.TestCase):
         cls.mnist = (x_train, y_train), (x_test, y_test)
 
     def setUp(self):
+        # Set master seed
+        master_seed(1234)
+
         # Define input and output placeholders
         input_ph = tf.placeholder(tf.float32, shape=[None, 28, 28, 1])
         output_ph = tf.placeholder(tf.int32, shape=[None, 10])

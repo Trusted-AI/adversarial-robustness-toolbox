@@ -13,7 +13,7 @@ from keras.models import Sequential
 
 from art.attacks.newtonfool import NewtonFool
 from art.classifiers import KerasClassifier, PyTorchClassifier, TFClassifier
-from art.utils import load_mnist
+from art.utils import load_mnist, master_seed
 
 logger = logging.getLogger('testLogger')
 
@@ -48,6 +48,10 @@ class TestNewtonFool(unittest.TestCase):
         x_train, y_train = x_train[:NB_TRAIN], y_train[:NB_TRAIN]
         x_test, y_test = x_test[:NB_TEST], y_test[:NB_TEST]
         cls.mnist = (x_train, y_train), (x_test, y_test)
+
+    def setUp(self):
+        # Set master seed
+        master_seed(1234)
 
     def test_tfclassifier(self):
         """

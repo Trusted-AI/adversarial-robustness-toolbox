@@ -10,7 +10,7 @@ from keras.layers import Dense, Conv2D, MaxPooling2D, Dropout, Input, Flatten
 from keras.models import Sequential, Model
 
 from art.classifiers import KerasClassifier
-from art.utils import load_mnist
+from art.utils import load_mnist, master_seed
 
 logger = logging.getLogger('testLogger')
 
@@ -68,6 +68,10 @@ class TestKerasClassifier(unittest.TestCase):
 
         import shutil
         shutil.rmtree(cls.test_dir)
+
+    def setUp(self):
+        # Set master seed
+        master_seed(1234)
 
     @staticmethod
     def functional_model():

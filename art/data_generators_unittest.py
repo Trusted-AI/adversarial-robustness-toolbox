@@ -6,6 +6,7 @@ import unittest
 import numpy as np
 
 from art.data_generators import KerasDataGenerator, PyTorchDataGenerator, MXDataGenerator
+from art.utils import master_seed
 
 
 logger = logging.getLogger('testLogger')
@@ -30,6 +31,10 @@ class TestKerasDataGenerator(unittest.TestCase):
 
         sequence = DummySequence()
         cls.data_gen = KerasDataGenerator(sequence)
+
+    def setUp(self):
+        # Set master seed
+        master_seed(42)
 
     def test_gen_interface(self):
         gen = self._dummy_gen()
@@ -179,3 +184,7 @@ class TestMXGenerator(unittest.TestCase):
         # Check shapes
         self.assertTrue(x.shape == (5, 1, 5, 5))
         self.assertTrue(y.shape == (5,))
+
+
+if __name__ == '__main__':
+    unittest.main()

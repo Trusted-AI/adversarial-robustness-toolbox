@@ -6,6 +6,7 @@ import unittest
 import numpy as np
 
 from art.classifiers import Classifier
+from art.utils import master_seed
 
 logger = logging.getLogger('testLogger')
 
@@ -34,6 +35,10 @@ class ClassifierInstance(Classifier):
 
 
 class TestClassifier(unittest.TestCase):
+    def setUp(self):
+        # Set master seed
+        master_seed(1234)
+
     def test_processing(self):
         classifier = ClassifierInstance((0, 1))
 

@@ -10,7 +10,7 @@ from keras.preprocessing.image import ImageDataGenerator
 
 from art.attacks import SamplingModelTheft
 from art.classifiers import KerasClassifier
-from art.utils import load_dataset
+from art.utils import load_dataset, master_seed
 
 logger = logging.getLogger('testLogger')
 
@@ -21,6 +21,10 @@ class TestSamplingModelTheft(unittest.TestCase):
     """
     A unittest class for testing SamplingModelTheft attack.
     """
+    def setUp(self):
+        # Set master seed
+        master_seed(1234)
+
     def test_krclassifier(self):
         """
         First test with the KerasClassifier.

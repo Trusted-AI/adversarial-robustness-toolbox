@@ -15,7 +15,7 @@ import torch.optim as optim
 
 from art.attacks.saliency_map import SaliencyMapMethod
 from art.classifiers import KerasClassifier, PyTorchClassifier, TFClassifier
-from art.utils import load_mnist, get_labels_np_array, to_categorical
+from art.utils import load_mnist, get_labels_np_array, to_categorical, master_seed
 
 logger = logging.getLogger('testLogger')
 
@@ -84,6 +84,10 @@ class TestSaliencyMap(unittest.TestCase):
         scores = get_labels_np_array(cls.classifier_py.predict(x_test))
         acc = np.sum(np.argmax(scores, axis=1) == np.argmax(y_test, axis=1)) / y_test.shape[0]
         logger.info('\n[PyTorch, MNIST] Accuracy on test set: %.2f%%', (acc * 100))
+
+    def setUp(self):
+        # Set master seed
+        master_seed(1234)
 
     def test_mnist(self):
         # Define all backends to test

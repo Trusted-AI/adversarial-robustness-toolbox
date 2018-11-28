@@ -8,11 +8,16 @@ from keras.datasets import cifar10
 import numpy as np
 
 from art.defences.jpeg_compression import JpegCompression
+from art.utils import master_seed
 
 logger = logging.getLogger('testLogger')
 
 
 class TestJpegCompression(unittest.TestCase):
+    def setUp(self):
+        # Set master seed
+        master_seed(1234)
+
     def test_one_channel(self):
         mnist = input_data.read_data_sets("tmp/MNIST_data/")
         x = np.reshape(mnist.test.images[0:2], (-1, 28, 28, 1))

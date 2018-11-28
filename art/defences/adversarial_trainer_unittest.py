@@ -13,7 +13,7 @@ from keras.models import Sequential
 from art.attacks import FastGradientMethod, DeepFool
 from art.classifiers import TFClassifier, KerasClassifier
 from art.defences import AdversarialTrainer, StaticAdversarialTrainer
-from art.utils import load_mnist, get_labels_np_array
+from art.utils import load_mnist, get_labels_np_array, master_seed
 
 logger = logging.getLogger('testLogger')
 
@@ -61,6 +61,10 @@ class TestBase(unittest.TestCase):
         scores = get_labels_np_array(TestBase.classifier_tf.predict(x_test))
         acc = np.sum(np.argmax(scores, axis=1) == np.argmax(y_test, axis=1)) / y_test.shape[0]
         logger.info('[TF, MNIST] Accuracy on test set: %.2f%%', (acc * 100))
+
+    def setUp(self):
+        # Set master seed
+        master_seed(1234)
 
     @staticmethod
     def _cnn_mnist_tf(input_shape):

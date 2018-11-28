@@ -9,7 +9,7 @@ import torch.nn.functional as F
 import torch.optim as optim
 
 from art.classifiers.pytorch import PyTorchClassifier
-from art.utils import load_mnist
+from art.utils import load_mnist, master_seed
 
 logger = logging.getLogger('testLogger')
 
@@ -72,6 +72,10 @@ class TestPyTorchClassifier(unittest.TestCase):
         classifier2 = PyTorchClassifier((0, 1), model, loss_fn, optimizer, (1, 28, 28), 10)
         classifier2.fit(x_train, y_train, batch_size=100, nb_epochs=2)
         cls.module_classifier = classifier2
+
+    def setUp(self):
+        # Set master seed
+        master_seed(1234)
 
     def test_fit_predict(self):
         # Get MNIST
