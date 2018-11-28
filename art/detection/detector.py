@@ -187,7 +187,7 @@ class BinaryActivationDetector(Detector):
 
 class FeatureBasedDetector(Detector):
     """
-    A feature based detector. It creates a detector that uses features obtained from a classifier for adversarial detection
+    A feature based detector.
     """
     def __init__(self, classifier, detector, feature, feature_params=None):
         """
@@ -206,7 +206,7 @@ class FeatureBasedDetector(Detector):
         super(FeatureBasedDetector, self).__init__()
         self._classifier = classifier
         self._detector = detector
-        self._feature = feature(classifier,**feature_params)
+        self._feature = feature(classifier, **feature_params)
 
         self._is_fitted = False
 
@@ -238,5 +238,5 @@ class FeatureBasedDetector(Detector):
         :rtype: `np.ndarray`
         """
         x_features = self._feature.extract(x)
-        x_features = x_features.reshape(x_features.shape[0],-1)
+        x_features = x_features.reshape(x_features.shape[0], -1)
         return self._detector.predict(x_features)

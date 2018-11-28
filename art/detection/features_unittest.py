@@ -17,6 +17,7 @@ from art.utils import load_mnist
 
 BATCH_SIZE, NB_TRAIN, NB_TEST = 100, 1000, 10
 
+
 class TestFeatures(unittest.TestCase):
 
     def setUp(self):
@@ -30,7 +31,7 @@ class TestFeatures(unittest.TestCase):
 
         # Get MNIST
         NB_TRAIN = 1000
-        (x_train, y_train), (_,_), _, _ = load_mnist()
+        (x_train, y_train), (_, _), _, _ = load_mnist()
         x_train, y_train = x_train[:NB_TRAIN], y_train[:NB_TRAIN]
 
         input_shape = x_train.shape[1:]
@@ -45,13 +46,11 @@ class TestFeatures(unittest.TestCase):
         model.compile(loss=keras.losses.categorical_crossentropy, optimizer=keras.optimizers.Adam(lr=0.01),
                       metrics=['accuracy'])
 
-        model.fit(x_train,y_train,nb_epoch=5,batch_size=128)
+        model.fit(x_train, y_train, nb_epoch=5, batch_size=128)
         model.save('./tests/model.h5')
-
 
     def tearDown(self):
         shutil.rmtree('./tests/')
-
 
     def test_saliency_map(self):
         """
@@ -71,14 +70,15 @@ class TestFeatures(unittest.TestCase):
 
         # compute the class gradients using Keras
         model = load_model('./tests/model.h5')
-        grad_f = [k.function([model.layers[0].input],k.gradients([model.layers[-1].output[:,i]], [model.layers[0].input])) for i in range(nb_classes)]
-        fv_keras = np.max(np.abs(np.asarray([grad_f[i]([x_train])[0] for i in range(nb_classes)])),axis=0)
+        grad_f = [k.function([model.layers[0].input], k.gradients([model.layers[-1].output[:, i]],
+                                                                 [model.layers[0].input])) for i in range(nb_classes)]
+        fv_keras = np.max(np.abs(np.asarray([grad_f[i]([x_train])[0] for i in range(nb_classes)])), axis=0)
 
         # compute the class gradients using ART
         classifier = KerasClassifier((0, 1), model, use_logits=False)
         df = SaliencyMap(classifier=classifier)
         fv_art = df.extract(x_train)
-        self.assertTrue(np.all(fv_keras==fv_art))
+        self.assertTrue(np.all(fv_keras == fv_art))
 
     def test_mean_class_dist_fv(self):
         """
@@ -101,15 +101,13 @@ class TestFeatures(unittest.TestCase):
 
         # compute the features using Keras
         model = load_model('./tests/model.h5')
-        f = k.function([model.layers[0].input],
-                                  [model.layers[layer_id].output])
+        f = k.function([model.layers[0].input], [model.layers[layer_id].output])
 
         # get the per class layer output for the training set
         layer_output = f([x_train])[0]
-        layer_output = layer_output.reshape(layer_output.shape[0],-1)
+        layer_output = layer_output.reshape(layer_output.shape[0], -1)
         layer_output_per_class_keras = [layer_output[np.where(np.argmax(y_train, axis=1) == c)[0]]
-                              for c in range(nb_classes)]
-
+                                        for c in range(nb_classes)]
 
         dists_ = []
         norms2_x = np.sum(layer_output ** 2, 1)[:, None]
@@ -122,12 +120,12 @@ class TestFeatures(unittest.TestCase):
 
         fv_keras = np.stack(dists_).T
 
-        #compute the features using classifier from ART
+        # compute the features using classifier from ART
         classifier = KerasClassifier((0, 1), model, use_logits=False)
-        df = MeanClassDist(classifier=classifier,x=x_train,y=y_train,layerid=2)
+        df = MeanClassDist(classifier=classifier, x=x_train, y=y_train, layer=2)
         fv_art = df.extract(x=x_train)
 
-        self.assertTrue(np.all(fv_keras==fv_art))
+        self.assertTrue(np.all(fv_keras == fv_art))
 
     def test_attention_map(self):
         """
@@ -174,7 +172,6 @@ class TestFeatures(unittest.TestCase):
 
         # compute the class gradients using ART
         classifier = KerasClassifier((0, 1), model, use_logits=False)
-        df = AttentionMap(classifier=classifier,window_width=WINDOW_WIDTH,strides=STRIDES)
+        df = AttentionMap(classifier=classifier, window_width=WINDOW_WIDTH, strides=STRIDES)
         fv_art = df.extract(x_train)
-        print(fv_art.shape,fv_keras.shape)
-        self.assertTrue(np.all(np.isclose(fv_keras,fv_art)))
+        self.assertTrue(np.all(np.isclose(fv_keras, fv_art)))
