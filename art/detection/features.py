@@ -27,8 +27,7 @@ class Feature(ABC):
         """
         Initialize a `Feature` object.
         :param classifier: classification model for which the features will be extracted
-        :type classifier: class:`Classifier`
-
+        :type classifier: :class:`Classifier`
         """
         self.classifier = classifier
 
@@ -36,7 +35,6 @@ class Feature(ABC):
     def extract(self, x):
         """
         Extracts features for a set of inputs
-
         :param x: sample input with shape as expected by the model.
         :type x: `np.ndarray`
         :return: extracted features for the inputs x
@@ -54,13 +52,12 @@ class SaliencyMap(Feature):
     def __init__(self, classifier):
         """
         :param classifier: classification model for which the features will be extracted
-        :type classifier: class:`Classifier`
+        :type classifier: :class:`Classifier`
         """
         super(SaliencyMap, self).__init__(classifier)
 
     def extract(self, x):
         """
-
         :param x: sample input with shape as expected by the model
         :type x: `np.ndarray`
         :return: saliencey map for the provided sample
@@ -78,7 +75,7 @@ class MeanClassDist(Feature):
     def __init__(self, classifier, x, y, layer=0, batch_size=32):
         """
         :param classifier: classification model for which the features will be extracted
-        :type classifier: class:`Classifier`
+        :type classifier: :class:`Classifier`
         :param x: a set samples with respect to which the mean class distance is to be computed
         :type x: `np.ndarray`
         :param y: labels for the sample set x
@@ -150,7 +147,7 @@ class AttentionMap(Feature):
     def __init__(self, classifier, window_width=8, strides=4):
         """
         :param classifier: classification model for which the features will be extracted.
-        :type classifier: class:`Classifier`
+        :type classifier: :class:`Classifier`
         :param window_width: width of the grey-path window.
         :type window_width: `int`
         :param strides: stride for the runnning window.
@@ -191,7 +188,7 @@ class KNNPreds(Feature):
     def __init__(self, classifier, x, y, layer, batch_size=32, n_neighbors=50):
         """
         :param classifier: classification model for which the features will be extracted
-        :type classifier: class:`Classifier`
+        :type classifier: :class:`Classifier`
         :param x: a set samples with respect to which the mean class distance is to be computed.
         :type x: `np.ndarray`
         :param y: labels for the sample set x.
