@@ -198,8 +198,8 @@ class FeatureBasedDetector(Detector):
         :type detector: `art.classifier.Classifier`
         :param feature: The feature to be used for binary classification.
         :type feature: `art.detection.Feature`
-        :param layer: Layer for computing the features.
-        :type layer: `int`
+        :param feature_params: Feature paramters to be used while instantiating the feature.
+        :type feature_params: `dict`
         """
         super(FeatureBasedDetector, self).__init__()
         self._classifier = classifier
