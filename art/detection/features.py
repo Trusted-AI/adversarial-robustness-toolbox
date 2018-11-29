@@ -17,7 +17,10 @@ else:
 
 class Feature(ABC):
     """
-    Base class for features
+    Base class for features.
+    A feature object is defined for a classifier and enables feature-extraction for sample inputs.
+    These features can be both layer-dependent or layer-independent. The extracted features can be
+    used for training a detector.
     """
 
     def __init__(self, classifier):
