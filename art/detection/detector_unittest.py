@@ -222,8 +222,8 @@ class TestFeatureBasedDetector(unittest.TestCase):
 
         # Create features for detection
         feature = MeanClassDist
-        LAYER = 0
-        feature_params = {'x':x_train,'y':y_train, 'layer':LAYER}
+        layer = 0
+        feature_params = {'x':x_train,'y':y_train, 'layer':layer}
 
         # Create a simple MLP for the detector.
         number_outputs = 2
@@ -236,7 +236,7 @@ class TestFeatureBasedDetector(unittest.TestCase):
                       metrics=['accuracy'])
 
         # Create detector and train it.
-        # Detector consider activations at layer=2:
+        # Detector consider activations at layer=0:
         detector = FeatureBasedDetector(classifier=classifier,
                                         detector=KerasClassifier((0, 1), model, use_logits=False),
                                         feature=feature,
