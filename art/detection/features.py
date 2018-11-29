@@ -2,8 +2,12 @@ from __future__ import absolute_import, division, print_function, unicode_litera
 
 import abc
 import sys
+import logging
 
 import numpy as np
+
+logger = logging.getLogger(__name__)
+
 # Ensure compatibility with Python 2 and 3 when using ABCMeta
 if sys.version_info >= (3, 4):
     ABC = abc.ABC
