@@ -36,7 +36,7 @@ class Feature(ABC):
     def extract(self, x):
         """
         Extracts features for a set of inputs
-        
+
         :param x: sample input with shape as expected by the model.
         :type x: `np.ndarray`
         :return: extracted features for the inputs x
@@ -120,6 +120,8 @@ class MeanClassDist(Feature):
 
     def extract(self, x):
         """
+        Extracts features for a set of inputs
+
         :param x: sample input with shape as expected by the model.
         :type x: `np.ndarray`
         :return: extracted features for the inputs x
@@ -136,7 +138,8 @@ class MeanClassDist(Feature):
         for c in range(self.classifier.nb_classes):
 
             norms2_y = np.sum(self.layer_output_per_class[c] ** 2, 1)[None, :]
-            pw_dists = norms2_x - 2 * np.matmul(layer_output, self.layer_output_per_class[c].T) + norms2_y
+            pw_dists = norms2_x - 2 * np.matmul(layer_output, self.layer_output_per_class[c].T)\
+                       + norms2_y
             dists_.append(np.mean(pw_dists, axis=1))
 
         return np.stack(dists_).T
@@ -161,6 +164,8 @@ class AttentionMap(Feature):
 
     def extract(self, x):
         """
+        Extracts features for a set of inputs
+
         :param x: sample input with shape as expected by the model.
         :type x: `np.ndarray`
         :return: extracted features for the inputs x
@@ -235,6 +240,8 @@ class KNNPreds(Feature):
 
     def extract(self, x):
         """
+        Extracts features for a set of inputs
+
         :param x: sample input with shape as expected by the model.
         :type x: `np.ndarray`
         :return: extracted features for the inputs x
