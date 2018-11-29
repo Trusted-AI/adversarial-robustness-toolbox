@@ -4,8 +4,6 @@ import abc
 import logging
 import sys
 
-from art.detection.features import Feature
-
 logger = logging.getLogger(__name__)
 
 
