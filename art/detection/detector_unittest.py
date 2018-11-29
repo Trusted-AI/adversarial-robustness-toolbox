@@ -247,8 +247,8 @@ class TestFeatureBasedDetector(unittest.TestCase):
         test_adv_detection = np.argmax(detector(x_test_adv), axis=1)
 
         # just checking the workflow
-        self.assertTrue(len(np.unique(test_detection))<=2)
-        self.assertTrue(len(np.unique(test_adv_detection))<=2)
+        self.assertTrue(len(np.unique(test_detection)) <= 2)
+        self.assertTrue(len(np.unique(test_adv_detection)) <= 2)
 
 
 if __name__ == '__main__':
