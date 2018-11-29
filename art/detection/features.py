@@ -26,6 +26,7 @@ class Feature(ABC):
     def __init__(self, classifier):
         """
         Initialize a `Feature` object.
+
         :param classifier: classification model for which the features will be extracted
         :type classifier: :class:`Classifier`
         """
@@ -35,6 +36,7 @@ class Feature(ABC):
     def extract(self, x):
         """
         Extracts features for a set of inputs
+        
         :param x: sample input with shape as expected by the model.
         :type x: `np.ndarray`
         :return: extracted features for the inputs x
