@@ -32,7 +32,7 @@ class TestEnsembleClassifier(unittest.TestCase):
 
         model_1 = KerasClassifier((0, 1), cls._get_model(cls, epochs=2))
         model_2 = KerasClassifier((0, 1), cls._get_model(cls, epochs=2))
-        cls.ensemble = EnsembleClassifier((0, 1), model_1, model_2)
+        cls.ensemble = EnsembleClassifier((0, 1), [model_1, model_2])
 
     @classmethod
     def tearDownClass(cls):

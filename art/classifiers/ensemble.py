@@ -14,7 +14,7 @@ class EnsembleClassifier(Classifier):
     Class allowing to aggregate multiple classifiers as an ensemble. The individual classifiers are expected to be
     trained when the ensemble is created and no training procedures are provided through this class.
     """
-    def __init__(self, clip_values, *classifiers, classifier_weights=None, channel_index=3, defences=None,
+    def __init__(self, clip_values, classifiers, classifier_weights=None, channel_index=3, defences=None,
                  preprocessing=(0, 1)):
         """
         Initialize a :class:`EnsembleClassifier` object. The data range values and colour channel index have to
