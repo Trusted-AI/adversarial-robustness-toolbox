@@ -128,7 +128,8 @@ class TotalVarMin(Preprocessor):
 
         return res
 
-    def _deri_loss_func(self, z, x, mask, norm, lam):
+    @staticmethod
+    def _deri_loss_func(z, x, mask, norm, lam):
         """
         Derivative of loss function to be minimized.
 
@@ -147,7 +148,8 @@ class TotalVarMin(Preprocessor):
         """
         # First compute the derivative of the first component of the loss function
         nor1 = np.sqrt(np.power(z - x.flatten(), 2).dot(mask.flatten()))
-        if nor1 < 1e-6: nor1 = 1e-6
+        if nor1 < 1e-6:
+            nor1 = 1e-6
         der1 = ((z - x.flatten()) * mask.flatten()) / (nor1 * 1.0)
 
         # Then compute the derivative of the second component of the loss function
@@ -219,8 +221,3 @@ class TotalVarMin(Preprocessor):
             raise ValueError('Number of iterations must be a positive integer.')
 
         return True
-
-
-
-
-

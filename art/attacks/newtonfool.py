@@ -153,7 +153,3 @@ class NewtonFool(Attack):
         result = nom / denom[:, None, None, None]
 
         return result
-
-
-
-

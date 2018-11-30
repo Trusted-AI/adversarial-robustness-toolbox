@@ -259,14 +259,14 @@ class TestFastGradientMethod(unittest.TestCase):
         # Get classifier
         classifier = PyTorchClassifier((0, 1), model, loss_fn, optimizer, (1, 28, 28), 10)
         return classifier
-    
+
     def _test_mnist_targeted(self, classifier):
         # Get MNIST
         (_, _), (x_test, y_test) = self.mnist
 
         # Test FGSM with np.inf norm
         attack = FastGradientMethod(classifier, eps=1.0, targeted=True)
-        
+
         pred_sort = classifier.predict(x_test).argsort(axis=1)
         y_test_adv = np.zeros((x_test.shape[0], 10))
         for i in range(x_test.shape[0]):
@@ -279,7 +279,7 @@ class TestFastGradientMethod(unittest.TestCase):
 
         self.assertEqual(y_test_adv.shape, test_y_pred.shape)
         self.assertTrue((y_test_adv == test_y_pred).sum() >= x_test.shape[0] // 2)
-    
+
     def test_mnist_targeted(self):
         # Define all backends to test
         backends = {'keras': self.classifier_k,

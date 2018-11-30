@@ -1,15 +1,14 @@
 from __future__ import absolute_import, division, print_function, unicode_literals
 
-import tensorflow as tf
-import numpy as np
-import os
-import shutil
-import unittest
 import logging
+import unittest
+
 import keras
 import keras.backend as k
-from keras.models import Sequential, load_model
+import numpy as np
+import tensorflow as tf
 from keras.layers import Dense, Flatten, Conv2D, MaxPooling2D
+from keras.models import Sequential
 
 from art.classifiers.keras import KerasClassifier
 from art.detection.features import MeanClassDist, SaliencyMap, AttentionMap
@@ -17,39 +16,37 @@ from art.utils import load_mnist, master_seed
 
 logger = logging.getLogger('testLogger')
 
-BATCH_SIZE, NB_TRAIN, NB_TEST = 100, 1000, 10
+NB_TRAIN, NB_TEST = 1000, 10
 
 
 class TestFeatures(unittest.TestCase):
 
     @classmethod
     def setUpClass(cls):
-        dir_path = './tests'
-        if not os.path.exists(dir_path):
-            os.makedirs(dir_path)
-
-        # Initialize a tf session
+        # Initialize a TF session
         session = tf.Session()
         k.set_session(session)
 
         # Get MNIST
         nb_train = 1000
-        (x_train, y_train), (_, _), _, _ = load_mnist()
+        (x_train, y_train), (x_test, y_test), _, _ = load_mnist()
         x_train, y_train = x_train[:nb_train], y_train[:nb_train]
+        x_test, y_test = x_test[:NB_TEST], y_test[:NB_TEST]
+        cls.mnist = (x_train, y_train), (x_test, y_test)
 
         input_shape = x_train.shape[1:]
         nb_classes = 10
 
         # Create simple CNN
-        cls.model = Sequential()
-        cls.model.add(Conv2D(4, kernel_size=(5, 5), activation='relu', input_shape=input_shape))
-        cls.model.add(MaxPooling2D(pool_size=(2, 2)))
-        cls.model.add(Flatten())
-        cls.model.add(Dense(nb_classes, activation='softmax'))
-        cls.model.compile(loss=keras.losses.categorical_crossentropy, optimizer=keras.optimizers.Adam(lr=0.01),
+        model = Sequential()
+        model.add(Conv2D(4, kernel_size=(5, 5), activation='relu', input_shape=input_shape))
+        model.add(MaxPooling2D(pool_size=(2, 2)))
+        model.add(Flatten())
+        model.add(Dense(nb_classes, activation='softmax'))
+        model.compile(loss=keras.losses.categorical_crossentropy, optimizer=keras.optimizers.Adam(lr=0.01),
                       metrics=['accuracy'])
-        cls.model.fit(x_train, y_train, nb_epoch=5, batch_size=128)
-
+        model.fit(x_train, y_train, nb_epoch=5, batch_size=128)
+        cls.model = model
 
     def setUp(self):
         # Set master seed
@@ -61,15 +58,13 @@ class TestFeatures(unittest.TestCase):
         """
 
         # Get MNIST
-        nb_train, nb_test = 1000, 10
-        (x_train, y_train), (_, _), _, _ = load_mnist()
-        x_train, y_train = x_train[:nb_train], y_train[:nb_train]
+        (x_train, y_train), (_, _) = self.mnist
         nb_classes = 10
 
         # compute the class gradients using Keras
         model = self.model
         grad_f = [k.function([model.layers[0].input], k.gradients([model.layers[-1].output[:, i]],
-                                                                 [model.layers[0].input])) for i in range(nb_classes)]
+                                                                  [model.layers[0].input])) for i in range(nb_classes)]
         fv_keras = np.max(np.abs(np.asarray([grad_f[i]([x_train])[0] for i in range(nb_classes)])), axis=0)
 
         # compute the class gradients using ART
@@ -83,11 +78,8 @@ class TestFeatures(unittest.TestCase):
         Testing feature workflow for Meanclassdist
         :return:
         """
-
         # Get MNIST
-        nb_train, nb_test = 1000, 10
-        (x_train, y_train), (_, _), _, _ = load_mnist()
-        x_train, y_train = x_train[:nb_train], y_train[:nb_train]
+        (x_train, y_train), (_, _) = self.mnist
 
         nb_classes = 10
         layer_id = 2
@@ -127,8 +119,8 @@ class TestFeatures(unittest.TestCase):
         """
 
         # Get MNIST
-        nb_train, nb_test = 2, 2
-        (x_train, y_train), (_, _), _, _ = load_mnist()
+        nb_train = 2
+        (x_train, y_train), (_, _) = self.mnist
         x_train, y_train = x_train[:nb_train], y_train[:nb_train]
 
         # compute the attention map using only Keras
@@ -152,7 +144,7 @@ class TestFeatures(unittest.TestCase):
             predictions.append(model.predict(np.array(images)))
 
         fv_keras = np.array(predictions).reshape((x_train.shape[0], np.arange(0, image.shape[0], strides).shape[0],
-                                              np.arange(0, image.shape[1], strides).shape[0], -1))
+                                                  np.arange(0, image.shape[1], strides).shape[0], -1))
 
         # compute the class gradients using ART
         classifier = KerasClassifier((0, 1), model, use_logits=False)

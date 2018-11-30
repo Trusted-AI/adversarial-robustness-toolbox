@@ -62,7 +62,7 @@ class KerasClassifier(Classifier):
         self._input_shape = k.int_shape(self._input)[1:]
         self._custom_activation = custom_activation
         logger.debug('Inferred %i classes and %s as input shape for Keras classifier.', self.nb_classes,
-                    str(self.input_shape))
+                     str(self.input_shape))
 
         # Get predictions and loss function
         label_ph = k.placeholder(shape=(None,))

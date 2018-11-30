@@ -212,7 +212,7 @@ class TestCarliniL2(unittest.TestCase):
         logger.debug('CW2 Actual: %s', y_pred_adv)
         logger.info('CW2 Success Rate: %.2f', (sum(y_pred != y_pred_adv) / float(len(y_pred))))
         self.assertTrue((y_pred != y_pred_adv).any())
-        
+
     def test_krclassifier(self):
         """
         Second test with the KerasClassifier.
@@ -503,7 +503,7 @@ class TestCarliniL0(unittest.TestCase):
         logger.debug('CW0 Actual: %s', y_pred_adv)
         logger.info('CW0 Success Rate: %.2f', (sum(y_pred != y_pred_adv) / float(len(y_pred))))
         self.assertTrue((y_pred != y_pred_adv).any())
-        
+
     def test_krclassifier(self):
         """
         Second test with the KerasClassifier.

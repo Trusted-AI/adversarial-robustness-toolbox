@@ -52,7 +52,7 @@ class TestEnsembleClassifier(unittest.TestCase):
     def test_layers(self):
         with self.assertRaises(NotImplementedError):
             self.ensemble.get_activations(self.mnist[1][0], layer=2)
-    
+
     @staticmethod
     def _get_model(cls, epochs=1):
         im_shape = cls.mnist[0][0][0].shape

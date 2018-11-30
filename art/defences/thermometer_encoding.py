@@ -96,7 +96,3 @@ class ThermometerEncoding(Preprocessor):
             raise ValueError('Number of evenly spaced levels must be a positive integer.')
 
         return True
-
-
-
-

@@ -55,7 +55,7 @@ class TestTFClassifier(unittest.TestCase):
 
         # Create classifier
         self.classifier = TFClassifier((0, 1), input_ph, logits, output_ph, train, loss, None, self.sess)
-    
+
     def tearDown(self):
         self.sess.close()
 
@@ -169,6 +169,7 @@ class TestTFClassifier(unittest.TestCase):
         for f in os.listdir(path):
             if re.search(filename, f):
                 os.remove(os.path.join(path, f))
+
 
 if __name__ == '__main__':
     unittest.main()

@@ -106,4 +106,3 @@ class DeepFool(Attack):
             raise ValueError("The overshoot parameter must not be negative.")
 
         return True
-

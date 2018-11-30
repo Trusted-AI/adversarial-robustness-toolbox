@@ -404,7 +404,7 @@ def _extract(full_path, path):
 
     if full_path.endswith('tar'):
         if tarfile.is_tarfile(full_path):
-            archive =  tarfile.open(full_path, "r:")
+            archive = tarfile.open(full_path, "r:")
     elif full_path.endswith('tar.gz'):
         if tarfile.is_tarfile(full_path):
             archive = tarfile.open(full_path, "r:gz")

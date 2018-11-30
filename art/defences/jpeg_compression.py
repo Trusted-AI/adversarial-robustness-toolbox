@@ -124,6 +124,3 @@ class JpegCompression(Preprocessor):
             raise ValueError('Image quality must be a positive integer and smaller than 101.')
 
         return True
-
-
-

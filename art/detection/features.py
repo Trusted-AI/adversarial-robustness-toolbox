@@ -17,9 +17,8 @@ else:
 
 class Feature(ABC):
     """
-    Base class for features.
-    A feature object is defined for a classifier and enables feature-extraction for sample inputs.
-    These features can be both layer-dependent or layer-independent. The extracted features can be
+    Base class for features. A feature object is defined for a classifier and enables feature-extraction for sample
+    inputs. These features can be both layer-dependent or layer-independent. The extracted features can be
     used for training a detector.
     """
 
@@ -27,7 +26,7 @@ class Feature(ABC):
         """
         Initialize a `Feature` object.
 
-        :param classifier: classification model for which the features will be extracted
+        :param classifier: Classification model for which the features will be extracted.
         :type classifier: :class:`Classifier`
         """
         self.classifier = classifier
@@ -35,11 +34,11 @@ class Feature(ABC):
     @abc.abstractmethod
     def extract(self, x):
         """
-        Extracts features for a set of inputs
+        Extracts features for a set of inputs.
 
-        :param x: sample input with shape as expected by the model.
+        :param x: Sample input with shape as expected by the model.
         :type x: `np.ndarray`
-        :return: extracted features for the inputs x
+        :return: extracted features for the inputs `x`.
                  Return variable has the same `batch_size` (first dimension) as `x`.
         :rtype: `np.ndarray`
         """
@@ -53,16 +52,16 @@ class SaliencyMap(Feature):
     """
     def __init__(self, classifier):
         """
-        :param classifier: classification model for which the features will be extracted
+        :param classifier: Classification model for which the features will be extracted.
         :type classifier: :class:`Classifier`
         """
         super(SaliencyMap, self).__init__(classifier)
 
     def extract(self, x):
         """
-        :param x: sample input with shape as expected by the model
+        :param x: Sample input with shape as expected by the model.
         :type x: `np.ndarray`
-        :return: saliencey map for the provided sample
+        :return: Saliency map for the provided sample.
         :rtype: `np.ndarray`
         """
         return np.max(np.abs(self.classifier.class_gradient(x, label=None, logits=False)), axis=1)
@@ -71,20 +70,20 @@ class SaliencyMap(Feature):
 class MeanClassDist(Feature):
     """
     Mean euclidean distances between features for a given layer.
-    They are computed with respect to samples for different class from a given set of labelled images
+    They are computed with respect to samples for different class from a given set of labelled images.
     """
 
     def __init__(self, classifier, x, y, layer=0, batch_size=32):
         """
-        :param classifier: classification model for which the features will be extracted
+        :param classifier: Classification model for which the features will be extracted.
         :type classifier: :class:`Classifier`
-        :param x: a set samples with respect to which the mean class distance is to be computed
+        :param x: A set samples with respect to which the mean class distance is to be computed.
         :type x: `np.ndarray`
-        :param y: labels for the sample set x
+        :param y: Labels for the sample set x.
         :type y: `np.ndarray`
         :param layer: Layer for computing the features.
         :type layer: `int` or `str`
-        :param batch_size: (optional) batch_size for computing activations
+        :param batch_size: Batch size for computing activations.
         :type batch_size: `int`
         """
 
@@ -120,11 +119,11 @@ class MeanClassDist(Feature):
 
     def extract(self, x):
         """
-        Extracts features for a set of inputs
+        Extracts features for a set of inputs.
 
-        :param x: sample input with shape as expected by the model.
+        :param x: Sample input with shape as expected by the model.
         :type x: `np.ndarray`
-        :return: extracted features for the inputs x
+        :return: Extracted features for the inputs `x`.
                  Return variable has the same `batch_size` (first dimension) as `x`.
         :rtype: `np.ndarray`
         """
@@ -138,8 +137,7 @@ class MeanClassDist(Feature):
         for c in range(self.classifier.nb_classes):
 
             norms2_y = np.sum(self.layer_output_per_class[c] ** 2, 1)[None, :]
-            pw_dists = norms2_x - 2 * np.matmul(layer_output, self.layer_output_per_class[c].T)\
-                       + norms2_y
+            pw_dists = norms2_x - 2 * np.matmul(layer_output, self.layer_output_per_class[c].T) + norms2_y
             dists_.append(np.mean(pw_dists, axis=1))
 
         return np.stack(dists_).T
@@ -151,11 +149,11 @@ class AttentionMap(Feature):
     """
     def __init__(self, classifier, window_width=8, strides=4):
         """
-        :param classifier: classification model for which the features will be extracted.
+        :param classifier: Classification model for which the features will be extracted.
         :type classifier: :class:`Classifier`
-        :param window_width: width of the grey-path window.
+        :param window_width: Width of the grey-path window.
         :type window_width: `int`
-        :param strides: stride for the runnning window.
+        :param strides: Stride for the running window.
         :type strides: `int`
         """
         super(AttentionMap, self).__init__(classifier)
@@ -164,11 +162,11 @@ class AttentionMap(Feature):
 
     def extract(self, x):
         """
-        Extracts features for a set of inputs
+        Extracts features for a set of inputs.
 
-        :param x: sample input with shape as expected by the model.
+        :param x: Sample input with shape as expected by the model.
         :type x: `np.ndarray`
-        :return: extracted features for the inputs x
+        :return: Extracted features for the inputs `x`.
                  Return variable has the same `batch_size` (first dimension) as `x`.
         :rtype: `np.ndarray`
         """
@@ -185,7 +183,8 @@ class AttentionMap(Feature):
                     img[start_x:end_x, start_y:end_y, :] = 0.5
                     images.append(img)
             predictions.append(self.classifier.predict(np.array(images)))
-        return np.array(predictions).reshape((x.shape[0], np.arange(0, image.shape[0], self.strides).shape[0], np.arange(0, image.shape[1], self.strides).shape[0], -1))
+        return np.array(predictions).reshape((x.shape[0], np.arange(0, image.shape[0], self.strides).shape[0],
+                                              np.arange(0, image.shape[1], self.strides).shape[0], -1))
 
 
 class KNNPreds(Feature):
@@ -194,15 +193,15 @@ class KNNPreds(Feature):
     """
     def __init__(self, classifier, x, y, layer, batch_size=32, n_neighbors=50):
         """
-        :param classifier: classification model for which the features will be extracted
+        :param classifier: Classification model for which the features will be extracted.
         :type classifier: :class:`Classifier`
-        :param x: a set samples with respect to which the mean class distance is to be computed.
+        :param x: A set samples with respect to which the mean class distance is to be computed.
         :type x: `np.ndarray`
-        :param y: labels for the sample set x.
+        :param y: Labels for the sample set `x`.
         :type y: `np.ndarray`
         :param layer: Layer for computing the features.
         :type layer: `int` or `str`
-        :param batch_size: (optional) batch_size for computing activations.
+        :param batch_size: Batch size for computing activations.
         :type batch_size: `int`
         """
         from sklearn.neighbors import KNeighborsClassifier
@@ -240,11 +239,11 @@ class KNNPreds(Feature):
 
     def extract(self, x):
         """
-        Extracts features for a set of inputs
+        Extracts features for a set of inputs.
 
-        :param x: sample input with shape as expected by the model.
+        :param x: Sample input with shape as expected by the model.
         :type x: `np.ndarray`
-        :return: extracted features for the inputs x
+        :return: Extracted features for the inputs x.
                  Return variable has the same `batch_size` (first dimension) as `x`.
         :rtype: `np.ndarray`
         """

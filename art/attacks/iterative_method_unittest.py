@@ -150,7 +150,7 @@ class TestIterativeAttack(unittest.TestCase):
         self.assertEqual(y_test_adv.shape, test_y_pred.shape)
         # This doesn't work all the time, especially with small networks
         self.assertTrue((y_test_adv == test_y_pred).sum() >= x_test.shape[0]//2)
-    
+
     def test_mnist_targeted(self):
         # Define all backends to test
         backends = {'keras': self.classifier_k,
@@ -163,7 +163,7 @@ class TestIterativeAttack(unittest.TestCase):
             self._test_mnist_targeted(classifier)
             if _ == 'pytorch':
                 self._swap_axes()
-   
+
     @staticmethod
     def _cnn_mnist_tf(input_shape):
         labels_tf = tf.placeholder(tf.float32, [None, 10])

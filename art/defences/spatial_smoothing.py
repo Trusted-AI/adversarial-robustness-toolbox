@@ -85,6 +85,3 @@ class SpatialSmoothing(Preprocessor):
                              'valid channel.')
 
         return True
-
-
-

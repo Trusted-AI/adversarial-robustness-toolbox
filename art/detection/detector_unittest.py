@@ -7,7 +7,7 @@ import keras
 import keras.backend as k
 import numpy as np
 import tensorflow as tf
-from keras.layers import Dense, Flatten, Conv2D, MaxPooling2D, Activation
+from keras.layers import Dense, Flatten, Conv2D, MaxPooling2D
 from keras.models import Sequential
 
 from art.attacks.fast_gradient import FastGradientMethod
@@ -180,6 +180,9 @@ class TestFeatureBasedDetector(unittest.TestCase):
     """
     A unittest class for testing the feature based detector.
     """
+    def setUp(self):
+        # Set master seed
+        master_seed(1234)
 
     def test_feature_based_detector(self):
         """
@@ -223,7 +226,7 @@ class TestFeatureBasedDetector(unittest.TestCase):
         # Create features for detection
         feature = MeanClassDist
         layer = 2
-        feature_params = {'x':x_train,'y':y_train, 'layer':layer}
+        feature_params = {'x': x_train, 'y': y_train, 'layer': layer}
 
         # Create a simple MLP for the detector.
         number_outputs = 2
@@ -246,7 +249,7 @@ class TestFeatureBasedDetector(unittest.TestCase):
         test_detection = np.argmax(detector(x_test), axis=1)
         test_adv_detection = np.argmax(detector(x_test_adv), axis=1)
 
-        # just checking the workflow
+        # Just checking the workflow
         self.assertTrue(len(np.unique(test_detection)) <= 2)
         self.assertTrue(len(np.unique(test_adv_detection)) <= 2)
 
