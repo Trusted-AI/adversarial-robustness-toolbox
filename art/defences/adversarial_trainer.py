@@ -64,7 +64,6 @@ class AdversarialTrainer:
         """
         logger.info('Performing adversarial training using %i attacks.', len(self.attacks))
         nb_batches = int(np.ceil(len(x) / batch_size))
-        nb_adv = int(np.ceil(self.ratio * batch_size))
         ind = np.arange(len(x))
         attack_id = 0
 
@@ -96,6 +95,7 @@ class AdversarialTrainer:
                 x_batch = x[ind[batch_id * batch_size:min((batch_id + 1) * batch_size, x.shape[0])]].copy()
                 y_batch = y[ind[batch_id * batch_size:min((batch_id + 1) * batch_size, x.shape[0])]]
 
+                nb_adv = int(np.ceil(self.ratio * x_batch.shape[0]))
                 # Choose indices to replace with adversarial samples
                 attack = self.attacks[attack_id]
                 adv_ids = np.random.choice(x_batch.shape[0], size=nb_adv, replace=False)
