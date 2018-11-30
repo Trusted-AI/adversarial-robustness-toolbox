@@ -1,19 +1,33 @@
 from __future__ import absolute_import, division, print_function, unicode_literals
 
+import logging
+
 import numpy as np
 
 from art.classifiers import Classifier
 
+logger = logging.getLogger(__name__)
+
+
 class EnsembleClassifier(Classifier):
     """
-    Base class for all classifiers.
+    Class allowing to aggregate multiple classifiers as an ensemble. The individual classifiers are expected to be
+    trained when the ensemble is created and no training procedures are provided through this class.
     """
-    def __init__(self, clip_values, *classifiers, classifier_weights=None, channel_index=3, defences=None, preprocessing=(0, 1), **kwargs):
+    def __init__(self, clip_values, *classifiers, classifier_weights=None, channel_index=3, defences=None,
+                 preprocessing=(0, 1)):
         """
-        Initialize a `Classifier` object.
+        Initialize a :class:`EnsembleClassifier` object. The data range values and colour channel index have to
+        be consistent for all the classifiers in the ensemble.
+
         :param clip_values: Tuple of the form `(min, max)` representing the minimum and maximum values allowed
                for features.
         :type clip_values: `tuple`
+        :param classifiers: List of :class:`Classifier` instances to be ensembled together.
+        :type classifiers: `list`
+        :param classifier_weights: List of weights, one scalar per classifier, to assign to their prediction when
+               aggregating results. If `None`, all classifiers are assigned the same weight.
+        :type classifier_weights: `list` or `np.ndarray` or `None`
         :param channel_index: Index of the axis in data containing the color channels or features.
         :type channel_index: `int`
         :param defences: Defences to be activated with the classifier.
@@ -23,43 +37,74 @@ class EnsembleClassifier(Classifier):
                be divided by the second one.
         :type preprocessing: `tuple`
         """
-        super(EnsembleClassifier, self).__init__(clip_values=clip_values, channel_index=channel_index, defences=defences,
- preprocessing=preprocessing)
-        # assert len(classifiers) > 0
-        self._nb_classes = classifiers[0].nb_classes
+        super(EnsembleClassifier, self).__init__(clip_values=clip_values, channel_index=channel_index,
+                                                 defences=defences, preprocessing=preprocessing)
+
+        if classifiers is None or len(classifiers) == 0:
+            raise ValueError('No classifiers provided for the ensemble.')
+        self._nb_classifiers = len(classifiers)
+
         # Assert all classifiers are the right shape(s)
+        for classifier in classifiers:
+            if not isinstance(classifier, Classifier):
+                raise TypeError('Expected type `Classifier`, found %s instead.' % type(classifier))
+
+            if clip_values != classifier.clip_values:
+                raise ValueError('Incompatible `clip_values` between classifiers in the ensemble. Found %s and %s.'
+                                 % (str(clip_values), str(classifier.clip_values)))
+
+            if classifier.nb_classes != classifiers[0].nb_classes:
+                raise ValueError('Incompatible output shapes between classifiers in the ensemble. Found %s and %s.'
+                                 % (str(classifier.nb_classes), str(classifiers[0].nb_classes)))
+
+            if classifier.input_shape != classifiers[0].input_shape:
+                raise ValueError('Incompatible input shapes between classifiers in the ensemble. Found %s and %s.'
+                                 % (str(classifier.input_shape), str(classifiers[0].input_shape)))
+
+        self._input_shape = classifiers[0].input_shape
+        self._nb_classes = classifiers[0].nb_classes
+        self._clip_values = clip_values
+
+        # Set weights for classifiers
         if classifier_weights is None:
-            self.classifier_weights = np.ones(len(classifiers))
-            self.classifier_weights = self.classifier_weights / sum(self.classifier_weights)
+            classifier_weights = np.ones(self._nb_classifiers) / self._nb_classifiers
         self._classifier_weights = classifier_weights
+
         self._classifiers = classifiers
-        self.__num_classifiers = len(self._classifiers)
 
     def predict(self, x, logits=False, raw=False):
         """
-        Perform prediction for a batch of inputs.
+        Perform prediction for a batch of inputs. Predictions from classifiers are aggregated at probabilities level,
+        as logits are not comparable between models. If logits prediction was specified, probabilities are converted
+        back to logits after aggregation.
 
         :param x: Test set.
         :type x: `np.ndarray`
         :param logits: `True` if the prediction should be done at the logits layer.
         :type logits: `bool`
-        :param raw: Return the individual classifier raw outputs
+        :param raw: Return the individual classifier raw outputs (not aggregated).
         :type raw: `bool`
-        :return: Array of predictions of shape `(nb_inputs, self.nb_classes)`.
+        :return: Array of predictions of shape `(nb_inputs, self.nb_classes)`, or of shape
+                 `(nb_classifiers, nb_inputs, self.nb_classes)` if `raw=True`.
         :rtype: `np.ndarray`
         """
-        preds = np.array([self.classifier_weights[i] * self._classifiers[i].predict(x,raw and logits) for i in range(self.__num_classifiers)])
+        preds = np.array([self._classifier_weights[i] * self._classifiers[i].predict(x, raw and logits)
+                          for i in range(self._nb_classifiers)])
         if raw:
             return preds
+
+        # Aggregate predictions only at probabilities level, as logits are not comparable between models
         z = np.sum(preds, axis=0)
+
+        # Convert back to logits if needed
         if logits:
             eps = 10e-8
-            z = np.log(np.clip(z, eps, 1. - eps))# - np.log(np.clip(1. - z, eps, 1. - eps))
+            z = np.log(np.clip(z, eps, 1. - eps))
         return z
 
     def fit(self, x, y, batch_size=128, nb_epochs=20):
         """
-        Fit the classifier on the training set `(x, y)`.
+        Fit the classifier on the training set `(x, y)`. This function is not supported for ensembles.
 
         :param x: Training data.
         :type x: `np.ndarray`
@@ -73,11 +118,40 @@ class EnsembleClassifier(Classifier):
         """
         raise NotImplementedError
 
+    def fit_generator(self, generator, nb_epochs=20):
+        """
+        Fit the classifier using the generator that yields batches as specified. This function is not supported for
+        ensembles.
+
+        :param generator: Batch generator providing `(x, y)` for each epoch. If the generator can be used for native
+                          training in Keras, it will.
+        :type generator: `DataGenerator`
+        :param nb_epochs: Number of epochs to use for trainings.
+        :type nb_epochs: `int`
+        :return: `None`
+        """
+        raise NotImplementedError
+
+    @property
+    def layer_names(self):
+        """
+        Return the hidden layers in the model, if applicable. This function is not supported for ensembles.
+
+        :return: The hidden layers in the model, input and output layers excluded.
+        :rtype: `list`
+
+        .. warning:: `layer_names` tries to infer the internal structure of the model.
+                     This feature comes with no guarantees on the correctness of the result.
+                     The intended order of the layers tries to match their order in the model, but this is not
+                     guaranteed either.
+        """
+        raise NotImplementedError
+
     def get_activations(self, x, layer):
         """
         Return the output of the specified layer for input `x`. `layer` is specified by layer index (between 0 and
         `nb_layers - 1`) or by name. The number of layers can be determined by counting the results returned by
-        calling `layer_names`.
+        calling `layer_names`. This function is not supported for ensembles.
 
         :param x: Input for computing the activations.
         :type x: `np.ndarray`
@@ -99,14 +173,16 @@ class EnsembleClassifier(Classifier):
         :type label: `int`
         :param logits: `True` if the prediction should be done at the logits layer.
         :type logits: `bool`
-        :param raw: Return the individual classifier raw outputs
+        :param raw: Return the individual classifier raw outputs (not aggregated).
         :type raw: `bool`
         :return: Array of gradients of input features w.r.t. each class in the form
                  `(batch_size, nb_classes, input_shape)` when computing for all classes, otherwise shape becomes
-                 `(batch_size, 1, input_shape)` when `label` parameter is specified.
+                 `(batch_size, 1, input_shape)` when `label` parameter is specified. If `raw=True`, an additional
+                 dimension is added at the beginning of the array, indexing the different classifiers.
         :rtype: `np.ndarray`
         """
-        grads = np.array([self.classifier_weights[i] * self._classifiers[i].class_gradient(x, label, logits) for i in range(self.__num_classifiers)])
+        grads = np.array([self._classifier_weights[i] * self._classifiers[i].class_gradient(x, label, logits)
+                          for i in range(self._nb_classifiers)])
         if raw:
             return grads
         return np.sum(grads, axis=0)
@@ -119,12 +195,28 @@ class EnsembleClassifier(Classifier):
         :type x: `np.ndarray`
         :param y: Correct labels, one-vs-rest encoding.
         :type y: `np.ndarray`
-        :param raw: Return the individual classifier raw outputs
+        :param raw: Return the individual classifier raw outputs (not aggregated).
         :type raw: `bool`
-        :return: Array of gradients of the same shape as `x`.
+        :return: Array of gradients of the same shape as `x`. If `raw=True`, shape becomes `[nb_classifiers, x.shape]`.
         :rtype: `np.ndarray`
         """
-        grads = np.array([self.classifier_weights[i] * self._classifiers[i].loss_gradient(x,y) for i in range(self.__num_classifiers)])
+        grads = np.array([self._classifier_weights[i] * self._classifiers[i].loss_gradient(x, y)
+                          for i in range(self._nb_classifiers)])
         if raw:
             return grads
+
         return np.sum(grads, axis=0)
+
+    def save(self, filename, path=None):
+        """
+        Save a model to file in the format specific to the backend framework. This function is not supported for
+        ensembles.
+
+        :param filename: Name of the file where to store the model.
+        :type filename: `str`
+        :param path: Path of the folder where to store the model. If no path is specified, the model will be stored in
+                     the default data location of the library `DATA_PATH`.
+        :type path: `str`
+        :return: None
+        """
+        raise NotImplementedError
