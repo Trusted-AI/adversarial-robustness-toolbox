@@ -80,7 +80,7 @@ class TestTFClassifier(unittest.TestCase):
         logger.info('Accuracy: %.2f%%', (acc * 100))
 
         gen = generator_fit(self.mnist[0][0], self.mnist[0][1], batch_size=100)
-        data_gen = KerasDataGenerator(generator=gen)
+        data_gen = KerasDataGenerator(generator=gen, size=NB_TRAIN, batch_size=100)
         self.classifier.fit_generator(generator=data_gen, nb_epochs=2)
         acc2 = np.sum(np.argmax(self.classifier.predict(self.mnist[1][0]), axis=1) == labels) / NB_TEST
         logger.info('Accuracy: %.2f%%', (acc2 * 100))

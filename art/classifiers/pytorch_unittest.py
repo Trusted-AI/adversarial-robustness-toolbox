@@ -100,7 +100,7 @@ class TestPyTorchClassifier(unittest.TestCase):
         # Create PyTorch dataset and loader
         dataset = torch.utils.data.TensorDataset(x_train_tens, y_train_tens)
         data_loader = DataLoader(dataset=dataset, batch_size=5, shuffle=True)
-        data_gen = PyTorchDataGenerator(data_loader)
+        data_gen = PyTorchDataGenerator(data_loader, size=NB_TRAIN, batch_size=5)
 
         # Fit model with generator
         self.module_classifier.fit_generator(data_gen, nb_epochs=2)
