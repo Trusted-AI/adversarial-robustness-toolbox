@@ -29,11 +29,11 @@ class TestKerasDataGenerator(unittest.TestCase):
                 return self._x[idx], self._y[idx]
 
         sequence = DummySequence()
-        cls.data_gen = KerasDataGenerator(sequence)
+        cls.data_gen = KerasDataGenerator(sequence, size=5, batch_size=1)
 
     def test_gen_interface(self):
         gen = self._dummy_gen()
-        data_gen = KerasDataGenerator(gen)
+        data_gen = KerasDataGenerator(gen, size=None, batch_size=5)
 
         x, y = data_gen.get_batch()
 
@@ -47,7 +47,7 @@ class TestKerasDataGenerator(unittest.TestCase):
 
     def test_gen_keras_specific(self):
         gen = self._dummy_gen()
-        data_gen = KerasDataGenerator(gen)
+        data_gen = KerasDataGenerator(gen, size=None, batch_size=5)
 
         iter_ = iter(data_gen.generator)
         x, y = next(iter_)
@@ -115,7 +115,7 @@ class TestPyTorchGenerator(unittest.TestCase):
 
         dataset = DummyDataset()
         data_loader = DataLoader(dataset=dataset, batch_size=5, shuffle=True)
-        cls.data_gen = PyTorchDataGenerator(data_loader)
+        cls.data_gen = PyTorchDataGenerator(data_loader, size=10, batch_size=5)
 
     def test_gen_interface(self):
         x, y = self.data_gen.get_batch()
@@ -153,7 +153,7 @@ class TestMXGenerator(unittest.TestCase):
         dataset = mx.gluon.data.dataset.ArrayDataset(x, y)
 
         data_loader = mx.gluon.data.DataLoader(dataset, batch_size=5, shuffle=True)
-        cls.data_gen = MXDataGenerator(data_loader)
+        cls.data_gen = MXDataGenerator(data_loader, size=10, batch_size=5)
 
     def test_gen_interface(self):
         x, y = self.data_gen.get_batch()
