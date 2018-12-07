@@ -2,8 +2,10 @@ from __future__ import absolute_import, division, print_function, unicode_litera
 
 import abc
 import sys
+import logging
 
 import numpy as np
+logger = logging.getLogger(__name__)
 
 # Ensure compatibility with Python 2 and 3 when using ABCMeta
 if sys.version_info >= (3, 4):
@@ -238,7 +240,7 @@ class ClusteringAnalyzer(ABC):
                 if silhouette_avg > silhouette_threshold:
                     # In this case the cluster is considered poisonous
                     clean_clusters = np.where(percentages >= size_threshold)
-                    print('computed silhouette score: ', silhouette_avg)
+                    logger.info('computed silhouette score: ', silhouette_avg)
                 else:
                     poison_clusters = [[]]
                     clean_clusters = np.where(percentages >= 0)
