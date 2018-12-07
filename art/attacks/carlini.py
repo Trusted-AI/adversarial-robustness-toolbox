@@ -452,9 +452,9 @@ class CarliniL2Method(Attack):
         return True
 
 
-class CarliniL0Method(Attack):
+class CarliniLInfMethod(Attack):
     """
-    This is a modified version of the L_2 optimized attack of Carlini and Wagner (2016). It controls the L_0
+    This is a modified version of the L_2 optimized attack of Carlini and Wagner (2016). It controls the L_Inf
     norm, i.e. the maximum perturbation applied to each pixel.
     """
     attack_params = Attack.attack_params + ['confidence', 'targeted', 'learning_rate', 'max_iter',
@@ -463,7 +463,7 @@ class CarliniL0Method(Attack):
     def __init__(self, classifier, confidence=0.0, targeted=True, learning_rate=0.01,
                  max_iter=10, max_halving=5, max_doubling=5, eps=0.3, batch_size=128):
         """
-        Create a Carlini L_0 attack instance.
+        Create a Carlini L_Inf attack instance.
 
         :param classifier: A trained model.
         :type classifier: :class:`Classifier`
@@ -486,7 +486,7 @@ class CarliniL0Method(Attack):
         :param batch_size: Internal size of batches on which adversarial samples are generated.
         :type batch_size: `int`
         """
-        super(CarliniL0Method, self).__init__(classifier)
+        super(CarliniLInfMethod, self).__init__(classifier)
 
         kwargs = {'confidence': confidence,
                   'targeted': targeted,
@@ -789,7 +789,7 @@ class CarliniL0Method(Attack):
         :type batch_size: `int`
         """
         # Save attack-specific parameters
-        super(CarliniL0Method, self).set_params(**kwargs)
+        super(CarliniLInfMethod, self).set_params(**kwargs)
 
         if self.eps <= 0:
             raise ValueError("The eps parameter must be strictly positive.")

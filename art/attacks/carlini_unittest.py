@@ -12,7 +12,7 @@ import torch.optim as optim
 from keras.layers import Dense, Flatten, Conv2D, MaxPooling2D
 from keras.models import Sequential
 
-from art.attacks import CarliniL2Method, CarliniL0Method
+from art.attacks import CarliniL2Method, CarliniLInfMethod
 from art.classifiers import KerasClassifier, PyTorchClassifier, TFClassifier
 from art.utils import load_mnist, random_targets, master_seed
 
@@ -334,9 +334,9 @@ class TestCarliniL2(unittest.TestCase):
         self.assertTrue((y_pred != y_pred_adv).any())
 
 
-class TestCarliniL0(unittest.TestCase):
+class TestCarliniLInf(unittest.TestCase):
     """
-    A unittest class for testing the Carlini L0 attack.
+    A unittest class for testing the Carlini LInf attack.
     """
     @classmethod
     def setUpClass(cls):
@@ -381,9 +381,9 @@ class TestCarliniL0(unittest.TestCase):
         tfc.fit(x_train, y_train, batch_size=BATCH_SIZE, nb_epochs=10)
 
         # Failure attack
-        cl0m = CarliniL0Method(classifier=tfc, targeted=True, max_iter=0, learning_rate=0, eps=0.5)
+        clinfm = CarliniLInfMethod(classifier=tfc, targeted=True, max_iter=0, learning_rate=0, eps=0.5)
         params = {'y': random_targets(y_test, tfc.nb_classes)}
-        x_test_adv = cl0m.generate(x_test, **params)
+        x_test_adv = clinfm.generate(x_test, **params)
         self.assertTrue((x_test_adv <= 1.0001).all())
         self.assertTrue((x_test_adv >= -0.0001).all())
         np.testing.assert_almost_equal(x_test, x_test_adv, 3)
@@ -423,9 +423,9 @@ class TestCarliniL0(unittest.TestCase):
         tfc.fit(x_train, y_train, batch_size=BATCH_SIZE, nb_epochs=10)
 
         # First attack
-        cl0m = CarliniL0Method(classifier=tfc, targeted=True, max_iter=10, eps=0.5)
+        clinfm = CarliniLInfMethod(classifier=tfc, targeted=True, max_iter=10, eps=0.5)
         params = {'y': random_targets(y_test, tfc.nb_classes)}
-        x_test_adv = cl0m.generate(x_test, **params)
+        x_test_adv = clinfm.generate(x_test, **params)
         self.assertFalse((x_test == x_test_adv).all())
         self.assertTrue((x_test_adv <= 1.0001).all())
         self.assertTrue((x_test_adv >= -0.0001).all())
@@ -437,9 +437,9 @@ class TestCarliniL0(unittest.TestCase):
         self.assertTrue((target == y_pred_adv).any())
 
         # Second attack
-        cl0m = CarliniL0Method(classifier=tfc, targeted=False, max_iter=10, eps=0.5)
+        clinfm = CarliniLInfMethod(classifier=tfc, targeted=False, max_iter=10, eps=0.5)
         params = {'y': random_targets(y_test, tfc.nb_classes)}
-        x_test_adv = cl0m.generate(x_test, **params)
+        x_test_adv = clinfm.generate(x_test, **params)
         self.assertTrue((x_test_adv <= 1.0001).all())
         self.assertTrue((x_test_adv >= -0.0001).all())
         target = np.argmax(params['y'], axis=1)
@@ -450,9 +450,9 @@ class TestCarliniL0(unittest.TestCase):
         self.assertTrue((target != y_pred_adv).any())
 
         # Third attack
-        cl0m = CarliniL0Method(classifier=tfc, targeted=False, max_iter=10, eps=0.5)
+        clinfm = CarliniLInfMethod(classifier=tfc, targeted=False, max_iter=10, eps=0.5)
         params = {}
-        x_test_adv = cl0m.generate(x_test, **params)
+        x_test_adv = clinfm.generate(x_test, **params)
         self.assertFalse((x_test == x_test_adv).all())
         self.assertTrue((x_test_adv <= 1.0001).all())
         self.assertTrue((x_test_adv >= -0.0001).all())
@@ -464,9 +464,9 @@ class TestCarliniL0(unittest.TestCase):
         self.assertTrue((y_pred != y_pred_adv).any())
 
         # First attack without batching
-        cl0mwob = CarliniL0Method(classifier=tfc, targeted=True, max_iter=10, eps=0.5, batch_size=1)
+        clinfmwob = CarliniLInfMethod(classifier=tfc, targeted=True, max_iter=10, eps=0.5, batch_size=1)
         params = {'y': random_targets(y_test, tfc.nb_classes)}
-        x_test_adv = cl0mwob.generate(x_test, **params)
+        x_test_adv = clinfmwob.generate(x_test, **params)
         self.assertFalse((x_test == x_test_adv).all())
         self.assertTrue((x_test_adv <= 1.0001).all())
         self.assertTrue((x_test_adv >= -0.0001).all())
@@ -478,9 +478,9 @@ class TestCarliniL0(unittest.TestCase):
         self.assertTrue((target == y_pred_adv).any())
 
         # Second attack without batching
-        cl0mwob = CarliniL0Method(classifier=tfc, targeted=False, max_iter=10, eps=0.5, batch_size=1)
+        clinfmwob = CarliniLInfMethod(classifier=tfc, targeted=False, max_iter=10, eps=0.5, batch_size=1)
         params = {'y': random_targets(y_test, tfc.nb_classes)}
-        x_test_adv = cl0mwob.generate(x_test, **params)
+        x_test_adv = clinfmwob.generate(x_test, **params)
         self.assertTrue((x_test_adv <= 1.0001).all())
         self.assertTrue((x_test_adv >= -0.0001).all())
         target = np.argmax(params['y'], axis=1)
@@ -491,9 +491,9 @@ class TestCarliniL0(unittest.TestCase):
         self.assertTrue((target != y_pred_adv).any())
 
         # Third attack without batching
-        cl0mwob = CarliniL0Method(classifier=tfc, targeted=False, max_iter=10, eps=0.5, batch_size=1)
+        clinfmwob = CarliniLInfMethod(classifier=tfc, targeted=False, max_iter=10, eps=0.5, batch_size=1)
         params = {}
-        x_test_adv = cl0mwob.generate(x_test, **params)
+        x_test_adv = clinfmwob.generate(x_test, **params)
         self.assertFalse((x_test == x_test_adv).all())
         self.assertTrue((x_test_adv <= 1.0001).all())
         self.assertTrue((x_test_adv >= -0.0001).all())
@@ -531,9 +531,9 @@ class TestCarliniL0(unittest.TestCase):
         krc.fit(x_train, y_train, batch_size=BATCH_SIZE, nb_epochs=10)
 
         # First attack
-        cl0m = CarliniL0Method(classifier=krc, targeted=True, max_iter=10, eps=0.5)
+        clinfm = CarliniLInfMethod(classifier=krc, targeted=True, max_iter=10, eps=0.5)
         params = {'y': random_targets(y_test, krc.nb_classes)}
-        x_test_adv = cl0m.generate(x_test, **params)
+        x_test_adv = clinfm.generate(x_test, **params)
         self.assertFalse((x_test == x_test_adv).all())
         self.assertTrue((x_test_adv <= 1.0001).all())
         self.assertTrue((x_test_adv >= -0.0001).all())
@@ -545,9 +545,9 @@ class TestCarliniL0(unittest.TestCase):
         self.assertTrue((target == y_pred_adv).any())
 
         # Second attack
-        cl0m = CarliniL0Method(classifier=krc, targeted=False, max_iter=10, eps=0.5)
+        clinfm = CarliniLInfMethod(classifier=krc, targeted=False, max_iter=10, eps=0.5)
         params = {'y': random_targets(y_test, krc.nb_classes)}
-        x_test_adv = cl0m.generate(x_test, **params)
+        x_test_adv = clinfm.generate(x_test, **params)
         self.assertTrue((x_test_adv <= 1.0001).all())
         self.assertTrue((x_test_adv >= -0.0001).all())
         target = np.argmax(params['y'], axis=1)
@@ -558,9 +558,9 @@ class TestCarliniL0(unittest.TestCase):
         self.assertTrue((target != y_pred_adv).any())
 
         # Third attack
-        cl0m = CarliniL0Method(classifier=krc, targeted=False, max_iter=10, eps=0.5)
+        clinfm = CarliniLInfMethod(classifier=krc, targeted=False, max_iter=10, eps=0.5)
         params = {}
-        x_test_adv = cl0m.generate(x_test, **params)
+        x_test_adv = clinfm.generate(x_test, **params)
         self.assertFalse((x_test == x_test_adv).all())
         self.assertTrue((x_test_adv <= 1.0001).all())
         self.assertTrue((x_test_adv >= -0.0001).all())
@@ -593,9 +593,9 @@ class TestCarliniL0(unittest.TestCase):
         ptc.fit(x_train, y_train, batch_size=BATCH_SIZE, nb_epochs=10)
 
         # First attack
-        cl0m = CarliniL0Method(classifier=ptc, targeted=True, max_iter=10, eps=0.5)
+        clinfm = CarliniLInfMethod(classifier=ptc, targeted=True, max_iter=10, eps=0.5)
         params = {'y': random_targets(y_test, ptc.nb_classes)}
-        x_test_adv = cl0m.generate(x_test, **params)
+        x_test_adv = clinfm.generate(x_test, **params)
         self.assertFalse((x_test == x_test_adv).all())
         self.assertTrue((x_test_adv <= 1.0001).all())
         self.assertTrue((x_test_adv >= -0.0001).all())
@@ -604,9 +604,9 @@ class TestCarliniL0(unittest.TestCase):
         self.assertTrue((target == y_pred_adv).any())
 
         # Second attack
-        cl0m = CarliniL0Method(classifier=ptc, targeted=False, max_iter=10, eps=0.5)
+        clinfm = CarliniLInfMethod(classifier=ptc, targeted=False, max_iter=10, eps=0.5)
         params = {'y': random_targets(y_test, ptc.nb_classes)}
-        x_test_adv = cl0m.generate(x_test, **params)
+        x_test_adv = clinfm.generate(x_test, **params)
         self.assertTrue((x_test_adv <= 1.0001).all())
         self.assertTrue((x_test_adv >= -0.0001).all())
         target = np.argmax(params['y'], axis=1)
@@ -614,9 +614,9 @@ class TestCarliniL0(unittest.TestCase):
         self.assertTrue((target != y_pred_adv).any())
 
         # Third attack
-        cl0m = CarliniL0Method(classifier=ptc, targeted=False, max_iter=10, eps=0.5)
+        clinfm = CarliniLInfMethod(classifier=ptc, targeted=False, max_iter=10, eps=0.5)
         params = {}
-        x_test_adv = cl0m.generate(x_test, **params)
+        x_test_adv = clinfm.generate(x_test, **params)
         self.assertFalse((x_test == x_test_adv).all())
         self.assertTrue((x_test_adv <= 1.0001).all())
         self.assertTrue((x_test_adv >= -0.0001).all())
