@@ -72,7 +72,7 @@ class MarginAttack(Attack):
             
         if restore_lr is None:
             if metric is 'L2':
-                restore_lr = 1
+                restore_lr = 1.0
             else:
                 restore_lr = 0.2
             
@@ -225,28 +225,19 @@ class MarginAttack(Attack):
         if self.num_scan_classes > self.num_classes-1:
             raise ValueError("num_scan_classes should be no greater than self.num_classes-1.")
             
-        if type(self.input_max) is not float:
-            raise ValueError("self.input_max should be a float.")
-            
-        if type(self.input_min) is not float:
-            raise ValueError("self.input_min should be a float.")
-            
         if self.input_max <= self.input_min:
             raise ValueError("input_max should be greater than input_min.")
             
-        if type(self.restore_lr) is not float or \
-           self.restore_lr > 1 or self.restore_lr < 0:
+        if self.restore_lr > 1 or self.restore_lr < 0:
             raise ValueError('restore_lr must be a float between 0 and 1.')
             
-        if type(self.project_lr_init) is not float \
-           or self.project_lr_init > 1 or self.project_lr_init < 0:
+        if self.project_lr_init > 1 or self.project_lr_init < 0:
             raise ValueError('self.project_lr_init must be a float between 0 and 1.')
             
-        if type(self.project_lr_ratio) is not float \
-           or self.project_lr_ratio > 1 or self.project_lr_ratio < 0:
+        if self.project_lr_ratio > 1 or self.project_lr_ratio < 0:
             raise ValueError('self.project_lr_ratio must be a float between 0 and 1.')
             
-        if type(self.nu) is not float or self.nu > 1 or self.nu < 0:
+        if self.nu > 1 or self.nu < 0:
             raise ValueError('nu must be a float between 0 and 1.')
             
         if type(self.verbose) is not bool:

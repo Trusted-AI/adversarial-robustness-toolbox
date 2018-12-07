@@ -89,13 +89,13 @@ class TestMarginAttack(unittest.TestCase):
 
     def test_mnist(self):
         # Define all backends to test
-        # backends = {'keras': self.classifier_k,
-        #             'tf': self.classifier_tf,
-        #             'pytorch': self.classifier_py}
-        
-        # pytorch doesn't work. Temporarily remove it.
         backends = {'keras': self.classifier_k,
-                    'tf': self.classifier_tf}
+                    'tf': self.classifier_tf,
+                    'pytorch': self.classifier_py}
+        
+        # # pytorch doesn't work. Temporarily remove it.
+        # backends = {'keras': self.classifier_k,
+        #             'tf': self.classifier_tf}
 
         for _, classifier in backends.items():
             if _ == 'pytorch':
