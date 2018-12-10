@@ -14,9 +14,9 @@ class DeepFool(Attack):
     Implementation of the attack from Moosavi-Dezfooli et al. (2015).
     Paper link: https://arxiv.org/abs/1511.04599
     """
-    attack_params = Attack.attack_params + ['max_iter', 'epsilon']
+    attack_params = Attack.attack_params + ['max_iter', 'epsilon', 'batch_size']
 
-    def __init__(self, classifier, max_iter=100, epsilon=1e-6):
+    def __init__(self, classifier, max_iter=100, epsilon=1e-6, batch_size=128):
         """
         Create a DeepFool attack instance.
 
@@ -26,9 +26,11 @@ class DeepFool(Attack):
         :type max_iter: `int`
         :param epsilon: Overshoot parameter.
         :type epsilon: `float`
+        :param batch_size: Batch size
+        :type batch_size: `int`
         """
         super(DeepFool, self).__init__(classifier)
-        params = {'max_iter': max_iter, 'epsilon': epsilon}
+        params = {'max_iter': max_iter, 'epsilon': epsilon, 'batch_size': batch_size}
         self.set_params(**params)
 
     def generate(self, x, **kwargs):
@@ -52,14 +54,21 @@ class DeepFool(Attack):
         # Pick a small scalar to avoid division by 0
         tol = 10e-8
 
-        for j, val in enumerate(x_adv):
-            xj = val[None, ...]
-            f = preds[j]
-            grd = self.classifier.class_gradient(xj, logits=True)[0]
-            fk_hat = np.argmax(f)
+        # Compute perturbation with implicit batching
+        for batch_id in range(int(np.ceil(x_adv.shape[0] / float(self.batch_size)))):
+            batch_index_1, batch_index_2 = batch_id * self.batch_size, (batch_id + 1) * self.batch_size
+            batch = x_adv[batch_index_1:batch_index_2]
 
-            for _ in range(self.max_iter):
-                grad_diff = grd - grd[fk_hat]
+            # Main algorithm for each batch
+            f = preds[batch_index_1:batch_index_2]
+            grd = self.classifier.class_gradient(batch, logits=True)
+            fk_hat = np.argmax(f, axis=1)
+
+            # Get current predictions
+            active_indices = np.arange(len(batch))
+            current_step = 0
+            while len(active_indices) != 0 and current_step < self.max_iter:
+                grad_diff = grd - grd[np.arange(len(grd)), fk_hat][:, None]
                 f_diff = f - f[fk_hat]
 
                 # Choose coordinate and compute perturbation
