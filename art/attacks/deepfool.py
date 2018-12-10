@@ -69,11 +69,41 @@ class DeepFool(Attack):
             current_step = 0
             while len(active_indices) != 0 and current_step < self.max_iter:
                 grad_diff = grd - grd[np.arange(len(grd)), fk_hat][:, None]
-                f_diff = f - f[fk_hat]
+                f_diff = f - f[np.arange(len(f)), fk_hat][:, None]
 
                 # Choose coordinate and compute perturbation
-                norm = np.linalg.norm(grad_diff.reshape(self.classifier.nb_classes, -1), axis=1) + tol
+                norm = np.linalg.norm(grad_diff.reshape(len(grad_diff), self.classifier.nb_classes, -1), axis=2) + tol
                 value = np.abs(f_diff) / norm
+
+
+
+
+
+
+
+                # Adversarial crafting
+                current_x = self._apply_perturbation(x[batch_index_1:batch_index_2], perturbation, current_eps)
+                # Update
+                batch[active_indices] = current_x[active_indices]
+                adv_preds = self.classifier.predict(batch)
+                # If targeted active check to see whether we have hit the target, otherwise head to anything but
+                if self.targeted:
+                    active_indices = np.where(np.argmax(batch_labels, axis=1) != np.argmax(adv_preds, axis=1))[0]
+                else:
+                    active_indices = np.where(np.argmax(batch_labels, axis=1) == np.argmax(adv_preds, axis=1))[0]
+
+                current_eps += eps_step
+
+
+
+
+
+
+
+
+
+
+
                 value[fk_hat] = np.inf
                 l = np.argmin(value)
                 r = (abs(f_diff[l]) / (pow(np.linalg.norm(grad_diff[l]), 2) + tol)) * grad_diff[l]
