@@ -86,14 +86,14 @@ class DeepFool(Attack):
                 # Recompute prediction for new x
                 f = self.classifier.predict(batch, logits=True)
                 grd = self.classifier.class_gradient(batch, logits=True)
-                fk_i_hat = np.argmax(f)
+                fk_i_hat = np.argmax(f, axis=1)
 
                 # Stop if misclassification has been achieved
-                if fk_i_hat != fk_hat:
-                    break
+                active_indices = np.where(fk_i_hat != fk_hat)[0]
 
             # Apply overshoot parameter
-            x_adv[j] = np.clip(x[j] + (1 + self.epsilon) * (xj[0] - x[j]), clip_min, clip_max)
+            x_adv[batch_index_1:batch_index_2] = np.clip(x_adv[batch_index_1:batch_index_2] + (
+                1 + self.epsilon) * (batch - x_adv[batch_index_1:batch_index_2]), clip_min, clip_max)
 
         preds = np.argmax(preds, axis=1)
         preds_adv = np.argmax(self.classifier.predict(x_adv), axis=1)
@@ -117,3 +117,5 @@ class DeepFool(Attack):
             raise ValueError("The overshoot parameter must not be negative.")
 
         return True
+
+
