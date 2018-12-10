@@ -74,46 +74,18 @@ class DeepFool(Attack):
                 # Choose coordinate and compute perturbation
                 norm = np.linalg.norm(grad_diff.reshape(len(grad_diff), self.classifier.nb_classes, -1), axis=2) + tol
                 value = np.abs(f_diff) / norm
-
-
-
-
-
-
-
-                # Adversarial crafting
-                current_x = self._apply_perturbation(x[batch_index_1:batch_index_2], perturbation, current_eps)
-                # Update
-                batch[active_indices] = current_x[active_indices]
-                adv_preds = self.classifier.predict(batch)
-                # If targeted active check to see whether we have hit the target, otherwise head to anything but
-                if self.targeted:
-                    active_indices = np.where(np.argmax(batch_labels, axis=1) != np.argmax(adv_preds, axis=1))[0]
-                else:
-                    active_indices = np.where(np.argmax(batch_labels, axis=1) == np.argmax(adv_preds, axis=1))[0]
-
-                current_eps += eps_step
-
-
-
-
-
-
-
-
-
-
-
-                value[fk_hat] = np.inf
-                l = np.argmin(value)
-                r = (abs(f_diff[l]) / (pow(np.linalg.norm(grad_diff[l]), 2) + tol)) * grad_diff[l]
+                value[np.arange(len(value)), fk_hat] = np.inf
+                l = np.argmin(value, axis=1)
+                r = (abs(f_diff[np.arange(len(f_diff)), l]) / (pow(np.linalg.norm(grad_diff[np.arange(len(
+                    grad_diff)), l].reshape(len(grad_diff), -1), axis=1), 2) + tol))[:, None, None, None] * \
+                    grad_diff[np.arange(len(grad_diff)), l]
 
                 # Add perturbation and clip result
-                xj = np.clip(xj + r, clip_min, clip_max)
+                batch[active_indices] = np.clip(batch[active_indices] + r[active_indices], clip_min, clip_max)
 
-                # Recompute prediction for new xj
-                f = self.classifier.predict(xj, logits=True)[0]
-                grd = self.classifier.class_gradient(xj, logits=True)[0]
+                # Recompute prediction for new x
+                f = self.classifier.predict(batch, logits=True)
+                grd = self.classifier.class_gradient(batch, logits=True)
                 fk_i_hat = np.argmax(f)
 
                 # Stop if misclassification has been achieved
