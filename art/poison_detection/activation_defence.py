@@ -64,7 +64,7 @@ class ActivationDefence(PoisonFilteringDefence):
         """
         self.set_params(**kwargs)
 
-        if len(self.activations_by_class) == 0:
+        if not self.activations_by_class:
             activations = self._get_activations()
             self.activations_by_class = self._segment_by_class(activations, self.y_train)
 
@@ -89,7 +89,7 @@ class ActivationDefence(PoisonFilteringDefence):
         """
         self.set_params(**kwargs)
 
-        if len(self.activations_by_class) == 0:
+        if not self.activations_by_class:
             activations = self._get_activations()
             self.activations_by_class = self._segment_by_class(activations, self.y_train)
         self.clusters_by_class, self.red_activations_by_class = self.cluster_activations()
@@ -102,8 +102,8 @@ class ActivationDefence(PoisonFilteringDefence):
         indices_by_class = self._segment_by_class(np.arange(n_train), self.y_train)
         self.is_clean_lst = [0] * n_train
         self.confidence_level = [1] * n_train
-        for i, (assigned_clean, dp) in enumerate(zip(self.assigned_clean_by_class, indices_by_class)):
-            for j, (assignment, index_dp) in enumerate(zip(assigned_clean, dp)):
+        for assigned_clean, dp in zip(self.assigned_clean_by_class, indices_by_class):
+            for assignment, index_dp in zip(assigned_clean, dp):
                 if assignment == 1:
                     self.is_clean_lst[index_dp] = 1
 
@@ -122,7 +122,7 @@ class ActivationDefence(PoisonFilteringDefence):
         :rtype: `tuple`
         """
         self.set_params(**kwargs)
-        if len(self.activations_by_class) == 0:
+        if not self.activations_by_class:
             activations = self._get_activations()
             self.activations_by_class = self._segment_by_class(activations, self.y_train)
 
@@ -146,7 +146,7 @@ class ActivationDefence(PoisonFilteringDefence):
         """
         self.set_params(**kwargs)
 
-        if len(self.clusters_by_class) == 0:
+        if not self.clusters_by_class:
             self.cluster_activations()
 
         if self.cluster_analysis == 'smaller':
@@ -177,7 +177,7 @@ class ActivationDefence(PoisonFilteringDefence):
         """
         self.set_params(**kwargs)
 
-        if len(self.clusters_by_class) == 0:
+        if not self.clusters_by_class:
             self.cluster_activations()
 
         x_raw_by_class = self._segment_by_class(x_raw, self.y_train)
@@ -314,7 +314,7 @@ def cluster_activations(separated_activations, nb_clusters=2, nb_dims=10, reduce
     else:
         raise ValueError(clustering_method + " clustering method not supported.")
 
-    for i, ac in enumerate(separated_activations):
+    for ac in separated_activations:
         # Apply dimensionality reduction
         nb_activations = np.shape(ac)[1]
         if nb_activations > nb_dims:

@@ -43,7 +43,7 @@ class DistanceAnalyzer(ClusteringAnalyzer):
         cluster_centers = []
 
         # assign centers
-        for t, activations in enumerate(self.separated_activations):
+        for activations in self.separated_activations:
             cluster_centers.append(np.median(activations, axis=0))
 
         for i, (clusters, ac) in enumerate(zip(separated_clusters, self.separated_activations)):

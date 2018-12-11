@@ -159,7 +159,7 @@ class TestKerasClassifier(unittest.TestCase):
         self.assertTrue(loss_grads.shape == x_test[:11].shape)
 
     def test_class_gradient(self):
-        (_, _), (x_test, y_test) = self.mnist
+        (_, _), (x_test, _) = self.mnist
         classifier = KerasClassifier((0, 1), self.model_mnist)
 
         # Test all gradients label

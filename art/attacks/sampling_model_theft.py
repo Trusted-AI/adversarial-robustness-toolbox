@@ -81,7 +81,7 @@ class SamplingModelTheft(ModelTheft):
         y = y[:budget]
 
         output_fit_datagen = self.fit_datagen(x, y)
-        for epoch in range(nb_epochs):
+        for _ in range(nb_epochs):
             xlist = []
             ylist = []
             num_samples = 0
@@ -112,7 +112,7 @@ class SamplingModelTheft(ModelTheft):
         # Save attack-specific parameters
         super(SamplingModelTheft, self).set_params(**kwargs)
 
-        if type(self.x) is not np.ndarray:
+        if not isinstance(self.x, np.ndarray):
             raise ValueError("Input x must be a numpy.ndarray.")
 
         if self.fit_datagen and not callable(self.fit_datagen):

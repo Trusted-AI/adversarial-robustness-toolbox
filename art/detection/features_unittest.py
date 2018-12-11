@@ -45,7 +45,7 @@ class TestFeatures(unittest.TestCase):
         model.add(Dense(nb_classes, activation='softmax'))
         model.compile(loss=keras.losses.categorical_crossentropy, optimizer=keras.optimizers.Adam(lr=0.01),
                       metrics=['accuracy'])
-        model.fit(x_train, y_train, nb_epoch=5, batch_size=128)
+        model.fit(x_train, y_train, epochs=5, batch_size=128)
         cls.model = model
 
     def setUp(self):
@@ -58,7 +58,7 @@ class TestFeatures(unittest.TestCase):
         """
 
         # Get MNIST
-        (x_train, y_train), (_, _) = self.mnist
+        (x_train, _), (_, _) = self.mnist
         nb_classes = 10
 
         # compute the class gradients using Keras

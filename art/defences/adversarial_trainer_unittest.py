@@ -20,7 +20,7 @@ logger = logging.getLogger('testLogger')
 BATCH_SIZE = 10
 NB_TRAIN = 100
 NB_TEST = 11
-accuracy_drop = 0.0  # The unit tests are too inaccurate
+ACCURACY_DROP = 0.0  # The unit tests are too inaccurate
 
 
 class TestBase(unittest.TestCase):
@@ -131,7 +131,7 @@ class TestAdversarialTrainer(TestBase):
 
         preds_new = np.argmax(adv_trainer.predict(x_test_adv), axis=1)
         acc_new = np.sum(preds_new == np.argmax(y_test, axis=1)) / NB_TEST
-        self.assertGreaterEqual(acc_new, acc * accuracy_drop)
+        self.assertGreaterEqual(acc_new, acc * ACCURACY_DROP)
 
         logger.info('Accuracy before adversarial training: %.2f%%', (acc * 100))
         logger.info('Accuracy after adversarial training: %.2f%%', (acc_new * 100))
@@ -149,7 +149,7 @@ class TestAdversarialTrainer(TestBase):
 
         preds_new = np.argmax(adv_trainer.predict(x_test_adv), axis=1)
         acc_new = np.sum(preds_new == np.argmax(y_test, axis=1)) / NB_TEST
-        self.assertGreaterEqual(acc_new, acc * accuracy_drop)
+        self.assertGreaterEqual(acc_new, acc * ACCURACY_DROP)
 
         logger.info('Accuracy before adversarial training: %.2f%%', (acc * 100))
         logger.info('Accuracy after adversarial training: %.2f%%', (acc_new * 100))
@@ -169,7 +169,7 @@ class TestAdversarialTrainer(TestBase):
         preds_new = np.argmax(adv_trainer.predict(x_test_adv), axis=1)
         acc_new = np.sum(preds_new == np.argmax(y_test, axis=1)) / NB_TEST
         # No reason to assert the newer accuracy is higher. It might go down slightly
-        self.assertGreaterEqual(acc_new, acc * accuracy_drop)
+        self.assertGreaterEqual(acc_new, acc * ACCURACY_DROP)
 
         logger.info('Accuracy before adversarial training: %.2f%%', (acc * 100))
         logger.info('\nAccuracy after adversarial training: %.2f%%', (acc_new * 100))

@@ -34,7 +34,7 @@ class SizeAnalyzer(ClusteringAnalyzer):
         """
         all_assigned_clean = []
 
-        for i, clusters in enumerate(separated_clusters):
+        for clusters in separated_clusters:
             # assume that smallest cluster is poisonous and all others are clean
             poison_clusters = [np.argmin(np.bincount(clusters))]
             clean_clusters = list(set(np.unique(clusters)) - set(poison_clusters))

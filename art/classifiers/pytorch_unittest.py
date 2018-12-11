@@ -123,7 +123,7 @@ class TestPyTorchClassifier(unittest.TestCase):
 
     def test_class_gradient(self):
         # Get MNIST
-        (_, _), (x_test, y_test) = self.mnist
+        (_, _), (x_test, _) = self.mnist
 
         # Test all gradients label = None
         ptc = self.module_classifier
@@ -147,7 +147,7 @@ class TestPyTorchClassifier(unittest.TestCase):
 
     def test_class_gradient_target(self):
         # Get MNIST
-        (_, _), (x_test, y_test) = self.mnist
+        (_, _), (x_test, _) = self.mnist
 
         # Test gradient
         ptc = self.module_classifier
@@ -169,7 +169,7 @@ class TestPyTorchClassifier(unittest.TestCase):
 
     def test_layers(self):
         # Get MNIST
-        (_, _), (x_test, y_test) = self.mnist
+        (_, _), (x_test, _) = self.mnist
 
         # Test and get layers
         ptc = self.seq_classifier

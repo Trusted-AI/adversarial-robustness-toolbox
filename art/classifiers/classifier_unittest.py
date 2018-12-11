@@ -33,6 +33,9 @@ class ClassifierInstance(Classifier):
     def save(self, filename, path=None):
         pass
 
+    def layer_names(self):
+        pass
+
 
 class TestClassifier(unittest.TestCase):
     def setUp(self):

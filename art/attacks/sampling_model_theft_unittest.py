@@ -35,27 +35,27 @@ class TestSamplingModelTheft(unittest.TestCase):
         x_test, y_test = x_test[:NB_TEST], y_test[:NB_TEST]
 
         m0 = Sequential([
-                Conv2D(32, kernel_size=(3, 3), activation='relu', input_shape=x_train.shape[1:]),
-                Conv2D(64, (3, 3), activation='relu'),
-                MaxPooling2D(pool_size=(2, 2)),
-                Dropout(0.25),
-                Flatten(),
-                Dense(128, activation='relu'),
-                Dropout(0.5),
-                Dense(10, activation='softmax')])
+            Conv2D(32, kernel_size=(3, 3), activation='relu', input_shape=x_train.shape[1:]),
+            Conv2D(64, (3, 3), activation='relu'),
+            MaxPooling2D(pool_size=(2, 2)),
+            Dropout(0.25),
+            Flatten(),
+            Dense(128, activation='relu'),
+            Dropout(0.5),
+            Dense(10, activation='softmax')])
         m0.compile(loss='categorical_crossentropy', optimizer='adam', metrics=['accuracy'])
         k0 = KerasClassifier((min_, max_), model=m0)
         k0.fit(x_train, y_train, nb_epochs=2, batch_size=128)
 
         m1 = Sequential([
-                Conv2D(32, kernel_size=(3, 3), activation='relu', input_shape=x_train.shape[1:]),
-                Conv2D(64, (3, 3), activation='relu'),
-                MaxPooling2D(pool_size=(2, 2)),
-                Dropout(0.25),
-                Flatten(),
-                Dense(128, activation='relu'),
-                Dropout(0.5),
-                Dense(10, activation='softmax')])
+            Conv2D(32, kernel_size=(3, 3), activation='relu', input_shape=x_train.shape[1:]),
+            Conv2D(64, (3, 3), activation='relu'),
+            MaxPooling2D(pool_size=(2, 2)),
+            Dropout(0.25),
+            Flatten(),
+            Dense(128, activation='relu'),
+            Dropout(0.5),
+            Dense(10, activation='softmax')])
         m1.compile(loss='categorical_crossentropy', optimizer='adam', metrics=['accuracy'])
         k1 = KerasClassifier((min_, max_), model=m1)
 

@@ -76,7 +76,7 @@ class TestActivationDefence(unittest.TestCase):
 
         n_classes = self.classifier.nb_classes
         for nb_clusters in range(2, 5):
-            clusters_by_class, red_activations_by_class = self.defence.cluster_activations(nb_clusters=nb_clusters)
+            clusters_by_class, _ = self.defence.cluster_activations(nb_clusters=nb_clusters)
 
             # Verify expected number of classes
             self.assertEqual(np.shape(clusters_by_class)[0], n_classes)

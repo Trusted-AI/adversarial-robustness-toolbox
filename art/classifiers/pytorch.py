@@ -223,9 +223,9 @@ class PyTorchClassifier(Classifier):
         """
         import torch
 
-        if not ((label is None) or (isinstance(label, (int, np.integer)) and label in range(self._nb_classes)) or (
-                                type(label) is np.ndarray and len(label.shape) == 1 and (label < self._nb_classes).all()
-                and label.shape[0] == x.shape[0])):
+        if not ((label is None) or (isinstance(label, (int, np.integer)) and label in range(self._nb_classes))
+                or (isinstance(label, np.ndarray) and len(label.shape) == 1 and (label < self._nb_classes).all()
+                    and label.shape[0] == x.shape[0])):
             raise ValueError('Label %s is out of range.' % label)
 
         # Convert the inputs to Tensors
@@ -452,7 +452,7 @@ class PyTorchClassifier(Classifier):
                 import torch.nn as nn
 
                 result = []
-                if type(self._model) is nn.Sequential:
+                if isinstance(self._model, nn.Sequential):
                     for _, module_ in self._model._modules.items():
                         x = module_(x)
                         result.append(x)
@@ -486,7 +486,7 @@ class PyTorchClassifier(Classifier):
                 import torch.nn as nn
 
                 result = []
-                if type(self._model) is nn.Sequential:
+                if isinstance(self._model, nn.Sequential):
                     for name, module_ in self._model._modules.items():
                         result.append(name + "_" + str(module_))
 

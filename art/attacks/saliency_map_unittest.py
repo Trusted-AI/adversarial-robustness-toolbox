@@ -131,7 +131,6 @@ class TestSaliencyMap(unittest.TestCase):
         x_test, y_test = x_test[:NB_TEST], y_test[:NB_TEST]
 
         # Generate random target classes
-        import numpy as np
         nb_classes = np.unique(np.argmax(y_test, axis=1)).shape[0]
         targets = np.random.randint(nb_classes, size=NB_TEST)
         while (targets == np.argmax(y_test, axis=1)).any():

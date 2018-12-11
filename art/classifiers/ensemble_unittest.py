@@ -53,9 +53,8 @@ class TestEnsembleClassifier(unittest.TestCase):
         with self.assertRaises(NotImplementedError):
             self.ensemble.get_activations(self.mnist[1][0], layer=2)
 
-    @staticmethod
-    def _get_model(cls, epochs=1):
-        im_shape = cls.mnist[0][0][0].shape
+    def _get_model(self, epochs=1):
+        im_shape = self.mnist[0][0][0].shape
 
         # Create basic CNN on MNIST; architecture from Keras examples
         model = Sequential()
@@ -69,7 +68,7 @@ class TestEnsembleClassifier(unittest.TestCase):
         model.compile(loss=keras.losses.categorical_crossentropy, optimizer=keras.optimizers.Adadelta(),
                       metrics=['accuracy'])
 
-        model.fit(cls.mnist[0][0], cls.mnist[0][1], batch_size=BATCH_SIZE, epochs=epochs)
+        model.fit(self.mnist[0][0], self.mnist[0][1], batch_size=BATCH_SIZE, epochs=epochs)
         return model
 
     def test_predict(self):

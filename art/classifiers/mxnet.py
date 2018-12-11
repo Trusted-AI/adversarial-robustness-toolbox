@@ -201,7 +201,7 @@ class MXClassifier(Classifier):
 
         # Check value of label for computing gradients
         if not (label is None or (isinstance(label, (int, np.integer)) and label in range(self.nb_classes))
-                or (type(label) is np.ndarray and len(label.shape) == 1 and (label < self.nb_classes).all()
+                or (isinstance(label, np.ndarray) and len(label.shape) == 1 and (label < self.nb_classes).all()
                     and label.shape[0] == x.shape[0])):
             raise ValueError('Label %s is out of range.' % str(label))
 
@@ -322,7 +322,7 @@ class MXClassifier(Classifier):
             if layer not in self._layer_names:
                 raise ValueError('Layer name %s is not part of the model.' % layer)
             layer_ind = self._layer_names.index(layer)
-        elif type(layer) is int:
+        elif isinstance(layer, int):
             if layer < 0 or layer >= len(self._layer_names):
                 raise ValueError('Layer index %d is outside of range (0 to %d included).'
                                  % (layer, len(self._layer_names) - 1))

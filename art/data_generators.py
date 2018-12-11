@@ -54,9 +54,9 @@ class KerasDataGenerator(DataGenerator):
 
         if inspect.isgeneratorfunction(self.generator):
             return next(self.generator)
-        else:
-            iter_ = iter(self.generator)
-            return next(iter_)
+
+        iter_ = iter(self.generator)
+        return next(iter_)
 
 
 class PyTorchDataGenerator(DataGenerator):

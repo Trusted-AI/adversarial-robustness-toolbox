@@ -40,7 +40,7 @@ class EnsembleClassifier(Classifier):
         super(EnsembleClassifier, self).__init__(clip_values=clip_values, channel_index=channel_index,
                                                  defences=defences, preprocessing=preprocessing)
 
-        if classifiers is None or len(classifiers) == 0:
+        if classifiers is None or not classifiers:
             raise ValueError('No classifiers provided for the ensemble.')
         self._nb_classifiers = len(classifiers)
 

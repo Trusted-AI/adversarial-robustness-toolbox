@@ -307,10 +307,8 @@ class CarliniL2Method(Attack):
                                                lr_mult * perturbation_tanh[do_halving]
                         new_x_adv_batch = self._tanh_to_original(new_x_adv_batch_tanh, clip_min, clip_max)
                         _, l2dist[active_and_do_halving], loss[active_and_do_halving] = self._loss(
-                                                                                        x_batch[active_and_do_halving],
-                                                                                        new_x_adv_batch,
-                                                                                        y_batch[active_and_do_halving],
-                                                                                        c[active_and_do_halving])
+                            x_batch[active_and_do_halving], new_x_adv_batch, y_batch[active_and_do_halving],
+                            c[active_and_do_halving])
 
                         logger.debug('New Average Loss: %f', np.mean(loss))
                         logger.debug('New Average L2Dist: %f', np.mean(l2dist))
@@ -342,10 +340,8 @@ class CarliniL2Method(Attack):
                                                lr_mult * perturbation_tanh[do_doubling]
                         new_x_adv_batch = self._tanh_to_original(new_x_adv_batch_tanh, clip_min, clip_max)
                         _, l2dist[active_and_do_doubling], loss[active_and_do_doubling] = self._loss(
-                                                                                       x_batch[active_and_do_doubling],
-                                                                                       new_x_adv_batch,
-                                                                                       y_batch[active_and_do_doubling],
-                                                                                       c[active_and_do_doubling])
+                            x_batch[active_and_do_doubling], new_x_adv_batch, y_batch[active_and_do_doubling],
+                            c[active_and_do_doubling])
                         logger.debug('New Average Loss: %f', np.mean(loss))
                         logger.debug('New Average L2Dist: %f', np.mean(l2dist))
                         logger.debug('New Average Margin Loss: %f', np.mean(loss-l2dist))
@@ -434,19 +430,19 @@ class CarliniL2Method(Attack):
         # Save attack-specific parameters
         super(CarliniL2Method, self).set_params(**kwargs)
 
-        if type(self.binary_search_steps) is not int or self.binary_search_steps < 0:
+        if not isinstance(self.binary_search_steps, (int, np.int)) or self.binary_search_steps < 0:
             raise ValueError("The number of binary search steps must be a non-negative integer.")
 
-        if type(self.max_iter) is not int or self.max_iter < 0:
+        if not isinstance(self.max_iter, (int, np.int)) or self.max_iter < 0:
             raise ValueError("The number of iterations must be a non-negative integer.")
 
-        if type(self.max_halving) is not int or self.max_halving < 1:
+        if not isinstance(self.max_halving, (int, np.int)) or self.max_halving < 1:
             raise ValueError("The number of halving steps must be an integer greater than zero.")
 
-        if type(self.max_doubling) is not int or self.max_doubling < 1:
+        if not isinstance(self.max_doubling, (int, np.int)) or self.max_doubling < 1:
             raise ValueError("The number of doubling steps must be an integer greater than zero.")
 
-        if type(self.batch_size) is not int or self.batch_size < 1:
+        if not isinstance(self.batch_size, (int, np.int)) or self.batch_size < 1:
             raise ValueError("The batch size must be an integer greater than zero.")
 
         return True
@@ -692,9 +688,9 @@ class CarliniLInfMethod(Attack):
                                                              clip_max[active_and_do_halving])
                     _, loss[active_and_do_halving] = self._loss(new_x_adv_batch, y_batch[active_and_do_halving])
                     logger.debug('New Average Loss: %f', np.mean(loss))
-                    logger.debug('loss: ' + str(loss))
-                    logger.debug('prev_loss: ' + str(prev_loss))
-                    logger.debug('best_loss: ' + str(best_loss))
+                    logger.debug('Loss: %s', str(loss))
+                    logger.debug('Prev_loss: %s', str(prev_loss))
+                    logger.debug('Best_loss: %s', str(best_loss))
 
                     best_lr[loss < best_loss] = lr[loss < best_loss]
                     best_loss[loss < best_loss] = loss[loss < best_loss]
@@ -742,14 +738,12 @@ class CarliniLInfMethod(Attack):
                         best_lr_mult = best_lr_mult[:, np.newaxis]
 
                     x_adv_batch_tanh[active_and_update_adv] = x_adv_batch_tanh[active_and_update_adv] + \
-                                                            best_lr_mult * perturbation_tanh[update_adv]
-                    x_adv_batch[active_and_update_adv] = \
-                                                     self._tanh_to_original(x_adv_batch_tanh[active_and_update_adv],
-                                                                            clip_min[active_and_update_adv],
-                                                                            clip_max[active_and_update_adv])
+                        best_lr_mult * perturbation_tanh[update_adv]
+                    x_adv_batch[active_and_update_adv] = self._tanh_to_original(x_adv_batch_tanh[active_and_update_adv],
+                                                                                clip_min[active_and_update_adv],
+                                                                                clip_max[active_and_update_adv])
                     z[active_and_update_adv], loss[active_and_update_adv] = self._loss(
-                                                                                x_adv_batch[active_and_update_adv],
-                                                                                y_batch[active_and_update_adv])
+                        x_adv_batch[active_and_update_adv], y_batch[active_and_update_adv])
                     attack_success = (loss <= 0)
 
             # Update depending on attack success:
@@ -794,16 +788,16 @@ class CarliniLInfMethod(Attack):
         if self.eps <= 0:
             raise ValueError("The eps parameter must be strictly positive.")
 
-        if type(self.max_iter) is not int or self.max_iter < 0:
+        if not isinstance(self.max_iter, (int, np.int)) or self.max_iter < 0:
             raise ValueError("The number of iterations must be a non-negative integer.")
 
-        if type(self.max_halving) is not int or self.max_halving < 1:
+        if not isinstance(self.max_halving, (int, np.int)) or self.max_halving < 1:
             raise ValueError("The number of halving steps must be an integer greater than zero.")
 
-        if type(self.max_doubling) is not int or self.max_doubling < 1:
+        if not isinstance(self.max_doubling, (int, np.int)) or self.max_doubling < 1:
             raise ValueError("The number of doubling steps must be an integer greater than zero.")
 
-        if type(self.batch_size) is not int or self.batch_size < 1:
+        if not isinstance(self.batch_size, (int, np.int)) or self.batch_size < 1:
             raise ValueError("The batch size must be an integer greater than zero.")
 
         return True

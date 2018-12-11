@@ -102,7 +102,7 @@ class TestTFClassifier(unittest.TestCase):
 
     def test_class_gradient(self):
         # Get MNIST
-        (_, _), (x_test, y_test) = self.mnist
+        (_, _), (x_test, _) = self.mnist
 
         # Test all gradients label = None
         grads = self.classifier.class_gradient(x_test)
@@ -136,7 +136,7 @@ class TestTFClassifier(unittest.TestCase):
 
     def test_layers(self):
         # Get MNIST
-        (_, _), (x_test, y_test) = self.mnist
+        (_, _), (x_test, _) = self.mnist
 
         # Test and get layers
         layer_names = self.classifier.layer_names
