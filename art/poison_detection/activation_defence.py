@@ -5,10 +5,9 @@ import os.path
 
 import numpy as np
 
-from art.poison_detection.distance_analyzer import DistanceAnalyzer
+from art.poison_detection.clustering_analyzer import ClusteringAnalyzer
 from art.poison_detection.ground_truth_evaluator import GroundTruthEvaluator
 from art.poison_detection.poison_filtering_defence import PoisonFilteringDefence
-from art.poison_detection.size_analyzer import SizeAnalyzer
 from art.visualization import create_sprite, save_image
 
 logger = logging.getLogger(__name__)
@@ -22,7 +21,8 @@ class ActivationDefence(PoisonFilteringDefence):
     defence_params = ['nb_clusters', 'clustering_method', 'nb_dims', 'reduce', 'cluster_analysis']
     valid_clustering = ['KMeans']
     valid_reduce = ['PCA', 'FastICA', 'TSNE']
-    valid_analysis = ['smaller', 'distance']
+    valid_analysis = ['smaller', 'distance', 'relative-size', 'silhouette-scores']
+
     TOO_SMALL_ACTIVATIONS = 32  # Threshold used to print a warning when activations are not enough
 
     def __init__(self, classifier, x_train, y_train):
@@ -49,6 +49,7 @@ class ActivationDefence(PoisonFilteringDefence):
         self.evaluator = GroundTruthEvaluator()
         self.is_clean_lst = []
         self.confidence_level = []
+        self.poisonous_clusters = []
 
     def evaluate_defence(self, is_clean, **kwargs):
         """
@@ -149,13 +150,26 @@ class ActivationDefence(PoisonFilteringDefence):
         if not self.clusters_by_class:
             self.cluster_activations()
 
+        analyzer = ClusteringAnalyzer()
+
         if self.cluster_analysis == 'smaller':
-            analyzer = SizeAnalyzer()
-            self.assigned_clean_by_class = analyzer.analyze_clusters(self.clusters_by_class)
+            self.assigned_clean_by_class, self.poisonous_clusters \
+                = analyzer.analyze_by_size(self.clusters_by_class)
+        elif self.cluster_analysis == 'relative-size':
+            self.assigned_clean_by_class, self.poisonous_clusters \
+                = analyzer.analyze_by_relative_size(self.clusters_by_class)
         elif self.cluster_analysis == 'distance':
-            analyzer = DistanceAnalyzer()
-            self.assigned_clean_by_class = analyzer.analyze_clusters(self.clusters_by_class,
-                                                                     separated_activations=self.red_activations_by_class)
+            self.assigned_clean_by_class, self.poisonous_clusters \
+                = analyzer.analyze_by_distance(self.clusters_by_class,
+                                               separated_activations=self.red_activations_by_class)
+        elif self.cluster_analysis == 'silhouette-scores':
+            self.assigned_clean_by_class, self.poisonous_clusters \
+                = analyzer.analyze_by_sihouette_score(self.clusters_by_class,
+                                                      reduced_activations_by_class=self.red_activations_by_class)
+        else:
+            raise ValueError(
+                "Unsupported cluster analysis technique " + self.cluster_analysis)
+
         return self.assigned_clean_by_class
 
     def visualize_clusters(self, x_raw, save=True, folder='.', **kwargs):
