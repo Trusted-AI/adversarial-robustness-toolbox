@@ -1,41 +1,14 @@
 sudo: required
 dist: trusty
 language: python
-stages:
-  - lint
-  - test
-jobs:
-  include:
-      - stage: lint
-        python: 3.5
-        env: KERAS_BACKEND=tensorflow TENSORFLOW_V=1.5.0
-        script: pylint -rn art & pycodestyle --max-line-length=120 art
-      - stage: test
-        python: 2.7
-        env: KERAS_BACKEND=tensorflow TENSORFLOW_V=1.5.0
-      - stage: test
-        python: 2.7
-        env: KERAS_BACKEND=tensorflow TENSORFLOW_V=1.6.0
-      - stage: test
-        python: 2.7
-        env: KERAS_BACKEND=tensorflow TENSORFLOW_V=1.7.0
-      - stage: test
-        python: 2.7
-        env: KERAS_BACKEND=tensorflow TENSORFLOW_V=1.10.0
-      - stage: test
-        python: 3.5
-        env: KERAS_BACKEND=tensorflow TENSORFLOW_V=1.5.0
-      - stage: test
-        python: 3.5
-        env: KERAS_BACKEND=tensorflow TENSORFLOW_V=1.6.0
-      - stage: test
-        python: 3.5
-        env: KERAS_BACKEND=tensorflow TENSORFLOW_V=1.7.0
-      - stage: test
-        python: 3.5
-        env: KERAS_BACKEND=tensorflow TENSORFLOW_V=1.10.0
-  exclude:
-      - env:
+env:
+  - KERAS_BACKEND=tensorflow TENSORFLOW_V=1.5.0
+  - KERAS_BACKEND=tensorflow TENSORFLOW_V=1.6.0
+  - KERAS_BACKEND=tensorflow TENSORFLOW_V=1.7.0
+  - KERAS_BACKEND=tensorflow TENSORFLOW_V=1.10.0
+python:
+  - "2.7"
+  - "3.5"
 
 before_install:
   - if [[ "$TRAVIS_PYTHON_VERSION" == "2.7" ]]; then
@@ -52,13 +25,10 @@ before_install:
   - conda update -q conda
   - conda info -a
 
-install: 
+install:
   - conda create -q -n test-environment python=$TRAVIS_PYTHON_VERSION --yes --file requirements.txt
-  # Can't specify channels in requirements.txt for conda
-  # - conda install -y pytorch -c pytorch
   - source activate test-environment
   - pip install -q -r test_requirements.txt
-  - pip install pylint
   - conda install libgcc
   - export LD_LIBRARY_PATH=$LD_LIBRARY_PATH:/home/travis/miniconda/envs/test-environment/lib
   - export PYTHONPATH=".":$PYTHONPATH
