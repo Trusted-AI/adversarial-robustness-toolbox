@@ -9,6 +9,17 @@ env:
 python:
   - "2.7"
   - "3.5"
+stages:
+  - lint
+  - test
+jobs:
+  include:
+    - stage: lint
+      env: KERAS_BACKEND=tensorflow TENSORFLOW_V=1.5.0
+      script: script: pylint -rn art & pycodestyle --max-line-length=120 art
+      python: 2.7
+    - stage: test
+
 
 before_install:
   - if [[ "$TRAVIS_PYTHON_VERSION" == "2.7" ]]; then
