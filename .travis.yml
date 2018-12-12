@@ -7,6 +7,7 @@ stages:
 jobs:
   include:
       - stage: lint
+        python: 3.5
         env: KERAS_BACKEND=tensorflow TENSORFLOW_V=1.5.0
         script: pylint -rn art & pycodestyle --max-line-length=120 art
       - stage: test
