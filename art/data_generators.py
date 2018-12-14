@@ -45,8 +45,16 @@ class KerasDataGenerator(DataGenerator):
         :type batch_size: int
         """
         self.generator = generator
+
+        if size is not None and (type(size) is not int or size < 1):
+            raise ValueError("The total size of the dataset must be an integer greater than zero.")
+
         self.size = size
-        self.batch_size = batch_size        
+
+        if type(batch_size) is not int or batch_size < 1:
+            raise ValueError("The batch size must be an integer greater than zero.")
+
+        self.batch_size = batch_size
 
     def get_batch(self):
         """
@@ -86,8 +94,16 @@ class PyTorchDataGenerator(DataGenerator):
             raise TypeError('Expected instance of PyTorch `DataLoader, received %s instead.`' % str(type(data_loader)))
 
         self.data_loader = data_loader
+
+        if size is not None and (type(size) is not int or size < 1):
+            raise ValueError("The total size of the dataset must be an integer greater than zero.")
+
         self.size = size
-        self.batch_size = batch_size    
+
+        if type(batch_size) is not int or batch_size < 1:
+            raise ValueError("The batch size must be an integer greater than zero.")
+
+        self.batch_size = batch_size
 
     def get_batch(self):
         """
@@ -127,8 +143,16 @@ class MXDataGenerator(DataGenerator):
             raise TypeError('Expected instance of Gluon `DataLoader, received %s instead.`' % str(type(data_loader)))
 
         self.data_loader = data_loader
+
+        if size is not None and (type(size) is not int or size < 1):
+            raise ValueError("The total size of the dataset must be an integer greater than zero.")
+
         self.size = size
-        self.batch_size = batch_size    
+
+        if type(batch_size) is not int or batch_size < 1:
+            raise ValueError("The batch size must be an integer greater than zero.")
+
+        self.batch_size = batch_size 
 
     def get_batch(self):
         """

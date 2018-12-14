@@ -174,19 +174,19 @@ class TestAdversarialTrainer(TestBase):
     def test_two_attacks_with_generator(self):
         (x_train, y_train), (x_test, y_test) = self.mnist
         x_train_original = x_train.copy()
-        
+
         class MyDataGenerator(DataGenerator):
             def __init__(self, x, y, size, batch_size):
                 self.x = x
                 self.y = y
                 self.size = size
-                self.batch_size = batch_size        
+                self.batch_size = batch_size
 
             def get_batch(self):
                 ids = np.random.choice(self.size, size=min(self.size, self.batch_size), replace=False)
                 return (self.x[ids], self.y[ids])
         generator = MyDataGenerator(x_train, y_train, x_train.shape[0], 128)
-       
+
         attack1 = FastGradientMethod(self.classifier_k)
         attack2 = DeepFool(self.classifier_tf)
         x_test_adv = attack1.generate(x_test)
@@ -203,10 +203,10 @@ class TestAdversarialTrainer(TestBase):
 
         logger.info('Accuracy before adversarial training: %.2f%%', (acc * 100))
         logger.info('\nAccuracy after adversarial training: %.2f%%', (acc_new * 100))
-        
+
         # Finally assert that the original training data hasn't changed:
         self.assertTrue((x_train == x_train_original).all())
-        
+
     def test_targeted_attack_error(self):
         """
         Test the adversarial trainer using a targeted attack, which will currently result in a
@@ -318,13 +318,13 @@ class TestStaticAdversarialTrainer(TestBase):
         """
         (x_train, y_train), (x_test, y_test) = self.mnist
         x_train_original = x_train.copy()
-        
+
         class MyDataGenerator(DataGenerator):
             def __init__(self, x, y, size, batch_size):
                 self.x = x
                 self.y = y
                 self.size = size
-                self.batch_size = batch_size        
+                self.batch_size = batch_size
 
             def get_batch(self):
                 ids = np.random.choice(self.size, size=min(self.size, self.batch_size), replace=False)
@@ -353,10 +353,10 @@ class TestStaticAdversarialTrainer(TestBase):
         acc_adv_trained = np.sum(np.argmax(preds_adv_trained, axis=1) == np.argmax(y_adv, axis=1)) / y_adv.shape[0]
         logger.info('Accuracy before adversarial training: %.2f%%', (acc * 100))
         logger.info('Accuracy after adversarial training: %.2f%%', (acc_adv_trained * 100))
-        
+
         # Finally assert that the original training data hasn't changed:
         self.assertTrue((x_train == x_train_original).all())
-        
+
     def test_shared_model_mnist(self):
         """
         Test the adversarial trainer using one FGSM attacker. The source and target models of the attack are the same

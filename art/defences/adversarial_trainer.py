@@ -47,10 +47,10 @@ class AdversarialTrainer:
 
         self._precomputed_adv_samples = []
         self.x_augmented, self.y_augmented = None, None
-    
+
     def fit_generator(self, generator, nb_epochs=20):
         """
-        Train a model adversarially using a data generator. 
+        Train a model adversarially using a data generator.
         See class documentation for more information on the exact procedure.
 
         :param generator: Data generator.
@@ -80,16 +80,16 @@ class AdversarialTrainer:
                 if not logged:
                     logger.info('Precomputing transferred adversarial samples.')
                     logged = True
-                
+
                 next_precomputed_adv_samples = None
                 for batch_id in range(nb_batches):
-                    # Create batch data               
-                    x_batch, y_batch = generator.get_batch()                     
+                    # Create batch data
+                    x_batch, y_batch = generator.get_batch()
                     x_adv_batch = attack.generate(x_batch, y=y_batch)
                     if next_precomputed_adv_samples is None:
                         next_precomputed_adv_samples = x_adv_batch
                     else:
-                       next_precomputed_adv_samples = np.append(next_precomputed_adv_samples, x_adv_batch, axis=0)                                    
+                        next_precomputed_adv_samples = np.append(next_precomputed_adv_samples, x_adv_batch, axis=0)
                 self._precomputed_adv_samples.append(next_precomputed_adv_samples)
             else:
                 self._precomputed_adv_samples.append(None)
@@ -99,9 +99,9 @@ class AdversarialTrainer:
 
             # Shuffle the indices of precomputed examples
             np.random.shuffle(ind)
-            
+
             for batch_id in range(nb_batches):
-                # Create batch data               
+                # Create batch data
                 x_batch, y_batch = generator.get_batch()
                 x_batch = x_batch.copy()
 
@@ -122,7 +122,7 @@ class AdversarialTrainer:
                 # Fit batch
                 self.classifier.fit(x_batch, y_batch, nb_epochs=1, batch_size=x_batch.shape[0])
                 attack_id = (attack_id + 1) % len(self.attacks)
-        
+
     def fit(self, x, y, batch_size=128, nb_epochs=20):
         """
         Train a model adversarially. See class documentation for more information on the exact procedure.
