@@ -4,10 +4,10 @@ import logging
 import unittest
 
 import numpy as np
+from keras.preprocessing.image import ImageDataGenerator
 
 from art.data_generators import KerasDataGenerator, PyTorchDataGenerator, MXDataGenerator
 from art.utils import master_seed
-
 
 logger = logging.getLogger('testLogger')
 
@@ -88,12 +88,47 @@ class TestKerasDataGenerator(unittest.TestCase):
         self.assertTrue(x.shape == (28, 28, 1))
         self.assertTrue(y.shape == (10,))
 
-    # def test_imagedatagen_keras_specific(self):
-    #     from keras.preprocessing.image import ImageDataGenerator
-    #
-    #     pass
-    #
-    # def test_imagedatagen_interface(self):
+    def test_imagedatagen_interface(self):
+        train_size, batch_size = 20, 5
+        x_train, y_train = np.random.rand(train_size, 28, 28, 1), np.random.randint(0, 2, size=(train_size, 10))
+
+        datagen = ImageDataGenerator(width_shift_range=0.075, height_shift_range=0.075, rotation_range=12,
+                                     shear_range=0.075, zoom_range=0.05, fill_mode='constant', cval=0)
+        datagen.fit(x_train)
+
+        # Create wrapper and get batch
+        data_gen = KerasDataGenerator(datagen.flow(x_train, y_train, batch_size=batch_size), size=None,
+                                      batch_size=batch_size)
+        x, y = data_gen.get_batch()
+
+        # Check return types
+        self.assertTrue(isinstance(x, np.ndarray))
+        self.assertTrue(isinstance(y, np.ndarray))
+
+        # Check shapes
+        self.assertTrue(x.shape == (batch_size, 28, 28, 1))
+        self.assertTrue(y.shape == (batch_size, 10))
+
+    def test_imagedatagen_keras_specific(self):
+        train_size, batch_size = 20, 5
+        x_train, y_train = np.random.rand(train_size, 28, 28, 1), np.random.randint(0, 2, size=(train_size, 10))
+
+        datagen = ImageDataGenerator(width_shift_range=0.075, height_shift_range=0.075, rotation_range=12,
+                                     shear_range=0.075, zoom_range=0.05, fill_mode='constant', cval=0)
+        datagen.fit(x_train)
+
+        # Create wrapper and get batch
+        data_gen = KerasDataGenerator(datagen.flow(x_train, y_train, batch_size=batch_size), size=None,
+                                      batch_size=batch_size)
+        x, y = next(data_gen.generator)
+
+        # Check return types
+        self.assertTrue(isinstance(x, np.ndarray))
+        self.assertTrue(isinstance(y, np.ndarray))
+
+        # Check shapes
+        self.assertTrue(x.shape == (batch_size, 28, 28, 1))
+        self.assertTrue(y.shape == (batch_size, 10))
 
     @staticmethod
     def _dummy_gen(size=5):

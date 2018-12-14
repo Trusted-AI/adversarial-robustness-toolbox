@@ -40,9 +40,9 @@ class KerasDataGenerator(DataGenerator):
                           the same length. The generator is expected to loop over its data indefinitely.
         :type generator: generator function or `keras.utils.Sequence` or `keras.preprocessing.image.ImageDataGenerator`
         :param size: Total size of the dataset.
-        :type size: int
+        :type size: `int` or `None`
         :param batch_size: Size of the minibatches.
-        :type batch_size: int
+        :type batch_size: `int`
         """
         self.generator = generator
 
@@ -152,7 +152,7 @@ class MXDataGenerator(DataGenerator):
         if type(batch_size) is not int or batch_size < 1:
             raise ValueError("The batch size must be an integer greater than zero.")
 
-        self.batch_size = batch_size 
+        self.batch_size = batch_size
 
     def get_batch(self):
         """
