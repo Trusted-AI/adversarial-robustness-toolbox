@@ -203,7 +203,7 @@ class TestAdversarialTrainer(TestBase):
         preds_new = np.argmax(adv_trainer.predict(x_test_adv), axis=1)
         acc_new = np.sum(preds_new == np.argmax(y_test, axis=1)) / NB_TEST
         # No reason to assert the newer accuracy is higher. It might go down slightly
-        self.assertGreaterEqual(acc_new, acc * accuracy_drop)
+        self.assertGreaterEqual(acc_new, acc * ACCURACY_DROP)
 
         logger.info('Accuracy before adversarial training: %.2f%%', (acc * 100))
         logger.info('\nAccuracy after adversarial training: %.2f%%', (acc_new * 100))
