@@ -13,3 +13,7 @@ Random Targets
 Preprocess
 ----------
 .. autofunction:: preprocess
+
+Fixing Random Number Generators Seed
+------------------------------------
+.. autofunction:: master_seed

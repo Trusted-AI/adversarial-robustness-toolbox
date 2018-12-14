@@ -15,7 +15,7 @@ from keras.models import Sequential
 
 from art.attacks.iterative_method import BasicIterativeMethod
 from art.classifiers import KerasClassifier, PyTorchClassifier, TFClassifier
-from art.utils import load_mnist, get_labels_np_array
+from art.utils import load_mnist, get_labels_np_array, master_seed
 
 logger = logging.getLogger('testLogger')
 
@@ -83,6 +83,10 @@ class TestIterativeAttack(unittest.TestCase):
         acc = np.sum(np.argmax(scores, axis=1) == np.argmax(y_test, axis=1)) / y_test.shape[0]
         logger.info('[PyTorch, MNIST] Accuracy on test set: %.2f%%', (acc * 100))
 
+    def setUp(self):
+        # Set master seed
+        master_seed(1234)
+
     def test_mnist(self):
         # Define all backends to test
         backends = {'keras': self.classifier_k,
@@ -128,7 +132,7 @@ class TestIterativeAttack(unittest.TestCase):
 
     def _test_mnist_targeted(self, classifier):
         # Get MNIST
-        (_, _), (x_test, y_test) = self.mnist
+        (_, _), (x_test, _) = self.mnist
 
         # Test FGSM with np.inf norm
         attack = BasicIterativeMethod(classifier, eps=1.0, eps_step=0.1, targeted=True)
@@ -146,7 +150,7 @@ class TestIterativeAttack(unittest.TestCase):
         self.assertEqual(y_test_adv.shape, test_y_pred.shape)
         # This doesn't work all the time, especially with small networks
         self.assertTrue((y_test_adv == test_y_pred).sum() >= x_test.shape[0]//2)
-    
+
     def test_mnist_targeted(self):
         # Define all backends to test
         backends = {'keras': self.classifier_k,
@@ -159,7 +163,7 @@ class TestIterativeAttack(unittest.TestCase):
             self._test_mnist_targeted(classifier)
             if _ == 'pytorch':
                 self._swap_axes()
-   
+
     @staticmethod
     def _cnn_mnist_tf(input_shape):
         labels_tf = tf.placeholder(tf.float32, [None, 10])

@@ -3,6 +3,7 @@ from __future__ import absolute_import, division, print_function, unicode_litera
 import abc
 import logging
 import sys
+import six
 
 logger = logging.getLogger(__name__)
 
@@ -140,11 +141,11 @@ class BinaryActivationDetector(Detector):
         self._detector = detector
 
         # Ensure that layer is well-defined:
-        if type(layer) is str:
+        if isinstance(layer, six.string_types):
             if layer not in classifier.layer_names:
                 raise ValueError('Layer name %s is not part of the graph.' % layer)
             self._layer_name = layer
-        elif type(layer) is int:
+        elif isinstance(layer, int):
             if layer < 0 or layer >= len(classifier.layer_names):
                 raise ValueError('Layer index %d is outside of range (0 to %d included).'
                                  % (layer, len(classifier.layer_names) - 1))
@@ -181,3 +182,60 @@ class BinaryActivationDetector(Detector):
         :rtype: `np.ndarray`
         """
         return self._detector.predict(self._classifier.get_activations(x, self._layer_name))
+
+
+class FeatureBasedDetector(Detector):
+    """
+    A feature based detector.
+    """
+    def __init__(self, classifier, detector, feature, feature_params=None):
+        """
+        Create a `FeatureBasedDetector` instance which performs binary classification on activation information.
+        The shape of the input of the detector has to match that of the output of the chosen layer.
+
+        :param classifier: The classifier of which the feature information is to be used for detection.
+        :type classifier: `art.classifier.Classifier`
+        :param detector: The detector architecture to be trained and applied for the binary classification.
+        :type detector: `art.classifier.Classifier`
+        :param feature: The feature to be used for binary classification.
+        :type feature: `art.detection.Feature`
+        :param feature_params: Feature paramters to be used while instantiating the feature.
+        :type feature_params: `dict`
+        """
+        super(FeatureBasedDetector, self).__init__()
+        self._classifier = classifier
+        self._detector = detector
+        self._feature = feature(classifier, **feature_params)
+
+        self._is_fitted = False
+
+    def fit(self, x, y, **kwargs):
+        """
+        Fit the detector using training data.
+
+        :param x: Training set to fit the detector.
+        :type x: `np.ndarray`
+        :param y: Labels for the training set.
+        :type y: `np.ndarray`
+        :param kwargs: Other parameters.
+        :type kwargs: `dict`
+        :return: None
+        """
+        x_features = self._feature.extract(x)
+        x_features = x_features.reshape(x_features.shape[0], -1)
+        self._detector.fit(x_features, y, **kwargs)
+        self._is_fitted = True
+
+    def __call__(self, x):
+        """
+        Perform detection of adversarial data and return prediction as tuple.
+
+        :param x: Data sample on which to perform detection.
+        :type x: `np.ndarray`
+        :return: Per-sample prediction whether data is adversarial or not, where `0` means non-adversarial.
+                 Return variable has the same `batch_size` (first dimension) as `x`.
+        :rtype: `np.ndarray`
+        """
+        x_features = self._feature.extract(x)
+        x_features = x_features.reshape(x_features.shape[0], -1)
+        return self._detector.predict(x_features)

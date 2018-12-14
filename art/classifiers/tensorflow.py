@@ -158,6 +158,20 @@ class TFClassifier(Classifier):
                     self._sess.run(self._train, feed_dict={self._input_ph: i_batch, self._output_ph: o_batch,
                                                            self._learning: True})
 
+    def fit_generator(self, generator, nb_epochs=20):
+        """
+        Fit the classifier using the generator that yields batches as specified.
+
+        :param generator: Batch generator providing `(x, y)` for each epoch. If the generator can be used for native
+                          training in TensorFlow, it will.
+        :type generator: `DataGenerator`
+        :param nb_epochs: Number of epochs to use for trainings.
+        :type nb_epochs: `int`
+        :return: `None`
+        """
+        # TODO Implement TF-specific version
+        super(TFClassifier, self).fit_generator(generator, nb_epochs=nb_epochs)
+
     def class_gradient(self, x, label=None, logits=False):
         """
         Compute per-class derivatives w.r.t. `x`.
@@ -178,7 +192,7 @@ class TFClassifier(Classifier):
         """
         # Check value of label for computing gradients
         if not (label is None or (isinstance(label, (int, np.integer)) and label in range(self.nb_classes))
-                or (type(label) is np.ndarray and len(label.shape) == 1 and (label < self._nb_classes).all()
+                or (isinstance(label, np.ndarray) and len(label.shape) == 1 and (label < self._nb_classes).all()
                     and label.shape[0] == x.shape[0])):
             raise ValueError('Label %s is out of range.' % label)
 
@@ -273,7 +287,7 @@ class TFClassifier(Classifier):
                                          if self._class_grads[i] is None else self._class_grads[i]
                                          for i in range(self._nb_classes)]
 
-        elif type(label) is int:
+        elif isinstance(label, int):
             if logits:
                 if self._logit_class_grads[label] is None:
                     self._logit_class_grads[label] = tf.gradients(self._logits[:, label], self._input_ph)[0]
@@ -311,17 +325,17 @@ class TFClassifier(Classifier):
         for op in ops:
             filter_cond = ((op.values()) and (not op.values()[0].get_shape() == None) and (
                 len(op.values()[0].get_shape().as_list()) > 1) and (
-                op.values()[0].get_shape().as_list()[0] is None) and (
-                op.values()[0].get_shape().as_list()[1] is not None) and (
-                not op.values()[0].name.startswith("gradients")) and (
-                not op.values()[0].name.startswith("softmax_cross_entropy_loss")) and (
-                not op.type == "Placeholder"))
+                        op.values()[0].get_shape().as_list()[0] is None) and (
+                        op.values()[0].get_shape().as_list()[1] is not None) and (
+                        not op.values()[0].name.startswith("gradients")) and (
+                        not op.values()[0].name.startswith("softmax_cross_entropy_loss")) and (
+                        not op.type == "Placeholder"))
 
             if filter_cond:
                 tmp_list.append(op.values()[0].name)
 
         # Shorten the list
-        if len(tmp_list) == 0:
+        if not tmp_list:
             return tmp_list
 
         result = [tmp_list[-1]]

@@ -7,7 +7,7 @@ import numpy as np
 import tensorflow as tf
 
 from art.classifiers import TFClassifier
-from art.utils import load_mnist
+from art.utils import load_mnist, master_seed
 
 logger = logging.getLogger('testLogger')
 
@@ -29,6 +29,9 @@ class TestTFClassifier(unittest.TestCase):
         cls.mnist = (x_train, y_train), (x_test, y_test)
 
     def setUp(self):
+        # Set master seed
+        master_seed(1234)
+
         # Define input and output placeholders
         input_ph = tf.placeholder(tf.float32, shape=[None, 28, 28, 1])
         output_ph = tf.placeholder(tf.int32, shape=[None, 10])
@@ -52,7 +55,7 @@ class TestTFClassifier(unittest.TestCase):
 
         # Create classifier
         self.classifier = TFClassifier((0, 1), input_ph, logits, output_ph, train, loss, None, self.sess)
-    
+
     def tearDown(self):
         self.sess.close()
 
@@ -71,6 +74,22 @@ class TestTFClassifier(unittest.TestCase):
         self.assertGreater(acc, 0.1)
         tf.reset_default_graph()
 
+    def test_fit_generator(self):
+        from art.classifiers.keras import generator_fit
+        from art.data_generators import KerasDataGenerator
+
+        labels = np.argmax(self.mnist[1][1], axis=1)
+        acc = np.sum(np.argmax(self.classifier.predict(self.mnist[1][0]), axis=1) == labels) / NB_TEST
+        logger.info('Accuracy: %.2f%%', (acc * 100))
+
+        gen = generator_fit(self.mnist[0][0], self.mnist[0][1], batch_size=100)
+        data_gen = KerasDataGenerator(generator=gen, size=NB_TRAIN, batch_size=100)
+        self.classifier.fit_generator(generator=data_gen, nb_epochs=2)
+        acc2 = np.sum(np.argmax(self.classifier.predict(self.mnist[1][0]), axis=1) == labels) / NB_TEST
+        logger.info('Accuracy: %.2f%%', (acc2 * 100))
+
+        self.assertTrue(acc2 >= .8 * acc)
+
     def test_nb_classes(self):
         # Start to test
         self.assertTrue(self.classifier.nb_classes == 10)
@@ -83,7 +102,7 @@ class TestTFClassifier(unittest.TestCase):
 
     def test_class_gradient(self):
         # Get MNIST
-        (_, _), (x_test, y_test) = self.mnist
+        (_, _), (x_test, _) = self.mnist
 
         # Test all gradients label = None
         grads = self.classifier.class_gradient(x_test)
@@ -117,7 +136,7 @@ class TestTFClassifier(unittest.TestCase):
 
     def test_layers(self):
         # Get MNIST
-        (_, _), (x_test, y_test) = self.mnist
+        (_, _), (x_test, _) = self.mnist
 
         # Test and get layers
         layer_names = self.classifier.layer_names
@@ -150,6 +169,7 @@ class TestTFClassifier(unittest.TestCase):
         for f in os.listdir(path):
             if re.search(filename, f):
                 os.remove(os.path.join(path, f))
+
 
 if __name__ == '__main__':
     unittest.main()

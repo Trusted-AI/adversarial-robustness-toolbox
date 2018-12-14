@@ -8,7 +8,7 @@ from mxnet import init, gluon
 from mxnet.gluon import nn
 
 from art.classifiers import MXClassifier
-from art.utils import load_mnist
+from art.utils import load_mnist, master_seed
 
 logger = logging.getLogger('testLogger')
 
@@ -50,13 +50,37 @@ class TestMXClassifier(unittest.TestCase):
         classifier.fit(x_train, y_train, batch_size=128, nb_epochs=2)
         cls.classifier = classifier
 
+    def setUp(self):
+        # Set master seed
+        master_seed(1234)
+
     def test_fit_predict(self):
         (_, _), (x_test, y_test) = self.mnist
 
         preds = self.classifier.predict(x_test)
-        acc = np.sum(np.argmax(preds, axis=1) == np.argmax(y_test, axis=1)) / len(y_test)
+        acc = np.sum(np.argmax(preds, axis=1) == np.argmax(y_test, axis=1)) / NB_TEST
         logger.info('Accuracy after fitting: %.2f%%', (acc * 100))
         self.assertGreater(acc, 0.1)
+
+    def test_fit_generator(self):
+        import mxnet as mx
+        from art.data_generators import MXDataGenerator
+
+        (x_train, y_train), (x_test, y_test) = self.mnist
+        acc = np.sum(np.argmax(self.classifier.predict(x_test), axis=1) == np.argmax(y_test, axis=1)) / NB_TEST
+        logger.info('Accuracy: %.2f%%', (acc * 100))
+
+        # Create MXNet dataset and loader
+        dataset = mx.gluon.data.dataset.ArrayDataset(x_train, y_train)
+        data_loader = mx.gluon.data.DataLoader(dataset, batch_size=5, shuffle=True)
+        data_gen = MXDataGenerator(data_loader, size=NB_TRAIN, batch_size=5)
+
+        # Fit model with generator
+        self.classifier.fit_generator(data_gen, nb_epochs=2)
+        acc2 = np.sum(np.argmax(self.classifier.predict(x_test), axis=1) == np.argmax(y_test, axis=1)) / NB_TEST
+        logger.info('Accuracy: %.2f%%', (acc * 100))
+
+        self.assertTrue(acc2 >= .8 * acc)
 
     def test_nb_classes(self):
         self.assertEqual(self.classifier.nb_classes, 10)
