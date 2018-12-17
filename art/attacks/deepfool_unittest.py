@@ -94,11 +94,16 @@ class TestDeepFool(unittest.TestCase):
                     'pytorch': self.classifier_py}
 
         for _, classifier in backends.items():
+            print("Test", _, "....")
             if _ == 'pytorch':
                 self._swap_axes()
             self._test_backend_mnist(classifier)
             if _ == 'pytorch':
                 self._swap_axes()
+
+        k.clear_session()
+        self.classifier_tf._sess.close()
+        tf.reset_default_graph()
 
     def _swap_axes(self):
         (x_train, y_train), (x_test, y_test) = self.mnist
@@ -111,8 +116,19 @@ class TestDeepFool(unittest.TestCase):
         (x_train, y_train), (x_test, y_test) = self.mnist
 
         # Test DeepFool
+        import time
         attack = DeepFool(classifier, max_iter=5)
-        x_test_adv = attack.generate(x_test)
+
+        starttime = time.clock()
+        x_test_adv = attack.generate(x_test, batch_size=1)
+        endtime = time.clock()
+        print(1, endtime - starttime)
+
+        starttime = time.clock()
+        x_test_adv = attack.generate(x_test, batch_size=100)
+        endtime = time.clock()
+        print(100, endtime - starttime)
+
         x_train_adv = attack.generate(x_train)
 
         self.assertFalse((x_train == x_train_adv).all())
