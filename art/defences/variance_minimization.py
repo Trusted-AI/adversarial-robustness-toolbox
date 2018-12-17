@@ -204,19 +204,19 @@ class TotalVarMin(Preprocessor):
         # Save defense-specific parameters
         super(TotalVarMin, self).set_params(**kwargs)
 
-        if type(self.prob) is not float or self.prob < 0.0 or self.prob > 1.0:
+        if not isinstance(self.prob, (float, int)) or self.prob < 0.0 or self.prob > 1.0:
             logger.error('Probability must be between 0 and 1.')
             raise ValueError('Probability must be between 0 and 1.')
 
-        if type(self.norm) is not int or self.norm <= 0:
+        if not isinstance(self.norm, (int, np.int)) or self.norm <= 0:
             logger.error('Norm must be a positive integer.')
             raise ValueError('Norm must be a positive integer.')
 
-        if not(self.solver == 'L-BFGS-B' or self.solver == 'CG' or self.solver == 'Newton-CG'):
+        if not (self.solver == 'L-BFGS-B' or self.solver == 'CG' or self.solver == 'Newton-CG'):
             logger.error('Current support only L-BFGS-B, CG, Newton-CG.')
             raise ValueError('Current support only L-BFGS-B, CG, Newton-CG.')
 
-        if type(self.maxiter) is not int or self.maxiter <= 0:
+        if not isinstance(self.maxiter, (int, np.int)) or self.maxiter <= 0:
             logger.error('Number of iterations must be a positive integer.')
             raise ValueError('Number of iterations must be a positive integer.')
 

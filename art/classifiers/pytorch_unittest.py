@@ -104,7 +104,7 @@ class TestPyTorchClassifier(unittest.TestCase):
         # Create PyTorch dataset and loader
         dataset = torch.utils.data.TensorDataset(x_train_tens, y_train_tens)
         data_loader = DataLoader(dataset=dataset, batch_size=5, shuffle=True)
-        data_gen = PyTorchDataGenerator(data_loader)
+        data_gen = PyTorchDataGenerator(data_loader, size=NB_TRAIN, batch_size=5)
 
         # Fit model with generator
         self.module_classifier.fit_generator(data_gen, nb_epochs=2)
@@ -123,7 +123,7 @@ class TestPyTorchClassifier(unittest.TestCase):
 
     def test_class_gradient(self):
         # Get MNIST
-        (_, _), (x_test, y_test) = self.mnist
+        (_, _), (x_test, _) = self.mnist
 
         # Test all gradients label = None
         ptc = self.module_classifier
@@ -147,7 +147,7 @@ class TestPyTorchClassifier(unittest.TestCase):
 
     def test_class_gradient_target(self):
         # Get MNIST
-        (_, _), (x_test, y_test) = self.mnist
+        (_, _), (x_test, _) = self.mnist
 
         # Test gradient
         ptc = self.module_classifier
@@ -169,7 +169,7 @@ class TestPyTorchClassifier(unittest.TestCase):
 
     def test_layers(self):
         # Get MNIST
-        (_, _), (x_test, y_test) = self.mnist
+        (_, _), (x_test, _) = self.mnist
 
         # Test and get layers
         ptc = self.seq_classifier

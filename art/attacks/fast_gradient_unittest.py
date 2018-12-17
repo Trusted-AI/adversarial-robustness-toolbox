@@ -262,7 +262,7 @@ class TestFastGradientMethod(unittest.TestCase):
 
     def _test_mnist_targeted(self, classifier):
         # Get MNIST
-        (_, _), (x_test, y_test) = self.mnist
+        (_, _), (x_test, _) = self.mnist
 
         # Test FGSM with np.inf norm
         attack = FastGradientMethod(classifier, eps=1.0, targeted=True)

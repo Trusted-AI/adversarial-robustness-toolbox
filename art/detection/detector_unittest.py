@@ -39,7 +39,7 @@ class TestBinaryInputDetector(unittest.TestCase):
         k.set_session(session)
 
         # Get MNIST
-        batch_size, nb_train, nb_test = 100, 1000, 10
+        nb_train, nb_test = 1000, 10
         (x_train, y_train), (x_test, y_test), _, _ = load_mnist()
         x_train, y_train = x_train[:NB_TRAIN], y_train[:NB_TRAIN]
         x_test, y_test = x_test[:NB_TEST], y_test[:NB_TEST]

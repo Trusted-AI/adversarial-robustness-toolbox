@@ -139,7 +139,7 @@ class KerasClassifier(Classifier):
         """
         # Check value of label for computing gradients
         if not (label is None or (isinstance(label, (int, np.integer)) and label in range(self.nb_classes))
-                or (type(label) is np.ndarray and len(label.shape) == 1 and (label < self.nb_classes).all()
+                or (isinstance(label, np.ndarray) and len(label.shape) == 1 and (label < self.nb_classes).all()
                     and label.shape[0] == x.shape[0])):
             raise ValueError('Label %s is out of range.' % str(label))
 
@@ -204,7 +204,7 @@ class KerasClassifier(Classifier):
         # Run predictions with batching
         preds = np.zeros((x_.shape[0], self.nb_classes), dtype=np.float32)
         for b in range(int(np.ceil(x_.shape[0] / float(batch_size)))):
-            begin, end = b * batch_size,  min((b + 1) * batch_size, x_.shape[0])
+            begin, end = b * batch_size, min((b + 1) * batch_size, x_.shape[0])
             preds[begin:end] = self._preds([x_[begin:end]])[0]
 
             if not logits and not self._custom_activation:
@@ -300,7 +300,7 @@ class KerasClassifier(Classifier):
             if layer not in self._layer_names:
                 raise ValueError('Layer name %s is not part of the graph.' % layer)
             layer_name = layer
-        elif type(layer) is int:
+        elif isinstance(layer, int):
             if layer < 0 or layer >= len(self._layer_names):
                 raise ValueError('Layer index %d is outside of range (0 to %d included).'
                                  % (layer, len(self._layer_names) - 1))
@@ -344,7 +344,7 @@ class KerasClassifier(Classifier):
                     self._class_grads = k.function([self._input], class_grads)
 
         else:
-            if type(label) is int:
+            if isinstance(label, int):
                 unique_labels = [label]
                 logger.debug('Computing class gradients for class %i.', label)
             else:

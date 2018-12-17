@@ -54,7 +54,7 @@ class TestUtils(unittest.TestCase):
         master_seed(1234)
         z = random.getrandbits(128)
         self.assertNotEqual(x, y)
-        self.assertEquals(z, x)
+        self.assertEqual(z, x)
 
     def test_master_seed_np(self):
         master_seed(1234)

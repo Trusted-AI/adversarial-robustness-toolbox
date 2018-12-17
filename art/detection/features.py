@@ -3,6 +3,7 @@ from __future__ import absolute_import, division, print_function, unicode_litera
 import abc
 import sys
 import logging
+import six
 
 import numpy as np
 
@@ -89,11 +90,11 @@ class MeanClassDist(Feature):
 
         super(MeanClassDist, self).__init__(classifier)
         # Ensure that layer is well-defined:
-        if type(layer) is str:
+        if isinstance(layer, six.string_types):
             if layer not in classifier.layer_names:
                 raise ValueError('Layer name %s is not part of the graph.' % layer)
             self._layer_name = layer
-        elif type(layer) is int:
+        elif isinstance(layer, int):
             if layer < 0 or layer >= len(classifier.layer_names):
                 raise ValueError('Layer index %d is outside of range (0 to %d included).'
                                  % (layer, len(classifier.layer_names) - 1))
@@ -212,11 +213,11 @@ class KNNPreds(Feature):
             y = y.ravel()
 
         # Ensure that layer is well-defined:
-        if type(layer) is str:
+        if isinstance(layer, six.string_types):
             if layer not in classifier.layer_names:
                 raise ValueError('Layer name %s is not part of the graph.' % layer)
             self._layer_name = layer
-        elif type(layer) is int:
+        elif isinstance(layer, int):
             if layer < 0 or layer >= len(classifier.layer_names):
                 raise ValueError('Layer index %d is outside of range (0 to %d included).'
                                  % (layer, len(classifier.layer_names) - 1))

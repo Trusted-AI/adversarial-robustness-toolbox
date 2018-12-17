@@ -30,8 +30,8 @@ class TestEnsembleClassifier(unittest.TestCase):
         x_train, y_train, x_test, y_test = x_train[:NB_TRAIN], y_train[:NB_TRAIN], x_test[:NB_TEST], y_test[:NB_TEST]
         cls.mnist = ((x_train, y_train), (x_test, y_test))
 
-        model_1 = KerasClassifier((0, 1), cls._get_model(cls, epochs=2))
-        model_2 = KerasClassifier((0, 1), cls._get_model(cls, epochs=2))
+        model_1 = KerasClassifier((0, 1), cls._get_model(epochs=2))
+        model_2 = KerasClassifier((0, 1), cls._get_model(epochs=2))
         cls.ensemble = EnsembleClassifier((0, 1), [model_1, model_2])
 
     @classmethod
@@ -53,7 +53,7 @@ class TestEnsembleClassifier(unittest.TestCase):
         with self.assertRaises(NotImplementedError):
             self.ensemble.get_activations(self.mnist[1][0], layer=2)
 
-    @staticmethod
+    @classmethod
     def _get_model(cls, epochs=1):
         im_shape = cls.mnist[0][0][0].shape
 

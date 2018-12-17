@@ -29,7 +29,7 @@ class TestTotalVarMin(unittest.TestCase):
         self.assertFalse((preprocessed_x == x).all())
 
     def test_three_channels(self):
-        (train_features, train_labels), (_, _) = cifar10.load_data()
+        (train_features, _), (_, _) = cifar10.load_data()
         x = train_features[:2] / 255.0
         preprocess = TotalVarMin()
         preprocessed_x = preprocess(x)

@@ -31,7 +31,7 @@ class KerasDataGenerator(DataGenerator):
     Wrapper class on top of the Keras-native data generators. These can either be generator functions,
     `keras.utils.Sequence` or Keras-specific data generators (`keras.preprocessing.image.ImageDataGenerator`).
     """
-    def __init__(self, generator):
+    def __init__(self, generator, size, batch_size):
         """
         Create a Keras data generator wrapper instance.
 
@@ -39,8 +39,22 @@ class KerasDataGenerator(DataGenerator):
                           `(inputs, targets)` or `(inputs, targets, sample_weights)`. All arrays in this tuple must have
                           the same length. The generator is expected to loop over its data indefinitely.
         :type generator: generator function or `keras.utils.Sequence` or `keras.preprocessing.image.ImageDataGenerator`
+        :param size: Total size of the dataset.
+        :type size: `int` or `None`
+        :param batch_size: Size of the minibatches.
+        :type batch_size: `int`
         """
         self.generator = generator
+
+        if size is not None and (type(size) is not int or size < 1):
+            raise ValueError("The total size of the dataset must be an integer greater than zero.")
+
+        self.size = size
+
+        if type(batch_size) is not int or batch_size < 1:
+            raise ValueError("The batch size must be an integer greater than zero.")
+
+        self.batch_size = batch_size
 
     def get_batch(self):
         """
@@ -54,21 +68,25 @@ class KerasDataGenerator(DataGenerator):
 
         if inspect.isgeneratorfunction(self.generator):
             return next(self.generator)
-        else:
-            iter_ = iter(self.generator)
-            return next(iter_)
+
+        iter_ = iter(self.generator)
+        return next(iter_)
 
 
 class PyTorchDataGenerator(DataGenerator):
     """
     Wrapper class on top of the PyTorch native data loader :class:`torch.utils.data.DataLoader`.
     """
-    def __init__(self, data_loader):
+    def __init__(self, data_loader, size, batch_size):
         """
         Create a data generator wrapper on top of a PyTorch :class:`DataLoader`.
 
         :param data_loader: A PyTorch data generator.
         :type data_loader: `torch.utils.data.DataLoader`
+        :param size: Total size of the dataset.
+        :type size: int
+        :param batch_size: Size of the minibatches.
+        :type batch_size: int
         """
         from torch.utils.data import DataLoader
 
@@ -76,6 +94,16 @@ class PyTorchDataGenerator(DataGenerator):
             raise TypeError('Expected instance of PyTorch `DataLoader, received %s instead.`' % str(type(data_loader)))
 
         self.data_loader = data_loader
+
+        if size is not None and (type(size) is not int or size < 1):
+            raise ValueError("The total size of the dataset must be an integer greater than zero.")
+
+        self.size = size
+
+        if type(batch_size) is not int or batch_size < 1:
+            raise ValueError("The batch size must be an integer greater than zero.")
+
+        self.batch_size = batch_size
 
     def get_batch(self):
         """
@@ -98,12 +126,16 @@ class MXDataGenerator(DataGenerator):
     """
     Wrapper class on top of the MXNet/Gluon native data loader :class:`mxnet.gluon.data.DataLoader``.
     """
-    def __init__(self, data_loader):
+    def __init__(self, data_loader, size, batch_size):
         """
         Create a data generator wrapper on top of an MXNet :class:`DataLoader`.
 
         :param data_loader:
         :type data_loader: `mxnet.gluon.data.DataLoader`
+        :param size: Total size of the dataset.
+        :type size: int
+        :param batch_size: Size of the minibatches.
+        :type batch_size: int
         """
         from mxnet.gluon.data import DataLoader
 
@@ -111,6 +143,16 @@ class MXDataGenerator(DataGenerator):
             raise TypeError('Expected instance of Gluon `DataLoader, received %s instead.`' % str(type(data_loader)))
 
         self.data_loader = data_loader
+
+        if size is not None and (type(size) is not int or size < 1):
+            raise ValueError("The total size of the dataset must be an integer greater than zero.")
+
+        self.size = size
+
+        if type(batch_size) is not int or batch_size < 1:
+            raise ValueError("The batch size must be an integer greater than zero.")
+
+        self.batch_size = batch_size
 
     def get_batch(self):
         """

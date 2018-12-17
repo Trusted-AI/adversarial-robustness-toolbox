@@ -393,8 +393,8 @@ def load_dataset(name):
         return load_cifar10()
     elif "stl10" in name:
         return load_stl()
-    else:
-        raise NotImplementedError("There is no loader for dataset '{}'.".format(name))
+
+    raise NotImplementedError("There is no loader for dataset '{}'.".format(name))
 
 
 def _extract(full_path, path):

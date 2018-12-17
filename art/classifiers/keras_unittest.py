@@ -132,9 +132,34 @@ class TestKerasClassifier(unittest.TestCase):
         logger.info('Accuracy: %.2f%%', (acc * 100))
 
         gen = generator_fit(self.mnist[0][0], self.mnist[0][1], batch_size=BATCH_SIZE)
-        data_gen = KerasDataGenerator(generator=gen)
+        data_gen = KerasDataGenerator(generator=gen, size=NB_TRAIN, batch_size=BATCH_SIZE)
         classifier.fit_generator(generator=data_gen, nb_epochs=2)
         acc2 = np.sum(np.argmax(classifier.predict(self.mnist[1][0]), axis=1) == labels) / NB_TEST
+        logger.info('Accuracy: %.2f%%', (acc2 * 100))
+
+        self.assertTrue(acc2 >= .8 * acc)
+
+    def test_fit_image_generator(self):
+        self._test_fit_image_generator(custom_activation=False)
+        self._test_fit_image_generator(custom_activation=True)
+
+    def _test_fit_image_generator(self, custom_activation=False):
+        from keras.preprocessing.image import ImageDataGenerator
+        from art.data_generators import KerasDataGenerator
+
+        x_train, y_train = self.mnist[0]
+        labels_test = np.argmax(self.mnist[1][1], axis=1)
+        classifier = KerasClassifier((0, 1), self.model_mnist, use_logits=False, custom_activation=custom_activation)
+        acc = np.sum(np.argmax(classifier.predict(self.mnist[1][0]), axis=1) == labels_test) / NB_TEST
+        logger.info('Accuracy: %.2f%%', (acc * 100))
+
+        keras_gen = ImageDataGenerator(width_shift_range=0.075, height_shift_range=0.075, rotation_range=12,
+                                       shear_range=0.075, zoom_range=0.05, fill_mode='constant', cval=0)
+        keras_gen.fit(x_train)
+        data_gen = KerasDataGenerator(generator=keras_gen.flow(x_train, y_train, batch_size=BATCH_SIZE),
+                                      size=NB_TRAIN, batch_size=BATCH_SIZE)
+        classifier.fit_generator(generator=data_gen, nb_epochs=2)
+        acc2 = np.sum(np.argmax(classifier.predict(self.mnist[1][0]), axis=1) == labels_test) / NB_TEST
         logger.info('Accuracy: %.2f%%', (acc2 * 100))
 
         self.assertTrue(acc2 >= .8 * acc)
@@ -159,7 +184,7 @@ class TestKerasClassifier(unittest.TestCase):
         self.assertTrue(loss_grads.shape == x_test[:11].shape)
 
     def test_class_gradient(self):
-        (_, _), (x_test, y_test) = self.mnist
+        (_, _), (x_test, _) = self.mnist
         classifier = KerasClassifier((0, 1), self.model_mnist)
 
         # Test all gradients label

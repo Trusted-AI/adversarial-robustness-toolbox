@@ -132,7 +132,7 @@ class TestIterativeAttack(unittest.TestCase):
 
     def _test_mnist_targeted(self, classifier):
         # Get MNIST
-        (_, _), (x_test, y_test) = self.mnist
+        (_, _), (x_test, _) = self.mnist
 
         # Test FGSM with np.inf norm
         attack = BasicIterativeMethod(classifier, eps=1.0, eps_step=0.1, targeted=True)
