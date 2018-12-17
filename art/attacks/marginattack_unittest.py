@@ -92,10 +92,6 @@ class TestMarginAttack(unittest.TestCase):
         backends = {'keras': self.classifier_k,
                     'tf': self.classifier_tf,
                     'pytorch': self.classifier_py}
-        
-        # # pytorch doesn't work. Temporarily remove it.
-        # backends = {'keras': self.classifier_k,
-        #             'tf': self.classifier_tf}
 
         for _, classifier in backends.items():
             if _ == 'pytorch':
