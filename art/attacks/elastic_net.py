@@ -11,16 +11,12 @@ from art.utils import get_labels_np_array
 logger = logging.getLogger(__name__)
 
 
-class CarliniL2Method(Attack):
+class ElasticNet(Attack):
     """
-    The L_2 optimized attack of Carlini and Wagner (2016). This attack is among the most effective and should be used
-    among the primary attacks to evaluate potential defences. A major difference wrt to the original implementation
-    (https://github.com/carlini/nn_robust_attacks) is that we use line search in the optimization of the attack
-    objective. Paper link: https://arxiv.org/pdf/1608.04644.pdf
+    The elastic net attack of Pin-Yu Chen et al. (2018). Paper link: https://arxiv.org/abs/1709.04114.
     """
-    attack_params = Attack.attack_params + ['confidence', 'targeted', 'learning_rate', 'max_iter',
-                                            'binary_search_steps', 'initial_const', 'max_halving', 'max_doubling',
-                                            'batch_size']
+    attack_params = Attack.attack_params + ['confidence', 'targeted', 'learning_rate', 'max_iter', 'beta',
+                                            'binary_search_steps', 'initial_const', 'batch_size', 'decision_rule']
 
     def __init__(self, classifier, confidence=0.0, targeted=True, learning_rate=0.01, binary_search_steps=10,
                  max_iter=10, initial_const=0.01, max_halving=5, max_doubling=5, batch_size=128):
