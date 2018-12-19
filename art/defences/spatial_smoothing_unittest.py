@@ -23,11 +23,16 @@ import unittest
 import numpy as np
 
 from art.defences.spatial_smoothing import SpatialSmoothing
+from art.utils import master_seed
 
 logger = logging.getLogger('testLogger')
 
 
 class TestLocalSpatialSmoothing(unittest.TestCase):
+    def setUp(self):
+        # Set master seed
+        master_seed(1234)
+
     def test_ones(self):
         m, n = 10, 2
         x = np.ones((1, m, n, 3))
@@ -68,4 +73,3 @@ class TestLocalSpatialSmoothing(unittest.TestCase):
 
 if __name__ == '__main__':
     unittest.main()
-

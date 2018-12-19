@@ -91,17 +91,14 @@ class SpatialSmoothing(Preprocessor):
         # Save attack-specific parameters
         super(SpatialSmoothing, self).set_params(**kwargs)
 
-        if type(self.window_size) is not int or self.window_size <= 0:
+        if not isinstance(self.window_size, (int, np.int)) or self.window_size <= 0:
             logger.error('Sliding window size must be a positive integer.')
             raise ValueError('Sliding window size must be a positive integer.')
 
-        if type(self.channel_index) is not int or self.channel_index <= 0:
+        if not isinstance(self.channel_index, (int, np.int)) or self.channel_index <= 0:
             logger.error('Data channel for smoothing must be a positive integer. The batch dimension is not a'
                          'valid channel.')
             raise ValueError('Data channel for smoothing must be a positive integer. The batch dimension is not a'
                              'valid channel.')
 
         return True
-
-
-

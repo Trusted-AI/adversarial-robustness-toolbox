@@ -102,8 +102,8 @@ class GaussianAugmentation(Preprocessor):
         if y is not None:
             y_aug = np.concatenate((y, y[indices]))
             return x_aug, y_aug
-        else:
-            return x_aug
+
+        return x_aug
 
     def fit(self, x, y=None, **kwargs):
         """

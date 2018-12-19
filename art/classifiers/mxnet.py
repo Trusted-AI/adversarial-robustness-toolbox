@@ -25,6 +25,7 @@ import six
 from art.classifiers import Classifier
 
 logger = logging.getLogger(__name__)
+# TODO Perform explicit casting to np.float32?
 
 
 class MXClassifier(Classifier):
@@ -94,7 +95,7 @@ class MXClassifier(Classifier):
         :return: `None`
         """
         if self._optimizer is None:
-            raise ValueError()
+            raise ValueError('An MXNet optimizer is required for fitting the model.')
 
         from mxnet import autograd, nd
 
@@ -112,8 +113,8 @@ class MXClassifier(Classifier):
 
             # Train for one epoch
             for m in range(nb_batch):
-                x_batch = nd.array(x_[ind[m * batch_size:(m + 1) * batch_size]])
-                y_batch = nd.array(y_[ind[m * batch_size:(m + 1) * batch_size]])
+                x_batch = nd.array(x_[ind[m * batch_size:(m + 1) * batch_size]]).as_in_context(self._ctx)
+                y_batch = nd.array(y_[ind[m * batch_size:(m + 1) * batch_size]]).as_in_context(self._ctx)
 
                 with autograd.record(train_mode=True):
                     preds = self._model(x_batch)
@@ -122,6 +123,39 @@ class MXClassifier(Classifier):
 
                 # Update parameters
                 self._optimizer.step(batch_size)
+
+    def fit_generator(self, generator, nb_epochs=20):
+        """
+        Fit the classifier using the generator that yields batches as specified.
+
+        :param generator: Batch generator providing `(x, y)` for each epoch.
+        :type generator: `DataGenerator`
+        :param nb_epochs: Number of epochs to use for trainings.
+        :type nb_epochs: `int`
+        :return: `None`
+        """
+        from mxnet import autograd, nd
+        from art.data_generators import MXDataGenerator
+
+        if isinstance(generator, MXDataGenerator) and \
+                not (hasattr(self, 'label_smooth') or hasattr(self, 'feature_squeeze')):
+            # Train directly in MXNet
+            for _ in range(nb_epochs):
+                for x_batch, y_batch in generator.data_loader:
+                    x_batch = nd.array(x_batch).as_in_context(self._ctx)
+                    y_batch = np.argmax(y_batch, axis=1)
+                    y_batch = nd.array(y_batch).as_in_context(self._ctx)
+
+                    with autograd.record(train_mode=True):
+                        preds = self._model(x_batch)
+                        loss = nd.softmax_cross_entropy(preds, y_batch)
+                    loss.backward()
+
+                    # Update parameters
+                    self._optimizer.step(x_batch.shape[0])
+        else:
+            # Fit a generic data generator through the API
+            super(MXClassifier, self).fit_generator(generator, nb_epochs=nb_epochs)
 
     def predict(self, x, logits=False, batch_size=128):
         """
@@ -184,7 +218,7 @@ class MXClassifier(Classifier):
 
         # Check value of label for computing gradients
         if not (label is None or (isinstance(label, (int, np.integer)) and label in range(self.nb_classes))
-                or (type(label) is np.ndarray and len(label.shape) == 1 and (label < self.nb_classes).all()
+                or (isinstance(label, np.ndarray) and len(label.shape) == 1 and (label < self.nb_classes).all()
                     and label.shape[0] == x.shape[0])):
             raise ValueError('Label %s is out of range.' % str(label))
 
@@ -305,7 +339,7 @@ class MXClassifier(Classifier):
             if layer not in self._layer_names:
                 raise ValueError('Layer name %s is not part of the model.' % layer)
             layer_ind = self._layer_names.index(layer)
-        elif type(layer) is int:
+        elif isinstance(layer, int):
             if layer < 0 or layer >= len(self._layer_names):
                 raise ValueError('Layer index %d is outside of range (0 to %d included).'
                                  % (layer, len(self._layer_names) - 1))

@@ -23,11 +23,16 @@ import unittest
 import numpy as np
 
 from art.defences.thermometer_encoding import ThermometerEncoding
+from art.utils import master_seed
 
 logger = logging.getLogger('testLogger')
 
 
 class TestThermometerEncoding(unittest.TestCase):
+    def setUp(self):
+        # Set master seed
+        master_seed(1234)
+
     def test_all(self):
         # Test data
         x = np.array([[[[0.2, 0.6, 0.8], [0.9, 0.4, 0.3], [0.2, 0.8, 0.5]],
@@ -55,6 +60,3 @@ class TestThermometerEncoding(unittest.TestCase):
 
 if __name__ == '__main__':
     unittest.main()
-
-
-

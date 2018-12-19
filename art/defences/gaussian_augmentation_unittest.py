@@ -23,11 +23,16 @@ import unittest
 import numpy as np
 
 from art.defences.gaussian_augmentation import GaussianAugmentation
+from art.utils import master_seed
 
 logger = logging.getLogger('testLogger')
 
 
 class TestGaussianAugmentation(unittest.TestCase):
+    def setUp(self):
+        # Set master seed
+        master_seed(1234)
+
     def test_small_size(self):
         x = np.arange(15).reshape((5, 3))
         ga = GaussianAugmentation()

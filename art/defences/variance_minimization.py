@@ -145,7 +145,8 @@ class TotalVarMin(Preprocessor):
 
         return res
 
-    def _deri_loss_func(self, z, x, mask, norm, lam):
+    @staticmethod
+    def _deri_loss_func(z, x, mask, norm, lam):
         """
         Derivative of loss function to be minimized.
 
@@ -164,7 +165,8 @@ class TotalVarMin(Preprocessor):
         """
         # First compute the derivative of the first component of the loss function
         nor1 = np.sqrt(np.power(z - x.flatten(), 2).dot(mask.flatten()))
-        if nor1 < 1e-6: nor1 = 1e-6
+        if nor1 < 1e-6:
+            nor1 = 1e-6
         der1 = ((z - x.flatten()) * mask.flatten()) / (nor1 * 1.0)
 
         # Then compute the derivative of the second component of the loss function
@@ -219,25 +221,20 @@ class TotalVarMin(Preprocessor):
         # Save defense-specific parameters
         super(TotalVarMin, self).set_params(**kwargs)
 
-        if type(self.prob) is not float or self.prob < 0.0 or self.prob > 1.0:
+        if not isinstance(self.prob, (float, int)) or self.prob < 0.0 or self.prob > 1.0:
             logger.error('Probability must be between 0 and 1.')
             raise ValueError('Probability must be between 0 and 1.')
 
-        if type(self.norm) is not int or self.norm <= 0:
+        if not isinstance(self.norm, (int, np.int)) or self.norm <= 0:
             logger.error('Norm must be a positive integer.')
             raise ValueError('Norm must be a positive integer.')
 
-        if not(self.solver == 'L-BFGS-B' or self.solver == 'CG' or self.solver == 'Newton-CG'):
+        if not (self.solver == 'L-BFGS-B' or self.solver == 'CG' or self.solver == 'Newton-CG'):
             logger.error('Current support only L-BFGS-B, CG, Newton-CG.')
             raise ValueError('Current support only L-BFGS-B, CG, Newton-CG.')
 
-        if type(self.maxiter) is not int or self.maxiter <= 0:
+        if not isinstance(self.maxiter, (int, np.int)) or self.maxiter <= 0:
             logger.error('Number of iterations must be a positive integer.')
             raise ValueError('Number of iterations must be a positive integer.')
 
         return True
-
-
-
-
-

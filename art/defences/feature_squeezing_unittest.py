@@ -23,11 +23,16 @@ import unittest
 import numpy as np
 
 from art.defences.feature_squeezing import FeatureSqueezing
+from art.utils import master_seed
 
 logger = logging.getLogger('testLogger')
 
 
 class TestFeatureSqueezing(unittest.TestCase):
+    def setUp(self):
+        # Set master seed
+        master_seed(1234)
+
     def test_ones(self):
         m, n = 10, 2
         x = np.ones((m, n))

@@ -89,9 +89,9 @@ class SaliencyMapMethod(Attack):
         for ind, val in enumerate(x_adv):
             # Initialize the search space; optimize to remove features that can't be changed
             if self.theta > 0:
-                search_space = set([i for i in range(self._nb_features) if val[i] < clip_max])
+                search_space = {i for i in range(self._nb_features) if val[i] < clip_max}
             else:
-                search_space = set([i for i in range(self._nb_features) if val[i] > clip_min])
+                search_space = {i for i in range(self._nb_features) if val[i] > clip_min}
 
             current_pred = preds[ind]
             target = targets[ind]

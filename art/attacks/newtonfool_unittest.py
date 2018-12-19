@@ -30,7 +30,7 @@ from keras.models import Sequential
 
 from art.attacks.newtonfool import NewtonFool
 from art.classifiers import KerasClassifier, PyTorchClassifier, TFClassifier
-from art.utils import load_mnist
+from art.utils import load_mnist, master_seed
 
 logger = logging.getLogger('testLogger')
 
@@ -66,6 +66,10 @@ class TestNewtonFool(unittest.TestCase):
         x_test, y_test = x_test[:NB_TEST], y_test[:NB_TEST]
         cls.mnist = (x_train, y_train), (x_test, y_test)
 
+    def setUp(self):
+        # Set master seed
+        master_seed(1234)
+
     def test_tfclassifier(self):
         """
         First test with the TFClassifier.
@@ -94,26 +98,27 @@ class TestNewtonFool(unittest.TestCase):
         sess.run(tf.global_variables_initializer())
 
         # Get MNIST
-        (x_train, y_train), (x_test, y_test) = self.mnist
+        (x_train, y_train), (x_test, _) = self.mnist
 
         # Train the classifier
         tfc = TFClassifier((0, 1), input_ph, logits, output_ph, train, loss, None, sess)
         tfc.fit(x_train, y_train, batch_size=BATCH_SIZE, nb_epochs=2)
 
         # Attack
-        import time
+        # import time
         nf = NewtonFool(tfc, max_iter=5)
 
-        print("Test Tensorflow....")
-        starttime = time.clock()
+        # print("Test Tensorflow....")
+        # starttime = time.clock()
         x_test_adv = nf.generate(x_test, batch_size=1)
-        endtime = time.clock()
-        print(1, endtime - starttime)
+        self.assertFalse((x_test == x_test_adv).all())
+        # endtime = time.clock()
+        # print(1, endtime - starttime)
 
-        starttime = time.clock()
+        # starttime = time.clock()
         x_test_adv = nf.generate(x_test, batch_size=10)
-        endtime = time.clock()
-        print(10, endtime - starttime)
+        # endtime = time.clock()
+        # print(10, endtime - starttime)
 
         # starttime = time.clock()
         # x_test_adv = nf.generate(x_test, batch_size=100)
@@ -140,7 +145,7 @@ class TestNewtonFool(unittest.TestCase):
         :return:
         """
         # Get MNIST
-        (x_train, y_train), (x_test, y_test) = self.mnist
+        (x_train, y_train), (x_test, _) = self.mnist
 
         # Create simple CNN
         model = Sequential()
@@ -157,29 +162,19 @@ class TestNewtonFool(unittest.TestCase):
         krc.fit(x_train, y_train, batch_size=BATCH_SIZE, nb_epochs=2)
 
         # Attack
-        import time
+        # import time
         nf = NewtonFool(krc, max_iter=5)
 
-        print("Test Keras....")
-        starttime = time.clock()
+        # print("Test Keras....")
+        # starttime = time.clock()
         x_test_adv = nf.generate(x_test, batch_size=1)
-        endtime = time.clock()
-        print(1, endtime - starttime)
+        # endtime = time.clock()
+        # print(1, endtime - starttime)
 
-        starttime = time.clock()
+        # starttime = time.clock()
         x_test_adv = nf.generate(x_test, batch_size=10)
-        endtime = time.clock()
-        print(10, endtime - starttime)
-
-        # starttime = time.clock()
-        # x_test_adv = nf.generate(x_test, batch_size=100)
         # endtime = time.clock()
-        # print(100, endtime - starttime)
-        #
-        # starttime = time.clock()
-        # x_test_adv = nf.generate(x_test, batch_size=1000)
-        # endtime = time.clock()
-        # print(1000, endtime - starttime)
+        # print(10, endtime - starttime)
 
         self.assertFalse((x_test == x_test_adv).all())
 
@@ -196,7 +191,7 @@ class TestNewtonFool(unittest.TestCase):
         :return:
         """
         # Get MNIST
-        (x_train, y_train), (x_test, y_test) = self.mnist
+        (x_train, y_train), (x_test, _) = self.mnist
         x_train = np.swapaxes(x_train, 1, 3)
         x_test = np.swapaxes(x_test, 1, 3)
 
@@ -212,19 +207,19 @@ class TestNewtonFool(unittest.TestCase):
         ptc.fit(x_train, y_train, batch_size=BATCH_SIZE, nb_epochs=1)
 
         # Attack
-        import time
+        # import time
         nf = NewtonFool(ptc, max_iter=5)
 
-        print("Test Pytorch....")
-        starttime = time.clock()
+        # print("Test Pytorch....")
+        # starttime = time.clock()
         x_test_adv = nf.generate(x_test, batch_size=1)
-        endtime = time.clock()
-        print(1, endtime - starttime)
+        # endtime = time.clock()
+        # print(1, endtime - starttime)
 
-        starttime = time.clock()
+        # starttime = time.clock()
         x_test_adv = nf.generate(x_test, batch_size=10)
-        endtime = time.clock()
-        print(10, endtime - starttime)
+        # endtime = time.clock()
+        # print(10, endtime - starttime)
 
         # starttime = time.clock()
         # x_test_adv = nf.generate(x_test, batch_size=100)

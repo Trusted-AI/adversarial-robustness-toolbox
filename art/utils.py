@@ -29,6 +29,54 @@ import numpy as np
 logger = logging.getLogger(__name__)
 
 
+def master_seed(seed):
+    """
+    Set the seed for all random number generators used in the library. This ensures experiments reproducibility and
+    stable testing.
+
+    :param seed: The value to be seeded in the random number generators.
+    :type seed: `int`
+    """
+    import numbers
+    import random
+
+    if not isinstance(seed, numbers.Integral):
+        raise TypeError('The seed for random number generators has to be an integer.')
+
+    # Set Python seed
+    random.seed(seed)
+
+    # Set Numpy seed
+    np.random.seed(seed)
+
+    # Now try to set seed for all specific frameworks
+    try:
+        import tensorflow as tf
+
+        logger.info('Setting random seed for TensorFlow.')
+        tf.set_random_seed(seed)
+    except ImportError:
+        logger.info('Could not set random seed for TensorFlow.')
+
+    try:
+        import mxnet as mx
+
+        logger.info('Setting random seed for MXNet.')
+        mx.random.seed(seed)
+    except ImportError:
+        logger.info('Could not set random seed for MXNet.')
+
+    try:
+        import torch
+
+        logger.info('Setting random seed for PyTorch.')
+        torch.manual_seed(seed)
+        if torch.cuda.is_available():
+            torch.cuda.manual_seed_all(seed)
+    except ImportError:
+        logger.info('Could not set random seed for PyTorch')
+
+
 def projection(v, eps, p):
     """
     Project the values in `v` on the L_p norm ball of size `eps`.
@@ -362,8 +410,8 @@ def load_dataset(name):
         return load_cifar10()
     elif "stl10" in name:
         return load_stl()
-    else:
-        raise NotImplementedError("There is no loader for dataset '{}'.".format(name))
+
+    raise NotImplementedError("There is no loader for dataset '{}'.".format(name))
 
 
 def _extract(full_path, path):
@@ -373,7 +421,7 @@ def _extract(full_path, path):
 
     if full_path.endswith('tar'):
         if tarfile.is_tarfile(full_path):
-            archive =  tarfile.open(full_path, "r:")
+            archive = tarfile.open(full_path, "r:")
     elif full_path.endswith('tar.gz'):
         if tarfile.is_tarfile(full_path):
             archive = tarfile.open(full_path, "r:gz")

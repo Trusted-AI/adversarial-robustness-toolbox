@@ -132,15 +132,12 @@ class JpegCompression(Preprocessor):
         # Save defense-specific parameters
         super(JpegCompression, self).set_params(**kwargs)
 
-        if type(self.quality) is not int or self.quality <= 0 or self.quality > 100:
+        if not isinstance(self.quality, (int, np.int)) or self.quality <= 0 or self.quality > 100:
             logger.error('Image quality must be a positive integer and smaller than 101.')
             raise ValueError('Image quality must be a positive integer and smaller than 101.')
 
-        if type(self.channel_index) is not int or self.channel_index <= 0:
+        if not isinstance(self.channel_index, (int, np.int)) or self.channel_index <= 0:
             logger.error('Data channel must be a positive integer. The batch dimension is not a valid channel.')
             raise ValueError('Image quality must be a positive integer and smaller than 101.')
 
         return True
-
-
-

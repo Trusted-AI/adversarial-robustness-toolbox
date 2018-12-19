@@ -167,13 +167,13 @@ class UniversalPerturbation(Attack):
         """
         super(UniversalPerturbation, self).set_params(**kwargs)
 
-        if type(self.delta) is not float or self.delta < 0 or self.delta > 1:
+        if not isinstance(self.delta, (float, int)) or self.delta < 0 or self.delta > 1:
             raise ValueError("The desired accuracy must be in the range [0, 1].")
 
-        if type(self.max_iter) is not int or self.max_iter <= 0:
+        if not isinstance(self.max_iter, (int, np.int)) or self.max_iter <= 0:
             raise ValueError("The number of iterations must be a positive integer.")
 
-        if type(self.eps) is not float or self.eps <= 0:
+        if not isinstance(self.eps, (float, int)) or self.eps <= 0:
             raise ValueError("The eps coefficient must be a positive float.")
 
         return True

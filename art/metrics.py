@@ -295,7 +295,7 @@ def clever_t(classifier, x, target_class, nb_batches, batch_size, radius, norm, 
         raise ValueError("Norm {} not supported".format(norm))
 
     # Loop over the batches
-    for i in range(nb_batches):
+    for _ in range(nb_batches):
         # Random generation of data points
         sample_xs = rand_pool[np.random.choice(pool_factor * batch_size, batch_size)]
 

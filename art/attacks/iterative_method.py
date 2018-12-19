@@ -62,13 +62,13 @@ class BasicIterativeMethod(FastGradientMethod):
         if max_iter <= 0:
             raise ValueError('The number of iterations `max_iter` has to be a positive integer.')
         self.max_iter = int(max_iter)
-        
+
         self._project = False
-        
+
     def generate(self, x, **kwargs):
         """
         Generate adversarial samples and return them in an array.
-        
+
         :param x: An array with the original inputs.
         :type x: `np.ndarray`
         :param norm: Order of the norm. Possible values: np.inf, 1 or 2.
@@ -104,9 +104,9 @@ class BasicIterativeMethod(FastGradientMethod):
         for i in range(self.max_iter):
             # Adversarial crafting
             adv_x = self._compute(adv_x, targets, self.eps_step, self.random_init and i == 0)
-            
+
             if self._project:
-                noise = projection(adv_x - x, self.eps, self.norm)               
+                noise = projection(adv_x - x, self.eps, self.norm)
                 adv_x = x + noise
 
         adv_preds = np.argmax(self.classifier.predict(adv_x), axis=1)
@@ -121,7 +121,7 @@ class BasicIterativeMethod(FastGradientMethod):
     def set_params(self, **kwargs):
         """
         Take in a dictionary of parameters and applies attack-specific checks before saving them as attributes.
-       
+
         :param norm: Order of the norm. Possible values: np.inf, 1 or 2.
         :type norm: `int`
         :param eps: Maximum perturbation that the attacker can introduce.

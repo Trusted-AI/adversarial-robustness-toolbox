@@ -48,8 +48,7 @@ class ProjectedGradientDescent(BasicIterativeMethod):
     The Projected Gradient Descent attack is a variant of the Basic Iterative Method in which,
     after each iteration, the perturbation is projected on an lp-ball of specified radius (in
     addition to clipping the values of the adversarial sample so that it lies in the permitted
-    data range). 
-    This is the attack proposed by Madry et al. for adversarial training.
+    data range). This is the attack proposed by Madry et al. for adversarial training.
     Paper link: https://arxiv.org/abs/1706.06083
     """
     attack_params = BasicIterativeMethod.attack_params

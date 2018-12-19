@@ -93,6 +93,33 @@ class Classifier(ABC):
         """
         raise NotImplementedError
 
+    def fit_generator(self, generator, nb_epochs=20):
+        """
+        Fit the classifier using the generator `gen` that yields batches as specified. Framework implementations can
+        provide framework-specific versions of this function to speed-up computation.
+
+        :param generator: Batch generator providing `(x, y)` for each epoch.
+        :type generator: `DataGenerator`
+        :param nb_epochs: Number of epochs to use for trainings.
+        :type nb_epochs: `int`
+        :return: `None`
+        """
+        from art.data_generators import DataGenerator
+
+        if not isinstance(generator, DataGenerator):
+            raise ValueError('Expected instance of `DataGenerator` for `fit_generator`, got %s instead.'
+                             % str(type(generator)))
+
+        for _ in range(nb_epochs):
+            x, y = generator.get_batch()
+
+            # Apply preprocessing and defences
+            x = self._apply_processing(x)
+            x, y = self._apply_defences_fit(x, y)
+
+            # Fit for current batch
+            self.fit(x, y, nb_epochs=1, batch_size=len(x))
+
     @property
     def nb_classes(self):
         """

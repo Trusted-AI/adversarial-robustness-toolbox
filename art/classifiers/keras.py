@@ -44,7 +44,6 @@ class KerasClassifier(Classifier):
         """
         import keras.backend as k
 
-        # TODO Generalize loss function?
         super(KerasClassifier, self).__init__(clip_values=clip_values, channel_index=channel_index, defences=defences,
                                               preprocessing=preprocessing)
 
@@ -63,7 +62,7 @@ class KerasClassifier(Classifier):
         self._input_shape = k.int_shape(self._input)[1:]
         self._custom_activation = custom_activation
         logger.debug('Inferred %i classes and %s as input shape for Keras classifier.', self.nb_classes,
-                    str(self.input_shape))
+                     str(self.input_shape))
 
         # Get predictions and loss function
         label_ph = k.placeholder(shape=(None,))
@@ -140,7 +139,7 @@ class KerasClassifier(Classifier):
         """
         # Check value of label for computing gradients
         if not (label is None or (isinstance(label, (int, np.integer)) and label in range(self.nb_classes))
-                or (type(label) is np.ndarray and len(label.shape) == 1 and (label < self.nb_classes).all()
+                or (isinstance(label, np.ndarray) and len(label.shape) == 1 and (label < self.nb_classes).all()
                     and label.shape[0] == x.shape[0])):
             raise ValueError('Label %s is out of range.' % str(label))
 
@@ -205,7 +204,7 @@ class KerasClassifier(Classifier):
         # Run predictions with batching
         preds = np.zeros((x_.shape[0], self.nb_classes), dtype=np.float32)
         for b in range(int(np.ceil(x_.shape[0] / float(batch_size)))):
-            begin, end = b * batch_size,  min((b + 1) * batch_size, x_.shape[0])
+            begin, end = b * batch_size, min((b + 1) * batch_size, x_.shape[0])
             preds[begin:end] = self._preds([x_[begin:end]])[0]
 
             if not logits and not self._custom_activation:
@@ -237,6 +236,34 @@ class KerasClassifier(Classifier):
 
         gen = generator_fit(x_, y_, batch_size)
         self._model.fit_generator(gen, steps_per_epoch=x_.shape[0] / batch_size, epochs=nb_epochs)
+
+    def fit_generator(self, generator, nb_epochs=20):
+        """
+        Fit the classifier using the generator that yields batches as specified.
+
+        :param generator: Batch generator providing `(x, y)` for each epoch. If the generator can be used for native
+                          training in Keras, it will.
+        :type generator: `DataGenerator`
+        :param nb_epochs: Number of epochs to use for trainings.
+        :type nb_epochs: `int`
+        :return: `None`
+        """
+        import keras.backend as k
+        from art.data_generators import KerasDataGenerator
+
+        k.set_learning_phase(1)
+
+        # Try to use the generator as a Keras native generator, otherwise use it through the `DataGenerator` interface
+        # TODO Testing for preprocessing defenses is currently hardcoded; this should be improved (add property)
+        if isinstance(generator, KerasDataGenerator) and \
+                not (hasattr(self, 'label_smooth') or hasattr(self, 'feature_squeeze')):
+            try:
+                self._model.fit_generator(generator.generator, epochs=nb_epochs)
+            except ValueError:
+                logger.info('Unable to use data generator as Keras generator. Now treating as framework-independent.')
+                super(KerasClassifier, self).fit_generator(generator, nb_epochs=nb_epochs)
+        else:
+            super(KerasClassifier, self).fit_generator(generator, nb_epochs=nb_epochs)
 
     @property
     def layer_names(self):
@@ -273,7 +300,7 @@ class KerasClassifier(Classifier):
             if layer not in self._layer_names:
                 raise ValueError('Layer name %s is not part of the graph.' % layer)
             layer_name = layer
-        elif type(layer) is int:
+        elif isinstance(layer, int):
             if layer < 0 or layer >= len(self._layer_names):
                 raise ValueError('Layer index %d is outside of range (0 to %d included).'
                                  % (layer, len(self._layer_names) - 1))
@@ -317,7 +344,7 @@ class KerasClassifier(Classifier):
                     self._class_grads = k.function([self._input], class_grads)
 
         else:
-            if type(label) is int:
+            if isinstance(label, int):
                 unique_labels = [label]
                 logger.debug('Computing class gradients for class %i.', label)
             else:

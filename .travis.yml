@@ -1,26 +1,19 @@
 sudo: required
 dist: trusty
 language: python
+env:
+  - KERAS_BACKEND=tensorflow TENSORFLOW_V=1.5.0
+  - KERAS_BACKEND=tensorflow TENSORFLOW_V=1.7.0
+  - KERAS_BACKEND=tensorflow TENSORFLOW_V=1.10.0
+python:
+  - "2.7"
+  - "3.5"
 matrix:
   include:
-      - python: 2.7
-        env: KERAS_BACKEND=tensorflow TENSORFLOW_V=1.5.0
-      - python: 2.7
-        env: KERAS_BACKEND=tensorflow TENSORFLOW_V=1.6.0
-      - python: 2.7
-        env: KERAS_BACKEND=tensorflow TENSORFLOW_V=1.7.0
-      - python: 2.7
-        env: KERAS_BACKEND=tensorflow TENSORFLOW_V=1.10.0
-      - python: 3.5
-        env: KERAS_BACKEND=tensorflow TENSORFLOW_V=1.5.0
-      - python: 3.5
-        env: KERAS_BACKEND=tensorflow TENSORFLOW_V=1.6.0
-      - python: 3.5
-        env: KERAS_BACKEND=tensorflow TENSORFLOW_V=1.7.0
-      - python: 3.5
-        env: KERAS_BACKEND=tensorflow TENSORFLOW_V=1.10.0
-  exclude:
-      - env:
+    - python: 3.5
+      env: KERAS_BACKEND=tensorflow TENSORFLOW_V=1.10.0
+      script:
+        - (pycodestyle --max-line-length=120 art || exit 0) && (pylint -rn art || exit 0)
 
 before_install:
   - if [[ "$TRAVIS_PYTHON_VERSION" == "2.7" ]]; then
@@ -28,7 +21,6 @@ before_install:
     else
       wget https://repo.continuum.io/miniconda/Miniconda3-latest-Linux-x86_64.sh -O miniconda.sh;
     fi
-  - sed -i "s/tensorflow/tensorflow==${TENSORFLOW_V}/" requirements.txt
   - sed -i "s/tensorflow/tensorflow==${TENSORFLOW_V}/" test_requirements.txt
   - bash miniconda.sh -b -p $HOME/miniconda
   - export PATH="$HOME/miniconda/bin:$PATH"
@@ -38,13 +30,11 @@ before_install:
   - conda update -q conda
   - conda info -a
 
-install: 
+install:
   - conda create -q -n test-environment python=$TRAVIS_PYTHON_VERSION --yes --file requirements.txt
-  # Can't specify channels in requirements.txt for conda
-  # - conda install -y pytorch -c pytorch
   - source activate test-environment
   - pip install -q -r test_requirements.txt
-#  - pip install -e .[tests] | cat
+  - pip install pylint pycodestyle
   - conda install libgcc
   - export LD_LIBRARY_PATH=$LD_LIBRARY_PATH:/home/travis/miniconda/envs/test-environment/lib
   - export PYTHONPATH=".":$PYTHONPATH

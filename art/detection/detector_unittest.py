@@ -1,3 +1,20 @@
+# MIT License
+#
+# Copyright (C) IBM Corporation 2018
+#
+# Permission is hereby granted, free of charge, to any person obtaining a copy of this software and associated
+# documentation files (the "Software"), to deal in the Software without restriction, including without limitation the
+# rights to use, copy, modify, merge, publish, distribute, sublicense, and/or sell copies of the Software, and to permit
+# persons to whom the Software is furnished to do so, subject to the following conditions:
+#
+# The above copyright notice and this permission notice shall be included in all copies or substantial portions of the
+# Software.
+#
+# THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE
+# WARRANTIES OF MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+# AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT,
+# TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
+# SOFTWARE.
 from __future__ import absolute_import, division, print_function, unicode_literals
 
 import logging
@@ -13,7 +30,7 @@ from keras.models import Sequential
 from art.attacks.fast_gradient import FastGradientMethod
 from art.classifiers.keras import KerasClassifier
 from art.detection.detector import BinaryInputDetector, BinaryActivationDetector
-from art.utils import load_mnist
+from art.utils import load_mnist, master_seed
 
 logger = logging.getLogger('testLogger')
 
@@ -24,6 +41,10 @@ class TestBinaryInputDetector(unittest.TestCase):
     """
     A unittest class for testing the binary input detector.
     """
+    def setUp(self):
+        # Set master seed
+        master_seed(1234)
+
     def test_binary_input_detector(self):
         """
         Test the binary input detector end-to-end.
@@ -34,7 +55,7 @@ class TestBinaryInputDetector(unittest.TestCase):
         k.set_session(session)
 
         # Get MNIST
-        batch_size, nb_train, nb_test = 100, 1000, 10
+        nb_train, nb_test = 1000, 10
         (x_train, y_train), (x_test, y_test), _, _ = load_mnist()
         x_train, y_train = x_train[:NB_TRAIN], y_train[:NB_TRAIN]
         x_test, y_test = x_test[:NB_TEST], y_test[:NB_TEST]
@@ -95,6 +116,10 @@ class TestBinaryActivationDetector(unittest.TestCase):
     """
     A unittest class for testing the binary activation detector.
     """
+    def setUp(self):
+        # Set master seed
+        master_seed(1234)
+
     def test_binary_activation_detector(self):
         """
         Test the binary activation detector end-to-end.

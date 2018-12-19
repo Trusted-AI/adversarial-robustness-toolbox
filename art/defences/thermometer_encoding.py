@@ -108,12 +108,8 @@ class ThermometerEncoding(Preprocessor):
         # Save attack-specific parameters
         super(ThermometerEncoding, self).set_params(**kwargs)
 
-        if type(self.num_space) is not int or self.num_space <= 0:
+        if not isinstance(self.num_space, (int, np.int)) or self.num_space <= 0:
             logger.error('Number of evenly spaced levels must be a positive integer.')
             raise ValueError('Number of evenly spaced levels must be a positive integer.')
 
         return True
-
-
-
-

@@ -116,11 +116,10 @@ class DeepFool(Attack):
         # Save attack-specific parameters
         super(DeepFool, self).set_params(**kwargs)
 
-        if type(self.max_iter) is not int or self.max_iter <= 0:
+        if not isinstance(self.max_iter, (int, np.int)) or self.max_iter <= 0:
             raise ValueError("The number of iterations must be a positive integer.")
 
         if self.epsilon < 0:
             raise ValueError("The overshoot parameter must not be negative.")
 
         return True
-

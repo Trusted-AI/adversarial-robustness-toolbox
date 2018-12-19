@@ -82,7 +82,7 @@ class FeatureSqueezing(Preprocessor):
         # Save attack-specific parameters
         super(FeatureSqueezing, self).set_params(**kwargs)
 
-        if type(self.bit_depth) is not int or self.bit_depth <= 0 or self.bit_depth > 64:
+        if not isinstance(self.bit_depth, (int, np.int)) or self.bit_depth <= 0 or self.bit_depth > 64:
             raise ValueError("The bit depth must be between 1 and 64.")
 
         return True

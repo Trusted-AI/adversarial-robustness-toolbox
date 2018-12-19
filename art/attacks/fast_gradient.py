@@ -63,7 +63,7 @@ class FastGradientMethod(Attack):
     def _minimal_perturbation(self, x, y, eps_step=0.1, eps_max=1., **kwargs):
         """Iteratively compute the minimal perturbation necessary to make the class prediction change. Stop when the
         first adversarial example was found.
-        
+
         :param x: An array with the original inputs
         :type x: `np.ndarray`
         :param y:
@@ -110,7 +110,7 @@ class FastGradientMethod(Attack):
 
     def generate(self, x, **kwargs):
         """Generate adversarial samples and return them in an array.
-        
+
         :param x: An array with the original inputs.
         :type x: `np.ndarray`
         :param eps: Attack step size (input variation)

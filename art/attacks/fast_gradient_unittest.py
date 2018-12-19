@@ -32,7 +32,7 @@ from keras.models import Sequential
 
 from art.attacks.fast_gradient import FastGradientMethod
 from art.classifiers import KerasClassifier, PyTorchClassifier, TFClassifier
-from art.utils import load_mnist, get_labels_np_array
+from art.utils import load_mnist, get_labels_np_array, master_seed
 
 logger = logging.getLogger('testLogger')
 
@@ -99,6 +99,10 @@ class TestFastGradientMethod(unittest.TestCase):
         scores = get_labels_np_array(cls.classifier_py.predict(x_test))
         acc = np.sum(np.argmax(scores, axis=1) == np.argmax(y_test, axis=1)) / y_test.shape[0]
         logger.info('[PyTorch, MNIST] Accuracy on test set: %.2f%%', (acc * 100))
+
+    def setUp(self):
+        # Set master seed
+        master_seed(1234)
 
     def test_mnist(self):
         # Define all backends to test
@@ -272,14 +276,14 @@ class TestFastGradientMethod(unittest.TestCase):
         # Get classifier
         classifier = PyTorchClassifier((0, 1), model, loss_fn, optimizer, (1, 28, 28), 10)
         return classifier
-    
+
     def _test_mnist_targeted(self, classifier):
         # Get MNIST
-        (_, _), (x_test, y_test) = self.mnist
+        (_, _), (x_test, _) = self.mnist
 
         # Test FGSM with np.inf norm
         attack = FastGradientMethod(classifier, eps=1.0, targeted=True)
-        
+
         pred_sort = classifier.predict(x_test).argsort(axis=1)
         y_test_adv = np.zeros((x_test.shape[0], 10))
         for i in range(x_test.shape[0]):
@@ -292,7 +296,7 @@ class TestFastGradientMethod(unittest.TestCase):
 
         self.assertEqual(y_test_adv.shape, test_y_pred.shape)
         self.assertTrue((y_test_adv == test_y_pred).sum() >= x_test.shape[0] // 2)
-    
+
     def test_mnist_targeted(self):
         # Define all backends to test
         backends = {'keras': self.classifier_k,

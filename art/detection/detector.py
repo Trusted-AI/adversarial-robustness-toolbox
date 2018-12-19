@@ -20,6 +20,7 @@ from __future__ import absolute_import, division, print_function, unicode_litera
 import abc
 import logging
 import sys
+import six
 
 logger = logging.getLogger(__name__)
 
@@ -157,11 +158,11 @@ class BinaryActivationDetector(Detector):
         self._detector = detector
 
         # Ensure that layer is well-defined:
-        if type(layer) is str:
+        if isinstance(layer, six.string_types):
             if layer not in classifier.layer_names:
                 raise ValueError('Layer name %s is not part of the graph.' % layer)
             self._layer_name = layer
-        elif type(layer) is int:
+        elif isinstance(layer, int):
             if layer < 0 or layer >= len(classifier.layer_names):
                 raise ValueError('Layer index %d is outside of range (0 to %d included).'
                                  % (layer, len(classifier.layer_names) - 1))

@@ -80,7 +80,7 @@ class NewtonFool(Attack):
             l_b = to_categorical(l, self.classifier.nb_classes).astype(bool)
 
             # Main loop of the algorithm
-            for i in range(self.max_iter):
+            for _ in range(self.max_iter):
                 # Compute score
                 score = self.classifier.predict(batch, logits=False)[l_b]
 
@@ -118,10 +118,10 @@ class NewtonFool(Attack):
         # Save attack-specific parameters
         super(NewtonFool, self).set_params(**kwargs)
 
-        if type(self.max_iter) is not int or self.max_iter <= 0:
+        if not isinstance(self.max_iter, (int, np.int)) or self.max_iter <= 0:
             raise ValueError("The number of iterations must be a positive integer.")
 
-        if type(self.eta) is not float or self.eta <= 0:
+        if not isinstance(self.eta, (float, int, np.int)) or self.eta <= 0:
             raise ValueError("The eta coefficient must be a positive float.")
 
         if self.batch_size <= 0:
@@ -170,7 +170,3 @@ class NewtonFool(Attack):
         result = nom / denom[:, None, None, None]
 
         return result
-
-
-
-

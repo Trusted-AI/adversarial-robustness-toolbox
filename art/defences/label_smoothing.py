@@ -66,7 +66,7 @@ class LabelSmoothing(Preprocessor):
         smooth_y[smooth_y == 0.] = min_value
         return x, smooth_y
 
-    def fit(self,  x, y=None, **kwargs):
+    def fit(self, x, y=None, **kwargs):
         """No parameters to learn for this method; do nothing."""
         pass
 

@@ -22,10 +22,9 @@ import os.path
 
 import numpy as np
 
-from art.poison_detection.distance_analyzer import DistanceAnalyzer
+from art.poison_detection.clustering_analyzer import ClusteringAnalyzer
 from art.poison_detection.ground_truth_evaluator import GroundTruthEvaluator
 from art.poison_detection.poison_filtering_defence import PoisonFilteringDefence
-from art.poison_detection.size_analyzer import SizeAnalyzer
 from art.visualization import create_sprite, save_image
 
 logger = logging.getLogger(__name__)
@@ -39,7 +38,8 @@ class ActivationDefence(PoisonFilteringDefence):
     defence_params = ['nb_clusters', 'clustering_method', 'nb_dims', 'reduce', 'cluster_analysis']
     valid_clustering = ['KMeans']
     valid_reduce = ['PCA', 'FastICA', 'TSNE']
-    valid_analysis = ['smaller', 'distance']
+    valid_analysis = ['smaller', 'distance', 'relative-size', 'silhouette-scores']
+
     TOO_SMALL_ACTIVATIONS = 32  # Threshold used to print a warning when activations are not enough
 
     def __init__(self, classifier, x_train, y_train):
@@ -66,6 +66,7 @@ class ActivationDefence(PoisonFilteringDefence):
         self.evaluator = GroundTruthEvaluator()
         self.is_clean_lst = []
         self.confidence_level = []
+        self.poisonous_clusters = []
 
     def evaluate_defence(self, is_clean, **kwargs):
         """
@@ -81,7 +82,7 @@ class ActivationDefence(PoisonFilteringDefence):
         """
         self.set_params(**kwargs)
 
-        if len(self.activations_by_class) == 0:
+        if not self.activations_by_class:
             activations = self._get_activations()
             self.activations_by_class = self._segment_by_class(activations, self.y_train)
 
@@ -106,7 +107,7 @@ class ActivationDefence(PoisonFilteringDefence):
         """
         self.set_params(**kwargs)
 
-        if len(self.activations_by_class) == 0:
+        if not self.activations_by_class:
             activations = self._get_activations()
             self.activations_by_class = self._segment_by_class(activations, self.y_train)
         self.clusters_by_class, self.red_activations_by_class = self.cluster_activations()
@@ -119,8 +120,8 @@ class ActivationDefence(PoisonFilteringDefence):
         indices_by_class = self._segment_by_class(np.arange(n_train), self.y_train)
         self.is_clean_lst = [0] * n_train
         self.confidence_level = [1] * n_train
-        for i, (assigned_clean, dp) in enumerate(zip(self.assigned_clean_by_class, indices_by_class)):
-            for j, (assignment, index_dp) in enumerate(zip(assigned_clean, dp)):
+        for assigned_clean, dp in zip(self.assigned_clean_by_class, indices_by_class):
+            for assignment, index_dp in zip(assigned_clean, dp):
                 if assignment == 1:
                     self.is_clean_lst[index_dp] = 1
 
@@ -139,7 +140,7 @@ class ActivationDefence(PoisonFilteringDefence):
         :rtype: `tuple`
         """
         self.set_params(**kwargs)
-        if len(self.activations_by_class) == 0:
+        if not self.activations_by_class:
             activations = self._get_activations()
             self.activations_by_class = self._segment_by_class(activations, self.y_train)
 
@@ -163,16 +164,29 @@ class ActivationDefence(PoisonFilteringDefence):
         """
         self.set_params(**kwargs)
 
-        if len(self.clusters_by_class) == 0:
+        if not self.clusters_by_class:
             self.cluster_activations()
 
+        analyzer = ClusteringAnalyzer()
+
         if self.cluster_analysis == 'smaller':
-            analyzer = SizeAnalyzer()
-            self.assigned_clean_by_class = analyzer.analyze_clusters(self.clusters_by_class)
+            self.assigned_clean_by_class, self.poisonous_clusters \
+                = analyzer.analyze_by_size(self.clusters_by_class)
+        elif self.cluster_analysis == 'relative-size':
+            self.assigned_clean_by_class, self.poisonous_clusters \
+                = analyzer.analyze_by_relative_size(self.clusters_by_class)
         elif self.cluster_analysis == 'distance':
-            analyzer = DistanceAnalyzer()
-            self.assigned_clean_by_class = analyzer.analyze_clusters(self.clusters_by_class,
-                                                                     separated_activations=self.red_activations_by_class)
+            self.assigned_clean_by_class, self.poisonous_clusters \
+                = analyzer.analyze_by_distance(self.clusters_by_class,
+                                               separated_activations=self.red_activations_by_class)
+        elif self.cluster_analysis == 'silhouette-scores':
+            self.assigned_clean_by_class, self.poisonous_clusters \
+                = analyzer.analyze_by_sihouette_score(self.clusters_by_class,
+                                                      reduced_activations_by_class=self.red_activations_by_class)
+        else:
+            raise ValueError(
+                "Unsupported cluster analysis technique " + self.cluster_analysis)
+
         return self.assigned_clean_by_class
 
     def visualize_clusters(self, x_raw, save=True, folder='.', **kwargs):
@@ -194,7 +208,7 @@ class ActivationDefence(PoisonFilteringDefence):
         """
         self.set_params(**kwargs)
 
-        if len(self.clusters_by_class) == 0:
+        if not self.clusters_by_class:
             self.cluster_activations()
 
         x_raw_by_class = self._segment_by_class(x_raw, self.y_train)
@@ -331,7 +345,7 @@ def cluster_activations(separated_activations, nb_clusters=2, nb_dims=10, reduce
     else:
         raise ValueError(clustering_method + " clustering method not supported.")
 
-    for i, ac in enumerate(separated_activations):
+    for ac in separated_activations:
         # Apply dimensionality reduction
         nb_activations = np.shape(ac)[1]
         if nb_activations > nb_dims:

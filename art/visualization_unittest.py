@@ -24,7 +24,7 @@ import unittest
 import numpy as np
 
 from art import DATA_PATH
-from art.utils import load_mnist, load_cifar10
+from art.utils import load_mnist, load_cifar10, master_seed
 from art.visualization import create_sprite, convert_to_rgb, save_image
 
 logger = logging.getLogger('testLogger')
@@ -33,6 +33,10 @@ logger = logging.getLogger('testLogger')
 # python -m unittest discover art/ -p 'visualization_unittest.py'
 
 class TestVisualization(unittest.TestCase):
+    def setUp(self):
+        # Set master seed
+        master_seed(42)
+
     def test_save_image(self):
         (x, _), (_, _), _, _ = load_mnist(raw=True)
 

@@ -27,7 +27,7 @@ from keras.models import Sequential
 
 from art.classifiers import KerasClassifier
 from art.poison_detection import ActivationDefence
-from art.utils import load_mnist
+from art.utils import load_mnist, master_seed
 
 logger = logging.getLogger('testLogger')
 
@@ -62,6 +62,10 @@ class TestActivationDefence(unittest.TestCase):
 
         cls.defence = ActivationDefence(cls.classifier, x_train, y_train)
 
+    def setUp(self):
+        # Set master seed
+        master_seed(1234)
+
     @unittest.expectedFailure
     def test_wrong_parameters_1(self):
         self.defence.set_params(nb_clusters=0)
@@ -89,7 +93,7 @@ class TestActivationDefence(unittest.TestCase):
 
         n_classes = self.classifier.nb_classes
         for nb_clusters in range(2, 5):
-            clusters_by_class, red_activations_by_class = self.defence.cluster_activations(nb_clusters=nb_clusters)
+            clusters_by_class, _ = self.defence.cluster_activations(nb_clusters=nb_clusters)
 
             # Verify expected number of classes
             self.assertEqual(np.shape(clusters_by_class)[0], n_classes)
@@ -171,5 +175,6 @@ class TestActivationDefence(unittest.TestCase):
         # Very unlikely that they are the same
         self.assertNotEqual(sum_dis, sum_sz, msg='This is very unlikely to happen... there may be an error')
 
-    if __name__ == '__main__':
-        unittest.main()
+
+if __name__ == '__main__':
+    unittest.main()

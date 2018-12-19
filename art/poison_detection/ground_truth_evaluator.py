@@ -60,7 +60,7 @@ class GroundTruthEvaluator:
         logger.debug("Error rates per class:")
         for class_i, (assigned_clean, is_clean) in enumerate(zip(assigned_clean_by_class, is_clean_by_class)):
             errors = []
-            for j, (assignment, bl) in enumerate(zip(assigned_clean, is_clean)):
+            for assignment, bl in zip(assigned_clean, is_clean):
                 bl = int(bl)
                 # marked poison, is poison = 0
                 # true positive
@@ -163,6 +163,6 @@ class GroundTruthEvaluator:
             res = 100 * (numerator / float(denominator))
             logger.debug("%s: %d/%d=%.3g", name, numerator, denominator, res)
             return res
-        except Exception as e:
+        except Exception:
             logger.debug("%s: couldn't calculate %d/%d", name, numerator, denominator)
             return 0

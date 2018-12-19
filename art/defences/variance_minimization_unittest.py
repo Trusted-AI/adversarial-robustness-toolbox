@@ -25,11 +25,16 @@ from keras.datasets import cifar10
 import numpy as np
 
 from art.defences.variance_minimization import TotalVarMin
+from art.utils import master_seed
 
 logger = logging.getLogger('testLogger')
 
 
 class TestTotalVarMin(unittest.TestCase):
+    def setUp(self):
+        # Set master seed
+        master_seed(1234)
+
     def test_one_channel(self):
         mnist = input_data.read_data_sets("tmp/MNIST_data/")
         x = np.reshape(mnist.test.images[0:2], (-1, 28, 28, 1))
@@ -41,7 +46,7 @@ class TestTotalVarMin(unittest.TestCase):
         self.assertFalse((preprocessed_x == x).all())
 
     def test_three_channels(self):
-        (train_features, train_labels), (_, _) = cifar10.load_data()
+        (train_features, _), (_, _) = cifar10.load_data()
         x = train_features[:2] / 255.0
         preprocess = TotalVarMin()
         preprocessed_x = preprocess(x)
@@ -53,5 +58,3 @@ class TestTotalVarMin(unittest.TestCase):
 
 if __name__ == '__main__':
     unittest.main()
-
-

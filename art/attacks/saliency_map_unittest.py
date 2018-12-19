@@ -32,7 +32,7 @@ import torch.optim as optim
 
 from art.attacks.saliency_map import SaliencyMapMethod
 from art.classifiers import KerasClassifier, PyTorchClassifier, TFClassifier
-from art.utils import load_mnist, get_labels_np_array, to_categorical
+from art.utils import load_mnist, get_labels_np_array, to_categorical, master_seed
 
 logger = logging.getLogger('testLogger')
 
@@ -102,6 +102,10 @@ class TestSaliencyMap(unittest.TestCase):
         acc = np.sum(np.argmax(scores, axis=1) == np.argmax(y_test, axis=1)) / y_test.shape[0]
         logger.info('\n[PyTorch, MNIST] Accuracy on test set: %.2f%%', (acc * 100))
 
+    def setUp(self):
+        # Set master seed
+        master_seed(1234)
+
     def test_mnist(self):
         # Define all backends to test
         backends = {'keras': self.classifier_k,
@@ -144,7 +148,6 @@ class TestSaliencyMap(unittest.TestCase):
         x_test, y_test = x_test[:NB_TEST], y_test[:NB_TEST]
 
         # Generate random target classes
-        import numpy as np
         nb_classes = np.unique(np.argmax(y_test, axis=1)).shape[0]
         targets = np.random.randint(nb_classes, size=NB_TEST)
         while (targets == np.argmax(y_test, axis=1)).any():
