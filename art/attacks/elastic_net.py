@@ -62,6 +62,24 @@ class ElasticNet(Attack):
                   }
         assert self.set_params(**kwargs)
 
+    def _loss(self, x, x_adv):
+        """
+        Compute the loss function values.
+
+        :param x: An array with the original input.
+        :type x: `np.ndarray`
+        :param x_adv: An array with the adversarial input.
+        :type x_adv: `np.ndarray`
+        :return: A tuple holding the current logits, l1 distance, l2 distance and elastic net loss.
+        :rtype: `(np.ndarray, float, float, float)`
+        """
+        l1dist = np.sum(np.abs(x - x_adv).reshape(x.shape[0], -1), axis=1)
+        l2dist = np.sum(np.square(x - x_adv).reshape(x.shape[0], -1), axis=1)
+        endist = self.beta * l1dist + l2dist
+        z = self.classifier.predict(np.array(x_adv, dtype=NUMPY_DTYPE), logits=True)
+
+        return np.argmax(z, axis=1), l1dist, l2dist, endist
+
 
 
 
