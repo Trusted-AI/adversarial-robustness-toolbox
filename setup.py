@@ -21,16 +21,14 @@ from setuptools import find_packages
 with open("README.md", "r") as fh:
     long_description = fh.read()
 
-install_requires = ['h5py',
-                    'numpy',
+install_requires = ['numpy',
                     'scipy',
-                    'keras',
-                    'tensorflow',
                     'six',
                     'setuptools',
                     'scikit-learn']
 
 tests_require = ['mxnet',
+                 'h5py',
                  'keras',
                  'Pillow',
                  'requests',
@@ -38,7 +36,7 @@ tests_require = ['mxnet',
                  'torch']
 
 setup(name='Adversarial Robustness Toolbox',
-      version='0.3.0',
+      version='0.4.0',
       description='IBM Adversarial machine learning toolbox',
       long_description=long_description,
       long_description_content_type='text/markdown',

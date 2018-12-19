@@ -14,6 +14,6 @@ Preprocess
 ----------
 .. autofunction:: preprocess
 
-Fixing Random Number Generators Seed
-------------------------------------
+Fixing the Seed for Random Number Generators
+--------------------------------------------
 .. autofunction:: master_seed
