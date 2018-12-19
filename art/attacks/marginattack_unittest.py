@@ -111,8 +111,7 @@ class TestMarginAttack(unittest.TestCase):
         (x_train, y_train), (x_test, y_test) = self.mnist
 
         # Test MarginAttack
-        attack = MarginAttack(classifier, max_iter=200, num_classes=10,
-                              input_max = 1.0, input_min=0.0, metric='L2')
+        attack = MarginAttack(classifier, max_iter=200, metric='L2')
         x_test_adv = attack.generate(x_test, y=y_test)
         x_train_adv = attack.generate(x_train, y=y_train)
 
@@ -126,7 +125,6 @@ class TestMarginAttack(unittest.TestCase):
         self.assertFalse((y_test == test_y_pred).all())
 
         acc = np.sum(np.argmax(train_y_pred, axis=1) == np.argmax(y_train, axis=1)) / y_train.shape[0]
-        print(np.where(np.argmax(train_y_pred, axis=1) == np.argmax(y_train, axis=1)))
         logger.info('Accuracy on adversarial train examples: %.2f%%', (acc * 100))
 
         acc = np.sum(np.argmax(test_y_pred, axis=1) == np.argmax(y_test, axis=1)) / y_test.shape[0]
