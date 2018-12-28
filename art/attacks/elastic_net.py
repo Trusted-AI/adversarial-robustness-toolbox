@@ -188,6 +188,42 @@ class ElasticNet(Attack):
 
         return x_adv
 
+    def _generate_batch(self, x_batch, y_batch):
+        """
+        Run the attack on a batch of images and labels.
+
+        :param x_batch: A batch of original examples.
+        :type x_batch: `np.ndarray`
+        :param y_batch: A batch of targets (0-1 hot).
+        :type y_batch: `np.ndarray`
+        :return: A batch of adversarial examples.
+        :rtype: `np.ndarray`
+        """
+        # Initialize binary search:
+        c = self.initial_const * np.ones(x_batch.shape[0])
+        c_lower_bound = np.zeros(x_batch.shape[0])
+        c_upper_bound = 10e10 * np.ones(x_batch.shape[0])
+
+        # Initialize best distortions and best attacks globally
+        o_best_dist = np.inf * np.ones(x_batch.shape[0])
+        o_best_attack = x_batch.copy()
+
+        # Start with a binary search
+        for bss in range(self.binary_search_steps):
+            logger.debug('Binary search step %i out of %i (c_mean==%f)', bss, self.binary_search_steps, np.mean(c))
+
+            # Run with 1 specific binary search step
+            best_dist, best_label, best_attack = self._generate_bss(x_batch, y_batch, c)
+
+            # Update best results so far
+            o_best_attack[best_dist < o_best_dist] = best_attack[best_dist < o_best_dist]
+            o_best_dist[best_dist < o_best_dist] = best_dist[best_dist < o_best_dist]
+
+            # Adjust the constant as needed
+            c, c_lower_bound, c_upper_bound = self._update_const(y_batch, best_label, c, c_lower_bound, c_upper_bound)
+
+        return o_best_attack
+
 
 
 
