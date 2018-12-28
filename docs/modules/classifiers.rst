@@ -7,8 +7,8 @@ Base Class
 .. autoclass:: Classifier
    :members:
 
-Concrete Model Wrappers
------------------------
+Framework-Specific Model Wrappers
+---------------------------------
 .. autoclass:: KerasClassifier
    :members:
 .. autoclass:: MXClassifier
@@ -16,4 +16,9 @@ Concrete Model Wrappers
 .. autoclass:: PyTorchClassifier
    :members:
 .. autoclass:: TFClassifier
+   :members:
+
+Ensemble Wrapper
+----------------
+.. autoclass:: EnsembleClassifier
    :members:
