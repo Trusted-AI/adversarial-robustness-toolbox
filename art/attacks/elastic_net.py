@@ -136,6 +136,58 @@ class ElasticNet(Attack):
 
         return decayed_learning_rate
 
+    def generate(self, x, **kwargs):
+        """
+        Generate adversarial samples and return them in an array.
+
+        :param x: An array with the original inputs to be attacked.
+        :type x: `np.ndarray`
+        :param y: If `self.targeted` is true, then `y` represents the target labels. Otherwise, the targets are the
+        original class labels.
+        :type y: `np.ndarray`
+        :return: An array holding the adversarial examples.
+        :rtype: `np.ndarray`
+        """
+        x_adv = x.astype(NUMPY_DTYPE)
+        (clip_min, clip_max) = self.classifier.clip_values
+
+        # Parse and save attack-specific parameters
+        params_cpy = dict(kwargs)
+        y = params_cpy.pop(str('y'), None)
+        self.set_params(**params_cpy)
+
+        # Assert that, if attack is targeted, y is provided:
+        if self.targeted and y is None:
+            raise ValueError('Target labels `y` need to be provided for a targeted attack.')
+
+        # No labels provided, use model prediction as correct class
+        if y is None:
+            y = get_labels_np_array(self.classifier.predict(x, logits=False))
+
+        # Compute adversarial examples with implicit batching
+        nb_batches = int(np.ceil(x_adv.shape[0] / float(self.batch_size)))
+        for batch_id in range(nb_batches):
+            logger.debug('Processing batch %i out of %i', batch_id, nb_batches)
+
+            batch_index_1, batch_index_2 = batch_id * self.batch_size, (batch_id + 1) * self.batch_size
+            x_batch = x_adv[batch_index_1:batch_index_2]
+            y_batch = y[batch_index_1:batch_index_2]
+            x_adv[batch_index_1:batch_index_2] = self._generate_batch(x_batch, y_batch)
+
+        # Apply clip
+        x_adv = np.clip(x_adv, clip_min, clip_max)
+
+        # Compute success rate of the EAD attack
+        adv_preds = np.argmax(self.classifier.predict(x_adv), axis=1)
+        if self.targeted:
+            rate = np.sum(adv_preds == np.argmax(y, axis=1)) / x_adv.shape[0]
+        else:
+            preds = np.argmax(self.classifier.predict(x), axis=1)
+            rate = np.sum(adv_preds != preds) / x_adv.shape[0]
+        logger.info('Success rate of EAD attack: %.2f%%', 100*rate)
+
+        return x_adv
+
 
 
 
