@@ -224,6 +224,46 @@ class ElasticNet(Attack):
 
         return o_best_attack
 
+    def _update_const(self, y_batch, best_label, c, c_lower_bound, c_upper_bound):
+        """
+        Update constants.
+
+        :param y_batch: A batch of targets (0-1 hot).
+        :type y_batch: `np.ndarray`
+        :param best_label: A batch of best labels.
+        :type best_label: `np.ndarray`
+        :param c: A batch of constants.
+        :type c: `np.ndarray`
+        :param c_lower_bound: A batch of lower bound constants.
+        :type c_lower_bound: `np.ndarray`
+        :param c_upper_bound: A batch of upper bound constants.
+        :type c_upper_bound: `np.ndarray`
+        :return: A tuple of three batches of updated constants and lower/upper bounds.
+        :rtype: `tuple`
+        """
+        def compare(o1, o2):
+            if self.targeted:
+                return o1 == o2
+            else:
+                return o1 != o2
+
+        for i in range(len(c)):
+            if compare(best_label[i], np.argmax(y_batch[i])) and best_label[i] != -np.inf:
+                # Successful attack
+                c_upper_bound[i] = min(c_upper_bound[i], c[i])
+                if c_upper_bound[i] < 1e9:
+                    c[i] = (c_lower_bound[i] + c_upper_bound[i]) / 2.0
+
+            else:
+                # Failure attack
+                c_lower_bound[i] = max(c_lower_bound[i], c[i])
+                if c_upper_bound[i] < 1e9:
+                    c[i] = (c_lower_bound[i] + c_upper_bound[i]) / 2.0
+                else:
+                    c[i] *= 10
+
+        return c, c_lower_bound, c_upper_bound
+
 
 
 
