@@ -264,6 +264,65 @@ class ElasticNet(Attack):
 
         return c, c_lower_bound, c_upper_bound
 
+    def _generate_bss(self, x_batch, y_batch, c):
+        """
+        Generate adversarial examples for a batch of inputs with a specific batch of constants.
+
+        :param x_batch: A batch of original examples.
+        :type x_batch: `np.ndarray`
+        :param y_batch: A batch of targets (0-1 hot).
+        :type y_batch: `np.ndarray`
+        :param c: A batch of constants.
+        :type c: `np.ndarray`
+        :return: A tuple of best elastic distances, best labels, best attacks
+        :rtype: `tuple`
+        """
+        def compare(o1, o2):
+            if self.targeted:
+                return o1 == o2
+            else:
+                return o1 != o2
+
+        # Initialize best distortions and best changed labels and best attacks
+        best_dist = np.inf * np.ones(x_batch.shape[0])
+        best_label = [-np.inf] * x_batch.shape[0]
+        best_attack = x_batch.copy()
+
+        # Implement the algorithm 1 in the EAD paper
+        x_adv = x_batch.copy()
+        y_adv = x_batch.copy()
+        for it in range(self.max_iter):
+            logger.debug('Iteration step %i out of %i', it, self.max_iter)
+
+            # Update learning rate
+            lr = self._decay_learning_rate(global_step=it, end_learning_rate=0, decay_steps=self.max_iter)
+
+            # Compute adversarial examples
+            grad = self._loss_gradient(target=y_batch, x=x_batch, x_adv=y_adv, c=c)
+            x_adv_next = self._shrinkage_threshold(y_adv - lr * grad, x_batch, self.beta)
+            y_adv = x_adv_next + (1.0 * it / (it + 3)) * (x_adv_next - x_adv)
+            x_adv = x_adv_next
+
+            # Adjust the best result
+            (z, l1dist, l2dist, endist) = self._loss(x=x_batch, x_adv=x_adv)
+
+            if self.decision_rule == 'EN':
+                zip_set = zip(endist, z)
+            elif self.decision_rule == 'L1':
+                zip_set = zip(l1dist, z)
+            elif self.decision_rule == 'L2':
+                zip_set = zip(l2dist, z)
+            else:
+                raise ValueError("The decision rule only supports `EN`, `L1`, `L2`.")
+
+            for j, (d, s) in enumerate(zip_set):
+                if d < best_dist[j] and compare(s, np.argmax(y_batch[j])):
+                    best_dist[j] = d
+                    best_attack[j] = x_adv[j]
+                    best_label[j] = s
+
+        return best_dist, best_label, best_attack
+
 
 
 
