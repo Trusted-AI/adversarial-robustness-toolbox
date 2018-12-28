@@ -197,43 +197,6 @@ class ElasticNet(Attack):
 
 
 
-    def _original_to_tanh(self, x_original, clip_min, clip_max):
-        """
-        Transform input from original to tanh space.
-
-        :param x_original: An array with the input to be transformed.
-        :type x_original: `np.ndarray`
-        :param clip_min: Minimum clipping value.
-        :type clip_min: `float`
-        :param clip_max: Maximum clipping value.
-        :type clip_max: `float`
-        :return: An array holding the transformed input.
-        :rtype: `np.ndarray`
-        """
-        # To avoid division by zero (which occurs if arguments of arctanh are +1 or -1),
-        # we multiply arguments with _tanh_smoother. It appears this is what Carlini and Wagner
-        # (2016) are alluding to in their footnote 8. However, it is not clear how their proposed trick
-        # ("instead of scaling by 1/2 we scale by 1/2 + eps") works in detail.
-        x_tanh = np.clip(x_original, clip_min, clip_max)
-        x_tanh = (x_tanh - clip_min) / (clip_max - clip_min)
-        x_tanh = np.arctanh(((x_tanh * 2) - 1) * self._tanh_smoother)
-        return x_tanh
-
-    def _tanh_to_original(self, x_tanh, clip_min, clip_max):
-        """
-        Transform input from tanh to original space.
-
-        :param x_tanh: An array with the input to be transformed.
-        :type x_tanh: `np.ndarray`
-        :param clip_min: Minimum clipping value.
-        :type clip_min: `float`
-        :param clip_max: Maximum clipping value.
-        :type clip_max: `float`
-        :return: An array holding the transformed input.
-        :rtype: `np.ndarray`
-        """
-        x_original = (np.tanh(x_tanh) / self._tanh_smoother + 1) / 2
-        return x_original * (clip_max - clip_min) + clip_min
 
     def generate(self, x, **kwargs):
         """
