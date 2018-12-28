@@ -291,46 +291,62 @@ class TestElasticNet(unittest.TestCase):
         # Kill Keras
         k.clear_session()
 
+    def test_ptclassifier(self):
+        """
+        Third test with the PyTorchClassifier.
+        :return:
+        """
+        # Get MNIST
+        (x_train, y_train), (x_test, y_test) = self.mnist
+        x_train = np.swapaxes(x_train, 1, 3)
+        x_test = np.swapaxes(x_test, 1, 3)
+
+        # Define the network
+        model = Model()
+
+        # Define a loss function and optimizer
+        loss_fn = nn.CrossEntropyLoss()
+        optimizer = optim.Adam(model.parameters(), lr=0.01)
+
+        # Get classifier
+        ptc = PyTorchClassifier((0, 1), model, loss_fn, optimizer, (1, 28, 28), 10)
+        ptc.fit(x_train, y_train, batch_size=BATCH_SIZE, nb_epochs=10)
+
+        # First attack
+        eda = ElasticNet(classifier=ptc, targeted=True, max_iter=10)
+        params = {'y': random_targets(y_test, ptc.nb_classes)}
+        x_test_adv = eda.generate(x_test, **params)
+        self.assertFalse((x_test == x_test_adv).all())
+        self.assertTrue((x_test_adv <= 1.0001).all())
+        self.assertTrue((x_test_adv >= -0.0001).all())
+        target = np.argmax(params['y'], axis=1)
+        y_pred_adv = np.argmax(ptc.predict(x_test_adv), axis=1)
+        self.assertTrue((target == y_pred_adv).any())
+
+        # Second attack
+        eda = ElasticNet(classifier=ptc, targeted=False, max_iter=10)
+        params = {'y': random_targets(y_test, ptc.nb_classes)}
+        x_test_adv = eda.generate(x_test, **params)
+        self.assertTrue((x_test_adv <= 1.0001).all())
+        self.assertTrue((x_test_adv >= -0.0001).all())
+        target = np.argmax(params['y'], axis=1)
+        y_pred_adv = np.argmax(ptc.predict(x_test_adv), axis=1)
+        self.assertTrue((target != y_pred_adv).any())
+
+        # Third attack
+        eda = ElasticNet(classifier=ptc, targeted=False, max_iter=10)
+        params = {}
+        x_test_adv = eda.generate(x_test, **params)
+        self.assertFalse((x_test == x_test_adv).all())
+        self.assertTrue((x_test_adv <= 1.0001).all())
+        self.assertTrue((x_test_adv >= -0.0001).all())
+        y_pred = np.argmax(ptc.predict(x_test), axis=1)
+        y_pred_adv = np.argmax(ptc.predict(x_test_adv), axis=1)
+        self.assertTrue((y_pred != y_pred_adv).any())
 
 
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
+if __name__ == '__main__':
+    unittest.main()
 
 
 
