@@ -80,6 +80,44 @@ class ElasticNet(Attack):
 
         return np.argmax(z, axis=1), l1dist, l2dist, endist
 
+    def _loss_gradient(self, target, x, x_adv, c):
+        """
+        Compute the gradient of the loss function.
+
+        :param target: An array with the target class (one-hot encoded).
+        :type target: `np.ndarray`
+        :param x: An array with the original input.
+        :type x: `np.ndarray`
+        :param x_adv: An array with the adversarial input.
+        :type x_adv: `np.ndarray`
+        :param c: Weight of the loss term aiming for classification as target.
+        :type c: `float`
+        :return: An array with the gradient of the loss function.
+        :type target: `np.ndarray`
+        """
+        # Compute the current logits
+        z = self.classifier.predict(np.array(x_adv, dtype=NUMPY_DTYPE), logits=True)
+
+        if self.targeted:
+            i_sub = np.argmax(target, axis=1)
+            i_add = np.argmax(z * (1 - target) + (np.min(z, axis=1) - 1)[:, np.newaxis] * target, axis=1)
+        else:
+            i_add = np.argmax(target, axis=1)
+            i_sub = np.argmax(z * (1 - target) + (np.min(z, axis=1) - 1)[:, np.newaxis] * target, axis=1)
+
+        loss_gradient = self.classifier.class_gradient(x_adv, label=i_add, logits=True)
+        loss_gradient -= self.classifier.class_gradient(x_adv, label=i_sub, logits=True)
+        loss_gradient = loss_gradient.reshape(x.shape)
+
+        c_mult = c
+        for _ in range(len(x.shape)-1):
+            c_mult = c_mult[:, np.newaxis]
+
+        loss_gradient *= c_mult
+        loss_gradient += 2 * (x_adv - x)
+
+        return loss_gradient
+
 
 
 
