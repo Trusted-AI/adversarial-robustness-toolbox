@@ -348,6 +348,49 @@ class ElasticNet(Attack):
 
         return result
 
+    def set_params(self, **kwargs):
+        """Take in a dictionary of parameters and applies attack-specific checks before saving them as attributes.
+
+        :param confidence: Confidence of adversarial examples: a higher value produces examples that are farther
+        away, from the original input, but classified with higher confidence as the target class.
+        :type confidence: `float`
+        :param targeted: Should the attack target one specific class.
+        :type targeted: `bool`
+        :param learning_rate: The initial learning rate for the attack algorithm. Smaller values produce better
+        results but are slower to converge.
+        :type learning_rate: `float`
+        :param binary_search_steps: Number of times to adjust constant with binary search (positive value).
+        :type binary_search_steps: `int`
+        :param max_iter: The maximum number of iterations.
+        :type max_iter: `int`
+        :param beta: Hyperparameter trading off L2 minimization for L1 minimization.
+        :type beta: `float`
+        :param initial_const: The initial trade-off constant `c` to use to tune the relative importance of distance
+        and confidence. If `binary_search_steps` is large, the initial constant is not important, as discussed in
+        Carlini and Wagner (2016).
+        :type initial_const: `float`
+        :param batch_size: Internal size of batches on which adversarial samples are generated.
+        :type batch_size: `int`
+        :param decision_rule: Decision rule. 'EN' means Elastic Net rule, 'L1' means L1 rule, 'L2' means L2 rule.
+        :type decision_rule: `string`
+        """
+        # Save attack-specific parameters
+        super(ElasticNet, self).set_params(**kwargs)
+
+        if type(self.binary_search_steps) is not int or self.binary_search_steps < 0:
+            raise ValueError("The number of binary search steps must be a non-negative integer.")
+
+        if type(self.max_iter) is not int or self.max_iter < 0:
+            raise ValueError("The number of iterations must be a non-negative integer.")
+
+        if type(self.batch_size) is not int or self.batch_size < 1:
+            raise ValueError("The batch size must be an integer greater than zero.")
+
+        if type(self.decision_rule) is not str or self.decision_rule not in ['EN', 'L1', 'L2']:
+            raise ValueError("The decision rule only supports `EN`, `L1`, `L2`.")
+
+        return True
+
 
 
 class CarliniLInfMethod(Attack):
