@@ -13,3 +13,4 @@ from art.attacks.universal_perturbation import UniversalPerturbation
 from art.attacks.virtual_adversarial import VirtualAdversarialMethod
 from art.attacks.model_theft import ModelTheft
 from art.attacks.sampling_model_theft import SamplingModelTheft
+from art.attacks.elastic_net import ElasticNet
