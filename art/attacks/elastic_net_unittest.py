@@ -221,6 +221,81 @@ class TestElasticNet(unittest.TestCase):
         sess.close()
         tf.reset_default_graph()
 
+    def test_krclassifier(self):
+        """
+        Second test with the KerasClassifier.
+        :return:
+        """
+        # Initialize a tf session
+        session = tf.Session()
+        k.set_session(session)
+
+        # Get MNIST
+        (x_train, y_train), (x_test, y_test) = self.mnist
+
+        # Create simple CNN
+        model = Sequential()
+        model.add(Conv2D(4, kernel_size=(5, 5), activation='relu', input_shape=(28, 28, 1)))
+        model.add(MaxPooling2D(pool_size=(2, 2)))
+        model.add(Flatten())
+        model.add(Dense(10, activation='softmax'))
+
+        model.compile(loss=keras.losses.categorical_crossentropy, optimizer=keras.optimizers.Adam(lr=0.01),
+                      metrics=['accuracy'])
+
+        # Get classifier
+        krc = KerasClassifier((0, 1), model, use_logits=False)
+        krc.fit(x_train, y_train, batch_size=BATCH_SIZE, nb_epochs=10)
+
+        # First attack
+        eda = ElasticNet(classifier=krc, targeted=True, max_iter=10)
+        params = {'y': random_targets(y_test, krc.nb_classes)}
+        x_test_adv = eda.generate(x_test, **params)
+        self.assertFalse((x_test == x_test_adv).all())
+        self.assertTrue((x_test_adv <= 1.0001).all())
+        self.assertTrue((x_test_adv >= -0.0001).all())
+        target = np.argmax(params['y'], axis=1)
+        y_pred_adv = np.argmax(krc.predict(x_test_adv), axis=1)
+        logger.debug('EDA Target: %s', target)
+        logger.debug('EDA Actual: %s', y_pred_adv)
+        logger.info('EDA Success Rate: %.2f', (sum(target == y_pred_adv) / float(len(target))))
+        self.assertTrue((target == y_pred_adv).any())
+
+        # Second attack
+        eda = ElasticNet(classifier=krc, targeted=False, max_iter=10)
+        params = {'y': random_targets(y_test, krc.nb_classes)}
+        x_test_adv = eda.generate(x_test, **params)
+        self.assertTrue((x_test_adv <= 1.0001).all())
+        self.assertTrue((x_test_adv >= -0.0001).all())
+        target = np.argmax(params['y'], axis=1)
+        y_pred_adv = np.argmax(krc.predict(x_test_adv), axis=1)
+        logger.debug('EDA Target: %s', target)
+        logger.debug('EDA Actual: %s', y_pred_adv)
+        logger.info('EDA Success Rate: %.2f', (sum(target != y_pred_adv) / float(len(target))))
+        self.assertTrue((target != y_pred_adv).any())
+
+        # Third attack
+        eda = ElasticNet(classifier=krc, targeted=False, max_iter=10)
+        params = {}
+        x_test_adv = eda.generate(x_test, **params)
+        self.assertFalse((x_test == x_test_adv).all())
+        self.assertTrue((x_test_adv <= 1.0001).all())
+        self.assertTrue((x_test_adv >= -0.0001).all())
+        y_pred = np.argmax(krc.predict(x_test), axis=1)
+        y_pred_adv = np.argmax(krc.predict(x_test_adv), axis=1)
+        logger.debug('EDA Target: %s', y_pred)
+        logger.debug('EDA Actual: %s', y_pred_adv)
+        logger.info('EDA Success Rate: %.2f', (sum(y_pred != y_pred_adv) / float(len(y_pred))))
+        self.assertTrue((y_pred != y_pred_adv).any())
+
+        # Kill Keras
+        k.clear_session()
+
+
+
+
+
+
 
 
 
