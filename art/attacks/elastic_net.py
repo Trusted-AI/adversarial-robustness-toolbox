@@ -118,6 +118,24 @@ class ElasticNet(Attack):
 
         return loss_gradient
 
+    def _decay_learning_rate(self, global_step, end_learning_rate, decay_steps):
+        """
+        Applies a square-root decay to the learning rate.
+
+        :param global_step: Global step to use for the decay computation.
+        :type global_step: `int`
+        :param end_learning_rate: The minimal end learning rate.
+        :type end_learning_rate: `float`
+        :param decay_steps: Number of decayed steps.
+        :type decay_steps: `int`
+        :return: The decayed learning rate
+        :rtype: `float`
+        """
+        decayed_learning_rate = (self.learning_rate - end_learning_rate) * (1 - global_step / decay_steps)**2 + \
+            end_learning_rate
+
+        return decayed_learning_rate
+
 
 
 
