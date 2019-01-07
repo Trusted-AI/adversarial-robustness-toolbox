@@ -78,7 +78,7 @@ class FastGradientMethod(Attack):
                 current_x = self._apply_perturbation(x[batch_index_1:batch_index_2], perturbation, current_eps)
                 # Update
                 batch[active_indices] = current_x[active_indices]
-                adv_preds = self.classifier.predict(batch)
+                adv_preds = self.predict(batch)
                 # If targeted active check to see whether we have hit the target, otherwise head to anything but
                 if self.targeted:
                     active_indices = np.where(np.argmax(batch_labels, axis=1) != np.argmax(adv_preds, axis=1))[0]
@@ -125,7 +125,7 @@ class FastGradientMethod(Attack):
 
             # Use model predictions as correct outputs
             logger.info('Using model predictions as correct labels for FGM.')
-            y = get_labels_np_array(self.classifier.predict(x))
+            y = get_labels_np_array(self.predict(x))
         else:
             y = params_cpy.pop(str('y'))
         y = y / np.sum(y, axis=1, keepdims=True)
@@ -137,7 +137,7 @@ class FastGradientMethod(Attack):
         else:
             x_adv = self._compute(x, y, self.eps, self.random_init)
 
-        adv_preds = np.argmax(self.classifier.predict(x_adv), axis=1)
+        adv_preds = np.argmax(self.predict(x_adv), axis=1)
         if self.targeted:
             rate = np.sum(adv_preds == np.argmax(y, axis=1)) / x_adv.shape[0]
         else:
@@ -178,7 +178,7 @@ class FastGradientMethod(Attack):
         tol = 10e-8
 
         # Get gradient wrt loss; invert it if attack is targeted
-        grad = self.classifier.loss_gradient(batch, batch_labels) * (1 - 2 * int(self.targeted))
+        grad = self.loss_gradient(batch, batch_labels) * (1 - 2 * int(self.targeted))
 
         # Apply norm bound
         if self.norm == np.inf:

@@ -49,7 +49,7 @@ class DeepFool(Attack):
         assert self.set_params(**kwargs)
         clip_min, clip_max = self.classifier.clip_values
         x_adv = x.copy()
-        preds = self.classifier.predict(x, logits=True)
+        preds = self.predict(x, logits=True)
 
         # Pick a small scalar to avoid division by 0
         tol = 10e-8
@@ -61,7 +61,7 @@ class DeepFool(Attack):
 
             # Main algorithm for each batch
             f = preds[batch_index_1:batch_index_2]
-            grd = self.classifier.class_gradient(batch, logits=True)
+            grd = self.class_gradient(batch, logits=True)
             fk_hat = np.argmax(f, axis=1)
 
             # Get current predictions
@@ -84,8 +84,8 @@ class DeepFool(Attack):
                 batch[active_indices] = np.clip(batch[active_indices] + r[active_indices], clip_min, clip_max)
 
                 # Recompute prediction for new x
-                f = self.classifier.predict(batch, logits=True)
-                grd = self.classifier.class_gradient(batch, logits=True)
+                f = self.predict(batch, logits=True)
+                grd = self.class_gradient(batch, logits=True)
                 fk_i_hat = np.argmax(f, axis=1)
 
                 # Stop if misclassification has been achieved
@@ -96,7 +96,7 @@ class DeepFool(Attack):
                 1 + self.epsilon) * (batch - x_adv[batch_index_1:batch_index_2]), clip_min, clip_max)
 
         preds = np.argmax(preds, axis=1)
-        preds_adv = np.argmax(self.classifier.predict(x_adv), axis=1)
+        preds_adv = np.argmax(self.predict(x_adv), axis=1)
         logger.info('Success rate of DeepFool attack: %.2f%%', (np.sum(preds != preds_adv) / x.shape[0]))
 
         return x_adv

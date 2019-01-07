@@ -56,7 +56,7 @@ class VirtualAdversarialMethod(Attack):
 
         x_adv = np.copy(x)
         dims = list(x.shape[1:])
-        preds = self.classifier.predict(x_adv, logits=False)
+        preds = self.predict(x_adv, logits=False)
         tol = 1e-10
 
         for ind, val in enumerate(x_adv):
@@ -64,7 +64,7 @@ class VirtualAdversarialMethod(Attack):
 
             for _ in range(self.max_iter):
                 d = self._normalize(d)
-                preds_new = self.classifier.predict((val + d)[None, ...], logits=False)
+                preds_new = self.predict((val + d)[None, ...], logits=False)
 
                 from scipy.stats import entropy
                 kl_div1 = entropy(preds[ind], preds_new[0])
@@ -74,7 +74,7 @@ class VirtualAdversarialMethod(Attack):
                 array_iter = np.nditer(d, op_flags=['readwrite'], flags=['multi_index'])
                 for x in array_iter:
                     x[...] += self.finite_diff
-                    preds_new = self.classifier.predict((val + d)[None, ...], logits=False)
+                    preds_new = self.predict((val + d)[None, ...], logits=False)
                     kl_div2 = entropy(preds[ind], preds_new[0])
                     d_new[array_iter.multi_index] = (kl_div2 - kl_div1) / (self.finite_diff + tol)
                     x[...] -= self.finite_diff

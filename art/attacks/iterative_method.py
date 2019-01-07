@@ -79,7 +79,7 @@ class BasicIterativeMethod(FastGradientMethod):
                 raise ValueError('Target labels `y` need to be provided for a targeted attack.')
 
             # Use model predictions as correct outputs
-            targets = get_labels_np_array(self.classifier.predict(x))
+            targets = get_labels_np_array(self.predict(x))
         else:
             targets = kwargs['y']
         target_labels = np.argmax(targets, axis=1)
@@ -92,7 +92,7 @@ class BasicIterativeMethod(FastGradientMethod):
                 noise = projection(adv_x - x, self.eps, self.norm)
                 adv_x = x + noise
 
-        adv_preds = np.argmax(self.classifier.predict(adv_x), axis=1)
+        adv_preds = np.argmax(self.predict(adv_x), axis=1)
         if self.targeted:
             rate = np.sum(adv_preds == target_labels) / adv_x.shape[0]
         else:
