@@ -5,10 +5,12 @@ import unittest
 
 import keras
 import keras.backend as k
+import tensorflow as tf
 import numpy as np
 from keras.layers import Dense, Flatten, Conv2D, MaxPooling2D
 from keras.models import Sequential
 
+from art.classifiers import KerasClassifier
 from art.attacks import FastGradientMethod, ExpectationOverTransformations
 from art.utils import load_mnist, random_targets, master_seed
 
@@ -79,7 +81,7 @@ class TestExpectationOverTransformations(unittest.TestCase):
                                            targeted=True)
         x_test_adv_with_eot = fgsm_with_eot.generate(x_test, **params)
 
-        self.assertTrue(np.abs(x_test_adv - x_test_adv_with_eot) < 0.001)
+        self.assertTrue((np.abs(x_test_adv - x_test_adv_with_eot) < 0.001).all())
 
 
 if __name__ == '__main__':

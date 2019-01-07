@@ -25,11 +25,14 @@ class UniversalPerturbation(Attack):
                     }
     attack_params = Attack.attack_params + ['attacker', 'attacker_params', 'delta', 'max_iter', 'eps', 'norm']
 
-    def __init__(self, classifier, attacker='deepfool', attacker_params=None, delta=0.2, max_iter=20, eps=10.0,
-                 norm=np.inf):
+    def __init__(self, classifier, expectation_over_transformations=None, attacker='deepfool', attacker_params=None,
+                 delta=0.2, max_iter=20, eps=10.0, norm=np.inf):
         """
         :param classifier: A trained model.
         :type classifier: :class:`Classifier`
+        :param expectation_over_transformations: An expectation over transformations to be applied when computing 
+                                                 classifier gradients.
+        :type expectation_over_transformations: :class:`ExpectationOverTransformations`
         :param attacker: Adversarial attack name. Default is 'deepfool'. Supported names: 'carlini', 'deepfool', 'fgsm',
                 'newtonfool', 'jsma', 'vat'.
         :type attacker: `str`

@@ -16,12 +16,15 @@ class DeepFool(Attack):
     """
     attack_params = Attack.attack_params + ['max_iter', 'epsilon', 'batch_size']
 
-    def __init__(self, classifier, max_iter=100, epsilon=1e-6, batch_size=128):
+    def __init__(self, classifier, expectation_over_transformations=None, max_iter=100, epsilon=1e-6, batch_size=128):
         """
         Create a DeepFool attack instance.
 
         :param classifier: A trained model.
         :type classifier: :class:`Classifier`
+        :param expectation_over_transformations: An expectation over transformations to be applied when computing 
+                                                 classifier gradients.
+        :type expectation_over_transformations: :class:`ExpectationOverTransformations`
         :param max_iter: The maximum number of iterations.
         :type max_iter: `int`
         :param epsilon: Overshoot parameter.

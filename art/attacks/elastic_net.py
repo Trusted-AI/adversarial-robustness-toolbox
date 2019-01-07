@@ -18,13 +18,17 @@ class ElasticNet(Attack):
     attack_params = Attack.attack_params + ['confidence', 'targeted', 'learning_rate', 'max_iter', 'beta',
                                             'binary_search_steps', 'initial_const', 'batch_size', 'decision_rule']
 
-    def __init__(self, classifier, confidence=0.0, targeted=True, learning_rate=1e-2, binary_search_steps=9,
-                 max_iter=10000, beta=1e-3, initial_const=1e-3, batch_size=128, decision_rule='EN'):
+    def __init__(self, classifier, expectation_over_transformations=None, confidence=0.0, targeted=True, 
+                 learning_rate=1e-2, binary_search_steps=9, max_iter=10000, beta=1e-3, initial_const=1e-3, 
+                 batch_size=128, decision_rule='EN'):
         """
         Create an ElasticNet attack instance.
 
         :param classifier: A trained model.
         :type classifier: :class:`Classifier`
+        :param expectation_over_transformations: An expectation over transformations to be applied when computing 
+                                                 classifier gradients.
+        :type expectation_over_transformations: :class:`ExpectationOverTransformations`
         :param confidence: Confidence of adversarial examples: a higher value produces examples that are farther
         away, from the original input, but classified with higher confidence as the target class.
         :type confidence: `float`

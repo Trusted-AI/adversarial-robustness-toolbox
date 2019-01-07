@@ -16,12 +16,15 @@ class VirtualAdversarialMethod(Attack):
     """
     attack_params = Attack.attack_params + ['eps', 'finite_diff', 'max_iter']
 
-    def __init__(self, classifier, max_iter=1, finite_diff=1e-6, eps=.1):
+    def __init__(self, classifier, expectation_over_transformations=None, max_iter=1, finite_diff=1e-6, eps=.1):
         """
         Create a VirtualAdversarialMethod instance.
 
         :param classifier: A trained model.
         :type classifier: :class:`Classifier`
+        :param expectation_over_transformations: An expectation over transformations to be applied when computing 
+                                                 classifier gradients.
+        :type expectation_over_transformations: :class:`ExpectationOverTransformations`
         :param eps: Attack step (max input variation).
         :type eps: `float`
         :param finite_diff: The finite difference parameter.

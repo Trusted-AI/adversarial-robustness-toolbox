@@ -18,14 +18,17 @@ class MarginAttack(Attack):
                                             'offset', 'metric', 'targeted', 'num_scan_classes', 'restore_lr', 
                                             'project_lr_init', 'project_lr_ratio', 'nu', 'verbose']
     
-    def __init__(self, classifier,  max_iter=200, target_scan_iters=20, final_restore_iters=20,
-                 offset=-0.1, metric='L2', targeted=False, num_scan_classes=None, 
+    def __init__(self, classifier,  expectation_over_transformations=None, max_iter=200, target_scan_iters=20, 
+                 final_restore_iters=20, offset=-0.1, metric='L2', targeted=False, num_scan_classes=None, 
                  restore_lr=None, project_lr_init=1.0, project_lr_ratio=0.1, nu=None, verbose=False):
         """
         Create a MarginAttack instance.
 
         :param classifier: A trained model.
         :type classifier: :class:`Classifier`
+        :param expectation_over_transformations: An expectation over transformations to be applied when computing 
+                                                 classifier gradients.
+        :type expectation_over_transformations: :class:`ExpectationOverTransformations`
         :param max_iter: The maximum number of iterations.
         :type max_iter: `int`
         :param target_scan_iters: The number of iterations where restoration move scans candidate adversarial classes

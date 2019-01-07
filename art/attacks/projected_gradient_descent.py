@@ -19,12 +19,16 @@ class ProjectedGradientDescent(BasicIterativeMethod):
     """
     attack_params = BasicIterativeMethod.attack_params
 
-    def __init__(self, classifier, norm=np.inf, eps=.3, eps_step=0.1, max_iter=20, targeted=False, random_init=False):
+    def __init__(self, classifier, expectation_over_transformations=None, norm=np.inf, eps=.3, eps_step=0.1, 
+                 max_iter=20, targeted=False, random_init=False):
         """
         Create a :class:`ProjectedGradientDescent` instance.
 
         :param classifier: A trained model.
         :type classifier: :class:`Classifier`
+        :param expectation_over_transformations: An expectation over transformations to be applied when computing 
+                                                 classifier gradients.
+        :type expectation_over_transformations: :class:`ExpectationOverTransformations`
         :param norm: Order of the norm. Possible values: np.inf, 1 or 2.
         :type norm: `int`
         :param eps: Maximum perturbation that the attacker can introduce.

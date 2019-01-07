@@ -17,12 +17,15 @@ class SaliencyMapMethod(Attack):
     attack_params = Attack.attack_params + ['theta', 'gamma']
 
     # TODO Add parameter logits?
-    def __init__(self, classifier, theta=0.1, gamma=1.):
+    def __init__(self, classifier, expectation_over_transformations=None, theta=0.1, gamma=1.):
         """
         Create a SaliencyMapMethod instance.
 
         :param classifier: A trained model.
         :type classifier: :class:`Classifier`
+        :param expectation_over_transformations: An expectation over transformations to be applied when computing 
+                                                 classifier gradients.
+        :type expectation_over_transformations: :class:`ExpectationOverTransformations`
         :param theta: Perturbation introduced to each modified feature per step (can be positive or negative).
         :type theta: `float`
         :param gamma: Maximum percentage of perturbed features (between 0 and 1).

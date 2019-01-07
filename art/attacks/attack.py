@@ -3,7 +3,7 @@ from __future__ import absolute_import, division, print_function, unicode_litera
 import abc
 import sys
 
-from expectation_over_transformations import ExpectationOverTransformations
+from art.attacks.expectation_over_transformations import ExpectationOverTransformations
 
 
 # Ensure compatibility with Python 2 and 3 when using ABCMeta
@@ -43,7 +43,7 @@ class Attack(ABC):
         :return: Array of predictions of shape `(nb_inputs, self.nb_classes)`.
         :rtype: `np.ndarray`
         """
-        if expectation_over_transformations is None:
+        if self.expectation_over_transformations is None:
             return self.classifier.predict(x,logits,batch_size)
         else:
             return self.expectation_over_transformations.loss_gradient(self.classifier,x,logits,batch_size)
@@ -59,7 +59,7 @@ class Attack(ABC):
         :return: Array of gradients of the same shape as `x`.
         :rtype: `np.ndarray`
         """
-        if expectation_over_transformations is None:
+        if self.expectation_over_transformations is None:
             return self.classifier.loss_gradient(x,y)
         else:
             return self.expectation_over_transformations.loss_gradient(self.classifier,x,y)
@@ -82,7 +82,7 @@ class Attack(ABC):
                  `(batch_size, 1, input_shape)` when `label` parameter is specified.
         :rtype: `np.ndarray`
         """
-        if expectation_over_transformations is None:
+        if self.expectation_over_transformations is None:
             return self.classifier.class_gradient(x,label,logits)
         else:
             return self.expectation_over_transformations.class_gradient(self.classifier,x,label,logits)

@@ -18,12 +18,16 @@ class FastGradientMethod(Attack):
     """
     attack_params = Attack.attack_params + ['norm', 'eps', 'targeted', 'random_init', 'batch_size']
 
-    def __init__(self, classifier, norm=np.inf, eps=.3, targeted=False, random_init=False, batch_size=128):
+    def __init__(self, classifier, expectation_over_transformations=None, norm=np.inf, eps=.3, targeted=False, 
+                 random_init=False, batch_size=128):
         """
         Create a :class:`FastGradientMethod` instance.
 
         :param classifier: A trained model.
         :type classifier: :class:`Classifier`
+        :param expectation_over_transformations: An expectation over transformations to be applied when computing 
+                                                 classifier gradients.
+        :type expectation_over_transformations: :class:`ExpectationOverTransformations`
         :param norm: Order of the norm. Possible values: np.inf, 1 or 2.
         :type norm: `int`
         :param eps: Attack step size (input variation)
