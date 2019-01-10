@@ -184,7 +184,7 @@ class ElasticNet(Attack):
         else:
             preds = np.argmax(self.classifier.predict(x), axis=1)
             rate = np.sum(adv_preds != preds) / x_adv.shape[0]
-        logger.info('Success rate of EAD attack: %.2f%%', 100*rate)
+        logger.info('Success rate of EAD attack: %.2f%%', 100 * rate)
 
         return x_adv
 
@@ -390,8 +390,3 @@ class ElasticNet(Attack):
             raise ValueError("The decision rule only supports `EN`, `L1`, `L2`.")
 
         return True
-
-
-
-
-
