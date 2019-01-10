@@ -13,7 +13,7 @@ import torch.optim as optim
 from keras.layers import Dense, Flatten, Conv2D, MaxPooling2D
 from keras.models import Sequential
 
-from art.attacks.marginattack import MarginAttack
+from art.attacks.margin_attack import MarginAttack
 from art.classifiers import KerasClassifier, PyTorchClassifier, TFClassifier
 from art.utils import load_mnist, get_labels_np_array, master_seed
 
