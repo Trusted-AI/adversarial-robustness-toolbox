@@ -30,6 +30,8 @@ class BasicIterativeMethod(FastGradientMethod):
         :type eps: `float`
         :param eps_step: Attack step size (input variation) at each iteration.
         :type eps_step: `float`
+        :param max_iter: The maximum number of iterations.
+        :type max_iter: `int`
         :param targeted: Should the attack target one specific class
         :type targeted: `bool`
         :param random_init: Whether to start at the original input or a random point within the epsilon ball
