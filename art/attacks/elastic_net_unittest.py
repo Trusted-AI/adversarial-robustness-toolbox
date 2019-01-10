@@ -56,7 +56,7 @@ class TestElasticNet(unittest.TestCase):
 
     def test_failure_attack(self):
         """
-        Test the corner case when attack is failed.
+        Test the corner case when attack fails.
         :return:
         """
         # Build a TFClassifier
@@ -136,7 +136,7 @@ class TestElasticNet(unittest.TestCase):
         tfc.fit(x_train, y_train, batch_size=BATCH_SIZE, nb_epochs=10)
 
         # First attack
-        ead = ElasticNet(classifier=tfc, targeted=True, max_iter=10)
+        ead = ElasticNet(classifier=tfc, targeted=True, max_iter=2)
         params = {'y': random_targets(y_test, tfc.nb_classes)}
         x_test_adv = ead.generate(x_test, **params)
         self.assertFalse((x_test == x_test_adv).all())
@@ -150,7 +150,7 @@ class TestElasticNet(unittest.TestCase):
         self.assertTrue((target == y_pred_adv).any())
 
         # Second attack
-        ead = ElasticNet(classifier=tfc, targeted=False, max_iter=10)
+        ead = ElasticNet(classifier=tfc, targeted=False, max_iter=2)
         params = {'y': random_targets(y_test, tfc.nb_classes)}
         x_test_adv = ead.generate(x_test, **params)
         self.assertTrue((x_test_adv <= 1.0001).all())
@@ -163,7 +163,7 @@ class TestElasticNet(unittest.TestCase):
         self.assertTrue((target != y_pred_adv).any())
 
         # Third attack
-        ead = ElasticNet(classifier=tfc, targeted=False, max_iter=10)
+        ead = ElasticNet(classifier=tfc, targeted=False, max_iter=2)
         params = {}
         x_test_adv = ead.generate(x_test, **params)
         self.assertFalse((x_test == x_test_adv).all())
@@ -177,7 +177,7 @@ class TestElasticNet(unittest.TestCase):
         self.assertTrue((y_pred != y_pred_adv).any())
 
         # First attack without batching
-        ead_wob = ElasticNet(classifier=tfc, targeted=True, max_iter=10, batch_size=1)
+        ead_wob = ElasticNet(classifier=tfc, targeted=True, max_iter=2, batch_size=1)
         params = {'y': random_targets(y_test, tfc.nb_classes)}
         x_test_adv = ead_wob.generate(x_test, **params)
         self.assertFalse((x_test == x_test_adv).all())
@@ -191,7 +191,7 @@ class TestElasticNet(unittest.TestCase):
         self.assertTrue((target == y_pred_adv).any())
 
         # Second attack without batching
-        ead_wob = ElasticNet(classifier=tfc, targeted=False, max_iter=10, batch_size=1)
+        ead_wob = ElasticNet(classifier=tfc, targeted=False, max_iter=2, batch_size=1)
         params = {'y': random_targets(y_test, tfc.nb_classes)}
         x_test_adv = ead_wob.generate(x_test, **params)
         self.assertTrue((x_test_adv <= 1.0001).all())
@@ -234,7 +234,7 @@ class TestElasticNet(unittest.TestCase):
         krc.fit(x_train, y_train, batch_size=BATCH_SIZE, nb_epochs=10)
 
         # First attack
-        ead = ElasticNet(classifier=krc, targeted=True, max_iter=10)
+        ead = ElasticNet(classifier=krc, targeted=True, max_iter=2)
         params = {'y': random_targets(y_test, krc.nb_classes)}
         x_test_adv = ead.generate(x_test, **params)
         self.assertFalse((x_test == x_test_adv).all())
@@ -248,7 +248,7 @@ class TestElasticNet(unittest.TestCase):
         self.assertTrue((target == y_pred_adv).any())
 
         # Second attack
-        ead = ElasticNet(classifier=krc, targeted=False, max_iter=10)
+        ead = ElasticNet(classifier=krc, targeted=False, max_iter=2)
         params = {'y': random_targets(y_test, krc.nb_classes)}
         x_test_adv = ead.generate(x_test, **params)
         self.assertTrue((x_test_adv <= 1.0001).all())
@@ -285,7 +285,7 @@ class TestElasticNet(unittest.TestCase):
         ptc.fit(x_train, y_train, batch_size=BATCH_SIZE, nb_epochs=10)
 
         # First attack
-        ead = ElasticNet(classifier=ptc, targeted=True, max_iter=10)
+        ead = ElasticNet(classifier=ptc, targeted=True, max_iter=2)
         params = {'y': random_targets(y_test, ptc.nb_classes)}
         x_test_adv = ead.generate(x_test, **params)
         self.assertFalse((x_test == x_test_adv).all())
@@ -296,7 +296,7 @@ class TestElasticNet(unittest.TestCase):
         self.assertTrue((target == y_pred_adv).any())
 
         # Second attack
-        ead = ElasticNet(classifier=ptc, targeted=False, max_iter=10)
+        ead = ElasticNet(classifier=ptc, targeted=False, max_iter=2)
         params = {'y': random_targets(y_test, ptc.nb_classes)}
         x_test_adv = ead.generate(x_test, **params)
         self.assertTrue((x_test_adv <= 1.0001).all())
