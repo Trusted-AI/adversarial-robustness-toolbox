@@ -439,12 +439,15 @@ class MarginAttack(Attack):
         :return: the solution of the constrained optimization problem
         :rtype: `np.ndarray`
         """
+        # Avoid division by 0
+        tol = 1e-10
+
         # dimension information
         ndim = x0.ndim
         x_mask = np.zeros(x0.shape)  # 1 - hit upper bound, -1 - hit lower ound, 0 - neither
 
         # reshape b
-        if b == 0:
+        if (b == 0).all():
             b = np.array([0]).reshape((-1,) + (1,) * (ndim-1))
         else:
             b = b.reshape((-1,) + (1,) * (ndim-1))
@@ -459,7 +462,7 @@ class MarginAttack(Attack):
         for it in range(num_iters):
             # compute the tentative solution
             if x1 is None:
-                x_tent = x0 + s * b / np.sum(c_grad * s, axis=tuple(range(1, ndim)), keepdims=True)
+                x_tent = x0 + s * b / (np.sum(c_grad * s, axis=tuple(range(1, ndim)), keepdims=True) + tol)
             else:
                 x_tent = x0 + s * (np.sum(c_grad * (x1 - x0), axis=tuple(range(1, ndim)), keepdims=True) + b) / \
                                   np.sum(c_grad * s, axis=tuple(range(1, ndim)), keepdims=True)
