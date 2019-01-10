@@ -3,6 +3,7 @@ from __future__ import absolute_import, division, print_function, unicode_litera
 import logging
 
 import numpy as np
+import six
 
 from art import NUMPY_DTYPE
 from art.attacks.attack import Attack
@@ -386,7 +387,7 @@ class ElasticNet(Attack):
         if type(self.batch_size) is not int or self.batch_size < 1:
             raise ValueError("The batch size must be an integer greater than zero.")
 
-        if type(self.decision_rule) is not str or self.decision_rule not in ['EN', 'L1', 'L2']:
+        if not isinstance(self.decision_rule, six.string_types) or self.decision_rule not in ['EN', 'L1', 'L2']:
             raise ValueError("The decision rule only supports `EN`, `L1`, `L2`.")
 
         return True
