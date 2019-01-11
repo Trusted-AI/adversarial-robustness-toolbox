@@ -19,6 +19,7 @@ class Classifier(ABC):
     def __init__(self, clip_values, channel_index, defences=None, preprocessing=(0, 1)):
         """
         Initialize a `Classifier` object.
+
         :param clip_values: Tuple of the form `(min, max)` representing the minimum and maximum values allowed
                for features.
         :type clip_values: `tuple`

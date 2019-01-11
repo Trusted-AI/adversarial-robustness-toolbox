@@ -13,7 +13,7 @@ import torch.optim as optim
 from keras.layers import Dense, Flatten, Conv2D, MaxPooling2D
 from keras.models import Sequential
 
-from art.attacks.marginattack import MarginAttack
+from art.attacks.margin_attack import MarginAttack
 from art.classifiers import KerasClassifier, PyTorchClassifier, TFClassifier
 from art.utils import load_mnist, get_labels_np_array, master_seed
 
@@ -108,24 +108,15 @@ class TestMarginAttack(unittest.TestCase):
 
     def _test_backend_mnist(self, classifier):
         # Get MNIST
-        (x_train, y_train), (x_test, y_test) = self.mnist
+        (_, _), (x_test, y_test) = self.mnist
 
         # Test MarginAttack
-        attack = MarginAttack(classifier, max_iter=200, metric='L2')
+        attack = MarginAttack(classifier, max_iter=20, metric='L2')
         x_test_adv = attack.generate(x_test, y=y_test)
-        x_train_adv = attack.generate(x_train, y=y_train)
-
-        self.assertFalse((x_train == x_train_adv).all())
         self.assertFalse((x_test == x_test_adv).all())
 
-        train_y_pred = get_labels_np_array(classifier.predict(x_train_adv))
         test_y_pred = get_labels_np_array(classifier.predict(x_test_adv))
-
-        self.assertFalse((y_train == train_y_pred).all())
         self.assertFalse((y_test == test_y_pred).all())
-
-        acc = np.sum(np.argmax(train_y_pred, axis=1) == np.argmax(y_train, axis=1)) / y_train.shape[0]
-        logger.info('Accuracy on adversarial train examples: %.2f%%', (acc * 100))
 
         acc = np.sum(np.argmax(test_y_pred, axis=1) == np.argmax(y_test, axis=1)) / y_test.shape[0]
         logger.info('Accuracy on adversarial test examples: %.2f%%', (acc * 100))

@@ -12,14 +12,14 @@ logger = logging.getLogger(__name__)
 
 class BasicIterativeMethod(FastGradientMethod):
     """
-    The Basic Iterative Method is the iterative version of FGM and FGSM. If target labels are not specified, the
-    attack aims for the least likely class (the prediction with the lowest score) for each input.
+    The Basic Iterative Method is the iterative version of FGM and FGSM.
     Paper link: https://arxiv.org/abs/1607.02533
     """
-    attack_params = FastGradientMethod.attack_params + ['eps_step', 'max_iter']
+    attack_params = FastGradientMethod.attack_params + ['eps_step', 'max_iter', 'batch_size']
+
 
     def __init__(self, classifier, expectation_over_transformations=None, norm=np.inf, eps=.3, eps_step=0.1, 
-                 max_iter=20, targeted=False, random_init=False):
+                 max_iter=20, targeted=False, random_init=False, batch_size=128):
         """
         Create a :class:`BasicIterativeMethod` instance.
 
@@ -34,13 +34,17 @@ class BasicIterativeMethod(FastGradientMethod):
         :type eps: `float`
         :param eps_step: Attack step size (input variation) at each iteration.
         :type eps_step: `float`
+        :param max_iter: The maximum number of iterations.
+        :type max_iter: `int`
         :param targeted: Should the attack target one specific class
         :type targeted: `bool`
         :param random_init: Whether to start at the original input or a random point within the epsilon ball
         :type random_init: `bool`
+        :param batch_size: Batch size
+        :type batch_size: `int`
         """
         super(BasicIterativeMethod, self).__init__(classifier, norm=norm, eps=eps, targeted=targeted,
-                                                   random_init=random_init)
+                                                   random_init=random_init, batch_size=batch_size)
 
         if eps_step > eps:
             raise ValueError('The iteration step `eps_step` has to be smaller than the total attack `eps`.')
@@ -69,6 +73,10 @@ class BasicIterativeMethod(FastGradientMethod):
                   "label leaking" effect (explained in this paper: https://arxiv.org/abs/1611.01236). Default is `None`.
                   Labels should be one-hot-encoded.
         :type y: `np.ndarray`
+        :param random_init: Whether to start at the original input or a random point within the epsilon ball
+        :type random_init: `bool`
+        :param batch_size: Batch size
+        :type batch_size: `int`
         :return: An array holding the adversarial examples.
         :rtype: `np.ndarray`
         """
@@ -115,6 +123,10 @@ class BasicIterativeMethod(FastGradientMethod):
         :type eps: `float`
         :param eps_step: Attack step size (input variation) at each iteration.
         :type eps_step: `float`
+        :param random_init: Whether to start at the original input or a random point within the epsilon ball
+        :type random_init: `bool`
+        :param batch_size: Batch size
+        :type batch_size: `int`
         """
         # Save attack-specific parameters
         super(BasicIterativeMethod, self).set_params(**kwargs)
