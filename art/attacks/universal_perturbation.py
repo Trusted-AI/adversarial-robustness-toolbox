@@ -35,8 +35,8 @@ class UniversalPerturbation(Attack):
         """
         :param classifier: A trained model.
         :type classifier: :class:`Classifier`
-        :param attacker: Adversarial attack name. Default is 'deepfool'. Supported names: 'carlini', 'deepfool',
-                'fgsm', 'bim', 'pgd', 'margin', 'ead', 'newtonfool', 'jsma', 'vat'.
+        :param attacker: Adversarial attack name. Default is 'deepfool'. Supported names: 'carlini', 'carlini_inf',
+                         'deepfool', 'fgsm', 'bim', 'pgd', 'margin', 'ead', 'newtonfool', 'jsma', 'vat'.
         :type attacker: `str`
         :param attacker_params: Parameters specific to the adversarial attack.
         :type attacker_params: `dict`
