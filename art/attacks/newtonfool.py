@@ -16,24 +16,24 @@ class NewtonFool(Attack):
     """
     attack_params = Attack.attack_params + ["max_iter", "eta", "batch_size"]
 
-    def __init__(self, classifier, expectation_over_transformations=None, max_iter=1000, eta=0.01, batch_size=128):
+    def __init__(self, classifier, max_iter=1000, eta=0.01, batch_size=128, expectation=None):
         """
         Create a NewtonFool attack instance.
 
         :param classifier: A trained model.
         :type classifier: :class:`Classifier`
-        :param expectation_over_transformations: An expectation over transformations to be applied when computing 
-                                                 classifier gradients.
-        :type expectation_over_transformations: :class:`ExpectationOverTransformations`
         :param max_iter: The maximum number of iterations.
         :type max_iter: `int`
         :param eta: The eta coefficient.
         :type eta: `float`
         :param batch_size: Batch size
         :type batch_size: `int`
+        :param expectation: An expectation over transformations to be applied when computing
+                            classifier gradients and predictions.
+        :type expectation: :class:`ExpectationOverTransformations`
         """
         super(NewtonFool, self).__init__(classifier)
-        params = {"max_iter": max_iter, "eta": eta, "batch_size": batch_size}
+        params = {"max_iter": max_iter, "eta": eta, "batch_size": batch_size, "expectation": expectation}
         self.set_params(**params)
 
     def generate(self, x, **kwargs):
@@ -52,7 +52,7 @@ class NewtonFool(Attack):
 
         # Initialize variables
         clip_min, clip_max = self.classifier.clip_values
-        y_pred = self.predict(x, logits=False)
+        y_pred = self._predict(x, logits=False)
         pred_class = np.argmax(y_pred, axis=1)
 
         # Compute perturbation with implicit batching
@@ -68,10 +68,10 @@ class NewtonFool(Attack):
             # Main loop of the algorithm
             for _ in range(self.max_iter):
                 # Compute score
-                score = self.predict(batch, logits=False)[l_b]
+                score = self._predict(batch, logits=False)[l_b]
 
                 # Compute the gradients and norm
-                grads = self.class_gradient(batch, label=l, logits=False)
+                grads = self._class_gradient(batch, label=l, logits=False)
                 grads = np.squeeze(grads, axis=1)
                 norm_grad = np.linalg.norm(np.reshape(grads, (batch.shape[0], -1)), axis=1)
 
@@ -87,8 +87,8 @@ class NewtonFool(Attack):
             # Apply clip
             x_adv[batch_index_1:batch_index_2] = np.clip(batch, clip_min, clip_max)
 
-        preds = np.argmax(self.predict(x), axis=1)
-        preds_adv = np.argmax(self.predict(x_adv), axis=1)
+        preds = np.argmax(self._predict(x), axis=1)
+        preds_adv = np.argmax(self._predict(x_adv), axis=1)
         logger.info('Success rate of NewtonFool attack: %.2f%%', (np.sum(preds != preds_adv) / x.shape[0]))
 
         return x_adv

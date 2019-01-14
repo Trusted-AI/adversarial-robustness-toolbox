@@ -16,25 +16,25 @@ class VirtualAdversarialMethod(Attack):
     """
     attack_params = Attack.attack_params + ['eps', 'finite_diff', 'max_iter']
 
-    def __init__(self, classifier, expectation_over_transformations=None, max_iter=1, finite_diff=1e-6, eps=.1):
+    def __init__(self, classifier, max_iter=1, finite_diff=1e-6, eps=.1, expectation=None):
         """
         Create a VirtualAdversarialMethod instance.
 
         :param classifier: A trained model.
         :type classifier: :class:`Classifier`
-        :param expectation_over_transformations: An expectation over transformations to be applied when computing 
-                                                 classifier gradients.
-        :type expectation_over_transformations: :class:`ExpectationOverTransformations`
         :param eps: Attack step (max input variation).
         :type eps: `float`
         :param finite_diff: The finite difference parameter.
         :type finite_diff: `float`
         :param max_iter: The maximum number of iterations.
         :type max_iter: `int`
+        :param expectation: An expectation over transformations to be applied when computing
+                            classifier gradients and predictions.
+        :type expectation: :class:`ExpectationOverTransformations`
         """
         super(VirtualAdversarialMethod, self).__init__(classifier)
 
-        kwargs = {'finite_diff': finite_diff, 'eps': eps, 'max_iter': max_iter}
+        kwargs = {'finite_diff': finite_diff, 'eps': eps, 'max_iter': max_iter, 'expectation': expectation}
         self.set_params(**kwargs)
 
     def generate(self, x, **kwargs):
@@ -59,7 +59,7 @@ class VirtualAdversarialMethod(Attack):
 
         x_adv = np.copy(x)
         dims = list(x.shape[1:])
-        preds = self.predict(x_adv, logits=False)
+        preds = self._predict(x_adv, logits=False)
         tol = 1e-10
 
         for ind, val in enumerate(x_adv):
@@ -67,7 +67,7 @@ class VirtualAdversarialMethod(Attack):
 
             for _ in range(self.max_iter):
                 d = self._normalize(d)
-                preds_new = self.predict((val + d)[None, ...], logits=False)
+                preds_new = self._predict((val + d)[None, ...], logits=False)
 
                 from scipy.stats import entropy
                 kl_div1 = entropy(preds[ind], preds_new[0])
@@ -77,7 +77,7 @@ class VirtualAdversarialMethod(Attack):
                 array_iter = np.nditer(d, op_flags=['readwrite'], flags=['multi_index'])
                 for x in array_iter:
                     x[...] += self.finite_diff
-                    preds_new = self.predict((val + d)[None, ...], logits=False)
+                    preds_new = self._predict((val + d)[None, ...], logits=False)
                     kl_div2 = entropy(preds[ind], preds_new[0])
                     d_new[array_iter.multi_index] = (kl_div2 - kl_div1) / (self.finite_diff + tol)
                     x[...] -= self.finite_diff

@@ -17,24 +17,25 @@ class SaliencyMapMethod(Attack):
     attack_params = Attack.attack_params + ['theta', 'gamma']
 
     # TODO Add parameter logits?
-    def __init__(self, classifier, expectation_over_transformations=None, theta=0.1, gamma=1.):
+    def __init__(self, classifier, theta=0.1, gamma=1., expectation=None):
         """
         Create a SaliencyMapMethod instance.
 
         :param classifier: A trained model.
         :type classifier: :class:`Classifier`
-        :param expectation_over_transformations: An expectation over transformations to be applied when computing 
-                                                 classifier gradients.
-        :type expectation_over_transformations: :class:`ExpectationOverTransformations`
         :param theta: Perturbation introduced to each modified feature per step (can be positive or negative).
         :type theta: `float`
         :param gamma: Maximum percentage of perturbed features (between 0 and 1).
         :type gamma: `float`
+        :param expectation: An expectation over transformations to be applied when computing
+                            classifier gradients and predictions.
+        :type expectation: :class:`ExpectationOverTransformations`
         """
         super(SaliencyMapMethod, self).__init__(classifier)
         kwargs = {
             'theta': theta,
-            'gamma': gamma
+            'gamma': gamma,
+            'expectation': expectation
             }
         self.set_params(**kwargs)
 
@@ -61,7 +62,7 @@ class SaliencyMapMethod(Attack):
         dims = [1] + list(x.shape[1:])
         self._nb_features = np.product(dims)
         x_adv = np.reshape(np.copy(x), (-1, self._nb_features))
-        preds = np.argmax(self.predict(x), axis=1)
+        preds = np.argmax(self._predict(x), axis=1)
 
         # Determine target classes for attack
         if 'y' not in kwargs or kwargs[str('y')] is None:
@@ -108,11 +109,11 @@ class SaliencyMapMethod(Attack):
                         search_space.discard(feature_ind)
 
                 # Recompute model prediction
-                current_pred = np.argmax(self.predict(np.reshape(val, dims)), axis=1)
+                current_pred = np.argmax(self._predict(np.reshape(val, dims)), axis=1)
 
         x_adv = np.reshape(x_adv, x.shape)
-        preds = np.argmax(self.predict(x), axis=1)
-        preds_adv = np.argmax(self.predict(x_adv), axis=1)
+        preds = np.argmax(self._predict(x), axis=1)
+        preds_adv = np.argmax(self._predict(x_adv), axis=1)
         logger.info('Success rate of JSMA attack: %.2f%%', (np.sum(preds != preds_adv) / x.shape[0]))
 
         return x_adv
@@ -148,7 +149,7 @@ class SaliencyMapMethod(Attack):
         :return: The top 2 coefficients in `search_space` that maximize / minimize the saliency map
         :rtype: `tuple`
         """
-        grads = self.class_gradient(x, label=target, logits=False)
+        grads = self._class_gradient(x, label=target, logits=False)
         grads = np.reshape(grads, (-1, self._nb_features))[0]
 
         # Remove gradients for already used features
@@ -177,7 +178,7 @@ class SaliencyMapMethod(Attack):
         :return: The top 2 coefficients in `search_space` that maximize / minimize the saliency map
         :rtype: `tuple`
         """
-        grads = self.class_gradient(x, logits=True)
+        grads = self._class_gradient(x, logits=True)
         grads = np.reshape(grads, (-1, self._nb_features))
 
         # Compute grads for target class and sum of gradients for all other classes

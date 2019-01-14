@@ -55,7 +55,7 @@ class TestExpectationOverTransformations(unittest.TestCase):
         model.add(Dense(10, activation='softmax'))
 
         model.compile(loss=keras.losses.categorical_crossentropy, optimizer=keras.optimizers.Adam(lr=0.01),
-                       metrics=['accuracy'])
+                      metrics=['accuracy'])
 
         # Get classifier
         krc = KerasClassifier((0, 1), model, use_logits=False)
@@ -76,9 +76,10 @@ class TestExpectationOverTransformations(unittest.TestCase):
 
         eot = ExpectationOverTransformations(sample_size=1, transformation=transformation)
 
-        fgsm_with_eot = FastGradientMethod(classifier=krc, 
-                                           expectation_over_transformations=eot,
+        fgsm_with_eot = FastGradientMethod(classifier=krc,
+                                           expectation=eot,
                                            targeted=True)
+        self.assertFalse(fgsm_with_eot.expectation is None)
         x_test_adv_with_eot = fgsm_with_eot.generate(x_test, **params)
 
         self.assertTrue((np.abs(x_test_adv - x_test_adv_with_eot) < 0.001).all())

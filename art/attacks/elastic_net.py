@@ -19,17 +19,13 @@ class ElasticNet(Attack):
     attack_params = Attack.attack_params + ['confidence', 'targeted', 'learning_rate', 'max_iter', 'beta',
                                             'binary_search_steps', 'initial_const', 'batch_size', 'decision_rule']
 
-    def __init__(self, classifier, expectation_over_transformations=None, confidence=0.0, targeted=True, 
-                 learning_rate=1e-2, binary_search_steps=9, max_iter=10000, beta=1e-3, initial_const=1e-3, 
-                 batch_size=128, decision_rule='EN'):
+    def __init__(self, classifier, confidence=0.0, targeted=True, learning_rate=1e-2, binary_search_steps=9,
+                 max_iter=10000, beta=1e-3, initial_const=1e-3, batch_size=128, decision_rule='EN', expectation=None):
         """
         Create an ElasticNet attack instance.
 
         :param classifier: A trained model.
         :type classifier: :class:`Classifier`
-        :param expectation_over_transformations: An expectation over transformations to be applied when computing 
-                                                 classifier gradients.
-        :type expectation_over_transformations: :class:`ExpectationOverTransformations`
         :param confidence: Confidence of adversarial examples: a higher value produces examples that are farther
         away, from the original input, but classified with higher confidence as the target class.
         :type confidence: `float`
@@ -52,6 +48,9 @@ class ElasticNet(Attack):
         :type batch_size: `int`
         :param decision_rule: Decision rule. 'EN' means Elastic Net rule, 'L1' means L1 rule, 'L2' means L2 rule.
         :type decision_rule: `string`
+        :param expectation: An expectation over transformations to be applied when computing
+                            classifier gradients and predictions.
+        :type expectation: :class:`ExpectationOverTransformations`
         """
         super(ElasticNet, self).__init__(classifier)
 
@@ -63,7 +62,8 @@ class ElasticNet(Attack):
                   'beta': beta,
                   'initial_const': initial_const,
                   'batch_size': batch_size,
-                  'decision_rule': decision_rule
+                  'decision_rule': decision_rule,
+                  'expectation': expectation
                   }
         assert self.set_params(**kwargs)
 
@@ -81,7 +81,7 @@ class ElasticNet(Attack):
         l1dist = np.sum(np.abs(x - x_adv).reshape(x.shape[0], -1), axis=1)
         l2dist = np.sum(np.square(x - x_adv).reshape(x.shape[0], -1), axis=1)
         endist = self.beta * l1dist + l2dist
-        z = self.predict(np.array(x_adv, dtype=NUMPY_DTYPE), logits=True)
+        z = self._predict(np.array(x_adv, dtype=NUMPY_DTYPE), logits=True)
 
         return np.argmax(z, axis=1), l1dist, l2dist, endist
 
@@ -101,7 +101,7 @@ class ElasticNet(Attack):
         :type target: `np.ndarray`
         """
         # Compute the current logits
-        z = self.predict(np.array(x_adv, dtype=NUMPY_DTYPE), logits=True)
+        z = self._predict(np.array(x_adv, dtype=NUMPY_DTYPE), logits=True)
 
         if self.targeted:
             i_sub = np.argmax(target, axis=1)
@@ -110,8 +110,8 @@ class ElasticNet(Attack):
             i_add = np.argmax(target, axis=1)
             i_sub = np.argmax(z * (1 - target) + (np.min(z, axis=1) - 1)[:, np.newaxis] * target, axis=1)
 
-        loss_gradient = self.class_gradient(x_adv, label=i_add, logits=True)
-        loss_gradient -= self.class_gradient(x_adv, label=i_sub, logits=True)
+        loss_gradient = self._class_gradient(x_adv, label=i_add, logits=True)
+        loss_gradient -= self._class_gradient(x_adv, label=i_sub, logits=True)
         loss_gradient = loss_gradient.reshape(x.shape)
 
         c_mult = c
@@ -167,7 +167,7 @@ class ElasticNet(Attack):
 
         # No labels provided, use model prediction as correct class
         if y is None:
-            y = get_labels_np_array(self.predict(x, logits=False))
+            y = get_labels_np_array(self._predict(x, logits=False))
 
         # Compute adversarial examples with implicit batching
         nb_batches = int(np.ceil(x_adv.shape[0] / float(self.batch_size)))
@@ -183,11 +183,11 @@ class ElasticNet(Attack):
         x_adv = np.clip(x_adv, clip_min, clip_max)
 
         # Compute success rate of the EAD attack
-        adv_preds = np.argmax(self.predict(x_adv), axis=1)
+        adv_preds = np.argmax(self._predict(x_adv), axis=1)
         if self.targeted:
             rate = np.sum(adv_preds == np.argmax(y, axis=1)) / x_adv.shape[0]
         else:
-            preds = np.argmax(self.predict(x), axis=1)
+            preds = np.argmax(self._predict(x), axis=1)
             rate = np.sum(adv_preds != preds) / x_adv.shape[0]
         logger.info('Success rate of EAD attack: %.2f%%', 100 * rate)
 

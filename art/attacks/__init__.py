@@ -1,7 +1,7 @@
 """
 Module providing adversarial attacks under a common interface.
 """
-from art.attacks.attack import Attack
+from art.attacks.attack import Attack, ExpectationOverTransformations
 from art.attacks.carlini import CarliniL2Method, CarliniLInfMethod
 from art.attacks.deepfool import DeepFool
 from art.attacks.margin_attack import MarginAttack
@@ -15,4 +15,3 @@ from art.attacks.virtual_adversarial import VirtualAdversarialMethod
 from art.attacks.model_theft import ModelTheft
 from art.attacks.sampling_model_theft import SamplingModelTheft
 from art.attacks.elastic_net import ElasticNet
-from art.attacks.expectation_over_transformations import ExpectationOverTransformations

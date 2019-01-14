@@ -25,16 +25,13 @@ class UniversalPerturbation(Attack):
                     }
     attack_params = Attack.attack_params + ['attacker', 'attacker_params', 'delta', 'max_iter', 'eps', 'norm']
 
-    def __init__(self, classifier, expectation_over_transformations=None, attacker='deepfool', attacker_params=None,
-                 delta=0.2, max_iter=20, eps=10.0, norm=np.inf):
+    def __init__(self, classifier, attacker='deepfool', attacker_params=None, delta=0.2, max_iter=20, eps=10.0,
+                 norm=np.inf, expectation=None):
         """
         :param classifier: A trained model.
         :type classifier: :class:`Classifier`
-        :param expectation_over_transformations: An expectation over transformations to be applied when computing 
-                                                 classifier gradients.
-        :type expectation_over_transformations: :class:`ExpectationOverTransformations`
-        :param attacker: Adversarial attack name. Default is 'deepfool'. Supported names: 'carlini', 'deepfool', 'fgsm',
-                'newtonfool', 'jsma', 'vat'.
+        :param attacker: Adversarial attack name. Default is 'deepfool'. Supported names: 'carlini', 'deepfool',
+                        'fgsm', 'newtonfool', 'jsma', 'vat'.
         :type attacker: `str`
         :param attacker_params: Parameters specific to the adversarial attack.
         :type attacker_params: `dict`
@@ -46,6 +43,9 @@ class UniversalPerturbation(Attack):
         :type eps: `float`
         :param norm: Order of the norm. Possible values: np.inf, 2 (default is np.inf)
         :type norm: `int`
+        :param expectation: An expectation over transformations to be applied when computing
+                            classifier gradients and predictions.
+        :type expectation: :class:`ExpectationOverTransformations`
         """
         super(UniversalPerturbation, self).__init__(classifier)
         kwargs = {'attacker': attacker,
@@ -53,7 +53,8 @@ class UniversalPerturbation(Attack):
                   'delta': delta,
                   'max_iter': max_iter,
                   'eps': eps,
-                  'norm': norm
+                  'norm': norm,
+                  'expectation': expectation
                   }
         self.set_params(**kwargs)
 
@@ -90,7 +91,7 @@ class UniversalPerturbation(Attack):
 
         # Instantiate the middle attacker and get the predicted labels
         attacker = self._get_attack(self.attacker, self.attacker_params)
-        pred_y = self.predict(x, logits=False)
+        pred_y = self._predict(x, logits=False)
         pred_y_max = np.argmax(pred_y, axis=1)
 
         # Start to generate the adversarial examples
@@ -103,14 +104,14 @@ class UniversalPerturbation(Attack):
             for j, ex in enumerate(x[rnd_idx]):
                 xi = ex[None, ...]
 
-                f_xi = self.predict(xi + v, logits=True)
+                f_xi = self._predict(xi + v, logits=True)
                 fk_i_hat = np.argmax(f_xi[0])
                 fk_hat = np.argmax(pred_y[rnd_idx][j])
 
                 if fk_i_hat == fk_hat:
                     # Compute adversarial perturbation
                     adv_xi = attacker.generate(xi + v)
-                    adv_f_xi = self.predict(adv_xi, logits=True)
+                    adv_f_xi = self._predict(adv_xi, logits=True)
                     adv_fk_i_hat = np.argmax(adv_f_xi[0])
 
                     # If the class has changed, update v
@@ -123,7 +124,7 @@ class UniversalPerturbation(Attack):
 
             # Compute the error rate
             adv_x = x + v
-            adv_y = np.argmax(self.predict(adv_x, logits=False))
+            adv_y = np.argmax(self._predict(adv_x, logits=False))
             fooling_rate = np.sum(pred_y_max != adv_y) / nb_instances
 
         self.fooling_rate = fooling_rate
