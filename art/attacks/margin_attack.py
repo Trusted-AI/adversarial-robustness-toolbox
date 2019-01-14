@@ -20,7 +20,6 @@ class MarginAttack(Attack):
                                             'offset', 'metric', 'targeted', 'num_scan_classes', 'restore_lr',
                                             'project_lr_init', 'project_lr_ratio', 'nu', 'verbose']
 
-
     def __init__(self, classifier, max_iter=200, target_scan_iters=20, final_restore_iters=20, offset=-0.1,
                  metric='L2', targeted=False, num_scan_classes=None, restore_lr=None, project_lr_init=1.0,
                  project_lr_ratio=0.1, nu=None, verbose=False, expectation=None):
@@ -272,7 +271,7 @@ class MarginAttack(Attack):
         # compute the constraint and its gradient
         grd_correct = self._class_gradient(np.array(x0, dtype=NUMPY_DTYPE), label=y, logits=True)
         grd_incorrect = self._class_gradient(np.array(x0, dtype=NUMPY_DTYPE), label=incorrect_class,
-                                                       logits=True)
+                                             logits=True)
 
         f_correct = f[range(self.num_obs), y]
         f_incorrect = f[range(self.num_obs), incorrect_class]
@@ -406,7 +405,7 @@ class MarginAttack(Attack):
         # compute the constraint and its gradient
         grd_correct = self._class_gradient(np.array(x1, dtype=NUMPY_DTYPE), label=y, logits=True)
         grd_incorrect = self._class_gradient(np.array(x1, dtype=NUMPY_DTYPE), label=incorrect_class,
-                                                       logits=True)
+                                             logits=True)
         if self.targeted:
             c_grad = grd_incorrect - grd_correct
         else:

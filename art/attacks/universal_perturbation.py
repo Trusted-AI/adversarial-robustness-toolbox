@@ -121,7 +121,7 @@ class UniversalPerturbation(Attack):
 
                     # If the class has changed, update v
                     if fk_i_hat != adv_fk_i_hat:
-                        #v += adv_xi - xi
+                        # v += adv_xi - xi
                         v = adv_xi - xi
 
                         # Project on L_p ball

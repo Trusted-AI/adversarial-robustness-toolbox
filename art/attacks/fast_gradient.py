@@ -18,7 +18,7 @@ class FastGradientMethod(Attack):
     """
     attack_params = Attack.attack_params + ['norm', 'eps', 'targeted', 'random_init', 'batch_size']
 
-    def __init__(self, classifier, norm=np.inf, eps=.3, targeted=False, random_init=False, batch_size=128, 
+    def __init__(self, classifier, norm=np.inf, eps=.3, targeted=False, random_init=False, batch_size=128,
                  expectation=None):
         """
         Create a :class:`FastGradientMethod` instance.
@@ -35,7 +35,7 @@ class FastGradientMethod(Attack):
         :type random_init: `bool`
         :param batch_size: Batch size
         :type batch_size: `int`
-        :param expectation: An expectation over transformations to be applied when computing 
+        :param expectation: An expectation over transformations to be applied when computing
                             classifier gradients and predictions.
         :type expectation: :class:`ExpectationOverTransformations`
         """

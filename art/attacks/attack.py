@@ -49,7 +49,7 @@ class ExpectationOverTransformations:
         :rtype: `np.ndarray`
         """
         logger.info('Apply Expectation over Transformations.')
-        prediction = classifier.predict(next(self.transformation())(x), logits,batch_size)
+        prediction = classifier.predict(next(self.transformation())(x), logits, batch_size)
         for _ in range(self.sample_size-1):
             prediction += classifier.predict(next(self.transformation())(x), logits, batch_size)
         return prediction/self.sample_size
@@ -100,7 +100,7 @@ class ExpectationOverTransformations:
             class_gradient += classifier.class_gradient(next(self.transformation())(x), label, logits)
         return class_gradient/self.sample_size
 
-        
+
 class Attack(ABC):
     """
     Abstract base class for all attack classes.
@@ -111,7 +111,7 @@ class Attack(ABC):
         """
         :param classifier: A trained model.
         :type classifier: :class:`Classifier`
-        :param expectation: An expectation over transformations to be applied when computing 
+        :param expectation: An expectation over transformations to be applied when computing
                             classifier gradients and predictions.
         :type expectation: :class:`ExpectationOverTransformations`
         """
@@ -132,9 +132,9 @@ class Attack(ABC):
         :rtype: `np.ndarray`
         """
         if self.expectation is None:
-            return self.classifier.predict(x,logits,batch_size)
+            return self.classifier.predict(x, logits, batch_size)
         else:
-            return self.expectation.predict(self.classifier, x, logits,batch_size)
+            return self.expectation.predict(self.classifier, x, logits, batch_size)
 
     def _loss_gradient(self, x, y):
         """

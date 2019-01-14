@@ -51,7 +51,7 @@ class CarliniL2Method(Attack):
         :type max_doubling: `int`
         :param batch_size: Internal size of batches on which adversarial samples are generated.
         :type batch_size: `int`
-        :param expectation: An expectation over transformations to be applied when computing 
+        :param expectation: An expectation over transformations to be applied when computing
                             classifier gradients and predictions.
         :type expectation: :class:`ExpectationOverTransformations`
         """

@@ -148,4 +148,3 @@ class VirtualAdversarialMethod(Attack):
             raise ValueError('The batch size `batch_size` has to be positive.')
 
         return True
-
