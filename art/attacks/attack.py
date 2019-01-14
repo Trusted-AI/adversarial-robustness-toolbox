@@ -127,10 +127,10 @@ class Attack(ABC):
         :return: Array of predictions of shape `(nb_inputs, self.nb_classes)`.
         :rtype: `np.ndarray`
         """
-        if self.expectation_over_transformations is None:
+        if self.expectation is None:
             return self.classifier.predict(x,logits,batch_size)
         else:
-            return self.expectation_over_transformations.loss_gradient(self.classifier, x, logits,batch_size)
+            return self.expectation.loss_gradient(self.classifier, x, logits,batch_size)
 
     def _loss_gradient(self, x, y):
         """
@@ -143,10 +143,10 @@ class Attack(ABC):
         :return: Array of gradients of the same shape as `x`.
         :rtype: `np.ndarray`
         """
-        if self.expectation_over_transformations is None:
+        if self.expectation is None:
             return self.classifier.loss_gradient(x, y)
         else:
-            return self.expectation_over_transformations.loss_gradient(self.classifier, x, y)
+            return self.expectation.loss_gradient(self.classifier, x, y)
 
     def _class_gradient(self, x, label=None, logits=False):
         """
@@ -166,10 +166,10 @@ class Attack(ABC):
                  `(batch_size, 1, input_shape)` when `label` parameter is specified.
         :rtype: `np.ndarray`
         """
-        if self.expectation_over_transformations is None:
+        if self.expectation is None:
             return self.classifier.class_gradient(x, label, logits)
         else:
-            return self.expectation_over_transformations.class_gradient(self.classifier, x, label, logits)
+            return self.expectation.class_gradient(self.classifier, x, label, logits)
 
     def generate(self, x, **kwargs):
         """

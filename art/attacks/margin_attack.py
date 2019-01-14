@@ -118,7 +118,7 @@ class MarginAttack(Attack):
             if self.targeted:
                 raise ValueError('The target class must be specified in y for targeted attacks.')
             else:
-                print('True class label not provided. Using predicted class as label.')
+                logger.info('True class label not provided. Using predicted class as label.')
                 y = np.argmax(self._predict(np.array(x, dtype=NUMPY_DTYPE), logits=True), axis=1)
         else:
             # convert one-hot labeling to one-dim label

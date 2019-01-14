@@ -100,6 +100,8 @@ class NewtonFool(Attack):
         :type max_iter: `int`
         :param eta: The eta coefficient.
         :type eta: `float`
+        :param batch_size: Internal size of batches on which adversarial samples are generated.
+        :type batch_size: `int`
         """
         # Save attack-specific parameters
         super(NewtonFool, self).set_params(**kwargs)
