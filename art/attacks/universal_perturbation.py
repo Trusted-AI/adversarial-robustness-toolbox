@@ -17,6 +17,7 @@ class UniversalPerturbation(Attack):
     future inputs. To this end, it can use any adversarial attack method. Paper link: https://arxiv.org/abs/1610.08401
     """
     attacks_dict = {'carlini': 'art.attacks.carlini.CarliniL2Method',
+                    'carlini_inf': 'art.attacks.carlini.CarliniLInfMethod',
                     'deepfool': 'art.attacks.deepfool.DeepFool',
                     'ead': 'art.attacks.elastic_net.ElasticNet',
                     'fgsm': 'art.attacks.fast_gradient.FastGradientMethod',
