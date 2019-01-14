@@ -17,8 +17,13 @@ class UniversalPerturbation(Attack):
     future inputs. To this end, it can use any adversarial attack method. Paper link: https://arxiv.org/abs/1610.08401
     """
     attacks_dict = {'carlini': 'art.attacks.carlini.CarliniL2Method',
+                    'carlini_inf': 'art.attacks.carlini.CarliniLInfMethod',
                     'deepfool': 'art.attacks.deepfool.DeepFool',
+                    'ead': 'art.attacks.elastic_net.ElasticNet',
                     'fgsm': 'art.attacks.fast_gradient.FastGradientMethod',
+                    'bim': 'art.attacks.iterative_method.BasicIterativeMethod',
+                    'pgd': 'art.attacks.projected_gradient_descent.ProjectedGradientDescent',
+                    'margin': 'art.attacks.margin_attack.MarginAttack',
                     'newtonfool': 'art.attacks.newtonfool.NewtonFool',
                     'jsma': 'art.attacks.saliency_map.SaliencyMapMethod',
                     'vat': 'art.attacks.virtual_adversarial.VirtualAdversarialMethod'
@@ -31,7 +36,7 @@ class UniversalPerturbation(Attack):
         :param classifier: A trained model.
         :type classifier: :class:`Classifier`
         :param attacker: Adversarial attack name. Default is 'deepfool'. Supported names: 'carlini', 'deepfool', 'fgsm',
-                'newtonfool', 'jsma', 'vat'.
+                'bim', 'pgd', 'margin', 'ead', 'newtonfool', 'jsma', 'vat'.
         :type attacker: `str`
         :param attacker_params: Parameters specific to the adversarial attack.
         :type attacker_params: `dict`
