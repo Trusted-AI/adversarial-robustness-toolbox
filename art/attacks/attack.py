@@ -1,7 +1,11 @@
 from __future__ import absolute_import, division, print_function, unicode_literals
 
+import logging
+
 import abc
 import sys
+
+logger = logging.getLogger(__name__)
 
 
 # Ensure compatibility with Python 2 and 3 when using ABCMeta
@@ -45,9 +49,9 @@ class ExpectationOverTransformations:
         :rtype: `np.ndarray`
         """
         logger.info('Apply Expectation over Transformations.')
-        prediction = classifier.predict(self.transformation.next()(x), logits,batch_size)
+        prediction = classifier.predict(next(self.transformation())(x), logits,batch_size)
         for _ in range(self.sample_size-1):
-            prediction += classifier.predict(self.transformation.next()(x), logits, batch_size)
+            prediction += classifier.predict(next(self.transformation())(x), logits, batch_size)
         return prediction/self.sample_size
 
     def loss_gradient(self, classifier, x, y):
@@ -65,9 +69,9 @@ class ExpectationOverTransformations:
         :rtype: `np.ndarray`
         """
         logger.info('Apply Expectation over Transformations.')
-        loss_gradient = classifier.loss_gradient(self.transformation.next()(x), y)
+        loss_gradient = classifier.loss_gradient(next(self.transformation())(x), y)
         for _ in range(self.sample_size-1):
-            loss_gradient += classifier.loss_gradient(self.transformation.next()(x), y)
+            loss_gradient += classifier.loss_gradient(next(self.transformation())(x), y)
         return loss_gradient/self.sample_size
 
     def class_gradient(self, classifier, x, label=None, logits=False):
@@ -91,9 +95,9 @@ class ExpectationOverTransformations:
         :rtype: `np.ndarray`
         """
         logger.info('Apply Expectation over Transformations.')
-        class_gradient = classifier.class_gradient(self.transformation.next()(x), label, logits)
+        class_gradient = classifier.class_gradient(next(self.transformation())(x), label, logits)
         for _ in range(self.sample_size-1):
-            class_gradient += classifier.class_gradient(self.transformation.next()(x), label, logits)
+            class_gradient += classifier.class_gradient(next(self.transformation())(x), label, logits)
         return class_gradient/self.sample_size
 
         
@@ -130,7 +134,7 @@ class Attack(ABC):
         if self.expectation is None:
             return self.classifier.predict(x,logits,batch_size)
         else:
-            return self.expectation.loss_gradient(self.classifier, x, logits,batch_size)
+            return self.expectation.predict(self.classifier, x, logits,batch_size)
 
     def _loss_gradient(self, x, y):
         """
