@@ -109,6 +109,10 @@ class DeepFool(Attack):
 
         :param max_iter: The maximum number of iterations.
         :type max_iter: `int`
+        :param epsilon: Overshoot parameter.
+        :type epsilon: `float`
+        :param batch_size: Internal size of batches on which adversarial samples are generated.
+        :type batch_size: `int`
         """
         # Save attack-specific parameters
         super(DeepFool, self).set_params(**kwargs)
@@ -118,5 +122,8 @@ class DeepFool(Attack):
 
         if self.epsilon < 0:
             raise ValueError("The overshoot parameter must not be negative.")
+
+        if self.batch_size <= 0:
+            raise ValueError('The batch size `batch_size` has to be positive.')
 
         return True
