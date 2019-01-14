@@ -14,10 +14,9 @@ class SaliencyMapMethod(Attack):
     Implementation of the Jacobian-based Saliency Map Attack (Papernot et al. 2016).
     Paper link: https://arxiv.org/pdf/1511.07528.pdf
     """
-    attack_params = Attack.attack_params + ['theta', 'gamma']
+    attack_params = Attack.attack_params + ['theta', 'gamma', 'batch_size']
 
-    # TODO Add parameter logits?
-    def __init__(self, classifier, theta=0.1, gamma=1.):
+    def __init__(self, classifier, theta=0.1, gamma=1., batch_size=128):
         """
         Create a SaliencyMapMethod instance.
 
@@ -27,12 +26,11 @@ class SaliencyMapMethod(Attack):
         :type theta: `float`
         :param gamma: Maximum percentage of perturbed features (between 0 and 1).
         :type gamma: `float`
+        :param batch_size: Batch size
+        :type batch_size: `int`
         """
         super(SaliencyMapMethod, self).__init__(classifier)
-        kwargs = {
-            'theta': theta,
-            'gamma': gamma
-            }
+        kwargs = {'theta': theta, 'gamma': gamma, 'batch_size': batch_size}
         self.set_params(**kwargs)
 
     def generate(self, x, **kwargs):
@@ -47,6 +45,8 @@ class SaliencyMapMethod(Attack):
         :type theta: `float`
         :param gamma: Maximum percentage of perturbed features (between 0 and 1)
         :type gamma: `float`
+        :param batch_size: Batch size
+        :type batch_size: `int`
         :return: An array holding the adversarial examples.
         :rtype: `np.ndarray`
         """
@@ -160,48 +160,3 @@ class SaliencyMapMethod(Attack):
 
         return tuple(ind)
 
-    def _saliency_map_logits(self, x, target, search_space):
-        """
-        Compute the saliency map of `x`. Return the top 2 coefficients in `search_space` that maximize / minimize
-        the saliency map.
-
-        :param x: One input sample
-        :type x: `np.ndarray`
-        :param target: Target class for `x`
-        :type target: `int`
-        :param search_space: The set of valid pairs of feature indices to search
-        :type search_space: `set(tuple)`
-        :return: The top 2 coefficients in `search_space` that maximize / minimize the saliency map
-        :rtype: `tuple`
-        """
-        grads = self.classifier.class_gradient(x, logits=True)
-        grads = np.reshape(grads, (-1, self._nb_features))
-
-        # Compute grads for target class and sum of gradients for all other classes
-        grads_target = grads[target]
-        other_mask = list(range(self.classifier.nb_classes))
-        other_mask.remove(target)
-        grads_others = np.sum(grads[other_mask, :], axis=0)
-
-        # Remove gradients for already used features
-        used_features = list(set(range(self._nb_features)) - search_space)
-        coeff = 2 * int(self.theta > 0) - 1
-        grads_target[used_features] = - np.max(np.abs(grads_target)) * coeff
-        grads_others[used_features] = np.max(np.abs(grads_others)) * coeff
-
-        # Precompute all pairs of sums of gradients and cache
-        sums_target = grads_target.reshape((1, self._nb_features)) + grads_target.reshape((self._nb_features, 1))
-        sums_others = grads_others.reshape((1, self._nb_features)) + grads_others.reshape((self._nb_features, 1))
-
-        if self.theta > 0:
-            mask = (sums_target > 0) & (sums_others < 0)
-        else:
-            mask = (sums_target < 0) & (sums_others > 0)
-        scores = mask * (-sums_target * sums_others)
-        np.fill_diagonal(scores, 0)
-
-        # Choose top 2 features
-        best_pair = np.argmax(scores)
-        ind1, ind2 = best_pair % self._nb_features, best_pair // self._nb_features
-
-        return ind1, ind2
