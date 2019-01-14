@@ -32,7 +32,7 @@ class VirtualAdversarialMethod(Attack):
         :type batch_size: `int`
         """
         super(VirtualAdversarialMethod, self).__init__(classifier)
-        kwargs = {'finite_diff': finite_diff, 'eps': eps, 'max_iter': max_iter}
+        kwargs = {'finite_diff': finite_diff, 'eps': eps, 'max_iter': max_iter, 'batch_size': batch_size}
         self.set_params(**kwargs)
 
     def generate(self, x, **kwargs):
@@ -77,18 +77,18 @@ class VirtualAdversarialMethod(Attack):
                 kl_div1 = entropy(np.transpose(preds[batch_index_1:batch_index_2]), np.transpose(preds_new))
 
                 d_new = np.zeros_like(d)
-                array_iter = np.nditer(d, op_flags=['readwrite'], flags=['multi_index'])
-                for x in array_iter:
-                    x[...] += self.finite_diff
-                    preds_new = self.classifier.predict((val + d)[None, ...], logits=False)
-                    kl_div2 = entropy(preds[ind], preds_new[0])
-                    d_new[array_iter.multi_index] = (kl_div2 - kl_div1) / (self.finite_diff + tol)
-                    x[...] -= self.finite_diff
+                for w in range(d.shape[1]):
+                    for h in range(d.shape[2]):
+                        for c in range(d.shape[3]):
+                            d[:, w, h, c] += self.finite_diff
+                            preds_new = self.classifier.predict(batch + d, logits=False)
+                            kl_div2 = entropy(np.transpose(preds[batch_index_1:batch_index_2]), np.transpose(preds_new))
+                            d_new[:, w, h, c] = (kl_div2 - kl_div1) / (self.finite_diff + tol)
+                            d[:, w, h, c] -= self.finite_diff
                 d = d_new
 
             # Apply perturbation and clip
-            val = np.clip(val + self.eps * self._normalize(d), clip_min, clip_max)
-            x_adv[ind] = val
+            x_adv[batch_index_1:batch_index_2] = np.clip(batch + self.eps * self._normalize(d), clip_min, clip_max)
 
         return x_adv
 
