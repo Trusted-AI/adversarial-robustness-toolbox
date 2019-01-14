@@ -56,7 +56,7 @@ class TestElasticNet(unittest.TestCase):
 
     def test_failure_attack(self):
         """
-        Test the corner case when attack is failed.
+        Test the corner case when attack fails.
         :return:
         """
         # Build a TFClassifier
@@ -89,10 +89,10 @@ class TestElasticNet(unittest.TestCase):
         tfc.fit(x_train, y_train, batch_size=BATCH_SIZE, nb_epochs=10)
 
         # Failure attack
-        eda = ElasticNet(classifier=tfc, targeted=True, max_iter=0, binary_search_steps=0, learning_rate=0,
+        ead = ElasticNet(classifier=tfc, targeted=True, max_iter=0, binary_search_steps=0, learning_rate=0,
                          initial_const=1)
         params = {'y': random_targets(y_test, tfc.nb_classes)}
-        x_test_adv = eda.generate(x_test, **params)
+        x_test_adv = ead.generate(x_test, **params)
         self.assertTrue((x_test_adv <= 1.0001).all())
         self.assertTrue((x_test_adv >= -0.0001).all())
         np.testing.assert_almost_equal(x_test, x_test_adv, 3)
@@ -136,86 +136,72 @@ class TestElasticNet(unittest.TestCase):
         tfc.fit(x_train, y_train, batch_size=BATCH_SIZE, nb_epochs=10)
 
         # First attack
-        eda = ElasticNet(classifier=tfc, targeted=True, max_iter=10)
+        ead = ElasticNet(classifier=tfc, targeted=True, max_iter=2)
         params = {'y': random_targets(y_test, tfc.nb_classes)}
-        x_test_adv = eda.generate(x_test, **params)
+        x_test_adv = ead.generate(x_test, **params)
         self.assertFalse((x_test == x_test_adv).all())
         self.assertTrue((x_test_adv <= 1.0001).all())
         self.assertTrue((x_test_adv >= -0.0001).all())
         target = np.argmax(params['y'], axis=1)
         y_pred_adv = np.argmax(tfc.predict(x_test_adv), axis=1)
-        logger.debug('EDA Target: %s', target)
-        logger.debug('EDA Actual: %s', y_pred_adv)
-        logger.info('EDA Success Rate: %.2f', (sum(target == y_pred_adv) / float(len(target))))
+        logger.debug('EAD Target: %s', target)
+        logger.debug('EAD Actual: %s', y_pred_adv)
+        logger.info('EAD Success Rate: %.2f', (sum(target == y_pred_adv) / float(len(target))))
         self.assertTrue((target == y_pred_adv).any())
 
         # Second attack
-        eda = ElasticNet(classifier=tfc, targeted=False, max_iter=10)
+        ead = ElasticNet(classifier=tfc, targeted=False, max_iter=2)
         params = {'y': random_targets(y_test, tfc.nb_classes)}
-        x_test_adv = eda.generate(x_test, **params)
+        x_test_adv = ead.generate(x_test, **params)
         self.assertTrue((x_test_adv <= 1.0001).all())
         self.assertTrue((x_test_adv >= -0.0001).all())
         target = np.argmax(params['y'], axis=1)
         y_pred_adv = np.argmax(tfc.predict(x_test_adv), axis=1)
-        logger.debug('EDA Target: %s', target)
-        logger.debug('EDA Actual: %s', y_pred_adv)
-        logger.info('EDA Success Rate: %.2f', (sum(target != y_pred_adv) / float(len(target))))
+        logger.debug('EAD Target: %s', target)
+        logger.debug('EAD Actual: %s', y_pred_adv)
+        logger.info('EAD Success Rate: %.2f', (sum(target != y_pred_adv) / float(len(target))))
         self.assertTrue((target != y_pred_adv).any())
 
         # Third attack
-        eda = ElasticNet(classifier=tfc, targeted=False, max_iter=10)
+        ead = ElasticNet(classifier=tfc, targeted=False, max_iter=2)
         params = {}
-        x_test_adv = eda.generate(x_test, **params)
+        x_test_adv = ead.generate(x_test, **params)
         self.assertFalse((x_test == x_test_adv).all())
         self.assertTrue((x_test_adv <= 1.0001).all())
         self.assertTrue((x_test_adv >= -0.0001).all())
         y_pred = np.argmax(tfc.predict(x_test), axis=1)
         y_pred_adv = np.argmax(tfc.predict(x_test_adv), axis=1)
-        logger.debug('EDA Target: %s', y_pred)
-        logger.debug('EDA Actual: %s', y_pred_adv)
-        logger.info('EDA Success Rate: %.2f', (sum(y_pred != y_pred_adv) / float(len(y_pred))))
+        logger.debug('EAD Target: %s', y_pred)
+        logger.debug('EAD Actual: %s', y_pred_adv)
+        logger.info('EAD Success Rate: %.2f', (sum(y_pred != y_pred_adv) / float(len(y_pred))))
         self.assertTrue((y_pred != y_pred_adv).any())
 
         # First attack without batching
-        edawob = ElasticNet(classifier=tfc, targeted=True, max_iter=10, batch_size=1)
+        ead_wob = ElasticNet(classifier=tfc, targeted=True, max_iter=2, batch_size=1)
         params = {'y': random_targets(y_test, tfc.nb_classes)}
-        x_test_adv = edawob.generate(x_test, **params)
+        x_test_adv = ead_wob.generate(x_test, **params)
         self.assertFalse((x_test == x_test_adv).all())
         self.assertTrue((x_test_adv <= 1.0001).all())
         self.assertTrue((x_test_adv >= -0.0001).all())
         target = np.argmax(params['y'], axis=1)
         y_pred_adv = np.argmax(tfc.predict(x_test_adv), axis=1)
-        logger.debug('EDA Target: %s', target)
-        logger.debug('EDA Actual: %s', y_pred_adv)
-        logger.info('EDA Success Rate: %.2f', (sum(target == y_pred_adv) / float(len(target))))
+        logger.debug('EAD Target: %s', target)
+        logger.debug('EAD Actual: %s', y_pred_adv)
+        logger.info('EAD Success Rate: %.2f', (sum(target == y_pred_adv) / float(len(target))))
         self.assertTrue((target == y_pred_adv).any())
 
         # Second attack without batching
-        edawob = ElasticNet(classifier=tfc, targeted=False, max_iter=10, batch_size=1)
+        ead_wob = ElasticNet(classifier=tfc, targeted=False, max_iter=2, batch_size=1)
         params = {'y': random_targets(y_test, tfc.nb_classes)}
-        x_test_adv = edawob.generate(x_test, **params)
+        x_test_adv = ead_wob.generate(x_test, **params)
         self.assertTrue((x_test_adv <= 1.0001).all())
         self.assertTrue((x_test_adv >= -0.0001).all())
         target = np.argmax(params['y'], axis=1)
         y_pred_adv = np.argmax(tfc.predict(x_test_adv), axis=1)
-        logger.debug('EDA Target: %s', target)
-        logger.debug('EDA Actual: %s', y_pred_adv)
-        logger.info('EDA Success Rate: %.2f', (sum(target != y_pred_adv) / float(len(target))))
+        logger.debug('EAD Target: %s', target)
+        logger.debug('EAD Actual: %s', y_pred_adv)
+        logger.info('EAD Success Rate: %.2f', (sum(target != y_pred_adv) / float(len(target))))
         self.assertTrue((target != y_pred_adv).any())
-
-        # Third attack without batching
-        edawob = ElasticNet(classifier=tfc, targeted=False, max_iter=10, batch_size=1)
-        params = {}
-        x_test_adv = edawob.generate(x_test, **params)
-        self.assertFalse((x_test == x_test_adv).all())
-        self.assertTrue((x_test_adv <= 1.0001).all())
-        self.assertTrue((x_test_adv >= -0.0001).all())
-        y_pred = np.argmax(tfc.predict(x_test), axis=1)
-        y_pred_adv = np.argmax(tfc.predict(x_test_adv), axis=1)
-        logger.debug('EDA Target: %s', y_pred)
-        logger.debug('EDA Actual: %s', y_pred_adv)
-        logger.info('EDA Success Rate: %.2f', (sum(y_pred != y_pred_adv) / float(len(y_pred))))
-        self.assertTrue((y_pred != y_pred_adv).any())
 
         # Kill TF
         sess.close()
@@ -248,45 +234,31 @@ class TestElasticNet(unittest.TestCase):
         krc.fit(x_train, y_train, batch_size=BATCH_SIZE, nb_epochs=10)
 
         # First attack
-        eda = ElasticNet(classifier=krc, targeted=True, max_iter=10)
+        ead = ElasticNet(classifier=krc, targeted=True, max_iter=2)
         params = {'y': random_targets(y_test, krc.nb_classes)}
-        x_test_adv = eda.generate(x_test, **params)
+        x_test_adv = ead.generate(x_test, **params)
         self.assertFalse((x_test == x_test_adv).all())
         self.assertTrue((x_test_adv <= 1.0001).all())
         self.assertTrue((x_test_adv >= -0.0001).all())
         target = np.argmax(params['y'], axis=1)
         y_pred_adv = np.argmax(krc.predict(x_test_adv), axis=1)
-        logger.debug('EDA Target: %s', target)
-        logger.debug('EDA Actual: %s', y_pred_adv)
-        logger.info('EDA Success Rate: %.2f', (sum(target == y_pred_adv) / float(len(target))))
+        logger.debug('EAD Target: %s', target)
+        logger.debug('EAD Actual: %s', y_pred_adv)
+        logger.info('EAD Success Rate: %.2f', (sum(target == y_pred_adv) / float(len(target))))
         self.assertTrue((target == y_pred_adv).any())
 
         # Second attack
-        eda = ElasticNet(classifier=krc, targeted=False, max_iter=10)
+        ead = ElasticNet(classifier=krc, targeted=False, max_iter=2)
         params = {'y': random_targets(y_test, krc.nb_classes)}
-        x_test_adv = eda.generate(x_test, **params)
+        x_test_adv = ead.generate(x_test, **params)
         self.assertTrue((x_test_adv <= 1.0001).all())
         self.assertTrue((x_test_adv >= -0.0001).all())
         target = np.argmax(params['y'], axis=1)
         y_pred_adv = np.argmax(krc.predict(x_test_adv), axis=1)
-        logger.debug('EDA Target: %s', target)
-        logger.debug('EDA Actual: %s', y_pred_adv)
-        logger.info('EDA Success Rate: %.2f', (sum(target != y_pred_adv) / float(len(target))))
+        logger.debug('EAD Target: %s', target)
+        logger.debug('EAD Actual: %s', y_pred_adv)
+        logger.info('EAD Success Rate: %.2f', (sum(target != y_pred_adv) / float(len(target))))
         self.assertTrue((target != y_pred_adv).any())
-
-        # Third attack
-        eda = ElasticNet(classifier=krc, targeted=False, max_iter=10)
-        params = {}
-        x_test_adv = eda.generate(x_test, **params)
-        self.assertFalse((x_test == x_test_adv).all())
-        self.assertTrue((x_test_adv <= 1.0001).all())
-        self.assertTrue((x_test_adv >= -0.0001).all())
-        y_pred = np.argmax(krc.predict(x_test), axis=1)
-        y_pred_adv = np.argmax(krc.predict(x_test_adv), axis=1)
-        logger.debug('EDA Target: %s', y_pred)
-        logger.debug('EDA Actual: %s', y_pred_adv)
-        logger.info('EDA Success Rate: %.2f', (sum(y_pred != y_pred_adv) / float(len(y_pred))))
-        self.assertTrue((y_pred != y_pred_adv).any())
 
         # Kill Keras
         k.clear_session()
@@ -313,9 +285,9 @@ class TestElasticNet(unittest.TestCase):
         ptc.fit(x_train, y_train, batch_size=BATCH_SIZE, nb_epochs=10)
 
         # First attack
-        eda = ElasticNet(classifier=ptc, targeted=True, max_iter=10)
+        ead = ElasticNet(classifier=ptc, targeted=True, max_iter=2)
         params = {'y': random_targets(y_test, ptc.nb_classes)}
-        x_test_adv = eda.generate(x_test, **params)
+        x_test_adv = ead.generate(x_test, **params)
         self.assertFalse((x_test == x_test_adv).all())
         self.assertTrue((x_test_adv <= 1.0001).all())
         self.assertTrue((x_test_adv >= -0.0001).all())
@@ -324,32 +296,15 @@ class TestElasticNet(unittest.TestCase):
         self.assertTrue((target == y_pred_adv).any())
 
         # Second attack
-        eda = ElasticNet(classifier=ptc, targeted=False, max_iter=10)
+        ead = ElasticNet(classifier=ptc, targeted=False, max_iter=2)
         params = {'y': random_targets(y_test, ptc.nb_classes)}
-        x_test_adv = eda.generate(x_test, **params)
+        x_test_adv = ead.generate(x_test, **params)
         self.assertTrue((x_test_adv <= 1.0001).all())
         self.assertTrue((x_test_adv >= -0.0001).all())
         target = np.argmax(params['y'], axis=1)
         y_pred_adv = np.argmax(ptc.predict(x_test_adv), axis=1)
         self.assertTrue((target != y_pred_adv).any())
 
-        # Third attack
-        eda = ElasticNet(classifier=ptc, targeted=False, max_iter=10)
-        params = {}
-        x_test_adv = eda.generate(x_test, **params)
-        self.assertFalse((x_test == x_test_adv).all())
-        self.assertTrue((x_test_adv <= 1.0001).all())
-        self.assertTrue((x_test_adv >= -0.0001).all())
-        y_pred = np.argmax(ptc.predict(x_test), axis=1)
-        y_pred_adv = np.argmax(ptc.predict(x_test_adv), axis=1)
-        self.assertTrue((y_pred != y_pred_adv).any())
-
 
 if __name__ == '__main__':
     unittest.main()
-
-
-
-
-
-
