@@ -105,7 +105,7 @@ class Attack(ABC):
     """
     Abstract base class for all attack classes.
     """
-    attack_params = ['classifier', 'expectation_over_transformations']
+    attack_params = ['classifier', 'expectation']
 
     def __init__(self, classifier, expectation=None):
         """
