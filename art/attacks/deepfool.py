@@ -16,7 +16,7 @@ class DeepFool(Attack):
     """
     attack_params = Attack.attack_params + ['max_iter', 'epsilon', 'batch_size']
 
-    def __init__(self, classifier, max_iter=100, epsilon=1e-6, batch_size=128):
+    def __init__(self, classifier, max_iter=100, epsilon=1e-6, batch_size=128, expectation=None):
         """
         Create a DeepFool attack instance.
 
@@ -28,9 +28,12 @@ class DeepFool(Attack):
         :type epsilon: `float`
         :param batch_size: Batch size
         :type batch_size: `int`
+        :param expectation: An expectation over transformations to be applied when computing
+                            classifier gradients and predictions.
+        :type expectation: :class:`ExpectationOverTransformations`
         """
         super(DeepFool, self).__init__(classifier)
-        params = {'max_iter': max_iter, 'epsilon': epsilon, 'batch_size': batch_size}
+        params = {'max_iter': max_iter, 'epsilon': epsilon, 'batch_size': batch_size, 'expectation': expectation}
         self.set_params(**params)
 
     def generate(self, x, **kwargs):
@@ -49,7 +52,7 @@ class DeepFool(Attack):
         assert self.set_params(**kwargs)
         clip_min, clip_max = self.classifier.clip_values
         x_adv = x.copy()
-        preds = self.classifier.predict(x, logits=True)
+        preds = self._predict(x, logits=True)
 
         # Pick a small scalar to avoid division by 0
         tol = 10e-8
@@ -61,7 +64,7 @@ class DeepFool(Attack):
 
             # Main algorithm for each batch
             f = preds[batch_index_1:batch_index_2]
-            grd = self.classifier.class_gradient(batch, logits=True)
+            grd = self._class_gradient(batch, logits=True)
             fk_hat = np.argmax(f, axis=1)
 
             # Get current predictions
@@ -84,8 +87,8 @@ class DeepFool(Attack):
                 batch[active_indices] = np.clip(batch[active_indices] + r[active_indices], clip_min, clip_max)
 
                 # Recompute prediction for new x
-                f = self.classifier.predict(batch, logits=True)
-                grd = self.classifier.class_gradient(batch, logits=True)
+                f = self._predict(batch, logits=True)
+                grd = self._class_gradient(batch, logits=True)
                 fk_i_hat = np.argmax(f, axis=1)
 
                 # Stop if misclassification has been achieved
@@ -96,7 +99,7 @@ class DeepFool(Attack):
                 1 + self.epsilon) * (batch - x_adv[batch_index_1:batch_index_2]), clip_min, clip_max)
 
         preds = np.argmax(preds, axis=1)
-        preds_adv = np.argmax(self.classifier.predict(x_adv), axis=1)
+        preds_adv = np.argmax(self._predict(x_adv), axis=1)
         logger.info('Success rate of DeepFool attack: %.2f%%', (np.sum(preds != preds_adv) / x.shape[0]))
 
         return x_adv
@@ -124,5 +127,3 @@ class DeepFool(Attack):
             raise ValueError('The batch size `batch_size` has to be positive.')
 
         return True
-
-
