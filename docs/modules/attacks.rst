@@ -7,6 +7,9 @@ Carlini and Wagner Attack
 .. autoclass:: CarliniL2Method
    :members:
 
+.. autoclass:: CarliniLInfMethod
+   :members:
+
 DeepFool
 --------
 .. autoclass:: DeepFool

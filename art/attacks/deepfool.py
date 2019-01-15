@@ -14,9 +14,9 @@ class DeepFool(Attack):
     Implementation of the attack from Moosavi-Dezfooli et al. (2015).
     Paper link: https://arxiv.org/abs/1511.04599
     """
-    attack_params = Attack.attack_params + ['max_iter', 'epsilon']
+    attack_params = Attack.attack_params + ['max_iter', 'epsilon', 'batch_size']
 
-    def __init__(self, classifier, max_iter=100, epsilon=1e-6):
+    def __init__(self, classifier, max_iter=100, epsilon=1e-6, batch_size=128):
         """
         Create a DeepFool attack instance.
 
@@ -26,9 +26,11 @@ class DeepFool(Attack):
         :type max_iter: `int`
         :param epsilon: Overshoot parameter.
         :type epsilon: `float`
+        :param batch_size: Batch size
+        :type batch_size: `int`
         """
         super(DeepFool, self).__init__(classifier)
-        params = {'max_iter': max_iter, 'epsilon': epsilon}
+        params = {'max_iter': max_iter, 'epsilon': epsilon, 'batch_size': batch_size}
         self.set_params(**params)
 
     def generate(self, x, **kwargs):
@@ -52,37 +54,46 @@ class DeepFool(Attack):
         # Pick a small scalar to avoid division by 0
         tol = 10e-8
 
-        for j, val in enumerate(x_adv):
-            xj = val[None, ...]
-            f = preds[j]
-            grd = self.classifier.class_gradient(xj, logits=True)[0]
-            fk_hat = np.argmax(f)
+        # Compute perturbation with implicit batching
+        for batch_id in range(int(np.ceil(x_adv.shape[0] / float(self.batch_size)))):
+            batch_index_1, batch_index_2 = batch_id * self.batch_size, (batch_id + 1) * self.batch_size
+            batch = x_adv[batch_index_1:batch_index_2]
 
-            for _ in range(self.max_iter):
-                grad_diff = grd - grd[fk_hat]
-                f_diff = f - f[fk_hat]
+            # Main algorithm for each batch
+            f = preds[batch_index_1:batch_index_2]
+            grd = self.classifier.class_gradient(batch, logits=True)
+            fk_hat = np.argmax(f, axis=1)
+
+            # Get current predictions
+            active_indices = np.arange(len(batch))
+            current_step = 0
+            while len(active_indices) != 0 and current_step < self.max_iter:
+                grad_diff = grd - grd[np.arange(len(grd)), fk_hat][:, None]
+                f_diff = f - f[np.arange(len(f)), fk_hat][:, None]
 
                 # Choose coordinate and compute perturbation
-                norm = np.linalg.norm(grad_diff.reshape(self.classifier.nb_classes, -1), axis=1) + tol
+                norm = np.linalg.norm(grad_diff.reshape(len(grad_diff), self.classifier.nb_classes, -1), axis=2) + tol
                 value = np.abs(f_diff) / norm
-                value[fk_hat] = np.inf
-                l = np.argmin(value)
-                r = (abs(f_diff[l]) / (pow(np.linalg.norm(grad_diff[l]), 2) + tol)) * grad_diff[l]
+                value[np.arange(len(value)), fk_hat] = np.inf
+                l = np.argmin(value, axis=1)
+                r = (abs(f_diff[np.arange(len(f_diff)), l]) / (pow(np.linalg.norm(grad_diff[np.arange(len(
+                    grad_diff)), l].reshape(len(grad_diff), -1), axis=1), 2) + tol))[:, None, None, None] * \
+                    grad_diff[np.arange(len(grad_diff)), l]
 
                 # Add perturbation and clip result
-                xj = np.clip(xj + r, clip_min, clip_max)
+                batch[active_indices] = np.clip(batch[active_indices] + r[active_indices], clip_min, clip_max)
 
-                # Recompute prediction for new xj
-                f = self.classifier.predict(xj, logits=True)[0]
-                grd = self.classifier.class_gradient(xj, logits=True)[0]
-                fk_i_hat = np.argmax(f)
+                # Recompute prediction for new x
+                f = self.classifier.predict(batch, logits=True)
+                grd = self.classifier.class_gradient(batch, logits=True)
+                fk_i_hat = np.argmax(f, axis=1)
 
                 # Stop if misclassification has been achieved
-                if fk_i_hat != fk_hat:
-                    break
+                active_indices = np.where(fk_i_hat != fk_hat)[0]
 
             # Apply overshoot parameter
-            x_adv[j] = np.clip(x[j] + (1 + self.epsilon) * (xj[0] - x[j]), clip_min, clip_max)
+            x_adv[batch_index_1:batch_index_2] = np.clip(x_adv[batch_index_1:batch_index_2] + (
+                1 + self.epsilon) * (batch - x_adv[batch_index_1:batch_index_2]), clip_min, clip_max)
 
         preds = np.argmax(preds, axis=1)
         preds_adv = np.argmax(self.classifier.predict(x_adv), axis=1)
@@ -95,6 +106,10 @@ class DeepFool(Attack):
 
         :param max_iter: The maximum number of iterations.
         :type max_iter: `int`
+        :param epsilon: Overshoot parameter.
+        :type epsilon: `float`
+        :param batch_size: Internal size of batches on which adversarial samples are generated.
+        :type batch_size: `int`
         """
         # Save attack-specific parameters
         super(DeepFool, self).set_params(**kwargs)
@@ -105,4 +120,9 @@ class DeepFool(Attack):
         if self.epsilon < 0:
             raise ValueError("The overshoot parameter must not be negative.")
 
+        if self.batch_size <= 0:
+            raise ValueError('The batch size `batch_size` has to be positive.')
+
         return True
+
+

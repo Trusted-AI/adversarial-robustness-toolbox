@@ -73,7 +73,7 @@ class TestMXClassifier(unittest.TestCase):
         # Create MXNet dataset and loader
         dataset = mx.gluon.data.dataset.ArrayDataset(x_train, y_train)
         data_loader = mx.gluon.data.DataLoader(dataset, batch_size=5, shuffle=True)
-        data_gen = MXDataGenerator(data_loader)
+        data_gen = MXDataGenerator(data_loader, size=NB_TRAIN, batch_size=5)
 
         # Fit model with generator
         self.classifier.fit_generator(data_gen, nb_epochs=2)
