@@ -91,6 +91,8 @@ class DeepFool(Attack):
                 # Stop if misclassification has been achieved
                 active_indices = np.where(fk_i_hat != fk_hat)[0]
 
+                current_step += 1
+
             # Apply overshoot parameter
             x_adv[batch_index_1:batch_index_2] = np.clip(x_adv[batch_index_1:batch_index_2] + (
                 1 + self.epsilon) * (batch - x_adv[batch_index_1:batch_index_2]), clip_min, clip_max)
