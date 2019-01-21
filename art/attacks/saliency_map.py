@@ -103,10 +103,12 @@ class SaliencyMapMethod(Attack):
                     clip_func, clip_value = np.maximum, clip_min
 
                 # Update adversarial examples
-                batch[active_indices][np.arange(len(active_indices)), feat_ind[:, 0]] = clip_func(clip_value,
-                    batch[active_indices][np.arange(len(active_indices)), feat_ind[:, 0]] + self.theta)
-                batch[active_indices][np.arange(len(active_indices)), feat_ind[:, 1]] = clip_func(clip_value,
-                    batch[active_indices][np.arange(len(active_indices)), feat_ind[:, 1]] + self.theta)
+                tmp_batch = batch[active_indices]
+                tmp_batch[np.arange(len(active_indices)), feat_ind[:, 0]] = clip_func(clip_value,
+                    tmp_batch[np.arange(len(active_indices)), feat_ind[:, 0]] + self.theta)
+                tmp_batch[np.arange(len(active_indices)), feat_ind[:, 1]] = clip_func(clip_value,
+                    tmp_batch[np.arange(len(active_indices)), feat_ind[:, 1]] + self.theta)
+                batch[active_indices] = tmp_batch
 
                 # Remove indices from search space if max/min values were reached
                 search_space[batch == clip_value] = 0
@@ -115,9 +117,9 @@ class SaliencyMapMethod(Attack):
                 current_pred = np.argmax(self.classifier.predict(np.reshape(batch, [batch.shape[0]] + dims)), axis=1)
 
                 # Update active_indices
-                active_indices = np.where(current_pred != target and
-                                          np.sum(all_feat, axis=1) / self._nb_features <= self.gamma and
-                                          np.sum(search_space, axis=1) > 0)[0]
+                active_indices = np.where((current_pred != target) *
+                                          (np.sum(all_feat, axis=1) / self._nb_features <= self.gamma) *
+                                          (np.sum(search_space, axis=1) > 0))[0]
 
             x_adv[batch_index_1:batch_index_2] = batch
 
