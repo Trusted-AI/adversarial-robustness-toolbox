@@ -13,9 +13,11 @@ logger = logging.getLogger('testLogger')
 
 
 class TestKerasDataGenerator(unittest.TestCase):
-    @classmethod
-    def setUpClass(cls):
+    def setUp(self):
         import keras
+
+        # Set master seed
+        master_seed(42)
 
         class DummySequence(keras.utils.Sequence):
             def __init__(self):
@@ -30,11 +32,12 @@ class TestKerasDataGenerator(unittest.TestCase):
                 return self._x[idx], self._y[idx]
 
         sequence = DummySequence()
-        cls.data_gen = KerasDataGenerator(sequence, size=5, batch_size=1)
+        self.data_gen = KerasDataGenerator(sequence, size=5, batch_size=1)
 
-    def setUp(self):
-        # Set master seed
-        master_seed(42)
+    def tearDown(self):
+        import keras.backend as k
+
+        k.clear_session()
 
     def test_gen_interface(self):
         gen = self._dummy_gen()
@@ -136,10 +139,12 @@ class TestKerasDataGenerator(unittest.TestCase):
 
 
 class TestPyTorchGenerator(unittest.TestCase):
-    @classmethod
-    def setUpClass(cls):
+    def setUp(self):
         import torch
         from torch.utils.data import DataLoader
+
+        # Set master seed
+        master_seed(42)
 
         class DummyDataset(torch.utils.data.Dataset):
             def __init__(self):
@@ -155,7 +160,7 @@ class TestPyTorchGenerator(unittest.TestCase):
 
         dataset = DummyDataset()
         data_loader = DataLoader(dataset=dataset, batch_size=5, shuffle=True)
-        cls.data_gen = PyTorchDataGenerator(data_loader, size=10, batch_size=5)
+        self.data_gen = PyTorchDataGenerator(data_loader, size=10, batch_size=5)
 
     def test_gen_interface(self):
         x, y = self.data_gen.get_batch()
@@ -184,16 +189,18 @@ class TestPyTorchGenerator(unittest.TestCase):
 
 
 class TestMXGenerator(unittest.TestCase):
-    @classmethod
-    def setUpClass(cls):
+    def setUp(self):
         import mxnet as mx
+
+        # Set master seed
+        master_seed(42)
 
         x = mx.random.uniform(shape=(10, 1, 5, 5))
         y = mx.random.uniform(shape=10)
         dataset = mx.gluon.data.dataset.ArrayDataset(x, y)
 
         data_loader = mx.gluon.data.DataLoader(dataset, batch_size=5, shuffle=True)
-        cls.data_gen = MXDataGenerator(data_loader, size=10, batch_size=5)
+        self.data_gen = MXDataGenerator(data_loader, size=10, batch_size=5)
 
     def test_gen_interface(self):
         x, y = self.data_gen.get_batch()
@@ -222,9 +229,11 @@ class TestMXGenerator(unittest.TestCase):
 
 
 class TestTFDataGenerator(unittest.TestCase):
-    @classmethod
-    def setUpClass(cls):
+    def setUp(self):
         import tensorflow as tf
+
+        # Set master seed
+        master_seed(42)
 
         def generator(batch_size=5):
             while True:
@@ -235,17 +244,12 @@ class TestTFDataGenerator(unittest.TestCase):
         dataset = tf.data.Dataset.from_generator(generator, (tf.float32, tf.int32))
         iter_ = dataset.make_one_shot_iterator()
         sess.run(tf.global_variables_initializer())
-        cls.data_gen = TFDataGenerator(sess=sess, iterator=iter_, size=10, batch_size=5)
+        self.data_gen = TFDataGenerator(sess=sess, iterator=iter_, size=10, batch_size=5)
 
-    def setUp(self):
-        # Set master seed
-        master_seed(42)
-
-    @classmethod
-    def tearDownClass(cls):
+    def tearDown(self):
         import tensorflow as tf
 
-        cls.data_gen.sess.close()
+        self.data_gen.sess.close()
         tf.reset_default_graph()
 
     def test_gen_interface(self):
