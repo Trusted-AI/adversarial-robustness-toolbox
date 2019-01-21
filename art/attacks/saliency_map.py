@@ -14,9 +14,9 @@ class SaliencyMapMethod(Attack):
     Implementation of the Jacobian-based Saliency Map Attack (Papernot et al. 2016).
     Paper link: https://arxiv.org/pdf/1511.07528.pdf
     """
-    attack_params = Attack.attack_params + ['theta', 'gamma', 'batch_size']
+    attack_params = Attack.attack_params + ['theta', 'gamma', 'batch_size', 'expectation']
 
-    def __init__(self, classifier, theta=0.1, gamma=1., batch_size=128):
+    def __init__(self, classifier, theta=0.1, gamma=1., batch_size=128, expectation=None):
         """
         Create a SaliencyMapMethod instance.
 
@@ -28,9 +28,12 @@ class SaliencyMapMethod(Attack):
         :type gamma: `float`
         :param batch_size: Batch size
         :type batch_size: `int`
+        :param expectation: An expectation over transformations to be applied when computing
+                            classifier gradients and predictions.
+        :type expectation: :class:`ExpectationOverTransformations`
         """
         super(SaliencyMapMethod, self).__init__(classifier)
-        kwargs = {'theta': theta, 'gamma': gamma, 'batch_size': batch_size}
+        kwargs = {'theta': theta, 'gamma': gamma, 'batch_size': batch_size, 'expectation': expectation}
         self.set_params(**kwargs)
 
     def generate(self, x, **kwargs):
@@ -114,7 +117,7 @@ class SaliencyMapMethod(Attack):
                 search_space[batch == clip_value] = 0
 
                 # Recompute model prediction
-                current_pred = np.argmax(self.classifier.predict(np.reshape(batch, [batch.shape[0]] + dims)), axis=1)
+                current_pred = np.argmax(self._predict(np.reshape(batch, [batch.shape[0]] + dims)), axis=1)
 
                 # Update active_indices
                 active_indices = np.where((current_pred != target) *
@@ -166,7 +169,7 @@ class SaliencyMapMethod(Attack):
         :return: The top 2 coefficients in `search_space` that maximize / minimize the saliency map
         :rtype: `np.ndarray`
         """
-        grads = self.classifier.class_gradient(x, label=target, logits=False)
+        grads = self._class_gradient(x, label=target, logits=False)
         grads = np.reshape(grads, (-1, self._nb_features))
 
         # Remove gradients for already used features
