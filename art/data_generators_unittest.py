@@ -6,7 +6,7 @@ import unittest
 import numpy as np
 from keras.preprocessing.image import ImageDataGenerator
 
-from art.data_generators import KerasDataGenerator, PyTorchDataGenerator, MXDataGenerator
+from art.data_generators import KerasDataGenerator, PyTorchDataGenerator, MXDataGenerator, TFDataGenerator
 from art.utils import master_seed
 
 logger = logging.getLogger('testLogger')
@@ -220,6 +220,44 @@ class TestMXGenerator(unittest.TestCase):
         self.assertTrue(x.shape == (5, 1, 5, 5))
         self.assertTrue(y.shape == (5,))
 
+
+class TestTFDataGenerator(unittest.TestCase):
+    @classmethod
+    def setUpClass(cls):
+        import tensorflow as tf
+
+        def generator(batch_size=5):
+            while True:
+                yield np.random.rand(batch_size, 5, 5, 1), np.random.randint(0, 10, size=10 * batch_size). \
+                    reshape(batch_size, -1)
+
+        sess = tf.Session()
+        dataset = tf.data.Dataset.from_generator(generator, (tf.float32, tf.int32))
+        iter_ = dataset.make_one_shot_iterator()
+        sess.run(tf.global_variables_initializer())
+        cls.data_gen = TFDataGenerator(sess=sess, iterator=iter_, size=10, batch_size=5)
+
+    def setUp(self):
+        # Set master seed
+        master_seed(42)
+
+    @classmethod
+    def tearDownClass(cls):
+        import tensorflow as tf
+
+        cls.data_gen.sess.close()
+        tf.reset_default_graph()
+
+    def test_gen_interface(self):
+        x, y = self.data_gen.get_batch()
+
+        # Check return types
+        self.assertTrue(isinstance(x, np.ndarray))
+        self.assertTrue(isinstance(y, np.ndarray))
+
+        # Check shapes
+        self.assertTrue(x.shape == (5, 5, 5, 1))
+        self.assertTrue(y.shape == (5, 10))
 
 if __name__ == '__main__':
     unittest.main()

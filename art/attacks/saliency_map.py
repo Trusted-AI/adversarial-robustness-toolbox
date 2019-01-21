@@ -58,7 +58,7 @@ class SaliencyMapMethod(Attack):
         dims = list(x.shape[1:])
         self._nb_features = np.product(dims)
         x_adv = np.reshape(np.copy(x), (-1, self._nb_features))
-        preds = np.argmax(self.classifier.predict(x), axis=1)
+        preds = np.argmax(self._predict(x), axis=1)
 
         # Determine target classes for attack
         if 'y' not in kwargs or kwargs[str('y')] is None:
@@ -124,8 +124,8 @@ class SaliencyMapMethod(Attack):
             x_adv[batch_index_1:batch_index_2] = batch
 
         x_adv = np.reshape(x_adv, x.shape)
-        preds = np.argmax(self.classifier.predict(x), axis=1)
-        preds_adv = np.argmax(self.classifier.predict(x_adv), axis=1)
+        preds = np.argmax(self._predict(x), axis=1)
+        preds_adv = np.argmax(self._predict(x_adv), axis=1)
         logger.info('Success rate of JSMA attack: %.2f%%', (np.sum(preds != preds_adv) / x.shape[0]))
 
         return x_adv
