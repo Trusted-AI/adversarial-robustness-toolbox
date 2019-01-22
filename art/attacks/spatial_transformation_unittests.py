@@ -17,6 +17,7 @@ from art.classifiers import KerasClassifier, PyTorchClassifier, TFClassifier
 from art.utils import load_mnist, master_seed
 
 logger = logging.getLogger('testLogger')
+logger.setLevel(10)
 
 BATCH_SIZE = 100
 NB_TRAIN = 1000
@@ -28,14 +29,14 @@ class Model(nn.Module):
         super(Model, self).__init__()
         self.conv = nn.Conv2d(1, 16, 5)
         self.pool = nn.MaxPool2d(2, 2)
-        self.fc = nn.Linear(2304, 10)
+        self.fullyconnected = nn.Linear(2304, 10)
 
     def forward(self, x):
         import torch.nn.functional as f
 
         x = self.pool(f.relu(self.conv(x)))
         x = x.view(-1, 2304)
-        logit_output = self.fc(x)
+        logit_output = self.fullyconnected(x)
 
         return logit_output
 
@@ -70,10 +71,10 @@ class TestSpatialTransformation(unittest.TestCase):
         # Define the tensorflow graph
         conv = tf.layers.conv2d(input_ph, 4, 5, activation=tf.nn.relu)
         conv = tf.layers.max_pooling2d(conv, 2, 2)
-        fc = tf.contrib.layers.flatten(conv)
+        flattened = tf.contrib.layers.flatten(conv)
 
         # Logits layer
-        logits = tf.layers.dense(fc, 10)
+        logits = tf.layers.dense(flattened, 10)
 
         # Train operator
         loss = tf.reduce_mean(tf.losses.softmax_cross_entropy(logits=logits, onehot_labels=output_ph))
@@ -92,18 +93,21 @@ class TestSpatialTransformation(unittest.TestCase):
         tfc.fit(x_train, y_train, batch_size=BATCH_SIZE, nb_epochs=2)
 
         # Attack
-        attack_params = {"max_translation": 10.0, "num_translations": 1, "max_rotation": 30.0, "num_rotations": 1}
-        st = SpatialTransformation(tfc)
-        x_train_adv = st.generate(x_train, **attack_params)
-        self.assertTrue((st.fooling_rate >= 0.2))
+        attack_params = {"max_translation": 10.0, "num_translations": 3, "max_rotation": 30.0, "num_rotations": 3,
+                         "data_format": 'bhwc'}
+        attack_st = SpatialTransformation(tfc)
+        x_train_adv = attack_st.generate(x_train, **attack_params)
 
-        # x_test_adv = x_test + up.v
-        # self.assertFalse((x_test == x_test_adv).all())
+        self.assertTrue(abs(x_train_adv[0, 8, 13, 0] - 0.49004024) <= 0.01)
+        self.assertTrue(abs(attack_st.fooling_rate - 0.923) <= 0.01)
 
-        train_y_pred = np.argmax(tfc.predict(x_train_adv), axis=1)
-        # test_y_pred = np.argmax(tfc.predict(x_test_adv), axis=1)
-        # self.assertFalse((np.argmax(y_test, axis=1) == test_y_pred).all())
-        self.assertFalse((np.argmax(y_train, axis=1) == train_y_pred).all())
+        self.assertTrue(attack_st.attack_trans_x == 3)
+        self.assertTrue(attack_st.attack_trans_y == 3)
+        self.assertTrue(attack_st.attack_rot == 30.0)
+
+        x_test_adv = attack_st.generate(x_test)
+
+        self.assertTrue(abs(x_test_adv[0, 14, 14, 0] - 0.013572651) <= 0.01)
 
     def test_krclassifier(self):
         """
@@ -132,18 +136,21 @@ class TestSpatialTransformation(unittest.TestCase):
         krc.fit(x_train, y_train, batch_size=BATCH_SIZE, nb_epochs=2)
 
         # Attack
-        attack_params = {"max_translation": 10.0, "num_translations": 1, "max_rotation": 30.0, "num_rotations": 1}
-        st = SpatialTransformation(krc)
-        x_train_adv = st.generate(x_train, **attack_params)
-        self.assertTrue(st.fooling_rate >= 0.2)
+        attack_params = {"max_translation": 10.0, "num_translations": 3, "max_rotation": 30.0, "num_rotations": 3,
+                         "data_format": 'bhwc'}
+        attack_st = SpatialTransformation(krc)
+        x_train_adv = attack_st.generate(x_train, **attack_params)
 
-        #     x_test_adv = x_test + up.v
-        #     self.assertFalse((x_test == x_test_adv).all())
+        self.assertTrue(abs(x_train_adv[0, 8, 13, 0] - 0.8066048) <= 0.01)
+        self.assertTrue(abs(attack_st.fooling_rate - 0.923) <= 0.01)
 
-        train_y_pred = np.argmax(krc.predict(x_train_adv), axis=1)
-        # test_y_pred = np.argmax(krc.predict(x_test_adv), axis=1)
-        # self.assertFalse((np.argmax(y_test, axis=1) == test_y_pred).all())
-        self.assertFalse((np.argmax(y_train, axis=1) == train_y_pred).all())
+        self.assertTrue(attack_st.attack_trans_x == -3)
+        self.assertTrue(attack_st.attack_trans_y == -3)
+        self.assertTrue(attack_st.attack_rot == -30.0)
+
+        x_test_adv = attack_st.generate(x_test)
+
+        self.assertTrue(abs(x_test_adv[0, 14, 14, 0] - 0.6941315) <= 0.01)
 
     def test_ptclassifier(self):
         """
@@ -168,18 +175,21 @@ class TestSpatialTransformation(unittest.TestCase):
         ptc.fit(x_train, y_train, batch_size=BATCH_SIZE, nb_epochs=1)
 
         # Attack
-        attack_params = {"max_translation": 10.0, "num_translations": 1, "max_rotation": 30.0, "num_rotations": 1}
-        st = SpatialTransformation(ptc)
-        x_train_adv = st.generate(x_train, **attack_params)
-        self.assertTrue((st.fooling_rate >= 0.2))
+        attack_params = {"max_translation": 10.0, "num_translations": 3, "max_rotation": 30.0, "num_rotations": 3,
+                         "data_format": 'bchw'}
+        attack_st = SpatialTransformation(ptc)
+        x_train_adv = attack_st.generate(x_train, **attack_params)
 
-        # x_test_adv = x_test + up.v
-        # self.assertFalse((x_test == x_test_adv).all())
+        self.assertTrue(abs(x_train_adv[0, 0, 13, 5] - 0.374206543) <= 0.01)
+        self.assertTrue(abs(attack_st.fooling_rate - 0.781) <= 0.01)
 
-        train_y_pred = np.argmax(ptc.predict(x_train_adv), axis=1)
-        # test_y_pred = np.argmax(ptc.predict(x_test_adv), axis=1)
-        # self.assertFalse((np.argmax(y_test, axis=1) == test_y_pred).all())
-        self.assertFalse((np.argmax(y_train, axis=1) == train_y_pred).all())
+        self.assertTrue(attack_st.attack_trans_x == 0)
+        self.assertTrue(attack_st.attack_trans_y == -3)
+        self.assertTrue(attack_st.attack_rot == 30.0)
+
+        x_test_adv = attack_st.generate(x_test)
+
+        self.assertTrue(abs(x_test_adv[0, 0, 14, 14] - 0.008591662) <= 0.01)
 
 
 if __name__ == '__main__':

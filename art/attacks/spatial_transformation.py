@@ -16,9 +16,11 @@ class SpatialTransformation(Attack):
     Paper link: https://arxiv.org/abs/1712.02779
     """
 
-    attack_params = Attack.attack_params + ['max_translation', 'num_translations', 'max_rotation', 'num_rotations']
+    attack_params = Attack.attack_params + ['max_translation', 'num_translations', 'max_rotation', 'num_rotations',
+                                            'data_format']
 
-    def __init__(self, classifier, max_translation=0.0, num_translations=1, max_rotation=0.0, num_rotations=1):
+    def __init__(self, classifier, max_translation=0.0, num_translations=1, max_rotation=0.0, num_rotations=1,
+                 data_format='bhwc'):
         """
         :param classifier: A trained model.
         :type classifier: :class:`Classifier`
@@ -30,14 +32,22 @@ class SpatialTransformation(Attack):
         :type max_rotation: `float`
         :param num_rotations: The number of rotations to search on grid spacing.
         :type num_rotations: `int`
+        :param data_format: The input data format ('bhwc' or 'bchw').
+        :type data_format: `string`
         """
         super(SpatialTransformation, self).__init__(classifier)
         kwargs = {'max_translation': max_translation,
                   'num_translations': num_translations,
                   'max_rotation': max_rotation,
-                  'num_rotations': num_rotations
+                  'num_rotations': num_rotations,
+                  'data_format': data_format
                   }
         self.set_params(**kwargs)
+
+        self.fooling_rate = None
+        self.attack_trans_x = None
+        self.attack_trans_y = None
+        self.attack_rot = None
 
     def generate(self, x, **kwargs):
         """
@@ -58,59 +68,84 @@ class SpatialTransformation(Attack):
         """
         logger.info('Computing spatial transformation based on grid search.')
 
-        self.set_params(**kwargs)
+        if self.attack_trans_x is None or self.attack_trans_y is None or self.attack_rot is None:
+            self.set_params(**kwargs)
 
-        y_pred = self.classifier.predict(x, logits=False)
-        y_pred_max = np.argmax(y_pred, axis=1)
+            y_pred = self.classifier.predict(x, logits=False)
+            y_pred_max = np.argmax(y_pred, axis=1)
 
-        nb_instances = len(x)
+            nb_instances = len(x)
+            self.min_ = np.min(x)
+            self.max_ = np.max(x)
 
-        # Determine grids
-        max_num_pixel_trans_x = int(round((x.shape[1] * self.max_translation / 100.0)))
-        max_num_pixel_trans_y = int(round((x.shape[2] * self.max_translation / 100.0)))
+            # Determine grids
+            max_num_pixel_trans_x = int(round((x.shape[1] * self.max_translation / 100.0)))
+            max_num_pixel_trans_y = int(round((x.shape[2] * self.max_translation / 100.0)))
 
-        grid_trans_x = [int(round(g)) for g in
-                        list(np.linspace(-max_num_pixel_trans_x, max_num_pixel_trans_x, num=self.num_translations))]
-        grid_trans_y = [int(round(g)) for g in
-                        list(np.linspace(-max_num_pixel_trans_y, max_num_pixel_trans_y, num=self.num_translations))]
-        grid_rot = list(np.linspace(-self.max_rotation, self.max_rotation, num=self.num_rotations))
+            grid_trans_x = [int(round(g)) for g in
+                            list(np.linspace(-max_num_pixel_trans_x, max_num_pixel_trans_x, num=self.num_translations))]
+            grid_trans_y = [int(round(g)) for g in
+                            list(np.linspace(-max_num_pixel_trans_y, max_num_pixel_trans_y, num=self.num_translations))]
+            grid_rot = list(np.linspace(-self.max_rotation, self.max_rotation, num=self.num_rotations))
 
-        # Remove duplicates
-        grid_trans_x = list(set(grid_trans_x))
-        grid_trans_y = list(set(grid_trans_y))
-        grid_rot = list(set(grid_rot))
+            # Remove duplicates
+            grid_trans_x = list(set(grid_trans_x))
+            grid_trans_y = list(set(grid_trans_y))
+            grid_rot = list(set(grid_rot))
 
-        grid_trans_x.sort()
-        grid_trans_y.sort()
-        grid_rot.sort()
+            grid_trans_x.sort()
+            grid_trans_y.sort()
+            grid_rot.sort()
 
-        # Search for worst case
-        fooling_rate = 0.0
-        x_adv = None
+            # Search for worst case
+            fooling_rate = 0.0
+            x_adv = None
+            trans_x = None
+            trans_y = None
+            rot = None
 
-        for trans_x in grid_trans_x:
-            for trans_y in grid_trans_y:
-                for rot in grid_rot:
+            for trans_x_i in grid_trans_x:
+                for trans_y_i in grid_trans_y:
+                    for rot_i in grid_rot:
 
-                    # print(trans_x, trans_y, rot)
+                        # Generate the adversarial examples
+                        x_adv_i = self._perturb(x, trans_x_i, trans_y_i, rot_i)
 
-                    # Generate the adversarial examples
-                    x_adv_i = shift(x, [0, trans_x, trans_y, 0])
-                    x_adv_i = rotate(x_adv_i, angle=rot, reshape=False)
+                        # Compute the error rate
+                        y_adv_i = np.argmax(self.classifier.predict(x_adv_i, logits=False), axis=1)
+                        fooling_rate_i = np.sum(y_pred_max != y_adv_i) / nb_instances
 
-                    # Compute the error rate
-                    y_adv_i = np.argmax(self.classifier.predict(x_adv_i, logits=False), axis=1)
-                    fooling_rate_i = np.sum(y_pred_max != y_adv_i) / nb_instances
+                        if fooling_rate_i > fooling_rate:
+                            fooling_rate = fooling_rate_i
+                            trans_x = trans_x_i
+                            trans_y = trans_y_i
+                            rot = rot_i
+                            x_adv = np.copy(x_adv_i)
 
-                    # print('fooling_rate_i:', fooling_rate_i)
+            self.fooling_rate = fooling_rate
+            self.attack_trans_x = trans_x
+            self.attack_trans_y = trans_y
+            self.attack_rot = rot
 
-                    if fooling_rate_i > fooling_rate:
-                        fooling_rate = fooling_rate_i
-                        x_adv = np.copy(x_adv_i)
+            logger.info('Success rate of spatial transformation attack: %.2f%%', self.fooling_rate)
+            logger.info('Attack-translation in x: %.2f%%', self.attack_trans_x)
+            logger.info('Attack-translation in y: %.2f%%', self.attack_trans_y)
+            logger.info('Attack-rotation: %.2f%%', self.attack_rot)
 
-        self.fooling_rate = fooling_rate
-        logger.info('Success rate of spatial transformation attack: %.2f%%', fooling_rate)
+        else:
+            x_adv = self._perturb(x, self.attack_trans_x, self.attack_trans_y, self.attack_rot)
 
+        return x_adv
+
+    def _perturb(self, x, trans_x, trans_y, rot):
+        if self.data_format == 'bhwc':
+            x_adv = shift(x, [0, trans_x, trans_y, 0])
+            x_adv = rotate(x_adv, angle=rot, axes=(1, 2), reshape=False)
+        elif self.data_format == 'bchw':
+            x_adv = shift(x, [0, 0, trans_x, trans_y])
+            x_adv = rotate(x_adv, angle=rot, axes=(2, 3), reshape=False)
+
+        x_adv = np.clip(x_adv, self.min_, self.max_)
         return x_adv
 
     def set_params(self, **kwargs):
@@ -143,5 +178,8 @@ class SpatialTransformation(Attack):
 
         if not isinstance(self.num_rotations, int) or self.num_rotations <= 0:
             raise ValueError("The number of rotations must be a positive integer.")
+
+        if not isinstance(self.data_format, str) or self.data_format not in ['bhwc', 'bchw']:
+            raise ValueError("The data format has to be either bhwc or bchw .")
 
         return True
