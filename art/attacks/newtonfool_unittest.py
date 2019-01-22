@@ -93,18 +93,18 @@ class TestNewtonFool(unittest.TestCase):
 
         # print("Test Tensorflow....")
         # starttime = time.clock()
-        x_test_adv = nf.generate(x_test, batch_size=1)
-        self.assertFalse((x_test == x_test_adv).all())
+        # x_test_adv = nf.generate(x_test, batch_size=1)
+        # self.assertFalse((x_test == x_test_adv).all())
         # endtime = time.clock()
         # print(1, endtime - starttime)
 
         # starttime = time.clock()
-        x_test_adv = nf.generate(x_test, batch_size=10)
+        # x_test_adv = nf.generate(x_test, batch_size=10)
         # endtime = time.clock()
         # print(10, endtime - starttime)
 
         # starttime = time.clock()
-        # x_test_adv = nf.generate(x_test, batch_size=100)
+        x_test_adv = nf.generate(x_test, batch_size=100)
         # endtime = time.clock()
         # print(100, endtime - starttime)
         #
@@ -150,14 +150,24 @@ class TestNewtonFool(unittest.TestCase):
 
         # print("Test Keras....")
         # starttime = time.clock()
-        x_test_adv = nf.generate(x_test, batch_size=1)
+        # x_test_adv = nf.generate(x_test, batch_size=1)
         # endtime = time.clock()
         # print(1, endtime - starttime)
 
         # starttime = time.clock()
-        x_test_adv = nf.generate(x_test, batch_size=10)
+        # x_test_adv = nf.generate(x_test, batch_size=10)
         # endtime = time.clock()
         # print(10, endtime - starttime)
+
+        # starttime = time.clock()
+        x_test_adv = nf.generate(x_test, batch_size=100)
+        # endtime = time.clock()
+        # print(100, endtime - starttime)
+        #
+        # starttime = time.clock()
+        # x_test_adv = nf.generate(x_test, batch_size=1000)
+        # endtime = time.clock()
+        # print(1000, endtime - starttime)
 
         self.assertFalse((x_test == x_test_adv).all())
 
@@ -195,17 +205,17 @@ class TestNewtonFool(unittest.TestCase):
 
         # print("Test Pytorch....")
         # starttime = time.clock()
-        x_test_adv = nf.generate(x_test, batch_size=1)
+        # x_test_adv = nf.generate(x_test, batch_size=1)
         # endtime = time.clock()
         # print(1, endtime - starttime)
 
         # starttime = time.clock()
-        x_test_adv = nf.generate(x_test, batch_size=10)
+        # x_test_adv = nf.generate(x_test, batch_size=10)
         # endtime = time.clock()
         # print(10, endtime - starttime)
 
         # starttime = time.clock()
-        # x_test_adv = nf.generate(x_test, batch_size=100)
+        x_test_adv = nf.generate(x_test, batch_size=100)
         # endtime = time.clock()
         # print(100, endtime - starttime)
         #

@@ -207,6 +207,16 @@ class EnsembleClassifier(Classifier):
 
         return np.sum(grads, axis=0)
 
+    def set_learning_phase(self, train):
+        """
+        Set the learning phase for the backend framework.
+
+        :param train: True to set the learning phase to training, False to set it to prediction.
+        :type train: `bool`
+        """
+        for classifier in self._classifiers:
+            classifier.set_learning_phase(train)
+
     def save(self, filename, path=None):
         """
         Save a model to file in the format specific to the backend framework. This function is not supported for

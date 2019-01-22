@@ -207,6 +207,16 @@ class Classifier(ABC):
         raise NotImplementedError
 
     @abc.abstractmethod
+    def set_learning_phase(self, train):
+        """
+        Set the learning phase for the backend framework.
+
+        :param train: True to set the learning phase to training, False to set it to prediction.
+        :type train: `bool`
+        """
+        raise NotImplementedError
+
+    @abc.abstractmethod
     def save(self, filename, path=None):
         """
         Save a model to file in the format specific to the backend framework.

@@ -38,7 +38,7 @@ class PoisonFilteringDefence(ABC):
 
         :param kwargs: Defence-specific parameters used by child classes.
         :type kwargs: `dict`
-        :return: `list` with items identified as poison
+        :return: `(dict, list)` dictionary with report and list with items identified as poison
         """
         raise NotImplementedError
 
