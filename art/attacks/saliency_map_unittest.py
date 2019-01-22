@@ -23,7 +23,7 @@ logger = logging.getLogger('testLogger')
 
 BATCH_SIZE = 10
 NB_TRAIN = 100
-NB_TEST = 11
+NB_TEST = 2
 
 
 class Model(nn.Module):
@@ -119,7 +119,7 @@ class TestSaliencyMap(unittest.TestCase):
         x_test, y_test = x_test[:NB_TEST], y_test[:NB_TEST]
 
         # import time
-        df = SaliencyMapMethod(classifier, theta=0.1)
+        df = SaliencyMapMethod(classifier, theta=1)
 
         # starttime = time.clock()
         # x_test_adv = df.generate(x_test, batch_size=1)
@@ -163,7 +163,7 @@ class TestSaliencyMap(unittest.TestCase):
 
         # Perform attack
         # import time
-        df = SaliencyMapMethod(classifier, theta=0.1)
+        df = SaliencyMapMethod(classifier, theta=1)
 
         # starttime = time.clock()
         # x_test_adv = df.generate(x_test, y=to_categorical(targets, nb_classes), batch_size=1)
