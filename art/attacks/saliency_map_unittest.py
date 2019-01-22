@@ -118,23 +118,23 @@ class TestSaliencyMap(unittest.TestCase):
         (_, _), (x_test, y_test) = self.mnist
         x_test, y_test = x_test[:NB_TEST], y_test[:NB_TEST]
 
-        import time
+        # import time
         df = SaliencyMapMethod(classifier, theta=0.1)
 
-        starttime = time.clock()
-        x_test_adv = df.generate(x_test, batch_size=1)
-        endtime = time.clock()
-        print(1, endtime - starttime)
-
-        starttime = time.clock()
-        x_test_adv = df.generate(x_test, batch_size=10)
-        endtime = time.clock()
-        print(10, endtime - starttime)
-
-        starttime = time.clock()
+        # starttime = time.clock()
+        # x_test_adv = df.generate(x_test, batch_size=1)
+        # endtime = time.clock()
+        # print(1, endtime - starttime)
+        #
+        # starttime = time.clock()
+        # x_test_adv = df.generate(x_test, batch_size=10)
+        # endtime = time.clock()
+        # print(10, endtime - starttime)
+        #
+        # starttime = time.clock()
         x_test_adv = df.generate(x_test, batch_size=100)
-        endtime = time.clock()
-        print(100, endtime - starttime)
+        # endtime = time.clock()
+        # print(100, endtime - starttime)
 
         # starttime = time.clock()
         # x_test_adv = df.generate(x_test, batch_size=1000)
@@ -162,23 +162,23 @@ class TestSaliencyMap(unittest.TestCase):
             targets = np.random.randint(nb_classes, size=NB_TEST)
 
         # Perform attack
-        import time
+        # import time
         df = SaliencyMapMethod(classifier, theta=0.1)
 
-        starttime = time.clock()
-        x_test_adv = df.generate(x_test, y=to_categorical(targets, nb_classes), batch_size=1)
-        endtime = time.clock()
-        print(1, endtime - starttime)
-
-        starttime = time.clock()
-        x_test_adv = df.generate(x_test, y=to_categorical(targets, nb_classes), batch_size=10)
-        endtime = time.clock()
-        print(10, endtime - starttime)
-
-        starttime = time.clock()
+        # starttime = time.clock()
+        # x_test_adv = df.generate(x_test, y=to_categorical(targets, nb_classes), batch_size=1)
+        # endtime = time.clock()
+        # print(1, endtime - starttime)
+        #
+        # starttime = time.clock()
+        # x_test_adv = df.generate(x_test, y=to_categorical(targets, nb_classes), batch_size=10)
+        # endtime = time.clock()
+        # print(10, endtime - starttime)
+        #
+        # starttime = time.clock()
         x_test_adv = df.generate(x_test, y=to_categorical(targets, nb_classes), batch_size=100)
-        endtime = time.clock()
-        print(100, endtime - starttime)
+        # endtime = time.clock()
+        # print(100, endtime - starttime)
 
         # starttime = time.clock()
         # x_test_adv = df.generate(x_test, y=to_categorical(targets, nb_classes), batch_size=1000)

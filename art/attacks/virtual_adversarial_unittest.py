@@ -116,23 +116,23 @@ class TestVirtualAdversarial(unittest.TestCase):
         (_, _), (x_test, y_test) = self.mnist
         x_test, y_test = x_test[:NB_TEST], y_test[:NB_TEST]
 
-        import time
+        #import time
         df = VirtualAdversarialMethod(classifier)
 
-        starttime = time.clock()
-        x_test_adv = df.generate(x_test, batch_size=1)
-        endtime = time.clock()
-        print(1, endtime - starttime)
-
-        starttime = time.clock()
-        x_test_adv = df.generate(x_test, batch_size=10)
-        endtime = time.clock()
-        print(10, endtime - starttime)
-
-        starttime = time.clock()
+        # starttime = time.clock()
+        # x_test_adv = df.generate(x_test, batch_size=1)
+        # endtime = time.clock()
+        # print(1, endtime - starttime)
+        #
+        # starttime = time.clock()
+        # x_test_adv = df.generate(x_test, batch_size=10)
+        # endtime = time.clock()
+        # print(10, endtime - starttime)
+        #
+        # starttime = time.clock()
         x_test_adv = df.generate(x_test, batch_size=100)
-        endtime = time.clock()
-        print(100, endtime - starttime)
+        # endtime = time.clock()
+        # print(100, endtime - starttime)
 
         # starttime = time.clock()
         # x_test_adv = df.generate(x_test, batch_size=1000)
