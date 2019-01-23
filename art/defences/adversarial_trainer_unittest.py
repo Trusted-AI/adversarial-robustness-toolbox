@@ -12,6 +12,7 @@ from keras.models import Sequential
 
 from art.attacks import FastGradientMethod, DeepFool
 from art.classifiers import TFClassifier, KerasClassifier
+from art.data_generators import DataGenerator
 from art.defences import AdversarialTrainer, StaticAdversarialTrainer
 from art.utils import load_mnist, get_labels_np_array, master_seed
 
@@ -174,6 +175,42 @@ class TestAdversarialTrainer(TestBase):
         logger.info('Accuracy before adversarial training: %.2f%%', (acc * 100))
         logger.info('\nAccuracy after adversarial training: %.2f%%', (acc_new * 100))
 
+    def test_two_attacks_with_generator(self):
+        (x_train, y_train), (x_test, y_test) = self.mnist
+        x_train_original = x_train.copy()
+
+        class MyDataGenerator(DataGenerator):
+            def __init__(self, x, y, size, batch_size):
+                self.x = x
+                self.y = y
+                self.size = size
+                self.batch_size = batch_size
+
+            def get_batch(self):
+                ids = np.random.choice(self.size, size=min(self.size, self.batch_size), replace=False)
+                return (self.x[ids], self.y[ids])
+        generator = MyDataGenerator(x_train, y_train, x_train.shape[0], 128)
+
+        attack1 = FastGradientMethod(self.classifier_k)
+        attack2 = DeepFool(self.classifier_tf)
+        x_test_adv = attack1.generate(x_test)
+        preds = np.argmax(self.classifier_k.predict(x_test_adv), axis=1)
+        acc = np.sum(preds == np.argmax(y_test, axis=1)) / NB_TEST
+
+        adv_trainer = AdversarialTrainer(self.classifier_k, attacks=[attack1, attack2])
+        adv_trainer.fit_generator(generator, nb_epochs=5)
+
+        preds_new = np.argmax(adv_trainer.predict(x_test_adv), axis=1)
+        acc_new = np.sum(preds_new == np.argmax(y_test, axis=1)) / NB_TEST
+        # No reason to assert the newer accuracy is higher. It might go down slightly
+        self.assertGreaterEqual(acc_new, acc * ACCURACY_DROP)
+
+        logger.info('Accuracy before adversarial training: %.2f%%', (acc * 100))
+        logger.info('\nAccuracy after adversarial training: %.2f%%', (acc_new * 100))
+
+        # Finally assert that the original training data hasn't changed:
+        self.assertTrue((x_train == x_train_original).all())
+
     def test_targeted_attack_error(self):
         """
         Test the adversarial trainer using a targeted attack, which will currently result in a
@@ -273,6 +310,56 @@ class TestStaticAdversarialTrainer(TestBase):
         acc_adv_trained = np.sum(np.argmax(preds_adv_trained, axis=1) == np.argmax(y_adv, axis=1)) / y_adv.shape[0]
         logger.info('Accuracy before adversarial training: %.2f%%', (acc * 100))
         logger.info('Accuracy after adversarial training: %.2f%%', (acc_adv_trained * 100))
+
+    def test_multi_attack_mnist_with_generator(self):
+        """
+        Test the adversarial trainer using two attackers: FGSM and DeepFool. The source and target models of the attack
+        are two CNNs on MNIST trained for 2 epochs. FGSM and DeepFool both generate the attack images on the same
+        source classifier. The test cast check if accuracy on adversarial samples increases
+        after adversarially training the model. Here a generator is used to yield the data for adversarial training
+
+        :return: None
+        """
+        (x_train, y_train), (x_test, y_test) = self.mnist
+        x_train_original = x_train.copy()
+
+        class MyDataGenerator(DataGenerator):
+            def __init__(self, x, y, size, batch_size):
+                self.x = x
+                self.y = y
+                self.size = size
+                self.batch_size = batch_size
+
+            def get_batch(self):
+                ids = np.random.choice(self.size, size=min(self.size, self.batch_size), replace=False)
+                return (self.x[ids], self.y[ids])
+        generator = MyDataGenerator(x_train, y_train, x_train.shape[0], BATCH_SIZE)
+
+        # Get source and target classifiers
+        classifier_tgt = self.classifier_k
+        classifier_src = self.classifier_tf
+
+        # Create FGSM and DeepFool attackers
+        adv1 = FastGradientMethod(classifier_src)
+        adv2 = DeepFool(classifier_src)
+        x_adv = np.vstack((adv1.generate(x_test), adv2.generate(x_test)))
+        y_adv = np.vstack((y_test, y_test))
+        preds = classifier_tgt.predict(x_adv)
+        acc = np.sum(np.argmax(preds, axis=1) == np.argmax(y_adv, axis=1)) / y_adv.shape[0]
+
+        # Perform adversarial training
+        adv_trainer = StaticAdversarialTrainer(classifier_tgt, [adv1, adv2])
+        params = {'nb_epochs': 2}
+        adv_trainer.fit_generator(generator, **params)
+
+        # Evaluate that accuracy on adversarial sample has improved
+        preds_adv_trained = adv_trainer.classifier.predict(x_adv)
+        acc_adv_trained = np.sum(np.argmax(preds_adv_trained, axis=1) == np.argmax(y_adv, axis=1)) / y_adv.shape[0]
+        logger.info('Accuracy before adversarial training: %.2f%%', (acc * 100))
+        logger.info('Accuracy after adversarial training: %.2f%%', (acc_adv_trained * 100))
+
+        # Finally assert that the original training data hasn't changed:
+        self.assertTrue((x_train == x_train_original).all())
 
     def test_shared_model_mnist(self):
         """

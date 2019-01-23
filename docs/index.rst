@@ -62,6 +62,7 @@ The following detector of poisoning attacks is also supported:
 
    modules/attacks
    modules/classifiers
+   modules/data_generators
    modules/defences
    modules/detection
    modules/poison_detection

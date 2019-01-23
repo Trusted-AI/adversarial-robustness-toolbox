@@ -4,16 +4,14 @@ from setuptools import find_packages
 with open("README.md", "r") as fh:
     long_description = fh.read()
 
-install_requires = ['h5py',
-                    'numpy',
+install_requires = ['numpy',
                     'scipy',
-                    'keras',
-                    'tensorflow',
                     'six',
                     'setuptools',
                     'scikit-learn']
 
 tests_require = ['mxnet',
+                 'h5py',
                  'keras',
                  'Pillow',
                  'requests',
@@ -21,13 +19,13 @@ tests_require = ['mxnet',
                  'torch']
 
 setup(name='Adversarial Robustness Toolbox',
-      version='0.3.0',
+      version='0.4.0',
       description='IBM Adversarial machine learning toolbox',
       long_description=long_description,
       long_description_content_type='text/markdown',
       author='Irina Nicolae',
       author_email='maria-irina.nicolae@ibm.com',
-      url='https://github.com/ririnicolae/adversarial-robustness-toolbox',
+      url='https://github.com/IBM/adversarial-robustness-toolbox',
       license='MIT',
       install_requires=install_requires,
       tests_require=tests_require,

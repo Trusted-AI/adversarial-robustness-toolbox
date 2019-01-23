@@ -19,6 +19,7 @@ class Classifier(ABC):
     def __init__(self, clip_values, channel_index, defences=None, preprocessing=(0, 1)):
         """
         Initialize a `Classifier` object.
+
         :param clip_values: Tuple of the form `(min, max)` representing the minimum and maximum values allowed
                for features.
         :type clip_values: `tuple`
@@ -202,6 +203,16 @@ class Classifier(ABC):
         :type layer: `int` or `str`
         :return: The output of `layer`, where the first dimension is the batch size corresponding to `x`.
         :rtype: `np.ndarray`
+        """
+        raise NotImplementedError
+
+    @abc.abstractmethod
+    def set_learning_phase(self, train):
+        """
+        Set the learning phase for the backend framework.
+
+        :param train: True to set the learning phase to training, False to set it to prediction.
+        :type train: `bool`
         """
         raise NotImplementedError
 

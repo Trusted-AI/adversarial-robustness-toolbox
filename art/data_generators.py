@@ -15,6 +15,26 @@ class DataGenerator:
     """
     Base class for data generators.
     """
+    def __init__(self, size, batch_size):
+        """
+        Base initializer for data generators.
+
+        :param size: Total size of the dataset.
+        :type size: `int` or `None`
+        :param batch_size: Size of the minibatches.
+        :type batch_size: `int`
+        """
+        if size is not None and (type(size) is not int or size < 1):
+            raise ValueError("The total size of the dataset must be an integer greater than zero.")
+        self.size = size
+
+        if type(batch_size) is not int or batch_size < 1:
+            raise ValueError("The batch size must be an integer greater than zero.")
+        self.batch_size = batch_size
+
+        if size is not None and batch_size > size:
+            raise ValueError("The batch size must be smaller than the dataset size.")
+
     def get_batch(self):
         """
         Provide the next batch for training in the form of a tuple `(x, y)`. The generator should loop over the data
@@ -31,7 +51,7 @@ class KerasDataGenerator(DataGenerator):
     Wrapper class on top of the Keras-native data generators. These can either be generator functions,
     `keras.utils.Sequence` or Keras-specific data generators (`keras.preprocessing.image.ImageDataGenerator`).
     """
-    def __init__(self, generator):
+    def __init__(self, generator, size, batch_size):
         """
         Create a Keras data generator wrapper instance.
 
@@ -39,7 +59,12 @@ class KerasDataGenerator(DataGenerator):
                           `(inputs, targets)` or `(inputs, targets, sample_weights)`. All arrays in this tuple must have
                           the same length. The generator is expected to loop over its data indefinitely.
         :type generator: generator function or `keras.utils.Sequence` or `keras.preprocessing.image.ImageDataGenerator`
+        :param size: Total size of the dataset.
+        :type size: `int` or `None`
+        :param batch_size: Size of the minibatches.
+        :type batch_size: `int`
         """
+        super(KerasDataGenerator, self).__init__(size=size, batch_size=batch_size)
         self.generator = generator
 
     def get_batch(self):
@@ -63,13 +88,19 @@ class PyTorchDataGenerator(DataGenerator):
     """
     Wrapper class on top of the PyTorch native data loader :class:`torch.utils.data.DataLoader`.
     """
-    def __init__(self, data_loader):
+    def __init__(self, data_loader, size, batch_size):
         """
         Create a data generator wrapper on top of a PyTorch :class:`DataLoader`.
 
         :param data_loader: A PyTorch data generator.
         :type data_loader: `torch.utils.data.DataLoader`
+        :param size: Total size of the dataset.
+        :type size: int
+        :param batch_size: Size of the minibatches.
+        :type batch_size: int
         """
+        super(PyTorchDataGenerator, self).__init__(size=size, batch_size=batch_size)
+
         from torch.utils.data import DataLoader
 
         if not isinstance(data_loader, DataLoader):
@@ -96,15 +127,21 @@ class PyTorchDataGenerator(DataGenerator):
 
 class MXDataGenerator(DataGenerator):
     """
-    Wrapper class on top of the MXNet/Gluon native data loader :class:`mxnet.gluon.data.DataLoader``.
+    Wrapper class on top of the MXNet/Gluon native data loader :class:`mxnet.gluon.data.DataLoader`.
     """
-    def __init__(self, data_loader):
+    def __init__(self, data_loader, size, batch_size):
         """
         Create a data generator wrapper on top of an MXNet :class:`DataLoader`.
 
         :param data_loader:
         :type data_loader: `mxnet.gluon.data.DataLoader`
+        :param size: Total size of the dataset.
+        :type size: int
+        :param batch_size: Size of the minibatches.
+        :type batch_size: int
         """
+        super(MXDataGenerator, self).__init__(size=size, batch_size=batch_size)
+
         from mxnet.gluon.data import DataLoader
 
         if not isinstance(data_loader, DataLoader):
@@ -130,9 +167,25 @@ class MXDataGenerator(DataGenerator):
 
 
 class TFDataGenerator(DataGenerator):
-    # TODO Needs to cover QueueRunner and Coordinator, tf.train.shuffle_batch, tf.data.Dataset
-    def __init__(self):
-        pass
+    """
+    Wrapper class on top of the TensorFlow native iterators :class:`tf.data.Iterator`.
+    """
+    def __init__(self, sess, iterator, size, batch_size):
+        """
+        Create a data generator wrapper for TensorFlow.
+
+        Iterator: one-shot, initializable, reinit, feedable
+
+        :param sess:
+        :param iterator: Data iterator from TensorFlow. The iterator is assumed to have been initialized.
+        :param size: Total size of the dataset.
+        :type size: int
+        :param batch_size: Size of the minibatches.
+        :type batch_size: int
+        """
+        super(TFDataGenerator, self).__init__(size=size, batch_size=batch_size)
+        self.sess = sess
+        self.iterator = iterator
 
     def get_batch(self):
         """
@@ -141,5 +194,12 @@ class TFDataGenerator(DataGenerator):
 
         :return: A tuple containing a batch of data `(x, y)`.
         :rtype: `tuple`
+        :raises: `ValueError` if the iterator has reached the end.
         """
-        raise NotImplementedError
+        import tensorflow as tf
+
+        if isinstance(self.iterator, tf.data.Iterator):
+            try:
+                return self.sess.run(self.iterator.get_next())
+            except tf.errors.OutOfRangeError as err:
+                raise ValueError('Could not extract next batch. ' + str(err))
