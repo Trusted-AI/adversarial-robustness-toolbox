@@ -12,7 +12,9 @@ logger = logging.getLogger(__name__)
 
 class SpatialTransformation(Attack):
     """
-    The spatial attacks of translation and rotation of inputs.
+    Implementation of the spatial transformation attack using translation and rotation of inputs. The attack conducts
+    black-box queries to the target model in a grid search over possible translations and rotations to find optimal
+    attack parameters.
     Paper link: https://arxiv.org/abs/1712.02779
     """
 
