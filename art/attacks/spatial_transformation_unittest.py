@@ -93,8 +93,7 @@ class TestSpatialTransformation(unittest.TestCase):
         tfc.fit(x_train, y_train, batch_size=BATCH_SIZE, nb_epochs=2)
 
         # Attack
-        attack_params = {"max_translation": 10.0, "num_translations": 3, "max_rotation": 30.0, "num_rotations": 3,
-                         "data_format": 'bhwc'}
+        attack_params = {"max_translation": 10.0, "num_translations": 3, "max_rotation": 30.0, "num_rotations": 3}
         attack_st = SpatialTransformation(tfc)
         x_train_adv = attack_st.generate(x_train, **attack_params)
 
@@ -140,8 +139,7 @@ class TestSpatialTransformation(unittest.TestCase):
         krc.fit(x_train, y_train, batch_size=BATCH_SIZE, nb_epochs=2)
 
         # Attack
-        attack_params = {"max_translation": 10.0, "num_translations": 3, "max_rotation": 30.0, "num_rotations": 3,
-                         "data_format": 'bhwc'}
+        attack_params = {"max_translation": 10.0, "num_translations": 3, "max_rotation": 30.0, "num_rotations": 3}
         attack_st = SpatialTransformation(krc)
         x_train_adv = attack_st.generate(x_train, **attack_params)
 
@@ -181,8 +179,7 @@ class TestSpatialTransformation(unittest.TestCase):
         ptc.fit(x_train, y_train, batch_size=BATCH_SIZE, nb_epochs=1)
 
         # Attack
-        attack_params = {"max_translation": 10.0, "num_translations": 3, "max_rotation": 30.0, "num_rotations": 3,
-                         "data_format": 'bchw'}
+        attack_params = {"max_translation": 10.0, "num_translations": 3, "max_rotation": 30.0, "num_rotations": 3}
         attack_st = SpatialTransformation(ptc)
         x_train_adv = attack_st.generate(x_train, **attack_params)
 

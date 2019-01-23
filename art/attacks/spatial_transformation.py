@@ -18,11 +18,10 @@ class SpatialTransformation(Attack):
     Paper link: https://arxiv.org/abs/1712.02779
     """
 
-    attack_params = Attack.attack_params + ['max_translation', 'num_translations', 'max_rotation', 'num_rotations',
-                                            'data_format']
+    attack_params = Attack.attack_params + ['max_translation', 'num_translations', 'max_rotation', 'num_rotations']
 
     def __init__(self, classifier, max_translation=0.0, num_translations=1, max_rotation=0.0, num_rotations=1,
-                 data_format='bhwc', expectation=None):
+                 expectation=None):
         """
         :param classifier: A trained model.
         :type classifier: :class:`Classifier`
@@ -34,8 +33,6 @@ class SpatialTransformation(Attack):
         :type max_rotation: `float`
         :param num_rotations: The number of rotations to search on grid spacing.
         :type num_rotations: `int`
-        :param data_format: The input data format ('bhwc' or 'bchw').
-        :type data_format: `string`
         :param expectation: An expectation over transformations to be applied when computing
                             classifier gradients and predictions.
         :type expectation: :class:`ExpectationOverTransformations`
@@ -44,8 +41,7 @@ class SpatialTransformation(Attack):
         kwargs = {'max_translation': max_translation,
                   'num_translations': num_translations,
                   'max_rotation': max_rotation,
-                  'num_rotations': num_rotations,
-                  'data_format': data_format
+                  'num_rotations': num_rotations
                   }
         self.set_params(**kwargs)
 
@@ -146,12 +142,14 @@ class SpatialTransformation(Attack):
         return x_adv
 
     def _perturb(self, x, trans_x, trans_y, rot):
-        if self.data_format == 'bhwc':
+        if self.classifier.channel_index == 3:
             x_adv = shift(x, [0, trans_x, trans_y, 0])
             x_adv = rotate(x_adv, angle=rot, axes=(1, 2), reshape=False)
-        elif self.data_format == 'bchw':
+        elif self.classifier.channel_index == 1:
             x_adv = shift(x, [0, 0, trans_x, trans_y])
             x_adv = rotate(x_adv, angle=rot, axes=(2, 3), reshape=False)
+        else:
+            raise ValueError("Unsupported channel index.")
 
         x_adv = np.clip(x_adv, self.min_, self.max_)
         return x_adv
@@ -189,8 +187,5 @@ class SpatialTransformation(Attack):
 
         if not isinstance(self.num_rotations, int) or self.num_rotations <= 0:
             raise ValueError("The number of rotations must be a positive integer.")
-
-        if not isinstance(self.data_format, str) or self.data_format not in ['bhwc', 'bchw']:
-            raise ValueError("The data format has to be either bhwc or bchw .")
 
         return True
