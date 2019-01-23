@@ -184,6 +184,8 @@ class TestSpatialTransformation(unittest.TestCase):
         x_train_adv = attack_st.generate(x_train, **attack_params)
 
         self.assertTrue(abs(x_train_adv[0, 0, 13, 5] - 0.374206543) <= 0.01)
+        print('attack_st.fooling_rate')
+        print(attack_st.fooling_rate)
         self.assertTrue(abs(attack_st.fooling_rate - 0.781) <= 0.01)
 
         self.assertTrue(attack_st.attack_trans_x == 0)
