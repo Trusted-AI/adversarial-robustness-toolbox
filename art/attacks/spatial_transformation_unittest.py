@@ -5,12 +5,12 @@ import unittest
 
 import keras
 import keras.backend as k
+from keras.layers import Dense, Flatten, Conv2D, MaxPooling2D
+from keras.models import Sequential
 import numpy as np
 import tensorflow as tf
 import torch.nn as nn
 import torch.optim as optim
-from keras.layers import Dense, Flatten, Conv2D, MaxPooling2D
-from keras.models import Sequential
 
 from art.attacks.spatial_transformation import SpatialTransformation
 from art.classifiers import KerasClassifier, PyTorchClassifier, TFClassifier
@@ -98,16 +98,20 @@ class TestSpatialTransformation(unittest.TestCase):
         attack_st = SpatialTransformation(tfc)
         x_train_adv = attack_st.generate(x_train, **attack_params)
 
-        self.assertTrue(abs(x_train_adv[0, 8, 13, 0] - 0.49004024) <= 0.01)
-        self.assertTrue(abs(attack_st.fooling_rate - 0.923) <= 0.01)
+        self.assertTrue(abs(x_train_adv[0, 8, 13, 0] - 0.8066048) <= 0.01)
 
-        self.assertTrue(attack_st.attack_trans_x == 3)
-        self.assertTrue(attack_st.attack_trans_y == 3)
-        self.assertTrue(attack_st.attack_rot == 30.0)
+        self.assertTrue(abs(attack_st.fooling_rate - 0.948) <= 0.01)
+
+        self.assertTrue(attack_st.attack_trans_x == -3)
+        self.assertTrue(attack_st.attack_trans_y == -3)
+        self.assertTrue(attack_st.attack_rot == -30.0)
 
         x_test_adv = attack_st.generate(x_test)
 
-        self.assertTrue(abs(x_test_adv[0, 14, 14, 0] - 0.013572651) <= 0.01)
+        self.assertTrue(abs(x_test_adv[0, 14, 14, 0] - 0.6941315) <= 0.01)
+
+        sess.close()
+        tf.reset_default_graph()
 
     def test_krclassifier(self):
         """
@@ -151,6 +155,8 @@ class TestSpatialTransformation(unittest.TestCase):
         x_test_adv = attack_st.generate(x_test)
 
         self.assertTrue(abs(x_test_adv[0, 14, 14, 0] - 0.6941315) <= 0.01)
+
+        k.clear_session()
 
     def test_ptclassifier(self):
         """
