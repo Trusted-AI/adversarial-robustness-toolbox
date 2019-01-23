@@ -22,7 +22,7 @@ class SpatialTransformation(Attack):
                                             'data_format']
 
     def __init__(self, classifier, max_translation=0.0, num_translations=1, max_rotation=0.0, num_rotations=1,
-                 data_format='bhwc'):
+                 data_format='bhwc', expectation=None):
         """
         :param classifier: A trained model.
         :type classifier: :class:`Classifier`
@@ -36,8 +36,11 @@ class SpatialTransformation(Attack):
         :type num_rotations: `int`
         :param data_format: The input data format ('bhwc' or 'bchw').
         :type data_format: `string`
+        :param expectation: An expectation over transformations to be applied when computing
+                            classifier gradients and predictions.
+        :type expectation: :class:`ExpectationOverTransformations`
         """
-        super(SpatialTransformation, self).__init__(classifier)
+        super(SpatialTransformation, self).__init__(classifier=classifier, expectation=expectation)
         kwargs = {'max_translation': max_translation,
                   'num_translations': num_translations,
                   'max_rotation': max_rotation,
@@ -65,6 +68,9 @@ class SpatialTransformation(Attack):
         :type max_rotation: `float`
         :param num_rotations: The number of rotations to search on grid spacing.
         :type num_rotations: `int`
+        :param expectation: An expectation over transformations to be applied when computing
+                            classifier gradients and predictions.
+        :type expectation: :class:`ExpectationOverTransformations`
         :return: An array holding the adversarial examples.
         :rtype: `np.ndarray`
         """
@@ -73,7 +79,7 @@ class SpatialTransformation(Attack):
         if self.attack_trans_x is None or self.attack_trans_y is None or self.attack_rot is None:
             self.set_params(**kwargs)
 
-            y_pred = self.classifier.predict(x, logits=False)
+            y_pred = self._predict(x, logits=False)
             y_pred_max = np.argmax(y_pred, axis=1)
 
             nb_instances = len(x)
@@ -114,7 +120,7 @@ class SpatialTransformation(Attack):
                         x_adv_i = self._perturb(x, trans_x_i, trans_y_i, rot_i)
 
                         # Compute the error rate
-                        y_adv_i = np.argmax(self.classifier.predict(x_adv_i, logits=False), axis=1)
+                        y_adv_i = np.argmax(self._predict(x_adv_i, logits=False), axis=1)
                         fooling_rate_i = np.sum(y_pred_max != y_adv_i) / nb_instances
 
                         if fooling_rate_i > fooling_rate:
@@ -162,6 +168,9 @@ class SpatialTransformation(Attack):
         :type max_rotation: `float`
         :param num_rotations: The number of rotations to search on grid spacing.
         :type num_rotations: `int`
+        :param expectation: An expectation over transformations to be applied when computing
+                            classifier gradients and predictions.
+        :type expectation: :class:`ExpectationOverTransformations`
         """
         super(SpatialTransformation, self).set_params(**kwargs)
 
