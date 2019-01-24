@@ -66,15 +66,6 @@ class PyTorchClassifier(Classifier):
     def _init_grads(self):
         return -1
 
-    def set_learning_phase(self, train):
-        """
-        Set the learning phase for the backend framework.
-
-        :param train: True to set the learning phase to training, False to set it to prediction.
-        :type train: `bool`
-        """
-        self._model.train(train)
-
     def predict(self, x, logits=False, batch_size=128):
         """
         Perform prediction for a batch of inputs.
@@ -385,7 +376,7 @@ class PyTorchClassifier(Classifier):
         :param train: True to set the learning phase to training, False to set it to prediction.
         :type train: `bool`
         """
-        raise NotImplementedError
+        self._model.train(train)
 
     def save(self, filename, path=None):
         """
