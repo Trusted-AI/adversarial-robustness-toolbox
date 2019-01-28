@@ -169,8 +169,23 @@ class TFClassifier(Classifier):
         :type nb_epochs: `int`
         :return: `None`
         """
-        # TODO Implement TF-specific version
-        super(TFClassifier, self).fit_generator(generator, nb_epochs=nb_epochs)
+        from art.data_generators import TFDataGenerator
+
+        # Train directly in Tensorflow
+        if isinstance(generator, TFDataGenerator) and not (hasattr(
+                self, 'label_smooth') or hasattr(self, 'feature_squeeze')):
+            for _ in range(nb_epochs):
+                for _ in range(int(generator.size / generator.batch_size)):
+                    i_batch, o_batch = generator.get_batch()
+
+                    # Create feed_dict
+                    fd = {self._input_ph: i_batch, self._output_ph: o_batch}
+                    fd.update(self._feed_dict)
+
+                    # Run train step
+                    self._sess.run(self._train, feed_dict=fd)
+        else:
+            super(TFClassifier, self).fit_generator(generator, nb_epochs=nb_epochs)
 
     def class_gradient(self, x, label=None, logits=False):
         """
