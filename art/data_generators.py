@@ -6,15 +6,45 @@ their own generators following the :class:`DataGenerator` interface.
 """
 from __future__ import absolute_import, division, print_function, unicode_literals
 
+import abc
+import sys
+
 import logging
 
 logger = logging.getLogger(__name__)
 
+# Ensure compatibility with Python 2 and 3 when using ABCMeta
+if sys.version_info >= (3, 4):
+    ABC = abc.ABC
+else:
+    ABC = abc.ABCMeta(str('ABC'), (), {})
 
-class DataGenerator:
+
+class DataGenerator(ABC):
     """
     Base class for data generators.
     """
+    def __init__(self, size, batch_size):
+        """
+        Base initializer for data generators.
+
+        :param size: Total size of the dataset.
+        :type size: `int` or `None`
+        :param batch_size: Size of the minibatches.
+        :type batch_size: `int`
+        """
+        if size is not None and (type(size) is not int or size < 1):
+            raise ValueError("The total size of the dataset must be an integer greater than zero.")
+        self.size = size
+
+        if type(batch_size) is not int or batch_size < 1:
+            raise ValueError("The batch size must be an integer greater than zero.")
+        self.batch_size = batch_size
+
+        if size is not None and batch_size > size:
+            raise ValueError("The batch size must be smaller than the dataset size.")
+
+    @abc.abstractmethod
     def get_batch(self):
         """
         Provide the next batch for training in the form of a tuple `(x, y)`. The generator should loop over the data
@@ -44,17 +74,8 @@ class KerasDataGenerator(DataGenerator):
         :param batch_size: Size of the minibatches.
         :type batch_size: `int`
         """
+        super(KerasDataGenerator, self).__init__(size=size, batch_size=batch_size)
         self.generator = generator
-
-        if size is not None and (type(size) is not int or size < 1):
-            raise ValueError("The total size of the dataset must be an integer greater than zero.")
-
-        self.size = size
-
-        if type(batch_size) is not int or batch_size < 1:
-            raise ValueError("The batch size must be an integer greater than zero.")
-
-        self.batch_size = batch_size
 
     def get_batch(self):
         """
@@ -88,22 +109,14 @@ class PyTorchDataGenerator(DataGenerator):
         :param batch_size: Size of the minibatches.
         :type batch_size: int
         """
+        super(PyTorchDataGenerator, self).__init__(size=size, batch_size=batch_size)
+
         from torch.utils.data import DataLoader
 
         if not isinstance(data_loader, DataLoader):
             raise TypeError('Expected instance of PyTorch `DataLoader, received %s instead.`' % str(type(data_loader)))
 
         self.data_loader = data_loader
-
-        if size is not None and (type(size) is not int or size < 1):
-            raise ValueError("The total size of the dataset must be an integer greater than zero.")
-
-        self.size = size
-
-        if type(batch_size) is not int or batch_size < 1:
-            raise ValueError("The batch size must be an integer greater than zero.")
-
-        self.batch_size = batch_size
 
     def get_batch(self):
         """
@@ -124,7 +137,7 @@ class PyTorchDataGenerator(DataGenerator):
 
 class MXDataGenerator(DataGenerator):
     """
-    Wrapper class on top of the MXNet/Gluon native data loader :class:`mxnet.gluon.data.DataLoader``.
+    Wrapper class on top of the MXNet/Gluon native data loader :class:`mxnet.gluon.data.DataLoader`.
     """
     def __init__(self, data_loader, size, batch_size):
         """
@@ -137,22 +150,14 @@ class MXDataGenerator(DataGenerator):
         :param batch_size: Size of the minibatches.
         :type batch_size: int
         """
+        super(MXDataGenerator, self).__init__(size=size, batch_size=batch_size)
+
         from mxnet.gluon.data import DataLoader
 
         if not isinstance(data_loader, DataLoader):
             raise TypeError('Expected instance of Gluon `DataLoader, received %s instead.`' % str(type(data_loader)))
 
         self.data_loader = data_loader
-
-        if size is not None and (type(size) is not int or size < 1):
-            raise ValueError("The total size of the dataset must be an integer greater than zero.")
-
-        self.size = size
-
-        if type(batch_size) is not int or batch_size < 1:
-            raise ValueError("The batch size must be an integer greater than zero.")
-
-        self.batch_size = batch_size
 
     def get_batch(self):
         """
@@ -172,9 +177,25 @@ class MXDataGenerator(DataGenerator):
 
 
 class TFDataGenerator(DataGenerator):
-    # TODO Needs to cover QueueRunner and Coordinator, tf.train.shuffle_batch, tf.data.Dataset
-    def __init__(self):
-        pass
+    """
+    Wrapper class on top of the TensorFlow native iterators :class:`tf.data.Iterator`.
+    """
+    def __init__(self, sess, iterator, size, batch_size):
+        """
+        Create a data generator wrapper for TensorFlow.
+
+        Iterator: one-shot, initializable, reinit, feedable
+
+        :param sess:
+        :param iterator: Data iterator from TensorFlow. The iterator is assumed to have been initialized.
+        :param size: Total size of the dataset.
+        :type size: int
+        :param batch_size: Size of the minibatches.
+        :type batch_size: int
+        """
+        super(TFDataGenerator, self).__init__(size=size, batch_size=batch_size)
+        self.sess = sess
+        self.iterator = iterator
 
     def get_batch(self):
         """
@@ -183,5 +204,12 @@ class TFDataGenerator(DataGenerator):
 
         :return: A tuple containing a batch of data `(x, y)`.
         :rtype: `tuple`
+        :raises: `ValueError` if the iterator has reached the end.
         """
-        raise NotImplementedError
+        import tensorflow as tf
+
+        if isinstance(self.iterator, tf.data.Iterator):
+            try:
+                return self.sess.run(self.iterator.get_next())
+            except tf.errors.OutOfRangeError as err:
+                raise ValueError('Could not extract next batch. ' + str(err))

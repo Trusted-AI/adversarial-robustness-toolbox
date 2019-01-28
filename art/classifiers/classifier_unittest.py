@@ -36,6 +36,9 @@ class ClassifierInstance(Classifier):
     def layer_names(self):
         pass
 
+    def set_learning_phase(self, train):
+        pass
+
 
 class TestClassifier(unittest.TestCase):
     def setUp(self):

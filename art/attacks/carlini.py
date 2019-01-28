@@ -23,7 +23,7 @@ class CarliniL2Method(Attack):
                                             'batch_size']
 
     def __init__(self, classifier, confidence=0.0, targeted=True, learning_rate=0.01, binary_search_steps=10,
-                 max_iter=10, initial_const=0.01, max_halving=5, max_doubling=5, batch_size=128):
+                 max_iter=10, initial_const=0.01, max_halving=5, max_doubling=5, batch_size=128, expectation=None):
         """
         Create a Carlini L_2 attack instance.
 
@@ -51,6 +51,9 @@ class CarliniL2Method(Attack):
         :type max_doubling: `int`
         :param batch_size: Internal size of batches on which adversarial samples are generated.
         :type batch_size: `int`
+        :param expectation: An expectation over transformations to be applied when computing
+                            classifier gradients and predictions.
+        :type expectation: :class:`ExpectationOverTransformations`
         """
         super(CarliniL2Method, self).__init__(classifier)
 
@@ -62,7 +65,8 @@ class CarliniL2Method(Attack):
                   'initial_const': initial_const,
                   'max_halving': max_halving,
                   'max_doubling': max_doubling,
-                  'batch_size': batch_size
+                  'batch_size': batch_size,
+                  'expectation': expectation
                   }
         assert self.set_params(**kwargs)
 
@@ -88,7 +92,7 @@ class CarliniL2Method(Attack):
         :rtype: `(float, float, float)`
         """
         l2dist = np.sum(np.square(x - x_adv).reshape(x.shape[0], -1), axis=1)
-        z = self.classifier.predict(np.array(x_adv, dtype=NUMPY_DTYPE), logits=True)
+        z = self._predict(np.array(x_adv, dtype=NUMPY_DTYPE), logits=True)
         z_target = np.sum(z * target, axis=1)
         z_other = np.max(z * (1 - target) + (np.min(z, axis=1) - 1)[:, np.newaxis] * target, axis=1)
 
@@ -137,8 +141,8 @@ class CarliniL2Method(Attack):
             i_add = np.argmax(target, axis=1)
             i_sub = np.argmax(z * (1 - target) + (np.min(z, axis=1) - 1)[:, np.newaxis] * target, axis=1)
 
-        loss_gradient = self.classifier.class_gradient(x_adv, label=i_add, logits=True)
-        loss_gradient -= self.classifier.class_gradient(x_adv, label=i_sub, logits=True)
+        loss_gradient = self._class_gradient(x_adv, label=i_add, logits=True)
+        loss_gradient -= self._class_gradient(x_adv, label=i_sub, logits=True)
         loss_gradient = loss_gradient.reshape(x.shape)
 
         c_mult = c
@@ -216,7 +220,7 @@ class CarliniL2Method(Attack):
 
         # No labels provided, use model prediction as correct class
         if y is None:
-            y = get_labels_np_array(self.classifier.predict(x, logits=False))
+            y = get_labels_np_array(self._predict(x, logits=False))
 
         # Compute perturbation with implicit batching
         nb_batches = int(np.ceil(x_adv.shape[0] / float(self.batch_size)))
@@ -304,7 +308,7 @@ class CarliniL2Method(Attack):
                             lr_mult = lr_mult[:, np.newaxis]
 
                         new_x_adv_batch_tanh = x_adv_batch_tanh[active_and_do_halving] + \
-                                               lr_mult * perturbation_tanh[do_halving]
+                            lr_mult * perturbation_tanh[do_halving]
                         new_x_adv_batch = self._tanh_to_original(new_x_adv_batch_tanh, clip_min, clip_max)
                         _, l2dist[active_and_do_halving], loss[active_and_do_halving] = self._loss(
                             x_batch[active_and_do_halving], new_x_adv_batch, y_batch[active_and_do_halving],
@@ -337,7 +341,7 @@ class CarliniL2Method(Attack):
                             lr_mult = lr_mult[:, np.newaxis]
 
                         new_x_adv_batch_tanh = x_adv_batch_tanh[active_and_do_doubling] + \
-                                               lr_mult * perturbation_tanh[do_doubling]
+                            lr_mult * perturbation_tanh[do_doubling]
                         new_x_adv_batch = self._tanh_to_original(new_x_adv_batch_tanh, clip_min, clip_max)
                         _, l2dist[active_and_do_doubling], loss[active_and_do_doubling] = self._loss(
                             x_batch[active_and_do_doubling], new_x_adv_batch, y_batch[active_and_do_doubling],
@@ -359,17 +363,13 @@ class CarliniL2Method(Attack):
                         best_lr_mult = best_lr[active_and_update_adv]
                         for _ in range(len(x.shape) - 1):
                             best_lr_mult = best_lr_mult[:, np.newaxis]
-
-                        x_adv_batch_tanh[active_and_update_adv] = x_adv_batch_tanh[update_adv] + \
-                                                                  best_lr_mult * perturbation_tanh[update_adv]
+                        x_adv_batch_tanh[active_and_update_adv] = x_adv_batch_tanh[active_and_update_adv] + \
+                            best_lr_mult * perturbation_tanh[update_adv]
                         x_adv_batch[active_and_update_adv] = \
-                                                        self._tanh_to_original(x_adv_batch_tanh[active_and_update_adv],
-                                                                               clip_min, clip_max)
+                            self._tanh_to_original(x_adv_batch_tanh[active_and_update_adv], clip_min, clip_max)
                         z[active_and_update_adv], l2dist[active_and_update_adv], loss[active_and_update_adv] = \
-                                                                        self._loss(x_batch[active_and_update_adv],
-                                                                                   x_adv_batch[active_and_update_adv],
-                                                                                   y_batch[active_and_update_adv],
-                                                                                   c[active_and_update_adv])
+                            self._loss(x_batch[active_and_update_adv], x_adv_batch[active_and_update_adv],
+                                       y_batch[active_and_update_adv], c[active_and_update_adv])
                         attack_success = (loss - l2dist <= 0)
                         overall_attack_success = overall_attack_success | attack_success
 
@@ -391,11 +391,11 @@ class CarliniL2Method(Attack):
 
             x_adv[batch_index_1:batch_index_2] = best_x_adv_batch
 
-        adv_preds = np.argmax(self.classifier.predict(x_adv), axis=1)
+        adv_preds = np.argmax(self._predict(x_adv), axis=1)
         if self.targeted:
             rate = np.sum(adv_preds == np.argmax(y, axis=1)) / x_adv.shape[0]
         else:
-            preds = np.argmax(self.classifier.predict(x), axis=1)
+            preds = np.argmax(self._predict(x), axis=1)
             rate = np.sum(adv_preds != preds) / x_adv.shape[0]
         logger.info('Success rate of C&W attack: %.2f%%', 100*rate)
 
@@ -457,7 +457,7 @@ class CarliniLInfMethod(Attack):
                                             'max_halving', 'max_doubling', 'eps', 'batch_size']
 
     def __init__(self, classifier, confidence=0.0, targeted=True, learning_rate=0.01,
-                 max_iter=10, max_halving=5, max_doubling=5, eps=0.3, batch_size=128):
+                 max_iter=10, max_halving=5, max_doubling=5, eps=0.3, batch_size=128, expectation=None):
         """
         Create a Carlini L_Inf attack instance.
 
@@ -481,6 +481,9 @@ class CarliniLInfMethod(Attack):
         :type eps: `float`
         :param batch_size: Internal size of batches on which adversarial samples are generated.
         :type batch_size: `int`
+        :param expectation: An expectation over transformations to be applied when computing
+                            classifier gradients and predictions.
+        :type expectation: :class:`ExpectationOverTransformations`
         """
         super(CarliniLInfMethod, self).__init__(classifier)
 
@@ -491,7 +494,8 @@ class CarliniLInfMethod(Attack):
                   'max_halving': max_halving,
                   'max_doubling': max_doubling,
                   'eps': eps,
-                  'batch_size': batch_size
+                  'batch_size': batch_size,
+                  'expectation': expectation
                   }
         assert self.set_params(**kwargs)
 
@@ -510,7 +514,7 @@ class CarliniLInfMethod(Attack):
         :return: A tuple holding the current logits and overall loss.
         :rtype: `(float, float)`
         """
-        z = self.classifier.predict(np.array(x_adv, dtype=NUMPY_DTYPE), logits=True)
+        z = self._predict(np.array(x_adv, dtype=NUMPY_DTYPE), logits=True)
         z_target = np.sum(z * target, axis=1)
         z_other = np.max(z * (1 - target) + (np.min(z, axis=1) - 1)[:, np.newaxis] * target, axis=1)
 
@@ -549,8 +553,8 @@ class CarliniLInfMethod(Attack):
             i_add = np.argmax(target, axis=1)
             i_sub = np.argmax(z * (1 - target) + (np.min(z, axis=1) - 1)[:, np.newaxis] * target, axis=1)
 
-        loss_gradient = self.classifier.class_gradient(x_adv, label=i_add, logits=True)
-        loss_gradient -= self.classifier.class_gradient(x_adv, label=i_sub, logits=True)
+        loss_gradient = self._class_gradient(x_adv, label=i_add, logits=True)
+        loss_gradient -= self._class_gradient(x_adv, label=i_sub, logits=True)
         loss_gradient = loss_gradient.reshape(x_adv.shape)
 
         loss_gradient *= (clip_max - clip_min)
@@ -617,7 +621,7 @@ class CarliniLInfMethod(Attack):
 
         # No labels provided, use model prediction as correct class
         if y is None:
-            y = get_labels_np_array(self.classifier.predict(x, logits=False))
+            y = get_labels_np_array(self._predict(x, logits=False))
 
         # Compute perturbation with implicit batching
         nb_batches = int(np.ceil(x_adv.shape[0] / float(self.batch_size)))
@@ -682,7 +686,7 @@ class CarliniLInfMethod(Attack):
                         lr_mult = lr_mult[:, np.newaxis]
 
                     new_x_adv_batch_tanh = x_adv_batch_tanh[active_and_do_halving] + \
-                                           lr_mult * perturbation_tanh[do_halving]
+                        lr_mult * perturbation_tanh[do_halving]
                     new_x_adv_batch = self._tanh_to_original(new_x_adv_batch_tanh,
                                                              clip_min[active_and_do_halving],
                                                              clip_max[active_and_do_halving])
@@ -715,7 +719,7 @@ class CarliniLInfMethod(Attack):
                         lr_mult = lr_mult[:, np.newaxis]
 
                     new_x_adv_batch_tanh = x_adv_batch_tanh[active_and_do_doubling] + \
-                                           lr_mult * perturbation_tanh[do_doubling]
+                        lr_mult * perturbation_tanh[do_doubling]
                     new_x_adv_batch = self._tanh_to_original(new_x_adv_batch_tanh,
                                                              clip_min[active_and_do_doubling],
                                                              clip_max[active_and_do_doubling])
@@ -750,11 +754,11 @@ class CarliniLInfMethod(Attack):
             x_adv_batch[~attack_success] = x_batch[~attack_success]
             x_adv[batch_index_1:batch_index_2] = x_adv_batch
 
-        adv_preds = np.argmax(self.classifier.predict(x_adv), axis=1)
+        adv_preds = np.argmax(self._predict(x_adv), axis=1)
         if self.targeted:
             rate = np.sum(adv_preds == np.argmax(y, axis=1)) / x_adv.shape[0]
         else:
-            preds = np.argmax(self.classifier.predict(x), axis=1)
+            preds = np.argmax(self._predict(x), axis=1)
             rate = np.sum(adv_preds != preds) / x_adv.shape[0]
         logger.info('Success rate of C&W attack: %.2f%%', 100 * rate)
 

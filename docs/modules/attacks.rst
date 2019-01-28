@@ -15,6 +15,11 @@ DeepFool
 .. autoclass:: DeepFool
    :members:
 
+Elastic Net Attack
+------------------
+.. autoclass:: ElasticNet
+   :members:
+
 Fast Gradient Method
 --------------------
 .. autoclass:: FastGradientMethod
@@ -38,6 +43,11 @@ Jacobian Saliency Map Attack
 NewtonFool
 ----------
 .. autoclass:: NewtonFool
+   :members:
+
+Spatial Transformations Attack
+------------------------------
+.. autoclass:: SpatialTransformation
    :members:
 
 Universal Perturbation Attack
