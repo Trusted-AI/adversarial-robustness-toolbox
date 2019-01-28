@@ -35,6 +35,7 @@ class TestTFClassifier(unittest.TestCase):
         # Define input and output placeholders
         input_ph = tf.placeholder(tf.float32, shape=[None, 28, 28, 1])
         output_ph = tf.placeholder(tf.int32, shape=[None, 10])
+        learning = tf.placeholder(tf.bool)
 
         # Define the tensorflow graph
         conv = tf.layers.conv2d(input_ph, 16, 5, activation=tf.nn.relu)
@@ -54,7 +55,7 @@ class TestTFClassifier(unittest.TestCase):
         self.sess.run(tf.global_variables_initializer())
 
         # Create classifier
-        self.classifier = TFClassifier((0, 1), input_ph, logits, output_ph, train, loss, None, self.sess)
+        self.classifier = TFClassifier((0, 1), input_ph, logits, output_ph, train, loss, learning, self.sess)
 
     def tearDown(self):
         self.sess.close()
@@ -170,6 +171,17 @@ class TestTFClassifier(unittest.TestCase):
             if re.search(filename, f):
                 os.remove(os.path.join(path, f))
 
+    def test_set_learning(self):
+        tfc = self.classifier
+
+        self.assertTrue(tfc._feed_dict == {})
+        tfc.set_learning_phase(False)
+        self.assertFalse(tfc._feed_dict[tfc._learning])
+        tfc.set_learning_phase(True)
+        self.assertTrue(tfc._feed_dict[tfc._learning])
+
 
 if __name__ == '__main__':
     unittest.main()
+
+
