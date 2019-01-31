@@ -140,6 +140,20 @@ class Classifier(ABC):
         """
         return self._channel_index
 
+    @property
+    def learning_phase(self):
+        """
+        Return the learning phase set by the user for the current classifier. Possible values are `True` for training,
+        `False` for prediction and `None` if it has not been set through the library. In the latter case, the library
+        does not do any explicit learning phase manipulation and the current value of the backend framework is used.
+        If a value has been set by the user for this property, it will impact all following computations for
+        model fitting, prediction and gradients.
+
+        :return: Value of the learning phase.
+        :rtype: `bool` or `None`
+        """
+        return self._learning_phase if hasattr(self, '_learning_phase') else None
+
     @abc.abstractmethod
     def class_gradient(self, x, label=None, logits=False):
         """

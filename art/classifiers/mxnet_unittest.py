@@ -150,6 +150,16 @@ class TestMXClassifier(unittest.TestCase):
     #     self.assertTrue(self.classifier.get_activations(x_test, 0).shape == (NB_TEST, 6, 24, 24))
     #     self.assertTrue(self.classifier.get_activations(x_test, 4).shape == (NB_TEST, 784))
 
+    def test_set_learning(self):
+        classifier = self.classifier
+
+        self.assertFalse(hasattr(classifier, '_learning_phase'))
+        classifier.set_learning_phase(False)
+        self.assertFalse(classifier.learning_phase)
+        classifier.set_learning_phase(True)
+        self.assertTrue(classifier.learning_phase)
+        self.assertTrue(hasattr(classifier, '_learning_phase'))
+
 
 if __name__ == '__main__':
     unittest.main()

@@ -190,6 +190,16 @@ class TestPyTorchClassifier(unittest.TestCase):
         self.assertTrue(ptc.get_activations(x_test, 3).shape == (20, 2304))
         self.assertTrue(ptc.get_activations(x_test, 4).shape == (20, 10))
 
+    def test_set_learning(self):
+        ptc = self.module_classifier
+
+        self.assertTrue(ptc._model.training)
+        ptc.set_learning_phase(False)
+        self.assertFalse(ptc._model.training)
+        ptc.set_learning_phase(True)
+        self.assertTrue(ptc._model.training)
+        self.assertTrue(ptc.learning_phase)
+
 
 if __name__ == '__main__':
     unittest.main()

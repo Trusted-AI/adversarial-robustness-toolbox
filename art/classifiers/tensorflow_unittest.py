@@ -35,6 +35,7 @@ class TestTFClassifier(unittest.TestCase):
         # Define input and output placeholders
         input_ph = tf.placeholder(tf.float32, shape=[None, 28, 28, 1])
         output_ph = tf.placeholder(tf.int32, shape=[None, 10])
+        learning = tf.placeholder(tf.bool)
 
         # Define the tensorflow graph
         conv = tf.layers.conv2d(input_ph, 16, 5, activation=tf.nn.relu)
@@ -54,7 +55,7 @@ class TestTFClassifier(unittest.TestCase):
         self.sess.run(tf.global_variables_initializer())
 
         # Create classifier
-        self.classifier = TFClassifier((0, 1), input_ph, logits, output_ph, train, loss, None, self.sess)
+        self.classifier = TFClassifier((0, 1), input_ph, logits, output_ph, train, loss, learning, self.sess)
 
     def tearDown(self):
         self.sess.close()
@@ -75,20 +76,29 @@ class TestTFClassifier(unittest.TestCase):
         tf.reset_default_graph()
 
     def test_fit_generator(self):
-        from art.classifiers.keras import generator_fit
-        from art.data_generators import KerasDataGenerator
+        from art.data_generators import TFDataGenerator
 
-        labels = np.argmax(self.mnist[1][1], axis=1)
-        acc = np.sum(np.argmax(self.classifier.predict(self.mnist[1][0]), axis=1) == labels) / NB_TEST
-        logger.info('Accuracy: %.2f%%', (acc * 100))
+        # Get MNIST
+        (x_train, y_train), (x_test, y_test) = self.mnist
 
-        gen = generator_fit(self.mnist[0][0], self.mnist[0][1], batch_size=100)
-        data_gen = KerasDataGenerator(generator=gen, size=NB_TRAIN, batch_size=100)
-        self.classifier.fit_generator(generator=data_gen, nb_epochs=2)
-        acc2 = np.sum(np.argmax(self.classifier.predict(self.mnist[1][0]), axis=1) == labels) / NB_TEST
-        logger.info('Accuracy: %.2f%%', (acc2 * 100))
+        # Create Tensorflow data generator
+        x_tensor = tf.convert_to_tensor(x_train.reshape(10, 100, 28, 28, 1))
+        y_tensor = tf.convert_to_tensor(y_train.reshape(10, 100, 10))
+        dataset = tf.data.Dataset.from_tensor_slices((x_tensor, y_tensor))
+        iterator = dataset.make_initializable_iterator()
+        data_gen = TFDataGenerator(sess=self.sess, iterator=iterator, iterator_type='initializable',
+                                   iterator_arg={}, size=1000, batch_size=100)
 
-        self.assertTrue(acc2 >= .8 * acc)
+        # Test fit and predict
+        self.classifier.fit_generator(data_gen, nb_epochs=1)
+        preds = self.classifier.predict(x_test)
+        preds_class = np.argmax(preds, axis=1)
+        trues_class = np.argmax(y_test, axis=1)
+        acc = np.sum(preds_class == trues_class) / len(trues_class)
+
+        logger.info('Accuracy after fitting: %.2f%%', (acc * 100))
+        self.assertGreater(acc, 0.1)
+        tf.reset_default_graph()
 
     def test_nb_classes(self):
         # Start to test
@@ -170,6 +180,18 @@ class TestTFClassifier(unittest.TestCase):
             if re.search(filename, f):
                 os.remove(os.path.join(path, f))
 
+    def test_set_learning(self):
+        tfc = self.classifier
+
+        self.assertTrue(tfc._feed_dict == {})
+        tfc.set_learning_phase(False)
+        self.assertFalse(tfc._feed_dict[tfc._learning])
+        tfc.set_learning_phase(True)
+        self.assertTrue(tfc._feed_dict[tfc._learning])
+        self.assertTrue(tfc.learning_phase)
+
 
 if __name__ == '__main__':
     unittest.main()
+
+

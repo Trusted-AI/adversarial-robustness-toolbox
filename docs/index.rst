@@ -25,7 +25,7 @@ The Adversarial Robustness Toolbox contains implementations of the following eva
 * Jacobian saliency map (`Papernot et al., 2016`_)
 * Universal perturbation (`Moosavi-Dezfooli et al., 2016`_)
 * Virtual adversarial method (`Miyato et al., 2015`_)
-* C&W attack (`Carlini and Wagner, 2016`_)
+* C&W L_2 and L_inf attack (`Carlini and Wagner, 2016`_)
 * NewtonFool (`Jang et al., 2017`_)
 * Elastic net attack (`Chen et al., 2017`_)
 * Spatial transformations attack (`Engstrom et al., 2017`_)
