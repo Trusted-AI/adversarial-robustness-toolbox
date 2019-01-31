@@ -433,7 +433,8 @@ class TFClassifier(Classifier):
         :param train: True to set the learning phase to training, False to set it to prediction.
         :type train: `bool`
         """
-        if self._learning is not None:
+        if isinstance(train, bool):
+            self._learning_phase = train
             self._feed_dict[self._learning] = train
 
     def save(self, filename, path=None):

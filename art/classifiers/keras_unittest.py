@@ -273,6 +273,16 @@ class TestKerasClassifier(unittest.TestCase):
         label = decode_predictions(classifier.predict(image))[0][0]
         self.assertEqual(label[1], 'Weimaraner')
 
+    def test_learning_phase(self):
+        classifier = KerasClassifier((0, 1), self.model_mnist, use_logits=False)
+
+        self.assertFalse(hasattr(classifier, '_learning_phase'))
+        classifier.set_learning_phase(False)
+        self.assertFalse(classifier.learning_phase)
+        classifier.set_learning_phase(True)
+        self.assertTrue(classifier.learning_phase)
+        self.assertTrue(hasattr(classifier, '_learning_phase'))
+
     def test_save(self):
         import os
 

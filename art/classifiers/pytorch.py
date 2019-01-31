@@ -376,7 +376,9 @@ class PyTorchClassifier(Classifier):
         :param train: True to set the learning phase to training, False to set it to prediction.
         :type train: `bool`
         """
-        self._model.train(train)
+        if isinstance(train, bool):
+            self._learning_phase = train
+            self._model.train(train)
 
     def save(self, filename, path=None):
         """

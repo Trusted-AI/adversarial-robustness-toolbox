@@ -198,6 +198,7 @@ class TestPyTorchClassifier(unittest.TestCase):
         self.assertFalse(ptc._model.training)
         ptc.set_learning_phase(True)
         self.assertTrue(ptc._model.training)
+        self.assertTrue(ptc.learning_phase)
 
 
 if __name__ == '__main__':

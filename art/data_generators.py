@@ -237,9 +237,7 @@ class TFDataGenerator(DataGenerator):
 
         # Process to get the batch
         try:
-            if self.iterator_type == 'initializable':
-                return self.sess.run(next_batch)
-            elif self.iterator_type == 'reinitializable':
+            if self.iterator_type in ('initializable', 'reinitializable'):
                 return self.sess.run(next_batch)
             else:
                 return self.sess.run(next_batch, feed_dict=self.iterator_arg[1])
@@ -253,6 +251,3 @@ class TFDataGenerator(DataGenerator):
             else:
                 self.sess.run(self.iterator_arg[0].initializer)
                 return self.sess.run(next_batch, feed_dict=self.iterator_arg[1])
-
-
-

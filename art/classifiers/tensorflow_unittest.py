@@ -188,6 +188,7 @@ class TestTFClassifier(unittest.TestCase):
         self.assertFalse(tfc._feed_dict[tfc._learning])
         tfc.set_learning_phase(True)
         self.assertTrue(tfc._feed_dict[tfc._learning])
+        self.assertTrue(tfc.learning_phase)
 
 
 if __name__ == '__main__':

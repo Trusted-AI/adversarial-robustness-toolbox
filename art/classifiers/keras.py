@@ -194,9 +194,6 @@ class KerasClassifier(Classifier):
         :return: Array of predictions of shape `(nb_inputs, self.nb_classes)`.
         :rtype: `np.ndarray`
         """
-        import keras.backend as k
-        k.set_learning_phase(0)
-
         # Apply defences
         x_ = self._apply_processing(x)
         x_ = self._apply_defences_predict(x_)
@@ -227,9 +224,6 @@ class KerasClassifier(Classifier):
         :type nb_epochs: `int`
         :return: `None`
         """
-        import keras.backend as k
-        k.set_learning_phase(1)
-
         # Apply preprocessing and defences
         x_ = self._apply_processing(x)
         x_, y_ = self._apply_defences_fit(x_, y)
@@ -248,10 +242,7 @@ class KerasClassifier(Classifier):
         :type nb_epochs: `int`
         :return: `None`
         """
-        import keras.backend as k
         from art.data_generators import KerasDataGenerator
-
-        k.set_learning_phase(1)
 
         # Try to use the generator as a Keras native generator, otherwise use it through the `DataGenerator` interface
         # TODO Testing for preprocessing defenses is currently hardcoded; this should be improved (add property)
@@ -294,7 +285,6 @@ class KerasClassifier(Classifier):
         :rtype: `np.ndarray`
         """
         import keras.backend as k
-        k.set_learning_phase(0)
 
         if isinstance(layer, six.string_types):
             if layer not in self._layer_names:
@@ -323,7 +313,6 @@ class KerasClassifier(Classifier):
 
     def _init_class_grads(self, label=None, logits=False):
         import keras.backend as k
-        k.set_learning_phase(0)
 
         if len(self._output.shape) == 2:
             nb_outputs = self._output.shape[1]
@@ -389,7 +378,11 @@ class KerasClassifier(Classifier):
         :param train: True to set the learning phase to training, False to set it to prediction.
         :type train: `bool`
         """
-        raise NotImplementedError
+        import keras.backend as k
+
+        if isinstance(train, bool):
+            self._learning_phase = train
+            k.set_learning_phase(int(train))
 
     def save(self, filename, path=None):
         """
