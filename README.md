@@ -15,7 +15,7 @@ The library contains implementations of the following **evasion attacks**:
 * Jacobian saliency map ([Papernot et al., 2016](https://arxiv.org/abs/1511.07528))
 * Universal perturbation ([Moosavi-Dezfooli et al., 2016](https://arxiv.org/abs/1610.08401))
 * Virtual adversarial method ([Miyato et al., 2015](https://arxiv.org/abs/1507.00677))
-* C&amp;W attack ([Carlini and Wagner, 2016](https://arxiv.org/abs/1608.04644))
+* C&amp;W `L_2` and `L_inf` attack ([Carlini and Wagner, 2016](https://arxiv.org/abs/1608.04644))
 * NewtonFool ([Jang et al., 2017](http://doi.acm.org/10.1145/3134600.3134635))
 * Elastic net attack ([Chen et al., 2017](https://arxiv.org/abs/1709.04114))
 * Spatial transformations attack ([Engstrom et al., 2017](https://arxiv.org/abs/1712.02779))
