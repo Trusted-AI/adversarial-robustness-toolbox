@@ -99,6 +99,8 @@ class MXClassifier(Classifier):
 
         from mxnet import autograd, nd
 
+        train_mode = self._learning_phase if hasattr(self, '_learning_phase') else True
+
         # Apply preprocessing and defences
         x_ = self._apply_processing(x)
         x_, y_ = self._apply_defences_fit(x_, y)
@@ -116,7 +118,7 @@ class MXClassifier(Classifier):
                 x_batch = nd.array(x_[ind[m * batch_size:(m + 1) * batch_size]]).as_in_context(self._ctx)
                 y_batch = nd.array(y_[ind[m * batch_size:(m + 1) * batch_size]]).as_in_context(self._ctx)
 
-                with autograd.record(train_mode=True):
+                with autograd.record(train_mode=train_mode):
                     preds = self._model(x_batch)
                     loss = nd.softmax_cross_entropy(preds, y_batch)
                 loss.backward()
@@ -137,6 +139,8 @@ class MXClassifier(Classifier):
         from mxnet import autograd, nd
         from art.data_generators import MXDataGenerator
 
+        train_mode = self._learning_phase if hasattr(self, '_learning_phase') else True
+
         if isinstance(generator, MXDataGenerator) and \
                 not (hasattr(self, 'label_smooth') or hasattr(self, 'feature_squeeze')):
             # Train directly in MXNet
@@ -146,7 +150,7 @@ class MXClassifier(Classifier):
                     y_batch = np.argmax(y_batch, axis=1)
                     y_batch = nd.array(y_batch).as_in_context(self._ctx)
 
-                    with autograd.record(train_mode=True):
+                    with autograd.record(train_mode=train_mode):
                         preds = self._model(x_batch)
                         loss = nd.softmax_cross_entropy(preds, y_batch)
                     loss.backward()
@@ -172,6 +176,8 @@ class MXClassifier(Classifier):
         """
         from mxnet import autograd, nd
 
+        train_mode = self._learning_phase if hasattr(self, '_learning_phase') else False
+
         # Apply preprocessing and defences
         x_ = self._apply_processing(x)
         x_ = self._apply_defences_predict(x_)
@@ -186,7 +192,7 @@ class MXClassifier(Classifier):
             # Predict
             x_batch = nd.array(x_[begin:end], ctx=self._ctx)
             x_batch.attach_grad()
-            with autograd.record(train_mode=False):
+            with autograd.record(train_mode=train_mode):
                 preds = self._model(x_batch)
 
             if logits is False:
@@ -222,6 +228,8 @@ class MXClassifier(Classifier):
                     and label.shape[0] == x.shape[0])):
             raise ValueError('Label %s is out of range.' % str(label))
 
+        train_mode = self._learning_phase if hasattr(self, '_learning_phase') else False
+
         x_ = self._apply_processing(x)
         x_ = nd.array(x_, ctx=self._ctx)
         x_.attach_grad()
@@ -241,7 +249,7 @@ class MXClassifier(Classifier):
                 grads.append(grad)
             grads = np.swapaxes(np.array(grads), 0, 1)
         elif isinstance(label, (int, np.integer)):
-            with autograd.record(train_mode=False):
+            with autograd.record(train_mode=train_mode):
                 if logits is True:
                     preds = self._model(x_)
                 else:
@@ -253,7 +261,7 @@ class MXClassifier(Classifier):
         else:
             unique_labels = list(np.unique(label))
 
-            with autograd.record(train_mode=False):
+            with autograd.record(train_mode=train_mode):
                 if logits is True:
                     preds = self._model(x_)
                 else:
@@ -289,12 +297,14 @@ class MXClassifier(Classifier):
         """
         from mxnet import autograd, gluon, nd
 
+        train_mode = self._learning_phase if hasattr(self, '_learning_phase') else False
+
         x_ = nd.array(x, ctx=self._ctx)
         y_ = nd.array([np.argmax(y, axis=1)]).T
 
         x_.attach_grad()
         loss = gluon.loss.SoftmaxCrossEntropyLoss()
-        with autograd.record(train_mode=False):
+        with autograd.record(train_mode=train_mode):
             preds = self._model(x_)
             loss = loss(preds, y_)
 
@@ -360,6 +370,16 @@ class MXClassifier(Classifier):
         preds = self._model[layer_ind](x_)
 
         return preds.asnumpy()
+
+    def set_learning_phase(self, train):
+        """
+        Set the learning phase for the backend framework.
+
+        :param train: True to set the learning phase to training, False to set it to prediction.
+        :type train: `bool`
+        """
+        if isinstance(train, bool):
+            self._learning_phase = train
 
     def save(self, filename, path=None):
         """

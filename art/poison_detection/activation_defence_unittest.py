@@ -110,21 +110,19 @@ class TestActivationDefence(unittest.TestCase):
         # Get MNIST
         (x_train, _), (_, _) = self.mnist
 
-        confidence_level, is_clean_lst = self.defence.detect_poison(nb_clusters=2, nb_dims=10, reduce='PCA')
+        report, is_clean_lst = self.defence.detect_poison(nb_clusters=2, nb_dims=10, reduce='PCA')
         sum_clean1 = sum(is_clean_lst)
 
         # Check number of items in is_clean
         self.assertEqual(len(x_train), len(is_clean_lst))
-        self.assertEqual(len(x_train), len(confidence_level))
 
         # Test right number of clusters
         found_clusters = len(np.unique(self.defence.clusters_by_class[0]))
         self.assertEqual(found_clusters, 2)
 
-        confidence_level, is_clean_lst = self.defence.detect_poison(nb_clusters=3, nb_dims=10, reduce='PCA',
-                                                                    cluster_analysis='distance')
+        report, is_clean_lst = self.defence.detect_poison(nb_clusters=3, nb_dims=10, reduce='PCA',
+                                                          cluster_analysis='distance')
         self.assertEqual(len(x_train), len(is_clean_lst))
-        self.assertEqual(len(x_train), len(confidence_level))
 
         # Test change of state to new number of clusters:
         found_clusters = len(np.unique(self.defence.clusters_by_class[0]))
@@ -134,11 +132,11 @@ class TestActivationDefence(unittest.TestCase):
         sum_clean2 = sum(is_clean_lst)
         self.assertNotEqual(sum_clean1, sum_clean2)
 
-        confidence_level, is_clean_lst = self.defence.detect_poison(nb_clusters=2, nb_dims=10, reduce='PCA',
-                                                                    cluster_analysis='distance')
+        report, is_clean_lst = self.defence.detect_poison(nb_clusters=2, nb_dims=10, reduce='PCA',
+                                                          cluster_analysis='distance')
         sum_dist = sum(is_clean_lst)
-        confidence_level, is_clean_lst = self.defence.detect_poison(nb_clusters=2, nb_dims=10, reduce='PCA',
-                                                                    cluster_analysis='smaller')
+        report, is_clean_lst = self.defence.detect_poison(nb_clusters=2, nb_dims=10, reduce='PCA',
+                                                          cluster_analysis='smaller')
         sum_size = sum(is_clean_lst)
         self.assertNotEqual(sum_dist, sum_size)
 
@@ -146,8 +144,11 @@ class TestActivationDefence(unittest.TestCase):
         # Get MNIST
         (x_train, _), (_, _) = self.mnist
 
-        dist_clean_by_class = self.defence.analyze_clusters(cluster_analysis='distance')
+        self.defence.analyze_clusters(cluster_analysis='relative-size')
 
+        self.defence.analyze_clusters(cluster_analysis='silhouette-scores')
+
+        report, dist_clean_by_class = self.defence.analyze_clusters(cluster_analysis='distance')
         n_classes = self.classifier.nb_classes
         self.assertEqual(n_classes, len(dist_clean_by_class))
 
@@ -157,7 +158,7 @@ class TestActivationDefence(unittest.TestCase):
             n_dp += len(dist_clean_by_class[i])
         self.assertEqual(len(x_train), n_dp)
 
-        sz_clean_by_class = self.defence.analyze_clusters(cluster_analysis='smaller')
+        report, sz_clean_by_class = self.defence.analyze_clusters(cluster_analysis='smaller')
         n_classes = self.classifier.nb_classes
         self.assertEqual(n_classes, len(sz_clean_by_class))
 

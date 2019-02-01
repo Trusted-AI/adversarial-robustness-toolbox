@@ -87,7 +87,7 @@ class ActivationDefence(PoisonFilteringDefence):
             self.activations_by_class = self._segment_by_class(activations, self.y_train)
 
         self.clusters_by_class, self.red_activations_by_class = self.cluster_activations()
-        self.assigned_clean_by_class = self.analyze_clusters()
+        report, self.assigned_clean_by_class = self.analyze_clusters()
 
         # Now check ground truth:
         self.is_clean_by_class = self._segment_by_class(is_clean, self.y_train)
@@ -97,11 +97,13 @@ class ActivationDefence(PoisonFilteringDefence):
 
     def detect_poison(self, **kwargs):
         """
-        Returns poison detected.
+        Returns poison detected and a report.
 
         :param kwargs: a dictionary of detection-specific parameters
         :type kwargs: `dict`
-        :return: 1) confidence_level, 2) is_clean_lst : type List[int], where is_clean_lst[i]=1 means that x_train[i]
+        :return: (report, is_clean_lst):
+                where a report is a dictionary that contains information specified by the clustering analysis technique.
+                where is_clean is a list, where is_clean_lst[i]=1 means that x_train[i]
                 there is clean and is_clean_lst[i]=0, means that x_train[i] was classified as poison
         :rtype: `tuple`
         """
@@ -111,7 +113,7 @@ class ActivationDefence(PoisonFilteringDefence):
             activations = self._get_activations()
             self.activations_by_class = self._segment_by_class(activations, self.y_train)
         self.clusters_by_class, self.red_activations_by_class = self.cluster_activations()
-        self.assigned_clean_by_class = self.analyze_clusters()
+        report, self.assigned_clean_by_class = self.analyze_clusters()
         # Here, assigned_clean_by_class[i][j] is 1 if the jth datapoint in the ith class was
         # determined to be clean by activation cluster
 
@@ -119,13 +121,13 @@ class ActivationDefence(PoisonFilteringDefence):
         n_train = len(self.x_train)
         indices_by_class = self._segment_by_class(np.arange(n_train), self.y_train)
         self.is_clean_lst = [0] * n_train
-        self.confidence_level = [1] * n_train
+
         for assigned_clean, dp in zip(self.assigned_clean_by_class, indices_by_class):
             for assignment, index_dp in zip(assigned_clean, dp):
                 if assignment == 1:
                     self.is_clean_lst[index_dp] = 1
 
-        return self.confidence_level, self.is_clean_lst
+        return report, self.is_clean_lst
 
     def cluster_activations(self, **kwargs):
         """
@@ -170,24 +172,27 @@ class ActivationDefence(PoisonFilteringDefence):
         analyzer = ClusteringAnalyzer()
 
         if self.cluster_analysis == 'smaller':
-            self.assigned_clean_by_class, self.poisonous_clusters \
+            self.assigned_clean_by_class, self.poisonous_clusters, report \
                 = analyzer.analyze_by_size(self.clusters_by_class)
         elif self.cluster_analysis == 'relative-size':
-            self.assigned_clean_by_class, self.poisonous_clusters \
+            self.assigned_clean_by_class, self.poisonous_clusters, report \
                 = analyzer.analyze_by_relative_size(self.clusters_by_class)
         elif self.cluster_analysis == 'distance':
-            self.assigned_clean_by_class, self.poisonous_clusters \
+            self.assigned_clean_by_class, self.poisonous_clusters, report \
                 = analyzer.analyze_by_distance(self.clusters_by_class,
                                                separated_activations=self.red_activations_by_class)
         elif self.cluster_analysis == 'silhouette-scores':
-            self.assigned_clean_by_class, self.poisonous_clusters \
-                = analyzer.analyze_by_sihouette_score(self.clusters_by_class,
-                                                      reduced_activations_by_class=self.red_activations_by_class)
+            self.assigned_clean_by_class, self.poisonous_clusters, report \
+                = analyzer.analyze_by_silhouette_score(self.clusters_by_class,
+                                                       reduced_activations_by_class=self.red_activations_by_class)
         else:
             raise ValueError(
                 "Unsupported cluster analysis technique " + self.cluster_analysis)
 
-        return self.assigned_clean_by_class
+        # Add to the report current parameters used to run the defence and the analysis summary
+        report = dict(list(report.items()) + list(self.get_params().items()))
+
+        return report, self.assigned_clean_by_class
 
     def visualize_clusters(self, x_raw, save=True, folder='.', **kwargs):
         """

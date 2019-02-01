@@ -20,6 +20,8 @@ from __future__ import absolute_import, division, print_function, unicode_litera
 import logging
 import unittest
 
+import numpy as np
+
 from art.poison_detection.clustering_analyzer import ClusteringAnalyzer
 
 logger = logging.getLogger('testLogger')
@@ -38,7 +40,7 @@ class TestActivationDefence(unittest.TestCase):
         clusters_by_class[1] = [1, 0, 0, 0, 0]  # Class 1
         clusters_by_class[2] = [0, 0, 0, 0, 1]  # Class 2
         analyzer = ClusteringAnalyzer()
-        assigned_clean_by_class, poison_clusters = analyzer.analyze_by_size(clusters_by_class)
+        assigned_clean_by_class, poison_clusters, report = analyzer.analyze_by_size(clusters_by_class)
 
         # print("clusters_by_class")
         # print(clusters_by_class)
@@ -53,13 +55,31 @@ class TestActivationDefence(unittest.TestCase):
         self.assertEqual(poison_clusters[0][0], poison)
         # For class 0, cluster 1 should be marked as clean.
         self.assertEqual(poison_clusters[0][1], clean)
+        self.assertEqual(report['Class_0']['cluster_0']['suspicious_cluster'], True)
+        self.assertEqual(report['Class_0']['cluster_1']['suspicious_cluster'], False)
+        total = len(clusters_by_class[0])
+        c1 = sum(clusters_by_class[0])
+        self.assertEqual(report['Class_0']['cluster_0']['ptc_data_in_cluster'], (total-c1)/total)
+        self.assertEqual(report['Class_0']['cluster_1']['ptc_data_in_cluster'], c1/total)
 
         # Inverse relations for class 1
         self.assertEqual(poison_clusters[1][0], clean)
         self.assertEqual(poison_clusters[1][1], poison)
+        self.assertEqual(report['Class_1']['cluster_0']['suspicious_cluster'], False)
+        self.assertEqual(report['Class_1']['cluster_1']['suspicious_cluster'], True)
+        total = len(clusters_by_class[1])
+        c1 = sum(clusters_by_class[1])
+        self.assertEqual(report['Class_1']['cluster_0']['ptc_data_in_cluster'], (total - c1) / total)
+        self.assertEqual(report['Class_1']['cluster_1']['ptc_data_in_cluster'], c1 / total)
 
         self.assertEqual(poison_clusters[2][0], clean)
         self.assertEqual(poison_clusters[2][1], poison)
+        self.assertEqual(report['Class_2']['cluster_0']['suspicious_cluster'], False)
+        self.assertEqual(report['Class_2']['cluster_1']['suspicious_cluster'], True)
+        total = len(clusters_by_class[2])
+        c1 = sum(clusters_by_class[2])
+        self.assertEqual(report['Class_2']['cluster_0']['ptc_data_in_cluster'], (total - c1) / total)
+        self.assertEqual(report['Class_2']['cluster_1']['ptc_data_in_cluster'], c1 / total)
 
         poison = 0
         self.assertEqual(assigned_clean_by_class[0][0], poison)
@@ -75,7 +95,7 @@ class TestActivationDefence(unittest.TestCase):
         clusters_by_class[1] = [1, 0, 0, 2, 2]  # Class 1
         clusters_by_class[2] = [0, 0, 0, 2, 1, 1]  # Class 2
         analyzer = ClusteringAnalyzer()
-        assigned_clean_by_class, poison_clusters = analyzer.analyze_by_size(clusters_by_class)
+        assigned_clean_by_class, poison_clusters, report = analyzer.analyze_by_size(clusters_by_class)
 
         # print("clusters_by_class")
         # print(clusters_by_class)
@@ -91,14 +111,38 @@ class TestActivationDefence(unittest.TestCase):
         # For class 0, cluster 1 and 2 should be marked as clean.
         self.assertEqual(poison_clusters[0][1], clean)
         self.assertEqual(poison_clusters[0][2], clean)
+        self.assertEqual(report['Class_0']['cluster_0']['suspicious_cluster'], True)
+        self.assertEqual(report['Class_0']['cluster_1']['suspicious_cluster'], False)
+        self.assertEqual(report['Class_0']['cluster_2']['suspicious_cluster'], False)
+        total = len(clusters_by_class[0])
+        counts = np.bincount(clusters_by_class[0])
+        self.assertEqual(report['Class_0']['cluster_0']['ptc_data_in_cluster'], counts[0] / total)
+        self.assertEqual(report['Class_0']['cluster_1']['ptc_data_in_cluster'], counts[1] / total)
+        self.assertEqual(report['Class_0']['cluster_2']['ptc_data_in_cluster'], counts[2] / total)
 
-        self.assertEqual(poison_clusters[1][1], poison)
         self.assertEqual(poison_clusters[1][0], clean)
+        self.assertEqual(poison_clusters[1][1], poison)
         self.assertEqual(poison_clusters[1][2], clean)
+        self.assertEqual(report['Class_1']['cluster_0']['suspicious_cluster'], False)
+        self.assertEqual(report['Class_1']['cluster_1']['suspicious_cluster'], True)
+        self.assertEqual(report['Class_1']['cluster_2']['suspicious_cluster'], False)
+        total = len(clusters_by_class[1])
+        counts = np.bincount(clusters_by_class[1])
+        self.assertEqual(report['Class_1']['cluster_0']['ptc_data_in_cluster'], counts[0] / total)
+        self.assertEqual(report['Class_1']['cluster_1']['ptc_data_in_cluster'], counts[1] / total)
+        self.assertEqual(report['Class_1']['cluster_2']['ptc_data_in_cluster'], counts[2] / total)
 
-        self.assertEqual(poison_clusters[2][2], poison)
         self.assertEqual(poison_clusters[2][0], clean)
         self.assertEqual(poison_clusters[2][1], clean)
+        self.assertEqual(poison_clusters[2][2], poison)
+        self.assertEqual(report['Class_2']['cluster_0']['suspicious_cluster'], False)
+        self.assertEqual(report['Class_2']['cluster_1']['suspicious_cluster'], False)
+        self.assertEqual(report['Class_2']['cluster_2']['suspicious_cluster'], True)
+        total = len(clusters_by_class[2])
+        counts = np.bincount(clusters_by_class[2])
+        self.assertEqual(report['Class_2']['cluster_0']['ptc_data_in_cluster'], round(counts[0] / total, 2))
+        self.assertEqual(report['Class_2']['cluster_1']['ptc_data_in_cluster'], round(counts[1] / total, 2))
+        self.assertEqual(report['Class_2']['cluster_2']['ptc_data_in_cluster'], round(counts[2] / total, 2))
 
         poison = 0
         self.assertEqual(assigned_clean_by_class[0][0], poison)
@@ -115,7 +159,7 @@ class TestActivationDefence(unittest.TestCase):
         clusters_by_class[2] = [0, 0, 0, 0, 1]  # Class 2
         clusters_by_class[3] = [0, 0, 1, 1, 1]  # Class 3
         analyzer = ClusteringAnalyzer()
-        assigned_clean_by_class, poison_clusters = analyzer.analyze_by_relative_size(clusters_by_class)
+        assigned_clean_by_class, poison_clusters, report = analyzer.analyze_by_relative_size(clusters_by_class)
 
         # print("clusters_by_class")
         # print(clusters_by_class)
@@ -130,16 +174,40 @@ class TestActivationDefence(unittest.TestCase):
         self.assertEqual(poison_clusters[0][0], poison)
         # For class 0, cluster 1 should be marked as clean.
         self.assertEqual(poison_clusters[0][1], clean)
+        self.assertEqual(report['Class_0']['cluster_0']['suspicious_cluster'], True)
+        self.assertEqual(report['Class_0']['cluster_1']['suspicious_cluster'], False)
+        total = len(clusters_by_class[0])
+        c1 = sum(clusters_by_class[0])
+        self.assertEqual(report['Class_0']['cluster_0']['ptc_data_in_cluster'], round((total - c1) / total, 2))
+        self.assertEqual(report['Class_0']['cluster_1']['ptc_data_in_cluster'], round(c1 / total, 2))
 
         # Inverse relations for class 1
         self.assertEqual(poison_clusters[1][0], clean)
         self.assertEqual(poison_clusters[1][1], poison)
+        self.assertEqual(report['Class_1']['cluster_0']['suspicious_cluster'], False)
+        self.assertEqual(report['Class_1']['cluster_1']['suspicious_cluster'], True)
+        total = len(clusters_by_class[1])
+        c1 = sum(clusters_by_class[1])
+        self.assertEqual(report['Class_1']['cluster_0']['ptc_data_in_cluster'], round((total - c1) / total, 2))
+        self.assertEqual(report['Class_1']['cluster_1']['ptc_data_in_cluster'], round(c1 / total, 2))
 
         self.assertEqual(poison_clusters[2][0], clean)
         self.assertEqual(poison_clusters[2][1], poison)
+        self.assertEqual(report['Class_2']['cluster_0']['suspicious_cluster'], False)
+        self.assertEqual(report['Class_2']['cluster_1']['suspicious_cluster'], True)
+        total = len(clusters_by_class[2])
+        c1 = sum(clusters_by_class[2])
+        self.assertEqual(report['Class_2']['cluster_0']['ptc_data_in_cluster'], round((total - c1) / total, 2))
+        self.assertEqual(report['Class_2']['cluster_1']['ptc_data_in_cluster'], round(c1 / total, 2))
 
         self.assertEqual(poison_clusters[3][0], clean)
         self.assertEqual(poison_clusters[3][1], clean)
+        self.assertEqual(report['Class_3']['cluster_0']['suspicious_cluster'], False)
+        self.assertEqual(report['Class_3']['cluster_1']['suspicious_cluster'], False)
+        total = len(clusters_by_class[3])
+        c1 = sum(clusters_by_class[3])
+        self.assertEqual(report['Class_3']['cluster_0']['ptc_data_in_cluster'], round((total - c1) / total, 2))
+        self.assertEqual(report['Class_3']['cluster_1']['ptc_data_in_cluster'], round(c1 / total, 2))
 
         poison = 0
         self.assertEqual(assigned_clean_by_class[0][0], poison)

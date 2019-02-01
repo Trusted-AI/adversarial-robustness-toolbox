@@ -104,6 +104,12 @@ class TestDeepFool(unittest.TestCase):
         # Set master seed
         master_seed(1234)
 
+    @classmethod
+    def tearDownClass(cls):
+        k.clear_session()
+        cls.classifier_tf._sess.close()
+        tf.reset_default_graph()
+
     def test_mnist(self):
         # Define all backends to test
         backends = {'keras': self.classifier_k,
@@ -129,8 +135,8 @@ class TestDeepFool(unittest.TestCase):
 
         # Test DeepFool
         attack = DeepFool(classifier, max_iter=5)
-        x_test_adv = attack.generate(x_test)
         x_train_adv = attack.generate(x_train)
+        x_test_adv = attack.generate(x_test, batch_size=11)
 
         self.assertFalse((x_train == x_train_adv).all())
         self.assertFalse((x_test == x_test_adv).all())
@@ -143,6 +149,20 @@ class TestDeepFool(unittest.TestCase):
 
         acc = np.sum(np.argmax(train_y_pred, axis=1) == np.argmax(y_train, axis=1)) / y_train.shape[0]
         logger.info('Accuracy on adversarial train examples: %.2f%%', (acc * 100))
+
+        acc = np.sum(np.argmax(test_y_pred, axis=1) == np.argmax(y_test, axis=1)) / y_test.shape[0]
+        logger.info('Accuracy on adversarial test examples: %.2f%%', (acc * 100))
+
+    def test_partial_grads(self):
+        # Get MNIST
+        (_, _), (x_test, y_test) = self.mnist
+
+        attack = DeepFool(self.classifier_k, max_iter=2, nb_grads=3)
+        x_test_adv = attack.generate(x_test)
+        self.assertFalse((x_test == x_test_adv).all())
+
+        test_y_pred = get_labels_np_array(self.classifier_k.predict(x_test_adv))
+        self.assertFalse((y_test == test_y_pred).all())
 
         acc = np.sum(np.argmax(test_y_pred, axis=1) == np.argmax(y_test, axis=1)) / y_test.shape[0]
         logger.info('Accuracy on adversarial test examples: %.2f%%', (acc * 100))

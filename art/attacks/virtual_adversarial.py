@@ -31,9 +31,9 @@ class VirtualAdversarialMethod(Attack):
     This attack was originally proposed by Miyato et al. (2016) and was used for virtual adversarial training.
     Paper link: https://arxiv.org/abs/1507.00677
     """
-    attack_params = Attack.attack_params + ['eps', 'finite_diff', 'max_iter']
+    attack_params = Attack.attack_params + ['eps', 'finite_diff', 'max_iter', 'batch_size']
 
-    def __init__(self, classifier, max_iter=1, finite_diff=1e-6, eps=.1):
+    def __init__(self, classifier, max_iter=1, finite_diff=1e-6, eps=.1, batch_size=128, expectation=None):
         """
         Create a VirtualAdversarialMethod instance.
 
@@ -45,10 +45,18 @@ class VirtualAdversarialMethod(Attack):
         :type finite_diff: `float`
         :param max_iter: The maximum number of iterations.
         :type max_iter: `int`
+        :param batch_size: Batch size
+        :type batch_size: `int`
+        :param expectation: An expectation over transformations to be applied when computing
+                            classifier gradients and predictions.
+        :type expectation: :class:`ExpectationOverTransformations`
         """
         super(VirtualAdversarialMethod, self).__init__(classifier)
-
-        kwargs = {'finite_diff': finite_diff, 'eps': eps, 'max_iter': max_iter}
+        kwargs = {'finite_diff': finite_diff,
+                  'eps': eps,
+                  'max_iter': max_iter,
+                  'batch_size': batch_size,
+                  'expectation': expectation}
         self.set_params(**kwargs)
 
     def generate(self, x, **kwargs):
@@ -66,40 +74,45 @@ class VirtualAdversarialMethod(Attack):
         :return: An array holding the adversarial examples.
         :rtype: `np.ndarray`
         """
-        # TODO Consider computing attack for a batch of samples at a time (no for loop)
         # Parse and save attack-specific parameters
         assert self.set_params(**kwargs)
         clip_min, clip_max = self.classifier.clip_values
-
         x_adv = np.copy(x)
         dims = list(x.shape[1:])
-        preds = self.classifier.predict(x_adv, logits=False)
+        preds = self._predict(x_adv, logits=False)
+
+        # Pick a small scalar to avoid division by 0
         tol = 1e-10
 
-        for ind, val in enumerate(x_adv):
-            d = np.random.randn(*dims)
+        # Compute perturbation with implicit batching
+        for batch_id in range(int(np.ceil(x_adv.shape[0] / float(self.batch_size)))):
+            batch_index_1, batch_index_2 = batch_id * self.batch_size, (batch_id + 1) * self.batch_size
+            batch = x_adv[batch_index_1:batch_index_2]
 
+            # Main algorithm for each batch
+            d = np.random.randn(*batch.shape)
+
+            # Main loop of the algorithm
             for _ in range(self.max_iter):
                 d = self._normalize(d)
-                preds_new = self.classifier.predict((val + d)[None, ...], logits=False)
+                preds_new = self._predict(batch + d, logits=False)
 
                 from scipy.stats import entropy
-                kl_div1 = entropy(preds[ind], preds_new[0])
+                kl_div1 = entropy(np.transpose(preds[batch_index_1:batch_index_2]), np.transpose(preds_new))
 
-                # TODO remove for loop
                 d_new = np.zeros_like(d)
-                array_iter = np.nditer(d, op_flags=['readwrite'], flags=['multi_index'])
-                for x in array_iter:
-                    x[...] += self.finite_diff
-                    preds_new = self.classifier.predict((val + d)[None, ...], logits=False)
-                    kl_div2 = entropy(preds[ind], preds_new[0])
-                    d_new[array_iter.multi_index] = (kl_div2 - kl_div1) / (self.finite_diff + tol)
-                    x[...] -= self.finite_diff
+                for w in range(d.shape[1]):
+                    for h in range(d.shape[2]):
+                        for c in range(d.shape[3]):
+                            d[:, w, h, c] += self.finite_diff
+                            preds_new = self._predict(batch + d, logits=False)
+                            kl_div2 = entropy(np.transpose(preds[batch_index_1:batch_index_2]), np.transpose(preds_new))
+                            d_new[:, w, h, c] = (kl_div2 - kl_div1) / (self.finite_diff + tol)
+                            d[:, w, h, c] -= self.finite_diff
                 d = d_new
 
             # Apply perturbation and clip
-            val = np.clip(val + self.eps * self._normalize(d), clip_min, clip_max)
-            x_adv[ind] = val
+            x_adv[batch_index_1:batch_index_2] = np.clip(batch + self.eps * self._normalize(d), clip_min, clip_max)
 
         return x_adv
 
@@ -108,7 +121,7 @@ class VirtualAdversarialMethod(Attack):
         """
         Apply L_2 batch normalization on `x`.
 
-        :param x: The input array to normalize.
+        :param x: The input array batch to normalize.
         :type x: `np.ndarray`
         :return: The normalized version of `x`.
         :rtype: `np.ndarray`
@@ -116,9 +129,9 @@ class VirtualAdversarialMethod(Attack):
         tol = 1e-10
         dims = x.shape
 
-        x = x.flatten()
-        inverse = (np.sum(x**2) + tol) ** -.5
-        x = x * inverse
+        x = x.reshape(dims[0], -1)
+        inverse = (np.sum(x**2, axis=1) + tol) ** -.5
+        x = x * inverse[:, None]
         x = np.reshape(x, dims)
 
         return x
@@ -133,8 +146,22 @@ class VirtualAdversarialMethod(Attack):
         :type finite_diff: `float`
         :param max_iter: The maximum number of iterations.
         :type max_iter: `int`
+        :param batch_size: Internal size of batches on which adversarial samples are generated.
+        :type batch_size: `int`
         """
         # Save attack-specific parameters
         super(VirtualAdversarialMethod, self).set_params(**kwargs)
+
+        if not isinstance(self.max_iter, (int, np.int)) or self.max_iter <= 0:
+            raise ValueError("The number of iterations must be a positive integer.")
+
+        if self.eps <= 0:
+            raise ValueError("The attack step must be positive.")
+
+        if not isinstance(self.finite_diff, float) or self.finite_diff <= 0:
+            raise ValueError("The finite difference parameter must be a positive float.")
+
+        if self.batch_size <= 0:
+            raise ValueError('The batch size `batch_size` has to be positive.')
 
         return True

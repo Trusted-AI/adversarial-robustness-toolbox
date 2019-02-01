@@ -109,7 +109,7 @@ def projection(v, eps, p):
 
 def random_sphere(nb_points, nb_dims, radius, norm):
     """
-    Generate randomly `m x n`-dimension points with radius `r` and centered around 0.
+    Generate randomly `m x n`-dimension points with radius `radius` and centered around 0.
 
     :param nb_points: Number of random data points
     :type nb_points: `int`

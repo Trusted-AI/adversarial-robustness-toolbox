@@ -80,7 +80,6 @@ class AdversarialTrainer:
         size = generator.size
         batch_size = generator.batch_size
         nb_batches = int(np.ceil(size / batch_size))
-        nb_adv = int(np.ceil(self.ratio * generator.batch_size))
         ind = np.arange(generator.size)
         attack_id = 0
 
@@ -123,8 +122,13 @@ class AdversarialTrainer:
                 x_batch = x_batch.copy()
 
                 # Choose indices to replace with adversarial samples
+                nb_adv = int(np.ceil(self.ratio * x_batch.shape[0]))
                 attack = self.attacks[attack_id]
-                adv_ids = np.random.choice(x_batch.shape[0], size=nb_adv, replace=False)
+                if self.ratio < 1:
+                    adv_ids = np.random.choice(x_batch.shape[0], size=nb_adv, replace=False)
+                else:
+                    adv_ids = list(range(x_batch.shape[0]))
+                    np.random.shuffle(adv_ids)
 
                 # If source and target models are the same, craft fresh adversarial samples
                 if attack.classifier == self.classifier:
@@ -189,8 +193,13 @@ class AdversarialTrainer:
 
                 nb_adv = int(np.ceil(self.ratio * x_batch.shape[0]))
                 # Choose indices to replace with adversarial samples
+                nb_adv = int(np.ceil(self.ratio * x_batch.shape[0]))
                 attack = self.attacks[attack_id]
-                adv_ids = np.random.choice(x_batch.shape[0], size=nb_adv, replace=False)
+                if self.ratio < 1:
+                    adv_ids = np.random.choice(x_batch.shape[0], size=nb_adv, replace=False)
+                else:
+                    adv_ids = list(range(x_batch.shape[0]))
+                    np.random.shuffle(adv_ids)
 
                 # If source and target models are the same, craft fresh adversarial samples
                 if attack.classifier == self.classifier:

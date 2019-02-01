@@ -33,9 +33,9 @@ class TotalVarMin(Preprocessor):
     Implement the total variance minimization defence approach. Defence method from [Guo et al., 2018].
     Paper link: https://openreview.net/forum?id=SyJ7ClWCb
     """
-    params = ['prob', 'norm', 'lam', 'solver', 'maxiter']
+    params = ['prob', 'norm', 'lamb', 'solver', 'max_iter']
 
-    def __init__(self, prob=0.3, norm=2, lam=0.5, solver='L-BFGS-B', maxiter=10):
+    def __init__(self, prob=0.3, norm=2, lamb=0.5, solver='L-BFGS-B', max_iter=10):
         """
         Create an instance of total variance minimization.
 
@@ -43,18 +43,18 @@ class TotalVarMin(Preprocessor):
         :type prob: `float`
         :param norm: The norm (positive integer).
         :type norm: `int`
-        :param lam: The lambda parameter in the objective function.
-        :type lam: `float`
+        :param lamb: The lambda parameter in the objective function.
+        :type lamb: `float`
         :param solver: Current support: L-BFGS-B, CG, Newton-CG
-        :type solver: `string`
-        :param maxiter: Maximum number of iterations in an optimization.
-        :type maxiter: `int`
+        :type solver: `str`
+        :param max_iter: Maximum number of iterations in an optimization.
+        :type max_iter: `int`
         """
         super(TotalVarMin, self).__init__()
         self._is_fitted = True
-        self.set_params(prob=prob, norm=norm, lam=lam, solver=solver, maxiter=maxiter)
+        self.set_params(prob=prob, norm=norm, lamb=lamb, solver=solver, max_iter=max_iter)
 
-    def __call__(self, x, y=None, prob=None, norm=None, lam=None, solver=None, maxiter=None, clip_values=(0, 1)):
+    def __call__(self, x, y=None, prob=None, norm=None, lamb=None, solver=None, max_iter=None, clip_values=(0, 1)):
         """
         Apply total variance minimization to sample `x`.
 
@@ -66,33 +66,35 @@ class TotalVarMin(Preprocessor):
         :type prob: `float`
         :param norm: The norm (positive integer).
         :type norm: `int`
-        :param lam: The lambda parameter in the objective function.
-        :type lam: `float`
+        :param lamb: The lambda parameter in the objective function.
+        :type lamb: `float`
         :param solver: Current support: L-BFGS-B, CG, Newton-CG
-        :type solver: `string`
-        :param maxiter: Maximum number of iterations in an optimization.
-        :type maxiter: `int`
+        :type solver: `str`
+        :param max_iter: Maximum number of iterations in an optimization.
+        :type max_iter: `int`
         :return: similar sample
         :rtype: `np.ndarray`
         """
+        params = {}
         if prob is not None:
-            self.set_params(prob=prob)
+            params['prob'] = prob
 
         if norm is not None:
-            self.set_params(norm=norm)
+            params['norm'] = norm
 
-        if lam is not None:
-            self.set_params(lam=lam)
+        if lamb is not None:
+            params['lamb'] = lamb
 
         if solver is not None:
-            self.set_params(solver=solver)
+            params['solver'] = solver
 
-        if maxiter is not None:
-            self.set_params(maxiter=maxiter)
+        if max_iter is not None:
+            params['max_iter'] = max_iter
 
+        self.set_params(**params)
         x_ = x.copy()
 
-        # Minimize one image per time
+        # Minimize one image at a time
         for i, xi in enumerate(x_):
             mask = (np.random.rand(xi.shape[0], xi.shape[1], xi.shape[2]) < self.prob).astype('int')
             x_[i] = self._minimize(xi, mask)
@@ -115,13 +117,14 @@ class TotalVarMin(Preprocessor):
         z = x.copy()
 
         for i in range(x.shape[2]):
-            res = minimize(self._loss_func, z[:, :, i].flatten(), (x[:, :, i], mask[:, :, i], self.norm, self.lam),
-                           method=self.solver, jac=self._deri_loss_func, options={'maxiter': self.maxiter})
+            res = minimize(self._loss_func, z[:, :, i].flatten(), (x[:, :, i], mask[:, :, i], self.norm, self.lamb),
+                           method=self.solver, jac=self._deri_loss_func, options={'maxiter': self.max_iter})
             z[:, :, i] = np.reshape(res.x, z[:, :, i].shape)
 
         return z
 
-    def _loss_func(self, z, x, mask, norm, lam):
+    @staticmethod
+    def _loss_func(z, x, mask, norm, lamb):
         """
         Loss function to be minimized.
 
@@ -133,20 +136,20 @@ class TotalVarMin(Preprocessor):
         :type mask: `np.ndarray`
         :param norm: The norm (positive integer).
         :type norm: `int`
-        :param lam: The lambda parameter in the objective function.
-        :type lam: `float`
+        :param lamb: The lambda parameter in the objective function.
+        :type lamb: `float`
         :return: Loss value.
         :rtype: `float`
         """
         res = np.sqrt(np.power(z - x.flatten(), 2).dot(mask.flatten()))
         z = np.reshape(z, x.shape)
-        res += lam * np.linalg.norm(z[1:, :] - z[:-1, :], norm, axis=1).sum()
-        res += lam * np.linalg.norm(z[:, 1:] - z[:, :-1], norm, axis=0).sum()
+        res += lamb * np.linalg.norm(z[1:, :] - z[:-1, :], norm, axis=1).sum()
+        res += lamb * np.linalg.norm(z[:, 1:] - z[:, :-1], norm, axis=0).sum()
 
         return res
 
     @staticmethod
-    def _deri_loss_func(z, x, mask, norm, lam):
+    def _deri_loss_func(z, x, mask, norm, lamb):
         """
         Derivative of loss function to be minimized.
 
@@ -158,8 +161,8 @@ class TotalVarMin(Preprocessor):
         :type mask: `np.ndarray`
         :param norm: The norm (positive integer).
         :type norm: `int`
-        :param lam: The lambda parameter in the objective function.
-        :type lam: `float`
+        :param lamb: The lambda parameter in the objective function.
+        :type lamb: `float`
         :return: Derivative value.
         :rtype: `float`
         """
@@ -190,12 +193,10 @@ class TotalVarMin(Preprocessor):
         der2[1:, :] += z_d1
         der2[:, :-1] -= z_d2
         der2[:, 1:] += z_d2
-        der2 = lam * der2.flatten()
+        der2 = lamb * der2.flatten()
 
         # Total derivative
-        der = der1 + der2
-
-        return der
+        return der1 + der2
 
     def fit(self, x, y=None, **kwargs):
         """
@@ -211,12 +212,12 @@ class TotalVarMin(Preprocessor):
         :type prob: `float`
         :param norm: The norm (positive integer).
         :type norm: `int`
-        :param lam: The lambda parameter in the objective function.
-        :type lam: `float`
-        :param solver: Current support: L-BFGS-B, CG, Newton-CG
-        :type solver: `string`
-        :param maxiter: Maximum number of iterations in an optimization.
-        :type maxiter: `int`
+        :param lamb: The lambda parameter in the objective function.
+        :type lamb: `float`
+        :param solver: Current support: L-BFGS-B, CG, Newton-CG.
+        :type solver: `str`
+        :param max_iter: Maximum number of iterations in an optimization.
+        :type max_iter: `int`
         """
         # Save defense-specific parameters
         super(TotalVarMin, self).set_params(**kwargs)
@@ -233,7 +234,7 @@ class TotalVarMin(Preprocessor):
             logger.error('Current support only L-BFGS-B, CG, Newton-CG.')
             raise ValueError('Current support only L-BFGS-B, CG, Newton-CG.')
 
-        if not isinstance(self.maxiter, (int, np.int)) or self.maxiter <= 0:
+        if not isinstance(self.max_iter, (int, np.int)) or self.max_iter <= 0:
             logger.error('Number of iterations must be a positive integer.')
             raise ValueError('Number of iterations must be a positive integer.')
 

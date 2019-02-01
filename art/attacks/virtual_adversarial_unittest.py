@@ -118,6 +118,10 @@ class TestVirtualAdversarial(unittest.TestCase):
             if _ == 'pytorch':
                 self._swap_axes()
 
+        self.classifier_tf._sess.close()
+        tf.reset_default_graph()
+        k.clear_session()
+
     def _swap_axes(self):
         (x_train, y_train), (x_test, y_test) = self.mnist
         x_train = np.swapaxes(x_train, 1, 3)
@@ -129,8 +133,29 @@ class TestVirtualAdversarial(unittest.TestCase):
         (_, _), (x_test, y_test) = self.mnist
         x_test, y_test = x_test[:NB_TEST], y_test[:NB_TEST]
 
+        #import time
         df = VirtualAdversarialMethod(classifier)
-        x_test_adv = df.generate(x_test, eps=1)
+
+        # starttime = time.clock()
+        # x_test_adv = df.generate(x_test, batch_size=1)
+        # endtime = time.clock()
+        # print(1, endtime - starttime)
+        #
+        # starttime = time.clock()
+        # x_test_adv = df.generate(x_test, batch_size=10)
+        # endtime = time.clock()
+        # print(10, endtime - starttime)
+        #
+        # starttime = time.clock()
+        x_test_adv = df.generate(x_test, batch_size=100)
+        # endtime = time.clock()
+        # print(100, endtime - starttime)
+
+        # starttime = time.clock()
+        # x_test_adv = df.generate(x_test, batch_size=1000)
+        # endtime = time.clock()
+        # print(1000, endtime - starttime)
+
         self.assertFalse((x_test == x_test_adv).all())
 
         y_pred = get_labels_np_array(classifier.predict(x_test_adv))

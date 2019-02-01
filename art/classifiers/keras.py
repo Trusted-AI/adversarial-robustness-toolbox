@@ -1,3 +1,20 @@
+# MIT License
+#
+# Copyright (C) IBM Corporation 2018
+#
+# Permission is hereby granted, free of charge, to any person obtaining a copy of this software and associated
+# documentation files (the "Software"), to deal in the Software without restriction, including without limitation the
+# rights to use, copy, modify, merge, publish, distribute, sublicense, and/or sell copies of the Software, and to permit
+# persons to whom the Software is furnished to do so, subject to the following conditions:
+#
+# The above copyright notice and this permission notice shall be included in all copies or substantial portions of the
+# Software.
+#
+# THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE
+# WARRANTIES OF MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+# AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT,
+# TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
+# SOFTWARE.
 from __future__ import absolute_import, division, print_function, unicode_literals
 
 import logging
@@ -194,9 +211,6 @@ class KerasClassifier(Classifier):
         :return: Array of predictions of shape `(nb_inputs, self.nb_classes)`.
         :rtype: `np.ndarray`
         """
-        import keras.backend as k
-        k.set_learning_phase(0)
-
         # Apply defences
         x_ = self._apply_processing(x)
         x_ = self._apply_defences_predict(x_)
@@ -227,9 +241,6 @@ class KerasClassifier(Classifier):
         :type nb_epochs: `int`
         :return: `None`
         """
-        import keras.backend as k
-        k.set_learning_phase(1)
-
         # Apply preprocessing and defences
         x_ = self._apply_processing(x)
         x_, y_ = self._apply_defences_fit(x_, y)
@@ -248,10 +259,7 @@ class KerasClassifier(Classifier):
         :type nb_epochs: `int`
         :return: `None`
         """
-        import keras.backend as k
         from art.data_generators import KerasDataGenerator
-
-        k.set_learning_phase(1)
 
         # Try to use the generator as a Keras native generator, otherwise use it through the `DataGenerator` interface
         # TODO Testing for preprocessing defenses is currently hardcoded; this should be improved (add property)
@@ -294,7 +302,6 @@ class KerasClassifier(Classifier):
         :rtype: `np.ndarray`
         """
         import keras.backend as k
-        k.set_learning_phase(0)
 
         if isinstance(layer, six.string_types):
             if layer not in self._layer_names:
@@ -323,7 +330,6 @@ class KerasClassifier(Classifier):
 
     def _init_class_grads(self, label=None, logits=False):
         import keras.backend as k
-        k.set_learning_phase(0)
 
         if len(self._output.shape) == 2:
             nb_outputs = self._output.shape[1]
@@ -381,6 +387,19 @@ class KerasClassifier(Classifier):
         logger.info('Inferred %i hidden layers on Keras classifier.', len(layer_names))
 
         return layer_names
+
+    def set_learning_phase(self, train):
+        """
+        Set the learning phase for the backend framework.
+
+        :param train: True to set the learning phase to training, False to set it to prediction.
+        :type train: `bool`
+        """
+        import keras.backend as k
+
+        if isinstance(train, bool):
+            self._learning_phase = train
+            k.set_learning_phase(int(train))
 
     def save(self, filename, path=None):
         """

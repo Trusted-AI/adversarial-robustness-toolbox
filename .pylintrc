@@ -61,6 +61,7 @@ confidence=
 # no Warning level messages displayed, use "--disable=all --enable=classes
 # --disable=W".
 disable=fixme,
+        misplaced-comparison-constant,
         no-member,
         duplicate-code,
         unnecessary-pass,

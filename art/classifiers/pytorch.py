@@ -102,15 +102,6 @@ class PyTorchClassifier(Classifier):
         x_ = self._apply_processing(x)
         x_ = self._apply_defences_predict(x_)
 
-        # Set test phase
-        self._model.train(False)
-
-        # Run prediction
-        # preds = self._forward_at(torch.from_numpy(inputs), self._logit_layer).detach().numpy()
-        # if not logits:
-        #     exp = np.exp(preds - np.max(preds, axis=1, keepdims=True))
-        #     preds = exp / np.sum(exp, axis=1, keepdims=True)
-
         # Run prediction with batch processing
         results = np.zeros((x_.shape[0], self.nb_classes), dtype=np.float32)
         num_batch = int(np.ceil(len(x_) / float(batch_size)))
@@ -148,9 +139,6 @@ class PyTorchClassifier(Classifier):
         x_ = self._apply_processing(x)
         x_, y_ = self._apply_defences_fit(x_, y)
         y_ = np.argmax(y_, axis=1)
-
-        # Set train phase
-        self._model.train(True)
 
         num_batch = int(np.ceil(len(x_) / float(batch_size)))
         ind = np.arange(len(x_))
@@ -194,9 +182,6 @@ class PyTorchClassifier(Classifier):
         if isinstance(generator, PyTorchDataGenerator) and \
                 not (hasattr(self, 'label_smooth') or hasattr(self, 'feature_squeeze')):
             for _ in range(nb_epochs):
-                # Set train phase
-                self._model.train(True)
-
                 for i_batch, o_batch in generator.data_loader:
                     if isinstance(i_batch, np.ndarray):
                         i_batch = torch.from_numpy(i_batch).to(self._device).float()
@@ -385,9 +370,6 @@ class PyTorchClassifier(Classifier):
         # Apply defences
         x = self._apply_defences_predict(x)
 
-        # Set test phase
-        self._model.train(False)
-
         # Run prediction
         model_outputs = self._model(torch.from_numpy(x).to(self._device).float())[:-1]
 
@@ -403,6 +385,17 @@ class PyTorchClassifier(Classifier):
             raise TypeError("Layer must be of type str or int")
 
         return model_outputs[layer_index].detach().cpu().numpy()
+
+    def set_learning_phase(self, train):
+        """
+        Set the learning phase for the backend framework.
+
+        :param train: True to set the learning phase to training, False to set it to prediction.
+        :type train: `bool`
+        """
+        if isinstance(train, bool):
+            self._learning_phase = train
+            self._model.train(train)
 
     def save(self, filename, path=None):
         """

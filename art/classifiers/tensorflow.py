@@ -61,6 +61,7 @@ class TFClassifier(Classifier):
         self._train = train
         self._loss = loss
         self._learning = learning
+        self._feed_dict = {}
 
         # Assign session
         if sess is None:
@@ -105,8 +106,7 @@ class TFClassifier(Classifier):
 
             # Create feed_dict
             fd = {self._input_ph: x_[begin:end]}
-            if self._learning is not None:
-                fd[self._learning] = False
+            fd.update(self._feed_dict)
 
             # Run prediction
             if logits:
@@ -151,12 +151,12 @@ class TFClassifier(Classifier):
                 i_batch = x_[ind[m * batch_size:(m + 1) * batch_size]]
                 o_batch = y_[ind[m * batch_size:(m + 1) * batch_size]]
 
+                # Create feed_dict
+                fd = {self._input_ph: i_batch, self._output_ph: o_batch}
+                fd.update(self._feed_dict)
+
                 # Run train step
-                if self._learning is None:
-                    self._sess.run(self._train, feed_dict={self._input_ph: i_batch, self._output_ph: o_batch})
-                else:
-                    self._sess.run(self._train, feed_dict={self._input_ph: i_batch, self._output_ph: o_batch,
-                                                           self._learning: True})
+                self._sess.run(self._train, feed_dict=fd)
 
     def fit_generator(self, generator, nb_epochs=20):
         """
@@ -169,8 +169,23 @@ class TFClassifier(Classifier):
         :type nb_epochs: `int`
         :return: `None`
         """
-        # TODO Implement TF-specific version
-        super(TFClassifier, self).fit_generator(generator, nb_epochs=nb_epochs)
+        from art.data_generators import TFDataGenerator
+
+        # Train directly in Tensorflow
+        if isinstance(generator, TFDataGenerator) and not (hasattr(
+                self, 'label_smooth') or hasattr(self, 'feature_squeeze')):
+            for _ in range(nb_epochs):
+                for _ in range(int(generator.size / generator.batch_size)):
+                    i_batch, o_batch = generator.get_batch()
+
+                    # Create feed_dict
+                    fd = {self._input_ph: i_batch, self._output_ph: o_batch}
+                    fd.update(self._feed_dict)
+
+                    # Run train step
+                    self._sess.run(self._train, feed_dict=fd)
+        else:
+            super(TFClassifier, self).fit_generator(generator, nb_epochs=nb_epochs)
 
     def class_gradient(self, x, label=None, logits=False):
         """
@@ -200,13 +215,17 @@ class TFClassifier(Classifier):
 
         x_ = self._apply_processing(x)
 
+        # Create feed_dict
+        fd = {self._input_ph: x_}
+        fd.update(self._feed_dict)
+
         # Compute the gradient and return
         if label is None:
             # Compute the gradients w.r.t. all classes
             if logits:
-                grads = self._sess.run(self._logit_class_grads, feed_dict={self._input_ph: x_})
+                grads = self._sess.run(self._logit_class_grads, feed_dict=fd)
             else:
-                grads = self._sess.run(self._class_grads, feed_dict={self._input_ph: x_})
+                grads = self._sess.run(self._class_grads, feed_dict=fd)
 
             grads = np.swapaxes(np.array(grads), 0, 1)
             grads = self._apply_processing_gradient(grads)
@@ -214,9 +233,9 @@ class TFClassifier(Classifier):
         elif isinstance(label, (int, np.integer)):
             # Compute the gradients only w.r.t. the provided label
             if logits:
-                grads = self._sess.run(self._logit_class_grads[label], feed_dict={self._input_ph: x_})
+                grads = self._sess.run(self._logit_class_grads[label], feed_dict=fd)
             else:
-                grads = self._sess.run(self._class_grads[label], feed_dict={self._input_ph: x_})
+                grads = self._sess.run(self._class_grads[label], feed_dict=fd)
 
             grads = grads[None, ...]
             grads = np.swapaxes(np.array(grads), 0, 1)
@@ -226,11 +245,9 @@ class TFClassifier(Classifier):
             # For each sample, compute the gradients w.r.t. the indicated target class (possibly distinct)
             unique_label = list(np.unique(label))
             if logits:
-                grads = self._sess.run([self._logit_class_grads[l] for l in unique_label],
-                                       feed_dict={self._input_ph: x_})
+                grads = self._sess.run([self._logit_class_grads[l] for l in unique_label], feed_dict=fd)
             else:
-                grads = self._sess.run([self._class_grads[l] for l in unique_label],
-                                       feed_dict={self._input_ph: x_})
+                grads = self._sess.run([self._class_grads[l] for l in unique_label], feed_dict=fd)
 
             grads = np.swapaxes(np.array(grads), 0, 1)
             lst = [unique_label.index(i) for i in label]
@@ -257,8 +274,12 @@ class TFClassifier(Classifier):
         if not hasattr(self, '_loss_grads') or self._loss_grads is None or self._output_ph is None:
             raise ValueError("Need the loss function and the labels placeholder to compute the loss gradient.")
 
+        # Create feed_dict
+        fd = {self._input_ph: x_, self._output_ph: y}
+        fd.update(self._feed_dict)
+
         # Compute the gradient and return
-        grds = self._sess.run(self._loss_grads, feed_dict={self._input_ph: x_, self._output_ph: y})
+        grds = self._sess.run(self._loss_grads, feed_dict=fd)
         grds = self._apply_processing_gradient(grds)
         assert grds.shape == x_.shape
 
@@ -398,13 +419,23 @@ class TFClassifier(Classifier):
 
         # Create feed_dict
         fd = {self._input_ph: x_}
-        if self._learning is not None:
-            fd[self._learning] = False
+        fd.update(self._feed_dict)
 
         # Run prediction
         result = self._sess.run(layer_tensor, feed_dict=fd)
 
         return result
+
+    def set_learning_phase(self, train):
+        """
+        Set the learning phase for the backend framework.
+
+        :param train: True to set the learning phase to training, False to set it to prediction.
+        :type train: `bool`
+        """
+        if isinstance(train, bool):
+            self._learning_phase = train
+            self._feed_dict[self._learning] = train
 
     def save(self, filename, path=None):
         """

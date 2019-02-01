@@ -20,8 +20,6 @@ from __future__ import absolute_import, division, print_function, unicode_litera
 import logging
 import unittest
 
-from tensorflow.examples.tutorials.mnist import input_data
-from keras.datasets import cifar10
 import numpy as np
 
 from art.defences.variance_minimization import TotalVarMin
@@ -36,8 +34,7 @@ class TestTotalVarMin(unittest.TestCase):
         master_seed(1234)
 
     def test_one_channel(self):
-        mnist = input_data.read_data_sets("tmp/MNIST_data/")
-        x = np.reshape(mnist.test.images[0:2], (-1, 28, 28, 1))
+        x = np.random.rand(2, 28, 28, 1)
         preprocess = TotalVarMin()
         preprocessed_x = preprocess(x)
         self.assertTrue((preprocessed_x.shape == x.shape))
@@ -46,8 +43,7 @@ class TestTotalVarMin(unittest.TestCase):
         self.assertFalse((preprocessed_x == x).all())
 
     def test_three_channels(self):
-        (train_features, _), (_, _) = cifar10.load_data()
-        x = train_features[:2] / 255.0
+        x = np.random.rand(2, 32, 32, 3)
         preprocess = TotalVarMin()
         preprocessed_x = preprocess(x)
         self.assertTrue((preprocessed_x.shape == x.shape))

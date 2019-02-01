@@ -1,6 +1,7 @@
 # Adversarial Robustness Toolbox (ART v0.4.0)
 [![Build Status](https://travis-ci.org/IBM/adversarial-robustness-toolbox.svg?branch=master)](https://travis-ci.org/IBM/adversarial-robustness-toolbox) [![Documentation Status](https://readthedocs.org/projects/adversarial-robustness-toolbox/badge/?version=latest)](http://adversarial-robustness-toolbox.readthedocs.io/en/latest/?badge=latest) [![GitHub version](https://badge.fury.io/gh/IBM%2Fadversarial-robustness-toolbox.svg)](https://badge.fury.io/gh/IBM%2Fadversarial-robustness-toolbox) [![Language grade: Python](https://img.shields.io/lgtm/grade/python/g/IBM/adversarial-robustness-toolbox.svg?logo=lgtm&logoWidth=18)](https://lgtm.com/projects/g/IBM/adversarial-robustness-toolbox/context:python) [![Total alerts](https://img.shields.io/lgtm/alerts/g/IBM/adversarial-robustness-toolbox.svg?logo=lgtm&logoWidth=18)](https://lgtm.com/projects/g/IBM/adversarial-robustness-toolbox/alerts/)
 
+
 This is a library dedicated to **adversarial machine learning**. Its purpose is to allow rapid crafting and analysis of attacks and defense methods for machine learning models. The Adversarial Robustness Toolbox provides an implementation for many state-of-the-art methods for attacking and defending classifiers.
 
 The library is still under development. Feedback, bug reports and extensions are highly appreciated. Get in touch with us on [Slack](https://ibm-art.slack.com) (invite [here](https://join.slack.com/t/ibm-art/shared_invite/enQtMzkyOTkyODE4NzM4LTlkMWY3MzgyZDA4ZDdiNzUzY2NhMjc5YmFhZTYzZGYwNDM4YTE1ODhhNDYyNmFlMGFjNWY4ODgyM2EwYTFjYTc))!
@@ -9,14 +10,16 @@ The library is still under development. Feedback, bug reports and extensions are
 
 The library contains implementations of the following **evasion attacks**:
 * DeepFool ([Moosavi-Dezfooli et al., 2015](https://arxiv.org/abs/1511.04599))
-* Fast Gradient Method ([Goodfellow et al., 2014](https://arxiv.org/abs/1412.6572))
-* Basic Iterative Method ([Kurakin et al., 2016](https://arxiv.org/abs/1607.02533))
-* Projected Gradient Descent ([Madry et al., 2017](https://arxiv.org/abs/1706.06083))
-* Jacobian Saliency Map ([Papernot et al., 2016](https://arxiv.org/abs/1511.07528))
-* Universal Perturbation ([Moosavi-Dezfooli et al., 2016](https://arxiv.org/abs/1610.08401))
-* Virtual Adversarial Method ([Miyato et al., 2015](https://arxiv.org/abs/1507.00677))
-* C&amp;W Attack ([Carlini and Wagner, 2016](https://arxiv.org/abs/1608.04644))
+* Fast gradient method ([Goodfellow et al., 2014](https://arxiv.org/abs/1412.6572))
+* Basic iterative method ([Kurakin et al., 2016](https://arxiv.org/abs/1607.02533))
+* Projected gradient descent ([Madry et al., 2017](https://arxiv.org/abs/1706.06083))
+* Jacobian saliency map ([Papernot et al., 2016](https://arxiv.org/abs/1511.07528))
+* Universal perturbation ([Moosavi-Dezfooli et al., 2016](https://arxiv.org/abs/1610.08401))
+* Virtual adversarial method ([Miyato et al., 2015](https://arxiv.org/abs/1507.00677))
+* C&amp;W `L_2` and `L_inf` attack ([Carlini and Wagner, 2016](https://arxiv.org/abs/1608.04644))
 * NewtonFool ([Jang et al., 2017](http://doi.acm.org/10.1145/3134600.3134635))
+* Elastic net attack ([Chen et al., 2017](https://arxiv.org/abs/1709.04114))
+* Spatial transformations attack ([Engstrom et al., 2017](https://arxiv.org/abs/1712.02779))
 
 The following **defence** methods are also supported:
 * Feature squeezing ([Xu et al., 2017](http://arxiv.org/abs/1704.01155))
