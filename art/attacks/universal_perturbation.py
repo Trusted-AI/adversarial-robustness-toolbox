@@ -130,7 +130,7 @@ class UniversalPerturbation(Attack):
 
             # Compute the error rate
             adv_x = x + v
-            adv_y = np.argmax(self._predict(adv_x, logits=False))
+            adv_y = np.argmax(self._predict(adv_x, logits=False), axis=1)
             fooling_rate = np.sum(pred_y_max != adv_y) / nb_instances
 
         self.fooling_rate = fooling_rate
