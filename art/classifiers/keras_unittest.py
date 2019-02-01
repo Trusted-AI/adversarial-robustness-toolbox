@@ -43,7 +43,7 @@ class TestKerasClassifier(unittest.TestCase):
         model.compile(loss=keras.losses.categorical_crossentropy, optimizer=keras.optimizers.Adadelta(),
                       metrics=['accuracy'])
 
-        model.fit(x_train, y_train, batch_size=BATCH_SIZE, epochs=1)
+        model.fit(x_train, y_train, batch_size=BATCH_SIZE, epochs=3)
         cls.model_mnist = model
 
         import requests

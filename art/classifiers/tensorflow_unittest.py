@@ -54,8 +54,12 @@ class TestTFClassifier(unittest.TestCase):
         self.sess = tf.Session()
         self.sess.run(tf.global_variables_initializer())
 
-        # Create classifier
+        # Create classifier and fit
         self.classifier = TFClassifier((0, 1), input_ph, logits, output_ph, train, loss, learning, self.sess)
+
+        # Get MNIST
+        (x_train, y_train), (x_test, y_test) = self.mnist
+        self.classifier.fit(x_train, y_train, batch_size=100, nb_epochs=3)
 
     def tearDown(self):
         self.sess.close()
@@ -65,7 +69,6 @@ class TestTFClassifier(unittest.TestCase):
         (x_train, y_train), (x_test, y_test) = self.mnist
 
         # Test fit and predict
-        self.classifier.fit(x_train, y_train, batch_size=100, nb_epochs=1)
         preds = self.classifier.predict(x_test)
         preds_class = np.argmax(preds, axis=1)
         trues_class = np.argmax(y_test, axis=1)

@@ -70,7 +70,6 @@ class DeepFool(Attack):
         if use_grads_subset:
             # TODO compute set of unique labels per batch
             grad_labels = np.argsort(-preds, axis=1)[:, :self.nb_grads]
-            # print(grad_labels)
             labels_set = np.unique(grad_labels)
         else:
             labels_set = np.arange(self.classifier.nb_classes)
@@ -167,6 +166,9 @@ class DeepFool(Attack):
 
         if not isinstance(self.max_iter, (int, np.int)) or self.max_iter <= 0:
             raise ValueError("The number of iterations must be a positive integer.")
+
+        if not isinstance(self.nb_grads, (int, np.int)) or self.nb_grads <= 0:
+            raise ValueError("The number of class gradients to compute must be a positive integer.")
 
         if self.epsilon < 0:
             raise ValueError("The overshoot parameter must not be negative.")
