@@ -109,19 +109,16 @@ class UniversalPerturbation(Attack):
             for j, ex in enumerate(x[rnd_idx]):
                 xi = ex[None, ...]
 
-                f_xi = self._predict(xi + v, logits=True)
-                fk_i_hat = np.argmax(f_xi[0])
-                fk_hat = np.argmax(pred_y[rnd_idx][j])
+                current_label = np.argmax(self._predict(xi + v, logits=True)[0])
+                original_label = np.argmax(pred_y[rnd_idx][j])
 
-                if fk_i_hat == fk_hat:
+                if current_label == original_label:
                     # Compute adversarial perturbation
                     adv_xi = attacker.generate(xi + v)
-                    adv_f_xi = self._predict(adv_xi, logits=True)
-                    adv_fk_i_hat = np.argmax(adv_f_xi[0])
+                    new_label = np.argmax(self._predict(adv_xi, logits=True)[0])
 
                     # If the class has changed, update v
-                    if fk_i_hat != adv_fk_i_hat:
-                        # v += adv_xi - xi
+                    if current_label != new_label:
                         v = adv_xi - xi
 
                         # Project on L_p ball
