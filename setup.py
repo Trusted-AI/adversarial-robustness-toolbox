@@ -36,7 +36,7 @@ tests_require = ['mxnet',
                  'torch']
 
 setup(name='Adversarial Robustness Toolbox',
-      version='0.4.0',
+      version='0.5.0',
       description='IBM Adversarial machine learning toolbox',
       long_description=long_description,
       long_description_content_type='text/markdown',
