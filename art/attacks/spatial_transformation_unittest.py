@@ -293,7 +293,6 @@ class TestSpatialTransformation(unittest.TestCase):
 
         # Get classifier
         ptc = PyTorchClassifier((0, 1), model, loss_fn, optimizer, (1, 28, 28), 10)
-        # ptc.fit(x_train, y_train, batch_size=BATCH_SIZE, nb_epochs=1)
 
         # Attack
         attack_params = {"max_translation": 10.0, "num_translations": 3, "max_rotation": 30.0, "num_rotations": 3}
