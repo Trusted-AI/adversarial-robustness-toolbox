@@ -87,7 +87,7 @@ class ActivationDefence(PoisonFilteringDefence):
             self.activations_by_class = self._segment_by_class(activations, self.y_train)
 
         self.clusters_by_class, self.red_activations_by_class = self.cluster_activations()
-        report, self.assigned_clean_by_class = self.analyze_clusters()
+        _, self.assigned_clean_by_class = self.analyze_clusters()
 
         # Now check ground truth:
         self.is_clean_by_class = self._segment_by_class(is_clean, self.y_train)

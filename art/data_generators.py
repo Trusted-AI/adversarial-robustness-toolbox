@@ -205,6 +205,7 @@ class TFDataGenerator(DataGenerator):
         :type size: `int`
         :param batch_size: Size of the minibatches.
         :type batch_size: `int`
+        :raises: `TypeError`, `ValueError`
         """
         import tensorflow as tf
 
@@ -215,7 +216,7 @@ class TFDataGenerator(DataGenerator):
         self.iterator_arg = iterator_arg
 
         if not isinstance(iterator, tf.data.Iterator):
-            raise ("Only support object tf.data.Iterator")
+            raise TypeError("Only support object tf.data.Iterator")
 
         if iterator_type == 'initializable':
             if type(iterator_arg) != dict:
@@ -225,9 +226,9 @@ class TFDataGenerator(DataGenerator):
                 raise ("Need to pass a tensorflow operation for iterator type %s" % iterator_type)
         elif iterator_type == 'feedable':
             if type(iterator_arg) != tuple:
-                raise ("Need to pass a tuple for iterator type %s" % iterator_type)
+                raise ValueError("Need to pass a tuple for iterator type %s" % iterator_type)
         else:
-            raise ("Iterator type %s not supported" % iterator_type)
+            raise TypeError("Iterator type %s not supported" % iterator_type)
 
     def get_batch(self):
         """
