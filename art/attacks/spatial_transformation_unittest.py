@@ -184,12 +184,16 @@ def kr_initializer_b_dense(_, dtype=None):
 
 
 class Model(nn.Module):
+    """
+    Create model for pytorch.
+    """
+
     def __init__(self):
         super(Model, self).__init__()
         self.conv = nn.Conv2d(in_channels=1, out_channels=1, kernel_size=7)
-        W_CONV2D_pt = np.swapaxes(W_CONV2D, 0, 2)
-        W_CONV2D_pt = np.swapaxes(W_CONV2D_pt, 1, 3)
-        self.conv.weight = nn.Parameter(torch.Tensor(W_CONV2D_pt))
+        w_conv2d_pt = np.swapaxes(W_CONV2D, 0, 2)
+        w_conv2d_pt = np.swapaxes(w_conv2d_pt, 1, 3)
+        self.conv.weight = nn.Parameter(torch.Tensor(w_conv2d_pt))
         self.conv.bias = nn.Parameter(torch.Tensor(B_CONV2D))
         self.pool = nn.MaxPool2d(4, 4)
         self.fullyconnected = nn.Linear(25, 10)
