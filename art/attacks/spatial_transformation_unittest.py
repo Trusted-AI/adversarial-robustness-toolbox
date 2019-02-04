@@ -41,12 +41,14 @@ W_CONV2D = np.asarray(
       [[-0.24360387]], [[-0.23828903]]]])
 
 
-def tf_initializer_w_conv2d(_1, dtype, _2):
+def tf_initializer_w_conv2d(shape_list, dtype, partition_info):
     """
     Initializer of weights in convolution layer for Tensorflow.
     :return: Tensorflow constant
     :rtype: tf.constant
     """
+    _ = shape_list
+    _ = partition_info
     return tf.constant(W_CONV2D, dtype)
 
 
@@ -62,12 +64,14 @@ def kr_initializer_w_conv2d(_, dtype=None):
 B_CONV2D = np.asarray([0.00311779])
 
 
-def tf_initializer_b_conv2d(_1, dtype, _2):
+def tf_initializer_b_conv2d(shape_list, dtype, partition_info):
     """
     Initializer of biases in convolution layer for Tensorflow.
     :return: Tensorflow constant
     :rtype: tf.constant
     """
+    _ = shape_list
+    _ = partition_info
     return tf.constant(B_CONV2D, dtype)
 
 
@@ -134,12 +138,14 @@ W_DENSE = np.asarray(
       0.05802418, -0.11327755]])
 
 
-def tf_initializer_w_dense(_1, dtype, _2):
+def tf_initializer_w_dense(shape_list, dtype, partition_info):
     """
     Initializer of weights in dense layer for Tensorflow.
     :return: Tensorflow constant
     :rtype: tf.constant
     """
+    _ = shape_list
+    _ = partition_info
     return tf.constant(W_DENSE, dtype)
 
 
@@ -157,12 +163,14 @@ B_DENSE = np.asarray(
      0.06066821])
 
 
-def tf_initializer_b_dense(_1, dtype, _2):
+def tf_initializer_b_dense(shape_list, dtype, partition_info):
     """
     Initializer of biases in dense layer for Tensorflow.
     :return: Tensorflow constant
     :rtype: tf.constant
     """
+    _ = shape_list
+    _ = partition_info
     return tf.constant(B_DENSE, dtype)
 
 
