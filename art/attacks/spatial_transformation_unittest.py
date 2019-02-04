@@ -41,22 +41,43 @@ W_CONV2D = np.asarray(
       [[-0.24360387]], [[-0.23828903]]]])
 
 
-def tf_initializer_w_conv2d(shape_list, dtype, partition_info):
+def tf_initializer_w_conv2d(_1, dtype, _2):
+    """
+    Initializer of weights in convolution layer for Tensorflow.
+    :return: Tensorflow constant
+    :rtype: tf.constant
+    """
     return tf.constant(W_CONV2D, dtype)
 
 
-def kr_initializer_w_conv2d(shape, dtype=None):
+def kr_initializer_w_conv2d(_, dtype=None):
+    """
+        Initializer of weights in convolution layer for Keras.
+        :return: Keras variable
+        :rtype: k.variable
+        """
     return k.variable(value=W_CONV2D, dtype=dtype)
 
 
 B_CONV2D = np.asarray([0.00311779])
 
 
-def tf_initializer_b_conv2d(shape_list, dtype, partition_info):
+def tf_initializer_b_conv2d(_1, dtype, _2):
+    """
+    Initializer of biases in convolution layer for Tensorflow.
+    :return: Tensorflow constant
+    :rtype: tf.constant
+    """
     return tf.constant(B_CONV2D, dtype)
 
 
 def kr_initializer_b_conv2d(shape, dtype=None):
+    """
+    Initializer of weights in convolution layer for Keras.
+    :return: Keras variable
+    :rtype: k.variable
+    """
+    _ = shape
     return k.variable(value=B_CONV2D, dtype=dtype)
 
 
@@ -113,11 +134,21 @@ W_DENSE = np.asarray(
       0.05802418, -0.11327755]])
 
 
-def tf_initializer_w_dense(shape_list, dtype, partition_info):
+def tf_initializer_w_dense(_1, dtype, _2):
+    """
+    Initializer of weights in dense layer for Tensorflow.
+    :return: Tensorflow constant
+    :rtype: tf.constant
+    """
     return tf.constant(W_DENSE, dtype)
 
 
-def kr_initializer_w_dense(shape, dtype=None):
+def kr_initializer_w_dense(_, dtype=None):
+    """
+    Initializer of weights in dense layer for Keras.
+    :return: Keras varibale
+    :rtype: k.variable
+    """
     return k.variable(value=W_DENSE, dtype=dtype)
 
 
@@ -126,11 +157,21 @@ B_DENSE = np.asarray(
      0.06066821])
 
 
-def tf_initializer_b_dense(shape_list, dtype, partition_info):
+def tf_initializer_b_dense(_1, dtype, _2):
+    """
+    Initializer of biases in dense layer for Tensorflow.
+    :return: Tensorflow constant
+    :rtype: tf.constant
+    """
     return tf.constant(B_DENSE, dtype)
 
 
-def kr_initializer_b_dense(shape, dtype=None):
+def kr_initializer_b_dense(_, dtype=None):
+    """
+    Initializer of biases in dense layer for Keras.
+    :return: Keras variable
+    :rtype: k.variable
+    """
     return k.variable(value=B_DENSE, dtype=dtype)
 
 
@@ -202,7 +243,7 @@ class TestSpatialTransformation(unittest.TestCase):
         sess.run(tf.global_variables_initializer())
 
         # Get MNIST
-        (x_train, y_train), (x_test, y_test) = self.mnist
+        (x_train, _), (x_test, _) = self.mnist
 
         # Train the classifier
         tfc = TFClassifier(clip_values=(0, 1), input_ph=input_ph, logits=logits, output_ph=output_ph, train=None,
@@ -238,7 +279,7 @@ class TestSpatialTransformation(unittest.TestCase):
         k.set_session(session)
 
         # Get MNIST
-        (x_train, y_train), (x_test, y_test) = self.mnist
+        (x_train, _), (x_test, _) = self.mnist
 
         # Create simple CNN
         model = Sequential()
@@ -279,7 +320,7 @@ class TestSpatialTransformation(unittest.TestCase):
         :return:
         """
         # Get MNIST
-        (x_train, y_train), (x_test, y_test) = self.mnist
+        (x_train, _), (x_test, _) = self.mnist
         x_train = np.swapaxes(x_train, 1, 3)
         x_test = np.swapaxes(x_test, 1, 3)
 
