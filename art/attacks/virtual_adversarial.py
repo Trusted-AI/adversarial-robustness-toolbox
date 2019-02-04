@@ -61,7 +61,6 @@ class VirtualAdversarialMethod(Attack):
         assert self.set_params(**kwargs)
         clip_min, clip_max = self.classifier.clip_values
         x_adv = np.copy(x)
-        dims = list(x.shape[1:])
         preds = self._predict(x_adv, logits=False)
 
         # Pick a small scalar to avoid division by 0
