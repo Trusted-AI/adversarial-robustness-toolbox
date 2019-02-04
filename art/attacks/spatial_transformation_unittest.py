@@ -24,7 +24,7 @@ BATCH_SIZE = 100
 NB_TRAIN = 1000
 NB_TEST = 10
 
-W_conv2d = np.asarray(
+W_CONV2D = np.asarray(
     [[[[-0.00789638]], [[-0.00263306]], [[-0.00258223]], [[-0.06708759]], [[0.21071541]], [[0.10087082]],
       [[0.30666843]]],
      [[[0.03002937]], [[0.02245444]], [[-0.07147028]], [[-0.10816725]], [[0.24887177]], [[-0.04827356]],
@@ -41,26 +41,26 @@ W_conv2d = np.asarray(
       [[-0.24360387]], [[-0.23828903]]]])
 
 
-def tf_initializer_W_conv2d(shape_list, dtype, partition_info):
-    return tf.constant(W_conv2d, dtype)
+def tf_initializer_w_conv2d(shape_list, dtype, partition_info):
+    return tf.constant(W_CONV2D, dtype)
 
 
-def kr_initializer_W_conv2d(shape, dtype=None):
-    return k.variable(value=W_conv2d, dtype=dtype)
+def kr_initializer_w_conv2d(shape, dtype=None):
+    return k.variable(value=W_CONV2D, dtype=dtype)
 
 
-b_conv2d = np.asarray([0.00311779])
+B_CONV2D = np.asarray([0.00311779])
 
 
 def tf_initializer_b_conv2d(shape_list, dtype, partition_info):
-    return tf.constant(b_conv2d, dtype)
+    return tf.constant(B_CONV2D, dtype)
 
 
 def kr_initializer_b_conv2d(shape, dtype=None):
-    return k.variable(value=b_conv2d, dtype=dtype)
+    return k.variable(value=B_CONV2D, dtype=dtype)
 
 
-W_dense = np.asarray(
+W_DENSE = np.asarray(
     [[-0.13476986, -0.35572886, 0.39324927, -0.22901052, -0.0811693, -0.3123055, -0.15369399, -0.3597307,
       -0.04729861, -0.20822074],
      [-0.0542084, -0.29528973, 0.01068741, -0.15940215, 0.07451159, 0.01864145, 0.13918124, -0.05344852,
@@ -113,39 +113,39 @@ W_dense = np.asarray(
       0.05802418, -0.11327755]])
 
 
-def tf_initializer_W_dense(shape_list, dtype, partition_info):
-    return tf.constant(W_dense, dtype)
+def tf_initializer_w_dense(shape_list, dtype, partition_info):
+    return tf.constant(W_DENSE, dtype)
 
 
-def kr_initializer_W_dense(shape, dtype=None):
-    return k.variable(value=W_dense, dtype=dtype)
+def kr_initializer_w_dense(shape, dtype=None):
+    return k.variable(value=W_DENSE, dtype=dtype)
 
 
-b_dense = np.asarray(
+B_DENSE = np.asarray(
     [-0.08853582, 0.09027167, -0.0260135, 0.01642286, -0.10401244, 0.02632654, -0.00310567, 0.05806893, -0.07686191,
      0.06066821])
 
 
 def tf_initializer_b_dense(shape_list, dtype, partition_info):
-    return tf.constant(b_dense, dtype)
+    return tf.constant(B_DENSE, dtype)
 
 
 def kr_initializer_b_dense(shape, dtype=None):
-    return k.variable(value=b_dense, dtype=dtype)
+    return k.variable(value=B_DENSE, dtype=dtype)
 
 
 class Model(nn.Module):
     def __init__(self):
         super(Model, self).__init__()
         self.conv = nn.Conv2d(in_channels=1, out_channels=1, kernel_size=7)
-        W_conv2d_pt = np.swapaxes(W_conv2d, 0, 2)
-        W_conv2d_pt = np.swapaxes(W_conv2d_pt, 1, 3)
-        self.conv.weight = nn.Parameter(torch.Tensor(W_conv2d_pt))
-        self.conv.bias = nn.Parameter(torch.Tensor(b_conv2d))
+        W_CONV2D_pt = np.swapaxes(W_CONV2D, 0, 2)
+        W_CONV2D_pt = np.swapaxes(W_CONV2D_pt, 1, 3)
+        self.conv.weight = nn.Parameter(torch.Tensor(W_CONV2D_pt))
+        self.conv.bias = nn.Parameter(torch.Tensor(B_CONV2D))
         self.pool = nn.MaxPool2d(4, 4)
         self.fullyconnected = nn.Linear(25, 10)
-        self.fullyconnected.weight = nn.Parameter(torch.Tensor(np.transpose(W_dense)))
-        self.fullyconnected.bias = nn.Parameter(torch.Tensor(b_dense))
+        self.fullyconnected.weight = nn.Parameter(torch.Tensor(np.transpose(W_DENSE)))
+        self.fullyconnected.bias = nn.Parameter(torch.Tensor(B_DENSE))
 
     def forward(self, x):
         import torch.nn.functional as f
@@ -185,13 +185,13 @@ class TestSpatialTransformation(unittest.TestCase):
         output_ph = tf.placeholder(tf.int32, shape=[None, 10])
 
         # Define the tensorflow graph
-        conv = tf.layers.conv2d(input_ph, 1, 7, activation=tf.nn.relu, kernel_initializer=tf_initializer_W_conv2d,
+        conv = tf.layers.conv2d(input_ph, 1, 7, activation=tf.nn.relu, kernel_initializer=tf_initializer_w_conv2d,
                                 bias_initializer=tf_initializer_b_conv2d)
         conv = tf.layers.max_pooling2d(conv, 4, 4)
         flattened = tf.contrib.layers.flatten(conv)
 
         # Logits layer
-        logits = tf.layers.dense(flattened, 10, kernel_initializer=tf_initializer_W_dense,
+        logits = tf.layers.dense(flattened, 10, kernel_initializer=tf_initializer_w_dense,
                                  bias_initializer=tf_initializer_b_dense)
 
         # Train operator
@@ -243,10 +243,10 @@ class TestSpatialTransformation(unittest.TestCase):
         # Create simple CNN
         model = Sequential()
         model.add(Conv2D(1, kernel_size=(7, 7), activation='relu', input_shape=(28, 28, 1),
-                         kernel_initializer=kr_initializer_W_conv2d, bias_initializer=kr_initializer_b_conv2d))
+                         kernel_initializer=kr_initializer_w_conv2d, bias_initializer=kr_initializer_b_conv2d))
         model.add(MaxPooling2D(pool_size=(4, 4)))
         model.add(Flatten())
-        model.add(Dense(10, activation='softmax', kernel_initializer=kr_initializer_W_dense,
+        model.add(Dense(10, activation='softmax', kernel_initializer=kr_initializer_w_dense,
                         bias_initializer=kr_initializer_b_dense))
 
         model.compile(loss=keras.losses.categorical_crossentropy, optimizer=keras.optimizers.Adam(lr=0.01),
