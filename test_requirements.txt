@@ -3,5 +3,5 @@ h5py
 mxnet
 Pillow
 requests
-torch
+torch<=1.0.0
 tensorflow
