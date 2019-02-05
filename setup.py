@@ -36,8 +36,7 @@ tests_require = ['mxnet',
                  'torch']
 
 docs_require = ['sphinx >= 1.4',
-                'sphinx_rtd_theme',
-                'torch']
+                'sphinx_rtd_theme']
 
 setup(name='Adversarial Robustness Toolbox',
       version='0.5.0',
