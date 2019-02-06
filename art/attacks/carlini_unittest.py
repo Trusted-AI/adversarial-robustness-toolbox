@@ -7,35 +7,16 @@ import keras
 import keras.backend as k
 import numpy as np
 import tensorflow as tf
-import torch.nn as nn
-import torch.optim as optim
 from keras.layers import Dense, Flatten, Conv2D, MaxPooling2D
 from keras.models import Sequential
 
 from art.attacks import CarliniL2Method, CarliniLInfMethod
-from art.classifiers import KerasClassifier, PyTorchClassifier, TFClassifier
+from art.classifiers import KerasClassifier, TFClassifier
 from art.utils import load_mnist, random_targets, master_seed
 
 logger = logging.getLogger('testLogger')
 
 BATCH_SIZE, NB_TRAIN, NB_TEST = 100, 5000, 10
-
-
-class Model(nn.Module):
-    def __init__(self):
-        super(Model, self).__init__()
-        self.conv = nn.Conv2d(1, 16, 5)
-        self.pool = nn.MaxPool2d(2, 2)
-        self.fc = nn.Linear(2304, 10)
-
-    def forward(self, x):
-        import torch.nn.functional as f
-
-        x = self.pool(f.relu(self.conv(x)))
-        x = x.view(-1, 2304)
-        logit_output = self.fc(x)
-
-        return logit_output
 
 
 class TestCarliniL2(unittest.TestCase):
@@ -146,7 +127,7 @@ class TestCarliniL2(unittest.TestCase):
         y_pred_adv = np.argmax(tfc.predict(x_test_adv), axis=1)
         logger.debug('CW2 Target: %s', target)
         logger.debug('CW2 Actual: %s', y_pred_adv)
-        logger.info('CW2 Success Rate: %.2f', (sum(target == y_pred_adv) / float(len(target))))
+        logger.info('CW2 Success Rate: %.2f', (np.sum(target == y_pred_adv) / float(len(target))))
         self.assertTrue((target == y_pred_adv).any())
 
         # Second attack, no batching
@@ -158,7 +139,7 @@ class TestCarliniL2(unittest.TestCase):
         y_pred_adv = np.argmax(tfc.predict(x_test_adv), axis=1)
         logger.debug('CW2 Target: %s', target)
         logger.debug('CW2 Actual: %s', y_pred_adv)
-        logger.info('CW2 Success Rate: %.2f', (sum(target == y_pred_adv) / float(len(target))))
+        logger.info('CW2 Success Rate: %.2f', (np.sum(target == y_pred_adv) / float(len(target))))
         self.assertTrue((target != y_pred_adv).any())
 
         # Clean-up session
@@ -202,7 +183,7 @@ class TestCarliniL2(unittest.TestCase):
         y_pred_adv = np.argmax(krc.predict(x_test_adv), axis=1)
         logger.debug('CW2 Target: %s', target)
         logger.debug('CW2 Actual: %s', y_pred_adv)
-        logger.info('CW2 Success Rate: %.2f', (sum(target == y_pred_adv) / float(len(target))))
+        logger.info('CW2 Success Rate: %.2f', (np.sum(target == y_pred_adv) / float(len(target))))
         self.assertTrue((target == y_pred_adv).any())
 
         # Second attack
@@ -214,54 +195,54 @@ class TestCarliniL2(unittest.TestCase):
         y_pred_adv = np.argmax(krc.predict(x_test_adv), axis=1)
         logger.debug('CW2 Target: %s', target)
         logger.debug('CW2 Actual: %s', y_pred_adv)
-        logger.info('CW2 Success Rate: %.2f', (sum(target != y_pred_adv) / float(len(target))))
+        logger.info('CW2 Success Rate: %.2f', (np.sum(target != y_pred_adv) / float(len(target))))
         self.assertTrue((target != y_pred_adv).any())
 
         # Clean-up
         k.clear_session()
 
-    def test_ptclassifier(self):
-        """
-        Third test with the PyTorchClassifier.
-        :return:
-        """
-        # Get MNIST
-        (x_train, y_train), (x_test, y_test) = self.mnist
-        x_train = np.swapaxes(x_train, 1, 3)
-        x_test = np.swapaxes(x_test, 1, 3)
-
-        # Define the network
-        model = Model()
-
-        # Define a loss function and optimizer
-        loss_fn = nn.CrossEntropyLoss()
-        optimizer = optim.Adam(model.parameters(), lr=0.01)
-
-        # Get classifier
-        ptc = PyTorchClassifier((0, 1), model, loss_fn, optimizer, (1, 28, 28), 10)
-        ptc.fit(x_train, y_train, batch_size=BATCH_SIZE, nb_epochs=10)
-
-        # First attack
-        cl2m = CarliniL2Method(classifier=ptc, targeted=True, max_iter=10)
-        params = {'y': random_targets(y_test, ptc.nb_classes)}
-        x_test_adv = cl2m.generate(x_test, **params)
-        self.assertFalse((x_test == x_test_adv).all())
-        self.assertTrue((x_test_adv <= 1.0001).all())
-        self.assertTrue((x_test_adv >= -0.0001).all())
-        target = np.argmax(params['y'], axis=1)
-        y_pred_adv = np.argmax(ptc.predict(x_test_adv), axis=1)
-        self.assertTrue((target == y_pred_adv).any())
-        logger.info('CW2 Success Rate: %.2f', (sum(target == y_pred_adv) / float(len(target))))
-
-        # Second attack
-        cl2m = CarliniL2Method(classifier=ptc, targeted=False, max_iter=10)
-        x_test_adv = cl2m.generate(x_test)
-        self.assertTrue((x_test_adv <= 1.0001).all())
-        self.assertTrue((x_test_adv >= -0.0001).all())
-        target = np.argmax(params['y'], axis=1)
-        y_pred_adv = np.argmax(ptc.predict(x_test_adv), axis=1)
-        self.assertTrue((target != y_pred_adv).any())
-        logger.info('CW2 Success Rate: %.2f', (sum(target != y_pred_adv) / float(len(target))))
+    # def test_ptclassifier(self):
+    #     """
+    #     Third test with the PyTorchClassifier.
+    #     :return:
+    #     """
+    #     # Get MNIST
+    #     (x_train, y_train), (x_test, y_test) = self.mnist
+    #     x_train = np.swapaxes(x_train, 1, 3)
+    #     x_test = np.swapaxes(x_test, 1, 3)
+    #
+    #     # Define the network
+    #     model = Model()
+    #
+    #     # Define a loss function and optimizer
+    #     loss_fn = nn.CrossEntropyLoss()
+    #     optimizer = optim.Adam(model.parameters(), lr=0.01)
+    #
+    #     # Get classifier
+    #     ptc = PyTorchClassifier((0, 1), model, loss_fn, optimizer, (1, 28, 28), 10)
+    #     ptc.fit(x_train, y_train, batch_size=BATCH_SIZE, nb_epochs=10)
+    #
+    #     # First attack
+    #     cl2m = CarliniL2Method(classifier=ptc, targeted=True, max_iter=10)
+    #     params = {'y': random_targets(y_test, ptc.nb_classes)}
+    #     x_test_adv = cl2m.generate(x_test, **params)
+    #     self.assertFalse((x_test == x_test_adv).all())
+    #     self.assertTrue((x_test_adv <= 1.0001).all())
+    #     self.assertTrue((x_test_adv >= -0.0001).all())
+    #     target = np.argmax(params['y'], axis=1)
+    #     y_pred_adv = np.argmax(ptc.predict(x_test_adv), axis=1)
+    #     self.assertTrue((target == y_pred_adv).any())
+    #     logger.info('CW2 Success Rate: %.2f', (sum(target == y_pred_adv) / float(len(target))))
+    #
+    #     # Second attack
+    #     cl2m = CarliniL2Method(classifier=ptc, targeted=False, max_iter=10)
+    #     x_test_adv = cl2m.generate(x_test)
+    #     self.assertTrue((x_test_adv <= 1.0001).all())
+    #     self.assertTrue((x_test_adv >= -0.0001).all())
+    #     target = np.argmax(params['y'], axis=1)
+    #     y_pred_adv = np.argmax(ptc.predict(x_test_adv), axis=1)
+    #     self.assertTrue((target != y_pred_adv).any())
+    #     logger.info('CW2 Success Rate: %.2f', (sum(target != y_pred_adv) / float(len(target))))
 
 
 class TestCarliniLInf(TestCarliniL2):
@@ -360,7 +341,7 @@ class TestCarliniLInf(TestCarliniL2):
         y_pred_adv = np.argmax(tfc.predict(x_test_adv), axis=1)
         logger.debug('CW0 Target: %s', target)
         logger.debug('CW0 Actual: %s', y_pred_adv)
-        logger.info('CW0 Success Rate: %.2f', (sum(target == y_pred_adv) / float(len(target))))
+        logger.info('CW0 Success Rate: %.2f', (np.sum(target == y_pred_adv) / float(len(target))))
         self.assertTrue((target == y_pred_adv).any())
 
         # Second attack, no batching
@@ -372,7 +353,7 @@ class TestCarliniLInf(TestCarliniL2):
         y_pred_adv = np.argmax(tfc.predict(x_test_adv), axis=1)
         logger.debug('CW0 Target: %s', target)
         logger.debug('CW0 Actual: %s', y_pred_adv)
-        logger.info('CW0 Success Rate: %.2f', (sum(target != y_pred_adv) / float(len(target))))
+        logger.info('CW0 Success Rate: %.2f', (np.sum(target != y_pred_adv) / float(len(target))))
         self.assertTrue((target != y_pred_adv).any())
 
         # Clean-up session
@@ -416,7 +397,7 @@ class TestCarliniLInf(TestCarliniL2):
         y_pred_adv = np.argmax(krc.predict(x_test_adv), axis=1)
         logger.debug('CW0 Target: %s', target)
         logger.debug('CW0 Actual: %s', y_pred_adv)
-        logger.info('CW0 Success Rate: %.2f', (sum(target == y_pred_adv) / float(len(target))))
+        logger.info('CW0 Success Rate: %.2f', (np.sum(target == y_pred_adv) / float(len(target))))
         self.assertTrue((target == y_pred_adv).any())
 
         # Second attack
@@ -428,52 +409,52 @@ class TestCarliniLInf(TestCarliniL2):
         y_pred_adv = np.argmax(krc.predict(x_test_adv), axis=1)
         logger.debug('CW0 Target: %s', target)
         logger.debug('CW0 Actual: %s', y_pred_adv)
-        logger.info('CW0 Success Rate: %.2f', (sum(target != y_pred_adv) / float(len(target))))
+        logger.info('CW0 Success Rate: %.2f', (np.sum(target != y_pred_adv) / float(len(target))))
         self.assertTrue((target != y_pred_adv).any())
 
         # Clean-up
         k.clear_session()
 
-    def test_ptclassifier(self):
-        """
-        Third test with the PyTorchClassifier.
-        :return:
-        """
-        # Get MNIST
-        (x_train, y_train), (x_test, y_test) = self.mnist
-        x_train = np.swapaxes(x_train, 1, 3)
-        x_test = np.swapaxes(x_test, 1, 3)
-
-        # Define the network
-        model = Model()
-
-        # Define a loss function and optimizer
-        loss_fn = nn.CrossEntropyLoss()
-        optimizer = optim.Adam(model.parameters(), lr=0.01)
-
-        # Get classifier
-        ptc = PyTorchClassifier((0, 1), model, loss_fn, optimizer, (1, 28, 28), 10)
-        ptc.fit(x_train, y_train, batch_size=BATCH_SIZE, nb_epochs=10)
-
-        # First attack
-        clinfm = CarliniLInfMethod(classifier=ptc, targeted=True, max_iter=10, eps=0.5)
-        params = {'y': random_targets(y_test, ptc.nb_classes)}
-        x_test_adv = clinfm.generate(x_test, **params)
-        self.assertFalse((x_test == x_test_adv).all())
-        self.assertTrue((x_test_adv <= 1.0001).all())
-        self.assertTrue((x_test_adv >= -0.0001).all())
-        target = np.argmax(params['y'], axis=1)
-        y_pred_adv = np.argmax(ptc.predict(x_test_adv), axis=1)
-        self.assertTrue((target == y_pred_adv).any())
-
-        # Second attack
-        clinfm = CarliniLInfMethod(classifier=ptc, targeted=False, max_iter=10, eps=0.5)
-        x_test_adv = clinfm.generate(x_test)
-        self.assertTrue((x_test_adv <= 1.0001).all())
-        self.assertTrue((x_test_adv >= -0.0001).all())
-        target = np.argmax(params['y'], axis=1)
-        y_pred_adv = np.argmax(ptc.predict(x_test_adv), axis=1)
-        self.assertTrue((target != y_pred_adv).any())
+    # def test_ptclassifier(self):
+    #     """
+    #     Third test with the PyTorchClassifier.
+    #     :return:
+    #     """
+    #     # Get MNIST
+    #     (x_train, y_train), (x_test, y_test) = self.mnist
+    #     x_train = np.swapaxes(x_train, 1, 3)
+    #     x_test = np.swapaxes(x_test, 1, 3)
+    #
+    #     # Define the network
+    #     model = Model()
+    #
+    #     # Define a loss function and optimizer
+    #     loss_fn = nn.CrossEntropyLoss()
+    #     optimizer = optim.Adam(model.parameters(), lr=0.01)
+    #
+    #     # Get classifier
+    #     ptc = PyTorchClassifier((0, 1), model, loss_fn, optimizer, (1, 28, 28), 10)
+    #     ptc.fit(x_train, y_train, batch_size=BATCH_SIZE, nb_epochs=10)
+    #
+    #     # First attack
+    #     clinfm = CarliniLInfMethod(classifier=ptc, targeted=True, max_iter=10, eps=0.5)
+    #     params = {'y': random_targets(y_test, ptc.nb_classes)}
+    #     x_test_adv = clinfm.generate(x_test, **params)
+    #     self.assertFalse((x_test == x_test_adv).all())
+    #     self.assertTrue((x_test_adv <= 1.0001).all())
+    #     self.assertTrue((x_test_adv >= -0.0001).all())
+    #     target = np.argmax(params['y'], axis=1)
+    #     y_pred_adv = np.argmax(ptc.predict(x_test_adv), axis=1)
+    #     self.assertTrue((target == y_pred_adv).any())
+    #
+    #     # Second attack
+    #     clinfm = CarliniLInfMethod(classifier=ptc, targeted=False, max_iter=10, eps=0.5)
+    #     x_test_adv = clinfm.generate(x_test)
+    #     self.assertTrue((x_test_adv <= 1.0001).all())
+    #     self.assertTrue((x_test_adv >= -0.0001).all())
+    #     target = np.argmax(params['y'], axis=1)
+    #     y_pred_adv = np.argmax(ptc.predict(x_test_adv), axis=1)
+    #     self.assertTrue((target != y_pred_adv).any())
 
 
 if __name__ == '__main__':
