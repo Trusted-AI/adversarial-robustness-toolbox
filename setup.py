@@ -18,6 +18,9 @@ tests_require = ['mxnet',
                  'tensorflow',
                  'torch']
 
+docs_require = ['sphinx >= 1.4',
+                'sphinx_rtd_theme']
+
 setup(name='Adversarial Robustness Toolbox',
       version='0.5.0',
       description='IBM Adversarial machine learning toolbox',
@@ -31,6 +34,7 @@ setup(name='Adversarial Robustness Toolbox',
       tests_require=tests_require,
       extras_require={
           'tests': tests_require,
+          'docs': docs_require
       },
       classifiers=[
             'Development Status :: 3 - Alpha',

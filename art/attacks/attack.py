@@ -28,7 +28,7 @@ class ExpectationOverTransformations:
         :param sample_size: Number of transformations to sample
         :type sample_size: `int`
         :param transformation: An iterator over transformations.
-        :type transformation: :class:`Classifier`
+        :type transformation: :class:`.Classifier`
         """
         self.sample_size = sample_size
         self.transformation = transformation
@@ -38,7 +38,7 @@ class ExpectationOverTransformations:
         Perform prediction of the given classifier for a batch of inputs, taking an expectation over transformations.
 
         :param classifier: A trained model.
-        :type classifier: :class:`Classifier`
+        :type classifier: :class:`.Classifier`
         :param x: Test set.
         :type x: `np.ndarray`
         :param logits: `True` if the prediction should be done at the logits layer.
@@ -60,7 +60,7 @@ class ExpectationOverTransformations:
         over transformations.
 
         :param classifier: A trained model.
-        :type classifier: :class:`Classifier`
+        :type classifier: :class:`.Classifier`
         :param x: Sample input with shape as expected by the model.
         :type x: `np.ndarray`
         :param y: Correct labels, one-vs-rest encoding.
@@ -79,7 +79,7 @@ class ExpectationOverTransformations:
         Compute per-class derivatives of the given classifier w.r.t. `x`, taking an expectation over transformations.
 
         :param classifier: A trained model.
-        :type classifier: :class:`Classifier`
+        :type classifier: :class:`.Classifier`
         :param x: Sample input with shape as expected by the model.
         :type x: `np.ndarray`
         :param label: Index of a specific per-class derivative. If an integer is provided, the gradient of that class
@@ -110,10 +110,10 @@ class Attack(ABC):
     def __init__(self, classifier, expectation=None):
         """
         :param classifier: A trained model.
-        :type classifier: :class:`Classifier`
+        :type classifier: :class:`.Classifier`
         :param expectation: An expectation over transformations to be applied when computing
                             classifier gradients and predictions.
-        :type expectation: :class:`ExpectationOverTransformations`
+        :type expectation: :class:`.ExpectationOverTransformations`
         """
         self.classifier = classifier
         self.expectation = expectation

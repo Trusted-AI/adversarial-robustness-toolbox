@@ -21,12 +21,12 @@ class AdversarialTrainer:
     """
     def __init__(self, classifier, attacks, ratio=.5):
         """
-        Create an :class:`AdversarialTrainer` instance.
+        Create an :class:`.AdversarialTrainer` instance.
 
         :param classifier: Model to train adversarially.
-        :type classifier: :class:`Classifier`
+        :type classifier: :class:`.Classifier`
         :param attacks: attacks to use for data augmentation in adversarial training
-        :type attacks: :class:`Attack` or `list(Attack)`
+        :type attacks: :class:`.Attack` or `list(Attack)`
         :param ratio: The proportion of samples in each batch to be replaced with their adversarial counterparts.
                       Setting this value to 1 allows to train only on adversarial samples.
         :type ratio: `float`
@@ -54,7 +54,7 @@ class AdversarialTrainer:
         See class documentation for more information on the exact procedure.
 
         :param generator: Data generator.
-        :type generator: :class:`DataGenerator`
+        :type generator: :class:`.DataGenerator`
         :param nb_epochs: Number of epochs to use for trainings.
         :type nb_epochs: `int`
         :return: `None`
@@ -222,7 +222,7 @@ class StaticAdversarialTrainer(AdversarialTrainer):
     """
     def fit(self, x, y, **kwargs):
         """
-        Apply static adversarial training to a :class:`Classifier`.
+        Apply static adversarial training to a :class:`.Classifier`.
 
         :param x: Training set.
         :type x: `np.ndarray`
