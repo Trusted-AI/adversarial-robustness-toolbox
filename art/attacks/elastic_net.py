@@ -85,7 +85,7 @@ class ElasticNet(Attack):
 
         return np.argmax(z, axis=1), l1dist, l2dist, endist
 
-    def _loss_gradient(self, target, x, x_adv, c):
+    def _gradient_of_loss(self, target, x, x_adv, c):
         """
         Compute the gradient of the loss function.
 
@@ -303,7 +303,7 @@ class ElasticNet(Attack):
             lr = self._decay_learning_rate(global_step=it, end_learning_rate=0, decay_steps=self.max_iter)
 
             # Compute adversarial examples
-            grad = self._loss_gradient(target=y_batch, x=x_batch, x_adv=y_adv, c=c)
+            grad = self._gradient_of_loss(target=y_batch, x=x_batch, x_adv=y_adv, c=c)
             x_adv_next = self._shrinkage_threshold(y_adv - lr * grad, x_batch, self.beta)
             y_adv = x_adv_next + (1.0 * it / (it + 3)) * (x_adv_next - x_adv)
             x_adv = x_adv_next
