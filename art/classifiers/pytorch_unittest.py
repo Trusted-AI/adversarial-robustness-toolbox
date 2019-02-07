@@ -200,6 +200,21 @@ class TestPyTorchClassifier(unittest.TestCase):
         self.assertTrue(ptc._model.training)
         self.assertTrue(ptc.learning_phase)
 
+    def test_save(self):
+        model = self.module_classifier
+        import tempfile
+        import os
+        t_file = tempfile.NamedTemporaryFile()
+        full_path = t_file.name
+        t_file.close()
+        base_name = os.path.basename(full_path)
+        dir_name = os.path.dirname(full_path)
+        model.save(base_name, path=dir_name)
+        self.assertTrue(os.path.exists(full_path + ".optimizer"))
+        self.assertTrue(os.path.exists(full_path + ".model"))
+        os.remove(full_path + '.optimizer')
+        os.remove(full_path + '.model')
+                                       
 
 if __name__ == '__main__':
     unittest.main()
