@@ -105,3 +105,10 @@ class TestEnsembleClassifier(unittest.TestCase):
         self.assertTrue(np.array(grad2.shape == (2, NB_TEST, 10, 28, 28, 1)).all())
 
         self.assertFalse((grad2[0] == grad).all())
+
+    def test_repr(self):
+        repr_ = repr(self.ensemble)
+        self.assertEqual(repr_.split(sep='(')[0], 'art.classifiers.ensemble.EnsembleClassifier')
+        self.assertTrue('clip_values=(0, 1)' in repr_)
+        self.assertTrue('classifier_weights=array([0.5, 0.5])' in repr_)
+        self.assertTrue('channel_index=3, defences=None, preprocessing=(0, 1)' in repr_)

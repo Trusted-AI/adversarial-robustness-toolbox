@@ -49,14 +49,18 @@ class KerasClassifier(Classifier):
 
         self._model = model
         if hasattr(model, 'inputs'):
+            self._input_layer = input_layer
             self._input = model.inputs[input_layer]
         else:
             self._input = model.input
+            self._input_layer = 0
 
         if hasattr(model, 'outputs'):
             self._output = model.outputs[output_layer]
+            self._output_layer = output_layer
         else:
             self._output = model.output
+            self._output_layer = 0
 
         _, self._nb_classes = k.int_shape(self._output)
         self._input_shape = k.int_shape(self._input)[1:]
@@ -66,6 +70,7 @@ class KerasClassifier(Classifier):
 
         # Get predictions and loss function
         label_ph = k.placeholder(shape=(None,))
+        self._use_logits = use_logits
         if not use_logits:
             if k.backend() == 'tensorflow':
                 if custom_activation:
@@ -344,18 +349,18 @@ class KerasClassifier(Classifier):
                 if not hasattr(self, '_class_grads_logits_idx'):
                     self._class_grads_logits_idx = [None for _ in range(nb_outputs)]
 
-                for l in unique_labels:
-                    if self._class_grads_logits_idx[l] is None:
-                        class_grads_logits = [k.gradients(self._preds_op[:, l], self._input)[0]]
-                        self._class_grads_logits_idx[l] = k.function([self._input], class_grads_logits)
+                for curr_label in unique_labels:
+                    if self._class_grads_logits_idx[curr_label] is None:
+                        class_grads_logits = [k.gradients(self._preds_op[:, curr_label], self._input)[0]]
+                        self._class_grads_logits_idx[curr_label] = k.function([self._input], class_grads_logits)
             else:
                 if not hasattr(self, '_class_grads_idx'):
                     self._class_grads_idx = [None for _ in range(nb_outputs)]
 
-                for l in unique_labels:
-                    if self._class_grads_idx[l] is None:
-                        class_grads = [k.gradients(k.softmax(self._preds_op)[:, l], self._input)[0]]
-                        self._class_grads_idx[l] = k.function([self._input], class_grads)
+                for curr_label in unique_labels:
+                    if self._class_grads_idx[curr_label] is None:
+                        class_grads = [k.gradients(k.softmax(self._preds_op)[:, curr_label], self._input)[0]]
+                        self._class_grads_idx[curr_label] = k.function([self._input], class_grads)
 
     def _get_layers(self):
         """
@@ -408,6 +413,15 @@ class KerasClassifier(Classifier):
 
         self._model.save(str(full_path))
         logger.info('Model saved in path: %s.', full_path)
+
+    def __repr__(self):
+        repr_ = "%s(clip_values=%r, model=%r, use_logits=%r, channel_index=%r, defences=%r, preprocessing=%r, " \
+                "input_layer=%r, output_layer=%r, custom_activation=%r)" \
+                % (self.__module__ + '.' + self.__class__.__name__,
+                   self.clip_values, self._model, self._use_logits, self.channel_index, self.defences,
+                   self._preprocessing, self._input_layer, self._output_layer, self._custom_activation)
+
+        return repr_
 
 
 def generator_fit(x, y, batch_size=128):

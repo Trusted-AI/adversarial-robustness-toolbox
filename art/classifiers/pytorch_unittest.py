@@ -200,6 +200,12 @@ class TestPyTorchClassifier(unittest.TestCase):
         self.assertTrue(ptc._model.training)
         self.assertTrue(ptc.learning_phase)
 
+    def test_repr(self):
+        repr_ = repr(self.module_classifier)
+        self.assertEqual(repr_.split(sep='(')[0], 'art.classifiers.pytorch.PyTorchClassifier')
+        self.assertTrue('clip_values=(0, 1)' in repr_)
+        self.assertTrue('input_shape=(1, 28, 28), nb_classes=10, channel_index=1' in repr_)
+        self.assertTrue('defences=None, preprocessing=(0, 1)' in repr_)
 
 if __name__ == '__main__':
     unittest.main()
