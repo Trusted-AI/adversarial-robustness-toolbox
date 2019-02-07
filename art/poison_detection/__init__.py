@@ -1,5 +1,5 @@
 """
-Poison detection defence API. Use the :class:`PoisonFilteringDefence` wrapper to be able to apply a defence for a
+Poison detection defence API. Use the :class:`.PoisonFilteringDefence` wrapper to be able to apply a defence for a
 preexisting model.
 """
 from art.poison_detection.poison_filtering_defence import PoisonFilteringDefence

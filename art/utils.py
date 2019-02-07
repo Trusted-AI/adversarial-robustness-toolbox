@@ -48,6 +48,7 @@ def master_seed(seed):
 
     # Set Numpy seed
     np.random.seed(seed)
+    np.random.RandomState(seed)
 
     # Now try to set seed for all specific frameworks
     try:

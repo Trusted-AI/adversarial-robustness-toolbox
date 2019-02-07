@@ -35,13 +35,13 @@ class PoisonFilteringDefence(ABC):
 
     def __init__(self, classifier, x_train, y_train):
         """
-        Create an :class:`ActivationDefence` object with the provided classifier.
+        Create an :class:`.ActivationDefence` object with the provided classifier.
 
         :param classifier: model evaluated for poison
-        :type classifier: :class:`Classifier`
-        :param x_train: dataset used to train `classifier`
+        :type classifier: :class:`.Classifier`
+        :param x_train: dataset used to train the classifier.
         :type x_train: :class:`numpy.ndarray`
-        :param y_train: labels used to train `classifier`
+        :param y_train: labels used to train the classifier.
         :type y_train: :class:`numpy.ndarray`
         """
         self.classifier = classifier

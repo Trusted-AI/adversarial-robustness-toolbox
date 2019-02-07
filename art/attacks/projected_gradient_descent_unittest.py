@@ -104,10 +104,6 @@ class TestPGD(unittest.TestCase):
         # Set master seed
         master_seed(1234)
 
-    def setUp(self):
-        # Set master seed
-        master_seed(1234)
-
     def test_mnist(self):
         # Define all backends to test
         backends = {'keras': self.classifier_k,

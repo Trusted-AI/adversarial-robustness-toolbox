@@ -34,13 +34,13 @@ class EnsembleClassifier(Classifier):
     def __init__(self, clip_values, classifiers, classifier_weights=None, channel_index=3, defences=None,
                  preprocessing=(0, 1)):
         """
-        Initialize a :class:`EnsembleClassifier` object. The data range values and colour channel index have to
+        Initialize a :class:`.EnsembleClassifier` object. The data range values and colour channel index have to
         be consistent for all the classifiers in the ensemble.
 
         :param clip_values: Tuple of the form `(min, max)` representing the minimum and maximum values allowed
                for features.
         :type clip_values: `tuple`
-        :param classifiers: List of :class:`Classifier` instances to be ensembled together.
+        :param classifiers: List of :class:`.Classifier` instances to be ensembled together.
         :type classifiers: `list`
         :param classifier_weights: List of weights, one scalar per classifier, to assign to their prediction when
                aggregating results. If `None`, all classifiers are assigned the same weight.

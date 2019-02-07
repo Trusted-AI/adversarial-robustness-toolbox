@@ -18,8 +18,8 @@
 """
 Module defining an interface for data generators and providing concrete implementations for the supported frameworks.
 Their purpose is to allow for data loading and batching on the fly, as well as dynamic data augmentation.
-The generators can be used with the `fit_generator` function in the :class:`Classifier` interface. Users can define
-their own generators following the :class:`DataGenerator` interface.
+The generators can be used with the `fit_generator` function in the :class:`.Classifier` interface. Users can define
+their own generators following the :class:`.DataGenerator` interface.
 """
 from __future__ import absolute_import, division, print_function, unicode_literals
 
@@ -44,6 +44,7 @@ class DataGenerator(ABC):
     def __init__(self, size, batch_size):
         """
         Base initializer for data generators.
+
         :param size: Total size of the dataset.
         :type size: `int` or `None`
         :param batch_size: Size of the minibatches.
@@ -65,6 +66,7 @@ class DataGenerator(ABC):
         """
         Provide the next batch for training in the form of a tuple `(x, y)`. The generator should loop over the data
         indefinitely.
+
         :return: A tuple containing a batch of data `(x, y)`.
         :rtype: `tuple`
         """
@@ -79,6 +81,7 @@ class KerasDataGenerator(DataGenerator):
     def __init__(self, generator, size, batch_size):
         """
         Create a Keras data generator wrapper instance.
+
         :param generator: A generator as specified by Keras documentation. Its output must be a tuple of either
                           `(inputs, targets)` or `(inputs, targets, sample_weights)`. All arrays in this tuple must have
                           the same length. The generator is expected to loop over its data indefinitely.
@@ -95,6 +98,7 @@ class KerasDataGenerator(DataGenerator):
         """
         Provide the next batch for training in the form of a tuple `(x, y)`. The generator should loop over the data
         indefinitely.
+
         :return: A tuple containing a batch of data `(x, y)`.
         :rtype: `tuple`
         """
@@ -114,6 +118,7 @@ class PyTorchDataGenerator(DataGenerator):
     def __init__(self, data_loader, size, batch_size):
         """
         Create a data generator wrapper on top of a PyTorch :class:`DataLoader`.
+
         :param data_loader: A PyTorch data generator.
         :type data_loader: `torch.utils.data.DataLoader`
         :param size: Total size of the dataset.
@@ -134,6 +139,7 @@ class PyTorchDataGenerator(DataGenerator):
         """
         Provide the next batch for training in the form of a tuple `(x, y)`. The generator should loop over the data
         indefinitely.
+
         :return: A tuple containing a batch of data `(x, y)`.
         :rtype: `tuple`
         """
@@ -153,6 +159,7 @@ class MXDataGenerator(DataGenerator):
     def __init__(self, data_loader, size, batch_size):
         """
         Create a data generator wrapper on top of an MXNet :class:`DataLoader`.
+
         :param data_loader:
         :type data_loader: `mxnet.gluon.data.DataLoader`
         :param size: Total size of the dataset.
@@ -173,6 +180,7 @@ class MXDataGenerator(DataGenerator):
         """
         Provide the next batch for training in the form of a tuple `(x, y)`. The generator should loop over the data
         indefinitely.
+
         :return: A tuple containing a batch of data `(x, y)`.
         :rtype: `tuple`
         """
@@ -192,6 +200,7 @@ class TFDataGenerator(DataGenerator):
     def __init__(self, sess, iterator, iterator_type, iterator_arg, size, batch_size):
         """
         Create a data generator wrapper for TensorFlow. Supported iterators: initializable, reinitializable, feedable.
+
         :param sess: Tensorflow session.
         :type sess: `tf.Session`
         :param iterator: Data iterator from TensorFlow.
@@ -234,6 +243,7 @@ class TFDataGenerator(DataGenerator):
         """
         Provide the next batch for training in the form of a tuple `(x, y)`. The generator should loop over the data
         indefinitely.
+
         :return: A tuple containing a batch of data `(x, y)`.
         :rtype: `tuple`
         :raises: `ValueError` if the iterator has reached the end.

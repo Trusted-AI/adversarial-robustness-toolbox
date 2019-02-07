@@ -179,12 +179,12 @@ class TestNewtonFool(unittest.TestCase):
         # starttime = time.clock()
         x_test_adv = nf.generate(x_test, batch_size=100)
         # endtime = time.clock()
-        # print(1, endtime - starttime)
-
+        # print(100, endtime - starttime)
+        #
         # starttime = time.clock()
-        x_test_adv = nf.generate(x_test, batch_size=10)
+        # x_test_adv = nf.generate(x_test, batch_size=1000)
         # endtime = time.clock()
-        # print(10, endtime - starttime)
+        # print(1000, endtime - starttime)
 
         self.assertFalse((x_test == x_test_adv).all())
 

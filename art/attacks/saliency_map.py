@@ -38,7 +38,7 @@ class SaliencyMapMethod(Attack):
         Create a SaliencyMapMethod instance.
 
         :param classifier: A trained model.
-        :type classifier: :class:`Classifier`
+        :type classifier: :class:`.Classifier`
         :param theta: Perturbation introduced to each modified feature per step (can be positive or negative).
         :type theta: `float`
         :param gamma: Maximum percentage of perturbed features (between 0 and 1).
@@ -47,7 +47,7 @@ class SaliencyMapMethod(Attack):
         :type batch_size: `int`
         :param expectation: An expectation over transformations to be applied when computing
                             classifier gradients and predictions.
-        :type expectation: :class:`ExpectationOverTransformations`
+        :type expectation: :class:`.ExpectationOverTransformations`
         """
         super(SaliencyMapMethod, self).__init__(classifier)
         kwargs = {'theta': theta, 'gamma': gamma, 'batch_size': batch_size, 'expectation': expectation}

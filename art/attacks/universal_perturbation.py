@@ -50,7 +50,7 @@ class UniversalPerturbation(Attack):
                  norm=np.inf, expectation=None):
         """
         :param classifier: A trained model.
-        :type classifier: :class:`Classifier`
+        :type classifier: :class:`.Classifier`
         :param attacker: Adversarial attack name. Default is 'deepfool'. Supported names: 'carlini', 'carlini_inf',
                          'deepfool', 'fgsm', 'bim', 'pgd', 'margin', 'ead', 'newtonfool', 'jsma', 'vat'.
         :type attacker: `str`
@@ -66,7 +66,7 @@ class UniversalPerturbation(Attack):
         :type norm: `int`
         :param expectation: An expectation over transformations to be applied when computing
                             classifier gradients and predictions.
-        :type expectation: :class:`ExpectationOverTransformations`
+        :type expectation: :class:`.ExpectationOverTransformations`
         """
         super(UniversalPerturbation, self).__init__(classifier)
         kwargs = {'attacker': attacker,

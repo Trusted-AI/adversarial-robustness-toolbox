@@ -59,7 +59,7 @@ def empirical_robustness(classifier, x, attack_name, attack_params=None):
     successful attack. Paper link: https://arxiv.org/abs/1511.04599
 
     :param classifier: A trained model
-    :type classifier: :class:`Classifier`
+    :type classifier: :class:`.Classifier`
     :param x: Data sample of shape that can be fed into `classifier`
     :type x: `np.ndarray`
     :param attack_name: adversarial attack name
@@ -96,7 +96,7 @@ def empirical_robustness(classifier, x, attack_name, attack_params=None):
 #     measure the Euclidean distance to its closest point in `x_train`, then average over all points.
 #
 #     :param classifier: A trained model
-#     :type classifier: :class:`Classifier`
+#     :type classifier: :class:`.Classifier`
 #     :param x: Data sample of shape that can be fed into `classifier`
 #     :type x: `np.ndarray`
 #     :param x_ref: Reference data sample to be considered as neighbors
@@ -134,7 +134,7 @@ def loss_sensitivity(classifier, x, y):
     https://arxiv.org/pdf/1706.05394.pdf.
 
     :param classifier: A trained model
-    :type classifier: :class:`Classifier`
+    :type classifier: :class:`.Classifier`
     :param x: Data sample of shape that can be fed into `classifier`
     :type x: `np.ndarray`
     :param y: Labels for sample `x`, one-hot encoded.
@@ -154,7 +154,7 @@ def clever(classifier, x, nb_batches, batch_size, radius, norm, target=None, tar
     Compute CLEVER score for an untargeted attack. Paper link: https://arxiv.org/abs/1801.10578
 
     :param classifier: A trained model.
-    :type classifier: :class:`Classifier`
+    :type classifier: :class:`.Classifier`
     :param x: One input sample
     :type x: `np.ndarray`
     :param nb_batches: Number of repetitions of the estimate
@@ -206,7 +206,7 @@ def clever_u(classifier, x, nb_batches, batch_size, radius, norm, c_init=1, pool
     Compute CLEVER score for an untargeted attack. Paper link: https://arxiv.org/abs/1801.10578
 
     :param classifier: A trained model.
-    :type classifier: :class:`Classifier`
+    :type classifier: :class:`.Classifier`
     :param x: One input sample
     :type x: `np.ndarray`
     :param nb_batches: Number of repetitions of the estimate
@@ -243,7 +243,7 @@ def clever_t(classifier, x, target_class, nb_batches, batch_size, radius, norm, 
     Compute CLEVER score for a targeted attack. Paper link: https://arxiv.org/abs/1801.10578
 
     :param classifier: A trained model
-    :type classifier: :class:`Classifier`
+    :type classifier: :class:`.Classifier`
     :param x: One input sample
     :type x: `np.ndarray`
     :param target_class: Targeted class

@@ -45,7 +45,7 @@ class CarliniL2Method(Attack):
         Create a Carlini L_2 attack instance.
 
         :param classifier: A trained model.
-        :type classifier: :class:`Classifier`
+        :type classifier: :class:`.Classifier`
         :param confidence: Confidence of adversarial examples: a higher value produces examples that are farther away,
                 from the original input, but classified with higher confidence as the target class.
         :type confidence: `float`
@@ -70,7 +70,7 @@ class CarliniL2Method(Attack):
         :type batch_size: `int`
         :param expectation: An expectation over transformations to be applied when computing
                             classifier gradients and predictions.
-        :type expectation: :class:`ExpectationOverTransformations`
+        :type expectation: :class:`.ExpectationOverTransformations`
         """
         super(CarliniL2Method, self).__init__(classifier)
 
@@ -480,7 +480,7 @@ class CarliniLInfMethod(Attack):
         Create a Carlini L_Inf attack instance.
 
         :param classifier: A trained model.
-        :type classifier: :class:`Classifier`
+        :type classifier: :class:`.Classifier`
         :param confidence: Confidence of adversarial examples: a higher value produces examples that are farther away,
                 from the original input, but classified with higher confidence as the target class.
         :type confidence: `float`
@@ -501,7 +501,7 @@ class CarliniLInfMethod(Attack):
         :type batch_size: `int`
         :param expectation: An expectation over transformations to be applied when computing
                             classifier gradients and predictions.
-        :type expectation: :class:`ExpectationOverTransformations`
+        :type expectation: :class:`.ExpectationOverTransformations`
         """
         super(CarliniLInfMethod, self).__init__(classifier)
 
