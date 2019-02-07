@@ -391,7 +391,21 @@ class PyTorchClassifier(Classifier):
         :type path: `str`
         :return: None
         """
-        raise NotImplementedError
+        import os
+        import torch
+
+        if path is None:
+            from art import DATA_PATH
+            full_path = os.path.join(DATA_PATH, filename)
+        else:
+            full_path = os.path.join(path, filename)
+        folder = os.path.split(full_path)[0]
+        if not os.path.exists(folder):
+            os.makedirs(folder)
+        torch.save(self._model.state_dict(), full_path + '.model')
+        torch.save(self._optimizer.state_dict(), full_path + '.optimizer')
+        logger.info("Model state dict saved in path: %s.", full_path + '.model')
+        logger.info("Optimizer state dict saved in path: %s.", full_path + '.optimizer')
 
     # def _forward_at(self, inputs, layer):
     #     """
