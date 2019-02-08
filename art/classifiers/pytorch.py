@@ -335,7 +335,7 @@ class PyTorchClassifier(Classifier):
         """
         return self._layer_names
 
-    def get_activations(self, x, layer):
+    def get_activations(self, x, layer, batch_size=128):
         """
         Return the output of the specified layer for input `x`. `layer` is specified by layer index (between 0 and
         `nb_layers - 1`) or by name. The number of layers can be determined by counting the results returned by
@@ -345,6 +345,8 @@ class PyTorchClassifier(Classifier):
         :type x: `np.ndarray`
         :param layer: Layer for computing the activations
         :type layer: `int` or `str`
+        :param batch_size: Size of batches.
+        :type batch_size: `int`
         :return: The output of `layer`, where the first dimension is the batch size corresponding to `x`.
         :rtype: `np.ndarray`
         """

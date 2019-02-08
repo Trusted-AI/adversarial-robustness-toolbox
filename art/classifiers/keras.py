@@ -194,12 +194,14 @@ class KerasClassifier(Classifier):
         :return: Array of predictions of shape `(nb_inputs, self.nb_classes)`.
         :rtype: `np.ndarray`
         """
+        from art import NUMPY_DTYPE
+
         # Apply defences
         x_ = self._apply_processing(x)
         x_ = self._apply_defences_predict(x_)
 
         # Run predictions with batching
-        preds = np.zeros((x_.shape[0], self.nb_classes), dtype=np.float32)
+        preds = np.zeros((x_.shape[0], self.nb_classes), dtype=NUMPY_DTYPE)
         for b in range(int(np.ceil(x_.shape[0] / float(batch_size)))):
             begin, end = b * batch_size, min((b + 1) * batch_size, x_.shape[0])
             preds[begin:end] = self._preds([x_[begin:end]])[0]
@@ -271,7 +273,7 @@ class KerasClassifier(Classifier):
         """
         return self._layer_names
 
-    def get_activations(self, x, layer):
+    def get_activations(self, x, layer, batch_size=128):
         """
         Return the output of the specified layer for input `x`. `layer` is specified by layer index (between 0 and
         `nb_layers - 1`) or by name. The number of layers can be determined by counting the results returned by
@@ -281,10 +283,13 @@ class KerasClassifier(Classifier):
         :type x: `np.ndarray`
         :param layer: Layer for computing the activations
         :type layer: `int` or `str`
+        :param batch_size: Size of batches.
+        :type batch_size: `int`
         :return: The output of `layer`, where the first dimension is the batch size corresponding to `x`.
         :rtype: `np.ndarray`
         """
         import keras.backend as k
+        from art import NUMPY_DTYPE
 
         if isinstance(layer, six.string_types):
             if layer not in self._layer_names:
@@ -309,7 +314,16 @@ class KerasClassifier(Classifier):
         x_ = self._apply_processing(x_)
         x_ = self._apply_defences_predict(x_)
 
-        return output_func([x_])[0]
+        # Determine shape of expected output and prepare array
+        output_shape = output_func([x_[0][None, ...]])[0].shape
+        activations = np.zeros((x_.shape[0],) + output_shape[1:], dtype=NUMPY_DTYPE)
+
+        # Get activations with batching
+        for b in range(int(np.ceil(x_.shape[0] / float(batch_size)))):
+            begin, end = b * batch_size, min((b + 1) * batch_size, x_.shape[0])
+            activations[begin:end] = output_func([x_[begin:end]])[0]
+
+        return activations
 
     def _init_class_grads(self, label=None, logits=False):
         import keras.backend as k
