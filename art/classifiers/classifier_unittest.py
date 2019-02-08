@@ -56,6 +56,6 @@ class TestClassifier(unittest.TestCase):
         classifier = ClassifierInstance((0, 1))
 
         repr_ = repr(classifier)
-        self.assertEqual(repr_.split(sep='(')[0], 'art.classifiers.classifier_unittest.ClassifierInstance')
+        self.assertTrue('classifiers.classifier_unittest.ClassifierInstance' in repr_)
         self.assertTrue('clip_values=(0, 1)' in repr_)
         self.assertTrue('channel_index=1, defences=None, preprocessing=(0, 1)' in repr_)

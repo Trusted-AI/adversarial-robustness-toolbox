@@ -162,7 +162,7 @@ class TestMXClassifier(unittest.TestCase):
 
     def test_repr(self):
         repr_ = repr(self.classifier)
-        self.assertEqual(repr_.split(sep='(')[0], 'art.classifiers.mxnet.MXClassifier')
+        self.assertTrue('art.classifiers.mxnet.MXClassifier' in repr_)
         self.assertTrue('clip_values=(0, 1)' in repr_)
         self.assertTrue('input_shape=(1, 28, 28), nb_classes=10' in repr_)
         self.assertTrue('channel_index=1, defences=None, preprocessing=(0, 1)' in repr_)

@@ -195,7 +195,7 @@ class TestTFClassifier(unittest.TestCase):
 
     def test_repr(self):
         repr_ = repr(self.classifier)
-        self.assertEqual(repr_.split(sep='(')[0], 'art.classifiers.tensorflow.TFClassifier')
+        self.assertTrue('art.classifiers.tensorflow.TFClassifier' in repr_)
         self.assertTrue('clip_values=(0, 1)' in repr_)
         self.assertTrue('channel_index=3, defences=None, preprocessing=(0, 1)' in repr_)
 
