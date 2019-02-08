@@ -8,7 +8,7 @@ import numpy as np
 from art.poison_detection.clustering_analyzer import ClusteringAnalyzer
 from art.poison_detection.ground_truth_evaluator import GroundTruthEvaluator
 from art.poison_detection.poison_filtering_defence import PoisonFilteringDefence
-from art.visualization import create_sprite, save_image
+from art.visualization import create_sprite, save_image, plot_3d
 
 logger = logging.getLogger(__name__)
 
@@ -63,6 +63,9 @@ class ActivationDefence(PoisonFilteringDefence):
         :return: JSON object with confusion matrix
         :rtype: `jsonObject`
         """
+        if not is_clean:
+            raise ValueError("is_clean was not provided while invoking evaluate_defence.")
+
         self.set_params(**kwargs)
 
         if not self.activations_by_class:
@@ -221,6 +224,24 @@ class ActivationDefence(PoisonFilteringDefence):
 
         return sprites_by_class
 
+    def plot_clusters(self, save=True, folder='.', **kwargs):
+        self.set_params(**kwargs)
+
+        if not self.clusters_by_class:
+            self.cluster_activations()
+
+        # Get activations reduced to 3-components:
+        separated_reduced_activations = []
+        for ac in self.activations_by_class:
+            reduced_activations = reduce_dimensionality(ac, nb_dims=3)
+            separated_reduced_activations.append(reduced_activations)
+
+        # For each class generate a plot:
+        for class_id, (labels, coordinates) in enumerate(zip(self.clusters_by_class, separated_reduced_activations)):
+            if save:
+                f_name = os.path.join(folder, 'plot_class_' + str(class_id) + '.png')
+            plot_3d(coordinates, labels, save=save, f_name=f_name)
+
     def set_params(self, **kwargs):
         """
         Take in a dictionary of parameters and applies defence-specific checks before saving them as attributes.
@@ -316,17 +337,9 @@ def cluster_activations(separated_activations, nb_clusters=2, nb_dims=10, reduce
     :rtype: `tuple`
     """
     from sklearn.cluster import KMeans
-    from sklearn.decomposition import FastICA, PCA
 
     separated_clusters = []
     separated_reduced_activations = []
-
-    if reduce == 'FastICA':
-        projector = FastICA(n_components=nb_dims, max_iter=1000, tol=0.005)
-    elif reduce == 'PCA':
-        projector = PCA(n_components=nb_dims)
-    else:
-        raise ValueError(reduce + " dimensionality reduction method not supported.")
 
     if clustering_method == 'KMeans':
         clusterer = KMeans(n_clusters=nb_clusters)
@@ -337,7 +350,7 @@ def cluster_activations(separated_activations, nb_clusters=2, nb_dims=10, reduce
         # Apply dimensionality reduction
         nb_activations = np.shape(ac)[1]
         if nb_activations > nb_dims:
-            reduced_activations = projector.fit_transform(ac)
+            reduced_activations = reduce_dimensionality(ac, nb_dims=nb_dims, reduce=reduce)
         else:
             logger.info("Dimensionality of activations = %i less than nb_dims = %i. Not applying dimensionality "
                         "reduction.", nb_activations, nb_dims)
@@ -349,3 +362,29 @@ def cluster_activations(separated_activations, nb_clusters=2, nb_dims=10, reduce
         separated_clusters.append(clusters)
 
     return separated_clusters, separated_reduced_activations
+
+
+def reduce_dimensionality(activations, nb_dims=10, reduce='FastICA'):
+    """
+    Reduces dimensionality of the activations provided using the specified number of dimensions and reduction technique.
+
+    :param activations: Activations to be reduced
+    :type activations: `numpy.ndarray'
+    :param nb_dims: number of dimensions to reduce activation to via PCA
+    :type nb_dims: `int`
+    :param reduce: Method to perform dimensionality reduction, default is FastICA
+    :type reduce: `str`
+    :return: array with the activations reduced
+    :rtype: `numpy.ndarray`
+    """
+
+    from sklearn.decomposition import FastICA, PCA
+    if reduce == 'FastICA':
+        projector = FastICA(n_components=nb_dims, max_iter=1000, tol=0.005)
+    elif reduce == 'PCA':
+        projector = PCA(n_components=nb_dims)
+    else:
+        raise ValueError(reduce + " dimensionality reduction method not supported.")
+
+    reduced_activations = projector.fit_transform(activations)
+    return reduced_activations

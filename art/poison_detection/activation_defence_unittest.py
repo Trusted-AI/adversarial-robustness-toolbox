@@ -143,6 +143,10 @@ class TestActivationDefence(unittest.TestCase):
         # Very unlikely that they are the same
         self.assertNotEqual(sum_dis, sum_sz, msg='This is very unlikely to happen... there may be an error')
 
+    def test_plot_clusters(self):
+        self.defence.detect_poison(nb_clusters=2, nb_dims=10, reduce='PCA')
+        self.defence.plot_clusters()
+
 
 if __name__ == '__main__':
     unittest.main()

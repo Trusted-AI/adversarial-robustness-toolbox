@@ -84,10 +84,9 @@ class ClusteringAnalyzer:
                 dict_cluster = {'cluster_'+str(cluster_id): dict_i}
                 report_class.update(dict_cluster)
 
-            report_class['nb_suspicious_clusters'] = len(poison_clusters)
             report['Class_'+str(i)] = report_class
 
-        report['suspicious_clusters'] = report['suspicious_clusters'] + np.sum(summary_poison_clusters)
+        report['suspicious_clusters'] = report['suspicious_clusters'] + np.sum(summary_poison_clusters).item()
         return np.asarray(all_assigned_clean), summary_poison_clusters, report
 
     def analyze_by_distance(self, separated_clusters, separated_activations):
@@ -240,10 +239,9 @@ class ClusteringAnalyzer:
                 dict_cluster = {'cluster_' + str(cluster_id): dict_i}
                 report_class.update(dict_cluster)
 
-            report_class['nb_suspicious_clusters'] = len(poison_clusters)
             report['Class_' + str(i)] = report_class
 
-        report['suspicious_clusters'] = report['suspicious_clusters'] + np.sum(summary_poison_clusters)
+        report['suspicious_clusters'] = report['suspicious_clusters'] + np.sum(summary_poison_clusters).item()
         return np.asarray(all_assigned_clean), summary_poison_clusters, report
 
     def analyze_by_silhouette_score(self, separated_clusters, reduced_activations_by_class, size_threshold=0.35,
