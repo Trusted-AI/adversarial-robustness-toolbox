@@ -181,7 +181,7 @@ class TestPyTorchClassifier(unittest.TestCase):
 
         for i, name in enumerate(layer_names):
             act_i = ptc.get_activations(x_test, i, batch_size=5)
-            act_name = ptc.get_activations(x_test, name)
+            act_name = ptc.get_activations(x_test, name, batch_size=5)
             self.assertTrue(np.sum(act_name-act_i) == 0)
 
         self.assertTrue(ptc.get_activations(x_test, 0, batch_size=5).shape == (20, 16, 24, 24))

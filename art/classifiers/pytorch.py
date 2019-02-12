@@ -379,7 +379,7 @@ class PyTorchClassifier(Classifier):
             layer_output = self._model(torch.from_numpy(x_[begin:end]).to(self._device).float())[layer_index]
             results.append(layer_output.detach().cpu().numpy())
 
-        results = np.vstack(results)
+        results = np.concatenate(results)
 
         return results
 
