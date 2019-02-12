@@ -28,7 +28,7 @@ class CarliniL2Method(Attack):
         Create a Carlini L_2 attack instance.
 
         :param classifier: A trained model.
-        :type classifier: :class:`Classifier`
+        :type classifier: :class:`.Classifier`
         :param confidence: Confidence of adversarial examples: a higher value produces examples that are farther away,
                 from the original input, but classified with higher confidence as the target class.
         :type confidence: `float`
@@ -53,7 +53,7 @@ class CarliniL2Method(Attack):
         :type batch_size: `int`
         :param expectation: An expectation over transformations to be applied when computing
                             classifier gradients and predictions.
-        :type expectation: :class:`ExpectationOverTransformations`
+        :type expectation: :class:`.ExpectationOverTransformations`
         """
         super(CarliniL2Method, self).__init__(classifier)
 
@@ -111,7 +111,7 @@ class CarliniL2Method(Attack):
 
         return z, l2dist, c*loss + l2dist
 
-    def _loss_gradient(self, z, target, x, x_adv, x_adv_tanh, c, clip_min, clip_max):
+    def _gradient_of_loss(self, z, target, x, x_adv, x_adv_tanh, c, clip_min, clip_max):
         """
         Compute the gradient of the loss function.
 
@@ -283,9 +283,9 @@ class CarliniL2Method(Attack):
 
                     # compute gradient:
                     logger.debug('Compute loss gradient')
-                    perturbation_tanh = -self._loss_gradient(z[active], y_batch[active], x_batch[active],
-                                                             x_adv_batch[active], x_adv_batch_tanh[active],
-                                                             c[active], clip_min, clip_max)
+                    perturbation_tanh = -self._gradient_of_loss(z[active], y_batch[active], x_batch[active],
+                                                                x_adv_batch[active], x_adv_batch_tanh[active],
+                                                                c[active], clip_min, clip_max)
 
                     # perform line search to optimize perturbation
                     # first, halve the learning rate until perturbation actually decreases the loss:
@@ -463,7 +463,7 @@ class CarliniLInfMethod(Attack):
         Create a Carlini L_Inf attack instance.
 
         :param classifier: A trained model.
-        :type classifier: :class:`Classifier`
+        :type classifier: :class:`.Classifier`
         :param confidence: Confidence of adversarial examples: a higher value produces examples that are farther away,
                 from the original input, but classified with higher confidence as the target class.
         :type confidence: `float`
@@ -484,7 +484,7 @@ class CarliniLInfMethod(Attack):
         :type batch_size: `int`
         :param expectation: An expectation over transformations to be applied when computing
                             classifier gradients and predictions.
-        :type expectation: :class:`ExpectationOverTransformations`
+        :type expectation: :class:`.ExpectationOverTransformations`
         """
         super(CarliniLInfMethod, self).__init__(classifier)
 
@@ -528,7 +528,7 @@ class CarliniLInfMethod(Attack):
 
         return z, loss
 
-    def _loss_gradient(self, z, target, x_adv, x_adv_tanh, clip_min, clip_max):
+    def _gradient_of_loss(self, z, target, x_adv, x_adv_tanh, clip_min, clip_max):
         """
         Compute the gradient of the loss function.
 
@@ -663,8 +663,8 @@ class CarliniLInfMethod(Attack):
 
                 # compute gradient:
                 logger.debug('Compute loss gradient')
-                perturbation_tanh = -self._loss_gradient(z[active], y_batch[active], x_adv_batch[active],
-                                                         x_adv_batch_tanh[active], clip_min[active], clip_max[active])
+                perturbation_tanh = -self._gradient_of_loss(z[active], y_batch[active], x_adv_batch[active],
+                                                            x_adv_batch_tanh[active], clip_min[active], clip_max[active])
 
                 # perform line search to optimize perturbation
                 # first, halve the learning rate until perturbation actually decreases the loss:

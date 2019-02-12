@@ -24,7 +24,7 @@ class SpatialTransformation(Attack):
                  expectation=None):
         """
         :param classifier: A trained model.
-        :type classifier: :class:`Classifier`
+        :type classifier: :class:`.Classifier`
         :param max_translation: The maximum translation in any direction as percentage of image size.
         :type max_translation: `float`
         :param num_translations: The number of translations to search on grid spacing per direction.
@@ -35,7 +35,7 @@ class SpatialTransformation(Attack):
         :type num_rotations: `int`
         :param expectation: An expectation over transformations to be applied when computing
                             classifier gradients and predictions.
-        :type expectation: :class:`ExpectationOverTransformations`
+        :type expectation: :class:`.ExpectationOverTransformations`
         """
         super(SpatialTransformation, self).__init__(classifier=classifier, expectation=expectation)
         kwargs = {'max_translation': max_translation,
@@ -66,7 +66,7 @@ class SpatialTransformation(Attack):
         :type num_rotations: `int`
         :param expectation: An expectation over transformations to be applied when computing
                             classifier gradients and predictions.
-        :type expectation: :class:`ExpectationOverTransformations`
+        :type expectation: :class:`.ExpectationOverTransformations`
         :return: An array holding the adversarial examples.
         :rtype: `np.ndarray`
         """
@@ -168,7 +168,7 @@ class SpatialTransformation(Attack):
         :type num_rotations: `int`
         :param expectation: An expectation over transformations to be applied when computing
                             classifier gradients and predictions.
-        :type expectation: :class:`ExpectationOverTransformations`
+        :type expectation: :class:`.ExpectationOverTransformations`
         """
         super(SpatialTransformation, self).set_params(**kwargs)
 

@@ -25,7 +25,7 @@ class ReverseSigmoid(NetworkManipulator):
         :type classifier: `Classifier`
         :return: A manipulated model derived from the given model. While the given model will be unchanged, its
                  component can be used in the manipulated model, and hence the manipulated model will be updated if the
-                 given model is updated, which does not break the :class:`ReverseSigmoid` defense.
+                 given model is updated, which does not break the :class:`.ReverseSigmoid` defense.
         """
         if streamlined:
             if isinstance(classifier, KerasClassifier):

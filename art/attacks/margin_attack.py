@@ -27,7 +27,7 @@ class MarginAttack(Attack):
         Create a MarginAttack instance.
 
         :param classifier: A trained model.
-        :type classifier: :class:`Classifier
+        :type classifier: :class:`.Classifier`
         :param max_iter: The maximum number of iterations.
         :type max_iter: `int`
         :param target_scan_iters: The number of iterations where restoration move scans candidate adversarial classes
@@ -55,7 +55,7 @@ class MarginAttack(Attack):
         :type verbose: `bool`
         :param expectation: An expectation over transformations to be applied when computing
                             classifier gradients and predictions.
-        :type expectation: :class:`ExpectationOverTransformations`
+        :type expectation: :class:`.ExpectationOverTransformations`
         """
         super(MarginAttack, self).__init__(classifier)
 

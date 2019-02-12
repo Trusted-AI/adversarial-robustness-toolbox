@@ -1,4 +1,4 @@
-# Adversarial Robustness Toolbox (ART v0.4.0)
+# Adversarial Robustness Toolbox (ART v0.5.0)
 [![Build Status](https://travis.ibm.com/nemesis/nemesis.svg?token=gRzs7KGtxQXDzQo1SRTx&branch=dev)](https://travis.ibm.com/nemesis/nemesis)
 
 This is a library dedicated to **adversarial machine learning**. Its purpose is to allow rapid crafting and analysis of attacks and defense methods for machine learning models. ART provides an implementation for many state-of-the-art methods for attacking and defending classifiers.
@@ -81,7 +81,7 @@ The `notebooks` folder contains Jupyter notebooks with detailed walkthroughs of 
 If you use ART for research, please consider citing the following reference paper:
 ```
 @article{art2018,
-    title = {Adversarial Robustness Toolbox v0.4.0},
+    title = {Adversarial Robustness Toolbox v0.5.0},
     author = {Nicolae, Maria-Irina and Sinn, Mathieu and Tran, Minh~Ngoc and Rawat, Ambrish and Wistuba, Martin and Zantedeschi, Valentina and Baracaldo, Nathalie and Chen, Bryant and Ludwig, Heiko and Molloy, Ian and Edwards, Ben},
     journal = {CoRR},
     volume = {1807.01069}

@@ -28,7 +28,7 @@ class Feature(ABC):
         Initialize a `Feature` object.
 
         :param classifier: Classification model for which the features will be extracted.
-        :type classifier: :class:`Classifier`
+        :type classifier: :class:`.Classifier`
         """
         self.classifier = classifier
 
@@ -54,7 +54,7 @@ class SaliencyMap(Feature):
     def __init__(self, classifier):
         """
         :param classifier: Classification model for which the features will be extracted.
-        :type classifier: :class:`Classifier`
+        :type classifier: :class:`.Classifier`
         """
         super(SaliencyMap, self).__init__(classifier)
 
@@ -77,7 +77,7 @@ class MeanClassDist(Feature):
     def __init__(self, classifier, x, y, layer=0, batch_size=32):
         """
         :param classifier: Classification model for which the features will be extracted.
-        :type classifier: :class:`Classifier`
+        :type classifier: :class:`.Classifier`
         :param x: A set samples with respect to which the mean class distance is to be computed.
         :type x: `np.ndarray`
         :param y: Labels for the sample set x.
@@ -151,7 +151,7 @@ class AttentionMap(Feature):
     def __init__(self, classifier, window_width=8, strides=4):
         """
         :param classifier: Classification model for which the features will be extracted.
-        :type classifier: :class:`Classifier`
+        :type classifier: :class:`.Classifier`
         :param window_width: Width of the grey-path window.
         :type window_width: `int`
         :param strides: Stride for the running window.
@@ -195,7 +195,7 @@ class KNNPreds(Feature):
     def __init__(self, classifier, x, y, layer, batch_size=32, n_neighbors=50):
         """
         :param classifier: Classification model for which the features will be extracted.
-        :type classifier: :class:`Classifier`
+        :type classifier: :class:`.Classifier`
         :param x: A set samples with respect to which the mean class distance is to be computed.
         :type x: `np.ndarray`
         :param y: Labels for the sample set `x`.

@@ -1,8 +1,8 @@
 """
 Module defining an interface for data generators and providing concrete implementations for the supported frameworks.
 Their purpose is to allow for data loading and batching on the fly, as well as dynamic data augmentation.
-The generators can be used with the `fit_generator` function in the :class:`Classifier` interface. Users can define
-their own generators following the :class:`DataGenerator` interface.
+The generators can be used with the `fit_generator` function in the :class:`.Classifier` interface. Users can define
+their own generators following the :class:`.DataGenerator` interface.
 """
 from __future__ import absolute_import, division, print_function, unicode_literals
 
@@ -197,6 +197,7 @@ class TFDataGenerator(DataGenerator):
         :type size: `int`
         :param batch_size: Size of the minibatches.
         :type batch_size: `int`
+        :raises: `TypeError`, `ValueError`
         """
         import tensorflow as tf
 
@@ -207,7 +208,7 @@ class TFDataGenerator(DataGenerator):
         self.iterator_arg = iterator_arg
 
         if not isinstance(iterator, tf.data.Iterator):
-            raise ("Only support object tf.data.Iterator")
+            raise TypeError("Only support object tf.data.Iterator")
 
         if iterator_type == 'initializable':
             if type(iterator_arg) != dict:
@@ -217,9 +218,9 @@ class TFDataGenerator(DataGenerator):
                 raise ("Need to pass a tensorflow operation for iterator type %s" % iterator_type)
         elif iterator_type == 'feedable':
             if type(iterator_arg) != tuple:
-                raise ("Need to pass a tuple for iterator type %s" % iterator_type)
+                raise ValueError("Need to pass a tuple for iterator type %s" % iterator_type)
         else:
-            raise ("Iterator type %s not supported" % iterator_type)
+            raise TypeError("Iterator type %s not supported" % iterator_type)
 
     def get_batch(self):
         """
