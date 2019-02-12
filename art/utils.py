@@ -698,6 +698,10 @@ def kr_initializer_b_dense(_, dtype=None):
 
 
 def get_model_tf():
+    """
+    Standard Tensorflow model for unit testing
+    :return: loss, logits, input_ph, output_ph
+    """
     # Define input and output placeholders
     input_ph = tf.placeholder(tf.float32, shape=[None, 28, 28, 1])
     output_ph = tf.placeholder(tf.int32, shape=[None, 10])
@@ -719,6 +723,10 @@ def get_model_tf():
 
 
 def get_model_kr():
+    """
+    Standard Keras model for unit testing
+    :return: Keras model
+    """
     # Create simple CNN
     model = Sequential()
     model.add(Conv2D(1, kernel_size=(7, 7), activation='relu', input_shape=(28, 28, 1),
@@ -735,6 +743,11 @@ def get_model_kr():
 
 
 def get_model_pt():
+    """
+    Standard PyTorch model for unit testing
+    :return: PyTorch model, loss function, optimizer
+    """
+
     class Model(nn.Module):
         """
         Create model for pytorch.
