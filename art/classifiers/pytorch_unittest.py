@@ -180,15 +180,15 @@ class TestPyTorchClassifier(unittest.TestCase):
                                         '3_Flatten()', '4_Linear(in_features=2304, out_features=10, bias=True)'])
 
         for i, name in enumerate(layer_names):
-            act_i = ptc.get_activations(x_test, i)
+            act_i = ptc.get_activations(x_test, i, batch_size=5)
             act_name = ptc.get_activations(x_test, name)
             self.assertTrue(np.sum(act_name-act_i) == 0)
 
-        self.assertTrue(ptc.get_activations(x_test, 0).shape == (20, 16, 24, 24))
-        self.assertTrue(ptc.get_activations(x_test, 1).shape == (20, 16, 24, 24))
-        self.assertTrue(ptc.get_activations(x_test, 2).shape == (20, 16, 12, 12))
-        self.assertTrue(ptc.get_activations(x_test, 3).shape == (20, 2304))
-        self.assertTrue(ptc.get_activations(x_test, 4).shape == (20, 10))
+        self.assertTrue(ptc.get_activations(x_test, 0, batch_size=5).shape == (20, 16, 24, 24))
+        self.assertTrue(ptc.get_activations(x_test, 1, batch_size=5).shape == (20, 16, 24, 24))
+        self.assertTrue(ptc.get_activations(x_test, 2, batch_size=5).shape == (20, 16, 12, 12))
+        self.assertTrue(ptc.get_activations(x_test, 3, batch_size=5).shape == (20, 2304))
+        self.assertTrue(ptc.get_activations(x_test, 4, batch_size=5).shape == (20, 10))
 
     def test_set_learning(self):
         ptc = self.module_classifier
