@@ -414,19 +414,28 @@ class TFClassifier(Classifier):
         else:
             raise TypeError("Layer must be of type `str` or `int`. Received '%s'", layer)
 
-        # Get activations
         # Apply preprocessing and defences
         x_ = self._apply_processing(x)
         x_ = self._apply_defences_predict(x_)
 
-        # Create feed_dict
-        fd = {self._input_ph: x_}
-        fd.update(self._feed_dict)
+        # Run prediction with batch processing
+        results = []
+        num_batch = int(np.ceil(len(x_) / float(batch_size)))
+        for m in range(num_batch):
+            # Batch indexes
+            begin, end = m * batch_size, min((m + 1) * batch_size, x_.shape[0])
 
-        # Run prediction
-        result = self._sess.run(layer_tensor, feed_dict=fd)
+            # Create feed_dict
+            fd = {self._input_ph: x_[begin:end]}
+            fd.update(self._feed_dict)
 
-        return result
+            # Run prediction for the current batch
+            layer_output = self._sess.run(layer_tensor, feed_dict=fd)
+            results.append(layer_output)
+
+        results = np.concatenate(results)
+
+        return results
 
     def set_learning_phase(self, train):
         """
