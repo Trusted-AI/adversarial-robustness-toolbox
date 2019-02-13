@@ -4,6 +4,7 @@ import logging
 import unittest
 
 import numpy as np
+import torch
 import torch.nn as nn
 import torch.nn.functional as F
 import torch.optim as optim
@@ -214,7 +215,44 @@ class TestPyTorchClassifier(unittest.TestCase):
         self.assertTrue(os.path.exists(full_path + ".model"))
         os.remove(full_path + '.optimizer')
         os.remove(full_path + '.model')
-                                       
+
+    def test_load(self):
+        def compare_state_dicts(d1, d2):
+            cond = (set(d1.keys()) == set(d2.keys()))
+            for i in d1.keys():
+                cond = cond and bool(torch.all(d1[i] == d2[i]).item())
+            return cond
+        model = Model()
+        loss_fn = nn.CrossEntropyLoss()
+        optimizer = optim.Adam(model.parameters(), lr=0.01)
+        classifier = PyTorchClassifier((0, 1), model, loss_fn, optimizer, (1, 28, 28), 10)        
+
+        
+        import tempfile
+        import os
+        import copy
+
+        orig_params = copy.deepcopy(classifier._model.state_dict())        
+        t_file = tempfile.NamedTemporaryFile()
+        full_path = t_file.name
+        t_file.close()
+        base_name = os.path.basename(full_path)
+        dir_name = os.path.dirname(full_path)
+
+        classifier.save(base_name, path=dir_name)
+
+        
+
+        model = Model()  # Reinitialize the weights
+        classifier = PyTorchClassifier((0, 1), model, loss_fn, optimizer, (1, 28, 28), 10)        
+        new_params = copy.deepcopy(classifier._model.state_dict())
+        assert (not compare_state_dicts(new_params, orig_params))        
+
+        classifier.load_model_weights(base_name, path=dir_name)
+        new_params = copy.deepcopy(classifier._model.state_dict())
+        assert (compare_state_dicts(new_params, orig_params))
+        os.remove(full_path + '.model')
+        
 
 if __name__ == '__main__':
     unittest.main()

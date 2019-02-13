@@ -424,6 +424,40 @@ class PyTorchClassifier(Classifier):
         logger.info("Model state dict saved in path: %s.", full_path + '.model')
         logger.info("Optimizer state dict saved in path: %s.", full_path + '.optimizer')
 
+    def load_model_weights(self, filename, path=None):
+        """
+        Load a model to file in the format specific to the backend
+        framework.  This follows the first method specified in:
+        https://pytorch.org/tutorials/beginner/saving_loading_models.html
+
+        :param filename: Name of the file where to load the model's
+        weights.  Note that the suffix `model` that was used must
+        *not* be given.  This is appended automatically so as to have
+        symmetry with the `save` function.
+
+        :type filename: `str`
+        :param path: Path of the folder where to store the model. If
+                     no path is specified, the model will be stored in
+                     the default data location of the library
+                     `DATA_PATH`.
+        :type path: `str`
+        :load_optimizer: `bool` : If true, load the optimizer state as well
+        :return: None
+
+        """
+        import os
+        import torch
+
+        if path is None:
+            from art import DATA_PATH
+            full_path = os.path.join(DATA_PATH, filename)
+        else:
+            full_path = os.path.join(path, filename)
+
+        self._model.load_state_dict(torch.load(os.path.abspath(full_path +
+                                                               '.model')))
+        logging.info("Model dict loaded from: %s", full_path + '.model')
+
     # def _forward_at(self, inputs, layer):
     #     """
     #     Compute the forward at a specific layer.
