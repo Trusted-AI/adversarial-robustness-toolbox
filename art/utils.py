@@ -610,7 +610,7 @@ def get_verbose_print(verbose):
 # -------------------------------------------------------------------------------------------------- PRE-TRAINED MODELS
 
 
-def tf_initializer_w_conv2d(shape_list, dtype, partition_info):
+def tf_initializer_w_conv2d(_1, dtype, _2):
     """
     Initializer of weights in convolution layer for Tensorflow.
 
@@ -618,57 +618,49 @@ def tf_initializer_w_conv2d(shape_list, dtype, partition_info):
     :rtype: tf.constant
     """
     w_conv2d = np.load(os.path.join(os.path.dirname(os.path.dirname(__file__)), 'models', 'W_CONV2D.npy'))
-    _ = shape_list
-    _ = partition_info
     return tf.constant(w_conv2d, dtype)
 
 
-def kr_initializer_w_conv2d(shape, dtype=None):
+def kr_initializer_w_conv2d(_, dtype=None):
     """
     Initializer of weights in convolution layer for Keras.
 
     :return: Keras variable
     :rtype: k.variable
     """
-    _ = shape
     w_conv2d = np.load(os.path.join(os.path.dirname(os.path.dirname(__file__)), 'models', 'W_CONV2D.npy'))
     return k.variable(value=w_conv2d, dtype=dtype)
 
 
-def tf_initializer_b_conv2d(shape_list, dtype, partition_info):
+def tf_initializer_b_conv2d(_1, dtype, _2):
     """
     Initializer of biases in convolution layer for Tensorflow.
 
     :return: Tensorflow constant
     :rtype: tf.constant
     """
-    _ = shape_list
-    _ = partition_info
     b_conv2d = np.load(os.path.join(os.path.dirname(os.path.dirname(__file__)), 'models', 'B_CONV2D.npy'))
     return tf.constant(b_conv2d, dtype)
 
 
-def kr_initializer_b_conv2d(shape, dtype=None):
+def kr_initializer_b_conv2d(_, dtype=None):
     """
     Initializer of weights in convolution layer for Keras.
 
     :return: Keras variable
     :rtype: k.variable
     """
-    _ = shape
     b_conv2d = np.load(os.path.join(os.path.dirname(os.path.dirname(__file__)), 'models', 'B_CONV2D.npy'))
     return k.variable(value=b_conv2d, dtype=dtype)
 
 
-def tf_initializer_w_dense(shape_list, dtype, partition_info):
+def tf_initializer_w_dense(_1, dtype, _2):
     """
     Initializer of weights in dense layer for Tensorflow.
 
     :return: Tensorflow constant
     :rtype: tf.constant
     """
-    _ = shape_list
-    _ = partition_info
     w_dense = np.load(os.path.join(os.path.dirname(os.path.dirname(__file__)), 'models', 'W_DENSE.npy'))
     return tf.constant(w_dense, dtype)
 
@@ -684,15 +676,13 @@ def kr_initializer_w_dense(_, dtype=None):
     return k.variable(value=w_dense, dtype=dtype)
 
 
-def tf_initializer_b_dense(shape_list, dtype, partition_info):
+def tf_initializer_b_dense(_1, dtype, _2):
     """
     Initializer of biases in dense layer for Tensorflow.
 
     :return: Tensorflow constant
     :rtype: tf.constant
     """
-    _ = shape_list
-    _ = partition_info
     b_dense = np.load(os.path.join(os.path.dirname(os.path.dirname(__file__)), 'models', 'B_DENSE.npy'))
     return tf.constant(b_dense, dtype)
 
