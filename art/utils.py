@@ -562,7 +562,7 @@ def make_directory(dir_path):
 # -------------------------------------------------------------------------------------------------- PRE-TRAINED MODELS
 
 
-def tf_initializer_w_conv2d(_1, dtype, _2):
+def _tf_initializer_w_conv2d(_1, dtype, _2):
     """
     Initializer of weights in convolution layer for Tensorflow.
 
@@ -573,7 +573,7 @@ def tf_initializer_w_conv2d(_1, dtype, _2):
     return tf.constant(w_conv2d, dtype)
 
 
-def kr_initializer_w_conv2d(_, dtype=None):
+def _kr_initializer_w_conv2d(_, dtype=None):
     """
     Initializer of weights in convolution layer for Keras.
 
@@ -584,7 +584,7 @@ def kr_initializer_w_conv2d(_, dtype=None):
     return k.variable(value=w_conv2d, dtype=dtype)
 
 
-def tf_initializer_b_conv2d(_1, dtype, _2):
+def _tf_initializer_b_conv2d(_1, dtype, _2):
     """
     Initializer of biases in convolution layer for Tensorflow.
 
@@ -595,7 +595,7 @@ def tf_initializer_b_conv2d(_1, dtype, _2):
     return tf.constant(b_conv2d, dtype)
 
 
-def kr_initializer_b_conv2d(_, dtype=None):
+def _kr_initializer_b_conv2d(_, dtype=None):
     """
     Initializer of weights in convolution layer for Keras.
 
@@ -606,7 +606,7 @@ def kr_initializer_b_conv2d(_, dtype=None):
     return k.variable(value=b_conv2d, dtype=dtype)
 
 
-def tf_initializer_w_dense(_1, dtype, _2):
+def _tf_initializer_w_dense(_1, dtype, _2):
     """
     Initializer of weights in dense layer for Tensorflow.
 
@@ -617,7 +617,7 @@ def tf_initializer_w_dense(_1, dtype, _2):
     return tf.constant(w_dense, dtype)
 
 
-def kr_initializer_w_dense(_, dtype=None):
+def _kr_initializer_w_dense(_, dtype=None):
     """
     Initializer of weights in dense layer for Keras.
 
@@ -628,7 +628,7 @@ def kr_initializer_w_dense(_, dtype=None):
     return k.variable(value=w_dense, dtype=dtype)
 
 
-def tf_initializer_b_dense(_1, dtype, _2):
+def _tf_initializer_b_dense(_1, dtype, _2):
     """
     Initializer of biases in dense layer for Tensorflow.
 
@@ -639,7 +639,7 @@ def tf_initializer_b_dense(_1, dtype, _2):
     return tf.constant(b_dense, dtype)
 
 
-def kr_initializer_b_dense(_, dtype=None):
+def _kr_initializer_b_dense(_, dtype=None):
     """
     Initializer of biases in dense layer for Keras.
 
@@ -661,14 +661,14 @@ def get_classifier_tf():
     output_ph = tf.placeholder(tf.int32, shape=[None, 10])
 
     # Define the tensorflow graph
-    conv = tf.layers.conv2d(input_ph, 1, 7, activation=tf.nn.relu, kernel_initializer=tf_initializer_w_conv2d,
-                            bias_initializer=tf_initializer_b_conv2d)
+    conv = tf.layers.conv2d(input_ph, 1, 7, activation=tf.nn.relu, kernel_initializer=_tf_initializer_w_conv2d,
+                            bias_initializer=_tf_initializer_b_conv2d)
     conv = tf.layers.max_pooling2d(conv, 4, 4)
     flattened = tf.contrib.layers.flatten(conv)
 
     # Logits layer
-    logits = tf.layers.dense(flattened, 10, kernel_initializer=tf_initializer_w_dense,
-                             bias_initializer=tf_initializer_b_dense)
+    logits = tf.layers.dense(flattened, 10, kernel_initializer=_tf_initializer_w_dense,
+                             bias_initializer=_tf_initializer_b_dense)
 
     # Train operator
     loss = tf.reduce_mean(tf.losses.softmax_cross_entropy(logits=logits, onehot_labels=output_ph))
@@ -697,11 +697,11 @@ def get_classifier_kr():
     # Create simple CNN
     model = Sequential()
     model.add(Conv2D(1, kernel_size=(7, 7), activation='relu', input_shape=(28, 28, 1),
-                     kernel_initializer=kr_initializer_w_conv2d, bias_initializer=kr_initializer_b_conv2d))
+                     kernel_initializer=_kr_initializer_w_conv2d, bias_initializer=_kr_initializer_b_conv2d))
     model.add(MaxPooling2D(pool_size=(4, 4)))
     model.add(Flatten())
-    model.add(Dense(10, activation='softmax', kernel_initializer=kr_initializer_w_dense,
-                    bias_initializer=kr_initializer_b_dense))
+    model.add(Dense(10, activation='softmax', kernel_initializer=_kr_initializer_w_dense,
+                    bias_initializer=_kr_initializer_b_dense))
 
     model.compile(loss=keras.losses.categorical_crossentropy, optimizer=keras.optimizers.Adam(lr=0.01),
                   metrics=['accuracy'])
