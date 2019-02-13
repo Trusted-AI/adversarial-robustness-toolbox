@@ -3,14 +3,10 @@ from __future__ import absolute_import, division, print_function, unicode_litera
 import logging
 import unittest
 
-import keras.backend as k
 import numpy as np
-from keras.layers import Dense, Flatten, Conv2D, MaxPooling2D, Dropout
-from keras.models import Sequential
 
-from art.classifiers import KerasClassifier
 from art.poison_detection import ActivationDefence
-from art.utils import load_mnist, master_seed
+from art.utils import load_mnist, master_seed, get_classifier_kr
 
 logger = logging.getLogger('testLogger')
 
@@ -24,24 +20,12 @@ class TestActivationDefence(unittest.TestCase):
     @classmethod
     def setUpClass(cls):
 
+        # Build KerasClassifier
+        cls.classifier, sess = get_classifier_kr()
+
         (x_train, y_train), (x_test, y_test), _, _ = load_mnist()
         x_train, y_train = x_train[:NB_TRAIN], y_train[:NB_TRAIN]
         cls.mnist = (x_train, y_train), (x_test, y_test)
-
-        k.set_learning_phase(1)
-        model = Sequential()
-        model.add(Conv2D(32, kernel_size=(3, 3), activation='relu', input_shape=x_train.shape[1:]))
-        model.add(Conv2D(64, (3, 3), activation='relu'))
-        model.add(MaxPooling2D(pool_size=(2, 2)))
-        model.add(Dropout(0.25))
-        model.add(Flatten())
-        model.add(Dense(128, activation='relu'))
-        model.add(Dropout(0.5))
-        model.add(Dense(10, activation='softmax'))
-        model.compile(loss='categorical_crossentropy', optimizer='adam', metrics=['accuracy'])
-
-        cls.classifier = KerasClassifier((0, 1), model=model)
-        cls.classifier.fit(x_train, y_train, nb_epochs=2, batch_size=128)
 
         cls.defence = ActivationDefence(cls.classifier, x_train, y_train)
 
