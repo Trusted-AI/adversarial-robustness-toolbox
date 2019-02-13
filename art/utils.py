@@ -3,7 +3,6 @@ Module providing convenience functions.
 """
 from __future__ import absolute_import, division, print_function, unicode_literals
 
-import argparse
 import logging
 import os
 
@@ -20,6 +19,9 @@ import torch.optim as optim
 from art.classifiers import KerasClassifier, PyTorchClassifier, TFClassifier
 
 logger = logging.getLogger(__name__)
+
+
+# -------------------------------------------------------------------------------------------- RANDOM NUMBER GENERATORS
 
 
 def master_seed(seed):
@@ -67,6 +69,9 @@ def master_seed(seed):
             torch.cuda.manual_seed_all(seed)
     except ImportError:
         logger.info('Could not set random seed for PyTorch')
+
+
+# ----------------------------------------------------------------------------------------------------- MATHS UTILITIES
 
 
 def projection(v, eps, p):
@@ -135,6 +140,49 @@ def random_sphere(nb_points, nb_dims, radius, norm):
         raise NotImplementedError("Norm {} not supported".format(norm))
 
     return res
+
+
+def original_to_tanh(x_original, clip_min, clip_max, tanh_smoother=0.999999):
+    """
+    Transform input from original to tanh space.
+
+    :param x_original: An array with the input to be transformed.
+    :type x_original: `np.ndarray`
+    :param clip_min: Minimum clipping value.
+    :type clip_min: `float` or `np.ndarray`
+    :param clip_max: Maximum clipping value.
+    :type clip_max: `float` or `np.ndarray`
+    :param tanh_smoother: Scalar for multiplying arguments of arctanh to avoid division by zero.
+    :type tanh_smoother: `float`
+    :return: An array holding the transformed input.
+    :rtype: `np.ndarray`
+    """
+    x_tanh = np.clip(x_original, clip_min, clip_max)
+    x_tanh = (x_tanh - clip_min) / (clip_max - clip_min)
+    x_tanh = np.arctanh(((x_tanh * 2) - 1) * tanh_smoother)
+    return x_tanh
+
+
+def tanh_to_original(x_tanh, clip_min, clip_max, tanh_smoother=0.999999):
+    """
+    Transform input from tanh to original space.
+
+    :param x_tanh: An array with the input to be transformed.
+    :type x_tanh: `np.ndarray`
+    :param clip_min: Minimum clipping value.
+    :type clip_min: `float` or `np.ndarray`
+    :param clip_max: Maximum clipping value.
+    :type clip_max: `float` or `np.ndarray`
+    :param tanh_smoother: Scalar for dividing arguments of tanh to avoid division by zero.
+    :type tanh_smoother: `float`
+    :return: An array holding the transformed input.
+    :rtype: `np.ndarray`
+    """
+    x_original = (np.tanh(x_tanh) / tanh_smoother + 1) / 2
+    return x_original * (clip_max - clip_min) + clip_min
+
+
+# --------------------------------------------------------------------------------------- LABELS MANIPULATION FUNCTIONS
 
 
 def to_categorical(labels, nb_classes=None):
@@ -509,102 +557,6 @@ def make_directory(dir_path):
     """
     if not os.path.exists(dir_path):
         os.makedirs(dir_path)
-
-
-def get_npy_files(path):
-    """
-    Generator returning all the npy files in path subdirectories.
-
-    :param path: (str) directory path
-    :return: (str) paths
-    """
-
-    for root, _, files in os.walk(path):
-        for file_ in files:
-            if file_.endswith(".npy"):
-                yield os.path.join(root, file_)
-
-
-# ------------------------------------------------------------------- ARG PARSER
-
-
-def get_args(prog, load_classifier=False, load_sample=False, per_batch=False, options=""):
-    """
-    Parser for all scripts
-    :param prog: name of the script calling the function
-    :param load_classifier: bool, load a model, default False
-    :param load_sample: bool, load (adversarial) data for training, default False
-    :param per_batch: bool, load data in batches, default False
-    :param options:
-    :return: parsed arguments
-    """
-    parser = argparse.ArgumentParser(prog=prog, formatter_class=argparse.ArgumentDefaultsHelpFormatter)
-
-    option_dict = {
-        "a": {"flags": ["-a", "--adv"],
-              "kwargs": {"type": str, "dest": 'adv_method', "default": "fgsm",
-                         "choices": ["fgsm", "deepfool", "universal", "jsma", "vat", "carlini", "rnd_fgsm"],
-                         "help": 'choice of attacker'}},
-        "b": {"flags": ["-b", "--batchsize"],
-              "kwargs": {"type": int, "dest": 'batch_size', "default": 128, "help": 'size of the batches'}},
-        "c": {"flags": ["-c", "--classifier"],
-              "kwargs": {"type": str, "dest": 'classifier', "default": "cnn", "choices": ["cnn", "resnet", "mlp"],
-                         "help": 'choice of classifier'}},
-        "d": {"flags": ["-d", "--dataset"],
-              "kwargs": {"type": str, "dest": 'dataset', "default": "mnist",
-                         "help": 'either the path or name of the dataset the classifier is tested/trained on.'}},
-        "e": {"flags": ["-e", "--epochs"],
-              "kwargs": {"type": int, "dest": 'nb_epochs', "default": 20,
-                         "help": 'number of epochs for training the classifier'}},
-        "f": {"flags": ["-f", "--act"],
-              "kwargs": {"type": str, "dest": 'act', "default": "relu", "choices": ["relu", "brelu"],
-                         "help": 'choice of activation function'}},
-        "n": {"flags": ["-n", "--nbinstances"],
-              "kwargs": {"type": int, "dest": 'nb_instances', "default": 1,
-                         "help": 'number of supplementary instances per true example'}},
-        "r": {"flags": ["-r", "--valsplit"],
-              "kwargs": {"type": float, "dest": 'val_split', "default": 0.1,
-                         "help": 'ratio of training sample used for validation'}},
-        "s": {"flags": ["-s", "--save"],
-              "kwargs": {"nargs": '?', "type": str, "dest": 'save', "default": False,
-                         "help": 'if set, the classifier is saved; if an argument is provided it is used as path to'
-                                 ' store the model'}},
-        "t": {"flags": ["-t", "--stdev"],
-              "kwargs": {"type": float, "dest": 'std_dev', "default": 0.1,
-                         "help": 'standard deviation of the distributions'}},
-        "v": {"flags": ["-v", "--verbose"],
-              "kwargs": {"dest": 'verbose', "action": "store_true", "help": 'if set, verbose mode'}},
-        "z": {"flags": ["-z", "--defences"],
-              "kwargs": {"dest": 'defences', "nargs": "*", "default": None, "help": 'list of basic defences.'}},
-    }
-
-    # Add required arguments
-    if load_classifier:
-        parser.add_argument("load", type=str, help='the classifier is loaded from `load` directory.')
-
-    if load_sample:
-        parser.add_argument("adv_path", type=str, help='path to the dataset for data augmentation training.')
-
-    if per_batch:
-        parser.add_argument("batch_idx", type=int, help='index of the batch to use.')
-
-    # Add optional arguments
-    for o in options:
-        parser.add_argument(*option_dict[o]["flags"], **option_dict[o]["kwargs"])
-
-    return parser.parse_args()
-
-
-def get_verbose_print(verbose):
-    """
-    Sets verbose mode.
-    :param verbose: (bool) True for verbose, False for quiet
-    :return: (function) printing function
-    """
-    if verbose:
-        return print
-    else:
-        return lambda *a, **k: None
 
 
 # -------------------------------------------------------------------------------------------------- PRE-TRAINED MODELS
