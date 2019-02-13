@@ -245,6 +245,21 @@ def least_likely_class(x, classifier):
     return to_categorical(np.argmin(classifier.predict(x), axis=1), nb_classes=classifier.nb_classes)
 
 
+def second_most_likely_class(x, classifier):
+    """
+    Compute the second most likely class predictions for sample `x`. This strategy can be used for choosing target
+    labels for an attack to improve its chances to succeed.
+
+    :param x: A data sample of shape accepted by `classifier`.
+    :type x: `np.ndarray`
+    :param classifier: The classifier used for computing predictions.
+    :type classifier: `Classifier`
+    :return: Second most likely class predicted by `classifier` for sample `x` in one-hot encoding.
+    :rtype: `np.ndarray`
+    """
+    return to_categorical(np.argpartition(classifier.predict(x), -2, axis=1)[:, -2], nb_classes=classifier.nb_classes)
+
+
 def get_label_conf(y_vec):
     """
     Returns the confidence and the label of the most probable class given a vector of class confidences
