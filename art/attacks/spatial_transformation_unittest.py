@@ -71,12 +71,11 @@ class TestSpatialTransformation(unittest.TestCase):
         Second test with the KerasClassifier.
         :return:
         """
+        # Build KerasClassifier
+        krc, sess = get_classifier_kr()
 
         # Get MNIST
         (x_train, _), (x_test, _) = self.mnist
-
-        # Build KerasClassifier
-        krc, sess = get_classifier_kr()
 
         # Attack
         attack_params = {"max_translation": 10.0, "num_translations": 3, "max_rotation": 30.0, "num_rotations": 3}
@@ -101,13 +100,13 @@ class TestSpatialTransformation(unittest.TestCase):
         Third test with the PyTorchClassifier.
         :return:
         """
+        # Build PyTorchClassifier
+        ptc = get_classifier_pt()
+
         # Get MNIST
         (x_train, _), (x_test, _) = self.mnist
         x_train = np.swapaxes(x_train, 1, 3)
         x_test = np.swapaxes(x_test, 1, 3)
-
-        # Build PyTorchClassifier
-        ptc = get_classifier_pt()
 
         # Attack
         attack_params = {"max_translation": 10.0, "num_translations": 3, "max_rotation": 30.0, "num_rotations": 3}

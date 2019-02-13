@@ -3,16 +3,12 @@ from __future__ import absolute_import, division, print_function, unicode_litera
 import logging
 import unittest
 
-import keras
 import keras.backend as k
 import numpy as np
 import tensorflow as tf
-from keras.layers import Dense, Flatten, Conv2D, MaxPooling2D
-from keras.models import Sequential
 
 from art.attacks import CarliniL2Method, CarliniLInfMethod
-from art.classifiers import KerasClassifier, TFClassifier
-from art.utils import load_mnist, random_targets, master_seed, get_classifier_tf, get_classifier_kr, get_classifier_pt
+from art.utils import load_mnist, random_targets, master_seed, get_classifier_tf, get_classifier_kr
 
 logger = logging.getLogger('testLogger')
 
@@ -107,7 +103,7 @@ class TestCarliniL2(unittest.TestCase):
         :return:
         """
         # Build KerasClassifier
-        krc, sess = get_classifier_tf()
+        krc, sess = get_classifier_kr()
 
         # Get MNIST
         (_, _), (x_test, y_test) = self.mnist
@@ -146,21 +142,12 @@ class TestCarliniL2(unittest.TestCase):
     #     Third test with the PyTorchClassifier.
     #     :return:
     #     """
+    #     # Build PyTorchClassifier
+    #     ptc = get_classifier_pt()
+    #
     #     # Get MNIST
-    #     (x_train, y_train), (x_test, y_test) = self.mnist
-    #     x_train = np.swapaxes(x_train, 1, 3)
+    #     (_, _), (x_test, y_test) = self.mnist
     #     x_test = np.swapaxes(x_test, 1, 3)
-    #
-    #     # Define the network
-    #     model = Model()
-    #
-    #     # Define a loss function and optimizer
-    #     loss_fn = nn.CrossEntropyLoss()
-    #     optimizer = optim.Adam(model.parameters(), lr=0.01)
-    #
-    #     # Get classifier
-    #     ptc = PyTorchClassifier((0, 1), model, loss_fn, optimizer, (1, 28, 28), 10)
-    #     ptc.fit(x_train, y_train, batch_size=BATCH_SIZE, nb_epochs=10)
     #
     #     # First attack
     #     cl2m = CarliniL2Method(classifier=ptc, targeted=True, max_iter=10)
@@ -195,34 +182,11 @@ class TestCarliniLInf(TestCarliniL2):
         Test the corner case when attack is failed.
         :return:
         """
-        # Build a TFClassifier
-        # Define input and output placeholders
-        input_ph = tf.placeholder(tf.float32, shape=[None, 28, 28, 1])
-        output_ph = tf.placeholder(tf.int32, shape=[None, 10])
-
-        # Define the tensorflow graph
-        conv = tf.layers.conv2d(input_ph, 4, 5, activation=tf.nn.relu)
-        conv = tf.layers.max_pooling2d(conv, 2, 2)
-        fc = tf.contrib.layers.flatten(conv)
-
-        # Logits layer
-        logits = tf.layers.dense(fc, 10)
-
-        # Train operator
-        loss = tf.reduce_mean(tf.losses.softmax_cross_entropy(logits=logits, onehot_labels=output_ph))
-        optimizer = tf.train.AdamOptimizer(learning_rate=0.01)
-        train = optimizer.minimize(loss)
-
-        # Tensorflow session and initialization
-        sess = tf.Session()
-        sess.run(tf.global_variables_initializer())
+        # Build TFClassifier
+        tfc, sess = get_classifier_tf()
 
         # Get MNIST
-        (x_train, y_train), (x_test, y_test) = self.mnist
-
-        # Train the classifier
-        tfc = TFClassifier((0, 1), input_ph, logits, output_ph, train, loss, None, sess)
-        tfc.fit(x_train, y_train, batch_size=BATCH_SIZE, nb_epochs=10)
+        (_, _), (x_test, y_test) = self.mnist
 
         # Failure attack
         clinfm = CarliniLInfMethod(classifier=tfc, targeted=True, max_iter=0, learning_rate=0, eps=0.5)
@@ -322,21 +286,13 @@ class TestCarliniLInf(TestCarliniL2):
     #     Third test with the PyTorchClassifier.
     #     :return:
     #     """
+    #     # Build PyTorchClassifier
+    #     ptc = get_classifier_pt()
+    #
     #     # Get MNIST
     #     (x_train, y_train), (x_test, y_test) = self.mnist
     #     x_train = np.swapaxes(x_train, 1, 3)
     #     x_test = np.swapaxes(x_test, 1, 3)
-    #
-    #     # Define the network
-    #     model = Model()
-    #
-    #     # Define a loss function and optimizer
-    #     loss_fn = nn.CrossEntropyLoss()
-    #     optimizer = optim.Adam(model.parameters(), lr=0.01)
-    #
-    #     # Get classifier
-    #     ptc = PyTorchClassifier((0, 1), model, loss_fn, optimizer, (1, 28, 28), 10)
-    #     ptc.fit(x_train, y_train, batch_size=BATCH_SIZE, nb_epochs=10)
     #
     #     # First attack
     #     clinfm = CarliniLInfMethod(classifier=ptc, targeted=True, max_iter=10, eps=0.5)
