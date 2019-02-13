@@ -656,7 +656,13 @@ def _kr_initializer_b_dense(_, dtype=None):
 
 def get_classifier_tf():
     """
-    Standard Tensorflow classifier for unit testing
+    Standard Tensorflow classifier for unit testing.
+
+    The following hyper-parameters were used to obtain the weights and biases:
+    learning_rate: 0.01
+    batch size: 10
+    number of epochs: 2
+    optimizer: tf.train.AdamOptimizer
 
     :return: TFClassifier, tf.Session()
     """
@@ -692,6 +698,8 @@ def get_classifier_kr():
     """
     Standard Keras classifier for unit testing
 
+    The weights and biases are identical to the Tensorflow model in get_classifier_tf().
+
     :return: KerasClassifier, tf.Session()
     """
     # Initialize a tf session
@@ -726,6 +734,8 @@ def get_classifier_pt():
     class Model(nn.Module):
         """
         Create model for pytorch.
+
+        The weights and biases are identical to the Tensorflow model in get_classifier_tf().
         """
 
         def __init__(self):
