@@ -3,13 +3,15 @@ Module providing convenience functions.
 """
 from __future__ import absolute_import, division, print_function, unicode_literals
 
-import argparse
 import logging
 import os
 
 import numpy as np
 
 logger = logging.getLogger(__name__)
+
+
+# -------------------------------------------------------------------------------------------- RANDOM NUMBER GENERATORS
 
 
 def master_seed(seed):
@@ -59,6 +61,9 @@ def master_seed(seed):
             torch.cuda.manual_seed_all(seed)
     except ImportError:
         logger.info('Could not set random seed for PyTorch')
+
+
+# ----------------------------------------------------------------------------------------------------- MATHS UTILITIES
 
 
 def projection(v, eps, p):
@@ -127,6 +132,49 @@ def random_sphere(nb_points, nb_dims, radius, norm):
         raise NotImplementedError("Norm {} not supported".format(norm))
 
     return res
+
+
+def original_to_tanh(x_original, clip_min, clip_max, tanh_smoother=0.999999):
+    """
+    Transform input from original to tanh space.
+
+    :param x_original: An array with the input to be transformed.
+    :type x_original: `np.ndarray`
+    :param clip_min: Minimum clipping value.
+    :type clip_min: `float` or `np.ndarray`
+    :param clip_max: Maximum clipping value.
+    :type clip_max: `float` or `np.ndarray`
+    :param tanh_smoother: Scalar for multiplying arguments of arctanh to avoid division by zero.
+    :type tanh_smoother: `float`
+    :return: An array holding the transformed input.
+    :rtype: `np.ndarray`
+    """
+    x_tanh = np.clip(x_original, clip_min, clip_max)
+    x_tanh = (x_tanh - clip_min) / (clip_max - clip_min)
+    x_tanh = np.arctanh(((x_tanh * 2) - 1) * tanh_smoother)
+    return x_tanh
+
+
+def tanh_to_original(x_tanh, clip_min, clip_max, tanh_smoother=0.999999):
+    """
+    Transform input from tanh to original space.
+
+    :param x_tanh: An array with the input to be transformed.
+    :type x_tanh: `np.ndarray`
+    :param clip_min: Minimum clipping value.
+    :type clip_min: `float` or `np.ndarray`
+    :param clip_max: Maximum clipping value.
+    :type clip_max: `float` or `np.ndarray`
+    :param tanh_smoother: Scalar for dividing arguments of tanh to avoid division by zero.
+    :type tanh_smoother: `float`
+    :return: An array holding the transformed input.
+    :rtype: `np.ndarray`
+    """
+    x_original = (np.tanh(x_tanh) / tanh_smoother + 1) / 2
+    return x_original * (clip_max - clip_min) + clip_min
+
+
+# --------------------------------------------------------------------------------------- LABELS MANIPULATION FUNCTIONS
 
 
 def to_categorical(labels, nb_classes=None):
