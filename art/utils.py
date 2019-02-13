@@ -17,6 +17,8 @@ import torch
 import torch.nn as nn
 import torch.optim as optim
 
+from art.classifiers import KerasClassifier, PyTorchClassifier, TFClassifier
+
 logger = logging.getLogger(__name__)
 
 
@@ -697,10 +699,10 @@ def kr_initializer_b_dense(_, dtype=None):
     return k.variable(value=b_dense, dtype=dtype)
 
 
-def get_model_tf():
+def get_classifier_tf():
     """
-    Standard Tensorflow model for unit testing
-    :return: loss, logits, input_ph, output_ph
+    Standard Tensorflow classifier for unit testing
+    :return: TFClassifier, tf.Session()
     """
     # Define input and output placeholders
     input_ph = tf.placeholder(tf.float32, shape=[None, 28, 28, 1])
@@ -719,14 +721,26 @@ def get_model_tf():
     # Train operator
     loss = tf.reduce_mean(tf.losses.softmax_cross_entropy(logits=logits, onehot_labels=output_ph))
 
-    return loss, logits, input_ph, output_ph
+    # Tensorflow session and initialization
+    sess = tf.Session()
+    sess.run(tf.global_variables_initializer())
+
+    # Train the classifier
+    tfc = TFClassifier(clip_values=(0, 1), input_ph=input_ph, logits=logits, output_ph=output_ph, train=None,
+                       loss=loss, learning=None, sess=sess)
+
+    return tfc, sess
 
 
-def get_model_kr():
+def get_classifier_kr():
     """
-    Standard Keras model for unit testing
-    :return: Keras model
+    Standard Keras classifier for unit testing
+    :return: KerasClassifier, tf.Session()
     """
+    # Initialize a tf session
+    sess = tf.Session()
+    k.set_session(sess)
+
     # Create simple CNN
     model = Sequential()
     model.add(Conv2D(1, kernel_size=(7, 7), activation='relu', input_shape=(28, 28, 1),
@@ -739,13 +753,16 @@ def get_model_kr():
     model.compile(loss=keras.losses.categorical_crossentropy, optimizer=keras.optimizers.Adam(lr=0.01),
                   metrics=['accuracy'])
 
-    return model
+    # Get classifier
+    krc = KerasClassifier((0, 1), model, use_logits=False)
+
+    return krc, sess
 
 
-def get_model_pt():
+def get_classifier_pt():
     """
-    Standard PyTorch model for unit testing
-    :return: PyTorch model, loss function, optimizer
+    Standard PyTorch classifier for unit testing
+    :return: PyTorchClassifier
     """
 
     class Model(nn.Module):
@@ -787,4 +804,7 @@ def get_model_pt():
     loss_fn = nn.CrossEntropyLoss()
     optimizer = optim.Adam(model.parameters(), lr=0.01)
 
-    return model, loss_fn, optimizer
+    # Get classifier
+    ptc = PyTorchClassifier((0, 1), model, loss_fn, optimizer, (1, 28, 28), 10)
+
+    return ptc

@@ -8,8 +8,7 @@ import numpy as np
 import tensorflow as tf
 
 from art.attacks.spatial_transformation import SpatialTransformation
-from art.classifiers import KerasClassifier, PyTorchClassifier, TFClassifier
-from art.utils import load_mnist, master_seed, get_model_tf, get_model_kr, get_model_pt
+from art.utils import load_mnist, master_seed, get_classifier_tf, get_classifier_kr, get_classifier_pt
 
 logger = logging.getLogger('testLogger')
 logger.setLevel(10)
@@ -42,18 +41,10 @@ class TestSpatialTransformation(unittest.TestCase):
         :return:
         """
         # Build TF model
-        loss, logits, input_ph, output_ph = get_model_tf()
-
-        # Tensorflow session and initialization
-        sess = tf.Session()
-        sess.run(tf.global_variables_initializer())
+        tfc, sess = get_classifier_tf()
 
         # Get MNIST
         (x_train, _), (x_test, _) = self.mnist
-
-        # Train the classifier
-        tfc = TFClassifier(clip_values=(0, 1), input_ph=input_ph, logits=logits, output_ph=output_ph, train=None,
-                           loss=loss, learning=None, sess=sess)
 
         # Attack
         attack_params = {"max_translation": 10.0, "num_translations": 3, "max_rotation": 30.0, "num_rotations": 3}
@@ -80,17 +71,11 @@ class TestSpatialTransformation(unittest.TestCase):
         Second test with the KerasClassifier.
         :return:
         """
-        # Initialize a tf session
-        session = tf.Session()
-        k.set_session(session)
 
         # Get MNIST
         (x_train, _), (x_test, _) = self.mnist
 
-        model = get_model_kr()
-
-        # Get classifier
-        krc = KerasClassifier((0, 1), model, use_logits=False)
+        krc, sess = get_classifier_kr()
 
         # Attack
         attack_params = {"max_translation": 10.0, "num_translations": 3, "max_rotation": 30.0, "num_rotations": 3}
@@ -120,10 +105,7 @@ class TestSpatialTransformation(unittest.TestCase):
         x_train = np.swapaxes(x_train, 1, 3)
         x_test = np.swapaxes(x_test, 1, 3)
 
-        model, loss_fn, optimizer = get_model_pt()
-
-        # Get classifier
-        ptc = PyTorchClassifier((0, 1), model, loss_fn, optimizer, (1, 28, 28), 10)
+        ptc = get_classifier_pt()
 
         # Attack
         attack_params = {"max_translation": 10.0, "num_translations": 3, "max_rotation": 30.0, "num_rotations": 3}
