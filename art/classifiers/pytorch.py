@@ -353,11 +353,10 @@ class PyTorchClassifier(Classifier):
         import torch
 
         # Apply defences
-        x = self._apply_defences_predict(x)
+        x_ = self._apply_processing(x)
+        x_ = self._apply_defences_predict(x_)
 
-        # Run prediction
-        model_outputs = self._model(torch.from_numpy(x).to(self._device).float())[:-1]
-
+        # Get index of the extracted layer
         if isinstance(layer, six.string_types):
             if layer not in self._layer_names:
                 raise ValueError("Layer name %s not supported" % layer)
@@ -369,7 +368,20 @@ class PyTorchClassifier(Classifier):
         else:
             raise TypeError("Layer must be of type str or int")
 
-        return model_outputs[layer_index].detach().cpu().numpy()
+        # Run prediction with batch processing
+        results = []
+        num_batch = int(np.ceil(len(x_) / float(batch_size)))
+        for m in range(num_batch):
+            # Batch indexes
+            begin, end = m * batch_size, min((m + 1) * batch_size, x_.shape[0])
+
+            # Run prediction for the current batch
+            layer_output = self._model(torch.from_numpy(x_[begin:end]).to(self._device).float())[layer_index]
+            results.append(layer_output.detach().cpu().numpy())
+
+        results = np.concatenate(results)
+
+        return results
 
     def set_learning_phase(self, train):
         """
