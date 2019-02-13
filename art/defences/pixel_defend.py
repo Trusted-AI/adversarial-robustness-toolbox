@@ -27,7 +27,7 @@ class PixelDefend(Preprocessor):
         self._is_fitted = True
         self.set_params(eps=eps)
 
-    def __call__(self, x, y=None, eps=None):
+    def __call__(self, x, y=None, eps=None, pixelcnn=None):
         """
         Apply pixel defence to sample `x`.
 
@@ -37,37 +37,44 @@ class PixelDefend(Preprocessor):
         :type y: `np.ndarray`
         :param eps: Defense parameter 0-255.
         :type eps: `int`
+        :param pixelcnn: Pre-trained PixelCNN model.
+        :type pixelcnn: :class:`.Classifier`
         :return: Purified sample.
         :rtype: `np.ndarray`
         """
+        from art.classifiers.classifier import Classifier
+
+        if not isinstance(pixelcnn, Classifier):
+            raise ("PixelCNN model must be of type Classifier.")
+
         clip_values = (0, 1)
-        if bit_depth is not None:
-            self.set_params(bit_depth=bit_depth)
 
-        x_ = x - clip_values[0]
-        if clip_values[1] != 0:
-            x_ = x_ / (clip_values[1] - clip_values[0])
+        if eps is not None:
+            self.set_params(eps=eps)
 
-        max_value = np.rint(2 ** self.bit_depth - 1)
-        res = (np.rint(x_ * max_value) / max_value) * (clip_values[1] - clip_values[0]) + clip_values[0]
+
+
 
         return res
 
     def fit(self, x, y=None, **kwargs):
-        """No parameters to learn for this method; do nothing."""
+        """
+        No parameters to learn for this method; do nothing.
+        """
         pass
 
     def set_params(self, **kwargs):
-        """Take in a dictionary of parameters and applies defence-specific checks before saving them as attributes.
+        """
+        Take in a dictionary of parameters and applies defence-specific checks before saving them as attributes.
 
         Defense-specific parameters:
-        :param bit_depth: The number of bits per channel for encoding the data.
-        :type bit_depth: `int`
+        :param eps: Defense parameter 0-255.
+        :type eps: `int`
         """
-        # Save attack-specific parameters
-        super(FeatureSqueezing, self).set_params(**kwargs)
+        # Save defence-specific parameters
+        super(PixelDefend, self).set_params(**kwargs)
 
-        if not isinstance(self.bit_depth, (int, np.int)) or self.bit_depth <= 0 or self.bit_depth > 64:
-            raise ValueError("The bit depth must be between 1 and 64.")
+        if not isinstance(self.eps, (int, np.int)) or self.eps < 0 or self.eps > 255:
+            raise ValueError("The defense parameter must be between 0 and 255.")
 
         return True
