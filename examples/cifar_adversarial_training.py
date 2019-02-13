@@ -1,13 +1,11 @@
 # -*- coding: utf-8 -*-
-"""Trains a convolutional neural network on the CIFAR-10 dataset, then generated adversarial images using the
+"""
+Trains a convolutional neural network on the CIFAR-10 dataset, then generated adversarial images using the
 DeepFool attack and retrains the network on the training set augmented with the adversarial images.
 """
 from __future__ import absolute_import, division, print_function, unicode_literals
 
-import sys
-from os.path import abspath
-
-sys.path.append(abspath('.'))
+import logging
 
 import keras.backend as k
 from keras.models import Sequential
@@ -18,6 +16,13 @@ from art.attacks import DeepFool
 from art.classifiers import KerasClassifier
 from art.utils import load_dataset
 
+# Configure a logger to capture ART outputs; these are printed in console and the level of detail is set to INFO
+logger = logging.getLogger()
+logger.setLevel(logging.INFO)
+handler = logging.StreamHandler()
+formatter = logging.Formatter('[%(levelname)s] %(message)s')
+handler.setFormatter(formatter)
+logger.addHandler(handler)
 
 # Read CIFAR10 dataset
 (x_train, y_train), (x_test, y_test), min_, max_ = load_dataset(str('cifar10'))
@@ -57,18 +62,18 @@ classifier = KerasClassifier((min_, max_), model=model)
 classifier.fit(x_train, y_train, nb_epochs=10, batch_size=128)
 
 # Craft adversarial samples with DeepFool
-print('\nCreate DeepFool attack')
+logger.info('Create DeepFool attack')
 adv_crafter = DeepFool(classifier)
-print('\nCraft attack on training examples')
+logger.info('Craft attack on training examples')
 x_train_adv = adv_crafter.generate(x_train)
-print('\nCraft attack test examples')
+logger.info('Craft attack test examples')
 x_test_adv = adv_crafter.generate(x_test)
 
 # Evaluate the classifier on the adversarial samples
 preds = np.argmax(classifier.predict(x_test_adv), axis=1)
 acc = np.sum(preds == np.argmax(y_test, axis=1)) / y_test.shape[0]
-print('\nClassifier before adversarial training')
-print('\nAccuracy on adversarial samples: %.2f%%' % (acc * 100))
+logger.info('Classifier before adversarial training')
+logger.info('Accuracy on adversarial samples: %.2f%%', (acc * 100))
 
 # Data augmentation: expand the training set with the adversarial samples
 x_train = np.append(x_train, x_train_adv, axis=0)
@@ -81,5 +86,5 @@ classifier.fit(x_train, y_train, nb_epochs=10, batch_size=128)
 # Evaluate the adversarially trained classifier on the test set
 preds = np.argmax(classifier.predict(x_test_adv), axis=1)
 acc = np.sum(preds == np.argmax(y_test, axis=1)) / y_test.shape[0]
-print('\nClassifier with adversarial training')
-print('\nAccuracy on adversarial samples: %.2f%%' % (acc * 100))
+logger.info('Classifier with adversarial training')
+logger.info('Accuracy on adversarial samples: %.2f%%', (acc * 100))

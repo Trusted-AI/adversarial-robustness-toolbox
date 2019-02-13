@@ -11,7 +11,6 @@ from art.attacks.spatial_transformation import SpatialTransformation
 from art.utils import load_mnist, master_seed, get_classifier_tf, get_classifier_kr, get_classifier_pt
 
 logger = logging.getLogger('testLogger')
-logger.setLevel(10)
 
 BATCH_SIZE = 100
 NB_TRAIN = 1000
