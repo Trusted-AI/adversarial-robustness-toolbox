@@ -368,7 +368,9 @@ class MXClassifier(Classifier):
 
     def save(self, filename, path=None):
         """
-        Save a model to file in the format specific to the backend framework.
+        Save a model to file in the format specific to the backend framework. For Gluon, only parameters are saved in
+        file with name `<filename>.params` at the specified path. To load the saved model, the original model code needs
+        to be run before calling `load_parameters` on the generated Gluon model.
 
         :param filename: Name of the file where to store the model.
         :type filename: `str`
@@ -377,7 +379,19 @@ class MXClassifier(Classifier):
         :type path: `str`
         :return: None
         """
-        raise NotImplementedError
+        import os
+
+        if path is None:
+            from art import DATA_PATH
+            full_path = os.path.join(DATA_PATH, filename)
+        else:
+            full_path = os.path.join(path, filename)
+        folder = os.path.split(full_path)[0]
+        if not os.path.exists(folder):
+            os.makedirs(folder)
+
+        self._model.save_parameters(full_path + '.params')
+        logger.info("Model parameters saved in path: %s.params.", full_path)
 
     def _get_layers(self):
         """
