@@ -75,6 +75,7 @@ class TestSpatialTransformation(unittest.TestCase):
         # Get MNIST
         (x_train, _), (x_test, _) = self.mnist
 
+        # Build KerasClassifier
         krc, sess = get_classifier_kr()
 
         # Attack
@@ -105,6 +106,7 @@ class TestSpatialTransformation(unittest.TestCase):
         x_train = np.swapaxes(x_train, 1, 3)
         x_test = np.swapaxes(x_test, 1, 3)
 
+        # Build PyTorchClassifier
         ptc = get_classifier_pt()
 
         # Attack
