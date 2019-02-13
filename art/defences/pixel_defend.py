@@ -65,7 +65,8 @@ class PixelDefend(Preprocessor):
                 for c in range(x_.shape[2]):
                     for k in range(x_.shape[3]):
                         # Setup the search space
-                        probs = pixelcnn.predict(np.array([xi / 255.0]), logits=False)
+                        # probs = pixelcnn.predict(np.array([xi / 255.0]), logits=False)
+                        probs = pixelcnn.get_activations(np.array([xi / 255.0]), -1)
                         f_probs = probs[0, r, c, k]
                         f_range = range(int(max(xi[r, c, k] - self.eps, 0)), int(min(xi[r, c, k] + self.eps, 255) + 1))
 
