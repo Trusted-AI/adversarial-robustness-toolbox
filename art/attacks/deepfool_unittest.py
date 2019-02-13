@@ -48,7 +48,6 @@ class TestDeepFool(unittest.TestCase):
         logger.info('[TF, MNIST] Accuracy on test set: %.2f%%', (acc * 100))
 
         # Create basic PyTorch model
-        # Build PyTorchClassifier
         cls.classifier_py = get_classifier_pt()
         x_train, x_test = np.swapaxes(x_train, 1, 3), np.swapaxes(x_test, 1, 3)
 
