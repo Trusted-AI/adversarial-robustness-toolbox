@@ -7,6 +7,16 @@ import logging
 import os
 
 import numpy as np
+import tensorflow as tf
+import keras
+import keras.backend as k
+from keras.layers import Dense, Flatten, Conv2D, MaxPooling2D
+from keras.models import Sequential
+import torch
+import torch.nn as nn
+import torch.optim as optim
+
+from art.classifiers import KerasClassifier, PyTorchClassifier, TFClassifier
 
 logger = logging.getLogger(__name__)
 
@@ -53,8 +63,6 @@ def master_seed(seed):
         logger.info('Could not set random seed for MXNet.')
 
     try:
-        import torch
-
         logger.info('Setting random seed for PyTorch.')
         torch.manual_seed(seed)
         if torch.cuda.is_available():
@@ -293,6 +301,7 @@ def load_cifar10(raw=False):
     :return: `(x_train, y_train), (x_test, y_test), min, max`
     :rtype: `(np.ndarray, np.ndarray), (np.ndarray, np.ndarray), float, float`
     """
+
     def load_batch(fpath):
         """
         Utility function for loading CIFAR batches, as written in Keras.
@@ -548,3 +557,222 @@ def make_directory(dir_path):
     """
     if not os.path.exists(dir_path):
         os.makedirs(dir_path)
+
+
+# -------------------------------------------------------------------------------------------------- PRE-TRAINED MODELS
+
+
+def _tf_initializer_w_conv2d(_, dtype, partition_info):
+    """
+    Initializer of weights in convolution layer for Tensorflow.
+
+    :return: Tensorflow constant
+    :rtype: tf.constant
+    """
+    _ = partition_info
+    w_conv2d = np.load(os.path.join(os.path.dirname(os.path.dirname(__file__)), 'models', 'W_CONV2D.npy'))
+    return tf.constant(w_conv2d, dtype)
+
+
+def _kr_initializer_w_conv2d(_, dtype=None):
+    """
+    Initializer of weights in convolution layer for Keras.
+
+    :return: Keras variable
+    :rtype: k.variable
+    """
+    w_conv2d = np.load(os.path.join(os.path.dirname(os.path.dirname(__file__)), 'models', 'W_CONV2D.npy'))
+    return k.variable(value=w_conv2d, dtype=dtype)
+
+
+def _tf_initializer_b_conv2d(_, dtype, partition_info):
+    """
+    Initializer of biases in convolution layer for Tensorflow.
+
+    :return: Tensorflow constant
+    :rtype: tf.constant
+    """
+    _ = partition_info
+    b_conv2d = np.load(os.path.join(os.path.dirname(os.path.dirname(__file__)), 'models', 'B_CONV2D.npy'))
+    return tf.constant(b_conv2d, dtype)
+
+
+def _kr_initializer_b_conv2d(_, dtype=None):
+    """
+    Initializer of weights in convolution layer for Keras.
+
+    :return: Keras variable
+    :rtype: k.variable
+    """
+    b_conv2d = np.load(os.path.join(os.path.dirname(os.path.dirname(__file__)), 'models', 'B_CONV2D.npy'))
+    return k.variable(value=b_conv2d, dtype=dtype)
+
+
+def _tf_initializer_w_dense(_1, dtype, partition_info):
+    """
+    Initializer of weights in dense layer for Tensorflow.
+
+    :return: Tensorflow constant
+    :rtype: tf.constant
+    """
+    _ = partition_info
+    w_dense = np.load(os.path.join(os.path.dirname(os.path.dirname(__file__)), 'models', 'W_DENSE.npy'))
+    return tf.constant(w_dense, dtype)
+
+
+def _kr_initializer_w_dense(_, dtype=None):
+    """
+    Initializer of weights in dense layer for Keras.
+
+    :return: Keras varibale
+    :rtype: k.variable
+    """
+    w_dense = np.load(os.path.join(os.path.dirname(os.path.dirname(__file__)), 'models', 'W_DENSE.npy'))
+    return k.variable(value=w_dense, dtype=dtype)
+
+
+def _tf_initializer_b_dense(_1, dtype, partition_info):
+    """
+    Initializer of biases in dense layer for Tensorflow.
+
+    :return: Tensorflow constant
+    :rtype: tf.constant
+    """
+    _ = partition_info
+    b_dense = np.load(os.path.join(os.path.dirname(os.path.dirname(__file__)), 'models', 'B_DENSE.npy'))
+    return tf.constant(b_dense, dtype)
+
+
+def _kr_initializer_b_dense(_, dtype=None):
+    """
+    Initializer of biases in dense layer for Keras.
+
+    :return: Keras variable
+    :rtype: k.variable
+    """
+    b_dense = np.load(os.path.join(os.path.dirname(os.path.dirname(__file__)), 'models', 'B_DENSE.npy'))
+    return k.variable(value=b_dense, dtype=dtype)
+
+
+def get_classifier_tf():
+    """
+    Standard Tensorflow classifier for unit testing.
+
+    The following hyper-parameters were used to obtain the weights and biases:
+    learning_rate: 0.01
+    batch size: 10
+    number of epochs: 2
+    optimizer: tf.train.AdamOptimizer
+
+    :return: TFClassifier, tf.Session()
+    """
+    # Define input and output placeholders
+    input_ph = tf.placeholder(tf.float32, shape=[None, 28, 28, 1])
+    output_ph = tf.placeholder(tf.int32, shape=[None, 10])
+
+    # Define the tensorflow graph
+    conv = tf.layers.conv2d(input_ph, 1, 7, activation=tf.nn.relu, kernel_initializer=_tf_initializer_w_conv2d,
+                            bias_initializer=_tf_initializer_b_conv2d)
+    conv = tf.layers.max_pooling2d(conv, 4, 4)
+    flattened = tf.contrib.layers.flatten(conv)
+
+    # Logits layer
+    logits = tf.layers.dense(flattened, 10, kernel_initializer=_tf_initializer_w_dense,
+                             bias_initializer=_tf_initializer_b_dense)
+
+    # Train operator
+    loss = tf.reduce_mean(tf.losses.softmax_cross_entropy(logits=logits, onehot_labels=output_ph))
+
+    # Tensorflow session and initialization
+    sess = tf.Session()
+    sess.run(tf.global_variables_initializer())
+
+    # Train the classifier
+    tfc = TFClassifier(clip_values=(0, 1), input_ph=input_ph, logits=logits, output_ph=output_ph, train=None,
+                       loss=loss, learning=None, sess=sess)
+
+    return tfc, sess
+
+
+def get_classifier_kr():
+    """
+    Standard Keras classifier for unit testing
+
+    The weights and biases are identical to the Tensorflow model in get_classifier_tf().
+
+    :return: KerasClassifier, tf.Session()
+    """
+    # Initialize a tf session
+    sess = tf.Session()
+    k.set_session(sess)
+
+    # Create simple CNN
+    model = Sequential()
+    model.add(Conv2D(1, kernel_size=(7, 7), activation='relu', input_shape=(28, 28, 1),
+                     kernel_initializer=_kr_initializer_w_conv2d, bias_initializer=_kr_initializer_b_conv2d))
+    model.add(MaxPooling2D(pool_size=(4, 4)))
+    model.add(Flatten())
+    model.add(Dense(10, activation='softmax', kernel_initializer=_kr_initializer_w_dense,
+                    bias_initializer=_kr_initializer_b_dense))
+
+    model.compile(loss=keras.losses.categorical_crossentropy, optimizer=keras.optimizers.Adam(lr=0.01),
+                  metrics=['accuracy'])
+
+    # Get classifier
+    krc = KerasClassifier((0, 1), model, use_logits=False)
+
+    return krc, sess
+
+
+def get_classifier_pt():
+    """
+    Standard PyTorch classifier for unit testing
+
+    :return: PyTorchClassifier
+    """
+
+    class Model(nn.Module):
+        """
+        Create model for pytorch.
+
+        The weights and biases are identical to the Tensorflow model in get_classifier_tf().
+        """
+
+        def __init__(self):
+            super(Model, self).__init__()
+
+            w_conv2d = np.load(os.path.join(os.path.dirname(os.path.dirname(__file__)), 'models', 'W_CONV2D.npy'))
+            b_conv2d = np.load(os.path.join(os.path.dirname(os.path.dirname(__file__)), 'models', 'B_CONV2D.npy'))
+            w_dense = np.load(os.path.join(os.path.dirname(os.path.dirname(__file__)), 'models', 'W_DENSE.npy'))
+            b_dense = np.load(os.path.join(os.path.dirname(os.path.dirname(__file__)), 'models', 'B_DENSE.npy'))
+
+            self.conv = nn.Conv2d(in_channels=1, out_channels=1, kernel_size=7)
+            w_conv2d_pt = np.swapaxes(w_conv2d, 0, 2)
+            w_conv2d_pt = np.swapaxes(w_conv2d_pt, 1, 3)
+            self.conv.weight = nn.Parameter(torch.Tensor(w_conv2d_pt))
+            self.conv.bias = nn.Parameter(torch.Tensor(b_conv2d))
+            self.pool = nn.MaxPool2d(4, 4)
+            self.fullyconnected = nn.Linear(25, 10)
+            self.fullyconnected.weight = nn.Parameter(torch.Tensor(np.transpose(w_dense)))
+            self.fullyconnected.bias = nn.Parameter(torch.Tensor(b_dense))
+
+        def forward(self, x):
+            import torch.nn.functional as f
+
+            x = self.pool(f.relu(self.conv(x)))
+            x = x.view(-1, 25)
+            logit_output = self.fullyconnected(x)
+
+            return logit_output
+
+    # Define the network
+    model = Model()
+
+    # Define a loss function and optimizer
+    loss_fn = nn.CrossEntropyLoss()
+    optimizer = optim.Adam(model.parameters(), lr=0.01)
+
+    # Get classifier
+    ptc = PyTorchClassifier((0, 1), model, loss_fn, optimizer, (1, 28, 28), 10)
+
+    return ptc
