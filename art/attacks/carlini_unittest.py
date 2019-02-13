@@ -12,7 +12,7 @@ from keras.models import Sequential
 
 from art.attacks import CarliniL2Method, CarliniLInfMethod
 from art.classifiers import KerasClassifier, TFClassifier
-from art.utils import load_mnist, random_targets, master_seed
+from art.utils import load_mnist, random_targets, master_seed, get_classifier_tf, get_classifier_kr, get_classifier_pt
 
 logger = logging.getLogger('testLogger')
 
@@ -23,6 +23,7 @@ class TestCarliniL2(unittest.TestCase):
     """
     A unittest class for testing the Carlini L2 attack.
     """
+
     @classmethod
     def setUpClass(cls):
         # Get MNIST
@@ -40,38 +41,15 @@ class TestCarliniL2(unittest.TestCase):
         Test the corner case when attack is failed.
         :return:
         """
-        # Build a TFClassifier
-        # Define input and output placeholders
-        input_ph = tf.placeholder(tf.float32, shape=[None, 28, 28, 1])
-        output_ph = tf.placeholder(tf.int32, shape=[None, 10])
-
-        # Define the tensorflow graph
-        conv = tf.layers.conv2d(input_ph, 4, 5, activation=tf.nn.relu)
-        conv = tf.layers.max_pooling2d(conv, 2, 2)
-        fc = tf.contrib.layers.flatten(conv)
-
-        # Logits layer
-        logits = tf.layers.dense(fc, 10)
-
-        # Train operator
-        loss = tf.reduce_mean(tf.losses.softmax_cross_entropy(logits=logits, onehot_labels=output_ph))
-        optimizer = tf.train.AdamOptimizer(learning_rate=0.01)
-        train = optimizer.minimize(loss)
-
-        # Tensorflow session and initialization
-        sess = tf.Session()
-        sess.run(tf.global_variables_initializer())
+        # Build TFClassifier
+        tfc, sess = get_classifier_tf()
 
         # Get MNIST
-        (x_train, y_train), (x_test, y_test) = self.mnist
-
-        # Train the classifier
-        tfc = TFClassifier((0, 1), input_ph, logits, output_ph, train, loss, None, sess)
-        tfc.fit(x_train, y_train, batch_size=BATCH_SIZE, nb_epochs=10)
+        (_, _), (x_test, y_test) = self.mnist
 
         # Failure attack
-        cl2m = CarliniL2Method(classifier=tfc, targeted=True, max_iter=0, binary_search_steps=0,
-                               learning_rate=0, initial_const=1)
+        cl2m = CarliniL2Method(classifier=tfc, targeted=True, max_iter=0, binary_search_steps=0, learning_rate=0,
+                               initial_const=1)
         params = {'y': random_targets(y_test, tfc.nb_classes)}
         x_test_adv = cl2m.generate(x_test, **params)
         self.assertTrue((x_test_adv <= 1.0001).all())
@@ -87,34 +65,11 @@ class TestCarliniL2(unittest.TestCase):
         First test with the TFClassifier.
         :return:
         """
-        # Build a TFClassifier
-        # Define input and output placeholders
-        input_ph = tf.placeholder(tf.float32, shape=[None, 28, 28, 1])
-        output_ph = tf.placeholder(tf.int32, shape=[None, 10])
-
-        # Define the tensorflow graph
-        conv = tf.layers.conv2d(input_ph, 4, 5, activation=tf.nn.relu)
-        conv = tf.layers.max_pooling2d(conv, 2, 2)
-        fc = tf.contrib.layers.flatten(conv)
-
-        # Logits layer
-        logits = tf.layers.dense(fc, 10)
-
-        # Train operator
-        loss = tf.reduce_mean(tf.losses.softmax_cross_entropy(logits=logits, onehot_labels=output_ph))
-        optimizer = tf.train.AdamOptimizer(learning_rate=0.01)
-        train = optimizer.minimize(loss)
-
-        # Tensorflow session and initialization
-        sess = tf.Session()
-        sess.run(tf.global_variables_initializer())
+        # Build TFClassifier
+        tfc, sess = get_classifier_tf()
 
         # Get MNIST
-        (x_train, y_train), (x_test, y_test) = self.mnist
-
-        # Train the classifier
-        tfc = TFClassifier((0, 1), input_ph, logits, output_ph, train, loss, None, sess)
-        tfc.fit(x_train, y_train, batch_size=BATCH_SIZE, nb_epochs=10)
+        (_, _), (x_test, y_test) = self.mnist
 
         # First attack
         cl2m = CarliniL2Method(classifier=tfc, targeted=True, max_iter=10)
@@ -151,26 +106,11 @@ class TestCarliniL2(unittest.TestCase):
         Second test with the KerasClassifier.
         :return:
         """
-        # Initialize a tf session
-        session = tf.Session()
-        k.set_session(session)
+        # Build KerasClassifier
+        krc, sess = get_classifier_tf()
 
         # Get MNIST
-        (x_train, y_train), (x_test, y_test) = self.mnist
-
-        # Create simple CNN
-        model = Sequential()
-        model.add(Conv2D(4, kernel_size=(5, 5), activation='relu', input_shape=(28, 28, 1)))
-        model.add(MaxPooling2D(pool_size=(2, 2)))
-        model.add(Flatten())
-        model.add(Dense(10, activation='softmax'))
-
-        model.compile(loss=keras.losses.categorical_crossentropy, optimizer=keras.optimizers.Adam(lr=0.01),
-                      metrics=['accuracy'])
-
-        # Get classifier
-        krc = KerasClassifier((0, 1), model, use_logits=False)
-        krc.fit(x_train, y_train, batch_size=BATCH_SIZE, nb_epochs=10)
+        (_, _), (x_test, y_test) = self.mnist
 
         # First attack
         cl2m = CarliniL2Method(classifier=krc, targeted=True, max_iter=10)
@@ -301,34 +241,11 @@ class TestCarliniLInf(TestCarliniL2):
         First test with the TFClassifier.
         :return:
         """
-        # Build a TFClassifier
-        # Define input and output placeholders
-        input_ph = tf.placeholder(tf.float32, shape=[None, 28, 28, 1])
-        output_ph = tf.placeholder(tf.int32, shape=[None, 10])
-
-        # Define the tensorflow graph
-        conv = tf.layers.conv2d(input_ph, 4, 5, activation=tf.nn.relu)
-        conv = tf.layers.max_pooling2d(conv, 2, 2)
-        fc = tf.contrib.layers.flatten(conv)
-
-        # Logits layer
-        logits = tf.layers.dense(fc, 10)
-
-        # Train operator
-        loss = tf.reduce_mean(tf.losses.softmax_cross_entropy(logits=logits, onehot_labels=output_ph))
-        optimizer = tf.train.AdamOptimizer(learning_rate=0.01)
-        train = optimizer.minimize(loss)
-
-        # Tensorflow session and initialization
-        sess = tf.Session()
-        sess.run(tf.global_variables_initializer())
+        # Build TFClassifier
+        tfc, sess = get_classifier_tf()
 
         # Get MNIST
-        (x_train, y_train), (x_test, y_test) = self.mnist
-
-        # Train the classifier
-        tfc = TFClassifier((0, 1), input_ph, logits, output_ph, train, loss, None, sess)
-        tfc.fit(x_train, y_train, batch_size=BATCH_SIZE, nb_epochs=10)
+        (_, _), (x_test, y_test) = self.mnist
 
         # First attack
         clinfm = CarliniLInfMethod(classifier=tfc, targeted=True, max_iter=10, eps=0.5)
@@ -365,26 +282,11 @@ class TestCarliniLInf(TestCarliniL2):
         Second test with the KerasClassifier.
         :return:
         """
-        # Initialize a tf session
-        session = tf.Session()
-        k.set_session(session)
+        # Build KerasClassifier
+        krc, sess = get_classifier_tf()
 
         # Get MNIST
-        (x_train, y_train), (x_test, y_test) = self.mnist
-
-        # Create simple CNN
-        model = Sequential()
-        model.add(Conv2D(4, kernel_size=(5, 5), activation='relu', input_shape=(28, 28, 1)))
-        model.add(MaxPooling2D(pool_size=(2, 2)))
-        model.add(Flatten())
-        model.add(Dense(10, activation='softmax'))
-
-        model.compile(loss=keras.losses.categorical_crossentropy, optimizer=keras.optimizers.Adam(lr=0.01),
-                      metrics=['accuracy'])
-
-        # Get classifier
-        krc = KerasClassifier((0, 1), model, use_logits=False)
-        krc.fit(x_train, y_train, batch_size=BATCH_SIZE, nb_epochs=10)
+        (_, _), (x_test, y_test) = self.mnist
 
         # First attack
         clinfm = CarliniLInfMethod(classifier=krc, targeted=True, max_iter=10, eps=0.5)

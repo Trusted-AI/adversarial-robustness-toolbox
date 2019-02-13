@@ -40,7 +40,7 @@ class TestSpatialTransformation(unittest.TestCase):
         First test with the TFClassifier.
         :return:
         """
-        # Build TF model
+        # Build TFClassifier
         tfc, sess = get_classifier_tf()
 
         # Get MNIST
