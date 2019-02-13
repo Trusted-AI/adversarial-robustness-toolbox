@@ -562,13 +562,14 @@ def make_directory(dir_path):
 # -------------------------------------------------------------------------------------------------- PRE-TRAINED MODELS
 
 
-def _tf_initializer_w_conv2d(_1, dtype, _2):
+def _tf_initializer_w_conv2d(_, dtype, partition_info):
     """
     Initializer of weights in convolution layer for Tensorflow.
 
     :return: Tensorflow constant
     :rtype: tf.constant
     """
+    _ = partition_info
     w_conv2d = np.load(os.path.join(os.path.dirname(os.path.dirname(__file__)), 'models', 'W_CONV2D.npy'))
     return tf.constant(w_conv2d, dtype)
 
@@ -584,13 +585,14 @@ def _kr_initializer_w_conv2d(_, dtype=None):
     return k.variable(value=w_conv2d, dtype=dtype)
 
 
-def _tf_initializer_b_conv2d(_1, dtype, _2):
+def _tf_initializer_b_conv2d(_, dtype, partition_info):
     """
     Initializer of biases in convolution layer for Tensorflow.
 
     :return: Tensorflow constant
     :rtype: tf.constant
     """
+    _ = partition_info
     b_conv2d = np.load(os.path.join(os.path.dirname(os.path.dirname(__file__)), 'models', 'B_CONV2D.npy'))
     return tf.constant(b_conv2d, dtype)
 
@@ -606,13 +608,14 @@ def _kr_initializer_b_conv2d(_, dtype=None):
     return k.variable(value=b_conv2d, dtype=dtype)
 
 
-def _tf_initializer_w_dense(_1, dtype, _2):
+def _tf_initializer_w_dense(_1, dtype, partition_info):
     """
     Initializer of weights in dense layer for Tensorflow.
 
     :return: Tensorflow constant
     :rtype: tf.constant
     """
+    _ = partition_info
     w_dense = np.load(os.path.join(os.path.dirname(os.path.dirname(__file__)), 'models', 'W_DENSE.npy'))
     return tf.constant(w_dense, dtype)
 
@@ -628,13 +631,14 @@ def _kr_initializer_w_dense(_, dtype=None):
     return k.variable(value=w_dense, dtype=dtype)
 
 
-def _tf_initializer_b_dense(_1, dtype, _2):
+def _tf_initializer_b_dense(_1, dtype, partition_info):
     """
     Initializer of biases in dense layer for Tensorflow.
 
     :return: Tensorflow constant
     :rtype: tf.constant
     """
+    _ = partition_info
     b_dense = np.load(os.path.join(os.path.dirname(os.path.dirname(__file__)), 'models', 'B_DENSE.npy'))
     return tf.constant(b_dense, dtype)
 
