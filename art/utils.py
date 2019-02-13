@@ -613,6 +613,7 @@ def get_verbose_print(verbose):
 def tf_initializer_w_conv2d(shape_list, dtype, partition_info):
     """
     Initializer of weights in convolution layer for Tensorflow.
+
     :return: Tensorflow constant
     :rtype: tf.constant
     """
@@ -622,12 +623,14 @@ def tf_initializer_w_conv2d(shape_list, dtype, partition_info):
     return tf.constant(w_conv2d, dtype)
 
 
-def kr_initializer_w_conv2d(_, dtype=None):
+def kr_initializer_w_conv2d(shape, dtype=None):
     """
     Initializer of weights in convolution layer for Keras.
+
     :return: Keras variable
     :rtype: k.variable
     """
+    _ = shape
     w_conv2d = np.load(os.path.join(os.path.dirname(os.path.dirname(__file__)), 'models', 'W_CONV2D.npy'))
     return k.variable(value=w_conv2d, dtype=dtype)
 
@@ -635,6 +638,7 @@ def kr_initializer_w_conv2d(_, dtype=None):
 def tf_initializer_b_conv2d(shape_list, dtype, partition_info):
     """
     Initializer of biases in convolution layer for Tensorflow.
+
     :return: Tensorflow constant
     :rtype: tf.constant
     """
@@ -647,6 +651,7 @@ def tf_initializer_b_conv2d(shape_list, dtype, partition_info):
 def kr_initializer_b_conv2d(shape, dtype=None):
     """
     Initializer of weights in convolution layer for Keras.
+
     :return: Keras variable
     :rtype: k.variable
     """
@@ -658,6 +663,7 @@ def kr_initializer_b_conv2d(shape, dtype=None):
 def tf_initializer_w_dense(shape_list, dtype, partition_info):
     """
     Initializer of weights in dense layer for Tensorflow.
+
     :return: Tensorflow constant
     :rtype: tf.constant
     """
@@ -670,6 +676,7 @@ def tf_initializer_w_dense(shape_list, dtype, partition_info):
 def kr_initializer_w_dense(_, dtype=None):
     """
     Initializer of weights in dense layer for Keras.
+
     :return: Keras varibale
     :rtype: k.variable
     """
@@ -680,6 +687,7 @@ def kr_initializer_w_dense(_, dtype=None):
 def tf_initializer_b_dense(shape_list, dtype, partition_info):
     """
     Initializer of biases in dense layer for Tensorflow.
+
     :return: Tensorflow constant
     :rtype: tf.constant
     """
@@ -692,6 +700,7 @@ def tf_initializer_b_dense(shape_list, dtype, partition_info):
 def kr_initializer_b_dense(_, dtype=None):
     """
     Initializer of biases in dense layer for Keras.
+
     :return: Keras variable
     :rtype: k.variable
     """
@@ -702,6 +711,7 @@ def kr_initializer_b_dense(_, dtype=None):
 def get_classifier_tf():
     """
     Standard Tensorflow classifier for unit testing
+
     :return: TFClassifier, tf.Session()
     """
     # Define input and output placeholders
@@ -735,6 +745,7 @@ def get_classifier_tf():
 def get_classifier_kr():
     """
     Standard Keras classifier for unit testing
+
     :return: KerasClassifier, tf.Session()
     """
     # Initialize a tf session
@@ -762,6 +773,7 @@ def get_classifier_kr():
 def get_classifier_pt():
     """
     Standard PyTorch classifier for unit testing
+
     :return: PyTorchClassifier
     """
 
