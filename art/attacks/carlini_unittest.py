@@ -12,7 +12,9 @@ from art.utils import load_mnist, random_targets, master_seed, get_classifier_tf
 
 logger = logging.getLogger('testLogger')
 
-BATCH_SIZE, NB_TRAIN, NB_TEST = 100, 5000, 10
+BATCH_SIZE = 100
+NB_TRAIN = 5000
+NB_TEST = 10
 
 
 class TestCarliniL2(unittest.TestCase):
