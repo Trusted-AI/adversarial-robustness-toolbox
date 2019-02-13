@@ -261,6 +261,22 @@ class Classifier(ABC):
         """
         raise NotImplementedError
 
+    @abc.abstractmethod
+    def load_model_weights(self, filename, path=None):
+        """
+        Load a model to file in the format specific to the backend framework.
+
+        :param filename: Name of the file where to load the model's weights.
+        :type filename: `str`
+        :param path: Path of the folder where to store the model. If
+                     no path is specified, the model will be stored in
+                     the default data location of the library
+                     `DATA_PATH`.
+        :type path: `str`
+        :return: None
+        """
+        raise NotImplementedError
+
     def _parse_defences(self, defences):
         self.defences = defences
 

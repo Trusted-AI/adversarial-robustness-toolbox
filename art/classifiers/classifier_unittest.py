@@ -33,6 +33,9 @@ class ClassifierInstance(Classifier):
     def save(self, filename, path=None):
         pass
 
+    def load_model_weights(self, filename, path=None):
+        pass
+
     def layer_names(self):
         pass
 
