@@ -9,36 +9,38 @@ from art.defences.preprocessor import Preprocessor
 logger = logging.getLogger(__name__)
 
 
-class FeatureSqueezing(Preprocessor):
+class PixelDefend(Preprocessor):
     """
-    Reduces the sensibility of the features of a sample. Defence method from https://arxiv.org/abs/1704.01155.
+    Implement the pixel defence approach. Defense based on PixelCNN that projects samples back to the data manifold.
+    Paper link: https://arxiv.org/abs/1710.10766
     """
-    params = ['bit_depth']
+    params = ['eps']
 
-    def __init__(self, bit_depth=8):
+    def __init__(self, eps=16):
         """
-        Create an instance of feature squeezing.
+        Create an instance of pixel defence.
 
-        :param bit_depth: The number of bits per channel for encoding the data.
-        :type bit_depth: `int`
+        :param eps: Defense parameter 0-255.
+        :type eps: `int`
         """
-        super(FeatureSqueezing, self).__init__()
+        super(PixelDefend, self).__init__()
         self._is_fitted = True
-        self.set_params(bit_depth=bit_depth)
+        self.set_params(eps=eps)
 
-    def __call__(self, x, y=None, bit_depth=None, clip_values=(0, 1)):
+    def __call__(self, x, y=None, eps=None):
         """
-        Apply feature squeezing to sample `x`.
+        Apply pixel defence to sample `x`.
 
-        :param x: Sample to squeeze. `x` values are expected to be in the data range provided by `clip_values`.
+        :param x: Sample to defense. `x` values are expected to be in the data range [0, 1].
         :type x: `np.ndarrray`
         :param y: Labels of the sample `x`. This function does not affect them in any way.
         :type y: `np.ndarray`
-        :param bit_depth: The number of bits per channel for encoding the data.
-        :type bit_depth: `int`
-        :return: Squeezed sample
+        :param eps: Defense parameter 0-255.
+        :type eps: `int`
+        :return: Purified sample.
         :rtype: `np.ndarray`
         """
+        clip_values = (0, 1)
         if bit_depth is not None:
             self.set_params(bit_depth=bit_depth)
 
