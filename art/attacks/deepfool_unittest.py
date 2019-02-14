@@ -8,8 +8,8 @@ import numpy as np
 import tensorflow as tf
 
 from art.attacks.deepfool import DeepFool
-from art.utils import load_mnist, get_labels_np_array, master_seed, get_classifier_tf, get_classifier_kr, \
-    get_classifier_pt
+from art.utils import load_mnist, get_labels_np_array, master_seed
+from art.utils import get_classifier_tf, get_classifier_kr, get_classifier_pt
 
 logger = logging.getLogger('testLogger')
 
@@ -48,7 +48,6 @@ class TestDeepFool(unittest.TestCase):
         logger.info('[TF, MNIST] Accuracy on test set: %.2f%%', (acc * 100))
 
         # Create basic PyTorch model
-        # Build PyTorchClassifier
         cls.classifier_py = get_classifier_pt()
         x_train, x_test = np.swapaxes(x_train, 1, 3), np.swapaxes(x_test, 1, 3)
 
