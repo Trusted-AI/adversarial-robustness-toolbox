@@ -164,6 +164,24 @@ class TestKerasClassifier(unittest.TestCase):
 
         self.assertTrue(acc2 >= .8 * acc)
 
+    def test_fit_kwargs(self):
+        from keras.callbacks import LearningRateScheduler
+
+        def get_lr(_):
+            return 0.01
+
+        # Test a valid callback
+        classifier = KerasClassifier((0, 1), self.model_mnist, use_logits=False)
+        kwargs = {'callbacks': [LearningRateScheduler(get_lr)]}
+        classifier.fit(self.mnist[0][0], self.mnist[0][1], batch_size=BATCH_SIZE, nb_epochs=1, **kwargs)
+
+        # Test failure for invalid parameters
+        kwargs = {'epochs': 5}
+        with self.assertRaises(TypeError) as context:
+            classifier.fit(self.mnist[0][0], self.mnist[0][1], batch_size=BATCH_SIZE, nb_epochs=1, **kwargs)
+
+        self.assertTrue('multiple values for keyword argument' in str(context.exception))
+
     def test_shapes(self):
         self._test_shapes(custom_activation=True)
         self._test_shapes(custom_activation=False)

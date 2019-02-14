@@ -102,7 +102,7 @@ class EnsembleClassifier(Classifier):
             z = np.log(np.clip(z, eps, 1. - eps))
         return z
 
-    def fit(self, x, y, batch_size=128, nb_epochs=20):
+    def fit(self, x, y, batch_size=128, nb_epochs=20, **kwargs):
         """
         Fit the classifier on the training set `(x, y)`. This function is not supported for ensembles.
 
@@ -112,13 +112,15 @@ class EnsembleClassifier(Classifier):
         :type y: `np.ndarray`
         :param batch_size: Size of batches.
         :type batch_size: `int`
-        :param nb_epochs: Number of epochs to use for trainings.
+        :param nb_epochs: Number of epochs to use for training.
         :type nb_epochs: `int`
+        :param kwargs: Dictionary of framework-specific arguments.
+        :type kwargs: `dict`
         :return: `None`
         """
         raise NotImplementedError
 
-    def fit_generator(self, generator, nb_epochs=20):
+    def fit_generator(self, generator, nb_epochs=20, **kwargs):
         """
         Fit the classifier using the generator that yields batches as specified. This function is not supported for
         ensembles.
@@ -128,6 +130,8 @@ class EnsembleClassifier(Classifier):
         :type generator: `DataGenerator`
         :param nb_epochs: Number of epochs to use for trainings.
         :type nb_epochs: `int`
+        :param kwargs: Dictionary of framework-specific argument.
+        :type kwargs: `dict`
         :return: `None`
         """
         raise NotImplementedError

@@ -63,7 +63,7 @@ class MXClassifier(Classifier):
         # Get the internal layer
         self._layer_names = self._get_layers()
 
-    def fit(self, x, y, batch_size=128, nb_epochs=20):
+    def fit(self, x, y, batch_size=128, nb_epochs=20, **kwargs):
         """
         Fit the classifier on the training set `(inputs, outputs)`.
 
@@ -73,8 +73,11 @@ class MXClassifier(Classifier):
         :type y: `np.ndarray`
         :param batch_size: Size of batches.
         :type batch_size: `int`
-        :param nb_epochs: Number of epochs to use for trainings.
+        :param nb_epochs: Number of epochs to use for training.
         :type nb_epochs: `int`
+        :param kwargs: Dictionary of framework-specific arguments. This parameter is not currently supported for MXNet
+               and providing it takes no effect.
+        :type kwargs: `dict`
         :return: `None`
         """
         if self._optimizer is None:
@@ -109,14 +112,17 @@ class MXClassifier(Classifier):
                 # Update parameters
                 self._optimizer.step(batch_size)
 
-    def fit_generator(self, generator, nb_epochs=20):
+    def fit_generator(self, generator, nb_epochs=20, **kwargs):
         """
         Fit the classifier using the generator that yields batches as specified.
 
         :param generator: Batch generator providing `(x, y)` for each epoch.
         :type generator: `DataGenerator`
-        :param nb_epochs: Number of epochs to use for trainings.
+        :param nb_epochs: Number of epochs to use for training.
         :type nb_epochs: `int`
+        :param kwargs: Dictionary of framework-specific arguments. This parameter is not currently supported for MXNet
+               and providing it takes no effect.
+        :type kwargs: `dict`
         :return: `None`
         """
         import mxnet as mx
