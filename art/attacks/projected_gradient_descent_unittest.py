@@ -7,8 +7,8 @@ import keras.backend as k
 import numpy as np
 
 from art.attacks.projected_gradient_descent import ProjectedGradientDescent
-from art.utils import load_mnist, get_labels_np_array, master_seed, get_classifier_tf, get_classifier_kr, \
-    get_classifier_pt
+from art.utils import load_mnist, get_labels_np_array, master_seed
+from art.utils import get_classifier_tf, get_classifier_kr, get_classifier_pt
 
 logger = logging.getLogger('testLogger')
 

@@ -8,8 +8,8 @@ import numpy as np
 import tensorflow as tf
 
 from art.attacks.saliency_map import SaliencyMapMethod
-from art.utils import load_mnist, get_labels_np_array, to_categorical, master_seed, get_classifier_tf, \
-    get_classifier_kr, get_classifier_pt
+from art.utils import load_mnist, get_labels_np_array, to_categorical, master_seed
+from art.utils import get_classifier_tf, get_classifier_kr, get_classifier_pt
 
 logger = logging.getLogger('testLogger')
 
