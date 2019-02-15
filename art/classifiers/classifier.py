@@ -61,7 +61,7 @@ class Classifier(ABC):
         raise NotImplementedError
 
     @abc.abstractmethod
-    def fit(self, x, y, batch_size=128, nb_epochs=20):
+    def fit(self, x, y, batch_size=128, nb_epochs=20, **kwargs):
         """
         Fit the classifier on the training set `(x, y)`.
 
@@ -71,21 +71,25 @@ class Classifier(ABC):
         :type y: `np.ndarray`
         :param batch_size: Size of batches.
         :type batch_size: `int`
-        :param nb_epochs: Number of epochs to use for trainings.
+        :param nb_epochs: Number of epochs to use for training.
         :type nb_epochs: `int`
+        :param kwargs: Dictionary of framework-specific arguments.
+        :type kwargs: `dict`
         :return: `None`
         """
         raise NotImplementedError
 
-    def fit_generator(self, generator, nb_epochs=20):
+    def fit_generator(self, generator, nb_epochs=20, **kwargs):
         """
         Fit the classifier using the generator `gen` that yields batches as specified. Framework implementations can
         provide framework-specific versions of this function to speed-up computation.
 
         :param generator: Batch generator providing `(x, y)` for each epoch.
         :type generator: `DataGenerator`
-        :param nb_epochs: Number of epochs to use for trainings.
+        :param nb_epochs: Number of epochs to use for training.
         :type nb_epochs: `int`
+        :param kwargs: Dictionary of framework-specific arguments.
+        :type kwargs: `dict`
         :return: `None`
         """
         from art.data_generators import DataGenerator
@@ -102,7 +106,7 @@ class Classifier(ABC):
             x, y = self._apply_defences_fit(x, y)
 
             # Fit for current batch
-            self.fit(x, y, nb_epochs=1, batch_size=len(x))
+            self.fit(x, y, nb_epochs=1, batch_size=len(x), **kwargs)
 
     @property
     def nb_classes(self):

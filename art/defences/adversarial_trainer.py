@@ -48,7 +48,7 @@ class AdversarialTrainer:
         self._precomputed_adv_samples = []
         self.x_augmented, self.y_augmented = None, None
 
-    def fit_generator(self, generator, nb_epochs=20):
+    def fit_generator(self, generator, nb_epochs=20, **kwargs):
         """
         Train a model adversarially using a data generator.
         See class documentation for more information on the exact procedure.
@@ -57,6 +57,9 @@ class AdversarialTrainer:
         :type generator: :class:`.DataGenerator`
         :param nb_epochs: Number of epochs to use for trainings.
         :type nb_epochs: `int`
+        :param kwargs: Dictionary of framework-specific arguments. These will be passed as such to the `fit` function of
+               the target classifier.
+        :type kwargs: `dict`
         :return: `None`
         """
         logger.info('Performing adversarial training using %i attacks.', len(self.attacks))
@@ -124,10 +127,10 @@ class AdversarialTrainer:
                     x_batch[adv_ids] = x_adv
 
                 # Fit batch
-                self.classifier.fit(x_batch, y_batch, nb_epochs=1, batch_size=x_batch.shape[0])
+                self.classifier.fit(x_batch, y_batch, nb_epochs=1, batch_size=x_batch.shape[0], **kwargs)
                 attack_id = (attack_id + 1) % len(self.attacks)
 
-    def fit(self, x, y, batch_size=128, nb_epochs=20):
+    def fit(self, x, y, batch_size=128, nb_epochs=20, **kwargs):
         """
         Train a model adversarially. See class documentation for more information on the exact procedure.
 
@@ -139,6 +142,9 @@ class AdversarialTrainer:
         :type batch_size: `int`
         :param nb_epochs: Number of epochs to use for trainings.
         :type nb_epochs: `int`
+        :param kwargs: Dictionary of framework-specific arguments. These will be passed as such to the `fit` function of
+               the target classifier.
+        :type kwargs: `dict`
         :return: `None`
         """
         logger.info('Performing adversarial training using %i attacks.', len(self.attacks))
@@ -194,7 +200,7 @@ class AdversarialTrainer:
                     x_batch[adv_ids] = x_adv
 
                 # Fit batch
-                self.classifier.fit(x_batch, y_batch, nb_epochs=1, batch_size=x_batch.shape[0])
+                self.classifier.fit(x_batch, y_batch, nb_epochs=1, batch_size=x_batch.shape[0], **kwargs)
                 attack_id = (attack_id + 1) % len(self.attacks)
 
     def predict(self, x, **kwargs):

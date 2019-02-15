@@ -212,7 +212,7 @@ class KerasClassifier(Classifier):
 
         return preds
 
-    def fit(self, x, y, batch_size=128, nb_epochs=20):
+    def fit(self, x, y, batch_size=128, nb_epochs=20, **kwargs):
         """
         Fit the classifier on the training set `(x, y)`.
 
@@ -222,8 +222,12 @@ class KerasClassifier(Classifier):
         :type y: `np.ndarray`
         :param batch_size: Size of batches.
         :type batch_size: `int`
-        :param nb_epochs: Number of epochs to use for trainings.
+        :param nb_epochs: Number of epochs to use for training.
         :type nb_epochs: `int`
+        :param kwargs: Dictionary of framework-specific arguments. These should be parameters supported by the
+               `fit_generator` function in Keras and will be passed to this function as such. Including the number of
+               epochs or the number of steps per epoch as part of this argument will result in as error.
+        :type kwargs: `dict`
         :return: `None`
         """
         # Apply preprocessing and defences
@@ -231,17 +235,21 @@ class KerasClassifier(Classifier):
         x_, y_ = self._apply_defences_fit(x_, y)
 
         gen = generator_fit(x_, y_, batch_size)
-        self._model.fit_generator(gen, steps_per_epoch=x_.shape[0] / batch_size, epochs=nb_epochs)
+        self._model.fit_generator(gen, steps_per_epoch=x_.shape[0] / batch_size, epochs=nb_epochs, **kwargs)
 
-    def fit_generator(self, generator, nb_epochs=20):
+    def fit_generator(self, generator, nb_epochs=20, **kwargs):
         """
         Fit the classifier using the generator that yields batches as specified.
 
         :param generator: Batch generator providing `(x, y)` for each epoch. If the generator can be used for native
                           training in Keras, it will.
         :type generator: `DataGenerator`
-        :param nb_epochs: Number of epochs to use for trainings.
+        :param nb_epochs: Number of epochs to use for training.
         :type nb_epochs: `int`
+        :param kwargs: Dictionary of framework-specific arguments. These should be parameters supported by the
+               `fit_generator` function in Keras and will be passed to this function as such. Including the number of
+               epochs as part of this argument will result in as error.
+        :type kwargs: `dict`
         :return: `None`
         """
         from art.data_generators import KerasDataGenerator
@@ -251,12 +259,12 @@ class KerasClassifier(Classifier):
         if isinstance(generator, KerasDataGenerator) and \
                 not (hasattr(self, 'label_smooth') or hasattr(self, 'feature_squeeze')):
             try:
-                self._model.fit_generator(generator.generator, epochs=nb_epochs)
+                self._model.fit_generator(generator.generator, epochs=nb_epochs, **kwargs)
             except ValueError:
                 logger.info('Unable to use data generator as Keras generator. Now treating as framework-independent.')
-                super(KerasClassifier, self).fit_generator(generator, nb_epochs=nb_epochs)
+                super(KerasClassifier, self).fit_generator(generator, nb_epochs=nb_epochs, **kwargs)
         else:
-            super(KerasClassifier, self).fit_generator(generator, nb_epochs=nb_epochs)
+            super(KerasClassifier, self).fit_generator(generator, nb_epochs=nb_epochs, **kwargs)
 
     @property
     def layer_names(self):

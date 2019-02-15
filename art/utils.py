@@ -3,13 +3,25 @@ Module providing convenience functions.
 """
 from __future__ import absolute_import, division, print_function, unicode_literals
 
-import argparse
 import logging
 import os
 
 import numpy as np
+import tensorflow as tf
+import keras
+import keras.backend as k
+from keras.layers import Dense, Flatten, Conv2D, MaxPooling2D
+from keras.models import Sequential
+import torch
+import torch.nn as nn
+import torch.optim as optim
+
+from art.classifiers import KerasClassifier, PyTorchClassifier, TFClassifier
 
 logger = logging.getLogger(__name__)
+
+
+# -------------------------------------------------------------------------------------------- RANDOM NUMBER GENERATORS
 
 
 def master_seed(seed):
@@ -51,14 +63,15 @@ def master_seed(seed):
         logger.info('Could not set random seed for MXNet.')
 
     try:
-        import torch
-
         logger.info('Setting random seed for PyTorch.')
         torch.manual_seed(seed)
         if torch.cuda.is_available():
             torch.cuda.manual_seed_all(seed)
     except ImportError:
         logger.info('Could not set random seed for PyTorch')
+
+
+# ----------------------------------------------------------------------------------------------------- MATHS UTILITIES
 
 
 def projection(v, eps, p):
@@ -129,6 +142,49 @@ def random_sphere(nb_points, nb_dims, radius, norm):
     return res
 
 
+def original_to_tanh(x_original, clip_min, clip_max, tanh_smoother=0.999999):
+    """
+    Transform input from original to tanh space.
+
+    :param x_original: An array with the input to be transformed.
+    :type x_original: `np.ndarray`
+    :param clip_min: Minimum clipping value.
+    :type clip_min: `float` or `np.ndarray`
+    :param clip_max: Maximum clipping value.
+    :type clip_max: `float` or `np.ndarray`
+    :param tanh_smoother: Scalar for multiplying arguments of arctanh to avoid division by zero.
+    :type tanh_smoother: `float`
+    :return: An array holding the transformed input.
+    :rtype: `np.ndarray`
+    """
+    x_tanh = np.clip(x_original, clip_min, clip_max)
+    x_tanh = (x_tanh - clip_min) / (clip_max - clip_min)
+    x_tanh = np.arctanh(((x_tanh * 2) - 1) * tanh_smoother)
+    return x_tanh
+
+
+def tanh_to_original(x_tanh, clip_min, clip_max, tanh_smoother=0.999999):
+    """
+    Transform input from tanh to original space.
+
+    :param x_tanh: An array with the input to be transformed.
+    :type x_tanh: `np.ndarray`
+    :param clip_min: Minimum clipping value.
+    :type clip_min: `float` or `np.ndarray`
+    :param clip_max: Maximum clipping value.
+    :type clip_max: `float` or `np.ndarray`
+    :param tanh_smoother: Scalar for dividing arguments of tanh to avoid division by zero.
+    :type tanh_smoother: `float`
+    :return: An array holding the transformed input.
+    :rtype: `np.ndarray`
+    """
+    x_original = (np.tanh(x_tanh) / tanh_smoother + 1) / 2
+    return x_original * (clip_max - clip_min) + clip_min
+
+
+# --------------------------------------------------------------------------------------- LABELS MANIPULATION FUNCTIONS
+
+
 def to_categorical(labels, nb_classes=None):
     """
     Convert an array of labels to binary class matrix.
@@ -189,6 +245,21 @@ def least_likely_class(x, classifier):
     return to_categorical(np.argmin(classifier.predict(x), axis=1), nb_classes=classifier.nb_classes)
 
 
+def second_most_likely_class(x, classifier):
+    """
+    Compute the second most likely class predictions for sample `x`. This strategy can be used for choosing target
+    labels for an attack to improve its chances to succeed.
+
+    :param x: A data sample of shape accepted by `classifier`.
+    :type x: `np.ndarray`
+    :param classifier: The classifier used for computing predictions.
+    :type classifier: `Classifier`
+    :return: Second most likely class predicted by `classifier` for sample `x` in one-hot encoding.
+    :rtype: `np.ndarray`
+    """
+    return to_categorical(np.argpartition(classifier.predict(x), -2, axis=1)[:, -2], nb_classes=classifier.nb_classes)
+
+
 def get_label_conf(y_vec):
     """
     Returns the confidence and the label of the most probable class given a vector of class confidences
@@ -245,6 +316,7 @@ def load_cifar10(raw=False):
     :return: `(x_train, y_train), (x_test, y_test), min, max`
     :rtype: `(np.ndarray, np.ndarray), (np.ndarray, np.ndarray), float, float`
     """
+
     def load_batch(fpath):
         """
         Utility function for loading CIFAR batches, as written in Keras.
@@ -502,97 +574,220 @@ def make_directory(dir_path):
         os.makedirs(dir_path)
 
 
-def get_npy_files(path):
+# -------------------------------------------------------------------------------------------------- PRE-TRAINED MODELS
+
+
+def _tf_initializer_w_conv2d(_, dtype, partition_info):
     """
-    Generator returning all the npy files in path subdirectories.
+    Initializer of weights in convolution layer for Tensorflow.
 
-    :param path: (str) directory path
-    :return: (str) paths
+    :return: Tensorflow constant
+    :rtype: tf.constant
+    """
+    _ = partition_info
+    w_conv2d = np.load(os.path.join(os.path.dirname(os.path.dirname(__file__)), 'models', 'W_CONV2D.npy'))
+    return tf.constant(w_conv2d, dtype)
+
+
+def _kr_initializer_w_conv2d(_, dtype=None):
+    """
+    Initializer of weights in convolution layer for Keras.
+
+    :return: Keras variable
+    :rtype: k.variable
+    """
+    w_conv2d = np.load(os.path.join(os.path.dirname(os.path.dirname(__file__)), 'models', 'W_CONV2D.npy'))
+    return k.variable(value=w_conv2d, dtype=dtype)
+
+
+def _tf_initializer_b_conv2d(_, dtype, partition_info):
+    """
+    Initializer of biases in convolution layer for Tensorflow.
+
+    :return: Tensorflow constant
+    :rtype: tf.constant
+    """
+    _ = partition_info
+    b_conv2d = np.load(os.path.join(os.path.dirname(os.path.dirname(__file__)), 'models', 'B_CONV2D.npy'))
+    return tf.constant(b_conv2d, dtype)
+
+
+def _kr_initializer_b_conv2d(_, dtype=None):
+    """
+    Initializer of weights in convolution layer for Keras.
+
+    :return: Keras variable
+    :rtype: k.variable
+    """
+    b_conv2d = np.load(os.path.join(os.path.dirname(os.path.dirname(__file__)), 'models', 'B_CONV2D.npy'))
+    return k.variable(value=b_conv2d, dtype=dtype)
+
+
+def _tf_initializer_w_dense(_1, dtype, partition_info):
+    """
+    Initializer of weights in dense layer for Tensorflow.
+
+    :return: Tensorflow constant
+    :rtype: tf.constant
+    """
+    _ = partition_info
+    w_dense = np.load(os.path.join(os.path.dirname(os.path.dirname(__file__)), 'models', 'W_DENSE.npy'))
+    return tf.constant(w_dense, dtype)
+
+
+def _kr_initializer_w_dense(_, dtype=None):
+    """
+    Initializer of weights in dense layer for Keras.
+
+    :return: Keras varibale
+    :rtype: k.variable
+    """
+    w_dense = np.load(os.path.join(os.path.dirname(os.path.dirname(__file__)), 'models', 'W_DENSE.npy'))
+    return k.variable(value=w_dense, dtype=dtype)
+
+
+def _tf_initializer_b_dense(_1, dtype, partition_info):
+    """
+    Initializer of biases in dense layer for Tensorflow.
+
+    :return: Tensorflow constant
+    :rtype: tf.constant
+    """
+    _ = partition_info
+    b_dense = np.load(os.path.join(os.path.dirname(os.path.dirname(__file__)), 'models', 'B_DENSE.npy'))
+    return tf.constant(b_dense, dtype)
+
+
+def _kr_initializer_b_dense(_, dtype=None):
+    """
+    Initializer of biases in dense layer for Keras.
+
+    :return: Keras variable
+    :rtype: k.variable
+    """
+    b_dense = np.load(os.path.join(os.path.dirname(os.path.dirname(__file__)), 'models', 'B_DENSE.npy'))
+    return k.variable(value=b_dense, dtype=dtype)
+
+
+def get_classifier_tf():
+    """
+    Standard Tensorflow classifier for unit testing.
+
+    The following hyper-parameters were used to obtain the weights and biases:
+    learning_rate: 0.01
+    batch size: 10
+    number of epochs: 2
+    optimizer: tf.train.AdamOptimizer
+
+    :return: TFClassifier, tf.Session()
+    """
+    # Define input and output placeholders
+    input_ph = tf.placeholder(tf.float32, shape=[None, 28, 28, 1])
+    output_ph = tf.placeholder(tf.int32, shape=[None, 10])
+
+    # Define the tensorflow graph
+    conv = tf.layers.conv2d(input_ph, 1, 7, activation=tf.nn.relu, kernel_initializer=_tf_initializer_w_conv2d,
+                            bias_initializer=_tf_initializer_b_conv2d)
+    conv = tf.layers.max_pooling2d(conv, 4, 4)
+    flattened = tf.contrib.layers.flatten(conv)
+
+    # Logits layer
+    logits = tf.layers.dense(flattened, 10, kernel_initializer=_tf_initializer_w_dense,
+                             bias_initializer=_tf_initializer_b_dense)
+
+    # Train operator
+    loss = tf.reduce_mean(tf.losses.softmax_cross_entropy(logits=logits, onehot_labels=output_ph))
+
+    # Tensorflow session and initialization
+    sess = tf.Session()
+    sess.run(tf.global_variables_initializer())
+
+    # Train the classifier
+    tfc = TFClassifier(clip_values=(0, 1), input_ph=input_ph, logits=logits, output_ph=output_ph, train=None,
+                       loss=loss, learning=None, sess=sess)
+
+    return tfc, sess
+
+
+def get_classifier_kr():
+    """
+    Standard Keras classifier for unit testing
+
+    The weights and biases are identical to the Tensorflow model in get_classifier_tf().
+
+    :return: KerasClassifier, tf.Session()
+    """
+    # Initialize a tf session
+    sess = tf.Session()
+    k.set_session(sess)
+
+    # Create simple CNN
+    model = Sequential()
+    model.add(Conv2D(1, kernel_size=(7, 7), activation='relu', input_shape=(28, 28, 1),
+                     kernel_initializer=_kr_initializer_w_conv2d, bias_initializer=_kr_initializer_b_conv2d))
+    model.add(MaxPooling2D(pool_size=(4, 4)))
+    model.add(Flatten())
+    model.add(Dense(10, activation='softmax', kernel_initializer=_kr_initializer_w_dense,
+                    bias_initializer=_kr_initializer_b_dense))
+
+    model.compile(loss=keras.losses.categorical_crossentropy, optimizer=keras.optimizers.Adam(lr=0.01),
+                  metrics=['accuracy'])
+
+    # Get classifier
+    krc = KerasClassifier((0, 1), model, use_logits=False)
+
+    return krc, sess
+
+
+def get_classifier_pt():
+    """
+    Standard PyTorch classifier for unit testing
+
+    :return: PyTorchClassifier
     """
 
-    for root, _, files in os.walk(path):
-        for file_ in files:
-            if file_.endswith(".npy"):
-                yield os.path.join(root, file_)
+    class Model(nn.Module):
+        """
+        Create model for pytorch.
 
+        The weights and biases are identical to the Tensorflow model in get_classifier_tf().
+        """
 
-# ------------------------------------------------------------------- ARG PARSER
+        def __init__(self):
+            super(Model, self).__init__()
 
+            w_conv2d = np.load(os.path.join(os.path.dirname(os.path.dirname(__file__)), 'models', 'W_CONV2D.npy'))
+            b_conv2d = np.load(os.path.join(os.path.dirname(os.path.dirname(__file__)), 'models', 'B_CONV2D.npy'))
+            w_dense = np.load(os.path.join(os.path.dirname(os.path.dirname(__file__)), 'models', 'W_DENSE.npy'))
+            b_dense = np.load(os.path.join(os.path.dirname(os.path.dirname(__file__)), 'models', 'B_DENSE.npy'))
 
-def get_args(prog, load_classifier=False, load_sample=False, per_batch=False, options=""):
-    """
-    Parser for all scripts
-    :param prog: name of the script calling the function
-    :param load_classifier: bool, load a model, default False
-    :param load_sample: bool, load (adversarial) data for training, default False
-    :param per_batch: bool, load data in batches, default False
-    :param options:
-    :return: parsed arguments
-    """
-    parser = argparse.ArgumentParser(prog=prog, formatter_class=argparse.ArgumentDefaultsHelpFormatter)
+            self.conv = nn.Conv2d(in_channels=1, out_channels=1, kernel_size=7)
+            w_conv2d_pt = np.swapaxes(w_conv2d, 0, 2)
+            w_conv2d_pt = np.swapaxes(w_conv2d_pt, 1, 3)
+            self.conv.weight = nn.Parameter(torch.Tensor(w_conv2d_pt))
+            self.conv.bias = nn.Parameter(torch.Tensor(b_conv2d))
+            self.pool = nn.MaxPool2d(4, 4)
+            self.fullyconnected = nn.Linear(25, 10)
+            self.fullyconnected.weight = nn.Parameter(torch.Tensor(np.transpose(w_dense)))
+            self.fullyconnected.bias = nn.Parameter(torch.Tensor(b_dense))
 
-    option_dict = {
-        "a": {"flags": ["-a", "--adv"],
-              "kwargs": {"type": str, "dest": 'adv_method', "default": "fgsm",
-                         "choices": ["fgsm", "deepfool", "universal", "jsma", "vat", "carlini", "rnd_fgsm"],
-                         "help": 'choice of attacker'}},
-        "b": {"flags": ["-b", "--batchsize"],
-              "kwargs": {"type": int, "dest": 'batch_size', "default": 128, "help": 'size of the batches'}},
-        "c": {"flags": ["-c", "--classifier"],
-              "kwargs": {"type": str, "dest": 'classifier', "default": "cnn", "choices": ["cnn", "resnet", "mlp"],
-                         "help": 'choice of classifier'}},
-        "d": {"flags": ["-d", "--dataset"],
-              "kwargs": {"type": str, "dest": 'dataset', "default": "mnist",
-                         "help": 'either the path or name of the dataset the classifier is tested/trained on.'}},
-        "e": {"flags": ["-e", "--epochs"],
-              "kwargs": {"type": int, "dest": 'nb_epochs', "default": 20,
-                         "help": 'number of epochs for training the classifier'}},
-        "f": {"flags": ["-f", "--act"],
-              "kwargs": {"type": str, "dest": 'act', "default": "relu", "choices": ["relu", "brelu"],
-                         "help": 'choice of activation function'}},
-        "n": {"flags": ["-n", "--nbinstances"],
-              "kwargs": {"type": int, "dest": 'nb_instances', "default": 1,
-                         "help": 'number of supplementary instances per true example'}},
-        "r": {"flags": ["-r", "--valsplit"],
-              "kwargs": {"type": float, "dest": 'val_split', "default": 0.1,
-                         "help": 'ratio of training sample used for validation'}},
-        "s": {"flags": ["-s", "--save"],
-              "kwargs": {"nargs": '?', "type": str, "dest": 'save', "default": False,
-                         "help": 'if set, the classifier is saved; if an argument is provided it is used as path to'
-                                 ' store the model'}},
-        "t": {"flags": ["-t", "--stdev"],
-              "kwargs": {"type": float, "dest": 'std_dev', "default": 0.1,
-                         "help": 'standard deviation of the distributions'}},
-        "v": {"flags": ["-v", "--verbose"],
-              "kwargs": {"dest": 'verbose', "action": "store_true", "help": 'if set, verbose mode'}},
-        "z": {"flags": ["-z", "--defences"],
-              "kwargs": {"dest": 'defences', "nargs": "*", "default": None, "help": 'list of basic defences.'}},
-    }
+        def forward(self, x):
+            import torch.nn.functional as f
 
-    # Add required arguments
-    if load_classifier:
-        parser.add_argument("load", type=str, help='the classifier is loaded from `load` directory.')
+            x = self.pool(f.relu(self.conv(x)))
+            x = x.view(-1, 25)
+            logit_output = self.fullyconnected(x)
 
-    if load_sample:
-        parser.add_argument("adv_path", type=str, help='path to the dataset for data augmentation training.')
+            return logit_output
 
-    if per_batch:
-        parser.add_argument("batch_idx", type=int, help='index of the batch to use.')
+    # Define the network
+    model = Model()
 
-    # Add optional arguments
-    for o in options:
-        parser.add_argument(*option_dict[o]["flags"], **option_dict[o]["kwargs"])
+    # Define a loss function and optimizer
+    loss_fn = nn.CrossEntropyLoss()
+    optimizer = optim.Adam(model.parameters(), lr=0.01)
 
-    return parser.parse_args()
+    # Get classifier
+    ptc = PyTorchClassifier((0, 1), model, loss_fn, optimizer, (1, 28, 28), 10)
 
-
-def get_verbose_print(verbose):
-    """
-    Sets verbose mode.
-    :param verbose: (bool) True for verbose, False for quiet
-    :return: (function) printing function
-    """
-    if verbose:
-        return print
-    else:
-        return lambda *a, **k: None
+    return ptc

@@ -116,7 +116,7 @@ class TFClassifier(Classifier):
 
         return results
 
-    def fit(self, x, y, batch_size=128, nb_epochs=10):
+    def fit(self, x, y, batch_size=128, nb_epochs=10, **kwargs):
         """
         Fit the classifier on the training set `(x, y)`.
 
@@ -126,8 +126,11 @@ class TFClassifier(Classifier):
         :type y: `np.ndarray`
         :param batch_size: Size of batches.
         :type batch_size: `int`
-        :param nb_epochs: Number of epochs to use for trainings.
+        :param nb_epochs: Number of epochs to use for training.
         :type nb_epochs: `int`
+        :param kwargs: Dictionary of framework-specific arguments. This parameter is not currently supported for
+               TensorFlow and providing it takes no effect.
+        :type kwargs: `dict`
         :return: `None`
         """
         # Check if train and output_ph available
@@ -158,15 +161,18 @@ class TFClassifier(Classifier):
                 # Run train step
                 self._sess.run(self._train, feed_dict=fd)
 
-    def fit_generator(self, generator, nb_epochs=20):
+    def fit_generator(self, generator, nb_epochs=20, **kwargs):
         """
         Fit the classifier using the generator that yields batches as specified.
 
         :param generator: Batch generator providing `(x, y)` for each epoch. If the generator can be used for native
                           training in TensorFlow, it will.
         :type generator: `DataGenerator`
-        :param nb_epochs: Number of epochs to use for trainings.
+        :param nb_epochs: Number of epochs to use for training.
         :type nb_epochs: `int`
+        :param kwargs: Dictionary of framework-specific arguments. This parameter is not currently supported for
+               TensorFlow and providing it takes no effect.
+        :type kwargs: `dict`
         :return: `None`
         """
         from art.data_generators import TFDataGenerator
@@ -185,7 +191,7 @@ class TFClassifier(Classifier):
                     # Run train step
                     self._sess.run(self._train, feed_dict=fd)
         else:
-            super(TFClassifier, self).fit_generator(generator, nb_epochs=nb_epochs)
+            super(TFClassifier, self).fit_generator(generator, nb_epochs=nb_epochs, **kwargs)
 
     def class_gradient(self, x, label=None, logits=False):
         """
