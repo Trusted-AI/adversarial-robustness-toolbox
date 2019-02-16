@@ -134,8 +134,8 @@ class ClusteringAnalyzer:
             cluster1_is_poison = False
 
             dict_k = dict()
-            dict_cluster_0 = dict(cluster0_distance_to_its_class=cluster0_distance)
-            dict_cluster_1 = dict(cluster1_distance_to_its_class=cluster1_distance)
+            dict_cluster_0 = dict(cluster0_distance_to_its_class=str(cluster0_distance))
+            dict_cluster_1 = dict(cluster1_distance_to_its_class=str(cluster1_distance))
             for k, center in enumerate(cluster_centers):
                 if k == i:
                     pass
@@ -148,10 +148,10 @@ class ClusteringAnalyzer:
                     if cluster1_distance_to_k < cluster1_distance and cluster0_distance_to_k > cluster0_distance:
                         cluster1_is_poison = True
 
-                    dict_cluster_0['distance_to_class_'+str(k)] = cluster0_distance_to_k
-                    dict_cluster_0['suspicious'] = cluster0_is_poison
+                    dict_cluster_0['distance_to_class_'+str(k)] = str(cluster0_distance_to_k)
+                    dict_cluster_0['suspicious'] = str(cluster0_is_poison)
 
-                    dict_cluster_1['distance_to_class_'+str(k)] = cluster1_distance_to_k
+                    dict_cluster_1['distance_to_class_'+str(k)] = str(cluster1_distance_to_k)
                     dict_cluster_1['suspicious'] = cluster1_is_poison
 
                     dict_k.update(dict_cluster_0)
@@ -282,8 +282,8 @@ class ClusteringAnalyzer:
         from sklearn.metrics import silhouette_score
         size_threshold = round(size_threshold, r_size)
         silhouette_threshold = round(silhouette_threshold, r_silhouette)
-        report = {'cluster_analysis': 'silhouette_score', 'size_threshold': size_threshold,
-                  'silhouette_threshold': silhouette_threshold}
+        report = {'cluster_analysis': 'silhouette_score', 'size_threshold': str(size_threshold),
+                  'silhouette_threshold': str(silhouette_threshold)}
         all_assigned_clean = []
         nb_classes = len(separated_clusters)
         nb_clusters = len(np.unique(separated_clusters[0]))
@@ -299,7 +299,9 @@ class ClusteringAnalyzer:
 
             # Generate report for class
             silhouette_avg = round(silhouette_score(activations, clusters), r_silhouette)
-            dict_i = dict(sizes_clusters=str(bins), ptc_cluster=str(percentages), avg_silhouette_score=silhouette_avg)
+            dict_i = dict(sizes_clusters=str(bins),
+                          ptc_cluster=str(percentages),
+                          avg_silhouette_score=str(silhouette_avg))
 
             if np.shape(poison_clusters)[1] != 0:
                 # Relative size of the clusters is suspicious

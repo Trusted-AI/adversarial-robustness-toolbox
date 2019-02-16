@@ -147,8 +147,9 @@ class ActivationDefence(PoisonFilteringDefence):
 
         :param kwargs: a dictionary of cluster-analysis-specific parameters
         :type kwargs: `dict`
-        :return: assigned_clean_by_class, an array of arrays that contains what data points where classified as clean.
-        :rtype: `np.ndarray`
+        :return: (report, assigned_clean_by_class), where the report is a dict and assigned_clean_by_class
+        is an array of arrays that contains what data points where classified as clean.
+        :rtype: `tuple(dict, np.ndarray)`
         """
         self.set_params(**kwargs)
 
