@@ -17,13 +17,13 @@ class EnsembleClassifier(Classifier):
     def __init__(self, clip_values, classifiers, classifier_weights=None, channel_index=3, defences=None,
                  preprocessing=(0, 1)):
         """
-        Initialize a :class:`EnsembleClassifier` object. The data range values and colour channel index have to
+        Initialize a :class:`.EnsembleClassifier` object. The data range values and colour channel index have to
         be consistent for all the classifiers in the ensemble.
 
         :param clip_values: Tuple of the form `(min, max)` representing the minimum and maximum values allowed
                for features.
         :type clip_values: `tuple`
-        :param classifiers: List of :class:`Classifier` instances to be ensembled together.
+        :param classifiers: List of :class:`.Classifier` instances to be ensembled together.
         :type classifiers: `list`
         :param classifier_weights: List of weights, one scalar per classifier, to assign to their prediction when
                aggregating results. If `None`, all classifiers are assigned the same weight.
@@ -102,7 +102,7 @@ class EnsembleClassifier(Classifier):
             z = np.log(np.clip(z, eps, 1. - eps))
         return z
 
-    def fit(self, x, y, batch_size=128, nb_epochs=20):
+    def fit(self, x, y, batch_size=128, nb_epochs=20, **kwargs):
         """
         Fit the classifier on the training set `(x, y)`. This function is not supported for ensembles.
 
@@ -112,13 +112,15 @@ class EnsembleClassifier(Classifier):
         :type y: `np.ndarray`
         :param batch_size: Size of batches.
         :type batch_size: `int`
-        :param nb_epochs: Number of epochs to use for trainings.
+        :param nb_epochs: Number of epochs to use for training.
         :type nb_epochs: `int`
+        :param kwargs: Dictionary of framework-specific arguments.
+        :type kwargs: `dict`
         :return: `None`
         """
         raise NotImplementedError
 
-    def fit_generator(self, generator, nb_epochs=20):
+    def fit_generator(self, generator, nb_epochs=20, **kwargs):
         """
         Fit the classifier using the generator that yields batches as specified. This function is not supported for
         ensembles.
@@ -128,6 +130,8 @@ class EnsembleClassifier(Classifier):
         :type generator: `DataGenerator`
         :param nb_epochs: Number of epochs to use for trainings.
         :type nb_epochs: `int`
+        :param kwargs: Dictionary of framework-specific argument.
+        :type kwargs: `dict`
         :return: `None`
         """
         raise NotImplementedError
@@ -147,7 +151,7 @@ class EnsembleClassifier(Classifier):
         """
         raise NotImplementedError
 
-    def get_activations(self, x, layer):
+    def get_activations(self, x, layer, batch_size=128):
         """
         Return the output of the specified layer for input `x`. `layer` is specified by layer index (between 0 and
         `nb_layers - 1`) or by name. The number of layers can be determined by counting the results returned by
@@ -157,6 +161,8 @@ class EnsembleClassifier(Classifier):
         :type x: `np.ndarray`
         :param layer: Layer for computing the activations
         :type layer: `int` or `str`
+        :param batch_size: Size of batches.
+        :type batch_size: `int`
         :return: The output of `layer`, where the first dimension is the batch size corresponding to `x`.
         :rtype: `np.ndarray`
         """
@@ -214,8 +220,10 @@ class EnsembleClassifier(Classifier):
         :param train: True to set the learning phase to training, False to set it to prediction.
         :type train: `bool`
         """
-        for classifier in self._classifiers:
-            classifier.set_learning_phase(train)
+        if self._learning is not None and isinstance(train, bool):
+            for classifier in self._classifiers:
+                classifier.set_learning_phase(train)
+            self._learning_phase = train
 
     def save(self, filename, path=None):
         """

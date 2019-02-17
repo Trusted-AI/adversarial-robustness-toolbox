@@ -2,12 +2,12 @@
 ===========================
 .. automodule:: art.poison_detection
 
-Base Class
-----------
-.. autoclass:: PoisonFilteringDefence
-   :members:
-
 Activation Defence
 ------------------
 .. autoclass:: ActivationDefence
+   :members:
+
+Base Class
+----------
+.. autoclass:: PoisonFilteringDefence
    :members:

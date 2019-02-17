@@ -63,7 +63,7 @@ class MXClassifier(Classifier):
         # Get the internal layer
         self._layer_names = self._get_layers()
 
-    def fit(self, x, y, batch_size=128, nb_epochs=20):
+    def fit(self, x, y, batch_size=128, nb_epochs=20, **kwargs):
         """
         Fit the classifier on the training set `(inputs, outputs)`.
 
@@ -73,14 +73,19 @@ class MXClassifier(Classifier):
         :type y: `np.ndarray`
         :param batch_size: Size of batches.
         :type batch_size: `int`
-        :param nb_epochs: Number of epochs to use for trainings.
+        :param nb_epochs: Number of epochs to use for training.
         :type nb_epochs: `int`
+        :param kwargs: Dictionary of framework-specific arguments. This parameter is not currently supported for MXNet
+               and providing it takes no effect.
+        :type kwargs: `dict`
         :return: `None`
         """
         if self._optimizer is None:
             raise ValueError('An MXNet optimizer is required for fitting the model.')
 
-        from mxnet import autograd, nd
+        import mxnet as mx
+
+        train_mode = self._learning_phase if hasattr(self, '_learning_phase') else True
 
         # Apply preprocessing and defences
         x_ = self._apply_processing(x)
@@ -96,42 +101,47 @@ class MXClassifier(Classifier):
 
             # Train for one epoch
             for m in range(nb_batch):
-                x_batch = nd.array(x_[ind[m * batch_size:(m + 1) * batch_size]]).as_in_context(self._ctx)
-                y_batch = nd.array(y_[ind[m * batch_size:(m + 1) * batch_size]]).as_in_context(self._ctx)
+                x_batch = mx.nd.array(x_[ind[m * batch_size:(m + 1) * batch_size]]).as_in_context(self._ctx)
+                y_batch = mx.nd.array(y_[ind[m * batch_size:(m + 1) * batch_size]]).as_in_context(self._ctx)
 
-                with autograd.record(train_mode=True):
+                with mx.autograd.record(train_mode=train_mode):
                     preds = self._model(x_batch)
-                    loss = nd.softmax_cross_entropy(preds, y_batch)
+                    loss = mx.nd.softmax_cross_entropy(preds, y_batch)
                 loss.backward()
 
                 # Update parameters
                 self._optimizer.step(batch_size)
 
-    def fit_generator(self, generator, nb_epochs=20):
+    def fit_generator(self, generator, nb_epochs=20, **kwargs):
         """
         Fit the classifier using the generator that yields batches as specified.
 
         :param generator: Batch generator providing `(x, y)` for each epoch.
         :type generator: `DataGenerator`
-        :param nb_epochs: Number of epochs to use for trainings.
+        :param nb_epochs: Number of epochs to use for training.
         :type nb_epochs: `int`
+        :param kwargs: Dictionary of framework-specific arguments. This parameter is not currently supported for MXNet
+               and providing it takes no effect.
+        :type kwargs: `dict`
         :return: `None`
         """
-        from mxnet import autograd, nd
+        import mxnet as mx
         from art.data_generators import MXDataGenerator
+
+        train_mode = self._learning_phase if hasattr(self, '_learning_phase') else True
 
         if isinstance(generator, MXDataGenerator) and \
                 not (hasattr(self, 'label_smooth') or hasattr(self, 'feature_squeeze')):
             # Train directly in MXNet
             for _ in range(nb_epochs):
                 for x_batch, y_batch in generator.data_loader:
-                    x_batch = nd.array(x_batch).as_in_context(self._ctx)
-                    y_batch = np.argmax(y_batch, axis=1)
-                    y_batch = nd.array(y_batch).as_in_context(self._ctx)
+                    x_batch = mx.nd.array(x_batch).as_in_context(self._ctx)
+                    y_batch = mx.nd.argmax(y_batch, axis=1)
+                    y_batch = mx.nd.array(y_batch).as_in_context(self._ctx)
 
-                    with autograd.record(train_mode=True):
+                    with mx.autograd.record(train_mode=train_mode):
                         preds = self._model(x_batch)
-                        loss = nd.softmax_cross_entropy(preds, y_batch)
+                        loss = mx.nd.softmax_cross_entropy(preds, y_batch)
                     loss.backward()
 
                     # Update parameters
@@ -153,7 +163,9 @@ class MXClassifier(Classifier):
         :return: Array of predictions of shape `(nb_inputs, self.nb_classes)`.
         :rtype: `np.ndarray`
         """
-        from mxnet import autograd, nd
+        import mxnet as mx
+
+        train_mode = self._learning_phase if hasattr(self, '_learning_phase') else False
 
         # Apply preprocessing and defences
         x_ = self._apply_processing(x)
@@ -167,9 +179,9 @@ class MXClassifier(Classifier):
             begin, end = m * batch_size, min((m + 1) * batch_size, x_.shape[0])
 
             # Predict
-            x_batch = nd.array(x_[begin:end], ctx=self._ctx)
+            x_batch = mx.nd.array(x_[begin:end], ctx=self._ctx)
             x_batch.attach_grad()
-            with autograd.record(train_mode=False):
+            with mx.autograd.record(train_mode=train_mode):
                 preds = self._model(x_batch)
 
             if logits is False:
@@ -197,7 +209,7 @@ class MXClassifier(Classifier):
                  `(batch_size, 1, input_shape)` when `label` parameter is specified.
         :rtype: `np.ndarray`
         """
-        from mxnet import autograd, nd
+        import mxnet as mx
 
         # Check value of label for computing gradients
         if not (label is None or (isinstance(label, (int, np.integer)) and label in range(self.nb_classes))
@@ -205,12 +217,14 @@ class MXClassifier(Classifier):
                     and label.shape[0] == x.shape[0])):
             raise ValueError('Label %s is out of range.' % str(label))
 
+        train_mode = self._learning_phase if hasattr(self, '_learning_phase') else False
+
         x_ = self._apply_processing(x)
-        x_ = nd.array(x_, ctx=self._ctx)
+        x_ = mx.nd.array(x_, ctx=self._ctx)
         x_.attach_grad()
 
         if label is None:
-            with autograd.record(train_mode=False):
+            with mx.autograd.record(train_mode=False):
                 if logits is True:
                     preds = self._model(x_)
                 else:
@@ -224,7 +238,7 @@ class MXClassifier(Classifier):
                 grads.append(grad)
             grads = np.swapaxes(np.array(grads), 0, 1)
         elif isinstance(label, (int, np.integer)):
-            with autograd.record(train_mode=False):
+            with mx.autograd.record(train_mode=train_mode):
                 if logits is True:
                     preds = self._model(x_)
                 else:
@@ -236,7 +250,7 @@ class MXClassifier(Classifier):
         else:
             unique_labels = list(np.unique(label))
 
-            with autograd.record(train_mode=False):
+            with mx.autograd.record(train_mode=train_mode):
                 if logits is True:
                     preds = self._model(x_)
                 else:
@@ -270,14 +284,16 @@ class MXClassifier(Classifier):
         :return: Array of gradients of the same shape as `x`.
         :rtype: `np.ndarray`
         """
-        from mxnet import autograd, gluon, nd
+        import mxnet as mx
 
-        x_ = nd.array(x, ctx=self._ctx)
-        y_ = nd.array([np.argmax(y, axis=1)]).T
+        train_mode = self._learning_phase if hasattr(self, '_learning_phase') else False
+
+        x_ = mx.nd.array(x, ctx=self._ctx)
+        y_ = mx.nd.array([np.argmax(y, axis=1)]).T
 
         x_.attach_grad()
-        loss = gluon.loss.SoftmaxCrossEntropyLoss()
-        with autograd.record(train_mode=False):
+        loss = mx.gluon.loss.SoftmaxCrossEntropyLoss()
+        with mx.autograd.record(train_mode=train_mode):
             preds = self._model(x_)
             loss = loss(preds, y_)
 
@@ -303,7 +319,7 @@ class MXClassifier(Classifier):
         """
         return self._layer_names
 
-    def get_activations(self, x, layer):
+    def get_activations(self, x, layer, batch_size=128):
         """
         Return the output of the specified layer for input `x`. `layer` is specified by layer index (between 0 and
         `nb_layers - 1`) or by name. The number of layers can be determined by counting the results returned by
@@ -313,10 +329,12 @@ class MXClassifier(Classifier):
         :type x: `np.ndarray`
         :param layer: Layer for computing the activations
         :type layer: `int` or `str`
+        :param batch_size: Size of batches.
+        :type batch_size: `int`
         :return: The output of `layer`, where the first dimension is the batch size corresponding to `x`.
         :rtype: `np.ndarray`
         """
-        from mxnet import nd
+        import mxnet as mx
 
         if isinstance(layer, six.string_types):
             if layer not in self._layer_names:
@@ -339,7 +357,7 @@ class MXClassifier(Classifier):
         x_ = self._apply_defences_predict(x_)
 
         # Compute activations
-        x_ = nd.array(x_, ctx=self._ctx)
+        x_ = mx.nd.array(x_, ctx=self._ctx)
         preds = self._model[layer_ind](x_)
 
         return preds.asnumpy()
@@ -351,11 +369,14 @@ class MXClassifier(Classifier):
         :param train: True to set the learning phase to training, False to set it to prediction.
         :type train: `bool`
         """
-        raise NotImplementedError
+        if isinstance(train, bool):
+            self._learning_phase = train
 
     def save(self, filename, path=None):
         """
-        Save a model to file in the format specific to the backend framework.
+        Save a model to file in the format specific to the backend framework. For Gluon, only parameters are saved in
+        file with name `<filename>.params` at the specified path. To load the saved model, the original model code needs
+        to be run before calling `load_parameters` on the generated Gluon model.
 
         :param filename: Name of the file where to store the model.
         :type filename: `str`
@@ -364,7 +385,19 @@ class MXClassifier(Classifier):
         :type path: `str`
         :return: None
         """
-        raise NotImplementedError
+        import os
+
+        if path is None:
+            from art import DATA_PATH
+            full_path = os.path.join(DATA_PATH, filename)
+        else:
+            full_path = os.path.join(path, filename)
+        folder = os.path.split(full_path)[0]
+        if not os.path.exists(folder):
+            os.makedirs(folder)
+
+        self._model.save_parameters(full_path + '.params')
+        logger.info("Model parameters saved in path: %s.params.", full_path)
 
     def _get_layers(self):
         """

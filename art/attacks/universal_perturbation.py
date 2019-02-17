@@ -34,7 +34,7 @@ class UniversalPerturbation(Attack):
                  norm=np.inf, expectation=None):
         """
         :param classifier: A trained model.
-        :type classifier: :class:`Classifier`
+        :type classifier: :class:`.Classifier`
         :param attacker: Adversarial attack name. Default is 'deepfool'. Supported names: 'carlini', 'carlini_inf',
                          'deepfool', 'fgsm', 'bim', 'pgd', 'margin', 'ead', 'newtonfool', 'jsma', 'vat'.
         :type attacker: `str`
@@ -50,7 +50,7 @@ class UniversalPerturbation(Attack):
         :type norm: `int`
         :param expectation: An expectation over transformations to be applied when computing
                             classifier gradients and predictions.
-        :type expectation: :class:`ExpectationOverTransformations`
+        :type expectation: :class:`.ExpectationOverTransformations`
         """
         super(UniversalPerturbation, self).__init__(classifier)
         kwargs = {'attacker': attacker,
@@ -109,19 +109,16 @@ class UniversalPerturbation(Attack):
             for j, ex in enumerate(x[rnd_idx]):
                 xi = ex[None, ...]
 
-                f_xi = self._predict(xi + v, logits=True)
-                fk_i_hat = np.argmax(f_xi[0])
-                fk_hat = np.argmax(pred_y[rnd_idx][j])
+                current_label = np.argmax(self._predict(xi + v, logits=True)[0])
+                original_label = np.argmax(pred_y[rnd_idx][j])
 
-                if fk_i_hat == fk_hat:
+                if current_label == original_label:
                     # Compute adversarial perturbation
                     adv_xi = attacker.generate(xi + v)
-                    adv_f_xi = self._predict(adv_xi, logits=True)
-                    adv_fk_i_hat = np.argmax(adv_f_xi[0])
+                    new_label = np.argmax(self._predict(adv_xi, logits=True)[0])
 
                     # If the class has changed, update v
-                    if fk_i_hat != adv_fk_i_hat:
-                        # v += adv_xi - xi
+                    if current_label != new_label:
                         v = adv_xi - xi
 
                         # Project on L_p ball
@@ -130,7 +127,7 @@ class UniversalPerturbation(Attack):
 
             # Compute the error rate
             adv_x = x + v
-            adv_y = np.argmax(self._predict(adv_x, logits=False))
+            adv_y = np.argmax(self._predict(adv_x, logits=False), axis=1)
             fooling_rate = np.sum(pred_y_max != adv_y) / nb_instances
 
         self.fooling_rate = fooling_rate

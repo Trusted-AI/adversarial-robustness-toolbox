@@ -237,23 +237,23 @@ class TestTFDataGenerator(unittest.TestCase):
 
         def generator(batch_size=5):
             while True:
-                yield np.random.rand(batch_size, 5, 5, 1), np.random.randint(0, 10, size=10 * batch_size). \
+                yield np.random.rand(batch_size, 5, 5, 1), np.random.randint(0, 10, size=10 * batch_size).\
                     reshape(batch_size, -1)
 
-        sess = tf.Session()
-        dataset = tf.data.Dataset.from_generator(generator, (tf.float32, tf.int32))
-        iter_ = dataset.make_one_shot_iterator()
-        sess.run(tf.global_variables_initializer())
-        self.data_gen = TFDataGenerator(sess=sess, iterator=iter_, size=10, batch_size=5)
+        self.sess = tf.Session()
+        self.dataset = tf.data.Dataset.from_generator(generator, (tf.float32, tf.int32))
 
     def tearDown(self):
         import tensorflow as tf
 
-        self.data_gen.sess.close()
+        self.sess.close()
         tf.reset_default_graph()
 
-    def test_gen_interface(self):
-        x, y = self.data_gen.get_batch()
+    def test_init(self):
+        iter_ = self.dataset.make_initializable_iterator()
+        data_gen = TFDataGenerator(sess=self.sess, iterator=iter_, iterator_type='initializable',
+                                   iterator_arg={}, size=10, batch_size=5)
+        x, y = data_gen.get_batch()
 
         # Check return types
         self.assertTrue(isinstance(x, np.ndarray))
@@ -262,6 +262,43 @@ class TestTFDataGenerator(unittest.TestCase):
         # Check shapes
         self.assertTrue(x.shape == (5, 5, 5, 1))
         self.assertTrue(y.shape == (5, 10))
+
+    def test_reinit(self):
+        import tensorflow as tf
+
+        iter_ = tf.data.Iterator.from_structure(self.dataset.output_types, self.dataset.output_shapes)
+        init_op = iter_.make_initializer(self.dataset)
+        data_gen = TFDataGenerator(sess=self.sess, iterator=iter_, iterator_type='reinitializable',
+                                   iterator_arg=init_op, size=10, batch_size=5)
+        x, y = data_gen.get_batch()
+
+        # Check return types
+        self.assertTrue(isinstance(x, np.ndarray))
+        self.assertTrue(isinstance(y, np.ndarray))
+
+        # Check shapes
+        self.assertTrue(x.shape == (5, 5, 5, 1))
+        self.assertTrue(y.shape == (5, 10))
+
+    def test_feedable(self):
+        import tensorflow as tf
+
+        handle = tf.placeholder(tf.string, shape=[])
+        iter_ = tf.data.Iterator.from_string_handle(handle, self.dataset.output_types, self.dataset.output_shapes)
+        feed_iterator = self.dataset.make_initializable_iterator()
+        feed_handle = self.sess.run(feed_iterator.string_handle())
+        data_gen = TFDataGenerator(sess=self.sess, iterator=iter_, iterator_type='feedable',
+                                   iterator_arg=(feed_iterator, {handle: feed_handle}), size=10, batch_size=5)
+        x, y = data_gen.get_batch()
+
+        # Check return types
+        self.assertTrue(isinstance(x, np.ndarray))
+        self.assertTrue(isinstance(y, np.ndarray))
+
+        # Check shapes
+        self.assertTrue(x.shape == (5, 5, 5, 1))
+        self.assertTrue(y.shape == (5, 10))
+
 
 if __name__ == '__main__':
     unittest.main()

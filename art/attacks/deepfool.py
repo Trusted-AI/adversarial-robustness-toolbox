@@ -21,7 +21,7 @@ class DeepFool(Attack):
         Create a DeepFool attack instance.
 
         :param classifier: A trained model.
-        :type classifier: :class:`Classifier`
+        :type classifier: :class:`.Classifier`
         :param max_iter: The maximum number of iterations.
         :type max_iter: `int`
         :param epsilon: Overshoot parameter.
@@ -33,7 +33,7 @@ class DeepFool(Attack):
         :type batch_size: `int`
         :param expectation: An expectation over transformations to be applied when computing
                             classifier gradients and predictions.
-        :type expectation: :class:`ExpectationOverTransformations`
+        :type expectation: :class:`.ExpectationOverTransformations`
         """
         super(DeepFool, self).__init__(classifier=classifier, expectation=expectation)
         params = {'max_iter': max_iter, 'epsilon': epsilon, 'nb_grads': nb_grads, 'batch_size': batch_size}
@@ -56,7 +56,7 @@ class DeepFool(Attack):
         :type batch_size: `int`
         :param expectation: An expectation over transformations to be applied when computing
                             classifier gradients and predictions.
-        :type expectation: :class:`ExpectationOverTransformations`
+        :type expectation: :class:`.ExpectationOverTransformations`
         :return: An array holding the adversarial examples.
         :rtype: `np.ndarray`
         """
@@ -70,7 +70,6 @@ class DeepFool(Attack):
         if use_grads_subset:
             # TODO compute set of unique labels per batch
             grad_labels = np.argsort(-preds, axis=1)[:, :self.nb_grads]
-            # print(grad_labels)
             labels_set = np.unique(grad_labels)
         else:
             labels_set = np.arange(self.classifier.nb_classes)
@@ -160,13 +159,16 @@ class DeepFool(Attack):
         :type batch_size: `int`
         :param expectation: An expectation over transformations to be applied when computing
                             classifier gradients and predictions.
-        :type expectation: :class:`ExpectationOverTransformations`
+        :type expectation: :class:`.ExpectationOverTransformations`
         """
         # Save attack-specific parameters
         super(DeepFool, self).set_params(**kwargs)
 
         if not isinstance(self.max_iter, (int, np.int)) or self.max_iter <= 0:
             raise ValueError("The number of iterations must be a positive integer.")
+
+        if not isinstance(self.nb_grads, (int, np.int)) or self.nb_grads <= 0:
+            raise ValueError("The number of class gradients to compute must be a positive integer.")
 
         if self.epsilon < 0:
             raise ValueError("The overshoot parameter must not be negative.")

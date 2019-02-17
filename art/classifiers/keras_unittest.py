@@ -43,7 +43,7 @@ class TestKerasClassifier(unittest.TestCase):
         model.compile(loss=keras.losses.categorical_crossentropy, optimizer=keras.optimizers.Adadelta(),
                       metrics=['accuracy'])
 
-        model.fit(x_train, y_train, batch_size=BATCH_SIZE, epochs=1)
+        model.fit(x_train, y_train, batch_size=BATCH_SIZE, epochs=3)
         cls.model_mnist = model
 
         import requests
@@ -164,6 +164,24 @@ class TestKerasClassifier(unittest.TestCase):
 
         self.assertTrue(acc2 >= .8 * acc)
 
+    def test_fit_kwargs(self):
+        from keras.callbacks import LearningRateScheduler
+
+        def get_lr(_):
+            return 0.01
+
+        # Test a valid callback
+        classifier = KerasClassifier((0, 1), self.model_mnist, use_logits=False)
+        kwargs = {'callbacks': [LearningRateScheduler(get_lr)]}
+        classifier.fit(self.mnist[0][0], self.mnist[0][1], batch_size=BATCH_SIZE, nb_epochs=1, **kwargs)
+
+        # Test failure for invalid parameters
+        kwargs = {'epochs': 5}
+        with self.assertRaises(TypeError) as context:
+            classifier.fit(self.mnist[0][0], self.mnist[0][1], batch_size=BATCH_SIZE, nb_epochs=1, **kwargs)
+
+        self.assertTrue('multiple values for keyword argument' in str(context.exception))
+
     def test_shapes(self):
         self._test_shapes(custom_activation=True)
         self._test_shapes(custom_activation=False)
@@ -272,6 +290,16 @@ class TestKerasClassifier(unittest.TestCase):
 
         label = decode_predictions(classifier.predict(image))[0][0]
         self.assertEqual(label[1], 'Weimaraner')
+
+    def test_learning_phase(self):
+        classifier = KerasClassifier((0, 1), self.model_mnist, use_logits=False)
+
+        self.assertFalse(hasattr(classifier, '_learning_phase'))
+        classifier.set_learning_phase(False)
+        self.assertFalse(classifier.learning_phase)
+        classifier.set_learning_phase(True)
+        self.assertTrue(classifier.learning_phase)
+        self.assertTrue(hasattr(classifier, '_learning_phase'))
 
     def test_save(self):
         import os

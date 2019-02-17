@@ -21,7 +21,7 @@ class VirtualAdversarialMethod(Attack):
         Create a VirtualAdversarialMethod instance.
 
         :param classifier: A trained model.
-        :type classifier: :class:`Classifier`
+        :type classifier: :class:`.Classifier`
         :param eps: Attack step (max input variation).
         :type eps: `float`
         :param finite_diff: The finite difference parameter.
@@ -32,7 +32,7 @@ class VirtualAdversarialMethod(Attack):
         :type batch_size: `int`
         :param expectation: An expectation over transformations to be applied when computing
                             classifier gradients and predictions.
-        :type expectation: :class:`ExpectationOverTransformations`
+        :type expectation: :class:`.ExpectationOverTransformations`
         """
         super(VirtualAdversarialMethod, self).__init__(classifier)
         kwargs = {'finite_diff': finite_diff,
@@ -61,7 +61,6 @@ class VirtualAdversarialMethod(Attack):
         assert self.set_params(**kwargs)
         clip_min, clip_max = self.classifier.clip_values
         x_adv = np.copy(x)
-        dims = list(x.shape[1:])
         preds = self._predict(x_adv, logits=False)
 
         # Pick a small scalar to avoid division by 0

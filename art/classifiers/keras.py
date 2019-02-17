@@ -196,15 +196,14 @@ class KerasClassifier(Classifier):
         :return: Array of predictions of shape `(nb_inputs, self.nb_classes)`.
         :rtype: `np.ndarray`
         """
-        import keras.backend as k
-        k.set_learning_phase(0)
+        from art import NUMPY_DTYPE
 
         # Apply defences
         x_ = self._apply_processing(x)
         x_ = self._apply_defences_predict(x_)
 
         # Run predictions with batching
-        preds = np.zeros((x_.shape[0], self.nb_classes), dtype=np.float32)
+        preds = np.zeros((x_.shape[0], self.nb_classes), dtype=NUMPY_DTYPE)
         for b in range(int(np.ceil(x_.shape[0] / float(batch_size)))):
             begin, end = b * batch_size, min((b + 1) * batch_size, x_.shape[0])
             preds[begin:end] = self._preds([x_[begin:end]])[0]
@@ -215,7 +214,7 @@ class KerasClassifier(Classifier):
 
         return preds
 
-    def fit(self, x, y, batch_size=128, nb_epochs=20):
+    def fit(self, x, y, batch_size=128, nb_epochs=20, **kwargs):
         """
         Fit the classifier on the training set `(x, y)`.
 
@@ -225,47 +224,49 @@ class KerasClassifier(Classifier):
         :type y: `np.ndarray`
         :param batch_size: Size of batches.
         :type batch_size: `int`
-        :param nb_epochs: Number of epochs to use for trainings.
+        :param nb_epochs: Number of epochs to use for training.
         :type nb_epochs: `int`
+        :param kwargs: Dictionary of framework-specific arguments. These should be parameters supported by the
+               `fit_generator` function in Keras and will be passed to this function as such. Including the number of
+               epochs or the number of steps per epoch as part of this argument will result in as error.
+        :type kwargs: `dict`
         :return: `None`
         """
-        import keras.backend as k
-        k.set_learning_phase(1)
-
         # Apply preprocessing and defences
         x_ = self._apply_processing(x)
         x_, y_ = self._apply_defences_fit(x_, y)
 
         gen = generator_fit(x_, y_, batch_size)
-        self._model.fit_generator(gen, steps_per_epoch=x_.shape[0] / batch_size, epochs=nb_epochs)
+        self._model.fit_generator(gen, steps_per_epoch=x_.shape[0] / batch_size, epochs=nb_epochs, **kwargs)
 
-    def fit_generator(self, generator, nb_epochs=20):
+    def fit_generator(self, generator, nb_epochs=20, **kwargs):
         """
         Fit the classifier using the generator that yields batches as specified.
 
         :param generator: Batch generator providing `(x, y)` for each epoch. If the generator can be used for native
                           training in Keras, it will.
         :type generator: `DataGenerator`
-        :param nb_epochs: Number of epochs to use for trainings.
+        :param nb_epochs: Number of epochs to use for training.
         :type nb_epochs: `int`
+        :param kwargs: Dictionary of framework-specific arguments. These should be parameters supported by the
+               `fit_generator` function in Keras and will be passed to this function as such. Including the number of
+               epochs as part of this argument will result in as error.
+        :type kwargs: `dict`
         :return: `None`
         """
-        import keras.backend as k
         from art.data_generators import KerasDataGenerator
-
-        k.set_learning_phase(1)
 
         # Try to use the generator as a Keras native generator, otherwise use it through the `DataGenerator` interface
         # TODO Testing for preprocessing defenses is currently hardcoded; this should be improved (add property)
         if isinstance(generator, KerasDataGenerator) and \
                 not (hasattr(self, 'label_smooth') or hasattr(self, 'feature_squeeze')):
             try:
-                self._model.fit_generator(generator.generator, epochs=nb_epochs)
+                self._model.fit_generator(generator.generator, epochs=nb_epochs, **kwargs)
             except ValueError:
                 logger.info('Unable to use data generator as Keras generator. Now treating as framework-independent.')
-                super(KerasClassifier, self).fit_generator(generator, nb_epochs=nb_epochs)
+                super(KerasClassifier, self).fit_generator(generator, nb_epochs=nb_epochs, **kwargs)
         else:
-            super(KerasClassifier, self).fit_generator(generator, nb_epochs=nb_epochs)
+            super(KerasClassifier, self).fit_generator(generator, nb_epochs=nb_epochs, **kwargs)
 
     @property
     def layer_names(self):
@@ -282,7 +283,7 @@ class KerasClassifier(Classifier):
         """
         return self._layer_names
 
-    def get_activations(self, x, layer):
+    def get_activations(self, x, layer, batch_size=128):
         """
         Return the output of the specified layer for input `x`. `layer` is specified by layer index (between 0 and
         `nb_layers - 1`) or by name. The number of layers can be determined by counting the results returned by
@@ -292,11 +293,13 @@ class KerasClassifier(Classifier):
         :type x: `np.ndarray`
         :param layer: Layer for computing the activations
         :type layer: `int` or `str`
+        :param batch_size: Size of batches.
+        :type batch_size: `int`
         :return: The output of `layer`, where the first dimension is the batch size corresponding to `x`.
         :rtype: `np.ndarray`
         """
         import keras.backend as k
-        k.set_learning_phase(0)
+        from art import NUMPY_DTYPE
 
         if isinstance(layer, six.string_types):
             if layer not in self._layer_names:
@@ -321,11 +324,19 @@ class KerasClassifier(Classifier):
         x_ = self._apply_processing(x_)
         x_ = self._apply_defences_predict(x_)
 
-        return output_func([x_])[0]
+        # Determine shape of expected output and prepare array
+        output_shape = output_func([x_[0][None, ...]])[0].shape
+        activations = np.zeros((x_.shape[0],) + output_shape[1:], dtype=NUMPY_DTYPE)
+
+        # Get activations with batching
+        for b in range(int(np.ceil(x_.shape[0] / float(batch_size)))):
+            begin, end = b * batch_size, min((b + 1) * batch_size, x_.shape[0])
+            activations[begin:end] = output_func([x_[begin:end]])[0]
+
+        return activations
 
     def _init_class_grads(self, label=None, logits=False):
         import keras.backend as k
-        k.set_learning_phase(0)
 
         if len(self._output.shape) == 2:
             nb_outputs = self._output.shape[1]
@@ -391,7 +402,11 @@ class KerasClassifier(Classifier):
         :param train: True to set the learning phase to training, False to set it to prediction.
         :type train: `bool`
         """
-        raise NotImplementedError
+        import keras.backend as k
+
+        if isinstance(train, bool):
+            self._learning_phase = train
+            k.set_learning_phase(int(train))
 
     def save(self, filename, path=None):
         """

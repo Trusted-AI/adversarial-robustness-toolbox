@@ -25,14 +25,14 @@ class ElasticNet(Attack):
         Create an ElasticNet attack instance.
 
         :param classifier: A trained model.
-        :type classifier: :class:`Classifier`
+        :type classifier: :class:`.Classifier`
         :param confidence: Confidence of adversarial examples: a higher value produces examples that are farther
-        away, from the original input, but classified with higher confidence as the target class.
+               away, from the original input, but classified with higher confidence as the target class.
         :type confidence: `float`
         :param targeted: Should the attack target one specific class.
         :type targeted: `bool`
         :param learning_rate: The initial learning rate for the attack algorithm. Smaller values produce better
-        results but are slower to converge.
+               results but are slower to converge.
         :type learning_rate: `float`
         :param binary_search_steps: Number of times to adjust constant with binary search (positive value).
         :type binary_search_steps: `int`
@@ -41,8 +41,8 @@ class ElasticNet(Attack):
         :param beta: Hyperparameter trading off L2 minimization for L1 minimization.
         :type beta: `float`
         :param initial_const: The initial trade-off constant `c` to use to tune the relative importance of distance
-        and confidence. If `binary_search_steps` is large, the initial constant is not important, as discussed in
-        Carlini and Wagner (2016).
+               and confidence. If `binary_search_steps` is large, the initial constant is not important, as discussed in
+               Carlini and Wagner (2016).
         :type initial_const: `float`
         :param batch_size: Internal size of batches on which adversarial samples are generated.
         :type batch_size: `int`
@@ -50,7 +50,7 @@ class ElasticNet(Attack):
         :type decision_rule: `string`
         :param expectation: An expectation over transformations to be applied when computing
                             classifier gradients and predictions.
-        :type expectation: :class:`ExpectationOverTransformations`
+        :type expectation: :class:`.ExpectationOverTransformations`
         """
         super(ElasticNet, self).__init__(classifier)
 
@@ -85,7 +85,7 @@ class ElasticNet(Attack):
 
         return np.argmax(z, axis=1), l1dist, l2dist, endist
 
-    def _loss_gradient(self, target, x, x_adv, c):
+    def _gradient_of_loss(self, target, x, x_adv, c):
         """
         Compute the gradient of the loss function.
 
@@ -148,7 +148,7 @@ class ElasticNet(Attack):
         :param x: An array with the original inputs to be attacked.
         :type x: `np.ndarray`
         :param y: If `self.targeted` is true, then `y` represents the target labels. Otherwise, the targets are the
-        original class labels.
+                  original class labels.
         :type y: `np.ndarray`
         :return: An array holding the adversarial examples.
         :rtype: `np.ndarray`
@@ -303,7 +303,7 @@ class ElasticNet(Attack):
             lr = self._decay_learning_rate(global_step=it, end_learning_rate=0, decay_steps=self.max_iter)
 
             # Compute adversarial examples
-            grad = self._loss_gradient(target=y_batch, x=x_batch, x_adv=y_adv, c=c)
+            grad = self._gradient_of_loss(target=y_batch, x=x_batch, x_adv=y_adv, c=c)
             x_adv_next = self._shrinkage_threshold(y_adv - lr * grad, x_batch, self.beta)
             y_adv = x_adv_next + (1.0 * it / (it + 3)) * (x_adv_next - x_adv)
             x_adv = x_adv_next
@@ -354,15 +354,16 @@ class ElasticNet(Attack):
         return result
 
     def set_params(self, **kwargs):
-        """Take in a dictionary of parameters and applies attack-specific checks before saving them as attributes.
+        """
+        Take in a dictionary of parameters and applies attack-specific checks before saving them as attributes.
 
         :param confidence: Confidence of adversarial examples: a higher value produces examples that are farther
-        away, from the original input, but classified with higher confidence as the target class.
+               away, from the original input, but classified with higher confidence as the target class.
         :type confidence: `float`
         :param targeted: Should the attack target one specific class.
         :type targeted: `bool`
         :param learning_rate: The initial learning rate for the attack algorithm. Smaller values produce better
-        results but are slower to converge.
+               results but are slower to converge.
         :type learning_rate: `float`
         :param binary_search_steps: Number of times to adjust constant with binary search (positive value).
         :type binary_search_steps: `int`
@@ -371,8 +372,8 @@ class ElasticNet(Attack):
         :param beta: Hyperparameter trading off L2 minimization for L1 minimization.
         :type beta: `float`
         :param initial_const: The initial trade-off constant `c` to use to tune the relative importance of distance
-        and confidence. If `binary_search_steps` is large, the initial constant is not important, as discussed in
-        Carlini and Wagner (2016).
+               and confidence. If `binary_search_steps` is large, the initial constant is not important, as discussed in
+               Carlini and Wagner (2016).
         :type initial_const: `float`
         :param batch_size: Internal size of batches on which adversarial samples are generated.
         :type batch_size: `int`

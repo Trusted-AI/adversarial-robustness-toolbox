@@ -150,6 +150,30 @@ class TestMXClassifier(unittest.TestCase):
     #     self.assertTrue(self.classifier.get_activations(x_test, 0).shape == (NB_TEST, 6, 24, 24))
     #     self.assertTrue(self.classifier.get_activations(x_test, 4).shape == (NB_TEST, 784))
 
+    def test_set_learning(self):
+        classifier = self.classifier
+
+        self.assertFalse(hasattr(classifier, '_learning_phase'))
+        classifier.set_learning_phase(False)
+        self.assertFalse(classifier.learning_phase)
+        classifier.set_learning_phase(True)
+        self.assertTrue(classifier.learning_phase)
+        self.assertTrue(hasattr(classifier, '_learning_phase'))
+
+    def test_save(self):
+        import tempfile
+        import os
+
+        classifier = self.classifier
+        t_file = tempfile.NamedTemporaryFile()
+        full_path = t_file.name
+        t_file.close()
+        base_name = os.path.basename(full_path)
+        dir_name = os.path.dirname(full_path)
+
+        classifier.save(base_name, path=dir_name)
+        self.assertTrue(os.path.exists(full_path + ".params"))
+        os.remove(full_path + '.params')
 
 if __name__ == '__main__':
     unittest.main()

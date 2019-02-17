@@ -61,7 +61,7 @@ class Classifier(ABC):
         raise NotImplementedError
 
     @abc.abstractmethod
-    def fit(self, x, y, batch_size=128, nb_epochs=20):
+    def fit(self, x, y, batch_size=128, nb_epochs=20, **kwargs):
         """
         Fit the classifier on the training set `(x, y)`.
 
@@ -71,21 +71,25 @@ class Classifier(ABC):
         :type y: `np.ndarray`
         :param batch_size: Size of batches.
         :type batch_size: `int`
-        :param nb_epochs: Number of epochs to use for trainings.
+        :param nb_epochs: Number of epochs to use for training.
         :type nb_epochs: `int`
+        :param kwargs: Dictionary of framework-specific arguments.
+        :type kwargs: `dict`
         :return: `None`
         """
         raise NotImplementedError
 
-    def fit_generator(self, generator, nb_epochs=20):
+    def fit_generator(self, generator, nb_epochs=20, **kwargs):
         """
         Fit the classifier using the generator `gen` that yields batches as specified. Framework implementations can
         provide framework-specific versions of this function to speed-up computation.
 
         :param generator: Batch generator providing `(x, y)` for each epoch.
         :type generator: `DataGenerator`
-        :param nb_epochs: Number of epochs to use for trainings.
+        :param nb_epochs: Number of epochs to use for training.
         :type nb_epochs: `int`
+        :param kwargs: Dictionary of framework-specific arguments.
+        :type kwargs: `dict`
         :return: `None`
         """
         from art.data_generators import DataGenerator
@@ -102,7 +106,7 @@ class Classifier(ABC):
             x, y = self._apply_defences_fit(x, y)
 
             # Fit for current batch
-            self.fit(x, y, nb_epochs=1, batch_size=len(x))
+            self.fit(x, y, nb_epochs=1, batch_size=len(x), **kwargs)
 
     @property
     def nb_classes(self):
@@ -139,6 +143,20 @@ class Classifier(ABC):
         :rtype: `int`
         """
         return self._channel_index
+
+    @property
+    def learning_phase(self):
+        """
+        Return the learning phase set by the user for the current classifier. Possible values are `True` for training,
+        `False` for prediction and `None` if it has not been set through the library. In the latter case, the library
+        does not do any explicit learning phase manipulation and the current value of the backend framework is used.
+        If a value has been set by the user for this property, it will impact all following computations for
+        model fitting, prediction and gradients.
+
+        :return: Value of the learning phase.
+        :rtype: `bool` or `None`
+        """
+        return self._learning_phase if hasattr(self, '_learning_phase') else None
 
     @abc.abstractmethod
     def class_gradient(self, x, label=None, logits=False):
@@ -191,7 +209,7 @@ class Classifier(ABC):
         raise NotImplementedError
 
     @abc.abstractmethod
-    def get_activations(self, x, layer):
+    def get_activations(self, x, layer, batch_size):
         """
         Return the output of the specified layer for input `x`. `layer` is specified by layer index (between 0 and
         `nb_layers - 1`) or by name. The number of layers can be determined by counting the results returned by
@@ -201,6 +219,8 @@ class Classifier(ABC):
         :type x: `np.ndarray`
         :param layer: Layer for computing the activations
         :type layer: `int` or `str`
+        :param batch_size: Size of batches.
+        :type batch_size: `int`
         :return: The output of `layer`, where the first dimension is the batch size corresponding to `x`.
         :rtype: `np.ndarray`
         """

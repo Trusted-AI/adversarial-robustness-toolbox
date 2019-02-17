@@ -61,6 +61,7 @@ class TFClassifier(Classifier):
         self._train = train
         self._loss = loss
         self._learning = learning
+        self._feed_dict = {}
 
         # Assign session
         if sess is None:
@@ -105,8 +106,7 @@ class TFClassifier(Classifier):
 
             # Create feed_dict
             fd = {self._input_ph: x_[begin:end]}
-            if self._learning is not None:
-                fd[self._learning] = False
+            fd.update(self._feed_dict)
 
             # Run prediction
             if logits:
@@ -116,7 +116,7 @@ class TFClassifier(Classifier):
 
         return results
 
-    def fit(self, x, y, batch_size=128, nb_epochs=10):
+    def fit(self, x, y, batch_size=128, nb_epochs=10, **kwargs):
         """
         Fit the classifier on the training set `(x, y)`.
 
@@ -126,8 +126,11 @@ class TFClassifier(Classifier):
         :type y: `np.ndarray`
         :param batch_size: Size of batches.
         :type batch_size: `int`
-        :param nb_epochs: Number of epochs to use for trainings.
+        :param nb_epochs: Number of epochs to use for training.
         :type nb_epochs: `int`
+        :param kwargs: Dictionary of framework-specific arguments. This parameter is not currently supported for
+               TensorFlow and providing it takes no effect.
+        :type kwargs: `dict`
         :return: `None`
         """
         # Check if train and output_ph available
@@ -151,26 +154,44 @@ class TFClassifier(Classifier):
                 i_batch = x_[ind[m * batch_size:(m + 1) * batch_size]]
                 o_batch = y_[ind[m * batch_size:(m + 1) * batch_size]]
 
-                # Run train step
-                if self._learning is None:
-                    self._sess.run(self._train, feed_dict={self._input_ph: i_batch, self._output_ph: o_batch})
-                else:
-                    self._sess.run(self._train, feed_dict={self._input_ph: i_batch, self._output_ph: o_batch,
-                                                           self._learning: True})
+                # Create feed_dict
+                fd = {self._input_ph: i_batch, self._output_ph: o_batch}
+                fd.update(self._feed_dict)
 
-    def fit_generator(self, generator, nb_epochs=20):
+                # Run train step
+                self._sess.run(self._train, feed_dict=fd)
+
+    def fit_generator(self, generator, nb_epochs=20, **kwargs):
         """
         Fit the classifier using the generator that yields batches as specified.
 
         :param generator: Batch generator providing `(x, y)` for each epoch. If the generator can be used for native
                           training in TensorFlow, it will.
         :type generator: `DataGenerator`
-        :param nb_epochs: Number of epochs to use for trainings.
+        :param nb_epochs: Number of epochs to use for training.
         :type nb_epochs: `int`
+        :param kwargs: Dictionary of framework-specific arguments. This parameter is not currently supported for
+               TensorFlow and providing it takes no effect.
+        :type kwargs: `dict`
         :return: `None`
         """
-        # TODO Implement TF-specific version
-        super(TFClassifier, self).fit_generator(generator, nb_epochs=nb_epochs)
+        from art.data_generators import TFDataGenerator
+
+        # Train directly in Tensorflow
+        if isinstance(generator, TFDataGenerator) and not (hasattr(
+                self, 'label_smooth') or hasattr(self, 'feature_squeeze')):
+            for _ in range(nb_epochs):
+                for _ in range(int(generator.size / generator.batch_size)):
+                    i_batch, o_batch = generator.get_batch()
+
+                    # Create feed_dict
+                    fd = {self._input_ph: i_batch, self._output_ph: o_batch}
+                    fd.update(self._feed_dict)
+
+                    # Run train step
+                    self._sess.run(self._train, feed_dict=fd)
+        else:
+            super(TFClassifier, self).fit_generator(generator, nb_epochs=nb_epochs, **kwargs)
 
     def class_gradient(self, x, label=None, logits=False):
         """
@@ -200,13 +221,17 @@ class TFClassifier(Classifier):
 
         x_ = self._apply_processing(x)
 
+        # Create feed_dict
+        fd = {self._input_ph: x_}
+        fd.update(self._feed_dict)
+
         # Compute the gradient and return
         if label is None:
             # Compute the gradients w.r.t. all classes
             if logits:
-                grads = self._sess.run(self._logit_class_grads, feed_dict={self._input_ph: x_})
+                grads = self._sess.run(self._logit_class_grads, feed_dict=fd)
             else:
-                grads = self._sess.run(self._class_grads, feed_dict={self._input_ph: x_})
+                grads = self._sess.run(self._class_grads, feed_dict=fd)
 
             grads = np.swapaxes(np.array(grads), 0, 1)
             grads = self._apply_processing_gradient(grads)
@@ -214,9 +239,9 @@ class TFClassifier(Classifier):
         elif isinstance(label, (int, np.integer)):
             # Compute the gradients only w.r.t. the provided label
             if logits:
-                grads = self._sess.run(self._logit_class_grads[label], feed_dict={self._input_ph: x_})
+                grads = self._sess.run(self._logit_class_grads[label], feed_dict=fd)
             else:
-                grads = self._sess.run(self._class_grads[label], feed_dict={self._input_ph: x_})
+                grads = self._sess.run(self._class_grads[label], feed_dict=fd)
 
             grads = grads[None, ...]
             grads = np.swapaxes(np.array(grads), 0, 1)
@@ -226,11 +251,9 @@ class TFClassifier(Classifier):
             # For each sample, compute the gradients w.r.t. the indicated target class (possibly distinct)
             unique_label = list(np.unique(label))
             if logits:
-                grads = self._sess.run([self._logit_class_grads[l] for l in unique_label],
-                                       feed_dict={self._input_ph: x_})
+                grads = self._sess.run([self._logit_class_grads[l] for l in unique_label], feed_dict=fd)
             else:
-                grads = self._sess.run([self._class_grads[l] for l in unique_label],
-                                       feed_dict={self._input_ph: x_})
+                grads = self._sess.run([self._class_grads[l] for l in unique_label], feed_dict=fd)
 
             grads = np.swapaxes(np.array(grads), 0, 1)
             lst = [unique_label.index(i) for i in label]
@@ -257,8 +280,12 @@ class TFClassifier(Classifier):
         if not hasattr(self, '_loss_grads') or self._loss_grads is None or self._output_ph is None:
             raise ValueError("Need the loss function and the labels placeholder to compute the loss gradient.")
 
+        # Create feed_dict
+        fd = {self._input_ph: x_, self._output_ph: y}
+        fd.update(self._feed_dict)
+
         # Compute the gradient and return
-        grds = self._sess.run(self._loss_grads, feed_dict={self._input_ph: x_, self._output_ph: y})
+        grds = self._sess.run(self._loss_grads, feed_dict=fd)
         grds = self._apply_processing_gradient(grds)
         assert grds.shape == x_.shape
 
@@ -361,7 +388,7 @@ class TFClassifier(Classifier):
         """
         return self._layer_names
 
-    def get_activations(self, x, layer):
+    def get_activations(self, x, layer, batch_size=128):
         """
         Return the output of the specified layer for input `x`. `layer` is specified by layer index (between 0 and
         `nb_layers - 1`) or by name. The number of layers can be determined by counting the results returned by
@@ -371,6 +398,8 @@ class TFClassifier(Classifier):
         :type x: `np.ndarray`
         :param layer: Layer for computing the activations
         :type layer: `int` or `str`
+        :param batch_size: Size of batches.
+        :type batch_size: `int`
         :return: The output of `layer`, where the first dimension is the batch size corresponding to `x`.
         :rtype: `np.ndarray`
         """
@@ -391,20 +420,28 @@ class TFClassifier(Classifier):
         else:
             raise TypeError("Layer must be of type `str` or `int`. Received '%s'", layer)
 
-        # Get activations
         # Apply preprocessing and defences
         x_ = self._apply_processing(x)
         x_ = self._apply_defences_predict(x_)
 
-        # Create feed_dict
-        fd = {self._input_ph: x_}
-        if self._learning is not None:
-            fd[self._learning] = False
+        # Run prediction with batch processing
+        results = []
+        num_batch = int(np.ceil(len(x_) / float(batch_size)))
+        for m in range(num_batch):
+            # Batch indexes
+            begin, end = m * batch_size, min((m + 1) * batch_size, x_.shape[0])
 
-        # Run prediction
-        result = self._sess.run(layer_tensor, feed_dict=fd)
+            # Create feed_dict
+            fd = {self._input_ph: x_[begin:end]}
+            fd.update(self._feed_dict)
 
-        return result
+            # Run prediction for the current batch
+            layer_output = self._sess.run(layer_tensor, feed_dict=fd)
+            results.append(layer_output)
+
+        results = np.concatenate(results)
+
+        return results
 
     def set_learning_phase(self, train):
         """
@@ -413,7 +450,9 @@ class TFClassifier(Classifier):
         :param train: True to set the learning phase to training, False to set it to prediction.
         :type train: `bool`
         """
-        raise NotImplementedError
+        if isinstance(train, bool):
+            self._learning_phase = train
+            self._feed_dict[self._learning] = train
 
     def save(self, filename, path=None):
         """

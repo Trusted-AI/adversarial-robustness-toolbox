@@ -1,4 +1,4 @@
-# Adversarial Robustness Toolbox (ART v0.4.0)
+# Adversarial Robustness Toolbox (ART v0.5.0)
 [![Build Status](https://travis.ibm.com/nemesis/nemesis.svg?token=gRzs7KGtxQXDzQo1SRTx&branch=dev)](https://travis.ibm.com/nemesis/nemesis)
 
 This is a library dedicated to **adversarial machine learning**. Its purpose is to allow rapid crafting and analysis of attacks and defense methods for machine learning models. ART provides an implementation for many state-of-the-art methods for attacking and defending classifiers.
@@ -9,14 +9,16 @@ The library is still under development. Feedback, bug reports and extensions are
 
 The library contains implementations of the following **evasion attacks**:
 * DeepFool ([Moosavi-Dezfooli et al., 2015](https://arxiv.org/abs/1511.04599))
-* Fast Gradient Method ([Goodfellow et al., 2014](https://arxiv.org/abs/1412.6572))
-* Basic Iterative Method ([Kurakin et al., 2016](https://arxiv.org/abs/1607.02533))
-* Projected Gradient Descent ([Madry et al., 2017](https://arxiv.org/abs/1706.06083))
-* Jacobian Saliency Map ([Papernot et al., 2016](https://arxiv.org/abs/1511.07528))
-* Universal Perturbation ([Moosavi-Dezfooli et al., 2016](https://arxiv.org/abs/1610.08401))
-* Virtual Adversarial Method ([Miyato et al., 2015](https://arxiv.org/abs/1507.00677))
-* C&amp;W Attack ([Carlini and Wagner, 2016](https://arxiv.org/abs/1608.04644))
+* Fast gradient method ([Goodfellow et al., 2014](https://arxiv.org/abs/1412.6572))
+* Basic iterative method ([Kurakin et al., 2016](https://arxiv.org/abs/1607.02533))
+* Projected gradient descent ([Madry et al., 2017](https://arxiv.org/abs/1706.06083))
+* Jacobian saliency map ([Papernot et al., 2016](https://arxiv.org/abs/1511.07528))
+* Universal perturbation ([Moosavi-Dezfooli et al., 2016](https://arxiv.org/abs/1610.08401))
+* Virtual adversarial method ([Miyato et al., 2015](https://arxiv.org/abs/1507.00677))
+* C&amp;W `L_2` and `L_inf` attack ([Carlini and Wagner, 2016](https://arxiv.org/abs/1608.04644))
 * NewtonFool ([Jang et al., 2017](http://doi.acm.org/10.1145/3134600.3134635))
+* Elastic net attack ([Chen et al., 2017](https://arxiv.org/abs/1709.04114))
+* Spatial transformations attack ([Engstrom et al., 2017](https://arxiv.org/abs/1712.02779))
 
 The following **defence** methods are also supported:
 * Feature squeezing ([Xu et al., 2017](http://arxiv.org/abs/1704.01155))
@@ -79,7 +81,7 @@ The `notebooks` folder contains Jupyter notebooks with detailed walkthroughs of 
 If you use ART for research, please consider citing the following reference paper:
 ```
 @article{art2018,
-    title = {Adversarial Robustness Toolbox v0.4.0},
+    title = {Adversarial Robustness Toolbox v0.5.0},
     author = {Nicolae, Maria-Irina and Sinn, Mathieu and Tran, Minh~Ngoc and Rawat, Ambrish and Wistuba, Martin and Zantedeschi, Valentina and Baracaldo, Nathalie and Chen, Bryant and Ludwig, Heiko and Molloy, Ian and Edwards, Ben},
     journal = {CoRR},
     volume = {1807.01069}

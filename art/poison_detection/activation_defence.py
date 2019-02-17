@@ -27,13 +27,13 @@ class ActivationDefence(PoisonFilteringDefence):
 
     def __init__(self, classifier, x_train, y_train):
         """
-        Create an :class:ActivationDefence object with the provided classifier.
+        Create an :class:`.ActivationDefence` object with the provided classifier.
 
         :param classifier: model evaluated for poison
-        :type classifier: :class:`Classifier`
-        :param x_train: dataset used to train `classifier`
+        :type classifier: :class:`.Classifier`
+        :param x_train: dataset used to train the classifier.
         :type x_train: `np.ndarray`
-        :param y_train: labels used to train `classifier`
+        :param y_train: labels used to train the classifier.
         :type y_train: `np.ndarray`
         """
         super(ActivationDefence, self).__init__(classifier, x_train, y_train)
@@ -70,7 +70,7 @@ class ActivationDefence(PoisonFilteringDefence):
             self.activations_by_class = self._segment_by_class(activations, self.y_train)
 
         self.clusters_by_class, self.red_activations_by_class = self.cluster_activations()
-        report, self.assigned_clean_by_class = self.analyze_clusters()
+        _, self.assigned_clean_by_class = self.analyze_clusters()
 
         # Now check ground truth:
         self.is_clean_by_class = self._segment_by_class(is_clean, self.y_train)
@@ -256,7 +256,7 @@ class ActivationDefence(PoisonFilteringDefence):
 
     def _get_activations(self):
         """
-        Find activations from :class:`Classifier`
+        Find activations from :class:`.Classifier`.
         """
         logger.info('Getting activations')
 
