@@ -1,5 +1,8 @@
 import logging
 
+import functools
+import operator
+
 import numpy as np
 from scipy.stats import entropy
 
@@ -8,15 +11,13 @@ from art.utils import clip_and_round
 
 logger = logging.getLogger(__name__)
 
-class QueryEfficientBBGradientEstimation(ClassifierWrapper):
+class ZooGradientEstimation(ClassifierWrapper):
     """
-    Implementation of Query-Efficient Black-box Adversarial Examples
-    The attack approximates the gradient by maximizing the loss function
-    over samples drawn from random Gaussian noise around the input.
+    Implementation of ZOO: Zeroth Order Optimization based Black-box Attacks to Deep Neural Networks without Training Substitute Models.
 
-    https://arxiv.org/abs/1712.07113
+    https://arxiv.org/abs/1708.03999
     """
-    attack_params = ['num_basis', 'sigma', 'round_samples']
+    attack_params = ['num_batch', 'sigma', 'round_samples']
 
     def __init__(self, classifier, n, sigma, round_samples=0):
         """
@@ -24,15 +25,20 @@ class QueryEfficientBBGradientEstimation(ClassifierWrapper):
         :type classifier: `Classifier`
         :param n:  The number of samples to draw to approximate the gradient
         :type n: `int`
-        :param sigma: Scaling on the Gaussian noise N(0,1)
+        :param sigma: Size of the step to take +/-
         :type sigma: `float`
         :param round_samples: The resolution of the input domain to round the data to, e.g., 1.0, or 1/255. Set to 0 to disable.
         :type round_samples: `float`
         """
-        super(QueryEfficientBBGradientEstimation, self).__init__(classifier)
+        super(ZooGradientEstimation, self).__init__(classifier)
         self._predict = self.predict
         self.predict = self.__predict
-        self.set_params(num_basis=n, sigma=sigma, round_samples=round_samples)
+        s = functools.reduce(operator.mul, self.input_shape)
+        self.input_size = s
+        if n > s or n <= 0:
+            logger.warn("Number of batches larger than input size. Will limit batch size to [1,%d]" % s)
+        n = max(1, min(n, s))
+        self.set_params(num_batch=n, sigma=sigma, round_samples=round_samples)
 
     def _generate_samples(self, x, epsilon_map):
         """
@@ -60,7 +66,12 @@ class QueryEfficientBBGradientEstimation(ClassifierWrapper):
         :return: Array of gradients of the same shape as `x`.
         :rtype: `np.ndarray`
         """
-        epsilon_map = self.sigma*np.random.normal(size=([self.num_basis] + list(self.input_shape)))
+        # TODO Add a bias to the sampling, pass in self.p to choice
+        # TODO Implement gradient upsampling (e.g., [32 x 32 x 3] to [64 x 64 x 3])
+        epsilon_map = np.zeros((self.num_batch, self.input_size))
+        epsilon_map[np.arange(self.num_batch), np.random.choice(self.input_size, self.num_batch, replace=False)] = self.sigma
+        epsilon_map.reshape([self.num_basis] + list(self.input_shape))
+
         grads = []
         for i in range(len(x)):
             minus, plus = self._generate_samples(x[i:i+1], epsilon_map)

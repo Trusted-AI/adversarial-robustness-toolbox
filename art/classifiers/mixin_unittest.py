@@ -10,7 +10,7 @@ from keras.layers import Dense, Conv2D, MaxPooling2D, Dropout, Input, Flatten
 from keras.models import Sequential, Model
 
 from art.classifiers import KerasClassifier
-from art.classifiers import ClassifierMixin
+from art.classifiers import ClassifierWrapper
 from art.utils import load_mnist, master_seed
 
 logger = logging.getLogger('testLogger')
@@ -111,7 +111,7 @@ class TestMixinWKerasClassifier(unittest.TestCase):
         labels = np.argmax(self.mnist[1][1], axis=1)
         classifier = KerasClassifier((0, 1), self.model_mnist, use_logits=False, custom_activation=custom_activation)
 
-        classifier = ClassifierMixin(classifier)
+        classifier = ClassifierWrapper(classifier)
         print("Shape",classifier.input_shape)
         acc = np.sum(np.argmax(classifier.predict(self.mnist[1][0]), axis=1) == labels) / NB_TEST
         logger.info('Accuracy: %.2f%%', (acc * 100))
@@ -131,7 +131,7 @@ class TestMixinWKerasClassifier(unittest.TestCase):
         from art.data_generators import KerasDataGenerator
 
         labels = np.argmax(self.mnist[1][1], axis=1)
-        classifier = ClassifierMixin(KerasClassifier((0, 1), self.model_mnist, use_logits=False, custom_activation=custom_activation))
+        classifier = ClassifierWrapper(KerasClassifier((0, 1), self.model_mnist, use_logits=False, custom_activation=custom_activation))
         acc = np.sum(np.argmax(classifier.predict(self.mnist[1][0]), axis=1) == labels) / NB_TEST
         logger.info('Accuracy: %.2f%%', (acc * 100))
 
@@ -153,7 +153,7 @@ class TestMixinWKerasClassifier(unittest.TestCase):
 
         x_train, y_train = self.mnist[0]
         labels_test = np.argmax(self.mnist[1][1], axis=1)
-        classifier = ClassifierMixin(KerasClassifier((0, 1), self.model_mnist, use_logits=False, custom_activation=custom_activation))
+        classifier = ClassifierWrapper(KerasClassifier((0, 1), self.model_mnist, use_logits=False, custom_activation=custom_activation))
         acc = np.sum(np.argmax(classifier.predict(self.mnist[1][0]), axis=1) == labels_test) / NB_TEST
         logger.info('Accuracy: %.2f%%', (acc * 100))
 
@@ -174,7 +174,7 @@ class TestMixinWKerasClassifier(unittest.TestCase):
 
     def _test_shapes(self, custom_activation=False):
         x_test, y_test = self.mnist[1]
-        classifier = ClassifierMixin(KerasClassifier((0, 1), self.model_mnist, custom_activation=custom_activation))
+        classifier = ClassifierWrapper(KerasClassifier((0, 1), self.model_mnist, custom_activation=custom_activation))
 
         preds = classifier.predict(self.mnist[1][0])
         self.assertTrue(preds.shape == y_test.shape)
@@ -189,7 +189,7 @@ class TestMixinWKerasClassifier(unittest.TestCase):
 
     def test_class_gradient(self):
         (_, _), (x_test, _) = self.mnist
-        classifier = ClassifierMixin(KerasClassifier((0, 1), self.model_mnist))
+        classifier = ClassifierWrapper(KerasClassifier((0, 1), self.model_mnist))
 
         # Test all gradients label
         grads = classifier.class_gradient(x_test)
@@ -212,7 +212,7 @@ class TestMixinWKerasClassifier(unittest.TestCase):
 
     def test_loss_gradient(self):
         (_, _), (x_test, y_test) = self.mnist
-        classifier = ClassifierMixin(KerasClassifier((0, 1), self.model_mnist))
+        classifier = ClassifierWrapper(KerasClassifier((0, 1), self.model_mnist))
 
         # Test gradient
         grads = classifier.loss_gradient(x_test, y_test)
@@ -227,10 +227,10 @@ class TestMixinWKerasClassifier(unittest.TestCase):
     def _test_functional_model(self, custom_activation=True):
         # Need to update the functional_model code to produce a model with more than one input and output layers...
         m = self.functional_model()
-        keras_model = ClassifierMixin(KerasClassifier((0, 1), m, input_layer=1, output_layer=1, custom_activation=custom_activation))
+        keras_model = ClassifierWrapper(KerasClassifier((0, 1), m, input_layer=1, output_layer=1, custom_activation=custom_activation))
         self.assertTrue(keras_model._input.name, "input1")
         self.assertTrue(keras_model._output.name, "output1")
-        keras_model = ClassifierMixin(KerasClassifier((0, 1), m, input_layer=0, output_layer=0, custom_activation=custom_activation))
+        keras_model = ClassifierWrapper(KerasClassifier((0, 1), m, input_layer=0, output_layer=0, custom_activation=custom_activation))
         self.assertTrue(keras_model._input.name, "input0")
         self.assertTrue(keras_model._output.name, "output0")
 
@@ -243,7 +243,7 @@ class TestMixinWKerasClassifier(unittest.TestCase):
         (_, _), (x_test, _), _, _ = load_mnist()
         x_test = x_test[:NB_TEST]
 
-        classifier = ClassifierMixin(KerasClassifier((0, 1), model=self.model_mnist, custom_activation=custom_activation))
+        classifier = ClassifierWrapper(KerasClassifier((0, 1), model=self.model_mnist, custom_activation=custom_activation))
         self.assertEqual(len(classifier.layer_names), 5)
 
         layer_names = classifier.layer_names
@@ -268,7 +268,7 @@ class TestMixinWKerasClassifier(unittest.TestCase):
 
         keras.backend.set_learning_phase(0)
         model = ResNet50(weights='imagenet')
-        classifier = ClassifierMixin(KerasClassifier((0, 255), model, custom_activation=custom_activation))
+        classifier = ClassifierWrapper(KerasClassifier((0, 255), model, custom_activation=custom_activation))
 
         # Load image from file
         image = img_to_array(load_img(os.path.join(self.test_dir, 'test.jpg'), target_size=(224, 224)))
@@ -282,7 +282,7 @@ class TestMixinWKerasClassifier(unittest.TestCase):
 
         path = 'tmp'
         filename = 'model.h5'
-        classifier = ClassifierMixin(KerasClassifier((0, 1), model=self.model_mnist))
+        classifier = ClassifierWrapper(KerasClassifier((0, 1), model=self.model_mnist))
         classifier.save(filename, path=path)
         self.assertTrue(os.path.isfile(os.path.join(path, filename)))
 

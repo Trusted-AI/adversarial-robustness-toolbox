@@ -595,3 +595,19 @@ def get_verbose_print(verbose):
         return print
     else:
         return lambda *a, **k: None
+
+def clip_and_round(x, clip_values, round_samples):
+    """
+    Rounds the input to the correct level of granularity.
+    Useful to ensure data passed to classifier can be represented
+    in the correct domain, e.g., [0, 255] integers verses [0,1]
+    or [0, 255] floating points.
+
+    :param x: Sample input with shape as expected by the model.
+    :type x: `np.ndarray`
+    """
+    if round_samples == 0:
+        return x
+    x = np.clip(x, *clip_values)
+    x = np.around(x / round_samples) * round_samples
+    return x

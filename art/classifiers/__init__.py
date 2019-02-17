@@ -7,7 +7,7 @@ from art.classifiers.keras import KerasClassifier
 from art.classifiers.mxnet import MXClassifier
 from art.classifiers.tensorflow import TFClassifier
 from art.classifiers.ensemble import EnsembleClassifier
-from art.classifiers.mixin import ClassifierMixin
+from art.classifiers.wrapper import ClassifierWrapper
 
 # PyTorchClassifier class creation requires `torch` install; create class only if `torch` is present
 # Otherwise, silence `torch` import error until the user actually tries to use the class

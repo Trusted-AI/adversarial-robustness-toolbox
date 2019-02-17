@@ -1,16 +1,18 @@
 """
 Wrapper class for any classifier.
-Subclass of the ClassifierMixin can override the behavior of
+Subclass of the ClassifierWrapper can override the behavior of
 key functions, such as loss_gradient, to facilitate new attacks.
 """
 
-class ClassifierMixin(object):
+class ClassifierWrapper(object):
     """
     Wrapper class for any classifier instance
     """
+    attack_params = ['__classifier']
+
     def __init__(self, classifier):
         """
-        Initialize a `ClassifierMixin` object.
+        Initialize a `ClassifierWrapper` object.
 
         :param classifier: The Classifier we want to wrap the functionality for the purpose of an attack.
         """
@@ -28,7 +30,20 @@ class ClassifierMixin(object):
         A generic grab-bag for the classifier instance
         This makes the wrapped class look like a subclass
         """
-        if attr == '_ClassifierMixin__classifier':
+        if attr == '_ClassifierWrapper__classifier':
             object.__setattr__(self, attr, value)
         else:
-            setattr(self.__a, attr, value)
+            setattr(self.__classifier, attr, value)
+    
+    def set_params(self, **kwargs):
+        """
+        Take in a dictionary of parameters and apply attack-specific checks before saving them as attributes.
+
+        :param kwargs: a dictionary of attack-specific parameters
+        :type kwargs: `dict`
+        :return: `True` when parsing was successful
+        """
+        for key, value in kwargs.items():
+            if key in self.attack_params:
+                setattr(self, key, value)
+        return True
