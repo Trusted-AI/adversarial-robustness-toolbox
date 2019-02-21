@@ -11,31 +11,19 @@ from art.classifiers.classifier import Classifier
 logger = logging.getLogger(__name__)
 
 
-class PyTorchClassifier(Classifier):
+class DetectorClassifier(Classifier):
     """
-    This class implements a classifier with the PyTorch framework.
+    This class implements a Classifier extension that wraps a classifier and a detector.
+    More details in https://arxiv.org/abs/1705.07263
     """
-    def __init__(self, clip_values, model, loss, optimizer, input_shape, nb_classes, channel_index=1, defences=None,
-                 preprocessing=(0, 1)):
+    def __init__(self, classifier, detector, defences=None, preprocessing=(0, 1)):
         """
-        Initialization specifically for the PyTorch-based implementation.
+        Initialization for the DetectorClassifier.
 
-        :param clip_values: Tuple of the form `(min, max)` representing the minimum and maximum values allowed
-               for features.
-        :type clip_values: `tuple`
-        :param model: PyTorch model. The forward function of the model must return the logit output.
-        :type model: is instance of `torch.nn.Module`
-        :param loss: The loss function for which to compute gradients for training. The target label must be raw
-               categorical, i.e. not converted to one-hot encoding.
-        :type loss: `torch.nn.modules.loss._Loss`
-        :param optimizer: The optimizer used to train the classifier.
-        :type optimizer: `torch.optim.Optimizer`
-        :param input_shape: The shape of one input instance.
-        :type input_shape: `tuple`
-        :param nb_classes: The number of classes of the model.
-        :type nb_classes: `int`
-        :param channel_index: Index of the axis in data containing the color channels or features.
-        :type channel_index: `int`
+        :param classifier: A trained classifier.
+        :type classifier: :class:`.Classifier`
+        :param detector: A trained detector applied for the binary classification.
+        :type detector: `art.detection.detector.Detector`
         :param defences: Defences to be activated with the classifier.
         :type defences: `str` or `list(str)`
         :param preprocessing: Tuple of the form `(substractor, divider)` of floats or `np.ndarray` of values to be
@@ -43,28 +31,13 @@ class PyTorchClassifier(Classifier):
                be divided by the second one.
         :type preprocessing: `tuple`
         """
-        super(PyTorchClassifier, self).__init__(clip_values=clip_values, channel_index=channel_index, defences=defences,
-                                                preprocessing=preprocessing)
+        super(DetectorClassifier, self).__init__(clip_values=classifier.clip_values, preprocessing=preprocessing,
+                                                 channel_index=classifier.channel_index, defences=defences)
 
-        self._nb_classes = nb_classes
-        self._input_shape = input_shape
-        self._model = self._make_model_wrapper(model)
-        self._loss = loss
-        self._optimizer = optimizer
-
-        # Get the internal layers
-        self._layer_names = self._model.get_layers
-
-        # # Store the logit layer
-        # self._logit_layer = len(list(model.modules())) - 2 if use_logits else len(list(model.modules())) - 3
-
-        # Use GPU if possible
-        import torch
-        self._device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
-        self._model.to(self._device)
-
-    def _init_grads(self):
-        return -1
+        self.classifier = classifier
+        self.detector = detector
+        self._nb_classes = classifier.nb_classes
+        self._input_shape = classifier.input_shape
 
     def predict(self, x, logits=False, batch_size=128):
         """
@@ -119,37 +92,7 @@ class PyTorchClassifier(Classifier):
         :type kwargs: `dict`
         :return: `None`
         """
-        import torch
-
-        # Apply defences
-        x_ = self._apply_processing(x)
-        x_, y_ = self._apply_defences_fit(x_, y)
-        y_ = np.argmax(y_, axis=1)
-
-        num_batch = int(np.ceil(len(x_) / float(batch_size)))
-        ind = np.arange(len(x_))
-
-        # Start training
-        for _ in range(nb_epochs):
-            # Shuffle the examples
-            random.shuffle(ind)
-
-            # Train for one epoch
-            for m in range(num_batch):
-                i_batch = torch.from_numpy(x_[ind[m * batch_size:(m + 1) * batch_size]]).to(self._device)
-                o_batch = torch.from_numpy(y_[ind[m * batch_size:(m + 1) * batch_size]]).to(self._device)
-
-                # Cast to float
-                i_batch = i_batch.float()
-
-                # Zero the parameter gradients
-                self._optimizer.zero_grad()
-
-                # Actual training
-                model_outputs = self._model(i_batch)
-                loss = self._loss(model_outputs[-1], o_batch)
-                loss.backward()
-                self._optimizer.step()
+        raise NotImplementedError
 
     def fit_generator(self, generator, nb_epochs=20, **kwargs):
         """
@@ -164,35 +107,7 @@ class PyTorchClassifier(Classifier):
         :type kwargs: `dict`
         :return: `None`
         """
-        import torch
-        from art.data_generators import PyTorchDataGenerator
-
-        # Train directly in PyTorch
-        if isinstance(generator, PyTorchDataGenerator) and \
-                not (hasattr(self, 'label_smooth') or hasattr(self, 'feature_squeeze')):
-            for _ in range(nb_epochs):
-                for i_batch, o_batch in generator.data_loader:
-                    if isinstance(i_batch, np.ndarray):
-                        i_batch = torch.from_numpy(i_batch).to(self._device).float()
-                    else:
-                        i_batch = i_batch.to(self._device).float()
-
-                    if isinstance(o_batch, np.ndarray):
-                        o_batch = torch.argmax(torch.from_numpy(o_batch).to(self._device), dim=1)
-                    else:
-                        o_batch = torch.argmax(o_batch.to(self._device), dim=1)
-
-                    # Zero the parameter gradients
-                    self._optimizer.zero_grad()
-
-                    # Actual training
-                    model_outputs = self._model(i_batch)
-                    loss = self._loss(model_outputs[-1], o_batch)
-                    loss.backward()
-                    self._optimizer.step()
-        else:
-            # Fit a generic data generator through the API
-            super(PyTorchClassifier, self).fit_generator(generator, nb_epochs=nb_epochs)
+        raise NotImplementedError
 
     def class_gradient(self, x, label=None, logits=False):
         """
@@ -212,81 +127,7 @@ class PyTorchClassifier(Classifier):
                  `(batch_size, 1, input_shape)` when `label` parameter is specified.
         :rtype: `np.ndarray`
         """
-        import torch
-
-        if not ((label is None) or (isinstance(label, (int, np.integer)) and label in range(self._nb_classes))
-                or (isinstance(label, np.ndarray) and len(label.shape) == 1 and (label < self._nb_classes).all()
-                    and label.shape[0] == x.shape[0])):
-            raise ValueError('Label %s is out of range.' % label)
-
-        # Convert the inputs to Tensors
-        x_ = torch.from_numpy(self._apply_processing(x)).to(self._device)
-
-        # Compute gradient wrt what
-        layer_idx = self._init_grads()
-        if layer_idx < 0:
-            x_.requires_grad = True
-
-        # Compute the gradient and return
-        # Run prediction
-        model_outputs = self._model(x_)
-
-        # Set where to get gradient
-        if layer_idx >= 0:
-            input_grad = model_outputs[layer_idx]
-        else:
-            input_grad = x_
-
-        # Set where to get gradient from
-        (logit_output, output) = (model_outputs[-2], model_outputs[-1])
-        if logits:
-            preds = logit_output
-        else:
-            preds = output
-
-        # Compute the gradient
-        grads = []
-
-        def save_grad():
-            def hook(grad):
-                grads.append(grad.cpu().numpy().copy())
-                grad.data.zero_()
-
-            return hook
-
-        input_grad.register_hook(save_grad())
-
-        self._model.zero_grad()
-        if label is None:
-            for i in range(self.nb_classes):
-                torch.autograd.backward(preds[:, i], torch.Tensor([1.] * len(preds[:, 0])).to(self._device),
-                                        retain_graph=True)
-
-            grads = np.swapaxes(np.array(grads), 0, 1)
-            grads = self._apply_processing_gradient(grads)
-
-        elif isinstance(label, (int, np.integer)):
-            torch.autograd.backward(preds[:, label], torch.Tensor([1.] * len(preds[:, 0])).to(self._device),
-                                    retain_graph=True)
-
-            grads = np.swapaxes(np.array(grads), 0, 1)
-            grads = self._apply_processing_gradient(grads)
-
-        else:
-            unique_label = list(np.unique(label))
-            for i in unique_label:
-                torch.autograd.backward(preds[:, i], torch.Tensor([1.] * len(preds[:, 0])).to(self._device),
-                                        retain_graph=True)
-
-            grads = np.swapaxes(np.array(grads), 0, 1)
-            lst = [unique_label.index(i) for i in label]
-            grads = grads[np.arange(len(grads)), lst]
-
-            grads = grads[None, ...]
-            grads = np.swapaxes(np.array(grads), 0, 1)
-            grads = self._apply_processing_gradient(grads)
-
-        return grads
+        pass
 
     def loss_gradient(self, x, y):
         """
