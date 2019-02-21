@@ -52,7 +52,23 @@ class DetectorClassifier(Classifier):
         :return: Array of predictions of shape `(nb_inputs, self.nb_classes)`.
         :rtype: `np.ndarray`
         """
-        pass
+        # Apply defences
+        x_ = self._apply_processing(x)
+        x_ = self._apply_defences_predict(x_)
+
+        # Compute the prediction logits
+        classifier_logits = self.classifier.predict(x=x_, logits=True, batch_size=batch_size)
+        detector_logits = self.detector.predict(x=x_, logits=True, batch_size=batch_size)
+        detector_logits = (np.reshape(detector_logits, [-1]) + 1) * np.max(classifier_logits, axis=1)
+        detector_logits = np.reshape(detector_logits, [-1, 1])
+        combined_logits = np.concatenate([classifier_logits, detector_logits], axis=1)
+
+        if logits:
+            result = combined_logits
+        else:
+            result = np.exp(combined_logits) / np.sum(np.exp(combined_logits), axis=1)[:, None]
+
+        return result
 
     def fit(self, x, y, batch_size=128, nb_epochs=10, **kwargs):
         """
