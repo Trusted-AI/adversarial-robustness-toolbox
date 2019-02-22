@@ -1,10 +1,8 @@
 from __future__ import absolute_import, division, print_function, unicode_literals
 
 import logging
-import random
 
 import numpy as np
-import six
 
 from art.classifiers.classifier import Classifier
 
@@ -36,7 +34,7 @@ class DetectorClassifier(Classifier):
 
         self.classifier = classifier
         self.detector = detector
-        self._nb_classes = classifier.nb_classes
+        self._nb_classes = classifier.nb_classes + 1
         self._input_shape = classifier.input_shape
 
     def predict(self, x, logits=False, batch_size=128):
@@ -122,7 +120,37 @@ class DetectorClassifier(Classifier):
                  `(batch_size, 1, input_shape)` when `label` parameter is specified.
         :rtype: `np.ndarray`
         """
-        pass
+        if not ((label is None) or (isinstance(label, (int, np.integer)) and label in range(self._nb_classes))
+                or (isinstance(label, np.ndarray) and len(label.shape) == 1 and (label < self._nb_classes).all()
+                    and label.shape[0] == x.shape[0])):
+            raise ValueError('Label %s is out of range.' % label)
+
+        # Apply preprocessing
+        x_ = self._apply_processing(x)
+
+        # Compute the gradient and return
+        if logits:
+            if label is None:
+                classifier_grads = self.classifier.class_gradient(x=x_, label=None, logits=logits)
+                detector_grads = self.detector.class_gradient(x=x_, label=None, logits=logits)
+                detector_logits = (np.reshape(detector_logits, [-1]) + 1) * np.max(classifier_logits, axis=1)
+                detector_logits = np.reshape(detector_logits, [-1, 1])
+                combined_logits = np.concatenate([classifier_logits, detector_logits], axis=1)
+
+
+            elif isinstance(label, (int, np.integer)):
+
+            else:
+        else:
+            if label is None:
+
+            elif isinstance(label, (int, np.integer)):
+                
+            else:
+
+
+
+
 
     def loss_gradient(self, x, y):
         """
