@@ -131,14 +131,23 @@ class DetectorClassifier(Classifier):
         # Compute the gradient and return
         if logits:
             if label is None:
-                classifier_grads = self.classifier.class_gradient(x=x_, label=None, logits=logits)
-                detector_grads = self.detector.class_gradient(x=x_, label=None, logits=logits)
-                detector_logits = (np.reshape(detector_logits, [-1]) + 1) * np.max(classifier_logits, axis=1)
-                detector_logits = np.reshape(detector_logits, [-1, 1])
-                combined_logits = np.concatenate([classifier_logits, detector_logits], axis=1)
+                # First compute the classifier gradients
+                classifier_grads = self.classifier.class_gradient(x=x_, label=None, logits=True)
 
+                # Then compute the detector gradients
+                detector_grads = self.detector.class_gradient(x=x_, label=None, logits=True)
+
+                # Combine the gradients
+                classifier_logits = self.classifier.predict(x=x_, logits=True)
+                max_classifier_logits = np.max(classifier_logits, axis=1)
+                detector_grads = max_classifier_logits[:, None, None, None, None] * detector_grads
+                combined_grads = np.concatenate([classifier_grads, detector_grads], axis=1)
 
             elif isinstance(label, (int, np.integer)):
+
+
+
+
 
             else:
         else:
@@ -147,6 +156,10 @@ class DetectorClassifier(Classifier):
             elif isinstance(label, (int, np.integer)):
                 
             else:
+
+
+
+        return combined_grads
 
 
 
