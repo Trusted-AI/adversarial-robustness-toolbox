@@ -137,30 +137,72 @@ class DetectorClassifier(Classifier):
                 # Then compute the detector gradients
                 detector_grads = self.detector.class_gradient(x=x_, label=None, logits=True)
 
-                # Combine the gradients
+                # Chain the detector gradients
                 classifier_logits = self.classifier.predict(x=x_, logits=True)
                 max_classifier_logits = np.max(classifier_logits, axis=1)
                 detector_grads = max_classifier_logits[:, None, None, None, None] * detector_grads
+
+                # Combine the gradients
                 combined_grads = np.concatenate([classifier_grads, detector_grads], axis=1)
 
             elif isinstance(label, (int, np.integer)):
                 if label < self._nb_classes - 1:
+                    # Compute and return from the classifier gradients
                     combined_grads = self.classifier.class_gradient(x=x_, label=label, logits=True)
                 else:
+                    # Compute and return from the detector gradients
                     detector_grads = self.detector.class_gradient(x=x_, label=label, logits=True)
+
+                    # Chain the detector gradients
                     classifier_logits = self.classifier.predict(x=x_, logits=True)
                     max_classifier_logits = np.max(classifier_logits, axis=1)
                     combined_grads = max_classifier_logits[:, None, None, None, None] * detector_grads
-                    
-
-
-
-
-
-
-
 
             else:
+                # Compute indexes for classifier labels and detector labels
+                classifier_idx = np.where(label < self._nb_classes - 1)
+                detector_idx = np.where(label == self._nb_classes - 1)
+
+                # Initialize the combined gradients
+                combined_grads = np.zeros(shape=(x_.shape[0], 1, x_.shape[1], x_.shape[2], x_.shape[3]))
+
+                # First compute the classifier gradients
+                if len(classifier_idx) > 0:
+                    classifier_grads = self.classifier.class_gradient(x=x_[classifier_idx],
+                                                                      label=label[classifier_idx],
+                                                                      logits=True)
+
+                    # Reassign the combined gradients
+                    combined_grads[classifier_idx] = classifier_grads
+
+                # Then compute the detector gradients
+                if len(detector_idx) > 0:
+                    detector_grads = self.detector.class_gradient(x=x_[detector_idx],
+                                                                  label=label[detector_idx],
+                                                                  logits=True)
+
+                    # Chain the detector gradients
+                    classifier_logits = self.classifier.predict(x=x_[detector_idx], logits=True)
+                    max_classifier_logits = np.max(classifier_logits, axis=1)
+                    detector_grads = max_classifier_logits[:, None, None, None, None] * detector_grads
+
+                    # Reassign the combined gradients
+                    combined_grads[detector_idx] = detector_grads
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
         else:
             if label is None:
 
