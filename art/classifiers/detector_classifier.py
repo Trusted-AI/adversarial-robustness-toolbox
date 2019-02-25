@@ -189,22 +189,56 @@ class DetectorClassifier(Classifier):
                     # Reassign the combined gradients
                     combined_grads[detector_idx] = detector_grads
 
-
-
-
-
-
-
-
-
-
-
-
-
-
-
         else:
+            # First compute the combined logits
+            combined_logits = self.predict(x=x_, logits=True)
+
+            # Store the sum logits for later use
+            sum_exp_logits = np.sum(np.exp(combined_logits), axis=1)
+
+            # Then compute the logits gradients for all classes
+            # First compute the classifier gradients
+            classifier_grads = self.classifier.class_gradient(x=x_, label=None, logits=True)
+
+            # Then compute the detector gradients
+            detector_grads = self.detector.class_gradient(x=x_, label=None, logits=True)
+
+            # Chain the detector gradients
+            classifier_logits = self.classifier.predict(x=x_, logits=True)
+            max_classifier_logits = np.max(classifier_logits, axis=1)
+            detector_grads = max_classifier_logits[:, None, None, None, None] * detector_grads
+
+            # Combine the gradients
+            combined_grads = np.concatenate([classifier_grads, detector_grads], axis=1)
+
+            # Now compute the softmax gradients for each of the three cases
+            grads = []
             if label is None:
+                for i in range(self._nb_classes):
+                    si_grads = 0
+                    for j in range(self._nb_classes):
+                        if j == i:
+                            c = sum_exp_logits - np.exp(combined_logits[:, i])
+                            si_li = c * np.power(c + np.exp(combined_logits[:, i]), -2) * np.exp(combined_logits[:, i])
+                            si_grads += si_li[:, None, None, None] * combined_grads[:, i]
+                        else:
+                            c = sum_exp_logits - np.exp(combined_logits[:, j])
+                            si_lj = -np.exp(combined_logits[:, i]) * np.power(c + np.exp(combined_logits[:, j]), -2) * \
+                                    np.exp(combined_logits[:, j])
+                            si_grads += si_lj[:, None, None, None] * combined_grads[:, j]
+
+                    grads.append(si_grads)
+
+                grads = np.swapaxes(np.array(grads), 0, 1)
+                grads = self._apply_processing_gradient(grads)
+
+
+
+
+
+
+
+
 
             elif isinstance(label, (int, np.integer)):
                 
