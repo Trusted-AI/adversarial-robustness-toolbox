@@ -144,6 +144,17 @@ class DetectorClassifier(Classifier):
                 combined_grads = np.concatenate([classifier_grads, detector_grads], axis=1)
 
             elif isinstance(label, (int, np.integer)):
+                if label < self._nb_classes - 1:
+                    combined_grads = self.classifier.class_gradient(x=x_, label=label, logits=True)
+                else:
+                    detector_grads = self.detector.class_gradient(x=x_, label=label, logits=True)
+                    classifier_logits = self.classifier.predict(x=x_, logits=True)
+                    max_classifier_logits = np.max(classifier_logits, axis=1)
+                    combined_grads = max_classifier_logits[:, None, None, None, None] * detector_grads
+                    
+
+
+
 
 
 
