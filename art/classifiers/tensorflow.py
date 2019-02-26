@@ -54,7 +54,7 @@ class TFClassifier(Classifier):
         super(TFClassifier, self).__init__(clip_values=clip_values, channel_index=channel_index, defences=defences,
                                            preprocessing=preprocessing)
         self._nb_classes = int(logits.get_shape()[-1])
-        self._input_shape = tuple(input_ph.get_shape()[1:])
+        self._input_shape = tuple(input_ph.get_shape().as_list()[1:])
         self._input_ph = input_ph
         self._logits = logits
         self._output_ph = output_ph
