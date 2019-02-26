@@ -9,6 +9,7 @@ import torch.nn.functional as F
 import torch.optim as optim
 
 from art.classifiers.pytorch import PyTorchClassifier
+from art.classifiers.detector_classifier import DetectorClassifier
 from art.utils import load_mnist, master_seed
 
 logger = logging.getLogger('testLogger')
@@ -41,9 +42,9 @@ class Flatten(nn.Module):
         return result
 
 
-class TestPyTorchClassifier(unittest.TestCase):
+class TestDetectorClassifier(unittest.TestCase):
     """
-    This class tests the functionalities of the PyTorch-based classifier.
+    This class tests the functionalities of the DetectorClassifier.
     """
     @classmethod
     def setUpClass(cls):
@@ -55,71 +56,45 @@ class TestPyTorchClassifier(unittest.TestCase):
         x_test = np.swapaxes(x_test, 1, 3)
         cls.mnist = (x_train, y_train), (x_test, y_test)
 
-        # Define the network
-        model = nn.Sequential(nn.Conv2d(1, 16, 5), nn.ReLU(), nn.MaxPool2d(2, 2), Flatten(), nn.Linear(2304, 10))
-
-        # Define a loss function and optimizer
+        # Define the internal classifier
+        model = Model()
         loss_fn = nn.CrossEntropyLoss()
         optimizer = optim.Adam(model.parameters(), lr=0.01)
         classifier = PyTorchClassifier((0, 1), model, loss_fn, optimizer, (1, 28, 28), 10)
         classifier.fit(x_train, y_train, batch_size=100, nb_epochs=2)
-        cls.seq_classifier = classifier
 
-        # Define the network
-        model = Model()
+        # Define the internal detector
+        model = nn.Sequential(nn.Conv2d(1, 16, 5), nn.ReLU(), nn.MaxPool2d(2, 2), Flatten(), nn.Linear(2304, 1))
         loss_fn = nn.CrossEntropyLoss()
         optimizer = optim.Adam(model.parameters(), lr=0.01)
-        classifier2 = PyTorchClassifier((0, 1), model, loss_fn, optimizer, (1, 28, 28), 10)
-        classifier2.fit(x_train, y_train, batch_size=100, nb_epochs=2)
-        cls.module_classifier = classifier2
+        detector = PyTorchClassifier((0, 1), model, loss_fn, optimizer, (1, 28, 28), 1)
+
+        # Define the detector-classifier
+        cls.detector_classifier = DetectorClassifier(classifier=classifier, detector=detector)
 
     def setUp(self):
         # Set master seed
         master_seed(1234)
 
-    def test_fit_predict(self):
+    def test_predict(self):
         # Get MNIST
         (_, _), (x_test, y_test) = self.mnist
 
-        # Test predict
-        preds = self.module_classifier.predict(x_test)
-        acc = np.sum(np.argmax(preds, axis=1) == np.argmax(y_test, axis=1)) / len(y_test)
-        logger.info('Accuracy after fitting: %.2f%%', (acc * 100))
-        self.assertGreater(acc, 0.1)
+        # Test predict logits
+        preds = self.detector_classifier.predict(x=x_test, logits=True)
+        self.assertTrue(preds.shape == (NB_TEST, 11))
 
-    def test_fit_generator(self):
-        import torch
-        from torch.utils.data import DataLoader
-        from art.data_generators import PyTorchDataGenerator
-
-        (x_train, y_train), (x_test, y_test) = self.mnist
-        acc = np.sum(np.argmax(self.module_classifier.predict(x_test), axis=1) == np.argmax(y_test, axis=1)) / NB_TEST
-        logger.info('Accuracy: %.2f%%', (acc * 100))
-
-        # Create tensors from data
-        x_train_tens = torch.from_numpy(x_train)
-        x_train_tens = x_train_tens.float()
-        y_train_tens = torch.from_numpy(y_train)
-
-        # Create PyTorch dataset and loader
-        dataset = torch.utils.data.TensorDataset(x_train_tens, y_train_tens)
-        data_loader = DataLoader(dataset=dataset, batch_size=5, shuffle=True)
-        data_gen = PyTorchDataGenerator(data_loader, size=NB_TRAIN, batch_size=5)
-
-        # Fit model with generator
-        self.module_classifier.fit_generator(data_gen, nb_epochs=2)
-        acc2 = np.sum(np.argmax(self.module_classifier.predict(x_test), axis=1) == np.argmax(y_test, axis=1)) / NB_TEST
-        logger.info('Accuracy: %.2f%%', (acc * 100))
-
-        self.assertTrue(acc2 >= .8 * acc)
+        # Test predict softmax
+        preds = self.detector_classifier.predict(x=x_test, logits=False)
+        self.assertTrue(np.sum(preds) == NB_TEST)
 
     def test_nb_classes(self):
-        ptc = self.module_classifier
-        self.assertTrue(ptc.nb_classes == 10)
+        dc = self.detector_classifier
+        self.assertTrue(dc.nb_classes == 11)
 
     def test_input_shape(self):
-        ptc = self.module_classifier
-        self.assertTrue(np.array(ptc.input_shape == (1, 28, 28)).all())
+        dc = self.detector_classifier
+        self.assertTrue(np.array(dc.input_shape == (1, 28, 28)).all())
 
     def test_class_gradient(self):
         # Get MNIST
