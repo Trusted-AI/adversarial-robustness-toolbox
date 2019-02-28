@@ -82,7 +82,7 @@ class TestDetectorClassifier(unittest.TestCase):
 
         # Test predict logits
         preds = self.detector_classifier.predict(x=x_test, logits=True)
-        self.assertTrue(preds.shape == (NB_TEST, 11))
+        self.assertTrue(np.array(preds.shape == (NB_TEST, 11)).all())
 
         # Test predict softmax
         preds = self.detector_classifier.predict(x=x_test, logits=False)
@@ -100,83 +100,78 @@ class TestDetectorClassifier(unittest.TestCase):
         # Get MNIST
         (_, _), (x_test, _) = self.mnist
 
-        # Test all gradients label = None
-        ptc = self.module_classifier
-        grads = ptc.class_gradient(x_test)
+        # Get the classifier
+        dc = self.detector_classifier
 
-        self.assertTrue(np.array(grads.shape == (NB_TEST, 10, 1, 28, 28)).all())
+        # Test logits = True and label = None
+        grads = dc.class_gradient(x=x_test, logits=True, label=None)
+
+        self.assertTrue(np.array(grads.shape == (NB_TEST, 11, 1, 28, 28)).all())
         self.assertTrue(np.sum(grads) != 0)
 
-        # Test 1 gradient label = 5
-        grads = ptc.class_gradient(x_test, label=5)
+        # Test logits = True and label = 5
+        grads = dc.class_gradient(x=x_test, logits=True, label=5)
 
         self.assertTrue(np.array(grads.shape == (NB_TEST, 1, 1, 28, 28)).all())
         self.assertTrue(np.sum(grads) != 0)
 
-        # Test a set of gradients label = array
-        label = np.random.randint(5, size=NB_TEST)
-        grads = ptc.class_gradient(x_test, label=label)
+        # Test logits = True and label = 10
+        grads = dc.class_gradient(x=x_test, logits=True, label=10)
 
         self.assertTrue(np.array(grads.shape == (NB_TEST, 1, 1, 28, 28)).all())
         self.assertTrue(np.sum(grads) != 0)
 
-    def test_class_gradient_target(self):
-        # Get MNIST
-        (_, _), (x_test, _) = self.mnist
-
-        # Test gradient
-        ptc = self.module_classifier
-        grads = ptc.class_gradient(x_test, label=3)
+        # Test logits = True and label = array
+        label = np.random.randint(11, size=NB_TEST)
+        grads = dc.class_gradient(x=x_test, logits=True, label=label)
 
         self.assertTrue(np.array(grads.shape == (NB_TEST, 1, 1, 28, 28)).all())
         self.assertTrue(np.sum(grads) != 0)
 
-    def test_loss_gradient(self):
-        # Get MNIST
-        (_, _), (x_test, y_test) = self.mnist
+        # Test logits = False and label = None
+        grads = dc.class_gradient(x=x_test, logits=False, label=None)
 
-        # Test gradient
-        ptc = self.module_classifier
-        grads = ptc.loss_gradient(x_test, y_test)
-
-        self.assertTrue(np.array(grads.shape == (NB_TEST, 1, 28, 28)).all())
+        self.assertTrue(np.array(grads.shape == (NB_TEST, 11, 1, 28, 28)).all())
         self.assertTrue(np.sum(grads) != 0)
 
-    def test_layers(self):
-        # Get MNIST
-        (_, _), (x_test, _) = self.mnist
+        # Test logits = False and label = 5
+        grads = dc.class_gradient(x=x_test, logits=False, label=5)
 
-        # Test and get layers
-        ptc = self.seq_classifier
+        self.assertTrue(np.array(grads.shape == (NB_TEST, 1, 1, 28, 28)).all())
+        self.assertTrue(np.sum(grads) != 0)
 
-        layer_names = self.seq_classifier.layer_names
-        self.assertTrue(layer_names == ['0_Conv2d(1, 16, kernel_size=(5, 5), stride=(1, 1))', '1_ReLU()',
-                                        '2_MaxPool2d(kernel_size=2, stride=2, padding=0, dilation=1, ceil_mode=False)',
-                                        '3_Flatten()', '4_Linear(in_features=2304, out_features=10, bias=True)'])
+        # Test logits = False and label = 10
+        grads = dc.class_gradient(x=x_test, logits=False, label=10)
 
-        for i, name in enumerate(layer_names):
-            act_i = ptc.get_activations(x_test, i, batch_size=5)
-            act_name = ptc.get_activations(x_test, name, batch_size=5)
-            self.assertTrue(np.sum(act_name-act_i) == 0)
+        self.assertTrue(np.array(grads.shape == (NB_TEST, 1, 1, 28, 28)).all())
+        self.assertTrue(np.sum(grads) != 0)
 
-        self.assertTrue(ptc.get_activations(x_test, 0, batch_size=5).shape == (20, 16, 24, 24))
-        self.assertTrue(ptc.get_activations(x_test, 1, batch_size=5).shape == (20, 16, 24, 24))
-        self.assertTrue(ptc.get_activations(x_test, 2, batch_size=5).shape == (20, 16, 12, 12))
-        self.assertTrue(ptc.get_activations(x_test, 3, batch_size=5).shape == (20, 2304))
-        self.assertTrue(ptc.get_activations(x_test, 4, batch_size=5).shape == (20, 10))
+        # Test logits = False and label = array
+        label = np.random.randint(11, size=NB_TEST)
+        grads = dc.class_gradient(x=x_test, logits=False, label=label)
+
+        self.assertTrue(np.array(grads.shape == (NB_TEST, 1, 1, 28, 28)).all())
+        self.assertTrue(np.sum(grads) != 0)
 
     def test_set_learning(self):
-        ptc = self.module_classifier
+        dc = self.detector_classifier
 
-        self.assertTrue(ptc._model.training)
-        ptc.set_learning_phase(False)
-        self.assertFalse(ptc._model.training)
-        ptc.set_learning_phase(True)
-        self.assertTrue(ptc._model.training)
-        self.assertTrue(ptc.learning_phase)
+        self.assertTrue(dc.classifier._model.training)
+        self.assertTrue(dc.detector._model.training)
+        self.assertTrue(dc.learning_phase is None)
+
+        dc.set_learning_phase(False)
+        self.assertFalse(dc.classifier._model.training)
+        self.assertFalse(dc.detector._model.training)
+        self.assertFalse(dc.learning_phase)
+
+        dc.set_learning_phase(True)
+        self.assertTrue(dc.classifier._model.training)
+        self.assertTrue(dc.detector._model.training)
+        self.assertTrue(dc.learning_phase)
 
     def test_save(self):
-        model = self.module_classifier
+        model = self.detector_classifier
         import tempfile
         import os
         t_file = tempfile.NamedTemporaryFile()
@@ -185,11 +180,17 @@ class TestDetectorClassifier(unittest.TestCase):
         base_name = os.path.basename(full_path)
         dir_name = os.path.dirname(full_path)
         model.save(base_name, path=dir_name)
-        self.assertTrue(os.path.exists(full_path + ".optimizer"))
-        self.assertTrue(os.path.exists(full_path + ".model"))
-        os.remove(full_path + '.optimizer')
-        os.remove(full_path + '.model')
-                                       
+
+        self.assertTrue(os.path.exists(full_path + "_classifier.optimizer"))
+        self.assertTrue(os.path.exists(full_path + "_classifier.model"))
+        os.remove(full_path + '_classifier.optimizer')
+        os.remove(full_path + '_classifier.model')
+
+        self.assertTrue(os.path.exists(full_path + "_detector.optimizer"))
+        self.assertTrue(os.path.exists(full_path + "_detector.model"))
+        os.remove(full_path + '_detector.optimizer')
+        os.remove(full_path + '_detector.model')
+
 
 if __name__ == '__main__':
     unittest.main()
