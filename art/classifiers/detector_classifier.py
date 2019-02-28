@@ -153,7 +153,7 @@ class DetectorClassifier(Classifier):
                     combined_grads = self.classifier.class_gradient(x=x_, label=label, logits=True)
                 else:
                     # Compute and return from the detector gradients
-                    detector_grads = self.detector.class_gradient(x=x_, label=label, logits=True)
+                    detector_grads = self.detector.class_gradient(x=x_, label=0, logits=True)
 
                     # Chain the detector gradients
                     classifier_logits = self.classifier.predict(x=x_, logits=True)
@@ -182,7 +182,7 @@ class DetectorClassifier(Classifier):
                 # Then compute the detector gradients
                 if len(detector_idx) > 0:
                     detector_grads = self.detector.class_gradient(x=x_[detector_idx],
-                                                                  label=label[detector_idx],
+                                                                  label=0,
                                                                   logits=True)
 
                     # Chain the detector gradients
@@ -321,8 +321,10 @@ class DetectorClassifier(Classifier):
         :param train: True to set the learning phase to training, False to set it to prediction.
         :type train: `bool`
         """
-        self.classifier.set_learning_phase(train=train)
-        self.detector.set_learning_phase(train=train)
+        if isinstance(train, bool):
+            self._learning_phase = train
+            self.classifier.set_learning_phase(train=train)
+            self.detector.set_learning_phase(train=train)
 
     def save(self, filename, path=None):
         """
