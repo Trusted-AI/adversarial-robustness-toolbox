@@ -115,6 +115,7 @@ def plot_3d(points, labels, colors=[], save=True, f_name=''):
     :return: fig
     :rtype: `matplotlib.figure.Figure`
     """
+    import matplotlib
     import matplotlib.pyplot as plt
     from mpl_toolkits import mplot3d
 
