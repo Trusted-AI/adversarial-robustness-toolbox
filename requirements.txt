@@ -1,3 +1,4 @@
+PyQt4
 matplotlib
 numpy
 scipy
