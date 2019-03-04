@@ -4,11 +4,11 @@ Subclass of the ClassifierWrapper can override the behavior of
 key functions, such as loss_gradient, to facilitate new attacks.
 """
 
-class ClassifierWrapper(object):
+class ClassifierWrapper():
     """
     Wrapper class for any classifier instance
     """
-    attack_params = ['__classifier']
+    attack_params = ['_classifier']
 
     def __init__(self, classifier):
         """
@@ -16,28 +16,29 @@ class ClassifierWrapper(object):
 
         :param classifier: The Classifier we want to wrap the functionality for the purpose of an attack.
         """
-        self.__classifier = classifier
+        self._classifier = classifier
 
     def __getattr__(self, attr):
         """
         A generic grab-bag for the classifier instance
         This makes the wrapped class look like a subclass
         """
-        return getattr(self.__classifier, attr)
+        return getattr(self._classifier, attr)
 
     def __setattr__(self, attr, value):
         """
         A generic grab-bag for the classifier instance
         This makes the wrapped class look like a subclass
         """
-        if attr == '_ClassifierWrapper__classifier':
+        if attr == '_classifier':
             object.__setattr__(self, attr, value)
         else:
-            setattr(self.__classifier, attr, value)
-    
+            setattr(self._classifier, attr, value)
+
     def set_params(self, **kwargs):
         """
-        Take in a dictionary of parameters and apply attack-specific checks before saving them as attributes.
+        Take in a dictionary of parameters and pass them down to the underlying
+        wrapped classifier instance.
 
         :param kwargs: a dictionary of attack-specific parameters
         :type kwargs: `dict`

@@ -1,3 +1,6 @@
+"""
+Provides blackbox gradient estimation using NES.
+"""
 import logging
 
 import numpy as np
@@ -18,21 +21,22 @@ class QueryEfficientBBGradientEstimation(ClassifierWrapper):
     """
     attack_params = ['num_basis', 'sigma', 'round_samples']
 
-    def __init__(self, classifier, n, sigma, round_samples=0):
+    def __init__(self, classifier, num_basis, sigma, round_samples=0):
         """
         :param classifier: An instance of a `Classifier` whose loss_gradient is being approximated
         :type classifier: `Classifier`
-        :param n:  The number of samples to draw to approximate the gradient
-        :type n: `int`
+        :param num_basis:  The number of samples to draw to approximate the gradient
+        :type num_basis: `int`
         :param sigma: Scaling on the Gaussian noise N(0,1)
         :type sigma: `float`
-        :param round_samples: The resolution of the input domain to round the data to, e.g., 1.0, or 1/255. Set to 0 to disable.
+        :param round_samples: The resolution of the input domain to round
+            the data to, e.g., 1.0, or 1/255. Set to 0 to disable.
         :type round_samples: `float`
         """
         super(QueryEfficientBBGradientEstimation, self).__init__(classifier)
         self._predict = self.predict
-        self.predict = self.__predict
-        self.set_params(num_basis=n, sigma=sigma, round_samples=round_samples)
+        self.predict = self._wrap_predict
+        self.set_params(num_basis=num_basis, sigma=sigma, round_samples=round_samples)
 
     def _generate_samples(self, x, epsilon_map):
         """
@@ -72,13 +76,16 @@ class QueryEfficientBBGradientEstimation(ClassifierWrapper):
             # Vanilla
             new_y_minus = np.array([entropy(y[i], p) for p in self.predict(minus)])
             new_y_plus = np.array([entropy(y[i], p) for p in self.predict(plus)])
-            
-            query_efficient_grad = 2*np.mean(np.multiply(epsilon_map.reshape(self.num_basis, -1), (new_y_plus - new_y_minus).reshape(self.num_basis, -1) / (2*self.sigma)).reshape([-1] + list(self.input_shape)), axis=0)
+            query_efficient_grad = 2*np.mean(np.multiply(
+                epsilon_map.reshape(self.num_basis, -1), 
+                (new_y_plus - new_y_minus).reshape(self.num_basis, -1)
+                / (2*self.sigma)).reshape([-1] + list(self.input_shape)), 
+                axis=0)
             grads.append(query_efficient_grad)
         grads = self._apply_processing_gradient(np.array(grads))
         return grads
 
-    def __predict(self, x, logits=False, batch_size=128):
+    def _wrap_predict(self, x, logits=False, batch_size=128):
         """
         Perform prediction for a batch of inputs. Rounds results first.
 
