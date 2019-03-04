@@ -115,30 +115,33 @@ def plot_3d(points, labels, colors=[], save=True, f_name=''):
     :return: fig
     :rtype: `matplotlib.figure.Figure`
     """
-    import matplotlib
-    import matplotlib.pyplot as plt
-    from mpl_toolkits import mplot3d
+    try:
+        import matplotlib
+        import matplotlib.pyplot as plt
+        from mpl_toolkits import mplot3d
 
-    if not colors:
-        for i, label in enumerate(np.unique(labels)):
-            colors.append('C'+str(i))
-    else:
-        if len(colors) != len(np.unique(labels)):
-            raise ValueError('The amount of provided colors should match the number of labels in the 3pd plot.')
+        if not colors:
+            for i, label in enumerate(np.unique(labels)):
+                colors.append('C' + str(i))
+        else:
+            if len(colors) != len(np.unique(labels)):
+                raise ValueError('The amount of provided colors should match the number of labels in the 3pd plot.')
 
-    fig = plt.figure()
-    ax = plt.axes(projection='3d')
+        fig = plt.figure()
+        ax = plt.axes(projection='3d')
 
-    for i, coord in enumerate(points):
-        ax.scatter3D(coord[0], coord[1], coord[2], color=colors[labels[i]])
+        for i, coord in enumerate(points):
+            ax.scatter3D(coord[0], coord[1], coord[2], color=colors[labels[i]])
 
-    if save:
-        file_name = os.path.realpath(os.path.join(DATA_PATH, f_name))
-        folder = os.path.split(file_name)[0]
+        if save:
+            file_name = os.path.realpath(os.path.join(DATA_PATH, f_name))
+            folder = os.path.split(file_name)[0]
 
-        if not os.path.exists(folder):
-            os.makedirs(folder)
-        fig.savefig(file_name, bbox_inches='tight')
-        logger.info('3d-plot saved to %s.', file_name)
+            if not os.path.exists(folder):
+                os.makedirs(folder)
+            fig.savefig(file_name, bbox_inches='tight')
+            logger.info('3d-plot saved to %s.', file_name)
 
-    return fig
+        return fig
+    except ImportError:
+        print("matplotlib not installed. For this reason, cluster visualization was not displayed")
