@@ -14,6 +14,7 @@ class KerasClassifier(Classifier):
     """
     Wrapper class for importing Keras models. The supported backends for Keras are TensorFlow and Theano.
     """
+
     def __init__(self, clip_values, model, use_logits=False, channel_index=3, defences=None, preprocessing=(0, 1),
                  input_layer=0, output_layer=0, custom_activation=False):
         """
@@ -48,6 +49,9 @@ class KerasClassifier(Classifier):
                                               preprocessing=preprocessing)
 
         self._model = model
+        self._input_layer = input_layer
+        self._output_layer = output_layer
+        self._use_logits = use_logits
         if hasattr(model, 'inputs'):
             self._input = model.inputs[input_layer]
         else:
@@ -430,6 +434,92 @@ class KerasClassifier(Classifier):
 
         self._model.save(str(full_path))
         logger.info('Model saved in path: %s.', full_path)
+
+    def __getstate__(self):
+        state = self.__dict__.copy()
+        # Remove the unpicklable entries:
+        print('-----------------STATE--------------\n ', state)
+        del state['_model']
+        del state['_input']
+        del state['_output']
+        del state['_preds_op']
+        del state['_loss']
+        del state['_loss_grads']
+        del state['_preds']
+        del state['_layer_names']
+        import time
+        model_name = str(time.time()) + '.h5'
+        state['model_name'] = model_name
+        self.save(model_name)
+        return state
+
+    def __setstate__(self, state):
+        self.__dict__.update(state)
+
+        # Load and update all functionality related to keras:
+        import keras.backend as k
+        from keras.models import load_model
+
+        import os
+        from art import DATA_PATH
+        full_path = os.path.join(DATA_PATH, state['model_name'])
+        model = load_model(full_path)
+
+        self._model = model
+        print('-----------------STATE--------------\n ', state)
+
+        if hasattr(model, 'inputs'):
+            self._input = model.inputs[state['_input_layer']]
+        else:
+            self._input = model.input
+
+        if hasattr(model, 'outputs'):
+            self._output = model.outputs[state['_output_layer']]
+        else:
+            self._output = model.output
+
+        _, self._nb_classes = k.int_shape(self._output)
+        self._input_shape = k.int_shape(self._input)[1:]
+        self._custom_activation = state['_custom_activation']
+        logger.debug('Inferred %i classes and %s as input shape for Keras classifier.', self.nb_classes,
+                     str(self.input_shape))
+
+        # Get predictions and loss function
+        label_ph = k.placeholder(shape=(None,))
+        if not state['_use_logits']:
+            if k.backend() == 'tensorflow':
+                if state['_custom_activation']:
+                    preds = self._output
+                    loss = k.sparse_categorical_crossentropy(label_ph, preds, from_logits=False)
+                else:
+                    preds, = self._output.op.inputs
+                    loss = k.sparse_categorical_crossentropy(label_ph, preds, from_logits=True)
+            else:
+                loss = k.sparse_categorical_crossentropy(label_ph, self._output, from_logits=state['_use_logits'])
+
+                # Convert predictions to logits for consistency with the other cases
+                eps = 10e-8
+                preds = k.log(k.clip(self._output, eps, 1. - eps))
+        else:
+            preds = self._output
+            loss = k.sparse_categorical_crossentropy(label_ph, self._output, from_logits=state['_use_logits'])
+        if preds == self._input:  # recent Tensorflow version does not allow a model with an output same as the input.
+            preds = k.identity(preds)
+        loss_grads = k.gradients(loss, self._input)
+
+        if k.backend() == 'tensorflow':
+            loss_grads = loss_grads[0]
+        elif k.backend() == 'cntk':
+            raise NotImplementedError('Only TensorFlow and Theano support is provided for Keras.')
+
+        # Set loss, grads and prediction functions
+        self._preds_op = preds
+        self._loss = k.function([self._input], [loss])
+        self._loss_grads = k.function([self._input, label_ph], [loss_grads])
+        self._preds = k.function([self._input], [preds])
+
+        # Get the internal layer
+        self._layer_names = self._get_layers()
 
 
 def generator_fit(x, y, batch_size=128):
