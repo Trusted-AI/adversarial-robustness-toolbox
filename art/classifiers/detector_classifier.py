@@ -92,7 +92,7 @@ class DetectorClassifier(Classifier):
         Fit the classifier using the generator that yields batches as specified.
 
         :param generator: Batch generator providing `(x, y)` for each epoch.
-        :type generator: `DataGenerator`
+        :type generator: :class:`.DataGenerator`
         :param nb_epochs: Number of epochs to use for training.
         :type nb_epochs: `int`
         :param kwargs: Dictionary of framework-specific arguments. This parameter is not currently supported for PyTorch
@@ -145,8 +145,6 @@ class DetectorClassifier(Classifier):
                 # Combine the gradients
                 combined_grads = np.concatenate([classifier_grads, detector_grads], axis=1)
 
-                combined_grads = self._apply_processing_gradient(combined_grads)
-
             elif isinstance(label, (int, np.integer)):
                 if label < self._nb_classes - 1:
                     # Compute and return from the classifier gradients
@@ -159,8 +157,6 @@ class DetectorClassifier(Classifier):
                     classifier_logits = self.classifier.predict(x=x_, logits=True)
                     max_classifier_logits = np.max(classifier_logits, axis=1)
                     combined_grads = max_classifier_logits[:, None, None, None, None] * detector_grads
-
-                combined_grads = self._apply_processing_gradient(combined_grads)
 
             else:
                 # Compute indexes for classifier labels and detector labels
@@ -192,8 +188,6 @@ class DetectorClassifier(Classifier):
 
                     # Reassign the combined gradients
                     combined_grads[detector_idx] = detector_grads
-
-                combined_grads = self._apply_processing_gradient(combined_grads)
 
         else:
             # First compute the combined logits
@@ -236,7 +230,6 @@ class DetectorClassifier(Classifier):
                     grads.append(si_grads)
 
                 combined_grads = np.swapaxes(np.array(grads), 0, 1)
-                combined_grads = self._apply_processing_gradient(combined_grads)
 
             elif isinstance(label, (int, np.integer)):
                 si_grads = 0
@@ -255,7 +248,6 @@ class DetectorClassifier(Classifier):
                 grads.append(si_grads)
 
                 combined_grads = np.swapaxes(np.array(grads), 0, 1)
-                combined_grads = self._apply_processing_gradient(combined_grads)
 
             else:
                 unique_label = list(np.unique(label))
@@ -280,8 +272,9 @@ class DetectorClassifier(Classifier):
 
                 grads = grads[None, ...]
                 combined_grads = np.swapaxes(np.array(grads), 0, 1)
-                combined_grads = self._apply_processing_gradient(combined_grads)
 
+        # Apply gradient post-processing
+        combined_grads = self._apply_processing_gradient(combined_grads)
         return combined_grads
 
     def loss_gradient(self, x, y):
@@ -294,6 +287,17 @@ class DetectorClassifier(Classifier):
         :type y: `np.ndarray`
         :return: Array of gradients of the same shape as `x`.
         :rtype: `np.ndarray`
+        """
+        raise NotImplementedError
+
+    @property
+    def layer_names(self):
+        """
+        Return the hidden layers in the model, if applicable. This function is not supported for the
+        Classifier and Detector wrapper.
+
+        :return: The hidden layers in the model, input and output layers excluded.
+        :rtype: `list`
         """
         raise NotImplementedError
 
@@ -339,5 +343,3 @@ class DetectorClassifier(Classifier):
         """
         self.classifier.save(filename=filename + "_classifier", path=path)
         self.detector.save(filename=filename + "_detector", path=path)
-
-

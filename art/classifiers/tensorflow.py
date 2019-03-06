@@ -167,7 +167,7 @@ class TFClassifier(Classifier):
 
         :param generator: Batch generator providing `(x, y)` for each epoch. If the generator can be used for native
                           training in TensorFlow, it will.
-        :type generator: `DataGenerator`
+        :type generator: :class:`.DataGenerator`
         :param nb_epochs: Number of epochs to use for training.
         :type nb_epochs: `int`
         :param kwargs: Dictionary of framework-specific arguments. This parameter is not currently supported for
