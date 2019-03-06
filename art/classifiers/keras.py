@@ -478,7 +478,7 @@ class KerasClassifier(Classifier):
     def __setstate__(self, state):
         """
         Use to ensure `classifier` can be unpickle
-         
+
         :param state:
         :return:
         """
@@ -490,7 +490,7 @@ class KerasClassifier(Classifier):
         import os
         from art import DATA_PATH
         full_path = os.path.join(DATA_PATH, state['model_name'])
-        model = load_model(full_path)
+        model = load_model(str(full_path))
 
         self._model = model
 

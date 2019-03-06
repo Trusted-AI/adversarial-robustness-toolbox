@@ -122,6 +122,7 @@ def plot_3d(points, labels, colors=None, save=True, f_name=''):
         from mpl_toolkits import mplot3d
 
         if colors is None:
+            colors = []
             for i, label in enumerate(np.unique(labels)):
                 colors.append('C' + str(i))
         else:
