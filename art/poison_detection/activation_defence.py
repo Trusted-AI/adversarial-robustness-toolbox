@@ -226,6 +226,18 @@ class ActivationDefence(PoisonFilteringDefence):
         return sprites_by_class
 
     def plot_clusters(self, save=True, folder='.', **kwargs):
+        """
+        Creates a 3D-plot to visualize each cluster each cluster is assigned a different color in the plot.
+        When save=True, it also stores the 3D-plot per cluster in DATA_PATH.
+
+        :param save: Boolean specifying if image should be saved
+        :type  save: `bool`
+        :param folder: Directory where the sprites will be saved inside DATA_PATH folder
+        :type folder: `str`
+        :param kwargs: a dictionary of cluster-analysis-specific parameters
+        :type kwargs: `dict`
+        :return: None
+        """
         self.set_params(**kwargs)
 
         if not self.clusters_by_class:
@@ -239,6 +251,7 @@ class ActivationDefence(PoisonFilteringDefence):
 
         # For each class generate a plot:
         for class_id, (labels, coordinates) in enumerate(zip(self.clusters_by_class, separated_reduced_activations)):
+            f_name = ''
             if save:
                 f_name = os.path.join(folder, 'plot_class_' + str(class_id) + '.png')
             plot_3d(coordinates, labels, save=save, f_name=f_name)

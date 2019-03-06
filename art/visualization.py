@@ -103,8 +103,9 @@ def plot_3d(points, labels, colors=[], save=True, f_name=''):
 
     :param points: arrays with 3-D coordinates of the plots to be plotted
     :type points: `np.ndarray`
-    :param labels: array of integers that determines the color used in the plot for the data point,
-    :type labels
+    :param labels: array of integers that determines the color used in the plot for the data point.
+    Need to start from 0 and be sequential from there on.
+    :type labels: `lst`
     :param colors: Optional argument to specify colors to be used in the plot. If provided, this array should contain
     as many colors as labels.
     :type `lst`
@@ -131,8 +132,11 @@ def plot_3d(points, labels, colors=[], save=True, f_name=''):
         ax = plt.axes(projection='3d')
 
         for i, coord in enumerate(points):
-            ax.scatter3D(coord[0], coord[1], coord[2], color=colors[labels[i]])
-
+            try:
+                color_point = labels[i]
+                ax.scatter3D(coord[0], coord[1], coord[2], color=colors[color_point])
+            except IndexError:
+                raise ValueError('Labels outside the range. Should start from zero and be sequential there after')
         if save:
             file_name = os.path.realpath(os.path.join(DATA_PATH, f_name))
             folder = os.path.split(file_name)[0]
