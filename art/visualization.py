@@ -92,3 +92,60 @@ def save_image(image, f_name):
     im = Image.fromarray(image)
     im.save(file_name)
     logger.info('Image saved to %s.', file_name)
+
+
+def plot_3d(points, labels, colors=[], save=True, f_name=''):
+    """
+    Generates a 3-D plot in of the provided points where the labels define the
+    color that will be used to color each data point.
+    Concretely, the color of points[i] is defined by colors(labels[i]).
+    Thus, there should be as many labels as colors.
+
+    :param points: arrays with 3-D coordinates of the plots to be plotted
+    :type points: `np.ndarray`
+    :param labels: array of integers that determines the color used in the plot for the data point.
+    Need to start from 0 and be sequential from there on.
+    :type labels: `lst`
+    :param colors: Optional argument to specify colors to be used in the plot. If provided, this array should contain
+    as many colors as labels.
+    :type `lst`
+    :param save:  When set to True, saves image into a file inside `DATA_PATH` with the name `f_name`.
+    :type save: `bool`
+    :param f_name: Name used to save the file when save is set to True
+    :type f_name: `str`
+    :return: fig
+    :rtype: `matplotlib.figure.Figure`
+    """
+    try:
+        import matplotlib
+        import matplotlib.pyplot as plt
+        from mpl_toolkits import mplot3d
+
+        if not colors:
+            for i, label in enumerate(np.unique(labels)):
+                colors.append('C' + str(i))
+        else:
+            if len(colors) != len(np.unique(labels)):
+                raise ValueError('The amount of provided colors should match the number of labels in the 3pd plot.')
+
+        fig = plt.figure()
+        ax = plt.axes(projection='3d')
+
+        for i, coord in enumerate(points):
+            try:
+                color_point = labels[i]
+                ax.scatter3D(coord[0], coord[1], coord[2], color=colors[color_point])
+            except IndexError:
+                raise ValueError('Labels outside the range. Should start from zero and be sequential there after')
+        if save:
+            file_name = os.path.realpath(os.path.join(DATA_PATH, f_name))
+            folder = os.path.split(file_name)[0]
+
+            if not os.path.exists(folder):
+                os.makedirs(folder)
+            fig.savefig(file_name, bbox_inches='tight')
+            logger.info('3d-plot saved to %s.', file_name)
+
+        return fig
+    except ImportError:
+        print("matplotlib not installed. For this reason, cluster visualization was not displayed")
