@@ -312,26 +312,3 @@ class TestKerasClassifier(unittest.TestCase):
 
         # Remove saved file
         os.remove(os.path.join(path, filename))
-
-    def test_pickle(self):
-        classifier = KerasClassifier((1, 3), self.model_mnist, use_logits=True)
-
-        # Now pickle
-        import os
-        filename = 'my_classifier.p'
-        from art import DATA_PATH
-        full_path = os.path.join(DATA_PATH, filename)
-        folder = os.path.split(full_path)[0]
-        if not os.path.exists(folder):
-            os.makedirs(folder)
-
-        import pickle
-        pickle.dump(classifier, open(full_path, 'wb'))
-
-        # Unpickle:
-        loaded = pickle.load(open(full_path, 'rb'))
-
-        self.assertTrue(classifier._clip_values == loaded._clip_values)
-        self.assertTrue(classifier._use_logits == loaded._use_logits)
-        self.assertTrue(classifier._input_layer == loaded._input_layer)
-        os.remove(full_path)
