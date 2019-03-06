@@ -42,12 +42,34 @@ class KerasClassifier(Classifier):
                output probability rather than the logits by attacks.
         :type custom_activation: `bool`
         """
-        import keras.backend as k
-
         super(KerasClassifier, self).__init__(clip_values=clip_values, channel_index=channel_index, defences=defences,
                                               preprocessing=preprocessing)
 
         self._model = model
+        self._input_layer = input_layer
+        self._output_layer = output_layer
+        self._use_logits = use_logits
+
+        self._initialize_params(model, use_logits, input_layer, output_layer, custom_activation)
+
+    def _initialize_params(self, model, use_logits, input_layer, output_layer, custom_activation):
+        """
+        Initialize all parameters of the classifier
+
+        :param model: Keras model
+        :type model: `keras.models.Model`
+        :param use_logits: True if the output of the model are the logits.
+        :type use_logits: `bool`
+        :param input_layer: Which layer to consider as the Input when the model has multple input layers.
+        :type input_layer: `int`
+        :param output_layer: Which layer to consider as the Output when the model has multiple output layers.
+        :type output_layer: `int`
+        :param custom_activation: True if the model uses the last activation other than softmax and requires to use the
+               output probability rather than the logits by attacks.
+        :type custom_activation: `bool`
+        """
+        import keras.backend as k
+
         if hasattr(model, 'inputs'):
             self._input = model.inputs[input_layer]
         else:
@@ -430,6 +452,50 @@ class KerasClassifier(Classifier):
 
         self._model.save(str(full_path))
         logger.info('Model saved in path: %s.', full_path)
+
+    def __getstate__(self):
+        """
+        Use to ensure `KerasClassifier` can be pickled
+
+        :return:
+        """
+        state = self.__dict__.copy()
+        # Remove the unpicklable entries:
+        del state['_model']
+        del state['_input']
+        del state['_output']
+        del state['_preds_op']
+        del state['_loss']
+        del state['_loss_grads']
+        del state['_preds']
+        del state['_layer_names']
+        import time
+        model_name = str(time.time()) + '.h5'
+        state['model_name'] = model_name
+        self.save(model_name)
+        return state
+
+    def __setstate__(self, state):
+        """
+        Use to ensure `classifier` can be unpickle
+         
+        :param state:
+        :return:
+        """
+        self.__dict__.update(state)
+
+        # Load and update all functionality related to keras:
+        from keras.models import load_model
+
+        import os
+        from art import DATA_PATH
+        full_path = os.path.join(DATA_PATH, state['model_name'])
+        model = load_model(full_path)
+
+        self._model = model
+
+        self._initialize_params(model, state['_use_logits'], state['_input_layer'], state['_output_layer'],
+                                state['_custom_activation'])
 
 
 def generator_fit(x, y, batch_size=128):
