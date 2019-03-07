@@ -72,6 +72,12 @@ class TestWrappingClassifierAttack(unittest.TestCase):
         # Set master seed
         master_seed(1234)
 
+    @classmethod
+    def tearDownClass(cls):
+        k.clear_session()
+        cls.classifier_tf._sess.close()
+        tf.reset_default_graph()
+
     def test_mnist(self):
         # Define all backends to test
         backends = {'keras': self.classifier_k,

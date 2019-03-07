@@ -66,6 +66,8 @@ class TestMixinWKerasClassifier(unittest.TestCase):
     @classmethod
     def tearDownClass(cls):
         k.clear_session()
+        cls.classifier_tf._sess.close()
+        tf.reset_default_graph()
 
         import shutil
         shutil.rmtree(cls.test_dir)
