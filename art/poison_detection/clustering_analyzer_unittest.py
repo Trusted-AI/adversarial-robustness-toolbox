@@ -41,8 +41,8 @@ class TestActivationDefence(unittest.TestCase):
         self.assertEqual(report['Class_0']['cluster_1']['suspicious_cluster'], False)
         total = len(clusters_by_class[0])
         c1 = sum(clusters_by_class[0])
-        self.assertEqual(report['Class_0']['cluster_0']['ptc_data_in_cluster'], (total-c1)/total)
-        self.assertEqual(report['Class_0']['cluster_1']['ptc_data_in_cluster'], c1/total)
+        self.assertEqual(report['Class_0']['cluster_0']['ptc_data_in_cluster'], (total - c1) / total)
+        self.assertEqual(report['Class_0']['cluster_1']['ptc_data_in_cluster'], c1 / total)
 
         # Inverse relations for class 1
         self.assertEqual(poison_clusters[1][0], clean)
@@ -208,6 +208,7 @@ class TestActivationDefence(unittest.TestCase):
         clusters_by_class[2] = [0, 0, 0, 2, 1, 1]  # Class 2
         analyzer = ClusteringAnalyzer()
         analyzer.analyze_clusters(clusters_by_class)
+
 
 if __name__ == '__main__':
     unittest.main()

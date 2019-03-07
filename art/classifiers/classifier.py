@@ -42,7 +42,7 @@ class Classifier(ABC):
         if len(preprocessing) != 2:
             raise ValueError('`preprocessing` should be a tuple of 2 floats with the substract and divide values for'
                              'the model inputs.')
-        self._preprocessing = preprocessing
+        self.preprocessing = preprocessing
 
     @abc.abstractmethod
     def predict(self, x, logits=False, batch_size=128):
@@ -85,7 +85,7 @@ class Classifier(ABC):
         provide framework-specific versions of this function to speed-up computation.
 
         :param generator: Batch generator providing `(x, y)` for each epoch.
-        :type generator: `DataGenerator`
+        :type generator: :class:`.DataGenerator`
         :param nb_epochs: Number of epochs to use for training.
         :type nb_epochs: `int`
         :param kwargs: Dictionary of framework-specific arguments.
@@ -257,23 +257,23 @@ class Classifier(ABC):
             import re
             pattern = re.compile("featsqueeze[1-8]?")
 
-            for d in defences:
-                if pattern.match(d):
+            for defence in defences:
+                if pattern.match(defence):
                     try:
                         from art.defences import FeatureSqueezing
 
-                        bit_depth = int(d[-1])
+                        bit_depth = int(defence[-1])
                         self.feature_squeeze = FeatureSqueezing(bit_depth=bit_depth)
                     except:
                         raise ValueError('You must specify the bit depth for feature squeezing: featsqueeze[1-8]')
 
                 # Add label smoothing
-                if d == 'labsmooth':
+                if defence == 'labsmooth':
                     from art.defences import LabelSmoothing
                     self.label_smooth = LabelSmoothing()
 
                 # Add spatial smoothing
-                if d == 'smooth':
+                if defence == 'smooth':
                     from art.defences import SpatialSmoothing
                     self.smooth = SpatialSmoothing(channel_index=self.channel_index)
 
@@ -302,7 +302,7 @@ class Classifier(ABC):
     def _apply_processing(self, x):
         import numpy as np
 
-        sub, div = self._preprocessing
+        sub, div = self.preprocessing
         sub = np.asarray(sub, dtype=x.dtype)
         div = np.asarray(div, dtype=x.dtype)
 
@@ -314,7 +314,14 @@ class Classifier(ABC):
     def _apply_processing_gradient(self, grad):
         import numpy as np
 
-        _, div = self._preprocessing
+        _, div = self.preprocessing
         div = np.asarray(div, dtype=grad.dtype)
         res = grad / div
         return res
+
+    def __repr__(self):
+        repr_ = "%s(clip_values=%r, channel_index=%r, defences=%r, preprocessing=%r)" \
+               % (self.__module__ + '.' + self.__class__.__name__,
+                  self.clip_values, self.channel_index, self.defences, self.preprocessing)
+
+        return repr_

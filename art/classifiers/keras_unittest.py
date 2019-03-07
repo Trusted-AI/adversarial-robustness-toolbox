@@ -312,3 +312,38 @@ class TestKerasClassifier(unittest.TestCase):
 
         # Remove saved file
         os.remove(os.path.join(path, filename))
+
+    def test_pickle(self):
+        classifier = KerasClassifier((1, 3), self.model_mnist, use_logits=True)
+
+        # Now pickle
+        import os
+        filename = 'my_classifier.p'
+        from art import DATA_PATH
+        full_path = os.path.join(DATA_PATH, filename)
+        folder = os.path.split(full_path)[0]
+        if not os.path.exists(folder):
+            os.makedirs(folder)
+
+        import pickle
+        pickle.dump(classifier, open(full_path, 'wb'))
+
+        # Unpickle:
+        with open(full_path, 'rb') as f:
+            loaded = pickle.load(f)
+
+            self.assertTrue(classifier._clip_values == loaded._clip_values)
+            self.assertTrue(classifier._channel_index == loaded._channel_index)
+            self.assertTrue(classifier._use_logits == loaded._use_logits)
+            self.assertTrue(classifier._input_layer == loaded._input_layer)
+            self.assertTrue(classifier._model.get_config() == loaded._model.get_config())
+
+        os.remove(full_path)
+
+    def test_repr(self):
+        classifier = KerasClassifier((0, 1), self.model_mnist, use_logits=False)
+        repr_ = repr(classifier)
+        self.assertTrue('art.classifiers.keras.KerasClassifier' in repr_)
+        self.assertTrue('clip_values=(0, 1)' in repr_)
+        self.assertTrue('use_logits=False, channel_index=3, defences=None, preprocessing=(0, 1)' in repr_)
+        self.assertTrue('input_layer=0, output_layer=0' in repr_)

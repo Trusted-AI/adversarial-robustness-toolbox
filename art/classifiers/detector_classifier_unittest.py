@@ -191,6 +191,11 @@ class TestDetectorClassifier(unittest.TestCase):
         os.remove(full_path + '_detector.optimizer')
         os.remove(full_path + '_detector.model')
 
+    def test_repr(self):
+        repr_ = repr(self.detector_classifier)
+        self.assertTrue('art.classifiers.detector_classifier.DetectorClassifier' in repr_)
+        self.assertTrue('preprocessing=(0, 1)' in repr_)
+
 
 if __name__ == '__main__':
     unittest.main()

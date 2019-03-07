@@ -214,7 +214,13 @@ class TestPyTorchClassifier(unittest.TestCase):
         self.assertTrue(os.path.exists(full_path + ".model"))
         os.remove(full_path + '.optimizer')
         os.remove(full_path + '.model')
-                                       
+
+    def test_repr(self):
+        repr_ = repr(self.module_classifier)
+        self.assertTrue('art.classifiers.pytorch.PyTorchClassifier' in repr_)
+        self.assertTrue('clip_values=(0, 1)' in repr_)
+        self.assertTrue('input_shape=(1, 28, 28), nb_classes=10, channel_index=1' in repr_)
+        self.assertTrue('defences=None, preprocessing=(0, 1)' in repr_)
 
 if __name__ == '__main__':
     unittest.main()

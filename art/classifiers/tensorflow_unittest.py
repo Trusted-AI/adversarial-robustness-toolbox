@@ -193,6 +193,12 @@ class TestTFClassifier(unittest.TestCase):
         self.assertTrue(tfc._feed_dict[tfc._learning])
         self.assertTrue(tfc.learning_phase)
 
+    def test_repr(self):
+        repr_ = repr(self.classifier)
+        self.assertTrue('art.classifiers.tensorflow.TFClassifier' in repr_)
+        self.assertTrue('clip_values=(0, 1)' in repr_)
+        self.assertTrue('channel_index=3, defences=None, preprocessing=(0, 1)' in repr_)
+
 
 if __name__ == '__main__':
     unittest.main()

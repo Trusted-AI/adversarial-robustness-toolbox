@@ -39,7 +39,7 @@ class ReverseSigmoid(NetworkManipulator):
                 manipulated_model = Model(inputs=x, outputs=y)
                 return KerasClassifier(classifier.clip_values, manipulated_model, use_logits=False,
                                        channel_index=classifier.channel_index, defences=classifier.defences,
-                                       preprocessing=classifier._preprocessing, input_layer=input_layer,
+                                       preprocessing=classifier.preprocessing, input_layer=input_layer,
                                        output_layer=output_layer, custom_activation=True)
             else:
                 raise NotImplementedError("End-to-end network integration of the defense is implemented only for"

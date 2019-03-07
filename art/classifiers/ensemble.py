@@ -127,7 +127,7 @@ class EnsembleClassifier(Classifier):
 
         :param generator: Batch generator providing `(x, y)` for each epoch. If the generator can be used for native
                           training in Keras, it will.
-        :type generator: `DataGenerator`
+        :type generator: :class:`.DataGenerator`
         :param nb_epochs: Number of epochs to use for trainings.
         :type nb_epochs: `int`
         :param kwargs: Dictionary of framework-specific argument.
@@ -224,6 +224,15 @@ class EnsembleClassifier(Classifier):
             for classifier in self._classifiers:
                 classifier.set_learning_phase(train)
             self._learning_phase = train
+
+    def __repr__(self):
+        repr_ = "%s(clip_values=%r, classifiers=%r, classifier_weights=%r, channel_index=%r, defences=%r, " \
+                "preprocessing=%r)" \
+                % (self.__module__ + '.' + self.__class__.__name__,
+                   self.clip_values, self._classifiers, self._classifier_weights, self.channel_index, self.defences,
+                   self.preprocessing)
+
+        return repr_
 
     def save(self, filename, path=None):
         """
