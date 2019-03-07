@@ -94,7 +94,7 @@ def save_image(image, f_name):
     logger.info('Image saved to %s.', file_name)
 
 
-def plot_3d(points, labels, colors=[], save=True, f_name=''):
+def plot_3d(points, labels, colors=None, save=True, f_name=''):
     """
     Generates a 3-D plot in of the provided points where the labels define the
     color that will be used to color each data point.
@@ -121,7 +121,8 @@ def plot_3d(points, labels, colors=[], save=True, f_name=''):
         import matplotlib.pyplot as plt
         from mpl_toolkits import mplot3d
 
-        if not colors:
+        if colors is None:
+            colors = []
             for i, label in enumerate(np.unique(labels)):
                 colors.append('C' + str(i))
         else:
