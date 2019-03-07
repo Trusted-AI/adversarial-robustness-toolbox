@@ -54,7 +54,8 @@ class KerasClassifier(Classifier):
 
     def _initialize_params(self, model, use_logits, input_layer, output_layer, custom_activation):
         """
-        Initialize all parameters of the classifier
+        Initialize most parameters of the classifier. This is a convenience function called by `__init__` and
+        `__setstate__` to avoid code duplication.
 
         :param model: Keras model
         :type model: `keras.models.Model`
@@ -224,8 +225,8 @@ class KerasClassifier(Classifier):
 
         # Run predictions with batching
         preds = np.zeros((x_.shape[0], self.nb_classes), dtype=NUMPY_DTYPE)
-        for b in range(int(np.ceil(x_.shape[0] / float(batch_size)))):
-            begin, end = b * batch_size, min((b + 1) * batch_size, x_.shape[0])
+        for batch_index in range(int(np.ceil(x_.shape[0] / float(batch_size)))):
+            begin, end = batch_index * batch_size, min((batch_index + 1) * batch_size, x_.shape[0])
             preds[begin:end] = self._preds([x_[begin:end]])[0]
 
             if not logits and not self._custom_activation:
@@ -349,8 +350,8 @@ class KerasClassifier(Classifier):
         activations = np.zeros((x_.shape[0],) + output_shape[1:], dtype=NUMPY_DTYPE)
 
         # Get activations with batching
-        for b in range(int(np.ceil(x_.shape[0] / float(batch_size)))):
-            begin, end = b * batch_size, min((b + 1) * batch_size, x_.shape[0])
+        for batch_index in range(int(np.ceil(x_.shape[0] / float(batch_size)))):
+            begin, end = batch_index * batch_size, min((batch_index + 1) * batch_size, x_.shape[0])
             activations[begin:end] = output_func([x_[begin:end]])[0]
 
         return activations
@@ -388,18 +389,18 @@ class KerasClassifier(Classifier):
                 if not hasattr(self, '_class_grads_logits_idx'):
                     self._class_grads_logits_idx = [None for _ in range(nb_outputs)]
 
-                for l in unique_labels:
-                    if self._class_grads_logits_idx[l] is None:
-                        class_grads_logits = [k.gradients(self._preds_op[:, l], self._input)[0]]
-                        self._class_grads_logits_idx[l] = k.function([self._input], class_grads_logits)
+                for current_label in unique_labels:
+                    if self._class_grads_logits_idx[current_label] is None:
+                        class_grads_logits = [k.gradients(self._preds_op[:, current_label], self._input)[0]]
+                        self._class_grads_logits_idx[current_label] = k.function([self._input], class_grads_logits)
             else:
                 if not hasattr(self, '_class_grads_idx'):
                     self._class_grads_idx = [None for _ in range(nb_outputs)]
 
-                for l in unique_labels:
-                    if self._class_grads_idx[l] is None:
-                        class_grads = [k.gradients(k.softmax(self._preds_op)[:, l], self._input)[0]]
-                        self._class_grads_idx[l] = k.function([self._input], class_grads)
+                for current_label in unique_labels:
+                    if self._class_grads_idx[current_label] is None:
+                        class_grads = [k.gradients(k.softmax(self._preds_op)[:, current_label], self._input)[0]]
+                        self._class_grads_idx[current_label] = k.function([self._input], class_grads)
 
     def _get_layers(self):
         """
@@ -455,11 +456,15 @@ class KerasClassifier(Classifier):
 
     def __getstate__(self):
         """
-        Use to ensure `KerasClassifier` can be pickled
+        Use to ensure `KerasClassifier` can be pickled.
 
-        :return:
+        :return: State dictionary with instance parameters.
+        :rtype: `dict`
         """
+        import time
+
         state = self.__dict__.copy()
+
         # Remove the unpicklable entries:
         del state['_model']
         del state['_input']
@@ -469,7 +474,7 @@ class KerasClassifier(Classifier):
         del state['_loss_grads']
         del state['_preds']
         del state['_layer_names']
-        import time
+
         model_name = str(time.time()) + '.h5'
         state['model_name'] = model_name
         self.save(model_name)
@@ -477,23 +482,22 @@ class KerasClassifier(Classifier):
 
     def __setstate__(self, state):
         """
-        Use to ensure `classifier` can be unpickle
+        Use to ensure `KerasClassifier` can be unpickled.
 
-        :param state:
-        :return:
+        :param state: State dictionary with instance parameters to restore.
+        :type state: `dict`
         """
         self.__dict__.update(state)
 
-        # Load and update all functionality related to keras:
-        from keras.models import load_model
-
+        # Load and update all functionality related to Keras
         import os
         from art import DATA_PATH
+        from keras.models import load_model
+
         full_path = os.path.join(DATA_PATH, state['model_name'])
         model = load_model(str(full_path))
 
         self._model = model
-
         self._initialize_params(model, state['_use_logits'], state['_input_layer'], state['_output_layer'],
                                 state['_custom_activation'])
 

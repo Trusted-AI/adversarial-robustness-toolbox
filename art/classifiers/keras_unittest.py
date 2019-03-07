@@ -329,10 +329,13 @@ class TestKerasClassifier(unittest.TestCase):
         pickle.dump(classifier, open(full_path, 'wb'))
 
         # Unpickle:
-        loaded = pickle.load(open(full_path, 'rb'))
+        with open(full_path, 'rb') as f:
+            loaded = pickle.load(f)
 
-        self.assertTrue(classifier._clip_values == loaded._clip_values)
-        self.assertTrue(classifier._channel_index == loaded._channel_index)
-        self.assertTrue(classifier._use_logits == loaded._use_logits)
-        self.assertTrue(classifier._input_layer == loaded._input_layer)
+            self.assertTrue(classifier._clip_values == loaded._clip_values)
+            self.assertTrue(classifier._channel_index == loaded._channel_index)
+            self.assertTrue(classifier._use_logits == loaded._use_logits)
+            self.assertTrue(classifier._input_layer == loaded._input_layer)
+            self.assertTrue(classifier._model.get_config() == loaded._model.get_config())
+
         os.remove(full_path)
