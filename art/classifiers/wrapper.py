@@ -4,7 +4,7 @@ Subclass of the ClassifierWrapper can override the behavior of
 key functions, such as loss_gradient, to facilitate new attacks.
 """
 
-class ClassifierWrapper():
+class ClassifierWrapper(object):
     """
     Wrapper class for any classifier instance
     """
