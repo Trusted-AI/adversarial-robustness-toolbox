@@ -51,3 +51,11 @@ class TestClassifier(unittest.TestCase):
         x = np.random.rand(100, 200)
         new_x = classifier._apply_processing(x)
         self.assertTrue(np.sum(x - new_x) == 0)
+
+    def test_repr(self):
+        classifier = ClassifierInstance((0, 1))
+
+        repr_ = repr(classifier)
+        self.assertTrue('classifiers.classifier_unittest.ClassifierInstance' in repr_)
+        self.assertTrue('clip_values=(0, 1)' in repr_)
+        self.assertTrue('channel_index=1, defences=None, preprocessing=(0, 1)' in repr_)

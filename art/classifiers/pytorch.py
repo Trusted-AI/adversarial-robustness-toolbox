@@ -427,6 +427,15 @@ class PyTorchClassifier(Classifier):
         logger.info("Model state dict saved in path: %s.", full_path + '.model')
         logger.info("Optimizer state dict saved in path: %s.", full_path + '.optimizer')
 
+    def __repr__(self):
+        repr_ = "%s(clip_values=%r, model=%r, loss=%r, optimizer=%r, input_shape=%r, nb_classes=%r, " \
+                "channel_index=%r, defences=%r, preprocessing=%r)" \
+                % (self.__module__ + '.' + self.__class__.__name__,
+                   self.clip_values, self._model, self._loss, self._optimizer, self._input_shape, self.nb_classes,
+                   self.channel_index, self.defences, self.preprocessing)
+
+        return repr_
+
     # def _forward_at(self, inputs, layer):
     #     """
     #     Compute the forward at a specific layer.

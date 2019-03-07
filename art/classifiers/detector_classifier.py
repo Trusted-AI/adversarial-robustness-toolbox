@@ -343,3 +343,10 @@ class DetectorClassifier(Classifier):
         """
         self.classifier.save(filename=filename + "_classifier", path=path)
         self.detector.save(filename=filename + "_detector", path=path)
+
+    def __repr__(self):
+        repr_ = "%s(classifier=%r, detector=%r, defences=%r, preprocessing=%r)" \
+                % (self.__module__ + '.' + self.__class__.__name__,
+                   self.classifier, self.detector, self.defences, self.preprocessing)
+
+        return repr_

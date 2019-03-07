@@ -339,3 +339,11 @@ class TestKerasClassifier(unittest.TestCase):
             self.assertTrue(classifier._model.get_config() == loaded._model.get_config())
 
         os.remove(full_path)
+
+    def test_repr(self):
+        classifier = KerasClassifier((0, 1), self.model_mnist, use_logits=False)
+        repr_ = repr(classifier)
+        self.assertTrue('art.classifiers.keras.KerasClassifier' in repr_)
+        self.assertTrue('clip_values=(0, 1)' in repr_)
+        self.assertTrue('use_logits=False, channel_index=3, defences=None, preprocessing=(0, 1)' in repr_)
+        self.assertTrue('input_layer=0, output_layer=0' in repr_)

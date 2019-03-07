@@ -72,14 +72,18 @@ class KerasClassifier(Classifier):
         import keras.backend as k
 
         if hasattr(model, 'inputs'):
+            self._input_layer = input_layer
             self._input = model.inputs[input_layer]
         else:
             self._input = model.input
+            self._input_layer = 0
 
         if hasattr(model, 'outputs'):
             self._output = model.outputs[output_layer]
+            self._output_layer = output_layer
         else:
             self._output = model.output
+            self._output_layer = 0
 
         _, self._nb_classes = k.int_shape(self._output)
         self._input_shape = k.int_shape(self._input)[1:]
@@ -89,6 +93,7 @@ class KerasClassifier(Classifier):
 
         # Get predictions and loss function
         label_ph = k.placeholder(shape=(None,))
+        self._use_logits = use_logits
         if not use_logits:
             if k.backend() == 'tensorflow':
                 if custom_activation:
@@ -465,7 +470,7 @@ class KerasClassifier(Classifier):
 
         state = self.__dict__.copy()
 
-        # Remove the unpicklable entries:
+        # Remove the unpicklable entries
         del state['_model']
         del state['_input']
         del state['_output']
@@ -500,6 +505,15 @@ class KerasClassifier(Classifier):
         self._model = model
         self._initialize_params(model, state['_use_logits'], state['_input_layer'], state['_output_layer'],
                                 state['_custom_activation'])
+
+    def __repr__(self):
+        repr_ = "%s(clip_values=%r, model=%r, use_logits=%r, channel_index=%r, defences=%r, preprocessing=%r, " \
+                "input_layer=%r, output_layer=%r, custom_activation=%r)" \
+                % (self.__module__ + '.' + self.__class__.__name__,
+                   self.clip_values, self._model, self._use_logits, self.channel_index, self.defences,
+                   self.preprocessing, self._input_layer, self._output_layer, self._custom_activation)
+
+        return repr_
 
 
 def generator_fit(x, y, batch_size=128):

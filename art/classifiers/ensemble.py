@@ -225,6 +225,15 @@ class EnsembleClassifier(Classifier):
                 classifier.set_learning_phase(train)
             self._learning_phase = train
 
+    def __repr__(self):
+        repr_ = "%s(clip_values=%r, classifiers=%r, classifier_weights=%r, channel_index=%r, defences=%r, " \
+                "preprocessing=%r)" \
+                % (self.__module__ + '.' + self.__class__.__name__,
+                   self.clip_values, self._classifiers, self._classifier_weights, self.channel_index, self.defences,
+                   self.preprocessing)
+
+        return repr_
+
     def save(self, filename, path=None):
         """
         Save a model to file in the format specific to the backend framework. This function is not supported for

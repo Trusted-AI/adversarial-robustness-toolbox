@@ -257,23 +257,23 @@ class Classifier(ABC):
             import re
             pattern = re.compile("featsqueeze[1-8]?")
 
-            for d in defences:
-                if pattern.match(d):
+            for defence in defences:
+                if pattern.match(defence):
                     try:
                         from art.defences import FeatureSqueezing
 
-                        bit_depth = int(d[-1])
+                        bit_depth = int(defence[-1])
                         self.feature_squeeze = FeatureSqueezing(bit_depth=bit_depth)
                     except:
                         raise ValueError('You must specify the bit depth for feature squeezing: featsqueeze[1-8]')
 
                 # Add label smoothing
-                if d == 'labsmooth':
+                if defence == 'labsmooth':
                     from art.defences import LabelSmoothing
                     self.label_smooth = LabelSmoothing()
 
                 # Add spatial smoothing
-                if d == 'smooth':
+                if defence == 'smooth':
                     from art.defences import SpatialSmoothing
                     self.smooth = SpatialSmoothing(channel_index=self.channel_index)
 
@@ -318,3 +318,10 @@ class Classifier(ABC):
         div = np.asarray(div, dtype=grad.dtype)
         res = grad / div
         return res
+
+    def __repr__(self):
+        repr_ = "%s(clip_values=%r, channel_index=%r, defences=%r, preprocessing=%r)" \
+               % (self.__module__ + '.' + self.__class__.__name__,
+                  self.clip_values, self.channel_index, self.defences, self.preprocessing)
+
+        return repr_

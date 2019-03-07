@@ -480,3 +480,12 @@ class TFClassifier(Classifier):
         saver = tf.train.Saver()
         saver.save(self._sess, full_path)
         logger.info('Model saved in path: %s.', full_path)
+
+    def __repr__(self):
+        repr_ = "%s(clip_values=%r, input_ph=%r, logits=%r, output_ph=%r, train=%r, loss=%r, learnign=%r, " \
+                "sess=%r, channel_index=%r, defences=%r, preprocessing=%r)" \
+                % (self.__module__ + '.' + self.__class__.__name__,
+                   self.clip_values, self._input_ph, self._logits, self._output_ph, self._train, self._loss,
+                   self._learning, self._sess, self.channel_index, self.defences, self.preprocessing)
+
+        return repr_
