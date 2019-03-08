@@ -88,7 +88,7 @@ class ActivationDefence(PoisonFilteringDefence):
         :param kwargs: a dictionary of detection-specific parameters
         :type kwargs: `dict`
         :return: (report, is_clean_lst):
-                where a report is a dictionary that contains information specified by the clustering analysis technique.
+                where a report is a json object that contains information specified by the clustering analysis technique.
                 where is_clean is a list, where is_clean_lst[i]=1 means that x_train[i]
                 there is clean and is_clean_lst[i]=0, means that x_train[i] was classified as poison
         :rtype: `tuple`
@@ -147,9 +147,9 @@ class ActivationDefence(PoisonFilteringDefence):
 
         :param kwargs: a dictionary of cluster-analysis-specific parameters
         :type kwargs: `dict`
-        :return: (report, assigned_clean_by_class), where the report is a dict and assigned_clean_by_class
+        :return: (report, assigned_clean_by_class), where the report is a json object and assigned_clean_by_class
         is an array of arrays that contains what data points where classified as clean.
-        :rtype: `tuple(dict, np.ndarray)`
+        :rtype: `tuple(json, np.ndarray)`
         """
         self.set_params(**kwargs)
 
@@ -178,8 +178,10 @@ class ActivationDefence(PoisonFilteringDefence):
 
         # Add to the report current parameters used to run the defence and the analysis summary
         report = dict(list(report.items()) + list(self.get_params().items()))
+        import json
+        jreport = json.dumps(report)
 
-        return report, self.assigned_clean_by_class
+        return jreport, self.assigned_clean_by_class
 
     def visualize_clusters(self, x_raw, save=True, folder='.', **kwargs):
         """
