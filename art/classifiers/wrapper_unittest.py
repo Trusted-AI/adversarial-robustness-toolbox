@@ -25,7 +25,9 @@ class TestMixinWKerasClassifier(unittest.TestCase):
         # Get MNIST
         (x_train, y_train), (x_test, y_test), _, _ = load_mnist()
         x_train, y_train, x_test, y_test = x_train[:NB_TRAIN], y_train[:NB_TRAIN], x_test[:NB_TEST], y_test[:NB_TEST]
-        cls.mnist = ((x_train, y_train), (x_test, y_test))
+        cls.mnist = (x_train, y_train), (x_test, y_test)
+
+        # Load small Keras model
         cls.model_mnist, _ = get_classifier_kr()
 
     @classmethod
