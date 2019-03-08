@@ -7,10 +7,10 @@ import keras
 import keras.backend as k
 import numpy as np
 from keras.layers import Dense, Conv2D, MaxPooling2D, Dropout, Input, Flatten
-from keras.models import Sequential, Model
+from keras.models import Model
 
 from art.classifiers import KerasClassifier
-from art.utils import load_mnist, master_seed
+from art.utils import load_mnist, get_classifier_kr, master_seed
 
 logger = logging.getLogger('testLogger')
 
@@ -28,23 +28,11 @@ class TestKerasClassifier(unittest.TestCase):
         # Get MNIST
         (x_train, y_train), (x_test, y_test), _, _ = load_mnist()
         x_train, y_train, x_test, y_test = x_train[:NB_TRAIN], y_train[:NB_TRAIN], x_test[:NB_TEST], y_test[:NB_TEST]
-        cls.mnist = ((x_train, y_train), (x_test, y_test))
-        im_shape = x_train[0].shape
+        cls.mnist = (x_train, y_train), (x_test, y_test)
 
-        # Create basic CNN on MNIST; architecture from Keras examples
-        model = Sequential()
-        model.add(Conv2D(32, kernel_size=(3, 3), activation='relu', input_shape=im_shape))
-        model.add(Conv2D(64, (3, 3), activation='relu'))
-        model.add(MaxPooling2D(pool_size=(2, 2)))
-        model.add(Flatten())
-        model.add(Dense(128, activation='relu'))
-        model.add(Dense(10, activation='softmax'))
-
-        model.compile(loss=keras.losses.categorical_crossentropy, optimizer=keras.optimizers.Adadelta(),
-                      metrics=['accuracy'])
-
-        model.fit(x_train, y_train, batch_size=BATCH_SIZE, epochs=3)
-        cls.model_mnist = model
+        # Load small Keras model
+        cls.model_mnist, _ = get_classifier_kr()
+        cls.functional_model = cls.functional_model()
 
         import requests
         import tempfile
@@ -103,12 +91,8 @@ class TestKerasClassifier(unittest.TestCase):
         return model
 
     def test_fit(self):
-        self._test_fit(custom_activation=False)
-        self._test_fit(custom_activation=True)
-
-    def _test_fit(self, custom_activation=False):
         labels = np.argmax(self.mnist[1][1], axis=1)
-        classifier = KerasClassifier((0, 1), self.model_mnist, use_logits=False, custom_activation=custom_activation)
+        classifier = self.model_mnist
         acc = np.sum(np.argmax(classifier.predict(self.mnist[1][0]), axis=1) == labels) / NB_TEST
         logger.info('Accuracy: %.2f%%', (acc * 100))
 
@@ -119,15 +103,11 @@ class TestKerasClassifier(unittest.TestCase):
         self.assertTrue(acc2 >= .9 * acc)
 
     def test_fit_generator(self):
-        self._test_fit_generator(custom_activation=False)
-        self._test_fit_generator(custom_activation=True)
-
-    def _test_fit_generator(self, custom_activation=False):
         from art.classifiers.keras import generator_fit
         from art.data_generators import KerasDataGenerator
 
         labels = np.argmax(self.mnist[1][1], axis=1)
-        classifier = KerasClassifier((0, 1), self.model_mnist, use_logits=False, custom_activation=custom_activation)
+        classifier = self.model_mnist
         acc = np.sum(np.argmax(classifier.predict(self.mnist[1][0]), axis=1) == labels) / NB_TEST
         logger.info('Accuracy: %.2f%%', (acc * 100))
 
@@ -140,16 +120,12 @@ class TestKerasClassifier(unittest.TestCase):
         self.assertTrue(acc2 >= .8 * acc)
 
     def test_fit_image_generator(self):
-        self._test_fit_image_generator(custom_activation=False)
-        self._test_fit_image_generator(custom_activation=True)
-
-    def _test_fit_image_generator(self, custom_activation=False):
         from keras.preprocessing.image import ImageDataGenerator
         from art.data_generators import KerasDataGenerator
 
         x_train, y_train = self.mnist[0]
         labels_test = np.argmax(self.mnist[1][1], axis=1)
-        classifier = KerasClassifier((0, 1), self.model_mnist, use_logits=False, custom_activation=custom_activation)
+        classifier = self.model_mnist
         acc = np.sum(np.argmax(classifier.predict(self.mnist[1][0]), axis=1) == labels_test) / NB_TEST
         logger.info('Accuracy: %.2f%%', (acc * 100))
 
@@ -171,24 +147,20 @@ class TestKerasClassifier(unittest.TestCase):
             return 0.01
 
         # Test a valid callback
-        classifier = KerasClassifier((0, 1), self.model_mnist, use_logits=False)
+        classifier = self.model_mnist
         kwargs = {'callbacks': [LearningRateScheduler(get_lr)]}
         classifier.fit(self.mnist[0][0], self.mnist[0][1], batch_size=BATCH_SIZE, nb_epochs=1, **kwargs)
 
         # Test failure for invalid parameters
-        kwargs = {'epochs': 5}
+        kwargs = {'epochs': 1}
         with self.assertRaises(TypeError) as context:
             classifier.fit(self.mnist[0][0], self.mnist[0][1], batch_size=BATCH_SIZE, nb_epochs=1, **kwargs)
 
         self.assertTrue('multiple values for keyword argument' in str(context.exception))
 
     def test_shapes(self):
-        self._test_shapes(custom_activation=True)
-        self._test_shapes(custom_activation=False)
-
-    def _test_shapes(self, custom_activation=False):
         x_test, y_test = self.mnist[1]
-        classifier = KerasClassifier((0, 1), self.model_mnist, custom_activation=custom_activation)
+        classifier = self.model_mnist
 
         preds = classifier.predict(self.mnist[1][0])
         self.assertTrue(preds.shape == y_test.shape)
@@ -203,7 +175,7 @@ class TestKerasClassifier(unittest.TestCase):
 
     def test_class_gradient(self):
         (_, _), (x_test, _) = self.mnist
-        classifier = KerasClassifier((0, 1), self.model_mnist)
+        classifier = self.model_mnist
 
         # Test all gradients label
         grads = classifier.class_gradient(x_test)
@@ -226,7 +198,7 @@ class TestKerasClassifier(unittest.TestCase):
 
     def test_loss_gradient(self):
         (_, _), (x_test, y_test) = self.mnist
-        classifier = KerasClassifier((0, 1), self.model_mnist)
+        classifier = self.model_mnist
 
         # Test gradient
         grads = classifier.loss_gradient(x_test, y_test)
@@ -240,41 +212,30 @@ class TestKerasClassifier(unittest.TestCase):
 
     def _test_functional_model(self, custom_activation=True):
         # Need to update the functional_model code to produce a model with more than one input and output layers...
-        m = self.functional_model()
-        keras_model = KerasClassifier((0, 1), m, input_layer=1, output_layer=1, custom_activation=custom_activation)
+        keras_model = KerasClassifier((0, 1), self.functional_model, input_layer=1, output_layer=1,
+                                      custom_activation=custom_activation)
         self.assertTrue(keras_model._input.name, "input1")
         self.assertTrue(keras_model._output.name, "output1")
-        keras_model = KerasClassifier((0, 1), m, input_layer=0, output_layer=0, custom_activation=custom_activation)
+        keras_model = KerasClassifier((0, 1), self.functional_model, input_layer=0, output_layer=0,
+                                      custom_activation=custom_activation)
         self.assertTrue(keras_model._input.name, "input0")
         self.assertTrue(keras_model._output.name, "output0")
 
     def test_layers(self):
-        self._test_layers(custom_activation=False)
-        self._test_layers(custom_activation=True)
-
-    def _test_layers(self, custom_activation=False):
         # Get MNIST
         (_, _), (x_test, _), _, _ = load_mnist()
         x_test = x_test[:NB_TEST]
 
-        classifier = KerasClassifier((0, 1), model=self.model_mnist, custom_activation=custom_activation)
-        self.assertEqual(len(classifier.layer_names), 5)
+        classifier = self.model_mnist
+        self.assertEqual(len(classifier.layer_names), 3)
 
         layer_names = classifier.layer_names
         for i, name in enumerate(layer_names):
-            if 'dropout' not in name:
-                act_i = classifier.get_activations(x_test, i)
-                act_name = classifier.get_activations(x_test, name)
-                self.assertAlmostEqual(np.sum(act_name - act_i), 0)
-
-        self.assertTrue(classifier.get_activations(x_test, 0).shape == (NB_TEST, 26, 26, 32))
-        self.assertTrue(classifier.get_activations(x_test, 4).shape == (NB_TEST, 128))
+            act_i = classifier.get_activations(x_test, i)
+            act_name = classifier.get_activations(x_test, name)
+            self.assertAlmostEqual(np.sum(act_name - act_i), 0)
 
     def test_resnet(self):
-        self._test_resnet(custom_activation=False)
-        self._test_resnet(custom_activation=True)
-
-    def _test_resnet(self, custom_activation=False):
         import os
 
         from keras.applications.resnet50 import ResNet50, decode_predictions
@@ -282,7 +243,7 @@ class TestKerasClassifier(unittest.TestCase):
 
         keras.backend.set_learning_phase(0)
         model = ResNet50(weights='imagenet')
-        classifier = KerasClassifier((0, 255), model, custom_activation=custom_activation)
+        classifier = KerasClassifier((0, 255), model)
 
         # Load image from file
         image = img_to_array(load_img(os.path.join(self.test_dir, 'test.jpg'), target_size=(224, 224)))
@@ -292,7 +253,7 @@ class TestKerasClassifier(unittest.TestCase):
         self.assertEqual(label[1], 'Weimaraner')
 
     def test_learning_phase(self):
-        classifier = KerasClassifier((0, 1), self.model_mnist, use_logits=False)
+        classifier = self.model_mnist
 
         self.assertFalse(hasattr(classifier, '_learning_phase'))
         classifier.set_learning_phase(False)
@@ -306,17 +267,13 @@ class TestKerasClassifier(unittest.TestCase):
 
         path = 'tmp'
         filename = 'model.h5'
-        classifier = KerasClassifier((0, 1), model=self.model_mnist)
-        classifier.save(filename, path=path)
+        self.model_mnist.save(filename, path=path)
         self.assertTrue(os.path.isfile(os.path.join(path, filename)))
 
         # Remove saved file
         os.remove(os.path.join(path, filename))
 
     def test_pickle(self):
-        classifier = KerasClassifier((1, 3), self.model_mnist, use_logits=True)
-
-        # Now pickle
         import os
         filename = 'my_classifier.p'
         from art import DATA_PATH
@@ -326,23 +283,23 @@ class TestKerasClassifier(unittest.TestCase):
             os.makedirs(folder)
 
         import pickle
-        pickle.dump(classifier, open(full_path, 'wb'))
+        keras_model = KerasClassifier((0, 1), self.functional_model, input_layer=1, output_layer=1)
+        pickle.dump(keras_model, open(full_path, 'wb'))
 
         # Unpickle:
         with open(full_path, 'rb') as f:
             loaded = pickle.load(f)
 
-            self.assertTrue(classifier._clip_values == loaded._clip_values)
-            self.assertTrue(classifier._channel_index == loaded._channel_index)
-            self.assertTrue(classifier._use_logits == loaded._use_logits)
-            self.assertTrue(classifier._input_layer == loaded._input_layer)
-            self.assertTrue(classifier._model.get_config() == loaded._model.get_config())
+            self.assertTrue(keras_model._clip_values == loaded._clip_values)
+            self.assertTrue(keras_model._channel_index == loaded._channel_index)
+            self.assertTrue(keras_model._use_logits == loaded._use_logits)
+            self.assertTrue(keras_model._input_layer == loaded._input_layer)
+            self.assertTrue(self.functional_model.get_config() == loaded._model.get_config())
 
         os.remove(full_path)
 
     def test_repr(self):
-        classifier = KerasClassifier((0, 1), self.model_mnist, use_logits=False)
-        repr_ = repr(classifier)
+        repr_ = repr(self.model_mnist)
         self.assertTrue('art.classifiers.keras.KerasClassifier' in repr_)
         self.assertTrue('clip_values=(0, 1)' in repr_)
         self.assertTrue('use_logits=False, channel_index=3, defences=None, preprocessing=(0, 1)' in repr_)
