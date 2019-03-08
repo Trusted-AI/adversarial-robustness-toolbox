@@ -4,6 +4,7 @@ Subclass of the ClassifierWrapper can override the behavior of
 key functions, such as loss_gradient, to facilitate new attacks.
 """
 
+
 class ClassifierWrapper(object):
     """
     Wrapper class for any classifier instance
@@ -12,9 +13,10 @@ class ClassifierWrapper(object):
 
     def __init__(self, classifier):
         """
-        Initialize a `ClassifierWrapper` object.
+        Initialize a :class:`.ClassifierWrapper` object.
 
         :param classifier: The Classifier we want to wrap the functionality for the purpose of an attack.
+        :type classifier: :class:`.Classifier`
         """
         self._classifier = classifier
 
