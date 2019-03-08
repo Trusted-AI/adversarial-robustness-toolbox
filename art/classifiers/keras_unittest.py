@@ -8,7 +8,6 @@ import keras.backend as k
 import numpy as np
 from keras.layers import Dense, Conv2D, MaxPooling2D, Dropout, Input, Flatten
 from keras.models import Model
-from memory_profiler import profile
 
 from art.classifiers import KerasClassifier
 from art.utils import load_mnist, get_classifier_kr, master_seed
@@ -22,7 +21,6 @@ NB_TEST = 100
 
 class TestKerasClassifier(unittest.TestCase):
     @classmethod
-    @profile
     def setUpClass(cls):
         k.clear_session()
         k.set_learning_phase(1)
@@ -53,7 +51,6 @@ class TestKerasClassifier(unittest.TestCase):
             f.close()
 
     @classmethod
-    @profile()
     def tearDownClass(cls):
         k.clear_session()
 
@@ -93,7 +90,6 @@ class TestKerasClassifier(unittest.TestCase):
 
         return model
 
-    @profile
     def test_fit(self):
         labels = np.argmax(self.mnist[1][1], axis=1)
         classifier = self.model_mnist
@@ -106,7 +102,6 @@ class TestKerasClassifier(unittest.TestCase):
 
         self.assertTrue(acc2 >= .9 * acc)
 
-    @profile
     def test_fit_generator(self):
         from art.classifiers.keras import generator_fit
         from art.data_generators import KerasDataGenerator
@@ -124,7 +119,6 @@ class TestKerasClassifier(unittest.TestCase):
 
         self.assertTrue(acc2 >= .8 * acc)
 
-    @profile
     def test_fit_image_generator(self):
         from keras.preprocessing.image import ImageDataGenerator
         from art.data_generators import KerasDataGenerator
@@ -146,7 +140,6 @@ class TestKerasClassifier(unittest.TestCase):
 
         self.assertTrue(acc2 >= .8 * acc)
 
-    @profile
     def test_fit_kwargs(self):
         from keras.callbacks import LearningRateScheduler
 
@@ -165,7 +158,6 @@ class TestKerasClassifier(unittest.TestCase):
 
         self.assertTrue('multiple values for keyword argument' in str(context.exception))
 
-    @profile
     def test_shapes(self):
         x_test, y_test = self.mnist[1]
         classifier = self.model_mnist
