@@ -100,7 +100,9 @@ class KerasClassifier(Classifier):
                     preds = self._output
                     loss = k.sparse_categorical_crossentropy(label_ph, preds, from_logits=False)
                 else:
-                    preds, = self._output.op.inputs
+                    # We get a list of tensors that comprise the final "layer" 
+                    # Take the last element
+                    preds = self._output.op.inputs[-1]
                     loss = k.sparse_categorical_crossentropy(label_ph, preds, from_logits=True)
             else:
                 loss = k.sparse_categorical_crossentropy(label_ph, self._output, from_logits=use_logits)

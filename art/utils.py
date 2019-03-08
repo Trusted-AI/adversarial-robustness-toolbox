@@ -573,6 +573,26 @@ def make_directory(dir_path):
     if not os.path.exists(dir_path):
         os.makedirs(dir_path)
 
+def clip_and_round(x, clip_values, round_samples):
+    """
+    Rounds the input to the correct level of granularity.
+    Useful to ensure data passed to classifier can be represented
+    in the correct domain, e.g., [0, 255] integers verses [0,1]
+    or [0, 255] floating points.
+
+    :param x: Sample input with shape as expected by the model.
+    :type x: `np.ndarray`
+    :param clip_values: Tuple of the form `(min, max)` representing the minimum and maximum values allowed
+               for features.
+    :type clip_values: `tuple`
+    :param round_samples: The resolution of the input domain to round the data to, e.g., 1.0, or 1/255. Set to 0 to disable.
+    :type round_samples: `float`
+    """
+    if round_samples == 0:
+        return x
+    x = np.clip(x, *clip_values)
+    x = np.around(x / round_samples) * round_samples
+    return x
 
 # -------------------------------------------------------------------------------------------------- PRE-TRAINED MODELS
 
