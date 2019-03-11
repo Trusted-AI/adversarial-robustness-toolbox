@@ -48,7 +48,6 @@ class KerasClassifier(Classifier):
         self._model = model
         self._input_layer = input_layer
         self._output_layer = output_layer
-        self._use_logits = use_logits
 
         self._initialize_params(model, use_logits, input_layer, output_layer, custom_activation)
 
@@ -92,30 +91,39 @@ class KerasClassifier(Classifier):
                      str(self.input_shape))
 
         # Get predictions and loss function
-        label_ph = k.placeholder(shape=(None,))
+        label_ph = k.placeholder(shape=self._output.shape)
+        if not hasattr(self._model, 'loss'):
+            logger.warning('Keras model has no loss set. Trying to use `k.sparse_categorical_crossentropy`.')
+            loss_function = k.sparse_categorical_crossentropy
+        else:
+            if isinstance(self._model.loss, six.string_types):
+                loss_function = getattr(k, self._model.loss)
+            else:
+                loss_function = getattr(k, self._model.loss.__name__)
+
         self._use_logits = use_logits
         if not use_logits:
             if k.backend() == 'tensorflow':
                 if custom_activation:
                     preds = self._output
-                    loss = k.sparse_categorical_crossentropy(label_ph, preds, from_logits=False)
+                    loss_ = loss_function(label_ph, preds, from_logits=False)
                 else:
                     # We get a list of tensors that comprise the final "layer" 
                     # Take the last element
                     preds = self._output.op.inputs[-1]
-                    loss = k.sparse_categorical_crossentropy(label_ph, preds, from_logits=True)
+                    loss_ = loss_function(label_ph, preds, from_logits=True)
             else:
-                loss = k.sparse_categorical_crossentropy(label_ph, self._output, from_logits=use_logits)
+                loss_ = loss_function(label_ph, self._output, from_logits=use_logits)
 
                 # Convert predictions to logits for consistency with the other cases
                 eps = 10e-8
                 preds = k.log(k.clip(self._output, eps, 1. - eps))
         else:
             preds = self._output
-            loss = k.sparse_categorical_crossentropy(label_ph, self._output, from_logits=use_logits)
+            loss_ = loss_function(label_ph, self._output, from_logits=use_logits)
         if preds == self._input:  # recent Tensorflow version does not allow a model with an output same as the input.
             preds = k.identity(preds)
-        loss_grads = k.gradients(loss, self._input)
+        loss_grads = k.gradients(loss_, self._input)
 
         if k.backend() == 'tensorflow':
             loss_grads = loss_grads[0]
@@ -124,7 +132,7 @@ class KerasClassifier(Classifier):
 
         # Set loss, grads and prediction functions
         self._preds_op = preds
-        self._loss = k.function([self._input], [loss])
+        self._loss = loss_
         self._loss_grads = k.function([self._input, label_ph], [loss_grads])
         self._preds = k.function([self._input], [preds])
 
@@ -143,7 +151,8 @@ class KerasClassifier(Classifier):
         :rtype: `np.ndarray`
         """
         x_ = self._apply_processing(x)
-        grads = self._loss_grads([x_, np.argmax(y, axis=1)])[0]
+
+        grads = self._loss_grads([x_, y])[0]
         grads = self._apply_processing_gradient(grads)
         assert grads.shape == x_.shape
 
