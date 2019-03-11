@@ -1,6 +1,8 @@
 """
-Provides blackbox gradient estimation using NES.
+Provides black-box gradient estimation using NES.
 """
+from __future__ import absolute_import, division, print_function, unicode_literals
+
 import logging
 
 import numpy as np
@@ -11,11 +13,11 @@ from art.utils import clip_and_round
 
 logger = logging.getLogger(__name__)
 
+
 class QueryEfficientBBGradientEstimation(ClassifierWrapper):
     """
-    Implementation of Query-Efficient Black-box Adversarial Examples
-    The attack approximates the gradient by maximizing the loss function
-    over samples drawn from random Gaussian noise around the input.
+    Implementation of Query-Efficient Black-box Adversarial Examples. The attack approximates the gradient by
+    maximizing the loss function over samples drawn from random Gaussian noise around the input.
 
     https://arxiv.org/abs/1712.07113
     """
@@ -40,7 +42,7 @@ class QueryEfficientBBGradientEstimation(ClassifierWrapper):
 
     def _generate_samples(self, x, epsilon_map):
         """
-        Generate samples around the current image
+        Generate samples around the current image.
 
         :param x: Sample input with shape as expected by the model.
         :type x: `np.ndarray`
@@ -76,11 +78,10 @@ class QueryEfficientBBGradientEstimation(ClassifierWrapper):
             # Vanilla
             new_y_minus = np.array([entropy(y[i], p) for p in self.predict(minus)])
             new_y_plus = np.array([entropy(y[i], p) for p in self.predict(plus)])
-            query_efficient_grad = 2*np.mean(np.multiply(
-                epsilon_map.reshape(self.num_basis, -1), 
-                (new_y_plus - new_y_minus).reshape(self.num_basis, -1)
-                / (2*self.sigma)).reshape([-1] + list(self.input_shape)), 
-                axis=0)
+            query_efficient_grad = 2 * np.mean(np.multiply(
+                epsilon_map.reshape(self.num_basis, -1),
+                (new_y_plus - new_y_minus).reshape(self.num_basis, -1) /
+                (2 * self.sigma)).reshape([-1] + list(self.input_shape)), axis=0)
             grads.append(query_efficient_grad)
         grads = self._apply_processing_gradient(np.array(grads))
         return grads
