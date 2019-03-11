@@ -59,11 +59,11 @@ def convert_to_rgb(images):
     :return: Images in RGB format of shape (NxHxWx3).
     :rtype: `np.ndarray`
     """
-    s = np.shape(images)
-    if not ((len(s) == 4 and s[-1] == 1) or len(s) == 3):
-        raise ValueError('Unexpected shape for grayscale images:' + str(s))
+    dims = np.shape(images)
+    if not ((len(dims) == 4 and dims[-1] == 1) or len(dims) == 3):
+        raise ValueError('Unexpected shape for grayscale images:' + str(dims))
 
-    if s[-1] == 1:
+    if dims[-1] == 1:
         # Squeeze channel axis if it exists
         rgb_images = np.squeeze(images, axis=-1)
     else:
@@ -104,7 +104,7 @@ def plot_3d(points, labels, colors=None, save=True, f_name=''):
     :param points: arrays with 3-D coordinates of the plots to be plotted
     :type points: `np.ndarray`
     :param labels: array of integers that determines the color used in the plot for the data point.
-    Need to start from 0 and be sequential from there on.
+        Need to start from 0 and be sequential from there on.
     :type labels: `lst`
     :param colors: Optional argument to specify colors to be used in the plot. If provided, this array should contain
     as many colors as labels.
@@ -117,13 +117,11 @@ def plot_3d(points, labels, colors=None, save=True, f_name=''):
     :rtype: `matplotlib.figure.Figure`
     """
     try:
-        import matplotlib
         import matplotlib.pyplot as plt
-        from mpl_toolkits import mplot3d
 
         if colors is None:
             colors = []
-            for i, label in enumerate(np.unique(labels)):
+            for i in range(len(np.unique(labels))):
                 colors.append('C' + str(i))
         else:
             if len(colors) != len(np.unique(labels)):
@@ -149,4 +147,4 @@ def plot_3d(points, labels, colors=None, save=True, f_name=''):
 
         return fig
     except ImportError:
-        print("matplotlib not installed. For this reason, cluster visualization was not displayed")
+        logger.warning("matplotlib not installed. For this reason, cluster visualization was not displayed.")
