@@ -8,7 +8,7 @@ import logging
 import numpy as np
 from scipy.stats import entropy
 
-from art.classifiers.wrapper import ClassifierWrapper
+from art.wrappers.wrapper import ClassifierWrapper
 from art.utils import clip_and_round
 
 logger = logging.getLogger(__name__)

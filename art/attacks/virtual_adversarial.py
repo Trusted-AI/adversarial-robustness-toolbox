@@ -16,7 +16,7 @@ class VirtualAdversarialMethod(Attack):
     """
     attack_params = Attack.attack_params + ['eps', 'finite_diff', 'max_iter', 'batch_size']
 
-    def __init__(self, classifier, max_iter=1, finite_diff=1e-6, eps=.1, batch_size=128, expectation=None):
+    def __init__(self, classifier, max_iter=1, finite_diff=1e-6, eps=.1, batch_size=128):
         """
         Create a VirtualAdversarialMethod instance.
 
@@ -30,16 +30,12 @@ class VirtualAdversarialMethod(Attack):
         :type max_iter: `int`
         :param batch_size: Batch size
         :type batch_size: `int`
-        :param expectation: An expectation over transformations to be applied when computing
-                            classifier gradients and predictions.
-        :type expectation: :class:`.ExpectationOverTransformations`
         """
         super(VirtualAdversarialMethod, self).__init__(classifier)
         kwargs = {'finite_diff': finite_diff,
                   'eps': eps,
                   'max_iter': max_iter,
-                  'batch_size': batch_size,
-                  'expectation': expectation}
+                  'batch_size': batch_size}
         self.set_params(**kwargs)
 
     def generate(self, x, **kwargs):
@@ -61,7 +57,7 @@ class VirtualAdversarialMethod(Attack):
         assert self.set_params(**kwargs)
         clip_min, clip_max = self.classifier.clip_values
         x_adv = np.copy(x)
-        preds = self._predict(x_adv, logits=False)
+        preds = self.classifier.predict(x_adv, logits=False)
 
         # Pick a small scalar to avoid division by 0
         tol = 1e-10
@@ -77,7 +73,7 @@ class VirtualAdversarialMethod(Attack):
             # Main loop of the algorithm
             for _ in range(self.max_iter):
                 d = self._normalize(d)
-                preds_new = self._predict(batch + d, logits=False)
+                preds_new = self.classifier.predict(batch + d, logits=False)
 
                 from scipy.stats import entropy
                 kl_div1 = entropy(np.transpose(preds[batch_index_1:batch_index_2]), np.transpose(preds_new))
@@ -87,7 +83,7 @@ class VirtualAdversarialMethod(Attack):
                     for h in range(d.shape[2]):
                         for c in range(d.shape[3]):
                             d[:, w, h, c] += self.finite_diff
-                            preds_new = self._predict(batch + d, logits=False)
+                            preds_new = self.classifier.predict(batch + d, logits=False)
                             kl_div2 = entropy(np.transpose(preds[batch_index_1:batch_index_2]), np.transpose(preds_new))
                             d_new[:, w, h, c] = (kl_div2 - kl_div1) / (self.finite_diff + tol)
                             d[:, w, h, c] -= self.finite_diff

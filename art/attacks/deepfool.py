@@ -16,7 +16,7 @@ class DeepFool(Attack):
     """
     attack_params = Attack.attack_params + ['max_iter', 'epsilon', 'nb_grads', 'batch_size']
 
-    def __init__(self, classifier, max_iter=100, epsilon=1e-6, nb_grads=10, batch_size=128, expectation=None):
+    def __init__(self, classifier, max_iter=100, epsilon=1e-6, nb_grads=10, batch_size=128):
         """
         Create a DeepFool attack instance.
 
@@ -31,11 +31,8 @@ class DeepFool(Attack):
         :type nb_grads: `int`
         :param batch_size: Batch size
         :type batch_size: `int`
-        :param expectation: An expectation over transformations to be applied when computing
-                            classifier gradients and predictions.
-        :type expectation: :class:`.ExpectationOverTransformations`
         """
-        super(DeepFool, self).__init__(classifier=classifier, expectation=expectation)
+        super(DeepFool, self).__init__(classifier=classifier)
         params = {'max_iter': max_iter, 'epsilon': epsilon, 'nb_grads': nb_grads, 'batch_size': batch_size}
         self.set_params(**params)
 
@@ -54,16 +51,13 @@ class DeepFool(Attack):
         :type nb_grads: `int`
         :param batch_size: Batch size
         :type batch_size: `int`
-        :param expectation: An expectation over transformations to be applied when computing
-                            classifier gradients and predictions.
-        :type expectation: :class:`.ExpectationOverTransformations`
         :return: An array holding the adversarial examples.
         :rtype: `np.ndarray`
         """
         self.set_params(**kwargs)
         clip_min, clip_max = self.classifier.clip_values
         x_adv = x.copy()
-        preds = self._predict(x, logits=True)
+        preds = self.classifier.predict(x, logits=True)
 
         # Determine the class labels for which to compute the gradients
         use_grads_subset = self.nb_grads < self.classifier.nb_classes
@@ -88,11 +82,11 @@ class DeepFool(Attack):
             fk_hat = np.argmax(f, axis=1)
             if use_grads_subset:
                 # Compute gradients only for top predicted classes
-                grd = np.array([self._class_gradient(batch, logits=True, label=_) for _ in labels_set])
+                grd = np.array([self.classifier.class_gradient(batch, logits=True, label=_) for _ in labels_set])
                 grd = np.squeeze(np.swapaxes(grd, 0, 2), axis=0)
             else:
                 # Compute gradients for all classes
-                grd = self._class_gradient(batch, logits=True)
+                grd = self.classifier.class_gradient(batch, logits=True)
 
             # Get current predictions
             active_indices = np.arange(len(batch))
@@ -116,17 +110,17 @@ class DeepFool(Attack):
                 batch[active_indices] = np.clip(batch[active_indices] + r[active_indices], clip_min, clip_max)
 
                 # Recompute prediction for new x
-                f = self._predict(batch, logits=True)
+                f = self.classifier.predict(batch, logits=True)
                 fk_i_hat = np.argmax(f, axis=1)
 
                 # Recompute gradients for new x
                 if use_grads_subset:
                     # Compute gradients only for (originally) top predicted classes
-                    grd = np.array([self._class_gradient(batch, logits=True, label=_) for _ in labels_set])
+                    grd = np.array([self.classifier.class_gradient(batch, logits=True, label=_) for _ in labels_set])
                     grd = np.squeeze(np.swapaxes(grd, 0, 2), axis=0)
                 else:
                     # Compute gradients for all classes
-                    grd = self._class_gradient(batch, logits=True)
+                    grd = self.classifier.class_gradient(batch, logits=True)
 
                 # Stop if misclassification has been achieved
                 active_indices = np.where(fk_i_hat != fk_hat)[0]
@@ -139,7 +133,7 @@ class DeepFool(Attack):
                 1 + self.epsilon) * (batch - x_adv[batch_index_1:batch_index_2]), clip_min, clip_max)
 
         preds = np.argmax(preds, axis=1)
-        preds_adv = np.argmax(self._predict(x_adv), axis=1)
+        preds_adv = np.argmax(self.classifier.predict(x_adv), axis=1)
         logger.info('Success rate of DeepFool attack: %.2f%%', (np.sum(preds != preds_adv) / x.shape[0]))
 
         return x_adv
@@ -157,9 +151,6 @@ class DeepFool(Attack):
         :type nb_grads: `int`
         :param batch_size: Internal size of batches on which adversarial samples are generated.
         :type batch_size: `int`
-        :param expectation: An expectation over transformations to be applied when computing
-                            classifier gradients and predictions.
-        :type expectation: :class:`.ExpectationOverTransformations`
         """
         # Save attack-specific parameters
         super(DeepFool, self).set_params(**kwargs)

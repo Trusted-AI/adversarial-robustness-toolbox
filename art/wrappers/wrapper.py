@@ -9,7 +9,7 @@ class ClassifierWrapper(object):
     """
     Wrapper class for any classifier instance
     """
-    attack_params = ['_classifier']
+    attack_params = ['classifier']
 
     def __init__(self, classifier):
         """
@@ -18,24 +18,24 @@ class ClassifierWrapper(object):
         :param classifier: The Classifier we want to wrap the functionality for the purpose of an attack.
         :type classifier: :class:`.Classifier`
         """
-        self._classifier = classifier
+        self.classifier = classifier
 
     def __getattr__(self, attr):
         """
         A generic grab-bag for the classifier instance
         This makes the wrapped class look like a subclass
         """
-        return getattr(self._classifier, attr)
+        return getattr(self.classifier, attr)
 
     def __setattr__(self, attr, value):
         """
         A generic grab-bag for the classifier instance
         This makes the wrapped class look like a subclass
         """
-        if attr == '_classifier':
+        if attr == 'classifier':
             object.__setattr__(self, attr, value)
         else:
-            setattr(self._classifier, attr, value)
+            setattr(self.classifier, attr, value)
 
     def set_params(self, **kwargs):
         """
