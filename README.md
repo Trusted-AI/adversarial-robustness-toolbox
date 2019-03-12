@@ -6,7 +6,7 @@ This is a library dedicated to **adversarial machine learning**. Its purpose is 
 
 The library is still under development. Feedback, bug reports and extensions are highly appreciated.
 
-## Supported attack and defense methods
+## Supported attacks, defences and metrics
 
 The library contains implementations of the following **evasion attacks**:
 * DeepFool ([Moosavi-Dezfooli et al., 2015](https://arxiv.org/abs/1511.04599))
@@ -16,10 +16,11 @@ The library contains implementations of the following **evasion attacks**:
 * Jacobian saliency map ([Papernot et al., 2016](https://arxiv.org/abs/1511.07528))
 * Universal perturbation ([Moosavi-Dezfooli et al., 2016](https://arxiv.org/abs/1610.08401))
 * Virtual adversarial method ([Miyato et al., 2015](https://arxiv.org/abs/1507.00677))
-* C&amp;W `L_2` and `L_inf` attack ([Carlini and Wagner, 2016](https://arxiv.org/abs/1608.04644))
+* C&amp;W `L_2` and `L_inf` attacks ([Carlini and Wagner, 2016](https://arxiv.org/abs/1608.04644))
 * NewtonFool ([Jang et al., 2017](http://doi.acm.org/10.1145/3134600.3134635))
 * Elastic net attack ([Chen et al., 2017](https://arxiv.org/abs/1709.04114))
 * Spatial transformations attack ([Engstrom et al., 2017](https://arxiv.org/abs/1712.02779))
+* Query-efficient black-box attack ([Ilyas et al., 2017](https://arxiv.org/abs/1712.07113))
 
 The following **defence** methods are also supported:
 * Feature squeezing ([Xu et al., 2017](http://arxiv.org/abs/1704.01155))
@@ -31,6 +32,7 @@ The following **defence** methods are also supported:
 * Thermometer encoding ([Buckman et al., 2018](https://openreview.net/forum?id=S18Su--CW))
 * Total variance minimization ([Guo et al., 2018](https://openreview.net/forum?id=SyJ7ClWCb))
 * JPEG compression ([Dziugaite et al., 2016](https://arxiv.org/abs/1608.00853))
+* PixelDefend ([Song et al., 2017](https://arxiv.org/abs/1710.10766))
 
 ART also implements **detection** methods of adversarial samples:
 * Basic detector based on inputs
@@ -39,12 +41,17 @@ ART also implements **detection** methods of adversarial samples:
 The following **detector of poisoning attacks** is also supported:
 * Detector based on activations analysis ([Chen et al., 2018](https://arxiv.org/abs/1811.03728))
 
+**Robustness metrics**:
+* CLEVER ([Weng et al., 2018](https://arxiv.org/abs/1801.10578))
+* Empirical robustness ([Moosavi-Dezfooli et al., 2015](https://arxiv.org/abs/1511.04599))
+* Loss sensitivity ([Arpit et al., 2017](https://arxiv.org/abs/1706.05394))
+
 ## Setup
 
 ### Installation with `pip`
 
 The toolbox is designed to run with Python 2 and 3.
-The library can be installed from the PyPi repository using `pip`:
+ART can be installed from the PyPi repository using `pip`:
 
 ```bash
 pip install adversarial-robustness-toolbox
