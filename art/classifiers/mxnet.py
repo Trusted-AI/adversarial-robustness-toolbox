@@ -80,7 +80,7 @@ class MXClassifier(Classifier):
         # Get the internal layer
         self._layer_names = self._get_layers()
 
-    def fit(self, x, y, batch_size=128, nb_epochs=20):
+    def fit(self, x, y, batch_size=128, nb_epochs=20, **kwargs):
         """
         Fit the classifier on the training set `(inputs, outputs)`.
 
@@ -90,8 +90,11 @@ class MXClassifier(Classifier):
         :type y: `np.ndarray`
         :param batch_size: Size of batches.
         :type batch_size: `int`
-        :param nb_epochs: Number of epochs to use for trainings.
+        :param nb_epochs: Number of epochs to use for training.
         :type nb_epochs: `int`
+        :param kwargs: Dictionary of framework-specific arguments. This parameter is not currently supported for MXNet
+               and providing it takes no effect.
+        :type kwargs: `dict`
         :return: `None`
         """
         if self._optimizer is None:
@@ -126,14 +129,17 @@ class MXClassifier(Classifier):
                 # Update parameters
                 self._optimizer.step(batch_size)
 
-    def fit_generator(self, generator, nb_epochs=20):
+    def fit_generator(self, generator, nb_epochs=20, **kwargs):
         """
         Fit the classifier using the generator that yields batches as specified.
 
         :param generator: Batch generator providing `(x, y)` for each epoch.
-        :type generator: `DataGenerator`
-        :param nb_epochs: Number of epochs to use for trainings.
+        :type generator: :class:`.DataGenerator`
+        :param nb_epochs: Number of epochs to use for training.
         :type nb_epochs: `int`
+        :param kwargs: Dictionary of framework-specific arguments. This parameter is not currently supported for MXNet
+               and providing it takes no effect.
+        :type kwargs: `dict`
         :return: `None`
         """
         import mxnet as mx
@@ -330,7 +336,7 @@ class MXClassifier(Classifier):
         """
         return self._layer_names
 
-    def get_activations(self, x, layer):
+    def get_activations(self, x, layer, batch_size=128):
         """
         Return the output of the specified layer for input `x`. `layer` is specified by layer index (between 0 and
         `nb_layers - 1`) or by name. The number of layers can be determined by counting the results returned by
@@ -340,6 +346,8 @@ class MXClassifier(Classifier):
         :type x: `np.ndarray`
         :param layer: Layer for computing the activations
         :type layer: `int` or `str`
+        :param batch_size: Size of batches.
+        :type batch_size: `int`
         :return: The output of `layer`, where the first dimension is the batch size corresponding to `x`.
         :rtype: `np.ndarray`
         """
@@ -383,7 +391,9 @@ class MXClassifier(Classifier):
 
     def save(self, filename, path=None):
         """
-        Save a model to file in the format specific to the backend framework.
+        Save a model to file in the format specific to the backend framework. For Gluon, only parameters are saved in
+        file with name `<filename>.params` at the specified path. To load the saved model, the original model code needs
+        to be run before calling `load_parameters` on the generated Gluon model.
 
         :param filename: Name of the file where to store the model.
         :type filename: `str`
@@ -392,7 +402,28 @@ class MXClassifier(Classifier):
         :type path: `str`
         :return: None
         """
-        raise NotImplementedError
+        import os
+
+        if path is None:
+            from art import DATA_PATH
+            full_path = os.path.join(DATA_PATH, filename)
+        else:
+            full_path = os.path.join(path, filename)
+        folder = os.path.split(full_path)[0]
+        if not os.path.exists(folder):
+            os.makedirs(folder)
+
+        self._model.save_parameters(full_path + '.params')
+        logger.info("Model parameters saved in path: %s.params.", full_path)
+
+    def __repr__(self):
+        repr_ = "%s(clip_values=%r, model=%r, input_shape=%r, nb_classes=%r, optimizer=%r, ctx=%r, channel_index=%r, " \
+                "defences=%r, preprocessing=%r)" \
+                % (self.__module__ + '.' + self.__class__.__name__,
+                   self.clip_values, self._model, self.input_shape, self.nb_classes, self._optimizer, self._ctx,
+                   self.channel_index, self.defences, self.preprocessing)
+
+        return repr_
 
     def _get_layers(self):
         """

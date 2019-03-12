@@ -119,7 +119,7 @@ class PyTorchClassifier(Classifier):
 
         return results
 
-    def fit(self, x, y, batch_size=128, nb_epochs=10):
+    def fit(self, x, y, batch_size=128, nb_epochs=10, **kwargs):
         """
         Fit the classifier on the training set `(x, y)`.
 
@@ -129,8 +129,11 @@ class PyTorchClassifier(Classifier):
         :type y: `np.ndarray`
         :param batch_size: Size of batches.
         :type batch_size: `int`
-        :param nb_epochs: Number of epochs to use for trainings.
+        :param nb_epochs: Number of epochs to use for training.
         :type nb_epochs: `int`
+        :param kwargs: Dictionary of framework-specific arguments. This parameter is not currently supported for PyTorch
+               and providing it takes no effect.
+        :type kwargs: `dict`
         :return: `None`
         """
         import torch
@@ -165,14 +168,17 @@ class PyTorchClassifier(Classifier):
                 loss.backward()
                 self._optimizer.step()
 
-    def fit_generator(self, generator, nb_epochs=20):
+    def fit_generator(self, generator, nb_epochs=20, **kwargs):
         """
         Fit the classifier using the generator that yields batches as specified.
 
         :param generator: Batch generator providing `(x, y)` for each epoch.
-        :type generator: `DataGenerator`
-        :param nb_epochs: Number of epochs to use for trainings.
+        :type generator: :class:`.DataGenerator`
+        :param nb_epochs: Number of epochs to use for training.
         :type nb_epochs: `int`
+        :param kwargs: Dictionary of framework-specific arguments. This parameter is not currently supported for PyTorch
+               and providing it takes no effect.
+        :type kwargs: `dict`
         :return: `None`
         """
         import torch
@@ -352,7 +358,7 @@ class PyTorchClassifier(Classifier):
         """
         return self._layer_names
 
-    def get_activations(self, x, layer):
+    def get_activations(self, x, layer, batch_size=128):
         """
         Return the output of the specified layer for input `x`. `layer` is specified by layer index (between 0 and
         `nb_layers - 1`) or by name. The number of layers can be determined by counting the results returned by
@@ -362,17 +368,18 @@ class PyTorchClassifier(Classifier):
         :type x: `np.ndarray`
         :param layer: Layer for computing the activations
         :type layer: `int` or `str`
+        :param batch_size: Size of batches.
+        :type batch_size: `int`
         :return: The output of `layer`, where the first dimension is the batch size corresponding to `x`.
         :rtype: `np.ndarray`
         """
         import torch
 
         # Apply defences
-        x = self._apply_defences_predict(x)
+        x_ = self._apply_processing(x)
+        x_ = self._apply_defences_predict(x_)
 
-        # Run prediction
-        model_outputs = self._model(torch.from_numpy(x).to(self._device).float())[:-1]
-
+        # Get index of the extracted layer
         if isinstance(layer, six.string_types):
             if layer not in self._layer_names:
                 raise ValueError("Layer name %s not supported" % layer)
@@ -384,7 +391,20 @@ class PyTorchClassifier(Classifier):
         else:
             raise TypeError("Layer must be of type str or int")
 
-        return model_outputs[layer_index].detach().cpu().numpy()
+        # Run prediction with batch processing
+        results = []
+        num_batch = int(np.ceil(len(x_) / float(batch_size)))
+        for m in range(num_batch):
+            # Batch indexes
+            begin, end = m * batch_size, min((m + 1) * batch_size, x_.shape[0])
+
+            # Run prediction for the current batch
+            layer_output = self._model(torch.from_numpy(x_[begin:end]).to(self._device).float())[layer_index]
+            results.append(layer_output.detach().cpu().numpy())
+
+        results = np.concatenate(results)
+
+        return results
 
     def set_learning_phase(self, train):
         """
@@ -423,6 +443,15 @@ class PyTorchClassifier(Classifier):
         torch.save(self._optimizer.state_dict(), full_path + '.optimizer')
         logger.info("Model state dict saved in path: %s.", full_path + '.model')
         logger.info("Optimizer state dict saved in path: %s.", full_path + '.optimizer')
+
+    def __repr__(self):
+        repr_ = "%s(clip_values=%r, model=%r, loss=%r, optimizer=%r, input_shape=%r, nb_classes=%r, " \
+                "channel_index=%r, defences=%r, preprocessing=%r)" \
+                % (self.__module__ + '.' + self.__class__.__name__,
+                   self.clip_values, self._model, self._loss, self._optimizer, self._input_shape, self.nb_classes,
+                   self.channel_index, self.defences, self.preprocessing)
+
+        return repr_
 
     # def _forward_at(self, inputs, layer):
     #     """

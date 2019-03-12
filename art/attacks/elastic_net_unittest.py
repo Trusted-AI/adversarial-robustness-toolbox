@@ -20,45 +20,25 @@ from __future__ import absolute_import, division, print_function, unicode_litera
 import logging
 import unittest
 
-import keras
 import keras.backend as k
 import numpy as np
 import tensorflow as tf
-import torch.nn as nn
-import torch.optim as optim
-from keras.layers import Dense, Flatten, Conv2D, MaxPooling2D
-from keras.models import Sequential
 
 from art.attacks import ElasticNet
-from art.classifiers import KerasClassifier, PyTorchClassifier, TFClassifier
-from art.utils import load_mnist, random_targets, master_seed
+from art.utils import load_mnist, random_targets, master_seed, get_classifier_tf, get_classifier_kr, get_classifier_pt
 
 logger = logging.getLogger('testLogger')
 
-BATCH_SIZE, NB_TRAIN, NB_TEST = 100, 500, 10
-
-
-class Model(nn.Module):
-    def __init__(self):
-        super(Model, self).__init__()
-        self.conv = nn.Conv2d(1, 16, 5)
-        self.pool = nn.MaxPool2d(2, 2)
-        self.fc = nn.Linear(2304, 10)
-
-    def forward(self, x):
-        import torch.nn.functional as f
-
-        x = self.pool(f.relu(self.conv(x)))
-        x = x.view(-1, 2304)
-        logit_output = self.fc(x)
-
-        return logit_output
+BATCH_SIZE = 100
+NB_TRAIN = 500
+NB_TEST = 10
 
 
 class TestElasticNet(unittest.TestCase):
     """
     A unittest class for testing the ElasticNet attack.
     """
+
     @classmethod
     def setUpClass(cls):
         # Get MNIST
@@ -76,34 +56,11 @@ class TestElasticNet(unittest.TestCase):
         Test the corner case when attack fails.
         :return:
         """
-        # Build a TFClassifier
-        # Define input and output placeholders
-        input_ph = tf.placeholder(tf.float32, shape=[None, 28, 28, 1])
-        output_ph = tf.placeholder(tf.int32, shape=[None, 10])
-
-        # Define the tensorflow graph
-        conv = tf.layers.conv2d(input_ph, 4, 5, activation=tf.nn.relu)
-        conv = tf.layers.max_pooling2d(conv, 2, 2)
-        fc = tf.contrib.layers.flatten(conv)
-
-        # Logits layer
-        logits = tf.layers.dense(fc, 10)
-
-        # Train operator
-        loss = tf.reduce_mean(tf.losses.softmax_cross_entropy(logits=logits, onehot_labels=output_ph))
-        optimizer = tf.train.AdamOptimizer(learning_rate=0.01)
-        train = optimizer.minimize(loss)
-
-        # Tensorflow session and initialization
-        sess = tf.Session()
-        sess.run(tf.global_variables_initializer())
+        # Build TFClassifier
+        tfc, sess = get_classifier_tf()
 
         # Get MNIST
-        (x_train, y_train), (x_test, y_test) = self.mnist
-
-        # Train the classifier
-        tfc = TFClassifier((0, 1), input_ph, logits, output_ph, train, loss, None, sess)
-        tfc.fit(x_train, y_train, batch_size=BATCH_SIZE, nb_epochs=10)
+        (_, _), (x_test, y_test) = self.mnist
 
         # Failure attack
         ead = ElasticNet(classifier=tfc, targeted=True, max_iter=0, binary_search_steps=0, learning_rate=0,
@@ -123,34 +80,11 @@ class TestElasticNet(unittest.TestCase):
         First test with the TFClassifier.
         :return:
         """
-        # Build a TFClassifier
-        # Define input and output placeholders
-        input_ph = tf.placeholder(tf.float32, shape=[None, 28, 28, 1])
-        output_ph = tf.placeholder(tf.int32, shape=[None, 10])
-
-        # Define the tensorflow graph
-        conv = tf.layers.conv2d(input_ph, 4, 5, activation=tf.nn.relu)
-        conv = tf.layers.max_pooling2d(conv, 2, 2)
-        fc = tf.contrib.layers.flatten(conv)
-
-        # Logits layer
-        logits = tf.layers.dense(fc, 10)
-
-        # Train operator
-        loss = tf.reduce_mean(tf.losses.softmax_cross_entropy(logits=logits, onehot_labels=output_ph))
-        optimizer = tf.train.AdamOptimizer(learning_rate=0.01)
-        train = optimizer.minimize(loss)
-
-        # Tensorflow session and initialization
-        sess = tf.Session()
-        sess.run(tf.global_variables_initializer())
+        # Build TFClassifier
+        tfc, sess = get_classifier_tf()
 
         # Get MNIST
-        (x_train, y_train), (x_test, y_test) = self.mnist
-
-        # Train the classifier
-        tfc = TFClassifier((0, 1), input_ph, logits, output_ph, train, loss, None, sess)
-        tfc.fit(x_train, y_train, batch_size=BATCH_SIZE, nb_epochs=10)
+        (_, _), (x_test, y_test) = self.mnist
 
         # First attack
         ead = ElasticNet(classifier=tfc, targeted=True, max_iter=2)
@@ -229,26 +163,11 @@ class TestElasticNet(unittest.TestCase):
         Second test with the KerasClassifier.
         :return:
         """
-        # Initialize a tf session
-        session = tf.Session()
-        k.set_session(session)
+        # Build KerasClassifier
+        krc, sess = get_classifier_kr()
 
         # Get MNIST
-        (x_train, y_train), (x_test, y_test) = self.mnist
-
-        # Create simple CNN
-        model = Sequential()
-        model.add(Conv2D(4, kernel_size=(5, 5), activation='relu', input_shape=(28, 28, 1)))
-        model.add(MaxPooling2D(pool_size=(2, 2)))
-        model.add(Flatten())
-        model.add(Dense(10, activation='softmax'))
-
-        model.compile(loss=keras.losses.categorical_crossentropy, optimizer=keras.optimizers.Adam(lr=0.01),
-                      metrics=['accuracy'])
-
-        # Get classifier
-        krc = KerasClassifier((0, 1), model, use_logits=False)
-        krc.fit(x_train, y_train, batch_size=BATCH_SIZE, nb_epochs=10)
+        (_, _), (x_test, y_test) = self.mnist
 
         # First attack
         ead = ElasticNet(classifier=krc, targeted=True, max_iter=2)
@@ -285,21 +204,12 @@ class TestElasticNet(unittest.TestCase):
         Third test with the PyTorchClassifier.
         :return:
         """
+        # Build PyTorchClassifier
+        ptc = get_classifier_pt()
+
         # Get MNIST
-        (x_train, y_train), (x_test, y_test) = self.mnist
-        x_train = np.swapaxes(x_train, 1, 3)
+        (_, _), (x_test, y_test) = self.mnist
         x_test = np.swapaxes(x_test, 1, 3)
-
-        # Define the network
-        model = Model()
-
-        # Define a loss function and optimizer
-        loss_fn = nn.CrossEntropyLoss()
-        optimizer = optim.Adam(model.parameters(), lr=0.01)
-
-        # Get classifier
-        ptc = PyTorchClassifier((0, 1), model, loss_fn, optimizer, (1, 28, 28), 10)
-        ptc.fit(x_train, y_train, batch_size=BATCH_SIZE, nb_epochs=10)
 
         # First attack
         ead = ElasticNet(classifier=ptc, targeted=True, max_iter=2)

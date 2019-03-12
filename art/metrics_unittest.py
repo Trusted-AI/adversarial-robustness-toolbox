@@ -327,7 +327,7 @@ class TestClever(unittest.TestCase):
         krc.fit(x_train, y_train, batch_size=batch_size, nb_epochs=2)
 
         scores = clever(krc, x_test[0], 5, 5, 3, 2, target=None, c_init=1, pool_factor=10)
-        logger.info("Clever scores for n-1 classes: %f %s", scores, str(scores.shape))
+        logger.info("Clever scores for n-1 classes: %s %s", str(scores), str(scores.shape))
         self.assertTrue(scores.shape == (krc.nb_classes-1,))
 
     def test_clever_l2_no_target_sorted(self):

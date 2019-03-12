@@ -25,7 +25,7 @@ import numpy as np
 
 from art import DATA_PATH
 from art.utils import load_mnist, load_cifar10, master_seed
-from art.visualization import create_sprite, convert_to_rgb, save_image
+from art.visualization import create_sprite, convert_to_rgb, save_image, plot_3d
 
 logger = logging.getLogger('testLogger')
 
@@ -111,6 +111,23 @@ class TestVisualization(unittest.TestCase):
         self.assertTrue(os.path.isfile(path))
 
         os.remove(path)  # Remove data added
+
+    # @unittest.expectedFailure
+    # def test_3D_plot_fail(self):
+    #     points = [[1, 1, 1],
+    #               [2, 2, 2],
+    #               [3, 3, 3]]
+    #     labels = [1, 1, 3]
+    #
+    #     plot_3d(points, labels, save=False)
+
+    def test_3D_plot(self):
+        points = [[1, 1, 1],
+                  [2, 2, 2],
+                  [3, 3, 3]]
+        labels = [0, 1, 1]
+
+        plot_3d(points, labels, save=False)
 
 
 if __name__ == '__main__':

@@ -2,20 +2,12 @@
 ====================
 .. automodule:: art.detection
 
-Base Class
-----------
-.. autoclass:: Detector
-   :members:
-   :special-members:
-
 Binary Input Detector
 ---------------------
 .. autoclass:: BinaryInputDetector
    :members:
-   :special-members:
 
-BinaryActivationDetector
-------------------------
+Binary Activation Detector
+--------------------------
 .. autoclass:: BinaryActivationDetector
    :members:
-   :special-members:
