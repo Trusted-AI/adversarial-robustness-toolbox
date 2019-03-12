@@ -1,8 +1,8 @@
 """
 Module defining an interface for data generators and providing concrete implementations for the supported frameworks.
 Their purpose is to allow for data loading and batching on the fly, as well as dynamic data augmentation.
-The generators can be used with the `fit_generator` function in the :class:`Classifier` interface. Users can define
-their own generators following the :class:`DataGenerator` interface.
+The generators can be used with the `fit_generator` function in the :class:`.Classifier` interface. Users can define
+their own generators following the :class:`.DataGenerator` interface.
 """
 from __future__ import absolute_import, division, print_function, unicode_literals
 

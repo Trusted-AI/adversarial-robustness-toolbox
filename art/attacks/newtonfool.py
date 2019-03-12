@@ -21,7 +21,7 @@ class NewtonFool(Attack):
         Create a NewtonFool attack instance.
 
         :param classifier: A trained model.
-        :type classifier: :class:`Classifier`
+        :type classifier: :class:`.Classifier`
         :param max_iter: The maximum number of iterations.
         :type max_iter: `int`
         :param eta: The eta coefficient.
@@ -30,7 +30,7 @@ class NewtonFool(Attack):
         :type batch_size: `int`
         :param expectation: An expectation over transformations to be applied when computing
                             classifier gradients and predictions.
-        :type expectation: :class:`ExpectationOverTransformations`
+        :type expectation: :class:`.ExpectationOverTransformations`
         """
         super(NewtonFool, self).__init__(classifier)
         params = {"max_iter": max_iter, "eta": eta, "batch_size": batch_size, "expectation": expectation}

@@ -6,7 +6,7 @@ import numpy as np
 
 from art import NUMPY_DTYPE
 from art.attacks.attack import Attack
-from art.utils import get_labels_np_array
+from art.utils import get_labels_np_array, tanh_to_original, original_to_tanh
 
 logger = logging.getLogger(__name__)
 
@@ -28,7 +28,7 @@ class CarliniL2Method(Attack):
         Create a Carlini L_2 attack instance.
 
         :param classifier: A trained model.
-        :type classifier: :class:`Classifier`
+        :type classifier: :class:`.Classifier`
         :param confidence: Confidence of adversarial examples: a higher value produces examples that are farther away,
                 from the original input, but classified with higher confidence as the target class.
         :type confidence: `float`
@@ -53,7 +53,7 @@ class CarliniL2Method(Attack):
         :type batch_size: `int`
         :param expectation: An expectation over transformations to be applied when computing
                             classifier gradients and predictions.
-        :type expectation: :class:`ExpectationOverTransformations`
+        :type expectation: :class:`.ExpectationOverTransformations`
         """
         super(CarliniL2Method, self).__init__(classifier)
 
@@ -73,7 +73,10 @@ class CarliniL2Method(Attack):
         # There are internal hyperparameters:
         # Abort binary search for c if it exceeds this threshold (suggested in Carlini and Wagner (2016)):
         self._c_upper_bound = 10e10
-        # Smooth arguments of arctanh by multiplying with this constant to avoid division by zero:
+
+        # Smooth arguments of arctanh by multiplying with this constant to avoid division by zero.
+        # It appears this is what Carlini and Wagner (2016) are alluding to in their footnote 8. However, it is not
+        # clear how their proposed trick ("instead of scaling by 1/2 we scale by 1/2 + eps") works in detail.
         self._tanh_smoother = 0.999999
 
     def _loss(self, x, x_adv, target, c):
@@ -156,44 +159,6 @@ class CarliniL2Method(Attack):
 
         return loss_gradient
 
-    def _original_to_tanh(self, x_original, clip_min, clip_max):
-        """
-        Transform input from original to tanh space.
-
-        :param x_original: An array with the input to be transformed.
-        :type x_original: `np.ndarray`
-        :param clip_min: Minimum clipping value.
-        :type clip_min: `float`
-        :param clip_max: Maximum clipping value.
-        :type clip_max: `float`
-        :return: An array holding the transformed input.
-        :rtype: `np.ndarray`
-        """
-        # To avoid division by zero (which occurs if arguments of arctanh are +1 or -1),
-        # we multiply arguments with _tanh_smoother. It appears this is what Carlini and Wagner
-        # (2016) are alluding to in their footnote 8. However, it is not clear how their proposed trick
-        # ("instead of scaling by 1/2 we scale by 1/2 + eps") works in detail.
-        x_tanh = np.clip(x_original, clip_min, clip_max)
-        x_tanh = (x_tanh - clip_min) / (clip_max - clip_min)
-        x_tanh = np.arctanh(((x_tanh * 2) - 1) * self._tanh_smoother)
-        return x_tanh
-
-    def _tanh_to_original(self, x_tanh, clip_min, clip_max):
-        """
-        Transform input from tanh to original space.
-
-        :param x_tanh: An array with the input to be transformed.
-        :type x_tanh: `np.ndarray`
-        :param clip_min: Minimum clipping value.
-        :type clip_min: `float`
-        :param clip_max: Maximum clipping value.
-        :type clip_max: `float`
-        :return: An array holding the transformed input.
-        :rtype: `np.ndarray`
-        """
-        x_original = (np.tanh(x_tanh) / self._tanh_smoother + 1) / 2
-        return x_original * (clip_max - clip_min) + clip_min
-
     def generate(self, x, **kwargs):
         """
         Generate adversarial samples and return them in an array.
@@ -233,7 +198,7 @@ class CarliniL2Method(Attack):
 
             # The optimization is performed in tanh space to keep the
             # adversarial images bounded from clip_min and clip_max.
-            x_batch_tanh = self._original_to_tanh(x_batch, clip_min, clip_max)
+            x_batch_tanh = original_to_tanh(x_batch, clip_min, clip_max, self._tanh_smoother)
 
             # Initialize binary search:
             c = self.initial_const * np.ones(x_batch.shape[0])
@@ -309,7 +274,8 @@ class CarliniL2Method(Attack):
 
                         new_x_adv_batch_tanh = x_adv_batch_tanh[active_and_do_halving] + \
                             lr_mult * perturbation_tanh[do_halving]
-                        new_x_adv_batch = self._tanh_to_original(new_x_adv_batch_tanh, clip_min, clip_max)
+                        new_x_adv_batch = tanh_to_original(new_x_adv_batch_tanh, clip_min, clip_max,
+                                                           self._tanh_smoother)
                         _, l2dist[active_and_do_halving], loss[active_and_do_halving] = self._loss(
                             x_batch[active_and_do_halving], new_x_adv_batch, y_batch[active_and_do_halving],
                             c[active_and_do_halving])
@@ -342,7 +308,8 @@ class CarliniL2Method(Attack):
 
                         new_x_adv_batch_tanh = x_adv_batch_tanh[active_and_do_doubling] + \
                             lr_mult * perturbation_tanh[do_doubling]
-                        new_x_adv_batch = self._tanh_to_original(new_x_adv_batch_tanh, clip_min, clip_max)
+                        new_x_adv_batch = tanh_to_original(new_x_adv_batch_tanh, clip_min, clip_max,
+                                                           self._tanh_smoother)
                         _, l2dist[active_and_do_doubling], loss[active_and_do_doubling] = self._loss(
                             x_batch[active_and_do_doubling], new_x_adv_batch, y_batch[active_and_do_doubling],
                             c[active_and_do_doubling])
@@ -365,8 +332,8 @@ class CarliniL2Method(Attack):
                             best_lr_mult = best_lr_mult[:, np.newaxis]
                         x_adv_batch_tanh[active_and_update_adv] = x_adv_batch_tanh[active_and_update_adv] + \
                             best_lr_mult * perturbation_tanh[update_adv]
-                        x_adv_batch[active_and_update_adv] = \
-                            self._tanh_to_original(x_adv_batch_tanh[active_and_update_adv], clip_min, clip_max)
+                        x_adv_batch[active_and_update_adv] = tanh_to_original(x_adv_batch_tanh[active_and_update_adv],
+                                                                              clip_min, clip_max, self._tanh_smoother)
                         z[active_and_update_adv], l2dist[active_and_update_adv], loss[active_and_update_adv] = \
                             self._loss(x_batch[active_and_update_adv], x_adv_batch[active_and_update_adv],
                                        y_batch[active_and_update_adv], c[active_and_update_adv])
@@ -462,7 +429,7 @@ class CarliniLInfMethod(Attack):
         Create a Carlini L_Inf attack instance.
 
         :param classifier: A trained model.
-        :type classifier: :class:`Classifier`
+        :type classifier: :class:`.Classifier`
         :param confidence: Confidence of adversarial examples: a higher value produces examples that are farther away,
                 from the original input, but classified with higher confidence as the target class.
         :type confidence: `float`
@@ -483,7 +450,7 @@ class CarliniLInfMethod(Attack):
         :type batch_size: `int`
         :param expectation: An expectation over transformations to be applied when computing
                             classifier gradients and predictions.
-        :type expectation: :class:`ExpectationOverTransformations`
+        :type expectation: :class:`.ExpectationOverTransformations`
         """
         super(CarliniLInfMethod, self).__init__(classifier)
 
@@ -638,7 +605,7 @@ class CarliniLInfMethod(Attack):
 
             # The optimization is performed in tanh space to keep the
             # adversarial images bounded from clip_min and clip_max.
-            x_batch_tanh = self._original_to_tanh(x_batch, clip_min, clip_max)
+            x_batch_tanh = original_to_tanh(x_batch, clip_min, clip_max, self._tanh_smoother)
 
             # Initialize perturbation in tanh space:
             x_adv_batch = x_batch.copy()

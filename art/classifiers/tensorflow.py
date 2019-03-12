@@ -54,7 +54,7 @@ class TFClassifier(Classifier):
         super(TFClassifier, self).__init__(clip_values=clip_values, channel_index=channel_index, defences=defences,
                                            preprocessing=preprocessing)
         self._nb_classes = int(logits.get_shape()[-1])
-        self._input_shape = tuple(input_ph.get_shape()[1:])
+        self._input_shape = tuple(input_ph.get_shape().as_list()[1:])
         self._input_ph = input_ph
         self._logits = logits
         self._output_ph = output_ph
@@ -116,7 +116,7 @@ class TFClassifier(Classifier):
 
         return results
 
-    def fit(self, x, y, batch_size=128, nb_epochs=10):
+    def fit(self, x, y, batch_size=128, nb_epochs=10, **kwargs):
         """
         Fit the classifier on the training set `(x, y)`.
 
@@ -126,8 +126,11 @@ class TFClassifier(Classifier):
         :type y: `np.ndarray`
         :param batch_size: Size of batches.
         :type batch_size: `int`
-        :param nb_epochs: Number of epochs to use for trainings.
+        :param nb_epochs: Number of epochs to use for training.
         :type nb_epochs: `int`
+        :param kwargs: Dictionary of framework-specific arguments. This parameter is not currently supported for
+               TensorFlow and providing it takes no effect.
+        :type kwargs: `dict`
         :return: `None`
         """
         # Check if train and output_ph available
@@ -158,15 +161,18 @@ class TFClassifier(Classifier):
                 # Run train step
                 self._sess.run(self._train, feed_dict=fd)
 
-    def fit_generator(self, generator, nb_epochs=20):
+    def fit_generator(self, generator, nb_epochs=20, **kwargs):
         """
         Fit the classifier using the generator that yields batches as specified.
 
         :param generator: Batch generator providing `(x, y)` for each epoch. If the generator can be used for native
                           training in TensorFlow, it will.
-        :type generator: `DataGenerator`
-        :param nb_epochs: Number of epochs to use for trainings.
+        :type generator: :class:`.DataGenerator`
+        :param nb_epochs: Number of epochs to use for training.
         :type nb_epochs: `int`
+        :param kwargs: Dictionary of framework-specific arguments. This parameter is not currently supported for
+               TensorFlow and providing it takes no effect.
+        :type kwargs: `dict`
         :return: `None`
         """
         from art.data_generators import TFDataGenerator
@@ -184,8 +190,7 @@ class TFClassifier(Classifier):
 
                     # Run train step
                     self._sess.run(self._train, feed_dict=fd)
-        else:
-            super(TFClassifier, self).fit_generator(generator, nb_epochs=nb_epochs)
+            super(TFClassifier, self).fit_generator(generator, nb_epochs=nb_epochs, **kwargs)
 
     def class_gradient(self, x, label=None, logits=False):
         """
@@ -414,19 +419,28 @@ class TFClassifier(Classifier):
         else:
             raise TypeError("Layer must be of type `str` or `int`. Received '%s'", layer)
 
-        # Get activations
         # Apply preprocessing and defences
         x_ = self._apply_processing(x)
         x_ = self._apply_defences_predict(x_)
 
-        # Create feed_dict
-        fd = {self._input_ph: x_}
-        fd.update(self._feed_dict)
+        # Run prediction with batch processing
+        results = []
+        num_batch = int(np.ceil(len(x_) / float(batch_size)))
+        for m in range(num_batch):
+            # Batch indexes
+            begin, end = m * batch_size, min((m + 1) * batch_size, x_.shape[0])
 
-        # Run prediction
-        result = self._sess.run(layer_tensor, feed_dict=fd)
+            # Create feed_dict
+            fd = {self._input_ph: x_[begin:end]}
+            fd.update(self._feed_dict)
 
-        return result
+            # Run prediction for the current batch
+            layer_output = self._sess.run(layer_tensor, feed_dict=fd)
+            results.append(layer_output)
+
+        results = np.concatenate(results)
+
+        return results
 
     def set_learning_phase(self, train):
         """
@@ -465,3 +479,12 @@ class TFClassifier(Classifier):
         saver = tf.train.Saver()
         saver.save(self._sess, full_path)
         logger.info('Model saved in path: %s.', full_path)
+
+    def __repr__(self):
+        repr_ = "%s(clip_values=%r, input_ph=%r, logits=%r, output_ph=%r, train=%r, loss=%r, learnign=%r, " \
+                "sess=%r, channel_index=%r, defences=%r, preprocessing=%r)" \
+                % (self.__module__ + '.' + self.__class__.__name__,
+                   self.clip_values, self._input_ph, self._logits, self._output_ph, self._train, self._loss,
+                   self._learning, self._sess, self.channel_index, self.defences, self.preprocessing)
+
+        return repr_

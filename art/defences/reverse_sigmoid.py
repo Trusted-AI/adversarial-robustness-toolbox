@@ -25,7 +25,7 @@ class ReverseSigmoid(NetworkManipulator):
         :type classifier: `Classifier`
         :return: A manipulated model derived from the given model. While the given model will be unchanged, its
                  component can be used in the manipulated model, and hence the manipulated model will be updated if the
-                 given model is updated, which does not break the :class:`ReverseSigmoid` defense.
+                 given model is updated, which does not break the :class:`.ReverseSigmoid` defense.
         """
         if streamlined:
             if isinstance(classifier, KerasClassifier):
@@ -39,7 +39,7 @@ class ReverseSigmoid(NetworkManipulator):
                 manipulated_model = Model(inputs=x, outputs=y)
                 return KerasClassifier(classifier.clip_values, manipulated_model, use_logits=False,
                                        channel_index=classifier.channel_index, defences=classifier.defences,
-                                       preprocessing=classifier._preprocessing, input_layer=input_layer,
+                                       preprocessing=classifier.preprocessing, input_layer=input_layer,
                                        output_layer=output_layer, custom_activation=True)
             else:
                 raise NotImplementedError("End-to-end network integration of the defense is implemented only for"

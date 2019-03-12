@@ -42,7 +42,7 @@ class Classifier(ABC):
         if len(preprocessing) != 2:
             raise ValueError('`preprocessing` should be a tuple of 2 floats with the substract and divide values for'
                              'the model inputs.')
-        self._preprocessing = preprocessing
+        self.preprocessing = preprocessing
 
     @abc.abstractmethod
     def predict(self, x, logits=False, batch_size=128):
@@ -61,7 +61,7 @@ class Classifier(ABC):
         raise NotImplementedError
 
     @abc.abstractmethod
-    def fit(self, x, y, batch_size=128, nb_epochs=20):
+    def fit(self, x, y, batch_size=128, nb_epochs=20, **kwargs):
         """
         Fit the classifier on the training set `(x, y)`.
 
@@ -71,21 +71,25 @@ class Classifier(ABC):
         :type y: `np.ndarray`
         :param batch_size: Size of batches.
         :type batch_size: `int`
-        :param nb_epochs: Number of epochs to use for trainings.
+        :param nb_epochs: Number of epochs to use for training.
         :type nb_epochs: `int`
+        :param kwargs: Dictionary of framework-specific arguments.
+        :type kwargs: `dict`
         :return: `None`
         """
         raise NotImplementedError
 
-    def fit_generator(self, generator, nb_epochs=20):
+    def fit_generator(self, generator, nb_epochs=20, **kwargs):
         """
         Fit the classifier using the generator `gen` that yields batches as specified. Framework implementations can
         provide framework-specific versions of this function to speed-up computation.
 
         :param generator: Batch generator providing `(x, y)` for each epoch.
-        :type generator: `DataGenerator`
-        :param nb_epochs: Number of epochs to use for trainings.
+        :type generator: :class:`.DataGenerator`
+        :param nb_epochs: Number of epochs to use for training.
         :type nb_epochs: `int`
+        :param kwargs: Dictionary of framework-specific arguments.
+        :type kwargs: `dict`
         :return: `None`
         """
         from art.data_generators import DataGenerator
@@ -102,7 +106,7 @@ class Classifier(ABC):
             x, y = self._apply_defences_fit(x, y)
 
             # Fit for current batch
-            self.fit(x, y, nb_epochs=1, batch_size=len(x))
+            self.fit(x, y, nb_epochs=1, batch_size=len(x), **kwargs)
 
     @property
     def nb_classes(self):
@@ -253,23 +257,23 @@ class Classifier(ABC):
             import re
             pattern = re.compile("featsqueeze[1-8]?")
 
-            for d in defences:
-                if pattern.match(d):
+            for defence in defences:
+                if pattern.match(defence):
                     try:
                         from art.defences import FeatureSqueezing
 
-                        bit_depth = int(d[-1])
+                        bit_depth = int(defence[-1])
                         self.feature_squeeze = FeatureSqueezing(bit_depth=bit_depth)
                     except:
                         raise ValueError('You must specify the bit depth for feature squeezing: featsqueeze[1-8]')
 
                 # Add label smoothing
-                if d == 'labsmooth':
+                if defence == 'labsmooth':
                     from art.defences import LabelSmoothing
                     self.label_smooth = LabelSmoothing()
 
                 # Add spatial smoothing
-                if d == 'smooth':
+                if defence == 'smooth':
                     from art.defences import SpatialSmoothing
                     self.smooth = SpatialSmoothing(channel_index=self.channel_index)
 
@@ -298,7 +302,7 @@ class Classifier(ABC):
     def _apply_processing(self, x):
         import numpy as np
 
-        sub, div = self._preprocessing
+        sub, div = self.preprocessing
         sub = np.asarray(sub, dtype=x.dtype)
         div = np.asarray(div, dtype=x.dtype)
 
@@ -310,7 +314,14 @@ class Classifier(ABC):
     def _apply_processing_gradient(self, grad):
         import numpy as np
 
-        _, div = self._preprocessing
+        _, div = self.preprocessing
         div = np.asarray(div, dtype=grad.dtype)
         res = grad / div
         return res
+
+    def __repr__(self):
+        repr_ = "%s(clip_values=%r, channel_index=%r, defences=%r, preprocessing=%r)" \
+               % (self.__module__ + '.' + self.__class__.__name__,
+                  self.clip_values, self.channel_index, self.defences, self.preprocessing)
+
+        return repr_

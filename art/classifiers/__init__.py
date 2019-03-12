@@ -1,16 +1,11 @@
 """
-Classifier API for applying all attacks. Use the :class:`Classifier` wrapper to be able to apply an attack to a
+Classifier API for applying all attacks. Use the :class:`.Classifier` wrapper to be able to apply an attack to a
 preexisting model.
 """
 from art.classifiers.classifier import Classifier
 from art.classifiers.keras import KerasClassifier
 from art.classifiers.mxnet import MXClassifier
+from art.classifiers.pytorch import PyTorchClassifier
 from art.classifiers.tensorflow import TFClassifier
 from art.classifiers.ensemble import EnsembleClassifier
-
-# PyTorchClassifier class creation requires `torch` install; create class only if `torch` is present
-# Otherwise, silence `torch` import error until the user actually tries to use the class
-try:
-    from art.classifiers.pytorch import PyTorchClassifier
-except ImportError:
-    pass
+from art.classifiers.wrapper import ClassifierWrapper

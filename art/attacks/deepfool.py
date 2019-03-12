@@ -21,7 +21,7 @@ class DeepFool(Attack):
         Create a DeepFool attack instance.
 
         :param classifier: A trained model.
-        :type classifier: :class:`Classifier`
+        :type classifier: :class:`.Classifier`
         :param max_iter: The maximum number of iterations.
         :type max_iter: `int`
         :param epsilon: Overshoot parameter.
@@ -33,7 +33,7 @@ class DeepFool(Attack):
         :type batch_size: `int`
         :param expectation: An expectation over transformations to be applied when computing
                             classifier gradients and predictions.
-        :type expectation: :class:`ExpectationOverTransformations`
+        :type expectation: :class:`.ExpectationOverTransformations`
         """
         super(DeepFool, self).__init__(classifier=classifier, expectation=expectation)
         params = {'max_iter': max_iter, 'epsilon': epsilon, 'nb_grads': nb_grads, 'batch_size': batch_size}
@@ -56,7 +56,7 @@ class DeepFool(Attack):
         :type batch_size: `int`
         :param expectation: An expectation over transformations to be applied when computing
                             classifier gradients and predictions.
-        :type expectation: :class:`ExpectationOverTransformations`
+        :type expectation: :class:`.ExpectationOverTransformations`
         :return: An array holding the adversarial examples.
         :rtype: `np.ndarray`
         """
@@ -159,7 +159,7 @@ class DeepFool(Attack):
         :type batch_size: `int`
         :param expectation: An expectation over transformations to be applied when computing
                             classifier gradients and predictions.
-        :type expectation: :class:`ExpectationOverTransformations`
+        :type expectation: :class:`.ExpectationOverTransformations`
         """
         # Save attack-specific parameters
         super(DeepFool, self).set_params(**kwargs)

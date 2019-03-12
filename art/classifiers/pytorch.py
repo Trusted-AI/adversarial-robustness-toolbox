@@ -48,7 +48,7 @@ class PyTorchClassifier(Classifier):
 
         self._nb_classes = nb_classes
         self._input_shape = input_shape
-        self._model = PyTorchClassifier.ModelWrapper(model)
+        self._model = self._make_model_wrapper(model)
         self._loss = loss
         self._optimizer = optimizer
 
@@ -102,7 +102,7 @@ class PyTorchClassifier(Classifier):
 
         return results
 
-    def fit(self, x, y, batch_size=128, nb_epochs=10):
+    def fit(self, x, y, batch_size=128, nb_epochs=10, **kwargs):
         """
         Fit the classifier on the training set `(x, y)`.
 
@@ -112,8 +112,11 @@ class PyTorchClassifier(Classifier):
         :type y: `np.ndarray`
         :param batch_size: Size of batches.
         :type batch_size: `int`
-        :param nb_epochs: Number of epochs to use for trainings.
+        :param nb_epochs: Number of epochs to use for training.
         :type nb_epochs: `int`
+        :param kwargs: Dictionary of framework-specific arguments. This parameter is not currently supported for PyTorch
+               and providing it takes no effect.
+        :type kwargs: `dict`
         :return: `None`
         """
         import torch
@@ -148,14 +151,17 @@ class PyTorchClassifier(Classifier):
                 loss.backward()
                 self._optimizer.step()
 
-    def fit_generator(self, generator, nb_epochs=20):
+    def fit_generator(self, generator, nb_epochs=20, **kwargs):
         """
         Fit the classifier using the generator that yields batches as specified.
 
         :param generator: Batch generator providing `(x, y)` for each epoch.
-        :type generator: `DataGenerator`
-        :param nb_epochs: Number of epochs to use for trainings.
+        :type generator: :class:`.DataGenerator`
+        :param nb_epochs: Number of epochs to use for training.
         :type nb_epochs: `int`
+        :param kwargs: Dictionary of framework-specific arguments. This parameter is not currently supported for PyTorch
+               and providing it takes no effect.
+        :type kwargs: `dict`
         :return: `None`
         """
         import torch
@@ -353,11 +359,10 @@ class PyTorchClassifier(Classifier):
         import torch
 
         # Apply defences
-        x = self._apply_defences_predict(x)
+        x_ = self._apply_processing(x)
+        x_ = self._apply_defences_predict(x_)
 
-        # Run prediction
-        model_outputs = self._model(torch.from_numpy(x).to(self._device).float())[:-1]
-
+        # Get index of the extracted layer
         if isinstance(layer, six.string_types):
             if layer not in self._layer_names:
                 raise ValueError("Layer name %s not supported" % layer)
@@ -369,7 +374,20 @@ class PyTorchClassifier(Classifier):
         else:
             raise TypeError("Layer must be of type str or int")
 
-        return model_outputs[layer_index].detach().cpu().numpy()
+        # Run prediction with batch processing
+        results = []
+        num_batch = int(np.ceil(len(x_) / float(batch_size)))
+        for m in range(num_batch):
+            # Batch indexes
+            begin, end = m * batch_size, min((m + 1) * batch_size, x_.shape[0])
+
+            # Run prediction for the current batch
+            layer_output = self._model(torch.from_numpy(x_[begin:end]).to(self._device).float())[layer_index]
+            results.append(layer_output.detach().cpu().numpy())
+
+        results = np.concatenate(results)
+
+        return results
 
     def set_learning_phase(self, train):
         """
@@ -393,7 +411,30 @@ class PyTorchClassifier(Classifier):
         :type path: `str`
         :return: None
         """
-        raise NotImplementedError
+        import os
+        import torch
+
+        if path is None:
+            from art import DATA_PATH
+            full_path = os.path.join(DATA_PATH, filename)
+        else:
+            full_path = os.path.join(path, filename)
+        folder = os.path.split(full_path)[0]
+        if not os.path.exists(folder):
+            os.makedirs(folder)
+        torch.save(self._model.state_dict(), full_path + '.model')
+        torch.save(self._optimizer.state_dict(), full_path + '.optimizer')
+        logger.info("Model state dict saved in path: %s.", full_path + '.model')
+        logger.info("Optimizer state dict saved in path: %s.", full_path + '.optimizer')
+
+    def __repr__(self):
+        repr_ = "%s(clip_values=%r, model=%r, loss=%r, optimizer=%r, input_shape=%r, nb_classes=%r, " \
+                "channel_index=%r, defences=%r, preprocessing=%r)" \
+                % (self.__module__ + '.' + self.__class__.__name__,
+                   self.clip_values, self._model, self._loss, self._optimizer, self._input_shape, self.nb_classes,
+                   self.channel_index, self.defences, self.preprocessing)
+
+        return repr_
 
     # def _forward_at(self, inputs, layer):
     #     """
@@ -417,82 +458,94 @@ class PyTorchClassifier(Classifier):
     #
     #     return results
 
-    try:
-        import torch.nn as nn
+    def _make_model_wrapper(self, model):
+        # Try to import PyTorch and create an internal class that acts like a model wrapper extending torch.nn.Module
+        try:
+            import torch.nn as nn
 
-        class ModelWrapper(nn.Module):
-            """
-            This is a wrapper for the input model.
-            """
+            # Define model wrapping class only if not defined before
+            if not hasattr(self, '_ModelWrapper'):
 
-            def __init__(self, model):
-                """
-                Initialization by storing the input model.
+                class ModelWrapper(nn.Module):
+                    """
+                    This is a wrapper for the input model.
+                    """
 
-                :param model: PyTorch model. The forward function of the model must return the logit output.
-                :type model: is instance of `torch.nn.Module`
-                """
-                super(PyTorchClassifier.ModelWrapper, self).__init__()
-                self._model = model
+                    def __init__(self, model):
+                        """
+                        Initialization by storing the input model.
 
-            def forward(self, x):
-                """
-                This is where we get outputs from the input model.
+                        :param model: PyTorch model. The forward function of the model must return the logit output.
+                        :type model: is instance of `torch.nn.Module`
+                        """
+                        super(ModelWrapper, self).__init__()
+                        self._model = model
 
-                :param x: Input data.
-                :type x: `torch.Tensor`
-                :return: a list of output layers, where the last 2 layers are logit and final outputs.
-                :rtype: `list`
-                """
-                import torch.nn as nn
+                    def forward(self, x):
+                        """
+                        This is where we get outputs from the input model.
 
-                result = []
-                if isinstance(self._model, nn.Sequential):
-                    for _, module_ in self._model._modules.items():
-                        x = module_(x)
-                        result.append(x)
+                        :param x: Input data.
+                        :type x: `torch.Tensor`
+                        :return: a list of output layers, where the last 2 layers are logit and final outputs.
+                        :rtype: `list`
+                        """
+                        import torch.nn as nn
 
-                elif isinstance(self._model, nn.Module):
-                    x = self._model(x)
-                    result.append(x)
+                        result = []
+                        if isinstance(self._model, nn.Sequential):
+                            for _, module_ in self._model._modules.items():
+                                x = module_(x)
+                                result.append(x)
 
-                else:
-                    raise TypeError("The input model must inherit from `nn.Module`.")
+                        elif isinstance(self._model, nn.Module):
+                            x = self._model(x)
+                            result.append(x)
 
-                output_layer = nn.functional.softmax(x, dim=1)
-                result.append(output_layer)
+                        else:
+                            raise TypeError("The input model must inherit from `nn.Module`.")
 
-                return result
+                        output_layer = nn.functional.softmax(x, dim=1)
+                        result.append(output_layer)
 
-            @property
-            def get_layers(self):
-                """
-                Return the hidden layers in the model, if applicable.
+                        return result
 
-                :return: The hidden layers in the model, input and output layers excluded.
-                :rtype: `list`
+                    @property
+                    def get_layers(self):
+                        """
+                        Return the hidden layers in the model, if applicable.
 
-                .. warning:: `get_layers` tries to infer the internal structure of the model.
-                             This feature comes with no guarantees on the correctness of the result.
-                             The intended order of the layers tries to match their order in the model, but this is not
-                             guaranteed either. In addition, the function can only infer the internal layers if the
-                             input model is of type `nn.Sequential`, otherwise, it will only return the logit layer.
-                """
-                import torch.nn as nn
+                        :return: The hidden layers in the model, input and output layers excluded.
+                        :rtype: `list`
 
-                result = []
-                if isinstance(self._model, nn.Sequential):
-                    for name, module_ in self._model._modules.items():
-                        result.append(name + "_" + str(module_))
+                        .. warning:: `get_layers` tries to infer the internal structure of the model.
+                                     This feature comes with no guarantees on the correctness of the result.
+                                     The intended order of the layers tries to match their order in the model, but this
+                                     is not guaranteed either. In addition, the function can only infer the internal
+                                     layers if the input model is of type `nn.Sequential`, otherwise, it will only
+                                     return the logit layer.
+                        """
+                        import torch.nn as nn
 
-                elif isinstance(self._model, nn.Module):
-                    result.append("logit_layer")
+                        result = []
+                        if isinstance(self._model, nn.Sequential):
+                            for name, module_ in self._model._modules.items():
+                                result.append(name + "_" + str(module_))
 
-                else:
-                    raise TypeError("The input model must inherit from `nn.Module`.")
-                logger.info('Inferred %i hidden layers on PyTorch classifier.', len(result))
+                        elif isinstance(self._model, nn.Module):
+                            result.append("logit_layer")
 
-                return result
+                        else:
+                            raise TypeError("The input model must inherit from `nn.Module`.")
+                        logger.info('Inferred %i hidden layers on PyTorch classifier.', len(result))
 
-    except ImportError:
-        raise ImportError('Could not find PyTorch (`torch`) installation.')
+                        return result
+
+                # Set newly created class as private attribute
+                self._ModelWrapper = ModelWrapper
+
+            # Use model wrapping class to wrap the PyTorch model received as argument
+            return self._ModelWrapper(model)
+
+        except ImportError:
+            raise ImportError('Could not find PyTorch (`torch`) installation.')
