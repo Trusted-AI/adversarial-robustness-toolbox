@@ -44,7 +44,6 @@ class TestAdversarialPatch(unittest.TestCase):
 
         # Get MNIST
         (x_train, _), (_, _) = self.mnist
-        print(x_train.shape)
 
         # Attack
         attack_params = {"target_ys": np.zeros((10, 10)), "rotation_max": 22.5, "scale_min": 0.1, "scale_max": 1.0,
@@ -53,9 +52,9 @@ class TestAdversarialPatch(unittest.TestCase):
         attack_ap = AdversarialPatch(tfc)
         patch_adv = attack_ap.generate(x_train, **attack_params)
 
-        self.assertTrue(patch_adv[8, 8, 0] == -60.0)
-        self.assertTrue(patch_adv[14, 14, 0] == 10.0)
-        self.assertTrue(np.sum(patch_adv) == -15560.0)
+        self.assertTrue(patch_adv[8, 8, 0] == -50.0)
+        self.assertTrue(patch_adv[14, 14, 0] == -30.0)
+        self.assertTrue(np.sum(patch_adv) == -14360.0)
 
         sess.close()
         tf.reset_default_graph()
@@ -78,9 +77,9 @@ class TestAdversarialPatch(unittest.TestCase):
         attack_ap = AdversarialPatch(krc)
         patch_adv = attack_ap.generate(x_train, **attack_params)
 
-        self.assertTrue(patch_adv[8, 8, 0] == 0.0)
-        self.assertTrue(patch_adv[14, 14, 0] == -30.0)
-        self.assertTrue(np.sum(patch_adv) == -13510.0)
+        self.assertTrue(patch_adv[8, 8, 0] == 40.0)
+        self.assertTrue(patch_adv[14, 14, 0] == -50.0)
+        self.assertTrue(np.sum(patch_adv) == -14160.0)
 
         k.clear_session()
 
@@ -103,9 +102,9 @@ class TestAdversarialPatch(unittest.TestCase):
         attack_ap = AdversarialPatch(ptc)
         patch_adv = attack_ap.generate(x_train, **attack_params)
 
-        self.assertTrue(patch_adv[0, 8, 8] == -20.0)
-        self.assertTrue(patch_adv[0, 14, 14] == -30.0)
-        self.assertTrue(np.sum(patch_adv) == 350.0)
+        self.assertTrue(patch_adv[0, 8, 8] == -10.0)
+        self.assertTrue(patch_adv[0, 14, 14] == 30.0)
+        self.assertTrue(np.sum(patch_adv) == -2560.0)
 
     if __name__ == '__main__':
         unittest.main()
