@@ -20,7 +20,7 @@ class AdversarialPatch(Attack):
     attack_params = Attack.attack_params + ["target_ys", "rotation_max", "scale_min", "scale_max", "learning_rate",
                                             "number_of_steps", "image_shape", "patch_shape", "batch_size"]
 
-    def __init__(self, classifier, target_ys=np.zeros((16, 1000)), rotation_max=22.5, scale_min=0.1, scale_max=1.0,
+    def __init__(self, classifier, target_ys=None, rotation_max=22.5, scale_min=0.1, scale_max=1.0,
                  learning_rate=5.0, number_of_steps=500, image_shape=(224, 224, 3), patch_shape=(224, 224, 3),
                  batch_size=16, expectation=None):
         """
@@ -49,6 +49,8 @@ class AdversarialPatch(Attack):
         :type expectation: :class:`.ExpectationOverTransformations`
         """
         super(AdversarialPatch, self).__init__(classifier=classifier, expectation=expectation)
+        if target_ys is None:
+            target_ys = np.zeros((batch_size, 10))
         kwargs = {"target_ys": target_ys,
                   "rotation_max": rotation_max,
                   "scale_min": scale_min,
@@ -136,12 +138,10 @@ class AdversarialPatch(Attack):
             if key in self.attack_params:
                 setattr(self, key, value)
 
-        if not isinstance(self.target_ys, np.ndarray):
+        if self.target_ys is not None and not isinstance(self.target_ys, np.ndarray):
             raise ValueError("The target labels must be of type np.ndarray.")
-        if not len(self.target_ys.shape) == 2:
+        if self.target_ys is not None and not len(self.target_ys.shape) == 2:
             raise ValueError("The target labels must be of dimension 2.")
-        if not self.target_ys.shape[0] == self.batch_size:
-            raise ValueError("The first dimension of the target labels must be equal to batch_size.")
 
         if not isinstance(self.rotation_max, (float, int)):
             raise ValueError("The maximum rotation of the random patches must be of type float.")
@@ -200,8 +200,8 @@ class AdversarialPatch(Attack):
 
         mask = 1 - np.clip(z, -1, 1)
 
-        pad_1 = round((shape[1] - mask.shape[1]) / 2)
-        pad_2 = shape[1] - pad_1 - mask.shape[1]
+        pad_1 = int((shape[1] - mask.shape[1]) / 2)
+        pad_2 = int(shape[1] - pad_1 - mask.shape[1])
         mask = np.pad(mask, pad_width=(pad_1, pad_2), mode='constant', constant_values=(0, 0))
 
         if self.classifier.channel_index == 3:
