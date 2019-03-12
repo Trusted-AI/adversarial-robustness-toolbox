@@ -47,14 +47,14 @@ class TestAdversarialPatch(unittest.TestCase):
 
         # Attack
         attack_params = {"target_ys": np.zeros((10, 10)), "rotation_max": 22.5, "scale_min": 0.1, "scale_max": 1.0,
-                         "learning_rate": 5.0, "number_of_steps": 50, "image_shape": (28, 28, 1),
+                         "learning_rate": 5.0, "number_of_steps": 5, "image_shape": (28, 28, 1),
                          "patch_shape": (28, 28, 1), "batch_size": 10}
         attack_ap = AdversarialPatch(tfc)
         patch_adv = attack_ap.generate(x_train, **attack_params)
 
-        self.assertTrue(patch_adv[8, 8, 0] == -50.0)
-        self.assertTrue(patch_adv[14, 14, 0] == -30.0)
-        self.assertTrue(np.sum(patch_adv) == -14360.0)
+        self.assertTrue(patch_adv[8, 8, 0] == -5.0)
+        self.assertTrue(patch_adv[14, 14, 0] == -15.0)
+        self.assertTrue(np.sum(patch_adv) == 450.0)
 
         sess.close()
         tf.reset_default_graph()
@@ -72,14 +72,14 @@ class TestAdversarialPatch(unittest.TestCase):
 
         # Attack
         attack_params = {"target_ys": np.zeros((10, 10)), "rotation_max": 22.5, "scale_min": 0.1, "scale_max": 1.0,
-                         "learning_rate": 5.0, "number_of_steps": 50, "image_shape": (28, 28, 1),
+                         "learning_rate": 5.0, "number_of_steps": 5, "image_shape": (28, 28, 1),
                          "patch_shape": (28, 28, 1), "batch_size": 10}
         attack_ap = AdversarialPatch(krc)
         patch_adv = attack_ap.generate(x_train, **attack_params)
 
-        self.assertTrue(patch_adv[8, 8, 0] == 40.0)
-        self.assertTrue(patch_adv[14, 14, 0] == -50.0)
-        self.assertTrue(np.sum(patch_adv) == -14160.0)
+        self.assertTrue(patch_adv[8, 8, 0] == 15.0)
+        self.assertTrue(patch_adv[14, 14, 0] == 5.0)
+        self.assertTrue(np.sum(patch_adv) == -1080.0)
 
         k.clear_session()
 
@@ -97,14 +97,14 @@ class TestAdversarialPatch(unittest.TestCase):
 
         # Attack
         attack_params = {"target_ys": np.zeros((10, 10)), "rotation_max": 22.5, "scale_min": 0.1, "scale_max": 1.0,
-                         "learning_rate": 5.0, "number_of_steps": 50, "image_shape": (1, 28, 28),
+                         "learning_rate": 5.0, "number_of_steps": 5, "image_shape": (1, 28, 28),
                          "patch_shape": (1, 28, 28), "batch_size": 10}
         attack_ap = AdversarialPatch(ptc)
         patch_adv = attack_ap.generate(x_train, **attack_params)
 
-        self.assertTrue(patch_adv[0, 8, 8] == -10.0)
-        self.assertTrue(patch_adv[0, 14, 14] == 30.0)
-        self.assertTrue(np.sum(patch_adv) == -2560.0)
+        self.assertTrue(patch_adv[0, 8, 8] == -5.0)
+        self.assertTrue(patch_adv[0, 14, 14] == 5.0)
+        self.assertTrue(np.sum(patch_adv) == -450.0)
 
     if __name__ == '__main__':
         unittest.main()
