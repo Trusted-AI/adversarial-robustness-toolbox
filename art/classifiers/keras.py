@@ -42,21 +42,47 @@ class KerasClassifier(Classifier):
                output probability rather than the logits by attacks.
         :type custom_activation: `bool`
         """
-        import keras.backend as k
-
         super(KerasClassifier, self).__init__(clip_values=clip_values, channel_index=channel_index, defences=defences,
                                               preprocessing=preprocessing)
 
         self._model = model
+        self._input_layer = input_layer
+        self._output_layer = output_layer
+
+        self._initialize_params(model, use_logits, input_layer, output_layer, custom_activation)
+
+    def _initialize_params(self, model, use_logits, input_layer, output_layer, custom_activation):
+        """
+        Initialize most parameters of the classifier. This is a convenience function called by `__init__` and
+        `__setstate__` to avoid code duplication.
+
+        :param model: Keras model
+        :type model: `keras.models.Model`
+        :param use_logits: True if the output of the model are the logits.
+        :type use_logits: `bool`
+        :param input_layer: Which layer to consider as the Input when the model has multple input layers.
+        :type input_layer: `int`
+        :param output_layer: Which layer to consider as the Output when the model has multiple output layers.
+        :type output_layer: `int`
+        :param custom_activation: True if the model uses the last activation other than softmax and requires to use the
+               output probability rather than the logits by attacks.
+        :type custom_activation: `bool`
+        """
+        import keras.backend as k
+
         if hasattr(model, 'inputs'):
+            self._input_layer = input_layer
             self._input = model.inputs[input_layer]
         else:
             self._input = model.input
+            self._input_layer = 0
 
         if hasattr(model, 'outputs'):
             self._output = model.outputs[output_layer]
+            self._output_layer = output_layer
         else:
             self._output = model.output
+            self._output_layer = 0
 
         _, self._nb_classes = k.int_shape(self._output)
         self._input_shape = k.int_shape(self._input)[1:]
@@ -65,27 +91,39 @@ class KerasClassifier(Classifier):
                      str(self.input_shape))
 
         # Get predictions and loss function
-        label_ph = k.placeholder(shape=(None,))
+        label_ph = k.placeholder(shape=self._output.shape)
+        if not hasattr(self._model, 'loss'):
+            logger.warning('Keras model has no loss set. Trying to use `k.sparse_categorical_crossentropy`.')
+            loss_function = k.sparse_categorical_crossentropy
+        else:
+            if isinstance(self._model.loss, six.string_types):
+                loss_function = getattr(k, self._model.loss)
+            else:
+                loss_function = getattr(k, self._model.loss.__name__)
+
+        self._use_logits = use_logits
         if not use_logits:
             if k.backend() == 'tensorflow':
                 if custom_activation:
                     preds = self._output
-                    loss = k.sparse_categorical_crossentropy(label_ph, preds, from_logits=False)
+                    loss_ = loss_function(label_ph, preds, from_logits=False)
                 else:
-                    preds, = self._output.op.inputs
-                    loss = k.sparse_categorical_crossentropy(label_ph, preds, from_logits=True)
+                    # We get a list of tensors that comprise the final "layer" 
+                    # Take the last element
+                    preds = self._output.op.inputs[-1]
+                    loss_ = loss_function(label_ph, preds, from_logits=True)
             else:
-                loss = k.sparse_categorical_crossentropy(label_ph, self._output, from_logits=use_logits)
+                loss_ = loss_function(label_ph, self._output, from_logits=use_logits)
 
                 # Convert predictions to logits for consistency with the other cases
                 eps = 10e-8
                 preds = k.log(k.clip(self._output, eps, 1. - eps))
         else:
             preds = self._output
-            loss = k.sparse_categorical_crossentropy(label_ph, self._output, from_logits=use_logits)
+            loss_ = loss_function(label_ph, self._output, from_logits=use_logits)
         if preds == self._input:  # recent Tensorflow version does not allow a model with an output same as the input.
             preds = k.identity(preds)
-        loss_grads = k.gradients(loss, self._input)
+        loss_grads = k.gradients(loss_, self._input)
 
         if k.backend() == 'tensorflow':
             loss_grads = loss_grads[0]
@@ -94,7 +132,7 @@ class KerasClassifier(Classifier):
 
         # Set loss, grads and prediction functions
         self._preds_op = preds
-        self._loss = k.function([self._input], [loss])
+        self._loss = loss_
         self._loss_grads = k.function([self._input, label_ph], [loss_grads])
         self._preds = k.function([self._input], [preds])
 
@@ -113,7 +151,8 @@ class KerasClassifier(Classifier):
         :rtype: `np.ndarray`
         """
         x_ = self._apply_processing(x)
-        grads = self._loss_grads([x_, np.argmax(y, axis=1)])[0]
+
+        grads = self._loss_grads([x_, y])[0]
         grads = self._apply_processing_gradient(grads)
         assert grads.shape == x_.shape
 
@@ -202,8 +241,8 @@ class KerasClassifier(Classifier):
 
         # Run predictions with batching
         preds = np.zeros((x_.shape[0], self.nb_classes), dtype=NUMPY_DTYPE)
-        for b in range(int(np.ceil(x_.shape[0] / float(batch_size)))):
-            begin, end = b * batch_size, min((b + 1) * batch_size, x_.shape[0])
+        for batch_index in range(int(np.ceil(x_.shape[0] / float(batch_size)))):
+            begin, end = batch_index * batch_size, min((batch_index + 1) * batch_size, x_.shape[0])
             preds[begin:end] = self._preds([x_[begin:end]])[0]
 
             if not logits and not self._custom_activation:
@@ -212,7 +251,7 @@ class KerasClassifier(Classifier):
 
         return preds
 
-    def fit(self, x, y, batch_size=128, nb_epochs=20):
+    def fit(self, x, y, batch_size=128, nb_epochs=20, **kwargs):
         """
         Fit the classifier on the training set `(x, y)`.
 
@@ -222,8 +261,12 @@ class KerasClassifier(Classifier):
         :type y: `np.ndarray`
         :param batch_size: Size of batches.
         :type batch_size: `int`
-        :param nb_epochs: Number of epochs to use for trainings.
+        :param nb_epochs: Number of epochs to use for training.
         :type nb_epochs: `int`
+        :param kwargs: Dictionary of framework-specific arguments. These should be parameters supported by the
+               `fit_generator` function in Keras and will be passed to this function as such. Including the number of
+               epochs or the number of steps per epoch as part of this argument will result in as error.
+        :type kwargs: `dict`
         :return: `None`
         """
         # Apply preprocessing and defences
@@ -231,17 +274,21 @@ class KerasClassifier(Classifier):
         x_, y_ = self._apply_defences_fit(x_, y)
 
         gen = generator_fit(x_, y_, batch_size)
-        self._model.fit_generator(gen, steps_per_epoch=x_.shape[0] / batch_size, epochs=nb_epochs)
+        self._model.fit_generator(gen, steps_per_epoch=x_.shape[0] / batch_size, epochs=nb_epochs, **kwargs)
 
-    def fit_generator(self, generator, nb_epochs=20):
+    def fit_generator(self, generator, nb_epochs=20, **kwargs):
         """
         Fit the classifier using the generator that yields batches as specified.
 
         :param generator: Batch generator providing `(x, y)` for each epoch. If the generator can be used for native
                           training in Keras, it will.
-        :type generator: `DataGenerator`
-        :param nb_epochs: Number of epochs to use for trainings.
+        :type generator: :class:`.DataGenerator`
+        :param nb_epochs: Number of epochs to use for training.
         :type nb_epochs: `int`
+        :param kwargs: Dictionary of framework-specific arguments. These should be parameters supported by the
+               `fit_generator` function in Keras and will be passed to this function as such. Including the number of
+               epochs as part of this argument will result in as error.
+        :type kwargs: `dict`
         :return: `None`
         """
         from art.data_generators import KerasDataGenerator
@@ -251,12 +298,12 @@ class KerasClassifier(Classifier):
         if isinstance(generator, KerasDataGenerator) and \
                 not (hasattr(self, 'label_smooth') or hasattr(self, 'feature_squeeze')):
             try:
-                self._model.fit_generator(generator.generator, epochs=nb_epochs)
+                self._model.fit_generator(generator.generator, epochs=nb_epochs, **kwargs)
             except ValueError:
                 logger.info('Unable to use data generator as Keras generator. Now treating as framework-independent.')
-                super(KerasClassifier, self).fit_generator(generator, nb_epochs=nb_epochs)
+                super(KerasClassifier, self).fit_generator(generator, nb_epochs=nb_epochs, **kwargs)
         else:
-            super(KerasClassifier, self).fit_generator(generator, nb_epochs=nb_epochs)
+            super(KerasClassifier, self).fit_generator(generator, nb_epochs=nb_epochs, **kwargs)
 
     @property
     def layer_names(self):
@@ -319,8 +366,8 @@ class KerasClassifier(Classifier):
         activations = np.zeros((x_.shape[0],) + output_shape[1:], dtype=NUMPY_DTYPE)
 
         # Get activations with batching
-        for b in range(int(np.ceil(x_.shape[0] / float(batch_size)))):
-            begin, end = b * batch_size, min((b + 1) * batch_size, x_.shape[0])
+        for batch_index in range(int(np.ceil(x_.shape[0] / float(batch_size)))):
+            begin, end = batch_index * batch_size, min((batch_index + 1) * batch_size, x_.shape[0])
             activations[begin:end] = output_func([x_[begin:end]])[0]
 
         return activations
@@ -358,18 +405,18 @@ class KerasClassifier(Classifier):
                 if not hasattr(self, '_class_grads_logits_idx'):
                     self._class_grads_logits_idx = [None for _ in range(nb_outputs)]
 
-                for l in unique_labels:
-                    if self._class_grads_logits_idx[l] is None:
-                        class_grads_logits = [k.gradients(self._preds_op[:, l], self._input)[0]]
-                        self._class_grads_logits_idx[l] = k.function([self._input], class_grads_logits)
+                for current_label in unique_labels:
+                    if self._class_grads_logits_idx[current_label] is None:
+                        class_grads_logits = [k.gradients(self._preds_op[:, current_label], self._input)[0]]
+                        self._class_grads_logits_idx[current_label] = k.function([self._input], class_grads_logits)
             else:
                 if not hasattr(self, '_class_grads_idx'):
                     self._class_grads_idx = [None for _ in range(nb_outputs)]
 
-                for l in unique_labels:
-                    if self._class_grads_idx[l] is None:
-                        class_grads = [k.gradients(k.softmax(self._preds_op)[:, l], self._input)[0]]
-                        self._class_grads_idx[l] = k.function([self._input], class_grads)
+                for current_label in unique_labels:
+                    if self._class_grads_idx[current_label] is None:
+                        class_grads = [k.gradients(k.softmax(self._preds_op)[:, current_label], self._input)[0]]
+                        self._class_grads_idx[current_label] = k.function([self._input], class_grads)
 
     def _get_layers(self):
         """
@@ -422,6 +469,62 @@ class KerasClassifier(Classifier):
 
         self._model.save(str(full_path))
         logger.info('Model saved in path: %s.', full_path)
+
+    def __getstate__(self):
+        """
+        Use to ensure `KerasClassifier` can be pickled.
+
+        :return: State dictionary with instance parameters.
+        :rtype: `dict`
+        """
+        import time
+
+        state = self.__dict__.copy()
+
+        # Remove the unpicklable entries
+        del state['_model']
+        del state['_input']
+        del state['_output']
+        del state['_preds_op']
+        del state['_loss']
+        del state['_loss_grads']
+        del state['_preds']
+        del state['_layer_names']
+
+        model_name = str(time.time()) + '.h5'
+        state['model_name'] = model_name
+        self.save(model_name)
+        return state
+
+    def __setstate__(self, state):
+        """
+        Use to ensure `KerasClassifier` can be unpickled.
+
+        :param state: State dictionary with instance parameters to restore.
+        :type state: `dict`
+        """
+        self.__dict__.update(state)
+
+        # Load and update all functionality related to Keras
+        import os
+        from art import DATA_PATH
+        from keras.models import load_model
+
+        full_path = os.path.join(DATA_PATH, state['model_name'])
+        model = load_model(str(full_path))
+
+        self._model = model
+        self._initialize_params(model, state['_use_logits'], state['_input_layer'], state['_output_layer'],
+                                state['_custom_activation'])
+
+    def __repr__(self):
+        repr_ = "%s(clip_values=%r, model=%r, use_logits=%r, channel_index=%r, defences=%r, preprocessing=%r, " \
+                "input_layer=%r, output_layer=%r, custom_activation=%r)" \
+                % (self.__module__ + '.' + self.__class__.__name__,
+                   self.clip_values, self._model, self._use_logits, self.channel_index, self.defences,
+                   self.preprocessing, self._input_layer, self._output_layer, self._custom_activation)
+
+        return repr_
 
 
 def generator_fit(x, y, batch_size=128):

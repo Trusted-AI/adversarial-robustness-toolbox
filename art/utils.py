@@ -245,6 +245,21 @@ def least_likely_class(x, classifier):
     return to_categorical(np.argmin(classifier.predict(x), axis=1), nb_classes=classifier.nb_classes)
 
 
+def second_most_likely_class(x, classifier):
+    """
+    Compute the second most likely class predictions for sample `x`. This strategy can be used for choosing target
+    labels for an attack to improve its chances to succeed.
+
+    :param x: A data sample of shape accepted by `classifier`.
+    :type x: `np.ndarray`
+    :param classifier: The classifier used for computing predictions.
+    :type classifier: `Classifier`
+    :return: Second most likely class predicted by `classifier` for sample `x` in one-hot encoding.
+    :rtype: `np.ndarray`
+    """
+    return to_categorical(np.argpartition(classifier.predict(x), -2, axis=1)[:, -2], nb_classes=classifier.nb_classes)
+
+
 def get_label_conf(y_vec):
     """
     Returns the confidence and the label of the most probable class given a vector of class confidences
@@ -558,6 +573,26 @@ def make_directory(dir_path):
     if not os.path.exists(dir_path):
         os.makedirs(dir_path)
 
+def clip_and_round(x, clip_values, round_samples):
+    """
+    Rounds the input to the correct level of granularity.
+    Useful to ensure data passed to classifier can be represented
+    in the correct domain, e.g., [0, 255] integers verses [0,1]
+    or [0, 255] floating points.
+
+    :param x: Sample input with shape as expected by the model.
+    :type x: `np.ndarray`
+    :param clip_values: Tuple of the form `(min, max)` representing the minimum and maximum values allowed
+               for features.
+    :type clip_values: `tuple`
+    :param round_samples: The resolution of the input domain to round the data to, e.g., 1.0, or 1/255. Set to 0 to disable.
+    :type round_samples: `float`
+    """
+    if round_samples == 0:
+        return x
+    x = np.clip(x, *clip_values)
+    x = np.around(x / round_samples) * round_samples
+    return x
 
 # -------------------------------------------------------------------------------------------------- PRE-TRAINED MODELS
 

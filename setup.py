@@ -48,4 +48,5 @@ setup(name='Adversarial Robustness Toolbox',
             'Topic :: Software Development :: Libraries :: Python Modules',
             'Topic :: Scientific/Engineering :: Artificial Intelligence',
       ],
-      packages=find_packages())
+      packages=find_packages(),
+      include_package_data=True)

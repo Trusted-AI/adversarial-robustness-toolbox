@@ -32,22 +32,22 @@ class JpegCompression(Preprocessor):
         self._is_fitted = True
         self.set_params(quality=quality, channel_index=channel_index)
 
-    def __call__(self, x, y=None, quality=None, clip_values=(0, 1)):
+    def __call__(self, x, y=None, quality=None):
         """
         Apply JPEG compression to sample `x`.
 
-        :param x: Sample to compress with shape `(batch_size, width, height, depth)`.
+        :param x: Sample to compress with shape `(batch_size, width, height, depth)`. `x` values are expected to be in
+               the data range [0, 1].
         :type x: `np.ndarray`
         :param y: Labels of the sample `x`. This function does not affect them in any way.
         :type y: `np.ndarray`
         :param quality: The image quality, on a scale from 1 (worst) to 95 (best). Values above 95 should be avoided.
         :type quality: `int`
-        :param clip_values: Tuple of the form `(min, max)` representing the minimum and maximum values allowed
-               for features.
-        :type clip_values: `tuple`
         :return: compressed sample.
         :rtype: `np.ndarray`
         """
+        clip_values = (0, 1)
+
         if quality is not None:
             self.set_params(quality=quality)
 

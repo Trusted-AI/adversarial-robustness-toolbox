@@ -3,26 +3,23 @@ from __future__ import absolute_import, division, print_function, unicode_litera
 import logging
 import unittest
 
-import keras
-import keras.backend as k
-import tensorflow as tf
 import numpy as np
-from keras.layers import Dense, Flatten, Conv2D, MaxPooling2D
-from keras.models import Sequential
 
-from art.classifiers import KerasClassifier
 from art.attacks import FastGradientMethod, ExpectationOverTransformations
-from art.utils import load_mnist, random_targets, master_seed
+from art.utils import load_mnist, random_targets, master_seed, get_classifier_kr
 
 logger = logging.getLogger('testLogger')
 
-BATCH_SIZE, NB_TRAIN, NB_TEST = 100, 5000, 10
+BATCH_SIZE = 100
+NB_TRAIN = 5000
+NB_TEST = 10
 
 
 class TestExpectationOverTransformations(unittest.TestCase):
     """
     A unittest class for testing the Expectation over Transformations in attacks.
     """
+
     @classmethod
     def setUpClass(cls):
         # Get MNIST
@@ -40,26 +37,11 @@ class TestExpectationOverTransformations(unittest.TestCase):
         Test with a KerasClassifier.
         :return:
         """
-        # Initialize a tf session
-        session = tf.Session()
-        k.set_session(session)
+        # Build KerasClassifier
+        krc, sess = get_classifier_kr()
 
         # Get MNIST
-        (x_train, y_train), (x_test, y_test) = self.mnist
-
-        # Create simple CNN
-        model = Sequential()
-        model.add(Conv2D(4, kernel_size=(5, 5), activation='relu', input_shape=(28, 28, 1)))
-        model.add(MaxPooling2D(pool_size=(2, 2)))
-        model.add(Flatten())
-        model.add(Dense(10, activation='softmax'))
-
-        model.compile(loss=keras.losses.categorical_crossentropy, optimizer=keras.optimizers.Adam(lr=0.01),
-                      metrics=['accuracy'])
-
-        # Get classifier
-        krc = KerasClassifier((0, 1), model, use_logits=False)
-        krc.fit(x_train, y_train, batch_size=BATCH_SIZE, nb_epochs=10)
+        (_, _), (x_test, y_test) = self.mnist
 
         # First attack (without EoT):
         fgsm = FastGradientMethod(classifier=krc, targeted=True)

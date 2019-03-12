@@ -6,7 +6,8 @@ import unittest
 import numpy as np
 
 from art.utils import load_mnist, projection, random_sphere, to_categorical, least_likely_class
-from art.utils import random_targets, get_label_conf, get_labels_np_array, preprocess, master_seed
+from art.utils import master_seed
+from art.utils import second_most_likely_class, random_targets, get_label_conf, get_labels_np_array, preprocess
 
 logger = logging.getLogger('testLogger')
 
@@ -143,7 +144,7 @@ class TestUtils(unittest.TestCase):
         self.assertTrue(np.all(y != random_y.argmax(axis=1)))
 
     def test_least_likely_class(self):
-        class DummyClassifier():
+        class DummyClassifier:
             @property
             def nb_classes(self):
                 return 4
@@ -159,6 +160,25 @@ class TestUtils(unittest.TestCase):
         self.assertTrue(preds.shape == (batch_size, classifier.nb_classes))
 
         expected_preds = np.array([[0, 0, 1, 0]] * batch_size)
+        self.assertTrue((preds == expected_preds).all())
+
+    def test_second_most_likely_class(self):
+        class DummyClassifier:
+            @property
+            def nb_classes(self):
+                return 4
+
+            def predict(self, x):
+                fake_preds = [0.1, 0.2, 0.05, 0.65]
+                return np.array([fake_preds] * x.shape[0])
+
+        batch_size = 5
+        x = np.random.rand(batch_size, 10, 10, 1)
+        classifier = DummyClassifier()
+        preds = second_most_likely_class(x, classifier)
+        self.assertTrue(preds.shape == (batch_size, classifier.nb_classes))
+
+        expected_preds = np.array([[0, 1, 0, 0]] * batch_size)
         self.assertTrue((preds == expected_preds).all())
 
     def test_get_label_conf(self):

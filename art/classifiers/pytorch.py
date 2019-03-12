@@ -102,7 +102,7 @@ class PyTorchClassifier(Classifier):
 
         return results
 
-    def fit(self, x, y, batch_size=128, nb_epochs=10):
+    def fit(self, x, y, batch_size=128, nb_epochs=10, **kwargs):
         """
         Fit the classifier on the training set `(x, y)`.
 
@@ -112,8 +112,11 @@ class PyTorchClassifier(Classifier):
         :type y: `np.ndarray`
         :param batch_size: Size of batches.
         :type batch_size: `int`
-        :param nb_epochs: Number of epochs to use for trainings.
+        :param nb_epochs: Number of epochs to use for training.
         :type nb_epochs: `int`
+        :param kwargs: Dictionary of framework-specific arguments. This parameter is not currently supported for PyTorch
+               and providing it takes no effect.
+        :type kwargs: `dict`
         :return: `None`
         """
         import torch
@@ -148,14 +151,17 @@ class PyTorchClassifier(Classifier):
                 loss.backward()
                 self._optimizer.step()
 
-    def fit_generator(self, generator, nb_epochs=20):
+    def fit_generator(self, generator, nb_epochs=20, **kwargs):
         """
         Fit the classifier using the generator that yields batches as specified.
 
         :param generator: Batch generator providing `(x, y)` for each epoch.
-        :type generator: `DataGenerator`
-        :param nb_epochs: Number of epochs to use for trainings.
+        :type generator: :class:`.DataGenerator`
+        :param nb_epochs: Number of epochs to use for training.
         :type nb_epochs: `int`
+        :param kwargs: Dictionary of framework-specific arguments. This parameter is not currently supported for PyTorch
+               and providing it takes no effect.
+        :type kwargs: `dict`
         :return: `None`
         """
         import torch
@@ -420,6 +426,15 @@ class PyTorchClassifier(Classifier):
         torch.save(self._optimizer.state_dict(), full_path + '.optimizer')
         logger.info("Model state dict saved in path: %s.", full_path + '.model')
         logger.info("Optimizer state dict saved in path: %s.", full_path + '.optimizer')
+
+    def __repr__(self):
+        repr_ = "%s(clip_values=%r, model=%r, loss=%r, optimizer=%r, input_shape=%r, nb_classes=%r, " \
+                "channel_index=%r, defences=%r, preprocessing=%r)" \
+                % (self.__module__ + '.' + self.__class__.__name__,
+                   self.clip_values, self._model, self._loss, self._optimizer, self._input_shape, self.nb_classes,
+                   self.channel_index, self.defences, self.preprocessing)
+
+        return repr_
 
     # def _forward_at(self, inputs, layer):
     #     """
