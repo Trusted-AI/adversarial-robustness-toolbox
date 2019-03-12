@@ -260,8 +260,8 @@ class AdversarialPatch(Attack):
         elif self.classifier.channel_index == 1:
             zooms = (1.0, scale, scale)
         patch_mask = zoom(patch_mask, zoom=zooms)
-        pad_1 = round((shape - patch_mask.shape[1]) / 2)
-        pad_2 = shape - pad_1 - patch_mask.shape[1]
+        pad_1 = int((shape - patch_mask.shape[1]) / 2)
+        pad_2 = int(shape - pad_1 - patch_mask.shape[1])
         if self.classifier.channel_index == 3:
             pad_width = ((pad_1, pad_2), (pad_1, pad_2), (0, 0))
         elif self.classifier.channel_index == 1:
