@@ -530,40 +530,6 @@ class CarliniLInfMethod(Attack):
 
         return loss_gradient
 
-    def _original_to_tanh(self, x_original, clip_min, clip_max):
-        """
-        Transform input from original to tanh space.
-
-        :param x_original: An array with the input to be transformed.
-        :type x_original: `np.ndarray`
-        :param clip_min: Minimum clipping values.
-        :type clip_min: `np.ndarray`
-        :param clip_max: Maximum clipping values.
-        :type clip_max: `np.ndarray`
-        :return: An array holding the transformed input.
-        :rtype: `np.ndarray`
-        """
-        x_tanh = np.clip(x_original, clip_min, clip_max)
-        x_tanh = (x_tanh - clip_min) / (clip_max - clip_min)
-        x_tanh = np.arctanh(((x_tanh * 2) - 1) * self._tanh_smoother)
-        return x_tanh
-
-    def _tanh_to_original(self, x_tanh, clip_min, clip_max):
-        """
-        Transform input from tanh to original space.
-
-        :param x_tanh: An array with the input to be transformed.
-        :type x_tanh: `np.ndarray`
-        :param clip_min: Minimum clipping values.
-        :type clip_min: `np.ndarray`
-        :param clip_max: Maximum clipping values.
-        :type clip_max: `np.ndarray`
-        :return: An array holding the transformed input.
-        :rtype: `np.ndarray`
-        """
-        x_original = (np.tanh(x_tanh) / self._tanh_smoother + 1) / 2
-        return x_original * (clip_max - clip_min) + clip_min
-
     def generate(self, x, **kwargs):
         """
         Generate adversarial samples and return them in an array.
@@ -655,9 +621,9 @@ class CarliniLInfMethod(Attack):
 
                     new_x_adv_batch_tanh = x_adv_batch_tanh[active_and_do_halving] + \
                         lr_mult * perturbation_tanh[do_halving]
-                    new_x_adv_batch = self._tanh_to_original(new_x_adv_batch_tanh,
-                                                             clip_min[active_and_do_halving],
-                                                             clip_max[active_and_do_halving])
+                    new_x_adv_batch = tanh_to_original(new_x_adv_batch_tanh,
+                                                       clip_min[active_and_do_halving],
+                                                       clip_max[active_and_do_halving])
                     _, loss[active_and_do_halving] = self._loss(new_x_adv_batch, y_batch[active_and_do_halving])
                     logger.debug('New Average Loss: %f', np.mean(loss))
                     logger.debug('Loss: %s', str(loss))
@@ -688,9 +654,9 @@ class CarliniLInfMethod(Attack):
 
                     new_x_adv_batch_tanh = x_adv_batch_tanh[active_and_do_doubling] + \
                         lr_mult * perturbation_tanh[do_doubling]
-                    new_x_adv_batch = self._tanh_to_original(new_x_adv_batch_tanh,
-                                                             clip_min[active_and_do_doubling],
-                                                             clip_max[active_and_do_doubling])
+                    new_x_adv_batch = tanh_to_original(new_x_adv_batch_tanh,
+                                                       clip_min[active_and_do_doubling],
+                                                       clip_max[active_and_do_doubling])
                     _, loss[active_and_do_doubling] = self._loss(new_x_adv_batch,
                                                                  y_batch[active_and_do_doubling])
                     logger.debug('New Average Loss: %f', np.mean(loss))
@@ -711,9 +677,9 @@ class CarliniLInfMethod(Attack):
 
                     x_adv_batch_tanh[active_and_update_adv] = x_adv_batch_tanh[active_and_update_adv] + \
                         best_lr_mult * perturbation_tanh[update_adv]
-                    x_adv_batch[active_and_update_adv] = self._tanh_to_original(x_adv_batch_tanh[active_and_update_adv],
-                                                                                clip_min[active_and_update_adv],
-                                                                                clip_max[active_and_update_adv])
+                    x_adv_batch[active_and_update_adv] = tanh_to_original(x_adv_batch_tanh[active_and_update_adv],
+                                                                          clip_min[active_and_update_adv],
+                                                                          clip_max[active_and_update_adv])
                     z[active_and_update_adv], loss[active_and_update_adv] = self._loss(
                         x_adv_batch[active_and_update_adv], y_batch[active_and_update_adv])
                     attack_success = (loss <= 0)
