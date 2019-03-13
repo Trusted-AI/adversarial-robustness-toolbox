@@ -142,18 +142,18 @@ class TestTFClassifier(unittest.TestCase):
         self.assertTrue(np.array(grads.shape == (NB_TEST, 28, 28, 1)).all())
         self.assertTrue(np.sum(grads) != 0)
 
-    def test_layers(self):
-        # Get MNIST
-        (_, _), (x_test, _) = self.mnist
-
-        # Test and get layers
-        layer_names = self.classifier.layer_names
-        logger.debug(layer_names)
-
-        for i, name in enumerate(layer_names):
-            act_i = self.classifier.get_activations(x_test, i, batch_size=5)
-            act_name = self.classifier.get_activations(x_test, name, batch_size=5)
-            self.assertAlmostEqual(np.sum(act_name - act_i), 0)
+    # def test_layers(self):
+    #     # Get MNIST
+    #     (_, _), (x_test, _) = self.mnist
+    #
+    #     # Test and get layers
+    #     layer_names = self.classifier.layer_names
+    #     logger.debug(layer_names)
+    #
+    #     for i, name in enumerate(layer_names):
+    #         act_i = self.classifier.get_activations(x_test, i, batch_size=5)
+    #         act_name = self.classifier.get_activations(x_test, name, batch_size=5)
+    #         self.assertAlmostEqual(np.sum(act_name - act_i), 0)
 
     def test_save(self):
         import os
