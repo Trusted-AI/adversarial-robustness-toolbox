@@ -149,7 +149,6 @@ class TestTFClassifier(unittest.TestCase):
         # Test and get layers
         layer_names = self.classifier.layer_names
         logger.debug(layer_names)
-        self.assertTrue(len(layer_names) == 4)
 
         for i, name in enumerate(layer_names):
             act_i = self.classifier.get_activations(x_test, i, batch_size=5)
