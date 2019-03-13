@@ -148,7 +148,8 @@ class TestTFClassifier(unittest.TestCase):
 
         # Test and get layers
         layer_names = self.classifier.layer_names
-        logger.debug(layer_names)
+        # logger.debug(layer_names)
+        layer_names = [str(name) for name in layer_names]
         self.assertTrue(layer_names == [str('conv2d/Relu:0'), str('max_pooling2d/MaxPool:0'),
                                         str('Flatten/flatten/Reshape:0'), str('dense/BiasAdd:0')])
 
