@@ -149,8 +149,8 @@ class TestTFClassifier(unittest.TestCase):
         # Test and get layers
         layer_names = self.classifier.layer_names
         logger.debug(layer_names)
-        self.assertTrue(layer_names == ['conv2d/Relu:0', 'max_pooling2d/MaxPool:0',
-                                        'Flatten/flatten/Reshape:0', 'dense/BiasAdd:0'])
+        self.assertTrue(layer_names == [str('conv2d/Relu:0'), str('max_pooling2d/MaxPool:0'),
+                                        str('Flatten/flatten/Reshape:0'), str('dense/BiasAdd:0')])
 
         for i, name in enumerate(layer_names):
             act_i = self.classifier.get_activations(x_test, i, batch_size=5)
