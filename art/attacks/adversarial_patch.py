@@ -78,31 +78,41 @@ class AdversarialPatch(Attack):
 
         self.set_params(**kwargs)
 
-        patch = np.zeros(shape=self.patch_shape)
+        def from_keras(x):
+            x = np.copy(x)
+            x[:, :, 2] += 123.68
+            x[:, :, 1] += 116.779
+            x[:, :, 0] += 103.939
+            return x[:, :, [2, 1, 0]].astype(np.uint8)
 
-        for i in range(self.number_of_steps):
+        patch = (np.random.standard_normal(size=self.patch_shape)) * 20.0
 
-            print(str(i + 1) + ' / ' + str(self.number_of_steps))
+        patch_0 = np.copy(patch)
 
-            clipped_patch = patch  # np.clip(patch, a_min=-1.0, a_max=1.0)
-            patched_input, patch_mask, image_masks, transforms = self._augment_images_with_random_patch(x,
-                                                                                                        clipped_patch,
-                                                                                                        self.image_shape,
-                                                                                                        rotation_max=self.rotation_max,
-                                                                                                        scale_min=self.scale_min,
-                                                                                                        scale_max=self.scale_max)
-            # patched_input = np.clip(patched_input, a_min=-1.0, a_max=1.0)
+        for i_step in range(self.number_of_steps):
 
-            gradients = self.classifier.loss_gradient(patched_input, self.target_ys)
+            print(str(i_step + 1) + ' / ' + str(self.number_of_steps))
+
+            patch[:, :, 2] = np.clip(patch[:, :, 2], a_min=-123.680, a_max=255.0 - 123.680)
+            patch[:, :, 1] = np.clip(patch[:, :, 1], a_min=-116.779, a_max=255.0 - 116.779)
+            patch[:, :, 0] = np.clip(patch[:, :, 0], a_min=-103.939, a_max=255.0 - 103.939)
+
+            patched_images, patch_mask_transformed, transforms = self._augment_images_with_random_patch(x, patch)
+
+            gradients = self.classifier.loss_gradient(patched_images, self.target_ys)
 
             patch_gradients = np.zeros_like(patch)
 
             for i_batch in range(self.batch_size):
-                patch_gradients += self._reverse_transformation(gradients[i_batch, :, :, :], transforms[i_batch])
+                patch_gradients_i = self._reverse_transformation(gradients[i_batch, :, :, :],
+                                                                 patch_mask_transformed[i_batch, :, :, :],
+                                                                 transforms[i_batch])
+
+                patch_gradients += patch_gradients_i
 
             patch_gradients = patch_gradients / self.batch_size
 
-            patch += np.sign(patch_gradients * patch_mask) * self.learning_rate
+            patch -= patch_gradients * self.learning_rate
 
         return patch
 
@@ -173,12 +183,12 @@ class AdversarialPatch(Attack):
 
         if not isinstance(self.image_shape, tuple) or not len(self.image_shape) == 3 or not isinstance(
                 self.image_shape[0], int) or not isinstance(self.image_shape[1], int) or not isinstance(
-            self.image_shape[2], int):
+                self.image_shape[2], int):
             raise ValueError("The shape of the training images must be a tuple of 3 integers.")
 
         if not isinstance(self.patch_shape, tuple) or not len(self.patch_shape) == 3 or not isinstance(
                 self.patch_shape[0], int) or not isinstance(self.patch_shape[1], int) or not isinstance(
-            self.patch_shape[2], int):
+                self.patch_shape[2], int):
             raise ValueError("The shape of the adversarial patch must be a tuple of 3 integers.")
 
         if not isinstance(self.batch_size, int):
@@ -188,11 +198,11 @@ class AdversarialPatch(Attack):
 
         return True
 
-    def _get_circular_patch_mask(self, shape, sharpness=40):
+    def _get_circular_patch_mask(self, sharpness=40):
         """
         Return a circular patch mask
         """
-        diameter = shape[1]
+        diameter = self.patch_shape[1]
         x = np.linspace(-1, 1, diameter)
         y = np.linspace(-1, 1, diameter)
         xx, yy = np.meshgrid(x, y, sparse=True)
@@ -200,116 +210,163 @@ class AdversarialPatch(Attack):
 
         mask = 1 - np.clip(z, -1, 1)
 
-        pad_1 = int((shape[1] - mask.shape[1]) / 2)
-        pad_2 = int(shape[1] - pad_1 - mask.shape[1])
+        pad_1 = int((self.patch_shape[1] - mask.shape[1]) / 2)
+        pad_2 = int(self.patch_shape[1] - pad_1 - mask.shape[1])
         mask = np.pad(mask, pad_width=(pad_1, pad_2), mode='constant', constant_values=(0, 0))
 
+        axis = None
         if self.classifier.channel_index == 3:
             axis = 2
         elif self.classifier.channel_index == 1:
             axis = 0
         mask = np.expand_dims(mask, axis=axis)
-        mask = np.broadcast_to(mask, shape).astype(np.float32)
+        mask = np.broadcast_to(mask, self.patch_shape).astype(np.float32)
         return mask
 
-    def _augment_images_with_random_patch(self, imgs, patch, image_shape, rotation_max, scale_min, scale_max):
+    def _augment_images_with_random_patch(self, images, patch):
         """
         Augment images with randomly rotated, shifted and scaled patch.
         """
         transformations = list()
         patched_images = list()
-        image_masks = list()
-        patch_mask = None
+        patch_mask_transformed_list = list()
 
-        for i_batch in range(imgs.shape[0]):
-            patch_mask = self._get_circular_patch_mask(image_shape)
-            image_mask, transformation = self._random_transformation(patch_mask, rotation_max, scale_min, scale_max)
+        for i_batch in range(images.shape[0]):
+            patch_transformed, patch_mask_transformed, transformation = self._random_transformation(patch)
 
-            inverted_mask = (1 - image_mask)
+            inverted_patch_mask_transformed = (1 - patch_mask_transformed)
 
-            patched_image = imgs[i_batch, :, :, :] * inverted_mask + patch * image_mask
+            patched_image = images[i_batch, :, :,
+                            :] * inverted_patch_mask_transformed + patch_transformed * patch_mask_transformed
             patched_image = np.expand_dims(patched_image, axis=0)
             patched_images.append(patched_image)
 
-            image_masks.append(image_mask)
+            patch_mask_transformed = np.expand_dims(patch_mask_transformed, axis=0)
+            patch_mask_transformed_list.append(patch_mask_transformed)
             transformations.append(transformation)
 
         patched_images = np.concatenate(patched_images, axis=0)
-        image_masks = np.concatenate(image_masks, axis=0)
+        patch_mask_transformed_np = np.concatenate(patch_mask_transformed_list, axis=0)
 
-        return patched_images, patch_mask, image_masks, transformations
+        return patched_images, patch_mask_transformed_np, transformations
 
-    def _random_transformation(self, patch_mask, rotation_max, scale_min, scale_max):
+    def _rotate(self, x, angle):
+        axes = None
+        if self.classifier.channel_index == 3:
+            axes = (0, 1)
+        elif self.classifier.channel_index == 1:
+            axes = (1, 2)
+        return rotate(x, angle=angle, reshape=False, axes=axes, order=1)
+
+    def _scale(self, x, scale, shape):
+        zooms = None
+        if self.classifier.channel_index == 3:
+            zooms = (scale, scale, 1.0)
+        elif self.classifier.channel_index == 1:
+            zooms = (1.0, scale, scale)
+        x = zoom(x, zoom=zooms, order=1)
+        if x.shape[0] <= 224:
+            pad_1 = int((shape - x.shape[1]) / 2)
+            pad_2 = int(shape - pad_1 - x.shape[1])
+            pad_width = None
+            if self.classifier.channel_index == 3:
+                pad_width = ((pad_1, pad_2), (pad_1, pad_2), (0, 0))
+            elif self.classifier.channel_index == 1:
+                pad_width = ((0, 0), (pad_1, pad_2), (pad_1, pad_2))
+            return np.pad(x, pad_width=pad_width, mode='constant', constant_values=(0, 0))
+        else:
+            center = int(x.shape[0] / 2)
+            if self.classifier.channel_index == 3:
+                return x[center - 112:center + 112, center - 112:center + 112, :]
+            elif self.classifier.channel_index == 1:
+                return x[:, center - 112:center + 112, center - 112:center + 112]
+
+    def _shift(self, x, shift_1, shift_2):
+        shift_xy = None
+        if self.classifier.channel_index == 3:
+            shift_xy = (shift_1, shift_2, 0)
+        elif self.classifier.channel_index == 1:
+            shift_xy = (0, shift_1, shift_2)
+        x = shift(x, shift=shift_xy, order=1)
+        return x, shift_xy
+
+    def _random_transformation(self, patch):
+
+        patch_mask = self._get_circular_patch_mask()
 
         transformation = dict()
         shape = patch_mask.shape[1]
 
         # rotate
-        angle = random.uniform(-rotation_max, rotation_max)
-        if self.classifier.channel_index == 3:
-            axes = (0, 1)
-        elif self.classifier.channel_index == 1:
-            axes = (1, 2)
-        patch_mask = rotate(patch_mask, angle=angle, reshape=False, axes=axes)
+        angle = random.uniform(-self.rotation_max, self.rotation_max)
         transformation['rotate'] = angle
+        patch = self._rotate(patch, angle)
+        patch_mask = self._rotate(patch_mask, angle)
 
         # scale
-        scale = random.uniform(scale_min, scale_max)
-        if self.classifier.channel_index == 3:
-            zooms = (scale, scale, 1.0)
-        elif self.classifier.channel_index == 1:
-            zooms = (1.0, scale, scale)
-        patch_mask = zoom(patch_mask, zoom=zooms)
-        pad_1 = int((shape - patch_mask.shape[1]) / 2)
-        pad_2 = int(shape - pad_1 - patch_mask.shape[1])
-        if self.classifier.channel_index == 3:
-            pad_width = ((pad_1, pad_2), (pad_1, pad_2), (0, 0))
-        elif self.classifier.channel_index == 1:
-            pad_width = ((0, 0), (pad_1, pad_2), (pad_1, pad_2))
-        patch_mask = np.pad(patch_mask, pad_width=pad_width, mode='constant',
-                            constant_values=(0, 0))
+        scale = random.uniform(self.scale_min, self.scale_max)
+        patch = self._scale(patch, scale, shape)
+        patch_mask = self._scale(patch_mask, scale, shape)
         transformation['scale'] = scale
 
         # shift
-        shift_max = 224 * (1.0 - scale) / 2.0 - 2.0
-        if self.classifier.channel_index == 3:
-            shift_xy = (random.uniform(-shift_max, shift_max), random.uniform(-shift_max, shift_max), 0)
-        elif self.classifier.channel_index == 1:
-            shift_xy = (0, random.uniform(-shift_max, shift_max), random.uniform(-shift_max, shift_max))
-        patch_mask = shift(patch_mask, shift=shift_xy)
-        transformation['shift'] = shift_xy
+        shift_max = 224 * (1.0 - scale) / 2.0  # - 2.0
+        if shift_max > 0:
+            shift_1 = random.uniform(-shift_max, shift_max)
+            shift_2 = random.uniform(-shift_max, shift_max)
+            patch, _ = self._shift(patch, shift_1, shift_2)
+            patch_mask, shift_xy = self._shift(patch_mask, shift_1, shift_2)
+            transformation['shift'] = shift_xy
+        else:
+            transformation['shift'] = (0, 0, 0)
 
-        return patch_mask, transformation
+        return patch, patch_mask, transformation
 
-    def _reverse_transformation(self, gradients, transformation):
+    def _reverse_transformation(self, gradients, patch_mask_transformed, transformation):
 
         shape = gradients.shape[1]
 
+        gradients = gradients * patch_mask_transformed
+
         # shift
         shift_xy = transformation['shift']
-        gradients = shift(gradients, shift=(-shift_xy[0], -shift_xy[1], -shift_xy[2]))
+        gradients = shift(gradients, shift=(-shift_xy[0], -shift_xy[1], -shift_xy[2]), order=1)
 
         # scale
         scale = transformation['scale']
+        zooms = None
         if self.classifier.channel_index == 3:
             zooms = (1.0 / scale, 1.0 / scale, 1.0)
         elif self.classifier.channel_index == 1:
             zooms = (1.0, 1.0 / scale, 1.0 / scale)
-        gradients = zoom(gradients, zoom=zooms)
-        center = int(gradients.shape[1] / 2)
-        delta_minus = int(shape / 2)
-        delta_plus = int(shape - delta_minus)
-        if self.classifier.channel_index == 3:
-            gradients = gradients[center - delta_minus:center + delta_plus, center - delta_minus:center + delta_plus, :]
-        elif self.classifier.channel_index == 1:
-            gradients = gradients[:, center - delta_minus:center + delta_plus, center - delta_minus:center + delta_plus]
+        gradients = zoom(gradients, zoom=zooms, order=1)
+        if scale <= 1.0:
+            center = int(gradients.shape[1] / 2)
+            delta_minus = int(shape / 2)
+            delta_plus = int(shape - delta_minus)
+            if self.classifier.channel_index == 3:
+                gradients = gradients[center - delta_minus:center + delta_plus,
+                                      center - delta_minus:center + delta_plus, :]
+            elif self.classifier.channel_index == 1:
+                gradients = gradients[:, center - delta_minus:center + delta_plus,
+                                      center - delta_minus:center + delta_plus]
+        else:
+            pad_1 = int((shape - gradients.shape[1]) / 2)
+            pad_2 = int(shape - pad_1 - gradients.shape[1])
+            pad_width = None
+            if self.classifier.channel_index == 3:
+                pad_width = ((pad_1, pad_2), (pad_1, pad_2), (0, 0))
+            elif self.classifier.channel_index == 1:
+                pad_width = ((0, 0), (pad_1, pad_2), (pad_1, pad_2))
+            gradients = np.pad(gradients, pad_width=pad_width, mode='constant', constant_values=(0, 0))
 
         # rotate
         angle = transformation['rotate']
+        axes = None
         if self.classifier.channel_index == 3:
             axes = (0, 1)
         elif self.classifier.channel_index == 1:
             axes = (1, 2)
-        gradients = rotate(gradients, angle=-angle, reshape=False, axes=axes)
+        gradients = rotate(gradients, angle=-angle, reshape=False, axes=axes, order=1)
 
         return gradients
