@@ -216,13 +216,15 @@ class ActivationDefence(PoisonFilteringDefence):
 
         # Now train using y_fix:
         improve_factor, fixed_classifier = train_remove_backdoor(self.classifier, x_train, y_train, x_test,
-                                                                 y_test, tolerable_backdoor=tolerable_backdoor, max_epochs=max_epochs,
+                                                                 y_test, tolerable_backdoor=tolerable_backdoor,
+                                                                 max_epochs=max_epochs,
                                                                  batch_epochs=batch_epochs)
         # Only update classifier if there was an improvement:
         if improve_factor < 0:
             self.classifier = self._unpickle_classifier(filename)
             return 0
 
+        self._remove_pickle(filename)
         return improve_factor
 
     def relabel_poison_cross_validation(self, x, y_fix, n_splits=10, tolerable_backdoor=0.01,
@@ -275,6 +277,7 @@ class ActivationDefence(PoisonFilteringDefence):
                 self.classifier = fixed_classifier
                 logger.info('Selected as best model so far: ' + str(curr_improvement))
 
+        self._remove_pickle(filename)
         return curr_improvement
 
     def _pickle_classifier(self, file_name):
@@ -293,7 +296,8 @@ class ActivationDefence(PoisonFilteringDefence):
             os.makedirs(folder)
 
         c = self.classifier
-        pickle.dump(c, open(full_path, 'wb'))
+        with open(full_path, 'wb') as f:
+            pickle.dump(c, f)
 
     @staticmethod
     def _unpickle_classifier(file_name):
@@ -312,6 +316,19 @@ class ActivationDefence(PoisonFilteringDefence):
         with open(full_path, 'rb') as f:
             loaded_classifier = pickle.load(f)
             return loaded_classifier
+
+    @staticmethod
+    def _remove_pickle(file_name):
+        """
+        Erases the pickle with the provided file name
+
+        :param file_name: File name without directory
+        :return: None
+        """
+        import os
+        from art import DATA_PATH
+        full_path = os.path.join(DATA_PATH, file_name)
+        os.remove(full_path)
 
     def visualize_clusters(self, x_raw, save=True, folder='.', **kwargs):
         """
@@ -590,3 +607,6 @@ def reduce_dimensionality(activations, nb_dims=10, reduce='FastICA'):
 
     reduced_activations = projector.fit_transform(activations)
     return reduced_activations
+
+
+
