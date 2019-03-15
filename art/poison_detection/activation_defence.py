@@ -57,13 +57,13 @@ class ActivationDefence(PoisonFilteringDefence):
 
         :param is_clean: ground truth, where is_clean[i]=1 means that x_train[i] is clean and is_clean[i]=0 means
                          x_train[i] is poisonous
-        :type is_clean: :class `list`
+        :type is_clean: :class `ny.ndarray'`
         :param kwargs: a dictionary of defence-specific parameters
         :type kwargs: `dict`
         :return: JSON object with confusion matrix
         :rtype: `jsonObject`
         """
-        if not is_clean:
+        if is_clean is None or len(is_clean) == 0:
             raise ValueError("is_clean was not provided while invoking evaluate_defence.")
 
         self.set_params(**kwargs)
@@ -88,7 +88,7 @@ class ActivationDefence(PoisonFilteringDefence):
         :param kwargs: a dictionary of detection-specific parameters
         :type kwargs: `dict`
         :return: (report, is_clean_lst):
-                where a report is a json object that contains information specified by the clustering analysis technique.
+                where a report is a dict object that contains information specified by the clustering analysis technique.
                 where is_clean is a list, where is_clean_lst[i]=1 means that x_train[i]
                 there is clean and is_clean_lst[i]=0, means that x_train[i] was classified as poison
         :rtype: `tuple`
@@ -147,9 +147,9 @@ class ActivationDefence(PoisonFilteringDefence):
 
         :param kwargs: a dictionary of cluster-analysis-specific parameters
         :type kwargs: `dict`
-        :return: (report, assigned_clean_by_class), where the report is a json object and assigned_clean_by_class
-                 is an array of arrays that contains what data points where classified as clean.
-        :rtype: `tuple(json, np.ndarray)`
+        :return: (report, assigned_clean_by_class), where the report is a dic object and assigned_clean_by_class
+        is an array of arrays that contains what data points where classified as clean.
+        :rtype: `tuple(dic, np.ndarray)`
         """
         self.set_params(**kwargs)
 
@@ -178,10 +178,140 @@ class ActivationDefence(PoisonFilteringDefence):
 
         # Add to the report current parameters used to run the defence and the analysis summary
         report = dict(list(report.items()) + list(self.get_params().items()))
-        import json
-        jreport = json.dumps(report)
 
-        return jreport, self.assigned_clean_by_class
+        return report, self.assigned_clean_by_class
+
+    def relabel_poison_ground_truth(self, x, y_fix, test_set_split=0.7, tolerable_backdoor=0.01,
+                                    max_epochs=50, batch_epochs=10):
+        """
+        Revert poison attack by continue training the current classifier with x, y_fix.
+        test_set_split determines the percentage in x that will be used as training set, while 1-test_set_split determines
+        how many data points to use for test set.
+
+        :param x: samples
+        :type x: `np.ndarray`
+        :param y_fix: true label of x_poison
+        :type y_fix: `np.ndarray`
+        :param test_set_split: Only used when cross_validation is set to False. This parameter determine how much data
+        goes to the training set. Here  test_set_split*len(y_fix) determines the number of data points in x_train
+        and (1-test_set_split) * len(y_fix) the number of data points in x_test.
+        :param tolerable_backdoor: Threshold that determines what is the maximum tolerable backdoor success rate.
+        :type tolerable_backdoor `float`
+        :param max_epochs: Maximum number of epochs that the model will be trained
+        :type max_epochs: `int`
+        :param batch_epochs: Number of epochs to be trained before checking current state of model
+        :type batch_epochs: `int`
+        :return: improve_factor
+        :rtype `float`
+        """
+
+        # Split data into testing and training:
+        n_train = int(len(x) * test_set_split)
+        x_train, x_test = x[:n_train], x[n_train:]
+        y_train, y_test = y_fix[:n_train], y_fix[n_train:]
+
+        import time
+        filename = 'original_classifier' + str(time.time()) + '.p'
+        self._pickle_classifier(filename)
+
+        # Now train using y_fix:
+        improve_factor, fixed_classifier = train_remove_backdoor(self.classifier, x_train, y_train, x_test,
+                                                                 y_test, tolerable_backdoor=tolerable_backdoor, max_epochs=max_epochs,
+                                                                 batch_epochs=batch_epochs)
+        # Only update classifier if there was an improvement:
+        if improve_factor < 0:
+            self.classifier = self._unpickle_classifier(filename)
+            return 0
+
+        return improve_factor
+
+    def relabel_poison_cross_validation(self, x, y_fix, n_splits=10, tolerable_backdoor=0.01,
+                                        max_epochs=50, batch_epochs=10):
+        """
+        Revert poison attack by continue training the current classifier with x, y_fix.
+        n_splits determine the number of cross validation splits.
+
+        :param x: samples
+        :type x: `np.ndarray`
+        :param y_fix: true label of x_poison
+        :type y_fix: `np.ndarray`
+        :param n_splits: determines how many splits to use in cross validation (only used if cross_validation=True)
+        :type n_splits: `int`
+        :param tolerable_backdoor: Threshold that determines what is the maximum tolerable backdoor success rate.
+        :type tolerable_backdoor `float`
+        :param max_epochs: Maximum number of epochs that the model will be trained
+        :type max_epochs: `int`
+        :param batch_epochs: Number of epochs to be trained before checking current state of model
+        :type batch_epochs: `int`
+        :return: improve_factor
+        :rtype `float`
+        :return:
+        """
+
+        # Train using cross validation
+        from sklearn.model_selection import KFold
+        kf = KFold(n_splits=n_splits)
+        KFold(n_splits=n_splits, random_state=None, shuffle=True)
+
+        import time
+        filename = 'original_classifier' + str(time.time()) + '.p'
+        self._pickle_classifier(filename)
+        curr_improvement = 0
+
+        for i, (train_index, test_index) in enumerate(kf.split(x)):
+            # Obtain partition:
+            x_train, x_test = x[train_index], x[test_index]
+            y_train, y_test = y_fix[train_index], y_fix[test_index]
+            # Unpickle original model:
+            curr_classifier = self._unpickle_classifier(filename)
+
+            new_improvement, fixed_classifier = train_remove_backdoor(curr_classifier, x_train, y_train, x_test,
+                                                                      y_test,
+                                                                      tolerable_backdoor=tolerable_backdoor,
+                                                                      max_epochs=max_epochs,
+                                                                      batch_epochs=batch_epochs)
+            if curr_improvement < new_improvement and new_improvement > 0:
+                curr_improvement = new_improvement
+                self.classifier = fixed_classifier
+                logger.info('Selected as best model so far: ' + str(curr_improvement))
+
+        return curr_improvement
+
+    def _pickle_classifier(self, file_name):
+        """
+        Pickles the self.classifier and stores it using the provided file_name in folder art.DATA_PATH
+
+        :param file_name:
+        :return:
+        """
+        import pickle
+        import os
+        from art import DATA_PATH
+        full_path = os.path.join(DATA_PATH, file_name)
+        folder = os.path.split(full_path)[0]
+        if not os.path.exists(folder):
+            os.makedirs(folder)
+
+        c = self.classifier
+        pickle.dump(c, open(full_path, 'wb'))
+
+    @staticmethod
+    def _unpickle_classifier(file_name):
+        """
+        Unpickles classifier using the filename provided. Function assumes that the pickle is int art.DATA_PATH
+        
+        :param file_name:
+        :return:
+        """
+        import os
+        from art import DATA_PATH
+        import pickle
+
+        full_path = os.path.join(DATA_PATH, file_name)
+        logger.info('Loading classifier from ' + str(full_path))
+        with open(full_path, 'rb') as f:
+            loaded_classifier = pickle.load(f)
+            return loaded_classifier
 
     def visualize_clusters(self, x_raw, save=True, folder='.', **kwargs):
         """
@@ -329,6 +459,62 @@ class ActivationDefence(PoisonFilteringDefence):
             by_class[assigned].append(data[indx])
 
         return [np.asarray(i) for i in by_class]
+
+
+def measure_misclassification(classifier, x_test, y_test):
+    """
+    Computes 1-accuracy given x_test and y_test
+
+    :param classifier: art.classifier to be used for predictions
+    :param x_test: test set
+    :type x_test: `np.darray`
+    :param y_test: labels test set
+    :type y_test: `np.darray`
+    :return: 1-accuracy
+    :rtype `float`
+    """
+    predictions = np.argmax(classifier.predict(x_test), axis=1)
+    return 1 - np.sum(predictions == np.argmax(y_test, axis=1)) / y_test.shape[0]
+
+
+def train_remove_backdoor(classifier, x_train, y_train, x_test, y_test, tolerable_backdoor,
+                          max_epochs, batch_epochs):
+    """
+    Trains the provider classifier until the tolerance or number of maximum epochs are reached.
+
+    :param classifier: art.classifier to be used for predictions
+    :type classifier: `art.classifier`
+    :param x_train: training set
+    :type x_train: `np.darray`
+    :param y_train: labels used for training
+    :type y_train: `np.darray`
+    :param x_test: samples in test set
+    :type x_test: `np.darray`
+    :param y_test: labels in test set
+    :type y_train: `np.darray`
+    :param tolerable_backdoor: Parameter that determines how many missclassifications are acceptable.
+    :type tolerable_backdoor: `float`
+    :param max_epochs: maximum number of epochs to be run
+    :type max_epochs: `int`
+    :param batch_epochs: groups of epochs that will be run together before checking for termination
+    :type batch_epochs: `int`
+    :return: (improve_factor, classifier)
+    :rtype `tuple`
+    """
+    # Measure poison success in current model:
+    initial_missed = measure_misclassification(classifier, x_test, y_test)
+
+    curr_epochs = 0
+    curr_missed = 1
+    while curr_epochs < max_epochs and curr_missed > tolerable_backdoor:
+        classifier.fit(x_train, y_train, nb_epochs=batch_epochs)
+        curr_epochs += batch_epochs
+        curr_missed = measure_misclassification(classifier, x_test, y_test)
+        logger.info('Current epoch: ' + str(curr_epochs))
+        logger.info('Misclassifications: ' + str(curr_missed))
+
+    improve_factor = initial_missed - curr_missed
+    return improve_factor, classifier
 
 
 def cluster_activations(separated_activations, nb_clusters=2, nb_dims=10, reduce='FastICA', clustering_method='KMeans'):

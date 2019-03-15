@@ -107,6 +107,14 @@ class TestActivationDefence(unittest.TestCase):
         sum_size = sum(is_clean_lst)
         self.assertNotEqual(sum_dist, sum_size)
 
+    def test_evaluate_defense(self):
+        # Get MNIST
+        (x_train, _), (_, _) = self.mnist
+
+        report, is_clean_lst = self.defence.detect_poison(nb_clusters=2, nb_dims=10, reduce='PCA')
+        is_clean = np.zeros(len(x_train))
+        self.defence.evaluate_defence(is_clean)
+
     def test_analyze_cluster(self):
         # Get MNIST
         (x_train, _), (_, _) = self.mnist
@@ -146,6 +154,55 @@ class TestActivationDefence(unittest.TestCase):
     def test_plot_clusters(self):
         self.defence.detect_poison(nb_clusters=2, nb_dims=10, reduce='PCA')
         self.defence.plot_clusters(save=False)
+
+    def test_pickle(self):
+        # Test pickle and unpickle:
+        filename = 'test_pickle.h5'
+        self.defence._pickle_classifier(filename)
+        import os
+        from art import DATA_PATH
+        full_path = os.path.join(DATA_PATH, filename)
+        self.defence.classifier.save(full_path)
+        os.remove(full_path)
+
+    def test_fix_relabel_poison(self):
+        (x_train, y_train), (min_, max_) = self.mnist
+        x_train = x_train[:500]
+        y_train = y_train[:500]
+        x_poison = x_train[:100]
+        y_fix = y_train[:100]
+
+        import keras.backend as k
+        from keras.models import Sequential
+        from keras.layers import Dense, Flatten, Conv2D, MaxPooling2D, Dropout
+
+        # Create Keras convolutional neural network - basic architecture from Keras examples
+        # Source here: https://github.com/keras-team/keras/blob/master/examples/mnist_cnn.py
+        k.set_learning_phase(1)
+        model = Sequential()
+        model.add(Conv2D(32, kernel_size=(3, 3), activation='relu', input_shape=x_train.shape[1:]))
+        model.add(Conv2D(64, (3, 3), activation='relu'))
+        model.add(MaxPooling2D(pool_size=(2, 2)))
+        model.add(Dropout(0.25))
+        model.add(Flatten())
+        model.add(Dense(128, activation='relu'))
+        model.add(Dropout(0.5))
+        model.add(Dense(10, activation='softmax'))
+
+        model.compile(loss='categorical_crossentropy', optimizer='adam', metrics=['accuracy'])
+
+        from art.classifiers import KerasClassifier
+        classifier = KerasClassifier((min_, max_), model=model)
+
+        classifier.fit(x_train, y_train, nb_epochs=1, batch_size=128)
+
+        self.defence = ActivationDefence(classifier, x_train, y_train)
+
+        self.defence.relabel_poison_ground_truth(x_poison, y_fix, test_set_split=0.7, tolerable_backdoor=0.01,
+                                                 max_epochs=5, batch_epochs=10)
+
+        self.defence.relabel_poison_cross_validation(x_poison, y_fix, n_splits=2, tolerable_backdoor=0.01,
+                                                     max_epochs=5, batch_epochs=10)
 
 
 if __name__ == '__main__':
