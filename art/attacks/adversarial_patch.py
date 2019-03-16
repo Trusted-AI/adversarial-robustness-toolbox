@@ -64,6 +64,7 @@ class AdversarialPatch(Attack):
         self.set_params(**kwargs)
 
         self.classifier = classifier
+        self.patch = None
 
     def generate(self, x, **kwargs):
         """
@@ -78,30 +79,22 @@ class AdversarialPatch(Attack):
 
         self.set_params(**kwargs)
 
-        def from_keras(x):
-            x = np.copy(x)
-            x[:, :, 2] += 123.68
-            x[:, :, 1] += 116.779
-            x[:, :, 0] += 103.939
-            return x[:, :, [2, 1, 0]].astype(np.uint8)
-
-        patch = (np.random.standard_normal(size=self.patch_shape)) * 20.0
-
-        patch_0 = np.copy(patch)
+        self.patch = (np.random.standard_normal(size=self.patch_shape)) * 20.0
 
         for i_step in range(self.number_of_steps):
 
-            print(str(i_step + 1) + ' / ' + str(self.number_of_steps))
+            if i_step == 0 or (i_step + 1) % 100 == 0:
+                print('Training Step: ' + str(i_step + 1))
 
-            patch[:, :, 2] = np.clip(patch[:, :, 2], a_min=-123.680, a_max=255.0 - 123.680)
-            patch[:, :, 1] = np.clip(patch[:, :, 1], a_min=-116.779, a_max=255.0 - 116.779)
-            patch[:, :, 0] = np.clip(patch[:, :, 0], a_min=-103.939, a_max=255.0 - 103.939)
+            self.patch[:, :, 2] = np.clip(self.patch[:, :, 2], a_min=-123.680, a_max=255.0 - 123.680)
+            self.patch[:, :, 1] = np.clip(self.patch[:, :, 1], a_min=-116.779, a_max=255.0 - 116.779)
+            self.patch[:, :, 0] = np.clip(self.patch[:, :, 0], a_min=-103.939, a_max=255.0 - 103.939)
 
-            patched_images, patch_mask_transformed, transforms = self._augment_images_with_random_patch(x, patch)
+            patched_images, patch_mask_transformed, transforms = self._augment_images_with_random_patch(x, self.patch)
 
             gradients = self.classifier.loss_gradient(patched_images, self.target_ys)
 
-            patch_gradients = np.zeros_like(patch)
+            patch_gradients = np.zeros_like(self.patch)
 
             for i_batch in range(self.batch_size):
                 patch_gradients_i = self._reverse_transformation(gradients[i_batch, :, :, :],
@@ -112,9 +105,13 @@ class AdversarialPatch(Attack):
 
             patch_gradients = patch_gradients / self.batch_size
 
-            patch -= patch_gradients * self.learning_rate
+            self.patch -= patch_gradients * self.learning_rate
 
-        return patch
+        return self.patch, self._get_circular_patch_mask()
+
+    def apply_patch(self, images, scale):
+        patched_images, _, _ = self._augment_images_with_random_patch(images, self.patch, scale)
+        return patched_images
 
     def set_params(self, **kwargs):
         """
@@ -183,12 +180,12 @@ class AdversarialPatch(Attack):
 
         if not isinstance(self.image_shape, tuple) or not len(self.image_shape) == 3 or not isinstance(
                 self.image_shape[0], int) or not isinstance(self.image_shape[1], int) or not isinstance(
-                self.image_shape[2], int):
+            self.image_shape[2], int):
             raise ValueError("The shape of the training images must be a tuple of 3 integers.")
 
         if not isinstance(self.patch_shape, tuple) or not len(self.patch_shape) == 3 or not isinstance(
                 self.patch_shape[0], int) or not isinstance(self.patch_shape[1], int) or not isinstance(
-                self.patch_shape[2], int):
+            self.patch_shape[2], int):
             raise ValueError("The shape of the adversarial patch must be a tuple of 3 integers.")
 
         if not isinstance(self.batch_size, int):
@@ -223,7 +220,7 @@ class AdversarialPatch(Attack):
         mask = np.broadcast_to(mask, self.patch_shape).astype(np.float32)
         return mask
 
-    def _augment_images_with_random_patch(self, images, patch):
+    def _augment_images_with_random_patch(self, images, patch, scale=None):
         """
         Augment images with randomly rotated, shifted and scaled patch.
         """
@@ -232,7 +229,7 @@ class AdversarialPatch(Attack):
         patch_mask_transformed_list = list()
 
         for i_batch in range(images.shape[0]):
-            patch_transformed, patch_mask_transformed, transformation = self._random_transformation(patch)
+            patch_transformed, patch_mask_transformed, transformation = self._random_transformation(patch, scale)
 
             inverted_patch_mask_transformed = (1 - patch_mask_transformed)
 
@@ -290,7 +287,7 @@ class AdversarialPatch(Attack):
         x = shift(x, shift=shift_xy, order=1)
         return x, shift_xy
 
-    def _random_transformation(self, patch):
+    def _random_transformation(self, patch, scale):
 
         patch_mask = self._get_circular_patch_mask()
 
@@ -304,7 +301,8 @@ class AdversarialPatch(Attack):
         patch_mask = self._rotate(patch_mask, angle)
 
         # scale
-        scale = random.uniform(self.scale_min, self.scale_max)
+        if scale is None:
+            scale = random.uniform(self.scale_min, self.scale_max)
         patch = self._scale(patch, scale, shape)
         patch_mask = self._scale(patch_mask, scale, shape)
         transformation['scale'] = scale
@@ -346,10 +344,10 @@ class AdversarialPatch(Attack):
             delta_plus = int(shape - delta_minus)
             if self.classifier.channel_index == 3:
                 gradients = gradients[center - delta_minus:center + delta_plus,
-                                      center - delta_minus:center + delta_plus, :]
+                            center - delta_minus:center + delta_plus, :]
             elif self.classifier.channel_index == 1:
                 gradients = gradients[:, center - delta_minus:center + delta_plus,
-                                      center - delta_minus:center + delta_plus]
+                            center - delta_minus:center + delta_plus]
         else:
             pad_1 = int((shape - gradients.shape[1]) / 2)
             pad_2 = int(shape - pad_1 - gradients.shape[1])
