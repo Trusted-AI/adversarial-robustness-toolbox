@@ -3,8 +3,7 @@ from __future__ import absolute_import, division, print_function, unicode_litera
 import logging
 import random
 import numpy as np
-from scipy.ndimage import rotate, shift
-from scipy.ndimage import zoom
+from scipy.ndimage import rotate, shift, zoom
 
 from art.attacks.attack import Attack
 
