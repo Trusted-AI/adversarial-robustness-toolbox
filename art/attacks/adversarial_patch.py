@@ -18,11 +18,11 @@ class AdversarialPatch(Attack):
     """
 
     attack_params = Attack.attack_params + ["target_ys", "rotation_max", "scale_min", "scale_max", "learning_rate",
-                                            "number_of_steps", "image_shape", "patch_shape", "batch_size"]
+                                            "number_of_steps", "image_shape", "patch_shape", "batch_size", "clip_patch"]
 
     def __init__(self, classifier, target_ys=None, rotation_max=22.5, scale_min=0.1, scale_max=1.0,
                  learning_rate=5.0, number_of_steps=500, image_shape=(224, 224, 3), patch_shape=(224, 224, 3),
-                 batch_size=16, expectation=None):
+                 batch_size=16, clip_patch=None, expectation=None):
         """
         :param classifier: A trained model.
         :type classifier: :class:`.Classifier`
@@ -44,6 +44,8 @@ class AdversarialPatch(Attack):
         :type patch_shape: `(int, int, int)`
         :param batch_size: The size of the training batch.
         :type batch_size: `int`
+        :param clip_batch: The minimum and maximum values for each channel
+        :type clip_patch: [(float, float), (float, float), (float, float)]
         :param expectation: An expectation over transformations to be applied when computing
                             classifier gradients and predictions.
         :type expectation: :class:`.ExpectationOverTransformations`
@@ -59,7 +61,8 @@ class AdversarialPatch(Attack):
                   "number_of_steps": number_of_steps,
                   "image_shape": image_shape,
                   "patch_shape": patch_shape,
-                  "batch_size": batch_size
+                  "batch_size": batch_size,
+                  "clip_patch": clip_patch
                   }
         self.set_params(**kwargs)
 
@@ -86,9 +89,9 @@ class AdversarialPatch(Attack):
             if i_step == 0 or (i_step + 1) % 100 == 0:
                 print('Training Step: ' + str(i_step + 1))
 
-            self.patch[:, :, 2] = np.clip(self.patch[:, :, 2], a_min=-123.680, a_max=255.0 - 123.680)
-            self.patch[:, :, 1] = np.clip(self.patch[:, :, 1], a_min=-116.779, a_max=255.0 - 116.779)
-            self.patch[:, :, 0] = np.clip(self.patch[:, :, 0], a_min=-103.939, a_max=255.0 - 103.939)
+            if self.clip_patch is not None:
+                for i_channel, (a_min, a_max) in enumerate(self.clip_patch):
+                    self.patch[:, :, i_channel] = np.clip(self.patch[:, :, i_channel], a_min=a_min, a_max=a_max)
 
             patched_images, patch_mask_transformed, transforms = self._augment_images_with_random_patch(x, self.patch)
 
@@ -135,6 +138,8 @@ class AdversarialPatch(Attack):
         :type patch_shape: `(int, int, int)`
         :param batch_size: The size of the training batch.
         :type batch_size: `int`
+        :param clip_batch: The minimum and maximum values for each channel
+        :type clip_patch: [(float, float), (float, float), (float, float)]
         :param expectation: An expectation over transformations to be applied when computing
                             classifier gradients and predictions.
         :type expectation: :class:`.ExpectationOverTransformations`
@@ -180,7 +185,7 @@ class AdversarialPatch(Attack):
 
         if not isinstance(self.image_shape, tuple) or not len(self.image_shape) == 3 or not isinstance(
                 self.image_shape[0], int) or not isinstance(self.image_shape[1], int) or not isinstance(
-            self.image_shape[2], int):
+                self.image_shape[2], int):
             raise ValueError("The shape of the training images must be a tuple of 3 integers.")
 
         if not isinstance(self.patch_shape, tuple) or not len(self.patch_shape) == 3 or not isinstance(
@@ -262,7 +267,7 @@ class AdversarialPatch(Attack):
         elif self.classifier.channel_index == 1:
             zooms = (1.0, scale, scale)
         x = zoom(x, zoom=zooms, order=1)
-        if x.shape[0] <= 224:
+        if x.shape[0] <= self.patch_shape[1]:
             pad_1 = int((shape - x.shape[1]) / 2)
             pad_2 = int(shape - pad_1 - x.shape[1])
             pad_width = None
@@ -273,10 +278,12 @@ class AdversarialPatch(Attack):
             return np.pad(x, pad_width=pad_width, mode='constant', constant_values=(0, 0))
         else:
             center = int(x.shape[0] / 2)
+            patch_hw_1 = int(self.patch_shape[1] / 2)
+            patch_hw_2 = self.patch_shape[1] - patch_hw_1
             if self.classifier.channel_index == 3:
-                return x[center - 112:center + 112, center - 112:center + 112, :]
+                return x[center - patch_hw_1:center + patch_hw_2, center - patch_hw_1:center + patch_hw_2, :]
             elif self.classifier.channel_index == 1:
-                return x[:, center - 112:center + 112, center - 112:center + 112]
+                return x[:, center - patch_hw_1:center + patch_hw_2, center - patch_hw_1:center + patch_hw_2]
 
     def _shift(self, x, shift_1, shift_2):
         shift_xy = None
@@ -308,7 +315,7 @@ class AdversarialPatch(Attack):
         transformation['scale'] = scale
 
         # shift
-        shift_max = 224 * (1.0 - scale) / 2.0  # - 2.0
+        shift_max = (self.image_shape[1] - self.patch_shape[1] * scale) / 2.0
         if shift_max > 0:
             shift_1 = random.uniform(-shift_max, shift_max)
             shift_2 = random.uniform(-shift_max, shift_max)

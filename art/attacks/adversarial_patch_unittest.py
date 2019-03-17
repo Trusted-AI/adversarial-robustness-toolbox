@@ -50,11 +50,11 @@ class TestAdversarialPatch(unittest.TestCase):
                          "learning_rate": 5.0, "number_of_steps": 5, "image_shape": (28, 28, 1),
                          "patch_shape": (28, 28, 1), "batch_size": 10}
         attack_ap = AdversarialPatch(tfc)
-        patch_adv = attack_ap.generate(x_train, **attack_params)
+        patch_adv, patch_mask_adv = attack_ap.generate(x_train, **attack_params)
 
-        self.assertTrue(patch_adv[8, 8, 0] == -5.0)
-        self.assertTrue(patch_adv[14, 14, 0] == -15.0)
-        self.assertTrue(np.sum(patch_adv) == 450.0)
+        self.assertTrue(patch_adv[8, 8, 0] - (-3.1541491702440285) < 0.01)
+        self.assertTrue(patch_adv[14, 14, 0] - 19.77060710322136 < 0.01)
+        self.assertTrue(np.sum(patch_adv) - 387.92340613537993 < 0.01)
 
         sess.close()
         tf.reset_default_graph()
@@ -75,11 +75,11 @@ class TestAdversarialPatch(unittest.TestCase):
                          "learning_rate": 5.0, "number_of_steps": 5, "image_shape": (28, 28, 1),
                          "patch_shape": (28, 28, 1), "batch_size": 10}
         attack_ap = AdversarialPatch(krc)
-        patch_adv = attack_ap.generate(x_train, **attack_params)
+        patch_adv, patch_mask_adv = attack_ap.generate(x_train, **attack_params)
 
-        self.assertTrue(patch_adv[8, 8, 0] == 15.0)
-        self.assertTrue(patch_adv[14, 14, 0] == 5.0)
-        self.assertTrue(np.sum(patch_adv) == -1080.0)
+        self.assertTrue(patch_adv[8, 8, 0] - (-3.2501425017774923) < 0.01)
+        self.assertTrue(patch_adv[14, 14, 0] - 19.62935354176458 < 0.01)
+        self.assertTrue(np.sum(patch_adv) - 427.5144147080584 < 0.01)
 
         k.clear_session()
 
@@ -100,11 +100,11 @@ class TestAdversarialPatch(unittest.TestCase):
                          "learning_rate": 5.0, "number_of_steps": 5, "image_shape": (1, 28, 28),
                          "patch_shape": (1, 28, 28), "batch_size": 10}
         attack_ap = AdversarialPatch(ptc)
-        patch_adv = attack_ap.generate(x_train, **attack_params)
+        patch_adv, patch_mask_adv = attack_ap.generate(x_train, **attack_params)
 
-        self.assertTrue(patch_adv[0, 8, 8] == -5.0)
-        self.assertTrue(patch_adv[0, 14, 14] == 5.0)
-        self.assertTrue(np.sum(patch_adv) == -450.0)
+        self.assertTrue(patch_adv[0, 8, 8] - (-3.1423605902784875) < 0.01)
+        self.assertTrue(patch_adv[0, 14, 14] - 19.790434152473054 < 0.01)
+        self.assertTrue(np.sum(patch_adv) - 383.5670772794207 < 0.01)
 
     if __name__ == '__main__':
         unittest.main()
