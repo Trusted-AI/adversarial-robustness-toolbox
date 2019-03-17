@@ -44,7 +44,7 @@ class AdversarialPatch(Attack):
         :type patch_shape: `(int, int, int)`
         :param batch_size: The size of the training batch.
         :type batch_size: `int`
-        :param clip_batch: The minimum and maximum values for each channel
+        :param clip_patch: The minimum and maximum values for each channel
         :type clip_patch: [(float, float), (float, float), (float, float)]
         :param expectation: An expectation over transformations to be applied when computing
                             classifier gradients and predictions.
@@ -190,7 +190,7 @@ class AdversarialPatch(Attack):
 
         if not isinstance(self.patch_shape, tuple) or not len(self.patch_shape) == 3 or not isinstance(
                 self.patch_shape[0], int) or not isinstance(self.patch_shape[1], int) or not isinstance(
-            self.patch_shape[2], int):
+                self.patch_shape[2], int):
             raise ValueError("The shape of the adversarial patch must be a tuple of 3 integers.")
 
         if not isinstance(self.batch_size, int):
