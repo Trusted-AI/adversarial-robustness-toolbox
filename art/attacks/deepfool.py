@@ -123,8 +123,7 @@ class DeepFool(Attack):
                     grd = self.classifier.class_gradient(batch, logits=True)
 
                 # Stop if misclassification has been achieved
-                active_indices = np.where(fk_i_hat != fk_hat)[0]
-                current_step += 1
+                active_indices = np.where(fk_i_hat == fk_hat)[0]
 
                 current_step += 1
 
