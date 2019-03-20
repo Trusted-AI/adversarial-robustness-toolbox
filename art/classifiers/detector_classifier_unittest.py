@@ -123,6 +123,7 @@ class TestDetectorClassifier(unittest.TestCase):
         self.assertTrue(np.array(grads.shape == (NB_TEST, 11, 1, 28, 28)).all())
         self.assertTrue(np.sum(grads) != 0)
 
+        # Sanity check
         for i1 in range(grads.shape[1]):
             for i2 in range(grads.shape[2]):
                 for i3 in range(grads.shape[3]):
@@ -130,25 +131,58 @@ class TestDetectorClassifier(unittest.TestCase):
                         result = self._derivative(x_test, i1, i2, i3, i4, True)
 
                         for i in range(grads.shape[0]):
-                            if np.abs(result[i]) > 0.3:
+                            if np.abs(result[i]) > 0.5:
                                 # print(result[i], grads[i, i1, i2, i3, i4])
                                 self.assertEqual(np.sign(result[i]), np.sign(grads[i, i1, i2, i3, i4]))
 
+    def test_class_gradient2(self):
+        # Get MNIST
+        (_, _), (x_test, _) = self.mnist
 
+        # Get the classifier
+        dc = self.detector_classifier
 
-    #
-    #     # Test logits = True and label = 5
-    #     grads = dc.class_gradient(x=x_test, logits=True, label=5)
-    #
-    #     self.assertTrue(np.array(grads.shape == (NB_TEST, 1, 1, 28, 28)).all())
-    #     self.assertTrue(np.sum(grads) != 0)
-    #
-    #     # Test logits = True and label = 10
-    #     grads = dc.class_gradient(x=x_test, logits=True, label=10)
-    #
-    #     self.assertTrue(np.array(grads.shape == (NB_TEST, 1, 1, 28, 28)).all())
-    #     self.assertTrue(np.sum(grads) != 0)
-    #
+        # Test logits = True and label = 5
+        grads = dc.class_gradient(x=x_test, logits=True, label=5)
+
+        self.assertTrue(np.array(grads.shape == (NB_TEST, 1, 1, 28, 28)).all())
+        self.assertTrue(np.sum(grads) != 0)
+
+        # Sanity check
+        for i2 in range(grads.shape[2]):
+            for i3 in range(grads.shape[3]):
+                for i4 in range(grads.shape[4]):
+                    result = self._derivative(x_test, 5, i2, i3, i4, True)
+
+                    for i in range(grads.shape[0]):
+                        if np.abs(result[i]) > 0.5:
+                            # print(result[i], grads[i, 0, i2, i3, i4])
+                            self.assertEqual(np.sign(result[i]), np.sign(grads[i, 0, i2, i3, i4]))
+
+    def test_class_gradient3(self):
+        # Get MNIST
+        (_, _), (x_test, _) = self.mnist
+
+        # Get the classifier
+        dc = self.detector_classifier
+
+        # Test logits = True and label = 10
+        grads = dc.class_gradient(x=x_test, logits=True, label=10)
+
+        self.assertTrue(np.array(grads.shape == (NB_TEST, 1, 1, 28, 28)).all())
+        self.assertTrue(np.sum(grads) != 0)
+
+        # Sanity check
+        for i2 in range(grads.shape[2]):
+            for i3 in range(grads.shape[3]):
+                for i4 in range(grads.shape[4]):
+                    result = self._derivative(x_test, 10, i2, i3, i4, True)
+
+                    for i in range(grads.shape[0]):
+                        if np.abs(result[i]) > 0.5:
+                            # print(result[i], grads[i, 0, i2, i3, i4])
+                            self.assertEqual(np.sign(result[i]), np.sign(grads[i, 0, i2, i3, i4]))
+
     #     # Test logits = True and label = array
     #     label = np.random.randint(11, size=NB_TEST)
     #     grads = dc.class_gradient(x=x_test, logits=True, label=label)
