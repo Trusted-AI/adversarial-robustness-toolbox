@@ -160,14 +160,29 @@ class DetectorClassifier(Classifier):
                 if label < self._nb_classes - 1:
                     # Compute and return from the classifier gradients
                     combined_grads = self.classifier.class_gradient(x=x_, label=label, logits=True)
+
                 else:
-                    # Compute and return from the detector gradients
+                    # First compute the classifier gradients
+                    classifier_grads = self.classifier.class_gradient(x=x_, label=None, logits=True)
+
+                    # Then compute the detector gradients
                     detector_grads = self.detector.class_gradient(x=x_, label=0, logits=True)
 
-                    # Chain the detector gradients
+                    # Chain the detector gradients for the first component
                     classifier_logits = self.classifier.predict(x=x_, logits=True)
                     max_classifier_logits = np.max(classifier_logits, axis=1)
-                    combined_grads = max_classifier_logits[:, None, None, None, None] * detector_grads
+                    first_detector_grads = max_classifier_logits[:, None, None, None, None] * detector_grads
+
+                    # Chain the detector gradients for the second component
+                    maxind_classifier_logits = np.argmax(classifier_logits, axis=1)
+                    max_classifier_grads = classifier_grads[np.arange(len(classifier_grads)), maxind_classifier_logits]
+                    detector_logits = self.detector.predict(x=x_, logits=True)
+                    second_detector_grads = max_classifier_grads * (detector_logits + 1)[:, None, None]
+                    second_detector_grads = second_detector_grads[None, ...]
+                    second_detector_grads = np.swapaxes(second_detector_grads, 0, 1)
+
+                    # Update detector gradients
+                    combined_grads = first_detector_grads + second_detector_grads
 
             else:
                 # Compute indexes for classifier labels and detector labels
