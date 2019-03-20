@@ -86,7 +86,7 @@ class TestDetectorClassifier(unittest.TestCase):
 
         # Test predict softmax
         preds = self.detector_classifier.predict(x=x_test, logits=False)
-        self.assertTrue(np.sum(preds) == NB_TEST)
+        self.assertAlmostEqual(np.sum(preds), NB_TEST, places=4)
 
     def test_nb_classes(self):
         dc = self.detector_classifier
