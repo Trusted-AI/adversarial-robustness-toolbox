@@ -22,7 +22,7 @@ class MarginAttack(Attack):
 
     def __init__(self, classifier, max_iter=200, target_scan_iters=20, final_restore_iters=20, offset=-0.1,
                  metric='L2', targeted=False, num_scan_classes=None, restore_lr=None, project_lr_init=1.0,
-                 project_lr_ratio=0.1, nu=None, verbose=False, expectation=None):
+                 project_lr_ratio=0.1, nu=None, verbose=False):
         """
         Create a MarginAttack instance.
 
@@ -53,9 +53,6 @@ class MarginAttack(Attack):
         :type nu: `float`
         :param verbose: print training information at each iteration if true
         :type verbose: `bool`
-        :param expectation: An expectation over transformations to be applied when computing
-                            classifier gradients and predictions.
-        :type expectation: :class:`.ExpectationOverTransformations`
         """
         super(MarginAttack, self).__init__(classifier)
 
@@ -86,8 +83,8 @@ class MarginAttack(Attack):
                   'project_lr_init': project_lr_init,
                   'project_lr_ratio': project_lr_ratio,
                   'nu': nu,
-                  'verbose': verbose,
-                  'expectation': expectation}
+                  'verbose': verbose
+                  }
         self.set_params(**params)
 
         self.input_min = self.classifier.clip_values[0]
@@ -118,7 +115,7 @@ class MarginAttack(Attack):
                 raise ValueError('The target class must be specified in y for targeted attacks.')
             else:
                 logger.info('True class label not provided. Using predicted class as label.')
-                y = np.argmax(self._predict(np.array(x, dtype=NUMPY_DTYPE), logits=True), axis=1)
+                y = np.argmax(self.classifier.predict(np.array(x, dtype=NUMPY_DTYPE), logits=True), axis=1)
         else:
             # convert one-hot labeling to one-dim label
             y = np.argmax(y, axis=1)
@@ -141,7 +138,7 @@ class MarginAttack(Attack):
                     dist_mean = np.mean(np.max(np.absolute(x_adv - x_original), axis=tuple(range(1, x.ndim))))
 
                 # compute average constraint
-                f = self._predict(np.array(x_adv, dtype=NUMPY_DTYPE), logits=True)
+                f = self.classifier.predict(np.array(x_adv, dtype=NUMPY_DTYPE), logits=True)
                 incorrect_class = np.argmax(f + np.log(1 - y_onehot + tol), axis=-1)
                 f_correct = f[range(self.num_obs), y]
                 f_incorrect = f[range(self.num_obs), incorrect_class]
@@ -265,12 +262,12 @@ class MarginAttack(Attack):
         tol = 1e-10
 
         # find the largest incorrect class
-        f = self._predict(np.array(x0, dtype=NUMPY_DTYPE), logits=True)
+        f = self.classifier.predict(np.array(x0, dtype=NUMPY_DTYPE), logits=True)
         incorrect_class = np.argmax(f + np.log(1 - y_onehot + tol), axis=-1)
 
         # compute the constraint and its gradient
-        grd_correct = self._class_gradient(np.array(x0, dtype=NUMPY_DTYPE), label=y, logits=True)
-        grd_incorrect = self._class_gradient(np.array(x0, dtype=NUMPY_DTYPE), label=incorrect_class,
+        grd_correct = self.classifier.class_gradient(np.array(x0, dtype=NUMPY_DTYPE), label=y, logits=True)
+        grd_incorrect = self.classifier.class_gradient(np.array(x0, dtype=NUMPY_DTYPE), label=incorrect_class,
                                              logits=True)
 
         f_correct = f[range(self.num_obs), y]
@@ -305,19 +302,19 @@ class MarginAttack(Attack):
         tol = 1e-10
 
         # find the top incorrect classes
-        f = self._predict(np.array(x0, dtype=NUMPY_DTYPE), logits=True)
+        f = self.classifier.predict(np.array(x0, dtype=NUMPY_DTYPE), logits=True)
         incorrect_class = np.argpartition(f + np.log(1 - y_onehot + tol), f.shape[-1] - self.num_scan_classes,
                                           axis=1)[:, -self.num_scan_classes:]
 
         # for each incorrect classes, perform the restoration move, pick the one with smallest perturbation
         xs = []
         dists = []
-        grd_correct = self._class_gradient(np.array(x0, dtype=NUMPY_DTYPE), label=y, logits=True)
+        grd_correct = self.classifier.class_gradient(np.array(x0, dtype=NUMPY_DTYPE), label=y, logits=True)
         f_correct = f[range(self.num_obs), y]
         for i in range(self.num_scan_classes):
             # compute the constraint and its gradient
-            grd_incorrect = self._class_gradient(np.array(x0, dtype=NUMPY_DTYPE),
-                                                 label=incorrect_class[:, i], logits=True)
+            grd_incorrect = self.classifier.class_gradient(np.array(x0, dtype=NUMPY_DTYPE),
+                                                           label=incorrect_class[:, i], logits=True)
             f_incorrect = f[range(self.num_obs), incorrect_class[:, i]]
 
             if self.targeted:
@@ -364,12 +361,12 @@ class MarginAttack(Attack):
         tol = 1e-10
 
         # find the largest incorrect class
-        f = self._predict(np.array(x1, dtype=NUMPY_DTYPE), logits=True)
+        f = self.classifier.predict(np.array(x1, dtype=NUMPY_DTYPE), logits=True)
         incorrect_class = np.argmax(f + np.log(1 - y_onehot + tol), axis=-1)
 
         # compute the constraint and its gradient
-        grd_correct = self._class_gradient(np.array(x1, dtype=NUMPY_DTYPE), label=y, logits=True)
-        grd_incorrect = self._class_gradient(np.array(x1, dtype=NUMPY_DTYPE), label=incorrect_class, logits=True)
+        grd_correct = self.classifier.class_gradient(np.array(x1, dtype=NUMPY_DTYPE), label=y, logits=True)
+        grd_incorrect = self.classifier.class_gradient(np.array(x1, dtype=NUMPY_DTYPE), label=incorrect_class, logits=True)
 
         if self.targeted:
             c_grad = grd_incorrect - grd_correct
@@ -399,13 +396,13 @@ class MarginAttack(Attack):
         :rtype: `np.ndarray`
         """
         # find the largest incorrect class
-        f = self._predict(np.array(x1, dtype=NUMPY_DTYPE), logits=True)
+        f = self.classifier.predict(np.array(x1, dtype=NUMPY_DTYPE), logits=True)
         incorrect_class = np.argmax(f + np.log(1 - y_onehot), axis=-1)
 
         # compute the constraint and its gradient
-        grd_correct = self._class_gradient(np.array(x1, dtype=NUMPY_DTYPE), label=y, logits=True)
-        grd_incorrect = self._class_gradient(np.array(x1, dtype=NUMPY_DTYPE), label=incorrect_class,
-                                             logits=True)
+        grd_correct = self.classifier.class_gradient(np.array(x1, dtype=NUMPY_DTYPE), label=y, logits=True)
+        grd_incorrect = self.classifier.class_gradient(np.array(x1, dtype=NUMPY_DTYPE), label=incorrect_class,
+                                                       logits=True)
         if self.targeted:
             c_grad = grd_incorrect - grd_correct
         else:

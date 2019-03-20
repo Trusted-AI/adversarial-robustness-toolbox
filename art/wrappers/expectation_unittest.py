@@ -5,8 +5,9 @@ import unittest
 
 import numpy as np
 
-from art.attacks import FastGradientMethod, ExpectationOverTransformations
+from art.attacks import FastGradientMethod
 from art.utils import load_mnist, random_targets, master_seed, get_classifier_kr
+from art.wrappers.expectation import ExpectationOverTransformations
 
 logger = logging.getLogger('testLogger')
 
@@ -56,12 +57,8 @@ class TestExpectationOverTransformations(unittest.TestCase):
             while True:
                 yield t
 
-        eot = ExpectationOverTransformations(sample_size=1, transformation=transformation)
-
-        fgsm_with_eot = FastGradientMethod(classifier=krc,
-                                           expectation=eot,
-                                           targeted=True)
-        self.assertFalse(fgsm_with_eot.expectation is None)
+        eot = ExpectationOverTransformations(classifier=krc, sample_size=1, transformation=transformation)
+        fgsm_with_eot = FastGradientMethod(classifier=eot, targeted=True)
         x_test_adv_with_eot = fgsm_with_eot.generate(x_test, **params)
 
         self.assertTrue((np.abs(x_test_adv - x_test_adv_with_eot) < 0.001).all())
