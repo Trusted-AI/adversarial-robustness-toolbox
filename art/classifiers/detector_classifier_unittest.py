@@ -76,25 +76,39 @@ class TestDetectorClassifier(unittest.TestCase):
         # Set master seed
         master_seed(1234)
 
-    def test_predict(self):
-        # Get MNIST
-        (_, _), (x_test, y_test) = self.mnist
+    # def test_predict(self):
+    #     # Get MNIST
+    #     (_, _), (x_test, y_test) = self.mnist
+    #
+    #     # Test predict logits
+    #     preds = self.detector_classifier.predict(x=x_test, logits=True)
+    #     self.assertTrue(np.array(preds.shape == (NB_TEST, 11)).all())
+    #
+    #     # Test predict softmax
+    #     preds = self.detector_classifier.predict(x=x_test, logits=False)
+    #     self.assertTrue(np.sum(preds) == NB_TEST)
+    #
+    # def test_nb_classes(self):
+    #     dc = self.detector_classifier
+    #     self.assertTrue(dc.nb_classes == 11)
+    #
+    # def test_input_shape(self):
+    #     dc = self.detector_classifier
+    #     self.assertTrue(np.array(dc.input_shape == (1, 28, 28)).all())
+    #
 
-        # Test predict logits
-        preds = self.detector_classifier.predict(x=x_test, logits=True)
-        self.assertTrue(np.array(preds.shape == (NB_TEST, 11)).all())
+    def _derivative(self, x, i1, i2, i3, i4, logits):
+        delta = 1e-5
+        x_minus = x.copy()
+        x_minus[:, i2, i3, i4] -= delta
+        x_plus = x.copy()
+        x_plus[:, i2, i3, i4] += delta
 
-        # Test predict softmax
-        preds = self.detector_classifier.predict(x=x_test, logits=False)
-        self.assertTrue(np.sum(preds) == NB_TEST)
+        result_plus = self.detector_classifier.predict(x_plus, logits=logits)
+        result_minus = self.detector_classifier.predict(x_minus, logits=logits)
+        result = (result_plus[:, i1] - result_minus[:, i1]) / (2 * delta)
 
-    def test_nb_classes(self):
-        dc = self.detector_classifier
-        self.assertTrue(dc.nb_classes == 11)
-
-    def test_input_shape(self):
-        dc = self.detector_classifier
-        self.assertTrue(np.array(dc.input_shape == (1, 28, 28)).all())
+        return result
 
     def test_class_gradient(self):
         # Get MNIST
@@ -109,92 +123,107 @@ class TestDetectorClassifier(unittest.TestCase):
         self.assertTrue(np.array(grads.shape == (NB_TEST, 11, 1, 28, 28)).all())
         self.assertTrue(np.sum(grads) != 0)
 
-        # Test logits = True and label = 5
-        grads = dc.class_gradient(x=x_test, logits=True, label=5)
+        for i1 in range(grads.shape[1]):
+            for i2 in range(grads.shape[2]):
+                for i3 in range(grads.shape[3]):
+                    for i4 in range(grads.shape[4]):
+                        result = self._derivative(x_test, i1, i2, i3, i4, True)
+                        print(np.sum(result), np.sum(grads[:, i1, i2, i3, i4]))
+                        self.assertAlmostEqual(np.sum(result), np.sum(grads[:, i1, i2, i3, i4]))
 
-        self.assertTrue(np.array(grads.shape == (NB_TEST, 1, 1, 28, 28)).all())
-        self.assertTrue(np.sum(grads) != 0)
+                        #for i in range(grads.shape[0]):
+                        #    print(result[i], grads[i, i1, i2, i3, i4])
+                        #    self.assertAlmostEqual(result[i], grads[i, i1, i2, i3, i4])
 
-        # Test logits = True and label = 10
-        grads = dc.class_gradient(x=x_test, logits=True, label=10)
 
-        self.assertTrue(np.array(grads.shape == (NB_TEST, 1, 1, 28, 28)).all())
-        self.assertTrue(np.sum(grads) != 0)
 
-        # Test logits = True and label = array
-        label = np.random.randint(11, size=NB_TEST)
-        grads = dc.class_gradient(x=x_test, logits=True, label=label)
-
-        self.assertTrue(np.array(grads.shape == (NB_TEST, 1, 1, 28, 28)).all())
-        self.assertTrue(np.sum(grads) != 0)
-
-        # Test logits = False and label = None
-        grads = dc.class_gradient(x=x_test, logits=False, label=None)
-
-        self.assertTrue(np.array(grads.shape == (NB_TEST, 11, 1, 28, 28)).all())
-        self.assertTrue(np.sum(grads) != 0)
-
-        # Test logits = False and label = 5
-        grads = dc.class_gradient(x=x_test, logits=False, label=5)
-
-        self.assertTrue(np.array(grads.shape == (NB_TEST, 1, 1, 28, 28)).all())
-        self.assertTrue(np.sum(grads) != 0)
-
-        # Test logits = False and label = 10
-        grads = dc.class_gradient(x=x_test, logits=False, label=10)
-
-        self.assertTrue(np.array(grads.shape == (NB_TEST, 1, 1, 28, 28)).all())
-        self.assertTrue(np.sum(grads) != 0)
-
-        # Test logits = False and label = array
-        label = np.random.randint(11, size=NB_TEST)
-        grads = dc.class_gradient(x=x_test, logits=False, label=label)
-
-        self.assertTrue(np.array(grads.shape == (NB_TEST, 1, 1, 28, 28)).all())
-        self.assertTrue(np.sum(grads) != 0)
-
-    def test_set_learning(self):
-        dc = self.detector_classifier
-
-        self.assertTrue(dc.classifier._model.training)
-        self.assertTrue(dc.detector._model.training)
-        self.assertTrue(dc.learning_phase is None)
-
-        dc.set_learning_phase(False)
-        self.assertFalse(dc.classifier._model.training)
-        self.assertFalse(dc.detector._model.training)
-        self.assertFalse(dc.learning_phase)
-
-        dc.set_learning_phase(True)
-        self.assertTrue(dc.classifier._model.training)
-        self.assertTrue(dc.detector._model.training)
-        self.assertTrue(dc.learning_phase)
-
-    def test_save(self):
-        model = self.detector_classifier
-        import tempfile
-        import os
-        t_file = tempfile.NamedTemporaryFile()
-        full_path = t_file.name
-        t_file.close()
-        base_name = os.path.basename(full_path)
-        dir_name = os.path.dirname(full_path)
-        model.save(base_name, path=dir_name)
-
-        self.assertTrue(os.path.exists(full_path + "_classifier.optimizer"))
-        self.assertTrue(os.path.exists(full_path + "_classifier.model"))
-        os.remove(full_path + '_classifier.optimizer')
-        os.remove(full_path + '_classifier.model')
-
-        self.assertTrue(os.path.exists(full_path + "_detector.optimizer"))
-        self.assertTrue(os.path.exists(full_path + "_detector.model"))
-        os.remove(full_path + '_detector.optimizer')
-        os.remove(full_path + '_detector.model')
-
-    def test_repr(self):
-        repr_ = repr(self.detector_classifier)
-        self.assertTrue('art.classifiers.detector_classifier.DetectorClassifier' in repr_)
-        self.assertTrue('preprocessing=(0, 1)' in repr_)
+    #
+    #     # Test logits = True and label = 5
+    #     grads = dc.class_gradient(x=x_test, logits=True, label=5)
+    #
+    #     self.assertTrue(np.array(grads.shape == (NB_TEST, 1, 1, 28, 28)).all())
+    #     self.assertTrue(np.sum(grads) != 0)
+    #
+    #     # Test logits = True and label = 10
+    #     grads = dc.class_gradient(x=x_test, logits=True, label=10)
+    #
+    #     self.assertTrue(np.array(grads.shape == (NB_TEST, 1, 1, 28, 28)).all())
+    #     self.assertTrue(np.sum(grads) != 0)
+    #
+    #     # Test logits = True and label = array
+    #     label = np.random.randint(11, size=NB_TEST)
+    #     grads = dc.class_gradient(x=x_test, logits=True, label=label)
+    #
+    #     self.assertTrue(np.array(grads.shape == (NB_TEST, 1, 1, 28, 28)).all())
+    #     self.assertTrue(np.sum(grads) != 0)
+    #
+    #     # Test logits = False and label = None
+    #     grads = dc.class_gradient(x=x_test, logits=False, label=None)
+    #
+    #     self.assertTrue(np.array(grads.shape == (NB_TEST, 11, 1, 28, 28)).all())
+    #     self.assertTrue(np.sum(grads) != 0)
+    #
+    #     # Test logits = False and label = 5
+    #     grads = dc.class_gradient(x=x_test, logits=False, label=5)
+    #
+    #     self.assertTrue(np.array(grads.shape == (NB_TEST, 1, 1, 28, 28)).all())
+    #     self.assertTrue(np.sum(grads) != 0)
+    #
+    #     # Test logits = False and label = 10
+    #     grads = dc.class_gradient(x=x_test, logits=False, label=10)
+    #
+    #     self.assertTrue(np.array(grads.shape == (NB_TEST, 1, 1, 28, 28)).all())
+    #     self.assertTrue(np.sum(grads) != 0)
+    #
+    #     # Test logits = False and label = array
+    #     label = np.random.randint(11, size=NB_TEST)
+    #     grads = dc.class_gradient(x=x_test, logits=False, label=label)
+    #
+    #     self.assertTrue(np.array(grads.shape == (NB_TEST, 1, 1, 28, 28)).all())
+    #     self.assertTrue(np.sum(grads) != 0)
+    #
+    # def test_set_learning(self):
+    #     dc = self.detector_classifier
+    #
+    #     self.assertTrue(dc.classifier._model.training)
+    #     self.assertTrue(dc.detector._model.training)
+    #     self.assertTrue(dc.learning_phase is None)
+    #
+    #     dc.set_learning_phase(False)
+    #     self.assertFalse(dc.classifier._model.training)
+    #     self.assertFalse(dc.detector._model.training)
+    #     self.assertFalse(dc.learning_phase)
+    #
+    #     dc.set_learning_phase(True)
+    #     self.assertTrue(dc.classifier._model.training)
+    #     self.assertTrue(dc.detector._model.training)
+    #     self.assertTrue(dc.learning_phase)
+    #
+    # def test_save(self):
+    #     model = self.detector_classifier
+    #     import tempfile
+    #     import os
+    #     t_file = tempfile.NamedTemporaryFile()
+    #     full_path = t_file.name
+    #     t_file.close()
+    #     base_name = os.path.basename(full_path)
+    #     dir_name = os.path.dirname(full_path)
+    #     model.save(base_name, path=dir_name)
+    #
+    #     self.assertTrue(os.path.exists(full_path + "_classifier.optimizer"))
+    #     self.assertTrue(os.path.exists(full_path + "_classifier.model"))
+    #     os.remove(full_path + '_classifier.optimizer')
+    #     os.remove(full_path + '_classifier.model')
+    #
+    #     self.assertTrue(os.path.exists(full_path + "_detector.optimizer"))
+    #     self.assertTrue(os.path.exists(full_path + "_detector.model"))
+    #     os.remove(full_path + '_detector.optimizer')
+    #     os.remove(full_path + '_detector.model')
+    #
+    # def test_repr(self):
+    #     repr_ = repr(self.detector_classifier)
+    #     self.assertTrue('art.classifiers.detector_classifier.DetectorClassifier' in repr_)
+    #     self.assertTrue('preprocessing=(0, 1)' in repr_)
 
 
 if __name__ == '__main__':
