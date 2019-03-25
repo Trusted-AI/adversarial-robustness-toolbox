@@ -7,7 +7,7 @@ key functions, such as loss_gradient, to facilitate new attacks.
 
 class ClassifierWrapper(object):
     """
-    Wrapper class for any classifier instance
+    Wrapper class for any classifier instance.
     """
     attack_params = ['classifier']
 
@@ -22,15 +22,13 @@ class ClassifierWrapper(object):
 
     def __getattr__(self, attr):
         """
-        A generic grab-bag for the classifier instance
-        This makes the wrapped class look like a subclass
+        A generic grab-bag for the classifier instance. This makes the wrapped class look like a subclass.
         """
         return getattr(self.classifier, attr)
 
     def __setattr__(self, attr, value):
         """
-        A generic grab-bag for the classifier instance
-        This makes the wrapped class look like a subclass
+        A generic grab-bag for the classifier instance. This makes the wrapped class look like a subclass.
         """
         if attr == 'classifier':
             object.__setattr__(self, attr, value)
@@ -42,9 +40,9 @@ class ClassifierWrapper(object):
         Take in a dictionary of parameters and pass them down to the underlying
         wrapped classifier instance.
 
-        :param kwargs: a dictionary of attack-specific parameters
+        :param kwargs: A dictionary of attack-specific parameters.
         :type kwargs: `dict`
-        :return: `True` when parsing was successful
+        :return: `True` when parsing was successful.
         """
         for key, value in kwargs.items():
             if key in self.attack_params:

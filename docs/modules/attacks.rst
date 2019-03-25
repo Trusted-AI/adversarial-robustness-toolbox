@@ -44,12 +44,6 @@ Projected Gradient Descent
    :members:
    :special-members:
 
-Query-Efficient Black-Box Attack
---------------------------------
-.. autoclass:: QueryEfficientBBGradientEstimation
-   :members:
-   :special-members:
-
 Jacobian Saliency Map Attack
 ----------------------------
 .. autoclass:: SaliencyMapMethod
