@@ -102,8 +102,8 @@ class TestVisualization(unittest.TestCase):
                   [3, 3, 3]]
         labels = [1, 1, 3]
 
+        # Shouldn't work because labels don't start in zero.
         plot_3d(points, labels, save=False)
-        print("failed as it should :D ")
 
     def test_3D_plot(self):
         points = [[1, 1, 1],

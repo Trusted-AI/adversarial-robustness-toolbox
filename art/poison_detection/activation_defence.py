@@ -57,7 +57,7 @@ class ActivationDefence(PoisonFilteringDefence):
 
         :param is_clean: ground truth, where is_clean[i]=1 means that x_train[i] is clean and is_clean[i]=0 means
                          x_train[i] is poisonous
-        :type is_clean: :class `ny.ndarray'`
+        :type is_clean: :class `np.ndarray`
         :param kwargs: a dictionary of defence-specific parameters
         :type kwargs: `dict`
         :return: JSON object with confusion matrix
@@ -149,7 +149,7 @@ class ActivationDefence(PoisonFilteringDefence):
         :type kwargs: `dict`
         :return: (report, assigned_clean_by_class), where the report is a dic object and assigned_clean_by_class
         is an array of arrays that contains what data points where classified as clean.
-        :rtype: `tuple(dic, np.ndarray)`
+        :rtype: `tuple(dict, np.ndarray)`
         """
         self.set_params(**kwargs)
 
@@ -192,8 +192,8 @@ class ActivationDefence(PoisonFilteringDefence):
         :type x: `np.ndarray`
         :param y_fix: true label of x_poison
         :type y_fix: `np.ndarray`
-        :param test_set_split: Only used when cross_validation is set to False. This parameter determine how much data
-        goes to the training set. Here  test_set_split*len(y_fix) determines the number of data points in x_train
+        :param test_set_split: this parameter determine how much data goes to the training set.
+        Here test_set_split*len(y_fix) determines the number of data points in x_train
         and (1-test_set_split) * len(y_fix) the number of data points in x_test.
         :param tolerable_backdoor: Threshold that determines what is the maximum tolerable backdoor success rate.
         :type tolerable_backdoor `float`
@@ -233,9 +233,9 @@ class ActivationDefence(PoisonFilteringDefence):
         Revert poison attack by continue training the current classifier with x, y_fix.
         n_splits determine the number of cross validation splits.
 
-        :param x: samples
+        :param x: samples that were miss-labeled
         :type x: `np.ndarray`
-        :param y_fix: true label of x_poison
+        :param y_fix: true label of x
         :type y_fix: `np.ndarray`
         :param n_splits: determines how many splits to use in cross validation (only used if cross_validation=True)
         :type n_splits: `int`
@@ -607,6 +607,3 @@ def reduce_dimensionality(activations, nb_dims=10, reduce='FastICA'):
 
     reduced_activations = projector.fit_transform(activations)
     return reduced_activations
-
-
-
