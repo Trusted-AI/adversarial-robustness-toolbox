@@ -29,7 +29,7 @@ class ActivationDefence(PoisonFilteringDefence):
         """
         Create an :class:`.ActivationDefence` object with the provided classifier.
 
-        :param classifier: model evaluated for poison
+        :param classifier: Model evaluated for poison.
         :type classifier: :class:`.Classifier`
         :param x_train: dataset used to train the classifier.
         :type x_train: `np.ndarray`
@@ -55,12 +55,12 @@ class ActivationDefence(PoisonFilteringDefence):
         """
         Returns confusion matrix.
 
-        :param is_clean: ground truth, where is_clean[i]=1 means that x_train[i] is clean and is_clean[i]=0 means
-                         x_train[i] is poisonous
+        :param is_clean: Ground truth, where is_clean[i]=1 means that x_train[i] is clean and is_clean[i]=0 means
+                         x_train[i] is poisonous.
         :type is_clean: :class `np.ndarray`
-        :param kwargs: a dictionary of defence-specific parameters
+        :param kwargs: A dictionary of defence-specific parameters.
         :type kwargs: `dict`
-        :return: JSON object with confusion matrix
+        :return: JSON object with confusion matrix.
         :rtype: `jsonObject`
         """
         if is_clean is None or len(is_clean) == 0:
@@ -90,7 +90,7 @@ class ActivationDefence(PoisonFilteringDefence):
         :return: (report, is_clean_lst):
                 where a report is a dict object that contains information specified by the clustering analysis technique.
                 where is_clean is a list, where is_clean_lst[i]=1 means that x_train[i]
-                there is clean and is_clean_lst[i]=0, means that x_train[i] was classified as poison
+                there is clean and is_clean_lst[i]=0, means that x_train[i] was classified as poison.
         :rtype: `tuple`
         """
         self.set_params(**kwargs)
@@ -122,9 +122,9 @@ class ActivationDefence(PoisonFilteringDefence):
         ith class belongs and the correspondent activations reduced by class
         red_activations_by_class[i][j]
 
-        :param kwargs: a dictionary of cluster-specific parameters
+        :param kwargs: A dictionary of cluster-specific parameters.
         :type kwargs: `dict`
-        :return: clusters per class and activations by class
+        :return: Clusters per class and activations by class.
         :rtype: `tuple`
         """
         self.set_params(**kwargs)
@@ -145,10 +145,10 @@ class ActivationDefence(PoisonFilteringDefence):
         """
         This function analyzes the clusters according to the provided method
 
-        :param kwargs: a dictionary of cluster-analysis-specific parameters
+        :param kwargs: A dictionary of cluster-analysis-specific parameters.
         :type kwargs: `dict`
-        :return: (report, assigned_clean_by_class), where the report is a dic object and assigned_clean_by_class
-        is an array of arrays that contains what data points where classified as clean.
+        :return: (report, assigned_clean_by_class), where the report is a dict object and assigned_clean_by_class
+                 is an array of arrays that contains what data points where classified as clean.
         :rtype: `tuple(dict, np.ndarray)`
         """
         self.set_params(**kwargs)
@@ -185,8 +185,8 @@ class ActivationDefence(PoisonFilteringDefence):
                                     max_epochs=50, batch_epochs=10):
         """
         Revert poison attack by continue training the current classifier with x, y_fix.
-        test_set_split determines the percentage in x that will be used as training set, while 1-test_set_split determines
-        how many data points to use for test set.
+        test_set_split determines the percentage in x that will be used as training set, while 1-test_set_split
+        determines how many data points to use for test set.
 
         :param x: samples
         :type x: `np.ndarray`
@@ -233,21 +233,20 @@ class ActivationDefence(PoisonFilteringDefence):
         Revert poison attack by continue training the current classifier with x, y_fix.
         n_splits determine the number of cross validation splits.
 
-        :param x: samples that were miss-labeled
+        :param x: Samples that were miss-labeled.
         :type x: `np.ndarray`
-        :param y_fix: true label of x
+        :param y_fix: True label of `x`.
         :type y_fix: `np.ndarray`
-        :param n_splits: determines how many splits to use in cross validation (only used if cross_validation=True)
+        :param n_splits: Determines how many splits to use in cross validation (only used if cross_validation=True).
         :type n_splits: `int`
         :param tolerable_backdoor: Threshold that determines what is the maximum tolerable backdoor success rate.
         :type tolerable_backdoor `float`
-        :param max_epochs: Maximum number of epochs that the model will be trained
+        :param max_epochs: Maximum number of epochs that the model will be trained.
         :type max_epochs: `int`
-        :param batch_epochs: Number of epochs to be trained before checking current state of model
+        :param batch_epochs: Number of epochs to be trained before checking current state of model.
         :type batch_epochs: `int`
         :return: improve_factor
         :rtype `float`
-        :return:
         """
 
         # Train using cross validation
@@ -282,7 +281,7 @@ class ActivationDefence(PoisonFilteringDefence):
 
     def _pickle_classifier(self, file_name):
         """
-        Pickles the self.classifier and stores it using the provided file_name in folder art.DATA_PATH
+        Pickles the self.classifier and stores it using the provided file_name in folder `art.DATA_PATH`.
 
         :param file_name:
         :return:
@@ -302,7 +301,7 @@ class ActivationDefence(PoisonFilteringDefence):
     @staticmethod
     def _unpickle_classifier(file_name):
         """
-        Unpickles classifier using the filename provided. Function assumes that the pickle is int art.DATA_PATH
+        Unpickles classifier using the filename provided. Function assumes that the pickle is in `art.DATA_PATH`.
         
         :param file_name:
         :return:
@@ -588,7 +587,7 @@ def reduce_dimensionality(activations, nb_dims=10, reduce='FastICA'):
     Reduces dimensionality of the activations provided using the specified number of dimensions and reduction technique.
 
     :param activations: Activations to be reduced
-    :type activations: `numpy.ndarray'
+    :type activations: `numpy.ndarray`
     :param nb_dims: number of dimensions to reduce activation to via PCA
     :type nb_dims: `int`
     :param reduce: Method to perform dimensionality reduction, default is FastICA
