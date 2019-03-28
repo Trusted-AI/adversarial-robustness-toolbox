@@ -169,7 +169,7 @@ class AdversarialPatch(Attack):
             raise ValueError("The maximum scale of the random patched must be of type float.")
         if not self.scale_max > self.scale_min and not self.scale_max <= 1.0:
             raise ValueError(
-                """The maximum scale of the random patched must be greater than the minimum scaling and less than or 
+                """The maximum scale of the random patched must be greater than the minimum scaling and less than or
                 equal to 1.0.""")
 
         if not isinstance(self.learning_rate, float):
@@ -206,10 +206,10 @@ class AdversarialPatch(Attack):
         diameter = self.patch_shape[1]
         x = np.linspace(-1, 1, diameter)
         y = np.linspace(-1, 1, diameter)
-        xx, yy = np.meshgrid(x, y, sparse=True)
-        z = (xx ** 2 + yy ** 2) ** sharpness
+        x_grid, y_grid = np.meshgrid(x, y, sparse=True)
+        z_grid = (x_grid ** 2 + y_grid ** 2) ** sharpness
 
-        mask = 1 - np.clip(z, -1, 1)
+        mask = 1 - np.clip(z_grid, -1, 1)
 
         pad_1 = int((self.patch_shape[1] - mask.shape[1]) / 2)
         pad_2 = int(self.patch_shape[1] - pad_1 - mask.shape[1])
@@ -237,8 +237,8 @@ class AdversarialPatch(Attack):
 
             inverted_patch_mask_transformed = (1 - patch_mask_transformed)
 
-            patched_image = images[i_batch, :, :,
-                            :] * inverted_patch_mask_transformed + patch_transformed * patch_mask_transformed
+            patched_image = images[i_batch, :, :, :] * inverted_patch_mask_transformed \
+                + patch_transformed * patch_mask_transformed
             patched_image = np.expand_dims(patched_image, axis=0)
             patched_images.append(patched_image)
 
@@ -269,11 +269,12 @@ class AdversarialPatch(Attack):
         if x.shape[0] <= self.patch_shape[1]:
             pad_1 = int((shape - x.shape[1]) / 2)
             pad_2 = int(shape - pad_1 - x.shape[1])
-            pad_width = None
             if self.classifier.channel_index == 3:
                 pad_width = ((pad_1, pad_2), (pad_1, pad_2), (0, 0))
             elif self.classifier.channel_index == 1:
                 pad_width = ((0, 0), (pad_1, pad_2), (pad_1, pad_2))
+            else:
+                pad_width = None
             return np.pad(x, pad_width=pad_width, mode='constant', constant_values=(0, 0))
         else:
             center = int(x.shape[0] / 2)
@@ -283,6 +284,8 @@ class AdversarialPatch(Attack):
                 return x[center - patch_hw_1:center + patch_hw_2, center - patch_hw_1:center + patch_hw_2, :]
             elif self.classifier.channel_index == 1:
                 return x[:, center - patch_hw_1:center + patch_hw_2, center - patch_hw_1:center + patch_hw_2]
+            else:
+                return None
 
     def _shift(self, x, shift_1, shift_2):
         shift_xy = None
@@ -350,10 +353,10 @@ class AdversarialPatch(Attack):
             delta_plus = int(shape - delta_minus)
             if self.classifier.channel_index == 3:
                 gradients = gradients[center - delta_minus:center + delta_plus,
-                            center - delta_minus:center + delta_plus, :]
+                                      center - delta_minus:center + delta_plus, :]
             elif self.classifier.channel_index == 1:
                 gradients = gradients[:, center - delta_minus:center + delta_plus,
-                            center - delta_minus:center + delta_plus]
+                                      center - delta_minus:center + delta_plus]
         else:
             pad_1 = int((shape - gradients.shape[1]) / 2)
             pad_2 = int(shape - pad_1 - gradients.shape[1])
