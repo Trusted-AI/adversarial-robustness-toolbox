@@ -13,8 +13,8 @@ The code can be found on `GitHub`_.
 
 The library is still under development. Feedback, bug reports and extensions are highly appreciated.
 
-Supported Attack and Defense Methods
-------------------------------------
+Supported Attacks, Defences and Metrics
+---------------------------------------
 
 The Adversarial Robustness Toolbox contains implementations of the following evasion attacks:
 
@@ -25,10 +25,11 @@ The Adversarial Robustness Toolbox contains implementations of the following eva
 * Jacobian saliency map (`Papernot et al., 2016`_)
 * Universal perturbation (`Moosavi-Dezfooli et al., 2016`_)
 * Virtual adversarial method (`Miyato et al., 2015`_)
-* C&W L_2 and L_inf attack (`Carlini and Wagner, 2016`_)
+* C&W L_2 and L_inf attacks (`Carlini and Wagner, 2016`_)
 * NewtonFool (`Jang et al., 2017`_)
 * Elastic net attack (`Chen et al., 2017`_)
 * Spatial transformations attack (`Engstrom et al., 2017`_)
+* Query-efficient black-box attack (`Ilyas et al., 2017`_)
 
 The following defense methods are also supported:
 
@@ -41,6 +42,7 @@ The following defense methods are also supported:
 * Thermometer encoding (`Buckman et al., 2018`_)
 * Total variance minimization (`Guo et al., 2018`_)
 * JPEG compression (`Dziugaite et al., 2016`_)
+* PixelDefend (`Song et al., 2017`_)
 
 ART also implements detection methods of adversarial samples:
 
@@ -49,6 +51,12 @@ ART also implements detection methods of adversarial samples:
 
 The following detector of poisoning attacks is also supported:
 * Detector based on activations analysis (`Chen et al., 2018`_)
+
+Robustness metrics:
+
+* CLEVER (`Weng et al., 2018`_)
+* Empirical robustness (`Moosavi-Dezfooli et al., 2015`_)
+* Loss sensitivity (`Arpit et al., 2017`_)
 
 
 .. toctree::
@@ -70,6 +78,7 @@ The following detector of poisoning attacks is also supported:
    modules/poison_detection
    modules/metrics
    modules/utils
+   modules/wrappers
 
 
 Indices and tables
@@ -90,6 +99,7 @@ Indices and tables
 .. _Jang et al., 2017: http://doi.acm.org/10.1145/3134600.3134635
 .. _Chen et al., 2017: https://arxiv.org/abs/1709.04114
 .. _Engstrom et al., 2017: https://arxiv.org/abs/1712.02779
+.. _Ilyas et al., 2017: https://arxiv.org/abs/1712.07113
 .. _Xu et al., 2017: http://arxiv.org/abs/1704.01155
 .. _Warde-Farley and Goodfellow, 2016: https://pdfs.semanticscholar.org/b5ec/486044c6218dd41b17d8bba502b32a12b91a.pdf
 .. _Szegedy et al., 2013: http://arxiv.org/abs/1312.6199
@@ -98,4 +108,7 @@ Indices and tables
 .. _Buckman et al., 2018: https://openreview.net/forum?id=S18Su--CW
 .. _Guo et al., 2018: https://openreview.net/forum?id=SyJ7ClWCb
 .. _Dziugaite et al., 2016: https://arxiv.org/abs/1608.00853
+.. _Song et al., 2017: https://arxiv.org/abs/1710.10766
 .. _Chen et al., 2018: https://arxiv.org/abs/1811.03728
+.. _Weng et al., 2018: https://arxiv.org/abs/1801.10578
+.. _Arpit et al., 2017: https://arxiv.org/abs/1706.05394

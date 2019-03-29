@@ -7,7 +7,7 @@ Binary Input Detector
 .. autoclass:: BinaryInputDetector
    :members:
 
-BinaryActivationDetector
-------------------------
+Binary Activation Detector
+--------------------------
 .. autoclass:: BinaryActivationDetector
    :members:

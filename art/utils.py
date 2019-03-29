@@ -7,19 +7,8 @@ import logging
 import os
 
 import numpy as np
-import tensorflow as tf
-import keras
-import keras.backend as k
-from keras.layers import Dense, Flatten, Conv2D, MaxPooling2D
-from keras.models import Sequential
-import torch
-import torch.nn as nn
-import torch.optim as optim
-
-from art.classifiers import KerasClassifier, PyTorchClassifier, TFClassifier
 
 logger = logging.getLogger(__name__)
-
 
 # -------------------------------------------------------------------------------------------- RANDOM NUMBER GENERATORS
 
@@ -63,6 +52,8 @@ def master_seed(seed):
         logger.info('Could not set random seed for MXNet.')
 
     try:
+        import torch
+
         logger.info('Setting random seed for PyTorch.')
         torch.manual_seed(seed)
         if torch.cuda.is_available():
@@ -327,17 +318,17 @@ def load_cifar10(raw=False):
         import sys
         from six.moves import cPickle
 
-        with open(fpath, 'rb') as f:
+        with open(fpath, 'rb') as file_:
             if sys.version_info < (3,):
-                d = cPickle.load(f)
+                content = cPickle.load(file_)
             else:
-                d = cPickle.load(f, encoding='bytes')
-                d_decoded = {}
-                for k, v in d.items():
-                    d_decoded[k.decode('utf8')] = v
-                d = d_decoded
-        data = d['data']
-        labels = d['labels']
+                content = cPickle.load(file_, encoding='bytes')
+                content_decoded = {}
+                for key, value in content.items():
+                    content_decoded[key.decode('utf8')] = value
+                content = content_decoded
+        data = content['data']
+        labels = content['labels']
 
         data = data.reshape(data.shape[0], 3, 32, 32)
         return data, labels
@@ -462,9 +453,9 @@ def load_dataset(name):
 
     if "mnist" in name:
         return load_mnist()
-    elif "cifar10" in name:
+    if "cifar10" in name:
         return load_cifar10()
-    elif "stl10" in name:
+    if "stl10" in name:
         return load_stl()
 
     raise NotImplementedError("There is no loader for dataset '{}'.".format(name))
@@ -573,19 +564,19 @@ def make_directory(dir_path):
     if not os.path.exists(dir_path):
         os.makedirs(dir_path)
 
+
 def clip_and_round(x, clip_values, round_samples):
     """
-    Rounds the input to the correct level of granularity.
-    Useful to ensure data passed to classifier can be represented
-    in the correct domain, e.g., [0, 255] integers verses [0,1]
-    or [0, 255] floating points.
+    Rounds the input to the correct level of granularity. Useful to ensure data passed to classifier can be represented
+    in the correct domain, e.g., [0, 255] integers verses [0,1] or [0, 255] floating points.
 
     :param x: Sample input with shape as expected by the model.
     :type x: `np.ndarray`
     :param clip_values: Tuple of the form `(min, max)` representing the minimum and maximum values allowed
                for features.
     :type clip_values: `tuple`
-    :param round_samples: The resolution of the input domain to round the data to, e.g., 1.0, or 1/255. Set to 0 to disable.
+    :param round_samples: The resolution of the input domain to round the data to, e.g., 1.0, or 1/255.
+           Set to 0 to disable.
     :type round_samples: `float`
     """
     if round_samples == 0:
@@ -604,6 +595,8 @@ def _tf_initializer_w_conv2d(_, dtype, partition_info):
     :return: Tensorflow constant
     :rtype: tf.constant
     """
+    import tensorflow as tf
+
     _ = partition_info
     w_conv2d = np.load(os.path.join(os.path.dirname(os.path.dirname(__file__)), 'models', 'W_CONV2D.npy'))
     return tf.constant(w_conv2d, dtype)
@@ -616,6 +609,8 @@ def _kr_initializer_w_conv2d(_, dtype=None):
     :return: Keras variable
     :rtype: k.variable
     """
+    import keras.backend as k
+
     w_conv2d = np.load(os.path.join(os.path.dirname(os.path.dirname(__file__)), 'models', 'W_CONV2D.npy'))
     return k.variable(value=w_conv2d, dtype=dtype)
 
@@ -627,7 +622,8 @@ def _tf_initializer_b_conv2d(_, dtype, partition_info):
     :return: Tensorflow constant
     :rtype: tf.constant
     """
-    _ = partition_info
+    import tensorflow as tf
+
     b_conv2d = np.load(os.path.join(os.path.dirname(os.path.dirname(__file__)), 'models', 'B_CONV2D.npy'))
     return tf.constant(b_conv2d, dtype)
 
@@ -639,18 +635,21 @@ def _kr_initializer_b_conv2d(_, dtype=None):
     :return: Keras variable
     :rtype: k.variable
     """
+    import keras.backend as k
+
     b_conv2d = np.load(os.path.join(os.path.dirname(os.path.dirname(__file__)), 'models', 'B_CONV2D.npy'))
     return k.variable(value=b_conv2d, dtype=dtype)
 
 
-def _tf_initializer_w_dense(_1, dtype, partition_info):
+def _tf_initializer_w_dense(_, dtype, partition_info):
     """
     Initializer of weights in dense layer for Tensorflow.
 
     :return: Tensorflow constant
     :rtype: tf.constant
     """
-    _ = partition_info
+    import tensorflow as tf
+
     w_dense = np.load(os.path.join(os.path.dirname(os.path.dirname(__file__)), 'models', 'W_DENSE.npy'))
     return tf.constant(w_dense, dtype)
 
@@ -662,18 +661,21 @@ def _kr_initializer_w_dense(_, dtype=None):
     :return: Keras varibale
     :rtype: k.variable
     """
+    import keras.backend as k
+
     w_dense = np.load(os.path.join(os.path.dirname(os.path.dirname(__file__)), 'models', 'W_DENSE.npy'))
     return k.variable(value=w_dense, dtype=dtype)
 
 
-def _tf_initializer_b_dense(_1, dtype, partition_info):
+def _tf_initializer_b_dense(_, dtype, partition_info):
     """
     Initializer of biases in dense layer for Tensorflow.
 
     :return: Tensorflow constant
     :rtype: tf.constant
     """
-    _ = partition_info
+    import tensorflow as tf
+
     b_dense = np.load(os.path.join(os.path.dirname(os.path.dirname(__file__)), 'models', 'B_DENSE.npy'))
     return tf.constant(b_dense, dtype)
 
@@ -685,6 +687,8 @@ def _kr_initializer_b_dense(_, dtype=None):
     :return: Keras variable
     :rtype: k.variable
     """
+    import keras.backend as k
+
     b_dense = np.load(os.path.join(os.path.dirname(os.path.dirname(__file__)), 'models', 'B_DENSE.npy'))
     return k.variable(value=b_dense, dtype=dtype)
 
@@ -701,6 +705,10 @@ def get_classifier_tf():
 
     :return: TFClassifier, tf.Session()
     """
+    import tensorflow as tf
+
+    from art.classifiers import TFClassifier
+
     # Define input and output placeholders
     input_ph = tf.placeholder(tf.float32, shape=[None, 28, 28, 1])
     output_ph = tf.placeholder(tf.int32, shape=[None, 10])
@@ -737,6 +745,14 @@ def get_classifier_kr():
 
     :return: KerasClassifier, tf.Session()
     """
+    import keras
+    import keras.backend as k
+    from keras.layers import Dense, Flatten, Conv2D, MaxPooling2D
+    from keras.models import Sequential
+    import tensorflow as tf
+
+    from art.classifiers import KerasClassifier
+
     # Initialize a tf session
     sess = tf.Session()
     k.set_session(sess)
@@ -765,6 +781,11 @@ def get_classifier_pt():
 
     :return: PyTorchClassifier
     """
+    import torch
+    import torch.nn as nn
+    import torch.optim as optim
+
+    from art.classifiers import PyTorchClassifier
 
     class Model(nn.Module):
         """

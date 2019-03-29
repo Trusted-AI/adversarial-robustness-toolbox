@@ -1,7 +1,7 @@
 """
 Module providing adversarial attacks under a common interface.
 """
-from art.attacks.attack import Attack, ExpectationOverTransformations
+from art.attacks.attack import Attack
 from art.attacks.carlini import CarliniL2Method, CarliniLInfMethod
 from art.attacks.deepfool import DeepFool
 from art.attacks.margin_attack import MarginAttack

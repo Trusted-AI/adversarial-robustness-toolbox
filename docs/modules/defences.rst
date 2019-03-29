@@ -36,6 +36,12 @@ Gaussian Data Augmentation
    :members:
    :special-members:
 
+PixelDefend
+-----------
+.. autoclass:: PixelDefend
+   :members:
+   :special-members:
+
 JPEG Compression
 ----------------
 .. autoclass:: JpegCompression

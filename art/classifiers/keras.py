@@ -136,6 +136,11 @@ class KerasClassifier(Classifier):
         self._loss_grads = k.function([self._input, label_ph], [loss_grads])
         self._preds = k.function([self._input], [preds])
 
+        # Set check for the shape of y for loss functions that do not take labels in one-hot encoding
+        self._reduce_labels = (hasattr(self._loss.op, 'inputs') and
+                               not all(len(input_.shape) == len(self._loss.op.inputs[0].shape)
+                                       for input_ in self._loss.op.inputs))
+
         # Get the internal layer
         self._layer_names = self._get_layers()
 
@@ -152,7 +157,13 @@ class KerasClassifier(Classifier):
         """
         x_ = self._apply_processing(x)
 
-        grads = self._loss_grads([x_, y])[0]
+        # Adjust the shape of y for loss functions that do not take labels in one-hot encoding
+        if self._reduce_labels:
+            y_ = np.argmax(y, axis=1)
+        else:
+            y_ = y
+
+        grads = self._loss_grads([x_, y_])[0]
         grads = self._apply_processing_gradient(grads)
         assert grads.shape == x_.shape
 
@@ -271,7 +282,13 @@ class KerasClassifier(Classifier):
         """
         # Apply preprocessing and defences
         x_ = self._apply_processing(x)
-        x_, y_ = self._apply_defences_fit(x_, y)
+
+        # Adjust the shape of y for loss functions that do not take labels in one-hot encoding
+        if self._reduce_labels:
+            x_, y_ = self._apply_defences_fit(x_, y)
+            y_ = np.argmax(y_, axis=1)
+        else:
+            x_, y_ = self._apply_defences_fit(x_, y)
 
         gen = generator_fit(x_, y_, batch_size)
         self._model.fit_generator(gen, steps_per_epoch=x_.shape[0] / batch_size, epochs=nb_epochs, **kwargs)
