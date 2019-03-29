@@ -21,7 +21,7 @@ class AdversarialPatch(Attack):
 
     def __init__(self, classifier, target_ys=None, rotation_max=22.5, scale_min=0.1, scale_max=1.0,
                  learning_rate=5.0, number_of_steps=500, image_shape=(224, 224, 3), patch_shape=(224, 224, 3),
-                 batch_size=16, clip_patch=None, expectation=None):
+                 batch_size=16, clip_patch=None):
         """
         :param classifier: A trained model.
         :type classifier: :class:`.Classifier`
@@ -49,7 +49,7 @@ class AdversarialPatch(Attack):
                             classifier gradients and predictions.
         :type expectation: :class:`.ExpectationOverTransformations`
         """
-        super(AdversarialPatch, self).__init__(classifier=classifier, expectation=expectation)
+        super(AdversarialPatch, self).__init__(classifier=classifier)
         if target_ys is None:
             target_ys = np.zeros((batch_size, 10))
         kwargs = {"target_ys": target_ys,
