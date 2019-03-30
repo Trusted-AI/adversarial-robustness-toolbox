@@ -78,6 +78,7 @@ Robustness metrics:
    modules/poison_detection
    modules/metrics
    modules/utils
+   modules/wrappers
 
 
 Indices and tables
