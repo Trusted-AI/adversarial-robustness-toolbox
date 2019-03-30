@@ -29,7 +29,7 @@ class KerasClassifier(Classifier):
         :param channel_index: Index of the axis in data containing the color channels or features.
         :type channel_index: `int`
         :param defences: Defences to be activated with the classifier.
-        :type defences: `str` or `list(str)`
+        :type defences: :class:`.Preprocessor` or `list(Preprocessor)` instances
         :param preprocessing: Tuple of the form `(substractor, divider)` of floats or `np.ndarray` of values to be
                used for data preprocessing. The first value will be substracted from the input. The input will then
                be divided by the second one.
@@ -151,8 +151,10 @@ class KerasClassifier(Classifier):
         :rtype: `np.ndarray`
         """
         x_ = self._apply_processing(x)
+        x_, y_ = self._apply_defences(x_, y, fit=False)
 
         grads = self._loss_grads([x_, y])[0]
+        grads = self._apply_defences_gradient(grads)
         grads = self._apply_processing_gradient(grads)
         assert grads.shape == x_.shape
 
@@ -185,6 +187,7 @@ class KerasClassifier(Classifier):
         self._init_class_grads(label=label, logits=logits)
 
         x_ = self._apply_processing(x)
+        x_, _ = self._apply_defences(x_, None)
 
         if label is None:
             # Compute the gradients w.r.t. all classes
@@ -193,8 +196,6 @@ class KerasClassifier(Classifier):
             else:
                 grads = np.swapaxes(np.array(self._class_grads([x_])), 0, 1)
 
-            grads = self._apply_processing_gradient(grads)
-
         elif isinstance(label, (int, np.integer)):
             # Compute the gradients only w.r.t. the provided label
             if logits:
@@ -202,7 +203,6 @@ class KerasClassifier(Classifier):
             else:
                 grads = np.swapaxes(np.array(self._class_grads_idx[label]([x_])), 0, 1)
 
-            grads = self._apply_processing_gradient(grads)
             assert grads.shape == (x_.shape[0], 1) + self.input_shape
 
         else:
@@ -216,7 +216,8 @@ class KerasClassifier(Classifier):
             lst = [unique_label.index(i) for i in label]
             grads = np.expand_dims(grads[np.arange(len(grads)), lst], axis=1)
 
-            grads = self._apply_processing_gradient(grads)
+        grads = self._apply_defences_gradient(grads)
+        grads = self._apply_processing_gradient(grads)
 
         return grads
 
@@ -237,7 +238,7 @@ class KerasClassifier(Classifier):
 
         # Apply defences
         x_ = self._apply_processing(x)
-        x_ = self._apply_defences_predict(x_)
+        x_, _ = self._apply_defences(x_, None, fit=False)
 
         # Run predictions with batching
         preds = np.zeros((x_.shape[0], self.nb_classes), dtype=NUMPY_DTYPE)
@@ -271,7 +272,7 @@ class KerasClassifier(Classifier):
         """
         # Apply preprocessing and defences
         x_ = self._apply_processing(x)
-        x_, y_ = self._apply_defences_fit(x_, y)
+        x_, y_ = self._apply_defences(x_, y, fit=True)
 
         gen = generator_fit(x_, y_, batch_size)
         self._model.fit_generator(gen, steps_per_epoch=x_.shape[0] / batch_size, epochs=nb_epochs, **kwargs)
@@ -294,9 +295,7 @@ class KerasClassifier(Classifier):
         from art.data_generators import KerasDataGenerator
 
         # Try to use the generator as a Keras native generator, otherwise use it through the `DataGenerator` interface
-        # TODO Testing for preprocessing defenses is currently hardcoded; this should be improved (add property)
-        if isinstance(generator, KerasDataGenerator) and \
-                not (hasattr(self, 'label_smooth') or hasattr(self, 'feature_squeeze')):
+        if isinstance(generator, KerasDataGenerator) and not hasattr(self, 'defences'):
             try:
                 self._model.fit_generator(generator.generator, epochs=nb_epochs, **kwargs)
             except ValueError:
@@ -359,7 +358,8 @@ class KerasClassifier(Classifier):
         else:
             x_ = x
         x_ = self._apply_processing(x_)
-        x_ = self._apply_defences_predict(x_)
+        x_, _ = self._apply_defences(x_, None, fit=False)
+        assert len(x_.shape) == 4
 
         # Determine shape of expected output and prepare array
         output_shape = output_func([x_[0][None, ...]])[0].shape
@@ -490,6 +490,7 @@ class KerasClassifier(Classifier):
         del state['_loss_grads']
         del state['_preds']
         del state['_layer_names']
+        # TODO pickle defences
 
         model_name = str(time.time()) + '.h5'
         state['model_name'] = model_name

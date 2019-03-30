@@ -63,7 +63,7 @@ class MXClassifier(Classifier):
         # Get the internal layer
         self._layer_names = self._get_layers()
 
-    def fit(self, x, y, batch_size=128, nb_epochs=20, **kwargs):
+    def fit(self, x, y, batch_size=128, nb_epochs=20):
         """
         Fit the classifier on the training set `(inputs, outputs)`.
 
@@ -73,11 +73,8 @@ class MXClassifier(Classifier):
         :type y: `np.ndarray`
         :param batch_size: Size of batches.
         :type batch_size: `int`
-        :param nb_epochs: Number of epochs to use for training.
+        :param nb_epochs: Number of epochs to use for trainings.
         :type nb_epochs: `int`
-        :param kwargs: Dictionary of framework-specific arguments. This parameter is not currently supported for MXNet
-               and providing it takes no effect.
-        :type kwargs: `dict`
         :return: `None`
         """
         if self._optimizer is None:
@@ -89,7 +86,7 @@ class MXClassifier(Classifier):
 
         # Apply preprocessing and defences
         x_ = self._apply_processing(x)
-        x_, y_ = self._apply_defences(x_, y, fit=True)
+        x_, y_ = self._apply_defences_fit(x_, y)
         y_ = np.argmax(y_, axis=1)
 
         nb_batch = int(np.ceil(len(x_) / batch_size))
@@ -112,17 +109,14 @@ class MXClassifier(Classifier):
                 # Update parameters
                 self._optimizer.step(batch_size)
 
-    def fit_generator(self, generator, nb_epochs=20, **kwargs):
+    def fit_generator(self, generator, nb_epochs=20):
         """
         Fit the classifier using the generator that yields batches as specified.
 
         :param generator: Batch generator providing `(x, y)` for each epoch.
-        :type generator: :class:`.DataGenerator`
-        :param nb_epochs: Number of epochs to use for training.
+        :type generator: `DataGenerator`
+        :param nb_epochs: Number of epochs to use for trainings.
         :type nb_epochs: `int`
-        :param kwargs: Dictionary of framework-specific arguments. This parameter is not currently supported for MXNet
-               and providing it takes no effect.
-        :type kwargs: `dict`
         :return: `None`
         """
         import mxnet as mx
@@ -169,7 +163,7 @@ class MXClassifier(Classifier):
 
         # Apply preprocessing and defences
         x_ = self._apply_processing(x)
-        x_, _ = self._apply_defences(x_, None, fit=False)
+        x_ = self._apply_defences_predict(x_)
 
         # Run prediction with batch processing
         results = np.zeros((x_.shape[0], self.nb_classes), dtype=np.float32)
@@ -336,6 +330,8 @@ class MXClassifier(Classifier):
         """
         import mxnet as mx
 
+        train_mode = self._learning_phase if hasattr(self, '_learning_phase') else False
+
         if isinstance(layer, six.string_types):
             if layer not in self._layer_names:
                 raise ValueError('Layer name %s is not part of the model.' % layer)
@@ -354,13 +350,29 @@ class MXClassifier(Classifier):
         else:
             x_ = x
         x_ = self._apply_processing(x_)
-        x_, _ = self._apply_defences(x_, None, fit=False)
+        x_ = self._apply_defences_predict(x_)
 
-        # Compute activations
-        x_ = mx.nd.array(x_, ctx=self._ctx)
-        preds = self._model[layer_ind](x_)
+        # Infer shape of expected output and prepare array
+        output_shape = self._model[layer_ind].infer_shape(mx.nd.array(x_, ctx=self._ctx))
+        activations = np.zeros(output_shape, dtype=np.float32)
+        print(activations.shape)
+        exit()
 
-        return preds.asnumpy()
+        # Compute activations with batching
+        num_batch = int(np.ceil(len(x_) / float(batch_size)))
+        for m in range(num_batch):
+            # Batch indexes
+            begin, end = m * batch_size, min((m + 1) * batch_size, x_.shape[0])
+
+            # Predict
+            x_batch = mx.nd.array(x_[begin:end], ctx=self._ctx)
+            x_batch.attach_grad()
+            with mx.autograd.record(train_mode=train_mode):
+                preds = self._model[layer_ind](x_batch)
+
+            activations[begin:end] = preds.asnumpy()
+
+        return activations
 
     def set_learning_phase(self, train):
         """
@@ -374,9 +386,7 @@ class MXClassifier(Classifier):
 
     def save(self, filename, path=None):
         """
-        Save a model to file in the format specific to the backend framework. For Gluon, only parameters are saved in
-        file with name `<filename>.params` at the specified path. To load the saved model, the original model code needs
-        to be run before calling `load_parameters` on the generated Gluon model.
+        Save a model to file in the format specific to the backend framework.
 
         :param filename: Name of the file where to store the model.
         :type filename: `str`
@@ -385,28 +395,7 @@ class MXClassifier(Classifier):
         :type path: `str`
         :return: None
         """
-        import os
-
-        if path is None:
-            from art import DATA_PATH
-            full_path = os.path.join(DATA_PATH, filename)
-        else:
-            full_path = os.path.join(path, filename)
-        folder = os.path.split(full_path)[0]
-        if not os.path.exists(folder):
-            os.makedirs(folder)
-
-        self._model.save_parameters(full_path + '.params')
-        logger.info("Model parameters saved in path: %s.params.", full_path)
-
-    def __repr__(self):
-        repr_ = "%s(clip_values=%r, model=%r, input_shape=%r, nb_classes=%r, optimizer=%r, ctx=%r, channel_index=%r, " \
-                "defences=%r, preprocessing=%r)" \
-                % (self.__module__ + '.' + self.__class__.__name__,
-                   self.clip_values, self._model, self.input_shape, self.nb_classes, self._optimizer, self._ctx,
-                   self.channel_index, self.defences, self.preprocessing)
-
-        return repr_
+        raise NotImplementedError
 
     def _get_layers(self):
         """
@@ -419,3 +408,8 @@ class MXClassifier(Classifier):
         logger.info('Inferred %i hidden layers on MXNet classifier.', len(layer_names))
 
         return layer_names
+
+# There was a problem processing your order.
+#
+# Please contact our Customer Care Center at 0808-101-5659 and provide our representative with your shopping bag ID 331026626.
+# Error CHK3006EID: 397a0124-39f9-4cdb-ae45-c36778714358

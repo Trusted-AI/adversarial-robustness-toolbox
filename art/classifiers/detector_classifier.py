@@ -52,7 +52,7 @@ class DetectorClassifier(Classifier):
         """
         # Apply defences
         x_ = self._apply_processing(x)
-        x_ = self._apply_defences_predict(x_)
+        x_, _ = self._apply_defences(x_, None, fit=False)
 
         # Compute the prediction logits
         classifier_logits = self.classifier.predict(x=x_, logits=True, batch_size=batch_size)
@@ -127,6 +127,7 @@ class DetectorClassifier(Classifier):
 
         # Apply preprocessing
         x_ = self._apply_processing(x)
+        x_, _ = self._apply_defences(x_, None, fit=False)
 
         # Compute the gradient and return
         if logits:
@@ -274,6 +275,7 @@ class DetectorClassifier(Classifier):
                 combined_grads = np.swapaxes(np.array(grads), 0, 1)
 
         # Apply gradient post-processing
+        combined_grads = self._apply_defences_gradient(combined_grads)
         combined_grads = self._apply_processing_gradient(combined_grads)
         return combined_grads
 

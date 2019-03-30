@@ -9,6 +9,7 @@ import numpy as np
 from art.attacks.fast_gradient import FastGradientMethod
 from art.attacks.query_efficient_bb import QueryEfficientBBGradientEstimation
 from art.classifiers import KerasClassifier
+from art.defences import FeatureSqueezing
 from art.utils import load_mnist, get_classifier_kr, get_labels_np_array, master_seed
 
 logger = logging.getLogger('testLogger')
@@ -74,7 +75,8 @@ class TestWrappingClassifierAttack(unittest.TestCase):
 
         # Get the ready-trained Keras model
         model = self.classifier_k._model
-        classifier = KerasClassifier((0, 1), model, defences='featsqueeze1')
+        fs = FeatureSqueezing(bit_depth=1, clip_values=(0, 1))
+        classifier = KerasClassifier((0, 1), model, defences=fs)
         # Wrap the classifier
         classifier = QueryEfficientBBGradientEstimation(classifier, 20, 1/64., round_samples=1/255.)
 

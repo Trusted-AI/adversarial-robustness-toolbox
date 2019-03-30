@@ -83,7 +83,7 @@ class PyTorchClassifier(Classifier):
 
         # Apply defences
         x_ = self._apply_processing(x)
-        x_ = self._apply_defences_predict(x_)
+        x_, _ = self._apply_defences(x_, None, fit=False)
 
         # Run prediction with batch processing
         results = np.zeros((x_.shape[0], self.nb_classes), dtype=np.float32)
@@ -123,7 +123,7 @@ class PyTorchClassifier(Classifier):
 
         # Apply defences
         x_ = self._apply_processing(x)
-        x_, y_ = self._apply_defences_fit(x_, y)
+        x_, y_ = self._apply_defences(x_, y, fit=True)
         y_ = np.argmax(y_, axis=1)
 
         num_batch = int(np.ceil(len(x_) / float(batch_size)))
@@ -360,7 +360,7 @@ class PyTorchClassifier(Classifier):
 
         # Apply defences
         x_ = self._apply_processing(x)
-        x_ = self._apply_defences_predict(x_)
+        x_, _ = self._apply_defences(x_, None, fit=False)
 
         # Get index of the extracted layer
         if isinstance(layer, six.string_types):

@@ -18,10 +18,10 @@ class ClassifierInstance(Classifier):
     def class_gradient(self, x, label=None, logits=False):
         pass
 
-    def fit(self, x, y, batch_size=128, nb_epochs=20):
+    def fit(self, x, y, batch_size=128, nb_epochs=20, **kwargs):
         pass
 
-    def get_activations(self, x, layer):
+    def get_activations(self, x, layer, batch_size):
         pass
 
     def loss_gradient(self, x, y):

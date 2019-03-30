@@ -173,6 +173,28 @@ class TestKerasClassifier(unittest.TestCase):
         loss_grads = classifier.loss_gradient(x_test[:11], y_test[:11])
         self.assertTrue(loss_grads.shape == x_test[:11].shape)
 
+    def test_defences_predict(self):
+        from art.defences import FeatureSqueezing, JpegCompression, SpatialSmoothing
+
+        (_, _), (x_test, y_test) = self.mnist
+
+        fs = FeatureSqueezing(bit_depth=2)
+        jpeg = JpegCompression()
+        smooth = SpatialSmoothing()
+        classifier = KerasClassifier(clip_values=(0, 1), model=self.model_mnist._model, defences=[fs, jpeg, smooth])
+        self.assertTrue(len(classifier.defences) == 3)
+
+        preds_classifier = classifier.predict(x_test)
+
+        # Apply the same defences by hand
+        x_test_defense, _ = fs(x_test, y_test)
+        x_test_defense, _ = jpeg(x_test_defense, y_test)
+        x_test_defense, _ = smooth(x_test_defense, y_test)
+        preds_check = self.model_mnist._model.predict(x_test_defense)
+
+        # Check that the prediction results match
+        self.assertTrue((preds_classifier - preds_check <= 1e-5).all())
+
     def test_class_gradient(self):
         (_, _), (x_test, _) = self.mnist
         classifier = self.model_mnist

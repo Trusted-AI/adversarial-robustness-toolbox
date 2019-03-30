@@ -95,7 +95,7 @@ class TFClassifier(Classifier):
         """
         # Apply defences
         x_ = self._apply_processing(x)
-        x_ = self._apply_defences_predict(x_)
+        x_, _ = self._apply_defences(x_, None, fit=False)
 
         # Run prediction with batch processing
         results = np.zeros((x_.shape[0], self.nb_classes), dtype=np.float32)
@@ -139,7 +139,7 @@ class TFClassifier(Classifier):
 
         # Apply defences
         x_ = self._apply_processing(x)
-        x_, y_ = self._apply_defences_fit(x_, y)
+        x_, y_ = self._apply_defences(x_, y, fit=True)
 
         num_batch = int(np.ceil(len(x_) / float(batch_size)))
         ind = np.arange(len(x_))
@@ -422,7 +422,7 @@ class TFClassifier(Classifier):
 
         # Apply preprocessing and defences
         x_ = self._apply_processing(x)
-        x_ = self._apply_defences_predict(x_)
+        x_, _ = self._apply_defences(x_, None, fit=False)
 
         # Run prediction with batch processing
         results = []
