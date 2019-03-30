@@ -99,10 +99,10 @@ class SpatialTransformation(Attack):
 
             # Search for worst case
             fooling_rate = 0.0
-            x_adv = None
-            trans_x = None
-            trans_y = None
-            rot = None
+            x_adv = np.copy(x)
+            trans_x = 0
+            trans_y = 0
+            rot = 0.0
 
             for trans_x_i in grid_trans_x:
                 for trans_y_i in grid_trans_y:
@@ -115,7 +115,7 @@ class SpatialTransformation(Attack):
                         y_adv_i = np.argmax(self.classifier.predict(x_adv_i, logits=False), axis=1)
                         fooling_rate_i = np.sum(y_pred_max != y_adv_i) / nb_instances
 
-                        if fooling_rate_i > fooling_rate:
+                        if fooling_rate_i >= fooling_rate:
                             fooling_rate = fooling_rate_i
                             trans_x = trans_x_i
                             trans_y = trans_y_i
