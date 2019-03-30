@@ -505,7 +505,6 @@ class KerasClassifier(Classifier):
         del state['_loss_grads']
         del state['_preds']
         del state['_layer_names']
-        # TODO pickle defences
 
         model_name = str(time.time()) + '.h5'
         state['model_name'] = model_name

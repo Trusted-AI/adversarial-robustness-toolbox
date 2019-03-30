@@ -10,6 +10,7 @@ from keras.layers import Dense, Conv2D, MaxPooling2D, Dropout, Input, Flatten
 from keras.models import Model
 
 from art.classifiers import KerasClassifier
+from art.defences import FeatureSqueezing
 from art.utils import load_mnist, get_classifier_kr, master_seed
 
 logger = logging.getLogger('testLogger')
@@ -305,18 +306,21 @@ class TestKerasClassifier(unittest.TestCase):
             os.makedirs(folder)
 
         import pickle
-        keras_model = KerasClassifier((0, 1), self.functional_model, input_layer=1, output_layer=1)
-        pickle.dump(keras_model, open(full_path, 'wb'))
+        fs = FeatureSqueezing(bit_depth=1, clip_values=(0, 1))
+        keras_model = KerasClassifier((0, 1), self.functional_model, input_layer=1, output_layer=1, defences=fs)
+        with open(full_path, 'wb') as save_file:
+            pickle.dump(keras_model, save_file)
 
         # Unpickle:
-        with open(full_path, 'rb') as f:
-            loaded = pickle.load(f)
+        with open(full_path, 'rb') as load_file:
+            loaded = pickle.load(load_file)
 
             self.assertTrue(keras_model._clip_values == loaded._clip_values)
             self.assertTrue(keras_model._channel_index == loaded._channel_index)
             self.assertTrue(keras_model._use_logits == loaded._use_logits)
             self.assertTrue(keras_model._input_layer == loaded._input_layer)
             self.assertTrue(self.functional_model.get_config() == loaded._model.get_config())
+            self.assertTrue(isinstance(loaded.defences[0], FeatureSqueezing))
 
         os.remove(full_path)
 
