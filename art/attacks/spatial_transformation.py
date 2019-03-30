@@ -115,7 +115,7 @@ class SpatialTransformation(Attack):
                         y_adv_i = np.argmax(self.classifier.predict(x_adv_i, logits=False), axis=1)
                         fooling_rate_i = np.sum(y_pred_max != y_adv_i) / nb_instances
 
-                        if fooling_rate_i >= fooling_rate:
+                        if fooling_rate_i > fooling_rate:
                             fooling_rate = fooling_rate_i
                             trans_x = trans_x_i
                             trans_y = trans_y_i
