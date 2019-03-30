@@ -32,6 +32,16 @@ class Preprocessor(ABC):
         """
         return self._is_fitted
 
+    @property
+    @abc.abstractmethod
+    def apply_fit(self):
+        raise NotImplementedError
+
+    @property
+    @abc.abstractmethod
+    def apply_predict(self):
+        raise NotImplementedError
+
     @abc.abstractmethod
     def __call__(self, x, y=None):
         """
@@ -58,7 +68,11 @@ class Preprocessor(ABC):
         :type kwargs: `dict`
         :return: None
         """
-        self._is_fitted = True
+        raise NotImplementedError
+
+    @abc.abstractmethod
+    def estimate_gradient(self, grad):
+        raise NotImplementedError
 
     def set_params(self, **kwargs):
         """

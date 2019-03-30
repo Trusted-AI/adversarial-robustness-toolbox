@@ -24,13 +24,13 @@ class TestThermometerEncoding(unittest.TestCase):
                       [[0.2, 0.6, 0.8], [0.9, 0.4, 0.3], [0.2, 0.8, 0.5]]]])
 
         # Create an instance of ThermometerEncoding
-        thencoder = ThermometerEncoding(num_space=4)
+        th_encoder = ThermometerEncoding(num_space=4)
 
         # Preprocess
-        pp_x = thencoder(x)
+        x_preproc, _ = th_encoder(x)
 
         # Test
-        self.assertTrue(pp_x.shape == (2, 2, 3, 12))
+        self.assertTrue(x_preproc.shape == (2, 2, 3, 12))
 
         true_value = np.array([[[[1, 1, 1, 1, 0, 0, 1, 1, 0, 0, 0, 1], [0, 0, 0, 1, 0, 1, 1, 1, 0, 1, 1, 1],
                                 [1, 1, 1, 1, 0, 0, 0, 1, 0, 1, 1, 1]], [[1, 1, 1, 1, 0, 0, 1, 1, 0, 0, 0, 1],
@@ -38,7 +38,7 @@ class TestThermometerEncoding(unittest.TestCase):
                                 [[[1, 1, 1, 1, 0, 0, 1, 1, 0, 0, 0, 1], [0, 0, 0, 1, 0, 1, 1, 1, 0, 1, 1, 1],
                                 [1, 1, 1, 1, 0, 0, 0, 1, 0, 1, 1, 1]], [[1, 1, 1, 1, 0, 0, 1, 1, 0, 0, 0, 1],
                                 [0, 0, 0, 1, 0, 1, 1, 1, 0, 1, 1, 1], [1, 1, 1, 1, 0, 0, 0, 1, 0, 1, 1, 1]]]])
-        self.assertTrue((pp_x == true_value).all())
+        self.assertTrue((x_preproc == true_value).all())
 
 
 if __name__ == '__main__':

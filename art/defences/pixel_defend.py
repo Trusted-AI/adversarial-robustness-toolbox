@@ -15,20 +15,33 @@ class PixelDefend(Preprocessor):
     Implement the pixel defence approach. Defense based on PixelCNN that projects samples back to the data manifold.
     Paper link: https://arxiv.org/abs/1710.10766
     """
-    params = ['eps']
+    params = ['eps', 'pixel_cnn']
 
-    def __init__(self, eps=16):
+    def __init__(self, eps=16, pixel_cnn=None):
         """
         Create an instance of pixel defence.
 
         :param eps: Defense parameter 0-255.
         :type eps: `int`
+        :param pixel_cnn: Pre-trained PixelCNN model.
+        :type pixel_cnn: :class:`.Classifier`
         """
         super(PixelDefend, self).__init__()
         self._is_fitted = True
-        self.set_params(eps=eps)
+        if pixel_cnn is not None:
+            self.set_params(eps=eps, pixel_cnn=pixel_cnn)
+        else:
+            self.set_params(eps=eps)
 
-    def __call__(self, x, y=None, eps=None, pixelcnn=None):
+    @property
+    def apply_fit(self):
+        return False
+
+    @property
+    def apply_predict(self):
+        return True
+
+    def __call__(self, x, y=None, eps=None, pixel_cnn=None):
         """
         Apply pixel defence to sample `x`.
 
@@ -39,34 +52,35 @@ class PixelDefend(Preprocessor):
         :type y: `np.ndarray`
         :param eps: Defense parameter 0-255.
         :type eps: `int`
-        :param pixelcnn: Pre-trained PixelCNN model.
-        :type pixelcnn: :class:`.Classifier`
+        :param pixel_cnn: Pre-trained PixelCNN model.
+        :type pixel_cnn: :class:`.Classifier`
         :return: Purified sample.
         :rtype: `np.ndarray`
         """
-        from art.classifiers.classifier import Classifier
-
-        if not isinstance(pixelcnn, Classifier):
-            raise TypeError("PixelCNN model must be of type Classifier.")
-
         clip_values = (0, 1)
 
+        params = {}
         if eps is not None:
-            self.set_params(eps=eps)
+            params['eps'] = eps
+
+        if pixel_cnn is not None:
+            params['pixel_cnn'] = pixel_cnn
+
+        self.set_params(**params)
 
         # Convert into `uint8`
         x_ = x.copy()
         x_ = x_ * 255
         x_ = x_.astype("uint8")
 
-        # Start defence one image per time
+        # Start defence one image at a time
         for i, xi in enumerate(x_):
             for r in range(x_.shape[1]):
                 for c in range(x_.shape[2]):
                     for k in range(x_.shape[3]):
                         # Setup the search space
-                        # probs = pixelcnn.predict(np.array([xi / 255.0]), logits=False)
-                        probs = pixelcnn.get_activations(np.array([xi / 255.0]), -1)
+                        # probs = self.pixel_cnn.predict(np.array([xi / 255.0]), logits=False)
+                        probs = self.pixel_cnn.get_activations(np.array([xi / 255.0]), -1)
                         f_probs = probs[0, r, c, k]
                         f_range = range(int(max(xi[r, c, k] - self.eps, 0)), int(min(xi[r, c, k] + self.eps, 255) + 1))
 
@@ -91,7 +105,10 @@ class PixelDefend(Preprocessor):
         # Clip values into the range [0, 1]
         x_ = np.clip(x_, clip_values[0], clip_values[1])
 
-        return x_
+        return x_, y
+
+    def estimate_gradient(self, grad):
+        raise grad
 
     def fit(self, x, y=None, **kwargs):
         """
@@ -106,14 +123,18 @@ class PixelDefend(Preprocessor):
         Defense-specific parameters:
         :param eps: Defense parameter 0-255.
         :type eps: `int`
+        :param pixel_cnn: Pre-trained PixelCNN model.
+        :type pixel_cnn: :class:`.Classifier`
         """
+        from art.classifiers import Classifier
+
         # Save defence-specific parameters
         super(PixelDefend, self).set_params(**kwargs)
 
         if not isinstance(self.eps, (int, np.int)) or self.eps < 0 or self.eps > 255:
             raise ValueError("The defense parameter must be between 0 and 255.")
 
+        if hasattr(self, 'pixel_cnn') and not isinstance(self.pixel_cnn, Classifier):
+            raise TypeError("PixelCNN model must be of type Classifier.")
+
         return True
-
-
-
