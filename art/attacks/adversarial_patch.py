@@ -167,7 +167,7 @@ class AdversarialPatch(Attack):
 
         if not isinstance(self.patch_shape, tuple) or not len(self.patch_shape) == 3 or not isinstance(
                 self.patch_shape[0], int) or not isinstance(self.patch_shape[1], int) or not isinstance(
-                self.patch_shape[2], int):
+            self.patch_shape[2], int):
             raise ValueError("The shape of the adversarial patch must be a tuple of 3 integers.")
 
         if not isinstance(self.batch_size, int):
@@ -212,7 +212,7 @@ class AdversarialPatch(Attack):
             inverted_patch_mask_transformed = (1 - patch_mask_transformed)
 
             patched_image = images[i_batch, :, :, :] * inverted_patch_mask_transformed \
-                + patch_transformed * patch_mask_transformed
+                            + patch_transformed * patch_mask_transformed
             patched_image = np.expand_dims(patched_image, axis=0)
             patched_images.append(patched_image)
 
@@ -240,7 +240,8 @@ class AdversarialPatch(Attack):
         elif self.classifier.channel_index == 1:
             zooms = (1.0, scale, scale)
         x = zoom(x, zoom=zooms, order=1)
-        if x.shape[0] <= self.patch_shape[1]:
+
+        if x.shape[1] <= self.patch_shape[1]:
             pad_1 = int((shape - x.shape[1]) / 2)
             pad_2 = int(shape - pad_1 - x.shape[1])
             if self.classifier.channel_index == 3:
@@ -251,7 +252,7 @@ class AdversarialPatch(Attack):
                 pad_width = None
             return np.pad(x, pad_width=pad_width, mode='constant', constant_values=(0, 0))
         else:
-            center = int(x.shape[0] / 2)
+            center = int(x.shape[1] / 2)
             patch_hw_1 = int(self.patch_shape[1] / 2)
             patch_hw_2 = self.patch_shape[1] - patch_hw_1
             if self.classifier.channel_index == 3:
@@ -297,7 +298,8 @@ class AdversarialPatch(Attack):
             shift_2 = random.uniform(-shift_max, shift_max)
             patch, _ = self._shift(patch, shift_1, shift_2)
             patch_mask, shift_xy = self._shift(patch_mask, shift_1, shift_2)
-            transformation['shift'] = shift_xy
+            transformation['shift_1'] = shift_1
+            transformation['shift_2'] = shift_2
         else:
             transformation['shift'] = (0, 0, 0)
 
@@ -310,44 +312,15 @@ class AdversarialPatch(Attack):
         gradients = gradients * patch_mask_transformed
 
         # shift
-        shift_xy = transformation['shift']
-        gradients = shift(gradients, shift=(-shift_xy[0], -shift_xy[1], -shift_xy[2]), order=1)
+        shift_1 = transformation['shift_1']
+        shift_2 = transformation['shift_2']
+        gradients, _ = self._shift(gradients, -shift_1, -shift_2)
 
         # scale
         scale = transformation['scale']
-        zooms = None
-        if self.classifier.channel_index == 3:
-            zooms = (1.0 / scale, 1.0 / scale, 1.0)
-        elif self.classifier.channel_index == 1:
-            zooms = (1.0, 1.0 / scale, 1.0 / scale)
-        gradients = zoom(gradients, zoom=zooms, order=1)
-        if scale <= 1.0:
-            center = int(gradients.shape[1] / 2)
-            delta_minus = int(shape / 2)
-            delta_plus = int(shape - delta_minus)
-            if self.classifier.channel_index == 3:
-                gradients = gradients[center - delta_minus:center + delta_plus,
-                                      center - delta_minus:center + delta_plus, :]
-            elif self.classifier.channel_index == 1:
-                gradients = gradients[:, center - delta_minus:center + delta_plus,
-                                      center - delta_minus:center + delta_plus]
-        else:
-            pad_1 = int((shape - gradients.shape[1]) / 2)
-            pad_2 = int(shape - pad_1 - gradients.shape[1])
-            pad_width = None
-            if self.classifier.channel_index == 3:
-                pad_width = ((pad_1, pad_2), (pad_1, pad_2), (0, 0))
-            elif self.classifier.channel_index == 1:
-                pad_width = ((0, 0), (pad_1, pad_2), (pad_1, pad_2))
-            gradients = np.pad(gradients, pad_width=pad_width, mode='constant', constant_values=(0, 0))
+        gradients = self._scale(gradients, 1.0 / scale, shape)
 
         # rotate
         angle = transformation['rotate']
-        axes = None
-        if self.classifier.channel_index == 3:
-            axes = (0, 1)
-        elif self.classifier.channel_index == 1:
-            axes = (1, 2)
-        gradients = rotate(gradients, angle=-angle, reshape=False, axes=axes, order=1)
-
+        gradients = self._rotate(gradients, -angle)
         return gradients
