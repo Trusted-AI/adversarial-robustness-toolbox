@@ -79,7 +79,7 @@ class AdversarialPatch(Attack):
         for i_step in range(self.max_iter):
 
             if i_step == 0 or (i_step + 1) % 100 == 0:
-                logger.info('Training Step: %i',  i_step + 1)
+                logger.info('Training Step: %i', i_step + 1)
 
             if self.clip_patch is not None:
                 for i_channel, (a_min, a_max) in enumerate(self.clip_patch):
@@ -176,7 +176,7 @@ class AdversarialPatch(Attack):
 
         if not isinstance(self.patch_shape, tuple) or not len(self.patch_shape) == 3 or not isinstance(
                 self.patch_shape[0], int) or not isinstance(self.patch_shape[1], int) or not isinstance(
-                self.patch_shape[2], int):
+                    self.patch_shape[2], int):
             raise ValueError("The shape of the adversarial patch must be a tuple of 3 integers.")
 
         if not isinstance(self.batch_size, int):
