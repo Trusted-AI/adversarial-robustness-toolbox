@@ -35,11 +35,23 @@ class Preprocessor(ABC):
     @property
     @abc.abstractmethod
     def apply_fit(self):
+        """
+        Property of the defence indicating if it should be applied at training time.
+
+        :return: `True` if the defence should be applied when fitting a model, `False` otherwise.
+        :rtype: `bool`
+        """
         raise NotImplementedError
 
     @property
     @abc.abstractmethod
     def apply_predict(self):
+        """
+        Property of the defence indicating if it should be applied at test time.
+
+        :return: `True` if the defence should be applied at prediction time, `False` otherwise.
+        :rtype: `bool`
+        """
         raise NotImplementedError
 
     @abc.abstractmethod
@@ -72,6 +84,16 @@ class Preprocessor(ABC):
 
     @abc.abstractmethod
     def estimate_gradient(self, grad):
+        """
+        Provide an estimate of the gradients of the defence for the backward pass. If the defence is not differentiable,
+        this is an estimate of the gradient, most often replacing the computation performed by the defence with the
+        identity function.
+
+        :param grad: Gradient value so far.
+        :type grad: `np.ndarray`
+        :return: The gradient (estimate) of the defence.
+        :rtype: `np.ndarray`
+        """
         raise NotImplementedError
 
     def set_params(self, **kwargs):
