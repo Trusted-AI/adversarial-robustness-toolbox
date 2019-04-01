@@ -134,9 +134,6 @@ class AdversarialPatch(Attack):
         :type batch_size: `int`
         :param clip_batch: The minimum and maximum values for each channel
         :type clip_patch: [(float, float), (float, float), (float, float)]
-        :param expectation: An expectation over transformations to be applied when computing
-                            classifier gradients and predictions.
-        :type expectation: :class:`.ExpectationOverTransformations`
         """
         super(AdversarialPatch, self).set_params(**kwargs)
 
