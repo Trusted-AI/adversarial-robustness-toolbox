@@ -165,10 +165,6 @@ class SpatialTransformation(Attack):
         """
         super(SpatialTransformation, self).set_params(**kwargs)
 
-        for key, value in kwargs.items():
-            if key in self.attack_params:
-                setattr(self, key, value)
-
         if not isinstance(self.max_translation, (float, int)) or self.max_translation < 0 or self.max_translation > 100:
             raise ValueError("The maximum translation must be in the range [0, 100].")
 
