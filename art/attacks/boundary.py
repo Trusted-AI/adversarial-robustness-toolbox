@@ -86,14 +86,25 @@ class Boundary(Attack):
         :rtype: `np.ndarray`
         """
         self.set_params(**kwargs)
+        params_cpy = dict(kwargs)
+        y = params_cpy.pop(str('y'), None)
+
+        # Assert that, if attack is targeted, y is provided
+        if self.targeted and y is None:
+            raise ValueError('Target labels `y` need to be provided for a targeted attack.')
+
+        # Some initial setups
         clip_min, clip_max = self.classifier.clip_values
         x_adv = x.copy()
-        preds = self.classifier.predict(x, logits=True)
 
+        # Generate the adversarial samples
+        for ind, val in enumerate(x_adv):
+            x_ = self._perturb(val, clip_min, clip_max)
+            x_adv[ind] = x_
 
-        preds = np.argmax(preds, axis=1)
+        preds = np.argmax(self.classifier.predict(x), axis=1)
         preds_adv = np.argmax(self.classifier.predict(x_adv), axis=1)
-        logger.info('Success rate of DeepFool attack: %.2f%%', (np.sum(preds != preds_adv) / x.shape[0]))
+        logger.info('Success rate of Boundary attack: %.2f%%', (np.sum(preds != preds_adv) / x.shape[0]))
 
         return x_adv
 
