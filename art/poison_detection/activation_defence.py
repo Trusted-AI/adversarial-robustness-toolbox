@@ -85,7 +85,7 @@ class ActivationDefence(PoisonFilteringDefence):
         """
         Returns poison detected and a report.
 
-        :param kwargs: a dictionary of detection-specific parameters
+        :param kwargs: A dictionary of detection-specific parameters.
         :type kwargs: `dict`
         :return: (report, is_clean_lst):
                 where a report is a dict object that contains information specified by the clustering analysis technique.
@@ -120,7 +120,7 @@ class ActivationDefence(PoisonFilteringDefence):
         Clusters activations and returns cluster_by_class and red_activations_by_class,
         where cluster_by_class[i][j] is the cluster to which the j-th datapoint in the
         ith class belongs and the correspondent activations reduced by class
-        red_activations_by_class[i][j]
+        red_activations_by_class[i][j].
 
         :param kwargs: A dictionary of cluster-specific parameters.
         :type kwargs: `dict`
@@ -143,7 +143,7 @@ class ActivationDefence(PoisonFilteringDefence):
 
     def analyze_clusters(self, **kwargs):
         """
-        This function analyzes the clusters according to the provided method
+        This function analyzes the clusters according to the provided method.
 
         :param kwargs: A dictionary of cluster-analysis-specific parameters.
         :type kwargs: `dict`
@@ -184,8 +184,8 @@ class ActivationDefence(PoisonFilteringDefence):
     def relabel_poison_ground_truth(self, x, y_fix, test_set_split=0.7, tolerable_backdoor=0.01,
                                     max_epochs=50, batch_epochs=10):
         """
-        Revert poison attack by continue training the current classifier with x, y_fix.
-        test_set_split determines the percentage in x that will be used as training set, while 1-test_set_split
+        Revert poison attack by continue training the current classifier with `x`, `y_fix`.
+        `test_set_split` determines the percentage in x that will be used as training set, while `1-test_set_split`
         determines how many data points to use for test set.
 
         :param x: samples
@@ -193,16 +193,16 @@ class ActivationDefence(PoisonFilteringDefence):
         :param y_fix: true label of x_poison
         :type y_fix: `np.ndarray`
         :param test_set_split: this parameter determine how much data goes to the training set.
-        Here test_set_split*len(y_fix) determines the number of data points in x_train
-        and (1-test_set_split) * len(y_fix) the number of data points in x_test.
+               Here `test_set_split*len(y_fix)` determines the number of data points in `x_train`
+               and `(1-test_set_split) * len(y_fix)` the number of data points in `x_test`.
         :param tolerable_backdoor: Threshold that determines what is the maximum tolerable backdoor success rate.
-        :type tolerable_backdoor `float`
+        :type tolerable_backdoor: `float`
         :param max_epochs: Maximum number of epochs that the model will be trained
         :type max_epochs: `int`
         :param batch_epochs: Number of epochs to be trained before checking current state of model
         :type batch_epochs: `int`
         :return: improve_factor
-        :rtype `float`
+        :rtype: `float`
         """
 
         # Split data into testing and training:
@@ -230,23 +230,23 @@ class ActivationDefence(PoisonFilteringDefence):
     def relabel_poison_cross_validation(self, x, y_fix, n_splits=10, tolerable_backdoor=0.01,
                                         max_epochs=50, batch_epochs=10):
         """
-        Revert poison attack by continue training the current classifier with x, y_fix.
-        n_splits determine the number of cross validation splits.
+        Revert poison attack by continue training the current classifier with `x`, `y_fix`.
+        `n_splits` determine the number of cross validation splits.
 
         :param x: Samples that were miss-labeled.
         :type x: `np.ndarray`
         :param y_fix: True label of `x`.
         :type y_fix: `np.ndarray`
-        :param n_splits: Determines how many splits to use in cross validation (only used if cross_validation=True).
+        :param n_splits: Determines how many splits to use in cross validation (only used if `cross_validation=True`).
         :type n_splits: `int`
         :param tolerable_backdoor: Threshold that determines what is the maximum tolerable backdoor success rate.
-        :type tolerable_backdoor `float`
+        :type tolerable_backdoor: `float`
         :param max_epochs: Maximum number of epochs that the model will be trained.
         :type max_epochs: `int`
         :param batch_epochs: Number of epochs to be trained before checking current state of model.
         :type batch_epochs: `int`
         :return: improve_factor
-        :rtype `float`
+        :rtype: `float`
         """
 
         # Train using cross validation
