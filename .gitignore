@@ -105,5 +105,5 @@ demo/pics/*
 *.ipynb
 .DS_Store
 
-# Exceptions for examples/
+# Exceptions for notebooks/
 !notebooks/*.ipynb
