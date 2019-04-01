@@ -31,29 +31,35 @@ class Boundary(Attack):
     Implementation of the boundary attack from Wieland Brendel et al. (2018).
     Paper link: https://arxiv.org/abs/1712.04248
     """
+    attack_params = Attack.attack_params + ['targeted', 'delta', 'epsilon', 'step_adapt', 'max_iter', 'sample_size']
 
-
-
-    attack_params = Attack.attack_params + []
-
-    def __init__(self, classifier, ):
+    def __init__(self, classifier, targeted=True, delta=0.01, epsilon=0.01, step_adapt=0.9, max_iter=100,
+                 sample_size=20):
         """
-        Create a DeepFool attack instance.
+        Create a Boundary attack instance.
 
         :param classifier: A trained model.
         :type classifier: :class:`.Classifier`
+        :param targeted: Should the attack target one specific class.
+        :type targeted: `bool`
+        :param delta: Initial step size for the orthogonal step.
+        :type delta: `float`
+        :param epsilon: Initial step size for the step towards the target.
+        :type epsilon: `float`
+        :param step_adapt: Factor by which the step sizes are multiplied or divided, must be in the range (0, 1).
+        :type step_adapt: `float`
         :param max_iter: The maximum number of iterations.
         :type max_iter: `int`
-        :param epsilon: Overshoot parameter.
-        :type epsilon: `float`
-        :param nb_grads: The number of class gradients (top nb_grads w.r.t. prediction) to compute. This way only the
-                         most likely classes are considered, speeding up the computation.
-        :type nb_grads: `int`
-        :param batch_size: Batch size
-        :type batch_size: `int`
+        :param sample_size: Maximum number of trials per iteration.
+        :type sample_size: `int`
         """
-        super(DeepFool, self).__init__(classifier=classifier)
-        params = {'max_iter': max_iter, 'epsilon': epsilon, 'nb_grads': nb_grads, 'batch_size': batch_size}
+        super(Boundary, self).__init__(classifier=classifier)
+        params = {'targeted': targeted,
+                  'delta': delta,
+                  'epsilon': epsilon,
+                  'step_adapt': step_adapt,
+                  'max_iter': max_iter,
+                  'sample_size': sample_size}
         self.set_params(**params)
 
     def generate(self, x, **kwargs):
@@ -62,15 +68,20 @@ class Boundary(Attack):
 
         :param x: An array with the original inputs to be attacked.
         :type x: `np.ndarray`
+        :param y: If `self.targeted` is true, then `y` represents the target labels.
+        :type y: `np.ndarray`
+        :param targeted: Should the attack target one specific class.
+        :type targeted: `bool`
+        :param delta: Initial step size for the orthogonal step.
+        :type delta: `float`
+        :param epsilon: Initial step size for the step towards the target.
+        :type epsilon: `float`
+        :param step_adapt: Factor by which the step sizes are multiplied or divided, must be in the range (0, 1).
+        :type step_adapt: `float`
         :param max_iter: The maximum number of iterations.
         :type max_iter: `int`
-        :param epsilon: Overshoot parameter.
-        :type epsilon: `float`
-        :param nb_grads: The number of class gradients (top nb_grads w.r.t. prediction) to compute. This way only the
-                         most likely classes are considered, speeding up the computation.
-        :type nb_grads: `int`
-        :param batch_size: Batch size
-        :type batch_size: `int`
+        :param sample_size: Maximum number of trials per iteration.
+        :type sample_size: `int`
         :return: An array holding the adversarial examples.
         :rtype: `np.ndarray`
         """
@@ -79,77 +90,6 @@ class Boundary(Attack):
         x_adv = x.copy()
         preds = self.classifier.predict(x, logits=True)
 
-        # Determine the class labels for which to compute the gradients
-        use_grads_subset = self.nb_grads < self.classifier.nb_classes
-        if use_grads_subset:
-            # TODO compute set of unique labels per batch
-            grad_labels = np.argsort(-preds, axis=1)[:, :self.nb_grads]
-            labels_set = np.unique(grad_labels)
-        else:
-            labels_set = np.arange(self.classifier.nb_classes)
-        sorter = np.arange(len(labels_set))
-
-        # Pick a small scalar to avoid division by 0
-        tol = 10e-8
-
-        # Compute perturbation with implicit batching
-        for batch_id in range(int(np.ceil(x_adv.shape[0] / float(self.batch_size)))):
-            batch_index_1, batch_index_2 = batch_id * self.batch_size, (batch_id + 1) * self.batch_size
-            batch = x_adv[batch_index_1:batch_index_2]
-
-            # Get predictions and gradients for batch
-            f = preds[batch_index_1:batch_index_2]
-            fk_hat = np.argmax(f, axis=1)
-            if use_grads_subset:
-                # Compute gradients only for top predicted classes
-                grd = np.array([self.classifier.class_gradient(batch, logits=True, label=_) for _ in labels_set])
-                grd = np.squeeze(np.swapaxes(grd, 0, 2), axis=0)
-            else:
-                # Compute gradients for all classes
-                grd = self.classifier.class_gradient(batch, logits=True)
-
-            # Get current predictions
-            active_indices = np.arange(len(batch))
-            current_step = 0
-            while len(active_indices) != 0 and current_step < self.max_iter:
-                # Compute difference in predictions and gradients only for selected top predictions
-                labels_indices = sorter[np.searchsorted(labels_set, fk_hat, sorter=sorter)]
-                grad_diff = grd - grd[np.arange(len(grd)), labels_indices][:, None]
-                f_diff = f[:, labels_set] - f[np.arange(len(f)), labels_indices][:, None]
-
-                # Choose coordinate and compute perturbation
-                norm = np.linalg.norm(grad_diff.reshape(len(grad_diff), len(labels_set), -1), axis=2) + tol
-                value = np.abs(f_diff) / norm
-                value[np.arange(len(value)), labels_indices] = np.inf
-                l = np.argmin(value, axis=1)
-                r = (abs(f_diff[np.arange(len(f_diff)), l]) / (pow(np.linalg.norm(grad_diff[np.arange(len(
-                    grad_diff)), l].reshape(len(grad_diff), -1), axis=1), 2) + tol))[:, None, None, None] * \
-                    grad_diff[np.arange(len(grad_diff)), l]
-
-                # Add perturbation and clip result
-                batch[active_indices] = np.clip(batch[active_indices] + r[active_indices], clip_min, clip_max)
-
-                # Recompute prediction for new x
-                f = self.classifier.predict(batch, logits=True)
-                fk_i_hat = np.argmax(f, axis=1)
-
-                # Recompute gradients for new x
-                if use_grads_subset:
-                    # Compute gradients only for (originally) top predicted classes
-                    grd = np.array([self.classifier.class_gradient(batch, logits=True, label=_) for _ in labels_set])
-                    grd = np.squeeze(np.swapaxes(grd, 0, 2), axis=0)
-                else:
-                    # Compute gradients for all classes
-                    grd = self.classifier.class_gradient(batch, logits=True)
-
-                # Stop if misclassification has been achieved
-                active_indices = np.where(fk_i_hat == fk_hat)[0]
-
-                current_step += 1
-
-            # Apply overshoot parameter
-            x_adv[batch_index_1:batch_index_2] = np.clip(x_adv[batch_index_1:batch_index_2] + (
-                1 + self.epsilon) * (batch - x_adv[batch_index_1:batch_index_2]), clip_min, clip_max)
 
         preds = np.argmax(preds, axis=1)
         preds_adv = np.argmax(self.classifier.predict(x_adv), axis=1)
