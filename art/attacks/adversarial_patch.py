@@ -134,10 +134,6 @@ class AdversarialPatch(Attack):
         """
         super(AdversarialPatch, self).set_params(**kwargs)
 
-        for key, value in kwargs.items():
-            if key in self.attack_params:
-                setattr(self, key, value)
-
         if self.target_ys is not None and not isinstance(self.target_ys, np.ndarray):
             raise ValueError("The target labels must be of type np.ndarray.")
         if self.target_ys is not None and not len(self.target_ys.shape) == 2:
