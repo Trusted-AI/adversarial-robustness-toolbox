@@ -47,8 +47,7 @@ class TestAdversarialPatch(unittest.TestCase):
 
         # Attack
         attack_params = {"target_ys": np.zeros((10, 10)), "rotation_max": 22.5, "scale_min": 0.1, "scale_max": 1.0,
-                         "learning_rate": 5.0, "number_of_steps": 5, "image_shape": (28, 28, 1),
-                         "patch_shape": (28, 28, 1), "batch_size": 10}
+                         "learning_rate": 5.0, "number_of_steps": 5, "patch_shape": (28, 28, 1), "batch_size": 10}
         attack_ap = AdversarialPatch(tfc)
         patch_adv, patch_mask_adv = attack_ap.generate(x_train, **attack_params)
 
@@ -72,8 +71,7 @@ class TestAdversarialPatch(unittest.TestCase):
 
         # Attack
         attack_params = {"target_ys": np.zeros((10, 10)), "rotation_max": 22.5, "scale_min": 0.1, "scale_max": 1.0,
-                         "learning_rate": 5.0, "number_of_steps": 5, "image_shape": (28, 28, 1),
-                         "patch_shape": (28, 28, 1), "batch_size": 10}
+                         "learning_rate": 5.0, "number_of_steps": 5, "patch_shape": (28, 28, 1), "batch_size": 10}
         attack_ap = AdversarialPatch(krc)
         patch_adv, patch_mask_adv = attack_ap.generate(x_train, **attack_params)
 
@@ -97,8 +95,7 @@ class TestAdversarialPatch(unittest.TestCase):
 
         # Attack
         attack_params = {"target_ys": np.zeros((10, 10)), "rotation_max": 22.5, "scale_min": 0.1, "scale_max": 1.0,
-                         "learning_rate": 5.0, "number_of_steps": 5, "image_shape": (1, 28, 28),
-                         "patch_shape": (1, 28, 28), "batch_size": 10}
+                         "learning_rate": 5.0, "number_of_steps": 5, "patch_shape": (1, 28, 28), "batch_size": 10}
         attack_ap = AdversarialPatch(ptc)
         patch_adv, patch_mask_adv = attack_ap.generate(x_train, **attack_params)
 

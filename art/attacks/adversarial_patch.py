@@ -17,10 +17,10 @@ class AdversarialPatch(Attack):
     """
 
     attack_params = Attack.attack_params + ["target_ys", "rotation_max", "scale_min", "scale_max", "learning_rate",
-                                            "number_of_steps", "image_shape", "patch_shape", "batch_size", "clip_patch"]
+                                            "number_of_steps", "patch_shape", "batch_size", "clip_patch"]
 
     def __init__(self, classifier, target_ys=None, rotation_max=22.5, scale_min=0.1, scale_max=1.0,
-                 learning_rate=5.0, number_of_steps=500, image_shape=(224, 224, 3), patch_shape=(224, 224, 3),
+                 learning_rate=5.0, number_of_steps=500, patch_shape=(224, 224, 3),
                  batch_size=16, clip_patch=None):
         """
         :param classifier: A trained model.
@@ -37,8 +37,6 @@ class AdversarialPatch(Attack):
         :type learning_rate: `float`
         :param number_of_steps: The numner of optimization steps.
         :type number_of_steps: `int`
-        :param image_shape: The shape of the training images.
-        :type image_shape: `(int, int, int)`
         :param patch_shape: The shape of the adversarial patch.
         :type patch_shape: `(int, int, int)`
         :param batch_size: The size of the training batch.
@@ -58,7 +56,6 @@ class AdversarialPatch(Attack):
                   "scale_max": scale_max,
                   "learning_rate": learning_rate,
                   "number_of_steps": number_of_steps,
-                  "image_shape": image_shape,
                   "patch_shape": patch_shape,
                   "batch_size": batch_size,
                   "clip_patch": clip_patch
@@ -131,8 +128,6 @@ class AdversarialPatch(Attack):
         :type learning_rate: `float`
         :param number_of_steps: The numner of optimization steps.
         :type number_of_steps: `int`
-        :param image_shape: The shape of the training images.
-        :type image_shape: `(int, int, int)`
         :param patch_shape: The shape of the adversarial patch.
         :type patch_shape: `(int, int, int)`
         :param batch_size: The size of the training batch.
@@ -181,11 +176,6 @@ class AdversarialPatch(Attack):
             raise ValueError("The number of optimization steps must be of type int.")
         if not self.number_of_steps > 0:
             raise ValueError("The number of optimization steps must be greater than 0.")
-
-        if not isinstance(self.image_shape, tuple) or not len(self.image_shape) == 3 or not isinstance(
-                self.image_shape[0], int) or not isinstance(self.image_shape[1], int) or not isinstance(
-                self.image_shape[2], int):
-            raise ValueError("The shape of the training images must be a tuple of 3 integers.")
 
         if not isinstance(self.patch_shape, tuple) or not len(self.patch_shape) == 3 or not isinstance(
                 self.patch_shape[0], int) or not isinstance(self.patch_shape[1], int) or not isinstance(
@@ -317,7 +307,7 @@ class AdversarialPatch(Attack):
         transformation['scale'] = scale
 
         # shift
-        shift_max = (self.image_shape[1] - self.patch_shape[1] * scale) / 2.0
+        shift_max = (self.classifier.input_shape[2] - self.patch_shape[1] * scale) / 2.0
         if shift_max > 0:
             shift_1 = random.uniform(-shift_max, shift_max)
             shift_2 = random.uniform(-shift_max, shift_max)
