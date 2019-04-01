@@ -307,7 +307,7 @@ class AdversarialPatch(Attack):
         if shift_max > 0:
             shift_1 = random.uniform(-shift_max, shift_max)
             shift_2 = random.uniform(-shift_max, shift_max)
-            patch, _ = self._shift(patch, shift_1, shift_2)
+            patch, _, _ = self._shift(patch, shift_1, shift_2)
             patch_mask, shift_1, shift_2 = self._shift(patch_mask, shift_1, shift_2)
             transformation['shift_1'] = shift_1
             transformation['shift_2'] = shift_2
