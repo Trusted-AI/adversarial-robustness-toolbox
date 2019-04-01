@@ -79,7 +79,7 @@ class AdversarialPatch(Attack):
         for i_step in range(self.max_iter):
 
             if i_step == 0 or (i_step + 1) % 100 == 0:
-                print('Training Step: ' + str(i_step + 1))
+                logger.info('Training Step: ' + str(i_step + 1))
 
             if self.clip_patch is not None:
                 for i_channel, (a_min, a_max) in enumerate(self.clip_patch):
