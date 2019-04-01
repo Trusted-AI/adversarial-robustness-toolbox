@@ -152,9 +152,8 @@ class AdversarialPatch(Attack):
         if not isinstance(self.scale_max, float):
             raise ValueError("The maximum scale of the random patched must be of type float.")
         if not self.scale_max > self.scale_min and not self.scale_max <= 1.0:
-            raise ValueError(
-                """The maximum scale of the random patched must be greater than the minimum scaling and less than or
-                equal to 1.0.""")
+            raise ValueError("The maximum scale of the random patched must be greater than the minimum scaling and " +
+                             "less than or equal to 1.0.")
 
         if not isinstance(self.learning_rate, float):
             raise ValueError("The learning rate must be of type float.")
