@@ -52,8 +52,8 @@ class TestAdversarialPatch(unittest.TestCase):
         patch_adv, patch_mask_adv = attack_ap.generate(x_train, **attack_params)
 
         self.assertTrue(patch_adv[8, 8, 0] - (-3.1541491702440285) < 0.01)
-        self.assertTrue(patch_adv[14, 14, 0] - 19.77060710322136 < 0.01)
-        self.assertTrue(np.sum(patch_adv) - 387.92340613537993 < 0.01)
+        self.assertTrue(patch_adv[14, 14, 0] - 18.954278294246386 < 0.01)
+        self.assertTrue(np.sum(patch_adv) - 794.2447019737851 < 0.01)
 
         sess.close()
         tf.reset_default_graph()
@@ -76,8 +76,8 @@ class TestAdversarialPatch(unittest.TestCase):
         patch_adv, patch_mask_adv = attack_ap.generate(x_train, **attack_params)
 
         self.assertTrue(patch_adv[8, 8, 0] - (-3.2501425017774923) < 0.01)
-        self.assertTrue(patch_adv[14, 14, 0] - 19.62935354176458 < 0.01)
-        self.assertTrue(np.sum(patch_adv) - 427.5144147080584 < 0.01)
+        self.assertTrue(patch_adv[14, 14, 0] - 20.48400094881169 < 0.01)
+        self.assertTrue(np.sum(patch_adv) - 1764.7681744376168 < 0.01)
 
         k.clear_session()
 

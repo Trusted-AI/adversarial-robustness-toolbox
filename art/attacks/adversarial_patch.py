@@ -295,7 +295,7 @@ class AdversarialPatch(Attack):
         transformation['scale'] = scale
 
         # shift
-        shift_max = (self.classifier.input_shape[2] - self.patch_shape[1] * scale) / 2.0
+        shift_max = (self.classifier.input_shape[1] - self.patch_shape[1] * scale) / 2.0
         if shift_max > 0:
             shift_1 = random.uniform(-shift_max, shift_max)
             shift_2 = random.uniform(-shift_max, shift_max)
