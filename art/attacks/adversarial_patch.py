@@ -79,7 +79,7 @@ class AdversarialPatch(Attack):
         for i_step in range(self.max_iter):
 
             if i_step == 0 or (i_step + 1) % 100 == 0:
-                logger.info('Training Step: ' + str(i_step + 1))
+                logger.info('Training Step: %i',  i_step + 1)
 
             if self.clip_patch is not None:
                 for i_channel, (a_min, a_max) in enumerate(self.clip_patch):
@@ -105,6 +105,15 @@ class AdversarialPatch(Attack):
         return self.patch, self._get_circular_patch_mask()
 
     def apply_patch(self, images, scale):
+        """
+        A function to apply the learned adversarial patch to images.
+        :param images: Images to apply randomly transformed patch.
+        :type images: `np.ndarray`
+        :param scale: Scale of the applied patch in relation to patch_shape.
+        :type scale: `float`
+        :return: The patched images.
+        :rtype: `np.ndarray`
+        """
         patched_images, _, _ = self._augment_images_with_random_patch(images, self.patch, scale)
         return patched_images
 
@@ -167,7 +176,7 @@ class AdversarialPatch(Attack):
 
         if not isinstance(self.patch_shape, tuple) or not len(self.patch_shape) == 3 or not isinstance(
                 self.patch_shape[0], int) or not isinstance(self.patch_shape[1], int) or not isinstance(
-            self.patch_shape[2], int):
+                self.patch_shape[2], int):
             raise ValueError("The shape of the adversarial patch must be a tuple of 3 integers.")
 
         if not isinstance(self.batch_size, int):
@@ -212,7 +221,7 @@ class AdversarialPatch(Attack):
             inverted_patch_mask_transformed = (1 - patch_mask_transformed)
 
             patched_image = images[i_batch, :, :, :] * inverted_patch_mask_transformed \
-                            + patch_transformed * patch_mask_transformed
+                + patch_transformed * patch_mask_transformed
             patched_image = np.expand_dims(patched_image, axis=0)
             patched_images.append(patched_image)
 
@@ -250,17 +259,19 @@ class AdversarialPatch(Attack):
                 pad_width = ((0, 0), (pad_1, pad_2), (pad_1, pad_2))
             else:
                 pad_width = None
-            return np.pad(x, pad_width=pad_width, mode='constant', constant_values=(0, 0))
+            x = np.pad(x, pad_width=pad_width, mode='constant', constant_values=(0, 0))
         else:
             center = int(x.shape[1] / 2)
             patch_hw_1 = int(self.patch_shape[1] / 2)
             patch_hw_2 = self.patch_shape[1] - patch_hw_1
             if self.classifier.channel_index == 3:
-                return x[center - patch_hw_1:center + patch_hw_2, center - patch_hw_1:center + patch_hw_2, :]
+                x = x[center - patch_hw_1:center + patch_hw_2, center - patch_hw_1:center + patch_hw_2, :]
             elif self.classifier.channel_index == 1:
-                return x[:, center - patch_hw_1:center + patch_hw_2, center - patch_hw_1:center + patch_hw_2]
+                x = x[:, center - patch_hw_1:center + patch_hw_2, center - patch_hw_1:center + patch_hw_2]
             else:
-                return None
+                x = None
+
+        return x
 
     def _shift(self, x, shift_1, shift_2):
         shift_xy = None
@@ -269,7 +280,7 @@ class AdversarialPatch(Attack):
         elif self.classifier.channel_index == 1:
             shift_xy = (0, shift_1, shift_2)
         x = shift(x, shift=shift_xy, order=1)
-        return x, shift_xy
+        return x, shift_1, shift_2
 
     def _random_transformation(self, patch, scale):
 
@@ -297,7 +308,7 @@ class AdversarialPatch(Attack):
             shift_1 = random.uniform(-shift_max, shift_max)
             shift_2 = random.uniform(-shift_max, shift_max)
             patch, _ = self._shift(patch, shift_1, shift_2)
-            patch_mask, shift_xy = self._shift(patch_mask, shift_1, shift_2)
+            patch_mask, shift_1, shift_2 = self._shift(patch_mask, shift_1, shift_2)
             transformation['shift_1'] = shift_1
             transformation['shift_2'] = shift_2
         else:
@@ -314,7 +325,7 @@ class AdversarialPatch(Attack):
         # shift
         shift_1 = transformation['shift_1']
         shift_2 = transformation['shift_2']
-        gradients, _ = self._shift(gradients, -shift_1, -shift_2)
+        gradients, _, _ = self._shift(gradients, -shift_1, -shift_2)
 
         # scale
         scale = transformation['scale']
