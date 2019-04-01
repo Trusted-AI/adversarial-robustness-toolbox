@@ -193,11 +193,7 @@ class AdversarialPatch(Attack):
         pad_2 = int(self.patch_shape[1] - pad_1 - mask.shape[1])
         mask = np.pad(mask, pad_width=(pad_1, pad_2), mode='constant', constant_values=(0, 0))
 
-        axis = None
-        if self.classifier.channel_index == 3:
-            axis = 2
-        elif self.classifier.channel_index == 1:
-            axis = 0
+        axis = self.classifier.channel_index - 1
         mask = np.expand_dims(mask, axis=axis)
         mask = np.broadcast_to(mask, self.patch_shape).astype(np.float32)
         return mask
