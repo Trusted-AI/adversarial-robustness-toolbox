@@ -31,9 +31,9 @@ class SaliencyMapMethod(Attack):
     Implementation of the Jacobian-based Saliency Map Attack (Papernot et al. 2016).
     Paper link: https://arxiv.org/pdf/1511.07528.pdf
     """
-    attack_params = Attack.attack_params + ['theta', 'gamma', 'batch_size', 'expectation']
+    attack_params = Attack.attack_params + ['theta', 'gamma', 'batch_size']
 
-    def __init__(self, classifier, theta=0.1, gamma=1., batch_size=128, expectation=None):
+    def __init__(self, classifier, theta=0.1, gamma=1., batch_size=128):
         """
         Create a SaliencyMapMethod instance.
 
@@ -45,12 +45,9 @@ class SaliencyMapMethod(Attack):
         :type gamma: `float`
         :param batch_size: Batch size
         :type batch_size: `int`
-        :param expectation: An expectation over transformations to be applied when computing
-                            classifier gradients and predictions.
-        :type expectation: :class:`.ExpectationOverTransformations`
         """
         super(SaliencyMapMethod, self).__init__(classifier)
-        kwargs = {'theta': theta, 'gamma': gamma, 'batch_size': batch_size, 'expectation': expectation}
+        kwargs = {'theta': theta, 'gamma': gamma, 'batch_size': batch_size}
         self.set_params(**kwargs)
 
     def generate(self, x, **kwargs):
@@ -78,7 +75,7 @@ class SaliencyMapMethod(Attack):
         dims = list(x.shape[1:])
         self._nb_features = np.product(dims)
         x_adv = np.reshape(np.copy(x), (-1, self._nb_features))
-        preds = np.argmax(self._predict(x), axis=1)
+        preds = np.argmax(self.classifier.predict(x), axis=1)
 
         # Determine target classes for attack
         if 'y' not in kwargs or kwargs[str('y')] is None:
@@ -134,7 +131,7 @@ class SaliencyMapMethod(Attack):
                 search_space[batch == clip_value] = 0
 
                 # Recompute model prediction
-                current_pred = np.argmax(self._predict(np.reshape(batch, [batch.shape[0]] + dims)), axis=1)
+                current_pred = np.argmax(self.classifier.predict(np.reshape(batch, [batch.shape[0]] + dims)), axis=1)
 
                 # Update active_indices
                 active_indices = np.where((current_pred != target) *
@@ -144,8 +141,8 @@ class SaliencyMapMethod(Attack):
             x_adv[batch_index_1:batch_index_2] = batch
 
         x_adv = np.reshape(x_adv, x.shape)
-        preds = np.argmax(self._predict(x), axis=1)
-        preds_adv = np.argmax(self._predict(x_adv), axis=1)
+        preds = np.argmax(self.classifier.predict(x), axis=1)
+        preds_adv = np.argmax(self.classifier.predict(x_adv), axis=1)
         logger.info('Success rate of JSMA attack: %.2f%%', (np.sum(preds != preds_adv) / x.shape[0]))
 
         return x_adv
@@ -186,7 +183,7 @@ class SaliencyMapMethod(Attack):
         :return: The top 2 coefficients in `search_space` that maximize / minimize the saliency map
         :rtype: `np.ndarray`
         """
-        grads = self._class_gradient(x, label=target, logits=False)
+        grads = self.classifier.class_gradient(x, label=target, logits=False)
         grads = np.reshape(grads, (-1, self._nb_features))
 
         # Remove gradients for already used features

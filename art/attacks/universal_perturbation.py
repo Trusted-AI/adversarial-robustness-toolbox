@@ -47,7 +47,7 @@ class UniversalPerturbation(Attack):
     attack_params = Attack.attack_params + ['attacker', 'attacker_params', 'delta', 'max_iter', 'eps', 'norm']
 
     def __init__(self, classifier, attacker='deepfool', attacker_params=None, delta=0.2, max_iter=20, eps=10.0,
-                 norm=np.inf, expectation=None):
+                 norm=np.inf):
         """
         :param classifier: A trained model.
         :type classifier: :class:`.Classifier`
@@ -64,9 +64,6 @@ class UniversalPerturbation(Attack):
         :type eps: `float`
         :param norm: Order of the norm. Possible values: np.inf, 2 (default is np.inf)
         :type norm: `int`
-        :param expectation: An expectation over transformations to be applied when computing
-                            classifier gradients and predictions.
-        :type expectation: :class:`.ExpectationOverTransformations`
         """
         super(UniversalPerturbation, self).__init__(classifier)
         kwargs = {'attacker': attacker,
@@ -74,8 +71,7 @@ class UniversalPerturbation(Attack):
                   'delta': delta,
                   'max_iter': max_iter,
                   'eps': eps,
-                  'norm': norm,
-                  'expectation': expectation
+                  'norm': norm
                   }
         self.set_params(**kwargs)
 
@@ -112,7 +108,7 @@ class UniversalPerturbation(Attack):
 
         # Instantiate the middle attacker and get the predicted labels
         attacker = self._get_attack(self.attacker, self.attacker_params)
-        pred_y = self._predict(x, logits=False)
+        pred_y = self.classifier.predict(x, logits=False)
         pred_y_max = np.argmax(pred_y, axis=1)
 
         # Start to generate the adversarial examples
@@ -125,13 +121,13 @@ class UniversalPerturbation(Attack):
             for j, ex in enumerate(x[rnd_idx]):
                 xi = ex[None, ...]
 
-                current_label = np.argmax(self._predict(xi + v, logits=True)[0])
+                current_label = np.argmax(self.classifier.predict(xi + v, logits=True)[0])
                 original_label = np.argmax(pred_y[rnd_idx][j])
 
                 if current_label == original_label:
                     # Compute adversarial perturbation
                     adv_xi = attacker.generate(xi + v)
-                    new_label = np.argmax(self._predict(adv_xi, logits=True)[0])
+                    new_label = np.argmax(self.classifier.predict(adv_xi, logits=True)[0])
 
                     # If the class has changed, update v
                     if current_label != new_label:
@@ -143,7 +139,7 @@ class UniversalPerturbation(Attack):
 
             # Compute the error rate
             adv_x = x + v
-            adv_y = np.argmax(self._predict(adv_x, logits=False), axis=1)
+            adv_y = np.argmax(self.classifier.predict(adv_x, logits=False), axis=1)
             fooling_rate = np.sum(pred_y_max != adv_y) / nb_instances
 
         self.fooling_rate = fooling_rate

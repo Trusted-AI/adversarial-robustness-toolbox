@@ -37,7 +37,7 @@ class ProjectedGradientDescent(BasicIterativeMethod):
     attack_params = BasicIterativeMethod.attack_params
 
     def __init__(self, classifier, norm=np.inf, eps=.3, eps_step=0.1, max_iter=20, targeted=False,
-                 random_init=False, batch_size=128, expectation=None):
+                 random_init=False, batch_size=128):
         """
         Create a :class:`.ProjectedGradientDescent` instance.
 
@@ -55,12 +55,9 @@ class ProjectedGradientDescent(BasicIterativeMethod):
         :type random_init: `bool`
         :param batch_size: Batch size
         :type batch_size: `int`
-        :param expectation: An expectation over transformations to be applied when computing
-                            classifier gradients and predictions.
-        :type expectation: :class:`.ExpectationOverTransformations`
         """
         super(ProjectedGradientDescent, self).__init__(classifier, norm=norm, eps=eps, eps_step=eps_step,
                                                        max_iter=max_iter, targeted=targeted, random_init=random_init,
-                                                       batch_size=batch_size, expectation=expectation)
+                                                       batch_size=batch_size)
 
         self._project = True

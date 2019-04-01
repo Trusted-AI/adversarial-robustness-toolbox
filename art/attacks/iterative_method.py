@@ -35,7 +35,7 @@ class BasicIterativeMethod(FastGradientMethod):
     attack_params = FastGradientMethod.attack_params + ['eps_step', 'max_iter', 'batch_size']
 
     def __init__(self, classifier, norm=np.inf, eps=.3, eps_step=0.1, max_iter=20, targeted=False, random_init=False,
-                 batch_size=128, expectation=None):
+                 batch_size=128):
         """
         Create a :class:`.BasicIterativeMethod` instance.
 
@@ -55,13 +55,9 @@ class BasicIterativeMethod(FastGradientMethod):
         :type random_init: `bool`
         :param batch_size: Batch size
         :type batch_size: `int`
-        :param expectation: An expectation over transformations to be applied when computing
-                            classifier gradients and predictions.
-        :type expectation: :class:`.ExpectationOverTransformations`
         """
         super(BasicIterativeMethod, self).__init__(classifier, norm=norm, eps=eps, targeted=targeted,
-                                                   random_init=random_init, batch_size=batch_size,
-                                                   expectation=expectation)
+                                                   random_init=random_init, batch_size=batch_size)
 
         if eps_step > eps:
             raise ValueError('The iteration step `eps_step` has to be smaller than the total attack `eps`.')
@@ -108,7 +104,7 @@ class BasicIterativeMethod(FastGradientMethod):
                 raise ValueError('Target labels `y` need to be provided for a targeted attack.')
 
             # Use model predictions as correct outputs
-            targets = get_labels_np_array(self._predict(x))
+            targets = get_labels_np_array(self.classifier.predict(x))
         else:
             targets = kwargs['y']
         target_labels = np.argmax(targets, axis=1)
@@ -121,7 +117,7 @@ class BasicIterativeMethod(FastGradientMethod):
                 noise = projection(adv_x - x, self.eps, self.norm)
                 adv_x = x + noise
 
-        adv_preds = np.argmax(self._predict(adv_x), axis=1)
+        adv_preds = np.argmax(self.classifier.predict(adv_x), axis=1)
         if self.targeted:
             rate = np.sum(adv_preds == target_labels) / adv_x.shape[0]
         else:
