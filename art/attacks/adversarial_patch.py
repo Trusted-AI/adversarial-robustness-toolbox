@@ -59,7 +59,6 @@ class AdversarialPatch(Attack):
                   }
         self.set_params(**kwargs)
 
-        self.classifier = classifier
         self.patch = None
 
     def generate(self, x, **kwargs):
