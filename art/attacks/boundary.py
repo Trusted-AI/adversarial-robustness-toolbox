@@ -139,28 +139,47 @@ class Boundary(Attack):
         return x_adv
 
     def _init_sample(self, x, y, y_p, clip_min, clip_max):
+        """
+        Find initial adversarial example for the attack.
+
+        :param x: An array with 1 original input to be attacked.
+        :type x: `np.ndarray`
+        :param y: If `self.targeted` is true, then `y` represents the target label.
+        :type y: `int`
+        :param y_p: The predicted label of x.
+        :type y_p: `int`
+        :param clip_min: minimum value of x.
+        :type clip_min: `float`
+        :param clip_max: maximum value of x.
+        :type clip_max: `float`
+        :return: an adversarial example.
+        """
         nprd = np.random.RandomState()
         initial_sample = None
+
         if self.targeted:
-            initial_sample
+            # Attack satisfied
+            if y == y_p:
+                return None
 
-            while True:
-                trial_sample = adversarial_sample + forward_perturbation(
-                    epsilon * get_diff(adversarial_sample, target_sample), adversarial_sample, target_sample)
-                prediction = classifier.predict(trial_sample.reshape(1, 224, 224, 3))
-                n_calls += 1
-                if np.argmax(prediction) == attack_class:
-                    adversarial_sample = trial_sample
+            # Attack unsatisfied yet
+            for _ in range(self.init_size):
+                random_img = nprd.uniform(clip_min, clip_max, size=x.shape).astype(x.dtype)
+                random_class = np.argmax(self.classifier.predict(np.array([random_img])), axis=1)[0]
+
+                if random_class == y:
+                    initial_sample = random_img
+
+                    logging.info('Found initial adversarial image for targeted attack.')
                     break
-                else:
-
-
-
+            else:
+                logging.warning('Failed to draw a random image that is adversarial, attack failed.')
 
         else:
             for _ in range(self.init_size):
                 random_img = nprd.uniform(clip_min, clip_max, size=x.shape).astype(x.dtype)
                 random_class = np.argmax(self.classifier.predict(np.array([random_img])), axis=1)[0]
+
                 if random_class != y_p:
                     initial_sample = random_img
 
