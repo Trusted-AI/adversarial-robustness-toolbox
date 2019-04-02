@@ -22,7 +22,6 @@ import logging
 import numpy as np
 
 from art.attacks.attack import Attack
-from art.attacks import FastGradientMethod
 
 logger = logging.getLogger(__name__)
 
@@ -134,7 +133,14 @@ class Boundary(Attack):
         clip_min, clip_max = self.classifier.clip_values
 
         # First, create an initial adversarial sample
+        initial_sample = self._init_sample(x, y, y_p, clip_min, clip_max)
 
+        # If an initial adversarial example is not found, then return the original image
+        if initial_sample is None:
+            return x
+
+        # If an initial adversarial example found, then go with boundary attack
+        x_adv = self._attack(initial_sample)
 
         return x_adv
 
