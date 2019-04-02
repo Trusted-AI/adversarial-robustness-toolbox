@@ -46,12 +46,12 @@ class TestAdversarialPatch(unittest.TestCase):
         (x_train, _), (_, _) = self.mnist
 
         # Attack
-        attack_params = {"target_ys": np.zeros((10, 10)), "rotation_max": 22.5, "scale_min": 0.1, "scale_max": 1.0,
+        attack_params = {"rotation_max": 22.5, "scale_min": 0.1, "scale_max": 1.0,
                          "learning_rate": 5.0, "number_of_steps": 5, "patch_shape": (28, 28, 1), "batch_size": 10}
         attack_ap = AdversarialPatch(tfc)
         patch_adv, _ = attack_ap.generate(x_train, **attack_params)
 
-        self.assertTrue(patch_adv[8, 8, 0] - (-3.1541491702440285) < 0.01)
+        self.assertTrue(patch_adv[8, 8, 0] - (-3.1106631027725005) < 0.01)
         self.assertTrue(patch_adv[14, 14, 0] - 18.954278294246386 < 0.01)
         self.assertTrue(np.sum(patch_adv) - 794.2447019737851 < 0.01)
 
@@ -70,7 +70,7 @@ class TestAdversarialPatch(unittest.TestCase):
         (x_train, _), (_, _) = self.mnist
 
         # Attack
-        attack_params = {"target_ys": np.zeros((10, 10)), "rotation_max": 22.5, "scale_min": 0.1, "scale_max": 1.0,
+        attack_params = {"rotation_max": 22.5, "scale_min": 0.1, "scale_max": 1.0,
                          "learning_rate": 5.0, "number_of_steps": 5, "patch_shape": (28, 28, 1), "batch_size": 10}
         attack_ap = AdversarialPatch(krc)
         patch_adv, _ = attack_ap.generate(x_train, **attack_params)
@@ -94,7 +94,7 @@ class TestAdversarialPatch(unittest.TestCase):
         x_train = np.swapaxes(x_train, 1, 3)
 
         # Attack
-        attack_params = {"target_ys": np.zeros((10, 10)), "rotation_max": 22.5, "scale_min": 0.1, "scale_max": 1.0,
+        attack_params = {"rotation_max": 22.5, "scale_min": 0.1, "scale_max": 1.0,
                          "learning_rate": 5.0, "number_of_steps": 5, "patch_shape": (1, 28, 28), "batch_size": 10}
         attack_ap = AdversarialPatch(ptc)
         patch_adv, _ = attack_ap.generate(x_train, **attack_params)
