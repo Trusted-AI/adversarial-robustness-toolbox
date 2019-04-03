@@ -16,7 +16,6 @@ import numpy as np
 from art.classifiers import KerasClassifier
 from art.utils import load_mnist, preprocess
 from art.poison_detection import ActivationDefence
-import json
 
 
 def main():
@@ -131,8 +130,10 @@ def main():
     # Now fix the model
     x_new, y_fix = correct_poisoned_labels(x_train, y_train, is_poison_train)
 
-    improvement = defence.relabel_poison_ground_truth(x_new, y_fix, test_set_split=0.7, tolerable_backdoor=0.001,
-                                                      max_epochs=5, batch_epochs=10)
+    improvement, new_classifier = ActivationDefence.relabel_poison_ground_truth(classifier, x_new, y_fix,
+                                                                                test_set_split=0.7,
+                                                                                tolerable_backdoor=0.001,
+                                                                                max_epochs=5, batch_epochs=10)
 
     # Evaluate the classifier on poisonous data after backdoor fix:
     preds = np.argmax(classifier.predict(x_test[is_poison_test]), axis=1)
