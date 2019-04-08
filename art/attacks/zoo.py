@@ -1,0 +1,505 @@
+# MIT License
+#
+# Copyright (C) IBM Corporation 2018
+#
+# Permission is hereby granted, free of charge, to any person obtaining a copy of this software and associated
+# documentation files (the "Software"), to deal in the Software without restriction, including without limitation the
+# rights to use, copy, modify, merge, publish, distribute, sublicense, and/or sell copies of the Software, and to permit
+# persons to whom the Software is furnished to do so, subject to the following conditions:
+#
+# The above copyright notice and this permission notice shall be included in all copies or substantial portions of the
+# Software.
+#
+# THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE
+# WARRANTIES OF MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+# AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT,
+# TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
+# SOFTWARE.
+from __future__ import absolute_import, division, print_function, unicode_literals
+
+import logging
+
+import numpy as np
+from scipy.ndimage import zoom
+
+from art import NUMPY_DTYPE
+from art.attacks.attack import Attack
+from art.utils import get_labels_np_array
+
+logger = logging.getLogger(__name__)
+
+
+class ZooAttack(Attack):
+    """
+    The black-box zeroth-order optimization attack from Pin-Yu Chen et al. (2018). This attack is a variant of the
+    C&W attack which uses ADAM coordinate descent to perform numerical estimation of gradients.
+    Paper link: https://arxiv.org/abs/1708.03999.
+    """
+    attack_params = Attack.attack_params + ['confidence', 'targeted', 'learning_rate', 'max_iter',
+                                            'binary_search_steps', 'abort_early', 'initial_const', 'batch_size']
+
+    def __init__(self, classifier, confidence=0.0, targeted=False, learning_rate=1e-2, max_iter=10,
+                 binary_search_steps=1, abort_early=True, initial_const=1e-3, batch_size=1):
+        """
+        Create a ZOO attack instance.
+
+        :param classifier: A trained model.
+        :type classifier: :class:`.Classifier`
+        :param confidence: Confidence of adversarial examples: a higher value produces examples that are farther
+               away, from the original input, but classified with higher confidence as the target class.
+        :type confidence: `float`
+        :param targeted: Should the attack target one specific class.
+        :type targeted: `bool`
+        :param learning_rate: The initial learning rate for the attack algorithm. Smaller values produce better
+               results but are slower to converge.
+        :type learning_rate: `float`
+        :param binary_search_steps: Number of times to adjust constant with binary search (positive value).
+        :type binary_search_steps: `int`
+        :param abort_early: `True` if gradient descent should be abandoned when it gets stuck.
+        :type abort_early: `bool`
+        :param max_iter: The maximum number of iterations.
+        :type max_iter: `int`
+        :param initial_const: The initial trade-off constant `c` to use to tune the relative importance of distance
+               and confidence. If `binary_search_steps` is large, the initial constant is not important, as discussed in
+               Carlini and Wagner (2016).
+        :type initial_const: `float`
+        :param batch_size: Internal size of batches on which adversarial samples are generated.
+        :type batch_size: `int`
+        """
+        super(ZooAttack, self).__init__(classifier)
+
+        kwargs = {'confidence': confidence,
+                  'targeted': targeted,
+                  'learning_rate': learning_rate,
+                  'max_iter': max_iter,
+                  'binary_search_steps': binary_search_steps,
+                  'abort_early': abort_early,
+                  'initial_const': initial_const,
+                  'batch_size': batch_size
+                  }
+        self.set_params(**kwargs)
+
+        # Initialize some internal variables
+        self._use_resize = True
+        self._init_size = 32
+        self._use_importance = True
+        if abort_early:
+            self._early_stop_iters = max_iter // 10 if max_iter >= 10 else max_iter
+
+        # Initialize noise variable to zero
+        if self._use_resize:
+            self._current_noise = np.zeros((1,) + (self._init_size, self._init_size, self.classifier.input_shape[-1]),
+                                           dtype=NUMPY_DTYPE)
+        else:
+            self._current_noise = np.zeros((1,) + self.classifier.input_shape, dtype=NUMPY_DTYPE)
+
+        self._sample_prob = np.ones(self._current_noise.size, dtype=NUMPY_DTYPE) / self._current_noise.size
+        self._nb_coord_parallel = 128
+
+    def _loss(self, x, x_adv, target, c):
+        """
+        Compute the loss function values.
+
+        :param x: An array with the original input.
+        :type x: `np.ndarray`
+        :param x_adv: An array with the adversarial input.
+        :type x_adv: `np.ndarray`
+        :param target: An array with the target class (one-hot encoded).
+        :type target: `np.ndarray`
+        :return: A tuple holding the current logits, `L_2` distortion and overall loss.
+        :rtype: `(float, float, float)`
+        """
+        l2dist = np.sum(np.square(x - x_adv).reshape(x_adv.shape[0], -1), axis=1)
+        ratios = [1] + [int(new_size) / int(old_size)
+                        for new_size, old_size in zip(self.classifier.input_shape, x.shape[1:])]
+        preds = self.classifier.predict(np.array(zoom(x_adv, zoom=ratios)))
+        z_target = np.sum(preds * target, axis=1)
+        z_other = np.max(preds * (1 - target) + (np.min(preds, axis=1) - 1)[:, np.newaxis] * target, axis=1)
+
+        if self.targeted:
+            # If targeted, optimize for making the target class most likely
+            loss = np.maximum(z_other - z_target + self.confidence, 0)
+        else:
+            # If untargeted, optimize for making any other class most likely
+            loss = np.maximum(z_target - z_other + self.confidence, 0)
+
+        return preds, l2dist, c * loss + l2dist
+
+    def generate(self, x, **kwargs):
+        """
+        Generate adversarial samples and return them in an array.
+
+        :param x: An array with the original inputs to be attacked.
+        :type x: `np.ndarray`
+        :param y: If `self.targeted` is true, then `y` represents the target labels. Otherwise, the targets are the
+                  original class labels.
+        :type y: `np.ndarray`
+        :return: An array holding the adversarial examples.
+        :rtype: `np.ndarray`
+        """
+        # Parse and save attack-specific parameters
+        params_cpy = dict(kwargs)
+        y = params_cpy.pop(str('y'), None)
+        self.set_params(**params_cpy)
+
+        # Assert that, if attack is targeted, y is provided:
+        if self.targeted and y is None:
+            raise ValueError('Target labels `y` need to be provided for a targeted attack.')
+
+        # No labels provided, use model prediction as correct class
+        if y is None:
+            y = get_labels_np_array(self.classifier.predict(x, logits=False))
+
+        # Compute adversarial examples with implicit batching
+        nb_batches = int(np.ceil(x.shape[0] / float(self.batch_size)))
+        x_adv = []
+        for batch_id in range(nb_batches):
+            print('batch id', batch_id)
+            logger.debug('Processing batch %i out of %i', batch_id, nb_batches)
+
+            batch_index_1, batch_index_2 = batch_id * self.batch_size, (batch_id + 1) * self.batch_size
+            x_batch = x[batch_index_1:batch_index_2]
+            y_batch = y[batch_index_1:batch_index_2]
+            res = self._generate_batch(x_batch, y_batch)
+            x_adv.append(res)
+
+        # Apply clip
+        x_adv = np.array(x_adv, dtype=NUMPY_DTYPE).reshape(x.shape)
+        x_adv = np.clip(x_adv, self.classifier.clip_values[0], self.classifier.clip_values[1])
+
+        # Compute success rate of the ZOO attack
+        adv_preds = np.argmax(self.classifier.predict(x_adv), axis=1)
+        if self.targeted:
+            rate = np.sum(adv_preds == np.argmax(y, axis=1)) / x_adv.shape[0]
+        else:
+            preds = np.argmax(self.classifier.predict(x), axis=1)
+            rate = np.sum(adv_preds != preds) / x_adv.shape[0]
+        logger.info('Success rate of ZOO attack: %.2f%%', 100 * rate)
+
+        return x_adv
+
+    def _generate_batch(self, x_batch, y_batch):
+        """
+        Run the attack on a batch of images and labels.
+
+        :param x_batch: A batch of original examples.
+        :type x_batch: `np.ndarray`
+        :param y_batch: A batch of targets (0-1 hot).
+        :type y_batch: `np.ndarray`
+        :return: A batch of adversarial examples.
+        :rtype: `np.ndarray`
+        """
+        # Initialize binary search
+        c = self.initial_const * np.ones(x_batch.shape[0])
+        c_lower_bound = np.zeros(x_batch.shape[0])
+        c_upper_bound = 1e10 * np.ones(x_batch.shape[0])
+
+        # Initialize best distortions and best attacks globally
+        o_best_dist = np.inf * np.ones(x_batch.shape[0])
+        o_best_attack = x_batch.copy()
+
+        # Start with a binary search
+        for bss in range(self.binary_search_steps):
+            logger.debug('Binary search step %i out of %i (c_mean==%f)', bss, self.binary_search_steps, np.mean(c))
+
+            # Run with 1 specific binary search step
+            best_dist, best_label, best_attack = self._generate_bss(x_batch, y_batch, c)
+
+            # Update best results so far
+            o_best_attack[best_dist < o_best_dist] = best_attack[best_dist < o_best_dist]
+            o_best_dist[best_dist < o_best_dist] = best_dist[best_dist < o_best_dist]
+
+            # Adjust the constant as needed
+            c, c_lower_bound, c_upper_bound = self._update_const(y_batch, best_label, c, c_lower_bound, c_upper_bound)
+
+        return o_best_attack
+
+    def _update_const(self, y_batch, best_label, c, c_lower_bound, c_upper_bound):
+        """
+        Update constant `c` from the ZOO objective. This characterizes the trade-off between attack strength and
+        amount of noise introduced.
+
+        :param y_batch: A batch of targets (0-1 hot).
+        :type y_batch: `np.ndarray`
+        :param best_label: A batch of best labels.
+        :type best_label: `np.ndarray`
+        :param c: A batch of constants.
+        :type c: `np.ndarray`
+        :param c_lower_bound: A batch of lower bound constants.
+        :type c_lower_bound: `np.ndarray`
+        :param c_upper_bound: A batch of upper bound constants.
+        :type c_upper_bound: `np.ndarray`
+        :return: A tuple of three batches of updated constants and lower/upper bounds.
+        :rtype: `tuple`
+        """
+        def compare(o1, o2):
+            return o1 == o2 if self.targeted else o1 != o2
+
+        comparison = [compare(best_label[i], np.argmax(y_batch[i])) and best_label[i] != -np.inf for i in range(len(c))]
+        for i, comp in enumerate(comparison):
+            if comp:
+                # Successful attack
+                c_upper_bound[i] = min(c_upper_bound[i], c[i])
+                if c_upper_bound[i] < 1e9:
+                    c[i] = (c_lower_bound[i] + c_upper_bound[i]) / 2
+            else:
+                # Failure attack
+                c_lower_bound[i] = max(c_lower_bound[i], c[i])
+                c[i] = (c_lower_bound[i] + c_upper_bound[i]) / 2 if c_upper_bound[i] < 1e9 else c[i] * 10
+
+        return c, c_lower_bound, c_upper_bound
+
+    def _generate_bss(self, x_batch, y_batch, c):
+        """
+        Generate adversarial examples for a batch of inputs with a specific batch of constants.
+
+        :param x_batch: A batch of original examples.
+        :type x_batch: `np.ndarray`
+        :param y_batch: A batch of targets (0-1 hot).
+        :type y_batch: `np.ndarray`
+        :param c: A batch of constants.
+        :type c: `np.ndarray`
+        :return: A tuple of best elastic distances, best labels, best attacks
+        :rtype: `tuple`
+        """
+        def compare(o1, o2):
+            return o1 == o2 if self.targeted else o1 != o2
+
+        x_orig = x_batch.astype(NUMPY_DTYPE)
+        fine_tuning = False
+        prev_loss = 1e6
+        prev_l2dist = 0
+
+        # Resize and initialize Adam
+        if self._use_resize:
+            x_orig = self._resize_image(x_orig, self._init_size, self._init_size, True)
+            assert (x_orig != 0).any()
+            x_adv = x_orig.copy()
+        else:
+            x_orig = x_batch
+            self._reset_adam(np.prod(self.classifier.input_shape))
+            self._current_noise.fill(0)
+
+        # Initialize best distortions, best changed labels and best attacks
+        best_dist = np.inf * np.ones(x_adv.shape[0])
+        best_label = -np.inf * np.ones(x_adv.shape[0])
+        best_attack = [x_adv[i] for i in range(x_adv.shape[0])]
+
+        for iter_ in range(self.max_iter):
+            logger.debug('Iteration step %i out of %i', iter_, self.max_iter)
+
+            # Upscaling for very large number of iterations
+            if self._use_resize:
+                # TODO test these at least once
+                if iter_ == 5:
+                    x_adv = self._resize_image(x_adv, 64, 64)
+                    x_orig = zoom(x_orig, [1, x_adv.shape[1] / x_orig.shape[1],
+                                           x_adv.shape[2] / x_orig.shape[2], x_adv.shape[3] / x_orig.shape[3]])
+                elif iter_ == 10000:
+                    x_adv = self._resize_image(x_adv, 128, 128)
+                    x_orig = zoom(x_orig, [1, x_adv.shape[1] / x_orig.shape[1],
+                                           x_adv.shape[2] / x_orig.shape[2], x_adv.shape[3] / x_orig.shape[3]])
+
+            # Compute adversarial examples and loss
+            x_adv = self._optimizer(x_adv, y_batch, c)
+            preds, l2dist, loss = self._loss(x_orig, x_adv, y_batch, c)
+
+            # Reset Adam if a valid example has been found to avoid overshoot
+            if not fine_tuning and loss == l2dist and prev_loss != prev_l2dist:
+                self._reset_adam(self.mt.size)
+                fine_tuning = True
+            prev_l2dist = l2dist
+
+            # Abort early if no improvement is obtained
+            if self.abort_early and iter_ % self._early_stop_iters == 0:
+                if loss > .9999 * prev_loss:
+                    break
+                prev_loss = loss
+
+            # Adjust the best result
+            labels_batch = np.argmax(y_batch, axis=1)
+            for i, (dist, pred) in enumerate(zip(l2dist, np.argmax(preds, axis=1))):
+                if dist < best_dist[i] and compare(pred, labels_batch[i]):
+                    best_dist[i] = dist
+                    best_attack[i] = x_adv[i]
+                    best_label[i] = pred
+
+        # Resize images to original size before returning
+        best_attack = np.array(best_attack)
+        if self._use_resize:
+            if self.classifier.channel_index == 3:
+                best_attack = zoom(best_attack, [1, int(x_batch.shape[1]) / best_attack.shape[1],
+                                                 int(x_batch.shape[2]) / best_attack.shape[2], 1])
+            elif self.classifier.channel_index == 1:
+                best_attack = zoom(best_attack, [1, 1, int(self.classifier.input_shape[2]) / best_attack.shape[2],
+                                                 int(self.classifier.input_shape[3]) / best_attack.shape[3]])
+
+        return best_dist, best_label, best_attack
+
+    def _optimizer(self, x, targets, c):
+        # Variation of input for computing loss, same as in original implementation
+        tol = 1e-4
+        var = np.repeat(self._current_noise, 2 * self._nb_coord_parallel, axis=0)
+        var = var.reshape(2 * self._nb_coord_parallel, -1)
+
+        # Sample indices to prioritize for optimization
+        if self._use_importance:
+            indices = np.random.choice(self._current_noise.size, self._nb_coord_parallel, replace=False,
+                                       p=self._sample_prob)
+        else:
+            indices = np.random.choice(self._current_noise.size, self._nb_coord_parallel, replace=False)
+
+        # Create the batch of modifications to run
+        for i in range(self._nb_coord_parallel):
+            var[2 * i, indices[i]] += tol
+            var[2 * i + 1, indices[i]] -= tol
+
+        # Compute loss for all coordinates and optimize
+        preds, l2dist, loss = self._loss(x, x + var.reshape((-1,) + x.shape[1:]), targets, c)
+        self._current_noise = self._optimizer_adam_coordinate(loss, indices, self.mt, self.vt, self._current_noise,
+                                                              self.learning_rate, self.adam_epochs, True)
+        print('Adam noise L_2', np.linalg.norm(self._current_noise))
+
+        if self._current_noise.shape[0] > self._init_size:
+            self._sample_prob = self._get_prob(self._current_noise).flatten()
+
+        return x + self._current_noise
+
+    def _optimizer_adam_coordinate(self, losses, index, mt, vt, current_noise, learning_rate, adam_epochs, proj):
+        """
+        Implementation of the ADAM optimizer for coordinate descent.
+        """
+        beta1, beta2 = .9, .999
+
+        # Estimate grads from loss variation (constant `h` from the paper is fixed to .0001)
+        grads = np.array([(losses[i] - losses[i + 1]) / .0002 for i in range(0, len(losses), 2)])
+
+        # ADAM update
+        mt[index] = beta1 * mt[index] + (1 - beta1) * grads
+        vt[index] = beta2 * vt[index] + (1 - beta2) * grads ** 2
+
+        corr = (np.sqrt(1 - np.power(beta2, adam_epochs[index]))) / (1 - np.power(beta1, adam_epochs[index]))
+        orig_shape = current_noise.shape
+        current_noise = current_noise.reshape(-1)
+        current_noise[index] -= learning_rate * corr * mt[index] / (np.sqrt(vt[index]) + 1e-8)
+        adam_epochs[index] += 1
+
+        if proj:
+            np.clip(current_noise[index], self.classifier.clip_values[0], self.classifier.clip_values[1])
+
+        return current_noise.reshape(orig_shape)
+
+    def _reset_adam(self, nb_vars):
+        if hasattr(self, 'mt') and self.mt.size == nb_vars:
+            self.mt.fill(0)
+            self.vt.fill(0)
+            self.adam_epochs.fill(1)
+        else:
+            self.mt = np.zeros(nb_vars, dtype=NUMPY_DTYPE)
+            self.vt = np.zeros(nb_vars, dtype=NUMPY_DTYPE)
+            self.adam_epochs = np.ones(nb_vars, dtype=np.int32)
+
+    def _resize_image(self, x, size_x, size_y, reset=False):
+        if self.classifier.channel_index == 3:
+            dims = (x.shape[0], size_x, size_y, x.shape[-1])
+        elif self.classifier.channel_index == 1:
+            dims = (x.shape[0], x.shape[1], size_x, size_y)
+        nb_vars = np.prod(dims)
+
+        if reset:
+            # Reset variables to original size and value
+            if dims == x.shape:
+                resized_x = x
+                self._current_noise.fill(0)
+            else:
+                resized_x = zoom(x, (1, dims[1] / x.shape[1], dims[2] / x.shape[2], dims[3] / x.shape[3]))
+                self._current_noise = np.zeros(dims, dtype=NUMPY_DTYPE)
+            self._sample_prob = np.ones(nb_vars, dtype=NUMPY_DTYPE) / nb_vars
+        else:
+            # Rescale variables and reset values
+            resized_x = zoom(x, (1, dims[1] / x.shape[1], dims[2] / x.shape[2], dims[3] / x.shape[3]))
+            self._sample_prob = self._get_prob(self._current_noise, double=True).flatten()
+            self._current_noise = np.zeros(dims, dtype=NUMPY_DTYPE)
+
+        # Reset Adam
+        self._reset_adam(nb_vars)
+
+        return resized_x
+
+    def _get_prob(self, prev_noise, double=False):
+        dims = list(prev_noise.shape)
+
+        # Double size if needed
+        if double:
+            dims = [2 * size if i != self.classifier.channel_index and i != 0 else size
+                    for i, size in enumerate(dims)]
+
+        prob = np.empty(shape=dims, dtype=np.float32)
+        image = np.abs(prev_noise)
+
+        for channel in range(prev_noise.shape[self.classifier.channel_index]):
+            # TODO adapt max pooling for batch of images?
+            if self.classifier.channel_index == 3:
+                image_pool = self._max_pooling(image[:, :, :, channel], dims[1] // 8)
+                if double:
+                    prob[:, :, :, channel] = np.abs(zoom(image_pool, [1, 2, 2]))
+                else:
+                    prob[:, :, :, channel] = image_pool
+            elif self.classifier.channel_index == 1:
+                image_pool = self._max_pooling(image[:, channel, :, :], dims[2] // 8)
+                if double:
+                    prob[:, channel, :, :] = np.abs(zoom(image_pool, [1, 2, 2]))
+                else:
+                    prob[:, channel, :, :] = image_pool
+
+        assert (prob >= 0).all()
+        prob /= np.sum(prob)
+
+        return prob
+
+    @staticmethod
+    def _max_pooling(image, kernel_size):
+        img_pool = np.copy(image)
+        for i in range(0, image.shape[1], kernel_size):
+            for j in range(0, image.shape[2], kernel_size):
+                img_pool[:, i:i+kernel_size, j:j+kernel_size] = np.max(image[:, i:i+kernel_size, j:j+kernel_size],
+                                                                       axis=(1, 2))
+
+        return img_pool
+
+    def set_params(self, **kwargs):
+        """
+        Take in a dictionary of parameters and applies attack-specific checks before saving them as attributes.
+
+        :param confidence: Confidence of adversarial examples: a higher value produces examples that are farther
+               away, from the original input, but classified with higher confidence as the target class.
+        :type confidence: `float`
+        :param targeted: Should the attack target one specific class.
+        :type targeted: `bool`
+        :param learning_rate: The initial learning rate for the attack algorithm. Smaller values produce better
+               results but are slower to converge.
+        :type learning_rate: `float`
+        :param binary_search_steps: Number of times to adjust constant with binary search (positive value).
+        :type binary_search_steps: `int`
+        :param max_iter: The maximum number of iterations.
+        :type max_iter: `int`
+        :param initial_const: The initial trade-off constant `c` to use to tune the relative importance of distance
+               and confidence. If `binary_search_steps` is large, the initial constant is not important, as discussed in
+               Carlini and Wagner (2016).
+        :type initial_const: `float`
+        :param batch_size: Internal size of batches on which adversarial samples are generated.
+        :type batch_size: `int`
+        """
+        # Save attack-specific parameters
+        super(ZooAttack, self).set_params(**kwargs)
+
+        if type(self.binary_search_steps) is not int or self.binary_search_steps < 0:
+            raise ValueError("The number of binary search steps must be a non-negative integer.")
+
+        if type(self.max_iter) is not int or self.max_iter < 0:
+            raise ValueError("The number of iterations must be a non-negative integer.")
+
+        if type(self.batch_size) is not int or self.batch_size < 1:
+            raise ValueError("The batch size must be an integer greater than zero.")
+
+        return True
