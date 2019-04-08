@@ -193,8 +193,22 @@ class Boundary(Attack):
 
             # Trust region method to adjust epsilon
             for _ in range(self.max_iter):
+                perturb = original_sample - x_adv
+                perturb *= epsilon
+                potential_adv = x_adv + perturb
+                pred = np.argmax(self.classifier.predict(np.array([potential_adv])), axis=1)[0]
 
-                
+                if self.targeted:
+                    satisfied = (pred == target)
+                else:
+                    satisfied = (pred != target)
+
+                if satisfied:
+                    x_adv = potential_adv
+                    epsilon /= self.step_adapt
+                    break
+                else:
+                    epsilon *= self.step_adapt
 
             else:
                 logging.warning('Adversarial example found but not optimal.')
