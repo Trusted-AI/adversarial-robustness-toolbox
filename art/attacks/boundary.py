@@ -149,11 +149,24 @@ class Boundary(Attack):
 
     def _attack(self, initial_sample, original_sample, target, initial_delta, initial_epsilon, clip_min, clip_max):
         """
+        Main function for the boundary attack.
 
-        :param initial_sample:
-        :param clip_min:
-        :param clip_max:
-        :return:
+        :param initial_sample: An initial adversarial example.
+        :type initial_sample: `np.ndarray`
+        :param original_sample: The original input.
+        :type original_sample: `np.ndarray`
+        :param target: If `self.targeted` is true, then `target` represents the target label, otherwise the
+        predicted label of the original sample.
+        :type target: `int`
+        :param initial_delta: Initial step size for the orthogonal step.
+        :type initial_delta: `float`
+        :param initial_epsilon: Initial step size for the step towards the target.
+        :type initial_epsilon: `float`
+        :param clip_min: minimum value of x.
+        :type clip_min: `float`
+        :param clip_max: maximum value of x.
+        :type clip_max: `float`
+        :return: an adversarial example.
         """
         # Get initialization for some variables
         x_adv = initial_sample
