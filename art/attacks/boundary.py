@@ -161,9 +161,9 @@ class Boundary(Attack):
         epsilon = initial_epsilon
 
         # Main loop to wander around the boundary
-        for step in range(self.max_iter):
+        for _ in range(self.max_iter):
             # Trust region method to adjust delta
-            while True:
+            for _ in range(self.max_iter):
                 potential_advs = []
                 for _ in range(self.sample_size):
                     potential_adv = x_adv + self._orthogonal_perturb(delta, x_adv, original_sample, clip_min, clip_max)
@@ -172,11 +172,33 @@ class Boundary(Attack):
                 preds = np.argmax(self.classifier.predict(np.array(potential_advs)), axis=1)
 
                 if self.targeted:
-                    delta_ratio = np.mean(preds == target)
+                    satisfied = (preds == target)
                 else:
-                    delta_ratio = np.mean(preds != target)
+                    satisfied = (preds != target)
 
+                delta_ratio = np.mean(satisfied)
 
+                if delta_ratio < 0.5:
+                    delta *= self.step_adapt
+                else:
+                    delta /= self.step_adapt
+
+                if delta_ratio > 0:
+                    x_adv = potential_advs[np.where(satisfied)[0][0]]
+                    break
+
+            else:
+                logging.warning('Adversarial example found but not optimal.')
+                return x_adv
+
+            # Trust region method to adjust epsilon
+            for _ in range(self.max_iter):
+
+                
+
+            else:
+                logging.warning('Adversarial example found but not optimal.')
+                return x_adv
 
         return x_adv
 
