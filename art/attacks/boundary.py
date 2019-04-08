@@ -140,9 +140,46 @@ class Boundary(Attack):
             return x
 
         # If an initial adversarial example found, then go with boundary attack
-        x_adv = self._attack(initial_sample)
+        x_adv = self._attack(initial_sample, clip_min, clip_max)
 
         return x_adv
+
+    def _attack(self, clip_min, clip_max):
+
+        return x_adv
+
+    def _orthogonal_perturb(self, delta, current_sample, original_sample, clip_min, clip_max):
+        """
+        Create an orthogonal perturbation.
+
+        :param delta: Initial step size for the orthogonal step.
+        :type delta: `float`
+        :param current_sample: Current adversarial example.
+        :type current_sample: `np.ndarray`
+        :param original_sample: The original input.
+        :type original_sample: `np.ndarray`
+        :param clip_min: minimum value of x.
+        :type clip_min: `float`
+        :param clip_max: maximum value of x.
+        :type clip_max: `float`
+        :return: an adversarial example.
+        """
+        # Generate perturbation randomly
+        perturb = np.random.randn(current_sample.shape[0], current_sample.shape[1], current_sample.shape[2])
+
+        # Rescale the perturbation
+        perturb /= np.linalg.norm(perturb)
+        perturb *= delta * np.linalg.norm(original_sample - current_sample)
+
+        # Project the perturbation onto sphere
+        direction = original_sample - current_sample
+        direction /= np.linalg.norm(direction)
+        perturb -= np.dot(perturb, direction) * direction
+
+        # Do clipping into the input range
+        perturb = np.clip(perturb, clip_min, clip_max)
+
+        return perturb
 
     def _init_sample(self, x, y, y_p, clip_min, clip_max):
         """
