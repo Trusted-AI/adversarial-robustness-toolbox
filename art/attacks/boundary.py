@@ -140,11 +140,43 @@ class Boundary(Attack):
             return x
 
         # If an initial adversarial example found, then go with boundary attack
-        x_adv = self._attack(initial_sample, clip_min, clip_max)
+        if self.targeted:
+            x_adv = self._attack(initial_sample, x, y, self.delta, self.epsilon, clip_min, clip_max)
+        else:
+            x_adv = self._attack(initial_sample, x, y_p, self.delta, self.epsilon, clip_min, clip_max)
 
         return x_adv
 
-    def _attack(self, clip_min, clip_max):
+    def _attack(self, initial_sample, original_sample, target, initial_delta, initial_epsilon, clip_min, clip_max):
+        """
+
+        :param initial_sample:
+        :param clip_min:
+        :param clip_max:
+        :return:
+        """
+        # Get initialization for some variables
+        x_adv = initial_sample
+        delta = initial_delta
+        epsilon = initial_epsilon
+
+        # Main loop to wander around the boundary
+        for step in range(self.max_iter):
+            # Trust region method to adjust delta
+            while True:
+                potential_advs = []
+                for _ in range(self.sample_size):
+                    potential_adv = x_adv + self._orthogonal_perturb(delta, x_adv, original_sample, clip_min, clip_max)
+                    potential_advs.append(potential_adv)
+
+                preds = np.argmax(self.classifier.predict(np.array(potential_advs)), axis=1)
+
+                if self.targeted:
+                    delta_ratio = np.mean(preds == target)
+                else:
+                    delta_ratio = np.mean(preds != target)
+
+
 
         return x_adv
 
