@@ -104,3 +104,6 @@ demo/pics/*
 *.npz
 *.ipynb
 .DS_Store
+
+# Exceptions for notebooks/
+!notebooks/*.ipynb
