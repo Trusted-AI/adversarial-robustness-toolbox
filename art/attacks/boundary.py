@@ -31,7 +31,8 @@ class Boundary(Attack):
     Implementation of the boundary attack from Wieland Brendel et al. (2018).
     Paper link: https://arxiv.org/abs/1712.04248
     """
-    attack_params = Attack.attack_params + ['targeted', 'delta', 'epsilon', 'step_adapt', 'max_iter', 'sample_size']
+    attack_params = Attack.attack_params + ['targeted', 'delta', 'epsilon', 'step_adapt',
+                                            'max_iter', 'sample_size', 'init_size']
 
     def __init__(self, classifier, targeted=True, delta=0.01, epsilon=0.01, step_adapt=0.9, max_iter=100,
                  sample_size=20, init_size=100):
@@ -103,6 +104,8 @@ class Boundary(Attack):
 
         # Some initial setups
         x_adv = x.copy()
+        if y is not None:
+            y = np.argmax(y, axis=1)
 
         # Generate the adversarial samples
         for ind, val in enumerate(x_adv):
@@ -115,6 +118,7 @@ class Boundary(Attack):
 
         preds_adv = np.argmax(self.classifier.predict(x_adv), axis=1)
         logger.info('Success rate of Boundary attack: %.2f%%', (np.sum(preds != preds_adv) / x.shape[0]))
+        print('Success rate of Boundary attack: %.2f%%', (np.sum(preds != preds_adv) / x.shape[0]))
 
         return x_adv
 
@@ -179,7 +183,8 @@ class Boundary(Attack):
             for _ in range(self.max_iter):
                 potential_advs = []
                 for _ in range(self.sample_size):
-                    potential_adv = x_adv + self._orthogonal_perturb(delta, x_adv, original_sample, clip_min, clip_max)
+                    potential_adv = x_adv + self._orthogonal_perturb(delta, x_adv, original_sample)
+                    potential_adv = np.clip(potential_adv, clip_min, clip_max)
                     potential_advs.append(potential_adv)
 
                 preds = np.argmax(self.classifier.predict(np.array(potential_advs)), axis=1)
@@ -209,6 +214,7 @@ class Boundary(Attack):
                 perturb = original_sample - x_adv
                 perturb *= epsilon
                 potential_adv = x_adv + perturb
+                potential_adv = np.clip(potential_adv, clip_min, clip_max)
                 pred = np.argmax(self.classifier.predict(np.array([potential_adv])), axis=1)[0]
 
                 if self.targeted:
@@ -229,7 +235,7 @@ class Boundary(Attack):
 
         return x_adv
 
-    def _orthogonal_perturb(self, delta, current_sample, original_sample, clip_min, clip_max):
+    def _orthogonal_perturb(self, delta, current_sample, original_sample):
         """
         Create an orthogonal perturbation.
 
@@ -239,11 +245,7 @@ class Boundary(Attack):
         :type current_sample: `np.ndarray`
         :param original_sample: The original input.
         :type original_sample: `np.ndarray`
-        :param clip_min: minimum value of x.
-        :type clip_min: `float`
-        :param clip_max: maximum value of x.
-        :type clip_max: `float`
-        :return: an adversarial example.
+        :return: a possible perturbation.
         """
         # Generate perturbation randomly
         perturb = np.random.randn(current_sample.shape[0], current_sample.shape[1], current_sample.shape[2])
@@ -254,11 +256,24 @@ class Boundary(Attack):
 
         # Project the perturbation onto sphere
         direction = original_sample - current_sample
-        direction /= np.linalg.norm(direction)
-        perturb -= np.dot(perturb, direction) * direction
+        perturb = np.swapaxes(perturb, 0, self.classifier.channel_index - 1)
+        direction = np.swapaxes(direction, 0, self.classifier.channel_index - 1)
 
-        # Do clipping into the input range
-        perturb = np.clip(perturb, clip_min, clip_max)
+        for i in range(len(direction)):
+            direction[i] /= np.linalg.norm(direction[i])
+            perturb[i] -= np.dot(perturb[i], direction[i]) * direction[i]
+
+        perturb = np.swapaxes(perturb, 0, self.classifier.channel_index - 1)
+
+        # direction = original_sample - current_sample
+        # norm_direction = np.linalg.norm(direction)
+        # direction /= norm_direction
+        # vdot = np.vdot(perturb, direction)
+        # perturb -= vdot * direction
+        # perturb *= delta * norm_direction / np.linalg.norm(perturb)
+        # d = 1.0 / np.sqrt(delta ** 2 + 1)
+        # direction = perturb - (original_sample - current_sample)
+        # perturb = d * direction
 
         return perturb
 
