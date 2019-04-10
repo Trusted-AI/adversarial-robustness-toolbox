@@ -20,32 +20,32 @@ DeepFool
    :members:
    :special-members:
 
-Elastic Net Attack
-------------------
+Elastic Net Attack (EAD)
+------------------------
 .. autoclass:: ElasticNet
    :members:
    :special-members:
 
-Fast Gradient Method
---------------------
+Fast Gradient Method (FGM)
+--------------------------
 .. autoclass:: FastGradientMethod
    :members:
    :special-members:
 
-Basic Iterative Method
-----------------------
+Basic Iterative Method (BIM)
+----------------------------
 .. autoclass:: BasicIterativeMethod
    :members:
    :special-members:
 
-Projected Gradient Descent
---------------------------
+Projected Gradient Descent (PGD)
+--------------------------------
 .. autoclass:: ProjectedGradientDescent
    :members:
    :special-members:
 
-Jacobian Saliency Map Attack
-----------------------------
+Jacobian Saliency Map Attack (JSMA)
+-----------------------------------
 .. autoclass:: SaliencyMapMethod
    :members:
    :special-members:
@@ -71,6 +71,12 @@ Universal Perturbation Attack
 Virtual Adversarial Method
 --------------------------
 .. autoclass:: VirtualAdversarialMethod
+   :members:
+   :special-members:
+
+Zeroth-Order Optimization Attack (ZOO)
+--------------------------------------
+.. autoclass:: ZooAttack
    :members:
    :special-members:
 
