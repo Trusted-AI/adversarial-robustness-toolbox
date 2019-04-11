@@ -18,11 +18,8 @@ tests_require = ['mxnet',
                  'tensorflow',
                  'torch == 0.4.0']
 
-docs_require = ['keras',
-                'mxnet',
-                'sphinx >= 1.4',
-                'sphinx_rtd_theme',
-                'tensorflow']
+docs_require = ['sphinx >= 1.4',
+                'sphinx_rtd_theme']
 
 setup(name='Adversarial Robustness Toolbox',
       version='0.6.0',
