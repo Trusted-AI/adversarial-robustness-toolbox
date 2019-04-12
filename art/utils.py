@@ -24,6 +24,9 @@ import logging
 import os
 
 import numpy as np
+import torch
+import torch.nn as nn
+import torch.optim as optim
 
 from art.classifiers import PyTorchClassifier
 
@@ -587,16 +590,17 @@ def make_directory(dir_path):
 
 def clip_and_round(x, clip_values, round_samples):
     """
-    Rounds the input to the correct level of granularity. Useful to ensure data passed to classifier can be represented
-    in the correct domain, e.g., [0, 255] integers verses [0,1] or [0, 255] floating points.
+    Rounds the input to the correct level of granularity.
+    Useful to ensure data passed to classifier can be represented
+    in the correct domain, e.g., [0, 255] integers verses [0,1]
+    or [0, 255] floating points.
 
     :param x: Sample input with shape as expected by the model.
     :type x: `np.ndarray`
     :param clip_values: Tuple of the form `(min, max)` representing the minimum and maximum values allowed
                for features.
     :type clip_values: `tuple`
-    :param round_samples: The resolution of the input domain to round the data to, e.g., 1.0, or 1/255. Set to 0 to
-           disable.
+    :param round_samples: The resolution of the input domain to round the data to, e.g., 1.0, or 1/255. Set to 0 to disable.
     :type round_samples: `float`
     """
     if round_samples == 0:
@@ -799,8 +803,6 @@ def get_classifier_pt():
 
     :return: PyTorchClassifier
     """
-    import torch.nn as nn
-    import torch.optim as optim
 
     class Model(nn.Module):
         """
@@ -810,8 +812,6 @@ def get_classifier_pt():
         """
 
         def __init__(self):
-            import torch
-
             super(Model, self).__init__()
 
             w_conv2d = np.load(os.path.join(os.path.dirname(os.path.dirname(__file__)), 'models', 'W_CONV2D.npy'))
