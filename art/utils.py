@@ -24,15 +24,11 @@ import logging
 import os
 
 import numpy as np
-import keras
-import keras.backend as k
-from keras.layers import Dense, Flatten, Conv2D, MaxPooling2D
-from keras.models import Sequential
 import torch
 import torch.nn as nn
 import torch.optim as optim
 
-from art.classifiers import KerasClassifier, PyTorchClassifier
+from art.classifiers import PyTorchClassifier
 
 logger = logging.getLogger(__name__)
 
@@ -625,7 +621,6 @@ def _tf_initializer_w_conv2d(_, dtype, partition_info):
     """
     import tensorflow as tf
 
-    _ = partition_info
     w_conv2d = np.load(os.path.join(os.path.dirname(os.path.dirname(__file__)), 'models', 'W_CONV2D.npy'))
     return tf.constant(w_conv2d, dtype)
 
@@ -637,6 +632,8 @@ def _kr_initializer_w_conv2d(_, dtype=None):
     :return: Keras variable
     :rtype: k.variable
     """
+    import keras.backend as k
+
     w_conv2d = np.load(os.path.join(os.path.dirname(os.path.dirname(__file__)), 'models', 'W_CONV2D.npy'))
     return k.variable(value=w_conv2d, dtype=dtype)
 
@@ -650,7 +647,6 @@ def _tf_initializer_b_conv2d(_, dtype, partition_info):
     """
     import tensorflow as tf
 
-    _ = partition_info
     b_conv2d = np.load(os.path.join(os.path.dirname(os.path.dirname(__file__)), 'models', 'B_CONV2D.npy'))
     return tf.constant(b_conv2d, dtype)
 
@@ -662,11 +658,13 @@ def _kr_initializer_b_conv2d(_, dtype=None):
     :return: Keras variable
     :rtype: k.variable
     """
+    import keras.backend as k
+
     b_conv2d = np.load(os.path.join(os.path.dirname(os.path.dirname(__file__)), 'models', 'B_CONV2D.npy'))
     return k.variable(value=b_conv2d, dtype=dtype)
 
 
-def _tf_initializer_w_dense(_1, dtype, partition_info):
+def _tf_initializer_w_dense(_, dtype, partition_info):
     """
     Initializer of weights in dense layer for Tensorflow.
 
@@ -674,7 +672,7 @@ def _tf_initializer_w_dense(_1, dtype, partition_info):
     :rtype: tf.constant
     """
     import tensorflow as tf
-    _ = partition_info
+
     w_dense = np.load(os.path.join(os.path.dirname(os.path.dirname(__file__)), 'models', 'W_DENSE.npy'))
     return tf.constant(w_dense, dtype)
 
@@ -686,11 +684,13 @@ def _kr_initializer_w_dense(_, dtype=None):
     :return: Keras varibale
     :rtype: k.variable
     """
+    import keras.backend as k
+
     w_dense = np.load(os.path.join(os.path.dirname(os.path.dirname(__file__)), 'models', 'W_DENSE.npy'))
     return k.variable(value=w_dense, dtype=dtype)
 
 
-def _tf_initializer_b_dense(_1, dtype, partition_info):
+def _tf_initializer_b_dense(_, dtype, partition_info):
     """
     Initializer of biases in dense layer for Tensorflow.
 
@@ -699,7 +699,6 @@ def _tf_initializer_b_dense(_1, dtype, partition_info):
     """
     import tensorflow as tf
 
-    _ = partition_info
     b_dense = np.load(os.path.join(os.path.dirname(os.path.dirname(__file__)), 'models', 'B_DENSE.npy'))
     return tf.constant(b_dense, dtype)
 
@@ -711,6 +710,8 @@ def _kr_initializer_b_dense(_, dtype=None):
     :return: Keras variable
     :rtype: k.variable
     """
+    import keras.backend as k
+
     b_dense = np.load(os.path.join(os.path.dirname(os.path.dirname(__file__)), 'models', 'B_DENSE.npy'))
     return k.variable(value=b_dense, dtype=dtype)
 
@@ -766,7 +767,13 @@ def get_classifier_kr():
 
     :return: KerasClassifier, tf.Session()
     """
+    import keras
+    import keras.backend as k
+    from keras.models import Sequential
+    from keras.layers import Dense, Flatten, Conv2D, MaxPooling2D
     import tensorflow as tf
+
+    from art.classifiers import KerasClassifier
 
     # Initialize a tf session
     sess = tf.Session()
