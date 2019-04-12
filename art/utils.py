@@ -341,17 +341,17 @@ def load_cifar10(raw=False):
         import sys
         from six.moves import cPickle
 
-        with open(fpath, 'rb') as f:
+        with open(fpath, 'rb') as file_:
             if sys.version_info < (3,):
-                d = cPickle.load(f)
+                content = cPickle.load(file_)
             else:
-                d = cPickle.load(f, encoding='bytes')
-                d_decoded = {}
-                for k, v in d.items():
-                    d_decoded[k.decode('utf8')] = v
-                d = d_decoded
-        data = d['data']
-        labels = d['labels']
+                content = cPickle.load(file_, encoding='bytes')
+                content_decoded = {}
+                for key, value in content.items():
+                    content_decoded[key.decode('utf8')] = value
+                content = content_decoded
+        data = content['data']
+        labels = content['labels']
 
         data = data.reshape(data.shape[0], 3, 32, 32)
         return data, labels
