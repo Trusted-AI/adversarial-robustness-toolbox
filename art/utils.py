@@ -63,13 +63,13 @@ def master_seed(seed):
     except ImportError:
         logger.info('Could not set random seed for TensorFlow.')
 
-    # try:
-    #     import mxnet as mx
-    #
-    #     logger.info('Setting random seed for MXNet.')
-    #     mx.random.seed(seed)
-    # except ImportError:
-    #     logger.info('Could not set random seed for MXNet.')
+    try:
+        import mxnet as mx
+
+        logger.info('Setting random seed for MXNet.')
+        mx.random.seed(seed)
+    except ImportError:
+        logger.info('Could not set random seed for MXNet.')
 
     try:
         import torch
