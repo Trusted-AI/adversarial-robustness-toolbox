@@ -24,9 +24,6 @@ import logging
 import os
 
 import numpy as np
-import torch
-import torch.nn as nn
-import torch.optim as optim
 
 from art.classifiers import PyTorchClassifier
 
@@ -803,6 +800,9 @@ def get_classifier_pt():
 
     :return: PyTorchClassifier
     """
+    import torch.nn as nn
+    import torch.optim as optim
+    import torch
 
     class Model(nn.Module):
         """
