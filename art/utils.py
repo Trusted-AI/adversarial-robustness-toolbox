@@ -25,10 +25,14 @@ import os
 
 import numpy as np
 
-from art.classifiers import PyTorchClassifier
-
 logger = logging.getLogger(__name__)
 
+try:
+    import torch
+    import torch.nn as nn
+    import torch.optim as optim
+except ImportError:
+    logger.info('Could not import PyTorch in utilities.')
 
 # -------------------------------------------------------------------------------------------- RANDOM NUMBER GENERATORS
 
@@ -800,9 +804,7 @@ def get_classifier_pt():
 
     :return: PyTorchClassifier
     """
-    import torch.nn as nn
-    import torch.optim as optim
-    import torch
+    from art.classifiers import PyTorchClassifier
 
     class Model(nn.Module):
         """
