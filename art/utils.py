@@ -24,7 +24,6 @@ import logging
 import os
 
 import numpy as np
-import tensorflow as tf
 import keras
 import keras.backend as k
 from keras.layers import Dense, Flatten, Conv2D, MaxPooling2D
@@ -33,7 +32,7 @@ import torch
 import torch.nn as nn
 import torch.optim as optim
 
-from art.classifiers import KerasClassifier, PyTorchClassifier, TFClassifier
+from art.classifiers import KerasClassifier, PyTorchClassifier
 
 logger = logging.getLogger(__name__)
 
@@ -80,12 +79,14 @@ def master_seed(seed):
         logger.info('Could not set random seed for MXNet.')
 
     try:
+        import torch
+
         logger.info('Setting random seed for PyTorch.')
         torch.manual_seed(seed)
         if torch.cuda.is_available():
             torch.cuda.manual_seed_all(seed)
     except ImportError:
-        logger.info('Could not set random seed for PyTorch')
+        logger.info('Could not set random seed for PyTorch.')
 
 
 # ----------------------------------------------------------------------------------------------------- MATHS UTILITIES
@@ -590,6 +591,7 @@ def make_directory(dir_path):
     if not os.path.exists(dir_path):
         os.makedirs(dir_path)
 
+
 def clip_and_round(x, clip_values, round_samples):
     """
     Rounds the input to the correct level of granularity.
@@ -621,6 +623,8 @@ def _tf_initializer_w_conv2d(_, dtype, partition_info):
     :return: Tensorflow constant
     :rtype: tf.constant
     """
+    import tensorflow as tf
+
     _ = partition_info
     w_conv2d = np.load(os.path.join(os.path.dirname(os.path.dirname(__file__)), 'models', 'W_CONV2D.npy'))
     return tf.constant(w_conv2d, dtype)
@@ -644,6 +648,8 @@ def _tf_initializer_b_conv2d(_, dtype, partition_info):
     :return: Tensorflow constant
     :rtype: tf.constant
     """
+    import tensorflow as tf
+
     _ = partition_info
     b_conv2d = np.load(os.path.join(os.path.dirname(os.path.dirname(__file__)), 'models', 'B_CONV2D.npy'))
     return tf.constant(b_conv2d, dtype)
@@ -667,6 +673,7 @@ def _tf_initializer_w_dense(_1, dtype, partition_info):
     :return: Tensorflow constant
     :rtype: tf.constant
     """
+    import tensorflow as tf
     _ = partition_info
     w_dense = np.load(os.path.join(os.path.dirname(os.path.dirname(__file__)), 'models', 'W_DENSE.npy'))
     return tf.constant(w_dense, dtype)
@@ -690,6 +697,8 @@ def _tf_initializer_b_dense(_1, dtype, partition_info):
     :return: Tensorflow constant
     :rtype: tf.constant
     """
+    import tensorflow as tf
+
     _ = partition_info
     b_dense = np.load(os.path.join(os.path.dirname(os.path.dirname(__file__)), 'models', 'B_DENSE.npy'))
     return tf.constant(b_dense, dtype)
@@ -718,6 +727,9 @@ def get_classifier_tf():
 
     :return: TFClassifier, tf.Session()
     """
+    import tensorflow as tf
+    from art.classifiers import TFClassifier
+
     # Define input and output placeholders
     input_ph = tf.placeholder(tf.float32, shape=[None, 28, 28, 1])
     output_ph = tf.placeholder(tf.int32, shape=[None, 10])
@@ -754,6 +766,8 @@ def get_classifier_kr():
 
     :return: KerasClassifier, tf.Session()
     """
+    import tensorflow as tf
+
     # Initialize a tf session
     sess = tf.Session()
     k.set_session(sess)
