@@ -465,19 +465,27 @@ class TFClassifier(Classifier):
         :return: None
         """
         import os
-        import tensorflow as tf
+        import shutil
+        from tensorflow.python import saved_model
+        from tensorflow.python.saved_model import tag_constants
+        from tensorflow.python.saved_model.signature_def_utils_impl import predict_signature_def
 
         if path is None:
             from art import DATA_PATH
             full_path = os.path.join(DATA_PATH, filename)
         else:
             full_path = os.path.join(path, filename)
-        folder = os.path.split(full_path)[0]
-        if not os.path.exists(folder):
-            os.makedirs(folder)
 
-        saver = tf.train.Saver()
-        saver.save(self._sess, full_path)
+        if os.path.exists(full_path):
+            shutil.rmtree(full_path)
+
+        builder = saved_model.builder.SavedModelBuilder(full_path)
+        signature = predict_signature_def(inputs={'SavedInputPhD': self._input_ph},
+                                          outputs={'SavedOutputLogit': self._logits})
+        builder.add_meta_graph_and_variables(sess=self._sess, tags=[tag_constants.SERVING],
+                                             signature_def_map={'predict': signature})
+        builder.save()
+
         logger.info('Model saved in path: %s.', full_path)
 
     def __repr__(self):
