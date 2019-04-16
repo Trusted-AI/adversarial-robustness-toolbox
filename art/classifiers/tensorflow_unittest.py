@@ -142,33 +142,41 @@ class TestTFClassifier(unittest.TestCase):
         self.assertTrue(np.array(grads.shape == (NB_TEST, 28, 28, 1)).all())
         self.assertTrue(np.sum(grads) != 0)
 
-    # def test_layers(self):
-    #     # Get MNIST
-    #     (_, _), (x_test, _) = self.mnist
-    #
-    #     # Test and get layers
-    #     layer_names = self.classifier.layer_names
-    #     logger.debug(layer_names)
-    #
-    #     for i, name in enumerate(layer_names):
-    #         act_i = self.classifier.get_activations(x_test, i, batch_size=5)
-    #         act_name = self.classifier.get_activations(x_test, name, batch_size=5)
-    #         self.assertAlmostEqual(np.sum(act_name - act_i), 0)
+    def test_layers(self):
+        # Get MNIST
+        (_, _), (x_test, _) = self.mnist
+
+        # Test and get layers
+        layer_names = self.classifier.layer_names
+        logger.debug(layer_names)
+
+        for i, name in enumerate(layer_names):
+            act_i = self.classifier.get_activations(x_test, i, batch_size=5)
+            act_name = self.classifier.get_activations(x_test, name, batch_size=5)
+            self.assertAlmostEqual(np.sum(act_name - act_i), 0)
 
     def test_save(self):
         import os
-        import re
+        import shutil
 
         path = 'tmp'
         filename = 'model.ckpt'
+
+        # Save
         self.classifier.save(filename, path=path)
-        self.assertTrue(os.path.isfile(os.path.join(path, filename + '.meta')))
-        self.assertTrue(os.path.isfile(os.path.join(path, filename + '.index')))
+        self.assertTrue(os.path.isfile(os.path.join(path, filename, 'variables/variables.data-00000-of-00001')))
+        self.assertTrue(os.path.isfile(os.path.join(path, filename, 'variables/variables.index')))
+        self.assertTrue(os.path.isfile(os.path.join(path, filename, 'saved_model.pb')))
+
+        # # Restore
+        # with tf.Session(graph=tf.Graph()) as sess:
+        #     tf.saved_model.loader.load(sess, ["serve"], os.path.join(path, filename))
+        #     graph = tf.get_default_graph()
+        #     print(graph.get_operations())
+        #     sess.run('SavedOutputLogit:0', feed_dict={'SavedInputPhD:0': input_batch})
 
         # Remove saved files
-        for f in os.listdir(path):
-            if re.search(filename, f):
-                os.remove(os.path.join(path, f))
+        shutil.rmtree(os.path.join(path, filename))
 
     def test_set_learning(self):
         tfc = self.classifier
