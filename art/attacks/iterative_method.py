@@ -111,7 +111,7 @@ class BasicIterativeMethod(FastGradientMethod):
 
         for i in range(self.max_iter):
             # Adversarial crafting
-            adv_x = self._compute(adv_x, targets, self.eps_step, self.random_init and i == 0)
+            adv_x = self._compute(adv_x, targets, self.eps, self.eps_step, self.random_init and i == 0)
 
             if self._project:
                 noise = projection(adv_x - x, self.eps, self.norm)

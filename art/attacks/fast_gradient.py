@@ -152,7 +152,7 @@ class FastGradientMethod(Attack):
             logger.info('Performing minimal perturbation FGM.')
             x_adv = self._minimal_perturbation(x, y, **params_cpy)
         else:
-            x_adv = self._compute(x, y, self.eps, self.random_init)
+            x_adv = self._compute(x, y, self.eps, self.eps, self.random_init)
 
         adv_preds = np.argmax(self.classifier.predict(x_adv), axis=1)
         if self.targeted:
@@ -210,15 +210,18 @@ class FastGradientMethod(Attack):
 
         return grad
 
-    def _apply_perturbation(self, batch, perturbation, eps):
+    def _apply_perturbation(self, batch, perturbation, eps_step):
         clip_min, clip_max = self.classifier.clip_values
-        return np.clip(batch + eps * perturbation, clip_min, clip_max)
+        return np.clip(batch + eps_step * perturbation, clip_min, clip_max)
 
-    def _compute(self, x, y, eps, random_init):
+    def _compute(self, x, y, eps, eps_step, random_init):
         if random_init:
             n = x.shape[0]
             m = np.prod(x.shape[1:])
             adv_x = x.copy() + random_sphere(n, m, eps, self.norm).reshape(x.shape)
+
+            clip_min, clip_max = self.classifier.clip_values
+            adv_x = np.clip(adv_x, clip_min, clip_max)
         else:
             adv_x = x.copy()
 
@@ -232,6 +235,6 @@ class FastGradientMethod(Attack):
             perturbation = self._compute_perturbation(batch, batch_labels)
 
             # Apply perturbation and clip
-            adv_x[batch_index_1:batch_index_2] = self._apply_perturbation(batch, perturbation, eps)
+            adv_x[batch_index_1:batch_index_2] = self._apply_perturbation(batch, perturbation, eps_step)
 
         return adv_x
