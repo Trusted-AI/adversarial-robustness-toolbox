@@ -13,3 +13,6 @@ from art.attacks.universal_perturbation import UniversalPerturbation
 from art.attacks.virtual_adversarial import VirtualAdversarialMethod
 from art.attacks.elastic_net import ElasticNet
 from art.attacks.spatial_transformation import SpatialTransformation
+from art.attacks.boundary import Boundary
+from art.attacks.zoo import ZooAttack
+

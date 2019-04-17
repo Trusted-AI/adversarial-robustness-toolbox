@@ -243,21 +243,6 @@ class TestAdversarialTrainer(TestBase):
         adv_trainer = AdversarialTrainer(classifier, attacks=adv)
         self.assertRaises(NotImplementedError, adv_trainer.fit, x_train, y_train, **params)
 
-    def test_save_model(self):
-        import os
-        import re
-
-        path, file = 'tmp', 'model.ckpt'
-        self.classifier_tf.save(file, path=path)
-
-        self.assertTrue(os.path.isfile(os.path.join(path, file + '.meta')))
-        self.assertTrue(os.path.isfile(os.path.join(path, file + '.index')))
-
-        # Remove saved files
-        for f in os.listdir(path):
-            if re.search(file, f):
-                os.remove(os.path.join(path, f))
-
 
 class TestStaticAdversarialTrainer(TestBase):
     """

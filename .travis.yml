@@ -1,4 +1,3 @@
-sudo: required
 dist: trusty
 language: python
 env:
@@ -38,6 +37,7 @@ install:
   - conda install libgcc
   - export LD_LIBRARY_PATH=$LD_LIBRARY_PATH:/home/travis/miniconda/envs/test-environment/lib
   - export PYTHONPATH=".":$PYTHONPATH
+  - pip freeze
 
 script:
   - python -m unittest discover art/ -p '*_unittest.py'

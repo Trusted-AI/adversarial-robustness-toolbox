@@ -27,6 +27,14 @@ import numpy as np
 
 logger = logging.getLogger(__name__)
 
+try:
+    # Conditional import of `torch` to avoid segmentation fault errors this framework generates at import
+    import torch
+    import torch.nn as nn
+    import torch.optim as optim
+except ImportError:
+    logger.info('Could not import PyTorch in utilities.')
+
 # -------------------------------------------------------------------------------------------- RANDOM NUMBER GENERATORS
 
 
@@ -76,7 +84,7 @@ def master_seed(seed):
         if torch.cuda.is_available():
             torch.cuda.manual_seed_all(seed)
     except ImportError:
-        logger.info('Could not set random seed for PyTorch')
+        logger.info('Could not set random seed for PyTorch.')
 
 
 # ----------------------------------------------------------------------------------------------------- MATHS UTILITIES
@@ -470,9 +478,9 @@ def load_dataset(name):
 
     if "mnist" in name:
         return load_mnist()
-    if "cifar10" in name:
+    elif "cifar10" in name:
         return load_cifar10()
-    if "stl10" in name:
+    elif "stl10" in name:
         return load_stl()
 
     raise NotImplementedError("There is no loader for dataset '{}'.".format(name))
@@ -584,16 +592,17 @@ def make_directory(dir_path):
 
 def clip_and_round(x, clip_values, round_samples):
     """
-    Rounds the input to the correct level of granularity. Useful to ensure data passed to classifier can be represented
-    in the correct domain, e.g., [0, 255] integers verses [0,1] or [0, 255] floating points.
+    Rounds the input to the correct level of granularity.
+    Useful to ensure data passed to classifier can be represented
+    in the correct domain, e.g., [0, 255] integers verses [0,1]
+    or [0, 255] floating points.
 
     :param x: Sample input with shape as expected by the model.
     :type x: `np.ndarray`
     :param clip_values: Tuple of the form `(min, max)` representing the minimum and maximum values allowed
                for features.
     :type clip_values: `tuple`
-    :param round_samples: The resolution of the input domain to round the data to, e.g., 1.0, or 1/255.
-           Set to 0 to disable.
+    :param round_samples: The resolution of the input domain to round the data to, e.g., 1.0, or 1/255. Set to 0 to disable.
     :type round_samples: `float`
     """
     if round_samples == 0:
@@ -614,7 +623,6 @@ def _tf_initializer_w_conv2d(_, dtype, partition_info):
     """
     import tensorflow as tf
 
-    _ = partition_info
     w_conv2d = np.load(os.path.join(os.path.dirname(os.path.dirname(__file__)), 'models', 'W_CONV2D.npy'))
     return tf.constant(w_conv2d, dtype)
 
@@ -723,7 +731,6 @@ def get_classifier_tf():
     :return: TFClassifier, tf.Session()
     """
     import tensorflow as tf
-
     from art.classifiers import TFClassifier
 
     # Define input and output placeholders
@@ -764,8 +771,8 @@ def get_classifier_kr():
     """
     import keras
     import keras.backend as k
-    from keras.layers import Dense, Flatten, Conv2D, MaxPooling2D
     from keras.models import Sequential
+    from keras.layers import Dense, Flatten, Conv2D, MaxPooling2D
     import tensorflow as tf
 
     from art.classifiers import KerasClassifier
@@ -798,10 +805,6 @@ def get_classifier_pt():
 
     :return: PyTorchClassifier
     """
-    import torch
-    import torch.nn as nn
-    import torch.optim as optim
-
     from art.classifiers import PyTorchClassifier
 
     class Model(nn.Module):

@@ -16,7 +16,6 @@ import numpy as np
 from art.classifiers import KerasClassifier
 from art.utils import load_mnist, preprocess
 from art.poison_detection import ActivationDefence
-import json
 
 
 def main():
@@ -30,13 +29,11 @@ def main():
         x_train = data_train['x_train']
         y_train = data_train['y_train']
         is_poison_train = data_train['is_poison_train']
-        x_poisoned_raw = data_train['x_raw']
 
         data_test = np.load('data_testing.npz')
         x_test = data_test['x_test']
         y_test = data_test['y_test']
         is_poison_test = data_test['is_poison_test']
-        x_poisoned_raw_test = data_test['x_raw_test']
 
     except:
         # Read MNIST dataset (x_raw contains the original images):
