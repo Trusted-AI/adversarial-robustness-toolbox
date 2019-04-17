@@ -23,7 +23,7 @@ import unittest
 import keras.backend as k
 import numpy as np
 
-from art.classifiers import ClassifierWrapper
+from art.wrappers.wrapper import ClassifierWrapper
 from art.utils import load_mnist, master_seed, get_classifier_kr
 
 logger = logging.getLogger('testLogger')

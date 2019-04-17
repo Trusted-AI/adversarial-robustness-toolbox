@@ -27,9 +27,11 @@ The Adversarial Robustness Toolbox contains implementations of the following eva
 * Virtual adversarial method (`Miyato et al., 2015`_)
 * C&W L_2 and L_inf attacks (`Carlini and Wagner, 2016`_)
 * NewtonFool (`Jang et al., 2017`_)
-* Elastic net attack (`Chen et al., 2017`_)
+* Elastic net attack (`Chen et al., 2017a`_)
 * Spatial transformations attack (`Engstrom et al., 2017`_)
 * Query-efficient black-box attack (`Ilyas et al., 2017`_)
+* Zeroth-order optimization attack (`Chen et al., 2017b`_)
+* Decision-based attack (`Brendel et al., 2018`_)
 
 The following defense methods are also supported:
 
@@ -78,6 +80,7 @@ Robustness metrics:
    modules/poison_detection
    modules/metrics
    modules/utils
+   modules/wrappers
 
 
 Indices and tables
@@ -96,7 +99,8 @@ Indices and tables
 .. _Moosavi-Dezfooli et al., 2016: https://arxiv.org/abs/1610.08401
 .. _Carlini and Wagner, 2016: https://arxiv.org/abs/1608.04644
 .. _Jang et al., 2017: http://doi.acm.org/10.1145/3134600.3134635
-.. _Chen et al., 2017: https://arxiv.org/abs/1709.04114
+.. _Chen et al., 2017a: https://arxiv.org/abs/1709.04114
+.. _Chen et al., 2017b: https://arxiv.org/abs/1708.03999
 .. _Engstrom et al., 2017: https://arxiv.org/abs/1712.02779
 .. _Ilyas et al., 2017: https://arxiv.org/abs/1712.07113
 .. _Xu et al., 2017: http://arxiv.org/abs/1704.01155
@@ -111,3 +115,4 @@ Indices and tables
 .. _Chen et al., 2018: https://arxiv.org/abs/1811.03728
 .. _Weng et al., 2018: https://arxiv.org/abs/1801.10578
 .. _Arpit et al., 2017: https://arxiv.org/abs/1706.05394
+.. _Brendel et al., 2018: https://arxiv.org/abs/1712.04248

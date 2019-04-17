@@ -112,14 +112,15 @@ class TestVisualization(unittest.TestCase):
 
         os.remove(path)  # Remove data added
 
-    # @unittest.expectedFailure
-    # def test_3D_plot_fail(self):
-    #     points = [[1, 1, 1],
-    #               [2, 2, 2],
-    #               [3, 3, 3]]
-    #     labels = [1, 1, 3]
-    #
-    #     plot_3d(points, labels, save=False)
+    @unittest.expectedFailure
+    def test_3D_plot_fail(self):
+        points = [[1, 1, 1],
+                  [2, 2, 2],
+                  [3, 3, 3]]
+        labels = [1, 1, 3]
+
+        # Shouldn't work because labels don't start in zero.
+        plot_3d(points, labels, save=False)
 
     def test_3D_plot(self):
         points = [[1, 1, 1],
