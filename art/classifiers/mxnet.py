@@ -25,7 +25,6 @@ import six
 from art.classifiers import Classifier
 
 logger = logging.getLogger(__name__)
-# TODO Perform explicit casting to np.float32?
 
 
 class MXClassifier(Classifier):
@@ -353,6 +352,8 @@ class MXClassifier(Classifier):
         """
         import mxnet as mx
 
+        train_mode = self._learning_phase if hasattr(self, '_learning_phase') else False
+
         if isinstance(layer, six.string_types):
             if layer not in self._layer_names:
                 raise ValueError('Layer name %s is not part of the model.' % layer)
@@ -373,11 +374,23 @@ class MXClassifier(Classifier):
         x_ = self._apply_processing(x_)
         x_ = self._apply_defences_predict(x_)
 
-        # Compute activations
-        x_ = mx.nd.array(x_, ctx=self._ctx)
-        preds = self._model[layer_ind](x_)
+        # Compute activations with batching
+        activations = []
+        nb_batches = int(np.ceil(len(x_) / float(batch_size)))
+        for batch_index in range(nb_batches):
+            # Batch indexes
+            begin, end = batch_index * batch_size, min((batch_index + 1) * batch_size, x_.shape[0])
 
-        return preds.asnumpy()
+            # Predict
+            x_batch = mx.nd.array(x_[begin:end], ctx=self._ctx)
+            x_batch.attach_grad()
+            with mx.autograd.record(train_mode=train_mode):
+                preds = self._model[layer_ind](x_batch)
+
+            activations.append(preds.asnumpy())
+
+        activations = np.vstack(activations)
+        return activations
 
     def set_learning_phase(self, train):
         """

@@ -134,21 +134,20 @@ class TestMXClassifier(unittest.TestCase):
         preds_preproc = classifier_preproc.predict(x_test)
         self.assertTrue(np.sum(preds - preds_preproc) == 0)
 
-    # def test_layers(self):
-    #     # Get MNIST
-    #     (_, _), (x_test, _) = self.mnist
-    #
-    #     self.assertEqual(len(self.classifier.layer_names), 7)
-    #
-    #     layer_names = self.classifier.layer_names
-    #     for i, name in enumerate(layer_names):
-    #         print(i, name)
-    #         act_i = self.classifier.get_activations(x_test, i)
-    #         act_name = self.classifier.get_activations(x_test, name)
-    #         self.assertAlmostEqual(np.sum(act_name - act_i), 0)
-    #
-    #     self.assertTrue(self.classifier.get_activations(x_test, 0).shape == (NB_TEST, 6, 24, 24))
-    #     self.assertTrue(self.classifier.get_activations(x_test, 4).shape == (NB_TEST, 784))
+    def test_layers(self):
+        # Get MNIST
+        (_, _), (x_test, _) = self.mnist
+
+        self.assertEqual(len(self.classifier.layer_names), 7)
+
+        # layer_names = self.classifier.layer_names
+        # for i, name in enumerate(layer_names):
+        #     act_i = self.classifier.get_activations(x_test, i)
+        #     act_name = self.classifier.get_activations(x_test, name)
+        #     self.assertAlmostEqual(np.sum(act_name - act_i), 0)
+
+        self.assertTrue(self.classifier.get_activations(x_test, 0).shape == (NB_TEST, 6, 24, 24))
+        self.assertTrue(self.classifier.get_activations(x_test, 4).shape == (NB_TEST, 784))
 
     def test_set_learning(self):
         classifier = self.classifier
