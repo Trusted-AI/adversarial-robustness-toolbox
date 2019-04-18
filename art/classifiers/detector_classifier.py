@@ -51,12 +51,12 @@ class DetectorClassifier(Classifier):
         :rtype: `np.ndarray`
         """
         # Apply defences
-        x_ = self._apply_processing(x)
-        x_, _ = self._apply_defences(x_, None, fit=False)
+        x_preproc = self._apply_processing(x)
+        x_defences, _ = self._apply_defences(x_preproc, None, fit=False)
 
         # Compute the prediction logits
-        classifier_logits = self.classifier.predict(x=x_, logits=True, batch_size=batch_size)
-        detector_logits = self.detector.predict(x=x_, logits=True, batch_size=batch_size)
+        classifier_logits = self.classifier.predict(x=x_defences, logits=True, batch_size=batch_size)
+        detector_logits = self.detector.predict(x=x_defences, logits=True, batch_size=batch_size)
         detector_logits = (np.reshape(detector_logits, [-1]) + 1) * np.max(classifier_logits, axis=1)
         detector_logits = np.reshape(detector_logits, [-1, 1])
         combined_logits = np.concatenate([classifier_logits, detector_logits], axis=1)
@@ -126,27 +126,27 @@ class DetectorClassifier(Classifier):
             raise ValueError('Label %s is out of range.' % label)
 
         # Apply preprocessing
-        x_ = self._apply_processing(x)
-        x_, _ = self._apply_defences(x_, None, fit=False)
+        x_preproc = self._apply_processing(x)
+        x_defences, _ = self._apply_defences(x_preproc, None, fit=False)
 
         # Compute the gradient and return
         if logits:
             if label is None:
                 # First compute the classifier gradients
-                classifier_grads = self.classifier.class_gradient(x=x_, label=None, logits=True)
+                classifier_grads = self.classifier.class_gradient(x=x_defences, label=None, logits=True)
 
                 # Then compute the detector gradients
-                detector_grads = self.detector.class_gradient(x=x_, label=None, logits=True)
+                detector_grads = self.detector.class_gradient(x=x_defences, label=None, logits=True)
 
                 # Chain the detector gradients for the first component
-                classifier_logits = self.classifier.predict(x=x_, logits=True)
+                classifier_logits = self.classifier.predict(x=x_defences, logits=True)
                 max_classifier_logits = np.max(classifier_logits, axis=1)
                 first_detector_grads = max_classifier_logits[:, None, None, None, None] * detector_grads
 
                 # Chain the detector gradients for the second component
                 maxind_classifier_logits = np.argmax(classifier_logits, axis=1)
                 max_classifier_grads = classifier_grads[np.arange(len(classifier_grads)), maxind_classifier_logits]
-                detector_logits = self.detector.predict(x=x_, logits=True)
+                detector_logits = self.detector.predict(x=x_defences, logits=True)
                 second_detector_grads = max_classifier_grads * (detector_logits + 1)[:, None, None]
                 second_detector_grads = second_detector_grads[None, ...]
                 second_detector_grads = np.swapaxes(second_detector_grads, 0, 1)
@@ -160,24 +160,24 @@ class DetectorClassifier(Classifier):
             elif isinstance(label, (int, np.integer)):
                 if label < self._nb_classes - 1:
                     # Compute and return from the classifier gradients
-                    combined_grads = self.classifier.class_gradient(x=x_, label=label, logits=True)
+                    combined_grads = self.classifier.class_gradient(x=x_defences, label=label, logits=True)
 
                 else:
                     # First compute the classifier gradients
-                    classifier_grads = self.classifier.class_gradient(x=x_, label=None, logits=True)
+                    classifier_grads = self.classifier.class_gradient(x=x_defences, label=None, logits=True)
 
                     # Then compute the detector gradients
-                    detector_grads = self.detector.class_gradient(x=x_, label=0, logits=True)
+                    detector_grads = self.detector.class_gradient(x=x_defences, label=0, logits=True)
 
                     # Chain the detector gradients for the first component
-                    classifier_logits = self.classifier.predict(x=x_, logits=True)
+                    classifier_logits = self.classifier.predict(x=x_defences, logits=True)
                     max_classifier_logits = np.max(classifier_logits, axis=1)
                     first_detector_grads = max_classifier_logits[:, None, None, None, None] * detector_grads
 
                     # Chain the detector gradients for the second component
                     maxind_classifier_logits = np.argmax(classifier_logits, axis=1)
                     max_classifier_grads = classifier_grads[np.arange(len(classifier_grads)), maxind_classifier_logits]
-                    detector_logits = self.detector.predict(x=x_, logits=True)
+                    detector_logits = self.detector.predict(x=x_defences, logits=True)
                     second_detector_grads = max_classifier_grads * (detector_logits + 1)[:, None, None]
                     second_detector_grads = second_detector_grads[None, ...]
                     second_detector_grads = np.swapaxes(second_detector_grads, 0, 1)
@@ -191,11 +191,12 @@ class DetectorClassifier(Classifier):
                 detector_idx = np.where(label == self._nb_classes - 1)
 
                 # Initialize the combined gradients
-                combined_grads = np.zeros(shape=(x_.shape[0], 1, x_.shape[1], x_.shape[2], x_.shape[3]))
+                combined_grads = np.zeros(shape=(x_defences.shape[0], 1, x_defences.shape[1], x_defences.shape[2],
+                                                 x_defences.shape[3]))
 
                 # First compute the classifier gradients for classifier_idx
                 if len(classifier_idx) > 0:
-                    classifier_grads = self.classifier.class_gradient(x=x_[classifier_idx],
+                    classifier_grads = self.classifier.class_gradient(x=x_defences[classifier_idx],
                                                                       label=label[classifier_idx],
                                                                       logits=True)
 
@@ -205,20 +206,20 @@ class DetectorClassifier(Classifier):
                 # Then compute the detector gradients for detector_idx
                 if len(detector_idx) > 0:
                     # First compute the classifier gradients for detector_idx
-                    classifier_grads = self.classifier.class_gradient(x=x_[detector_idx], label=None, logits=True)
+                    classifier_grads = self.classifier.class_gradient(x=x_defences[detector_idx], label=None, logits=True)
 
                     # Then compute the detector gradients for detector_idx
-                    detector_grads = self.detector.class_gradient(x=x_[detector_idx], label=0, logits=True)
+                    detector_grads = self.detector.class_gradient(x=x_defences[detector_idx], label=0, logits=True)
 
                     # Chain the detector gradients for the first component
-                    classifier_logits = self.classifier.predict(x=x_[detector_idx], logits=True)
+                    classifier_logits = self.classifier.predict(x=x_defences[detector_idx], logits=True)
                     max_classifier_logits = np.max(classifier_logits, axis=1)
                     first_detector_grads = max_classifier_logits[:, None, None, None, None] * detector_grads
 
                     # Chain the detector gradients for the second component
                     maxind_classifier_logits = np.argmax(classifier_logits, axis=1)
                     max_classifier_grads = classifier_grads[np.arange(len(classifier_grads)), maxind_classifier_logits]
-                    detector_logits = self.detector.predict(x=x_[detector_idx], logits=True)
+                    detector_logits = self.detector.predict(x=x_defences[detector_idx], logits=True)
                     second_detector_grads = max_classifier_grads * (detector_logits + 1)[:, None, None]
                     second_detector_grads = second_detector_grads[None, ...]
                     second_detector_grads = np.swapaxes(second_detector_grads, 0, 1)
@@ -231,27 +232,27 @@ class DetectorClassifier(Classifier):
 
         else:
             # First compute the combined logits
-            combined_logits = self.predict(x=x_, logits=True)
+            combined_logits = self.predict(x=x_defences, logits=True)
 
             # Store the sum logits for later use
             sum_exp_logits = np.sum(np.exp(combined_logits), axis=1)
 
             # Then compute the logits gradients for all classes
             # First compute the classifier gradients
-            classifier_grads = self.classifier.class_gradient(x=x_, label=None, logits=True)
+            classifier_grads = self.classifier.class_gradient(x=x_defences, label=None, logits=True)
 
             # Then compute the detector gradients
-            detector_grads = self.detector.class_gradient(x=x_, label=None, logits=True)
+            detector_grads = self.detector.class_gradient(x=x_defences, label=None, logits=True)
 
             # Chain the detector gradients for the first component
-            classifier_logits = self.classifier.predict(x=x_, logits=True)
+            classifier_logits = self.classifier.predict(x=x_defences, logits=True)
             max_classifier_logits = np.max(classifier_logits, axis=1)
             first_detector_grads = max_classifier_logits[:, None, None, None, None] * detector_grads
 
             # Chain the detector gradients for the second component
             maxind_classifier_logits = np.argmax(classifier_logits, axis=1)
             max_classifier_grads = classifier_grads[np.arange(len(classifier_grads)), maxind_classifier_logits]
-            detector_logits = self.detector.predict(x=x_, logits=True)
+            detector_logits = self.detector.predict(x=x_defences, logits=True)
             second_detector_grads = max_classifier_grads * (detector_logits + 1)[:, None, None]
             second_detector_grads = second_detector_grads[None, ...]
             second_detector_grads = np.swapaxes(second_detector_grads, 0, 1)
@@ -280,8 +281,6 @@ class DetectorClassifier(Classifier):
 
                     grads.append(si_grads)
 
-                combined_grads = np.swapaxes(np.array(grads), 0, 1)
-
             elif isinstance(label, (int, np.integer)):
                 si_grads = 0
                 for j in range(self._nb_classes):
@@ -297,8 +296,6 @@ class DetectorClassifier(Classifier):
                         si_grads += si_lj[:, None, None, None] * combined_logits_grads[:, j]
 
                 grads.append(si_grads)
-
-                combined_grads = np.swapaxes(np.array(grads), 0, 1)
 
             else:
                 unique_label = list(np.unique(label))
@@ -320,12 +317,11 @@ class DetectorClassifier(Classifier):
                 grads = np.swapaxes(np.array(grads), 0, 1)
                 lst = [unique_label.index(i) for i in label]
                 grads = grads[np.arange(len(grads)), lst]
-
                 grads = grads[None, ...]
-                combined_grads = np.swapaxes(np.array(grads), 0, 1)
+            combined_grads = np.swapaxes(np.array(grads), 0, 1)
 
         # Apply gradient post-processing
-        combined_grads = self._apply_defences_gradient(combined_grads)
+        combined_grads = self._apply_defences_gradient(x_preproc, combined_grads)
         combined_grads = self._apply_processing_gradient(combined_grads)
 
         return combined_grads

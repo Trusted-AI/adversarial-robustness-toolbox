@@ -256,8 +256,17 @@ class Classifier(ABC):
         raise NotImplementedError
 
     def _apply_defences(self, x, y, fit=False):
-        from art.defences.preprocessor import Preprocessor
+        """
+        Apply the defences specified for the classifier in inputs `(x, y)`.
 
+        :param x: Input data, where first dimension is the batch size.
+        :type x: `np.ndarray`
+        :param y: Labels for input data, where first dimension is the batch size.
+        :type y: `np.ndarray`
+        :param fit: `True` if the defences are applied during training.
+        :return: Value of the data after applying the defences.
+        :rtype: `np.ndarray`
+        """
         if self.defences is not None:
             for defence in self.defences:
                 if fit:
@@ -269,19 +278,38 @@ class Classifier(ABC):
 
         return x, y
 
-    def _apply_defences_gradient(self, grad, fit=False):
+    def _apply_defences_gradient(self, x, grad, fit=False):
+        """
+        Apply the backward pass through the preprocessing defences.
+
+        :param x: Input data for which the gradient is estimated. First dimension is the batch size.
+        :type x: `np.ndarray`
+        :param grad: Gradient value so far.
+        :type grad: `np.ndarray`
+        :param fit: `True` if the gradient is computed during training.
+        :return: Value of the gradient.
+        :rtype: `np.ndarray`
+        """
         if self.defences is not None:
             for defence in self.defences[::-1]:
                 if fit:
                     if defence.apply_fit:
-                        grad = defence.estimate_gradient(grad)
+                        grad = defence.estimate_gradient(x, grad)
                 else:
                     if defence.apply_predict:
-                        grad = defence.estimate_gradient(grad)
+                        grad = defence.estimate_gradient(x, grad)
 
         return grad
 
     def _apply_processing(self, x):
+        """
+        Apply the data preprocessing / normalization steps specified for the classifier on `x`.
+
+        :param x: Input data, where first dimension is the batch size.
+        :type x: `np.ndarray`
+        :return: Value of the preprocessed data.
+        :rtype: `np.ndarray`
+        """
         import numpy as np
 
         sub, div = self.preprocessing
@@ -294,6 +322,14 @@ class Classifier(ABC):
         return res
 
     def _apply_processing_gradient(self, grad):
+        """
+        Apply the backward pass through the data preprocessing / normalization steps.
+
+        :param grad: Gradient value so far.
+        :type grad: `np.ndarray`
+        :return: Value of the gradient.
+        :rtype: `np.ndarray`
+        """
         import numpy as np
 
         _, div = self.preprocessing
