@@ -95,8 +95,23 @@ class ThermometerEncoding(Preprocessor):
 
         return result
 
-    def estimate_gradient(self, grad):
-        raise NotImplementedError
+    def estimate_gradient(self, x, grad):
+        """
+        Provide an estimate of the gradients of the defence for the backward pass. For thermometer encoding,
+
+        :param x: Input data for which the gradient is estimated. First dimension is the batch size.
+        :type x: `np.ndarray`
+        :param grad: Gradient value so far.
+        :type grad: `np.ndarray`
+        :return: The gradient (estimate) of the defence.
+        :rtype: `np.ndarray`
+        """
+        thermometer_grad = np.zeros(x.shape + (self.num_space,))
+        mask = np.array([x > k / self.num_space for k in range(self.num_space)])
+        mask = np.moveaxis(mask, 0, -1)
+        thermometer_grad[mask] = 1
+
+        return grad * thermometer_grad
 
     def fit(self, x, y=None, **kwargs):
         """

@@ -108,7 +108,7 @@ class JpegCompression(Preprocessor):
 
         return x_, y
 
-    def estimate_gradient(self, grad):
+    def estimate_gradient(self, x, grad):
         return grad
 
     def fit(self, x, y=None, **kwargs):

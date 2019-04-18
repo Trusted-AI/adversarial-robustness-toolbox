@@ -40,6 +40,13 @@ class TestThermometerEncoding(unittest.TestCase):
                                 [0, 0, 0, 1, 0, 1, 1, 1, 0, 1, 1, 1], [1, 1, 1, 1, 0, 0, 0, 1, 0, 1, 1, 1]]]])
         self.assertTrue((x_preproc == true_value).all())
 
+    def test_estimate_gradient(self):
+        num_space = 5
+        encoder = ThermometerEncoding(num_space=num_space)
+        x = np.random.rand(10, 28, 28, 1)
+        grad = np.ones((10, 28, 28, 1, num_space))
+        estimated_grads = encoder.estimate_gradient(grad=grad, x=x)
+        self.assertTrue(np.isin(estimated_grads, [0, 1]).all())
 
 if __name__ == '__main__':
     unittest.main()

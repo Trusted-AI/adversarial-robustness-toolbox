@@ -64,7 +64,7 @@ class SpatialSmoothing(Preprocessor):
 
         return result.astype(NUMPY_DTYPE), y
 
-    def estimate_gradient(self, grad):
+    def estimate_gradient(self, x, grad):
         return grad
 
     def fit(self, x, y=None, **kwargs):

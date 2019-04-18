@@ -83,12 +83,14 @@ class Preprocessor(ABC):
         raise NotImplementedError
 
     @abc.abstractmethod
-    def estimate_gradient(self, grad):
+    def estimate_gradient(self, x, grad):
         """
         Provide an estimate of the gradients of the defence for the backward pass. If the defence is not differentiable,
         this is an estimate of the gradient, most often replacing the computation performed by the defence with the
         identity function.
 
+        :param x: Input data for which the gradient is estimated. First dimension is the batch size.
+        :type x: `np.ndarray`
         :param grad: Gradient value so far.
         :type grad: `np.ndarray`
         :return: The gradient (estimate) of the defence.

@@ -103,7 +103,7 @@ class TotalVarMin(Preprocessor):
 
         return x_.astype(NUMPY_DTYPE), y
 
-    def estimate_gradient(self, grad):
+    def estimate_gradient(self, x, grad):
         return grad
 
     def _minimize(self, x, mask):
