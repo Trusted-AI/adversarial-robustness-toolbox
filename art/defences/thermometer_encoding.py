@@ -98,6 +98,9 @@ class ThermometerEncoding(Preprocessor):
     def estimate_gradient(self, x, grad):
         """
         Provide an estimate of the gradients of the defence for the backward pass. For thermometer encoding,
+        the gradient estimate is the one used in https://arxiv.org/abs/1802.00420, where the thermometer encoding
+        is replaced with a differentiable approximation:
+        `g(x_{i,j,c})_k = min(max(x_{i,j,c} - k / self.num_space, 0), 1)`.
 
         :param x: Input data for which the gradient is estimated. First dimension is the batch size.
         :type x: `np.ndarray`
