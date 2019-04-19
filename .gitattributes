@@ -1,0 +1,2 @@
+models/cifar-10*.h5 filter=lfs diff=lfs merge=lfs -text
+models/mnist*.h5 filter=lfs diff=lfs merge=lfs -text
