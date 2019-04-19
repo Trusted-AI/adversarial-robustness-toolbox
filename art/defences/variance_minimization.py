@@ -16,9 +16,9 @@ class TotalVarMin(Preprocessor):
     Implement the total variance minimization defence approach. Defence method from [Guo et al., 2018].
     Paper link: https://openreview.net/forum?id=SyJ7ClWCb
     """
-    params = ['prob', 'norm', 'lamb', 'solver', 'max_iter']
+    params = ['prob', 'norm', 'lamb', 'solver', 'max_iter', 'clip_values']
 
-    def __init__(self, prob=0.3, norm=2, lamb=0.5, solver='L-BFGS-B', max_iter=10):
+    def __init__(self, prob=0.3, norm=2, lamb=0.5, solver='L-BFGS-B', max_iter=10, clip_values=(0, 1)):
         """
         Create an instance of total variance minimization.
 
@@ -28,16 +28,27 @@ class TotalVarMin(Preprocessor):
         :type norm: `int`
         :param lamb: The lambda parameter in the objective function.
         :type lamb: `float`
-        :param solver: Current support: L-BFGS-B, CG, Newton-CG
+        :param solver: Current support: `L-BFGS-B`, `CG`, `Newton-CG`.
         :type solver: `str`
-        :param max_iter: Maximum number of iterations in an optimization.
+        :param max_iter: Maximum number of iterations when performing optimization.
         :type max_iter: `int`
+        :param clip_values: Tuple of the form `(min, max)` representing the minimum and maximum values allowed
+               for features.
+        :type clip_values: `tuple`
         """
         super(TotalVarMin, self).__init__()
         self._is_fitted = True
-        self.set_params(prob=prob, norm=norm, lamb=lamb, solver=solver, max_iter=max_iter)
+        self.set_params(prob=prob, norm=norm, lamb=lamb, solver=solver, max_iter=max_iter, clip_values=clip_values)
 
-    def __call__(self, x, y=None, prob=None, norm=None, lamb=None, solver=None, max_iter=None, clip_values=(0, 1)):
+    @property
+    def apply_fit(self):
+        return False
+
+    @property
+    def apply_predict(self):
+        return True
+
+    def __call__(self, x, y=None, prob=None, norm=None, lamb=None, solver=None, max_iter=None, clip_values=None):
         """
         Apply total variance minimization to sample `x`.
 
@@ -51,11 +62,14 @@ class TotalVarMin(Preprocessor):
         :type norm: `int`
         :param lamb: The lambda parameter in the objective function.
         :type lamb: `float`
-        :param solver: Current support: L-BFGS-B, CG, Newton-CG
+        :param solver: Current support: `L-BFGS-B`, `CG`, `Newton-CG`.
         :type solver: `str`
-        :param max_iter: Maximum number of iterations in an optimization.
+        :param max_iter: Maximum number of iterations when performing optimization.
         :type max_iter: `int`
-        :return: similar sample
+        :param clip_values: Tuple of the form `(min, max)` representing the minimum and maximum values allowed
+               for features.
+        :type clip_values: `tuple`
+        :return: Similar samples.
         :rtype: `np.ndarray`
         """
         params = {}
@@ -74,6 +88,9 @@ class TotalVarMin(Preprocessor):
         if max_iter is not None:
             params['max_iter'] = max_iter
 
+        if clip_values is not None:
+            params['clip_values'] = clip_values
+
         self.set_params(**params)
         x_ = x.copy()
 
@@ -82,9 +99,12 @@ class TotalVarMin(Preprocessor):
             mask = (np.random.rand(xi.shape[0], xi.shape[1], xi.shape[2]) < self.prob).astype('int')
             x_[i] = self._minimize(xi, mask)
 
-        x_ = np.clip(x_, clip_values[0], clip_values[1])
+        x_ = np.clip(x_, self.clip_values[0], self.clip_values[1])
 
-        return x_.astype(NUMPY_DTYPE)
+        return x_.astype(NUMPY_DTYPE), y
+
+    def estimate_gradient(self, x, grad):
+        return grad
 
     def _minimize(self, x, mask):
         """
@@ -197,12 +217,15 @@ class TotalVarMin(Preprocessor):
         :type norm: `int`
         :param lamb: The lambda parameter in the objective function.
         :type lamb: `float`
-        :param solver: Current support: L-BFGS-B, CG, Newton-CG.
+        :param solver: Current support: `L-BFGS-B`, `CG`, `Newton-CG`.
         :type solver: `str`
-        :param max_iter: Maximum number of iterations in an optimization.
+        :param max_iter: Maximum number of iterations when performing optimization.
         :type max_iter: `int`
+        :param clip_values: Tuple of the form `(min, max)` representing the minimum and maximum values allowed
+               for features.
+        :type clip_values: `tuple`
         """
-        # Save defense-specific parameters
+        # Save defence-specific parameters
         super(TotalVarMin, self).set_params(**kwargs)
 
         if not isinstance(self.prob, (float, int)) or self.prob < 0.0 or self.prob > 1.0:
@@ -220,5 +243,10 @@ class TotalVarMin(Preprocessor):
         if not isinstance(self.max_iter, (int, np.int)) or self.max_iter <= 0:
             logger.error('Number of iterations must be a positive integer.')
             raise ValueError('Number of iterations must be a positive integer.')
+
+        if len(self.clip_values) != 2:
+            raise ValueError('`clip_values` should be a tuple of 2 floats containing the allowed data range.')
+        if self.clip_values[0] >= self.clip_values[1]:
+            raise ValueError('Invalid `clip_values`: min >= max.')
 
         return True

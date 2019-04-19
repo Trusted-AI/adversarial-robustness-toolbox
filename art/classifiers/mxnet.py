@@ -8,7 +8,6 @@ import six
 from art.classifiers import Classifier
 
 logger = logging.getLogger(__name__)
-# TODO Perform explicit casting to np.float32?
 
 
 class MXClassifier(Classifier):
@@ -88,12 +87,12 @@ class MXClassifier(Classifier):
         train_mode = self._learning_phase if hasattr(self, '_learning_phase') else True
 
         # Apply preprocessing and defences
-        x_ = self._apply_processing(x)
-        x_, y_ = self._apply_defences_fit(x_, y)
-        y_ = np.argmax(y_, axis=1)
+        x_preproc = self._apply_processing(x)
+        x_preproc, y_preproc = self._apply_defences(x_preproc, y, fit=True)
+        y_preproc = np.argmax(y_preproc, axis=1)
 
-        nb_batch = int(np.ceil(len(x_) / batch_size))
-        ind = np.arange(len(x_))
+        nb_batch = int(np.ceil(len(x_preproc) / batch_size))
+        ind = np.arange(len(x_preproc))
 
         for _ in range(nb_epochs):
             # Shuffle the examples
@@ -101,8 +100,8 @@ class MXClassifier(Classifier):
 
             # Train for one epoch
             for m in range(nb_batch):
-                x_batch = mx.nd.array(x_[ind[m * batch_size:(m + 1) * batch_size]]).as_in_context(self._ctx)
-                y_batch = mx.nd.array(y_[ind[m * batch_size:(m + 1) * batch_size]]).as_in_context(self._ctx)
+                x_batch = mx.nd.array(x_preproc[ind[m * batch_size:(m + 1) * batch_size]]).as_in_context(self._ctx)
+                y_batch = mx.nd.array(y_preproc[ind[m * batch_size:(m + 1) * batch_size]]).as_in_context(self._ctx)
 
                 with mx.autograd.record(train_mode=train_mode):
                     preds = self._model(x_batch)
@@ -168,18 +167,18 @@ class MXClassifier(Classifier):
         train_mode = self._learning_phase if hasattr(self, '_learning_phase') else False
 
         # Apply preprocessing and defences
-        x_ = self._apply_processing(x)
-        x_ = self._apply_defences_predict(x_)
+        x_preproc = self._apply_processing(x)
+        x_preproc, _ = self._apply_defences(x_preproc, None, fit=False)
 
         # Run prediction with batch processing
-        results = np.zeros((x_.shape[0], self.nb_classes), dtype=np.float32)
-        num_batch = int(np.ceil(len(x_) / float(batch_size)))
+        results = np.zeros((x_preproc.shape[0], self.nb_classes), dtype=np.float32)
+        num_batch = int(np.ceil(len(x_preproc) / float(batch_size)))
         for m in range(num_batch):
             # Batch indexes
-            begin, end = m * batch_size, min((m + 1) * batch_size, x_.shape[0])
+            begin, end = m * batch_size, min((m + 1) * batch_size, x_preproc.shape[0])
 
             # Predict
-            x_batch = mx.nd.array(x_[begin:end], ctx=self._ctx)
+            x_batch = mx.nd.array(x_preproc[begin:end], ctx=self._ctx)
             x_batch.attach_grad()
             with mx.autograd.record(train_mode=train_mode):
                 preds = self._model(x_batch)
@@ -219,56 +218,57 @@ class MXClassifier(Classifier):
 
         train_mode = self._learning_phase if hasattr(self, '_learning_phase') else False
 
-        x_ = self._apply_processing(x)
-        x_ = mx.nd.array(x_, ctx=self._ctx)
-        x_.attach_grad()
+        x_preproc = self._apply_processing(x)
+        x_defences, _ = self._apply_defences(x_preproc, None, fit=False)
+        x_defences = mx.nd.array(x_defences, ctx=self._ctx)
+        x_defences.attach_grad()
 
         if label is None:
             with mx.autograd.record(train_mode=False):
                 if logits is True:
-                    preds = self._model(x_)
+                    preds = self._model(x_defences)
                 else:
-                    preds = self._model(x_).softmax()
+                    preds = self._model(x_defences).softmax()
                 class_slices = [preds[:, i] for i in range(self.nb_classes)]
 
             grads = []
             for slice_ in class_slices:
                 slice_.backward(retain_graph=True)
-                grad = x_.grad.asnumpy()
+                grad = x_defences.grad.asnumpy()
                 grads.append(grad)
             grads = np.swapaxes(np.array(grads), 0, 1)
         elif isinstance(label, (int, np.integer)):
             with mx.autograd.record(train_mode=train_mode):
                 if logits is True:
-                    preds = self._model(x_)
+                    preds = self._model(x_defences)
                 else:
-                    preds = self._model(x_).softmax()
+                    preds = self._model(x_defences).softmax()
                 class_slice = preds[:, label]
 
             class_slice.backward()
-            grads = np.expand_dims(x_.grad.asnumpy(), axis=1)
+            grads = np.expand_dims(x_defences.grad.asnumpy(), axis=1)
         else:
             unique_labels = list(np.unique(label))
 
             with mx.autograd.record(train_mode=train_mode):
                 if logits is True:
-                    preds = self._model(x_)
+                    preds = self._model(x_defences)
                 else:
-                    preds = self._model(x_).softmax()
+                    preds = self._model(x_defences).softmax()
                 class_slices = [preds[:, i] for i in unique_labels]
 
             grads = []
             for slice_ in class_slices:
                 slice_.backward(retain_graph=True)
-                grad = x_.grad.asnumpy()
+                grad = x_defences.grad.asnumpy()
                 grads.append(grad)
 
             grads = np.swapaxes(np.array(grads), 0, 1)
             lst = [unique_labels.index(i) for i in label]
             grads = grads[np.arange(len(grads)), lst]
             grads = np.expand_dims(grads, axis=1)
-            grads = self._apply_processing_gradient(grads)
 
+        grads = self._apply_defences_gradient(x_preproc, grads)
         grads = self._apply_processing_gradient(grads)
 
         return grads
@@ -288,17 +288,20 @@ class MXClassifier(Classifier):
 
         train_mode = self._learning_phase if hasattr(self, '_learning_phase') else False
 
-        x_ = mx.nd.array(x, ctx=self._ctx)
-        y_ = mx.nd.array([np.argmax(y, axis=1)]).T
+        x_preproc = self._apply_processing(x)
+        x_defences, y_defences = self._apply_defences(x_preproc, y, fit=False)
+        y_defences = mx.nd.array([np.argmax(y_defences, axis=1)]).T
+        x_defences = mx.nd.array(x_defences, ctx=self._ctx)
+        x_defences.attach_grad()
 
-        x_.attach_grad()
         loss = mx.gluon.loss.SoftmaxCrossEntropyLoss()
         with mx.autograd.record(train_mode=train_mode):
-            preds = self._model(x_)
-            loss = loss(preds, y_)
+            preds = self._model(x_defences)
+            loss = loss(preds, y_defences)
 
         loss.backward()
-        grads = x_.grad.asnumpy()
+        grads = x_defences.grad.asnumpy()
+        grads = self._apply_defences_gradient(x_preproc, grads)
         grads = self._apply_processing_gradient(grads)
         assert grads.shape == x.shape
 
@@ -350,15 +353,15 @@ class MXClassifier(Classifier):
 
         # Apply preprocessing and defences
         if x.shape == self.input_shape:
-            x_ = np.expand_dims(x, 0)
+            x_preproc = np.expand_dims(x, 0)
         else:
-            x_ = x
-        x_ = self._apply_processing(x_)
-        x_ = self._apply_defences_predict(x_)
+            x_preproc = x
+        x_preproc = self._apply_processing(x_preproc)
+        x_preproc, _ = self._apply_defences(x_preproc, None, fit=False)
 
         # Compute activations
-        x_ = mx.nd.array(x_, ctx=self._ctx)
-        preds = self._model[layer_ind](x_)
+        x_preproc = mx.nd.array(x_preproc, ctx=self._ctx)
+        preds = self._model[layer_ind](x_preproc)
 
         return preds.asnumpy()
 

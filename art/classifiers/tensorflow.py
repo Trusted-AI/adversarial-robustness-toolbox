@@ -94,18 +94,18 @@ class TFClassifier(Classifier):
         :rtype: `np.ndarray`
         """
         # Apply defences
-        x_ = self._apply_processing(x)
-        x_ = self._apply_defences_predict(x_)
+        x_preproc = self._apply_processing(x)
+        x_preproc, _ = self._apply_defences(x_preproc, None, fit=False)
 
         # Run prediction with batch processing
-        results = np.zeros((x_.shape[0], self.nb_classes), dtype=np.float32)
-        num_batch = int(np.ceil(len(x_) / float(batch_size)))
+        results = np.zeros((x_preproc.shape[0], self.nb_classes), dtype=np.float32)
+        num_batch = int(np.ceil(len(x_preproc) / float(batch_size)))
         for m in range(num_batch):
             # Batch indexes
-            begin, end = m * batch_size, min((m + 1) * batch_size, x_.shape[0])
+            begin, end = m * batch_size, min((m + 1) * batch_size, x_preproc.shape[0])
 
             # Create feed_dict
-            fd = {self._input_ph: x_[begin:end]}
+            fd = {self._input_ph: x_preproc[begin:end]}
             fd.update(self._feed_dict)
 
             # Run prediction
@@ -138,11 +138,11 @@ class TFClassifier(Classifier):
             raise ValueError("Need the training objective and the output placeholder to train the model.")
 
         # Apply defences
-        x_ = self._apply_processing(x)
-        x_, y_ = self._apply_defences_fit(x_, y)
+        x_preproc = self._apply_processing(x)
+        x_preproc, y_preproc = self._apply_defences(x_preproc, y, fit=True)
 
-        num_batch = int(np.ceil(len(x_) / float(batch_size)))
-        ind = np.arange(len(x_))
+        num_batch = int(np.ceil(len(x_preproc) / float(batch_size)))
+        ind = np.arange(len(x_preproc))
 
         # Start training
         for _ in range(nb_epochs):
@@ -151,8 +151,8 @@ class TFClassifier(Classifier):
 
             # Train for one epoch
             for m in range(num_batch):
-                i_batch = x_[ind[m * batch_size:(m + 1) * batch_size]]
-                o_batch = y_[ind[m * batch_size:(m + 1) * batch_size]]
+                i_batch = x_preproc[ind[m * batch_size:(m + 1) * batch_size]]
+                o_batch = y_preproc[ind[m * batch_size:(m + 1) * batch_size]]
 
                 # Create feed_dict
                 fd = {self._input_ph: i_batch, self._output_ph: o_batch}
@@ -219,10 +219,11 @@ class TFClassifier(Classifier):
 
         self._init_class_grads(label=label, logits=logits)
 
-        x_ = self._apply_processing(x)
+        x_preproc = self._apply_processing(x)
+        x_defences, _ = self._apply_defences(x_preproc, None)
 
         # Create feed_dict
-        fd = {self._input_ph: x_}
+        fd = {self._input_ph: x_defences}
         fd.update(self._feed_dict)
 
         # Compute the gradient and return
@@ -234,8 +235,6 @@ class TFClassifier(Classifier):
                 grads = self._sess.run(self._class_grads, feed_dict=fd)
 
             grads = np.swapaxes(np.array(grads), 0, 1)
-            grads = self._apply_processing_gradient(grads)
-
         elif isinstance(label, (int, np.integer)):
             # Compute the gradients only w.r.t. the provided label
             if logits:
@@ -245,8 +244,6 @@ class TFClassifier(Classifier):
 
             grads = grads[None, ...]
             grads = np.swapaxes(np.array(grads), 0, 1)
-            grads = self._apply_processing_gradient(grads)
-
         else:
             # For each sample, compute the gradients w.r.t. the indicated target class (possibly distinct)
             unique_label = list(np.unique(label))
@@ -259,7 +256,8 @@ class TFClassifier(Classifier):
             lst = [unique_label.index(i) for i in label]
             grads = np.expand_dims(grads[np.arange(len(grads)), lst], axis=1)
 
-            grads = self._apply_processing_gradient(grads)
+        grads = self._apply_defences_gradient(x_preproc, grads)
+        grads = self._apply_processing_gradient(grads)
 
         return grads
 
@@ -274,20 +272,22 @@ class TFClassifier(Classifier):
         :return: Array of gradients of the same shape as `x`.
         :rtype: `np.ndarray`
         """
-        x_ = self._apply_processing(x)
+        x_preproc = self._apply_processing(x)
+        x_defences, y_ = self._apply_defences(x_preproc, y, fit=False)
 
         # Check if loss available
         if not hasattr(self, '_loss_grads') or self._loss_grads is None or self._output_ph is None:
             raise ValueError("Need the loss function and the labels placeholder to compute the loss gradient.")
 
         # Create feed_dict
-        fd = {self._input_ph: x_, self._output_ph: y}
+        fd = {self._input_ph: x_defences, self._output_ph: y_}
         fd.update(self._feed_dict)
 
         # Compute the gradient and return
         grds = self._sess.run(self._loss_grads, feed_dict=fd)
+        grds = self._apply_defences_gradient(x_preproc, grds)
         grds = self._apply_processing_gradient(grds)
-        assert grds.shape == x_.shape
+        assert grds.shape == x_preproc.shape
 
         return grds
 
@@ -421,18 +421,18 @@ class TFClassifier(Classifier):
             raise TypeError("Layer must be of type `str` or `int`. Received '%s'", layer)
 
         # Apply preprocessing and defences
-        x_ = self._apply_processing(x)
-        x_ = self._apply_defences_predict(x_)
+        x_preproc = self._apply_processing(x)
+        x_preproc, _ = self._apply_defences(x_preproc, None, fit=False)
 
         # Run prediction with batch processing
         results = []
-        num_batch = int(np.ceil(len(x_) / float(batch_size)))
+        num_batch = int(np.ceil(len(x_preproc) / float(batch_size)))
         for m in range(num_batch):
             # Batch indexes
-            begin, end = m * batch_size, min((m + 1) * batch_size, x_.shape[0])
+            begin, end = m * batch_size, min((m + 1) * batch_size, x_preproc.shape[0])
 
             # Create feed_dict
-            fd = {self._input_ph: x_[begin:end]}
+            fd = {self._input_ph: x_preproc[begin:end]}
             fd.update(self._feed_dict)
 
             # Run prediction for the current batch

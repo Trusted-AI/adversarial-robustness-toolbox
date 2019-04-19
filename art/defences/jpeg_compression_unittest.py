@@ -8,7 +8,7 @@ from keras.datasets import cifar10
 import numpy as np
 
 from art.defences.jpeg_compression import JpegCompression
-from art.utils import master_seed
+from art.utils import load_mnist, master_seed
 
 logger = logging.getLogger('testLogger')
 
@@ -19,11 +19,11 @@ class TestJpegCompression(unittest.TestCase):
         master_seed(1234)
 
     def test_one_channel(self):
-        mnist = input_data.read_data_sets("tmp/MNIST_data/")
-        x = np.reshape(mnist.test.images[0:2], (-1, 28, 28, 1))
+        (x_train, _), (_, _), _, _ = load_mnist()
+        x_train = x_train[:2]
         preprocess = JpegCompression()
-        compressed_x = preprocess(x, quality=70)
-        self.assertTrue((compressed_x.shape == x.shape))
+        compressed_x, _ = preprocess(x_train, quality=70)
+        self.assertTrue((compressed_x.shape == x_train.shape))
         self.assertTrue((compressed_x <= 1.0).all())
         self.assertTrue((compressed_x >= 0.0).all())
 
@@ -31,7 +31,7 @@ class TestJpegCompression(unittest.TestCase):
         (train_features, _), (_, _) = cifar10.load_data()
         x = train_features[:2] / 255.0
         preprocess = JpegCompression()
-        compressed_x = preprocess(x, quality=80)
+        compressed_x, _ = preprocess(x, quality=80)
         self.assertTrue((compressed_x.shape == x.shape))
         self.assertTrue((compressed_x <= 1.0).all())
         self.assertTrue((compressed_x >= 0.0).all())
@@ -41,7 +41,7 @@ class TestJpegCompression(unittest.TestCase):
         x = train_features[:2] / 255.0
         x = np.swapaxes(x, 1, 3)
         preprocess = JpegCompression(channel_index=1)
-        compressed_x = preprocess(x, quality=80)
+        compressed_x, _ = preprocess(x, quality=80)
         self.assertTrue((compressed_x.shape == x.shape))
         self.assertTrue((compressed_x <= 1.0).all())
         self.assertTrue((compressed_x >= 0.0).all())

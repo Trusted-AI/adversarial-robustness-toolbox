@@ -157,12 +157,15 @@ class TestFastGradientMethod(unittest.TestCase):
         self._test_with_defences(custom_activation=True)
 
     def _test_with_defences(self, custom_activation=False):
+        from art.defences import FeatureSqueezing
+
         # Get MNIST
         (x_train, y_train), (x_test, y_test) = self.mnist
 
         # Get the ready-trained Keras model
         model = self.classifier_k._model
-        classifier = KerasClassifier((0, 1), model, defences='featsqueeze1', custom_activation=custom_activation)
+        fs = FeatureSqueezing(bit_depth=1, clip_values=(0, 1))
+        classifier = KerasClassifier((0, 1), model, defences=fs, custom_activation=custom_activation)
 
         attack = FastGradientMethod(classifier, eps=1)
         x_train_adv = attack.generate(x_train)

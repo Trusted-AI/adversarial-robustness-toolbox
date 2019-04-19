@@ -59,3 +59,9 @@ Total Variance Minimization
 .. autoclass:: TotalVarMin
    :members:
    :special-members:
+
+Base Preprocessor Class
+-----------------------
+.. autoclass:: Preprocessor
+   :members:
+   :special-members:
