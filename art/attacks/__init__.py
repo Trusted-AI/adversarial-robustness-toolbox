@@ -1,6 +1,7 @@
 """
 Module providing adversarial attacks under a common interface.
 """
+from art.attacks.adversarial_patch import AdversarialPatch
 from art.attacks.attack import Attack
 from art.attacks.boundary import BoundaryAttack
 from art.attacks.carlini import CarliniL2Method, CarliniLInfMethod
@@ -15,4 +16,3 @@ from art.attacks.spatial_transformation import SpatialTransformation
 from art.attacks.universal_perturbation import UniversalPerturbation
 from art.attacks.virtual_adversarial import VirtualAdversarialMethod
 from art.attacks.zoo import ZooAttack
-

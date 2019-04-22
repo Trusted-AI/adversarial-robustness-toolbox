@@ -20,8 +20,6 @@ from __future__ import absolute_import, division, print_function, unicode_litera
 import abc
 import sys
 
-# TODO Add tests for defences on classifier
-
 # Ensure compatibility with Python 2 and 3 when using ABCMeta
 if sys.version_info >= (3, 4):
     ABC = abc.ABC
@@ -42,19 +40,26 @@ class Classifier(ABC):
         :type clip_values: `tuple`
         :param channel_index: Index of the axis in data containing the color channels or features.
         :type channel_index: `int`
-        :param defences: Defences to be activated with the classifier.
-        :type defences: `str` or `list(str)`
+        :param defences: Defence(s) to be activated with the classifier.
+        :type defences: :class:`.Preprocessor` or `list(Preprocessor)` instances
         :param preprocessing: Tuple of the form `(substractor, divider)` of floats or `np.ndarray` of values to be
                used for data preprocessing. The first value will be substracted from the input. The input will then
                be divided by the second one.
         :type preprocessing: `tuple`
         """
+        from art.defences.preprocessor import Preprocessor
+
         if len(clip_values) != 2:
             raise ValueError('`clip_values` should be a tuple of 2 floats containing the allowed data range.')
+        if clip_values[0] >= clip_values[1]:
+            raise ValueError('Invalid `clip_values`: min >= max.')
         self._clip_values = clip_values
 
         self._channel_index = channel_index
-        self._parse_defences(defences)
+        if isinstance(defences, Preprocessor):
+            self.defences = [defences]
+        else:
+            self.defences = defences
 
         if len(preprocessing) != 2:
             raise ValueError('`preprocessing` should be a tuple of 2 floats with the substract and divide values for'
@@ -120,7 +125,7 @@ class Classifier(ABC):
 
             # Apply preprocessing and defences
             x = self._apply_processing(x)
-            x, y = self._apply_defences_fit(x, y)
+            x, y = self._apply_defences(x, y, fit=True)
 
             # Fit for current batch
             self.fit(x, y, nb_epochs=1, batch_size=len(x), **kwargs)
@@ -267,56 +272,61 @@ class Classifier(ABC):
         """
         raise NotImplementedError
 
-    def _parse_defences(self, defences):
-        self.defences = defences
+    def _apply_defences(self, x, y, fit=False):
+        """
+        Apply the defences specified for the classifier in inputs `(x, y)`.
 
-        if defences:
-            import re
-            pattern = re.compile("featsqueeze[1-8]?")
-
-            for defence in defences:
-                if pattern.match(defence):
-                    try:
-                        from art.defences import FeatureSqueezing
-
-                        bit_depth = int(defence[-1])
-                        self.feature_squeeze = FeatureSqueezing(bit_depth=bit_depth)
-                    except:
-                        raise ValueError('You must specify the bit depth for feature squeezing: featsqueeze[1-8]')
-
-                # Add label smoothing
-                if defence == 'labsmooth':
-                    from art.defences import LabelSmoothing
-                    self.label_smooth = LabelSmoothing()
-
-                # Add spatial smoothing
-                if defence == 'smooth':
-                    from art.defences import SpatialSmoothing
-                    self.smooth = SpatialSmoothing(channel_index=self.channel_index)
-
-    def _apply_defences_fit(self, x, y):
-        # Apply label smoothing if option is set
-        if hasattr(self, 'label_smooth'):
-            _, y = self.label_smooth(None, y)
-
-        # Apply feature squeezing if option is set
-        if hasattr(self, 'feature_squeeze'):
-            x = self.feature_squeeze(x, clip_values=self.clip_values)
+        :param x: Input data, where first dimension is the batch size.
+        :type x: `np.ndarray`
+        :param y: Labels for input data, where first dimension is the batch size.
+        :type y: `np.ndarray`
+        :param fit: `True` if the defences are applied during training.
+        :return: Value of the data after applying the defences.
+        :rtype: `np.ndarray`
+        """
+        if self.defences is not None:
+            for defence in self.defences:
+                if fit:
+                    if defence.apply_fit:
+                        x, y = defence(x, y)
+                else:
+                    if defence.apply_predict:
+                        x, y = defence(x, y)
 
         return x, y
 
-    def _apply_defences_predict(self, x):
-        # Apply feature squeezing if option is set
-        if hasattr(self, 'feature_squeeze'):
-            x = self.feature_squeeze(x, clip_values=self.clip_values)
+    def _apply_defences_gradient(self, x, grad, fit=False):
+        """
+        Apply the backward pass through the preprocessing defences.
 
-        # Apply inputs smoothing if option is set
-        if hasattr(self, 'smooth'):
-            x = self.smooth(x)
+        :param x: Input data for which the gradient is estimated. First dimension is the batch size.
+        :type x: `np.ndarray`
+        :param grad: Gradient value so far.
+        :type grad: `np.ndarray`
+        :param fit: `True` if the gradient is computed during training.
+        :return: Value of the gradient.
+        :rtype: `np.ndarray`
+        """
+        if self.defences is not None:
+            for defence in self.defences[::-1]:
+                if fit:
+                    if defence.apply_fit:
+                        grad = defence.estimate_gradient(x, grad)
+                else:
+                    if defence.apply_predict:
+                        grad = defence.estimate_gradient(x, grad)
 
-        return x
+        return grad
 
     def _apply_processing(self, x):
+        """
+        Apply the data preprocessing / normalization steps specified for the classifier on `x`.
+
+        :param x: Input data, where first dimension is the batch size.
+        :type x: `np.ndarray`
+        :return: Value of the preprocessed data.
+        :rtype: `np.ndarray`
+        """
         import numpy as np
 
         sub, div = self.preprocessing
@@ -329,6 +339,14 @@ class Classifier(ABC):
         return res
 
     def _apply_processing_gradient(self, grad):
+        """
+        Apply the backward pass through the data preprocessing / normalization steps.
+
+        :param grad: Gradient value so far.
+        :type grad: `np.ndarray`
+        :return: Value of the gradient.
+        :rtype: `np.ndarray`
+        """
         import numpy as np
 
         _, div = self.preprocessing

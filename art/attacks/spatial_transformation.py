@@ -41,11 +41,13 @@ class SpatialTransformation(Attack):
         """
         :param classifier: A trained model.
         :type classifier: :class:`.Classifier`
-        :param max_translation: The maximum translation in any direction as percentage of image size.
+        :param max_translation: The maximum translation in any direction as percentage of image size. The value is
+               expected to be in the range `[0, 100]`.
         :type max_translation: `float`
         :param num_translations: The number of translations to search on grid spacing per direction.
         :type num_translations: `int`
-        :param max_rotation: The maximum rotation in either direction in degrees.
+        :param max_rotation: The maximum rotation in either direction in degrees. The value is expected to be in the
+               range `[0, 180]`.
         :type max_rotation: `float`
         :param num_rotations: The number of rotations to search on grid spacing.
         :type num_rotations: `int`
@@ -69,17 +71,16 @@ class SpatialTransformation(Attack):
 
         :param x: An array with the original inputs.
         :type x: `np.ndarray`
-        :param max_translation: The maximum translation in any direction as percentage of image size.
+        :param max_translation: The maximum translation in any direction as percentage of image size. The value is
+               expected to be in the range `[0, 100]`.
         :type max_translation: `float`
         :param num_translations: The number of translations to search on grid spacing per direction.
         :type num_translations: `int`
-        :param max_rotation: The maximum rotation in either direction in degrees.
+        :param max_rotation: The maximum rotation in either direction in degrees. The value is expected to be in the
+               range `[0, 180]`.
         :type max_rotation: `float`
         :param num_rotations: The number of rotations to search on grid spacing.
         :type num_rotations: `int`
-        :param expectation: An expectation over transformations to be applied when computing
-                            classifier gradients and predictions.
-        :type expectation: :class:`.ExpectationOverTransformations`
         :return: An array holding the adversarial examples.
         :rtype: `np.ndarray`
         """
@@ -171,20 +172,18 @@ class SpatialTransformation(Attack):
         """
         Take in a dictionary of parameters and applies attack-specific checks before saving them as attributes.
 
-        :param max_translation: The maximum translation in any direction as percentage of image size.
+        :param max_translation: The maximum translation in any direction as percentage of image size. The value is
+               expected to be in the range `[0, 100]`.
         :type max_translation: `float`
         :param num_translations: The number of translations to search on grid spacing per direction.
         :type num_translations: `int`
-        :param max_rotation: The maximum rotation in degrees.
+        :param max_rotation: The maximum rotation in either direction in degrees. The value is expected to be in the
+               range `[0, 180]`.
         :type max_rotation: `float`
         :param num_rotations: The number of rotations to search on grid spacing.
         :type num_rotations: `int`
         """
         super(SpatialTransformation, self).set_params(**kwargs)
-
-        for key, value in kwargs.items():
-            if key in self.attack_params:
-                setattr(self, key, value)
 
         if not isinstance(self.max_translation, (float, int)) or self.max_translation < 0 or self.max_translation > 100:
             raise ValueError("The maximum translation must be in the range [0, 100].")

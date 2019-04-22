@@ -47,6 +47,14 @@ class SpatialSmoothing(Preprocessor):
         self._is_fitted = True
         self.set_params(window_size=window_size, channel_index=channel_index)
 
+    @property
+    def apply_fit(self):
+        return False
+
+    @property
+    def apply_predict(self):
+        return True
+
     def __call__(self, x, y=None, window_size=None, clip_values=(0, 1)):
         """
         Apply local spatial smoothing to sample `x`.
@@ -71,7 +79,10 @@ class SpatialSmoothing(Preprocessor):
         result = ndimage.filters.median_filter(x, size=size, mode="reflect")
         result = np.clip(result, clip_values[0], clip_values[1])
 
-        return result.astype(NUMPY_DTYPE)
+        return result.astype(NUMPY_DTYPE), y
+
+    def estimate_gradient(self, x, grad):
+        return grad
 
     def fit(self, x, y=None, **kwargs):
         """

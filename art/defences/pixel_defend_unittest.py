@@ -20,14 +20,12 @@ from __future__ import absolute_import, division, print_function, unicode_litera
 import logging
 import unittest
 
-from tensorflow.examples.tutorials.mnist import input_data
-import numpy as np
 import torch.nn as nn
 import torch.optim as optim
 
-from art.defences.pixel_defend import PixelDefend
 from art.classifiers.pytorch import PyTorchClassifier
-from art.utils import master_seed
+from art.defences.pixel_defend import PixelDefend
+from art.utils import load_mnist, master_seed
 
 logger = logging.getLogger('testLogger')
 
@@ -57,13 +55,14 @@ class TestPixelDefend(unittest.TestCase):
         self.pixelcnn = PyTorchClassifier((0, 1), model, loss_fn, optimizer, (1, 28, 28), 10)
 
     def test_one_channel(self):
-        mnist = input_data.read_data_sets("tmp/MNIST_data/")
-        x = np.reshape(mnist.test.images[0:2], (-1, 28, 28, 1))
-        x = x[:, 10:15, 15:20, :]
-        preprocess = PixelDefend()
-        defended_x = preprocess(x, eps=5, pixelcnn=self.pixelcnn)
+        (x_train, _), (_, _), _, _ = load_mnist()
+        x_train = x_train[:2]
 
-        self.assertTrue((defended_x.shape == x.shape))
+        x_train = x_train[:, 10:15, 15:20, :]
+        preprocess = PixelDefend()
+        defended_x, _ = preprocess(x_train, eps=5, pixel_cnn=self.pixelcnn)
+
+        self.assertTrue((defended_x.shape == x_train.shape))
         self.assertTrue((defended_x <= 1.0).all())
         self.assertTrue((defended_x >= 0.0).all())
 

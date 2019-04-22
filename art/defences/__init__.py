@@ -7,6 +7,7 @@ from art.defences.gaussian_augmentation import GaussianAugmentation
 from art.defences.jpeg_compression import JpegCompression
 from art.defences.label_smoothing import LabelSmoothing
 from art.defences.pixel_defend import PixelDefend
+from art.defences.preprocessor import Preprocessor
 from art.defences.spatial_smoothing import SpatialSmoothing
 from art.defences.thermometer_encoding import ThermometerEncoding
 from art.defences.variance_minimization import TotalVarMin
