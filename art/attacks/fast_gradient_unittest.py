@@ -169,6 +169,16 @@ class TestFastGradientMethod(unittest.TestCase):
         acc = np.sum(np.argmax(test_y_pred, axis=1) == np.argmax(y_test, axis=1)) / y_test.shape[0]
         logger.info('Accuracy on adversarial test examples with L2 norm: %.2f%%', (acc * 100))
 
+        # Test random initialisations
+        attack = FastGradientMethod(classifier, num_random_init=30)
+        x_test_adv = attack.generate(x_test)
+        self.assertFalse((x_test == x_test_adv).all())
+
+        test_y_pred = get_labels_np_array(classifier.predict(x_test_adv))
+        self.assertFalse((y_test == test_y_pred).all())
+        acc = np.sum(np.argmax(test_y_pred, axis=1) == np.argmax(y_test, axis=1)) / y_test.shape[0]
+        logger.info('Accuracy on adversarial test examples with 3 random initialisations: %.2f%%', (acc * 100))
+
     def test_with_defences(self):
         self._test_with_defences(custom_activation=False)
         self._test_with_defences(custom_activation=True)
