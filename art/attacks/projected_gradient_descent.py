@@ -51,7 +51,7 @@ class ProjectedGradientDescent(BasicIterativeMethod):
         :type eps_step: `float`
         :param targeted: Should the attack target one specific class
         :type targeted: `bool`
-        :param num_random_init: Number of random initialisations withing the epsilon ball. For random_init=0 starting at the
+        :param num_random_init: Number of random initialisations within the epsilon ball. For random_init=0 starting at the
         original input.
         :type num_random_init: `int`
         :param batch_size: Batch size

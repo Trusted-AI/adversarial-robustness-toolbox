@@ -51,7 +51,7 @@ class BasicIterativeMethod(FastGradientMethod):
         :type max_iter: `int`
         :param targeted: Should the attack target one specific class
         :type targeted: `bool`
-        :param num_random_init: Number of random initialisations withing the epsilon ball. For num_random_init=0
+        :param num_random_init: Number of random initialisations within the epsilon ball. For num_random_init=0
         starting at the original input.
         :type num_random_init: `int`
         :param batch_size: Batch size
@@ -87,7 +87,7 @@ class BasicIterativeMethod(FastGradientMethod):
                   "label leaking" effect (explained in this paper: https://arxiv.org/abs/1611.01236). Default is `None`.
                   Labels should be one-hot-encoded.
         :type y: `np.ndarray`
-        :param num_random_init: Number of random initialisations withing the epsilon ball. For num_random_init=0
+        :param num_random_init: Number of random initialisations within the epsilon ball. For num_random_init=0
         starting at the original input.
         :type num_random_init: `int`
         :param batch_size: Batch size
@@ -144,7 +144,7 @@ class BasicIterativeMethod(FastGradientMethod):
         :type eps: `float`
         :param eps_step: Attack step size (input variation) at each iteration.
         :type eps_step: `float`
-        :param num_random_init: Number of random initialisations withing the epsilon ball. For num_random_init=0
+        :param num_random_init: Number of random initialisations within the epsilon ball. For num_random_init=0
         starting at the original input.
         :type num_random_init: `int`
         :param batch_size: Batch size
