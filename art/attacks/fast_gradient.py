@@ -194,7 +194,7 @@ class FastGradientMethod(Attack):
         if self.batch_size <= 0:
             raise ValueError('The batch size `batch_size` has to be positive.')
 
-        if not isinstance(self.num_random_init, int):
+        if not isinstance(self.num_random_init, (int, np.int)):
             raise TypeError('The number of random initialisations has to be of type integer')
 
         if self.num_random_init < 0:
