@@ -170,7 +170,7 @@ class TestFastGradientMethod(unittest.TestCase):
         logger.info('Accuracy on adversarial test examples with L2 norm: %.2f%%', (acc * 100))
 
         # Test random initialisations
-        attack = FastGradientMethod(classifier, num_random_init=30)
+        attack = FastGradientMethod(classifier, num_random_init=3)
         x_test_adv = attack.generate(x_test)
         self.assertFalse((x_test == x_test_adv).all())
 
