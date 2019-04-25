@@ -33,9 +33,9 @@ class FastGradientMethod(Attack):
     Gradient Sign Method"). This implementation extends the attack to other norms, and is therefore called the Fast
     Gradient Method. Paper link: https://arxiv.org/abs/1412.6572
     """
-    attack_params = Attack.attack_params + ['norm', 'eps', 'targeted', 'random_init', 'batch_size']
+    attack_params = Attack.attack_params + ['norm', 'eps', 'targeted', 'num_random_init', 'batch_size']
 
-    def __init__(self, classifier, norm=np.inf, eps=.3, targeted=False, random_init=False, batch_size=128):
+    def __init__(self, classifier, norm=np.inf, eps=.3, targeted=False, num_random_init=0, batch_size=128):
         """
         Create a :class:`.FastGradientMethod` instance.
 
@@ -47,8 +47,9 @@ class FastGradientMethod(Attack):
         :type eps: `float`
         :param targeted: Should the attack target one specific class
         :type targeted: `bool`
-        :param random_init: Whether to start at the original input or a random point within the epsilon ball
-        :type random_init: `bool`
+        :param num_random_init: Number of random initialisations within the epsilon ball. For random_init=0 starting at
+            the original input.
+        :type num_random_init: `int`
         :param batch_size: Batch size
         :type batch_size: `int`
         """
@@ -57,7 +58,7 @@ class FastGradientMethod(Attack):
         self.norm = norm
         self.eps = eps
         self.targeted = targeted
-        self.random_init = random_init
+        self.num_random_init = num_random_init
         self.batch_size = batch_size
 
     def _minimal_perturbation(self, x, y, eps_step=0.1, eps_max=1., **kwargs):
@@ -125,8 +126,9 @@ class FastGradientMethod(Attack):
         :param minimal: `True` if only the minimal perturbation should be computed. In that case, use `eps_step` for the
                         step size and `eps_max` for the total allowed perturbation.
         :type minimal: `bool`
-        :param random_init: Whether to start at the original input or a random point within the epsilon ball
-        :type random_init: `bool`
+        :param num_random_init: Number of random initialisations within the epsilon ball. For num_random_init=0
+            starting at the original input.
+        :type num_random_init: `bool`
         :param batch_size: Batch size
         :type batch_size: `int`
         :return: An array holding the adversarial examples.
@@ -150,14 +152,22 @@ class FastGradientMethod(Attack):
         # Return adversarial examples computed with minimal perturbation if option is active
         if 'minimal' in params_cpy and params_cpy[str('minimal')]:
             logger.info('Performing minimal perturbation FGM.')
-            x_adv = self._minimal_perturbation(x, y, **params_cpy)
+            adv_x_best = self._minimal_perturbation(x, y, **params_cpy)
+            rate_best = 100 * compute_success(self.classifier, x, y, adv_x_best, self.targeted)
         else:
-            x_adv = self._compute(x, y, self.eps, self.eps, self.random_init)
+            adv_x_best = None
+            rate_best = 0.0
 
-        logger.info('Success rate of FGM attack: %.2f%%',
-                    100 * compute_success(self.classifier, x, y, x_adv, self.targeted))
+            for i_random_init in range(max(1, self.num_random_init)):
+                adv_x = self._compute(x, y, self.eps, self.eps, self.num_random_init > 0)
+                rate = 100 * compute_success(self.classifier, x, y, adv_x, self.targeted)
+                if rate > rate_best or adv_x_best is None:
+                    rate_best = rate
+                    adv_x_best = adv_x.copy()
 
-        return x_adv
+        logger.info('Success rate of FGM attack: %.2f%%', rate_best)
+
+        return adv_x_best
 
     def set_params(self, **kwargs):
         """
@@ -183,6 +193,12 @@ class FastGradientMethod(Attack):
 
         if self.batch_size <= 0:
             raise ValueError('The batch size `batch_size` has to be positive.')
+
+        if not isinstance(self.num_random_init, (int, np.int)):
+            raise TypeError('The number of random initialisations has to be of type integer')
+
+        if self.num_random_init < 0:
+            raise ValueError('The number of random initialisations `random_init` has to be greater than or equal to 0.')
 
         return True
 
