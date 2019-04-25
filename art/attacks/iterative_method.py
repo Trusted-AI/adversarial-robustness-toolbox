@@ -117,7 +117,8 @@ class BasicIterativeMethod(FastGradientMethod):
 
             for i_max_iter in range(self.max_iter):
 
-                adv_x = self._compute(adv_x, targets, self.eps, self.eps_step, self.num_random_init > 0 and i_max_iter == 0)
+                adv_x = self._compute(adv_x, targets, self.eps, self.eps_step,
+                                      self.num_random_init > 0 and i_max_iter == 0)
 
                 if self._project:
                     noise = projection(adv_x - x, self.eps, self.norm)
@@ -144,7 +145,7 @@ class BasicIterativeMethod(FastGradientMethod):
         :param eps_step: Attack step size (input variation) at each iteration.
         :type eps_step: `float`
         :param num_random_init: Number of random initialisations within the epsilon ball. For num_random_init=0
-        starting at the original input.
+            starting at the original input.
         :type num_random_init: `int`
         :param batch_size: Batch size
         :type batch_size: `int`
