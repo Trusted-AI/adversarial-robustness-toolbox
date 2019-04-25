@@ -113,7 +113,6 @@ class BasicIterativeMethod(FastGradientMethod):
         rate_best = 0.0
 
         for i_random_init in range(max(1, self.num_random_init)):
-
             adv_x = x.copy()
 
             for i_max_iter in range(self.max_iter):

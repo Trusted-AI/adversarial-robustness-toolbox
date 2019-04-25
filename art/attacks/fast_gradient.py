@@ -165,14 +165,12 @@ class FastGradientMethod(Attack):
             adv_x_best = self._minimal_perturbation(x, y, **params_cpy)
             rate_best = 100 * compute_success(self.classifier, x, y, adv_x_best, self.targeted)
         else:
-
             adv_x_best = None
             rate_best = 0.0
 
             for i_random_init in range(max(1, self.num_random_init)):
                 adv_x = self._compute(x, y, self.eps, self.eps, self.num_random_init > 0)
                 rate = 100 * compute_success(self.classifier, x, y, adv_x, self.targeted)
-
                 if rate > rate_best or adv_x_best is None:
                     rate_best = rate
                     adv_x_best = adv_x.copy()
