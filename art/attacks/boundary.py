@@ -116,8 +116,8 @@ class BoundaryAttack(Attack):
 
             x_adv[ind] = x_
 
-        preds_adv = np.argmax(self.classifier.predict(x_adv), axis=1)
-        logger.info('Success rate of Boundary attack: %.2f%%', (np.sum(preds != preds_adv) / x.shape[0]))
+        logger.info('Success rate of Boundary attack: %.2f%%',
+                    (np.sum(preds != np.argmax(self.classifier.predict(x_adv), axis=1)) / x.shape[0]))
 
         return x_adv
 

@@ -22,7 +22,7 @@ import logging
 import numpy as np
 
 from art.attacks.attack import Attack
-from art.utils import get_labels_np_array, random_sphere
+from art.utils import compute_success, get_labels_np_array, random_sphere
 
 logger = logging.getLogger(__name__)
 
@@ -154,12 +154,8 @@ class FastGradientMethod(Attack):
         else:
             x_adv = self._compute(x, y, self.eps, self.eps, self.random_init)
 
-        adv_preds = np.argmax(self.classifier.predict(x_adv), axis=1)
-        if self.targeted:
-            rate = np.sum(adv_preds == np.argmax(y, axis=1)) / x_adv.shape[0]
-        else:
-            rate = np.sum(adv_preds != np.argmax(y, axis=1)) / x_adv.shape[0]
-        logger.info('Success rate of FGM attack: %.2f%%', rate)
+        logger.info('Success rate of FGM attack: %.2f%%',
+                    100 * compute_success(self.classifier, x, y, x_adv, self.targeted))
 
         return x_adv
 
