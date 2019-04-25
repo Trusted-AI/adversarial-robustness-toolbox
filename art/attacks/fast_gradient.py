@@ -109,16 +109,6 @@ class FastGradientMethod(Attack):
 
         return adv_x
 
-    def _get_rate(self, x_adv, y):
-        adv_preds = np.argmax(self.classifier.predict(x_adv), axis=1)
-
-        if self.targeted:
-            rate = np.sum(adv_preds == np.argmax(y, axis=1)) / x_adv.shape[0]
-        else:
-            rate = np.sum(adv_preds != np.argmax(y, axis=1)) / x_adv.shape[0]
-
-        return rate
-
     def generate(self, x, **kwargs):
         """Generate adversarial samples and return them in an array.
 
