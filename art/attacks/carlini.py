@@ -23,7 +23,7 @@ import numpy as np
 
 from art import NUMPY_DTYPE
 from art.attacks.attack import Attack
-from art.utils import get_labels_np_array, tanh_to_original, original_to_tanh
+from art.utils import compute_success, get_labels_np_array, tanh_to_original, original_to_tanh
 
 logger = logging.getLogger(__name__)
 
@@ -371,13 +371,8 @@ class CarliniL2Method(Attack):
 
             x_adv[batch_index_1:batch_index_2] = best_x_adv_batch
 
-        adv_preds = np.argmax(self.classifier.predict(x_adv), axis=1)
-        if self.targeted:
-            rate = np.sum(adv_preds == np.argmax(y, axis=1)) / x_adv.shape[0]
-        else:
-            preds = np.argmax(self.classifier.predict(x), axis=1)
-            rate = np.sum(adv_preds != preds) / x_adv.shape[0]
-        logger.info('Success rate of C&W attack: %.2f%%', 100*rate)
+        logger.info('Success rate of C&W L_2 attack: %.2f%%',
+                    100 * compute_success(self.classifier, x, y, x_adv, self.targeted))
 
         return x_adv
 
@@ -699,13 +694,8 @@ class CarliniLInfMethod(Attack):
             x_adv_batch[~attack_success] = x_batch[~attack_success]
             x_adv[batch_index_1:batch_index_2] = x_adv_batch
 
-        adv_preds = np.argmax(self.classifier.predict(x_adv), axis=1)
-        if self.targeted:
-            rate = np.sum(adv_preds == np.argmax(y, axis=1)) / x_adv.shape[0]
-        else:
-            preds = np.argmax(self.classifier.predict(x), axis=1)
-            rate = np.sum(adv_preds != preds) / x_adv.shape[0]
-        logger.info('Success rate of C&W attack: %.2f%%', 100 * rate)
+        logger.info('Success rate of C&W L_inf attack: %.2f%%',
+                    100 * compute_success(self.classifier, x, y, x_adv, self.targeted))
 
         return x_adv
 

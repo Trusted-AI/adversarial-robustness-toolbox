@@ -321,6 +321,17 @@ def preprocess(x, y, nb_classes=10, max_value=255):
     return x, y
 
 
+def compute_success(classifier, x_clean, labels, x_adv, targeted=False):
+    adv_preds = np.argmax(classifier.predict(x_adv), axis=1)
+    if targeted:
+        rate = np.sum(adv_preds == np.argmax(labels, axis=1)) / x_adv.shape[0]
+    else:
+        preds = np.argmax(classifier.predict(x_clean), axis=1)
+        rate = np.sum(adv_preds != preds) / x_adv.shape[0]
+
+    return rate
+
+
 # -------------------------------------------------------------------------------------------------------- IO FUNCTIONS
 
 

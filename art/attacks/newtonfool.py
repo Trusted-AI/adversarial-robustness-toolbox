@@ -101,9 +101,9 @@ class NewtonFool(Attack):
             # Apply clip
             x_adv[batch_index_1:batch_index_2] = np.clip(batch, clip_min, clip_max)
 
-        preds = np.argmax(self.classifier.predict(x), axis=1)
-        preds_adv = np.argmax(self.classifier.predict(x_adv), axis=1)
-        logger.info('Success rate of NewtonFool attack: %.2f%%', (np.sum(preds != preds_adv) / x.shape[0]))
+        logger.info('Success rate of NewtonFool attack: %.2f%%',
+                    (np.sum(np.argmax(self.classifier.predict(x), axis=1) !=
+                            np.argmax(self.classifier.predict(x_adv), axis=1)) / x.shape[0]))
 
         return x_adv
 

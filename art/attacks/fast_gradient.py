@@ -22,7 +22,7 @@ import logging
 import numpy as np
 
 from art.attacks.attack import Attack
-from art.utils import get_labels_np_array, random_sphere
+from art.utils import compute_success, get_labels_np_array, random_sphere
 
 logger = logging.getLogger(__name__)
 
@@ -170,12 +170,8 @@ class FastGradientMethod(Attack):
             rate_best = 0.0
 
             for i_random_init in range(max(1, self.num_random_init)):
-
                 adv_x = self._compute(x, y, self.eps, self.eps, self.num_random_init > 0)
-
-                rate = self._get_rate(adv_x, y)
-
-                print('rate:', rate)
+                rate = 100 * compute_success(self.classifier, x, y, adv_x, self.targeted)
 
                 if rate > rate_best or adv_x_best is None:
                     rate_best = rate
