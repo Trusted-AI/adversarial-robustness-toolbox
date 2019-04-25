@@ -128,7 +128,7 @@ class BasicIterativeMethod(FastGradientMethod):
 
             if rate > rate_best or adv_x_best is None:
                 rate_best = rate
-                adv_x_best = adv_x.copy()
+                adv_x_best = adv_x
 
         logger.info('Success rate of BIM attack: %.2f%%', rate_best)
 

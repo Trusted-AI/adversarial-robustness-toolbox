@@ -163,7 +163,7 @@ class FastGradientMethod(Attack):
                 rate = 100 * compute_success(self.classifier, x, y, adv_x, self.targeted)
                 if rate > rate_best or adv_x_best is None:
                     rate_best = rate
-                    adv_x_best = adv_x.copy()
+                    adv_x_best = adv_x
 
         logger.info('Success rate of FGM attack: %.2f%%', rate_best)
 
