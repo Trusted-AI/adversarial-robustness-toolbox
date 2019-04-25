@@ -33,7 +33,7 @@ class FastGradientMethod(Attack):
     Gradient Sign Method"). This implementation extends the attack to other norms, and is therefore called the Fast
     Gradient Method. Paper link: https://arxiv.org/abs/1412.6572
     """
-     attack_params = Attack.attack_params + ['norm', 'eps', 'targeted', 'num_random_init', 'batch_size']
+    attack_params = Attack.attack_params + ['norm', 'eps', 'targeted', 'num_random_init', 'batch_size']
 
     def __init__(self, classifier, norm=np.inf, eps=.3, targeted=False, num_random_init=0, batch_size=128):
         """
