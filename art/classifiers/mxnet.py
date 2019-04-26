@@ -31,15 +31,12 @@ class MXClassifier(Classifier):
     """
     Wrapper class for importing MXNet Gluon model.
     """
-    def __init__(self, clip_values, model, input_shape, nb_classes, optimizer=None, ctx=None, channel_index=1,
+    def __init__(self, model, input_shape, nb_classes, optimizer=None, ctx=None, channel_index=1, clip_values=None,
                  defences=None, preprocessing=(0, 1)):
         """
         Initialize an `MXClassifier` object. Assumes the `model` passed as parameter is a Gluon model and that the
         loss function is the softmax cross-entropy.
 
-        :param clip_values: Tuple of the form `(min, max)` representing the minimum and maximum values allowed
-               for features.
-        :type clip_values: `tuple`
         :param model: The model with logits as expected output.
         :type model: `mxnet.gluon.Block`
         :param input_shape: The shape of one input instance.
@@ -53,6 +50,11 @@ class MXClassifier(Classifier):
         :type ctx: `mxnet.context.Context`
         :param channel_index: Index of the axis in data containing the color channels or features.
         :type channel_index: `int`
+        :param clip_values: Tuple of the form `(min, max)` of floats or `np.ndarray` representing the minimum and
+               maximum values allowed for features. If floats are provided, these will be used as the range of all
+               features. If arrays are provided, each value will be considered the bound for a feature, thus
+               the shape of clip values needs to match the total number of features.
+        :type clip_values: `tuple`
         :param defences: Defences to be activated with the classifier.
         :type defences: `str` or `list(str)`
         :param preprocessing: Tuple of the form `(substractor, divider)` of floats or `np.ndarray` of values to be
@@ -434,11 +436,11 @@ class MXClassifier(Classifier):
         logger.info("Model parameters saved in path: %s.params.", full_path)
 
     def __repr__(self):
-        repr_ = "%s(clip_values=%r, model=%r, input_shape=%r, nb_classes=%r, optimizer=%r, ctx=%r, channel_index=%r, " \
-                "defences=%r, preprocessing=%r)" \
+        repr_ = "%s(model=%r, input_shape=%r, nb_classes=%r, optimizer=%r, ctx=%r, channel_index=%r, " \
+                "clip_values=%r, defences=%r, preprocessing=%r)" \
                 % (self.__module__ + '.' + self.__class__.__name__,
-                   self.clip_values, self._model, self.input_shape, self.nb_classes, self._optimizer, self._ctx,
-                   self.channel_index, self.defences, self.preprocessing)
+                   self._model, self.input_shape, self.nb_classes, self._optimizer, self._ctx,
+                   self.channel_index, self.clip_values, self.defences, self.preprocessing)
 
         return repr_
 

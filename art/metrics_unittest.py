@@ -110,7 +110,7 @@ class TestMetrics(unittest.TestCase):
         model.compile(loss=keras.losses.categorical_crossentropy, optimizer=keras.optimizers.Adam(lr=0.01),
                       metrics=['accuracy'])
 
-        classifier = KerasClassifier((0, 1), model, use_logits=False)
+        classifier = KerasClassifier(model=model, clip_values=(0, 1), use_logits=False)
         return classifier
 
 #########################################
@@ -169,7 +169,8 @@ class TestClever(unittest.TestCase):
         sess.run(tf.global_variables_initializer())
 
         # Create the classifier
-        tfc = TFClassifier((0, 1), input_ph, logits, output_ph, train, loss, None, sess)
+        tfc = TFClassifier(input_ph=input_ph, logits=logits, output_ph=output_ph, train=train, loss=loss,
+                           learning=None, sess=sess, clip_values=(0, 1))
 
         return tfc
 
@@ -194,7 +195,7 @@ class TestClever(unittest.TestCase):
                       metrics=['accuracy'])
 
         # Get the classifier
-        krc = KerasClassifier((0, 1), model, use_logits=False)
+        krc = KerasClassifier(model, clip_values=(0, 1), use_logits=False)
 
         return krc
 
@@ -212,7 +213,8 @@ class TestClever(unittest.TestCase):
         optimizer = optim.Adam(model.parameters(), lr=0.01)
 
         # Get classifier
-        ptc = PyTorchClassifier((0, 1), model, loss_fn, optimizer, (1, 28, 28), 10)
+        ptc = PyTorchClassifier(model=model, loss=loss_fn, optimizer=optimizer, input_shape=(1, 28, 28), nb_classes=10,
+                                clip_values=(0, 1))
 
         return ptc
 

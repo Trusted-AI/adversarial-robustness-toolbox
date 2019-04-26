@@ -32,14 +32,11 @@ class PyTorchClassifier(Classifier):
     """
     This class implements a classifier with the PyTorch framework.
     """
-    def __init__(self, clip_values, model, loss, optimizer, input_shape, nb_classes, channel_index=1, defences=None,
-                 preprocessing=(0, 1)):
+    def __init__(self, model, loss, optimizer, input_shape, nb_classes, channel_index=1, clip_values=None,
+                 defences=None, preprocessing=(0, 1)):
         """
         Initialization specifically for the PyTorch-based implementation.
 
-        :param clip_values: Tuple of the form `(min, max)` representing the minimum and maximum values allowed
-               for features.
-        :type clip_values: `tuple`
         :param model: PyTorch model. The forward function of the model must return the logit output.
         :type model: is instance of `torch.nn.Module`
         :param loss: The loss function for which to compute gradients for training. The target label must be raw
@@ -53,6 +50,11 @@ class PyTorchClassifier(Classifier):
         :type nb_classes: `int`
         :param channel_index: Index of the axis in data containing the color channels or features.
         :type channel_index: `int`
+        :param clip_values: Tuple of the form `(min, max)` of floats or `np.ndarray` representing the minimum and
+               maximum values allowed for features. If floats are provided, these will be used as the range of all
+               features. If arrays are provided, each value will be considered the bound for a feature, thus
+               the shape of clip values needs to match the total number of features.
+        :type clip_values: `tuple`
         :param defences: Defences to be activated with the classifier.
         :type defences: `str` or `list(str)`
         :param preprocessing: Tuple of the form `(substractor, divider)` of floats or `np.ndarray` of values to be
@@ -446,11 +448,11 @@ class PyTorchClassifier(Classifier):
         logger.info("Optimizer state dict saved in path: %s.", full_path + '.optimizer')
 
     def __repr__(self):
-        repr_ = "%s(clip_values=%r, model=%r, loss=%r, optimizer=%r, input_shape=%r, nb_classes=%r, " \
-                "channel_index=%r, defences=%r, preprocessing=%r)" \
+        repr_ = "%s(model=%r, loss=%r, optimizer=%r, input_shape=%r, nb_classes=%r, " \
+                "channel_index=%r, clip_values=%r, defences=%r, preprocessing=%r)" \
                 % (self.__module__ + '.' + self.__class__.__name__,
-                   self.clip_values, self._model, self._loss, self._optimizer, self._input_shape, self.nb_classes,
-                   self.channel_index, self.defences, self.preprocessing)
+                   self._model, self._loss, self._optimizer, self._input_shape, self.nb_classes,
+                   self.channel_index, self.clip_values, self.defences, self.preprocessing)
 
         return repr_
 

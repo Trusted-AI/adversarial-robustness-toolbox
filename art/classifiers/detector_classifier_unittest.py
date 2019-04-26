@@ -60,14 +60,16 @@ class TestDetectorClassifier(unittest.TestCase):
         model = Model()
         loss_fn = nn.CrossEntropyLoss()
         optimizer = optim.Adam(model.parameters(), lr=0.01)
-        classifier = PyTorchClassifier((0, 1), model, loss_fn, optimizer, (1, 28, 28), 10)
+        classifier = PyTorchClassifier(model=model, loss=loss_fn, optimizer=optimizer, input_shape=(1, 28, 28),
+                                       nb_classes=10, clip_values=(0, 1))
         classifier.fit(x_train, y_train, batch_size=100, nb_epochs=2)
 
         # Define the internal detector
         model = nn.Sequential(nn.Conv2d(1, 16, 5), nn.ReLU(), nn.MaxPool2d(2, 2), Flatten(), nn.Linear(2304, 1))
         loss_fn = nn.CrossEntropyLoss()
         optimizer = optim.Adam(model.parameters(), lr=0.01)
-        detector = PyTorchClassifier((0, 1), model, loss_fn, optimizer, (1, 28, 28), 1)
+        detector = PyTorchClassifier(model=model, loss=loss_fn, optimizer=optimizer, input_shape=(1, 28, 28),
+                                     nb_classes=1, clip_values=(0, 1))
 
         # Define the detector-classifier
         cls.detector_classifier = DetectorClassifier(classifier=classifier, detector=detector)

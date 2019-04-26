@@ -805,7 +805,7 @@ def get_classifier_kr():
                   metrics=['accuracy'])
 
     # Get classifier
-    krc = KerasClassifier((0, 1), model, use_logits=False)
+    krc = KerasClassifier(model, clip_values=(0, 1), use_logits=False)
 
     return krc, sess
 
@@ -860,6 +860,7 @@ def get_classifier_pt():
     optimizer = optim.Adam(model.parameters(), lr=0.01)
 
     # Get classifier
-    ptc = PyTorchClassifier((0, 1), model, loss_fn, optimizer, (1, 28, 28), 10)
+    ptc = PyTorchClassifier(model=model, loss=loss_fn, optimizer=optimizer, input_shape=(1, 28, 28), nb_classes=10,
+                            clip_values=(0, 1))
 
     return ptc

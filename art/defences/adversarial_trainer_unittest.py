@@ -105,8 +105,8 @@ class TestBase(unittest.TestCase):
         TestBase.sess = tf.Session()
         TestBase.sess.run(tf.global_variables_initializer())
 
-        classifier = TFClassifier((0, 1), inputs_tf, logits, loss=loss, train=train_tf, output_ph=labels_tf,
-                                  sess=TestBase.sess)
+        classifier = TFClassifier(input_ph=inputs_tf, logits=logits, loss=loss, train=train_tf, output_ph=labels_tf,
+                                  sess=TestBase.sess, clip_values=(0, 1))
         return classifier
 
     @staticmethod
@@ -121,7 +121,7 @@ class TestBase(unittest.TestCase):
         model.compile(loss=keras.losses.categorical_crossentropy, optimizer=keras.optimizers.Adam(lr=0.01),
                       metrics=['accuracy'])
 
-        classifier = KerasClassifier((0, 1), model, use_logits=False)
+        classifier = KerasClassifier(model=model, clip_values=(0, 1), use_logits=False)
         return classifier
 
 

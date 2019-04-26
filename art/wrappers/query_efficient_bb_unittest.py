@@ -93,7 +93,7 @@ class TestWrappingClassifierAttack(unittest.TestCase):
         # Get the ready-trained Keras model
         model = self.classifier_k._model
         fs = FeatureSqueezing(bit_depth=1, clip_values=(0, 1))
-        classifier = KerasClassifier((0, 1), model, defences=fs)
+        classifier = KerasClassifier(model=model, clip_values=(0, 1), defences=fs)
         # Wrap the classifier
         classifier = QueryEfficientBBGradientEstimation(classifier, 20, 1/64., round_samples=1/255.)
 

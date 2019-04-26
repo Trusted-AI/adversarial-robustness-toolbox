@@ -81,7 +81,7 @@ class TestBinaryInputDetector(unittest.TestCase):
                       metrics=['accuracy'])
 
         # Create detector and train it:
-        detector = BinaryInputDetector(KerasClassifier((0, 1), model, use_logits=False))
+        detector = BinaryInputDetector(KerasClassifier(model=model, clip_values=(0, 1), use_logits=False))
         detector.fit(x_train_detector, y_train_detector, nb_epochs=2, batch_size=128)
 
         # Apply detector on clean and adversarial test data:
@@ -143,7 +143,7 @@ class TestBinaryActivationDetector(unittest.TestCase):
         # Create detector and train it.
         # Detector consider activations at layer=0:
         detector = BinaryActivationDetector(classifier=classifier,
-                                            detector=KerasClassifier((0, 1), model, use_logits=False),
+                                            detector=KerasClassifier(model=model, clip_values=(0, 1), use_logits=False),
                                             layer=0)
         detector.fit(x_train_detector, y_train_detector, nb_epochs=2, batch_size=128)
 

@@ -52,7 +52,8 @@ class TestPixelDefend(unittest.TestCase):
         model = Model()
         loss_fn = nn.CrossEntropyLoss()
         optimizer = optim.Adam(model.parameters(), lr=0.01)
-        self.pixelcnn = PyTorchClassifier((0, 1), model, loss_fn, optimizer, (1, 28, 28), 10)
+        self.pixelcnn = PyTorchClassifier(model=model, loss=loss_fn, optimizer=optimizer, input_shape=(1, 28, 28),
+                                          nb_classes=10, clip_values=(0, 1))
 
     def test_one_channel(self):
         (x_train, _), (_, _), _, _ = load_mnist()

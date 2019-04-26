@@ -20,6 +20,8 @@ from __future__ import absolute_import, division, print_function, unicode_litera
 import abc
 import sys
 
+import numpy as np
+
 # Ensure compatibility with Python 2 and 3 when using ABCMeta
 if sys.version_info >= (3, 4):
     ABC = abc.ABC
@@ -31,15 +33,17 @@ class Classifier(ABC):
     """
     Base class for all classifiers.
     """
-    def __init__(self, clip_values, channel_index, defences=None, preprocessing=(0, 1)):
+    def __init__(self, channel_index, clip_values=None, defences=None, preprocessing=(0, 1)):
         """
         Initialize a `Classifier` object.
 
-        :param clip_values: Tuple of the form `(min, max)` representing the minimum and maximum values allowed
-               for features.
-        :type clip_values: `tuple`
         :param channel_index: Index of the axis in data containing the color channels or features.
         :type channel_index: `int`
+        :param clip_values: Tuple of the form `(min, max)` of floats or `np.ndarray` representing the minimum and
+               maximum values allowed for features. If floats are provided, these will be used as the range of all
+               features. If arrays are provided, each value will be considered the bound for a feature, thus
+               the shape of clip values needs to match the total number of features.
+        :type clip_values: `tuple`
         :param defences: Defence(s) to be activated with the classifier.
         :type defences: :class:`.Preprocessor` or `list(Preprocessor)` instances
         :param preprocessing: Tuple of the form `(substractor, divider)` of floats or `np.ndarray` of values to be
@@ -49,10 +53,12 @@ class Classifier(ABC):
         """
         from art.defences.preprocessor import Preprocessor
 
-        if len(clip_values) != 2:
-            raise ValueError('`clip_values` should be a tuple of 2 floats containing the allowed data range.')
-        if clip_values[0] >= clip_values[1]:
-            raise ValueError('Invalid `clip_values`: min >= max.')
+        if clip_values is not None:
+            if len(clip_values) != 2:
+                raise ValueError('`clip_values` should be a tuple of 2 floats or arrays containing the allowed'
+                                 'data range.')
+            if np.array(clip_values[0] >= clip_values[1]).any():
+                raise ValueError('Invalid `clip_values`: min >= max.')
         self._clip_values = clip_values
 
         self._channel_index = channel_index
@@ -355,8 +361,8 @@ class Classifier(ABC):
         return res
 
     def __repr__(self):
-        repr_ = "%s(clip_values=%r, channel_index=%r, defences=%r, preprocessing=%r)" \
+        repr_ = "%s(channel_index=%r, clip_values=%r, defences=%r, preprocessing=%r)" \
                % (self.__module__ + '.' + self.__class__.__name__,
-                  self.clip_values, self.channel_index, self.defences, self.preprocessing)
+                  self.channel_index, self.clip_values, self.defences, self.preprocessing)
 
         return repr_

@@ -192,7 +192,7 @@ class TestFastGradientMethod(unittest.TestCase):
         # Get the ready-trained Keras model
         model = self.classifier_k._model
         fs = FeatureSqueezing(bit_depth=1, clip_values=(0, 1))
-        classifier = KerasClassifier((0, 1), model, defences=fs, custom_activation=custom_activation)
+        classifier = KerasClassifier(model=model, clip_values=(0, 1), defences=fs, custom_activation=custom_activation)
 
         attack = FastGradientMethod(classifier, eps=1)
         x_train_adv = attack.generate(x_train)
