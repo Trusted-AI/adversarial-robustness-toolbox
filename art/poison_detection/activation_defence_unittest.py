@@ -192,15 +192,15 @@ class TestActivationDefence(unittest.TestCase):
 
         # Test pickle and unpickle:
         filename = 'test_pickle.h5'
-        self.defence._pickle_classifier(filename)
-        loaded = self.defence._unpickle_classifier(filename)
+        ActivationDefence._pickle_classifier(self.classifier, filename)
+        loaded = ActivationDefence._unpickle_classifier(filename)
 
         self.assertTrue(self.classifier._clip_values == loaded._clip_values)
         self.assertTrue(self.classifier._channel_index == loaded._channel_index)
         self.assertTrue(self.classifier._use_logits == loaded._use_logits)
         self.assertTrue(self.classifier._input_layer == loaded._input_layer)
 
-        self.defence._remove_pickle(filename)
+        ActivationDefence._remove_pickle(filename)
 
     def test_fix_relabel_poison(self):
         (x_train, y_train), (_, _), (_, _) = self.mnist
@@ -215,18 +215,22 @@ class TestActivationDefence(unittest.TestCase):
         predictions = np.argmax(self.classifier.predict(x_test), axis=1)
         ini_miss = 1 - np.sum(predictions == np.argmax(y_test, axis=1)) / y_test.shape[0]
 
-        improvement = self.defence.relabel_poison_ground_truth(x_poison, y_fix, test_set_split=test_set_split,
-                                                               tolerable_backdoor=0.01,
-                                                               max_epochs=5, batch_epochs=10)
+        improvement, new_classifier = ActivationDefence.relabel_poison_ground_truth(self.classifier, x_poison, y_fix,
+                                                                                    test_set_split=test_set_split,
+                                                                                    tolerable_backdoor=0.01,
+                                                                                    max_epochs=5, batch_epochs=10)
 
-        predictions = np.argmax(self.classifier.predict(x_test), axis=1)
+        predictions = np.argmax(new_classifier.predict(x_test), axis=1)
         final_miss = 1 - np.sum(predictions == np.argmax(y_test, axis=1)) / y_test.shape[0]
 
         self.assertEqual(improvement, ini_miss - final_miss)
 
-        self.defence.relabel_poison_cross_validation(x_poison, y_fix, n_splits=2, tolerable_backdoor=0.01,
-                                                     max_epochs=5, batch_epochs=10)
-
+        # Other method (since it's cross validation we can't assert to a concrete number).
+        improvement, _ = ActivationDefence.relabel_poison_cross_validation(self.classifier, x_poison,
+                                                          y_fix, n_splits=2,
+                                                          tolerable_backdoor=0.01,
+                                                          max_epochs=5, batch_epochs=10)
+        self.assertGreaterEqual(improvement, 0)
 
 if __name__ == '__main__':
     unittest.main()

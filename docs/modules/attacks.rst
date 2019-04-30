@@ -2,6 +2,18 @@
 ==================
 .. automodule:: art.attacks
 
+Adversarial Patch
+-----------------
+.. autoclass:: AdversarialPatch
+   :members:
+   :special-members:
+
+Decision-Based Attack
+---------------------
+.. autoclass:: BoundaryAttack
+   :members:
+   :special-members:
+
 Carlini and Wagner L_2 Attack
 -----------------------------
 .. autoclass:: CarliniL2Method

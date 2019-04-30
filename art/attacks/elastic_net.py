@@ -24,7 +24,7 @@ import six
 
 from art import NUMPY_DTYPE
 from art.attacks.attack import Attack
-from art.utils import get_labels_np_array
+from art.utils import compute_success, get_labels_np_array
 
 logger = logging.getLogger(__name__)
 
@@ -196,13 +196,8 @@ class ElasticNet(Attack):
         x_adv = np.clip(x_adv, clip_min, clip_max)
 
         # Compute success rate of the EAD attack
-        adv_preds = np.argmax(self.classifier.predict(x_adv), axis=1)
-        if self.targeted:
-            rate = np.sum(adv_preds == np.argmax(y, axis=1)) / x_adv.shape[0]
-        else:
-            preds = np.argmax(self.classifier.predict(x), axis=1)
-            rate = np.sum(adv_preds != preds) / x_adv.shape[0]
-        logger.info('Success rate of EAD attack: %.2f%%', 100 * rate)
+        logger.info('Success rate of EAD attack: %.2f%%',
+                    100 * compute_success(self.classifier, x, y, x_adv, self.targeted))
 
         return x_adv
 

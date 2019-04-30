@@ -198,13 +198,16 @@ class ActivationDefence(PoisonFilteringDefence):
 
         return report, self.assigned_clean_by_class
 
-    def relabel_poison_ground_truth(self, x, y_fix, test_set_split=0.7, tolerable_backdoor=0.01,
+    @staticmethod
+    def relabel_poison_ground_truth(classifier, x, y_fix, test_set_split=0.7, tolerable_backdoor=0.01,
                                     max_epochs=50, batch_epochs=10):
         """
         Revert poison attack by continue training the current classifier with `x`, `y_fix`.
         `test_set_split` determines the percentage in x that will be used as training set, while `1-test_set_split`
         determines how many data points to use for test set.
 
+        :param classifier: Classifier to be fixed
+        :type classifier: :class:`.Classifier`
         :param x: samples
         :type x: `np.ndarray`
         :param y_fix: true label of x_poison
@@ -218,10 +221,9 @@ class ActivationDefence(PoisonFilteringDefence):
         :type max_epochs: `int`
         :param batch_epochs: Number of epochs to be trained before checking current state of model
         :type batch_epochs: `int`
-        :return: improve_factor
-        :rtype: `float`
+        :return: (improve_factor, classifier)
+        :rtype: `float`, `.Classifier`
         """
-
         # Split data into testing and training:
         n_train = int(len(x) * test_set_split)
         x_train, x_test = x[:n_train], x[n_train:]
@@ -229,27 +231,30 @@ class ActivationDefence(PoisonFilteringDefence):
 
         import time
         filename = 'original_classifier' + str(time.time()) + '.p'
-        self._pickle_classifier(filename)
+        ActivationDefence._pickle_classifier(classifier, filename)
 
         # Now train using y_fix:
-        improve_factor, fixed_classifier = train_remove_backdoor(self.classifier, x_train, y_train, x_test,
+        improve_factor, fixed_classifier = train_remove_backdoor(classifier, x_train, y_train, x_test,
                                                                  y_test, tolerable_backdoor=tolerable_backdoor,
                                                                  max_epochs=max_epochs,
                                                                  batch_epochs=batch_epochs)
         # Only update classifier if there was an improvement:
         if improve_factor < 0:
-            self.classifier = self._unpickle_classifier(filename)
-            return 0
+            classifier = ActivationDefence._unpickle_classifier(filename)
+            return 0, classifier
 
-        self._remove_pickle(filename)
-        return improve_factor
+        ActivationDefence._remove_pickle(filename)
+        return improve_factor, classifier
 
-    def relabel_poison_cross_validation(self, x, y_fix, n_splits=10, tolerable_backdoor=0.01,
+    @staticmethod
+    def relabel_poison_cross_validation(classifier, x, y_fix, n_splits=10, tolerable_backdoor=0.01,
                                         max_epochs=50, batch_epochs=10):
         """
         Revert poison attack by continue training the current classifier with `x`, `y_fix`.
         `n_splits` determine the number of cross validation splits.
 
+        :param classifier: Classifier to be fixed
+        :type classifier: :class:`.Classifier`
         :param x: Samples that were miss-labeled.
         :type x: `np.ndarray`
         :param y_fix: True label of `x`.
@@ -262,8 +267,8 @@ class ActivationDefence(PoisonFilteringDefence):
         :type max_epochs: `int`
         :param batch_epochs: Number of epochs to be trained before checking current state of model.
         :type batch_epochs: `int`
-        :return: improve_factor
-        :rtype: `float`
+        :return: (improve_factor, classifier)
+        :rtype: `float`, `.Classifier`
         """
 
         # Train using cross validation
@@ -273,7 +278,7 @@ class ActivationDefence(PoisonFilteringDefence):
 
         import time
         filename = 'original_classifier' + str(time.time()) + '.p'
-        self._pickle_classifier(filename)
+        ActivationDefence._pickle_classifier(classifier, filename)
         curr_improvement = 0
 
         for i, (train_index, test_index) in enumerate(kf.split(x)):
@@ -281,7 +286,7 @@ class ActivationDefence(PoisonFilteringDefence):
             x_train, x_test = x[train_index], x[test_index]
             y_train, y_test = y_fix[train_index], y_fix[test_index]
             # Unpickle original model:
-            curr_classifier = self._unpickle_classifier(filename)
+            curr_classifier = ActivationDefence._unpickle_classifier(filename)
 
             new_improvement, fixed_classifier = train_remove_backdoor(curr_classifier, x_train, y_train, x_test,
                                                                       y_test,
@@ -290,19 +295,23 @@ class ActivationDefence(PoisonFilteringDefence):
                                                                       batch_epochs=batch_epochs)
             if curr_improvement < new_improvement and new_improvement > 0:
                 curr_improvement = new_improvement
-                self.classifier = fixed_classifier
+                classifier = fixed_classifier
                 logger.info('Selected as best model so far: ' + str(curr_improvement))
 
-        self._remove_pickle(filename)
-        return curr_improvement
+        ActivationDefence._remove_pickle(filename)
+        return curr_improvement, classifier
 
-    def _pickle_classifier(self, file_name):
+    @staticmethod
+    def _pickle_classifier(classifier, file_name):
         """
         Pickles the self.classifier and stores it using the provided file_name in folder `art.DATA_PATH`.
 
-        :param file_name:
-        :return:
+        :param classifier: Classifier to be pickled.
+        :type classifier: :class:`.Classifier`
+        :param file_name: Name of the file where the classifier will be pickled
+        :return: None
         """
+
         import pickle
         import os
         from art import DATA_PATH
@@ -311,9 +320,8 @@ class ActivationDefence(PoisonFilteringDefence):
         if not os.path.exists(folder):
             os.makedirs(folder)
 
-        c = self.classifier
         with open(full_path, 'wb') as f:
-            pickle.dump(c, f)
+            pickle.dump(classifier, f)
 
     @staticmethod
     def _unpickle_classifier(file_name):

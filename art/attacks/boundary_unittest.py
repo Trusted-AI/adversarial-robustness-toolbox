@@ -24,7 +24,7 @@ import keras.backend as k
 import numpy as np
 import tensorflow as tf
 
-from art.attacks import Boundary
+from art.attacks import BoundaryAttack
 from art.utils import load_mnist, random_targets, master_seed, get_classifier_tf, get_classifier_kr, get_classifier_pt
 
 logger = logging.getLogger('testLogger')
@@ -61,7 +61,7 @@ class TestBoundary(unittest.TestCase):
         (_, _), (x_test, y_test) = self.mnist
 
         # First targeted attack
-        boundary = Boundary(classifier=tfc, targeted=True, max_iter=20)
+        boundary = BoundaryAttack(classifier=tfc, targeted=True, max_iter=20)
         params = {'y': random_targets(y_test, tfc.nb_classes)}
         x_test_adv = boundary.generate(x_test, **params)
 
@@ -74,7 +74,7 @@ class TestBoundary(unittest.TestCase):
         self.assertTrue((target == y_pred_adv).any())
 
         # Second untargeted attack
-        boundary = Boundary(classifier=tfc, targeted=False, max_iter=20)
+        boundary = BoundaryAttack(classifier=tfc, targeted=False, max_iter=20)
         x_test_adv = boundary.generate(x_test)
 
         self.assertFalse((x_test == x_test_adv).all())
@@ -101,7 +101,7 @@ class TestBoundary(unittest.TestCase):
         (_, _), (x_test, y_test) = self.mnist
 
         # First targeted attack
-        boundary = Boundary(classifier=krc, targeted=True, max_iter=20)
+        boundary = BoundaryAttack(classifier=krc, targeted=True, max_iter=20)
         params = {'y': random_targets(y_test, krc.nb_classes)}
         x_test_adv = boundary.generate(x_test, **params)
 
@@ -114,7 +114,7 @@ class TestBoundary(unittest.TestCase):
         self.assertTrue((target == y_pred_adv).any())
 
         # Second untargeted attack
-        boundary = Boundary(classifier=krc, targeted=False, max_iter=20)
+        boundary = BoundaryAttack(classifier=krc, targeted=False, max_iter=20)
         x_test_adv = boundary.generate(x_test)
 
         self.assertFalse((x_test == x_test_adv).all())
@@ -141,7 +141,7 @@ class TestBoundary(unittest.TestCase):
         x_test = np.swapaxes(x_test, 1, 3)
 
         # First targeted attack
-        boundary = Boundary(classifier=ptc, targeted=True, max_iter=20)
+        boundary = BoundaryAttack(classifier=ptc, targeted=True, max_iter=20)
         params = {'y': random_targets(y_test, ptc.nb_classes)}
         x_test_adv = boundary.generate(x_test, **params)
 
@@ -154,7 +154,7 @@ class TestBoundary(unittest.TestCase):
         self.assertTrue((target == y_pred_adv).any())
 
         # Second untargeted attack
-        boundary = Boundary(classifier=ptc, targeted=False, max_iter=20)
+        boundary = BoundaryAttack(classifier=ptc, targeted=False, max_iter=20)
         x_test_adv = boundary.generate(x_test)
 
         self.assertFalse((x_test == x_test_adv).all())

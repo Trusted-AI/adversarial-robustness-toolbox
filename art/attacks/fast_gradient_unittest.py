@@ -169,17 +169,30 @@ class TestFastGradientMethod(unittest.TestCase):
         acc = np.sum(np.argmax(test_y_pred, axis=1) == np.argmax(y_test, axis=1)) / y_test.shape[0]
         logger.info('Accuracy on adversarial test examples with L2 norm: %.2f%%', (acc * 100))
 
+        # Test random initialisations
+        attack = FastGradientMethod(classifier, num_random_init=3)
+        x_test_adv = attack.generate(x_test)
+        self.assertFalse((x_test == x_test_adv).all())
+
+        test_y_pred = get_labels_np_array(classifier.predict(x_test_adv))
+        self.assertFalse((y_test == test_y_pred).all())
+        acc = np.sum(np.argmax(test_y_pred, axis=1) == np.argmax(y_test, axis=1)) / y_test.shape[0]
+        logger.info('Accuracy on adversarial test examples with 3 random initialisations: %.2f%%', (acc * 100))
+
     def test_with_defences(self):
         self._test_with_defences(custom_activation=False)
         self._test_with_defences(custom_activation=True)
 
     def _test_with_defences(self, custom_activation=False):
+        from art.defences import FeatureSqueezing
+
         # Get MNIST
         (x_train, y_train), (x_test, y_test) = self.mnist
 
         # Get the ready-trained Keras model
         model = self.classifier_k._model
-        classifier = KerasClassifier((0, 1), model, defences='featsqueeze1', custom_activation=custom_activation)
+        fs = FeatureSqueezing(bit_depth=1, clip_values=(0, 1))
+        classifier = KerasClassifier((0, 1), model, defences=fs, custom_activation=custom_activation)
 
         attack = FastGradientMethod(classifier, eps=1)
         x_train_adv = attack.generate(x_train)

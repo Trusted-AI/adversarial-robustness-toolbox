@@ -105,6 +105,26 @@ class TestIterativeAttack(unittest.TestCase):
         acc = np.sum(np.argmax(test_y_pred, axis=1) == np.argmax(y_test, axis=1)) / y_test.shape[0]
         logger.info('Accuracy on adversarial test examples: %.2f%%', (acc * 100))
 
+        # Test BIM with 3 random initialisations
+        attack = BasicIterativeMethod(classifier, num_random_init=3)
+        x_train_adv = attack.generate(x_train)
+        x_test_adv = attack.generate(x_test)
+
+        self.assertFalse((x_train == x_train_adv).all())
+        self.assertFalse((x_test == x_test_adv).all())
+
+        train_y_pred = get_labels_np_array(classifier.predict(x_train_adv))
+        test_y_pred = get_labels_np_array(classifier.predict(x_test_adv))
+
+        self.assertFalse((y_train == train_y_pred).all())
+        self.assertFalse((y_test == test_y_pred).all())
+
+        acc = np.sum(np.argmax(train_y_pred, axis=1) == np.argmax(y_train, axis=1)) / y_train.shape[0]
+        logger.info('Accuracy on adversarial train examples with 3 random initialisations: %.2f%%', (acc * 100))
+
+        acc = np.sum(np.argmax(test_y_pred, axis=1) == np.argmax(y_test, axis=1)) / y_test.shape[0]
+        logger.info('Accuracy on adversarial test examples with 3 random initialisations: %.2f%%', (acc * 100))
+
     def _test_mnist_targeted(self, classifier):
         # Get MNIST
         (_, _), (x_test, _) = self.mnist

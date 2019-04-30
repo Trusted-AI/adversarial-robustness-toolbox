@@ -31,6 +31,8 @@ The Adversarial Robustness Toolbox contains implementations of the following eva
 * Spatial transformations attack (`Engstrom et al., 2017`_)
 * Query-efficient black-box attack (`Ilyas et al., 2017`_)
 * Zeroth-order optimization attack (`Chen et al., 2017b`_)
+* Decision-based attack (`Brendel et al., 2018`_)
+* Adversarial patch (`Brown et al., 2017`_)
 
 The following defense methods are also supported:
 
@@ -114,3 +116,5 @@ Indices and tables
 .. _Chen et al., 2018: https://arxiv.org/abs/1811.03728
 .. _Weng et al., 2018: https://arxiv.org/abs/1801.10578
 .. _Arpit et al., 2017: https://arxiv.org/abs/1706.05394
+.. _Brendel et al., 2018: https://arxiv.org/abs/1712.04248
+.. _Brown et al., 2017: https://arxiv.org/abs/1712.09665

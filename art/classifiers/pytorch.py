@@ -99,17 +99,17 @@ class PyTorchClassifier(Classifier):
         import torch
 
         # Apply defences
-        x_ = self._apply_processing(x)
-        x_ = self._apply_defences_predict(x_)
+        x_preproc = self._apply_processing(x)
+        x_preproc, _ = self._apply_defences(x_preproc, None, fit=False)
 
         # Run prediction with batch processing
-        results = np.zeros((x_.shape[0], self.nb_classes), dtype=np.float32)
-        num_batch = int(np.ceil(len(x_) / float(batch_size)))
+        results = np.zeros((x_preproc.shape[0], self.nb_classes), dtype=np.float32)
+        num_batch = int(np.ceil(len(x_preproc) / float(batch_size)))
         for m in range(num_batch):
             # Batch indexes
-            begin, end = m * batch_size, min((m + 1) * batch_size, x_.shape[0])
+            begin, end = m * batch_size, min((m + 1) * batch_size, x_preproc.shape[0])
 
-            model_outputs = self._model(torch.from_numpy(x_[begin:end]).to(self._device).float())
+            model_outputs = self._model(torch.from_numpy(x_preproc[begin:end]).to(self._device).float())
             (logit_output, output) = (model_outputs[-2], model_outputs[-1])
 
             if logits:
@@ -139,12 +139,12 @@ class PyTorchClassifier(Classifier):
         import torch
 
         # Apply defences
-        x_ = self._apply_processing(x)
-        x_, y_ = self._apply_defences_fit(x_, y)
-        y_ = np.argmax(y_, axis=1)
+        x_preproc = self._apply_processing(x)
+        x_preproc, y_preproc = self._apply_defences(x_preproc, y, fit=True)
+        y_preproc = np.argmax(y_preproc, axis=1)
 
-        num_batch = int(np.ceil(len(x_) / float(batch_size)))
-        ind = np.arange(len(x_))
+        num_batch = int(np.ceil(len(x_preproc) / float(batch_size)))
+        ind = np.arange(len(x_preproc))
 
         # Start training
         for _ in range(nb_epochs):
@@ -153,8 +153,8 @@ class PyTorchClassifier(Classifier):
 
             # Train for one epoch
             for m in range(num_batch):
-                i_batch = torch.from_numpy(x_[ind[m * batch_size:(m + 1) * batch_size]]).to(self._device)
-                o_batch = torch.from_numpy(y_[ind[m * batch_size:(m + 1) * batch_size]]).to(self._device)
+                i_batch = torch.from_numpy(x_preproc[ind[m * batch_size:(m + 1) * batch_size]]).to(self._device)
+                o_batch = torch.from_numpy(y_preproc[ind[m * batch_size:(m + 1) * batch_size]]).to(self._device)
 
                 # Cast to float
                 i_batch = i_batch.float()
@@ -237,22 +237,24 @@ class PyTorchClassifier(Classifier):
             raise ValueError('Label %s is out of range.' % label)
 
         # Convert the inputs to Tensors
-        x_ = torch.from_numpy(self._apply_processing(x)).to(self._device)
+        x_preproc = self._apply_processing(x)
+        x_defences, _ = self._apply_defences(x_preproc, None, fit=False)
+        x_defences = torch.from_numpy(x_defences).to(self._device)
 
         # Compute gradient wrt what
         layer_idx = self._init_grads()
         if layer_idx < 0:
-            x_.requires_grad = True
+            x_defences.requires_grad = True
 
         # Compute the gradient and return
         # Run prediction
-        model_outputs = self._model(x_)
+        model_outputs = self._model(x_defences)
 
         # Set where to get gradient
         if layer_idx >= 0:
             input_grad = model_outputs[layer_idx]
         else:
-            input_grad = x_
+            input_grad = x_defences
 
         # Set where to get gradient from
         (logit_output, output) = (model_outputs[-2], model_outputs[-1])
@@ -279,16 +281,9 @@ class PyTorchClassifier(Classifier):
                 torch.autograd.backward(preds[:, i], torch.Tensor([1.] * len(preds[:, 0])).to(self._device),
                                         retain_graph=True)
 
-            grads = np.swapaxes(np.array(grads), 0, 1)
-            grads = self._apply_processing_gradient(grads)
-
         elif isinstance(label, (int, np.integer)):
             torch.autograd.backward(preds[:, label], torch.Tensor([1.] * len(preds[:, 0])).to(self._device),
                                     retain_graph=True)
-
-            grads = np.swapaxes(np.array(grads), 0, 1)
-            grads = self._apply_processing_gradient(grads)
-
         else:
             unique_label = list(np.unique(label))
             for i in unique_label:
@@ -300,8 +295,10 @@ class PyTorchClassifier(Classifier):
             grads = grads[np.arange(len(grads)), lst]
 
             grads = grads[None, ...]
-            grads = np.swapaxes(np.array(grads), 0, 1)
-            grads = self._apply_processing_gradient(grads)
+
+        grads = np.swapaxes(np.array(grads), 0, 1)
+        grads = self._apply_defences_gradient(x_preproc, grads)
+        grads = self._apply_processing_gradient(grads)
 
         return grads
 
@@ -318,13 +315,17 @@ class PyTorchClassifier(Classifier):
         """
         import torch
 
+        # Apply preprocessing and defences
+        x_preproc = self._apply_processing(x)
+        x_defences, y_ = self._apply_defences(x_preproc, y, fit=False)
+
         # Convert the inputs to Tensors
-        inputs_t = torch.from_numpy(self._apply_processing(x)).to(self._device)
+        inputs_t = torch.from_numpy(x_defences).to(self._device)
         inputs_t = inputs_t.float()
         inputs_t.requires_grad = True
 
         # Convert the labels to Tensors
-        labels_t = torch.from_numpy(np.argmax(y, axis=1)).to(self._device)
+        labels_t = torch.from_numpy(np.argmax(y_, axis=1)).to(self._device)
 
         # Compute the gradient and return
         model_outputs = self._model(inputs_t)
@@ -332,11 +333,11 @@ class PyTorchClassifier(Classifier):
 
         # Clean gradients
         self._model.zero_grad()
-        # inputs_t.grad.data.zero_()
 
         # Compute gradients
         loss.backward()
         grds = inputs_t.grad.cpu().numpy().copy()
+        grds = self._apply_defences_gradient(x_preproc, grds)
         grds = self._apply_processing_gradient(grds)
         assert grds.shape == x.shape
 
@@ -376,8 +377,8 @@ class PyTorchClassifier(Classifier):
         import torch
 
         # Apply defences
-        x_ = self._apply_processing(x)
-        x_ = self._apply_defences_predict(x_)
+        x_preproc = self._apply_processing(x)
+        x_preproc, _ = self._apply_defences(x_preproc, None, fit=False)
 
         # Get index of the extracted layer
         if isinstance(layer, six.string_types):
@@ -393,13 +394,13 @@ class PyTorchClassifier(Classifier):
 
         # Run prediction with batch processing
         results = []
-        num_batch = int(np.ceil(len(x_) / float(batch_size)))
+        num_batch = int(np.ceil(len(x_preproc) / float(batch_size)))
         for m in range(num_batch):
             # Batch indexes
-            begin, end = m * batch_size, min((m + 1) * batch_size, x_.shape[0])
+            begin, end = m * batch_size, min((m + 1) * batch_size, x_preproc.shape[0])
 
             # Run prediction for the current batch
-            layer_output = self._model(torch.from_numpy(x_[begin:end]).to(self._device).float())[layer_index]
+            layer_output = self._model(torch.from_numpy(x_preproc[begin:end]).to(self._device).float())[layer_index]
             results.append(layer_output.detach().cpu().numpy())
 
         results = np.concatenate(results)

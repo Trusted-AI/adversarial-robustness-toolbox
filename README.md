@@ -21,6 +21,8 @@ The library contains implementations of the following **evasion attacks**:
 * Spatial transformations attack ([Engstrom et al., 2017](https://arxiv.org/abs/1712.02779))
 * Query-efficient black-box attack ([Ilyas et al., 2017](https://arxiv.org/abs/1712.07113))
 * Zeroth-order optimization attack ([Chen et al., 2017](https://arxiv.org/abs/1708.03999))
+* Decision-based attack ([Brendel et al., 2018](https://arxiv.org/abs/1712.04248))
+* Adversarial patch ([Brown et al., 2017](https://arxiv.org/abs/1712.09665))
 
 The following **defence** methods are also supported:
 * Feature squeezing ([Xu et al., 2017](http://arxiv.org/abs/1704.01155))

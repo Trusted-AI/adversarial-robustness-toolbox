@@ -43,6 +43,14 @@ class LabelSmoothing(Preprocessor):
         self._is_fitted = True
         self.set_params(max_value=max_value)
 
+    @property
+    def apply_fit(self):
+        return True
+
+    @property
+    def apply_predict(self):
+        return False
+
     def __call__(self, x, y, max_value=0.9):
         """
         Apply label smoothing.
@@ -65,6 +73,9 @@ class LabelSmoothing(Preprocessor):
         smooth_y[smooth_y == 1.] = max_value
         smooth_y[smooth_y == 0.] = min_value
         return x, smooth_y
+
+    def estimate_gradient(self, x, grad):
+        return grad
 
     def fit(self, x, y=None, **kwargs):
         """No parameters to learn for this method; do nothing."""
