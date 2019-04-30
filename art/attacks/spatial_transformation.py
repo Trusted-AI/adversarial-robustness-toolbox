@@ -93,8 +93,6 @@ class SpatialTransformation(Attack):
             y_pred_max = np.argmax(y_pred, axis=1)
 
             nb_instances = len(x)
-            self.min_ = np.min(x)
-            self.max_ = np.max(x)
 
             # Determine grids
             max_num_pixel_trans_x = int(round((x.shape[1] * self.max_translation / 100.0)))
@@ -165,7 +163,7 @@ class SpatialTransformation(Attack):
         else:
             raise ValueError("Unsupported channel index.")
 
-        x_adv = np.clip(x_adv, self.min_, self.max_)
+        x_adv = np.clip(x_adv, self.classifier.clip_values[0], self.classifier.clip_values[1])
         return x_adv
 
     def set_params(self, **kwargs):
