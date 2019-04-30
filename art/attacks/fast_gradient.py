@@ -223,8 +223,13 @@ class FastGradientMethod(Attack):
         return grad
 
     def _apply_perturbation(self, batch, perturbation, eps_step):
-        clip_min, clip_max = self.classifier.clip_values
-        return np.clip(batch + eps_step * perturbation, clip_min, clip_max)
+        if hasattr(self.classifier, 'clip_values') and self.classifier.clip_values is not None:
+            clip_min, clip_max = self.classifier.clip_values
+            batch = np.clip(batch + eps_step * perturbation, clip_min, clip_max)
+        else:
+            batch = batch + eps_step * perturbation
+
+        return batch
 
     def _compute(self, x, y, eps, eps_step, random_init):
         if random_init:
@@ -232,8 +237,9 @@ class FastGradientMethod(Attack):
             m = np.prod(x.shape[1:])
             adv_x = x.copy() + random_sphere(n, m, eps, self.norm).reshape(x.shape)
 
-            clip_min, clip_max = self.classifier.clip_values
-            adv_x = np.clip(adv_x, clip_min, clip_max)
+            if hasattr(self.classifier, 'clip_values') and self.classifier.clip_values is not None:
+                clip_min, clip_max = self.classifier.clip_values
+                adv_x = np.clip(adv_x, clip_min, clip_max)
         else:
             adv_x = x.copy()
 

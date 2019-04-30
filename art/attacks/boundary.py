@@ -28,8 +28,8 @@ logger = logging.getLogger(__name__)
 
 class BoundaryAttack(Attack):
     """
-    Implementation of the boundary attack from Wieland Brendel et al. (2018).
-    Paper link: https://arxiv.org/abs/1712.04248
+    Implementation of the boundary attack from Wieland Brendel et al. (2018). This is a powerful black-box attack that
+    only requires final class prediction. Paper link: https://arxiv.org/abs/1712.04248
     """
     attack_params = Attack.attack_params + ['targeted', 'delta', 'epsilon', 'step_adapt',
                                             'max_iter', 'sample_size', 'init_size']
@@ -170,7 +170,6 @@ class BoundaryAttack(Attack):
         x_adv = initial_sample
         delta = initial_delta
         epsilon = initial_epsilon
-        clip_min, clip_max = self.classifier.clip_values
 
         # Main loop to wander around the boundary
         for _ in range(self.max_iter):
@@ -179,7 +178,9 @@ class BoundaryAttack(Attack):
                 potential_advs = []
                 for _ in range(self.sample_size):
                     potential_adv = x_adv + self._orthogonal_perturb(delta, x_adv, original_sample)
-                    potential_adv = np.clip(potential_adv, clip_min, clip_max)
+                    if hasattr(self.classifier, 'clip_values') and self.classifier is not None:
+                        np.clip(potential_adv, self.classifier.clip_values[0], self.classifier.clip_values[1],
+                                out=potential_adv)
                     potential_advs.append(potential_adv)
 
                 preds = np.argmax(self.classifier.predict(np.array(potential_advs)), axis=1)
@@ -209,7 +210,10 @@ class BoundaryAttack(Attack):
                 perturb = original_sample - x_adv
                 perturb *= epsilon
                 potential_adv = x_adv + perturb
-                potential_adv = np.clip(potential_adv, clip_min, clip_max)
+                if hasattr(self.classifier, 'clip_values') and self.classifier.clip_values is not None:
+                    np.clip(potential_adv, self.classifier.clip_values[0], self.classifier.clip_values[1],
+                            out=potential_adv)
+
                 pred = np.argmax(self.classifier.predict(np.array([potential_adv])), axis=1)[0]
 
                 if self.targeted:
@@ -272,7 +276,7 @@ class BoundaryAttack(Attack):
 
         return perturb
 
-    def _init_sample(self, x, y, y_p):
+    def _init_sample(self, x, y, y_pred):
         """
         Find initial adversarial example for the attack.
 
@@ -280,44 +284,32 @@ class BoundaryAttack(Attack):
         :type x: `np.ndarray`
         :param y: If `self.targeted` is true, then `y` represents the target label.
         :type y: `int`
-        :param y_p: The predicted label of x.
-        :type y_p: `int`
+        :param y_pred: The predicted label of x.
+        :type y_pred: `int`
         :return: an adversarial example.
         """
-        clip_min, clip_max = self.classifier.clip_values
         nprd = np.random.RandomState()
         initial_sample = None
 
-        if self.targeted:
-            # Attack satisfied
-            if y == y_p:
-                return None
+        # Attack satisfied
+        if self.targeted and y == y_pred:
+            return None
 
-            # Attack unsatisfied yet
-            for _ in range(self.init_size):
-                random_img = nprd.uniform(clip_min, clip_max, size=x.shape).astype(x.dtype)
-                random_class = np.argmax(self.classifier.predict(np.array([random_img])), axis=1)[0]
-
-                if random_class == y:
-                    initial_sample = random_img
-
-                    logging.info('Found initial adversarial image for targeted attack.')
-                    break
+        # Attack unsatisfied yet
+        for _ in range(self.init_size):
+            if hasattr(self.classifier, 'clip_values') and self.classifier.clip_values is not None:
+                random_sample = nprd.uniform(self.classifier.clip_values[0], self.classifier.clip_values[1],
+                                             size=x.shape).astype(x.dtype)
             else:
-                logging.warning('Failed to draw a random image that is adversarial, attack failed.')
+                # TODO Adjust following feature-wise and for entire sample provided by user?
+                mean_, std_ = np.mean(x), np.std(x)
+                random_sample = nprd.normal(loc=mean_, scale=2 * std_, size=x.shape).astype(x.dtype)
+            random_class = np.argmax(self.classifier.predict(np.array([random_sample])), axis=1)[0]
 
-        else:
-            for _ in range(self.init_size):
-                random_img = nprd.uniform(clip_min, clip_max, size=x.shape).astype(x.dtype)
-                random_class = np.argmax(self.classifier.predict(np.array([random_img])), axis=1)[0]
-
-                if random_class != y_p:
-                    initial_sample = random_img
-
-                    logging.info('Found initial adversarial image for untargeted attack.')
-                    break
-            else:
-                logging.warning('Failed to draw a random image that is adversarial, attack failed.')
+            if (self.targeted and random_class == y) or (not self.targeted and random_class != y_pred):
+                initial_sample = random_sample
+                logging.info('Found initial adversarial image for attack.')
+                break
 
         return initial_sample
 

@@ -72,7 +72,6 @@ class VirtualAdversarialMethod(Attack):
         """
         # Parse and save attack-specific parameters
         assert self.set_params(**kwargs)
-        clip_min, clip_max = self.classifier.clip_values
         x_adv = np.copy(x)
         preds = self.classifier.predict(x_adv, logits=False)
 
@@ -107,7 +106,11 @@ class VirtualAdversarialMethod(Attack):
                 d = d_new
 
             # Apply perturbation and clip
-            x_adv[batch_index_1:batch_index_2] = np.clip(batch + self.eps * self._normalize(d), clip_min, clip_max)
+            if hasattr(self.classifier, 'clip_values') and self.classifier.clip_values is not None:
+                clip_min, clip_max = self.classifier.clip_values
+                x_adv[batch_index_1:batch_index_2] = np.clip(batch + self.eps * self._normalize(d), clip_min, clip_max)
+            else:
+                x_adv[batch_index_1:batch_index_2] = batch + self.eps * self._normalize(d)
 
         return x_adv
 

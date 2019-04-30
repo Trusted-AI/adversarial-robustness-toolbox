@@ -163,7 +163,9 @@ class SpatialTransformation(Attack):
         else:
             raise ValueError("Unsupported channel index.")
 
-        x_adv = np.clip(x_adv, self.classifier.clip_values[0], self.classifier.clip_values[1])
+        if hasattr(self.classifier, 'clip_values') and self.classifier.clip_values is not None:
+            np.clip(x_adv, self.classifier.clip_values[0], self.classifier.clip_values[1], out=x_adv)
+
         return x_adv
 
     def set_params(self, **kwargs):

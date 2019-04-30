@@ -72,7 +72,6 @@ class DeepFool(Attack):
         :rtype: `np.ndarray`
         """
         self.set_params(**kwargs)
-        clip_min, clip_max = self.classifier.clip_values
         x_adv = x.copy()
         preds = self.classifier.predict(x, logits=True)
 
@@ -124,7 +123,11 @@ class DeepFool(Attack):
                     grad_diff[np.arange(len(grad_diff)), l]
 
                 # Add perturbation and clip result
-                batch[active_indices] = np.clip(batch[active_indices] + r[active_indices], clip_min, clip_max)
+                if hasattr(self.classifier, 'clip_values') and self.classifier.clip_values is not None:
+                    batch[active_indices] = np.clip(batch[active_indices] + r[active_indices],
+                                                    self.classifier.clip_values[0], self.classifier.clip_values[1])
+                else:
+                    batch[active_indices] += r[active_indices]
 
                 # Recompute prediction for new x
                 f = self.classifier.predict(batch, logits=True)
@@ -145,8 +148,11 @@ class DeepFool(Attack):
                 current_step += 1
 
             # Apply overshoot parameter
-            x_adv[batch_index_1:batch_index_2] = np.clip(x_adv[batch_index_1:batch_index_2] + (
-                1 + self.epsilon) * (batch - x_adv[batch_index_1:batch_index_2]), clip_min, clip_max)
+            x_adv[batch_index_1:batch_index_2] = x_adv[batch_index_1:batch_index_2] + \
+                (1 + self.epsilon) * (batch - x_adv[batch_index_1:batch_index_2])
+            if hasattr(self.classifier, 'clip_values') and self.classifier.clip_values is not None:
+                np.clip(x_adv[batch_index_1:batch_index_2], self.classifier.clip_values[0],
+                        self.classifier.clip_values[1], out=x_adv[batch_index_1:batch_index_2])
 
         logger.info('Success rate of DeepFool attack: %.2f%%',
                     (np.sum(np.argmax(preds, axis=1) != np.argmax(self.classifier.predict(x_adv), axis=1)) /

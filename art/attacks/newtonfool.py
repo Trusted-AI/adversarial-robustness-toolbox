@@ -65,7 +65,6 @@ class NewtonFool(Attack):
         x_adv = x.copy()
 
         # Initialize variables
-        clip_min, clip_max = self.classifier.clip_values
         y_pred = self.classifier.predict(x, logits=False)
         pred_class = np.argmax(y_pred, axis=1)
 
@@ -99,7 +98,11 @@ class NewtonFool(Attack):
                 batch += di_batch
 
             # Apply clip
-            x_adv[batch_index_1:batch_index_2] = np.clip(batch, clip_min, clip_max)
+            if hasattr(self.classifier, 'clip_values') and self.classifier.clip_values is not None:
+                clip_min, clip_max = self.classifier.clip_values
+                x_adv[batch_index_1:batch_index_2] = np.clip(batch, clip_min, clip_max)
+            else:
+                x_adv[batch_index_1:batch_index_2] = batch
 
         logger.info('Success rate of NewtonFool attack: %.2f%%',
                     (np.sum(np.argmax(self.classifier.predict(x), axis=1) !=

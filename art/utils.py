@@ -611,14 +611,16 @@ def clip_and_round(x, clip_values, round_samples):
     :param x: Sample input with shape as expected by the model.
     :type x: `np.ndarray`
     :param clip_values: Tuple of the form `(min, max)` representing the minimum and maximum values allowed
-               for features.
+           for features, or `None` if no clipping should be performed.
     :type clip_values: `tuple`
-    :param round_samples: The resolution of the input domain to round the data to, e.g., 1.0, or 1/255. Set to 0 to disable.
+    :param round_samples: The resolution of the input domain to round the data to, e.g., 1.0, or 1/255. Set to 0 to
+           disable.
     :type round_samples: `float`
     """
     if round_samples == 0:
         return x
-    x = np.clip(x, *clip_values)
+    if clip_values is not None:
+        np.clip(x, clip_values[0], clip_values[1], out=x)
     x = np.around(x / round_samples) * round_samples
     return x
 
