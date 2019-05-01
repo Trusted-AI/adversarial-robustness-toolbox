@@ -22,8 +22,8 @@ import unittest
 
 import numpy as np
 
-from art.utils import load_mnist, projection, random_sphere, to_categorical, least_likely_class
-from art.utils import master_seed
+from art.utils import projection, random_sphere, to_categorical, least_likely_class
+from art.utils import load_iris, load_mnist, master_seed
 from art.utils import second_most_likely_class, random_targets, get_label_conf, get_labels_np_array, preprocess
 
 logger = logging.getLogger('testLogger')
@@ -230,7 +230,7 @@ class TestUtils(unittest.TestCase):
         x = (255 * x).astype('int')[:100]
         y = np.argmax(y, axis=1)[:100]
 
-        x_, y_ = preprocess(x, y)
+        x_, y_ = preprocess(x, y, clip_values=(0, 255))
         self.assertEqual(x_.shape, x.shape)
         self.assertEqual(y_.shape, (y.shape[0], 10))
         self.assertEqual(x_.max(), 1.0)
@@ -240,11 +240,19 @@ class TestUtils(unittest.TestCase):
 
         x = (5 * x).astype('int')[:100]
         y = np.argmax(y, axis=1)[:100]
-        x_, y_ = preprocess(x, y, nb_classes=20, max_value=5)
+        x_, y_ = preprocess(x, y, nb_classes=20, clip_values=(0, 5))
         self.assertEqual(x_.shape, x.shape)
         self.assertEqual(y_.shape, (y.shape[0], 20))
         self.assertEqual(x_.max(), 1.0)
         self.assertEqual(x_.min(), 0)
+
+    def test_iris(self):
+        (data, labels), min_, max_ = load_iris()
+        print(min_, max_)
+
+        self.assertTrue((min_ == 0).all())
+        self.assertTrue((max_ == 1).all())
+        self.assertEqual(data.shape[0], labels.shape[0])
 
 
 if __name__ == '__main__':

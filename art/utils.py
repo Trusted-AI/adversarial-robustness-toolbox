@@ -25,6 +25,8 @@ import os
 
 import numpy as np
 
+from art import NUMPY_DTYPE
+
 logger = logging.getLogger(__name__)
 
 try:
@@ -301,27 +303,43 @@ def get_labels_np_array(preds):
     return y
 
 
-def preprocess(x, y, nb_classes=10, max_value=255):
+# TODO change preprocess to normalize feature-wise?
+def preprocess(x, y, nb_classes=10, clip_values=None):
     """Scales `x` to [0, 1] and converts `y` to class categorical confidences.
 
-    :param x: Data instances
+    :param x: Data instances.
     :type x: `np.ndarray`
-    :param y: Labels
+    :param y: Labels.
     :type y: `np.ndarray`
-    :param nb_classes: Number of classes in dataset
+    :param nb_classes: Number of classes in dataset.
     :type nb_classes: `int`
-    :param max_value: Original maximum allowed value for features
-    :type max_value: `int`
-    :return: rescaled values of `x`, `y`
+    :param clip_values: Original data range allowed value for features, either one respective scalar or one value per
+           feature.
+    :type clip_values: `tuple(float, float)` or `tuple(np.ndarray, np.ndarray)`
+    :return: Rescaled values of `x`, `y`
     :rtype: `tuple`
     """
-    x = x.astype('float32') / max_value
-    y = to_categorical(y, nb_classes)
+    if clip_values is None:
+        min_, max_ = np.amin(x), np.amax(x)
+    else:
+        min_, max_ = clip_values
 
-    return x, y
+    normalized_x = (x - min_) / (max_ - min_)
+    categorical_y = to_categorical(y, nb_classes)
+
+    return normalized_x, categorical_y
 
 
 def compute_success(classifier, x_clean, labels, x_adv, targeted=False):
+    """
+
+    :param classifier:
+    :param x_clean:
+    :param labels:
+    :param x_adv:
+    :param targeted:
+    :return:
+    """
     adv_preds = np.argmax(classifier.predict(x_adv), axis=1)
     if targeted:
         rate = np.sum(adv_preds == np.argmax(labels, axis=1)) / x_adv.shape[0]
@@ -397,8 +415,8 @@ def load_cifar10(raw=False):
     min_, max_ = 0, 255
     if not raw:
         min_, max_ = 0., 1.
-        x_train, y_train = preprocess(x_train, y_train)
-        x_test, y_test = preprocess(x_test, y_test)
+        x_train, y_train = preprocess(x_train, y_train, max_value=255)
+        x_test, y_test = preprocess(x_test, y_test, max_value=255)
 
     return (x_train, y_train), (x_test, y_test), min_, max_
 
@@ -476,6 +494,37 @@ def load_stl():
     return (x_train, y_train), (x_test, y_test), min_, max_
 
 
+def load_iris(raw=False):
+    """
+    Loads the UCI Iris dataset from `DATA_PATH` or downloads it if necessary.
+
+    :return: Entire dataset and labels.
+    :rtype: `(np.ndarray, np.ndarray)`
+    """
+    from art import DATA_PATH, NUMPY_DTYPE
+
+    # Download data if needed
+    path = get_file('iris.data', path=DATA_PATH, extract=False,
+                    url='https://archive.ics.uci.edu/ml/machine-learning-databases/iris/iris.data')
+
+    data = np.loadtxt(path, delimiter=',', usecols=(0, 1, 2, 3), dtype=NUMPY_DTYPE)
+    labels = np.loadtxt(path, delimiter=',', usecols=4, dtype=str)
+
+    if not raw:
+        label_map = {
+            'Iris-setosa': 0,
+            'Iris-versicolor': 1,
+            'Iris-virginica': 2
+        }
+        labels = np.array([label_map[labels[i]] for i in range(labels.size)], dtype=np.int32)
+        random_indices = np.random.permutation(labels.size)
+        data, labels = data[random_indices], labels[random_indices]
+        data, labels = preprocess(data, labels, nb_classes=3)
+    min_, max_ = np.amin(data), np.amax(data)
+
+    return (data, labels), min_, max_
+
+
 def load_dataset(name):
     """
     Loads or downloads the dataset corresponding to `name`. Options are: `mnist`, `cifar10` and `stl10`.
@@ -486,13 +535,14 @@ def load_dataset(name):
     :rtype: `(np.ndarray, np.ndarray), (np.ndarray, np.ndarray), float, float`
     :raises NotImplementedError: If the dataset is unknown.
     """
-
     if "mnist" in name:
         return load_mnist()
-    elif "cifar10" in name:
+    if "cifar10" in name:
         return load_cifar10()
-    elif "stl10" in name:
+    if "stl10" in name:
         return load_stl()
+    if "iris" in name:
+        return load_iris()
 
     raise NotImplementedError("There is no loader for dataset '{}'.".format(name))
 
