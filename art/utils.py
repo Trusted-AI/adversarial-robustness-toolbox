@@ -332,13 +332,21 @@ def preprocess(x, y, nb_classes=10, clip_values=None):
 
 def compute_success(classifier, x_clean, labels, x_adv, targeted=False):
     """
+    Compute the success rate of an attack based on clean samples, adversarial samples and targets or correct labels.
 
-    :param classifier:
-    :param x_clean:
-    :param labels:
-    :param x_adv:
-    :param targeted:
-    :return:
+    :param classifier: Classifier used for prediction.
+    :type classifier: :class:`.Classifier`
+    :param x_clean: Original clean samples.
+    :type x_clean: `np.ndarray`
+    :param labels: Correct labels of `x_clean` if the attack is untargeted, or target labels of the attack otherwise.
+    :type labels: `np.ndarray`
+    :param x_adv: Adversarial samples to be evaluated.
+    :type x_adv: `np.ndarray`
+    :param targeted: `True` if the attack is targeted. In that case, `labels` are treated as target classes instead of
+           correct labels of the clean samples.s
+    :type targeted: `bool`
+    :return: Percentage of successful adversarial samples.
+    :rtype: `float`
     """
     adv_preds = np.argmax(classifier.predict(x_adv), axis=1)
     if targeted:
