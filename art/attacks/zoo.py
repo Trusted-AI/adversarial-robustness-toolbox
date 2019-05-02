@@ -106,7 +106,7 @@ class ZooAttack(Attack):
             if self.classifier.channel_index == 3:
                 dims = (batch_size, self._init_size, self._init_size, self.classifier.input_shape[-1])
             elif self.classifier.channel_index == 1:
-                dims = (batch_size, self.classifier.input_shape[1], self._init_size, self._init_size)
+                dims = (batch_size, self.classifier.input_shape[0], self._init_size, self._init_size)
             self._current_noise = np.zeros(dims, dtype=NUMPY_DTYPE)
         else:
             self._current_noise = np.zeros((batch_size,) + self.classifier.input_shape, dtype=NUMPY_DTYPE)
