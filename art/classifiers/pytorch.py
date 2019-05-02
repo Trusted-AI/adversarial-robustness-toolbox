@@ -440,7 +440,7 @@ class PyTorchClassifier(Classifier):
         if not os.path.exists(folder):
             os.makedirs(folder)
 
-        torch.save(self._model.state_dict(), full_path + '.model')
+        torch.save(self._model._model.state_dict(), full_path + '.model')
         torch.save(self._optimizer.state_dict(), full_path + '.optimizer')
         logger.info("Model state dict saved in path: %s.", full_path + '.model')
         logger.info("Optimizer state dict saved in path: %s.", full_path + '.optimizer')
@@ -453,8 +453,10 @@ class PyTorchClassifier(Classifier):
         :rtype: `dict`
         """
         import time
+        import copy
 
         state = self.__dict__.copy()
+        state['inner_model'] = copy.copy(state['_model']._model)
 
         # Remove the unpicklable entries
         del state['_ModelWrapper']
@@ -464,8 +466,36 @@ class PyTorchClassifier(Classifier):
         model_name = str(time.time())
         state['model_name'] = model_name
         self.save(model_name)
-        
+
         return state
+
+    def __setstate__(self, state):
+        """
+        Use to ensure `PytorchClassifier` can be unpickled.
+
+        :param state: State dictionary with instance parameters to restore.
+        :type state: `dict`
+        """
+        self.__dict__.update(state)
+
+        # Load and update all functionality related to Pytorch
+        import os
+        import torch
+        from art import DATA_PATH
+
+        # Recover model
+        full_path = os.path.join(DATA_PATH, state['model_name'])
+        model = state['inner_model']
+        model.load_state_dict(torch.load(str(full_path) + '.model'))
+        model.eval()
+        self._model = self._make_model_wrapper(model)
+
+        # Recover device
+        self._device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
+        self._model.to(self._device)
+
+        # Recover optimizer
+        self._optimizer.load_state_dict(torch.load(str(full_path) + '.optimizer'))
 
     def __repr__(self):
         repr_ = "%s(clip_values=%r, model=%r, loss=%r, optimizer=%r, input_shape=%r, nb_classes=%r, " \
