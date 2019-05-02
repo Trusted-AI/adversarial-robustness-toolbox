@@ -439,10 +439,33 @@ class PyTorchClassifier(Classifier):
         folder = os.path.split(full_path)[0]
         if not os.path.exists(folder):
             os.makedirs(folder)
+
         torch.save(self._model.state_dict(), full_path + '.model')
         torch.save(self._optimizer.state_dict(), full_path + '.optimizer')
         logger.info("Model state dict saved in path: %s.", full_path + '.model')
         logger.info("Optimizer state dict saved in path: %s.", full_path + '.optimizer')
+
+    def __getstate__(self):
+        """
+        Use to ensure `PytorchClassifier` can be pickled.
+
+        :return: State dictionary with instance parameters.
+        :rtype: `dict`
+        """
+        import time
+
+        state = self.__dict__.copy()
+
+        # Remove the unpicklable entries
+        del state['_ModelWrapper']
+        del state['_device']
+        del state['_model']
+
+        model_name = str(time.time())
+        state['model_name'] = model_name
+        self.save(model_name)
+        
+        return state
 
     def __repr__(self):
         repr_ = "%s(clip_values=%r, model=%r, loss=%r, optimizer=%r, input_shape=%r, nb_classes=%r, " \
