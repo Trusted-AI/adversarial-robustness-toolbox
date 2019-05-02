@@ -77,8 +77,6 @@ def master_seed(seed):
         logger.info('Could not set random seed for MXNet.')
 
     try:
-        import torch
-
         logger.info('Setting random seed for PyTorch.')
         torch.manual_seed(seed)
         if torch.cuda.is_available():
