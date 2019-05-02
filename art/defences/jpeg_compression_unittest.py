@@ -38,8 +38,8 @@ class TestJpegCompression(unittest.TestCase):
     def test_one_channel(self):
         (x_train, _), (_, _), _, _ = load_mnist()
         x_train = x_train[:2]
-        preprocess = JpegCompression()
-        compressed_x, _ = preprocess(x_train, quality=70)
+        preprocess = JpegCompression(quality=70)
+        compressed_x, _ = preprocess(x_train)
         self.assertTrue((compressed_x.shape == x_train.shape))
         self.assertTrue((compressed_x <= 1.0).all())
         self.assertTrue((compressed_x >= 0.0).all())
@@ -47,8 +47,8 @@ class TestJpegCompression(unittest.TestCase):
     def test_three_channels(self):
         (train_features, _), (_, _) = cifar10.load_data()
         x = train_features[:2] / 255.0
-        preprocess = JpegCompression()
-        compressed_x, _ = preprocess(x, quality=80)
+        preprocess = JpegCompression(quality=80)
+        compressed_x, _ = preprocess(x)
         self.assertTrue((compressed_x.shape == x.shape))
         self.assertTrue((compressed_x <= 1.0).all())
         self.assertTrue((compressed_x >= 0.0).all())
@@ -57,8 +57,8 @@ class TestJpegCompression(unittest.TestCase):
         (train_features, _), (_, _) = cifar10.load_data()
         x = train_features[:2] / 255.0
         x = np.swapaxes(x, 1, 3)
-        preprocess = JpegCompression(channel_index=1)
-        compressed_x, _ = preprocess(x, quality=80)
+        preprocess = JpegCompression(channel_index=1, quality=80)
+        compressed_x, _ = preprocess(x)
         self.assertTrue((compressed_x.shape == x.shape))
         self.assertTrue((compressed_x <= 1.0).all())
         self.assertTrue((compressed_x >= 0.0).all())

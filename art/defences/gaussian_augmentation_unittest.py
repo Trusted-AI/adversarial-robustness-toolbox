@@ -35,8 +35,8 @@ class TestGaussianAugmentation(unittest.TestCase):
 
     def test_small_size(self):
         x = np.arange(15).reshape((5, 3))
-        ga = GaussianAugmentation()
-        new_x, _ = ga(x, ratio=.4)
+        ga = GaussianAugmentation(ratio=0.4)
+        new_x, _ = ga(x)
         self.assertTrue(new_x.shape == (7, 3))
 
     def test_double_size(self):

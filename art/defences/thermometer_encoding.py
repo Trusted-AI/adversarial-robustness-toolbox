@@ -56,7 +56,7 @@ class ThermometerEncoding(Preprocessor):
     def apply_predict(self):
         return True
 
-    def __call__(self, x, y=None, num_space=None, clip_values=None):
+    def __call__(self, x, y=None):
         """
         Apply thermometer encoding to sample `x`.
 
@@ -64,23 +64,9 @@ class ThermometerEncoding(Preprocessor):
         :type x: `np.ndarray`
         :param y: Labels of the sample `x`. This function does not affect them in any way.
         :type y: `np.ndarray`
-        :param num_space: Number of evenly spaced levels within [0, 1].
-        :type num_space: `int`
-        :param clip_values: Tuple of the form `(min, max)` representing the minimum and maximum values allowed
-               for features.
-        :type clip_values: `tuple`
         :return: Encoded sample with shape `(batch_size, width, height, depth x num_space)`.
         :rtype: `np.ndarray`
         """
-        params = {}
-        if num_space is not None:
-            params['num_space'] = num_space
-
-        if clip_values is not None:
-            params['clip_values'] = clip_values
-
-        self.set_params(**params)
-
         result = []
         for c in range(x.shape[-1]):
             result.append(self._perchannel(x[:, :, :, c]))
