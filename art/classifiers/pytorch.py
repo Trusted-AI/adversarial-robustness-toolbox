@@ -497,6 +497,9 @@ class PyTorchClassifier(Classifier):
         # Recover optimizer
         self._optimizer.load_state_dict(torch.load(str(full_path) + '.optimizer'))
 
+        self.__dict__.pop('model_name', None)
+        self.__dict__.pop('inner_model', None)
+
     def __repr__(self):
         repr_ = "%s(clip_values=%r, model=%r, loss=%r, optimizer=%r, input_shape=%r, nb_classes=%r, " \
                 "channel_index=%r, defences=%r, preprocessing=%r)" \
