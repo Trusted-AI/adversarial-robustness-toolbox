@@ -81,12 +81,14 @@ class AdversarialPatch(Attack):
         self.set_params(**kwargs)
         self.patch = None
 
-    def generate(self, x):
+    def generate(self, x, y=None):
         """
         Generate adversarial samples and return them in an array.
 
         :param x: An array with the original inputs.
         :type x: `np.ndarray`
+        :param y: An array with the original labels to be predicted.
+        :type y: `np.ndarray`
         :return: An array holding the adversarial patch.
         :rtype: `np.ndarray`
         """

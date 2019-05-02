@@ -50,12 +50,14 @@ class NewtonFool(Attack):
         params = {"max_iter": max_iter, "eta": eta, "batch_size": batch_size}
         self.set_params(**params)
 
-    def generate(self, x):
+    def generate(self, x, y=None):
         """
         Generate adversarial samples and return them in a Numpy array.
 
         :param x: An array with the original inputs to be attacked.
         :type x: `np.ndarray`
+        :param y: An array with the original labels to be predicted.
+        :type y: `np.ndarray`
         :return: An array holding the adversarial examples.
         :rtype: `np.ndarray`
         """
