@@ -40,4 +40,4 @@ install:
   - pip freeze
 
 script:
-  - python -m unittest discover art/ -p '*_unittest.py'
+  - python -m unittest
