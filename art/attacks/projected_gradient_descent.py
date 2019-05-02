@@ -36,8 +36,8 @@ class ProjectedGradientDescent(BasicIterativeMethod):
     """
     attack_params = BasicIterativeMethod.attack_params
 
-    def __init__(self, classifier, norm=np.inf, eps=.3, eps_step=0.1, max_iter=20, targeted=False,
-                 num_random_init=0, batch_size=128):
+    def __init__(self, classifier, norm=np.inf, eps=.3, eps_step=0.1, max_iter=20, targeted=False, num_random_init=0,
+                 batch_size=128):
         """
         Create a :class:`.ProjectedGradientDescent` instance.
 

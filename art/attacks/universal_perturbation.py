@@ -75,31 +75,16 @@ class UniversalPerturbation(Attack):
                   }
         self.set_params(**kwargs)
 
-    def generate(self, x, **kwargs):
+    def generate(self, x):
         """
         Generate adversarial samples and return them in an array.
 
         :param x: An array with the original inputs.
         :type x: `np.ndarray`
-        :param attacker: Adversarial attack name. Default is 'deepfool'. Supported names: 'carlini', 'deepfool', 'fgsm',
-                'newtonfool', 'jsma', 'vat'.
-        :type attacker: `str`
-        :param attacker_params: Parameters specific to the adversarial attack.
-        :type attacker_params: `dict`
-        :param delta: desired accuracy
-        :type delta: `float`
-        :param max_iter: The maximum number of iterations for computing universal perturbation.
-        :type max_iter: `int`
-        :param eps: Attack step size (input variation)
-        :type eps: `float`
-        :param norm: Order of the norm. Possible values: np.inf, 1 and 2 (default is np.inf).
-        :type norm: `int`
         :return: An array holding the adversarial examples.
         :rtype: `np.ndarray`
         """
         logger.info('Computing universal perturbation based on %s attack.', self.attacker)
-
-        self.set_params(**kwargs)
 
         # Init universal perturbation
         v = 0

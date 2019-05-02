@@ -33,9 +33,11 @@ class FastGradientMethod(Attack):
     Gradient Sign Method"). This implementation extends the attack to other norms, and is therefore called the Fast
     Gradient Method. Paper link: https://arxiv.org/abs/1412.6572
     """
-    attack_params = Attack.attack_params + ['norm', 'eps', 'targeted', 'num_random_init', 'batch_size']
+    attack_params = Attack.attack_params + ['norm', 'eps', 'targeted', 'num_random_init', 'batch_size', 'minimal',
+                                            'eps_max', 'eps_step']
 
-    def __init__(self, classifier, norm=np.inf, eps=.3, targeted=False, num_random_init=0, batch_size=128):
+    def __init__(self, classifier, norm=np.inf, eps=.3, targeted=False, num_random_init=0, batch_size=128,
+                 minimal=False, eps_max=1.0, eps_step=0.1):
         """
         Create a :class:`.FastGradientMethod` instance.
 
@@ -52,6 +54,12 @@ class FastGradientMethod(Attack):
         :type num_random_init: `int`
         :param batch_size: Batch size
         :type batch_size: `int`
+        :param minimal: Flag to compute the minimal perturbation.
+        :type minimal: `bool`
+        :param eps_max: Maximal input variation for minimal perturbation computation
+        :type eps_max: `float`
+        :param eps_step: Step size of input variation for minimal perturbation computation
+        :type eps_step: `float`
         """
         super(FastGradientMethod, self).__init__(classifier)
 
@@ -60,8 +68,11 @@ class FastGradientMethod(Attack):
         self.targeted = targeted
         self.num_random_init = num_random_init
         self.batch_size = batch_size
+        self.minimal = minimal
+        self.eps_max = eps_max
+        self.eps_step = eps_step
 
-    def _minimal_perturbation(self, x, y, eps_step=0.1, eps_max=1., **kwargs):
+    def _minimal_perturbation(self, x, y):
         """Iteratively compute the minimal perturbation necessary to make the class prediction change. Stop when the
         first adversarial example was found.
 
@@ -69,14 +80,9 @@ class FastGradientMethod(Attack):
         :type x: `np.ndarray`
         :param y:
         :type y:
-        :param eps_step: The increase in the perturbation for each iteration
-        :type eps_step: `float`
-        :param eps_max: The maximum accepted perturbation
-        :type eps_max: `float`
         :return: An array holding the adversarial examples
         :rtype: `np.ndarray`
         """
-        self.set_params(**kwargs)
         adv_x = x.copy()
 
         # Compute perturbation with implicit batching
@@ -90,8 +96,8 @@ class FastGradientMethod(Attack):
 
             # Get current predictions
             active_indices = np.arange(len(batch))
-            current_eps = eps_step
-            while len(active_indices) != 0 and current_eps <= eps_max:
+            current_eps = self.eps_step
+            while len(active_indices) != 0 and current_eps <= self.eps_max:
                 # Adversarial crafting
                 current_x = self._apply_perturbation(x[batch_index_1:batch_index_2], perturbation, current_eps)
                 # Update
@@ -103,41 +109,26 @@ class FastGradientMethod(Attack):
                 else:
                     active_indices = np.where(np.argmax(batch_labels, axis=1) == np.argmax(adv_preds, axis=1))[0]
 
-                current_eps += eps_step
+                current_eps += self.eps_step
 
             adv_x[batch_index_1:batch_index_2] = batch
 
         return adv_x
 
-    def generate(self, x, **kwargs):
+    def generate(self, x, y=None):
         """Generate adversarial samples and return them in an array.
 
         :param x: An array with the original inputs.
         :type x: `np.ndarray`
-        :param eps: Attack step size (input variation)
-        :type eps: `float`
-        :param norm: Order of the norm (mimics Numpy). Possible values: np.inf, 1 or 2.
-        :type norm: `int`
         :param y: The labels for the data `x`. Only provide this parameter if you'd like to use true
                   labels when crafting adversarial samples. Otherwise, model predictions are used as labels to avoid the
                   "label leaking" effect (explained in this paper: https://arxiv.org/abs/1611.01236). Default is `None`.
                   Labels should be one-hot-encoded.
         :type y: `np.ndarray`
-        :param minimal: `True` if only the minimal perturbation should be computed. In that case, use `eps_step` for the
-                        step size and `eps_max` for the total allowed perturbation.
-        :type minimal: `bool`
-        :param num_random_init: Number of random initialisations within the epsilon ball. For num_random_init=0
-            starting at the original input.
-        :type num_random_init: `bool`
-        :param batch_size: Batch size
-        :type batch_size: `int`
         :return: An array holding the adversarial examples.
         :rtype: `np.ndarray`
         """
-        self.set_params(**kwargs)
-        params_cpy = dict(kwargs)
-
-        if 'y' not in params_cpy or params_cpy[str('y')] is None:
+        if y is None:
             # Throw error if attack is targeted, but no targets are provided
             if self.targeted:
                 raise ValueError('Target labels `y` need to be provided for a targeted attack.')
@@ -145,14 +136,12 @@ class FastGradientMethod(Attack):
             # Use model predictions as correct outputs
             logger.info('Using model predictions as correct labels for FGM.')
             y = get_labels_np_array(self.classifier.predict(x))
-        else:
-            y = params_cpy.pop(str('y'))
         y = y / np.sum(y, axis=1, keepdims=True)
 
         # Return adversarial examples computed with minimal perturbation if option is active
-        if 'minimal' in params_cpy and params_cpy[str('minimal')]:
+        if self.minimal:
             logger.info('Performing minimal perturbation FGM.')
-            adv_x_best = self._minimal_perturbation(x, y, **params_cpy)
+            adv_x_best = self._minimal_perturbation(x, y)
             rate_best = 100 * compute_success(self.classifier, x, y, adv_x_best, self.targeted)
         else:
             adv_x_best = None

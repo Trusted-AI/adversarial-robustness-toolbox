@@ -111,28 +111,8 @@ class TestSaliencyMap(unittest.TestCase):
         (_, _), (x_test, y_test) = self.mnist
         x_test, y_test = x_test[:NB_TEST], y_test[:NB_TEST]
 
-        # import time
-        df = SaliencyMapMethod(classifier, theta=1)
-
-        # starttime = time.clock()
-        # x_test_adv = df.generate(x_test, batch_size=1)
-        # endtime = time.clock()
-        # print(1, endtime - starttime)
-        #
-        # starttime = time.clock()
-        # x_test_adv = df.generate(x_test, batch_size=10)
-        # endtime = time.clock()
-        # print(10, endtime - starttime)
-        #
-        # starttime = time.clock()
-        x_test_adv = df.generate(x_test, batch_size=100)
-        # endtime = time.clock()
-        # print(100, endtime - starttime)
-
-        # starttime = time.clock()
-        # x_test_adv = df.generate(x_test, batch_size=1000)
-        # endtime = time.clock()
-        # print(1000, endtime - starttime)
+        df = SaliencyMapMethod(classifier, theta=1, batch_size=100)
+        x_test_adv = df.generate(x_test)
 
         self.assertFalse((x_test == x_test_adv).all())
         self.assertFalse((0. == x_test_adv).all())
@@ -155,28 +135,8 @@ class TestSaliencyMap(unittest.TestCase):
             targets = np.random.randint(nb_classes, size=NB_TEST)
 
         # Perform attack
-        # import time
-        df = SaliencyMapMethod(classifier, theta=1)
-
-        # starttime = time.clock()
-        # x_test_adv = df.generate(x_test, y=to_categorical(targets, nb_classes), batch_size=1)
-        # endtime = time.clock()
-        # print(1, endtime - starttime)
-        #
-        # starttime = time.clock()
-        # x_test_adv = df.generate(x_test, y=to_categorical(targets, nb_classes), batch_size=10)
-        # endtime = time.clock()
-        # print(10, endtime - starttime)
-        #
-        # starttime = time.clock()
-        x_test_adv = df.generate(x_test, y=to_categorical(targets, nb_classes), batch_size=100)
-        # endtime = time.clock()
-        # print(100, endtime - starttime)
-
-        # starttime = time.clock()
-        # x_test_adv = df.generate(x_test, y=to_categorical(targets, nb_classes), batch_size=1000)
-        # endtime = time.clock()
-        # print(1000, endtime - starttime)
+        df = SaliencyMapMethod(classifier, theta=1, batch_size=100)
+        x_test_adv = df.generate(x_test, y=to_categorical(targets, nb_classes))
 
         self.assertFalse((x_test == x_test_adv).all())
         self.assertFalse((0. == x_test_adv).all())

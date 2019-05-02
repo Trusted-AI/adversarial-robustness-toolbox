@@ -45,15 +45,13 @@ class Attack(ABC):
         """
         self.classifier = classifier
 
-    def generate(self, x, **kwargs):
+    def generate(self, x):
         """
         Generate adversarial examples and return them as an array. This method should be overridden by all concrete
         attack implementations.
 
         :param x: An array with the original inputs to be attacked.
         :type x: `np.ndarray`
-        :param kwargs: Attack-specific parameters used by child classes.
-        :type kwargs: `dict`
         :return: An array holding the adversarial examples.
         :rtype: `np.ndarray`
         """

@@ -81,7 +81,7 @@ class AdversarialPatch(Attack):
         self.set_params(**kwargs)
         self.patch = None
 
-    def generate(self, x, **kwargs):
+    def generate(self, x):
         """
         Generate adversarial samples and return them in an array.
 
@@ -91,7 +91,6 @@ class AdversarialPatch(Attack):
         :rtype: `np.ndarray`
         """
         logger.info('Creating adversarial patch.')
-        self.set_params(**kwargs)
         self.patch = (np.random.standard_normal(size=self.patch_shape)) * 20.0
 
         for i_step in range(self.max_iter):

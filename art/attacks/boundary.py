@@ -31,8 +31,8 @@ class BoundaryAttack(Attack):
     Implementation of the boundary attack from Wieland Brendel et al. (2018).
     Paper link: https://arxiv.org/abs/1712.04248
     """
-    attack_params = Attack.attack_params + ['targeted', 'delta', 'epsilon', 'step_adapt',
-                                            'max_iter', 'sample_size', 'init_size']
+    attack_params = Attack.attack_params + ['targeted', 'delta', 'epsilon', 'step_adapt', 'max_iter', 'sample_size',
+                                            'init_size']
 
     def __init__(self, classifier, targeted=True, delta=0.01, epsilon=0.01, step_adapt=0.9, max_iter=100,
                  sample_size=20, init_size=100):
@@ -66,7 +66,7 @@ class BoundaryAttack(Attack):
                   'init_size': init_size}
         self.set_params(**params)
 
-    def generate(self, x, **kwargs):
+    def generate(self, x, y=None):
         """
         Generate adversarial samples and return them in an array.
 
@@ -74,27 +74,9 @@ class BoundaryAttack(Attack):
         :type x: `np.ndarray`
         :param y: If `self.targeted` is true, then `y` represents the target labels.
         :type y: `np.ndarray`
-        :param targeted: Should the attack target one specific class.
-        :type targeted: `bool`
-        :param delta: Initial step size for the orthogonal step.
-        :type delta: `float`
-        :param epsilon: Initial step size for the step towards the target.
-        :type epsilon: `float`
-        :param step_adapt: Factor by which the step sizes are multiplied or divided, must be in the range (0, 1).
-        :type step_adapt: `float`
-        :param max_iter: The maximum number of iterations.
-        :type max_iter: `int`
-        :param sample_size: Maximum number of trials per iteration.
-        :type sample_size: `int`
-        :param init_size: Maximum number of trials for initial generation of adversarial examples.
-        :type init_size: `int`
         :return: An array holding the adversarial examples.
         :rtype: `np.ndarray`
         """
-        self.set_params(**kwargs)
-        params_cpy = dict(kwargs)
-        y = params_cpy.pop(str('y'), None)
-
         # Prediction from the original images
         preds = np.argmax(self.classifier.predict(x), axis=1)
 

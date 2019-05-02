@@ -154,7 +154,7 @@ class ElasticNet(Attack):
 
         return decayed_learning_rate
 
-    def generate(self, x, **kwargs):
+    def generate(self, x, y=None):
         """
         Generate adversarial samples and return them in an array.
 
@@ -168,11 +168,6 @@ class ElasticNet(Attack):
         """
         x_adv = x.astype(NUMPY_DTYPE)
         (clip_min, clip_max) = self.classifier.clip_values
-
-        # Parse and save attack-specific parameters
-        params_cpy = dict(kwargs)
-        y = params_cpy.pop(str('y'), None)
-        self.set_params(**params_cpy)
 
         # Assert that, if attack is targeted, y is provided:
         if self.targeted and y is None:

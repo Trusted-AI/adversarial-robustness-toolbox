@@ -130,13 +130,13 @@ class TestIterativeAttack(unittest.TestCase):
         (_, _), (x_test, _) = self.mnist
 
         # Test FGSM with np.inf norm
-        attack = BasicIterativeMethod(classifier, eps=1.0, eps_step=0.1, targeted=True)
+        attack = BasicIterativeMethod(classifier, eps=1.0, eps_step=0.01, targeted=True)
         # y_test_adv = to_categorical((np.argmax(y_test, axis=1) + 1)  % 10, 10)
         pred_sort = classifier.predict(x_test).argsort(axis=1)
         y_test_adv = np.zeros((x_test.shape[0], 10))
         for i in range(x_test.shape[0]):
             y_test_adv[i, pred_sort[i, -2]] = 1.0
-        x_test_adv = attack.generate(x_test, eps_step=0.01, eps=1.0, y=y_test_adv)
+        x_test_adv = attack.generate(x_test, y=y_test_adv)
 
         self.assertFalse((x_test == x_test_adv).all())
 

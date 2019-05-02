@@ -50,7 +50,7 @@ class SaliencyMapMethod(Attack):
         kwargs = {'theta': theta, 'gamma': gamma, 'batch_size': batch_size}
         self.set_params(**kwargs)
 
-    def generate(self, x, **kwargs):
+    def generate(self, x, y=None):
         """
         Generate adversarial samples and return them in an array.
 
@@ -58,17 +58,10 @@ class SaliencyMapMethod(Attack):
         :type x: `np.ndarray`
         :param y: Target values if the attack is targeted
         :type y: `np.ndarray`
-        :param theta: Perturbation introduced to each modified feature per step (can be positive or negative)
-        :type theta: `float`
-        :param gamma: Maximum percentage of perturbed features (between 0 and 1)
-        :type gamma: `float`
-        :param batch_size: Batch size
-        :type batch_size: `int`
         :return: An array holding the adversarial examples.
         :rtype: `np.ndarray`
         """
         # Parse and save attack-specific parameters
-        self.set_params(**kwargs)
         clip_min, clip_max = self.classifier.clip_values
 
         # Initialize variables
@@ -78,12 +71,12 @@ class SaliencyMapMethod(Attack):
         preds = np.argmax(self.classifier.predict(x), axis=1)
 
         # Determine target classes for attack
-        if 'y' not in kwargs or kwargs[str('y')] is None:
+        if y is None:
             # Randomly choose target from the incorrect classes for each sample
             from art.utils import random_targets
             targets = np.argmax(random_targets(preds, self.classifier.nb_classes), axis=1)
         else:
-            targets = np.argmax(kwargs[str('y')], axis=1)
+            targets = np.argmax(y, axis=1)
 
         # Compute perturbation with implicit batching
         for batch_id in range(int(np.ceil(x_adv.shape[0] / float(self.batch_size)))):

@@ -55,23 +55,15 @@ class VirtualAdversarialMethod(Attack):
                   'batch_size': batch_size}
         self.set_params(**kwargs)
 
-    def generate(self, x, **kwargs):
+    def generate(self, x):
         """
         Generate adversarial samples and return them in an array.
 
         :param x: An array with the original inputs to be attacked.
         :type x: `np.ndarray`
-        :param eps: Attack step (max input variation).
-        :type eps: `float`
-        :param finite_diff: The finite difference parameter.
-        :type finite_diff: `float`
-        :param max_iter: The maximum number of iterations.
-        :type max_iter: `int`
         :return: An array holding the adversarial examples.
         :rtype: `np.ndarray`
         """
-        # Parse and save attack-specific parameters
-        assert self.set_params(**kwargs)
         clip_min, clip_max = self.classifier.clip_values
         x_adv = np.copy(x)
         preds = self.classifier.predict(x_adv, logits=False)

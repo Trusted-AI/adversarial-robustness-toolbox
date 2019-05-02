@@ -65,29 +65,18 @@ class SpatialTransformation(Attack):
         self.attack_trans_y = None
         self.attack_rot = None
 
-    def generate(self, x, **kwargs):
+    def generate(self, x):
         """
         Generate adversarial samples and return them in an array.
 
         :param x: An array with the original inputs.
         :type x: `np.ndarray`
-        :param max_translation: The maximum translation in any direction as percentage of image size. The value is
-               expected to be in the range `[0, 100]`.
-        :type max_translation: `float`
-        :param num_translations: The number of translations to search on grid spacing per direction.
-        :type num_translations: `int`
-        :param max_rotation: The maximum rotation in either direction in degrees. The value is expected to be in the
-               range `[0, 180]`.
-        :type max_rotation: `float`
-        :param num_rotations: The number of rotations to search on grid spacing.
-        :type num_rotations: `int`
         :return: An array holding the adversarial examples.
         :rtype: `np.ndarray`
         """
         logger.info('Computing spatial transformation based on grid search.')
 
         if self.attack_trans_x is None or self.attack_trans_y is None or self.attack_rot is None:
-            self.set_params(**kwargs)
 
             y_pred = self.classifier.predict(x, logits=False)
             y_pred_max = np.argmax(y_pred, axis=1)
