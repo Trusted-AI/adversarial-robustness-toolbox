@@ -110,9 +110,9 @@ class TestDeepFool(unittest.TestCase):
         (x_train, y_train), (x_test, y_test) = self.mnist
 
         # Test DeepFool
-        attack = DeepFool(classifier, max_iter=5)
+        attack = DeepFool(classifier, max_iter=5, batch_size=11)
         x_train_adv = attack.generate(x_train)
-        x_test_adv = attack.generate(x_test, batch_size=11)
+        x_test_adv = attack.generate(x_test)
 
         self.assertFalse((x_train == x_train_adv).all())
         self.assertFalse((x_test == x_test_adv).all())

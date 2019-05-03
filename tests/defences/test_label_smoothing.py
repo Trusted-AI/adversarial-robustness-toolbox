@@ -48,8 +48,8 @@ class TestLabelSmoothing(unittest.TestCase):
         y = np.zeros((m, n))
         y[(range(m), np.random.choice(range(n), m))] = 1.
 
-        ls = LabelSmoothing()
-        _, smooth_y = ls(None, y, max_value=1./n)
+        ls = LabelSmoothing(max_value=1.0/n)
+        _, smooth_y = ls(None, y)
         self.assertTrue(np.isclose(np.sum(smooth_y, axis=1), np.ones(m)).all())
         self.assertTrue((np.max(smooth_y, axis=1) == np.ones(m) / n).all())
         self.assertTrue(np.isclose(smooth_y, np.ones((m, n)) / n).all())

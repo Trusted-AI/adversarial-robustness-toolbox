@@ -47,15 +47,17 @@ class TestLocalSpatialSmoothing(unittest.TestCase):
         x = np.array([[[[0.1], [0.2], [0.3]], [[0.7], [0.8], [0.9]], [[0.4], [0.5], [0.6]]]]).astype(np.float32)
 
         # Start to test
-        preprocess = SpatialSmoothing()
-        smooth_x, _ = preprocess(x, window_size=3)
+        preprocess = SpatialSmoothing(window_size=3)
+        smooth_x, _ = preprocess(x)
         self.assertTrue((smooth_x == np.array(
             [[[[0.2], [0.3], [0.3]], [[0.4], [0.5], [0.6]], [[0.5], [0.6], [0.6]]]]).astype(np.float32)).all())
 
-        smooth_x, _ = preprocess(x, window_size=1)
+        preprocess = SpatialSmoothing(window_size=1)
+        smooth_x, _ = preprocess(x)
         self.assertTrue((smooth_x == x).all())
 
-        smooth_x, _ = preprocess(x, window_size=2)
+        preprocess = SpatialSmoothing(window_size=2)
+        smooth_x, _ = preprocess(x)
         self.assertTrue((smooth_x == np.array(
             [[[[0.1], [0.2], [0.3]], [[0.7], [0.7], [0.8]], [[0.7], [0.7], [0.8]]]]).astype(np.float32)).all())
 

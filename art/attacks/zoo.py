@@ -143,7 +143,7 @@ class ZooAttack(Attack):
 
         return preds, l2dist, c * loss + l2dist
 
-    def generate(self, x, **kwargs):
+    def generate(self, x, y=None):
         """
         Generate adversarial samples and return them in an array.
 
@@ -155,11 +155,6 @@ class ZooAttack(Attack):
         :return: An array holding the adversarial examples.
         :rtype: `np.ndarray`
         """
-        # Parse and save attack-specific parameters
-        params_cpy = dict(kwargs)
-        y = params_cpy.pop(str('y'), None)
-        self.set_params(**params_cpy)
-
         # Check that `y` is provided for targeted attacks
         if self.targeted and y is None:
             raise ValueError('Target labels `y` need to be provided for a targeted attack.')

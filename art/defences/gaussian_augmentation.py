@@ -60,7 +60,7 @@ class GaussianAugmentation(Preprocessor):
     def apply_predict(self):
         return not self.augmentation
 
-    def __call__(self, x, y=None, sigma=None, augmentation=None, ratio=None):
+    def __call__(self, x, y=None):
         """
         Augment the sample `(x, y)` with Gaussian noise. The result is either an extended dataset containing the original
         sample, as well as the newly created noisy samples (augmentation=True) or just the noisy counterparts to the
@@ -71,30 +71,9 @@ class GaussianAugmentation(Preprocessor):
         :param y: Labels for the sample. If this argument is provided, it will be augmented with the corresponded
                   original labels of each sample point.
         :type y: `np.ndarray`
-        :param sigma: Standard deviation of Gaussian noise to be added.
-        :type sigma: `float`
-        :param augmentation: If true, perform dataset augmentation using `ratio`, otherwise replace samples with noisy
-                            counterparts.
-        :type augmentation: `bool`
-        :param ratio: Percentage of data augmentation. E.g. for a ratio of 1, the size of the dataset will double.
-        :type ratio: `float`
         :return: The augmented dataset and (if provided) corresponding labels.
         :rtype:
         """
-        # Set params
-        params = {}
-        if sigma is not None:
-            params['sigma'] = sigma
-
-        if augmentation is not None:
-            params['augmentation'] = augmentation
-
-        if ratio is not None:
-            params['ratio'] = ratio
-
-        if params:
-            self.set_params(**params)
-
         logger.info('Original dataset size: %d', x.shape[0])
 
         # Select indices to augment

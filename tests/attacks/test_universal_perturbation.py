@@ -61,9 +61,8 @@ class TestUniversalPerturbation(unittest.TestCase):
         (x_train, y_train), (x_test, y_test) = self.mnist
 
         # Attack
-        attack_params = {"max_iter": 1, "attacker": "newtonfool", "attacker_params": {"max_iter": 5}}
-        up = UniversalPerturbation(tfc)
-        x_train_adv = up.generate(x_train, **attack_params)
+        up = UniversalPerturbation(tfc, max_iter=1, attacker="newtonfool", attacker_params={"max_iter": 5})
+        x_train_adv = up.generate(x_train)
         self.assertTrue((up.fooling_rate >= 0.2) or not up.converged)
 
         x_test_adv = x_test + up.v
@@ -86,9 +85,8 @@ class TestUniversalPerturbation(unittest.TestCase):
         (x_train, y_train), (x_test, y_test) = self.mnist
 
         # Attack
-        attack_params = {"max_iter": 1, "attacker": "ead", "attacker_params": {"max_iter": 5, "targeted": False}}
-        up = UniversalPerturbation(krc)
-        x_train_adv = up.generate(x_train, **attack_params)
+        up = UniversalPerturbation(krc, max_iter=1, attacker="ead", attacker_params={"max_iter": 5, "targeted": False})
+        x_train_adv = up.generate(x_train)
         self.assertTrue((up.fooling_rate >= 0.2) or not up.converged)
 
         x_test_adv = x_test + up.v
@@ -113,9 +111,8 @@ class TestUniversalPerturbation(unittest.TestCase):
         x_test = np.swapaxes(x_test, 1, 3)
 
         # Attack
-        attack_params = {"max_iter": 1, "attacker": "newtonfool", "attacker_params": {"max_iter": 5}}
-        up = UniversalPerturbation(ptc)
-        x_train_adv = up.generate(x_train, **attack_params)
+        up = UniversalPerturbation(ptc, max_iter=1, attacker="newtonfool", attacker_params={"max_iter": 5})
+        x_train_adv = up.generate(x_train)
         self.assertTrue((up.fooling_rate >= 0.2) or not up.converged)
 
         x_test_adv = x_test + up.v

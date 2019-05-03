@@ -59,8 +59,8 @@ class TestPixelDefend(unittest.TestCase):
         x_train = x_train[:2]
 
         x_train = x_train[:, 10:15, 15:20, :]
-        preprocess = PixelDefend()
-        defended_x, _ = preprocess(x_train, eps=5, pixel_cnn=self.pixelcnn)
+        preprocess = PixelDefend(eps=5, pixel_cnn=self.pixelcnn)
+        defended_x, _ = preprocess(x_train)
 
         self.assertTrue((defended_x.shape == x_train.shape))
         self.assertTrue((defended_x <= 1.0).all())

@@ -104,9 +104,9 @@ class TestFastGradientMethod(unittest.TestCase):
         (x_train, y_train), (x_test, y_test) = self.mnist
 
         # Test FGSM with np.inf norm
-        attack = FastGradientMethod(classifier, eps=1)
-        x_test_adv = attack.generate(x_test, **{'batch_size': 2})
-        x_train_adv = attack.generate(x_train, **{'batch_size': 4})
+        attack = FastGradientMethod(classifier, eps=1, batch_size=2)
+        x_test_adv = attack.generate(x_test)
+        x_train_adv = attack.generate(x_train)
 
         self.assertFalse((x_train == x_train_adv).all())
         self.assertFalse((x_test == x_test_adv).all())
@@ -124,12 +124,11 @@ class TestFastGradientMethod(unittest.TestCase):
         logger.info('Accuracy on adversarial test examples: %.2f%%', (acc * 100))
 
         # Test minimal perturbations
-        attack_params = {"minimal": True,
-                         "eps_step": .1,
-                         "eps_max": 1.}
+        attack_params = {"minimal": True, "eps_step": 0.1, "eps": 1.0}
+        attack.set_params(**attack_params)
 
-        x_train_adv_min = attack.generate(x_train, **attack_params)
-        x_test_adv_min = attack.generate(x_test, **attack_params)
+        x_train_adv_min = attack.generate(x_train)
+        x_test_adv_min = attack.generate(x_test)
 
         self.assertFalse((x_train_adv_min == x_train_adv).all())
         self.assertFalse((x_test_adv_min == x_test_adv).all())
@@ -227,7 +226,10 @@ class TestFastGradientMethod(unittest.TestCase):
         for i in range(x_test.shape[0]):
             y_test_adv[i, pred_sort[i, -2]] = 1.0
 
-        x_test_adv = attack.generate(x_test, minimal=True, eps_step=0.01, eps=1.0, y=y_test_adv)
+        attack_params = {"minimal": True, "eps_step": 0.01, "eps": 1.0}
+        attack.set_params(**attack_params)
+
+        x_test_adv = attack.generate(x_test, y=y_test_adv)
         self.assertFalse((x_test == x_test_adv).all())
 
         test_y_pred = get_labels_np_array(classifier.predict(x_test_adv))
