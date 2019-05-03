@@ -52,7 +52,8 @@ class Attack(ABC):
 
         :param x: An array with the original inputs to be attacked.
         :type x: `np.ndarray`
-        :param y: An array with the original labels to be predicted.
+        :param y: Correct labels or target labels for `x`, depending if the attack is targeted
+               or not. This parameter is only used by some of the attacks.
         :type y: `np.ndarray`
         :return: An array holding the adversarial examples.
         :rtype: `np.ndarray`
