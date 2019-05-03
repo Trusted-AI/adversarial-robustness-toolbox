@@ -502,10 +502,14 @@ def load_stl():
     return (x_train, y_train), (x_test, y_test), min_, max_
 
 
-def load_iris(raw=False):
+def load_iris(raw=False, test_set=.3):
     """
     Loads the UCI Iris dataset from `DATA_PATH` or downloads it if necessary.
 
+    :param raw: `True` if no preprocessing should be applied to the data. Otherwise, data is normalized to 1.
+    :type raw: `bool`
+    :param test_set: Proportion of the data to use as validation split. The value should be between o and 1.
+    :type test_set: `float`
     :return: Entire dataset and labels.
     :rtype: `(np.ndarray, np.ndarray)`
     """
@@ -518,6 +522,7 @@ def load_iris(raw=False):
     data = np.loadtxt(path, delimiter=',', usecols=(0, 1, 2, 3), dtype=NUMPY_DTYPE)
     labels = np.loadtxt(path, delimiter=',', usecols=4, dtype=str)
 
+    # Preprocess
     if not raw:
         label_map = {
             'Iris-setosa': 0,
@@ -525,12 +530,29 @@ def load_iris(raw=False):
             'Iris-virginica': 2
         }
         labels = np.array([label_map[labels[i]] for i in range(labels.size)], dtype=np.int32)
-        random_indices = np.random.permutation(labels.size)
-        data, labels = data[random_indices], labels[random_indices]
         data, labels = preprocess(data, labels, nb_classes=3)
     min_, max_ = np.amin(data), np.amax(data)
 
-    return (data, labels), min_, max_
+    # Split training and test sets
+    split_index = int((1 - test_set) * len(data) / 3)
+    x_train = np.vstack((data[:split_index], data[50:50+split_index], data[100:100+split_index]))
+    y_train = np.vstack((labels[:split_index], labels[50:50+split_index], labels[100:100+split_index]))
+
+    if split_index == 49:
+        x_test, y_test = None, None
+    else:
+
+        x_test = np.vstack((data[split_index:50], data[50+split_index:100], data[100+split_index:]))
+        y_test = np.vstack((labels[split_index:50], labels[50+split_index:100], labels[100+split_index:]))
+        assert len(x_train) + len(x_test) == 150
+
+    # Shuffle
+    random_indices = np.random.permutation(len(y_train))
+    x_train, y_train = x_train[random_indices], y_train[random_indices]
+    random_indices = np.random.permutation(len(y_test))
+    x_test, y_test = x_test[random_indices], y_test[random_indices]
+
+    return (x_train, y_train), (x_test, y_test), min_, max_
 
 
 def load_dataset(name):
