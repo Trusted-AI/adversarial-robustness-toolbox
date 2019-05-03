@@ -40,4 +40,4 @@ install:
   - pip freeze
 
 script:
-  - python -m unittest
+  - python -m unittest discover

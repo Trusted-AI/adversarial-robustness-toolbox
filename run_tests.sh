@@ -1,2 +1,2 @@
 #!/usr/bin/env bash
-python -m unittest
+python -m unittest discover
