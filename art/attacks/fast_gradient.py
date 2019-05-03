@@ -34,10 +34,10 @@ class FastGradientMethod(Attack):
     Gradient Method. Paper link: https://arxiv.org/abs/1412.6572
     """
     attack_params = Attack.attack_params + ['norm', 'eps', 'targeted', 'num_random_init', 'batch_size', 'minimal',
-                                            'eps_max', 'eps_step']
+                                            'eps_step']
 
     def __init__(self, classifier, norm=np.inf, eps=.3, targeted=False, num_random_init=0, batch_size=128,
-                 minimal=False, eps_max=1.0, eps_step=0.1):
+                 minimal=False, eps_step=0.1):
         """
         Create a :class:`.FastGradientMethod` instance.
 
@@ -56,8 +56,6 @@ class FastGradientMethod(Attack):
         :type batch_size: `int`
         :param minimal: Flag to compute the minimal perturbation.
         :type minimal: `bool`
-        :param eps_max: Maximal input variation for minimal perturbation computation
-        :type eps_max: `float`
         :param eps_step: Step size of input variation for minimal perturbation computation
         :type eps_step: `float`
         """
@@ -69,7 +67,6 @@ class FastGradientMethod(Attack):
         self.num_random_init = num_random_init
         self.batch_size = batch_size
         self.minimal = minimal
-        self.eps_max = eps_max
         self.eps_step = eps_step
 
     def _minimal_perturbation(self, x, y):

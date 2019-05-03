@@ -124,7 +124,7 @@ class TestFastGradientMethod(unittest.TestCase):
         logger.info('Accuracy on adversarial test examples: %.2f%%', (acc * 100))
 
         # Test minimal perturbations
-        attack_params = {"minimal": True, "eps_step": 0.1, "eps_max": 1.0}
+        attack_params = {"minimal": True, "eps_step": 0.1, "eps": 1.0}
         attack.set_params(**attack_params)
 
         x_train_adv_min = attack.generate(x_train)
