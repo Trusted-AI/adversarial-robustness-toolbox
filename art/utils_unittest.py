@@ -247,12 +247,22 @@ class TestUtils(unittest.TestCase):
         self.assertEqual(x_.min(), 0)
 
     def test_iris(self):
-        (data, labels), min_, max_ = load_iris()
-        print(min_, max_)
+        (x_train, y_train), (x_test, y_test), min_, max_ = load_iris()
 
         self.assertTrue((min_ == 0).all())
         self.assertTrue((max_ == 1).all())
-        self.assertEqual(data.shape[0], labels.shape[0])
+        self.assertEqual(x_train.shape[0], y_train.shape[0])
+        self.assertEqual(x_test.shape[0], y_test.shape[0])
+        train_labels = np.argmax(y_train, axis=1)
+        self.assertTrue(np.setdiff1d(train_labels, np.array([0, 1, 2])).shape == (0,))
+        test_labels = np.argmax(y_test, axis=1)
+        self.assertTrue(np.setdiff1d(test_labels, np.array([0, 1, 2])).shape == (0,))
+
+        (x_train, y_train), (x_test, y_test), min_, max_ = load_iris(test_set=0)
+        self.assertTrue(x_train.shape[0] == 150)
+        self.assertTrue(y_train.shape[0] == 150)
+        self.assertTrue(x_test is None)
+        self.assertTrue(y_test is None)
 
 
 if __name__ == '__main__':

@@ -538,7 +538,7 @@ def load_iris(raw=False, test_set=.3):
     x_train = np.vstack((data[:split_index], data[50:50+split_index], data[100:100+split_index]))
     y_train = np.vstack((labels[:split_index], labels[50:50+split_index], labels[100:100+split_index]))
 
-    if split_index == 49:
+    if split_index >= 49:
         x_test, y_test = None, None
     else:
 
@@ -546,11 +546,13 @@ def load_iris(raw=False, test_set=.3):
         y_test = np.vstack((labels[split_index:50], labels[50+split_index:100], labels[100+split_index:]))
         assert len(x_train) + len(x_test) == 150
 
-    # Shuffle
+        # Shuffle test set
+        random_indices = np.random.permutation(len(y_test))
+        x_test, y_test = x_test[random_indices], y_test[random_indices]
+
+    # Shuffle training set
     random_indices = np.random.permutation(len(y_train))
     x_train, y_train = x_train[random_indices], y_train[random_indices]
-    random_indices = np.random.permutation(len(y_test))
-    x_test, y_test = x_test[random_indices], y_test[random_indices]
 
     return (x_train, y_train), (x_test, y_test), min_, max_
 
