@@ -55,21 +55,17 @@ class SklearnLogisticRegression(Classifier):
         sample_weight = None
 
         n_classes = 10
-
         n_samples, n_features = x.shape
         gradients = np.zeros_like(x)
 
         y_pred = self.model.predict_proba(X=x)
 
-        # TODO Try to vectorize these loops
+        w_weighted = np.matmul(y_pred, w)
+
         for i_sample in range(n_samples):
             for i_class_1 in range(n_classes):
-
-                w_weighted = 0.0
-                for i_class_2 in range(n_classes):
-                    w_weighted += y_pred[i_sample, i_class_2] * w[i_class_2, :]
-
-                gradients[i_sample, :] += (1 - y_one_hot[i_sample, i_class_1]) * (w[i_class_1, :] - w_weighted)
+                gradients[i_sample, :] += (1 - y_one_hot[i_sample, i_class_1]) * (
+                            w[i_class_1, :] - w_weighted[i_sample, :])
 
         return gradients
 
