@@ -45,9 +45,6 @@ class SklearnLogisticRegression(Classifier):
 
     def loss_gradient(self, x, y):
 
-        # TODO Account for regularisation parameter, alpha = 1/C
-        alpha = 0
-
         y_one_hot = y
         w = self.model.coef_
 
