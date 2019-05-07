@@ -38,7 +38,7 @@ class SklearnLogisticRegression(Classifier):
         raise NotImplementedError
 
     def fit(self, x, y, batch_size=128, nb_epochs=20, **kwargs):
-        raise NotImplementedError
+        self.model.fit(X=x, y=y, sample_weight=None)
 
     def get_activations(self, x, layer, batch_size):
         raise NotImplementedError
@@ -75,11 +75,12 @@ class SklearnLogisticRegression(Classifier):
         return gradients
 
     def predict(self, x, logits=False, batch_size=128):
-        y = self.model.predict_proba(X=x)
-        return y
+        return self.model.predict_proba(X=x)
 
     def save(self, filename, path=None):
-        raise NotImplementedError
+        import pickle
+        with open(filename + '.pickle', 'wb') as f:
+            pickle.dump(self.model, file=f)
 
     def set_learning_phase(self, train):
         raise NotImplementedError
