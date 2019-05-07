@@ -51,16 +51,16 @@ class SklearnLogisticRegression(Classifier):
         # TODO Account for sample weight option
         sample_weight = None
 
-        n_classes = 10
-        n_samples, n_features = x.shape
+        num_classes = len(self.model.classes_)
+        num_samples, n_features = x.shape
         gradients = np.zeros_like(x)
 
         y_pred = self.model.predict_proba(X=x)
 
         w_weighted = np.matmul(y_pred, w)
 
-        for i_sample in range(n_samples):
-            for i_class_1 in range(n_classes):
+        for i_sample in range(num_samples):
+            for i_class_1 in range(num_classes):
                 gradients[i_sample, :] += (1 - y_one_hot[i_sample, i_class_1]) * (
                             w[i_class_1, :] - w_weighted[i_sample, :])
 
