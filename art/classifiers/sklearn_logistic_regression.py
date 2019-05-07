@@ -69,7 +69,6 @@ class SklearnLogisticRegression(Classifier):
                 for i_class_2 in range(n_classes):
                     w_weighted += y_pred[i_sample, i_class_2] * w[i_class_2, :]
 
-                # TODO Account for l1 or l2 regularisation
                 gradients[i_sample, :] += (1 - y_one_hot[i_sample, i_class_1]) * (w[i_class_1, :] - w_weighted)
 
         return gradients
