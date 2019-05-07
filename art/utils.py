@@ -25,8 +25,6 @@ import os
 
 import numpy as np
 
-from art import NUMPY_DTYPE
-
 logger = logging.getLogger(__name__)
 
 try:
@@ -706,7 +704,7 @@ def clip_and_round(x, clip_values, round_samples):
     x = np.around(x / round_samples) * round_samples
     return x
 
-# -------------------------------------------------------------------------------------------------- PRE-TRAINED MODELS
+# ----------------------------------------------------------------------------------------------- TEST MODELS FOR MNIST
 
 
 def _tf_initializer_w_conv2d(_, dtype, partition_info):
@@ -946,5 +944,227 @@ def get_classifier_pt():
     # Get classifier
     ptc = PyTorchClassifier(model=model, loss=loss_fn, optimizer=optimizer, input_shape=(1, 28, 28), nb_classes=10,
                             clip_values=(0, 1))
+
+    return ptc
+
+
+# ------------------------------------------------------------------------------------------------ TEST MODELS FOR IRIS
+
+def _tf_iris_initializer_dense1_weights(_, dtype, partition_info):
+    import tensorflow as tf
+
+    w_dense = np.load(os.path.join(os.path.dirname(os.path.dirname(__file__)), 'models', 'W_DENSE1_IRIS.npy'))
+    return tf.constant(w_dense, dtype)
+
+
+def _tf_iris_initializer_dense1_bias(_, dtype, partition_info):
+    import tensorflow as tf
+
+    b_dense = np.load(os.path.join(os.path.dirname(os.path.dirname(__file__)), 'models', 'B_DENSE1_IRIS.npy'))
+    return tf.constant(b_dense, dtype)
+
+
+def _tf_iris_initializer_dense2_weights(_, dtype, partition_info):
+    import tensorflow as tf
+
+    w_dense = np.load(os.path.join(os.path.dirname(os.path.dirname(__file__)), 'models', 'W_DENSE2_IRIS.npy'))
+    return tf.constant(w_dense, dtype)
+
+
+def _tf_iris_initializer_dense2_bias(_, dtype, partition_info):
+    import tensorflow as tf
+
+    b_dense = np.load(os.path.join(os.path.dirname(os.path.dirname(__file__)), 'models', 'B_DENSE2_IRIS.npy'))
+    return tf.constant(b_dense, dtype)
+
+
+def _tf_iris_initializer_dense3_weights(_, dtype, partition_info):
+    import tensorflow as tf
+
+    w_dense = np.load(os.path.join(os.path.dirname(os.path.dirname(__file__)), 'models', 'W_DENSE3_IRIS.npy'))
+    return tf.constant(w_dense, dtype)
+
+
+def _tf_iris_initializer_dense3_bias(_, dtype, partition_info):
+    import tensorflow as tf
+
+    b_dense = np.load(os.path.join(os.path.dirname(os.path.dirname(__file__)), 'models', 'B_DENSE3_IRIS.npy'))
+    return tf.constant(b_dense, dtype)
+
+
+def _kr_iris_initializer_dense1_bias(_, dtype=None):
+    import keras.backend as k
+
+    b_dense = np.load(os.path.join(os.path.dirname(os.path.dirname(__file__)), 'models', 'B_DENSE1_IRIS.npy'))
+    return k.variable(value=b_dense, dtype=dtype)
+
+
+def _kr_iris_initializer_dense1_weights(_, dtype=None):
+    import keras.backend as k
+
+    b_dense = np.load(os.path.join(os.path.dirname(os.path.dirname(__file__)), 'models', 'W_DENSE1_IRIS.npy'))
+    return k.variable(value=b_dense, dtype=dtype)
+
+
+def _kr_iris_initializer_dense2_bias(_, dtype=None):
+    import keras.backend as k
+
+    b_dense = np.load(os.path.join(os.path.dirname(os.path.dirname(__file__)), 'models', 'B_DENSE2_IRIS.npy'))
+    return k.variable(value=b_dense, dtype=dtype)
+
+
+def _kr_iris_initializer_dense2_weights(_, dtype=None):
+    import keras.backend as k
+
+    b_dense = np.load(os.path.join(os.path.dirname(os.path.dirname(__file__)), 'models', 'W_DENSE2_IRIS.npy'))
+    return k.variable(value=b_dense, dtype=dtype)
+
+
+def _kr_iris_initializer_dense3_bias(_, dtype=None):
+    import keras.backend as k
+
+    b_dense = np.load(os.path.join(os.path.dirname(os.path.dirname(__file__)), 'models', 'B_DENSE3_IRIS.npy'))
+    return k.variable(value=b_dense, dtype=dtype)
+
+
+def _kr_iris_initializer_dense3_weights(_, dtype=None):
+    import keras.backend as k
+
+    b_dense = np.load(os.path.join(os.path.dirname(os.path.dirname(__file__)), 'models', 'W_DENSE3_IRIS.npy'))
+    return k.variable(value=b_dense, dtype=dtype)
+
+
+def get_iris_classifier_tf():
+    """
+    Standard Tensorflow classifier for unit testing.
+
+    The following hyper-parameters were used to obtain the weights and biases:
+    - learning_rate: 0.01
+    - batch size: 5
+    - number of epochs: 200
+    - optimizer: tf.train.AdamOptimizer
+    The model is trained of 70% of the dataset, and 30% of the training set is used as validation split.
+
+    :return: The trained model for Iris dataset and the session.
+    :rtype: `tuple(TFClassifier, tf.Session)`
+    """
+    import tensorflow as tf
+    from art.classifiers import TFClassifier
+
+    # Define input and output placeholders
+    input_ph = tf.placeholder(tf.float32, shape=[None, 4])
+    output_ph = tf.placeholder(tf.int32, shape=[None, 3])
+
+    # Define the tensorflow graph
+    dense1 = tf.layers.dense(input_ph, 10, kernel_initializer=_tf_iris_initializer_dense1_weights,
+                             bias_initializer=_tf_iris_initializer_dense1_bias)
+    dense2 = tf.layers.dense(dense1, 10, kernel_initializer=_tf_iris_initializer_dense2_weights,
+                             bias_initializer=_tf_iris_initializer_dense2_bias)
+    logits = tf.layers.dense(dense2, 3, kernel_initializer=_tf_iris_initializer_dense3_weights,
+                             bias_initializer=_tf_iris_initializer_dense3_bias)
+
+    # Train operator
+    loss = tf.reduce_mean(tf.losses.softmax_cross_entropy(logits=logits, onehot_labels=output_ph))
+
+    # Tensorflow session and initialization
+    sess = tf.Session()
+    sess.run(tf.global_variables_initializer())
+
+    # Train the classifier
+    tfc = TFClassifier(clip_values=(0, 1), input_ph=input_ph, logits=logits, output_ph=output_ph, train=None,
+                       loss=loss, learning=None, sess=sess, channel_index=1)
+
+    return tfc, sess
+
+
+def get_iris_classifier_kr():
+    """
+    Standard Keras classifier for unit testing on Iris dataset. The weights and biases are identical to the Tensorflow
+    model in `get_iris_classifier_tf`.
+
+    :return: The trained model for Iris dataset and the session.
+    :rtype: `tuple(KerasClassifier, tf.Session)`
+    """
+    import keras
+    import keras.backend as k
+    from keras.models import Sequential
+    from keras.layers import Dense
+    import tensorflow as tf
+
+    from art.classifiers import KerasClassifier
+
+    # Initialize a tf session
+    sess = tf.Session()
+    k.set_session(sess)
+
+    # Create simple CNN
+    model = Sequential()
+    model.add(Dense(10, input_shape=(4,), activation='relu', kernel_initializer=_kr_iris_initializer_dense1_weights,
+                    bias_initializer=_kr_iris_initializer_dense1_bias))
+    model.add(Dense(10, activation='relu', kernel_initializer=_kr_iris_initializer_dense2_weights,
+                    bias_initializer=_kr_iris_initializer_dense2_bias))
+    model.add(Dense(3, activation='softmax', kernel_initializer=_kr_iris_initializer_dense3_weights,
+                    bias_initializer=_kr_iris_initializer_dense3_bias))
+    model.compile(loss='categorical_crossentropy', optimizer=keras.optimizers.Adam(lr=0.001), metrics=['accuracy'])
+
+    # Get classifier
+    krc = KerasClassifier(model, clip_values=(0, 1), use_logits=False, channel_index=1)
+
+    return krc, sess
+
+
+def get_iris_classifier_pt():
+    """
+    Standard PyTorch classifier for unit testing on Iris dataset.
+
+    :return: Trained model for Iris dataset.
+    :rtype: :class:`.PyTorchClassifier`
+    """
+    from art.classifiers import PyTorchClassifier
+
+    class Model(nn.Module):
+        """
+        Create Iris model for PyTorch.
+
+        The weights and biases are identical to the Tensorflow model in `get_iris_classifier_tf`.
+        """
+
+        def __init__(self):
+            super(Model, self).__init__()
+
+            w_dense1 = np.load(os.path.join(os.path.dirname(os.path.dirname(__file__)), 'models', 'W_DENSE1_IRIS.npy'))
+            b_dense1 = np.load(os.path.join(os.path.dirname(os.path.dirname(__file__)), 'models', 'B_DENSE1_IRIS.npy'))
+            w_dense2 = np.load(os.path.join(os.path.dirname(os.path.dirname(__file__)), 'models', 'W_DENSE2_IRIS.npy'))
+            b_dense2 = np.load(os.path.join(os.path.dirname(os.path.dirname(__file__)), 'models', 'B_DENSE2_IRIS.npy'))
+            w_dense3 = np.load(os.path.join(os.path.dirname(os.path.dirname(__file__)), 'models', 'W_DENSE3_IRIS.npy'))
+            b_dense3 = np.load(os.path.join(os.path.dirname(os.path.dirname(__file__)), 'models', 'B_DENSE3_IRIS.npy'))
+
+            self.fully_connected1 = nn.Linear(4, 10)
+            self.fully_connected1.weight = nn.Parameter(torch.Tensor(np.transpose(w_dense1)))
+            self.fully_connected1.bias = nn.Parameter(torch.Tensor(b_dense1))
+            self.fully_connected2 = nn.Linear(10, 10)
+            self.fully_connected2.weight = nn.Parameter(torch.Tensor(np.transpose(w_dense2)))
+            self.fully_connected2.bias = nn.Parameter(torch.Tensor(b_dense2))
+            self.fully_connected3 = nn.Linear(10, 3)
+            self.fully_connected3.weight = nn.Parameter(torch.Tensor(np.transpose(w_dense3)))
+            self.fully_connected3.bias = nn.Parameter(torch.Tensor(b_dense3))
+
+        def forward(self, x):
+            x = self.fully_connected1(x)
+            x = self.fully_connected2(x)
+            logit_output = self.fully_connected3(x)
+
+            return logit_output
+
+    # Define the network
+    model = Model()
+
+    # Define a loss function and optimizer
+    loss_fn = nn.CrossEntropyLoss()
+    optimizer = optim.Adam(model.parameters(), lr=0.01)
+
+    # Get classifier
+    ptc = PyTorchClassifier(model=model, loss=loss_fn, optimizer=optimizer, input_shape=(4,), nb_classes=3,
+                            clip_values=(0, 1), channel_index=1)
 
     return ptc
