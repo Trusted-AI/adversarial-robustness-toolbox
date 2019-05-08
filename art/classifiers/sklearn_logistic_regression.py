@@ -19,6 +19,7 @@ from __future__ import absolute_import, division, print_function, unicode_litera
 
 import logging
 import numpy as np
+from sklearn.utils.class_weight import compute_class_weight
 
 from art.classifiers import Classifier
 
@@ -45,11 +46,9 @@ class SklearnLogisticRegression(Classifier):
 
     def loss_gradient(self, x, y):
 
-        y_one_hot = y
         w = self.model.coef_
-
-        # TODO Account for sample weight option
-        sample_weight = None
+        class_weight = compute_class_weight(class_weight=self.model.class_weight, classes=self.model.classes_,
+                                            y=np.argmax(y, axis=1))
 
         num_classes = len(self.model.classes_)
         num_samples, n_features = x.shape
@@ -60,9 +59,10 @@ class SklearnLogisticRegression(Classifier):
         w_weighted = np.matmul(y_pred, w)
 
         for i_sample in range(num_samples):
-            for i_class_1 in range(num_classes):
-                gradients[i_sample, :] += (1 - y_one_hot[i_sample, i_class_1]) * (
-                            w[i_class_1, :] - w_weighted[i_sample, :])
+            for i_class in range(num_classes):
+                gradients[i_sample, :] += class_weight[i_class] * (1 - y[i_sample, i_class]) * (
+                            w[i_class, :] - w_weighted[i_sample, :])
+                # gradients[i_sample, :] += class_weight[i_class] * y[i_sample, i_class_1] * (w[i_class_1, :] - w_weighted[i_sample, :])
 
         return gradients
 
