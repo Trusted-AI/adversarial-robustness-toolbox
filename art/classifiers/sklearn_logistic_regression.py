@@ -44,7 +44,7 @@ class SklearnLogisticRegression(Classifier):
     def get_activations(self, x, layer, batch_size):
         raise NotImplementedError
 
-    def loss_gradient(self, x, y):
+    def loss_gradient(self, x, y, targeted=False):
 
         w = self.model.coef_
         class_weight = compute_class_weight(class_weight=self.model.class_weight, classes=self.model.classes_,
@@ -60,9 +60,12 @@ class SklearnLogisticRegression(Classifier):
 
         for i_sample in range(num_samples):
             for i_class in range(num_classes):
-                gradients[i_sample, :] += class_weight[i_class] * (1 - y[i_sample, i_class]) * (
-                            w[i_class, :] - w_weighted[i_sample, :])
-                # gradients[i_sample, :] += class_weight[i_class] * y[i_sample, i_class_1] * (w[i_class_1, :] - w_weighted[i_sample, :])
+                if targeted:
+                    gradients[i_sample, :] += class_weight[i_class] * y[i_sample, i_class] * (
+                                w[i_class, :] - w_weighted[i_sample, :])
+                else:
+                    gradients[i_sample, :] += class_weight[i_class] * (1 - y[i_sample, i_class]) * (
+                                w[i_class, :] - w_weighted[i_sample, :])
 
         return gradients
 
