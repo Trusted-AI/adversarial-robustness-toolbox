@@ -707,108 +707,27 @@ def clip_and_round(x, clip_values, round_samples):
 # ----------------------------------------------------------------------------------------------- TEST MODELS FOR MNIST
 
 
-def _tf_initializer_w_conv2d(_, dtype, partition_info):
-    """
-    Initializer of weights in convolution layer for Tensorflow.
+def _tf_weights_loader(dataset, weights_type, layer='DENSE'):
+    filename = str(weights_type) + '_' + str(layer) + '_' + str(dataset) + '.npy'
 
-    :return: Tensorflow constant
-    :rtype: tf.constant
-    """
-    import tensorflow as tf
+    def _tf_initializer(_, dtype, partition_info):
+        import tensorflow as tf
 
-    w_conv2d = np.load(os.path.join(os.path.dirname(os.path.dirname(__file__)), 'models', 'W_CONV2D.npy'))
-    return tf.constant(w_conv2d, dtype)
+        weights = np.load(os.path.join(os.path.dirname(os.path.dirname(__file__)), 'models', filename))
+        return tf.constant(weights, dtype)
+
+    return _tf_initializer
 
 
-def _kr_initializer_w_conv2d(_, dtype=None):
-    """
-    Initializer of weights in convolution layer for Keras.
-
-    :return: Keras variable
-    :rtype: k.variable
-    """
+def _kr_weights_loader(dataset, weights_type, layer='DENSE'):
     import keras.backend as k
+    filename = str(weights_type) + '_' + str(layer) + '_' + str(dataset) + '.npy'
 
-    w_conv2d = np.load(os.path.join(os.path.dirname(os.path.dirname(__file__)), 'models', 'W_CONV2D.npy'))
-    return k.variable(value=w_conv2d, dtype=dtype)
+    def _kr_initializer(_, dtype=None):
+        weights = np.load(os.path.join(os.path.dirname(os.path.dirname(__file__)), 'models', filename))
+        return k.variable(value=weights, dtype=dtype)
 
-
-def _tf_initializer_b_conv2d(_, dtype, partition_info):
-    """
-    Initializer of biases in convolution layer for Tensorflow.
-
-    :return: Tensorflow constant
-    :rtype: tf.constant
-    """
-    import tensorflow as tf
-
-    b_conv2d = np.load(os.path.join(os.path.dirname(os.path.dirname(__file__)), 'models', 'B_CONV2D.npy'))
-    return tf.constant(b_conv2d, dtype)
-
-
-def _kr_initializer_b_conv2d(_, dtype=None):
-    """
-    Initializer of weights in convolution layer for Keras.
-
-    :return: Keras variable
-    :rtype: k.variable
-    """
-    import keras.backend as k
-
-    b_conv2d = np.load(os.path.join(os.path.dirname(os.path.dirname(__file__)), 'models', 'B_CONV2D.npy'))
-    return k.variable(value=b_conv2d, dtype=dtype)
-
-
-def _tf_initializer_w_dense(_, dtype, partition_info):
-    """
-    Initializer of weights in dense layer for Tensorflow.
-
-    :return: Tensorflow constant
-    :rtype: tf.constant
-    """
-    import tensorflow as tf
-
-    w_dense = np.load(os.path.join(os.path.dirname(os.path.dirname(__file__)), 'models', 'W_DENSE.npy'))
-    return tf.constant(w_dense, dtype)
-
-
-def _kr_initializer_w_dense(_, dtype=None):
-    """
-    Initializer of weights in dense layer for Keras.
-
-    :return: Keras varibale
-    :rtype: k.variable
-    """
-    import keras.backend as k
-
-    w_dense = np.load(os.path.join(os.path.dirname(os.path.dirname(__file__)), 'models', 'W_DENSE.npy'))
-    return k.variable(value=w_dense, dtype=dtype)
-
-
-def _tf_initializer_b_dense(_, dtype, partition_info):
-    """
-    Initializer of biases in dense layer for Tensorflow.
-
-    :return: Tensorflow constant
-    :rtype: tf.constant
-    """
-    import tensorflow as tf
-
-    b_dense = np.load(os.path.join(os.path.dirname(os.path.dirname(__file__)), 'models', 'B_DENSE.npy'))
-    return tf.constant(b_dense, dtype)
-
-
-def _kr_initializer_b_dense(_, dtype=None):
-    """
-    Initializer of biases in dense layer for Keras.
-
-    :return: Keras variable
-    :rtype: k.variable
-    """
-    import keras.backend as k
-
-    b_dense = np.load(os.path.join(os.path.dirname(os.path.dirname(__file__)), 'models', 'B_DENSE.npy'))
-    return k.variable(value=b_dense, dtype=dtype)
+    return _kr_initializer
 
 
 def get_classifier_tf():
@@ -831,14 +750,15 @@ def get_classifier_tf():
     output_ph = tf.placeholder(tf.int32, shape=[None, 10])
 
     # Define the tensorflow graph
-    conv = tf.layers.conv2d(input_ph, 1, 7, activation=tf.nn.relu, kernel_initializer=_tf_initializer_w_conv2d,
-                            bias_initializer=_tf_initializer_b_conv2d)
+    conv = tf.layers.conv2d(input_ph, 1, 7, activation=tf.nn.relu,
+                            kernel_initializer=_tf_weights_loader('MNIST', 'W', 'CONV2D'),
+                            bias_initializer=_tf_weights_loader('MNIST', 'B', 'CONV2D'))
     conv = tf.layers.max_pooling2d(conv, 4, 4)
     flattened = tf.contrib.layers.flatten(conv)
 
     # Logits layer
-    logits = tf.layers.dense(flattened, 10, kernel_initializer=_tf_initializer_w_dense,
-                             bias_initializer=_tf_initializer_b_dense)
+    logits = tf.layers.dense(flattened, 10, kernel_initializer=_tf_weights_loader('MNIST', 'W', 'DENSE'),
+                             bias_initializer=_tf_weights_loader('MNIST', 'B', 'DENSE'))
 
     # Train operator
     loss = tf.reduce_mean(tf.losses.softmax_cross_entropy(logits=logits, onehot_labels=output_ph))
@@ -877,11 +797,12 @@ def get_classifier_kr():
     # Create simple CNN
     model = Sequential()
     model.add(Conv2D(1, kernel_size=(7, 7), activation='relu', input_shape=(28, 28, 1),
-                     kernel_initializer=_kr_initializer_w_conv2d, bias_initializer=_kr_initializer_b_conv2d))
+                     kernel_initializer=_kr_weights_loader('MNIST', 'W', 'CONV2D'),
+                     bias_initializer=_kr_weights_loader('MNIST', 'B', 'CONV2D')))
     model.add(MaxPooling2D(pool_size=(4, 4)))
     model.add(Flatten())
-    model.add(Dense(10, activation='softmax', kernel_initializer=_kr_initializer_w_dense,
-                    bias_initializer=_kr_initializer_b_dense))
+    model.add(Dense(10, activation='softmax', kernel_initializer=_kr_weights_loader('MNIST', 'W', 'DENSE'),
+                    bias_initializer=_kr_weights_loader('MNIST', 'B', 'DENSE')))
 
     model.compile(loss=keras.losses.categorical_crossentropy, optimizer=keras.optimizers.Adam(lr=0.01),
                   metrics=['accuracy'])
@@ -910,10 +831,10 @@ def get_classifier_pt():
         def __init__(self):
             super(Model, self).__init__()
 
-            w_conv2d = np.load(os.path.join(os.path.dirname(os.path.dirname(__file__)), 'models', 'W_CONV2D.npy'))
-            b_conv2d = np.load(os.path.join(os.path.dirname(os.path.dirname(__file__)), 'models', 'B_CONV2D.npy'))
-            w_dense = np.load(os.path.join(os.path.dirname(os.path.dirname(__file__)), 'models', 'W_DENSE.npy'))
-            b_dense = np.load(os.path.join(os.path.dirname(os.path.dirname(__file__)), 'models', 'B_DENSE.npy'))
+            w_conv2d = np.load(os.path.join(os.path.dirname(os.path.dirname(__file__)), 'models', 'W_CONV2D_MNIST.npy'))
+            b_conv2d = np.load(os.path.join(os.path.dirname(os.path.dirname(__file__)), 'models', 'B_CONV2D_MNIST.npy'))
+            w_dense = np.load(os.path.join(os.path.dirname(os.path.dirname(__file__)), 'models', 'W_DENSE_MNIST.npy'))
+            b_dense = np.load(os.path.join(os.path.dirname(os.path.dirname(__file__)), 'models', 'B_DENSE_MNIST.npy'))
 
             self.conv = nn.Conv2d(in_channels=1, out_channels=1, kernel_size=7)
             w_conv2d_pt = np.swapaxes(w_conv2d, 0, 2)
@@ -950,90 +871,6 @@ def get_classifier_pt():
 
 # ------------------------------------------------------------------------------------------------ TEST MODELS FOR IRIS
 
-def _tf_iris_initializer_dense1_weights(_, dtype, partition_info):
-    import tensorflow as tf
-
-    w_dense = np.load(os.path.join(os.path.dirname(os.path.dirname(__file__)), 'models', 'W_DENSE1_IRIS.npy'))
-    return tf.constant(w_dense, dtype)
-
-
-def _tf_iris_initializer_dense1_bias(_, dtype, partition_info):
-    import tensorflow as tf
-
-    b_dense = np.load(os.path.join(os.path.dirname(os.path.dirname(__file__)), 'models', 'B_DENSE1_IRIS.npy'))
-    return tf.constant(b_dense, dtype)
-
-
-def _tf_iris_initializer_dense2_weights(_, dtype, partition_info):
-    import tensorflow as tf
-
-    w_dense = np.load(os.path.join(os.path.dirname(os.path.dirname(__file__)), 'models', 'W_DENSE2_IRIS.npy'))
-    return tf.constant(w_dense, dtype)
-
-
-def _tf_iris_initializer_dense2_bias(_, dtype, partition_info):
-    import tensorflow as tf
-
-    b_dense = np.load(os.path.join(os.path.dirname(os.path.dirname(__file__)), 'models', 'B_DENSE2_IRIS.npy'))
-    return tf.constant(b_dense, dtype)
-
-
-def _tf_iris_initializer_dense3_weights(_, dtype, partition_info):
-    import tensorflow as tf
-
-    w_dense = np.load(os.path.join(os.path.dirname(os.path.dirname(__file__)), 'models', 'W_DENSE3_IRIS.npy'))
-    return tf.constant(w_dense, dtype)
-
-
-def _tf_iris_initializer_dense3_bias(_, dtype, partition_info):
-    import tensorflow as tf
-
-    b_dense = np.load(os.path.join(os.path.dirname(os.path.dirname(__file__)), 'models', 'B_DENSE3_IRIS.npy'))
-    return tf.constant(b_dense, dtype)
-
-
-def _kr_iris_initializer_dense1_bias(_, dtype=None):
-    import keras.backend as k
-
-    b_dense = np.load(os.path.join(os.path.dirname(os.path.dirname(__file__)), 'models', 'B_DENSE1_IRIS.npy'))
-    return k.variable(value=b_dense, dtype=dtype)
-
-
-def _kr_iris_initializer_dense1_weights(_, dtype=None):
-    import keras.backend as k
-
-    b_dense = np.load(os.path.join(os.path.dirname(os.path.dirname(__file__)), 'models', 'W_DENSE1_IRIS.npy'))
-    return k.variable(value=b_dense, dtype=dtype)
-
-
-def _kr_iris_initializer_dense2_bias(_, dtype=None):
-    import keras.backend as k
-
-    b_dense = np.load(os.path.join(os.path.dirname(os.path.dirname(__file__)), 'models', 'B_DENSE2_IRIS.npy'))
-    return k.variable(value=b_dense, dtype=dtype)
-
-
-def _kr_iris_initializer_dense2_weights(_, dtype=None):
-    import keras.backend as k
-
-    b_dense = np.load(os.path.join(os.path.dirname(os.path.dirname(__file__)), 'models', 'W_DENSE2_IRIS.npy'))
-    return k.variable(value=b_dense, dtype=dtype)
-
-
-def _kr_iris_initializer_dense3_bias(_, dtype=None):
-    import keras.backend as k
-
-    b_dense = np.load(os.path.join(os.path.dirname(os.path.dirname(__file__)), 'models', 'B_DENSE3_IRIS.npy'))
-    return k.variable(value=b_dense, dtype=dtype)
-
-
-def _kr_iris_initializer_dense3_weights(_, dtype=None):
-    import keras.backend as k
-
-    b_dense = np.load(os.path.join(os.path.dirname(os.path.dirname(__file__)), 'models', 'W_DENSE3_IRIS.npy'))
-    return k.variable(value=b_dense, dtype=dtype)
-
-
 def get_iris_classifier_tf():
     """
     Standard Tensorflow classifier for unit testing.
@@ -1056,12 +893,12 @@ def get_iris_classifier_tf():
     output_ph = tf.placeholder(tf.int32, shape=[None, 3])
 
     # Define the tensorflow graph
-    dense1 = tf.layers.dense(input_ph, 10, kernel_initializer=_tf_iris_initializer_dense1_weights,
-                             bias_initializer=_tf_iris_initializer_dense1_bias)
-    dense2 = tf.layers.dense(dense1, 10, kernel_initializer=_tf_iris_initializer_dense2_weights,
-                             bias_initializer=_tf_iris_initializer_dense2_bias)
-    logits = tf.layers.dense(dense2, 3, kernel_initializer=_tf_iris_initializer_dense3_weights,
-                             bias_initializer=_tf_iris_initializer_dense3_bias)
+    dense1 = tf.layers.dense(input_ph, 10, kernel_initializer=_tf_weights_loader('IRIS', 'W', 'DENSE1'),
+                             bias_initializer=_tf_weights_loader('IRIS', 'B', 'DENSE1'))
+    dense2 = tf.layers.dense(dense1, 10, kernel_initializer=_tf_weights_loader('IRIS', 'W', 'DENSE2'),
+                             bias_initializer=_tf_weights_loader('IRIS', 'B', 'DENSE2'))
+    logits = tf.layers.dense(dense2, 3, kernel_initializer=_tf_weights_loader('IRIS', 'W', 'DENSE3'),
+                             bias_initializer=_tf_weights_loader('IRIS', 'B', 'DENSE3'))
 
     # Train operator
     loss = tf.reduce_mean(tf.losses.softmax_cross_entropy(logits=logits, onehot_labels=output_ph))
@@ -1099,12 +936,13 @@ def get_iris_classifier_kr():
 
     # Create simple CNN
     model = Sequential()
-    model.add(Dense(10, input_shape=(4,), activation='relu', kernel_initializer=_kr_iris_initializer_dense1_weights,
-                    bias_initializer=_kr_iris_initializer_dense1_bias))
-    model.add(Dense(10, activation='relu', kernel_initializer=_kr_iris_initializer_dense2_weights,
-                    bias_initializer=_kr_iris_initializer_dense2_bias))
-    model.add(Dense(3, activation='softmax', kernel_initializer=_kr_iris_initializer_dense3_weights,
-                    bias_initializer=_kr_iris_initializer_dense3_bias))
+    model.add(Dense(10, input_shape=(4,), activation='relu',
+                    kernel_initializer=_kr_weights_loader('IRIS', 'W', 'DENSE1'),
+                    bias_initializer=_kr_weights_loader('IRIS', 'B', 'DENSE1')))
+    model.add(Dense(10, activation='relu', kernel_initializer=_kr_weights_loader('IRIS', 'W', 'DENSE2'),
+                    bias_initializer=_kr_weights_loader('IRIS', 'B', 'DENSE2')))
+    model.add(Dense(3, activation='softmax', kernel_initializer=_kr_weights_loader('IRIS', 'W', 'DENSE3'),
+                    bias_initializer=_kr_weights_loader('IRIS', 'B', 'DENSE3')))
     model.compile(loss='categorical_crossentropy', optimizer=keras.optimizers.Adam(lr=0.001), metrics=['accuracy'])
 
     # Get classifier
