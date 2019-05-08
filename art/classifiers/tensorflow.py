@@ -500,15 +500,31 @@ class TFClassifier(Classifier):
         state = self.__dict__.copy()
 
         # Remove the unpicklable entries
-        del state['_loss_grads']
+        del state['_sess']
         del state['_logits']
         del state['_input_ph']
-        del state['_output_ph']
         del state['_probs']
-        del state['_loss']
-        del state['_learning']
-        del state['_train']
-        del state['_sess']
+
+        if hasattr(self, '_output_ph'):
+            state['_output_ph'] = True
+        else:
+            state['_output_ph'] = False
+
+        if hasattr(self, '_loss'):
+            state['_loss'] = True
+            del state['_loss_grads']
+        else:
+            state['_loss'] = False
+
+        if hasattr(self, '_learning'):
+            state['_learning'] = True
+        else:
+            state['_learning'] = False
+
+        if hasattr(self, '_train'):
+            state['_train'] = True
+        else:
+            state['_train'] = False
 
         model_name = str(time.time())
         state['model_name'] = model_name
@@ -525,7 +541,7 @@ class TFClassifier(Classifier):
         """
         self.__dict__.update(state)
 
-        # Load and update all functionality related to Keras
+        # Load and update all functionality related to Tensorflow
         import os
         from art import DATA_PATH
         import tensorflow as tf
@@ -535,6 +551,17 @@ class TFClassifier(Classifier):
         with tf.Session(graph=tf.Graph()) as sess:
             tf.saved_model.loader.load(sess, ["serve"], full_path)
             graph = tf.get_default_graph()
+
+
+
+            self._probs = tf.nn.softmax(logits)
+
+            # Get the loss gradients graph
+            if self._loss is not None:
+                self._loss_grads = tf.gradients(self._loss, self._input_ph)[0]
+
+            self._loss_grads =
+
             print(graph.get_operations())
             print(graph.get_tensor_by_name("Mean:0"))
             print(graph.get_operation_by_name('Adam'))
