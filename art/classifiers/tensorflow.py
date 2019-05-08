@@ -503,28 +503,24 @@ class TFClassifier(Classifier):
         del state['_sess']
         del state['_logits']
         del state['_input_ph']
-        del state['_probs']
+        state['_probs'] = self._probs.name
 
-        if hasattr(self, '_output_ph'):
-            state['_output_ph'] = True
-        else:
-            state['_output_ph'] = False
+        if self._output_ph is not None:
+            state['_output_ph'] = self._output_ph.name
 
-        if hasattr(self, '_loss'):
-            state['_loss'] = True
-            del state['_loss_grads']
-        else:
-            state['_loss'] = False
+        if self._loss is not None:
+            state['_loss'] = self._loss.name
 
-        if hasattr(self, '_learning'):
-            state['_learning'] = True
+        if hasattr(self, '_loss_grads'):
+            state['_loss_grads'] = self._loss_grads.name
         else:
-            state['_learning'] = False
+            state['_loss_grads'] = False
 
-        if hasattr(self, '_train'):
-            state['_train'] = True
-        else:
-            state['_train'] = False
+        if self._learning is not None:
+            state['_learning'] = self._learning.name
+
+        if self._train is not None:
+            state['_train'] = self._train.name
 
         model_name = str(time.time())
         state['model_name'] = model_name
@@ -534,7 +530,7 @@ class TFClassifier(Classifier):
 
     def __setstate__(self, state):
         """
-        Use to ensure `KerasClassifier` can be unpickled.
+        Use to ensure `TFClassifier` can be unpickled.
 
         :param state: State dictionary with instance parameters to restore.
         :type state: `dict`
@@ -545,34 +541,58 @@ class TFClassifier(Classifier):
         import os
         from art import DATA_PATH
         import tensorflow as tf
+        from tensorflow.python.saved_model import tag_constants
 
         full_path = os.path.join(DATA_PATH, state['model_name'])
 
         with tf.Session(graph=tf.Graph()) as sess:
-            tf.saved_model.loader.load(sess, ["serve"], full_path)
+            loaded = tf.saved_model.loader.load(sess, [tag_constants.SERVING], full_path)
             graph = tf.get_default_graph()
 
+        # Recover session
+        self._sess = sess
 
+        # Recover logits
+        logits_tensor_name = loaded.signature_def['predict'].outputs['SavedOutputLogit'].name
+        self._logits = graph.get_tensor_by_name(logits_tensor_name)
 
-            self._probs = tf.nn.softmax(logits)
+        # Recover input_ph
+        input_tensor_name = loaded.signature_def['predict'].inputs['SavedInputPhD'].name
+        self._input_ph = graph.get_tensor_by_name(input_tensor_name)
 
-            # Get the loss gradients graph
-            if self._loss is not None:
-                self._loss_grads = tf.gradients(self._loss, self._input_ph)[0]
+        # Recover probability layer
+        self._probs = graph.get_tensor_by_name(state['_probs'])
 
-            self._loss_grads =
+        # Recover output_ph if any
+        if state['_output_ph'] is not None:
+            self._output_ph = graph.get_tensor_by_name(state['_output_ph'])
 
-            print(graph.get_operations())
-            print(graph.get_tensor_by_name("Mean:0"))
-            print(graph.get_operation_by_name('Adam'))
+        # Recover loss if any
+        if state['_loss'] is not None:
+            self._loss = graph.get_tensor_by_name(state['_loss'])
 
+        # Recover loss_grads if any
+        if state['_loss_grads']:
+            self._loss_grads = graph.get_tensor_by_name(state['_loss_grads'])
+        else:
+            self.__dict__.pop('_loss_grads', None)
 
+        # Recover learning if any
+        if state['_learning'] is not None:
+            self._learning = graph.get_tensor_by_name(state['_learning'])
+
+        # Recover train if any
+        if state['_train'] is not None:
+            self._train = graph.get_operation_by_name(state['_train'])
+
+        self.__dict__.pop('model_name', None)
 
     def __repr__(self):
-        repr_ = "%s(clip_values=%r, input_ph=%r, logits=%r, output_ph=%r, train=%r, loss=%r, learnign=%r, " \
+        repr_ = "%s(clip_values=%r, input_ph=%r, logits=%r, output_ph=%r, train=%r, loss=%r, learning=%r, " \
                 "sess=%r, channel_index=%r, defences=%r, preprocessing=%r)" \
                 % (self.__module__ + '.' + self.__class__.__name__,
                    self.clip_values, self._input_ph, self._logits, self._output_ph, self._train, self._loss,
                    self._learning, self._sess, self.channel_index, self.defences, self.preprocessing)
 
         return repr_
+
