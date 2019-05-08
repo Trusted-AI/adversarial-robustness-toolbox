@@ -488,6 +488,59 @@ class TFClassifier(Classifier):
 
         logger.info('Model saved in path: %s.', full_path)
 
+    def __getstate__(self):
+        """
+        Use to ensure `TFClassifier` can be pickled.
+
+        :return: State dictionary with instance parameters.
+        :rtype: `dict`
+        """
+        import time
+
+        state = self.__dict__.copy()
+
+        # Remove the unpicklable entries
+        del state['_loss_grads']
+        del state['_logits']
+        del state['_input_ph']
+        del state['_output_ph']
+        del state['_probs']
+        del state['_loss']
+        del state['_learning']
+        del state['_train']
+        del state['_sess']
+
+        model_name = str(time.time())
+        state['model_name'] = model_name
+        self.save(model_name)
+
+        return state
+
+    def __setstate__(self, state):
+        """
+        Use to ensure `KerasClassifier` can be unpickled.
+
+        :param state: State dictionary with instance parameters to restore.
+        :type state: `dict`
+        """
+        self.__dict__.update(state)
+
+        # Load and update all functionality related to Keras
+        import os
+        from art import DATA_PATH
+        import tensorflow as tf
+
+        full_path = os.path.join(DATA_PATH, state['model_name'])
+
+        with tf.Session(graph=tf.Graph()) as sess:
+            tf.saved_model.loader.load(sess, ["serve"], full_path)
+            graph = tf.get_default_graph()
+            print(graph.get_operations())
+            print(graph.get_tensor_by_name("Mean:0"))
+            print(graph.get_operation_by_name('Adam'))
+
+
+
     def __repr__(self):
         repr_ = "%s(clip_values=%r, input_ph=%r, logits=%r, output_ph=%r, train=%r, loss=%r, learnign=%r, " \
                 "sess=%r, channel_index=%r, defences=%r, preprocessing=%r)" \

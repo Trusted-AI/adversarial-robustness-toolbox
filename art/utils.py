@@ -749,13 +749,15 @@ def get_classifier_tf():
 
     # Train operator
     loss = tf.reduce_mean(tf.losses.softmax_cross_entropy(logits=logits, onehot_labels=output_ph))
+    optimizer = tf.train.AdamOptimizer(learning_rate=0.01)
+    train = optimizer.minimize(loss)
 
     # Tensorflow session and initialization
     sess = tf.Session()
     sess.run(tf.global_variables_initializer())
 
     # Train the classifier
-    tfc = TFClassifier(clip_values=(0, 1), input_ph=input_ph, logits=logits, output_ph=output_ph, train=None,
+    tfc = TFClassifier(clip_values=(0, 1), input_ph=input_ph, logits=logits, output_ph=output_ph, train=train,
                        loss=loss, learning=None, sess=sess)
 
     return tfc, sess
