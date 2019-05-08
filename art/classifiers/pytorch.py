@@ -509,28 +509,6 @@ class PyTorchClassifier(Classifier):
 
         return repr_
 
-    # def _forward_at(self, inputs, layer):
-    #     """
-    #     Compute the forward at a specific layer.
-    #
-    #     :param inputs: Input data.
-    #     :type inputs: `np.ndarray`
-    #     :param layer: The layer where to get the forward results.
-    #     :type layer: `int`
-    #     :return: The forward results at the layer.
-    #     :rtype: `torch.Tensor`
-    #     """
-    #     print(layer)
-    #     results = inputs
-    #     for l in list(self._model.modules())[1:layer + 2]:
-    #         print(l)
-    #
-    #         results = l(results)
-    #
-    #         print(results.shape)
-    #
-    #     return results
-
     def _make_model_wrapper(self, model):
         # Try to import PyTorch and create an internal class that acts like a model wrapper extending torch.nn.Module
         try:
