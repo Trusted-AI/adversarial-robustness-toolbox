@@ -545,9 +545,9 @@ class TFClassifier(Classifier):
 
         full_path = os.path.join(DATA_PATH, state['model_name'])
 
-        with tf.Session(graph=tf.Graph()) as sess:
-            loaded = tf.saved_model.loader.load(sess, [tag_constants.SERVING], full_path)
-            graph = tf.get_default_graph()
+        graph = tf.Graph()
+        sess = tf.Session(graph=graph)
+        loaded = tf.saved_model.loader.load(sess, [tag_constants.SERVING], full_path)
 
         # Recover session
         self._sess = sess
