@@ -27,8 +27,39 @@ logger = logging.getLogger(__name__)
 
 
 class SklearnLogisticRegression(Classifier):
-
+    """
+    Wrapper class for importing scikit-learn LogisticRegression models.
+    """
     def __init__(self, clip_values=(0, 1), model=None, channel_index=None, defences=None, preprocessing=(0, 1)):
+        """
+        Create a `Classifier` instance from a scikit-learn LogisticRegression model.
+
+        :param clip_values: Tuple of the form `(min, max)` representing the minimum and maximum values allowed
+               for features.
+        :type clip_values: `tuple`
+        :param model: scikit-learn LogisticRegression model
+        :type model: `sklearn.linear_model.LogisticRegression`
+        :param use_logits: True if the output of the model are the logits. Not used in this class.
+        :type use_logits: `bool`
+        :param channel_index: Index of the axis in data containing the color channels or features. Not used in this
+               class.
+        :type channel_index: `int`
+        :param defences: Defences to be activated with the classifier.
+        :type defences: :class:`.Preprocessor` or `list(Preprocessor)` instances
+        :param preprocessing: Tuple of the form `(substractor, divider)` of floats or `np.ndarray` of values to be
+               used for data preprocessing. The first value will be substracted from the input. The input will then
+               be divided by the second one.
+        :type preprocessing: `tuple`
+        :param input_layer: Which layer to consider as the Input when the model has multiple input layers. Not used in
+               this class.
+        :type input_layer: `int`
+        :param output_layer: Which layer to consider as the Output when the model has multiple output layers. Not used
+               in this class.
+        :type output_layer: `int`
+        :param custom_activation: True if the model uses the last activation other than softmax and requires to use the
+               output probability rather than the logits by attacks. Not used in this class.
+        :type custom_activation: `bool`
+        """
 
         super(SklearnLogisticRegression, self).__init__(clip_values=clip_values, channel_index=channel_index,
                                                         defences=defences, preprocessing=preprocessing)
