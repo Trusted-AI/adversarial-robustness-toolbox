@@ -127,12 +127,16 @@ class SklearnLogisticRegression(Classifier):
         :rtype: `np.ndarray`
         """
         w = self.model.coef_
-        num_classes = len(self.model.classes_)
+        num_classes = self.model.classes_.shape[0]
         num_samples, n_features = x.shape
         gradients = np.zeros_like(x)
 
-        class_weight = compute_class_weight(class_weight=self.model.class_weight, classes=self.model.classes_,
-                                            y=np.argmax(y, axis=1))
+        y_index = np.argmax(y, axis=1)
+        if np.unique(y_index).shape[0] < num_classes:
+            class_weight = np.ones(num_classes)
+        else:
+            class_weight = compute_class_weight(class_weight=self.model.class_weight, classes=self.model.classes_,
+                                                y=y_index)
 
         y_pred = self.model.predict_proba(X=x)
         w_weighted = np.matmul(y_pred, w)
