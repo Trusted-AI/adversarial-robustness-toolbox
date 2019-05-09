@@ -90,14 +90,14 @@ class SklearnLogisticRegression(Classifier):
         gradients = np.zeros_like(x)
 
         class_weight = compute_class_weight(class_weight=self.model.class_weight, classes=self.model.classes_,
-                                            y=np.argmax(y, axis=1))
+                                            y=np.argmax(label, axis=1))
 
         y_pred = self.model.predict_proba(X=x)
         w_weighted = np.matmul(y_pred, w)
 
         for i_sample in range(num_samples):
             for i_class in range(num_classes):
-                gradients[i_sample, :] += class_weight[i_class] * y[i_sample, i_class] * (
+                gradients[i_sample, :] += class_weight[i_class] * label[i_sample, i_class] * (
                         w[i_class, :] - w_weighted[i_sample, :])
 
         return gradients
