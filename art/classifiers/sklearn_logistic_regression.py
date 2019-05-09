@@ -39,8 +39,6 @@ class SklearnLogisticRegression(Classifier):
         :type clip_values: `tuple`
         :param model: scikit-learn LogisticRegression model
         :type model: `sklearn.linear_model.LogisticRegression`
-        :param use_logits: True if the output of the model are the logits. Not used in this class.
-        :type use_logits: `bool`
         :param channel_index: Index of the axis in data containing the color channels or features. Not used in this
                class.
         :type channel_index: `int`
@@ -50,15 +48,6 @@ class SklearnLogisticRegression(Classifier):
                used for data preprocessing. The first value will be subtracted from the input. The input will then
                be divided by the second one.
         :type preprocessing: `tuple`
-        :param input_layer: Which layer to consider as the Input when the model has multiple input layers. Not used in
-               this class.
-        :type input_layer: `int`
-        :param output_layer: Which layer to consider as the Output when the model has multiple output layers. Not used
-               in this class.
-        :type output_layer: `int`
-        :param custom_activation: True if the model uses the last activation other than softmax and requires to use the
-               output probability rather than the logits by attacks. Not used in this class.
-        :type custom_activation: `bool`
         """
 
         super(SklearnLogisticRegression, self).__init__(clip_values=clip_values, channel_index=channel_index,
