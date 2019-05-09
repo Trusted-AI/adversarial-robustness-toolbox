@@ -30,6 +30,7 @@ class SklearnLogisticRegression(Classifier):
     """
     Wrapper class for importing scikit-learn LogisticRegression models.
     """
+
     def __init__(self, clip_values=(0, 1), model=None, channel_index=None, defences=None, preprocessing=(0, 1)):
         """
         Create a `Classifier` instance from a scikit-learn LogisticRegression model.
