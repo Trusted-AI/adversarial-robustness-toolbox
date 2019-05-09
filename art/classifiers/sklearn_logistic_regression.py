@@ -36,7 +36,23 @@ class SklearnLogisticRegression(Classifier):
         self.model = model
 
     def class_gradient(self, x, label=None, logits=False):
-        raise NotImplementedError
+        w = self.model.coef_
+        num_classes = len(self.model.classes_)
+        num_samples, n_features = x.shape
+        gradients = np.zeros_like(x)
+
+        class_weight = compute_class_weight(class_weight=self.model.class_weight, classes=self.model.classes_,
+                                            y=np.argmax(y, axis=1))
+
+        y_pred = self.model.predict_proba(X=x)
+        w_weighted = np.matmul(y_pred, w)
+
+        for i_sample in range(num_samples):
+            for i_class in range(num_classes):
+                gradients[i_sample, :] += class_weight[i_class] * y[i_sample, i_class] * (
+                        w[i_class, :] - w_weighted[i_sample, :])
+
+        return gradients
 
     def fit(self, x, y, batch_size=128, nb_epochs=20, **kwargs):
         self.model.fit(X=x, y=y, sample_weight=None)
