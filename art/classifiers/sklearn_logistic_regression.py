@@ -46,8 +46,8 @@ class SklearnLogisticRegression(Classifier):
         :type channel_index: `int`
         :param defences: Defences to be activated with the classifier.
         :type defences: :class:`.Preprocessor` or `list(Preprocessor)` instances
-        :param preprocessing: Tuple of the form `(substractor, divider)` of floats or `np.ndarray` of values to be
-               used for data preprocessing. The first value will be substracted from the input. The input will then
+        :param preprocessing: Tuple of the form `(subtractor, divider)` of floats or `np.ndarray` of values to be
+               used for data preprocessing. The first value will be subtracted from the input. The input will then
                be divided by the second one.
         :type preprocessing: `tuple`
         :param input_layer: Which layer to consider as the Input when the model has multiple input layers. Not used in
@@ -114,12 +114,13 @@ class SklearnLogisticRegression(Classifier):
         :type batch_size: `int`
         :param nb_epochs: Number of epochs to use for training. Not used in this function.
         :type nb_epochs: `int`
-        :param kwargs: Dictionary of framework-specific arguments. Not used in this function.
+        :param kwargs: Dictionary of framework-specific arguments. These should be parameters supported by the
+               `fit` function in `sklearn.linear_model.LogisticRegression` and will be passed to this function as such.
         :type kwargs: `dict`
         :return: `None`
         """
         y_index = np.argmax(y, axis=1)
-        self.model.fit(X=x, y=y_index, sample_weight=None)
+        self.model.fit(X=x, y=y_index, **kwargs)
 
     def get_activations(self, x, layer, batch_size):
         raise NotImplementedError
