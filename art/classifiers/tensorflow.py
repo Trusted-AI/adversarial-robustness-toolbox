@@ -522,6 +522,16 @@ class TFClassifier(Classifier):
         if self._train is not None:
             state['_train'] = self._train.name
 
+        if hasattr(self, '_logit_class_grads'):
+            state['_logit_class_grads'] = [ts if ts is None else ts.name for ts in self._logit_class_grads]
+        else:
+            state['_logit_class_grads'] = False
+
+        if hasattr(self, '_class_grads'):
+            state['_class_grads'] = [ts if ts is None else ts.name for ts in self._class_grads]
+        else:
+            state['_class_grads'] = False
+
         model_name = str(time.time())
         state['model_name'] = model_name
         self.save(model_name)
@@ -584,6 +594,19 @@ class TFClassifier(Classifier):
         # Recover train if any
         if state['_train'] is not None:
             self._train = graph.get_operation_by_name(state['_train'])
+
+        # Recover logit_class_grads if any
+        if state['_logit_class_grads']:
+            self._logit_class_grads = [ts if ts is None else graph.get_tensor_by_name(ts)
+                                       for ts in state['_logit_class_grads']]
+        else:
+            self.__dict__.pop('_logit_class_grads', None)
+
+        # Recover class_grads if any
+        if state['_class_grads']:
+            self._class_grads = [ts if ts is None else graph.get_tensor_by_name(ts) for ts in state['_class_grads']]
+        else:
+            self.__dict__.pop('_class_grads', None)
 
         self.__dict__.pop('model_name', None)
 
