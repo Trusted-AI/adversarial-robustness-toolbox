@@ -36,6 +36,23 @@ class SklearnLogisticRegression(Classifier):
         self.model = model
 
     def class_gradient(self, x, label=None, logits=False):
+        """
+        Compute per-class derivatives w.r.t. `x`.
+
+        :param x: Sample input with shape as expected by the model.
+        :type x: `np.ndarray`
+        :param label: Index of a specific per-class derivative. If an integer is provided, the gradient of that class
+                      output is computed for all samples. If multiple values as provided, the first dimension should
+                      match the batch size of `x`, and each value will be used as target for its corresponding sample in
+                      `x`. If `None`, then gradients for all classes will be computed for each sample.
+        :type label: `int` or `list`
+        :param logits: `True` if the prediction should be done at the logits layer.
+        :type logits: `bool`
+        :return: Array of gradients of input features w.r.t. each class in the form
+                 `(batch_size, nb_classes, input_shape)` when computing for all classes, otherwise shape becomes
+                 `(batch_size, 1, input_shape)` when `label` parameter is specified.
+        :rtype: `np.ndarray`
+        """
         w = self.model.coef_
         num_classes = len(self.model.classes_)
         num_samples, n_features = x.shape
@@ -55,12 +72,38 @@ class SklearnLogisticRegression(Classifier):
         return gradients
 
     def fit(self, x, y, batch_size=128, nb_epochs=20, **kwargs):
-        self.model.fit(X=x, y=y, sample_weight=None)
+        """
+        Fit the classifier on the training set `(x, y)`.
+
+        :param x: Training data.
+        :type x: `np.ndarray`
+        :param y: Labels, one-vs-rest encoding.
+        :type y: `np.ndarray`
+        :param batch_size: Size of batches. Not used in this function.
+        :type batch_size: `int`
+        :param nb_epochs: Number of epochs to use for training. Not used in this function.
+        :type nb_epochs: `int`
+        :param kwargs: Dictionary of framework-specific arguments. Not used in this function.
+        :type kwargs: `dict`
+        :return: `None`
+        """
+        y_index = np.argmax(y, axis=1)
+        self.model.fit(X=x, y=y_index, sample_weight=None)
 
     def get_activations(self, x, layer, batch_size):
         raise NotImplementedError
 
     def loss_gradient(self, x, y):
+        """
+        Compute the gradient of the loss function w.r.t. `x`.
+
+        :param x: Sample input with shape as expected by the model.
+        :type x: `np.ndarray`
+        :param y: Correct labels, one-vs-rest encoding.
+        :type y: `np.ndarray`
+        :return: Array of gradients of the same shape as `x`.
+        :rtype: `np.ndarray`
+        """
         w = self.model.coef_
         num_classes = len(self.model.classes_)
         num_samples, n_features = x.shape
@@ -75,11 +118,23 @@ class SklearnLogisticRegression(Classifier):
         for i_sample in range(num_samples):
             for i_class in range(num_classes):
                 gradients[i_sample, :] += class_weight[i_class] * (1 - y[i_sample, i_class]) * (
-                            w[i_class, :] - w_weighted[i_sample, :])
+                        w[i_class, :] - w_weighted[i_sample, :])
 
         return gradients
 
     def predict(self, x, logits=False, batch_size=128):
+        """
+        Perform prediction for a batch of inputs.
+
+        :param x: Test set.
+        :type x: `np.ndarray`
+        :param logits: `True` if the prediction should be done at the logits layer.
+        :type logits: `bool`
+        :param batch_size: Size of batches. Not used in this function.
+        :type batch_size: `int`
+        :return: Array of predictions of shape `(nb_inputs, self.nb_classes)`.
+        :rtype: `np.ndarray`
+        """
         return self.model.predict_proba(X=x)
 
     def save(self, filename, path=None):
