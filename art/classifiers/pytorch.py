@@ -155,11 +155,8 @@ class PyTorchClassifier(Classifier):
 
             # Train for one epoch
             for m in range(num_batch):
-                i_batch = torch.from_numpy(x_preproc[ind[m * batch_size:(m + 1) * batch_size]]).to(self._device)
+                i_batch = torch.from_numpy(x_preproc[ind[m * batch_size:(m + 1) * batch_size]]).to(self._device).float()
                 o_batch = torch.from_numpy(y_preproc[ind[m * batch_size:(m + 1) * batch_size]]).to(self._device)
-
-                # Cast to float
-                i_batch = i_batch.float()
 
                 # Zero the parameter gradients
                 self._optimizer.zero_grad()
@@ -241,7 +238,7 @@ class PyTorchClassifier(Classifier):
         # Convert the inputs to Tensors
         x_preproc = self._apply_processing(x)
         x_defences, _ = self._apply_defences(x_preproc, None, fit=False)
-        x_defences = torch.from_numpy(x_defences).to(self._device)
+        x_defences = torch.from_numpy(x_defences).to(self._device).float()
 
         # Compute gradient wrt what
         layer_idx = self._init_grads()

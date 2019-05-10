@@ -55,7 +55,7 @@ class TestMXClassifier(unittest.TestCase):
         # Set master seed
         master_seed(1234)
 
-    def test_fit_predict(self):
+    def test_predict(self):
         (_, _), (x_test, y_test) = self.mnist
 
         preds = self.classifier.predict(x_test)
