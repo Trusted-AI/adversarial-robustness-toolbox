@@ -120,5 +120,19 @@ class TestAdversarialPatch(unittest.TestCase):
         self.assertTrue(patch_adv[0, 14, 14] - 19.790434152473054 < 0.01)
         self.assertTrue(np.sum(patch_adv) - 383.5670772794207 < 0.01)
 
-    if __name__ == '__main__':
-        unittest.main()
+    def test_failure_feature_vectors(self):
+        attack_params = {"rotation_max": 22.5, "scale_min": 0.1, "scale_max": 1.0,
+                         "learning_rate": 5.0, "number_of_steps": 5, "patch_shape": (1, 28, 28), "batch_size": 10}
+        attack = AdversarialPatch(classifier=None)
+        attack.set_params(**attack_params)
+        data = np.random.rand(10, 4)
+
+        # Assert that value error is raised for feature vectors
+        with self.assertRaises(ValueError) as context:
+            attack.generate(data)
+
+        self.assertTrue('Feature vectors detected.' in str(context.exception))
+
+
+if __name__ == '__main__':
+    unittest.main()

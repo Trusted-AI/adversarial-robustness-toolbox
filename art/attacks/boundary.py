@@ -21,6 +21,7 @@ import logging
 
 import numpy as np
 
+from art import NUMPY_DTYPE
 from art.attacks.attack import Attack
 
 logger = logging.getLogger(__name__)
@@ -95,42 +96,38 @@ class BoundaryAttack(Attack):
         params_cpy = dict(kwargs)
         y = params_cpy.pop(str('y'), None)
 
-        # Prediction from the original images
-        preds = np.argmax(self.classifier.predict(x), axis=1)
-
         # Assert that, if attack is targeted, y is provided
         if self.targeted and y is None:
             raise ValueError('Target labels `y` need to be provided for a targeted attack.')
 
         # Some initial setups
-        x_adv = x.copy()
+        x_adv = x.astype(NUMPY_DTYPE)
         if y is not None:
             y = np.argmax(y, axis=1)
+        preds = np.argmax(self.classifier.predict(x), axis=1)
 
         # Generate the adversarial samples
         for ind, val in enumerate(x_adv):
             if self.targeted:
-                x_ = self._perturb(x=val, y=y[ind], y_p=preds[ind])
+                x_adv[ind] = self._perturb(x=val, y_p=preds[ind], y=y[ind])
             else:
-                x_ = self._perturb(x=val, y=None, y_p=preds[ind])
-
-            x_adv[ind] = x_
+                x_adv[ind] = self._perturb(x=val, y_p=preds[ind])
 
         logger.info('Success rate of Boundary attack: %.2f%%',
                     (np.sum(preds != np.argmax(self.classifier.predict(x_adv), axis=1)) / x.shape[0]))
 
         return x_adv
 
-    def _perturb(self, x, y, y_p):
+    def _perturb(self, x, y_p, y=None):
         """
         Internal attack function for one example.
 
         :param x: An array with one original input to be attacked.
         :type x: `np.ndarray`
-        :param y: If `self.targeted` is true, then `y` represents the target label.
-        :type y: `int`
         :param y_p: The predicted label of x.
         :type y_p: `int`
+        :param y: If `self.targeted` is true, then `y` represents the target label.
+        :type y: `int`
         :return: an adversarial example.
         """
         # First, create an initial adversarial sample
@@ -166,6 +163,9 @@ class BoundaryAttack(Attack):
         :return: an adversarial example.
         :rtype: `np.ndarray`
         """
+        def compare(object1, object2):
+            return object1 == object2 if self.targeted else object1 != object2
+
         # Get initialization for some variables
         x_adv = initial_sample
         delta = initial_delta
@@ -178,24 +178,15 @@ class BoundaryAttack(Attack):
                 potential_advs = []
                 for _ in range(self.sample_size):
                     potential_adv = x_adv + self._orthogonal_perturb(delta, x_adv, original_sample)
-                    if hasattr(self.classifier, 'clip_values') and self.classifier is not None:
+                    if hasattr(self.classifier, 'clip_values') and self.classifier.clip_values is not None:
                         np.clip(potential_adv, self.classifier.clip_values[0], self.classifier.clip_values[1],
                                 out=potential_adv)
                     potential_advs.append(potential_adv)
 
                 preds = np.argmax(self.classifier.predict(np.array(potential_advs)), axis=1)
-
-                if self.targeted:
-                    satisfied = (preds == target)
-                else:
-                    satisfied = (preds != target)
-
+                satisfied = compare(preds, target)
                 delta_ratio = np.mean(satisfied)
-
-                if delta_ratio < 0.5:
-                    delta *= self.step_adapt
-                else:
-                    delta /= self.step_adapt
+                delta = delta * self.step_adapt if delta_ratio < .5 else delta / self.step_adapt
 
                 if delta_ratio > 0:
                     x_adv = potential_advs[np.where(satisfied)[0][0]]
@@ -216,12 +207,7 @@ class BoundaryAttack(Attack):
 
                 pred = np.argmax(self.classifier.predict(np.array([potential_adv])), axis=1)[0]
 
-                if self.targeted:
-                    satisfied = (pred == target)
-                else:
-                    satisfied = (pred != target)
-
-                if satisfied:
+                if compare(pred, target):
                     x_adv = potential_adv
                     epsilon /= self.step_adapt
                     break
@@ -247,7 +233,7 @@ class BoundaryAttack(Attack):
         :return: a possible perturbation.
         """
         # Generate perturbation randomly
-        perturb = np.random.randn(current_sample.shape[0], current_sample.shape[1], current_sample.shape[2])
+        perturb = np.random.randn(*self.classifier.input_shape)
 
         # Rescale the perturbation
         perturb /= np.linalg.norm(perturb)

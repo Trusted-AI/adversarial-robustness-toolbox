@@ -21,6 +21,7 @@ import logging
 
 import numpy as np
 
+from art import NUMPY_DTYPE
 from art.attacks.attack import Attack
 from art.utils import compute_success, get_labels_np_array, random_sphere
 
@@ -235,13 +236,13 @@ class FastGradientMethod(Attack):
         if random_init:
             n = x.shape[0]
             m = np.prod(x.shape[1:])
-            adv_x = x.copy() + random_sphere(n, m, eps, self.norm).reshape(x.shape)
+            adv_x = x.astype(NUMPY_DTYPE) + random_sphere(n, m, eps, self.norm).reshape(x.shape)
 
             if hasattr(self.classifier, 'clip_values') and self.classifier.clip_values is not None:
                 clip_min, clip_max = self.classifier.clip_values
                 adv_x = np.clip(adv_x, clip_min, clip_max)
         else:
-            adv_x = x.copy()
+            adv_x = x.astype(NUMPY_DTYPE)
 
         # Compute perturbation with implicit batching
         for batch_id in range(int(np.ceil(adv_x.shape[0] / float(self.batch_size)))):

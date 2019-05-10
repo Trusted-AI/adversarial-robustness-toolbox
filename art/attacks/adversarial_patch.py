@@ -85,12 +85,17 @@ class AdversarialPatch(Attack):
         """
         Generate adversarial samples and return them in an array.
 
-        :param x: An array with the original inputs.
+        :param x: An array with the original inputs. `x` is expected to have spatial dimensions.
         :type x: `np.ndarray`
         :return: An array holding the adversarial patch.
         :rtype: `np.ndarray`
         """
         logger.info('Creating adversarial patch.')
+
+        if len(x.shape) == 2:
+            raise ValueError('Feature vectors detected. The adversarial patch can only be applied to data with spatial '
+                             'dimensions.')
+
         self.set_params(**kwargs)
         self.patch = (np.random.standard_normal(size=self.patch_shape)) * 20.0
 

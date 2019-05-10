@@ -21,6 +21,7 @@ import logging
 
 import numpy as np
 
+from art import NUMPY_DTYPE
 from art.attacks.attack import Attack
 
 logger = logging.getLogger(__name__)
@@ -72,7 +73,7 @@ class DeepFool(Attack):
         :rtype: `np.ndarray`
         """
         self.set_params(**kwargs)
-        x_adv = x.copy()
+        x_adv = x.astype(NUMPY_DTYPE)
         preds = self.classifier.predict(x, logits=True)
 
         # Determine the class labels for which to compute the gradients
@@ -119,8 +120,9 @@ class DeepFool(Attack):
                 value[np.arange(len(value)), labels_indices] = np.inf
                 l = np.argmin(value, axis=1)
                 r = (abs(f_diff[np.arange(len(f_diff)), l]) / (pow(np.linalg.norm(grad_diff[np.arange(len(
-                    grad_diff)), l].reshape(len(grad_diff), -1), axis=1), 2) + tol))[:, None, None, None] * \
-                    grad_diff[np.arange(len(grad_diff)), l]
+                    grad_diff)), l].reshape(len(grad_diff), -1), axis=1), 2) + tol))
+                r = r.reshape((-1,) + (1,) * (len(x.shape) - 1))
+                r = r * grad_diff[np.arange(len(grad_diff)), l]
 
                 # Add perturbation and clip result
                 if hasattr(self.classifier, 'clip_values') and self.classifier.clip_values is not None:

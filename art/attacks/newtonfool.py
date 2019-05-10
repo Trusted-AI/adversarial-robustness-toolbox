@@ -21,6 +21,7 @@ import logging
 
 import numpy as np
 
+from art import NUMPY_DTYPE
 from art.attacks.attack import Attack
 from art.utils import to_categorical
 
@@ -62,7 +63,7 @@ class NewtonFool(Attack):
         :rtype: `np.ndarray`
         """
         self.set_params(**kwargs)
-        x_adv = x.copy()
+        x_adv = x.astype(NUMPY_DTYPE)
 
         # Initialize variables
         y_pred = self.classifier.predict(x, logits=False)
@@ -169,9 +170,10 @@ class NewtonFool(Attack):
         """
         # Pick a small scalar to avoid division by 0
         tol = 10e-8
-        nom = -theta[:, None, None, None] * grads
+
+        nom = -theta.reshape((-1,) + (1,) * (len(grads.shape) - 1)) * grads
         denom = norm_grad**2
         denom[denom < tol] = tol
-        result = nom / denom[:, None, None, None]
+        result = nom / denom.reshape((-1,) + (1,) * (len(grads.shape) - 1))
 
         return result

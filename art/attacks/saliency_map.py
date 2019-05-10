@@ -21,6 +21,7 @@ import logging
 
 import numpy as np
 
+from art import NUMPY_DTYPE
 from art.attacks.attack import Attack
 
 logger = logging.getLogger(__name__)
@@ -73,7 +74,7 @@ class SaliencyMapMethod(Attack):
         # Initialize variables
         dims = list(x.shape[1:])
         self._nb_features = np.product(dims)
-        x_adv = np.reshape(np.copy(x), (-1, self._nb_features))
+        x_adv = np.reshape(x.astype(NUMPY_DTYPE), (-1, self._nb_features))
         preds = np.argmax(self.classifier.predict(x), axis=1)
 
         # Determine target classes for attack

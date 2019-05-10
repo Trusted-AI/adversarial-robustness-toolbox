@@ -86,6 +86,10 @@ class SpatialTransformation(Attack):
         """
         logger.info('Computing spatial transformation based on grid search.')
 
+        if len(x.shape) == 2:
+            raise ValueError('Feature vectors detected. The attack can only be applied to data with spatial'
+                             'dimensions.')
+
         if self.attack_trans_x is None or self.attack_trans_y is None or self.attack_rot is None:
             self.set_params(**kwargs)
 

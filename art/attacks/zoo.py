@@ -80,6 +80,10 @@ class ZooAttack(Attack):
         """
         super(ZooAttack, self).__init__(classifier)
 
+        if len(classifier.input_shape) == 1:
+            raise ValueError('Feature vectors detected. The ZOO attack can only be applied to data with spatial'
+                             'dimensions.')
+
         kwargs = {
             'confidence': confidence,
             'targeted': targeted,
@@ -155,6 +159,11 @@ class ZooAttack(Attack):
         :return: An array holding the adversarial examples.
         :rtype: `np.ndarray`
         """
+        # ZOO can probably be extended to feature vectors if no zooming or resizing is applied
+        if len(x.shape) == 2:
+            raise ValueError('Feature vectors detected. The ZOO attack can only be applied to data with spatial'
+                             'dimensions.')
+
         # Parse and save attack-specific parameters
         params_cpy = dict(kwargs)
         y = params_cpy.pop(str('y'), None)
