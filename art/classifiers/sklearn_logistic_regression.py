@@ -55,6 +55,16 @@ class SklearnLogisticRegression(Classifier):
                                                         defences=defences, preprocessing=preprocessing)
 
         self.model = model
+        if hasattr(self.model, 'coef_'):
+            self.w = self.model.coef_
+            self.classes = self.model.classes_
+            self.num_classes = self.model.classes_.shape[0]
+            self.model_class_weight = self.model.class_weight
+        else:
+            self.w = None
+            self.classes = None
+            self.num_classes = None
+            self.model_class_weight = None
 
     def class_gradient(self, x, label=None, logits=False):
         """
@@ -74,21 +84,22 @@ class SklearnLogisticRegression(Classifier):
                  `(batch_size, 1, input_shape)` when `label` parameter is specified.
         :rtype: `np.ndarray`
         """
-        w = self.model.coef_
-        num_classes = len(self.model.classes_)
         num_samples, n_features = x.shape
         gradients = np.zeros_like(x)
 
-        class_weight = compute_class_weight(class_weight=self.model.class_weight, classes=self.model.classes_,
+        class_weight = compute_class_weight(class_weight=self.model_class_weight, classes=self.classes,
                                             y=np.argmax(label, axis=1))
 
         y_pred = self.model.predict_proba(X=x)
-        w_weighted = np.matmul(y_pred, w)
+
+        w_weighted = np.matmul(y_pred, self.w)
 
         for i_sample in range(num_samples):
-            for i_class in range(num_classes):
+            for i_class in range(self.num_classes):
                 gradients[i_sample, :] += class_weight[i_class] * label[i_sample, i_class] * (
-                        w[i_class, :] - w_weighted[i_sample, :])
+                        self.w[i_class, :] - w_weighted[i_sample, :])
+
+        # gradients = gradients / self.num_classes
 
         return gradients
 
@@ -111,6 +122,10 @@ class SklearnLogisticRegression(Classifier):
         """
         y_index = np.argmax(y, axis=1)
         self.model.fit(X=x, y=y_index, **kwargs)
+        self.w = self.model.coef_
+        self.num_classes = self.model.classes_.shape[0]
+        self.model_class_weight = self.model.class_weight
+        self.classes = self.model.classes_
 
     def get_activations(self, x, layer, batch_size):
         raise NotImplementedError
@@ -126,25 +141,24 @@ class SklearnLogisticRegression(Classifier):
         :return: Array of gradients of the same shape as `x`.
         :rtype: `np.ndarray`
         """
-        w = self.model.coef_
-        num_classes = self.model.classes_.shape[0]
         num_samples, n_features = x.shape
         gradients = np.zeros_like(x)
 
         y_index = np.argmax(y, axis=1)
-        if np.unique(y_index).shape[0] < num_classes:
-            class_weight = np.ones(num_classes)
+        if np.unique(y_index).shape[0] < self.num_classes or self.model_class_weight is None:
+            class_weight = np.ones(self.num_classes)
         else:
-            class_weight = compute_class_weight(class_weight=self.model.class_weight, classes=self.model.classes_,
-                                                y=y_index)
+            class_weight = compute_class_weight(class_weight=self.model_class_weight, classes=self.classes, y=y_index)
 
         y_pred = self.model.predict_proba(X=x)
-        w_weighted = np.matmul(y_pred, w)
+        w_weighted = np.matmul(y_pred, self.w)
 
         for i_sample in range(num_samples):
-            for i_class in range(num_classes):
+            for i_class in range(self.num_classes):
                 gradients[i_sample, :] += class_weight[i_class] * (1 - y[i_sample, i_class]) * (
-                        w[i_class, :] - w_weighted[i_sample, :])
+                        self.w[i_class, :] - w_weighted[i_sample, :])
+
+        gradients = gradients / self.num_classes
 
         return gradients
 
