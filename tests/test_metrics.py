@@ -65,12 +65,12 @@ class TestMetrics(unittest.TestCase):
         self.assertEqual(emp_robust, 0.)
 
         params = {"eps_step": 1.,
-                  "eps_max": 1.}
+                  "eps": 1.}
         emp_robust = empirical_robustness(classifier, x_train, str('fgsm'), params)
         self.assertAlmostEqual(emp_robust, 1., 3)
 
         params = {"eps_step": 0.1,
-                  "eps_max": 0.2}
+                  "eps": 0.2}
         emp_robust = empirical_robustness(classifier, x_train, str('fgsm'), params)
         self.assertLessEqual(emp_robust, 0.21)
 

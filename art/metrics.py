@@ -70,8 +70,8 @@ def empirical_robustness(classifier, x, attack_name, attack_params=None):
     :rtype: `float`
     """
     crafter = get_crafter(classifier, attack_name, attack_params)
-    attack_params['minimal'] = True
-    adv_x = crafter.generate(x, **attack_params)
+    crafter.set_params(**{'minimal': True})
+    adv_x = crafter.generate(x)
 
     # Predict the labels for adversarial examples
     y = classifier.predict(x)

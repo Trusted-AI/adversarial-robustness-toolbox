@@ -24,9 +24,9 @@ import keras.backend as k
 import numpy as np
 import tensorflow as tf
 
-from art.attacks.saliency_map import SaliencyMapMethod
+from art.attacks.virtual_adversarial import VirtualAdversarialMethod
 from art.classifiers import KerasClassifier
-from art.utils import load_dataset, get_labels_np_array, to_categorical, master_seed
+from art.utils import load_dataset, get_labels_np_array, master_seed, random_targets
 from art.utils import get_classifier_tf, get_classifier_kr, get_classifier_pt
 from art.utils import get_iris_classifier_tf, get_iris_classifier_kr, get_iris_classifier_pt
 
@@ -34,10 +34,10 @@ logger = logging.getLogger('testLogger')
 
 BATCH_SIZE = 10
 NB_TRAIN = 100
-NB_TEST = 2
+NB_TEST = 10
 
 
-class TestSaliencyMap(unittest.TestCase):
+class TestVirtualAdversarial(unittest.TestCase):
     @classmethod
     def setUpClass(cls):
         k.set_learning_phase(1)
@@ -51,20 +51,20 @@ class TestSaliencyMap(unittest.TestCase):
         cls.classifier_k, sess = get_classifier_kr()
 
         scores = cls.classifier_k._model.evaluate(x_train, y_train)
-        logger.info('[Keras, MNIST] Accuracy on training set: %.2f%%', (scores[1] * 100))
+        logging.info('[Keras, MNIST] Accuracy on training set: %.2f%%', (scores[1] * 100))
         scores = cls.classifier_k._model.evaluate(x_test, y_test)
-        logger.info('[Keras, MNIST] Accuracy on test set: %.2f%%', (scores[1] * 100))
+        logging.info('[Keras, MNIST] Accuracy on test set: %.2f%%', (scores[1] * 100))
 
         # Create basic CNN on MNIST using TensorFlow
         cls.classifier_tf, sess = get_classifier_tf()
 
         scores = get_labels_np_array(cls.classifier_tf.predict(x_train))
         acc = np.sum(np.argmax(scores, axis=1) == np.argmax(y_train, axis=1)) / y_train.shape[0]
-        logger.info('[TF, MNIST] Accuracy on training set: %.2f%%', (acc * 100))
+        logging.info('[TF, MNIST] Accuracy on training set: %.2f%%', (acc * 100))
 
         scores = get_labels_np_array(cls.classifier_tf.predict(x_test))
         acc = np.sum(np.argmax(scores, axis=1) == np.argmax(y_test, axis=1)) / y_test.shape[0]
-        logger.info('[TF, MNIST] Accuracy on test set: %.2f%%', (acc * 100))
+        logging.info('[TF, MNIST] Accuracy on test set: %.2f%%', (acc * 100))
 
         # Create basic PyTorch model
         cls.classifier_py = get_classifier_pt()
@@ -72,11 +72,11 @@ class TestSaliencyMap(unittest.TestCase):
 
         scores = get_labels_np_array(cls.classifier_py.predict(x_train))
         acc = np.sum(np.argmax(scores, axis=1) == np.argmax(y_train, axis=1)) / y_train.shape[0]
-        logger.info('[PyTorch, MNIST] Accuracy on training set: %.2f%%', (acc * 100))
+        logging.info('[PyTorch, MNIST] Accuracy on training set: %.2f%%', (acc * 100))
 
         scores = get_labels_np_array(cls.classifier_py.predict(x_test))
         acc = np.sum(np.argmax(scores, axis=1) == np.argmax(y_test, axis=1)) / y_test.shape[0]
-        logger.info('\n[PyTorch, MNIST] Accuracy on test set: %.2f%%', (acc * 100))
+        logging.info('[PyTorch, MNIST] Accuracy on test set: %.2f%%', (acc * 100))
 
     def setUp(self):
         # Set master seed
@@ -91,8 +91,7 @@ class TestSaliencyMap(unittest.TestCase):
         for _, classifier in backends.items():
             if _ == 'pytorch':
                 self._swap_axes()
-            self._test_mnist_targeted(classifier)
-            self._test_mnist_untargeted(classifier)
+            self._test_backend_mnist(classifier)
             if _ == 'pytorch':
                 self._swap_axes()
 
@@ -106,89 +105,24 @@ class TestSaliencyMap(unittest.TestCase):
         x_test = np.swapaxes(x_test, 1, 3)
         self.mnist = (x_train, y_train), (x_test, y_test)
 
-    def _test_mnist_untargeted(self, classifier):
+    def _test_backend_mnist(self, classifier):
         # Get MNIST
         (_, _), (x_test, y_test) = self.mnist
         x_test, y_test = x_test[:NB_TEST], y_test[:NB_TEST]
 
-        # import time
-        df = SaliencyMapMethod(classifier, theta=1)
-
-        # starttime = time.clock()
-        # x_test_adv = df.generate(x_test, batch_size=1)
-        # endtime = time.clock()
-        # print(1, endtime - starttime)
-        #
-        # starttime = time.clock()
-        # x_test_adv = df.generate(x_test, batch_size=10)
-        # endtime = time.clock()
-        # print(10, endtime - starttime)
-        #
-        # starttime = time.clock()
-        x_test_adv = df.generate(x_test, batch_size=100)
-        # endtime = time.clock()
-        # print(100, endtime - starttime)
-
-        # starttime = time.clock()
-        # x_test_adv = df.generate(x_test, batch_size=1000)
-        # endtime = time.clock()
-        # print(1000, endtime - starttime)
+        df = VirtualAdversarialMethod(classifier, batch_size=100)
+        x_test_adv = df.generate(x_test)
 
         self.assertFalse((x_test == x_test_adv).all())
-        self.assertFalse((0. == x_test_adv).all())
 
         y_pred = get_labels_np_array(classifier.predict(x_test_adv))
         self.assertFalse((y_test == y_pred).all())
 
         acc = np.sum(np.argmax(y_pred, axis=1) == np.argmax(y_test, axis=1)) / y_test.shape[0]
-        logger.info('Accuracy on adversarial examples: %.2f%%', (acc * 100))
-
-    def _test_mnist_targeted(self, classifier):
-        # Get MNIST
-        (_, _), (x_test, y_test) = self.mnist
-        x_test, y_test = x_test[:NB_TEST], y_test[:NB_TEST]
-
-        # Generate random target classes
-        nb_classes = np.unique(np.argmax(y_test, axis=1)).shape[0]
-        targets = np.random.randint(nb_classes, size=NB_TEST)
-        while (targets == np.argmax(y_test, axis=1)).any():
-            targets = np.random.randint(nb_classes, size=NB_TEST)
-
-        # Perform attack
-        # import time
-        df = SaliencyMapMethod(classifier, theta=1)
-
-        # starttime = time.clock()
-        # x_test_adv = df.generate(x_test, y=to_categorical(targets, nb_classes), batch_size=1)
-        # endtime = time.clock()
-        # print(1, endtime - starttime)
-        #
-        # starttime = time.clock()
-        # x_test_adv = df.generate(x_test, y=to_categorical(targets, nb_classes), batch_size=10)
-        # endtime = time.clock()
-        # print(10, endtime - starttime)
-        #
-        # starttime = time.clock()
-        x_test_adv = df.generate(x_test, y=to_categorical(targets, nb_classes), batch_size=100)
-        # endtime = time.clock()
-        # print(100, endtime - starttime)
-
-        # starttime = time.clock()
-        # x_test_adv = df.generate(x_test, y=to_categorical(targets, nb_classes), batch_size=1000)
-        # endtime = time.clock()
-        # print(1000, endtime - starttime)
-
-        self.assertFalse((x_test == x_test_adv).all())
-        self.assertFalse((0. == x_test_adv).all())
-
-        y_pred = get_labels_np_array(classifier.predict(x_test_adv))
-        self.assertFalse((y_test == y_pred).all())
-
-        acc = np.sum(np.argmax(y_pred, axis=1) == np.argmax(y_test, axis=1)) / y_test.shape[0]
-        logger.info('Accuracy on adversarial examples: %.2f%%', (acc * 100))
+        logging.info('Accuracy on adversarial examples: %.2f%%', (acc * 100))
 
 
-class TestSaliencyMapVectors(unittest.TestCase):
+class TestVirtualAdversarialVectors(unittest.TestCase):
     @classmethod
     def setUpClass(cls):
         # Get Iris
@@ -202,7 +136,8 @@ class TestSaliencyMapVectors(unittest.TestCase):
         (_, _), (x_test, y_test) = self.iris
         classifier, _ = get_iris_classifier_kr()
 
-        attack = SaliencyMapMethod(classifier, theta=1)
+        # Test untargeted attack
+        attack = VirtualAdversarialMethod(classifier, eps=.1)
         x_test_adv = attack.generate(x_test)
         self.assertFalse((x_test == x_test_adv).all())
         self.assertTrue((x_test_adv <= 1).all())
@@ -211,7 +146,7 @@ class TestSaliencyMapVectors(unittest.TestCase):
         preds_adv = np.argmax(classifier.predict(x_test_adv), axis=1)
         self.assertFalse((np.argmax(y_test, axis=1) == preds_adv).all())
         acc = np.sum(preds_adv == np.argmax(y_test, axis=1)) / y_test.shape[0]
-        logger.info('Accuracy on Iris with JSMA adversarial examples: %.2f%%', (acc * 100))
+        logger.info('Accuracy on Iris with VAT adversarial examples: %.2f%%', (acc * 100))
 
     def test_iris_k_unbounded(self):
         (_, _), (x_test, y_test) = self.iris
@@ -219,20 +154,22 @@ class TestSaliencyMapVectors(unittest.TestCase):
 
         # Recreate a classifier without clip values
         classifier = KerasClassifier(model=classifier._model, use_logits=False, channel_index=1)
-        attack = SaliencyMapMethod(classifier, theta=1)
+        attack = VirtualAdversarialMethod(classifier, eps=1)
         x_test_adv = attack.generate(x_test)
         self.assertFalse((x_test == x_test_adv).all())
+        self.assertTrue((x_test_adv > 1).any())
+        self.assertTrue((x_test_adv < 0).any())
 
         preds_adv = np.argmax(classifier.predict(x_test_adv), axis=1)
         self.assertFalse((np.argmax(y_test, axis=1) == preds_adv).all())
         acc = np.sum(preds_adv == np.argmax(y_test, axis=1)) / y_test.shape[0]
-        logger.info('Accuracy on Iris with JSMA adversarial examples: %.2f%%', (acc * 100))
+        logger.info('Accuracy on Iris with VAT adversarial examples: %.2f%%', (acc * 100))
 
     def test_iris_tf(self):
         (_, _), (x_test, y_test) = self.iris
         classifier, _ = get_iris_classifier_tf()
 
-        attack = SaliencyMapMethod(classifier, theta=1)
+        attack = VirtualAdversarialMethod(classifier, eps=.1)
         x_test_adv = attack.generate(x_test)
         self.assertFalse((x_test == x_test_adv).all())
         self.assertTrue((x_test_adv <= 1).all())
@@ -241,13 +178,13 @@ class TestSaliencyMapVectors(unittest.TestCase):
         preds_adv = np.argmax(classifier.predict(x_test_adv), axis=1)
         self.assertFalse((np.argmax(y_test, axis=1) == preds_adv).all())
         acc = np.sum(preds_adv == np.argmax(y_test, axis=1)) / y_test.shape[0]
-        logger.info('Accuracy on Iris with JSMA adversarial examples: %.2f%%', (acc * 100))
+        logger.info('Accuracy on Iris with VAT adversarial examples: %.2f%%', (acc * 100))
 
     def test_iris_pt(self):
         (_, _), (x_test, y_test) = self.iris
         classifier = get_iris_classifier_pt()
 
-        attack = SaliencyMapMethod(classifier, theta=1)
+        attack = VirtualAdversarialMethod(classifier, eps=.1)
         x_test_adv = attack.generate(x_test)
         self.assertFalse((x_test == x_test_adv).all())
         self.assertTrue((x_test_adv <= 1).all())
@@ -256,8 +193,7 @@ class TestSaliencyMapVectors(unittest.TestCase):
         preds_adv = np.argmax(classifier.predict(x_test_adv), axis=1)
         self.assertFalse((np.argmax(y_test, axis=1) == preds_adv).all())
         acc = np.sum(preds_adv == np.argmax(y_test, axis=1)) / y_test.shape[0]
-        logger.info('Accuracy on Iris with JSMA adversarial examples: %.2f%%', (acc * 100))
-
+        logger.info('Accuracy on Iris with VAT adversarial examples: %.2f%%', (acc * 100))
 
 
 if __name__ == '__main__':

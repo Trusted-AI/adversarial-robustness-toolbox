@@ -110,7 +110,7 @@ class ZooAttack(Attack):
             if self.classifier.channel_index == 3:
                 dims = (batch_size, self._init_size, self._init_size, self.classifier.input_shape[-1])
             elif self.classifier.channel_index == 1:
-                dims = (batch_size, self.classifier.input_shape[1], self._init_size, self._init_size)
+                dims = (batch_size, self.classifier.input_shape[0], self._init_size, self._init_size)
             self._current_noise = np.zeros(dims, dtype=NUMPY_DTYPE)
         else:
             self._current_noise = np.zeros((batch_size,) + self.classifier.input_shape, dtype=NUMPY_DTYPE)
@@ -147,7 +147,7 @@ class ZooAttack(Attack):
 
         return preds, l2dist, c * loss + l2dist
 
-    def generate(self, x, **kwargs):
+    def generate(self, x, y=None):
         """
         Generate adversarial samples and return them in an array.
 
@@ -163,11 +163,6 @@ class ZooAttack(Attack):
         if len(x.shape) == 2:
             raise ValueError('Feature vectors detected. The ZOO attack can only be applied to data with spatial'
                              'dimensions.')
-
-        # Parse and save attack-specific parameters
-        params_cpy = dict(kwargs)
-        y = params_cpy.pop(str('y'), None)
-        self.set_params(**params_cpy)
 
         # Check that `y` is provided for targeted attacks
         if self.targeted and y is None:

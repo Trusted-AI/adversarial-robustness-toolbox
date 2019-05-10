@@ -63,9 +63,9 @@ class TestSpatialTransformation(unittest.TestCase):
         (x_train, _), (x_test, _) = self.mnist
 
         # Attack
-        attack_params = {"max_translation": 10.0, "num_translations": 3, "max_rotation": 30.0, "num_rotations": 3}
-        attack_st = SpatialTransformation(tfc)
-        x_train_adv = attack_st.generate(x_train, **attack_params)
+        attack_st = SpatialTransformation(tfc, max_translation=10.0, num_translations=3, max_rotation=30.0,
+                                          num_rotations=3)
+        x_train_adv = attack_st.generate(x_train)
 
         self.assertTrue(abs(x_train_adv[0, 8, 13, 0] - 0.49004024) <= 0.01)
 
@@ -94,9 +94,9 @@ class TestSpatialTransformation(unittest.TestCase):
         (x_train, _), (x_test, _) = self.mnist
 
         # Attack
-        attack_params = {"max_translation": 10.0, "num_translations": 3, "max_rotation": 30.0, "num_rotations": 3}
-        attack_st = SpatialTransformation(krc)
-        x_train_adv = attack_st.generate(x_train, **attack_params)
+        attack_st = SpatialTransformation(krc, max_translation=10.0, num_translations=3, max_rotation=30.0,
+                                          num_rotations=3)
+        x_train_adv = attack_st.generate(x_train)
 
         self.assertTrue(abs(x_train_adv[0, 8, 13, 0] - 0.49004024) <= 0.01)
         self.assertTrue(abs(attack_st.fooling_rate - 0.707) <= 0.01)
@@ -125,9 +125,9 @@ class TestSpatialTransformation(unittest.TestCase):
         x_test = np.swapaxes(x_test, 1, 3)
 
         # Attack
-        attack_params = {"max_translation": 10.0, "num_translations": 3, "max_rotation": 30.0, "num_rotations": 3}
-        attack_st = SpatialTransformation(ptc)
-        x_train_adv = attack_st.generate(x_train, **attack_params)
+        attack_st = SpatialTransformation(ptc, max_translation=10.0, num_translations=3, max_rotation=30.0,
+                                          num_rotations=3)
+        x_train_adv = attack_st.generate(x_train)
 
         self.assertTrue(abs(x_train_adv[0, 0, 13, 5] - 0.374206543) <= 0.01)
         self.assertTrue(abs(attack_st.fooling_rate - 0.361) <= 0.01)

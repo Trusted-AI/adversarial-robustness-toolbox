@@ -51,7 +51,7 @@ class LabelSmoothing(Preprocessor):
     def apply_predict(self):
         return False
 
-    def __call__(self, x, y, max_value=0.9):
+    def __call__(self, x, y=None):
         """
         Apply label smoothing.
 
@@ -59,18 +59,15 @@ class LabelSmoothing(Preprocessor):
         :type x: `np.ndarray`
         :param y: Original vector of label probabilities (one-vs-rest)
         :type y: `np.ndarray`
-        :param max_value: Value to affect to correct label
-        :type max_value: `float`
         :return: Unmodified input data and the vector of smooth probabilities as correct labels
         :rtype: `(np.ndarray, np.ndarray)`
         """
-        self.set_params(max_value=max_value)
 
-        min_value = (1 - max_value) / (y.shape[1] - 1)
-        assert max_value >= min_value
+        min_value = (1 - self.max_value) / (y.shape[1] - 1)
+        assert self.max_value >= min_value
 
         smooth_y = y.copy()
-        smooth_y[smooth_y == 1.] = max_value
+        smooth_y[smooth_y == 1.] = self.max_value
         smooth_y[smooth_y == 0.] = min_value
         return x, smooth_y
 

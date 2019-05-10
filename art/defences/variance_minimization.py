@@ -65,7 +65,7 @@ class TotalVarMin(Preprocessor):
     def apply_predict(self):
         return True
 
-    def __call__(self, x, y=None, prob=None, norm=None, lamb=None, solver=None, max_iter=None, clip_values=None):
+    def __call__(self, x, y=None):
         """
         Apply total variance minimization to sample `x`.
 
@@ -73,42 +73,9 @@ class TotalVarMin(Preprocessor):
         :type x: `np.ndarray`
         :param y: Labels of the sample `x`. This function does not affect them in any way.
         :type y: `np.ndarray`
-        :param prob: Probability of the Bernoulli distribution.
-        :type prob: `float`
-        :param norm: The norm (positive integer).
-        :type norm: `int`
-        :param lamb: The lambda parameter in the objective function.
-        :type lamb: `float`
-        :param solver: Current support: `L-BFGS-B`, `CG`, `Newton-CG`.
-        :type solver: `str`
-        :param max_iter: Maximum number of iterations when performing optimization.
-        :type max_iter: `int`
-        :param clip_values: Tuple of the form `(min, max)` representing the minimum and maximum values allowed
-               for features.
-        :type clip_values: `tuple`
         :return: Similar samples.
         :rtype: `np.ndarray`
         """
-        params = {}
-        if prob is not None:
-            params['prob'] = prob
-
-        if norm is not None:
-            params['norm'] = norm
-
-        if lamb is not None:
-            params['lamb'] = lamb
-
-        if solver is not None:
-            params['solver'] = solver
-
-        if max_iter is not None:
-            params['max_iter'] = max_iter
-
-        if clip_values is not None:
-            params['clip_values'] = clip_values
-
-        self.set_params(**params)
         x_ = x.copy()
 
         # Minimize one image at a time

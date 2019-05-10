@@ -57,7 +57,7 @@ class JpegCompression(Preprocessor):
     def apply_predict(self):
         return True
 
-    def __call__(self, x, y=None, quality=None):
+    def __call__(self, x, y=None):
         """
         Apply JPEG compression to sample `x`.
 
@@ -66,15 +66,10 @@ class JpegCompression(Preprocessor):
         :type x: `np.ndarray`
         :param y: Labels of the sample `x`. This function does not affect them in any way.
         :type y: `np.ndarray`
-        :param quality: The image quality, on a scale from 1 (worst) to 95 (best). Values above 95 should be avoided.
-        :type quality: `int`
         :return: compressed sample.
         :rtype: `np.ndarray`
         """
         clip_values = (0, 1)
-
-        if quality is not None:
-            self.set_params(quality=quality)
 
         assert self.channel_index < len(x.shape)
 

@@ -22,7 +22,7 @@ import unittest
 
 import numpy as np
 
-from art.attacks.newtonfool import NewtonFool
+from art.attacks.universal_perturbation import UniversalPerturbation
 from art.classifiers import KerasClassifier
 from art.utils import load_dataset, master_seed, get_classifier_tf, get_classifier_kr, get_classifier_pt
 from art.utils import get_iris_classifier_tf, get_iris_classifier_kr, get_iris_classifier_pt
@@ -30,13 +30,13 @@ from art.utils import get_iris_classifier_tf, get_iris_classifier_kr, get_iris_c
 logger = logging.getLogger('testLogger')
 
 BATCH_SIZE = 100
-NB_TRAIN = 1000
-NB_TEST = 100
+NB_TRAIN = 500
+NB_TEST = 10
 
 
-class TestNewtonFool(unittest.TestCase):
+class TestUniversalPerturbation(unittest.TestCase):
     """
-    A unittest class for testing the NewtonFool attack.
+    A unittest class for testing the UniversalPerturbation attack.
     """
 
     @classmethod
@@ -60,42 +60,20 @@ class TestNewtonFool(unittest.TestCase):
         tfc, sess = get_classifier_tf()
 
         # Get MNIST
-        (_, _), (x_test, _) = self.mnist
+        (x_train, y_train), (x_test, y_test) = self.mnist
 
         # Attack
-        # import time
-        nf = NewtonFool(tfc, max_iter=5)
+        up = UniversalPerturbation(tfc, max_iter=1, attacker="newtonfool", attacker_params={"max_iter": 5})
+        x_train_adv = up.generate(x_train)
+        self.assertTrue((up.fooling_rate >= 0.2) or not up.converged)
 
-        # print("Test Tensorflow....")
-        # starttime = time.clock()
-        # x_test_adv = nf.generate(x_test, batch_size=1)
-        # self.assertFalse((x_test == x_test_adv).all())
-        # endtime = time.clock()
-        # print(1, endtime - starttime)
-
-        # starttime = time.clock()
-        # x_test_adv = nf.generate(x_test, batch_size=10)
-        # endtime = time.clock()
-        # print(10, endtime - starttime)
-
-        # starttime = time.clock()
-        x_test_adv = nf.generate(x_test, batch_size=100)
-        # endtime = time.clock()
-        # print(100, endtime - starttime)
-        #
-        # starttime = time.clock()
-        # x_test_adv = nf.generate(x_test, batch_size=1000)
-        # endtime = time.clock()
-        # print(1000, endtime - starttime)
-
+        x_test_adv = x_test + up.v
         self.assertFalse((x_test == x_test_adv).all())
 
-        y_pred = tfc.predict(x_test)
-        y_pred_adv = tfc.predict(x_test_adv)
-        y_pred_bool = y_pred.max(axis=1, keepdims=1) == y_pred
-        y_pred_max = y_pred.max(axis=1)
-        y_pred_adv_max = y_pred_adv[y_pred_bool]
-        self.assertTrue((y_pred_max >= y_pred_adv_max).all())
+        train_y_pred = np.argmax(tfc.predict(x_train_adv), axis=1)
+        test_y_pred = np.argmax(tfc.predict(x_test_adv), axis=1)
+        self.assertFalse((np.argmax(y_test, axis=1) == test_y_pred).all())
+        self.assertFalse((np.argmax(y_train, axis=1) == train_y_pred).all())
 
     def test_krclassifier(self):
         """
@@ -106,41 +84,20 @@ class TestNewtonFool(unittest.TestCase):
         krc, sess = get_classifier_kr()
 
         # Get MNIST
-        (_, _), (x_test, _) = self.mnist
+        (x_train, y_train), (x_test, y_test) = self.mnist
 
         # Attack
-        # import time
-        nf = NewtonFool(krc, max_iter=5)
+        up = UniversalPerturbation(krc, max_iter=1, attacker="ead", attacker_params={"max_iter": 5, "targeted": False})
+        x_train_adv = up.generate(x_train)
+        self.assertTrue((up.fooling_rate >= 0.2) or not up.converged)
 
-        # print("Test Keras....")
-        # starttime = time.clock()
-        # x_test_adv = nf.generate(x_test, batch_size=1)
-        # endtime = time.clock()
-        # print(1, endtime - starttime)
-
-        # starttime = time.clock()
-        # x_test_adv = nf.generate(x_test, batch_size=10)
-        # endtime = time.clock()
-        # print(10, endtime - starttime)
-
-        # starttime = time.clock()
-        x_test_adv = nf.generate(x_test, batch_size=100)
-        # endtime = time.clock()
-        # print(100, endtime - starttime)
-        #
-        # starttime = time.clock()
-        # x_test_adv = nf.generate(x_test, batch_size=1000)
-        # endtime = time.clock()
-        # print(1000, endtime - starttime)
-
+        x_test_adv = x_test + up.v
         self.assertFalse((x_test == x_test_adv).all())
 
-        y_pred = krc.predict(x_test)
-        y_pred_adv = krc.predict(x_test_adv)
-        y_pred_bool = y_pred.max(axis=1, keepdims=1) == y_pred
-        y_pred_max = y_pred.max(axis=1)
-        y_pred_adv_max = y_pred_adv[y_pred_bool]
-        self.assertTrue((y_pred_max >= y_pred_adv_max).all())
+        train_y_pred = np.argmax(krc.predict(x_train_adv), axis=1)
+        test_y_pred = np.argmax(krc.predict(x_test_adv), axis=1)
+        self.assertFalse((np.argmax(y_test, axis=1) == test_y_pred).all())
+        self.assertFalse((np.argmax(y_train, axis=1) == train_y_pred).all())
 
     def test_ptclassifier(self):
         """
@@ -151,45 +108,25 @@ class TestNewtonFool(unittest.TestCase):
         ptc = get_classifier_pt()
 
         # Get MNIST
-        (_, _), (x_test, _) = self.mnist
+        (x_train, y_train), (x_test, y_test) = self.mnist
+        x_train = np.swapaxes(x_train, 1, 3)
         x_test = np.swapaxes(x_test, 1, 3)
 
         # Attack
-        # import time
-        nf = NewtonFool(ptc, max_iter=5)
+        up = UniversalPerturbation(ptc, max_iter=1, attacker="newtonfool", attacker_params={"max_iter": 5})
+        x_train_adv = up.generate(x_train)
+        self.assertTrue((up.fooling_rate >= 0.2) or not up.converged)
 
-        # print("Test Pytorch....")
-        # starttime = time.clock()
-        # x_test_adv = nf.generate(x_test, batch_size=1)
-        # endtime = time.clock()
-        # print(1, endtime - starttime)
-
-        # starttime = time.clock()
-        # x_test_adv = nf.generate(x_test, batch_size=10)
-        # endtime = time.clock()
-        # print(10, endtime - starttime)
-
-        # starttime = time.clock()
-        x_test_adv = nf.generate(x_test, batch_size=100)
-        # endtime = time.clock()
-        # print(100, endtime - starttime)
-        #
-        # starttime = time.clock()
-        # x_test_adv = nf.generate(x_test, batch_size=1000)
-        # endtime = time.clock()
-        # print(1000, endtime - starttime)
-
+        x_test_adv = x_test + up.v
         self.assertFalse((x_test == x_test_adv).all())
 
-        y_pred = ptc.predict(x_test)
-        y_pred_adv = ptc.predict(x_test_adv)
-        y_pred_bool = y_pred.max(axis=1, keepdims=1) == y_pred
-        y_pred_max = y_pred.max(axis=1)
-        y_pred_adv_max = y_pred_adv[y_pred_bool]
-        self.assertTrue((y_pred_max >= y_pred_adv_max).all())
+        train_y_pred = np.argmax(ptc.predict(x_train_adv), axis=1)
+        test_y_pred = np.argmax(ptc.predict(x_test_adv), axis=1)
+        self.assertFalse((np.argmax(y_test, axis=1) == test_y_pred).all())
+        self.assertFalse((np.argmax(y_train, axis=1) == train_y_pred).all())
 
 
-class TestNewtonFoolVectors(unittest.TestCase):
+class TestUniversalPerturbationVectors(unittest.TestCase):
     @classmethod
     def setUpClass(cls):
         # Get Iris
@@ -203,8 +140,10 @@ class TestNewtonFoolVectors(unittest.TestCase):
         (_, _), (x_test, y_test) = self.iris
         classifier, _ = get_iris_classifier_kr()
 
-        attack = NewtonFool(classifier, max_iter=5)
-        x_test_adv = attack.generate(x_test)
+        # Test untargeted attack
+        attack_params = {"max_iter": 1, "attacker": "newtonfool", "attacker_params": {"max_iter": 5}}
+        attack = UniversalPerturbation(classifier)
+        attack.set_params(**attack_params)
         x_test_adv = attack.generate(x_test)
         self.assertFalse((x_test == x_test_adv).all())
         self.assertTrue((x_test_adv <= 1).all())
@@ -213,7 +152,7 @@ class TestNewtonFoolVectors(unittest.TestCase):
         preds_adv = np.argmax(classifier.predict(x_test_adv), axis=1)
         self.assertFalse((np.argmax(y_test, axis=1) == preds_adv).all())
         acc = np.sum(preds_adv == np.argmax(y_test, axis=1)) / y_test.shape[0]
-        logger.info('Accuracy on Iris with NewtonFool adversarial examples: %.2f%%', (acc * 100))
+        logger.info('Accuracy on Iris with universal adversarial examples: %.2f%%', (acc * 100))
 
     def test_iris_k_unbounded(self):
         (_, _), (x_test, y_test) = self.iris
@@ -221,20 +160,25 @@ class TestNewtonFoolVectors(unittest.TestCase):
 
         # Recreate a classifier without clip values
         classifier = KerasClassifier(model=classifier._model, use_logits=False, channel_index=1)
-        attack = NewtonFool(classifier, max_iter=5)
+        attack_params = {"max_iter": 1, "attacker": "newtonfool", "attacker_params": {"max_iter": 5}}
+        attack = UniversalPerturbation(classifier)
+        attack.set_params(**attack_params)
         x_test_adv = attack.generate(x_test)
         self.assertFalse((x_test == x_test_adv).all())
 
         preds_adv = np.argmax(classifier.predict(x_test_adv), axis=1)
         self.assertFalse((np.argmax(y_test, axis=1) == preds_adv).all())
         acc = np.sum(preds_adv == np.argmax(y_test, axis=1)) / y_test.shape[0]
-        logger.info('Accuracy on Iris with NewtonFool adversarial examples: %.2f%%', (acc * 100))
+        logger.info('Accuracy on Iris with universal adversarial examples: %.2f%%', (acc * 100))
 
     def test_iris_tf(self):
         (_, _), (x_test, y_test) = self.iris
         classifier, _ = get_iris_classifier_tf()
 
-        attack = NewtonFool(classifier, max_iter=5)
+        # Test untargeted attack
+        attack_params = {"max_iter": 1, "attacker": "ead", "attacker_params": {"max_iter": 5, "targeted": False}}
+        attack = UniversalPerturbation(classifier)
+        attack.set_params(**attack_params)
         x_test_adv = attack.generate(x_test)
         self.assertFalse((x_test == x_test_adv).all())
         self.assertTrue((x_test_adv <= 1).all())
@@ -243,13 +187,15 @@ class TestNewtonFoolVectors(unittest.TestCase):
         preds_adv = np.argmax(classifier.predict(x_test_adv), axis=1)
         self.assertFalse((np.argmax(y_test, axis=1) == preds_adv).all())
         acc = np.sum(preds_adv == np.argmax(y_test, axis=1)) / y_test.shape[0]
-        logger.info('Accuracy on Iris with NewtonFool adversarial examples: %.2f%%', (acc * 100))
+        logger.info('Accuracy on Iris with universal adversarial examples: %.2f%%', (acc * 100))
 
     def test_iris_pt(self):
         (_, _), (x_test, y_test) = self.iris
         classifier = get_iris_classifier_pt()
 
-        attack = NewtonFool(classifier, max_iter=5)
+        attack_params = {"max_iter": 1, "attacker": "ead", "attacker_params": {"max_iter": 5, "targeted": False}}
+        attack = UniversalPerturbation(classifier)
+        attack.set_params(**attack_params)
         x_test_adv = attack.generate(x_test)
         self.assertFalse((x_test == x_test_adv).all())
         self.assertTrue((x_test_adv <= 1).all())
@@ -258,7 +204,7 @@ class TestNewtonFoolVectors(unittest.TestCase):
         preds_adv = np.argmax(classifier.predict(x_test_adv), axis=1)
         self.assertFalse((np.argmax(y_test, axis=1) == preds_adv).all())
         acc = np.sum(preds_adv == np.argmax(y_test, axis=1)) / y_test.shape[0]
-        logger.info('Accuracy on Iris with NewtonFool adversarial examples: %.2f%%', (acc * 100))
+        logger.info('Accuracy on Iris with universal adversarial examples: %.2f%%', (acc * 100))
 
 
 if __name__ == '__main__':

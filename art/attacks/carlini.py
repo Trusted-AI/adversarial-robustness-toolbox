@@ -172,7 +172,7 @@ class CarliniL2Method(Attack):
 
         return loss_gradient
 
-    def generate(self, x, **kwargs):
+    def generate(self, x, y=None):
         """
         Generate adversarial samples and return them in an array.
 
@@ -189,11 +189,6 @@ class CarliniL2Method(Attack):
             clip_min, clip_max = self.classifier.clip_values
         else:
             clip_min, clip_max = np.amin(x), np.amax(x)
-
-        # Parse and save attack-specific parameters
-        params_cpy = dict(kwargs)
-        y = params_cpy.pop(str('y'), None)
-        self.set_params(**params_cpy)
 
         # Assert that, if attack is targeted, y_val is provided:
         if self.targeted and y is None:

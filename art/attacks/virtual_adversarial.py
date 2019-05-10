@@ -21,6 +21,7 @@ import logging
 
 import numpy as np
 
+from art import NUMPY_DTYPE
 from art.attacks.attack import Attack
 
 logger = logging.getLogger(__name__)
@@ -55,24 +56,18 @@ class VirtualAdversarialMethod(Attack):
                   'batch_size': batch_size}
         self.set_params(**kwargs)
 
-    def generate(self, x, **kwargs):
+    def generate(self, x, y=None):
         """
         Generate adversarial samples and return them in an array.
 
         :param x: An array with the original inputs to be attacked.
         :type x: `np.ndarray`
-        :param eps: Attack step (max input variation).
-        :type eps: `float`
-        :param finite_diff: The finite difference parameter.
-        :type finite_diff: `float`
-        :param max_iter: The maximum number of iterations.
-        :type max_iter: `int`
+        :param y: An array with the original labels to be predicted.
+        :type y: `np.ndarray`
         :return: An array holding the adversarial examples.
         :rtype: `np.ndarray`
         """
-        # Parse and save attack-specific parameters
-        assert self.set_params(**kwargs)
-        x_adv = np.copy(x)
+        x_adv = x.astype(NUMPY_DTYPE)
         preds = self.classifier.predict(x_adv, logits=False)
 
         # Pick a small scalar to avoid division by 0

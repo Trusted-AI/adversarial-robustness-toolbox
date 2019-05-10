@@ -58,7 +58,7 @@ class PixelDefend(Preprocessor):
     def apply_predict(self):
         return True
 
-    def __call__(self, x, y=None, eps=None, pixel_cnn=None):
+    def __call__(self, x, y=None):
         """
         Apply pixel defence to sample `x`.
 
@@ -67,23 +67,10 @@ class PixelDefend(Preprocessor):
         :type x: `np.ndarrray`
         :param y: Labels of the sample `x`. This function does not affect them in any way.
         :type y: `np.ndarray`
-        :param eps: Defense parameter 0-255.
-        :type eps: `int`
-        :param pixel_cnn: Pre-trained PixelCNN model.
-        :type pixel_cnn: :class:`.Classifier`
         :return: Purified sample.
         :rtype: `np.ndarray`
         """
         clip_values = (0, 1)
-
-        params = {}
-        if eps is not None:
-            params['eps'] = eps
-
-        if pixel_cnn is not None:
-            params['pixel_cnn'] = pixel_cnn
-
-        self.set_params(**params)
 
         # Convert into `uint8`
         x_ = x.copy()

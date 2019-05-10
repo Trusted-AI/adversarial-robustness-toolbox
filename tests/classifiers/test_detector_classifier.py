@@ -4,6 +4,7 @@ import logging
 import unittest
 
 import numpy as np
+import torch
 import torch.nn as nn
 import torch.nn.functional as F
 import torch.optim as optim
@@ -65,7 +66,11 @@ class TestDetectorClassifier(unittest.TestCase):
         classifier.fit(x_train, y_train, batch_size=100, nb_epochs=2)
 
         # Define the internal detector
-        model = nn.Sequential(nn.Conv2d(1, 16, 5), nn.ReLU(), nn.MaxPool2d(2, 2), Flatten(), nn.Linear(2304, 1))
+        conv = nn.Conv2d(1, 16, 5)
+        linear = nn.Linear(2304, 1)
+        torch.nn.init.xavier_uniform(conv.weight)
+        torch.nn.init.xavier_uniform(linear.weight)
+        model = nn.Sequential(conv, nn.ReLU(), nn.MaxPool2d(2, 2), Flatten(), linear)
         loss_fn = nn.CrossEntropyLoss()
         optimizer = optim.Adam(model.parameters(), lr=0.01)
         detector = PyTorchClassifier(model=model, loss=loss_fn, optimizer=optimizer, input_shape=(1, 28, 28),
