@@ -153,17 +153,17 @@ class BoundaryAttack(Attack):
         """
         # Get initialization for some variables
         x_adv = initial_sample
-        delta = initial_delta
-        epsilon = initial_epsilon
+        self.curr_delta = initial_delta
+        self.curr_epsilon = initial_epsilon
         clip_min, clip_max = self.classifier.clip_values
 
         # Main loop to wander around the boundary
         for _ in range(self.max_iter):
             # Trust region method to adjust delta
-            for _ in range(self.max_iter):
+            for _ in range(self.num_trial):
                 potential_advs = []
                 for _ in range(self.sample_size):
-                    potential_adv = x_adv + self._orthogonal_perturb(delta, x_adv, original_sample)
+                    potential_adv = x_adv + self._orthogonal_perturb(self.curr_delta, x_adv, original_sample)
                     potential_adv = np.clip(potential_adv, clip_min, clip_max)
                     potential_advs.append(potential_adv)
 
@@ -177,9 +177,9 @@ class BoundaryAttack(Attack):
                 delta_ratio = np.mean(satisfied)
 
                 if delta_ratio < 0.5:
-                    delta *= self.step_adapt
+                    self.curr_delta *= self.step_adapt
                 else:
-                    delta /= self.step_adapt
+                    self.curr_delta /= self.step_adapt
 
                 if delta_ratio > 0:
                     x_adv = potential_advs[np.where(satisfied)[0][0]]
@@ -190,9 +190,9 @@ class BoundaryAttack(Attack):
                 return x_adv
 
             # Trust region method to adjust epsilon
-            for _ in range(self.max_iter):
+            for _ in range(self.num_trial):
                 perturb = original_sample - x_adv
-                perturb *= epsilon
+                perturb *= self.curr_epsilon
                 potential_adv = x_adv + perturb
                 potential_adv = np.clip(potential_adv, clip_min, clip_max)
                 pred = np.argmax(self.classifier.predict(np.array([potential_adv])), axis=1)[0]
@@ -204,10 +204,10 @@ class BoundaryAttack(Attack):
 
                 if satisfied:
                     x_adv = potential_adv
-                    epsilon /= self.step_adapt
+                    self.curr_epsilon /= self.step_adapt
                     break
                 else:
-                    epsilon *= self.step_adapt
+                    self.curr_epsilon *= self.step_adapt
 
             else:
                 logging.warning('Adversarial example found but not optimal.')
