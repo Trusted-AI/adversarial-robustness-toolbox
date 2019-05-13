@@ -13,10 +13,11 @@ from art.utils import load_mnist
 
 logger = logging.getLogger('testLogger')
 np.random.seed(seed=1234)
+tf.set_random_seed(1234)
 
-BATCH_SIZE = 10
-NB_TRAIN = 500
-NB_TEST = 100
+NB_TRAIN = 40
+
+tf.keras.backend.set_floatx('float64')
 
 
 class TestSklearnLogisticRegression(unittest.TestCase):
@@ -24,53 +25,74 @@ class TestSklearnLogisticRegression(unittest.TestCase):
     @classmethod
     def setUpClass(cls):
         num_classes = 10
+        cls.num_features = 784
+        cls.num_samples = NB_TRAIN
+        cls.num_samples_loss = 20
 
         (x_train, y_train), (_, _), min_, max_ = load_mnist()
 
-        cls.x_train = x_train[:NB_TRAIN].reshape(NB_TRAIN, 784)
-        cls.y_train = y_train[:NB_TRAIN]
-        clip_values = (min_, max_)
+        cls.x_train = x_train[0:cls.num_samples].reshape((cls.num_samples, 1, cls.num_features, 1))
+        cls.y_train = y_train[0:cls.num_samples]
+
+        clip_values = (0, 1)
+
+        def unitnorm(x):
+            return x / (tf.keras.backend.epsilon() + (tf.keras.backend.sum(x, keepdims=True, axis=1)))
 
         cls.model = tf.keras.models.Sequential()
-        cls.model.add(tf.keras.layers.Flatten(input_shape=(28, 28, 1,)))
-        cls.model.add(tf.keras.layers.Dense(num_classes, activation=tf.nn.softmax))
+        cls.model.add(tf.keras.layers.Flatten(input_shape=(1, cls.num_features, 1)))
+        cls.model.add(tf.keras.layers.Dense(num_classes, use_bias=True, activation=tf.keras.activations.sigmoid,
+                                            kernel_regularizer=tf.keras.regularizers.l2(0.5)))
+        cls.model.add(tf.keras.layers.Lambda(unitnorm, name='unitnorm'))
 
-        cls.model.compile(optimizer='sgd',
+        cls.model.compile(optimizer='adadelta',
                           loss='categorical_crossentropy',
                           metrics=['accuracy'])
 
-        cls.model.fit(x_train, y_train, epochs=1)
+        cls.model.fit(cls.x_train, cls.y_train, epochs=400)
 
-        cls.lr_weights = np.random.random((28 * 28, num_classes)) * 0.001
-        cls.lr_biases = np.ones(num_classes)
+        (cls.lr_weights, cls.lr_biases) = cls.model.layers[1].get_weights()
 
-        cls.model.layers[1].set_weights([cls.lr_weights, cls.lr_biases])
+        y_tensor = tf.keras.backend.placeholder(shape=(cls.num_samples_loss, num_classes))
 
-        loss_function = tf.keras.losses.categorical_crossentropy
+        loss = tf.keras.losses.categorical_crossentropy(y_tensor, cls.model.outputs[0])
+        loss_reg = cls.model.losses[0]
+        loss += loss_reg
 
-        y_tensor = tf.keras.backend.placeholder(shape=(5, 10))
-        loss = loss_function(y_tensor, cls.model.outputs[0])
-        gradients = tf.keras.backend.gradients(loss, cls.model.input)
+        # gradients = tf.keras.backend.gradients(loss, cls.model.input)
 
-        with tf.keras.backend.get_session() as sess:
-            evaluated_gradients = sess.run(gradients,
-                                           feed_dict={cls.model.input: np.reshape(x_train[0:5], (5, 28, 28, 1)),
-                                                      y_tensor: np.reshape(y_train[0:5], (5, 10))})
+        # with tf.keras.backend.get_session() as sess:
+        #     evaluated_gradients = sess.run(gradients,
+        #                                    feed_dict={cls.model.input: cls.x_train[0:cls.num_samples_loss],
+        #                                               y_tensor: cls.y_train[0:cls.num_samples_loss]})
+        #
+        #     evaluated_loss = sess.run(loss,
+        #                               feed_dict={cls.model.input: cls.x_train[0:cls.num_samples_loss],
+        #                                          y_tensor: cls.y_train[0:cls.num_samples_loss]})
+        #
+        #     evaluated_loss_reg = sess.run(loss_reg,
+        #                                   feed_dict={cls.model.input: cls.x_train[0:cls.num_samples_loss],
+        #                                              y_tensor: cls.y_train[0:cls.num_samples_loss]})
 
-        cls.grad_tf_0 = evaluated_gradients[0].reshape(5, 784)[0, :]
+        # print('evaluated_loss:', evaluated_loss)
+        # print('evaluated_loss mean:', np.mean(evaluated_loss))
+        # print('evaluated_loss sum:', np.sum(evaluated_loss))
+        # print('evaluated_loss_reg:', evaluated_loss_reg)
 
-        sklearn_model = LogisticRegression()
+        # cls.grad_tf_0 = evaluated_gradients[0].reshape(cls.num_samples_loss, cls.num_features)
+
+        sklearn_model = LogisticRegression(verbose=0, C=1, solver='newton-cg', dual=False, fit_intercept=True)
         cls.classifier = SklearnLogisticRegression(clip_values=clip_values, model=sklearn_model)
-        cls.classifier.fit(x=cls.x_train, y=cls.y_train)
+        cls.classifier.fit(x=cls.x_train.reshape((cls.num_samples, cls.num_features)), y=cls.y_train)
 
     def test_predict(self):
-        y_pred = self.classifier.predict(self.x_train[0:1])
+        y_pred = self.classifier.predict(self.x_train[0:self.num_samples_loss].reshape(self.num_samples_loss, self.num_features))
 
-        y_target = [1.61375339e-03, 5.47272107e-03, 1.71608819e-03, 5.41703142e-02, 1.25176200e-06, 9.31320640e-01,
-                    6.62234138e-04, 4.30541412e-03, 6.99393960e-04, 3.81892851e-05]
+        y_target = [0.10596804, 0.09933693, 0.12362145, 0.16801073, 0.07376496, 0.1022053, 0.11010179, 0.06613702,
+                    0.07016114, 0.08069265]
 
         for i in range(10):
-            self.assertAlmostEqual(y_target[i], y_pred[0, i])
+            self.assertAlmostEqual(y_target[i], y_pred[0, i], places=4)
 
     def test_class_gradient(self):
         self.classifier.w = self.lr_weights.T
@@ -78,18 +100,33 @@ class TestSklearnLogisticRegression(unittest.TestCase):
         label = np.zeros((NB_TRAIN, 10))
         label[:, 3] = 1
 
-        grad = self.classifier.class_gradient(self.x_train, label=label)
+        grad = self.classifier.class_gradient(self.x_train[0:self.num_samples_loss].reshape(self.num_samples_loss, self.num_features), label=label)
 
         self.assertTrue(abs(grad[0, 0] - 2.79379165e-04) < 0.001)
 
     def test_loss_gradient(self):
-        self.classifier.w = self.lr_weights.T
-        grad = self.classifier.loss_gradient(self.x_train[0:5], self.y_train[0:5])
-
         # from matplotlib import pyplot as plt
-        # plt.plot(self.grad_tf_0)
-        # plt.plot(self.y2)
-        # plt.show()
 
-        for i in range(self.grad_tf_0.shape[0]):
-            self.assertTrue(abs(self.grad_tf_0[i] - grad[0, i]) < 0.1)
+        self.classifier.w = self.lr_weights.T
+
+        self.classifier.model.coef_ = self.lr_weights.T
+        self.classifier.model.intercept_ = self.lr_biases
+
+        grad = self.classifier.loss_gradient(
+            self.x_train[0:self.num_samples_loss].reshape(self.num_samples_loss, self.num_features),
+            self.y_train[0:self.num_samples_loss])
+
+        # for i in range(self.num_samples_loss):
+        #     plt.plot(self.grad_tf_0[i], label='tf')
+        #     plt.plot(grad[i], label='sklearn')
+        #     plt.legend()
+        #     plt.show()
+        #
+        # plt.matshow(self.grad_tf_0[0].reshape((28, 28)))
+        # plt.colorbar()
+        # plt.clim(-0.004, 0.004)
+        # plt.show()
+        # plt.matshow(grad[0].reshape((28, 28)))
+        # plt.colorbar()
+        # plt.clim(-0.004, 0.004)
+        # plt.show()
