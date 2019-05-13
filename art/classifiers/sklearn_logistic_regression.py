@@ -69,6 +69,8 @@ class SklearnLogisticRegression(Classifier):
     def class_gradient(self, x, label=None, logits=False):
         """
         Compute per-class derivatives w.r.t. `x`.
+        Paper link: http://cs229.stanford.edu/proj2016/report/ItkinaWu-AdversarialAttacksonImageRecognition-report.pdf
+        Typo in: https://arxiv.org/abs/1605.07277 (equation 6)
 
         :param x: Sample input with shape as expected by the model.
         :type x: `np.ndarray`
@@ -84,6 +86,10 @@ class SklearnLogisticRegression(Classifier):
                  `(batch_size, 1, input_shape)` when `label` parameter is specified.
         :rtype: `np.ndarray`
         """
+        if not hasattr(self.model, 'coef_'):
+            raise ValueError("""Model has not been fitted. Run function `fit(x, y)` of classifier first or provide a 
+            fitted model.""")
+
         num_samples, n_features = x.shape
         gradients = np.zeros_like(x)
 
@@ -98,8 +104,6 @@ class SklearnLogisticRegression(Classifier):
             for i_class in range(self.num_classes):
                 gradients[i_sample, :] += class_weight[i_class] * label[i_sample, i_class] * (
                         self.w[i_class, :] - w_weighted[i_sample, :])
-
-        # gradients = gradients / self.num_classes
 
         return gradients
 
@@ -141,11 +145,15 @@ class SklearnLogisticRegression(Classifier):
         :return: Array of gradients of the same shape as `x`.
         :rtype: `np.ndarray`
         """
+        if not hasattr(self.model, 'coef_'):
+            raise ValueError("""Model has not been fitted. Run function `fit(x, y)` of classifier first or provide a 
+            fitted model.""")
+
         num_samples, n_features = x.shape
         gradients = np.zeros_like(x)
 
         y_index = np.argmax(y, axis=1)
-        if np.unique(y_index).shape[0] < self.num_classes or self.model_class_weight is None:
+        if self.model_class_weight is None or np.unique(y_index).shape[0] < self.num_classes:
             class_weight = np.ones(self.num_classes)
         else:
             class_weight = compute_class_weight(class_weight=self.model_class_weight, classes=self.classes, y=y_index)
@@ -155,10 +163,8 @@ class SklearnLogisticRegression(Classifier):
 
         for i_sample in range(num_samples):
             for i_class in range(self.num_classes):
-                gradients[i_sample, :] += class_weight[i_class] * (1 - y[i_sample, i_class]) * (
+                gradients[i_sample, :] += class_weight[i_class] * (1.0 - y[i_sample, i_class]) * (
                         self.w[i_class, :] - w_weighted[i_sample, :])
-
-        gradients = gradients / self.num_classes
 
         return gradients
 
