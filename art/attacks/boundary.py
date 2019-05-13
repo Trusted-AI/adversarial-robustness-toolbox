@@ -31,11 +31,11 @@ class BoundaryAttack(Attack):
     Implementation of the boundary attack from Wieland Brendel et al. (2018).
     Paper link: https://arxiv.org/abs/1712.04248
     """
-    attack_params = Attack.attack_params + ['targeted', 'delta', 'epsilon', 'step_adapt', 'max_iter', 'sample_size',
-                                            'init_size']
+    attack_params = Attack.attack_params + ['targeted', 'delta', 'epsilon', 'step_adapt', 'max_iter', 'num_trial',
+                                            'sample_size', 'init_size']
 
     def __init__(self, classifier, targeted=True, delta=0.01, epsilon=0.01, step_adapt=0.9, max_iter=100,
-                 sample_size=20, init_size=100):
+                 num_trial=25, sample_size=20, init_size=100):
         """
         Create a boundary attack instance.
 
@@ -49,9 +49,11 @@ class BoundaryAttack(Attack):
         :type epsilon: `float`
         :param step_adapt: Factor by which the step sizes are multiplied or divided, must be in the range (0, 1).
         :type step_adapt: `float`
-        :param max_iter: The maximum number of iterations.
+        :param max_iter: Maximum number of iterations.
         :type max_iter: `int`
-        :param sample_size: Maximum number of trials per iteration.
+        :param num_trial: Maximum number of trials per iteration.
+        :type num_trial: `int`
+        :param sample_size: Number of samples per trial.
         :type sample_size: `int`
         :param init_size: Maximum number of trials for initial generation of adversarial examples.
         :type init_size: `int`
@@ -62,6 +64,7 @@ class BoundaryAttack(Attack):
                   'epsilon': epsilon,
                   'step_adapt': step_adapt,
                   'max_iter': max_iter,
+                  'num_trial': num_trial,
                   'sample_size': sample_size,
                   'init_size': init_size}
         self.set_params(**params)
@@ -315,9 +318,11 @@ class BoundaryAttack(Attack):
         :type epsilon: `float`
         :param step_adapt: Factor by which the step sizes are multiplied or divided, must be in the range (0, 1).
         :type step_adapt: `float`
-        :param max_iter: The maximum number of iterations.
+        :param max_iter: Maximum number of iterations.
         :type max_iter: `int`
-        :param sample_size: Maximum number of trials per iteration.
+        :param num_trial: Maximum number of trials per iteration.
+        :type num_trial: `int`
+        :param sample_size: Number of samples per trial.
         :type sample_size: `int`
         :param init_size: Maximum number of trials for initial generation of adversarial examples.
         :type init_size: `int`
@@ -328,11 +333,14 @@ class BoundaryAttack(Attack):
         if not isinstance(self.max_iter, (int, np.int)) or self.max_iter <= 0:
             raise ValueError("The number of iterations must be a positive integer.")
 
-        if not isinstance(self.sample_size, (int, np.int)) or self.sample_size <= 0:
+        if not isinstance(self.num_trial, (int, np.int)) or self.num_trial <= 0:
             raise ValueError("The number of trials must be a positive integer.")
 
+        if not isinstance(self.sample_size, (int, np.int)) or self.sample_size <= 0:
+            raise ValueError("The number of samples must be a positive integer.")
+
         if not isinstance(self.init_size, (int, np.int)) or self.init_size <= 0:
-            raise ValueError("The number of trials must be a positive integer.")
+            raise ValueError("The number of initial trials must be a positive integer.")
 
         if self.epsilon <= 0:
             raise ValueError("The initial step size for the step towards the target must be positive.")
