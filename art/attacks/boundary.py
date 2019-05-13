@@ -32,10 +32,10 @@ class BoundaryAttack(Attack):
     Paper link: https://arxiv.org/abs/1712.04248
     """
     attack_params = Attack.attack_params + ['targeted', 'delta', 'epsilon', 'step_adapt', 'max_iter', 'num_trial',
-                                            'sample_size', 'init_size']
+                                            'sample_size', 'init_size', 'init_image']
 
     def __init__(self, classifier, targeted=True, delta=0.01, epsilon=0.01, step_adapt=0.9, max_iter=100,
-                 num_trial=25, sample_size=20, init_size=100):
+                 num_trial=25, sample_size=20, init_size=100, init_image=None):
         """
         Create a boundary attack instance.
 
@@ -57,6 +57,8 @@ class BoundaryAttack(Attack):
         :type sample_size: `int`
         :param init_size: Maximum number of trials for initial generation of adversarial examples.
         :type init_size: `int`
+        :param init_image: An initial image to act as an initial adversarial example.
+        :type init_image: `np.ndarray`
         """
         super(BoundaryAttack, self).__init__(classifier=classifier)
         params = {'targeted': targeted,
@@ -66,7 +68,9 @@ class BoundaryAttack(Attack):
                   'max_iter': max_iter,
                   'num_trial': num_trial,
                   'sample_size': sample_size,
-                  'init_size': init_size}
+                  'init_size': init_size,
+                  'init_image': init_image
+                  }
         self.set_params(**params)
 
     def generate(self, x, y=None):
@@ -83,6 +87,12 @@ class BoundaryAttack(Attack):
         # Prediction from the original images
         preds = np.argmax(self.classifier.predict(x), axis=1)
 
+        # Prediction from the initial image if it is not None
+        if self.init_image is not None:
+            init_pred = np.argmax(self.classifier.predict(np.array([self.init_image])), axis=1)[0]
+        else:
+            init_pred = None
+
         # Assert that, if attack is targeted, y is provided
         if self.targeted and y is None:
             raise ValueError('Target labels `y` need to be provided for a targeted attack.')
@@ -95,9 +105,9 @@ class BoundaryAttack(Attack):
         # Generate the adversarial samples
         for ind, val in enumerate(x_adv):
             if self.targeted:
-                x_ = self._perturb(x=val, y=y[ind], y_p=preds[ind])
+                x_ = self._perturb(x=val, y=y[ind], y_p=preds[ind], init_pred=init_pred)
             else:
-                x_ = self._perturb(x=val, y=None, y_p=preds[ind])
+                x_ = self._perturb(x=val, y=None, y_p=preds[ind], init_pred=init_pred)
 
             x_adv[ind] = x_
 
@@ -106,7 +116,7 @@ class BoundaryAttack(Attack):
 
         return x_adv
 
-    def _perturb(self, x, y, y_p):
+    def _perturb(self, x, y, y_p, init_pred):
         """
         Internal attack function for one example.
 
@@ -116,10 +126,12 @@ class BoundaryAttack(Attack):
         :type y: `int`
         :param y_p: The predicted label of x.
         :type y_p: `int`
+        :param init_pred: The predicted label of the initial image.
+        :type init_pred: `int`
         :return: an adversarial example.
         """
         # First, create an initial adversarial sample
-        initial_sample = self._init_sample(x, y, y_p)
+        initial_sample = self._init_sample(x, y, y_p, init_pred)
 
         # If an initial adversarial example is not found, then return the original image
         if initial_sample is None:
@@ -257,7 +269,7 @@ class BoundaryAttack(Attack):
 
         return perturb
 
-    def _init_sample(self, x, y, y_p):
+    def _init_sample(self, x, y, y_p, init_pred):
         """
         Find initial adversarial example for the attack.
 
@@ -267,6 +279,8 @@ class BoundaryAttack(Attack):
         :type y: `int`
         :param y_p: The predicted label of x.
         :type y_p: `int`
+        :param init_pred: The predicted label of the initial image.
+        :type init_pred: `int`
         :return: an adversarial example.
         """
         clip_min, clip_max = self.classifier.clip_values
@@ -278,7 +292,11 @@ class BoundaryAttack(Attack):
             if y == y_p:
                 return None
 
-            # Attack unsatisfied yet
+            # Attack unsatisfied yet and the initial image satisfied
+            if init_pred is not None and init_pred == y:
+                return self.init_image
+
+            # Attack unsatisfied yet and the initial image unsatisfied
             for _ in range(self.init_size):
                 random_img = nprd.uniform(clip_min, clip_max, size=x.shape).astype(x.dtype)
                 random_class = np.argmax(self.classifier.predict(np.array([random_img])), axis=1)[0]
@@ -292,6 +310,11 @@ class BoundaryAttack(Attack):
                 logging.warning('Failed to draw a random image that is adversarial, attack failed.')
 
         else:
+            # The initial image satisfied
+            if init_pred is not None and init_pred != y_p:
+                return self.init_image
+
+            # The initial image unsatisfied
             for _ in range(self.init_size):
                 random_img = nprd.uniform(clip_min, clip_max, size=x.shape).astype(x.dtype)
                 random_class = np.argmax(self.classifier.predict(np.array([random_img])), axis=1)[0]
