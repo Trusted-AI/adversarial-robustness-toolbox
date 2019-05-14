@@ -95,11 +95,11 @@ class FeatureSqueezing(Preprocessor):
         super(FeatureSqueezing, self).set_params(**kwargs)
 
         if not isinstance(self.bit_depth, (int, np.int)) or self.bit_depth <= 0 or self.bit_depth > 64:
-            raise ValueError("The bit depth must be between 1 and 64.")
+            raise ValueError('The bit depth must be between 1 and 64.')
 
         if len(self.clip_values) != 2:
             raise ValueError('`clip_values` should be a tuple of 2 floats containing the allowed data range.')
-        if self.clip_values[0] >= self.clip_values[1]:
+        if np.array(self.clip_values[0] >= self.clip_values[1]).any():
             raise ValueError('Invalid `clip_values`: min >= max.')
 
         return True

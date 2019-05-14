@@ -63,6 +63,16 @@ class TestJpegCompression(unittest.TestCase):
         self.assertTrue((compressed_x <= 1.0).all())
         self.assertTrue((compressed_x >= 0.0).all())
 
+    def test_failure_feature_vectors(self):
+        x = np.random.rand(10, 3)
+        preprocess = JpegCompression(channel_index=1, quality=80)
+
+        # Assert that value error is raised for feature vectors
+        with self.assertRaises(ValueError) as context:
+            preprocess(x)
+
+        self.assertTrue('Feature vectors detected.' in str(context.exception))
+
 
 if __name__ == '__main__':
     unittest.main()
