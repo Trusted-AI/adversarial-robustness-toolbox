@@ -67,7 +67,7 @@ class TestUniversalPerturbation(unittest.TestCase):
         x_train_adv = up.generate(x_train)
         self.assertTrue((up.fooling_rate >= 0.2) or not up.converged)
 
-        x_test_adv = x_test + up.v
+        x_test_adv = x_test + up.noise
         self.assertFalse((x_test == x_test_adv).all())
 
         train_y_pred = np.argmax(tfc.predict(x_train_adv), axis=1)
@@ -91,7 +91,7 @@ class TestUniversalPerturbation(unittest.TestCase):
         x_train_adv = up.generate(x_train)
         self.assertTrue((up.fooling_rate >= 0.2) or not up.converged)
 
-        x_test_adv = x_test + up.v
+        x_test_adv = x_test + up.noise
         self.assertFalse((x_test == x_test_adv).all())
 
         train_y_pred = np.argmax(krc.predict(x_train_adv), axis=1)
@@ -117,7 +117,7 @@ class TestUniversalPerturbation(unittest.TestCase):
         x_train_adv = up.generate(x_train)
         self.assertTrue((up.fooling_rate >= 0.2) or not up.converged)
 
-        x_test_adv = x_test + up.v
+        x_test_adv = x_test + up.noise
         self.assertFalse((x_test == x_test_adv).all())
 
         train_y_pred = np.argmax(ptc.predict(x_train_adv), axis=1)
