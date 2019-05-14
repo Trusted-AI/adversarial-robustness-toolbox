@@ -15,6 +15,7 @@ logger = logging.getLogger('testLogger')
 np.random.seed(seed=1234)
 tf.set_random_seed(1234)
 
+
 class TestSklearnLogisticRegression(unittest.TestCase):
 
     @classmethod
