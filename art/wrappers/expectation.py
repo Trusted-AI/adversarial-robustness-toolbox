@@ -71,7 +71,7 @@ class ExpectationOverTransformations(ClassifierWrapper):
 
         :param x: Sample input with shape as expected by the model.
         :type x: `np.ndarray`
-        :param y: Correct labels, one-vs-rest encoding.
+        :param y: Correct labels, one-hot encoded.
         :type y: `np.ndarray`
         :return: Array of gradients of the same shape as `x`.
         :rtype: `np.ndarray`
@@ -102,6 +102,7 @@ class ExpectationOverTransformations(ClassifierWrapper):
         """
         logger.info('Apply Expectation over Transformations.')
         class_gradient = self.classifier.class_gradient(next(self.transformation())(x), label, logits)
-        for _ in range(self.sample_size-1):
+        for _ in range(self.sample_size - 1):
             class_gradient += self.classifier.class_gradient(next(self.transformation())(x), label, logits)
-        return class_gradient/self.sample_size
+
+        return class_gradient / self.sample_size
