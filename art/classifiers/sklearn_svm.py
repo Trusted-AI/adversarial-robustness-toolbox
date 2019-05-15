@@ -108,7 +108,16 @@ class SklearnSVC(Classifier):
         :return: Array of gradients of the same shape as `x`.
         :rtype: `np.ndarray`
         """
-        raise NotImplementedError
+        if self.model.kernel == 'linear':
+            raise NotImplementedError
+        elif self.model.kernel == 'poly':
+            raise NotImplementedError
+        elif self.model.kernel == 'rbf':
+            raise NotImplementedError
+        elif self.model.kernel == 'sigmoid':
+            raise NotImplementedError
+        else:
+            raise NotImplementedError
 
     def predict(self, x, logits=False, batch_size=128):
         """
