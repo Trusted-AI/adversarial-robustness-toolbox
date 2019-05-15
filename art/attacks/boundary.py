@@ -170,7 +170,7 @@ class BoundaryAttack(Attack):
         clip_min, clip_max = self.classifier.clip_values
 
         # Main loop to wander around the boundary
-        for _ in range(self.max_iter):
+        for m in range(self.max_iter):
             # Trust region method to adjust delta
             for _ in range(self.num_trial):
                 potential_advs = []
@@ -185,6 +185,7 @@ class BoundaryAttack(Attack):
                     satisfied = (preds == target)
                 else:
                     satisfied = (preds != target)
+                    #print(preds, target)
 
                 delta_ratio = np.mean(satisfied)
 
@@ -195,6 +196,7 @@ class BoundaryAttack(Attack):
 
                 if delta_ratio > 0:
                     x_adv = potential_advs[np.where(satisfied)[0][0]]
+                    #print("loop success %f %f" % (self.curr_delta, delta_ratio))
                     break
 
             else:
@@ -267,6 +269,33 @@ class BoundaryAttack(Attack):
         # direction = perturb - (original_sample - current_sample)
         # perturb = d * direction
 
+        return perturb
+
+    def _orthogonal_perturb11(self, delta, prev_sample, target_sample):
+
+        def get_diff(sample_1, sample_2):
+            sample_1 = sample_1.reshape(3, 224, 224)
+            sample_2 = sample_2.reshape(3, 224, 224)
+            diff = []
+            for i, channel in enumerate(sample_1):
+                diff.append(np.linalg.norm((channel - sample_2[i]).astype(np.float32)))
+
+            return np.array(diff)
+
+        #prev_sample = prev_sample.reshape(224, 224, 3)
+        # Generate perturbation
+        perturb = np.random.randn(224, 224, 3)
+        perturb /= get_diff(perturb, np.zeros_like(perturb))
+        perturb *= delta * np.mean(get_diff(target_sample, prev_sample))
+        # Project perturbation onto sphere around target
+        diff = (target_sample - prev_sample).astype(np.float32)
+        diff /= get_diff(target_sample, prev_sample)
+        diff = diff.reshape(3, 224, 224)
+        perturb = perturb.reshape(3, 224, 224)
+        for i, channel in enumerate(diff):
+            perturb[i] -= np.dot(perturb[i], channel) * channel
+
+        perturb = perturb.reshape(224, 224, 3)
         return perturb
 
     def _init_sample(self, x, y, y_p, init_pred):
@@ -353,11 +382,11 @@ class BoundaryAttack(Attack):
         # Save attack-specific parameters
         super(BoundaryAttack, self).set_params(**kwargs)
 
-        if not isinstance(self.max_iter, (int, np.int)) or self.max_iter <= 0:
-            raise ValueError("The number of iterations must be a positive integer.")
+        if not isinstance(self.max_iter, (int, np.int)) or self.max_iter < 0:
+            raise ValueError("The number of iterations must be a non-negative integer.")
 
-        if not isinstance(self.num_trial, (int, np.int)) or self.num_trial <= 0:
-            raise ValueError("The number of trials must be a positive integer.")
+        if not isinstance(self.num_trial, (int, np.int)) or self.num_trial < 0:
+            raise ValueError("The number of trials must be a non-negative integer.")
 
         if not isinstance(self.sample_size, (int, np.int)) or self.sample_size <= 0:
             raise ValueError("The number of samples must be a positive integer.")
