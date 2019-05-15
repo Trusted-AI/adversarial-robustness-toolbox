@@ -67,8 +67,8 @@ class TestDetectorClassifier(unittest.TestCase):
         # Define the internal detector
         conv = nn.Conv2d(1, 16, 5)
         linear = nn.Linear(2304, 1)
-        torch.nn.init.xavier_uniform(conv.weight)
-        torch.nn.init.xavier_uniform(linear.weight)
+        torch.nn.init.xavier_uniform_(conv.weight)
+        torch.nn.init.xavier_uniform_(linear.weight)
         model = nn.Sequential(conv, nn.ReLU(), nn.MaxPool2d(2, 2), Flatten(), linear)
         loss_fn = nn.CrossEntropyLoss()
         optimizer = optim.Adam(model.parameters(), lr=0.01)
