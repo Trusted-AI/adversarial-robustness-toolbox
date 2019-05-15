@@ -49,7 +49,15 @@ class JpegCompression(Preprocessor):
         self._is_fitted = True
         self.set_params(quality=quality, channel_index=channel_index)
 
-    def __call__(self, x, y=None, quality=None):
+    @property
+    def apply_fit(self):
+        return False
+
+    @property
+    def apply_predict(self):
+        return True
+
+    def __call__(self, x, y=None):
         """
         Apply JPEG compression to sample `x`.
 
@@ -58,15 +66,10 @@ class JpegCompression(Preprocessor):
         :type x: `np.ndarray`
         :param y: Labels of the sample `x`. This function does not affect them in any way.
         :type y: `np.ndarray`
-        :param quality: The image quality, on a scale from 1 (worst) to 95 (best). Values above 95 should be avoided.
-        :type quality: `int`
         :return: compressed sample.
         :rtype: `np.ndarray`
         """
         clip_values = (0, 1)
-
-        if quality is not None:
-            self.set_params(quality=quality)
 
         assert self.channel_index < len(x.shape)
 
@@ -84,7 +87,7 @@ class JpegCompression(Preprocessor):
         if x_.shape[-1] == 1:
             x_ = np.reshape(x_, x_.shape[:-1])
 
-        # Compress one image per time
+        # Compress one image at a time
         for i, xi in enumerate(x_):
             if len(xi.shape) == 2:
                 xi = Image.fromarray(xi, mode='L')
@@ -115,7 +118,10 @@ class JpegCompression(Preprocessor):
 
         x_ = np.clip(x_, clip_values[0], clip_values[1])
 
-        return x_
+        return x_, y
+
+    def estimate_gradient(self, x, grad):
+        return grad
 
     def fit(self, x, y=None, **kwargs):
         """
@@ -136,11 +142,11 @@ class JpegCompression(Preprocessor):
         super(JpegCompression, self).set_params(**kwargs)
 
         if not isinstance(self.quality, (int, np.int)) or self.quality <= 0 or self.quality > 100:
-            logger.error('Image quality must be a positive integer and smaller than 101.')
-            raise ValueError('Image quality must be a positive integer and smaller than 101.')
+            logger.error('Image quality must be a positive integer <= 100.')
+            raise ValueError('Image quality must be a positive integer <= 100..')
 
         if not isinstance(self.channel_index, (int, np.int)) or self.channel_index <= 0:
             logger.error('Data channel must be a positive integer. The batch dimension is not a valid channel.')
-            raise ValueError('Data channel must be a positive integer and smaller than 101.')
+            raise ValueError('Data channel must be a positive integer. The batch dimension is not a valid channel.')
 
         return True

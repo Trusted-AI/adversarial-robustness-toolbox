@@ -36,8 +36,8 @@ class ProjectedGradientDescent(BasicIterativeMethod):
     """
     attack_params = BasicIterativeMethod.attack_params
 
-    def __init__(self, classifier, norm=np.inf, eps=.3, eps_step=0.1, max_iter=20, targeted=False,
-                 random_init=False, batch_size=128):
+    def __init__(self, classifier, norm=np.inf, eps=.3, eps_step=0.1, max_iter=20, targeted=False, num_random_init=0,
+                 batch_size=128):
         """
         Create a :class:`.ProjectedGradientDescent` instance.
 
@@ -51,13 +51,14 @@ class ProjectedGradientDescent(BasicIterativeMethod):
         :type eps_step: `float`
         :param targeted: Should the attack target one specific class
         :type targeted: `bool`
-        :param random_init: Whether to start at the original input or a random point within the epsilon ball
-        :type random_init: `bool`
+        :param num_random_init: Number of random initialisations within the epsilon ball. For random_init=0 starting at
+            the original input.
+        :type num_random_init: `int`
         :param batch_size: Batch size
         :type batch_size: `int`
         """
         super(ProjectedGradientDescent, self).__init__(classifier, norm=norm, eps=eps, eps_step=eps_step,
-                                                       max_iter=max_iter, targeted=targeted, random_init=random_init,
-                                                       batch_size=batch_size)
+                                                       max_iter=max_iter, targeted=targeted,
+                                                       num_random_init=num_random_init, batch_size=batch_size)
 
         self._project = True

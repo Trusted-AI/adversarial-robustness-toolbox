@@ -80,6 +80,12 @@ Zeroth-Order Optimization Attack (ZOO)
    :members:
    :special-members:
 
+Decision-Based Attack
+---------------------
+.. autoclass:: BoundaryAttack
+   :members:
+   :special-members:
+
 Base Class
 ----------
 .. autoclass:: Attack

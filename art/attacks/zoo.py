@@ -24,7 +24,7 @@ from scipy.ndimage import zoom
 
 from art import NUMPY_DTYPE
 from art.attacks.attack import Attack
-from art.utils import get_labels_np_array
+from art.utils import compute_success, get_labels_np_array
 
 logger = logging.getLogger(__name__)
 
@@ -106,7 +106,7 @@ class ZooAttack(Attack):
             if self.classifier.channel_index == 3:
                 dims = (batch_size, self._init_size, self._init_size, self.classifier.input_shape[-1])
             elif self.classifier.channel_index == 1:
-                dims = (batch_size, self.classifier.input_shape[1], self._init_size, self._init_size)
+                dims = (batch_size, self.classifier.input_shape[0], self._init_size, self._init_size)
             self._current_noise = np.zeros(dims, dtype=NUMPY_DTYPE)
         else:
             self._current_noise = np.zeros((batch_size,) + self.classifier.input_shape, dtype=NUMPY_DTYPE)
@@ -143,7 +143,7 @@ class ZooAttack(Attack):
 
         return preds, l2dist, c * loss + l2dist
 
-    def generate(self, x, **kwargs):
+    def generate(self, x, y=None):
         """
         Generate adversarial samples and return them in an array.
 
@@ -155,11 +155,6 @@ class ZooAttack(Attack):
         :return: An array holding the adversarial examples.
         :rtype: `np.ndarray`
         """
-        # Parse and save attack-specific parameters
-        params_cpy = dict(kwargs)
-        y = params_cpy.pop(str('y'), None)
-        self.set_params(**params_cpy)
-
         # Check that `y` is provided for targeted attacks
         if self.targeted and y is None:
             raise ValueError('Target labels `y` need to be provided for a targeted attack.')
@@ -184,14 +179,9 @@ class ZooAttack(Attack):
         x_adv = np.vstack(x_adv)
         x_adv = np.clip(x_adv, self.classifier.clip_values[0], self.classifier.clip_values[1])
 
-        # Compute success rate of the ZOO attack
-        adv_preds = np.argmax(self.classifier.predict(x_adv), axis=1)
-        if self.targeted:
-            rate = np.sum(adv_preds == np.argmax(y, axis=1)) / x_adv.shape[0]
-        else:
-            preds = np.argmax(self.classifier.predict(x), axis=1)
-            rate = np.sum(adv_preds != preds) / x_adv.shape[0]
-        logger.info('Success rate of ZOO attack: %.2f%%', 100 * rate)
+        # Log success rate of the ZOO attack
+        logger.info('Success rate of ZOO attack: %.2f%%',
+                    100 * compute_success(self.classifier, x, y, x_adv, self.targeted))
 
         return x_adv
 

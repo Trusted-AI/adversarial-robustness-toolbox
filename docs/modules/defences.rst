@@ -26,10 +26,6 @@ Adversarial Training
    :members:
    :special-members:
 
-.. autoclass:: StaticAdversarialTrainer
-   :members:
-   :special-members:
-
 Gaussian Data Augmentation
 --------------------------
 .. autoclass:: GaussianAugmentation
@@ -57,5 +53,11 @@ Thermometer Encoding
 Total Variance Minimization
 ---------------------------
 .. autoclass:: TotalVarMin
+   :members:
+   :special-members:
+
+Base Preprocessor Class
+-----------------------
+.. autoclass:: Preprocessor
    :members:
    :special-members:

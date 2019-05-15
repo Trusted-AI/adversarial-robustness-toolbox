@@ -19,6 +19,8 @@ from __future__ import absolute_import, division, print_function, unicode_litera
 
 import logging
 
+import numpy as np
+
 from art.defences.preprocessor import Preprocessor
 
 logger = logging.getLogger(__name__)
@@ -27,7 +29,9 @@ logger = logging.getLogger(__name__)
 class GaussianAugmentation(Preprocessor):
     """
     Add Gaussian noise to a dataset in one of two ways: either add noise to each sample (keeping the size of the
-    original dataset) or perform augmentation by keeping all original samples and adding noisy counterparts.
+    original dataset) or perform augmentation by keeping all original samples and adding noisy counterparts. When used
+    as part of a :class:`.Classifier` instance, the defense will be applied automatically only when training if
+    `augmentation` is true, and only when performing prediction otherwise.
     """
     params = ['sigma', 'augmentation', 'ratio']
 
@@ -48,7 +52,15 @@ class GaussianAugmentation(Preprocessor):
         self._is_fitted = True
         self.set_params(sigma=sigma, augmentation=augmentation, ratio=ratio)
 
-    def __call__(self, x, y=None, sigma=None, augmentation=None, ratio=None):
+    @property
+    def apply_fit(self):
+        return self.augmentation
+
+    @property
+    def apply_predict(self):
+        return not self.augmentation
+
+    def __call__(self, x, y=None):
         """
         Augment the sample `(x, y)` with Gaussian noise. The result is either an extended dataset containing the original
         sample, as well as the newly created noisy samples (augmentation=True) or just the noisy counterparts to the
@@ -59,34 +71,12 @@ class GaussianAugmentation(Preprocessor):
         :param y: Labels for the sample. If this argument is provided, it will be augmented with the corresponded
                   original labels of each sample point.
         :type y: `np.ndarray`
-        :param sigma: Standard deviation of Gaussian noise to be added.
-        :type sigma: `float`
-        :param augmentation: If true, perform dataset augmentation using `ratio`, otherwise replace samples with noisy
-                            counterparts.
-        :type augmentation: `bool`
-        :param ratio: Percentage of data augmentation. E.g. for a ratio of 1, the size of the dataset will double.
-        :type ratio: `float`
         :return: The augmented dataset and (if provided) corresponding labels.
         :rtype:
         """
-        # Set params
-        params = {}
-        if sigma is not None:
-            params['sigma'] = sigma
-
-        if augmentation is not None:
-            params['augmentation'] = augmentation
-
-        if ratio is not None:
-            params['ratio'] = ratio
-
-        if params:
-            self.set_params(**params)
-
         logger.info('Original dataset size: %d', x.shape[0])
 
         # Select indices to augment
-        import numpy as np
         if self.augmentation:
             size = int(x.shape[0] * self.ratio)
             indices = np.random.randint(0, x.shape[0], size=size)
@@ -95,15 +85,19 @@ class GaussianAugmentation(Preprocessor):
             x_aug = np.random.normal(x[indices], scale=self.sigma, size=(size,) + x[indices].shape[1:])
             x_aug = np.vstack((x, x_aug))
             logger.info('Augmented dataset size: %d', x_aug.shape[0])
+
+            if y is not None:
+                return x_aug, np.concatenate((y, y[indices]))
+            else:
+                return x_aug, y
         else:
             x_aug = np.random.normal(x, scale=self.sigma, size=x.shape)
             logger.info('Created %i samples with Gaussian noise.')
 
-        if y is not None:
-            y_aug = np.concatenate((y, y[indices]))
-            return x_aug, y_aug
+            return x_aug, y
 
-        return x_aug
+    def estimate_gradient(self, x, grad):
+        return grad
 
     def fit(self, x, y=None, **kwargs):
         """
