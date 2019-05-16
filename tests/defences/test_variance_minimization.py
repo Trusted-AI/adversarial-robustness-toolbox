@@ -51,6 +51,16 @@ class TestTotalVarMin(unittest.TestCase):
         self.assertTrue((preprocessed_x >= 0.0).all())
         self.assertFalse((preprocessed_x == x).all())
 
+    def test_failure_feature_vectors(self):
+        x = np.random.rand(10, 3)
+        preprocess = TotalVarMin()
+
+        # Assert that value error is raised for feature vectors
+        with self.assertRaises(ValueError) as context:
+            preprocess(x)
+
+        self.assertTrue('Feature vectors detected.' in str(context.exception))
+
 
 if __name__ == '__main__':
     unittest.main()

@@ -47,9 +47,9 @@ class TestEnsembleClassifier(unittest.TestCase):
         x_train, y_train, x_test, y_test = x_train[:NB_TRAIN], y_train[:NB_TRAIN], x_test[:NB_TEST], y_test[:NB_TEST]
         cls.mnist = ((x_train, y_train), (x_test, y_test))
 
-        model_1 = KerasClassifier((0, 1), cls._get_model(epochs=2))
-        model_2 = KerasClassifier((0, 1), cls._get_model(epochs=2))
-        cls.ensemble = EnsembleClassifier((0, 1), [model_1, model_2])
+        model_1 = KerasClassifier(model=cls._get_model(epochs=2), clip_values=(0, 1))
+        model_2 = KerasClassifier(model=cls._get_model(epochs=2), clip_values=(0, 1))
+        cls.ensemble = EnsembleClassifier(classifiers=[model_1, model_2], clip_values=(0, 1))
 
     @classmethod
     def tearDownClass(cls):
@@ -126,6 +126,5 @@ class TestEnsembleClassifier(unittest.TestCase):
     def test_repr(self):
         repr_ = repr(self.ensemble)
         self.assertTrue('art.classifiers.ensemble.EnsembleClassifier' in repr_)
-        self.assertTrue('clip_values=(0, 1)' in repr_)
         self.assertTrue('classifier_weights=array([0.5, 0.5])' in repr_)
-        self.assertTrue('channel_index=3, defences=None, preprocessing=(0, 1)' in repr_)
+        self.assertTrue('channel_index=3, clip_values=(0, 1), defences=None, preprocessing=(0, 1)' in repr_)

@@ -140,6 +140,18 @@ class TestSpatialTransformation(unittest.TestCase):
 
         self.assertTrue(abs(x_test_adv[0, 0, 14, 14] - 0.008591662) <= 0.01)
 
+    def test_failure_feature_vectors(self):
+        attack_params = {"max_translation": 10.0, "num_translations": 3, "max_rotation": 30.0, "num_rotations": 3}
+        attack = SpatialTransformation(classifier=None)
+        attack.set_params(**attack_params)
+        data = np.random.rand(10, 4)
+
+        # Assert that value error is raised for feature vectors
+        with self.assertRaises(ValueError) as context:
+            attack.generate(data)
+
+        self.assertTrue('Feature vectors detected.' in str(context.exception))
+
 
 if __name__ == '__main__':
     unittest.main()

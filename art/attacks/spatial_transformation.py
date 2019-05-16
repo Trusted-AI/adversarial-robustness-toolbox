@@ -78,6 +78,10 @@ class SpatialTransformation(Attack):
         """
         logger.info('Computing spatial transformation based on grid search.')
 
+        if len(x.shape) == 2:
+            raise ValueError('Feature vectors detected. The attack can only be applied to data with spatial'
+                             'dimensions.')
+
         if self.attack_trans_x is None or self.attack_trans_y is None or self.attack_rot is None:
 
             y_pred = self.classifier.predict(x, logits=False)
@@ -154,7 +158,9 @@ class SpatialTransformation(Attack):
         else:
             raise ValueError("Unsupported channel index.")
 
-        x_adv = np.clip(x_adv, self.classifier.clip_values[0], self.classifier.clip_values[1])
+        if hasattr(self.classifier, 'clip_values') and self.classifier.clip_values is not None:
+            np.clip(x_adv, self.classifier.clip_values[0], self.classifier.clip_values[1], out=x_adv)
+
         return x_adv
 
     def set_params(self, **kwargs):

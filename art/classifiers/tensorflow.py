@@ -15,14 +15,11 @@ class TFClassifier(Classifier):
     """
     This class implements a classifier with the Tensorflow framework.
     """
-    def __init__(self, clip_values, input_ph, logits, output_ph=None, train=None, loss=None, learning=None, sess=None,
-                 channel_index=3, defences=None, preprocessing=(0, 1)):
+    def __init__(self, input_ph, logits, output_ph=None, train=None, loss=None, learning=None, sess=None,
+                 channel_index=3, clip_values=None, defences=None, preprocessing=(0, 1)):
         """
-        Initialization specifically for the Tensorflow-based implementation.
+        Initialization specific to Tensorflow models implementation.
 
-        :param clip_values: Tuple of the form `(min, max)` representing the minimum and maximum values allowed
-               for features.
-        :type clip_values: `tuple`
         :param input_ph: The input placeholder.
         :type input_ph: `tf.Placeholder`
         :param logits: The logits layer of the model.
@@ -42,6 +39,11 @@ class TFClassifier(Classifier):
         :type sess: `tf.Session`
         :param channel_index: Index of the axis in data containing the color channels or features.
         :type channel_index: `int`
+        :param clip_values: Tuple of the form `(min, max)` of floats or `np.ndarray` representing the minimum and
+               maximum values allowed for features. If floats are provided, these will be used as the range of all
+               features. If arrays are provided, each value will be considered the bound for a feature, thus
+               the shape of clip values needs to match the total number of features.
+        :type clip_values: `tuple`
         :param defences: Defences to be activated with the classifier.
         :type defences: `str` or `list(str)`
         :param preprocessing: Tuple of the form `(substractor, divider)` of floats or `np.ndarray` of values to be
@@ -611,11 +613,11 @@ class TFClassifier(Classifier):
         self.__dict__.pop('model_name', None)
 
     def __repr__(self):
-        repr_ = "%s(clip_values=%r, input_ph=%r, logits=%r, output_ph=%r, train=%r, loss=%r, learning=%r, " \
-                "sess=%r, channel_index=%r, defences=%r, preprocessing=%r)" \
+        repr_ = "%s(input_ph=%r, logits=%r, output_ph=%r, train=%r, loss=%r, learning=%r, " \
+                "sess=%r, channel_index=%r, clip_values=%r, defences=%r, preprocessing=%r)" \
                 % (self.__module__ + '.' + self.__class__.__name__,
-                   self.clip_values, self._input_ph, self._logits, self._output_ph, self._train, self._loss,
-                   self._learning, self._sess, self.channel_index, self.defences, self.preprocessing)
+                   self._input_ph, self._logits, self._output_ph, self._train, self._loss, self._learning, self._sess,
+                   self.channel_index, self.clip_values, self.defences, self.preprocessing)
 
         return repr_
 

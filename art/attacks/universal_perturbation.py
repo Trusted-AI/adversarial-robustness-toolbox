@@ -89,7 +89,7 @@ class UniversalPerturbation(Attack):
         logger.info('Computing universal perturbation based on %s attack.', self.attacker)
 
         # Init universal perturbation
-        v = 0
+        noise = 0
         fooling_rate = 0.0
         nb_instances = len(x)
 
@@ -108,33 +108,38 @@ class UniversalPerturbation(Attack):
             for j, ex in enumerate(x[rnd_idx]):
                 xi = ex[None, ...]
 
-                current_label = np.argmax(self.classifier.predict(xi + v, logits=True)[0])
+                current_label = np.argmax(self.classifier.predict(xi + noise, logits=True)[0])
                 original_label = np.argmax(pred_y[rnd_idx][j])
 
                 if current_label == original_label:
                     # Compute adversarial perturbation
-                    adv_xi = attacker.generate(xi + v)
+                    adv_xi = attacker.generate(xi + noise)
                     new_label = np.argmax(self.classifier.predict(adv_xi, logits=True)[0])
 
                     # If the class has changed, update v
                     if current_label != new_label:
-                        v = adv_xi - xi
+                        noise = adv_xi - xi
 
                         # Project on L_p ball
-                        v = projection(v, self.eps, self.norm)
+                        noise = projection(noise, self.eps, self.norm)
             nb_iter += 1
 
+            # Apply attack and clip
+            x_adv = x + noise
+            if hasattr(self.classifier, 'clip_values') and self.classifier.clip_values is not None:
+                clip_min, clip_max = self.classifier.clip_values
+                x_adv = np.clip(x_adv, clip_min, clip_max)
+
             # Compute the error rate
-            adv_x = x + v
-            adv_y = np.argmax(self.classifier.predict(adv_x, logits=False), axis=1)
-            fooling_rate = np.sum(pred_y_max != adv_y) / nb_instances
+            y_adv = np.argmax(self.classifier.predict(x_adv, logits=False), axis=1)
+            fooling_rate = np.sum(pred_y_max != y_adv) / nb_instances
 
         self.fooling_rate = fooling_rate
-        self.converged = (nb_iter < self.max_iter)
-        self.v = v
+        self.converged = nb_iter < self.max_iter
+        self.noise = noise
         logger.info('Success rate of universal perturbation attack: %.2f%%', fooling_rate)
 
-        return adv_x
+        return x_adv
 
     def set_params(self, **kwargs):
         """
