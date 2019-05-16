@@ -189,14 +189,20 @@ class BoundaryAttack(Attack):
 
                 delta_ratio = np.mean(satisfied)
 
-                if delta_ratio < 0.5:
-                    self.curr_delta *= self.step_adapt
+                if self.targeted:
+                    if delta_ratio < 0.2:
+                        self.curr_delta *= self.step_adapt
+                    elif delta_ratio > 0.5:
+                        self.curr_delta /= self.step_adapt
                 else:
-                    self.curr_delta /= self.step_adapt
+                    if delta_ratio < 0.2:
+                        self.curr_delta /= self.step_adapt
+                    elif delta_ratio > 0.5:
+                        self.curr_delta *= self.step_adapt
 
                 if delta_ratio > 0:
                     x_adv = potential_advs[np.where(satisfied)[0][0]]
-                    #print("loop success %f %f" % (self.curr_delta, delta_ratio))
+                    print("loop success %f %f" % (self.curr_delta, delta_ratio))
                     break
 
             else:
@@ -220,6 +226,7 @@ class BoundaryAttack(Attack):
                     x_adv = potential_adv
                     self.curr_epsilon /= self.step_adapt
                     break
+
                 else:
                     self.curr_epsilon *= self.step_adapt
 
@@ -269,33 +276,6 @@ class BoundaryAttack(Attack):
         # direction = perturb - (original_sample - current_sample)
         # perturb = d * direction
 
-        return perturb
-
-    def _orthogonal_perturb11(self, delta, prev_sample, target_sample):
-
-        def get_diff(sample_1, sample_2):
-            sample_1 = sample_1.reshape(3, 224, 224)
-            sample_2 = sample_2.reshape(3, 224, 224)
-            diff = []
-            for i, channel in enumerate(sample_1):
-                diff.append(np.linalg.norm((channel - sample_2[i]).astype(np.float32)))
-
-            return np.array(diff)
-
-        #prev_sample = prev_sample.reshape(224, 224, 3)
-        # Generate perturbation
-        perturb = np.random.randn(224, 224, 3)
-        perturb /= get_diff(perturb, np.zeros_like(perturb))
-        perturb *= delta * np.mean(get_diff(target_sample, prev_sample))
-        # Project perturbation onto sphere around target
-        diff = (target_sample - prev_sample).astype(np.float32)
-        diff /= get_diff(target_sample, prev_sample)
-        diff = diff.reshape(3, 224, 224)
-        perturb = perturb.reshape(3, 224, 224)
-        for i, channel in enumerate(diff):
-            perturb[i] -= np.dot(perturb[i], channel) * channel
-
-        perturb = perturb.reshape(224, 224, 3)
         return perturb
 
     def _init_sample(self, x, y, y_p, init_pred):
