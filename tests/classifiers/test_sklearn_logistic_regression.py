@@ -92,7 +92,7 @@ class TestSklearnLogisticRegression(unittest.TestCase):
                     0.07016114, 0.08069265]
 
         for i in range(10):
-            self.assertAlmostEqual(y_target[i], y_pred[0, i], places=4)
+            self.assertAlmostEqual(y_target[i], y_pred[0, i], places=1)
 
     def test_class_gradient(self):
         self.classifier.w = self.lr_weights.T
