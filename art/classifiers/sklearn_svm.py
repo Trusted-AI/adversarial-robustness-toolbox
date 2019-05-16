@@ -49,7 +49,6 @@ class SklearnSVC(Classifier):
                be divided by the second one.
         :type preprocessing: `tuple`
         """
-
         super(SklearnSVC, self).__init__(clip_values=clip_values, channel_index=channel_index,
                                          defences=defences, preprocessing=preprocessing)
 
@@ -110,6 +109,9 @@ class SklearnSVC(Classifier):
         :return: Array of gradients of the same shape as `x`.
         :rtype: `np.ndarray`
         """
+        if self.model.fit_status_:
+            raise AssertionError('Model has not been fitted correctly.')
+
         if self.model.kernel == 'linear':
             raise NotImplementedError
         elif self.model.kernel == 'poly':
