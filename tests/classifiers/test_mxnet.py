@@ -46,7 +46,8 @@ class TestMXClassifier(unittest.TestCase):
         trainer = gluon.Trainer(net.collect_params(), 'sgd', {'learning_rate': 0.1})
 
         # Fit classifier
-        classifier = MXClassifier((0, 1), net, (1, 28, 28), 10, trainer)
+        classifier = MXClassifier(model=net, clip_values=(0, 1), input_shape=(1, 28, 28), nb_classes=10,
+                                  optimizer=trainer)
         classifier.fit(x_train, y_train, batch_size=128, nb_epochs=2)
         cls.classifier = classifier
 
@@ -54,7 +55,7 @@ class TestMXClassifier(unittest.TestCase):
         # Set master seed
         master_seed(1234)
 
-    def test_fit_predict(self):
+    def test_predict(self):
         (_, _), (x_test, y_test) = self.mnist
 
         preds = self.classifier.predict(x_test)
@@ -127,8 +128,8 @@ class TestMXClassifier(unittest.TestCase):
         (_, _), (x_test, _) = self.mnist
 
         # Create classifier
-        classifier_preproc = MXClassifier((0, 1), self.classifier._model, (1, 28, 28), 10, self.classifier._optimizer,
-                                          preprocessing=(1, 2))
+        classifier_preproc = MXClassifier(model=self.classifier._model, clip_values=(0, 1), input_shape=(1, 28, 28),
+                                          nb_classes=10, optimizer=self.classifier._optimizer, preprocessing=(1, 2))
 
         preds = self.classifier.predict((x_test - 1.) / 2)
         preds_preproc = classifier_preproc.predict(x_test)
@@ -177,9 +178,9 @@ class TestMXClassifier(unittest.TestCase):
     def test_repr(self):
         repr_ = repr(self.classifier)
         self.assertTrue('art.classifiers.mxnet.MXClassifier' in repr_)
-        self.assertTrue('clip_values=(0, 1)' in repr_)
         self.assertTrue('input_shape=(1, 28, 28), nb_classes=10' in repr_)
-        self.assertTrue('channel_index=1, defences=None, preprocessing=(0, 1)' in repr_)
+        self.assertTrue('channel_index=1, clip_values=(0, 1)' in repr_)
+        self.assertTrue('defences=None, preprocessing=(0, 1)' in repr_)
 
 
 if __name__ == '__main__':

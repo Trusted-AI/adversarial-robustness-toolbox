@@ -80,6 +80,10 @@ class ZooAttack(Attack):
         """
         super(ZooAttack, self).__init__(classifier)
 
+        if len(classifier.input_shape) == 1:
+            raise ValueError('Feature vectors detected. The ZOO attack can only be applied to data with spatial'
+                             'dimensions.')
+
         kwargs = {
             'confidence': confidence,
             'targeted': targeted,
@@ -155,6 +159,11 @@ class ZooAttack(Attack):
         :return: An array holding the adversarial examples.
         :rtype: `np.ndarray`
         """
+        # ZOO can probably be extended to feature vectors if no zooming or resizing is applied
+        if len(x.shape) == 2:
+            raise ValueError('Feature vectors detected. The ZOO attack can only be applied to data with spatial'
+                             'dimensions.')
+
         # Check that `y` is provided for targeted attacks
         if self.targeted and y is None:
             raise ValueError('Target labels `y` need to be provided for a targeted attack.')
@@ -174,10 +183,12 @@ class ZooAttack(Attack):
             y_batch = y[batch_index_1:batch_index_2]
             res = self._generate_batch(x_batch, y_batch)
             x_adv.append(res)
+        x_adv = np.vstack(x_adv)
 
         # Apply clip
-        x_adv = np.vstack(x_adv)
-        x_adv = np.clip(x_adv, self.classifier.clip_values[0], self.classifier.clip_values[1])
+        if hasattr(self.classifier, 'clip_values') and self.classifier.clip_values is not None:
+            clip_min, clip_max = self.classifier.clip_values
+            np.clip(x_adv, clip_min, clip_max, out=x_adv)
 
         # Log success rate of the ZOO attack
         logger.info('Success rate of ZOO attack: %.2f%%',
@@ -397,8 +408,9 @@ class ZooAttack(Attack):
         current_noise[index] -= learning_rate * corr * mean[index] / (np.sqrt(var[index]) + 1e-8)
         adam_epochs[index] += 1
 
-        if proj:
-            np.clip(current_noise[index], self.classifier.clip_values[0], self.classifier.clip_values[1])
+        if proj and hasattr(self.classifier, 'clip_values') and self.classifier.clip_values is not None:
+            clip_min, clip_max = self.classifier.clip_values
+            current_noise[index] = np.clip(current_noise[index], clip_min, clip_max)
 
         return current_noise.reshape(orig_shape)
 

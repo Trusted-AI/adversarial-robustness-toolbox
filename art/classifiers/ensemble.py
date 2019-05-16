@@ -31,15 +31,12 @@ class EnsembleClassifier(Classifier):
     Class allowing to aggregate multiple classifiers as an ensemble. The individual classifiers are expected to be
     trained when the ensemble is created and no training procedures are provided through this class.
     """
-    def __init__(self, clip_values, classifiers, classifier_weights=None, channel_index=3, defences=None,
+    def __init__(self, classifiers, classifier_weights=None, channel_index=3, clip_values=None, defences=None,
                  preprocessing=(0, 1)):
         """
         Initialize a :class:`.EnsembleClassifier` object. The data range values and colour channel index have to
         be consistent for all the classifiers in the ensemble.
 
-        :param clip_values: Tuple of the form `(min, max)` representing the minimum and maximum values allowed
-               for features.
-        :type clip_values: `tuple`
         :param classifiers: List of :class:`.Classifier` instances to be ensembled together.
         :type classifiers: `list`
         :param classifier_weights: List of weights, one scalar per classifier, to assign to their prediction when
@@ -47,6 +44,11 @@ class EnsembleClassifier(Classifier):
         :type classifier_weights: `list` or `np.ndarray` or `None`
         :param channel_index: Index of the axis in data containing the color channels or features.
         :type channel_index: `int`
+        :param clip_values: Tuple of the form `(min, max)` of floats or `np.ndarray` representing the minimum and
+               maximum values allowed for features. If floats are provided, these will be used as the range of all
+               features. If arrays are provided, each value will be considered the bound for a feature, thus
+               the shape of clip values needs to match the total number of features.
+        :type clip_values: `tuple`
         :param defences: Defences to be activated with the classifier.
         :type defences: `str` or `list(str)`
         :param preprocessing: Tuple of the form `(substractor, divider)` of floats or `np.ndarray` of values to be
@@ -80,7 +82,6 @@ class EnsembleClassifier(Classifier):
 
         self._input_shape = classifiers[0].input_shape
         self._nb_classes = classifiers[0].nb_classes
-        self._clip_values = clip_values
 
         # Set weights for classifiers
         if classifier_weights is None:
@@ -243,10 +244,10 @@ class EnsembleClassifier(Classifier):
             self._learning_phase = train
 
     def __repr__(self):
-        repr_ = "%s(clip_values=%r, classifiers=%r, classifier_weights=%r, channel_index=%r, defences=%r, " \
+        repr_ = "%s(classifiers=%r, classifier_weights=%r, channel_index=%r, clip_values=%r, defences=%r, " \
                 "preprocessing=%r)" \
                 % (self.__module__ + '.' + self.__class__.__name__,
-                   self.clip_values, self._classifiers, self._classifier_weights, self.channel_index, self.defences,
+                   self._classifiers, self._classifier_weights, self.channel_index, self.clip_values, self.defences,
                    self.preprocessing)
 
         return repr_

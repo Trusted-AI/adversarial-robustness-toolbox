@@ -61,7 +61,8 @@ class TestPyTorchClassifier(unittest.TestCase):
         # Define a loss function and optimizer
         loss_fn = nn.CrossEntropyLoss()
         optimizer = optim.Adam(model.parameters(), lr=0.01)
-        classifier = PyTorchClassifier((0, 1), model, loss_fn, optimizer, (1, 28, 28), 10)
+        classifier = PyTorchClassifier(clip_values=(0, 1), model=model, loss=loss_fn, optimizer=optimizer,
+                                       input_shape=(1, 28, 28), nb_classes=10)
         classifier.fit(x_train, y_train, batch_size=100, nb_epochs=2)
         cls.seq_classifier = classifier
 
@@ -69,7 +70,8 @@ class TestPyTorchClassifier(unittest.TestCase):
         model = Model()
         loss_fn = nn.CrossEntropyLoss()
         optimizer = optim.Adam(model.parameters(), lr=0.01)
-        classifier2 = PyTorchClassifier((0, 1), model, loss_fn, optimizer, (1, 28, 28), 10)
+        classifier2 = PyTorchClassifier(clip_values=(0, 1), model=model, loss=loss_fn, optimizer=optimizer,
+                                        input_shape=(1, 28, 28), nb_classes=10)
         classifier2.fit(x_train, y_train, batch_size=100, nb_epochs=2)
         cls.module_classifier = classifier2
 
@@ -218,8 +220,8 @@ class TestPyTorchClassifier(unittest.TestCase):
     def test_repr(self):
         repr_ = repr(self.module_classifier)
         self.assertTrue('art.classifiers.pytorch.PyTorchClassifier' in repr_)
-        self.assertTrue('clip_values=(0, 1)' in repr_)
         self.assertTrue('input_shape=(1, 28, 28), nb_classes=10, channel_index=1' in repr_)
+        self.assertTrue('clip_values=(0, 1)' in repr_)
         self.assertTrue('defences=None, preprocessing=(0, 1)' in repr_)
 
 if __name__ == '__main__':

@@ -235,11 +235,11 @@ class TestKerasClassifier(unittest.TestCase):
 
     def _test_functional_model(self, custom_activation=True):
         # Need to update the functional_model code to produce a model with more than one input and output layers...
-        keras_model = KerasClassifier((0, 1), self.functional_model, input_layer=1, output_layer=1,
+        keras_model = KerasClassifier(self.functional_model, clip_values=(0, 1), input_layer=1, output_layer=1,
                                       custom_activation=custom_activation)
         self.assertTrue(keras_model._input.name, "input1")
         self.assertTrue(keras_model._output.name, "output1")
-        keras_model = KerasClassifier((0, 1), self.functional_model, input_layer=0, output_layer=0,
+        keras_model = KerasClassifier(self.functional_model, clip_values=(0, 1), input_layer=0, output_layer=0,
                                       custom_activation=custom_activation)
         self.assertTrue(keras_model._input.name, "input0")
         self.assertTrue(keras_model._output.name, "output0")
@@ -266,7 +266,7 @@ class TestKerasClassifier(unittest.TestCase):
 
         keras.backend.set_learning_phase(0)
         model = ResNet50(weights='imagenet')
-        classifier = KerasClassifier((0, 255), model)
+        classifier = KerasClassifier(model, clip_values=(0, 255))
 
         # Load image from file
         image = img_to_array(load_img(os.path.join(self.test_dir, 'test.jpg'), target_size=(224, 224)))
@@ -307,7 +307,8 @@ class TestKerasClassifier(unittest.TestCase):
 
         import pickle
         fs = FeatureSqueezing(bit_depth=1, clip_values=(0, 1))
-        keras_model = KerasClassifier((0, 1), self.functional_model, input_layer=1, output_layer=1, defences=fs)
+        keras_model = KerasClassifier(self.functional_model, clip_values=(0, 1), input_layer=1, output_layer=1,
+                                      defences=fs)
         with open(full_path, 'wb') as save_file:
             pickle.dump(keras_model, save_file)
 
@@ -327,6 +328,6 @@ class TestKerasClassifier(unittest.TestCase):
     def test_repr(self):
         repr_ = repr(self.model_mnist)
         self.assertTrue('art.classifiers.keras.KerasClassifier' in repr_)
-        self.assertTrue('clip_values=(0, 1)' in repr_)
-        self.assertTrue('use_logits=False, channel_index=3, defences=None, preprocessing=(0, 1)' in repr_)
+        self.assertTrue('use_logits=False, channel_index=3' in repr_)
+        self.assertTrue('clip_values=(0, 1), defences=None, preprocessing=(0, 1)' in repr_)
         self.assertTrue('input_layer=0, output_layer=0' in repr_)

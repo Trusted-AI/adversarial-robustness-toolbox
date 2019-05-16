@@ -31,20 +31,22 @@ class KerasClassifier(Classifier):
     """
     Wrapper class for importing Keras models. The supported backends for Keras are TensorFlow and Theano.
     """
-    def __init__(self, clip_values, model, use_logits=False, channel_index=3, defences=None, preprocessing=(0, 1),
+    def __init__(self, model, use_logits=False, channel_index=3, clip_values=None, defences=None, preprocessing=(0, 1),
                  input_layer=0, output_layer=0, custom_activation=False):
         """
         Create a `Classifier` instance from a Keras model. Assumes the `model` passed as argument is compiled.
 
-        :param clip_values: Tuple of the form `(min, max)` representing the minimum and maximum values allowed
-               for features.
-        :type clip_values: `tuple`
         :param model: Keras model
         :type model: `keras.models.Model`
         :param use_logits: True if the output of the model are the logits.
         :type use_logits: `bool`
         :param channel_index: Index of the axis in data containing the color channels or features.
         :type channel_index: `int`
+        :param clip_values: Tuple of the form `(min, max)` of floats or `np.ndarray` representing the minimum and
+               maximum values allowed for features. If floats are provided, these will be used as the range of all
+               features. If arrays are provided, each value will be considered the bound for a feature, thus
+               the shape of clip values needs to match the total number of features.
+        :type clip_values: `tuple`
         :param defences: Defences to be activated with the classifier.
         :type defences: :class:`.Preprocessor` or `list(Preprocessor)` instances
         :param preprocessing: Tuple of the form `(substractor, divider)` of floats or `np.ndarray` of values to be
@@ -549,10 +551,10 @@ class KerasClassifier(Classifier):
                                 state['_custom_activation'])
 
     def __repr__(self):
-        repr_ = "%s(clip_values=%r, model=%r, use_logits=%r, channel_index=%r, defences=%r, preprocessing=%r, " \
+        repr_ = "%s(model=%r, use_logits=%r, channel_index=%r, clip_values=%r, defences=%r, preprocessing=%r, " \
                 "input_layer=%r, output_layer=%r, custom_activation=%r)" \
                 % (self.__module__ + '.' + self.__class__.__name__,
-                   self.clip_values, self._model, self._use_logits, self.channel_index, self.defences,
+                   self._model, self._use_logits, self.channel_index, self.clip_values, self.defences,
                    self.preprocessing, self._input_layer, self._output_layer, self._custom_activation)
 
         return repr_

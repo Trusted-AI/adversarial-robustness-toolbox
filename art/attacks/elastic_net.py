@@ -167,7 +167,6 @@ class ElasticNet(Attack):
         :rtype: `np.ndarray`
         """
         x_adv = x.astype(NUMPY_DTYPE)
-        (clip_min, clip_max) = self.classifier.clip_values
 
         # Assert that, if attack is targeted, y is provided:
         if self.targeted and y is None:
@@ -188,7 +187,8 @@ class ElasticNet(Attack):
             x_adv[batch_index_1:batch_index_2] = self._generate_batch(x_batch, y_batch)
 
         # Apply clip
-        x_adv = np.clip(x_adv, clip_min, clip_max)
+        if hasattr(self.classifier, 'clip_values') and self.classifier.clip_values is not None:
+            x_adv = np.clip(x_adv, self.classifier.clip_values[0], self.classifier.clip_values[1])
 
         # Compute success rate of the EAD attack
         logger.info('Success rate of EAD attack: %.2f%%',
