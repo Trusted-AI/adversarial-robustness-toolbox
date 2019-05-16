@@ -92,7 +92,8 @@ class SklearnSVC(Classifier):
         :type kwargs: `dict`
         :return: `None`
         """
-        raise NotImplementedError
+        y_index = np.argmax(y, axis=1)
+        self.model.fit(X=x, y=y_index, **kwargs)
 
     def get_activations(self, x, layer, batch_size):
         raise NotImplementedError
@@ -100,6 +101,7 @@ class SklearnSVC(Classifier):
     def loss_gradient(self, x, y):
         """
         Compute the gradient of the loss function w.r.t. `x`.
+        Paper link: https://pralab.diee.unica.it/sites/default/files/biggio14-svm-chapter.pdf
 
         :param x: Sample input with shape as expected by the model.
         :type x: `np.ndarray`
@@ -117,7 +119,10 @@ class SklearnSVC(Classifier):
         elif self.model.kernel == 'sigmoid':
             raise NotImplementedError
         else:
-            raise NotImplementedError
+            raise NotImplementedError(
+                'Loss gradients for kernel \'{}\' are not implemented.'.format(self.model.kernel))
+
+        return gradients
 
     def predict(self, x, logits=False, batch_size=128):
         """
