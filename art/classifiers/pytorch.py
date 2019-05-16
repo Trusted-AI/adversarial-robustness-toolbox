@@ -439,10 +439,66 @@ class PyTorchClassifier(Classifier):
         folder = os.path.split(full_path)[0]
         if not os.path.exists(folder):
             os.makedirs(folder)
-        torch.save(self._model.state_dict(), full_path + '.model')
+
+        torch.save(self._model._model.state_dict(), full_path + '.model')
         torch.save(self._optimizer.state_dict(), full_path + '.optimizer')
         logger.info("Model state dict saved in path: %s.", full_path + '.model')
         logger.info("Optimizer state dict saved in path: %s.", full_path + '.optimizer')
+
+    def __getstate__(self):
+        """
+        Use to ensure `PytorchClassifier` can be pickled.
+
+        :return: State dictionary with instance parameters.
+        :rtype: `dict`
+        """
+        import time
+        import copy
+
+        state = self.__dict__.copy()
+        state['inner_model'] = copy.copy(state['_model']._model)
+
+        # Remove the unpicklable entries
+        del state['_ModelWrapper']
+        del state['_device']
+        del state['_model']
+
+        model_name = str(time.time())
+        state['model_name'] = model_name
+        self.save(model_name)
+
+        return state
+
+    def __setstate__(self, state):
+        """
+        Use to ensure `PytorchClassifier` can be unpickled.
+
+        :param state: State dictionary with instance parameters to restore.
+        :type state: `dict`
+        """
+        self.__dict__.update(state)
+
+        # Load and update all functionality related to Pytorch
+        import os
+        import torch
+        from art import DATA_PATH
+
+        # Recover model
+        full_path = os.path.join(DATA_PATH, state['model_name'])
+        model = state['inner_model']
+        model.load_state_dict(torch.load(str(full_path) + '.model'))
+        model.eval()
+        self._model = self._make_model_wrapper(model)
+
+        # Recover device
+        self._device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
+        self._model.to(self._device)
+
+        # Recover optimizer
+        self._optimizer.load_state_dict(torch.load(str(full_path) + '.optimizer'))
+
+        self.__dict__.pop('model_name', None)
+        self.__dict__.pop('inner_model', None)
 
     def __repr__(self):
         repr_ = "%s(model=%r, loss=%r, optimizer=%r, input_shape=%r, nb_classes=%r, " \
@@ -452,28 +508,6 @@ class PyTorchClassifier(Classifier):
                    self.channel_index, self.clip_values, self.defences, self.preprocessing)
 
         return repr_
-
-    # def _forward_at(self, inputs, layer):
-    #     """
-    #     Compute the forward at a specific layer.
-    #
-    #     :param inputs: Input data.
-    #     :type inputs: `np.ndarray`
-    #     :param layer: The layer where to get the forward results.
-    #     :type layer: `int`
-    #     :return: The forward results at the layer.
-    #     :rtype: `torch.Tensor`
-    #     """
-    #     print(layer)
-    #     results = inputs
-    #     for l in list(self._model.modules())[1:layer + 2]:
-    #         print(l)
-    #
-    #         results = l(results)
-    #
-    #         print(results.shape)
-    #
-    #     return results
 
     def _make_model_wrapper(self, model):
         # Try to import PyTorch and create an internal class that acts like a model wrapper extending torch.nn.Module

@@ -224,5 +224,35 @@ class TestPyTorchClassifier(unittest.TestCase):
         self.assertTrue('clip_values=(0, 1)' in repr_)
         self.assertTrue('defences=None, preprocessing=(0, 1)' in repr_)
 
+    def test_pickle(self):
+        import os
+        from art import DATA_PATH
+        full_path = os.path.join(DATA_PATH, 'my_classifier')
+        folder = os.path.split(full_path)[0]
+        if not os.path.exists(folder):
+            os.makedirs(folder)
+
+        import pickle
+        pickle.dump(self.module_classifier, open(full_path, 'wb'))
+
+        # Unpickle:
+        with open(full_path, 'rb') as f:
+             loaded = pickle.load(f)
+             self.assertTrue(self.module_classifier._clip_values == loaded._clip_values)
+             self.assertTrue(self.module_classifier._channel_index == loaded._channel_index)
+             self.assertTrue(self.module_classifier.__dict__.keys() == loaded.__dict__.keys())
+
+        # Get MNIST
+        (_, _), (x_test, y_test) = self.mnist
+
+        # Test predict
+        preds1 = self.module_classifier.predict(x_test)
+        acc1 = np.sum(np.argmax(preds1, axis=1) == np.argmax(y_test, axis=1)) / len(y_test)
+        preds2 = loaded.predict(x_test)
+        acc2 = np.sum(np.argmax(preds2, axis=1) == np.argmax(y_test, axis=1)) / len(y_test)
+        self.assertTrue(acc1 == acc2)
+
+
 if __name__ == '__main__':
     unittest.main()
+
