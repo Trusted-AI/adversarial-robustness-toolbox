@@ -23,7 +23,7 @@ import numpy as np
 
 from art import NUMPY_DTYPE
 from art.attacks import FastGradientMethod
-from art.utils import compute_success, get_labels_np_array, projection
+from art.utils import compute_success, get_labels_np_array
 
 logger = logging.getLogger(__name__)
 
@@ -102,13 +102,8 @@ class BasicIterativeMethod(FastGradientMethod):
             adv_x = x.astype(NUMPY_DTYPE)
 
             for i_max_iter in range(self.max_iter):
-
-                adv_x = self._compute(adv_x, targets, self.eps, self.eps_step,
+                adv_x = self._compute(adv_x, targets, self.eps, self.eps_step, self._project,
                                       self.num_random_init > 0 and i_max_iter == 0)
-
-                if self._project:
-                    noise = projection(adv_x - x, self.eps, self.norm)
-                    adv_x = x + noise
 
             rate = 100 * compute_success(self.classifier, x, targets, adv_x, self.targeted)
 
