@@ -21,8 +21,9 @@ import logging
 
 import numpy as np
 
+from art import NUMPY_DTYPE
 from art.attacks import FastGradientMethod
-from art.utils import compute_success, get_labels_np_array
+from art.utils import compute_success, get_labels_np_array, projection
 
 logger = logging.getLogger(__name__)
 
@@ -70,36 +71,21 @@ class BasicIterativeMethod(FastGradientMethod):
 
         self._project = False
 
-    def generate(self, x, **kwargs):
+    def generate(self, x, y=None):
         """
         Generate adversarial samples and return them in an array.
 
         :param x: An array with the original inputs.
         :type x: `np.ndarray`
-        :param norm: Order of the norm. Possible values: np.inf, 1 or 2.
-        :type norm: `int`
-        :param eps: Maximum perturbation that the attacker can introduce.
-        :type eps: `float`
-        :param eps_step: Attack step size (input variation) at each iteration.
-        :type eps_step: `float`
         :param y: The labels for the data `x`. Only provide this parameter if you'd like to use true
                   labels when crafting adversarial samples. Otherwise, model predictions are used as labels to avoid the
                   "label leaking" effect (explained in this paper: https://arxiv.org/abs/1611.01236). Default is `None`.
                   Labels should be one-hot-encoded.
         :type y: `np.ndarray`
-        :param num_random_init: Number of random initialisations within the epsilon ball. For num_random_init=0
-            starting at the original input.
-        :type num_random_init: `int`
-        :param batch_size: Batch size
-        :type batch_size: `int`
         :return: An array holding the adversarial examples.
         :rtype: `np.ndarray`
         """
-        from art.utils import projection
-
-        self.set_params(**kwargs)
-
-        if 'y' not in kwargs or kwargs[str('y')] is None:
+        if y is None:
             # Throw error if attack is targeted, but no targets are provided
             if self.targeted:
                 raise ValueError('Target labels `y` need to be provided for a targeted attack.')
@@ -107,13 +93,13 @@ class BasicIterativeMethod(FastGradientMethod):
             # Use model predictions as correct outputs
             targets = get_labels_np_array(self.classifier.predict(x))
         else:
-            targets = kwargs['y']
+            targets = y
 
         adv_x_best = None
         rate_best = 0.0
 
         for i_random_init in range(max(1, self.num_random_init)):
-            adv_x = x.copy()
+            adv_x = x.astype(NUMPY_DTYPE)
 
             for i_max_iter in range(self.max_iter):
 

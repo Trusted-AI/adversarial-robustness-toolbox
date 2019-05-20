@@ -21,6 +21,7 @@ import logging
 
 import numpy as np
 
+from art import NUMPY_DTYPE
 from art.attacks.attack import Attack
 from art.utils import to_categorical
 
@@ -50,22 +51,20 @@ class NewtonFool(Attack):
         params = {"max_iter": max_iter, "eta": eta, "batch_size": batch_size}
         self.set_params(**params)
 
-    def generate(self, x, **kwargs):
+    def generate(self, x, y=None):
         """
         Generate adversarial samples and return them in a Numpy array.
 
         :param x: An array with the original inputs to be attacked.
         :type x: `np.ndarray`
-        :param kwargs: Attack-specific parameters used by child classes.
-        :type kwargs: `dict`
+        :param y: An array with the original labels to be predicted.
+        :type y: `np.ndarray`
         :return: An array holding the adversarial examples.
         :rtype: `np.ndarray`
         """
-        self.set_params(**kwargs)
-        x_adv = x.copy()
+        x_adv = x.astype(NUMPY_DTYPE)
 
         # Initialize variables
-        clip_min, clip_max = self.classifier.clip_values
         y_pred = self.classifier.predict(x, logits=False)
         pred_class = np.argmax(y_pred, axis=1)
 
@@ -99,7 +98,11 @@ class NewtonFool(Attack):
                 batch += di_batch
 
             # Apply clip
-            x_adv[batch_index_1:batch_index_2] = np.clip(batch, clip_min, clip_max)
+            if hasattr(self.classifier, 'clip_values') and self.classifier.clip_values is not None:
+                clip_min, clip_max = self.classifier.clip_values
+                x_adv[batch_index_1:batch_index_2] = np.clip(batch, clip_min, clip_max)
+            else:
+                x_adv[batch_index_1:batch_index_2] = batch
 
         logger.info('Success rate of NewtonFool attack: %.2f%%',
                     (np.sum(np.argmax(self.classifier.predict(x), axis=1) !=
@@ -166,9 +169,10 @@ class NewtonFool(Attack):
         """
         # Pick a small scalar to avoid division by 0
         tol = 10e-8
-        nom = -theta[:, None, None, None] * grads
+
+        nom = -theta.reshape((-1,) + (1,) * (len(grads.shape) - 1)) * grads
         denom = norm_grad**2
         denom[denom < tol] = tol
-        result = nom / denom[:, None, None, None]
+        result = nom / denom.reshape((-1,) + (1,) * (len(grads.shape) - 1))
 
         return result

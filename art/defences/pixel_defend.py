@@ -58,7 +58,7 @@ class PixelDefend(Preprocessor):
     def apply_predict(self):
         return True
 
-    def __call__(self, x, y=None, eps=None, pixel_cnn=None):
+    def __call__(self, x, y=None):
         """
         Apply pixel defence to sample `x`.
 
@@ -67,59 +67,44 @@ class PixelDefend(Preprocessor):
         :type x: `np.ndarrray`
         :param y: Labels of the sample `x`. This function does not affect them in any way.
         :type y: `np.ndarray`
-        :param eps: Defense parameter 0-255.
-        :type eps: `int`
-        :param pixel_cnn: Pre-trained PixelCNN model.
-        :type pixel_cnn: :class:`.Classifier`
         :return: Purified sample.
         :rtype: `np.ndarray`
         """
-        clip_values = (0, 1)
-
-        params = {}
-        if eps is not None:
-            params['eps'] = eps
-
-        if pixel_cnn is not None:
-            params['pixel_cnn'] = pixel_cnn
-
-        self.set_params(**params)
-
         # Convert into `uint8`
+        original_shape = x.shape
         x_ = x.copy()
+        probs = self.pixel_cnn.get_activations(x_, layer=-1).reshape((x_.shape[0], -1, 256))
         x_ = x_ * 255
         x_ = x_.astype("uint8")
+        x_ = x_.reshape((x_.shape[0], -1))
 
         # Start defence one image at a time
         for i, xi in enumerate(x_):
-            for r in range(x_.shape[1]):
-                for c in range(x_.shape[2]):
-                    for k in range(x_.shape[3]):
-                        # Setup the search space
-                        # probs = self.pixel_cnn.predict(np.array([xi / 255.0]), logits=False)
-                        probs = self.pixel_cnn.get_activations(np.array([xi / 255.0]), -1)
-                        f_probs = probs[0, r, c, k]
-                        f_range = range(int(max(xi[r, c, k] - self.eps, 0)), int(min(xi[r, c, k] + self.eps, 255) + 1))
+            for feat_index in range(x_.shape[1]):
+                # Setup the search space
+                f_probs = probs[i, feat_index, :]
+                f_range = range(int(max(xi[feat_index] - self.eps, 0)), int(min(xi[feat_index] + self.eps, 255) + 1))
 
-                        # Look in the search space
-                        best_prob = -1
-                        best_idx = -1
-                        for idx in f_range:
-                            if f_probs[idx] > best_prob:
-                                best_prob = f_probs[idx]
-                                best_idx = idx
+                # Look in the search space
+                best_prob = -1
+                best_idx = -1
+                for idx in f_range:
+                    if f_probs[idx] > best_prob:
+                        best_prob = f_probs[idx]
+                        best_idx = idx
 
-                        # Update result
-                        xi[r, c, k] = best_idx
+                # Update result
+                xi[feat_index] = best_idx
 
             # Update in batch
             x_[i] = xi
 
         # Convert to old dtype
         x_ = x_ / 255.0
-        x_ = x_.astype(NUMPY_DTYPE)
+        x_ = x_.astype(NUMPY_DTYPE).reshape(original_shape)
 
         # Clip values into the range [0, 1]
+        clip_values = (0, 1)
         x_ = np.clip(x_, clip_values[0], clip_values[1])
 
         return x_, y

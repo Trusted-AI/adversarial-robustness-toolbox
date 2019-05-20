@@ -77,8 +77,6 @@ def master_seed(seed):
         logger.info('Could not set random seed for MXNet.')
 
     try:
-        import torch
-
         logger.info('Setting random seed for PyTorch.')
         torch.manual_seed(seed)
         if torch.cuda.is_available():
@@ -301,27 +299,51 @@ def get_labels_np_array(preds):
     return y
 
 
-def preprocess(x, y, nb_classes=10, max_value=255):
+# TODO change preprocess to normalize feature-wise?
+def preprocess(x, y, nb_classes=10, clip_values=None):
     """Scales `x` to [0, 1] and converts `y` to class categorical confidences.
 
-    :param x: Data instances
+    :param x: Data instances.
     :type x: `np.ndarray`
-    :param y: Labels
+    :param y: Labels.
     :type y: `np.ndarray`
-    :param nb_classes: Number of classes in dataset
+    :param nb_classes: Number of classes in dataset.
     :type nb_classes: `int`
-    :param max_value: Original maximum allowed value for features
-    :type max_value: `int`
-    :return: rescaled values of `x`, `y`
+    :param clip_values: Original data range allowed value for features, either one respective scalar or one value per
+           feature.
+    :type clip_values: `tuple(float, float)` or `tuple(np.ndarray, np.ndarray)`
+    :return: Rescaled values of `x`, `y`
     :rtype: `tuple`
     """
-    x = x.astype('float32') / max_value
-    y = to_categorical(y, nb_classes)
+    if clip_values is None:
+        min_, max_ = np.amin(x), np.amax(x)
+    else:
+        min_, max_ = clip_values
 
-    return x, y
+    normalized_x = (x - min_) / (max_ - min_)
+    categorical_y = to_categorical(y, nb_classes)
+
+    return normalized_x, categorical_y
 
 
 def compute_success(classifier, x_clean, labels, x_adv, targeted=False):
+    """
+    Compute the success rate of an attack based on clean samples, adversarial samples and targets or correct labels.
+
+    :param classifier: Classifier used for prediction.
+    :type classifier: :class:`.Classifier`
+    :param x_clean: Original clean samples.
+    :type x_clean: `np.ndarray`
+    :param labels: Correct labels of `x_clean` if the attack is untargeted, or target labels of the attack otherwise.
+    :type labels: `np.ndarray`
+    :param x_adv: Adversarial samples to be evaluated.
+    :type x_adv: `np.ndarray`
+    :param targeted: `True` if the attack is targeted. In that case, `labels` are treated as target classes instead of
+           correct labels of the clean samples.s
+    :type targeted: `bool`
+    :return: Percentage of successful adversarial samples.
+    :rtype: `float`
+    """
     adv_preds = np.argmax(classifier.predict(x_adv), axis=1)
     if targeted:
         rate = np.sum(adv_preds == np.argmax(labels, axis=1)) / x_adv.shape[0]
@@ -397,8 +419,8 @@ def load_cifar10(raw=False):
     min_, max_ = 0, 255
     if not raw:
         min_, max_ = 0., 1.
-        x_train, y_train = preprocess(x_train, y_train)
-        x_test, y_test = preprocess(x_test, y_test)
+        x_train, y_train = preprocess(x_train, y_train, max_value=255)
+        x_test, y_test = preprocess(x_test, y_test, max_value=255)
 
     return (x_train, y_train), (x_test, y_test), min_, max_
 
@@ -476,6 +498,61 @@ def load_stl():
     return (x_train, y_train), (x_test, y_test), min_, max_
 
 
+def load_iris(raw=False, test_set=.3):
+    """
+    Loads the UCI Iris dataset from `DATA_PATH` or downloads it if necessary.
+
+    :param raw: `True` if no preprocessing should be applied to the data. Otherwise, data is normalized to 1.
+    :type raw: `bool`
+    :param test_set: Proportion of the data to use as validation split. The value should be between o and 1.
+    :type test_set: `float`
+    :return: Entire dataset and labels.
+    :rtype: `(np.ndarray, np.ndarray)`
+    """
+    from art import DATA_PATH, NUMPY_DTYPE
+
+    # Download data if needed
+    path = get_file('iris.data', path=DATA_PATH, extract=False,
+                    url='https://archive.ics.uci.edu/ml/machine-learning-databases/iris/iris.data')
+
+    data = np.loadtxt(path, delimiter=',', usecols=(0, 1, 2, 3), dtype=NUMPY_DTYPE)
+    labels = np.loadtxt(path, delimiter=',', usecols=4, dtype=str)
+
+    # Preprocess
+    if not raw:
+        label_map = {
+            'Iris-setosa': 0,
+            'Iris-versicolor': 1,
+            'Iris-virginica': 2
+        }
+        labels = np.array([label_map[labels[i]] for i in range(labels.size)], dtype=np.int32)
+        data, labels = preprocess(data, labels, nb_classes=3)
+    min_, max_ = np.amin(data), np.amax(data)
+
+    # Split training and test sets
+    split_index = int((1 - test_set) * len(data) / 3)
+    x_train = np.vstack((data[:split_index], data[50:50+split_index], data[100:100+split_index]))
+    y_train = np.vstack((labels[:split_index], labels[50:50+split_index], labels[100:100+split_index]))
+
+    if split_index >= 49:
+        x_test, y_test = None, None
+    else:
+
+        x_test = np.vstack((data[split_index:50], data[50+split_index:100], data[100+split_index:]))
+        y_test = np.vstack((labels[split_index:50], labels[50+split_index:100], labels[100+split_index:]))
+        assert len(x_train) + len(x_test) == 150
+
+        # Shuffle test set
+        random_indices = np.random.permutation(len(y_test))
+        x_test, y_test = x_test[random_indices], y_test[random_indices]
+
+    # Shuffle training set
+    random_indices = np.random.permutation(len(y_train))
+    x_train, y_train = x_train[random_indices], y_train[random_indices]
+
+    return (x_train, y_train), (x_test, y_test), min_, max_
+
+
 def load_dataset(name):
     """
     Loads or downloads the dataset corresponding to `name`. Options are: `mnist`, `cifar10` and `stl10`.
@@ -486,13 +563,14 @@ def load_dataset(name):
     :rtype: `(np.ndarray, np.ndarray), (np.ndarray, np.ndarray), float, float`
     :raises NotImplementedError: If the dataset is unknown.
     """
-
     if "mnist" in name:
         return load_mnist()
-    elif "cifar10" in name:
+    if "cifar10" in name:
         return load_cifar10()
-    elif "stl10" in name:
+    if "stl10" in name:
         return load_stl()
+    if "iris" in name:
+        return load_iris()
 
     raise NotImplementedError("There is no loader for dataset '{}'.".format(name))
 
@@ -611,122 +689,43 @@ def clip_and_round(x, clip_values, round_samples):
     :param x: Sample input with shape as expected by the model.
     :type x: `np.ndarray`
     :param clip_values: Tuple of the form `(min, max)` representing the minimum and maximum values allowed
-               for features.
+           for features, or `None` if no clipping should be performed.
     :type clip_values: `tuple`
-    :param round_samples: The resolution of the input domain to round the data to, e.g., 1.0, or 1/255. Set to 0 to disable.
+    :param round_samples: The resolution of the input domain to round the data to, e.g., 1.0, or 1/255. Set to 0 to
+           disable.
     :type round_samples: `float`
     """
     if round_samples == 0:
         return x
-    x = np.clip(x, *clip_values)
+    if clip_values is not None:
+        np.clip(x, clip_values[0], clip_values[1], out=x)
     x = np.around(x / round_samples) * round_samples
     return x
 
-# -------------------------------------------------------------------------------------------------- PRE-TRAINED MODELS
+# ----------------------------------------------------------------------------------------------- TEST MODELS FOR MNIST
 
 
-def _tf_initializer_w_conv2d(_, dtype, partition_info):
-    """
-    Initializer of weights in convolution layer for Tensorflow.
+def _tf_weights_loader(dataset, weights_type, layer='DENSE'):
+    filename = str(weights_type) + '_' + str(layer) + '_' + str(dataset) + '.npy'
 
-    :return: Tensorflow constant
-    :rtype: tf.constant
-    """
-    import tensorflow as tf
+    def _tf_initializer(_, dtype, partition_info):
+        import tensorflow as tf
 
-    w_conv2d = np.load(os.path.join(os.path.dirname(os.path.dirname(__file__)), 'models', 'W_CONV2D.npy'))
-    return tf.constant(w_conv2d, dtype)
+        weights = np.load(os.path.join(os.path.dirname(os.path.dirname(__file__)), 'models', filename))
+        return tf.constant(weights, dtype)
+
+    return _tf_initializer
 
 
-def _kr_initializer_w_conv2d(_, dtype=None):
-    """
-    Initializer of weights in convolution layer for Keras.
-
-    :return: Keras variable
-    :rtype: k.variable
-    """
+def _kr_weights_loader(dataset, weights_type, layer='DENSE'):
     import keras.backend as k
+    filename = str(weights_type) + '_' + str(layer) + '_' + str(dataset) + '.npy'
 
-    w_conv2d = np.load(os.path.join(os.path.dirname(os.path.dirname(__file__)), 'models', 'W_CONV2D.npy'))
-    return k.variable(value=w_conv2d, dtype=dtype)
+    def _kr_initializer(_, dtype=None):
+        weights = np.load(os.path.join(os.path.dirname(os.path.dirname(__file__)), 'models', filename))
+        return k.variable(value=weights, dtype=dtype)
 
-
-def _tf_initializer_b_conv2d(_, dtype, partition_info):
-    """
-    Initializer of biases in convolution layer for Tensorflow.
-
-    :return: Tensorflow constant
-    :rtype: tf.constant
-    """
-    import tensorflow as tf
-
-    b_conv2d = np.load(os.path.join(os.path.dirname(os.path.dirname(__file__)), 'models', 'B_CONV2D.npy'))
-    return tf.constant(b_conv2d, dtype)
-
-
-def _kr_initializer_b_conv2d(_, dtype=None):
-    """
-    Initializer of weights in convolution layer for Keras.
-
-    :return: Keras variable
-    :rtype: k.variable
-    """
-    import keras.backend as k
-
-    b_conv2d = np.load(os.path.join(os.path.dirname(os.path.dirname(__file__)), 'models', 'B_CONV2D.npy'))
-    return k.variable(value=b_conv2d, dtype=dtype)
-
-
-def _tf_initializer_w_dense(_, dtype, partition_info):
-    """
-    Initializer of weights in dense layer for Tensorflow.
-
-    :return: Tensorflow constant
-    :rtype: tf.constant
-    """
-    import tensorflow as tf
-
-    w_dense = np.load(os.path.join(os.path.dirname(os.path.dirname(__file__)), 'models', 'W_DENSE.npy'))
-    return tf.constant(w_dense, dtype)
-
-
-def _kr_initializer_w_dense(_, dtype=None):
-    """
-    Initializer of weights in dense layer for Keras.
-
-    :return: Keras varibale
-    :rtype: k.variable
-    """
-    import keras.backend as k
-
-    w_dense = np.load(os.path.join(os.path.dirname(os.path.dirname(__file__)), 'models', 'W_DENSE.npy'))
-    return k.variable(value=w_dense, dtype=dtype)
-
-
-def _tf_initializer_b_dense(_, dtype, partition_info):
-    """
-    Initializer of biases in dense layer for Tensorflow.
-
-    :return: Tensorflow constant
-    :rtype: tf.constant
-    """
-    import tensorflow as tf
-
-    b_dense = np.load(os.path.join(os.path.dirname(os.path.dirname(__file__)), 'models', 'B_DENSE.npy'))
-    return tf.constant(b_dense, dtype)
-
-
-def _kr_initializer_b_dense(_, dtype=None):
-    """
-    Initializer of biases in dense layer for Keras.
-
-    :return: Keras variable
-    :rtype: k.variable
-    """
-    import keras.backend as k
-
-    b_dense = np.load(os.path.join(os.path.dirname(os.path.dirname(__file__)), 'models', 'B_DENSE.npy'))
-    return k.variable(value=b_dense, dtype=dtype)
+    return _kr_initializer
 
 
 def get_classifier_tf():
@@ -749,24 +748,27 @@ def get_classifier_tf():
     output_ph = tf.placeholder(tf.int32, shape=[None, 10])
 
     # Define the tensorflow graph
-    conv = tf.layers.conv2d(input_ph, 1, 7, activation=tf.nn.relu, kernel_initializer=_tf_initializer_w_conv2d,
-                            bias_initializer=_tf_initializer_b_conv2d)
+    conv = tf.layers.conv2d(input_ph, 1, 7, activation=tf.nn.relu,
+                            kernel_initializer=_tf_weights_loader('MNIST', 'W', 'CONV2D'),
+                            bias_initializer=_tf_weights_loader('MNIST', 'B', 'CONV2D'))
     conv = tf.layers.max_pooling2d(conv, 4, 4)
     flattened = tf.contrib.layers.flatten(conv)
 
     # Logits layer
-    logits = tf.layers.dense(flattened, 10, kernel_initializer=_tf_initializer_w_dense,
-                             bias_initializer=_tf_initializer_b_dense)
+    logits = tf.layers.dense(flattened, 10, kernel_initializer=_tf_weights_loader('MNIST', 'W', 'DENSE'),
+                             bias_initializer=_tf_weights_loader('MNIST', 'B', 'DENSE'))
 
     # Train operator
     loss = tf.reduce_mean(tf.losses.softmax_cross_entropy(logits=logits, onehot_labels=output_ph))
+    optimizer = tf.train.AdamOptimizer(learning_rate=0.01)
+    train = optimizer.minimize(loss)
 
     # Tensorflow session and initialization
     sess = tf.Session()
     sess.run(tf.global_variables_initializer())
 
     # Train the classifier
-    tfc = TFClassifier(clip_values=(0, 1), input_ph=input_ph, logits=logits, output_ph=output_ph, train=None,
+    tfc = TFClassifier(clip_values=(0, 1), input_ph=input_ph, logits=logits, output_ph=output_ph, train=train,
                        loss=loss, learning=None, sess=sess)
 
     return tfc, sess
@@ -795,17 +797,18 @@ def get_classifier_kr():
     # Create simple CNN
     model = Sequential()
     model.add(Conv2D(1, kernel_size=(7, 7), activation='relu', input_shape=(28, 28, 1),
-                     kernel_initializer=_kr_initializer_w_conv2d, bias_initializer=_kr_initializer_b_conv2d))
+                     kernel_initializer=_kr_weights_loader('MNIST', 'W', 'CONV2D'),
+                     bias_initializer=_kr_weights_loader('MNIST', 'B', 'CONV2D')))
     model.add(MaxPooling2D(pool_size=(4, 4)))
     model.add(Flatten())
-    model.add(Dense(10, activation='softmax', kernel_initializer=_kr_initializer_w_dense,
-                    bias_initializer=_kr_initializer_b_dense))
+    model.add(Dense(10, activation='softmax', kernel_initializer=_kr_weights_loader('MNIST', 'W', 'DENSE'),
+                    bias_initializer=_kr_weights_loader('MNIST', 'B', 'DENSE')))
 
     model.compile(loss=keras.losses.categorical_crossentropy, optimizer=keras.optimizers.Adam(lr=0.01),
                   metrics=['accuracy'])
 
     # Get classifier
-    krc = KerasClassifier((0, 1), model, use_logits=False)
+    krc = KerasClassifier(model, clip_values=(0, 1), use_logits=False)
 
     return krc, sess
 
@@ -828,10 +831,10 @@ def get_classifier_pt():
         def __init__(self):
             super(Model, self).__init__()
 
-            w_conv2d = np.load(os.path.join(os.path.dirname(os.path.dirname(__file__)), 'models', 'W_CONV2D.npy'))
-            b_conv2d = np.load(os.path.join(os.path.dirname(os.path.dirname(__file__)), 'models', 'B_CONV2D.npy'))
-            w_dense = np.load(os.path.join(os.path.dirname(os.path.dirname(__file__)), 'models', 'W_DENSE.npy'))
-            b_dense = np.load(os.path.join(os.path.dirname(os.path.dirname(__file__)), 'models', 'B_DENSE.npy'))
+            w_conv2d = np.load(os.path.join(os.path.dirname(os.path.dirname(__file__)), 'models', 'W_CONV2D_MNIST.npy'))
+            b_conv2d = np.load(os.path.join(os.path.dirname(os.path.dirname(__file__)), 'models', 'B_CONV2D_MNIST.npy'))
+            w_dense = np.load(os.path.join(os.path.dirname(os.path.dirname(__file__)), 'models', 'W_DENSE_MNIST.npy'))
+            b_dense = np.load(os.path.join(os.path.dirname(os.path.dirname(__file__)), 'models', 'B_DENSE_MNIST.npy'))
 
             self.conv = nn.Conv2d(in_channels=1, out_channels=1, kernel_size=7)
             w_conv2d_pt = np.swapaxes(w_conv2d, 0, 2)
@@ -860,6 +863,146 @@ def get_classifier_pt():
     optimizer = optim.Adam(model.parameters(), lr=0.01)
 
     # Get classifier
-    ptc = PyTorchClassifier((0, 1), model, loss_fn, optimizer, (1, 28, 28), 10)
+    ptc = PyTorchClassifier(model=model, loss=loss_fn, optimizer=optimizer, input_shape=(1, 28, 28), nb_classes=10,
+                            clip_values=(0, 1))
+
+    return ptc
+
+
+# ------------------------------------------------------------------------------------------------ TEST MODELS FOR IRIS
+
+def get_iris_classifier_tf():
+    """
+    Standard Tensorflow classifier for unit testing.
+
+    The following hyper-parameters were used to obtain the weights and biases:
+    - learning_rate: 0.01
+    - batch size: 5
+    - number of epochs: 200
+    - optimizer: tf.train.AdamOptimizer
+    The model is trained of 70% of the dataset, and 30% of the training set is used as validation split.
+
+    :return: The trained model for Iris dataset and the session.
+    :rtype: `tuple(TFClassifier, tf.Session)`
+    """
+    import tensorflow as tf
+    from art.classifiers import TFClassifier
+
+    # Define input and output placeholders
+    input_ph = tf.placeholder(tf.float32, shape=[None, 4])
+    output_ph = tf.placeholder(tf.int32, shape=[None, 3])
+
+    # Define the tensorflow graph
+    dense1 = tf.layers.dense(input_ph, 10, kernel_initializer=_tf_weights_loader('IRIS', 'W', 'DENSE1'),
+                             bias_initializer=_tf_weights_loader('IRIS', 'B', 'DENSE1'))
+    dense2 = tf.layers.dense(dense1, 10, kernel_initializer=_tf_weights_loader('IRIS', 'W', 'DENSE2'),
+                             bias_initializer=_tf_weights_loader('IRIS', 'B', 'DENSE2'))
+    logits = tf.layers.dense(dense2, 3, kernel_initializer=_tf_weights_loader('IRIS', 'W', 'DENSE3'),
+                             bias_initializer=_tf_weights_loader('IRIS', 'B', 'DENSE3'))
+
+    # Train operator
+    loss = tf.reduce_mean(tf.losses.softmax_cross_entropy(logits=logits, onehot_labels=output_ph))
+
+    # Tensorflow session and initialization
+    sess = tf.Session()
+    sess.run(tf.global_variables_initializer())
+
+    # Train the classifier
+    tfc = TFClassifier(clip_values=(0, 1), input_ph=input_ph, logits=logits, output_ph=output_ph, train=None,
+                       loss=loss, learning=None, sess=sess, channel_index=1)
+
+    return tfc, sess
+
+
+def get_iris_classifier_kr():
+    """
+    Standard Keras classifier for unit testing on Iris dataset. The weights and biases are identical to the Tensorflow
+    model in `get_iris_classifier_tf`.
+
+    :return: The trained model for Iris dataset and the session.
+    :rtype: `tuple(KerasClassifier, tf.Session)`
+    """
+    import keras
+    import keras.backend as k
+    from keras.models import Sequential
+    from keras.layers import Dense
+    import tensorflow as tf
+
+    from art.classifiers import KerasClassifier
+
+    # Initialize a tf session
+    sess = tf.Session()
+    k.set_session(sess)
+
+    # Create simple CNN
+    model = Sequential()
+    model.add(Dense(10, input_shape=(4,), activation='relu',
+                    kernel_initializer=_kr_weights_loader('IRIS', 'W', 'DENSE1'),
+                    bias_initializer=_kr_weights_loader('IRIS', 'B', 'DENSE1')))
+    model.add(Dense(10, activation='relu', kernel_initializer=_kr_weights_loader('IRIS', 'W', 'DENSE2'),
+                    bias_initializer=_kr_weights_loader('IRIS', 'B', 'DENSE2')))
+    model.add(Dense(3, activation='softmax', kernel_initializer=_kr_weights_loader('IRIS', 'W', 'DENSE3'),
+                    bias_initializer=_kr_weights_loader('IRIS', 'B', 'DENSE3')))
+    model.compile(loss='categorical_crossentropy', optimizer=keras.optimizers.Adam(lr=0.001), metrics=['accuracy'])
+
+    # Get classifier
+    krc = KerasClassifier(model, clip_values=(0, 1), use_logits=False, channel_index=1)
+
+    return krc, sess
+
+
+def get_iris_classifier_pt():
+    """
+    Standard PyTorch classifier for unit testing on Iris dataset.
+
+    :return: Trained model for Iris dataset.
+    :rtype: :class:`.PyTorchClassifier`
+    """
+    from art.classifiers import PyTorchClassifier
+
+    class Model(nn.Module):
+        """
+        Create Iris model for PyTorch.
+
+        The weights and biases are identical to the Tensorflow model in `get_iris_classifier_tf`.
+        """
+
+        def __init__(self):
+            super(Model, self).__init__()
+
+            w_dense1 = np.load(os.path.join(os.path.dirname(os.path.dirname(__file__)), 'models', 'W_DENSE1_IRIS.npy'))
+            b_dense1 = np.load(os.path.join(os.path.dirname(os.path.dirname(__file__)), 'models', 'B_DENSE1_IRIS.npy'))
+            w_dense2 = np.load(os.path.join(os.path.dirname(os.path.dirname(__file__)), 'models', 'W_DENSE2_IRIS.npy'))
+            b_dense2 = np.load(os.path.join(os.path.dirname(os.path.dirname(__file__)), 'models', 'B_DENSE2_IRIS.npy'))
+            w_dense3 = np.load(os.path.join(os.path.dirname(os.path.dirname(__file__)), 'models', 'W_DENSE3_IRIS.npy'))
+            b_dense3 = np.load(os.path.join(os.path.dirname(os.path.dirname(__file__)), 'models', 'B_DENSE3_IRIS.npy'))
+
+            self.fully_connected1 = nn.Linear(4, 10)
+            self.fully_connected1.weight = nn.Parameter(torch.Tensor(np.transpose(w_dense1)))
+            self.fully_connected1.bias = nn.Parameter(torch.Tensor(b_dense1))
+            self.fully_connected2 = nn.Linear(10, 10)
+            self.fully_connected2.weight = nn.Parameter(torch.Tensor(np.transpose(w_dense2)))
+            self.fully_connected2.bias = nn.Parameter(torch.Tensor(b_dense2))
+            self.fully_connected3 = nn.Linear(10, 3)
+            self.fully_connected3.weight = nn.Parameter(torch.Tensor(np.transpose(w_dense3)))
+            self.fully_connected3.bias = nn.Parameter(torch.Tensor(b_dense3))
+
+        def forward(self, x):
+            x = self.fully_connected1(x)
+            x = self.fully_connected2(x)
+            logit_output = self.fully_connected3(x)
+
+            return logit_output
+
+    # Define the network
+    model = Model()
+
+    # Define a loss function and optimizer
+    loss_fn = nn.CrossEntropyLoss()
+    optimizer = optim.Adam(model.parameters(), lr=0.01)
+
+    # Get classifier
+    ptc = PyTorchClassifier(model=model, loss=loss_fn, optimizer=optimizer, input_shape=(4,), nb_classes=3,
+                            clip_values=(0, 1), channel_index=1)
 
     return ptc

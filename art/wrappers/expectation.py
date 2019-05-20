@@ -49,8 +49,6 @@ class ExpectationOverTransformations(ClassifierWrapper):
         """
         Perform prediction of the given classifier for a batch of inputs, taking an expectation over transformations.
 
-        :param classifier: A trained model.
-        :type classifier: :class:`.Classifier`
         :param x: Test set.
         :type x: `np.ndarray`
         :param logits: `True` if the prediction should be done at the logits layer.
@@ -60,7 +58,7 @@ class ExpectationOverTransformations(ClassifierWrapper):
         :return: Array of predictions of shape `(nb_inputs, self.nb_classes)`.
         :rtype: `np.ndarray`
         """
-        logger.info('Apply Expectation over Transformations.')
+        logger.info('Applying expectation over transformations.')
         prediction = self.classifier.predict(next(self.transformation())(x), logits, batch_size)
         for _ in range(self.sample_size-1):
             prediction += self.classifier.predict(next(self.transformation())(x), logits, batch_size)
@@ -71,20 +69,18 @@ class ExpectationOverTransformations(ClassifierWrapper):
         Compute the gradient of the given classifier's loss function w.r.t. `x`, taking an expectation
         over transformations.
 
-        :param classifier: A trained model.
-        :type classifier: :class:`.Classifier`
         :param x: Sample input with shape as expected by the model.
         :type x: `np.ndarray`
-        :param y: Correct labels, one-vs-rest encoding.
+        :param y: Correct labels, one-hot encoded.
         :type y: `np.ndarray`
         :return: Array of gradients of the same shape as `x`.
         :rtype: `np.ndarray`
         """
-        logger.info('Apply Expectation over Transformations.')
+        logger.info('Applying expectation over transformations.')
         loss_gradient = self.classifier.loss_gradient(next(self.transformation())(x), y)
-        for _ in range(self.sample_size-1):
+        for _ in range(self.sample_size - 1):
             loss_gradient += self.classifier.loss_gradient(next(self.transformation())(x), y)
-        return loss_gradient/self.sample_size
+        return loss_gradient / self.sample_size
 
     def class_gradient(self, x, label=None, logits=False):
         """
@@ -106,6 +102,7 @@ class ExpectationOverTransformations(ClassifierWrapper):
         """
         logger.info('Apply Expectation over Transformations.')
         class_gradient = self.classifier.class_gradient(next(self.transformation())(x), label, logits)
-        for _ in range(self.sample_size-1):
+        for _ in range(self.sample_size - 1):
             class_gradient += self.classifier.class_gradient(next(self.transformation())(x), label, logits)
-        return class_gradient/self.sample_size
+
+        return class_gradient / self.sample_size

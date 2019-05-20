@@ -15,14 +15,11 @@ class TFClassifier(Classifier):
     """
     This class implements a classifier with the Tensorflow framework.
     """
-    def __init__(self, clip_values, input_ph, logits, output_ph=None, train=None, loss=None, learning=None, sess=None,
-                 channel_index=3, defences=None, preprocessing=(0, 1)):
+    def __init__(self, input_ph, logits, output_ph=None, train=None, loss=None, learning=None, sess=None,
+                 channel_index=3, clip_values=None, defences=None, preprocessing=(0, 1)):
         """
-        Initialization specifically for the Tensorflow-based implementation.
+        Initialization specific to Tensorflow models implementation.
 
-        :param clip_values: Tuple of the form `(min, max)` representing the minimum and maximum values allowed
-               for features.
-        :type clip_values: `tuple`
         :param input_ph: The input placeholder.
         :type input_ph: `tf.Placeholder`
         :param logits: The logits layer of the model.
@@ -42,6 +39,11 @@ class TFClassifier(Classifier):
         :type sess: `tf.Session`
         :param channel_index: Index of the axis in data containing the color channels or features.
         :type channel_index: `int`
+        :param clip_values: Tuple of the form `(min, max)` of floats or `np.ndarray` representing the minimum and
+               maximum values allowed for features. If floats are provided, these will be used as the range of all
+               features. If arrays are provided, each value will be considered the bound for a feature, thus
+               the shape of clip values needs to match the total number of features.
+        :type clip_values: `tuple`
         :param defences: Defences to be activated with the classifier.
         :type defences: `str` or `list(str)`
         :param preprocessing: Tuple of the form `(substractor, divider)` of floats or `np.ndarray` of values to be
@@ -488,11 +490,134 @@ class TFClassifier(Classifier):
 
         logger.info('Model saved in path: %s.', full_path)
 
+    def __getstate__(self):
+        """
+        Use to ensure `TFClassifier` can be pickled.
+
+        :return: State dictionary with instance parameters.
+        :rtype: `dict`
+        """
+        import time
+
+        state = self.__dict__.copy()
+
+        # Remove the unpicklable entries
+        del state['_sess']
+        del state['_logits']
+        del state['_input_ph']
+        state['_probs'] = self._probs.name
+
+        if self._output_ph is not None:
+            state['_output_ph'] = self._output_ph.name
+
+        if self._loss is not None:
+            state['_loss'] = self._loss.name
+
+        if hasattr(self, '_loss_grads'):
+            state['_loss_grads'] = self._loss_grads.name
+        else:
+            state['_loss_grads'] = False
+
+        if self._learning is not None:
+            state['_learning'] = self._learning.name
+
+        if self._train is not None:
+            state['_train'] = self._train.name
+
+        if hasattr(self, '_logit_class_grads'):
+            state['_logit_class_grads'] = [ts if ts is None else ts.name for ts in self._logit_class_grads]
+        else:
+            state['_logit_class_grads'] = False
+
+        if hasattr(self, '_class_grads'):
+            state['_class_grads'] = [ts if ts is None else ts.name for ts in self._class_grads]
+        else:
+            state['_class_grads'] = False
+
+        model_name = str(time.time())
+        state['model_name'] = model_name
+        self.save(model_name)
+
+        return state
+
+    def __setstate__(self, state):
+        """
+        Use to ensure `TFClassifier` can be unpickled.
+
+        :param state: State dictionary with instance parameters to restore.
+        :type state: `dict`
+        """
+        self.__dict__.update(state)
+
+        # Load and update all functionality related to Tensorflow
+        import os
+        from art import DATA_PATH
+        import tensorflow as tf
+        from tensorflow.python.saved_model import tag_constants
+
+        full_path = os.path.join(DATA_PATH, state['model_name'])
+
+        graph = tf.Graph()
+        sess = tf.Session(graph=graph)
+        loaded = tf.saved_model.loader.load(sess, [tag_constants.SERVING], full_path)
+
+        # Recover session
+        self._sess = sess
+
+        # Recover logits
+        logits_tensor_name = loaded.signature_def['predict'].outputs['SavedOutputLogit'].name
+        self._logits = graph.get_tensor_by_name(logits_tensor_name)
+
+        # Recover input_ph
+        input_tensor_name = loaded.signature_def['predict'].inputs['SavedInputPhD'].name
+        self._input_ph = graph.get_tensor_by_name(input_tensor_name)
+
+        # Recover probability layer
+        self._probs = graph.get_tensor_by_name(state['_probs'])
+
+        # Recover output_ph if any
+        if state['_output_ph'] is not None:
+            self._output_ph = graph.get_tensor_by_name(state['_output_ph'])
+
+        # Recover loss if any
+        if state['_loss'] is not None:
+            self._loss = graph.get_tensor_by_name(state['_loss'])
+
+        # Recover loss_grads if any
+        if state['_loss_grads']:
+            self._loss_grads = graph.get_tensor_by_name(state['_loss_grads'])
+        else:
+            self.__dict__.pop('_loss_grads', None)
+
+        # Recover learning if any
+        if state['_learning'] is not None:
+            self._learning = graph.get_tensor_by_name(state['_learning'])
+
+        # Recover train if any
+        if state['_train'] is not None:
+            self._train = graph.get_operation_by_name(state['_train'])
+
+        # Recover logit_class_grads if any
+        if state['_logit_class_grads']:
+            self._logit_class_grads = [ts if ts is None else graph.get_tensor_by_name(ts)
+                                       for ts in state['_logit_class_grads']]
+        else:
+            self.__dict__.pop('_logit_class_grads', None)
+
+        # Recover class_grads if any
+        if state['_class_grads']:
+            self._class_grads = [ts if ts is None else graph.get_tensor_by_name(ts) for ts in state['_class_grads']]
+        else:
+            self.__dict__.pop('_class_grads', None)
+
+        self.__dict__.pop('model_name', None)
+
     def __repr__(self):
-        repr_ = "%s(clip_values=%r, input_ph=%r, logits=%r, output_ph=%r, train=%r, loss=%r, learnign=%r, " \
-                "sess=%r, channel_index=%r, defences=%r, preprocessing=%r)" \
+        repr_ = "%s(input_ph=%r, logits=%r, output_ph=%r, train=%r, loss=%r, learning=%r, " \
+                "sess=%r, channel_index=%r, clip_values=%r, defences=%r, preprocessing=%r)" \
                 % (self.__module__ + '.' + self.__class__.__name__,
-                   self.clip_values, self._input_ph, self._logits, self._output_ph, self._train, self._loss,
-                   self._learning, self._sess, self.channel_index, self.defences, self.preprocessing)
+                   self._input_ph, self._logits, self._output_ph, self._train, self._loss, self._learning, self._sess,
+                   self.channel_index, self.clip_values, self.defences, self.preprocessing)
 
         return repr_
+

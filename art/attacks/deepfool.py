@@ -21,6 +21,7 @@ import logging
 
 import numpy as np
 
+from art import NUMPY_DTYPE
 from art.attacks.attack import Attack
 
 logger = logging.getLogger(__name__)
@@ -53,27 +54,18 @@ class DeepFool(Attack):
         params = {'max_iter': max_iter, 'epsilon': epsilon, 'nb_grads': nb_grads, 'batch_size': batch_size}
         self.set_params(**params)
 
-    def generate(self, x, **kwargs):
+    def generate(self, x, y=None):
         """
         Generate adversarial samples and return them in an array.
 
         :param x: An array with the original inputs to be attacked.
         :type x: `np.ndarray`
-        :param max_iter: The maximum number of iterations.
-        :type max_iter: `int`
-        :param epsilon: Overshoot parameter.
-        :type epsilon: `float`
-        :param nb_grads: The number of class gradients (top nb_grads w.r.t. prediction) to compute. This way only the
-                         most likely classes are considered, speeding up the computation.
-        :type nb_grads: `int`
-        :param batch_size: Batch size
-        :type batch_size: `int`
+        :param y: An array with the original labels to be predicted.
+        :type y: `np.ndarray`
         :return: An array holding the adversarial examples.
         :rtype: `np.ndarray`
         """
-        self.set_params(**kwargs)
-        clip_min, clip_max = self.classifier.clip_values
-        x_adv = x.copy()
+        x_adv = x.astype(NUMPY_DTYPE)
         preds = self.classifier.predict(x, logits=True)
 
         # Determine the class labels for which to compute the gradients
@@ -120,11 +112,16 @@ class DeepFool(Attack):
                 value[np.arange(len(value)), labels_indices] = np.inf
                 l = np.argmin(value, axis=1)
                 r = (abs(f_diff[np.arange(len(f_diff)), l]) / (pow(np.linalg.norm(grad_diff[np.arange(len(
-                    grad_diff)), l].reshape(len(grad_diff), -1), axis=1), 2) + tol))[:, None, None, None] * \
-                    grad_diff[np.arange(len(grad_diff)), l]
+                    grad_diff)), l].reshape(len(grad_diff), -1), axis=1), 2) + tol))
+                r = r.reshape((-1,) + (1,) * (len(x.shape) - 1))
+                r = r * grad_diff[np.arange(len(grad_diff)), l]
 
                 # Add perturbation and clip result
-                batch[active_indices] = np.clip(batch[active_indices] + r[active_indices], clip_min, clip_max)
+                if hasattr(self.classifier, 'clip_values') and self.classifier.clip_values is not None:
+                    batch[active_indices] = np.clip(batch[active_indices] + r[active_indices],
+                                                    self.classifier.clip_values[0], self.classifier.clip_values[1])
+                else:
+                    batch[active_indices] += r[active_indices]
 
                 # Recompute prediction for new x
                 f = self.classifier.predict(batch, logits=True)
@@ -145,8 +142,11 @@ class DeepFool(Attack):
                 current_step += 1
 
             # Apply overshoot parameter
-            x_adv[batch_index_1:batch_index_2] = np.clip(x_adv[batch_index_1:batch_index_2] + (
-                1 + self.epsilon) * (batch - x_adv[batch_index_1:batch_index_2]), clip_min, clip_max)
+            x_adv[batch_index_1:batch_index_2] = x_adv[batch_index_1:batch_index_2] + \
+                (1 + self.epsilon) * (batch - x_adv[batch_index_1:batch_index_2])
+            if hasattr(self.classifier, 'clip_values') and self.classifier.clip_values is not None:
+                np.clip(x_adv[batch_index_1:batch_index_2], self.classifier.clip_values[0],
+                        self.classifier.clip_values[1], out=x_adv[batch_index_1:batch_index_2])
 
         logger.info('Success rate of DeepFool attack: %.2f%%',
                     (np.sum(np.argmax(preds, axis=1) != np.argmax(self.classifier.predict(x_adv), axis=1)) /

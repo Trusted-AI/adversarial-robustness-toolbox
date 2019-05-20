@@ -57,7 +57,7 @@ class JpegCompression(Preprocessor):
     def apply_predict(self):
         return True
 
-    def __call__(self, x, y=None, quality=None):
+    def __call__(self, x, y=None):
         """
         Apply JPEG compression to sample `x`.
 
@@ -66,20 +66,20 @@ class JpegCompression(Preprocessor):
         :type x: `np.ndarray`
         :param y: Labels of the sample `x`. This function does not affect them in any way.
         :type y: `np.ndarray`
-        :param quality: The image quality, on a scale from 1 (worst) to 95 (best). Values above 95 should be avoided.
-        :type quality: `int`
         :return: compressed sample.
         :rtype: `np.ndarray`
         """
+        if len(x.shape) == 2:
+            raise ValueError('Feature vectors detected. JPEG compression can only be applied to data with spatial'
+                             'dimensions.')
+
+        if self.channel_index >= len(x.shape):
+            raise ValueError('Channel index does not match input shape.')
+
         clip_values = (0, 1)
 
-        if quality is not None:
-            self.set_params(quality=quality)
-
-        assert self.channel_index < len(x.shape)
-
         # Swap channel index
-        if self.channel_index < 3:
+        if self.channel_index < 3 and len(x.shape) == 4:
             x_ = np.swapaxes(x, self.channel_index, 3)
         else:
             x_ = x.copy()
@@ -148,7 +148,7 @@ class JpegCompression(Preprocessor):
 
         if not isinstance(self.quality, (int, np.int)) or self.quality <= 0 or self.quality > 100:
             logger.error('Image quality must be a positive integer <= 100.')
-            raise ValueError('Image quality must be a positive integer <= 100..')
+            raise ValueError('Image quality must be a positive integer <= 100.')
 
         if not isinstance(self.channel_index, (int, np.int)) or self.channel_index <= 0:
             logger.error('Data channel must be a positive integer. The batch dimension is not a valid channel.')

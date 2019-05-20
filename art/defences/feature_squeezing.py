@@ -54,7 +54,7 @@ class FeatureSqueezing(Preprocessor):
     def apply_predict(self):
         return True
 
-    def __call__(self, x, y=None, bit_depth=None, clip_values=None):
+    def __call__(self, x, y=None):
         """
         Apply feature squeezing to sample `x`.
 
@@ -62,23 +62,9 @@ class FeatureSqueezing(Preprocessor):
         :type x: `np.ndarrray`
         :param y: Labels of the sample `x`. This function does not affect them in any way.
         :type y: `np.ndarray`
-        :param bit_depth: The number of bits per channel for encoding the data.
-        :type bit_depth: `int`
-        :param clip_values: Tuple of the form `(min, max)` representing the minimum and maximum values allowed
-               for features.
-        :type clip_values: `tuple`
         :return: Squeezed sample.
         :rtype: `np.ndarray`
         """
-        params = {}
-        if bit_depth is not None:
-            params['bit_depth'] = bit_depth
-
-        if clip_values is not None:
-            params['clip_values'] = clip_values
-
-        self.set_params(**params)
-
         x_ = x - self.clip_values[0]
         if self.clip_values[1] != 0:
             x_ = x_ / (self.clip_values[1] - self.clip_values[0])
@@ -109,11 +95,11 @@ class FeatureSqueezing(Preprocessor):
         super(FeatureSqueezing, self).set_params(**kwargs)
 
         if not isinstance(self.bit_depth, (int, np.int)) or self.bit_depth <= 0 or self.bit_depth > 64:
-            raise ValueError("The bit depth must be between 1 and 64.")
+            raise ValueError('The bit depth must be between 1 and 64.')
 
         if len(self.clip_values) != 2:
             raise ValueError('`clip_values` should be a tuple of 2 floats containing the allowed data range.')
-        if self.clip_values[0] >= self.clip_values[1]:
+        if np.array(self.clip_values[0] >= self.clip_values[1]).any():
             raise ValueError('Invalid `clip_values`: min >= max.')
 
         return True

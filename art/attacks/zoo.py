@@ -80,6 +80,10 @@ class ZooAttack(Attack):
         """
         super(ZooAttack, self).__init__(classifier)
 
+        if len(classifier.input_shape) == 1:
+            raise ValueError('Feature vectors detected. The ZOO attack can only be applied to data with spatial'
+                             'dimensions.')
+
         kwargs = {
             'confidence': confidence,
             'targeted': targeted,
@@ -106,7 +110,7 @@ class ZooAttack(Attack):
             if self.classifier.channel_index == 3:
                 dims = (batch_size, self._init_size, self._init_size, self.classifier.input_shape[-1])
             elif self.classifier.channel_index == 1:
-                dims = (batch_size, self.classifier.input_shape[1], self._init_size, self._init_size)
+                dims = (batch_size, self.classifier.input_shape[0], self._init_size, self._init_size)
             self._current_noise = np.zeros(dims, dtype=NUMPY_DTYPE)
         else:
             self._current_noise = np.zeros((batch_size,) + self.classifier.input_shape, dtype=NUMPY_DTYPE)
@@ -143,7 +147,7 @@ class ZooAttack(Attack):
 
         return preds, l2dist, c * loss + l2dist
 
-    def generate(self, x, **kwargs):
+    def generate(self, x, y=None):
         """
         Generate adversarial samples and return them in an array.
 
@@ -155,10 +159,10 @@ class ZooAttack(Attack):
         :return: An array holding the adversarial examples.
         :rtype: `np.ndarray`
         """
-        # Parse and save attack-specific parameters
-        params_cpy = dict(kwargs)
-        y = params_cpy.pop(str('y'), None)
-        self.set_params(**params_cpy)
+        # ZOO can probably be extended to feature vectors if no zooming or resizing is applied
+        if len(x.shape) == 2:
+            raise ValueError('Feature vectors detected. The ZOO attack can only be applied to data with spatial'
+                             'dimensions.')
 
         # Check that `y` is provided for targeted attacks
         if self.targeted and y is None:
@@ -179,10 +183,12 @@ class ZooAttack(Attack):
             y_batch = y[batch_index_1:batch_index_2]
             res = self._generate_batch(x_batch, y_batch)
             x_adv.append(res)
+        x_adv = np.vstack(x_adv)
 
         # Apply clip
-        x_adv = np.vstack(x_adv)
-        x_adv = np.clip(x_adv, self.classifier.clip_values[0], self.classifier.clip_values[1])
+        if hasattr(self.classifier, 'clip_values') and self.classifier.clip_values is not None:
+            clip_min, clip_max = self.classifier.clip_values
+            np.clip(x_adv, clip_min, clip_max, out=x_adv)
 
         # Log success rate of the ZOO attack
         logger.info('Success rate of ZOO attack: %.2f%%',
@@ -402,8 +408,9 @@ class ZooAttack(Attack):
         current_noise[index] -= learning_rate * corr * mean[index] / (np.sqrt(var[index]) + 1e-8)
         adam_epochs[index] += 1
 
-        if proj:
-            np.clip(current_noise[index], self.classifier.clip_values[0], self.classifier.clip_values[1])
+        if proj and hasattr(self.classifier, 'clip_values') and self.classifier.clip_values is not None:
+            clip_min, clip_max = self.classifier.clip_values
+            current_noise[index] = np.clip(current_noise[index], clip_min, clip_max)
 
         return current_noise.reshape(orig_shape)
 

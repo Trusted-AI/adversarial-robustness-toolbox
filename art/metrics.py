@@ -70,8 +70,8 @@ def empirical_robustness(classifier, x, attack_name, attack_params=None):
     :rtype: `float`
     """
     crafter = get_crafter(classifier, attack_name, attack_params)
-    attack_params['minimal'] = True
-    adv_x = crafter.generate(x, **attack_params)
+    crafter.set_params(**{'minimal': True})
+    adv_x = crafter.generate(x)
 
     # Predict the labels for adversarial examples
     y = classifier.predict(x)
@@ -284,7 +284,8 @@ def clever_t(classifier, x, target_class, nb_batches, batch_size, radius, norm, 
                            shape)
     rand_pool += np.repeat(np.array([x]), pool_factor * batch_size, 0)
     rand_pool = rand_pool.astype(NUMPY_DTYPE)
-    np.clip(rand_pool, classifier.clip_values[0], classifier.clip_values[1], out=rand_pool)
+    if hasattr(classifier, 'clip_values') and classifier.clip_values is not None:
+        np.clip(rand_pool, classifier.clip_values[0], classifier.clip_values[1], out=rand_pool)
 
     # Change norm since q = p / (p-1)
     if norm == 1:

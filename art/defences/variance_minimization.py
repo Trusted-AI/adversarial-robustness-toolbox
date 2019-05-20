@@ -65,7 +65,7 @@ class TotalVarMin(Preprocessor):
     def apply_predict(self):
         return True
 
-    def __call__(self, x, y=None, prob=None, norm=None, lamb=None, solver=None, max_iter=None, clip_values=None):
+    def __call__(self, x, y=None):
         """
         Apply total variance minimization to sample `x`.
 
@@ -73,52 +73,24 @@ class TotalVarMin(Preprocessor):
         :type x: `np.ndarray`
         :param y: Labels of the sample `x`. This function does not affect them in any way.
         :type y: `np.ndarray`
-        :param prob: Probability of the Bernoulli distribution.
-        :type prob: `float`
-        :param norm: The norm (positive integer).
-        :type norm: `int`
-        :param lamb: The lambda parameter in the objective function.
-        :type lamb: `float`
-        :param solver: Current support: `L-BFGS-B`, `CG`, `Newton-CG`.
-        :type solver: `str`
-        :param max_iter: Maximum number of iterations when performing optimization.
-        :type max_iter: `int`
-        :param clip_values: Tuple of the form `(min, max)` representing the minimum and maximum values allowed
-               for features.
-        :type clip_values: `tuple`
         :return: Similar samples.
         :rtype: `np.ndarray`
         """
-        params = {}
-        if prob is not None:
-            params['prob'] = prob
+        if len(x.shape) == 2:
+            raise ValueError('Feature vectors detected. Variance minimization can only be applied to data with spatial'
+                             'dimensions.')
 
-        if norm is not None:
-            params['norm'] = norm
+        x_preproc = x.copy()
 
-        if lamb is not None:
-            params['lamb'] = lamb
+        # Minimize one input at a time
+        for i, xi in enumerate(x_preproc):
+            mask = (np.random.rand(*xi.shape) < self.prob).astype('int')
+            x_preproc[i] = self._minimize(xi, mask)
 
-        if solver is not None:
-            params['solver'] = solver
+        if hasattr(self, 'clip_values') and self.clip_values is not None:
+            np.clip(x_preproc, self.clip_values[0], self.clip_values[1], out=x_preproc)
 
-        if max_iter is not None:
-            params['max_iter'] = max_iter
-
-        if clip_values is not None:
-            params['clip_values'] = clip_values
-
-        self.set_params(**params)
-        x_ = x.copy()
-
-        # Minimize one image at a time
-        for i, xi in enumerate(x_):
-            mask = (np.random.rand(xi.shape[0], xi.shape[1], xi.shape[2]) < self.prob).astype('int')
-            x_[i] = self._minimize(xi, mask)
-
-        x_ = np.clip(x_, self.clip_values[0], self.clip_values[1])
-
-        return x_.astype(NUMPY_DTYPE), y
+        return x_preproc.astype(NUMPY_DTYPE), y
 
     def estimate_gradient(self, x, grad):
         return grad
@@ -263,7 +235,7 @@ class TotalVarMin(Preprocessor):
 
         if len(self.clip_values) != 2:
             raise ValueError('`clip_values` should be a tuple of 2 floats containing the allowed data range.')
-        if self.clip_values[0] >= self.clip_values[1]:
+        if np.array(self.clip_values[0] >= self.clip_values[1]).any():
             raise ValueError('Invalid `clip_values`: min >= max.')
 
         return True

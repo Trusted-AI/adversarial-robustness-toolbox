@@ -32,21 +32,23 @@ class ThermometerEncoding(Preprocessor):
     """
     Implement the thermometer encoding defence approach. Defence method from https://openreview.net/forum?id=S18Su--CW.
     """
-    params = ['num_space', 'clip_values']
+    params = ['num_space', 'channel_index', 'clip_values']
 
-    def __init__(self, num_space=10, clip_values=(0, 1)):
+    def __init__(self, num_space=10, channel_index=3, clip_values=None):
         """
         Create an instance of thermometer encoding.
 
         :param num_space: Number of evenly spaced levels within [0, 1].
         :type num_space: `int`
+        :param channel_index: Index of the axis in data containing the color channels or features.
+        :type channel_index: `int`
         :param clip_values: Tuple of the form `(min, max)` representing the minimum and maximum values allowed
                for features.
         :type clip_values: `tuple`
         """
         super(ThermometerEncoding, self).__init__()
         self._is_fitted = True
-        self.set_params(num_space=num_space, clip_values=clip_values)
+        self.set_params(num_space=num_space, channel_index=channel_index, clip_values=clip_values)
 
     @property
     def apply_fit(self):
@@ -56,37 +58,22 @@ class ThermometerEncoding(Preprocessor):
     def apply_predict(self):
         return True
 
-    def __call__(self, x, y=None, num_space=None, clip_values=None):
+    def __call__(self, x, y=None):
         """
-        Apply thermometer encoding to sample `x`.
+        Apply thermometer encoding to sample `x`. The new axis with the encoding is added as last dimension.
 
         :param x: Sample to encode with shape `(batch_size, width, height, depth)`.
         :type x: `np.ndarray`
         :param y: Labels of the sample `x`. This function does not affect them in any way.
         :type y: `np.ndarray`
-        :param num_space: Number of evenly spaced levels within [0, 1].
-        :type num_space: `int`
-        :param clip_values: Tuple of the form `(min, max)` representing the minimum and maximum values allowed
-               for features.
-        :type clip_values: `tuple`
         :return: Encoded sample with shape `(batch_size, width, height, depth x num_space)`.
         :rtype: `np.ndarray`
         """
-        params = {}
-        if num_space is not None:
-            params['num_space'] = num_space
+        result = np.apply_along_axis(self._perchannel, self.channel_index, x)
 
-        if clip_values is not None:
-            params['clip_values'] = clip_values
-
-        self.set_params(**params)
-
-        result = []
-        for c in range(x.shape[-1]):
-            result.append(self._perchannel(x[:, :, :, c]))
-
-        result = np.concatenate(result, axis=3)
-        result = np.clip(result, self.clip_values[0], self.clip_values[1])
+        # result = np.concatenate(result, axis=self.channel_index)
+        if hasattr(self, 'clip_values') and self.clip_values is not None:
+            np.clip(result, self.clip_values[0], self.clip_values[1], out=result)
 
         return result.astype(NUMPY_DTYPE), y
 
@@ -108,9 +95,7 @@ class ThermometerEncoding(Preprocessor):
         for i in reversed(range(1, self.num_space)):
             onehot_rep[:, i] += np.sum(onehot_rep[:, :i], axis=1)
 
-        result = onehot_rep.reshape(list(x.shape) + [self.num_space])
-
-        return result
+        return onehot_rep.flatten()
 
     def estimate_gradient(self, x, grad):
         """
@@ -126,9 +111,10 @@ class ThermometerEncoding(Preprocessor):
         :return: The gradient (estimate) of the defence.
         :rtype: `np.ndarray`
         """
-        thermometer_grad = np.zeros(x.shape + (self.num_space,))
+        thermometer_grad = np.zeros(x.shape[:-1] + (x.shape[-1] * self.num_space,))
         mask = np.array([x > k / self.num_space for k in range(self.num_space)])
         mask = np.moveaxis(mask, 0, -1)
+        mask = mask.reshape(thermometer_grad.shape)
         thermometer_grad[mask] = 1
 
         return grad * thermometer_grad
@@ -145,6 +131,8 @@ class ThermometerEncoding(Preprocessor):
 
         :param num_space: Number of evenly spaced levels within [0, 1].
         :type num_space: `int`
+        :param channel_index: Index of the axis in data containing the color channels or features.
+        :type channel_index: `int`
         :param clip_values: Tuple of the form `(min, max)` representing the minimum and maximum values allowed
                for features.
         :type clip_values: `tuple`
@@ -156,9 +144,10 @@ class ThermometerEncoding(Preprocessor):
             logger.error('Number of evenly spaced levels must be a positive integer.')
             raise ValueError('Number of evenly spaced levels must be a positive integer.')
 
-        if len(self.clip_values) != 2:
-            raise ValueError('`clip_values` should be a tuple of 2 floats containing the allowed data range.')
-        if self.clip_values[0] >= self.clip_values[1]:
-            raise ValueError('Invalid `clip_values`: min >= max.')
+        if hasattr(self, 'clip_values') and self.clip_values is not None:
+            if len(self.clip_values) != 2:
+                raise ValueError('`clip_values` should be a tuple of 2 floats containing the allowed data range.')
+            if np.array(self.clip_values[0] >= self.clip_values[1]).any():
+                raise ValueError('Invalid `clip_values`: min >= max.')
 
         return True
