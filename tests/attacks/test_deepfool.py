@@ -177,7 +177,7 @@ class TestDeepFoolVectors(unittest.TestCase):
 
         # Recreate a classifier without clip values
         classifier = KerasClassifier(model=classifier._model, use_logits=False, channel_index=1)
-        attack = DeepFool(classifier, max_iter=5)
+        attack = DeepFool(classifier, max_iter=5, batch_size=128)
         x_test_adv = attack.generate(x_test)
         self.assertFalse((x_test == x_test_adv).all())
 
@@ -190,7 +190,7 @@ class TestDeepFoolVectors(unittest.TestCase):
         (_, _), (x_test, y_test) = self.iris
         classifier, _ = get_iris_classifier_tf()
 
-        attack = DeepFool(classifier, max_iter=5)
+        attack = DeepFool(classifier, max_iter=5, batch_size=128)
         x_test_adv = attack.generate(x_test)
         self.assertFalse((x_test == x_test_adv).all())
         self.assertTrue((x_test_adv <= 1).all())
@@ -205,7 +205,7 @@ class TestDeepFoolVectors(unittest.TestCase):
         (_, _), (x_test, y_test) = self.iris
         classifier = get_iris_classifier_pt()
 
-        attack = DeepFool(classifier, max_iter=5)
+        attack = DeepFool(classifier, max_iter=5, batch_size=128)
         x_test_adv = attack.generate(x_test)
         self.assertFalse((x_test == x_test_adv).all())
         self.assertTrue((x_test_adv <= 1).all())

@@ -34,7 +34,7 @@ class DeepFool(Attack):
     """
     attack_params = Attack.attack_params + ['max_iter', 'epsilon', 'nb_grads', 'batch_size']
 
-    def __init__(self, classifier, max_iter=100, epsilon=1e-6, nb_grads=10, batch_size=128):
+    def __init__(self, classifier, max_iter=100, epsilon=1e-6, nb_grads=10, batch_size=1):
         """
         Create a DeepFool attack instance.
 

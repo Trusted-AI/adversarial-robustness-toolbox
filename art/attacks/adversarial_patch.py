@@ -38,7 +38,7 @@ class AdversarialPatch(Attack):
                                             "max_iter", "patch_shape", "batch_size", "clip_patch"]
 
     def __init__(self, classifier, target=0, rotation_max=22.5, scale_min=0.1, scale_max=1.0, learning_rate=5.0,
-                 max_iter=500, patch_shape=(224, 224, 3), clip_patch=None, batch_size=16):
+                 max_iter=100, patch_shape=(224, 224, 3), clip_patch=None, batch_size=1):
         """
         Create an instance of the :class:`.AdversarialPatch`.
 

@@ -34,7 +34,7 @@ class NewtonFool(Attack):
     """
     attack_params = Attack.attack_params + ["max_iter", "eta", "batch_size"]
 
-    def __init__(self, classifier, max_iter=1000, eta=0.01, batch_size=128):
+    def __init__(self, classifier, max_iter=100, eta=0.01, batch_size=1):
         """
         Create a NewtonFool attack instance.
 

@@ -152,7 +152,7 @@ class TestFastGradientMethodImages(unittest.TestCase):
                     (acc * 100))
 
         # L_1 norm
-        attack = FastGradientMethod(classifier, eps=1, norm=1)
+        attack = FastGradientMethod(classifier, eps=1, norm=1, batch_size=128)
         x_test_adv = attack.generate(x_test)
         self.assertFalse((x_test == x_test_adv).all())
 
@@ -162,7 +162,7 @@ class TestFastGradientMethodImages(unittest.TestCase):
         logger.info('Accuracy on MNIST with FGM adversarial test examples with L1 norm: %.2f%%', (acc * 100))
 
         # L_2 norm
-        attack = FastGradientMethod(classifier, eps=1, norm=2)
+        attack = FastGradientMethod(classifier, eps=1, norm=2, batch_size=128)
         x_test_adv = attack.generate(x_test)
         self.assertFalse((x_test == x_test_adv).all())
 
@@ -197,7 +197,7 @@ class TestFastGradientMethodImages(unittest.TestCase):
         fs = FeatureSqueezing(bit_depth=1, clip_values=(0, 1))
         classifier = KerasClassifier(model=model, clip_values=(0, 1), defences=fs, custom_activation=custom_activation)
 
-        attack = FastGradientMethod(classifier, eps=1)
+        attack = FastGradientMethod(classifier, eps=1, batch_size=128)
         x_train_adv = attack.generate(x_train)
         x_test_adv = attack.generate(x_test)
 
@@ -329,7 +329,7 @@ class TestFastGradientVectors(unittest.TestCase):
 
         # Test targeted attack
         targets = random_targets(y_test, nb_classes=3)
-        attack = FastGradientMethod(classifier, targeted=True, eps=.1)
+        attack = FastGradientMethod(classifier, targeted=True, eps=.1, batch_size=128)
         x_test_adv = attack.generate(x_test, **{'y': targets})
         self.assertFalse((x_test == x_test_adv).all())
         self.assertTrue((x_test_adv <= 1).all())
@@ -358,7 +358,7 @@ class TestFastGradientVectors(unittest.TestCase):
 
         # Test targeted attack
         targets = random_targets(y_test, nb_classes=3)
-        attack = FastGradientMethod(classifier, targeted=True, eps=.1)
+        attack = FastGradientMethod(classifier, targeted=True, eps=.1, batch_size=128)
         x_test_adv = attack.generate(x_test, **{'y': targets})
         self.assertFalse((x_test == x_test_adv).all())
         self.assertTrue((x_test_adv <= 1).all())

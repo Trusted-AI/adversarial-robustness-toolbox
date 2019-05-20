@@ -34,7 +34,7 @@ class VirtualAdversarialMethod(Attack):
     """
     attack_params = Attack.attack_params + ['eps', 'finite_diff', 'max_iter', 'batch_size']
 
-    def __init__(self, classifier, max_iter=1, finite_diff=1e-6, eps=.1, batch_size=128):
+    def __init__(self, classifier, max_iter=10, finite_diff=1e-6, eps=.1, batch_size=1):
         """
         Create a VirtualAdversarialMethod instance.
 
@@ -76,7 +76,8 @@ class VirtualAdversarialMethod(Attack):
         # Compute perturbation with implicit batching
         for batch_id in range(int(np.ceil(x_adv.shape[0] / float(self.batch_size)))):
             batch_index_1, batch_index_2 = batch_id * self.batch_size, (batch_id + 1) * self.batch_size
-            batch = x_adv[batch_index_1:batch_index_2].reshape((x_adv.shape[0], -1))
+            batch = x_adv[batch_index_1:batch_index_2]
+            batch = batch.reshape((batch.shape[0], -1))
 
             # Main algorithm for each batch
             d = np.random.randn(*batch.shape)

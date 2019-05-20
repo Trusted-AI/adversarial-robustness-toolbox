@@ -37,7 +37,7 @@ class FastGradientMethod(Attack):
     attack_params = Attack.attack_params + ['norm', 'eps', 'targeted', 'num_random_init', 'batch_size', 'minimal',
                                             'eps_step']
 
-    def __init__(self, classifier, norm=np.inf, eps=.3, targeted=False, num_random_init=0, batch_size=128,
+    def __init__(self, classifier, norm=np.inf, eps=.3, targeted=False, num_random_init=0, batch_size=1,
                  minimal=False, eps_step=0.1):
         """
         Create a :class:`.FastGradientMethod` instance.

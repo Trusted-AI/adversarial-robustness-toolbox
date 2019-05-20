@@ -88,7 +88,7 @@ class TestIterativeAttack(unittest.TestCase):
         (x_train, y_train), (x_test, y_test) = self.mnist
 
         # Test BIM with np.inf norm
-        attack = BasicIterativeMethod(classifier, eps=1, eps_step=0.1)
+        attack = BasicIterativeMethod(classifier, eps=1, eps_step=0.1, batch_size=128)
         x_train_adv = attack.generate(x_train)
         x_test_adv = attack.generate(x_test)
 
@@ -132,7 +132,7 @@ class TestIterativeAttack(unittest.TestCase):
         (_, _), (x_test, _) = self.mnist
 
         # Test FGSM with np.inf norm
-        attack = BasicIterativeMethod(classifier, eps=1.0, eps_step=0.01, targeted=True)
+        attack = BasicIterativeMethod(classifier, eps=1.0, eps_step=0.01, targeted=True, batch_size=128)
         # y_test_adv = to_categorical((np.argmax(y_test, axis=1) + 1)  % 10, 10)
         pred_sort = classifier.predict(x_test).argsort(axis=1)
         y_test_adv = np.zeros((x_test.shape[0], 10))
@@ -177,7 +177,7 @@ class TestIterativeAttackVectors(unittest.TestCase):
         classifier, _ = get_iris_classifier_kr()
 
         # Test untargeted attack
-        attack = BasicIterativeMethod(classifier, eps=1, eps_step=0.1)
+        attack = BasicIterativeMethod(classifier, eps=1, eps_step=0.1, batch_size=128)
         x_test_adv = attack.generate(x_test)
         self.assertFalse((x_test == x_test_adv).all())
         self.assertTrue((x_test_adv <= 1).all())
@@ -207,7 +207,7 @@ class TestIterativeAttackVectors(unittest.TestCase):
 
         # Recreate a classifier without clip values
         classifier = KerasClassifier(model=classifier._model, use_logits=False, channel_index=1)
-        attack = BasicIterativeMethod(classifier, eps=1, eps_step=0.2)
+        attack = BasicIterativeMethod(classifier, eps=1, eps_step=0.2, batch_size=128)
         x_test_adv = attack.generate(x_test)
         self.assertFalse((x_test == x_test_adv).all())
         self.assertTrue((x_test_adv > 1).any())
@@ -265,7 +265,7 @@ class TestIterativeAttackVectors(unittest.TestCase):
 
         # Test targeted attack
         targets = random_targets(y_test, nb_classes=3)
-        attack = BasicIterativeMethod(classifier, targeted=True, eps=1, eps_step=0.1)
+        attack = BasicIterativeMethod(classifier, targeted=True, eps=1, eps_step=0.1, batch_size=128)
         x_test_adv = attack.generate(x_test, **{'y': targets})
         self.assertFalse((x_test == x_test_adv).all())
         self.assertTrue((x_test_adv <= 1).all())

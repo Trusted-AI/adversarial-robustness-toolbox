@@ -35,8 +35,8 @@ class BasicIterativeMethod(FastGradientMethod):
     """
     attack_params = FastGradientMethod.attack_params + ['eps_step', 'max_iter', 'batch_size']
 
-    def __init__(self, classifier, norm=np.inf, eps=.3, eps_step=0.1, max_iter=20, targeted=False, num_random_init=0,
-                 batch_size=128):
+    def __init__(self, classifier, norm=np.inf, eps=.3, eps_step=0.1, max_iter=100, targeted=False, num_random_init=0,
+                 batch_size=1):
         """
         Create a :class:`.BasicIterativeMethod` instance.
 
