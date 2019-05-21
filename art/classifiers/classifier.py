@@ -333,8 +333,6 @@ class Classifier(ABC):
         :return: Value of the preprocessed data.
         :rtype: `np.ndarray`
         """
-        import numpy as np
-
         sub, div = self.preprocessing
         sub = np.asarray(sub, dtype=x.dtype)
         div = np.asarray(div, dtype=x.dtype)
@@ -353,8 +351,6 @@ class Classifier(ABC):
         :return: Value of the gradient.
         :rtype: `np.ndarray`
         """
-        import numpy as np
-
         _, div = self.preprocessing
         div = np.asarray(div, dtype=grad.dtype)
         res = grad / div
