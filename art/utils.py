@@ -299,7 +299,6 @@ def get_labels_np_array(preds):
     return y
 
 
-# TODO change preprocess to normalize feature-wise?
 def preprocess(x, y, nb_classes=10, clip_values=None):
     """Scales `x` to [0, 1] and converts `y` to class categorical confidences.
 
@@ -419,8 +418,8 @@ def load_cifar10(raw=False):
     min_, max_ = 0, 255
     if not raw:
         min_, max_ = 0., 1.
-        x_train, y_train = preprocess(x_train, y_train, max_value=255)
-        x_test, y_test = preprocess(x_test, y_test, max_value=255)
+        x_train, y_train = preprocess(x_train, y_train, clip_values=(0, 255))
+        x_test, y_test = preprocess(x_test, y_test, clip_values=(0, 255))
 
     return (x_train, y_train), (x_test, y_test), min_, max_
 

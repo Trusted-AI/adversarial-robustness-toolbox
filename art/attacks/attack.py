@@ -45,7 +45,7 @@ class Attack(ABC):
         """
         self.classifier = classifier
 
-    def generate(self, x, y):
+    def generate(self, x, y=None):
         """
         Generate adversarial examples and return them as an array. This method should be overridden by all concrete
         attack implementations.
