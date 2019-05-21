@@ -192,7 +192,7 @@ class ZooAttack(Attack):
 
         # Log success rate of the ZOO attack
         logger.info('Success rate of ZOO attack: %.2f%%',
-                    100 * (self.classifier, x, y, x_adv, self.targeted))
+                    100 * compute_success(self.classifier, x, y, x_adv, self.targeted))
 
         return x_adv
 
