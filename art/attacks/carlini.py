@@ -39,8 +39,8 @@ class CarliniL2Method(Attack):
                                             'binary_search_steps', 'initial_const', 'max_halving', 'max_doubling',
                                             'batch_size']
 
-    def __init__(self, classifier, confidence=0.0, targeted=True, learning_rate=0.01, binary_search_steps=10,
-                 max_iter=10, initial_const=0.01, max_halving=5, max_doubling=5, batch_size=128):
+    def __init__(self, classifier, confidence=0.0, targeted=False, learning_rate=0.01, binary_search_steps=10,
+                 max_iter=10, initial_const=0.01, max_halving=5, max_doubling=5, batch_size=1):
         """
         Create a Carlini L_2 attack instance.
 
@@ -428,7 +428,7 @@ class CarliniLInfMethod(Attack):
     attack_params = Attack.attack_params + ['confidence', 'targeted', 'learning_rate', 'max_iter',
                                             'max_halving', 'max_doubling', 'eps', 'batch_size']
 
-    def __init__(self, classifier, confidence=0.0, targeted=True, learning_rate=0.01,
+    def __init__(self, classifier, confidence=0.0, targeted=False, learning_rate=0.01,
                  max_iter=10, max_halving=5, max_doubling=5, eps=0.3, batch_size=128):
         """
         Create a Carlini L_Inf attack instance.

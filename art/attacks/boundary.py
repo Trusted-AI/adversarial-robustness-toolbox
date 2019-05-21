@@ -35,7 +35,7 @@ class BoundaryAttack(Attack):
     attack_params = Attack.attack_params + ['targeted', 'delta', 'epsilon', 'step_adapt', 'max_iter', 'sample_size',
                                             'init_size']
 
-    def __init__(self, classifier, targeted=True, delta=0.01, epsilon=0.01, step_adapt=0.9, max_iter=100,
+    def __init__(self, classifier, targeted=False, delta=0.01, epsilon=0.01, step_adapt=0.9, max_iter=100,
                  sample_size=20, init_size=100):
         """
         Create a boundary attack instance.
