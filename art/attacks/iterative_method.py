@@ -96,7 +96,7 @@ class BasicIterativeMethod(FastGradientMethod):
             targets = y
 
         adv_x_best = None
-        rate_best = 0.0
+        rate_best = None
 
         for i_random_init in range(max(1, self.num_random_init)):
             adv_x = x.astype(NUMPY_DTYPE)
@@ -105,13 +105,16 @@ class BasicIterativeMethod(FastGradientMethod):
                 adv_x = self._compute(adv_x, targets, self.eps, self.eps_step, self._project,
                                       self.num_random_init > 0 and i_max_iter == 0)
 
-            rate = 100 * compute_success(self.classifier, x, targets, adv_x, self.targeted)
-
-            if rate > rate_best or adv_x_best is None:
-                rate_best = rate
+            if self.num_random_init > 1:
+                rate = 100 * compute_success(self.classifier, x, targets, adv_x, self.targeted)
+                if rate_best is None or rate > rate_best or adv_x_best is None:
+                    rate_best = rate
+                    adv_x_best = adv_x
+            else:
                 adv_x_best = adv_x
 
-        logger.info('Success rate of BIM attack: %.2f%%', rate_best)
+        logger.info('Success rate of BIM attack: %.2f%%', rate_best if rate_best is not None else
+                    100 * compute_success(self.classifier, x, y, adv_x, self.targeted))
 
         return adv_x_best
 
