@@ -112,17 +112,69 @@ class SklearnSVC(Classifier):
         if self.model.fit_status_:
             raise AssertionError('Model has not been fitted correctly.')
 
+        num_samples, n_features = x.shape
+        gradients = np.zeros_like(x)
+
         if self.model.kernel == 'linear':
-            raise NotImplementedError
+
+            support_indices = [0] + list(np.cumsum(self.model.n_support_))
+            num_classes = len(self.model.classes_)
+
+            for i_sample in range(num_samples):
+
+                for i_k_c in range(num_classes):
+                    for i_k in range(support_indices[i_k_c], support_indices[i_k_c + 1]):
+
+                        for i in range(num_classes):
+
+                            if i < i_k_c:
+                                i_i = i
+                            elif i > i_k_c:
+                                i_i = i - 1
+                            else:
+                                continue
+
+                            alpha_i_k_y_i = self.model.dual_coef_[i_i, i_k]
+                            x_i = self.model.support_vectors_[i_k, :]
+
+                            gradients[i_sample, :] += alpha_i_k_y_i * x_i
+
         elif self.model.kernel == 'poly':
             raise NotImplementedError
+
         elif self.model.kernel == 'rbf':
-            raise NotImplementedError
+            support_indices = [0] + list(np.cumsum(self.model.n_support_))
+            num_classes = len(self.model.classes_)
+
+            for i_sample in range(num_samples):
+
+                for i_k_c in range(num_classes):
+                    for i_k in range(support_indices[i_k_c], support_indices[i_k_c + 1]):
+
+                        for i in range(num_classes):
+
+                            if i < i_k_c:
+                                i_i = i
+                            elif i > i_k_c:
+                                i_i = i - 1
+                            else:
+                                continue
+
+                            alpha_i_k_y_i = self.model.dual_coef_[i_i, i_k]
+                            x_i = self.model.support_vectors_[i_k, :]
+                            gamma = 1.0
+
+                            gradients[i_sample, :] += alpha_i_k_y_i * 2.0 * gamma * np.exp(
+                                -gamma * np.linalg.norm(x[i_sample] - x_i, ord=2)) * (x[i_sample] - x_i)
+
         elif self.model.kernel == 'sigmoid':
             raise NotImplementedError
+
         else:
             raise NotImplementedError(
                 'Loss gradients for kernel \'{}\' are not implemented.'.format(self.model.kernel))
+
+        # print(gradients)
 
         return gradients
 
@@ -139,7 +191,16 @@ class SklearnSVC(Classifier):
         :return: Array of predictions of shape `(nb_inputs, self.nb_classes)`.
         :rtype: `np.ndarray`
         """
-        return self.model.predict_proba(X=x)
+        if self.model.probability:
+            y_pred = self.model.predict_proba(X=x)
+        else:
+            y_pred_label = self.model.predict(X=x)
+            num_classes = len(self.model.classes_)
+            targets = np.array(y_pred_label).reshape(-1)
+            one_hot_targets = np.eye(num_classes)[targets]
+            y_pred = one_hot_targets
+
+        return y_pred
 
     def save(self, filename, path=None):
         import pickle
