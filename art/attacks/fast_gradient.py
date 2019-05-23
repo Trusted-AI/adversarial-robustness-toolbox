@@ -145,21 +145,21 @@ class FastGradientMethod(Attack):
             rate_best = 100 * compute_success(self.classifier, x, y, adv_x_best, self.targeted)
         else:
             adv_x_best = None
-            rate_best = 0.0
+            rate_best = None
 
             for i_random_init in range(max(1, self.num_random_init)):
                 adv_x = self._compute(x, y, self.eps, self.eps, self._project, self.num_random_init > 0)
 
-                if self.num_random_init > 0:
+                if self.num_random_init > 1:
                     rate = 100 * compute_success(self.classifier, x, y, adv_x, self.targeted)
-                    if rate > rate_best or adv_x_best is None:
+                    if rate_best is None or rate > rate_best or adv_x_best is None:
                         rate_best = rate
                         adv_x_best = adv_x
                 else:
                     adv_x_best = adv_x
 
-        if self.num_random_init > 0:
-            logger.info('Success rate of FGM attack: %.2f%%', rate_best)
+        logger.info('Success rate of FGM attack: %.2f%%', rate_best if rate_best is not None else
+                    100 * compute_success(self.classifier, x, y, adv_x, self.targeted))
 
         return adv_x_best
 
