@@ -35,10 +35,10 @@ class AdversarialPatch(Attack):
     """
 
     attack_params = Attack.attack_params + ["target", "rotation_max", "scale_min", "scale_max", "learning_rate",
-                                            "max_iter", "patch_shape", "batch_size", "clip_patch"]
+                                            "max_iter", "batch_size", "clip_patch"]
 
     def __init__(self, classifier, target=0, rotation_max=22.5, scale_min=0.1, scale_max=1.0, learning_rate=5.0,
-                 max_iter=100, patch_shape=(224, 224, 3), clip_patch=None, batch_size=1):
+                 max_iter=500, clip_patch=None, batch_size=16):
         """
         Create an instance of the :class:`.AdversarialPatch`.
 
@@ -59,8 +59,6 @@ class AdversarialPatch(Attack):
         :type learning_rate: `float`
         :param max_iter: The number of optimization steps.
         :type max_iter: `int`
-        :param patch_shape: The shape of the adversarial patch.
-        :type patch_shape: `(int, int, int)`
         :param clip_patch: The minimum and maximum values for each channel
         :type clip_patch: [(float, float), (float, float), (float, float)]
         :param batch_size: The size of the training batch.
@@ -74,7 +72,6 @@ class AdversarialPatch(Attack):
                   "scale_max": scale_max,
                   "learning_rate": learning_rate,
                   "max_iter": max_iter,
-                  "patch_shape": patch_shape,
                   "batch_size": batch_size,
                   "clip_patch": clip_patch
                   }
@@ -98,7 +95,7 @@ class AdversarialPatch(Attack):
             raise ValueError('Feature vectors detected. The adversarial patch can only be applied to data with spatial '
                              'dimensions.')
 
-        self.patch = (np.random.standard_normal(size=self.patch_shape)) * 20.0
+        self.patch = (np.random.standard_normal(size=self.classifier.input_shape)) * 20.0
 
         for i_step in range(self.max_iter):
             if i_step == 0 or (i_step + 1) % 100 == 0:
@@ -131,7 +128,7 @@ class AdversarialPatch(Attack):
 
         :param x: Instances to apply randomly transformed patch.
         :type x: `np.ndarray`
-        :param scale: Scale of the applied patch in relation to `patch_shape`.
+        :param scale: Scale of the applied patch in relation to the classifier input shape.
         :type scale: `float`
         :return: The patched instances.
         :rtype: `np.ndarray`
@@ -158,8 +155,6 @@ class AdversarialPatch(Attack):
         :type learning_rate: `float`
         :param max_iter: The number of optimization steps.
         :type max_iter: `int`
-        :param patch_shape: The shape of the adversarial patch.
-        :type patch_shape: `(int, int, int)`
         :param clip_batch: The minimum and maximum values for each channel
         :type clip_patch: [(float, float), (float, float), (float, float)]
         :param batch_size: The size of the training batch.
@@ -196,11 +191,6 @@ class AdversarialPatch(Attack):
         if not self.max_iter > 0:
             raise ValueError("The number of optimization steps must be greater than 0.")
 
-        if not isinstance(self.patch_shape, tuple) or not len(self.patch_shape) == 3 or not isinstance(
-                self.patch_shape[0], int) or not isinstance(self.patch_shape[1], int) or not isinstance(
-                    self.patch_shape[2], int):
-            raise ValueError("The shape of the adversarial patch must be a tuple of 3 integers.")
-
         if not isinstance(self.batch_size, int):
             raise ValueError("The batch size must be of type int.")
         if not self.batch_size > 0:
@@ -212,7 +202,7 @@ class AdversarialPatch(Attack):
         """
         Return a circular patch mask
         """
-        diameter = self.patch_shape[1]
+        diameter = self.classifier.input_shape[1]
         x = np.linspace(-1, 1, diameter)
         y = np.linspace(-1, 1, diameter)
         x_grid, y_grid = np.meshgrid(x, y, sparse=True)
@@ -220,13 +210,13 @@ class AdversarialPatch(Attack):
 
         mask = 1 - np.clip(z_grid, -1, 1)
 
-        pad_1 = int((self.patch_shape[1] - mask.shape[1]) / 2)
-        pad_2 = int(self.patch_shape[1] - pad_1 - mask.shape[1])
+        pad_1 = int((self.classifier.input_shape[1] - mask.shape[1]) / 2)
+        pad_2 = int(self.classifier.input_shape[1] - pad_1 - mask.shape[1])
         mask = np.pad(mask, pad_width=(pad_1, pad_2), mode='constant', constant_values=(0, 0))
 
         axis = self.classifier.channel_index - 1
         mask = np.expand_dims(mask, axis=axis)
-        mask = np.broadcast_to(mask, self.patch_shape).astype(np.float32)
+        mask = np.broadcast_to(mask, self.classifier.input_shape).astype(np.float32)
         return mask
 
     def _augment_images_with_random_patch(self, images, patch, scale=None):
@@ -272,7 +262,7 @@ class AdversarialPatch(Attack):
             zooms = (1.0, scale, scale)
         x = zoom(x, zoom=zooms, order=1)
 
-        if x.shape[1] <= self.patch_shape[1]:
+        if x.shape[1] <= self.classifier.input_shape[1]:
             pad_1 = int((shape - x.shape[1]) / 2)
             pad_2 = int(shape - pad_1 - x.shape[1])
             if self.classifier.channel_index == 3:
@@ -284,8 +274,8 @@ class AdversarialPatch(Attack):
             x = np.pad(x, pad_width=pad_width, mode='constant', constant_values=(0, 0))
         else:
             center = int(x.shape[1] / 2)
-            patch_hw_1 = int(self.patch_shape[1] / 2)
-            patch_hw_2 = self.patch_shape[1] - patch_hw_1
+            patch_hw_1 = int(self.classifier.input_shape[1] / 2)
+            patch_hw_2 = self.classifier.input_shape[1] - patch_hw_1
             if self.classifier.channel_index == 3:
                 x = x[center - patch_hw_1:center + patch_hw_2, center - patch_hw_1:center + patch_hw_2, :]
             elif self.classifier.channel_index == 1:
@@ -325,7 +315,7 @@ class AdversarialPatch(Attack):
         transformation['scale'] = scale
 
         # shift
-        shift_max = (self.classifier.input_shape[1] - self.patch_shape[1] * scale) / 2.0
+        shift_max = (self.classifier.input_shape[1] * (1. - scale)) / 2.0
         if shift_max > 0:
             shift_1 = random.uniform(-shift_max, shift_max)
             shift_2 = random.uniform(-shift_max, shift_max)

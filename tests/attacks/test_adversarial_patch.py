@@ -64,7 +64,7 @@ class TestAdversarialPatch(unittest.TestCase):
 
         # Attack
         attack_ap = AdversarialPatch(tfc, rotation_max=22.5, scale_min=0.1, scale_max=1.0, learning_rate=5.0,
-                                     patch_shape=(28, 28, 1), batch_size=10, max_iter=500)
+                                     batch_size=10, max_iter=500)
         patch_adv, _ = attack_ap.generate(x_train)
 
         self.assertTrue(patch_adv[8, 8, 0] - (-3.1106631027725005) < 0.01)
@@ -87,7 +87,7 @@ class TestAdversarialPatch(unittest.TestCase):
 
         # Attack
         attack_ap = AdversarialPatch(krc, rotation_max=22.5, scale_min=0.1, scale_max=1.0, learning_rate=5.0,
-                                     patch_shape=(28, 28, 1), batch_size=10, max_iter=500)
+                                     batch_size=10, max_iter=500)
         patch_adv, _ = attack_ap.generate(x_train)
 
         self.assertTrue(patch_adv[8, 8, 0] - (-3.2501425017774923) < 0.01)
@@ -110,7 +110,7 @@ class TestAdversarialPatch(unittest.TestCase):
 
         # Attack
         attack_ap = AdversarialPatch(ptc, rotation_max=22.5, scale_min=0.1, scale_max=1.0, learning_rate=5.0,
-                                     patch_shape=(1, 28, 28), batch_size=10, max_iter=500)
+                                     batch_size=10, max_iter=500)
         patch_adv, _ = attack_ap.generate(x_train)
 
         self.assertTrue(patch_adv[0, 8, 8] - (-3.1423605902784875) < 0.01)
@@ -119,7 +119,7 @@ class TestAdversarialPatch(unittest.TestCase):
 
     def test_failure_feature_vectors(self):
         attack_params = {"rotation_max": 22.5, "scale_min": 0.1, "scale_max": 1.0,
-                         "learning_rate": 5.0, "number_of_steps": 5, "patch_shape": (1, 28, 28), "batch_size": 10}
+                         "learning_rate": 5.0, "number_of_steps": 5, "batch_size": 10}
         attack = AdversarialPatch(classifier=None)
         attack.set_params(**attack_params)
         data = np.random.rand(10, 4)
