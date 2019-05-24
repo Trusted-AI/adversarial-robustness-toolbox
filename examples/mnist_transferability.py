@@ -5,11 +5,6 @@ black-box attack: the attack never has access to the parameters of the TensorFlo
 """
 from __future__ import absolute_import, division, print_function
 
-import sys
-from os.path import abspath
-
-sys.path.append(abspath('.'))
-
 import keras
 import keras.backend as k
 from keras.models import Sequential
@@ -42,7 +37,8 @@ def cnn_mnist_tf(input_shape):
     sess = tf.Session()
     sess.run(tf.global_variables_initializer())
 
-    classifier = TFClassifier((0, 1), inputs_tf, logits, loss=loss, train=train_tf, output_ph=labels_tf, sess=sess)
+    classifier = TFClassifier(clip_values=(0, 1), input_ph=inputs_tf, output=logits, loss=loss, train=train_tf,
+                              labels_ph=labels_tf, sess=sess)
     return classifier
 
 
@@ -57,7 +53,7 @@ def cnn_mnist_k(input_shape):
     model.compile(loss=keras.losses.categorical_crossentropy, optimizer=keras.optimizers.Adam(lr=0.01),
                   metrics=['accuracy'])
 
-    classifier = KerasClassifier((0, 1), model, use_logits=False)
+    classifier = KerasClassifier((0, 1), model)
     return classifier
 
 # Get session

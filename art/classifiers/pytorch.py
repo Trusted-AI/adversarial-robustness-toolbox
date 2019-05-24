@@ -85,14 +85,12 @@ class PyTorchClassifier(Classifier):
     def _init_grads(self):
         return -1
 
-    def predict(self, x, logits=False, batch_size=128):
+    def predict(self, x, batch_size=128):
         """
         Perform prediction for a batch of inputs.
 
         :param x: Test set.
         :type x: `np.ndarray`
-        :param logits: `True` if the prediction should be done at the logits layer.
-        :type logits: `bool`
         :param batch_size: Size of batches.
         :type batch_size: `int`
         :return: Array of predictions of shape `(nb_inputs, self.nb_classes)`.
@@ -112,12 +110,8 @@ class PyTorchClassifier(Classifier):
             begin, end = m * batch_size, min((m + 1) * batch_size, x_preproc.shape[0])
 
             model_outputs = self._model(torch.from_numpy(x_preproc[begin:end]).to(self._device).float())
-            (logit_output, output) = (model_outputs[-2], model_outputs[-1])
-
-            if logits:
-                results[begin:end] = logit_output.detach().cpu().numpy()
-            else:
-                results[begin:end] = output.detach().cpu().numpy()
+            output = model_outputs[-1]
+            results[begin:end] = output.detach().cpu().numpy()
 
         return results
 
@@ -210,7 +204,7 @@ class PyTorchClassifier(Classifier):
             # Fit a generic data generator through the API
             super(PyTorchClassifier, self).fit_generator(generator, nb_epochs=nb_epochs)
 
-    def class_gradient(self, x, label=None, logits=False):
+    def class_gradient(self, x, label=None):
         """
         Compute per-class derivatives w.r.t. `x`.
 
@@ -221,8 +215,6 @@ class PyTorchClassifier(Classifier):
                       match the batch size of `x`, and each value will be used as target for its corresponding sample in
                       `x`. If `None`, then gradients for all classes will be computed for each sample.
         :type label: `int` or `list`
-        :param logits: `True` if the prediction should be done at the logits layer.
-        :type logits: `bool`
         :return: Array of gradients of input features w.r.t. each class in the form
                  `(batch_size, nb_classes, input_shape)` when computing for all classes, otherwise shape becomes
                  `(batch_size, 1, input_shape)` when `label` parameter is specified.
@@ -256,11 +248,7 @@ class PyTorchClassifier(Classifier):
             input_grad = x_defences
 
         # Set where to get gradient from
-        (logit_output, output) = (model_outputs[-2], model_outputs[-1])
-        if logits:
-            preds = logit_output
-        else:
-            preds = output
+        preds = model_outputs[-1]
 
         # Compute the gradient
         grads = []

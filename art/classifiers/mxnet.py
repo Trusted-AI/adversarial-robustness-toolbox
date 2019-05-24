@@ -171,14 +171,12 @@ class MXClassifier(Classifier):
             # Fit a generic data generator through the API
             super(MXClassifier, self).fit_generator(generator, nb_epochs=nb_epochs)
 
-    def predict(self, x, logits=False, batch_size=128):
+    def predict(self, x, batch_size=128):
         """
         Perform prediction for a batch of inputs.
 
         :param x: Test set.
         :type x: `np.ndarray`
-        :param logits: `True` if the prediction should be done at the logits layer.
-        :type logits: `bool`
         :param batch_size: Size of batches.
         :type batch_size: `int`
         :return: Array of predictions of shape `(nb_inputs, self.nb_classes)`.
@@ -205,14 +203,11 @@ class MXClassifier(Classifier):
             with mx.autograd.record(train_mode=train_mode):
                 preds = self._model(x_batch)
 
-            if logits is False:
-                preds = preds.softmax()
-
             results[begin:end] = preds.asnumpy()
 
         return results
 
-    def class_gradient(self, x, label=None, logits=False):
+    def class_gradient(self, x, label=None):
         """
         Compute per-class derivatives w.r.t. `x`.
 
@@ -223,8 +218,6 @@ class MXClassifier(Classifier):
                       match the batch size of `x`, and each value will be used as target for its corresponding sample in
                       `x`. If `None`, then gradients for all classes will be computed for each sample.
         :type label: `int` or `list`
-        :param logits: `True` if the prediction should be done at the logits layer.
-        :type logits: `bool`
         :return: Array of gradients of input features w.r.t. each class in the form
                  `(batch_size, nb_classes, input_shape)` when computing for all classes, otherwise shape becomes
                  `(batch_size, 1, input_shape)` when `label` parameter is specified.
@@ -247,10 +240,7 @@ class MXClassifier(Classifier):
 
         if label is None:
             with mx.autograd.record(train_mode=False):
-                if logits is True:
-                    preds = self._model(x_defences)
-                else:
-                    preds = self._model(x_defences).softmax()
+                preds = self._model(x_defences)
                 class_slices = [preds[:, i] for i in range(self.nb_classes)]
 
             grads = []
@@ -261,10 +251,7 @@ class MXClassifier(Classifier):
             grads = np.swapaxes(np.array(grads), 0, 1)
         elif isinstance(label, (int, np.integer)):
             with mx.autograd.record(train_mode=train_mode):
-                if logits is True:
-                    preds = self._model(x_defences)
-                else:
-                    preds = self._model(x_defences).softmax()
+                preds = self._model(x_defences)
                 class_slice = preds[:, label]
 
             class_slice.backward()
@@ -273,10 +260,7 @@ class MXClassifier(Classifier):
             unique_labels = list(np.unique(label))
 
             with mx.autograd.record(train_mode=train_mode):
-                if logits is True:
-                    preds = self._model(x_defences)
-                else:
-                    preds = self._model(x_defences).softmax()
+                preds = self._model(x_defences)
                 class_slices = [preds[:, i] for i in unique_labels]
 
             grads = []

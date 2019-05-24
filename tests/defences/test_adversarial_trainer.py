@@ -105,7 +105,7 @@ class TestBase(unittest.TestCase):
         TestBase.sess = tf.Session()
         TestBase.sess.run(tf.global_variables_initializer())
 
-        classifier = TFClassifier(input_ph=inputs_tf, logits=logits, loss=loss, train=train_tf, output_ph=labels_tf,
+        classifier = TFClassifier(input_ph=inputs_tf, output=logits, loss=loss, train=train_tf, labels_ph=labels_tf,
                                   sess=TestBase.sess, clip_values=(0, 1))
         return classifier
 

@@ -745,7 +745,7 @@ def get_classifier_tf():
 
     # Define input and output placeholders
     input_ph = tf.placeholder(tf.float32, shape=[None, 28, 28, 1])
-    output_ph = tf.placeholder(tf.int32, shape=[None, 10])
+    labels_ph = tf.placeholder(tf.int32, shape=[None, 10])
 
     # Define the tensorflow graph
     conv = tf.layers.conv2d(input_ph, 1, 7, activation=tf.nn.relu,
@@ -759,14 +759,16 @@ def get_classifier_tf():
                              bias_initializer=_tf_weights_loader('MNIST', 'B', 'DENSE'))
 
     # Train operator
-    loss = tf.reduce_mean(tf.losses.softmax_cross_entropy(logits=logits, onehot_labels=output_ph))
+    loss = tf.reduce_mean(tf.losses.softmax_cross_entropy(logits=logits, onehot_labels=labels_ph))
+    optimizer = tf.train.AdamOptimizer(learning_rate=0.01)
+    train = optimizer.minimize(loss)
 
     # Tensorflow session and initialization
     sess = tf.Session()
     sess.run(tf.global_variables_initializer())
 
     # Train the classifier
-    tfc = TFClassifier(clip_values=(0, 1), input_ph=input_ph, logits=logits, output_ph=output_ph, train=None,
+    tfc = TFClassifier(clip_values=(0, 1), input_ph=input_ph, output=logits, labels_ph=labels_ph, train=train,
                        loss=loss, learning=None, sess=sess)
 
     return tfc, sess
@@ -806,7 +808,7 @@ def get_classifier_kr():
                   metrics=['accuracy'])
 
     # Get classifier
-    krc = KerasClassifier(model, clip_values=(0, 1), use_logits=False)
+    krc = KerasClassifier(model, clip_values=(0, 1))
 
     return krc, sess
 
@@ -888,7 +890,7 @@ def get_iris_classifier_tf():
 
     # Define input and output placeholders
     input_ph = tf.placeholder(tf.float32, shape=[None, 4])
-    output_ph = tf.placeholder(tf.int32, shape=[None, 3])
+    labels_ph = tf.placeholder(tf.int32, shape=[None, 3])
 
     # Define the tensorflow graph
     dense1 = tf.layers.dense(input_ph, 10, kernel_initializer=_tf_weights_loader('IRIS', 'W', 'DENSE1'),
@@ -899,14 +901,14 @@ def get_iris_classifier_tf():
                              bias_initializer=_tf_weights_loader('IRIS', 'B', 'DENSE3'))
 
     # Train operator
-    loss = tf.reduce_mean(tf.losses.softmax_cross_entropy(logits=logits, onehot_labels=output_ph))
+    loss = tf.reduce_mean(tf.losses.softmax_cross_entropy(logits=logits, onehot_labels=labels_ph))
 
     # Tensorflow session and initialization
     sess = tf.Session()
     sess.run(tf.global_variables_initializer())
 
     # Train the classifier
-    tfc = TFClassifier(clip_values=(0, 1), input_ph=input_ph, logits=logits, output_ph=output_ph, train=None,
+    tfc = TFClassifier(clip_values=(0, 1), input_ph=input_ph, output=logits, labels_ph=labels_ph, train=None,
                        loss=loss, learning=None, sess=sess, channel_index=1)
 
     return tfc, sess
@@ -944,7 +946,7 @@ def get_iris_classifier_kr():
     model.compile(loss='categorical_crossentropy', optimizer=keras.optimizers.Adam(lr=0.001), metrics=['accuracy'])
 
     # Get classifier
-    krc = KerasClassifier(model, clip_values=(0, 1), use_logits=False, channel_index=1)
+    krc = KerasClassifier(model, clip_values=(0, 1), channel_index=1)
 
     return krc, sess
 

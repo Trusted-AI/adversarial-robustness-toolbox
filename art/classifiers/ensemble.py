@@ -90,7 +90,7 @@ class EnsembleClassifier(Classifier):
 
         self._classifiers = classifiers
 
-    def predict(self, x, logits=False, raw=False):
+    def predict(self, x, raw=False):
         """
         Perform prediction for a batch of inputs. Predictions from classifiers are aggregated at probabilities level,
         as logits are not comparable between models. If logits prediction was specified, probabilities are converted
@@ -98,26 +98,19 @@ class EnsembleClassifier(Classifier):
 
         :param x: Test set.
         :type x: `np.ndarray`
-        :param logits: `True` if the prediction should be done at the logits layer.
-        :type logits: `bool`
         :param raw: Return the individual classifier raw outputs (not aggregated).
         :type raw: `bool`
         :return: Array of predictions of shape `(nb_inputs, self.nb_classes)`, or of shape
                  `(nb_classifiers, nb_inputs, self.nb_classes)` if `raw=True`.
         :rtype: `np.ndarray`
         """
-        preds = np.array([self._classifier_weights[i] * self._classifiers[i].predict(x, raw and logits)
+        preds = np.array([self._classifier_weights[i] * self._classifiers[i].predict(x)
                           for i in range(self._nb_classifiers)])
         if raw:
             return preds
 
-        # Aggregate predictions only at probabilities level, as logits are not comparable between models
+        # Aggregate predictions (warning: logits are not comparable between models)
         z = np.sum(preds, axis=0)
-
-        # Convert back to logits if needed
-        if logits:
-            eps = 10e-8
-            z = np.log(np.clip(z, eps, 1. - eps))
         return z
 
     def fit(self, x, y, batch_size=128, nb_epochs=20, **kwargs):
@@ -186,7 +179,7 @@ class EnsembleClassifier(Classifier):
         """
         raise NotImplementedError
 
-    def class_gradient(self, x, label=None, logits=False, raw=False):
+    def class_gradient(self, x, label=None, raw=False):
         """
         Compute per-class derivatives w.r.t. `x`.
 
@@ -195,8 +188,6 @@ class EnsembleClassifier(Classifier):
         :param label: Index of a specific per-class derivative. If `None`, then gradients for all
                       classes will be computed.
         :type label: `int`
-        :param logits: `True` if the prediction should be done at the logits layer.
-        :type logits: `bool`
         :param raw: Return the individual classifier raw outputs (not aggregated).
         :type raw: `bool`
         :return: Array of gradients of input features w.r.t. each class in the form
@@ -205,7 +196,7 @@ class EnsembleClassifier(Classifier):
                  dimension is added at the beginning of the array, indexing the different classifiers.
         :rtype: `np.ndarray`
         """
-        grads = np.array([self._classifier_weights[i] * self._classifiers[i].class_gradient(x, label, logits)
+        grads = np.array([self._classifier_weights[i] * self._classifiers[i].class_gradient(x, label)
                           for i in range(self._nb_classifiers)])
         if raw:
             return grads

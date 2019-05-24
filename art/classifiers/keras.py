@@ -31,15 +31,13 @@ class KerasClassifier(Classifier):
     """
     Wrapper class for importing Keras models. The supported backends for Keras are TensorFlow and Theano.
     """
-    def __init__(self, model, use_logits=False, channel_index=3, clip_values=None, defences=None, preprocessing=(0, 1),
-                 input_layer=0, output_layer=0, custom_activation=False):
+    def __init__(self, model, channel_index=3, clip_values=None, defences=None, preprocessing=(0, 1),
+                 input_layer=0, output_layer=0):
         """
         Create a `Classifier` instance from a Keras model. Assumes the `model` passed as argument is compiled.
 
         :param model: Keras model
         :type model: `keras.models.Model`
-        :param use_logits: True if the output of the model are the logits.
-        :type use_logits: `bool`
         :param channel_index: Index of the axis in data containing the color channels or features.
         :type channel_index: `int`
         :param clip_values: Tuple of the form `(min, max)` of floats or `np.ndarray` representing the minimum and
@@ -57,9 +55,6 @@ class KerasClassifier(Classifier):
         :type input_layer: `int`
         :param output_layer: Which layer to consider as the Output when the model has multiple output layers.
         :type output_layer: `int`
-        :param custom_activation: True if the model uses the last activation other than softmax and requires to use the
-               output probability rather than the logits by attacks.
-        :type custom_activation: `bool`
         """
         super(KerasClassifier, self).__init__(clip_values=clip_values, channel_index=channel_index, defences=defences,
                                               preprocessing=preprocessing)
@@ -68,24 +63,19 @@ class KerasClassifier(Classifier):
         self._input_layer = input_layer
         self._output_layer = output_layer
 
-        self._initialize_params(model, use_logits, input_layer, output_layer, custom_activation)
+        self._initialize_params(model, input_layer, output_layer)
 
-    def _initialize_params(self, model, use_logits, input_layer, output_layer, custom_activation):
+    def _initialize_params(self, model, input_layer, output_layer):
         """
         Initialize most parameters of the classifier. This is a convenience function called by `__init__` and
         `__setstate__` to avoid code duplication.
 
         :param model: Keras model
         :type model: `keras.models.Model`
-        :param use_logits: True if the output of the model are the logits.
-        :type use_logits: `bool`
         :param input_layer: Which layer to consider as the Input when the model has multple input layers.
         :type input_layer: `int`
         :param output_layer: Which layer to consider as the Output when the model has multiple output layers.
         :type output_layer: `int`
-        :param custom_activation: True if the model uses the last activation other than softmax and requires to use the
-               output probability rather than the logits by attacks.
-        :type custom_activation: `bool`
         """
         import keras.backend as k
 
@@ -105,7 +95,6 @@ class KerasClassifier(Classifier):
 
         _, self._nb_classes = k.int_shape(self._output)
         self._input_shape = k.int_shape(self._input)[1:]
-        self._custom_activation = custom_activation
         logger.debug('Inferred %i classes and %s as input shape for Keras classifier.', self.nb_classes,
                      str(self.input_shape))
 
@@ -120,25 +109,10 @@ class KerasClassifier(Classifier):
             else:
                 loss_function = getattr(k, self._model.loss.__name__)
 
-        self._use_logits = use_logits
-        if not use_logits:
-            if k.backend() == 'tensorflow':
-                if custom_activation:
-                    preds = self._output
-                    loss_ = loss_function(label_ph, preds, from_logits=False)
-                else:
-                    # We get a list of tensors that comprise the final "layer" -> take the last element
-                    preds = self._output.op.inputs[-1]
-                    loss_ = loss_function(label_ph, preds, from_logits=True)
-            else:
-                loss_ = loss_function(label_ph, self._output, from_logits=use_logits)
+        # We get a list of tensors that comprise the final "layer" -> take the last element
+        preds = self._output.op.inputs[-1]
+        loss_ = loss_function(label_ph, preds)
 
-                # Convert predictions to logits for consistency with the other cases
-                eps = 10e-8
-                preds = k.log(k.clip(self._output, eps, 1. - eps))
-        else:
-            preds = self._output
-            loss_ = loss_function(label_ph, self._output, from_logits=use_logits)
         if preds == self._input:  # recent Tensorflow version does not allow a model with an output same as the input.
             preds = k.identity(preds)
         loss_grads = k.gradients(loss_, self._input)
@@ -187,7 +161,7 @@ class KerasClassifier(Classifier):
 
         return grads
 
-    def class_gradient(self, x, label=None, logits=False):
+    def class_gradient(self, x, label=None):
         """
         Compute per-class derivatives w.r.t. `x`.
 
@@ -198,8 +172,6 @@ class KerasClassifier(Classifier):
                       match the batch size of `x`, and each value will be used as target for its corresponding sample in
                       `x`. If `None`, then gradients for all classes will be computed for each sample.
         :type label: `int` or `list`
-        :param logits: `True` if the prediction should be done at the logits layer.
-        :type logits: `bool`
         :return: Array of gradients of input features w.r.t. each class in the form
                  `(batch_size, nb_classes, input_shape)` when computing for all classes, otherwise shape becomes
                  `(batch_size, 1, input_shape)` when `label` parameter is specified.
@@ -211,34 +183,24 @@ class KerasClassifier(Classifier):
                     and label.shape[0] == x.shape[0])):
             raise ValueError('Label %s is out of range.' % str(label))
 
-        self._init_class_grads(label=label, logits=logits)
+        self._init_class_grads(label=label)
 
         x_preproc = self._apply_processing(x)
         x_defences, _ = self._apply_defences(x_preproc, None)
 
         if label is None:
             # Compute the gradients w.r.t. all classes
-            if logits:
-                grads = np.swapaxes(np.array(self._class_grads_logits([x_defences])), 0, 1)
-            else:
-                grads = np.swapaxes(np.array(self._class_grads([x_defences])), 0, 1)
+            grads = np.swapaxes(np.array(self._class_grads([x_defences])), 0, 1)
 
         elif isinstance(label, (int, np.integer)):
             # Compute the gradients only w.r.t. the provided label
-            if logits:
-                grads = np.swapaxes(np.array(self._class_grads_logits_idx[label]([x_defences])), 0, 1)
-            else:
-                grads = np.swapaxes(np.array(self._class_grads_idx[label]([x_defences])), 0, 1)
-
+            grads = np.swapaxes(np.array(self._class_grads_idx[label]([x_defences])), 0, 1)
             assert grads.shape == (x_defences.shape[0], 1) + self.input_shape
 
         else:
             # For each sample, compute the gradients w.r.t. the indicated target class (possibly distinct)
             unique_label = list(np.unique(label))
-            if logits:
-                grads = np.array([self._class_grads_logits_idx[l]([x_defences]) for l in unique_label])
-            else:
-                grads = np.array([self._class_grads_idx[l]([x_defences]) for l in unique_label])
+            grads = np.array([self._class_grads_idx[l]([x_defences]) for l in unique_label])
             grads = np.swapaxes(np.squeeze(grads, axis=1), 0, 1)
             lst = [unique_label.index(i) for i in label]
             grads = np.expand_dims(grads[np.arange(len(grads)), lst], axis=1)
@@ -248,14 +210,12 @@ class KerasClassifier(Classifier):
 
         return grads
 
-    def predict(self, x, logits=False, batch_size=128):
+    def predict(self, x, batch_size=128):
         """
         Perform prediction for a batch of inputs.
 
         :param x: Test set.
         :type x: `np.ndarray`
-        :param logits: `True` if the prediction should be done at the logits layer.
-        :type logits: `bool`
         :param batch_size: Size of batches.
         :type batch_size: `int`
         :return: Array of predictions of shape `(nb_inputs, self.nb_classes)`.
@@ -272,10 +232,6 @@ class KerasClassifier(Classifier):
         for batch_index in range(int(np.ceil(x_preproc.shape[0] / float(batch_size)))):
             begin, end = batch_index * batch_size, min((batch_index + 1) * batch_size, x_preproc.shape[0])
             preds[begin:end] = self._preds([x_preproc[begin:end]])[0]
-
-            if not logits and not self._custom_activation:
-                exp = np.exp(preds[begin:end] - np.max(preds[begin:end], axis=1, keepdims=True))
-                preds[begin:end] = exp / np.sum(exp, axis=1, keepdims=True)
 
         return preds
 
@@ -405,7 +361,7 @@ class KerasClassifier(Classifier):
 
         return activations
 
-    def _init_class_grads(self, label=None, logits=False):
+    def _init_class_grads(self, label=None):
         import keras.backend as k
 
         if len(self._output.shape) == 2:
@@ -415,41 +371,24 @@ class KerasClassifier(Classifier):
 
         if label is None:
             logger.debug('Computing class gradients for all %i classes.', self.nb_classes)
-            if logits:
-                if not hasattr(self, '_class_grads_logits'):
-                    class_grads_logits = [k.gradients(self._preds_op[:, i], self._input)[0]
-                                          for i in range(nb_outputs)]
-                    self._class_grads_logits = k.function([self._input], class_grads_logits)
-            else:
-                if not hasattr(self, '_class_grads'):
-                    class_grads = [k.gradients(k.softmax(self._preds_op)[:, i], self._input)[0]
-                                   for i in range(nb_outputs)]
-                    self._class_grads = k.function([self._input], class_grads)
+            if not hasattr(self, '_class_grads'):
+                class_grads = [k.gradients(self._preds_op[:, i], self._input)[0] for i in range(nb_outputs)]
+                self._class_grads = k.function([self._input], class_grads)
 
         else:
             if isinstance(label, int):
                 unique_labels = [label]
-                logger.debug('Computing class gradients for class %i.', label)
             else:
                 unique_labels = np.unique(label)
-                logger.debug('Computing class gradients for classes %s.', str(unique_labels))
+            logger.debug('Computing class gradients for classes %s.', str(unique_labels))
 
-            if logits:
-                if not hasattr(self, '_class_grads_logits_idx'):
-                    self._class_grads_logits_idx = [None for _ in range(nb_outputs)]
+            if not hasattr(self, '_class_grads_idx'):
+                self._class_grads_idx = [None for _ in range(nb_outputs)]
 
-                for current_label in unique_labels:
-                    if self._class_grads_logits_idx[current_label] is None:
-                        class_grads_logits = [k.gradients(self._preds_op[:, current_label], self._input)[0]]
-                        self._class_grads_logits_idx[current_label] = k.function([self._input], class_grads_logits)
-            else:
-                if not hasattr(self, '_class_grads_idx'):
-                    self._class_grads_idx = [None for _ in range(nb_outputs)]
-
-                for current_label in unique_labels:
-                    if self._class_grads_idx[current_label] is None:
-                        class_grads = [k.gradients(k.softmax(self._preds_op)[:, current_label], self._input)[0]]
-                        self._class_grads_idx[current_label] = k.function([self._input], class_grads)
+            for current_label in unique_labels:
+                if self._class_grads_idx[current_label] is None:
+                    class_grads = [k.gradients(self._preds_op[:, current_label], self._input)[0]]
+                    self._class_grads_idx[current_label] = k.function([self._input], class_grads)
 
     def _get_layers(self):
         """
@@ -547,15 +486,14 @@ class KerasClassifier(Classifier):
         model = load_model(str(full_path))
 
         self._model = model
-        self._initialize_params(model, state['_use_logits'], state['_input_layer'], state['_output_layer'],
-                                state['_custom_activation'])
+        self._initialize_params(model, state['_input_layer'], state['_output_layer'])
 
     def __repr__(self):
-        repr_ = "%s(model=%r, use_logits=%r, channel_index=%r, clip_values=%r, defences=%r, preprocessing=%r, " \
-                "input_layer=%r, output_layer=%r, custom_activation=%r)" \
+        repr_ = "%s(model=%r, channel_index=%r, clip_values=%r, defences=%r, preprocessing=%r, " \
+                "input_layer=%r, output_layer=%r)" \
                 % (self.__module__ + '.' + self.__class__.__name__,
-                   self._model, self._use_logits, self.channel_index, self.clip_values, self.defences,
-                   self.preprocessing, self._input_layer, self._output_layer, self._custom_activation)
+                   self._model, self.channel_index, self.clip_values, self.defences, self.preprocessing,
+                   self._input_layer, self._output_layer)
 
         return repr_
 

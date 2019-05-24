@@ -91,19 +91,15 @@ class TestEnsembleClassifier(unittest.TestCase):
 
     def test_predict(self):
         preds = self.ensemble.predict(self.mnist[1][0])
-        preds_logits = self.ensemble.predict(self.mnist[1][0], logits=True)
+        preds_logits = self.ensemble.predict(self.mnist[1][0])
         self.assertTrue(preds.shape == preds_logits.shape)
         self.assertTrue(np.array(preds.shape == (NB_TEST, 10)).all())
         self.assertFalse((preds == preds_logits).all())
 
         preds_raw = self.ensemble.predict(self.mnist[1][0], raw=True)
-        preds_raw_logits = self.ensemble.predict(self.mnist[1][0], raw=True, logits=True)
-        self.assertTrue(preds_raw.shape == preds_raw_logits.shape)
         self.assertTrue(preds_raw.shape == (2, NB_TEST, 10))
-        self.assertFalse((preds_raw == preds_raw_logits).all())
 
         self.assertFalse((preds == preds_raw[0]).all())
-        self.assertFalse((preds_logits == preds_raw_logits[0]).all())
 
     def test_loss_gradient(self):
         grad = self.ensemble.loss_gradient(self.mnist[1][0], self.mnist[1][1])

@@ -230,17 +230,12 @@ class TestKerasClassifier(unittest.TestCase):
         self.assertTrue(np.sum(grads) != 0)
 
     def test_functional_model(self):
-        self._test_functional_model(custom_activation=True)
-        self._test_functional_model(custom_activation=False)
-
-    def _test_functional_model(self, custom_activation=True):
         # Need to update the functional_model code to produce a model with more than one input and output layers...
-        keras_model = KerasClassifier(self.functional_model, clip_values=(0, 1), input_layer=1, output_layer=1,
-                                      custom_activation=custom_activation)
+        keras_model = KerasClassifier(self.functional_model, clip_values=(0, 1), input_layer=1, output_layer=1)
         self.assertTrue(keras_model._input.name, "input1")
         self.assertTrue(keras_model._output.name, "output1")
-        keras_model = KerasClassifier(self.functional_model, clip_values=(0, 1), input_layer=0, output_layer=0,
-                                      custom_activation=custom_activation)
+
+        keras_model = KerasClassifier(self.functional_model, clip_values=(0, 1), input_layer=0, output_layer=0)
         self.assertTrue(keras_model._input.name, "input0")
         self.assertTrue(keras_model._output.name, "output0")
 
@@ -318,7 +313,6 @@ class TestKerasClassifier(unittest.TestCase):
 
             self.assertTrue(keras_model._clip_values == loaded._clip_values)
             self.assertTrue(keras_model._channel_index == loaded._channel_index)
-            self.assertTrue(keras_model._use_logits == loaded._use_logits)
             self.assertTrue(keras_model._input_layer == loaded._input_layer)
             self.assertTrue(self.functional_model.get_config() == loaded._model.get_config())
             self.assertTrue(isinstance(loaded.defences[0], FeatureSqueezing))
@@ -328,6 +322,6 @@ class TestKerasClassifier(unittest.TestCase):
     def test_repr(self):
         repr_ = repr(self.model_mnist)
         self.assertTrue('art.classifiers.keras.KerasClassifier' in repr_)
-        self.assertTrue('use_logits=False, channel_index=3' in repr_)
+        self.assertTrue('channel_index=3' in repr_)
         self.assertTrue('clip_values=(0, 1), defences=None, preprocessing=(0, 1)' in repr_)
         self.assertTrue('input_layer=0, output_layer=0' in repr_)
