@@ -122,8 +122,6 @@ class SklearnSVC(Classifier):
         else:
             sign_multiplier = -1
 
-        print('sign_multiplier', sign_multiplier)
-
         if self.model.kernel == 'linear':
 
             support_indices = [0] + list(np.cumsum(self.model.n_support_))
