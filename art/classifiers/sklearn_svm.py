@@ -115,6 +115,15 @@ class SklearnSVC(Classifier):
         num_samples, n_features = x.shape
         gradients = np.zeros_like(x)
 
+        y_index = np.argmax(y, axis=1)
+
+        if len(np.unique(y_index)) == 2:
+            sign_multiplier = 1
+        else:
+            sign_multiplier = -1
+
+        print('sign_multiplier', sign_multiplier)
+
         if self.model.kernel == 'linear':
 
             support_indices = [0] + list(np.cumsum(self.model.n_support_))
@@ -122,50 +131,67 @@ class SklearnSVC(Classifier):
 
             for i_sample in range(num_samples):
 
-                for i_k_c in range(num_classes):
-                    for i_k in range(support_indices[i_k_c], support_indices[i_k_c + 1]):
+                i_label = y_index[i_sample]
 
-                        for i in range(num_classes):
+                for i_not_label in range(num_classes):
 
-                            if i < i_k_c:
-                                i_i = i
-                            elif i > i_k_c:
-                                i_i = i - 1
-                            else:
-                                continue
+                    if i_label != i_not_label:
 
-                            alpha_i_k_y_i = self.model.dual_coef_[i_i, i_k]
-                            x_i = self.model.support_vectors_[i_k, :]
+                        if i_not_label < i_label:
+                            i_not_label_i = i_not_label
+                            label_multiplier = -1
+                        elif i_not_label > i_label:
+                            i_not_label_i = i_not_label - 1
+                            label_multiplier = 1
 
-                            gradients[i_sample, :] += alpha_i_k_y_i * x_i
+                        for i_label_sv in range(support_indices[i_label], support_indices[i_label + 1]):
+
+                            alpha_i_k_y_i = self.model.dual_coef_[i_not_label_i, i_label_sv] * label_multiplier
+                            x_i = self.model.support_vectors_[i_label_sv, :]
+                            gradients[i_sample, :] += sign_multiplier * alpha_i_k_y_i * x_i
+
+                        for i_not_label_sv in range(support_indices[i_not_label], support_indices[i_not_label + 1]):
+
+                            alpha_i_k_y_i = self.model.dual_coef_[i_not_label_i, i_not_label_sv] * label_multiplier
+                            x_i = self.model.support_vectors_[i_not_label_sv, :]
+                            gradients[i_sample, :] += sign_multiplier * alpha_i_k_y_i * x_i
 
         elif self.model.kernel == 'poly':
             raise NotImplementedError
 
         elif self.model.kernel == 'rbf':
+
             support_indices = [0] + list(np.cumsum(self.model.n_support_))
             num_classes = len(self.model.classes_)
 
             for i_sample in range(num_samples):
 
-                for i_k_c in range(num_classes):
-                    for i_k in range(support_indices[i_k_c], support_indices[i_k_c + 1]):
+                i_label = y_index[i_sample]
 
-                        for i in range(num_classes):
+                for i_not_label in range(num_classes):
 
-                            if i < i_k_c:
-                                i_i = i
-                            elif i > i_k_c:
-                                i_i = i - 1
-                            else:
-                                continue
+                    if i_label != i_not_label:
 
-                            alpha_i_k_y_i = self.model.dual_coef_[i_i, i_k]
-                            x_i = self.model.support_vectors_[i_k, :]
-                            gamma = 1.0
+                        if i_not_label < i_label:
+                            i_not_label_i = i_not_label
+                            label_multiplier = -1
+                        elif i_not_label > i_label:
+                            i_not_label_i = i_not_label - 1
+                            label_multiplier = 1
 
-                            gradients[i_sample, :] += alpha_i_k_y_i * 2.0 * gamma * np.exp(
-                                -gamma * np.linalg.norm(x[i_sample] - x_i, ord=2)) * (x[i_sample] - x_i)
+                        gamma = self.model._gamma
+
+                        for i_label_sv in range(support_indices[i_label], support_indices[i_label + 1]):
+
+                            alpha_i_k_y_i = self.model.dual_coef_[i_not_label_i, i_label_sv] * label_multiplier
+                            x_i = self.model.support_vectors_[i_label_sv, :]
+                            gradients[i_sample, :] += sign_multiplier * alpha_i_k_y_i * 2.0 * gamma * (-1) * np.exp(-gamma * np.linalg.norm(x[i_sample] - x_i, ord=2)) * (x[i_sample] - x_i)
+
+                        for i_not_label_sv in range(support_indices[i_not_label], support_indices[i_not_label + 1]):
+
+                            alpha_i_k_y_i = self.model.dual_coef_[i_not_label_i, i_not_label_sv] * label_multiplier
+                            x_i = self.model.support_vectors_[i_not_label_sv, :]
+                            gradients[i_sample, :] += sign_multiplier * alpha_i_k_y_i * 2.0 * gamma * (-1) * np.exp(-gamma * np.linalg.norm(x[i_sample] - x_i, ord=2)) * (x[i_sample] - x_i)
 
         elif self.model.kernel == 'sigmoid':
             raise NotImplementedError
