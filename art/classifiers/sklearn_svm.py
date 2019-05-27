@@ -19,6 +19,7 @@ from __future__ import absolute_import, division, print_function, unicode_litera
 
 import logging
 import numpy as np
+import sklearn
 
 from art.classifiers import Classifier
 
@@ -49,6 +50,9 @@ class SklearnSVC(Classifier):
                be divided by the second one.
         :type preprocessing: `tuple`
         """
+        if not isinstance(model, sklearn.svm.SVC):
+            raise TypeError('Model must be of type sklearn.svm.SVC')
+
         super(SklearnSVC, self).__init__(clip_values=clip_values, channel_index=channel_index,
                                          defences=defences, preprocessing=preprocessing)
 
