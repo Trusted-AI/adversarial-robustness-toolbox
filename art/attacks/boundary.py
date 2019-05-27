@@ -187,7 +187,7 @@ class BoundaryAttack(Attack):
                     self.curr_delta /= self.step_adapt
 
                 if delta_ratio > 0:
-                    x_adv = potential_advs[np.where(satisfied)[0][0]]
+                    x_advs = np.array(potential_advs)[np.where(satisfied)[0]]
                     break
             else:
                 logging.warning('Adversarial example found but not optimal.')
@@ -195,21 +195,25 @@ class BoundaryAttack(Attack):
 
             # Trust region method to adjust epsilon
             for _ in range(self.num_trial):
-                perturb = original_sample - x_adv
+                perturb = np.repeat(np.array([original_sample]), len(x_advs), axis=0) - x_advs
                 perturb *= self.curr_epsilon
-                potential_adv = x_adv + perturb
-                potential_adv = np.clip(potential_adv, clip_min, clip_max)
-                pred = np.argmax(self.classifier.predict(np.array([potential_adv])), axis=1)[0]
+                potential_advs = x_advs + perturb
+                potential_advs = np.clip(potential_advs, clip_min, clip_max)
+                preds = np.argmax(self.classifier.predict(potential_advs), axis=1)
+                satisfied = (preds == target)
+                epsilon_ratio = np.mean(satisfied)
 
-                if pred == target:
-                    x_adv = potential_adv
-                    self.curr_epsilon /= self.step_adapt
-                    break
-                else:
+                if epsilon_ratio < 0.2:
                     self.curr_epsilon *= self.step_adapt
+                elif epsilon_ratio > 0.5:
+                    self.curr_epsilon /= self.step_adapt
+
+                if epsilon_ratio > 0:
+                    x_adv = potential_advs[np.where(satisfied)[0][0]]
+                    break
             else:
                 logging.warning('Adversarial example found but not optimal.')
-                return x_adv
+                return x_advs[0]
 
         return x_adv
 
@@ -242,16 +246,6 @@ class BoundaryAttack(Attack):
             perturb[i] -= np.dot(perturb[i], direction[i]) * direction[i]
 
         perturb = np.swapaxes(perturb, 0, self.classifier.channel_index - 1)
-
-        # direction = original_sample - current_sample
-        # norm_direction = np.linalg.norm(direction)
-        # direction /= norm_direction
-        # vdot = np.vdot(perturb, direction)
-        # perturb -= vdot * direction
-        # perturb *= delta * norm_direction / np.linalg.norm(perturb)
-        # d = 1.0 / np.sqrt(delta ** 2 + 1)
-        # direction = perturb - (original_sample - current_sample)
-        # perturb = d * direction
 
         return perturb
 
