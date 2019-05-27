@@ -15,7 +15,7 @@ logger = logging.getLogger('testLogger')
 np.random.seed(seed=1234)
 tf.set_random_seed(1234)
 
-NB_TRAIN = 40
+NB_TRAIN = 20
 
 
 class TestSklearnSVC(unittest.TestCase):
@@ -34,9 +34,9 @@ class TestSklearnSVC(unittest.TestCase):
 
         clip_values = (0, 1)
 
-        sklearn_model = SVC()
+        sklearn_model = SVC(kernel='rbf')
         cls.classifier = SklearnSVC(clip_values=clip_values, model=sklearn_model)
-        # cls.classifier.fit(x=cls.x_train.reshape((cls.num_samples, cls.num_features)), y=cls.y_train)
+        cls.classifier.fit(x=cls.x_train.reshape((cls.num_samples, cls.num_features)), y=cls.y_train)
 
     def test_predict(self):
         print('test_predict')
