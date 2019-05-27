@@ -1,4 +1,4 @@
-# Adversarial Robustness Toolbox (ART v0.8.0)
+# Adversarial Robustness Toolbox (ART v0.9.0)
 <p align="center">
   <img src="docs/images/art_logo.png?raw=true" width="200" title="ART logo">
 </p>
@@ -110,8 +110,8 @@ git commit -s -m 'Add new feature'
 If you use ART for research, please consider citing the following reference paper:
 ```
 @article{art2018,
-    title = {Adversarial Robustness Toolbox v0.8.0},
-    author = {Nicolae, Maria-Irina and Sinn, Mathieu and Tran, Minh~Ngoc and Rawat, Ambrish and Wistuba, Martin and Zantedeschi, Valentina and Baracaldo, Nathalie and Chen, Bryant and Ludwig, Heiko and Molloy, Ian and Edwards, Ben},
+    title = {Adversarial Robustness Toolbox v0.9.0},
+    author = {Nicolae, Maria-Irina and Sinn, Mathieu and Tran, Minh~Ngoc and Buesser, Beat and Rawat, Ambrish and Wistuba, Martin and Zantedeschi, Valentina and Baracaldo, Nathalie and Chen, Bryant and Ludwig, Heiko and Molloy, Ian and Edwards, Ben},
     journal = {CoRR},
     volume = {1807.01069}
     year = {2018},

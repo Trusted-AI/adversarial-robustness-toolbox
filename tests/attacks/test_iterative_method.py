@@ -7,8 +7,10 @@ import keras.backend as k
 import numpy as np
 
 from art.attacks.iterative_method import BasicIterativeMethod
-from art.utils import load_mnist, get_labels_np_array, master_seed
+from art.classifiers import KerasClassifier
+from art.utils import load_dataset, get_labels_np_array, master_seed, random_targets
 from art.utils import get_classifier_tf, get_classifier_kr, get_classifier_pt
+from art.utils import get_iris_classifier_tf, get_iris_classifier_kr, get_iris_classifier_pt
 
 logger = logging.getLogger('testLogger')
 
@@ -23,7 +25,7 @@ class TestIterativeAttack(unittest.TestCase):
         k.set_learning_phase(1)
 
         # Get MNIST
-        (x_train, y_train), (x_test, y_test), _, _ = load_mnist()
+        (x_train, y_train), (x_test, y_test), _, _ = load_dataset('mnist')
         x_train, y_train, x_test, y_test = x_train[:NB_TRAIN], y_train[:NB_TRAIN], x_test[:NB_TEST], y_test[:NB_TEST]
         cls.mnist = (x_train, y_train), (x_test, y_test)
 
@@ -86,7 +88,7 @@ class TestIterativeAttack(unittest.TestCase):
         (x_train, y_train), (x_test, y_test) = self.mnist
 
         # Test BIM with np.inf norm
-        attack = BasicIterativeMethod(classifier, eps=1, eps_step=0.1)
+        attack = BasicIterativeMethod(classifier, eps=1, eps_step=0.1, batch_size=128)
         x_train_adv = attack.generate(x_train)
         x_test_adv = attack.generate(x_test)
 
@@ -120,17 +122,17 @@ class TestIterativeAttack(unittest.TestCase):
         self.assertFalse((y_test == test_y_pred).all())
 
         acc = np.sum(np.argmax(train_y_pred, axis=1) == np.argmax(y_train, axis=1)) / y_train.shape[0]
-        logger.info('Accuracy on adversarial train examples with 3 random initialisations: %.2f%%', (acc * 100))
+        logger.info('Accuracy on adversarial train examples with 3 random initializations: %.2f%%', (acc * 100))
 
         acc = np.sum(np.argmax(test_y_pred, axis=1) == np.argmax(y_test, axis=1)) / y_test.shape[0]
-        logger.info('Accuracy on adversarial test examples with 3 random initialisations: %.2f%%', (acc * 100))
+        logger.info('Accuracy on adversarial test examples with 3 random initializations: %.2f%%', (acc * 100))
 
     def _test_mnist_targeted(self, classifier):
         # Get MNIST
         (_, _), (x_test, _) = self.mnist
 
         # Test FGSM with np.inf norm
-        attack = BasicIterativeMethod(classifier, eps=1.0, eps_step=0.01, targeted=True)
+        attack = BasicIterativeMethod(classifier, eps=1.0, eps_step=0.01, targeted=True, batch_size=128)
         # y_test_adv = to_categorical((np.argmax(y_test, axis=1) + 1)  % 10, 10)
         pred_sort = classifier.predict(x_test).argsort(axis=1)
         y_test_adv = np.zeros((x_test.shape[0], 10))
@@ -158,6 +160,121 @@ class TestIterativeAttack(unittest.TestCase):
             self._test_mnist_targeted(classifier)
             if _ == 'pytorch':
                 self._swap_axes()
+
+
+class TestIterativeAttackVectors(unittest.TestCase):
+    @classmethod
+    def setUpClass(cls):
+        # Get Iris
+        (x_train, y_train), (x_test, y_test), _, _ = load_dataset('iris')
+        cls.iris = (x_train, y_train), (x_test, y_test)
+
+    def setUp(self):
+        master_seed(1234)
+
+    def test_iris_k_clipped(self):
+        (_, _), (x_test, y_test) = self.iris
+        classifier, _ = get_iris_classifier_kr()
+
+        # Test untargeted attack
+        attack = BasicIterativeMethod(classifier, eps=1, eps_step=0.1, batch_size=128)
+        x_test_adv = attack.generate(x_test)
+        self.assertFalse((x_test == x_test_adv).all())
+        self.assertTrue((x_test_adv <= 1).all())
+        self.assertTrue((x_test_adv >= 0).all())
+
+        preds_adv = np.argmax(classifier.predict(x_test_adv), axis=1)
+        self.assertFalse((np.argmax(y_test, axis=1) == preds_adv).all())
+        acc = np.sum(preds_adv == np.argmax(y_test, axis=1)) / y_test.shape[0]
+        logger.info('Accuracy on Iris with BIM adversarial examples: %.2f%%', (acc * 100))
+
+        # Test targeted attack
+        targets = random_targets(y_test, nb_classes=3)
+        attack = BasicIterativeMethod(classifier, targeted=True, eps=1, eps_step=0.1)
+        x_test_adv = attack.generate(x_test, **{'y': targets})
+        self.assertFalse((x_test == x_test_adv).all())
+        self.assertTrue((x_test_adv <= 1).all())
+        self.assertTrue((x_test_adv >= 0).all())
+
+        preds_adv = np.argmax(classifier.predict(x_test_adv), axis=1)
+        self.assertTrue((np.argmax(targets, axis=1) == preds_adv).any())
+        acc = np.sum(preds_adv == np.argmax(targets, axis=1)) / y_test.shape[0]
+        logger.info('Success rate of targeted BIM on Iris: %.2f%%', (acc * 100))
+
+    def test_iris_k_unbounded(self):
+        (_, _), (x_test, y_test) = self.iris
+        classifier, _ = get_iris_classifier_kr()
+
+        # Recreate a classifier without clip values
+        classifier = KerasClassifier(model=classifier._model, use_logits=False, channel_index=1)
+        attack = BasicIterativeMethod(classifier, eps=1, eps_step=0.2, batch_size=128)
+        x_test_adv = attack.generate(x_test)
+        self.assertFalse((x_test == x_test_adv).all())
+        self.assertTrue((x_test_adv > 1).any())
+        self.assertTrue((x_test_adv < 0).any())
+
+        preds_adv = np.argmax(classifier.predict(x_test_adv), axis=1)
+        self.assertFalse((np.argmax(y_test, axis=1) == preds_adv).all())
+        acc = np.sum(preds_adv == np.argmax(y_test, axis=1)) / y_test.shape[0]
+        logger.info('Accuracy on Iris with BIM adversarial examples: %.2f%%', (acc * 100))
+
+    def test_iris_tf(self):
+        (_, _), (x_test, y_test) = self.iris
+        classifier, _ = get_iris_classifier_tf()
+
+        # Test untargeted attack
+        attack = BasicIterativeMethod(classifier, eps=1, eps_step=0.1)
+        x_test_adv = attack.generate(x_test)
+        self.assertFalse((x_test == x_test_adv).all())
+        self.assertTrue((x_test_adv <= 1).all())
+        self.assertTrue((x_test_adv >= 0).all())
+
+        preds_adv = np.argmax(classifier.predict(x_test_adv), axis=1)
+        self.assertFalse((np.argmax(y_test, axis=1) == preds_adv).all())
+        acc = np.sum(preds_adv == np.argmax(y_test, axis=1)) / y_test.shape[0]
+        logger.info('Accuracy on Iris with BIM adversarial examples: %.2f%%', (acc * 100))
+
+        # Test targeted attack
+        targets = random_targets(y_test, nb_classes=3)
+        attack = BasicIterativeMethod(classifier, targeted=True, eps=1, eps_step=0.1)
+        x_test_adv = attack.generate(x_test, **{'y': targets})
+        self.assertFalse((x_test == x_test_adv).all())
+        self.assertTrue((x_test_adv <= 1).all())
+        self.assertTrue((x_test_adv >= 0).all())
+
+        preds_adv = np.argmax(classifier.predict(x_test_adv), axis=1)
+        self.assertTrue((np.argmax(targets, axis=1) == preds_adv).any())
+        acc = np.sum(preds_adv == np.argmax(targets, axis=1)) / y_test.shape[0]
+        logger.info('Success rate of targeted BIM on Iris: %.2f%%', (acc * 100))
+
+    def test_iris_pt(self):
+        (_, _), (x_test, y_test) = self.iris
+        classifier = get_iris_classifier_pt()
+
+        # Test untargeted attack
+        attack = BasicIterativeMethod(classifier, eps=1, eps_step=0.1)
+        x_test_adv = attack.generate(x_test)
+        self.assertFalse((x_test == x_test_adv).all())
+        self.assertTrue((x_test_adv <= 1).all())
+        self.assertTrue((x_test_adv >= 0).all())
+
+        preds_adv = np.argmax(classifier.predict(x_test_adv), axis=1)
+        self.assertFalse((np.argmax(y_test, axis=1) == preds_adv).all())
+        acc = np.sum(preds_adv == np.argmax(y_test, axis=1)) / y_test.shape[0]
+        logger.info('Accuracy on Iris with BIM adversarial examples: %.2f%%', (acc * 100))
+
+        # Test targeted attack
+        targets = random_targets(y_test, nb_classes=3)
+        attack = BasicIterativeMethod(classifier, targeted=True, eps=1, eps_step=0.1, batch_size=128)
+        x_test_adv = attack.generate(x_test, **{'y': targets})
+        self.assertFalse((x_test == x_test_adv).all())
+        self.assertTrue((x_test_adv <= 1).all())
+        self.assertTrue((x_test_adv >= 0).all())
+
+        preds_adv = np.argmax(classifier.predict(x_test_adv), axis=1)
+        self.assertTrue((np.argmax(targets, axis=1) == preds_adv).any())
+        acc = np.sum(preds_adv == np.argmax(targets, axis=1)) / y_test.shape[0]
+        logger.info('Success rate of targeted BIM on Iris: %.2f%%', (acc * 100))
 
 
 if __name__ == '__main__':

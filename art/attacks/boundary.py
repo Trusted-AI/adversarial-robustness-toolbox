@@ -21,6 +21,7 @@ import logging
 
 import numpy as np
 
+from art import NUMPY_DTYPE
 from art.attacks.attack import Attack
 
 logger = logging.getLogger(__name__)
@@ -28,8 +29,8 @@ logger = logging.getLogger(__name__)
 
 class BoundaryAttack(Attack):
     """
-    Implementation of the boundary attack from Wieland Brendel et al. (2018).
-    Paper link: https://arxiv.org/abs/1712.04248
+    Implementation of the boundary attack from Wieland Brendel et al. (2018). This is a powerful black-box attack that
+    only requires final class prediction. Paper link: https://arxiv.org/abs/1712.04248
     """
     attack_params = Attack.attack_params + ['targeted', 'delta', 'epsilon', 'step_adapt', 'max_iter', 'num_trial',
                                             'sample_size', 'init_size']
@@ -230,7 +231,7 @@ class BoundaryAttack(Attack):
         :return: a possible perturbation.
         """
         # Generate perturbation randomly
-        perturb = np.random.randn(current_sample.shape[0], current_sample.shape[1], current_sample.shape[2])
+        perturb = np.random.randn(*self.classifier.input_shape)
 
         # Rescale the perturbation
         perturb /= np.linalg.norm(perturb)

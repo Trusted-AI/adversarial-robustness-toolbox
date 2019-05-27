@@ -82,7 +82,7 @@ class GaussianAugmentation(Preprocessor):
             indices = np.random.randint(0, x.shape[0], size=size)
 
             # Generate noisy samples
-            x_aug = np.random.normal(x[indices], scale=self.sigma, size=(size,) + x[indices].shape[1:])
+            x_aug = np.random.normal(x[indices], scale=self.sigma, size=(size,) + x.shape[1:])
             x_aug = np.vstack((x, x_aug))
             logger.info('Augmented dataset size: %d', x_aug.shape[0])
 

@@ -33,7 +33,7 @@ class TestThermometerEncoding(unittest.TestCase):
         # Set master seed
         master_seed(1234)
 
-    def test_all(self):
+    def test_channel_last(self):
         # Test data
         x = np.array([[[[0.2, 0.6, 0.8], [0.9, 0.4, 0.3], [0.2, 0.8, 0.5]],
                       [[0.2, 0.6, 0.8], [0.9, 0.4, 0.3], [0.2, 0.8, 0.5]]],
@@ -57,13 +57,29 @@ class TestThermometerEncoding(unittest.TestCase):
                                 [0, 0, 0, 1, 0, 1, 1, 1, 0, 1, 1, 1], [1, 1, 1, 1, 0, 0, 0, 1, 0, 1, 1, 1]]]])
         self.assertTrue((x_preproc == true_value).all())
 
+    def test_channel_first(self):
+        x = np.random.rand(5, 2, 28, 28)
+        x_copy = x.copy()
+        num_space = 5
+        encoder = ThermometerEncoding(num_space=num_space, channel_index=1)
+        encoded_x, _ = encoder(x)
+        self.assertTrue((x == x_copy).all())
+        self.assertTrue(encoded_x.shape == (5, 10, 28, 28))
+
     def test_estimate_gradient(self):
         num_space = 5
         encoder = ThermometerEncoding(num_space=num_space)
-        x = np.random.rand(10, 28, 28, 1)
-        grad = np.ones((10, 28, 28, 1, num_space))
+        x = np.random.rand(5, 28, 28, 1)
+        grad = np.ones((5, 28, 28, num_space))
         estimated_grads = encoder.estimate_gradient(grad=grad, x=x)
         self.assertTrue(np.isin(estimated_grads, [0, 1]).all())
+
+    def test_feature_vectors(self):
+        x = np.random.rand(10, 4)
+        num_space = 5
+        encoder = ThermometerEncoding(num_space=num_space, channel_index=1)
+        encoded_x, _ = encoder(x)
+        self.assertTrue(encoded_x.shape == (10, 20))
 
 if __name__ == '__main__':
     unittest.main()
