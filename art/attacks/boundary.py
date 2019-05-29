@@ -113,12 +113,10 @@ class BoundaryAttack(Attack):
         for ind, val in enumerate(x_adv):
             if self.targeted:
                 x_adv[ind] = self._perturb(x=val, y=y[ind], y_p=preds[ind], init_pred=init_preds[ind],
-                                           adv_init=x_adv_init[ind].astype(NUMPY_DTYPE),
-                                           clip_min=clip_min, clip_max=clip_max)
+                                           adv_init=x_adv_init[ind], clip_min=clip_min, clip_max=clip_max)
             else:
                 x_adv[ind] = self._perturb(x=val, y=-1, y_p=preds[ind], init_pred=init_preds[ind],
-                                           adv_init=x_adv_init[ind].astype(NUMPY_DTYPE),
-                                           clip_min=clip_min, clip_max=clip_max)
+                                           adv_init=x_adv_init[ind], clip_min=clip_min, clip_max=clip_max)
 
         logger.info('Success rate of Boundary attack: %.2f%%',
                     (np.sum(preds != np.argmax(self.classifier.predict(x_adv), axis=1)) / x.shape[0]))
@@ -298,7 +296,7 @@ class BoundaryAttack(Attack):
 
             # Attack unsatisfied yet and the initial image satisfied
             if adv_init is not None and init_pred == y:
-                return adv_init, init_pred
+                return adv_init.astype(NUMPY_DTYPE), init_pred
 
             # Attack unsatisfied yet and the initial image unsatisfied
             for _ in range(self.init_size):
@@ -316,7 +314,7 @@ class BoundaryAttack(Attack):
         else:
             # The initial image satisfied
             if adv_init is not None and init_pred != y_p:
-                return adv_init, init_pred
+                return adv_init.astype(NUMPY_DTYPE), init_pred
 
             # The initial image unsatisfied
             for _ in range(self.init_size):
