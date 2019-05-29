@@ -100,7 +100,7 @@ class DeepFool(Attack):
             # Get current predictions
             active_indices = np.arange(len(batch))
             current_step = 0
-            while len(active_indices) != 0 and current_step < self.max_iter:
+            while active_indices and current_step < self.max_iter:
                 # Compute difference in predictions and gradients only for selected top predictions
                 labels_indices = sorter[np.searchsorted(labels_set, fk_hat, sorter=sorter)]
                 grad_diff = grd - grd[np.arange(len(grd)), labels_indices][:, None]
