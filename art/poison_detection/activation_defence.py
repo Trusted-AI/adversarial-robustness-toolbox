@@ -327,7 +327,7 @@ class ActivationDefence(PoisonFilteringDefence):
     def _unpickle_classifier(file_name):
         """
         Unpickles classifier using the filename provided. Function assumes that the pickle is in `art.DATA_PATH`.
-        
+
         :param file_name:
         :return:
         """
