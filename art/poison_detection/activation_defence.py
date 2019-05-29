@@ -105,7 +105,7 @@ class ActivationDefence(PoisonFilteringDefence):
         :param kwargs: A dictionary of detection-specific parameters.
         :type kwargs: `dict`
         :return: (report, is_clean_lst):
-                where a report is a dict object that contains information specified by the clustering analysis technique.
+                where a report is a dict object that contains information specified by the clustering analysis technique
                 where is_clean is a list, where is_clean_lst[i]=1 means that x_train[i]
                 there is clean and is_clean_lst[i]=0, means that x_train[i] was classified as poison.
         :rtype: `tuple`
