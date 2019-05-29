@@ -620,4 +620,3 @@ class TFClassifier(Classifier):
                    self.channel_index, self.clip_values, self.defences, self.preprocessing)
 
         return repr_
-
