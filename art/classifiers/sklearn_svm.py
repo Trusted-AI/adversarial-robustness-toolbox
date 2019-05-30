@@ -53,10 +53,15 @@ class SklearnSVC(Classifier):
         if not isinstance(model, sklearn.svm.SVC) and not isinstance(model, sklearn.svm.LinearSVC):
             raise TypeError('Model must be of type sklearn.svm.SVC or sklearn.svm.LinearSVC')
 
+        if not model.__getstate__()['_sklearn_version'].startswith('0.20.'):
+            raise Exception('Untested version of sci-kit-learn, please use scikit-learn v0.20.x')
+
         super(SklearnSVC, self).__init__(clip_values=clip_values, channel_index=channel_index,
                                          defences=defences, preprocessing=preprocessing)
 
         self.model = model
+
+        print(type(model.__getstate__()['_sklearn_version']))
 
     def class_gradient(self, x, label=None, logits=False):
         """
