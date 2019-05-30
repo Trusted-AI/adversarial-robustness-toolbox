@@ -50,8 +50,8 @@ class SklearnSVC(Classifier):
                be divided by the second one.
         :type preprocessing: `tuple`
         """
-        if not isinstance(model, sklearn.svm.SVC):
-            raise TypeError('Model must be of type sklearn.svm.SVC')
+        if not isinstance(model, sklearn.svm.SVC) and not isinstance(model, sklearn.svm.LinearSVC):
+            raise TypeError('Model must be of type sklearn.svm.SVC or sklearn.svm.LinearSVC')
 
         super(SklearnSVC, self).__init__(clip_values=clip_values, channel_index=channel_index,
                                          defences=defences, preprocessing=preprocessing)
@@ -101,6 +101,23 @@ class SklearnSVC(Classifier):
     def get_activations(self, x, layer, batch_size):
         raise NotImplementedError
 
+    def _get_kernel_gradient(self, i_sv, x_sample):
+
+        x_i = self.model.support_vectors_[i_sv, :]
+
+        if self.model.kernel == 'linear':
+            grad = x_i
+        elif self.model.kernel == 'poly':
+            raise NotImplementedError
+        elif self.model.kernel == 'rbf':
+            grad = 2 * self.model._gamma * (-1) * np.exp(-self.model._gamma * np.linalg.norm(x_sample - x_i, ord=2)) * (
+                    x_sample - x_i)
+        elif self.model.kernel == 'sigmoid':
+            raise NotImplementedError
+        else:
+            raise NotImplementedError('Loss gradients for kernel \'{}\' are not implemented.'.format(self.model.kernel))
+        return grad
+
     def loss_gradient(self, x, y):
         """
         Compute the gradient of the loss function w.r.t. `x`.
@@ -113,67 +130,72 @@ class SklearnSVC(Classifier):
         :return: Array of gradients of the same shape as `x`.
         :rtype: `np.ndarray`
         """
-        if self.model.fit_status_:
-            raise AssertionError('Model has not been fitted correctly.')
-
         num_samples, n_features = x.shape
+        num_classes = len(self.model.classes_)
         gradients = np.zeros_like(x)
 
         y_index = np.argmax(y, axis=1)
 
-        if len(np.unique(y_index)) == 2:
-            sign_multiplier = 1
-        else:
-            sign_multiplier = -1
+        if isinstance(self.model, sklearn.svm.SVC):
 
-        def _get_kernel_gradient(i_sv, x_sample):
+            if self.model.fit_status_:
+                raise AssertionError('Model has not been fitted correctly.')
 
-            x_i = self.model.support_vectors_[i_sv, :]
-
-            if self.model.kernel == 'linear':
-                grad = x_i
-            elif self.model.kernel == 'poly':
-                raise NotImplementedError
-            elif self.model.kernel == 'rbf':
-                grad = 2 * self.model._gamma * (-1) * np.exp(
-                    -self.model._gamma * np.linalg.norm(x_sample - x_i, ord=2)) * (x_sample - x_i)
-            elif self.model.kernel == 'sigmoid':
-                raise NotImplementedError
+            if len(np.unique(y_index)) == 2:
+                sign_multiplier = 1
             else:
-                raise NotImplementedError(
-                    'Loss gradients for kernel \'{}\' are not implemented.'.format(self.model.kernel))
-            return grad
+                sign_multiplier = -1
 
-        i_not_label_i = None
-        label_multiplier = None
+            i_not_label_i = None
+            label_multiplier = None
 
-        support_indices = [0] + list(np.cumsum(self.model.n_support_))
-        num_classes = len(self.model.classes_)
+            support_indices = [0] + list(np.cumsum(self.model.n_support_))
 
-        for i_sample in range(num_samples):
+            for i_sample in range(num_samples):
 
-            i_label = y_index[i_sample]
+                i_label = y_index[i_sample]
 
-            for i_not_label in range(num_classes):
+                for i_not_label in range(num_classes):
 
-                if i_label != i_not_label:
+                    if i_label != i_not_label:
 
-                    if i_not_label < i_label:
-                        i_not_label_i = i_not_label
-                        label_multiplier = -1
-                    elif i_not_label > i_label:
-                        i_not_label_i = i_not_label - 1
+                        if i_not_label < i_label:
+                            i_not_label_i = i_not_label
+                            label_multiplier = -1
+                        elif i_not_label > i_label:
+                            i_not_label_i = i_not_label - 1
+                            label_multiplier = 1
+
+                        for i_label_sv in range(support_indices[i_label], support_indices[i_label + 1]):
+                            alpha_i_k_y_i = self.model.dual_coef_[i_not_label_i, i_label_sv] * label_multiplier
+                            grad_kernel = self._get_kernel_gradient(i_label_sv, x[i_sample])
+                            gradients[i_sample, :] += sign_multiplier * alpha_i_k_y_i * grad_kernel
+
+                        for i_not_label_sv in range(support_indices[i_not_label], support_indices[i_not_label + 1]):
+                            alpha_i_k_y_i = self.model.dual_coef_[i_not_label_i, i_not_label_sv] * label_multiplier
+                            grad_kernel = self._get_kernel_gradient(i_not_label_sv, x[i_sample])
+                            gradients[i_sample, :] += sign_multiplier * alpha_i_k_y_i * grad_kernel
+
+        elif isinstance(self.model, sklearn.svm.LinearSVC):
+
+            for i_sample in range(num_samples):
+
+                i_label = y_index[i_sample]
+                if num_classes == 2:
+                    i_label_i = 0
+                    if i_label == 0:
                         label_multiplier = 1
+                    elif i_label == 1:
+                        label_multiplier = -1
+                    else:
+                        raise ValueError('Label index not recognized because it is not 0 or 1.')
+                else:
+                    i_label_i = i_label
+                    label_multiplier = -1
 
-                    for i_label_sv in range(support_indices[i_label], support_indices[i_label + 1]):
-                        alpha_i_k_y_i = self.model.dual_coef_[i_not_label_i, i_label_sv] * label_multiplier
-                        grad_kernel = _get_kernel_gradient(i_label_sv, x[i_sample])
-                        gradients[i_sample, :] += sign_multiplier * alpha_i_k_y_i * grad_kernel
-
-                    for i_not_label_sv in range(support_indices[i_not_label], support_indices[i_not_label + 1]):
-                        alpha_i_k_y_i = self.model.dual_coef_[i_not_label_i, i_not_label_sv] * label_multiplier
-                        grad_kernel = _get_kernel_gradient(i_not_label_sv, x[i_sample])
-                        gradients[i_sample, :] += sign_multiplier * alpha_i_k_y_i * grad_kernel
+                gradients[i_sample] = label_multiplier * self.model.coef_[i_label_i]
+        else:
+            raise TypeError('Model not recognized.')
 
         return gradients
 
@@ -190,7 +212,7 @@ class SklearnSVC(Classifier):
         :return: Array of predictions of shape `(nb_inputs, self.nb_classes)`.
         :rtype: `np.ndarray`
         """
-        if self.model.probability:
+        if isinstance(self.model, sklearn.svm.SVC) and self.model.probability:
             y_pred = self.model.predict_proba(X=x)
         else:
             y_pred_label = self.model.predict(X=x)
