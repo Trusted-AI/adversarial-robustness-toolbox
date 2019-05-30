@@ -18,7 +18,7 @@ tf.set_random_seed(1234)
 NB_TRAIN = 20
 
 
-class TestSklearnSVC(unittest.TestCase):
+class TestSklearnDecisionTreeClassifier(unittest.TestCase):
 
     @classmethod
     def setUpClass(cls):
