@@ -33,7 +33,7 @@ class SklearnSVC(Classifier):
 
     def __init__(self, clip_values=(0, 1), model=None, channel_index=None, defences=None, preprocessing=(0, 1)):
         """
-        Create a `Classifier` instance from a scikit-learn C-Support Vector Classification. model.
+        Create a `Classifier` instance from a scikit-learn C-Support Vector Classification model.
 
         :param clip_values: Tuple of the form `(min, max)` representing the minimum and maximum values allowed
                for features.
@@ -60,8 +60,6 @@ class SklearnSVC(Classifier):
                                          defences=defences, preprocessing=preprocessing)
 
         self.model = model
-
-        print(type(model.__getstate__()['_sklearn_version']))
 
     def class_gradient(self, x, label=None, logits=False):
         """
