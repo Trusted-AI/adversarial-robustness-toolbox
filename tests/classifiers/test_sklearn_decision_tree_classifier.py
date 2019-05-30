@@ -6,9 +6,9 @@ import unittest
 import tensorflow as tf
 import numpy as np
 
-from sklearn.svm import SVC
+from sklearn.tree import DecisionTreeClassifier
 
-from art.classifiers import SklearnSVC
+from art.classifiers import SklearnDecisionTreeClassifier
 from art.utils import load_mnist
 
 logger = logging.getLogger('testLogger')
