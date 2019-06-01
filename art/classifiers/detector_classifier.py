@@ -21,7 +21,7 @@ class DetectorClassifier(Classifier):
         :param classifier: A trained classifier.
         :type classifier: :class:`.Classifier`
         :param detector: A trained detector applied for the binary classification.
-        :type detector: `art.detection.detector.Detector`
+        :type detector: :class:`.Detector`
         :param defences: Defences to be activated with the classifier.
         :type defences: `str` or `list(str)`
         :param preprocessing: Tuple of the form `(substractor, divider)` of floats or `np.ndarray` of values to be

@@ -91,10 +91,7 @@ class TestEnsembleClassifier(unittest.TestCase):
 
     def test_predict(self):
         preds = self.ensemble.predict(self.mnist[1][0])
-        preds_logits = self.ensemble.predict(self.mnist[1][0])
-        self.assertTrue(preds.shape == preds_logits.shape)
         self.assertTrue(np.array(preds.shape == (NB_TEST, 10)).all())
-        self.assertFalse((preds == preds_logits).all())
 
         preds_raw = self.ensemble.predict(self.mnist[1][0], raw=True)
         self.assertTrue(preds_raw.shape == (2, NB_TEST, 10))

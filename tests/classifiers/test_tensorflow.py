@@ -75,11 +75,9 @@ class TestTFClassifier(unittest.TestCase):
         self.assertGreater(acc, 0.1)
 
     def test_nb_classes(self):
-        # Start to test
         self.assertTrue(self.classifier.nb_classes == 10)
 
     def test_input_shape(self):
-        # Start to test
         self.assertTrue(np.array(self.classifier.input_shape == (28, 28, 1)).all())
 
     def test_class_gradient(self):

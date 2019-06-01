@@ -11,7 +11,7 @@ import torch.optim as optim
 
 from art.classifiers.pytorch import PyTorchClassifier
 from art.classifiers.detector_classifier import DetectorClassifier
-from art.utils import load_mnist, master_seed
+from art.utils import get_labels_np_array, load_mnist, master_seed
 
 logger = logging.getLogger('testLogger')
 
@@ -90,7 +90,7 @@ class TestDetectorClassifier(unittest.TestCase):
         # Test predict
         preds = self.detector_classifier.predict(x=x_test)
         self.assertTrue(np.array(preds.shape == (NB_TEST, 11)).all())
-        self.assertAlmostEqual(np.sum(preds), NB_TEST, places=4)
+        self.assertAlmostEqual(np.sum(get_labels_np_array(preds)), NB_TEST)
 
     def test_nb_classes(self):
         dc = self.detector_classifier
