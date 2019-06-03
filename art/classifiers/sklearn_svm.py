@@ -19,7 +19,6 @@ from __future__ import absolute_import, division, print_function, unicode_litera
 
 import logging
 import numpy as np
-import sklearn
 
 from art.classifiers import Classifier
 
@@ -38,7 +37,7 @@ class SklearnSVC(Classifier):
         :param clip_values: Tuple of the form `(min, max)` representing the minimum and maximum values allowed
                for features.
         :type clip_values: `tuple`
-        :param model: scikit-learn C-Support Vector Classification. model
+        :param model: scikit-learn C-Support Vector Classification model.
         :type model: `sklearn.svm.SVC`
         :param channel_index: Index of the axis in data containing the color channels or features. Not used in this
                class.
@@ -50,7 +49,9 @@ class SklearnSVC(Classifier):
                be divided by the second one.
         :type preprocessing: `tuple`
         """
-        if not isinstance(model, sklearn.svm.SVC) and not isinstance(model, sklearn.svm.LinearSVC):
+        from sklearn.svm import SVC, LinearSVC
+
+        if not isinstance(model, SVC) and not isinstance(model, LinearSVC):
             raise TypeError('Model must be of type sklearn.svm.SVC or sklearn.svm.LinearSVC')
 
         if not model.__getstate__()['_sklearn_version'].startswith('0.20.'):
