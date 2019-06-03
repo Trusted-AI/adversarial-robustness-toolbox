@@ -134,13 +134,15 @@ class SklearnSVC(Classifier):
         :return: Array of gradients of the same shape as `x`.
         :rtype: `np.ndarray`
         """
+        from sklearn.svm import SVC, LinearSVC
+
         num_samples, n_features = x.shape
         num_classes = len(self.model.classes_)
         gradients = np.zeros_like(x)
 
         y_index = np.argmax(y, axis=1)
 
-        if isinstance(self.model, sklearn.svm.SVC):
+        if isinstance(self.model, SVC):
 
             if self.model.fit_status_:
                 raise AssertionError('Model has not been fitted correctly.')
@@ -180,7 +182,7 @@ class SklearnSVC(Classifier):
                             grad_kernel = self._get_kernel_gradient(i_not_label_sv, x[i_sample])
                             gradients[i_sample, :] += sign_multiplier * alpha_i_k_y_i * grad_kernel
 
-        elif isinstance(self.model, sklearn.svm.LinearSVC):
+        elif isinstance(self.model, LinearSVC):
 
             for i_sample in range(num_samples):
 
@@ -216,7 +218,9 @@ class SklearnSVC(Classifier):
         :return: Array of predictions of shape `(nb_inputs, self.nb_classes)`.
         :rtype: `np.ndarray`
         """
-        if isinstance(self.model, sklearn.svm.SVC) and self.model.probability:
+        from sklearn.svm import SVC
+
+        if isinstance(self.model, SVC) and self.model.probability:
             y_pred = self.model.predict_proba(X=x)
         else:
             y_pred_label = self.model.predict(X=x)
