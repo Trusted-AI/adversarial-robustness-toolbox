@@ -19,7 +19,6 @@ from __future__ import absolute_import, division, print_function, unicode_litera
 
 import logging
 import numpy as np
-import sklearn
 
 from art.classifiers import Classifier
 
@@ -50,7 +49,9 @@ class SklearnDecisionTreeClassifier(Classifier):
                be divided by the second one.
         :type preprocessing: `tuple`
         """
-        if not isinstance(model, sklearn.tree.DecisionTreeClassifier):
+        from sklearn.tree import DecisionTreeClassifier
+
+        if not isinstance(model, DecisionTreeClassifier):
             raise TypeError('Model must be of type sklearn.tree.DecisionTreeClassifier')
 
         if not model.__getstate__()['_sklearn_version'].startswith('0.20.'):
