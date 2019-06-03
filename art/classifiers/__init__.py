@@ -10,3 +10,4 @@ from art.classifiers.tensorflow import TFClassifier
 from art.classifiers.ensemble import EnsembleClassifier
 from art.classifiers.sklearn_decision_tree_classifier import SklearnDecisionTreeClassifier
 from art.classifiers.lightgbm import LightGBMClassifier
+from art.classifiers.xgboost import XGBoostClassifier
