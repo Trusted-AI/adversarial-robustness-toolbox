@@ -31,7 +31,7 @@ class SklearnDecisionTreeClassifier(Classifier):
     Wrapper class for importing scikit-learn Decision Tree Classifier models.
     """
 
-    def __init__(self, clip_values=(0, 1), model=None, channel_index=None, defences=None, preprocessing=(0, 1)):
+    def __init__(self, model=None, channel_index=None, clip_values=None, defences=None, preprocessing=(0, 1)):
         """
         Create a `Classifier` instance from a scikit-learn Decision Tree Classifier model.
 
@@ -60,6 +60,7 @@ class SklearnDecisionTreeClassifier(Classifier):
                                                             defences=defences, preprocessing=preprocessing)
 
         self.model = model
+        self._input_shape = (self.model.n_features_,)
 
     def class_gradient(self, x, label=None, logits=False):
         """
@@ -130,7 +131,10 @@ class SklearnDecisionTreeClassifier(Classifier):
         :return: Array of predictions of shape `(nb_inputs, self.nb_classes)`.
         :rtype: `np.ndarray`
         """
-        raise NotImplementedError
+        return self.model.predict_proba(x)
+        # to_categorical(y_train, n_classes)
+        # from keras.utils.np_utils import to_categorical
+        # return to_categorical(self.model.predict(x), 3)
 
     def save(self, filename, path=None):
         import pickle
