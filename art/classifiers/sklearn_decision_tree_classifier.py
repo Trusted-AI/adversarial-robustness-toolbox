@@ -133,9 +133,6 @@ class SklearnDecisionTreeClassifier(Classifier):
         :rtype: `np.ndarray`
         """
         return self.model.predict_proba(x)
-        # to_categorical(y_train, n_classes)
-        # from keras.utils.np_utils import to_categorical
-        # return to_categorical(self.model.predict(x), 3)
 
     def save(self, filename, path=None):
         import pickle
