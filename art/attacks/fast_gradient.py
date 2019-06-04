@@ -21,8 +21,9 @@ import logging
 
 import numpy as np
 
+from art import NUMPY_DTYPE
 from art.attacks.attack import Attack
-from art.utils import compute_success, get_labels_np_array, random_sphere
+from art.utils import compute_success, get_labels_np_array, random_sphere, projection
 
 logger = logging.getLogger(__name__)
 
@@ -36,7 +37,7 @@ class FastGradientMethod(Attack):
     attack_params = Attack.attack_params + ['norm', 'eps', 'targeted', 'num_random_init', 'batch_size', 'minimal',
                                             'eps_step']
 
-    def __init__(self, classifier, norm=np.inf, eps=.3, targeted=False, num_random_init=0, batch_size=128,
+    def __init__(self, classifier, norm=np.inf, eps=.3, targeted=False, num_random_init=0, batch_size=1,
                  minimal=False, eps_step=0.1):
         """
         Create a :class:`.FastGradientMethod` instance.
@@ -69,6 +70,8 @@ class FastGradientMethod(Attack):
         self.minimal = minimal
         self.eps_step = eps_step
 
+        self._project = True
+
     def _minimal_perturbation(self, x, y):
         """Iteratively compute the minimal perturbation necessary to make the class prediction change. Stop when the
         first adversarial example was found.
@@ -94,7 +97,7 @@ class FastGradientMethod(Attack):
             # Get current predictions
             active_indices = np.arange(len(batch))
             current_eps = self.eps_step
-            while len(active_indices) != 0 and current_eps <= self.eps:
+            while active_indices.size > 0 and current_eps <= self.eps:
                 # Adversarial crafting
                 current_x = self._apply_perturbation(x[batch_index_1:batch_index_2], perturbation, current_eps)
                 # Update
@@ -142,16 +145,21 @@ class FastGradientMethod(Attack):
             rate_best = 100 * compute_success(self.classifier, x, y, adv_x_best, self.targeted)
         else:
             adv_x_best = None
-            rate_best = 0.0
+            rate_best = None
 
             for i_random_init in range(max(1, self.num_random_init)):
-                adv_x = self._compute(x, y, self.eps, self.eps, self.num_random_init > 0)
-                rate = 100 * compute_success(self.classifier, x, y, adv_x, self.targeted)
-                if rate > rate_best or adv_x_best is None:
-                    rate_best = rate
+                adv_x = self._compute(x, y, self.eps, self.eps, self._project, self.num_random_init > 0)
+
+                if self.num_random_init > 1:
+                    rate = 100 * compute_success(self.classifier, x, y, adv_x, self.targeted)
+                    if rate_best is None or rate > rate_best or adv_x_best is None:
+                        rate_best = rate
+                        adv_x_best = adv_x
+                else:
                     adv_x_best = adv_x
 
-        logger.info('Success rate of FGM attack: %.2f%%', rate_best)
+        logger.info('Success rate of FGM attack: %.2f%%', rate_best if rate_best is not None else
+                    100 * compute_success(self.classifier, x, y, adv_x, self.targeted))
 
         return adv_x_best
 
@@ -209,30 +217,41 @@ class FastGradientMethod(Attack):
         return grad
 
     def _apply_perturbation(self, batch, perturbation, eps_step):
-        clip_min, clip_max = self.classifier.clip_values
-        return np.clip(batch + eps_step * perturbation, clip_min, clip_max)
+        batch += eps_step * perturbation
 
-    def _compute(self, x, y, eps, eps_step, random_init):
+        if hasattr(self.classifier, 'clip_values') and self.classifier.clip_values is not None:
+            clip_min, clip_max = self.classifier.clip_values
+            batch = np.clip(batch, clip_min, clip_max)
+
+        return batch
+
+    def _compute(self, x, y, eps, eps_step, project, random_init):
         if random_init:
             n = x.shape[0]
             m = np.prod(x.shape[1:])
-            adv_x = x.copy() + random_sphere(n, m, eps, self.norm).reshape(x.shape)
+            x_adv = x.astype(NUMPY_DTYPE) + random_sphere(n, m, eps, self.norm).reshape(x.shape)
 
-            clip_min, clip_max = self.classifier.clip_values
-            adv_x = np.clip(adv_x, clip_min, clip_max)
+            if hasattr(self.classifier, 'clip_values') and self.classifier.clip_values is not None:
+                clip_min, clip_max = self.classifier.clip_values
+                x_adv = np.clip(x_adv, clip_min, clip_max)
         else:
-            adv_x = x.copy()
+            x_adv = x.astype(NUMPY_DTYPE)
 
         # Compute perturbation with implicit batching
-        for batch_id in range(int(np.ceil(adv_x.shape[0] / float(self.batch_size)))):
+        for batch_id in range(int(np.ceil(x.shape[0] / float(self.batch_size)))):
             batch_index_1, batch_index_2 = batch_id * self.batch_size, (batch_id + 1) * self.batch_size
-            batch = adv_x[batch_index_1:batch_index_2]
+            batch = x_adv[batch_index_1:batch_index_2]
             batch_labels = y[batch_index_1:batch_index_2]
 
             # Get perturbation
             perturbation = self._compute_perturbation(batch, batch_labels)
 
             # Apply perturbation and clip
-            adv_x[batch_index_1:batch_index_2] = self._apply_perturbation(batch, perturbation, eps_step)
+            x_adv[batch_index_1:batch_index_2] = self._apply_perturbation(batch, perturbation, eps_step)
 
-        return adv_x
+            if project:
+                perturbation = projection(x_adv[batch_index_1:batch_index_2] - x[batch_index_1:batch_index_2], self.eps,
+                                          self.norm)
+                x_adv[batch_index_1:batch_index_2] = x[batch_index_1:batch_index_2] + perturbation
+
+        return x_adv

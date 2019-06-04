@@ -34,7 +34,7 @@ model.add(Dense(10, activation='softmax'))
 
 model.compile(loss='categorical_crossentropy', optimizer='adam', metrics=['accuracy'])
 
-classifier = KerasClassifier((min_, max_), model=model)
+classifier = KerasClassifier(clip_values=(min_, max_), model=model)
 classifier.fit(x_train, y_train, nb_epochs=5, batch_size=128)
 
 # Evaluate the classifier on the test set
@@ -44,8 +44,8 @@ print("\nTest accuracy: %.2f%%" % (acc * 100))
 
 # Craft adversarial samples with FGSM
 epsilon = .1  # Maximum perturbation
-adv_crafter = FastGradientMethod(classifier)
-x_test_adv = adv_crafter.generate(x=x_test, eps=epsilon)
+adv_crafter = FastGradientMethod(classifier, eps=epsilon)
+x_test_adv = adv_crafter.generate(x=x_test)
 
 # Evaluate the classifier on the adversarial examples
 preds = np.argmax(classifier.predict(x_test_adv), axis=1)

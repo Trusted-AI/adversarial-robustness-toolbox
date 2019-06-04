@@ -32,14 +32,11 @@ class PyTorchClassifier(Classifier):
     """
     This class implements a classifier with the PyTorch framework.
     """
-    def __init__(self, clip_values, model, loss, optimizer, input_shape, nb_classes, channel_index=1, defences=None,
-                 preprocessing=(0, 1)):
+    def __init__(self, model, loss, optimizer, input_shape, nb_classes, channel_index=1, clip_values=None,
+                 defences=None, preprocessing=(0, 1)):
         """
         Initialization specifically for the PyTorch-based implementation.
 
-        :param clip_values: Tuple of the form `(min, max)` representing the minimum and maximum values allowed
-               for features.
-        :type clip_values: `tuple`
         :param model: PyTorch model. The forward function of the model must return the logit output.
         :type model: is instance of `torch.nn.Module`
         :param loss: The loss function for which to compute gradients for training. The target label must be raw
@@ -53,6 +50,11 @@ class PyTorchClassifier(Classifier):
         :type nb_classes: `int`
         :param channel_index: Index of the axis in data containing the color channels or features.
         :type channel_index: `int`
+        :param clip_values: Tuple of the form `(min, max)` of floats or `np.ndarray` representing the minimum and
+               maximum values allowed for features. If floats are provided, these will be used as the range of all
+               features. If arrays are provided, each value will be considered the bound for a feature, thus
+               the shape of clip values needs to match the total number of features.
+        :type clip_values: `tuple`
         :param defences: Defences to be activated with the classifier.
         :type defences: `str` or `list(str)`
         :param preprocessing: Tuple of the form `(substractor, divider)` of floats or `np.ndarray` of values to be
@@ -153,11 +155,8 @@ class PyTorchClassifier(Classifier):
 
             # Train for one epoch
             for m in range(num_batch):
-                i_batch = torch.from_numpy(x_preproc[ind[m * batch_size:(m + 1) * batch_size]]).to(self._device)
+                i_batch = torch.from_numpy(x_preproc[ind[m * batch_size:(m + 1) * batch_size]]).to(self._device).float()
                 o_batch = torch.from_numpy(y_preproc[ind[m * batch_size:(m + 1) * batch_size]]).to(self._device)
-
-                # Cast to float
-                i_batch = i_batch.float()
 
                 # Zero the parameter gradients
                 self._optimizer.zero_grad()
@@ -239,7 +238,7 @@ class PyTorchClassifier(Classifier):
         # Convert the inputs to Tensors
         x_preproc = self._apply_processing(x)
         x_defences, _ = self._apply_defences(x_preproc, None, fit=False)
-        x_defences = torch.from_numpy(x_defences).to(self._device)
+        x_defences = torch.from_numpy(x_defences).to(self._device).float()
 
         # Compute gradient wrt what
         layer_idx = self._init_grads()
@@ -440,41 +439,75 @@ class PyTorchClassifier(Classifier):
         folder = os.path.split(full_path)[0]
         if not os.path.exists(folder):
             os.makedirs(folder)
-        torch.save(self._model.state_dict(), full_path + '.model')
+
+        torch.save(self._model._model.state_dict(), full_path + '.model')
         torch.save(self._optimizer.state_dict(), full_path + '.optimizer')
         logger.info("Model state dict saved in path: %s.", full_path + '.model')
         logger.info("Optimizer state dict saved in path: %s.", full_path + '.optimizer')
 
+    def __getstate__(self):
+        """
+        Use to ensure `PytorchClassifier` can be pickled.
+
+        :return: State dictionary with instance parameters.
+        :rtype: `dict`
+        """
+        import time
+        import copy
+
+        state = self.__dict__.copy()
+        state['inner_model'] = copy.copy(state['_model']._model)
+
+        # Remove the unpicklable entries
+        del state['_ModelWrapper']
+        del state['_device']
+        del state['_model']
+
+        model_name = str(time.time())
+        state['model_name'] = model_name
+        self.save(model_name)
+
+        return state
+
+    def __setstate__(self, state):
+        """
+        Use to ensure `PytorchClassifier` can be unpickled.
+
+        :param state: State dictionary with instance parameters to restore.
+        :type state: `dict`
+        """
+        self.__dict__.update(state)
+
+        # Load and update all functionality related to Pytorch
+        import os
+        import torch
+        from art import DATA_PATH
+
+        # Recover model
+        full_path = os.path.join(DATA_PATH, state['model_name'])
+        model = state['inner_model']
+        model.load_state_dict(torch.load(str(full_path) + '.model'))
+        model.eval()
+        self._model = self._make_model_wrapper(model)
+
+        # Recover device
+        self._device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
+        self._model.to(self._device)
+
+        # Recover optimizer
+        self._optimizer.load_state_dict(torch.load(str(full_path) + '.optimizer'))
+
+        self.__dict__.pop('model_name', None)
+        self.__dict__.pop('inner_model', None)
+
     def __repr__(self):
-        repr_ = "%s(clip_values=%r, model=%r, loss=%r, optimizer=%r, input_shape=%r, nb_classes=%r, " \
-                "channel_index=%r, defences=%r, preprocessing=%r)" \
+        repr_ = "%s(model=%r, loss=%r, optimizer=%r, input_shape=%r, nb_classes=%r, " \
+                "channel_index=%r, clip_values=%r, defences=%r, preprocessing=%r)" \
                 % (self.__module__ + '.' + self.__class__.__name__,
-                   self.clip_values, self._model, self._loss, self._optimizer, self._input_shape, self.nb_classes,
-                   self.channel_index, self.defences, self.preprocessing)
+                   self._model, self._loss, self._optimizer, self._input_shape, self.nb_classes,
+                   self.channel_index, self.clip_values, self.defences, self.preprocessing)
 
         return repr_
-
-    # def _forward_at(self, inputs, layer):
-    #     """
-    #     Compute the forward at a specific layer.
-    #
-    #     :param inputs: Input data.
-    #     :type inputs: `np.ndarray`
-    #     :param layer: The layer where to get the forward results.
-    #     :type layer: `int`
-    #     :return: The forward results at the layer.
-    #     :rtype: `torch.Tensor`
-    #     """
-    #     print(layer)
-    #     results = inputs
-    #     for l in list(self._model.modules())[1:layer + 2]:
-    #         print(l)
-    #
-    #         results = l(results)
-    #
-    #         print(results.shape)
-    #
-    #     return results
 
     def _make_model_wrapper(self, model):
         # Try to import PyTorch and create an internal class that acts like a model wrapper extending torch.nn.Module

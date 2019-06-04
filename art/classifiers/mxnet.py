@@ -22,6 +22,7 @@ import logging
 import numpy as np
 import six
 
+from art import NUMPY_DTYPE
 from art.classifiers import Classifier
 
 logger = logging.getLogger(__name__)
@@ -31,15 +32,12 @@ class MXClassifier(Classifier):
     """
     Wrapper class for importing MXNet Gluon model.
     """
-    def __init__(self, clip_values, model, input_shape, nb_classes, optimizer=None, ctx=None, channel_index=1,
+    def __init__(self, model, input_shape, nb_classes, optimizer=None, ctx=None, channel_index=1, clip_values=None,
                  defences=None, preprocessing=(0, 1)):
         """
         Initialize an `MXClassifier` object. Assumes the `model` passed as parameter is a Gluon model and that the
         loss function is the softmax cross-entropy.
 
-        :param clip_values: Tuple of the form `(min, max)` representing the minimum and maximum values allowed
-               for features.
-        :type clip_values: `tuple`
         :param model: The model with logits as expected output.
         :type model: `mxnet.gluon.Block`
         :param input_shape: The shape of one input instance.
@@ -53,6 +51,11 @@ class MXClassifier(Classifier):
         :type ctx: `mxnet.context.Context`
         :param channel_index: Index of the axis in data containing the color channels or features.
         :type channel_index: `int`
+        :param clip_values: Tuple of the form `(min, max)` of floats or `np.ndarray` representing the minimum and
+               maximum values allowed for features. If floats are provided, these will be used as the range of all
+               features. If arrays are provided, each value will be considered the bound for a feature, thus
+               the shape of clip values needs to match the total number of features.
+        :type clip_values: `tuple`
         :param defences: Defences to be activated with the classifier.
         :type defences: `str` or `list(str)`
         :param preprocessing: Tuple of the form `(substractor, divider)` of floats or `np.ndarray` of values to be
@@ -117,7 +120,8 @@ class MXClassifier(Classifier):
 
             # Train for one epoch
             for m in range(nb_batch):
-                x_batch = mx.nd.array(x_preproc[ind[m * batch_size:(m + 1) * batch_size]]).as_in_context(self._ctx)
+                x_batch = mx.nd.array(x_preproc[ind[m * batch_size:(m + 1) * batch_size]].astype(NUMPY_DTYPE)) \
+                    .as_in_context(self._ctx)
                 y_batch = mx.nd.array(y_preproc[ind[m * batch_size:(m + 1) * batch_size]]).as_in_context(self._ctx)
 
                 with mx.autograd.record(train_mode=train_mode):
@@ -146,12 +150,13 @@ class MXClassifier(Classifier):
 
         train_mode = self._learning_phase if hasattr(self, '_learning_phase') else True
 
+        # TODO fix fit_generator w.r.t. defenses
         if isinstance(generator, MXDataGenerator) and \
                 not (hasattr(self, 'label_smooth') or hasattr(self, 'feature_squeeze')):
             # Train directly in MXNet
             for _ in range(nb_epochs):
                 for x_batch, y_batch in generator.data_loader:
-                    x_batch = mx.nd.array(x_batch).as_in_context(self._ctx)
+                    x_batch = mx.nd.array(x_batch.astype(NUMPY_DTYPE)).as_in_context(self._ctx)
                     y_batch = mx.nd.argmax(y_batch, axis=1)
                     y_batch = mx.nd.array(y_batch).as_in_context(self._ctx)
 
@@ -195,7 +200,7 @@ class MXClassifier(Classifier):
             begin, end = m * batch_size, min((m + 1) * batch_size, x_preproc.shape[0])
 
             # Predict
-            x_batch = mx.nd.array(x_preproc[begin:end], ctx=self._ctx)
+            x_batch = mx.nd.array(x_preproc[begin:end].astype(NUMPY_DTYPE), ctx=self._ctx)
             x_batch.attach_grad()
             with mx.autograd.record(train_mode=train_mode):
                 preds = self._model(x_batch)
@@ -237,7 +242,7 @@ class MXClassifier(Classifier):
 
         x_preproc = self._apply_processing(x)
         x_defences, _ = self._apply_defences(x_preproc, None, fit=False)
-        x_defences = mx.nd.array(x_defences, ctx=self._ctx)
+        x_defences = mx.nd.array(x_defences.astype(NUMPY_DTYPE), ctx=self._ctx)
         x_defences.attach_grad()
 
         if label is None:
@@ -308,7 +313,7 @@ class MXClassifier(Classifier):
         x_preproc = self._apply_processing(x)
         x_defences, y_defences = self._apply_defences(x_preproc, y, fit=False)
         y_defences = mx.nd.array([np.argmax(y_defences, axis=1)]).T
-        x_defences = mx.nd.array(x_defences, ctx=self._ctx)
+        x_defences = mx.nd.array(x_defences.astype(NUMPY_DTYPE), ctx=self._ctx)
         x_defences.attach_grad()
 
         loss = mx.gluon.loss.SoftmaxCrossEntropyLoss()
@@ -386,7 +391,7 @@ class MXClassifier(Classifier):
             begin, end = batch_index * batch_size, min((batch_index + 1) * batch_size, x_preproc.shape[0])
 
             # Predict
-            x_batch = mx.nd.array(x_preproc[begin:end], ctx=self._ctx)
+            x_batch = mx.nd.array(x_preproc[begin:end].astype(NUMPY_DTYPE), ctx=self._ctx)
             x_batch.attach_grad()
             with mx.autograd.record(train_mode=train_mode):
                 preds = self._model[layer_ind](x_batch)
@@ -434,11 +439,11 @@ class MXClassifier(Classifier):
         logger.info("Model parameters saved in path: %s.params.", full_path)
 
     def __repr__(self):
-        repr_ = "%s(clip_values=%r, model=%r, input_shape=%r, nb_classes=%r, optimizer=%r, ctx=%r, channel_index=%r, " \
-                "defences=%r, preprocessing=%r)" \
+        repr_ = "%s(model=%r, input_shape=%r, nb_classes=%r, optimizer=%r, ctx=%r, channel_index=%r, " \
+                "clip_values=%r, defences=%r, preprocessing=%r)" \
                 % (self.__module__ + '.' + self.__class__.__name__,
-                   self.clip_values, self._model, self.input_shape, self.nb_classes, self._optimizer, self._ctx,
-                   self.channel_index, self.defences, self.preprocessing)
+                   self._model, self.input_shape, self.nb_classes, self._optimizer, self._ctx,
+                   self.channel_index, self.clip_values, self.defences, self.preprocessing)
 
         return repr_
 

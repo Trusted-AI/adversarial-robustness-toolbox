@@ -39,8 +39,8 @@ class CarliniL2Method(Attack):
                                             'binary_search_steps', 'initial_const', 'max_halving', 'max_doubling',
                                             'batch_size']
 
-    def __init__(self, classifier, confidence=0.0, targeted=True, learning_rate=0.01, binary_search_steps=10,
-                 max_iter=10, initial_const=0.01, max_halving=5, max_doubling=5, batch_size=128):
+    def __init__(self, classifier, confidence=0.0, targeted=False, learning_rate=0.01, binary_search_steps=10,
+                 max_iter=10, initial_const=0.01, max_halving=5, max_doubling=5, batch_size=1):
         """
         Create a Carlini L_2 attack instance.
 
@@ -127,7 +127,7 @@ class CarliniL2Method(Attack):
 
         return z, l2dist, c*loss + l2dist
 
-    def _gradient_of_loss(self, z, target, x, x_adv, x_adv_tanh, c, clip_min, clip_max):
+    def _loss_gradient(self, z, target, x, x_adv, x_adv_tanh, c, clip_min, clip_max):
         """
         Compute the gradient of the loss function.
 
@@ -185,7 +185,10 @@ class CarliniL2Method(Attack):
         :rtype: `np.ndarray`
         """
         x_adv = x.astype(NUMPY_DTYPE)
-        (clip_min, clip_max) = self.classifier.clip_values
+        if hasattr(self.classifier, 'clip_values') and self.classifier.clip_values is not None:
+            clip_min, clip_max = self.classifier.clip_values
+        else:
+            clip_min, clip_max = np.amin(x), np.amax(x)
 
         # Assert that, if attack is targeted, y_val is provided:
         if self.targeted and y is None:
@@ -204,8 +207,7 @@ class CarliniL2Method(Attack):
             x_batch = x_adv[batch_index_1:batch_index_2]
             y_batch = y[batch_index_1:batch_index_2]
 
-            # The optimization is performed in tanh space to keep the
-            # adversarial images bounded from clip_min and clip_max.
+            # The optimization is performed in tanh space to keep the adversarial images bounded in correct range
             x_batch_tanh = original_to_tanh(x_batch, clip_min, clip_max, self._tanh_smoother)
 
             # Initialize binary search:
@@ -256,9 +258,9 @@ class CarliniL2Method(Attack):
 
                     # compute gradient:
                     logger.debug('Compute loss gradient')
-                    perturbation_tanh = -self._gradient_of_loss(z[active], y_batch[active], x_batch[active],
-                                                                x_adv_batch[active], x_adv_batch_tanh[active],
-                                                                c[active], clip_min, clip_max)
+                    perturbation_tanh = -self._loss_gradient(z[active], y_batch[active], x_batch[active],
+                                                             x_adv_batch[active], x_adv_batch_tanh[active],
+                                                             c[active], clip_min, clip_max)
 
                     # perform line search to optimize perturbation
                     # first, halve the learning rate until perturbation actually decreases the loss:
@@ -426,7 +428,7 @@ class CarliniLInfMethod(Attack):
     attack_params = Attack.attack_params + ['confidence', 'targeted', 'learning_rate', 'max_iter',
                                             'max_halving', 'max_doubling', 'eps', 'batch_size']
 
-    def __init__(self, classifier, confidence=0.0, targeted=True, learning_rate=0.01,
+    def __init__(self, classifier, confidence=0.0, targeted=False, learning_rate=0.01,
                  max_iter=10, max_halving=5, max_doubling=5, eps=0.3, batch_size=128):
         """
         Create a Carlini L_Inf attack instance.
@@ -496,7 +498,7 @@ class CarliniLInfMethod(Attack):
 
         return z, loss
 
-    def _gradient_of_loss(self, z, target, x_adv, x_adv_tanh, clip_min, clip_max):
+    def _loss_gradient(self, z, target, x_adv, x_adv_tanh, clip_min, clip_max):
         """
         Compute the gradient of the loss function.
 
@@ -531,7 +533,7 @@ class CarliniLInfMethod(Attack):
 
         return loss_gradient
 
-    def generate(self, x, **kwargs):
+    def generate(self, x, y=None):
         """
         Generate adversarial samples and return them in an array.
 
@@ -545,10 +547,10 @@ class CarliniLInfMethod(Attack):
         """
         x_adv = x.astype(NUMPY_DTYPE)
 
-        # Parse and save attack-specific parameters
-        params_cpy = dict(kwargs)
-        y = params_cpy.pop(str('y'), None)
-        self.set_params(**params_cpy)
+        if hasattr(self.classifier, 'clip_values') and self.classifier.clip_values is not None:
+            clip_min_per_pixel, clip_max_per_pixel = self.classifier.clip_values
+        else:
+            clip_min_per_pixel, clip_max_per_pixel = np.amin(x), np.amax(x)
 
         # Assert that, if attack is targeted, y_val is provided:
         if self.targeted and y is None:
@@ -567,7 +569,7 @@ class CarliniLInfMethod(Attack):
             x_batch = x_adv[batch_index_1:batch_index_2]
             y_batch = y[batch_index_1:batch_index_2]
 
-            (clip_min_per_pixel, clip_max_per_pixel) = self.classifier.clip_values
+            # Determine values for later clipping
             clip_min = np.clip(x_batch - self.eps, clip_min_per_pixel, clip_max_per_pixel)
             clip_max = np.clip(x_batch + self.eps, clip_min_per_pixel, clip_max_per_pixel)
 
@@ -597,8 +599,8 @@ class CarliniLInfMethod(Attack):
 
                 # compute gradient:
                 logger.debug('Compute loss gradient')
-                perturbation_tanh = -self._gradient_of_loss(z[active], y_batch[active], x_adv_batch[active],
-                                                            x_adv_batch_tanh[active], clip_min[active], clip_max[active])
+                perturbation_tanh = -self._loss_gradient(z[active], y_batch[active], x_adv_batch[active],
+                                                         x_adv_batch_tanh[active], clip_min[active], clip_max[active])
 
                 # perform line search to optimize perturbation
                 # first, halve the learning rate until perturbation actually decreases the loss:

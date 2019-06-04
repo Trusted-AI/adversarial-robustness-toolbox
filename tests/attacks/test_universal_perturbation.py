@@ -23,7 +23,9 @@ import unittest
 import numpy as np
 
 from art.attacks.universal_perturbation import UniversalPerturbation
-from art.utils import load_mnist, master_seed, get_classifier_tf, get_classifier_kr, get_classifier_pt
+from art.classifiers import KerasClassifier
+from art.utils import load_dataset, master_seed, get_classifier_tf, get_classifier_kr, get_classifier_pt
+from art.utils import get_iris_classifier_tf, get_iris_classifier_kr, get_iris_classifier_pt
 
 logger = logging.getLogger('testLogger')
 
@@ -40,7 +42,7 @@ class TestUniversalPerturbation(unittest.TestCase):
     @classmethod
     def setUpClass(cls):
         # Get MNIST
-        (x_train, y_train), (x_test, y_test), _, _ = load_mnist()
+        (x_train, y_train), (x_test, y_test), _, _ = load_dataset('mnist')
         x_train, y_train = x_train[:NB_TRAIN], y_train[:NB_TRAIN]
         x_test, y_test = x_test[:NB_TEST], y_test[:NB_TEST]
         cls.mnist = (x_train, y_train), (x_test, y_test)
@@ -65,7 +67,7 @@ class TestUniversalPerturbation(unittest.TestCase):
         x_train_adv = up.generate(x_train)
         self.assertTrue((up.fooling_rate >= 0.2) or not up.converged)
 
-        x_test_adv = x_test + up.v
+        x_test_adv = x_test + up.noise
         self.assertFalse((x_test == x_test_adv).all())
 
         train_y_pred = np.argmax(tfc.predict(x_train_adv), axis=1)
@@ -89,7 +91,7 @@ class TestUniversalPerturbation(unittest.TestCase):
         x_train_adv = up.generate(x_train)
         self.assertTrue((up.fooling_rate >= 0.2) or not up.converged)
 
-        x_test_adv = x_test + up.v
+        x_test_adv = x_test + up.noise
         self.assertFalse((x_test == x_test_adv).all())
 
         train_y_pred = np.argmax(krc.predict(x_train_adv), axis=1)
@@ -115,13 +117,94 @@ class TestUniversalPerturbation(unittest.TestCase):
         x_train_adv = up.generate(x_train)
         self.assertTrue((up.fooling_rate >= 0.2) or not up.converged)
 
-        x_test_adv = x_test + up.v
+        x_test_adv = x_test + up.noise
         self.assertFalse((x_test == x_test_adv).all())
 
         train_y_pred = np.argmax(ptc.predict(x_train_adv), axis=1)
         test_y_pred = np.argmax(ptc.predict(x_test_adv), axis=1)
         self.assertFalse((np.argmax(y_test, axis=1) == test_y_pred).all())
         self.assertFalse((np.argmax(y_train, axis=1) == train_y_pred).all())
+
+
+class TestUniversalPerturbationVectors(unittest.TestCase):
+    @classmethod
+    def setUpClass(cls):
+        # Get Iris
+        (x_train, y_train), (x_test, y_test), _, _ = load_dataset('iris')
+        cls.iris = (x_train, y_train), (x_test, y_test)
+
+    def setUp(self):
+        master_seed(1234)
+
+    def test_iris_k_clipped(self):
+        (_, _), (x_test, y_test) = self.iris
+        classifier, _ = get_iris_classifier_kr()
+
+        # Test untargeted attack
+        attack_params = {"max_iter": 1, "attacker": "newtonfool", "attacker_params": {"max_iter": 5}}
+        attack = UniversalPerturbation(classifier)
+        attack.set_params(**attack_params)
+        x_test_adv = attack.generate(x_test)
+        self.assertFalse((x_test == x_test_adv).all())
+        self.assertTrue((x_test_adv <= 1).all())
+        self.assertTrue((x_test_adv >= 0).all())
+
+        preds_adv = np.argmax(classifier.predict(x_test_adv), axis=1)
+        self.assertFalse((np.argmax(y_test, axis=1) == preds_adv).all())
+        acc = np.sum(preds_adv == np.argmax(y_test, axis=1)) / y_test.shape[0]
+        logger.info('Accuracy on Iris with universal adversarial examples: %.2f%%', (acc * 100))
+
+    def test_iris_k_unbounded(self):
+        (_, _), (x_test, y_test) = self.iris
+        classifier, _ = get_iris_classifier_kr()
+
+        # Recreate a classifier without clip values
+        classifier = KerasClassifier(model=classifier._model, use_logits=False, channel_index=1)
+        attack_params = {"max_iter": 1, "attacker": "newtonfool", "attacker_params": {"max_iter": 5}}
+        attack = UniversalPerturbation(classifier)
+        attack.set_params(**attack_params)
+        x_test_adv = attack.generate(x_test)
+        self.assertFalse((x_test == x_test_adv).all())
+
+        preds_adv = np.argmax(classifier.predict(x_test_adv), axis=1)
+        self.assertFalse((np.argmax(y_test, axis=1) == preds_adv).all())
+        acc = np.sum(preds_adv == np.argmax(y_test, axis=1)) / y_test.shape[0]
+        logger.info('Accuracy on Iris with universal adversarial examples: %.2f%%', (acc * 100))
+
+    def test_iris_tf(self):
+        (_, _), (x_test, y_test) = self.iris
+        classifier, _ = get_iris_classifier_tf()
+
+        # Test untargeted attack
+        attack_params = {"max_iter": 1, "attacker": "ead", "attacker_params": {"max_iter": 5, "targeted": False}}
+        attack = UniversalPerturbation(classifier)
+        attack.set_params(**attack_params)
+        x_test_adv = attack.generate(x_test)
+        self.assertFalse((x_test == x_test_adv).all())
+        self.assertTrue((x_test_adv <= 1).all())
+        self.assertTrue((x_test_adv >= 0).all())
+
+        preds_adv = np.argmax(classifier.predict(x_test_adv), axis=1)
+        self.assertFalse((np.argmax(y_test, axis=1) == preds_adv).all())
+        acc = np.sum(preds_adv == np.argmax(y_test, axis=1)) / y_test.shape[0]
+        logger.info('Accuracy on Iris with universal adversarial examples: %.2f%%', (acc * 100))
+
+    def test_iris_pt(self):
+        (_, _), (x_test, y_test) = self.iris
+        classifier = get_iris_classifier_pt()
+
+        attack_params = {"max_iter": 1, "attacker": "ead", "attacker_params": {"max_iter": 5, "targeted": False}}
+        attack = UniversalPerturbation(classifier)
+        attack.set_params(**attack_params)
+        x_test_adv = attack.generate(x_test)
+        self.assertFalse((x_test == x_test_adv).all())
+        self.assertTrue((x_test_adv <= 1).all())
+        self.assertTrue((x_test_adv >= 0).all())
+
+        preds_adv = np.argmax(classifier.predict(x_test_adv), axis=1)
+        self.assertFalse((np.argmax(y_test, axis=1) == preds_adv).all())
+        acc = np.sum(preds_adv == np.argmax(y_test, axis=1)) / y_test.shape[0]
+        logger.info('Accuracy on Iris with universal adversarial examples: %.2f%%', (acc * 100))
 
 
 if __name__ == '__main__':

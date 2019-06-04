@@ -72,6 +72,14 @@ class TestLocalSpatialSmoothing(unittest.TestCase):
 
         self.assertTrue((smooth_x[0, 0] == new_smooth_x[0, :, :, 0]).all())
 
+    def test_failure(self):
+        x = np.arange(10).reshape(5, 2)
+        preprocess = SpatialSmoothing(channel_index=1)
+        with self.assertRaises(ValueError) as context:
+            preprocess(x)
+
+        self.assertTrue('Feature vectors detected.' in str(context.exception))
+
 
 if __name__ == '__main__':
     unittest.main()

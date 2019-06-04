@@ -25,12 +25,12 @@ import numpy as np
 import tensorflow as tf
 
 from art.attacks.saliency_map import SaliencyMapMethod
-from art.utils import load_mnist, get_labels_np_array, to_categorical, master_seed
+from art.classifiers import KerasClassifier
+from art.utils import load_dataset, get_labels_np_array, to_categorical, master_seed
 from art.utils import get_classifier_tf, get_classifier_kr, get_classifier_pt
+from art.utils import get_iris_classifier_tf, get_iris_classifier_kr, get_iris_classifier_pt
 
 logger = logging.getLogger('testLogger')
-
-# TODO add test with gamma < 1
 
 BATCH_SIZE = 10
 NB_TRAIN = 100
@@ -43,7 +43,7 @@ class TestSaliencyMap(unittest.TestCase):
         k.set_learning_phase(1)
 
         # Get MNIST
-        (x_train, y_train), (x_test, y_test), _, _ = load_mnist()
+        (x_train, y_train), (x_test, y_test), _, _ = load_dataset('mnist')
         x_train, y_train, x_test, y_test = x_train[:NB_TRAIN], y_train[:NB_TRAIN], x_test[:NB_TEST], y_test[:NB_TEST]
         cls.mnist = (x_train, y_train), (x_test, y_test)
 
@@ -146,6 +146,78 @@ class TestSaliencyMap(unittest.TestCase):
 
         acc = np.sum(np.argmax(y_pred, axis=1) == np.argmax(y_test, axis=1)) / y_test.shape[0]
         logger.info('Accuracy on adversarial examples: %.2f%%', (acc * 100))
+
+
+class TestSaliencyMapVectors(unittest.TestCase):
+    @classmethod
+    def setUpClass(cls):
+        # Get Iris
+        (x_train, y_train), (x_test, y_test), _, _ = load_dataset('iris')
+        cls.iris = (x_train, y_train), (x_test, y_test)
+
+    def setUp(self):
+        master_seed(1234)
+
+    def test_iris_k_clipped(self):
+        (_, _), (x_test, y_test) = self.iris
+        classifier, _ = get_iris_classifier_kr()
+
+        attack = SaliencyMapMethod(classifier, theta=1)
+        x_test_adv = attack.generate(x_test)
+        self.assertFalse((x_test == x_test_adv).all())
+        self.assertTrue((x_test_adv <= 1).all())
+        self.assertTrue((x_test_adv >= 0).all())
+
+        preds_adv = np.argmax(classifier.predict(x_test_adv), axis=1)
+        self.assertFalse((np.argmax(y_test, axis=1) == preds_adv).all())
+        acc = np.sum(preds_adv == np.argmax(y_test, axis=1)) / y_test.shape[0]
+        logger.info('Accuracy on Iris with JSMA adversarial examples: %.2f%%', (acc * 100))
+
+    def test_iris_k_unbounded(self):
+        (_, _), (x_test, y_test) = self.iris
+        classifier, _ = get_iris_classifier_kr()
+
+        # Recreate a classifier without clip values
+        classifier = KerasClassifier(model=classifier._model, use_logits=False, channel_index=1)
+        attack = SaliencyMapMethod(classifier, theta=1)
+        x_test_adv = attack.generate(x_test)
+        self.assertFalse((x_test == x_test_adv).all())
+
+        preds_adv = np.argmax(classifier.predict(x_test_adv), axis=1)
+        self.assertFalse((np.argmax(y_test, axis=1) == preds_adv).all())
+        acc = np.sum(preds_adv == np.argmax(y_test, axis=1)) / y_test.shape[0]
+        logger.info('Accuracy on Iris with JSMA adversarial examples: %.2f%%', (acc * 100))
+
+    def test_iris_tf(self):
+        (_, _), (x_test, y_test) = self.iris
+        classifier, _ = get_iris_classifier_tf()
+
+        attack = SaliencyMapMethod(classifier, theta=1)
+        x_test_adv = attack.generate(x_test)
+        self.assertFalse((x_test == x_test_adv).all())
+        self.assertTrue((x_test_adv <= 1).all())
+        self.assertTrue((x_test_adv >= 0).all())
+
+        preds_adv = np.argmax(classifier.predict(x_test_adv), axis=1)
+        self.assertFalse((np.argmax(y_test, axis=1) == preds_adv).all())
+        acc = np.sum(preds_adv == np.argmax(y_test, axis=1)) / y_test.shape[0]
+        logger.info('Accuracy on Iris with JSMA adversarial examples: %.2f%%', (acc * 100))
+
+    def test_iris_pt(self):
+        (_, _), (x_test, y_test) = self.iris
+        classifier = get_iris_classifier_pt()
+
+        attack = SaliencyMapMethod(classifier, theta=1)
+        x_test_adv = attack.generate(x_test)
+        self.assertFalse((x_test == x_test_adv).all())
+        self.assertTrue((x_test_adv <= 1).all())
+        self.assertTrue((x_test_adv >= 0).all())
+
+        preds_adv = np.argmax(classifier.predict(x_test_adv), axis=1)
+        self.assertFalse((np.argmax(y_test, axis=1) == preds_adv).all())
+        acc = np.sum(preds_adv == np.argmax(y_test, axis=1)) / y_test.shape[0]
+        logger.info('Accuracy on Iris with JSMA adversarial examples: %.2f%%', (acc * 100))
+
 
 
 if __name__ == '__main__':

@@ -50,11 +50,11 @@ class DataGenerator(ABC):
         :param batch_size: Size of the minibatches.
         :type batch_size: `int`
         """
-        if size is not None and (type(size) is not int or size < 1):
+        if size is not None and (not isinstance(size, int) or size < 1):
             raise ValueError("The total size of the dataset must be an integer greater than zero.")
         self.size = size
 
-        if type(batch_size) is not int or batch_size < 1:
+        if not isinstance(batch_size, int) or batch_size < 1:
             raise ValueError("The batch size must be an integer greater than zero.")
         self.batch_size = batch_size
 
@@ -228,14 +228,14 @@ class TFDataGenerator(DataGenerator):
             raise TypeError("Only support object tf.data.Iterator")
 
         if iterator_type == 'initializable':
-            if type(iterator_arg) != dict:
-                raise ("Need to pass a dictionary for iterator type %s" % iterator_type)
+            if not isinstance(iterator_arg, dict):
+                raise TypeError("Need to pass a dictionary for iterator type %s" % iterator_type)
         elif iterator_type == 'reinitializable':
             if not isinstance(iterator_arg, tf.Operation):
-                raise ("Need to pass a tensorflow operation for iterator type %s" % iterator_type)
+                raise TypeError("Need to pass a tensorflow operation for iterator type %s" % iterator_type)
         elif iterator_type == 'feedable':
-            if type(iterator_arg) != tuple:
-                raise ValueError("Need to pass a tuple for iterator type %s" % iterator_type)
+            if not isinstance(iterator_arg, tuple):
+                raise TypeError("Need to pass a tuple for iterator type %s" % iterator_type)
         else:
             raise TypeError("Iterator type %s not supported" % iterator_type)
 

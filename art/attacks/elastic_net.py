@@ -36,8 +36,8 @@ class ElasticNet(Attack):
     attack_params = Attack.attack_params + ['confidence', 'targeted', 'learning_rate', 'max_iter', 'beta',
                                             'binary_search_steps', 'initial_const', 'batch_size', 'decision_rule']
 
-    def __init__(self, classifier, confidence=0.0, targeted=True, learning_rate=1e-2, binary_search_steps=9,
-                 max_iter=10000, beta=1e-3, initial_const=1e-3, batch_size=128, decision_rule='EN'):
+    def __init__(self, classifier, confidence=0.0, targeted=False, learning_rate=1e-2, binary_search_steps=9,
+                 max_iter=100, beta=1e-3, initial_const=1e-3, batch_size=1, decision_rule='EN'):
         """
         Create an ElasticNet attack instance.
 
@@ -167,7 +167,6 @@ class ElasticNet(Attack):
         :rtype: `np.ndarray`
         """
         x_adv = x.astype(NUMPY_DTYPE)
-        (clip_min, clip_max) = self.classifier.clip_values
 
         # Assert that, if attack is targeted, y is provided:
         if self.targeted and y is None:
@@ -188,7 +187,8 @@ class ElasticNet(Attack):
             x_adv[batch_index_1:batch_index_2] = self._generate_batch(x_batch, y_batch)
 
         # Apply clip
-        x_adv = np.clip(x_adv, clip_min, clip_max)
+        if hasattr(self.classifier, 'clip_values') and self.classifier.clip_values is not None:
+            x_adv = np.clip(x_adv, self.classifier.clip_values[0], self.classifier.clip_values[1])
 
         # Compute success rate of the EAD attack
         logger.info('Success rate of EAD attack: %.2f%%',
@@ -386,13 +386,13 @@ class ElasticNet(Attack):
         # Save attack-specific parameters
         super(ElasticNet, self).set_params(**kwargs)
 
-        if type(self.binary_search_steps) is not int or self.binary_search_steps < 0:
+        if not isinstance(self.binary_search_steps, int) or self.binary_search_steps < 0:
             raise ValueError("The number of binary search steps must be a non-negative integer.")
 
-        if type(self.max_iter) is not int or self.max_iter < 0:
+        if not isinstance(self.max_iter, int) or self.max_iter < 0:
             raise ValueError("The number of iterations must be a non-negative integer.")
 
-        if type(self.batch_size) is not int or self.batch_size < 1:
+        if not isinstance(self.batch_size, int) or self.batch_size < 1:
             raise ValueError("The batch size must be an integer greater than zero.")
 
         if not isinstance(self.decision_rule, six.string_types) or self.decision_rule not in ['EN', 'L1', 'L2']:

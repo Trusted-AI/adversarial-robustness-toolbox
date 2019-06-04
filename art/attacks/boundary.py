@@ -21,6 +21,7 @@ import logging
 
 import numpy as np
 
+from art import NUMPY_DTYPE
 from art.attacks.attack import Attack
 
 logger = logging.getLogger(__name__)
@@ -28,14 +29,14 @@ logger = logging.getLogger(__name__)
 
 class BoundaryAttack(Attack):
     """
-    Implementation of the boundary attack from Wieland Brendel et al. (2018).
-    Paper link: https://arxiv.org/abs/1712.04248
+    Implementation of the boundary attack from Wieland Brendel et al. (2018). This is a powerful black-box attack that
+    only requires final class prediction. Paper link: https://arxiv.org/abs/1712.04248
     """
-    attack_params = Attack.attack_params + ['targeted', 'delta', 'epsilon', 'step_adapt', 'max_iter', 'sample_size',
-                                            'init_size']
+    attack_params = Attack.attack_params + ['targeted', 'delta', 'epsilon', 'step_adapt', 'max_iter', 'num_trial',
+                                            'sample_size', 'init_size']
 
-    def __init__(self, classifier, targeted=True, delta=0.01, epsilon=0.01, step_adapt=0.9, max_iter=100,
-                 sample_size=20, init_size=100):
+    def __init__(self, classifier, targeted=True, delta=0.01, epsilon=0.01, step_adapt=0.667, max_iter=5000,
+                 num_trial=25, sample_size=20, init_size=100):
         """
         Create a boundary attack instance.
 
@@ -49,9 +50,11 @@ class BoundaryAttack(Attack):
         :type epsilon: `float`
         :param step_adapt: Factor by which the step sizes are multiplied or divided, must be in the range (0, 1).
         :type step_adapt: `float`
-        :param max_iter: The maximum number of iterations.
+        :param max_iter: Maximum number of iterations.
         :type max_iter: `int`
-        :param sample_size: Maximum number of trials per iteration.
+        :param num_trial: Maximum number of trials per iteration.
+        :type num_trial: `int`
+        :param sample_size: Number of samples per trial.
         :type sample_size: `int`
         :param init_size: Maximum number of trials for initial generation of adversarial examples.
         :type init_size: `int`
@@ -62,11 +65,13 @@ class BoundaryAttack(Attack):
                   'epsilon': epsilon,
                   'step_adapt': step_adapt,
                   'max_iter': max_iter,
+                  'num_trial': num_trial,
                   'sample_size': sample_size,
-                  'init_size': init_size}
+                  'init_size': init_size,
+                  }
         self.set_params(**params)
 
-    def generate(self, x, y=None):
+    def generate(self, x, y=None, x_adv_init=None):
         """
         Generate adversarial samples and return them in an array.
 
@@ -74,36 +79,51 @@ class BoundaryAttack(Attack):
         :type x: `np.ndarray`
         :param y: If `self.targeted` is true, then `y` represents the target labels.
         :type y: `np.ndarray`
+        :param x_adv_init: Initial array to act as initial adversarial examples. Same shape as `x`.
+        :type x_adv_init: `np.ndarray`
         :return: An array holding the adversarial examples.
         :rtype: `np.ndarray`
         """
+        # Get clip_min and clip_max from the classifier or infer them from data
+        if hasattr(self.classifier, 'clip_values') and self.classifier.clip_values is not None:
+            clip_min, clip_max = self.classifier.clip_values
+        else:
+            clip_min, clip_max = np.min(x), np.max(x)
+
         # Prediction from the original images
         preds = np.argmax(self.classifier.predict(x), axis=1)
+
+        # Prediction from the initial adversarial examples if not None
+        if x_adv_init is not None:
+            init_preds = np.argmax(self.classifier.predict(x_adv_init), axis=1)
+        else:
+            init_preds = [None] * len(x)
+            x_adv_init = [None] * len(x)
 
         # Assert that, if attack is targeted, y is provided
         if self.targeted and y is None:
             raise ValueError('Target labels `y` need to be provided for a targeted attack.')
 
         # Some initial setups
-        x_adv = x.copy()
+        x_adv = x.astype(NUMPY_DTYPE)
         if y is not None:
             y = np.argmax(y, axis=1)
 
         # Generate the adversarial samples
         for ind, val in enumerate(x_adv):
             if self.targeted:
-                x_ = self._perturb(x=val, y=y[ind], y_p=preds[ind])
+                x_adv[ind] = self._perturb(x=val, y=y[ind], y_p=preds[ind], init_pred=init_preds[ind],
+                                           adv_init=x_adv_init[ind], clip_min=clip_min, clip_max=clip_max)
             else:
-                x_ = self._perturb(x=val, y=None, y_p=preds[ind])
-
-            x_adv[ind] = x_
+                x_adv[ind] = self._perturb(x=val, y=-1, y_p=preds[ind], init_pred=init_preds[ind],
+                                           adv_init=x_adv_init[ind], clip_min=clip_min, clip_max=clip_max)
 
         logger.info('Success rate of Boundary attack: %.2f%%',
                     (np.sum(preds != np.argmax(self.classifier.predict(x_adv), axis=1)) / x.shape[0]))
 
         return x_adv
 
-    def _perturb(self, x, y, y_p):
+    def _perturb(self, x, y, y_p, init_pred, adv_init, clip_min, clip_max):
         """
         Internal attack function for one example.
 
@@ -113,24 +133,30 @@ class BoundaryAttack(Attack):
         :type y: `int`
         :param y_p: The predicted label of x.
         :type y_p: `int`
+        :param init_pred: The predicted label of the initial image.
+        :type init_pred: `int`
+        :param adv_init: Initial array to act as an initial adversarial example.
+        :type adv_init: `np.ndarray`
+        :param clip_min: Minimum value of an example.
+        :type clip_min: `float`
+        :param clip_max: Maximum value of an example.
+        :type clip_max: `float`
         :return: an adversarial example.
+        :rtype: `np.ndarray`
         """
         # First, create an initial adversarial sample
-        initial_sample = self._init_sample(x, y, y_p)
+        initial_sample = self._init_sample(x, y, y_p, init_pred, adv_init, clip_min, clip_max)
 
         # If an initial adversarial example is not found, then return the original image
         if initial_sample is None:
             return x
 
         # If an initial adversarial example found, then go with boundary attack
-        if self.targeted:
-            x_adv = self._attack(initial_sample, x, y, self.delta, self.epsilon)
-        else:
-            x_adv = self._attack(initial_sample, x, y_p, self.delta, self.epsilon)
+        x_adv = self._attack(initial_sample[0], x, initial_sample[1], self.delta, self.epsilon, clip_min, clip_max)
 
         return x_adv
 
-    def _attack(self, initial_sample, original_sample, target, initial_delta, initial_epsilon):
+    def _attack(self, initial_sample, original_sample, target, initial_delta, initial_epsilon, clip_min, clip_max):
         """
         Main function for the boundary attack.
 
@@ -138,77 +164,71 @@ class BoundaryAttack(Attack):
         :type initial_sample: `np.ndarray`
         :param original_sample: The original input.
         :type original_sample: `np.ndarray`
-        :param target: If `self.targeted` is true, then `target` represents the target label, otherwise the
-        predicted label of the original sample.
+        :param target: The target label.
         :type target: `int`
         :param initial_delta: Initial step size for the orthogonal step.
         :type initial_delta: `float`
         :param initial_epsilon: Initial step size for the step towards the target.
         :type initial_epsilon: `float`
+        :param clip_min: Minimum value of an example.
+        :type clip_min: `float`
+        :param clip_max: Maximum value of an example.
+        :type clip_max: `float`
         :return: an adversarial example.
         :rtype: `np.ndarray`
         """
         # Get initialization for some variables
         x_adv = initial_sample
-        delta = initial_delta
-        epsilon = initial_epsilon
-        clip_min, clip_max = self.classifier.clip_values
+        self.curr_delta = initial_delta
+        self.curr_epsilon = initial_epsilon
 
         # Main loop to wander around the boundary
         for _ in range(self.max_iter):
             # Trust region method to adjust delta
-            for _ in range(self.max_iter):
+            for _ in range(self.num_trial):
                 potential_advs = []
                 for _ in range(self.sample_size):
-                    potential_adv = x_adv + self._orthogonal_perturb(delta, x_adv, original_sample)
+                    potential_adv = x_adv + self._orthogonal_perturb(self.curr_delta, x_adv, original_sample)
                     potential_adv = np.clip(potential_adv, clip_min, clip_max)
                     potential_advs.append(potential_adv)
 
                 preds = np.argmax(self.classifier.predict(np.array(potential_advs)), axis=1)
-
-                if self.targeted:
-                    satisfied = (preds == target)
-                else:
-                    satisfied = (preds != target)
-
+                satisfied = (preds == target)
                 delta_ratio = np.mean(satisfied)
 
-                if delta_ratio < 0.5:
-                    delta *= self.step_adapt
-                else:
-                    delta /= self.step_adapt
+                if delta_ratio < 0.2:
+                    self.curr_delta *= self.step_adapt
+                elif delta_ratio > 0.5:
+                    self.curr_delta /= self.step_adapt
 
                 if delta_ratio > 0:
-                    x_adv = potential_advs[np.where(satisfied)[0][0]]
+                    x_advs = np.array(potential_advs)[np.where(satisfied)[0]]
                     break
-
             else:
                 logging.warning('Adversarial example found but not optimal.')
                 return x_adv
 
             # Trust region method to adjust epsilon
-            for _ in range(self.max_iter):
-                perturb = original_sample - x_adv
-                perturb *= epsilon
-                potential_adv = x_adv + perturb
-                potential_adv = np.clip(potential_adv, clip_min, clip_max)
-                pred = np.argmax(self.classifier.predict(np.array([potential_adv])), axis=1)[0]
+            for _ in range(self.num_trial):
+                perturb = np.repeat(np.array([original_sample]), len(x_advs), axis=0) - x_advs
+                perturb *= self.curr_epsilon
+                potential_advs = x_advs + perturb
+                potential_advs = np.clip(potential_advs, clip_min, clip_max)
+                preds = np.argmax(self.classifier.predict(potential_advs), axis=1)
+                satisfied = (preds == target)
+                epsilon_ratio = np.mean(satisfied)
 
-                if self.targeted:
-                    satisfied = (pred == target)
-                else:
-                    satisfied = (pred != target)
+                if epsilon_ratio < 0.2:
+                    self.curr_epsilon *= self.step_adapt
+                elif epsilon_ratio > 0.5:
+                    self.curr_epsilon /= self.step_adapt
 
-                if satisfied:
-                    x_adv = potential_adv
-                    epsilon /= self.step_adapt
+                if epsilon_ratio > 0:
+                    x_adv = potential_advs[np.where(satisfied)[0][0]]
                     break
-                else:
-                    epsilon *= self.step_adapt
-
             else:
                 logging.warning('Adversarial example found but not optimal.')
-                return x_adv
+                return x_advs[0]
 
         return x_adv
 
@@ -223,9 +243,10 @@ class BoundaryAttack(Attack):
         :param original_sample: The original input.
         :type original_sample: `np.ndarray`
         :return: a possible perturbation.
+        :rtype: `np.ndarray`
         """
         # Generate perturbation randomly
-        perturb = np.random.randn(current_sample.shape[0], current_sample.shape[1], current_sample.shape[2])
+        perturb = np.random.randn(*self.classifier.input_shape)
 
         # Rescale the perturbation
         perturb /= np.linalg.norm(perturb)
@@ -242,19 +263,9 @@ class BoundaryAttack(Attack):
 
         perturb = np.swapaxes(perturb, 0, self.classifier.channel_index - 1)
 
-        # direction = original_sample - current_sample
-        # norm_direction = np.linalg.norm(direction)
-        # direction /= norm_direction
-        # vdot = np.vdot(perturb, direction)
-        # perturb -= vdot * direction
-        # perturb *= delta * norm_direction / np.linalg.norm(perturb)
-        # d = 1.0 / np.sqrt(delta ** 2 + 1)
-        # direction = perturb - (original_sample - current_sample)
-        # perturb = d * direction
-
         return perturb
 
-    def _init_sample(self, x, y, y_p):
+    def _init_sample(self, x, y, y_p, init_pred, adv_init, clip_min, clip_max):
         """
         Find initial adversarial example for the attack.
 
@@ -264,9 +275,17 @@ class BoundaryAttack(Attack):
         :type y: `int`
         :param y_p: The predicted label of x.
         :type y_p: `int`
+        :param init_pred: The predicted label of the initial image.
+        :type init_pred: `int`
+        :param adv_init: Initial array to act as an initial adversarial example.
+        :type adv_init: `np.ndarray`
+        :param clip_min: Minimum value of an example.
+        :type clip_min: `float`
+        :param clip_max: Maximum value of an example.
+        :type clip_max: `float`
         :return: an adversarial example.
+        :rtype: `np.ndarray`
         """
-        clip_min, clip_max = self.classifier.clip_values
         nprd = np.random.RandomState()
         initial_sample = None
 
@@ -275,13 +294,17 @@ class BoundaryAttack(Attack):
             if y == y_p:
                 return None
 
-            # Attack unsatisfied yet
+            # Attack unsatisfied yet and the initial image satisfied
+            if adv_init is not None and init_pred == y:
+                return adv_init.astype(NUMPY_DTYPE), init_pred
+
+            # Attack unsatisfied yet and the initial image unsatisfied
             for _ in range(self.init_size):
                 random_img = nprd.uniform(clip_min, clip_max, size=x.shape).astype(x.dtype)
                 random_class = np.argmax(self.classifier.predict(np.array([random_img])), axis=1)[0]
 
                 if random_class == y:
-                    initial_sample = random_img
+                    initial_sample = random_img, random_class
 
                     logging.info('Found initial adversarial image for targeted attack.')
                     break
@@ -289,12 +312,17 @@ class BoundaryAttack(Attack):
                 logging.warning('Failed to draw a random image that is adversarial, attack failed.')
 
         else:
+            # The initial image satisfied
+            if adv_init is not None and init_pred != y_p:
+                return adv_init.astype(NUMPY_DTYPE), init_pred
+
+            # The initial image unsatisfied
             for _ in range(self.init_size):
                 random_img = nprd.uniform(clip_min, clip_max, size=x.shape).astype(x.dtype)
                 random_class = np.argmax(self.classifier.predict(np.array([random_img])), axis=1)[0]
 
                 if random_class != y_p:
-                    initial_sample = random_img
+                    initial_sample = random_img, random_class
 
                     logging.info('Found initial adversarial image for untargeted attack.')
                     break
@@ -315,9 +343,11 @@ class BoundaryAttack(Attack):
         :type epsilon: `float`
         :param step_adapt: Factor by which the step sizes are multiplied or divided, must be in the range (0, 1).
         :type step_adapt: `float`
-        :param max_iter: The maximum number of iterations.
+        :param max_iter: Maximum number of iterations.
         :type max_iter: `int`
-        :param sample_size: Maximum number of trials per iteration.
+        :param num_trial: Maximum number of trials per iteration.
+        :type num_trial: `int`
+        :param sample_size: Number of samples per trial.
         :type sample_size: `int`
         :param init_size: Maximum number of trials for initial generation of adversarial examples.
         :type init_size: `int`
@@ -325,14 +355,17 @@ class BoundaryAttack(Attack):
         # Save attack-specific parameters
         super(BoundaryAttack, self).set_params(**kwargs)
 
-        if not isinstance(self.max_iter, (int, np.int)) or self.max_iter <= 0:
-            raise ValueError("The number of iterations must be a positive integer.")
+        if not isinstance(self.max_iter, (int, np.int)) or self.max_iter < 0:
+            raise ValueError("The number of iterations must be a non-negative integer.")
+
+        if not isinstance(self.num_trial, (int, np.int)) or self.num_trial < 0:
+            raise ValueError("The number of trials must be a non-negative integer.")
 
         if not isinstance(self.sample_size, (int, np.int)) or self.sample_size <= 0:
-            raise ValueError("The number of trials must be a positive integer.")
+            raise ValueError("The number of samples must be a positive integer.")
 
         if not isinstance(self.init_size, (int, np.int)) or self.init_size <= 0:
-            raise ValueError("The number of trials must be a positive integer.")
+            raise ValueError("The number of initial trials must be a positive integer.")
 
         if self.epsilon <= 0:
             raise ValueError("The initial step size for the step towards the target must be positive.")

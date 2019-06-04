@@ -76,16 +76,21 @@ class TotalVarMin(Preprocessor):
         :return: Similar samples.
         :rtype: `np.ndarray`
         """
-        x_ = x.copy()
+        if len(x.shape) == 2:
+            raise ValueError('Feature vectors detected. Variance minimization can only be applied to data with spatial'
+                             'dimensions.')
 
-        # Minimize one image at a time
-        for i, xi in enumerate(x_):
-            mask = (np.random.rand(xi.shape[0], xi.shape[1], xi.shape[2]) < self.prob).astype('int')
-            x_[i] = self._minimize(xi, mask)
+        x_preproc = x.copy()
 
-        x_ = np.clip(x_, self.clip_values[0], self.clip_values[1])
+        # Minimize one input at a time
+        for i, xi in enumerate(x_preproc):
+            mask = (np.random.rand(*xi.shape) < self.prob).astype('int')
+            x_preproc[i] = self._minimize(xi, mask)
 
-        return x_.astype(NUMPY_DTYPE), y
+        if hasattr(self, 'clip_values') and self.clip_values is not None:
+            np.clip(x_preproc, self.clip_values[0], self.clip_values[1], out=x_preproc)
+
+        return x_preproc.astype(NUMPY_DTYPE), y
 
     def estimate_gradient(self, x, grad):
         return grad
@@ -230,7 +235,7 @@ class TotalVarMin(Preprocessor):
 
         if len(self.clip_values) != 2:
             raise ValueError('`clip_values` should be a tuple of 2 floats containing the allowed data range.')
-        if self.clip_values[0] >= self.clip_values[1]:
+        if np.array(self.clip_values[0] >= self.clip_values[1]).any():
             raise ValueError('Invalid `clip_values`: min >= max.')
 
         return True

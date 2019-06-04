@@ -21,6 +21,7 @@ import logging
 
 import numpy as np
 
+from art import NUMPY_DTYPE
 from art.attacks.attack import Attack
 
 logger = logging.getLogger(__name__)
@@ -33,7 +34,7 @@ class VirtualAdversarialMethod(Attack):
     """
     attack_params = Attack.attack_params + ['eps', 'finite_diff', 'max_iter', 'batch_size']
 
-    def __init__(self, classifier, max_iter=1, finite_diff=1e-6, eps=.1, batch_size=128):
+    def __init__(self, classifier, max_iter=10, finite_diff=1e-6, eps=.1, batch_size=1):
         """
         Create a VirtualAdversarialMethod instance.
 
@@ -45,7 +46,7 @@ class VirtualAdversarialMethod(Attack):
         :type finite_diff: `float`
         :param max_iter: The maximum number of iterations.
         :type max_iter: `int`
-        :param batch_size: Batch size
+        :param batch_size: Batch size.
         :type batch_size: `int`
         """
         super(VirtualAdversarialMethod, self).__init__(classifier)
@@ -66,8 +67,7 @@ class VirtualAdversarialMethod(Attack):
         :return: An array holding the adversarial examples.
         :rtype: `np.ndarray`
         """
-        clip_min, clip_max = self.classifier.clip_values
-        x_adv = np.copy(x)
+        x_adv = x.astype(NUMPY_DTYPE)
         preds = self.classifier.predict(x_adv, logits=False)
 
         # Pick a small scalar to avoid division by 0
@@ -77,6 +77,7 @@ class VirtualAdversarialMethod(Attack):
         for batch_id in range(int(np.ceil(x_adv.shape[0] / float(self.batch_size)))):
             batch_index_1, batch_index_2 = batch_id * self.batch_size, (batch_id + 1) * self.batch_size
             batch = x_adv[batch_index_1:batch_index_2]
+            batch = batch.reshape((batch.shape[0], -1))
 
             # Main algorithm for each batch
             d = np.random.randn(*batch.shape)
@@ -84,24 +85,31 @@ class VirtualAdversarialMethod(Attack):
             # Main loop of the algorithm
             for _ in range(self.max_iter):
                 d = self._normalize(d)
-                preds_new = self.classifier.predict(batch + d, logits=False)
+                preds_new = self.classifier.predict((batch + d).reshape((-1,) + self.classifier.input_shape),
+                                                    logits=False)
 
                 from scipy.stats import entropy
                 kl_div1 = entropy(np.transpose(preds[batch_index_1:batch_index_2]), np.transpose(preds_new))
 
                 d_new = np.zeros_like(d)
-                for w in range(d.shape[1]):
-                    for h in range(d.shape[2]):
-                        for c in range(d.shape[3]):
-                            d[:, w, h, c] += self.finite_diff
-                            preds_new = self.classifier.predict(batch + d, logits=False)
-                            kl_div2 = entropy(np.transpose(preds[batch_index_1:batch_index_2]), np.transpose(preds_new))
-                            d_new[:, w, h, c] = (kl_div2 - kl_div1) / (self.finite_diff + tol)
-                            d[:, w, h, c] -= self.finite_diff
+                for current_index in range(d.shape[1]):
+                    d[:, current_index] += self.finite_diff
+                    preds_new = self.classifier.predict((batch + d).reshape((-1,) + self.classifier.input_shape),
+                                                        logits=False)
+                    kl_div2 = entropy(np.transpose(preds[batch_index_1:batch_index_2]), np.transpose(preds_new))
+                    d_new[:, current_index] = (kl_div2 - kl_div1) / (self.finite_diff + tol)
+                    d[:, current_index] -= self.finite_diff
                 d = d_new
 
             # Apply perturbation and clip
-            x_adv[batch_index_1:batch_index_2] = np.clip(batch + self.eps * self._normalize(d), clip_min, clip_max)
+            if hasattr(self.classifier, 'clip_values') and self.classifier.clip_values is not None:
+                clip_min, clip_max = self.classifier.clip_values
+                x_adv[batch_index_1:batch_index_2] = \
+                    np.clip(batch + self.eps * self._normalize(d), clip_min, clip_max) \
+                    .reshape((-1,) + self.classifier.input_shape)
+            else:
+                x_adv[batch_index_1:batch_index_2] = (batch + self.eps * self._normalize(d)) \
+                    .reshape((-1,) + self.classifier.input_shape)
 
         return x_adv
 
@@ -116,12 +124,9 @@ class VirtualAdversarialMethod(Attack):
         :rtype: `np.ndarray`
         """
         tol = 1e-10
-        dims = x.shape
 
-        x = x.reshape(dims[0], -1)
         inverse = (np.sum(x**2, axis=1) + tol) ** -.5
         x = x * inverse[:, None]
-        x = np.reshape(x, dims)
 
         return x
 
