@@ -97,7 +97,7 @@ class SaliencyMapMethod(Attack):
             active_indices = np.where(current_pred != target)[0]
             all_feat = np.zeros_like(batch)
 
-            while active_indices.shape[0] != 0:
+            while active_indices.size != 0:
                 # Compute saliency map
                 feat_ind = self._saliency_map(np.reshape(batch, [batch.shape[0]] + dims)[active_indices],
                                               target[active_indices], search_space[active_indices])

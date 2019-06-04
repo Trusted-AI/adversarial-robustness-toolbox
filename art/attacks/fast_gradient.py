@@ -97,7 +97,7 @@ class FastGradientMethod(Attack):
             # Get current predictions
             active_indices = np.arange(len(batch))
             current_eps = self.eps_step
-            while active_indices.shape[0] != 0 and current_eps <= self.eps:
+            while active_indices.size > 0 and current_eps <= self.eps:
                 # Adversarial crafting
                 current_x = self._apply_perturbation(x[batch_index_1:batch_index_2], perturbation, current_eps)
                 # Update

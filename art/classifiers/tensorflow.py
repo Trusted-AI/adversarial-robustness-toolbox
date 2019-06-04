@@ -351,7 +351,7 @@ class TFClassifier(Classifier):
         ops = graph.get_operations()
 
         for op in ops:
-            filter_cond = ((op.values()) and (op.values()[0].get_shape() is not None) and (
+            filter_cond = ((op.values()) and (not op.values()[0].get_shape() is not None) and (
                 len(op.values()[0].get_shape().as_list()) > 1) and (
                     op.values()[0].get_shape().as_list()[0] is None) and (
                     op.values()[0].get_shape().as_list()[1] is not None) and (
