@@ -25,20 +25,20 @@ from art.classifiers import Classifier
 logger = logging.getLogger(__name__)
 
 
-class SklearnDecisionTreeClassifier(Classifier):
+class ScikitlearnClassifier(Classifier):
     """
-    Wrapper class for importing scikit-learn Decision Tree Classifier models.
+    Wrapper class for importing scikit-learn classifier models.
     """
 
     def __init__(self, model=None, channel_index=None, clip_values=None, defences=None, preprocessing=(0, 1)):
         """
-        Create a `Classifier` instance from a scikit-learn Decision Tree Classifier model.
+        Create a `Classifier` instance from a scikit-learn classifier model.
 
         :param clip_values: Tuple of the form `(min, max)` representing the minimum and maximum values allowed
                for features.
         :type clip_values: `tuple`
-        :param model: scikit-learn C-Support Vector Classification model.
-        :type model: `sklearn.svm.SVC`
+        :param model: scikit-learn classifier model.
+        :type model: `sklearn`
         :param channel_index: Index of the axis in data containing the color channels or features. Not used in this
                class.
         :type channel_index: `int`
@@ -49,19 +49,11 @@ class SklearnDecisionTreeClassifier(Classifier):
                be divided by the second one.
         :type preprocessing: `tuple`
         """
-        from sklearn.tree import DecisionTreeClassifier
-
-        if not isinstance(model, DecisionTreeClassifier):
-            raise TypeError('Model must be of type sklearn.tree.DecisionTreeClassifier')
-
-        if not model.__getstate__()['_sklearn_version'].startswith('0.20.'):
-            raise Exception('Untested version of sci-kit-learn, please use scikit-learn v0.20.x')
-
-        super(SklearnDecisionTreeClassifier, self).__init__(clip_values=clip_values, channel_index=channel_index,
-                                                            defences=defences, preprocessing=preprocessing)
+        super(ScikitlearnClassifier, self).__init__(clip_values=clip_values, channel_index=channel_index,
+                                                    defences=defences, preprocessing=preprocessing)
 
         self.model = model
-        self._input_shape = (self.model.n_features_,)
+        self._input_shape = None
 
     def class_gradient(self, x, label=None, logits=False):
         """
@@ -96,7 +88,7 @@ class SklearnDecisionTreeClassifier(Classifier):
         :param nb_epochs: Number of epochs to use for training. Not used in this function.
         :type nb_epochs: `int`
         :param kwargs: Dictionary of framework-specific arguments. These should be parameters supported by the
-               `fit` function in `sklearn.linear_model.LogisticRegression` and will be passed to this function as such.
+               `fit` function in `sklearn.tree.DecisionTreeClassifier` and will be passed to this function as such.
         :type kwargs: `dict`
         :return: `None`
         """
@@ -140,3 +132,253 @@ class SklearnDecisionTreeClassifier(Classifier):
 
     def set_learning_phase(self, train):
         raise NotImplementedError
+
+
+class ScikitlearnDecisionTreeClassifier(ScikitlearnClassifier):
+    """
+        Wrapper class for scikit-learn Decision Tree Classifier models.
+        """
+
+    def __init__(self, model=None, channel_index=None, clip_values=None, defences=None, preprocessing=(0, 1)):
+        """
+        Create a `Classifier` instance from a scikit-learn Decision Tree Classifier model.
+
+        :param clip_values: Tuple of the form `(min, max)` representing the minimum and maximum values allowed
+               for features.
+        :type clip_values: `tuple`
+        :param model: scikit-learn Decision Tree Classifier model.
+        :type model: `sklearn.tree.DecisionTree`
+        :param channel_index: Index of the axis in data containing the color channels or features. Not used in this
+               class.
+        :type channel_index: `int`
+        :param defences: Defences to be activated with the classifier.
+        :type defences: :class:`.Preprocessor` or `list(Preprocessor)` instances
+        :param preprocessing: Tuple of the form `(subtractor, divider)` of floats or `np.ndarray` of values to be
+               used for data preprocessing. The first value will be subtracted from the input. The input will then
+               be divided by the second one.
+        :type preprocessing: `tuple`
+        """
+        from sklearn.tree import DecisionTreeClassifier
+
+        if not isinstance(model, DecisionTreeClassifier):
+            raise TypeError('Model must be of type sklearn.tree.DecisionTreeClassifier')
+
+        super(ScikitlearnDecisionTreeClassifier, self).__init__(model=model, clip_values=clip_values,
+                                                                channel_index=channel_index, defences=defences,
+                                                                preprocessing=preprocessing)
+
+
+class ScikitlearnExtraTreeClassifier(ScikitlearnClassifier):
+    """
+        Wrapper class for scikit-learn Extra TreeClassifier Classifier models.
+        """
+
+    def __init__(self, model=None, channel_index=None, clip_values=None, defences=None, preprocessing=(0, 1)):
+        """
+        Create a `Classifier` instance from a scikit-learn Extra TreeClassifier Classifier model.
+
+        :param clip_values: Tuple of the form `(min, max)` representing the minimum and maximum values allowed
+               for features.
+        :type clip_values: `tuple`
+        :param model: scikit-learn Extra TreeClassifier Classifier model.
+        :type model: `sklearn.tree.ExtraTreeClassifier`
+        :param channel_index: Index of the axis in data containing the color channels or features. Not used in this
+               class.
+        :type channel_index: `int`
+        :param defences: Defences to be activated with the classifier.
+        :type defences: :class:`.Preprocessor` or `list(Preprocessor)` instances
+        :param preprocessing: Tuple of the form `(subtractor, divider)` of floats or `np.ndarray` of values to be
+               used for data preprocessing. The first value will be subtracted from the input. The input will then
+               be divided by the second one.
+        :type preprocessing: `tuple`
+        """
+        from sklearn.tree import ExtraTreeClassifier
+
+        if not isinstance(model, ExtraTreeClassifier):
+            raise TypeError('Model must be of type sklearn.tree.ExtraTreeClassifier')
+
+        super(ScikitlearnExtraTreeClassifier, self).__init__(model=model, clip_values=clip_values,
+                                                             channel_index=channel_index, defences=defences,
+                                                             preprocessing=preprocessing)
+
+        self._input_shape = (self.model.n_features_,)
+
+
+class ScikitlearnAdaBoostClassifier(ScikitlearnClassifier):
+    """
+        Wrapper class for importing scikit-learn AdaBoost Classifier models.
+        """
+
+    def __init__(self, model=None, channel_index=None, clip_values=None, defences=None, preprocessing=(0, 1)):
+        """
+        Create a `Classifier` instance from a scikit-learn AdaBoost Classifier model.
+
+        :param clip_values: Tuple of the form `(min, max)` representing the minimum and maximum values allowed
+               for features.
+        :type clip_values: `tuple`
+        :param model: scikit-learn AdaBoost Classifier model.
+        :type model: `sklearn.ensemble.AdaBoost`
+        :param channel_index: Index of the axis in data containing the color channels or features. Not used in this
+               class.
+        :type channel_index: `int`
+        :param defences: Defences to be activated with the classifier.
+        :type defences: :class:`.Preprocessor` or `list(Preprocessor)` instances
+        :param preprocessing: Tuple of the form `(subtractor, divider)` of floats or `np.ndarray` of values to be
+               used for data preprocessing. The first value will be subtracted from the input. The input will then
+               be divided by the second one.
+        :type preprocessing: `tuple`
+        """
+        from sklearn.ensemble import AdaBoostClassifier
+
+        if not isinstance(model, AdaBoostClassifier):
+            raise TypeError('Model must be of type sklearn.ensemble.AdaBoostClassifier')
+
+        super(ScikitlearnAdaBoostClassifier, self).__init__(model=model, clip_values=clip_values,
+                                                            channel_index=channel_index, defences=defences,
+                                                            preprocessing=preprocessing)
+
+        self._input_shape = (len(model.feature_importances_),)
+
+
+class ScikitlearnBaggingClassifier(ScikitlearnClassifier):
+    """
+    Wrapper class for scikit-learn Bagging Classifier models.
+    """
+
+    def __init__(self, model=None, channel_index=None, clip_values=None, defences=None, preprocessing=(0, 1)):
+        """
+        Create a `Classifier` instance from a scikit-learn Bagging Classifier model.
+
+        :param clip_values: Tuple of the form `(min, max)` representing the minimum and maximum values allowed
+               for features.
+        :type clip_values: `tuple`
+        :param model: scikit-learn Bagging Classifier model.
+        :type model: `sklearn.ensemble.BaggingClassifier`
+        :param channel_index: Index of the axis in data containing the color channels or features. Not used in this
+               class.
+        :type channel_index: `int`
+        :param defences: Defences to be activated with the classifier.
+        :type defences: :class:`.Preprocessor` or `list(Preprocessor)` instances
+        :param preprocessing: Tuple of the form `(subtractor, divider)` of floats or `np.ndarray` of values to be
+               used for data preprocessing. The first value will be subtracted from the input. The input will then
+               be divided by the second one.
+        :type preprocessing: `tuple`
+        """
+        from sklearn.ensemble import BaggingClassifier
+
+        if not isinstance(model, BaggingClassifier):
+            raise TypeError('Model must be of type sklearn.ensemble.BaggingClassifier')
+
+        super(ScikitlearnBaggingClassifier, self).__init__(model=model, clip_values=clip_values,
+                                                           channel_index=channel_index, defences=defences,
+                                                           preprocessing=preprocessing)
+
+        self._input_shape = (self.model.n_features_,)
+
+
+class ScikitlearnExtraTreesClassifier(ScikitlearnClassifier):
+    """
+    Wrapper class for importing scikit-learn Extra Trees Classifier models.
+    """
+
+    def __init__(self, model=None, channel_index=None, clip_values=None, defences=None, preprocessing=(0, 1)):
+        """
+        Create a `Classifier` instance from a scikit-learn Extra Trees Classifier model.
+
+        :param clip_values: Tuple of the form `(min, max)` representing the minimum and maximum values allowed
+               for features.
+        :type clip_values: `tuple`
+        :param model: scikit-learn Extra Trees Classifier model.
+        :type model: `sklearn.ensemble.ExtraTreesClassifier`
+        :param channel_index: Index of the axis in data containing the color channels or features. Not used in this
+               class.
+        :type channel_index: `int`
+        :param defences: Defences to be activated with the classifier.
+        :type defences: :class:`.Preprocessor` or `list(Preprocessor)` instances
+        :param preprocessing: Tuple of the form `(subtractor, divider)` of floats or `np.ndarray` of values to be
+               used for data preprocessing. The first value will be subtracted from the input. The input will then
+               be divided by the second one.
+        :type preprocessing: `tuple`
+        """
+        from sklearn.ensemble import ExtraTreesClassifier
+
+        if not isinstance(model, ExtraTreesClassifier):
+            raise TypeError('Model must be of type sklearn.ensemble.ExtraTreesClassifier')
+
+        super(ScikitlearnExtraTreesClassifier, self).__init__(model=model, clip_values=clip_values,
+                                                              channel_index=channel_index, defences=defences,
+                                                              preprocessing=preprocessing)
+
+        self._input_shape = (self.model.n_features_,)
+
+
+class ScikitlearnGradientBoostingClassifier(ScikitlearnClassifier):
+    """
+    Wrapper class for importing scikit-learn Gradient Boosting Classifier models.
+    """
+
+    def __init__(self, model=None, channel_index=None, clip_values=None, defences=None, preprocessing=(0, 1)):
+        """
+        Create a `Classifier` instance from a scikit-learn Gradient Boosting Classifier model.
+
+        :param clip_values: Tuple of the form `(min, max)` representing the minimum and maximum values allowed
+               for features.
+        :type clip_values: `tuple`
+        :param model: scikit-learn Gradient Boosting Classifier model.
+        :type model: `sklearn.ensemble.GradientBoostingClassifier`
+        :param channel_index: Index of the axis in data containing the color channels or features. Not used in this
+               class.
+        :type channel_index: `int`
+        :param defences: Defences to be activated with the classifier.
+        :type defences: :class:`.Preprocessor` or `list(Preprocessor)` instances
+        :param preprocessing: Tuple of the form `(subtractor, divider)` of floats or `np.ndarray` of values to be
+               used for data preprocessing. The first value will be subtracted from the input. The input will then
+               be divided by the second one.
+        :type preprocessing: `tuple`
+        """
+        from sklearn.ensemble import GradientBoostingClassifier
+
+        if not isinstance(model, GradientBoostingClassifier):
+            raise TypeError('Model must be of type sklearn.ensemble.GradientBoostingClassifier')
+
+        super(ScikitlearnGradientBoostingClassifier, self).__init__(model=model, clip_values=clip_values,
+                                                                    channel_index=channel_index, defences=defences,
+                                                                    preprocessing=preprocessing)
+
+        self._input_shape = (self.model.n_features_,)
+
+
+class ScikitlearnRandomForestClassifier(ScikitlearnClassifier):
+    """
+    Wrapper class for scikit-learn Random Forest Classifier models.
+    """
+
+    def __init__(self, model=None, channel_index=None, clip_values=None, defences=None, preprocessing=(0, 1)):
+        """
+        Create a `Classifier` instance from a scikit-learn Random Forest Classifier model.
+
+        :param clip_values: Tuple of the form `(min, max)` representing the minimum and maximum values allowed
+               for features.
+        :type clip_values: `tuple`
+        :param model: scikit-learn Random Forest Classifier model.
+        :type model: `sklearn.ensemble.RandomForestClassifier`
+        :param channel_index: Index of the axis in data containing the color channels or features. Not used in this
+               class.
+        :type channel_index: `int`
+        :param defences: Defences to be activated with the classifier.
+        :type defences: :class:`.Preprocessor` or `list(Preprocessor)` instances
+        :param preprocessing: Tuple of the form `(subtractor, divider)` of floats or `np.ndarray` of values to be
+               used for data preprocessing. The first value will be subtracted from the input. The input will then
+               be divided by the second one.
+        :type preprocessing: `tuple`
+        """
+        from sklearn.ensemble import RandomForestClassifier
+
+        if not isinstance(model, RandomForestClassifier):
+            raise TypeError('Model must be of type sklearn.ensemble.RandomForestClassifier')
+
+        super(ScikitlearnRandomForestClassifier, self).__init__(model=model, clip_values=clip_values,
+                                                                channel_index=channel_index, defences=defences,
+                                                                preprocessing=preprocessing)
+
+        self._input_shape = (self.model.n_features_,)
