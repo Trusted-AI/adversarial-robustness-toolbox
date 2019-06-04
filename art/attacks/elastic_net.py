@@ -386,13 +386,13 @@ class ElasticNet(Attack):
         # Save attack-specific parameters
         super(ElasticNet, self).set_params(**kwargs)
 
-        if type(self.binary_search_steps) is not int or self.binary_search_steps < 0:
+        if not isinstance(self.binary_search_steps, int) or self.binary_search_steps < 0:
             raise ValueError("The number of binary search steps must be a non-negative integer.")
 
-        if type(self.max_iter) is not int or self.max_iter < 0:
+        if not isinstance(self.max_iter, int) or self.max_iter < 0:
             raise ValueError("The number of iterations must be a non-negative integer.")
 
-        if type(self.batch_size) is not int or self.batch_size < 1:
+        if not isinstance(self.batch_size, int) or self.batch_size < 1:
             raise ValueError("The batch size must be an integer greater than zero.")
 
         if not isinstance(self.decision_rule, six.string_types) or self.decision_rule not in ['EN', 'L1', 'L2']:
