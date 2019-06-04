@@ -53,7 +53,7 @@ class XGBoostClassifier(Classifier):
         from xgboost import Booster
 
         if not isinstance(model, Booster):
-            raise TypeError('Model must be of type sklearn.tree.DecisionTreeClassifier')
+            raise TypeError('Model must be of type xgboost.Booster')
 
         super(XGBoostClassifier, self).__init__(clip_values=clip_values, channel_index=channel_index,
                                                 defences=defences, preprocessing=preprocessing)

@@ -52,7 +52,7 @@ class LightGBMClassifier(Classifier):
         from lightgbm import Booster
 
         if not isinstance(model, Booster):
-            raise TypeError('Model must be of type sklearn.tree.DecisionTreeClassifier')
+            raise TypeError('Model must be of type lightgbm.Booster')
 
         super(LightGBMClassifier, self).__init__(clip_values=clip_values, channel_index=channel_index,
                                                  defences=defences, preprocessing=preprocessing)
