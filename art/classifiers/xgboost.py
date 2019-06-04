@@ -106,7 +106,6 @@ class XGBoostClassifier(Classifier):
     def loss_gradient(self, x, y):
         """
         Compute the gradient of the loss function w.r.t. `x`.
-        Paper link: https://pralab.diee.unica.it/sites/default/files/biggio14-svm-chapter.pdf
 
         :param x: Sample input with shape as expected by the model.
         :type x: `np.ndarray`

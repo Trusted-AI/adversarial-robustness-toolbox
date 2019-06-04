@@ -37,7 +37,7 @@ class SklearnDecisionTreeClassifier(Classifier):
         :param clip_values: Tuple of the form `(min, max)` representing the minimum and maximum values allowed
                for features.
         :type clip_values: `tuple`
-        :param model: scikit-learn C-Support Vector Classification. model
+        :param model: scikit-learn C-Support Vector Classification model.
         :type model: `sklearn.svm.SVC`
         :param channel_index: Index of the axis in data containing the color channels or features. Not used in this
                class.
@@ -108,7 +108,6 @@ class SklearnDecisionTreeClassifier(Classifier):
     def loss_gradient(self, x, y):
         """
         Compute the gradient of the loss function w.r.t. `x`.
-        Paper link: https://pralab.diee.unica.it/sites/default/files/biggio14-svm-chapter.pdf
 
         :param x: Sample input with shape as expected by the model.
         :type x: `np.ndarray`
