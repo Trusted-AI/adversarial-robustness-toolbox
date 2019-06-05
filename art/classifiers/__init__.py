@@ -9,7 +9,7 @@ from art.classifiers.pytorch import PyTorchClassifier
 from art.classifiers.tensorflow import TFClassifier
 from art.classifiers.ensemble import EnsembleClassifier
 from art.classifiers.scikitklearn import ScikitlearnLogisticRegression
-from art.classifiers.sklearn_svm import SklearnSVC
+from art.classifiers.scikitklearn import ScikitlearnSVC
 from art.classifiers.scikitklearn import ScikitlearnDecisionTreeClassifier
 from art.classifiers.scikitklearn import ScikitlearnExtraTreeClassifier
 from art.classifiers.scikitklearn import ScikitlearnAdaBoostClassifier
