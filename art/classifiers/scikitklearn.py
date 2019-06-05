@@ -92,7 +92,7 @@ class ScikitlearnClassifier(Classifier):
         :type kwargs: `dict`
         :return: `None`
         """
-        raise NotImplementedError
+        self.model.fit(x, y)
 
     def get_activations(self, x, layer, batch_size):
         raise NotImplementedError
