@@ -148,7 +148,7 @@ class FastGradientMethod(Attack):
             rate_best = None
 
             for i_random_init in range(max(1, self.num_random_init)):
-                adv_x = self._compute(x, y, self.eps, self.eps, self._project, self.num_random_init > 0)
+                adv_x = self._compute(x, x, y, self.eps, self.eps, self._project, self.num_random_init > 0)
 
                 if self.num_random_init > 1:
                     rate = 100 * compute_success(self.classifier, x, y, adv_x, self.targeted)
@@ -225,7 +225,7 @@ class FastGradientMethod(Attack):
 
         return batch
 
-    def _compute(self, x, y, eps, eps_step, project, random_init):
+    def _compute(self, x, x_init, y, eps, eps_step, project, random_init):
         if random_init:
             n = x.shape[0]
             m = np.prod(x.shape[1:])
@@ -250,8 +250,8 @@ class FastGradientMethod(Attack):
             x_adv[batch_index_1:batch_index_2] = self._apply_perturbation(batch, perturbation, eps_step)
 
             if project:
-                perturbation = projection(x_adv[batch_index_1:batch_index_2] - x[batch_index_1:batch_index_2], self.eps,
-                                          self.norm)
-                x_adv[batch_index_1:batch_index_2] = x[batch_index_1:batch_index_2] + perturbation
+                perturbation = projection(x_adv[batch_index_1:batch_index_2] - x_init[batch_index_1:batch_index_2],
+                                          self.eps, self.norm)
+                x_adv[batch_index_1:batch_index_2] = x_init[batch_index_1:batch_index_2] + perturbation
 
         return x_adv
