@@ -22,7 +22,7 @@ class TestXGBoostClassifier(unittest.TestCase):
         cls.x_train = x_train
         cls.y_train = y_train
         cls.x_test = x_test
-        cls.y_test = y_test
+        cls.y_test = np.argmax(y_test, axis=1)
 
         num_round = 10
         param = {'objective': 'multi:softprob', 'metric': 'multi_logloss', 'num_class': 3}

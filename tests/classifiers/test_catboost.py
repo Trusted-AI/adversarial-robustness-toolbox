@@ -22,7 +22,7 @@ class TestXGBoostClassifier(unittest.TestCase):
         cls.x_train = x_train
         cls.y_train = np.argmax(y_train, axis=1)
         cls.x_test = x_test
-        cls.y_test = y_test
+        cls.y_test = np.argmax(y_test, axis=1)
 
         model = CatBoostClassifier(custom_loss=['Accuracy'], random_seed=42, logging_level='Silent')
         model.fit(cls.x_train, cls.y_train, cat_features=None, eval_set=(cls.x_train, cls.y_train))
