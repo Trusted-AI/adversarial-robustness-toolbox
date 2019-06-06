@@ -102,7 +102,7 @@ class BasicIterativeMethod(FastGradientMethod):
             adv_x = x.astype(NUMPY_DTYPE)
 
             for i_max_iter in range(self.max_iter):
-                adv_x = self._compute(adv_x, targets, self.eps, self.eps_step, self._project,
+                adv_x = self._compute(adv_x, x, targets, self.eps, self.eps_step, self._project,
                                       self.num_random_init > 0 and i_max_iter == 0)
 
             if self.num_random_init > 1:
