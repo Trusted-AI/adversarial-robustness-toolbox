@@ -172,6 +172,7 @@ class TestVirtualAdversarialVectors(unittest.TestCase):
         attack = VirtualAdversarialMethod(classifier, eps=.1)
         x_test_adv = attack.generate(x_test)
         self.assertFalse((x_test == x_test_adv).all())
+        # print(x_test_adv)
         self.assertTrue((x_test_adv <= 1).all())
         self.assertTrue((x_test_adv >= 0).all())
 

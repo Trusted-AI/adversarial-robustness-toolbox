@@ -67,9 +67,9 @@ class TestAdversarialPatch(unittest.TestCase):
                                      patch_shape=(28, 28, 1), batch_size=10)
         patch_adv, _ = attack_ap.generate(x_train)
 
-        self.assertTrue(patch_adv[8, 8, 0] - (-3.1106631027725005) < 0.01)
-        self.assertTrue(patch_adv[14, 14, 0] - 18.954278294246386 < 0.01)
-        self.assertTrue(np.sum(patch_adv) - 794.2447019737851 < 0.01)
+        self.assertAlmostEqual(patch_adv[8, 8, 0], -3.1106631027725005, delta=.1)
+        self.assertAlmostEqual(patch_adv[14, 14, 0], 18.101, delta=.1)
+        self.assertAlmostEqual(np.sum(patch_adv), 624.867, delta=.1)
 
         sess.close()
         tf.reset_default_graph()
@@ -90,9 +90,9 @@ class TestAdversarialPatch(unittest.TestCase):
                                      patch_shape=(28, 28, 1), batch_size=10)
         patch_adv, _ = attack_ap.generate(x_train)
 
-        self.assertTrue(patch_adv[8, 8, 0] - (-3.2501425017774923) < 0.01)
-        self.assertTrue(patch_adv[14, 14, 0] - 20.48400094881169 < 0.01)
-        self.assertTrue(np.sum(patch_adv) - 1764.7681744376168 < 0.01)
+        self.assertAlmostEqual(patch_adv[8, 8, 0], -3.336, delta=.1)
+        self.assertAlmostEqual(patch_adv[14, 14, 0], 18.574, delta=.1)
+        self.assertAlmostEqual(np.sum(patch_adv), 1054.587, delta=.1)
 
         k.clear_session()
 
@@ -113,9 +113,9 @@ class TestAdversarialPatch(unittest.TestCase):
                                      patch_shape=(1, 28, 28), batch_size=10)
         patch_adv, _ = attack_ap.generate(x_train)
 
-        self.assertTrue(patch_adv[0, 8, 8] - (-3.1423605902784875) < 0.01)
-        self.assertTrue(patch_adv[0, 14, 14] - 19.790434152473054 < 0.01)
-        self.assertTrue(np.sum(patch_adv) - 383.5670772794207 < 0.01)
+        self.assertAlmostEqual(patch_adv[0, 8, 8], -3.143605902784875, delta=.1)
+        self.assertAlmostEqual(patch_adv[0, 14, 14], 19.790434152473054, delta=.1)
+        self.assertAlmostEqual(np.sum(patch_adv), 382.163, delta=.1)
 
     def test_failure_feature_vectors(self):
         attack_params = {"rotation_max": 22.5, "scale_min": 0.1, "scale_max": 1.0,

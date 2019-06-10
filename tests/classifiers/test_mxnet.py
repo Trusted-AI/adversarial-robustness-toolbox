@@ -104,7 +104,7 @@ class TestMXClassifier(unittest.TestCase):
         self.assertTrue(np.sum(grads) != 0)
 
         # Assert gradient computed for the same class on same input are equal
-        self.assertAlmostEqual(np.sum(grads_all[:, 3] - grads), 0, places=6)
+        self.assertAlmostEqual(np.sum(grads_all[:, 3] - grads), 0, places=5)
 
         # Test a set of gradients label = array
         labels = np.random.randint(5, size=NB_TEST)

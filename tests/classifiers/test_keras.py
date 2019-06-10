@@ -194,6 +194,8 @@ class TestKerasClassifier(unittest.TestCase):
         preds_check = self.model_mnist._model.predict(x_test_defense)
 
         # Check that the prediction results match
+        print(preds_classifier[0])
+        print(preds_check[0])
         self.assertTrue((preds_classifier - preds_check <= 1e-5).all())
 
     def test_class_gradient(self):

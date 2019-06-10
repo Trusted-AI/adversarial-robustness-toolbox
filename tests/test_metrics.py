@@ -110,7 +110,7 @@ class TestMetrics(unittest.TestCase):
         model.compile(loss=keras.losses.categorical_crossentropy, optimizer=keras.optimizers.Adam(lr=0.01),
                       metrics=['accuracy'])
 
-        classifier = KerasClassifier(model=model, clip_values=(0, 1))
+        classifier = KerasClassifier(model=model, clip_values=(0, 1), use_logits=False)
         return classifier
 
 #########################################
@@ -195,7 +195,7 @@ class TestClever(unittest.TestCase):
                       metrics=['accuracy'])
 
         # Get the classifier
-        krc = KerasClassifier(model, clip_values=(0, 1))
+        krc = KerasClassifier(model=model, clip_values=(0, 1), use_logits=False)
 
         return krc
 
