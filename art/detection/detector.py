@@ -66,21 +66,19 @@ class BinaryInputDetector(Classifier):
         """
         self.detector.fit(x, y, batch_size=batch_size, nb_epochs=nb_epochs, **kwargs)
 
-    def predict(self, x, logits=False, batch_size=128):
+    def predict(self, x, batch_size=128):
         """
         Perform detection of adversarial data and return prediction as tuple.
 
         :param x: Data sample on which to perform detection.
         :type x: `np.ndarray`
-        :param logits: `True` if the prediction should be done at the logits layer.
-        :type logits: `bool`
         :param batch_size: Size of batches.
         :type batch_size: `int`
         :return: Per-sample prediction whether data is adversarial or not, where `0` means non-adversarial.
                  Return variable has the same `batch_size` (first dimension) as `x`.
         :rtype: `np.ndarray`
         """
-        return self.detector.predict(x, logits=logits, batch_size=batch_size)
+        return self.detector.predict(x, batch_size=batch_size)
 
     def fit_generator(self, generator, nb_epochs=20, **kwargs):
         """
@@ -110,8 +108,8 @@ class BinaryInputDetector(Classifier):
     def learning_phase(self):
         return self.detector.learning_phase
 
-    def class_gradient(self, x, label=None, logits=False):
-        return self.detector.class_gradient(x, label=label, logits=logits)
+    def class_gradient(self, x, label=None):
+        return self.detector.class_gradient(x, label=label)
 
     def loss_gradient(self, x, y):
         return self.detector.loss_gradient(x, y)
@@ -184,19 +182,17 @@ class BinaryActivationDetector(Classifier):
         :type nb_epochs: `int`
         :param kwargs: Other parameters.
         :type kwargs: `dict`
-        :return: None
+        :return: `None`
         """
         x_activations = self.classifier.get_activations(x, self._layer_name)
         self.detector.fit(x_activations, y, batch_size=batch_size, nb_epochs=nb_epochs, **kwargs)
 
-    def predict(self, x, logits=False, batch_size=128):
+    def predict(self, x, batch_size=128):
         """
         Perform detection of adversarial data and return prediction as tuple.
 
         :param x: Data sample on which to perform detection.
         :type x: `np.ndarray`
-        :param logits: `True` if the prediction should be done at the logits layer.
-        :type logits: `bool`
         :param batch_size: Size of batches.
         :type batch_size: `int`
         :return: Per-sample prediction whether data is adversarial or not, where `0` means non-adversarial.
@@ -233,8 +229,8 @@ class BinaryActivationDetector(Classifier):
     def learning_phase(self):
         return self.detector.learning_phase
 
-    def class_gradient(self, x, label=None, logits=False):
-        return self.detector.class_gradient(x, label=label, logits=logits)
+    def class_gradient(self, x, label=None):
+        return self.detector.class_gradient(x, label=label)
 
     def loss_gradient(self, x, y):
         return self.detector.loss_gradient(x, y)

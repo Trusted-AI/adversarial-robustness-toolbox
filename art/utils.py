@@ -808,7 +808,7 @@ def get_classifier_kr():
                   metrics=['accuracy'])
 
     # Get classifier
-    krc = KerasClassifier(model, clip_values=(0, 1))
+    krc = KerasClassifier(model=model, use_logits=False, clip_values=(0, 1))
 
     return krc, sess
 
@@ -946,7 +946,7 @@ def get_iris_classifier_kr():
     model.compile(loss='categorical_crossentropy', optimizer=keras.optimizers.Adam(lr=0.001), metrics=['accuracy'])
 
     # Get classifier
-    krc = KerasClassifier(model, clip_values=(0, 1), channel_index=1)
+    krc = KerasClassifier(model=model, use_logits=False, clip_values=(0, 1), channel_index=1)
 
     return krc, sess
 

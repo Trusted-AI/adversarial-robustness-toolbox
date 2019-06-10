@@ -471,7 +471,7 @@ class ActivationDefence(PoisonFilteringDefence):
         nb_layers = len(self.classifier.layer_names)
         activations = self.classifier.get_activations(self.x_train, layer=nb_layers - 1)
 
-        # wrong way to get activations activations = self.classifier.predict(self.x_train, logits=True)
+        # wrong way to get activations activations = self.classifier.predict(self.x_train)
         nodes_last_layer = np.shape(activations)[1]
 
         if nodes_last_layer <= self.TOO_SMALL_ACTIVATIONS:
