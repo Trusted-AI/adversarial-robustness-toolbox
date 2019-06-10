@@ -53,8 +53,9 @@ def cnn_mnist_k(input_shape):
     model.compile(loss=keras.losses.categorical_crossentropy, optimizer=keras.optimizers.Adam(lr=0.01),
                   metrics=['accuracy'])
 
-    classifier = KerasClassifier((0, 1), model)
+    classifier = KerasClassifier(model=model, clip_values=(0, 1))
     return classifier
+
 
 # Get session
 session = tf.Session()
