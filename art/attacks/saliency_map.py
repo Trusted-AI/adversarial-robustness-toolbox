@@ -185,7 +185,7 @@ class SaliencyMapMethod(Attack):
         :return: The top 2 coefficients in `search_space` that maximize / minimize the saliency map
         :rtype: `np.ndarray`
         """
-        grads = self.classifier.class_gradient(x, label=target, logits=False)
+        grads = self.classifier.class_gradient(x, label=target)
         grads = np.reshape(grads, (-1, self._nb_features))
 
         # Remove gradients for already used features

@@ -88,13 +88,13 @@ class ElasticNet(Attack):
         :type x: `np.ndarray`
         :param x_adv: An array with the adversarial input.
         :type x_adv: `np.ndarray`
-        :return: A tuple holding the current logits, l1 distance, l2 distance and elastic net loss.
+        :return: A tuple holding the current predictions, l1 distance, l2 distance and elastic net loss.
         :rtype: `(np.ndarray, float, float, float)`
         """
         l1dist = np.sum(np.abs(x - x_adv).reshape(x.shape[0], -1), axis=1)
         l2dist = np.sum(np.square(x - x_adv).reshape(x.shape[0], -1), axis=1)
         endist = self.beta * l1dist + l2dist
-        z = self.classifier.predict(np.array(x_adv, dtype=NUMPY_DTYPE), logits=True)
+        z = self.classifier.predict(np.array(x_adv, dtype=NUMPY_DTYPE))
 
         return np.argmax(z, axis=1), l1dist, l2dist, endist
 
@@ -113,8 +113,8 @@ class ElasticNet(Attack):
         :return: An array with the gradient of the loss function.
         :type target: `np.ndarray`
         """
-        # Compute the current logits
-        z = self.classifier.predict(np.array(x_adv, dtype=NUMPY_DTYPE), logits=True)
+        # Compute the current predictions
+        z = self.classifier.predict(np.array(x_adv, dtype=NUMPY_DTYPE))
 
         if self.targeted:
             i_sub = np.argmax(target, axis=1)
@@ -123,8 +123,8 @@ class ElasticNet(Attack):
             i_add = np.argmax(target, axis=1)
             i_sub = np.argmax(z * (1 - target) + (np.min(z, axis=1) - 1)[:, np.newaxis] * target, axis=1)
 
-        loss_gradient = self.classifier.class_gradient(x_adv, label=i_add, logits=True)
-        loss_gradient -= self.classifier.class_gradient(x_adv, label=i_sub, logits=True)
+        loss_gradient = self.classifier.class_gradient(x_adv, label=i_add)
+        loss_gradient -= self.classifier.class_gradient(x_adv, label=i_sub)
         loss_gradient = loss_gradient.reshape(x.shape)
 
         c_mult = c
@@ -174,7 +174,7 @@ class ElasticNet(Attack):
 
         # No labels provided, use model prediction as correct class
         if y is None:
-            y = get_labels_np_array(self.classifier.predict(x, logits=False))
+            y = get_labels_np_array(self.classifier.predict(x))
 
         # Compute adversarial examples with implicit batching
         nb_batches = int(np.ceil(x_adv.shape[0] / float(self.batch_size)))

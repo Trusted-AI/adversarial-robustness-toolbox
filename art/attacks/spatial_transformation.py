@@ -84,7 +84,7 @@ class SpatialTransformation(Attack):
 
         if self.attack_trans_x is None or self.attack_trans_y is None or self.attack_rot is None:
 
-            y_pred = self.classifier.predict(x, logits=False)
+            y_pred = self.classifier.predict(x)
             y_pred_max = np.argmax(y_pred, axis=1)
 
             nb_instances = len(x)
@@ -123,7 +123,7 @@ class SpatialTransformation(Attack):
                         x_adv_i = self._perturb(x, trans_x_i, trans_y_i, rot_i)
 
                         # Compute the error rate
-                        y_adv_i = np.argmax(self.classifier.predict(x_adv_i, logits=False), axis=1)
+                        y_adv_i = np.argmax(self.classifier.predict(x_adv_i), axis=1)
                         fooling_rate_i = np.sum(y_pred_max != y_adv_i) / nb_instances
 
                         if fooling_rate_i > fooling_rate:

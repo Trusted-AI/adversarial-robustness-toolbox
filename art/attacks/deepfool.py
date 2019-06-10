@@ -66,7 +66,7 @@ class DeepFool(Attack):
         :rtype: `np.ndarray`
         """
         x_adv = x.astype(NUMPY_DTYPE)
-        preds = self.classifier.predict(x, logits=True)
+        preds = self.classifier.predict(x)
 
         # Determine the class labels for which to compute the gradients
         use_grads_subset = self.nb_grads < self.classifier.nb_classes
@@ -91,11 +91,11 @@ class DeepFool(Attack):
             fk_hat = np.argmax(f, axis=1)
             if use_grads_subset:
                 # Compute gradients only for top predicted classes
-                grd = np.array([self.classifier.class_gradient(batch, logits=True, label=_) for _ in labels_set])
+                grd = np.array([self.classifier.class_gradient(batch, label=_) for _ in labels_set])
                 grd = np.squeeze(np.swapaxes(grd, 0, 2), axis=0)
             else:
                 # Compute gradients for all classes
-                grd = self.classifier.class_gradient(batch, logits=True)
+                grd = self.classifier.class_gradient(batch)
 
             # Get current predictions
             active_indices = np.arange(len(batch))
@@ -124,17 +124,17 @@ class DeepFool(Attack):
                     batch[active_indices] += r[active_indices]
 
                 # Recompute prediction for new x
-                f = self.classifier.predict(batch, logits=True)
+                f = self.classifier.predict(batch)
                 fk_i_hat = np.argmax(f, axis=1)
 
                 # Recompute gradients for new x
                 if use_grads_subset:
                     # Compute gradients only for (originally) top predicted classes
-                    grd = np.array([self.classifier.class_gradient(batch, logits=True, label=_) for _ in labels_set])
+                    grd = np.array([self.classifier.class_gradient(batch, label=_) for _ in labels_set])
                     grd = np.squeeze(np.swapaxes(grd, 0, 2), axis=0)
                 else:
                     # Compute gradients for all classes
-                    grd = self.classifier.class_gradient(batch, logits=True)
+                    grd = self.classifier.class_gradient(batch)
 
                 # Stop if misclassification has been achieved
                 active_indices = np.where(fk_i_hat == fk_hat)[0]

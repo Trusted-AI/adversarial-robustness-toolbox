@@ -238,6 +238,7 @@ class FastGradientMethod(Attack):
 
             # Get perturbation
             perturbation = self._compute_perturbation(batch, batch_labels)
+            # print('--------- pert ', perturbation)
 
             # Apply perturbation and clip
             adv_x[batch_index_1:batch_index_2] = self._apply_perturbation(batch, perturbation, eps_step)

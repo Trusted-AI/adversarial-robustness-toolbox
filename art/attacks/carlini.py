@@ -104,11 +104,11 @@ class CarliniL2Method(Attack):
         :type target: `np.ndarray`
         :param c: Weight of the loss term aiming for classification as target.
         :type c: `float`
-        :return: A tuple holding the current logits, l2 distance and overall loss.
+        :return: A tuple holding the current predictions, l2 distance and overall loss.
         :rtype: `(float, float, float)`
         """
         l2dist = np.sum(np.square(x - x_adv).reshape(x.shape[0], -1), axis=1)
-        z = self.classifier.predict(np.array(x_adv, dtype=NUMPY_DTYPE), logits=True)
+        z = self.classifier.predict(np.array(x_adv, dtype=NUMPY_DTYPE))
         z_target = np.sum(z * target, axis=1)
         z_other = np.max(z * (1 - target) + (np.min(z, axis=1) - 1)[:, np.newaxis] * target, axis=1)
 
@@ -131,7 +131,7 @@ class CarliniL2Method(Attack):
         """
         Compute the gradient of the loss function.
 
-        :param z: An array with the current logits.
+        :param z: An array with the current predictions.
         :type z: `np.ndarray`
         :param target: An array with the target class (one-hot encoded).
         :type target: `np.ndarray`
@@ -157,8 +157,8 @@ class CarliniL2Method(Attack):
             i_add = np.argmax(target, axis=1)
             i_sub = np.argmax(z * (1 - target) + (np.min(z, axis=1) - 1)[:, np.newaxis] * target, axis=1)
 
-        loss_gradient = self.classifier.class_gradient(x_adv, label=i_add, logits=True)
-        loss_gradient -= self.classifier.class_gradient(x_adv, label=i_sub, logits=True)
+        loss_gradient = self.classifier.class_gradient(x_adv, label=i_add)
+        loss_gradient -= self.classifier.class_gradient(x_adv, label=i_sub)
         loss_gradient = loss_gradient.reshape(x.shape)
 
         c_mult = c
@@ -196,7 +196,7 @@ class CarliniL2Method(Attack):
 
         # No labels provided, use model prediction as correct class
         if y is None:
-            y = get_labels_np_array(self.classifier.predict(x, logits=False))
+            y = get_labels_np_array(self.classifier.predict(x))
 
         # Compute perturbation with implicit batching
         nb_batches = int(np.ceil(x_adv.shape[0] / float(self.batch_size)))
@@ -482,10 +482,10 @@ class CarliniLInfMethod(Attack):
         :type x_adv: `np.ndarray`
         :param target: An array with the target class (one-hot encoded).
         :type target: `np.ndarray`
-        :return: A tuple holding the current logits and overall loss.
+        :return: A tuple holding the current predictions and overall loss.
         :rtype: `(float, float)`
         """
-        z = self.classifier.predict(np.array(x_adv, dtype=NUMPY_DTYPE), logits=True)
+        z = self.classifier.predict(np.array(x_adv, dtype=NUMPY_DTYPE))
         z_target = np.sum(z * target, axis=1)
         z_other = np.max(z * (1 - target) + (np.min(z, axis=1) - 1)[:, np.newaxis] * target, axis=1)
 
@@ -502,7 +502,7 @@ class CarliniLInfMethod(Attack):
         """
         Compute the gradient of the loss function.
 
-        :param z: An array with the current logits.
+        :param z: An array with the current predictions.
         :type z: `np.ndarray`
         :param target: An array with the target class (one-hot encoded).
         :type target: `np.ndarray`
@@ -524,8 +524,8 @@ class CarliniLInfMethod(Attack):
             i_add = np.argmax(target, axis=1)
             i_sub = np.argmax(z * (1 - target) + (np.min(z, axis=1) - 1)[:, np.newaxis] * target, axis=1)
 
-        loss_gradient = self.classifier.class_gradient(x_adv, label=i_add, logits=True)
-        loss_gradient -= self.classifier.class_gradient(x_adv, label=i_sub, logits=True)
+        loss_gradient = self.classifier.class_gradient(x_adv, label=i_add)
+        loss_gradient -= self.classifier.class_gradient(x_adv, label=i_sub)
         loss_gradient = loss_gradient.reshape(x_adv.shape)
 
         loss_gradient *= (clip_max - clip_min)
@@ -558,7 +558,7 @@ class CarliniLInfMethod(Attack):
 
         # No labels provided, use model prediction as correct class
         if y is None:
-            y = get_labels_np_array(self.classifier.predict(x, logits=False))
+            y = get_labels_np_array(self.classifier.predict(x))
 
         # Compute perturbation with implicit batching
         nb_batches = int(np.ceil(x_adv.shape[0] / float(self.batch_size)))

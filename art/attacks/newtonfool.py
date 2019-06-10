@@ -65,7 +65,7 @@ class NewtonFool(Attack):
         x_adv = x.astype(NUMPY_DTYPE)
 
         # Initialize variables
-        y_pred = self.classifier.predict(x, logits=False)
+        y_pred = self.classifier.predict(x)
         pred_class = np.argmax(y_pred, axis=1)
 
         # Compute perturbation with implicit batching
@@ -81,10 +81,10 @@ class NewtonFool(Attack):
             # Main loop of the algorithm
             for _ in range(self.max_iter):
                 # Compute score
-                score = self.classifier.predict(batch, logits=False)[l_b]
+                score = self.classifier.predict(batch)[l_b]
 
                 # Compute the gradients and norm
-                grads = self.classifier.class_gradient(batch, label=l, logits=False)
+                grads = self.classifier.class_gradient(batch, label=l)
                 grads = np.squeeze(grads, axis=1)
                 norm_grad = np.linalg.norm(np.reshape(grads, (batch.shape[0], -1)), axis=1)
 

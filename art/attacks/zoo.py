@@ -128,7 +128,7 @@ class ZooAttack(Attack):
         :type target: `np.ndarray`
         :param c: Weight of the loss term aiming for classification as target.
         :type c: `float`
-        :return: A tuple holding the current logits, `L_2` distortion and overall loss.
+        :return: A tuple holding the current predictions, `L_2` distortion and overall loss.
         :rtype: `(float, float, float)`
         """
         l2dist = np.sum(np.square(x - x_adv).reshape(x_adv.shape[0], -1), axis=1)
@@ -170,7 +170,7 @@ class ZooAttack(Attack):
 
         # No labels provided, use model prediction as correct class
         if y is None:
-            y = get_labels_np_array(self.classifier.predict(x, logits=False))
+            y = get_labels_np_array(self.classifier.predict(x))
 
         # Compute adversarial examples with implicit batching
         nb_batches = int(np.ceil(x.shape[0] / float(self.batch_size)))
