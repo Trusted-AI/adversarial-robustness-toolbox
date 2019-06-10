@@ -31,13 +31,15 @@ class KerasClassifier(Classifier):
     """
     Wrapper class for importing Keras models. The supported backends for Keras are TensorFlow and Theano.
     """
-    def __init__(self, model, channel_index=3, clip_values=None, defences=None, preprocessing=(0, 1),
+    def __init__(self, model, use_logits=False, channel_index=3, clip_values=None, defences=None, preprocessing=(0, 1),
                  input_layer=0, output_layer=0):
         """
         Create a `Classifier` instance from a Keras model. Assumes the `model` passed as argument is compiled.
 
         :param model: Keras model
         :type model: `keras.models.Model`
+        :param use_logits: True if the output of the model are logits.
+        :type use_logits: `bool`
         :param channel_index: Index of the axis in data containing the color channels or features.
         :type channel_index: `int`
         :param clip_values: Tuple of the form `(min, max)` of floats or `np.ndarray` representing the minimum and
@@ -63,15 +65,17 @@ class KerasClassifier(Classifier):
         self._input_layer = input_layer
         self._output_layer = output_layer
 
-        self._initialize_params(model, input_layer, output_layer)
+        self._initialize_params(model, use_logits, input_layer, output_layer)
 
-    def _initialize_params(self, model, input_layer, output_layer):
+    def _initialize_params(self, model, use_logits, input_layer, output_layer):
         """
         Initialize most parameters of the classifier. This is a convenience function called by `__init__` and
         `__setstate__` to avoid code duplication.
 
         :param model: Keras model
         :type model: `keras.models.Model`
+        :param use_logits: True if the output of the model are logits.
+        :type use_logits: `bool`
         :param input_layer: Which layer to consider as the Input when the model has multple input layers.
         :type input_layer: `int`
         :param output_layer: Which layer to consider as the Output when the model has multiple output layers.
@@ -99,6 +103,7 @@ class KerasClassifier(Classifier):
                      str(self.input_shape))
 
         # Get predictions and loss function
+        self._use_logits = use_logits
         label_ph = k.placeholder(shape=self._output.shape)
         if not hasattr(self._model, 'loss'):
             logger.warning('Keras model has no loss set. Trying to use `k.sparse_categorical_crossentropy`.')
@@ -109,9 +114,8 @@ class KerasClassifier(Classifier):
             else:
                 loss_function = getattr(k, self._model.loss.__name__)
 
-        # We get a list of tensors that comprise the final "layer" -> take the last element
-        preds = self._output.op.inputs[-1]
-        loss_ = loss_function(label_ph, preds)
+        preds = self._output
+        loss_ = loss_function(label_ph, self._output, from_logits=use_logits)
 
         if preds == self._input:  # recent Tensorflow version does not allow a model with an output same as the input.
             preds = k.identity(preds)
@@ -486,14 +490,14 @@ class KerasClassifier(Classifier):
         model = load_model(str(full_path))
 
         self._model = model
-        self._initialize_params(model, state['_input_layer'], state['_output_layer'])
+        self._initialize_params(model, state['_use_logits'], state['_input_layer'], state['_output_layer'])
 
     def __repr__(self):
-        repr_ = "%s(model=%r, channel_index=%r, clip_values=%r, defences=%r, preprocessing=%r, " \
+        repr_ = "%s(model=%r, use_logits=%r, channel_index=%r, clip_values=%r, defences=%r, preprocessing=%r, " \
                 "input_layer=%r, output_layer=%r)" \
                 % (self.__module__ + '.' + self.__class__.__name__,
-                   self._model, self.channel_index, self.clip_values, self.defences, self.preprocessing,
-                   self._input_layer, self._output_layer)
+                   self._model, self._use_logits, self.channel_index, self.clip_values, self.defences,
+                   self.preprocessing, self._input_layer, self._output_layer)
 
         return repr_
 
