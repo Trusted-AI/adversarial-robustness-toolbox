@@ -40,17 +40,14 @@ class BasicIterativeMethod(ProjectedGradientDescent):
 
         :param classifier: A trained model.
         :type classifier: :class:`.Classifier`
-        :param norm: Order of the norm. Possible values: np.inf, 1 or 2.
-        :type norm: `int`
         :param eps: Maximum perturbation that the attacker can introduce.
         :type eps: `float`
         :param eps_step: Attack step size (input variation) at each iteration.
         :type eps_step: `float`
+        :param max_iter: The maximum number of iterations.
+        :type max_iter: `int`
         :param targeted: Should the attack target one specific class
         :type targeted: `bool`
-        :param num_random_init: Number of random initialisations within the epsilon ball. For random_init=0 starting at
-            the original input.
-        :type num_random_init: `int`
         :param batch_size: Batch size
         :type batch_size: `int`
         """
