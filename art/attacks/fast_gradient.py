@@ -263,7 +263,7 @@ class FastGradientMethod(Attack):
 
             if project:
                 perturbation = projection(x_adv[batch_index_1:batch_index_2] - x_init[batch_index_1:batch_index_2],
-                                          self.eps, self.norm)
+                                          eps, self.norm)
                 x_adv[batch_index_1:batch_index_2] = x_init[batch_index_1:batch_index_2] + perturbation
 
         return x_adv
