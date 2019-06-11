@@ -36,7 +36,7 @@ class ProjectedGradientDescent(FastGradientMethod):
     data range). This is the attack proposed by Madry et al. for adversarial training.
     Paper link: https://arxiv.org/abs/1706.06083
     """
-    attack_params = FastGradientMethod.attack_params + ['max_iter', 'batch_size']
+    attack_params = FastGradientMethod.attack_params + ['max_iter']
 
     def __init__(self, classifier, norm=np.inf, eps=.3, eps_step=0.1, max_iter=100, targeted=False, num_random_init=0,
                  batch_size=1):
@@ -61,16 +61,12 @@ class ProjectedGradientDescent(FastGradientMethod):
         :param batch_size: Batch size
         :type batch_size: `int`
         """
-        super(ProjectedGradientDescent, self).__init__(classifier, norm=norm, eps=eps, targeted=targeted,
-                                                       num_random_init=num_random_init, batch_size=batch_size)
+        super(ProjectedGradientDescent, self).__init__(classifier, norm=norm, eps=eps, eps_step=eps_step,
+                                                       targeted=targeted, num_random_init=num_random_init,
+                                                       batch_size=batch_size, minimal=False)
 
-        if eps_step > eps:
-            raise ValueError('The iteration step `eps_step` has to be smaller than the total attack `eps`.')
-        self.eps_step = eps_step
-
-        if max_iter <= 0:
-            raise ValueError('The number of iterations `max_iter` has to be a positive integer.')
-        self.max_iter = int(max_iter)
+        kwargs = {'max_iter': max_iter}
+        self.set_params(**kwargs)
 
         self._project = True
 
