@@ -66,7 +66,7 @@ class ProjectedGradientDescent(FastGradientMethod):
                                                        batch_size=batch_size, minimal=False)
 
         kwargs = {'max_iter': max_iter}
-        self.set_params(**kwargs)
+        ProjectedGradientDescent.set_params(self, **kwargs)
 
         self._project = True
 

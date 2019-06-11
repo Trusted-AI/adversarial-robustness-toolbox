@@ -32,7 +32,6 @@ class BasicIterativeMethod(ProjectedGradientDescent):
     Paper link: https://arxiv.org/abs/1607.02533
     """
     attack_params = ProjectedGradientDescent.attack_params
-    attack_params = [ap for ap in attack_params if ap not in ['norm', 'num_random_init']]
 
     def __init__(self, classifier, eps=.3, eps_step=0.1, max_iter=100, targeted=False, batch_size=1):
         """

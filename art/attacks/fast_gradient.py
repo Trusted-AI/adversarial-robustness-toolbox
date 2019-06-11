@@ -64,7 +64,7 @@ class FastGradientMethod(Attack):
         super(FastGradientMethod, self).__init__(classifier)
         kwargs = {'norm': norm, 'eps': eps, 'eps_step': eps_step, 'targeted': targeted,
                   'num_random_init': num_random_init, 'batch_size': batch_size, 'minimal': minimal}
-        self.set_params(**kwargs)
+        FastGradientMethod.set_params(self, **kwargs)
 
         self._project = True
 
