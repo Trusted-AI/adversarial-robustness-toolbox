@@ -173,12 +173,14 @@ class KerasClassifier(Classifier):
         :return: Array of gradients of the same shape as `x`.
         :rtype: `np.ndarray`
         """
+        # Apply preprocessing
         x_defences, y_defences, x_preproc = self._apply_preprocessing(x, y, fit=False)
 
         # Adjust the shape of y for loss functions that do not take labels in one-hot encoding
         if self._reduce_labels:
             y_defences = np.argmax(y_defences, axis=1)
 
+        # Compute gradients
         grads = self._loss_grads([x_defences, y_defences])[0]
         grads = self._apply_preprocessing_gradient(x_preproc, grads)
         assert grads.shape == x_preproc.shape
@@ -211,6 +213,7 @@ class KerasClassifier(Classifier):
 
         self._init_class_grads(label=label, logits=logits)
 
+        # Apply preprocessing
         x_defences, _, x_preproc = self._apply_preprocessing(x, y=None, fit=False)
 
         if label is None:
@@ -377,12 +380,12 @@ class KerasClassifier(Classifier):
         layer_output = self._model.get_layer(layer_name).output
         output_func = k.function([self._input], [layer_output])
 
-        # Apply preprocessing and defences
         if x.shape == self.input_shape:
             x_expanded = np.expand_dims(x, 0)
         else:
             x_expanded = x
 
+        # Apply preprocessing
         x_defences, _, _ = self._apply_preprocessing(x=x_expanded, y=None, fit=False)
 
         assert len(x_defences.shape) == 4

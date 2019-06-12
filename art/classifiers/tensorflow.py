@@ -95,7 +95,7 @@ class TFClassifier(Classifier):
         :return: Array of predictions of shape `(nb_inputs, self.nb_classes)`.
         :rtype: `np.ndarray`
         """
-        # Apply defences
+        # Apply preprocessing
         x_defences, _, _ = self._apply_preprocessing(x, y=None, fit=False)
 
         # Run prediction with batch processing
@@ -138,7 +138,7 @@ class TFClassifier(Classifier):
         if self._train is None or self._output_ph is None:
             raise ValueError("Need the training objective and the output placeholder to train the model.")
 
-        # Apply defences
+        # Apply preprocessing
         x_defences, y_defences, _ = self._apply_preprocessing(x, y, fit=True)
 
         num_batch = int(np.ceil(len(x_defences) / float(batch_size)))
@@ -218,6 +218,7 @@ class TFClassifier(Classifier):
 
         self._init_class_grads(label=label, logits=logits)
 
+        # Apply preprocessing
         x_defences, _, x_preproc = self._apply_preprocessing(x, y=None, fit=False)
 
         # Create feed_dict
@@ -269,6 +270,7 @@ class TFClassifier(Classifier):
         :return: Array of gradients of the same shape as `x`.
         :rtype: `np.ndarray`
         """
+        # Apply preprocessing
         x_defences, y_defences, x_preproc = self._apply_preprocessing(x, y, fit=False)
 
         # Check if loss available
@@ -279,7 +281,7 @@ class TFClassifier(Classifier):
         fd = {self._input_ph: x_defences, self._output_ph: y_defences}
         fd.update(self._feed_dict)
 
-        # Compute the gradient and return
+        # Compute gradients
         grads = self._sess.run(self._loss_grads, feed_dict=fd)
         grads = self._apply_preprocessing_gradient(x_preproc, grads)
         assert grads.shape == x_preproc.shape
@@ -415,7 +417,7 @@ class TFClassifier(Classifier):
         else:
             raise TypeError("Layer must be of type `str` or `int`. Received '%s'", layer)
 
-        # Apply preprocessing and defences
+        # Apply preprocessing
         x_defences, _, _ = self._apply_preprocessing(x, y=None, fit=False)
 
         # Run prediction with batch processing

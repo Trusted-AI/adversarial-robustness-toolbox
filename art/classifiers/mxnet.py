@@ -106,7 +106,7 @@ class MXClassifier(Classifier):
 
         train_mode = self._learning_phase if hasattr(self, '_learning_phase') else True
 
-        # Apply preprocessing and defences
+        # Apply preprocessing
         x_defences, y_defences, _ = self._apply_preprocessing(x, y, fit=True)
 
         y_defences = np.argmax(y_defences, axis=1)
@@ -188,7 +188,7 @@ class MXClassifier(Classifier):
 
         train_mode = self._learning_phase if hasattr(self, '_learning_phase') else False
 
-        # Apply preprocessing and defences
+        # Apply preprocessing
         x_defences, _, _ = self._apply_preprocessing(x, y=None, fit=False)
 
         # Run prediction with batch processing
@@ -239,6 +239,7 @@ class MXClassifier(Classifier):
 
         train_mode = self._learning_phase if hasattr(self, '_learning_phase') else False
 
+        # Apply preprocessing
         x_defences, _, x_preproc = self._apply_preprocessing(x, y=None, fit=False)
 
         x_defences = mx.nd.array(x_defences.astype(NUMPY_DTYPE), ctx=self._ctx)
@@ -308,6 +309,7 @@ class MXClassifier(Classifier):
 
         train_mode = self._learning_phase if hasattr(self, '_learning_phase') else False
 
+        # Apply preprocessing
         x_defences, y_defences, x_preproc = self._apply_preprocessing(x, y, fit=False)
 
         y_defences = mx.nd.array([np.argmax(y_defences, axis=1)]).T
@@ -320,6 +322,8 @@ class MXClassifier(Classifier):
             loss = loss(preds, y_defences)
 
         loss.backward()
+
+        # Compute gradients
         grads = x_defences.grad.asnumpy()
         grads = self._apply_preprocessing_gradient(x_preproc, grads)
         assert grads.shape == x.shape

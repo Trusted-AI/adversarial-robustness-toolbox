@@ -100,7 +100,7 @@ class PyTorchClassifier(Classifier):
         """
         import torch
 
-        # Apply defences
+        # Apply preprocessing
         x_defences, _, _ = self._apply_preprocessing(x, y=None, fit=False)
 
         # Run prediction with batch processing
@@ -139,7 +139,7 @@ class PyTorchClassifier(Classifier):
         """
         import torch
 
-        # Apply defences
+        # Apply preprocessing
         x_defences, y_defences, _ = self._apply_preprocessing(x, y, fit=True)
 
         y_defences = np.argmax(y_defences, axis=1)
@@ -234,7 +234,7 @@ class PyTorchClassifier(Classifier):
                     and label.shape[0] == x.shape[0])):
             raise ValueError('Label %s is out of range.' % label)
 
-        # Convert the inputs to Tensors
+        # Apply preprocessing
         x_defences, _, x_preproc = self._apply_preprocessing(x, y=None, fit=False)
 
         x_defences = torch.from_numpy(x_defences).to(self._device).float()
@@ -312,7 +312,7 @@ class PyTorchClassifier(Classifier):
         """
         import torch
 
-        # Apply preprocessing and defences
+        # Apply preprocessing
         x_defences, y_defences, x_preproc = self._apply_preprocessing(x, y, fit=False)
 
         # Convert the inputs to Tensors
