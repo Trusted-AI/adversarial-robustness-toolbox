@@ -173,16 +173,14 @@ class KerasClassifier(Classifier):
         :return: Array of gradients of the same shape as `x`.
         :rtype: `np.ndarray`
         """
-        x_preproc = self._apply_processing(x)
-        x_defences, y_defences = self._apply_defences(x_preproc, y, fit=False)
+        x_defences, y_defences, x_preproc = self._apply_preprocessing(x, y, fit=False)
 
         # Adjust the shape of y for loss functions that do not take labels in one-hot encoding
         if self._reduce_labels:
             y_defences = np.argmax(y_defences, axis=1)
 
         grads = self._loss_grads([x_defences, y_defences])[0]
-        grads = self._apply_defences_gradient(x_preproc, grads)
-        grads = self._apply_processing_gradient(grads)
+        grads = self._apply_preprocessing_gradient(x_preproc, grads)
         assert grads.shape == x_preproc.shape
 
         return grads
@@ -213,8 +211,7 @@ class KerasClassifier(Classifier):
 
         self._init_class_grads(label=label, logits=logits)
 
-        x_preproc = self._apply_processing(x)
-        x_defences, _ = self._apply_defences(x_preproc, None)
+        x_defences, _, x_preproc = self._apply_preprocessing(x, y=None, fit=False)
 
         if label is None:
             # Compute the gradients w.r.t. all classes
@@ -243,8 +240,7 @@ class KerasClassifier(Classifier):
             lst = [unique_label.index(i) for i in label]
             grads = np.expand_dims(grads[np.arange(len(grads)), lst], axis=1)
 
-        grads = self._apply_defences_gradient(x_preproc, grads)
-        grads = self._apply_processing_gradient(grads)
+        grads = self._apply_preprocessing_gradient(x_preproc, grads)
 
         return grads
 
@@ -264,14 +260,13 @@ class KerasClassifier(Classifier):
         from art import NUMPY_DTYPE
 
         # Apply defences
-        x_preproc = self._apply_processing(x)
-        x_preproc, _ = self._apply_defences(x_preproc, None, fit=False)
+        x_defences, _, _ = self._apply_preprocessing(x, y=None, fit=False)
 
         # Run predictions with batching
-        preds = np.zeros((x_preproc.shape[0], self.nb_classes), dtype=NUMPY_DTYPE)
-        for batch_index in range(int(np.ceil(x_preproc.shape[0] / float(batch_size)))):
-            begin, end = batch_index * batch_size, min((batch_index + 1) * batch_size, x_preproc.shape[0])
-            preds[begin:end] = self._preds([x_preproc[begin:end]])[0]
+        preds = np.zeros((x_defences.shape[0], self.nb_classes), dtype=NUMPY_DTYPE)
+        for batch_index in range(int(np.ceil(x_defences.shape[0] / float(batch_size)))):
+            begin, end = batch_index * batch_size, min((batch_index + 1) * batch_size, x_defences.shape[0])
+            preds[begin:end] = self._preds([x_defences[begin:end]])[0]
 
             if not logits and not self._custom_activation:
                 exp = np.exp(preds[begin:end] - np.max(preds[begin:end], axis=1, keepdims=True))
@@ -298,17 +293,14 @@ class KerasClassifier(Classifier):
         :return: `None`
         """
         # Apply preprocessing
-        x_preproc = self._apply_processing(x)
+        x_defences, y_defences, _ = self._apply_preprocessing(x, y, fit=True)
 
         # Adjust the shape of y for loss functions that do not take labels in one-hot encoding
         if self._reduce_labels:
-            x_preproc, y_preproc = self._apply_defences(x_preproc, y, fit=True)
-            y_preproc = np.argmax(y_preproc, axis=1)
-        else:
-            x_preproc, y_preproc = self._apply_defences(x_preproc, y, fit=True)
+            y_defences = np.argmax(y_defences, axis=1)
 
-        gen = generator_fit(x_preproc, y_preproc, batch_size)
-        self._model.fit_generator(gen, steps_per_epoch=x_preproc.shape[0] / batch_size, epochs=nb_epochs, **kwargs)
+        gen = generator_fit(x_defences, y_defences, batch_size)
+        self._model.fit_generator(gen, steps_per_epoch=x_defences.shape[0] / batch_size, epochs=nb_epochs, **kwargs)
 
     def fit_generator(self, generator, nb_epochs=20, **kwargs):
         """
@@ -387,21 +379,22 @@ class KerasClassifier(Classifier):
 
         # Apply preprocessing and defences
         if x.shape == self.input_shape:
-            x_preproc = np.expand_dims(x, 0)
+            x_expanded = np.expand_dims(x, 0)
         else:
-            x_preproc = x
-        x_preproc = self._apply_processing(x_preproc)
-        x_preproc, _ = self._apply_defences(x_preproc, None, fit=False)
-        assert len(x_preproc.shape) == 4
+            x_expanded = x
+
+        x_defences, _, _ = self._apply_preprocessing(x=x_expanded, y=None, fit=False)
+
+        assert len(x_defences.shape) == 4
 
         # Determine shape of expected output and prepare array
-        output_shape = output_func([x_preproc[0][None, ...]])[0].shape
-        activations = np.zeros((x_preproc.shape[0],) + output_shape[1:], dtype=NUMPY_DTYPE)
+        output_shape = output_func([x_defences[0][None, ...]])[0].shape
+        activations = np.zeros((x_defences.shape[0],) + output_shape[1:], dtype=NUMPY_DTYPE)
 
         # Get activations with batching
-        for batch_index in range(int(np.ceil(x_preproc.shape[0] / float(batch_size)))):
-            begin, end = batch_index * batch_size, min((batch_index + 1) * batch_size, x_preproc.shape[0])
-            activations[begin:end] = output_func([x_preproc[begin:end]])[0]
+        for batch_index in range(int(np.ceil(x_defences.shape[0] / float(batch_size)))):
+            begin, end = batch_index * batch_size, min((batch_index + 1) * batch_size, x_defences.shape[0])
+            activations[begin:end] = output_func([x_defences[begin:end]])[0]
 
         return activations
 

@@ -130,11 +130,10 @@ class Classifier(ABC):
             x, y = generator.get_batch()
 
             # Apply preprocessing and defences
-            x = self._apply_processing(x)
-            x, y = self._apply_defences(x, y, fit=True)
+            x_defences, y_defences, _ = self._apply_preprocessing(x, y, fit=True)
 
             # Fit for current batch
-            self.fit(x, y, nb_epochs=1, batch_size=len(x), **kwargs)
+            self.fit(x_defences, y_defences, nb_epochs=1, batch_size=len(x), **kwargs)
 
     @property
     def nb_classes(self):
@@ -279,13 +278,13 @@ class Classifier(ABC):
         raise NotImplementedError
 
     def _apply_preprocessing(self, x, y, fit):
-        x = self._apply_preprocessing_normalization(x)
-        x, y = self._apply_preprocessing_defences(x, y, fit=fit)
-        return x, y
+        x_preproc = self._apply_preprocessing_normalization(x)
+        x_defences, y_defences = self._apply_preprocessing_defences(x_preproc, y, fit=fit)
+        return x_defences, y_defences, x_preproc
 
     def _apply_preprocessing_gradient(self, x, grads):
         grads = self._apply_preprocessing_defences_gradient(x, grads)
-        grads = self._apply_preprocessing_processing_gradient(grads)
+        grads = self._apply_preprocessing_normalization_gradient(grads)
         return grads
 
     def _apply_preprocessing_defences(self, x, y, fit=False):
