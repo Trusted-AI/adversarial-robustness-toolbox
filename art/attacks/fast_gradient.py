@@ -34,11 +34,11 @@ class FastGradientMethod(Attack):
     Gradient Sign Method"). This implementation extends the attack to other norms, and is therefore called the Fast
     Gradient Method. Paper link: https://arxiv.org/abs/1412.6572
     """
-    attack_params = Attack.attack_params + ['norm', 'eps', 'targeted', 'num_random_init', 'batch_size', 'minimal',
-                                            'eps_step']
+    attack_params = Attack.attack_params + ['norm', 'eps', 'eps_step', 'targeted', 'num_random_init', 'batch_size',
+                                            'minimal']
 
-    def __init__(self, classifier, norm=np.inf, eps=.3, targeted=False, num_random_init=0, batch_size=1,
-                 minimal=False, eps_step=0.1):
+    def __init__(self, classifier, norm=np.inf, eps=.3, eps_step=0.1, targeted=False, num_random_init=0, batch_size=1,
+                 minimal=False):
         """
         Create a :class:`.FastGradientMethod` instance.
 
@@ -48,6 +48,8 @@ class FastGradientMethod(Attack):
         :type norm: `int`
         :param eps: Attack step size (input variation)
         :type eps: `float`
+        :param eps_step: Step size of input variation for minimal perturbation computation
+        :type eps_step: `float`
         :param targeted: Should the attack target one specific class
         :type targeted: `bool`
         :param num_random_init: Number of random initialisations within the epsilon ball. For random_init=0 starting at
@@ -57,18 +59,12 @@ class FastGradientMethod(Attack):
         :type batch_size: `int`
         :param minimal: Flag to compute the minimal perturbation.
         :type minimal: `bool`
-        :param eps_step: Step size of input variation for minimal perturbation computation
-        :type eps_step: `float`
+
         """
         super(FastGradientMethod, self).__init__(classifier)
-
-        self.norm = norm
-        self.eps = eps
-        self.targeted = targeted
-        self.num_random_init = num_random_init
-        self.batch_size = batch_size
-        self.minimal = minimal
-        self.eps_step = eps_step
+        kwargs = {'norm': norm, 'eps': eps, 'eps_step': eps_step, 'targeted': targeted,
+                  'num_random_init': num_random_init, 'batch_size': batch_size, 'minimal': minimal}
+        FastGradientMethod.set_params(self, **kwargs)
 
         self._project = True
 
@@ -170,10 +166,17 @@ class FastGradientMethod(Attack):
         :type norm: `int` or `float`
         :param eps: Attack step size (input variation)
         :type eps: `float`
+        :param eps_step: Step size of input variation for minimal perturbation computation
+        :type eps_step: `float`
         :param targeted: Should the attack target one specific class
         :type targeted: `bool`
+        :param num_random_init: Number of random initialisations within the epsilon ball. For random_init=0 starting at
+            the original input.
+        :type num_random_init: `int`
         :param batch_size: Batch size
         :type batch_size: `int`
+        :param minimal: Flag to compute the minimal perturbation.
+        :type minimal: `bool`
         """
         # Save attack-specific parameters
         super(FastGradientMethod, self).set_params(**kwargs)
@@ -185,14 +188,23 @@ class FastGradientMethod(Attack):
         if self.eps <= 0:
             raise ValueError('The perturbation size `eps` has to be positive.')
 
-        if self.batch_size <= 0:
-            raise ValueError('The batch size `batch_size` has to be positive.')
+        if self.eps_step <= 0:
+            raise ValueError('The perturbation step-size `eps_step` has to be positive.')
+
+        if not isinstance(self.targeted, bool):
+            raise ValueError('The flag `targeted` has to be of type bool.')
 
         if not isinstance(self.num_random_init, (int, np.int)):
             raise TypeError('The number of random initialisations has to be of type integer')
 
         if self.num_random_init < 0:
             raise ValueError('The number of random initialisations `random_init` has to be greater than or equal to 0.')
+
+        if self.batch_size <= 0:
+            raise ValueError('The batch size `batch_size` has to be positive.')
+
+        if not isinstance(self.minimal, bool):
+            raise ValueError('The flag `minimal` has to be of type bool.')
 
         return True
 
@@ -251,7 +263,7 @@ class FastGradientMethod(Attack):
 
             if project:
                 perturbation = projection(x_adv[batch_index_1:batch_index_2] - x_init[batch_index_1:batch_index_2],
-                                          self.eps, self.norm)
+                                          eps, self.norm)
                 x_adv[batch_index_1:batch_index_2] = x_init[batch_index_1:batch_index_2] + perturbation
 
         return x_adv
