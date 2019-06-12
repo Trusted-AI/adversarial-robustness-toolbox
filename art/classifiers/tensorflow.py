@@ -15,6 +15,7 @@ class TFClassifier(Classifier):
     """
     This class implements a classifier with the Tensorflow framework.
     """
+
     def __init__(self, input_ph, logits, output_ph=None, train=None, loss=None, learning=None, sess=None,
                  channel_index=3, clip_values=None, defences=None, preprocessing=(0, 1)):
         """
@@ -348,12 +349,12 @@ class TFClassifier(Classifier):
 
         for op in ops:
             filter_cond = ((op.values()) and (not op.values()[0].get_shape() == None) and (
-                len(op.values()[0].get_shape().as_list()) > 1) and (
-                    op.values()[0].get_shape().as_list()[0] is None) and (
-                    op.values()[0].get_shape().as_list()[1] is not None) and (
-                    not op.values()[0].name.startswith("gradients")) and (
-                    not op.values()[0].name.startswith("softmax_cross_entropy_loss")) and (
-                    not op.type == "Placeholder"))
+                    len(op.values()[0].get_shape().as_list()) > 1) and (
+                                   op.values()[0].get_shape().as_list()[0] is None) and (
+                                   op.values()[0].get_shape().as_list()[1] is not None) and (
+                               not op.values()[0].name.startswith("gradients")) and (
+                               not op.values()[0].name.startswith("softmax_cross_entropy_loss")) and (
+                               not op.type == "Placeholder"))
 
             if filter_cond:
                 tmp_list.append(op.values()[0].name)

@@ -32,6 +32,7 @@ class MXClassifier(Classifier):
     """
     Wrapper class for importing MXNet Gluon model.
     """
+
     def __init__(self, model, input_shape, nb_classes, optimizer=None, ctx=None, channel_index=1, clip_values=None,
                  defences=None, preprocessing=(0, 1)):
         """
@@ -382,7 +383,7 @@ class MXClassifier(Classifier):
         else:
             x_expanded = x
 
-        x_preprocessed, _= self._apply_preprocessing(x=x_expanded, y=None, fit=False)
+        x_preprocessed, _ = self._apply_preprocessing(x=x_expanded, y=None, fit=False)
 
         # Compute activations with batching
         activations = []

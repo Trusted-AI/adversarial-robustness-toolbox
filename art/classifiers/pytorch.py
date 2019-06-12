@@ -32,6 +32,7 @@ class PyTorchClassifier(Classifier):
     """
     This class implements a classifier with the PyTorch framework.
     """
+
     def __init__(self, model, loss, optimizer, input_shape, nb_classes, channel_index=1, clip_values=None,
                  defences=None, preprocessing=(0, 1)):
         """
@@ -154,7 +155,8 @@ class PyTorchClassifier(Classifier):
 
             # Train for one epoch
             for m in range(num_batch):
-                i_batch = torch.from_numpy(x_preprocessed[ind[m * batch_size:(m + 1) * batch_size]]).to(self._device).float()
+                i_batch = torch.from_numpy(x_preprocessed[ind[m * batch_size:(m + 1) * batch_size]]).to(
+                    self._device).float()
                 o_batch = torch.from_numpy(y_preprocessed[ind[m * batch_size:(m + 1) * batch_size]]).to(self._device)
 
                 # Zero the parameter gradients
@@ -394,7 +396,8 @@ class PyTorchClassifier(Classifier):
             begin, end = m * batch_size, min((m + 1) * batch_size, x_preprocessed.shape[0])
 
             # Run prediction for the current batch
-            layer_output = self._model(torch.from_numpy(x_preprocessed[begin:end]).to(self._device).float())[layer_index]
+            layer_output = self._model(torch.from_numpy(x_preprocessed[begin:end]).to(self._device).float())[
+                layer_index]
             results.append(layer_output.detach().cpu().numpy())
 
         results = np.concatenate(results)

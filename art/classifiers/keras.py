@@ -31,6 +31,7 @@ class KerasClassifier(Classifier):
     """
     Wrapper class for importing Keras models. The supported backends for Keras are TensorFlow and Theano.
     """
+
     def __init__(self, model, use_logits=False, channel_index=3, clip_values=None, defences=None, preprocessing=(0, 1),
                  input_layer=0, output_layer=0, custom_activation=False):
         """

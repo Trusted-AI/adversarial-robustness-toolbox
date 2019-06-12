@@ -33,6 +33,7 @@ class Classifier(ABC):
     """
     Base class for all classifiers.
     """
+
     def __init__(self, channel_index, clip_values=None, defences=None, preprocessing=(0, 1)):
         """
         Initialize a `Classifier` object.
@@ -389,7 +390,7 @@ class Classifier(ABC):
 
     def __repr__(self):
         repr_ = "%s(channel_index=%r, clip_values=%r, defences=%r, preprocessing=%r)" \
-               % (self.__module__ + '.' + self.__class__.__name__,
-                  self.channel_index, self.clip_values, self.defences, self.preprocessing)
+                % (self.__module__ + '.' + self.__class__.__name__,
+                   self.channel_index, self.clip_values, self.defences, self.preprocessing)
 
         return repr_
