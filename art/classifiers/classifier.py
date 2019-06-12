@@ -130,10 +130,10 @@ class Classifier(ABC):
             x, y = generator.get_batch()
 
             # Apply preprocessing and defences
-            x_defences, y_defences, _ = self._apply_preprocessing(x, y, fit=True)
+            x_preprocessed, y_preprocessed = self._apply_preprocessing(x, y, fit=True)
 
             # Fit for current batch
-            self.fit(x_defences, y_defences, nb_epochs=1, batch_size=len(x), **kwargs)
+            self.fit(x_preprocessed, y_preprocessed, nb_epochs=1, batch_size=len(x), **kwargs)
 
     @property
     def nb_classes(self):
@@ -289,9 +289,9 @@ class Classifier(ABC):
         :return: Value of the data after applying the defences.
         :rtype: `np.ndarray`
         """
-        x_preproc = self._apply_preprocessing_normalization(x)
-        x_defences, y_defences = self._apply_preprocessing_defences(x_preproc, y, fit=fit)
-        return x_defences, y_defences, x_preproc
+        x_preprocessed, y_preprocessed = self._apply_preprocessing_defences(x, y, fit=fit)
+        x_preprocessed = self._apply_preprocessing_normalization(x_preprocessed)
+        return x_preprocessed, y_preprocessed
 
     def _apply_preprocessing_gradient(self, x, grads):
         """
@@ -305,8 +305,8 @@ class Classifier(ABC):
         :return: Value of the gradient.
         :rtype: `np.ndarray`
         """
-        grads = self._apply_preprocessing_defences_gradient(x, grads)
         grads = self._apply_preprocessing_normalization_gradient(grads)
+        grads = self._apply_preprocessing_defences_gradient(x, grads)
         return grads
 
     def _apply_preprocessing_defences(self, x, y, fit=False):
