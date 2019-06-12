@@ -27,47 +27,37 @@ from art.attacks.attack import Attack
 logger = logging.getLogger(__name__)
 
 
-class BoundaryAttack(Attack):
+class HopSkipJump(Attack):
     """
-    Implementation of the boundary attack from Wieland Brendel et al. (2018). This is a powerful black-box attack that
-    only requires final class prediction. Paper link: https://arxiv.org/abs/1712.04248
+    Implementation of the HopSkipJump attack from Jianbo et al. (2019). This is a powerful black-box attack that
+    only requires final class prediction, and is an advanced version of the boundary attack.
+    Paper link: https://arxiv.org/abs/1904.02144
     """
-    attack_params = Attack.attack_params + ['targeted', 'delta', 'epsilon', 'step_adapt', 'max_iter', 'num_trial',
-                                            'sample_size', 'init_size']
+    attack_params = Attack.attack_params + ['targeted', 'norm', 'max_iter', 'max_eval', 'init_eval']
 
-    def __init__(self, classifier, targeted=True, delta=0.01, epsilon=0.01, step_adapt=0.667, max_iter=5000,
-                 num_trial=25, sample_size=20, init_size=100):
+    def __init__(self, classifier, targeted=True, norm=2, max_iter=50, max_eval=1e4, init_eval=1e2):
         """
-        Create a boundary attack instance.
+        Create a HopSkipJump attack instance.
 
         :param classifier: A trained model.
         :type classifier: :class:`.Classifier`
         :param targeted: Should the attack target one specific class.
         :type targeted: `bool`
-        :param delta: Initial step size for the orthogonal step.
-        :type delta: `float`
-        :param epsilon: Initial step size for the step towards the target.
-        :type epsilon: `float`
-        :param step_adapt: Factor by which the step sizes are multiplied or divided, must be in the range (0, 1).
-        :type step_adapt: `float`
+        :param norm: Order of the norm. Possible values: np.inf or 2.
+        :type norm: `int`
         :param max_iter: Maximum number of iterations.
         :type max_iter: `int`
-        :param num_trial: Maximum number of trials per iteration.
-        :type num_trial: `int`
-        :param sample_size: Number of samples per trial.
-        :type sample_size: `int`
-        :param init_size: Maximum number of trials for initial generation of adversarial examples.
-        :type init_size: `int`
+        :param max_eval: Maximum number of evaluations for estimating gradient.
+        :type max_eval: `int`
+        :param init_eval: Initial number of evaluations for estimating gradient.
+        :type init_eval: `int`
         """
-        super(BoundaryAttack, self).__init__(classifier=classifier)
+        super(HopSkipJump, self).__init__(classifier=classifier)
         params = {'targeted': targeted,
-                  'delta': delta,
-                  'epsilon': epsilon,
-                  'step_adapt': step_adapt,
+                  'norm': norm,
                   'max_iter': max_iter,
-                  'num_trial': num_trial,
-                  'sample_size': sample_size,
-                  'init_size': init_size,
+                  'max_eval': max_eval,
+                  'init_eval': init_eval,
                   }
         self.set_params(**params)
 
