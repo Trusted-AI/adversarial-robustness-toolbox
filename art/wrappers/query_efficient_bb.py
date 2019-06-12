@@ -100,7 +100,7 @@ class QueryEfficientBBGradientEstimation(ClassifierWrapper):
                 (new_y_plus - new_y_minus).reshape(self.num_basis, -1) /
                 (2 * self.sigma)).reshape([-1] + list(self.input_shape)), axis=0)
             grads.append(query_efficient_grad)
-        grads = self._apply_processing_gradient(np.array(grads))
+        grads = self._apply_preprocessing_normalization_gradient(np.array(grads))
         return grads
 
     def _wrap_predict(self, x, logits=False, batch_size=128):
