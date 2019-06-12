@@ -278,7 +278,17 @@ class Classifier(ABC):
         """
         raise NotImplementedError
 
-    def _apply_defences(self, x, y, fit=False):
+    def _apply_preprocessing(self, x, y, fit):
+        x = self._apply_preprocessing_normalization(x)
+        x, y = self._apply_preprocessing_defences(x, y, fit=fit)
+        return x, y
+
+    def _apply_preprocessing_gradient(self, x, grads):
+        grads = self._apply_preprocessing_defences_gradient(x, grads)
+        grads = self._apply_preprocessing_processing_gradient(grads)
+        return grads
+
+    def _apply_preprocessing_defences(self, x, y, fit=False):
         """
         Apply the defences specified for the classifier in inputs `(x, y)`.
 
@@ -301,7 +311,7 @@ class Classifier(ABC):
 
         return x, y
 
-    def _apply_defences_gradient(self, x, grad, fit=False):
+    def _apply_preprocessing_defences_gradient(self, x, grad, fit=False):
         """
         Apply the backward pass through the preprocessing defences.
 
@@ -324,9 +334,9 @@ class Classifier(ABC):
 
         return grad
 
-    def _apply_processing(self, x):
+    def _apply_preprocessing_normalization(self, x):
         """
-        Apply the data preprocessing / normalization steps specified for the classifier on `x`.
+        Apply the data normalization steps specified for the classifier on `x`.
 
         :param x: Input data, where first dimension is the batch size.
         :type x: `np.ndarray`
@@ -342,9 +352,9 @@ class Classifier(ABC):
 
         return res
 
-    def _apply_processing_gradient(self, grad):
+    def _apply_preprocessing_normalization_gradient(self, grad):
         """
-        Apply the backward pass through the data preprocessing / normalization steps.
+        Apply the backward pass through the data normalization steps.
 
         :param grad: Gradient value so far.
         :type grad: `np.ndarray`
