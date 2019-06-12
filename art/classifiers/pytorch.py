@@ -101,17 +101,16 @@ class PyTorchClassifier(Classifier):
         import torch
 
         # Apply defences
-        x_preproc = self._apply_processing(x)
-        x_preproc, _ = self._apply_defences(x_preproc, None, fit=False)
+        x_defences, _, _ = self._apply_preprocessing(x, y=None, fit=False)
 
         # Run prediction with batch processing
-        results = np.zeros((x_preproc.shape[0], self.nb_classes), dtype=np.float32)
-        num_batch = int(np.ceil(len(x_preproc) / float(batch_size)))
+        results = np.zeros((x_defences.shape[0], self.nb_classes), dtype=np.float32)
+        num_batch = int(np.ceil(len(x_defences) / float(batch_size)))
         for m in range(num_batch):
             # Batch indexes
-            begin, end = m * batch_size, min((m + 1) * batch_size, x_preproc.shape[0])
+            begin, end = m * batch_size, min((m + 1) * batch_size, x_defences.shape[0])
 
-            model_outputs = self._model(torch.from_numpy(x_preproc[begin:end]).to(self._device).float())
+            model_outputs = self._model(torch.from_numpy(x_defences[begin:end]).to(self._device).float())
             (logit_output, output) = (model_outputs[-2], model_outputs[-1])
 
             if logits:
@@ -141,12 +140,12 @@ class PyTorchClassifier(Classifier):
         import torch
 
         # Apply defences
-        x_preproc = self._apply_processing(x)
-        x_preproc, y_preproc = self._apply_defences(x_preproc, y, fit=True)
-        y_preproc = np.argmax(y_preproc, axis=1)
+        x_defences, y_defences, _ = self._apply_preprocessing(x, y, fit=True)
 
-        num_batch = int(np.ceil(len(x_preproc) / float(batch_size)))
-        ind = np.arange(len(x_preproc))
+        y_defences = np.argmax(y_defences, axis=1)
+
+        num_batch = int(np.ceil(len(x_defences) / float(batch_size)))
+        ind = np.arange(len(x_defences))
 
         # Start training
         for _ in range(nb_epochs):
@@ -155,8 +154,8 @@ class PyTorchClassifier(Classifier):
 
             # Train for one epoch
             for m in range(num_batch):
-                i_batch = torch.from_numpy(x_preproc[ind[m * batch_size:(m + 1) * batch_size]]).to(self._device).float()
-                o_batch = torch.from_numpy(y_preproc[ind[m * batch_size:(m + 1) * batch_size]]).to(self._device)
+                i_batch = torch.from_numpy(x_defences[ind[m * batch_size:(m + 1) * batch_size]]).to(self._device).float()
+                o_batch = torch.from_numpy(y_defences[ind[m * batch_size:(m + 1) * batch_size]]).to(self._device)
 
                 # Zero the parameter gradients
                 self._optimizer.zero_grad()
@@ -236,8 +235,8 @@ class PyTorchClassifier(Classifier):
             raise ValueError('Label %s is out of range.' % label)
 
         # Convert the inputs to Tensors
-        x_preproc = self._apply_processing(x)
-        x_defences, _ = self._apply_defences(x_preproc, None, fit=False)
+        x_defences, _, x_preproc = self._apply_preprocessing(x, y=None, fit=False)
+
         x_defences = torch.from_numpy(x_defences).to(self._device).float()
 
         # Compute gradient wrt what
@@ -296,8 +295,7 @@ class PyTorchClassifier(Classifier):
             grads = grads[None, ...]
 
         grads = np.swapaxes(np.array(grads), 0, 1)
-        grads = self._apply_defences_gradient(x_preproc, grads)
-        grads = self._apply_processing_gradient(grads)
+        grads = self._apply_preprocessing_gradient(x_preproc, grads)
 
         return grads
 
@@ -315,8 +313,7 @@ class PyTorchClassifier(Classifier):
         import torch
 
         # Apply preprocessing and defences
-        x_preproc = self._apply_processing(x)
-        x_defences, y_ = self._apply_defences(x_preproc, y, fit=False)
+        x_defences, y_defences, x_preproc = self._apply_preprocessing(x, y, fit=False)
 
         # Convert the inputs to Tensors
         inputs_t = torch.from_numpy(x_defences).to(self._device)
@@ -324,7 +321,7 @@ class PyTorchClassifier(Classifier):
         inputs_t.requires_grad = True
 
         # Convert the labels to Tensors
-        labels_t = torch.from_numpy(np.argmax(y_, axis=1)).to(self._device)
+        labels_t = torch.from_numpy(np.argmax(y_defences, axis=1)).to(self._device)
 
         # Compute the gradient and return
         model_outputs = self._model(inputs_t)
@@ -335,12 +332,11 @@ class PyTorchClassifier(Classifier):
 
         # Compute gradients
         loss.backward()
-        grds = inputs_t.grad.cpu().numpy().copy()
-        grds = self._apply_defences_gradient(x_preproc, grds)
-        grds = self._apply_processing_gradient(grds)
-        assert grds.shape == x.shape
+        grads = inputs_t.grad.cpu().numpy().copy()
+        grads = self._apply_preprocessing_gradient(x_preproc, grads)
+        assert grads.shape == x.shape
 
-        return grds
+        return grads
 
     @property
     def layer_names(self):
@@ -376,8 +372,7 @@ class PyTorchClassifier(Classifier):
         import torch
 
         # Apply defences
-        x_preproc = self._apply_processing(x)
-        x_preproc, _ = self._apply_defences(x_preproc, None, fit=False)
+        x_defences, _, _ = self._apply_preprocessing(x=x, y=None, fit=False)
 
         # Get index of the extracted layer
         if isinstance(layer, six.string_types):
@@ -393,13 +388,13 @@ class PyTorchClassifier(Classifier):
 
         # Run prediction with batch processing
         results = []
-        num_batch = int(np.ceil(len(x_preproc) / float(batch_size)))
+        num_batch = int(np.ceil(len(x_defences) / float(batch_size)))
         for m in range(num_batch):
             # Batch indexes
-            begin, end = m * batch_size, min((m + 1) * batch_size, x_preproc.shape[0])
+            begin, end = m * batch_size, min((m + 1) * batch_size, x_defences.shape[0])
 
             # Run prediction for the current batch
-            layer_output = self._model(torch.from_numpy(x_preproc[begin:end]).to(self._device).float())[layer_index]
+            layer_output = self._model(torch.from_numpy(x_defences[begin:end]).to(self._device).float())[layer_index]
             results.append(layer_output.detach().cpu().numpy())
 
         results = np.concatenate(results)
