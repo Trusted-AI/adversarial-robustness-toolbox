@@ -327,43 +327,32 @@ class HopSkipJump(Attack):
 
         :param targeted: Should the attack target one specific class.
         :type targeted: `bool`
-        :param delta: Initial step size for the orthogonal step.
-        :type delta: `float`
-        :param epsilon: Initial step size for the step towards the target.
-        :type epsilon: `float`
-        :param step_adapt: Factor by which the step sizes are multiplied or divided, must be in the range (0, 1).
-        :type step_adapt: `float`
+        :param norm: Order of the norm. Possible values: np.inf or 2.
+        :type norm: `int`
         :param max_iter: Maximum number of iterations.
         :type max_iter: `int`
-        :param num_trial: Maximum number of trials per iteration.
-        :type num_trial: `int`
-        :param sample_size: Number of samples per trial.
-        :type sample_size: `int`
-        :param init_size: Maximum number of trials for initial generation of adversarial examples.
-        :type init_size: `int`
+        :param max_eval: Maximum number of evaluations for estimating gradient.
+        :type max_eval: `int`
+        :param init_eval: Initial number of evaluations for estimating gradient.
+        :type init_eval: `int`
         """
         # Save attack-specific parameters
-        super(BoundaryAttack, self).set_params(**kwargs)
+        super(HopSkipJump, self).set_params(**kwargs)
+
+        # Check if order of the norm is acceptable given current implementation
+        if self.norm not in [np.inf, int(2)]:
+            raise ValueError('Norm order must be either `np.inf` or 2.')
 
         if not isinstance(self.max_iter, (int, np.int)) or self.max_iter < 0:
             raise ValueError("The number of iterations must be a non-negative integer.")
 
-        if not isinstance(self.num_trial, (int, np.int)) or self.num_trial < 0:
-            raise ValueError("The number of trials must be a non-negative integer.")
+        if not isinstance(self.max_eval, (int, np.int)) or self.max_eval <= 0:
+            raise ValueError("The maximum number of evaluations must be a positive integer.")
 
-        if not isinstance(self.sample_size, (int, np.int)) or self.sample_size <= 0:
-            raise ValueError("The number of samples must be a positive integer.")
+        if not isinstance(self.init_eval, (int, np.int)) or self.init_eval <= 0:
+            raise ValueError("The initial number of evaluations must be a positive integer.")
 
-        if not isinstance(self.init_size, (int, np.int)) or self.init_size <= 0:
-            raise ValueError("The number of initial trials must be a positive integer.")
-
-        if self.epsilon <= 0:
-            raise ValueError("The initial step size for the step towards the target must be positive.")
-
-        if self.delta <= 0:
-            raise ValueError("The initial step size for the orthogonal step must be positive.")
-
-        if self.step_adapt <= 0 or self.step_adapt >= 1:
-            raise ValueError("The adaptation factor must be in the range (0, 1).")
+        if self.init_eval > self.max_eval:
+            raise ValueError("The maximum number of evaluations must be larger than the initial number of evaluations.")
 
         return True
