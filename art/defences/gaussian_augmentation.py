@@ -33,9 +33,9 @@ class GaussianAugmentation(Preprocessor):
     as part of a :class:`.Classifier` instance, the defense will be applied automatically only when training if
     `augmentation` is true, and only when performing prediction otherwise.
     """
-    params = ['sigma', 'augmentation', 'ratio']
+    params = ['sigma', 'augmentation', 'ratio', '_apply_fit', '_apply_predict']
 
-    def __init__(self, sigma=1., augmentation=True, ratio=1.):
+    def __init__(self, sigma=1.0, augmentation=True, ratio=1.0, apply_fit=True, apply_predict=False):
         """
         Initialize a Gaussian augmentation object.
 
@@ -50,15 +50,16 @@ class GaussianAugmentation(Preprocessor):
         """
         super(GaussianAugmentation, self).__init__()
         self._is_fitted = True
-        self.set_params(sigma=sigma, augmentation=augmentation, ratio=ratio)
+        self.set_params(sigma=sigma, augmentation=augmentation, ratio=ratio, _apply_fit=apply_fit,
+                        _apply_predict=apply_predict)
 
     @property
     def apply_fit(self):
-        return self.augmentation
+        return self._apply_fit
 
     @property
     def apply_predict(self):
-        return not self.augmentation
+        return self._apply_predict
 
     def __call__(self, x, y=None):
         """
