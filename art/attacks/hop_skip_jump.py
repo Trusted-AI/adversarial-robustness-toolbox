@@ -395,13 +395,12 @@ class HopSkipJump(Attack):
         """
         if self.norm == 2:
             result = (1 - alpha) * original_sample + alpha * current_sample
-
         else:
             result = np.clip(current_sample, original_sample - alpha, original_sample + alpha)
 
         return result
 
-    def _binary_search(self, current_sample, original_sample, target, threshold=None):
+    def _binary_search(self, current_sample, original_sample, target, clip_min, clip_max, threshold=None):
         """
         Binary search to approach the boundary.
 
@@ -411,6 +410,10 @@ class HopSkipJump(Attack):
         :type original_sample: `np.ndarray`
         :param target: The target label.
         :type target: `int`
+        :param clip_min: Minimum value of an example.
+        :type clip_min: `float`
+        :param clip_max: Maximum value of an example.
+        :type clip_max: `float`
         :param threshold: The upper threshold in binary search.
         :type threshold: `float`
         :return: an adversarial example.
@@ -438,30 +441,14 @@ class HopSkipJump(Attack):
                                                     alpha=alpha)
 
             # Update upper_bound and lower_bound
-            decisions = decision_function(model, mid_images, params)
-            lows = np.where(decisions == 0, mids, lows)
-            highs = np.where(decisions == 1, mids, highs)
+            satisfied = self._adversarial_satisfactory(samples=interpolated_sample[None], target=target,
+                                                       clip_min=clip_min, clip_max=clip_max)[0]
+            lower_bound = np.where(satisfied == 0, alpha, lower_bound)
+            upper_bound = np.where(satisfied == 1, alpha, upper_bound)
 
-        out_images = project(original_image, perturbed_images, highs, params)
+        result = self._interpolate(current_sample=current_sample, original_sample=original_sample, alpha=upper_bound)
 
-        # Compute distance of the output image to select the best choice.
-        # (only used when stepsize_search is grid_search.)
-        dists = np.array([
-            compute_distance(
-                original_image,
-                out_image,
-                params['constraint']
-            )
-            for out_image in out_images])
-        idx = np.argmin(dists)
-
-        dist = dists_post_update[idx]
-        out_image = out_images[idx]
-
-    return out_image, dist
-
-
-
+        return result
 
     def set_params(self, **kwargs):
         """
