@@ -255,6 +255,31 @@ class HopSkipJump(Attack):
 
         return perturb
 
+    def _adversarial_satisfactory(self, samples, target, clip_min, clip_max):
+        """
+        Check whether an image is adversarial.
+
+        :param samples: A batch of examples.
+        :type samples: `np.ndarray`
+        :param target: The target label.
+        :type target: `int`
+        :param clip_min: Minimum value of an example.
+        :type clip_min: `float`
+        :param clip_max: Maximum value of an example.
+        :type clip_max: `float`
+        :return: An array of 0/1.
+        :rtype: `np.ndarray`
+        """
+        samples = np.clip(samples, clip_min, clip_max)
+        preds = np.argmax(self.classifier.predict(samples), axis=1)
+
+        if self.targeted:
+            result = (preds == target)
+        else:
+            result = (preds != target)
+
+        return result
+
     def _init_sample(self, x, y, y_p, init_pred, adv_init, clip_min, clip_max):
         """
         Find initial adversarial example for the attack.
@@ -406,11 +431,13 @@ class HopSkipJump(Attack):
 
         # Then start the binary search
         while (upper_bound - lower_bound) > threshold:
-            # projection to mids.
-            mids = (highs + lows) / 2.0
-            mid_images = project(original_image, perturbed_images, mids, params)
+            # Interpolation point
+            alpha = (upper_bound + lower_bound) / 2.0
+            interpolated_sample = self._interpolate(current_sample=current_sample,
+                                                    original_sample=original_sample,
+                                                    alpha=alpha)
 
-            # Update highs and lows based on model decisions.
+            # Update upper_bound and lower_bound
             decisions = decision_function(model, mid_images, params)
             lows = np.where(decisions == 0, mids, lows)
             highs = np.where(decisions == 1, mids, highs)
