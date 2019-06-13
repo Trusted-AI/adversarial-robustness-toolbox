@@ -222,39 +222,6 @@ class HopSkipJump(Attack):
 
         return x_adv
 
-    def _orthogonal_perturb(self, delta, current_sample, original_sample):
-        """
-        Create an orthogonal perturbation.
-
-        :param delta: Initial step size for the orthogonal step.
-        :type delta: `float`
-        :param current_sample: Current adversarial example.
-        :type current_sample: `np.ndarray`
-        :param original_sample: The original input.
-        :type original_sample: `np.ndarray`
-        :return: a possible perturbation.
-        :rtype: `np.ndarray`
-        """
-        # Generate perturbation randomly
-        perturb = np.random.randn(*self.classifier.input_shape)
-
-        # Rescale the perturbation
-        perturb /= np.linalg.norm(perturb)
-        perturb *= delta * np.linalg.norm(original_sample - current_sample)
-
-        # Project the perturbation onto sphere
-        direction = original_sample - current_sample
-        perturb = np.swapaxes(perturb, 0, self.classifier.channel_index - 1)
-        direction = np.swapaxes(direction, 0, self.classifier.channel_index - 1)
-
-        for i in range(len(direction)):
-            direction[i] /= np.linalg.norm(direction[i])
-            perturb[i] -= np.dot(perturb[i], direction[i]) * direction[i]
-
-        perturb = np.swapaxes(perturb, 0, self.classifier.channel_index - 1)
-
-        return perturb
-
     def _adversarial_satisfactory(self, samples, target, clip_min, clip_max):
         """
         Check whether an image is adversarial.
@@ -346,39 +313,58 @@ class HopSkipJump(Attack):
 
         return initial_sample
 
-    def approximate_gradient(model, sample, num_evals, delta, params):
-        clip_max, clip_min = params['clip_max'], params['clip_min']
+    def _compute_update(self, current_sample, num_eval, delta, target, clip_min, clip_max):
+        """
+        Compute the update in Eq.(14).
 
-        # Generate random vectors.
-        noise_shape = [num_evals] + list(params['shape'])
-        if params['constraint'] == 'l2':
-            rv = np.random.randn(*noise_shape)
-        elif params['constraint'] == 'linf':
-            rv = np.random.uniform(low=-1, high=1, size=noise_shape)
-
-        rv = rv / np.sqrt(np.sum(rv ** 2, axis=(1, 2, 3), keepdims=True))
-        perturbed = sample + delta * rv
-        perturbed = clip_image(perturbed, clip_min, clip_max)
-        rv = (perturbed - sample) / delta
-
-        # query the model.
-        decisions = decision_function(model, perturbed, params)
-        decision_shape = [len(decisions)] + [1] * len(params['shape'])
-        fval = 2 * decisions.astype(float).reshape(decision_shape) - 1.0
-
-        # Baseline subtraction (when fval differs)
-        if np.mean(fval) == 1.0:  # label changes.
-            gradf = np.mean(rv, axis=0)
-        elif np.mean(fval) == -1.0:  # label not change.
-            gradf = - np.mean(rv, axis=0)
+        :param current_sample: Current adversarial example.
+        :type current_sample: `np.ndarray`
+        :param num_eval: The number of evaluations for estimating gradient.
+        :type num_eval: `int`
+        :param delta: The size of random perturbation.
+        :type delta: `float`
+        :param target: The target label.
+        :type target: `int`
+        :param clip_min: Minimum value of an example.
+        :type clip_min: `float`
+        :param clip_max: Maximum value of an example.
+        :type clip_max: `float`
+        :return: an updated perturbation.
+        :rtype: `np.ndarray`
+        """
+        # Generate random noise
+        rnd_noise_shape = [num_eval] + list(self.classifier.input_shape)
+        if self.norm == 2:
+            rnd_noise = np.random.randn(*rnd_noise_shape)
         else:
-            fval -= np.mean(fval)
-            gradf = np.mean(fval * rv, axis=0)
+            rnd_noise = np.random.uniform(low=-1, high=1, size=rnd_noise_shape)
 
-        # Get the gradient direction.
-        gradf = gradf / np.linalg.norm(gradf)
+        # Normalize random noise to fit into the range of input data
+        rnd_noise = rnd_noise / np.sqrt(np.sum(rnd_noise ** 2, axis=(1, 2, 3), keepdims=True))
+        eval_samples = np.clip(current_sample + delta * rnd_noise, clip_min, clip_max)
+        rnd_noise = (eval_samples - current_sample) / delta
 
-        return gradf
+        # Compute gradient: This is a bit different from the original paper, instead we keep those that are
+        # implemented in the original source code of the authors
+        satisfied = self._adversarial_satisfactory(samples=eval_samples, target=target,
+                                                   clip_min=clip_min, clip_max=clip_max)
+        f_val = 2 * satisfied.reshape([num_eval] + [1] * len(self.classifier.input_shape)) - 1.0
+
+        if np.mean(f_val) == 1.0:
+            grad = np.mean(rnd_noise, axis=0)
+        elif np.mean(f_val) == -1.0:
+            grad = -np.mean(rnd_noise, axis=0)
+        else:
+            f_val -= np.mean(f_val)
+            grad = np.mean(f_val * rnd_noise, axis=0)
+
+        # Compute update
+        if self.norm == 2:
+            result = grad / np.linalg.norm(grad)
+        else:
+            result = np.sign(grad)
+
+        return result
 
     def _interpolate(self, current_sample, original_sample, alpha):
         """
