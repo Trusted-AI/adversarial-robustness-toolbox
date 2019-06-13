@@ -32,7 +32,7 @@ class SpatialSmoothing(Preprocessor):
     """
     Implement the local spatial smoothing defence approach. Defence method from https://arxiv.org/abs/1704.01155.
     """
-    params = ['channel_index', 'window_size', 'clip_values', '_apply_fit', '_predict']
+    params = ['channel_index', 'window_size', 'clip_values', '_apply_fit', '_apply_predict']
 
     def __init__(self, channel_index, window_size=3, clip_values=None, apply_fit=False, apply_predict=True):
         """
