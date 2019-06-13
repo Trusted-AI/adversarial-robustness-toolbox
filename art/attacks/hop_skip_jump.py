@@ -321,6 +321,121 @@ class HopSkipJump(Attack):
 
         return initial_sample
 
+    def approximate_gradient(model, sample, num_evals, delta, params):
+        clip_max, clip_min = params['clip_max'], params['clip_min']
+
+        # Generate random vectors.
+        noise_shape = [num_evals] + list(params['shape'])
+        if params['constraint'] == 'l2':
+            rv = np.random.randn(*noise_shape)
+        elif params['constraint'] == 'linf':
+            rv = np.random.uniform(low=-1, high=1, size=noise_shape)
+
+        rv = rv / np.sqrt(np.sum(rv ** 2, axis=(1, 2, 3), keepdims=True))
+        perturbed = sample + delta * rv
+        perturbed = clip_image(perturbed, clip_min, clip_max)
+        rv = (perturbed - sample) / delta
+
+        # query the model.
+        decisions = decision_function(model, perturbed, params)
+        decision_shape = [len(decisions)] + [1] * len(params['shape'])
+        fval = 2 * decisions.astype(float).reshape(decision_shape) - 1.0
+
+        # Baseline subtraction (when fval differs)
+        if np.mean(fval) == 1.0:  # label changes.
+            gradf = np.mean(rv, axis=0)
+        elif np.mean(fval) == -1.0:  # label not change.
+            gradf = - np.mean(rv, axis=0)
+        else:
+            fval -= np.mean(fval)
+            gradf = np.mean(fval * rv, axis=0)
+
+        # Get the gradient direction.
+        gradf = gradf / np.linalg.norm(gradf)
+
+        return gradf
+
+    def _interpolate(self, current_sample, original_sample, alpha):
+        """
+        Interpolate a new sample based on the original and the current samples.
+
+        :param current_sample: Current adversarial example.
+        :type current_sample: `np.ndarray`
+        :param original_sample: The original input.
+        :type original_sample: `np.ndarray`
+        :param alpha: The coefficient of interpolation.
+        :type alpha: `float`
+        :return: an adversarial example.
+        :rtype: `np.ndarray`
+        """
+        if self.norm == 2:
+            result = (1 - alpha) * original_sample + alpha * current_sample
+
+        else:
+            result = np.clip(current_sample, original_sample - alpha, original_sample + alpha)
+
+        return result
+
+    def _binary_search(self, current_sample, original_sample, target, threshold=None):
+        """
+        Binary search to approach the boundary.
+
+        :param current_sample: Current adversarial example.
+        :type current_sample: `np.ndarray`
+        :param original_sample: The original input.
+        :type original_sample: `np.ndarray`
+        :param target: The target label.
+        :type target: `int`
+        :param threshold: The upper threshold in binary search.
+        :type threshold: `float`
+        :return: an adversarial example.
+        :rtype: `np.ndarray`
+        """
+        # First set upper and lower bounds as well as the threshold for the binary search
+        if self.norm == 2:
+            (upper_bound, lower_bound) = (1, 0)
+
+            if threshold is None:
+                threshold = self.theta
+
+        else:
+            (upper_bound, lower_bound) = (np.max(abs(original_sample - current_sample)), 0)
+
+            if threshold is None:
+                threshold = np.min(upper_bound * self.theta, self.theta)
+
+        # Then start the binary search
+        while (upper_bound - lower_bound) > threshold:
+            # projection to mids.
+            mids = (highs + lows) / 2.0
+            mid_images = project(original_image, perturbed_images, mids, params)
+
+            # Update highs and lows based on model decisions.
+            decisions = decision_function(model, mid_images, params)
+            lows = np.where(decisions == 0, mids, lows)
+            highs = np.where(decisions == 1, mids, highs)
+
+        out_images = project(original_image, perturbed_images, highs, params)
+
+        # Compute distance of the output image to select the best choice.
+        # (only used when stepsize_search is grid_search.)
+        dists = np.array([
+            compute_distance(
+                original_image,
+                out_image,
+                params['constraint']
+            )
+            for out_image in out_images])
+        idx = np.argmin(dists)
+
+        dist = dists_post_update[idx]
+        out_image = out_images[idx]
+
+    return out_image, dist
+
+
+
+
     def set_params(self, **kwargs):
         """
         Take in a dictionary of parameters and applies attack-specific checks before saving them as attributes.
