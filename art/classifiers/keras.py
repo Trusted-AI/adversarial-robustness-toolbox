@@ -301,7 +301,7 @@ class KerasClassifier(Classifier):
 
         # Adjust the shape of y for loss functions that do not take labels in one-hot encoding
         if self._reduce_labels:
-            y_defences = np.argmax(y_preprocessed, axis=1)
+            y_preprocessed = np.argmax(y_preprocessed, axis=1)
 
         gen = generator_fit(x_preprocessed, y_preprocessed, batch_size)
         self._model.fit_generator(gen, steps_per_epoch=x_preprocessed.shape[0] / batch_size, epochs=nb_epochs, **kwargs)
