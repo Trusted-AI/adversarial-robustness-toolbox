@@ -33,9 +33,9 @@ class HopSkipJump(Attack):
     only requires final class prediction, and is an advanced version of the boundary attack.
     Paper link: https://arxiv.org/abs/1904.02144
     """
-    attack_params = Attack.attack_params + ['targeted', 'norm', 'max_iter', 'max_eval', 'init_eval']
+    attack_params = Attack.attack_params + ['targeted', 'norm', 'max_iter', 'max_eval', 'init_eval', 'init_size']
 
-    def __init__(self, classifier, targeted=True, norm=2, max_iter=50, max_eval=1e4, init_eval=1e2):
+    def __init__(self, classifier, targeted=True, norm=2, max_iter=50, max_eval=1e4, init_eval=1e2, init_size=100):
         """
         Create a HopSkipJump attack instance.
 
@@ -51,6 +51,8 @@ class HopSkipJump(Attack):
         :type max_eval: `int`
         :param init_eval: Initial number of evaluations for estimating gradient.
         :type init_eval: `int`
+        :param init_size: Maximum number of trials for initial generation of adversarial examples.
+        :type init_size: `int`
         """
         super(HopSkipJump, self).__init__(classifier=classifier)
         params = {'targeted': targeted,
@@ -141,12 +143,12 @@ class HopSkipJump(Attack):
         if initial_sample is None:
             return x
 
-        # If an initial adversarial example found, then go with boundary attack
-        x_adv = self._attack(initial_sample[0], x, initial_sample[1], self.delta, self.epsilon, clip_min, clip_max)
+        # If an initial adversarial example found, then go with hopskipjump attack
+        x_adv = self._attack(initial_sample[0], x, initial_sample[1], clip_min, clip_max)
 
         return x_adv
 
-    def _attack(self, initial_sample, original_sample, target, initial_delta, initial_epsilon, clip_min, clip_max):
+    def _attack(self, initial_sample, original_sample, target, clip_min, clip_max):
         """
         Main function for the boundary attack.
 
@@ -286,6 +288,12 @@ class HopSkipJump(Attack):
                 random_class = np.argmax(self.classifier.predict(np.array([random_img])), axis=1)[0]
 
                 if random_class == y:
+                    # Binary search to reduce the l2 distance to the original image
+                    tmp_norm = self.norm
+                    self.norm = 2
+                    random_img = self._binary_search(current_sample=random_img, original_sample=x, target=y,
+                                                     clip_min=clip_min, clip_max=clip_max, threshold=0.001)
+                    self.norm = tmp_norm
                     initial_sample = random_img, random_class
 
                     logging.info('Found initial adversarial image for targeted attack.')
@@ -304,6 +312,12 @@ class HopSkipJump(Attack):
                 random_class = np.argmax(self.classifier.predict(np.array([random_img])), axis=1)[0]
 
                 if random_class != y_p:
+                    # Binary search to reduce the l2 distance to the original image
+                    tmp_norm = self.norm
+                    self.norm = 2
+                    random_img = self._binary_search(current_sample=random_img, original_sample=x, target=y_p,
+                                                     clip_min=clip_min, clip_max=clip_max, threshold=0.001)
+                    self.norm = tmp_norm
                     initial_sample = random_img, random_class
 
                     logging.info('Found initial adversarial image for untargeted attack.')
@@ -450,6 +464,8 @@ class HopSkipJump(Attack):
         :type max_eval: `int`
         :param init_eval: Initial number of evaluations for estimating gradient.
         :type init_eval: `int`
+        :param init_size: Maximum number of trials for initial generation of adversarial examples.
+        :type init_size: `int`
         """
         # Save attack-specific parameters
         super(HopSkipJump, self).set_params(**kwargs)
@@ -469,5 +485,8 @@ class HopSkipJump(Attack):
 
         if self.init_eval > self.max_eval:
             raise ValueError("The maximum number of evaluations must be larger than the initial number of evaluations.")
+
+        if not isinstance(self.init_size, (int, np.int)) or self.init_size <= 0:
+            raise ValueError("The number of initial trials must be a positive integer.")
 
         return True
