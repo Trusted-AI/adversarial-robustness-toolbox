@@ -60,6 +60,8 @@ class HopSkipJump(Attack):
                   'max_iter': max_iter,
                   'max_eval': max_eval,
                   'init_eval': init_eval,
+                  'init_size': init_size,
+                  'curr_iter': 0,
                   }
         self.set_params(**params)
 
@@ -158,10 +160,6 @@ class HopSkipJump(Attack):
         :type original_sample: `np.ndarray`
         :param target: The target label.
         :type target: `int`
-        :param initial_delta: Initial step size for the orthogonal step.
-        :type initial_delta: `float`
-        :param initial_epsilon: Initial step size for the step towards the target.
-        :type initial_epsilon: `float`
         :param clip_min: Minimum value of an example.
         :type clip_min: `float`
         :param clip_max: Maximum value of an example.
@@ -169,60 +167,39 @@ class HopSkipJump(Attack):
         :return: an adversarial example.
         :rtype: `np.ndarray`
         """
-        # Get initialization for some variables
-        x_adv = initial_sample
-        self.curr_delta = initial_delta
-        self.curr_epsilon = initial_epsilon
-
         # Main loop to wander around the boundary
         for _ in range(self.max_iter):
-            # Trust region method to adjust delta
-            for _ in range(self.num_trial):
-                potential_advs = []
-                for _ in range(self.sample_size):
-                    potential_adv = x_adv + self._orthogonal_perturb(self.curr_delta, x_adv, original_sample)
-                    potential_adv = np.clip(potential_adv, clip_min, clip_max)
-                    potential_advs.append(potential_adv)
-
-                preds = np.argmax(self.classifier.predict(np.array(potential_advs)), axis=1)
-                satisfied = (preds == target)
-                delta_ratio = np.mean(satisfied)
-
-                if delta_ratio < 0.2:
-                    self.curr_delta *= self.step_adapt
-                elif delta_ratio > 0.5:
-                    self.curr_delta /= self.step_adapt
-
-                if delta_ratio > 0:
-                    x_advs = np.array(potential_advs)[np.where(satisfied)[0]]
-                    break
-            else:
-                logging.warning('Adversarial example found but not optimal.')
-                return x_adv
-
-            # Trust region method to adjust epsilon
-            for _ in range(self.num_trial):
-                perturb = np.repeat(np.array([original_sample]), len(x_advs), axis=0) - x_advs
-                perturb *= self.curr_epsilon
-                potential_advs = x_advs + perturb
-                potential_advs = np.clip(potential_advs, clip_min, clip_max)
-                preds = np.argmax(self.classifier.predict(potential_advs), axis=1)
-                satisfied = (preds == target)
-                epsilon_ratio = np.mean(satisfied)
-
-                if epsilon_ratio < 0.2:
-                    self.curr_epsilon *= self.step_adapt
-                elif epsilon_ratio > 0.5:
-                    self.curr_epsilon /= self.step_adapt
-
-                if epsilon_ratio > 0:
-                    x_adv = potential_advs[np.where(satisfied)[0][0]]
-                    break
-            else:
-                logging.warning('Adversarial example found but not optimal.')
-                return x_advs[0]
 
         return x_adv
+
+    def _compute_delta(self, current_sample, original_sample, clip_min, clip_max):
+        """
+        Compute the delta parameter.
+
+        :param current_sample: Current adversarial example.
+        :type current_sample: `np.ndarray`
+        :param original_sample: The original input.
+        :type original_sample: `np.ndarray`
+        :param clip_min: Minimum value of an example.
+        :type clip_min: `float`
+        :param clip_max: Maximum value of an example.
+        :type clip_max: `float`
+        :return: Delta value.
+        :rtype: `float`
+        """
+        # Note: This is a bit different from the original paper, instead we keep those that are
+        # implemented in the original source code of the authors
+        if self.curr_iter == 0:
+            return 0.1 * (clip_max - clip_min)
+
+        if self.norm == 2:
+            dist = np.linalg.norm(original_sample - current_sample)
+            delta = np.sqrt(np.prod(self.classifier.input_shape)) * self.theta * dist
+        else:
+            dist = np.max(abs(original_sample - current_sample))
+            delta = np.prod(self.classifier.input_shape) * self.theta * dist
+
+        return delta
 
     def _adversarial_satisfactory(self, samples, target, clip_min, clip_max):
         """
