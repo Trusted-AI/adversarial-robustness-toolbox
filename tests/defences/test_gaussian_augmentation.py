@@ -69,11 +69,9 @@ class TestGaussianAugmentation(unittest.TestCase):
         self.assertFalse((x == new_x).all())
 
     def test_failure_augmentation_fit_predict(self):
-        x = np.random.rand(10, 3)
-
         # Assert that value error is raised
         with self.assertRaises(ValueError) as context:
-            ga = GaussianAugmentation(augmentation=True, apply_fit=True, apply_predict=True)
+            _ = GaussianAugmentation(augmentation=True, apply_fit=True, apply_predict=True)
 
         self.assertTrue('If `augmentation` is `True`, then `apply_fit` must be `True` and `apply_predict`'
                         ' must be `False`.' in str(context.exception))
