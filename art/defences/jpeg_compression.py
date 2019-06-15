@@ -34,9 +34,9 @@ class JpegCompression(Preprocessor):
     Implement the jpeg compression defence approach. Some related papers: https://arxiv.org/pdf/1705.02900.pdf,
     https://arxiv.org/abs/1608.00853
     """
-    params = ['quality', 'channel_index']
+    params = ['quality', 'channel_index', 'clip_values']
 
-    def __init__(self, quality=50, channel_index=3):
+    def __init__(self, clip_values, quality=50, channel_index=3):
         """
         Create an instance of jpeg compression.
 
@@ -47,7 +47,7 @@ class JpegCompression(Preprocessor):
         """
         super(JpegCompression, self).__init__()
         self._is_fitted = True
-        self.set_params(quality=quality, channel_index=channel_index)
+        self.set_params(quality=quality, channel_index=channel_index, clip_values=clip_values)
 
     @property
     def apply_fit(self):
@@ -76,7 +76,13 @@ class JpegCompression(Preprocessor):
         if self.channel_index >= len(x.shape):
             raise ValueError('Channel index does not match input shape.')
 
-        clip_values = (0, 1)
+        if np.min(x) < 0.0:
+            raise ValueError('Negative values in input `x` detected. The JPEG compression defence required unnormalized'
+                             'input.')
+
+        if np.max(x) < 0.0:
+            raise ValueError('Negative values in input `x` detected. The JPEG compression defence required unnormalized'
+                             'input.')
 
         # Swap channel index
         if self.channel_index < 3 and len(x.shape) == 4:
@@ -85,7 +91,8 @@ class JpegCompression(Preprocessor):
             x_ = x.copy()
 
         # Convert into `uint8`
-        x_ = x_ * 255
+        if self.clip_values[1] == 1.0:
+            x_ = x_ * 255
         x_ = x_.astype("uint8")
 
         # Convert to 'L' mode
@@ -114,14 +121,13 @@ class JpegCompression(Preprocessor):
             x_ = np.expand_dims(x_, 3)
 
         # Convert to old dtype
-        x_ = x_ / 255.0
+        if self.clip_values[1] == 1.0:
+            x_ = x_ / 255.0
         x_ = x_.astype(NUMPY_DTYPE)
 
         # Swap channel index
         if self.channel_index < 3:
             x_ = np.swapaxes(x_, self.channel_index, 3)
-
-        x_ = np.clip(x_, clip_values[0], clip_values[1])
 
         return x_, y
 
@@ -153,5 +159,18 @@ class JpegCompression(Preprocessor):
         if not isinstance(self.channel_index, (int, np.int)) or self.channel_index <= 0:
             logger.error('Data channel must be a positive integer. The batch dimension is not a valid channel.')
             raise ValueError('Data channel must be a positive integer. The batch dimension is not a valid channel.')
+
+        if self.clip_values is not None:
+            if len(self.clip_values) != 2:
+                raise ValueError('`clip_values` should be a tuple of 2 floats or arrays containing the allowed'
+                                 'data range.')
+            if np.array(self.clip_values[0] >= self.clip_values[1]).any():
+                raise ValueError('Invalid `clip_values`: min >= max.')
+
+            if self.clip_values[0] != 0:
+                raise ValueError('`clip_values` min value should be 0.')
+
+            if self.clip_values[1] != 1.0 and self.clip_values[1] != 255:
+                raise ValueError('`clip_values` max value should be either 1 or 255.')
 
         return True
