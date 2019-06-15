@@ -32,9 +32,9 @@ class SpatialSmoothing(Preprocessor):
     """
     Implement the local spatial smoothing defence approach. Defence method from https://arxiv.org/abs/1704.01155.
     """
-    params = ['channel_index', 'window_size', 'clip_values', '_apply_fit', '_apply_predict']
+    params = ['window_size', 'channel_index', 'clip_values', '_apply_fit', '_apply_predict']
 
-    def __init__(self, channel_index, window_size=3, clip_values=None, apply_fit=False, apply_predict=True):
+    def __init__(self, window_size=3, channel_index=3, clip_values=None, apply_fit=False, apply_predict=True):
         """
         Create an instance of local spatial smoothing.
 
@@ -45,6 +45,10 @@ class SpatialSmoothing(Preprocessor):
         :param clip_values: Tuple of the form `(min, max)` representing the minimum and maximum values allowed
                for features.
         :type clip_values: `tuple`
+        :param apply_fit: True if applied during fitting/training.
+        :type apply_fit: `bool`
+        :param apply_predict: True if applied during predicting.
+        :type apply_predict: `bool`
         """
         super(SpatialSmoothing, self).__init__()
         self._is_fitted = True
@@ -81,7 +85,7 @@ class SpatialSmoothing(Preprocessor):
         size = tuple(size)
 
         result = ndimage.filters.median_filter(x, size=size, mode="reflect")
-        if hasattr(self, 'clip_values') and self.clip_values is not None:
+        if self.clip_values is not None:
             np.clip(result, self.clip_values[0], self.clip_values[1], out=result)
 
         return result.astype(NUMPY_DTYPE), y
@@ -106,6 +110,10 @@ class SpatialSmoothing(Preprocessor):
         :param clip_values: Tuple of the form `(min, max)` representing the minimum and maximum values allowed
                for features.
         :type clip_values: `tuple`
+        :param apply_fit: True if applied during fitting/training.
+        :type apply_fit: `bool`
+        :param apply_predict: True if applied during predicting.
+        :type apply_predict: `bool`
         """
         # Save attack-specific parameters
         super(SpatialSmoothing, self).set_params(**kwargs)
