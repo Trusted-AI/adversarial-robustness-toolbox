@@ -34,9 +34,9 @@ class JpegCompression(Preprocessor):
     Implement the jpeg compression defence approach. Some related papers: https://arxiv.org/pdf/1705.02900.pdf,
     https://arxiv.org/abs/1608.00853
     """
-    params = ['quality', 'channel_index', 'clip_values']
+    params = ['quality', 'channel_index', 'clip_values', '_apply_fit', '_apply_predict']
 
-    def __init__(self, clip_values, quality=50, channel_index=3):
+    def __init__(self, clip_values, quality=50, channel_index=3, apply_fit=True, apply_predict=False):
         """
         Create an instance of jpeg compression.
 
@@ -44,18 +44,23 @@ class JpegCompression(Preprocessor):
         :type quality: `int`
         :param channel_index: Index of the axis in data containing the color channels or features.
         :type channel_index: `int`
+        :param apply_fit: True if applied during fitting/training.
+        :type apply_fit: `bool`
+        :param apply_predict: True if applied during predicting.
+        :type apply_predict: `bool`
         """
         super(JpegCompression, self).__init__()
         self._is_fitted = True
-        self.set_params(quality=quality, channel_index=channel_index, clip_values=clip_values)
+        self.set_params(quality=quality, channel_index=channel_index, clip_values=clip_values, _apply_fit=apply_fit,
+                        _apply_predict=apply_predict)
 
     @property
     def apply_fit(self):
-        return False
+        return self._apply_fit
 
     @property
     def apply_predict(self):
-        return True
+        return self._apply_predict
 
     def __call__(self, x, y=None):
         """
