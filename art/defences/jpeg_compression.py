@@ -40,10 +40,8 @@ class JpegCompression(Preprocessor):
         """
         Create an instance of jpeg compression.
 
-        :param clip_values: Tuple of the form `(min, max)` of floats or `np.ndarray` representing the minimum and
-               maximum values allowed for features. If floats are provided, these will be used as the range of all
-               features. If arrays are provided, each value will be considered the bound for a feature, thus
-               the shape of clip values needs to match the total number of features.
+        :param clip_values: Tuple of the form `(min, max)` representing the minimum and maximum values allowed
+               for features.
         :type clip_values: `tuple`
         :param quality: The image quality, on a scale from 1 (worst) to 95 (best). Values above 95 should be avoided.
         :type quality: `int`
@@ -154,10 +152,8 @@ class JpegCompression(Preprocessor):
         """
         Take in a dictionary of parameters and applies defence-specific checks before saving them as attributes.
 
-        :param clip_values: Tuple of the form `(min, max)` of floats or `np.ndarray` representing the minimum and
-               maximum values allowed for features. If floats are provided, these will be used as the range of all
-               features. If arrays are provided, each value will be considered the bound for a feature, thus
-               the shape of clip values needs to match the total number of features.
+        :param clip_values: Tuple of the form `(min, max)` representing the minimum and maximum values allowed
+               for features.
         :type clip_values: `tuple`
         :param quality: The image quality, on a scale from 1 (worst) to 95 (best). Values above 95 should be avoided.
         :type quality: `int`

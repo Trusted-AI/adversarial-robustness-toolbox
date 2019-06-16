@@ -35,7 +35,7 @@ class TotalVarMin(Preprocessor):
     """
     params = ['prob', 'norm', 'lamb', 'solver', 'max_iter', 'clip_values']
 
-    def __init__(self, prob=0.3, norm=2, lamb=0.5, solver='L-BFGS-B', max_iter=10, clip_values=(0, 1)):
+    def __init__(self, prob=0.3, norm=2, lamb=0.5, solver='L-BFGS-B', max_iter=10, clip_values=None):
         """
         Create an instance of total variance minimization.
 
@@ -87,7 +87,7 @@ class TotalVarMin(Preprocessor):
             mask = (np.random.rand(*xi.shape) < self.prob).astype('int')
             x_preproc[i] = self._minimize(xi, mask)
 
-        if hasattr(self, 'clip_values') and self.clip_values is not None:
+        if self.clip_values is not None:
             np.clip(x_preproc, self.clip_values[0], self.clip_values[1], out=x_preproc)
 
         return x_preproc.astype(NUMPY_DTYPE), y
@@ -233,9 +233,11 @@ class TotalVarMin(Preprocessor):
             logger.error('Number of iterations must be a positive integer.')
             raise ValueError('Number of iterations must be a positive integer.')
 
-        if len(self.clip_values) != 2:
-            raise ValueError('`clip_values` should be a tuple of 2 floats containing the allowed data range.')
-        if np.array(self.clip_values[0] >= self.clip_values[1]).any():
-            raise ValueError('Invalid `clip_values`: min >= max.')
+        if self.clip_values is not None:
+            if len(self.clip_values) != 2:
+                raise ValueError('`clip_values` should be a tuple of 2 floats containing the allowed data range.')
+
+            if np.array(self.clip_values[0] >= self.clip_values[1]).any():
+                raise ValueError('Invalid `clip_values`: min >= max.')
 
         return True

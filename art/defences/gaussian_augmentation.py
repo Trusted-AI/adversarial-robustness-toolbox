@@ -47,10 +47,8 @@ class GaussianAugmentation(Preprocessor):
         :param ratio: Percentage of data augmentation. E.g. for a rate of 1, the size of the dataset will double.
                       If `augmentation` is false, `ratio` value is ignored.
         :type ratio: `float`
-        :param clip_values: Tuple of the form `(min, max)` of floats or `np.ndarray` representing the minimum and
-               maximum values allowed for features. If floats are provided, these will be used as the range of all
-               features. If arrays are provided, each value will be considered the bound for a feature, thus
-               the shape of clip values needs to match the total number of features.
+        :param clip_values: Tuple of the form `(min, max)` representing the minimum and maximum values allowed
+               for features.
         :type clip_values: `tuple`
         :param apply_fit: True if applied during fitting/training.
         :type apply_fit: `bool`
@@ -129,10 +127,8 @@ class GaussianAugmentation(Preprocessor):
         :type augmentation: `bool`
         :param ratio: Percentage of data augmentation. E.g. for a ratio of 1, the size of the dataset will double.
         :type ratio: `float`
-        :param clip_values: Tuple of the form `(min, max)` of floats or `np.ndarray` representing the minimum and
-               maximum values allowed for features. If floats are provided, these will be used as the range of all
-               features. If arrays are provided, each value will be considered the bound for a feature, thus
-               the shape of clip values needs to match the total number of features.
+        :param clip_values: Tuple of the form `(min, max)` representing the minimum and maximum values allowed
+               for features.
         :type clip_values: `tuple`
         :param apply_fit: True if applied during fitting/training.
         :type apply_fit: `bool`
