@@ -179,17 +179,17 @@ class JpegCompression(Preprocessor):
             logger.error('Data channel must be a positive integer. The batch dimension is not a valid channel.')
             raise ValueError('Data channel must be a positive integer. The batch dimension is not a valid channel.')
 
-        if self.clip_values is not None:
-            if len(self.clip_values) != 2:
-                raise ValueError('`clip_values` should be a tuple of 2 floats or arrays containing the allowed'
+        if len(self.clip_values) != 2:
+            raise ValueError('`clip_values` should be a tuple of 2 floats or arrays containing the allowed'
                                  'data range.')
-            if np.array(self.clip_values[0] >= self.clip_values[1]).any():
-                raise ValueError('Invalid `clip_values`: min >= max.')
 
-            if self.clip_values[0] != 0:
-                raise ValueError('`clip_values` min value should be 0.')
+        if np.array(self.clip_values[0] >= self.clip_values[1]).any():
+            raise ValueError('Invalid `clip_values`: min >= max.')
 
-            if self.clip_values[1] != 1.0 and self.clip_values[1] != 255:
-                raise ValueError('`clip_values` max value should be either 1 or 255.')
+        if self.clip_values[0] != 0:
+            raise ValueError('`clip_values` min value must be 0.')
+
+        if self.clip_values[1] != 1.0 and self.clip_values[1] != 255:
+            raise ValueError('`clip_values` max value must be either 1 or 255.')
 
         return True

@@ -32,31 +32,36 @@ class ThermometerEncoding(Preprocessor):
     """
     Implement the thermometer encoding defence approach. Defence method from https://openreview.net/forum?id=S18Su--CW.
     """
-    params = ['num_space', 'channel_index', 'clip_values']
+    params = ['clip_values', 'num_space', 'channel_index', '_apply_fit', '_apply_predict']
 
-    def __init__(self, num_space=10, channel_index=3, clip_values=None):
+    def __init__(self, clip_values, num_space=10, channel_index=3, apply_fit=True, apply_predict=True):
         """
         Create an instance of thermometer encoding.
 
+        :param clip_values: Tuple of the form `(min, max)` representing the minimum and maximum values allowed
+               for features.
+        :type clip_values: `tuple`
         :param num_space: Number of evenly spaced levels within [0, 1].
         :type num_space: `int`
         :param channel_index: Index of the axis in data containing the color channels or features.
         :type channel_index: `int`
-        :param clip_values: Tuple of the form `(min, max)` representing the minimum and maximum values allowed
-               for features.
-        :type clip_values: `tuple`
+        :param apply_fit: True if applied during fitting/training.
+        :type apply_fit: `bool`
+        :param apply_predict: True if applied during predicting.
+        :type apply_predict: `bool`
         """
         super(ThermometerEncoding, self).__init__()
         self._is_fitted = True
-        self.set_params(num_space=num_space, channel_index=channel_index, clip_values=clip_values)
+        self.set_params(clip_values=clip_values, num_space=num_space, channel_index=channel_index, _apply_fit=apply_fit,
+                        _apply_predict=apply_predict)
 
     @property
     def apply_fit(self):
-        return True
+        return self._apply_fit
 
     @property
     def apply_predict(self):
-        return True
+        return self._apply_predict
 
     def __call__(self, x, y=None):
         """
@@ -71,8 +76,7 @@ class ThermometerEncoding(Preprocessor):
         """
         result = np.apply_along_axis(self._perchannel, self.channel_index, x)
 
-        # result = np.concatenate(result, axis=self.channel_index)
-        if hasattr(self, 'clip_values') and self.clip_values is not None:
+        if self.clip_values is not None:
             np.clip(result, self.clip_values[0], self.clip_values[1], out=result)
 
         return result.astype(NUMPY_DTYPE), y
@@ -129,13 +133,17 @@ class ThermometerEncoding(Preprocessor):
         """
         Take in a dictionary of parameters and applies defence-specific checks before saving them as attributes.
 
+        :param clip_values: Tuple of the form `(min, max)` representing the minimum and maximum values allowed
+               for features.
+        :type clip_values: `tuple`
         :param num_space: Number of evenly spaced levels within [0, 1].
         :type num_space: `int`
         :param channel_index: Index of the axis in data containing the color channels or features.
         :type channel_index: `int`
-        :param clip_values: Tuple of the form `(min, max)` representing the minimum and maximum values allowed
-               for features.
-        :type clip_values: `tuple`
+        :param apply_fit: True if applied during fitting/training.
+        :type apply_fit: `bool`
+        :param apply_predict: True if applied during predicting.
+        :type apply_predict: `bool`
         """
         # Save attack-specific parameters
         super(ThermometerEncoding, self).set_params(**kwargs)
@@ -144,10 +152,13 @@ class ThermometerEncoding(Preprocessor):
             logger.error('Number of evenly spaced levels must be a positive integer.')
             raise ValueError('Number of evenly spaced levels must be a positive integer.')
 
-        if hasattr(self, 'clip_values') and self.clip_values is not None:
-            if len(self.clip_values) != 2:
-                raise ValueError('`clip_values` should be a tuple of 2 floats containing the allowed data range.')
-            if np.array(self.clip_values[0] >= self.clip_values[1]).any():
-                raise ValueError('Invalid `clip_values`: min >= max.')
+        if len(self.clip_values) != 2:
+            raise ValueError('`clip_values` should be a tuple of 2 floats containing the allowed data range.')
+
+        if self.clip_values[0] != 0:
+            raise ValueError('`clip_values` min value must be 0.')
+
+        if self.clip_values[1] != 1:
+            raise ValueError('`clip_values` max value must be 1.')
 
         return True
