@@ -36,7 +36,7 @@ class TestTotalVarMin(unittest.TestCase):
     def test_one_channel(self):
         clip_values = (0, 1)
         x = np.random.rand(2, 28, 28, 1)
-        preprocess = TotalVarMin(clip_values = (0, 1))
+        preprocess = TotalVarMin(clip_values=(0, 1))
         x_preprocessed, _ = preprocess(x)
         self.assertTrue((x_preprocessed.shape == x.shape))
         self.assertTrue((x_preprocessed >= clip_values[0]).all())

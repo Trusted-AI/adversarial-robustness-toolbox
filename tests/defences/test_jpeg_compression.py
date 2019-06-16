@@ -20,7 +20,6 @@ from __future__ import absolute_import, division, print_function, unicode_litera
 import logging
 import unittest
 
-from tensorflow.examples.tutorials.mnist import input_data
 from keras.datasets import cifar10
 import numpy as np
 
@@ -95,21 +94,19 @@ class TestJpegCompression(unittest.TestCase):
 
     def test_failure_clip_values_negative(self):
         clip_values = (-1, 1)
-        x = np.random.rand(10, 3)
 
         # Assert that value error is raised
         with self.assertRaises(ValueError) as context:
-            preprocess = JpegCompression(clip_values=clip_values, channel_index=1, quality=80)
+            _ = JpegCompression(clip_values=clip_values, channel_index=1, quality=80)
 
         self.assertTrue('min value must be 0.' in str(context.exception))
 
     def test_failure_clip_values_unexpected_maximum(self):
         clip_values = (0, 2)
-        x = np.random.rand(10, 3)
 
         # Assert that value error is raised
         with self.assertRaises(ValueError) as context:
-            preprocess = JpegCompression(clip_values=clip_values, channel_index=1, quality=80)
+            _ = JpegCompression(clip_values=clip_values, channel_index=1, quality=80)
 
         self.assertTrue('max value must be either 1 or 255.' in str(context.exception))
 
