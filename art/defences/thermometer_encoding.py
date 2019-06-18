@@ -75,10 +75,7 @@ class ThermometerEncoding(Preprocessor):
         :rtype: `np.ndarray`
         """
         result = np.apply_along_axis(self._perchannel, self.channel_index, x)
-
-        if self.clip_values is not None:
-            np.clip(result, self.clip_values[0], self.clip_values[1], out=result)
-
+        np.clip(result, self.clip_values[0], self.clip_values[1], out=result)
         return result.astype(NUMPY_DTYPE), y
 
     def _perchannel(self, x):
