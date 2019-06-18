@@ -93,7 +93,7 @@ class LightGBMClassifier(Classifier):
         :param nb_epochs: Number of epochs to use for training. Not used in this function.
         :type nb_epochs: `int`
         :param kwargs: Dictionary of framework-specific arguments. These should be parameters supported by the
-               `fit` function in `sklearn.linear_model.LogisticRegression` and will be passed to this function as such.
+               `fit` function in `lightgbm.Booster` and will be passed to this function as such.
         :type kwargs: `dict`
         :return: `None`
         """
@@ -128,7 +128,10 @@ class LightGBMClassifier(Classifier):
         :return: Array of predictions of shape `(nb_inputs, self.nb_classes)`.
         :rtype: `np.ndarray`
         """
-        return self.model.predict(x)
+        # Apply defences
+        x_preprocessed, _ = self._apply_preprocessing(x, y=None, fit=False)
+
+        return self.model.predict(x_preprocessed)
 
     def save(self, filename, path=None):
         import pickle
