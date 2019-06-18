@@ -33,9 +33,10 @@ class TotalVarMin(Preprocessor):
     Implement the total variance minimization defence approach. Defence method from [Guo et al., 2018].
     Paper link: https://openreview.net/forum?id=SyJ7ClWCb
     """
-    params = ['prob', 'norm', 'lamb', 'solver', 'max_iter', 'clip_values']
+    params = ['prob', 'norm', 'lamb', 'solver', 'max_iter', 'clip_values', '_apply_fit', '_apply_predict']
 
-    def __init__(self, prob=0.3, norm=2, lamb=0.5, solver='L-BFGS-B', max_iter=10, clip_values=(0, 1)):
+    def __init__(self, prob=0.3, norm=2, lamb=0.5, solver='L-BFGS-B', max_iter=10, clip_values=None, apply_fit=False,
+                 apply_predict=True):
         """
         Create an instance of total variance minimization.
 
@@ -52,18 +53,23 @@ class TotalVarMin(Preprocessor):
         :param clip_values: Tuple of the form `(min, max)` representing the minimum and maximum values allowed
                for features.
         :type clip_values: `tuple`
+        :param apply_fit: True if applied during fitting/training.
+        :type apply_fit: `bool`
+        :param apply_predict: True if applied during predicting.
+        :type apply_predict: `bool`
         """
         super(TotalVarMin, self).__init__()
         self._is_fitted = True
-        self.set_params(prob=prob, norm=norm, lamb=lamb, solver=solver, max_iter=max_iter, clip_values=clip_values)
+        self.set_params(prob=prob, norm=norm, lamb=lamb, solver=solver, max_iter=max_iter, clip_values=clip_values,
+                        _apply_fit=apply_fit, _apply_predict=apply_predict)
 
     @property
     def apply_fit(self):
-        return False
+        return self._apply_fit
 
     @property
     def apply_predict(self):
-        return True
+        return self._apply_predict
 
     def __call__(self, x, y=None):
         """
@@ -87,7 +93,7 @@ class TotalVarMin(Preprocessor):
             mask = (np.random.rand(*xi.shape) < self.prob).astype('int')
             x_preproc[i] = self._minimize(xi, mask)
 
-        if hasattr(self, 'clip_values') and self.clip_values is not None:
+        if self.clip_values is not None:
             np.clip(x_preproc, self.clip_values[0], self.clip_values[1], out=x_preproc)
 
         return x_preproc.astype(NUMPY_DTYPE), y
@@ -213,6 +219,10 @@ class TotalVarMin(Preprocessor):
         :param clip_values: Tuple of the form `(min, max)` representing the minimum and maximum values allowed
                for features.
         :type clip_values: `tuple`
+        :param apply_fit: True if applied during fitting/training.
+        :type apply_fit: `bool`
+        :param apply_predict: True if applied during predicting.
+        :type apply_predict: `bool`
         """
         # Save defence-specific parameters
         super(TotalVarMin, self).set_params(**kwargs)
@@ -233,9 +243,12 @@ class TotalVarMin(Preprocessor):
             logger.error('Number of iterations must be a positive integer.')
             raise ValueError('Number of iterations must be a positive integer.')
 
-        if len(self.clip_values) != 2:
-            raise ValueError('`clip_values` should be a tuple of 2 floats containing the allowed data range.')
-        if np.array(self.clip_values[0] >= self.clip_values[1]).any():
-            raise ValueError('Invalid `clip_values`: min >= max.')
+        if self.clip_values is not None:
+
+            if len(self.clip_values) != 2:
+                raise ValueError('`clip_values` should be a tuple of 2 floats containing the allowed data range.')
+
+            if np.array(self.clip_values[0] >= self.clip_values[1]).any():
+                raise ValueError('Invalid `clip_values`: min >= max.')
 
         return True
