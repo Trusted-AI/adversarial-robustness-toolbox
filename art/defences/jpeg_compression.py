@@ -85,11 +85,7 @@ class JpegCompression(Preprocessor):
             raise ValueError('Channel index does not match input shape.')
 
         if np.min(x) < 0.0:
-            raise ValueError('Negative values in input `x` detected. The JPEG compression defence required unnormalized'
-                             'input.')
-
-        if np.max(x) < 0.0:
-            raise ValueError('Negative values in input `x` detected. The JPEG compression defence required unnormalized'
+            raise ValueError('Negative values in input `x` detected. The JPEG compression defence requires unnormalized'
                              'input.')
 
         # Swap channel index
