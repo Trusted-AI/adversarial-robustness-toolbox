@@ -25,9 +25,8 @@ class TestXGBoostClassifier(unittest.TestCase):
         cls.y_test = np.argmax(y_test, axis=1)
 
         model = CatBoostClassifier(custom_loss=['Accuracy'], random_seed=42, logging_level='Silent')
-        model.fit(cls.x_train, cls.y_train, cat_features=None, eval_set=(cls.x_train, cls.y_train))
-
         cls.classifier = CatBoostARTClassifier(model=model)
+        cls.classifier.fit(cls.x_train, cls.y_train, cat_features=[], eval_set=[])
 
     def test_predict(self):
         y_predicted = (self.classifier.predict(self.x_test[0:1]))
