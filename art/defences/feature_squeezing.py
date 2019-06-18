@@ -101,7 +101,6 @@ class FeatureSqueezing(Preprocessor):
         :type apply_fit: `bool`
         :param apply_predict: True if applied during predicting.
         :type apply_predict: `bool`
-
         """
         # Save defence-specific parameters
         super(FeatureSqueezing, self).set_params(**kwargs)
