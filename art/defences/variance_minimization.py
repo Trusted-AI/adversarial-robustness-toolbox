@@ -244,6 +244,7 @@ class TotalVarMin(Preprocessor):
             raise ValueError('Number of iterations must be a positive integer.')
 
         if self.clip_values is not None:
+
             if len(self.clip_values) != 2:
                 raise ValueError('`clip_values` should be a tuple of 2 floats containing the allowed data range.')
 
