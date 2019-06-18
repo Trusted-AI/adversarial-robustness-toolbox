@@ -146,6 +146,7 @@ class GaussianAugmentation(Preprocessor):
                              " must be `False`.")
 
         if self.clip_values is not None:
+
             if len(self.clip_values) != 2:
                 raise ValueError('`clip_values` should be a tuple of 2 floats or arrays containing the allowed'
                                  'data range.')
