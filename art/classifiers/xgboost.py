@@ -94,7 +94,7 @@ class XGBoostClassifier(Classifier):
         :param nb_epochs: Number of epochs to use for training. Not used in this function.
         :type nb_epochs: `int`
         :param kwargs: Dictionary of framework-specific arguments. These should be parameters supported by the
-               `fit` function in `sklearn.linear_model.LogisticRegression` and will be passed to this function as such.
+               `fit` function in `xgboost.Booster` and will be passed to this function as such.
         :type kwargs: `dict`
         :return: `None`
         """
@@ -130,7 +130,11 @@ class XGBoostClassifier(Classifier):
         :rtype: `np.ndarray`
         """
         from xgboost import DMatrix
-        train_data = DMatrix(x, label=None)
+
+        # Apply defences
+        x_preprocessed, _ = self._apply_preprocessing(x, y=None, fit=False)
+
+        train_data = DMatrix(x_preprocessed, label=None)
         predictions = self.model.predict(train_data)
         return np.asarray([line for line in predictions])
 
