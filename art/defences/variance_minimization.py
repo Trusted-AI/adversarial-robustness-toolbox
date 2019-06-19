@@ -89,9 +89,9 @@ class TotalVarMin(Preprocessor):
         x_preproc = x.copy()
 
         # Minimize one input at a time
-        for i, xi in enumerate(x_preproc):
-            mask = (np.random.rand(*xi.shape) < self.prob).astype('int')
-            x_preproc[i] = self._minimize(xi, mask)
+        for i, x_i in enumerate(x_preproc):
+            mask = (np.random.rand(*x_i.shape) < self.prob).astype('int')
+            x_preproc[i] = self._minimize(x_i, mask)
 
         if self.clip_values is not None:
             np.clip(x_preproc, self.clip_values[0], self.clip_values[1], out=x_preproc)
