@@ -7,4 +7,5 @@ torch==0.4.0
 tensorflow
 xgboost
 lightgbm
-catboost
+# Comment out because of compatibility issues with numpy versions
+# catboost
