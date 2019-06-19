@@ -53,7 +53,12 @@ class ScikitlearnClassifier(Classifier):
                                                     defences=defences, preprocessing=preprocessing)
 
         self.model = model
-        self._input_shape = None
+        if hasattr(self.model, 'n_features_'):
+            self._input_shape = (self.model.n_features_,)
+        elif hasattr(self.model, 'feature_importances_'):
+            self._input_shape = (len(self.model.feature_importances_),)
+        else:
+            self._input_shape = None
 
     def class_gradient(self, x, label=None, logits=False):
         """
@@ -92,7 +97,14 @@ class ScikitlearnClassifier(Classifier):
         :type kwargs: `dict`
         :return: `None`
         """
+        y = np.argmax(y, axis=1)
+
         self.model.fit(x, y)
+
+        if hasattr(self.model, 'n_features_'):
+            self._input_shape = (self.model.n_features_,)
+        elif hasattr(self.model, 'feature_importances_'):
+            self._input_shape = (len(self.model.feature_importances_),)
 
     def get_activations(self, x, layer, batch_size):
         raise NotImplementedError
@@ -201,8 +213,6 @@ class ScikitlearnExtraTreeClassifier(ScikitlearnClassifier):
                                                              channel_index=channel_index, defences=defences,
                                                              preprocessing=preprocessing)
 
-        self._input_shape = (self.model.n_features_,)
-
 
 class ScikitlearnAdaBoostClassifier(ScikitlearnClassifier):
     """
@@ -236,8 +246,6 @@ class ScikitlearnAdaBoostClassifier(ScikitlearnClassifier):
         super(ScikitlearnAdaBoostClassifier, self).__init__(model=model, clip_values=clip_values,
                                                             channel_index=channel_index, defences=defences,
                                                             preprocessing=preprocessing)
-
-        self._input_shape = (len(model.feature_importances_),)
 
 
 class ScikitlearnBaggingClassifier(ScikitlearnClassifier):
@@ -273,8 +281,6 @@ class ScikitlearnBaggingClassifier(ScikitlearnClassifier):
                                                            channel_index=channel_index, defences=defences,
                                                            preprocessing=preprocessing)
 
-        self._input_shape = (self.model.n_features_,)
-
 
 class ScikitlearnExtraTreesClassifier(ScikitlearnClassifier):
     """
@@ -308,8 +314,6 @@ class ScikitlearnExtraTreesClassifier(ScikitlearnClassifier):
         super(ScikitlearnExtraTreesClassifier, self).__init__(model=model, clip_values=clip_values,
                                                               channel_index=channel_index, defences=defences,
                                                               preprocessing=preprocessing)
-
-        self._input_shape = (self.model.n_features_,)
 
 
 class ScikitlearnGradientBoostingClassifier(ScikitlearnClassifier):
@@ -345,8 +349,6 @@ class ScikitlearnGradientBoostingClassifier(ScikitlearnClassifier):
                                                                     channel_index=channel_index, defences=defences,
                                                                     preprocessing=preprocessing)
 
-        self._input_shape = (self.model.n_features_,)
-
 
 class ScikitlearnRandomForestClassifier(ScikitlearnClassifier):
     """
@@ -380,8 +382,6 @@ class ScikitlearnRandomForestClassifier(ScikitlearnClassifier):
         super(ScikitlearnRandomForestClassifier, self).__init__(model=model, clip_values=clip_values,
                                                                 channel_index=channel_index, defences=defences,
                                                                 preprocessing=preprocessing)
-
-        self._input_shape = (self.model.n_features_,)
 
 
 class ScikitlearnLogisticRegression(ScikitlearnClassifier):
@@ -581,7 +581,7 @@ class ScikitlearnSVC(ScikitlearnClassifier):
 
         scikit_version = model.__getstate__()['_sklearn_version'].split('.')
 
-        if scikit_version[0] == 0 and scikit_version[1] not in  [20, 21]:
+        if scikit_version[0] == 0 and scikit_version[1] not in [20, 21]:
             raise Exception('Untested version of sci-kit-learn, please use scikit-learn v0.20.x')
 
         super(ScikitlearnSVC, self).__init__(clip_values=clip_values, channel_index=channel_index,
