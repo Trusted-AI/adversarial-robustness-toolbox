@@ -90,50 +90,50 @@ class JpegCompression(Preprocessor):
 
         # Swap channel index
         if self.channel_index < 3 and len(x.shape) == 4:
-            x_ = np.swapaxes(x, self.channel_index, 3)
+            x_local = np.swapaxes(x, self.channel_index, 3)
         else:
-            x_ = x.copy()
+            x_local = x.copy()
 
         # Convert into `uint8`
         if self.clip_values[1] == 1.0:
-            x_ = x_ * 255
-        x_ = x_.astype("uint8")
+            x_local = x_local * 255
+        x_local = x_local.astype("uint8")
 
         # Convert to 'L' mode
-        if x_.shape[-1] == 1:
-            x_ = np.reshape(x_, x_.shape[:-1])
+        if x_local.shape[-1] == 1:
+            x_local = np.reshape(x_local, x_local.shape[:-1])
 
         # Compress one image at a time
-        for i, xi in enumerate(x_):
-            if len(xi.shape) == 2:
-                xi = Image.fromarray(xi, mode='L')
-            elif xi.shape[-1] == 3:
-                xi = Image.fromarray(xi, mode='RGB')
+        for i, x_i in enumerate(x_local):
+            if len(x_i.shape) == 2:
+                x_i = Image.fromarray(x_i, mode='L')
+            elif x_i.shape[-1] == 3:
+                x_i = Image.fromarray(x_i, mode='RGB')
             else:
                 logger.log(level=40, msg="Currently only support `RGB` and `L` images.")
                 raise NotImplementedError("Currently only support `RGB` and `L` images.")
 
             out = BytesIO()
-            xi.save(out, format="jpeg", quality=self.quality)
-            xi = Image.open(out)
-            xi = np.array(xi)
-            x_[i] = xi
+            x_i.save(out, format="jpeg", quality=self.quality)
+            x_i = Image.open(out)
+            x_i = np.array(x_i)
+            x_local[i] = x_i
             del out
 
         # Expand dim if black/white images
-        if len(x_.shape) < 4:
-            x_ = np.expand_dims(x_, 3)
+        if len(x_local.shape) < 4:
+            x_local = np.expand_dims(x_local, 3)
 
         # Convert to old dtype
         if self.clip_values[1] == 1.0:
-            x_ = x_ / 255.0
-        x_ = x_.astype(NUMPY_DTYPE)
+            x_local = x_local / 255.0
+        x_local = x_local.astype(NUMPY_DTYPE)
 
         # Swap channel index
         if self.channel_index < 3:
-            x_ = np.swapaxes(x_, self.channel_index, 3)
+            x_local = np.swapaxes(x_local, self.channel_index, 3)
 
-        return x_, y
+        return x_local, y
 
     def estimate_gradient(self, x, grad):
         return grad

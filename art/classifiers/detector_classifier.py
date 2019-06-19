@@ -52,7 +52,7 @@ class DetectorClassifier(Classifier):
         :rtype: `np.ndarray`
         """
         # Apply preprocessing
-        x_defences, _, _ = self._apply_preprocessing(x, y=None, fit=False)
+        x_defences, _ = self._apply_preprocessing(x, y=None, fit=False)
 
         # Compute the prediction logits
         classifier_logits = self.classifier.predict(x=x_defences, logits=True, batch_size=batch_size)
@@ -126,7 +126,7 @@ class DetectorClassifier(Classifier):
             raise ValueError('Label %s is out of range.' % label)
 
         # Apply preprocessing
-        x_defences, _, x_preproc = self._apply_preprocessing(x, y=None, fit=False)
+        x_defences, _ = self._apply_preprocessing(x, y=None, fit=False)
 
         # Compute the gradient and return
         if logits:
@@ -264,7 +264,7 @@ class DetectorClassifier(Classifier):
                 grads = grads[np.arange(len(grads)), lst]
                 combined_grads = np.expand_dims(grads, axis=1)
 
-        combined_grads = self._apply_preprocessing_gradient(x_preproc, combined_grads)
+        combined_grads = self._apply_preprocessing_gradient(x, combined_grads)
 
         return combined_grads
 
