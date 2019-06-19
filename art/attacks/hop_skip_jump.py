@@ -36,7 +36,7 @@ class HopSkipJump(Attack):
     attack_params = Attack.attack_params + ['targeted', 'norm', 'max_iter', 'max_eval',
                                             'init_eval', 'init_size', 'curr_iter']
 
-    def __init__(self, classifier, targeted=True, norm=2, max_iter=50, max_eval=1e4, init_eval=1e2, init_size=100):
+    def __init__(self, classifier, targeted=True, norm=2, max_iter=50, max_eval=10000, init_eval=100, init_size=100):
         """
         Create a HopSkipJump attack instance.
 
@@ -65,6 +65,12 @@ class HopSkipJump(Attack):
                   'curr_iter': 0,
                   }
         self.set_params(**params)
+
+        # Set binary search threshold
+        if norm == 2:
+            self.theta = 0.01 / np.sqrt(np.prod(self.classifier.input_shape))
+        else:
+            self.theta = 0.01 / np.prod(self.classifier.input_shape)
 
     def generate(self, x, y=None, x_adv_init=None):
         """
