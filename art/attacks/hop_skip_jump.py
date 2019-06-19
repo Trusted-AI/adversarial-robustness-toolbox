@@ -33,7 +33,8 @@ class HopSkipJump(Attack):
     only requires final class prediction, and is an advanced version of the boundary attack.
     Paper link: https://arxiv.org/abs/1904.02144
     """
-    attack_params = Attack.attack_params + ['targeted', 'norm', 'max_iter', 'max_eval', 'init_eval', 'init_size']
+    attack_params = Attack.attack_params + ['targeted', 'norm', 'max_iter', 'max_eval',
+                                            'init_eval', 'init_size', 'curr_iter']
 
     def __init__(self, classifier, targeted=True, norm=2, max_iter=50, max_eval=1e4, init_eval=1e2, init_size=100):
         """
@@ -112,7 +113,7 @@ class HopSkipJump(Attack):
                 x_adv[ind] = self._perturb(x=val, y=-1, y_p=preds[ind], init_pred=init_preds[ind],
                                            adv_init=x_adv_init[ind], clip_min=clip_min, clip_max=clip_max)
 
-        logger.info('Success rate of Boundary attack: %.2f%%',
+        logger.info('Success rate of HopSkipJump attack: %.2f%%',
                     (np.sum(preds != np.argmax(self.classifier.predict(x_adv), axis=1)) / x.shape[0]))
 
         return x_adv
@@ -149,82 +150,6 @@ class HopSkipJump(Attack):
         x_adv = self._attack(initial_sample[0], x, initial_sample[1], clip_min, clip_max)
 
         return x_adv
-
-    def _attack(self, initial_sample, original_sample, target, clip_min, clip_max):
-        """
-        Main function for the boundary attack.
-
-        :param initial_sample: An initial adversarial example.
-        :type initial_sample: `np.ndarray`
-        :param original_sample: The original input.
-        :type original_sample: `np.ndarray`
-        :param target: The target label.
-        :type target: `int`
-        :param clip_min: Minimum value of an example.
-        :type clip_min: `float`
-        :param clip_max: Maximum value of an example.
-        :type clip_max: `float`
-        :return: an adversarial example.
-        :rtype: `np.ndarray`
-        """
-        # Main loop to wander around the boundary
-        for _ in range(self.max_iter):
-
-        return x_adv
-
-    def _compute_delta(self, current_sample, original_sample, clip_min, clip_max):
-        """
-        Compute the delta parameter.
-
-        :param current_sample: Current adversarial example.
-        :type current_sample: `np.ndarray`
-        :param original_sample: The original input.
-        :type original_sample: `np.ndarray`
-        :param clip_min: Minimum value of an example.
-        :type clip_min: `float`
-        :param clip_max: Maximum value of an example.
-        :type clip_max: `float`
-        :return: Delta value.
-        :rtype: `float`
-        """
-        # Note: This is a bit different from the original paper, instead we keep those that are
-        # implemented in the original source code of the authors
-        if self.curr_iter == 0:
-            return 0.1 * (clip_max - clip_min)
-
-        if self.norm == 2:
-            dist = np.linalg.norm(original_sample - current_sample)
-            delta = np.sqrt(np.prod(self.classifier.input_shape)) * self.theta * dist
-        else:
-            dist = np.max(abs(original_sample - current_sample))
-            delta = np.prod(self.classifier.input_shape) * self.theta * dist
-
-        return delta
-
-    def _adversarial_satisfactory(self, samples, target, clip_min, clip_max):
-        """
-        Check whether an image is adversarial.
-
-        :param samples: A batch of examples.
-        :type samples: `np.ndarray`
-        :param target: The target label.
-        :type target: `int`
-        :param clip_min: Minimum value of an example.
-        :type clip_min: `float`
-        :param clip_max: Maximum value of an example.
-        :type clip_max: `float`
-        :return: An array of 0/1.
-        :rtype: `np.ndarray`
-        """
-        samples = np.clip(samples, clip_min, clip_max)
-        preds = np.argmax(self.classifier.predict(samples), axis=1)
-
-        if self.targeted:
-            result = (preds == target)
-        else:
-            result = (preds != target)
-
-        return result
 
     def _init_sample(self, x, y, y_p, init_pred, adv_init, clip_min, clip_max):
         """
@@ -304,6 +229,143 @@ class HopSkipJump(Attack):
 
         return initial_sample
 
+    def _attack(self, initial_sample, original_sample, target, clip_min, clip_max):
+        """
+        Main function for the boundary attack.
+
+        :param initial_sample: An initial adversarial example.
+        :type initial_sample: `np.ndarray`
+        :param original_sample: The original input.
+        :type original_sample: `np.ndarray`
+        :param target: The target label.
+        :type target: `int`
+        :param clip_min: Minimum value of an example.
+        :type clip_min: `float`
+        :param clip_max: Maximum value of an example.
+        :type clip_max: `float`
+        :return: an adversarial example.
+        :rtype: `np.ndarray`
+        """
+        # Set current perturbed image to the initial image
+        current_sample = initial_sample
+
+        # Main loop to wander around the boundary
+        for _ in range(self.max_iter):
+            # First compute delta
+            delta = self._compute_delta(current_sample=current_sample, original_sample=original_sample,
+                                        clip_min=clip_min, clip_max=clip_max)
+
+            # Then run binary search
+            current_sample = self._binary_search(current_sample=current_sample, original_sample=original_sample,
+                                                 target=target, clip_min=clip_min, clip_max=clip_max)
+
+            # Next compute the number of evaluations and compute the update
+            num_eval = min(int(self.init_eval * np.sqrt(self.curr_iter + 1)), self.max_eval)
+            update = self._compute_update(current_sample=current_sample, num_eval=num_eval, delta=delta,
+                                          target=target, clip_min=clip_min, clip_max=clip_max)
+
+            # Finally run step size search by first computing epsilon
+            if self.norm == 2:
+                dist = np.linalg.norm(original_sample - current_sample)
+            else:
+                dist = np.max(abs(original_sample - current_sample))
+
+            epsilon = 2.0 * dist / np.sqrt(self.curr_iter + 1)
+            success = False
+
+            while not success:
+                epsilon /= 2.0
+                potential_sample = current_sample + epsilon * update
+                success = self._adversarial_satisfactory(samples=potential_sample[None], target=target,
+                                                         clip_min=clip_min, clip_max=clip_max)
+
+            # Update current sample
+            current_sample = np.clip(potential_sample, clip_min, clip_max)
+
+            # Update current iteration
+            self.curr_iter += 1
+
+        return current_sample
+
+    def _binary_search(self, current_sample, original_sample, target, clip_min, clip_max, threshold=None):
+        """
+        Binary search to approach the boundary.
+
+        :param current_sample: Current adversarial example.
+        :type current_sample: `np.ndarray`
+        :param original_sample: The original input.
+        :type original_sample: `np.ndarray`
+        :param target: The target label.
+        :type target: `int`
+        :param clip_min: Minimum value of an example.
+        :type clip_min: `float`
+        :param clip_max: Maximum value of an example.
+        :type clip_max: `float`
+        :param threshold: The upper threshold in binary search.
+        :type threshold: `float`
+        :return: an adversarial example.
+        :rtype: `np.ndarray`
+        """
+        # First set upper and lower bounds as well as the threshold for the binary search
+        if self.norm == 2:
+            (upper_bound, lower_bound) = (1, 0)
+
+            if threshold is None:
+                threshold = self.theta
+
+        else:
+            (upper_bound, lower_bound) = (np.max(abs(original_sample - current_sample)), 0)
+
+            if threshold is None:
+                threshold = np.min(upper_bound * self.theta, self.theta)
+
+        # Then start the binary search
+        while (upper_bound - lower_bound) > threshold:
+            # Interpolation point
+            alpha = (upper_bound + lower_bound) / 2.0
+            interpolated_sample = self._interpolate(current_sample=current_sample,
+                                                    original_sample=original_sample,
+                                                    alpha=alpha)
+
+            # Update upper_bound and lower_bound
+            satisfied = self._adversarial_satisfactory(samples=interpolated_sample[None], target=target,
+                                                       clip_min=clip_min, clip_max=clip_max)[0]
+            lower_bound = np.where(satisfied == 0, alpha, lower_bound)
+            upper_bound = np.where(satisfied == 1, alpha, upper_bound)
+
+        result = self._interpolate(current_sample=current_sample, original_sample=original_sample, alpha=upper_bound)
+
+        return result
+
+    def _compute_delta(self, current_sample, original_sample, clip_min, clip_max):
+        """
+        Compute the delta parameter.
+
+        :param current_sample: Current adversarial example.
+        :type current_sample: `np.ndarray`
+        :param original_sample: The original input.
+        :type original_sample: `np.ndarray`
+        :param clip_min: Minimum value of an example.
+        :type clip_min: `float`
+        :param clip_max: Maximum value of an example.
+        :type clip_max: `float`
+        :return: Delta value.
+        :rtype: `float`
+        """
+        # Note: This is a bit different from the original paper, instead we keep those that are
+        # implemented in the original source code of the authors
+        if self.curr_iter == 0:
+            return 0.1 * (clip_max - clip_min)
+
+        if self.norm == 2:
+            dist = np.linalg.norm(original_sample - current_sample)
+            delta = np.sqrt(np.prod(self.classifier.input_shape)) * self.theta * dist
+        else:
+            dist = np.max(abs(original_sample - current_sample))
+            delta = np.prod(self.classifier.input_shape) * self.theta * dist
+
+        return delta
+
     def _compute_update(self, current_sample, num_eval, delta, target, clip_min, clip_max):
         """
         Compute the update in Eq.(14).
@@ -357,6 +419,31 @@ class HopSkipJump(Attack):
 
         return result
 
+    def _adversarial_satisfactory(self, samples, target, clip_min, clip_max):
+        """
+        Check whether an image is adversarial.
+
+        :param samples: A batch of examples.
+        :type samples: `np.ndarray`
+        :param target: The target label.
+        :type target: `int`
+        :param clip_min: Minimum value of an example.
+        :type clip_min: `float`
+        :param clip_max: Maximum value of an example.
+        :type clip_max: `float`
+        :return: An array of 0/1.
+        :rtype: `np.ndarray`
+        """
+        samples = np.clip(samples, clip_min, clip_max)
+        preds = np.argmax(self.classifier.predict(samples), axis=1)
+
+        if self.targeted:
+            result = (preds == target)
+        else:
+            result = (preds != target)
+
+        return result
+
     def _interpolate(self, current_sample, original_sample, alpha):
         """
         Interpolate a new sample based on the original and the current samples.
@@ -374,56 +461,6 @@ class HopSkipJump(Attack):
             result = (1 - alpha) * original_sample + alpha * current_sample
         else:
             result = np.clip(current_sample, original_sample - alpha, original_sample + alpha)
-
-        return result
-
-    def _binary_search(self, current_sample, original_sample, target, clip_min, clip_max, threshold=None):
-        """
-        Binary search to approach the boundary.
-
-        :param current_sample: Current adversarial example.
-        :type current_sample: `np.ndarray`
-        :param original_sample: The original input.
-        :type original_sample: `np.ndarray`
-        :param target: The target label.
-        :type target: `int`
-        :param clip_min: Minimum value of an example.
-        :type clip_min: `float`
-        :param clip_max: Maximum value of an example.
-        :type clip_max: `float`
-        :param threshold: The upper threshold in binary search.
-        :type threshold: `float`
-        :return: an adversarial example.
-        :rtype: `np.ndarray`
-        """
-        # First set upper and lower bounds as well as the threshold for the binary search
-        if self.norm == 2:
-            (upper_bound, lower_bound) = (1, 0)
-
-            if threshold is None:
-                threshold = self.theta
-
-        else:
-            (upper_bound, lower_bound) = (np.max(abs(original_sample - current_sample)), 0)
-
-            if threshold is None:
-                threshold = np.min(upper_bound * self.theta, self.theta)
-
-        # Then start the binary search
-        while (upper_bound - lower_bound) > threshold:
-            # Interpolation point
-            alpha = (upper_bound + lower_bound) / 2.0
-            interpolated_sample = self._interpolate(current_sample=current_sample,
-                                                    original_sample=original_sample,
-                                                    alpha=alpha)
-
-            # Update upper_bound and lower_bound
-            satisfied = self._adversarial_satisfactory(samples=interpolated_sample[None], target=target,
-                                                       clip_min=clip_min, clip_max=clip_max)[0]
-            lower_bound = np.where(satisfied == 0, alpha, lower_bound)
-            upper_bound = np.where(satisfied == 1, alpha, upper_bound)
-
-        result = self._interpolate(current_sample=current_sample, original_sample=original_sample, alpha=upper_bound)
 
         return result
 
