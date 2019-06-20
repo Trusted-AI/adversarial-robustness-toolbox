@@ -13,7 +13,6 @@ from art.utils import load_mnist, master_seed
 
 logger = logging.getLogger('testLogger')
 
-
 NB_TRAIN = 1000
 NB_TEST = 20
 
@@ -45,6 +44,7 @@ class TestPyTorchClassifier(unittest.TestCase):
     """
     This class tests the functionalities of the PyTorch-based classifier.
     """
+
     @classmethod
     def setUpClass(cls):
         # Get MNIST
@@ -184,7 +184,7 @@ class TestPyTorchClassifier(unittest.TestCase):
         for i, name in enumerate(layer_names):
             act_i = ptc.get_activations(x_test, i, batch_size=5)
             act_name = ptc.get_activations(x_test, name, batch_size=5)
-            self.assertTrue(np.sum(act_name-act_i) == 0)
+            self.assertTrue(np.sum(act_name - act_i) == 0)
 
         self.assertTrue(ptc.get_activations(x_test, 0, batch_size=5).shape == (20, 16, 24, 24))
         self.assertTrue(ptc.get_activations(x_test, 1, batch_size=5).shape == (20, 16, 24, 24))
@@ -237,10 +237,10 @@ class TestPyTorchClassifier(unittest.TestCase):
 
         # Unpickle:
         with open(full_path, 'rb') as f:
-             loaded = pickle.load(f)
-             self.assertTrue(self.module_classifier._clip_values == loaded._clip_values)
-             self.assertTrue(self.module_classifier._channel_index == loaded._channel_index)
-             self.assertTrue(self.module_classifier.__dict__.keys() == loaded.__dict__.keys())
+            loaded = pickle.load(f)
+            self.assertTrue(self.module_classifier._clip_values == loaded._clip_values)
+            self.assertTrue(self.module_classifier._channel_index == loaded._channel_index)
+            self.assertTrue(self.module_classifier.__dict__.keys() == loaded.__dict__.keys())
 
         # Get MNIST
         (_, _), (x_test, y_test) = self.mnist
@@ -255,4 +255,3 @@ class TestPyTorchClassifier(unittest.TestCase):
 
 if __name__ == '__main__':
     unittest.main()
-

@@ -15,7 +15,6 @@ from art.utils import load_mnist, master_seed
 
 logger = logging.getLogger('testLogger')
 
-
 NB_TRAIN = 1000
 NB_TEST = 2
 
@@ -47,6 +46,7 @@ class TestDetectorClassifier(unittest.TestCase):
     """
     This class tests the functionalities of the DetectorClassifier.
     """
+
     @classmethod
     def setUpClass(cls):
         # Get MNIST
