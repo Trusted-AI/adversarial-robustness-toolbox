@@ -187,7 +187,7 @@ class TestTFClassifier(unittest.TestCase):
             loaded = pickle.load(f)
             self.assertTrue(self.classifier._clip_values == loaded._clip_values)
             self.assertTrue(self.classifier._channel_index == loaded._channel_index)
-            self.assertTrue(self.classifier.__dict__.keys() == loaded.__dict__.keys())
+            self.assertTrue(set(self.classifier.__dict__.keys()) == set(loaded.__dict__.keys()))
 
         # Test predict
         preds1 = self.classifier.predict(x_test)

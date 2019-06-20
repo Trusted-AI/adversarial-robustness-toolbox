@@ -240,7 +240,7 @@ class TestPyTorchClassifier(unittest.TestCase):
             loaded = pickle.load(f)
             self.assertTrue(self.module_classifier._clip_values == loaded._clip_values)
             self.assertTrue(self.module_classifier._channel_index == loaded._channel_index)
-            self.assertTrue(self.module_classifier.__dict__.keys() == loaded.__dict__.keys())
+            self.assertTrue(set(self.module_classifier.__dict__.keys()) == set(loaded.__dict__.keys()))
 
         # Get MNIST
         (_, _), (x_test, y_test) = self.mnist
