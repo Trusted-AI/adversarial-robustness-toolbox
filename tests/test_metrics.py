@@ -72,7 +72,7 @@ class TestMetrics(unittest.TestCase):
         params = {"eps_step": 0.1,
                   "eps": 0.2}
         emp_robust = empirical_robustness(classifier, x_train, str('fgsm'), params)
-        self.assertLessEqual(emp_robust, 0.55)
+        self.assertLessEqual(emp_robust, 0.65)
 
     def test_loss_sensitivity(self):
         # Get MNIST
