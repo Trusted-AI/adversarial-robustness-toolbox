@@ -28,7 +28,6 @@ from art.wrappers.query_efficient_bb import QueryEfficientBBGradientEstimation
 from art.classifiers import KerasClassifier
 from art.defences import FeatureSqueezing
 from art.utils import load_dataset, get_classifier_kr, get_iris_classifier_kr, get_labels_np_array, master_seed
-from art.utils import random_targets
 
 logger = logging.getLogger('testLogger')
 
