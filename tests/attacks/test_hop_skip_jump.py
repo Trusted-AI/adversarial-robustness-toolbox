@@ -32,7 +32,7 @@ from art.utils import get_iris_classifier_tf, get_iris_classifier_kr, get_iris_c
 logger = logging.getLogger('testLogger')
 
 NB_TRAIN = 100
-NB_TEST = 20
+NB_TEST = 10
 
 
 class TestHopSkipJump(unittest.TestCase):
@@ -63,7 +63,7 @@ class TestHopSkipJump(unittest.TestCase):
         (_, _), (x_test, y_test) = self.mnist
 
         # First targeted attack
-        hsj = HopSkipJump(classifier=tfc, targeted=True, max_iter=20)
+        hsj = HopSkipJump(classifier=tfc, targeted=True, max_iter=2, max_eval=100, init_eval=10)
         params = {'y': random_targets(y_test, tfc.nb_classes)}
         x_test_adv = hsj.generate(x_test, **params)
 
@@ -76,7 +76,7 @@ class TestHopSkipJump(unittest.TestCase):
         self.assertTrue((target == y_pred_adv).any())
 
         # Second untargeted attack
-        hsj = HopSkipJump(classifier=tfc, targeted=False, max_iter=20)
+        hsj = HopSkipJump(classifier=tfc, targeted=False, max_iter=2, max_eval=100, init_eval=10)
         x_test_adv = hsj.generate(x_test)
 
         self.assertFalse((x_test == x_test_adv).all())
@@ -103,7 +103,7 @@ class TestHopSkipJump(unittest.TestCase):
         (_, _), (x_test, y_test) = self.mnist
 
         # First targeted attack
-        hsj = HopSkipJump(classifier=krc, targeted=True, max_iter=20)
+        hsj = HopSkipJump(classifier=krc, targeted=True, max_iter=2, max_eval=100, init_eval=10)
         params = {'y': random_targets(y_test, krc.nb_classes)}
         x_test_adv = hsj.generate(x_test, **params)
 
@@ -116,7 +116,7 @@ class TestHopSkipJump(unittest.TestCase):
         self.assertTrue((target == y_pred_adv).any())
 
         # Second untargeted attack
-        hsj = HopSkipJump(classifier=krc, targeted=False, max_iter=20)
+        hsj = HopSkipJump(classifier=krc, targeted=False, max_iter=2, max_eval=100, init_eval=10)
         x_test_adv = hsj.generate(x_test)
 
         self.assertFalse((x_test == x_test_adv).all())
@@ -143,7 +143,7 @@ class TestHopSkipJump(unittest.TestCase):
         x_test = np.swapaxes(x_test, 1, 3)
 
         # First targeted attack
-        hsj = HopSkipJump(classifier=ptc, targeted=True, max_iter=20)
+        hsj = HopSkipJump(classifier=ptc, targeted=True, max_iter=2, max_eval=100, init_eval=10)
         params = {'y': random_targets(y_test, ptc.nb_classes)}
         x_test_adv = hsj.generate(x_test, **params)
 
@@ -156,7 +156,7 @@ class TestHopSkipJump(unittest.TestCase):
         self.assertTrue((target == y_pred_adv).any())
 
         # Second untargeted attack
-        hsj = HopSkipJump(classifier=ptc, targeted=False, max_iter=20)
+        hsj = HopSkipJump(classifier=ptc, targeted=False, max_iter=2, max_eval=100, init_eval=10)
         x_test_adv = hsj.generate(x_test)
 
         self.assertFalse((x_test == x_test_adv).all())
@@ -181,7 +181,7 @@ class TestHopSkipJumpVectors(unittest.TestCase):
     def test_iris_k_clipped(self):
         (_, _), (x_test, y_test) = self.iris
         classifier, _ = get_iris_classifier_kr()
-        attack = HopSkipJump(classifier, targeted=False, max_iter=10)
+        attack = HopSkipJump(classifier, targeted=False, max_iter=2, max_eval=100, init_eval=10)
         x_test_adv = attack.generate(x_test)
         self.assertFalse((x_test == x_test_adv).all())
         self.assertTrue((x_test_adv <= 1).all())
@@ -198,7 +198,7 @@ class TestHopSkipJumpVectors(unittest.TestCase):
 
         # Recreate a classifier without clip values
         classifier = KerasClassifier(model=classifier._model, use_logits=False, channel_index=1)
-        attack = HopSkipJump(classifier, targeted=False, max_iter=10)
+        attack = HopSkipJump(classifier, targeted=False, max_iter=2, max_eval=100, init_eval=10)
         x_test_adv = attack.generate(x_test)
         self.assertFalse((x_test == x_test_adv).all())
 
@@ -212,7 +212,7 @@ class TestHopSkipJumpVectors(unittest.TestCase):
         classifier, _ = get_iris_classifier_tf()
 
         # Test untargeted attack
-        attack = HopSkipJump(classifier, targeted=False, max_iter=10)
+        attack = HopSkipJump(classifier, targeted=False, max_iter=2, max_eval=100, init_eval=10)
         x_test_adv = attack.generate(x_test)
         self.assertFalse((x_test == x_test_adv).all())
         self.assertTrue((x_test_adv <= 1).all())
@@ -225,7 +225,7 @@ class TestHopSkipJumpVectors(unittest.TestCase):
 
         # Test targeted attack
         targets = random_targets(y_test, nb_classes=3)
-        attack = HopSkipJump(classifier, targeted=True, max_iter=10)
+        attack = HopSkipJump(classifier, targeted=True, max_iter=2, max_eval=100, init_eval=10)
         x_test_adv = attack.generate(x_test, **{'y': targets})
         self.assertFalse((x_test == x_test_adv).all())
         self.assertTrue((x_test_adv <= 1).all())
@@ -239,7 +239,7 @@ class TestHopSkipJumpVectors(unittest.TestCase):
     def test_iris_pt(self):
         (_, _), (x_test, y_test) = self.iris
         classifier = get_iris_classifier_pt()
-        attack = HopSkipJump(classifier, targeted=False, max_iter=10)
+        attack = HopSkipJump(classifier, targeted=False, max_iter=2, max_eval=100, init_eval=10)
         x_test_adv = attack.generate(x_test)
         self.assertFalse((x_test == x_test_adv).all())
         self.assertTrue((x_test_adv <= 1).all())
