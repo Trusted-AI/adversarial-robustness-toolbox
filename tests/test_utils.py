@@ -111,20 +111,20 @@ class TestUtils(unittest.TestCase):
         t = tuple(range(1, len(x.shape)))
         rand_sign = 1 - 2 * np.random.randint(0, 2, size=x.shape)
 
-        x_proj = projection(rand_sign*x, 3.14159, 1)
+        x_proj = projection(rand_sign * x, 3.14159, 1)
         self.assertEqual(x.shape, x_proj.shape)
         self.assertTrue(np.allclose(np.sum(np.abs(x_proj), axis=t), 3.14159, atol=10e-8))
 
-        x_proj = projection(rand_sign*x, 3.14159, 2)
+        x_proj = projection(rand_sign * x, 3.14159, 2)
         self.assertEqual(x.shape, x_proj.shape)
-        self.assertTrue(np.allclose(np.sqrt(np.sum(x_proj**2, axis=t)), 3.14159, atol=10e-8))
+        self.assertTrue(np.allclose(np.sqrt(np.sum(x_proj ** 2, axis=t)), 3.14159, atol=10e-8))
 
-        x_proj = projection(rand_sign*x, 0.314159, np.inf)
+        x_proj = projection(rand_sign * x, 0.314159, np.inf)
         self.assertEqual(x.shape, x_proj.shape)
         self.assertEqual(x_proj.min(), -0.314159)
         self.assertEqual(x_proj.max(), 0.314159)
 
-        x_proj = projection(rand_sign*x, 3.14159, np.inf)
+        x_proj = projection(rand_sign * x, 3.14159, np.inf)
         self.assertEqual(x.shape, x_proj.shape)
         self.assertEqual(x_proj.min(), -1.0)
         self.assertEqual(x_proj.max(), 1.0)
@@ -173,11 +173,11 @@ class TestUtils(unittest.TestCase):
         batch_size = 5
         x = np.random.rand(batch_size, 10, 10, 1)
         classifier = DummyClassifier()
-        preds = least_likely_class(x, classifier)
-        self.assertTrue(preds.shape == (batch_size, classifier.nb_classes))
+        predictions = least_likely_class(x, classifier)
+        self.assertTrue(predictions.shape == (batch_size, classifier.nb_classes))
 
-        expected_preds = np.array([[0, 0, 1, 0]] * batch_size)
-        self.assertTrue((preds == expected_preds).all())
+        expected_predictions = np.array([[0, 0, 1, 0]] * batch_size)
+        self.assertTrue((predictions == expected_predictions).all())
 
     def test_second_most_likely_class(self):
         class DummyClassifier:
@@ -186,17 +186,17 @@ class TestUtils(unittest.TestCase):
                 return 4
 
             def predict(self, x):
-                fake_preds = [0.1, 0.2, 0.05, 0.65]
-                return np.array([fake_preds] * x.shape[0])
+                fake_predictions = [0.1, 0.2, 0.05, 0.65]
+                return np.array([fake_predictions] * x.shape[0])
 
         batch_size = 5
         x = np.random.rand(batch_size, 10, 10, 1)
         classifier = DummyClassifier()
-        preds = second_most_likely_class(x, classifier)
-        self.assertTrue(preds.shape == (batch_size, classifier.nb_classes))
+        predictions = second_most_likely_class(x, classifier)
+        self.assertTrue(predictions.shape == (batch_size, classifier.nb_classes))
 
-        expected_preds = np.array([[0, 1, 0, 0]] * batch_size)
-        self.assertTrue((preds == expected_preds).all())
+        expected_predictions = np.array([[0, 1, 0, 0]] * batch_size)
+        self.assertTrue((predictions == expected_predictions).all())
 
     def test_get_label_conf(self):
         y = np.array([3, 1, 4, 1, 5, 9])

@@ -227,10 +227,11 @@ class TestActivationDefence(unittest.TestCase):
 
         # Other method (since it's cross validation we can't assert to a concrete number).
         improvement, _ = ActivationDefence.relabel_poison_cross_validation(self.classifier, x_poison,
-                                                          y_fix, n_splits=2,
-                                                          tolerable_backdoor=0.01,
-                                                          max_epochs=5, batch_epochs=10)
+                                                                           y_fix, n_splits=2,
+                                                                           tolerable_backdoor=0.01,
+                                                                           max_epochs=5, batch_epochs=10)
         self.assertGreaterEqual(improvement, 0)
+
 
 if __name__ == '__main__':
     unittest.main()

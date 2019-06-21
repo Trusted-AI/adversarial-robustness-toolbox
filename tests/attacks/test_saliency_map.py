@@ -219,6 +219,5 @@ class TestSaliencyMapVectors(unittest.TestCase):
         logger.info('Accuracy on Iris with JSMA adversarial examples: %.2f%%', (acc * 100))
 
 
-
 if __name__ == '__main__':
     unittest.main()
