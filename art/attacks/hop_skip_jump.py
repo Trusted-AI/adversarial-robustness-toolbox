@@ -212,7 +212,7 @@ class HopSkipJump(Attack):
         else:
             # The initial image satisfied
             if adv_init is not None and init_pred != y_p:
-                return adv_init.astype(NUMPY_DTYPE), init_pred
+                return adv_init.astype(NUMPY_DTYPE), y_p
 
             # The initial image unsatisfied
             for _ in range(self.init_size):
@@ -226,7 +226,7 @@ class HopSkipJump(Attack):
                     random_img = self._binary_search(current_sample=random_img, original_sample=x, target=y_p,
                                                      clip_min=clip_min, clip_max=clip_max, threshold=0.001)
                     self.norm = tmp_norm
-                    initial_sample = random_img, random_class
+                    initial_sample = random_img, y_p
 
                     logging.info('Found initial adversarial image for untargeted attack.')
                     break
@@ -399,7 +399,8 @@ class HopSkipJump(Attack):
             rnd_noise = np.random.uniform(low=-1, high=1, size=rnd_noise_shape)
 
         # Normalize random noise to fit into the range of input data
-        rnd_noise = rnd_noise / np.sqrt(np.sum(rnd_noise ** 2, axis=(1, 2, 3), keepdims=True))
+        rnd_noise = rnd_noise / np.sqrt(np.sum(rnd_noise ** 2, axis=tuple(range(len(rnd_noise_shape)))[1:],
+                                               keepdims=True))
         eval_samples = np.clip(current_sample + delta * rnd_noise, clip_min, clip_max)
         rnd_noise = (eval_samples - current_sample) / delta
 
