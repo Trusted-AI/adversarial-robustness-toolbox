@@ -1035,11 +1035,6 @@ class ScikitlearnSVC(ScikitlearnClassifier):
         if not isinstance(model, SVC) and not isinstance(model, LinearSVC):
             raise TypeError('Model must be of type sklearn.svm.SVC or sklearn.svm.LinearSVC')
 
-        scikit_version = model.__getstate__()['_sklearn_version'].split('.')
-
-        if scikit_version[0] == 0 and scikit_version[1] not in [20, 21]:
-            raise Exception('Untested version of sci-kit-learn, please use scikit-learn v0.20.x')
-
         super(ScikitlearnSVC, self).__init__(clip_values=clip_values, channel_index=channel_index,
                                              defences=defences, preprocessing=preprocessing)
 
@@ -1130,7 +1125,7 @@ class ScikitlearnSVC(ScikitlearnClassifier):
             if self.model.fit_status_:
                 raise AssertionError('Model has not been fitted correctly.')
 
-            if len(np.unique(y_index)) == 2:
+            if y_preprocessed.shape[1] == 2:
                 sign_multiplier = 1
             else:
                 sign_multiplier = -1
