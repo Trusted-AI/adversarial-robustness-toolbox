@@ -180,6 +180,13 @@ class TestScikitlearnLogisticRegression(unittest.TestCase):
         for i in range(4):
             self.assertAlmostEqual(grad_predicted[0, i], grad_expected[i], 4)
 
+    def test_class_gradient(self):
+        grad_predicted = self.classifier.class_gradient(x_test[0:1], y_test[0:1])
+        grad_expected = [0.6454806, 0.27053964, 1.5315429, 0.8058077]
+
+        for i in range(4):
+            self.assertAlmostEqual(grad_predicted[0, i], grad_expected[i], 4)
+
 
 class TestScikitlearnSVCSVC(unittest.TestCase):
 
