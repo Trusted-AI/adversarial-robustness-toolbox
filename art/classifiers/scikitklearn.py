@@ -1087,7 +1087,8 @@ class ScikitlearnSVC(ScikitlearnClassifier):
         if self.model.kernel == 'linear':
             grad = x_i
         elif self.model.kernel == 'poly':
-            grad = self.model.degree * (np.sum(x_sample * x_i) + self.model.coef0) ** (self.model.degree - 1) * x_i
+            grad = self.model.degree * (self.model._gamma * np.sum(x_sample * x_i) + self.model.coef0) ** (
+                    self.model.degree - 1) * x_i
         elif self.model.kernel == 'rbf':
             grad = 2 * self.model._gamma * (-1) * np.exp(-self.model._gamma * np.linalg.norm(x_sample - x_i, ord=2)) * (
                     x_sample - x_i)
