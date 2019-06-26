@@ -97,6 +97,8 @@ class AdversarialPatch(Attack):
 
         self.patch = (np.random.standard_normal(size=self.classifier.input_shape)) * 20.0
 
+        y_target = to_categorical(np.broadcast_to(np.array(self.target), x.shape[0]), self.classifier.nb_classes)
+
         for i_step in range(self.max_iter):
             if i_step == 0 or (i_step + 1) % 100 == 0:
                 logger.info('Training Step: %i', i_step + 1)
@@ -106,18 +108,24 @@ class AdversarialPatch(Attack):
                     self.patch[:, :, i_channel] = np.clip(self.patch[:, :, i_channel], a_min=a_min, a_max=a_max)
 
             patched_images, patch_mask_transformed, transforms = self._augment_images_with_random_patch(x, self.patch)
-            gradients = self.classifier.loss_gradient(patched_images,
-                                                      to_categorical(np.broadcast_to(np.array(self.target), x.shape[0]),
-                                                                     self.classifier.nb_classes))
+
+            num_batches = int(x.shape[0] / self.batch_size)
             patch_gradients = np.zeros_like(self.patch)
 
-            for i_batch in range(self.batch_size):
-                patch_gradients_i = self._reverse_transformation(gradients[i_batch, :, :, :],
-                                                                 patch_mask_transformed[i_batch, :, :, :],
-                                                                 transforms[i_batch])
-                patch_gradients += patch_gradients_i
+            for i_batch in range(num_batches):
+                i_batch_start = i_batch * self.batch_size
+                i_batch_end = (i_batch + 1) * self.batch_size
 
-            patch_gradients = patch_gradients / self.batch_size
+                gradients = self.classifier.loss_gradient(patched_images[i_batch_start:i_batch_end],
+                                                          y_target[i_batch_start:i_batch_end])
+
+                for i_image in range(self.batch_size):
+                    patch_gradients_i = self._reverse_transformation(gradients[i_image, :, :, :],
+                                                                     patch_mask_transformed[i_image, :, :, :],
+                                                                     transforms[i_image])
+                    patch_gradients += patch_gradients_i
+
+            patch_gradients = patch_gradients / (num_batches * self.batch_size)
             self.patch -= patch_gradients * self.learning_rate
 
         return self.patch, self._get_circular_patch_mask()
@@ -227,13 +235,13 @@ class AdversarialPatch(Attack):
         patched_images = list()
         patch_mask_transformed_list = list()
 
-        for i_batch in range(images.shape[0]):
+        for i_image in range(images.shape[0]):
             patch_transformed, patch_mask_transformed, transformation = self._random_transformation(patch, scale)
 
             inverted_patch_mask_transformed = (1 - patch_mask_transformed)
 
-            patched_image = images[i_batch, :, :, :] * inverted_patch_mask_transformed \
-                + patch_transformed * patch_mask_transformed
+            patched_image = images[i_image, :, :, :] * inverted_patch_mask_transformed \
+                            + patch_transformed * patch_mask_transformed
             patched_image = np.expand_dims(patched_image, axis=0)
             patched_images.append(patched_image)
 
