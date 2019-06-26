@@ -57,7 +57,7 @@ class GaussianAugmentation(Preprocessor):
         """
         super(GaussianAugmentation, self).__init__()
         self._is_fitted = True
-        if self.augmentation and self.apply_fit and self.apply_predict:
+        if augmentation and apply_fit and apply_predict:
             raise ValueError("If `augmentation` is `True`, then `apply_fit` must be `True` and `apply_predict`"
                              " must be `False`.")
         self._apply_fit = apply_fit
