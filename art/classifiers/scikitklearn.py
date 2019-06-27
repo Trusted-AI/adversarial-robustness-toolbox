@@ -1101,6 +1101,7 @@ class ScikitlearnSVC(ScikitlearnClassifier):
     def loss_gradient(self, x, y):
         """
         Compute the gradient of the loss function w.r.t. `x`.
+        Following equation (1) with lambda=0.
         Paper link: https://pralab.diee.unica.it/sites/default/files/biggio14-svm-chapter.pdf
 
         :param x: Sample input with shape as expected by the model.
