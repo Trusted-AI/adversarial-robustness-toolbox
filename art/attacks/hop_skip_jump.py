@@ -319,7 +319,7 @@ class HopSkipJump(Attack):
             (upper_bound, lower_bound) = (np.max(abs(original_sample - current_sample)), 0)
 
             if threshold is None:
-                threshold = np.min(upper_bound * self.theta, self.theta)
+                threshold = np.minimum(upper_bound * self.theta, self.theta)
 
         # Then start the binary search
         while (upper_bound - lower_bound) > threshold:
