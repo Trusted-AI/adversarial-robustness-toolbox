@@ -36,7 +36,7 @@ class HopSkipJump(Attack):
     attack_params = Attack.attack_params + ['targeted', 'norm', 'max_iter', 'max_eval',
                                             'init_eval', 'init_size', 'curr_iter']
 
-    def __init__(self, classifier, targeted=True, norm=2, max_iter=50, max_eval=10000, init_eval=100, init_size=100):
+    def __init__(self, classifier, targeted=False, norm=2, max_iter=50, max_eval=10000, init_eval=100, init_size=100):
         """
         Create a HopSkipJump attack instance.
 
@@ -197,11 +197,8 @@ class HopSkipJump(Attack):
 
                 if random_class == y:
                     # Binary search to reduce the l2 distance to the original image
-                    tmp_norm = self.norm
-                    self.norm = 2
-                    random_img = self._binary_search(current_sample=random_img, original_sample=x, target=y,
+                    random_img = self._binary_search(current_sample=random_img, original_sample=x, target=y, norm=2,
                                                      clip_min=clip_min, clip_max=clip_max, threshold=0.001)
-                    self.norm = tmp_norm
                     initial_sample = random_img, random_class
 
                     logging.info('Found initial adversarial image for targeted attack.')
@@ -221,11 +218,8 @@ class HopSkipJump(Attack):
 
                 if random_class != y_p:
                     # Binary search to reduce the l2 distance to the original image
-                    tmp_norm = self.norm
-                    self.norm = 2
-                    random_img = self._binary_search(current_sample=random_img, original_sample=x, target=y_p,
+                    random_img = self._binary_search(current_sample=random_img, original_sample=x, target=y_p, norm=2,
                                                      clip_min=clip_min, clip_max=clip_max, threshold=0.001)
-                    self.norm = tmp_norm
                     initial_sample = random_img, y_p
 
                     logging.info('Found initial adversarial image for untargeted attack.')
@@ -263,7 +257,7 @@ class HopSkipJump(Attack):
 
             # Then run binary search
             current_sample = self._binary_search(current_sample=current_sample, original_sample=original_sample,
-                                                 target=target, clip_min=clip_min, clip_max=clip_max)
+                                                 norm=self.norm, target=target, clip_min=clip_min, clip_max=clip_max)
 
             # Next compute the number of evaluations and compute the update
             num_eval = min(int(self.init_eval * np.sqrt(self.curr_iter + 1)), self.max_eval)
@@ -293,7 +287,7 @@ class HopSkipJump(Attack):
 
         return current_sample
 
-    def _binary_search(self, current_sample, original_sample, target, clip_min, clip_max, threshold=None):
+    def _binary_search(self, current_sample, original_sample, target, norm, clip_min, clip_max, threshold=None):
         """
         Binary search to approach the boundary.
 
@@ -303,6 +297,8 @@ class HopSkipJump(Attack):
         :type original_sample: `np.ndarray`
         :param target: The target label.
         :type target: `int`
+        :param norm: Order of the norm. Possible values: np.inf or 2.
+        :type norm: `int`
         :param clip_min: Minimum value of an example.
         :type clip_min: `float`
         :param clip_max: Maximum value of an example.
@@ -313,7 +309,7 @@ class HopSkipJump(Attack):
         :rtype: `np.ndarray`
         """
         # First set upper and lower bounds as well as the threshold for the binary search
-        if self.norm == 2:
+        if norm == 2:
             (upper_bound, lower_bound) = (1, 0)
 
             if threshold is None:
@@ -331,7 +327,7 @@ class HopSkipJump(Attack):
             alpha = (upper_bound + lower_bound) / 2.0
             interpolated_sample = self._interpolate(current_sample=current_sample,
                                                     original_sample=original_sample,
-                                                    alpha=alpha)
+                                                    alpha=alpha, norm=norm)
 
             # Update upper_bound and lower_bound
             satisfied = self._adversarial_satisfactory(samples=interpolated_sample[None], target=target,
@@ -339,7 +335,9 @@ class HopSkipJump(Attack):
             lower_bound = np.where(satisfied == 0, alpha, lower_bound)
             upper_bound = np.where(satisfied == 1, alpha, upper_bound)
 
-        result = self._interpolate(current_sample=current_sample, original_sample=original_sample, alpha=upper_bound)
+        result = self._interpolate(current_sample=current_sample,
+                                   original_sample=original_sample,
+                                   alpha=upper_bound, norm=norm)
 
         return result
 
@@ -451,7 +449,7 @@ class HopSkipJump(Attack):
 
         return result
 
-    def _interpolate(self, current_sample, original_sample, alpha):
+    def _interpolate(self, current_sample, original_sample, alpha, norm):
         """
         Interpolate a new sample based on the original and the current samples.
 
@@ -461,10 +459,12 @@ class HopSkipJump(Attack):
         :type original_sample: `np.ndarray`
         :param alpha: The coefficient of interpolation.
         :type alpha: `float`
+        :param norm: Order of the norm. Possible values: np.inf or 2.
+        :type norm: `int`
         :return: an adversarial example.
         :rtype: `np.ndarray`
         """
-        if self.norm == 2:
+        if norm == 2:
             result = (1 - alpha) * original_sample + alpha * current_sample
         else:
             result = np.clip(current_sample, original_sample - alpha, original_sample + alpha)
