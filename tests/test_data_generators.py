@@ -254,7 +254,7 @@ class TestTFDataGenerator(unittest.TestCase):
 
         def generator(batch_size=5):
             while True:
-                yield np.random.rand(batch_size, 5, 5, 1), np.random.randint(0, 10, size=10 * batch_size).\
+                yield np.random.rand(batch_size, 5, 5, 1), np.random.randint(0, 10, size=10 * batch_size). \
                     reshape(batch_size, -1)
 
         self.sess = tf.Session()

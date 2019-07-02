@@ -10,7 +10,6 @@ from art.utils import get_classifier_tf, load_mnist, master_seed
 
 logger = logging.getLogger('testLogger')
 
-
 NB_TRAIN = 1000
 NB_TEST = 20
 
@@ -19,6 +18,7 @@ class TestTFClassifier(unittest.TestCase):
     """
     This class tests the functionalities of the Tensorflow-based classifier.
     """
+
     @classmethod
     def setUpClass(cls):
         # Get MNIST
@@ -184,10 +184,10 @@ class TestTFClassifier(unittest.TestCase):
 
         # Unpickle:
         with open(full_path, 'rb') as f:
-             loaded = pickle.load(f)
-             self.assertTrue(self.classifier._clip_values == loaded._clip_values)
-             self.assertTrue(self.classifier._channel_index == loaded._channel_index)
-             self.assertTrue(self.classifier.__dict__.keys() == loaded.__dict__.keys())
+            loaded = pickle.load(f)
+            self.assertTrue(self.classifier._clip_values == loaded._clip_values)
+            self.assertTrue(self.classifier._channel_index == loaded._channel_index)
+            self.assertTrue(set(self.classifier.__dict__.keys()) == set(loaded.__dict__.keys()))
 
         # Test predict
         preds1 = self.classifier.predict(x_test)
@@ -201,4 +201,3 @@ class TestTFClassifier(unittest.TestCase):
 
 if __name__ == '__main__':
     unittest.main()
-

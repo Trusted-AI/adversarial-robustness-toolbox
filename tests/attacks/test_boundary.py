@@ -39,6 +39,7 @@ class TestBoundary(unittest.TestCase):
     """
     A unittest class for testing the Boundary attack.
     """
+
     @classmethod
     def setUpClass(cls):
         # Get MNIST

@@ -40,6 +40,7 @@ class TestBinaryInputDetector(unittest.TestCase):
     """
     A unittest class for testing the binary input detector.
     """
+
     def setUp(self):
         # Set master seed
         master_seed(1234)
@@ -101,6 +102,7 @@ class TestBinaryActivationDetector(unittest.TestCase):
     """
     A unittest class for testing the binary activation detector.
     """
+
     def setUp(self):
         # Set master seed
         master_seed(1234)
