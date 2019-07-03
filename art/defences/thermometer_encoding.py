@@ -32,7 +32,7 @@ class ThermometerEncoding(Preprocessor):
     """
     Implement the thermometer encoding defence approach. Defence method from https://openreview.net/forum?id=S18Su--CW.
     """
-    params = ['clip_values', 'num_space', 'channel_index', '_apply_fit', '_apply_predict']
+    params = ['clip_values', 'num_space', 'channel_index']
 
     def __init__(self, clip_values, num_space=10, channel_index=3, apply_fit=True, apply_predict=True):
         """
@@ -52,8 +52,9 @@ class ThermometerEncoding(Preprocessor):
         """
         super(ThermometerEncoding, self).__init__()
         self._is_fitted = True
-        self.set_params(clip_values=clip_values, num_space=num_space, channel_index=channel_index, _apply_fit=apply_fit,
-                        _apply_predict=apply_predict)
+        self._apply_fit = apply_fit
+        self._apply_predict = apply_predict
+        self.set_params(clip_values=clip_values, num_space=num_space, channel_index=channel_index)
 
     @property
     def apply_fit(self):
@@ -137,10 +138,6 @@ class ThermometerEncoding(Preprocessor):
         :type num_space: `int`
         :param channel_index: Index of the axis in data containing the color channels or features.
         :type channel_index: `int`
-        :param apply_fit: True if applied during fitting/training.
-        :type apply_fit: `bool`
-        :param apply_predict: True if applied during predicting.
-        :type apply_predict: `bool`
         """
         # Save attack-specific parameters
         super(ThermometerEncoding, self).set_params(**kwargs)

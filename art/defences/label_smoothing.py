@@ -32,24 +32,30 @@ class LabelSmoothing(Preprocessor):
     """
     params = ['max_value']
 
-    def __init__(self, max_value=.9):
+    def __init__(self, max_value=0.9, apply_fit=True, apply_predict=False):
         """
         Create an instance of label smoothing.
 
         :param max_value: Value to affect to correct label
         :type max_value: `float`
+        :param apply_fit: True if applied during fitting/training.
+        :type apply_fit: `bool`
+        :param apply_predict: True if applied during predicting.
+        :type apply_predict: `bool`
         """
         super(LabelSmoothing, self).__init__()
         self._is_fitted = True
+        self._apply_fit = apply_fit
+        self._apply_predict = apply_predict
         self.set_params(max_value=max_value)
 
     @property
     def apply_fit(self):
-        return True
+        return self._apply_fit
 
     @property
     def apply_predict(self):
-        return False
+        return self._apply_predict
 
     def __call__(self, x, y=None):
         """
