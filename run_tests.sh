@@ -1,6 +1,8 @@
 #!/usr/bin/env bash
 exit_code=0
-python -m unittest discover tests/attacks -p 'test_*.py'
+python -m unittest discover tests/attacks -p 'test_[a-i]*.py'
+if [[ $? -ne 0 ]]; then exit_code=1; fi
+python -m unittest discover tests/attacks -p 'test_[j-z]*.py'
 if [[ $? -ne 0 ]]; then exit_code=1; fi
 python -m unittest discover tests/classifiers -p 'test_*.py'
 if [[ $? -ne 0 ]]; then exit_code=1; fi
