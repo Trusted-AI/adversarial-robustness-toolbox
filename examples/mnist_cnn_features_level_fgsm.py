@@ -1,5 +1,5 @@
 # -*- coding: utf-8 -*-
-"""Trains a convolutional neural network on the MNIST dataset, then attacks it with the FGSM attack."""
+"""Trains a convolutional neural network on the MNIST dataset, then attacks one of the inner layers with the FGSM attack."""
 from __future__ import absolute_import, division, print_function, unicode_literals
 
 import sys
