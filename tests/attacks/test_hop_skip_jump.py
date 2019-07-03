@@ -281,6 +281,9 @@ class TestHopSkipJumpVectors(unittest.TestCase):
         acc = np.sum(preds_adv == np.argmax(y_test, axis=1)) / y_test.shape[0]
         logger.info('Accuracy on Iris with HopSkipJump adversarial examples: %.2f%%', (acc * 100))
 
+        # Clean-up session
+        k.clear_session()
+
     def test_iris_k_unbounded(self):
         (_, _), (x_test, y_test) = self.iris
         classifier, _ = get_iris_classifier_kr()
@@ -308,9 +311,12 @@ class TestHopSkipJumpVectors(unittest.TestCase):
         acc = np.sum(preds_adv == np.argmax(y_test, axis=1)) / y_test.shape[0]
         logger.info('Accuracy on Iris with HopSkipJump adversarial examples: %.2f%%', (acc * 100))
 
+        # Clean-up session
+        k.clear_session()
+
     def test_iris_tf(self):
         (_, _), (x_test, y_test) = self.iris
-        classifier, _ = get_iris_classifier_tf()
+        classifier, sess = get_iris_classifier_tf()
 
         # Test untargeted attack and norm=2
         attack = HopSkipJump(classifier, targeted=False, max_iter=2, max_eval=100, init_eval=10)
@@ -361,6 +367,10 @@ class TestHopSkipJumpVectors(unittest.TestCase):
         self.assertTrue((np.argmax(targets, axis=1) == preds_adv).any())
         acc = np.sum(preds_adv == np.argmax(targets, axis=1)) / y_test.shape[0]
         logger.info('Success rate of targeted HopSkipJump on Iris: %.2f%%', (acc * 100))
+
+        # Clean-up session
+        sess.close()
+        tf.reset_default_graph()
 
     def test_iris_pt(self):
         (_, _), (x_test, y_test) = self.iris
