@@ -255,7 +255,7 @@ class ElasticNet(Attack):
             else:
                 return o1 != o2
 
-        for i in range(len(c_batch)):
+        for i in range(c_batch.shape[0]):
             if compare(best_label[i], np.argmax(y_batch[i])) and best_label[i] != -np.inf:
                 # Successful attack
                 c_upper_bound[i] = min(c_upper_bound[i], c_batch[i])
