@@ -80,7 +80,7 @@ class ActivationDefence(PoisonFilteringDefence):
         :return: JSON object with confusion matrix.
         :rtype: `jsonObject`
         """
-        if is_clean is None or len(is_clean) == 0:
+        if is_clean is None or is_clean.size == 0:
             raise ValueError("is_clean was not provided while invoking evaluate_defence.")
 
         self.set_params(**kwargs)
