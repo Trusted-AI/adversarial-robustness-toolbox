@@ -80,35 +80,35 @@ class VirtualAdversarialMethod(Attack):
             batch = batch.reshape((batch.shape[0], -1))
 
             # Main algorithm for each batch
-            d = np.random.randn(*batch.shape)
+            var_d = np.random.randn(*batch.shape)
 
             # Main loop of the algorithm
             for _ in range(self.max_iter):
-                d = self._normalize(d)
-                preds_new = self.classifier.predict((batch + d).reshape((-1,) + self.classifier.input_shape),
+                var_d = self._normalize(var_d)
+                preds_new = self.classifier.predict((batch + var_d).reshape((-1,) + self.classifier.input_shape),
                                                     logits=False)
 
                 from scipy.stats import entropy
                 kl_div1 = entropy(np.transpose(preds[batch_index_1:batch_index_2]), np.transpose(preds_new))
 
-                d_new = np.zeros_like(d)
-                for current_index in range(d.shape[1]):
-                    d[:, current_index] += self.finite_diff
-                    preds_new = self.classifier.predict((batch + d).reshape((-1,) + self.classifier.input_shape),
+                var_d_new = np.zeros_like(var_d)
+                for current_index in range(var_d.shape[1]):
+                    var_d[:, current_index] += self.finite_diff
+                    preds_new = self.classifier.predict((batch + var_d).reshape((-1,) + self.classifier.input_shape),
                                                         logits=False)
                     kl_div2 = entropy(np.transpose(preds[batch_index_1:batch_index_2]), np.transpose(preds_new))
-                    d_new[:, current_index] = (kl_div2 - kl_div1) / (self.finite_diff + tol)
-                    d[:, current_index] -= self.finite_diff
-                d = d_new
+                    var_d_new[:, current_index] = (kl_div2 - kl_div1) / (self.finite_diff + tol)
+                    var_d[:, current_index] -= self.finite_diff
+                var_d = var_d_new
 
             # Apply perturbation and clip
             if hasattr(self.classifier, 'clip_values') and self.classifier.clip_values is not None:
                 clip_min, clip_max = self.classifier.clip_values
                 x_adv[batch_index_1:batch_index_2] = \
-                    np.clip(batch + self.eps * self._normalize(d), clip_min, clip_max) \
+                    np.clip(batch + self.eps * self._normalize(var_d), clip_min, clip_max) \
                         .reshape((-1,) + self.classifier.input_shape)
             else:
-                x_adv[batch_index_1:batch_index_2] = (batch + self.eps * self._normalize(d)) \
+                x_adv[batch_index_1:batch_index_2] = (batch + self.eps * self._normalize(var_d)) \
                     .reshape((-1,) + self.classifier.input_shape)
 
         return x_adv
