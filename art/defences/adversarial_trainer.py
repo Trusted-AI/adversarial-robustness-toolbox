@@ -114,8 +114,8 @@ class AdversarialTrainer:
             else:
                 self._precomputed_adv_samples.append(None)
 
-        for e in range(nb_epochs):
-            logger.info('Adversarial training epoch %i/%i', e, nb_epochs)
+        for i_epoch in range(nb_epochs):
+            logger.info('Adversarial training epoch %i/%i', i_epoch, nb_epochs)
 
             # Shuffle the indices of precomputed examples
             np.random.shuffle(ind)
@@ -187,8 +187,8 @@ class AdversarialTrainer:
             else:
                 self._precomputed_adv_samples.append(None)
 
-        for e in range(nb_epochs):
-            logger.info('Adversarial training epoch %i/%i', e, nb_epochs)
+        for i_epoch in range(nb_epochs):
+            logger.info('Adversarial training epoch %i/%i', i_epoch, nb_epochs)
 
             # Shuffle the examples
             np.random.shuffle(ind)
