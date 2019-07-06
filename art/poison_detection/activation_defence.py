@@ -296,7 +296,7 @@ class ActivationDefence(PoisonFilteringDefence):
             if curr_improvement < new_improvement and new_improvement > 0:
                 curr_improvement = new_improvement
                 classifier = fixed_classifier
-                logger.info('Selected as best model so far: ' + str(curr_improvement))
+                logger.info('Selected as best model so far: %s', curr_improvement)
 
         ActivationDefence._remove_pickle(filename)
         return curr_improvement, classifier
@@ -333,7 +333,7 @@ class ActivationDefence(PoisonFilteringDefence):
         import pickle
 
         full_path = os.path.join(DATA_PATH, file_name)
-        logger.info('Loading classifier from ' + str(full_path))
+        logger.info('Loading classifier from %s', full_path)
         with open(full_path, 'rb') as f_classifier:
             loaded_classifier = pickle.load(f_classifier)
             return loaded_classifier
@@ -547,8 +547,8 @@ def train_remove_backdoor(classifier, x_train, y_train, x_test, y_test, tolerabl
         classifier.fit(x_train, y_train, nb_epochs=batch_epochs)
         curr_epochs += batch_epochs
         curr_missed = measure_misclassification(classifier, x_test, y_test)
-        logger.info('Current epoch: ' + str(curr_epochs))
-        logger.info('Misclassifications: ' + str(curr_missed))
+        logger.info('Current epoch: %s', curr_epochs)
+        logger.info('Misclassifications: %s', curr_missed)
 
     improve_factor = initial_missed - curr_missed
     return improve_factor, classifier
