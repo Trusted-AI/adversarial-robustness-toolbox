@@ -116,7 +116,7 @@ class ZooAttack(Attack):
             self._current_noise = np.zeros((batch_size,) + self.classifier.input_shape, dtype=NUMPY_DTYPE)
         self._sample_prob = np.ones(self._current_noise.size, dtype=NUMPY_DTYPE) / self._current_noise.size
 
-    def _loss(self, x, x_adv, target, c):
+    def _loss(self, x, x_adv, target, c_weight):
         """
         Compute the loss function values.
 
@@ -126,8 +126,8 @@ class ZooAttack(Attack):
         :type x_adv: `np.ndarray`
         :param target: An array with the target class (one-hot encoded).
         :type target: `np.ndarray`
-        :param c: Weight of the loss term aiming for classification as target.
-        :type c: `float`
+        :param c_weight: Weight of the loss term aiming for classification as target.
+        :type c_weight: `float`
         :return: A tuple holding the current logits, `L_2` distortion and overall loss.
         :rtype: `(float, float, float)`
         """
@@ -145,7 +145,7 @@ class ZooAttack(Attack):
             # If untargeted, optimize for making any other class most likely
             loss = np.maximum(z_target - z_other + self.confidence, 0)
 
-        return preds, l2dist, c * loss + l2dist
+        return preds, l2dist, c_weight * loss + l2dist
 
     def generate(self, x, y=None):
         """
@@ -208,7 +208,7 @@ class ZooAttack(Attack):
         :rtype: `np.ndarray`
         """
         # Initialize binary search
-        c = self.initial_const * np.ones(x_batch.shape[0])
+        c_current = self.initial_const * np.ones(x_batch.shape[0])
         c_lower_bound = np.zeros(x_batch.shape[0])
         c_upper_bound = 1e10 * np.ones(x_batch.shape[0])
 
@@ -218,31 +218,31 @@ class ZooAttack(Attack):
 
         # Start with a binary search
         for bss in range(self.binary_search_steps):
-            logger.debug('Binary search step %i out of %i (c_mean==%f)', bss, self.binary_search_steps, np.mean(c))
+            logger.debug('Binary search step %i out of %i (c_mean==%f)', bss, self.binary_search_steps, np.mean(c_current))
 
             # Run with 1 specific binary search step
-            best_dist, best_label, best_attack = self._generate_bss(x_batch, y_batch, c)
+            best_dist, best_label, best_attack = self._generate_bss(x_batch, y_batch, c_current)
 
             # Update best results so far
             o_best_attack[best_dist < o_best_dist] = best_attack[best_dist < o_best_dist]
             o_best_dist[best_dist < o_best_dist] = best_dist[best_dist < o_best_dist]
 
             # Adjust the constant as needed
-            c, c_lower_bound, c_upper_bound = self._update_const(y_batch, best_label, c, c_lower_bound, c_upper_bound)
+            c_current, c_lower_bound, c_upper_bound = self._update_const(y_batch, best_label, c_current, c_lower_bound, c_upper_bound)
 
         return o_best_attack
 
-    def _update_const(self, y_batch, best_label, c, c_lower_bound, c_upper_bound):
+    def _update_const(self, y_batch, best_label, c_batch, c_lower_bound, c_upper_bound):
         """
-        Update constant `c` from the ZOO objective. This characterizes the trade-off between attack strength and
+        Update constant `c_batch` from the ZOO objective. This characterizes the trade-off between attack strength and
         amount of noise introduced.
 
         :param y_batch: A batch of targets (0-1 hot).
         :type y_batch: `np.ndarray`
         :param best_label: A batch of best labels.
         :type best_label: `np.ndarray`
-        :param c: A batch of constants.
-        :type c: `np.ndarray`
+        :param c_batch: A batch of constants.
+        :type c_batch: `np.ndarray`
         :param c_lower_bound: A batch of lower bound constants.
         :type c_lower_bound: `np.ndarray`
         :param c_upper_bound: A batch of upper bound constants.
@@ -253,21 +253,21 @@ class ZooAttack(Attack):
         def compare(object1, object2):
             return object1 == object2 if self.targeted else object1 != object2
 
-        comparison = [compare(best_label[i], np.argmax(y_batch[i])) and best_label[i] != -np.inf for i in range(len(c))]
+        comparison = [compare(best_label[i], np.argmax(y_batch[i])) and best_label[i] != -np.inf for i in range(len(c_batch))]
         for i, comp in enumerate(comparison):
             if comp:
                 # Successful attack
-                c_upper_bound[i] = min(c_upper_bound[i], c[i])
+                c_upper_bound[i] = min(c_upper_bound[i], c_batch[i])
                 if c_upper_bound[i] < 1e9:
-                    c[i] = (c_lower_bound[i] + c_upper_bound[i]) / 2
+                    c_batch[i] = (c_lower_bound[i] + c_upper_bound[i]) / 2
             else:
                 # Failure attack
-                c_lower_bound[i] = max(c_lower_bound[i], c[i])
-                c[i] = (c_lower_bound[i] + c_upper_bound[i]) / 2 if c_upper_bound[i] < 1e9 else c[i] * 10
+                c_lower_bound[i] = max(c_lower_bound[i], c_batch[i])
+                c_batch[i] = (c_lower_bound[i] + c_upper_bound[i]) / 2 if c_upper_bound[i] < 1e9 else c_batch[i] * 10
 
-        return c, c_lower_bound, c_upper_bound
+        return c_batch, c_lower_bound, c_upper_bound
 
-    def _generate_bss(self, x_batch, y_batch, c):
+    def _generate_bss(self, x_batch, y_batch, c_batch):
         """
         Generate adversarial examples for a batch of inputs with a specific batch of constants.
 
@@ -275,8 +275,8 @@ class ZooAttack(Attack):
         :type x_batch: `np.ndarray`
         :param y_batch: A batch of targets (0-1 hot).
         :type y_batch: `np.ndarray`
-        :param c: A batch of constants.
-        :type c: `np.ndarray`
+        :param c_batch: A batch of constants.
+        :type c_batch: `np.ndarray`
         :return: A tuple of best elastic distances, best labels, best attacks
         :rtype: `tuple`
         """
@@ -318,8 +318,8 @@ class ZooAttack(Attack):
                                            x_adv.shape[2] / x_orig.shape[2], x_adv.shape[3] / x_orig.shape[3]])
 
             # Compute adversarial examples and loss
-            x_adv = self._optimizer(x_adv, y_batch, c)
-            preds, l2dist, loss = self._loss(x_orig, x_adv, y_batch, c)
+            x_adv = self._optimizer(x_adv, y_batch, c_batch)
+            preds, l2dist, loss = self._loss(x_orig, x_adv, y_batch, c_batch)
 
             # Reset Adam if a valid example has been found to avoid overshoot
             mask_fine_tune = (~fine_tuning) & (loss == l2dist) & (prev_loss != prev_l2dist)
@@ -353,7 +353,7 @@ class ZooAttack(Attack):
 
         return best_dist, best_label, best_attack
 
-    def _optimizer(self, x, targets, c):
+    def _optimizer(self, x, targets, c_batch):
         # Variation of input for computing loss, same as in original implementation
         tol = 1e-4
         coord_batch = np.repeat(self._current_noise, 2 * self.nb_parallel, axis=0)
@@ -377,7 +377,7 @@ class ZooAttack(Attack):
         # Compute loss for all samples and coordinates, then optimize
         expanded_x = np.repeat(x, 2 * self.nb_parallel, axis=0).reshape((-1,) + x.shape[1:])
         expanded_targets = np.repeat(targets, 2 * self.nb_parallel, axis=0).reshape((-1,) + targets.shape[1:])
-        expanded_c = np.repeat(c, 2 * self.nb_parallel)
+        expanded_c = np.repeat(c_batch, 2 * self.nb_parallel)
         _, _, loss = self._loss(expanded_x, expanded_x + coord_batch.reshape(expanded_x.shape), expanded_targets,
                                 expanded_c)
         self._current_noise = self._optimizer_adam_coordinate(loss, indices, self.adam_mean, self.adam_var,
