@@ -128,7 +128,7 @@ class ElasticNet(Attack):
         loss_gradient = loss_gradient.reshape(x.shape)
 
         c_mult = c_weight
-        for _ in range(len(x.shape)-1):
+        for _ in range(len(x.shape) - 1):
             c_mult = c_mult[:, np.newaxis]
 
         loss_gradient *= c_mult
@@ -149,8 +149,8 @@ class ElasticNet(Attack):
         :return: The decayed learning rate
         :rtype: `float`
         """
-        decayed_learning_rate = (self.learning_rate - end_learning_rate) * (1 - global_step / decay_steps)**2 + \
-            end_learning_rate
+        decayed_learning_rate = (self.learning_rate - end_learning_rate) * (1 - global_step / decay_steps) ** 2 + \
+                                end_learning_rate
 
         return decayed_learning_rate
 
@@ -218,7 +218,8 @@ class ElasticNet(Attack):
 
         # Start with a binary search
         for bss in range(self.binary_search_steps):
-            logger.debug('Binary search step %i out of %i (c_mean==%f)', bss, self.binary_search_steps, np.mean(c_current))
+            logger.debug('Binary search step %i out of %i (c_mean==%f)', bss, self.binary_search_steps,
+                         np.mean(c_current))
 
             # Run with 1 specific binary search step
             best_dist, best_label, best_attack = self._generate_bss(x_batch, y_batch, c_current)
@@ -228,7 +229,8 @@ class ElasticNet(Attack):
             o_best_dist[best_dist < o_best_dist] = best_dist[best_dist < o_best_dist]
 
             # Adjust the constant as needed
-            c_current, c_lower_bound, c_upper_bound = self._update_const(y_batch, best_label, c_current, c_lower_bound, c_upper_bound)
+            c_current, c_lower_bound, c_upper_bound = self._update_const(y_batch, best_label, c_current, c_lower_bound,
+                                                                         c_upper_bound)
 
         return o_best_attack
 
@@ -249,6 +251,7 @@ class ElasticNet(Attack):
         :return: A tuple of three batches of updated constants and lower/upper bounds.
         :rtype: `tuple`
         """
+
         def compare(o1, o2):
             if self.targeted:
                 return o1 == o2
@@ -285,6 +288,7 @@ class ElasticNet(Attack):
         :return: A tuple of best elastic distances, best labels, best attacks
         :rtype: `tuple`
         """
+
         def compare(o1, o2):
             if self.targeted:
                 return o1 == o2

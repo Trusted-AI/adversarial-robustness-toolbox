@@ -218,7 +218,8 @@ class ZooAttack(Attack):
 
         # Start with a binary search
         for bss in range(self.binary_search_steps):
-            logger.debug('Binary search step %i out of %i (c_mean==%f)', bss, self.binary_search_steps, np.mean(c_current))
+            logger.debug('Binary search step %i out of %i (c_mean==%f)', bss, self.binary_search_steps,
+                         np.mean(c_current))
 
             # Run with 1 specific binary search step
             best_dist, best_label, best_attack = self._generate_bss(x_batch, y_batch, c_current)
@@ -228,7 +229,8 @@ class ZooAttack(Attack):
             o_best_dist[best_dist < o_best_dist] = best_dist[best_dist < o_best_dist]
 
             # Adjust the constant as needed
-            c_current, c_lower_bound, c_upper_bound = self._update_const(y_batch, best_label, c_current, c_lower_bound, c_upper_bound)
+            c_current, c_lower_bound, c_upper_bound = self._update_const(y_batch, best_label, c_current, c_lower_bound,
+                                                                         c_upper_bound)
 
         return o_best_attack
 
@@ -250,10 +252,12 @@ class ZooAttack(Attack):
         :return: A tuple of three batches of updated constants and lower/upper bounds.
         :rtype: `tuple`
         """
+
         def compare(object1, object2):
             return object1 == object2 if self.targeted else object1 != object2
 
-        comparison = [compare(best_label[i], np.argmax(y_batch[i])) and best_label[i] != -np.inf for i in range(len(c_batch))]
+        comparison = [compare(best_label[i], np.argmax(y_batch[i])) and best_label[i] != -np.inf for i in
+                      range(len(c_batch))]
         for i, comp in enumerate(comparison):
             if comp:
                 # Successful attack
@@ -280,6 +284,7 @@ class ZooAttack(Attack):
         :return: A tuple of best elastic distances, best labels, best attacks
         :rtype: `tuple`
         """
+
         def compare(object1, object2):
             return object1 == object2 if self.targeted else object1 != object2
 
@@ -491,8 +496,9 @@ class ZooAttack(Attack):
         img_pool = np.copy(image)
         for i in range(0, image.shape[1], kernel_size):
             for j in range(0, image.shape[2], kernel_size):
-                img_pool[:, i:i+kernel_size, j:j+kernel_size] = np.max(image[:, i:i+kernel_size, j:j+kernel_size],
-                                                                       axis=(1, 2), keepdims=True)
+                img_pool[:, i:i + kernel_size, j:j + kernel_size] = np.max(
+                    image[:, i:i + kernel_size, j:j + kernel_size],
+                    axis=(1, 2), keepdims=True)
 
         return img_pool
 
