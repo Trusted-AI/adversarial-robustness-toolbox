@@ -281,7 +281,7 @@ class ActivationDefence(PoisonFilteringDefence):
         ActivationDefence._pickle_classifier(classifier, filename)
         curr_improvement = 0
 
-        for i, (train_index, test_index) in enumerate(kf.split(x)):
+        for _, (train_index, test_index) in enumerate(kf.split(x)):
             # Obtain partition:
             x_train, x_test = x[train_index], x[test_index]
             y_train, y_test = y_fix[train_index], y_fix[test_index]
