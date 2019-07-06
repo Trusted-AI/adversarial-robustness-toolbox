@@ -90,12 +90,12 @@ def convert_to_rgb(images):
     return rgb_images
 
 
-def save_image(image, f_name):
+def save_image(image_array, f_name):
     """
     Saves image into a file inside `DATA_PATH` with the name `f_name`.
 
-    :param image: Image to be saved
-    :type image: `np.ndarray`
+    :param image_array: Image to be saved
+    :type image_array: `np.ndarray`
     :param f_name: File name containing extension e.g., my_img.jpg, my_img.png, my_images/my_img.png
     :type f_name: `str`
     :return: `None`
@@ -106,8 +106,8 @@ def save_image(image, f_name):
         os.makedirs(folder)
 
     from PIL import Image
-    im = Image.fromarray(image)
-    im.save(file_name)
+    image = Image.fromarray(image_array)
+    image.save(file_name)
     logger.info('Image saved to %s.', file_name)
 
 
@@ -147,12 +147,12 @@ def plot_3d(points, labels, colors=None, save=True, f_name=''):
                 raise ValueError('The amount of provided colors should match the number of labels in the 3pd plot.')
 
         fig = plt.figure()
-        ax = plt.axes(projection='3d')
+        axis = plt.axes(projection='3d')
 
         for i, coord in enumerate(points):
             try:
                 color_point = labels[i]
-                ax.scatter3D(coord[0], coord[1], coord[2], color=colors[color_point])
+                axis.scatter3D(coord[0], coord[1], coord[2], color=colors[color_point])
             except IndexError:
                 raise ValueError('Labels outside the range. Should start from zero and be sequential there after')
         if save:
