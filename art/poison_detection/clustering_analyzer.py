@@ -268,15 +268,17 @@ class ClusteringAnalyzer:
         and silhouette score.
         Computes a silhouette score for each class to determine how cohesive resulting clusters are.
         A low silhouette score indicates that the clustering does not fit the data well, and the class can be considered
-        to be unpoisoned. Conversely, a high silhouette score indicates that the clusters reflect true splits in the data.
+        to be unpoisoned. Conversely, a high silhouette score indicates that the clusters reflect true splits in the
+        data.
         The method concludes that a cluster is poison based on the silhouette score and the cluster relative size.
-         If the relative size is too small, below a size_threshold and at the same time
+        If the relative size is too small, below a size_threshold and at the same time
         the silhouette score is higher than silhouette_threshold, the cluster is classified as poisonous.
         If the above thresholds are not provided, the default ones will be used.
 
         :param separated_clusters: list where separated_clusters[i] is the cluster assignments for the ith class
         :type separated_clusters: `list`
-        :param reduced_activations_by_class: list where separated_activations[i] is a 1D array of [0,1] for [poison,clean]
+        :param reduced_activations_by_class: list where separated_activations[i] is a 1D array of [0,1] for
+               [poison,clean]
         :type reduced_activations_by_class: `list`
         :param size_threshold: (optional) threshold used to define when a cluster is substantially smaller. A default
         value is used if the parameter is not provided.
