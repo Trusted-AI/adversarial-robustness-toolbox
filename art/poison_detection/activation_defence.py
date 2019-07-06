@@ -18,7 +18,7 @@
 from __future__ import absolute_import, division, print_function, unicode_literals
 
 import logging
-import os.path
+import os
 
 import numpy as np
 
@@ -125,8 +125,8 @@ class ActivationDefence(PoisonFilteringDefence):
         indices_by_class = self._segment_by_class(np.arange(n_train), self.y_train)
         self.is_clean_lst = [0] * n_train
 
-        for assigned_clean, dp in zip(self.assigned_clean_by_class, indices_by_class):
-            for assignment, index_dp in zip(assigned_clean, dp):
+        for assigned_clean, indices_dp in zip(self.assigned_clean_by_class, indices_by_class):
+            for assignment, index_dp in zip(assigned_clean, indices_dp):
                 if assignment == 1:
                     self.is_clean_lst[index_dp] = 1
 
@@ -273,7 +273,7 @@ class ActivationDefence(PoisonFilteringDefence):
 
         # Train using cross validation
         from sklearn.model_selection import KFold
-        kf = KFold(n_splits=n_splits)
+        k_fold = KFold(n_splits=n_splits)
         KFold(n_splits=n_splits, random_state=None, shuffle=True)
 
         import time
@@ -281,7 +281,7 @@ class ActivationDefence(PoisonFilteringDefence):
         ActivationDefence._pickle_classifier(classifier, filename)
         curr_improvement = 0
 
-        for _, (train_index, test_index) in enumerate(kf.split(x)):
+        for _, (train_index, test_index) in enumerate(k_fold.split(x)):
             # Obtain partition:
             x_train, x_test = x[train_index], x[test_index]
             y_train, y_test = y_fix[train_index], y_fix[test_index]
@@ -311,17 +311,15 @@ class ActivationDefence(PoisonFilteringDefence):
         :param file_name: Name of the file where the classifier will be pickled
         :return: None
         """
-
         import pickle
-        import os
         from art import DATA_PATH
         full_path = os.path.join(DATA_PATH, file_name)
         folder = os.path.split(full_path)[0]
         if not os.path.exists(folder):
             os.makedirs(folder)
 
-        with open(full_path, 'wb') as f:
-            pickle.dump(classifier, f)
+        with open(full_path, 'wb') as f_classifier:
+            pickle.dump(classifier, f_classifier)
 
     @staticmethod
     def _unpickle_classifier(file_name):
@@ -331,14 +329,13 @@ class ActivationDefence(PoisonFilteringDefence):
         :param file_name:
         :return:
         """
-        import os
         from art import DATA_PATH
         import pickle
 
         full_path = os.path.join(DATA_PATH, file_name)
         logger.info('Loading classifier from ' + str(full_path))
-        with open(full_path, 'rb') as f:
-            loaded_classifier = pickle.load(f)
+        with open(full_path, 'rb') as f_classifier:
+            loaded_classifier = pickle.load(f_classifier)
             return loaded_classifier
 
     @staticmethod
@@ -349,7 +346,6 @@ class ActivationDefence(PoisonFilteringDefence):
         :param file_name: File name without directory
         :return: None
         """
-        import os
         from art import DATA_PATH
         full_path = os.path.join(DATA_PATH, file_name)
         os.remove(full_path)
@@ -418,8 +414,8 @@ class ActivationDefence(PoisonFilteringDefence):
 
         # Get activations reduced to 3-components:
         separated_reduced_activations = []
-        for ac in self.activations_by_class:
-            reduced_activations = reduce_dimensionality(ac, nb_dims=3)
+        for activation in self.activations_by_class:
+            reduced_activations = reduce_dimensionality(activation, nb_dims=3)
             separated_reduced_activations.append(reduced_activations)
 
         # For each class generate a plot:
@@ -589,15 +585,15 @@ def cluster_activations(separated_activations, nb_clusters=2, nb_dims=10, reduce
     else:
         raise ValueError(clustering_method + " clustering method not supported.")
 
-    for ac in separated_activations:
+    for activation in separated_activations:
         # Apply dimensionality reduction
-        nb_activations = np.shape(ac)[1]
+        nb_activations = np.shape(activation)[1]
         if nb_activations > nb_dims:
-            reduced_activations = reduce_dimensionality(ac, nb_dims=nb_dims, reduce=reduce)
+            reduced_activations = reduce_dimensionality(activation, nb_dims=nb_dims, reduce=reduce)
         else:
             logger.info("Dimensionality of activations = %i less than nb_dims = %i. Not applying dimensionality "
                         "reduction.", nb_activations, nb_dims)
-            reduced_activations = ac
+            reduced_activations = activation
         separated_reduced_activations.append(reduced_activations)
 
         # Get cluster assignments
