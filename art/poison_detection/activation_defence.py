@@ -234,10 +234,10 @@ class ActivationDefence(PoisonFilteringDefence):
         ActivationDefence._pickle_classifier(classifier, filename)
 
         # Now train using y_fix:
-        improve_factor, fixed_classifier = train_remove_backdoor(classifier, x_train, y_train, x_test,
-                                                                 y_test, tolerable_backdoor=tolerable_backdoor,
-                                                                 max_epochs=max_epochs,
-                                                                 batch_epochs=batch_epochs)
+        improve_factor, _ = train_remove_backdoor(classifier, x_train, y_train, x_test, y_test,
+                                                  tolerable_backdoor=tolerable_backdoor, max_epochs=max_epochs,
+                                                  batch_epochs=batch_epochs)
+
         # Only update classifier if there was an improvement:
         if improve_factor < 0:
             classifier = ActivationDefence._unpickle_classifier(filename)
