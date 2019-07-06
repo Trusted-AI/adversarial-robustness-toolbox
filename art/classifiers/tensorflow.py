@@ -107,14 +107,14 @@ class TFClassifier(Classifier):
             begin, end = m * batch_size, min((m + 1) * batch_size, x_preprocessed.shape[0])
 
             # Create feed_dict
-            fd = {self._input_ph: x_preprocessed[begin:end]}
-            fd.update(self._feed_dict)
+            feed_dict = {self._input_ph: x_preprocessed[begin:end]}
+            feed_dict.update(self._feed_dict)
 
             # Run prediction
             if logits:
-                results[begin:end] = self._sess.run(self._logits, feed_dict=fd)
+                results[begin:end] = self._sess.run(self._logits, feed_dict=feed_dict)
             else:
-                results[begin:end] = self._sess.run(self._probs, feed_dict=fd)
+                results[begin:end] = self._sess.run(self._probs, feed_dict=feed_dict)
 
         return results
 
@@ -156,11 +156,11 @@ class TFClassifier(Classifier):
                 o_batch = y_preprocessed[ind[m * batch_size:(m + 1) * batch_size]]
 
                 # Create feed_dict
-                fd = {self._input_ph: i_batch, self._output_ph: o_batch}
-                fd.update(self._feed_dict)
+                feed_dict = {self._input_ph: i_batch, self._output_ph: o_batch}
+                feed_dict.update(self._feed_dict)
 
                 # Run train step
-                self._sess.run(self._train, feed_dict=fd)
+                self._sess.run(self._train, feed_dict=feed_dict)
 
     def fit_generator(self, generator, nb_epochs=20, **kwargs):
         """
@@ -186,11 +186,11 @@ class TFClassifier(Classifier):
                     i_batch, o_batch = generator.get_batch()
 
                     # Create feed_dict
-                    fd = {self._input_ph: i_batch, self._output_ph: o_batch}
-                    fd.update(self._feed_dict)
+                    feed_dict = {self._input_ph: i_batch, self._output_ph: o_batch}
+                    feed_dict.update(self._feed_dict)
 
                     # Run train step
-                    self._sess.run(self._train, feed_dict=fd)
+                    self._sess.run(self._train, feed_dict=feed_dict)
             super(TFClassifier, self).fit_generator(generator, nb_epochs=nb_epochs, **kwargs)
 
     def class_gradient(self, x, label=None, logits=False):
@@ -223,24 +223,24 @@ class TFClassifier(Classifier):
         x_preprocessed, _ = self._apply_preprocessing(x, y=None, fit=False)
 
         # Create feed_dict
-        fd = {self._input_ph: x_preprocessed}
-        fd.update(self._feed_dict)
+        feed_dict = {self._input_ph: x_preprocessed}
+        feed_dict.update(self._feed_dict)
 
         # Compute the gradient and return
         if label is None:
             # Compute the gradients w.r.t. all classes
             if logits:
-                grads = self._sess.run(self._logit_class_grads, feed_dict=fd)
+                grads = self._sess.run(self._logit_class_grads, feed_dict=feed_dict)
             else:
-                grads = self._sess.run(self._class_grads, feed_dict=fd)
+                grads = self._sess.run(self._class_grads, feed_dict=feed_dict)
 
             grads = np.swapaxes(np.array(grads), 0, 1)
         elif isinstance(label, (int, np.integer)):
             # Compute the gradients only w.r.t. the provided label
             if logits:
-                grads = self._sess.run(self._logit_class_grads[label], feed_dict=fd)
+                grads = self._sess.run(self._logit_class_grads[label], feed_dict=feed_dict)
             else:
-                grads = self._sess.run(self._class_grads[label], feed_dict=fd)
+                grads = self._sess.run(self._class_grads[label], feed_dict=feed_dict)
 
             grads = grads[None, ...]
             grads = np.swapaxes(np.array(grads), 0, 1)
@@ -248,9 +248,9 @@ class TFClassifier(Classifier):
             # For each sample, compute the gradients w.r.t. the indicated target class (possibly distinct)
             unique_label = list(np.unique(label))
             if logits:
-                grads = self._sess.run([self._logit_class_grads[l] for l in unique_label], feed_dict=fd)
+                grads = self._sess.run([self._logit_class_grads[l] for l in unique_label], feed_dict=feed_dict)
             else:
-                grads = self._sess.run([self._class_grads[l] for l in unique_label], feed_dict=fd)
+                grads = self._sess.run([self._class_grads[l] for l in unique_label], feed_dict=feed_dict)
 
             grads = np.swapaxes(np.array(grads), 0, 1)
             lst = [unique_label.index(i) for i in label]
@@ -279,11 +279,11 @@ class TFClassifier(Classifier):
             raise ValueError("Need the loss function and the labels placeholder to compute the loss gradient.")
 
         # Create feed_dict
-        fd = {self._input_ph: x_preprocessed, self._output_ph: y_preprocessed}
-        fd.update(self._feed_dict)
+        feed_dict = {self._input_ph: x_preprocessed, self._output_ph: y_preprocessed}
+        feed_dict.update(self._feed_dict)
 
         # Compute gradients
-        grads = self._sess.run(self._loss_grads, feed_dict=fd)
+        grads = self._sess.run(self._loss_grads, feed_dict=feed_dict)
         grads = self._apply_preprocessing_gradient(x, grads)
         assert grads.shape == x_preprocessed.shape
 
@@ -322,13 +322,13 @@ class TFClassifier(Classifier):
 
         else:
             if logits:
-                for l in np.unique(label):
-                    if self._logit_class_grads[l] is None:
-                        self._logit_class_grads[l] = tf.gradients(self._logits[:, l], self._input_ph)[0]
+                for unique_label in np.unique(label):
+                    if self._logit_class_grads[unique_label] is None:
+                        self._logit_class_grads[unique_label] = tf.gradients(self._logits[:, unique_label], self._input_ph)[0]
             else:
-                for l in np.unique(label):
-                    if self._class_grads[l] is None:
-                        self._class_grads[l] = tf.gradients(self._probs[:, l], self._input_ph)[0]
+                for unique_label in np.unique(label):
+                    if self._class_grads[unique_label] is None:
+                        self._class_grads[unique_label] = tf.gradients(self._probs[:, unique_label], self._input_ph)[0]
 
     def _get_layers(self):
         """
@@ -429,11 +429,11 @@ class TFClassifier(Classifier):
             begin, end = m * batch_size, min((m + 1) * batch_size, x_preprocessed.shape[0])
 
             # Create feed_dict
-            fd = {self._input_ph: x_preprocessed[begin:end]}
-            fd.update(self._feed_dict)
+            feed_dict = {self._input_ph: x_preprocessed[begin:end]}
+            feed_dict.update(self._feed_dict)
 
             # Run prediction for the current batch
-            layer_output = self._sess.run(layer_tensor, feed_dict=fd)
+            layer_output = self._sess.run(layer_tensor, feed_dict=feed_dict)
             results.append(layer_output)
 
         results = np.concatenate(results)
