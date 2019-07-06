@@ -42,6 +42,17 @@ SUPPORTED_METHODS = {
 
 
 def get_crafter(classifier, attack, params=None):
+    """Create an attack instance to craft adversarial samples.
+
+        :param classifier: A trained model
+        :type classifier: :class:`.Classifier`
+        :param attack: adversarial attack name
+        :type attack: `str`
+        :param params: Parameters specific to the adversarial attack
+        :type params: `dict`
+        :return: A crafter
+        :rtype: `Attack`
+        """
     try:
         crafter = SUPPORTED_METHODS[attack]["class"](classifier)
     except:
