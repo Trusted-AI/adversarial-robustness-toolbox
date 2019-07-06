@@ -196,8 +196,8 @@ def clever(classifier, x, nb_batches, batch_size, radius, norm, target=None, tar
         if j == pred_class:
             score_list.append(None)
             continue
-        s = clever_t(classifier, x, j, nb_batches, batch_size, radius, norm, c_init, pool_factor)
-        score_list.append(s)
+        score = clever_t(classifier, x, j, nb_batches, batch_size, radius, norm, c_init, pool_factor)
+        score_list.append(score)
     return np.array(score_list)
 
 
@@ -232,8 +232,8 @@ def clever_u(classifier, x, nb_batches, batch_size, radius, norm, c_init=1, pool
     # Compute CLEVER score for each untargeted class
     score_list = []
     for j in untarget_classes:
-        s = clever_t(classifier, x, j, nb_batches, batch_size, radius, norm, c_init, pool_factor)
-        score_list.append(s)
+        score = clever_t(classifier, x, j, nb_batches, batch_size, radius, norm, c_init, pool_factor)
+        score_list.append(score)
 
     return np.min(score_list)
 
@@ -318,6 +318,6 @@ def clever_t(classifier, x, target_class, nb_batches, batch_size, radius, norm, 
     value = values[:, pred_class] - values[:, target_class]
 
     # Compute scores
-    s = np.min([-value[0] / loc, radius])
+    score = np.min([-value[0] / loc, radius])
 
-    return s
+    return score
