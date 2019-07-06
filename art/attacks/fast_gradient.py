@@ -143,7 +143,7 @@ class FastGradientMethod(Attack):
             adv_x_best = None
             rate_best = None
 
-            for i_random_init in range(max(1, self.num_random_init)):
+            for _ in range(max(1, self.num_random_init)):
                 adv_x = self._compute(x, x, y, self.eps, self.eps, self._project, self.num_random_init > 0)
 
                 if self.num_random_init > 1:
