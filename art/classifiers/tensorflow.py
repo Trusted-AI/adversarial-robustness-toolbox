@@ -369,10 +369,10 @@ class TFClassifier(Classifier):
             filter_cond = ((op.values()) and (not op.values()[0].get_shape() == None) and (
                 len(op.values()[0].get_shape().as_list()) > 1) and (
                     op.values()[0].get_shape().as_list()[0] is None) and (
-                                   op.values()[0].get_shape().as_list()[1] is not None) and (
-                               not op.values()[0].name.startswith("gradients")) and (
-                               not op.values()[0].name.startswith("softmax_cross_entropy_loss")) and (
-                               not op.type == "Placeholder"))
+                        op.values()[0].get_shape().as_list()[1] is not None) and (
+                                       not op.values()[0].name.startswith("gradients")) and (
+                                   not op.values()[0].name.startswith("softmax_cross_entropy_loss")) and (
+                                   not op.type == "Placeholder"))
 
             if filter_cond:
                 tmp_list.append(op.values()[0].name)
