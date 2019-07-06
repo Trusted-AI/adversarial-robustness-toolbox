@@ -97,7 +97,7 @@ class ProjectedGradientDescent(FastGradientMethod):
         adv_x_best = None
         rate_best = None
 
-        for i_random_init in range(max(1, self.num_random_init)):
+        for _ in range(max(1, self.num_random_init)):
             adv_x = x.astype(NUMPY_DTYPE)
 
             for i_max_iter in range(self.max_iter):
@@ -113,7 +113,7 @@ class ProjectedGradientDescent(FastGradientMethod):
                 adv_x_best = adv_x
 
         logger.info('Success rate of attack: %.2f%%', rate_best if rate_best is not None else
-        100 * compute_success(self.classifier, x, y, adv_x, self.targeted))
+                    100 * compute_success(self.classifier, x, y, adv_x, self.targeted))
 
         return adv_x_best
 
