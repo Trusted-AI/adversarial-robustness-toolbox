@@ -138,11 +138,11 @@ class ClusteringAnalyzer:
         for _, activations in enumerate(separated_activations):
             cluster_centers.append(np.median(activations, axis=0))
 
-        for i, (clusters, ac) in enumerate(zip(separated_clusters, separated_activations)):
+        for i, (clusters, activation) in enumerate(zip(separated_clusters, separated_activations)):
             clusters = np.array(clusters)
 
-            cluster0_center = np.median(ac[np.where(clusters == 0)], axis=0)
-            cluster1_center = np.median(ac[np.where(clusters == 1)], axis=0)
+            cluster0_center = np.median(activation[np.where(clusters == 0)], axis=0)
+            cluster1_center = np.median(activation[np.where(clusters == 1)], axis=0)
 
             cluster0_distance = np.linalg.norm(cluster0_center - cluster_centers[i])
             cluster1_distance = np.linalg.norm(cluster1_center - cluster_centers[i])
