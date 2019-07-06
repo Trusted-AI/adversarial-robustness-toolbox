@@ -135,7 +135,7 @@ class ClusteringAnalyzer:
         summary_poison_clusters = [[[] for x in range(nb_clusters)] for y in range(nb_classes)]
 
         # assign centers
-        for t, activations in enumerate(separated_activations):
+        for _, activations in enumerate(separated_activations):
             cluster_centers.append(np.median(activations, axis=0))
 
         for i, (clusters, ac) in enumerate(zip(separated_clusters, separated_activations)):
