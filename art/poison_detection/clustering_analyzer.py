@@ -327,7 +327,7 @@ class ClusteringAnalyzer:
                 if silhouette_avg > silhouette_threshold:
                     # In this case the cluster is considered poisonous
                     clean_clusters = np.where(percentages < size_threshold)
-                    logger.info('computed silhouette score: ', silhouette_avg)
+                    logger.info('computed silhouette score: %s', silhouette_avg)
                     dict_i.update(suspicious=True)
                 else:
                     poison_clusters = [[]]
