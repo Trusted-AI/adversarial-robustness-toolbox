@@ -1,3 +1,6 @@
+"""
+The Adversarial Robustness Toolbox (ART).
+"""
 import json
 import logging
 import logging.config
