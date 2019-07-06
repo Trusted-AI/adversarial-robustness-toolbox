@@ -112,13 +112,13 @@ class EnsembleClassifier(Classifier):
             return preds
 
         # Aggregate predictions only at probabilities level, as logits are not comparable between models
-        z = np.sum(preds, axis=0)
+        var_z = np.sum(preds, axis=0)
 
         # Convert back to logits if needed
         if logits:
             eps = 10e-8
-            z = np.log(np.clip(z, eps, 1. - eps))
-        return z
+            var_z = np.log(np.clip(var_z, eps, 1. - eps))
+        return var_z
 
     def fit(self, x, y, batch_size=128, nb_epochs=20, **kwargs):
         """
