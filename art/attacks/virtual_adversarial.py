@@ -106,7 +106,7 @@ class VirtualAdversarialMethod(Attack):
                 clip_min, clip_max = self.classifier.clip_values
                 x_adv[batch_index_1:batch_index_2] = \
                     np.clip(batch + self.eps * self._normalize(d), clip_min, clip_max) \
-                    .reshape((-1,) + self.classifier.input_shape)
+                        .reshape((-1,) + self.classifier.input_shape)
             else:
                 x_adv[batch_index_1:batch_index_2] = (batch + self.eps * self._normalize(d)) \
                     .reshape((-1,) + self.classifier.input_shape)
@@ -125,7 +125,7 @@ class VirtualAdversarialMethod(Attack):
         """
         tol = 1e-10
 
-        inverse = (np.sum(x**2, axis=1) + tol) ** -.5
+        inverse = (np.sum(x ** 2, axis=1) + tol) ** -.5
         x = x * inverse[:, None]
 
         return x

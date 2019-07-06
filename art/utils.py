@@ -35,6 +35,7 @@ try:
 except ImportError:
     logger.info('Could not import PyTorch in utilities.')
 
+
 # -------------------------------------------------------------------------------------------- RANDOM NUMBER GENERATORS
 
 
@@ -530,15 +531,15 @@ def load_iris(raw=False, test_set=.3):
 
     # Split training and test sets
     split_index = int((1 - test_set) * len(data) / 3)
-    x_train = np.vstack((data[:split_index], data[50:50+split_index], data[100:100+split_index]))
-    y_train = np.vstack((labels[:split_index], labels[50:50+split_index], labels[100:100+split_index]))
+    x_train = np.vstack((data[:split_index], data[50:50 + split_index], data[100:100 + split_index]))
+    y_train = np.vstack((labels[:split_index], labels[50:50 + split_index], labels[100:100 + split_index]))
 
     if split_index >= 49:
         x_test, y_test = None, None
     else:
 
-        x_test = np.vstack((data[split_index:50], data[50+split_index:100], data[100+split_index:]))
-        y_test = np.vstack((labels[split_index:50], labels[50+split_index:100], labels[100+split_index:]))
+        x_test = np.vstack((data[split_index:50], data[50 + split_index:100], data[100 + split_index:]))
+        y_test = np.vstack((labels[split_index:50], labels[50 + split_index:100], labels[100 + split_index:]))
         assert len(x_train) + len(x_test) == 150
 
         # Shuffle test set
@@ -700,6 +701,7 @@ def clip_and_round(x, clip_values, round_samples):
         np.clip(x, clip_values[0], clip_values[1], out=x)
     x = np.around(x / round_samples) * round_samples
     return x
+
 
 # ----------------------------------------------------------------------------------------------- TEST MODELS FOR MNIST
 

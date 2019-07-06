@@ -94,14 +94,14 @@ class ClusteringAnalyzer:
             # Generate report for this class:
             report_class = dict()
             for cluster_id in range(nb_clusters):
-                ptc = sizes[cluster_id]/total_dp_in_class
+                ptc = sizes[cluster_id] / total_dp_in_class
                 susp = (cluster_id in poison_clusters)
                 dict_i = dict(ptc_data_in_cluster=round(ptc, 2), suspicious_cluster=susp)
 
-                dict_cluster = {'cluster_'+str(cluster_id): dict_i}
+                dict_cluster = {'cluster_' + str(cluster_id): dict_i}
                 report_class.update(dict_cluster)
 
-            report['Class_'+str(i)] = report_class
+            report['Class_' + str(i)] = report_class
 
         report['suspicious_clusters'] = report['suspicious_clusters'] + np.sum(summary_poison_clusters).item()
         return np.asarray(all_assigned_clean), summary_poison_clusters, report
@@ -165,10 +165,10 @@ class ClusteringAnalyzer:
                     if cluster1_distance_to_k < cluster1_distance and cluster0_distance_to_k > cluster0_distance:
                         cluster1_is_poison = True
 
-                    dict_cluster_0['distance_to_class_'+str(k)] = str(cluster0_distance_to_k)
+                    dict_cluster_0['distance_to_class_' + str(k)] = str(cluster0_distance_to_k)
                     dict_cluster_0['suspicious'] = str(cluster0_is_poison)
 
-                    dict_cluster_1['distance_to_class_'+str(k)] = str(cluster1_distance_to_k)
+                    dict_cluster_1['distance_to_class_' + str(k)] = str(cluster1_distance_to_k)
                     dict_cluster_1['suspicious'] = cluster1_is_poison
 
                     dict_k.update(dict_cluster_0)

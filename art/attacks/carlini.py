@@ -125,7 +125,7 @@ class CarliniL2Method(Attack):
             # if untargeted, optimize for making any other class most likely
             loss = np.maximum(z_target - z_other + self.confidence, np.zeros(x.shape[0]))
 
-        return z, l2dist, c*loss + l2dist
+        return z, l2dist, c * loss + l2dist
 
     def _loss_gradient(self, z, target, x, x_adv, x_adv_tanh, c, clip_min, clip_max):
         """
@@ -162,7 +162,7 @@ class CarliniL2Method(Attack):
         loss_gradient = loss_gradient.reshape(x.shape)
 
         c_mult = c
-        for _ in range(len(x.shape)-1):
+        for _ in range(len(x.shape) - 1):
             c_mult = c_mult[:, np.newaxis]
 
         loss_gradient *= c_mult
@@ -239,7 +239,7 @@ class CarliniL2Method(Attack):
                     logger.debug('Iteration step %i out of %i', it, self.max_iter)
                     logger.debug('Average Loss: %f', np.mean(loss))
                     logger.debug('Average L2Dist: %f', np.mean(l2dist))
-                    logger.debug('Average Margin Loss: %f', np.mean(loss-l2dist))
+                    logger.debug('Average Margin Loss: %f', np.mean(loss - l2dist))
                     logger.debug('Current number of succeeded attacks: %i out of %i', int(np.sum(attack_success)),
                                  len(attack_success))
 
@@ -279,11 +279,11 @@ class CarliniL2Method(Attack):
                         active_and_do_halving[active] = do_halving
 
                         lr_mult = lr[active_and_do_halving]
-                        for _ in range(len(x.shape)-1):
+                        for _ in range(len(x.shape) - 1):
                             lr_mult = lr_mult[:, np.newaxis]
 
                         new_x_adv_batch_tanh = x_adv_batch_tanh[active_and_do_halving] + \
-                            lr_mult * perturbation_tanh[do_halving]
+                                               lr_mult * perturbation_tanh[do_halving]
                         new_x_adv_batch = tanh_to_original(new_x_adv_batch_tanh, clip_min, clip_max,
                                                            self._tanh_smoother)
                         _, l2dist[active_and_do_halving], loss[active_and_do_halving] = self._loss(
@@ -292,7 +292,7 @@ class CarliniL2Method(Attack):
 
                         logger.debug('New Average Loss: %f', np.mean(loss))
                         logger.debug('New Average L2Dist: %f', np.mean(l2dist))
-                        logger.debug('New Average Margin Loss: %f', np.mean(loss-l2dist))
+                        logger.debug('New Average Margin Loss: %f', np.mean(loss - l2dist))
 
                         best_lr[loss < best_loss] = lr[loss < best_loss]
                         best_loss[loss < best_loss] = loss[loss < best_loss]
@@ -313,11 +313,11 @@ class CarliniL2Method(Attack):
                         lr[active_and_do_doubling] *= 2
 
                         lr_mult = lr[active_and_do_doubling]
-                        for _ in range(len(x.shape)-1):
+                        for _ in range(len(x.shape) - 1):
                             lr_mult = lr_mult[:, np.newaxis]
 
                         new_x_adv_batch_tanh = x_adv_batch_tanh[active_and_do_doubling] + \
-                            lr_mult * perturbation_tanh[do_doubling]
+                                               lr_mult * perturbation_tanh[do_doubling]
                         new_x_adv_batch = tanh_to_original(new_x_adv_batch_tanh, clip_min, clip_max,
                                                            self._tanh_smoother)
                         _, l2dist[active_and_do_doubling], loss[active_and_do_doubling] = self._loss(
@@ -325,7 +325,7 @@ class CarliniL2Method(Attack):
                             c[active_and_do_doubling])
                         logger.debug('New Average Loss: %f', np.mean(loss))
                         logger.debug('New Average L2Dist: %f', np.mean(l2dist))
-                        logger.debug('New Average Margin Loss: %f', np.mean(loss-l2dist))
+                        logger.debug('New Average Margin Loss: %f', np.mean(loss - l2dist))
                         best_lr[loss < best_loss] = lr[loss < best_loss]
                         best_loss[loss < best_loss] = loss[loss < best_loss]
 
@@ -341,7 +341,7 @@ class CarliniL2Method(Attack):
                         for _ in range(len(x.shape) - 1):
                             best_lr_mult = best_lr_mult[:, np.newaxis]
                         x_adv_batch_tanh[active_and_update_adv] = x_adv_batch_tanh[active_and_update_adv] + \
-                            best_lr_mult * perturbation_tanh[update_adv]
+                                                                  best_lr_mult * perturbation_tanh[update_adv]
                         x_adv_batch[active_and_update_adv] = tanh_to_original(x_adv_batch_tanh[active_and_update_adv],
                                                                               clip_min, clip_max, self._tanh_smoother)
                         z[active_and_update_adv], l2dist[active_and_update_adv], loss[active_and_update_adv] = \
@@ -619,11 +619,11 @@ class CarliniLInfMethod(Attack):
                     active_and_do_halving[active] = do_halving
 
                     lr_mult = lr[active_and_do_halving]
-                    for _ in range(len(x.shape)-1):
+                    for _ in range(len(x.shape) - 1):
                         lr_mult = lr_mult[:, np.newaxis]
 
                     new_x_adv_batch_tanh = x_adv_batch_tanh[active_and_do_halving] + \
-                        lr_mult * perturbation_tanh[do_halving]
+                                           lr_mult * perturbation_tanh[do_halving]
                     new_x_adv_batch = tanh_to_original(new_x_adv_batch_tanh,
                                                        clip_min[active_and_do_halving],
                                                        clip_max[active_and_do_halving])
@@ -652,11 +652,11 @@ class CarliniLInfMethod(Attack):
                     lr[active_and_do_doubling] *= 2
 
                     lr_mult = lr[active_and_do_doubling]
-                    for _ in range(len(x.shape)-1):
+                    for _ in range(len(x.shape) - 1):
                         lr_mult = lr_mult[:, np.newaxis]
 
                     new_x_adv_batch_tanh = x_adv_batch_tanh[active_and_do_doubling] + \
-                        lr_mult * perturbation_tanh[do_doubling]
+                                           lr_mult * perturbation_tanh[do_doubling]
                     new_x_adv_batch = tanh_to_original(new_x_adv_batch_tanh,
                                                        clip_min[active_and_do_doubling],
                                                        clip_max[active_and_do_doubling])
@@ -675,11 +675,11 @@ class CarliniLInfMethod(Attack):
                     active_and_update_adv = active.copy()
                     active_and_update_adv[active] = update_adv
                     best_lr_mult = best_lr[active_and_update_adv]
-                    for _ in range(len(x.shape)-1):
+                    for _ in range(len(x.shape) - 1):
                         best_lr_mult = best_lr_mult[:, np.newaxis]
 
                     x_adv_batch_tanh[active_and_update_adv] = x_adv_batch_tanh[active_and_update_adv] + \
-                        best_lr_mult * perturbation_tanh[update_adv]
+                                                              best_lr_mult * perturbation_tanh[update_adv]
                     x_adv_batch[active_and_update_adv] = tanh_to_original(x_adv_batch_tanh[active_and_update_adv],
                                                                           clip_min[active_and_update_adv],
                                                                           clip_max[active_and_update_adv])

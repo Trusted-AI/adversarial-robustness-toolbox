@@ -31,6 +31,7 @@ class EnsembleClassifier(Classifier):
     Class allowing to aggregate multiple classifiers as an ensemble. The individual classifiers are expected to be
     trained when the ensemble is created and no training procedures are provided through this class.
     """
+
     def __init__(self, classifiers, classifier_weights=None, channel_index=3, clip_values=None, defences=None,
                  preprocessing=(0, 1)):
         """

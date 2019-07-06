@@ -35,6 +35,7 @@ class BinaryInputDetector(Classifier):
     Binary detector of adversarial samples coming from evasion attacks. The detector uses an architecture provided by
     the user and trains it on data labeled as clean (label 0) or adversarial (label 1).
     """
+
     def __init__(self, detector):
         """
         Create a `BinaryInputDetector` instance which performs binary classification on input data.
@@ -138,6 +139,7 @@ class BinaryActivationDetector(Classifier):
     Binary detector of adversarial samples coming from evasion attacks. The detector uses an architecture provided by
     the user and is trained on the values of the activations of a classifier at a given layer.
     """
+
     def __init__(self, classifier, detector, layer):
         """
         Create a `BinaryActivationDetector` instance which performs binary classification on activation information.

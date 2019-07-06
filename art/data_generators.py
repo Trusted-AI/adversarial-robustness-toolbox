@@ -41,6 +41,7 @@ class DataGenerator(ABC):
     """
     Base class for data generators.
     """
+
     def __init__(self, size, batch_size):
         """
         Base initializer for data generators.
@@ -78,6 +79,7 @@ class KerasDataGenerator(DataGenerator):
     Wrapper class on top of the Keras-native data generators. These can either be generator functions,
     `keras.utils.Sequence` or Keras-specific data generators (`keras.preprocessing.image.ImageDataGenerator`).
     """
+
     def __init__(self, generator, size, batch_size):
         """
         Create a Keras data generator wrapper instance.
@@ -115,6 +117,7 @@ class PyTorchDataGenerator(DataGenerator):
     """
     Wrapper class on top of the PyTorch native data loader :class:`torch.utils.data.DataLoader`.
     """
+
     def __init__(self, data_loader, size, batch_size):
         """
         Create a data generator wrapper on top of a PyTorch :class:`DataLoader`.
@@ -156,6 +159,7 @@ class MXDataGenerator(DataGenerator):
     """
     Wrapper class on top of the MXNet/Gluon native data loader :class:`mxnet.gluon.data.DataLoader`.
     """
+
     def __init__(self, data_loader, size, batch_size):
         """
         Create a data generator wrapper on top of an MXNet :class:`DataLoader`.
@@ -197,6 +201,7 @@ class TFDataGenerator(DataGenerator):
     """
     Wrapper class on top of the TensorFlow native iterators :class:`tf.data.Iterator`.
     """
+
     def __init__(self, sess, iterator, iterator_type, iterator_arg, size, batch_size):
         """
         Create a data generator wrapper for TensorFlow. Supported iterators: initializable, reinitializable, feedable.

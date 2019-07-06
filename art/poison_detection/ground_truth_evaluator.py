@@ -29,6 +29,7 @@ class GroundTruthEvaluator:
     """
     Class to evaluate the performance of the poison detection method.
     """
+
     def __init__(self):
         """
         Evaluates ground truth constructor

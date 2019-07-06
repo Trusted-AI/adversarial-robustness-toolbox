@@ -60,6 +60,7 @@ def cnn_mnist_k(input_shape):
     classifier = KerasClassifier((0, 1), model, use_logits=False)
     return classifier
 
+
 # Get session
 session = tf.Session()
 k.set_session(session)

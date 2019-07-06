@@ -38,7 +38,7 @@ logger = logging.getLogger(__name__)
 SUPPORTED_METHODS = {
     "fgsm": {"class": FastGradientMethod, "params": {"eps_step": 0.1, "eps_max": 1., "clip_min": 0., "clip_max": 1.}},
     # "jsma": {"class": SaliencyMapMethod, "params": {"theta": 1., "gamma": 0.01, "clip_min": 0., "clip_max": 1.}}
-    }
+}
 
 
 def get_crafter(classifier, attack, params=None):
