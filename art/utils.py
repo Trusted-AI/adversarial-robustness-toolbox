@@ -107,9 +107,11 @@ def projection(values, eps, norm_p):
     values_tmp = values.reshape((values.shape[0], -1))
 
     if norm_p == 2:
-        values_tmp = values_tmp * np.expand_dims(np.minimum(1., eps / (np.linalg.norm(values_tmp, axis=1) + tol)), axis=1)
+        values_tmp = values_tmp * np.expand_dims(np.minimum(1., eps / (np.linalg.norm(values_tmp, axis=1) + tol)),
+                                                 axis=1)
     elif norm_p == 1:
-        values_tmp = values_tmp * np.expand_dims(np.minimum(1., eps / (np.linalg.norm(values_tmp, axis=1, ord=1) + tol)), axis=1)
+        values_tmp = values_tmp * np.expand_dims(
+            np.minimum(1., eps / (np.linalg.norm(values_tmp, axis=1, ord=1) + tol)), axis=1)
     elif norm_p == np.inf:
         values_tmp = np.sign(values_tmp) * np.minimum(abs(values_tmp), eps)
     else:
