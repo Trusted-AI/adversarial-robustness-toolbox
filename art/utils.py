@@ -89,34 +89,34 @@ def master_seed(seed):
 # ----------------------------------------------------------------------------------------------------- MATHS UTILITIES
 
 
-def projection(v, eps, p):
+def projection(values, eps, p):
     """
-    Project the values in `v` on the L_p norm ball of size `eps`.
+    Project `values` on the L_p norm ball of size `eps`.
 
-    :param v: Array of perturbations to clip.
-    :type v: `np.ndarray`
+    :param values: Array of perturbations to clip.
+    :type values: `np.ndarray`
     :param eps: Maximum norm allowed.
     :type eps: `float`
     :param p: L_p norm to use for clipping. Only 1, 2 and `np.Inf` supported for now.
     :type p: `int`
-    :return: Values of `v` after projection.
+    :return: Values of `values` after projection.
     :rtype: `np.ndarray`
     """
     # Pick a small scalar to avoid division by 0
     tol = 10e-8
-    v_ = v.reshape((v.shape[0], -1))
+    values_tmp = values.reshape((values.shape[0], -1))
 
     if p == 2:
-        v_ = v_ * np.expand_dims(np.minimum(1., eps / (np.linalg.norm(v_, axis=1) + tol)), axis=1)
+        values_tmp = values_tmp * np.expand_dims(np.minimum(1., eps / (np.linalg.norm(values_tmp, axis=1) + tol)), axis=1)
     elif p == 1:
-        v_ = v_ * np.expand_dims(np.minimum(1., eps / (np.linalg.norm(v_, axis=1, ord=1) + tol)), axis=1)
+        values_tmp = values_tmp * np.expand_dims(np.minimum(1., eps / (np.linalg.norm(values_tmp, axis=1, ord=1) + tol)), axis=1)
     elif p == np.inf:
-        v_ = np.sign(v_) * np.minimum(abs(v_), eps)
+        values_tmp = np.sign(values_tmp) * np.minimum(abs(values_tmp), eps)
     else:
         raise NotImplementedError('Values of `p` different from 1, 2 and `np.inf` are currently not supported.')
 
-    v = v_.reshape(v.shape)
-    return v
+    values = values_tmp.reshape(values.shape)
+    return values
 
 
 def random_sphere(nb_points, nb_dims, radius, norm):
