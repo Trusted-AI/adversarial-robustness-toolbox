@@ -335,27 +335,27 @@ class ElasticNet(Attack):
         return best_dist, best_label, best_attack
 
     @staticmethod
-    def _shrinkage_threshold(z, x, beta):
+    def _shrinkage_threshold(z_batch, x_batch, beta):
         """
         Implement the element-wise projected shrinkage-threshold function.
 
-        :param z: a batch of examples.
-        :type z: `np.ndarray`
-        :param x: a batch of original examples.
-        :type x: `np.ndarray`
+        :param z_batch: a batch of examples.
+        :type z_batch: `np.ndarray`
+        :param x_batch: a batch of original examples.
+        :type x_batch: `np.ndarray`
         :param beta: the shrink parameter.
         :type beta: `float`
         :return: a shrinked version of z.
         :rtype: `np.ndarray`
         """
-        cond1 = (z - x) > beta
-        cond2 = np.abs(z - x) <= beta
-        cond3 = (z - x) < -beta
+        cond1 = (z_batch - x_batch) > beta
+        cond2 = np.abs(z_batch - x_batch) <= beta
+        cond3 = (z_batch - x_batch) < -beta
 
-        upper = np.minimum(z - beta, 1.0)
-        lower = np.maximum(z + beta, 0.0)
+        upper = np.minimum(z_batch - beta, 1.0)
+        lower = np.maximum(z_batch + beta, 0.0)
 
-        result = cond1 * upper + cond2 * x + cond3 * lower
+        result = cond1 * upper + cond2 * x_batch + cond3 * lower
 
         return result
 
