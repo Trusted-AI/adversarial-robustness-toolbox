@@ -365,7 +365,7 @@ class TFClassifier(Classifier):
 
         for op in ops:
             if op.values():
-                if not op.values()[0].get_shape() == None:
+                if op.values()[0].get_shape() is not None:
                     if len(op.values()[0].get_shape().as_list()) > 1:
                         if op.values()[0].get_shape().as_list()[0] is None:
                             if op.values()[0].get_shape().as_list()[1] is not None:
