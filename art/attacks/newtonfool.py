@@ -75,8 +75,8 @@ class NewtonFool(Attack):
 
             # Main algorithm for each batch
             norm_batch = np.linalg.norm(np.reshape(batch, (batch.shape[0], -1)), axis=1)
-            l = pred_class[batch_index_1:batch_index_2]
-            l_b = to_categorical(l, self.classifier.nb_classes).astype(bool)
+            l_batch = pred_class[batch_index_1:batch_index_2]
+            l_b = to_categorical(l_batch, self.classifier.nb_classes).astype(bool)
 
             # Main loop of the algorithm
             for _ in range(self.max_iter):
@@ -84,7 +84,7 @@ class NewtonFool(Attack):
                 score = self.classifier.predict(batch, logits=False)[l_b]
 
                 # Compute the gradients and norm
-                grads = self.classifier.class_gradient(batch, label=l, logits=False)
+                grads = self.classifier.class_gradient(batch, label=l_batch, logits=False)
                 grads = np.squeeze(grads, axis=1)
                 norm_grad = np.linalg.norm(np.reshape(grads, (batch.shape[0], -1)), axis=1)
 
