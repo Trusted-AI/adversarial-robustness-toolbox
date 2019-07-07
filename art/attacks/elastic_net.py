@@ -150,7 +150,7 @@ class ElasticNet(Attack):
         :rtype: `float`
         """
         decayed_learning_rate = (self.learning_rate - end_learning_rate) * (1 - global_step / decay_steps) ** 2 + \
-                                end_learning_rate
+            end_learning_rate
 
         return decayed_learning_rate
 
