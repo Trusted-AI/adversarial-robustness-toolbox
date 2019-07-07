@@ -342,7 +342,7 @@ class TFClassifier(Classifier):
                 for unique_label in np.unique(label):
                     if self._logit_class_grads[unique_label] is None:
                         self._logit_class_grads[unique_label] = \
-                        tf.gradients(self._logits[:, unique_label], self._input_ph)[0]
+                            tf.gradients(self._logits[:, unique_label], self._input_ph)[0]
             else:
                 for unique_label in np.unique(label):
                     if self._class_grads[unique_label] is None:
@@ -366,16 +366,15 @@ class TFClassifier(Classifier):
         ops = graph.get_operations()
 
         for op in ops:
-            filter_cond = ((op.values()) and (not op.values()[0].get_shape() == None) and (
-                len(op.values()[0].get_shape().as_list()) > 1) and (
-                    op.values()[0].get_shape().as_list()[0] is None) and (
-                        op.values()[0].get_shape().as_list()[1] is not None) and (
-                                       not op.values()[0].name.startswith("gradients")) and (
-                                   not op.values()[0].name.startswith("softmax_cross_entropy_loss")) and (
-                                   not op.type == "Placeholder"))
-
-            if filter_cond:
-                tmp_list.append(op.values()[0].name)
+            if op.values():
+                if not op.values()[0].get_shape() == None:
+                    if len(op.values()[0].get_shape().as_list()) > 1:
+                        if op.values()[0].get_shape().as_list()[0] is None:
+                            if op.values()[0].get_shape().as_list()[1] is not None:
+                                if not op.values()[0].name.startswith("gradients"):
+                                    if not op.values()[0].name.startswith("softmax_cross_entropy_loss"):
+                                        if not op.type == "Placeholder":
+                                            tmp_list.append(op.values()[0].name)
 
         # Shorten the list
         if not tmp_list:
