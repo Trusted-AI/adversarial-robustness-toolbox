@@ -233,12 +233,12 @@ class DetectorClassifier(Classifier):
                 for i in range(self._nb_classes):
                     si_grads = 0
                     for j in range(self._nb_classes):
-                        c = sum_exp_logits - np.exp(combined_logits[:, j])
+                        c_var = sum_exp_logits - np.exp(combined_logits[:, j])
 
                         if j == i:
-                            si_lj = c * np.power(c + np.exp(combined_logits[:, i]), -2) * np.exp(combined_logits[:, i])
+                            si_lj = c_var * np.power(c_var + np.exp(combined_logits[:, i]), -2) * np.exp(combined_logits[:, i])
                         else:
-                            si_lj = -np.exp(combined_logits[:, i]) * np.power(c + np.exp(combined_logits[:, j]), -2) * \
+                            si_lj = -np.exp(combined_logits[:, i]) * np.power(c_var + np.exp(combined_logits[:, j]), -2) * \
                                     np.exp(combined_logits[:, j])
                         si_grads += si_lj[:, None, None, None] * combined_logits_grads[:, j]
 
@@ -249,12 +249,12 @@ class DetectorClassifier(Classifier):
             elif isinstance(label, (int, np.int)):
                 si_grads = 0
                 for j in range(self._nb_classes):
-                    c = sum_exp_logits - np.exp(combined_logits[:, j])
+                    c_var = sum_exp_logits - np.exp(combined_logits[:, j])
                     if j == label:
-                        si_lj = c * np.power(c + np.exp(combined_logits[:, label]), -2) * \
+                        si_lj = c_var * np.power(c_var + np.exp(combined_logits[:, label]), -2) * \
                                 np.exp(combined_logits[:, label])
                     else:
-                        si_lj = -np.exp(combined_logits[:, label]) * np.power(c + np.exp(combined_logits[:, j]), -2) * \
+                        si_lj = -np.exp(combined_logits[:, label]) * np.power(c_var + np.exp(combined_logits[:, j]), -2) * \
                                 np.exp(combined_logits[:, j])
                     si_grads += si_lj[:, None, None, None] * combined_logits_grads[:, j]
 
@@ -266,11 +266,11 @@ class DetectorClassifier(Classifier):
                 for i in unique_label:
                     si_grads = 0
                     for j in range(self._nb_classes):
-                        c = sum_exp_logits - np.exp(combined_logits[:, j])
+                        c_var = sum_exp_logits - np.exp(combined_logits[:, j])
                         if j == i:
-                            si_lj = c * np.power(c + np.exp(combined_logits[:, i]), -2) * np.exp(combined_logits[:, i])
+                            si_lj = c_var * np.power(c_var + np.exp(combined_logits[:, i]), -2) * np.exp(combined_logits[:, i])
                         else:
-                            si_lj = -np.exp(combined_logits[:, i]) * np.power(c + np.exp(combined_logits[:, j]), -2) * \
+                            si_lj = -np.exp(combined_logits[:, i]) * np.power(c_var + np.exp(combined_logits[:, j]), -2) * \
                                     np.exp(combined_logits[:, j])
                         si_grads += si_lj[:, None, None, None] * combined_logits_grads[:, j]
 
