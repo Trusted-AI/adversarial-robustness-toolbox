@@ -255,8 +255,7 @@ class ElasticNet(Attack):
         def compare(o_1, o_2):
             if self.targeted:
                 return o_1 == o_2
-            else:
-                return o_1 != o_2
+            return o_1 != o_2
 
         for i in range(c_batch.shape[0]):
             if compare(best_label[i], np.argmax(y_batch[i])) and best_label[i] != -np.inf:
@@ -292,8 +291,7 @@ class ElasticNet(Attack):
         def compare(o_1, o_2):
             if self.targeted:
                 return o_1 == o_2
-            else:
-                return o_1 != o_2
+            return o_1 != o_2
 
         # Initialize best distortions and best changed labels and best attacks
         best_dist = np.inf * np.ones(x_batch.shape[0])
