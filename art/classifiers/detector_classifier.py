@@ -188,13 +188,13 @@ class DetectorClassifier(Classifier):
                                                  x_defences.shape[3]))
 
                 # First compute the classifier gradients for classifier_idx
-                if len(classifier_idx) > 0:
+                if classifier_idx.size > 0:
                     combined_grads[classifier_idx] = self.classifier.class_gradient(x=x_defences[classifier_idx],
                                                                                     label=label[classifier_idx],
                                                                                     logits=True)
 
                 # Then compute the detector gradients for detector_idx
-                if len(detector_idx) > 0:
+                if detector_idx.size > 0:
                     # First compute the classifier gradients for detector_idx
                     classifier_grads = self.classifier.class_gradient(x=x_defences[detector_idx], label=None,
                                                                       logits=True)
