@@ -135,20 +135,20 @@ def random_sphere(nb_points, nb_dims, radius, norm):
     :rtype: `np.ndarray`
     """
     if norm == 1:
-        a = np.zeros(shape=(nb_points, nb_dims + 1))
-        a[:, -1] = np.sqrt(np.random.uniform(0, radius ** 2, nb_points))
+        a_tmp = np.zeros(shape=(nb_points, nb_dims + 1))
+        a_tmp[:, -1] = np.sqrt(np.random.uniform(0, radius ** 2, nb_points))
 
         for i in range(nb_points):
-            a[i, 1:-1] = np.sort(np.random.uniform(0, a[i, -1], nb_dims - 1))
+            a_tmp[i, 1:-1] = np.sort(np.random.uniform(0, a_tmp[i, -1], nb_dims - 1))
 
-        res = (a[:, 1:] - a[:, :-1]) * np.random.choice([-1, 1], (nb_points, nb_dims))
+        res = (a_tmp[:, 1:] - a_tmp[:, :-1]) * np.random.choice([-1, 1], (nb_points, nb_dims))
     elif norm == 2:
         from scipy.special import gammainc
 
-        a = np.random.randn(nb_points, nb_dims)
-        s2 = np.sum(a ** 2, axis=1)
-        base = gammainc(nb_dims / 2.0, s2 / 2.0) ** (1 / nb_dims) * radius / np.sqrt(s2)
-        res = a * (np.tile(base, (nb_dims, 1))).T
+        a_tmp = np.random.randn(nb_points, nb_dims)
+        s_2 = np.sum(a_tmp ** 2, axis=1)
+        base = gammainc(nb_dims / 2.0, s_2 / 2.0) ** (1 / nb_dims) * radius / np.sqrt(s_2)
+        res = a_tmp * (np.tile(base, (nb_dims, 1))).T
     elif norm == np.inf:
         res = np.random.uniform(float(-radius), float(radius), (nb_points, nb_dims))
     else:
@@ -437,12 +437,12 @@ def load_mnist(raw=False):
 
     path = get_file('mnist.npz', path=DATA_PATH, url='https://s3.amazonaws.com/img-datasets/mnist.npz')
 
-    f = np.load(path)
-    x_train = f['x_train']
-    y_train = f['y_train']
-    x_test = f['x_test']
-    y_test = f['y_test']
-    f.close()
+    dict_mnist = np.load(path)
+    x_train = dict_mnist['x_train']
+    y_train = dict_mnist['y_train']
+    x_test = dict_mnist['x_test']
+    y_test = dict_mnist['y_test']
+    dict_mnist.close()
 
     # Add channel axis
     min_, max_ = 0, 255
@@ -472,24 +472,24 @@ def load_stl():
     path = get_file('stl10_binary', path=DATA_PATH, extract=True,
                     url='https://ai.stanford.edu/~acoates/stl10/stl10_binary.tar.gz')
 
-    with open(join(path, 'train_X.bin'), 'rb') as f:
-        x_train = np.fromfile(f, dtype=np.uint8)
+    with open(join(path, 'train_X.bin'), 'rb') as f_numpy:
+        x_train = np.fromfile(f_numpy, dtype=np.uint8)
         x_train = np.reshape(x_train, (-1, 3, 96, 96))
 
-    with open(join(path, 'test_X.bin'), 'rb') as f:
-        x_test = np.fromfile(f, dtype=np.uint8)
+    with open(join(path, 'test_X.bin'), 'rb') as f_numpy:
+        x_test = np.fromfile(f_numpy, dtype=np.uint8)
         x_test = np.reshape(x_test, (-1, 3, 96, 96))
 
     # Set channel last
     x_train = x_train.transpose(0, 2, 3, 1)
     x_test = x_test.transpose(0, 2, 3, 1)
 
-    with open(join(path, 'train_y.bin'), 'rb') as f:
-        y_train = np.fromfile(f, dtype=np.uint8)
+    with open(join(path, 'train_y.bin'), 'rb') as f_numpy:
+        y_train = np.fromfile(f_numpy, dtype=np.uint8)
         y_train -= 1
 
-    with open(join(path, 'test_y.bin'), 'rb') as f:
-        y_test = np.fromfile(f, dtype=np.uint8)
+    with open(join(path, 'test_y.bin'), 'rb') as f_numpy:
+        y_test = np.fromfile(f_numpy, dtype=np.uint8)
         y_test -= 1
 
     x_train, y_train = preprocess(x_train, y_train)
