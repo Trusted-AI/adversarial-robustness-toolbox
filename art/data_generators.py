@@ -262,8 +262,7 @@ class TFDataGenerator(DataGenerator):
         try:
             if self.iterator_type in ('initializable', 'reinitializable'):
                 return self.sess.run(next_batch)
-            else:
-                return self.sess.run(next_batch, feed_dict=self.iterator_arg[1])
+            return self.sess.run(next_batch, feed_dict=self.iterator_arg[1])
         except (tf.errors.FailedPreconditionError, tf.errors.OutOfRangeError):
             if self.iterator_type == 'initializable':
                 self.sess.run(self.iterator.initializer, feed_dict=self.iterator_arg)
