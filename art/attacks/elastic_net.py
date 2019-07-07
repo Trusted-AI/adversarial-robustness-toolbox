@@ -307,7 +307,8 @@ class ElasticNet(Attack):
             logger.debug('Iteration step %i out of %i', i_iter, self.max_iter)
 
             # Update learning rate
-            learning_rate = self._decay_learning_rate(global_step=i_iter, end_learning_rate=0, decay_steps=self.max_iter)
+            learning_rate = self._decay_learning_rate(global_step=i_iter, end_learning_rate=0,
+                                                      decay_steps=self.max_iter)
 
             # Compute adversarial examples
             grad = self._gradient_of_loss(target=y_batch, x=x_batch, x_adv=y_adv, c_weight=c_batch)
