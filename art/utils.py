@@ -653,10 +653,10 @@ def get_file(filename, url, path=None, extract=False):
                 from six.moves.urllib.request import urlretrieve
 
                 urlretrieve(url, full_path)
-            except HTTPError as e:
-                raise Exception(error_msg.format(url, e.code, e.msg))
-            except URLError as e:
-                raise Exception(error_msg.format(url, e.errno, e.reason))
+            except HTTPError as exception:
+                raise Exception(error_msg.format(url, exception.code, exception.msg))
+            except URLError as exception:
+                raise Exception(error_msg.format(url, exception.errno, exception.reason))
         except (Exception, KeyboardInterrupt):
             if os.path.exists(full_path):
                 os.remove(full_path)
