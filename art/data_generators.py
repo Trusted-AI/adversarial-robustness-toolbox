@@ -267,9 +267,10 @@ class TFDataGenerator(DataGenerator):
             if self.iterator_type == 'initializable':
                 self.sess.run(self.iterator.initializer, feed_dict=self.iterator_arg)
                 return self.sess.run(next_batch)
-            elif self.iterator_type == 'reinitializable':
+
+            if self.iterator_type == 'reinitializable':
                 self.sess.run(self.iterator_arg)
                 return self.sess.run(next_batch)
-            else:
-                self.sess.run(self.iterator_arg[0].initializer)
-                return self.sess.run(next_batch, feed_dict=self.iterator_arg[1])
+
+            self.sess.run(self.iterator_arg[0].initializer)
+            return self.sess.run(next_batch, feed_dict=self.iterator_arg[1])
