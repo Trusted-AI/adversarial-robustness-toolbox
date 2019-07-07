@@ -472,11 +472,11 @@ def load_stl():
     path = get_file('stl10_binary', path=DATA_PATH, extract=True,
                     url='https://ai.stanford.edu/~acoates/stl10/stl10_binary.tar.gz')
 
-    with open(join(path, str('train_X.bin')), str('rb')) as f:
+    with open(join(path, 'train_X.bin'), 'rb') as f:
         x_train = np.fromfile(f, dtype=np.uint8)
         x_train = np.reshape(x_train, (-1, 3, 96, 96))
 
-    with open(join(path, str('test_X.bin')), str('rb')) as f:
+    with open(join(path, 'test_X.bin'), 'rb') as f:
         x_test = np.fromfile(f, dtype=np.uint8)
         x_test = np.reshape(x_test, (-1, 3, 96, 96))
 
@@ -484,11 +484,11 @@ def load_stl():
     x_train = x_train.transpose(0, 2, 3, 1)
     x_test = x_test.transpose(0, 2, 3, 1)
 
-    with open(join(path, str('train_y.bin')), str('rb')) as f:
+    with open(join(path, 'train_y.bin'), 'rb') as f:
         y_train = np.fromfile(f, dtype=np.uint8)
         y_train -= 1
 
-    with open(join(path, str('test_y.bin')), str('rb')) as f:
+    with open(join(path, 'test_y.bin'), 'rb') as f:
         y_test = np.fromfile(f, dtype=np.uint8)
         y_test -= 1
 
