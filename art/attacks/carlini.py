@@ -344,8 +344,7 @@ class CarliniL2Method(Attack):
                         for _ in range(len(x.shape) - 1):
                             best_lr_mult = best_lr_mult[:, np.newaxis]
                         x_adv_batch_tanh[active_and_update_adv] = x_adv_batch_tanh[
-                                                                      active_and_update_adv] + best_lr_mult * \
-                                                                  perturbation_tanh[update_adv]
+                            active_and_update_adv] + best_lr_mult * perturbation_tanh[update_adv]
                         x_adv_batch[active_and_update_adv] = tanh_to_original(x_adv_batch_tanh[active_and_update_adv],
                                                                               clip_min, clip_max, self._tanh_smoother)
                         z_logits[active_and_update_adv], l2dist[active_and_update_adv], loss[active_and_update_adv] = \
@@ -368,7 +367,7 @@ class CarliniL2Method(Attack):
                 c_old = c_current
                 c_current[~overall_attack_success & c_double] *= 2
                 c_current[~overall_attack_success & ~c_double] += (c_current - c_lower_bound)[
-                                                                      ~overall_attack_success & ~c_double] / 2
+                    ~overall_attack_success & ~c_double] / 2
                 c_lower_bound[~overall_attack_success] = c_old[~overall_attack_success]
 
             x_adv[batch_index_1:batch_index_2] = best_x_adv_batch
