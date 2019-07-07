@@ -457,7 +457,7 @@ class PyTorchClassifier(Classifier):
         state['inner_model'] = copy.copy(state['_model']._model)
 
         # Remove the unpicklable entries
-        del state['_ModelWrapper']
+        del state['_model_wrapper']
         del state['_device']
         del state['_model']
 
@@ -513,7 +513,7 @@ class PyTorchClassifier(Classifier):
             import torch.nn as nn
 
             # Define model wrapping class only if not defined before
-            if not hasattr(self, '_ModelWrapper'):
+            if not hasattr(self, '_model_wrapper'):
 
                 class ModelWrapper(nn.Module):
                     """
@@ -591,10 +591,10 @@ class PyTorchClassifier(Classifier):
                         return result
 
                 # Set newly created class as private attribute
-                self._ModelWrapper = ModelWrapper
+                self._model_wrapper = ModelWrapper
 
             # Use model wrapping class to wrap the PyTorch model received as argument
-            return self._ModelWrapper(model)
+            return self._model_wrapper(model)
 
         except ImportError:
             raise ImportError('Could not find PyTorch (`torch`) installation.')
