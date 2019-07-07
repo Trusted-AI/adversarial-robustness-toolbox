@@ -89,7 +89,7 @@ def master_seed(seed):
 # ----------------------------------------------------------------------------------------------------- MATHS UTILITIES
 
 
-def projection(values, eps, p):
+def projection(values, eps, norm_p):
     """
     Project `values` on the L_p norm ball of size `eps`.
 
@@ -97,8 +97,8 @@ def projection(values, eps, p):
     :type values: `np.ndarray`
     :param eps: Maximum norm allowed.
     :type eps: `float`
-    :param p: L_p norm to use for clipping. Only 1, 2 and `np.Inf` supported for now.
-    :type p: `int`
+    :param norm_p: L_p norm to use for clipping. Only 1, 2 and `np.Inf` supported for now.
+    :type norm_p: `int`
     :return: Values of `values` after projection.
     :rtype: `np.ndarray`
     """
@@ -106,14 +106,14 @@ def projection(values, eps, p):
     tol = 10e-8
     values_tmp = values.reshape((values.shape[0], -1))
 
-    if p == 2:
+    if norm_p == 2:
         values_tmp = values_tmp * np.expand_dims(np.minimum(1., eps / (np.linalg.norm(values_tmp, axis=1) + tol)), axis=1)
-    elif p == 1:
+    elif norm_p == 1:
         values_tmp = values_tmp * np.expand_dims(np.minimum(1., eps / (np.linalg.norm(values_tmp, axis=1, ord=1) + tol)), axis=1)
-    elif p == np.inf:
+    elif norm_p == np.inf:
         values_tmp = np.sign(values_tmp) * np.minimum(abs(values_tmp), eps)
     else:
-        raise NotImplementedError('Values of `p` different from 1, 2 and `np.inf` are currently not supported.')
+        raise NotImplementedError('Values of `norm_p` different from 1, 2 and `np.inf` are currently not supported.')
 
     values = values_tmp.reshape(values.shape)
     return values
