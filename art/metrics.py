@@ -55,7 +55,7 @@ def get_crafter(classifier, attack, params=None):
         """
     try:
         crafter = SUPPORTED_METHODS[attack]["class"](classifier)
-    except:
+    except Exception:
         raise NotImplementedError("{} crafting method not supported.".format(attack))
 
     if params:
