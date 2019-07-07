@@ -366,13 +366,14 @@ class TFClassifier(Classifier):
         for op in ops:
             if op.values():
                 if op.values()[0].get_shape() is not None:
-                    if len(op.values()[0].get_shape().as_list()) > 1:
-                        if op.values()[0].get_shape().as_list()[0] is None:
-                            if op.values()[0].get_shape().as_list()[1] is not None:
-                                if not op.values()[0].name.startswith("gradients"):
-                                    if not op.values()[0].name.startswith("softmax_cross_entropy_loss"):
-                                        if not op.type == "Placeholder":
-                                            tmp_list.append(op.values()[0].name)
+                    if op.values()[0].get_shape().ndims is not None:
+                        if len(op.values()[0].get_shape().as_list()) > 1:
+                            if op.values()[0].get_shape().as_list()[0] is None:
+                                if op.values()[0].get_shape().as_list()[1] is not None:
+                                    if not op.values()[0].name.startswith("gradients"):
+                                        if not op.values()[0].name.startswith("softmax_cross_entropy_loss"):
+                                            if not op.type == "Placeholder":
+                                                tmp_list.append(op.values()[0].name)
 
         # Shorten the list
         if not tmp_list:
