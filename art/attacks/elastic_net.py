@@ -252,11 +252,11 @@ class ElasticNet(Attack):
         :rtype: `tuple`
         """
 
-        def compare(o1, o2):
+        def compare(o_1, o_2):
             if self.targeted:
-                return o1 == o2
+                return o_1 == o_2
             else:
-                return o1 != o2
+                return o_1 != o_2
 
         for i in range(c_batch.shape[0]):
             if compare(best_label[i], np.argmax(y_batch[i])) and best_label[i] != -np.inf:
@@ -289,11 +289,11 @@ class ElasticNet(Attack):
         :rtype: `tuple`
         """
 
-        def compare(o1, o2):
+        def compare(o_1, o_2):
             if self.targeted:
-                return o1 == o2
+                return o_1 == o_2
             else:
-                return o1 != o2
+                return o_1 != o_2
 
         # Initialize best distortions and best changed labels and best attacks
         best_dist = np.inf * np.ones(x_batch.shape[0])
@@ -303,16 +303,16 @@ class ElasticNet(Attack):
         # Implement the algorithm 1 in the EAD paper
         x_adv = x_batch.copy()
         y_adv = x_batch.copy()
-        for it in range(self.max_iter):
-            logger.debug('Iteration step %i out of %i', it, self.max_iter)
+        for i_iter in range(self.max_iter):
+            logger.debug('Iteration step %i out of %i', i_iter, self.max_iter)
 
             # Update learning rate
-            lr = self._decay_learning_rate(global_step=it, end_learning_rate=0, decay_steps=self.max_iter)
+            learning_rate = self._decay_learning_rate(global_step=i_iter, end_learning_rate=0, decay_steps=self.max_iter)
 
             # Compute adversarial examples
             grad = self._gradient_of_loss(target=y_batch, x=x_batch, x_adv=y_adv, c_weight=c_batch)
-            x_adv_next = self._shrinkage_threshold(y_adv - lr * grad, x_batch, self.beta)
-            y_adv = x_adv_next + (1.0 * it / (it + 3)) * (x_adv_next - x_adv)
+            x_adv_next = self._shrinkage_threshold(y_adv - learning_rate * grad, x_batch, self.beta)
+            y_adv = x_adv_next + (1.0 * i_iter / (i_iter + 3)) * (x_adv_next - x_adv)
             x_adv = x_adv_next
 
             # Adjust the best result
@@ -327,11 +327,11 @@ class ElasticNet(Attack):
             else:
                 raise ValueError("The decision rule only supports `EN`, `L1`, `L2`.")
 
-            for j, (d, s) in enumerate(zip_set):
-                if d < best_dist[j] and compare(s, np.argmax(y_batch[j])):
-                    best_dist[j] = d
+            for j, (distance, label) in enumerate(zip_set):
+                if distance < best_dist[j] and compare(label, np.argmax(y_batch[j])):
+                    best_dist[j] = distance
                     best_attack[j] = x_adv[j]
-                    best_label[j] = s
+                    best_label[j] = label
 
         return best_dist, best_label, best_attack
 

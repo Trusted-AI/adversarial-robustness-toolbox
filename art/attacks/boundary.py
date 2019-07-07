@@ -257,7 +257,7 @@ class BoundaryAttack(Attack):
         perturb = np.swapaxes(perturb, 0, self.classifier.channel_index - 1)
         direction = np.swapaxes(direction, 0, self.classifier.channel_index - 1)
 
-        for i in range(len(direction)):
+        for i in range(direction.shape[0]):
             direction[i] /= np.linalg.norm(direction[i])
             perturb[i] -= np.dot(perturb[i], direction[i]) * direction[i]
 
