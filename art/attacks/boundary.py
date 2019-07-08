@@ -33,7 +33,7 @@ class BoundaryAttack(Attack):
     only requires final class prediction. Paper link: https://arxiv.org/abs/1712.04248
     """
     attack_params = Attack.attack_params + ['targeted', 'delta', 'epsilon', 'step_adapt', 'max_iter', 'num_trial',
-                                            'sample_size', 'init_size']
+                                            'sample_size', 'init_size', 'batch_size']
 
     def __init__(self, classifier, targeted=True, delta=0.01, epsilon=0.01, step_adapt=0.667, max_iter=5000,
                  num_trial=25, sample_size=20, init_size=100):
@@ -68,6 +68,7 @@ class BoundaryAttack(Attack):
                   'num_trial': num_trial,
                   'sample_size': sample_size,
                   'init_size': init_size,
+                  'batch_size': 1
                   }
         self.set_params(**params)
 
@@ -91,11 +92,11 @@ class BoundaryAttack(Attack):
             clip_min, clip_max = np.min(x), np.max(x)
 
         # Prediction from the original images
-        preds = np.argmax(self.classifier.predict(x), axis=1)
+        preds = np.argmax(self.classifier.predict(x, batch_size=self.batch_size), axis=1)
 
         # Prediction from the initial adversarial examples if not None
         if x_adv_init is not None:
-            init_preds = np.argmax(self.classifier.predict(x_adv_init), axis=1)
+            init_preds = np.argmax(self.classifier.predict(x_adv_init, batch_size=self.batch_size), axis=1)
         else:
             init_preds = [None] * len(x)
             x_adv_init = [None] * len(x)
@@ -119,7 +120,8 @@ class BoundaryAttack(Attack):
                                            adv_init=x_adv_init[ind], clip_min=clip_min, clip_max=clip_max)
 
         logger.info('Success rate of Boundary attack: %.2f%%',
-                    (np.sum(preds != np.argmax(self.classifier.predict(x_adv), axis=1)) / x.shape[0]))
+                    (np.sum(preds != np.argmax(self.classifier.predict(x_adv, batch_size=self.batch_size),
+                                               axis=1)) / x.shape[0]))
 
         return x_adv
 
@@ -192,7 +194,7 @@ class BoundaryAttack(Attack):
                     potential_adv = np.clip(potential_adv, clip_min, clip_max)
                     potential_advs.append(potential_adv)
 
-                preds = np.argmax(self.classifier.predict(np.array(potential_advs)), axis=1)
+                preds = np.argmax(self.classifier.predict(np.array(potential_advs), batch_size=self.batch_size), axis=1)
                 satisfied = (preds == target)
                 delta_ratio = np.mean(satisfied)
 
@@ -214,7 +216,7 @@ class BoundaryAttack(Attack):
                 perturb *= self.curr_epsilon
                 potential_advs = x_advs + perturb
                 potential_advs = np.clip(potential_advs, clip_min, clip_max)
-                preds = np.argmax(self.classifier.predict(potential_advs), axis=1)
+                preds = np.argmax(self.classifier.predict(potential_advs, batch_size=self.batch_size), axis=1)
                 satisfied = (preds == target)
                 epsilon_ratio = np.mean(satisfied)
 
@@ -301,7 +303,8 @@ class BoundaryAttack(Attack):
             # Attack unsatisfied yet and the initial image unsatisfied
             for _ in range(self.init_size):
                 random_img = nprd.uniform(clip_min, clip_max, size=x.shape).astype(x.dtype)
-                random_class = np.argmax(self.classifier.predict(np.array([random_img])), axis=1)[0]
+                random_class = np.argmax(self.classifier.predict(np.array([random_img]), batch_size=self.batch_size),
+                                         axis=1)[0]
 
                 if random_class == y:
                     initial_sample = random_img, random_class
@@ -319,7 +322,8 @@ class BoundaryAttack(Attack):
             # The initial image unsatisfied
             for _ in range(self.init_size):
                 random_img = nprd.uniform(clip_min, clip_max, size=x.shape).astype(x.dtype)
-                random_class = np.argmax(self.classifier.predict(np.array([random_img])), axis=1)[0]
+                random_class = np.argmax(self.classifier.predict(np.array([random_img]), batch_size=self.batch_size),
+                                         axis=1)[0]
 
                 if random_class != y_p:
                     initial_sample = random_img, random_class
