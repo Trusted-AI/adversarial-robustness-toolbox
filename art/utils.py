@@ -712,6 +712,8 @@ def clip_and_round(x, clip_values, round_samples):
 def _tf_weights_loader(dataset, weights_type, layer='DENSE'):
     filename = str(weights_type) + '_' + str(layer) + '_' + str(dataset) + '.npy'
 
+    # pylint: disable=W0613
+    # disable pylint becasue of API requirements for function
     def _tf_initializer(_, dtype, partition_info):
         import tensorflow as tf
 
@@ -850,6 +852,8 @@ def get_classifier_pt():
             self.fullyconnected.weight = nn.Parameter(torch.Tensor(np.transpose(w_dense)))
             self.fullyconnected.bias = nn.Parameter(torch.Tensor(b_dense))
 
+        # pylint: disable=W0221
+        # disable pylint becasue of API requirements for function
         def forward(self, x):
             import torch.nn.functional as f
 
@@ -991,6 +995,8 @@ def get_iris_classifier_pt():
             self.fully_connected3.weight = nn.Parameter(torch.Tensor(np.transpose(w_dense3)))
             self.fully_connected3.bias = nn.Parameter(torch.Tensor(b_dense3))
 
+        # pylint: disable=W0221
+        # disable pylint becasue of API requirements for function
         def forward(self, x):
             x = self.fully_connected1(x)
             x = self.fully_connected2(x)
