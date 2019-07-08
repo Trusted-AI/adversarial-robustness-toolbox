@@ -5,10 +5,10 @@ env:
   - KERAS_BACKEND=tensorflow TENSORFLOW_V=1.13.1
   - KERAS_BACKEND=tensorflow TENSORFLOW_V=1.14.0
 python:
-   - "3.5"
+   - "3.6"
 matrix:
   include:
-    - python: 3.5
+    - python: 3.6
       env: KERAS_BACKEND=tensorflow TENSORFLOW_V=1.14.0
       script:
         - (pycodestyle --max-line-length=120 art || exit 0) && (pylint -rn art || exit 0)
