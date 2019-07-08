@@ -15,6 +15,16 @@
 # AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT,
 # TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 # SOFTWARE.
+"""
+This module implements the L2 and LInf optimized attacks `CarliniL2Method` and `CarliniLInfMethod` of Carlini and Wagner
+(2016). These attacks are among the most effective white-box attacks and should be used among the primary attacks to
+evaluate potential defences. A major difference with respect to the original implementation
+(https://github.com/carlini/nn_robust_attacks) is that this implementation uses line search in the optimization of the
+attack objective.
+
+Paper link:
+    https://arxiv.org/pdf/1608.04644.pdf
+"""
 from __future__ import absolute_import, division, print_function, unicode_literals
 
 import logging
