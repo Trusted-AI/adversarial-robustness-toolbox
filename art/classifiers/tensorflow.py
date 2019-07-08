@@ -481,6 +481,7 @@ class TFClassifier(Classifier):
         :type path: `str`
         :return: None
         """
+        # pylint: disable-msg=E0611
         import os
         import shutil
         from tensorflow.python import saved_model
