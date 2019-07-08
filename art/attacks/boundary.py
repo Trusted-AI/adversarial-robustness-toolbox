@@ -23,6 +23,8 @@ import numpy as np
 
 from art import NUMPY_DTYPE
 from art.attacks.attack import Attack
+from art.utils import compute_success
+from art.utils import to_categorical
 
 logger = logging.getLogger(__name__)
 
@@ -119,9 +121,11 @@ class BoundaryAttack(Attack):
                 x_adv[ind] = self._perturb(x=val, y=-1, y_p=preds[ind], init_pred=init_preds[ind],
                                            adv_init=x_adv_init[ind], clip_min=clip_min, clip_max=clip_max)
 
+        if y is not None:
+            y = to_categorical(y, self.classifier.nb_classes)
+
         logger.info('Success rate of Boundary attack: %.2f%%',
-                    (np.sum(preds != np.argmax(self.classifier.predict(x_adv, batch_size=self.batch_size),
-                                               axis=1)) / x.shape[0]))
+                    100 * compute_success(self.classifier, x, y, x_adv, self.targeted, batch_size=self.batch_size))
 
         return x_adv
 
