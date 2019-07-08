@@ -45,11 +45,11 @@ class TestClassifier(unittest.TestCase):
         # Set master seed
         master_seed(1234)
 
-    def test_processing(self):
+    def test_preprocessing_normalisation(self):
         classifier = ClassifierInstance((0, 1))
 
         x = np.random.rand(100, 200)
-        new_x = classifier._apply_processing(x)
+        new_x = classifier._apply_preprocessing_normalization(x)
         self.assertTrue(np.sum(x - new_x) == 0)
 
     def test_repr(self):

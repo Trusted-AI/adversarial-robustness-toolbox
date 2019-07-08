@@ -34,22 +34,24 @@ class TestTotalVarMin(unittest.TestCase):
         master_seed(1234)
 
     def test_one_channel(self):
+        clip_values = (0, 1)
         x = np.random.rand(2, 28, 28, 1)
-        preprocess = TotalVarMin()
-        preprocessed_x, _ = preprocess(x)
-        self.assertTrue((preprocessed_x.shape == x.shape))
-        self.assertTrue((preprocessed_x <= 1.0).all())
-        self.assertTrue((preprocessed_x >= 0.0).all())
-        self.assertFalse((preprocessed_x == x).all())
+        preprocess = TotalVarMin(clip_values=(0, 1))
+        x_preprocessed, _ = preprocess(x)
+        self.assertTrue((x_preprocessed.shape == x.shape))
+        self.assertTrue((x_preprocessed >= clip_values[0]).all())
+        self.assertTrue((x_preprocessed <= clip_values[1]).all())
+        self.assertFalse((x_preprocessed == x).all())
 
     def test_three_channels(self):
+        clip_values = (0, 1)
         x = np.random.rand(2, 32, 32, 3)
-        preprocess = TotalVarMin()
-        preprocessed_x, _ = preprocess(x)
-        self.assertTrue((preprocessed_x.shape == x.shape))
-        self.assertTrue((preprocessed_x <= 1.0).all())
-        self.assertTrue((preprocessed_x >= 0.0).all())
-        self.assertFalse((preprocessed_x == x).all())
+        preprocess = TotalVarMin(clip_values=clip_values)
+        x_preprocessed, _ = preprocess(x)
+        self.assertTrue((x_preprocessed.shape == x.shape))
+        self.assertTrue((x_preprocessed >= clip_values[0]).all())
+        self.assertTrue((x_preprocessed <= clip_values[1]).all())
+        self.assertFalse((x_preprocessed == x).all())
 
     def test_failure_feature_vectors(self):
         x = np.random.rand(10, 3)

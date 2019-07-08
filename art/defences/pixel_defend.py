@@ -32,12 +32,15 @@ class PixelDefend(Preprocessor):
     Implement the pixel defence approach. Defense based on PixelCNN that projects samples back to the data manifold.
     Paper link: https://arxiv.org/abs/1710.10766
     """
-    params = ['eps', 'pixel_cnn']
+    params = ['clip_values', 'eps', 'pixel_cnn']
 
-    def __init__(self, eps=16, pixel_cnn=None):
+    def __init__(self, clip_values=(0, 1), eps=16, pixel_cnn=None, apply_fit=False, apply_predict=True):
         """
         Create an instance of pixel defence.
 
+        :param clip_values: Tuple of the form `(min, max)` representing the minimum and maximum values allowed
+               for features.
+        :type clip_values: `tuple`
         :param eps: Defense parameter 0-255.
         :type eps: `int`
         :param pixel_cnn: Pre-trained PixelCNN model.
@@ -45,18 +48,20 @@ class PixelDefend(Preprocessor):
         """
         super(PixelDefend, self).__init__()
         self._is_fitted = True
+        self._apply_fit = apply_fit
+        self._apply_predict = apply_predict
         if pixel_cnn is not None:
-            self.set_params(eps=eps, pixel_cnn=pixel_cnn)
+            self.set_params(clip_values=clip_values, eps=eps, pixel_cnn=pixel_cnn)
         else:
-            self.set_params(eps=eps)
+            self.set_params(clip_values=clip_values, eps=eps)
 
     @property
     def apply_fit(self):
-        return False
+        return self._apply_fit
 
     @property
     def apply_predict(self):
-        return True
+        return self._apply_predict
 
     def __call__(self, x, y=None):
         """
@@ -103,9 +108,8 @@ class PixelDefend(Preprocessor):
         x_ = x_ / 255.0
         x_ = x_.astype(NUMPY_DTYPE).reshape(original_shape)
 
-        # Clip values into the range [0, 1]
-        clip_values = (0, 1)
-        x_ = np.clip(x_, clip_values[0], clip_values[1])
+        # Clip to clip_values
+        x_ = np.clip(x_, self.clip_values[0], self.clip_values[1])
 
         return x_, y
 
@@ -123,6 +127,9 @@ class PixelDefend(Preprocessor):
         Take in a dictionary of parameters and applies defence-specific checks before saving them as attributes.
 
         Defense-specific parameters:
+        :param clip_values: Tuple of the form `(min, max)` representing the minimum and maximum values allowed
+               for features.
+        :type clip_values: `tuple`
         :param eps: Defense parameter 0-255.
         :type eps: `int`
         :param pixel_cnn: Pre-trained PixelCNN model.
@@ -138,5 +145,14 @@ class PixelDefend(Preprocessor):
 
         if hasattr(self, 'pixel_cnn') and not isinstance(self.pixel_cnn, Classifier):
             raise TypeError("PixelCNN model must be of type Classifier.")
+
+        if np.array(self.clip_values[0] >= self.clip_values[1]).any():
+            raise ValueError('Invalid `clip_values`: min >= max.')
+
+        if self.clip_values[0] != 0:
+            raise ValueError('`clip_values` min value must be 0.')
+
+        if self.clip_values[1] != 1:
+            raise ValueError('`clip_values` max value must be 1.')
 
         return True

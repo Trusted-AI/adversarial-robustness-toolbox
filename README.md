@@ -27,6 +27,7 @@ The library contains implementations of the following **evasion attacks**:
 * Query-efficient black-box attack ([Ilyas et al., 2017](https://arxiv.org/abs/1712.07113))
 * Zeroth-order optimization attack ([Chen et al., 2017](https://arxiv.org/abs/1708.03999))
 * Decision-based attack ([Brendel et al., 2018](https://arxiv.org/abs/1712.04248))
+* HopSkipJump attack ([Chen et al., 2017](https://arxiv.org/abs/1904.02144))
 
 The following **defence** methods are also supported:
 * Feature squeezing ([Xu et al., 2017](http://arxiv.org/abs/1704.01155))
@@ -56,7 +57,7 @@ The following **detector of poisoning attacks** is also supported:
 
 ### Installation with `pip`
 
-The toolbox is designed to run with Python 2 and 3.
+The toolbox is designed and tested to run with Python 3. 
 ART can be installed from the PyPi repository using `pip`:
 
 ```bash

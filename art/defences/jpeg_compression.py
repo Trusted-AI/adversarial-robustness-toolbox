@@ -34,28 +34,37 @@ class JpegCompression(Preprocessor):
     Implement the jpeg compression defence approach. Some related papers: https://arxiv.org/pdf/1705.02900.pdf,
     https://arxiv.org/abs/1608.00853
     """
-    params = ['quality', 'channel_index']
+    params = ['quality', 'channel_index', 'clip_values']
 
-    def __init__(self, quality=50, channel_index=3):
+    def __init__(self, clip_values, quality=50, channel_index=3, apply_fit=True, apply_predict=False):
         """
         Create an instance of jpeg compression.
 
+        :param clip_values: Tuple of the form `(min, max)` representing the minimum and maximum values allowed
+               for features.
+        :type clip_values: `tuple`
         :param quality: The image quality, on a scale from 1 (worst) to 95 (best). Values above 95 should be avoided.
         :type quality: `int`
         :param channel_index: Index of the axis in data containing the color channels or features.
         :type channel_index: `int`
+        :param apply_fit: True if applied during fitting/training.
+        :type apply_fit: `bool`
+        :param apply_predict: True if applied during predicting.
+        :type apply_predict: `bool`
         """
         super(JpegCompression, self).__init__()
         self._is_fitted = True
-        self.set_params(quality=quality, channel_index=channel_index)
+        self._apply_fit = apply_fit
+        self._apply_predict = apply_predict
+        self.set_params(quality=quality, channel_index=channel_index, clip_values=clip_values)
 
     @property
     def apply_fit(self):
-        return False
+        return self._apply_fit
 
     @property
     def apply_predict(self):
-        return True
+        return self._apply_predict
 
     def __call__(self, x, y=None):
         """
@@ -76,54 +85,56 @@ class JpegCompression(Preprocessor):
         if self.channel_index >= len(x.shape):
             raise ValueError('Channel index does not match input shape.')
 
-        clip_values = (0, 1)
+        if np.min(x) < 0.0:
+            raise ValueError('Negative values in input `x` detected. The JPEG compression defence requires unnormalized'
+                             'input.')
 
         # Swap channel index
         if self.channel_index < 3 and len(x.shape) == 4:
-            x_ = np.swapaxes(x, self.channel_index, 3)
+            x_local = np.swapaxes(x, self.channel_index, 3)
         else:
-            x_ = x.copy()
+            x_local = x.copy()
 
         # Convert into `uint8`
-        x_ = x_ * 255
-        x_ = x_.astype("uint8")
+        if self.clip_values[1] == 1.0:
+            x_local = x_local * 255
+        x_local = x_local.astype("uint8")
 
         # Convert to 'L' mode
-        if x_.shape[-1] == 1:
-            x_ = np.reshape(x_, x_.shape[:-1])
+        if x_local.shape[-1] == 1:
+            x_local = np.reshape(x_local, x_local.shape[:-1])
 
         # Compress one image at a time
-        for i, xi in enumerate(x_):
-            if len(xi.shape) == 2:
-                xi = Image.fromarray(xi, mode='L')
-            elif xi.shape[-1] == 3:
-                xi = Image.fromarray(xi, mode='RGB')
+        for i, x_i in enumerate(x_local):
+            if len(x_i.shape) == 2:
+                x_i = Image.fromarray(x_i, mode='L')
+            elif x_i.shape[-1] == 3:
+                x_i = Image.fromarray(x_i, mode='RGB')
             else:
                 logger.log(level=40, msg="Currently only support `RGB` and `L` images.")
                 raise NotImplementedError("Currently only support `RGB` and `L` images.")
 
             out = BytesIO()
-            xi.save(out, format="jpeg", quality=self.quality)
-            xi = Image.open(out)
-            xi = np.array(xi)
-            x_[i] = xi
+            x_i.save(out, format="jpeg", quality=self.quality)
+            x_i = Image.open(out)
+            x_i = np.array(x_i)
+            x_local[i] = x_i
             del out
 
         # Expand dim if black/white images
-        if len(x_.shape) < 4:
-            x_ = np.expand_dims(x_, 3)
+        if len(x_local.shape) < 4:
+            x_local = np.expand_dims(x_local, 3)
 
         # Convert to old dtype
-        x_ = x_ / 255.0
-        x_ = x_.astype(NUMPY_DTYPE)
+        if self.clip_values[1] == 1.0:
+            x_local = x_local / 255.0
+        x_local = x_local.astype(NUMPY_DTYPE)
 
         # Swap channel index
         if self.channel_index < 3:
-            x_ = np.swapaxes(x_, self.channel_index, 3)
+            x_local = np.swapaxes(x_local, self.channel_index, 3)
 
-        x_ = np.clip(x_, clip_values[0], clip_values[1])
-
-        return x_, y
+        return x_local, y
 
     def estimate_gradient(self, x, grad):
         return grad
@@ -138,6 +149,9 @@ class JpegCompression(Preprocessor):
         """
         Take in a dictionary of parameters and applies defence-specific checks before saving them as attributes.
 
+        :param clip_values: Tuple of the form `(min, max)` representing the minimum and maximum values allowed
+               for features.
+        :type clip_values: `tuple`
         :param quality: The image quality, on a scale from 1 (worst) to 95 (best). Values above 95 should be avoided.
         :type quality: `int`
         :param channel_index: Index of the axis in data containing the color channels or features.
@@ -153,5 +167,18 @@ class JpegCompression(Preprocessor):
         if not isinstance(self.channel_index, (int, np.int)) or self.channel_index <= 0:
             logger.error('Data channel must be a positive integer. The batch dimension is not a valid channel.')
             raise ValueError('Data channel must be a positive integer. The batch dimension is not a valid channel.')
+
+        if len(self.clip_values) != 2:
+            raise ValueError('`clip_values` should be a tuple of 2 floats or arrays containing the allowed'
+                             'data range.')
+
+        if np.array(self.clip_values[0] >= self.clip_values[1]).any():
+            raise ValueError('Invalid `clip_values`: min >= max.')
+
+        if self.clip_values[0] != 0:
+            raise ValueError('`clip_values` min value must be 0.')
+
+        if self.clip_values[1] != 1.0 and self.clip_values[1] != 255:
+            raise ValueError('`clip_values` max value must be either 1 or 255.')
 
         return True

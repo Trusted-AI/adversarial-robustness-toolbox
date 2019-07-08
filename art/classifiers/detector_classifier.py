@@ -14,6 +14,7 @@ class DetectorClassifier(Classifier):
     This class implements a Classifier extension that wraps a classifier and a detector.
     More details in https://arxiv.org/abs/1705.07263
     """
+
     def __init__(self, classifier, detector, defences=None, preprocessing=(0, 1)):
         """
         Initialization for the DetectorClassifier.
@@ -50,9 +51,8 @@ class DetectorClassifier(Classifier):
         :return: Array of predictions of shape `(nb_inputs, self.nb_classes)`.
         :rtype: `np.ndarray`
         """
-        # Apply defences
-        x_preproc = self._apply_processing(x)
-        x_defences, _ = self._apply_defences(x_preproc, None, fit=False)
+        # Apply preprocessing
+        x_defences, _ = self._apply_preprocessing(x, y=None, fit=False)
 
         # Compute the prediction logits
         classifier_logits = self.classifier.predict(x=x_defences, logits=True, batch_size=batch_size)
@@ -126,8 +126,7 @@ class DetectorClassifier(Classifier):
             raise ValueError('Label %s is out of range.' % label)
 
         # Apply preprocessing
-        x_preproc = self._apply_processing(x)
-        x_defences, _ = self._apply_defences(x_preproc, None, fit=False)
+        x_defences, _ = self._apply_preprocessing(x, y=None, fit=False)
 
         # Compute the gradient and return
         if logits:
@@ -180,7 +179,8 @@ class DetectorClassifier(Classifier):
                 # Then compute the detector gradients for detector_idx
                 if len(detector_idx) > 0:
                     # First compute the classifier gradients for detector_idx
-                    classifier_grads = self.classifier.class_gradient(x=x_defences[detector_idx], label=None, logits=True)
+                    classifier_grads = self.classifier.class_gradient(x=x_defences[detector_idx], label=None,
+                                                                      logits=True)
 
                     # Then compute the detector gradients for detector_idx
                     detector_grads = self.detector.class_gradient(x=x_defences[detector_idx], label=0, logits=True)
@@ -222,7 +222,7 @@ class DetectorClassifier(Classifier):
                             si_lj = c * np.power(c + np.exp(combined_logits[:, i]), -2) * np.exp(combined_logits[:, i])
                         else:
                             si_lj = -np.exp(combined_logits[:, i]) * np.power(c + np.exp(combined_logits[:, j]), -2) * \
-                                np.exp(combined_logits[:, j])
+                                    np.exp(combined_logits[:, j])
                         si_grads += si_lj[:, None, None, None] * combined_logits_grads[:, j]
 
                     grads.append(si_grads)
@@ -235,10 +235,10 @@ class DetectorClassifier(Classifier):
                     c = sum_exp_logits - np.exp(combined_logits[:, j])
                     if j == label:
                         si_lj = c * np.power(c + np.exp(combined_logits[:, label]), -2) * \
-                            np.exp(combined_logits[:, label])
+                                np.exp(combined_logits[:, label])
                     else:
                         si_lj = -np.exp(combined_logits[:, label]) * np.power(c + np.exp(combined_logits[:, j]), -2) * \
-                            np.exp(combined_logits[:, j])
+                                np.exp(combined_logits[:, j])
                     si_grads += si_lj[:, None, None, None] * combined_logits_grads[:, j]
 
                 grads.append(si_grads)
@@ -254,7 +254,7 @@ class DetectorClassifier(Classifier):
                             si_lj = c * np.power(c + np.exp(combined_logits[:, i]), -2) * np.exp(combined_logits[:, i])
                         else:
                             si_lj = -np.exp(combined_logits[:, i]) * np.power(c + np.exp(combined_logits[:, j]), -2) * \
-                                np.exp(combined_logits[:, j])
+                                    np.exp(combined_logits[:, j])
                         si_grads += si_lj[:, None, None, None] * combined_logits_grads[:, j]
 
                     grads.append(si_grads)
@@ -264,9 +264,7 @@ class DetectorClassifier(Classifier):
                 grads = grads[np.arange(len(grads)), lst]
                 combined_grads = np.expand_dims(grads, axis=1)
 
-        # Apply gradient post-processing
-        combined_grads = self._apply_defences_gradient(x_preproc, combined_grads)
-        combined_grads = self._apply_processing_gradient(combined_grads)
+        combined_grads = self._apply_preprocessing_gradient(x, combined_grads)
 
         return combined_grads
 

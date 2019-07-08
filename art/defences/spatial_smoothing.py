@@ -34,29 +34,35 @@ class SpatialSmoothing(Preprocessor):
     """
     params = ['window_size', 'channel_index', 'clip_values']
 
-    def __init__(self, window_size=3, channel_index=3, clip_values=None):
+    def __init__(self, window_size=3, channel_index=3, clip_values=None, apply_fit=False, apply_predict=True):
         """
         Create an instance of local spatial smoothing.
 
-        :param window_size: The size of the sliding window.
-        :type window_size: `int`
         :param channel_index: Index of the axis in data containing the color channels or features.
         :type channel_index: `int`
+        :param window_size: The size of the sliding window.
+        :type window_size: `int`
         :param clip_values: Tuple of the form `(min, max)` representing the minimum and maximum values allowed
                for features.
         :type clip_values: `tuple`
+        :param apply_fit: True if applied during fitting/training.
+        :type apply_fit: `bool`
+        :param apply_predict: True if applied during predicting.
+        :type apply_predict: `bool`
         """
         super(SpatialSmoothing, self).__init__()
         self._is_fitted = True
-        self.set_params(window_size=window_size, channel_index=channel_index, clip_values=clip_values)
+        self._apply_fit = apply_fit
+        self._apply_predict = apply_predict
+        self.set_params(channel_index=channel_index, window_size=window_size, clip_values=clip_values)
 
     @property
     def apply_fit(self):
-        return False
+        return self._apply_fit
 
     @property
     def apply_predict(self):
-        return True
+        return self._apply_predict
 
     def __call__(self, x, y=None):
         """
@@ -80,7 +86,7 @@ class SpatialSmoothing(Preprocessor):
         size = tuple(size)
 
         result = ndimage.filters.median_filter(x, size=size, mode="reflect")
-        if hasattr(self, 'clip_values') and self.clip_values is not None:
+        if self.clip_values is not None:
             np.clip(result, self.clip_values[0], self.clip_values[1], out=result)
 
         return result.astype(NUMPY_DTYPE), y
@@ -120,8 +126,10 @@ class SpatialSmoothing(Preprocessor):
                              'valid channel.')
 
         if self.clip_values is not None:
+
             if len(self.clip_values) != 2:
                 raise ValueError('`clip_values` should be a tuple of 2 floats containing the allowed data range.')
+
             if np.array(self.clip_values[0] >= self.clip_values[1]).any():
                 raise ValueError('Invalid `clip_values`: min >= max.')
 
