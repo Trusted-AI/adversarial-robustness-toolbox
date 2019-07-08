@@ -16,7 +16,7 @@
 # TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 # SOFTWARE.
 """
-This module implements the base class for classifier and detector combinations.
+This module implements the base class `DetectorClassifier` for classifier and detector combinations.
 
 Paper link:
     https://arxiv.org/abs/1705.07263
