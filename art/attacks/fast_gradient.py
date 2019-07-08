@@ -15,6 +15,13 @@
 # AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT,
 # TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 # SOFTWARE.
+"""
+This module implements the Fast Gradient Method attack. This implementation includes the original Fast Gradient Sign
+Method attack and extends it to other norms, therefore it is called the Fast Gradient Method.
+
+Paper link:
+    https://arxiv.org/abs/1412.6572
+"""
 from __future__ import absolute_import, division, print_function, unicode_literals
 
 import logging

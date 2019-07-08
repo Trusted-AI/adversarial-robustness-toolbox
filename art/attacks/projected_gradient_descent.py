@@ -15,6 +15,15 @@
 # AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT,
 # TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 # SOFTWARE.
+"""
+This module implements the Projected Gradient Descent attack `ProjectedGradientDescent` as an iterative method in which,
+after each iteration, the perturbation is projected on an lp-ball of specified radius (in addition to clipping the
+values of the adversarial sample so that it lies in the permitted data range). This is the attack proposed by Madry et
+al. for adversarial training.
+
+Paper link:
+    https://arxiv.org/abs/1706.06083
+"""
 from __future__ import absolute_import, division, print_function, unicode_literals
 
 import logging
