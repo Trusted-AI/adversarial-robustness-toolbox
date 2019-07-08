@@ -439,7 +439,7 @@ class PyTorchClassifier(Classifier):
             os.makedirs(folder)
 
         # pylint: disable=W0212
-        # disable pylint because access to _model required
+        # disable pylint because access to _modules required
         torch.save(self._model._model.state_dict(), full_path + '.model')
         torch.save(self._optimizer.state_dict(), full_path + '.optimizer')
         logger.info("Model state dict saved in path: %s.", full_path + '.model')
@@ -586,6 +586,8 @@ class PyTorchClassifier(Classifier):
 
                         result = []
                         if isinstance(self._model, nn.Sequential):
+                            # pylint: disable=W0212
+                            # disable pylint because access to _modules required
                             for name, module_ in self._model._modules.items():
                                 result.append(name + "_" + str(module_))
 

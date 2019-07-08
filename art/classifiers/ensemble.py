@@ -94,7 +94,7 @@ class EnsembleClassifier(Classifier):
 
         self._classifiers = classifiers
 
-    def predict(self, x, logits=False, raw=False):
+    def predict(self, x, logits=False, batch_size=128, **kwargs):
         """
         Perform prediction for a batch of inputs. Predictions from classifiers are aggregated at probabilities level,
         as logits are not comparable between models. If logits prediction was specified, probabilities are converted
@@ -110,6 +110,11 @@ class EnsembleClassifier(Classifier):
                  `(nb_classifiers, nb_inputs, self.nb_classes)` if `raw=True`.
         :rtype: `np.ndarray`
         """
+        if 'raw' in kwargs:
+            raw = kwargs['raw']
+        else:
+            raise ValueError('Missing argument `raw`.')
+
         preds = np.array([self._classifier_weights[i] * self._classifiers[i].predict(x, raw and logits)
                           for i in range(self._nb_classifiers)])
         if raw:
@@ -190,7 +195,7 @@ class EnsembleClassifier(Classifier):
         """
         raise NotImplementedError
 
-    def class_gradient(self, x, label=None, logits=False, raw=False):
+    def class_gradient(self, x, label=None, logits=False, **kwargs):
         """
         Compute per-class derivatives w.r.t. `x`.
 
@@ -209,13 +214,18 @@ class EnsembleClassifier(Classifier):
                  dimension is added at the beginning of the array, indexing the different classifiers.
         :rtype: `np.ndarray`
         """
+        if 'raw' in kwargs:
+            raw = kwargs['raw']
+        else:
+            raise ValueError('Missing argument `raw`.')
+
         grads = np.array([self._classifier_weights[i] * self._classifiers[i].class_gradient(x, label, logits)
                           for i in range(self._nb_classifiers)])
         if raw:
             return grads
         return np.sum(grads, axis=0)
 
-    def loss_gradient(self, x, y, raw=False):
+    def loss_gradient(self, x, y, **kwargs):
         """
         Compute the gradient of the loss function w.r.t. `x`.
 
@@ -228,6 +238,11 @@ class EnsembleClassifier(Classifier):
         :return: Array of gradients of the same shape as `x`. If `raw=True`, shape becomes `[nb_classifiers, x.shape]`.
         :rtype: `np.ndarray`
         """
+        if 'raw' in kwargs:
+            raw = kwargs['raw']
+        else:
+            raise ValueError('Missing argument `raw`.')
+
         grads = np.array([self._classifier_weights[i] * self._classifiers[i].loss_gradient(x, y)
                           for i in range(self._nb_classifiers)])
         if raw:

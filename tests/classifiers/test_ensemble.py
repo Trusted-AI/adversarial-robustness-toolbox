@@ -90,14 +90,14 @@ class TestEnsembleClassifier(unittest.TestCase):
         return model
 
     def test_predict(self):
-        preds = self.ensemble.predict(self.mnist[1][0])
-        preds_logits = self.ensemble.predict(self.mnist[1][0], logits=True)
+        preds = self.ensemble.predict(self.mnist[1][0], logits=False, raw=False)
+        preds_logits = self.ensemble.predict(self.mnist[1][0], logits=True, raw=False)
         self.assertTrue(preds.shape == preds_logits.shape)
         self.assertTrue(np.array(preds.shape == (NB_TEST, 10)).all())
         self.assertFalse((preds == preds_logits).all())
 
-        preds_raw = self.ensemble.predict(self.mnist[1][0], raw=True)
-        preds_raw_logits = self.ensemble.predict(self.mnist[1][0], raw=True, logits=True)
+        preds_raw = self.ensemble.predict(self.mnist[1][0], logits=False, raw=True)
+        preds_raw_logits = self.ensemble.predict(self.mnist[1][0], logits=True, raw=True)
         self.assertTrue(preds_raw.shape == preds_raw_logits.shape)
         self.assertTrue(preds_raw.shape == (2, NB_TEST, 10))
         self.assertFalse((preds_raw == preds_raw_logits).all())
@@ -106,7 +106,7 @@ class TestEnsembleClassifier(unittest.TestCase):
         self.assertFalse((preds_logits == preds_raw_logits[0]).all())
 
     def test_loss_gradient(self):
-        grad = self.ensemble.loss_gradient(self.mnist[1][0], self.mnist[1][1])
+        grad = self.ensemble.loss_gradient(self.mnist[1][0], self.mnist[1][1], raw=False)
         self.assertTrue(np.array(grad.shape == (NB_TEST, 28, 28, 1)).all())
 
         grad2 = self.ensemble.loss_gradient(self.mnist[1][0], self.mnist[1][1], raw=True)

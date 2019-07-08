@@ -124,6 +124,10 @@ class ZooAttack(Attack):
             self._current_noise = np.zeros((batch_size,) + self.classifier.input_shape, dtype=NUMPY_DTYPE)
         self._sample_prob = np.ones(self._current_noise.size, dtype=NUMPY_DTYPE) / self._current_noise.size
 
+        self.adam_mean = None
+        self.adam_var = None
+        self.adam_epochs = None
+
     def _loss(self, x, x_adv, target, c_weight):
         """
         Compute the loss function values.
@@ -429,7 +433,7 @@ class ZooAttack(Attack):
 
     def _reset_adam(self, nb_vars, indices=None):
         # If variables are already there and at the right size, reset values
-        if hasattr(self, 'adam_mean') and self.adam_mean.size == nb_vars:
+        if self.adam_mean is not None and self.adam_mean.size == nb_vars:
             if indices is None:
                 self.adam_mean.fill(0)
                 self.adam_var.fill(0)

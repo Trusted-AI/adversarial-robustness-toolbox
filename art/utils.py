@@ -30,8 +30,6 @@ logger = logging.getLogger(__name__)
 try:
     # Conditional import of `torch` to avoid segmentation fault errors this framework generates at import
     import torch
-    import torch.nn as nn
-    import torch.optim as optim
 except ImportError:
     logger.info('Could not import PyTorch in utilities.')
 

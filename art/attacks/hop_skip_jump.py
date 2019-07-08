@@ -102,7 +102,8 @@ class HopSkipJump(Attack):
         preds = np.argmax(self.classifier.predict(x), axis=1)
 
         # Prediction from the initial adversarial examples if not None
-        if x_adv_init is not None:
+        if 'x_adv_init' in kwargs:
+            x_adv_init = kwargs['x_adv_init']
             init_preds = np.argmax(self.classifier.predict(x_adv_init), axis=1)
         else:
             init_preds = [None] * len(x)

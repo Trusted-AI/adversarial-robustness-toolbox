@@ -77,7 +77,7 @@ class Classifier(ABC):
         self.preprocessing = preprocessing
 
     @abc.abstractmethod
-    def predict(self, x, logits=False, batch_size=128):
+    def predict(self, x, logits=False, batch_size=128, **kwargs):
         """
         Perform prediction for a batch of inputs.
 
@@ -190,7 +190,7 @@ class Classifier(ABC):
         return self._learning_phase if hasattr(self, '_learning_phase') else None
 
     @abc.abstractmethod
-    def class_gradient(self, x, label=None, logits=False):
+    def class_gradient(self, x, label=None, logits=False, **kwargs):
         """
         Compute per-class derivatives w.r.t. `x`.
 
@@ -211,7 +211,7 @@ class Classifier(ABC):
         raise NotImplementedError
 
     @abc.abstractmethod
-    def loss_gradient(self, x, y):
+    def loss_gradient(self, x, y, **kwargs):
         """
         Compute the gradient of the loss function w.r.t. `x`.
 

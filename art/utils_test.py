@@ -35,6 +35,7 @@ try:
 except ImportError:
     logger.info('Could not import PyTorch in utilities.')
 
+
 # ----------------------------------------------------------------------------------------------- TEST MODELS FOR MNIST
 
 
