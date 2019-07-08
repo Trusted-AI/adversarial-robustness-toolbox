@@ -45,7 +45,7 @@ class Decision_Tree_Attack(ABC):
         """
         :param classifier: A trained model of type scikit decision tree.
         :type classifier: :class:`.Classifier.ScikitlearnDecisionTreeClassifier`
-        :param offset: How much the value is changed away from tree's threshold
+        :param offset: How much the value is pushed away from tree's threshold
         :type classifier: :float:
         """
         self.classifier = classifier
@@ -61,24 +61,24 @@ class Decision_Tree_Attack(ABC):
             raise TypeError('Model must be a decision tree model and provide which class is classified at which node!')
         self.offset = offset
     
-    def searchSubtree(self, position, original_class, target=None):
+    def DFSubtree(self, position, original_class, target=None):
         #base case, we're at a leaf
         if self.classifier.get_left_child(position)==self.classifier.get_right_child(position):
-            if target is None:
+            if target is None: #untargeted case
                 if self.classifier.get_classes_at_node(position)!=original_class:
                     return [position]
                 else:
                     return [-1]
-            else:
+            else: #targeted case
                 if self.classifier.get_classes_at_node(position) == target:
                     return [position]
                 else:
                     return [-1]
         else: #go deeper, depths first
-            res = self.searchSubtree(self.classifier.get_left_child(position), original_class, target)
+            res = self.DFSubtree(self.classifier.get_left_child(position), original_class, target)
             if res[0]==-1:
                 #no result, try right subtree
-                res = self.searchSubtree(self.classifier.get_right_child(position), original_class, target)  
+                res = self.DFSubtree(self.classifier.get_right_child(position), original_class, target)  
                 if res[0]==-1:
                     #no desired result
                     return [-1]
@@ -103,6 +103,7 @@ class Decision_Tree_Attack(ABC):
         :return: An array holding the adversarial examples.
         :rtype: `np.ndarray`
         """
+        x = x.copy()
         if y is not None:
             assert np.shape(y)[0]==np.shape(x)[0]
             if len(np.shape(y))>1:
@@ -116,24 +117,24 @@ class Decision_Tree_Attack(ABC):
             while np.abs(position)< (len(path)-1) or adv_path[0]== -1:
                 ancestor = path[position]
                 current_child = path[position+1]
-                if current_child == self.classifier.get_left_child(ancestor):  
+                if current_child == self.classifier.get_left_child(ancestor):  #serach in right subtree
                     if y is None:
-                        adv_path = self.searchSubtree(self.classifier.get_right_child(ancestor),legitimate_class)
+                        adv_path = self.DFSubtree(self.classifier.get_right_child(ancestor),legitimate_class)
                     else:
-                        adv_path = self.searchSubtree(self.classifier.get_right_child(ancestor),legitimate_class,y[index])
-                else: #we are not the left leaf (binary tree)
+                        adv_path = self.DFSubtree(self.classifier.get_right_child(ancestor),legitimate_class,y[index])
+                else: #serach in left subtree
                     if y is None:
-                        adv_path = self.searchSubtree(self.classifier.get_left_child(ancestor),legitimate_class)
+                        adv_path = self.DFSubtree(self.classifier.get_left_child(ancestor),legitimate_class)
                     else:
-                        adv_path = self.searchSubtree(self.classifier.get_left_child(ancestor),legitimate_class,y[index])
+                        adv_path = self.DFSubtree(self.classifier.get_left_child(ancestor),legitimate_class,y[index])
                 position = position -1 #we are going the decision path updwards
             adv_path.append(ancestor)
-            #print(adv_path,path)
-            for i in range(1,1+len(adv_path[1:])): #first one is node, cannot be perturbed
+            #we figured out which is the way to the target, now perturb
+            for i in range(1,1+len(adv_path[1:])): #first one is leaf-> no threshold, cannot be perturbed
                 goFor = adv_path[i-1]
                 threshold = self.classifier.get_threshold_at_node(adv_path[i])
                 feature  = self.classifier.get_feature_at_node(adv_path[i])
-                #print(goFor, threshold, x[index][feature],self.classifier.get_left_child(adv_path[i]),self.classifier.get_right_child(adv_path[i]))
+                #only perturb if the feature is acutally wrong
                 if x[index][feature]>threshold and goFor==self.classifier.get_left_child(adv_path[i]):
                     x[index][feature]=threshold-self.offset
                 elif x[index][feature]<=threshold and goFor==self.classifier.get_right_child(adv_path[i]):
