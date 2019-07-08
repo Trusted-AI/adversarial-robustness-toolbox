@@ -15,6 +15,12 @@
 # AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT,
 # TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 # SOFTWARE.
+"""
+This module implements the virtual adversarial attack. It was originally was used for virtual adversarial training.
+
+Paper link:
+    https://arxiv.org/abs/1507.00677
+"""
 from __future__ import absolute_import, division, print_function, unicode_literals
 
 import logging

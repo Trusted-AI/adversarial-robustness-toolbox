@@ -15,6 +15,13 @@
 # AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT,
 # TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 # SOFTWARE.
+"""
+This module implements the JPEG compression defence `JpegCompression`.
+
+Paper link:
+    https://arxiv.org/pdf/1705.02900.pdf
+    https://arxiv.org/abs/1608.00853
+"""
 from __future__ import absolute_import, division, print_function, unicode_literals
 
 from io import BytesIO
