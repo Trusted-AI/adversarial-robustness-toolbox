@@ -366,6 +366,7 @@ class TFClassifier(Classifier):
         tmp_list = []
         ops = graph.get_operations()
 
+        # pylint: disable-msg=R1702
         for op in ops:
             if op.values():
                 if op.values()[0].get_shape() is not None:
@@ -435,7 +436,7 @@ class TFClassifier(Classifier):
             layer_tensor = graph.get_tensor_by_name(self._layer_names[layer])
 
         else:
-            raise TypeError("Layer must be of type `str` or `int`. Received `%s`", layer)
+            raise TypeError("Layer must be of type `str` or `int`. Received %s", layer)
 
         # Apply preprocessing
         x_preprocessed, _ = self._apply_preprocessing(x, y=None, fit=False)
