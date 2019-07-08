@@ -108,7 +108,7 @@ class CarliniL2Method(Attack):
         :rtype: `(float, float, float)`
         """
         l2dist = np.sum(np.square(x - x_adv).reshape(x.shape[0], -1), axis=1)
-        z = self.classifier.predict(np.array(x_adv, dtype=NUMPY_DTYPE), logits=True)
+        z = self.classifier.predict(np.array(x_adv, dtype=NUMPY_DTYPE), logits=True, batch_size=self.batch_size)
         z_target = np.sum(z * target, axis=1)
         z_other = np.max(z * (1 - target) + (np.min(z, axis=1) - 1)[:, np.newaxis] * target, axis=1)
 
@@ -196,7 +196,7 @@ class CarliniL2Method(Attack):
 
         # No labels provided, use model prediction as correct class
         if y is None:
-            y = get_labels_np_array(self.classifier.predict(x, logits=False))
+            y = get_labels_np_array(self.classifier.predict(x, logits=False, batch_size=self.batch_size))
 
         # Compute perturbation with implicit batching
         nb_batches = int(np.ceil(x_adv.shape[0] / float(self.batch_size)))
@@ -369,7 +369,7 @@ class CarliniL2Method(Attack):
             x_adv[batch_index_1:batch_index_2] = best_x_adv_batch
 
         logger.info('Success rate of C&W L_2 attack: %.2f%%',
-                    100 * compute_success(self.classifier, x, y, x_adv, self.targeted))
+                    100 * compute_success(self.classifier, x, y, x_adv, self.targeted, batch_size=self.batch_size))
 
         return x_adv
 
@@ -485,7 +485,7 @@ class CarliniLInfMethod(Attack):
         :return: A tuple holding the current logits and overall loss.
         :rtype: `(float, float)`
         """
-        z = self.classifier.predict(np.array(x_adv, dtype=NUMPY_DTYPE), logits=True)
+        z = self.classifier.predict(np.array(x_adv, dtype=NUMPY_DTYPE), logits=True, batch_size=self.batch_size)
         z_target = np.sum(z * target, axis=1)
         z_other = np.max(z * (1 - target) + (np.min(z, axis=1) - 1)[:, np.newaxis] * target, axis=1)
 
@@ -558,7 +558,7 @@ class CarliniLInfMethod(Attack):
 
         # No labels provided, use model prediction as correct class
         if y is None:
-            y = get_labels_np_array(self.classifier.predict(x, logits=False))
+            y = get_labels_np_array(self.classifier.predict(x, logits=False, batch_size=self.batch_size))
 
         # Compute perturbation with implicit batching
         nb_batches = int(np.ceil(x_adv.shape[0] / float(self.batch_size)))
@@ -692,7 +692,7 @@ class CarliniLInfMethod(Attack):
             x_adv[batch_index_1:batch_index_2] = x_adv_batch
 
         logger.info('Success rate of C&W L_inf attack: %.2f%%',
-                    100 * compute_success(self.classifier, x, y, x_adv, self.targeted))
+                    100 * compute_success(self.classifier, x, y, x_adv, self.targeted, batch_size=self.batch_size))
 
         return x_adv
 
