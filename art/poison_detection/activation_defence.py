@@ -276,7 +276,7 @@ class ActivationDefence(PoisonFilteringDefence):
         :return: (improve_factor, classifier)
         :rtype: `float`, `.Classifier`
         """
-
+        # pylint: disable=E0001
         # Train using cross validation
         from sklearn.model_selection import KFold
         k_fold = KFold(n_splits=n_splits)
@@ -581,6 +581,7 @@ def cluster_activations(separated_activations, nb_clusters=2, nb_dims=10, reduce
     :return: separated_clusters, separated_reduced_activations
     :rtype: `tuple`
     """
+    # pylint: disable=E0001
     from sklearn.cluster import KMeans
 
     separated_clusters = []
@@ -622,7 +623,7 @@ def reduce_dimensionality(activations, nb_dims=10, reduce='FastICA'):
     :return: array with the activations reduced
     :rtype: `numpy.ndarray`
     """
-
+    # pylint: disable=E0001
     from sklearn.decomposition import FastICA, PCA
     if reduce == 'FastICA':
         projector = FastICA(n_components=nb_dims, max_iter=1000, tol=0.005)

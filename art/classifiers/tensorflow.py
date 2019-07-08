@@ -366,7 +366,7 @@ class TFClassifier(Classifier):
         tmp_list = []
         ops = graph.get_operations()
 
-        # pylint: disable-msg=R1702
+        # pylint: disable=R1702
         for op in ops:
             if op.values():
                 if op.values()[0].get_shape() is not None:
@@ -482,7 +482,7 @@ class TFClassifier(Classifier):
         :type path: `str`
         :return: None
         """
-        # pylint: disable-msg=E0611
+        # pylint: disable=E0611
         import os
         import shutil
         from tensorflow.python import saved_model
@@ -567,7 +567,7 @@ class TFClassifier(Classifier):
         self.__dict__.update(state)
 
         # Load and update all functionality related to Tensorflow
-        # pylint: disable-msg=E0611
+        # pylint: disable=E0611
         import os
         from art import DATA_PATH
         import tensorflow as tf

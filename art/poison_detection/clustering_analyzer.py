@@ -301,6 +301,7 @@ class ClusteringAnalyzer:
         report: Dictionary with summary of the analysis
         :rtype: all_assigned_clean: `ndarray`, summary_poison_clusters: `list`, report" `dic`
         """
+        # pylint: disable=E0001
         from sklearn.metrics import silhouette_score
         size_threshold = round(size_threshold, r_size)
         silhouette_threshold = round(silhouette_threshold, r_silhouette)
