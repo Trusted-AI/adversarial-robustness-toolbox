@@ -25,7 +25,7 @@ import logging
 import numpy as np
 import six
 
-from art.classifiers import Classifier
+from art.classifiers.classifier import Classifier
 
 logger = logging.getLogger(__name__)
 
