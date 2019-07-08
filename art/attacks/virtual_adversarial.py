@@ -97,7 +97,7 @@ class VirtualAdversarialMethod(Attack):
                 from scipy.stats import entropy
                 kl_div1 = entropy(np.transpose(preds[batch_index_1:batch_index_2]), np.transpose(preds_new))
 
-                var_d_new = np.zeros_like(var_d)
+                var_d_new = np.zeros(var_d.shape)
                 for current_index in range(var_d.shape[1]):
                     var_d[:, current_index] += self.finite_diff
                     preds_new = self.classifier.predict((batch + var_d).reshape((-1,) + self.classifier.input_shape),

@@ -89,7 +89,7 @@ class SaliencyMapMethod(Attack):
 
             # Main algorithm for each batch
             # Initialize the search space; optimize to remove features that can't be changed
-            search_space = np.zeros_like(batch)
+            search_space = np.zeros(batch.shape)
             if hasattr(self.classifier, 'clip_values') and self.classifier.clip_values is not None:
                 clip_min, clip_max = self.classifier.clip_values
                 if self.theta > 0:
