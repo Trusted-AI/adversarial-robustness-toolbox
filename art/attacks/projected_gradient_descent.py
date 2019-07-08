@@ -31,7 +31,8 @@ import logging
 import numpy as np
 
 from art import NUMPY_DTYPE
-from art.attacks import FastGradientMethod
+# from art.attacks import FastGradientMethod
+from art.attacks.fast_gradient import FastGradientMethod
 from art.utils import compute_success, get_labels_np_array
 
 logger = logging.getLogger(__name__)
