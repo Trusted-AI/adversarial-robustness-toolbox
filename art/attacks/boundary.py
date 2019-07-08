@@ -78,7 +78,7 @@ class BoundaryAttack(Attack):
                   }
         self.set_params(**params)
 
-    def generate(self, x, y=None, x_adv_init=None):
+    def generate(self, x, y=None, **kwargs):
         """
         Generate adversarial samples and return them in an array.
 

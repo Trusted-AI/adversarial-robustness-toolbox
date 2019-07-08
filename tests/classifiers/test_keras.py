@@ -11,7 +11,8 @@ from keras.models import Model
 
 from art.classifiers import KerasClassifier
 from art.defences import FeatureSqueezing
-from art.utils import load_mnist, get_classifier_kr, master_seed
+from art.utils import load_mnist, master_seed
+from art.utils_test import get_classifier_kr
 
 logger = logging.getLogger('testLogger')
 

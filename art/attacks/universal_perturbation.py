@@ -82,7 +82,7 @@ class UniversalPerturbation(Attack):
                   }
         self.set_params(**kwargs)
 
-    def generate(self, x, y=None):
+    def generate(self, x, y=None, **kwargs):
         """
         Generate adversarial samples and return them in an array.
 

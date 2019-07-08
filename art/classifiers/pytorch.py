@@ -438,6 +438,8 @@ class PyTorchClassifier(Classifier):
         if not os.path.exists(folder):
             os.makedirs(folder)
 
+        # pylint: disable=W0212
+        # disable pylint because access to _model required
         torch.save(self._model._model.state_dict(), full_path + '.model')
         torch.save(self._optimizer.state_dict(), full_path + '.optimizer')
         logger.info("Model state dict saved in path: %s.", full_path + '.model')
@@ -453,6 +455,8 @@ class PyTorchClassifier(Classifier):
         import time
         import copy
 
+        # pylint: disable=W0212
+        # disable pylint because access to _model required
         state = self.__dict__.copy()
         state['inner_model'] = copy.copy(state['_model']._model)
 
@@ -530,6 +534,8 @@ class PyTorchClassifier(Classifier):
                         super(ModelWrapper, self).__init__()
                         self._model = model
 
+                    # pylint: disable=W0221
+                    # disable pylint because of API requirements for function
                     def forward(self, x):
                         """
                         This is where we get outputs from the input model.
@@ -539,6 +545,8 @@ class PyTorchClassifier(Classifier):
                         :return: a list of output layers, where the last 2 layers are logit and final outputs.
                         :rtype: `list`
                         """
+                        # pylint: disable=W0212
+                        # disable pylint because access to _model required
                         import torch.nn as nn
 
                         result = []

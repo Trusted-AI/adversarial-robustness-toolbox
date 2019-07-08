@@ -60,7 +60,7 @@ class DeepFool(Attack):
         params = {'max_iter': max_iter, 'epsilon': epsilon, 'nb_grads': nb_grads, 'batch_size': batch_size}
         self.set_params(**params)
 
-    def generate(self, x, y=None):
+    def generate(self, x, y=None, **kwargs):
         """
         Generate adversarial samples and return them in an array.
 

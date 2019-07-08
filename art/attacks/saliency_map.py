@@ -57,7 +57,7 @@ class SaliencyMapMethod(Attack):
         kwargs = {'theta': theta, 'gamma': gamma, 'batch_size': batch_size}
         self.set_params(**kwargs)
 
-    def generate(self, x, y=None):
+    def generate(self, x, y=None, **kwargs):
         """
         Generate adversarial samples and return them in an array.
 

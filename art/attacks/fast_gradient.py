@@ -118,7 +118,7 @@ class FastGradientMethod(Attack):
 
         return adv_x
 
-    def generate(self, x, y=None):
+    def generate(self, x, y=None, **kwargs):
         """Generate adversarial samples and return them in an array.
 
         :param x: An array with the original inputs.

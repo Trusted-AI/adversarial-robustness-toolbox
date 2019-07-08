@@ -29,7 +29,8 @@ import numpy as np
 from art.attacks.fast_gradient import FastGradientMethod
 from art.classifiers.keras import KerasClassifier
 from art.detection.detector import BinaryInputDetector, BinaryActivationDetector
-from art.utils import load_mnist, get_classifier_kr, master_seed
+from art.utils import load_mnist, master_seed
+from art.utils_test import get_classifier_kr
 
 logger = logging.getLogger('testLogger')
 

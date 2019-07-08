@@ -155,7 +155,7 @@ class ZooAttack(Attack):
 
         return preds, l2dist, c_weight * loss + l2dist
 
-    def generate(self, x, y=None):
+    def generate(self, x, y=None, **kwargs):
         """
         Generate adversarial samples and return them in an array.
 

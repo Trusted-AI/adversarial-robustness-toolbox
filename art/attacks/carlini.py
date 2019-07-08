@@ -182,7 +182,7 @@ class CarliniL2Method(Attack):
 
         return loss_gradient
 
-    def generate(self, x, y=None):
+    def generate(self, x, y=None, **kwargs):
         """
         Generate adversarial samples and return them in an array.
 
@@ -547,7 +547,7 @@ class CarliniLInfMethod(Attack):
 
         return loss_gradient
 
-    def generate(self, x, y=None):
+    def generate(self, x, y=None, **kwargs):
         """
         Generate adversarial samples and return them in an array.
 

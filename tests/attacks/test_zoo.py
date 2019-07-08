@@ -25,8 +25,8 @@ import numpy as np
 import tensorflow as tf
 
 from art.attacks.zoo import ZooAttack
-from art.utils import get_classifier_kr, get_classifier_pt, get_classifier_tf
-from art.utils import load_dataset, random_targets, master_seed, get_iris_classifier_pt
+from art.utils import load_dataset, random_targets, master_seed
+from art.utils_test import get_classifier_kr, get_classifier_pt, get_classifier_tf, get_iris_classifier_pt
 
 logger = logging.getLogger('testLogger')
 

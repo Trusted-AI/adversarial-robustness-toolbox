@@ -160,7 +160,7 @@ class ElasticNet(Attack):
 
         return decayed_learning_rate
 
-    def generate(self, x, y=None):
+    def generate(self, x, y=None, **kwargs):
         """
         Generate adversarial samples and return them in an array.
 

@@ -79,7 +79,7 @@ class HopSkipJump(Attack):
         else:
             self.theta = 0.01 / np.prod(self.classifier.input_shape)
 
-    def generate(self, x, y=None, x_adv_init=None):
+    def generate(self, x, y=None, **kwargs):
         """
         Generate adversarial samples and return them in an array.
 
@@ -456,7 +456,8 @@ class HopSkipJump(Attack):
 
         return result
 
-    def _interpolate(self, current_sample, original_sample, alpha, norm):
+    @staticmethod
+    def _interpolate(current_sample, original_sample, alpha, norm):
         """
         Interpolate a new sample based on the original and the current samples.
 

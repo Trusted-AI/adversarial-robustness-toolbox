@@ -8,6 +8,8 @@ import os
 
 from numpy import float32
 
+# pylint: disable=C0103
+
 LOGGING = {
     'version': 1,
     'disable_existing_loggers': False,

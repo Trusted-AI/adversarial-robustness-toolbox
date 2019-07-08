@@ -6,7 +6,8 @@ import unittest
 import numpy as np
 import tensorflow as tf
 
-from art.utils import get_classifier_tf, load_mnist, master_seed
+from art.utils import load_mnist, master_seed
+from art.utils_test import get_classifier_tf
 
 logger = logging.getLogger('testLogger')
 

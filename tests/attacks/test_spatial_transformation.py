@@ -25,7 +25,8 @@ import numpy as np
 import tensorflow as tf
 
 from art.attacks.spatial_transformation import SpatialTransformation
-from art.utils import load_mnist, master_seed, get_classifier_tf, get_classifier_kr, get_classifier_pt
+from art.utils import load_mnist, master_seed
+from art.utils_test import get_classifier_tf, get_classifier_kr, get_classifier_pt
 
 logger = logging.getLogger('testLogger')
 
