@@ -15,6 +15,13 @@
 # AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT,
 # TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 # SOFTWARE.
+"""
+This module implements the HopSkipJump attack `HopSkipJump`. This is a black-box attack that only requires class
+predictions. It is an advanced version of the boundary attack.
+
+Paper link:
+    https://arxiv.org/abs/1904.02144
+"""
 from __future__ import absolute_import, division, print_function, unicode_literals
 
 import logging
