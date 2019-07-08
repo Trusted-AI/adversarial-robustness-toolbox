@@ -134,6 +134,8 @@ def plot_3d(points, labels, colors=None, save=True, f_name=''):
     :rtype: `matplotlib.figure.Figure`
     """
     try:
+        # Disable warnings of unused import because all imports in this block are required
+        # pylint: disable=W0611
         import matplotlib
         import matplotlib.pyplot as plt
         from mpl_toolkits import mplot3d
