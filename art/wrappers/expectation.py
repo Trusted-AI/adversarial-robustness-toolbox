@@ -15,6 +15,12 @@
 # AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT,
 # TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 # SOFTWARE.
+"""
+This module implements the Expectation Over Transformation applied to classifier predictions and gradients.
+
+Paper link:
+    https://arxiv.org/pdf/1707.07397.pdf
+"""
 from __future__ import absolute_import, division, print_function, unicode_literals
 
 import logging
