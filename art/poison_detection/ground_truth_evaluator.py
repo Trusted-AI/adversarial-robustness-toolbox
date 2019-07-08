@@ -168,6 +168,6 @@ class GroundTruthEvaluator:
             logger.debug("%s: %d/%d=%.3g", name, numerator, denominator, res)
             return res
         except Exception as exception:
-            logger.debug("%s: couldn't calculate %d/%d", name, numerator, denominator)
             logging.exception(exception)
+            logger.debug("%s: couldn't calculate %d/%d", name, numerator, denominator)
             return 0
