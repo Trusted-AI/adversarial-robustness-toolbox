@@ -86,7 +86,7 @@ class PyTorchClassifier(Classifier):
         self._device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
         self._model.to(self._device)
 
-    def predict(self, x, logits=False, batch_size=128):
+    def predict(self, x, logits=False, batch_size=128, **kwargs):
         """
         Perform prediction for a batch of inputs.
 
@@ -211,7 +211,7 @@ class PyTorchClassifier(Classifier):
             # Fit a generic data generator through the API
             super(PyTorchClassifier, self).fit_generator(generator, nb_epochs=nb_epochs)
 
-    def class_gradient(self, x, label=None, logits=False):
+    def class_gradient(self, x, label=None, logits=False, **kwargs):
         """
         Compute per-class derivatives w.r.t. `x`.
 
@@ -301,7 +301,7 @@ class PyTorchClassifier(Classifier):
 
         return grads
 
-    def loss_gradient(self, x, y):
+    def loss_gradient(self, x, y, **kwargs):
         """
         Compute the gradient of the loss function w.r.t. `x`.
 

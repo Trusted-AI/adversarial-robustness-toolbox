@@ -61,7 +61,7 @@ class DetectorClassifier(Classifier):
         self._nb_classes = classifier.nb_classes + 1
         self._input_shape = classifier.input_shape
 
-    def predict(self, x, logits=False, batch_size=128):
+    def predict(self, x, logits=False, batch_size=128, **kwargs):
         """
         Perform prediction for a batch of inputs.
 
@@ -125,7 +125,7 @@ class DetectorClassifier(Classifier):
         """
         raise NotImplementedError
 
-    def class_gradient(self, x, label=None, logits=False):
+    def class_gradient(self, x, label=None, logits=False, **kwargs):
         """
         Compute per-class derivatives w.r.t. `x`.
 
@@ -293,7 +293,7 @@ class DetectorClassifier(Classifier):
 
         return combined_grads
 
-    def loss_gradient(self, x, y):
+    def loss_gradient(self, x, y, **kwargs):
         """
         Compute the gradient of the loss function w.r.t. `x`.
 

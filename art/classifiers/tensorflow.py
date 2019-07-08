@@ -101,7 +101,7 @@ class TFClassifier(Classifier):
         if self._loss is not None:
             self._loss_grads = tf.gradients(self._loss, self._input_ph)[0]
 
-    def predict(self, x, logits=False, batch_size=128):
+    def predict(self, x, logits=False, batch_size=128, **kwargs):
         """
         Perform prediction for a batch of inputs.
 
@@ -211,7 +211,7 @@ class TFClassifier(Classifier):
                     self._sess.run(self._train, feed_dict=feed_dict)
             super(TFClassifier, self).fit_generator(generator, nb_epochs=nb_epochs, **kwargs)
 
-    def class_gradient(self, x, label=None, logits=False):
+    def class_gradient(self, x, label=None, logits=False, **kwargs):
         """
         Compute per-class derivatives w.r.t. `x`.
 
@@ -278,7 +278,7 @@ class TFClassifier(Classifier):
 
         return grads
 
-    def loss_gradient(self, x, y):
+    def loss_gradient(self, x, y, **kwargs):
         """
         Compute the gradient of the loss function w.r.t. `x`.
 

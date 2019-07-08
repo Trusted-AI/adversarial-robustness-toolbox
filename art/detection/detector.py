@@ -67,7 +67,7 @@ class BinaryInputDetector(Classifier):
         """
         self.detector.fit(x, y, batch_size=batch_size, nb_epochs=nb_epochs, **kwargs)
 
-    def predict(self, x, logits=False, batch_size=128):
+    def predict(self, x, logits=False, batch_size=128, **kwargs):
         """
         Perform detection of adversarial data and return prediction as tuple.
 
@@ -111,10 +111,10 @@ class BinaryInputDetector(Classifier):
     def learning_phase(self):
         return self.detector.learning_phase
 
-    def class_gradient(self, x, label=None, logits=False):
+    def class_gradient(self, x, label=None, logits=False, **kwargs):
         return self.detector.class_gradient(x, label=label, logits=logits)
 
-    def loss_gradient(self, x, y):
+    def loss_gradient(self, x, y, **kwargs):
         return self.detector.loss_gradient(x, y)
 
     def get_activations(self, x, layer, batch_size):
@@ -191,7 +191,7 @@ class BinaryActivationDetector(Classifier):
         x_activations = self.classifier.get_activations(x, self._layer_name)
         self.detector.fit(x_activations, y, batch_size=batch_size, nb_epochs=nb_epochs, **kwargs)
 
-    def predict(self, x, logits=False, batch_size=128):
+    def predict(self, x, logits=False, batch_size=128, **kwargs):
         """
         Perform detection of adversarial data and return prediction as tuple.
 
@@ -235,10 +235,10 @@ class BinaryActivationDetector(Classifier):
     def learning_phase(self):
         return self.detector.learning_phase
 
-    def class_gradient(self, x, label=None, logits=False):
+    def class_gradient(self, x, label=None, logits=False, **kwargs):
         return self.detector.class_gradient(x, label=label, logits=logits)
 
-    def loss_gradient(self, x, y):
+    def loss_gradient(self, x, y, **kwargs):
         return self.detector.loss_gradient(x, y)
 
     def get_activations(self, x, layer, batch_size):

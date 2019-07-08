@@ -27,7 +27,8 @@ from art.attacks.fast_gradient import FastGradientMethod
 from art.wrappers.query_efficient_bb import QueryEfficientBBGradientEstimation
 from art.classifiers import KerasClassifier
 from art.defences import FeatureSqueezing
-from art.utils import load_dataset, get_classifier_kr, get_iris_classifier_kr, get_labels_np_array, master_seed
+from art.utils import load_dataset, get_labels_np_array, master_seed
+from art.utils_test import get_classifier_kr, get_iris_classifier_kr
 
 logger = logging.getLogger('testLogger')
 

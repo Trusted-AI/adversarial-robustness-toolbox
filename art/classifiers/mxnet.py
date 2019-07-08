@@ -175,7 +175,7 @@ class MXClassifier(Classifier):
             # Fit a generic data generator through the API
             super(MXClassifier, self).fit_generator(generator, nb_epochs=nb_epochs)
 
-    def predict(self, x, logits=False, batch_size=128):
+    def predict(self, x, logits=False, batch_size=128, **kwargs):
         """
         Perform prediction for a batch of inputs.
 
@@ -215,7 +215,7 @@ class MXClassifier(Classifier):
 
         return results
 
-    def class_gradient(self, x, label=None, logits=False):
+    def class_gradient(self, x, label=None, logits=False, **kwargs):
         """
         Compute per-class derivatives w.r.t. `x`.
 
@@ -298,7 +298,7 @@ class MXClassifier(Classifier):
 
         return grads
 
-    def loss_gradient(self, x, y):
+    def loss_gradient(self, x, y, **kwargs):
         """
         Compute the gradient of the loss function w.r.t. `x`.
 
