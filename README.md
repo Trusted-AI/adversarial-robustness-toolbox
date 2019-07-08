@@ -56,7 +56,7 @@ The following **detector of poisoning attacks** is also supported:
 
 ### Installation with `pip`
 
-The toolbox is designed to run with Python 2 and 3.
+The toolbox is designed and tested to run with Python 3. 
 ART can be installed from the PyPi repository using `pip`:
 
 ```bash
