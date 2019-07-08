@@ -145,6 +145,7 @@ def random_sphere(nb_points, nb_dims, radius, norm):
 
         res = (a_tmp[:, 1:] - a_tmp[:, :-1]) * np.random.choice([-1, 1], (nb_points, nb_dims))
     elif norm == 2:
+        # pylint: disable-msg=E0611
         from scipy.special import gammainc
 
         a_tmp = np.random.randn(nb_points, nb_dims)
