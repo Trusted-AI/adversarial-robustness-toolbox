@@ -22,7 +22,7 @@ key functions, such as loss_gradient, to facilitate new attacks.
 """
 
 
-class ClassifierWrapper(object):
+class ClassifierWrapper:
     """
     Wrapper class for any classifier instance.
     """
