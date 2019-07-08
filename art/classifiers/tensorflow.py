@@ -566,6 +566,7 @@ class TFClassifier(Classifier):
         self.__dict__.update(state)
 
         # Load and update all functionality related to Tensorflow
+        # pylint: disable-msg=E0611
         import os
         from art import DATA_PATH
         import tensorflow as tf
