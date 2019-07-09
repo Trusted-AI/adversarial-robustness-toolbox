@@ -40,7 +40,7 @@ class TestJpegCompression(unittest.TestCase):
         x_train = x_train[:2]
         preprocess = JpegCompression(clip_values=clip_values, quality=70)
         x_compressed, _ = preprocess(x_train)
-        self.assertEqual((x_compressed.shape, x_train.shape))
+        self.assertEqual(x_compressed.shape, x_train.shape)
         self.assertTrue((x_compressed >= clip_values[0]).all())
         self.assertTrue((x_compressed <= clip_values[1]).all())
 
@@ -50,7 +50,7 @@ class TestJpegCompression(unittest.TestCase):
         x = train_features[:2] / 255.0
         preprocess = JpegCompression(clip_values=clip_values, quality=80)
         x_compressed, _ = preprocess(x)
-        self.assertEqual((x_compressed.shape, x.shape))
+        self.assertEqual(x_compressed.shape, x.shape)
         self.assertTrue((x_compressed >= clip_values[0]).all())
         self.assertTrue((x_compressed <= clip_values[1]).all())
         self.assertAlmostEqual(x_compressed[0, 14, 14, 0], 0.92941177)
@@ -63,7 +63,7 @@ class TestJpegCompression(unittest.TestCase):
         x = train_features[:2]
         preprocess = JpegCompression(clip_values=clip_values, quality=80)
         x_compressed, _ = preprocess(x)
-        self.assertEqual((x_compressed.shape, x.shape))
+        self.assertEqual(x_compressed.shape, x.shape)
         self.assertTrue((x_compressed >= clip_values[0]).all())
         self.assertTrue((x_compressed <= clip_values[1]).all())
         self.assertAlmostEqual(x_compressed[0, 14, 14, 0], 0.92941177 * clip_values[1], places=4)

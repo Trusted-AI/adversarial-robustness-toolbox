@@ -78,7 +78,7 @@ class TestLocalSpatialSmoothing(unittest.TestCase):
         with self.assertRaises(ValueError) as context:
             preprocess(x)
 
-        self.assertEqual('Feature vectors detected.', str(context.exception))
+        self.assertIn('Feature vectors detected.', str(context.exception))
 
 
 if __name__ == '__main__':
