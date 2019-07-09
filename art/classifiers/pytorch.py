@@ -86,6 +86,9 @@ class PyTorchClassifier(Classifier):
         self._device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
         self._model.to(self._device)
 
+        # Index of layer at which the class gradients should be calculated
+        self._layer_idx_gradients = -1
+
     def predict(self, x, logits=False, batch_size=128, **kwargs):
         """
         Perform prediction for a batch of inputs.
@@ -241,18 +244,16 @@ class PyTorchClassifier(Classifier):
 
         x_preprocessed = torch.from_numpy(x_preprocessed).to(self._device).float()
 
-        # Compute gradient wrt what
-        layer_idx = -1
-        if layer_idx < 0:
+        # Compute gradients
+        if self._layer_idx_gradients < 0:
             x_preprocessed.requires_grad = True
 
-        # Compute the gradient and return
         # Run prediction
         model_outputs = self._model(x_preprocessed)
 
         # Set where to get gradient
-        if layer_idx >= 0:
-            input_grad = model_outputs[layer_idx]
+        if self._layer_idx_gradients >= 0:
+            input_grad = model_outputs[self._layer_idx_gradients]
         else:
             input_grad = x_preprocessed
 
