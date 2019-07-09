@@ -95,8 +95,8 @@ class TestBinaryInputDetector(unittest.TestCase):
         nb_true_negatives = len(np.where(test_detection == 0)[0])
         logger.debug('Number of true positives detected: %i', nb_true_positives)
         logger.debug('Number of true negatives detected: %i', nb_true_negatives)
-        self.assertTrue(nb_true_positives > 0)
-        self.assertTrue(nb_true_negatives > 0)
+        self.assertGreater(nb_true_positives, 0)
+        self.assertGreater(nb_true_negatives, 0)
 
 
 class TestBinaryActivationDetector(unittest.TestCase):
@@ -159,8 +159,8 @@ class TestBinaryActivationDetector(unittest.TestCase):
         nb_true_negatives = len(np.where(test_detection == 0)[0])
         logger.debug('Number of true positives detected: %i', nb_true_positives)
         logger.debug('Number of true negatives detected: %i', nb_true_negatives)
-        self.assertTrue(nb_true_positives > 0)
-        self.assertTrue(nb_true_negatives > 0)
+        self.assertGreater(nb_true_positives, 0)
+        self.assertGreater(nb_true_negatives, 0)
 
 
 if __name__ == '__main__':
