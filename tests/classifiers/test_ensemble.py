@@ -92,14 +92,14 @@ class TestEnsembleClassifier(unittest.TestCase):
     def test_predict(self):
         preds = self.ensemble.predict(self.mnist[1][0], logits=False, raw=False)
         preds_logits = self.ensemble.predict(self.mnist[1][0], logits=True, raw=False)
-        self.assertTrue(preds.shape == preds_logits.shape)
+        self.assertEqual(preds.shape, preds_logits.shape)
         self.assertTrue(np.array(preds.shape == (NB_TEST, 10)).all())
         self.assertFalse((preds == preds_logits).all())
 
         preds_raw = self.ensemble.predict(self.mnist[1][0], logits=False, raw=True)
         preds_raw_logits = self.ensemble.predict(self.mnist[1][0], logits=True, raw=True)
-        self.assertTrue(preds_raw.shape == preds_raw_logits.shape)
-        self.assertTrue(preds_raw.shape == (2, NB_TEST, 10))
+        self.assertEqual(preds_raw.shape, preds_raw_logits.shape)
+        self.assertEqual(preds_raw.shape, (2, NB_TEST, 10))
         self.assertFalse((preds_raw == preds_raw_logits).all())
 
         self.assertFalse((preds == preds_raw[0]).all())
@@ -125,6 +125,6 @@ class TestEnsembleClassifier(unittest.TestCase):
 
     def test_repr(self):
         repr_ = repr(self.ensemble)
-        self.assertTrue('art.classifiers.ensemble.EnsembleClassifier' in repr_)
-        self.assertTrue('classifier_weights=array([0.5, 0.5])' in repr_)
-        self.assertTrue('channel_index=3, clip_values=(0, 1), defences=None, preprocessing=(0, 1)' in repr_)
+        self.assertIn('art.classifiers.ensemble.EnsembleClassifier', repr_)
+        self.assertIn('classifier_weights=array([0.5, 0.5])', repr_)
+        self.assertIn('channel_index=3, clip_values=(0, 1), defences=None, preprocessing=(0, 1)', repr_)
