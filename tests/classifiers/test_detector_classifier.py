@@ -362,8 +362,8 @@ class TestDetectorClassifier(unittest.TestCase):
 
     def test_repr(self):
         repr_ = repr(self.detector_classifier)
-        self.assertIs('art.classifiers.detector_classifier.DetectorClassifier', repr_)
-        self.assertIs('preprocessing=(0, 1)', repr_)
+        self.assertIn('art.classifiers.detector_classifier.DetectorClassifier', repr_)
+        self.assertIn('preprocessing=(0, 1)', repr_)
 
 
 if __name__ == '__main__':
