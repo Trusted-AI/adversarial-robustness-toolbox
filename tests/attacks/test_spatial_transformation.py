@@ -68,17 +68,17 @@ class TestSpatialTransformation(unittest.TestCase):
                                           num_rotations=3)
         x_train_adv = attack_st.generate(x_train)
 
-        self.assertTrue(abs(x_train_adv[0, 8, 13, 0] - 0.49004024) <= 0.01)
+        self.assertLessEqual(abs(x_train_adv[0, 8, 13, 0] - 0.49004024), 0.01)
 
-        self.assertTrue(abs(attack_st.fooling_rate - 0.707) <= 0.01)
+        self.assertLessEqual(abs(attack_st.fooling_rate - 0.707), 0.01)
 
-        self.assertTrue(attack_st.attack_trans_x == 3)
-        self.assertTrue(attack_st.attack_trans_y == 3)
-        self.assertTrue(attack_st.attack_rot == 30.0)
+        self.assertEqual(attack_st.attack_trans_x, 3)
+        self.assertEqual(attack_st.attack_trans_y,  3)
+        self.assertEqual(attack_st.attack_rot, 30.0)
 
         x_test_adv = attack_st.generate(x_test)
 
-        self.assertTrue(abs(x_test_adv[0, 14, 14, 0] - 0.013572651) <= 0.01)
+        self.assertLessEqual(abs(x_test_adv[0, 14, 14, 0] - 0.013572651), 0.01)
 
         sess.close()
         tf.reset_default_graph()
@@ -99,16 +99,16 @@ class TestSpatialTransformation(unittest.TestCase):
                                           num_rotations=3)
         x_train_adv = attack_st.generate(x_train)
 
-        self.assertTrue(abs(x_train_adv[0, 8, 13, 0] - 0.49004024) <= 0.01)
-        self.assertTrue(abs(attack_st.fooling_rate - 0.707) <= 0.01)
+        self.assertLessEqual(abs(x_train_adv[0, 8, 13, 0] - 0.49004024), 0.01)
+        self.assertLessEqual(abs(attack_st.fooling_rate - 0.707), 0.01)
 
-        self.assertTrue(attack_st.attack_trans_x == 3)
-        self.assertTrue(attack_st.attack_trans_y == 3)
-        self.assertTrue(attack_st.attack_rot == 30.0)
+        self.assertEqual(attack_st.attack_trans_x, 3)
+        self.assertEqual(attack_st.attack_trans_y, 3)
+        self.assertEqual(attack_st.attack_rot, 30.0)
 
         x_test_adv = attack_st.generate(x_test)
 
-        self.assertTrue(abs(x_test_adv[0, 14, 14, 0] - 0.013572651) <= 0.01)
+        self.assertLessEqual(abs(x_test_adv[0, 14, 14, 0] - 0.013572651), 0.01)
 
         k.clear_session()
 
@@ -130,16 +130,16 @@ class TestSpatialTransformation(unittest.TestCase):
                                           num_rotations=3)
         x_train_adv = attack_st.generate(x_train)
 
-        self.assertTrue(abs(x_train_adv[0, 0, 13, 5] - 0.374206543) <= 0.01)
-        self.assertTrue(abs(attack_st.fooling_rate - 0.361) <= 0.01)
+        self.assertLessEqual(abs(x_train_adv[0, 0, 13, 5] - 0.374206543), 0.01)
+        self.assertLessEqual(abs(attack_st.fooling_rate - 0.361), 0.01)
 
-        self.assertTrue(attack_st.attack_trans_x == 0)
-        self.assertTrue(attack_st.attack_trans_y == -3)
-        self.assertTrue(attack_st.attack_rot == 30.0)
+        self.assertEqual(attack_st.attack_trans_x, 0)
+        self.assertEqual(attack_st.attack_trans_y, -3)
+        self.assertEqual(attack_st.attack_rot, 30.0)
 
         x_test_adv = attack_st.generate(x_test)
 
-        self.assertTrue(abs(x_test_adv[0, 0, 14, 14] - 0.008591662) <= 0.01)
+        self.assertLessEqual(abs(x_test_adv[0, 0, 14, 14] - 0.008591662), 0.01)
 
     def test_failure_feature_vectors(self):
         attack_params = {"max_translation": 10.0, "num_translations": 3, "max_rotation": 30.0, "num_rotations": 3}
@@ -151,7 +151,7 @@ class TestSpatialTransformation(unittest.TestCase):
         with self.assertRaises(ValueError) as context:
             attack.generate(data)
 
-        self.assertTrue('Feature vectors detected.' in str(context.exception))
+        self.assertIn('Feature vectors detected.', str(context.exception))
 
 
 if __name__ == '__main__':

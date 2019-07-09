@@ -142,7 +142,6 @@ class TestNewtonFoolVectors(unittest.TestCase):
 
         attack = NewtonFool(classifier, max_iter=5)
         x_test_adv = attack.generate(x_test)
-        x_test_adv = attack.generate(x_test)
         self.assertFalse((x_test == x_test_adv).all())
         self.assertTrue((x_test_adv <= 1).all())
         self.assertTrue((x_test_adv >= 0).all())

@@ -393,8 +393,7 @@ class TestCarliniLInf(TestCarliniL2):
         ptc = get_classifier_pt()
 
         # Get MNIST
-        (x_train, y_train), (x_test, y_test) = self.mnist
-        x_train = np.swapaxes(x_train, 1, 3)
+        (_, _), (x_test, y_test) = self.mnist
         x_test = np.swapaxes(x_test, 1, 3)
 
         # First attack

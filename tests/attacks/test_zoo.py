@@ -195,7 +195,7 @@ class TestZooAttack(unittest.TestCase):
             attack.set_params(**attack_params)
             attack.generate(data)
 
-        self.assertTrue('Feature vectors detected.' in str(context.exception))
+        self.assertIn('Feature vectors detected.', str(context.exception))
 
 
 if __name__ == '__main__':

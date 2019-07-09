@@ -68,9 +68,9 @@ class TestAdversarialPatch(unittest.TestCase):
                                      batch_size=10, max_iter=500)
         patch_adv, _ = attack_ap.generate(x_train)
 
-        self.assertTrue(patch_adv[8, 8, 0] - (-3.1106631027725005) < 0.01)
-        self.assertTrue(patch_adv[14, 14, 0] - 18.954278294246386 < 0.01)
-        self.assertTrue(np.sum(patch_adv) - 794.2447019737851 < 0.01)
+        self.assertLess(patch_adv[8, 8, 0] - (-3.1106631027725005), 0.01)
+        self.assertLess(patch_adv[14, 14, 0] - 18.954278294246386, 0.01)
+        self.assertLess(np.sum(patch_adv) - 794.2447019737851, 0.01)
 
         sess.close()
         tf.reset_default_graph()
@@ -91,9 +91,9 @@ class TestAdversarialPatch(unittest.TestCase):
                                      batch_size=10, max_iter=500)
         patch_adv, _ = attack_ap.generate(x_train)
 
-        self.assertTrue(patch_adv[8, 8, 0] - (-3.2501425017774923) < 0.01)
-        self.assertTrue(patch_adv[14, 14, 0] - 20.48400094881169 < 0.01)
-        self.assertTrue(np.sum(patch_adv) - 1764.7681744376168 < 0.01)
+        self.assertLess(patch_adv[8, 8, 0] - (-3.2501425017774923), 0.01)
+        self.assertLess(patch_adv[14, 14, 0] - 20.48400094881169, 0.01)
+        self.assertLess(np.sum(patch_adv) - 1764.7681744376168, 0.01)
 
         k.clear_session()
 
@@ -114,9 +114,9 @@ class TestAdversarialPatch(unittest.TestCase):
                                      batch_size=10, max_iter=500)
         patch_adv, _ = attack_ap.generate(x_train)
 
-        self.assertTrue(patch_adv[0, 8, 8] - (-3.1423605902784875) < 0.01)
-        self.assertTrue(patch_adv[0, 14, 14] - 19.790434152473054 < 0.01)
-        self.assertTrue(np.sum(patch_adv) - 383.5670772794207 < 0.01)
+        self.assertLess(patch_adv[0, 8, 8] - (-3.1423605902784875), 0.01)
+        self.assertLess(patch_adv[0, 14, 14] - 19.790434152473054, 0.01)
+        self.assertLess(np.sum(patch_adv) - 383.5670772794207, 0.01)
 
     def test_failure_feature_vectors(self):
         attack_params = {"rotation_max": 22.5, "scale_min": 0.1, "scale_max": 1.0,
@@ -129,7 +129,7 @@ class TestAdversarialPatch(unittest.TestCase):
         with self.assertRaises(ValueError) as context:
             attack.generate(data)
 
-        self.assertTrue('Feature vectors detected.' in str(context.exception))
+        self.assertIn('Feature vectors detected.', str(context.exception))
 
 
 if __name__ == '__main__':
