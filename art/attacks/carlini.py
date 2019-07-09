@@ -512,7 +512,7 @@ class CarliniLInfMethod(Attack):
 
         return z_predicted, loss
 
-    def _loss_gradient(self, z_logits, target, x_adv, x_adv_tanh, clip_min, clip_max):
+    def _loss_gradient(self, z_logits, target, x_adv, x_adv_tanh, clip_min, clip_max): # lgtm [py/similar-function]
         """
         Compute the gradient of the loss function.
 
