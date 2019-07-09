@@ -38,7 +38,7 @@ class TestTotalVarMin(unittest.TestCase):
         x = np.random.rand(2, 28, 28, 1)
         preprocess = TotalVarMin(clip_values=(0, 1))
         x_preprocessed, _ = preprocess(x)
-        self.assertTrue((x_preprocessed.shape == x.shape))
+        self.assertEqual(x_preprocessed.shape, x.shape)
         self.assertTrue((x_preprocessed >= clip_values[0]).all())
         self.assertTrue((x_preprocessed <= clip_values[1]).all())
         self.assertFalse((x_preprocessed == x).all())
@@ -48,7 +48,7 @@ class TestTotalVarMin(unittest.TestCase):
         x = np.random.rand(2, 32, 32, 3)
         preprocess = TotalVarMin(clip_values=clip_values)
         x_preprocessed, _ = preprocess(x)
-        self.assertTrue((x_preprocessed.shape == x.shape))
+        self.assertEqual((x_preprocessed.shape, x.shape))
         self.assertTrue((x_preprocessed >= clip_values[0]).all())
         self.assertTrue((x_preprocessed <= clip_values[1]).all())
         self.assertFalse((x_preprocessed == x).all())
@@ -61,7 +61,7 @@ class TestTotalVarMin(unittest.TestCase):
         with self.assertRaises(ValueError) as context:
             preprocess(x)
 
-        self.assertTrue('Feature vectors detected.' in str(context.exception))
+        self.assertIn('Feature vectors detected.', str(context.exception))
 
 
 if __name__ == '__main__':
