@@ -8,8 +8,19 @@ class ScanningOps:
     @staticmethod
     def optimize_in_single_dimension(pvalues, a_max, image_to_node, score_function):
         """
-        takes in a subset of pvalues and direction
-        image_to_node is BOOL which informs direction. """
+        Optimizes over all subsets of nodes for a given subset of images or \
+            over all subsets of images for a given subet of nodes  
+        :param pvalues: pvalue ranges
+        :type pvalues: `ndarray`
+        :param a_max: alpha max. determines the significance level threshold
+        :type a_max: `float`
+        :param image_to_node: informs what direction to optimize in
+        :type image_to_node: `bool`
+        :param score_function: scoring function
+        :type score_function: `.ScoringFunction`
+        :return: (best_score_so_far, subset, best_alpha)
+        :rtype: `float`, `np.array`, `float`     
+        """
 
         alpha_thresholds = np.unique(pvalues[:, :, 1])
 
@@ -72,7 +83,6 @@ class ScanningOps:
             # cumulating count, alpha stays same.
             alpha_v = np.ones(number_of_elements)*alpha_threshold
 
-            # may need to reverse this?
             n_alpha_v = np.cumsum(
                 unsort_priority[:, alpha_count][arg_sort_priority][:, alpha_count])
             count_increments_this = np.ones(number_of_elements)*size_of_given
@@ -106,7 +116,19 @@ class ScanningOps:
         """
         Here we control the iteration between images->nodes and nodes->images
         we start with a fixed subset of nodes by default
-        We collapse pvalues array to only use those """
+        :param pvalues: pvalue ranges
+        :type pvalues: `ndarray`
+        :param a_max: alpha max. determines the significance level threshold
+        :type a_max: `float`  
+        :param indices_of_seeds: indices of initial sets of images or nodes to perform optimization
+        :type indices_of_seeds: `np.array`
+        :param image_to_node: informs what direction to optimize in
+        :type image_to_node: `bool`
+        :param score_function: scoring function
+        :type score_function: `.ScoringFunction`   
+        :return: (best_score_so_far, best_sub_of_images, best_sub_of_nodes, best_alpha)
+        :rtype: `float`, `np.array`, `np.array`, `float`    
+        """
 
         best_score_so_far = -100000
 

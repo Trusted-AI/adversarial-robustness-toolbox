@@ -43,7 +43,7 @@ The following **defence** methods are also supported:
 ART also implements **detection** methods of adversarial samples:
 * Basic detector based on inputs
 * Detector trained on the activations of a specific layer
-* Detector based on Fast Generalized Subset Scan ([Speakman et al., 2018])(https://arxiv.org/pdf/1810.08676)
+* Detector based on Fast Generalized Subset Scan ([Speakman et al., 2018](https://arxiv.org/pdf/1810.08676))
 
 The following **detector of poisoning attacks** is also supported:
 * Detector based on activations analysis ([Chen et al., 2018](https://arxiv.org/abs/1811.03728))

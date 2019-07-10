@@ -12,8 +12,13 @@ class ScoringFunctions:
     def get_score_bj_fast(n_alpha, no_records, alpha):
         """ BerkJones
         :param n_alpha: no of records less than alpha
+        :type n_alpha: `list`
         :param no_records: no of records
-        :param n_alpha: alpha threshold
+        :type no_records: `list`
+        :param alpha: alpha threshold
+        :type alpha: `list`
+        :return: score
+        :rtype: `list`
         """
 
         score = np.zeros(alpha.shape[0])
@@ -45,8 +50,13 @@ class ScoringFunctions:
         In this case we use the binomial distribution.  The observed is N_a.  The expected (under null) is N*a.
         and the standard deviation is sqrt(N*a(1-a))
         :param n_alpha: no of records less than alpha
+        :type n_alpha: `list`
         :param no_records: no of records
-        :param n_alpha: alpha threshold
+        :type no_records: `list`
+        :param alpha: alpha threshold
+        :type alpha: `list`
+        :return: score
+        :rtype: `list`
         """
 
         #nds = np.array(range(0, valpha.shape[0])) #count over these
@@ -61,8 +71,13 @@ class ScoringFunctions:
     def get_score_ks_fast(n_alpha, no_records, alpha):
         """ KolmarovSmirnov
         :param n_alpha: no of records less than alpha
+        :type n_alpha: `list`
         :param no_records: no of records
-        :param vn_alpha: alpha threshold
+        :type no_records: `list`
+        :param alpha: alpha threshold
+        :type alpha: `list`
+        :return: score    
+        :rtype: `list`
         """
 
         score = np.zeros(alpha.shape[0])

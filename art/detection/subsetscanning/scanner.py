@@ -13,6 +13,19 @@ class Scanner:
 
     @staticmethod
     def fgss_individ_for_nets(pvalues, a_max=0.5, score_function=ScoringFunctions.get_score_bj_fast):
+        """ 
+        Finds the highest scoring subset of records and attribute. Return the subsets, the score, and the\
+            alpha that maximizes the score 
+
+        :param pvalues: pvalue ranges
+        :type clean_x `np.ndarray`
+        :param a_max: alpha max. determines the significance level threshold 
+        :type adv_x `float`
+        :param score_function: scoring function
+        :type score_function `.ScoringFunctions`
+        :return: (best_score, image_sub, node_sub, optimal_alpha)
+        :rtype: `float`, `list`, `list`, `float`
+        """
 
         """ 
         A simplified, faster, exact method but only useable when scoring an individual input
@@ -58,7 +71,24 @@ class Scanner:
     @staticmethod
     def fgss_for_nets(pvalues, a_max=0.5, restarts=10, \
         image_to_node_init=False, score_function=ScoringFunctions.get_score_bj_fast):
-        """ iterates between images and nodes, each time performing NPSS efficient maximization """
+        """ 
+        Finds the highest scoring subset of records and attribute. Return the subsets, the score, and the\
+            alpha that maximizes the score 
+        iterates between images and nodes, each time performing NPSS efficient maximization 
+
+        :param pvalues: pvalue ranges
+        :type clean_x `np.ndarray`
+        :param a_max: alpha threshold
+        :type adv_x `float`
+        :param restarts: number of iterative restarts
+        :type adv_x `int`
+        :param image_to_node_init: intializes what direction to begin the search: image to node or vice-versa
+        :type adv_x `bool`
+        :param score_function: scoring function
+        :type score_function `.ScoringFunctions`
+        :return: (best_score, image_sub, node_sub, optimal_alpha)
+        :rtype: `float`, `list`, `list`, `float`
+        """
 
         best_score = -100000
 
