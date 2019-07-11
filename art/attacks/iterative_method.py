@@ -51,5 +51,5 @@ class BasicIterativeMethod(ProjectedGradientDescent):
         :type batch_size: `int`
         """
         super(BasicIterativeMethod, self).__init__(classifier, norm=np.inf, eps=eps, eps_step=eps_step,
-                                                       max_iter=max_iter, targeted=targeted,
-                                                       num_random_init=0, batch_size=batch_size)
+                                                   max_iter=max_iter, targeted=targeted,
+                                                   num_random_init=0, batch_size=batch_size)

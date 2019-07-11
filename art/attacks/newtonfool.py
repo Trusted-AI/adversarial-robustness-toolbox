@@ -65,7 +65,7 @@ class NewtonFool(Attack):
         x_adv = x.astype(NUMPY_DTYPE)
 
         # Initialize variables
-        y_pred = self.classifier.predict(x, logits=False)
+        y_pred = self.classifier.predict(x, logits=False, batch_size=self.batch_size)
         pred_class = np.argmax(y_pred, axis=1)
 
         # Compute perturbation with implicit batching
@@ -105,8 +105,8 @@ class NewtonFool(Attack):
                 x_adv[batch_index_1:batch_index_2] = batch
 
         logger.info('Success rate of NewtonFool attack: %.2f%%',
-                    (np.sum(np.argmax(self.classifier.predict(x), axis=1) !=
-                            np.argmax(self.classifier.predict(x_adv), axis=1)) / x.shape[0]))
+                    (np.sum(np.argmax(self.classifier.predict(x, batch_size=self.batch_size), axis=1) != np.argmax(
+                        self.classifier.predict(x_adv, batch_size=self.batch_size), axis=1)) / x.shape[0]))
 
         return x_adv
 

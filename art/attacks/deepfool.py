@@ -66,7 +66,7 @@ class DeepFool(Attack):
         :rtype: `np.ndarray`
         """
         x_adv = x.astype(NUMPY_DTYPE)
-        preds = self.classifier.predict(x, logits=True)
+        preds = self.classifier.predict(x, logits=True, batch_size=self.batch_size)
 
         # Determine the class labels for which to compute the gradients
         use_grads_subset = self.nb_grads < self.classifier.nb_classes
@@ -149,8 +149,8 @@ class DeepFool(Attack):
                         self.classifier.clip_values[1], out=x_adv[batch_index_1:batch_index_2])
 
         logger.info('Success rate of DeepFool attack: %.2f%%',
-                    (np.sum(np.argmax(preds, axis=1) != np.argmax(self.classifier.predict(x_adv), axis=1)) /
-                     x.shape[0]))
+                    (np.sum(np.argmax(preds, axis=1) != np.argmax(self.classifier.predict(
+                    x_adv, batch_size=self.batch_size), axis=1)) / x.shape[0]))
 
         return x_adv
 
