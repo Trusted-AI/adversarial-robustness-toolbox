@@ -11,7 +11,7 @@ import numpy as np
 
 from art.attacks.fast_gradient import FastGradientMethod
 from art.detection.subsetscanning.detector import SubsetScanningDetector
-from art.utils import master_seed, load_cifar10
+from art.utils import master_seed, load_dataset
 from art.utils_test import get_classifier_kr
 
 logger = logging.getLogger('testLogger')
@@ -33,7 +33,7 @@ class TestSubsetScanningDetector(unittest.TestCase):
         k.clear_session()
 
     def test_subsetscan_detector(self):
-        (x_train, y_train), (x_test, y_test), _, _ = load_cifar10()
+        (x_train, y_train), (x_test, y_test), _, _ = load_dataset('mnist')
         x_train, y_train = x_train[:NB_TRAIN], y_train[:NB_TRAIN]
         x_test, y_test = x_test[:NB_TEST], y_test[:NB_TEST]
 
@@ -42,11 +42,11 @@ class TestSubsetScanningDetector(unittest.TestCase):
 
         # Generate adversarial samples:
         attacker = FastGradientMethod(classifier, eps=0.5)
-        x_train_adv = attacker.generate(x_train[:NB_TRAIN])
-        x_test_adv = attacker.generate(x_test[:NB_TEST])
+        x_train_adv = attacker.generate(x_train)
+        x_test_adv = attacker.generate(x_test)
 
         # Compile training data for detector:
-        x_train_detector = np.concatenate((x_train[:NB_TRAIN], x_train_adv), axis=0)
+        x_train_detector = np.concatenate((x_train, x_train_adv), axis=0)
 
         bgd = x_train
         clean = x_test
