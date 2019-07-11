@@ -118,7 +118,8 @@ class CarliniL2Method(Attack):
         :rtype: `(float, float, float)`
         """
         l2dist = np.sum(np.square(x - x_adv).reshape(x.shape[0], -1), axis=1)
-        z_predicted = self.classifier.predict(np.array(x_adv, dtype=NUMPY_DTYPE), logits=True, batch_size=self.batch_size)
+        z_predicted = self.classifier.predict(np.array(x_adv, dtype=NUMPY_DTYPE), logits=True,
+                                              batch_size=self.batch_size)
         z_target = np.sum(z_predicted * target, axis=1)
         z_other = np.max(z_predicted * (1 - target) + (np.min(z_predicted, axis=1) - 1)[:, np.newaxis] * target, axis=1)
 
@@ -499,7 +500,8 @@ class CarliniLInfMethod(Attack):
         :return: A tuple holding the current logits and overall loss.
         :rtype: `(float, float)`
         """
-        z_predicted = self.classifier.predict(np.array(x_adv, dtype=NUMPY_DTYPE), logits=True, batch_size=self.batch_size)
+        z_predicted = self.classifier.predict(np.array(x_adv, dtype=NUMPY_DTYPE), logits=True,
+                                              batch_size=self.batch_size)
         z_target = np.sum(z_predicted * target, axis=1)
         z_other = np.max(z_predicted * (1 - target) + (np.min(z_predicted, axis=1) - 1)[:, np.newaxis] * target, axis=1)
 
@@ -512,7 +514,7 @@ class CarliniLInfMethod(Attack):
 
         return z_predicted, loss
 
-    def _loss_gradient(self, z_logits, target, x_adv, x_adv_tanh, clip_min, clip_max): # lgtm [py/similar-function]
+    def _loss_gradient(self, z_logits, target, x_adv, x_adv_tanh, clip_min, clip_max):  # lgtm [py/similar-function]
         """
         Compute the gradient of the loss function.
 
