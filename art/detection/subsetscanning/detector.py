@@ -15,6 +15,7 @@ logger = logging.getLogger(__name__)
 
 class SubsetScanningDetector(Classifier):
     """ Fast generalized subset scan based detector"""
+
     def __init__(self, classifier, bgd_data, layer):
         """
         Create a `SubsetScanningDetector` instance which is used to the detect the presence of .
@@ -53,7 +54,6 @@ class SubsetScanningDetector(Classifier):
 
         self.sorted_bgd_activations = np.sort(bgd_activations, axis=0)
 
-
     def calculate_pvalue_ranges(self, eval_x):
         """
         Returns computed p-value ranges.
@@ -78,14 +78,13 @@ class SubsetScanningDetector(Classifier):
         pvalue_ranges = np.empty((records_n, atrr_n, 2))
 
         for j in range(atrr_n):
-
             pvalue_ranges[:, j, 0] = np.searchsorted(bgd_activations[:, j], eval_activations[:, j], side='right')
             pvalue_ranges[:, j, 1] = np.searchsorted(bgd_activations[:, j], eval_activations[:, j], side='left')
 
         pvalue_ranges = bgrecords_n - pvalue_ranges
 
-        pvalue_ranges[:, :, 0] = np.divide(pvalue_ranges[:, :, 0], bgrecords_n+1)
-        pvalue_ranges[:, :, 1] = np.divide(pvalue_ranges[:, :, 1] + 1, bgrecords_n+1)
+        pvalue_ranges[:, :, 0] = np.divide(pvalue_ranges[:, :, 0], bgrecords_n + 1)
+        pvalue_ranges[:, :, 1] = np.divide(pvalue_ranges[:, :, 1] + 1, bgrecords_n + 1)
 
         return pvalue_ranges
 
@@ -109,7 +108,7 @@ class SubsetScanningDetector(Classifier):
 
         if cleanssize is None and advssize is None:
 
-            #individualscan
+            # individualscan
             for j, _ in enumerate(clean_pvalranges):
                 best_score, _, _, _ = Scanner.fgss_individ_for_nets(clean_pvalranges[j])
                 clean_scores.append(best_score)
