@@ -5,7 +5,6 @@ import logging
 import six
 
 # pylint: disable=E0001
-from sklearn import metrics
 import numpy as np
 
 from art.classifiers import Classifier
@@ -100,6 +99,7 @@ class SubsetScanningDetector(Classifier):
         :return: (clean_scores, adv_scores, detectionpower)
         :rtype: `list`, `list`, `float`
         """
+        from sklearn import metrics
 
         clean_pvalranges = self.calculate_pvalue_ranges(clean_x)
         adv_pvalranges = self.calculate_pvalue_ranges(adv_x)
