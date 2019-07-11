@@ -23,7 +23,7 @@ class SubsetScanningDetector(Classifier):
         :type classifier: :class:`.Classifier`
         :bgd_data: The background data used to learn a null model. Typically dataset used to train the classifier.
         :type bgd_data: `np.ndarray`
-        :layer: The layer from which to extract activations to perform scan 
+        :layer: The layer from which to extract activations to perform scan
         :type layer: `int` or `str`
         """
         super(SubsetScanningDetector, self).__init__(clip_values=classifier.clip_values,
@@ -55,7 +55,7 @@ class SubsetScanningDetector(Classifier):
 
 
     def calculate_pvalue_ranges(self, eval_x):
-        """ 
+        """
         Returns computed p-value ranges.
 
         :param eval_x: data being evaluted for anomalies
@@ -90,7 +90,7 @@ class SubsetScanningDetector(Classifier):
         return pvalue_ranges
 
     def scan(self, clean_x, adv_x, cleanssize=None, advssize=None, run=10):
-        """ 
+        """
         Returns scores of highest scoring subsets
 
         :param clean_x: data presumably without anomalies
@@ -153,7 +153,7 @@ class SubsetScanningDetector(Classifier):
         """
         raise NotImplementedError
 
-    def predict(self, x, logits=False, batch_size=128):
+    def predict(self, x, logits=False, batch_size=128, **kwargs):
         """
         Perform detection of adversarial data and return prediction as tuple.
 
@@ -189,10 +189,10 @@ class SubsetScanningDetector(Classifier):
     def learning_phase(self):
         return self.detector.learning_phase
 
-    def class_gradient(self, x, label=None, logits=False):
+    def class_gradient(self, x, label=None, logits=False, **kwargs):
         return self.detector.class_gradient(x, label=label, logits=logits)
 
-    def loss_gradient(self, x, y):
+    def loss_gradient(self, x, y, **kwargs):
         return self.detector.loss_gradient(x, y)
 
     def get_activations(self, x, layer, batch_size):
