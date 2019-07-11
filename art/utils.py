@@ -327,7 +327,7 @@ def preprocess(x, y, nb_classes=10, clip_values=None):
     return normalized_x, categorical_y
 
 
-def compute_success(classifier, x_clean, labels, x_adv, targeted=False):
+def compute_success(classifier, x_clean, labels, x_adv, targeted=False, batch_size=1):
     """
     Compute the success rate of an attack based on clean samples, adversarial samples and targets or correct labels.
 
@@ -342,14 +342,16 @@ def compute_success(classifier, x_clean, labels, x_adv, targeted=False):
     :param targeted: `True` if the attack is targeted. In that case, `labels` are treated as target classes instead of
            correct labels of the clean samples.s
     :type targeted: `bool`
+    :param batch_size: Batch size
+    :type batch_size: `int`
     :return: Percentage of successful adversarial samples.
     :rtype: `float`
     """
-    adv_preds = np.argmax(classifier.predict(x_adv), axis=1)
+    adv_preds = np.argmax(classifier.predict(x_adv, batch_size=batch_size), axis=1)
     if targeted:
         rate = np.sum(adv_preds == np.argmax(labels, axis=1)) / x_adv.shape[0]
     else:
-        preds = np.argmax(classifier.predict(x_clean), axis=1)
+        preds = np.argmax(classifier.predict(x_clean, batch_size=batch_size), axis=1)
         rate = np.sum(adv_preds != preds) / x_adv.shape[0]
 
     return rate

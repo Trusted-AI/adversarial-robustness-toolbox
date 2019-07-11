@@ -74,7 +74,7 @@ class VirtualAdversarialMethod(Attack):
         :rtype: `np.ndarray`
         """
         x_adv = x.astype(NUMPY_DTYPE)
-        preds = self.classifier.predict(x_adv, logits=False)
+        preds = self.classifier.predict(x_adv, logits=False, batch_size=self.batch_size)
 
         # Pick a small scalar to avoid division by 0
         tol = 1e-10

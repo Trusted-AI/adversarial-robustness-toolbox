@@ -30,6 +30,8 @@ import numpy as np
 
 from art import NUMPY_DTYPE
 from art.attacks.attack import Attack
+from art.utils import compute_success
+from art.utils import to_categorical
 
 logger = logging.getLogger(__name__)
 
@@ -41,7 +43,7 @@ class HopSkipJump(Attack):
     Paper link: https://arxiv.org/abs/1904.02144
     """
     attack_params = Attack.attack_params + ['targeted', 'norm', 'max_iter', 'max_eval',
-                                            'init_eval', 'init_size', 'curr_iter']
+                                            'init_eval', 'init_size', 'curr_iter', 'batch_size']
 
     def __init__(self, classifier, targeted=False, norm=2, max_iter=50, max_eval=10000, init_eval=100, init_size=100):
         """
@@ -70,6 +72,7 @@ class HopSkipJump(Attack):
                   'init_eval': init_eval,
                   'init_size': init_size,
                   'curr_iter': 0,
+                  'batch_size': 1
                   }
         self.set_params(**params)
 
@@ -99,12 +102,12 @@ class HopSkipJump(Attack):
             clip_min, clip_max = np.min(x), np.max(x)
 
         # Prediction from the original images
-        preds = np.argmax(self.classifier.predict(x), axis=1)
+        preds = np.argmax(self.classifier.predict(x, batch_size=self.batch_size), axis=1)
 
         # Prediction from the initial adversarial examples if not None
         if 'x_adv_init' in kwargs:
             x_adv_init = kwargs['x_adv_init']
-            init_preds = np.argmax(self.classifier.predict(x_adv_init), axis=1)
+            init_preds = np.argmax(self.classifier.predict(x_adv_init, batch_size=self.batch_size), axis=1)
         else:
             init_preds = [None] * len(x)
             x_adv_init = [None] * len(x)
@@ -127,8 +130,11 @@ class HopSkipJump(Attack):
                 x_adv[ind] = self._perturb(x=val, y=-1, y_p=preds[ind], init_pred=init_preds[ind],
                                            adv_init=x_adv_init[ind], clip_min=clip_min, clip_max=clip_max)
 
+        if y is not None:
+            y = to_categorical(y, self.classifier.nb_classes)
+
         logger.info('Success rate of HopSkipJump attack: %.2f%%',
-                    (np.sum(preds != np.argmax(self.classifier.predict(x_adv), axis=1)) / x.shape[0]))
+                    100 * compute_success(self.classifier, x, y, x_adv, self.targeted, batch_size=self.batch_size))
 
         return x_adv
 
@@ -201,7 +207,8 @@ class HopSkipJump(Attack):
             # Attack unsatisfied yet and the initial image unsatisfied
             for _ in range(self.init_size):
                 random_img = nprd.uniform(clip_min, clip_max, size=x.shape).astype(x.dtype)
-                random_class = np.argmax(self.classifier.predict(np.array([random_img])), axis=1)[0]
+                random_class = np.argmax(self.classifier.predict(np.array([random_img]), batch_size=self.batch_size),
+                                         axis=1)[0]
 
                 if random_class == y:
                     # Binary search to reduce the l2 distance to the original image
@@ -222,7 +229,8 @@ class HopSkipJump(Attack):
             # The initial image unsatisfied
             for _ in range(self.init_size):
                 random_img = nprd.uniform(clip_min, clip_max, size=x.shape).astype(x.dtype)
-                random_class = np.argmax(self.classifier.predict(np.array([random_img])), axis=1)[0]
+                random_class = np.argmax(self.classifier.predict(np.array([random_img]), batch_size=self.batch_size),
+                                         axis=1)[0]
 
                 if random_class != y_p:
                     # Binary search to reduce the l2 distance to the original image
@@ -448,7 +456,7 @@ class HopSkipJump(Attack):
         :rtype: `np.ndarray`
         """
         samples = np.clip(samples, clip_min, clip_max)
-        preds = np.argmax(self.classifier.predict(samples), axis=1)
+        preds = np.argmax(self.classifier.predict(samples, batch_size=self.batch_size), axis=1)
 
         if self.targeted:
             result = (preds == target)

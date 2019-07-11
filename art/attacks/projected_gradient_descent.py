@@ -99,7 +99,7 @@ class ProjectedGradientDescent(FastGradientMethod):
                 raise ValueError('Target labels `y` need to be provided for a targeted attack.')
 
             # Use model predictions as correct outputs
-            targets = get_labels_np_array(self.classifier.predict(x))
+            targets = get_labels_np_array(self.classifier.predict(x, batch_size=self.batch_size))
         else:
             targets = y
 
@@ -114,7 +114,8 @@ class ProjectedGradientDescent(FastGradientMethod):
                                       self.num_random_init > 0 and i_max_iter == 0)
 
             if self.num_random_init > 1:
-                rate = 100 * compute_success(self.classifier, x, targets, adv_x, self.targeted)
+                rate = 100 * compute_success(self.classifier, x, targets, adv_x,
+                                             self.targeted, batch_size=self.batch_size)
                 if rate_best is None or rate > rate_best or adv_x_best is None:
                     rate_best = rate
                     adv_x_best = adv_x
@@ -122,7 +123,7 @@ class ProjectedGradientDescent(FastGradientMethod):
                 adv_x_best = adv_x
 
         logger.info('Success rate of attack: %.2f%%', rate_best if rate_best is not None else
-                    100 * compute_success(self.classifier, x, y, adv_x, self.targeted))
+                    100 * compute_success(self.classifier, x, y, adv_x, self.targeted, batch_size=self.batch_size))
 
         return adv_x_best
 
