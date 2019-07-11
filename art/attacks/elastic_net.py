@@ -100,7 +100,7 @@ class ElasticNet(Attack):
         l1dist = np.sum(np.abs(x - x_adv).reshape(x.shape[0], -1), axis=1)
         l2dist = np.sum(np.square(x - x_adv).reshape(x.shape[0], -1), axis=1)
         endist = self.beta * l1dist + l2dist
-        logits = self.classifier.predict(np.array(x_adv, dtype=NUMPY_DTYPE), logits=True)
+        logits = self.classifier.predict(np.array(x_adv, dtype=NUMPY_DTYPE), logits=True, batch_size=self.batch_size)
 
         return np.argmax(logits, axis=1), l1dist, l2dist, endist
 
@@ -120,7 +120,7 @@ class ElasticNet(Attack):
         :type target: `np.ndarray`
         """
         # Compute the current logits
-        logits = self.classifier.predict(np.array(x_adv, dtype=NUMPY_DTYPE), logits=True)
+        logits = self.classifier.predict(np.array(x_adv, dtype=NUMPY_DTYPE), logits=True, batch_size=self.batch_size)
 
         if self.targeted:
             i_sub = np.argmax(target, axis=1)
@@ -180,7 +180,7 @@ class ElasticNet(Attack):
 
         # No labels provided, use model prediction as correct class
         if y is None:
-            y = get_labels_np_array(self.classifier.predict(x, logits=False))
+            y = get_labels_np_array(self.classifier.predict(x, logits=False, batch_size=self.batch_size))
 
         # Compute adversarial examples with implicit batching
         nb_batches = int(np.ceil(x_adv.shape[0] / float(self.batch_size)))
@@ -198,7 +198,7 @@ class ElasticNet(Attack):
 
         # Compute success rate of the EAD attack
         logger.info('Success rate of EAD attack: %.2f%%',
-                    100 * compute_success(self.classifier, x, y, x_adv, self.targeted))
+                    100 * compute_success(self.classifier, x, y, x_adv, self.targeted, batch_size=self.batch_size))
 
         return x_adv
 

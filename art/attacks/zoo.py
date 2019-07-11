@@ -146,7 +146,7 @@ class ZooAttack(Attack):
         l2dist = np.sum(np.square(x - x_adv).reshape(x_adv.shape[0], -1), axis=1)
         ratios = [1] + [int(new_size) / int(old_size)
                         for new_size, old_size in zip(self.classifier.input_shape, x.shape[1:])]
-        preds = self.classifier.predict(np.array(zoom(x_adv, zoom=ratios)))
+        preds = self.classifier.predict(np.array(zoom(x_adv, zoom=ratios)), batch_size=self.batch_size)
         z_target = np.sum(preds * target, axis=1)
         z_other = np.max(preds * (1 - target) + (np.min(preds, axis=1) - 1)[:, np.newaxis] * target, axis=1)
 
@@ -182,7 +182,7 @@ class ZooAttack(Attack):
 
         # No labels provided, use model prediction as correct class
         if y is None:
-            y = get_labels_np_array(self.classifier.predict(x, logits=False))
+            y = get_labels_np_array(self.classifier.predict(x, logits=False, batch_size=self.batch_size))
 
         # Compute adversarial examples with implicit batching
         nb_batches = int(np.ceil(x.shape[0] / float(self.batch_size)))
@@ -204,7 +204,7 @@ class ZooAttack(Attack):
 
         # Log success rate of the ZOO attack
         logger.info('Success rate of ZOO attack: %.2f%%',
-                    100 * compute_success(self.classifier, x, y, x_adv, self.targeted))
+                    100 * compute_success(self.classifier, x, y, x_adv, self.targeted, batch_size=self.batch_size))
 
         return x_adv
 
