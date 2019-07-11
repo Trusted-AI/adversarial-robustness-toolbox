@@ -15,6 +15,13 @@
 # AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT,
 # TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 # SOFTWARE.
+"""
+This module implement the pixel defence in `PixelDefend`. It is based on PixelCNN that projects samples back to the data
+manifold.
+
+Paper link:
+    https://arxiv.org/abs/1710.10766
+"""
 from __future__ import absolute_import, division, print_function, unicode_literals
 
 import logging
@@ -77,18 +84,17 @@ class PixelDefend(Preprocessor):
         """
         # Convert into `uint8`
         original_shape = x.shape
-        x_ = x.copy()
-        probs = self.pixel_cnn.get_activations(x_, layer=-1).reshape((x_.shape[0], -1, 256))
-        x_ = x_ * 255
-        x_ = x_.astype("uint8")
-        x_ = x_.reshape((x_.shape[0], -1))
+        probs = self.pixel_cnn.get_activations(x, layer=-1).reshape((x.shape[0], -1, 256))
+        x = x * 255
+        x = x.astype("uint8")
+        x = x.reshape((x.shape[0], -1))
 
         # Start defence one image at a time
-        for i, xi in enumerate(x_):
-            for feat_index in range(x_.shape[1]):
+        for i, x_i in enumerate(x):
+            for feat_index in range(x.shape[1]):
                 # Setup the search space
                 f_probs = probs[i, feat_index, :]
-                f_range = range(int(max(xi[feat_index] - self.eps, 0)), int(min(xi[feat_index] + self.eps, 255) + 1))
+                f_range = range(int(max(x_i[feat_index] - self.eps, 0)), int(min(x_i[feat_index] + self.eps, 255) + 1))
 
                 # Look in the search space
                 best_prob = -1
@@ -99,19 +105,19 @@ class PixelDefend(Preprocessor):
                         best_idx = idx
 
                 # Update result
-                xi[feat_index] = best_idx
+                x_i[feat_index] = best_idx
 
             # Update in batch
-            x_[i] = xi
+            x[i] = x_i
 
         # Convert to old dtype
-        x_ = x_ / 255.0
-        x_ = x_.astype(NUMPY_DTYPE).reshape(original_shape)
+        x = x / 255.0
+        x = x.astype(NUMPY_DTYPE).reshape(original_shape)
 
         # Clip to clip_values
-        x_ = np.clip(x_, self.clip_values[0], self.clip_values[1])
+        x = np.clip(x, self.clip_values[0], self.clip_values[1])
 
-        return x_, y
+        return x, y
 
     def estimate_gradient(self, x, grad):
         raise grad

@@ -15,6 +15,12 @@
 # AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT,
 # TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 # SOFTWARE.
+"""
+This module implements the white-box attack `NewtonFool`.
+
+Paper link:
+    http://doi.acm.org/10.1145/3134600.3134635
+"""
 from __future__ import absolute_import, division, print_function, unicode_literals
 
 import logging
@@ -51,7 +57,7 @@ class NewtonFool(Attack):
         params = {"max_iter": max_iter, "eta": eta, "batch_size": batch_size}
         self.set_params(**params)
 
-    def generate(self, x, y=None):
+    def generate(self, x, y=None, **kwargs):
         """
         Generate adversarial samples and return them in a Numpy array.
 
@@ -75,8 +81,8 @@ class NewtonFool(Attack):
 
             # Main algorithm for each batch
             norm_batch = np.linalg.norm(np.reshape(batch, (batch.shape[0], -1)), axis=1)
-            l = pred_class[batch_index_1:batch_index_2]
-            l_b = to_categorical(l, self.classifier.nb_classes).astype(bool)
+            l_batch = pred_class[batch_index_1:batch_index_2]
+            l_b = to_categorical(l_batch, self.classifier.nb_classes).astype(bool)
 
             # Main loop of the algorithm
             for _ in range(self.max_iter):
@@ -84,7 +90,7 @@ class NewtonFool(Attack):
                 score = self.classifier.predict(batch, logits=False)[l_b]
 
                 # Compute the gradients and norm
-                grads = self.classifier.class_gradient(batch, label=l, logits=False)
+                grads = self.classifier.class_gradient(batch, label=l_batch, logits=False)
                 grads = np.squeeze(grads, axis=1)
                 norm_grad = np.linalg.norm(np.reshape(grads, (batch.shape[0], -1)), axis=1)
 
@@ -171,7 +177,7 @@ class NewtonFool(Attack):
         tol = 10e-8
 
         nom = -theta.reshape((-1,) + (1,) * (len(grads.shape) - 1)) * grads
-        denom = norm_grad**2
+        denom = norm_grad ** 2
         denom[denom < tol] = tol
         result = nom / denom.reshape((-1,) + (1,) * (len(grads.shape) - 1))
 

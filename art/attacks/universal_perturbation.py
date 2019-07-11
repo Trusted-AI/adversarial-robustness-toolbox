@@ -15,6 +15,13 @@
 # AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT,
 # TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 # SOFTWARE.
+"""
+This module implements the universal adversarial perturbations attack `UniversalPerturbation`. This is a white-box
+attack.
+
+Paper link:
+    https://arxiv.org/abs/1610.08401
+"""
 from __future__ import absolute_import, division, print_function, unicode_literals
 
 import logging
@@ -75,7 +82,7 @@ class UniversalPerturbation(Attack):
                   }
         self.set_params(**kwargs)
 
-    def generate(self, x, y=None):
+    def generate(self, x, y=None, **kwargs):
         """
         Generate adversarial samples and return them in an array.
 
@@ -106,19 +113,19 @@ class UniversalPerturbation(Attack):
 
             # Go through the data set and compute the perturbation increments sequentially
             for j, ex in enumerate(x[rnd_idx]):
-                xi = ex[None, ...]
+                x_i = ex[None, ...]
 
-                current_label = np.argmax(self.classifier.predict(xi + noise, logits=True)[0])
+                current_label = np.argmax(self.classifier.predict(x_i + noise, logits=True)[0])
                 original_label = np.argmax(pred_y[rnd_idx][j])
 
                 if current_label == original_label:
                     # Compute adversarial perturbation
-                    adv_xi = attacker.generate(xi + noise)
+                    adv_xi = attacker.generate(x_i + noise)
                     new_label = np.argmax(self.classifier.predict(adv_xi, logits=True)[0])
 
                     # If the class has changed, update v
                     if current_label != new_label:
-                        noise = adv_xi - xi
+                        noise = adv_xi - x_i
 
                         # Project on L_p ball
                         noise = projection(noise, self.eps, self.norm)

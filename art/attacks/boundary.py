@@ -15,6 +15,13 @@
 # AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT,
 # TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 # SOFTWARE.
+"""
+This module implements the boundary attack `BoundaryAttack`. This is a black-box attack which only requires class
+predictions.
+
+Paper link:
+    https://arxiv.org/abs/1712.04248
+"""
 from __future__ import absolute_import, division, print_function, unicode_literals
 
 import logging
@@ -74,7 +81,7 @@ class BoundaryAttack(Attack):
                   }
         self.set_params(**params)
 
-    def generate(self, x, y=None, x_adv_init=None):
+    def generate(self, x, y=None, **kwargs):
         """
         Generate adversarial samples and return them in an array.
 
@@ -97,7 +104,8 @@ class BoundaryAttack(Attack):
         preds = np.argmax(self.classifier.predict(x, batch_size=self.batch_size), axis=1)
 
         # Prediction from the initial adversarial examples if not None
-        if x_adv_init is not None:
+        if 'x_adv_init'in kwargs:
+            x_adv_init = kwargs['x_adv_init']
             init_preds = np.argmax(self.classifier.predict(x_adv_init, batch_size=self.batch_size), axis=1)
         else:
             init_preds = [None] * len(x)
@@ -263,7 +271,7 @@ class BoundaryAttack(Attack):
         perturb = np.swapaxes(perturb, 0, self.classifier.channel_index - 1)
         direction = np.swapaxes(direction, 0, self.classifier.channel_index - 1)
 
-        for i in range(len(direction)):
+        for i in range(direction.shape[0]):
             direction[i] /= np.linalg.norm(direction[i])
             perturb[i] -= np.dot(perturb[i], direction[i]) * direction[i]
 

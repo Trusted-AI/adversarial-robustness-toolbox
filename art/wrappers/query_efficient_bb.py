@@ -53,6 +53,8 @@ class QueryEfficientBBGradientEstimation(ClassifierWrapper):
         :type round_samples: `float`
         """
         super(QueryEfficientBBGradientEstimation, self).__init__(classifier)
+        # self.predict refers to predict of classifier
+        # pylint: disable=E0203
         self._predict = self.predict
         self.predict = self._wrap_predict
         self.set_params(num_basis=num_basis, sigma=sigma, round_samples=round_samples)

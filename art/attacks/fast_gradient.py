@@ -15,6 +15,13 @@
 # AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT,
 # TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 # SOFTWARE.
+"""
+This module implements the Fast Gradient Method attack. This implementation includes the original Fast Gradient Sign
+Method attack and extends it to other norms, therefore it is called the Fast Gradient Method.
+
+Paper link:
+    https://arxiv.org/abs/1412.6572
+"""
 from __future__ import absolute_import, division, print_function, unicode_literals
 
 import logging
@@ -111,7 +118,7 @@ class FastGradientMethod(Attack):
 
         return adv_x
 
-    def generate(self, x, y=None):
+    def generate(self, x, y=None, **kwargs):
         """Generate adversarial samples and return them in an array.
 
         :param x: An array with the original inputs.
@@ -144,7 +151,7 @@ class FastGradientMethod(Attack):
             adv_x_best = None
             rate_best = None
 
-            for i_random_init in range(max(1, self.num_random_init)):
+            for _ in range(max(1, self.num_random_init)):
                 adv_x = self._compute(x, x, y, self.eps, self.eps, self._project, self.num_random_init > 0)
 
                 if self.num_random_init > 1:

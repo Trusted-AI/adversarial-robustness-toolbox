@@ -195,10 +195,10 @@ class TestActivationDefence(unittest.TestCase):
         ActivationDefence._pickle_classifier(self.classifier, filename)
         loaded = ActivationDefence._unpickle_classifier(filename)
 
-        self.assertTrue(self.classifier._clip_values == loaded._clip_values)
-        self.assertTrue(self.classifier._channel_index == loaded._channel_index)
-        self.assertTrue(self.classifier._use_logits == loaded._use_logits)
-        self.assertTrue(self.classifier._input_layer == loaded._input_layer)
+        self.assertEqual(self.classifier._clip_values, loaded._clip_values)
+        self.assertEqual(self.classifier._channel_index, loaded._channel_index)
+        self.assertEqual(self.classifier._use_logits, loaded._use_logits)
+        self.assertEqual(self.classifier._input_layer, loaded._input_layer)
 
         ActivationDefence._remove_pickle(filename)
 

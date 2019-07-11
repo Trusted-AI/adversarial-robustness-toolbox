@@ -15,6 +15,15 @@
 # AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT,
 # TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 # SOFTWARE.
+"""
+This module implements the Projected Gradient Descent attack `ProjectedGradientDescent` as an iterative method in which,
+after each iteration, the perturbation is projected on an lp-ball of specified radius (in addition to clipping the
+values of the adversarial sample so that it lies in the permitted data range). This is the attack proposed by Madry et
+al. for adversarial training.
+
+Paper link:
+    https://arxiv.org/abs/1706.06083
+"""
 from __future__ import absolute_import, division, print_function, unicode_literals
 
 import logging
@@ -22,7 +31,7 @@ import logging
 import numpy as np
 
 from art import NUMPY_DTYPE
-from art.attacks import FastGradientMethod
+from art.attacks.fast_gradient import FastGradientMethod
 from art.utils import compute_success, get_labels_np_array
 
 logger = logging.getLogger(__name__)
@@ -70,7 +79,7 @@ class ProjectedGradientDescent(FastGradientMethod):
 
         self._project = True
 
-    def generate(self, x, y=None):
+    def generate(self, x, y=None, **kwargs):
         """
         Generate adversarial samples and return them in an array.
 
@@ -97,7 +106,7 @@ class ProjectedGradientDescent(FastGradientMethod):
         adv_x_best = None
         rate_best = None
 
-        for i_random_init in range(max(1, self.num_random_init)):
+        for _ in range(max(1, self.num_random_init)):
             adv_x = x.astype(NUMPY_DTYPE)
 
             for i_max_iter in range(self.max_iter):
@@ -114,7 +123,7 @@ class ProjectedGradientDescent(FastGradientMethod):
                 adv_x_best = adv_x
 
         logger.info('Success rate of attack: %.2f%%', rate_best if rate_best is not None else
-        100 * compute_success(self.classifier, x, y, adv_x, self.targeted, batch_size=self.batch_size))
+                    100 * compute_success(self.classifier, x, y, adv_x, self.targeted, batch_size=self.batch_size))
 
         return adv_x_best
 

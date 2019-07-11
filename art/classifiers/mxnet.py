@@ -15,6 +15,9 @@
 # AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT,
 # TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 # SOFTWARE.
+"""
+This module implements the classifier `MXClassifier` for MXNet Gluon models.
+"""
 from __future__ import absolute_import, division, print_function, unicode_literals
 
 import logging
@@ -23,7 +26,7 @@ import numpy as np
 import six
 
 from art import NUMPY_DTYPE
-from art.classifiers import Classifier
+from art.classifiers.classifier import Classifier
 
 logger = logging.getLogger(__name__)
 
@@ -172,7 +175,7 @@ class MXClassifier(Classifier):
             # Fit a generic data generator through the API
             super(MXClassifier, self).fit_generator(generator, nb_epochs=nb_epochs)
 
-    def predict(self, x, logits=False, batch_size=128):
+    def predict(self, x, logits=False, batch_size=128, **kwargs):
         """
         Perform prediction for a batch of inputs.
 
@@ -212,7 +215,7 @@ class MXClassifier(Classifier):
 
         return results
 
-    def class_gradient(self, x, label=None, logits=False):
+    def class_gradient(self, x, label=None, logits=False, **kwargs):
         """
         Compute per-class derivatives w.r.t. `x`.
 
@@ -295,7 +298,7 @@ class MXClassifier(Classifier):
 
         return grads
 
-    def loss_gradient(self, x, y):
+    def loss_gradient(self, x, y, **kwargs):
         """
         Compute the gradient of the loss function w.r.t. `x`.
 

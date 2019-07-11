@@ -9,7 +9,7 @@ class ScanningOps:
     def optimize_in_single_dimension(pvalues, a_max, image_to_node, score_function):
         """
         Optimizes over all subsets of nodes for a given subset of images or \
-            over all subsets of images for a given subet of nodes  
+            over all subsets of images for a given subet of nodes
         :param pvalues: pvalue ranges
         :type pvalues: `ndarray`
         :param a_max: alpha max. determines the significance level threshold
@@ -19,23 +19,23 @@ class ScanningOps:
         :param score_function: scoring function
         :type score_function: `.ScoringFunction`
         :return: (best_score_so_far, subset, best_alpha)
-        :rtype: `float`, `np.array`, `float`     
+        :rtype: `float`, `np.array`, `float`
         """
 
         alpha_thresholds = np.unique(pvalues[:, :, 1])
 
-        #alpha_thresholds = alpha_thresholds[0::5] #take every 5th for speed purposes
+        # alpha_thresholds = alpha_thresholds[0::5] #take every 5th for speed purposes
         # where does a_max fall in check
         last_alpha_index = np.searchsorted(alpha_thresholds, a_max)
         # resize check for only ones smaller than a_max
         alpha_thresholds = alpha_thresholds[0:last_alpha_index]
 
         step_for_50 = len(alpha_thresholds) / 50
-        alpha_thresholds = alpha_thresholds[0::int(step_for_50)+1]
+        alpha_thresholds = alpha_thresholds[0::int(step_for_50) + 1]
         # add on the max value to check as well as it may not have been part of unique
         alpha_thresholds = np.append(alpha_thresholds, a_max)
 
-        #alpha_thresholds = np.arange(a_max/50, a_max, a_max/50)
+        # alpha_thresholds = np.arange(a_max/50, a_max, a_max/50)
 
         unsort_priority = np.zeros(pvalues.shape[1])
 
@@ -51,22 +51,21 @@ class ScanningOps:
                 (pvalues.shape[0], alpha_thresholds.shape[0]))  # number of rows
 
         for elem_indx in range(0, number_of_elements):
-            #sort all the range maxes
+            # sort all the range maxes
             if image_to_node:
                 # collect ranges over images(rows)
                 arg_sort_max = np.argsort(pvalues[:, elem_indx, 1])
-                #arg_sort_min = np.argsort(pvalues[:,e,0]) #collect ranges over images(rows)
+                # arg_sort_min = np.argsort(pvalues[:,e,0]) #collect ranges over images(rows)
                 completely_included = np.searchsorted(
                     pvalues[:, elem_indx, 1][arg_sort_max], alpha_thresholds, side='right')
             else:
                 # collect ranges over nodes(columns)
                 arg_sort_max = np.argsort(pvalues[elem_indx, :, 1])
-                #arg_sort_min = np.argsort(pvalues[elem_indx,:,0])
+                # arg_sort_min = np.argsort(pvalues[elem_indx,:,0])
 
                 completely_included = np.searchsorted(
                     pvalues[elem_indx, :, 1][arg_sort_max], alpha_thresholds, side='right')
 
-            #print('complete included shape', completely_included.shape)
             # should be num elements by num thresh
             unsort_priority[elem_indx, :] = completely_included
 
@@ -81,11 +80,11 @@ class ScanningOps:
 
             # score each threshold by itself, cumulating priority,
             # cumulating count, alpha stays same.
-            alpha_v = np.ones(number_of_elements)*alpha_threshold
+            alpha_v = np.ones(number_of_elements) * alpha_threshold
 
             n_alpha_v = np.cumsum(
                 unsort_priority[:, alpha_count][arg_sort_priority][:, alpha_count])
-            count_increments_this = np.ones(number_of_elements)*size_of_given
+            count_increments_this = np.ones(number_of_elements) * size_of_given
             n_v = np.cumsum(count_increments_this)
 
             vector_of_scores = score_function(n_alpha_v, n_v, alpha_v)
@@ -109,7 +108,7 @@ class ScanningOps:
         for loc in range(0, best_size):
             subset[loc] = unsort[loc]
 
-        return(best_score_so_far, subset, best_alpha)
+        return (best_score_so_far, subset, best_alpha)
 
     @staticmethod
     def single_restart(pvalues, a_max, indices_of_seeds, image_to_node, score_function):
@@ -119,15 +118,15 @@ class ScanningOps:
         :param pvalues: pvalue ranges
         :type pvalues: `ndarray`
         :param a_max: alpha max. determines the significance level threshold
-        :type a_max: `float`  
+        :type a_max: `float`
         :param indices_of_seeds: indices of initial sets of images or nodes to perform optimization
         :type indices_of_seeds: `np.array`
         :param image_to_node: informs what direction to optimize in
         :type image_to_node: `bool`
         :param score_function: scoring function
-        :type score_function: `.ScoringFunction`   
+        :type score_function: `.ScoringFunction`
         :return: (best_score_so_far, best_sub_of_images, best_sub_of_nodes, best_alpha)
-        :rtype: `float`, `np.array`, `np.array`, `float`    
+        :rtype: `float`, `np.array`, `np.array`, `float`
         """
 
         best_score_so_far = -100000
@@ -135,7 +134,7 @@ class ScanningOps:
         count = 0
 
         while True:
-            #### These can be moved outside the while loop as only executed first time through??
+            # These can be moved outside the while loop as only executed first time through??
             if count == 0:  # first time through, we need something initialized depending on direction.
                 if image_to_node:
                     sub_of_images = indices_of_seeds
@@ -143,24 +142,26 @@ class ScanningOps:
                     sub_of_nodes = indices_of_seeds
 
             if image_to_node:  # passed pvalues are only those belonging to fixed images, update nodes in return
+                # only sending sub of images
                 score_from_optimization, sub_of_nodes, optimal_alpha = \
                     ScanningOps.optimize_in_single_dimension(pvalues[sub_of_images, :, :],
-                                                             a_max, image_to_node, score_function)  # only sending sub of images
+                                                             a_max, image_to_node, score_function)
             else:  # passed pvalues are only those belonging to fixed nodes, update images in return
+                # only sending sub of nodes
                 score_from_optimization, sub_of_images, optimal_alpha = \
                     ScanningOps.optimize_in_single_dimension(pvalues[:, sub_of_nodes, :],
-                                                             a_max, image_to_node, score_function)  # only sending sub of nodes
+                                                             a_max, image_to_node, score_function)
 
             if score_from_optimization > best_score_so_far:  # havent converged yet
-                #update
+                # update
                 best_score_so_far = score_from_optimization
                 best_sub_of_nodes = sub_of_nodes
                 best_sub_of_images = sub_of_images
-                best_alpha = optimal_alpha 
+                best_alpha = optimal_alpha
 
                 image_to_node = not image_to_node  # switch direction!
                 count = count + 1  # for printing and
             else:  # converged!  Don't update from most recent optimiztion, return current best
-                return(best_score_so_far, best_sub_of_images, best_sub_of_nodes, best_alpha)
+                return (best_score_so_far, best_sub_of_images, best_sub_of_nodes, best_alpha)
 
-            #end do while
+            # end do while

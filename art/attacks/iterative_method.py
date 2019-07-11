@@ -15,13 +15,20 @@
 # AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT,
 # TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 # SOFTWARE.
+"""
+This module implements the Basic Iterative Method attack `BasicIterativeMethod` as the iterative version of FGM and
+FGSM. This is a white-box attack.
+
+Paper link:
+    https://arxiv.org/abs/1607.02533
+"""
 from __future__ import absolute_import, division, print_function, unicode_literals
 
 import logging
 
 import numpy as np
 
-from art.attacks import ProjectedGradientDescent
+from art.attacks.projected_gradient_descent import ProjectedGradientDescent
 
 logger = logging.getLogger(__name__)
 

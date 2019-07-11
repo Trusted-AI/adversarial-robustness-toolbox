@@ -15,6 +15,12 @@
 # AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT,
 # TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 # SOFTWARE.
+"""
+This module implements the white-box attack `DeepFool`.
+
+Paper link:
+    https://arxiv.org/abs/1511.04599
+"""
 from __future__ import absolute_import, division, print_function, unicode_literals
 
 import logging
@@ -54,7 +60,7 @@ class DeepFool(Attack):
         params = {'max_iter': max_iter, 'epsilon': epsilon, 'nb_grads': nb_grads, 'batch_size': batch_size}
         self.set_params(**params)
 
-    def generate(self, x, y=None):
+    def generate(self, x, y=None, **kwargs):
         """
         Generate adversarial samples and return them in an array.
 
@@ -87,8 +93,8 @@ class DeepFool(Attack):
             batch = x_adv[batch_index_1:batch_index_2]
 
             # Get predictions and gradients for batch
-            f = preds[batch_index_1:batch_index_2]
-            fk_hat = np.argmax(f, axis=1)
+            f_batch = preds[batch_index_1:batch_index_2]
+            fk_hat = np.argmax(f_batch, axis=1)
             if use_grads_subset:
                 # Compute gradients only for top predicted classes
                 grd = np.array([self.classifier.class_gradient(batch, logits=True, label=_) for _ in labels_set])
@@ -104,28 +110,28 @@ class DeepFool(Attack):
                 # Compute difference in predictions and gradients only for selected top predictions
                 labels_indices = sorter[np.searchsorted(labels_set, fk_hat, sorter=sorter)]
                 grad_diff = grd - grd[np.arange(len(grd)), labels_indices][:, None]
-                f_diff = f[:, labels_set] - f[np.arange(len(f)), labels_indices][:, None]
+                f_diff = f_batch[:, labels_set] - f_batch[np.arange(len(f_batch)), labels_indices][:, None]
 
                 # Choose coordinate and compute perturbation
                 norm = np.linalg.norm(grad_diff.reshape(len(grad_diff), len(labels_set), -1), axis=2) + tol
                 value = np.abs(f_diff) / norm
                 value[np.arange(len(value)), labels_indices] = np.inf
-                l = np.argmin(value, axis=1)
-                r = (abs(f_diff[np.arange(len(f_diff)), l]) / (pow(np.linalg.norm(grad_diff[np.arange(len(
-                    grad_diff)), l].reshape(len(grad_diff), -1), axis=1), 2) + tol))
-                r = r.reshape((-1,) + (1,) * (len(x.shape) - 1))
-                r = r * grad_diff[np.arange(len(grad_diff)), l]
+                l_var = np.argmin(value, axis=1)
+                r_var = (abs(f_diff[np.arange(len(f_diff)), l_var]) / (pow(np.linalg.norm(grad_diff[np.arange(len(
+                    grad_diff)), l_var].reshape(len(grad_diff), -1), axis=1), 2) + tol))
+                r_var = r_var.reshape((-1,) + (1,) * (len(x.shape) - 1))
+                r_var = r_var * grad_diff[np.arange(len(grad_diff)), l_var]
 
                 # Add perturbation and clip result
                 if hasattr(self.classifier, 'clip_values') and self.classifier.clip_values is not None:
-                    batch[active_indices] = np.clip(batch[active_indices] + r[active_indices],
+                    batch[active_indices] = np.clip(batch[active_indices] + r_var[active_indices],
                                                     self.classifier.clip_values[0], self.classifier.clip_values[1])
                 else:
-                    batch[active_indices] += r[active_indices]
+                    batch[active_indices] += r_var[active_indices]
 
                 # Recompute prediction for new x
-                f = self.classifier.predict(batch, logits=True)
-                fk_i_hat = np.argmax(f, axis=1)
+                f_batch = self.classifier.predict(batch, logits=True)
+                fk_i_hat = np.argmax(f_batch, axis=1)
 
                 # Recompute gradients for new x
                 if use_grads_subset:
@@ -150,7 +156,7 @@ class DeepFool(Attack):
 
         logger.info('Success rate of DeepFool attack: %.2f%%',
                     (np.sum(np.argmax(preds, axis=1) != np.argmax(self.classifier.predict(
-                    x_adv, batch_size=self.batch_size), axis=1)) / x.shape[0]))
+                        x_adv, batch_size=self.batch_size), axis=1)) / x.shape[0]))
 
         return x_adv
 

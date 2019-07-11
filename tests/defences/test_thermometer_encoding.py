@@ -47,7 +47,7 @@ class TestThermometerEncoding(unittest.TestCase):
         x_preproc, _ = th_encoder(x)
 
         # Test
-        self.assertTrue(x_preproc.shape == (2, 2, 3, 12))
+        self.assertEqual(x_preproc.shape, (2, 2, 3, 12))
 
         true_value = np.array([[[[1, 1, 1, 1, 0, 0, 1, 1, 0, 0, 0, 1], [0, 0, 0, 1, 0, 1, 1, 1, 0, 1, 1, 1],
                                  [1, 1, 1, 1, 0, 0, 0, 1, 0, 1, 1, 1]], [[1, 1, 1, 1, 0, 0, 1, 1, 0, 0, 0, 1],
@@ -66,7 +66,7 @@ class TestThermometerEncoding(unittest.TestCase):
         encoder = ThermometerEncoding(clip_values=(0, 1), num_space=num_space, channel_index=1)
         x_encoded, _ = encoder(x)
         self.assertTrue((x == x_copy).all())
-        self.assertTrue(x_encoded.shape == (5, 10, 28, 28))
+        self.assertEqual(x_encoded.shape, (5, 10, 28, 28))
 
     def test_estimate_gradient(self):
         num_space = 5
@@ -81,7 +81,7 @@ class TestThermometerEncoding(unittest.TestCase):
         num_space = 5
         encoder = ThermometerEncoding(clip_values=(0, 1), num_space=num_space, channel_index=1)
         x_encoded, _ = encoder(x)
-        self.assertTrue(x_encoded.shape == (10, 20))
+        self.assertEqual(x_encoded.shape, (10, 20))
 
 
 if __name__ == '__main__':

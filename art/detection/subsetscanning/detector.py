@@ -4,7 +4,7 @@ from __future__ import absolute_import, division, print_function, unicode_litera
 import logging
 import six
 
-from sklearn import metrics
+# pylint: disable=E0001
 import numpy as np
 
 from art.classifiers import Classifier
@@ -15,6 +15,7 @@ logger = logging.getLogger(__name__)
 
 class SubsetScanningDetector(Classifier):
     """ Fast generalized subset scan based detector"""
+
     def __init__(self, classifier, bgd_data, layer):
         """
         Create a `SubsetScanningDetector` instance which is used to the detect the presence of .
@@ -23,7 +24,7 @@ class SubsetScanningDetector(Classifier):
         :type classifier: :class:`.Classifier`
         :bgd_data: The background data used to learn a null model. Typically dataset used to train the classifier.
         :type bgd_data: `np.ndarray`
-        :layer: The layer from which to extract activations to perform scan 
+        :layer: The layer from which to extract activations to perform scan
         :type layer: `int` or `str`
         """
         super(SubsetScanningDetector, self).__init__(clip_values=classifier.clip_values,
@@ -53,9 +54,8 @@ class SubsetScanningDetector(Classifier):
 
         self.sorted_bgd_activations = np.sort(bgd_activations, axis=0)
 
-
     def calculate_pvalue_ranges(self, eval_x):
-        """ 
+        """
         Returns computed p-value ranges.
 
         :param eval_x: data being evaluted for anomalies
@@ -78,19 +78,18 @@ class SubsetScanningDetector(Classifier):
         pvalue_ranges = np.empty((records_n, atrr_n, 2))
 
         for j in range(atrr_n):
-
             pvalue_ranges[:, j, 0] = np.searchsorted(bgd_activations[:, j], eval_activations[:, j], side='right')
             pvalue_ranges[:, j, 1] = np.searchsorted(bgd_activations[:, j], eval_activations[:, j], side='left')
 
         pvalue_ranges = bgrecords_n - pvalue_ranges
 
-        pvalue_ranges[:, :, 0] = np.divide(pvalue_ranges[:, :, 0], bgrecords_n+1)
-        pvalue_ranges[:, :, 1] = np.divide(pvalue_ranges[:, :, 1] + 1, bgrecords_n+1)
+        pvalue_ranges[:, :, 0] = np.divide(pvalue_ranges[:, :, 0], bgrecords_n + 1)
+        pvalue_ranges[:, :, 1] = np.divide(pvalue_ranges[:, :, 1] + 1, bgrecords_n + 1)
 
         return pvalue_ranges
 
     def scan(self, clean_x, adv_x, cleanssize=None, advssize=None, run=10):
-        """ 
+        """
         Returns scores of highest scoring subsets
 
         :param clean_x: data presumably without anomalies
@@ -100,6 +99,7 @@ class SubsetScanningDetector(Classifier):
         :return: (clean_scores, adv_scores, detectionpower)
         :rtype: `list`, `list`, `float`
         """
+        from sklearn import metrics
 
         clean_pvalranges = self.calculate_pvalue_ranges(clean_x)
         adv_pvalranges = self.calculate_pvalue_ranges(adv_x)
@@ -109,7 +109,7 @@ class SubsetScanningDetector(Classifier):
 
         if cleanssize is None and advssize is None:
 
-            #individualscan
+            # individualscan
             for j, _ in enumerate(clean_pvalranges):
                 best_score, _, _, _ = Scanner.fgss_individ_for_nets(clean_pvalranges[j])
                 clean_scores.append(best_score)
@@ -153,7 +153,7 @@ class SubsetScanningDetector(Classifier):
         """
         raise NotImplementedError
 
-    def predict(self, x, logits=False, batch_size=128):
+    def predict(self, x, logits=False, batch_size=128, **kwargs):
         """
         Perform detection of adversarial data and return prediction as tuple.
 
@@ -189,10 +189,10 @@ class SubsetScanningDetector(Classifier):
     def learning_phase(self):
         return self.detector.learning_phase
 
-    def class_gradient(self, x, label=None, logits=False):
+    def class_gradient(self, x, label=None, logits=False, **kwargs):
         return self.detector.class_gradient(x, label=label, logits=logits)
 
-    def loss_gradient(self, x, y):
+    def loss_gradient(self, x, y, **kwargs):
         return self.detector.loss_gradient(x, y)
 
     def get_activations(self, x, layer, batch_size):

@@ -37,19 +37,19 @@ class TestGaussianAugmentation(unittest.TestCase):
         x = np.arange(15).reshape((5, 3))
         ga = GaussianAugmentation(ratio=0.4)
         x_new, _ = ga(x)
-        self.assertTrue(x_new.shape == (7, 3))
+        self.assertEqual(x_new.shape, (7, 3))
 
     def test_double_size(self):
         x = np.arange(12).reshape((4, 3))
         ga = GaussianAugmentation()
         x_new, _ = ga(x)
-        self.assertTrue(x_new.shape[0] == 2 * x.shape[0])
+        self.assertEqual(x_new.shape[0], 2 * x.shape[0])
 
     def test_multiple_size(self):
         x = np.arange(12).reshape((4, 3))
         ga = GaussianAugmentation(ratio=3.5)
         x_new, _ = ga(x)
-        self.assertTrue(int(4.5 * x.shape[0]) == x_new.shape[0])
+        self.assertEqual(int(4.5 * x.shape[0]), x_new.shape[0])
 
     def test_labels(self):
         x = np.arange(12).reshape((4, 3))
@@ -58,14 +58,14 @@ class TestGaussianAugmentation(unittest.TestCase):
         ga = GaussianAugmentation()
         x_new, new_y = ga(x, y)
         self.assertTrue(x_new.shape[0] == new_y.shape[0] == 8)
-        self.assertTrue(x_new.shape[1:] == x.shape[1:])
-        self.assertTrue(new_y.shape[1:] == y.shape[1:])
+        self.assertEqual(x_new.shape[1:], x.shape[1:])
+        self.assertEqual(new_y.shape[1:], y.shape[1:])
 
     def test_no_augmentation(self):
         x = np.arange(12).reshape((4, 3))
         ga = GaussianAugmentation(augmentation=False)
         x_new, _ = ga(x)
-        self.assertTrue(x.shape == x_new.shape)
+        self.assertEqual(x.shape, x_new.shape)
         self.assertFalse((x == x_new).all())
 
     def test_failure_augmentation_fit_predict(self):

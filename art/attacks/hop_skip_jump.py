@@ -15,6 +15,13 @@
 # AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT,
 # TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 # SOFTWARE.
+"""
+This module implements the HopSkipJump attack `HopSkipJump`. This is a black-box attack that only requires class
+predictions. It is an advanced version of the boundary attack.
+
+Paper link:
+    https://arxiv.org/abs/1904.02144
+"""
 from __future__ import absolute_import, division, print_function, unicode_literals
 
 import logging
@@ -75,7 +82,7 @@ class HopSkipJump(Attack):
         else:
             self.theta = 0.01 / np.prod(self.classifier.input_shape)
 
-    def generate(self, x, y=None, x_adv_init=None):
+    def generate(self, x, y=None, **kwargs):
         """
         Generate adversarial samples and return them in an array.
 
@@ -98,7 +105,8 @@ class HopSkipJump(Attack):
         preds = np.argmax(self.classifier.predict(x, batch_size=self.batch_size), axis=1)
 
         # Prediction from the initial adversarial examples if not None
-        if x_adv_init is not None:
+        if 'x_adv_init' in kwargs:
+            x_adv_init = kwargs['x_adv_init']
             init_preds = np.argmax(self.classifier.predict(x_adv_init, batch_size=self.batch_size), axis=1)
         else:
             init_preds = [None] * len(x)
@@ -457,7 +465,8 @@ class HopSkipJump(Attack):
 
         return result
 
-    def _interpolate(self, current_sample, original_sample, alpha, norm):
+    @staticmethod
+    def _interpolate(current_sample, original_sample, alpha, norm):
         """
         Interpolate a new sample based on the original and the current samples.
 

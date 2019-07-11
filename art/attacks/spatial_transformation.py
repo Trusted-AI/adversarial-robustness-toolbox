@@ -15,6 +15,14 @@
 # AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT,
 # TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 # SOFTWARE.
+"""
+This module implements the spatial transformation attack `SpatialTransformation` using translation and rotation of
+inputs. The attack conducts black-box queries to the target model in a grid search over possible translations and
+rotations to find optimal attack parameters.
+
+Paper link:
+    https://arxiv.org/abs/1712.02779
+"""
 from __future__ import absolute_import, division, print_function, unicode_literals
 
 import logging
@@ -65,7 +73,7 @@ class SpatialTransformation(Attack):
         self.attack_trans_y = None
         self.attack_rot = None
 
-    def generate(self, x, y=None):
+    def generate(self, x, y=None, **kwargs):
         """
         Generate adversarial samples and return them in an array.
 

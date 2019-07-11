@@ -15,6 +15,19 @@
 # AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT,
 # TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 # SOFTWARE.
+"""
+This module implements adversarial training based on a model and one or multiple attack methods. It incorporates
+original adversarial training, ensemble adversarial training, training on all adversarial data and other common setups.
+If multiple attacks are specified, they are rotated for each batch. If the specified attacks have as target a different
+model, then the attack is transferred. The `ratio` determines how many of the clean samples in each batch are replaced
+with their adversarial counterpart.
+
+.. warning:: Both successful and unsuccessful adversarial samples are used for training. In the case of
+              unbounded attacks (e.g., DeepFool), this can result in invalid (very noisy) samples being included.
+
+Paper link:
+    https://arxiv.org/abs/1705.07204
+"""
 from __future__ import absolute_import, division, print_function, unicode_literals
 
 import logging
@@ -114,8 +127,8 @@ class AdversarialTrainer:
             else:
                 self._precomputed_adv_samples.append(None)
 
-        for e in range(nb_epochs):
-            logger.info('Adversarial training epoch %i/%i', e, nb_epochs)
+        for i_epoch in range(nb_epochs):
+            logger.info('Adversarial training epoch %i/%i', i_epoch, nb_epochs)
 
             # Shuffle the indices of precomputed examples
             np.random.shuffle(ind)
@@ -187,8 +200,8 @@ class AdversarialTrainer:
             else:
                 self._precomputed_adv_samples.append(None)
 
-        for e in range(nb_epochs):
-            logger.info('Adversarial training epoch %i/%i', e, nb_epochs)
+        for i_epoch in range(nb_epochs):
+            logger.info('Adversarial training epoch %i/%i', i_epoch, nb_epochs)
 
             # Shuffle the examples
             np.random.shuffle(ind)
