@@ -134,7 +134,7 @@ class ScanningOps:
         count = 0
 
         while True:
-            #### These can be moved outside the while loop as only executed first time through??
+            # These can be moved outside the while loop as only executed first time through??
             if count == 0:  # first time through, we need something initialized depending on direction.
                 if image_to_node:
                     sub_of_images = indices_of_seeds

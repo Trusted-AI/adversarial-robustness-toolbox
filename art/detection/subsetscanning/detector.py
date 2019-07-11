@@ -4,6 +4,7 @@ from __future__ import absolute_import, division, print_function, unicode_litera
 import logging
 import six
 
+# pylint: disable=E0001
 from sklearn import metrics
 import numpy as np
 
