@@ -66,7 +66,6 @@ class ScanningOps:
                 completely_included = np.searchsorted(
                     pvalues[elem_indx, :, 1][arg_sort_max], alpha_thresholds, side='right')
 
-            # print('complete included shape', completely_included.shape)
             # should be num elements by num thresh
             unsort_priority[elem_indx, :] = completely_included
 
