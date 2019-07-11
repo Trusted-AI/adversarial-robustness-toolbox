@@ -16,7 +16,9 @@ from art.utils_test import get_classifier_kr
 
 logger = logging.getLogger('testLogger')
 
-BATCH_SIZE, NB_TRAIN, NB_TEST = 100, 100, 100
+BATCH_SIZE = 100
+NB_TRAIN = 100
+NB_TEST = 100
 
 
 class TestSubsetScanningDetector(unittest.TestCase):
@@ -31,7 +33,6 @@ class TestSubsetScanningDetector(unittest.TestCase):
         k.clear_session()
 
     def test_subsetscan_detector(self):
-
         (x_train, y_train), (x_test, y_test), _, _ = load_cifar10()
         x_train, y_train = x_train[:NB_TRAIN], y_train[:NB_TRAIN]
         x_test, y_test = x_test[:NB_TEST], y_test[:NB_TEST]
