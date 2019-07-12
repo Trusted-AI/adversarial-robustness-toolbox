@@ -25,9 +25,9 @@ import numpy as np
 
 from art.attacks.fast_gradient import FastGradientMethod
 from art.classifiers import KerasClassifier
-from art.utils import load_dataset, get_labels_np_array, master_seed
-from art.utils import get_classifier_tf, get_classifier_kr, get_classifier_pt, random_targets
-from art.utils import get_iris_classifier_tf, get_iris_classifier_kr, get_iris_classifier_pt
+from art.utils import load_dataset, get_labels_np_array, master_seed, random_targets
+from art.utils_test import get_classifier_tf, get_classifier_kr, get_classifier_pt
+from art.utils_test import get_iris_classifier_tf, get_iris_classifier_kr, get_iris_classifier_pt
 
 logger = logging.getLogger('testLogger')
 
@@ -152,7 +152,7 @@ class TestFastGradientMethodImages(unittest.TestCase):
                     (acc * 100))
 
         # L_1 norm
-        attack = FastGradientMethod(classifier, eps=1, norm=1)
+        attack = FastGradientMethod(classifier, eps=1, norm=1, batch_size=128)
         x_test_adv = attack.generate(x_test)
         self.assertFalse((x_test == x_test_adv).all())
 
@@ -162,7 +162,7 @@ class TestFastGradientMethodImages(unittest.TestCase):
         logger.info('Accuracy on MNIST with FGM adversarial test examples with L1 norm: %.2f%%', (acc * 100))
 
         # L_2 norm
-        attack = FastGradientMethod(classifier, eps=1, norm=2)
+        attack = FastGradientMethod(classifier, eps=1, norm=2, batch_size=128)
         x_test_adv = attack.generate(x_test)
         self.assertFalse((x_test == x_test_adv).all())
 
@@ -197,7 +197,7 @@ class TestFastGradientMethodImages(unittest.TestCase):
         fs = FeatureSqueezing(bit_depth=1, clip_values=(0, 1))
         classifier = KerasClassifier(model=model, clip_values=(0, 1), defences=fs, custom_activation=custom_activation)
 
-        attack = FastGradientMethod(classifier, eps=1)
+        attack = FastGradientMethod(classifier, eps=1, batch_size=128)
         x_train_adv = attack.generate(x_train)
         x_test_adv = attack.generate(x_test)
 
@@ -239,7 +239,7 @@ class TestFastGradientMethodImages(unittest.TestCase):
         test_y_pred = get_labels_np_array(classifier.predict(x_test_adv))
 
         self.assertEqual(y_test_adv.shape, test_y_pred.shape)
-        self.assertTrue((y_test_adv == test_y_pred).sum() >= x_test.shape[0] // 2)
+        self.assertGreaterEqual((y_test_adv == test_y_pred).sum(), x_test.shape[0] // 2)
 
     def test_mnist_targeted(self):
         # Define all backends to test
@@ -329,7 +329,7 @@ class TestFastGradientVectors(unittest.TestCase):
 
         # Test targeted attack
         targets = random_targets(y_test, nb_classes=3)
-        attack = FastGradientMethod(classifier, targeted=True, eps=.1)
+        attack = FastGradientMethod(classifier, targeted=True, eps=.1, batch_size=128)
         x_test_adv = attack.generate(x_test, **{'y': targets})
         self.assertFalse((x_test == x_test_adv).all())
         self.assertTrue((x_test_adv <= 1).all())
@@ -358,7 +358,7 @@ class TestFastGradientVectors(unittest.TestCase):
 
         # Test targeted attack
         targets = random_targets(y_test, nb_classes=3)
-        attack = FastGradientMethod(classifier, targeted=True, eps=.1)
+        attack = FastGradientMethod(classifier, targeted=True, eps=.1, batch_size=128)
         x_test_adv = attack.generate(x_test, **{'y': targets})
         self.assertFalse((x_test == x_test_adv).all())
         self.assertTrue((x_test_adv <= 1).all())

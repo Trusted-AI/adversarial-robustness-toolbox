@@ -11,7 +11,8 @@ from keras.models import Model
 
 from art.classifiers import KerasClassifier
 from art.defences import FeatureSqueezing
-from art.utils import load_mnist, get_classifier_kr, master_seed
+from art.utils import load_mnist, master_seed
+from art.utils_test import get_classifier_kr
 
 logger = logging.getLogger('testLogger')
 
@@ -87,7 +88,7 @@ class TestKerasClassifier(unittest.TestCase):
         model = Model(inputs=[in_layer, in_layer_2], outputs=[out_layer, out_layer_2])
 
         model.compile(loss=keras.losses.categorical_crossentropy, optimizer=keras.optimizers.Adadelta(),
-                      metrics=['accuracy'], loss_weights=[1., 1.0])
+                      metrics=['accuracy'], loss_weights=[1.0, 1.0])
 
         return model
 
@@ -101,7 +102,7 @@ class TestKerasClassifier(unittest.TestCase):
         acc2 = np.sum(np.argmax(classifier.predict(self.mnist[1][0]), axis=1) == labels) / NB_TEST
         logger.info('Accuracy: %.2f%%', (acc2 * 100))
 
-        self.assertTrue(acc2 >= .9 * acc)
+        self.assertGreaterEqual(acc2, 0.9 * acc)
 
     def test_fit_generator(self):
         from art.classifiers.keras import generator_fit
@@ -118,7 +119,7 @@ class TestKerasClassifier(unittest.TestCase):
         acc2 = np.sum(np.argmax(classifier.predict(self.mnist[1][0]), axis=1) == labels) / NB_TEST
         logger.info('Accuracy: %.2f%%', (acc2 * 100))
 
-        self.assertTrue(acc2 >= .8 * acc)
+        self.assertGreaterEqual(acc2, 0.8 * acc)
 
     def test_fit_image_generator(self):
         from keras.preprocessing.image import ImageDataGenerator
@@ -139,7 +140,7 @@ class TestKerasClassifier(unittest.TestCase):
         acc2 = np.sum(np.argmax(classifier.predict(self.mnist[1][0]), axis=1) == labels_test) / NB_TEST
         logger.info('Accuracy: %.2f%%', (acc2 * 100))
 
-        self.assertTrue(acc2 >= .8 * acc)
+        self.assertGreaterEqual(acc2, 0.8 * acc)
 
     def test_fit_kwargs(self):
         from keras.callbacks import LearningRateScheduler
@@ -157,38 +158,41 @@ class TestKerasClassifier(unittest.TestCase):
         with self.assertRaises(TypeError) as context:
             classifier.fit(self.mnist[0][0], self.mnist[0][1], batch_size=BATCH_SIZE, nb_epochs=1, **kwargs)
 
-        self.assertTrue('multiple values for keyword argument' in str(context.exception))
+        self.assertIn('multiple values for keyword argument', str(context.exception))
 
     def test_shapes(self):
         x_test, y_test = self.mnist[1]
         classifier = self.model_mnist
 
         preds = classifier.predict(self.mnist[1][0])
-        self.assertTrue(preds.shape == y_test.shape)
+        self.assertEqual(preds.shape, y_test.shape)
 
-        self.assertTrue(classifier.nb_classes == 10)
+        self.assertEqual(classifier.nb_classes, 10)
 
         class_grads = classifier.class_gradient(x_test[:11])
-        self.assertTrue(class_grads.shape == tuple([11, 10] + list(x_test[1].shape)))
+        self.assertEqual(class_grads.shape, tuple([11, 10] + list(x_test[1].shape)))
 
         loss_grads = classifier.loss_gradient(x_test[:11], y_test[:11])
-        self.assertTrue(loss_grads.shape == x_test[:11].shape)
+        self.assertEqual(loss_grads.shape, x_test[:11].shape)
 
     def test_defences_predict(self):
         from art.defences import FeatureSqueezing, JpegCompression, SpatialSmoothing
 
         (_, _), (x_test, y_test) = self.mnist
 
-        fs = FeatureSqueezing(bit_depth=2)
-        jpeg = JpegCompression()
+        clip_values = (0, 1)
+        fs = FeatureSqueezing(clip_values=clip_values, bit_depth=2)
+        jpeg = JpegCompression(clip_values=clip_values, apply_predict=True)
         smooth = SpatialSmoothing()
-        classifier = KerasClassifier(clip_values=(0, 1), model=self.model_mnist._model, defences=[fs, jpeg, smooth])
-        self.assertTrue(len(classifier.defences) == 3)
+        classifier = KerasClassifier(clip_values=clip_values, model=self.model_mnist._model,
+                                     defences=[fs, jpeg, smooth])
+        self.assertEqual(len(classifier.defences), 3)
 
         preds_classifier = classifier.predict(x_test)
 
         # Apply the same defences by hand
-        x_test_defense, _ = fs(x_test, y_test)
+        x_test_defense = x_test
+        x_test_defense, _ = fs(x_test_defense, y_test)
         x_test_defense, _ = jpeg(x_test_defense, y_test)
         x_test_defense, _ = smooth(x_test_defense, y_test)
         preds_check = self.model_mnist._model.predict(x_test_defense)
@@ -204,20 +208,20 @@ class TestKerasClassifier(unittest.TestCase):
         grads = classifier.class_gradient(x_test)
 
         self.assertTrue(np.array(grads.shape == (NB_TEST, 10, 28, 28, 1)).all())
-        self.assertTrue(np.sum(grads) != 0)
+        self.assertNotEqual(np.sum(grads), 0)
 
         # Test 1 gradient label = 5
         grads = classifier.class_gradient(x_test, label=5)
 
         self.assertTrue(np.array(grads.shape == (NB_TEST, 1, 28, 28, 1)).all())
-        self.assertTrue(np.sum(grads) != 0)
+        self.assertNotEqual(np.sum(grads), 0)
 
         # Test a set of gradients label = array
         label = np.random.randint(5, size=NB_TEST)
         grads = classifier.class_gradient(x_test, label=label)
 
         self.assertTrue(np.array(grads.shape == (NB_TEST, 1, 28, 28, 1)).all())
-        self.assertTrue(np.sum(grads) != 0)
+        self.assertNotEqual(np.sum(grads), 0)
 
     def test_loss_gradient(self):
         (_, _), (x_test, y_test) = self.mnist
@@ -227,7 +231,7 @@ class TestKerasClassifier(unittest.TestCase):
         grads = classifier.loss_gradient(x_test, y_test)
 
         self.assertTrue(np.array(grads.shape == (NB_TEST, 28, 28, 1)).all())
-        self.assertTrue(np.sum(grads) != 0)
+        self.assertNotEqual(np.sum(grads), 0)
 
     def test_functional_model(self):
         self._test_functional_model(custom_activation=True)
@@ -316,18 +320,18 @@ class TestKerasClassifier(unittest.TestCase):
         with open(full_path, 'rb') as load_file:
             loaded = pickle.load(load_file)
 
-            self.assertTrue(keras_model._clip_values == loaded._clip_values)
-            self.assertTrue(keras_model._channel_index == loaded._channel_index)
-            self.assertTrue(keras_model._use_logits == loaded._use_logits)
-            self.assertTrue(keras_model._input_layer == loaded._input_layer)
-            self.assertTrue(self.functional_model.get_config() == loaded._model.get_config())
+            self.assertEqual(keras_model._clip_values, loaded._clip_values)
+            self.assertEqual(keras_model._channel_index, loaded._channel_index)
+            self.assertEqual(keras_model._use_logits, loaded._use_logits)
+            self.assertEqual(keras_model._input_layer, loaded._input_layer)
+            self.assertEqual(self.functional_model.get_config(), loaded._model.get_config())
             self.assertTrue(isinstance(loaded.defences[0], FeatureSqueezing))
 
         os.remove(full_path)
 
     def test_repr(self):
         repr_ = repr(self.model_mnist)
-        self.assertTrue('art.classifiers.keras.KerasClassifier' in repr_)
-        self.assertTrue('use_logits=False, channel_index=3' in repr_)
-        self.assertTrue('clip_values=(0, 1), defences=None, preprocessing=(0, 1)' in repr_)
-        self.assertTrue('input_layer=0, output_layer=0' in repr_)
+        self.assertIn('art.classifiers.keras.KerasClassifier', repr_)
+        self.assertIn('use_logits=False, channel_index=3', repr_)
+        self.assertIn('clip_values=(0, 1), defences=None, preprocessing=(0, 1)', repr_)
+        self.assertIn('input_layer=0, output_layer=0', repr_)

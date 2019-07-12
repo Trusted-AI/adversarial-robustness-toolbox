@@ -15,7 +15,6 @@ from art.utils import load_mnist, master_seed
 
 logger = logging.getLogger('testLogger')
 
-
 NB_TRAIN = 1000
 NB_TEST = 2
 
@@ -47,6 +46,7 @@ class TestDetectorClassifier(unittest.TestCase):
     """
     This class tests the functionalities of the DetectorClassifier.
     """
+
     @classmethod
     def setUpClass(cls):
         # Get MNIST
@@ -97,7 +97,7 @@ class TestDetectorClassifier(unittest.TestCase):
 
     def test_nb_classes(self):
         dc = self.detector_classifier
-        self.assertTrue(dc.nb_classes == 11)
+        self.assertEqual(dc.nb_classes, 11)
 
     def test_input_shape(self):
         dc = self.detector_classifier
@@ -127,7 +127,7 @@ class TestDetectorClassifier(unittest.TestCase):
         grads = dc.class_gradient(x=x_test, logits=True, label=None)
 
         self.assertTrue(np.array(grads.shape == (NB_TEST, 11, 1, 28, 28)).all())
-        self.assertTrue(np.sum(grads) != 0)
+        self.assertNotEqual(np.sum(grads), 0)
 
         # Sanity check
         for i1 in range(grads.shape[1]):
@@ -152,7 +152,7 @@ class TestDetectorClassifier(unittest.TestCase):
         grads = dc.class_gradient(x=x_test, logits=True, label=5)
 
         self.assertTrue(np.array(grads.shape == (NB_TEST, 1, 1, 28, 28)).all())
-        self.assertTrue(np.sum(grads) != 0)
+        self.assertNotEqual(np.sum(grads), 0)
 
         # Sanity check
         for i2 in range(grads.shape[2]):
@@ -176,7 +176,7 @@ class TestDetectorClassifier(unittest.TestCase):
         grads = dc.class_gradient(x=x_test, logits=True, label=10)
 
         self.assertTrue(np.array(grads.shape == (NB_TEST, 1, 1, 28, 28)).all())
-        self.assertTrue(np.sum(grads) != 0)
+        self.assertNotEqual(np.sum(grads), 0)
 
         # Sanity check
         for i2 in range(grads.shape[2]):
@@ -202,7 +202,7 @@ class TestDetectorClassifier(unittest.TestCase):
         grads = dc.class_gradient(x=x_test, logits=True, label=label)
 
         self.assertTrue(np.array(grads.shape == (NB_TEST, 1, 1, 28, 28)).all())
-        self.assertTrue(np.sum(grads) != 0)
+        self.assertNotEqual(np.sum(grads), 0)
 
         # Sanity check
         for i2 in range(grads.shape[2]):
@@ -230,7 +230,7 @@ class TestDetectorClassifier(unittest.TestCase):
         grads = dc.class_gradient(x=x_test, logits=False, label=None)
 
         self.assertTrue(np.array(grads.shape == (NB_TEST, 11, 1, 28, 28)).all())
-        self.assertTrue(np.sum(grads) != 0)
+        self.assertNotEqual(np.sum(grads), 0)
 
         # Sanity check
         for i1 in range(grads.shape[1]):
@@ -255,7 +255,7 @@ class TestDetectorClassifier(unittest.TestCase):
         grads = dc.class_gradient(x=x_test, logits=False, label=2)
 
         self.assertTrue(np.array(grads.shape == (NB_TEST, 1, 1, 28, 28)).all())
-        self.assertTrue(np.sum(grads) != 0)
+        self.assertNotEqual(np.sum(grads), 0)
 
         # Sanity check
         for i2 in range(grads.shape[2]):
@@ -279,7 +279,7 @@ class TestDetectorClassifier(unittest.TestCase):
         grads = dc.class_gradient(x=x_test, logits=False, label=10)
 
         self.assertTrue(np.array(grads.shape == (NB_TEST, 1, 1, 28, 28)).all())
-        self.assertTrue(np.sum(grads) != 0)
+        self.assertNotEqual(np.sum(grads), 0)
 
         # Sanity check
         for i2 in range(grads.shape[2]):
@@ -305,7 +305,7 @@ class TestDetectorClassifier(unittest.TestCase):
         grads = dc.class_gradient(x=x_test, logits=False, label=label)
 
         self.assertTrue(np.array(grads.shape == (NB_TEST, 1, 1, 28, 28)).all())
-        self.assertTrue(np.sum(grads) != 0)
+        self.assertNotEqual(np.sum(grads), 0)
 
         # Sanity check
         for i2 in range(grads.shape[2]):
@@ -327,7 +327,7 @@ class TestDetectorClassifier(unittest.TestCase):
 
         self.assertTrue(dc.classifier._model.training)
         self.assertTrue(dc.detector._model.training)
-        self.assertTrue(dc.learning_phase is None)
+        self.assertIs(dc.learning_phase, None)
 
         dc.set_learning_phase(False)
         self.assertFalse(dc.classifier._model.training)
@@ -362,8 +362,8 @@ class TestDetectorClassifier(unittest.TestCase):
 
     def test_repr(self):
         repr_ = repr(self.detector_classifier)
-        self.assertTrue('art.classifiers.detector_classifier.DetectorClassifier' in repr_)
-        self.assertTrue('preprocessing=(0, 1)' in repr_)
+        self.assertIn('art.classifiers.detector_classifier.DetectorClassifier', repr_)
+        self.assertIn('preprocessing=(0, 1)', repr_)
 
 
 if __name__ == '__main__':

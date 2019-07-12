@@ -36,6 +36,7 @@ def build_model(input_shape=(32, 32, 3), nb_classes=10):
 
     return model
 
+
 # Load data and normalize
 (x_train, y_train), (x_test, y_test), min_, max_ = load_cifar10()
 

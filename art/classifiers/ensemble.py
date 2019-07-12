@@ -15,13 +15,16 @@
 # AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT,
 # TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 # SOFTWARE.
+"""
+This module implements the classifier `EnsembleClassifier` for ensembles of multiple classifiers.
+"""
 from __future__ import absolute_import, division, print_function, unicode_literals
 
 import logging
 
 import numpy as np
 
-from art.classifiers import Classifier
+from art.classifiers.classifier import Classifier
 
 logger = logging.getLogger(__name__)
 
@@ -31,6 +34,7 @@ class EnsembleClassifier(Classifier):
     Class allowing to aggregate multiple classifiers as an ensemble. The individual classifiers are expected to be
     trained when the ensemble is created and no training procedures are provided through this class.
     """
+
     def __init__(self, classifiers, classifier_weights=None, channel_index=3, clip_values=None, defences=None,
                  preprocessing=(0, 1)):
         """
@@ -90,7 +94,7 @@ class EnsembleClassifier(Classifier):
 
         self._classifiers = classifiers
 
-    def predict(self, x, logits=False, raw=False):
+    def predict(self, x, logits=False, batch_size=128, **kwargs):
         """
         Perform prediction for a batch of inputs. Predictions from classifiers are aggregated at probabilities level,
         as logits are not comparable between models. If logits prediction was specified, probabilities are converted
@@ -106,19 +110,24 @@ class EnsembleClassifier(Classifier):
                  `(nb_classifiers, nb_inputs, self.nb_classes)` if `raw=True`.
         :rtype: `np.ndarray`
         """
+        if 'raw' in kwargs:
+            raw = kwargs['raw']
+        else:
+            raise ValueError('Missing argument `raw`.')
+
         preds = np.array([self._classifier_weights[i] * self._classifiers[i].predict(x, raw and logits)
                           for i in range(self._nb_classifiers)])
         if raw:
             return preds
 
         # Aggregate predictions only at probabilities level, as logits are not comparable between models
-        z = np.sum(preds, axis=0)
+        var_z = np.sum(preds, axis=0)
 
         # Convert back to logits if needed
         if logits:
             eps = 10e-8
-            z = np.log(np.clip(z, eps, 1. - eps))
-        return z
+            var_z = np.log(np.clip(var_z, eps, 1. - eps))
+        return var_z
 
     def fit(self, x, y, batch_size=128, nb_epochs=20, **kwargs):
         """
@@ -186,7 +195,7 @@ class EnsembleClassifier(Classifier):
         """
         raise NotImplementedError
 
-    def class_gradient(self, x, label=None, logits=False, raw=False):
+    def class_gradient(self, x, label=None, logits=False, **kwargs):
         """
         Compute per-class derivatives w.r.t. `x`.
 
@@ -205,13 +214,18 @@ class EnsembleClassifier(Classifier):
                  dimension is added at the beginning of the array, indexing the different classifiers.
         :rtype: `np.ndarray`
         """
+        if 'raw' in kwargs:
+            raw = kwargs['raw']
+        else:
+            raise ValueError('Missing argument `raw`.')
+
         grads = np.array([self._classifier_weights[i] * self._classifiers[i].class_gradient(x, label, logits)
                           for i in range(self._nb_classifiers)])
         if raw:
             return grads
         return np.sum(grads, axis=0)
 
-    def loss_gradient(self, x, y, raw=False):
+    def loss_gradient(self, x, y, **kwargs):
         """
         Compute the gradient of the loss function w.r.t. `x`.
 
@@ -224,6 +238,11 @@ class EnsembleClassifier(Classifier):
         :return: Array of gradients of the same shape as `x`. If `raw=True`, shape becomes `[nb_classifiers, x.shape]`.
         :rtype: `np.ndarray`
         """
+        if 'raw' in kwargs:
+            raw = kwargs['raw']
+        else:
+            raise ValueError('Missing argument `raw`.')
+
         grads = np.array([self._classifier_weights[i] * self._classifiers[i].loss_gradient(x, y)
                           for i in range(self._nb_classifiers)])
         if raw:

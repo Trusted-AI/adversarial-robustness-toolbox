@@ -27,8 +27,8 @@ from art.attacks.fast_gradient import FastGradientMethod
 from art.wrappers.query_efficient_bb import QueryEfficientBBGradientEstimation
 from art.classifiers import KerasClassifier
 from art.defences import FeatureSqueezing
-from art.utils import load_dataset, get_classifier_kr, get_iris_classifier_kr, get_labels_np_array, master_seed
-from art.utils import random_targets
+from art.utils import load_dataset, get_labels_np_array, master_seed
+from art.utils_test import get_classifier_kr, get_iris_classifier_kr
 
 logger = logging.getLogger('testLogger')
 
@@ -63,7 +63,7 @@ class TestWrappingClassifierAttack(unittest.TestCase):
         (x_train, y_train), (x_test, y_test) = self.mnist
 
         # Get the ready-trained Keras model and wrap it in query efficient gradient estimator wrapper
-        classifier = QueryEfficientBBGradientEstimation(self.classifier_k, 20, 1/64., round_samples=1/255.)
+        classifier = QueryEfficientBBGradientEstimation(self.classifier_k, 20, 1 / 64., round_samples=1 / 255.)
 
         attack = FastGradientMethod(classifier, eps=1)
         x_train_adv = attack.generate(x_train)
@@ -96,7 +96,7 @@ class TestWrappingClassifierAttack(unittest.TestCase):
         fs = FeatureSqueezing(bit_depth=1, clip_values=(0, 1))
         classifier = KerasClassifier(model=model, clip_values=(0, 1), defences=fs)
         # Wrap the classifier
-        classifier = QueryEfficientBBGradientEstimation(classifier, 20, 1/64., round_samples=1/255.)
+        classifier = QueryEfficientBBGradientEstimation(classifier, 20, 1 / 64., round_samples=1 / 255.)
 
         attack = FastGradientMethod(classifier, eps=1)
         x_train_adv = attack.generate(x_train)
@@ -137,7 +137,7 @@ class TestQueryEfficientVectors(unittest.TestCase):
         (_, _), (x_test, y_test) = self.iris
 
         classifier, _ = get_iris_classifier_kr()
-        classifier = QueryEfficientBBGradientEstimation(classifier, 20, 1/64., round_samples=1 / 255.)
+        classifier = QueryEfficientBBGradientEstimation(classifier, 20, 1 / 64., round_samples=1 / 255.)
 
         # Test untargeted attack
         attack = FastGradientMethod(classifier, eps=.1)
@@ -157,7 +157,7 @@ class TestQueryEfficientVectors(unittest.TestCase):
 
         # Recreate a classifier without clip values
         classifier = KerasClassifier(model=classifier._model, use_logits=False, channel_index=1)
-        classifier = QueryEfficientBBGradientEstimation(classifier, 20, 1/64., round_samples=1 / 255.)
+        classifier = QueryEfficientBBGradientEstimation(classifier, 20, 1 / 64., round_samples=1 / 255.)
         attack = FastGradientMethod(classifier, eps=1)
         x_test_adv = attack.generate(x_test)
         self.assertFalse((x_test == x_test_adv).all())

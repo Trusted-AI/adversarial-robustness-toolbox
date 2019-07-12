@@ -15,6 +15,12 @@
 # AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT,
 # TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 # SOFTWARE.
+"""
+This module implements the elastic net attack `ElasticNet`. This is a white-box attack.
+
+Paper link:
+    https://arxiv.org/abs/1709.04114.
+"""
 from __future__ import absolute_import, division, print_function, unicode_literals
 
 import logging
@@ -36,8 +42,8 @@ class ElasticNet(Attack):
     attack_params = Attack.attack_params + ['confidence', 'targeted', 'learning_rate', 'max_iter', 'beta',
                                             'binary_search_steps', 'initial_const', 'batch_size', 'decision_rule']
 
-    def __init__(self, classifier, confidence=0.0, targeted=True, learning_rate=1e-2, binary_search_steps=9,
-                 max_iter=10000, beta=1e-3, initial_const=1e-3, batch_size=128, decision_rule='EN'):
+    def __init__(self, classifier, confidence=0.0, targeted=False, learning_rate=1e-2, binary_search_steps=9,
+                 max_iter=100, beta=1e-3, initial_const=1e-3, batch_size=1, decision_rule='EN'):
         """
         Create an ElasticNet attack instance.
 
@@ -94,11 +100,11 @@ class ElasticNet(Attack):
         l1dist = np.sum(np.abs(x - x_adv).reshape(x.shape[0], -1), axis=1)
         l2dist = np.sum(np.square(x - x_adv).reshape(x.shape[0], -1), axis=1)
         endist = self.beta * l1dist + l2dist
-        z = self.classifier.predict(np.array(x_adv, dtype=NUMPY_DTYPE), logits=True)
+        logits = self.classifier.predict(np.array(x_adv, dtype=NUMPY_DTYPE), logits=True, batch_size=self.batch_size)
 
-        return np.argmax(z, axis=1), l1dist, l2dist, endist
+        return np.argmax(logits, axis=1), l1dist, l2dist, endist
 
-    def _gradient_of_loss(self, target, x, x_adv, c):
+    def _gradient_of_loss(self, target, x, x_adv, c_weight):
         """
         Compute the gradient of the loss function.
 
@@ -108,27 +114,27 @@ class ElasticNet(Attack):
         :type x: `np.ndarray`
         :param x_adv: An array with the adversarial input.
         :type x_adv: `np.ndarray`
-        :param c: Weight of the loss term aiming for classification as target.
-        :type c: `float`
+        :param c_weight: Weight of the loss term aiming for classification as target.
+        :type c_weight: `float`
         :return: An array with the gradient of the loss function.
         :type target: `np.ndarray`
         """
         # Compute the current logits
-        z = self.classifier.predict(np.array(x_adv, dtype=NUMPY_DTYPE), logits=True)
+        logits = self.classifier.predict(np.array(x_adv, dtype=NUMPY_DTYPE), logits=True, batch_size=self.batch_size)
 
         if self.targeted:
             i_sub = np.argmax(target, axis=1)
-            i_add = np.argmax(z * (1 - target) + (np.min(z, axis=1) - 1)[:, np.newaxis] * target, axis=1)
+            i_add = np.argmax(logits * (1 - target) + (np.min(logits, axis=1) - 1)[:, np.newaxis] * target, axis=1)
         else:
             i_add = np.argmax(target, axis=1)
-            i_sub = np.argmax(z * (1 - target) + (np.min(z, axis=1) - 1)[:, np.newaxis] * target, axis=1)
+            i_sub = np.argmax(logits * (1 - target) + (np.min(logits, axis=1) - 1)[:, np.newaxis] * target, axis=1)
 
         loss_gradient = self.classifier.class_gradient(x_adv, label=i_add, logits=True)
         loss_gradient -= self.classifier.class_gradient(x_adv, label=i_sub, logits=True)
         loss_gradient = loss_gradient.reshape(x.shape)
 
-        c_mult = c
-        for _ in range(len(x.shape)-1):
+        c_mult = c_weight
+        for _ in range(len(x.shape) - 1):
             c_mult = c_mult[:, np.newaxis]
 
         loss_gradient *= c_mult
@@ -149,12 +155,12 @@ class ElasticNet(Attack):
         :return: The decayed learning rate
         :rtype: `float`
         """
-        decayed_learning_rate = (self.learning_rate - end_learning_rate) * (1 - global_step / decay_steps)**2 + \
+        decayed_learning_rate = (self.learning_rate - end_learning_rate) * (1 - global_step / decay_steps) ** 2 + \
             end_learning_rate
 
         return decayed_learning_rate
 
-    def generate(self, x, y=None):
+    def generate(self, x, y=None, **kwargs):
         """
         Generate adversarial samples and return them in an array.
 
@@ -174,7 +180,7 @@ class ElasticNet(Attack):
 
         # No labels provided, use model prediction as correct class
         if y is None:
-            y = get_labels_np_array(self.classifier.predict(x, logits=False))
+            y = get_labels_np_array(self.classifier.predict(x, logits=False, batch_size=self.batch_size))
 
         # Compute adversarial examples with implicit batching
         nb_batches = int(np.ceil(x_adv.shape[0] / float(self.batch_size)))
@@ -192,7 +198,7 @@ class ElasticNet(Attack):
 
         # Compute success rate of the EAD attack
         logger.info('Success rate of EAD attack: %.2f%%',
-                    100 * compute_success(self.classifier, x, y, x_adv, self.targeted))
+                    100 * compute_success(self.classifier, x, y, x_adv, self.targeted, batch_size=self.batch_size))
 
         return x_adv
 
@@ -208,7 +214,7 @@ class ElasticNet(Attack):
         :rtype: `np.ndarray`
         """
         # Initialize binary search:
-        c = self.initial_const * np.ones(x_batch.shape[0])
+        c_current = self.initial_const * np.ones(x_batch.shape[0])
         c_lower_bound = np.zeros(x_batch.shape[0])
         c_upper_bound = 10e10 * np.ones(x_batch.shape[0])
 
@@ -218,21 +224,23 @@ class ElasticNet(Attack):
 
         # Start with a binary search
         for bss in range(self.binary_search_steps):
-            logger.debug('Binary search step %i out of %i (c_mean==%f)', bss, self.binary_search_steps, np.mean(c))
+            logger.debug('Binary search step %i out of %i (c_mean==%f)', bss, self.binary_search_steps,
+                         np.mean(c_current))
 
             # Run with 1 specific binary search step
-            best_dist, best_label, best_attack = self._generate_bss(x_batch, y_batch, c)
+            best_dist, best_label, best_attack = self._generate_bss(x_batch, y_batch, c_current)
 
             # Update best results so far
             o_best_attack[best_dist < o_best_dist] = best_attack[best_dist < o_best_dist]
             o_best_dist[best_dist < o_best_dist] = best_dist[best_dist < o_best_dist]
 
             # Adjust the constant as needed
-            c, c_lower_bound, c_upper_bound = self._update_const(y_batch, best_label, c, c_lower_bound, c_upper_bound)
+            c_current, c_lower_bound, c_upper_bound = self._update_const(y_batch, best_label, c_current, c_lower_bound,
+                                                                         c_upper_bound)
 
         return o_best_attack
 
-    def _update_const(self, y_batch, best_label, c, c_lower_bound, c_upper_bound):
+    def _update_const(self, y_batch, best_label, c_batch, c_lower_bound, c_upper_bound):
         """
         Update constants.
 
@@ -240,8 +248,8 @@ class ElasticNet(Attack):
         :type y_batch: `np.ndarray`
         :param best_label: A batch of best labels.
         :type best_label: `np.ndarray`
-        :param c: A batch of constants.
-        :type c: `np.ndarray`
+        :param c_batch: A batch of constants.
+        :type c_batch: `np.ndarray`
         :param c_lower_bound: A batch of lower bound constants.
         :type c_lower_bound: `np.ndarray`
         :param c_upper_bound: A batch of upper bound constants.
@@ -249,30 +257,30 @@ class ElasticNet(Attack):
         :return: A tuple of three batches of updated constants and lower/upper bounds.
         :rtype: `tuple`
         """
-        def compare(o1, o2):
-            if self.targeted:
-                return o1 == o2
-            else:
-                return o1 != o2
 
-        for i in range(len(c)):
+        def compare(o_1, o_2):
+            if self.targeted:
+                return o_1 == o_2
+            return o_1 != o_2
+
+        for i in range(c_batch.shape[0]):
             if compare(best_label[i], np.argmax(y_batch[i])) and best_label[i] != -np.inf:
                 # Successful attack
-                c_upper_bound[i] = min(c_upper_bound[i], c[i])
+                c_upper_bound[i] = min(c_upper_bound[i], c_batch[i])
                 if c_upper_bound[i] < 1e9:
-                    c[i] = (c_lower_bound[i] + c_upper_bound[i]) / 2.0
+                    c_batch[i] = (c_lower_bound[i] + c_upper_bound[i]) / 2.0
 
             else:
                 # Failure attack
-                c_lower_bound[i] = max(c_lower_bound[i], c[i])
+                c_lower_bound[i] = max(c_lower_bound[i], c_batch[i])
                 if c_upper_bound[i] < 1e9:
-                    c[i] = (c_lower_bound[i] + c_upper_bound[i]) / 2.0
+                    c_batch[i] = (c_lower_bound[i] + c_upper_bound[i]) / 2.0
                 else:
-                    c[i] *= 10
+                    c_batch[i] *= 10
 
-        return c, c_lower_bound, c_upper_bound
+        return c_batch, c_lower_bound, c_upper_bound
 
-    def _generate_bss(self, x_batch, y_batch, c):
+    def _generate_bss(self, x_batch, y_batch, c_batch):
         """
         Generate adversarial examples for a batch of inputs with a specific batch of constants.
 
@@ -280,16 +288,16 @@ class ElasticNet(Attack):
         :type x_batch: `np.ndarray`
         :param y_batch: A batch of targets (0-1 hot).
         :type y_batch: `np.ndarray`
-        :param c: A batch of constants.
-        :type c: `np.ndarray`
+        :param c_batch: A batch of constants.
+        :type c_batch: `np.ndarray`
         :return: A tuple of best elastic distances, best labels, best attacks
         :rtype: `tuple`
         """
-        def compare(o1, o2):
+
+        def compare(o_1, o_2):
             if self.targeted:
-                return o1 == o2
-            else:
-                return o1 != o2
+                return o_1 == o_2
+            return o_1 != o_2
 
         # Initialize best distortions and best changed labels and best attacks
         best_dist = np.inf * np.ones(x_batch.shape[0])
@@ -299,60 +307,61 @@ class ElasticNet(Attack):
         # Implement the algorithm 1 in the EAD paper
         x_adv = x_batch.copy()
         y_adv = x_batch.copy()
-        for it in range(self.max_iter):
-            logger.debug('Iteration step %i out of %i', it, self.max_iter)
+        for i_iter in range(self.max_iter):
+            logger.debug('Iteration step %i out of %i', i_iter, self.max_iter)
 
             # Update learning rate
-            lr = self._decay_learning_rate(global_step=it, end_learning_rate=0, decay_steps=self.max_iter)
+            learning_rate = self._decay_learning_rate(global_step=i_iter, end_learning_rate=0,
+                                                      decay_steps=self.max_iter)
 
             # Compute adversarial examples
-            grad = self._gradient_of_loss(target=y_batch, x=x_batch, x_adv=y_adv, c=c)
-            x_adv_next = self._shrinkage_threshold(y_adv - lr * grad, x_batch, self.beta)
-            y_adv = x_adv_next + (1.0 * it / (it + 3)) * (x_adv_next - x_adv)
+            grad = self._gradient_of_loss(target=y_batch, x=x_batch, x_adv=y_adv, c_weight=c_batch)
+            x_adv_next = self._shrinkage_threshold(y_adv - learning_rate * grad, x_batch, self.beta)
+            y_adv = x_adv_next + (1.0 * i_iter / (i_iter + 3)) * (x_adv_next - x_adv)
             x_adv = x_adv_next
 
             # Adjust the best result
-            (z, l1dist, l2dist, endist) = self._loss(x=x_batch, x_adv=x_adv)
+            (logits, l1dist, l2dist, endist) = self._loss(x=x_batch, x_adv=x_adv)
 
             if self.decision_rule == 'EN':
-                zip_set = zip(endist, z)
+                zip_set = zip(endist, logits)
             elif self.decision_rule == 'L1':
-                zip_set = zip(l1dist, z)
+                zip_set = zip(l1dist, logits)
             elif self.decision_rule == 'L2':
-                zip_set = zip(l2dist, z)
+                zip_set = zip(l2dist, logits)
             else:
                 raise ValueError("The decision rule only supports `EN`, `L1`, `L2`.")
 
-            for j, (d, s) in enumerate(zip_set):
-                if d < best_dist[j] and compare(s, np.argmax(y_batch[j])):
-                    best_dist[j] = d
+            for j, (distance, label) in enumerate(zip_set):
+                if distance < best_dist[j] and compare(label, np.argmax(y_batch[j])):
+                    best_dist[j] = distance
                     best_attack[j] = x_adv[j]
-                    best_label[j] = s
+                    best_label[j] = label
 
         return best_dist, best_label, best_attack
 
     @staticmethod
-    def _shrinkage_threshold(z, x, beta):
+    def _shrinkage_threshold(z_batch, x_batch, beta):
         """
         Implement the element-wise projected shrinkage-threshold function.
 
-        :param z: a batch of examples.
-        :type z: `np.ndarray`
-        :param x: a batch of original examples.
-        :type x: `np.ndarray`
+        :param z_batch: a batch of examples.
+        :type z_batch: `np.ndarray`
+        :param x_batch: a batch of original examples.
+        :type x_batch: `np.ndarray`
         :param beta: the shrink parameter.
         :type beta: `float`
         :return: a shrinked version of z.
         :rtype: `np.ndarray`
         """
-        cond1 = (z - x) > beta
-        cond2 = np.abs(z - x) <= beta
-        cond3 = (z - x) < -beta
+        cond1 = (z_batch - x_batch) > beta
+        cond2 = np.abs(z_batch - x_batch) <= beta
+        cond3 = (z_batch - x_batch) < -beta
 
-        upper = np.minimum(z - beta, 1.0)
-        lower = np.maximum(z + beta, 0.0)
+        upper = np.minimum(z_batch - beta, 1.0)
+        lower = np.maximum(z_batch + beta, 0.0)
 
-        result = cond1 * upper + cond2 * x + cond3 * lower
+        result = cond1 * upper + cond2 * x_batch + cond3 * lower
 
         return result
 
@@ -386,13 +395,13 @@ class ElasticNet(Attack):
         # Save attack-specific parameters
         super(ElasticNet, self).set_params(**kwargs)
 
-        if type(self.binary_search_steps) is not int or self.binary_search_steps < 0:
+        if not isinstance(self.binary_search_steps, int) or self.binary_search_steps < 0:
             raise ValueError("The number of binary search steps must be a non-negative integer.")
 
-        if type(self.max_iter) is not int or self.max_iter < 0:
+        if not isinstance(self.max_iter, int) or self.max_iter < 0:
             raise ValueError("The number of iterations must be a non-negative integer.")
 
-        if type(self.batch_size) is not int or self.batch_size < 1:
+        if not isinstance(self.batch_size, int) or self.batch_size < 1:
             raise ValueError("The batch size must be an integer greater than zero.")
 
         if not isinstance(self.decision_rule, six.string_types) or self.decision_rule not in ['EN', 'L1', 'L2']:

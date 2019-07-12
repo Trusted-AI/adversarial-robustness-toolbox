@@ -15,6 +15,9 @@
 # AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT,
 # TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 # SOFTWARE.
+"""
+This module implements the classifier `PyTorchClassifier` for PyTorch models.
+"""
 from __future__ import absolute_import, division, print_function, unicode_literals
 
 import logging
@@ -32,6 +35,7 @@ class PyTorchClassifier(Classifier):
     """
     This class implements a classifier with the PyTorch framework.
     """
+
     def __init__(self, model, loss, optimizer, input_shape, nb_classes, channel_index=1, clip_values=None,
                  defences=None, preprocessing=(0, 1)):
         """
@@ -82,10 +86,10 @@ class PyTorchClassifier(Classifier):
         self._device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
         self._model.to(self._device)
 
-    def _init_grads(self):
-        return -1
+        # Index of layer at which the class gradients should be calculated
+        self._layer_idx_gradients = -1
 
-    def predict(self, x, logits=False, batch_size=128):
+    def predict(self, x, logits=False, batch_size=128, **kwargs):
         """
         Perform prediction for a batch of inputs.
 
@@ -100,18 +104,17 @@ class PyTorchClassifier(Classifier):
         """
         import torch
 
-        # Apply defences
-        x_preproc = self._apply_processing(x)
-        x_preproc, _ = self._apply_defences(x_preproc, None, fit=False)
+        # Apply preprocessing
+        x_preprocessed, _ = self._apply_preprocessing(x, y=None, fit=False)
 
         # Run prediction with batch processing
-        results = np.zeros((x_preproc.shape[0], self.nb_classes), dtype=np.float32)
-        num_batch = int(np.ceil(len(x_preproc) / float(batch_size)))
+        results = np.zeros((x_preprocessed.shape[0], self.nb_classes), dtype=np.float32)
+        num_batch = int(np.ceil(len(x_preprocessed) / float(batch_size)))
         for m in range(num_batch):
             # Batch indexes
-            begin, end = m * batch_size, min((m + 1) * batch_size, x_preproc.shape[0])
+            begin, end = m * batch_size, min((m + 1) * batch_size, x_preprocessed.shape[0])
 
-            model_outputs = self._model(torch.from_numpy(x_preproc[begin:end]).to(self._device).float())
+            model_outputs = self._model(torch.from_numpy(x_preprocessed[begin:end]).to(self._device).float())
             (logit_output, output) = (model_outputs[-2], model_outputs[-1])
 
             if logits:
@@ -140,13 +143,13 @@ class PyTorchClassifier(Classifier):
         """
         import torch
 
-        # Apply defences
-        x_preproc = self._apply_processing(x)
-        x_preproc, y_preproc = self._apply_defences(x_preproc, y, fit=True)
-        y_preproc = np.argmax(y_preproc, axis=1)
+        # Apply preprocessing
+        x_preprocessed, y_preprocessed = self._apply_preprocessing(x, y, fit=True)
 
-        num_batch = int(np.ceil(len(x_preproc) / float(batch_size)))
-        ind = np.arange(len(x_preproc))
+        y_preprocessed = np.argmax(y_preprocessed, axis=1)
+
+        num_batch = int(np.ceil(len(x_preprocessed) / float(batch_size)))
+        ind = np.arange(len(x_preprocessed))
 
         # Start training
         for _ in range(nb_epochs):
@@ -155,8 +158,9 @@ class PyTorchClassifier(Classifier):
 
             # Train for one epoch
             for m in range(num_batch):
-                i_batch = torch.from_numpy(x_preproc[ind[m * batch_size:(m + 1) * batch_size]]).to(self._device).float()
-                o_batch = torch.from_numpy(y_preproc[ind[m * batch_size:(m + 1) * batch_size]]).to(self._device)
+                i_batch = torch.from_numpy(x_preprocessed[ind[m * batch_size:(m + 1) * batch_size]]).to(
+                    self._device).float()
+                o_batch = torch.from_numpy(y_preprocessed[ind[m * batch_size:(m + 1) * batch_size]]).to(self._device)
 
                 # Zero the parameter gradients
                 self._optimizer.zero_grad()
@@ -210,7 +214,7 @@ class PyTorchClassifier(Classifier):
             # Fit a generic data generator through the API
             super(PyTorchClassifier, self).fit_generator(generator, nb_epochs=nb_epochs)
 
-    def class_gradient(self, x, label=None, logits=False):
+    def class_gradient(self, x, label=None, logits=False, **kwargs):
         """
         Compute per-class derivatives w.r.t. `x`.
 
@@ -235,25 +239,23 @@ class PyTorchClassifier(Classifier):
                     and label.shape[0] == x.shape[0])):
             raise ValueError('Label %s is out of range.' % label)
 
-        # Convert the inputs to Tensors
-        x_preproc = self._apply_processing(x)
-        x_defences, _ = self._apply_defences(x_preproc, None, fit=False)
-        x_defences = torch.from_numpy(x_defences).to(self._device).float()
+        # Apply preprocessing
+        x_preprocessed, _ = self._apply_preprocessing(x, y=None, fit=False)
 
-        # Compute gradient wrt what
-        layer_idx = self._init_grads()
-        if layer_idx < 0:
-            x_defences.requires_grad = True
+        x_preprocessed = torch.from_numpy(x_preprocessed).to(self._device).float()
 
-        # Compute the gradient and return
+        # Compute gradients
+        if self._layer_idx_gradients < 0:
+            x_preprocessed.requires_grad = True
+
         # Run prediction
-        model_outputs = self._model(x_defences)
+        model_outputs = self._model(x_preprocessed)
 
         # Set where to get gradient
-        if layer_idx >= 0:
-            input_grad = model_outputs[layer_idx]
+        if self._layer_idx_gradients >= 0:
+            input_grad = model_outputs[self._layer_idx_gradients]
         else:
-            input_grad = x_defences
+            input_grad = x_preprocessed
 
         # Set where to get gradient from
         (logit_output, output) = (model_outputs[-2], model_outputs[-1])
@@ -296,12 +298,11 @@ class PyTorchClassifier(Classifier):
             grads = grads[None, ...]
 
         grads = np.swapaxes(np.array(grads), 0, 1)
-        grads = self._apply_defences_gradient(x_preproc, grads)
-        grads = self._apply_processing_gradient(grads)
+        grads = self._apply_preprocessing_gradient(x, grads)
 
         return grads
 
-    def loss_gradient(self, x, y):
+    def loss_gradient(self, x, y, **kwargs):
         """
         Compute the gradient of the loss function w.r.t. `x`.
 
@@ -314,17 +315,16 @@ class PyTorchClassifier(Classifier):
         """
         import torch
 
-        # Apply preprocessing and defences
-        x_preproc = self._apply_processing(x)
-        x_defences, y_ = self._apply_defences(x_preproc, y, fit=False)
+        # Apply preprocessing
+        x_preprocessed, y_preprocessed = self._apply_preprocessing(x, y, fit=False)
 
         # Convert the inputs to Tensors
-        inputs_t = torch.from_numpy(x_defences).to(self._device)
+        inputs_t = torch.from_numpy(x_preprocessed).to(self._device)
         inputs_t = inputs_t.float()
         inputs_t.requires_grad = True
 
         # Convert the labels to Tensors
-        labels_t = torch.from_numpy(np.argmax(y_, axis=1)).to(self._device)
+        labels_t = torch.from_numpy(np.argmax(y_preprocessed, axis=1)).to(self._device)
 
         # Compute the gradient and return
         model_outputs = self._model(inputs_t)
@@ -335,12 +335,11 @@ class PyTorchClassifier(Classifier):
 
         # Compute gradients
         loss.backward()
-        grds = inputs_t.grad.cpu().numpy().copy()
-        grds = self._apply_defences_gradient(x_preproc, grds)
-        grds = self._apply_processing_gradient(grds)
-        assert grds.shape == x.shape
+        grads = inputs_t.grad.cpu().numpy().copy()
+        grads = self._apply_preprocessing_gradient(x, grads)
+        assert grads.shape == x.shape
 
-        return grds
+        return grads
 
     @property
     def layer_names(self):
@@ -376,8 +375,7 @@ class PyTorchClassifier(Classifier):
         import torch
 
         # Apply defences
-        x_preproc = self._apply_processing(x)
-        x_preproc, _ = self._apply_defences(x_preproc, None, fit=False)
+        x_preprocessed, _ = self._apply_preprocessing(x=x, y=None, fit=False)
 
         # Get index of the extracted layer
         if isinstance(layer, six.string_types):
@@ -393,13 +391,14 @@ class PyTorchClassifier(Classifier):
 
         # Run prediction with batch processing
         results = []
-        num_batch = int(np.ceil(len(x_preproc) / float(batch_size)))
+        num_batch = int(np.ceil(len(x_preprocessed) / float(batch_size)))
         for m in range(num_batch):
             # Batch indexes
-            begin, end = m * batch_size, min((m + 1) * batch_size, x_preproc.shape[0])
+            begin, end = m * batch_size, min((m + 1) * batch_size, x_preprocessed.shape[0])
 
             # Run prediction for the current batch
-            layer_output = self._model(torch.from_numpy(x_preproc[begin:end]).to(self._device).float())[layer_index]
+            layer_output = self._model(torch.from_numpy(x_preprocessed[begin:end]).to(self._device).float())[
+                layer_index]
             results.append(layer_output.detach().cpu().numpy())
 
         results = np.concatenate(results)
@@ -440,6 +439,8 @@ class PyTorchClassifier(Classifier):
         if not os.path.exists(folder):
             os.makedirs(folder)
 
+        # pylint: disable=W0212
+        # disable pylint because access to _modules required
         torch.save(self._model._model.state_dict(), full_path + '.model')
         torch.save(self._optimizer.state_dict(), full_path + '.optimizer')
         logger.info("Model state dict saved in path: %s.", full_path + '.model')
@@ -455,11 +456,13 @@ class PyTorchClassifier(Classifier):
         import time
         import copy
 
+        # pylint: disable=W0212
+        # disable pylint because access to _model required
         state = self.__dict__.copy()
         state['inner_model'] = copy.copy(state['_model']._model)
 
         # Remove the unpicklable entries
-        del state['_ModelWrapper']
+        del state['_model_wrapper']
         del state['_device']
         del state['_model']
 
@@ -515,7 +518,7 @@ class PyTorchClassifier(Classifier):
             import torch.nn as nn
 
             # Define model wrapping class only if not defined before
-            if not hasattr(self, '_ModelWrapper'):
+            if not hasattr(self, '_model_wrapper'):
 
                 class ModelWrapper(nn.Module):
                     """
@@ -532,6 +535,8 @@ class PyTorchClassifier(Classifier):
                         super(ModelWrapper, self).__init__()
                         self._model = model
 
+                    # pylint: disable=W0221
+                    # disable pylint because of API requirements for function
                     def forward(self, x):
                         """
                         This is where we get outputs from the input model.
@@ -541,6 +546,8 @@ class PyTorchClassifier(Classifier):
                         :return: a list of output layers, where the last 2 layers are logit and final outputs.
                         :rtype: `list`
                         """
+                        # pylint: disable=W0212
+                        # disable pylint because access to _model required
                         import torch.nn as nn
 
                         result = []
@@ -580,6 +587,8 @@ class PyTorchClassifier(Classifier):
 
                         result = []
                         if isinstance(self._model, nn.Sequential):
+                            # pylint: disable=W0212
+                            # disable pylint because access to _modules required
                             for name, module_ in self._model._modules.items():
                                 result.append(name + "_" + str(module_))
 
@@ -593,10 +602,10 @@ class PyTorchClassifier(Classifier):
                         return result
 
                 # Set newly created class as private attribute
-                self._ModelWrapper = ModelWrapper
+                self._model_wrapper = ModelWrapper
 
             # Use model wrapping class to wrap the PyTorch model received as argument
-            return self._ModelWrapper(model)
+            return self._model_wrapper(model)
 
         except ImportError:
             raise ImportError('Could not find PyTorch (`torch`) installation.')
