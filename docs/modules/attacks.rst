@@ -92,6 +92,12 @@ Zeroth-Order Optimization Attack (ZOO)
    :members:
    :special-members:
 
+HopSkipJump Attack
+------------------
+.. autoclass:: HopSkipJump
+   :members:
+   :special-members:
+
 Base Class
 ----------
 .. autoclass:: Attack
