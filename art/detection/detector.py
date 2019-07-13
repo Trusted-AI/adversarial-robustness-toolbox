@@ -140,7 +140,7 @@ class BinaryActivationDetector(Classifier):
     the user and is trained on the values of the activations of a classifier at a given layer.
     """
 
-    def __init__(self, classifier, detector, layer):
+    def __init__(self, classifier, detector, layer):  # lgtm [py/similar-function]
         """
         Create a `BinaryActivationDetector` instance which performs binary classification on activation information.
         The shape of the input of the detector has to match that of the output of the chosen layer.
