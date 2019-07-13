@@ -54,8 +54,6 @@ class ScanningOps:
 
         # alpha_thresholds = np.arange(a_max/50, a_max, a_max/50)
 
-        unsort_priority = np.zeros(pvalues.shape[1])
-
         if image_to_node:
             number_of_elements = pvalues.shape[1]  # searching over j columns
             size_of_given = pvalues.shape[0]  # for fixed this many images
