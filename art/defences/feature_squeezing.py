@@ -15,6 +15,12 @@
 # AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT,
 # TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 # SOFTWARE.
+"""
+This module implements the feature squeezing defence in `FeatureSqueezing`.
+
+Paper link:
+    https://arxiv.org/abs/1704.01155
+"""
 from __future__ import absolute_import, division, print_function, unicode_literals
 
 import logging
@@ -30,29 +36,35 @@ class FeatureSqueezing(Preprocessor):
     """
     Reduces the sensibility of the features of a sample. Defence method from https://arxiv.org/abs/1704.01155.
     """
-    params = ['bit_depth', 'clip_values']
+    params = ['clip_values', 'bit_depth']
 
-    def __init__(self, bit_depth=8, clip_values=(0, 1)):
+    def __init__(self, clip_values, bit_depth=8, apply_fit=False, apply_predict=True):
         """
         Create an instance of feature squeezing.
 
-        :param bit_depth: The number of bits per channel for encoding the data.
-        :type bit_depth: `int`
         :param clip_values: Tuple of the form `(min, max)` representing the minimum and maximum values allowed
                for features.
         :type clip_values: `tuple`
+        :param bit_depth: The number of bits per channel for encoding the data.
+        :type bit_depth: `int`
+        :param apply_fit: True if applied during fitting/training.
+        :type apply_fit: `bool`
+        :param apply_predict: True if applied during predicting.
+        :type apply_predict: `bool`
         """
         super(FeatureSqueezing, self).__init__()
         self._is_fitted = True
-        self.set_params(bit_depth=bit_depth, clip_values=clip_values)
+        self._apply_fit = apply_fit
+        self._apply_predict = apply_predict
+        self.set_params(clip_values=clip_values, bit_depth=bit_depth)
 
     @property
     def apply_fit(self):
-        return False
+        return self._apply_fit
 
     @property
     def apply_predict(self):
-        return True
+        return self._apply_predict
 
     def __call__(self, x, y=None):
         """
@@ -65,12 +77,14 @@ class FeatureSqueezing(Preprocessor):
         :return: Squeezed sample.
         :rtype: `np.ndarray`
         """
-        x_ = x - self.clip_values[0]
-        if self.clip_values[1] != 0:
-            x_ = x_ / (self.clip_values[1] - self.clip_values[0])
+        x_normalized = x - self.clip_values[0]
+        x_normalized = x_normalized / (self.clip_values[1] - self.clip_values[0])
 
         max_value = np.rint(2 ** self.bit_depth - 1)
-        res = (np.rint(x_ * max_value) / max_value) * (self.clip_values[1] - self.clip_values[0]) + self.clip_values[0]
+        res = (np.rint(x_normalized * max_value) / max_value)
+
+        res = res * (self.clip_values[1] - self.clip_values[0])
+        res = res + self.clip_values[0]
 
         return res, y
 
@@ -85,11 +99,11 @@ class FeatureSqueezing(Preprocessor):
         """
         Take in a dictionary of parameters and applies defence-specific checks before saving them as attributes.
 
-        :param bit_depth: The number of bits per channel for encoding the data.
-        :type bit_depth: `int`
         :param clip_values: Tuple of the form `(min, max)` representing the minimum and maximum values allowed
                for features.
         :type clip_values: `tuple`
+        :param bit_depth: The number of bits per channel for encoding the data.
+        :type bit_depth: `int`
         """
         # Save defence-specific parameters
         super(FeatureSqueezing, self).set_params(**kwargs)
@@ -99,6 +113,7 @@ class FeatureSqueezing(Preprocessor):
 
         if len(self.clip_values) != 2:
             raise ValueError('`clip_values` should be a tuple of 2 floats containing the allowed data range.')
+
         if np.array(self.clip_values[0] >= self.clip_values[1]).any():
             raise ValueError('Invalid `clip_values`: min >= max.')
 

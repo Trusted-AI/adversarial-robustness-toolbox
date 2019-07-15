@@ -36,39 +36,41 @@ class TestThermometerEncoding(unittest.TestCase):
     def test_channel_last(self):
         # Test data
         x = np.array([[[[0.2, 0.6, 0.8], [0.9, 0.4, 0.3], [0.2, 0.8, 0.5]],
-                      [[0.2, 0.6, 0.8], [0.9, 0.4, 0.3], [0.2, 0.8, 0.5]]],
+                       [[0.2, 0.6, 0.8], [0.9, 0.4, 0.3], [0.2, 0.8, 0.5]]],
                       [[[0.2, 0.6, 0.8], [0.9, 0.4, 0.3], [0.2, 0.8, 0.5]],
-                      [[0.2, 0.6, 0.8], [0.9, 0.4, 0.3], [0.2, 0.8, 0.5]]]])
+                       [[0.2, 0.6, 0.8], [0.9, 0.4, 0.3], [0.2, 0.8, 0.5]]]])
 
         # Create an instance of ThermometerEncoding
-        th_encoder = ThermometerEncoding(num_space=4)
+        th_encoder = ThermometerEncoding(clip_values=(0, 1), num_space=4)
 
         # Preprocess
         x_preproc, _ = th_encoder(x)
 
         # Test
-        self.assertTrue(x_preproc.shape == (2, 2, 3, 12))
+        self.assertEqual(x_preproc.shape, (2, 2, 3, 12))
 
         true_value = np.array([[[[1, 1, 1, 1, 0, 0, 1, 1, 0, 0, 0, 1], [0, 0, 0, 1, 0, 1, 1, 1, 0, 1, 1, 1],
-                                [1, 1, 1, 1, 0, 0, 0, 1, 0, 1, 1, 1]], [[1, 1, 1, 1, 0, 0, 1, 1, 0, 0, 0, 1],
-                                [0, 0, 0, 1, 0, 1, 1, 1, 0, 1, 1, 1], [1, 1, 1, 1, 0, 0, 0, 1, 0, 1, 1, 1]]],
-                                [[[1, 1, 1, 1, 0, 0, 1, 1, 0, 0, 0, 1], [0, 0, 0, 1, 0, 1, 1, 1, 0, 1, 1, 1],
-                                [1, 1, 1, 1, 0, 0, 0, 1, 0, 1, 1, 1]], [[1, 1, 1, 1, 0, 0, 1, 1, 0, 0, 0, 1],
-                                [0, 0, 0, 1, 0, 1, 1, 1, 0, 1, 1, 1], [1, 1, 1, 1, 0, 0, 0, 1, 0, 1, 1, 1]]]])
+                                 [1, 1, 1, 1, 0, 0, 0, 1, 0, 1, 1, 1]], [[1, 1, 1, 1, 0, 0, 1, 1, 0, 0, 0, 1],
+                                                                         [0, 0, 0, 1, 0, 1, 1, 1, 0, 1, 1, 1],
+                                                                         [1, 1, 1, 1, 0, 0, 0, 1, 0, 1, 1, 1]]],
+                               [[[1, 1, 1, 1, 0, 0, 1, 1, 0, 0, 0, 1], [0, 0, 0, 1, 0, 1, 1, 1, 0, 1, 1, 1],
+                                 [1, 1, 1, 1, 0, 0, 0, 1, 0, 1, 1, 1]], [[1, 1, 1, 1, 0, 0, 1, 1, 0, 0, 0, 1],
+                                                                         [0, 0, 0, 1, 0, 1, 1, 1, 0, 1, 1, 1],
+                                                                         [1, 1, 1, 1, 0, 0, 0, 1, 0, 1, 1, 1]]]])
         self.assertTrue((x_preproc == true_value).all())
 
     def test_channel_first(self):
         x = np.random.rand(5, 2, 28, 28)
         x_copy = x.copy()
         num_space = 5
-        encoder = ThermometerEncoding(num_space=num_space, channel_index=1)
-        encoded_x, _ = encoder(x)
+        encoder = ThermometerEncoding(clip_values=(0, 1), num_space=num_space, channel_index=1)
+        x_encoded, _ = encoder(x)
         self.assertTrue((x == x_copy).all())
-        self.assertTrue(encoded_x.shape == (5, 10, 28, 28))
+        self.assertEqual(x_encoded.shape, (5, 10, 28, 28))
 
     def test_estimate_gradient(self):
         num_space = 5
-        encoder = ThermometerEncoding(num_space=num_space)
+        encoder = ThermometerEncoding(clip_values=(0, 1), num_space=num_space)
         x = np.random.rand(5, 28, 28, 1)
         grad = np.ones((5, 28, 28, num_space))
         estimated_grads = encoder.estimate_gradient(grad=grad, x=x)
@@ -77,9 +79,10 @@ class TestThermometerEncoding(unittest.TestCase):
     def test_feature_vectors(self):
         x = np.random.rand(10, 4)
         num_space = 5
-        encoder = ThermometerEncoding(num_space=num_space, channel_index=1)
-        encoded_x, _ = encoder(x)
-        self.assertTrue(encoded_x.shape == (10, 20))
+        encoder = ThermometerEncoding(clip_values=(0, 1), num_space=num_space, channel_index=1)
+        x_encoded, _ = encoder(x)
+        self.assertEqual(x_encoded.shape, (10, 20))
+
 
 if __name__ == '__main__':
     unittest.main()

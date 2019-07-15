@@ -1,4 +1,4 @@
-# Adversarial Robustness Toolbox (ART v0.8.0)
+# Adversarial Robustness Toolbox (ART v0.10.0)
 <p align="center">
   <img src="docs/images/art_logo.png?raw=true" width="200" title="ART logo">
 </p>
@@ -27,6 +27,8 @@ The library contains implementations of the following **evasion attacks**:
 * Query-efficient black-box attack ([Ilyas et al., 2017](https://arxiv.org/abs/1712.07113))
 * Zeroth-order optimization attack ([Chen et al., 2017](https://arxiv.org/abs/1708.03999))
 * Decision-based attack ([Brendel et al., 2018](https://arxiv.org/abs/1712.04248))
+* Adversarial patch ([Brown et al., 2017](https://arxiv.org/abs/1712.09665))
+* HopSkipJump attack ([Chen et al., 2017](https://arxiv.org/abs/1904.02144))
 
 The following **defence** methods are also supported:
 * Feature squeezing ([Xu et al., 2017](http://arxiv.org/abs/1704.01155))
@@ -43,6 +45,7 @@ The following **defence** methods are also supported:
 ART also implements **detection** methods of adversarial samples:
 * Basic detector based on inputs
 * Detector trained on the activations of a specific layer
+* Detector based on Fast Generalized Subset Scan ([Speakman et al., 2018](https://arxiv.org/pdf/1810.08676))
 
 The following **detector of poisoning attacks** is also supported:
 * Detector based on activations analysis ([Chen et al., 2018](https://arxiv.org/abs/1811.03728))
@@ -56,7 +59,7 @@ The following **detector of poisoning attacks** is also supported:
 
 ### Installation with `pip`
 
-The toolbox is designed to run with Python 2 and 3.
+The toolbox is designed and tested to run with Python 3. 
 ART can be installed from the PyPi repository using `pip`:
 
 ```bash
@@ -110,8 +113,8 @@ git commit -s -m 'Add new feature'
 If you use ART for research, please consider citing the following reference paper:
 ```
 @article{art2018,
-    title = {Adversarial Robustness Toolbox v0.8.0},
-    author = {Nicolae, Maria-Irina and Sinn, Mathieu and Tran, Minh~Ngoc and Rawat, Ambrish and Wistuba, Martin and Zantedeschi, Valentina and Baracaldo, Nathalie and Chen, Bryant and Ludwig, Heiko and Molloy, Ian and Edwards, Ben},
+    title = {Adversarial Robustness Toolbox v0.10.0},
+    author = {Nicolae, Maria-Irina and Sinn, Mathieu and Tran, Minh~Ngoc and Buesser, Beat and Rawat, Ambrish and Wistuba, Martin and Zantedeschi, Valentina and Baracaldo, Nathalie and Chen, Bryant and Ludwig, Heiko and Molloy, Ian and Edwards, Ben},
     journal = {CoRR},
     volume = {1807.01069}
     year = {2018},

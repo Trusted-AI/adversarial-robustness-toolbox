@@ -129,6 +129,7 @@ class TestAdversarialTrainer(TestBase):
     """
     Test cases for the AdversarialTrainer class.
     """
+
     def test_classifier_match(self):
         attack = FastGradientMethod(self.classifier_k)
         adv_trainer = AdversarialTrainer(self.classifier_k, attack)
@@ -206,6 +207,7 @@ class TestAdversarialTrainer(TestBase):
             def get_batch(self):
                 ids = np.random.choice(self.size, size=min(self.size, self.batch_size), replace=False)
                 return self.x[ids], self.y[ids]
+
         generator = MyDataGenerator(x_train, y_train, x_train.shape[0], 128)
 
         attack1 = FastGradientMethod(self.classifier_k)

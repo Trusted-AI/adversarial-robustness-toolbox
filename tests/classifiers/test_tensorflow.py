@@ -6,10 +6,10 @@ import unittest
 import numpy as np
 import tensorflow as tf
 
-from art.utils import get_classifier_tf, load_mnist, master_seed
+from art.utils import load_mnist, master_seed
+from art.utils_test import get_classifier_tf
 
 logger = logging.getLogger('testLogger')
-
 
 NB_TRAIN = 1000
 NB_TEST = 20
@@ -19,6 +19,7 @@ class TestTFClassifier(unittest.TestCase):
     """
     This class tests the functionalities of the Tensorflow-based classifier.
     """
+
     @classmethod
     def setUpClass(cls):
         # Get MNIST
@@ -35,6 +36,7 @@ class TestTFClassifier(unittest.TestCase):
 
     @classmethod
     def tearDownClass(cls):
+        tf.reset_default_graph()
         cls.sess.close()
 
     def test_predict(self):
@@ -75,7 +77,7 @@ class TestTFClassifier(unittest.TestCase):
         self.assertGreater(acc, 0.1)
 
     def test_nb_classes(self):
-        self.assertTrue(self.classifier.nb_classes == 10)
+        self.assertEqual(self.classifier.nb_classes, 10)
 
     def test_input_shape(self):
         self.assertTrue(np.array(self.classifier.input_shape == (28, 28, 1)).all())
@@ -88,20 +90,20 @@ class TestTFClassifier(unittest.TestCase):
         grads = self.classifier.class_gradient(x_test)
 
         self.assertTrue(np.array(grads.shape == (NB_TEST, 10, 28, 28, 1)).all())
-        self.assertTrue(np.sum(grads) != 0)
+        self.assertNotEqual(np.sum(grads), 0)
 
         # Test 1 gradient label = 5
         grads = self.classifier.class_gradient(x_test, label=5)
 
         self.assertTrue(np.array(grads.shape == (NB_TEST, 1, 28, 28, 1)).all())
-        self.assertTrue(np.sum(grads) != 0)
+        self.assertNotEqual(np.sum(grads), 0)
 
         # Test a set of gradients label = array
         label = np.random.randint(5, size=NB_TEST)
         grads = self.classifier.class_gradient(x_test, label=label)
 
         self.assertTrue(np.array(grads.shape == (NB_TEST, 1, 28, 28, 1)).all())
-        self.assertTrue(np.sum(grads) != 0)
+        self.assertNotEqual(np.sum(grads), 0)
 
     def test_loss_gradient(self):
         # Get MNIST
@@ -111,7 +113,7 @@ class TestTFClassifier(unittest.TestCase):
         grads = self.classifier.loss_gradient(x_test, y_test)
 
         self.assertTrue(np.array(grads.shape == (NB_TEST, 28, 28, 1)).all())
-        self.assertTrue(np.sum(grads) != 0)
+        self.assertNotEqual(np.sum(grads), 0)
 
     def test_layers(self):
         # Get MNIST
@@ -152,7 +154,7 @@ class TestTFClassifier(unittest.TestCase):
     def test_set_learning(self):
         tfc = self.classifier
 
-        self.assertTrue(tfc._feed_dict == {})
+        self.assertEqual(tfc._feed_dict, {})
         tfc.set_learning_phase(False)
         self.assertFalse(tfc._feed_dict[tfc._learning])
         tfc.set_learning_phase(True)
@@ -161,9 +163,39 @@ class TestTFClassifier(unittest.TestCase):
 
     def test_repr(self):
         repr_ = repr(self.classifier)
-        self.assertTrue('art.classifiers.tensorflow.TFClassifier' in repr_)
-        self.assertTrue('channel_index=3, clip_values=(0, 1)' in repr_)
-        self.assertTrue('defences=None, preprocessing=(0, 1)' in repr_)
+        self.assertIn('art.classifiers.tensorflow.TFClassifier', repr_)
+        self.assertIn('channel_index=3, clip_values=(0, 1)', repr_)
+        self.assertIn('defences=None, preprocessing=(0, 1)', repr_)
+
+    def test_pickle(self):
+        import os
+        from art import DATA_PATH
+        full_path = os.path.join(DATA_PATH, 'my_classifier')
+        folder = os.path.split(full_path)[0]
+        if not os.path.exists(folder):
+            os.makedirs(folder)
+
+        import pickle
+        pickle.dump(self.classifier, open(full_path, 'wb'))
+
+        # Get MNIST
+        (_, _), (x_test, y_test) = self.mnist
+
+        # Unpickle:
+        with open(full_path, 'rb') as f:
+            loaded = pickle.load(f)
+            self.assertEqual(self.classifier._clip_values, loaded._clip_values)
+            self.assertEqual(self.classifier._channel_index, loaded._channel_index)
+            self.assertEqual(set(self.classifier.__dict__.keys()), set(loaded.__dict__.keys()))
+
+        # Test predict
+        preds1 = self.classifier.predict(x_test)
+        acc1 = np.sum(np.argmax(preds1, axis=1) == np.argmax(y_test, axis=1)) / len(y_test)
+        preds2 = loaded.predict(x_test)
+        acc2 = np.sum(np.argmax(preds2, axis=1) == np.argmax(y_test, axis=1)) / len(y_test)
+        self.assertEqual(acc1, acc2)
+
+        loaded._sess.close()
 
 
 if __name__ == '__main__':

@@ -90,7 +90,7 @@ class TestEnsembleClassifier(unittest.TestCase):
         return model
 
     def test_predict(self):
-        preds = self.ensemble.predict(self.mnist[1][0])
+        preds = self.ensemble.predict(self.mnist[1][0], raw=False)
         self.assertTrue(np.array(preds.shape == (NB_TEST, 10)).all())
 
         preds_raw = self.ensemble.predict(self.mnist[1][0], raw=True)
@@ -99,7 +99,7 @@ class TestEnsembleClassifier(unittest.TestCase):
         self.assertFalse((preds == preds_raw[0]).all())
 
     def test_loss_gradient(self):
-        grad = self.ensemble.loss_gradient(self.mnist[1][0], self.mnist[1][1])
+        grad = self.ensemble.loss_gradient(self.mnist[1][0], self.mnist[1][1], raw=False)
         self.assertTrue(np.array(grad.shape == (NB_TEST, 28, 28, 1)).all())
 
         grad2 = self.ensemble.loss_gradient(self.mnist[1][0], self.mnist[1][1], raw=True)
@@ -108,7 +108,7 @@ class TestEnsembleClassifier(unittest.TestCase):
         self.assertFalse((grad2[0] == grad).all())
 
     def test_class_gradient(self):
-        grad = self.ensemble.class_gradient(self.mnist[1][0])
+        grad = self.ensemble.class_gradient(self.mnist[1][0], raw=False)
         self.assertTrue(np.array(grad.shape == (NB_TEST, 10, 28, 28, 1)).all())
 
         grad2 = self.ensemble.class_gradient(self.mnist[1][0], raw=True)
@@ -118,6 +118,6 @@ class TestEnsembleClassifier(unittest.TestCase):
 
     def test_repr(self):
         repr_ = repr(self.ensemble)
-        self.assertTrue('art.classifiers.ensemble.EnsembleClassifier' in repr_)
-        self.assertTrue('classifier_weights=array([0.5, 0.5])' in repr_)
-        self.assertTrue('channel_index=3, clip_values=(0, 1), defences=None, preprocessing=(0, 1)' in repr_)
+        self.assertIn('art.classifiers.ensemble.EnsembleClassifier', repr_)
+        self.assertIn('classifier_weights=array([0.5, 0.5])', repr_)
+        self.assertIn('channel_index=3, clip_values=(0, 1), defences=None, preprocessing=(0, 1)', repr_)

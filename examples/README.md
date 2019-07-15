@@ -7,9 +7,6 @@ DeepFool attack and retrains the network on the training set augmented with the 
 [data_augmentation.py](data_augmentation.py)
 This example shows how to use ART and Keras to perform adversarial training using data generators for CIFAR-10.
 
-[expectation_over_transformations.py](expectation_over_transformations.py)
-Shows how to wrap a `Classifier` in a series of random transformations before attacking it. This feature can be used to break randomized defences or to produce adversarial attacks that are robust to certain transformations.
-
 [mnist_cnn_fgsm.py](mnist_cnn_fgsm.py)
 Trains a convolutional neural network on MNIST, then crafts FGSM attack examples on it.
 

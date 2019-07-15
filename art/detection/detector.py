@@ -35,6 +35,7 @@ class BinaryInputDetector(Classifier):
     Binary detector of adversarial samples coming from evasion attacks. The detector uses an architecture provided by
     the user and trains it on data labeled as clean (label 0) or adversarial (label 1).
     """
+
     def __init__(self, detector):
         """
         Create a `BinaryInputDetector` instance which performs binary classification on input data.
@@ -66,7 +67,7 @@ class BinaryInputDetector(Classifier):
         """
         self.detector.fit(x, y, batch_size=batch_size, nb_epochs=nb_epochs, **kwargs)
 
-    def predict(self, x, batch_size=128):
+    def predict(self, x, batch_size=128, **kwargs):
         """
         Perform detection of adversarial data and return prediction as tuple.
 
@@ -108,10 +109,10 @@ class BinaryInputDetector(Classifier):
     def learning_phase(self):
         return self.detector.learning_phase
 
-    def class_gradient(self, x, label=None):
+    def class_gradient(self, x, label=None, **kwargs):
         return self.detector.class_gradient(x, label=label)
 
-    def loss_gradient(self, x, y):
+    def loss_gradient(self, x, y, **kwargs):
         return self.detector.loss_gradient(x, y)
 
     def get_activations(self, x, layer, batch_size):
@@ -136,7 +137,8 @@ class BinaryActivationDetector(Classifier):
     Binary detector of adversarial samples coming from evasion attacks. The detector uses an architecture provided by
     the user and is trained on the values of the activations of a classifier at a given layer.
     """
-    def __init__(self, classifier, detector, layer):
+
+    def __init__(self, classifier, detector, layer):  # lgtm [py/similar-function]
         """
         Create a `BinaryActivationDetector` instance which performs binary classification on activation information.
         The shape of the input of the detector has to match that of the output of the chosen layer.
@@ -187,7 +189,7 @@ class BinaryActivationDetector(Classifier):
         x_activations = self.classifier.get_activations(x, self._layer_name)
         self.detector.fit(x_activations, y, batch_size=batch_size, nb_epochs=nb_epochs, **kwargs)
 
-    def predict(self, x, batch_size=128):
+    def predict(self, x, batch_size=128, **kwargs):
         """
         Perform detection of adversarial data and return prediction as tuple.
 
@@ -229,10 +231,10 @@ class BinaryActivationDetector(Classifier):
     def learning_phase(self):
         return self.detector.learning_phase
 
-    def class_gradient(self, x, label=None):
+    def class_gradient(self, x, label=None, **kwargs):
         return self.detector.class_gradient(x, label=label)
 
-    def loss_gradient(self, x, y):
+    def loss_gradient(self, x, y, **kwargs):
         return self.detector.loss_gradient(x, y)
 
     def get_activations(self, x, layer, batch_size):

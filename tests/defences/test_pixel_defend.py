@@ -73,11 +73,11 @@ class TestPixelDefend(unittest.TestCase):
         self.pixelcnn = PyTorchClassifier(model=model, loss=loss_fn, optimizer=optimizer, input_shape=(1, 28, 28),
                                           nb_classes=10, clip_values=(0, 1))
         preprocess = PixelDefend(eps=5, pixel_cnn=self.pixelcnn)
-        defended_x, _ = preprocess(x_train)
+        x_defended, _ = preprocess(x_train)
 
-        self.assertTrue((defended_x.shape == x_train.shape))
-        self.assertTrue((defended_x <= 1.0).all())
-        self.assertTrue((defended_x >= 0.0).all())
+        self.assertEqual(x_defended.shape, x_train.shape)
+        self.assertTrue((x_defended <= 1.0).all())
+        self.assertTrue((x_defended >= 0.0).all())
 
     def test_feature_vectors(self):
         # Define the network
@@ -89,13 +89,12 @@ class TestPixelDefend(unittest.TestCase):
 
         x = np.random.rand(5, 4)
         preprocess = PixelDefend(eps=5, pixel_cnn=pixel_cnn)
-        defended_x, _ = preprocess(x)
+        x_defended, _ = preprocess(x)
 
-        self.assertTrue((defended_x.shape == x.shape))
-        self.assertTrue((defended_x <= 1.0).all())
-        self.assertTrue((defended_x >= 0.0).all())
+        self.assertEqual(x_defended.shape, x.shape)
+        self.assertTrue((x_defended <= 1.0).all())
+        self.assertTrue((x_defended >= 0.0).all())
 
 
 if __name__ == '__main__':
     unittest.main()
-

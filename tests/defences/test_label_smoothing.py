@@ -39,20 +39,20 @@ class TestLabelSmoothing(unittest.TestCase):
         y[(range(m), np.random.choice(range(n), m))] = 1.
 
         ls = LabelSmoothing()
-        _, smooth_y = ls(None, y)
-        self.assertTrue(np.isclose(np.sum(smooth_y, axis=1), np.ones(m)).all())
-        self.assertTrue((np.max(smooth_y, axis=1) == np.ones(m)*0.9).all())
+        _, y_smooth = ls(None, y)
+        self.assertTrue(np.isclose(np.sum(y_smooth, axis=1), np.ones(m)).all())
+        self.assertTrue((np.max(y_smooth, axis=1) == np.ones(m) * 0.9).all())
 
     def test_customizing(self):
         m, n = 1000, 20
         y = np.zeros((m, n))
         y[(range(m), np.random.choice(range(n), m))] = 1.
 
-        ls = LabelSmoothing(max_value=1.0/n)
-        _, smooth_y = ls(None, y)
-        self.assertTrue(np.isclose(np.sum(smooth_y, axis=1), np.ones(m)).all())
-        self.assertTrue((np.max(smooth_y, axis=1) == np.ones(m) / n).all())
-        self.assertTrue(np.isclose(smooth_y, np.ones((m, n)) / n).all())
+        ls = LabelSmoothing(max_value=1.0 / n)
+        _, y_smooth = ls(None, y)
+        self.assertTrue(np.isclose(np.sum(y_smooth, axis=1), np.ones(m)).all())
+        self.assertTrue((np.max(y_smooth, axis=1) == np.ones(m) / n).all())
+        self.assertTrue(np.isclose(y_smooth, np.ones((m, n)) / n).all())
 
 
 if __name__ == '__main__':

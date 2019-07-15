@@ -15,6 +15,9 @@
 # AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT,
 # TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 # SOFTWARE.
+"""
+This module implements the Gaussian augmentation defence in `GaussianAugmentation`.
+"""
 from __future__ import absolute_import, division, print_function, unicode_literals
 
 import logging
@@ -33,9 +36,9 @@ class GaussianAugmentation(Preprocessor):
     as part of a :class:`.Classifier` instance, the defense will be applied automatically only when training if
     `augmentation` is true, and only when performing prediction otherwise.
     """
-    params = ['sigma', 'augmentation', 'ratio']
+    params = ['sigma', 'augmentation', 'ratio', 'clip_values', '_apply_fit', '_apply_predict']
 
-    def __init__(self, sigma=1., augmentation=True, ratio=1.):
+    def __init__(self, sigma=1.0, augmentation=True, ratio=1.0, clip_values=None, apply_fit=True, apply_predict=False):
         """
         Initialize a Gaussian augmentation object.
 
@@ -47,24 +50,36 @@ class GaussianAugmentation(Preprocessor):
         :param ratio: Percentage of data augmentation. E.g. for a rate of 1, the size of the dataset will double.
                       If `augmentation` is false, `ratio` value is ignored.
         :type ratio: `float`
+        :param clip_values: Tuple of the form `(min, max)` representing the minimum and maximum values allowed
+               for features.
+        :type clip_values: `tuple`
+        :param apply_fit: True if applied during fitting/training.
+        :type apply_fit: `bool`
+        :param apply_predict: True if applied during predicting.
+        :type apply_predict: `bool`
         """
         super(GaussianAugmentation, self).__init__()
         self._is_fitted = True
-        self.set_params(sigma=sigma, augmentation=augmentation, ratio=ratio)
+        if augmentation and apply_fit and apply_predict:
+            raise ValueError("If `augmentation` is `True`, then `apply_fit` must be `True` and `apply_predict`"
+                             " must be `False`.")
+        self._apply_fit = apply_fit
+        self._apply_predict = apply_predict
+        self.set_params(sigma=sigma, augmentation=augmentation, ratio=ratio, clip_values=clip_values)
 
     @property
     def apply_fit(self):
-        return self.augmentation
+        return self._apply_fit
 
     @property
     def apply_predict(self):
-        return not self.augmentation
+        return self._apply_predict
 
     def __call__(self, x, y=None):
         """
-        Augment the sample `(x, y)` with Gaussian noise. The result is either an extended dataset containing the original
-        sample, as well as the newly created noisy samples (augmentation=True) or just the noisy counterparts to the
-        original samples.
+        Augment the sample `(x, y)` with Gaussian noise. The result is either an extended dataset containing the
+        original sample, as well as the newly created noisy samples (augmentation=True) or just the noisy counterparts
+        to the original samples.
 
         :param x: Sample to augment with shape `(batch_size, width, height, depth)`.
         :type x: `np.ndarray`
@@ -84,17 +99,20 @@ class GaussianAugmentation(Preprocessor):
             # Generate noisy samples
             x_aug = np.random.normal(x[indices], scale=self.sigma, size=(size,) + x.shape[1:])
             x_aug = np.vstack((x, x_aug))
-            logger.info('Augmented dataset size: %d', x_aug.shape[0])
-
             if y is not None:
-                return x_aug, np.concatenate((y, y[indices]))
+                y_aug = np.concatenate((y, y[indices]))
             else:
-                return x_aug, y
+                y_aug = y
+            logger.info('Augmented dataset size: %d', x_aug.shape[0])
         else:
             x_aug = np.random.normal(x, scale=self.sigma, size=x.shape)
+            y_aug = y
             logger.info('Created %i samples with Gaussian noise.')
 
-            return x_aug, y
+        if self.clip_values is not None:
+            x_aug = np.clip(x_aug, self.clip_values[0], self.clip_values[1])
+
+        return x_aug, y_aug
 
     def estimate_gradient(self, x, grad):
         return grad
@@ -116,11 +134,22 @@ class GaussianAugmentation(Preprocessor):
         :type augmentation: `bool`
         :param ratio: Percentage of data augmentation. E.g. for a ratio of 1, the size of the dataset will double.
         :type ratio: `float`
+        :param clip_values: Tuple of the form `(min, max)` representing the minimum and maximum values allowed
+               for features.
+        :type clip_values: `tuple`
         """
         # Save attack-specific parameters
         super(GaussianAugmentation, self).set_params(**kwargs)
 
         if self.augmentation and self.ratio <= 0:
             raise ValueError("The augmentation ratio must be positive.")
+
+        if self.clip_values is not None:
+
+            if len(self.clip_values) != 2:
+                raise ValueError('`clip_values` should be a tuple of 2 floats or arrays containing the allowed'
+                                 'data range.')
+            if np.array(self.clip_values[0] >= self.clip_values[1]).any():
+                raise ValueError('Invalid `clip_values`: min >= max.')
 
         return True

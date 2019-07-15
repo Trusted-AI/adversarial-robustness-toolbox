@@ -15,6 +15,13 @@
 # AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT,
 # TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 # SOFTWARE.
+"""
+This module implements the universal adversarial perturbations attack `UniversalPerturbation`. This is a white-box
+attack.
+
+Paper link:
+    https://arxiv.org/abs/1610.08401
+"""
 from __future__ import absolute_import, division, print_function, unicode_literals
 
 import logging
@@ -75,7 +82,7 @@ class UniversalPerturbation(Attack):
                   }
         self.set_params(**kwargs)
 
-    def generate(self, x, y=None):
+    def generate(self, x, y=None, **kwargs):
         """
         Generate adversarial samples and return them in an array.
 
@@ -95,7 +102,7 @@ class UniversalPerturbation(Attack):
 
         # Instantiate the middle attacker and get the predicted labels
         attacker = self._get_attack(self.attacker, self.attacker_params)
-        pred_y = self.classifier.predict(x)
+        pred_y = self.classifier.predict(x, batch_size=1)
         pred_y_max = np.argmax(pred_y, axis=1)
 
         # Start to generate the adversarial examples
@@ -106,19 +113,19 @@ class UniversalPerturbation(Attack):
 
             # Go through the data set and compute the perturbation increments sequentially
             for j, ex in enumerate(x[rnd_idx]):
-                xi = ex[None, ...]
+                x_i = ex[None, ...]
 
-                current_label = np.argmax(self.classifier.predict(xi + noise)[0])
+                current_label = np.argmax(self.classifier.predict(x_i + noise)[0])
                 original_label = np.argmax(pred_y[rnd_idx][j])
 
                 if current_label == original_label:
                     # Compute adversarial perturbation
-                    adv_xi = attacker.generate(xi + noise)
+                    adv_xi = attacker.generate(x_i + noise)
                     new_label = np.argmax(self.classifier.predict(adv_xi)[0])
 
                     # If the class has changed, update v
                     if current_label != new_label:
-                        noise = adv_xi - xi
+                        noise = adv_xi - x_i
 
                         # Project on L_p ball
                         noise = projection(noise, self.eps, self.norm)
@@ -131,7 +138,7 @@ class UniversalPerturbation(Attack):
                 x_adv = np.clip(x_adv, clip_min, clip_max)
 
             # Compute the error rate
-            y_adv = np.argmax(self.classifier.predict(x_adv), axis=1)
+            y_adv = np.argmax(self.classifier.predict(x_adv, batch_size=1), axis=1)
             fooling_rate = np.sum(pred_y_max != y_adv) / nb_instances
 
         self.fooling_rate = fooling_rate

@@ -15,6 +15,13 @@
 # AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT,
 # TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 # SOFTWARE.
+"""
+This module implements the adversarial patch attack `AdversarialPatch`. This attack generates an adversarial patch that
+can be printed into the physical world with a common printer. The patch can be used to fool image classifiers.
+
+Paper link:
+    https://arxiv.org/abs/1712.09665
+"""
 from __future__ import absolute_import, division, print_function, unicode_literals
 
 import logging
@@ -35,10 +42,10 @@ class AdversarialPatch(Attack):
     """
 
     attack_params = Attack.attack_params + ["target", "rotation_max", "scale_min", "scale_max", "learning_rate",
-                                            "max_iter", "patch_shape", "batch_size", "clip_patch"]
+                                            "max_iter", "batch_size", "clip_patch"]
 
     def __init__(self, classifier, target=0, rotation_max=22.5, scale_min=0.1, scale_max=1.0, learning_rate=5.0,
-                 max_iter=500, patch_shape=(224, 224, 3), clip_patch=None, batch_size=16):
+                 max_iter=500, clip_patch=None, batch_size=16):
         """
         Create an instance of the :class:`.AdversarialPatch`.
 
@@ -59,8 +66,6 @@ class AdversarialPatch(Attack):
         :type learning_rate: `float`
         :param max_iter: The number of optimization steps.
         :type max_iter: `int`
-        :param patch_shape: The shape of the adversarial patch.
-        :type patch_shape: `(int, int, int)`
         :param clip_patch: The minimum and maximum values for each channel
         :type clip_patch: [(float, float), (float, float), (float, float)]
         :param batch_size: The size of the training batch.
@@ -74,14 +79,13 @@ class AdversarialPatch(Attack):
                   "scale_max": scale_max,
                   "learning_rate": learning_rate,
                   "max_iter": max_iter,
-                  "patch_shape": patch_shape,
                   "batch_size": batch_size,
                   "clip_patch": clip_patch
                   }
         self.set_params(**kwargs)
         self.patch = None
 
-    def generate(self, x, y=None):
+    def generate(self, x, y=None, **kwargs):
         """
         Generate adversarial samples and return them in an array.
 
@@ -98,7 +102,9 @@ class AdversarialPatch(Attack):
             raise ValueError('Feature vectors detected. The adversarial patch can only be applied to data with spatial '
                              'dimensions.')
 
-        self.patch = (np.random.standard_normal(size=self.patch_shape)) * 20.0
+        self.patch = (np.random.standard_normal(size=self.classifier.input_shape)) * 20.0
+
+        y_target = to_categorical(np.broadcast_to(np.array(self.target), x.shape[0]), self.classifier.nb_classes)
 
         for i_step in range(self.max_iter):
             if i_step == 0 or (i_step + 1) % 100 == 0:
@@ -109,18 +115,24 @@ class AdversarialPatch(Attack):
                     self.patch[:, :, i_channel] = np.clip(self.patch[:, :, i_channel], a_min=a_min, a_max=a_max)
 
             patched_images, patch_mask_transformed, transforms = self._augment_images_with_random_patch(x, self.patch)
-            gradients = self.classifier.loss_gradient(patched_images,
-                                                      to_categorical(np.broadcast_to(np.array(self.target), x.shape[0]),
-                                                                     self.classifier.nb_classes))
+
+            num_batches = int(x.shape[0] / self.batch_size)
             patch_gradients = np.zeros_like(self.patch)
 
-            for i_batch in range(self.batch_size):
-                patch_gradients_i = self._reverse_transformation(gradients[i_batch, :, :, :],
-                                                                 patch_mask_transformed[i_batch, :, :, :],
-                                                                 transforms[i_batch])
-                patch_gradients += patch_gradients_i
+            for i_batch in range(num_batches):
+                i_batch_start = i_batch * self.batch_size
+                i_batch_end = (i_batch + 1) * self.batch_size
 
-            patch_gradients = patch_gradients / self.batch_size
+                gradients = self.classifier.loss_gradient(patched_images[i_batch_start:i_batch_end],
+                                                          y_target[i_batch_start:i_batch_end])
+
+                for i_image in range(self.batch_size):
+                    patch_gradients_i = self._reverse_transformation(gradients[i_image, :, :, :],
+                                                                     patch_mask_transformed[i_image, :, :, :],
+                                                                     transforms[i_image])
+                    patch_gradients += patch_gradients_i
+
+            patch_gradients = patch_gradients / (num_batches * self.batch_size)
             self.patch -= patch_gradients * self.learning_rate
 
         return self.patch, self._get_circular_patch_mask()
@@ -131,7 +143,7 @@ class AdversarialPatch(Attack):
 
         :param x: Instances to apply randomly transformed patch.
         :type x: `np.ndarray`
-        :param scale: Scale of the applied patch in relation to `patch_shape`.
+        :param scale: Scale of the applied patch in relation to the classifier input shape.
         :type scale: `float`
         :return: The patched instances.
         :rtype: `np.ndarray`
@@ -158,8 +170,6 @@ class AdversarialPatch(Attack):
         :type learning_rate: `float`
         :param max_iter: The number of optimization steps.
         :type max_iter: `int`
-        :param patch_shape: The shape of the adversarial patch.
-        :type patch_shape: `(int, int, int)`
         :param clip_batch: The minimum and maximum values for each channel
         :type clip_patch: [(float, float), (float, float), (float, float)]
         :param batch_size: The size of the training batch.
@@ -196,11 +206,6 @@ class AdversarialPatch(Attack):
         if not self.max_iter > 0:
             raise ValueError("The number of optimization steps must be greater than 0.")
 
-        if not isinstance(self.patch_shape, tuple) or not len(self.patch_shape) == 3 or not isinstance(
-                self.patch_shape[0], int) or not isinstance(self.patch_shape[1], int) or not isinstance(
-                    self.patch_shape[2], int):
-            raise ValueError("The shape of the adversarial patch must be a tuple of 3 integers.")
-
         if not isinstance(self.batch_size, int):
             raise ValueError("The batch size must be of type int.")
         if not self.batch_size > 0:
@@ -212,7 +217,7 @@ class AdversarialPatch(Attack):
         """
         Return a circular patch mask
         """
-        diameter = self.patch_shape[1]
+        diameter = self.classifier.input_shape[1]
         x = np.linspace(-1, 1, diameter)
         y = np.linspace(-1, 1, diameter)
         x_grid, y_grid = np.meshgrid(x, y, sparse=True)
@@ -220,13 +225,13 @@ class AdversarialPatch(Attack):
 
         mask = 1 - np.clip(z_grid, -1, 1)
 
-        pad_1 = int((self.patch_shape[1] - mask.shape[1]) / 2)
-        pad_2 = int(self.patch_shape[1] - pad_1 - mask.shape[1])
+        pad_1 = int((self.classifier.input_shape[1] - mask.shape[1]) / 2)
+        pad_2 = int(self.classifier.input_shape[1] - pad_1 - mask.shape[1])
         mask = np.pad(mask, pad_width=(pad_1, pad_2), mode='constant', constant_values=(0, 0))
 
         axis = self.classifier.channel_index - 1
         mask = np.expand_dims(mask, axis=axis)
-        mask = np.broadcast_to(mask, self.patch_shape).astype(np.float32)
+        mask = np.broadcast_to(mask, self.classifier.input_shape).astype(np.float32)
         return mask
 
     def _augment_images_with_random_patch(self, images, patch, scale=None):
@@ -237,12 +242,12 @@ class AdversarialPatch(Attack):
         patched_images = list()
         patch_mask_transformed_list = list()
 
-        for i_batch in range(images.shape[0]):
+        for i_image in range(images.shape[0]):
             patch_transformed, patch_mask_transformed, transformation = self._random_transformation(patch, scale)
 
             inverted_patch_mask_transformed = (1 - patch_mask_transformed)
 
-            patched_image = images[i_batch, :, :, :] * inverted_patch_mask_transformed \
+            patched_image = images[i_image, :, :, :] * inverted_patch_mask_transformed \
                 + patch_transformed * patch_mask_transformed
             patched_image = np.expand_dims(patched_image, axis=0)
             patched_images.append(patched_image)
@@ -272,7 +277,7 @@ class AdversarialPatch(Attack):
             zooms = (1.0, scale, scale)
         x = zoom(x, zoom=zooms, order=1)
 
-        if x.shape[1] <= self.patch_shape[1]:
+        if x.shape[1] <= self.classifier.input_shape[1]:
             pad_1 = int((shape - x.shape[1]) / 2)
             pad_2 = int(shape - pad_1 - x.shape[1])
             if self.classifier.channel_index == 3:
@@ -284,8 +289,8 @@ class AdversarialPatch(Attack):
             x = np.pad(x, pad_width=pad_width, mode='constant', constant_values=(0, 0))
         else:
             center = int(x.shape[1] / 2)
-            patch_hw_1 = int(self.patch_shape[1] / 2)
-            patch_hw_2 = self.patch_shape[1] - patch_hw_1
+            patch_hw_1 = int(self.classifier.input_shape[1] / 2)
+            patch_hw_2 = self.classifier.input_shape[1] - patch_hw_1
             if self.classifier.channel_index == 3:
                 x = x[center - patch_hw_1:center + patch_hw_2, center - patch_hw_1:center + patch_hw_2, :]
             elif self.classifier.channel_index == 1:
@@ -325,7 +330,7 @@ class AdversarialPatch(Attack):
         transformation['scale'] = scale
 
         # shift
-        shift_max = (self.classifier.input_shape[1] - self.patch_shape[1] * scale) / 2.0
+        shift_max = (self.classifier.input_shape[1] * (1. - scale)) / 2.0
         if shift_max > 0:
             shift_1 = random.uniform(-shift_max, shift_max)
             shift_2 = random.uniform(-shift_max, shift_max)

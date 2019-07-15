@@ -53,6 +53,8 @@ class QueryEfficientBBGradientEstimation(ClassifierWrapper):
         :type round_samples: `float`
         """
         super(QueryEfficientBBGradientEstimation, self).__init__(classifier)
+        # self.predict refers to predict of classifier
+        # pylint: disable=E0203
         self._predict = self.predict
         self.predict = self._wrap_predict
         self.set_params(num_basis=num_basis, sigma=sigma, round_samples=round_samples)
@@ -100,7 +102,7 @@ class QueryEfficientBBGradientEstimation(ClassifierWrapper):
                 (new_y_plus - new_y_minus).reshape(self.num_basis, -1) /
                 (2 * self.sigma)).reshape([-1] + list(self.input_shape)), axis=0)
             grads.append(query_efficient_grad)
-        grads = self._apply_processing_gradient(np.array(grads))
+        grads = self._apply_preprocessing_normalization_gradient(np.array(grads))
         return grads
 
     def _wrap_predict(self, x, batch_size=128):

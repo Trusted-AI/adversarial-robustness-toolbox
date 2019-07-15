@@ -24,8 +24,9 @@ import numpy as np
 
 from art.attacks.newtonfool import NewtonFool
 from art.classifiers import KerasClassifier
-from art.utils import load_dataset, master_seed, get_classifier_tf, get_classifier_kr, get_classifier_pt
-from art.utils import get_iris_classifier_tf, get_iris_classifier_kr, get_iris_classifier_pt
+from art.utils import load_dataset, master_seed
+from art.utils_test import get_classifier_tf, get_classifier_kr, get_classifier_pt
+from art.utils_test import get_iris_classifier_tf, get_iris_classifier_kr, get_iris_classifier_pt
 
 logger = logging.getLogger('testLogger')
 
@@ -141,7 +142,6 @@ class TestNewtonFoolVectors(unittest.TestCase):
 
         attack = NewtonFool(classifier, max_iter=5)
         x_test_adv = attack.generate(x_test)
-        x_test_adv = attack.generate(x_test)
         self.assertFalse((x_test == x_test_adv).all())
         self.assertTrue((x_test_adv <= 1).all())
         self.assertTrue((x_test_adv >= 0).all())
@@ -157,7 +157,7 @@ class TestNewtonFoolVectors(unittest.TestCase):
 
         # Recreate a classifier without clip values
         classifier = KerasClassifier(model=classifier._model, use_logits=False, channel_index=1)
-        attack = NewtonFool(classifier, max_iter=5)
+        attack = NewtonFool(classifier, max_iter=5, batch_size=128)
         x_test_adv = attack.generate(x_test)
         self.assertFalse((x_test == x_test_adv).all())
 
@@ -170,7 +170,7 @@ class TestNewtonFoolVectors(unittest.TestCase):
         (_, _), (x_test, y_test) = self.iris
         classifier, _ = get_iris_classifier_tf()
 
-        attack = NewtonFool(classifier, max_iter=5)
+        attack = NewtonFool(classifier, max_iter=5, batch_size=128)
         x_test_adv = attack.generate(x_test)
         self.assertFalse((x_test == x_test_adv).all())
         self.assertTrue((x_test_adv <= 1).all())
@@ -185,7 +185,7 @@ class TestNewtonFoolVectors(unittest.TestCase):
         (_, _), (x_test, y_test) = self.iris
         classifier = get_iris_classifier_pt()
 
-        attack = NewtonFool(classifier, max_iter=5)
+        attack = NewtonFool(classifier, max_iter=5, batch_size=128)
         x_test_adv = attack.generate(x_test)
         self.assertFalse((x_test == x_test_adv).all())
         self.assertTrue((x_test_adv <= 1).all())

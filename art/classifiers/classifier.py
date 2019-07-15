@@ -15,6 +15,9 @@
 # AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT,
 # TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 # SOFTWARE.
+"""
+This module implements the abstract base class `Classifier` for all classifiers.
+"""
 from __future__ import absolute_import, division, print_function, unicode_literals
 
 import abc
@@ -33,6 +36,7 @@ class Classifier(ABC):
     """
     Base class for all classifiers.
     """
+
     def __init__(self, channel_index, clip_values=None, defences=None, preprocessing=(0, 1)):
         """
         Initialize a `Classifier` object.
@@ -73,7 +77,7 @@ class Classifier(ABC):
         self.preprocessing = preprocessing
 
     @abc.abstractmethod
-    def predict(self, x, batch_size=128):
+    def predict(self, x, batch_size=128, **kwargs):
         """
         Perform prediction for a batch of inputs.
 
@@ -128,11 +132,10 @@ class Classifier(ABC):
             x, y = generator.get_batch()
 
             # Apply preprocessing and defences
-            x = self._apply_processing(x)
-            x, y = self._apply_defences(x, y, fit=True)
+            x_preprocessed, y_preprocessed = self._apply_preprocessing(x, y, fit=True)
 
             # Fit for current batch
-            self.fit(x, y, nb_epochs=1, batch_size=len(x), **kwargs)
+            self.fit(x_preprocessed, y_preprocessed, nb_epochs=1, batch_size=len(x), **kwargs)
 
     @property
     def nb_classes(self):
@@ -185,7 +188,7 @@ class Classifier(ABC):
         return self._learning_phase if hasattr(self, '_learning_phase') else None
 
     @abc.abstractmethod
-    def class_gradient(self, x, label=None):
+    def class_gradient(self, x, label=None, **kwargs):
         """
         Compute per-class derivatives w.r.t. `x`.
 
@@ -204,7 +207,7 @@ class Classifier(ABC):
         raise NotImplementedError
 
     @abc.abstractmethod
-    def loss_gradient(self, x, y):
+    def loss_gradient(self, x, y, **kwargs):
         """
         Compute the gradient of the loss function w.r.t. `x`.
 
@@ -274,7 +277,39 @@ class Classifier(ABC):
         """
         raise NotImplementedError
 
-    def _apply_defences(self, x, y, fit=False):
+    def _apply_preprocessing(self, x, y, fit):
+        """
+        Apply all preprocessing steps of the classifier on inputs `(x, y)`.
+
+        :param x: Input data, where first dimension is the batch size.
+        :type x: `np.ndarray`
+        :param y: Labels for input data, where first dimension is the batch size.
+        :type y: `np.ndarray`
+        :param fit: `True` if the defences are applied during training.
+        :return: Value of the data after applying the defences.
+        :rtype: `np.ndarray`
+        """
+        x_preprocessed, y_preprocessed = self._apply_preprocessing_defences(x, y, fit=fit)
+        x_preprocessed = self._apply_preprocessing_normalization(x_preprocessed)
+        return x_preprocessed, y_preprocessed
+
+    def _apply_preprocessing_gradient(self, x, grads):
+        """
+        Apply the backward pass through all preprocessing steps to gradients.
+
+        :param x: Input data for which the gradient is estimated. First dimension is the batch size.
+        :type x: `np.ndarray`
+        :param grads: Gradient value so far.
+        :type grads: `np.ndarray`
+        :param fit: `True` if the gradient is computed during training.
+        :return: Value of the gradient.
+        :rtype: `np.ndarray`
+        """
+        grads = self._apply_preprocessing_normalization_gradient(grads)
+        grads = self._apply_preprocessing_defences_gradient(x, grads)
+        return grads
+
+    def _apply_preprocessing_defences(self, x, y, fit=False):
         """
         Apply the defences specified for the classifier in inputs `(x, y)`.
 
@@ -297,14 +332,14 @@ class Classifier(ABC):
 
         return x, y
 
-    def _apply_defences_gradient(self, x, grad, fit=False):
+    def _apply_preprocessing_defences_gradient(self, x, grads, fit=False):
         """
         Apply the backward pass through the preprocessing defences.
 
         :param x: Input data for which the gradient is estimated. First dimension is the batch size.
         :type x: `np.ndarray`
-        :param grad: Gradient value so far.
-        :type grad: `np.ndarray`
+        :param grads: Gradient value so far.
+        :type grads: `np.ndarray`
         :param fit: `True` if the gradient is computed during training.
         :return: Value of the gradient.
         :rtype: `np.ndarray`
@@ -313,24 +348,22 @@ class Classifier(ABC):
             for defence in self.defences[::-1]:
                 if fit:
                     if defence.apply_fit:
-                        grad = defence.estimate_gradient(x, grad)
+                        grads = defence.estimate_gradient(x, grads)
                 else:
                     if defence.apply_predict:
-                        grad = defence.estimate_gradient(x, grad)
+                        grads = defence.estimate_gradient(x, grads)
 
-        return grad
+        return grads
 
-    def _apply_processing(self, x):
+    def _apply_preprocessing_normalization(self, x):
         """
-        Apply the data preprocessing / normalization steps specified for the classifier on `x`.
+        Apply the data normalization steps specified for the classifier on `x`.
 
         :param x: Input data, where first dimension is the batch size.
         :type x: `np.ndarray`
         :return: Value of the preprocessed data.
         :rtype: `np.ndarray`
         """
-        import numpy as np
-
         sub, div = self.preprocessing
         sub = np.asarray(sub, dtype=x.dtype)
         div = np.asarray(div, dtype=x.dtype)
@@ -340,25 +373,23 @@ class Classifier(ABC):
 
         return res
 
-    def _apply_processing_gradient(self, grad):
+    def _apply_preprocessing_normalization_gradient(self, grads):
         """
-        Apply the backward pass through the data preprocessing / normalization steps.
+        Apply the backward pass through the data normalization steps.
 
-        :param grad: Gradient value so far.
-        :type grad: `np.ndarray`
+        :param grads: Gradient value so far.
+        :type grads: `np.ndarray`
         :return: Value of the gradient.
         :rtype: `np.ndarray`
         """
-        import numpy as np
-
         _, div = self.preprocessing
-        div = np.asarray(div, dtype=grad.dtype)
-        res = grad / div
+        div = np.asarray(div, dtype=grads.dtype)
+        res = grads / div
         return res
 
     def __repr__(self):
         repr_ = "%s(channel_index=%r, clip_values=%r, defences=%r, preprocessing=%r)" \
-               % (self.__module__ + '.' + self.__class__.__name__,
-                  self.channel_index, self.clip_values, self.defences, self.preprocessing)
+                % (self.__module__ + '.' + self.__class__.__name__,
+                   self.channel_index, self.clip_values, self.defences, self.preprocessing)
 
         return repr_

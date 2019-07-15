@@ -195,10 +195,10 @@ class TestActivationDefence(unittest.TestCase):
         ActivationDefence._pickle_classifier(self.classifier, filename)
         loaded = ActivationDefence._unpickle_classifier(filename)
 
-        self.assertTrue(self.classifier._clip_values == loaded._clip_values)
-        self.assertTrue(self.classifier._channel_index == loaded._channel_index)
-        self.assertTrue(self.classifier._use_logits == loaded._use_logits)
-        self.assertTrue(self.classifier._input_layer == loaded._input_layer)
+        self.assertEqual(self.classifier._clip_values, loaded._clip_values)
+        self.assertEqual(self.classifier._channel_index, loaded._channel_index)
+        self.assertEqual(self.classifier._use_logits, loaded._use_logits)
+        self.assertEqual(self.classifier._input_layer, loaded._input_layer)
 
         ActivationDefence._remove_pickle(filename)
 
@@ -227,10 +227,11 @@ class TestActivationDefence(unittest.TestCase):
 
         # Other method (since it's cross validation we can't assert to a concrete number).
         improvement, _ = ActivationDefence.relabel_poison_cross_validation(self.classifier, x_poison,
-                                                          y_fix, n_splits=2,
-                                                          tolerable_backdoor=0.01,
-                                                          max_epochs=5, batch_epochs=10)
+                                                                           y_fix, n_splits=2,
+                                                                           tolerable_backdoor=0.01,
+                                                                           max_epochs=5, batch_epochs=10)
         self.assertGreaterEqual(improvement, 0)
+
 
 if __name__ == '__main__':
     unittest.main()
