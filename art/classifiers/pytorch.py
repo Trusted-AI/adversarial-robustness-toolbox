@@ -15,6 +15,9 @@
 # AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT,
 # TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 # SOFTWARE.
+"""
+This module implements the classifier `PyTorchClassifier` for PyTorch models.
+"""
 from __future__ import absolute_import, division, print_function, unicode_literals
 
 import logging
@@ -83,10 +86,10 @@ class PyTorchClassifier(Classifier):
         self._device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
         self._model.to(self._device)
 
-    def _init_grads(self):
-        return -1
+        # Index of layer at which the class gradients should be calculated
+        self._layer_idx_gradients = -1
 
-    def predict(self, x, logits=False, batch_size=128):
+    def predict(self, x, logits=False, batch_size=128, **kwargs):
         """
         Perform prediction for a batch of inputs.
 
@@ -211,7 +214,7 @@ class PyTorchClassifier(Classifier):
             # Fit a generic data generator through the API
             super(PyTorchClassifier, self).fit_generator(generator, nb_epochs=nb_epochs)
 
-    def class_gradient(self, x, label=None, logits=False):
+    def class_gradient(self, x, label=None, logits=False, **kwargs):
         """
         Compute per-class derivatives w.r.t. `x`.
 
@@ -241,18 +244,16 @@ class PyTorchClassifier(Classifier):
 
         x_preprocessed = torch.from_numpy(x_preprocessed).to(self._device).float()
 
-        # Compute gradient wrt what
-        layer_idx = self._init_grads()
-        if layer_idx < 0:
+        # Compute gradients
+        if self._layer_idx_gradients < 0:
             x_preprocessed.requires_grad = True
 
-        # Compute the gradient and return
         # Run prediction
         model_outputs = self._model(x_preprocessed)
 
         # Set where to get gradient
-        if layer_idx >= 0:
-            input_grad = model_outputs[layer_idx]
+        if self._layer_idx_gradients >= 0:
+            input_grad = model_outputs[self._layer_idx_gradients]
         else:
             input_grad = x_preprocessed
 
@@ -301,7 +302,7 @@ class PyTorchClassifier(Classifier):
 
         return grads
 
-    def loss_gradient(self, x, y):
+    def loss_gradient(self, x, y, **kwargs):
         """
         Compute the gradient of the loss function w.r.t. `x`.
 
@@ -438,6 +439,8 @@ class PyTorchClassifier(Classifier):
         if not os.path.exists(folder):
             os.makedirs(folder)
 
+        # pylint: disable=W0212
+        # disable pylint because access to _modules required
         torch.save(self._model._model.state_dict(), full_path + '.model')
         torch.save(self._optimizer.state_dict(), full_path + '.optimizer')
         logger.info("Model state dict saved in path: %s.", full_path + '.model')
@@ -453,11 +456,13 @@ class PyTorchClassifier(Classifier):
         import time
         import copy
 
+        # pylint: disable=W0212
+        # disable pylint because access to _model required
         state = self.__dict__.copy()
         state['inner_model'] = copy.copy(state['_model']._model)
 
         # Remove the unpicklable entries
-        del state['_ModelWrapper']
+        del state['_model_wrapper']
         del state['_device']
         del state['_model']
 
@@ -513,7 +518,7 @@ class PyTorchClassifier(Classifier):
             import torch.nn as nn
 
             # Define model wrapping class only if not defined before
-            if not hasattr(self, '_ModelWrapper'):
+            if not hasattr(self, '_model_wrapper'):
 
                 class ModelWrapper(nn.Module):
                     """
@@ -530,6 +535,8 @@ class PyTorchClassifier(Classifier):
                         super(ModelWrapper, self).__init__()
                         self._model = model
 
+                    # pylint: disable=W0221
+                    # disable pylint because of API requirements for function
                     def forward(self, x):
                         """
                         This is where we get outputs from the input model.
@@ -539,6 +546,8 @@ class PyTorchClassifier(Classifier):
                         :return: a list of output layers, where the last 2 layers are logit and final outputs.
                         :rtype: `list`
                         """
+                        # pylint: disable=W0212
+                        # disable pylint because access to _model required
                         import torch.nn as nn
 
                         result = []
@@ -578,6 +587,8 @@ class PyTorchClassifier(Classifier):
 
                         result = []
                         if isinstance(self._model, nn.Sequential):
+                            # pylint: disable=W0212
+                            # disable pylint because access to _modules required
                             for name, module_ in self._model._modules.items():
                                 result.append(name + "_" + str(module_))
 
@@ -591,10 +602,10 @@ class PyTorchClassifier(Classifier):
                         return result
 
                 # Set newly created class as private attribute
-                self._ModelWrapper = ModelWrapper
+                self._model_wrapper = ModelWrapper
 
             # Use model wrapping class to wrap the PyTorch model received as argument
-            return self._ModelWrapper(model)
+            return self._model_wrapper(model)
 
         except ImportError:
             raise ImportError('Could not find PyTorch (`torch`) installation.')

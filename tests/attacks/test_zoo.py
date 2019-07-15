@@ -25,8 +25,8 @@ import numpy as np
 import tensorflow as tf
 
 from art.attacks.zoo import ZooAttack
-from art.utils import get_classifier_kr, get_classifier_pt, get_classifier_tf
-from art.utils import load_dataset, random_targets, master_seed, get_iris_classifier_pt
+from art.utils import load_dataset, random_targets, master_seed
+from art.utils_test import get_classifier_kr, get_classifier_pt, get_classifier_tf, get_iris_classifier_pt
 
 logger = logging.getLogger('testLogger')
 
@@ -203,6 +203,20 @@ class TestZooAttack(unittest.TestCase):
         y_pred = np.argmax(ptc.predict(x_test), axis=1)
         logger.debug('ZOO actual: %s', y_pred_adv)
         logger.info('ZOO success rate on MNIST: %.2f', (sum(y_pred != y_pred_adv) / float(len(y_pred))))
+
+    def test_failure_feature_vectors(self):
+        attack_params = {"rotation_max": 22.5, "scale_min": 0.1, "scale_max": 1.0,
+                         "learning_rate": 5.0, "number_of_steps": 5, "patch_shape": (1, 28, 28), "batch_size": 10}
+        classifier = get_iris_classifier_pt()
+        data = np.random.rand(10, 4)
+
+        # Assert that value error is raised for feature vectors
+        with self.assertRaises(ValueError) as context:
+            attack = ZooAttack(classifier=classifier)
+            attack.set_params(**attack_params)
+            attack.generate(data)
+
+        self.assertIn('Feature vectors detected.', str(context.exception))
 
 
 if __name__ == '__main__':

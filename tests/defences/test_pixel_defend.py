@@ -75,7 +75,7 @@ class TestPixelDefend(unittest.TestCase):
         preprocess = PixelDefend(eps=5, pixel_cnn=self.pixelcnn)
         x_defended, _ = preprocess(x_train)
 
-        self.assertTrue((x_defended.shape == x_train.shape))
+        self.assertEqual(x_defended.shape, x_train.shape)
         self.assertTrue((x_defended <= 1.0).all())
         self.assertTrue((x_defended >= 0.0).all())
 
@@ -91,7 +91,7 @@ class TestPixelDefend(unittest.TestCase):
         preprocess = PixelDefend(eps=5, pixel_cnn=pixel_cnn)
         x_defended, _ = preprocess(x)
 
-        self.assertTrue((x_defended.shape == x.shape))
+        self.assertEqual(x_defended.shape, x.shape)
         self.assertTrue((x_defended <= 1.0).all())
         self.assertTrue((x_defended >= 0.0).all())
 

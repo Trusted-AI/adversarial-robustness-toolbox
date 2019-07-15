@@ -15,6 +15,12 @@
 # AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT,
 # TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 # SOFTWARE.
+"""
+This module implements the Jacobian-based Saliency Map attack `SaliencyMapMethod`. This is a white-box attack.
+
+Paper link:
+    https://arxiv.org/pdf/1511.07528.pdf
+"""
 from __future__ import absolute_import, division, print_function, unicode_literals
 
 import logging
@@ -51,7 +57,7 @@ class SaliencyMapMethod(Attack):
         kwargs = {'theta': theta, 'gamma': gamma, 'batch_size': batch_size}
         self.set_params(**kwargs)
 
-    def generate(self, x, y=None):
+    def generate(self, x, y=None, **kwargs):
         """
         Generate adversarial samples and return them in an array.
 
@@ -66,7 +72,7 @@ class SaliencyMapMethod(Attack):
         dims = list(x.shape[1:])
         self._nb_features = np.product(dims)
         x_adv = np.reshape(x.astype(NUMPY_DTYPE), (-1, self._nb_features))
-        preds = np.argmax(self.classifier.predict(x), axis=1)
+        preds = np.argmax(self.classifier.predict(x, batch_size=self.batch_size), axis=1)
 
         # Determine target classes for attack
         if y is None:
@@ -83,7 +89,7 @@ class SaliencyMapMethod(Attack):
 
             # Main algorithm for each batch
             # Initialize the search space; optimize to remove features that can't be changed
-            search_space = np.zeros_like(batch)
+            search_space = np.zeros(batch.shape)
             if hasattr(self.classifier, 'clip_values') and self.classifier.clip_values is not None:
                 clip_min, clip_max = self.classifier.clip_values
                 if self.theta > 0:
@@ -144,8 +150,8 @@ class SaliencyMapMethod(Attack):
 
         x_adv = np.reshape(x_adv, x.shape)
         logger.info('Success rate of JSMA attack: %.2f%%',
-                    (np.sum(np.argmax(self.classifier.predict(x), axis=1) !=
-                            np.argmax(self.classifier.predict(x_adv), axis=1)) / x.shape[0]))
+                    (np.sum(np.argmax(self.classifier.predict(x, batch_size=self.batch_size), axis=1) != np.argmax(
+                        self.classifier.predict(x_adv, batch_size=self.batch_size), axis=1)) / x.shape[0]))
 
         return x_adv
 

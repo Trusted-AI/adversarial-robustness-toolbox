@@ -15,6 +15,13 @@
 # AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT,
 # TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 # SOFTWARE.
+"""
+This module implements the Fast Gradient Method attack. This implementation includes the original Fast Gradient Sign
+Method attack and extends it to other norms, therefore it is called the Fast Gradient Method.
+
+Paper link:
+    https://arxiv.org/abs/1412.6572
+"""
 from __future__ import absolute_import, division, print_function, unicode_literals
 
 import logging
@@ -111,7 +118,7 @@ class FastGradientMethod(Attack):
 
         return adv_x
 
-    def generate(self, x, y=None):
+    def generate(self, x, y=None, **kwargs):
         """Generate adversarial samples and return them in an array.
 
         :param x: An array with the original inputs.
@@ -131,23 +138,25 @@ class FastGradientMethod(Attack):
 
             # Use model predictions as correct outputs
             logger.info('Using model predictions as correct labels for FGM.')
-            y = get_labels_np_array(self.classifier.predict(x))
+            y = get_labels_np_array(self.classifier.predict(x, batch_size=self.batch_size))
         y = y / np.sum(y, axis=1, keepdims=True)
 
         # Return adversarial examples computed with minimal perturbation if option is active
         if self.minimal:
             logger.info('Performing minimal perturbation FGM.')
             adv_x_best = self._minimal_perturbation(x, y)
-            rate_best = 100 * compute_success(self.classifier, x, y, adv_x_best, self.targeted)
+            rate_best = 100 * compute_success(self.classifier, x, y, adv_x_best,
+                                              self.targeted, batch_size=self.batch_size)
         else:
             adv_x_best = None
             rate_best = None
 
-            for i_random_init in range(max(1, self.num_random_init)):
+            for _ in range(max(1, self.num_random_init)):
                 adv_x = self._compute(x, x, y, self.eps, self.eps, self._project, self.num_random_init > 0)
 
                 if self.num_random_init > 1:
-                    rate = 100 * compute_success(self.classifier, x, y, adv_x, self.targeted)
+                    rate = 100 * compute_success(self.classifier, x, y, adv_x,
+                                                 self.targeted, batch_size=self.batch_size)
                     if rate_best is None or rate > rate_best or adv_x_best is None:
                         rate_best = rate
                         adv_x_best = adv_x
@@ -155,7 +164,7 @@ class FastGradientMethod(Attack):
                     adv_x_best = adv_x
 
         logger.info('Success rate of FGM attack: %.2f%%', rate_best if rate_best is not None else
-                    100 * compute_success(self.classifier, x, y, adv_x, self.targeted))
+                    100 * compute_success(self.classifier, x, y, adv_x, self.targeted, batch_size=self.batch_size))
 
         return adv_x_best
 

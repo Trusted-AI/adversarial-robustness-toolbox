@@ -26,9 +26,9 @@ import tensorflow as tf
 
 from art.attacks.virtual_adversarial import VirtualAdversarialMethod
 from art.classifiers import KerasClassifier
-from art.utils import load_dataset, get_labels_np_array, master_seed, random_targets
-from art.utils import get_classifier_tf, get_classifier_kr, get_classifier_pt
-from art.utils import get_iris_classifier_tf, get_iris_classifier_kr, get_iris_classifier_pt
+from art.utils import load_dataset, get_labels_np_array, master_seed
+from art.utils_test import get_classifier_tf, get_classifier_kr, get_classifier_pt
+from art.utils_test import get_iris_classifier_tf, get_iris_classifier_kr, get_iris_classifier_pt
 
 logger = logging.getLogger('testLogger')
 

@@ -15,6 +15,14 @@
 # AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT,
 # TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 # SOFTWARE.
+"""
+This module implements the spatial transformation attack `SpatialTransformation` using translation and rotation of
+inputs. The attack conducts black-box queries to the target model in a grid search over possible translations and
+rotations to find optimal attack parameters.
+
+Paper link:
+    https://arxiv.org/abs/1712.02779
+"""
 from __future__ import absolute_import, division, print_function, unicode_literals
 
 import logging
@@ -65,7 +73,7 @@ class SpatialTransformation(Attack):
         self.attack_trans_y = None
         self.attack_rot = None
 
-    def generate(self, x, y=None):
+    def generate(self, x, y=None, **kwargs):
         """
         Generate adversarial samples and return them in an array.
 
@@ -84,7 +92,7 @@ class SpatialTransformation(Attack):
 
         if self.attack_trans_x is None or self.attack_trans_y is None or self.attack_rot is None:
 
-            y_pred = self.classifier.predict(x, logits=False)
+            y_pred = self.classifier.predict(x, logits=False, batch_size=1)
             y_pred_max = np.argmax(y_pred, axis=1)
 
             nb_instances = len(x)
@@ -123,7 +131,7 @@ class SpatialTransformation(Attack):
                         x_adv_i = self._perturb(x, trans_x_i, trans_y_i, rot_i)
 
                         # Compute the error rate
-                        y_adv_i = np.argmax(self.classifier.predict(x_adv_i, logits=False), axis=1)
+                        y_adv_i = np.argmax(self.classifier.predict(x_adv_i, logits=False, batch_size=1), axis=1)
                         fooling_rate_i = np.sum(y_pred_max != y_adv_i) / nb_instances
 
                         if fooling_rate_i > fooling_rate:

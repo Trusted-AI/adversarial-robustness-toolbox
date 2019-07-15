@@ -174,7 +174,7 @@ class TestUtils(unittest.TestCase):
         x = np.random.rand(batch_size, 10, 10, 1)
         classifier = DummyClassifier()
         predictions = least_likely_class(x, classifier)
-        self.assertTrue(predictions.shape == (batch_size, classifier.nb_classes))
+        self.assertEqual(predictions.shape, (batch_size, classifier.nb_classes))
 
         expected_predictions = np.array([[0, 0, 1, 0]] * batch_size)
         self.assertTrue((predictions == expected_predictions).all())
@@ -193,7 +193,7 @@ class TestUtils(unittest.TestCase):
         x = np.random.rand(batch_size, 10, 10, 1)
         classifier = DummyClassifier()
         predictions = second_most_likely_class(x, classifier)
-        self.assertTrue(predictions.shape == (batch_size, classifier.nb_classes))
+        self.assertEqual(predictions.shape, (batch_size, classifier.nb_classes))
 
         expected_predictions = np.array([[0, 1, 0, 0]] * batch_size)
         self.assertTrue((predictions == expected_predictions).all())
@@ -254,15 +254,15 @@ class TestUtils(unittest.TestCase):
         self.assertEqual(x_train.shape[0], y_train.shape[0])
         self.assertEqual(x_test.shape[0], y_test.shape[0])
         train_labels = np.argmax(y_train, axis=1)
-        self.assertTrue(np.setdiff1d(train_labels, np.array([0, 1, 2])).shape == (0,))
+        self.assertEqual(np.setdiff1d(train_labels, np.array([0, 1, 2])).shape, (0,))
         test_labels = np.argmax(y_test, axis=1)
-        self.assertTrue(np.setdiff1d(test_labels, np.array([0, 1, 2])).shape == (0,))
+        self.assertEqual(np.setdiff1d(test_labels, np.array([0, 1, 2])).shape, (0,))
 
-        (x_train, y_train), (x_test, y_test), min_, max_ = load_iris(test_set=0)
-        self.assertTrue(x_train.shape[0] == 150)
-        self.assertTrue(y_train.shape[0] == 150)
-        self.assertTrue(x_test is None)
-        self.assertTrue(y_test is None)
+        (x_train, y_train), (x_test, y_test), _, _ = load_iris(test_set=0)
+        self.assertEqual(x_train.shape[0], 150)
+        self.assertEqual(y_train.shape[0], 150)
+        self.assertIs(x_test, None)
+        self.assertIs(y_test, None)
 
 
 if __name__ == '__main__':

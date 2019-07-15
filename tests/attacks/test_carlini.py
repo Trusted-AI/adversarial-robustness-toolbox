@@ -26,8 +26,9 @@ import tensorflow as tf
 
 from art.attacks import CarliniL2Method, CarliniLInfMethod
 from art.classifiers import KerasClassifier
-from art.utils import load_dataset, random_targets, master_seed, get_classifier_tf, get_classifier_kr
-from art.utils import get_classifier_pt, get_iris_classifier_tf, get_iris_classifier_kr, get_iris_classifier_pt
+from art.utils import load_dataset, random_targets, master_seed
+from art.utils_test import get_classifier_tf, get_classifier_kr
+from art.utils_test import get_classifier_pt, get_iris_classifier_tf, get_iris_classifier_kr, get_iris_classifier_pt
 
 logger = logging.getLogger('testLogger')
 
@@ -392,8 +393,7 @@ class TestCarliniLInf(TestCarliniL2):
         ptc = get_classifier_pt()
 
         # Get MNIST
-        (x_train, y_train), (x_test, y_test) = self.mnist
-        x_train = np.swapaxes(x_train, 1, 3)
+        (_, _), (x_test, y_test) = self.mnist
         x_test = np.swapaxes(x_test, 1, 3)
 
         # First attack

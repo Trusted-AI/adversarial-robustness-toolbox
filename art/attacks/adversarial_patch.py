@@ -15,6 +15,13 @@
 # AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT,
 # TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 # SOFTWARE.
+"""
+This module implements the adversarial patch attack `AdversarialPatch`. This attack generates an adversarial patch that
+can be printed into the physical world with a common printer. The patch can be used to fool image classifiers.
+
+Paper link:
+    https://arxiv.org/abs/1712.09665
+"""
 from __future__ import absolute_import, division, print_function, unicode_literals
 
 import logging
@@ -78,7 +85,7 @@ class AdversarialPatch(Attack):
         self.set_params(**kwargs)
         self.patch = None
 
-    def generate(self, x, y=None):
+    def generate(self, x, y=None, **kwargs):
         """
         Generate adversarial samples and return them in an array.
 
@@ -241,7 +248,7 @@ class AdversarialPatch(Attack):
             inverted_patch_mask_transformed = (1 - patch_mask_transformed)
 
             patched_image = images[i_image, :, :, :] * inverted_patch_mask_transformed \
-                            + patch_transformed * patch_mask_transformed
+                + patch_transformed * patch_mask_transformed
             patched_image = np.expand_dims(patched_image, axis=0)
             patched_images.append(patched_image)
 

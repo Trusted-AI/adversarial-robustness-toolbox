@@ -24,8 +24,9 @@ import numpy as np
 
 from art.attacks.newtonfool import NewtonFool
 from art.classifiers import KerasClassifier
-from art.utils import load_dataset, master_seed, get_classifier_tf, get_classifier_kr, get_classifier_pt
-from art.utils import get_iris_classifier_tf, get_iris_classifier_kr, get_iris_classifier_pt
+from art.utils import load_dataset, master_seed
+from art.utils_test import get_classifier_tf, get_classifier_kr, get_classifier_pt
+from art.utils_test import get_iris_classifier_tf, get_iris_classifier_kr, get_iris_classifier_pt
 
 logger = logging.getLogger('testLogger')
 
@@ -140,7 +141,6 @@ class TestNewtonFoolVectors(unittest.TestCase):
         classifier, _ = get_iris_classifier_kr()
 
         attack = NewtonFool(classifier, max_iter=5)
-        x_test_adv = attack.generate(x_test)
         x_test_adv = attack.generate(x_test)
         self.assertFalse((x_test == x_test_adv).all())
         self.assertTrue((x_test_adv <= 1).all())
