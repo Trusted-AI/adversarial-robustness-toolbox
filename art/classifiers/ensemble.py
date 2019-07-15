@@ -24,12 +24,12 @@ import logging
 
 import numpy as np
 
-from art.classifiers.classifier import Classifier
+from art.classifiers.classifier import ClassifierNeuralNetwork
 
 logger = logging.getLogger(__name__)
 
 
-class EnsembleClassifier(Classifier):
+class EnsembleClassifier(ClassifierNeuralNetwork):
     """
     Class allowing to aggregate multiple classifiers as an ensemble. The individual classifiers are expected to be
     trained when the ensemble is created and no training procedures are provided through this class.
@@ -69,7 +69,7 @@ class EnsembleClassifier(Classifier):
 
         # Assert all classifiers are the right shape(s)
         for classifier in classifiers:
-            if not isinstance(classifier, Classifier):
+            if not isinstance(classifier, ClassifierNeuralNetwork):
                 raise TypeError('Expected type `Classifier`, found %s instead.' % type(classifier))
 
             if clip_values != classifier.clip_values:

@@ -37,9 +37,167 @@ class Classifier(ABC):
     Base class for all classifiers.
     """
 
-    def __init__(self, channel_index, clip_values=None, defences=None, preprocessing=(0, 1)):
+    def __init__(self, clip_values=None, defences=None, preprocessing=None):
         """
         Initialize a `Classifier` object.
+
+        :param clip_values: Tuple of the form `(min, max)` of floats or `np.ndarray` representing the minimum and
+               maximum values allowed for features. If floats are provided, these will be used as the range of all
+               features. If arrays are provided, each value will be considered the bound for a feature, thus
+               the shape of clip values needs to match the total number of features.
+        :type clip_values: `tuple`
+        :param defences: Defence(s) to be activated with the classifier.
+        :type defences: :class:`.Preprocessor` or `list(Preprocessor)` instances
+        :param preprocessing: Tuple of the form `(substractor, divider)` of floats or `np.ndarray` of values to be
+               used for data preprocessing. The first value will be substracted from the input. The input will then
+               be divided by the second one.
+        :type preprocessing: `tuple`
+        """
+        from art.defences.preprocessor import Preprocessor
+
+        if clip_values is not None:
+            if len(clip_values) != 2:
+                raise ValueError('`clip_values` should be a tuple of 2 floats or arrays containing the allowed'
+                                 'data range.')
+            if np.array(clip_values[0] >= clip_values[1]).any():
+                raise ValueError('Invalid `clip_values`: min >= max.')
+        self._clip_values = clip_values
+
+        if isinstance(defences, Preprocessor):
+            self.defences = [defences]
+        else:
+            self.defences = defences
+
+        if preprocessing is not None and len(preprocessing) != 2:
+            raise ValueError('`preprocessing` should be a tuple of 2 floats with the substract and divide values for'
+                             'the model inputs.')
+        self.preprocessing = preprocessing
+
+    @abc.abstractmethod
+    def predict(self, x):
+        """
+        Perform prediction for a batch of inputs.
+
+        :param x: Test set.
+        :type x: `np.ndarray`
+        :return: Array of predictions of shape `(nb_inputs, self.nb_classes)`.
+        :rtype: `np.ndarray`
+        """
+        raise NotImplementedError
+
+    @abc.abstractmethod
+    def fit(self, x, y, **kwargs):
+        """
+        Fit the classifier on the training set `(x, y)`.
+
+        :param x: Training data.
+        :type x: `np.ndarray`
+        :param y: Labels, one-vs-rest encoding.
+        :type y: `np.ndarray`
+        :param kwargs: Dictionary of framework-specific arguments.
+        :type kwargs: `dict`
+        :return: `None`
+        """
+        raise NotImplementedError
+
+    @property
+    def clip_values(self):
+        """
+        :return: Tuple of the form `(min, max)` representing the minimum and maximum values allowed for features.
+        :rtype: `tuple`
+        """
+        return self._clip_values
+
+    @abc.abstractmethod
+    def save(self, filename, path=None):
+        """
+        Save a model to file in the format specific to the backend framework.
+
+        :param filename: Name of the file where to store the model.
+        :type filename: `str`
+        :param path: Path of the folder where to store the model. If no path is specified, the model will be stored in
+                     the default data location of the library `DATA_PATH`.
+        :type path: `str`
+        :return: None
+        """
+        raise NotImplementedError
+
+    def _apply_preprocessing(self, x, y, fit):
+        """
+        Apply all preprocessing steps of the classifier on inputs `(x, y)`.
+
+        :param x: Input data, where first dimension is the batch size.
+        :type x: `np.ndarray`
+        :param y: Labels for input data, where first dimension is the batch size.
+        :type y: `np.ndarray`
+        :param fit: `True` if the defences are applied during training.
+        :return: Value of the data after applying the defences.
+        :rtype: `np.ndarray`
+        """
+        x_preprocessed, y_preprocessed = self._apply_preprocessing_defences(x, y, fit=fit)
+        x_preprocessed = self._apply_preprocessing_normalization(x_preprocessed)
+        return x_preprocessed, y_preprocessed
+
+    def _apply_preprocessing_defences(self, x, y, fit=False):
+        """
+        Apply the defences specified for the classifier in inputs `(x, y)`.
+
+        :param x: Input data, where first dimension is the batch size.
+        :type x: `np.ndarray`
+        :param y: Labels for input data, where first dimension is the batch size.
+        :type y: `np.ndarray`
+        :param fit: `True` if the defences are applied during training.
+        :return: Value of the data after applying the defences.
+        :rtype: `np.ndarray`
+        """
+        if self.defences is not None:
+            for defence in self.defences:
+                if fit:
+                    if defence.apply_fit:
+                        x, y = defence(x, y)
+                else:
+                    if defence.apply_predict:
+                        x, y = defence(x, y)
+
+        return x, y
+
+    def _apply_preprocessing_normalization(self, x):
+        """
+        Apply the data normalization steps specified for the classifier on `x`.
+
+        :param x: Input data, where first dimension is the batch size.
+        :type x: `np.ndarray`
+        :return: Value of the preprocessed data.
+        :rtype: `np.ndarray`
+        """
+        if self.preprocessing is not None:
+            sub, div = self.preprocessing
+            sub = np.asarray(sub, dtype=x.dtype)
+            div = np.asarray(div, dtype=x.dtype)
+
+            res = x - sub
+            res = res / div
+
+        else:
+            res = x
+
+        return res
+
+    def __repr__(self):
+        repr_ = "%s(clip_values=%r, defences=%r, preprocessing=%r)" \
+                % (self.__module__ + '.' + self.__class__.__name__, self.clip_values, self.defences, self.preprocessing)
+
+        return repr_
+
+
+class ClassifierNeuralNetwork(ABC):
+    """
+    Base class for all neural network classifiers.
+    """
+
+    def __init__(self, channel_index, clip_values=None, defences=None, preprocessing=(0, 1)):
+        """
+        Initialize a `ClassifierNeuralNetwork` object.
 
         :param channel_index: Index of the axis in data containing the color channels or features.
         :type channel_index: `int`
@@ -72,8 +230,9 @@ class Classifier(ABC):
             self.defences = defences
 
         if len(preprocessing) != 2:
-            raise ValueError('`preprocessing` should be a tuple of 2 floats with the substract and divide values for'
-                             'the model inputs.')
+            raise ValueError(
+                '`preprocessing` should be a tuple of 2 floats with the substract and divide values for'
+                'the model inputs.')
         self.preprocessing = preprocessing
 
     @abc.abstractmethod

@@ -20,12 +20,12 @@ from __future__ import absolute_import, division, print_function, unicode_litera
 import logging
 import numpy as np
 
-from art.classifiers import Classifier
+from art.classifiers import ClassifierNeuralNetwork
 
 logger = logging.getLogger(__name__)
 
 
-class XGBoostClassifier(Classifier):
+class XGBoostClassifier(ClassifierNeuralNetwork):
     """
     Wrapper class for importing XGBoost models.
     """
