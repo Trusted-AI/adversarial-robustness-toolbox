@@ -18,7 +18,6 @@
 from __future__ import absolute_import, division, print_function, unicode_literals
 
 import logging
-import numpy as np
 
 from art.classifiers.classifier import Classifier
 
@@ -91,5 +90,5 @@ class CatBoostARTClassifier(Classifier):
 
     def save(self, filename, path=None):
         import pickle
-        with open(filename + '.pickle', 'wb') as f:
-            pickle.dump(self.model, file=f)
+        with open(filename + '.pickle', 'wb') as file_pickle:
+            pickle.dump(self.model, file=file_pickle)

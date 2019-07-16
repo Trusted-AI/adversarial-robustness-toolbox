@@ -98,8 +98,8 @@ class ScikitlearnClassifier(Classifier):
 
     def save(self, filename, path=None):
         import pickle
-        with open(filename + '.pickle', 'wb') as f:
-            pickle.dump(self.model, file=f)
+        with open(filename + '.pickle', 'wb') as file_pickle:
+            pickle.dump(self.model, file=file_pickle)
 
 
 class ScikitlearnDecisionTreeClassifier(ScikitlearnClassifier):
@@ -126,6 +126,7 @@ class ScikitlearnDecisionTreeClassifier(ScikitlearnClassifier):
                be divided by the second one.
         :type preprocessing: `tuple`
         """
+        # pylint: disable=E0001
         from sklearn.tree import DecisionTreeClassifier
 
         if not isinstance(model, DecisionTreeClassifier):
@@ -157,6 +158,7 @@ class ScikitlearnExtraTreeClassifier(ScikitlearnClassifier):
                be divided by the second one.
         :type preprocessing: `tuple`
         """
+        # pylint: disable=E0001
         from sklearn.tree import ExtraTreeClassifier
 
         if not isinstance(model, ExtraTreeClassifier):
@@ -191,6 +193,7 @@ class ScikitlearnAdaBoostClassifier(ScikitlearnClassifier):
                be divided by the second one.
         :type preprocessing: `tuple`
         """
+        # pylint: disable=E0001
         from sklearn.ensemble import AdaBoostClassifier
 
         if not isinstance(model, AdaBoostClassifier):
@@ -225,6 +228,7 @@ class ScikitlearnBaggingClassifier(ScikitlearnClassifier):
                be divided by the second one.
         :type preprocessing: `tuple`
         """
+        # pylint: disable=E0001
         from sklearn.ensemble import BaggingClassifier
 
         if not isinstance(model, BaggingClassifier):
@@ -256,6 +260,7 @@ class ScikitlearnExtraTreesClassifier(ScikitlearnClassifier):
                be divided by the second one.
         :type preprocessing: `tuple`
         """
+        # pylint: disable=E0001
         from sklearn.ensemble import ExtraTreesClassifier
 
         if not isinstance(model, ExtraTreesClassifier):
@@ -287,6 +292,7 @@ class ScikitlearnGradientBoostingClassifier(ScikitlearnClassifier):
                be divided by the second one.
         :type preprocessing: `tuple`
         """
+        # pylint: disable=E0001
         from sklearn.ensemble import GradientBoostingClassifier
 
         if not isinstance(model, GradientBoostingClassifier):
@@ -318,6 +324,7 @@ class ScikitlearnRandomForestClassifier(ScikitlearnClassifier):
                be divided by the second one.
         :type preprocessing: `tuple`
         """
+        # pylint: disable=E0001
         from sklearn.ensemble import RandomForestClassifier
 
         if not isinstance(model, RandomForestClassifier):
@@ -383,9 +390,10 @@ class ScikitlearnLogisticRegression(ScikitlearnClassifier, ClassifierGradients):
         :rtype: `np.ndarray`
         """
         if not hasattr(self.model, 'coef_'):
-            raise ValueError("""Model has not been fitted. Run function `fit(x, y)` of classifier first or provide a 
+            raise ValueError("""Model has not been fitted. Run function `fit(x, y)` of classifier first or provide a
             fitted model.""")
 
+        # pylint: disable=E0001
         from sklearn.utils.class_weight import compute_class_weight
 
         # Apply preprocessing
@@ -446,10 +454,11 @@ class ScikitlearnLogisticRegression(ScikitlearnClassifier, ClassifierGradients):
         :return: Array of gradients of the same shape as `x`.
         :rtype: `np.ndarray`
         """
+        # pylint: disable=E0001
         from sklearn.utils.class_weight import compute_class_weight
 
         if not hasattr(self.model, 'coef_'):
-            raise ValueError("""Model has not been fitted. Run function `fit(x, y)` of classifier first or provide a 
+            raise ValueError("""Model has not been fitted. Run function `fit(x, y)` of classifier first or provide a
             fitted model.""")
 
         # Apply preprocessing
@@ -490,11 +499,6 @@ class ScikitlearnLogisticRegression(ScikitlearnClassifier, ClassifierGradients):
 
         return self.model.predict_proba(X=x_preprocessed)
 
-    def save(self, filename, path=None):
-        import pickle
-        with open(filename + '.pickle', 'wb') as f:
-            pickle.dump(self.model, file=f)
-
 
 class ScikitlearnSVC(ScikitlearnClassifier, ClassifierGradients):
     """
@@ -517,6 +521,7 @@ class ScikitlearnSVC(ScikitlearnClassifier, ClassifierGradients):
                be divided by the second one.
         :type preprocessing: `tuple`
         """
+        # pylint: disable=E0001
         from sklearn.svm import SVC, LinearSVC
 
         if not isinstance(model, SVC) and not isinstance(model, LinearSVC):
@@ -591,6 +596,7 @@ class ScikitlearnSVC(ScikitlearnClassifier, ClassifierGradients):
         :return: Array of gradients of the same shape as `x`.
         :rtype: `np.ndarray`
         """
+        # pylint: disable=E0001
         from sklearn.svm import SVC, LinearSVC
 
         # Apply preprocessing
@@ -676,6 +682,7 @@ class ScikitlearnSVC(ScikitlearnClassifier, ClassifierGradients):
         :return: Array of predictions of shape `(num_inputs, self.num_classes)`.
         :rtype: `np.ndarray`
         """
+        # pylint: disable=E0001
         from sklearn.svm import SVC
 
         # Apply defences
@@ -691,8 +698,3 @@ class ScikitlearnSVC(ScikitlearnClassifier, ClassifierGradients):
             y_pred = one_hot_targets
 
         return y_pred
-
-    def save(self, filename, path=None):
-        import pickle
-        with open(filename + '.pickle', 'wb') as f:
-            pickle.dump(self.model, file=f)
