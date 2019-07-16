@@ -115,7 +115,8 @@ class TestEnsembleClassifier(unittest.TestCase):
         self.assertFalse((grad2[0] == grad).all())
 
     def test_class_gradient(self):
-        grad = self.ensemble.class_gradient(self.mnist[1][0], raw=False)
+        kwargs = {'raw': False}
+        grad = self.ensemble.class_gradient(self.mnist[1][0], None, raw=False)
         self.assertTrue(np.array(grad.shape == (NB_TEST, 10, 28, 28, 1)).all())
 
         grad2 = self.ensemble.class_gradient(self.mnist[1][0], raw=True)

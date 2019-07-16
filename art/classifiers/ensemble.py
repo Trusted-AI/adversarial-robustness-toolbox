@@ -223,8 +223,9 @@ class EnsembleClassifier(ClassifierNeuralNetwork, ClassifierGradients, Classifie
         if logits is None:
             logits = False
 
-        grads = np.array([self._classifier_weights[i] * self._classifiers[i].class_gradient(x, label, logits)
-                          for i in range(self._nb_classifiers)])
+        grads = np.array(
+            [self._classifier_weights[i] * self._classifiers[i].class_gradient(x, label=label, logits=logits) for i in
+             range(self._nb_classifiers)])
         if raw:
             return grads
         return np.sum(grads, axis=0)
