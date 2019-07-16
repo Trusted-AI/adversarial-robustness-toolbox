@@ -24,13 +24,13 @@ import six
 # pylint: disable=E0001
 import numpy as np
 
-from art.classifiers import Classifier
+from art.classifiers import Classifier, ClassifierNeuralNetwork, ClassifierGradients
 from art.detection.subsetscanning.scanner import Scanner
 
 logger = logging.getLogger(__name__)
 
 
-class SubsetScanningDetector(Classifier):
+class SubsetScanningDetector(Classifier, ClassifierNeuralNetwork, ClassifierGradients):
     """ Fast generalized subset scan based detector"""
 
     def __init__(self, classifier, bgd_data, layer):
