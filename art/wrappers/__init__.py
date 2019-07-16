@@ -4,4 +4,5 @@ black-box gradient estimation.
 """
 from art.wrappers.wrapper import ClassifierWrapper
 from art.wrappers.expectation import ExpectationOverTransformations
+from art.wrappers.randomized_smoothing import RandomizedSmoothing
 from art.wrappers.query_efficient_bb import QueryEfficientBBGradientEstimation
