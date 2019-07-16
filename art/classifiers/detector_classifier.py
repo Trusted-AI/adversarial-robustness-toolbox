@@ -58,7 +58,7 @@ class DetectorClassifier(Classifier, ClassifierNeuralNetwork, ClassifierGradient
 
         self.classifier = classifier
         self.detector = detector
-        self._nb_classes = classifier.nb_classes + 1
+        self._num_classes = classifier.num_classes + 1
         self._input_shape = classifier.input_shape
 
     def predict(self, x, logits=False, batch_size=128, **kwargs):
@@ -71,7 +71,7 @@ class DetectorClassifier(Classifier, ClassifierNeuralNetwork, ClassifierGradient
         :type logits: `bool`
         :param batch_size: Size of batches.
         :type batch_size: `int`
-        :return: Array of predictions of shape `(nb_inputs, self.nb_classes)`.
+        :return: Array of predictions of shape `(num_inputs, self.num_classes)`.
         :rtype: `np.ndarray`
         """
         # Apply preprocessing
@@ -91,7 +91,7 @@ class DetectorClassifier(Classifier, ClassifierNeuralNetwork, ClassifierGradient
 
         return result
 
-    def fit(self, x, y, batch_size=128, nb_epochs=10, **kwargs):
+    def fit(self, x, y, batch_size=128, num_epochs=10, **kwargs):
         """
         Fit the classifier on the training set `(x, y)`.
 
@@ -101,8 +101,8 @@ class DetectorClassifier(Classifier, ClassifierNeuralNetwork, ClassifierGradient
         :type y: `np.ndarray`
         :param batch_size: Size of batches.
         :type batch_size: `int`
-        :param nb_epochs: Number of epochs to use for training.
-        :type nb_epochs: `int`
+        :param num_epochs: Number of epochs to use for training.
+        :type num_epochs: `int`
         :param kwargs: Dictionary of framework-specific arguments. This parameter is not currently supported for PyTorch
                and providing it takes no effect.
         :type kwargs: `dict`
@@ -110,14 +110,14 @@ class DetectorClassifier(Classifier, ClassifierNeuralNetwork, ClassifierGradient
         """
         raise NotImplementedError
 
-    def fit_generator(self, generator, nb_epochs=20, **kwargs):
+    def fit_generator(self, generator, num_epochs=20, **kwargs):
         """
         Fit the classifier using the generator that yields batches as specified.
 
         :param generator: Batch generator providing `(x, y)` for each epoch.
         :type generator: :class:`.DataGenerator`
-        :param nb_epochs: Number of epochs to use for training.
-        :type nb_epochs: `int`
+        :param num_epochs: Number of epochs to use for training.
+        :type num_epochs: `int`
         :param kwargs: Dictionary of framework-specific arguments. This parameter is not currently supported for PyTorch
                and providing it takes no effect.
         :type kwargs: `dict`
@@ -139,12 +139,12 @@ class DetectorClassifier(Classifier, ClassifierNeuralNetwork, ClassifierGradient
         :param logits: `True` if the prediction should be done at the logits layer.
         :type logits: `bool`
         :return: Array of gradients of input features w.r.t. each class in the form
-                 `(batch_size, nb_classes, input_shape)` when computing for all classes, otherwise shape becomes
+                 `(batch_size, num_classes, input_shape)` when computing for all classes, otherwise shape becomes
                  `(batch_size, 1, input_shape)` when `label` parameter is specified.
         :rtype: `np.ndarray`
         """
-        if not ((label is None) or (isinstance(label, (int, np.integer)) and label in range(self._nb_classes))
-                or (isinstance(label, np.ndarray) and len(label.shape) == 1 and (label < self._nb_classes).all()
+        if not ((label is None) or (isinstance(label, (int, np.integer)) and label in range(self._num_classes))
+                or (isinstance(label, np.ndarray) and len(label.shape) == 1 and (label < self._num_classes).all()
                     and label.shape[0] == x.shape[0])):
             raise ValueError('Label %s is out of range.' % label)
 
@@ -157,7 +157,7 @@ class DetectorClassifier(Classifier, ClassifierNeuralNetwork, ClassifierGradient
                 combined_grads = self._compute_combined_grads(x, label=None)
 
             elif isinstance(label, (int, np.int)):
-                if label < self._nb_classes - 1:
+                if label < self._num_classes - 1:
                     # Compute and return from the classifier gradients
                     combined_grads = self.classifier.class_gradient(x=x_defences, label=label, logits=True)
 
@@ -186,8 +186,8 @@ class DetectorClassifier(Classifier, ClassifierNeuralNetwork, ClassifierGradient
 
             else:
                 # Compute indexes for classifier labels and detector labels
-                classifier_idx = np.where(label < self._nb_classes - 1)
-                detector_idx = np.where(label == self._nb_classes - 1)
+                classifier_idx = np.where(label < self._num_classes - 1)
+                detector_idx = np.where(label == self._num_classes - 1)
 
                 # Initialize the combined gradients
                 combined_grads = np.zeros(shape=(x_defences.shape[0], 1, x_defences.shape[1], x_defences.shape[2],
@@ -236,9 +236,9 @@ class DetectorClassifier(Classifier, ClassifierNeuralNetwork, ClassifierGradient
             # Now compute the softmax gradients for each of the three cases
             grads = []
             if label is None:
-                for i in range(self._nb_classes):
+                for i in range(self._num_classes):
                     si_grads = 0
-                    for j in range(self._nb_classes):
+                    for j in range(self._num_classes):
                         c_var = sum_exp_logits - np.exp(combined_logits[:, j])
 
                         if j == i:
@@ -255,7 +255,7 @@ class DetectorClassifier(Classifier, ClassifierNeuralNetwork, ClassifierGradient
 
             elif isinstance(label, (int, np.int)):
                 si_grads = 0
-                for j in range(self._nb_classes):
+                for j in range(self._num_classes):
                     c_var = sum_exp_logits - np.exp(combined_logits[:, j])
                     if j == label:
                         si_lj = c_var * np.power(c_var + np.exp(combined_logits[:, label]), -2) * \
@@ -272,7 +272,7 @@ class DetectorClassifier(Classifier, ClassifierNeuralNetwork, ClassifierGradient
                 unique_label = list(np.unique(label))
                 for i in unique_label:
                     si_grads = 0
-                    for j in range(self._nb_classes):
+                    for j in range(self._num_classes):
                         c_var = sum_exp_logits - np.exp(combined_logits[:, j])
                         if j == i:
                             si_lj = c_var * np.power(c_var + np.exp(combined_logits[:, i]), -2) * np.exp(
@@ -320,7 +320,7 @@ class DetectorClassifier(Classifier, ClassifierNeuralNetwork, ClassifierGradient
     def get_activations(self, x, layer, batch_size=128):
         """
         Return the output of the specified layer for input `x`. `layer` is specified by layer index (between 0 and
-        `nb_layers - 1`) or by name. The number of layers can be determined by counting the results returned by
+        `num_layers - 1`) or by name. The number of layers can be determined by counting the results returned by
         calling `layer_names`.
 
         :param x: Input for computing the activations.

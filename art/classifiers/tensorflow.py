@@ -76,7 +76,7 @@ class TFClassifier(Classifier, ClassifierNeuralNetwork, ClassifierGradients):
 
         super(TFClassifier, self).__init__(clip_values=clip_values, channel_index=channel_index, defences=defences,
                                            preprocessing=preprocessing)
-        self._nb_classes = int(logits.get_shape()[-1])
+        self._num_classes = int(logits.get_shape()[-1])
         self._input_shape = tuple(input_ph.get_shape().as_list()[1:])
         self._input_ph = input_ph
         self._logits = logits
@@ -111,14 +111,14 @@ class TFClassifier(Classifier, ClassifierNeuralNetwork, ClassifierGradients):
         :type logits: `bool`
         :param batch_size: Size of batches.
         :type batch_size: `int`
-        :return: Array of predictions of shape `(nb_inputs, self.nb_classes)`.
+        :return: Array of predictions of shape `(num_inputs, self.num_classes)`.
         :rtype: `np.ndarray`
         """
         # Apply preprocessing
         x_preprocessed, _ = self._apply_preprocessing(x, y=None, fit=False)
 
         # Run prediction with batch processing
-        results = np.zeros((x_preprocessed.shape[0], self.nb_classes), dtype=np.float32)
+        results = np.zeros((x_preprocessed.shape[0], self.num_classes), dtype=np.float32)
         num_batch = int(np.ceil(len(x_preprocessed) / float(batch_size)))
         for m in range(num_batch):
             # Batch indexes
@@ -136,7 +136,7 @@ class TFClassifier(Classifier, ClassifierNeuralNetwork, ClassifierGradients):
 
         return results
 
-    def fit(self, x, y, batch_size=128, nb_epochs=10, **kwargs):
+    def fit(self, x, y, batch_size=128, num_epochs=10, **kwargs):
         """
         Fit the classifier on the training set `(x, y)`.
 
@@ -146,8 +146,8 @@ class TFClassifier(Classifier, ClassifierNeuralNetwork, ClassifierGradients):
         :type y: `np.ndarray`
         :param batch_size: Size of batches.
         :type batch_size: `int`
-        :param nb_epochs: Number of epochs to use for training.
-        :type nb_epochs: `int`
+        :param num_epochs: Number of epochs to use for training.
+        :type num_epochs: `int`
         :param kwargs: Dictionary of framework-specific arguments. This parameter is not currently supported for
                TensorFlow and providing it takes no effect.
         :type kwargs: `dict`
@@ -164,7 +164,7 @@ class TFClassifier(Classifier, ClassifierNeuralNetwork, ClassifierGradients):
         ind = np.arange(len(x_preprocessed))
 
         # Start training
-        for _ in range(nb_epochs):
+        for _ in range(num_epochs):
             # Shuffle the examples
             random.shuffle(ind)
 
@@ -180,15 +180,15 @@ class TFClassifier(Classifier, ClassifierNeuralNetwork, ClassifierGradients):
                 # Run train step
                 self._sess.run(self._train, feed_dict=feed_dict)
 
-    def fit_generator(self, generator, nb_epochs=20, **kwargs):
+    def fit_generator(self, generator, num_epochs=20, **kwargs):
         """
         Fit the classifier using the generator that yields batches as specified.
 
         :param generator: Batch generator providing `(x, y)` for each epoch. If the generator can be used for native
                           training in TensorFlow, it will.
         :type generator: :class:`.DataGenerator`
-        :param nb_epochs: Number of epochs to use for training.
-        :type nb_epochs: `int`
+        :param num_epochs: Number of epochs to use for training.
+        :type num_epochs: `int`
         :param kwargs: Dictionary of framework-specific arguments. This parameter is not currently supported for
                TensorFlow and providing it takes no effect.
         :type kwargs: `dict`
@@ -199,7 +199,7 @@ class TFClassifier(Classifier, ClassifierNeuralNetwork, ClassifierGradients):
         # Train directly in Tensorflow
         if isinstance(generator, TFDataGenerator) and not (hasattr(
                 self, 'label_smooth') or hasattr(self, 'feature_squeeze')):
-            for _ in range(nb_epochs):
+            for _ in range(num_epochs):
                 for _ in range(int(generator.size / generator.batch_size)):
                     i_batch, o_batch = generator.get_batch()
 
@@ -209,7 +209,7 @@ class TFClassifier(Classifier, ClassifierNeuralNetwork, ClassifierGradients):
 
                     # Run train step
                     self._sess.run(self._train, feed_dict=feed_dict)
-            super(TFClassifier, self).fit_generator(generator, nb_epochs=nb_epochs, **kwargs)
+            super(TFClassifier, self).fit_generator(generator, num_epochs=num_epochs, **kwargs)
 
     def class_gradient(self, x, label=None, logits=False, **kwargs):
         """
@@ -225,13 +225,13 @@ class TFClassifier(Classifier, ClassifierNeuralNetwork, ClassifierGradients):
         :param logits: `True` if the prediction should be done at the logits layer.
         :type logits: `bool`
         :return: Array of gradients of input features w.r.t. each class in the form
-                 `(batch_size, nb_classes, input_shape)` when computing for all classes, otherwise shape becomes
+                 `(batch_size, num_classes, input_shape)` when computing for all classes, otherwise shape becomes
                  `(batch_size, 1, input_shape)` when `label` parameter is specified.
         :rtype: `np.ndarray`
         """
         # Check value of label for computing gradients
-        if not (label is None or (isinstance(label, (int, np.integer)) and label in range(self.nb_classes))
-                or (isinstance(label, np.ndarray) and len(label.shape) == 1 and (label < self._nb_classes).all()
+        if not (label is None or (isinstance(label, (int, np.integer)) and label in range(self.num_classes))
+                or (isinstance(label, np.ndarray) and len(label.shape) == 1 and (label < self._num_classes).all()
                     and label.shape[0] == x.shape[0])):
             raise ValueError('Label %s is out of range.' % label)
 
@@ -312,10 +312,10 @@ class TFClassifier(Classifier, ClassifierNeuralNetwork, ClassifierGradients):
 
         if logits:
             if not hasattr(self, '_logit_class_grads'):
-                self._logit_class_grads = [None for _ in range(self.nb_classes)]
+                self._logit_class_grads = [None for _ in range(self.num_classes)]
         else:
             if not hasattr(self, '_class_grads'):
-                self._class_grads = [None for _ in range(self.nb_classes)]
+                self._class_grads = [None for _ in range(self.num_classes)]
 
         # Construct the class gradients graph
         if label is None:
@@ -323,12 +323,12 @@ class TFClassifier(Classifier, ClassifierNeuralNetwork, ClassifierGradients):
                 if None in self._logit_class_grads:
                     self._logit_class_grads = [tf.gradients(self._logits[:, i], self._input_ph)[0]
                                                if self._logit_class_grads[i] is None else self._logit_class_grads[i]
-                                               for i in range(self._nb_classes)]
+                                               for i in range(self._num_classes)]
             else:
                 if None in self._class_grads:
                     self._class_grads = [tf.gradients(self._probs[:, i], self._input_ph)[0]
                                          if self._class_grads[i] is None else self._class_grads[i]
-                                         for i in range(self._nb_classes)]
+                                         for i in range(self._num_classes)]
 
         elif isinstance(label, int):
             if logits:
@@ -409,7 +409,7 @@ class TFClassifier(Classifier, ClassifierNeuralNetwork, ClassifierGradients):
     def get_activations(self, x, layer, batch_size=128):
         """
         Return the output of the specified layer for input `x`. `layer` is specified by layer index (between 0 and
-        `nb_layers - 1`) or by name. The number of layers can be determined by counting the results returned by
+        `num_layers - 1`) or by name. The number of layers can be determined by counting the results returned by
         calling `layer_names`.
 
         :param x: Input for computing the activations.

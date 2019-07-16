@@ -36,7 +36,7 @@ class MXClassifier(Classifier, ClassifierNeuralNetwork, ClassifierGradients):
     Wrapper class for importing MXNet Gluon model.
     """
 
-    def __init__(self, model, input_shape, nb_classes, optimizer=None, ctx=None, channel_index=1, clip_values=None,
+    def __init__(self, model, input_shape, num_classes, optimizer=None, ctx=None, channel_index=1, clip_values=None,
                  defences=None, preprocessing=(0, 1)):
         """
         Initialize an `MXClassifier` object. Assumes the `model` passed as parameter is a Gluon model and that the
@@ -46,8 +46,8 @@ class MXClassifier(Classifier, ClassifierNeuralNetwork, ClassifierGradients):
         :type model: `mxnet.gluon.Block`
         :param input_shape: The shape of one input instance.
         :type input_shape: `tuple`
-        :param nb_classes: The number of classes of the model.
-        :type nb_classes: `int`
+        :param num_classes: The number of classes of the model.
+        :type num_classes: `int`
         :param optimizer: The optimizer used to train the classifier. This parameter is not required if no training is
                used.
         :type optimizer: `mxnet.gluon.Trainer`
@@ -73,7 +73,7 @@ class MXClassifier(Classifier, ClassifierNeuralNetwork, ClassifierGradients):
                                            preprocessing=preprocessing)
 
         self._model = model
-        self._nb_classes = nb_classes
+        self._num_classes = num_classes
         self._input_shape = input_shape
         self._device = ctx
         self._optimizer = optimizer
@@ -86,7 +86,7 @@ class MXClassifier(Classifier, ClassifierNeuralNetwork, ClassifierGradients):
         # Get the internal layer
         self._layer_names = self._get_layers()
 
-    def fit(self, x, y, batch_size=128, nb_epochs=20, **kwargs):
+    def fit(self, x, y, batch_size=128, num_epochs=20, **kwargs):
         """
         Fit the classifier on the training set `(inputs, outputs)`.
 
@@ -96,8 +96,8 @@ class MXClassifier(Classifier, ClassifierNeuralNetwork, ClassifierGradients):
         :type y: `np.ndarray`
         :param batch_size: Size of batches.
         :type batch_size: `int`
-        :param nb_epochs: Number of epochs to use for training.
-        :type nb_epochs: `int`
+        :param num_epochs: Number of epochs to use for training.
+        :type num_epochs: `int`
         :param kwargs: Dictionary of framework-specific arguments. This parameter is not currently supported for MXNet
                and providing it takes no effect.
         :type kwargs: `dict`
@@ -115,15 +115,15 @@ class MXClassifier(Classifier, ClassifierNeuralNetwork, ClassifierGradients):
 
         y_preprocessed = np.argmax(y_preprocessed, axis=1)
 
-        nb_batch = int(np.ceil(len(x_preprocessed) / batch_size))
+        num_batch = int(np.ceil(len(x_preprocessed) / batch_size))
         ind = np.arange(len(x_preprocessed))
 
-        for _ in range(nb_epochs):
+        for _ in range(num_epochs):
             # Shuffle the examples
             np.random.shuffle(ind)
 
             # Train for one epoch
-            for m in range(nb_batch):
+            for m in range(num_batch):
                 x_batch = mx.nd.array(x_preprocessed[ind[m * batch_size:(m + 1) * batch_size]].astype(NUMPY_DTYPE)) \
                     .as_in_context(self._ctx)
                 y_batch = mx.nd.array(y_preprocessed[ind[m * batch_size:(m + 1) * batch_size]]).as_in_context(self._ctx)
@@ -136,14 +136,14 @@ class MXClassifier(Classifier, ClassifierNeuralNetwork, ClassifierGradients):
                 # Update parameters
                 self._optimizer.step(batch_size)
 
-    def fit_generator(self, generator, nb_epochs=20, **kwargs):
+    def fit_generator(self, generator, num_epochs=20, **kwargs):
         """
         Fit the classifier using the generator that yields batches as specified.
 
         :param generator: Batch generator providing `(x, y)` for each epoch.
         :type generator: :class:`.DataGenerator`
-        :param nb_epochs: Number of epochs to use for training.
-        :type nb_epochs: `int`
+        :param num_epochs: Number of epochs to use for training.
+        :type num_epochs: `int`
         :param kwargs: Dictionary of framework-specific arguments. This parameter is not currently supported for MXNet
                and providing it takes no effect.
         :type kwargs: `dict`
@@ -158,7 +158,7 @@ class MXClassifier(Classifier, ClassifierNeuralNetwork, ClassifierGradients):
         if isinstance(generator, MXDataGenerator) and \
                 not (hasattr(self, 'label_smooth') or hasattr(self, 'feature_squeeze')):
             # Train directly in MXNet
-            for _ in range(nb_epochs):
+            for _ in range(num_epochs):
                 for x_batch, y_batch in generator.data_loader:
                     x_batch = mx.nd.array(x_batch.astype(NUMPY_DTYPE)).as_in_context(self._ctx)
                     y_batch = mx.nd.argmax(y_batch, axis=1)
@@ -173,7 +173,7 @@ class MXClassifier(Classifier, ClassifierNeuralNetwork, ClassifierGradients):
                     self._optimizer.step(x_batch.shape[0])
         else:
             # Fit a generic data generator through the API
-            super(MXClassifier, self).fit_generator(generator, nb_epochs=nb_epochs)
+            super(MXClassifier, self).fit_generator(generator, num_epochs=num_epochs)
 
     def predict(self, x, logits=False, batch_size=128, **kwargs):
         """
@@ -185,7 +185,7 @@ class MXClassifier(Classifier, ClassifierNeuralNetwork, ClassifierGradients):
         :type logits: `bool`
         :param batch_size: Size of batches.
         :type batch_size: `int`
-        :return: Array of predictions of shape `(nb_inputs, self.nb_classes)`.
+        :return: Array of predictions of shape `(num_inputs, self.num_classes)`.
         :rtype: `np.ndarray`
         """
         import mxnet as mx
@@ -196,7 +196,7 @@ class MXClassifier(Classifier, ClassifierNeuralNetwork, ClassifierGradients):
         x_preprocessed, _ = self._apply_preprocessing(x, y=None, fit=False)
 
         # Run prediction with batch processing
-        results = np.zeros((x_preprocessed.shape[0], self.nb_classes), dtype=np.float32)
+        results = np.zeros((x_preprocessed.shape[0], self.num_classes), dtype=np.float32)
         num_batch = int(np.ceil(len(x_preprocessed) / float(batch_size)))
         for m in range(num_batch):
             # Batch indexes
@@ -229,15 +229,15 @@ class MXClassifier(Classifier, ClassifierNeuralNetwork, ClassifierGradients):
         :param logits: `True` if the prediction should be done at the logits layer.
         :type logits: `bool`
         :return: Array of gradients of input features w.r.t. each class in the form
-                 `(batch_size, nb_classes, input_shape)` when computing for all classes, otherwise shape becomes
+                 `(batch_size, num_classes, input_shape)` when computing for all classes, otherwise shape becomes
                  `(batch_size, 1, input_shape)` when `label` parameter is specified.
         :rtype: `np.ndarray`
         """
         import mxnet as mx
 
         # Check value of label for computing gradients
-        if not (label is None or (isinstance(label, (int, np.integer)) and label in range(self.nb_classes))
-                or (isinstance(label, np.ndarray) and len(label.shape) == 1 and (label < self.nb_classes).all()
+        if not (label is None or (isinstance(label, (int, np.integer)) and label in range(self.num_classes))
+                or (isinstance(label, np.ndarray) and len(label.shape) == 1 and (label < self.num_classes).all()
                     and label.shape[0] == x.shape[0])):
             raise ValueError('Label %s is out of range.' % str(label))
 
@@ -255,7 +255,7 @@ class MXClassifier(Classifier, ClassifierNeuralNetwork, ClassifierGradients):
                     preds = self._model(x_preprocessed)
                 else:
                     preds = self._model(x_preprocessed).softmax()
-                class_slices = [preds[:, i] for i in range(self.nb_classes)]
+                class_slices = [preds[:, i] for i in range(self.num_classes)]
 
             grads = []
             for slice_ in class_slices:
@@ -352,7 +352,7 @@ class MXClassifier(Classifier, ClassifierNeuralNetwork, ClassifierGradients):
     def get_activations(self, x, layer, batch_size=128):
         """
         Return the output of the specified layer for input `x`. `layer` is specified by layer index (between 0 and
-        `nb_layers - 1`) or by name. The number of layers can be determined by counting the results returned by
+        `num_layers - 1`) or by name. The number of layers can be determined by counting the results returned by
         calling `layer_names`.
 
         :param x: Input for computing the activations.
@@ -390,8 +390,8 @@ class MXClassifier(Classifier, ClassifierNeuralNetwork, ClassifierGradients):
 
         # Compute activations with batching
         activations = []
-        nb_batches = int(np.ceil(len(x_preprocessed) / float(batch_size)))
-        for batch_index in range(nb_batches):
+        num_batches = int(np.ceil(len(x_preprocessed) / float(batch_size)))
+        for batch_index in range(num_batches):
             # Batch indexes
             begin, end = batch_index * batch_size, min((batch_index + 1) * batch_size, x_preprocessed.shape[0])
 
@@ -444,10 +444,10 @@ class MXClassifier(Classifier, ClassifierNeuralNetwork, ClassifierGradients):
         logger.info("Model parameters saved in path: %s.params.", full_path)
 
     def __repr__(self):
-        repr_ = "%s(model=%r, input_shape=%r, nb_classes=%r, optimizer=%r, ctx=%r, channel_index=%r, " \
+        repr_ = "%s(model=%r, input_shape=%r, num_classes=%r, optimizer=%r, ctx=%r, channel_index=%r, " \
                 "clip_values=%r, defences=%r, preprocessing=%r)" \
                 % (self.__module__ + '.' + self.__class__.__name__,
-                   self._model, self.input_shape, self.nb_classes, self._optimizer, self._ctx,
+                   self._model, self.input_shape, self.num_classes, self._optimizer, self._ctx,
                    self.channel_index, self.clip_values, self.defences, self.preprocessing)
 
         return repr_
