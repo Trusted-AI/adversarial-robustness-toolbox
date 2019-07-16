@@ -199,18 +199,6 @@ class Classifier(ABC):
 
         return repr_
 
-    # def __repr__(self):
-
-        # repr_ = "%s(clip_values=%r, defences=%r, preprocessing=%r)" \
-        #         % (self.__module__ + '.' + self.__class__.__name__, self.clip_values, self.defences, self.preprocessing)
-
-        # name = self.__class__.__name__ + ': '
-        # attrs = ['{}={}'.format(k, v) for (k, v) in self.__dict__.items()]
-        # repr_ = name + '(' + ', '.join(attrs) + ')'
-        #
-        #
-        # return repr_
-
 
 class ClassifierNeuralNetwork(ABC):
     """
@@ -223,17 +211,6 @@ class ClassifierNeuralNetwork(ABC):
 
         :param channel_index: Index of the axis in data containing the color channels or features.
         :type channel_index: `int`
-        :param clip_values: Tuple of the form `(min, max)` of floats or `np.ndarray` representing the minimum and
-               maximum values allowed for features. If floats are provided, these will be used as the range of all
-               features. If arrays are provided, each value will be considered the bound for a feature, thus
-               the shape of clip values needs to match the total number of features.
-        :type clip_values: `tuple`
-        :param defences: Defence(s) to be activated with the classifier.
-        :type defences: :class:`.Preprocessor` or `list(Preprocessor)` instances
-        :param preprocessing: Tuple of the form `(substractor, divider)` of floats or `np.ndarray` of values to be
-               used for data preprocessing. The first value will be substracted from the input. The input will then
-               be divided by the second one.
-        :type preprocessing: `tuple`
         """
         self._channel_index = channel_index
 
@@ -347,7 +324,6 @@ class ClassifierNeuralNetwork(ABC):
         :rtype: `bool` or `None`
         """
         return self._learning_phase if hasattr(self, '_learning_phase') else None
-
 
     @property
     def layer_names(self):
