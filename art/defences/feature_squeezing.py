@@ -34,7 +34,8 @@ logger = logging.getLogger(__name__)
 
 class FeatureSqueezing(Preprocessor):
     """
-    Reduces the sensibility of the features of a sample. Defence method from https://arxiv.org/abs/1704.01155.
+    Reduces the sensibility of the features of a sample.
+    Paper link: https://arxiv.org/abs/1704.01155.
     """
     params = ['clip_values', 'bit_depth']
 

@@ -38,8 +38,8 @@ logger = logging.getLogger(__name__)
 
 class JpegCompression(Preprocessor):
     """
-    Implement the jpeg compression defence approach. Some related papers: https://arxiv.org/pdf/1705.02900.pdf,
-    https://arxiv.org/abs/1608.00853
+    Implement the jpeg compression defence approach.
+    Paper links: https://arxiv.org/pdf/1705.02900.pdf, https://arxiv.org/abs/1608.00853
     """
     params = ['quality', 'channel_index', 'clip_values']
 

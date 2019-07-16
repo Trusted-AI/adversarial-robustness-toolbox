@@ -36,7 +36,7 @@ logger = logging.getLogger(__name__)
 
 class TotalVarMin(Preprocessor):
     """
-    Implement the total variance minimization defence approach. Defence method from [Guo et al., 2018].
+    Implement the total variance minimization defence approach.
     Paper link: https://openreview.net/forum?id=SyJ7ClWCb
     """
     params = ['prob', 'norm', 'lamb', 'solver', 'max_iter', 'clip_values']

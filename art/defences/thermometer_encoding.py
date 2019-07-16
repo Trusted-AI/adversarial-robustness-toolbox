@@ -36,7 +36,8 @@ logger = logging.getLogger(__name__)
 
 class ThermometerEncoding(Preprocessor):
     """
-    Implement the thermometer encoding defence approach. Defence method from https://openreview.net/forum?id=S18Su--CW.
+    Implement the thermometer encoding defence approach.
+    Paper link: https://openreview.net/forum?id=S18Su--CW
     """
     params = ['clip_values', 'num_space', 'channel_index']
 

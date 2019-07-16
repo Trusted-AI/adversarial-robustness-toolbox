@@ -36,7 +36,8 @@ logger = logging.getLogger(__name__)
 
 class SpatialSmoothing(Preprocessor):
     """
-    Implement the local spatial smoothing defence approach. Defence method from https://arxiv.org/abs/1704.01155.
+    Implement the local spatial smoothing defence approach.
+    Paper link: https://arxiv.org/abs/1704.01155
     """
     params = ['window_size', 'channel_index', 'clip_values']
 
