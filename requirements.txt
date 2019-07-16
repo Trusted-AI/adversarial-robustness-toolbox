@@ -3,3 +3,5 @@ numpy
 scipy
 six
 scikit-learn
+scipy
+statsmodels
