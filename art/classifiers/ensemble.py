@@ -65,7 +65,7 @@ class EnsembleClassifier(Classifier, ClassifierNeuralNetwork, ClassifierGradient
 
         if classifiers is None or not classifiers:
             raise ValueError('No classifiers provided for the ensemble.')
-        self._num_classifiers = len(classifiers)
+        self._nb_classifiers = len(classifiers)
 
         # Assert all classifiers are the right shape(s)
         for classifier in classifiers:
@@ -76,20 +76,20 @@ class EnsembleClassifier(Classifier, ClassifierNeuralNetwork, ClassifierGradient
                 raise ValueError('Incompatible `clip_values` between classifiers in the ensemble. Found %s and %s.'
                                  % (str(clip_values), str(classifier.clip_values)))
 
-            if classifier.num_classes != classifiers[0].num_classes:
+            if classifier.nb_classes != classifiers[0].nb_classes:
                 raise ValueError('Incompatible output shapes between classifiers in the ensemble. Found %s and %s.'
-                                 % (str(classifier.num_classes), str(classifiers[0].num_classes)))
+                                 % (str(classifier.nb_classes), str(classifiers[0].nb_classes)))
 
             if classifier.input_shape != classifiers[0].input_shape:
                 raise ValueError('Incompatible input shapes between classifiers in the ensemble. Found %s and %s.'
                                  % (str(classifier.input_shape), str(classifiers[0].input_shape)))
 
         self._input_shape = classifiers[0].input_shape
-        self._num_classes = classifiers[0].num_classes
+        self._nb_classes = classifiers[0].nb_classes
 
         # Set weights for classifiers
         if classifier_weights is None:
-            classifier_weights = np.ones(self._num_classifiers) / self._num_classifiers
+            classifier_weights = np.ones(self._nb_classifiers) / self._nb_classifiers
         self._classifier_weights = classifier_weights
 
         self._classifiers = classifiers
@@ -106,8 +106,8 @@ class EnsembleClassifier(Classifier, ClassifierNeuralNetwork, ClassifierGradient
         :type logits: `bool`
         :param raw: Return the individual classifier raw outputs (not aggregated).
         :type raw: `bool`
-        :return: Array of predictions of shape `(num_inputs, self.num_classes)`, or of shape
-                 `(num_classifiers, num_inputs, self.num_classes)` if `raw=True`.
+        :return: Array of predictions of shape `(nb_inputs, self.nb_classes)`, or of shape
+                 `(nb_classifiers, nb_inputs, self.nb_classes)` if `raw=True`.
         :rtype: `np.ndarray`
         """
         if 'raw' in kwargs:
@@ -116,7 +116,7 @@ class EnsembleClassifier(Classifier, ClassifierNeuralNetwork, ClassifierGradient
             raise ValueError('Missing argument `raw`.')
 
         preds = np.array([self._classifier_weights[i] * self._classifiers[i].predict(x, raw and logits)
-                          for i in range(self._num_classifiers)])
+                          for i in range(self._nb_classifiers)])
         if raw:
             return preds
 
@@ -129,7 +129,7 @@ class EnsembleClassifier(Classifier, ClassifierNeuralNetwork, ClassifierGradient
             var_z = np.log(np.clip(var_z, eps, 1. - eps))
         return var_z
 
-    def fit(self, x, y, batch_size=128, num_epochs=20, **kwargs):
+    def fit(self, x, y, batch_size=128, nb_epochs=20, **kwargs):
         """
         Fit the classifier on the training set `(x, y)`. This function is not supported for ensembles.
 
@@ -139,15 +139,15 @@ class EnsembleClassifier(Classifier, ClassifierNeuralNetwork, ClassifierGradient
         :type y: `np.ndarray`
         :param batch_size: Size of batches.
         :type batch_size: `int`
-        :param num_epochs: Number of epochs to use for training.
-        :type num_epochs: `int`
+        :param nb_epochs: Number of epochs to use for training.
+        :type nb_epochs: `int`
         :param kwargs: Dictionary of framework-specific arguments.
         :type kwargs: `dict`
         :return: `None`
         """
         raise NotImplementedError
 
-    def fit_generator(self, generator, num_epochs=20, **kwargs):
+    def fit_generator(self, generator, nb_epochs=20, **kwargs):
         """
         Fit the classifier using the generator that yields batches as specified. This function is not supported for
         ensembles.
@@ -155,8 +155,8 @@ class EnsembleClassifier(Classifier, ClassifierNeuralNetwork, ClassifierGradient
         :param generator: Batch generator providing `(x, y)` for each epoch. If the generator can be used for native
                           training in Keras, it will.
         :type generator: :class:`.DataGenerator`
-        :param num_epochs: Number of epochs to use for trainings.
-        :type num_epochs: `int`
+        :param nb_epochs: Number of epochs to use for trainings.
+        :type nb_epochs: `int`
         :param kwargs: Dictionary of framework-specific argument.
         :type kwargs: `dict`
         :return: `None`
@@ -181,7 +181,7 @@ class EnsembleClassifier(Classifier, ClassifierNeuralNetwork, ClassifierGradient
     def get_activations(self, x, layer, batch_size=128):
         """
         Return the output of the specified layer for input `x`. `layer` is specified by layer index (between 0 and
-        `num_layers - 1`) or by name. The number of layers can be determined by counting the results returned by
+        `nb_layers - 1`) or by name. The number of layers can be determined by counting the results returned by
         calling `layer_names`. This function is not supported for ensembles.
 
         :param x: Input for computing the activations.
@@ -209,7 +209,7 @@ class EnsembleClassifier(Classifier, ClassifierNeuralNetwork, ClassifierGradient
         :param raw: Return the individual classifier raw outputs (not aggregated).
         :type raw: `bool`
         :return: Array of gradients of input features w.r.t. each class in the form
-                 `(batch_size, num_classes, input_shape)` when computing for all classes, otherwise shape becomes
+                 `(batch_size, nb_classes, input_shape)` when computing for all classes, otherwise shape becomes
                  `(batch_size, 1, input_shape)` when `label` parameter is specified. If `raw=True`, an additional
                  dimension is added at the beginning of the array, indexing the different classifiers.
         :rtype: `np.ndarray`
@@ -220,7 +220,7 @@ class EnsembleClassifier(Classifier, ClassifierNeuralNetwork, ClassifierGradient
             raise ValueError('Missing argument `raw`.')
 
         grads = np.array([self._classifier_weights[i] * self._classifiers[i].class_gradient(x, label, logits)
-                          for i in range(self._num_classifiers)])
+                          for i in range(self._nb_classifiers)])
         if raw:
             return grads
         return np.sum(grads, axis=0)
@@ -235,7 +235,7 @@ class EnsembleClassifier(Classifier, ClassifierNeuralNetwork, ClassifierGradient
         :type y: `np.ndarray`
         :param raw: Return the individual classifier raw outputs (not aggregated).
         :type raw: `bool`
-        :return: Array of gradients of the same shape as `x`. If `raw=True`, shape becomes `[num_classifiers, x.shape]`.
+        :return: Array of gradients of the same shape as `x`. If `raw=True`, shape becomes `[nb_classifiers, x.shape]`.
         :rtype: `np.ndarray`
         """
         if 'raw' in kwargs:
@@ -244,7 +244,7 @@ class EnsembleClassifier(Classifier, ClassifierNeuralNetwork, ClassifierGradient
             raise ValueError('Missing argument `raw`.')
 
         grads = np.array([self._classifier_weights[i] * self._classifiers[i].loss_gradient(x, y)
-                          for i in range(self._num_classifiers)])
+                          for i in range(self._nb_classifiers)])
         if raw:
             return grads
 

@@ -88,7 +88,7 @@ class ScikitlearnClassifier(Classifier):
 
         :param x: Test set.
         :type x: `np.ndarray`
-        :return: Array of predictions of shape `(num_inputs, self.num_classes)`.
+        :return: Array of predictions of shape `(nb_inputs, self.nb_classes)`.
         :rtype: `np.ndarray`
         """
         # Apply defences
@@ -385,7 +385,7 @@ class ScikitlearnLogisticRegression(ScikitlearnClassifier, ClassifierGradients):
                       `x`. If `None`, then gradients for all classes will be computed for each sample.
         :type label: `int` or `list`
         :return: Array of gradients of input features w.r.t. each class in the form
-                 `(batch_size, num_classes, input_shape)` when computing for all classes, otherwise shape becomes
+                 `(batch_size, nb_classes, input_shape)` when computing for all classes, otherwise shape becomes
                  `(batch_size, 1, input_shape)` when `label` parameter is specified.
         :rtype: `np.ndarray`
         """
@@ -491,7 +491,7 @@ class ScikitlearnLogisticRegression(ScikitlearnClassifier, ClassifierGradients):
 
         :param x: Test set.
         :type x: `np.ndarray`
-        :return: Array of predictions of shape `(num_inputs, self.num_classes)`.
+        :return: Array of predictions of shape `(nb_inputs, self.nb_classes)`.
         :rtype: `np.ndarray`
         """
         # Apply defences
@@ -679,7 +679,7 @@ class ScikitlearnSVC(ScikitlearnClassifier, ClassifierGradients):
 
         :param x: Test set.
         :type x: `np.ndarray`
-        :return: Array of predictions of shape `(num_inputs, self.num_classes)`.
+        :return: Array of predictions of shape `(nb_inputs, self.nb_classes)`.
         :rtype: `np.ndarray`
         """
         # pylint: disable=E0001

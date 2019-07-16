@@ -107,10 +107,10 @@ class KerasClassifier(Classifier, ClassifierNeuralNetwork, ClassifierGradients):
             self._output = model.output
             self._output_layer = 0
 
-        _, self._num_classes = k.int_shape(self._output)
+        _, self._nb_classes = k.int_shape(self._output)
         self._input_shape = k.int_shape(self._input)[1:]
         self._custom_activation = custom_activation
-        logger.debug('Inferred %i classes and %s as input shape for Keras classifier.', self.num_classes,
+        logger.debug('Inferred %i classes and %s as input shape for Keras classifier.', self.nb_classes,
                      str(self.input_shape))
 
         # Get predictions and loss function
@@ -205,13 +205,13 @@ class KerasClassifier(Classifier, ClassifierNeuralNetwork, ClassifierGradients):
         :param logits: `True` if the prediction should be done at the logits layer.
         :type logits: `bool`
         :return: Array of gradients of input features w.r.t. each class in the form
-                 `(batch_size, num_classes, input_shape)` when computing for all classes, otherwise shape becomes
+                 `(batch_size, nb_classes, input_shape)` when computing for all classes, otherwise shape becomes
                  `(batch_size, 1, input_shape)` when `label` parameter is specified.
         :rtype: `np.ndarray`
         """
         # Check value of label for computing gradients
-        if not (label is None or (isinstance(label, (int, np.integer)) and label in range(self.num_classes))
-                or (isinstance(label, np.ndarray) and len(label.shape) == 1 and (label < self.num_classes).all()
+        if not (label is None or (isinstance(label, (int, np.integer)) and label in range(self.nb_classes))
+                or (isinstance(label, np.ndarray) and len(label.shape) == 1 and (label < self.nb_classes).all()
                     and label.shape[0] == x.shape[0])):
             raise ValueError('Label %s is out of range.' % str(label))
 
@@ -261,7 +261,7 @@ class KerasClassifier(Classifier, ClassifierNeuralNetwork, ClassifierGradients):
         :type logits: `bool`
         :param batch_size: Size of batches.
         :type batch_size: `int`
-        :return: Array of predictions of shape `(num_inputs, self.num_classes)`.
+        :return: Array of predictions of shape `(nb_inputs, self.nb_classes)`.
         :rtype: `np.ndarray`
         """
         from art import NUMPY_DTYPE
@@ -270,7 +270,7 @@ class KerasClassifier(Classifier, ClassifierNeuralNetwork, ClassifierGradients):
         x_preprocessed, _ = self._apply_preprocessing(x, y=None, fit=False)
 
         # Run predictions with batching
-        preds = np.zeros((x_preprocessed.shape[0], self.num_classes), dtype=NUMPY_DTYPE)
+        preds = np.zeros((x_preprocessed.shape[0], self.nb_classes), dtype=NUMPY_DTYPE)
         for batch_index in range(int(np.ceil(x_preprocessed.shape[0] / float(batch_size)))):
             begin, end = batch_index * batch_size, min((batch_index + 1) * batch_size, x_preprocessed.shape[0])
             preds[begin:end] = self._preds([x_preprocessed[begin:end]])[0]
@@ -281,7 +281,7 @@ class KerasClassifier(Classifier, ClassifierNeuralNetwork, ClassifierGradients):
 
         return preds
 
-    def fit(self, x, y, batch_size=128, num_epochs=20, **kwargs):
+    def fit(self, x, y, batch_size=128, nb_epochs=20, **kwargs):
         """
         Fit the classifier on the training set `(x, y)`.
 
@@ -291,8 +291,8 @@ class KerasClassifier(Classifier, ClassifierNeuralNetwork, ClassifierGradients):
         :type y: `np.ndarray`
         :param batch_size: Size of batches.
         :type batch_size: `int`
-        :param num_epochs: Number of epochs to use for training.
-        :type num_epochs: `int`
+        :param nb_epochs: Number of epochs to use for training.
+        :type nb_epochs: `int`
         :param kwargs: Dictionary of framework-specific arguments. These should be parameters supported by the
                `fit_generator` function in Keras and will be passed to this function as such. Including the number of
                epochs or the number of steps per epoch as part of this argument will result in as error.
@@ -307,17 +307,17 @@ class KerasClassifier(Classifier, ClassifierNeuralNetwork, ClassifierGradients):
             y_preprocessed = np.argmax(y_preprocessed, axis=1)
 
         gen = generator_fit(x_preprocessed, y_preprocessed, batch_size)
-        self._model.fit_generator(gen, steps_per_epoch=x_preprocessed.shape[0] / batch_size, epochs=num_epochs, **kwargs)
+        self._model.fit_generator(gen, steps_per_epoch=x_preprocessed.shape[0] / batch_size, epochs=nb_epochs, **kwargs)
 
-    def fit_generator(self, generator, num_epochs=20, **kwargs):
+    def fit_generator(self, generator, nb_epochs=20, **kwargs):
         """
         Fit the classifier using the generator that yields batches as specified.
 
         :param generator: Batch generator providing `(x, y)` for each epoch. If the generator can be used for native
                           training in Keras, it will.
         :type generator: :class:`.DataGenerator`
-        :param num_epochs: Number of epochs to use for training.
-        :type num_epochs: `int`
+        :param nb_epochs: Number of epochs to use for training.
+        :type nb_epochs: `int`
         :param kwargs: Dictionary of framework-specific arguments. These should be parameters supported by the
                `fit_generator` function in Keras and will be passed to this function as such. Including the number of
                epochs as part of this argument will result in as error.
@@ -329,12 +329,12 @@ class KerasClassifier(Classifier, ClassifierNeuralNetwork, ClassifierGradients):
         # Try to use the generator as a Keras native generator, otherwise use it through the `DataGenerator` interface
         if isinstance(generator, KerasDataGenerator) and not hasattr(self, 'defences'):
             try:
-                self._model.fit_generator(generator.generator, epochs=num_epochs, **kwargs)
+                self._model.fit_generator(generator.generator, epochs=nb_epochs, **kwargs)
             except ValueError:
                 logger.info('Unable to use data generator as Keras generator. Now treating as framework-independent.')
-                super(KerasClassifier, self).fit_generator(generator, num_epochs=num_epochs, **kwargs)
+                super(KerasClassifier, self).fit_generator(generator, nb_epochs=nb_epochs, **kwargs)
         else:
-            super(KerasClassifier, self).fit_generator(generator, num_epochs=num_epochs, **kwargs)
+            super(KerasClassifier, self).fit_generator(generator, nb_epochs=nb_epochs, **kwargs)
 
     @property
     def layer_names(self):
@@ -354,7 +354,7 @@ class KerasClassifier(Classifier, ClassifierNeuralNetwork, ClassifierGradients):
     def get_activations(self, x, layer, batch_size=128):
         """
         Return the output of the specified layer for input `x`. `layer` is specified by layer index (between 0 and
-        `num_layers - 1`) or by name. The number of layers can be determined by counting the results returned by
+        `nb_layers - 1`) or by name. The number of layers can be determined by counting the results returned by
         calling `layer_names`.
 
         :param x: Input for computing the activations.
@@ -409,21 +409,21 @@ class KerasClassifier(Classifier, ClassifierNeuralNetwork, ClassifierGradients):
         import keras.backend as k
 
         if len(self._output.shape) == 2:
-            num_outputs = self._output.shape[1]
+            nb_outputs = self._output.shape[1]
         else:
             raise ValueError('Unexpected output shape for classification in Keras model.')
 
         if label is None:
-            logger.debug('Computing class gradients for all %i classes.', self.num_classes)
+            logger.debug('Computing class gradients for all %i classes.', self.nb_classes)
             if logits:
                 if not hasattr(self, '_class_grads_logits'):
                     class_grads_logits = [k.gradients(self._preds_op[:, i], self._input)[0]
-                                          for i in range(num_outputs)]
+                                          for i in range(nb_outputs)]
                     self._class_grads_logits = k.function([self._input], class_grads_logits)
             else:
                 if not hasattr(self, '_class_grads'):
                     class_grads = [k.gradients(k.softmax(self._preds_op)[:, i], self._input)[0]
-                                   for i in range(num_outputs)]
+                                   for i in range(nb_outputs)]
                     self._class_grads = k.function([self._input], class_grads)
 
         else:
@@ -436,7 +436,7 @@ class KerasClassifier(Classifier, ClassifierNeuralNetwork, ClassifierGradients):
 
             if logits:
                 if not hasattr(self, '_class_grads_logits_idx'):
-                    self._class_grads_logits_idx = [None for _ in range(num_outputs)]
+                    self._class_grads_logits_idx = [None for _ in range(nb_outputs)]
 
                 for current_label in unique_labels:
                     if self._class_grads_logits_idx[current_label] is None:
@@ -444,7 +444,7 @@ class KerasClassifier(Classifier, ClassifierNeuralNetwork, ClassifierGradients):
                         self._class_grads_logits_idx[current_label] = k.function([self._input], class_grads_logits)
             else:
                 if not hasattr(self, '_class_grads_idx'):
-                    self._class_grads_idx = [None for _ in range(num_outputs)]
+                    self._class_grads_idx = [None for _ in range(nb_outputs)]
 
                 for current_label in unique_labels:
                     if self._class_grads_idx[current_label] is None:

@@ -74,20 +74,17 @@ class Classifier(ABC):
                              'the model inputs.')
         self.preprocessing = preprocessing
 
-        if kwargs:
-            super().__init__(**kwargs)
-        else:
-            super().__init__()
+        super().__init__(**kwargs)
 
     @abc.abstractmethod
     def predict(self, x):
         """
         Perform prediction of the classifier for input `x`.
 
-        :param x: Features in array of shape (num_samples, num_features) or (num_samples, num_pixels_1, num_pixels_2,
-                  num_channels) or (num_samples, num_channels, num_pixels_1, num_pixels_2)
+        :param x: Features in array of shape (nb_samples, nb_features) or (nb_samples, nb_pixels_1, nb_pixels_2,
+                  nb_channels) or (nb_samples, nb_channels, nb_pixels_1, nb_pixels_2)
         :type x: `np.ndarray`
-        :return: Array of predictions of shape `(num_inputs, num_classes)`.
+        :return: Array of predictions of shape `(nb_inputs, nb_classes)`.
         :rtype: `np.ndarray`
         """
         raise NotImplementedError
@@ -97,10 +94,10 @@ class Classifier(ABC):
         """
         Fit the classifier using the training data `(x, y)`.
 
-        :param x: Features in array of shape (num_samples, num_features) or (num_samples, num_pixels_1, num_pixels_2,
-                  num_channels) or (num_samples, num_channels, num_pixels_1, num_pixels_2)
+        :param x: Features in array of shape (nb_samples, nb_features) or (nb_samples, nb_pixels_1, nb_pixels_2,
+                  nb_channels) or (nb_samples, nb_channels, nb_pixels_1, nb_pixels_2)
         :type x: `np.ndarray`
-        :param y: Target values (class labels in classification) in array of shape (num_samples, num_classes) in
+        :param y: Target values (class labels in classification) in array of shape (nb_samples, nb_classes) in
                   One Hot Encoding format.
         :type y: `np.ndarray`
         :param kwargs: Dictionary of framework-specific arguments.
@@ -217,58 +214,53 @@ class ClassifierNeuralNetwork(ABC):
         :type channel_index: `int`
         """
         self._channel_index = channel_index
-
-        if kwargs:
-            print(kwargs)
-            super().__init__(**kwargs)
-        else:
-            super().__init__()
+        super().__init__(**kwargs)
 
     @abc.abstractmethod
     def predict(self, x, logits=False, batch_size=128, **kwargs):
         """
         Perform prediction of the classifier for input `x`.
 
-        :param x: Features in array of shape (num_samples, num_features) or (num_samples, num_pixels_1, num_pixels_2,
-                  num_channels) or (num_samples, num_channels, num_pixels_1, num_pixels_2)
+        :param x: Features in array of shape (nb_samples, nb_features) or (nb_samples, nb_pixels_1, nb_pixels_2,
+                  nb_channels) or (nb_samples, nb_channels, nb_pixels_1, nb_pixels_2)
         :param logits: `True` if the prediction should be done at the logits layer.
         :type logits: `bool`
         :param batch_size: The batch size used for evaluating the classifer's `model`.
         :type batch_size: `int`
-        :return: Array of predictions of shape `(num_inputs, num_classes)`.
+        :return: Array of predictions of shape `(nb_inputs, nb_classes)`.
         :rtype: `np.ndarray`
         """
         raise NotImplementedError
 
     @abc.abstractmethod
-    def fit(self, x, y, batch_size=128, num_epochs=20, **kwargs):
+    def fit(self, x, y, batch_size=128, nb_epochs=20, **kwargs):
         """
         Fit the classifier on the training set `(x, y)`.
 
-        :param x: Features in array of shape (num_samples, num_features) or (num_samples, num_pixels_1, num_pixels_2,
-                  num_channels) or (num_samples, num_channels, num_pixels_1, num_pixels_2)
-        :param y: Target values (class labels in classification) in array of shape (num_samples, num_classes) in
+        :param x: Features in array of shape (nb_samples, nb_features) or (nb_samples, nb_pixels_1, nb_pixels_2,
+                  nb_channels) or (nb_samples, nb_channels, nb_pixels_1, nb_pixels_2)
+        :param y: Target values (class labels in classification) in array of shape (nb_samples, nb_classes) in
                   One Hot Encoding format.
         :type y: `np.ndarray`
         :param batch_size: The batch size used for evaluating the classifer's `model`.
         :type batch_size: `int`
-        :param num_epochs: Number of epochs to use for training.
-        :type num_epochs: `int`
+        :param nb_epochs: Number of epochs to use for training.
+        :type nb_epochs: `int`
         :param kwargs: Dictionary of framework-specific arguments.
         :type kwargs: `dict`
         :return: `None`
         """
         raise NotImplementedError
 
-    def fit_generator(self, generator, num_epochs=20, **kwargs):
+    def fit_generator(self, generator, nb_epochs=20, **kwargs):
         """
         Fit the classifier using `generator` yielding training batches as specified. Framework implementations can
         provide framework-specific versions of this function to speed-up computation.
 
         :param generator: Batch generator providing `(x, y)` for each epoch.
         :type generator: :class:`.DataGenerator`
-        :param num_epochs: Number of epochs to use for training.
-        :type num_epochs: `int`
+        :param nb_epochs: Number of epochs to use for training.
+        :type nb_epochs: `int`
         :param kwargs: Dictionary of framework-specific arguments.
         :type kwargs: `dict`
         :return: `None`
@@ -279,24 +271,24 @@ class ClassifierNeuralNetwork(ABC):
             raise ValueError('Expected instance of `DataGenerator` for `fit_generator`, got %s instead.'
                              % str(type(generator)))
 
-        for _ in range(num_epochs):
+        for _ in range(nb_epochs):
             x, y = generator.get_batch()
 
             # Apply preprocessing and defences
             x_preprocessed, y_preprocessed = self._apply_preprocessing(x, y, fit=True)
 
             # Fit for current batch
-            self.fit(x_preprocessed, y_preprocessed, num_epochs=1, batch_size=len(x), **kwargs)
+            self.fit(x_preprocessed, y_preprocessed, nb_epochs=1, batch_size=len(x), **kwargs)
 
     @property
-    def num_classes(self):
+    def nb_classes(self):
         """
         Return the number of output classes.
 
         :return: Number of classes in the data.
         :rtype: `int`
         """
-        return self._num_classes
+        return self._nb_classes
 
     @property
     def input_shape(self):
@@ -349,7 +341,7 @@ class ClassifierNeuralNetwork(ABC):
     def get_activations(self, x, layer, batch_size):
         """
         Return the output of the specified layer for input `x`. `layer` is specified by layer index (between 0 and
-        `num_layers - 1`) or by name. The number of layers can be determined by counting the results returned by
+        `nb_layers - 1`) or by name. The number of layers can be determined by counting the results returned by
         calling `layer_names`.
 
         :param x: Input for computing the activations.
@@ -403,7 +395,7 @@ class ClassifierGradients(ABC):
                       `x`. If `None`, then gradients for all classes will be computed for each sample.
         :type label: `int` or `list`
         :return: Array of gradients of input features w.r.t. each class in the form
-                 `(batch_size, num_classes, input_shape)` when computing for all classes, otherwise shape becomes
+                 `(batch_size, nb_classes, input_shape)` when computing for all classes, otherwise shape becomes
                  `(batch_size, 1, input_shape)` when `label` parameter is specified.
         :rtype: `np.ndarray`
         """
