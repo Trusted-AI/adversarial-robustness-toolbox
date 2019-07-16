@@ -39,9 +39,6 @@ class ScikitlearnClassifier(Classifier):
         :type clip_values: `tuple`
         :param model: scikit-learn classifier model.
         :type model: `sklearn`
-        :param channel_index: Index of the axis in data containing the color channels or features. Not used in this
-               class.
-        :type channel_index: `int`
         :param defences: Defences to be activated with the classifier.
         :type defences: :class:`.Preprocessor` or `list(Preprocessor)` instances
         :param preprocessing: Tuple of the form `(subtractor, divider)` of floats or `np.ndarray` of values to be
@@ -49,7 +46,8 @@ class ScikitlearnClassifier(Classifier):
                be divided by the second one.
         :type preprocessing: `tuple`
         """
-        super(ScikitlearnClassifier, self).__init__(clip_values=clip_values,                                                     defences=defences, preprocessing=preprocessing)
+        super(ScikitlearnClassifier, self).__init__(clip_values=clip_values, defences=defences,
+                                                    preprocessing=preprocessing)
 
         self.model = model
         if hasattr(self.model, 'n_features_'):
@@ -58,26 +56,6 @@ class ScikitlearnClassifier(Classifier):
             self._input_shape = (len(self.model.feature_importances_),)
         else:
             self._input_shape = None
-
-    def class_gradient(self, x, label=None, logits=False):
-        """
-        Compute per-class derivatives w.r.t. `x`.
-
-        :param x: Sample input with shape as expected by the model.
-        :type x: `np.ndarray`
-        :param label: Index of a specific per-class derivative. If an integer is provided, the gradient of that class
-                      output is computed for all samples. If multiple values as provided, the first dimension should
-                      match the batch size of `x`, and each value will be used as target for its corresponding sample in
-                      `x`. If `None`, then gradients for all classes will be computed for each sample.
-        :type label: `int` or `list`
-        :param logits: `True` if the prediction should be done at the logits layer.
-        :type logits: `bool`
-        :return: Array of gradients of input features w.r.t. each class in the form
-                 `(batch_size, nb_classes, input_shape)` when computing for all classes, otherwise shape becomes
-                 `(batch_size, 1, input_shape)` when `label` parameter is specified.
-        :rtype: `np.ndarray`
-        """
-        raise NotImplementedError
 
     def fit(self, x, y, batch_size=128, nb_epochs=20, **kwargs):
         """
@@ -108,37 +86,6 @@ class ScikitlearnClassifier(Classifier):
         elif hasattr(self.model, 'feature_importances_'):
             self._input_shape = (len(self.model.feature_importances_),)
 
-    def get_activations(self, x, layer, batch_size):
-        raise NotImplementedError
-
-    def loss_gradient(self, x, y):
-        """
-        Compute the gradient of the loss function w.r.t. `x`.
-
-        :param x: Sample input with shape as expected by the model.
-        :type x: `np.ndarray`
-        :param y: Correct labels, one-vs-rest encoding.
-        :type y: `np.ndarray`
-        :return: Array of gradients of the same shape as `x`.
-        :rtype: `np.ndarray`
-        """
-        raise NotImplementedError
-
-    @property
-    def layer_names(self):
-        """
-        Return the hidden layers in the model, if applicable.
-
-        :return: The hidden layers in the model, input and output layers excluded.
-        :rtype: `list`
-
-        .. warning:: `layer_names` tries to infer the internal structure of the model.
-                     This feature comes with no guarantees on the correctness of the result.
-                     The intended order of the layers tries to match their order in the model, but this is not
-                     guaranteed either.
-        """
-        raise NotImplementedError
-
     def predict(self, x, logits=False, batch_size=128):
         """
         Perform prediction for a batch of inputs.
@@ -162,16 +109,13 @@ class ScikitlearnClassifier(Classifier):
         with open(filename + '.pickle', 'wb') as f:
             pickle.dump(self.model, file=f)
 
-    def set_learning_phase(self, train):
-        raise NotImplementedError
-
 
 class ScikitlearnDecisionTreeClassifier(ScikitlearnClassifier):
     """
     Wrapper class for scikit-learn Decision Tree Classifier models.
     """
 
-    def __init__(self, model=None, channel_index=None, clip_values=None, defences=None, preprocessing=(0, 1)):
+    def __init__(self, model=None, clip_values=None, defences=None, preprocessing=(0, 1)):
         """
         Create a `Classifier` instance from a scikit-learn Decision Tree Classifier model.
 
@@ -196,62 +140,8 @@ class ScikitlearnDecisionTreeClassifier(ScikitlearnClassifier):
             raise TypeError('Model must be of type sklearn.tree.DecisionTreeClassifier')
 
         super(ScikitlearnDecisionTreeClassifier, self).__init__(model=model, clip_values=clip_values,
-                                                                 defences=defences,
+                                                                defences=defences,
                                                                 preprocessing=preprocessing)
-
-    def class_gradient(self, x, label=None, logits=False):
-        """
-        Compute per-class derivatives w.r.t. `x`.
-
-        :param x: Sample input with shape as expected by the model.
-        :type x: `np.ndarray`
-        :param label: Index of a specific per-class derivative. If an integer is provided, the gradient of that class
-                      output is computed for all samples. If multiple values as provided, the first dimension should
-                      match the batch size of `x`, and each value will be used as target for its corresponding sample in
-                      `x`. If `None`, then gradients for all classes will be computed for each sample.
-        :type label: `int` or `list`
-        :param logits: `True` if the prediction should be done at the logits layer.
-        :type logits: `bool`
-        :return: Array of gradients of input features w.r.t. each class in the form
-                 `(batch_size, nb_classes, input_shape)` when computing for all classes, otherwise shape becomes
-                 `(batch_size, 1, input_shape)` when `label` parameter is specified.
-        :rtype: `np.ndarray`
-        """
-        raise NotImplementedError
-
-    def get_activations(self, x, layer, batch_size):
-        raise NotImplementedError
-
-    def loss_gradient(self, x, y):
-        """
-        Compute the gradient of the loss function w.r.t. `x`.
-
-        :param x: Sample input with shape as expected by the model.
-        :type x: `np.ndarray`
-        :param y: Correct labels, one-vs-rest encoding.
-        :type y: `np.ndarray`
-        :return: Array of gradients of the same shape as `x`.
-        :rtype: `np.ndarray`
-        """
-        raise NotImplementedError
-
-    @property
-    def layer_names(self):
-        """
-        Return the hidden layers in the model, if applicable.
-
-        :return: The hidden layers in the model, input and output layers excluded.
-        :rtype: `list`
-
-        .. warning:: `layer_names` tries to infer the internal structure of the model.
-                     This feature comes with no guarantees on the correctness of the result.
-                     The intended order of the layers tries to match their order in the model, but this is not
-                     guaranteed either.
-        """
-        raise NotImplementedError
-
-    def set_learning_phase(self, train):
-        raise NotImplementedError
 
 
 class ScikitlearnExtraTreeClassifier(ScikitlearnClassifier):
@@ -259,7 +149,7 @@ class ScikitlearnExtraTreeClassifier(ScikitlearnClassifier):
     Wrapper class for scikit-learn Extra TreeClassifier Classifier models.
     """
 
-    def __init__(self, model=None, channel_index=None, clip_values=None, defences=None, preprocessing=(0, 1)):
+    def __init__(self, model=None, clip_values=None, defences=None, preprocessing=(0, 1)):
         """
         Create a `Classifier` instance from a scikit-learn Extra TreeClassifier Classifier model.
 
@@ -268,9 +158,6 @@ class ScikitlearnExtraTreeClassifier(ScikitlearnClassifier):
         :type clip_values: `tuple`
         :param model: scikit-learn Extra TreeClassifier Classifier model.
         :type model: `sklearn.tree.ExtraTreeClassifier`
-        :param channel_index: Index of the axis in data containing the color channels or features. Not used in this
-               class.
-        :type channel_index: `int`
         :param defences: Defences to be activated with the classifier.
         :type defences: :class:`.Preprocessor` or `list(Preprocessor)` instances
         :param preprocessing: Tuple of the form `(subtractor, divider)` of floats or `np.ndarray` of values to be
@@ -287,67 +174,13 @@ class ScikitlearnExtraTreeClassifier(ScikitlearnClassifier):
                                                              defences=defences,
                                                              preprocessing=preprocessing)
 
-    def class_gradient(self, x, label=None, logits=False):
-        """
-        Compute per-class derivatives w.r.t. `x`.
-
-        :param x: Sample input with shape as expected by the model.
-        :type x: `np.ndarray`
-        :param label: Index of a specific per-class derivative. If an integer is provided, the gradient of that class
-                      output is computed for all samples. If multiple values as provided, the first dimension should
-                      match the batch size of `x`, and each value will be used as target for its corresponding sample in
-                      `x`. If `None`, then gradients for all classes will be computed for each sample.
-        :type label: `int` or `list`
-        :param logits: `True` if the prediction should be done at the logits layer.
-        :type logits: `bool`
-        :return: Array of gradients of input features w.r.t. each class in the form
-                 `(batch_size, nb_classes, input_shape)` when computing for all classes, otherwise shape becomes
-                 `(batch_size, 1, input_shape)` when `label` parameter is specified.
-        :rtype: `np.ndarray`
-        """
-        raise NotImplementedError
-
-    def get_activations(self, x, layer, batch_size):
-        raise NotImplementedError
-
-    def loss_gradient(self, x, y):
-        """
-        Compute the gradient of the loss function w.r.t. `x`.
-
-        :param x: Sample input with shape as expected by the model.
-        :type x: `np.ndarray`
-        :param y: Correct labels, one-vs-rest encoding.
-        :type y: `np.ndarray`
-        :return: Array of gradients of the same shape as `x`.
-        :rtype: `np.ndarray`
-        """
-        raise NotImplementedError
-
-    @property
-    def layer_names(self):
-        """
-        Return the hidden layers in the model, if applicable.
-
-        :return: The hidden layers in the model, input and output layers excluded.
-        :rtype: `list`
-
-        .. warning:: `layer_names` tries to infer the internal structure of the model.
-                     This feature comes with no guarantees on the correctness of the result.
-                     The intended order of the layers tries to match their order in the model, but this is not
-                     guaranteed either.
-        """
-        raise NotImplementedError
-
-    def set_learning_phase(self, train):
-        raise NotImplementedError
-
 
 class ScikitlearnAdaBoostClassifier(ScikitlearnClassifier):
     """
     Wrapper class for scikit-learn AdaBoost Classifier models.
     """
 
-    def __init__(self, model=None, channel_index=None, clip_values=None, defences=None, preprocessing=(0, 1)):
+    def __init__(self, model=None, clip_values=None, defences=None, preprocessing=(0, 1)):
         """
         Create a `Classifier` instance from a scikit-learn AdaBoost Classifier model.
 
@@ -375,67 +208,13 @@ class ScikitlearnAdaBoostClassifier(ScikitlearnClassifier):
                                                             defences=defences,
                                                             preprocessing=preprocessing)
 
-    def class_gradient(self, x, label=None, logits=False):
-        """
-        Compute per-class derivatives w.r.t. `x`.
-
-        :param x: Sample input with shape as expected by the model.
-        :type x: `np.ndarray`
-        :param label: Index of a specific per-class derivative. If an integer is provided, the gradient of that class
-                      output is computed for all samples. If multiple values as provided, the first dimension should
-                      match the batch size of `x`, and each value will be used as target for its corresponding sample in
-                      `x`. If `None`, then gradients for all classes will be computed for each sample.
-        :type label: `int` or `list`
-        :param logits: `True` if the prediction should be done at the logits layer.
-        :type logits: `bool`
-        :return: Array of gradients of input features w.r.t. each class in the form
-                 `(batch_size, nb_classes, input_shape)` when computing for all classes, otherwise shape becomes
-                 `(batch_size, 1, input_shape)` when `label` parameter is specified.
-        :rtype: `np.ndarray`
-        """
-        raise NotImplementedError
-
-    def get_activations(self, x, layer, batch_size):
-        raise NotImplementedError
-
-    def loss_gradient(self, x, y):
-        """
-        Compute the gradient of the loss function w.r.t. `x`.
-
-        :param x: Sample input with shape as expected by the model.
-        :type x: `np.ndarray`
-        :param y: Correct labels, one-vs-rest encoding.
-        :type y: `np.ndarray`
-        :return: Array of gradients of the same shape as `x`.
-        :rtype: `np.ndarray`
-        """
-        raise NotImplementedError
-
-    @property
-    def layer_names(self):
-        """
-        Return the hidden layers in the model, if applicable.
-
-        :return: The hidden layers in the model, input and output layers excluded.
-        :rtype: `list`
-
-        .. warning:: `layer_names` tries to infer the internal structure of the model.
-                     This feature comes with no guarantees on the correctness of the result.
-                     The intended order of the layers tries to match their order in the model, but this is not
-                     guaranteed either.
-        """
-        raise NotImplementedError
-
-    def set_learning_phase(self, train):
-        raise NotImplementedError
-
 
 class ScikitlearnBaggingClassifier(ScikitlearnClassifier):
     """
     Wrapper class for scikit-learn Bagging Classifier models.
     """
 
-    def __init__(self, model=None, channel_index=None, clip_values=None, defences=None, preprocessing=(0, 1)):
+    def __init__(self, model=None, clip_values=None, defences=None, preprocessing=(0, 1)):
         """
         Create a `Classifier` instance from a scikit-learn Bagging Classifier model.
 
@@ -460,62 +239,8 @@ class ScikitlearnBaggingClassifier(ScikitlearnClassifier):
             raise TypeError('Model must be of type sklearn.ensemble.BaggingClassifier')
 
         super(ScikitlearnBaggingClassifier, self).__init__(model=model, clip_values=clip_values,
-                                                            defences=defences,
+                                                           defences=defences,
                                                            preprocessing=preprocessing)
-
-    def class_gradient(self, x, label=None, logits=False):
-        """
-        Compute per-class derivatives w.r.t. `x`.
-
-        :param x: Sample input with shape as expected by the model.
-        :type x: `np.ndarray`
-        :param label: Index of a specific per-class derivative. If an integer is provided, the gradient of that class
-                      output is computed for all samples. If multiple values as provided, the first dimension should
-                      match the batch size of `x`, and each value will be used as target for its corresponding sample in
-                      `x`. If `None`, then gradients for all classes will be computed for each sample.
-        :type label: `int` or `list`
-        :param logits: `True` if the prediction should be done at the logits layer.
-        :type logits: `bool`
-        :return: Array of gradients of input features w.r.t. each class in the form
-                 `(batch_size, nb_classes, input_shape)` when computing for all classes, otherwise shape becomes
-                 `(batch_size, 1, input_shape)` when `label` parameter is specified.
-        :rtype: `np.ndarray`
-        """
-        raise NotImplementedError
-
-    def get_activations(self, x, layer, batch_size):
-        raise NotImplementedError
-
-    def loss_gradient(self, x, y):
-        """
-        Compute the gradient of the loss function w.r.t. `x`.
-
-        :param x: Sample input with shape as expected by the model.
-        :type x: `np.ndarray`
-        :param y: Correct labels, one-vs-rest encoding.
-        :type y: `np.ndarray`
-        :return: Array of gradients of the same shape as `x`.
-        :rtype: `np.ndarray`
-        """
-        raise NotImplementedError
-
-    @property
-    def layer_names(self):
-        """
-        Return the hidden layers in the model, if applicable.
-
-        :return: The hidden layers in the model, input and output layers excluded.
-        :rtype: `list`
-
-        .. warning:: `layer_names` tries to infer the internal structure of the model.
-                     This feature comes with no guarantees on the correctness of the result.
-                     The intended order of the layers tries to match their order in the model, but this is not
-                     guaranteed either.
-        """
-        raise NotImplementedError
-
-    def set_learning_phase(self, train):
-        raise NotImplementedError
 
 
 class ScikitlearnExtraTreesClassifier(ScikitlearnClassifier):
@@ -523,7 +248,7 @@ class ScikitlearnExtraTreesClassifier(ScikitlearnClassifier):
     Wrapper class for scikit-learn Extra Trees Classifier models.
     """
 
-    def __init__(self, model=None, channel_index=None, clip_values=None, defences=None, preprocessing=(0, 1)):
+    def __init__(self, model=None, clip_values=None, defences=None, preprocessing=(0, 1)):
         """
         Create a `Classifier` instance from a scikit-learn Extra Trees Classifier model.
 
@@ -532,9 +257,6 @@ class ScikitlearnExtraTreesClassifier(ScikitlearnClassifier):
         :type clip_values: `tuple`
         :param model: scikit-learn Extra Trees Classifier model.
         :type model: `sklearn.ensemble.ExtraTreesClassifier`
-        :param channel_index: Index of the axis in data containing the color channels or features. Not used in this
-               class.
-        :type channel_index: `int`
         :param defences: Defences to be activated with the classifier.
         :type defences: :class:`.Preprocessor` or `list(Preprocessor)` instances
         :param preprocessing: Tuple of the form `(subtractor, divider)` of floats or `np.ndarray` of values to be
@@ -548,62 +270,8 @@ class ScikitlearnExtraTreesClassifier(ScikitlearnClassifier):
             raise TypeError('Model must be of type sklearn.ensemble.ExtraTreesClassifier')
 
         super(ScikitlearnExtraTreesClassifier, self).__init__(model=model, clip_values=clip_values,
-                                                               defences=defences,
+                                                              defences=defences,
                                                               preprocessing=preprocessing)
-
-    def class_gradient(self, x, label=None, logits=False):
-        """
-        Compute per-class derivatives w.r.t. `x`.
-
-        :param x: Sample input with shape as expected by the model.
-        :type x: `np.ndarray`
-        :param label: Index of a specific per-class derivative. If an integer is provided, the gradient of that class
-                      output is computed for all samples. If multiple values as provided, the first dimension should
-                      match the batch size of `x`, and each value will be used as target for its corresponding sample in
-                      `x`. If `None`, then gradients for all classes will be computed for each sample.
-        :type label: `int` or `list`
-        :param logits: `True` if the prediction should be done at the logits layer.
-        :type logits: `bool`
-        :return: Array of gradients of input features w.r.t. each class in the form
-                 `(batch_size, nb_classes, input_shape)` when computing for all classes, otherwise shape becomes
-                 `(batch_size, 1, input_shape)` when `label` parameter is specified.
-        :rtype: `np.ndarray`
-        """
-        raise NotImplementedError
-
-    def get_activations(self, x, layer, batch_size):
-        raise NotImplementedError
-
-    def loss_gradient(self, x, y):
-        """
-        Compute the gradient of the loss function w.r.t. `x`.
-
-        :param x: Sample input with shape as expected by the model.
-        :type x: `np.ndarray`
-        :param y: Correct labels, one-vs-rest encoding.
-        :type y: `np.ndarray`
-        :return: Array of gradients of the same shape as `x`.
-        :rtype: `np.ndarray`
-        """
-        raise NotImplementedError
-
-    @property
-    def layer_names(self):
-        """
-        Return the hidden layers in the model, if applicable.
-
-        :return: The hidden layers in the model, input and output layers excluded.
-        :rtype: `list`
-
-        .. warning:: `layer_names` tries to infer the internal structure of the model.
-                     This feature comes with no guarantees on the correctness of the result.
-                     The intended order of the layers tries to match their order in the model, but this is not
-                     guaranteed either.
-        """
-        raise NotImplementedError
-
-    def set_learning_phase(self, train):
-        raise NotImplementedError
 
 
 class ScikitlearnGradientBoostingClassifier(ScikitlearnClassifier):
@@ -611,7 +279,7 @@ class ScikitlearnGradientBoostingClassifier(ScikitlearnClassifier):
     Wrapper class for scikit-learn Gradient Boosting Classifier models.
     """
 
-    def __init__(self, model=None, channel_index=None, clip_values=None, defences=None, preprocessing=(0, 1)):
+    def __init__(self, model=None, clip_values=None, defences=None, preprocessing=(0, 1)):
         """
         Create a `Classifier` instance from a scikit-learn Gradient Boosting Classifier model.
 
@@ -620,9 +288,6 @@ class ScikitlearnGradientBoostingClassifier(ScikitlearnClassifier):
         :type clip_values: `tuple`
         :param model: scikit-learn Gradient Boosting Classifier model.
         :type model: `sklearn.ensemble.GradientBoostingClassifier`
-        :param channel_index: Index of the axis in data containing the color channels or features. Not used in this
-               class.
-        :type channel_index: `int`
         :param defences: Defences to be activated with the classifier.
         :type defences: :class:`.Preprocessor` or `list(Preprocessor)` instances
         :param preprocessing: Tuple of the form `(subtractor, divider)` of floats or `np.ndarray` of values to be
@@ -636,62 +301,8 @@ class ScikitlearnGradientBoostingClassifier(ScikitlearnClassifier):
             raise TypeError('Model must be of type sklearn.ensemble.GradientBoostingClassifier')
 
         super(ScikitlearnGradientBoostingClassifier, self).__init__(model=model, clip_values=clip_values,
-                                                                     defences=defences,
+                                                                    defences=defences,
                                                                     preprocessing=preprocessing)
-
-    def class_gradient(self, x, label=None, logits=False):
-        """
-        Compute per-class derivatives w.r.t. `x`.
-
-        :param x: Sample input with shape as expected by the model.
-        :type x: `np.ndarray`
-        :param label: Index of a specific per-class derivative. If an integer is provided, the gradient of that class
-                      output is computed for all samples. If multiple values as provided, the first dimension should
-                      match the batch size of `x`, and each value will be used as target for its corresponding sample in
-                      `x`. If `None`, then gradients for all classes will be computed for each sample.
-        :type label: `int` or `list`
-        :param logits: `True` if the prediction should be done at the logits layer.
-        :type logits: `bool`
-        :return: Array of gradients of input features w.r.t. each class in the form
-                 `(batch_size, nb_classes, input_shape)` when computing for all classes, otherwise shape becomes
-                 `(batch_size, 1, input_shape)` when `label` parameter is specified.
-        :rtype: `np.ndarray`
-        """
-        raise NotImplementedError
-
-    def get_activations(self, x, layer, batch_size):
-        raise NotImplementedError
-
-    def loss_gradient(self, x, y):
-        """
-        Compute the gradient of the loss function w.r.t. `x`.
-
-        :param x: Sample input with shape as expected by the model.
-        :type x: `np.ndarray`
-        :param y: Correct labels, one-vs-rest encoding.
-        :type y: `np.ndarray`
-        :return: Array of gradients of the same shape as `x`.
-        :rtype: `np.ndarray`
-        """
-        raise NotImplementedError
-
-    @property
-    def layer_names(self):
-        """
-        Return the hidden layers in the model, if applicable.
-
-        :return: The hidden layers in the model, input and output layers excluded.
-        :rtype: `list`
-
-        .. warning:: `layer_names` tries to infer the internal structure of the model.
-                     This feature comes with no guarantees on the correctness of the result.
-                     The intended order of the layers tries to match their order in the model, but this is not
-                     guaranteed either.
-        """
-        raise NotImplementedError
-
-    def set_learning_phase(self, train):
-        raise NotImplementedError
 
 
 class ScikitlearnRandomForestClassifier(ScikitlearnClassifier):
@@ -699,7 +310,7 @@ class ScikitlearnRandomForestClassifier(ScikitlearnClassifier):
     Wrapper class for scikit-learn Random Forest Classifier models.
     """
 
-    def __init__(self, model=None, channel_index=None, clip_values=None, defences=None, preprocessing=(0, 1)):
+    def __init__(self, model=None, clip_values=None, defences=None, preprocessing=(0, 1)):
         """
         Create a `Classifier` instance from a scikit-learn Random Forest Classifier model.
 
@@ -708,9 +319,6 @@ class ScikitlearnRandomForestClassifier(ScikitlearnClassifier):
         :type clip_values: `tuple`
         :param model: scikit-learn Random Forest Classifier model.
         :type model: `sklearn.ensemble.RandomForestClassifier`
-        :param channel_index: Index of the axis in data containing the color channels or features. Not used in this
-               class.
-        :type channel_index: `int`
         :param defences: Defences to be activated with the classifier.
         :type defences: :class:`.Preprocessor` or `list(Preprocessor)` instances
         :param preprocessing: Tuple of the form `(subtractor, divider)` of floats or `np.ndarray` of values to be
@@ -723,63 +331,8 @@ class ScikitlearnRandomForestClassifier(ScikitlearnClassifier):
         if not isinstance(model, RandomForestClassifier):
             raise TypeError('Model must be of type sklearn.ensemble.RandomForestClassifier')
 
-        super(ScikitlearnRandomForestClassifier, self).__init__(model=model, clip_values=clip_values,
-                                                                 defences=defences,
+        super(ScikitlearnRandomForestClassifier, self).__init__(model=model, clip_values=clip_values, defences=defences,
                                                                 preprocessing=preprocessing)
-
-    def class_gradient(self, x, label=None, logits=False):
-        """
-        Compute per-class derivatives w.r.t. `x`.
-
-        :param x: Sample input with shape as expected by the model.
-        :type x: `np.ndarray`
-        :param label: Index of a specific per-class derivative. If an integer is provided, the gradient of that class
-                      output is computed for all samples. If multiple values as provided, the first dimension should
-                      match the batch size of `x`, and each value will be used as target for its corresponding sample in
-                      `x`. If `None`, then gradients for all classes will be computed for each sample.
-        :type label: `int` or `list`
-        :param logits: `True` if the prediction should be done at the logits layer.
-        :type logits: `bool`
-        :return: Array of gradients of input features w.r.t. each class in the form
-                 `(batch_size, nb_classes, input_shape)` when computing for all classes, otherwise shape becomes
-                 `(batch_size, 1, input_shape)` when `label` parameter is specified.
-        :rtype: `np.ndarray`
-        """
-        raise NotImplementedError
-
-    def get_activations(self, x, layer, batch_size):
-        raise NotImplementedError
-
-    def loss_gradient(self, x, y):
-        """
-        Compute the gradient of the loss function w.r.t. `x`.
-
-        :param x: Sample input with shape as expected by the model.
-        :type x: `np.ndarray`
-        :param y: Correct labels, one-vs-rest encoding.
-        :type y: `np.ndarray`
-        :return: Array of gradients of the same shape as `x`.
-        :rtype: `np.ndarray`
-        """
-        raise NotImplementedError
-
-    @property
-    def layer_names(self):
-        """
-        Return the hidden layers in the model, if applicable.
-
-        :return: The hidden layers in the model, input and output layers excluded.
-        :rtype: `list`
-
-        .. warning:: `layer_names` tries to infer the internal structure of the model.
-                     This feature comes with no guarantees on the correctness of the result.
-                     The intended order of the layers tries to match their order in the model, but this is not
-                     guaranteed either.
-        """
-        raise NotImplementedError
-
-    def set_learning_phase(self, train):
-        raise NotImplementedError
 
 
 class ScikitlearnLogisticRegression(ScikitlearnClassifier, ClassifierGradients):
@@ -787,7 +340,7 @@ class ScikitlearnLogisticRegression(ScikitlearnClassifier, ClassifierGradients):
     Wrapper class for scikit-learn Logistic Regression models.
     """
 
-    def __init__(self, model=None, channel_index=None, clip_values=None, defences=None, preprocessing=(0, 1)):
+    def __init__(self, model=None, clip_values=None, defences=None, preprocessing=(0, 1)):
         """
         Create a `Classifier` instance from a scikit-learn Logistic Regression model.
 
@@ -796,9 +349,6 @@ class ScikitlearnLogisticRegression(ScikitlearnClassifier, ClassifierGradients):
         :type clip_values: `tuple`
         :param model: scikit-learn LogisticRegression model
         :type model: `sklearn.linear_model.LogisticRegression`
-        :param channel_index: Index of the axis in data containing the color channels or features. Not used in this
-               class.
-        :type channel_index: `int`
         :param defences: Defences to be activated with the classifier.
         :type defences: :class:`.Preprocessor` or `list(Preprocessor)` instances
         :param preprocessing: Tuple of the form `(subtractor, divider)` of floats or `np.ndarray` of values to be
@@ -958,47 +508,6 @@ class ScikitlearnLogisticRegression(ScikitlearnClassifier, ClassifierGradients):
 
         return self.model.predict_proba(X=x_preprocessed)
 
-    @property
-    def layer_names(self):
-        """
-        Return the hidden layers in the model, if applicable.
-
-        :return: The hidden layers in the model, input and output layers excluded.
-        :rtype: `list`
-
-        .. warning:: `layer_names` tries to infer the internal structure of the model.
-                     This feature comes with no guarantees on the correctness of the result.
-                     The intended order of the layers tries to match their order in the model, but this is not
-                     guaranteed either.
-        """
-        raise NotImplementedError
-
-    def get_activations(self, x, layer, batch_size):
-        """
-        Return the output of the specified layer for input `x`. `layer` is specified by layer index (between 0 and
-        `nb_layers - 1`) or by name. The number of layers can be determined by counting the results returned by
-        calling `layer_names`.
-
-        :param x: Input for computing the activations.
-        :type x: `np.ndarray`
-        :param layer: Layer for computing the activations
-        :type layer: `int` or `str`
-        :param batch_size: Size of batches.
-        :type batch_size: `int`
-        :return: The output of `layer`, where the first dimension is the batch size corresponding to `x`.
-        :rtype: `np.ndarray`
-        """
-        raise NotImplementedError
-
-    def set_learning_phase(self, train):
-        """
-        Set the learning phase for the backend framework.
-
-        :param train: True to set the learning phase to training, False to set it to prediction.
-        :type train: `bool`
-        """
-        raise NotImplementedError
-
     def save(self, filename, path=None):
         import pickle
         with open(filename + '.pickle', 'wb') as f:
@@ -1010,7 +519,7 @@ class ScikitlearnSVC(ScikitlearnClassifier, ClassifierGradients):
     Wrapper class for scikit-learn C-Support Vector Classification models.
     """
 
-    def __init__(self, model=None, channel_index=None, clip_values=None, defences=None, preprocessing=(0, 1)):
+    def __init__(self, model=None, clip_values=None, defences=None, preprocessing=(0, 1)):
         """
         Create a `Classifier` instance from a scikit-learn C-Support Vector Classification model.
 
@@ -1019,9 +528,6 @@ class ScikitlearnSVC(ScikitlearnClassifier, ClassifierGradients):
         :type clip_values: `tuple`
         :param model: scikit-learn C-Support Vector Classification model.
         :type model: `sklearn.svm.SVC`, `sklearn.svm.LinearSVC`
-        :param channel_index: Index of the axis in data containing the color channels or features. Not used in this
-               class.
-        :type channel_index: `int`
         :param defences: Defences to be activated with the classifier.
         :type defences: :class:`.Preprocessor` or `list(Preprocessor)` instances
         :param preprocessing: Tuple of the form `(subtractor, divider)` of floats or `np.ndarray` of values to be
@@ -1214,47 +720,6 @@ class ScikitlearnSVC(ScikitlearnClassifier, ClassifierGradients):
             y_pred = one_hot_targets
 
         return y_pred
-
-    @property
-    def layer_names(self):
-        """
-        Return the hidden layers in the model, if applicable.
-
-        :return: The hidden layers in the model, input and output layers excluded.
-        :rtype: `list`
-
-        .. warning:: `layer_names` tries to infer the internal structure of the model.
-                     This feature comes with no guarantees on the correctness of the result.
-                     The intended order of the layers tries to match their order in the model, but this is not
-                     guaranteed either.
-        """
-        raise NotImplementedError
-
-    def get_activations(self, x, layer, batch_size):
-        """
-        Return the output of the specified layer for input `x`. `layer` is specified by layer index (between 0 and
-        `nb_layers - 1`) or by name. The number of layers can be determined by counting the results returned by
-        calling `layer_names`.
-
-        :param x: Input for computing the activations.
-        :type x: `np.ndarray`
-        :param layer: Layer for computing the activations
-        :type layer: `int` or `str`
-        :param batch_size: Size of batches.
-        :type batch_size: `int`
-        :return: The output of `layer`, where the first dimension is the batch size corresponding to `x`.
-        :rtype: `np.ndarray`
-        """
-        raise NotImplementedError
-
-    def set_learning_phase(self, train):
-        """
-        Set the learning phase for the backend framework.
-
-        :param train: True to set the learning phase to training, False to set it to prediction.
-        :type train: `bool`
-        """
-        raise NotImplementedError
 
     def save(self, filename, path=None):
         import pickle
