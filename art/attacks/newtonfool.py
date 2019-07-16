@@ -36,7 +36,8 @@ logger = logging.getLogger(__name__)
 
 class NewtonFool(Attack):
     """
-    Implementation of the attack from Uyeong Jang et al. (2017). Paper link: http://doi.acm.org/10.1145/3134600.3134635
+    Implementation of the attack from Uyeong Jang et al. (2017).
+    Paper link: http://doi.acm.org/10.1145/3134600.3134635
     """
     attack_params = Attack.attack_params + ["max_iter", "eta", "batch_size"]
 

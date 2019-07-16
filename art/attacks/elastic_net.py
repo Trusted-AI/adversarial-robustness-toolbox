@@ -37,7 +37,8 @@ logger = logging.getLogger(__name__)
 
 class ElasticNet(Attack):
     """
-    The elastic net attack of Pin-Yu Chen et al. (2018). Paper link: https://arxiv.org/abs/1709.04114.
+    The elastic net attack of Pin-Yu Chen et al. (2018).
+    Paper link: https://arxiv.org/abs/1709.04114.
     """
     attack_params = Attack.attack_params + ['confidence', 'targeted', 'learning_rate', 'max_iter', 'beta',
                                             'binary_search_steps', 'initial_const', 'batch_size', 'decision_rule']

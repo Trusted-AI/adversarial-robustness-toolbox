@@ -38,7 +38,8 @@ logger = logging.getLogger(__name__)
 class UniversalPerturbation(Attack):
     """
     Implementation of the attack from Moosavi-Dezfooli et al. (2016). Computes a fixed perturbation to be applied to all
-    future inputs. To this end, it can use any adversarial attack method. Paper link: https://arxiv.org/abs/1610.08401
+    future inputs. To this end, it can use any adversarial attack method.
+    Paper link: https://arxiv.org/abs/1610.08401
     """
     attacks_dict = {'carlini': 'art.attacks.carlini.CarliniL2Method',
                     'carlini_inf': 'art.attacks.carlini.CarliniLInfMethod',

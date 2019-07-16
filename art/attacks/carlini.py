@@ -43,7 +43,8 @@ class CarliniL2Method(Attack):
     The L_2 optimized attack of Carlini and Wagner (2016). This attack is among the most effective and should be used
     among the primary attacks to evaluate potential defences. A major difference wrt to the original implementation
     (https://github.com/carlini/nn_robust_attacks) is that we use line search in the optimization of the attack
-    objective. Paper link: https://arxiv.org/pdf/1608.04644.pdf
+    objective.
+    Paper link: https://arxiv.org/pdf/1608.04644.pdf
     """
     attack_params = Attack.attack_params + ['confidence', 'targeted', 'learning_rate', 'max_iter',
                                             'binary_search_steps', 'initial_const', 'max_halving', 'max_doubling',

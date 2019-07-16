@@ -39,7 +39,8 @@ logger = logging.getLogger(__name__)
 class BoundaryAttack(Attack):
     """
     Implementation of the boundary attack from Wieland Brendel et al. (2018). This is a powerful black-box attack that
-    only requires final class prediction. Paper link: https://arxiv.org/abs/1712.04248
+    only requires final class prediction.
+    Paper link: https://arxiv.org/abs/1712.04248
     """
     attack_params = Attack.attack_params + ['targeted', 'delta', 'epsilon', 'step_adapt', 'max_iter', 'num_trial',
                                             'sample_size', 'init_size', 'batch_size']

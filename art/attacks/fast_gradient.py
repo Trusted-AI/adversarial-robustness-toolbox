@@ -39,7 +39,8 @@ class FastGradientMethod(Attack):
     """
     This attack was originally implemented by Goodfellow et al. (2015) with the infinity norm (and is known as the "Fast
     Gradient Sign Method"). This implementation extends the attack to other norms, and is therefore called the Fast
-    Gradient Method. Paper link: https://arxiv.org/abs/1412.6572
+    Gradient Method.
+    Paper link: https://arxiv.org/abs/1412.6572
     """
     attack_params = Attack.attack_params + ['norm', 'eps', 'eps_step', 'targeted', 'num_random_init', 'batch_size',
                                             'minimal']
