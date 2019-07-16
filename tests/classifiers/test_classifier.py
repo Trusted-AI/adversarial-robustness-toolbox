@@ -62,7 +62,7 @@ class TestClassifier(unittest.TestCase):
         classifier = ClassifierInstance()
 
         x = np.random.rand(100, 200)
-        new_x = classifier._apply_preprocessing_normalization(x)
+        new_x = classifier._apply_preprocessing_standardisation(x)
         self.assertEqual(np.sum(x - new_x), 0)
 
     def test_repr(self):
@@ -83,7 +83,7 @@ class TestClassifierNeuralNetwork(unittest.TestCase):
         classifier = ClassifierNeuralNetworkInstance((0, 1))
 
         x = np.random.rand(100, 200)
-        new_x = classifier._apply_preprocessing_normalization(x)
+        new_x = classifier._apply_preprocessing_standardisation(x)
         self.assertEqual(np.sum(x - new_x), 0)
 
     def test_repr(self):
