@@ -24,12 +24,12 @@ import logging
 
 import numpy as np
 
-from art.classifiers.classifier import ClassifierNeuralNetwork
+from art.classifiers.classifier import Classifier, ClassifierNeuralNetwork, ClassifierGradients
 
 logger = logging.getLogger(__name__)
 
 
-class EnsembleClassifier(ClassifierNeuralNetwork):
+class EnsembleClassifier(Classifier, ClassifierNeuralNetwork, ClassifierGradients):
     """
     Class allowing to aggregate multiple classifiers as an ensemble. The individual classifiers are expected to be
     trained when the ensemble is created and no training procedures are provided through this class.

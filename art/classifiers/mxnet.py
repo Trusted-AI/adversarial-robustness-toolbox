@@ -26,12 +26,12 @@ import numpy as np
 import six
 
 from art import NUMPY_DTYPE
-from art.classifiers.classifier import ClassifierNeuralNetwork
+from art.classifiers.classifier import Classifier, ClassifierNeuralNetwork, ClassifierGradients
 
 logger = logging.getLogger(__name__)
 
 
-class MXClassifier(ClassifierNeuralNetwork):
+class MXClassifier(Classifier, ClassifierNeuralNetwork, ClassifierGradients):
     """
     Wrapper class for importing MXNet Gluon model.
     """

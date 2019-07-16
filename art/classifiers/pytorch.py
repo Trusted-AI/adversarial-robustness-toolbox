@@ -26,12 +26,12 @@ import random
 import numpy as np
 import six
 
-from art.classifiers.classifier import ClassifierNeuralNetwork
+from art.classifiers.classifier import Classifier, ClassifierNeuralNetwork, ClassifierGradients
 
 logger = logging.getLogger(__name__)
 
 
-class PyTorchClassifier(ClassifierNeuralNetwork):
+class PyTorchClassifier(Classifier, ClassifierNeuralNetwork, ClassifierGradients):
     """
     This class implements a classifier with the PyTorch framework.
     """

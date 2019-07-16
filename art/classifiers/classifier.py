@@ -37,7 +37,7 @@ class Classifier(ABC):
     Base class for all classifiers.
     """
 
-    def __init__(self, clip_values=None, defences=None, preprocessing=None):
+    def __init__(self, clip_values=None, defences=None, preprocessing=None, **kwargs):
         """
         Initialize a `Classifier` object.
 
@@ -55,13 +55,13 @@ class Classifier(ABC):
         """
         from art.defences.preprocessor import Preprocessor
 
+        self._clip_values = clip_values
         if clip_values is not None:
             if len(clip_values) != 2:
                 raise ValueError('`clip_values` should be a tuple of 2 floats or arrays containing the allowed'
                                  'data range.')
             if np.array(clip_values[0] >= clip_values[1]).any():
                 raise ValueError('Invalid `clip_values`: min >= max.')
-        self._clip_values = clip_values
 
         if isinstance(defences, Preprocessor):
             self.defences = [defences]
@@ -72,6 +72,13 @@ class Classifier(ABC):
             raise ValueError('`preprocessing` should be a tuple of 2 floats with the substract and divide values for'
                              'the model inputs.')
         self.preprocessing = preprocessing
+
+        print(kwargs)
+
+        if kwargs:
+            super().__init__(**kwargs)
+        else:
+            super().__init__()
 
     @abc.abstractmethod
     def predict(self, x):
@@ -184,10 +191,25 @@ class Classifier(ABC):
         return res
 
     def __repr__(self):
-        repr_ = "%s(clip_values=%r, defences=%r, preprocessing=%r)" \
-                % (self.__module__ + '.' + self.__class__.__name__, self.clip_values, self.defences, self.preprocessing)
+        name = self.__class__.__name__
+
+        attributes = {(k[1:], v) if k[0] == '_' else (k, v) for (k, v) in self.__dict__.items()}
+        attrs = ['{}={}'.format(k, v) for (k, v) in attributes]
+        repr_ = name + '(' + ', '.join(attrs) + ')'
 
         return repr_
+
+    # def __repr__(self):
+
+        # repr_ = "%s(clip_values=%r, defences=%r, preprocessing=%r)" \
+        #         % (self.__module__ + '.' + self.__class__.__name__, self.clip_values, self.defences, self.preprocessing)
+
+        # name = self.__class__.__name__ + ': '
+        # attrs = ['{}={}'.format(k, v) for (k, v) in self.__dict__.items()]
+        # repr_ = name + '(' + ', '.join(attrs) + ')'
+        #
+        #
+        # return repr_
 
 
 class ClassifierNeuralNetwork(ABC):
@@ -195,7 +217,7 @@ class ClassifierNeuralNetwork(ABC):
     Base class for all neural network classifiers.
     """
 
-    def __init__(self, channel_index, clip_values=None, defences=None, preprocessing=(0, 1)):
+    def __init__(self, channel_index=None, **kwargs):
         """
         Initialize a `ClassifierNeuralNetwork` object.
 
@@ -213,27 +235,13 @@ class ClassifierNeuralNetwork(ABC):
                be divided by the second one.
         :type preprocessing: `tuple`
         """
-        from art.defences.preprocessor import Preprocessor
-
-        if clip_values is not None:
-            if len(clip_values) != 2:
-                raise ValueError('`clip_values` should be a tuple of 2 floats or arrays containing the allowed'
-                                 'data range.')
-            if np.array(clip_values[0] >= clip_values[1]).any():
-                raise ValueError('Invalid `clip_values`: min >= max.')
-        self._clip_values = clip_values
-
         self._channel_index = channel_index
-        if isinstance(defences, Preprocessor):
-            self.defences = [defences]
-        else:
-            self.defences = defences
 
-        if len(preprocessing) != 2:
-            raise ValueError(
-                '`preprocessing` should be a tuple of 2 floats with the substract and divide values for'
-                'the model inputs.')
-        self.preprocessing = preprocessing
+        if kwargs:
+            print(kwargs)
+            super().__init__(**kwargs)
+        else:
+            super().__init__()
 
     @abc.abstractmethod
     def predict(self, x, logits=False, batch_size=128, **kwargs):
@@ -319,14 +327,6 @@ class ClassifierNeuralNetwork(ABC):
         return self._input_shape
 
     @property
-    def clip_values(self):
-        """
-        :return: Tuple of the form `(min, max)` representing the minimum and maximum values allowed for features.
-        :rtype: `tuple`
-        """
-        return self._clip_values
-
-    @property
     def channel_index(self):
         """
         :return: Index of the axis in data containing the color channels or features.
@@ -348,40 +348,6 @@ class ClassifierNeuralNetwork(ABC):
         """
         return self._learning_phase if hasattr(self, '_learning_phase') else None
 
-    @abc.abstractmethod
-    def class_gradient(self, x, label=None, logits=False, **kwargs):
-        """
-        Compute per-class derivatives w.r.t. `x`.
-
-        :param x: Sample input with shape as expected by the model.
-        :type x: `np.ndarray`
-        :param label: Index of a specific per-class derivative. If an integer is provided, the gradient of that class
-                      output is computed for all samples. If multiple values as provided, the first dimension should
-                      match the batch size of `x`, and each value will be used as target for its corresponding sample in
-                      `x`. If `None`, then gradients for all classes will be computed for each sample.
-        :type label: `int` or `list`
-        :param logits: `True` if the prediction should be done at the logits layer.
-        :type logits: `bool`
-        :return: Array of gradients of input features w.r.t. each class in the form
-                 `(batch_size, nb_classes, input_shape)` when computing for all classes, otherwise shape becomes
-                 `(batch_size, 1, input_shape)` when `label` parameter is specified.
-        :rtype: `np.ndarray`
-        """
-        raise NotImplementedError
-
-    @abc.abstractmethod
-    def loss_gradient(self, x, y, **kwargs):
-        """
-        Compute the gradient of the loss function w.r.t. `x`.
-
-        :param x: Sample input with shape as expected by the model.
-        :type x: `np.ndarray`
-        :param y: Correct labels, one-vs-rest encoding.
-        :type y: `np.ndarray`
-        :return: Array of gradients of the same shape as `x`.
-        :rtype: `np.ndarray`
-        """
-        raise NotImplementedError
 
     @property
     def layer_names(self):
@@ -426,35 +392,55 @@ class ClassifierNeuralNetwork(ABC):
         """
         raise NotImplementedError
 
-    @abc.abstractmethod
-    def save(self, filename, path=None):
-        """
-        Save a model to file in the format specific to the backend framework.
+    def __repr__(self):
+        name = self.__class__.__name__
 
-        :param filename: Name of the file where to store the model.
-        :type filename: `str`
-        :param path: Path of the folder where to store the model. If no path is specified, the model will be stored in
-                     the default data location of the library `DATA_PATH`.
-        :type path: `str`
-        :return: None
+        attributes = {(k[1:], v) if k[0] == '_' else (k, v) for (k, v) in self.__dict__.items()}
+        attrs = ['{}={}'.format(k, v) for (k, v) in attributes]
+        repr_ = name + '(' + ', '.join(attrs) + ')'
+
+        return repr_
+
+
+class ClassifierGradients(ABC):
+    """
+    Base class for all neural network classifiers.
+    """
+
+    @abc.abstractmethod
+    def class_gradient(self, x, label=None, logits=False, **kwargs):
+        """
+        Compute per-class derivatives w.r.t. `x`.
+
+        :param x: Sample input with shape as expected by the model.
+        :type x: `np.ndarray`
+        :param label: Index of a specific per-class derivative. If an integer is provided, the gradient of that class
+                      output is computed for all samples. If multiple values as provided, the first dimension should
+                      match the batch size of `x`, and each value will be used as target for its corresponding sample in
+                      `x`. If `None`, then gradients for all classes will be computed for each sample.
+        :type label: `int` or `list`
+        :param logits: `True` if the prediction should be done at the logits layer.
+        :type logits: `bool`
+        :return: Array of gradients of input features w.r.t. each class in the form
+                 `(batch_size, nb_classes, input_shape)` when computing for all classes, otherwise shape becomes
+                 `(batch_size, 1, input_shape)` when `label` parameter is specified.
+        :rtype: `np.ndarray`
         """
         raise NotImplementedError
 
-    def _apply_preprocessing(self, x, y, fit):
+    @abc.abstractmethod
+    def loss_gradient(self, x, y, **kwargs):
         """
-        Apply all preprocessing steps of the classifier on inputs `(x, y)`.
+        Compute the gradient of the loss function w.r.t. `x`.
 
-        :param x: Input data, where first dimension is the batch size.
+        :param x: Sample input with shape as expected by the model.
         :type x: `np.ndarray`
-        :param y: Labels for input data, where first dimension is the batch size.
+        :param y: Correct labels, one-vs-rest encoding.
         :type y: `np.ndarray`
-        :param fit: `True` if the defences are applied during training.
-        :return: Value of the data after applying the defences.
+        :return: Array of gradients of the same shape as `x`.
         :rtype: `np.ndarray`
         """
-        x_preprocessed, y_preprocessed = self._apply_preprocessing_defences(x, y, fit=fit)
-        x_preprocessed = self._apply_preprocessing_normalization(x_preprocessed)
-        return x_preprocessed, y_preprocessed
+        raise NotImplementedError
 
     def _apply_preprocessing_gradient(self, x, grads):
         """
@@ -471,29 +457,6 @@ class ClassifierNeuralNetwork(ABC):
         grads = self._apply_preprocessing_normalization_gradient(grads)
         grads = self._apply_preprocessing_defences_gradient(x, grads)
         return grads
-
-    def _apply_preprocessing_defences(self, x, y, fit=False):
-        """
-        Apply the defences specified for the classifier in inputs `(x, y)`.
-
-        :param x: Input data, where first dimension is the batch size.
-        :type x: `np.ndarray`
-        :param y: Labels for input data, where first dimension is the batch size.
-        :type y: `np.ndarray`
-        :param fit: `True` if the defences are applied during training.
-        :return: Value of the data after applying the defences.
-        :rtype: `np.ndarray`
-        """
-        if self.defences is not None:
-            for defence in self.defences:
-                if fit:
-                    if defence.apply_fit:
-                        x, y = defence(x, y)
-                else:
-                    if defence.apply_predict:
-                        x, y = defence(x, y)
-
-        return x, y
 
     def _apply_preprocessing_defences_gradient(self, x, grads, fit=False):
         """
@@ -518,24 +481,6 @@ class ClassifierNeuralNetwork(ABC):
 
         return grads
 
-    def _apply_preprocessing_normalization(self, x):
-        """
-        Apply the data normalization steps specified for the classifier on `x`.
-
-        :param x: Input data, where first dimension is the batch size.
-        :type x: `np.ndarray`
-        :return: Value of the preprocessed data.
-        :rtype: `np.ndarray`
-        """
-        sub, div = self.preprocessing
-        sub = np.asarray(sub, dtype=x.dtype)
-        div = np.asarray(div, dtype=x.dtype)
-
-        res = x - sub
-        res = res / div
-
-        return res
-
     def _apply_preprocessing_normalization_gradient(self, grads):
         """
         Apply the backward pass through the data normalization steps.
@@ -549,10 +494,3 @@ class ClassifierNeuralNetwork(ABC):
         div = np.asarray(div, dtype=grads.dtype)
         res = grads / div
         return res
-
-    def __repr__(self):
-        repr_ = "%s(channel_index=%r, clip_values=%r, defences=%r, preprocessing=%r)" \
-                % (self.__module__ + '.' + self.__class__.__name__,
-                   self.channel_index, self.clip_values, self.defences, self.preprocessing)
-
-        return repr_

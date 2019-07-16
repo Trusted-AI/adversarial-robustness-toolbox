@@ -5,7 +5,7 @@ import unittest
 
 import numpy as np
 
-from art.classifiers import Classifier, ClassifierNeuralNetwork
+from art.classifiers import Classifier, ClassifierNeuralNetwork, ClassifierGradients
 from art.utils import master_seed
 
 logger = logging.getLogger('testLogger')
@@ -25,7 +25,7 @@ class ClassifierInstance(Classifier):
         pass
 
 
-class ClassifierNeuralNetworkInstance(ClassifierNeuralNetwork):
+class ClassifierNeuralNetworkInstance(Classifier, ClassifierNeuralNetwork, ClassifierGradients):
     def __init__(self, clip_values, channel_index=1):
         super(ClassifierNeuralNetworkInstance, self).__init__(clip_values=clip_values, channel_index=channel_index)
 
@@ -71,7 +71,9 @@ class TestClassifier(unittest.TestCase):
         repr_ = repr(classifier)
         self.assertIn('ClassifierInstance', repr_)
         self.assertIn('clip_values=None', repr_)
-        self.assertIn('defences=None, preprocessing=None', repr_)
+        self.assertIn('defences=None', repr_)
+        self.assertIn('preprocessing=None', repr_)
+
 
 class TestClassifierNeuralNetwork(unittest.TestCase):
     def setUp(self):
@@ -88,6 +90,11 @@ class TestClassifierNeuralNetwork(unittest.TestCase):
         classifier = ClassifierNeuralNetworkInstance((0, 1))
 
         repr_ = repr(classifier)
+
+        print(repr_)
+
         self.assertIn('ClassifierNeuralNetworkInstance', repr_)
-        self.assertIn('channel_index=1, clip_values=(0, 1)', repr_)
-        self.assertIn('defences=None, preprocessing=(0, 1)', repr_)
+        self.assertIn('channel_index=1', repr_)
+        self.assertIn('clip_values=(0, 1)', repr_)
+        self.assertIn('defences=None', repr_)
+        self.assertIn('preprocessing=None', repr_)

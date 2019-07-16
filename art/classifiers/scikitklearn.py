@@ -20,17 +20,17 @@ from __future__ import absolute_import, division, print_function, unicode_litera
 import logging
 import numpy as np
 
-from art.classifiers import ClassifierNeuralNetwork
+from art.classifiers import Classifier, ClassifierGradients
 
 logger = logging.getLogger(__name__)
 
 
-class ScikitlearnClassifier(ClassifierNeuralNetwork):
+class ScikitlearnClassifier(Classifier):
     """
     Wrapper class for scikit-learn classifier models.
     """
 
-    def __init__(self, model=None, channel_index=None, clip_values=None, defences=None, preprocessing=(0, 1)):
+    def __init__(self, model=None, clip_values=None, defences=None, preprocessing=(0, 1)):
         """
         Create a `Classifier` instance from a scikit-learn classifier model.
 
@@ -49,8 +49,7 @@ class ScikitlearnClassifier(ClassifierNeuralNetwork):
                be divided by the second one.
         :type preprocessing: `tuple`
         """
-        super(ScikitlearnClassifier, self).__init__(clip_values=clip_values, channel_index=channel_index,
-                                                    defences=defences, preprocessing=preprocessing)
+        super(ScikitlearnClassifier, self).__init__(clip_values=clip_values,                                                     defences=defences, preprocessing=preprocessing)
 
         self.model = model
         if hasattr(self.model, 'n_features_'):
@@ -197,7 +196,7 @@ class ScikitlearnDecisionTreeClassifier(ScikitlearnClassifier):
             raise TypeError('Model must be of type sklearn.tree.DecisionTreeClassifier')
 
         super(ScikitlearnDecisionTreeClassifier, self).__init__(model=model, clip_values=clip_values,
-                                                                channel_index=channel_index, defences=defences,
+                                                                 defences=defences,
                                                                 preprocessing=preprocessing)
 
     def class_gradient(self, x, label=None, logits=False):
@@ -285,7 +284,7 @@ class ScikitlearnExtraTreeClassifier(ScikitlearnClassifier):
             raise TypeError('Model must be of type sklearn.tree.ExtraTreeClassifier')
 
         super(ScikitlearnExtraTreeClassifier, self).__init__(model=model, clip_values=clip_values,
-                                                             channel_index=channel_index, defences=defences,
+                                                             defences=defences,
                                                              preprocessing=preprocessing)
 
     def class_gradient(self, x, label=None, logits=False):
@@ -373,7 +372,7 @@ class ScikitlearnAdaBoostClassifier(ScikitlearnClassifier):
             raise TypeError('Model must be of type sklearn.ensemble.AdaBoostClassifier')
 
         super(ScikitlearnAdaBoostClassifier, self).__init__(model=model, clip_values=clip_values,
-                                                            channel_index=channel_index, defences=defences,
+                                                            defences=defences,
                                                             preprocessing=preprocessing)
 
     def class_gradient(self, x, label=None, logits=False):
@@ -461,7 +460,7 @@ class ScikitlearnBaggingClassifier(ScikitlearnClassifier):
             raise TypeError('Model must be of type sklearn.ensemble.BaggingClassifier')
 
         super(ScikitlearnBaggingClassifier, self).__init__(model=model, clip_values=clip_values,
-                                                           channel_index=channel_index, defences=defences,
+                                                            defences=defences,
                                                            preprocessing=preprocessing)
 
     def class_gradient(self, x, label=None, logits=False):
@@ -549,7 +548,7 @@ class ScikitlearnExtraTreesClassifier(ScikitlearnClassifier):
             raise TypeError('Model must be of type sklearn.ensemble.ExtraTreesClassifier')
 
         super(ScikitlearnExtraTreesClassifier, self).__init__(model=model, clip_values=clip_values,
-                                                              channel_index=channel_index, defences=defences,
+                                                               defences=defences,
                                                               preprocessing=preprocessing)
 
     def class_gradient(self, x, label=None, logits=False):
@@ -637,7 +636,7 @@ class ScikitlearnGradientBoostingClassifier(ScikitlearnClassifier):
             raise TypeError('Model must be of type sklearn.ensemble.GradientBoostingClassifier')
 
         super(ScikitlearnGradientBoostingClassifier, self).__init__(model=model, clip_values=clip_values,
-                                                                    channel_index=channel_index, defences=defences,
+                                                                     defences=defences,
                                                                     preprocessing=preprocessing)
 
     def class_gradient(self, x, label=None, logits=False):
@@ -725,7 +724,7 @@ class ScikitlearnRandomForestClassifier(ScikitlearnClassifier):
             raise TypeError('Model must be of type sklearn.ensemble.RandomForestClassifier')
 
         super(ScikitlearnRandomForestClassifier, self).__init__(model=model, clip_values=clip_values,
-                                                                channel_index=channel_index, defences=defences,
+                                                                 defences=defences,
                                                                 preprocessing=preprocessing)
 
     def class_gradient(self, x, label=None, logits=False):
@@ -783,7 +782,7 @@ class ScikitlearnRandomForestClassifier(ScikitlearnClassifier):
         raise NotImplementedError
 
 
-class ScikitlearnLogisticRegression(ScikitlearnClassifier):
+class ScikitlearnLogisticRegression(ScikitlearnClassifier, ClassifierGradients):
     """
     Wrapper class for scikit-learn Logistic Regression models.
     """
@@ -808,7 +807,7 @@ class ScikitlearnLogisticRegression(ScikitlearnClassifier):
         :type preprocessing: `tuple`
         """
 
-        super(ScikitlearnLogisticRegression, self).__init__(clip_values=clip_values, channel_index=channel_index,
+        super(ScikitlearnLogisticRegression, self).__init__(clip_values=clip_values,
                                                             defences=defences, preprocessing=preprocessing)
 
         self.model = model
@@ -1006,7 +1005,7 @@ class ScikitlearnLogisticRegression(ScikitlearnClassifier):
             pickle.dump(self.model, file=f)
 
 
-class ScikitlearnSVC(ScikitlearnClassifier):
+class ScikitlearnSVC(ScikitlearnClassifier, ClassifierGradients):
     """
     Wrapper class for scikit-learn C-Support Vector Classification models.
     """
@@ -1035,7 +1034,7 @@ class ScikitlearnSVC(ScikitlearnClassifier):
         if not isinstance(model, SVC) and not isinstance(model, LinearSVC):
             raise TypeError('Model must be of type sklearn.svm.SVC or sklearn.svm.LinearSVC')
 
-        super(ScikitlearnSVC, self).__init__(clip_values=clip_values, channel_index=channel_index,
+        super(ScikitlearnSVC, self).__init__(clip_values=clip_values,
                                              defences=defences, preprocessing=preprocessing)
 
         self.model = model

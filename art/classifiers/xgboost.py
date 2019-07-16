@@ -20,18 +20,17 @@ from __future__ import absolute_import, division, print_function, unicode_litera
 import logging
 import numpy as np
 
-from art.classifiers import ClassifierNeuralNetwork
+from art.classifiers import Classifier
 
 logger = logging.getLogger(__name__)
 
 
-class XGBoostClassifier(ClassifierNeuralNetwork):
+class XGBoostClassifier(Classifier):
     """
     Wrapper class for importing XGBoost models.
     """
 
-    def __init__(self, model=None, channel_index=None, clip_values=None, defences=None, preprocessing=(0, 1),
-                 num_features=None):
+    def __init__(self, model=None, clip_values=None, defences=None, preprocessing=None, num_features=None):
         """
         Create a `Classifier` instance from a XGBoost model.
 
@@ -55,8 +54,7 @@ class XGBoostClassifier(ClassifierNeuralNetwork):
         if not isinstance(model, Booster):
             raise TypeError('Model must be of type xgboost.Booster')
 
-        super(XGBoostClassifier, self).__init__(clip_values=clip_values, channel_index=channel_index,
-                                                defences=defences, preprocessing=preprocessing)
+        super(XGBoostClassifier, self).__init__(clip_values=clip_values, defences=defences, preprocessing=preprocessing)
 
         self.model = model
         self._input_shape = (num_features,)

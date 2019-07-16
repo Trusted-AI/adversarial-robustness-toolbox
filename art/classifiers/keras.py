@@ -25,12 +25,12 @@ import logging
 import numpy as np
 import six
 
-from art.classifiers.classifier import ClassifierNeuralNetwork
+from art.classifiers.classifier import Classifier, ClassifierNeuralNetwork, ClassifierGradients
 
 logger = logging.getLogger(__name__)
 
 
-class KerasClassifier(ClassifierNeuralNetwork):
+class KerasClassifier(Classifier, ClassifierNeuralNetwork, ClassifierGradients):
     """
     Wrapper class for importing Keras models. The supported backends for Keras are TensorFlow and Theano.
     """
@@ -65,8 +65,8 @@ class KerasClassifier(ClassifierNeuralNetwork):
                output probability rather than the logits by attacks.
         :type custom_activation: `bool`
         """
-        super(KerasClassifier, self).__init__(clip_values=clip_values, channel_index=channel_index, defences=defences,
-                                              preprocessing=preprocessing)
+        super(KerasClassifier, self).__init__(clip_values=clip_values, defences=defences,
+                                              preprocessing=preprocessing, channel_index=channel_index)
 
         self._model = model
         self._input_layer = input_layer

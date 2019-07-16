@@ -20,18 +20,17 @@ from __future__ import absolute_import, division, print_function, unicode_litera
 import logging
 import numpy as np
 
-from art.classifiers import ClassifierNeuralNetwork
+from art.classifiers import Classifier
 
 logger = logging.getLogger(__name__)
 
 
-class CatBoostARTClassifier(ClassifierNeuralNetwork):
+class CatBoostARTClassifier(Classifier):
     """
     Wrapper class for importing CatBoost models.
     """
 
-    def __init__(self, model, channel_index=None, clip_values=None, defences=None, preprocessing=(0, 1),
-                 num_features=None):
+    def __init__(self, model=None, defences=None, preprocessing=None, clip_values=None, num_features=None):
         """
         Create a `Classifier` instance from a CatBoost model.
 
@@ -55,8 +54,8 @@ class CatBoostARTClassifier(ClassifierNeuralNetwork):
         if not isinstance(model, CatBoostClassifier):
             raise TypeError('Model must be of type catboost.core.CatBoostClassifier')
 
-        super(CatBoostARTClassifier, self).__init__(clip_values=clip_values, channel_index=channel_index,
-                                                    defences=defences, preprocessing=preprocessing)
+        super(CatBoostARTClassifier, self).__init__(clip_values=clip_values, defences=defences,
+                                                    preprocessing=preprocessing)
 
         self.model = model
         self._input_shape = (num_features,)

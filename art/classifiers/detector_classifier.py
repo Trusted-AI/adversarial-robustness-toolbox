@@ -27,12 +27,12 @@ import logging
 
 import numpy as np
 
-from art.classifiers.classifier import ClassifierNeuralNetwork
+from art.classifiers.classifier import Classifier, ClassifierNeuralNetwork, ClassifierGradients
 
 logger = logging.getLogger(__name__)
 
 
-class DetectorClassifier(ClassifierNeuralNetwork):
+class DetectorClassifier(Classifier, ClassifierNeuralNetwork, ClassifierGradients):
     """
     This class implements a Classifier extension that wraps a classifier and a detector.
     More details in https://arxiv.org/abs/1705.07263
