@@ -33,7 +33,8 @@ logger = logging.getLogger(__name__)
 class ExpectationOverTransformations(ClassifierWrapper):
     """
     Implementation of Expectation Over Transformations applied to classifier predictions and gradients, as introduced
-    in Athalye et al. (2017). Paper link: https://arxiv.org/pdf/1707.07397.pdf
+    in Athalye et al. (2017).
+    Paper link: https://arxiv.org/pdf/1707.07397.pdf
     """
 
     def __init__(self, classifier, sample_size, transformation):

@@ -38,7 +38,7 @@ logger = logging.getLogger(__name__)
 
 class ActivationDefence(PoisonFilteringDefence):
     """
-    Method from [Chen et al., 2018] performing poisoning detection based on activations clustering.
+    Method from Chen et al., 2018 performing poisoning detection based on activations clustering.
     Paper link: https://arxiv.org/abs/1811.03728
     """
     defence_params = ['nb_clusters', 'clustering_method', 'nb_dims', 'reduce', 'cluster_analysis']

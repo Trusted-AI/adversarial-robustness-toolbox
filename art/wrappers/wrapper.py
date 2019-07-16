@@ -17,8 +17,8 @@
 # SOFTWARE.
 """
 Wrapper class for any classifier.
-Subclass of the ClassifierWrapper can override the behavior of
-key functions, such as loss_gradient, to facilitate new attacks.
+Subclass of the ClassifierWrapper can override the behavior of key functions, such as loss_gradient, to facilitate new
+attacks.
 """
 
 
