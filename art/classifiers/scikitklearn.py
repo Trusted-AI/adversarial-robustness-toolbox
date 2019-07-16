@@ -57,7 +57,7 @@ class ScikitlearnClassifier(Classifier):
         else:
             self._input_shape = None
 
-    def fit(self, x, y, batch_size=128, nb_epochs=20, **kwargs):
+    def fit(self, x, y, **kwargs):
         """
         Fit the classifier on the training set `(x, y)`.
 
@@ -65,10 +65,6 @@ class ScikitlearnClassifier(Classifier):
         :type x: `np.ndarray`
         :param y: Labels, one-vs-rest encoding.
         :type y: `np.ndarray`
-        :param batch_size: Size of batches. Not used in this function.
-        :type batch_size: `int`
-        :param nb_epochs: Number of epochs to use for training. Not used in this function.
-        :type nb_epochs: `int`
         :param kwargs: Dictionary of framework-specific arguments. These should be parameters supported by the
                `fit` function in `sklearn` classifier and will be passed to this function as such.
         :type kwargs: `dict`
@@ -86,16 +82,12 @@ class ScikitlearnClassifier(Classifier):
         elif hasattr(self.model, 'feature_importances_'):
             self._input_shape = (len(self.model.feature_importances_),)
 
-    def predict(self, x, logits=False, batch_size=128):
+    def predict(self, x):
         """
         Perform prediction for a batch of inputs.
 
         :param x: Test set.
         :type x: `np.ndarray`
-        :param logits: `True` if the prediction should be done at the logits layer.
-        :type logits: `bool`
-        :param batch_size: Size of batches. Not used in this function.
-        :type batch_size: `int`
         :return: Array of predictions of shape `(nb_inputs, self.nb_classes)`.
         :rtype: `np.ndarray`
         """
@@ -357,8 +349,8 @@ class ScikitlearnLogisticRegression(ScikitlearnClassifier, ClassifierGradients):
         :type preprocessing: `tuple`
         """
 
-        super(ScikitlearnLogisticRegression, self).__init__(clip_values=clip_values,
-                                                            defences=defences, preprocessing=preprocessing)
+        super(ScikitlearnLogisticRegression, self).__init__(clip_values=clip_values, defences=defences,
+                                                            preprocessing=preprocessing)
 
         self.model = model
         if hasattr(self.model, 'coef_'):
@@ -372,7 +364,7 @@ class ScikitlearnLogisticRegression(ScikitlearnClassifier, ClassifierGradients):
             self.num_classes = None
             self.model_class_weight = None
 
-    def class_gradient(self, x, label=None, logits=False):
+    def class_gradient(self, x, label=None, **kwargs):
         """
         Compute per-class derivatives w.r.t. `x`.
         Paper link: http://cs229.stanford.edu/proj2016/report/ItkinaWu-AdversarialAttacksonImageRecognition-report.pdf
@@ -385,8 +377,6 @@ class ScikitlearnLogisticRegression(ScikitlearnClassifier, ClassifierGradients):
                       match the batch size of `x`, and each value will be used as target for its corresponding sample in
                       `x`. If `None`, then gradients for all classes will be computed for each sample.
         :type label: `int` or `list`
-        :param logits: `True` if the prediction should be done at the logits layer.
-        :type logits: `bool`
         :return: Array of gradients of input features w.r.t. each class in the form
                  `(batch_size, nb_classes, input_shape)` when computing for all classes, otherwise shape becomes
                  `(batch_size, 1, input_shape)` when `label` parameter is specified.
@@ -420,7 +410,7 @@ class ScikitlearnLogisticRegression(ScikitlearnClassifier, ClassifierGradients):
 
         return gradients
 
-    def fit(self, x, y, batch_size=128, nb_epochs=20, **kwargs):
+    def fit(self, x, y, **kwargs):
         """
         Fit the classifier on the training set `(x, y)`.
 
@@ -428,10 +418,6 @@ class ScikitlearnLogisticRegression(ScikitlearnClassifier, ClassifierGradients):
         :type x: `np.ndarray`
         :param y: Labels, one-vs-rest encoding.
         :type y: `np.ndarray`
-        :param batch_size: Size of batches. Not used in this function.
-        :type batch_size: `int`
-        :param nb_epochs: Number of epochs to use for training. Not used in this function.
-        :type nb_epochs: `int`
         :param kwargs: Dictionary of framework-specific arguments. These should be parameters supported by the
                `fit` function in `sklearn.svm.{SVC, LinerSVC}` and will be passed to this function as such.
         :type kwargs: `dict`
@@ -447,7 +433,7 @@ class ScikitlearnLogisticRegression(ScikitlearnClassifier, ClassifierGradients):
         self.model_class_weight = self.model.class_weight
         self.classes = self.model.classes_
 
-    def loss_gradient(self, x, y):
+    def loss_gradient(self, x, y, **kwargs):
         """
         Compute the gradient of the loss function w.r.t. `x`.
         Paper link: http://cs229.stanford.edu/proj2016/report/ItkinaWu-AdversarialAttacksonImageRecognition-report.pdf
@@ -490,16 +476,12 @@ class ScikitlearnLogisticRegression(ScikitlearnClassifier, ClassifierGradients):
 
         return gradients
 
-    def predict(self, x, logits=False, batch_size=128):
+    def predict(self, x):
         """
         Perform prediction for a batch of inputs.
 
         :param x: Test set.
         :type x: `np.ndarray`
-        :param logits: `True` if the prediction should be done at the logits layer.
-        :type logits: `bool`
-        :param batch_size: Size of batches. Not used in this function.
-        :type batch_size: `int`
         :return: Array of predictions of shape `(nb_inputs, self.nb_classes)`.
         :rtype: `np.ndarray`
         """
@@ -540,12 +522,11 @@ class ScikitlearnSVC(ScikitlearnClassifier, ClassifierGradients):
         if not isinstance(model, SVC) and not isinstance(model, LinearSVC):
             raise TypeError('Model must be of type sklearn.svm.SVC or sklearn.svm.LinearSVC')
 
-        super(ScikitlearnSVC, self).__init__(clip_values=clip_values,
-                                             defences=defences, preprocessing=preprocessing)
+        super(ScikitlearnSVC, self).__init__(clip_values=clip_values, defences=defences, preprocessing=preprocessing)
 
         self.model = model
 
-    def class_gradient(self, x, label=None, logits=False):
+    def class_gradient(self, x, label=None, **kwargs):
         """
         Compute per-class derivatives w.r.t. `x`.
 
@@ -556,8 +537,6 @@ class ScikitlearnSVC(ScikitlearnClassifier, ClassifierGradients):
                       match the batch size of `x`, and each value will be used as target for its corresponding sample in
                       `x`. If `None`, then gradients for all classes will be computed for each sample.
         :type label: `int` or `list`
-        :param logits: `True` if the prediction should be done at the logits layer.
-        :type logits: `bool`
         :return: Array of gradients of input features w.r.t. each class in the form
                  `(batch_size, nb_classes, input_shape)` when computing for all classes, otherwise shape becomes
                  `(batch_size, 1, input_shape)` when `label` parameter is specified.
@@ -565,7 +544,7 @@ class ScikitlearnSVC(ScikitlearnClassifier, ClassifierGradients):
         """
         raise NotImplementedError
 
-    def fit(self, x, y, batch_size=128, nb_epochs=20, **kwargs):
+    def fit(self, x, y, **kwargs):
         """
         Fit the classifier on the training set `(x, y)`.
 
@@ -573,10 +552,6 @@ class ScikitlearnSVC(ScikitlearnClassifier, ClassifierGradients):
         :type x: `np.ndarray`
         :param y: Labels, one-vs-rest encoding.
         :type y: `np.ndarray`
-        :param batch_size: Size of batches. Not used in this function.
-        :type batch_size: `int`
-        :param nb_epochs: Number of epochs to use for training. Not used in this function.
-        :type nb_epochs: `int`
         :param kwargs: Dictionary of framework-specific arguments. These should be parameters supported by the
                `fit` function in `sklearn.linear_model.LogisticRegression` and will be passed to this function as such.
         :type kwargs: `dict`
@@ -603,7 +578,7 @@ class ScikitlearnSVC(ScikitlearnClassifier, ClassifierGradients):
             raise NotImplementedError('Loss gradients for kernel \'{}\' are not implemented.'.format(self.model.kernel))
         return grad
 
-    def loss_gradient(self, x, y):
+    def loss_gradient(self, x, y, **kwargs):
         """
         Compute the gradient of the loss function w.r.t. `x`.
         Following equation (1) with lambda=0.
@@ -692,16 +667,12 @@ class ScikitlearnSVC(ScikitlearnClassifier, ClassifierGradients):
 
         return gradients
 
-    def predict(self, x, logits=False, batch_size=128):
+    def predict(self, x):
         """
         Perform prediction for a batch of inputs.
 
         :param x: Test set.
         :type x: `np.ndarray`
-        :param logits: `True` if the prediction should be done at the logits layer.
-        :type logits: `bool`
-        :param batch_size: Size of batches. Not used in this function.
-        :type batch_size: `int`
         :return: Array of predictions of shape `(nb_inputs, self.nb_classes)`.
         :rtype: `np.ndarray`
         """

@@ -408,7 +408,7 @@ class ClassifierGradients(ABC):
     """
 
     @abc.abstractmethod
-    def class_gradient(self, x, label=None, logits=False, **kwargs):
+    def class_gradient(self, x, label=None, **kwargs):
         """
         Compute per-class derivatives w.r.t. `x`.
 
@@ -419,8 +419,6 @@ class ClassifierGradients(ABC):
                       match the batch size of `x`, and each value will be used as target for its corresponding sample in
                       `x`. If `None`, then gradients for all classes will be computed for each sample.
         :type label: `int` or `list`
-        :param logits: `True` if the prediction should be done at the logits layer.
-        :type logits: `bool`
         :return: Array of gradients of input features w.r.t. each class in the form
                  `(batch_size, nb_classes, input_shape)` when computing for all classes, otherwise shape becomes
                  `(batch_size, 1, input_shape)` when `label` parameter is specified.
