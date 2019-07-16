@@ -119,9 +119,6 @@ class ScikitlearnDecisionTreeClassifier(ScikitlearnClassifier):
         :type clip_values: `tuple`
         :param model: scikit-learn Decision Tree Classifier model.
         :type model: `sklearn.tree.DecisionTree`
-        :param channel_index: Index of the axis in data containing the color channels or features. Not used in this
-               class.
-        :type channel_index: `int`
         :param defences: Defences to be activated with the classifier.
         :type defences: :class:`.Preprocessor` or `list(Preprocessor)` instances
         :param preprocessing: Tuple of the form `(subtractor, divider)` of floats or `np.ndarray` of values to be
@@ -186,9 +183,6 @@ class ScikitlearnAdaBoostClassifier(ScikitlearnClassifier):
         :type clip_values: `tuple`
         :param model: scikit-learn AdaBoost Classifier model.
         :type model: `sklearn.ensemble.AdaBoost`
-        :param channel_index: Index of the axis in data containing the color channels or features. Not used in this
-               class.
-        :type channel_index: `int`
         :param defences: Defences to be activated with the classifier.
         :type defences: :class:`.Preprocessor` or `list(Preprocessor)` instances
         :param preprocessing: Tuple of the form `(subtractor, divider)` of floats or `np.ndarray` of values to be
@@ -221,9 +215,6 @@ class ScikitlearnBaggingClassifier(ScikitlearnClassifier):
         :type clip_values: `tuple`
         :param model: scikit-learn Bagging Classifier model.
         :type model: `sklearn.ensemble.BaggingClassifier`
-        :param channel_index: Index of the axis in data containing the color channels or features. Not used in this
-               class.
-        :type channel_index: `int`
         :param defences: Defences to be activated with the classifier.
         :type defences: :class:`.Preprocessor` or `list(Preprocessor)` instances
         :param preprocessing: Tuple of the form `(subtractor, divider)` of floats or `np.ndarray` of values to be
