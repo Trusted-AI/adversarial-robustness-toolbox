@@ -30,7 +30,7 @@ from art.classifiers.classifier import Classifier, ClassifierNeuralNetwork, Clas
 logger = logging.getLogger(__name__)
 
 
-class KerasClassifier(Classifier, ClassifierNeuralNetwork, ClassifierGradients):
+class KerasClassifier(ClassifierNeuralNetwork, ClassifierGradients, Classifier):
     """
     Wrapper class for importing Keras models. The supported backends for Keras are TensorFlow and Theano.
     """
@@ -191,7 +191,7 @@ class KerasClassifier(Classifier, ClassifierNeuralNetwork, ClassifierGradients):
 
         return grads
 
-    def class_gradient(self, x, label=None, logits=False, **kwargs):
+    def class_gradient(self, x, label=None, **kwargs):
         """
         Compute per-class derivatives w.r.t. `x`.
 
@@ -209,6 +209,10 @@ class KerasClassifier(Classifier, ClassifierNeuralNetwork, ClassifierGradients):
                  `(batch_size, 1, input_shape)` when `label` parameter is specified.
         :rtype: `np.ndarray`
         """
+        logits = kwargs.get('logits')
+        if logits is None:
+            logits = False
+
         # Check value of label for computing gradients
         if not (label is None or (isinstance(label, (int, np.integer)) and label in range(self.nb_classes))
                 or (isinstance(label, np.ndarray) and len(label.shape) == 1 and (label < self.nb_classes).all()

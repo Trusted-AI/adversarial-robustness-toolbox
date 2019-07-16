@@ -32,7 +32,7 @@ from art.classifiers.classifier import Classifier, ClassifierNeuralNetwork, Clas
 logger = logging.getLogger(__name__)
 
 
-class DetectorClassifier(Classifier, ClassifierNeuralNetwork, ClassifierGradients):
+class DetectorClassifier(ClassifierNeuralNetwork, ClassifierGradients, Classifier):
     """
     This class implements a Classifier extension that wraps a classifier and a detector.
     More details in https://arxiv.org/abs/1705.07263
@@ -125,7 +125,7 @@ class DetectorClassifier(Classifier, ClassifierNeuralNetwork, ClassifierGradient
         """
         raise NotImplementedError
 
-    def class_gradient(self, x, label=None, logits=False, **kwargs):
+    def class_gradient(self, x, label=None, **kwargs):
         """
         Compute per-class derivatives w.r.t. `x`.
 
@@ -143,6 +143,10 @@ class DetectorClassifier(Classifier, ClassifierNeuralNetwork, ClassifierGradient
                  `(batch_size, 1, input_shape)` when `label` parameter is specified.
         :rtype: `np.ndarray`
         """
+        logits = kwargs.get('logits')
+        if logits is None:
+            logits = False
+
         if not ((label is None) or (isinstance(label, (int, np.integer)) and label in range(self._nb_classes))
                 or (isinstance(label, np.ndarray) and len(label.shape) == 1 and (label < self._nb_classes).all()
                     and label.shape[0] == x.shape[0])):

@@ -32,7 +32,7 @@ from art.detection.subsetscanning.scanner import Scanner
 logger = logging.getLogger(__name__)
 
 
-class SubsetScanningDetector(Classifier, ClassifierNeuralNetwork, ClassifierGradients):
+class SubsetScanningDetector(ClassifierNeuralNetwork, ClassifierGradients, Classifier):
     """ Fast generalized subset scan based detector"""
 
     def __init__(self, classifier, bgd_data, layer):
@@ -208,7 +208,10 @@ class SubsetScanningDetector(Classifier, ClassifierNeuralNetwork, ClassifierGrad
     def learning_phase(self):
         return self.detector.learning_phase
 
-    def class_gradient(self, x, label=None, logits=False, **kwargs):
+    def class_gradient(self, x, label=None, **kwargs):
+        logits = kwargs.get('logits')
+        if logits is None:
+            logits = False
         return self.detector.class_gradient(x, label=label, logits=logits)
 
     def loss_gradient(self, x, y, **kwargs):

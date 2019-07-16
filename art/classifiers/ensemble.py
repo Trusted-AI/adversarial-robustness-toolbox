@@ -29,7 +29,7 @@ from art.classifiers.classifier import Classifier, ClassifierNeuralNetwork, Clas
 logger = logging.getLogger(__name__)
 
 
-class EnsembleClassifier(Classifier, ClassifierNeuralNetwork, ClassifierGradients):
+class EnsembleClassifier(ClassifierNeuralNetwork, ClassifierGradients, Classifier):
     """
     Class allowing to aggregate multiple classifiers as an ensemble. The individual classifiers are expected to be
     trained when the ensemble is created and no training procedures are provided through this class.
@@ -195,7 +195,7 @@ class EnsembleClassifier(Classifier, ClassifierNeuralNetwork, ClassifierGradient
         """
         raise NotImplementedError
 
-    def class_gradient(self, x, label=None, logits=False, **kwargs):
+    def class_gradient(self, x, label=None, **kwargs):
         """
         Compute per-class derivatives w.r.t. `x`.
 
@@ -218,6 +218,10 @@ class EnsembleClassifier(Classifier, ClassifierNeuralNetwork, ClassifierGradient
             raw = kwargs['raw']
         else:
             raise ValueError('Missing argument `raw`.')
+
+        logits = kwargs.get('logits')
+        if logits is None:
+            logits = False
 
         grads = np.array([self._classifier_weights[i] * self._classifiers[i].class_gradient(x, label, logits)
                           for i in range(self._nb_classifiers)])

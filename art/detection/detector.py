@@ -30,7 +30,7 @@ from art.classifiers import Classifier, ClassifierNeuralNetwork, ClassifierGradi
 logger = logging.getLogger(__name__)
 
 
-class BinaryInputDetector(Classifier, ClassifierNeuralNetwork, ClassifierGradients):
+class BinaryInputDetector(ClassifierNeuralNetwork, ClassifierGradients, Classifier):
     """
     Binary detector of adversarial samples coming from evasion attacks. The detector uses an architecture provided by
     the user and trains it on data labeled as clean (label 0) or adversarial (label 1).
@@ -111,7 +111,10 @@ class BinaryInputDetector(Classifier, ClassifierNeuralNetwork, ClassifierGradien
     def learning_phase(self):
         return self.detector.learning_phase
 
-    def class_gradient(self, x, label=None, logits=False, **kwargs):
+    def class_gradient(self, x, label=None, **kwargs):
+        logits = kwargs.get('logits')
+        if logits is None:
+            logits = False
         return self.detector.class_gradient(x, label=label, logits=logits)
 
     def loss_gradient(self, x, y, **kwargs):
@@ -134,7 +137,7 @@ class BinaryInputDetector(Classifier, ClassifierNeuralNetwork, ClassifierGradien
         self.detector.save(filename, path)
 
 
-class BinaryActivationDetector(Classifier, ClassifierNeuralNetwork, ClassifierGradients):
+class BinaryActivationDetector(ClassifierNeuralNetwork, ClassifierGradients, Classifier):
     """
     Binary detector of adversarial samples coming from evasion attacks. The detector uses an architecture provided by
     the user and is trained on the values of the activations of a classifier at a given layer.
@@ -235,7 +238,10 @@ class BinaryActivationDetector(Classifier, ClassifierNeuralNetwork, ClassifierGr
     def learning_phase(self):
         return self.detector.learning_phase
 
-    def class_gradient(self, x, label=None, logits=False, **kwargs):
+    def class_gradient(self, x, label=None, **kwargs):
+        logits = kwargs.get('logits')
+        if logits is None:
+            logits = False
         return self.detector.class_gradient(x, label=label, logits=logits)
 
     def loss_gradient(self, x, y, **kwargs):

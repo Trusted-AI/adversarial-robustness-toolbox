@@ -31,7 +31,7 @@ from art.classifiers.classifier import Classifier, ClassifierNeuralNetwork, Clas
 logger = logging.getLogger(__name__)
 
 
-class MXClassifier(Classifier, ClassifierNeuralNetwork, ClassifierGradients):
+class MXClassifier(ClassifierNeuralNetwork, ClassifierGradients, Classifier):
     """
     Wrapper class for importing MXNet Gluon model.
     """
@@ -215,7 +215,7 @@ class MXClassifier(Classifier, ClassifierNeuralNetwork, ClassifierGradients):
 
         return results
 
-    def class_gradient(self, x, label=None, logits=False, **kwargs):
+    def class_gradient(self, x, label=None, **kwargs):
         """
         Compute per-class derivatives w.r.t. `x`.
 
@@ -234,6 +234,10 @@ class MXClassifier(Classifier, ClassifierNeuralNetwork, ClassifierGradients):
         :rtype: `np.ndarray`
         """
         import mxnet as mx
+
+        logits = kwargs.get('logits')
+        if logits is None:
+            logits = False
 
         # Check value of label for computing gradients
         if not (label is None or (isinstance(label, (int, np.integer)) and label in range(self.nb_classes))

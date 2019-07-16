@@ -31,7 +31,7 @@ from art.classifiers.classifier import Classifier, ClassifierNeuralNetwork, Clas
 logger = logging.getLogger(__name__)
 
 
-class PyTorchClassifier(Classifier, ClassifierNeuralNetwork, ClassifierGradients):
+class PyTorchClassifier(ClassifierNeuralNetwork, ClassifierGradients, Classifier):
     """
     This class implements a classifier with the PyTorch framework.
     """
@@ -52,6 +52,7 @@ class PyTorchClassifier(Classifier, ClassifierNeuralNetwork, ClassifierGradients
         :type input_shape: `tuple`
         :param nb_classes: The number of classes of the model.
         :type nb_classes: `int`
+        :param channel_index: Index of the axis in data containing the color channels or features.
         :param channel_index: Index of the axis in data containing the color channels or features.
         :type channel_index: `int`
         :param clip_values: Tuple of the form `(min, max)` of floats or `np.ndarray` representing the minimum and
@@ -214,7 +215,7 @@ class PyTorchClassifier(Classifier, ClassifierNeuralNetwork, ClassifierGradients
             # Fit a generic data generator through the API
             super(PyTorchClassifier, self).fit_generator(generator, num_epochs=nb_epochs)
 
-    def class_gradient(self, x, label=None, logits=False, **kwargs):
+    def class_gradient(self, x, label=None, **kwargs):
         """
         Compute per-class derivatives w.r.t. `x`.
 
@@ -233,6 +234,10 @@ class PyTorchClassifier(Classifier, ClassifierNeuralNetwork, ClassifierGradients
         :rtype: `np.ndarray`
         """
         import torch
+
+        logits = kwargs.get('logits')
+        if logits is None:
+            logits = False
 
         if not ((label is None) or (isinstance(label, (int, np.integer)) and label in range(self._nb_classes))
                 or (isinstance(label, np.ndarray) and len(label.shape) == 1 and (label < self._nb_classes).all()

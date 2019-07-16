@@ -31,7 +31,7 @@ from art.classifiers.classifier import Classifier, ClassifierNeuralNetwork, Clas
 logger = logging.getLogger(__name__)
 
 
-class TFClassifier(Classifier, ClassifierNeuralNetwork, ClassifierGradients):
+class TFClassifier(ClassifierNeuralNetwork, ClassifierGradients, Classifier):
     """
     This class implements a classifier with the Tensorflow framework.
     """
@@ -211,7 +211,7 @@ class TFClassifier(Classifier, ClassifierNeuralNetwork, ClassifierGradients):
                     self._sess.run(self._train, feed_dict=feed_dict)
             super(TFClassifier, self).fit_generator(generator, num_epochs=nb_epochs, **kwargs)
 
-    def class_gradient(self, x, label=None, logits=False, **kwargs):
+    def class_gradient(self, x, label=None, **kwargs):
         """
         Compute per-class derivatives w.r.t. `x`.
 
@@ -229,6 +229,10 @@ class TFClassifier(Classifier, ClassifierNeuralNetwork, ClassifierGradients):
                  `(batch_size, 1, input_shape)` when `label` parameter is specified.
         :rtype: `np.ndarray`
         """
+        logits = kwargs.get('logits')
+        if logits is None:
+            logits = False
+
         # Check value of label for computing gradients
         if not (label is None or (isinstance(label, (int, np.integer)) and label in range(self.nb_classes))
                 or (isinstance(label, np.ndarray) and len(label.shape) == 1 and (label < self._nb_classes).all()
