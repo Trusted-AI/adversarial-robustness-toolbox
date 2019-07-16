@@ -15,6 +15,9 @@
 # AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT,
 # TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 # SOFTWARE.
+"""
+This module implements the classifier `CatBoostARTClassifier` for CatBoost models.
+"""
 from __future__ import absolute_import, division, print_function, unicode_literals
 
 import logging
@@ -29,7 +32,7 @@ class CatBoostARTClassifier(Classifier):
     Wrapper class for importing CatBoost models.
     """
 
-    def __init__(self, model=None, defences=None, preprocessing=None, clip_values=None, num_features=None):
+    def __init__(self, model=None, defences=None, preprocessing=None, clip_values=None, nb_features=None):
         """
         Create a `Classifier` instance from a CatBoost model.
 
@@ -45,6 +48,7 @@ class CatBoostARTClassifier(Classifier):
                be divided by the second one.
         :type preprocessing: `tuple`
         """
+        # pylint: disable=E0611,E0401
         from catboost.core import CatBoostClassifier
 
         if not isinstance(model, CatBoostClassifier):
