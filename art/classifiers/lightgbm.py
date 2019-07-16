@@ -20,7 +20,7 @@ from __future__ import absolute_import, division, print_function, unicode_litera
 import logging
 import numpy as np
 
-from art.classifiers import Classifier
+from art.classifiers.classifier import Classifier
 
 logger = logging.getLogger(__name__)
 
@@ -51,7 +51,8 @@ class LightGBMClassifier(Classifier):
         if not isinstance(model, Booster):
             raise TypeError('Model must be of type lightgbm.Booster')
 
-        super(LightGBMClassifier, self).__init__(clip_values=clip_values, defences=defences,               preprocessing=preprocessing)
+        super(LightGBMClassifier, self).__init__(clip_values=clip_values, defences=defences,
+                                                 preprocessing=preprocessing)
 
         self.model = model
         self._input_shape = (self.model.num_feature(),)
@@ -87,5 +88,5 @@ class LightGBMClassifier(Classifier):
 
     def save(self, filename, path=None):
         import pickle
-        with open(filename + '.pickle', 'wb') as f:
-            pickle.dump(self.model, file=f)
+        with open(filename + '.pickle', 'wb') as file_pickle:
+            pickle.dump(self.model, file=file_pickle)

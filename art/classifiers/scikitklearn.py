@@ -20,7 +20,7 @@ from __future__ import absolute_import, division, print_function, unicode_litera
 import logging
 import numpy as np
 
-from art.classifiers import Classifier, ClassifierGradients
+from art.classifiers.classifier import Classifier, ClassifierGradients
 
 logger = logging.getLogger(__name__)
 

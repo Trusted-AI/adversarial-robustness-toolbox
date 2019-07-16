@@ -20,7 +20,7 @@ from __future__ import absolute_import, division, print_function, unicode_litera
 import logging
 import numpy as np
 
-from art.classifiers import Classifier
+from art.classifiers.classifier import Classifier
 
 logger = logging.getLogger(__name__)
 
@@ -91,5 +91,5 @@ class XGBoostClassifier(Classifier):
 
     def save(self, filename, path=None):
         import pickle
-        with open(filename + '.pickle', 'wb') as f:
-            pickle.dump(self.model, file=f)
+        with open(filename + '.pickle', 'wb') as file_pickle:
+            pickle.dump(self.model, file=file_pickle)
