@@ -24,8 +24,10 @@ import keras.backend as k
 import numpy as np
 
 from art.attacks.projected_gradient_descent import ProjectedGradientDescent
-from art.utils import load_mnist, get_labels_np_array, master_seed
-from art.utils import get_classifier_tf, get_classifier_kr, get_classifier_pt
+from art.classifiers import KerasClassifier
+from art.utils import load_dataset, get_labels_np_array, master_seed, random_targets
+from art.utils_test import get_classifier_tf, get_classifier_kr, get_classifier_pt
+from art.utils_test import get_iris_classifier_tf, get_iris_classifier_kr, get_iris_classifier_pt
 
 logger = logging.getLogger('testLogger')
 
@@ -40,7 +42,7 @@ class TestPGD(unittest.TestCase):
         k.set_learning_phase(1)
 
         # Get MNIST
-        (x_train, y_train), (x_test, y_test), _, _ = load_mnist()
+        (x_train, y_train), (x_test, y_test), _, _ = load_dataset('mnist')
         x_train, y_train, x_test, y_test = x_train[:NB_TRAIN], y_train[:NB_TRAIN], x_test[:NB_TEST], y_test[:NB_TEST]
         cls.mnist = (x_train, y_train), (x_test, y_test)
 
@@ -142,6 +144,120 @@ class TestPGD(unittest.TestCase):
         acc = np.sum(np.argmax(test_y_pred, axis=1) == np.argmax(y_test, axis=1)) / y_test.shape[0]
         logger.info('Accuracy on adversarial test examples with 3 random initialisations: %.2f%%', acc * 100)
 
+
+class TestPGDVectors(unittest.TestCase):
+    @classmethod
+    def setUpClass(cls):
+        # Get Iris
+        (x_train, y_train), (x_test, y_test), _, _ = load_dataset('iris')
+        cls.iris = (x_train, y_train), (x_test, y_test)
+
+    def setUp(self):
+        master_seed(1234)
+
+    def test_iris_k_clipped(self):
+        (_, _), (x_test, y_test) = self.iris
+        classifier, _ = get_iris_classifier_kr()
+
+        # Test untargeted attack
+        attack = ProjectedGradientDescent(classifier, eps=1, eps_step=0.1)
+        x_test_adv = attack.generate(x_test)
+        self.assertFalse((x_test == x_test_adv).all())
+        self.assertTrue((x_test_adv <= 1).all())
+        self.assertTrue((x_test_adv >= 0).all())
+
+        preds_adv = np.argmax(classifier.predict(x_test_adv), axis=1)
+        self.assertFalse((np.argmax(y_test, axis=1) == preds_adv).all())
+        acc = np.sum(preds_adv == np.argmax(y_test, axis=1)) / y_test.shape[0]
+        logger.info('Accuracy on Iris with PGD adversarial examples: %.2f%%', (acc * 100))
+
+        # Test targeted attack
+        targets = random_targets(y_test, nb_classes=3)
+        attack = ProjectedGradientDescent(classifier, targeted=True, eps=1, eps_step=0.1)
+        x_test_adv = attack.generate(x_test, **{'y': targets})
+        self.assertFalse((x_test == x_test_adv).all())
+        self.assertTrue((x_test_adv <= 1).all())
+        self.assertTrue((x_test_adv >= 0).all())
+
+        preds_adv = np.argmax(classifier.predict(x_test_adv), axis=1)
+        self.assertTrue((np.argmax(targets, axis=1) == preds_adv).any())
+        acc = np.sum(preds_adv == np.argmax(targets, axis=1)) / y_test.shape[0]
+        logger.info('Success rate of targeted PGD on Iris: %.2f%%', (acc * 100))
+
+    def test_iris_k_unbounded(self):
+        (_, _), (x_test, y_test) = self.iris
+        classifier, _ = get_iris_classifier_kr()
+
+        # Recreate a classifier without clip values
+        classifier = KerasClassifier(model=classifier._model, use_logits=False, channel_index=1)
+        attack = ProjectedGradientDescent(classifier, eps=1, eps_step=0.2)
+        x_test_adv = attack.generate(x_test)
+        self.assertFalse((x_test == x_test_adv).all())
+        self.assertTrue((x_test_adv > 1).any())
+        self.assertTrue((x_test_adv < 0).any())
+
+        preds_adv = np.argmax(classifier.predict(x_test_adv), axis=1)
+        self.assertFalse((np.argmax(y_test, axis=1) == preds_adv).all())
+        acc = np.sum(preds_adv == np.argmax(y_test, axis=1)) / y_test.shape[0]
+        logger.info('Accuracy on Iris with PGD adversarial examples: %.2f%%', (acc * 100))
+
+    def test_iris_tf(self):
+        (_, _), (x_test, y_test) = self.iris
+        classifier, _ = get_iris_classifier_tf()
+
+        # Test untargeted attack
+        attack = ProjectedGradientDescent(classifier, eps=1, eps_step=0.1)
+        x_test_adv = attack.generate(x_test)
+        self.assertFalse((x_test == x_test_adv).all())
+        self.assertTrue((x_test_adv <= 1).all())
+        self.assertTrue((x_test_adv >= 0).all())
+
+        preds_adv = np.argmax(classifier.predict(x_test_adv), axis=1)
+        self.assertFalse((np.argmax(y_test, axis=1) == preds_adv).all())
+        acc = np.sum(preds_adv == np.argmax(y_test, axis=1)) / y_test.shape[0]
+        logger.info('Accuracy on Iris with PGD adversarial examples: %.2f%%', (acc * 100))
+
+        # Test targeted attack
+        targets = random_targets(y_test, nb_classes=3)
+        attack = ProjectedGradientDescent(classifier, targeted=True, eps=1, eps_step=0.1)
+        x_test_adv = attack.generate(x_test, **{'y': targets})
+        self.assertFalse((x_test == x_test_adv).all())
+        self.assertTrue((x_test_adv <= 1).all())
+        self.assertTrue((x_test_adv >= 0).all())
+
+        preds_adv = np.argmax(classifier.predict(x_test_adv), axis=1)
+        self.assertTrue((np.argmax(targets, axis=1) == preds_adv).any())
+        acc = np.sum(preds_adv == np.argmax(targets, axis=1)) / y_test.shape[0]
+        logger.info('Success rate of targeted PGD on Iris: %.2f%%', (acc * 100))
+
+    def test_iris_pt(self):
+        (_, _), (x_test, y_test) = self.iris
+        classifier = get_iris_classifier_pt()
+
+        # Test untargeted attack
+        attack = ProjectedGradientDescent(classifier, eps=1, eps_step=0.1)
+        x_test_adv = attack.generate(x_test)
+        self.assertFalse((x_test == x_test_adv).all())
+        self.assertTrue((x_test_adv <= 1).all())
+        self.assertTrue((x_test_adv >= 0).all())
+
+        preds_adv = np.argmax(classifier.predict(x_test_adv), axis=1)
+        self.assertFalse((np.argmax(y_test, axis=1) == preds_adv).all())
+        acc = np.sum(preds_adv == np.argmax(y_test, axis=1)) / y_test.shape[0]
+        logger.info('Accuracy on Iris with PGD adversarial examples: %.2f%%', (acc * 100))
+
+        # Test targeted attack
+        targets = random_targets(y_test, nb_classes=3)
+        attack = ProjectedGradientDescent(classifier, targeted=True, eps=1, eps_step=0.1)
+        x_test_adv = attack.generate(x_test, **{'y': targets})
+        self.assertFalse((x_test == x_test_adv).all())
+        self.assertTrue((x_test_adv <= 1).all())
+        self.assertTrue((x_test_adv >= 0).all())
+
+        preds_adv = np.argmax(classifier.predict(x_test_adv), axis=1)
+        self.assertTrue((np.argmax(targets, axis=1) == preds_adv).any())
+        acc = np.sum(preds_adv == np.argmax(targets, axis=1)) / y_test.shape[0]
+        logger.info('Success rate of targeted PGD on Iris: %.2f%%', (acc * 100))
 
 
 if __name__ == '__main__':

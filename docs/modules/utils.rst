@@ -27,9 +27,3 @@ Preprocess Datasets
 Fix the Seed for Random Number Generators
 -----------------------------------------
 .. autofunction:: master_seed
-
-Unit Test Pretrained Models
----------------------------
-.. autofunction:: get_classifier_kr
-.. autofunction:: get_classifier_pt
-.. autofunction:: get_classifier_tf

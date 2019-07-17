@@ -20,6 +20,7 @@ from __future__ import absolute_import, division, print_function, unicode_litera
 import logging
 import unittest
 
+import numpy as np
 import torch.nn as nn
 import torch.optim as optim
 
@@ -30,9 +31,9 @@ from art.utils import load_mnist, master_seed
 logger = logging.getLogger('testLogger')
 
 
-class Model(nn.Module):
+class ModelImage(nn.Module):
     def __init__(self):
-        super(Model, self).__init__()
+        super(ModelImage, self).__init__()
         self.fc = nn.Linear(25, 6400)
 
     def forward(self, x):
@@ -43,30 +44,57 @@ class Model(nn.Module):
         return logit_output
 
 
+class Model(nn.Module):
+    def __init__(self):
+        super(Model, self).__init__()
+        self.fc = nn.Linear(4, 1024)
+
+    def forward(self, x):
+        x = x.view(-1, 4)
+        logit_output = self.fc(x)
+        logit_output = logit_output.view(-1, 4, 256)
+
+        return logit_output
+
+
 class TestPixelDefend(unittest.TestCase):
     def setUp(self):
         # Set master seed
         master_seed(1234)
 
+    def test_one_channel(self):
+        (x_train, _), (_, _), _, _ = load_mnist()
+        x_train = x_train[:2, 10:15, 15:20, :]
+
+        # Define the network
+        model = ModelImage()
+        loss_fn = nn.CrossEntropyLoss()
+        optimizer = optim.Adam(model.parameters(), lr=0.01)
+        self.pixelcnn = PyTorchClassifier(model=model, loss=loss_fn, optimizer=optimizer, input_shape=(1, 28, 28),
+                                          nb_classes=10, clip_values=(0, 1))
+        preprocess = PixelDefend(eps=5, pixel_cnn=self.pixelcnn)
+        x_defended, _ = preprocess(x_train)
+
+        self.assertEqual(x_defended.shape, x_train.shape)
+        self.assertTrue((x_defended <= 1.0).all())
+        self.assertTrue((x_defended >= 0.0).all())
+
+    def test_feature_vectors(self):
         # Define the network
         model = Model()
         loss_fn = nn.CrossEntropyLoss()
         optimizer = optim.Adam(model.parameters(), lr=0.01)
-        self.pixelcnn = PyTorchClassifier((0, 1), model, loss_fn, optimizer, (1, 28, 28), 10)
+        pixel_cnn = PyTorchClassifier(model=model, loss=loss_fn, optimizer=optimizer, input_shape=(4,),
+                                      nb_classes=2, clip_values=(0, 1))
 
-    def test_one_channel(self):
-        (x_train, _), (_, _), _, _ = load_mnist()
-        x_train = x_train[:2]
+        x = np.random.rand(5, 4)
+        preprocess = PixelDefend(eps=5, pixel_cnn=pixel_cnn)
+        x_defended, _ = preprocess(x)
 
-        x_train = x_train[:, 10:15, 15:20, :]
-        preprocess = PixelDefend(eps=5, pixel_cnn=self.pixelcnn)
-        defended_x, _ = preprocess(x_train)
-
-        self.assertTrue((defended_x.shape == x_train.shape))
-        self.assertTrue((defended_x <= 1.0).all())
-        self.assertTrue((defended_x >= 0.0).all())
+        self.assertEqual(x_defended.shape, x.shape)
+        self.assertTrue((x_defended <= 1.0).all())
+        self.assertTrue((x_defended >= 0.0).all())
 
 
 if __name__ == '__main__':
     unittest.main()
-

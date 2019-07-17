@@ -15,6 +15,12 @@
 # AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT,
 # TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 # SOFTWARE.
+"""
+This module implements the total variance minimization defence `TotalVarMin`.
+
+Paper link:
+    https://openreview.net/forum?id=SyJ7ClWCb
+"""
 from __future__ import absolute_import, division, print_function, unicode_literals
 
 import logging
@@ -35,7 +41,8 @@ class TotalVarMin(Preprocessor):
     """
     params = ['prob', 'norm', 'lamb', 'solver', 'max_iter', 'clip_values']
 
-    def __init__(self, prob=0.3, norm=2, lamb=0.5, solver='L-BFGS-B', max_iter=10, clip_values=(0, 1)):
+    def __init__(self, prob=0.3, norm=2, lamb=0.5, solver='L-BFGS-B', max_iter=10, clip_values=None, apply_fit=False,
+                 apply_predict=True):
         """
         Create an instance of total variance minimization.
 
@@ -52,18 +59,24 @@ class TotalVarMin(Preprocessor):
         :param clip_values: Tuple of the form `(min, max)` representing the minimum and maximum values allowed
                for features.
         :type clip_values: `tuple`
+        :param apply_fit: True if applied during fitting/training.
+        :type apply_fit: `bool`
+        :param apply_predict: True if applied during predicting.
+        :type apply_predict: `bool`
         """
         super(TotalVarMin, self).__init__()
         self._is_fitted = True
+        self._apply_fit = apply_fit
+        self._apply_predict = apply_predict
         self.set_params(prob=prob, norm=norm, lamb=lamb, solver=solver, max_iter=max_iter, clip_values=clip_values)
 
     @property
     def apply_fit(self):
-        return False
+        return self._apply_fit
 
     @property
     def apply_predict(self):
-        return True
+        return self._apply_predict
 
     def __call__(self, x, y=None):
         """
@@ -76,16 +89,21 @@ class TotalVarMin(Preprocessor):
         :return: Similar samples.
         :rtype: `np.ndarray`
         """
-        x_ = x.copy()
+        if len(x.shape) == 2:
+            raise ValueError('Feature vectors detected. Variance minimization can only be applied to data with spatial'
+                             'dimensions.')
 
-        # Minimize one image at a time
-        for i, xi in enumerate(x_):
-            mask = (np.random.rand(xi.shape[0], xi.shape[1], xi.shape[2]) < self.prob).astype('int')
-            x_[i] = self._minimize(xi, mask)
+        x_preproc = x.copy()
 
-        x_ = np.clip(x_, self.clip_values[0], self.clip_values[1])
+        # Minimize one input at a time
+        for i, x_i in enumerate(x_preproc):
+            mask = (np.random.rand(*x_i.shape) < self.prob).astype('int')
+            x_preproc[i] = self._minimize(x_i, mask)
 
-        return x_.astype(NUMPY_DTYPE), y
+        if self.clip_values is not None:
+            np.clip(x_preproc, self.clip_values[0], self.clip_values[1], out=x_preproc)
+
+        return x_preproc.astype(NUMPY_DTYPE), y
 
     def estimate_gradient(self, x, grad):
         return grad
@@ -101,22 +119,22 @@ class TotalVarMin(Preprocessor):
         :return: A new image.
         :rtype: `np.ndarray`
         """
-        z = x.copy()
+        z_min = x.copy()
 
         for i in range(x.shape[2]):
-            res = minimize(self._loss_func, z[:, :, i].flatten(), (x[:, :, i], mask[:, :, i], self.norm, self.lamb),
+            res = minimize(self._loss_func, z_min[:, :, i].flatten(), (x[:, :, i], mask[:, :, i], self.norm, self.lamb),
                            method=self.solver, jac=self._deri_loss_func, options={'maxiter': self.max_iter})
-            z[:, :, i] = np.reshape(res.x, z[:, :, i].shape)
+            z_min[:, :, i] = np.reshape(res.x, z_min[:, :, i].shape)
 
-        return z
+        return z_min
 
     @staticmethod
-    def _loss_func(z, x, mask, norm, lamb):
+    def _loss_func(z_init, x, mask, norm, lamb):
         """
         Loss function to be minimized.
 
-        :param z: Initial guess.
-        :type z: `np.ndarray`
+        :param z_init: Initial guess.
+        :type z_init: `np.ndarray`
         :param x: Original image.
         :type x: `np.ndarray`
         :param mask: A matrix that decides which points are kept.
@@ -128,20 +146,20 @@ class TotalVarMin(Preprocessor):
         :return: Loss value.
         :rtype: `float`
         """
-        res = np.sqrt(np.power(z - x.flatten(), 2).dot(mask.flatten()))
-        z = np.reshape(z, x.shape)
-        res += lamb * np.linalg.norm(z[1:, :] - z[:-1, :], norm, axis=1).sum()
-        res += lamb * np.linalg.norm(z[:, 1:] - z[:, :-1], norm, axis=0).sum()
+        res = np.sqrt(np.power(z_init - x.flatten(), 2).dot(mask.flatten()))
+        z_init = np.reshape(z_init, x.shape)
+        res += lamb * np.linalg.norm(z_init[1:, :] - z_init[:-1, :], norm, axis=1).sum()
+        res += lamb * np.linalg.norm(z_init[:, 1:] - z_init[:, :-1], norm, axis=0).sum()
 
         return res
 
     @staticmethod
-    def _deri_loss_func(z, x, mask, norm, lamb):
+    def _deri_loss_func(z_init, x, mask, norm, lamb):
         """
         Derivative of loss function to be minimized.
 
-        :param z: Initial guess.
-        :type z: `np.ndarray`
+        :param z_init: Initial guess.
+        :type z_init: `np.ndarray`
         :param x: Original image.
         :type x: `np.ndarray`
         :param mask: A matrix that decides which points are kept.
@@ -154,28 +172,28 @@ class TotalVarMin(Preprocessor):
         :rtype: `float`
         """
         # First compute the derivative of the first component of the loss function
-        nor1 = np.sqrt(np.power(z - x.flatten(), 2).dot(mask.flatten()))
+        nor1 = np.sqrt(np.power(z_init - x.flatten(), 2).dot(mask.flatten()))
         if nor1 < 1e-6:
             nor1 = 1e-6
-        der1 = ((z - x.flatten()) * mask.flatten()) / (nor1 * 1.0)
+        der1 = ((z_init - x.flatten()) * mask.flatten()) / (nor1 * 1.0)
 
         # Then compute the derivative of the second component of the loss function
-        z = np.reshape(z, x.shape)
+        z_init = np.reshape(z_init, x.shape)
 
         if norm == 1:
-            z_d1 = np.sign(z[1:, :] - z[:-1, :])
-            z_d2 = np.sign(z[:, 1:] - z[:, :-1])
+            z_d1 = np.sign(z_init[1:, :] - z_init[:-1, :])
+            z_d2 = np.sign(z_init[:, 1:] - z_init[:, :-1])
         else:
-            z_d1_norm = np.power(np.linalg.norm(z[1:, :] - z[:-1, :], norm, axis=1), norm - 1)
-            z_d2_norm = np.power(np.linalg.norm(z[:, 1:] - z[:, :-1], norm, axis=0), norm - 1)
+            z_d1_norm = np.power(np.linalg.norm(z_init[1:, :] - z_init[:-1, :], norm, axis=1), norm - 1)
+            z_d2_norm = np.power(np.linalg.norm(z_init[:, 1:] - z_init[:, :-1], norm, axis=0), norm - 1)
             z_d1_norm[z_d1_norm < 1e-6] = 1e-6
             z_d2_norm[z_d2_norm < 1e-6] = 1e-6
-            z_d1_norm = np.repeat(z_d1_norm[:, np.newaxis], z.shape[1], axis=1)
-            z_d2_norm = np.repeat(z_d2_norm[np.newaxis, :], z.shape[0], axis=0)
-            z_d1 = norm * np.power(z[1:, :] - z[:-1, :], norm - 1) / z_d1_norm
-            z_d2 = norm * np.power(z[:, 1:] - z[:, :-1], norm - 1) / z_d2_norm
+            z_d1_norm = np.repeat(z_d1_norm[:, np.newaxis], z_init.shape[1], axis=1)
+            z_d2_norm = np.repeat(z_d2_norm[np.newaxis, :], z_init.shape[0], axis=0)
+            z_d1 = norm * np.power(z_init[1:, :] - z_init[:-1, :], norm - 1) / z_d1_norm
+            z_d2 = norm * np.power(z_init[:, 1:] - z_init[:, :-1], norm - 1) / z_d2_norm
 
-        der2 = np.zeros(z.shape)
+        der2 = np.zeros(z_init.shape)
         der2[:-1, :] -= z_d1
         der2[1:, :] += z_d1
         der2[:, :-1] -= z_d2
@@ -228,9 +246,12 @@ class TotalVarMin(Preprocessor):
             logger.error('Number of iterations must be a positive integer.')
             raise ValueError('Number of iterations must be a positive integer.')
 
-        if len(self.clip_values) != 2:
-            raise ValueError('`clip_values` should be a tuple of 2 floats containing the allowed data range.')
-        if self.clip_values[0] >= self.clip_values[1]:
-            raise ValueError('Invalid `clip_values`: min >= max.')
+        if self.clip_values is not None:
+
+            if len(self.clip_values) != 2:
+                raise ValueError('`clip_values` should be a tuple of 2 floats containing the allowed data range.')
+
+            if np.array(self.clip_values[0] >= self.clip_values[1]).any():
+                raise ValueError('Invalid `clip_values`: min >= max.')
 
         return True

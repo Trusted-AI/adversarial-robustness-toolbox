@@ -1,3 +1,20 @@
+# MIT License
+#
+# Copyright (C) IBM Corporation 2018
+#
+# Permission is hereby granted, free of charge, to any person obtaining a copy of this software and associated
+# documentation files (the "Software"), to deal in the Software without restriction, including without limitation the
+# rights to use, copy, modify, merge, publish, distribute, sublicense, and/or sell copies of the Software, and to permit
+# persons to whom the Software is furnished to do so, subject to the following conditions:
+#
+# The above copyright notice and this permission notice shall be included in all copies or substantial portions of the
+# Software.
+#
+# THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE
+# WARRANTIES OF MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+# AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT,
+# TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
+# SOFTWARE.
 """ Scanner scoring functions """
 
 import numpy as np
@@ -29,19 +46,18 @@ class ScoringFunctions:
 
         score[inds_tie] = no_records[inds_tie] * np.log(np.true_divide(1, alpha[inds_tie]))
 
-        factor1 = n_alpha[inds_pos_not_tie] * \
-        np.log(np.true_divide(n_alpha[inds_pos_not_tie], no_records[inds_pos_not_tie] * alpha[inds_pos_not_tie]))
+        factor1 = n_alpha[inds_pos_not_tie] * np.log(
+            np.true_divide(n_alpha[inds_pos_not_tie], no_records[inds_pos_not_tie] * alpha[inds_pos_not_tie]))
 
         factor2 = (no_records[inds_pos_not_tie] - n_alpha[inds_pos_not_tie])
 
-        factor3 = np.log(np.true_divide(no_records[inds_pos_not_tie] - \
-        n_alpha[inds_pos_not_tie], no_records[inds_pos_not_tie]*(1-alpha[inds_pos_not_tie])))
+        factor3 = np.log(np.true_divide(no_records[inds_pos_not_tie] -
+                                        n_alpha[inds_pos_not_tie],
+                                        no_records[inds_pos_not_tie] * (1 - alpha[inds_pos_not_tie])))
 
         score[inds_pos_not_tie] = factor1 + factor2 * factor3
 
         return score
-
-
 
     @staticmethod
     def get_score_hc_fast(n_alpha, no_records, alpha):
@@ -59,11 +75,11 @@ class ScoringFunctions:
         :rtype: `list`
         """
 
-        #nds = np.array(range(0, valpha.shape[0])) #count over these
+        # nds = np.array(range(0, valpha.shape[0])) #count over these
         score = np.zeros(alpha.shape[0])
         inds = n_alpha > no_records * alpha
-        factor1 = n_alpha[inds] - no_records[inds]*alpha[inds]
-        factor2 = np.sqrt(no_records[inds]*alpha[inds] *(1.0-alpha[inds]))
+        factor1 = n_alpha[inds] - no_records[inds] * alpha[inds]
+        factor2 = np.sqrt(no_records[inds] * alpha[inds] * (1.0 - alpha[inds]))
         score[inds] = np.true_divide(factor1, factor2)
         return score
 
@@ -76,11 +92,11 @@ class ScoringFunctions:
         :type no_records: `list`
         :param alpha: alpha threshold
         :type alpha: `list`
-        :return: score    
+        :return: score
         :rtype: `list`
         """
 
         score = np.zeros(alpha.shape[0])
         inds = n_alpha > no_records * alpha
-        score[inds] = np.true_divide(n_alpha[inds] - no_records[inds]*alpha[inds], np.sqrt(no_records[inds]))
+        score[inds] = np.true_divide(n_alpha[inds] - no_records[inds] * alpha[inds], np.sqrt(no_records[inds]))
         return score

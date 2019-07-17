@@ -29,7 +29,8 @@ import numpy as np
 from art.attacks.fast_gradient import FastGradientMethod
 from art.classifiers.keras import KerasClassifier
 from art.detection.detector import BinaryInputDetector, BinaryActivationDetector
-from art.utils import load_mnist, get_classifier_kr, master_seed
+from art.utils import load_mnist, master_seed
+from art.utils_test import get_classifier_kr
 
 logger = logging.getLogger('testLogger')
 
@@ -40,6 +41,7 @@ class TestBinaryInputDetector(unittest.TestCase):
     """
     A unittest class for testing the binary input detector.
     """
+
     def setUp(self):
         # Set master seed
         master_seed(1234)
@@ -81,7 +83,7 @@ class TestBinaryInputDetector(unittest.TestCase):
                       metrics=['accuracy'])
 
         # Create detector and train it:
-        detector = BinaryInputDetector(KerasClassifier((0, 1), model, use_logits=False))
+        detector = BinaryInputDetector(KerasClassifier(model=model, clip_values=(0, 1), use_logits=False))
         detector.fit(x_train_detector, y_train_detector, nb_epochs=2, batch_size=128)
 
         # Apply detector on clean and adversarial test data:
@@ -93,14 +95,15 @@ class TestBinaryInputDetector(unittest.TestCase):
         nb_true_negatives = len(np.where(test_detection == 0)[0])
         logger.debug('Number of true positives detected: %i', nb_true_positives)
         logger.debug('Number of true negatives detected: %i', nb_true_negatives)
-        self.assertTrue(nb_true_positives > 0)
-        self.assertTrue(nb_true_negatives > 0)
+        self.assertGreater(nb_true_positives, 0)
+        self.assertGreater(nb_true_negatives, 0)
 
 
 class TestBinaryActivationDetector(unittest.TestCase):
     """
     A unittest class for testing the binary activation detector.
     """
+
     def setUp(self):
         # Set master seed
         master_seed(1234)
@@ -143,7 +146,7 @@ class TestBinaryActivationDetector(unittest.TestCase):
         # Create detector and train it.
         # Detector consider activations at layer=0:
         detector = BinaryActivationDetector(classifier=classifier,
-                                            detector=KerasClassifier((0, 1), model, use_logits=False),
+                                            detector=KerasClassifier(model=model, clip_values=(0, 1), use_logits=False),
                                             layer=0)
         detector.fit(x_train_detector, y_train_detector, nb_epochs=2, batch_size=128)
 
@@ -156,8 +159,8 @@ class TestBinaryActivationDetector(unittest.TestCase):
         nb_true_negatives = len(np.where(test_detection == 0)[0])
         logger.debug('Number of true positives detected: %i', nb_true_positives)
         logger.debug('Number of true negatives detected: %i', nb_true_negatives)
-        self.assertTrue(nb_true_positives > 0)
-        self.assertTrue(nb_true_negatives > 0)
+        self.assertGreater(nb_true_positives, 0)
+        self.assertGreater(nb_true_negatives, 0)
 
 
 if __name__ == '__main__':

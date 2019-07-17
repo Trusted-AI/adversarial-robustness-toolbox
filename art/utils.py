@@ -30,10 +30,9 @@ logger = logging.getLogger(__name__)
 try:
     # Conditional import of `torch` to avoid segmentation fault errors this framework generates at import
     import torch
-    import torch.nn as nn
-    import torch.optim as optim
 except ImportError:
     logger.info('Could not import PyTorch in utilities.')
+
 
 # -------------------------------------------------------------------------------------------- RANDOM NUMBER GENERATORS
 
@@ -88,34 +87,36 @@ def master_seed(seed):
 # ----------------------------------------------------------------------------------------------------- MATHS UTILITIES
 
 
-def projection(v, eps, p):
+def projection(values, eps, norm_p):
     """
-    Project the values in `v` on the L_p norm ball of size `eps`.
+    Project `values` on the L_p norm ball of size `eps`.
 
-    :param v: Array of perturbations to clip.
-    :type v: `np.ndarray`
+    :param values: Array of perturbations to clip.
+    :type values: `np.ndarray`
     :param eps: Maximum norm allowed.
     :type eps: `float`
-    :param p: L_p norm to use for clipping. Only 1, 2 and `np.Inf` supported for now.
-    :type p: `int`
-    :return: Values of `v` after projection.
+    :param norm_p: L_p norm to use for clipping. Only 1, 2 and `np.Inf` supported for now.
+    :type norm_p: `int`
+    :return: Values of `values` after projection.
     :rtype: `np.ndarray`
     """
     # Pick a small scalar to avoid division by 0
     tol = 10e-8
-    v_ = v.reshape((v.shape[0], -1))
+    values_tmp = values.reshape((values.shape[0], -1))
 
-    if p == 2:
-        v_ = v_ * np.expand_dims(np.minimum(1., eps / (np.linalg.norm(v_, axis=1) + tol)), axis=1)
-    elif p == 1:
-        v_ = v_ * np.expand_dims(np.minimum(1., eps / (np.linalg.norm(v_, axis=1, ord=1) + tol)), axis=1)
-    elif p == np.inf:
-        v_ = np.sign(v_) * np.minimum(abs(v_), eps)
+    if norm_p == 2:
+        values_tmp = values_tmp * np.expand_dims(np.minimum(1., eps / (np.linalg.norm(values_tmp, axis=1) + tol)),
+                                                 axis=1)
+    elif norm_p == 1:
+        values_tmp = values_tmp * np.expand_dims(
+            np.minimum(1., eps / (np.linalg.norm(values_tmp, axis=1, ord=1) + tol)), axis=1)
+    elif norm_p == np.inf:
+        values_tmp = np.sign(values_tmp) * np.minimum(abs(values_tmp), eps)
     else:
-        raise NotImplementedError('Values of `p` different from 1, 2 and `np.inf` are currently not supported.')
+        raise NotImplementedError('Values of `norm_p` different from 1, 2 and `np.inf` are currently not supported.')
 
-    v = v_.reshape(v.shape)
-    return v
+    values = values_tmp.reshape(values.shape)
+    return values
 
 
 def random_sphere(nb_points, nb_dims, radius, norm):
@@ -134,20 +135,21 @@ def random_sphere(nb_points, nb_dims, radius, norm):
     :rtype: `np.ndarray`
     """
     if norm == 1:
-        a = np.zeros(shape=(nb_points, nb_dims + 1))
-        a[:, -1] = np.sqrt(np.random.uniform(0, radius ** 2, nb_points))
+        a_tmp = np.zeros(shape=(nb_points, nb_dims + 1))
+        a_tmp[:, -1] = np.sqrt(np.random.uniform(0, radius ** 2, nb_points))
 
         for i in range(nb_points):
-            a[i, 1:-1] = np.sort(np.random.uniform(0, a[i, -1], nb_dims - 1))
+            a_tmp[i, 1:-1] = np.sort(np.random.uniform(0, a_tmp[i, -1], nb_dims - 1))
 
-        res = (a[:, 1:] - a[:, :-1]) * np.random.choice([-1, 1], (nb_points, nb_dims))
+        res = (a_tmp[:, 1:] - a_tmp[:, :-1]) * np.random.choice([-1, 1], (nb_points, nb_dims))
     elif norm == 2:
+        # pylint: disable=E0611
         from scipy.special import gammainc
 
-        a = np.random.randn(nb_points, nb_dims)
-        s2 = np.sum(a ** 2, axis=1)
-        base = gammainc(nb_dims / 2.0, s2 / 2.0) ** (1 / nb_dims) * radius / np.sqrt(s2)
-        res = a * (np.tile(base, (nb_dims, 1))).T
+        a_tmp = np.random.randn(nb_points, nb_dims)
+        s_2 = np.sum(a_tmp ** 2, axis=1)
+        base = gammainc(nb_dims / 2.0, s_2 / 2.0) ** (1 / nb_dims) * radius / np.sqrt(s_2)
+        res = a_tmp * (np.tile(base, (nb_dims, 1))).T
     elif norm == np.inf:
         res = np.random.uniform(float(-radius), float(radius), (nb_points, nb_dims))
     else:
@@ -299,32 +301,57 @@ def get_labels_np_array(preds):
     return y
 
 
-def preprocess(x, y, nb_classes=10, max_value=255):
+def preprocess(x, y, nb_classes=10, clip_values=None):
     """Scales `x` to [0, 1] and converts `y` to class categorical confidences.
 
-    :param x: Data instances
+    :param x: Data instances.
     :type x: `np.ndarray`
-    :param y: Labels
+    :param y: Labels.
     :type y: `np.ndarray`
-    :param nb_classes: Number of classes in dataset
+    :param nb_classes: Number of classes in dataset.
     :type nb_classes: `int`
-    :param max_value: Original maximum allowed value for features
-    :type max_value: `int`
-    :return: rescaled values of `x`, `y`
+    :param clip_values: Original data range allowed value for features, either one respective scalar or one value per
+           feature.
+    :type clip_values: `tuple(float, float)` or `tuple(np.ndarray, np.ndarray)`
+    :return: Rescaled values of `x`, `y`
     :rtype: `tuple`
     """
-    x = x.astype('float32') / max_value
-    y = to_categorical(y, nb_classes)
+    if clip_values is None:
+        min_, max_ = np.amin(x), np.amax(x)
+    else:
+        min_, max_ = clip_values
 
-    return x, y
+    normalized_x = (x - min_) / (max_ - min_)
+    categorical_y = to_categorical(y, nb_classes)
+
+    return normalized_x, categorical_y
 
 
-def compute_success(classifier, x_clean, labels, x_adv, targeted=False):
-    adv_preds = np.argmax(classifier.predict(x_adv), axis=1)
+def compute_success(classifier, x_clean, labels, x_adv, targeted=False, batch_size=1):
+    """
+    Compute the success rate of an attack based on clean samples, adversarial samples and targets or correct labels.
+
+    :param classifier: Classifier used for prediction.
+    :type classifier: :class:`.Classifier`
+    :param x_clean: Original clean samples.
+    :type x_clean: `np.ndarray`
+    :param labels: Correct labels of `x_clean` if the attack is untargeted, or target labels of the attack otherwise.
+    :type labels: `np.ndarray`
+    :param x_adv: Adversarial samples to be evaluated.
+    :type x_adv: `np.ndarray`
+    :param targeted: `True` if the attack is targeted. In that case, `labels` are treated as target classes instead of
+           correct labels of the clean samples.s
+    :type targeted: `bool`
+    :param batch_size: Batch size
+    :type batch_size: `int`
+    :return: Percentage of successful adversarial samples.
+    :rtype: `float`
+    """
+    adv_preds = np.argmax(classifier.predict(x_adv, batch_size=batch_size), axis=1)
     if targeted:
         rate = np.sum(adv_preds == np.argmax(labels, axis=1)) / x_adv.shape[0]
     else:
-        preds = np.argmax(classifier.predict(x_clean), axis=1)
+        preds = np.argmax(classifier.predict(x_clean, batch_size=batch_size), axis=1)
         rate = np.sum(adv_preds != preds) / x_adv.shape[0]
 
     return rate
@@ -395,8 +422,8 @@ def load_cifar10(raw=False):
     min_, max_ = 0, 255
     if not raw:
         min_, max_ = 0., 1.
-        x_train, y_train = preprocess(x_train, y_train)
-        x_test, y_test = preprocess(x_test, y_test)
+        x_train, y_train = preprocess(x_train, y_train, clip_values=(0, 255))
+        x_test, y_test = preprocess(x_test, y_test, clip_values=(0, 255))
 
     return (x_train, y_train), (x_test, y_test), min_, max_
 
@@ -413,12 +440,12 @@ def load_mnist(raw=False):
 
     path = get_file('mnist.npz', path=DATA_PATH, url='https://s3.amazonaws.com/img-datasets/mnist.npz')
 
-    f = np.load(path)
-    x_train = f['x_train']
-    y_train = f['y_train']
-    x_test = f['x_test']
-    y_test = f['y_test']
-    f.close()
+    dict_mnist = np.load(path)
+    x_train = dict_mnist['x_train']
+    y_train = dict_mnist['y_train']
+    x_test = dict_mnist['x_test']
+    y_test = dict_mnist['y_test']
+    dict_mnist.close()
 
     # Add channel axis
     min_, max_ = 0, 255
@@ -448,28 +475,83 @@ def load_stl():
     path = get_file('stl10_binary', path=DATA_PATH, extract=True,
                     url='https://ai.stanford.edu/~acoates/stl10/stl10_binary.tar.gz')
 
-    with open(join(path, str('train_X.bin')), str('rb')) as f:
-        x_train = np.fromfile(f, dtype=np.uint8)
+    with open(join(path, 'train_X.bin'), 'rb') as f_numpy:
+        x_train = np.fromfile(f_numpy, dtype=np.uint8)
         x_train = np.reshape(x_train, (-1, 3, 96, 96))
 
-    with open(join(path, str('test_X.bin')), str('rb')) as f:
-        x_test = np.fromfile(f, dtype=np.uint8)
+    with open(join(path, 'test_X.bin'), 'rb') as f_numpy:
+        x_test = np.fromfile(f_numpy, dtype=np.uint8)
         x_test = np.reshape(x_test, (-1, 3, 96, 96))
 
     # Set channel last
     x_train = x_train.transpose(0, 2, 3, 1)
     x_test = x_test.transpose(0, 2, 3, 1)
 
-    with open(join(path, str('train_y.bin')), str('rb')) as f:
-        y_train = np.fromfile(f, dtype=np.uint8)
+    with open(join(path, 'train_y.bin'), 'rb') as f_numpy:
+        y_train = np.fromfile(f_numpy, dtype=np.uint8)
         y_train -= 1
 
-    with open(join(path, str('test_y.bin')), str('rb')) as f:
-        y_test = np.fromfile(f, dtype=np.uint8)
+    with open(join(path, 'test_y.bin'), 'rb') as f_numpy:
+        y_test = np.fromfile(f_numpy, dtype=np.uint8)
         y_test -= 1
 
     x_train, y_train = preprocess(x_train, y_train)
     x_test, y_test = preprocess(x_test, y_test)
+
+    return (x_train, y_train), (x_test, y_test), min_, max_
+
+
+def load_iris(raw=False, test_set=.3):
+    """
+    Loads the UCI Iris dataset from `DATA_PATH` or downloads it if necessary.
+
+    :param raw: `True` if no preprocessing should be applied to the data. Otherwise, data is normalized to 1.
+    :type raw: `bool`
+    :param test_set: Proportion of the data to use as validation split. The value should be between o and 1.
+    :type test_set: `float`
+    :return: Entire dataset and labels.
+    :rtype: `(np.ndarray, np.ndarray)`
+    """
+    from art import DATA_PATH, NUMPY_DTYPE
+
+    # Download data if needed
+    path = get_file('iris.data', path=DATA_PATH, extract=False,
+                    url='https://archive.ics.uci.edu/ml/machine-learning-databases/iris/iris.data')
+
+    data = np.loadtxt(path, delimiter=',', usecols=(0, 1, 2, 3), dtype=NUMPY_DTYPE)
+    labels = np.loadtxt(path, delimiter=',', usecols=4, dtype=str)
+
+    # Preprocess
+    if not raw:
+        label_map = {
+            'Iris-setosa': 0,
+            'Iris-versicolor': 1,
+            'Iris-virginica': 2
+        }
+        labels = np.array([label_map[labels[i]] for i in range(labels.size)], dtype=np.int32)
+        data, labels = preprocess(data, labels, nb_classes=3)
+    min_, max_ = np.amin(data), np.amax(data)
+
+    # Split training and test sets
+    split_index = int((1 - test_set) * len(data) / 3)
+    x_train = np.vstack((data[:split_index], data[50:50 + split_index], data[100:100 + split_index]))
+    y_train = np.vstack((labels[:split_index], labels[50:50 + split_index], labels[100:100 + split_index]))
+
+    if split_index >= 49:
+        x_test, y_test = None, None
+    else:
+
+        x_test = np.vstack((data[split_index:50], data[50 + split_index:100], data[100 + split_index:]))
+        y_test = np.vstack((labels[split_index:50], labels[50 + split_index:100], labels[100 + split_index:]))
+        assert len(x_train) + len(x_test) == 150
+
+        # Shuffle test set
+        random_indices = np.random.permutation(len(y_test))
+        x_test, y_test = x_test[random_indices], y_test[random_indices]
+
+    # Shuffle training set
+    random_indices = np.random.permutation(len(y_train))
+    x_train, y_train = x_train[random_indices], y_train[random_indices]
 
     return (x_train, y_train), (x_test, y_test), min_, max_
 
@@ -484,13 +566,14 @@ def load_dataset(name):
     :rtype: `(np.ndarray, np.ndarray), (np.ndarray, np.ndarray), float, float`
     :raises NotImplementedError: If the dataset is unknown.
     """
-
     if "mnist" in name:
         return load_mnist()
-    elif "cifar10" in name:
+    if "cifar10" in name:
         return load_cifar10()
-    elif "stl10" in name:
+    if "stl10" in name:
         return load_stl()
+    if "iris" in name:
+        return load_iris()
 
     raise NotImplementedError("There is no loader for dataset '{}'.".format(name))
 
@@ -571,10 +654,10 @@ def get_file(filename, url, path=None, extract=False):
                 from six.moves.urllib.request import urlretrieve
 
                 urlretrieve(url, full_path)
-            except HTTPError as e:
-                raise Exception(error_msg.format(url, e.code, e.msg))
-            except URLError as e:
-                raise Exception(error_msg.format(url, e.errno, e.reason))
+            except HTTPError as exception:
+                raise Exception(error_msg.format(url, exception.code, exception.msg))
+            except URLError as exception:
+                raise Exception(error_msg.format(url, exception.errno, exception.reason))
         except (Exception, KeyboardInterrupt):
             if os.path.exists(full_path):
                 os.remove(full_path)
@@ -609,255 +692,15 @@ def clip_and_round(x, clip_values, round_samples):
     :param x: Sample input with shape as expected by the model.
     :type x: `np.ndarray`
     :param clip_values: Tuple of the form `(min, max)` representing the minimum and maximum values allowed
-               for features.
+           for features, or `None` if no clipping should be performed.
     :type clip_values: `tuple`
-    :param round_samples: The resolution of the input domain to round the data to, e.g., 1.0, or 1/255. Set to 0 to disable.
+    :param round_samples: The resolution of the input domain to round the data to, e.g., 1.0, or 1/255. Set to 0 to
+           disable.
     :type round_samples: `float`
     """
     if round_samples == 0:
         return x
-    x = np.clip(x, *clip_values)
+    if clip_values is not None:
+        np.clip(x, clip_values[0], clip_values[1], out=x)
     x = np.around(x / round_samples) * round_samples
     return x
-
-# -------------------------------------------------------------------------------------------------- PRE-TRAINED MODELS
-
-
-def _tf_initializer_w_conv2d(_, dtype, partition_info):
-    """
-    Initializer of weights in convolution layer for Tensorflow.
-
-    :return: Tensorflow constant
-    :rtype: tf.constant
-    """
-    import tensorflow as tf
-
-    w_conv2d = np.load(os.path.join(os.path.dirname(os.path.dirname(__file__)), 'models', 'W_CONV2D.npy'))
-    return tf.constant(w_conv2d, dtype)
-
-
-def _kr_initializer_w_conv2d(_, dtype=None):
-    """
-    Initializer of weights in convolution layer for Keras.
-
-    :return: Keras variable
-    :rtype: k.variable
-    """
-    import keras.backend as k
-
-    w_conv2d = np.load(os.path.join(os.path.dirname(os.path.dirname(__file__)), 'models', 'W_CONV2D.npy'))
-    return k.variable(value=w_conv2d, dtype=dtype)
-
-
-def _tf_initializer_b_conv2d(_, dtype, partition_info):
-    """
-    Initializer of biases in convolution layer for Tensorflow.
-
-    :return: Tensorflow constant
-    :rtype: tf.constant
-    """
-    import tensorflow as tf
-
-    b_conv2d = np.load(os.path.join(os.path.dirname(os.path.dirname(__file__)), 'models', 'B_CONV2D.npy'))
-    return tf.constant(b_conv2d, dtype)
-
-
-def _kr_initializer_b_conv2d(_, dtype=None):
-    """
-    Initializer of weights in convolution layer for Keras.
-
-    :return: Keras variable
-    :rtype: k.variable
-    """
-    import keras.backend as k
-
-    b_conv2d = np.load(os.path.join(os.path.dirname(os.path.dirname(__file__)), 'models', 'B_CONV2D.npy'))
-    return k.variable(value=b_conv2d, dtype=dtype)
-
-
-def _tf_initializer_w_dense(_, dtype, partition_info):
-    """
-    Initializer of weights in dense layer for Tensorflow.
-
-    :return: Tensorflow constant
-    :rtype: tf.constant
-    """
-    import tensorflow as tf
-
-    w_dense = np.load(os.path.join(os.path.dirname(os.path.dirname(__file__)), 'models', 'W_DENSE.npy'))
-    return tf.constant(w_dense, dtype)
-
-
-def _kr_initializer_w_dense(_, dtype=None):
-    """
-    Initializer of weights in dense layer for Keras.
-
-    :return: Keras varibale
-    :rtype: k.variable
-    """
-    import keras.backend as k
-
-    w_dense = np.load(os.path.join(os.path.dirname(os.path.dirname(__file__)), 'models', 'W_DENSE.npy'))
-    return k.variable(value=w_dense, dtype=dtype)
-
-
-def _tf_initializer_b_dense(_, dtype, partition_info):
-    """
-    Initializer of biases in dense layer for Tensorflow.
-
-    :return: Tensorflow constant
-    :rtype: tf.constant
-    """
-    import tensorflow as tf
-
-    b_dense = np.load(os.path.join(os.path.dirname(os.path.dirname(__file__)), 'models', 'B_DENSE.npy'))
-    return tf.constant(b_dense, dtype)
-
-
-def _kr_initializer_b_dense(_, dtype=None):
-    """
-    Initializer of biases in dense layer for Keras.
-
-    :return: Keras variable
-    :rtype: k.variable
-    """
-    import keras.backend as k
-
-    b_dense = np.load(os.path.join(os.path.dirname(os.path.dirname(__file__)), 'models', 'B_DENSE.npy'))
-    return k.variable(value=b_dense, dtype=dtype)
-
-
-def get_classifier_tf():
-    """
-    Standard Tensorflow classifier for unit testing.
-
-    The following hyper-parameters were used to obtain the weights and biases:
-    learning_rate: 0.01
-    batch size: 10
-    number of epochs: 2
-    optimizer: tf.train.AdamOptimizer
-
-    :return: TFClassifier, tf.Session()
-    """
-    import tensorflow as tf
-    from art.classifiers import TFClassifier
-
-    # Define input and output placeholders
-    input_ph = tf.placeholder(tf.float32, shape=[None, 28, 28, 1])
-    output_ph = tf.placeholder(tf.int32, shape=[None, 10])
-
-    # Define the tensorflow graph
-    conv = tf.layers.conv2d(input_ph, 1, 7, activation=tf.nn.relu, kernel_initializer=_tf_initializer_w_conv2d,
-                            bias_initializer=_tf_initializer_b_conv2d)
-    conv = tf.layers.max_pooling2d(conv, 4, 4)
-    flattened = tf.contrib.layers.flatten(conv)
-
-    # Logits layer
-    logits = tf.layers.dense(flattened, 10, kernel_initializer=_tf_initializer_w_dense,
-                             bias_initializer=_tf_initializer_b_dense)
-
-    # Train operator
-    loss = tf.reduce_mean(tf.losses.softmax_cross_entropy(logits=logits, onehot_labels=output_ph))
-
-    # Tensorflow session and initialization
-    sess = tf.Session()
-    sess.run(tf.global_variables_initializer())
-
-    # Train the classifier
-    tfc = TFClassifier(clip_values=(0, 1), input_ph=input_ph, logits=logits, output_ph=output_ph, train=None,
-                       loss=loss, learning=None, sess=sess)
-
-    return tfc, sess
-
-
-def get_classifier_kr():
-    """
-    Standard Keras classifier for unit testing
-
-    The weights and biases are identical to the Tensorflow model in get_classifier_tf().
-
-    :return: KerasClassifier, tf.Session()
-    """
-    import keras
-    import keras.backend as k
-    from keras.models import Sequential
-    from keras.layers import Dense, Flatten, Conv2D, MaxPooling2D
-    import tensorflow as tf
-
-    from art.classifiers import KerasClassifier
-
-    # Initialize a tf session
-    sess = tf.Session()
-    k.set_session(sess)
-
-    # Create simple CNN
-    model = Sequential()
-    model.add(Conv2D(1, kernel_size=(7, 7), activation='relu', input_shape=(28, 28, 1),
-                     kernel_initializer=_kr_initializer_w_conv2d, bias_initializer=_kr_initializer_b_conv2d))
-    model.add(MaxPooling2D(pool_size=(4, 4)))
-    model.add(Flatten())
-    model.add(Dense(10, activation='softmax', kernel_initializer=_kr_initializer_w_dense,
-                    bias_initializer=_kr_initializer_b_dense))
-
-    model.compile(loss=keras.losses.categorical_crossentropy, optimizer=keras.optimizers.Adam(lr=0.01),
-                  metrics=['accuracy'])
-
-    # Get classifier
-    krc = KerasClassifier((0, 1), model, use_logits=False)
-
-    return krc, sess
-
-
-def get_classifier_pt():
-    """
-    Standard PyTorch classifier for unit testing
-
-    :return: PyTorchClassifier
-    """
-    from art.classifiers import PyTorchClassifier
-
-    class Model(nn.Module):
-        """
-        Create model for pytorch.
-
-        The weights and biases are identical to the Tensorflow model in get_classifier_tf().
-        """
-
-        def __init__(self):
-            super(Model, self).__init__()
-
-            w_conv2d = np.load(os.path.join(os.path.dirname(os.path.dirname(__file__)), 'models', 'W_CONV2D.npy'))
-            b_conv2d = np.load(os.path.join(os.path.dirname(os.path.dirname(__file__)), 'models', 'B_CONV2D.npy'))
-            w_dense = np.load(os.path.join(os.path.dirname(os.path.dirname(__file__)), 'models', 'W_DENSE.npy'))
-            b_dense = np.load(os.path.join(os.path.dirname(os.path.dirname(__file__)), 'models', 'B_DENSE.npy'))
-
-            self.conv = nn.Conv2d(in_channels=1, out_channels=1, kernel_size=7)
-            w_conv2d_pt = np.swapaxes(w_conv2d, 0, 2)
-            w_conv2d_pt = np.swapaxes(w_conv2d_pt, 1, 3)
-            self.conv.weight = nn.Parameter(torch.Tensor(w_conv2d_pt))
-            self.conv.bias = nn.Parameter(torch.Tensor(b_conv2d))
-            self.pool = nn.MaxPool2d(4, 4)
-            self.fullyconnected = nn.Linear(25, 10)
-            self.fullyconnected.weight = nn.Parameter(torch.Tensor(np.transpose(w_dense)))
-            self.fullyconnected.bias = nn.Parameter(torch.Tensor(b_dense))
-
-        def forward(self, x):
-            import torch.nn.functional as f
-
-            x = self.pool(f.relu(self.conv(x)))
-            x = x.view(-1, 25)
-            logit_output = self.fullyconnected(x)
-
-            return logit_output
-
-    # Define the network
-    model = Model()
-
-    # Define a loss function and optimizer
-    loss_fn = nn.CrossEntropyLoss()
-    optimizer = optim.Adam(model.parameters(), lr=0.01)
-
-    # Get classifier
-    ptc = PyTorchClassifier((0, 1), model, loss_fn, optimizer, (1, 28, 28), 10)
-
-    return ptc

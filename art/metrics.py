@@ -35,16 +35,27 @@ from art import NUMPY_DTYPE
 
 logger = logging.getLogger(__name__)
 
-supported_methods = {
+SUPPORTED_METHODS = {
     "fgsm": {"class": FastGradientMethod, "params": {"eps_step": 0.1, "eps_max": 1., "clip_min": 0., "clip_max": 1.}},
     # "jsma": {"class": SaliencyMapMethod, "params": {"theta": 1., "gamma": 0.01, "clip_min": 0., "clip_max": 1.}}
-    }
+}
 
 
 def get_crafter(classifier, attack, params=None):
+    """Create an attack instance to craft adversarial samples.
+
+        :param classifier: A trained model
+        :type classifier: :class:`.Classifier`
+        :param attack: adversarial attack name
+        :type attack: `str`
+        :param params: Parameters specific to the adversarial attack
+        :type params: `dict`
+        :return: A crafter
+        :rtype: `Attack`
+        """
     try:
-        crafter = supported_methods[attack]["class"](classifier)
-    except:
+        crafter = SUPPORTED_METHODS[attack]["class"](classifier)
+    except Exception:
         raise NotImplementedError("{} crafting method not supported.".format(attack))
 
     if params:
@@ -196,8 +207,8 @@ def clever(classifier, x, nb_batches, batch_size, radius, norm, target=None, tar
         if j == pred_class:
             score_list.append(None)
             continue
-        s = clever_t(classifier, x, j, nb_batches, batch_size, radius, norm, c_init, pool_factor)
-        score_list.append(s)
+        score = clever_t(classifier, x, j, nb_batches, batch_size, radius, norm, c_init, pool_factor)
+        score_list.append(score)
     return np.array(score_list)
 
 
@@ -232,8 +243,8 @@ def clever_u(classifier, x, nb_batches, batch_size, radius, norm, c_init=1, pool
     # Compute CLEVER score for each untargeted class
     score_list = []
     for j in untarget_classes:
-        s = clever_t(classifier, x, j, nb_batches, batch_size, radius, norm, c_init, pool_factor)
-        score_list.append(s)
+        score = clever_t(classifier, x, j, nb_batches, batch_size, radius, norm, c_init, pool_factor)
+        score_list.append(score)
 
     return np.min(score_list)
 
@@ -284,7 +295,8 @@ def clever_t(classifier, x, target_class, nb_batches, batch_size, radius, norm, 
                            shape)
     rand_pool += np.repeat(np.array([x]), pool_factor * batch_size, 0)
     rand_pool = rand_pool.astype(NUMPY_DTYPE)
-    np.clip(rand_pool, classifier.clip_values[0], classifier.clip_values[1], out=rand_pool)
+    if hasattr(classifier, 'clip_values') and classifier.clip_values is not None:
+        np.clip(rand_pool, classifier.clip_values[0], classifier.clip_values[1], out=rand_pool)
 
     # Change norm since q = p / (p-1)
     if norm == 1:
@@ -317,6 +329,6 @@ def clever_t(classifier, x, target_class, nb_batches, batch_size, radius, norm, 
     value = values[:, pred_class] - values[:, target_class]
 
     # Compute scores
-    s = np.min([-value[0] / loc, radius])
+    score = np.min([-value[0] / loc, radius])
 
-    return s
+    return score

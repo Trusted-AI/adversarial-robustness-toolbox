@@ -45,17 +45,17 @@ class TestClassifier(unittest.TestCase):
         # Set master seed
         master_seed(1234)
 
-    def test_processing(self):
+    def test_preprocessing_normalisation(self):
         classifier = ClassifierInstance((0, 1))
 
         x = np.random.rand(100, 200)
-        new_x = classifier._apply_processing(x)
-        self.assertTrue(np.sum(x - new_x) == 0)
+        new_x = classifier._apply_preprocessing_normalization(x)
+        self.assertEqual(np.sum(x - new_x), 0)
 
     def test_repr(self):
         classifier = ClassifierInstance((0, 1))
 
         repr_ = repr(classifier)
-        self.assertTrue('ClassifierInstance' in repr_)
-        self.assertTrue('clip_values=(0, 1)' in repr_)
-        self.assertTrue('channel_index=1, defences=None, preprocessing=(0, 1)' in repr_)
+        self.assertIn('ClassifierInstance', repr_)
+        self.assertIn('channel_index=1, clip_values=(0, 1)', repr_)
+        self.assertIn('defences=None, preprocessing=(0, 1)', repr_)

@@ -15,14 +15,22 @@
 # AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT,
 # TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 # SOFTWARE.
+"""
+This module implements the Fast Gradient Method attack. This implementation includes the original Fast Gradient Sign
+Method attack and extends it to other norms, therefore it is called the Fast Gradient Method.
+
+Paper link:
+    https://arxiv.org/abs/1412.6572
+"""
 from __future__ import absolute_import, division, print_function, unicode_literals
 
 import logging
 
 import numpy as np
 
+from art import NUMPY_DTYPE
 from art.attacks.attack import Attack
-from art.utils import compute_success, get_labels_np_array, random_sphere
+from art.utils import compute_success, get_labels_np_array, random_sphere, projection
 
 logger = logging.getLogger(__name__)
 
@@ -33,11 +41,11 @@ class FastGradientMethod(Attack):
     Gradient Sign Method"). This implementation extends the attack to other norms, and is therefore called the Fast
     Gradient Method. Paper link: https://arxiv.org/abs/1412.6572
     """
-    attack_params = Attack.attack_params + ['norm', 'eps', 'targeted', 'num_random_init', 'batch_size', 'minimal',
-                                            'eps_step']
+    attack_params = Attack.attack_params + ['norm', 'eps', 'eps_step', 'targeted', 'num_random_init', 'batch_size',
+                                            'minimal']
 
-    def __init__(self, classifier, norm=np.inf, eps=.3, targeted=False, num_random_init=0, batch_size=128,
-                 minimal=False, eps_step=0.1):
+    def __init__(self, classifier, norm=np.inf, eps=.3, eps_step=0.1, targeted=False, num_random_init=0, batch_size=1,
+                 minimal=False):
         """
         Create a :class:`.FastGradientMethod` instance.
 
@@ -47,6 +55,8 @@ class FastGradientMethod(Attack):
         :type norm: `int`
         :param eps: Attack step size (input variation)
         :type eps: `float`
+        :param eps_step: Step size of input variation for minimal perturbation computation
+        :type eps_step: `float`
         :param targeted: Should the attack target one specific class
         :type targeted: `bool`
         :param num_random_init: Number of random initialisations within the epsilon ball. For random_init=0 starting at
@@ -56,18 +66,14 @@ class FastGradientMethod(Attack):
         :type batch_size: `int`
         :param minimal: Flag to compute the minimal perturbation.
         :type minimal: `bool`
-        :param eps_step: Step size of input variation for minimal perturbation computation
-        :type eps_step: `float`
+
         """
         super(FastGradientMethod, self).__init__(classifier)
+        kwargs = {'norm': norm, 'eps': eps, 'eps_step': eps_step, 'targeted': targeted,
+                  'num_random_init': num_random_init, 'batch_size': batch_size, 'minimal': minimal}
+        FastGradientMethod.set_params(self, **kwargs)
 
-        self.norm = norm
-        self.eps = eps
-        self.targeted = targeted
-        self.num_random_init = num_random_init
-        self.batch_size = batch_size
-        self.minimal = minimal
-        self.eps_step = eps_step
+        self._project = True
 
     def _minimal_perturbation(self, x, y):
         """Iteratively compute the minimal perturbation necessary to make the class prediction change. Stop when the
@@ -94,7 +100,7 @@ class FastGradientMethod(Attack):
             # Get current predictions
             active_indices = np.arange(len(batch))
             current_eps = self.eps_step
-            while len(active_indices) != 0 and current_eps <= self.eps:
+            while active_indices.size > 0 and current_eps <= self.eps:
                 # Adversarial crafting
                 current_x = self._apply_perturbation(x[batch_index_1:batch_index_2], perturbation, current_eps)
                 # Update
@@ -112,7 +118,7 @@ class FastGradientMethod(Attack):
 
         return adv_x
 
-    def generate(self, x, y=None):
+    def generate(self, x, y=None, **kwargs):
         """Generate adversarial samples and return them in an array.
 
         :param x: An array with the original inputs.
@@ -132,26 +138,33 @@ class FastGradientMethod(Attack):
 
             # Use model predictions as correct outputs
             logger.info('Using model predictions as correct labels for FGM.')
-            y = get_labels_np_array(self.classifier.predict(x))
+            y = get_labels_np_array(self.classifier.predict(x, batch_size=self.batch_size))
         y = y / np.sum(y, axis=1, keepdims=True)
 
         # Return adversarial examples computed with minimal perturbation if option is active
         if self.minimal:
             logger.info('Performing minimal perturbation FGM.')
             adv_x_best = self._minimal_perturbation(x, y)
-            rate_best = 100 * compute_success(self.classifier, x, y, adv_x_best, self.targeted)
+            rate_best = 100 * compute_success(self.classifier, x, y, adv_x_best,
+                                              self.targeted, batch_size=self.batch_size)
         else:
             adv_x_best = None
-            rate_best = 0.0
+            rate_best = None
 
-            for i_random_init in range(max(1, self.num_random_init)):
-                adv_x = self._compute(x, y, self.eps, self.eps, self.num_random_init > 0)
-                rate = 100 * compute_success(self.classifier, x, y, adv_x, self.targeted)
-                if rate > rate_best or adv_x_best is None:
-                    rate_best = rate
+            for _ in range(max(1, self.num_random_init)):
+                adv_x = self._compute(x, x, y, self.eps, self.eps, self._project, self.num_random_init > 0)
+
+                if self.num_random_init > 1:
+                    rate = 100 * compute_success(self.classifier, x, y, adv_x,
+                                                 self.targeted, batch_size=self.batch_size)
+                    if rate_best is None or rate > rate_best or adv_x_best is None:
+                        rate_best = rate
+                        adv_x_best = adv_x
+                else:
                     adv_x_best = adv_x
 
-        logger.info('Success rate of FGM attack: %.2f%%', rate_best)
+        logger.info('Success rate of FGM attack: %.2f%%', rate_best if rate_best is not None else
+                    100 * compute_success(self.classifier, x, y, adv_x, self.targeted, batch_size=self.batch_size))
 
         return adv_x_best
 
@@ -162,10 +175,17 @@ class FastGradientMethod(Attack):
         :type norm: `int` or `float`
         :param eps: Attack step size (input variation)
         :type eps: `float`
+        :param eps_step: Step size of input variation for minimal perturbation computation
+        :type eps_step: `float`
         :param targeted: Should the attack target one specific class
         :type targeted: `bool`
+        :param num_random_init: Number of random initialisations within the epsilon ball. For random_init=0 starting at
+            the original input.
+        :type num_random_init: `int`
         :param batch_size: Batch size
         :type batch_size: `int`
+        :param minimal: Flag to compute the minimal perturbation.
+        :type minimal: `bool`
         """
         # Save attack-specific parameters
         super(FastGradientMethod, self).set_params(**kwargs)
@@ -177,14 +197,23 @@ class FastGradientMethod(Attack):
         if self.eps <= 0:
             raise ValueError('The perturbation size `eps` has to be positive.')
 
-        if self.batch_size <= 0:
-            raise ValueError('The batch size `batch_size` has to be positive.')
+        if self.eps_step <= 0:
+            raise ValueError('The perturbation step-size `eps_step` has to be positive.')
+
+        if not isinstance(self.targeted, bool):
+            raise ValueError('The flag `targeted` has to be of type bool.')
 
         if not isinstance(self.num_random_init, (int, np.int)):
             raise TypeError('The number of random initialisations has to be of type integer')
 
         if self.num_random_init < 0:
             raise ValueError('The number of random initialisations `random_init` has to be greater than or equal to 0.')
+
+        if self.batch_size <= 0:
+            raise ValueError('The batch size `batch_size` has to be positive.')
+
+        if not isinstance(self.minimal, bool):
+            raise ValueError('The flag `minimal` has to be of type bool.')
 
         return True
 
@@ -209,30 +238,41 @@ class FastGradientMethod(Attack):
         return grad
 
     def _apply_perturbation(self, batch, perturbation, eps_step):
-        clip_min, clip_max = self.classifier.clip_values
-        return np.clip(batch + eps_step * perturbation, clip_min, clip_max)
+        batch += eps_step * perturbation
 
-    def _compute(self, x, y, eps, eps_step, random_init):
+        if hasattr(self.classifier, 'clip_values') and self.classifier.clip_values is not None:
+            clip_min, clip_max = self.classifier.clip_values
+            batch = np.clip(batch, clip_min, clip_max)
+
+        return batch
+
+    def _compute(self, x, x_init, y, eps, eps_step, project, random_init):
         if random_init:
             n = x.shape[0]
             m = np.prod(x.shape[1:])
-            adv_x = x.copy() + random_sphere(n, m, eps, self.norm).reshape(x.shape)
+            x_adv = x.astype(NUMPY_DTYPE) + random_sphere(n, m, eps, self.norm).reshape(x.shape)
 
-            clip_min, clip_max = self.classifier.clip_values
-            adv_x = np.clip(adv_x, clip_min, clip_max)
+            if hasattr(self.classifier, 'clip_values') and self.classifier.clip_values is not None:
+                clip_min, clip_max = self.classifier.clip_values
+                x_adv = np.clip(x_adv, clip_min, clip_max)
         else:
-            adv_x = x.copy()
+            x_adv = x.astype(NUMPY_DTYPE)
 
         # Compute perturbation with implicit batching
-        for batch_id in range(int(np.ceil(adv_x.shape[0] / float(self.batch_size)))):
+        for batch_id in range(int(np.ceil(x.shape[0] / float(self.batch_size)))):
             batch_index_1, batch_index_2 = batch_id * self.batch_size, (batch_id + 1) * self.batch_size
-            batch = adv_x[batch_index_1:batch_index_2]
+            batch = x_adv[batch_index_1:batch_index_2]
             batch_labels = y[batch_index_1:batch_index_2]
 
             # Get perturbation
             perturbation = self._compute_perturbation(batch, batch_labels)
 
             # Apply perturbation and clip
-            adv_x[batch_index_1:batch_index_2] = self._apply_perturbation(batch, perturbation, eps_step)
+            x_adv[batch_index_1:batch_index_2] = self._apply_perturbation(batch, perturbation, eps_step)
 
-        return adv_x
+            if project:
+                perturbation = projection(x_adv[batch_index_1:batch_index_2] - x_init[batch_index_1:batch_index_2],
+                                          eps, self.norm)
+                x_adv[batch_index_1:batch_index_2] = x_init[batch_index_1:batch_index_2] + perturbation
+
+        return x_adv

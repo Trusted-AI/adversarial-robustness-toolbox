@@ -22,7 +22,7 @@ docs_require = ['sphinx >= 1.4',
                 'sphinx_rtd_theme']
 
 setup(name='Adversarial Robustness Toolbox',
-      version='0.8.0',
+      version='0.10.0',
       description='IBM Adversarial machine learning toolbox',
       long_description=long_description,
       long_description_content_type='text/markdown',
