@@ -55,8 +55,6 @@ class TestSaliencyMap(unittest.TestCase):
         scores = cls.classifier_k._model.evaluate(x_test, y_test)
         logger.info('[Keras, MNIST] Accuracy on test set: %.2f%%', (scores[1] * 100))
 
-        sess.close()
-
         # Create basic CNN on MNIST using TensorFlow
         cls.classifier_tf, sess = get_classifier_tf()
 
