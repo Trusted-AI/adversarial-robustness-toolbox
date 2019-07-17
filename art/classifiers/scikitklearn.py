@@ -357,12 +357,12 @@ class ScikitlearnLogisticRegression(ScikitlearnClassifier, ClassifierGradients):
         if hasattr(self.model, 'coef_'):
             self.weights = self.model.coef_
             self.classes = self.model.classes_
-            self.num_classes = self.model.classes_.shape[0]
+            self._nb_classes = self.model.classes_.shape[0]
             self.model_class_weight = self.model.class_weight
         else:
             self.weights = None
             self.classes = None
-            self.num_classes = None
+            self._nb_classes = None
             self.model_class_weight = None
 
     def class_gradient(self, x, label=None, **kwargs):
@@ -403,7 +403,7 @@ class ScikitlearnLogisticRegression(ScikitlearnClassifier, ClassifierGradients):
         w_weighted = np.matmul(y_pred, self.weights)
 
         for i_sample in range(num_samples):
-            for i_class in range(self.num_classes):
+            for i_class in range(self.nb_classes):
                 gradients[i_sample, :] += class_weight[i_class] * label[i_sample, i_class] * (
                     self.weights[i_class, :] - w_weighted[i_sample, :])
 
@@ -430,7 +430,7 @@ class ScikitlearnLogisticRegression(ScikitlearnClassifier, ClassifierGradients):
         y_index = np.argmax(y_preprocessed, axis=1)
         self.model.fit(X=x_preprocessed, y=y_index, **kwargs)
         self.weights = self.model.coef_
-        self.num_classes = self.model.classes_.shape[0]
+        self._nb_classes = self.model.classes_.shape[0]
         self.model_class_weight = self.model.class_weight
         self.classes = self.model.classes_
 
@@ -461,8 +461,8 @@ class ScikitlearnLogisticRegression(ScikitlearnClassifier, ClassifierGradients):
         gradients = np.zeros(x_preprocessed.shape)
 
         y_index = np.argmax(y_preprocessed, axis=1)
-        if self.model_class_weight is None or np.unique(y_index).shape[0] < self.num_classes:
-            class_weight = np.ones(self.num_classes)
+        if self.model_class_weight is None or np.unique(y_index).shape[0] < self.nb_classes:
+            class_weight = np.ones(self.nb_classes)
         else:
             class_weight = compute_class_weight(class_weight=self.model_class_weight, classes=self.classes, y=y_index)
 
@@ -470,7 +470,7 @@ class ScikitlearnLogisticRegression(ScikitlearnClassifier, ClassifierGradients):
         w_weighted = np.matmul(y_pred, self.weights)
 
         for i_sample in range(num_samples):
-            for i_class in range(self.num_classes):
+            for i_class in range(self.nb_classes):
                 gradients[i_sample, :] += class_weight[i_class] * (1.0 - y_preprocessed[i_sample, i_class]) * (
                     self.weights[i_class, :] - w_weighted[i_sample, :])
 
@@ -523,6 +523,10 @@ class ScikitlearnSVC(ScikitlearnClassifier, ClassifierGradients):
         super(ScikitlearnSVC, self).__init__(clip_values=clip_values, defences=defences, preprocessing=preprocessing)
 
         self.model = model
+        if hasattr(self.model, 'classes_'):
+            self._nb_classes = len(self.model.classes_)
+        else:
+            self._nb_classes = None
 
     def class_gradient(self, x, label=None, **kwargs):
         """
@@ -536,7 +540,7 @@ class ScikitlearnSVC(ScikitlearnClassifier, ClassifierGradients):
                       `x`. If `None`, then gradients for all classes will be computed for each sample.
         :type label: `int` or `list`
         :return: Array of gradients of input features w.r.t. each class in the form
-                 `(batch_size, num_classes, input_shape)` when computing for all classes, otherwise shape becomes
+                 `(batch_size, nb_classes, input_shape)` when computing for all classes, otherwise shape becomes
                  `(batch_size, 1, input_shape)` when `label` parameter is specified.
         :rtype: `np.ndarray`
         """
@@ -557,6 +561,7 @@ class ScikitlearnSVC(ScikitlearnClassifier, ClassifierGradients):
         """
         y_index = np.argmax(y, axis=1)
         self.model.fit(X=x, y=y_index, **kwargs)
+        self._nb_classes = len(self.model.classes_)
 
     def _get_kernel_gradient(self, i_sv, x_sample):
         # pylint: disable=W0212
@@ -597,7 +602,6 @@ class ScikitlearnSVC(ScikitlearnClassifier, ClassifierGradients):
         x_preprocessed, y_preprocessed = self._apply_preprocessing(x, y, fit=False)
 
         num_samples, _ = x_preprocessed.shape
-        num_classes = len(self.model.classes_)
         gradients = np.zeros_like(x_preprocessed)
 
         y_index = np.argmax(y_preprocessed, axis=1)
@@ -621,7 +625,7 @@ class ScikitlearnSVC(ScikitlearnClassifier, ClassifierGradients):
 
                 i_label = y_index[i_sample]
 
-                for i_not_label in range(num_classes):
+                for i_not_label in range(self.nb_classes):
 
                     if i_label != i_not_label:
 
@@ -647,7 +651,7 @@ class ScikitlearnSVC(ScikitlearnClassifier, ClassifierGradients):
             for i_sample in range(num_samples):
 
                 i_label = y_index[i_sample]
-                if num_classes == 2:
+                if self.nb_classes == 2:
                     i_label_i = 0
                     if i_label == 0:
                         label_multiplier = 1
@@ -686,9 +690,8 @@ class ScikitlearnSVC(ScikitlearnClassifier, ClassifierGradients):
             y_pred = self.model.predict_proba(X=x_preprocessed)
         else:
             y_pred_label = self.model.predict(X=x_preprocessed)
-            num_classes = len(self.model.classes_)
             targets = np.array(y_pred_label).reshape(-1)
-            one_hot_targets = np.eye(num_classes)[targets]
+            one_hot_targets = np.eye(self.nb_classes)[targets]
             y_pred = one_hot_targets
 
         return y_pred

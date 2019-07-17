@@ -415,6 +415,16 @@ class ClassifierGradients(ABC):
         """
         raise NotImplementedError
 
+    @property
+    def nb_classes(self):
+        """
+        Return the number of output classes.
+
+        :return: Number of classes in the data.
+        :rtype: `int`
+        """
+        return self._nb_classes
+
     def _apply_preprocessing_gradient(self, x, gradients):
         """
         Apply the backward pass through all preprocessing operations to the gradients.
