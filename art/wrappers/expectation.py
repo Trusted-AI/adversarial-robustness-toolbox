@@ -26,12 +26,12 @@ from __future__ import absolute_import, division, print_function, unicode_litera
 import logging
 
 from art.wrappers.wrapper import ClassifierWrapper
-from art.classifiers.classifier import Classifier, ClassifierGradients
+from art.classifiers.classifier import Classifier, ClassifierNeuralNetwork, ClassifierGradients
 
 logger = logging.getLogger(__name__)
 
 
-class ExpectationOverTransformations(ClassifierWrapper, ClassifierGradients, Classifier):
+class ExpectationOverTransformations(ClassifierGradients, ClassifierNeuralNetwork, Classifier, ClassifierWrapper):
     """
     Implementation of Expectation Over Transformations applied to classifier predictions and gradients, as introduced
     in Athalye et al. (2017).
@@ -72,7 +72,7 @@ class ExpectationOverTransformations(ClassifierWrapper, ClassifierGradients, Cla
             prediction += self.classifier.predict(next(self.transformation())(x), logits, batch_size)
         return prediction/self.sample_size
 
-    def fit(self, x, y, **kwargs):
+    def fit(self, x, y, batch_size=128, nb_epochs=20, **kwargs):
         """
         Fit the classifier using the training data `(x, y)`.
 
@@ -106,7 +106,7 @@ class ExpectationOverTransformations(ClassifierWrapper, ClassifierGradients, Cla
             loss_gradient += self.classifier.loss_gradient(next(self.transformation())(x), y)
         return loss_gradient / self.sample_size
 
-    def class_gradient(self, x, label=None, logits=False, **kwargs):
+    def class_gradient(self, x, label=None, **kwargs):
         """
         Compute per-class derivatives of the given classifier w.r.t. `x`, taking an expectation over transformations.
 
@@ -125,6 +125,11 @@ class ExpectationOverTransformations(ClassifierWrapper, ClassifierGradients, Cla
         :rtype: `np.ndarray`
         """
         logger.info('Apply Expectation over Transformations.')
+
+        logits = kwargs.get('logits')
+        if logits is None:
+            logits = False
+
         class_gradient = self.classifier.class_gradient(next(self.transformation())(x), label, logits)
         for _ in range(self.sample_size - 1):
             class_gradient += self.classifier.class_gradient(next(self.transformation())(x), label, logits)

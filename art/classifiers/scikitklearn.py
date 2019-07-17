@@ -478,7 +478,7 @@ class ScikitlearnLogisticRegression(ScikitlearnClassifier, ClassifierGradients):
 
         return gradients
 
-    def predict(self, x):
+    def predict(self, x, **kwargs):
         """
         Perform prediction for a batch of inputs.
 
@@ -671,7 +671,7 @@ class ScikitlearnSVC(ScikitlearnClassifier, ClassifierGradients):
 
         return gradients
 
-    def predict(self, x):
+    def predict(self, x, **kwargs):
         """
         Perform prediction for a batch of inputs.
 
