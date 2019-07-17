@@ -26,7 +26,7 @@ import tensorflow as tf
 
 from art.attacks.spatial_transformation import SpatialTransformation
 from art.utils import load_mnist, master_seed
-from art.utils_test import get_classifier_tf, get_classifier_kr, get_classifier_pt
+from art.utils_test import get_classifier_tf, get_classifier_kr, get_classifier_pt, get_iris_classifier_kr
 
 logger = logging.getLogger('testLogger')
 
@@ -144,7 +144,8 @@ class TestSpatialTransformation(unittest.TestCase):
 
     def test_failure_feature_vectors(self):
         attack_params = {"max_translation": 10.0, "num_translations": 3, "max_rotation": 30.0, "num_rotations": 3}
-        attack = SpatialTransformation(classifier=None)
+        classifier, _ = get_iris_classifier_kr()
+        attack = SpatialTransformation(classifier=classifier)
         attack.set_params(**attack_params)
         data = np.random.rand(10, 4)
 
@@ -153,6 +154,19 @@ class TestSpatialTransformation(unittest.TestCase):
             attack.generate(data)
 
         self.assertIn('Feature vectors detected.', str(context.exception))
+
+    def test_classifier_type_check_fail(self):
+        # to test black-box attack use a useless test classifier
+        class ClassifierNoAPI:
+            pass
+
+        classifier = ClassifierNoAPI
+        with self.assertRaises(TypeError) as context:
+            _ = SpatialTransformation(classifier=classifier)
+
+        self.assertIn('For `SpatialTransformation` classifier must be an instance of '
+                      '`art.classifiers.classifier.Classifier`, the provided classifier is instance of '
+                      '(<class \'object\'>,).', str(context.exception))
 
 
 if __name__ == '__main__':

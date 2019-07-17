@@ -204,6 +204,17 @@ class TestZooAttack(unittest.TestCase):
         logger.debug('ZOO actual: %s', y_pred_adv)
         logger.info('ZOO success rate on MNIST: %.2f', (sum(y_pred != y_pred_adv) / float(len(y_pred))))
 
+    def test_classifier_type_check_fail(self):
+        # to test black-box attack use a useless test classifier
+        class ClassifierNoAPI:
+            pass
 
-if __name__ == '__main__':
-    unittest.main()
+        classifier = ClassifierNoAPI
+        with self.assertRaises(TypeError) as context:
+            _ = ZooAttack(classifier=classifier)
+
+        self.assertIn('For `ZooAttack` classifier must be an instance of `art.classifiers.classifier.Classifier`, the '
+                      'provided classifier is instance of (<class \'object\'>,).', str(context.exception))
+
+    if __name__ == '__main__':
+        unittest.main()

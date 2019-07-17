@@ -30,8 +30,7 @@ import numpy as np
 
 from art import NUMPY_DTYPE
 from art.attacks.attack import Attack
-from art.utils import compute_success
-from art.utils import to_categorical
+from art.utils import compute_success, to_categorical
 
 logger = logging.getLogger(__name__)
 

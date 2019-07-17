@@ -170,6 +170,18 @@ class TestBoundary(unittest.TestCase):
         y_pred_adv = np.argmax(ptc.predict(x_test_adv), axis=1)
         self.assertTrue((y_pred != y_pred_adv).any())
 
+    def test_classifier_type_check_fail(self):
+        # to test black-box attack use a useless test classifier
+        class ClassifierNoAPI:
+            pass
+
+        classifier = ClassifierNoAPI
+        with self.assertRaises(TypeError) as context:
+            _ = BoundaryAttack(classifier=classifier)
+
+        self.assertIn('For `BoundaryAttack` classifier must be an instance of `art.classifiers.classifier.Classifier`, '
+                      'the provided classifier is instance of (<class \'object\'>,).', str(context.exception))
+
 
 class TestBoundaryVectors(unittest.TestCase):
     @classmethod
