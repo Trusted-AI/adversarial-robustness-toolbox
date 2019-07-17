@@ -20,6 +20,8 @@ This module implements Randomized Smoothing applied to classifier predictions an
 
 Paper link:
     https://arxiv.org/pdf/1902.02918.pdf
+    https://arxiv.org/abs/1706.03825
+
 """
 from __future__ import absolute_import, division, print_function, unicode_literals
 
@@ -108,9 +110,6 @@ class RandomizedSmoothing(ClassifierWrapper):
             x_new, y_new = self._noisy_samples(x_i, y[idx])
             loss_gradient.append(np.mean(self.classifier.loss_gradient(x_new, y_new), axis=0))
         return np.array(loss_gradient)
-
-    def test_gradient(self, x, label=None, logits=False):
-        return self.classifier.class_gradient(x, label, logits)
 
     def class_gradient(self, x, label=None, logits=False):
         """
