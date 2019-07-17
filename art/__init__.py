@@ -1,9 +1,14 @@
+"""
+The Adversarial Robustness Toolbox (ART).
+"""
 import json
 import logging
 import logging.config
 import os
 
 from numpy import float32
+
+# pylint: disable=C0103
 
 LOGGING = {
     'version': 1,

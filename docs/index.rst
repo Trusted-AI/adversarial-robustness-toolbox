@@ -32,6 +32,8 @@ The Adversarial Robustness Toolbox contains implementations of the following eva
 * Query-efficient black-box attack (`Ilyas et al., 2017`_)
 * Zeroth-order optimization attack (`Chen et al., 2017b`_)
 * Decision-based attack (`Brendel et al., 2018`_)
+* Adversarial patch (`Brown et al., 2017`_)
+* HopSkipJump attack (`Chen et al., 2017`_)
 
 The following defense methods are also supported:
 
@@ -50,6 +52,7 @@ ART also implements detection methods of adversarial samples:
 
 * Basic detector based on inputs
 * Detector trained on the activations of a specific layer
+* Detector based on Fast Generalized Subset Scan (`Speakman et al., 2018`_)
 
 The following detector of poisoning attacks is also supported:
 * Detector based on activations analysis (`Chen et al., 2018`_)
@@ -80,6 +83,7 @@ Robustness metrics:
    modules/poison_detection
    modules/metrics
    modules/utils
+   modules/utils_test
    modules/wrappers
 
 
@@ -116,3 +120,6 @@ Indices and tables
 .. _Weng et al., 2018: https://arxiv.org/abs/1801.10578
 .. _Arpit et al., 2017: https://arxiv.org/abs/1706.05394
 .. _Brendel et al., 2018: https://arxiv.org/abs/1712.04248
+.. _Brown et al., 2017: https://arxiv.org/abs/1712.09665
+.. _Chen et al., 2017: https://arxiv.org/abs/1904.02144
+.. _Speakman et al., 2018: https://arxiv.org/pdf/1810.08676

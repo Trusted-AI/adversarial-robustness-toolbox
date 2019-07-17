@@ -115,7 +115,7 @@ def main():
         plt.imshow(sprites_by_class[n_class][1])
         plt.title("Class " + str(n_class) + " cluster: 1")
         plt.show()
-    except:
+    except ImportError:
         print("matplotlib not installed. For this reason, cluster visualization was not displayed")
 
     # Try again using distance analysis this time:

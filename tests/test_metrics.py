@@ -67,12 +67,12 @@ class TestMetrics(unittest.TestCase):
         params = {"eps_step": 1.,
                   "eps": 1.}
         emp_robust = empirical_robustness(classifier, x_train, str('fgsm'), params)
-        self.assertAlmostEqual(emp_robust, 1., 3)
+        self.assertAlmostEqual(emp_robust, 0.5006149157681419, 3)
 
         params = {"eps_step": 0.1,
                   "eps": 0.2}
         emp_robust = empirical_robustness(classifier, x_train, str('fgsm'), params)
-        self.assertLessEqual(emp_robust, 0.21)
+        self.assertLessEqual(emp_robust, 0.65)
 
     def test_loss_sensitivity(self):
         # Get MNIST
@@ -110,8 +110,9 @@ class TestMetrics(unittest.TestCase):
         model.compile(loss=keras.losses.categorical_crossentropy, optimizer=keras.optimizers.Adam(lr=0.01),
                       metrics=['accuracy'])
 
-        classifier = KerasClassifier((0, 1), model, use_logits=False)
+        classifier = KerasClassifier(model=model, clip_values=(0, 1), use_logits=False)
         return classifier
+
 
 #########################################
 # This part is the unit test for Clever.#
@@ -137,6 +138,7 @@ class TestClever(unittest.TestCase):
     """
     Unittest for Clever metrics.
     """
+
     def setUp(self):
         # Set master seed
         master_seed(42)
@@ -169,7 +171,8 @@ class TestClever(unittest.TestCase):
         sess.run(tf.global_variables_initializer())
 
         # Create the classifier
-        tfc = TFClassifier((0, 1), input_ph, logits, output_ph, train, loss, None, sess)
+        tfc = TFClassifier(input_ph=input_ph, logits=logits, output_ph=output_ph, train=train, loss=loss,
+                           learning=None, sess=sess, clip_values=(0, 1))
 
         return tfc
 
@@ -194,7 +197,7 @@ class TestClever(unittest.TestCase):
                       metrics=['accuracy'])
 
         # Get the classifier
-        krc = KerasClassifier((0, 1), model, use_logits=False)
+        krc = KerasClassifier(model, clip_values=(0, 1), use_logits=False)
 
         return krc
 
@@ -212,7 +215,8 @@ class TestClever(unittest.TestCase):
         optimizer = optim.Adam(model.parameters(), lr=0.01)
 
         # Get classifier
-        ptc = PyTorchClassifier((0, 1), model, loss_fn, optimizer, (1, 28, 28), 10)
+        ptc = PyTorchClassifier(model=model, loss=loss_fn, optimizer=optimizer, input_shape=(1, 28, 28), nb_classes=10,
+                                clip_values=(0, 1))
 
         return ptc
 
@@ -237,18 +241,18 @@ class TestClever(unittest.TestCase):
         res1 = clever_t(tfc, x_test[-1], 2, 10, 5, R_L2, norm=2, pool_factor=3)
         res2 = clever_t(tfc, x_test[-1], 2, 10, 5, R_LI, norm=np.inf, pool_factor=3)
         logger.info("Targeted TensorFlow: %f %f %f", res0, res1, res2)
-        self.assertFalse(res0 == res1)
-        self.assertFalse(res1 == res2)
-        self.assertFalse(res2 == res0)
+        self.assertNotEqual(res0, res1)
+        self.assertNotEqual(res1, res2)
+        self.assertNotEqual(res2, res0)
 
         # Test untargeted clever
         res0 = clever_u(tfc, x_test[-1], 10, 5, R_L1, norm=1, pool_factor=3)
         res1 = clever_u(tfc, x_test[-1], 10, 5, R_L2, norm=2, pool_factor=3)
         res2 = clever_u(tfc, x_test[-1], 10, 5, R_LI, norm=np.inf, pool_factor=3)
         logger.info("Untargeted TensorFlow: %f %f %f", res0, res1, res2)
-        self.assertFalse(res0 == res1)
-        self.assertFalse(res1 == res2)
-        self.assertFalse(res2 == res0)
+        self.assertNotEqual(res0, res1)
+        self.assertNotEqual(res1, res2)
+        self.assertNotEqual(res2, res0)
 
     def test_clever_kr(self):
         """
@@ -305,18 +309,18 @@ class TestClever(unittest.TestCase):
         res1 = clever_t(ptc, x_test[-1], 2, 10, 5, R_L2, norm=2, pool_factor=3)
         res2 = clever_t(ptc, x_test[-1], 2, 10, 5, R_LI, norm=np.inf, pool_factor=3)
         logger.info("Targeted PyTorch: %f %f %f", res0, res1, res2)
-        self.assertFalse(res0 == res1)
-        self.assertFalse(res1 == res2)
-        self.assertFalse(res2 == res0)
+        self.assertNotEqual(res0, res1)
+        self.assertNotEqual(res1, res2)
+        self.assertNotEqual(res2, res0)
 
         # Test untargeted clever
         res0 = clever_u(ptc, x_test[-1], 10, 5, R_L1, norm=1, pool_factor=3)
         res1 = clever_u(ptc, x_test[-1], 10, 5, R_L2, norm=2, pool_factor=3)
         res2 = clever_u(ptc, x_test[-1], 10, 5, R_LI, norm=np.inf, pool_factor=3)
         logger.info("Untargeted PyTorch: %f %f %f", res0, res1, res2)
-        self.assertFalse(res0 == res1)
-        self.assertFalse(res1 == res2)
-        self.assertFalse(res2 == res0)
+        self.assertNotEqual(res0, res1)
+        self.assertNotEqual(res1, res2)
+        self.assertNotEqual(res2, res0)
 
     def test_clever_l2_no_target(self):
         batch_size = 100
@@ -328,7 +332,7 @@ class TestClever(unittest.TestCase):
 
         scores = clever(krc, x_test[0], 5, 5, 3, 2, target=None, c_init=1, pool_factor=10)
         logger.info("Clever scores for n-1 classes: %s %s", str(scores), str(scores.shape))
-        self.assertTrue(scores.shape == (krc.nb_classes-1,))
+        self.assertEqual(scores.shape, (krc.nb_classes - 1,))
 
     def test_clever_l2_no_target_sorted(self):
         batch_size = 100
@@ -341,7 +345,7 @@ class TestClever(unittest.TestCase):
         scores = clever(krc, x_test[0], 5, 5, 3, 2, target=None, target_sort=True, c_init=1, pool_factor=10)
         logger.info("Clever scores for n-1 classes: %s %s", str(scores), str(scores.shape))
         # Should approx. be in decreasing value
-        self.assertTrue(scores.shape == (krc.nb_classes-1,))
+        self.assertEqual(scores.shape, (krc.nb_classes - 1,))
 
     def test_clever_l2_same_target(self):
         batch_size = 100

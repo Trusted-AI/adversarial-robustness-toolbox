@@ -15,6 +15,13 @@
 # AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT,
 # TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 # SOFTWARE.
+"""
+This module implement the pixel defence in `PixelDefend`. It is based on PixelCNN that projects samples back to the data
+manifold.
+
+Paper link:
+    https://arxiv.org/abs/1710.10766
+"""
 from __future__ import absolute_import, division, print_function, unicode_literals
 
 import logging
@@ -32,12 +39,15 @@ class PixelDefend(Preprocessor):
     Implement the pixel defence approach. Defense based on PixelCNN that projects samples back to the data manifold.
     Paper link: https://arxiv.org/abs/1710.10766
     """
-    params = ['eps', 'pixel_cnn']
+    params = ['clip_values', 'eps', 'pixel_cnn']
 
-    def __init__(self, eps=16, pixel_cnn=None):
+    def __init__(self, clip_values=(0, 1), eps=16, pixel_cnn=None, apply_fit=False, apply_predict=True):
         """
         Create an instance of pixel defence.
 
+        :param clip_values: Tuple of the form `(min, max)` representing the minimum and maximum values allowed
+               for features.
+        :type clip_values: `tuple`
         :param eps: Defense parameter 0-255.
         :type eps: `int`
         :param pixel_cnn: Pre-trained PixelCNN model.
@@ -45,18 +55,20 @@ class PixelDefend(Preprocessor):
         """
         super(PixelDefend, self).__init__()
         self._is_fitted = True
+        self._apply_fit = apply_fit
+        self._apply_predict = apply_predict
         if pixel_cnn is not None:
-            self.set_params(eps=eps, pixel_cnn=pixel_cnn)
+            self.set_params(clip_values=clip_values, eps=eps, pixel_cnn=pixel_cnn)
         else:
-            self.set_params(eps=eps)
+            self.set_params(clip_values=clip_values, eps=eps)
 
     @property
     def apply_fit(self):
-        return False
+        return self._apply_fit
 
     @property
     def apply_predict(self):
-        return True
+        return self._apply_predict
 
     def __call__(self, x, y=None):
         """
@@ -70,46 +82,42 @@ class PixelDefend(Preprocessor):
         :return: Purified sample.
         :rtype: `np.ndarray`
         """
-        clip_values = (0, 1)
-
         # Convert into `uint8`
-        x_ = x.copy()
-        x_ = x_ * 255
-        x_ = x_.astype("uint8")
+        original_shape = x.shape
+        probs = self.pixel_cnn.get_activations(x, layer=-1).reshape((x.shape[0], -1, 256))
+        x = x * 255
+        x = x.astype("uint8")
+        x = x.reshape((x.shape[0], -1))
 
         # Start defence one image at a time
-        for i, xi in enumerate(x_):
-            for r in range(x_.shape[1]):
-                for c in range(x_.shape[2]):
-                    for k in range(x_.shape[3]):
-                        # Setup the search space
-                        # probs = self.pixel_cnn.predict(np.array([xi / 255.0]), logits=False)
-                        probs = self.pixel_cnn.get_activations(np.array([xi / 255.0]), -1)
-                        f_probs = probs[0, r, c, k]
-                        f_range = range(int(max(xi[r, c, k] - self.eps, 0)), int(min(xi[r, c, k] + self.eps, 255) + 1))
+        for i, x_i in enumerate(x):
+            for feat_index in range(x.shape[1]):
+                # Setup the search space
+                f_probs = probs[i, feat_index, :]
+                f_range = range(int(max(x_i[feat_index] - self.eps, 0)), int(min(x_i[feat_index] + self.eps, 255) + 1))
 
-                        # Look in the search space
-                        best_prob = -1
-                        best_idx = -1
-                        for idx in f_range:
-                            if f_probs[idx] > best_prob:
-                                best_prob = f_probs[idx]
-                                best_idx = idx
+                # Look in the search space
+                best_prob = -1
+                best_idx = -1
+                for idx in f_range:
+                    if f_probs[idx] > best_prob:
+                        best_prob = f_probs[idx]
+                        best_idx = idx
 
-                        # Update result
-                        xi[r, c, k] = best_idx
+                # Update result
+                x_i[feat_index] = best_idx
 
             # Update in batch
-            x_[i] = xi
+            x[i] = x_i
 
         # Convert to old dtype
-        x_ = x_ / 255.0
-        x_ = x_.astype(NUMPY_DTYPE)
+        x = x / 255.0
+        x = x.astype(NUMPY_DTYPE).reshape(original_shape)
 
-        # Clip values into the range [0, 1]
-        x_ = np.clip(x_, clip_values[0], clip_values[1])
+        # Clip to clip_values
+        x = np.clip(x, self.clip_values[0], self.clip_values[1])
 
-        return x_, y
+        return x, y
 
     def estimate_gradient(self, x, grad):
         raise grad
@@ -125,6 +133,9 @@ class PixelDefend(Preprocessor):
         Take in a dictionary of parameters and applies defence-specific checks before saving them as attributes.
 
         Defense-specific parameters:
+        :param clip_values: Tuple of the form `(min, max)` representing the minimum and maximum values allowed
+               for features.
+        :type clip_values: `tuple`
         :param eps: Defense parameter 0-255.
         :type eps: `int`
         :param pixel_cnn: Pre-trained PixelCNN model.
@@ -140,5 +151,14 @@ class PixelDefend(Preprocessor):
 
         if hasattr(self, 'pixel_cnn') and not isinstance(self.pixel_cnn, Classifier):
             raise TypeError("PixelCNN model must be of type Classifier.")
+
+        if np.array(self.clip_values[0] >= self.clip_values[1]).any():
+            raise ValueError('Invalid `clip_values`: min >= max.')
+
+        if self.clip_values[0] != 0:
+            raise ValueError('`clip_values` min value must be 0.')
+
+        if self.clip_values[1] != 1:
+            raise ValueError('`clip_values` max value must be 1.')
 
         return True

@@ -15,6 +15,9 @@
 # AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT,
 # TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 # SOFTWARE.
+"""
+This module implements the abstract base class `Attack` for all attacks.
+"""
 from __future__ import absolute_import, division, print_function, unicode_literals
 
 import logging
@@ -23,7 +26,6 @@ import abc
 import sys
 
 logger = logging.getLogger(__name__)
-
 
 # Ensure compatibility with Python 2 and 3 when using ABCMeta
 if sys.version_info >= (3, 4):
@@ -45,7 +47,7 @@ class Attack(ABC):
         """
         self.classifier = classifier
 
-    def generate(self, x, y):
+    def generate(self, x, y=None, **kwargs):
         """
         Generate adversarial examples and return them as an array. This method should be overridden by all concrete
         attack implementations.

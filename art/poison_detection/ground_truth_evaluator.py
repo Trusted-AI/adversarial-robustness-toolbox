@@ -15,6 +15,9 @@
 # AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT,
 # TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 # SOFTWARE.
+"""
+This module implements classes to evaluate the performance of poison detection methods.
+"""
 from __future__ import absolute_import, division, print_function, unicode_literals
 
 import json
@@ -29,6 +32,7 @@ class GroundTruthEvaluator:
     """
     Class to evaluate the performance of the poison detection method.
     """
+
     def __init__(self):
         """
         Evaluates ground truth constructor
@@ -60,26 +64,26 @@ class GroundTruthEvaluator:
         logger.debug("Error rates per class:")
         for class_i, (assigned_clean, is_clean) in enumerate(zip(assigned_clean_by_class, is_clean_by_class)):
             errors = []
-            for assignment, bl in zip(assigned_clean, is_clean):
-                bl = int(bl)
+            for assignment, bl_var in zip(assigned_clean, is_clean):
+                bl_var = int(bl_var)
                 # marked poison, is poison = 0
                 # true positive
-                if assignment == poison and bl == poison:
+                if assignment == poison and bl_var == poison:
                     errors.append(0)
 
                 # marked clean, is clean = 1
                 # true negative
-                elif assignment == clean and bl == clean:
+                elif assignment == clean and bl_var == clean:
                     errors.append(1)
 
                 # marked poison, is clean = 2
                 # false positive
-                elif assignment == poison and bl == clean:
+                elif assignment == poison and bl_var == clean:
                     errors.append(2)
 
                 # marked clean, is poison = 3
                 # false negative
-                elif assignment == clean and bl == poison:
+                elif assignment == clean and bl_var == poison:
                     errors.append(3)
                 else:
                     raise Exception('Analyze_correctness entered wrong class')
@@ -110,32 +114,32 @@ class GroundTruthEvaluator:
         false_positive = np.where(values == 2)[0].shape[0]
         false_negative = np.where(values == 3)[0].shape[0]
 
-        tp = self.calculate_and_print(true_positive,
-                                      true_positive + false_negative,
-                                      "true-positive rate")
-        tn = self.calculate_and_print(true_negative,
-                                      false_positive + true_negative,
-                                      "true-negative rate")
-        fp = self.calculate_and_print(false_positive,
-                                      false_positive + true_negative,
-                                      "false-positive rate")
-        fn = self.calculate_and_print(false_negative,
-                                      true_positive + false_negative,
-                                      "false-negative rate")
+        tp_rate = self.calculate_and_print(true_positive,
+                                           true_positive + false_negative,
+                                           "true-positive rate")
+        tn_rate = self.calculate_and_print(true_negative,
+                                           false_positive + true_negative,
+                                           "true-negative rate")
+        fp_rate = self.calculate_and_print(false_positive,
+                                           false_positive + true_negative,
+                                           "false-positive rate")
+        fn_rate = self.calculate_and_print(false_negative,
+                                           true_positive + false_negative,
+                                           "false-negative rate")
 
-        dic_tp = dict(rate=round(tp, 2), numerator=true_positive, denominator=(true_positive + false_negative))
+        dic_tp = dict(rate=round(tp_rate, 2), numerator=true_positive, denominator=(true_positive + false_negative))
         if (true_positive + false_negative) == 0:
             dic_tp = dict(rate='N/A', numerator=true_positive, denominator=(true_positive + false_negative))
 
-        dic_tn = dict(rate=round(tn, 2), numerator=true_negative, denominator=(false_positive + true_negative))
+        dic_tn = dict(rate=round(tn_rate, 2), numerator=true_negative, denominator=(false_positive + true_negative))
         if (false_positive + true_negative) == 0:
             dic_tn = dict(rate='N/A', numerator=true_negative, denominator=(false_positive + true_negative))
 
-        dic_fp = dict(rate=round(fp, 2), numerator=false_positive, denominator=(false_positive + true_negative))
+        dic_fp = dict(rate=round(fp_rate, 2), numerator=false_positive, denominator=(false_positive + true_negative))
         if (false_positive + true_negative) == 0:
             dic_fp = dict(rate='N/A', numerator=false_positive, denominator=(false_positive + true_negative))
 
-        dic_fn = dict(rate=round(fn, 2), numerator=false_negative, denominator=(true_positive + false_negative))
+        dic_fn = dict(rate=round(fn_rate, 2), numerator=false_negative, denominator=(true_positive + false_negative))
         if (true_positive + false_negative) == 0:
             dic_fn = dict(rate='N/A', numerator=false_negative, denominator=(true_positive + false_negative))
 
@@ -163,6 +167,6 @@ class GroundTruthEvaluator:
             res = 100 * (numerator / float(denominator))
             logger.debug("%s: %d/%d=%.3g", name, numerator, denominator, res)
             return res
-        except Exception:
+        except ZeroDivisionError:
             logger.debug("%s: couldn't calculate %d/%d", name, numerator, denominator)
             return 0

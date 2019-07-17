@@ -15,12 +15,19 @@
 # AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT,
 # TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 # SOFTWARE.
+"""
+This module implements the Jacobian-based Saliency Map attack `SaliencyMapMethod`. This is a white-box attack.
+
+Paper link:
+    https://arxiv.org/pdf/1511.07528.pdf
+"""
 from __future__ import absolute_import, division, print_function, unicode_literals
 
 import logging
 
 import numpy as np
 
+from art import NUMPY_DTYPE
 from art.attacks.attack import Attack
 
 logger = logging.getLogger(__name__)
@@ -33,7 +40,7 @@ class SaliencyMapMethod(Attack):
     """
     attack_params = Attack.attack_params + ['theta', 'gamma', 'batch_size']
 
-    def __init__(self, classifier, theta=0.1, gamma=1., batch_size=128):
+    def __init__(self, classifier, theta=0.1, gamma=1., batch_size=1):
         """
         Create a SaliencyMapMethod instance.
 
@@ -50,7 +57,7 @@ class SaliencyMapMethod(Attack):
         kwargs = {'theta': theta, 'gamma': gamma, 'batch_size': batch_size}
         self.set_params(**kwargs)
 
-    def generate(self, x, y=None):
+    def generate(self, x, y=None, **kwargs):
         """
         Generate adversarial samples and return them in an array.
 
@@ -61,14 +68,11 @@ class SaliencyMapMethod(Attack):
         :return: An array holding the adversarial examples.
         :rtype: `np.ndarray`
         """
-        # Parse and save attack-specific parameters
-        clip_min, clip_max = self.classifier.clip_values
-
         # Initialize variables
         dims = list(x.shape[1:])
         self._nb_features = np.product(dims)
-        x_adv = np.reshape(np.copy(x), (-1, self._nb_features))
-        preds = np.argmax(self.classifier.predict(x), axis=1)
+        x_adv = np.reshape(x.astype(NUMPY_DTYPE), (-1, self._nb_features))
+        preds = np.argmax(self.classifier.predict(x, batch_size=self.batch_size), axis=1)
 
         # Determine target classes for attack
         if y is None:
@@ -85,11 +89,13 @@ class SaliencyMapMethod(Attack):
 
             # Main algorithm for each batch
             # Initialize the search space; optimize to remove features that can't be changed
-            search_space = np.zeros_like(batch)
-            if self.theta > 0:
-                search_space[batch < clip_max] = 1
-            else:
-                search_space[batch > clip_min] = 1
+            search_space = np.zeros(batch.shape)
+            if hasattr(self.classifier, 'clip_values') and self.classifier.clip_values is not None:
+                clip_min, clip_max = self.classifier.clip_values
+                if self.theta > 0:
+                    search_space[batch < clip_max] = 1
+                else:
+                    search_space[batch > clip_min] = 1
 
             # Get current predictions
             current_pred = preds[batch_index_1:batch_index_2]
@@ -97,7 +103,7 @@ class SaliencyMapMethod(Attack):
             active_indices = np.where(current_pred != target)[0]
             all_feat = np.zeros_like(batch)
 
-            while len(active_indices) != 0:
+            while active_indices.size != 0:
                 # Compute saliency map
                 feat_ind = self._saliency_map(np.reshape(batch, [batch.shape[0]] + dims)[active_indices],
                                               target[active_indices], search_space[active_indices])
@@ -106,22 +112,31 @@ class SaliencyMapMethod(Attack):
                 all_feat[active_indices][np.arange(len(active_indices)), feat_ind[:, 0]] = 1
                 all_feat[active_indices][np.arange(len(active_indices)), feat_ind[:, 1]] = 1
 
-                # Prepare update depending of theta
-                if self.theta > 0:
-                    clip_func, clip_value = np.minimum, clip_max
+                # Apply attack with clipping
+                if hasattr(self.classifier, 'clip_values') and self.classifier.clip_values is not None:
+                    # Prepare update depending of theta
+                    if self.theta > 0:
+                        clip_func, clip_value = np.minimum, clip_max
+                    else:
+                        clip_func, clip_value = np.maximum, clip_min
+
+                    # Update adversarial examples
+                    tmp_batch = batch[active_indices]
+                    tmp_batch[np.arange(len(active_indices)), feat_ind[:, 0]] = \
+                        clip_func(clip_value, tmp_batch[np.arange(len(active_indices)), feat_ind[:, 0]] + self.theta)
+                    tmp_batch[np.arange(len(active_indices)), feat_ind[:, 1]] = \
+                        clip_func(clip_value, tmp_batch[np.arange(len(active_indices)), feat_ind[:, 1]] + self.theta)
+                    batch[active_indices] = tmp_batch
+
+                    # Remove indices from search space if max/min values were reached
+                    search_space[batch == clip_value] = 0
+
+                # Apply attack without clipping
                 else:
-                    clip_func, clip_value = np.maximum, clip_min
-
-                # Update adversarial examples
-                tmp_batch = batch[active_indices]
-                tmp_batch[np.arange(len(active_indices)), feat_ind[:, 0]] = clip_func(clip_value,
-                    tmp_batch[np.arange(len(active_indices)), feat_ind[:, 0]] + self.theta)
-                tmp_batch[np.arange(len(active_indices)), feat_ind[:, 1]] = clip_func(clip_value,
-                    tmp_batch[np.arange(len(active_indices)), feat_ind[:, 1]] + self.theta)
-                batch[active_indices] = tmp_batch
-
-                # Remove indices from search space if max/min values were reached
-                search_space[batch == clip_value] = 0
+                    tmp_batch = batch[active_indices]
+                    tmp_batch[np.arange(len(active_indices)), feat_ind[:, 0]] += self.theta
+                    tmp_batch[np.arange(len(active_indices)), feat_ind[:, 1]] += self.theta
+                    batch[active_indices] = tmp_batch
 
                 # Recompute model prediction
                 current_pred = np.argmax(self.classifier.predict(np.reshape(batch, [batch.shape[0]] + dims)), axis=1)
@@ -135,8 +150,8 @@ class SaliencyMapMethod(Attack):
 
         x_adv = np.reshape(x_adv, x.shape)
         logger.info('Success rate of JSMA attack: %.2f%%',
-                    (np.sum(np.argmax(self.classifier.predict(x), axis=1) !=
-                            np.argmax(self.classifier.predict(x_adv), axis=1)) / x.shape[0]))
+                    (np.sum(np.argmax(self.classifier.predict(x, batch_size=self.batch_size), axis=1) != np.argmax(
+                        self.classifier.predict(x_adv, batch_size=self.batch_size), axis=1)) / x.shape[0]))
 
         return x_adv
 

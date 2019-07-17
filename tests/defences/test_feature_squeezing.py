@@ -38,9 +38,9 @@ class TestFeatureSqueezing(unittest.TestCase):
         x = np.ones((m, n))
 
         for depth in range(1, 50):
-            preproc = FeatureSqueezing(bit_depth=depth)
-            squeezed_x, _ = preproc(x)
-            self.assertTrue((squeezed_x == 1).all())
+            preproc = FeatureSqueezing(clip_values=(0, 1), bit_depth=depth)
+            x_squeezed, _ = preproc(x)
+            self.assertTrue((x_squeezed == 1).all())
 
     def test_random(self):
         m, n = 1000, 20
@@ -48,23 +48,23 @@ class TestFeatureSqueezing(unittest.TestCase):
         x_zero = np.where(x < 0.5)
         x_one = np.where(x >= 0.5)
 
-        preproc = FeatureSqueezing(bit_depth=1)
-        squeezed_x, _ = preproc(x)
-        self.assertTrue((squeezed_x[x_zero] == 0.).all())
-        self.assertTrue((squeezed_x[x_one] == 1.).all())
+        preproc = FeatureSqueezing(clip_values=(0, 1), bit_depth=1)
+        x_squeezed, _ = preproc(x)
+        self.assertTrue((x_squeezed[x_zero] == 0.).all())
+        self.assertTrue((x_squeezed[x_one] == 1.).all())
 
-        preproc = FeatureSqueezing(bit_depth=2)
-        squeezed_x, _ = preproc(x)
-        self.assertFalse(np.logical_and(0. < squeezed_x, squeezed_x < 0.33).any())
-        self.assertFalse(np.logical_and(0.34 < squeezed_x, squeezed_x < 0.66).any())
-        self.assertFalse(np.logical_and(0.67 < squeezed_x, squeezed_x < 1.).any())
+        preproc = FeatureSqueezing(clip_values=(0, 1), bit_depth=2)
+        x_squeezed, _ = preproc(x)
+        self.assertFalse(np.logical_and(0. < x_squeezed, x_squeezed < 0.33).any())
+        self.assertFalse(np.logical_and(0.34 < x_squeezed, x_squeezed < 0.66).any())
+        self.assertFalse(np.logical_and(0.67 < x_squeezed, x_squeezed < 1.).any())
 
     def test_data_range(self):
         x = np.arange(5)
-        preproc = FeatureSqueezing(bit_depth=2, clip_values=(0, 4))
-        squeezed_x, _ = preproc(x)
+        preproc = FeatureSqueezing(clip_values=(0, 4), bit_depth=2)
+        x_squeezed, _ = preproc(x)
         self.assertTrue(np.array_equal(x, np.arange(5)))
-        self.assertTrue(np.allclose(squeezed_x, [0, 1.33, 2.67, 2.67, 4], atol=1e-1))
+        self.assertTrue(np.allclose(x_squeezed, [0, 1.33, 2.67, 2.67, 4], atol=1e-1))
 
 
 if __name__ == '__main__':
