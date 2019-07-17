@@ -66,8 +66,6 @@ class TestSaliencyMap(unittest.TestCase):
         acc = np.sum(np.argmax(scores, axis=1) == np.argmax(y_test, axis=1)) / y_test.shape[0]
         logger.info('[TF, MNIST] Accuracy on test set: %.2f%%', (acc * 100))
 
-        sess.close()
-
         # Create basic PyTorch model
         cls.classifier_py = get_classifier_pt()
         x_train, x_test = np.swapaxes(x_train, 1, 3), np.swapaxes(x_test, 1, 3)
