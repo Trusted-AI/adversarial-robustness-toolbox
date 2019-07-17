@@ -29,6 +29,7 @@ import numpy as np
 import six
 
 from art import NUMPY_DTYPE
+from art.classifiers.classifier import ClassifierGradients
 from art.attacks.attack import Attack
 from art.utils import compute_success, get_labels_np_array
 
@@ -48,7 +49,7 @@ class ElasticNet(Attack):
         """
         Create an ElasticNet attack instance.
 
-        :param classifier: A trained model.
+        :param classifier: A trained classifier.
         :type classifier: :class:`.Classifier`
         :param confidence: Confidence of adversarial examples: a higher value produces examples that are farther
                away, from the original input, but classified with higher confidence as the target class.
@@ -74,6 +75,10 @@ class ElasticNet(Attack):
         :type decision_rule: `string`
         """
         super(ElasticNet, self).__init__(classifier)
+        if not isinstance(classifier, ClassifierGradients):
+            raise (TypeError('For `' + self.__class__.__name__ + '` classifier must be an instance of '
+                             '`art.classifiers.classifier.ClassifierGradients`, the provided classifier is instance of '
+                             + str(classifier.__class__.__bases__) + '.'))
 
         kwargs = {'confidence': confidence,
                   'targeted': targeted,

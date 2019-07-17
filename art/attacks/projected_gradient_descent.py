@@ -31,6 +31,7 @@ import logging
 import numpy as np
 
 from art import NUMPY_DTYPE
+from art.classifiers.classifier import ClassifierGradients
 from art.attacks.fast_gradient import FastGradientMethod
 from art.utils import compute_success, get_labels_np_array
 
@@ -52,7 +53,7 @@ class ProjectedGradientDescent(FastGradientMethod):
         """
         Create a :class:`.ProjectedGradientDescent` instance.
 
-        :param classifier: A trained model.
+        :param classifier: A trained classifier.
         :type classifier: :class:`.Classifier`
         :param norm: Order of the norm. Possible values: np.inf, 1 or 2.
         :type norm: `int`
@@ -73,6 +74,10 @@ class ProjectedGradientDescent(FastGradientMethod):
         super(ProjectedGradientDescent, self).__init__(classifier, norm=norm, eps=eps, eps_step=eps_step,
                                                        targeted=targeted, num_random_init=num_random_init,
                                                        batch_size=batch_size, minimal=False)
+        if not isinstance(classifier, ClassifierGradients):
+            raise (TypeError('For `' + self.__class__.__name__ + '` classifier must be an instance of '
+                             '`art.classifiers.classifier.ClassifierGradients`, the provided classifier is instance of '
+                             + str(classifier.__class__.__bases__) + '.'))
 
         kwargs = {'max_iter': max_iter}
         ProjectedGradientDescent.set_params(self, **kwargs)

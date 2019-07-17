@@ -47,7 +47,7 @@ class SpatialTransformation(Attack):
 
     def __init__(self, classifier, max_translation=0.0, num_translations=1, max_rotation=0.0, num_rotations=1):
         """
-        :param classifier: A trained model.
+        :param classifier: A trained classifier.
         :type classifier: :class:`.Classifier`
         :param max_translation: The maximum translation in any direction as percentage of image size. The value is
                expected to be in the range `[0, 100]`.

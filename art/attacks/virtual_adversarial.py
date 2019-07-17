@@ -44,7 +44,7 @@ class VirtualAdversarialMethod(Attack):
         """
         Create a VirtualAdversarialMethod instance.
 
-        :param classifier: A trained model.
+        :param classifier: A trained classifier.
         :type classifier: :class:`.Classifier`
         :param eps: Attack step (max input variation).
         :type eps: `float`

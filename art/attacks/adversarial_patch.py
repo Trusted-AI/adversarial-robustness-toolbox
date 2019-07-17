@@ -49,7 +49,7 @@ class AdversarialPatch(Attack):
         """
         Create an instance of the :class:`.AdversarialPatch`.
 
-        :param classifier: A trained model.
+        :param classifier: A trained classifier.
         :type classifier: :class:`.Classifier`
         :param target: The target label for the created patch.
         :type target: `int`

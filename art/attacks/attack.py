@@ -44,7 +44,7 @@ class Attack(ABC):
 
     def __init__(self, classifier):
         """
-        :param classifier: A trained model.
+        :param classifier: A trained classifier.
         :type classifier: :class:`.Classifier`
         """
         if not isinstance(classifier, Classifier):

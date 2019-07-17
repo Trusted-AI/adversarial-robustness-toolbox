@@ -44,7 +44,7 @@ class SaliencyMapMethod(Attack):
         """
         Create a SaliencyMapMethod instance.
 
-        :param classifier: A trained model.
+        :param classifier: A trained classifier.
         :type classifier: :class:`.Classifier`
         :param theta: Perturbation introduced to each modified feature per step (can be positive or negative).
         :type theta: `float`

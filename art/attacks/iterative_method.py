@@ -44,7 +44,7 @@ class BasicIterativeMethod(ProjectedGradientDescent):
         """
         Create a :class:`.ProjectedGradientDescent` instance.
 
-        :param classifier: A trained model.
+        :param classifier: A trained classifier.
         :type classifier: :class:`.Classifier`
         :param eps: Maximum perturbation that the attacker can introduce.
         :type eps: `float`

@@ -45,7 +45,7 @@ class NewtonFool(Attack):
         """
         Create a NewtonFool attack instance.
 
-        :param classifier: A trained model.
+        :param classifier: A trained classifier.
         :type classifier: :class:`.Classifier`
         :param max_iter: The maximum number of iterations.
         :type max_iter: `int`

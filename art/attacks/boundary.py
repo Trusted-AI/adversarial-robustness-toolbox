@@ -37,7 +37,7 @@ logger = logging.getLogger(__name__)
 
 class BoundaryAttack(Attack):
     """
-    Implementation of the boundary attack from Wieland Brendel et al. (2018). This is a powerful black-box attack that
+    Implementation of the boundary attack from Brendel et al. (2018). This is a powerful black-box attack that
     only requires final class prediction.
     Paper link: https://arxiv.org/abs/1712.04248
     """
@@ -49,7 +49,7 @@ class BoundaryAttack(Attack):
         """
         Create a boundary attack instance.
 
-        :param classifier: A trained model.
+        :param classifier: A trained classifier.
         :type classifier: :class:`.Classifier`
         :param targeted: Should the attack target one specific class.
         :type targeted: `bool`

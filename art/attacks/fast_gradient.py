@@ -29,6 +29,7 @@ import logging
 import numpy as np
 
 from art import NUMPY_DTYPE
+from art.classifiers.classifier import ClassifierGradients
 from art.attacks.attack import Attack
 from art.utils import compute_success, get_labels_np_array, random_sphere, projection
 
@@ -50,7 +51,7 @@ class FastGradientMethod(Attack):
         """
         Create a :class:`.FastGradientMethod` instance.
 
-        :param classifier: A trained model.
+        :param classifier: A trained classifier.
         :type classifier: :class:`.Classifier`
         :param norm: Order of the norm. Possible values: np.inf, 1 or 2.
         :type norm: `int`
@@ -70,6 +71,11 @@ class FastGradientMethod(Attack):
 
         """
         super(FastGradientMethod, self).__init__(classifier)
+        if not isinstance(classifier, ClassifierGradients):
+            raise (TypeError('For `' + self.__class__.__name__ + '` classifier must be an instance of '
+                             '`art.classifiers.classifier.ClassifierGradients`, the provided classifier is instance of '
+                             + str(classifier.__class__.__bases__) + '.'))
+
         kwargs = {'norm': norm, 'eps': eps, 'eps_step': eps_step, 'targeted': targeted,
                   'num_random_init': num_random_init, 'batch_size': batch_size, 'minimal': minimal}
         FastGradientMethod.set_params(self, **kwargs)

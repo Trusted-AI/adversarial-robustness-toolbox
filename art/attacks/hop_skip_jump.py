@@ -48,7 +48,7 @@ class HopSkipJump(Attack):
         """
         Create a HopSkipJump attack instance.
 
-        :param classifier: A trained model.
+        :param classifier: A trained classifier.
         :type classifier: :class:`.Classifier`
         :param targeted: Should the attack target one specific class.
         :type targeted: `bool`
