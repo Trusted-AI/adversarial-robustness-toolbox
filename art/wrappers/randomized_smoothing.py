@@ -62,7 +62,7 @@ class RandomizedSmoothing(ClassifierWrapper):
         self.scale = scale
         self.alpha = alpha
 
-    def predict(self, x, logits=False, batch_size=128):
+    def predict(self, x, logits=False, batch_size=128, isAbstain=True):
         """
         Perform prediction of the given classifier for a batch of inputs, taking an expectation over transformations.
 
@@ -72,6 +72,8 @@ class RandomizedSmoothing(ClassifierWrapper):
         :type logits: `bool`
         :param batch_size: Size of batches.
         :type batch_size: `int`
+        :param isAbstain: True if function will abstain from prediction and return 0s
+        :type isAbstain: `boolean`
         :return: Array of predictions of shape `(nb_inputs, self.nb_classes)`.
         :rtype: `np.ndarray`
         """
@@ -87,7 +89,7 @@ class RandomizedSmoothing(ClassifierWrapper):
 
             # predict or abstain
             smooth_prediction = np.zeros(counts_pred.shape)
-            if binom_test(count1, count1 + count2, p=0.5) <= self.alpha:
+            if (not isAbstain) or (binom_test(count1, count1 + count2, p=0.5) <= self.alpha):
                 smooth_prediction[np.argmax(counts_pred)] = 1
             prediction.append(smooth_prediction)
         return np.array(prediction)
