@@ -26,11 +26,12 @@ from __future__ import absolute_import, division, print_function, unicode_litera
 import logging
 
 from art.wrappers.wrapper import ClassifierWrapper
+from art.classifiers.classifier import Classifier, ClassifierGradients
 
 logger = logging.getLogger(__name__)
 
 
-class ExpectationOverTransformations(ClassifierWrapper):
+class ExpectationOverTransformations(ClassifierWrapper, ClassifierGradients, Classifier):
     """
     Implementation of Expectation Over Transformations applied to classifier predictions and gradients, as introduced
     in Athalye et al. (2017).
@@ -70,6 +71,22 @@ class ExpectationOverTransformations(ClassifierWrapper):
         for _ in range(self.sample_size-1):
             prediction += self.classifier.predict(next(self.transformation())(x), logits, batch_size)
         return prediction/self.sample_size
+
+    def fit(self, x, y, **kwargs):
+        """
+        Fit the classifier using the training data `(x, y)`.
+
+        :param x: Features in array of shape (nb_samples, nb_features) or (nb_samples, nb_pixels_1, nb_pixels_2,
+                  nb_channels) or (nb_samples, nb_channels, nb_pixels_1, nb_pixels_2)
+        :type x: `np.ndarray`
+        :param y: Target values (class labels in classification) in array of shape (nb_samples, nb_classes) in
+                  One Hot Encoding format.
+        :type y: `np.ndarray`
+        :param kwargs: Dictionary of framework-specific arguments.
+        :type kwargs: `dict`
+        :return: `None`
+        """
+        raise NotImplementedError
 
     def loss_gradient(self, x, y):
         """
@@ -113,3 +130,16 @@ class ExpectationOverTransformations(ClassifierWrapper):
             class_gradient += self.classifier.class_gradient(next(self.transformation())(x), label, logits)
 
         return class_gradient / self.sample_size
+
+    def save(self, filename, path=None):
+        """
+        Save a model to file specific to the backend framework.
+
+        :param filename: Name of the file where to save the model.
+        :type filename: `str`
+        :param path: Path of the directory where to save the model. If no path is specified, the model will be stored in
+                     the default data location of ART at `DATA_PATH`.
+        :type path: `str`
+        :return: None
+        """
+        raise NotImplementedError
