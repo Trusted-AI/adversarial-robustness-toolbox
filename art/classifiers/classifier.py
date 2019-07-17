@@ -77,7 +77,7 @@ class Classifier(ABC):
         super().__init__(**kwargs)
 
     @abc.abstractmethod
-    def predict(self, x):
+    def predict(self, x, **kwargs):
         """
         Perform prediction of the classifier for input `x`.
 
