@@ -244,8 +244,8 @@ class TestHopSkipJump(unittest.TestCase):
         y_pred_adv = np.argmax(ptc.predict(x_test_adv), axis=1)
         self.assertTrue((y_pred != y_pred_adv).any())
 
-    def test_classifier_type_check_fail(self):
-        # to test black-box attack use a useless test classifier
+    def test_classifier_type_check_fail_classifier(self):
+        # Use a useless test classifier to test basic classifier properties
         class ClassifierNoAPI:
             pass
 

@@ -204,8 +204,8 @@ class TestZooAttack(unittest.TestCase):
         logger.debug('ZOO actual: %s', y_pred_adv)
         logger.info('ZOO success rate on MNIST: %.2f', (sum(y_pred != y_pred_adv) / float(len(y_pred))))
 
-    def test_classifier_type_check_fail(self):
-        # to test black-box attack use a useless test classifier
+    def test_classifier_type_check_fail_classifier(self):
+        # Use a useless test classifier to test basic classifier properties
         class ClassifierNoAPI:
             pass
 
