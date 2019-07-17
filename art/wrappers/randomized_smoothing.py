@@ -55,14 +55,14 @@ class RandomizedSmoothing(ClassifierWrapper):
         :param scale: Standard deviation of Gaussian noise added.
         :type scale: `float`
         :param alpha: The failure probability of smoothing
-        :type alpha: `float` 
+        :type alpha: `float`
         """
         super(RandomizedSmoothing, self).__init__(classifier)
         self.sample_size = sample_size
         self.scale = scale
         self.alpha = alpha
 
-    def predict(self, x, logits=False, batch_size=128, isAbstain=True):
+    def predict(self, x, logits=False, batch_size=128, is_abstain=True):
         """
         Perform prediction of the given classifier for a batch of inputs, taking an expectation over transformations.
 
@@ -82,14 +82,14 @@ class RandomizedSmoothing(ClassifierWrapper):
         for x_i in x:
 
             # get class counts
-            counts_pred = self._prediction_counts(x_i)
+            counts_pred = self._prediction_counts(x_i, logits=logits, batch_size=batch_size)
             top = counts_pred.argsort()[::-1]
             count1 = np.max(counts_pred)
             count2 = counts_pred[top[1]]
 
             # predict or abstain
             smooth_prediction = np.zeros(counts_pred.shape)
-            if (not isAbstain) or (binom_test(count1, count1 + count2, p=0.5) <= self.alpha):
+            if (not is_abstain) or (binom_test(count1, count1 + count2, p=0.5) <= self.alpha):
                 smooth_prediction[np.argmax(counts_pred)] = 1
             prediction.append(smooth_prediction)
         return np.array(prediction)
@@ -158,20 +158,20 @@ class RandomizedSmoothing(ClassifierWrapper):
 
             # get sample prediction for classification
             counts_pred = self._prediction_counts(x_i)
-            ca = np.argmax(counts_pred)
+            class_select = np.argmax(counts_pred)
 
             # get sample prediction for certification
             counts_est = self._prediction_counts(x_i, n=n)
-            nA = counts_est[ca]
+            count_class = counts_est[class_select]
 
-            pABar = self._lower_confidence_bound(nA, n)
+            prob_class = self._lower_confidence_bound(count_class, n)
 
-            if pABar < 0.5:
+            if prob_class < 0.5:
                 prediction.append(-1)
                 radius.append(0.0)
             else:
-                prediction.append(ca)
-                radius.append(self.scale*norm.ppf(pABar))
+                prediction.append(class_select)
+                radius.append(self.scale*norm.ppf(prob_class))
 
         return np.array(prediction), np.array(radius)
 
@@ -204,7 +204,7 @@ class RandomizedSmoothing(ClassifierWrapper):
         else:
             return x
 
-    def _prediction_counts(self, x, n=None):
+    def _prediction_counts(self, x, n=None, logits=False, batch_size=128):
         """
         Makes predictions and then converts probability distribution to counts
 
@@ -215,7 +215,7 @@ class RandomizedSmoothing(ClassifierWrapper):
         """
         # sample and predict
         x_new = self._noisy_samples(x, n=n)
-        predictions = self.classifier.predict(x_new)
+        predictions = self.classifier.predict(x_new, logits, batch_size)
 
          # convert to binary predictions
         idx = np.argmax(predictions, axis=-1)
@@ -227,7 +227,7 @@ class RandomizedSmoothing(ClassifierWrapper):
 
         return counts
 
-    def _lower_confidence_bound(self, nA, n):
+    def _lower_confidence_bound(self, n_class_samples, n_total_samples):
         """
         Uses Clopper-Pearson method to return a (1-alpha) lower confidence bound on bernoulli proportion
 
@@ -238,6 +238,4 @@ class RandomizedSmoothing(ClassifierWrapper):
         :return: Lower bound on the binomial proportion w.p. (1-alpha) over samples
         :rtype: `float`
         """
-        return proportion_confint(nA, n, alpha=2 * self.alpha, method="beta")[0]
-
-
+        return proportion_confint(n_class_samples, n_total_samples, alpha=2 * self.alpha, method="beta")[0]
