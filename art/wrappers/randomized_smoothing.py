@@ -107,7 +107,10 @@ class RandomizedSmoothing(ClassifierWrapper):
         for idx, x_i in enumerate(x):
             x_new, y_new = self._noisy_samples(x_i, y[idx])
             loss_gradient.append(np.mean(self.classifier.loss_gradient(x_new, y_new), axis=0))
-        return loss_gradient
+        return np.array(loss_gradient)
+
+    def test_gradient(self, x, label=None, logits=False):
+        return self.classifier.class_gradient(x, label, logits)
 
     def class_gradient(self, x, label=None, logits=False):
         """
@@ -135,7 +138,7 @@ class RandomizedSmoothing(ClassifierWrapper):
             else:
                 x_new, label = self._noisy_samples(x_i, label[idx])
             class_gradient.append(np.mean(self.classifier.class_gradient(x_new, label, logits), axis=0))
-        return class_gradient
+        return np.array(class_gradient)
 
     def certify(self, x, n):
         """
@@ -169,7 +172,7 @@ class RandomizedSmoothing(ClassifierWrapper):
                 prediction.append(ca)
                 radius.append(self.scale*norm.ppf(pABar))
 
-        return prediction, radius
+        return np.array(prediction), np.array(radius)
 
 
     def _noisy_samples(self, x, y=None, n=None):
