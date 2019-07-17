@@ -132,6 +132,33 @@ class TestAdversarialPatch(unittest.TestCase):
 
         self.assertIn('Feature vectors detected.', str(context.exception))
 
+    def test_classifier_type_check_fail_classifier(self):
+        # Use a useless test classifier to test basic classifier properties
+        class ClassifierNoAPI:
+            pass
+
+        classifier = ClassifierNoAPI
+        with self.assertRaises(TypeError) as context:
+            _ = AdversarialPatch(classifier=classifier)
+
+        self.assertIn('For `AdversarialPatch` classifier must be an instance of '
+                      '`art.classifiers.classifier.Classifier`, the provided classifier is instance of '
+                      '(<class \'object\'>,).', str(context.exception))
+
+    def test_classifier_type_check_fail_gradients(self):
+        # Use a test classifier not providing gradients required by white-box attack
+        from art.classifiers.scikitklearn import ScikitlearnDecisionTreeClassifier
+        from sklearn.tree import DecisionTreeClassifier
+
+        classifier = ScikitlearnDecisionTreeClassifier(model=DecisionTreeClassifier())
+        with self.assertRaises(TypeError) as context:
+            _ = AdversarialPatch(classifier=classifier)
+
+        self.assertIn('For `AdversarialPatch` classifier must be an instance of '
+                      '`art.classifiers.classifier.ClassifierNeuralNetwork` and '
+                      '`art.classifiers.classifier.ClassifierGradients`, the provided classifier is instance of '
+                      '(<class \'art.classifiers.scikitklearn.ScikitlearnClassifier\'>,).', str(context.exception))
+
 
 if __name__ == '__main__':
     unittest.main()

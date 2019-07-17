@@ -28,6 +28,7 @@ import logging
 import numpy as np
 
 from art import NUMPY_DTYPE
+from art.classifiers.classifier import ClassifierNeuralNetwork, ClassifierGradients
 from art.attacks.attack import Attack
 
 logger = logging.getLogger(__name__)
@@ -56,6 +57,11 @@ class VirtualAdversarialMethod(Attack):
         :type batch_size: `int`
         """
         super(VirtualAdversarialMethod, self).__init__(classifier)
+        if not isinstance(classifier, ClassifierNeuralNetwork) or not isinstance(classifier, ClassifierGradients):
+            raise (TypeError('For `' + self.__class__.__name__ + '` classifier must be an instance of '
+                             '`art.classifiers.classifier.ClassifierNeuralNetwork` and '
+                             '`art.classifiers.classifier.ClassifierGradients`, the provided classifier is instance of '
+                             + str(classifier.__class__.__bases__) + '.'))
         kwargs = {'finite_diff': finite_diff,
                   'eps': eps,
                   'max_iter': max_iter,

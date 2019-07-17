@@ -29,6 +29,7 @@ import random
 import numpy as np
 from scipy.ndimage import rotate, shift, zoom
 
+from art.classifiers.classifier import ClassifierNeuralNetwork, ClassifierGradients
 from art.attacks.attack import Attack
 from art.utils import to_categorical
 
@@ -72,6 +73,11 @@ class AdversarialPatch(Attack):
         :type batch_size: `int`
         """
         super(AdversarialPatch, self).__init__(classifier=classifier)
+        if not isinstance(classifier, ClassifierNeuralNetwork) or not isinstance(classifier, ClassifierGradients):
+            raise (TypeError('For `' + self.__class__.__name__ + '` classifier must be an instance of '
+                             '`art.classifiers.classifier.ClassifierNeuralNetwork` and '
+                             '`art.classifiers.classifier.ClassifierGradients`, the provided classifier is instance of '
+                             + str(classifier.__class__.__bases__) + '.'))
 
         kwargs = {"target": target,
                   "rotation_max": rotation_max,
