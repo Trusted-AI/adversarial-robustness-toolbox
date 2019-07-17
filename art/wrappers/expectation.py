@@ -31,7 +31,7 @@ from art.classifiers.classifier import Classifier, ClassifierNeuralNetwork, Clas
 logger = logging.getLogger(__name__)
 
 
-class ExpectationOverTransformations(ClassifierGradients, ClassifierNeuralNetwork, Classifier, ClassifierWrapper):
+class ExpectationOverTransformations(ClassifierWrapper, ClassifierGradients, ClassifierNeuralNetwork, Classifier):
     """
     Implementation of Expectation Over Transformations applied to classifier predictions and gradients, as introduced
     in Athalye et al. (2017).
@@ -52,6 +52,7 @@ class ExpectationOverTransformations(ClassifierGradients, ClassifierNeuralNetwor
         super(ExpectationOverTransformations, self).__init__(classifier)
         self.sample_size = sample_size
         self.transformation = transformation
+        self._predict = self.classifier.predict
 
     def predict(self, x, logits=False, batch_size=128, **kwargs):
         """
@@ -67,10 +68,10 @@ class ExpectationOverTransformations(ClassifierGradients, ClassifierNeuralNetwor
         :rtype: `np.ndarray`
         """
         logger.info('Applying expectation over transformations.')
-        prediction = self.classifier.predict(next(self.transformation())(x), logits, batch_size)
-        for _ in range(self.sample_size-1):
-            prediction += self.classifier.predict(next(self.transformation())(x), logits, batch_size)
-        return prediction/self.sample_size
+        prediction = self._predict(next(self.transformation())(x), logits, batch_size)
+        for _ in range(self.sample_size - 1):
+            prediction += self._predict(next(self.transformation())(x), logits, batch_size)
+        return prediction / self.sample_size
 
     def fit(self, x, y, batch_size=128, nb_epochs=20, **kwargs):
         """
@@ -135,6 +136,32 @@ class ExpectationOverTransformations(ClassifierGradients, ClassifierNeuralNetwor
             class_gradient += self.classifier.class_gradient(next(self.transformation())(x), label, logits)
 
         return class_gradient / self.sample_size
+
+    def get_activations(self, x, layer, batch_size):
+        """
+        Return the output of the specified layer for input `x`. `layer` is specified by layer index (between 0 and
+        `nb_layers - 1`) or by name. The number of layers can be determined by counting the results returned by
+        calling `layer_names`.
+
+        :param x: Input for computing the activations.
+        :type x: `np.ndarray`
+        :param layer: Layer for computing the activations
+        :type layer: `int` or `str`
+        :param batch_size: Size of batches.
+        :type batch_size: `int`
+        :return: The output of `layer`, where the first dimension is the batch size corresponding to `x`.
+        :rtype: `np.ndarray`
+        """
+        raise NotImplementedError
+
+    def set_learning_phase(self, train):
+        """
+        Set the learning phase for the backend framework.
+
+        :param train: `True` if the learning phase is training, `False` if learning phase is not training.
+        :type train: `bool`
+        """
+        raise NotImplementedError
 
     def save(self, filename, path=None):
         """
