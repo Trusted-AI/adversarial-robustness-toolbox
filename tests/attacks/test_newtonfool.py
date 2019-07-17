@@ -76,6 +76,8 @@ class TestNewtonFool(unittest.TestCase):
         y_pred_adv_max = y_pred_adv[y_pred_bool]
         self.assertTrue((y_pred_max >= y_pred_adv_max).all())
 
+        sess.close()
+
     def test_krclassifier(self):
         """
         Second test with the KerasClassifier.
@@ -99,6 +101,8 @@ class TestNewtonFool(unittest.TestCase):
         y_pred_max = y_pred.max(axis=1)
         y_pred_adv_max = y_pred_adv[y_pred_bool]
         self.assertTrue((y_pred_max >= y_pred_adv_max).all())
+
+        sess.close()
 
     def test_ptclassifier(self):
         """

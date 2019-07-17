@@ -73,7 +73,7 @@ class TestSpatialTransformation(unittest.TestCase):
         self.assertLessEqual(abs(attack_st.fooling_rate - 0.707), 0.01)
 
         self.assertEqual(attack_st.attack_trans_x, 3)
-        self.assertEqual(attack_st.attack_trans_y,  3)
+        self.assertEqual(attack_st.attack_trans_y, 3)
         self.assertEqual(attack_st.attack_rot, 30.0)
 
         x_test_adv = attack_st.generate(x_test)
@@ -111,6 +111,7 @@ class TestSpatialTransformation(unittest.TestCase):
         self.assertLessEqual(abs(x_test_adv[0, 14, 14, 0] - 0.013572651), 0.01)
 
         k.clear_session()
+        sess.close()
 
     def test_ptclassifier(self):
         """

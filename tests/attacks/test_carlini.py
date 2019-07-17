@@ -156,6 +156,7 @@ class TestCarliniL2(unittest.TestCase):
 
         # Clean-up
         k.clear_session()
+        sess.close()
 
     def test_ptclassifier(self):
         """
@@ -383,6 +384,7 @@ class TestCarliniLInf(TestCarliniL2):
 
         # Clean-up
         k.clear_session()
+        sess.close()
 
     def test_ptclassifier(self):
         """

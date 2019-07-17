@@ -76,6 +76,8 @@ class TestUniversalPerturbation(unittest.TestCase):
         self.assertFalse((np.argmax(y_test, axis=1) == test_y_pred).all())
         self.assertFalse((np.argmax(y_train, axis=1) == train_y_pred).all())
 
+        sess.close()
+
     def test_krclassifier(self):
         """
         Second test with the KerasClassifier.
@@ -99,6 +101,8 @@ class TestUniversalPerturbation(unittest.TestCase):
         test_y_pred = np.argmax(krc.predict(x_test_adv), axis=1)
         self.assertFalse((np.argmax(y_test, axis=1) == test_y_pred).all())
         self.assertFalse((np.argmax(y_train, axis=1) == train_y_pred).all())
+
+        sess.close()
 
     def test_ptclassifier(self):
         """

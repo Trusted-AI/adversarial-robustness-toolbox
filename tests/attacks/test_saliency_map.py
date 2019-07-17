@@ -55,6 +55,8 @@ class TestSaliencyMap(unittest.TestCase):
         scores = cls.classifier_k._model.evaluate(x_test, y_test)
         logger.info('[Keras, MNIST] Accuracy on test set: %.2f%%', (scores[1] * 100))
 
+        sess.close()
+
         # Create basic CNN on MNIST using TensorFlow
         cls.classifier_tf, sess = get_classifier_tf()
 
@@ -65,6 +67,8 @@ class TestSaliencyMap(unittest.TestCase):
         scores = get_labels_np_array(cls.classifier_tf.predict(x_test))
         acc = np.sum(np.argmax(scores, axis=1) == np.argmax(y_test, axis=1)) / y_test.shape[0]
         logger.info('[TF, MNIST] Accuracy on test set: %.2f%%', (acc * 100))
+
+        sess.close()
 
         # Create basic PyTorch model
         cls.classifier_py = get_classifier_pt()

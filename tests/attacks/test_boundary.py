@@ -131,6 +131,7 @@ class TestBoundary(unittest.TestCase):
 
         # Clean-up session
         k.clear_session()
+        sess.close()
 
     def test_ptclassifier(self):
         """
