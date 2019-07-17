@@ -3,14 +3,14 @@ from __future__ import absolute_import, division, print_function, unicode_litera
 import logging
 import unittest
 
+import numpy as np
 import keras
 import keras.backend as k
-import numpy as np
 from keras.layers import Dense, Conv2D, MaxPooling2D, Dropout, Input, Flatten
 from keras.models import Model
 
 from art.classifiers import KerasClassifier
-from art.defences import FeatureSqueezing
+from art.defences import FeatureSqueezing, JpegCompression, SpatialSmoothing
 from art.utils import load_mnist, master_seed
 from art.utils_test import get_classifier_kr
 
@@ -176,7 +176,6 @@ class TestKerasClassifier(unittest.TestCase):
         self.assertEqual(loss_grads.shape, x_test[:11].shape)
 
     def test_defences_predict(self):
-        from art.defences import FeatureSqueezing, JpegCompression, SpatialSmoothing
 
         (_, _), (x_test, y_test) = self.mnist
 

@@ -85,7 +85,7 @@ class TestDetectorClassifier(unittest.TestCase):
 
     def test_predict(self):
         # Get MNIST
-        (_, _), (x_test, y_test) = self.mnist
+        (_, _), (x_test, _) = self.mnist
 
         # Test predict logits
         preds = self.detector_classifier.predict(x=x_test, logits=True)

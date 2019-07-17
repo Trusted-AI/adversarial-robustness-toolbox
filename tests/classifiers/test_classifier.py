@@ -25,11 +25,11 @@ class ClassifierInstance(Classifier):
         pass
 
 
-class ClassifierNeuralNetworkInstance(Classifier, ClassifierNeuralNetwork, ClassifierGradients):
+class ClassifierNeuralNetworkInstance(ClassifierNeuralNetwork, ClassifierGradients, Classifier):
     def __init__(self, clip_values, channel_index=1):
         super(ClassifierNeuralNetworkInstance, self).__init__(clip_values=clip_values, channel_index=channel_index)
 
-    def class_gradient(self, x, label=None, logits=False, **kwargs):
+    def class_gradient(self, x, label=None, **kwargs):
         pass
 
     def fit(self, x, y, batch_size=128, nb_epochs=20, **kwargs):
