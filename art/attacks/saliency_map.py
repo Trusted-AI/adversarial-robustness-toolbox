@@ -28,6 +28,7 @@ import logging
 import numpy as np
 
 from art import NUMPY_DTYPE
+from art.classifiers.classifier import ClassifierGradients
 from art.attacks.attack import Attack
 
 logger = logging.getLogger(__name__)
@@ -54,6 +55,11 @@ class SaliencyMapMethod(Attack):
         :type batch_size: `int`
         """
         super(SaliencyMapMethod, self).__init__(classifier)
+        if not isinstance(classifier, ClassifierGradients):
+            raise (TypeError('For `' + self.__class__.__name__ + '` classifier must be an instance of '
+                             '`art.classifiers.classifier.ClassifierGradients`, the provided classifier is instance of '
+                             + str(classifier.__class__.__bases__) + '.'))
+
         kwargs = {'theta': theta, 'gamma': gamma, 'batch_size': batch_size}
         self.set_params(**kwargs)
 
