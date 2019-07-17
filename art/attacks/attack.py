@@ -50,7 +50,7 @@ class Attack(ABC):
         if not isinstance(classifier, Classifier):
             raise (TypeError('For `' + self.__class__.__name__ + '` classifier must be an instance of '
                              '`art.classifiers.classifier.Classifier`, the provided classifier is instance of ' + str(
-                             classifier.__class__.__bases__) + '.'))
+                                 classifier.__class__.__bases__) + '.'))
         self.classifier = classifier
 
     def generate(self, x, y=None, **kwargs):

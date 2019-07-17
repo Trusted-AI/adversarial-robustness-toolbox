@@ -119,7 +119,7 @@ class QueryEfficientBBGradientEstimation(ClassifierWrapper, ClassifierGradients,
         """
         raise NotImplementedError
 
-    def loss_gradient(self, x, y):
+    def loss_gradient(self, x, y, **kwargs):
         """
         Compute the gradient of the loss function w.r.t. `x`.
 
@@ -130,10 +130,10 @@ class QueryEfficientBBGradientEstimation(ClassifierWrapper, ClassifierGradients,
         :return: Array of gradients of the same shape as `x`.
         :rtype: `np.ndarray`
         """
-        epsilon_map = self.sigma*np.random.normal(size=([self.num_basis] + list(self.input_shape)))
+        epsilon_map = self.sigma * np.random.normal(size=([self.num_basis] + list(self.input_shape)))
         grads = []
         for i in range(len(x)):
-            minus, plus = self._generate_samples(x[i:i+1], epsilon_map)
+            minus, plus = self._generate_samples(x[i:i + 1], epsilon_map)
 
             # Vectorized; small tests weren't faster
             # ent_vec = np.vectorize(lambda p: entropy(y[i], p), signature='(n)->()')
@@ -163,7 +163,8 @@ class QueryEfficientBBGradientEstimation(ClassifierWrapper, ClassifierGradients,
         :return: Array of predictions of shape `(nb_inputs, self.nb_classes)`.
         :rtype: `np.ndarray`
         """
-        return self._predict(clip_and_round(x, self.clip_values, self.round_samples), **{'logits': logits, 'batch_size': batch_size})
+        return self._predict(clip_and_round(x, self.clip_values, self.round_samples),
+                             **{'logits': logits, 'batch_size': batch_size})
 
     def save(self, filename, path=None):
         """

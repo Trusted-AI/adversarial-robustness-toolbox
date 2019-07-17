@@ -53,7 +53,7 @@ class ExpectationOverTransformations(ClassifierWrapper, ClassifierGradients, Cla
         self.sample_size = sample_size
         self.transformation = transformation
 
-    def predict(self, x, logits=False, batch_size=128):
+    def predict(self, x, logits=False, batch_size=128, **kwargs):
         """
         Perform prediction of the given classifier for a batch of inputs, taking an expectation over transformations.
 
@@ -88,7 +88,7 @@ class ExpectationOverTransformations(ClassifierWrapper, ClassifierGradients, Cla
         """
         raise NotImplementedError
 
-    def loss_gradient(self, x, y):
+    def loss_gradient(self, x, y, **kwargs):
         """
         Compute the gradient of the given classifier's loss function w.r.t. `x`, taking an expectation
         over transformations.
@@ -106,7 +106,7 @@ class ExpectationOverTransformations(ClassifierWrapper, ClassifierGradients, Cla
             loss_gradient += self.classifier.loss_gradient(next(self.transformation())(x), y)
         return loss_gradient / self.sample_size
 
-    def class_gradient(self, x, label=None, logits=False):
+    def class_gradient(self, x, label=None, logits=False, **kwargs):
         """
         Compute per-class derivatives of the given classifier w.r.t. `x`, taking an expectation over transformations.
 

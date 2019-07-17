@@ -74,7 +74,7 @@ class XGBoostClassifier(Classifier):
         """
         raise NotImplementedError
 
-    def predict(self, x):
+    def predict(self, x, **kwargs):
         """
         Perform prediction for a batch of inputs.
 

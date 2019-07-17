@@ -78,7 +78,7 @@ class CatBoostARTClassifier(Classifier):
 
         self.model.fit(x_preprocessed, y_preprocessed, **kwargs)
 
-    def predict(self, x):
+    def predict(self, x, **kwargs):
         """
         Perform prediction for a batch of inputs.
 

@@ -85,7 +85,7 @@ class ScikitlearnClassifier(Classifier):
         elif hasattr(self.model, 'feature_importances_'):
             self._input_shape = (len(self.model.feature_importances_),)
 
-    def predict(self, x):
+    def predict(self, x, **kwargs):
         """
         Perform prediction for a batch of inputs.
 
