@@ -22,7 +22,7 @@ attacks.
 """
 
 
-class ClassifierWrapper(object):
+class ClassifierWrapper:
     """
     Wrapper class for any classifier instance.
     """
