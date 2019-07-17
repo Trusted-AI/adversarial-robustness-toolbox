@@ -14,10 +14,17 @@ logger = logging.getLogger(__name__)
 
 
 class SubsetScanningDetector(Classifier):
-    """ Fast generalized subset scan based detector"""
+    """ Fast generalized subset scan based detector
+
+        Fast generalized subset scan
+        McFowland, E., Speakman, S., & Neill, D. B. (2013).
+        Fast generalized subset scan for anomalous pattern detection.
+        The Journal of Machine Learning Research, 14(1), 1533-1561. 
+
+   """
     def __init__(self, classifier, bgd_data, layer):
         """
-        Create a `SubsetScanningDetector` instance which is used to the detect the presence of .
+        Create a `SubsetScanningDetector` instance which is used to the detect the presence of adversarial samples.
 
         :param classifier: The model being evaluated for its robustness to anomalies (eg. adversarial samples)
         :type classifier: :class:`.Classifier`
