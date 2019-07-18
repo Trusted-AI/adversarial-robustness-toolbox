@@ -411,8 +411,8 @@ class ScikitlearnLogisticRegression(ScikitlearnClassifier, ClassifierGradients):
             # Compute the gradients only w.r.t. the provided label
             label = [label] * nb_samples
             label = to_categorical(labels=label, nb_classes=self.nb_classes)
-        elif (isinstance(label, list) and len(label) == nb_samples) or isinstance(label,
-             np.ndarray) and label.shape == (nb_samples,):
+        elif (isinstance(label, list) and len(label) == nb_samples) or \
+                  isinstance(label, np.ndarray) and label.shape == (nb_samples,):
             # For each sample, compute the gradients w.r.t. the indicated target class (possibly distinct)
             label = to_categorical(labels=label, nb_classes=self.nb_classes)
         else:
