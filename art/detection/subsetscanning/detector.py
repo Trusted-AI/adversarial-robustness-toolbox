@@ -34,13 +34,7 @@ class SubsetScanningDetector(Classifier):
     """ 
     Fast generalized subset scan based detector by McFowland, E., Speakman, S., and Neill, D. B. (2013).
     Paper link: https://www.cs.cmu.edu/~neill/papers/mcfowland13a.pdf
-
-        Fast generalized subset scan
-        McFowland, E., Speakman, S., & Neill, D. B. (2013).
-        Fast generalized subset scan for anomalous pattern detection.
-        The Journal of Machine Learning Research, 14(1), 1533-1561. 
-
-   """
+    """
     def __init__(self, classifier, bgd_data, layer):
         """
         Create a `SubsetScanningDetector` instance which is used to the detect the presence of adversarial samples.
