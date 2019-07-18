@@ -31,7 +31,7 @@ logger = logging.getLogger(__name__)
 
 
 class SubsetScanningDetector(Classifier):
-    """ 
+    """
     Fast generalized subset scan based detector by McFowland, E., Speakman, S., and Neill, D. B. (2013).
     Paper link: https://www.cs.cmu.edu/~neill/papers/mcfowland13a.pdf
     """
