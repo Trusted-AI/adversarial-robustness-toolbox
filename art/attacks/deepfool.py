@@ -28,7 +28,7 @@ import logging
 import numpy as np
 
 from art import NUMPY_DTYPE
-from art.classifiers.classifier import ClassifierGradients
+from art.classifiers.classifier import ClassifierNeuralNetwork, ClassifierGradients
 from art.attacks.attack import Attack
 
 logger = logging.getLogger(__name__)
@@ -58,8 +58,9 @@ class DeepFool(Attack):
         :type batch_size: `int`
         """
         super(DeepFool, self).__init__(classifier=classifier)
-        if not isinstance(classifier, ClassifierGradients):
+        if not isinstance(classifier, ClassifierNeuralNetwork) or not isinstance(classifier, ClassifierGradients):
             raise (TypeError('For `' + self.__class__.__name__ + '` classifier must be an instance of '
+                             '`art.classifiers.classifier.ClassifierNeuralNetwork` and '
                              '`art.classifiers.classifier.ClassifierGradients`, the provided classifier is instance of '
                              + str(classifier.__class__.__bases__) + '.'))
 

@@ -282,6 +282,50 @@ class TestIterativeAttackVectors(unittest.TestCase):
         acc = np.sum(preds_adv == np.argmax(targets, axis=1)) / y_test.shape[0]
         logger.info('Success rate of targeted BIM on Iris: %.2f%%', (acc * 100))
 
+    def test_scikitlearn(self):
+        from sklearn.linear_model import LogisticRegression
+        from sklearn.svm import SVC, LinearSVC
+
+        from art.classifiers.scikitklearn import ScikitlearnLogisticRegression, ScikitlearnSVC
+
+        scikitlearn_test_cases = {LogisticRegression: ScikitlearnLogisticRegression,
+                                  SVC: ScikitlearnSVC,
+                                  LinearSVC: ScikitlearnSVC}
+
+        (_, _), (x_test, y_test) = self.iris
+
+        for (model_class, classifier_class) in scikitlearn_test_cases.items():
+            model = model_class()
+            classifier = classifier_class(model=model, clip_values=(0, 1))
+            classifier.fit(x=x_test, y=y_test)
+
+            # Test untargeted attack
+            attack = BasicIterativeMethod(classifier, eps=1, eps_step=0.1)
+            x_test_adv = attack.generate(x_test)
+            self.assertFalse((x_test == x_test_adv).all())
+            self.assertTrue((x_test_adv <= 1).all())
+            self.assertTrue((x_test_adv >= 0).all())
+
+            preds_adv = np.argmax(classifier.predict(x_test_adv), axis=1)
+            self.assertFalse((np.argmax(y_test, axis=1) == preds_adv).all())
+            acc = np.sum(preds_adv == np.argmax(y_test, axis=1)) / y_test.shape[0]
+            logger.info('Accuracy of ' + classifier.__class__.__name__ + ' on Iris with BIM adversarial examples: '
+                                                                         '%.2f%%', (acc * 100))
+
+            # Test targeted attack
+            targets = random_targets(y_test, nb_classes=3)
+            attack = BasicIterativeMethod(classifier, targeted=True, eps=1, eps_step=0.1, batch_size=128)
+            x_test_adv = attack.generate(x_test, **{'y': targets})
+            self.assertFalse((x_test == x_test_adv).all())
+            self.assertTrue((x_test_adv <= 1).all())
+            self.assertTrue((x_test_adv >= 0).all())
+
+            preds_adv = np.argmax(classifier.predict(x_test_adv), axis=1)
+            self.assertTrue((np.argmax(targets, axis=1) == preds_adv).any())
+            acc = np.sum(preds_adv == np.argmax(targets, axis=1)) / y_test.shape[0]
+            logger.info('Success rate of ' + classifier.__class__.__name__ + ' on targeted BIM on Iris: %.2f%%',
+                        (acc * 100))
+
 
 if __name__ == '__main__':
     unittest.main()

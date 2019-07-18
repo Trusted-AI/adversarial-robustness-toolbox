@@ -343,6 +343,49 @@ class TestElasticNetVectors(unittest.TestCase):
         acc = 1. - np.sum(preds_adv == np.argmax(y_test, axis=1)) / y_test.shape[0]
         logger.info('EAD success rate on Iris: %.2f%%', (acc * 100))
 
+    def test_scikitlearn(self):
+        from sklearn.linear_model import LogisticRegression
+        from sklearn.svm import SVC, LinearSVC
+
+        from art.classifiers.scikitklearn import ScikitlearnLogisticRegression, ScikitlearnSVC
+
+        scikitlearn_test_cases = {LogisticRegression: ScikitlearnLogisticRegression}#,
+                                  # SVC: ScikitlearnSVC,
+                                  # LinearSVC: ScikitlearnSVC}
+
+        (_, _), (x_test, y_test) = self.iris
+
+        for (model_class, classifier_class) in scikitlearn_test_cases.items():
+            model = model_class()
+            classifier = classifier_class(model=model, clip_values=(0, 1))
+            classifier.fit(x=x_test, y=y_test)
+
+            # Test untargeted attack
+            attack = ElasticNet(classifier, targeted=False, max_iter=10)
+            x_test_adv = attack.generate(x_test)
+            self.assertFalse((x_test == x_test_adv).all())
+            self.assertTrue((x_test_adv <= 1).all())
+            self.assertTrue((x_test_adv >= 0).all())
+
+            preds_adv = np.argmax(classifier.predict(x_test_adv), axis=1)
+            self.assertFalse((np.argmax(y_test, axis=1) == preds_adv).all())
+            acc = 1. - np.sum(preds_adv == np.argmax(y_test, axis=1)) / y_test.shape[0]
+            logger.info('EAD success rate  of ' + classifier.__class__.__name__ + ' on Iris: %.2f%%', (acc * 100))
+
+            # Test targeted attack
+            targets = random_targets(y_test, nb_classes=3)
+            attack = ElasticNet(classifier, targeted=True, max_iter=10)
+            x_test_adv = attack.generate(x_test, **{'y': targets})
+            self.assertFalse((x_test == x_test_adv).all())
+            self.assertTrue((x_test_adv <= 1).all())
+            self.assertTrue((x_test_adv >= 0).all())
+
+            preds_adv = np.argmax(classifier.predict(x_test_adv), axis=1)
+            self.assertTrue((np.argmax(targets, axis=1) == preds_adv).any())
+            acc = np.sum(preds_adv == np.argmax(targets, axis=1)) / y_test.shape[0]
+            logger.info('Targeted EAD success rate of ' + classifier.__class__.__name__ + ' on Iris: %.2f%%',
+                        (acc * 100))
+
 
 if __name__ == '__main__':
     unittest.main()

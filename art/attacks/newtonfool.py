@@ -28,6 +28,7 @@ import logging
 import numpy as np
 
 from art import NUMPY_DTYPE
+from art.classifiers.classifier import ClassifierGradients
 from art.attacks.attack import Attack
 from art.utils import to_categorical
 
@@ -55,6 +56,11 @@ class NewtonFool(Attack):
         :type batch_size: `int`
         """
         super(NewtonFool, self).__init__(classifier)
+        if not isinstance(classifier, ClassifierGradients):
+            raise (TypeError('For `' + self.__class__.__name__ + '` classifier must be an instance of '
+                             '`art.classifiers.classifier.ClassifierGradients`, the provided classifier is instance of '
+                             + str(classifier.__class__.__bases__) + '.'))
+
         params = {"max_iter": max_iter, "eta": eta, "batch_size": batch_size}
         self.set_params(**params)
 
@@ -92,7 +98,8 @@ class NewtonFool(Attack):
 
                 # Compute the gradients and norm
                 grads = self.classifier.class_gradient(batch, label=l_batch, logits=False)
-                grads = np.squeeze(grads, axis=1)
+                if grads.shape[1] == 1:
+                    grads = np.squeeze(grads, axis=1)
                 norm_grad = np.linalg.norm(np.reshape(grads, (batch.shape[0], -1)), axis=1)
 
                 # Theta

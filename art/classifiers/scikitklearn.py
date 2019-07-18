@@ -24,6 +24,7 @@ import logging
 import numpy as np
 
 from art.classifiers.classifier import Classifier, ClassifierGradients
+from art.utils import to_categorical
 
 logger = logging.getLogger(__name__)
 
@@ -57,6 +58,13 @@ class ScikitlearnClassifier(Classifier):
             self._input_shape = (self.model.n_features_,)
         elif hasattr(self.model, 'feature_importances_'):
             self._input_shape = (len(self.model.feature_importances_),)
+        elif hasattr(self.model, 'coef_'):
+            if len(self.model.coef_.shape) == 1:
+                self._input_shape = (self.model.coef_.shape[0],)
+            else:
+                self._input_shape = (self.model.coef_.shape[1],)
+        elif hasattr(self.model, 'support_vectors_'):
+            self._input_shape = (self.model.support_vectors_.shape[1],)
         else:
             self._input_shape = None
 
@@ -84,6 +92,13 @@ class ScikitlearnClassifier(Classifier):
             self._input_shape = (self.model.n_features_,)
         elif hasattr(self.model, 'feature_importances_'):
             self._input_shape = (len(self.model.feature_importances_),)
+        elif hasattr(self.model, 'coef_'):
+            if len(self.model.coef_.shape) == 1:
+                self._input_shape = (self.model.coef_.shape[0],)
+            else:
+                self._input_shape = (self.model.coef_.shape[1],)
+        elif hasattr(self.model, 'support_vectors_'):
+            self._input_shape = (self.model.support_vectors_.shape[1],)
 
     def predict(self, x, **kwargs):
         """
@@ -118,7 +133,7 @@ class ScikitlearnDecisionTreeClassifier(ScikitlearnClassifier):
                for features.
         :type clip_values: `tuple`
         :param model: scikit-learn Decision Tree Classifier model.
-        :type model: `sklearn.tree.DecisionTree`
+        :type model: `sklearn.tree.DecisionTreeClassifier`
         :param defences: Defences to be activated with the classifier.
         :type defences: :class:`.Preprocessor` or `list(Preprocessor)` instances
         :param preprocessing: Tuple of the form `(subtractor, divider)` of floats or `np.ndarray` of values to be
@@ -182,7 +197,7 @@ class ScikitlearnAdaBoostClassifier(ScikitlearnClassifier):
                for features.
         :type clip_values: `tuple`
         :param model: scikit-learn AdaBoost Classifier model.
-        :type model: `sklearn.ensemble.AdaBoost`
+        :type model: `sklearn.ensemble.AdaBoostClassifier`
         :param defences: Defences to be activated with the classifier.
         :type defences: :class:`.Preprocessor` or `list(Preprocessor)` instances
         :param preprocessing: Tuple of the form `(subtractor, divider)` of floats or `np.ndarray` of values to be
@@ -387,16 +402,27 @@ class ScikitlearnLogisticRegression(ScikitlearnClassifier, ClassifierGradients):
             raise ValueError("""Model has not been fitted. Run function `fit(x, y)` of classifier first or provide a
             fitted model.""")
 
-        # pylint: disable=E0001
-        from sklearn.utils.class_weight import compute_class_weight
+        nb_samples = x.shape[0]
+
+        if label is None:
+            # Compute the gradients w.r.t all classses
+            label = np.ones(shape=(nb_samples, self.nb_classes))
+        elif isinstance(label, (int, np.integer)):
+            # Compute the gradients only w.r.t. the provided label
+            label = [label] * nb_samples
+            label = to_categorical(labels=label, nb_classes=self.nb_classes)
+        elif (isinstance(label, list) and len(label) == nb_samples) or isinstance(label,
+             np.ndarray) and label.shape == (nb_samples,):
+            # For each sample, compute the gradients w.r.t. the indicated target class (possibly distinct)
+            label = to_categorical(labels=label, nb_classes=self.nb_classes)
+        else:
+            raise TypeError('Unrecognized type for argument `label` with type ' + str(type(label)))
 
         # Apply preprocessing
         x_preprocessed, _ = self._apply_preprocessing(x, y=None, fit=False)
 
         num_samples, _ = x.shape
         gradients = np.zeros(x.shape)
-        class_weight = compute_class_weight(class_weight=self.model_class_weight, classes=self.classes,
-                                            y=np.argmax(label, axis=1))
 
         y_pred = self.model.predict_proba(X=x_preprocessed)
 
@@ -404,7 +430,7 @@ class ScikitlearnLogisticRegression(ScikitlearnClassifier, ClassifierGradients):
 
         for i_sample in range(num_samples):
             for i_class in range(self.nb_classes):
-                gradients[i_sample, :] += class_weight[i_class] * label[i_sample, i_class] * (
+                gradients[i_sample, :] += label[i_sample, i_class] * (
                     self.weights[i_class, :] - w_weighted[i_sample, :])
 
         gradients = self._apply_preprocessing_gradient(x, gradients)
@@ -433,6 +459,7 @@ class ScikitlearnLogisticRegression(ScikitlearnClassifier, ClassifierGradients):
         self._nb_classes = self.model.classes_.shape[0]
         self.model_class_weight = self.model.class_weight
         self.classes = self.model.classes_
+        self._input_shape = (self.model.coef_.shape[1],)
 
     def loss_gradient(self, x, y, **kwargs):
         """
@@ -562,6 +589,14 @@ class ScikitlearnSVC(ScikitlearnClassifier, ClassifierGradients):
         y_index = np.argmax(y, axis=1)
         self.model.fit(X=x, y=y_index, **kwargs)
         self._nb_classes = len(self.model.classes_)
+
+        if hasattr(self.model, 'coef_'):
+            if len(self.model.coef_.shape) == 1:
+                self._input_shape = (self.model.coef_.shape[0],)
+            else:
+                self._input_shape = (self.model.coef_.shape[1],)
+        elif hasattr(self.model, 'support_vectors_'):
+            self._input_shape = (self.model.support_vectors_.shape[1],)
 
     def _get_kernel_gradient(self, i_sv, x_sample):
         # pylint: disable=W0212

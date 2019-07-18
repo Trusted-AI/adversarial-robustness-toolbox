@@ -114,6 +114,16 @@ class Classifier(ABC):
         """
         return self._clip_values
 
+    @property
+    def input_shape(self):
+        """
+        Return the shape of one input.
+
+        :return: Shape of one input for the classifier.
+        :rtype: `tuple`
+        """
+        return self._input_shape
+
     @abc.abstractmethod
     def save(self, filename, path=None):
         """
@@ -289,16 +299,6 @@ class ClassifierNeuralNetwork(ABC):
         :rtype: `int`
         """
         return self._nb_classes
-
-    @property
-    def input_shape(self):
-        """
-        Return the shape of one input.
-
-        :return: Shape of one input for the classifier.
-        :rtype: `tuple`
-        """
-        return self._input_shape
 
     @property
     def channel_index(self):

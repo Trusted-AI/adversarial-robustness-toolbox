@@ -15,7 +15,7 @@ from art.utils import load_mnist, master_seed
 
 logger = logging.getLogger('testLogger')
 
-NB_TRAIN = 1000
+NB_TRAIN = 10
 NB_TEST = 2
 
 
