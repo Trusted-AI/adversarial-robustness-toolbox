@@ -23,18 +23,12 @@ import abc
 import sys
 
 import numpy as np
-
+from art.attacks.attack import Attack
+from art.classifiers.scikitklearn import ScikitlearnDecisionTreeClassifier
 logger = logging.getLogger(__name__)
 
 
-# Ensure compatibility with Python 2 and 3 when using ABCMeta
-if sys.version_info >= (3, 4):
-    ABC = abc.ABC
-else:
-    ABC = abc.ABCMeta(str('ABC'), (), {})
-
-
-class Decision_Tree_Attack(ABC):
+class Decision_Tree_Attack(Attack):
     """
     # Close implementation of papernots attack on decision trees from https://arxiv.org/pdf/1605.07277.pdf , Algorithm 2. 
     # Implementation after Algorthim 2 and communication with the authors.  
@@ -49,19 +43,24 @@ class Decision_Tree_Attack(ABC):
         :type classifier: :float:
         """
         self.classifier = classifier
-        if not callable(getattr(classifier, 'get_decision_path')):
-            raise TypeError('Model must be a decision tree model and provide a decision path!')
-        if not callable(getattr(classifier, 'get_left_child')) or not callable(getattr(classifier, 'get_right_child')):
-            raise TypeError('Model must be a decision tree model and provide children for nodes!')
-        if not callable(getattr(classifier, 'get_feature_at_node')):
-            raise TypeError('Model must be a decision tree model and provide a feature per node!')
-        if not callable(getattr(classifier, 'get_threshold_at_node')):
-            raise TypeError('Model must be a decision tree model and provide a threshold for each split!')
-        if not callable(getattr(classifier, 'get_classes_at_node')):
-            raise TypeError('Model must be a decision tree model and provide which class is classified at which node!')
+        if not isinstance(classifier, ScikitlearnDecisionTreeClassifier):
+            raise TypeError('Model must be a decision tree model!')
         self.offset = offset
     
-    def DFSubtree(self, position, original_class, target=None):
+    def _DFSubtree(self, position, original_class, target=None):
+        """
+        Search a decision tree for a misclassifying instance.
+
+        :param position: An array with the original inputs to be attacked.
+        :type position: `int`
+        :param original_class: original label for the instances we are serching misclassification for.
+        :type original_class: `int`
+        :param target: If the provided, specifies which output the leaf has to have to be accepted. 
+        :type target: `int`
+        :return: An array specifying the path to the leaf where the classification is either != original class or 
+               ==target class if provided.
+        :rtype: `np.ndarray`
+        """
         #base case, we're at a leaf
         if self.classifier.get_left_child(position)==self.classifier.get_right_child(position):
             if target is None: #untargeted case
@@ -75,10 +74,10 @@ class Decision_Tree_Attack(ABC):
                 else:
                     return [-1]
         else: #go deeper, depths first
-            res = self.DFSubtree(self.classifier.get_left_child(position), original_class, target)
+            res = self._DFSubtree(self.classifier.get_left_child(position), original_class, target)
             if res[0]==-1:
                 #no result, try right subtree
-                res = self.DFSubtree(self.classifier.get_right_child(position), original_class, target)  
+                res = self._DFSubtree(self.classifier.get_right_child(position), original_class, target)  
                 if res[0]==-1:
                     #no desired result
                     return [-1]
@@ -119,14 +118,14 @@ class Decision_Tree_Attack(ABC):
                 current_child = path[position+1]
                 if current_child == self.classifier.get_left_child(ancestor):  #serach in right subtree
                     if y is None:
-                        adv_path = self.DFSubtree(self.classifier.get_right_child(ancestor),legitimate_class)
+                        adv_path = self._DFSubtree(self.classifier.get_right_child(ancestor),legitimate_class)
                     else:
-                        adv_path = self.DFSubtree(self.classifier.get_right_child(ancestor),legitimate_class,y[index])
+                        adv_path = self._DFSubtree(self.classifier.get_right_child(ancestor),legitimate_class,y[index])
                 else: #serach in left subtree
                     if y is None:
-                        adv_path = self.DFSubtree(self.classifier.get_left_child(ancestor),legitimate_class)
+                        adv_path = self._DFSubtree(self.classifier.get_left_child(ancestor),legitimate_class)
                     else:
-                        adv_path = self.DFSubtree(self.classifier.get_left_child(ancestor),legitimate_class,y[index])
+                        adv_path = self._DFSubtree(self.classifier.get_left_child(ancestor),legitimate_class,y[index])
                 position = position -1 #we are going the decision path updwards
             adv_path.append(ancestor)
             #we figured out which is the way to the target, now perturb
@@ -149,7 +148,8 @@ class Decision_Tree_Attack(ABC):
         :type kwargs: `dict`
         :return: `True` when parsing was successful
         """
-        for key, value in kwargs.items():
-            if key in self.attack_params:
-                setattr(self, key, value)
-        return True
+        super(Decision_Tree_Attack, self).set_params(**kwargs)
+
+        if self.offset <= 0:
+            raise ValueError("The offset parameter must be strictly positive.")
+
