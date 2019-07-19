@@ -219,7 +219,8 @@ class TestScikitlearnLogisticRegression(unittest.TestCase):
         with self.assertRaises(TypeError) as context:
             _ = self.classifier.class_gradient(x_test[0:2], label=np.asarray([0, 1, 0]))
 
-        self.assertIn('Unrecognized type for argument `label`: <class \'numpy.ndarray\'>', str(context.exception))
+        self.assertIn('Unrecognized type for argument `label` with type <class \'numpy.ndarray\'>',
+                      str(context.exception))
 
     def test_loss_gradient(self):
         grad_predicted = self.classifier.loss_gradient(x_test[0:1], y_test[0:1])
