@@ -33,9 +33,9 @@ class Decision_Tree_Attack(Attack):
     # Close implementation of papernots attack on decision trees from https://arxiv.org/pdf/1605.07277.pdf , Algorithm 2. 
     # Implementation after Algorthim 2 and communication with the authors.  
     """
-    attack_params = ['classifier','offset']
+    attack_params = ['classifier', 'offset']
 
-    def __init__(self, classifier,offset=0.001):
+    def __init__(self, classifier, offset=0.001):
         """
         :param classifier: A trained model of type scikit decision tree.
         :type classifier: :class:`.Classifier.ScikitlearnDecisionTreeClassifier`
@@ -46,7 +46,7 @@ class Decision_Tree_Attack(Attack):
         if not isinstance(classifier, ScikitlearnDecisionTreeClassifier):
             raise TypeError('Model must be a decision tree model!')
         self.offset = offset
-    
+
     def _DFSubtree(self, position, original_class, target=None):
         """
         Search a decision tree for a misclassifying instance.
@@ -61,31 +61,33 @@ class Decision_Tree_Attack(Attack):
                ==target class if provided.
         :rtype: `np.ndarray`
         """
-        #base case, we're at a leaf
-        if self.classifier.get_left_child(position)==self.classifier.get_right_child(position):
-            if target is None: #untargeted case
-                if self.classifier.get_classes_at_node(position)!=original_class:
+        # base case, we're at a leaf
+        if self.classifier.get_left_child(position) == self.classifier.get_right_child(position):
+            if target is None:  # untargeted case
+                if self.classifier.get_classes_at_node(position) != original_class:
                     return [position]
                 else:
                     return [-1]
-            else: #targeted case
+            else:  # targeted case
                 if self.classifier.get_classes_at_node(position) == target:
                     return [position]
                 else:
                     return [-1]
-        else: #go deeper, depths first
-            res = self._DFSubtree(self.classifier.get_left_child(position), original_class, target)
-            if res[0]==-1:
-                #no result, try right subtree
-                res = self._DFSubtree(self.classifier.get_right_child(position), original_class, target)  
-                if res[0]==-1:
-                    #no desired result
+        else:  # go deeper, depths first
+            res = self._DFSubtree(self.classifier.get_left_child(
+                position), original_class, target)
+            if res[0] == -1:
+                # no result, try right subtree
+                res = self._DFSubtree(self.classifier.get_right_child(
+                    position), original_class, target)
+                if res[0] == -1:
+                    # no desired result
                     return [-1]
                 else:
                     res.append(position)
                     return res
             else:
-                #done, it is returning a path
+                # done, it is returning a path
                 res.append(position)
                 return res
 
@@ -104,40 +106,47 @@ class Decision_Tree_Attack(Attack):
         """
         x = x.copy()
         if y is not None:
-            assert np.shape(y)[0]==np.shape(x)[0]
-            if len(np.shape(y))>1:
+            assert np.shape(y)[0] == np.shape(x)[0]
+            if len(np.shape(y)) > 1:
                 y = np.argmax(y)
         for index in range(np.shape(x)[0]):
             path = self.classifier.get_decision_path(x[index])
-            legitimate_class = np.argmax(self.classifier.predict(x[index].reshape(1,-1)))
+            legitimate_class = np.argmax(
+                self.classifier.predict(x[index].reshape(1, -1)))
             position = -2
             adv_path = [-1]
             ancestor = path[position]
-            while np.abs(position)< (len(path)-1) or adv_path[0]== -1:
+            while np.abs(position) < (len(path)-1) or adv_path[0] == -1:
                 ancestor = path[position]
                 current_child = path[position+1]
-                if current_child == self.classifier.get_left_child(ancestor):  #serach in right subtree
+                # serach in right subtree
+                if current_child == self.classifier.get_left_child(ancestor):
                     if y is None:
-                        adv_path = self._DFSubtree(self.classifier.get_right_child(ancestor),legitimate_class)
+                        adv_path = self._DFSubtree(
+                            self.classifier.get_right_child(ancestor), legitimate_class)
                     else:
-                        adv_path = self._DFSubtree(self.classifier.get_right_child(ancestor),legitimate_class,y[index])
-                else: #serach in left subtree
+                        adv_path = self._DFSubtree(self.classifier.get_right_child(
+                            ancestor), legitimate_class, y[index])
+                else:  # serach in left subtree
                     if y is None:
-                        adv_path = self._DFSubtree(self.classifier.get_left_child(ancestor),legitimate_class)
+                        adv_path = self._DFSubtree(
+                            self.classifier.get_left_child(ancestor), legitimate_class)
                     else:
-                        adv_path = self._DFSubtree(self.classifier.get_left_child(ancestor),legitimate_class,y[index])
-                position = position -1 #we are going the decision path updwards
+                        adv_path = self._DFSubtree(self.classifier.get_left_child(
+                            ancestor), legitimate_class, y[index])
+                position = position - 1  # we are going the decision path updwards
             adv_path.append(ancestor)
-            #we figured out which is the way to the target, now perturb
-            for i in range(1,1+len(adv_path[1:])): #first one is leaf-> no threshold, cannot be perturbed
+            # we figured out which is the way to the target, now perturb
+            # first one is leaf-> no threshold, cannot be perturbed
+            for i in range(1, 1+len(adv_path[1:])):
                 goFor = adv_path[i-1]
                 threshold = self.classifier.get_threshold_at_node(adv_path[i])
-                feature  = self.classifier.get_feature_at_node(adv_path[i])
-                #only perturb if the feature is acutally wrong
-                if x[index][feature]>threshold and goFor==self.classifier.get_left_child(adv_path[i]):
-                    x[index][feature]=threshold-self.offset
-                elif x[index][feature]<=threshold and goFor==self.classifier.get_right_child(adv_path[i]):
-                    x[index][feature]=threshold+self.offset
+                feature = self.classifier.get_feature_at_node(adv_path[i])
+                # only perturb if the feature is acutally wrong
+                if x[index][feature] > threshold and goFor == self.classifier.get_left_child(adv_path[i]):
+                    x[index][feature] = threshold-self.offset
+                elif x[index][feature] <= threshold and goFor == self.classifier.get_right_child(adv_path[i]):
+                    x[index][feature] = threshold+self.offset
         return x
 
     def set_params(self, **kwargs):
@@ -152,4 +161,3 @@ class Decision_Tree_Attack(Attack):
 
         if self.offset <= 0:
             raise ValueError("The offset parameter must be strictly positive.")
-
