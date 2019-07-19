@@ -356,23 +356,18 @@ def compute_success(classifier, x_clean, labels, x_adv, targeted=False, batch_si
 
     return rate
 
-def compute_accuracy(classifier, x, labels, batch_size=1):
+def compute_accuracy(preds, labels):
     """
-    Compute the accuracy rate and coverage rate of a classifier on samples `x`. 
+    Compute the accuracy rate and coverage rate of predictions 
     In the case where predictions are abstained, those samples are ignored.
 
-    :param classifier: Classifier used for prediction.
-    :type classifier: :class:`.Classifier`
-    :param x: Samples.
-    :type x: `np.ndarray`
+    :param preds: Predictions.
+    :type preds: `np.ndarray`
     :param labels: Correct labels of `x`.
     :type labels: `np.ndarray`
-    :param batch_size: Batch size
-    :type batch_size: `int`
     :return: Tuple of accuracy rate and coverage rate
     :rtype: `tuple`
     """
-    preds = classifier.predict(x, batch_size=batch_size)
     has_pred = np.sum(preds, axis=1)
     idx_pred = np.where(has_pred)[0]
     labels = np.argmax(labels[idx_pred], axis=1)
