@@ -15,6 +15,13 @@
 # AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT,
 # TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 # SOFTWARE.
+"""
+This module implements the boundary attack `BoundaryAttack`. This is a black-box attack which only requires class
+predictions.
+
+Paper link:
+    https://arxiv.org/abs/1712.04248
+"""
 from __future__ import absolute_import, division, print_function, unicode_literals
 
 import logging
@@ -22,25 +29,28 @@ import logging
 import numpy as np
 
 from art import NUMPY_DTYPE
+from art.classifiers.classifier import ClassifierNeuralNetwork, ClassifierGradients
 from art.attacks.attack import Attack
+from art.utils import compute_success, to_categorical
 
 logger = logging.getLogger(__name__)
 
 
 class BoundaryAttack(Attack):
     """
-    Implementation of the boundary attack from Wieland Brendel et al. (2018). This is a powerful black-box attack that
-    only requires final class prediction. Paper link: https://arxiv.org/abs/1712.04248
+    Implementation of the boundary attack from Brendel et al. (2018). This is a powerful black-box attack that
+    only requires final class prediction.
+    Paper link: https://arxiv.org/abs/1712.04248
     """
     attack_params = Attack.attack_params + ['targeted', 'delta', 'epsilon', 'step_adapt', 'max_iter', 'num_trial',
-                                            'sample_size', 'init_size']
+                                            'sample_size', 'init_size', 'batch_size']
 
     def __init__(self, classifier, targeted=True, delta=0.01, epsilon=0.01, step_adapt=0.667, max_iter=5000,
                  num_trial=25, sample_size=20, init_size=100):
         """
         Create a boundary attack instance.
 
-        :param classifier: A trained model.
+        :param classifier: A trained classifier.
         :type classifier: :class:`.Classifier`
         :param targeted: Should the attack target one specific class.
         :type targeted: `bool`
@@ -60,6 +70,12 @@ class BoundaryAttack(Attack):
         :type init_size: `int`
         """
         super(BoundaryAttack, self).__init__(classifier=classifier)
+        if not isinstance(classifier, ClassifierNeuralNetwork) or not isinstance(classifier, ClassifierGradients):
+            raise (TypeError('For `' + self.__class__.__name__ + '` classifier must be an instance of '
+                             '`art.classifiers.classifier.ClassifierNeuralNetwork` and '
+                             '`art.classifiers.classifier.ClassifierGradients`, the provided classifier is instance of '
+                             + str(classifier.__class__.__bases__) + '.'))
+
         params = {'targeted': targeted,
                   'delta': delta,
                   'epsilon': epsilon,
@@ -68,10 +84,11 @@ class BoundaryAttack(Attack):
                   'num_trial': num_trial,
                   'sample_size': sample_size,
                   'init_size': init_size,
+                  'batch_size': 1
                   }
         self.set_params(**params)
 
-    def generate(self, x, y=None, x_adv_init=None):
+    def generate(self, x, y=None, **kwargs):
         """
         Generate adversarial samples and return them in an array.
 
@@ -91,11 +108,13 @@ class BoundaryAttack(Attack):
             clip_min, clip_max = np.min(x), np.max(x)
 
         # Prediction from the original images
-        preds = np.argmax(self.classifier.predict(x), axis=1)
+        preds = np.argmax(self.classifier.predict(x, batch_size=self.batch_size), axis=1)
 
         # Prediction from the initial adversarial examples if not None
+        x_adv_init = kwargs.get('x_adv_init')
+
         if x_adv_init is not None:
-            init_preds = np.argmax(self.classifier.predict(x_adv_init), axis=1)
+            init_preds = np.argmax(self.classifier.predict(x_adv_init, batch_size=self.batch_size), axis=1)
         else:
             init_preds = [None] * len(x)
             x_adv_init = [None] * len(x)
@@ -118,8 +137,11 @@ class BoundaryAttack(Attack):
                 x_adv[ind] = self._perturb(x=val, y=-1, y_p=preds[ind], init_pred=init_preds[ind],
                                            adv_init=x_adv_init[ind], clip_min=clip_min, clip_max=clip_max)
 
+        if y is not None:
+            y = to_categorical(y, self.classifier.nb_classes)
+
         logger.info('Success rate of Boundary attack: %.2f%%',
-                    (np.sum(preds != np.argmax(self.classifier.predict(x_adv), axis=1)) / x.shape[0]))
+                    100 * compute_success(self.classifier, x, y, x_adv, self.targeted, batch_size=self.batch_size))
 
         return x_adv
 
@@ -192,7 +214,7 @@ class BoundaryAttack(Attack):
                     potential_adv = np.clip(potential_adv, clip_min, clip_max)
                     potential_advs.append(potential_adv)
 
-                preds = np.argmax(self.classifier.predict(np.array(potential_advs)), axis=1)
+                preds = np.argmax(self.classifier.predict(np.array(potential_advs), batch_size=self.batch_size), axis=1)
                 satisfied = (preds == target)
                 delta_ratio = np.mean(satisfied)
 
@@ -214,7 +236,7 @@ class BoundaryAttack(Attack):
                 perturb *= self.curr_epsilon
                 potential_advs = x_advs + perturb
                 potential_advs = np.clip(potential_advs, clip_min, clip_max)
-                preds = np.argmax(self.classifier.predict(potential_advs), axis=1)
+                preds = np.argmax(self.classifier.predict(potential_advs, batch_size=self.batch_size), axis=1)
                 satisfied = (preds == target)
                 epsilon_ratio = np.mean(satisfied)
 
@@ -257,7 +279,7 @@ class BoundaryAttack(Attack):
         perturb = np.swapaxes(perturb, 0, self.classifier.channel_index - 1)
         direction = np.swapaxes(direction, 0, self.classifier.channel_index - 1)
 
-        for i in range(len(direction)):
+        for i in range(direction.shape[0]):
             direction[i] /= np.linalg.norm(direction[i])
             perturb[i] -= np.dot(perturb[i], direction[i]) * direction[i]
 
@@ -301,7 +323,8 @@ class BoundaryAttack(Attack):
             # Attack unsatisfied yet and the initial image unsatisfied
             for _ in range(self.init_size):
                 random_img = nprd.uniform(clip_min, clip_max, size=x.shape).astype(x.dtype)
-                random_class = np.argmax(self.classifier.predict(np.array([random_img])), axis=1)[0]
+                random_class = np.argmax(self.classifier.predict(np.array([random_img]), batch_size=self.batch_size),
+                                         axis=1)[0]
 
                 if random_class == y:
                     initial_sample = random_img, random_class
@@ -319,7 +342,8 @@ class BoundaryAttack(Attack):
             # The initial image unsatisfied
             for _ in range(self.init_size):
                 random_img = nprd.uniform(clip_min, clip_max, size=x.shape).astype(x.dtype)
-                random_class = np.argmax(self.classifier.predict(np.array([random_img])), axis=1)[0]
+                random_class = np.argmax(self.classifier.predict(np.array([random_img]), batch_size=self.batch_size),
+                                         axis=1)[0]
 
                 if random_class != y_p:
                     initial_sample = random_img, random_class

@@ -15,10 +15,16 @@
 # AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT,
 # TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 # SOFTWARE.
+"""
+This module implements methods performing poisoning detection based on activations clustering.
+
+Paper link:
+    https://arxiv.org/abs/1811.03728
+"""
 from __future__ import absolute_import, division, print_function, unicode_literals
 
 import logging
-import os.path
+import os
 
 import numpy as np
 
@@ -32,7 +38,7 @@ logger = logging.getLogger(__name__)
 
 class ActivationDefence(PoisonFilteringDefence):
     """
-    Method from [Chen et al., 2018] performing poisoning detection based on activations clustering.
+    Method from Chen et al., 2018 performing poisoning detection based on activations clustering.
     Paper link: https://arxiv.org/abs/1811.03728
     """
     defence_params = ['nb_clusters', 'clustering_method', 'nb_dims', 'reduce', 'cluster_analysis']
@@ -80,7 +86,7 @@ class ActivationDefence(PoisonFilteringDefence):
         :return: JSON object with confusion matrix.
         :rtype: `jsonObject`
         """
-        if is_clean is None or len(is_clean) == 0:
+        if is_clean is None or is_clean.size == 0:
             raise ValueError("is_clean was not provided while invoking evaluate_defence.")
 
         self.set_params(**kwargs)
@@ -125,8 +131,8 @@ class ActivationDefence(PoisonFilteringDefence):
         indices_by_class = self._segment_by_class(np.arange(n_train), self.y_train)
         self.is_clean_lst = [0] * n_train
 
-        for assigned_clean, dp in zip(self.assigned_clean_by_class, indices_by_class):
-            for assignment, index_dp in zip(assigned_clean, dp):
+        for assigned_clean, indices_dp in zip(self.assigned_clean_by_class, indices_by_class):
+            for assignment, index_dp in zip(assigned_clean, indices_dp):
                 if assignment == 1:
                     self.is_clean_lst[index_dp] = 1
 
@@ -234,10 +240,10 @@ class ActivationDefence(PoisonFilteringDefence):
         ActivationDefence._pickle_classifier(classifier, filename)
 
         # Now train using y_fix:
-        improve_factor, fixed_classifier = train_remove_backdoor(classifier, x_train, y_train, x_test,
-                                                                 y_test, tolerable_backdoor=tolerable_backdoor,
-                                                                 max_epochs=max_epochs,
-                                                                 batch_epochs=batch_epochs)
+        improve_factor, _ = train_remove_backdoor(classifier, x_train, y_train, x_test, y_test,
+                                                  tolerable_backdoor=tolerable_backdoor, max_epochs=max_epochs,
+                                                  batch_epochs=batch_epochs)
+
         # Only update classifier if there was an improvement:
         if improve_factor < 0:
             classifier = ActivationDefence._unpickle_classifier(filename)
@@ -270,10 +276,10 @@ class ActivationDefence(PoisonFilteringDefence):
         :return: (improve_factor, classifier)
         :rtype: `float`, `.Classifier`
         """
-
+        # pylint: disable=E0001
         # Train using cross validation
         from sklearn.model_selection import KFold
-        kf = KFold(n_splits=n_splits)
+        k_fold = KFold(n_splits=n_splits)
         KFold(n_splits=n_splits, random_state=None, shuffle=True)
 
         import time
@@ -281,7 +287,7 @@ class ActivationDefence(PoisonFilteringDefence):
         ActivationDefence._pickle_classifier(classifier, filename)
         curr_improvement = 0
 
-        for i, (train_index, test_index) in enumerate(kf.split(x)):
+        for _, (train_index, test_index) in enumerate(k_fold.split(x)):
             # Obtain partition:
             x_train, x_test = x[train_index], x[test_index]
             y_train, y_test = y_fix[train_index], y_fix[test_index]
@@ -296,7 +302,7 @@ class ActivationDefence(PoisonFilteringDefence):
             if curr_improvement < new_improvement and new_improvement > 0:
                 curr_improvement = new_improvement
                 classifier = fixed_classifier
-                logger.info('Selected as best model so far: ' + str(curr_improvement))
+                logger.info('Selected as best model so far: %s', curr_improvement)
 
         ActivationDefence._remove_pickle(filename)
         return curr_improvement, classifier
@@ -311,17 +317,15 @@ class ActivationDefence(PoisonFilteringDefence):
         :param file_name: Name of the file where the classifier will be pickled
         :return: None
         """
-
         import pickle
-        import os
         from art import DATA_PATH
         full_path = os.path.join(DATA_PATH, file_name)
         folder = os.path.split(full_path)[0]
         if not os.path.exists(folder):
             os.makedirs(folder)
 
-        with open(full_path, 'wb') as f:
-            pickle.dump(classifier, f)
+        with open(full_path, 'wb') as f_classifier:
+            pickle.dump(classifier, f_classifier)
 
     @staticmethod
     def _unpickle_classifier(file_name):
@@ -331,14 +335,13 @@ class ActivationDefence(PoisonFilteringDefence):
         :param file_name:
         :return:
         """
-        import os
         from art import DATA_PATH
         import pickle
 
         full_path = os.path.join(DATA_PATH, file_name)
-        logger.info('Loading classifier from ' + str(full_path))
-        with open(full_path, 'rb') as f:
-            loaded_classifier = pickle.load(f)
+        logger.info('Loading classifier from %s', full_path)
+        with open(full_path, 'rb') as f_classifier:
+            loaded_classifier = pickle.load(f_classifier)
             return loaded_classifier
 
     @staticmethod
@@ -349,7 +352,6 @@ class ActivationDefence(PoisonFilteringDefence):
         :param file_name: File name without directory
         :return: None
         """
-        import os
         from art import DATA_PATH
         full_path = os.path.join(DATA_PATH, file_name)
         os.remove(full_path)
@@ -418,8 +420,8 @@ class ActivationDefence(PoisonFilteringDefence):
 
         # Get activations reduced to 3-components:
         separated_reduced_activations = []
-        for ac in self.activations_by_class:
-            reduced_activations = reduce_dimensionality(ac, nb_dims=3)
+        for activation in self.activations_by_class:
+            reduced_activations = reduce_dimensionality(activation, nb_dims=3)
             separated_reduced_activations.append(reduced_activations)
 
         # For each class generate a plot:
@@ -551,8 +553,8 @@ def train_remove_backdoor(classifier, x_train, y_train, x_test, y_test, tolerabl
         classifier.fit(x_train, y_train, nb_epochs=batch_epochs)
         curr_epochs += batch_epochs
         curr_missed = measure_misclassification(classifier, x_test, y_test)
-        logger.info('Current epoch: ' + str(curr_epochs))
-        logger.info('Misclassifications: ' + str(curr_missed))
+        logger.info('Current epoch: %s', curr_epochs)
+        logger.info('Misclassifications: %s', curr_missed)
 
     improve_factor = initial_missed - curr_missed
     return improve_factor, classifier
@@ -579,6 +581,7 @@ def cluster_activations(separated_activations, nb_clusters=2, nb_dims=10, reduce
     :return: separated_clusters, separated_reduced_activations
     :rtype: `tuple`
     """
+    # pylint: disable=E0001
     from sklearn.cluster import KMeans
 
     separated_clusters = []
@@ -589,15 +592,15 @@ def cluster_activations(separated_activations, nb_clusters=2, nb_dims=10, reduce
     else:
         raise ValueError(clustering_method + " clustering method not supported.")
 
-    for ac in separated_activations:
+    for activation in separated_activations:
         # Apply dimensionality reduction
-        nb_activations = np.shape(ac)[1]
+        nb_activations = np.shape(activation)[1]
         if nb_activations > nb_dims:
-            reduced_activations = reduce_dimensionality(ac, nb_dims=nb_dims, reduce=reduce)
+            reduced_activations = reduce_dimensionality(activation, nb_dims=nb_dims, reduce=reduce)
         else:
             logger.info("Dimensionality of activations = %i less than nb_dims = %i. Not applying dimensionality "
                         "reduction.", nb_activations, nb_dims)
-            reduced_activations = ac
+            reduced_activations = activation
         separated_reduced_activations.append(reduced_activations)
 
         # Get cluster assignments
@@ -620,7 +623,7 @@ def reduce_dimensionality(activations, nb_dims=10, reduce='FastICA'):
     :return: array with the activations reduced
     :rtype: `numpy.ndarray`
     """
-
+    # pylint: disable=E0001
     from sklearn.decomposition import FastICA, PCA
     if reduce == 'FastICA':
         projector = FastICA(n_components=nb_dims, max_iter=1000, tol=0.005)

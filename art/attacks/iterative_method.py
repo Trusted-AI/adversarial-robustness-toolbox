@@ -15,13 +15,20 @@
 # AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT,
 # TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 # SOFTWARE.
+"""
+This module implements the Basic Iterative Method attack `BasicIterativeMethod` as the iterative version of FGM and
+FGSM. This is a white-box attack.
+
+Paper link:
+    https://arxiv.org/abs/1607.02533
+"""
 from __future__ import absolute_import, division, print_function, unicode_literals
 
 import logging
 
 import numpy as np
 
-from art.attacks import ProjectedGradientDescent
+from art.attacks.projected_gradient_descent import ProjectedGradientDescent
 
 logger = logging.getLogger(__name__)
 
@@ -37,7 +44,7 @@ class BasicIterativeMethod(ProjectedGradientDescent):
         """
         Create a :class:`.ProjectedGradientDescent` instance.
 
-        :param classifier: A trained model.
+        :param classifier: A trained classifier.
         :type classifier: :class:`.Classifier`
         :param eps: Maximum perturbation that the attacker can introduce.
         :type eps: `float`
@@ -51,5 +58,5 @@ class BasicIterativeMethod(ProjectedGradientDescent):
         :type batch_size: `int`
         """
         super(BasicIterativeMethod, self).__init__(classifier, norm=np.inf, eps=eps, eps_step=eps_step,
-                                                       max_iter=max_iter, targeted=targeted,
-                                                       num_random_init=0, batch_size=batch_size)
+                                                   max_iter=max_iter, targeted=targeted,
+                                                   num_random_init=0, batch_size=batch_size)

@@ -113,11 +113,11 @@ class TestPyTorchClassifier(unittest.TestCase):
         acc2 = np.sum(np.argmax(self.module_classifier.predict(x_test), axis=1) == np.argmax(y_test, axis=1)) / NB_TEST
         logger.info('Accuracy: %.2f%%', (acc * 100))
 
-        self.assertTrue(acc2 >= .8 * acc)
+        self.assertGreaterEqual(acc2, 0.8 * acc)
 
     def test_nb_classes(self):
         ptc = self.module_classifier
-        self.assertTrue(ptc.nb_classes == 10)
+        self.assertEqual(ptc.nb_classes, 10)
 
     def test_input_shape(self):
         ptc = self.module_classifier
@@ -132,20 +132,20 @@ class TestPyTorchClassifier(unittest.TestCase):
         grads = ptc.class_gradient(x_test)
 
         self.assertTrue(np.array(grads.shape == (NB_TEST, 10, 1, 28, 28)).all())
-        self.assertTrue(np.sum(grads) != 0)
+        self.assertNotEqual(np.sum(grads), 0)
 
         # Test 1 gradient label = 5
         grads = ptc.class_gradient(x_test, label=5)
 
         self.assertTrue(np.array(grads.shape == (NB_TEST, 1, 1, 28, 28)).all())
-        self.assertTrue(np.sum(grads) != 0)
+        self.assertNotEqual(np.sum(grads), 0)
 
         # Test a set of gradients label = array
         label = np.random.randint(5, size=NB_TEST)
         grads = ptc.class_gradient(x_test, label=label)
 
         self.assertTrue(np.array(grads.shape == (NB_TEST, 1, 1, 28, 28)).all())
-        self.assertTrue(np.sum(grads) != 0)
+        self.assertNotEqual(np.sum(grads), 0)
 
     def test_class_gradient_target(self):
         # Get MNIST
@@ -156,7 +156,7 @@ class TestPyTorchClassifier(unittest.TestCase):
         grads = ptc.class_gradient(x_test, label=3)
 
         self.assertTrue(np.array(grads.shape == (NB_TEST, 1, 1, 28, 28)).all())
-        self.assertTrue(np.sum(grads) != 0)
+        self.assertNotEqual(np.sum(grads), 0)
 
     def test_loss_gradient(self):
         # Get MNIST
@@ -167,7 +167,7 @@ class TestPyTorchClassifier(unittest.TestCase):
         grads = ptc.loss_gradient(x_test, y_test)
 
         self.assertTrue(np.array(grads.shape == (NB_TEST, 1, 28, 28)).all())
-        self.assertTrue(np.sum(grads) != 0)
+        self.assertNotEqual(np.sum(grads), 0)
 
     def test_layers(self):
         # Get MNIST
@@ -177,20 +177,20 @@ class TestPyTorchClassifier(unittest.TestCase):
         ptc = self.seq_classifier
 
         layer_names = self.seq_classifier.layer_names
-        self.assertTrue(layer_names == ['0_Conv2d(1, 16, kernel_size=(5, 5), stride=(1, 1))', '1_ReLU()',
-                                        '2_MaxPool2d(kernel_size=2, stride=2, padding=0, dilation=1, ceil_mode=False)',
-                                        '3_Flatten()', '4_Linear(in_features=2304, out_features=10, bias=True)'])
+        self.assertEqual(layer_names, ['0_Conv2d(1, 16, kernel_size=(5, 5), stride=(1, 1))', '1_ReLU()',
+                                       '2_MaxPool2d(kernel_size=2, stride=2, padding=0, dilation=1, ceil_mode=False)',
+                                       '3_Flatten()', '4_Linear(in_features=2304, out_features=10, bias=True)'])
 
         for i, name in enumerate(layer_names):
             act_i = ptc.get_activations(x_test, i, batch_size=5)
             act_name = ptc.get_activations(x_test, name, batch_size=5)
-            self.assertTrue(np.sum(act_name - act_i) == 0)
+            self.assertEqual(np.sum(act_name - act_i), 0)
 
-        self.assertTrue(ptc.get_activations(x_test, 0, batch_size=5).shape == (20, 16, 24, 24))
-        self.assertTrue(ptc.get_activations(x_test, 1, batch_size=5).shape == (20, 16, 24, 24))
-        self.assertTrue(ptc.get_activations(x_test, 2, batch_size=5).shape == (20, 16, 12, 12))
-        self.assertTrue(ptc.get_activations(x_test, 3, batch_size=5).shape == (20, 2304))
-        self.assertTrue(ptc.get_activations(x_test, 4, batch_size=5).shape == (20, 10))
+        self.assertEqual(ptc.get_activations(x_test, 0, batch_size=5).shape, (20, 16, 24, 24))
+        self.assertEqual(ptc.get_activations(x_test, 1, batch_size=5).shape, (20, 16, 24, 24))
+        self.assertEqual(ptc.get_activations(x_test, 2, batch_size=5).shape, (20, 16, 12, 12))
+        self.assertEqual(ptc.get_activations(x_test, 3, batch_size=5).shape, (20, 2304))
+        self.assertEqual(ptc.get_activations(x_test, 4, batch_size=5).shape, (20, 10))
 
     def test_set_learning(self):
         ptc = self.module_classifier
@@ -219,10 +219,10 @@ class TestPyTorchClassifier(unittest.TestCase):
 
     def test_repr(self):
         repr_ = repr(self.module_classifier)
-        self.assertTrue('art.classifiers.pytorch.PyTorchClassifier' in repr_)
-        self.assertTrue('input_shape=(1, 28, 28), nb_classes=10, channel_index=1' in repr_)
-        self.assertTrue('clip_values=(0, 1)' in repr_)
-        self.assertTrue('defences=None, preprocessing=(0, 1)' in repr_)
+        self.assertIn('art.classifiers.pytorch.PyTorchClassifier', repr_)
+        self.assertIn('input_shape=(1, 28, 28), nb_classes=10, channel_index=1', repr_)
+        self.assertIn('clip_values=(0, 1)', repr_)
+        self.assertIn('defences=None, preprocessing=(0, 1)', repr_)
 
     def test_pickle(self):
         import os
@@ -238,9 +238,9 @@ class TestPyTorchClassifier(unittest.TestCase):
         # Unpickle:
         with open(full_path, 'rb') as f:
             loaded = pickle.load(f)
-            self.assertTrue(self.module_classifier._clip_values == loaded._clip_values)
-            self.assertTrue(self.module_classifier._channel_index == loaded._channel_index)
-            self.assertTrue(set(self.module_classifier.__dict__.keys()) == set(loaded.__dict__.keys()))
+            self.assertEqual(self.module_classifier._clip_values, loaded._clip_values)
+            self.assertEqual(self.module_classifier._channel_index, loaded._channel_index)
+            self.assertEqual(set(self.module_classifier.__dict__.keys()), set(loaded.__dict__.keys()))
 
         # Get MNIST
         (_, _), (x_test, y_test) = self.mnist
@@ -250,7 +250,7 @@ class TestPyTorchClassifier(unittest.TestCase):
         acc1 = np.sum(np.argmax(preds1, axis=1) == np.argmax(y_test, axis=1)) / len(y_test)
         preds2 = loaded.predict(x_test)
         acc2 = np.sum(np.argmax(preds2, axis=1) == np.argmax(y_test, axis=1)) / len(y_test)
-        self.assertTrue(acc1 == acc2)
+        self.assertEqual(acc1, acc2)
 
 
 if __name__ == '__main__':

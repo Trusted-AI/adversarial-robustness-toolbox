@@ -15,6 +15,12 @@
 # AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT,
 # TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 # SOFTWARE.
+"""
+This module implements the feature squeezing defence in `FeatureSqueezing`.
+
+Paper link:
+    https://arxiv.org/abs/1704.01155
+"""
 from __future__ import absolute_import, division, print_function, unicode_literals
 
 import logging
@@ -28,9 +34,10 @@ logger = logging.getLogger(__name__)
 
 class FeatureSqueezing(Preprocessor):
     """
-    Reduces the sensibility of the features of a sample. Defence method from https://arxiv.org/abs/1704.01155.
+    Reduces the sensibility of the features of a sample.
+    Paper link: https://arxiv.org/abs/1704.01155.
     """
-    params = ['clip_values', 'bit_depth', '_apply_fit', '_apply_predict']
+    params = ['clip_values', 'bit_depth']
 
     def __init__(self, clip_values, bit_depth=8, apply_fit=False, apply_predict=True):
         """
@@ -48,8 +55,9 @@ class FeatureSqueezing(Preprocessor):
         """
         super(FeatureSqueezing, self).__init__()
         self._is_fitted = True
-        self.set_params(clip_values=clip_values, bit_depth=bit_depth, _apply_fit=apply_fit,
-                        _apply_predict=apply_predict)
+        self._apply_fit = apply_fit
+        self._apply_predict = apply_predict
+        self.set_params(clip_values=clip_values, bit_depth=bit_depth)
 
     @property
     def apply_fit(self):
@@ -97,10 +105,6 @@ class FeatureSqueezing(Preprocessor):
         :type clip_values: `tuple`
         :param bit_depth: The number of bits per channel for encoding the data.
         :type bit_depth: `int`
-        :param apply_fit: True if applied during fitting/training.
-        :type apply_fit: `bool`
-        :param apply_predict: True if applied during predicting.
-        :type apply_predict: `bool`
         """
         # Save defence-specific parameters
         super(FeatureSqueezing, self).set_params(**kwargs)

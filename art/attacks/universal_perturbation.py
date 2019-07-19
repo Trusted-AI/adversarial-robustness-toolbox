@@ -15,6 +15,13 @@
 # AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT,
 # TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 # SOFTWARE.
+"""
+This module implements the universal adversarial perturbations attack `UniversalPerturbation`. This is a white-box
+attack.
+
+Paper link:
+    https://arxiv.org/abs/1610.08401
+"""
 from __future__ import absolute_import, division, print_function, unicode_literals
 
 import logging
@@ -22,6 +29,7 @@ import random
 
 import numpy as np
 
+from art.classifiers.classifier import ClassifierNeuralNetwork, ClassifierGradients
 from art.attacks.attack import Attack
 from art.utils import projection
 
@@ -31,7 +39,8 @@ logger = logging.getLogger(__name__)
 class UniversalPerturbation(Attack):
     """
     Implementation of the attack from Moosavi-Dezfooli et al. (2016). Computes a fixed perturbation to be applied to all
-    future inputs. To this end, it can use any adversarial attack method. Paper link: https://arxiv.org/abs/1610.08401
+    future inputs. To this end, it can use any adversarial attack method.
+    Paper link: https://arxiv.org/abs/1610.08401
     """
     attacks_dict = {'carlini': 'art.attacks.carlini.CarliniL2Method',
                     'carlini_inf': 'art.attacks.carlini.CarliniLInfMethod',
@@ -49,7 +58,7 @@ class UniversalPerturbation(Attack):
     def __init__(self, classifier, attacker='deepfool', attacker_params=None, delta=0.2, max_iter=20, eps=10.0,
                  norm=np.inf):
         """
-        :param classifier: A trained model.
+        :param classifier: A trained classifier.
         :type classifier: :class:`.Classifier`
         :param attacker: Adversarial attack name. Default is 'deepfool'. Supported names: 'carlini', 'carlini_inf',
                          'deepfool', 'fgsm', 'bim', 'pgd', 'margin', 'ead', 'newtonfool', 'jsma', 'vat'.
@@ -66,6 +75,12 @@ class UniversalPerturbation(Attack):
         :type norm: `int`
         """
         super(UniversalPerturbation, self).__init__(classifier)
+        if not isinstance(classifier, ClassifierNeuralNetwork) or not isinstance(classifier, ClassifierGradients):
+            raise (TypeError('For `' + self.__class__.__name__ + '` classifier must be an instance of '
+                             '`art.classifiers.classifier.ClassifierNeuralNetwork` and '
+                             '`art.classifiers.classifier.ClassifierGradients`, the provided classifier is instance of '
+                             + str(classifier.__class__.__bases__) + '.'))
+
         kwargs = {'attacker': attacker,
                   'attacker_params': attacker_params,
                   'delta': delta,
@@ -75,7 +90,7 @@ class UniversalPerturbation(Attack):
                   }
         self.set_params(**kwargs)
 
-    def generate(self, x, y=None):
+    def generate(self, x, y=None, **kwargs):
         """
         Generate adversarial samples and return them in an array.
 
@@ -95,7 +110,7 @@ class UniversalPerturbation(Attack):
 
         # Instantiate the middle attacker and get the predicted labels
         attacker = self._get_attack(self.attacker, self.attacker_params)
-        pred_y = self.classifier.predict(x, logits=False)
+        pred_y = self.classifier.predict(x, logits=False, batch_size=1)
         pred_y_max = np.argmax(pred_y, axis=1)
 
         # Start to generate the adversarial examples
@@ -106,19 +121,19 @@ class UniversalPerturbation(Attack):
 
             # Go through the data set and compute the perturbation increments sequentially
             for j, ex in enumerate(x[rnd_idx]):
-                xi = ex[None, ...]
+                x_i = ex[None, ...]
 
-                current_label = np.argmax(self.classifier.predict(xi + noise, logits=True)[0])
+                current_label = np.argmax(self.classifier.predict(x_i + noise, logits=True)[0])
                 original_label = np.argmax(pred_y[rnd_idx][j])
 
                 if current_label == original_label:
                     # Compute adversarial perturbation
-                    adv_xi = attacker.generate(xi + noise)
+                    adv_xi = attacker.generate(x_i + noise)
                     new_label = np.argmax(self.classifier.predict(adv_xi, logits=True)[0])
 
                     # If the class has changed, update v
                     if current_label != new_label:
-                        noise = adv_xi - xi
+                        noise = adv_xi - x_i
 
                         # Project on L_p ball
                         noise = projection(noise, self.eps, self.norm)
@@ -131,7 +146,7 @@ class UniversalPerturbation(Attack):
                 x_adv = np.clip(x_adv, clip_min, clip_max)
 
             # Compute the error rate
-            y_adv = np.argmax(self.classifier.predict(x_adv, logits=False), axis=1)
+            y_adv = np.argmax(self.classifier.predict(x_adv, logits=False, batch_size=1), axis=1)
             fooling_rate = np.sum(pred_y_max != y_adv) / nb_instances
 
         self.fooling_rate = fooling_rate

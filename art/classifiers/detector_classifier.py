@@ -1,15 +1,38 @@
+# MIT License
+#
+# Copyright (C) IBM Corporation 2018
+#
+# Permission is hereby granted, free of charge, to any person obtaining a copy of this software and associated
+# documentation files (the "Software"), to deal in the Software without restriction, including without limitation the
+# rights to use, copy, modify, merge, publish, distribute, sublicense, and/or sell copies of the Software, and to permit
+# persons to whom the Software is furnished to do so, subject to the following conditions:
+#
+# The above copyright notice and this permission notice shall be included in all copies or substantial portions of the
+# Software.
+#
+# THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE
+# WARRANTIES OF MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+# AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT,
+# TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
+# SOFTWARE.
+"""
+This module implements the base class `DetectorClassifier` for classifier and detector combinations.
+
+Paper link:
+    https://arxiv.org/abs/1705.07263
+"""
 from __future__ import absolute_import, division, print_function, unicode_literals
 
 import logging
 
 import numpy as np
 
-from art.classifiers.classifier import Classifier
+from art.classifiers.classifier import Classifier, ClassifierNeuralNetwork, ClassifierGradients
 
 logger = logging.getLogger(__name__)
 
 
-class DetectorClassifier(Classifier):
+class DetectorClassifier(ClassifierNeuralNetwork, ClassifierGradients, Classifier):
     """
     This class implements a Classifier extension that wraps a classifier and a detector.
     More details in https://arxiv.org/abs/1705.07263
@@ -38,7 +61,7 @@ class DetectorClassifier(Classifier):
         self._nb_classes = classifier.nb_classes + 1
         self._input_shape = classifier.input_shape
 
-    def predict(self, x, logits=False, batch_size=128):
+    def predict(self, x, logits=False, batch_size=128, **kwargs):
         """
         Perform prediction for a batch of inputs.
 
@@ -102,7 +125,7 @@ class DetectorClassifier(Classifier):
         """
         raise NotImplementedError
 
-    def class_gradient(self, x, label=None, logits=False):
+    def class_gradient(self, x, label=None, **kwargs):
         """
         Compute per-class derivatives w.r.t. `x`.
 
@@ -120,6 +143,10 @@ class DetectorClassifier(Classifier):
                  `(batch_size, 1, input_shape)` when `label` parameter is specified.
         :rtype: `np.ndarray`
         """
+        logits = kwargs.get('logits')
+        if logits is None:
+            logits = False
+
         if not ((label is None) or (isinstance(label, (int, np.integer)) and label in range(self._nb_classes))
                 or (isinstance(label, np.ndarray) and len(label.shape) == 1 and (label < self._nb_classes).all()
                     and label.shape[0] == x.shape[0])):
@@ -171,13 +198,13 @@ class DetectorClassifier(Classifier):
                                                  x_defences.shape[3]))
 
                 # First compute the classifier gradients for classifier_idx
-                if len(classifier_idx) > 0:
+                if classifier_idx:
                     combined_grads[classifier_idx] = self.classifier.class_gradient(x=x_defences[classifier_idx],
                                                                                     label=label[classifier_idx],
                                                                                     logits=True)
 
                 # Then compute the detector gradients for detector_idx
-                if len(detector_idx) > 0:
+                if detector_idx:
                     # First compute the classifier gradients for detector_idx
                     classifier_grads = self.classifier.class_gradient(x=x_defences[detector_idx], label=None,
                                                                       logits=True)
@@ -216,13 +243,14 @@ class DetectorClassifier(Classifier):
                 for i in range(self._nb_classes):
                     si_grads = 0
                     for j in range(self._nb_classes):
-                        c = sum_exp_logits - np.exp(combined_logits[:, j])
+                        c_var = sum_exp_logits - np.exp(combined_logits[:, j])
 
                         if j == i:
-                            si_lj = c * np.power(c + np.exp(combined_logits[:, i]), -2) * np.exp(combined_logits[:, i])
+                            si_lj = c_var * np.power(c_var + np.exp(combined_logits[:, i]), -2) * np.exp(
+                                combined_logits[:, i])
                         else:
-                            si_lj = -np.exp(combined_logits[:, i]) * np.power(c + np.exp(combined_logits[:, j]), -2) * \
-                                    np.exp(combined_logits[:, j])
+                            si_lj = -np.exp(combined_logits[:, i]) * np.power(c_var + np.exp(combined_logits[:, j]),
+                                                                              -2) * np.exp(combined_logits[:, j])
                         si_grads += si_lj[:, None, None, None] * combined_logits_grads[:, j]
 
                     grads.append(si_grads)
@@ -232,13 +260,13 @@ class DetectorClassifier(Classifier):
             elif isinstance(label, (int, np.int)):
                 si_grads = 0
                 for j in range(self._nb_classes):
-                    c = sum_exp_logits - np.exp(combined_logits[:, j])
+                    c_var = sum_exp_logits - np.exp(combined_logits[:, j])
                     if j == label:
-                        si_lj = c * np.power(c + np.exp(combined_logits[:, label]), -2) * \
+                        si_lj = c_var * np.power(c_var + np.exp(combined_logits[:, label]), -2) * \
                                 np.exp(combined_logits[:, label])
                     else:
-                        si_lj = -np.exp(combined_logits[:, label]) * np.power(c + np.exp(combined_logits[:, j]), -2) * \
-                                np.exp(combined_logits[:, j])
+                        si_lj = -np.exp(combined_logits[:, label]) * np.power(c_var + np.exp(combined_logits[:, j]),
+                                                                              -2) * np.exp(combined_logits[:, j])
                     si_grads += si_lj[:, None, None, None] * combined_logits_grads[:, j]
 
                 grads.append(si_grads)
@@ -249,12 +277,13 @@ class DetectorClassifier(Classifier):
                 for i in unique_label:
                     si_grads = 0
                     for j in range(self._nb_classes):
-                        c = sum_exp_logits - np.exp(combined_logits[:, j])
+                        c_var = sum_exp_logits - np.exp(combined_logits[:, j])
                         if j == i:
-                            si_lj = c * np.power(c + np.exp(combined_logits[:, i]), -2) * np.exp(combined_logits[:, i])
+                            si_lj = c_var * np.power(c_var + np.exp(combined_logits[:, i]), -2) * np.exp(
+                                combined_logits[:, i])
                         else:
-                            si_lj = -np.exp(combined_logits[:, i]) * np.power(c + np.exp(combined_logits[:, j]), -2) * \
-                                    np.exp(combined_logits[:, j])
+                            si_lj = -np.exp(combined_logits[:, i]) * np.power(c_var + np.exp(combined_logits[:, j]),
+                                                                              -2) * np.exp(combined_logits[:, j])
                         si_grads += si_lj[:, None, None, None] * combined_logits_grads[:, j]
 
                     grads.append(si_grads)
@@ -268,7 +297,7 @@ class DetectorClassifier(Classifier):
 
         return combined_grads
 
-    def loss_gradient(self, x, y):
+    def loss_gradient(self, x, y, **kwargs):
         """
         Compute the gradient of the loss function w.r.t. `x`.
 

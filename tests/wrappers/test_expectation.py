@@ -24,7 +24,8 @@ import numpy as np
 
 from art.attacks import FastGradientMethod
 from art.classifiers import KerasClassifier
-from art.utils import load_dataset, random_targets, master_seed, get_classifier_kr, get_iris_classifier_kr
+from art.utils import load_dataset, random_targets, master_seed
+from art.utils_test import get_classifier_kr, get_iris_classifier_kr
 from art.wrappers.expectation import ExpectationOverTransformations
 
 logger = logging.getLogger('testLogger')
@@ -41,14 +42,12 @@ class TestExpectationOverTransformations(unittest.TestCase):
 
     @classmethod
     def setUpClass(cls):
-        # Get MNIST
         (x_train, y_train), (x_test, y_test), _, _ = load_dataset('mnist')
         x_train, y_train = x_train[:NB_TRAIN], y_train[:NB_TRAIN]
         x_test, y_test = x_test[:NB_TEST], y_test[:NB_TEST]
         cls.mnist = (x_train, y_train), (x_test, y_test)
 
     def setUp(self):
-        # Set master seed
         master_seed(1234)
 
     def test_krclassifier(self):
@@ -90,7 +89,6 @@ class TestExpectationVectors(unittest.TestCase):
         cls.iris = (x_train, y_train), (x_test, y_test)
 
     def setUp(self):
-        # Set master seed
         master_seed(1234)
 
     def test_iris_clipped(self):

@@ -24,7 +24,8 @@ import keras.backend as k
 import numpy as np
 
 from art.wrappers.wrapper import ClassifierWrapper
-from art.utils import load_mnist, master_seed, get_classifier_kr
+from art.utils import load_mnist, master_seed
+from art.utils_test import get_classifier_kr
 
 logger = logging.getLogger('testLogger')
 
@@ -52,7 +53,6 @@ class TestMixinWKerasClassifier(unittest.TestCase):
         k.clear_session()
 
     def setUp(self):
-        # Set master seed
         master_seed(1234)
 
     def test_shapes(self):
@@ -60,15 +60,15 @@ class TestMixinWKerasClassifier(unittest.TestCase):
         classifier = ClassifierWrapper(self.model_mnist)
 
         preds = classifier.predict(self.mnist[1][0])
-        self.assertTrue(preds.shape == y_test.shape)
+        self.assertEqual(preds.shape, y_test.shape)
 
-        self.assertTrue(classifier.nb_classes == 10)
+        self.assertEqual(classifier.nb_classes, 10)
 
         class_grads = classifier.class_gradient(x_test[:11])
-        self.assertTrue(class_grads.shape == tuple([11, 10] + list(x_test[1].shape)))
+        self.assertEqual(class_grads.shape, tuple([11, 10] + list(x_test[1].shape)))
 
         loss_grads = classifier.loss_gradient(x_test[:11], y_test[:11])
-        self.assertTrue(loss_grads.shape == x_test[:11].shape)
+        self.assertEqual(loss_grads.shape, x_test[:11].shape)
 
     def test_class_gradient(self):
         (_, _), (x_test, _) = self.mnist
@@ -78,20 +78,20 @@ class TestMixinWKerasClassifier(unittest.TestCase):
         grads = classifier.class_gradient(x_test)
 
         self.assertTrue(np.array(grads.shape == (NB_TEST, 10, 28, 28, 1)).all())
-        self.assertTrue(np.sum(grads) != 0)
+        self.assertNotEqual(np.sum(grads), 0)
 
         # Test 1 gradient label = 5
         grads = classifier.class_gradient(x_test, label=5)
 
         self.assertTrue(np.array(grads.shape == (NB_TEST, 1, 28, 28, 1)).all())
-        self.assertTrue(np.sum(grads) != 0)
+        self.assertNotEqual(np.sum(grads), 0)
 
         # Test a set of gradients label = array
         label = np.random.randint(5, size=NB_TEST)
         grads = classifier.class_gradient(x_test, label=label)
 
         self.assertTrue(np.array(grads.shape == (NB_TEST, 1, 28, 28, 1)).all())
-        self.assertTrue(np.sum(grads) != 0)
+        self.assertNotEqual(np.sum(grads), 0)
 
     def test_loss_gradient(self):
         (_, _), (x_test, y_test) = self.mnist
@@ -101,10 +101,9 @@ class TestMixinWKerasClassifier(unittest.TestCase):
         grads = classifier.loss_gradient(x_test, y_test)
 
         self.assertTrue(np.array(grads.shape == (NB_TEST, 28, 28, 1)).all())
-        self.assertTrue(np.sum(grads) != 0)
+        self.assertNotEqual(np.sum(grads), 0)
 
     def test_layers(self):
-        # Get MNIST
         (_, _), (x_test, _), _, _ = load_mnist()
         x_test = x_test[:NB_TEST]
 

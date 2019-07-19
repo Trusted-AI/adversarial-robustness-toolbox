@@ -15,6 +15,13 @@
 # AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT,
 # TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 # SOFTWARE.
+"""
+This module implements the JPEG compression defence `JpegCompression`.
+
+Paper link:
+    https://arxiv.org/pdf/1705.02900.pdf
+    https://arxiv.org/abs/1608.00853
+"""
 from __future__ import absolute_import, division, print_function, unicode_literals
 
 from io import BytesIO
@@ -31,10 +38,10 @@ logger = logging.getLogger(__name__)
 
 class JpegCompression(Preprocessor):
     """
-    Implement the jpeg compression defence approach. Some related papers: https://arxiv.org/pdf/1705.02900.pdf,
-    https://arxiv.org/abs/1608.00853
+    Implement the jpeg compression defence approach.
+    Paper links: https://arxiv.org/pdf/1705.02900.pdf, https://arxiv.org/abs/1608.00853
     """
-    params = ['quality', 'channel_index', 'clip_values', '_apply_fit', '_apply_predict']
+    params = ['quality', 'channel_index', 'clip_values']
 
     def __init__(self, clip_values, quality=50, channel_index=3, apply_fit=True, apply_predict=False):
         """
@@ -54,8 +61,9 @@ class JpegCompression(Preprocessor):
         """
         super(JpegCompression, self).__init__()
         self._is_fitted = True
-        self.set_params(quality=quality, channel_index=channel_index, clip_values=clip_values, _apply_fit=apply_fit,
-                        _apply_predict=apply_predict)
+        self._apply_fit = apply_fit
+        self._apply_predict = apply_predict
+        self.set_params(quality=quality, channel_index=channel_index, clip_values=clip_values)
 
     @property
     def apply_fit(self):
@@ -155,10 +163,6 @@ class JpegCompression(Preprocessor):
         :type quality: `int`
         :param channel_index: Index of the axis in data containing the color channels or features.
         :type channel_index: `int`
-        :param apply_fit: True if applied during fitting/training.
-        :type apply_fit: `bool`
-        :param apply_predict: True if applied during predicting.
-        :type apply_predict: `bool`
         """
         # Save defense-specific parameters
         super(JpegCompression, self).set_params(**kwargs)

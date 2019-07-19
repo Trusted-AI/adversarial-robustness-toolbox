@@ -24,8 +24,9 @@ import numpy as np
 
 from art.attacks.universal_perturbation import UniversalPerturbation
 from art.classifiers import KerasClassifier
-from art.utils import load_dataset, master_seed, get_classifier_tf, get_classifier_kr, get_classifier_pt
-from art.utils import get_iris_classifier_tf, get_iris_classifier_kr, get_iris_classifier_pt
+from art.utils import load_dataset, master_seed
+from art.utils_test import get_classifier_tf, get_classifier_kr, get_classifier_pt
+from art.utils_test import get_iris_classifier_tf, get_iris_classifier_kr, get_iris_classifier_pt
 
 logger = logging.getLogger('testLogger')
 
@@ -75,6 +76,8 @@ class TestUniversalPerturbation(unittest.TestCase):
         self.assertFalse((np.argmax(y_test, axis=1) == test_y_pred).all())
         self.assertFalse((np.argmax(y_train, axis=1) == train_y_pred).all())
 
+        sess.close()
+
     def test_krclassifier(self):
         """
         Second test with the KerasClassifier.
@@ -98,6 +101,8 @@ class TestUniversalPerturbation(unittest.TestCase):
         test_y_pred = np.argmax(krc.predict(x_test_adv), axis=1)
         self.assertFalse((np.argmax(y_test, axis=1) == test_y_pred).all())
         self.assertFalse((np.argmax(y_train, axis=1) == train_y_pred).all())
+
+        sess.close()
 
     def test_ptclassifier(self):
         """
@@ -124,6 +129,33 @@ class TestUniversalPerturbation(unittest.TestCase):
         test_y_pred = np.argmax(ptc.predict(x_test_adv), axis=1)
         self.assertFalse((np.argmax(y_test, axis=1) == test_y_pred).all())
         self.assertFalse((np.argmax(y_train, axis=1) == train_y_pred).all())
+
+    def test_classifier_type_check_fail_classifier(self):
+        # Use a useless test classifier to test basic classifier properties
+        class ClassifierNoAPI:
+            pass
+
+        classifier = ClassifierNoAPI
+        with self.assertRaises(TypeError) as context:
+            _ = UniversalPerturbation(classifier=classifier)
+
+        self.assertIn('For `UniversalPerturbation` classifier must be an instance of '
+                      '`art.classifiers.classifier.Classifier`, the provided classifier is instance of '
+                      '(<class \'object\'>,).', str(context.exception))
+
+    def test_classifier_type_check_fail_gradients(self):
+        # Use a test classifier not providing gradients required by white-box attack
+        from art.classifiers.scikitklearn import ScikitlearnDecisionTreeClassifier
+        from sklearn.tree import DecisionTreeClassifier
+
+        classifier = ScikitlearnDecisionTreeClassifier(model=DecisionTreeClassifier())
+        with self.assertRaises(TypeError) as context:
+            _ = UniversalPerturbation(classifier=classifier)
+
+        self.assertIn('For `UniversalPerturbation` classifier must be an instance of '
+                      '`art.classifiers.classifier.ClassifierNeuralNetwork` and '
+                      '`art.classifiers.classifier.ClassifierGradients`, the provided classifier is instance of '
+                      '(<class \'art.classifiers.scikitklearn.ScikitlearnClassifier\'>,).', str(context.exception))
 
 
 class TestUniversalPerturbationVectors(unittest.TestCase):

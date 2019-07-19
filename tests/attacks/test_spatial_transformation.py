@@ -25,7 +25,8 @@ import numpy as np
 import tensorflow as tf
 
 from art.attacks.spatial_transformation import SpatialTransformation
-from art.utils import load_mnist, master_seed, get_classifier_tf, get_classifier_kr, get_classifier_pt
+from art.utils import load_mnist, master_seed
+from art.utils_test import get_classifier_tf, get_classifier_kr, get_classifier_pt, get_iris_classifier_kr
 
 logger = logging.getLogger('testLogger')
 
@@ -67,17 +68,17 @@ class TestSpatialTransformation(unittest.TestCase):
                                           num_rotations=3)
         x_train_adv = attack_st.generate(x_train)
 
-        self.assertTrue(abs(x_train_adv[0, 8, 13, 0] - 0.49004024) <= 0.01)
+        self.assertLessEqual(abs(x_train_adv[0, 8, 13, 0] - 0.49004024), 0.01)
 
-        self.assertTrue(abs(attack_st.fooling_rate - 0.707) <= 0.01)
+        self.assertLessEqual(abs(attack_st.fooling_rate - 0.707), 0.01)
 
-        self.assertTrue(attack_st.attack_trans_x == 3)
-        self.assertTrue(attack_st.attack_trans_y == 3)
-        self.assertTrue(attack_st.attack_rot == 30.0)
+        self.assertEqual(attack_st.attack_trans_x, 3)
+        self.assertEqual(attack_st.attack_trans_y, 3)
+        self.assertEqual(attack_st.attack_rot, 30.0)
 
         x_test_adv = attack_st.generate(x_test)
 
-        self.assertTrue(abs(x_test_adv[0, 14, 14, 0] - 0.013572651) <= 0.01)
+        self.assertLessEqual(abs(x_test_adv[0, 14, 14, 0] - 0.013572651), 0.01)
 
         sess.close()
         tf.reset_default_graph()
@@ -98,18 +99,19 @@ class TestSpatialTransformation(unittest.TestCase):
                                           num_rotations=3)
         x_train_adv = attack_st.generate(x_train)
 
-        self.assertTrue(abs(x_train_adv[0, 8, 13, 0] - 0.49004024) <= 0.01)
-        self.assertTrue(abs(attack_st.fooling_rate - 0.707) <= 0.01)
+        self.assertLessEqual(abs(x_train_adv[0, 8, 13, 0] - 0.49004024), 0.01)
+        self.assertLessEqual(abs(attack_st.fooling_rate - 0.707), 0.01)
 
-        self.assertTrue(attack_st.attack_trans_x == 3)
-        self.assertTrue(attack_st.attack_trans_y == 3)
-        self.assertTrue(attack_st.attack_rot == 30.0)
+        self.assertEqual(attack_st.attack_trans_x, 3)
+        self.assertEqual(attack_st.attack_trans_y, 3)
+        self.assertEqual(attack_st.attack_rot, 30.0)
 
         x_test_adv = attack_st.generate(x_test)
 
-        self.assertTrue(abs(x_test_adv[0, 14, 14, 0] - 0.013572651) <= 0.01)
+        self.assertLessEqual(abs(x_test_adv[0, 14, 14, 0] - 0.013572651), 0.01)
 
         k.clear_session()
+        sess.close()
 
     def test_ptclassifier(self):
         """
@@ -129,20 +131,21 @@ class TestSpatialTransformation(unittest.TestCase):
                                           num_rotations=3)
         x_train_adv = attack_st.generate(x_train)
 
-        self.assertTrue(abs(x_train_adv[0, 0, 13, 5] - 0.374206543) <= 0.01)
-        self.assertTrue(abs(attack_st.fooling_rate - 0.361) <= 0.01)
+        self.assertLessEqual(abs(x_train_adv[0, 0, 13, 5] - 0.374206543), 0.01)
+        self.assertLessEqual(abs(attack_st.fooling_rate - 0.361), 0.01)
 
-        self.assertTrue(attack_st.attack_trans_x == 0)
-        self.assertTrue(attack_st.attack_trans_y == -3)
-        self.assertTrue(attack_st.attack_rot == 30.0)
+        self.assertEqual(attack_st.attack_trans_x, 0)
+        self.assertEqual(attack_st.attack_trans_y, -3)
+        self.assertEqual(attack_st.attack_rot, 30.0)
 
         x_test_adv = attack_st.generate(x_test)
 
-        self.assertTrue(abs(x_test_adv[0, 0, 14, 14] - 0.008591662) <= 0.01)
+        self.assertLessEqual(abs(x_test_adv[0, 0, 14, 14] - 0.008591662), 0.01)
 
     def test_failure_feature_vectors(self):
         attack_params = {"max_translation": 10.0, "num_translations": 3, "max_rotation": 30.0, "num_rotations": 3}
-        attack = SpatialTransformation(classifier=None)
+        classifier, _ = get_iris_classifier_kr()
+        attack = SpatialTransformation(classifier=classifier)
         attack.set_params(**attack_params)
         data = np.random.rand(10, 4)
 
@@ -150,7 +153,20 @@ class TestSpatialTransformation(unittest.TestCase):
         with self.assertRaises(ValueError) as context:
             attack.generate(data)
 
-        self.assertTrue('Feature vectors detected.' in str(context.exception))
+        self.assertIn('Feature vectors detected.', str(context.exception))
+
+    def test_classifier_type_check_fail_classifier(self):
+        # Use a useless test classifier to test basic classifier properties
+        class ClassifierNoAPI:
+            pass
+
+        classifier = ClassifierNoAPI
+        with self.assertRaises(TypeError) as context:
+            _ = SpatialTransformation(classifier=classifier)
+
+        self.assertIn('For `SpatialTransformation` classifier must be an instance of '
+                      '`art.classifiers.classifier.Classifier`, the provided classifier is instance of '
+                      '(<class \'object\'>,).', str(context.exception))
 
 
 if __name__ == '__main__':

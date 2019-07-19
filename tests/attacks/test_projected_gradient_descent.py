@@ -26,8 +26,8 @@ import numpy as np
 from art.attacks.projected_gradient_descent import ProjectedGradientDescent
 from art.classifiers import KerasClassifier
 from art.utils import load_dataset, get_labels_np_array, master_seed, random_targets
-from art.utils import get_classifier_tf, get_classifier_kr, get_classifier_pt
-from art.utils import get_iris_classifier_tf, get_iris_classifier_kr, get_iris_classifier_pt
+from art.utils_test import get_classifier_tf, get_classifier_kr, get_classifier_pt
+from art.utils_test import get_iris_classifier_tf, get_iris_classifier_kr, get_iris_classifier_pt
 
 logger = logging.getLogger('testLogger')
 
@@ -144,6 +144,31 @@ class TestPGD(unittest.TestCase):
         acc = np.sum(np.argmax(test_y_pred, axis=1) == np.argmax(y_test, axis=1)) / y_test.shape[0]
         logger.info('Accuracy on adversarial test examples with 3 random initialisations: %.2f%%', acc * 100)
 
+    def test_classifier_type_check_fail_classifier(self):
+        # Use a useless test classifier to test basic classifier properties
+        class ClassifierNoAPI:
+            pass
+
+        classifier = ClassifierNoAPI
+        with self.assertRaises(TypeError) as context:
+            _ = ProjectedGradientDescent(classifier=classifier)
+
+        self.assertIn('For `ProjectedGradientDescent` classifier must be an instance of '
+                      '`art.classifiers.classifier.Classifier`, the provided classifier is instance of '
+                      '(<class \'object\'>,).', str(context.exception))
+
+    def test_classifier_type_check_fail_gradients(self):
+        # Use a test classifier not providing gradients required by white-box attack
+        from art.classifiers.scikitklearn import ScikitlearnDecisionTreeClassifier
+        from sklearn.tree import DecisionTreeClassifier
+
+        classifier = ScikitlearnDecisionTreeClassifier(model=DecisionTreeClassifier())
+        with self.assertRaises(TypeError) as context:
+            _ = ProjectedGradientDescent(classifier=classifier)
+
+        self.assertIn('For `ProjectedGradientDescent` classifier must be an instance of '
+                      '`art.classifiers.classifier.ClassifierGradients`, the provided classifier is instance of '
+                      '(<class \'art.classifiers.scikitklearn.ScikitlearnClassifier\'>,).', str(context.exception))
 
 class TestPGDVectors(unittest.TestCase):
     @classmethod
@@ -258,6 +283,50 @@ class TestPGDVectors(unittest.TestCase):
         self.assertTrue((np.argmax(targets, axis=1) == preds_adv).any())
         acc = np.sum(preds_adv == np.argmax(targets, axis=1)) / y_test.shape[0]
         logger.info('Success rate of targeted PGD on Iris: %.2f%%', (acc * 100))
+
+    def test_scikitlearn(self):
+        from sklearn.linear_model import LogisticRegression
+        from sklearn.svm import SVC, LinearSVC
+
+        from art.classifiers.scikitklearn import ScikitlearnLogisticRegression, ScikitlearnSVC
+
+        scikitlearn_test_cases = {LogisticRegression: ScikitlearnLogisticRegression,
+                                  SVC: ScikitlearnSVC,
+                                  LinearSVC: ScikitlearnSVC}
+
+        (_, _), (x_test, y_test) = self.iris
+
+        for (model_class, classifier_class) in scikitlearn_test_cases.items():
+            model = model_class()
+            classifier = classifier_class(model=model, clip_values=(0, 1))
+            classifier.fit(x=x_test, y=y_test)
+
+            # Test untargeted attack
+            attack = ProjectedGradientDescent(classifier, eps=1, eps_step=0.1)
+            x_test_adv = attack.generate(x_test)
+            self.assertFalse((x_test == x_test_adv).all())
+            self.assertTrue((x_test_adv <= 1).all())
+            self.assertTrue((x_test_adv >= 0).all())
+
+            preds_adv = np.argmax(classifier.predict(x_test_adv), axis=1)
+            self.assertFalse((np.argmax(y_test, axis=1) == preds_adv).all())
+            acc = np.sum(preds_adv == np.argmax(y_test, axis=1)) / y_test.shape[0]
+            logger.info('Accuracy of ' + classifier.__class__.__name__ + ' on Iris with PGD adversarial examples: '
+                                                                         '%.2f%%', (acc * 100))
+
+            # Test targeted attack
+            targets = random_targets(y_test, nb_classes=3)
+            attack = ProjectedGradientDescent(classifier, targeted=True, eps=1, eps_step=0.1)
+            x_test_adv = attack.generate(x_test, **{'y': targets})
+            self.assertFalse((x_test == x_test_adv).all())
+            self.assertTrue((x_test_adv <= 1).all())
+            self.assertTrue((x_test_adv >= 0).all())
+
+            preds_adv = np.argmax(classifier.predict(x_test_adv), axis=1)
+            self.assertTrue((np.argmax(targets, axis=1) == preds_adv).any())
+            acc = np.sum(preds_adv == np.argmax(targets, axis=1)) / y_test.shape[0]
+            logger.info('Success rate of ' + classifier.__class__.__name__ + ' on targeted PGD on Iris: %.2f%%',
+                        (acc * 100))
 
 
 if __name__ == '__main__':
