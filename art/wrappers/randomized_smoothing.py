@@ -78,6 +78,7 @@ class RandomizedSmoothing(ClassifierWrapper):
         :rtype: `np.ndarray`
         """
         logger.info('Applying randomized smoothing.')
+        n_abstained = 0
         prediction = []
         for x_i in x:
 
@@ -91,7 +92,12 @@ class RandomizedSmoothing(ClassifierWrapper):
             smooth_prediction = np.zeros(counts_pred.shape)
             if (not is_abstain) or (binom_test(count1, count1 + count2, p=0.5) <= self.alpha):
                 smooth_prediction[np.argmax(counts_pred)] = 1
+            elif is_abstain:
+                n_abstained += 1
+                
             prediction.append(smooth_prediction)
+        if n_abstained > 0:
+            logger.info('%s prediction(s) abstained.', n_abstained)
         return np.array(prediction)
 
     def loss_gradient(self, x, y):
