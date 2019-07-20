@@ -112,7 +112,7 @@ class PyTorchClassifier(Classifier):
             # Batch indexes
             begin, end = m * batch_size, min((m + 1) * batch_size, x_preprocessed.shape[0])
 
-            model_outputs = self._model(torch.from_numpy(x_preproc[begin:end]).to(self._device).float())
+            model_outputs = self._model(torch.from_numpy(x_preprocessed[begin:end]).to(self._device).float())
             output = model_outputs[-1]
             results[begin:end] = output.detach().cpu().numpy()
 
