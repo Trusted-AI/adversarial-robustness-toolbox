@@ -104,7 +104,7 @@ def get_classifier_tf():
     sess.run(tf.global_variables_initializer())
 
     # Train the classifier
-    tfc = TFClassifier(clip_values=(0, 1), input_ph=input_ph, logits=logits, output_ph=output_ph, train=train,
+    tfc = TFClassifier(clip_values=(0, 1), input_ph=input_ph, output=logits, labels_ph=output_ph, train=train,
                        loss=loss, learning=None, sess=sess)
 
     return tfc, sess
@@ -246,7 +246,7 @@ def get_iris_classifier_tf():
     sess.run(tf.global_variables_initializer())
 
     # Train the classifier
-    tfc = TFClassifier(clip_values=(0, 1), input_ph=input_ph, logits=logits, output_ph=output_ph, train=None,
+    tfc = TFClassifier(clip_values=(0, 1), input_ph=input_ph, output=logits, labels_ph=output_ph, train=None,
                        loss=loss, learning=None, sess=sess, channel_index=1)
 
     return tfc, sess
