@@ -40,9 +40,10 @@ class KerasClassifier(Classifier):
         """
         Create a `Classifier` instance from a Keras model. Assumes the `model` passed as argument is compiled.
 
-        :param model: Keras model
+        :param model: Keras model, neural network or other.
         :type model: `keras.models.Model`
-        :param use_logits: True if the output of the model are logits.
+        :param use_logits: True if the output of the model are logits; false for probabilities or any other type of
+               outputs. Logits output should be favored when possible to ensure attack efficiency.
         :type use_logits: `bool`
         :param channel_index: Index of the axis in data containing the color channels or features.
         :type channel_index: `int`
@@ -57,9 +58,9 @@ class KerasClassifier(Classifier):
                used for data preprocessing. The first value will be substracted from the input. The input will then
                be divided by the second one.
         :type preprocessing: `tuple`
-        :param input_layer: Which layer to consider as the Input when the model has multple input layers.
+        :param input_layer: Which layer to consider as the input when the model has multiple input layers.
         :type input_layer: `int`
-        :param output_layer: Which layer to consider as the Output when the model has multiple output layers.
+        :param output_layer: Which layer to consider as the output when the model has multiple output layers.
         :type output_layer: `int`
         """
         super(KerasClassifier, self).__init__(clip_values=clip_values, channel_index=channel_index, defences=defences,

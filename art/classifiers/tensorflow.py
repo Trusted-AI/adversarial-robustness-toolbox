@@ -42,7 +42,8 @@ class TFClassifier(Classifier):
 
         :param input_ph: The input placeholder.
         :type input_ph: `tf.Placeholder`
-        :param output: The output layer of the model.
+        :param output: The output layer of the model. This can be logits, probabilities or anything else. Logits
+               output should be preferred where possible to ensure attack efficiency.
         :type output: `tf.Tensor`
         :param labels_ph: The labels placeholder of the model. This parameter is necessary when training the model and
                when computing gradients w.r.t. the loss function.

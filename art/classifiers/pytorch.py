@@ -41,8 +41,9 @@ class PyTorchClassifier(Classifier):
         """
         Initialization specifically for the PyTorch-based implementation.
 
-        :param model: PyTorch model. The forward function of the model must return the logit output.
-        :type model: is instance of `torch.nn.Module`
+        :param model: PyTorch model. The output of the model can be logits, probabilities or anything else. Logits
+               output should be preferred where possible to ensure attack efficiency.
+        :type model: `torch.nn.Module`
         :param loss: The loss function for which to compute gradients for training. The target label must be raw
                categorical, i.e. not converted to one-hot encoding.
         :type loss: `torch.nn.modules.loss._Loss`
@@ -77,9 +78,6 @@ class PyTorchClassifier(Classifier):
 
         # Get the internal layers
         self._layer_names = self._model.get_layers
-
-        # # Store the logit layer
-        # self._logit_layer = len(list(model.modules())) - 2 if use_logits else len(list(model.modules())) - 3
 
         # Use GPU if possible
         import torch
