@@ -227,14 +227,12 @@ class ClassifierNeuralNetwork(ABC):
         super().__init__(**kwargs)
 
     @abc.abstractmethod
-    def predict(self, x, logits=False, batch_size=128, **kwargs):
+    def predict(self, x, batch_size=128, **kwargs):
         """
         Perform prediction of the classifier for input `x`.
 
         :param x: Features in array of shape (nb_samples, nb_features) or (nb_samples, nb_pixels_1, nb_pixels_2,
                   nb_channels) or (nb_samples, nb_channels, nb_pixels_1, nb_pixels_2)
-        :param logits: `True` if the prediction should be done at the logits layer.
-        :type logits: `bool`
         :param batch_size: The batch size used for evaluating the classifer's `model`.
         :type batch_size: `int`
         :return: Array of predictions of shape `(nb_inputs, nb_classes)`.

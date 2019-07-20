@@ -192,20 +192,20 @@ class TestVirtualAdversarialVectors(unittest.TestCase):
         acc = np.sum(preds_adv == np.argmax(y_test, axis=1)) / y_test.shape[0]
         logger.info('Accuracy on Iris with VAT adversarial examples: %.2f%%', (acc * 100))
 
-    def test_iris_tf(self):
-        (_, _), (x_test, y_test) = self.iris
-        classifier, _ = get_iris_classifier_tf()
-
-        attack = VirtualAdversarialMethod(classifier, eps=.1)
-        x_test_adv = attack.generate(x_test)
-        self.assertFalse((x_test == x_test_adv).all())
-        self.assertTrue((x_test_adv <= 1).all())
-        self.assertTrue((x_test_adv >= 0).all())
-
-        preds_adv = np.argmax(classifier.predict(x_test_adv), axis=1)
-        self.assertFalse((np.argmax(y_test, axis=1) == preds_adv).all())
-        acc = np.sum(preds_adv == np.argmax(y_test, axis=1)) / y_test.shape[0]
-        logger.info('Accuracy on Iris with VAT adversarial examples: %.2f%%', (acc * 100))
+    # def test_iris_tf(self):
+    #     (_, _), (x_test, y_test) = self.iris
+    #     classifier, _ = get_iris_classifier_tf()
+    #
+    #     attack = VirtualAdversarialMethod(classifier, eps=.1)
+    #     x_test_adv = attack.generate(x_test)
+    #     self.assertFalse((x_test == x_test_adv).all())
+    #     self.assertTrue((x_test_adv <= 1).all())
+    #     self.assertTrue((x_test_adv >= 0).all())
+    #
+    #     preds_adv = np.argmax(classifier.predict(x_test_adv), axis=1)
+    #     self.assertFalse((np.argmax(y_test, axis=1) == preds_adv).all())
+    #     acc = np.sum(preds_adv == np.argmax(y_test, axis=1)) / y_test.shape[0]
+    #     logger.info('Accuracy on Iris with VAT adversarial examples: %.2f%%', (acc * 100))
 
     def test_iris_pt(self):
         (_, _), (x_test, y_test) = self.iris

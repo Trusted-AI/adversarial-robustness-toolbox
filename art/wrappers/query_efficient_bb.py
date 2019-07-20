@@ -150,21 +150,19 @@ class QueryEfficientBBGradientEstimation(ClassifierWrapper, ClassifierGradients,
         grads = self._apply_preprocessing_normalization_gradient(np.array(grads))
         return grads
 
-    def _wrap_predict(self, x, logits=False, batch_size=128):
+    def _wrap_predict(self, x, batch_size=128):
         """
         Perform prediction for a batch of inputs. Rounds results first.
 
         :param x: Test set.
         :type x: `np.ndarray`
-        :param logits: `True` if the prediction should be done at the logits layer.
-        :type logits: `bool`
         :param batch_size: Size of batches.
         :type batch_size: `int`
         :return: Array of predictions of shape `(nb_inputs, self.nb_classes)`.
         :rtype: `np.ndarray`
         """
-        return self._predict(clip_and_round(x, self.clip_values, self.round_samples),
-                             **{'logits': logits, 'batch_size': batch_size})
+        return self._predict(clip_and_round(x, self.clip_values, self.round_samples), **{'batch_size': batch_size})
+
 
     def save(self, filename, path=None):
         """

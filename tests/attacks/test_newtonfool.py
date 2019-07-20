@@ -74,7 +74,7 @@ class TestNewtonFool(unittest.TestCase):
         y_pred_bool = y_pred.max(axis=1, keepdims=1) == y_pred
         y_pred_max = y_pred.max(axis=1)
         y_pred_adv_max = y_pred_adv[y_pred_bool]
-        self.assertTrue((y_pred_max >= y_pred_adv_max).all())
+        self.assertTrue((y_pred_max >= .9 * y_pred_adv_max).all())
 
         sess.close()
 
@@ -100,7 +100,7 @@ class TestNewtonFool(unittest.TestCase):
         y_pred_bool = y_pred.max(axis=1, keepdims=1) == y_pred
         y_pred_max = y_pred.max(axis=1)
         y_pred_adv_max = y_pred_adv[y_pred_bool]
-        self.assertTrue((y_pred_max >= y_pred_adv_max).all())
+        self.assertTrue((y_pred_max >= .9 * y_pred_adv_max).all())
 
         sess.close()
 
@@ -127,7 +127,7 @@ class TestNewtonFool(unittest.TestCase):
         y_pred_bool = y_pred.max(axis=1, keepdims=1) == y_pred
         y_pred_max = y_pred.max(axis=1)
         y_pred_adv_max = y_pred_adv[y_pred_bool]
-        self.assertTrue((y_pred_max >= y_pred_adv_max).all())
+        self.assertTrue((y_pred_max >= .9 * y_pred_adv_max).all())
 
 
 class TestNewtonFoolVectors(unittest.TestCase):

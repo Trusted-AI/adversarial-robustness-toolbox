@@ -233,17 +233,12 @@ class TestKerasClassifier(unittest.TestCase):
         self.assertNotEqual(np.sum(grads), 0)
 
     def test_functional_model(self):
-        self._test_functional_model(custom_activation=True)
-        self._test_functional_model(custom_activation=False)
-
-    def _test_functional_model(self, custom_activation=True):
         # Need to update the functional_model code to produce a model with more than one input and output layers...
-        keras_model = KerasClassifier(self.functional_model, clip_values=(0, 1), input_layer=1, output_layer=1,
-                                      custom_activation=custom_activation)
+        keras_model = KerasClassifier(self.functional_model, clip_values=(0, 1), input_layer=1, output_layer=1)
         self.assertTrue(keras_model._input.name, "input1")
         self.assertTrue(keras_model._output.name, "output1")
-        keras_model = KerasClassifier(self.functional_model, clip_values=(0, 1), input_layer=0, output_layer=0,
-                                      custom_activation=custom_activation)
+
+        keras_model = KerasClassifier(self.functional_model, clip_values=(0, 1), input_layer=0, output_layer=0)
         self.assertTrue(keras_model._input.name, "input0")
         self.assertTrue(keras_model._output.name, "output0")
 

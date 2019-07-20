@@ -148,7 +148,7 @@ class TestClever(unittest.TestCase):
         """
         # Define input and output placeholders
         input_ph = tf.placeholder(tf.float32, shape=[None, 28, 28, 1])
-        output_ph = tf.placeholder(tf.int32, shape=[None, 10])
+        labels_ph = tf.placeholder(tf.int32, shape=[None, 10])
 
         # Define the tensorflow graph
         conv = tf.layers.conv2d(input_ph, 4, 5, activation=tf.nn.relu)
@@ -159,7 +159,7 @@ class TestClever(unittest.TestCase):
         logits = tf.layers.dense(fc, 10)
 
         # Train operator
-        loss = tf.reduce_mean(tf.losses.softmax_cross_entropy(logits=logits, onehot_labels=output_ph))
+        loss = tf.reduce_mean(tf.losses.softmax_cross_entropy(logits=logits, onehot_labels=labels_ph))
         optimizer = tf.train.AdamOptimizer(learning_rate=0.01)
         train = optimizer.minimize(loss)
 
@@ -168,7 +168,7 @@ class TestClever(unittest.TestCase):
         sess.run(tf.global_variables_initializer())
 
         # Create the classifier
-        tfc = TFClassifier(input_ph=input_ph, logits=logits, output_ph=output_ph, train=train, loss=loss,
+        tfc = TFClassifier(input_ph=input_ph, output=logits, labels_ph=labels_ph, train=train, loss=loss,
                            learning=None, sess=sess, clip_values=(0, 1))
 
         return tfc
@@ -194,7 +194,7 @@ class TestClever(unittest.TestCase):
                       metrics=['accuracy'])
 
         # Get the classifier
-        krc = KerasClassifier(model, clip_values=(0, 1), use_logits=False)
+        krc = KerasClassifier(model=model, clip_values=(0, 1), use_logits=False)
 
         return krc
 
