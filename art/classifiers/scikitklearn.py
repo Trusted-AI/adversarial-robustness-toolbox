@@ -82,7 +82,8 @@ class ScikitlearnClassifier(Classifier):
         :return: `None`
         """
         # Apply preprocessing
-        x_preprocessed, y_preprocessed = self._apply_preprocessing(x, y, fit=True)
+        x_preprocessed, y_preprocessed = self._apply_preprocessing(
+            x, y, fit=True)
 
         y_preprocessed = np.argmax(y_preprocessed, axis=1)
 
@@ -145,11 +146,72 @@ class ScikitlearnDecisionTreeClassifier(ScikitlearnClassifier):
         from sklearn.tree import DecisionTreeClassifier
 
         if not isinstance(model, DecisionTreeClassifier):
-            raise TypeError('Model must be of type sklearn.tree.DecisionTreeClassifier')
+            raise TypeError(
+                'Model must be of type sklearn.tree.DecisionTreeClassifier')
 
         super(ScikitlearnDecisionTreeClassifier, self).__init__(model=model, clip_values=clip_values,
                                                                 defences=defences,
                                                                 preprocessing=preprocessing)
+    
+    def set_learning_phase(self, train):
+        raise NotImplementedError
+
+    def get_classes_at_node(self, node_id):
+        """
+        Returns the classification for a given node
+
+        :return: major class in node
+        :rtype: float
+        """
+        return np.argmax(self.model.tree_.value[node_id])
+
+    def get_threshold_at_node(self, node_id):
+        """
+        Returns the threshold of given id for a node
+
+        :return: threshold value of feature split in this node
+        :rtype: float
+        """
+        return self.model.tree_.threshold[node_id]
+
+    def get_feature_at_node(self, node_id):
+        """
+        Returns the feature of given id for a node
+
+        :return: feature index of feature split in this node
+        :rtype: int
+        """
+        return self.model.tree_.feature[node_id]
+
+    def get_left_child(self, node_id):
+        """
+        Returns the id of the left child node of node_id
+
+        :return: the indices of the left child in the tree
+        :rtype: int
+        """
+        return self.model.tree_.children_left[node_id]
+
+    def get_right_child(self, node_id):
+        """
+        Returns the id of the right child node of node_id
+
+        :return: the indices of the right child in the tree
+        :rtype: int
+        """
+        return self.model.tree_.children_right[node_id]
+
+    def get_decision_path(self, x):
+        """
+        Returns the path through nodes in the tree when classififying x. Last one is leaf, first one root node.
+
+        :return: the indices of the nodes in the array structure of the tree.
+        :rtype: array
+        """
+        if len(np.shape(x)) == 1:
+            return self.model.decision_path(x.reshape(1, -1)).indices
+        else:
+            return self.model.decision_path(x).indices
 
 
 class ScikitlearnExtraTreeClassifier(ScikitlearnClassifier):
@@ -177,7 +239,8 @@ class ScikitlearnExtraTreeClassifier(ScikitlearnClassifier):
         from sklearn.tree import ExtraTreeClassifier
 
         if not isinstance(model, ExtraTreeClassifier):
-            raise TypeError('Model must be of type sklearn.tree.ExtraTreeClassifier')
+            raise TypeError(
+                'Model must be of type sklearn.tree.ExtraTreeClassifier')
 
         super(ScikitlearnExtraTreeClassifier, self).__init__(model=model, clip_values=clip_values,
                                                              defences=defences,
@@ -209,7 +272,8 @@ class ScikitlearnAdaBoostClassifier(ScikitlearnClassifier):
         from sklearn.ensemble import AdaBoostClassifier
 
         if not isinstance(model, AdaBoostClassifier):
-            raise TypeError('Model must be of type sklearn.ensemble.AdaBoostClassifier')
+            raise TypeError(
+                'Model must be of type sklearn.ensemble.AdaBoostClassifier')
 
         super(ScikitlearnAdaBoostClassifier, self).__init__(model=model, clip_values=clip_values,
                                                             defences=defences,
@@ -241,7 +305,8 @@ class ScikitlearnBaggingClassifier(ScikitlearnClassifier):
         from sklearn.ensemble import BaggingClassifier
 
         if not isinstance(model, BaggingClassifier):
-            raise TypeError('Model must be of type sklearn.ensemble.BaggingClassifier')
+            raise TypeError(
+                'Model must be of type sklearn.ensemble.BaggingClassifier')
 
         super(ScikitlearnBaggingClassifier, self).__init__(model=model, clip_values=clip_values,
                                                            defences=defences,
@@ -273,7 +338,8 @@ class ScikitlearnExtraTreesClassifier(ScikitlearnClassifier):
         from sklearn.ensemble import ExtraTreesClassifier
 
         if not isinstance(model, ExtraTreesClassifier):
-            raise TypeError('Model must be of type sklearn.ensemble.ExtraTreesClassifier')
+            raise TypeError(
+                'Model must be of type sklearn.ensemble.ExtraTreesClassifier')
 
         super(ScikitlearnExtraTreesClassifier, self).__init__(model=model, clip_values=clip_values,
                                                               defences=defences,
@@ -305,7 +371,8 @@ class ScikitlearnGradientBoostingClassifier(ScikitlearnClassifier):
         from sklearn.ensemble import GradientBoostingClassifier
 
         if not isinstance(model, GradientBoostingClassifier):
-            raise TypeError('Model must be of type sklearn.ensemble.GradientBoostingClassifier')
+            raise TypeError(
+                'Model must be of type sklearn.ensemble.GradientBoostingClassifier')
 
         super(ScikitlearnGradientBoostingClassifier, self).__init__(model=model, clip_values=clip_values,
                                                                     defences=defences,
@@ -337,7 +404,8 @@ class ScikitlearnRandomForestClassifier(ScikitlearnClassifier):
         from sklearn.ensemble import RandomForestClassifier
 
         if not isinstance(model, RandomForestClassifier):
-            raise TypeError('Model must be of type sklearn.ensemble.RandomForestClassifier')
+            raise TypeError(
+                'Model must be of type sklearn.ensemble.RandomForestClassifier')
 
         super(ScikitlearnRandomForestClassifier, self).__init__(model=model, clip_values=clip_values, defences=defences,
                                                                 preprocessing=preprocessing)
@@ -451,7 +519,8 @@ class ScikitlearnLogisticRegression(ScikitlearnClassifier, ClassifierGradients):
         :return: `None`
         """
         # Apply preprocessing
-        x_preprocessed, y_preprocessed = self._apply_preprocessing(x, y, fit=True)
+        x_preprocessed, y_preprocessed = self._apply_preprocessing(
+            x, y, fit=True)
 
         y_index = np.argmax(y_preprocessed, axis=1)
         self.model.fit(X=x_preprocessed, y=y_index, **kwargs)
@@ -482,7 +551,8 @@ class ScikitlearnLogisticRegression(ScikitlearnClassifier, ClassifierGradients):
             fitted model.""")
 
         # Apply preprocessing
-        x_preprocessed, y_preprocessed = self._apply_preprocessing(x, y, fit=False)
+        x_preprocessed, y_preprocessed = self._apply_preprocessing(
+            x, y, fit=False)
 
         num_samples, _ = x_preprocessed.shape
         gradients = np.zeros(x_preprocessed.shape)
@@ -491,7 +561,8 @@ class ScikitlearnLogisticRegression(ScikitlearnClassifier, ClassifierGradients):
         if self.model_class_weight is None or np.unique(y_index).shape[0] < self.nb_classes:
             class_weight = np.ones(self.nb_classes)
         else:
-            class_weight = compute_class_weight(class_weight=self.model_class_weight, classes=self.classes, y=y_index)
+            class_weight = compute_class_weight(
+                class_weight=self.model_class_weight, classes=self.classes, y=y_index)
 
         y_pred = self.model.predict_proba(X=x_preprocessed)
         w_weighted = np.matmul(y_pred, self.weights)
@@ -545,7 +616,8 @@ class ScikitlearnSVC(ScikitlearnClassifier, ClassifierGradients):
         from sklearn.svm import SVC, LinearSVC
 
         if not isinstance(model, SVC) and not isinstance(model, LinearSVC):
-            raise TypeError('Model must be of type sklearn.svm.SVC or sklearn.svm.LinearSVC')
+            raise TypeError(
+                'Model must be of type sklearn.svm.SVC or sklearn.svm.LinearSVC')
 
         super(ScikitlearnSVC, self).__init__(clip_values=clip_values, defences=defences, preprocessing=preprocessing)
 
@@ -614,7 +686,8 @@ class ScikitlearnSVC(ScikitlearnClassifier, ClassifierGradients):
         elif self.model.kernel == 'sigmoid':
             raise NotImplementedError
         else:
-            raise NotImplementedError('Loss gradients for kernel \'{}\' are not implemented.'.format(self.model.kernel))
+            raise NotImplementedError(
+                'Loss gradients for kernel \'{}\' are not implemented.'.format(self.model.kernel))
         return grad
 
     def loss_gradient(self, x, y, **kwargs):
@@ -634,7 +707,8 @@ class ScikitlearnSVC(ScikitlearnClassifier, ClassifierGradients):
         from sklearn.svm import SVC, LinearSVC
 
         # Apply preprocessing
-        x_preprocessed, y_preprocessed = self._apply_preprocessing(x, y, fit=False)
+        x_preprocessed, y_preprocessed = self._apply_preprocessing(
+            x, y, fit=False)
 
         num_samples, _ = x_preprocessed.shape
         gradients = np.zeros_like(x_preprocessed)
@@ -672,14 +746,20 @@ class ScikitlearnSVC(ScikitlearnClassifier, ClassifierGradients):
                             label_multiplier = 1
 
                         for i_label_sv in range(support_indices[i_label], support_indices[i_label + 1]):
-                            alpha_i_k_y_i = self.model.dual_coef_[i_not_label_i, i_label_sv] * label_multiplier
-                            grad_kernel = self._get_kernel_gradient(i_label_sv, x_preprocessed[i_sample])
-                            gradients[i_sample, :] += sign_multiplier * alpha_i_k_y_i * grad_kernel
+                            alpha_i_k_y_i = self.model.dual_coef_[
+                                i_not_label_i, i_label_sv] * label_multiplier
+                            grad_kernel = self._get_kernel_gradient(
+                                i_label_sv, x_preprocessed[i_sample])
+                            gradients[i_sample, :] += sign_multiplier * \
+                                alpha_i_k_y_i * grad_kernel
 
                         for i_not_label_sv in range(support_indices[i_not_label], support_indices[i_not_label + 1]):
-                            alpha_i_k_y_i = self.model.dual_coef_[i_not_label_i, i_not_label_sv] * label_multiplier
-                            grad_kernel = self._get_kernel_gradient(i_not_label_sv, x_preprocessed[i_sample])
-                            gradients[i_sample, :] += sign_multiplier * alpha_i_k_y_i * grad_kernel
+                            alpha_i_k_y_i = self.model.dual_coef_[
+                                i_not_label_i, i_not_label_sv] * label_multiplier
+                            grad_kernel = self._get_kernel_gradient(
+                                i_not_label_sv, x_preprocessed[i_sample])
+                            gradients[i_sample, :] += sign_multiplier * \
+                                alpha_i_k_y_i * grad_kernel
 
         elif isinstance(self.model, LinearSVC):
 
@@ -693,12 +773,14 @@ class ScikitlearnSVC(ScikitlearnClassifier, ClassifierGradients):
                     elif i_label == 1:
                         label_multiplier = -1
                     else:
-                        raise ValueError('Label index not recognized because it is not 0 or 1.')
+                        raise ValueError(
+                            'Label index not recognized because it is not 0 or 1.')
                 else:
                     i_label_i = i_label
                     label_multiplier = -1
 
-                gradients[i_sample] = label_multiplier * self.model.coef_[i_label_i]
+                gradients[i_sample] = label_multiplier * \
+                    self.model.coef_[i_label_i]
         else:
             raise TypeError('Model not recognized.')
 
