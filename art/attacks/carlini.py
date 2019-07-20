@@ -207,7 +207,7 @@ class CarliniL2Method(Attack):
 
         # No labels provided, use model prediction as correct class
         if y is None:
-            y = get_labels_np_array(self.classifier.predict(x), batch_size=self.batch_size)
+            y = get_labels_np_array(self.classifier.predict(x, batch_size=self.batch_size))
 
         # Compute perturbation with implicit batching
         nb_batches = int(np.ceil(x_adv.shape[0] / float(self.batch_size)))
@@ -573,7 +573,7 @@ class CarliniLInfMethod(Attack):
 
         # No labels provided, use model prediction as correct class
         if y is None:
-            y = get_labels_np_array(self.classifier.predict(x), batch_size=self.batch_size)
+            y = get_labels_np_array(self.classifier.predict(x, batch_size=self.batch_size))
 
         # Compute perturbation with implicit batching
         nb_batches = int(np.ceil(x_adv.shape[0] / float(self.batch_size)))
