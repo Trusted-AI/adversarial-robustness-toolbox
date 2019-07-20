@@ -11,7 +11,7 @@ import torch.optim as optim
 
 from art.classifiers.pytorch import PyTorchClassifier
 from art.classifiers.detector_classifier import DetectorClassifier
-from art.utils import load_mnist, master_seed
+from art.utils import get_labels_np_array, load_mnist, master_seed
 
 logger = logging.getLogger('testLogger')
 
@@ -87,13 +87,10 @@ class TestDetectorClassifier(unittest.TestCase):
         # Get MNIST
         (_, _), (x_test, y_test) = self.mnist
 
-        # Test predict logits
-        preds = self.detector_classifier.predict(x=x_test, logits=True)
+        # Test predict
+        preds = self.detector_classifier.predict(x=x_test)
         self.assertTrue(np.array(preds.shape == (NB_TEST, 11)).all())
-
-        # Test predict softmax
-        preds = self.detector_classifier.predict(x=x_test, logits=False)
-        self.assertAlmostEqual(np.sum(preds), NB_TEST, places=4)
+        self.assertAlmostEqual(np.sum(get_labels_np_array(preds)), NB_TEST)
 
     def test_nb_classes(self):
         dc = self.detector_classifier
@@ -103,15 +100,15 @@ class TestDetectorClassifier(unittest.TestCase):
         dc = self.detector_classifier
         self.assertTrue(np.array(dc.input_shape == (1, 28, 28)).all())
 
-    def _derivative(self, x, i1, i2, i3, i4, logits):
+    def _derivative(self, x, i1, i2, i3, i4):
         delta = 1e-5
         x_minus = x.copy()
         x_minus[:, i2, i3, i4] -= delta
         x_plus = x.copy()
         x_plus[:, i2, i3, i4] += delta
 
-        result_plus = self.detector_classifier.predict(x_plus, logits=logits)
-        result_minus = self.detector_classifier.predict(x_minus, logits=logits)
+        result_plus = self.detector_classifier.predict(x_plus)
+        result_minus = self.detector_classifier.predict(x_minus)
         result = (result_plus[:, i1] - result_minus[:, i1]) / (2 * delta)
 
         return result
@@ -123,8 +120,8 @@ class TestDetectorClassifier(unittest.TestCase):
         # Get the classifier
         dc = self.detector_classifier
 
-        # Test logits = True and label = None
-        grads = dc.class_gradient(x=x_test, logits=True, label=None)
+        # Test label = None
+        grads = dc.class_gradient(x=x_test, label=None)
 
         self.assertTrue(np.array(grads.shape == (NB_TEST, 11, 1, 28, 28)).all())
         self.assertNotEqual(np.sum(grads), 0)
@@ -134,7 +131,7 @@ class TestDetectorClassifier(unittest.TestCase):
             for i2 in range(grads.shape[2]):
                 for i3 in range(grads.shape[3]):
                     for i4 in range(grads.shape[4]):
-                        result = self._derivative(x_test, i1, i2, i3, i4, True)
+                        result = self._derivative(x_test, i1, i2, i3, i4)
 
                         for i in range(grads.shape[0]):
                             if np.abs(result[i]) > 0.5:
@@ -148,8 +145,8 @@ class TestDetectorClassifier(unittest.TestCase):
         # Get the classifier
         dc = self.detector_classifier
 
-        # Test logits = True and label = 5
-        grads = dc.class_gradient(x=x_test, logits=True, label=5)
+        # Test label = 5
+        grads = dc.class_gradient(x=x_test, label=5)
 
         self.assertTrue(np.array(grads.shape == (NB_TEST, 1, 1, 28, 28)).all())
         self.assertNotEqual(np.sum(grads), 0)
@@ -158,7 +155,7 @@ class TestDetectorClassifier(unittest.TestCase):
         for i2 in range(grads.shape[2]):
             for i3 in range(grads.shape[3]):
                 for i4 in range(grads.shape[4]):
-                    result = self._derivative(x_test, 5, i2, i3, i4, True)
+                    result = self._derivative(x_test, 5, i2, i3, i4)
 
                     for i in range(grads.shape[0]):
                         if np.abs(result[i]) > 0.5:
@@ -172,8 +169,8 @@ class TestDetectorClassifier(unittest.TestCase):
         # Get the classifier
         dc = self.detector_classifier
 
-        # Test logits = True and label = 10
-        grads = dc.class_gradient(x=x_test, logits=True, label=10)
+        # Test label = 10
+        grads = dc.class_gradient(x=x_test, label=10)
 
         self.assertTrue(np.array(grads.shape == (NB_TEST, 1, 1, 28, 28)).all())
         self.assertNotEqual(np.sum(grads), 0)
@@ -182,7 +179,7 @@ class TestDetectorClassifier(unittest.TestCase):
         for i2 in range(grads.shape[2]):
             for i3 in range(grads.shape[3]):
                 for i4 in range(grads.shape[4]):
-                    result = self._derivative(x_test, 10, i2, i3, i4, True)
+                    result = self._derivative(x_test, 10, i2, i3, i4)
 
                     for i in range(grads.shape[0]):
                         if np.abs(result[i]) > 0.5:
@@ -196,10 +193,9 @@ class TestDetectorClassifier(unittest.TestCase):
         # Get the classifier
         dc = self.detector_classifier
 
-        # Test logits = True and label = array
-        # label = np.random.randint(11, size=NB_TEST)
+        # Test label = array
         label = np.array([2, 10])
-        grads = dc.class_gradient(x=x_test, logits=True, label=label)
+        grads = dc.class_gradient(x=x_test, label=label)
 
         self.assertTrue(np.array(grads.shape == (NB_TEST, 1, 1, 28, 28)).all())
         self.assertNotEqual(np.sum(grads), 0)
@@ -208,117 +204,14 @@ class TestDetectorClassifier(unittest.TestCase):
         for i2 in range(grads.shape[2]):
             for i3 in range(grads.shape[3]):
                 for i4 in range(grads.shape[4]):
-                    result1 = self._derivative(np.array([x_test[0]]), 2, i2, i3, i4, True)
-                    result2 = self._derivative(np.array([x_test[1]]), 10, i2, i3, i4, True)
+                    result1 = self._derivative(np.array([x_test[0]]), 2, i2, i3, i4)
+                    result2 = self._derivative(np.array([x_test[1]]), 10, i2, i3, i4)
 
                     if np.abs(result1[0]) > 0.5:
                         # print(result1[0], grads[0, 0, i2, i3, i4])
                         self.assertEqual(np.sign(result1[0]), np.sign(grads[0, 0, i2, i3, i4]))
 
                     if np.abs(result2[0]) > 0.5:
-                        # print(result2[0], grads[1, 0, i2, i3, i4])
-                        self.assertEqual(np.sign(result2[0]), np.sign(grads[1, 0, i2, i3, i4]))
-
-    def test_class_gradient5(self):
-        # Get MNIST
-        (_, _), (x_test, _) = self.mnist
-
-        # Get the classifier
-        dc = self.detector_classifier
-
-        # Test logits = False and label = None
-        grads = dc.class_gradient(x=x_test, logits=False, label=None)
-
-        self.assertTrue(np.array(grads.shape == (NB_TEST, 11, 1, 28, 28)).all())
-        self.assertNotEqual(np.sum(grads), 0)
-
-        # Sanity check
-        for i1 in range(grads.shape[1]):
-            for i2 in range(grads.shape[2]):
-                for i3 in range(grads.shape[3]):
-                    for i4 in range(grads.shape[4]):
-                        result = self._derivative(x_test, i1, i2, i3, i4, False)
-
-                        for i in range(grads.shape[0]):
-                            if np.abs(result[i]) > 0.1:
-                                # print(result[i], grads[i, i1, i2, i3, i4])
-                                self.assertEqual(np.sign(result[i]), np.sign(grads[i, i1, i2, i3, i4]))
-
-    def test_class_gradient6(self):
-        # Get MNIST
-        (_, _), (x_test, _) = self.mnist
-
-        # Get the classifier
-        dc = self.detector_classifier
-
-        # Test logits = False and label = 2
-        grads = dc.class_gradient(x=x_test, logits=False, label=2)
-
-        self.assertTrue(np.array(grads.shape == (NB_TEST, 1, 1, 28, 28)).all())
-        self.assertNotEqual(np.sum(grads), 0)
-
-        # Sanity check
-        for i2 in range(grads.shape[2]):
-            for i3 in range(grads.shape[3]):
-                for i4 in range(grads.shape[4]):
-                    result = self._derivative(x_test, 2, i2, i3, i4, False)
-
-                    for i in range(grads.shape[0]):
-                        if np.abs(result[i]) > 0.1:
-                            # print(result[i], grads[i, 0, i2, i3, i4])
-                            self.assertEqual(np.sign(result[i]), np.sign(grads[i, 0, i2, i3, i4]))
-
-    def test_class_gradient7(self):
-        # Get MNIST
-        (_, _), (x_test, _) = self.mnist
-
-        # Get the classifier
-        dc = self.detector_classifier
-
-        # Test logits = False and label = 10
-        grads = dc.class_gradient(x=x_test, logits=False, label=10)
-
-        self.assertTrue(np.array(grads.shape == (NB_TEST, 1, 1, 28, 28)).all())
-        self.assertNotEqual(np.sum(grads), 0)
-
-        # Sanity check
-        for i2 in range(grads.shape[2]):
-            for i3 in range(grads.shape[3]):
-                for i4 in range(grads.shape[4]):
-                    result = self._derivative(x_test, 10, i2, i3, i4, False)
-
-                    for i in range(grads.shape[0]):
-                        if np.abs(result[i]) > 0.1:
-                            # print(result[i], grads[i, 0, i2, i3, i4])
-                            self.assertEqual(np.sign(result[i]), np.sign(grads[i, 0, i2, i3, i4]))
-
-    def test_class_gradient8(self):
-        # Get MNIST
-        (_, _), (x_test, _) = self.mnist
-
-        # Get the classifier
-        dc = self.detector_classifier
-
-        # Test logits = False and label = array
-        # label = np.random.randint(11, size=NB_TEST)
-        label = np.array([2, 10])
-        grads = dc.class_gradient(x=x_test, logits=False, label=label)
-
-        self.assertTrue(np.array(grads.shape == (NB_TEST, 1, 1, 28, 28)).all())
-        self.assertNotEqual(np.sum(grads), 0)
-
-        # Sanity check
-        for i2 in range(grads.shape[2]):
-            for i3 in range(grads.shape[3]):
-                for i4 in range(grads.shape[4]):
-                    result1 = self._derivative(np.array([x_test[0]]), 2, i2, i3, i4, False)
-                    result2 = self._derivative(np.array([x_test[1]]), 10, i2, i3, i4, False)
-
-                    if np.abs(result1[0]) > 0.1:
-                        # print(result1[0], grads[0, 0, i2, i3, i4])
-                        self.assertEqual(np.sign(result1[0]), np.sign(grads[0, 0, i2, i3, i4]))
-
-                    if np.abs(result2[0]) > 0.1:
                         # print(result2[0], grads[1, 0, i2, i3, i4])
                         self.assertEqual(np.sign(result2[0]), np.sign(grads[1, 0, i2, i3, i4]))
 

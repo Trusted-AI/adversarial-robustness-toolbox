@@ -3,11 +3,6 @@
  and runs activation defence to find poison."""
 from __future__ import absolute_import, division, print_function, unicode_literals
 
-import sys
-from os.path import abspath
-
-sys.path.append(abspath('.'))
-
 import keras.backend as k
 from keras.models import Sequential
 from keras.layers import Dense, Flatten, Conv2D, MaxPooling2D, Dropout
@@ -66,7 +61,7 @@ def main():
 
     model.compile(loss='categorical_crossentropy', optimizer='adam', metrics=['accuracy'])
 
-    classifier = KerasClassifier((min_, max_), model=model)
+    classifier = KerasClassifier(clip_values=(min_, max_), model=model)
 
     classifier.fit(x_train, y_train, nb_epochs=30, batch_size=128)
 

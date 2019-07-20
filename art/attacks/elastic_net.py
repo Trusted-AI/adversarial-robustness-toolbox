@@ -94,15 +94,15 @@ class ElasticNet(Attack):
         :type x: `np.ndarray`
         :param x_adv: An array with the adversarial input.
         :type x_adv: `np.ndarray`
-        :return: A tuple holding the current logits, l1 distance, l2 distance and elastic net loss.
+        :return: A tuple holding the current predictions, l1 distance, l2 distance and elastic net loss.
         :rtype: `(np.ndarray, float, float, float)`
         """
         l1dist = np.sum(np.abs(x - x_adv).reshape(x.shape[0], -1), axis=1)
         l2dist = np.sum(np.square(x - x_adv).reshape(x.shape[0], -1), axis=1)
         endist = self.beta * l1dist + l2dist
-        logits = self.classifier.predict(np.array(x_adv, dtype=NUMPY_DTYPE), logits=True, batch_size=self.batch_size)
+        predictions = self.classifier.predict(np.array(x_adv, dtype=NUMPY_DTYPE), batch_size=self.batch_size)
 
-        return np.argmax(logits, axis=1), l1dist, l2dist, endist
+        return np.argmax(predictions, axis=1), l1dist, l2dist, endist
 
     def _gradient_of_loss(self, target, x, x_adv, c_weight):
         """
@@ -119,18 +119,20 @@ class ElasticNet(Attack):
         :return: An array with the gradient of the loss function.
         :type target: `np.ndarray`
         """
-        # Compute the current logits
-        logits = self.classifier.predict(np.array(x_adv, dtype=NUMPY_DTYPE), logits=True, batch_size=self.batch_size)
+        # Compute the current predictions
+        predictions = self.classifier.predict(np.array(x_adv, dtype=NUMPY_DTYPE), batch_size=self.batch_size)
 
         if self.targeted:
             i_sub = np.argmax(target, axis=1)
-            i_add = np.argmax(logits * (1 - target) + (np.min(logits, axis=1) - 1)[:, np.newaxis] * target, axis=1)
+            i_add = np.argmax(predictions * (1 - target) + (np.min(predictions, axis=1) - 1)[:, np.newaxis] * target,
+                              axis=1)
         else:
             i_add = np.argmax(target, axis=1)
-            i_sub = np.argmax(logits * (1 - target) + (np.min(logits, axis=1) - 1)[:, np.newaxis] * target, axis=1)
+            i_sub = np.argmax(predictions * (1 - target) + (np.min(predictions, axis=1) - 1)[:, np.newaxis] * target,
+                              axis=1)
 
-        loss_gradient = self.classifier.class_gradient(x_adv, label=i_add, logits=True)
-        loss_gradient -= self.classifier.class_gradient(x_adv, label=i_sub, logits=True)
+        loss_gradient = self.classifier.class_gradient(x_adv, label=i_add)
+        loss_gradient -= self.classifier.class_gradient(x_adv, label=i_sub)
         loss_gradient = loss_gradient.reshape(x.shape)
 
         c_mult = c_weight
@@ -180,7 +182,7 @@ class ElasticNet(Attack):
 
         # No labels provided, use model prediction as correct class
         if y is None:
-            y = get_labels_np_array(self.classifier.predict(x, logits=False, batch_size=self.batch_size))
+            y = get_labels_np_array(self.classifier.predict(x, batch_size=self.batch_size))
 
         # Compute adversarial examples with implicit batching
         nb_batches = int(np.ceil(x_adv.shape[0] / float(self.batch_size)))

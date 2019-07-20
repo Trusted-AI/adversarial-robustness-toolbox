@@ -183,10 +183,6 @@ class TestFastGradientMethodImages(unittest.TestCase):
                     (acc * 100))
 
     def test_with_defences(self):
-        self._test_with_defences(custom_activation=False)
-        self._test_with_defences(custom_activation=True)
-
-    def _test_with_defences(self, custom_activation=False):
         from art.defences import FeatureSqueezing
 
         # Get MNIST
@@ -195,7 +191,7 @@ class TestFastGradientMethodImages(unittest.TestCase):
         # Get the ready-trained Keras model
         model = self.classifier_k._model
         fs = FeatureSqueezing(bit_depth=1, clip_values=(0, 1))
-        classifier = KerasClassifier(model=model, clip_values=(0, 1), defences=fs, custom_activation=custom_activation)
+        classifier = KerasClassifier(model=model, clip_values=(0, 1), defences=fs)
 
         attack = FastGradientMethod(classifier, eps=1, batch_size=128)
         x_train_adv = attack.generate(x_train)
