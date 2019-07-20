@@ -43,10 +43,11 @@ class TestMXClassifier(unittest.TestCase):
         net.initialize(init=init.Xavier())
 
         # Create optimizer
+        loss = gluon.loss.SoftmaxCrossEntropyLoss()
         trainer = gluon.Trainer(net.collect_params(), 'sgd', {'learning_rate': 0.1})
 
         # Fit classifier
-        classifier = MXClassifier(model=net, clip_values=(0, 1), input_shape=(1, 28, 28), nb_classes=10,
+        classifier = MXClassifier(model=net, loss=loss, clip_values=(0, 1), input_shape=(1, 28, 28), nb_classes=10,
                                   optimizer=trainer)
         classifier.fit(x_train, y_train, batch_size=128, nb_epochs=2)
         cls.classifier = classifier
@@ -127,8 +128,10 @@ class TestMXClassifier(unittest.TestCase):
         (_, _), (x_test, _) = self.mnist
 
         # Create classifier
-        classifier_preproc = MXClassifier(model=self.classifier._model, clip_values=(0, 1), input_shape=(1, 28, 28),
-                                          nb_classes=10, optimizer=self.classifier._optimizer, preprocessing=(1, 2))
+        loss = gluon.loss.SoftmaxCrossEntropyLoss()
+        classifier_preproc = MXClassifier(model=self.classifier._model, loss=loss, clip_values=(0, 1),
+                                          input_shape=(1, 28, 28), nb_classes=10, optimizer=self.classifier._optimizer,
+                                          preprocessing=(1, 2))
 
         preds = self.classifier.predict((x_test - 1.) / 2)
         preds_preproc = classifier_preproc.predict(x_test)
