@@ -152,9 +152,6 @@ class ScikitlearnDecisionTreeClassifier(ScikitlearnClassifier):
         super(ScikitlearnDecisionTreeClassifier, self).__init__(model=model, clip_values=clip_values,
                                                                 defences=defences,
                                                                 preprocessing=preprocessing)
-    
-    def set_learning_phase(self, train):
-        raise NotImplementedError
 
     def get_classes_at_node(self, node_id):
         """
@@ -210,8 +207,8 @@ class ScikitlearnDecisionTreeClassifier(ScikitlearnClassifier):
         """
         if len(np.shape(x)) == 1:
             return self.model.decision_path(x.reshape(1, -1)).indices
-        else:
-            return self.model.decision_path(x).indices
+
+        return self.model.decision_path(x).indices
 
 
 class ScikitlearnExtraTreeClassifier(ScikitlearnClassifier):

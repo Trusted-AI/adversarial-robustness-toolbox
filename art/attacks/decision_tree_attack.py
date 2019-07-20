@@ -15,23 +15,26 @@
 # AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT,
 # TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 # SOFTWARE.
+"""
+This module implements attacks on Decision Trees.
+"""
 from __future__ import absolute_import, division, print_function, unicode_literals
 
 import logging
 
-import abc
-import sys
-
 import numpy as np
+
 from art.attacks.attack import Attack
 from art.classifiers.scikitklearn import ScikitlearnDecisionTreeClassifier
+
 logger = logging.getLogger(__name__)
 
 
-class Decision_Tree_Attack(Attack):
+class DecisionTreeAttack(Attack):
     """
-    # Close implementation of papernots attack on decision trees from https://arxiv.org/pdf/1605.07277.pdf , Algorithm 2. 
-    # Implementation after Algorthim 2 and communication with the authors.  
+    Close implementation of Papernot's attack on decision trees following Algorthim 2 and communication
+    with the authors.
+    Paper link: https://arxiv.org/pdf/1605.07277.pdf
     """
     attack_params = ['classifier', 'offset']
 
@@ -42,22 +45,23 @@ class Decision_Tree_Attack(Attack):
         :param offset: How much the value is pushed away from tree's threshold
         :type classifier: :float:
         """
+        super(DecisionTreeAttack, self).__init__(classifier)
         self.classifier = classifier
         if not isinstance(classifier, ScikitlearnDecisionTreeClassifier):
             raise TypeError('Model must be a decision tree model!')
         self.offset = offset
 
-    def _DFSubtree(self, position, original_class, target=None):
+    def _df_subtree(self, position, original_class, target=None):
         """
         Search a decision tree for a misclassifying instance.
 
         :param position: An array with the original inputs to be attacked.
         :type position: `int`
-        :param original_class: original label for the instances we are serching misclassification for.
+        :param original_class: original label for the instances we are searching misclassification for.
         :type original_class: `int`
-        :param target: If the provided, specifies which output the leaf has to have to be accepted. 
+        :param target: If the provided, specifies which output the leaf has to have to be accepted.
         :type target: `int`
-        :return: An array specifying the path to the leaf where the classification is either != original class or 
+        :return: An array specifying the path to the leaf where the classification is either != original class or
                ==target class if provided.
         :rtype: `np.ndarray`
         """
@@ -65,33 +69,35 @@ class Decision_Tree_Attack(Attack):
         if self.classifier.get_left_child(position) == self.classifier.get_right_child(position):
             if target is None:  # untargeted case
                 if self.classifier.get_classes_at_node(position) != original_class:
-                    return [position]
+                    path = [position]
                 else:
-                    return [-1]
+                    path = [-1]
             else:  # targeted case
                 if self.classifier.get_classes_at_node(position) == target:
-                    return [position]
+                    path = [position]
                 else:
-                    return [-1]
+                    path = [-1]
         else:  # go deeper, depths first
-            res = self._DFSubtree(self.classifier.get_left_child(
+            res = self._df_subtree(self.classifier.get_left_child(
                 position), original_class, target)
             if res[0] == -1:
                 # no result, try right subtree
-                res = self._DFSubtree(self.classifier.get_right_child(
+                res = self._df_subtree(self.classifier.get_right_child(
                     position), original_class, target)
                 if res[0] == -1:
                     # no desired result
-                    return [-1]
+                    path = [-1]
                 else:
                     res.append(position)
-                    return res
+                    path = res
             else:
                 # done, it is returning a path
                 res.append(position)
-                return res
+                path = res
 
-    def generate(self, x, y=None):
+        return path
+
+    def generate(self, x, y=None, **kwargs):
         """
         Generate adversarial examples and return them as an array. This method should be overridden by all concrete
         attack implementations.
@@ -116,37 +122,37 @@ class Decision_Tree_Attack(Attack):
             position = -2
             adv_path = [-1]
             ancestor = path[position]
-            while np.abs(position) < (len(path)-1) or adv_path[0] == -1:
+            while np.abs(position) < (len(path) - 1) or adv_path[0] == -1:
                 ancestor = path[position]
-                current_child = path[position+1]
+                current_child = path[position + 1]
                 # serach in right subtree
                 if current_child == self.classifier.get_left_child(ancestor):
                     if y is None:
-                        adv_path = self._DFSubtree(
+                        adv_path = self._df_subtree(
                             self.classifier.get_right_child(ancestor), legitimate_class)
                     else:
-                        adv_path = self._DFSubtree(self.classifier.get_right_child(
+                        adv_path = self._df_subtree(self.classifier.get_right_child(
                             ancestor), legitimate_class, y[index])
                 else:  # serach in left subtree
                     if y is None:
-                        adv_path = self._DFSubtree(
+                        adv_path = self._df_subtree(
                             self.classifier.get_left_child(ancestor), legitimate_class)
                     else:
-                        adv_path = self._DFSubtree(self.classifier.get_left_child(
+                        adv_path = self._df_subtree(self.classifier.get_left_child(
                             ancestor), legitimate_class, y[index])
                 position = position - 1  # we are going the decision path updwards
             adv_path.append(ancestor)
             # we figured out which is the way to the target, now perturb
             # first one is leaf-> no threshold, cannot be perturbed
-            for i in range(1, 1+len(adv_path[1:])):
-                goFor = adv_path[i-1]
+            for i in range(1, 1 + len(adv_path[1:])):
+                go_for = adv_path[i - 1]
                 threshold = self.classifier.get_threshold_at_node(adv_path[i])
                 feature = self.classifier.get_feature_at_node(adv_path[i])
                 # only perturb if the feature is acutally wrong
-                if x[index][feature] > threshold and goFor == self.classifier.get_left_child(adv_path[i]):
-                    x[index][feature] = threshold-self.offset
-                elif x[index][feature] <= threshold and goFor == self.classifier.get_right_child(adv_path[i]):
-                    x[index][feature] = threshold+self.offset
+                if x[index][feature] > threshold and go_for == self.classifier.get_left_child(adv_path[i]):
+                    x[index][feature] = threshold - self.offset
+                elif x[index][feature] <= threshold and go_for == self.classifier.get_right_child(adv_path[i]):
+                    x[index][feature] = threshold + self.offset
         return x
 
     def set_params(self, **kwargs):
@@ -157,7 +163,7 @@ class Decision_Tree_Attack(Attack):
         :type kwargs: `dict`
         :return: `True` when parsing was successful
         """
-        super(Decision_Tree_Attack, self).set_params(**kwargs)
+        super(DecisionTreeAttack, self).set_params(**kwargs)
 
         if self.offset <= 0:
             raise ValueError("The offset parameter must be strictly positive.")

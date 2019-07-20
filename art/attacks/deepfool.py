@@ -137,8 +137,8 @@ class DeepFool(Attack):
                     batch[active_indices] += r_var[active_indices]
 
                 # Recompute prediction for new x
-                f = self.classifier.predict(batch)
-                fk_i_hat = np.argmax(f, axis=1)
+                f_batch = self.classifier.predict(batch)
+                fk_i_hat = np.argmax(f_batch, axis=1)
 
                 # Recompute gradients for new x
                 if use_grads_subset:
