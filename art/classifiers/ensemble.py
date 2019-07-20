@@ -96,9 +96,10 @@ class EnsembleClassifier(Classifier):
 
     def predict(self, x, batch_size=128, **kwargs):
         """
-        Perform prediction for a batch of inputs. Predictions from classifiers are aggregated at probabilities level,
-        as logits are not comparable between models. If logits prediction was specified, probabilities are converted
-        back to logits after aggregation.
+        Perform prediction for a batch of inputs. Predictions from classifiers should only be aggregated if they all
+        have the same type of output (e.g., probabilities). Otherwise, use `raw=True` to get predictions from all
+        models without aggregation. The same option should be used for logits output, as logits are not comparable
+        between models and should not be aggregated.
 
         :param x: Test set.
         :type x: `np.ndarray`
@@ -113,7 +114,7 @@ class EnsembleClassifier(Classifier):
         else:
             raise ValueError('Missing argument `raw`.')
 
-        preds = np.array([self._classifier_weights[i] * self._classifiers[i].predict(x, raw)
+        preds = np.array([self._classifier_weights[i] * self._classifiers[i].predict(x)
                           for i in range(self._nb_classifiers)])
         if raw:
             return preds
