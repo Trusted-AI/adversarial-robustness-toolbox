@@ -33,17 +33,19 @@ logger = logging.getLogger(__name__)
 
 class MXClassifier(Classifier):
     """
-    Wrapper class for importing MXNet Gluon model.
+    Wrapper class for importing MXNet Gluon models.
     """
 
-    def __init__(self, model, input_shape, nb_classes, optimizer=None, ctx=None, channel_index=1, clip_values=None,
-                 defences=None, preprocessing=(0, 1)):
+    def __init__(self, model, loss, input_shape, nb_classes, optimizer=None, ctx=None, channel_index=1,
+                 clip_values=None, defences=None, preprocessing=(0, 1)):
         """
-        Initialize an `MXClassifier` object. Assumes the `model` passed as parameter is a Gluon model and that the
-        loss function is the softmax cross-entropy.
+        Initialize an `MXClassifier` object. Assumes the `model` passed as parameter is a Gluon model.
 
-        :param model: The model with logits as expected output.
+        :param model: The Gluon model. The output of the model can be logits, probabilities or anything else. Logits
+               output should be preferred where possible to ensure attack efficiency.
         :type model: `mxnet.gluon.Block`
+        :param loss: The loss function for which to compute gradients for training.
+        :type loss: `mxnet.nd.loss` or `mxnet.gluon.Loss`
         :param input_shape: The shape of one input instance.
         :type input_shape: `tuple`
         :param nb_classes: The number of classes of the model.
@@ -73,6 +75,7 @@ class MXClassifier(Classifier):
                                            preprocessing=preprocessing)
 
         self._model = model
+        self._loss = loss
         self._nb_classes = nb_classes
         self._input_shape = input_shape
         self._device = ctx
@@ -130,7 +133,7 @@ class MXClassifier(Classifier):
 
                 with mx.autograd.record(train_mode=train_mode):
                     preds = self._model(x_batch)
-                    loss = mx.nd.softmax_cross_entropy(preds, y_batch)
+                    loss = self._loss(preds, y_batch)
                 loss.backward()
 
                 # Update parameters
@@ -166,7 +169,7 @@ class MXClassifier(Classifier):
 
                     with mx.autograd.record(train_mode=train_mode):
                         preds = self._model(x_batch)
-                        loss = mx.nd.softmax_cross_entropy(preds, y_batch)
+                        loss = self._loss(preds, y_batch)
                     loss.backward()
 
                     # Update parameters
@@ -304,10 +307,9 @@ class MXClassifier(Classifier):
         x_preprocessed = mx.nd.array(x_preprocessed.astype(NUMPY_DTYPE), ctx=self._ctx)
         x_preprocessed.attach_grad()
 
-        loss = mx.gluon.loss.SoftmaxCrossEntropyLoss()
         with mx.autograd.record(train_mode=train_mode):
             preds = self._model(x_preprocessed)
-            loss = loss(preds, y_preprocessed)
+            loss = self._loss(preds, y_preprocessed)
 
         loss.backward()
 
@@ -428,10 +430,10 @@ class MXClassifier(Classifier):
         logger.info("Model parameters saved in path: %s.params.", full_path)
 
     def __repr__(self):
-        repr_ = "%s(model=%r, input_shape=%r, nb_classes=%r, optimizer=%r, ctx=%r, channel_index=%r, " \
+        repr_ = "%s(model=%r, loss=%r, input_shape=%r, nb_classes=%r, optimizer=%r, ctx=%r, channel_index=%r, " \
                 "clip_values=%r, defences=%r, preprocessing=%r)" \
                 % (self.__module__ + '.' + self.__class__.__name__,
-                   self._model, self.input_shape, self.nb_classes, self._optimizer, self._ctx,
+                   self._model, self._loss, self.input_shape, self.nb_classes, self._optimizer, self._ctx,
                    self.channel_index, self.clip_values, self.defences, self.preprocessing)
 
         return repr_
