@@ -70,6 +70,13 @@ class KerasClassifier(Classifier):
         self._input_layer = input_layer
         self._output_layer = output_layer
 
+        if '<class \'tensorflow' in str(type(model)):
+            self.is_tensorflow = True
+        elif '<class \'keras' in str(type(model)):
+            self.is_tensorflow = False
+        else:
+            raise TypeError('Type of model not recognized:' + type(model))
+
         self._initialize_params(model, use_logits, input_layer, output_layer)
 
     def _initialize_params(self, model, use_logits, input_layer, output_layer):
@@ -81,12 +88,15 @@ class KerasClassifier(Classifier):
         :type model: `keras.models.Model`
         :param use_logits: True if the output of the model are logits.
         :type use_logits: `bool`
-        :param input_layer: Which layer to consider as the Input when the model has multple input layers.
+        :param input_layer: Which layer to consider as the Input when the model has multiple input layers.
         :type input_layer: `int`
         :param output_layer: Which layer to consider as the Output when the model has multiple output layers.
         :type output_layer: `int`
         """
-        import keras.backend as k
+        if self.is_tensorflow:
+            import tensorflow.keras.backend as k
+        else:
+            import keras.backend as k
 
         if hasattr(model, 'inputs'):
             self._input_layer = input_layer
@@ -327,7 +337,10 @@ class KerasClassifier(Classifier):
         :return: The output of `layer`, where the first dimension is the batch size corresponding to `x`.
         :rtype: `np.ndarray`
         """
-        import keras.backend as k
+        if self.is_tensorflow:
+            import tensorflow.keras.backend as k
+        else:
+            import keras.backend as k
         from art import NUMPY_DTYPE
 
         if isinstance(layer, six.string_types):
@@ -367,7 +380,10 @@ class KerasClassifier(Classifier):
         return activations
 
     def _init_class_grads(self, label=None):
-        import keras.backend as k
+        if self.is_tensorflow:
+            import tensorflow.keras.backend as k
+        else:
+            import keras.backend as k
 
         if len(self._output.shape) == 2:
             nb_outputs = self._output.shape[1]
@@ -402,7 +418,10 @@ class KerasClassifier(Classifier):
         :return: The hidden layers in the model, input and output layers excluded.
         :rtype: `list`
         """
-        from keras.engine.topology import InputLayer
+        if self.is_tensorflow:
+            from tensorflow.keras.layers import InputLayer
+        else:
+            from keras.engine.topology import InputLayer
 
         layer_names = [layer.name for layer in self._model.layers[:-1] if not isinstance(layer, InputLayer)]
         logger.info('Inferred %i hidden layers on Keras classifier.', len(layer_names))
@@ -416,7 +435,10 @@ class KerasClassifier(Classifier):
         :param train: True to set the learning phase to training, False to set it to prediction.
         :type train: `bool`
         """
-        import keras.backend as k
+        if self.is_tensorflow:
+            import tensorflow.keras.backend as k
+        else:
+            import keras.backend as k
 
         if isinstance(train, bool):
             self._learning_phase = train
@@ -485,7 +507,10 @@ class KerasClassifier(Classifier):
         # Load and update all functionality related to Keras
         import os
         from art import DATA_PATH
-        from keras.models import load_model
+        if self.is_tensorflow:
+            from tensorflow.keras.models import load_model
+        else:
+            from keras.models import load_model
 
         full_path = os.path.join(DATA_PATH, state['model_name'])
         model = load_model(str(full_path))

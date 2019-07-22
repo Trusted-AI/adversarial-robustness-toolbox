@@ -63,7 +63,10 @@ def master_seed(seed):
         import tensorflow as tf
 
         logger.info('Setting random seed for TensorFlow.')
-        tf.set_random_seed(seed)
+        if tf.__version__[0] == '2':
+            tf.random.set_seed(seed)
+        else:
+            tf.set_random_seed(seed)
     except ImportError:
         logger.info('Could not set random seed for TensorFlow.')
 
@@ -704,3 +707,11 @@ def clip_and_round(x, clip_values, round_samples):
         np.clip(x, clip_values[0], clip_values[1], out=x)
     x = np.around(x / round_samples) * round_samples
     return x
+
+
+def import_tensorflow_v1():
+    import tensorflow as tf
+    if tf.__version__[0] == '2':
+        import tensorflow.compat.v1 as tf
+        tf.disable_eager_execution()
+    return tf

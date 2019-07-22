@@ -76,7 +76,6 @@ class TestElasticNet(unittest.TestCase):
 
         # Kill TF
         sess.close()
-        tf.reset_default_graph()
 
     def test_tfclassifier(self):
         """
@@ -159,8 +158,9 @@ class TestElasticNet(unittest.TestCase):
 
         # Kill TF
         sess.close()
-        tf.reset_default_graph()
 
+    @unittest.skipIf(tf.__version__[0] == '2', reason='Skip unittests for Tensorflow v2 until Keras supports Tensorflow'
+                                                      ' v2 as backend.')
     def test_krclassifier(self):
         """
         Second test with the KerasClassifier.
@@ -246,6 +246,8 @@ class TestElasticNetVectors(unittest.TestCase):
     def setUp(self):
         master_seed(1234)
 
+    @unittest.skipIf(tf.__version__[0] == '2', reason='Skip unittests for Tensorflow v2 until Keras supports Tensorflow'
+                                                      ' v2 as backend.')
     def test_iris_k_clipped(self):
         (_, _), (x_test, y_test) = self.iris
         classifier, _ = get_iris_classifier_kr()
@@ -260,6 +262,8 @@ class TestElasticNetVectors(unittest.TestCase):
         acc = 1. - np.sum(preds_adv == np.argmax(y_test, axis=1)) / y_test.shape[0]
         logger.info('EAD success rate on Iris: %.2f%%', (acc * 100))
 
+    @unittest.skipIf(tf.__version__[0] == '2', reason='Skip unittests for Tensorflow v2 until Keras supports Tensorflow'
+                                                      ' v2 as backend.')
     def test_iris_k_unbounded(self):
         (_, _), (x_test, y_test) = self.iris
         classifier, _ = get_iris_classifier_kr()

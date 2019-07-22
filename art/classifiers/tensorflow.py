@@ -27,6 +27,7 @@ import numpy as np
 import six
 
 from art.classifiers.classifier import Classifier
+from art.utils import import_tensorflow_v1
 
 logger = logging.getLogger(__name__)
 
@@ -72,7 +73,8 @@ class TFClassifier(Classifier):
                be divided by the second one.
         :type preprocessing: `tuple`
         """
-        import tensorflow as tf
+        from art.utils import import_tensorflow_v1
+        tf = import_tensorflow_v1()
 
         super(TFClassifier, self).__init__(clip_values=clip_values, channel_index=channel_index, defences=defences,
                                            preprocessing=preprocessing)
@@ -288,7 +290,7 @@ class TFClassifier(Classifier):
         return grads
 
     def _init_class_grads(self, label=None):
-        import tensorflow as tf
+        tf = import_tensorflow_v1()
 
         if not hasattr(self, '_class_grads'):
             self._class_grads = [None for _ in range(self.nb_classes)]
@@ -315,7 +317,7 @@ class TFClassifier(Classifier):
         :return: The hidden layers in the model, input and output layers excluded.
         :rtype: `list`
         """
-        import tensorflow as tf
+        tf = import_tensorflow_v1()
 
         # Get the computational graph
         with self._sess.graph.as_default():
@@ -380,7 +382,7 @@ class TFClassifier(Classifier):
         :return: The output of `layer`, where the first dimension is the batch size corresponding to `x`.
         :rtype: `np.ndarray`
         """
-        import tensorflow as tf
+        tf = import_tensorflow_v1()
 
         # Get the computational graph
         with self._sess.graph.as_default():
@@ -528,7 +530,7 @@ class TFClassifier(Classifier):
         # pylint: disable=E0611
         import os
         from art import DATA_PATH
-        import tensorflow as tf
+        tf = import_tensorflow_v1()
         from tensorflow.python.saved_model import tag_constants
 
         full_path = os.path.join(DATA_PATH, state['model_name'])

@@ -85,20 +85,22 @@ class TestUtils(unittest.TestCase):
         self.assertTrue((z == x).all())
 
     def test_master_seed_tf(self):
-        import tensorflow as tf
+        from art.utils import import_tensorflow_v1
+        tf = import_tensorflow_v1()
+
         tf.reset_default_graph()
         master_seed(1234)
-
         with tf.Session() as sess:
             x = tf.random_uniform(shape=(1, 10))
             y = tf.random_uniform(shape=(1, 10))
             xv, yv = sess.run([x, y])
+
         tf.reset_default_graph()
         master_seed(1234)
-
         with tf.Session() as sess:
             z = tf.random_uniform(shape=(1, 10))
             zv = sess.run([z])[0]
+
         self.assertTrue((xv != yv).any())
         self.assertTrue((zv == xv).all())
 

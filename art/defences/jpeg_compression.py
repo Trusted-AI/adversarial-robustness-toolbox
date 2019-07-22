@@ -28,7 +28,6 @@ from io import BytesIO
 import logging
 
 import numpy as np
-from PIL import Image
 
 from art.defences.preprocessor import Preprocessor
 from art import NUMPY_DTYPE
@@ -85,6 +84,8 @@ class JpegCompression(Preprocessor):
         :return: compressed sample.
         :rtype: `np.ndarray`
         """
+        from PIL import Image
+
         if len(x.shape) == 2:
             raise ValueError('Feature vectors detected. JPEG compression can only be applied to data with spatial'
                              'dimensions.')

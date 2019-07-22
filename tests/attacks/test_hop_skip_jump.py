@@ -115,8 +115,9 @@ class TestHopSkipJump(unittest.TestCase):
 
         # Clean-up session
         sess.close()
-        tf.reset_default_graph()
 
+    @unittest.skipIf(tf.__version__[0] == '2', reason='Skip unittests for Tensorflow v2 until Keras supports Tensorflow'
+                                                      ' v2 as backend.')
     def test_krclassifier(self):
         """
         Second test with the KerasClassifier.
@@ -254,6 +255,8 @@ class TestHopSkipJumpVectors(unittest.TestCase):
     def setUp(self):
         master_seed(1234)
 
+    @unittest.skipIf(tf.__version__[0] == '2', reason='Skip unittests for Tensorflow v2 until Keras supports Tensorflow'
+                                                      ' v2 as backend.')
     def test_iris_k_clipped(self):
         (_, _), (x_test, y_test) = self.iris
         classifier, _ = get_iris_classifier_kr()
@@ -285,6 +288,8 @@ class TestHopSkipJumpVectors(unittest.TestCase):
         # Clean-up session
         k.clear_session()
 
+    @unittest.skipIf(tf.__version__[0] == '2', reason='Skip unittests for Tensorflow v2 until Keras supports Tensorflow'
+                                                      ' v2 as backend.')
     def test_iris_k_unbounded(self):
         (_, _), (x_test, y_test) = self.iris
         classifier, _ = get_iris_classifier_kr()
@@ -371,7 +376,6 @@ class TestHopSkipJumpVectors(unittest.TestCase):
 
         # Clean-up session
         sess.close()
-        tf.reset_default_graph()
 
     def test_iris_pt(self):
         (_, _), (x_test, y_test) = self.iris

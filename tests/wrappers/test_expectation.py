@@ -20,6 +20,7 @@ from __future__ import absolute_import, division, print_function, unicode_litera
 import logging
 import unittest
 
+import tensorflow as tf
 import numpy as np
 
 from art.attacks import FastGradientMethod
@@ -52,6 +53,8 @@ class TestExpectationOverTransformations(unittest.TestCase):
         # Set master seed
         master_seed(1234)
 
+    @unittest.skipIf(tf.__version__[0] == '2', reason='Skip unittests for Tensorflow v2 until Keras supports Tensorflow'
+                                                      ' v2 as backend.')
     def test_krclassifier(self):
         """
         Test with a KerasClassifier.
@@ -94,6 +97,8 @@ class TestExpectationVectors(unittest.TestCase):
         # Set master seed
         master_seed(1234)
 
+    @unittest.skipIf(tf.__version__[0] == '2', reason='Skip unittests for Tensorflow v2 until Keras supports Tensorflow'
+                                                      ' v2 as backend.')
     def test_iris_clipped(self):
         (_, _), (x_test, y_test) = self.iris
 
@@ -119,6 +124,8 @@ class TestExpectationVectors(unittest.TestCase):
         acc = np.sum(preds_adv == np.argmax(y_test, axis=1)) / y_test.shape[0]
         logger.info('Accuracy on Iris with limited query info: %.2f%%', (acc * 100))
 
+    @unittest.skipIf(tf.__version__[0] == '2', reason='Skip unittests for Tensorflow v2 until Keras supports Tensorflow'
+                                                      ' v2 as backend.')
     def test_iris_unbounded(self):
         (_, _), (x_test, y_test) = self.iris
         classifier, _ = get_iris_classifier_kr()

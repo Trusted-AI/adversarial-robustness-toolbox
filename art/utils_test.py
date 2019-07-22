@@ -76,7 +76,8 @@ def get_classifier_tf():
 
     :return: TFClassifier, tf.Session()
     """
-    import tensorflow as tf
+    from art.utils import import_tensorflow_v1
+    tf = import_tensorflow_v1()
     from art.classifiers import TFClassifier
 
     # Define input and output placeholders
@@ -88,7 +89,7 @@ def get_classifier_tf():
                             kernel_initializer=_tf_weights_loader('MNIST', 'W', 'CONV2D'),
                             bias_initializer=_tf_weights_loader('MNIST', 'B', 'CONV2D'))
     conv = tf.layers.max_pooling2d(conv, 4, 4)
-    flattened = tf.contrib.layers.flatten(conv)
+    flattened = tf.layers.flatten(conv)
 
     # Logits layer
     logits = tf.layers.dense(flattened, 10, kernel_initializer=_tf_weights_loader('MNIST', 'W', 'DENSE'),
@@ -223,7 +224,8 @@ def get_iris_classifier_tf():
     :return: The trained model for Iris dataset and the session.
     :rtype: `tuple(TFClassifier, tf.Session)`
     """
-    import tensorflow as tf
+    from art.utils import import_tensorflow_v1
+    tf = import_tensorflow_v1()
     from art.classifiers import TFClassifier
 
     # Define input and output placeholders

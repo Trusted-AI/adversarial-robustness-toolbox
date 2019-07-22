@@ -98,6 +98,8 @@ class TestMetrics(unittest.TestCase):
     #     dist = nearest_neighbour_dist(classifier, x_train, x_train, str('fgsm'))
     #     self.assertGreaterEqual(dist, 0)
 
+    @unittest.skipIf(tf.__version__[0] == '2', reason='Skip unittests for Tensorflow v2 until Keras supports Tensorflow'
+                                                      ' v2 as backend.')
     @staticmethod
     def _cnn_mnist_k(input_shape):
         # Create simple CNN
@@ -149,6 +151,9 @@ class TestClever(unittest.TestCase):
         To create a simple TFClassifier for testing.
         :return:
         """
+        from art.utils import import_tensorflow_v1
+        tf = import_tensorflow_v1()
+
         # Define input and output placeholders
         input_ph = tf.placeholder(tf.float32, shape=[None, 28, 28, 1])
         labels_ph = tf.placeholder(tf.int32, shape=[None, 10])
@@ -156,7 +161,7 @@ class TestClever(unittest.TestCase):
         # Define the tensorflow graph
         conv = tf.layers.conv2d(input_ph, 4, 5, activation=tf.nn.relu)
         conv = tf.layers.max_pooling2d(conv, 2, 2)
-        fc = tf.contrib.layers.flatten(conv)
+        fc = tf.layers.flatten(conv)
 
         # Logits layer
         logits = tf.layers.dense(fc, 10)
@@ -176,6 +181,8 @@ class TestClever(unittest.TestCase):
 
         return tfc
 
+    @unittest.skipIf(tf.__version__[0] == '2', reason='Skip unittests for Tensorflow v2 until Keras supports Tensorflow'
+                                                      ' v2 as backend.')
     @staticmethod
     def _create_krclassifier():
         """
@@ -225,6 +232,9 @@ class TestClever(unittest.TestCase):
         Test with tensorflow.
         :return:
         """
+        from art.utils import import_tensorflow_v1
+        tf = import_tensorflow_v1()
+
         # Get MNIST
         batch_size, nb_train, nb_test = 100, 1000, 10
         (x_train, y_train), (x_test, y_test), _, _ = load_mnist()
