@@ -20,10 +20,11 @@ from __future__ import absolute_import, division, print_function, unicode_litera
 import logging
 import unittest
 
+import tensorflow as tf
+
 import keras
 import keras.backend as k
 import numpy as np
-import tensorflow as tf
 from keras.layers import Dense, Flatten, Conv2D, MaxPooling2D
 from keras.models import Sequential
 
@@ -41,6 +42,8 @@ NB_TEST = 11
 ACCURACY_DROP = 0.0  # The unit tests are too inaccurate
 
 
+@unittest.skipIf(tf.__version__[0] == '2', reason='Skip AdversarialTrainer unittests for Tensorflow v2 until Keras '
+                                                  'supports it')
 class TestBase(unittest.TestCase):
     mnist = None
     classifier_k = None

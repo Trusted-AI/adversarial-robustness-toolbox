@@ -221,7 +221,8 @@ class TFDataGenerator(DataGenerator):
         :type batch_size: `int`
         :raises: `TypeError`, `ValueError`
         """
-        import tensorflow as tf
+        from art.utils import import_tensorflow_v1
+        tf = import_tensorflow_v1()
 
         super(TFDataGenerator, self).__init__(size=size, batch_size=batch_size)
         self.sess = sess

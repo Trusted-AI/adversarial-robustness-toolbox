@@ -6,6 +6,7 @@ from __future__ import absolute_import, division, print_function, unicode_litera
 import logging
 import unittest
 
+import tensorflow as tf
 import keras.backend as k
 import numpy as np
 
@@ -21,6 +22,8 @@ NB_TRAIN = 100
 NB_TEST = 100
 
 
+@unittest.skipIf(tf.__version__[0] == '2', reason='Skip unittests for Tensorflow v2 until Keras supports Tensorflow'
+                                                  ' v2 as backend.')
 class TestSubsetScanningDetector(unittest.TestCase):
     """
     A unittest class for testing the subset scanning detector.

@@ -81,8 +81,9 @@ class TestSpatialTransformation(unittest.TestCase):
         self.assertLessEqual(abs(x_test_adv[0, 14, 14, 0] - 0.013572651), 0.01)
 
         sess.close()
-        tf.reset_default_graph()
 
+    @unittest.skipIf(tf.__version__[0] == '2', reason='Skip unittests for Tensorflow v2 until Keras supports Tensorflow'
+                                                      ' v2 as backend.')
     def test_krclassifier(self):
         """
         Second test with the KerasClassifier.
