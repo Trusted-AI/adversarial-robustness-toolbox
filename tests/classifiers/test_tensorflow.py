@@ -39,7 +39,6 @@ class TestTFClassifier(unittest.TestCase):
     def tearDownClass(cls):
         tf.reset_default_graph()
         cls.sess.close()
-        del cls.mnist
 
     def test_predict(self):
         # Get MNIST
