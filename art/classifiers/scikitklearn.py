@@ -511,7 +511,7 @@ class ScikitlearnLogisticRegression(ScikitlearnClassifier, ClassifierGradients):
         :param y: Labels, one-vs-rest encoding.
         :type y: `np.ndarray`
         :param kwargs: Dictionary of framework-specific arguments. These should be parameters supported by the
-               `fit` function in `sklearn.svm.{SVC, LinerSVC}` and will be passed to this function as such.
+               `fit` function in `sklearn.linear_model.LogisticRegression` and will be passed to this function as such.
         :type kwargs: `dict`
         :return: `None`
         """
