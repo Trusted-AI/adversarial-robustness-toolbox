@@ -16,11 +16,10 @@
 # TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 # SOFTWARE.
 """
-This module implements Randomized Smoothing applied to classifier predictions and Smoothgrad applied to gradients.
+This module implements Randomized Smoothing applied to classifier predictions.
 
 Paper link:
     https://arxiv.org/pdf/1902.02918.pdf
-    https://arxiv.org/abs/1706.03825
 
 """
 from __future__ import absolute_import, division, print_function, unicode_literals
@@ -102,8 +101,7 @@ class RandomizedSmoothing(ClassifierWrapper):
 
     def loss_gradient(self, x, y):
         """
-        Compute the gradient of the given classifier's loss function w.r.t. `x`, taking an expectation
-        over transformations.
+        Compute the gradient of the given classifier's loss function w.r.t. `x` of the original classifier.
 
         :param x: Sample input with shape as expected by the model.
         :type x: `np.ndarray`
@@ -113,15 +111,11 @@ class RandomizedSmoothing(ClassifierWrapper):
         :rtype: `np.ndarray`
         """
         logger.info('Applying randomized smoothing.')
-        loss_gradient = []
-        for idx, x_i in enumerate(x):
-            x_new, y_new = self._noisy_samples(x_i, y[idx])
-            loss_gradient.append(np.mean(self.classifier.loss_gradient(x_new, y_new), axis=0))
-        return np.array(loss_gradient)
+        return self.classifier.loss_gradient(x, y)
 
     def class_gradient(self, x, label=None, logits=False):
         """
-        Compute per-class derivatives of the given classifier w.r.t. `x`, taking an average over noisy samples.
+        Compute per-class derivatives of the given classifier w.r.t. `x` of original classifier.
 
         :param x: Sample input with shape as expected by the model.
         :type x: `np.ndarray`
@@ -138,14 +132,7 @@ class RandomizedSmoothing(ClassifierWrapper):
         :rtype: `np.ndarray`
         """
         logger.info('Apply randomized smoothing.')
-        class_gradient = []
-        for idx, x_i in enumerate(x):
-            if label is None:
-                x_new = self._noisy_samples(x_i)
-            else:
-                x_new, label = self._noisy_samples(x_i, label[idx])
-            class_gradient.append(np.mean(self.classifier.class_gradient(x_new, label, logits), axis=0))
-        return np.array(class_gradient)
+        return self.classifier.class_gradient(x, label, logits)
 
     def certify(self, x, n):
         """
@@ -182,15 +169,13 @@ class RandomizedSmoothing(ClassifierWrapper):
         return np.array(prediction), np.array(radius)
 
 
-    def _noisy_samples(self, x, y=None, n=None):
+    def _noisy_samples(self, x, n=None):
         """
         Adds Gaussian noise to `x` to generate samples. Optionally augments `y` similarly.
 
         :param x: Sample input with shape as expected by the model.
         :type x: `np.ndarray`
         :return: Array of samples of the same shape as `x`.
-        :type y: `np.ndarray`
-        :return: Array of gradients of the same shape as `x`.
         :rtype: `np.ndarray`
         """
         # set default value to sample_size
@@ -202,13 +187,7 @@ class RandomizedSmoothing(ClassifierWrapper):
         x = np.repeat(x, n, axis=0)
         x = x + np.random.normal(scale=self.scale, size=x.shape)
 
-        # augment y if necessary
-        if y is not None:
-            y = np.expand_dims(y, axis=0)
-            y = np.repeat(y, n, axis=0)
-            return x, y
-        else:
-            return x
+        return x
 
     def _prediction_counts(self, x, n=None, logits=False, batch_size=128):
         """

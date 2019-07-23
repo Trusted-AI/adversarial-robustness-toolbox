@@ -356,7 +356,7 @@ def compute_success(classifier, x_clean, labels, x_adv, targeted=False, batch_si
 
     return rate
 
-def compute_accuracy(preds, labels):
+def compute_accuracy(preds, labels, abstain=True):
     """
     Compute the accuracy rate and coverage rate of predictions 
     In the case where predictions are abstained, those samples are ignored.
@@ -365,14 +365,21 @@ def compute_accuracy(preds, labels):
     :type preds: `np.ndarray`
     :param labels: Correct labels of `x`.
     :type labels: `np.ndarray`
+    :param abstain: True if ignore abstained prediction, False if count them as incorrect.
+    :type abstain: `boolean`
     :return: Tuple of accuracy rate and coverage rate
     :rtype: `tuple`
     """
     has_pred = np.sum(preds, axis=1)
     idx_pred = np.where(has_pred)[0]
     labels = np.argmax(labels[idx_pred], axis=1)
-    acc_rate = np.sum(np.argmax(preds[idx_pred], axis=1) == labels)/preds[idx_pred].shape[0]
+    num_correct = np.sum(np.argmax(preds[idx_pred], axis=1) == labels)
     coverage_rate = len(idx_pred)/preds.shape[0]
+
+    if abstain:
+        acc_rate = num_correct/preds[idx_pred].shape[0]
+    else:
+        acc_rate = num_correct/preds.shape[0]
 
     return acc_rate, coverage_rate
 # -------------------------------------------------------------------------------------------------------- IO FUNCTIONS
