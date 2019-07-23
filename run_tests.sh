@@ -12,7 +12,13 @@ python -m unittest discover tests/attacks -p 'test_[q-t]*.py'
 if [[ $? -ne 0 ]]; then exit_code=1; fi
 python -m unittest discover tests/attacks -p 'test_[u-z]*.py'
 if [[ $? -ne 0 ]]; then exit_code=1; fi
-python -m unittest discover tests/classifiers -p 'test_*.py'
+python -m unittest discover tests/classifiers -p 'test_[a-e]*.py'
+if [[ $? -ne 0 ]]; then exit_code=1; fi
+python -m unittest discover tests/classifiers -p 'test_[f-l]*.py'
+if [[ $? -ne 0 ]]; then exit_code=1; fi
+python -m unittest discover tests/classifiers -p 'test_[m-q]*.py'
+if [[ $? -ne 0 ]]; then exit_code=1; fi
+python -m unittest discover tests/classifiers -p 'test_[r-z]*.py'
 if [[ $? -ne 0 ]]; then exit_code=1; fi
 python -m unittest discover tests/defences -p 'test_*.py'
 if [[ $? -ne 0 ]]; then exit_code=1; fi
