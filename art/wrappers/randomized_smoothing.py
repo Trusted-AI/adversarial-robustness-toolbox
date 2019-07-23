@@ -30,8 +30,6 @@ from art.wrappers.wrapper import ClassifierWrapper
 
 from scipy.stats import norm, binom_test
 
-from statsmodels.stats.proportion import proportion_confint
-
 import numpy as np
 
 logger = logging.getLogger(__name__)
@@ -71,8 +69,8 @@ class RandomizedSmoothing(ClassifierWrapper):
         :type logits: `bool`
         :param batch_size: Size of batches.
         :type batch_size: `int`
-        :param isAbstain: True if function will abstain from prediction and return 0s
-        :type isAbstain: `boolean`
+        :param is_abstain: True if function will abstain from prediction and return 0s
+        :type is_abstain: `boolean`
         :return: Array of predictions of shape `(nb_inputs, self.nb_classes)`.
         :rtype: `np.ndarray`
         """
@@ -175,6 +173,8 @@ class RandomizedSmoothing(ClassifierWrapper):
 
         :param x: Sample input with shape as expected by the model.
         :type x: `np.ndarray`
+        :param n: Number of noisy samples to create
+        :type n: `int`
         :return: Array of samples of the same shape as `x`.
         :rtype: `np.ndarray`
         """
@@ -195,6 +195,10 @@ class RandomizedSmoothing(ClassifierWrapper):
 
         :param x: Sample input with shape as expected by the model.
         :type x: `np.ndarray`
+        :param logits: `True` if the prediction should be done at the logits layer.
+        :type logits: `bool`
+        :param batch_size: Size of batches.
+        :type batch_size: `int`
         :return: Array of counts with length equal to number of columns of `x`.
         :rtype: `np.ndarray`
         """
@@ -216,11 +220,13 @@ class RandomizedSmoothing(ClassifierWrapper):
         """
         Uses Clopper-Pearson method to return a (1-alpha) lower confidence bound on bernoulli proportion
 
-        :param nA: Number of samples of a specific class.
-        :type nA: `int`
-        :param n: Number of samples for certification.
-        :type n: `int`
+        :param n_class_samples: Number of samples of a specific class.
+        :type n_class_samples: `int`
+        :param n_total_samples: Number of samples for certification.
+        :type n_total_samples: `int`
         :return: Lower bound on the binomial proportion w.p. (1-alpha) over samples
         :rtype: `float`
         """
+        from statsmodels.stats.proportion import proportion_confint
+
         return proportion_confint(n_class_samples, n_total_samples, alpha=2 * self.alpha, method="beta")[0]
