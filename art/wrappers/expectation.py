@@ -51,23 +51,21 @@ class ExpectationOverTransformations(ClassifierWrapper):
         self.sample_size = sample_size
         self.transformation = transformation
 
-    def predict(self, x, logits=False, batch_size=128):
+    def predict(self, x, batch_size=128):
         """
         Perform prediction of the given classifier for a batch of inputs, taking an expectation over transformations.
 
         :param x: Test set.
         :type x: `np.ndarray`
-        :param logits: `True` if the prediction should be done at the logits layer.
-        :type logits: `bool`
         :param batch_size: Size of batches.
         :type batch_size: `int`
         :return: Array of predictions of shape `(nb_inputs, self.nb_classes)`.
         :rtype: `np.ndarray`
         """
         logger.info('Applying expectation over transformations.')
-        prediction = self.classifier.predict(next(self.transformation())(x), logits, batch_size)
+        prediction = self.classifier.predict(next(self.transformation())(x), batch_size)
         for _ in range(self.sample_size-1):
-            prediction += self.classifier.predict(next(self.transformation())(x), logits, batch_size)
+            prediction += self.classifier.predict(next(self.transformation())(x), batch_size)
         return prediction/self.sample_size
 
     def loss_gradient(self, x, y):
@@ -88,7 +86,7 @@ class ExpectationOverTransformations(ClassifierWrapper):
             loss_gradient += self.classifier.loss_gradient(next(self.transformation())(x), y)
         return loss_gradient / self.sample_size
 
-    def class_gradient(self, x, label=None, logits=False):
+    def class_gradient(self, x, label=None):
         """
         Compute per-class derivatives of the given classifier w.r.t. `x`, taking an expectation over transformations.
 
@@ -99,16 +97,14 @@ class ExpectationOverTransformations(ClassifierWrapper):
                       match the batch size of `x`, and each value will be used as target for its corresponding sample in
                       `x`. If `None`, then gradients for all classes will be computed for each sample.
         :type label: `int` or `list`
-        :param logits: `True` if the prediction should be done at the logits layer.
-        :type logits: `bool`
         :return: Array of gradients of input features w.r.t. each class in the form
                  `(batch_size, nb_classes, input_shape)` when computing for all classes, otherwise shape becomes
                  `(batch_size, 1, input_shape)` when `label` parameter is specified.
         :rtype: `np.ndarray`
         """
         logger.info('Apply Expectation over Transformations.')
-        class_gradient = self.classifier.class_gradient(next(self.transformation())(x), label, logits)
+        class_gradient = self.classifier.class_gradient(next(self.transformation())(x), label)
         for _ in range(self.sample_size - 1):
-            class_gradient += self.classifier.class_gradient(next(self.transformation())(x), label, logits)
+            class_gradient += self.classifier.class_gradient(next(self.transformation())(x), label)
 
         return class_gradient / self.sample_size

@@ -102,7 +102,7 @@ class UniversalPerturbation(Attack):
 
         # Instantiate the middle attacker and get the predicted labels
         attacker = self._get_attack(self.attacker, self.attacker_params)
-        pred_y = self.classifier.predict(x, logits=False, batch_size=1)
+        pred_y = self.classifier.predict(x, batch_size=1)
         pred_y_max = np.argmax(pred_y, axis=1)
 
         # Start to generate the adversarial examples
@@ -115,13 +115,13 @@ class UniversalPerturbation(Attack):
             for j, ex in enumerate(x[rnd_idx]):
                 x_i = ex[None, ...]
 
-                current_label = np.argmax(self.classifier.predict(x_i + noise, logits=True)[0])
+                current_label = np.argmax(self.classifier.predict(x_i + noise)[0])
                 original_label = np.argmax(pred_y[rnd_idx][j])
 
                 if current_label == original_label:
                     # Compute adversarial perturbation
                     adv_xi = attacker.generate(x_i + noise)
-                    new_label = np.argmax(self.classifier.predict(adv_xi, logits=True)[0])
+                    new_label = np.argmax(self.classifier.predict(adv_xi)[0])
 
                     # If the class has changed, update v
                     if current_label != new_label:
@@ -138,7 +138,7 @@ class UniversalPerturbation(Attack):
                 x_adv = np.clip(x_adv, clip_min, clip_max)
 
             # Compute the error rate
-            y_adv = np.argmax(self.classifier.predict(x_adv, logits=False, batch_size=1), axis=1)
+            y_adv = np.argmax(self.classifier.predict(x_adv, batch_size=1), axis=1)
             fooling_rate = np.sum(pred_y_max != y_adv) / nb_instances
 
         self.fooling_rate = fooling_rate

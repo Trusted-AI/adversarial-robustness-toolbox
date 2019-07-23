@@ -15,7 +15,7 @@ class ClassifierInstance(Classifier):
     def __init__(self, clip_values, channel_index=1):
         super(ClassifierInstance, self).__init__(clip_values=clip_values, channel_index=channel_index)
 
-    def class_gradient(self, x, label=None, logits=False):
+    def class_gradient(self, x, label=None):
         pass
 
     def fit(self, x, y, batch_size=128, nb_epochs=20, **kwargs):
@@ -27,7 +27,7 @@ class ClassifierInstance(Classifier):
     def loss_gradient(self, x, y):
         pass
 
-    def predict(self, x, logits=False, batch_size=128):
+    def predict(self, x, batch_size=128):
         pass
 
     def save(self, filename, path=None):

@@ -77,11 +77,9 @@ class TestTFClassifier(unittest.TestCase):
         self.assertGreater(acc, 0.1)
 
     def test_nb_classes(self):
-        # Start to test
         self.assertEqual(self.classifier.nb_classes, 10)
 
     def test_input_shape(self):
-        # Start to test
         self.assertTrue(np.array(self.classifier.input_shape == (28, 28, 1)).all())
 
     def test_class_gradient(self):
@@ -148,7 +146,7 @@ class TestTFClassifier(unittest.TestCase):
         #     tf.saved_model.loader.load(sess, ["serve"], os.path.join(path, filename))
         #     graph = tf.get_default_graph()
         #     print(graph.get_operations())
-        #     sess.run('SavedOutputLogit:0', feed_dict={'SavedInputPhD:0': input_batch})
+        #     sess.run('SavedOutput:0', feed_dict={'SavedInputPhD:0': input_batch})
 
         # Remove saved files
         shutil.rmtree(os.path.join(path, filename))

@@ -2,11 +2,6 @@
 """Trains a convolutional neural network on the MNIST dataset, then attacks it with the FGSM attack."""
 from __future__ import absolute_import, division, print_function, unicode_literals
 
-import sys
-from os.path import abspath
-
-sys.path.append(abspath('.'))
-
 import keras.backend as k
 from keras.models import Sequential
 from keras.layers import Dense, Flatten, Conv2D, MaxPooling2D, Dropout
@@ -34,7 +29,7 @@ model.add(Dense(10, activation='softmax'))
 
 model.compile(loss='categorical_crossentropy', optimizer='adam', metrics=['accuracy'])
 
-classifier = KerasClassifier(clip_values=(min_, max_), model=model)
+classifier = KerasClassifier(clip_values=(min_, max_), model=model, use_logits=False)
 classifier.fit(x_train, y_train, nb_epochs=5, batch_size=128)
 
 # Evaluate the classifier on the test set
