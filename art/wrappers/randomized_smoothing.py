@@ -59,14 +59,12 @@ class RandomizedSmoothing(ClassifierWrapper):
         self.scale = scale
         self.alpha = alpha
 
-    def predict(self, x, logits=False, batch_size=128, is_abstain=True):
+    def predict(self, x, batch_size=128, is_abstain=True):
         """
         Perform prediction of the given classifier for a batch of inputs, taking an expectation over transformations.
 
         :param x: Test set.
         :type x: `np.ndarray`
-        :param logits: `True` if the prediction should be done at the logits layer.
-        :type logits: `bool`
         :param batch_size: Size of batches.
         :type batch_size: `int`
         :param is_abstain: True if function will abstain from prediction and return 0s
@@ -80,7 +78,7 @@ class RandomizedSmoothing(ClassifierWrapper):
         for x_i in x:
 
             # get class counts
-            counts_pred = self._prediction_counts(x_i, logits=logits, batch_size=batch_size)
+            counts_pred = self._prediction_counts(x_i, batch_size=batch_size)
             top = counts_pred.argsort()[::-1]
             count1 = np.max(counts_pred)
             count2 = counts_pred[top[1]]
@@ -111,7 +109,7 @@ class RandomizedSmoothing(ClassifierWrapper):
         logger.info('Applying randomized smoothing.')
         return self.classifier.loss_gradient(x, y)
 
-    def class_gradient(self, x, label=None, logits=False):
+    def class_gradient(self, x, label=None):
         """
         Compute per-class derivatives of the given classifier w.r.t. `x` of original classifier.
 
@@ -122,15 +120,13 @@ class RandomizedSmoothing(ClassifierWrapper):
                       match the batch size of `x`, and each value will be used as target for its corresponding sample in
                       `x`. If `None`, then gradients for all classes will be computed for each sample.
         :type label: `list`
-        :param logits: `True` if the prediction should be done at the logits layer.
-        :type logits: `bool`
         :return: Array of gradients of input features w.r.t. each class in the form
                  `(batch_size, nb_classes, input_shape)` when computing for all classes, otherwise shape becomes
                  `(batch_size, 1, input_shape)` when `label` parameter is specified.
         :rtype: `np.ndarray`
         """
         logger.info('Apply randomized smoothing.')
-        return self.classifier.class_gradient(x, label, logits)
+        return self.classifier.class_gradient(x, label)
 
     def certify(self, x, n):
         """
@@ -189,14 +185,12 @@ class RandomizedSmoothing(ClassifierWrapper):
 
         return x
 
-    def _prediction_counts(self, x, n=None, logits=False, batch_size=128):
+    def _prediction_counts(self, x, n=None, batch_size=128):
         """
         Makes predictions and then converts probability distribution to counts
 
         :param x: Sample input with shape as expected by the model.
         :type x: `np.ndarray`
-        :param logits: `True` if the prediction should be done at the logits layer.
-        :type logits: `bool`
         :param batch_size: Size of batches.
         :type batch_size: `int`
         :return: Array of counts with length equal to number of columns of `x`.
@@ -204,7 +198,7 @@ class RandomizedSmoothing(ClassifierWrapper):
         """
         # sample and predict
         x_new = self._noisy_samples(x, n=n)
-        predictions = self.classifier.predict(x_new, logits, batch_size)
+        predictions = self.classifier.predict(x_new, batch_size)
 
          # convert to binary predictions
         idx = np.argmax(predictions, axis=-1)
