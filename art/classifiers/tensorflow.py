@@ -602,10 +602,8 @@ class TensorflowV2Classifier(Classifier):
     This class implements a classifier with the Tensorflow framework.
     """
 
-    def __init__(self, model, loss_object=None, learning=None, train_step=None, channel_index=3, clip_values=None, defences=None,
-                 preprocessing=(0, 1)):
-        # def __init__(self, input_ph, output, labels_ph=None, train=None, loss=None, learning=None, sess=None,
-        #                 channel_index=3, clip_values=None, defences=None, preprocessing=(0, 1)):
+    def __init__(self, model, loss_object=None, learning=None, train_step=None, channel_index=3, clip_values=None,
+                 defences=None, preprocessing=(0, 1)):
         """
         Initialization specific to Tensorflow models implementation.
 
@@ -699,33 +697,17 @@ class TensorflowV2Classifier(Classifier):
         """
         Fit the classifier using the generator that yields batches as specified.
 
-    #     :param generator: Batch generator providing `(x, y)` for each epoch. If the generator can be used for native
-    #                       training in TensorFlow, it will.
-    #     :type generator: :class:`.DataGenerator`
-    #     :param nb_epochs: Number of epochs to use for training.
-    #     :type nb_epochs: `int`
-    #     :param kwargs: Dictionary of framework-specific arguments. This parameter is not currently supported for
-    #            TensorFlow and providing it takes no effect.
-    #     :type kwargs: `dict`
-    #     :return: `None`
+        :param generator: Batch generator providing `(x, y)` for each epoch. If the generator can be used for native
+                          training in TensorFlow, it will.
+        :type generator: :class:`.DataGenerator`
+        :param nb_epochs: Number of epochs to use for training.
+        :type nb_epochs: `int`
+        :param kwargs: Dictionary of framework-specific arguments. This parameter is not currently supported for
+               TensorFlow and providing it takes no effect.
+        :type kwargs: `dict`
+        :return: `None`
         """
-
-    #     from art.data_generators import TFDataGenerator
-    #
-    #     # Train directly in Tensorflow
-    #     if isinstance(generator, TFDataGenerator) and not (
-    #             hasattr(self, 'label_smooth') or hasattr(self, 'feature_squeeze')):
-    #         for _ in range(nb_epochs):
-    #             for _ in range(int(generator.size / generator.batch_size)):
-    #                 i_batch, o_batch = generator.get_batch()
-    #
-    #                 # Create feed_dict
-    #                 feed_dict = {self._input_ph: i_batch, self._labels_ph: o_batch}
-    #                 feed_dict.update(self._feed_dict)
-    #
-    #                 # Run train step
-    #                 self._sess.run(self._train, feed_dict=feed_dict)
-    #         super(TFClassifier, self).fit_generator(generator, nb_epochs=nb_epochs, **kwargs)
+        raise NotImplementedError
 
     def class_gradient(self, x, label=None, **kwargs):
         """
