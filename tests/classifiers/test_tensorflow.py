@@ -23,16 +23,17 @@ class TestTFClassifier(unittest.TestCase):
 
     @classmethod
     def setUpClass(cls):
-        # Get MNIST
         (x_train, y_train), (x_test, y_test), _, _ = load_mnist()
         x_train, y_train = x_train[:NB_TRAIN], y_train[:NB_TRAIN]
         x_test, y_test = x_test[:NB_TEST], y_test[:NB_TEST]
-        cls.mnist = (x_train, y_train), (x_test, y_test)
+        cls.x_train = x_train
+        cls.y_train = y_train
+        cls.x_test = x_test
+        cls.y_test = y_test
 
         cls.classifier, cls.sess = get_classifier_tf()
 
     def setUp(self):
-        # Set master seed
         master_seed(1234)
 
     @classmethod
@@ -41,13 +42,10 @@ class TestTFClassifier(unittest.TestCase):
         cls.sess.close()
 
     def test_predict(self):
-        # Get MNIST
-        (_, _), (x_test, y_test) = self.mnist
-
         # Test fit and predict
-        preds = self.classifier.predict(x_test)
+        preds = self.classifier.predict(self.x_test)
         preds_class = np.argmax(preds, axis=1)
-        trues_class = np.argmax(y_test, axis=1)
+        trues_class = np.argmax(self.y_test, axis=1)
         acc = np.sum(preds_class == trues_class) / len(trues_class)
 
         logger.info('Accuracy after fitting: %.2f%%', (acc * 100))
@@ -56,12 +54,9 @@ class TestTFClassifier(unittest.TestCase):
     def test_fit_generator(self):
         from art.data_generators import TFDataGenerator
 
-        # Get MNIST
-        (x_train, y_train), (x_test, y_test) = self.mnist
-
         # Create Tensorflow data generator
-        x_tensor = tf.convert_to_tensor(x_train.reshape(10, 100, 28, 28, 1))
-        y_tensor = tf.convert_to_tensor(y_train.reshape(10, 100, 10))
+        x_tensor = tf.convert_to_tensor(self.x_train.reshape(10, 100, 28, 28, 1))
+        y_tensor = tf.convert_to_tensor(self.y_train.reshape(10, 100, 10))
         dataset = tf.data.Dataset.from_tensor_slices((x_tensor, y_tensor))
         iterator = dataset.make_initializable_iterator()
         data_gen = TFDataGenerator(sess=self.sess, iterator=iterator, iterator_type='initializable',
@@ -69,9 +64,9 @@ class TestTFClassifier(unittest.TestCase):
 
         # Test fit and predict
         self.classifier.fit_generator(data_gen, nb_epochs=2)
-        preds = self.classifier.predict(x_test)
+        preds = self.classifier.predict(self.x_test)
         preds_class = np.argmax(preds, axis=1)
-        trues_class = np.argmax(y_test, axis=1)
+        trues_class = np.argmax(self.y_test, axis=1)
         acc = np.sum(preds_class == trues_class) / len(trues_class)
 
         logger.info('Accuracy after fitting TF classifier with generator: %.2f%%', (acc * 100))
@@ -84,49 +79,40 @@ class TestTFClassifier(unittest.TestCase):
         self.assertTrue(np.array(self.classifier.input_shape == (28, 28, 1)).all())
 
     def test_class_gradient(self):
-        # Get MNIST
-        (_, _), (x_test, _) = self.mnist
-
         # Test all gradients label = None
-        grads = self.classifier.class_gradient(x_test)
+        grads = self.classifier.class_gradient(self.x_test)
 
         self.assertTrue(np.array(grads.shape == (NB_TEST, 10, 28, 28, 1)).all())
         self.assertNotEqual(np.sum(grads), 0)
 
         # Test 1 gradient label = 5
-        grads = self.classifier.class_gradient(x_test, label=5)
+        grads = self.classifier.class_gradient(self.x_test, label=5)
 
         self.assertTrue(np.array(grads.shape == (NB_TEST, 1, 28, 28, 1)).all())
         self.assertNotEqual(np.sum(grads), 0)
 
         # Test a set of gradients label = array
         label = np.random.randint(5, size=NB_TEST)
-        grads = self.classifier.class_gradient(x_test, label=label)
+        grads = self.classifier.class_gradient(self.x_test, label=label)
 
         self.assertTrue(np.array(grads.shape == (NB_TEST, 1, 28, 28, 1)).all())
         self.assertNotEqual(np.sum(grads), 0)
 
     def test_loss_gradient(self):
-        # Get MNIST
-        (_, _), (x_test, y_test) = self.mnist
-
         # Test gradient
-        grads = self.classifier.loss_gradient(x_test, y_test)
+        grads = self.classifier.loss_gradient(self.x_test, self.y_test)
 
         self.assertTrue(np.array(grads.shape == (NB_TEST, 28, 28, 1)).all())
         self.assertNotEqual(np.sum(grads), 0)
 
     def test_layers(self):
-        # Get MNIST
-        (_, _), (x_test, _) = self.mnist
-
         # Test and get layers
         layer_names = self.classifier.layer_names
         logger.debug(layer_names)
 
         for i, name in enumerate(layer_names):
-            act_i = self.classifier.get_activations(x_test, i, batch_size=5)
-            act_name = self.classifier.get_activations(x_test, name, batch_size=5)
+            act_i = self.classifier.get_activations(self.x_test, i, batch_size=5)
+            act_name = self.classifier.get_activations(self.x_test, name, batch_size=5)
             self.assertAlmostEqual(np.sum(act_name - act_i), 0)
 
     def test_save(self):
@@ -179,9 +165,6 @@ class TestTFClassifier(unittest.TestCase):
         import pickle
         pickle.dump(self.classifier, open(full_path, 'wb'))
 
-        # Get MNIST
-        (_, _), (x_test, y_test) = self.mnist
-
         # Unpickle:
         with open(full_path, 'rb') as f:
             loaded = pickle.load(f)
@@ -190,10 +173,10 @@ class TestTFClassifier(unittest.TestCase):
             self.assertEqual(set(self.classifier.__dict__.keys()), set(loaded.__dict__.keys()))
 
         # Test predict
-        preds1 = self.classifier.predict(x_test)
-        acc1 = np.sum(np.argmax(preds1, axis=1) == np.argmax(y_test, axis=1)) / len(y_test)
-        preds2 = loaded.predict(x_test)
-        acc2 = np.sum(np.argmax(preds2, axis=1) == np.argmax(y_test, axis=1)) / len(y_test)
+        preds1 = self.classifier.predict(self.x_test)
+        acc1 = np.sum(np.argmax(preds1, axis=1) == np.argmax(self.y_test, axis=1)) / len(self.y_test)
+        preds2 = loaded.predict(self.x_test)
+        acc2 = np.sum(np.argmax(preds2, axis=1) == np.argmax(self.y_test, axis=1)) / len(self.y_test)
         self.assertEqual(acc1, acc2)
 
         loaded._sess.close()
