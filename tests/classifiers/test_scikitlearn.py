@@ -168,51 +168,69 @@ class TestScikitlearnLogisticRegression(unittest.TestCase):
 
     def test_class_gradient_none_1(self):
         grad_predicted = self.classifier.class_gradient(x_test[0:1], label=None)
-        grad_expected = [[-1.90326625, 0.92300177, -5.77190936, -2.48811615]]
+        grad_expected = [[[-1.97934151, 1.36346793, -6.29719639, -2.61386204],
+                          [-0.56940532, -0.71100581, -1.00625587, -0.68006182],
+                          [0.64548057, 0.27053964, 1.5315429, 0.80580771]]]
 
-        for i in range(4):
-            self.assertAlmostEqual(grad_predicted[0, i], grad_expected[0][i], 4)
+        for i in range(3):
+            for k in range(4):
+                self.assertAlmostEqual(grad_predicted[0, i, k], grad_expected[0][i][k], 4)
 
     def test_class_gradient_none_2(self):
         grad_predicted = self.classifier.class_gradient(x_test[0:2], label=None)
-        grad_expected = [[-1.90326625, 0.92300177, -5.77190936, -2.48811615],
-                         [-1.72967273, 0.8862018, -5.28005117, -2.26426661]]
+        grad_expected = [[[-1.97934151, 1.36346793, -6.29719639, -2.61386204],
+                          [-1.97934151, 1.36346793, -6.29719639, -2.61386204],
+                          [-0.56940532, -0.71100581, -1.00625587, -0.68006182],
+                          [-0.56940532, -0.71100581, -1.00625587, -0.68006182],
+                          [0.64548057, 0.27053964, 1.5315429, 0.80580771],
+                          [0.64548057, 0.27053964, 1.5315429, 0.80580771]],
+
+                         [[-1.92147708, 1.3512013, -6.13324356, -2.53924561],
+                          [-1.92147708, 1.3512013, -6.13324356, -2.53924561],
+                          [-0.51154077, -0.72327244, -0.84230322, -0.60544527],
+                          [-0.51154077, -0.72327244, -0.84230322, -0.60544527],
+                          [0.70334512, 0.25827295, 1.69549561, 0.88042426],
+                          [0.70334512, 0.25827295, 1.69549561, 0.88042426]]]
 
         for i_sample in range(2):
             for i in range(4):
-                self.assertAlmostEqual(grad_predicted[i_sample, i], grad_expected[i_sample][i], 4)
+                for k in range(4):
+                    self.assertAlmostEqual(grad_predicted[i_sample, i, k], grad_expected[i_sample][i][k], 4)
 
     def test_class_gradient_int_1(self):
         grad_predicted = self.classifier.class_gradient(x_test[0:1], label=1)
-        grad_expected = [[-0.56940532, -0.71100581, -1.00625587, -0.68006182]]
+        grad_expected = [[[-0.56940532, -0.71100581, -1.00625587, -0.68006182]]]
+
+        print(grad_predicted)
+        print(grad_predicted.shape)
 
         for i in range(4):
-            self.assertAlmostEqual(grad_predicted[0, i], grad_expected[0][i], 4)
+            self.assertAlmostEqual(grad_predicted[0, 0, i], grad_expected[0][0][i], 4)
 
     def test_class_gradient_int_2(self):
         grad_predicted = self.classifier.class_gradient(x_test[0:2], label=1)
-        grad_expected = [[-0.56940532, -0.71100581, -1.00625587, -0.68006182],
-                         [-0.51154077, -0.72327244, -0.84230322, -0.60544527]]
+        grad_expected = [[[-0.56940532, -0.71100581, -1.00625587, -0.68006182]],
+                         [[-0.51154077, -0.72327244, -0.84230322, -0.60544527]]]
 
         for i_sample in range(2):
             for i in range(4):
-                self.assertAlmostEqual(grad_predicted[i_sample, i], grad_expected[i_sample][i], 4)
+                self.assertAlmostEqual(grad_predicted[i_sample, 0, i], grad_expected[i_sample][0][i], 4)
 
     def test_class_gradient_list_1(self):
         grad_predicted = self.classifier.class_gradient(x_test[0:1], label=[1])
-        grad_expected = [[-0.56940532, -0.71100581, -1.00625587, -0.68006182]]
+        grad_expected = [[[-0.56940532, -0.71100581, -1.00625587, -0.68006182]]]
 
         for i in range(4):
-            self.assertAlmostEqual(grad_predicted[0, i], grad_expected[0][i], 4)
+            self.assertAlmostEqual(grad_predicted[0, 0, i], grad_expected[0][0][i], 4)
 
     def test_class_gradient_list_2(self):
         grad_predicted = self.classifier.class_gradient(x_test[0:2], label=[1, 2])
-        grad_expected = [[-0.56940532, -0.71100581, -1.00625587, -0.68006182],
-                         [0.70334512, 0.25827295, 1.69549561, 0.88042426]]
+        grad_expected = [[[-0.56940532, -0.71100581, -1.00625587, -0.68006182]],
+                         [[0.70334512, 0.25827295, 1.69549561, 0.88042426]]]
 
         for i_sample in range(2):
             for i in range(4):
-                self.assertAlmostEqual(grad_predicted[i_sample, i], grad_expected[i_sample][i], 4)
+                self.assertAlmostEqual(grad_predicted[i_sample, 0, i], grad_expected[i_sample][0][i], 4)
 
     def test_class_gradient_label_wrong_type(self):
 
