@@ -8,4 +8,4 @@ tensorflow
 xgboost
 lightgbm
 # Comment out because of compatibility issues with numpy versions
-# catboost
+# catboost 
