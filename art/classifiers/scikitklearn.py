@@ -499,7 +499,7 @@ class ScikitlearnLogisticRegression(ScikitlearnClassifier, ClassifierGradients):
             gradients = np.expand_dims(gradients[np.arange(len(gradients)), lst], axis=1)
 
         elif (isinstance(label, list) and len(label) == nb_samples) or \
-                  isinstance(label, np.ndarray) and label.shape == (nb_samples,):
+                isinstance(label, np.ndarray) and label.shape == (nb_samples,):
             # For each sample, compute the gradients w.r.t. the indicated target class (possibly distinct)
             class_gradients = list()
             unique_labels = list(np.unique(label))
@@ -507,7 +507,8 @@ class ScikitlearnLogisticRegression(ScikitlearnClassifier, ClassifierGradients):
             for unique_label in unique_labels:
                 class_gradient = np.zeros(x.shape)
                 for i_sample in range(nb_samples):
-                    # class_gradient[i_sample, :] += label[i_sample, unique_label] * (self.weights[unique_label, :] - w_weighted[i_sample, :])
+                    # class_gradient[i_sample, :] += label[i_sample, unique_label] * (self.weights[unique_label, :]
+                    # - w_weighted[i_sample, :])
                     class_gradient[i_sample, :] += (self.weights[unique_label, :] - w_weighted[i_sample, :])
 
                 class_gradients.append(class_gradient)
@@ -588,7 +589,7 @@ class ScikitlearnLogisticRegression(ScikitlearnClassifier, ClassifierGradients):
         for i_sample in range(num_samples):
             for i_class in range(self.nb_classes):
                 gradients[i_sample, :] += class_weight[i_class] * (1.0 - y_preprocessed[i_sample, i_class]) * (
-                    self.weights[i_class, :] - w_weighted[i_sample, :])
+                        self.weights[i_class, :] - w_weighted[i_sample, :])
 
         gradients = self._apply_preprocessing_gradient(x, gradients)
 
@@ -697,10 +698,10 @@ class ScikitlearnSVC(ScikitlearnClassifier, ClassifierGradients):
             grad = x_i
         elif self.model.kernel == 'poly':
             grad = self.model.degree * (self.model._gamma * np.sum(x_sample * x_i) + self.model.coef0) ** (
-                self.model.degree - 1) * x_i
+                    self.model.degree - 1) * x_i
         elif self.model.kernel == 'rbf':
             grad = 2 * self.model._gamma * (-1) * np.exp(-self.model._gamma * np.linalg.norm(x_sample - x_i, ord=2)) * (
-                x_sample - x_i)
+                    x_sample - x_i)
         elif self.model.kernel == 'sigmoid':
             raise NotImplementedError
         else:
@@ -765,19 +766,19 @@ class ScikitlearnSVC(ScikitlearnClassifier, ClassifierGradients):
 
                         for i_label_sv in range(support_indices[i_label], support_indices[i_label + 1]):
                             alpha_i_k_y_i = self.model.dual_coef_[
-                                i_not_label_i, i_label_sv] * label_multiplier
+                                                i_not_label_i, i_label_sv] * label_multiplier
                             grad_kernel = self._get_kernel_gradient(
                                 i_label_sv, x_preprocessed[i_sample])
                             gradients[i_sample, :] += sign_multiplier * \
-                                alpha_i_k_y_i * grad_kernel
+                                                      alpha_i_k_y_i * grad_kernel
 
                         for i_not_label_sv in range(support_indices[i_not_label], support_indices[i_not_label + 1]):
                             alpha_i_k_y_i = self.model.dual_coef_[
-                                i_not_label_i, i_not_label_sv] * label_multiplier
+                                                i_not_label_i, i_not_label_sv] * label_multiplier
                             grad_kernel = self._get_kernel_gradient(
                                 i_not_label_sv, x_preprocessed[i_sample])
                             gradients[i_sample, :] += sign_multiplier * \
-                                alpha_i_k_y_i * grad_kernel
+                                                      alpha_i_k_y_i * grad_kernel
 
         elif isinstance(self.model, LinearSVC):
 
@@ -798,7 +799,7 @@ class ScikitlearnSVC(ScikitlearnClassifier, ClassifierGradients):
                     label_multiplier = -1
 
                 gradients[i_sample] = label_multiplier * \
-                    self.model.coef_[i_label_i]
+                                      self.model.coef_[i_label_i]
         else:
             raise TypeError('Model not recognized.')
 
