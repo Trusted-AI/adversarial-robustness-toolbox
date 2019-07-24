@@ -12,13 +12,21 @@ python -m unittest discover tests/attacks -p 'test_[q-t]*.py'
 if [[ $? -ne 0 ]]; then exit_code=1; fi
 python -m unittest discover tests/attacks -p 'test_[u-z]*.py'
 if [[ $? -ne 0 ]]; then exit_code=1; fi
-python -m unittest discover tests/classifiers -p 'test_[a-e]*.py'
+python -m unittest 'tests/classifiers/test_classifier.py'
 if [[ $? -ne 0 ]]; then exit_code=1; fi
-python -m unittest discover tests/classifiers -p 'test_[f-l]*.py'
+python -m unittest 'tests/classifiers/test_detector_classifier.py'
 if [[ $? -ne 0 ]]; then exit_code=1; fi
-python -m unittest discover tests/classifiers -p 'test_[m-q]*.py'
+python -m unittest 'tests/classifiers/test_ensemble.py'
 if [[ $? -ne 0 ]]; then exit_code=1; fi
-python -m unittest discover tests/classifiers -p 'test_[r-z]*.py'
+python -m unittest 'tests/classifiers/test_keras.py'
+if [[ $? -ne 0 ]]; then exit_code=1; fi
+python -m unittest 'tests/classifiers/test_mxnet.py'
+if [[ $? -ne 0 ]]; then exit_code=1; fi
+python -m unittest 'tests/classifiers/test_pytorch.py'
+if [[ $? -ne 0 ]]; then exit_code=1; fi
+python -m unittest 'tests/classifiers/test_tensorflow.py'
+if [[ $? -ne 0 ]]; then exit_code=1; fi
+python -m unittest 'tests/classifiers/test_tensorflow_v2.py'
 if [[ $? -ne 0 ]]; then exit_code=1; fi
 python -m unittest discover tests/defences -p 'test_*.py'
 if [[ $? -ne 0 ]]; then exit_code=1; fi

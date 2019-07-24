@@ -3,8 +3,6 @@ from __future__ import absolute_import, division, print_function, unicode_litera
 import logging
 import unittest
 
-import numpy as np
-
 from art.utils import load_mnist, master_seed
 from art.utils_test import get_classifier_tf_v2
 
