@@ -483,7 +483,7 @@ class ScikitlearnLogisticRegression(ScikitlearnClassifier, ClassifierGradients):
                 class_gradient = np.zeros(x.shape)
                 for i_sample in range(nb_samples):
                     class_gradient[i_sample, :] += (self.weights[i_class, :] - w_weighted[i_sample, :])
-                    class_gradients.append(class_gradient)
+                class_gradients.append(class_gradient)
 
             gradients = np.swapaxes(np.array(class_gradients), 0, 1)
 
