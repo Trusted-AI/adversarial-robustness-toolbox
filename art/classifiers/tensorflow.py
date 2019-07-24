@@ -881,14 +881,13 @@ class TensorflowV2Classifier(Classifier):
         :type path: `str`
         :return: None
         """
+        raise NotImplementedError
 
-    raise NotImplementedError
-
-    def __repr__(self):
-        #     repr_ = "%s(input_ph=%r, output=%r, labels_ph=%r, train=%r, loss=%r, learnign=%r, " \
-        #             "sess=%r, channel_index=%r, clip_values=%r, defences=%r, preprocessing=%r)" \
-        #             % (self.__module__ + '.' + self.__class__.__name__,
-        #                self._input_ph, self._output, self._labels_ph, self._train, self._loss, self._learning, self._sess,
-        #                self.channel_index, self.clip_values, self.defences, self.preprocessing)
-
-        return repr_
+    # def __repr__(self):
+    #     #     repr_ = "%s(input_ph=%r, output=%r, labels_ph=%r, train=%r, loss=%r, learnign=%r, " \
+    #     #             "sess=%r, channel_index=%r, clip_values=%r, defences=%r, preprocessing=%r)" \
+    #     #             % (self.__module__ + '.' + self.__class__.__name__,
+    #     #                self._input_ph, self._output, self._labels_ph, self._train, self._loss, self._learning, self._sess,
+    #     #                self.channel_index, self.clip_values, self.defences, self.preprocessing)
+    #
+    #     return repr_
