@@ -39,18 +39,32 @@ except ImportError:
 # ----------------------------------------------------------------------------------------------- TEST MODELS FOR MNIST
 
 
-def _tf_weights_loader(dataset, weights_type, layer='DENSE'):
+def _tf_weights_loader(dataset, weights_type, layer='DENSE', tf_version=1):
     filename = str(weights_type) + '_' + str(layer) + '_' + str(dataset) + '.npy'
 
     # pylint: disable=W0613
     # disable pylint because of API requirements for function
-    def _tf_initializer(_, dtype, partition_info):
-        import tensorflow as tf
+    if tf_version == 1:
+        def _tf_initializer(_, dtype, partition_info):
+            import tensorflow as tf
 
-        weights = np.load(os.path.join(os.path.dirname(os.path.dirname(__file__)), 'models', filename))
-        return tf.constant(weights, dtype)
+            weights = np.load(os.path.join(os.path.dirname(os.path.dirname(__file__)), 'models', filename))
+            return tf.constant(weights, dtype)
 
-    return _tf_initializer
+        return _tf_initializer
+
+    elif tf_version == 2:
+        def _tf_initializer(_, dtype):
+            import tensorflow as tf
+
+            weights = np.load(os.path.join(os.path.dirname(os.path.dirname(__file__)), 'models', filename))
+            return tf.constant(weights, dtype)
+
+        return _tf_initializer
+
+
+    else:
+        raise ValueError('The Tensorflow version tf_version has to be wither 1 or 2.')
 
 
 def _kr_weights_loader(dataset, weights_type, layer='DENSE'):
@@ -104,11 +118,59 @@ def get_classifier_tf():
     sess = tf.Session()
     sess.run(tf.global_variables_initializer())
 
-    # Train the classifier
+    # Create the classifier
     tfc = TFClassifier(clip_values=(0, 1), input_ph=input_ph, output=logits, labels_ph=output_ph, train=train,
                        loss=loss, learning=None, sess=sess)
 
     return tfc, sess
+
+
+def get_classifier_tf_v2():
+    """
+    Standard Tensorflow v2 classifier for unit testing.
+
+    The following hyper-parameters were used to obtain the weights and biases:
+    learning_rate: 0.01
+    batch size: 10
+    number of epochs: 2
+    optimizer: tf.train.AdamOptimizer
+
+    :return: TensorflowV2Classifier,
+    """
+    import tensorflow as tf
+    from tensorflow.keras import Model
+    from tensorflow.keras.layers import Dense, Flatten, Conv2D, MaxPool2D
+    from art.classifiers import TensorflowV2Classifier
+
+    if tf.__version__[0] != '2':
+        raise ImportError('This function requires Tensorflow v2.')
+
+    class TensorflowModel(Model):
+        def __init__(self):
+            super(TensorflowModel, self).__init__()
+            self.conv1 = Conv2D(filters=1, kernel_size=7, activation='relu',
+                                kernel_initializer=_tf_weights_loader('MNIST', 'W', 'CONV2D', 2),
+                                bias_initializer=_tf_weights_loader('MNIST', 'B', 'CONV2D', 2))
+            self.maxpool = MaxPool2D(pool_size=(4, 4), strides=(4, 4), padding='valid', data_format=None)
+            self.flatten = Flatten()
+            self.dense1 = Dense(10, activation='softmax',
+                                kernel_initializer=_tf_weights_loader('MNIST', 'W', 'DENSE', 2),
+                                bias_initializer=_tf_weights_loader('MNIST', 'B', 'DENSE', 2))
+
+        def call(self, x):
+            x = self.conv1(x)
+            x = self.maxpool(x)
+            x = self.flatten(x)
+            x = self.dense1(x)
+            return x
+
+    model = TensorflowModel()
+    loss_object = tf.keras.losses.SparseCategoricalCrossentropy()
+
+    # Create the classifier
+    tfc = TensorflowV2Classifier(model=model, loss_object=loss_object, nb_classes=10, clip_values=(0, 1))
+
+    return tfc
 
 
 def get_classifier_kr():
