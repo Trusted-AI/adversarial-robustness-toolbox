@@ -469,34 +469,55 @@ class ScikitlearnLogisticRegression(ScikitlearnClassifier, ClassifierGradients):
 
         nb_samples = x.shape[0]
 
-        if label is None:
-            # Compute the gradients w.r.t all classses
-            label = np.ones(shape=(nb_samples, self.nb_classes))
-        elif isinstance(label, (int, np.integer)):
-            # Compute the gradients only w.r.t. the provided label
-            label = [label] * nb_samples
-            label = to_categorical(labels=label, nb_classes=self.nb_classes)
-        elif (isinstance(label, list) and len(label) == nb_samples) or \
-                  isinstance(label, np.ndarray) and label.shape == (nb_samples,):
-            # For each sample, compute the gradients w.r.t. the indicated target class (possibly distinct)
-            label = to_categorical(labels=label, nb_classes=self.nb_classes)
-        else:
-            raise TypeError('Unrecognized type for argument `label` with type ' + str(type(label)))
-
         # Apply preprocessing
         x_preprocessed, _ = self._apply_preprocessing(x, y=None, fit=False)
 
-        num_samples, _ = x.shape
-        gradients = np.zeros(x.shape)
-
         y_pred = self.model.predict_proba(X=x_preprocessed)
-
         w_weighted = np.matmul(y_pred, self.weights)
 
-        for i_sample in range(num_samples):
+        if label is None:
+            # Compute the gradients w.r.t. all classes
+            class_gradients = list()
+
             for i_class in range(self.nb_classes):
-                gradients[i_sample, :] += label[i_sample, i_class] * (
-                    self.weights[i_class, :] - w_weighted[i_sample, :])
+                class_gradient = np.zeros(x.shape)
+                for i_sample in range(nb_samples):
+                    class_gradient[i_sample, :] += (self.weights[i_class, :] - w_weighted[i_sample, :])
+                    class_gradients.append(class_gradient)
+
+            gradients = np.swapaxes(np.array(class_gradients), 0, 1)
+
+        elif isinstance(label, (int, np.integer)):
+            # Compute the gradients only w.r.t. the provided label
+            class_gradient = np.zeros(x.shape)
+            unique_labels = list(np.unique(label))
+            for i_sample in range(nb_samples):
+                class_gradient[i_sample, :] += (self.weights[label, :] - w_weighted[i_sample, :])
+
+            gradients = np.swapaxes(np.array([class_gradient]), 0, 1)
+            lst = [unique_labels.index(i) for i in [label]]
+            gradients = np.expand_dims(gradients[np.arange(len(gradients)), lst], axis=1)
+
+        elif (isinstance(label, list) and len(label) == nb_samples) or \
+                  isinstance(label, np.ndarray) and label.shape == (nb_samples,):
+            # For each sample, compute the gradients w.r.t. the indicated target class (possibly distinct)
+            class_gradients = list()
+            unique_labels = list(np.unique(label))
+
+            for unique_label in unique_labels:
+                class_gradient = np.zeros(x.shape)
+                for i_sample in range(nb_samples):
+                    # class_gradient[i_sample, :] += label[i_sample, unique_label] * (self.weights[unique_label, :] - w_weighted[i_sample, :])
+                    class_gradient[i_sample, :] += (self.weights[unique_label, :] - w_weighted[i_sample, :])
+
+                class_gradients.append(class_gradient)
+
+            gradients = np.swapaxes(np.array(class_gradients), 0, 1)
+            lst = [unique_labels.index(i) for i in label]
+            gradients = np.expand_dims(gradients[np.arange(len(gradients)), lst], axis=1)
+
+        else:
+            raise TypeError('Unrecognized type for argument `label` with type ' + str(type(label)))
 
         gradients = self._apply_preprocessing_gradient(x, gradients)
 
