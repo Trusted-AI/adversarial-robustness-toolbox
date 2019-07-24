@@ -490,13 +490,10 @@ class ScikitlearnLogisticRegression(ScikitlearnClassifier, ClassifierGradients):
         elif isinstance(label, (int, np.integer)):
             # Compute the gradients only w.r.t. the provided label
             class_gradient = np.zeros(x.shape)
-            unique_labels = list(np.unique(label))
             for i_sample in range(nb_samples):
                 class_gradient[i_sample, :] += (self.weights[label, :] - w_weighted[i_sample, :])
 
             gradients = np.swapaxes(np.array([class_gradient]), 0, 1)
-            lst = [unique_labels.index(i) for i in [label]]
-            gradients = np.expand_dims(gradients[np.arange(len(gradients)), lst], axis=1)
 
         elif (isinstance(label, list) and len(label) == nb_samples) or \
                 isinstance(label, np.ndarray) and label.shape == (nb_samples,):
