@@ -602,7 +602,7 @@ class TensorflowV2Classifier(Classifier):
     This class implements a classifier with the Tensorflow framework.
     """
 
-    def __init__(self, model, loss_object=None, learning=None, train_step=None, channel_index=3, clip_values=None,
+    def __init__(self, model, nb_classes, loss_object=None, learning=None, train_step=None, channel_index=3, clip_values=None,
                  defences=None, preprocessing=(0, 1)):
         """
         Initialization specific to Tensorflow models implementation.
@@ -627,6 +627,8 @@ class TensorflowV2Classifier(Classifier):
     #     :type preprocessing: `tuple`
         """
         import tensorflow
+        import tensorflow as tf
+        print('tf.executing_eagerly:', tf.executing_eagerly())
 
         super(TensorflowV2Classifier, self).__init__(clip_values=clip_values, channel_index=channel_index,
                                                      defences=defences, preprocessing=preprocessing)
@@ -634,7 +636,7 @@ class TensorflowV2Classifier(Classifier):
         if not isinstance(model, tensorflow.keras.Model):
             raise TypeError
         self._model = model
-        # self._nb_classes = int(output.get_shape()[-1])
+        self._nb_classes = nb_classes
         self._loss_object = loss_object
         self._train_step = train_step
         self._learning = learning
@@ -661,7 +663,7 @@ class TensorflowV2Classifier(Classifier):
             begin, end = m * batch_size, min((m + 1) * batch_size, x_preprocessed.shape[0])
 
             # Run prediction
-            results[begin:end] = self._model(x_preprocessed[begin:end]).numpy()
+            results[begin:end] = self._model(x_preprocessed[begin:end])
 
         return results
 
@@ -759,7 +761,7 @@ class TensorflowV2Classifier(Classifier):
                     tape.watch(prediction)
 
                 class_gradient = tape.gradient(prediction, x_preprocessed_tf).numpy()
-                gradients = np.swapaxes(np.array(class_gradient), 0, 1)
+                gradients = np.expand_dims(class_gradient, axis=1)
 
             else:
                 # For each sample, compute the gradients w.r.t. the indicated target class (possibly distinct)
@@ -807,6 +809,7 @@ class TensorflowV2Classifier(Classifier):
                 x_preprocessed_tf = tf.convert_to_tensor(x_preprocessed)
                 tape.watch(x_preprocessed_tf)
                 predictions = self._model(x_preprocessed_tf)
+                print(np.argmax(y, axis=1))
                 loss = self._loss_object(np.argmax(y, axis=1), predictions)
 
             gradients = tape.gradient(loss, x_preprocessed_tf).numpy()

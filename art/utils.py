@@ -453,7 +453,7 @@ def load_mnist(raw=False):
     # Add channel axis
     min_, max_ = 0, 255
     if not raw:
-        min_, max_ = 0., 1.
+        min_, max_ = 0.0, 1.0
         x_train = np.expand_dims(x_train, axis=3)
         x_test = np.expand_dims(x_test, axis=3)
         x_train, y_train = preprocess(x_train, y_train)
@@ -472,7 +472,7 @@ def load_stl():
     from os.path import join
     from art import DATA_PATH
 
-    min_, max_ = 0., 1.
+    min_, max_ = 0.0, 1.0
 
     # Download and extract data if needed
     path = get_file('stl10_binary', path=DATA_PATH, extract=True,
@@ -504,7 +504,7 @@ def load_stl():
     return (x_train, y_train), (x_test, y_test), min_, max_
 
 
-def load_iris(raw=False, test_set=.3):
+def load_iris(raw=False, test_set=0.3):
     """
     Loads the UCI Iris dataset from `DATA_PATH` or downloads it if necessary.
 
@@ -710,6 +710,11 @@ def clip_and_round(x, clip_values, round_samples):
 
 
 def import_tensorflow_v1():
+    """
+    A function that import either Tensorflow v1 or Tensorflow v2 compatibility module.
+    :return tf: The imported module
+    :type tf: `module`
+    """
     import tensorflow as tf
     if tf.__version__[0] == '2':
         import tensorflow.compat.v1 as tf
