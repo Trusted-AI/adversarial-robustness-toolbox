@@ -599,19 +599,23 @@ class TFClassifier(Classifier):
 
 class TensorflowV2Classifier(Classifier):
     """
-    This class implements a classifier with the Tensorflow framework.
+    This class implements a classifier with the Tensorflow v2 framework.
     """
 
-    def __init__(self, model, nb_classes, loss_object=None, learning=None, train_step=None, channel_index=3,
-                 clip_values=None, defences=None, preprocessing=(0, 1)):
+    def __init__(self, model, nb_classes, loss_object=None, train_step=None, channel_index=3, clip_values=None,
+                 defences=None, preprocessing=(0, 1)):
         """
-        Initialization specific to Tensorflow models implementation.
+        Initialization specific to Tensorflow v2 models.
 
-    #     :param loss: The loss function for which to compute gradients. This parameter is necessary when training the
-    #            model and when computing gradients w.r.t. the loss function.
-    #     :type loss: `tf.Tensor`
-    #     :param learning: The placeholder to indicate if the model is training.
-    #     :type learning: `tf.Placeholder` of type bool.
+        :param model: a python functions or callable class defining the model and providing it prediction as output.
+        :type model: `function` or `callable class`
+        :param nb_classes: the number of classes in the classification task
+        :type nb_classes: `int`
+        :param loss_object: The loss function for which to compute gradients. This parameter is applied for training
+            the model and computing gradients of the loss w.r.t. the input.
+        :type loss_object: `tf.keras.losses`
+        :param train_step: a function that applies a gradient update to the trainable variables
+        :type train_step: `function`
         :param channel_index: Index of the axis in data containing the color channels or features.
         :type channel_index: `int`
         :param clip_values: Tuple of the form `(min, max)` of floats or `np.ndarray` representing the minimum and
@@ -633,7 +637,6 @@ class TensorflowV2Classifier(Classifier):
         self._nb_classes = nb_classes
         self._loss_object = loss_object
         self._train_step = train_step
-        self._learning = learning
 
     def predict(self, x, batch_size=128, **kwargs):
         """
@@ -836,7 +839,7 @@ class TensorflowV2Classifier(Classifier):
                      The intended order of the layers tries to match their order in the model, but this is not
                      guaranteed either.
         """
-        return self._layer_names
+        raise NotImplementedError
 
     def get_activations(self, x, layer, batch_size=128):
         """
@@ -862,11 +865,9 @@ class TensorflowV2Classifier(Classifier):
         :param train: True to set the learning phase to training, False to set it to prediction.
         :type train: `bool`
         """
-        if isinstance(train, bool):
-            self._learning_phase = train
+        raise NotImplementedError
 
     def save(self, filename, path=None):
-        pass
         """
         Save a model to file in the format specific to the backend framework. For TensorFlow, .ckpt is used.
 
