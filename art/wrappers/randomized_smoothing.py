@@ -33,7 +33,6 @@ from art.wrappers.wrapper import ClassifierWrapper
 
 from scipy.stats import norm, binom_test
 
-import numpy as np
 
 logger = logging.getLogger(__name__)
 
