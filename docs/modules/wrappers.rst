@@ -13,7 +13,7 @@ Query-Efficient Black-Box Attack
    :members:
 
 Randomized Smoothing
---------------------------------
+--------------------
 .. autoclass:: RandomizedSmoothing
    :members:
 
