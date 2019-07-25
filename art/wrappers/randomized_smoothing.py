@@ -26,11 +26,13 @@ from __future__ import absolute_import, division, print_function, unicode_litera
 
 import logging
 
+import numpy as np
+from scipy.stats import norm, binom_test
+
 from art.wrappers.wrapper import ClassifierWrapper
 
 from scipy.stats import norm, binom_test
 
-import numpy as np
 
 logger = logging.getLogger(__name__)
 
