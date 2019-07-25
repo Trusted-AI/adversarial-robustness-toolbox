@@ -626,15 +626,9 @@ class TensorflowV2Classifier(Classifier):
                be divided by the second one.
         :type preprocessing: `tuple`
         """
-        import tensorflow
-        import tensorflow as tf
-        print('tf.executing_eagerly:', tf.executing_eagerly())
-
         super(TensorflowV2Classifier, self).__init__(clip_values=clip_values, channel_index=channel_index,
                                                      defences=defences, preprocessing=preprocessing)
 
-        if not isinstance(model, tensorflow.keras.Model):
-            raise TypeError
         self._model = model
         self._nb_classes = nb_classes
         self._loss_object = loss_object
