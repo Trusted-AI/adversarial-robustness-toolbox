@@ -41,7 +41,7 @@ class XGBoostClassifier(Classifier):
                for features.
         :type clip_values: `tuple`
         :param model: XGBoost model
-        :type model: `xgboost.Booster`
+        :type model: `xgboost.Booster` or `xgboost.XGBClassifier`
         :param defences: Defences to be activated with the classifier.
         :type defences: :class:`.Preprocessor` or `list(Preprocessor)` instances
         :param preprocessing: Tuple of the form `(subtractor, divider)` of floats or `np.ndarray` of values to be
@@ -49,14 +49,14 @@ class XGBoostClassifier(Classifier):
                be divided by the second one.
         :type preprocessing: `tuple`
         """
-        from xgboost import Booster
+        from xgboost import Booster, XGBClassifier
 
-        if not isinstance(model, Booster):
-            raise TypeError('Model must be of type xgboost.Booster')
+        if not isinstance(model, Booster) and not isinstance(model, XGBClassifier):
+            raise TypeError('Model must be of type xgboost.Booster or xgboost.XGBClassifier')
 
         super(XGBoostClassifier, self).__init__(clip_values=clip_values, defences=defences, preprocessing=preprocessing)
 
-        self.model = model
+        self._model = model
         self._input_shape = (num_features,)
 
     def fit(self, x, y, **kwargs):
@@ -68,7 +68,7 @@ class XGBoostClassifier(Classifier):
         :param y: Labels, one-vs-rest encoding.
         :type y: `np.ndarray`
         :param kwargs: Dictionary of framework-specific arguments. These should be parameters supported by the
-               `fit` function in `xgboost.Booster` and will be passed to this function as such.
+               `fit` function in `xgboost.Booster` or `xgboost.XGBClassifier` and will be passed to this function as such.
         :type kwargs: `dict`
         :return: `None`
         """
@@ -83,14 +83,18 @@ class XGBoostClassifier(Classifier):
         :return: Array of predictions of shape `(nb_inputs, self.nb_classes)`.
         :rtype: `np.ndarray`
         """
-        from xgboost import DMatrix
+        from xgboost import Booster, XGBClassifier
 
         # Apply defences
         x_preprocessed, _ = self._apply_preprocessing(x, y=None, fit=False)
 
-        train_data = DMatrix(x_preprocessed, label=None)
-        predictions = self.model.predict(train_data)
-        return np.asarray([line for line in predictions])
+        if isinstance(self._model, Booster):
+            from xgboost import DMatrix
+            train_data = DMatrix(x_preprocessed, label=None)
+            predictions = self.model.predict(train_data)
+            return np.asarray([line for line in predictions])
+        elif isinstance(self._model, XGBClassifier):
+            return self._model.predict(x_preprocessed)
 
     def save(self, filename, path=None):
         import pickle
