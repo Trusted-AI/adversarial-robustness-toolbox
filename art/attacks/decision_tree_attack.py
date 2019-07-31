@@ -32,7 +32,7 @@ logger = logging.getLogger(__name__)
 
 class DecisionTreeAttack(Attack):
     """
-    Close implementation of Papernot's attack on decision trees following Algorthim 2 and communication
+    Close implementation of Papernot's attack on decision trees following Algorithm 2 and communication
     with the authors.
     Paper link: https://arxiv.org/pdf/1605.07277.pdf
     """
@@ -148,7 +148,7 @@ class DecisionTreeAttack(Attack):
                 go_for = adv_path[i - 1]
                 threshold = self.classifier.get_threshold_at_node(adv_path[i])
                 feature = self.classifier.get_feature_at_node(adv_path[i])
-                # only perturb if the feature is acutally wrong
+                # only perturb if the feature is actually wrong
                 if x[index][feature] > threshold and go_for == self.classifier.get_left_child(adv_path[i]):
                     x[index][feature] = threshold - self.offset
                 elif x[index][feature] <= threshold and go_for == self.classifier.get_right_child(adv_path[i]):
