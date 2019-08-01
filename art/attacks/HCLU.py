@@ -31,11 +31,11 @@ logger = logging.getLogger(__name__)
 
 class HCLU(Attack):
     """
-    # Implemntation of the HCLU formulation in https://arxiv.org/abs/1812.02606 by Grosse et al..  
+    # Implementation of the HCLU formulation in https://arxiv.org/abs/1812.02606 by Grosse et al.  
     """
     attack_params = ['conf', 'unc_increase']
 
-    def __init__(self, classifier, conf=0.95, unc_increase=100.0,minVal=0.0,maxVal=1.0):
+    def __init__(self, classifier, conf=0.95, unc_increase=100.0, minVal=0.0, maxVal=1.0):
         """
         :param classifier: A trained model of type scikit decision tree.
         :type classifier: :class:`.Classifier.GPyGaussianProcessClassifier
@@ -52,7 +52,7 @@ class HCLU(Attack):
         if not isinstance(classifier, GPyGaussianProcessClassifier):
             raise TypeError('Model must be a GPy Gaussian Process classifier!')
         self.conf = conf
-        self.unc_increase =unc_increase
+        self.unc_increase = unc_increase
         self.minVal = minVal
         self.maxVal = maxVal
 
@@ -70,27 +70,36 @@ class HCLU(Attack):
         :rtype: `np.ndarray`
         """
         adv_x = copy.copy(x)
-        def minfun(x,args): #minimize L2 norm
+
+        def minfun(x, args):  # minimize L2 norm
             return np.sum(np.sqrt((x-args['orig'])**2))
-        def constraint_conf(x,args): #cosntraint for confidence
-            pred = args['classifier'].predict(x.reshape(1,-1))[0,0]
+
+        def constraint_conf(x, args):  # constraint for confidence
+            pred = args['classifier'].predict(x.reshape(1, -1))[0, 0]
             if args['class_zero']:
                 pred = 1.0-pred
             return (pred-0.95).reshape(-1)
-        def constraint_unc(x,args): #constraint for uncertainty
-            return (args['max_uncertainty']-(args['classifier'].predict_uncertainty(x.reshape(1,-1))).reshape(-1))[0]
+
+        def constraint_unc(x, args):  # constraint for uncertainty
+            return (args['max_uncertainty']-(args['classifier'].predict_uncertainty(x.reshape(1, -1))).reshape(-1))[0]
         bounds = []
-        for i in range(np.shape(x)[1]): #adding bounds, to not go away from original data
-            bounds.append((self.minVal,self.maxVal)) #TODO
-        for i in range(np.shape(x)[0]): #go though data amd craft
-            #get properties for attack
-            max_uncertainty = self.unc_increase*self.classifier.predict_uncertainty(adv_x[i].reshape(1,-1))
-            class_zero = not self.classifier.predict(adv_x[i].reshape(1,-1))[0,0]<0.5
-            init_args = {'classifier': self.classifier, 'class_zero': class_zero, 'max_uncertainty': max_uncertainty}
-            cC = {'type': 'ineq', 'fun': constraint_conf,'args': (init_args,)}
-            cU = {'type': 'ineq', 'fun': constraint_unc,'args': (init_args,)}
-            args = {'args':init_args, 'orig':x[i].reshape(-1)}
-            adv_x[i] = minimize(minfun,adv_x[i],args=args,bounds=bounds,constraints=[cC,cU])['x']
+        # adding bounds, to not go away from original data
+        for i in range(np.shape(x)[1]):
+            bounds.append((self.minVal, self.maxVal))
+        for i in range(np.shape(x)[0]):  # go though data amd craft
+            # get properties for attack
+            max_uncertainty = self.unc_increase * \
+                self.classifier.predict_uncertainty(adv_x[i].reshape(1, -1))
+            class_zero = not self.classifier.predict(
+                adv_x[i].reshape(1, -1))[0, 0] < 0.5
+            init_args = {'classifier': self.classifier,
+                         'class_zero': class_zero, 'max_uncertainty': max_uncertainty}
+            cC = {'type': 'ineq', 'fun': constraint_conf, 'args': (init_args,)}
+            cU = {'type': 'ineq', 'fun': constraint_unc, 'args': (init_args,)}
+            args = {'args': init_args, 'orig': x[i].reshape(-1)}
+            # #finally, run optimization
+            adv_x[i] = minimize(minfun, adv_x[i], args=args,
+                                bounds=bounds, constraints=[cC, cU])['x']
         return adv_x
 
     def set_params(self, **kwargs):
@@ -102,7 +111,8 @@ class HCLU(Attack):
         :return: `True` when parsing was successful
         """
         super(HCLU, self).set_params(**kwargs)
-        if self.conf <= 0.5 or self.conf>1.0:
+        if self.conf <= 0.5 or self.conf > 1.0:
             raise ValueError("Confidence value has to be between 0.5 and 1.0.")
-        if self.unc_increase<0.0:
-            raise ValueError("Uncertainty increase value has to be a positive nubmer.")
+        if self.unc_increase < 0.0:
+            raise ValueError(
+                "Uncertainty increase value has to be a positive nubmer.")

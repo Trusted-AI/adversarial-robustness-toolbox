@@ -50,7 +50,7 @@ class GPyClassifier(Classifier):
         :type preprocessing: `tuple`
         """
         super(GPyClassifier, self).__init__(clip_values=clip_values, channel_index=channel_index,
-                                                    defences=defences, preprocessing=preprocessing)
+                                            defences=defences, preprocessing=preprocessing)
 
         self.model = model
         self._input_shape = None
@@ -103,7 +103,7 @@ class GPyClassifier(Classifier):
         raise NotImplementedError
 
     def save(self, filename, path=None):
-        self.model.save_model(filename,save_data=False)
+        self.model.save_model(filename, save_data=False)
 
 
 class GPyGaussianProcessClassifier(GPyClassifier):
@@ -135,10 +135,10 @@ class GPyGaussianProcessClassifier(GPyClassifier):
         if not isinstance(model, GPC):
             raise TypeError(
                 'Model must be of type GPy.models.GPClassification')
-        self._nb_classes = 2 #always binary
+        self._nb_classes = 2  # always binary
         super(GPyGaussianProcessClassifier, self).__init__(model=model, clip_values=clip_values,
-                                                                channel_index=channel_index, defences=defences,
-                                                                preprocessing=preprocessing)
+                                                           channel_index=channel_index, defences=defences,
+                                                           preprocessing=preprocessing)
 
     def class_gradient(self, x, label=None, logits=False, eps=0.0001):
         """
@@ -159,16 +159,18 @@ class GPyGaussianProcessClassifier(GPyClassifier):
         :rtype: `np.ndarray`
         """
         eps = 0.00001
-        grads = np.zeros((np.shape(x)[0],2,np.shape(x)[1]))
+        grads = np.zeros((np.shape(x)[0], 2, np.shape(x)[1]))
         for i in range(np.shape(x)[0]):
+            # get gradient for the two classes GPC can maximally have
             for c in range(2):
-                ind = self.predict(x[i].reshape(1,-1))[0,c]
-                sur = self.predict(np.repeat(x[i].reshape(1,-1),np.shape(x)[1],0) + eps*np.eye(np.shape(x)[1]))[:,c]
-                grads[i,c] = ((sur-ind)*eps).reshape(1,-1)
+                ind = self.predict(x[i].reshape(1, -1))[0, c]
+                sur = self.predict(np.repeat(x[i].reshape(1, -1),
+                    np.shape(x)[1], 0) + eps*np.eye(np.shape(x)[1]))[:, c]
+                grads[i, c] = ((sur-ind)*eps).reshape(1, -1)
         if label is None:
             return grads
         else:
-            return grads[:,label,:].reshape(np.shape(x)[0],1,np.shape(x)[1])
+            return grads[:, label, :].reshape(np.shape(x)[0], 1, np.shape(x)[1])
 
     def get_activations(self, x, layer, batch_size):
         raise NotImplementedError
@@ -187,12 +189,12 @@ class GPyGaussianProcessClassifier(GPyClassifier):
         eps = 0.00001
         grads = np.zeros(np.shape(x))
         for i in range(np.shape(x)[0]):
-            #1.0 - to mimic loss, [0,np.argmax] to get right class
-            ind = 1.0-self.predict(x[i].reshape(1,-1))[0,np.argmax(y[i])]
-            sur = 1.0-self.predict(np.repeat(x[i].reshape(1,-1),np.shape(x)[1],0) + eps*np.eye(np.shape(x)[1]))[:,np.argmax(y[i])]
-            grads[i] = ((sur-ind)*eps).reshape(1,-1)
+            # 1.0 - to mimic loss, [0,np.argmax] to get right class
+            ind = 1.0-self.predict(x[i].reshape(1, -1))[0, np.argmax(y[i])]
+            sur = 1.0-self.predict(np.repeat(x[i].reshape(1, -1), np.shape(x)[1], 0)
+                 + eps*np.eye(np.shape(x)[1]))[:, np.argmax(y[i])]
+            grads[i] = ((sur-ind)*eps).reshape(1, -1)
         return grads
-
 
     def predict(self, x, logits=False, batch_size=128):
         """
@@ -207,14 +209,14 @@ class GPyGaussianProcessClassifier(GPyClassifier):
         :return: Array of predictions of shape `(nb_inputs, self.nb_classes)`.
         :rtype: `np.ndarray`
         """
-        out = np.zeros((np.shape(x)[0],2))
-        if logits: #output the mon-squashed version
-            out[:,0]= self.model.predict_noiseless(x)[0].reshape(-1)  
-            out[:,1] = -1.0*out[:,0] 
-            return out 
-        #output normal prediction, scale up to two values
-        out[:,0]= self.model.predict(x)[0].reshape(-1)
-        out[:,1] = 1.0-out[:,0]   
+        out = np.zeros((np.shape(x)[0], 2))
+        if logits:  # output the mon-squashed version
+            out[:, 0] = self.model.predict_noiseless(x)[0].reshape(-1)
+            out[:, 1] = -1.0*out[:, 0]
+            return out
+        # output normal prediction, scale up to two values
+        out[:, 0] = self.model.predict(x)[0].reshape(-1)
+        out[:, 1] = 1.0-out[:, 0]
         return out
 
     def predict_uncertainty(self, x, logits=False, batch_size=128):
@@ -230,7 +232,7 @@ class GPyGaussianProcessClassifier(GPyClassifier):
         :return: Array of uncertainty predictions of shape `(nb_inputs, self.nb_classes)`.
         :rtype: `np.ndarray`
         """
-        #geturn uncertainty, only in one dimension
+        # geturn uncertainty, only in one dimension
         return self.model.predict_noiseless(x)[1]
 
     @property
