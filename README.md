@@ -10,7 +10,7 @@ This is a library dedicated to **adversarial machine learning**. Its purpose is 
 
 The library is still under development. Feedback, bug reports and extensions are highly appreciated. Get in touch with us on [Slack](https://ibm-art.slack.com) (invite [here](https://join.slack.com/t/ibm-art/shared_invite/enQtMzkyOTkyODE4NzM4LTlkMWY3MzgyZDA4ZDdiNzUzY2NhMjc5YmFhZTYzZGYwNDM4YTE1ODhhNDYyNmFlMGFjNWY4ODgyM2EwYTFjYTc))!
 
-**[Important notice]** Versions 0.8 and 0.9 of ART contain a bug in the BIM attack. This was fixed in version 0.10 (see issue #85). Users are advised to update their installation as soon as possible.
+**[Important notice]** Versions 0.8 and 0.9 of ART contain a bug in the BIM attack. This was fixed in version 0.10. Users are advised to update their installation as soon as possible.
 
 ## Supported attacks, defences and metrics
 
