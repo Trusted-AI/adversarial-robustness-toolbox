@@ -12,6 +12,8 @@ The library is still under development. Feedback, bug reports and extensions are
 
 We use Github issues for tracking bugs and feature requests. Please check the release notes for fixed bugs in earlier versions and new features.
 
+**[Important notice]** ART v0.8 and v0.9 contain for certain settings a bug in the Basic Iterative Method (BIM) and Projected Gradient Descent (PGD) attacks, which has been fixed in ART v0.10. To be sure, please update ART to v0.10, especially if using BIM or PGD attack.
+
 ## Supported attacks, defences and metrics
 
 The library contains implementations of the following **evasion attacks**:
