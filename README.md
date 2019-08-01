@@ -10,6 +10,8 @@ This is a library dedicated to **adversarial machine learning**. Its purpose is 
 
 The library is still under development. Feedback, bug reports and extensions are highly appreciated. Get in touch with us on [Slack](https://ibm-art.slack.com) (invite [here](https://join.slack.com/t/ibm-art/shared_invite/enQtMzkyOTkyODE4NzM4LTlkMWY3MzgyZDA4ZDdiNzUzY2NhMjc5YmFhZTYzZGYwNDM4YTE1ODhhNDYyNmFlMGFjNWY4ODgyM2EwYTFjYTc))!
 
+We use Github issues for tracking bugs and feature requests. Please check the release notes for fixed bugs in earlier versions and new features.
+
 ## Supported attacks, defences and metrics
 
 The library contains implementations of the following **evasion attacks**:
