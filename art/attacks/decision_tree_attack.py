@@ -25,7 +25,7 @@ import logging
 import numpy as np
 
 from art.attacks.attack import Attack
-from art.classifiers.scikitklearn import ScikitlearnDecisionTreeClassifier
+from art.classifiers.scikitlearn import ScikitlearnDecisionTreeClassifier
 
 logger = logging.getLogger(__name__)
 

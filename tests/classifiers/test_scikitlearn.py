@@ -11,7 +11,7 @@ from sklearn.ensemble import AdaBoostClassifier, BaggingClassifier, ExtraTreesCl
 from sklearn.linear_model import LogisticRegression
 from sklearn.svm import SVC, LinearSVC
 
-from art.classifiers.scikitklearn import ScikitlearnDecisionTreeClassifier, ScikitlearnExtraTreeClassifier, \
+from art.classifiers.scikitlearn import ScikitlearnDecisionTreeClassifier, ScikitlearnExtraTreeClassifier, \
     ScikitlearnAdaBoostClassifier, ScikitlearnBaggingClassifier, ScikitlearnExtraTreesClassifier, \
     ScikitlearnGradientBoostingClassifier, ScikitlearnRandomForestClassifier, ScikitlearnLogisticRegression, \
     ScikitlearnSVC
