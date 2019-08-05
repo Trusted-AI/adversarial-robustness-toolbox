@@ -8,15 +8,7 @@ from art.classifiers.mxnet import MXClassifier
 from art.classifiers.pytorch import PyTorchClassifier
 from art.classifiers.tensorflow import TFClassifier
 from art.classifiers.ensemble import EnsembleClassifier
-from art.classifiers.scikitklearn import ScikitlearnLogisticRegression
-from art.classifiers.scikitklearn import ScikitlearnSVC
-from art.classifiers.scikitklearn import ScikitlearnDecisionTreeClassifier
-from art.classifiers.scikitklearn import ScikitlearnExtraTreeClassifier
-from art.classifiers.scikitklearn import ScikitlearnAdaBoostClassifier
-from art.classifiers.scikitklearn import ScikitlearnBaggingClassifier
-from art.classifiers.scikitklearn import ScikitlearnExtraTreesClassifier
-from art.classifiers.scikitklearn import ScikitlearnGradientBoostingClassifier
-from art.classifiers.scikitklearn import ScikitlearnRandomForestClassifier
+from art.classifiers.scikitklearn import SklearnClassifier
 from art.classifiers.lightgbm import LightGBMClassifier
 from art.classifiers.xgboost import XGBoostClassifier
 from art.classifiers.catboost import CatBoostARTClassifier
