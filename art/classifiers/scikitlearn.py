@@ -49,7 +49,7 @@ def SklearnClassifier(model=None, clip_values=None, defences=None, preprocessing
     if model.__class__.__module__.split('.')[0] != 'sklearn':
         raise TypeError("Model is not an sklearn model. Received '%s'" % model.__class__)
     sklearn_name = model.__class__.__name__
-    module = importlib.import_module('art.classifiers.scikitklearn')
+    module = importlib.import_module('art.classifiers.scikitlearn')
     if hasattr(module, 'Scikitlearn%s' % sklearn_name):
         return getattr(module, 'Scikitlearn%s' % sklearn_name)(model=model, 
         clip_values=clip_values, defences=defences, preprocessing=preprocessing)
@@ -141,7 +141,6 @@ class ScikitlearnClassifier(Classifier):
         """
         # Apply defences
         x_preprocessed, _ = self._apply_preprocessing(x, y=None, fit=False)
-
         return self.model.predict_proba(x_preprocessed)
 
     def save(self, filename, path=None):

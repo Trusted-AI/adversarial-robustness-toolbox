@@ -209,7 +209,7 @@ class TestCarliniL2(unittest.TestCase):
 
     def test_classifier_type_check_fail_gradients(self):
         # Use a test classifier not providing gradients required by white-box attack
-        from art.classifiers.scikitklearn import ScikitlearnDecisionTreeClassifier
+        from art.classifiers.scikitlearn import ScikitlearnDecisionTreeClassifier
         from sklearn.tree import DecisionTreeClassifier
 
         classifier = ScikitlearnDecisionTreeClassifier(model=DecisionTreeClassifier())
@@ -218,7 +218,7 @@ class TestCarliniL2(unittest.TestCase):
 
         self.assertIn('For `CarliniL2Method` classifier must be an instance of '
                       '`art.classifiers.classifier.ClassifierGradients`, the provided classifier is instance of '
-                      '(<class \'art.classifiers.scikitklearn.ScikitlearnClassifier\'>,).', str(context.exception))
+                      '(<class \'art.classifiers.scikitlearn.ScikitlearnClassifier\'>,).', str(context.exception))
 
 
 class TestCarliniL2Vectors(unittest.TestCase):
@@ -311,7 +311,7 @@ class TestCarliniL2Vectors(unittest.TestCase):
         from sklearn.linear_model import LogisticRegression
         from sklearn.svm import SVC, LinearSVC
 
-        from art.classifiers.scikitklearn import ScikitlearnLogisticRegression, ScikitlearnSVC
+        from art.classifiers.scikitlearn import ScikitlearnLogisticRegression, ScikitlearnSVC
 
         scikitlearn_test_cases = {LogisticRegression: ScikitlearnLogisticRegression}#,
                                   # SVC: ScikitlearnSVC,
@@ -509,7 +509,7 @@ class TestCarliniLInf(TestCarliniL2):
 
     def test_classifier_type_check_fail_gradients(self):
         # Use a test classifier not providing gradients required by white-box attack
-        from art.classifiers.scikitklearn import ScikitlearnDecisionTreeClassifier
+        from art.classifiers.scikitlearn import ScikitlearnDecisionTreeClassifier
         from sklearn.tree import DecisionTreeClassifier
 
         classifier = ScikitlearnDecisionTreeClassifier(model=DecisionTreeClassifier())
@@ -518,7 +518,7 @@ class TestCarliniLInf(TestCarliniL2):
 
         self.assertIn('For `CarliniLInfMethod` classifier must be an instance of '
                       '`art.classifiers.classifier.ClassifierGradients`, the provided classifier is instance of '
-                      '(<class \'art.classifiers.scikitklearn.ScikitlearnClassifier\'>,).', str(context.exception))
+                      '(<class \'art.classifiers.scikitlearn.ScikitlearnClassifier\'>,).', str(context.exception))
 
 
 class TestCarliniLInfVectors(TestCarliniL2Vectors):
@@ -602,7 +602,7 @@ class TestCarliniLInfVectors(TestCarliniL2Vectors):
         from sklearn.linear_model import LogisticRegression
         from sklearn.svm import SVC, LinearSVC
 
-        from art.classifiers.scikitklearn import ScikitlearnLogisticRegression, ScikitlearnSVC
+        from art.classifiers.scikitlearn import ScikitlearnLogisticRegression, ScikitlearnSVC
 
         scikitlearn_test_cases = {LogisticRegression: ScikitlearnLogisticRegression}#,
                                   # SVC: ScikitlearnSVC,
