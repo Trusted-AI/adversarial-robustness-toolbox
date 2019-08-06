@@ -21,8 +21,9 @@ This module implements the classifiers for scikit-learn models.
 from __future__ import absolute_import, division, print_function, unicode_literals
 
 import logging
-import numpy as np
 import importlib
+
+import numpy as np
 
 from art.classifiers.classifier import Classifier, ClassifierGradients
 from art.utils import to_categorical
@@ -51,11 +52,10 @@ def SklearnClassifier(model=None, clip_values=None, defences=None, preprocessing
     sklearn_name = model.__class__.__name__
     module = importlib.import_module('art.classifiers.scikitlearn')
     if hasattr(module, 'Scikitlearn%s' % sklearn_name):
-        return getattr(module, 'Scikitlearn%s' % sklearn_name)(model=model, 
+        return getattr(module, 'Scikitlearn%s' % sklearn_name)(model=model,
         clip_values=clip_values, defences=defences, preprocessing=preprocessing)
-    else:
-        # This basic class at least generically handles `fit`, `predict` and `save`
-        return ScikitlearnClassifier(model, clip_values, defences, preprocessing)
+    # This basic class at least generically handles `fit`, `predict` and `save`
+    return ScikitlearnClassifier(model, clip_values, defences, preprocessing)
 
 
 class ScikitlearnClassifier(Classifier):
@@ -111,7 +111,8 @@ class ScikitlearnClassifier(Classifier):
         :return: `None`
         """
         # Apply preprocessing
-        x_preprocessed, y_preprocessed = self._apply_preprocessing(x, y, fit=True)
+        x_preprocessed, y_preprocessed = self._apply_preprocessing(
+            x, y, fit=True)
 
         y_preprocessed = np.argmax(y_preprocessed, axis=1)
 
@@ -577,7 +578,7 @@ class ScikitlearnLogisticRegression(ScikitlearnClassifier, ClassifierGradients):
         """
         Compute the gradient of the loss function w.r.t. `x`.
         Paper link: http://cs229.stanford.edu/proj2016/report/ItkinaWu-AdversarialAttacksonImageRecognition-report.pdf
-        Typo in https://arxiv.org/abs/1605.07277 (equation 6)
+        Typo in: https://arxiv.org/abs/1605.07277 (equation 6)
 
         :param x: Sample input with shape as expected by the model.
         :type x: `np.ndarray`
