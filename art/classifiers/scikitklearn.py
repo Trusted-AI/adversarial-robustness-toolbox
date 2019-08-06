@@ -112,7 +112,14 @@ class ScikitlearnClassifier(Classifier):
         # Apply defences
         x_preprocessed, _ = self._apply_preprocessing(x, y=None, fit=False)
 
-        return self.model.predict_proba(x_preprocessed)
+        if hasattr(self.model, 'predict_proba') and callable(getattr(self.model, 'predict_proba')):
+            y_pred = self.model.predict_proba(x_preprocessed)
+        elif hasattr(self.model, 'predict') and callable(getattr(self.model, 'predict')):
+            y_pred = to_categorical(self.model.predict(x_preprocessed), nb_classes=self.model.classes_.shape[0])
+        else:
+            raise ValueError('The provided model does not have methods `predict_proba` or `predict`.')
+
+        return y_pred
 
     def save(self, filename, path=None):
         import pickle
