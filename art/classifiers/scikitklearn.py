@@ -82,8 +82,7 @@ class ScikitlearnClassifier(Classifier):
         :return: `None`
         """
         # Apply preprocessing
-        x_preprocessed, y_preprocessed = self._apply_preprocessing(
-            x, y, fit=True)
+        x_preprocessed, y_preprocessed = self._apply_preprocessing(x, y, fit=True)
 
         y_preprocessed = np.argmax(y_preprocessed, axis=1)
 
@@ -550,7 +549,7 @@ class ScikitlearnLogisticRegression(ScikitlearnClassifier, ClassifierGradients):
         """
         Compute the gradient of the loss function w.r.t. `x`.
         Paper link: http://cs229.stanford.edu/proj2016/report/ItkinaWu-AdversarialAttacksonImageRecognition-report.pdf
-        Typo in: https://arxiv.org/abs/1605.07277 (equation 6)
+        Typo in https://arxiv.org/abs/1605.07277 (equation 6)
 
         :param x: Sample input with shape as expected by the model.
         :type x: `np.ndarray`
