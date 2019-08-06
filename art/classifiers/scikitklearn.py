@@ -580,7 +580,7 @@ class ScikitlearnLogisticRegression(ScikitlearnClassifier, ClassifierGradients):
         gradients = np.zeros(x_preprocessed.shape)
 
         y_index = np.argmax(y_preprocessed, axis=1)
-        if self.model_class_weight is None or np.unique(y_index).shape[0] < self.nb_classes:
+        if self.model_class_weight is None or self.model_class_weight == 'balanced':
             class_weight = np.ones(self.nb_classes)
         else:
             class_weight = compute_class_weight(
