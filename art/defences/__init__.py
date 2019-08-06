@@ -4,7 +4,10 @@ Module implementing multiple types of defences against adversarial attacks.
 from art.defences.adversarial_trainer import AdversarialTrainer
 from art.defences.feature_squeezing import FeatureSqueezing
 from art.defences.gaussian_augmentation import GaussianAugmentation
-from art.defences.jpeg_compression import JpegCompression
+try:
+    from art.defences.jpeg_compression import JpegCompression
+except ImportError:
+    pass
 from art.defences.label_smoothing import LabelSmoothing
 from art.defences.pixel_defend import PixelDefend
 from art.defences.preprocessor import Preprocessor
