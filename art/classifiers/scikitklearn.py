@@ -592,20 +592,6 @@ class ScikitlearnLogisticRegression(ScikitlearnClassifier, ClassifierGradients):
 
         return gradients
 
-    def predict(self, x, **kwargs):
-        """
-        Perform prediction for a batch of inputs.
-
-        :param x: Test set.
-        :type x: `np.ndarray`
-        :return: Array of predictions of shape `(nb_inputs, self.nb_classes)`.
-        :rtype: `np.ndarray`
-        """
-        # Apply defences
-        x_preprocessed, _ = self._apply_preprocessing(x, y=None, fit=False)
-
-        return self.model.predict_proba(X=x_preprocessed)
-
 
 class ScikitlearnSVC(ScikitlearnClassifier, ClassifierGradients):
     """
