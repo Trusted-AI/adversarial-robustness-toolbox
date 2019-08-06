@@ -140,7 +140,15 @@ class ScikitlearnClassifier(Classifier):
         """
         # Apply defences
         x_preprocessed, _ = self._apply_preprocessing(x, y=None, fit=False)
-        return self.model.predict_proba(x_preprocessed)
+
+        if hasattr(self.model, 'predict_proba') and callable(getattr(self.model, 'predict_proba')):
+            y_pred = self.model.predict_proba(x_preprocessed)
+        elif hasattr(self.model, 'predict') and callable(getattr(self.model, 'predict')):
+            y_pred = to_categorical(self.model.predict(x_preprocessed), nb_classes=self.model.classes_.shape[0])
+        else:
+            raise ValueError('The provided model does not have methods `predict_proba` or `predict`.')
+
+        return y_pred
 
     def save(self, filename, path=None):
         import pickle
@@ -462,15 +470,9 @@ class ScikitlearnLogisticRegression(ScikitlearnClassifier, ClassifierGradients):
 
         self.model = model
         if hasattr(self.model, 'coef_'):
-            self.weights = self.model.coef_
-            self.classes = self.model.classes_
             self._nb_classes = self.model.classes_.shape[0]
-            self.model_class_weight = self.model.class_weight
         else:
-            self.weights = None
-            self.classes = None
             self._nb_classes = None
-            self.model_class_weight = None
 
     def class_gradient(self, x, label=None, **kwargs):
         """
@@ -500,7 +502,8 @@ class ScikitlearnLogisticRegression(ScikitlearnClassifier, ClassifierGradients):
         x_preprocessed, _ = self._apply_preprocessing(x, y=None, fit=False)
 
         y_pred = self.model.predict_proba(X=x_preprocessed)
-        w_weighted = np.matmul(y_pred, self.weights)
+        weights = self.model.coef_
+        w_weighted = np.matmul(y_pred, weights)
 
         if label is None:
             # Compute the gradients w.r.t. all classes
@@ -509,7 +512,7 @@ class ScikitlearnLogisticRegression(ScikitlearnClassifier, ClassifierGradients):
             for i_class in range(self.nb_classes):
                 class_gradient = np.zeros(x.shape)
                 for i_sample in range(nb_samples):
-                    class_gradient[i_sample, :] += (self.weights[i_class, :] - w_weighted[i_sample, :])
+                    class_gradient[i_sample, :] += (weights[i_class, :] - w_weighted[i_sample, :])
                 class_gradients.append(class_gradient)
 
             gradients = np.swapaxes(np.array(class_gradients), 0, 1)
@@ -518,7 +521,7 @@ class ScikitlearnLogisticRegression(ScikitlearnClassifier, ClassifierGradients):
             # Compute the gradients only w.r.t. the provided label
             class_gradient = np.zeros(x.shape)
             for i_sample in range(nb_samples):
-                class_gradient[i_sample, :] += (self.weights[label, :] - w_weighted[i_sample, :])
+                class_gradient[i_sample, :] += (weights[label, :] - w_weighted[i_sample, :])
 
             gradients = np.swapaxes(np.array([class_gradient]), 0, 1)
 
@@ -531,9 +534,9 @@ class ScikitlearnLogisticRegression(ScikitlearnClassifier, ClassifierGradients):
             for unique_label in unique_labels:
                 class_gradient = np.zeros(x.shape)
                 for i_sample in range(nb_samples):
-                    # class_gradient[i_sample, :] += label[i_sample, unique_label] * (self.weights[unique_label, :]
+                    # class_gradient[i_sample, :] += label[i_sample, unique_label] * (weights[unique_label, :]
                     # - w_weighted[i_sample, :])
-                    class_gradient[i_sample, :] += (self.weights[unique_label, :] - w_weighted[i_sample, :])
+                    class_gradient[i_sample, :] += (weights[unique_label, :] - w_weighted[i_sample, :])
 
                 class_gradients.append(class_gradient)
 
@@ -567,10 +570,7 @@ class ScikitlearnLogisticRegression(ScikitlearnClassifier, ClassifierGradients):
 
         y_index = np.argmax(y_preprocessed, axis=1)
         self.model.fit(X=x_preprocessed, y=y_index, **kwargs)
-        self.weights = self.model.coef_
         self._nb_classes = self.model.classes_.shape[0]
-        self.model_class_weight = self.model.class_weight
-        self.classes = self.model.classes_
         self._input_shape = (self.model.coef_.shape[1],)
 
     def loss_gradient(self, x, y, **kwargs):
@@ -601,19 +601,20 @@ class ScikitlearnLogisticRegression(ScikitlearnClassifier, ClassifierGradients):
         gradients = np.zeros(x_preprocessed.shape)
 
         y_index = np.argmax(y_preprocessed, axis=1)
-        if self.model_class_weight is None or np.unique(y_index).shape[0] < self.nb_classes:
+        if self.model.class_weight is None or self.model.class_weight == 'balanced':
             class_weight = np.ones(self.nb_classes)
         else:
             class_weight = compute_class_weight(
-                class_weight=self.model_class_weight, classes=self.classes, y=y_index)
+                class_weight=self.model.class_weight, classes=self.model.classes_, y=y_index)
 
         y_pred = self.model.predict_proba(X=x_preprocessed)
-        w_weighted = np.matmul(y_pred, self.weights)
+        weights = self.model.coef_
+        w_weighted = np.matmul(y_pred, weights)
 
         for i_sample in range(num_samples):
             for i_class in range(self.nb_classes):
                 gradients[i_sample, :] += class_weight[i_class] * (1.0 - y_preprocessed[i_sample, i_class]) * (
-                        self.weights[i_class, :] - w_weighted[i_sample, :])
+                        weights[i_class, :] - w_weighted[i_sample, :])
 
         gradients = self._apply_preprocessing_gradient(x, gradients)
 
