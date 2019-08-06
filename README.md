@@ -1,4 +1,4 @@
-# Adversarial Robustness Toolbox (ART v0.10.0)
+# Adversarial Robustness 360 (ART v0.10.0)
 <p align="center">
   <img src="docs/images/art_logo.png?raw=true" width="200" title="ART logo">
 </p>
