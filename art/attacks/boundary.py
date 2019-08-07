@@ -278,9 +278,12 @@ class BoundaryAttack(Attack):
         direction = original_sample - current_sample
 
         if len(self.classifier.input_shape) == 3:
-            for i in range(direction.shape[self.classifier.channel_index - 1]):
-                direction[:, :, i] /= np.linalg.norm(direction[:, :, i])
-                perturb[:, :, i] -= np.dot(perturb[:, :, i], direction[:, :, i]) * direction[:, :, i]
+            perturb = np.swapaxes(perturb, 0, self.classifier.channel_index - 1)
+            direction = np.swapaxes(direction, 0, self.classifier.channel_index - 1)
+            for i in range(direction.shape[0]):
+                direction[i] /= np.linalg.norm(direction[i])
+                perturb[i] -= np.dot(perturb[i], direction[i]) * direction[i]
+            perturb = np.swapaxes(perturb, 0, self.classifier.channel_index - 1)
         elif len(self.classifier.input_shape) == 1:
             direction /= np.linalg.norm(direction)
             perturb -= np.dot(perturb, direction.T) * direction
