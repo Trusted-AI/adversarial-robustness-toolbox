@@ -146,7 +146,7 @@ class ScikitlearnClassifier(Classifier):
         elif hasattr(self._model, 'support_vectors_'):
             _input_shape = (self._model.support_vectors_.shape[1],)
         else:
-            raise ValueError('Input shape not recognised.')
+            _input_shape = None
         return _input_shape
 
 
