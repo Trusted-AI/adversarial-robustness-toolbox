@@ -21,12 +21,41 @@ This module implements the classifiers for scikit-learn models.
 from __future__ import absolute_import, division, print_function, unicode_literals
 
 import logging
+import importlib
+
 import numpy as np
 
 from art.classifiers.classifier import Classifier, ClassifierGradients
 from art.utils import to_categorical
 
 logger = logging.getLogger(__name__)
+
+def SklearnClassifier(model=None, clip_values=None, defences=None, preprocessing=(0, 1)):
+    """
+    Create a `Classifier` instance from a scikit-learn Classifier model. This is a convenience function that instantiates the correct wrapper
+    class for the given Sklearn model
+
+    :param clip_values: Tuple of the form `(min, max)` representing the minimum and maximum values allowed
+            for features.
+    :type clip_values: `tuple`
+    :param model: scikit-learn Classifier model.
+    :type model: `sklearn.*` classifier for a supported type
+    :param defences: Defences to be activated with the classifier.
+    :type defences: :class:`.Preprocessor` or `list(Preprocessor)` instances
+    :param preprocessing: Tuple of the form `(subtractor, divider)` of floats or `np.ndarray` of values to be
+            used for data preprocessing. The first value will be subtracted from the input. The input will then
+            be divided by the second one.
+    :type preprocessing: `tuple`
+    """
+    if model.__class__.__module__.split('.')[0] != 'sklearn':
+        raise TypeError("Model is not an sklearn model. Received '%s'" % model.__class__)
+    sklearn_name = model.__class__.__name__
+    module = importlib.import_module('art.classifiers.scikitlearn')
+    if hasattr(module, 'Scikitlearn%s' % sklearn_name):
+        return getattr(module, 'Scikitlearn%s' % sklearn_name)(model=model,
+        clip_values=clip_values, defences=defences, preprocessing=preprocessing)
+    # This basic class at least generically handles `fit`, `predict` and `save`
+    return ScikitlearnClassifier(model, clip_values, defences, preprocessing)
 
 
 class ScikitlearnClassifier(Classifier):
@@ -82,7 +111,8 @@ class ScikitlearnClassifier(Classifier):
         :return: `None`
         """
         # Apply preprocessing
-        x_preprocessed, y_preprocessed = self._apply_preprocessing(x, y, fit=True)
+        x_preprocessed, y_preprocessed = self._apply_preprocessing(
+            x, y, fit=True)
 
         y_preprocessed = np.argmax(y_preprocessed, axis=1)
 
@@ -548,7 +578,7 @@ class ScikitlearnLogisticRegression(ScikitlearnClassifier, ClassifierGradients):
         """
         Compute the gradient of the loss function w.r.t. `x`.
         Paper link: http://cs229.stanford.edu/proj2016/report/ItkinaWu-AdversarialAttacksonImageRecognition-report.pdf
-        Typo in https://arxiv.org/abs/1605.07277 (equation 6)
+        Typo in: https://arxiv.org/abs/1605.07277 (equation 6)
 
         :param x: Sample input with shape as expected by the model.
         :type x: `np.ndarray`
@@ -813,3 +843,6 @@ class ScikitlearnSVC(ScikitlearnClassifier, ClassifierGradients):
             y_pred = one_hot_targets
 
         return y_pred
+
+
+ScikitlearnLinearSVC = ScikitlearnSVC
