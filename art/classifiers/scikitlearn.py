@@ -462,7 +462,7 @@ class ScikitlearnLogisticRegression(ScikitlearnClassifier, ClassifierGradients):
         :type preprocessing: `tuple`
         """
 
-        super(ScikitlearnLogisticRegression, self).__init__(clip_values=clip_values, defences=defences,
+        super(ScikitlearnLogisticRegression, self).__init__(model=model, clip_values=clip_values, defences=defences,
                                                             preprocessing=preprocessing)
 
         self._model = model
@@ -646,7 +646,8 @@ class ScikitlearnSVC(ScikitlearnClassifier, ClassifierGradients):
             raise TypeError(
                 'Model must be of type sklearn.svm.SVC or sklearn.svm.LinearSVC')
 
-        super(ScikitlearnSVC, self).__init__(clip_values=clip_values, defences=defences, preprocessing=preprocessing)
+        super(ScikitlearnSVC, self).__init__(model=model, clip_values=clip_values, defences=defences,
+                                             preprocessing=preprocessing)
 
         self._model = model
         if hasattr(self._model, 'classes_'):
