@@ -29,7 +29,7 @@ import logging
 import numpy as np
 
 from art import NUMPY_DTYPE
-from art.classifiers.classifier import ClassifierNeuralNetwork, ClassifierGradients
+from art.classifiers.classifier import ClassifierGradients
 from art.attacks.attack import Attack
 from art.utils import compute_success, to_categorical
 
