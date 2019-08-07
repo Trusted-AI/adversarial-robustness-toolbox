@@ -175,8 +175,7 @@ class ScikitlearnDecisionTreeClassifier(ScikitlearnClassifier):
         from sklearn.tree import DecisionTreeClassifier
 
         if not isinstance(model, DecisionTreeClassifier):
-            raise TypeError(
-                'Model must be of type sklearn.tree.DecisionTreeClassifier')
+            raise TypeError('Model must be of type sklearn.tree.DecisionTreeClassifier')
 
         super(ScikitlearnDecisionTreeClassifier, self).__init__(model=model, clip_values=clip_values, defences=defences,
                                                                 preprocessing=preprocessing)
@@ -264,8 +263,7 @@ class ScikitlearnExtraTreeClassifier(ScikitlearnClassifier):
         from sklearn.tree import ExtraTreeClassifier
 
         if not isinstance(model, ExtraTreeClassifier):
-            raise TypeError(
-                'Model must be of type sklearn.tree.ExtraTreeClassifier')
+            raise TypeError('Model must be of type sklearn.tree.ExtraTreeClassifier')
 
         super(ScikitlearnExtraTreeClassifier, self).__init__(model=model, clip_values=clip_values, defences=defences,
                                                              preprocessing=preprocessing)
@@ -296,8 +294,7 @@ class ScikitlearnAdaBoostClassifier(ScikitlearnClassifier):
         from sklearn.ensemble import AdaBoostClassifier
 
         if not isinstance(model, AdaBoostClassifier):
-            raise TypeError(
-                'Model must be of type sklearn.ensemble.AdaBoostClassifier')
+            raise TypeError('Model must be of type sklearn.ensemble.AdaBoostClassifier')
 
         super(ScikitlearnAdaBoostClassifier, self).__init__(model=model, clip_values=clip_values, defences=defences,
                                                             preprocessing=preprocessing)
@@ -328,8 +325,7 @@ class ScikitlearnBaggingClassifier(ScikitlearnClassifier):
         from sklearn.ensemble import BaggingClassifier
 
         if not isinstance(model, BaggingClassifier):
-            raise TypeError(
-                'Model must be of type sklearn.ensemble.BaggingClassifier')
+            raise TypeError('Model must be of type sklearn.ensemble.BaggingClassifier')
 
         super(ScikitlearnBaggingClassifier, self).__init__(model=model, clip_values=clip_values, defences=defences,
                                                            preprocessing=preprocessing)
@@ -360,8 +356,7 @@ class ScikitlearnExtraTreesClassifier(ScikitlearnClassifier):
         from sklearn.ensemble import ExtraTreesClassifier
 
         if not isinstance(model, ExtraTreesClassifier):
-            raise TypeError(
-                'Model must be of type sklearn.ensemble.ExtraTreesClassifier')
+            raise TypeError('Model must be of type sklearn.ensemble.ExtraTreesClassifier')
 
         super(ScikitlearnExtraTreesClassifier, self).__init__(model=model, clip_values=clip_values, defences=defences,
                                                               preprocessing=preprocessing)
@@ -392,8 +387,7 @@ class ScikitlearnGradientBoostingClassifier(ScikitlearnClassifier):
         from sklearn.ensemble import GradientBoostingClassifier
 
         if not isinstance(model, GradientBoostingClassifier):
-            raise TypeError(
-                'Model must be of type sklearn.ensemble.GradientBoostingClassifier')
+            raise TypeError('Model must be of type sklearn.ensemble.GradientBoostingClassifier')
 
         super(ScikitlearnGradientBoostingClassifier, self).__init__(model=model, clip_values=clip_values,
                                                                     defences=defences, preprocessing=preprocessing)
@@ -424,8 +418,7 @@ class ScikitlearnRandomForestClassifier(ScikitlearnClassifier):
         from sklearn.ensemble import RandomForestClassifier
 
         if not isinstance(model, RandomForestClassifier):
-            raise TypeError(
-                'Model must be of type sklearn.ensemble.RandomForestClassifier')
+            raise TypeError('Model must be of type sklearn.ensemble.RandomForestClassifier')
 
         super(ScikitlearnRandomForestClassifier, self).__init__(model=model, clip_values=clip_values, defences=defences,
                                                                 preprocessing=preprocessing)
@@ -592,8 +585,8 @@ class ScikitlearnLogisticRegression(ScikitlearnClassifier, ClassifierGradients):
         if self._model.class_weight is None or self._model.class_weight == 'balanced':
             class_weight = np.ones(self.nb_classes)
         else:
-            class_weight = compute_class_weight(
-                class_weight=self._model.class_weight, classes=self._model.classes_, y=y_index)
+            class_weight = compute_class_weight(class_weight=self._model.class_weight, classes=self._model.classes_,
+                                                y=y_index)
 
         y_pred = self._model.predict_proba(X=x_preprocessed)
         weights = self._model.coef_
