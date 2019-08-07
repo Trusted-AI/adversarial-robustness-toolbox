@@ -29,7 +29,6 @@ import logging
 import numpy as np
 
 from art import NUMPY_DTYPE
-from art.classifiers.classifier import ClassifierGradients
 from art.attacks.attack import Attack
 from art.utils import compute_success, to_categorical
 
@@ -70,10 +69,6 @@ class BoundaryAttack(Attack):
         :type init_size: `int`
         """
         super(BoundaryAttack, self).__init__(classifier=classifier)
-        if not isinstance(classifier, ClassifierGradients):
-            raise (TypeError('For `' + self.__class__.__name__ + '` classifier must be an instance of '
-                             '`art.classifiers.classifier.ClassifierGradients`, the provided classifier is instance of '
-                             + str(classifier.__class__.__bases__) + '.'))
 
         params = {'targeted': targeted,
                   'delta': delta,
