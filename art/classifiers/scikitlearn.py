@@ -85,19 +85,7 @@ class ScikitlearnClassifier(Classifier):
                                                     preprocessing=preprocessing)
 
         self._model = model
-        if hasattr(self._model, 'n_features_'):
-            self._input_shape = (self._model.n_features_,)
-        elif hasattr(self._model, 'feature_importances_'):
-            self._input_shape = (len(self._model.feature_importances_),)
-        elif hasattr(self._model, 'coef_'):
-            if len(self._model.coef_.shape) == 1:
-                self._input_shape = (self._model.coef_.shape[0],)
-            else:
-                self._input_shape = (self._model.coef_.shape[1],)
-        elif hasattr(self._model, 'support_vectors_'):
-            self._input_shape = (self._model.support_vectors_.shape[1],)
-        else:
-            self._input_shape = None
+        self._input_shape = self._get_input_shape()
 
     def fit(self, x, y, **kwargs):
         """
@@ -113,24 +101,11 @@ class ScikitlearnClassifier(Classifier):
         :return: `None`
         """
         # Apply preprocessing
-        x_preprocessed, y_preprocessed = self._apply_preprocessing(
-            x, y, fit=True)
-
+        x_preprocessed, y_preprocessed = self._apply_preprocessing(x, y, fit=True)
         y_preprocessed = np.argmax(y_preprocessed, axis=1)
 
         self._model.fit(x_preprocessed, y_preprocessed, **kwargs)
-
-        if hasattr(self._model, 'n_features_'):
-            self._input_shape = (self._model.n_features_,)
-        elif hasattr(self._model, 'feature_importances_'):
-            self._input_shape = (len(self._model.feature_importances_),)
-        elif hasattr(self._model, 'coef_'):
-            if len(self._model.coef_.shape) == 1:
-                self._input_shape = (self._model.coef_.shape[0],)
-            else:
-                self._input_shape = (self._model.coef_.shape[1],)
-        elif hasattr(self._model, 'support_vectors_'):
-            self._input_shape = (self._model.support_vectors_.shape[1],)
+        self._input_shape = self._get_input_shape()
 
     def predict(self, x, **kwargs):
         """
@@ -157,6 +132,22 @@ class ScikitlearnClassifier(Classifier):
         import pickle
         with open(filename + '.pickle', 'wb') as file_pickle:
             pickle.dump(self._model, file=file_pickle)
+
+    def _get_input_shape(self):
+        if hasattr(self._model, 'n_features_'):
+            _input_shape = (self._model.n_features_,)
+        elif hasattr(self._model, 'feature_importances_'):
+            _input_shape = (len(self._model.feature_importances_),)
+        elif hasattr(self._model, 'coef_'):
+            if len(self._model.coef_.shape) == 1:
+                _input_shape = (self._model.coef_.shape[0],)
+            else:
+                _input_shape = (self._model.coef_.shape[1],)
+        elif hasattr(self._model, 'support_vectors_'):
+            _input_shape = (self._model.support_vectors_.shape[1],)
+        else:
+            raise ValueError('Input shape not recognised.')
+        return _input_shape
 
 
 class ScikitlearnDecisionTreeClassifier(ScikitlearnClassifier):
@@ -643,8 +634,7 @@ class ScikitlearnSVC(ScikitlearnClassifier, ClassifierGradients):
         from sklearn.svm import SVC, LinearSVC
 
         if not isinstance(model, SVC) and not isinstance(model, LinearSVC):
-            raise TypeError(
-                'Model must be of type sklearn.svm.SVC or sklearn.svm.LinearSVC')
+            raise TypeError('Model must be of type sklearn.svm.SVC or sklearn.svm.LinearSVC')
 
         super(ScikitlearnSVC, self).__init__(model=model, clip_values=clip_values, defences=defences,
                                              preprocessing=preprocessing)
