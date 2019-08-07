@@ -30,6 +30,7 @@ from art.utils import to_categorical
 
 logger = logging.getLogger(__name__)
 
+
 # pylint: disable=C0103
 def SklearnClassifier(model=None, clip_values=None, defences=None, preprocessing=(0, 1)):
     """
