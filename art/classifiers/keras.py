@@ -122,9 +122,10 @@ class KerasClassifier(Classifier):
         # The implementation of categorical_crossentropy is different in keras and tensorflow.keras. To ensure
         # consistent behavior of `KerasClassifier` for keras and tensorflow.keras we follow the approach of
         # tensorflow.keras for all cases of `from_logits` if the loss_function is categorical_crossentropy.
-        if loss_function.__name__ == 'categorical_crossentropy':
-            preds = self._output.op.inputs[-1]
-            loss_ = loss_function(label_ph, preds, from_logits=True)
+        if hasattr(self._model, 'loss') and isinstance(self._model.loss, six.string_types) \
+                and loss_function.__name__ == 'categorical_crossentropy':
+            preds = self._output
+            loss_ = loss_function(label_ph, self._output.op.inputs[-1], from_logits=True)
         else:
             preds = self._output
             loss_ = loss_function(label_ph, self._output, from_logits=use_logits)
