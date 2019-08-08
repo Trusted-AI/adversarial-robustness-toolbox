@@ -58,7 +58,7 @@ model.add(Activation('softmax'))
 model.compile(loss='categorical_crossentropy', optimizer='adam', metrics=['accuracy'])
 
 # Create classifier wrapper
-classifier = KerasClassifier((min_, max_), model=model)
+classifier = KerasClassifier(model=model, clip_values=(min_, max_))
 classifier.fit(x_train, y_train, nb_epochs=10, batch_size=128)
 
 # Craft adversarial samples with DeepFool
