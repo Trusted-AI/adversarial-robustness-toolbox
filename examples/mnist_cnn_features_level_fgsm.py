@@ -33,7 +33,7 @@ model.add(Dense(10, activation='softmax'))
 
 model.compile(loss='categorical_crossentropy', optimizer='adam', metrics=['accuracy'])
 
-classifier = KerasClassifier(clip_values=(min_, max_), model=model)
+classifier = KerasClassifier(model=model, clip_values=(min_, max_))
 classifier.fit(x_train, y_train, nb_epochs=5, batch_size=128)
 
 # Attack one of the inner layers, instead of the input one. In this example
