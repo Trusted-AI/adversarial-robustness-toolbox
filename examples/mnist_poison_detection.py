@@ -66,7 +66,7 @@ def main():
 
     model.compile(loss='categorical_crossentropy', optimizer='adam', metrics=['accuracy'])
 
-    classifier = KerasClassifier(model=model)
+    classifier = KerasClassifier(model=model, clip_values=(min_, max_))
 
     classifier.fit(x_train, y_train, nb_epochs=30, batch_size=128)
 
