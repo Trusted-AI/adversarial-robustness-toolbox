@@ -38,7 +38,7 @@ python -m unittest discover tests/wrappers -p 'test_*.py'
 if [[ $? -ne 0 ]]; then exit_code=1; fi
 python -m unittest tests.test_data_generators
 if [[ $? -ne 0 ]]; then exit_code=1; fi
-python -m unittest tests.test_metrics
+python -m unittest discover tests/metrics -p 'test_*.py'
 if [[ $? -ne 0 ]]; then exit_code=1; fi
 python -m unittest tests.test_utils
 if [[ $? -ne 0 ]]; then exit_code=1; fi
