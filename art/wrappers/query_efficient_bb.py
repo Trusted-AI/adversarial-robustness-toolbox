@@ -163,7 +163,6 @@ class QueryEfficientBBGradientEstimation(ClassifierWrapper, ClassifierGradients,
         """
         return self._predict(clip_and_round(x, self.clip_values, self.round_samples), **{'batch_size': batch_size})
 
-
     def save(self, filename, path=None):
         """
         Save a model to file specific to the backend framework.

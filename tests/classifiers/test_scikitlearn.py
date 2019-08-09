@@ -11,10 +11,11 @@ from sklearn.ensemble import AdaBoostClassifier, BaggingClassifier, ExtraTreesCl
 from sklearn.linear_model import LogisticRegression
 from sklearn.svm import SVC, LinearSVC
 
-from art.classifiers import ScikitlearnDecisionTreeClassifier, ScikitlearnExtraTreeClassifier, \
+from art.classifiers.scikitlearn import ScikitlearnDecisionTreeClassifier, ScikitlearnExtraTreeClassifier, \
     ScikitlearnAdaBoostClassifier, ScikitlearnBaggingClassifier, ScikitlearnExtraTreesClassifier, \
     ScikitlearnGradientBoostingClassifier, ScikitlearnRandomForestClassifier, ScikitlearnLogisticRegression, \
     ScikitlearnSVC
+from art.classifiers import SklearnClassifier
 from art.utils import load_dataset
 
 logger = logging.getLogger('testLogger')
@@ -31,6 +32,7 @@ class TestScikitlearnDecisionTreeClassifier(unittest.TestCase):
 
         sklearn_model = DecisionTreeClassifier()
         cls.classifier = ScikitlearnDecisionTreeClassifier(model=sklearn_model)
+        assert(type(cls.classifier) == type(SklearnClassifier(model=sklearn_model)))
         cls.classifier.fit(x=x_train, y=y_train)
 
     def test_predict(self):
@@ -49,6 +51,7 @@ class TestScikitlearnExtraTreeClassifier(unittest.TestCase):
 
         sklearn_model = ExtraTreeClassifier()
         cls.classifier = ScikitlearnExtraTreeClassifier(model=sklearn_model)
+        assert(type(cls.classifier) == type(SklearnClassifier(model=sklearn_model)))
         cls.classifier.fit(x=x_train, y=y_train)
 
     def test_predict(self):
@@ -67,6 +70,7 @@ class TestScikitlearnAdaBoostClassifier(unittest.TestCase):
 
         sklearn_model = AdaBoostClassifier()
         cls.classifier = ScikitlearnAdaBoostClassifier(model=sklearn_model)
+        assert(type(cls.classifier) == type(SklearnClassifier(model=sklearn_model)))
         cls.classifier.fit(x=x_train, y=y_train)
 
     def test_predict(self):
@@ -85,6 +89,7 @@ class TestScikitlearnBaggingClassifier(unittest.TestCase):
 
         sklearn_model = BaggingClassifier()
         cls.classifier = ScikitlearnBaggingClassifier(model=sklearn_model)
+        assert(type(cls.classifier) == type(SklearnClassifier(model=sklearn_model)))
         cls.classifier.fit(x=x_train, y=y_train)
 
     def test_predict(self):
@@ -103,6 +108,7 @@ class TestScikitlearnExtraTreesClassifier(unittest.TestCase):
 
         sklearn_model = ExtraTreesClassifier()
         cls.classifier = ScikitlearnExtraTreesClassifier(model=sklearn_model)
+        assert(type(cls.classifier) == type(SklearnClassifier(model=sklearn_model)))
         cls.classifier.fit(x=x_train, y=y_train)
 
     def test_predict(self):
@@ -121,6 +127,7 @@ class TestScikitlearnGradientBoostingClassifier(unittest.TestCase):
 
         sklearn_model = GradientBoostingClassifier()
         cls.classifier = ScikitlearnGradientBoostingClassifier(model=sklearn_model)
+        assert(type(cls.classifier) == type(SklearnClassifier(model=sklearn_model)))
         cls.classifier.fit(x=x_train, y=y_train)
 
     def test_predict(self):
@@ -139,6 +146,7 @@ class TestScikitlearnRandomForestClassifier(unittest.TestCase):
 
         sklearn_model = RandomForestClassifier()
         cls.classifier = ScikitlearnRandomForestClassifier(model=sklearn_model)
+        assert(type(cls.classifier) == type(SklearnClassifier(model=sklearn_model)))
         cls.classifier.fit(x=x_train, y=y_train)
 
     def test_predict(self):
@@ -157,6 +165,7 @@ class TestScikitlearnLogisticRegression(unittest.TestCase):
 
         sklearn_model = LogisticRegression(verbose=0, C=1, solver='newton-cg', dual=False, fit_intercept=True)
         cls.classifier = ScikitlearnLogisticRegression(model=sklearn_model)
+        assert(type(cls.classifier) == type(SklearnClassifier(model=sklearn_model)))
         cls.classifier.fit(x=x_train, y=y_train)
 
     def test_predict(self):
@@ -248,6 +257,7 @@ class TestScikitlearnSVCSVC(unittest.TestCase):
 
         sklearn_model = SVC()
         cls.classifier = ScikitlearnSVC(model=sklearn_model)
+        assert(type(cls.classifier) == type(SklearnClassifier(model=sklearn_model)))
         cls.classifier.fit(x=x_train, y=y_train)
 
     def test_predict(self):
@@ -273,6 +283,7 @@ class TestScikitlearnSVCLinearSVC(unittest.TestCase):
 
         sklearn_model = LinearSVC()
         cls.classifier = ScikitlearnSVC(model=sklearn_model)
+        assert(type(cls.classifier) == type(SklearnClassifier(model=sklearn_model)))    
         cls.classifier.fit(x=x_train, y=y_train)
 
     def test_predict(self):

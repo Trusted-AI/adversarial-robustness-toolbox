@@ -29,7 +29,6 @@ import logging
 import numpy as np
 
 from art import NUMPY_DTYPE
-from art.classifiers.classifier import ClassifierNeuralNetwork, ClassifierGradients
 from art.attacks.attack import Attack
 from art.utils import compute_success, to_categorical
 
@@ -70,11 +69,6 @@ class BoundaryAttack(Attack):
         :type init_size: `int`
         """
         super(BoundaryAttack, self).__init__(classifier=classifier)
-        if not isinstance(classifier, ClassifierNeuralNetwork) or not isinstance(classifier, ClassifierGradients):
-            raise (TypeError('For `' + self.__class__.__name__ + '` classifier must be an instance of '
-                             '`art.classifiers.classifier.ClassifierNeuralNetwork` and '
-                             '`art.classifiers.classifier.ClassifierGradients`, the provided classifier is instance of '
-                             + str(classifier.__class__.__bases__) + '.'))
 
         params = {'targeted': targeted,
                   'delta': delta,
@@ -268,6 +262,7 @@ class BoundaryAttack(Attack):
         :rtype: `np.ndarray`
         """
         # Generate perturbation randomly
+        # input_shape = current_sample.shape
         perturb = np.random.randn(*self.classifier.input_shape)
 
         # Rescale the perturbation
@@ -276,14 +271,19 @@ class BoundaryAttack(Attack):
 
         # Project the perturbation onto sphere
         direction = original_sample - current_sample
-        perturb = np.swapaxes(perturb, 0, self.classifier.channel_index - 1)
-        direction = np.swapaxes(direction, 0, self.classifier.channel_index - 1)
 
-        for i in range(direction.shape[0]):
-            direction[i] /= np.linalg.norm(direction[i])
-            perturb[i] -= np.dot(perturb[i], direction[i]) * direction[i]
-
-        perturb = np.swapaxes(perturb, 0, self.classifier.channel_index - 1)
+        if len(self.classifier.input_shape) == 3:
+            perturb = np.swapaxes(perturb, 0, self.classifier.channel_index - 1)
+            direction = np.swapaxes(direction, 0, self.classifier.channel_index - 1)
+            for i in range(direction.shape[0]):
+                direction[i] /= np.linalg.norm(direction[i])
+                perturb[i] -= np.dot(perturb[i], direction[i]) * direction[i]
+            perturb = np.swapaxes(perturb, 0, self.classifier.channel_index - 1)
+        elif len(self.classifier.input_shape) == 1:
+            direction /= np.linalg.norm(direction)
+            perturb -= np.dot(perturb, direction.T) * direction
+        else:
+            raise ValueError('Input shape not recognised.')
 
         return perturb
 
