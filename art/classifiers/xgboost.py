@@ -91,7 +91,7 @@ class XGBoostClassifier(Classifier):
         if isinstance(self._model, Booster):
             from xgboost import DMatrix
             train_data = DMatrix(x_preprocessed, label=None)
-            predictions = self.model.predict(train_data)
+            predictions = self._model.predict(train_data)
             return np.asarray([line for line in predictions])
         elif isinstance(self._model, XGBClassifier):
             return self._model.predict(x_preprocessed)
@@ -100,3 +100,64 @@ class XGBoostClassifier(Classifier):
         import pickle
         with open(filename + '.pickle', 'wb') as file_pickle:
             pickle.dump(self.model, file=file_pickle)
+
+    def get_leaf_nodes(self):
+
+        import json
+        from art.metrics_trees import Box
+
+        booster_dump = self._model.get_booster().get_dump(dump_format='json')
+        leaf_nodes = list()
+        num_classes = 10
+
+        for i_tree, tree_dump in enumerate(booster_dump):
+            box = Box()
+
+            if num_classes == 2:
+                class_label = -1
+            else:
+                class_label = i_tree % num_classes
+
+            tree_json = json.loads(tree_dump)
+            leaf_nodes.append(self._get_leaf_nodes(tree_json, i_tree, class_label, box))
+
+        return leaf_nodes
+
+    def _get_leaf_nodes(self, node, i_tree, class_label, box):
+        from copy import deepcopy
+        from art.metrics_trees import LeafNode, Box, Interval
+
+        leaf_nodes = list()
+
+        if 'children' in node:
+            if node['children'][0]['nodeid'] == node['yes'] and node['children'][1]['nodeid'] == node['no']:
+                node_left = node['children'][0]
+                node_right = node['children'][1]
+            elif node['children'][1]['nodeid'] == node['yes'] and node['children'][0]['nodeid'] == node['no']:
+                node_left = node['children'][1]
+                node_right = node['children'][0]
+            else:
+                raise ValueError
+
+            box_left = deepcopy(box)
+            box_right = deepcopy(box)
+
+            feature = int(node['split'][1:])
+            box_split_left = Box(intervals={feature: Interval(-np.inf, node['split_condition'])})
+            box_split_right = Box(intervals={feature: Interval(node['split_condition'], np.inf)})
+
+            if box.intervals:
+                box_left.intersect_with_box(box_split_left)
+                box_right.intersect_with_box(box_split_right)
+            else:
+                box_left = box_split_left
+                box_right = box_split_right
+
+            leaf_nodes += self._get_leaf_nodes(node_left, i_tree, class_label, box_left)
+            leaf_nodes += self._get_leaf_nodes(node_right, i_tree, class_label, box_right)
+
+        if 'leaf' in node:
+            leaf_nodes.append(LeafNode(tree_id=i_tree, class_label=class_label, node_id=node['nodeid'], box=box,
+                                       value=node['leaf']))
+
+        return leaf_nodes
