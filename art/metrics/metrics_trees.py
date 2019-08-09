@@ -71,7 +71,7 @@ class RobustnessMetricTreeModelsCliqueMethod:
         :param max_level: The maximum number of clique search levels.
         :type max_level: `int`
         :return: A tuple of the average robustness bound and the verification error at `eps`
-        :type: `tuple`
+        :rtype: `tuple`
         """
         self.x = x
         self.y = y
@@ -227,7 +227,7 @@ class RobustnessMetricTreeModelsCliqueMethod:
         :param target_label: The target label.
         :type target_label: `int` or `None`
         :return: The best scores.
-        :type: `double`
+        :rtype: `double`
         """
         nodes = self._get_accessible_leafs(i_sample, eps, norm, target_label)
         best_score = None
@@ -254,7 +254,7 @@ class RobustnessMetricTreeModelsCliqueMethod:
         :param norm: The norm to apply epsilon.
         :type norm: `int` or `np.inf`
         :return: The distance.
-        :type: `double`
+        :rtype: `double`
         """
         resulting_distance = 0.0
 
@@ -300,7 +300,7 @@ class RobustnessMetricTreeModelsCliqueMethod:
         :param target_label: The target label.
         :type target_label: `int`
         :return: A list of lists of leaf nodes.
-        :type: list(list(LeafNode))
+        :rtype: list(list(LeafNode))
         """
         accessible_leafs = list()
 
