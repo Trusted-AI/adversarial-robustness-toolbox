@@ -104,7 +104,7 @@ class XGBoostClassifier(Classifier):
     def get_leaf_nodes(self):
 
         import json
-        from art.metrics_trees import Box
+        from art.metrics.metrics_trees import Box
 
         booster_dump = self._model.get_booster().get_dump(dump_format='json')
         leaf_nodes = list()
@@ -125,7 +125,7 @@ class XGBoostClassifier(Classifier):
 
     def _get_leaf_nodes(self, node, i_tree, class_label, box):
         from copy import deepcopy
-        from art.metrics_trees import LeafNode, Box, Interval
+        from art.metrics.metrics_trees import LeafNode, Box, Interval
 
         leaf_nodes = list()
 
