@@ -146,7 +146,7 @@ class Classifier(ABC):
         :param x: Features, where first dimension is the number of samples.
         :type x: `np.ndarray`
         :param y: Target values (class labels), where first dimension is the number of samples.
-        :type y: `np.ndarray`
+        :type y: `np.ndarray` or `None`
         :param fit: `True` if the defences are applied during training.
         :return: Value of the data after applying the defences.
         :rtype: `np.ndarray`
