@@ -176,7 +176,7 @@ class MXClassifier(ClassifierNeuralNetwork, ClassifierGradients, Classifier):
                     self._optimizer.step(x_batch.shape[0])
         else:
             # Fit a generic data generator through the API
-            super(MXClassifier, self).fit_generator(generator, num_epochs=nb_epochs)
+            super(MXClassifier, self).fit_generator(generator, nb_epochs=nb_epochs)
 
     def predict(self, x, batch_size=128, **kwargs):
         """
