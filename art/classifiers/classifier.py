@@ -434,7 +434,6 @@ class ClassifierGradients(ABC):
         :type x: `np.ndarray`
         :param gradients: Input gradients.
         :type gradients: `np.ndarray`
-        :param fit: `True` if the gradient is computed during training.
         :return: Gradients after backward step through preprocessing operations and defences.
         :rtype: `np.ndarray`
         """
