@@ -37,16 +37,16 @@ class RobustnessMetricTreeModelsCliqueMethod:
 
     def __init__(self, classifier, num_classes):
         """
-        Create robustness metric for tree-based classifier.
+        Create robustness metric for decision-tree-based classifier.
 
-        :param classifier: A trained tree-based classifier.
-        :type classifier: `art.classifiers`
+        :param classifier: A trained decision-tree-based classifier.
+        :type classifier: `art.classifiers.ClassifierDecisionTree`
         :param num_classes: The number of classes in the classification dataset.
         :type num_classes: `int`
         """
         self._classifier = classifier
         self.num_classes = num_classes
-        self._leaf_nodes = self._classifier.get_leaf_nodes()
+        self._trees = self._classifier.get_trees()
         self.x = None
         self.y = None
         self.max_clique = None
@@ -97,7 +97,7 @@ class RobustnessMetricTreeModelsCliqueMethod:
                 if self.num_classes <= 2:
                     best_score = self._get_best_score(i_sample, eps, norm, target_label=None)
                     is_robust = (self.y[i_sample] < 0.5 and best_score < 0) or (
-                                self.y[i_sample] > 0.5 and best_score > 0)
+                            self.y[i_sample] > 0.5 and best_score > 0)
                 else:
                     for i_class in range(self.num_classes):
                         if i_class != self.y[i_sample]:
@@ -304,13 +304,12 @@ class RobustnessMetricTreeModelsCliqueMethod:
         """
         accessible_leafs = list()
 
-        for i, tree_leaf_nodes in enumerate(self._leaf_nodes):
-            if self.num_classes <= 2 or target_label is None or ((i % self.num_classes) == self.y[i_sample]) or (
-                    (i % self.num_classes) == target_label):
+        for tree in self._trees:
+            if self.num_classes <= 2 or target_label is None or tree.class_id in [self.y[i_sample], target_label]:
 
                 leafs = list()
 
-                for leaf_node in tree_leaf_nodes:
+                for leaf_node in tree.leaf_nodes:
                     distance = self._get_distance(leaf_node.box, i_sample, norm)
                     if leaf_node.box and distance <= eps:
                         leafs.append(leaf_node)
@@ -388,3 +387,10 @@ class LeafNode:
     def __repr__(self):
         return self.__class__.__name__ + '({}, {}, {}, {}, {})'.format(self.tree_id, self.class_label, self.node_id,
                                                                        self.box, self.value)
+
+
+class Tree:
+
+    def __init__(self, class_id, leaf_nodes):
+        self.class_id = class_id
+        self.leaf_nodes = leaf_nodes
