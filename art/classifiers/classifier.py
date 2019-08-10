@@ -490,12 +490,11 @@ class ClassifierDecisionTree(ABC):
     """
 
     @abc.abstractmethod
-    def get_leaf_nodes(self):
+    def get_trees(self):
         """
-        Get the leaf nodes of the decision trees.
+        Get the decision trees.
 
-        :return: A list of lists of leaf nodes. The inner list contain all leaf nodes of a decision tree. These list are
-                 ordered in the outer list by increasing class label and then by increasing estimator id.
-        :rtype: `list(list(LeafNode))`
+        :return: A list of decision trees.
+        :rtype: `list(Tree)`
         """
         raise NotImplementedError
