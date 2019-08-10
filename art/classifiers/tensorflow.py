@@ -201,7 +201,7 @@ class TFClassifier(ClassifierNeuralNetwork, ClassifierGradients, Classifier):
 
                     # Run train step
                     self._sess.run(self._train, feed_dict=feed_dict)
-            super(TFClassifier, self).fit_generator(generator, num_epochs=nb_epochs, **kwargs)
+            super(TFClassifier, self).fit_generator(generator, nb_epochs=nb_epochs, **kwargs)
 
     def class_gradient(self, x, label=None, **kwargs):
         """
