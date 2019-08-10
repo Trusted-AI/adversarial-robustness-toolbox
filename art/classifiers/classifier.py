@@ -494,6 +494,6 @@ class ClassifierDecisionTree(ABC):
         Get the decision trees.
 
         :return: A list of decision trees.
-        :rtype: `list(Tree)`
+        :rtype: `[Tree]`
         """
         raise NotImplementedError
