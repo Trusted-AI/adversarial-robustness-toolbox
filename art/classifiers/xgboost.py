@@ -102,21 +102,26 @@ class XGBoostClassifier(Classifier, ClassifierDecisionTree):
             pickle.dump(self.model, file=file_pickle)
 
     def get_trees(self):
+        """
+        Get the decision trees.
+
+        :return: A list of decision trees.
+        :rtype: `[Tree]`
+        """
 
         import json
         from art.metrics.metrics_trees import Box, Tree
 
         booster_dump = self._model.get_booster().get_dump(dump_format='json')
         trees = list()
-        num_classes = 10
 
         for i_tree, tree_dump in enumerate(booster_dump):
             box = Box()
 
-            if num_classes == 2:
+            if self._model.n_classes_ == 2:
                 class_label = -1
             else:
-                class_label = i_tree % num_classes
+                class_label = i_tree % self._model.n_classes_
 
             tree_json = json.loads(tree_dump)
             trees.append(Tree(class_id=class_label, leaf_nodes=self._get_leaf_nodes(tree_json, i_tree, class_label, box)))
