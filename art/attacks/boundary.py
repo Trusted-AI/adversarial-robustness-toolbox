@@ -89,7 +89,7 @@ class BoundaryAttack(Attack):
         :param x: An array with the original inputs to be attacked.
         :type x: `np.ndarray`
         :param y: If `self.targeted` is true, then `y` represents the target labels.
-        :type y: `np.ndarray`
+        :type y: `np.ndarray` or `None`
         :param x_adv_init: Initial array to act as initial adversarial examples. Same shape as `x`.
         :type x_adv_init: `np.ndarray`
         :return: An array holding the adversarial examples.

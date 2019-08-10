@@ -302,7 +302,8 @@ def get_labels_np_array(preds):
 
 
 def preprocess(x, y, nb_classes=10, clip_values=None):
-    """Scales `x` to [0, 1] and converts `y` to class categorical confidences.
+    """
+    Scales `x` to [0, 1] and converts `y` to class categorical confidences.
 
     :param x: Data instances.
     :type x: `np.ndarray`
@@ -389,7 +390,8 @@ def compute_accuracy(preds, labels, abstain=True):
 
 
 def load_cifar10(raw=False):
-    """Loads CIFAR10 dataset from config.CIFAR10_PATH or downloads it if necessary.
+    """
+    Loads CIFAR10 dataset from config.CIFAR10_PATH or downloads it if necessary.
 
     :param raw: `True` if no preprocessing should be applied to the data. Otherwise, data is normalized to 1.
     :type raw: `bool`
@@ -457,7 +459,8 @@ def load_cifar10(raw=False):
 
 
 def load_mnist(raw=False):
-    """Loads MNIST dataset from `DATA_PATH` or downloads it if necessary.
+    """
+    Loads MNIST dataset from `DATA_PATH` or downloads it if necessary.
 
     :param raw: `True` if no preprocessing should be applied to the data. Otherwise, data is normalized to 1.
     :type raw: `bool`
@@ -497,7 +500,7 @@ def load_stl():
     from os.path import join
     from art import DATA_PATH
 
-    min_, max_ = 0., 1.
+    min_, max_ = 0.0, 1.0
 
     # Download and extract data if needed
     path = get_file('stl10_binary', path=DATA_PATH, extract=True,
@@ -551,11 +554,7 @@ def load_iris(raw=False, test_set=.3):
 
     # Preprocess
     if not raw:
-        label_map = {
-            'Iris-setosa': 0,
-            'Iris-versicolor': 1,
-            'Iris-virginica': 2
-        }
+        label_map = {'Iris-setosa': 0, 'Iris-versicolor': 1, 'Iris-virginica': 2}
         labels = np.array([label_map[labels[i]] for i in range(labels.size)], dtype=np.int32)
         data, labels = preprocess(data, labels, nb_classes=3)
     min_, max_ = np.amin(data), np.amax(data)
