@@ -238,6 +238,10 @@ class BinaryActivationDetector(ClassifierNeuralNetwork, ClassifierGradients, Cla
     def learning_phase(self):
         return self.detector.learning_phase
 
+    @property
+    def layer_names(self):
+        raise NotImplementedError
+
     def class_gradient(self, x, label=None, **kwargs):
         logits = kwargs.get('logits')
         if logits is None:

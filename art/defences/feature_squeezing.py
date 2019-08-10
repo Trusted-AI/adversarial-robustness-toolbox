@@ -93,7 +93,9 @@ class FeatureSqueezing(Preprocessor):
         return grad
 
     def fit(self, x, y=None, **kwargs):
-        """No parameters to learn for this method; do nothing."""
+        """
+        No parameters to learn for this method; do nothing.
+        """
         pass
 
     def set_params(self, **kwargs):
