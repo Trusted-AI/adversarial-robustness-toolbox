@@ -129,6 +129,21 @@ class ExpectationOverTransformations(ClassifierWrapper, ClassifierGradients, Cla
 
         return class_gradient / self.sample_size
 
+    @property
+    def layer_names(self):
+        """
+        Return the hidden layers in the model, if applicable.
+
+        :return: The hidden layers in the model, input and output layers excluded.
+        :rtype: `list`
+
+        .. warning:: `layer_names` tries to infer the internal structure of the model.
+                     This feature comes with no guarantees on the correctness of the result.
+                     The intended order of the layers tries to match their order in the model, but this is not
+                     guaranteed either.
+        """
+        raise NotImplementedError
+
     def get_activations(self, x, layer, batch_size):
         """
         Return the output of the specified layer for input `x`. `layer` is specified by layer index (between 0 and
