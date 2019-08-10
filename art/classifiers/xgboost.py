@@ -101,13 +101,13 @@ class XGBoostClassifier(Classifier, ClassifierDecisionTree):
         with open(filename + '.pickle', 'wb') as file_pickle:
             pickle.dump(self.model, file=file_pickle)
 
-    def get_leaf_nodes(self):
+    def get_trees(self):
 
         import json
-        from art.metrics.metrics_trees import Box
+        from art.metrics.metrics_trees import Box, Tree
 
         booster_dump = self._model.get_booster().get_dump(dump_format='json')
-        leaf_nodes = list()
+        trees = list()
         num_classes = 10
 
         for i_tree, tree_dump in enumerate(booster_dump):
@@ -119,9 +119,9 @@ class XGBoostClassifier(Classifier, ClassifierDecisionTree):
                 class_label = i_tree % num_classes
 
             tree_json = json.loads(tree_dump)
-            leaf_nodes.append(self._get_leaf_nodes(tree_json, i_tree, class_label, box))
+            trees.append(Tree(class_id=class_label, leaf_nodes=self._get_leaf_nodes(tree_json, i_tree, class_label, box)))
 
-        return leaf_nodes
+        return trees
 
     def _get_leaf_nodes(self, node, i_tree, class_label, box):
         from copy import deepcopy
