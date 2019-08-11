@@ -25,7 +25,7 @@ import importlib
 
 import numpy as np
 
-from art.classifiers.classifier import Classifier, ClassifierGradients
+from art.classifiers.classifier import Classifier, ClassifierGradients, ClassifierDecisionTree
 from art.utils import to_categorical
 
 logger = logging.getLogger(__name__)
@@ -238,6 +238,49 @@ class ScikitlearnDecisionTreeClassifier(ScikitlearnClassifier):
 
         return self._model.decision_path(x).indices
 
+    def get_normalised_values_at_node(self, node_id):
+        """
+        Returns the feature of given id for a node
+
+        :return: Normalized values at node node_id.
+        :rtype: `nd.array`
+        """
+        return self._model.tree_.value[node_id] / np.linalg.norm(self._model.tree_.value[node_id])
+
+    def _get_leaf_nodes(self, node_id, i_tree, class_label, box):
+        from copy import deepcopy
+        from art.metrics.metrics_trees import LeafNode, Box, Interval
+
+        leaf_nodes = list()
+
+        if self.get_left_child(node_id) != self.get_right_child(node_id):
+
+            node_left = self.get_left_child(node_id)
+            node_right = self.get_right_child(node_id)
+
+            box_left = deepcopy(box)
+            box_right = deepcopy(box)
+
+            feature = self.get_feature_at_node(node_id)
+            box_split_left = Box(intervals={feature: Interval(-np.inf, self.get_threshold_at_node(node_id))})
+            box_split_right = Box(intervals={feature: Interval(self.get_threshold_at_node(node_id), np.inf)})
+
+            if box.intervals:
+                box_left.intersect_with_box(box_split_left)
+                box_right.intersect_with_box(box_split_right)
+            else:
+                box_left = box_split_left
+                box_right = box_split_right
+
+            leaf_nodes += self._get_leaf_nodes(node_left, i_tree, class_label, box_left)
+            leaf_nodes += self._get_leaf_nodes(node_right, i_tree, class_label, box_right)
+
+        else:
+            leaf_nodes.append(LeafNode(tree_id=i_tree, class_label=class_label, node_id=node_id, box=box,
+                                       value=self.get_normalised_values_at_node(node_id)[0, class_label]))
+
+        return leaf_nodes
+
 
 class ScikitlearnExtraTreeClassifier(ScikitlearnClassifier):
     """
@@ -424,6 +467,39 @@ class ScikitlearnRandomForestClassifier(ScikitlearnClassifier):
         super(ScikitlearnRandomForestClassifier, self).__init__(model=model, clip_values=clip_values, defences=defences,
                                                                 preprocessing=preprocessing)
 
+    def get_trees(self):
+        """
+        Get the decision trees.
+
+        :return: A list of decision trees.
+        :rtype: `[Tree]`
+        """
+        from art.metrics.metrics_trees import Box, Tree
+
+        trees = list()
+
+        for i_tree, decision_tree_model in enumerate(self._model.estimators_):
+            box = Box()
+
+            #     if num_classes == 2:
+            #         class_label = -1
+            #     else:
+            #         class_label = i_tree % num_classes
+
+            decision_tree_classifier = ScikitlearnDecisionTreeClassifier(model=decision_tree_model)
+
+            for i_class in range(self._model.n_classes_):
+                class_label = i_class
+
+                trees.append(Tree(class_id=class_label,
+                                  leaf_nodes=decision_tree_classifier._get_leaf_nodes(0, i_tree, class_label, box)))
+
+        return trees
+
+    @property
+    def num_classes(self):
+        return self._model.n_classes_
+
 
 class ScikitlearnLogisticRegression(ScikitlearnClassifier, ClassifierGradients):
     """
@@ -596,7 +672,7 @@ class ScikitlearnLogisticRegression(ScikitlearnClassifier, ClassifierGradients):
         for i_sample in range(num_samples):
             for i_class in range(self.nb_classes):
                 gradients[i_sample, :] += class_weight[i_class] * (1.0 - y_preprocessed[i_sample, i_class]) * (
-                    weights[i_class, :] - w_weighted[i_sample, :])
+                        weights[i_class, :] - w_weighted[i_sample, :])
 
         gradients = self._apply_preprocessing_gradient(x, gradients)
 
@@ -691,7 +767,7 @@ class ScikitlearnSVC(ScikitlearnClassifier, ClassifierGradients):
             grad = x_i
         elif self._model.kernel == 'poly':
             grad = self._model.degree * (self._model._gamma * np.sum(x_sample * x_i) + self._model.coef0) ** (
-                self._model.degree - 1) * x_i
+                    self._model.degree - 1) * x_i
         elif self._model.kernel == 'rbf':
             grad = 2 * self._model._gamma * (-1) * np.exp(
                 -self._model._gamma * np.linalg.norm(x_sample - x_i, ord=2)) * (x_sample - x_i)

@@ -35,24 +35,21 @@ class RobustnessMetricTreeModelsCliqueMethod:
     Paper link: https://arxiv.org/abs/1906.03849,
     """
 
-    def __init__(self, classifier, num_classes):
+    def __init__(self, classifier):
         """
         Create robustness metric for decision-tree-based classifier.
 
         :param classifier: A trained decision-tree-based classifier.
         :type classifier: `art.classifiers.ClassifierDecisionTree`
-        :param num_classes: The number of classes in the classification dataset.
-        :type num_classes: `int`
         """
         self._classifier = classifier
-        self.num_classes = num_classes
         self._trees = self._classifier.get_trees()
         self.x = None
         self.y = None
         self.max_clique = None
         self.max_level = None
 
-    def verify(self, x, y, eps_init, norm=np.inf, num_search_steps=10, max_clique=2, max_level=1):
+    def verify(self, x, y, eps_init, norm=np.inf, num_search_steps=10, max_clique=2, max_level=2):
         """
         Verify the robustness of the classifier on the dataset `(x, y)`.
 
@@ -94,12 +91,12 @@ class RobustnessMetricTreeModelsCliqueMethod:
 
                 is_robust = True
 
-                if self.num_classes <= 2:
+                if self._classifier.num_classes <= 2:
                     best_score = self._get_best_score(i_sample, eps, norm, target_label=None)
                     is_robust = (self.y[i_sample] < 0.5 and best_score < 0) or (
                             self.y[i_sample] > 0.5 and best_score > 0)
                 else:
-                    for i_class in range(self.num_classes):
+                    for i_class in range(self._classifier.num_classes):
                         if i_class != self.y[i_sample]:
                             best_score = self._get_best_score(i_sample, eps, norm, target_label=i_class)
                             is_robust = is_robust and (best_score > 0)
@@ -166,7 +163,8 @@ class RobustnessMetricTreeModelsCliqueMethod:
 
             # Start searching for cliques
             for accessible_leaf in accessible_leafs[start_tree]:
-                if self.num_classes > 2 and 0 <= target_label == accessible_leaf.class_label:
+                if self._classifier.num_classes > 2 and target_label is not None \
+                        and target_label == accessible_leaf.class_label:
                     new_leaf_value = - accessible_leaf.value
                 else:
                     new_leaf_value = accessible_leaf.value
@@ -182,7 +180,8 @@ class RobustnessMetricTreeModelsCliqueMethod:
                         leaf_box = deepcopy(accessible_leaf.box)
                         leaf_box.intersect_with_box(clique['box'])
                         if leaf_box.intervals:
-                            if self.num_classes > 2 and 0 <= target_label == accessible_leaf.class_label:
+                            if self._classifier.num_classes > 2 and target_label is not None \
+                                    and target_label == accessible_leaf.class_label:
                                 new_leaf_value = - accessible_leaf.value
                             else:
                                 new_leaf_value = accessible_leaf.value
@@ -191,23 +190,19 @@ class RobustnessMetricTreeModelsCliqueMethod:
                 cliques_old = cliques_new.copy()
 
             new_nodes = list()
-
             best_score = 0.0
             for i, clique in enumerate(cliques_old):
-
-                score = clique['value']
-
                 # Create a new node without tree_id and node_id to represent clique
                 new_nodes.append(
-                    LeafNode(tree_id=None, class_label=label, node_id=None, box=clique['box'], value=score))
+                    LeafNode(tree_id=None, class_label=label, node_id=None, box=clique['box'], value=clique['value']))
 
                 if i == 0:
-                    best_score = score
+                    best_score = clique['value']
                 else:
-                    if label < 0.5 and self.num_classes <= 2:
-                        best_score = max(best_score, score)
+                    if label < 0.5 and self._classifier.num_classes <= 2:
+                        best_score = max(best_score, clique['value'])
                     else:
-                        best_score = min(best_score, score)
+                        best_score = min(best_score, clique['value'])
 
             new_nodes_list.append(new_nodes)
             best_scores_sum += best_score
@@ -233,7 +228,7 @@ class RobustnessMetricTreeModelsCliqueMethod:
         best_score = None
 
         for i_level in range(self.max_level):
-            if self.num_classes > 2 and i_level > 0:
+            if self._classifier.num_classes > 2 and i_level > 0:
                 target_label = None
             best_score, nodes = self._get_k_partite_clique(nodes, label=self.y[i_sample], target_label=target_label)
 
@@ -305,7 +300,8 @@ class RobustnessMetricTreeModelsCliqueMethod:
         accessible_leafs = list()
 
         for tree in self._trees:
-            if self.num_classes <= 2 or target_label is None or tree.class_id in [self.y[i_sample], target_label]:
+            if self._classifier.num_classes <= 2 or target_label is None or tree.class_id in [self.y[i_sample],
+                                                                                              target_label]:
 
                 leafs = list()
 
