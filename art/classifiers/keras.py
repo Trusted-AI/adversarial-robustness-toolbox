@@ -186,10 +186,6 @@ class KerasClassifier(ClassifierNeuralNetwork, ClassifierGradients, Classifier):
                  `(batch_size, 1, input_shape)` when `label` parameter is specified.
         :rtype: `np.ndarray`
         """
-        logits = kwargs.get('logits')
-        if logits is None:
-            logits = False
-
         # Check value of label for computing gradients
         if not (label is None or (isinstance(label, (int, np.integer)) and label in range(self.nb_classes))
                 or (isinstance(label, np.ndarray) and len(label.shape) == 1 and (label < self.nb_classes).all()

@@ -32,17 +32,17 @@ logger = logging.getLogger(__name__)
 
 
 # pylint: disable=C0103
-def SklearnClassifier(model=None, clip_values=None, defences=None, preprocessing=(0, 1)):
+def SklearnClassifier(model, clip_values=None, defences=None, preprocessing=(0, 1)):
     """
     Create a `Classifier` instance from a scikit-learn Classifier model. This is a convenience function that
     instantiates the correct wrapper
     class for the given scikit-learn model
 
+    :param model: scikit-learn Classifier model.
+    :type model: `sklearn.base.BaseEstimator`
     :param clip_values: Tuple of the form `(min, max)` representing the minimum and maximum values allowed
             for features.
     :type clip_values: `tuple`
-    :param model: scikit-learn Classifier model.
-    :type model: `sklearn.*` classifier for a supported type
     :param defences: Defences to be activated with the classifier.
     :type defences: :class:`.Preprocessor` or `list(Preprocessor)` instances
     :param preprocessing: Tuple of the form `(subtractor, divider)` of floats or `np.ndarray` of values to be
@@ -66,7 +66,7 @@ class ScikitlearnClassifier(Classifier):
     Wrapper class for scikit-learn classifier models.
     """
 
-    def __init__(self, model=None, clip_values=None, defences=None, preprocessing=(0, 1)):
+    def __init__(self, model, clip_values=None, defences=None, preprocessing=(0, 1)):
         """
         Create a `Classifier` instance from a scikit-learn classifier model.
 
@@ -74,7 +74,7 @@ class ScikitlearnClassifier(Classifier):
                for features.
         :type clip_values: `tuple`
         :param model: scikit-learn classifier model.
-        :type model: `sklearn`
+        :type model: `sklearn.base.BaseEstimator`
         :param defences: Defences to be activated with the classifier.
         :type defences: :class:`.Preprocessor` or `list(Preprocessor)` instances
         :param preprocessing: Tuple of the form `(subtractor, divider)` of floats or `np.ndarray` of values to be
@@ -156,15 +156,15 @@ class ScikitlearnDecisionTreeClassifier(ScikitlearnClassifier):
     Wrapper class for scikit-learn Decision Tree Classifier models.
     """
 
-    def __init__(self, model=None, clip_values=None, defences=None, preprocessing=(0, 1)):
+    def __init__(self, model, clip_values=None, defences=None, preprocessing=(0, 1)):
         """
         Create a `Classifier` instance from a scikit-learn Decision Tree Classifier model.
 
+        :param model: scikit-learn Decision Tree Classifier model.
+        :type model: `sklearn.tree.DecisionTreeClassifier`
         :param clip_values: Tuple of the form `(min, max)` representing the minimum and maximum values allowed
                for features.
         :type clip_values: `tuple`
-        :param model: scikit-learn Decision Tree Classifier model.
-        :type model: `sklearn.tree.DecisionTreeClassifier`
         :param defences: Defences to be activated with the classifier.
         :type defences: :class:`.Preprocessor` or `list(Preprocessor)` instances
         :param preprocessing: Tuple of the form `(subtractor, divider)` of floats or `np.ndarray` of values to be
@@ -180,13 +180,14 @@ class ScikitlearnDecisionTreeClassifier(ScikitlearnClassifier):
 
         super(ScikitlearnDecisionTreeClassifier, self).__init__(model=model, clip_values=clip_values, defences=defences,
                                                                 preprocessing=preprocessing)
+        self._model = model
 
     def get_classes_at_node(self, node_id):
         """
         Returns the classification for a given node
 
         :return: major class in node
-        :rtype: float
+        :rtype: `float`
         """
         return np.argmax(self._model.tree_.value[node_id])
 
@@ -195,7 +196,7 @@ class ScikitlearnDecisionTreeClassifier(ScikitlearnClassifier):
         Returns the threshold of given id for a node
 
         :return: threshold value of feature split in this node
-        :rtype: float
+        :rtype: `float`
         """
         return self._model.tree_.threshold[node_id]
 
@@ -204,7 +205,7 @@ class ScikitlearnDecisionTreeClassifier(ScikitlearnClassifier):
         Returns the feature of given id for a node
 
         :return: feature index of feature split in this node
-        :rtype: int
+        :rtype: `int`
         """
         return self._model.tree_.feature[node_id]
 
@@ -213,7 +214,7 @@ class ScikitlearnDecisionTreeClassifier(ScikitlearnClassifier):
         Returns the id of the left child node of node_id
 
         :return: the indices of the left child in the tree
-        :rtype: int
+        :rtype: `int`
         """
         return self._model.tree_.children_left[node_id]
 
@@ -222,7 +223,7 @@ class ScikitlearnDecisionTreeClassifier(ScikitlearnClassifier):
         Returns the id of the right child node of node_id
 
         :return: the indices of the right child in the tree
-        :rtype: int
+        :rtype: `int`
         """
         return self._model.tree_.children_right[node_id]
 
@@ -231,7 +232,7 @@ class ScikitlearnDecisionTreeClassifier(ScikitlearnClassifier):
         Returns the path through nodes in the tree when classifying x. Last one is leaf, first one root node.
 
         :return: the indices of the nodes in the array structure of the tree.
-        :rtype: array
+        :rtype: `np.ndarray`
         """
         if len(np.shape(x)) == 1:
             return self._model.decision_path(x.reshape(1, -1)).indices
@@ -287,15 +288,15 @@ class ScikitlearnExtraTreeClassifier(ScikitlearnDecisionTreeClassifier):
     Wrapper class for scikit-learn Extra TreeClassifier Classifier models.
     """
 
-    def __init__(self, model=None, clip_values=None, defences=None, preprocessing=(0, 1)):
+    def __init__(self, model, clip_values=None, defences=None, preprocessing=(0, 1)):
         """
         Create a `Classifier` instance from a scikit-learn Extra TreeClassifier Classifier model.
 
+        :param model: scikit-learn Extra TreeClassifier Classifier model.
+        :type model: `sklearn.tree.ExtraTreeClassifier`
         :param clip_values: Tuple of the form `(min, max)` representing the minimum and maximum values allowed
                for features.
         :type clip_values: `tuple`
-        :param model: scikit-learn Extra TreeClassifier Classifier model.
-        :type model: `sklearn.tree.ExtraTreeClassifier`
         :param defences: Defences to be activated with the classifier.
         :type defences: :class:`.Preprocessor` or `list(Preprocessor)` instances
         :param preprocessing: Tuple of the form `(subtractor, divider)` of floats or `np.ndarray` of values to be
@@ -311,6 +312,7 @@ class ScikitlearnExtraTreeClassifier(ScikitlearnDecisionTreeClassifier):
 
         super(ScikitlearnExtraTreeClassifier, self).__init__(model=model, clip_values=clip_values, defences=defences,
                                                              preprocessing=preprocessing)
+        self._model = model
 
 
 class ScikitlearnAdaBoostClassifier(ScikitlearnClassifier):
@@ -318,15 +320,15 @@ class ScikitlearnAdaBoostClassifier(ScikitlearnClassifier):
     Wrapper class for scikit-learn AdaBoost Classifier models.
     """
 
-    def __init__(self, model=None, clip_values=None, defences=None, preprocessing=(0, 1)):
+    def __init__(self, model, clip_values=None, defences=None, preprocessing=(0, 1)):
         """
         Create a `Classifier` instance from a scikit-learn AdaBoost Classifier model.
 
+        :param model: scikit-learn AdaBoost Classifier model.
+        :type model: `sklearn.ensemble.AdaBoostClassifier`
         :param clip_values: Tuple of the form `(min, max)` representing the minimum and maximum values allowed
                for features.
         :type clip_values: `tuple`
-        :param model: scikit-learn AdaBoost Classifier model.
-        :type model: `sklearn.ensemble.AdaBoostClassifier`
         :param defences: Defences to be activated with the classifier.
         :type defences: :class:`.Preprocessor` or `list(Preprocessor)` instances
         :param preprocessing: Tuple of the form `(subtractor, divider)` of floats or `np.ndarray` of values to be
@@ -342,6 +344,7 @@ class ScikitlearnAdaBoostClassifier(ScikitlearnClassifier):
 
         super(ScikitlearnAdaBoostClassifier, self).__init__(model=model, clip_values=clip_values, defences=defences,
                                                             preprocessing=preprocessing)
+        self._model = model
 
 
 class ScikitlearnBaggingClassifier(ScikitlearnClassifier):
@@ -349,15 +352,15 @@ class ScikitlearnBaggingClassifier(ScikitlearnClassifier):
     Wrapper class for scikit-learn Bagging Classifier models.
     """
 
-    def __init__(self, model=None, clip_values=None, defences=None, preprocessing=(0, 1)):
+    def __init__(self, model, clip_values=None, defences=None, preprocessing=(0, 1)):
         """
         Create a `Classifier` instance from a scikit-learn Bagging Classifier model.
 
+        :param model: scikit-learn Bagging Classifier model.
+        :type model: `sklearn.ensemble.BaggingClassifier`
         :param clip_values: Tuple of the form `(min, max)` representing the minimum and maximum values allowed
                for features.
         :type clip_values: `tuple`
-        :param model: scikit-learn Bagging Classifier model.
-        :type model: `sklearn.ensemble.BaggingClassifier`
         :param defences: Defences to be activated with the classifier.
         :type defences: :class:`.Preprocessor` or `list(Preprocessor)` instances
         :param preprocessing: Tuple of the form `(subtractor, divider)` of floats or `np.ndarray` of values to be
@@ -373,6 +376,7 @@ class ScikitlearnBaggingClassifier(ScikitlearnClassifier):
 
         super(ScikitlearnBaggingClassifier, self).__init__(model=model, clip_values=clip_values, defences=defences,
                                                            preprocessing=preprocessing)
+        self._model = model
 
 
 class ScikitlearnExtraTreesClassifier(ScikitlearnClassifier, ClassifierDecisionTree):
@@ -380,15 +384,15 @@ class ScikitlearnExtraTreesClassifier(ScikitlearnClassifier, ClassifierDecisionT
     Wrapper class for scikit-learn Extra Trees Classifier models.
     """
 
-    def __init__(self, model=None, clip_values=None, defences=None, preprocessing=(0, 1)):
+    def __init__(self, model, clip_values=None, defences=None, preprocessing=(0, 1)):
         """
         Create a `Classifier` instance from a scikit-learn Extra Trees Classifier model.
 
+        :param model: scikit-learn Extra Trees Classifier model.
+        :type model: `sklearn.ensemble.ExtraTreesClassifier`
         :param clip_values: Tuple of the form `(min, max)` representing the minimum and maximum values allowed
                for features.
         :type clip_values: `tuple`
-        :param model: scikit-learn Extra Trees Classifier model.
-        :type model: `sklearn.ensemble.ExtraTreesClassifier`
         :param defences: Defences to be activated with the classifier.
         :type defences: :class:`.Preprocessor` or `list(Preprocessor)` instances
         :param preprocessing: Tuple of the form `(subtractor, divider)` of floats or `np.ndarray` of values to be
@@ -404,6 +408,7 @@ class ScikitlearnExtraTreesClassifier(ScikitlearnClassifier, ClassifierDecisionT
 
         super(ScikitlearnExtraTreesClassifier, self).__init__(model=model, clip_values=clip_values, defences=defences,
                                                               preprocessing=preprocessing)
+        self._model = model
 
     def get_trees(self):
         """
@@ -444,15 +449,15 @@ class ScikitlearnGradientBoostingClassifier(ScikitlearnClassifier):
     Wrapper class for scikit-learn Gradient Boosting Classifier models.
     """
 
-    def __init__(self, model=None, clip_values=None, defences=None, preprocessing=(0, 1)):
+    def __init__(self, model, clip_values=None, defences=None, preprocessing=(0, 1)):
         """
         Create a `Classifier` instance from a scikit-learn Gradient Boosting Classifier model.
 
+        :param model: scikit-learn Gradient Boosting Classifier model.
+        :type model: `sklearn.ensemble.GradientBoostingClassifier`
         :param clip_values: Tuple of the form `(min, max)` representing the minimum and maximum values allowed
                for features.
         :type clip_values: `tuple`
-        :param model: scikit-learn Gradient Boosting Classifier model.
-        :type model: `sklearn.ensemble.GradientBoostingClassifier`
         :param defences: Defences to be activated with the classifier.
         :type defences: :class:`.Preprocessor` or `list(Preprocessor)` instances
         :param preprocessing: Tuple of the form `(subtractor, divider)` of floats or `np.ndarray` of values to be
@@ -468,6 +473,7 @@ class ScikitlearnGradientBoostingClassifier(ScikitlearnClassifier):
 
         super(ScikitlearnGradientBoostingClassifier, self).__init__(model=model, clip_values=clip_values,
                                                                     defences=defences, preprocessing=preprocessing)
+        self._model = model
 
 
 class ScikitlearnRandomForestClassifier(ScikitlearnClassifier):
@@ -475,15 +481,15 @@ class ScikitlearnRandomForestClassifier(ScikitlearnClassifier):
     Wrapper class for scikit-learn Random Forest Classifier models.
     """
 
-    def __init__(self, model=None, clip_values=None, defences=None, preprocessing=(0, 1)):
+    def __init__(self, model, clip_values=None, defences=None, preprocessing=(0, 1)):
         """
         Create a `Classifier` instance from a scikit-learn Random Forest Classifier model.
 
+        :param model: scikit-learn Random Forest Classifier model.
+        :type model: `sklearn.ensemble.RandomForestClassifier`
         :param clip_values: Tuple of the form `(min, max)` representing the minimum and maximum values allowed
                for features.
         :type clip_values: `tuple`
-        :param model: scikit-learn Random Forest Classifier model.
-        :type model: `sklearn.ensemble.RandomForestClassifier`
         :param defences: Defences to be activated with the classifier.
         :type defences: :class:`.Preprocessor` or `list(Preprocessor)` instances
         :param preprocessing: Tuple of the form `(subtractor, divider)` of floats or `np.ndarray` of values to be
@@ -499,6 +505,7 @@ class ScikitlearnRandomForestClassifier(ScikitlearnClassifier):
 
         super(ScikitlearnRandomForestClassifier, self).__init__(model=model, clip_values=clip_values, defences=defences,
                                                                 preprocessing=preprocessing)
+        self._model = model
 
     def get_trees(self):
         """
@@ -539,15 +546,15 @@ class ScikitlearnLogisticRegression(ScikitlearnClassifier, ClassifierGradients):
     Wrapper class for scikit-learn Logistic Regression models.
     """
 
-    def __init__(self, model=None, clip_values=None, defences=None, preprocessing=(0, 1)):
+    def __init__(self, model, clip_values=None, defences=None, preprocessing=(0, 1)):
         """
         Create a `Classifier` instance from a scikit-learn Logistic Regression model.
 
+        :param model: scikit-learn LogisticRegression model
+        :type model: `sklearn.linear_model.LogisticRegression`
         :param clip_values: Tuple of the form `(min, max)` representing the minimum and maximum values allowed
                for features.
         :type clip_values: `tuple`
-        :param model: scikit-learn LogisticRegression model
-        :type model: `sklearn.linear_model.LogisticRegression`
         :param defences: Defences to be activated with the classifier.
         :type defences: :class:`.Preprocessor` or `list(Preprocessor)` instances
         :param preprocessing: Tuple of the form `(subtractor, divider)` of floats or `np.ndarray` of values to be
@@ -558,8 +565,8 @@ class ScikitlearnLogisticRegression(ScikitlearnClassifier, ClassifierGradients):
 
         super(ScikitlearnLogisticRegression, self).__init__(model=model, clip_values=clip_values, defences=defences,
                                                             preprocessing=preprocessing)
-
         self._model = model
+
         if hasattr(self._model, 'coef_'):
             self._nb_classes = self._model.classes_.shape[0]
         else:
@@ -717,15 +724,15 @@ class ScikitlearnSVC(ScikitlearnClassifier, ClassifierGradients):
     Wrapper class for scikit-learn C-Support Vector Classification models.
     """
 
-    def __init__(self, model=None, clip_values=None, defences=None, preprocessing=(0, 1)):
+    def __init__(self, model, clip_values=None, defences=None, preprocessing=(0, 1)):
         """
         Create a `Classifier` instance from a scikit-learn C-Support Vector Classification model.
 
+        :param model: scikit-learn C-Support Vector Classification model.
+        :type model: `sklearn.svm.SVC` or `sklearn.svm.LinearSVC`
         :param clip_values: Tuple of the form `(min, max)` representing the minimum and maximum values allowed
                for features.
         :type clip_values: `tuple`
-        :param model: scikit-learn C-Support Vector Classification model.
-        :type model: `sklearn.svm.SVC`, `sklearn.svm.LinearSVC`
         :param defences: Defences to be activated with the classifier.
         :type defences: :class:`.Preprocessor` or `list(Preprocessor)` instances
         :param preprocessing: Tuple of the form `(subtractor, divider)` of floats or `np.ndarray` of values to be
@@ -741,8 +748,8 @@ class ScikitlearnSVC(ScikitlearnClassifier, ClassifierGradients):
 
         super(ScikitlearnSVC, self).__init__(model=model, clip_values=clip_values, defences=defences,
                                              preprocessing=preprocessing)
-
         self._model = model
+
         if hasattr(self._model, 'classes_'):
             self._nb_classes = len(self._model.classes_)
         else:
@@ -759,6 +766,7 @@ class ScikitlearnSVC(ScikitlearnClassifier, ClassifierGradients):
                       match the batch size of `x`, and each value will be used as target for its corresponding sample in
                       `x`. If `None`, then gradients for all classes will be computed for each sample.
         :type label: `int` or `list`
+        :raises: `NotImplementedException`
         :return: Array of gradients of input features w.r.t. each class in the form
                  `(batch_size, nb_classes, input_shape)` when computing for all classes, otherwise shape becomes
                  `(batch_size, 1, input_shape)` when `label` parameter is specified.
