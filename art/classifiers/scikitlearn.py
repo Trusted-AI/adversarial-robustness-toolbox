@@ -186,7 +186,7 @@ class ScikitlearnDecisionTreeClassifier(ScikitlearnClassifier):
         Returns the classification for a given node
 
         :return: major class in node
-        :rtype: float
+        :rtype: `float`
         """
         return np.argmax(self._model.tree_.value[node_id])
 
@@ -195,7 +195,7 @@ class ScikitlearnDecisionTreeClassifier(ScikitlearnClassifier):
         Returns the threshold of given id for a node
 
         :return: threshold value of feature split in this node
-        :rtype: float
+        :rtype: `float`
         """
         return self._model.tree_.threshold[node_id]
 
@@ -204,7 +204,7 @@ class ScikitlearnDecisionTreeClassifier(ScikitlearnClassifier):
         Returns the feature of given id for a node
 
         :return: feature index of feature split in this node
-        :rtype: int
+        :rtype: `int`
         """
         return self._model.tree_.feature[node_id]
 
@@ -213,7 +213,7 @@ class ScikitlearnDecisionTreeClassifier(ScikitlearnClassifier):
         Returns the id of the left child node of node_id
 
         :return: the indices of the left child in the tree
-        :rtype: int
+        :rtype: `int`
         """
         return self._model.tree_.children_left[node_id]
 
@@ -222,7 +222,7 @@ class ScikitlearnDecisionTreeClassifier(ScikitlearnClassifier):
         Returns the id of the right child node of node_id
 
         :return: the indices of the right child in the tree
-        :rtype: int
+        :rtype: `int`
         """
         return self._model.tree_.children_right[node_id]
 
@@ -231,7 +231,7 @@ class ScikitlearnDecisionTreeClassifier(ScikitlearnClassifier):
         Returns the path through nodes in the tree when classifying x. Last one is leaf, first one root node.
 
         :return: the indices of the nodes in the array structure of the tree.
-        :rtype: array
+        :rtype: `nd.array`
         """
         if len(np.shape(x)) == 1:
             return self._model.decision_path(x.reshape(1, -1)).indices
