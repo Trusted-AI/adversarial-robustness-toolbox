@@ -141,12 +141,12 @@ class RobustnessMetricTreeModelsCliqueMethod:
 
         return average_bound, verified_error
 
-    def _get_k_partite_clique(self, accessible_leafs, label, target_label):
+    def _get_k_partite_clique(self, accessible_leaves, label, target_label):
         """
         Find the K partite cliques among the accessible leaf nodes.
 
-        :param accessible_leafs: List of lists of accessible leaf nodes.
-        :type accessible_leafs: `list(list(LeafNode))`
+        :param accessible_leaves: List of lists of accessible leaf nodes.
+        :type accessible_leaves: `list(list(LeafNode))`
         :param label: The try label of the current sample.
         :type label: `int`
         :param target_label: The target label.
@@ -156,13 +156,13 @@ class RobustnessMetricTreeModelsCliqueMethod:
         new_nodes_list = list()
         best_scores_sum = 0.0
 
-        for start_tree in range(0, len(accessible_leafs), self.max_clique):
+        for start_tree in range(0, len(accessible_leaves), self.max_clique):
 
             cliques_old = list()
             cliques_new = list()
 
             # Start searching for cliques
-            for accessible_leaf in accessible_leafs[start_tree]:
+            for accessible_leaf in accessible_leaves[start_tree]:
                 if self._classifier.num_classes > 2 and target_label is not None \
                         and target_label == accessible_leaf.class_label:
                     new_leaf_value = - accessible_leaf.value
@@ -171,12 +171,12 @@ class RobustnessMetricTreeModelsCliqueMethod:
                 cliques_old.append({'box': accessible_leaf.box, 'value': new_leaf_value})
 
             # Loop over all all trees
-            for i_tree in range(start_tree + 1, min(len(accessible_leafs), start_tree + self.max_clique)):
+            for i_tree in range(start_tree + 1, min(len(accessible_leaves), start_tree + self.max_clique)):
                 cliques_new.clear()
                 # Loop over all existing cliques
                 for clique in cliques_old:
                     # Loop over leaf nodes in tree
-                    for accessible_leaf in accessible_leafs[i_tree]:
+                    for accessible_leaf in accessible_leaves[i_tree]:
                         leaf_box = deepcopy(accessible_leaf.box)
                         leaf_box.intersect_with_box(clique['box'])
                         if leaf_box.intervals:
@@ -224,7 +224,7 @@ class RobustnessMetricTreeModelsCliqueMethod:
         :return: The best scores.
         :rtype: `double`
         """
-        nodes = self._get_accessible_leafs(i_sample, eps, norm, target_label)
+        nodes = self._get_accessible_leaves(i_sample, eps, norm, target_label)
         best_score = None
 
         for i_level in range(self.max_level):
@@ -282,7 +282,7 @@ class RobustnessMetricTreeModelsCliqueMethod:
 
         return resulting_distance
 
-    def _get_accessible_leafs(self, i_sample, eps, norm, target_label):
+    def _get_accessible_leaves(self, i_sample, eps, norm, target_label):
         """
         Determine the leaf nodes accessible within the attack budget.
 
@@ -297,25 +297,25 @@ class RobustnessMetricTreeModelsCliqueMethod:
         :return: A list of lists of leaf nodes.
         :rtype: list(list(LeafNode))
         """
-        accessible_leafs = list()
+        accessible_leaves = list()
 
         for tree in self._trees:
             if self._classifier.num_classes <= 2 or target_label is None or tree.class_id in [self.y[i_sample],
                                                                                               target_label]:
 
-                leafs = list()
+                leaves = list()
 
                 for leaf_node in tree.leaf_nodes:
                     distance = self._get_distance(leaf_node.box, i_sample, norm)
                     if leaf_node.box and distance <= eps:
-                        leafs.append(leaf_node)
+                        leaves.append(leaf_node)
 
-                if not leafs:
-                    raise ValueError('No accessible leafs found.')
+                if not leaves:
+                    raise ValueError('No accessible leaves found.')
 
-                accessible_leafs.append(leafs)
+                accessible_leaves.append(leaves)
 
-        return accessible_leafs
+        return accessible_leaves
 
 
 class Interval:
