@@ -143,6 +143,7 @@ class EnsembleClassifier(ClassifierNeuralNetwork, ClassifierGradients, Classifie
         :type nb_epochs: `int`
         :param kwargs: Dictionary of framework-specific arguments.
         :type kwargs: `dict`
+        :raises: `NotImplementedException`
         :return: `None`
         """
         raise NotImplementedError
@@ -159,6 +160,7 @@ class EnsembleClassifier(ClassifierNeuralNetwork, ClassifierGradients, Classifie
         :type nb_epochs: `int`
         :param kwargs: Dictionary of framework-specific argument.
         :type kwargs: `dict`
+        :raises: `NotImplementedException`
         :return: `None`
         """
         raise NotImplementedError
@@ -168,6 +170,7 @@ class EnsembleClassifier(ClassifierNeuralNetwork, ClassifierGradients, Classifie
         """
         Return the hidden layers in the model, if applicable. This function is not supported for ensembles.
 
+        :raises: `NotImplementedException`
         :return: The hidden layers in the model, input and output layers excluded.
         :rtype: `list`
 
@@ -190,6 +193,7 @@ class EnsembleClassifier(ClassifierNeuralNetwork, ClassifierGradients, Classifie
         :type layer: `int` or `str`
         :param batch_size: Size of batches.
         :type batch_size: `int`
+        :raises: `NotImplementedException`
         :return: The output of `layer`, where the first dimension is the batch size corresponding to `x`.
         :rtype: `np.ndarray`
         """
@@ -286,6 +290,7 @@ class EnsembleClassifier(ClassifierNeuralNetwork, ClassifierGradients, Classifie
         :param path: Path of the folder where to store the model. If no path is specified, the model will be stored in
                      the default data location of the library `DATA_PATH`.
         :type path: `str`
+        :raises: `NotImplementedException`
         :return: None
         """
         raise NotImplementedError
