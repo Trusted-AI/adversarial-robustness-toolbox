@@ -70,6 +70,7 @@ class XGBoostClassifier(Classifier, ClassifierDecisionTree):
         :param kwargs: Dictionary of framework-specific arguments. These should be parameters supported by the
                `fit` function in `xgboost.Booster` or `xgboost.XGBClassifier` and will be passed to this function as such.
         :type kwargs: `dict`
+        :raises: `NotImplementedException`
         :return: `None`
         """
         raise NotImplementedError
