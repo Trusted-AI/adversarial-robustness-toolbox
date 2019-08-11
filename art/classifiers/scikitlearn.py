@@ -616,7 +616,7 @@ class ScikitlearnSVC(ScikitlearnClassifier, ClassifierGradients):
                for features.
         :type clip_values: `tuple`
         :param model: scikit-learn C-Support Vector Classification model.
-        :type model: `sklearn.svm.SVC`, `sklearn.svm.LinearSVC`
+        :type model: `sklearn.svm.SVC` or `sklearn.svm.LinearSVC`
         :param defences: Defences to be activated with the classifier.
         :type defences: :class:`.Preprocessor` or `list(Preprocessor)` instances
         :param preprocessing: Tuple of the form `(subtractor, divider)` of floats or `np.ndarray` of values to be
@@ -650,6 +650,7 @@ class ScikitlearnSVC(ScikitlearnClassifier, ClassifierGradients):
                       match the batch size of `x`, and each value will be used as target for its corresponding sample in
                       `x`. If `None`, then gradients for all classes will be computed for each sample.
         :type label: `int` or `list`
+        :raises: `NotImplementedException`
         :return: Array of gradients of input features w.r.t. each class in the form
                  `(batch_size, nb_classes, input_shape)` when computing for all classes, otherwise shape becomes
                  `(batch_size, 1, input_shape)` when `label` parameter is specified.

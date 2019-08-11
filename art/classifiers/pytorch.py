@@ -204,7 +204,7 @@ class PyTorchClassifier(ClassifierNeuralNetwork, ClassifierGradients, Classifier
                     self._optimizer.step()
         else:
             # Fit a generic data generator through the API
-            super(PyTorchClassifier, self).fit_generator(generator, num_epochs=nb_epochs)
+            super(PyTorchClassifier, self).fit_generator(generator, nb_epochs=nb_epochs)
 
     def class_gradient(self, x, label=None, **kwargs):
         """
