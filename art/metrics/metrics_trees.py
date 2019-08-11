@@ -87,7 +87,7 @@ class RobustnessMetricTreeModelsCliqueMethod:
             i_not_robust = None
 
             for i_step in range(num_search_steps):
-                logger.info('Search step {}: eps = {}'.format(i_step, eps))
+                logger.info('Search step {0:d}: eps = {1:.4g}'.format(i_step, eps))
 
                 is_robust = True
 
@@ -108,11 +108,11 @@ class RobustnessMetricTreeModelsCliqueMethod:
                 if is_robust:
                     if i_step == 0:
                         num_initial_successes += 1
-                    logger.info('Model is robust at eps = {}'.format(eps))
+                    logger.info('Model is robust at eps = {:.4g}'.format(eps))
                     i_robust = i_step
                     eps_robust = eps
                 else:
-                    logger.info('Model is not robust at eps = {}'.format(eps))
+                    logger.info('Model is not robust at eps = {:.4g}'.format(eps))
                     i_not_robust = i_step
                     eps_not_robust = eps
 
@@ -136,8 +136,8 @@ class RobustnessMetricTreeModelsCliqueMethod:
         verified_error = 1.0 - num_initial_successes / num_samples
         average_bound = average_bound / num_samples
 
-        logger.info('The average interval bound is: {}'.format(average_bound))
-        logger.info('The verified error at eps = {} is: {}'.format(eps_init, verified_error))
+        logger.info('The average interval bound is: {:.4g}'.format(average_bound))
+        logger.info('The verified error at eps = {0:.4g} is: {1:.4g}'.format(eps_init, verified_error))
 
         return average_bound, verified_error
 
