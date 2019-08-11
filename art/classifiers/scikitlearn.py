@@ -566,7 +566,6 @@ class ScikitlearnGradientBoostingClassifier(ScikitlearnClassifier, ClassifierDec
             box = Box()
 
             for i_class in range(num_classes):
-                print(type(self._model.estimators_[i_tree, i_class]))
                 decision_tree_classifier = ScikitlearnDecisionTreeRegressor(
                     model=self._model.estimators_[i_tree, i_class])
 
