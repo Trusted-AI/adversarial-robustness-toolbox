@@ -239,7 +239,7 @@ class ScikitlearnDecisionTreeClassifier(ScikitlearnClassifier):
 
         return self._model.decision_path(x).indices
 
-    def get_normalised_values_at_node(self, node_id):
+    def get_values_at_node(self, node_id):
         """
         Returns the feature of given id for a node
 
@@ -278,7 +278,82 @@ class ScikitlearnDecisionTreeClassifier(ScikitlearnClassifier):
 
         else:
             leaf_nodes.append(LeafNode(tree_id=i_tree, class_label=class_label, node_id=node_id, box=box,
-                                       value=self.get_normalised_values_at_node(node_id)[0, class_label]))
+                                       value=self.get_values_at_node(node_id)[0, class_label]))
+
+        return leaf_nodes
+
+
+class ScikitlearnDecisionTreeRegressor(ScikitlearnDecisionTreeClassifier):
+    """
+    Wrapper class for scikit-learn Decision Tree Regressor models.
+    """
+
+    def __init__(self, model, clip_values=None, defences=None, preprocessing=(0, 1)):
+        """
+        Create a `Regressor` instance from a scikit-learn Decision Tree Regressor model.
+
+        :param model: scikit-learn Decision Tree Regressor model.
+        :type model: `sklearn.tree.DecisionTreeRegressor`
+        :param clip_values: Tuple of the form `(min, max)` representing the minimum and maximum values allowed
+               for features.
+        :type clip_values: `tuple`
+        :param defences: Defences to be activated with the classifier.
+        :type defences: :class:`.Preprocessor` or `list(Preprocessor)` instances
+        :param preprocessing: Tuple of the form `(subtractor, divider)` of floats or `np.ndarray` of values to be
+               used for data preprocessing. The first value will be subtracted from the input. The input will then
+               be divided by the second one.
+        :type preprocessing: `tuple`
+        """
+        # pylint: disable=E0001
+        from sklearn.tree import DecisionTreeRegressor
+
+        if not isinstance(model, DecisionTreeRegressor):
+            raise TypeError('Model must be of type sklearn.tree.DecisionTreeRegressor')
+
+        ScikitlearnClassifier.__init__(self, model=model, clip_values=clip_values, defences=defences,
+                                       preprocessing=preprocessing)
+        self._model = model
+
+    def get_values_at_node(self, node_id):
+        """
+        Returns the feature of given id for a node
+
+        :return: Normalized values at node node_id.
+        :rtype: `nd.array`
+        """
+        return self._model.tree_.value[node_id]
+
+    def _get_leaf_nodes(self, node_id, i_tree, class_label, box):
+        from copy import deepcopy
+        from art.metrics.metrics_trees import LeafNode, Box, Interval
+
+        leaf_nodes = list()
+
+        if self.get_left_child(node_id) != self.get_right_child(node_id):
+
+            node_left = self.get_left_child(node_id)
+            node_right = self.get_right_child(node_id)
+
+            box_left = deepcopy(box)
+            box_right = deepcopy(box)
+
+            feature = self.get_feature_at_node(node_id)
+            box_split_left = Box(intervals={feature: Interval(-np.inf, self.get_threshold_at_node(node_id))})
+            box_split_right = Box(intervals={feature: Interval(self.get_threshold_at_node(node_id), np.inf)})
+
+            if box.intervals:
+                box_left.intersect_with_box(box_split_left)
+                box_right.intersect_with_box(box_split_right)
+            else:
+                box_left = box_split_left
+                box_right = box_split_right
+
+            leaf_nodes += self._get_leaf_nodes(node_left, i_tree, class_label, box_left)
+            leaf_nodes += self._get_leaf_nodes(node_right, i_tree, class_label, box_right)
+
+        else:
+            leaf_nodes.append(LeafNode(tree_id=i_tree, class_label=class_label, node_id=node_id, box=box,
+                                       value=self.get_values_at_node(node_id)[0, 0]))
 
         return leaf_nodes
 
@@ -444,7 +519,7 @@ class ScikitlearnExtraTreesClassifier(ScikitlearnClassifier, ClassifierDecisionT
         return self._model.n_classes_
 
 
-class ScikitlearnGradientBoostingClassifier(ScikitlearnClassifier):
+class ScikitlearnGradientBoostingClassifier(ScikitlearnClassifier, ClassifierDecisionTree):
     """
     Wrapper class for scikit-learn Gradient Boosting Classifier models.
     """
@@ -474,6 +549,40 @@ class ScikitlearnGradientBoostingClassifier(ScikitlearnClassifier):
         super(ScikitlearnGradientBoostingClassifier, self).__init__(model=model, clip_values=clip_values,
                                                                     defences=defences, preprocessing=preprocessing)
         self._model = model
+
+    def get_trees(self):
+        """
+        Get the decision trees.
+
+        :return: A list of decision trees.
+        :rtype: `[Tree]`
+        """
+        from art.metrics.metrics_trees import Box, Tree
+
+        trees = list()
+        num_trees, num_classes = self._model.estimators_.shape
+
+        for i_tree in range(num_trees):
+            box = Box()
+
+            for i_class in range(num_classes):
+                print(type(self._model.estimators_[i_tree, i_class]))
+                decision_tree_classifier = ScikitlearnDecisionTreeRegressor(
+                    model=self._model.estimators_[i_tree, i_class])
+
+                if num_classes == 2:
+                    class_label = None
+                else:
+                    class_label = i_class
+
+                trees.append(Tree(class_id=class_label,
+                                  leaf_nodes=decision_tree_classifier._get_leaf_nodes(0, i_tree, class_label, box)))
+
+        return trees
+
+    @property
+    def num_classes(self):
+        return self._model.n_classes_
 
 
 class ScikitlearnRandomForestClassifier(ScikitlearnClassifier):
