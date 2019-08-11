@@ -37,7 +37,7 @@ class ScoringFunctions:
         :param no_records: no of records
         :type no_records: `list`
         :param alpha: alpha threshold
-        :type alpha: `nd.array`
+        :type alpha: `np.ndarray`
         :return: score
         :rtype: `list`
         """
@@ -96,7 +96,7 @@ class ScoringFunctions:
         :param no_records: no of records
         :type no_records: `list`
         :param alpha: alpha threshold
-        :type alpha: `nd.array`
+        :type alpha: `np.ndarray`
         :return: score
         :rtype: `list`
         """
