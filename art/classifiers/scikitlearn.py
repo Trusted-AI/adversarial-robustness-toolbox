@@ -283,7 +283,7 @@ class ScikitlearnDecisionTreeClassifier(ScikitlearnClassifier):
         return leaf_nodes
 
 
-class ScikitlearnExtraTreeClassifier(ScikitlearnClassifier):
+class ScikitlearnExtraTreeClassifier(ScikitlearnDecisionTreeClassifier):
     """
     Wrapper class for scikit-learn Extra TreeClassifier Classifier models.
     """
@@ -379,7 +379,7 @@ class ScikitlearnBaggingClassifier(ScikitlearnClassifier):
         self._model = model
 
 
-class ScikitlearnExtraTreesClassifier(ScikitlearnClassifier):
+class ScikitlearnExtraTreesClassifier(ScikitlearnClassifier, ClassifierDecisionTree):
     """
     Wrapper class for scikit-learn Extra Trees Classifier models.
     """
@@ -409,6 +409,39 @@ class ScikitlearnExtraTreesClassifier(ScikitlearnClassifier):
         super(ScikitlearnExtraTreesClassifier, self).__init__(model=model, clip_values=clip_values, defences=defences,
                                                               preprocessing=preprocessing)
         self._model = model
+
+    def get_trees(self):
+        """
+        Get the decision trees.
+
+        :return: A list of decision trees.
+        :rtype: `[Tree]`
+        """
+        from art.metrics.metrics_trees import Box, Tree
+
+        trees = list()
+
+        for i_tree, decision_tree_model in enumerate(self._model.estimators_):
+            box = Box()
+
+            #     if num_classes == 2:
+            #         class_label = -1
+            #     else:
+            #         class_label = i_tree % num_classes
+
+            decision_tree_classifier = ScikitlearnExtraTreeClassifier(model=decision_tree_model)
+
+            for i_class in range(self._model.n_classes_):
+                class_label = i_class
+
+                trees.append(Tree(class_id=class_label,
+                                  leaf_nodes=decision_tree_classifier._get_leaf_nodes(0, i_tree, class_label, box)))
+
+        return trees
+
+    @property
+    def num_classes(self):
+        return self._model.n_classes_
 
 
 class ScikitlearnGradientBoostingClassifier(ScikitlearnClassifier):
