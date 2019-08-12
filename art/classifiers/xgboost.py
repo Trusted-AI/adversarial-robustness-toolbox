@@ -97,7 +97,6 @@ class XGBoostClassifier(Classifier, ClassifierDecisionTree):
         elif isinstance(self._model, XGBClassifier):
             return self._model.predict(x_preprocessed)
 
-    @property
     def nb_classes(self):
         return self._model.n_classes_
 
@@ -129,7 +128,8 @@ class XGBoostClassifier(Classifier, ClassifierDecisionTree):
                 class_label = i_tree % self._model.n_classes_
 
             tree_json = json.loads(tree_dump)
-            trees.append(Tree(class_id=class_label, leaf_nodes=self._get_leaf_nodes(tree_json, i_tree, class_label, box)))
+            trees.append(
+                Tree(class_id=class_label, leaf_nodes=self._get_leaf_nodes(tree_json, i_tree, class_label, box)))
 
         return trees
 

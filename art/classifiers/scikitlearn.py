@@ -129,6 +129,20 @@ class ScikitlearnClassifier(Classifier):
 
         return y_pred
 
+    def nb_classes(self):
+        """
+        Return the number of output classes.
+
+        :return: Number of classes in the data.
+        :rtype: `int` or `None`
+        """
+        # return self._model.n_classes_
+        if hasattr(self._model, 'n_classes_'):
+            _nb_classes = self._model.n_classes_
+        else:
+            _nb_classes = None
+        return _nb_classes
+
     def save(self, filename, path=None):
         import pickle
         with open(filename + '.pickle', 'wb') as file_pickle:
@@ -514,10 +528,6 @@ class ScikitlearnExtraTreesClassifier(ScikitlearnClassifier, ClassifierDecisionT
 
         return trees
 
-    @property
-    def num_classes(self):
-        return self._model.n_classes_
-
 
 class ScikitlearnGradientBoostingClassifier(ScikitlearnClassifier, ClassifierDecisionTree):
     """
@@ -578,10 +588,6 @@ class ScikitlearnGradientBoostingClassifier(ScikitlearnClassifier, ClassifierDec
                                   leaf_nodes=decision_tree_classifier._get_leaf_nodes(0, i_tree, class_label, box)))
 
         return trees
-
-    @property
-    def num_classes(self):
-        return self._model.n_classes_
 
 
 class ScikitlearnRandomForestClassifier(ScikitlearnClassifier):
@@ -644,10 +650,6 @@ class ScikitlearnRandomForestClassifier(ScikitlearnClassifier):
 
         return trees
 
-    @property
-    def num_classes(self):
-        return self._model.n_classes_
-
 
 class ScikitlearnLogisticRegression(ScikitlearnClassifier, ClassifierGradients):
     """
@@ -675,10 +677,18 @@ class ScikitlearnLogisticRegression(ScikitlearnClassifier, ClassifierGradients):
                                                             preprocessing=preprocessing)
         self._model = model
 
+    def nb_classes(self):
+        """
+        Return the number of output classes.
+
+        :return: Number of classes in the data.
+        :rtype: `int` or `None`
+        """
         if hasattr(self._model, 'coef_'):
-            self._nb_classes = self._model.classes_.shape[0]
+            _nb_classes = self._model.classes_.shape[0]
         else:
-            self._nb_classes = None
+            _nb_classes = None
+        return _nb_classes
 
     def class_gradient(self, x, label=None, **kwargs):
         """
@@ -715,7 +725,7 @@ class ScikitlearnLogisticRegression(ScikitlearnClassifier, ClassifierGradients):
             # Compute the gradients w.r.t. all classes
             class_gradients = list()
 
-            for i_class in range(self.nb_classes):
+            for i_class in range(self.nb_classes()):
                 class_gradient = np.zeros(x.shape)
                 for i_sample in range(nb_samples):
                     class_gradient[i_sample, :] += (weights[i_class, :] - w_weighted[i_sample, :])
@@ -808,7 +818,7 @@ class ScikitlearnLogisticRegression(ScikitlearnClassifier, ClassifierGradients):
 
         y_index = np.argmax(y_preprocessed, axis=1)
         if self._model.class_weight is None or self._model.class_weight == 'balanced':
-            class_weight = np.ones(self.nb_classes)
+            class_weight = np.ones(self.nb_classes())
         else:
             class_weight = compute_class_weight(class_weight=self._model.class_weight, classes=self._model.classes_,
                                                 y=y_index)
@@ -818,7 +828,7 @@ class ScikitlearnLogisticRegression(ScikitlearnClassifier, ClassifierGradients):
         w_weighted = np.matmul(y_pred, weights)
 
         for i_sample in range(num_samples):
-            for i_class in range(self.nb_classes):
+            for i_class in range(self.nb_classes()):
                 gradients[i_sample, :] += class_weight[i_class] * (1.0 - y_preprocessed[i_sample, i_class]) * (
                         weights[i_class, :] - w_weighted[i_sample, :])
 
@@ -857,11 +867,6 @@ class ScikitlearnSVC(ScikitlearnClassifier, ClassifierGradients):
         super(ScikitlearnSVC, self).__init__(model=model, clip_values=clip_values, defences=defences,
                                              preprocessing=preprocessing)
         self._model = model
-
-        if hasattr(self._model, 'classes_'):
-            self._nb_classes = len(self._model.classes_)
-        else:
-            self._nb_classes = None
 
     def class_gradient(self, x, label=None, **kwargs):
         """
@@ -970,7 +975,7 @@ class ScikitlearnSVC(ScikitlearnClassifier, ClassifierGradients):
 
                 i_label = y_index[i_sample]
 
-                for i_not_label in range(self.nb_classes):
+                for i_not_label in range(self.nb_classes()):
 
                     if i_label != i_not_label:
 
@@ -1037,10 +1042,23 @@ class ScikitlearnSVC(ScikitlearnClassifier, ClassifierGradients):
         else:
             y_pred_label = self._model.predict(X=x_preprocessed)
             targets = np.array(y_pred_label).reshape(-1)
-            one_hot_targets = np.eye(self.nb_classes)[targets]
+            one_hot_targets = np.eye(self.nb_classes())[targets]
             y_pred = one_hot_targets
 
         return y_pred
+
+    def nb_classes(self):
+        """
+        Return the number of output classes.
+
+        :return: Number of classes in the data.
+        :rtype: `int` or `None`
+        """
+        if hasattr(self._model, 'classes_'):
+            _nb_classes = len(self._model.classes_)
+        else:
+            _nb_classes = None
+        return _nb_classes
 
 
 ScikitlearnLinearSVC = ScikitlearnSVC

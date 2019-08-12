@@ -435,6 +435,16 @@ class TFClassifier(ClassifierNeuralNetwork, ClassifierGradients, Classifier):
             self._learning_phase = train
             self._feed_dict[self._learning] = train
 
+    @property
+    def nb_classes(self):
+        """
+        Return the number of output classes.
+
+        :return: Number of classes in the data.
+        :rtype: `int`
+        """
+        return self._nb_classes
+
     def save(self, filename, path=None):
         """
         Save a model to file in the format specific to the backend framework. For TensorFlow, .ckpt is used.
