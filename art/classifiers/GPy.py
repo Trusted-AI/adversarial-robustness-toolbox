@@ -20,7 +20,7 @@ from __future__ import absolute_import, division, print_function, unicode_litera
 import logging
 import numpy as np
 
-from art.classifiers import Classifier
+from art.classifiers import Classifier, ClassifierGradients
 
 logger = logging.getLogger(__name__)
 
@@ -49,7 +49,7 @@ class GPyClassifier(Classifier):
                be divided by the second one.
         :type preprocessing: `tuple`
         """
-        super(GPyClassifier, self).__init__(clip_values=clip_values, channel_index=channel_index,
+        super(GPyClassifier, self).__init__(clip_values=clip_values,
                                             defences=defences, preprocessing=preprocessing)
 
         self.model = model
@@ -106,7 +106,7 @@ class GPyClassifier(Classifier):
         self.model.save_model(filename, save_data=False)
 
 
-class GPyGaussianProcessClassifier(GPyClassifier):
+class GPyGaussianProcessClassifier(GPyClassifier, ClassifierGradients):
     """
     Wrapper class for scikit-learn Decision Tree Classifier models.
     """
