@@ -167,10 +167,10 @@ class GPyGaussianProcessClassifier(GPyClassifier):
                 sur = self.predict(np.repeat(x[i].reshape(1, -1),
                                              np.shape(x)[1], 0) + eps*np.eye(np.shape(x)[1]))[:, c]
                 grads[i, c] = ((sur-ind)*eps).reshape(1, -1)
-        if label is None:
-            return grads
-        else:
+        if not(label is None):
             return grads[:, label, :].reshape(np.shape(x)[0], 1, np.shape(x)[1])
+        else:
+            return grads
 
     def get_activations(self, x, layer, batch_size):
         raise NotImplementedError
