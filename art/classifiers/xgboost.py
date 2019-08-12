@@ -97,6 +97,10 @@ class XGBoostClassifier(Classifier, ClassifierDecisionTree):
         elif isinstance(self._model, XGBClassifier):
             return self._model.predict(x_preprocessed)
 
+    @property
+    def nb_classes(self):
+        return self._model.n_classes_
+
     def save(self, filename, path=None):
         import pickle
         with open(filename + '.pickle', 'wb') as file_pickle:
