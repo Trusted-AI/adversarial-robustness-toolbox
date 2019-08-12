@@ -117,7 +117,7 @@ class TestPyTorchClassifier(unittest.TestCase):
 
     def test_nb_classes(self):
         ptc = self.module_classifier
-        self.assertEqual(ptc.nb_classes, 10)
+        self.assertEqual(ptc.nb_classes(), 10)
 
     def test_input_shape(self):
         ptc = self.module_classifier

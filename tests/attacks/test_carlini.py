@@ -66,7 +66,7 @@ class TestCarliniL2(unittest.TestCase):
         # Failure attack
         cl2m = CarliniL2Method(classifier=tfc, targeted=True, max_iter=0, binary_search_steps=0, learning_rate=0,
                                initial_const=1)
-        params = {'y': random_targets(y_test, tfc.nb_classes)}
+        params = {'y': random_targets(y_test, tfc.nb_classes())}
         x_test_adv = cl2m.generate(x_test, **params)
         self.assertTrue((x_test_adv <= 1.0001).all())
         self.assertTrue((x_test_adv >= -0.0001).all())
@@ -89,7 +89,7 @@ class TestCarliniL2(unittest.TestCase):
 
         # First attack
         cl2m = CarliniL2Method(classifier=tfc, targeted=True, max_iter=10)
-        params = {'y': random_targets(y_test, tfc.nb_classes)}
+        params = {'y': random_targets(y_test, tfc.nb_classes())}
         x_test_adv = cl2m.generate(x_test, **params)
         self.assertFalse((x_test == x_test_adv).all())
         self.assertTrue((x_test_adv <= 1.0001).all())
@@ -130,7 +130,7 @@ class TestCarliniL2(unittest.TestCase):
 
         # First attack
         cl2m = CarliniL2Method(classifier=krc, targeted=True, max_iter=10)
-        params = {'y': random_targets(y_test, krc.nb_classes)}
+        params = {'y': random_targets(y_test, krc.nb_classes())}
         x_test_adv = cl2m.generate(x_test, **params)
         self.assertFalse((x_test == x_test_adv).all())
         self.assertTrue((x_test_adv <= 1.0001).all())
@@ -172,7 +172,7 @@ class TestCarliniL2(unittest.TestCase):
 
         # First attack
         cl2m = CarliniL2Method(classifier=ptc, targeted=True, max_iter=10)
-        params = {'y': random_targets(y_test, ptc.nb_classes)}
+        params = {'y': random_targets(y_test, ptc.nb_classes())}
         x_test_adv = cl2m.generate(x_test, **params)
         self.assertFalse((x_test == x_test_adv).all())
         self.assertTrue((x_test_adv <= 1.0001).all())
@@ -363,7 +363,7 @@ class TestCarliniLInf(TestCarliniL2):
 
         # Failure attack
         clinfm = CarliniLInfMethod(classifier=tfc, targeted=True, max_iter=0, learning_rate=0, eps=0.5)
-        params = {'y': random_targets(y_test, tfc.nb_classes)}
+        params = {'y': random_targets(y_test, tfc.nb_classes())}
         x_test_adv = clinfm.generate(x_test, **params)
         self.assertTrue((x_test_adv <= 1.0001).all())
         self.assertTrue((x_test_adv >= -0.0001).all())
@@ -386,7 +386,7 @@ class TestCarliniLInf(TestCarliniL2):
 
         # First attack
         clinfm = CarliniLInfMethod(classifier=tfc, targeted=True, max_iter=10, eps=0.5)
-        params = {'y': random_targets(y_test, tfc.nb_classes)}
+        params = {'y': random_targets(y_test, tfc.nb_classes())}
         x_test_adv = clinfm.generate(x_test, **params)
         self.assertFalse((x_test == x_test_adv).all())
         self.assertTrue((x_test_adv <= 1.0001).all())
@@ -427,7 +427,7 @@ class TestCarliniLInf(TestCarliniL2):
 
         # First attack
         clinfm = CarliniLInfMethod(classifier=krc, targeted=True, max_iter=10, eps=0.5)
-        params = {'y': random_targets(y_test, krc.nb_classes)}
+        params = {'y': random_targets(y_test, krc.nb_classes())}
         x_test_adv = clinfm.generate(x_test, **params)
         self.assertFalse((x_test == x_test_adv).all())
         self.assertTrue((x_test_adv <= 1.0001).all())
@@ -469,7 +469,7 @@ class TestCarliniLInf(TestCarliniL2):
 
         # First attack
         clinfm = CarliniLInfMethod(classifier=ptc, targeted=True, max_iter=10, eps=0.5)
-        params = {'y': random_targets(y_test, ptc.nb_classes)}
+        params = {'y': random_targets(y_test, ptc.nb_classes())}
         x_test_adv = clinfm.generate(x_test, **params)
         self.assertFalse((x_test == x_test_adv).all())
         self.assertTrue((x_test_adv <= 1.0001).all())

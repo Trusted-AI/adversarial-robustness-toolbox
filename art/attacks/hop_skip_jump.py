@@ -131,7 +131,7 @@ class HopSkipJump(Attack):
                                            adv_init=x_adv_init[ind], clip_min=clip_min, clip_max=clip_max)
 
         if y is not None:
-            y = to_categorical(y, self.classifier.nb_classes)
+            y = to_categorical(y, self.classifier.nb_classes())
 
         logger.info('Success rate of HopSkipJump attack: %.2f%%',
                     100 * compute_success(self.classifier, x, y, x_adv, self.targeted, batch_size=self.batch_size))
