@@ -124,6 +124,16 @@ class Classifier(ABC):
         """
         return self._input_shape
 
+    @property
+    def nb_classes(self):
+        """
+        Return the number of output classes.
+
+        :return: Number of classes in the data.
+        :rtype: `int`
+        """
+        raise NotImplementedError
+
     @abc.abstractmethod
     def save(self, filename, path=None):
         """
@@ -289,16 +299,6 @@ class ClassifierNeuralNetwork(ABC):
             self.fit(x_preprocessed, y_preprocessed, nb_epochs=1, batch_size=len(x), **kwargs)
 
     @property
-    def nb_classes(self):
-        """
-        Return the number of output classes.
-
-        :return: Number of classes in the data.
-        :rtype: `int`
-        """
-        return self._nb_classes
-
-    @property
     def channel_index(self):
         """
         :return: Index of the axis in input data containing the color channels.
@@ -412,16 +412,6 @@ class ClassifierGradients(ABC):
         :rtype: `np.ndarray`
         """
         raise NotImplementedError
-
-    @property
-    def nb_classes(self):
-        """
-        Return the number of output classes.
-
-        :return: Number of classes in the data.
-        :rtype: `int`
-        """
-        return self._nb_classes
 
     def _apply_preprocessing_gradient(self, x, gradients):
         """
