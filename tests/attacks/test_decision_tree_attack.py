@@ -31,6 +31,7 @@ from art.classifiers.scikitklearn import ScikitlearnDecisionTreeClassifier
 
 logger = logging.getLogger('testLogger')
 
+
 class TestdecisionTreeattack(unittest.TestCase):
     """
     A unittest class for testing the decision tree attack.
@@ -49,16 +50,18 @@ class TestdecisionTreeattack(unittest.TestCase):
 
     def test_scikitlearn(self):
         clf = DecisionTreeClassifier()
-        clf.fit(self.X,self.y)
+        clf.fit(self.X, self.y)
         clf_art = ScikitlearnDecisionTreeClassifier(clf)
         attack = Decision_Tree_Attack(clf_art)
         adv = attack.generate(self.X[:25])
         #all crafting should succeed
-        self.assert(np.sum(clf.predict(adv)==clf.predict(self.X[:25]))==0)
-        targets = np.array([1,1,1,2,2,2,3,3,3,4,4,4,5,5,5,6,6,6,7,7,7,8,8,8,9])
-        adv = attack.generate(self.X[:25],targets)
+        self.assert(np.sum(clf.predict(adv) == clf.predict(self.X[:25])) == 0)
+        targets = np.array([1, 1, 1, 2, 2, 2, 3, 3, 3, 4, 4,
+                            4, 5, 5, 5, 6, 6, 6, 7, 7, 7, 8, 8, 8, 9])
+        adv = attack.generate(self.X[:25], targets)
         #all targeted crafting should succeed as well
-        self.assert(np.sum(cl.predict(adv)==targets)==25.0)
+        self.assert(np.sum(cl.predict(adv) == targets) == 25.0)
+
 
 if __name__ == '__main__':
     unittest.main()
