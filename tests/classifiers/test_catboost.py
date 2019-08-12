@@ -1,5 +1,3 @@
-# Comment out because of compatibility issues with numpy versions
-
 # from __future__ import absolute_import, division, print_function, unicode_literals
 #
 # import logging
@@ -15,7 +13,7 @@
 # np.random.seed(seed=1234)
 #
 #
-# class TestXGBoostClassifier(unittest.TestCase):
+# class TestCatBoostClassifier(unittest.TestCase):
 #
 #     @classmethod
 #     def setUpClass(cls):

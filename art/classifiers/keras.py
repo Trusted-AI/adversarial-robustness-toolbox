@@ -15,6 +15,9 @@
 # AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT,
 # TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 # SOFTWARE.
+"""
+This module implements the classifier `KerasClassifier` for Keras models.
+"""
 from __future__ import absolute_import, division, print_function, unicode_literals
 
 import logging
@@ -22,12 +25,12 @@ import logging
 import numpy as np
 import six
 
-from art.classifiers import Classifier
+from art.classifiers.classifier import Classifier, ClassifierNeuralNetwork, ClassifierGradients
 
 logger = logging.getLogger(__name__)
 
 
-class KerasClassifier(Classifier):
+class KerasClassifier(ClassifierNeuralNetwork, ClassifierGradients, Classifier):
     """
     Wrapper class for importing Keras models. The supported backends for Keras are TensorFlow and Theano.
     """
@@ -62,8 +65,8 @@ class KerasClassifier(Classifier):
                output probability rather than the logits by attacks.
         :type custom_activation: `bool`
         """
-        super(KerasClassifier, self).__init__(clip_values=clip_values, channel_index=channel_index, defences=defences,
-                                              preprocessing=preprocessing)
+        super(KerasClassifier, self).__init__(clip_values=clip_values, defences=defences,
+                                              preprocessing=preprocessing, channel_index=channel_index)
 
         self._model = model
         self._input_layer = input_layer
@@ -163,7 +166,7 @@ class KerasClassifier(Classifier):
         # Get the internal layer
         self._layer_names = self._get_layers()
 
-    def loss_gradient(self, x, y):
+    def loss_gradient(self, x, y, **kwargs):
         """
         Compute the gradient of the loss function w.r.t. `x`.
 
@@ -188,7 +191,7 @@ class KerasClassifier(Classifier):
 
         return grads
 
-    def class_gradient(self, x, label=None, logits=False):
+    def class_gradient(self, x, label=None, **kwargs):
         """
         Compute per-class derivatives w.r.t. `x`.
 
@@ -206,6 +209,10 @@ class KerasClassifier(Classifier):
                  `(batch_size, 1, input_shape)` when `label` parameter is specified.
         :rtype: `np.ndarray`
         """
+        logits = kwargs.get('logits')
+        if logits is None:
+            logits = False
+
         # Check value of label for computing gradients
         if not (label is None or (isinstance(label, (int, np.integer)) and label in range(self.nb_classes))
                 or (isinstance(label, np.ndarray) and len(label.shape) == 1 and (label < self.nb_classes).all()
@@ -248,7 +255,7 @@ class KerasClassifier(Classifier):
 
         return grads
 
-    def predict(self, x, logits=False, batch_size=128):
+    def predict(self, x, logits=False, batch_size=128, **kwargs):
         """
         Perform prediction for a batch of inputs.
 

@@ -27,8 +27,8 @@ import tensorflow as tf
 from art.attacks.deepfool import DeepFool
 from art.classifiers import KerasClassifier
 from art.utils import load_dataset, get_labels_np_array, master_seed
-from art.utils import get_classifier_tf, get_classifier_kr, get_classifier_pt
-from art.utils import get_iris_classifier_tf, get_iris_classifier_kr, get_iris_classifier_pt
+from art.utils_test import get_classifier_tf, get_classifier_kr, get_classifier_pt
+from art.utils_test import get_iris_classifier_tf, get_iris_classifier_kr, get_iris_classifier_pt
 
 logger = logging.getLogger('testLogger')
 
@@ -144,6 +144,33 @@ class TestDeepFool(unittest.TestCase):
 
         acc = np.sum(np.argmax(test_y_pred, axis=1) == np.argmax(y_test, axis=1)) / y_test.shape[0]
         logger.info('Accuracy on adversarial test examples: %.2f%%', (acc * 100))
+
+    def test_classifier_type_check_fail_classifier(self):
+        # Use a useless test classifier to test basic classifier properties
+        class ClassifierNoAPI:
+            pass
+
+        classifier = ClassifierNoAPI
+        with self.assertRaises(TypeError) as context:
+            _ = DeepFool(classifier=classifier)
+
+        self.assertIn('For `DeepFool` classifier must be an instance of '
+                      '`art.classifiers.classifier.Classifier`, the provided classifier is instance of '
+                      '(<class \'object\'>,).', str(context.exception))
+
+    def test_classifier_type_check_fail_gradients(self):
+        # Use a test classifier not providing gradients required by white-box attack
+        from art.classifiers.scikitklearn import ScikitlearnDecisionTreeClassifier
+        from sklearn.tree import DecisionTreeClassifier
+
+        classifier = ScikitlearnDecisionTreeClassifier(model=DecisionTreeClassifier())
+        with self.assertRaises(TypeError) as context:
+            _ = DeepFool(classifier=classifier)
+
+        self.assertIn('For `DeepFool` classifier must be an instance of '
+                      '`art.classifiers.classifier.ClassifierNeuralNetwork` and '
+                      '`art.classifiers.classifier.ClassifierGradients`, the provided classifier is instance of '
+                      '(<class \'art.classifiers.scikitklearn.ScikitlearnClassifier\'>,).', str(context.exception))
 
 
 class TestDeepFoolVectors(unittest.TestCase):

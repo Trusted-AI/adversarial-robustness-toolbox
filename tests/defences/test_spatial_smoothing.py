@@ -68,9 +68,9 @@ class TestLocalSpatialSmoothing(unittest.TestCase):
 
         x_new = np.arange(9).reshape(1, 3, 3, 1)
         preprocess = SpatialSmoothing()
-        new_smooth_x, _ = preprocess(x_new)
+        x_new_smooth, _ = preprocess(x_new)
 
-        self.assertTrue((x_smooth[0, 0] == new_smooth_x[0, :, :, 0]).all())
+        self.assertTrue((x_smooth[0, 0] == x_new_smooth[0, :, :, 0]).all())
 
     def test_failure(self):
         x = np.arange(10).reshape(5, 2)
@@ -78,7 +78,7 @@ class TestLocalSpatialSmoothing(unittest.TestCase):
         with self.assertRaises(ValueError) as context:
             preprocess(x)
 
-        self.assertTrue('Feature vectors detected.' in str(context.exception))
+        self.assertIn('Feature vectors detected.', str(context.exception))
 
 
 if __name__ == '__main__':

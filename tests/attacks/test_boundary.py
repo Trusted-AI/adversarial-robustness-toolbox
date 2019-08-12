@@ -26,8 +26,9 @@ import tensorflow as tf
 
 from art.attacks import BoundaryAttack
 from art.classifiers import KerasClassifier
-from art.utils import load_dataset, random_targets, master_seed, get_classifier_tf, get_classifier_kr, get_classifier_pt
-from art.utils import get_iris_classifier_tf, get_iris_classifier_kr, get_iris_classifier_pt
+from art.utils import load_dataset, random_targets, master_seed
+from art.utils_test import get_classifier_tf, get_classifier_kr, get_classifier_pt
+from art.utils_test import get_iris_classifier_tf, get_iris_classifier_kr, get_iris_classifier_pt
 
 logger = logging.getLogger('testLogger')
 
@@ -130,6 +131,7 @@ class TestBoundary(unittest.TestCase):
 
         # Clean-up session
         k.clear_session()
+        sess.close()
 
     def test_ptclassifier(self):
         """
@@ -167,6 +169,18 @@ class TestBoundary(unittest.TestCase):
         y_pred = np.argmax(ptc.predict(x_test), axis=1)
         y_pred_adv = np.argmax(ptc.predict(x_test_adv), axis=1)
         self.assertTrue((y_pred != y_pred_adv).any())
+
+    def test_classifier_type_check_fail_classifier(self):
+        # Use a useless test classifier to test basic classifier properties
+        class ClassifierNoAPI:
+            pass
+
+        classifier = ClassifierNoAPI
+        with self.assertRaises(TypeError) as context:
+            _ = BoundaryAttack(classifier=classifier)
+
+        self.assertIn('For `BoundaryAttack` classifier must be an instance of `art.classifiers.classifier.Classifier`, '
+                      'the provided classifier is instance of (<class \'object\'>,).', str(context.exception))
 
 
 class TestBoundaryVectors(unittest.TestCase):

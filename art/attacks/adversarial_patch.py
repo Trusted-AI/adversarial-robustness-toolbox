@@ -15,6 +15,13 @@
 # AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT,
 # TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 # SOFTWARE.
+"""
+This module implements the adversarial patch attack `AdversarialPatch`. This attack generates an adversarial patch that
+can be printed into the physical world with a common printer. The patch can be used to fool image classifiers.
+
+Paper link:
+    https://arxiv.org/abs/1712.09665
+"""
 from __future__ import absolute_import, division, print_function, unicode_literals
 
 import logging
@@ -22,6 +29,7 @@ import random
 import numpy as np
 from scipy.ndimage import rotate, shift, zoom
 
+from art.classifiers.classifier import ClassifierNeuralNetwork, ClassifierGradients
 from art.attacks.attack import Attack
 from art.utils import to_categorical
 
@@ -42,7 +50,7 @@ class AdversarialPatch(Attack):
         """
         Create an instance of the :class:`.AdversarialPatch`.
 
-        :param classifier: A trained model.
+        :param classifier: A trained classifier.
         :type classifier: :class:`.Classifier`
         :param target: The target label for the created patch.
         :type target: `int`
@@ -65,6 +73,11 @@ class AdversarialPatch(Attack):
         :type batch_size: `int`
         """
         super(AdversarialPatch, self).__init__(classifier=classifier)
+        if not isinstance(classifier, ClassifierNeuralNetwork) or not isinstance(classifier, ClassifierGradients):
+            raise (TypeError('For `' + self.__class__.__name__ + '` classifier must be an instance of '
+                             '`art.classifiers.classifier.ClassifierNeuralNetwork` and '
+                             '`art.classifiers.classifier.ClassifierGradients`, the provided classifier is instance of '
+                             + str(classifier.__class__.__bases__) + '.'))
 
         kwargs = {"target": target,
                   "rotation_max": rotation_max,
@@ -78,7 +91,7 @@ class AdversarialPatch(Attack):
         self.set_params(**kwargs)
         self.patch = None
 
-    def generate(self, x, y=None):
+    def generate(self, x, y=None, **kwargs):
         """
         Generate adversarial samples and return them in an array.
 
@@ -97,6 +110,8 @@ class AdversarialPatch(Attack):
 
         self.patch = (np.random.standard_normal(size=self.classifier.input_shape)) * 20.0
 
+        y_target = to_categorical(np.broadcast_to(np.array(self.target), x.shape[0]), self.classifier.nb_classes)
+
         for i_step in range(self.max_iter):
             if i_step == 0 or (i_step + 1) % 100 == 0:
                 logger.info('Training Step: %i', i_step + 1)
@@ -106,18 +121,24 @@ class AdversarialPatch(Attack):
                     self.patch[:, :, i_channel] = np.clip(self.patch[:, :, i_channel], a_min=a_min, a_max=a_max)
 
             patched_images, patch_mask_transformed, transforms = self._augment_images_with_random_patch(x, self.patch)
-            gradients = self.classifier.loss_gradient(patched_images,
-                                                      to_categorical(np.broadcast_to(np.array(self.target), x.shape[0]),
-                                                                     self.classifier.nb_classes))
+
+            num_batches = int(x.shape[0] / self.batch_size)
             patch_gradients = np.zeros_like(self.patch)
 
-            for i_batch in range(self.batch_size):
-                patch_gradients_i = self._reverse_transformation(gradients[i_batch, :, :, :],
-                                                                 patch_mask_transformed[i_batch, :, :, :],
-                                                                 transforms[i_batch])
-                patch_gradients += patch_gradients_i
+            for i_batch in range(num_batches):
+                i_batch_start = i_batch * self.batch_size
+                i_batch_end = (i_batch + 1) * self.batch_size
 
-            patch_gradients = patch_gradients / self.batch_size
+                gradients = self.classifier.loss_gradient(patched_images[i_batch_start:i_batch_end],
+                                                          y_target[i_batch_start:i_batch_end])
+
+                for i_image in range(self.batch_size):
+                    patch_gradients_i = self._reverse_transformation(gradients[i_image, :, :, :],
+                                                                     patch_mask_transformed[i_image, :, :, :],
+                                                                     transforms[i_image])
+                    patch_gradients += patch_gradients_i
+
+            patch_gradients = patch_gradients / (num_batches * self.batch_size)
             self.patch -= patch_gradients * self.learning_rate
 
         return self.patch, self._get_circular_patch_mask()
@@ -227,12 +248,12 @@ class AdversarialPatch(Attack):
         patched_images = list()
         patch_mask_transformed_list = list()
 
-        for i_batch in range(images.shape[0]):
+        for i_image in range(images.shape[0]):
             patch_transformed, patch_mask_transformed, transformation = self._random_transformation(patch, scale)
 
             inverted_patch_mask_transformed = (1 - patch_mask_transformed)
 
-            patched_image = images[i_batch, :, :, :] * inverted_patch_mask_transformed \
+            patched_image = images[i_image, :, :, :] * inverted_patch_mask_transformed \
                 + patch_transformed * patch_mask_transformed
             patched_image = np.expand_dims(patched_image, axis=0)
             patched_images.append(patched_image)

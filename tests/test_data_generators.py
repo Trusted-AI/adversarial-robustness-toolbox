@@ -32,8 +32,6 @@ logger = logging.getLogger('testLogger')
 class TestKerasDataGenerator(unittest.TestCase):
     def setUp(self):
         import keras
-
-        # Set master seed
         master_seed(42)
 
         class DummySequence(keras.utils.Sequence):
@@ -67,8 +65,8 @@ class TestKerasDataGenerator(unittest.TestCase):
         self.assertTrue(isinstance(y, np.ndarray))
 
         # Check shapes
-        self.assertTrue(x.shape == (5, 28, 28, 1))
-        self.assertTrue(y.shape == (5, 10))
+        self.assertEqual(x.shape, (5, 28, 28, 1))
+        self.assertEqual(y.shape, (5, 10))
 
     def test_gen_keras_specific(self):
         gen = self._dummy_gen()
@@ -82,8 +80,8 @@ class TestKerasDataGenerator(unittest.TestCase):
         self.assertTrue(isinstance(y, np.ndarray))
 
         # Check shapes
-        self.assertTrue(x.shape == (5, 28, 28, 1))
-        self.assertTrue(y.shape == (5, 10))
+        self.assertEqual(x.shape, (5, 28, 28, 1))
+        self.assertEqual(y.shape, (5, 10))
 
     def test_sequence_keras_specific(self):
         iter_ = iter(self.data_gen.generator)
@@ -94,8 +92,8 @@ class TestKerasDataGenerator(unittest.TestCase):
         self.assertTrue(isinstance(y, np.ndarray))
 
         # Check shapes
-        self.assertTrue(x.shape == (28, 28, 1))
-        self.assertTrue(y.shape == (10,))
+        self.assertEqual(x.shape, (28, 28, 1))
+        self.assertEqual(y.shape, (10,))
 
     def test_sequence_interface(self):
         x, y = self.data_gen.get_batch()
@@ -105,8 +103,8 @@ class TestKerasDataGenerator(unittest.TestCase):
         self.assertTrue(isinstance(y, np.ndarray))
 
         # Check shapes
-        self.assertTrue(x.shape == (28, 28, 1))
-        self.assertTrue(y.shape == (10,))
+        self.assertEqual(x.shape, (28, 28, 1))
+        self.assertEqual(y.shape, (10,))
 
     def test_imagedatagen_interface(self):
         train_size, batch_size = 20, 5
@@ -126,8 +124,8 @@ class TestKerasDataGenerator(unittest.TestCase):
         self.assertTrue(isinstance(y, np.ndarray))
 
         # Check shapes
-        self.assertTrue(x.shape == (batch_size, 28, 28, 1))
-        self.assertTrue(y.shape == (batch_size, 10))
+        self.assertEqual(x.shape, (batch_size, 28, 28, 1))
+        self.assertEqual(y.shape, (batch_size, 10))
 
     def test_imagedatagen_keras_specific(self):
         train_size, batch_size = 20, 5
@@ -147,8 +145,8 @@ class TestKerasDataGenerator(unittest.TestCase):
         self.assertTrue(isinstance(y, np.ndarray))
 
         # Check shapes
-        self.assertTrue(x.shape == (batch_size, 28, 28, 1))
-        self.assertTrue(y.shape == (batch_size, 10))
+        self.assertEqual(x.shape, (batch_size, 28, 28, 1))
+        self.assertEqual(y.shape, (batch_size, 10))
 
     @staticmethod
     def _dummy_gen(size=5):
@@ -159,8 +157,6 @@ class TestPyTorchGenerator(unittest.TestCase):
     def setUp(self):
         import torch
         from torch.utils.data import DataLoader
-
-        # Set master seed
         master_seed(42)
 
         class DummyDataset(torch.utils.data.Dataset):
@@ -187,8 +183,8 @@ class TestPyTorchGenerator(unittest.TestCase):
         self.assertTrue(isinstance(y, np.ndarray))
 
         # Check shapes
-        self.assertTrue(x.shape == (5, 1, 5, 5))
-        self.assertTrue(y.shape == (5,))
+        self.assertEqual(x.shape, (5, 1, 5, 5))
+        self.assertEqual(y.shape, (5,))
 
     def test_pytorch_specific(self):
         import torch
@@ -201,15 +197,13 @@ class TestPyTorchGenerator(unittest.TestCase):
         self.assertTrue(isinstance(y, torch.Tensor))
 
         # Check shapes
-        self.assertTrue(x.shape == (5, 1, 5, 5))
-        self.assertTrue(y.shape == (5,))
+        self.assertEqual(x.shape, (5, 1, 5, 5))
+        self.assertEqual(y.shape, (5,))
 
 
 class TestMXGenerator(unittest.TestCase):
     def setUp(self):
         import mxnet as mx
-
-        # Set master seed
         master_seed(42)
 
         x = mx.random.uniform(shape=(10, 1, 5, 5))
@@ -227,8 +221,8 @@ class TestMXGenerator(unittest.TestCase):
         self.assertTrue(isinstance(y, np.ndarray))
 
         # Check shapes
-        self.assertTrue(x.shape == (5, 1, 5, 5))
-        self.assertTrue(y.shape == (5,))
+        self.assertEqual(x.shape, (5, 1, 5, 5))
+        self.assertEqual(y.shape, (5,))
 
     def test_mxnet_specific(self):
         import mxnet as mx
@@ -241,15 +235,13 @@ class TestMXGenerator(unittest.TestCase):
         self.assertTrue(isinstance(y, mx.ndarray.NDArray))
 
         # Check shapes
-        self.assertTrue(x.shape == (5, 1, 5, 5))
-        self.assertTrue(y.shape == (5,))
+        self.assertEqual(x.shape, (5, 1, 5, 5))
+        self.assertEqual(y.shape, (5,))
 
 
 class TestTFDataGenerator(unittest.TestCase):
     def setUp(self):
         import tensorflow as tf
-
-        # Set master seed
         master_seed(42)
 
         def generator(batch_size=5):
@@ -277,8 +269,8 @@ class TestTFDataGenerator(unittest.TestCase):
         self.assertTrue(isinstance(y, np.ndarray))
 
         # Check shapes
-        self.assertTrue(x.shape == (5, 5, 5, 1))
-        self.assertTrue(y.shape == (5, 10))
+        self.assertEqual(x.shape, (5, 5, 5, 1))
+        self.assertEqual(y.shape, (5, 10))
 
     def test_reinit(self):
         import tensorflow as tf
@@ -294,8 +286,8 @@ class TestTFDataGenerator(unittest.TestCase):
         self.assertTrue(isinstance(y, np.ndarray))
 
         # Check shapes
-        self.assertTrue(x.shape == (5, 5, 5, 1))
-        self.assertTrue(y.shape == (5, 10))
+        self.assertEqual(x.shape, (5, 5, 5, 1))
+        self.assertEqual(y.shape, (5, 10))
 
     def test_feedable(self):
         import tensorflow as tf
@@ -313,8 +305,8 @@ class TestTFDataGenerator(unittest.TestCase):
         self.assertTrue(isinstance(y, np.ndarray))
 
         # Check shapes
-        self.assertTrue(x.shape == (5, 5, 5, 1))
-        self.assertTrue(y.shape == (5, 10))
+        self.assertEqual(x.shape, (5, 5, 5, 1))
+        self.assertEqual(y.shape, (5, 10))
 
 
 if __name__ == '__main__':

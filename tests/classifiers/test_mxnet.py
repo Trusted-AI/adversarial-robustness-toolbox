@@ -64,7 +64,6 @@ class TestMXClassifier(unittest.TestCase):
         self.assertGreater(acc, 0.1)
 
     def test_fit_generator(self):
-        import mxnet as mx
         from art.data_generators import MXDataGenerator
 
         (x_train, y_train), (x_test, y_test) = self.mnist
@@ -72,8 +71,8 @@ class TestMXClassifier(unittest.TestCase):
         logger.info('Accuracy: %.2f%%', (acc * 100))
 
         # Create MXNet dataset and loader
-        dataset = mx.gluon.data.dataset.ArrayDataset(x_train, y_train)
-        data_loader = mx.gluon.data.DataLoader(dataset, batch_size=5, shuffle=True)
+        dataset = gluon.data.dataset.ArrayDataset(x_train, y_train)
+        data_loader = gluon.data.DataLoader(dataset, batch_size=5, shuffle=True)
         data_gen = MXDataGenerator(data_loader, size=NB_TRAIN, batch_size=5)
 
         # Fit model with generator
@@ -81,7 +80,7 @@ class TestMXClassifier(unittest.TestCase):
         acc2 = np.sum(np.argmax(self.classifier.predict(x_test), axis=1) == np.argmax(y_test, axis=1)) / NB_TEST
         logger.info('Accuracy: %.2f%%', (acc * 100))
 
-        self.assertTrue(acc2 >= .8 * acc)
+        self.assertGreaterEqual(acc2, 0.8 * acc)
 
     def test_nb_classes(self):
         self.assertEqual(self.classifier.nb_classes, 10)
@@ -96,12 +95,12 @@ class TestMXClassifier(unittest.TestCase):
         # Test class grads for all classes
         grads_all = self.classifier.class_gradient(x_test)
         self.assertTrue(np.array(grads_all.shape == (NB_TEST, 10, 1, 28, 28)).all())
-        self.assertTrue(np.sum(grads_all) != 0)
+        self.assertNotEqual(np.sum(grads_all), 0)
 
         # Test class grads for specified label
         grads = self.classifier.class_gradient(x_test, label=3)
         self.assertTrue(np.array(grads.shape == (NB_TEST, 1, 1, 28, 28)).all())
-        self.assertTrue(np.sum(grads) != 0)
+        self.assertNotEqual(np.sum(grads), 0)
 
         # Assert gradient computed for the same class on same input are equal
         self.assertAlmostEqual(np.sum(grads_all[:, 3] - grads), 0, places=6)
@@ -111,7 +110,7 @@ class TestMXClassifier(unittest.TestCase):
         grads = self.classifier.class_gradient(x_test, label=labels)
 
         self.assertTrue(np.array(grads.shape == (NB_TEST, 1, 1, 28, 28)).all())
-        self.assertTrue(np.sum(grads) != 0)
+        self.assertNotEqual(np.sum(grads), 0)
 
     def test_loss_gradient(self):
         # Get MNIST
@@ -121,7 +120,7 @@ class TestMXClassifier(unittest.TestCase):
         grads = self.classifier.loss_gradient(x_test, y_test)
 
         self.assertTrue(np.array(grads.shape == (NB_TEST, 1, 28, 28)).all())
-        self.assertTrue(np.sum(grads) != 0)
+        self.assertNotEqual(np.sum(grads), 0)
 
     def test_preprocessing(self):
         # Get MNIST
@@ -133,7 +132,7 @@ class TestMXClassifier(unittest.TestCase):
 
         preds = self.classifier.predict((x_test - 1.) / 2)
         preds_preproc = classifier_preproc.predict(x_test)
-        self.assertTrue(np.sum(preds - preds_preproc) == 0)
+        self.assertEqual(np.sum(preds - preds_preproc), 0)
 
     def test_layers(self):
         # Get MNIST
@@ -147,8 +146,8 @@ class TestMXClassifier(unittest.TestCase):
         #     act_name = self.classifier.get_activations(x_test, name)
         #     self.assertAlmostEqual(np.sum(act_name - act_i), 0)
 
-        self.assertTrue(self.classifier.get_activations(x_test, 0).shape == (NB_TEST, 6, 24, 24))
-        self.assertTrue(self.classifier.get_activations(x_test, 4).shape == (NB_TEST, 784))
+        self.assertEqual(self.classifier.get_activations(x_test, 0).shape, (NB_TEST, 6, 24, 24))
+        self.assertEqual(self.classifier.get_activations(x_test, 4).shape, (NB_TEST, 784))
 
     def test_set_learning(self):
         classifier = self.classifier
@@ -177,10 +176,10 @@ class TestMXClassifier(unittest.TestCase):
 
     def test_repr(self):
         repr_ = repr(self.classifier)
-        self.assertTrue('art.classifiers.mxnet.MXClassifier' in repr_)
-        self.assertTrue('input_shape=(1, 28, 28), nb_classes=10' in repr_)
-        self.assertTrue('channel_index=1, clip_values=(0, 1)' in repr_)
-        self.assertTrue('defences=None, preprocessing=(0, 1)' in repr_)
+        self.assertIn('art.classifiers.mxnet.MXClassifier', repr_)
+        self.assertIn('input_shape=(1, 28, 28), nb_classes=10', repr_)
+        self.assertIn('channel_index=1, clip_values=(0, 1)', repr_)
+        self.assertIn('defences=None, preprocessing=(0, 1)', repr_)
 
 
 if __name__ == '__main__':

@@ -15,6 +15,12 @@
 # AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT,
 # TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 # SOFTWARE.
+"""
+This module implements the local spatial smoothing defence in `SpatialSmoothing`.
+
+Paper link:
+    https://arxiv.org/abs/1704.01155
+"""
 from __future__ import absolute_import, division, print_function, unicode_literals
 
 import logging
@@ -30,9 +36,10 @@ logger = logging.getLogger(__name__)
 
 class SpatialSmoothing(Preprocessor):
     """
-    Implement the local spatial smoothing defence approach. Defence method from https://arxiv.org/abs/1704.01155.
+    Implement the local spatial smoothing defence approach.
+    Paper link: https://arxiv.org/abs/1704.01155
     """
-    params = ['window_size', 'channel_index', 'clip_values', '_apply_fit', '_apply_predict']
+    params = ['window_size', 'channel_index', 'clip_values']
 
     def __init__(self, window_size=3, channel_index=3, clip_values=None, apply_fit=False, apply_predict=True):
         """
@@ -52,8 +59,9 @@ class SpatialSmoothing(Preprocessor):
         """
         super(SpatialSmoothing, self).__init__()
         self._is_fitted = True
-        self.set_params(channel_index=channel_index, window_size=window_size, clip_values=clip_values,
-                        _apply_fit=apply_fit, _apply_predict=apply_predict)
+        self._apply_fit = apply_fit
+        self._apply_predict = apply_predict
+        self.set_params(channel_index=channel_index, window_size=window_size, clip_values=clip_values)
 
     @property
     def apply_fit(self):
@@ -110,10 +118,6 @@ class SpatialSmoothing(Preprocessor):
         :param clip_values: Tuple of the form `(min, max)` representing the minimum and maximum values allowed
                for features.
         :type clip_values: `tuple`
-        :param apply_fit: True if applied during fitting/training.
-        :type apply_fit: `bool`
-        :param apply_predict: True if applied during predicting.
-        :type apply_predict: `bool`
         """
         # Save attack-specific parameters
         super(SpatialSmoothing, self).set_params(**kwargs)

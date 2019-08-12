@@ -15,6 +15,9 @@
 # AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT,
 # TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 # SOFTWARE.
+"""
+This module implements methodologies to analyze clusters and determine whether they are poisonous.
+"""
 from __future__ import absolute_import, division, print_function, unicode_literals
 
 import logging
@@ -94,14 +97,14 @@ class ClusteringAnalyzer:
             # Generate report for this class:
             report_class = dict()
             for cluster_id in range(nb_clusters):
-                ptc = sizes[cluster_id]/total_dp_in_class
+                ptc = sizes[cluster_id] / total_dp_in_class
                 susp = (cluster_id in poison_clusters)
                 dict_i = dict(ptc_data_in_cluster=round(ptc, 2), suspicious_cluster=susp)
 
-                dict_cluster = {'cluster_'+str(cluster_id): dict_i}
+                dict_cluster = {'cluster_' + str(cluster_id): dict_i}
                 report_class.update(dict_cluster)
 
-            report['Class_'+str(i)] = report_class
+            report['Class_' + str(i)] = report_class
 
         report['suspicious_clusters'] = report['suspicious_clusters'] + np.sum(summary_poison_clusters).item()
         return np.asarray(all_assigned_clean), summary_poison_clusters, report
@@ -135,14 +138,14 @@ class ClusteringAnalyzer:
         summary_poison_clusters = [[[] for x in range(nb_clusters)] for y in range(nb_classes)]
 
         # assign centers
-        for t, activations in enumerate(separated_activations):
+        for _, activations in enumerate(separated_activations):
             cluster_centers.append(np.median(activations, axis=0))
 
-        for i, (clusters, ac) in enumerate(zip(separated_clusters, separated_activations)):
+        for i, (clusters, activation) in enumerate(zip(separated_clusters, separated_activations)):
             clusters = np.array(clusters)
 
-            cluster0_center = np.median(ac[np.where(clusters == 0)], axis=0)
-            cluster1_center = np.median(ac[np.where(clusters == 1)], axis=0)
+            cluster0_center = np.median(activation[np.where(clusters == 0)], axis=0)
+            cluster1_center = np.median(activation[np.where(clusters == 1)], axis=0)
 
             cluster0_distance = np.linalg.norm(cluster0_center - cluster_centers[i])
             cluster1_distance = np.linalg.norm(cluster1_center - cluster_centers[i])
@@ -165,10 +168,10 @@ class ClusteringAnalyzer:
                     if cluster1_distance_to_k < cluster1_distance and cluster0_distance_to_k > cluster0_distance:
                         cluster1_is_poison = True
 
-                    dict_cluster_0['distance_to_class_'+str(k)] = str(cluster0_distance_to_k)
+                    dict_cluster_0['distance_to_class_' + str(k)] = str(cluster0_distance_to_k)
                     dict_cluster_0['suspicious'] = str(cluster0_is_poison)
 
-                    dict_cluster_1['distance_to_class_'+str(k)] = str(cluster1_distance_to_k)
+                    dict_cluster_1['distance_to_class_' + str(k)] = str(cluster1_distance_to_k)
                     dict_cluster_1['suspicious'] = cluster1_is_poison
 
                     dict_k.update(dict_cluster_0)
@@ -268,15 +271,17 @@ class ClusteringAnalyzer:
         and silhouette score.
         Computes a silhouette score for each class to determine how cohesive resulting clusters are.
         A low silhouette score indicates that the clustering does not fit the data well, and the class can be considered
-        to be unpoisoned. Conversely, a high silhouette score indicates that the clusters reflect true splits in the data.
+        to be unpoisoned. Conversely, a high silhouette score indicates that the clusters reflect true splits in the
+        data.
         The method concludes that a cluster is poison based on the silhouette score and the cluster relative size.
-         If the relative size is too small, below a size_threshold and at the same time
+        If the relative size is too small, below a size_threshold and at the same time
         the silhouette score is higher than silhouette_threshold, the cluster is classified as poisonous.
         If the above thresholds are not provided, the default ones will be used.
 
         :param separated_clusters: list where separated_clusters[i] is the cluster assignments for the ith class
         :type separated_clusters: `list`
-        :param reduced_activations_by_class: list where separated_activations[i] is a 1D array of [0,1] for [poison,clean]
+        :param reduced_activations_by_class: list where separated_activations[i] is a 1D array of [0,1] for
+               [poison,clean]
         :type reduced_activations_by_class: `list`
         :param size_threshold: (optional) threshold used to define when a cluster is substantially smaller. A default
         value is used if the parameter is not provided.
@@ -296,6 +301,7 @@ class ClusteringAnalyzer:
         report: Dictionary with summary of the analysis
         :rtype: all_assigned_clean: `ndarray`, summary_poison_clusters: `list`, report" `dic`
         """
+        # pylint: disable=E0001
         from sklearn.metrics import silhouette_score
         size_threshold = round(size_threshold, r_size)
         silhouette_threshold = round(silhouette_threshold, r_silhouette)
@@ -325,7 +331,7 @@ class ClusteringAnalyzer:
                 if silhouette_avg > silhouette_threshold:
                     # In this case the cluster is considered poisonous
                     clean_clusters = np.where(percentages < size_threshold)
-                    logger.info('computed silhouette score: ', silhouette_avg)
+                    logger.info('computed silhouette score: %s', silhouette_avg)
                     dict_i.update(suspicious=True)
                 else:
                     poison_clusters = [[]]

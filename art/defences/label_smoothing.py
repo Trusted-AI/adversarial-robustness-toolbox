@@ -15,6 +15,10 @@
 # AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT,
 # TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 # SOFTWARE.
+"""
+This module implements the label smoothing defence in `LabelSmoothing`. It computes a vector of smooth labels from a
+vector of hard labels.
+"""
 from __future__ import absolute_import, division, print_function, unicode_literals
 
 import logging
@@ -32,24 +36,30 @@ class LabelSmoothing(Preprocessor):
     """
     params = ['max_value']
 
-    def __init__(self, max_value=.9):
+    def __init__(self, max_value=0.9, apply_fit=True, apply_predict=False):
         """
         Create an instance of label smoothing.
 
         :param max_value: Value to affect to correct label
         :type max_value: `float`
+        :param apply_fit: True if applied during fitting/training.
+        :type apply_fit: `bool`
+        :param apply_predict: True if applied during predicting.
+        :type apply_predict: `bool`
         """
         super(LabelSmoothing, self).__init__()
         self._is_fitted = True
+        self._apply_fit = apply_fit
+        self._apply_predict = apply_predict
         self.set_params(max_value=max_value)
 
     @property
     def apply_fit(self):
-        return True
+        return self._apply_fit
 
     @property
     def apply_predict(self):
-        return False
+        return self._apply_predict
 
     def __call__(self, x, y=None):
         """

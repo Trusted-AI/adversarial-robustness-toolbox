@@ -15,6 +15,9 @@
 # AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT,
 # TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 # SOFTWARE.
+"""
+This module implements the Gaussian augmentation defence in `GaussianAugmentation`.
+"""
 from __future__ import absolute_import, division, print_function, unicode_literals
 
 import logging
@@ -57,8 +60,12 @@ class GaussianAugmentation(Preprocessor):
         """
         super(GaussianAugmentation, self).__init__()
         self._is_fitted = True
-        self.set_params(sigma=sigma, augmentation=augmentation, ratio=ratio, clip_values=clip_values,
-                        _apply_fit=apply_fit, _apply_predict=apply_predict)
+        if augmentation and apply_fit and apply_predict:
+            raise ValueError("If `augmentation` is `True`, then `apply_fit` must be `True` and `apply_predict`"
+                             " must be `False`.")
+        self._apply_fit = apply_fit
+        self._apply_predict = apply_predict
+        self.set_params(sigma=sigma, augmentation=augmentation, ratio=ratio, clip_values=clip_values)
 
     @property
     def apply_fit(self):
@@ -130,20 +137,12 @@ class GaussianAugmentation(Preprocessor):
         :param clip_values: Tuple of the form `(min, max)` representing the minimum and maximum values allowed
                for features.
         :type clip_values: `tuple`
-        :param apply_fit: True if applied during fitting/training.
-        :type apply_fit: `bool`
-        :param apply_predict: True if applied during predicting.
-        :type apply_predict: `bool`
         """
         # Save attack-specific parameters
         super(GaussianAugmentation, self).set_params(**kwargs)
 
         if self.augmentation and self.ratio <= 0:
             raise ValueError("The augmentation ratio must be positive.")
-
-        if self.augmentation and self.apply_fit and self.apply_predict:
-            raise ValueError("If `augmentation` is `True`, then `apply_fit` must be `True` and `apply_predict`"
-                             " must be `False`.")
 
         if self.clip_values is not None:
 
