@@ -76,16 +76,16 @@ class EnsembleClassifier(ClassifierNeuralNetwork, ClassifierGradients, Classifie
                 raise ValueError('Incompatible `clip_values` between classifiers in the ensemble. Found %s and %s.'
                                  % (str(clip_values), str(classifier.clip_values)))
 
-            if classifier.nb_classes != classifiers[0].nb_classes:
+            if classifier.nb_classes() != classifiers[0].nb_classes():
                 raise ValueError('Incompatible output shapes between classifiers in the ensemble. Found %s and %s.'
-                                 % (str(classifier.nb_classes), str(classifiers[0].nb_classes)))
+                                 % (str(classifier.nb_classes()), str(classifiers[0].nb_classes())))
 
             if classifier.input_shape != classifiers[0].input_shape:
                 raise ValueError('Incompatible input shapes between classifiers in the ensemble. Found %s and %s.'
                                  % (str(classifier.input_shape), str(classifiers[0].input_shape)))
 
         self._input_shape = classifiers[0].input_shape
-        self._nb_classes = classifiers[0].nb_classes
+        self._nb_classes = classifiers[0].nb_classes()
 
         # Set weights for classifiers
         if classifier_weights is None:
@@ -266,16 +266,6 @@ class EnsembleClassifier(ClassifierNeuralNetwork, ClassifierGradients, Classifie
                    self.preprocessing)
 
         return repr_
-
-    @property
-    def nb_classes(self):
-        """
-        Return the number of output classes.
-
-        :return: Number of classes in the data.
-        :rtype: `int`
-        """
-        return self._nb_classes
 
     def save(self, filename, path=None):
         """

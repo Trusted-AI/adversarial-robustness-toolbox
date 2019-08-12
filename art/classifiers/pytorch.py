@@ -105,7 +105,7 @@ class PyTorchClassifier(ClassifierNeuralNetwork, ClassifierGradients, Classifier
         x_preprocessed, _ = self._apply_preprocessing(x, y=None, fit=False)
 
         # Run prediction with batch processing
-        results = np.zeros((x_preprocessed.shape[0], self.nb_classes), dtype=np.float32)
+        results = np.zeros((x_preprocessed.shape[0], self.nb_classes()), dtype=np.float32)
         num_batch = int(np.ceil(len(x_preprocessed) / float(batch_size)))
         for m in range(num_batch):
             # Batch indexes
@@ -267,7 +267,7 @@ class PyTorchClassifier(ClassifierNeuralNetwork, ClassifierGradients, Classifier
 
         self._model.zero_grad()
         if label is None:
-            for i in range(self.nb_classes):
+            for i in range(self.nb_classes()):
                 torch.autograd.backward(preds[:, i], torch.Tensor([1.] * len(preds[:, 0])).to(self._device),
                                         retain_graph=True)
 
@@ -405,16 +405,6 @@ class PyTorchClassifier(ClassifierNeuralNetwork, ClassifierGradients, Classifier
             self._learning_phase = train
             self._model.train(train)
 
-    @property
-    def nb_classes(self):
-        """
-        Return the number of output classes.
-
-        :return: Number of classes in the data.
-        :rtype: `int`
-        """
-        return self._nb_classes
-
     def save(self, filename, path=None):
         """
         Save a model to file in the format specific to the backend framework.
@@ -506,7 +496,7 @@ class PyTorchClassifier(ClassifierNeuralNetwork, ClassifierGradients, Classifier
         repr_ = "%s(model=%r, loss=%r, optimizer=%r, input_shape=%r, nb_classes=%r, " \
                 "channel_index=%r, clip_values=%r, defences=%r, preprocessing=%r)" \
                 % (self.__module__ + '.' + self.__class__.__name__,
-                   self._model, self._loss, self._optimizer, self._input_shape, self.nb_classes,
+                   self._model, self._loss, self._optimizer, self._input_shape, self.nb_classes(),
                    self.channel_index, self.clip_values, self.defences, self.preprocessing)
 
         return repr_
