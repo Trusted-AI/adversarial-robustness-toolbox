@@ -119,11 +119,6 @@ class LightGBMClassifier(Classifier, ClassifierDecisionTree):
             else:
                 class_label = i_tree % self._model._Booster__num_class
 
-            print(tree_dump)
-
-            print(type(tree_dump))
-
-            # tree_json = json.loads(tree_dump)
             trees.append(Tree(class_id=class_label,
                               leaf_nodes=self._get_leaf_nodes(tree_dump['tree_structure'], i_tree, class_label, box)))
 
