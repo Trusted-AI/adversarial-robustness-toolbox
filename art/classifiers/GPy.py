@@ -165,7 +165,7 @@ class GPyGaussianProcessClassifier(GPyClassifier):
             for c in range(2):
                 ind = self.predict(x[i].reshape(1, -1))[0, c]
                 sur = self.predict(np.repeat(x[i].reshape(1, -1),
-                    np.shape(x)[1], 0) + eps*np.eye(np.shape(x)[1]))[:, c]
+                                             np.shape(x)[1], 0) + eps*np.eye(np.shape(x)[1]))[:, c]
                 grads[i, c] = ((sur-ind)*eps).reshape(1, -1)
         if label is None:
             return grads
@@ -192,7 +192,7 @@ class GPyGaussianProcessClassifier(GPyClassifier):
             # 1.0 - to mimic loss, [0,np.argmax] to get right class
             ind = 1.0-self.predict(x[i].reshape(1, -1))[0, np.argmax(y[i])]
             sur = 1.0-self.predict(np.repeat(x[i].reshape(1, -1), np.shape(x)[1], 0)
-                 + eps*np.eye(np.shape(x)[1]))[:, np.argmax(y[i])]
+                                   + eps*np.eye(np.shape(x)[1]))[:, np.argmax(y[i])]
             grads[i] = ((sur-ind)*eps).reshape(1, -1)
         return grads
 
