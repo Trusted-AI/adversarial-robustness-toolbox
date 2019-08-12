@@ -35,6 +35,7 @@ class TFClassifier(ClassifierNeuralNetwork, ClassifierGradients, Classifier):
     """
     This class implements a classifier with the Tensorflow framework.
     """
+
     def __init__(self, input_ph, output, labels_ph=None, train=None, loss=None, learning=None, sess=None,
                  channel_index=3, clip_values=None, defences=None, preprocessing=(0, 1)):
         """
@@ -433,6 +434,16 @@ class TFClassifier(ClassifierNeuralNetwork, ClassifierGradients, Classifier):
         if isinstance(train, bool):
             self._learning_phase = train
             self._feed_dict[self._learning] = train
+
+    @property
+    def nb_classes(self):
+        """
+        Return the number of output classes.
+
+        :return: Number of classes in the data.
+        :rtype: `int`
+        """
+        return self._nb_classes
 
     def save(self, filename, path=None):
         """

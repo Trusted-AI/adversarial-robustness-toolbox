@@ -91,7 +91,6 @@ class LightGBMClassifier(Classifier, ClassifierDecisionTree):
 
         return self._model.predict(x_preprocessed)
 
-    @property
     def nb_classes(self):
         return self._model._Booster__num_class
 
@@ -125,7 +124,8 @@ class LightGBMClassifier(Classifier, ClassifierDecisionTree):
             print(type(tree_dump))
 
             # tree_json = json.loads(tree_dump)
-            trees.append(Tree(class_id=class_label, leaf_nodes=self._get_leaf_nodes(tree_dump['tree_structure'], i_tree, class_label, box)))
+            trees.append(Tree(class_id=class_label,
+                              leaf_nodes=self._get_leaf_nodes(tree_dump['tree_structure'], i_tree, class_label, box)))
 
         return trees
 

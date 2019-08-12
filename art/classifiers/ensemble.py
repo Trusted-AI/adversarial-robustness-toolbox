@@ -267,6 +267,16 @@ class EnsembleClassifier(ClassifierNeuralNetwork, ClassifierGradients, Classifie
 
         return repr_
 
+    @property
+    def nb_classes(self):
+        """
+        Return the number of output classes.
+
+        :return: Number of classes in the data.
+        :rtype: `int`
+        """
+        return self._nb_classes
+
     def save(self, filename, path=None):
         """
         Save a model to file in the format specific to the backend framework. This function is not supported for

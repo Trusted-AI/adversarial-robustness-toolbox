@@ -124,7 +124,6 @@ class Classifier(ABC):
         """
         return self._input_shape
 
-    @property
     def nb_classes(self):
         """
         Return the number of output classes.

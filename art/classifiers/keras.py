@@ -422,6 +422,16 @@ class KerasClassifier(ClassifierNeuralNetwork, ClassifierGradients, Classifier):
             self._learning_phase = train
             k.set_learning_phase(int(train))
 
+    @property
+    def nb_classes(self):
+        """
+        Return the number of output classes.
+
+        :return: Number of classes in the data.
+        :rtype: `int`
+        """
+        return self._nb_classes
+
     def save(self, filename, path=None):
         """
         Save a model to file in the format specific to the backend framework. For Keras, .h5 format is used.
