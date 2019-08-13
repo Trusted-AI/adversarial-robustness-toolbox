@@ -96,12 +96,12 @@ class HCLU(Attack):
                 adv_x[i].reshape(1, -1))[0, 0] < 0.5
             init_args = {'classifier': self.classifier,
                          'class_zero': class_zero, 'max_uncertainty': max_uncertainty}
-            cC = {'type': 'ineq', 'fun': constraint_conf, 'args': (init_args,)}
-            cU = {'type': 'ineq', 'fun': constraint_unc, 'args': (init_args,)}
+            constr_conf = {'type': 'ineq', 'fun': constraint_conf, 'args': (init_args,)}
+            constr_unc = {'type': 'ineq', 'fun': constraint_unc, 'args': (init_args,)}
             args = {'args': init_args, 'orig': x[i].reshape(-1)}
             # #finally, run optimization
             adv_x[i] = minimize(minfun, adv_x[i], args=args,
-                                bounds=bounds, constraints=[cC, cU])['x']
+                                bounds=bounds, constraints=[constr_conf, constr_unc])['x']
         return adv_x
 
     def set_params(self, **kwargs):

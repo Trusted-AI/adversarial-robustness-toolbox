@@ -27,10 +27,10 @@ logger = logging.getLogger(__name__)
 
 class GPyGaussianProcessClassifier(Classifier, ClassifierGradients):
     """
-    Wrapper class for GPY Gaussian Process classification models.
+    Wrapper class for GPy Gaussian Process classification models.
     """
 
-    def __init__(self, model=None, channel_index=None, clip_values=None, defences=None, preprocessing=(0, 1)):
+    def __init__(self, model=None, clip_values=None, defences=None, preprocessing=(0, 1)):
         """
         Create a `Classifier` instance GPY Gaussian Process classification models.
 
@@ -39,9 +39,6 @@ class GPyGaussianProcessClassifier(Classifier, ClassifierGradients):
         :type clip_values: `tuple`
         :param model: GPY Gaussian Process Classification model.
         :type model: `Gpy.models.GPClassification`
-        :param channel_index: Index of the axis in data containing the color channels or features. Not used in this
-               class.
-        :type channel_index: `int`
         :param defences: Defences to be activated with the classifier.
         :type defences: :class:`.Preprocessor` or `list(Preprocessor)` instances
         :param preprocessing: Tuple of the form `(subtractor, divider)` of floats or `np.ndarray` of values to be
@@ -78,7 +75,6 @@ class GPyGaussianProcessClassifier(Classifier, ClassifierGradients):
                  `(batch_size, 1, input_shape)` when `label` parameter is specified.
         :rtype: `np.ndarray`
         """
-        eps = 0.00001
         grads = np.zeros((np.shape(x)[0], 2, np.shape(x)[1]))
         for i in range(np.shape(x)[0]):
             # get gradient for the two classes GPC can maximally have
@@ -95,7 +91,7 @@ class GPyGaussianProcessClassifier(Classifier, ClassifierGradients):
     def get_activations(self, x, layer, batch_size):
         raise NotImplementedError
 
-    def loss_gradient(self, x, y):
+    def loss_gradient(self, x, y, **kwargs):
         """
         Compute the gradient of the loss function w.r.t. `x`.
 
@@ -116,7 +112,7 @@ class GPyGaussianProcessClassifier(Classifier, ClassifierGradients):
             grads[i] = ((sur-ind)*eps).reshape(1, -1)
         return grads
 
-    def predict(self, x, logits=False, batch_size=128):
+    def predict(self, x, logits=False):
         """
         Perform prediction for a batch of inputs.
 
@@ -124,13 +120,11 @@ class GPyGaussianProcessClassifier(Classifier, ClassifierGradients):
         :type x: `np.ndarray`
         :param logits: `True` if the prediction should be done without squashing function.
         :type logits: `bool`
-        :param batch_size: Size of batches. Not used in this function.
-        :type batch_size: `int`
         :return: Array of predictions of shape `(nb_inputs, self.nb_classes)`.
         :rtype: `np.ndarray`
         """
         out = np.zeros((np.shape(x)[0], 2))
-        if logits:  # output the mon-squashed version
+        if logits:  # output the non-squashed version
             out[:, 0] = self.model.predict_noiseless(x)[0].reshape(-1)
             out[:, 1] = -1.0*out[:, 0]
             return out
@@ -139,23 +133,18 @@ class GPyGaussianProcessClassifier(Classifier, ClassifierGradients):
         out[:, 1] = 1.0-out[:, 0]
         return out
 
-    def predict_uncertainty(self, x, logits=False, batch_size=128):
+    def predict_uncertainty(self, x):
         """
-        Perform prediction for a batch of inputs.
+        Perform uncertainty prediction for a batch of inputs.
 
         :param x: Test set.
         :type x: `np.ndarray`
-        :param logits: `True` if the prediction should be done at the logits layer.
-        :type logits: `bool`
-        :param batch_size: Size of batches. Not used in this function.
-        :type batch_size: `int`
-        :return: Array of uncertainty predictions of shape `(nb_inputs, self.nb_classes)`.
+        :return: Array of uncertainty predictions of shape `(nb_inputs)`.
         :rtype: `np.ndarray`
         """
-        # geturn uncertainty, only in one dimension
         return self.model.predict_noiseless(x)[1]
 
-    def fit(self, x, y, batch_size=128, nb_epochs=20, **kwargs):
+    def fit(self, x, y, **kwargs):
         """
         Fit the classifier on the training set `(x, y)`.
 
@@ -163,10 +152,6 @@ class GPyGaussianProcessClassifier(Classifier, ClassifierGradients):
         :type x: `np.ndarray`
         :param y: Labels, one-vs-rest encoding. Not used, as given to model in initialized earlier.
         :type y: `np.ndarray`
-        :param batch_size: Size of batches. Not used in this class
-        :type batch_size: `int`
-        :param nb_epochs: Number of iterations to be optimized.
-        :type nb_epochs: `int`
         :type kwargs: `dict`
         :return: `None`
         """
