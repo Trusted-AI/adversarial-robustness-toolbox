@@ -20,14 +20,13 @@ from __future__ import absolute_import, division, print_function, unicode_litera
 import logging
 import unittest
 
-import numpy as np
-
 from sklearn.tree import DecisionTreeClassifier
 from sklearn.datasets import load_digits
 import numpy as np
 
 from art.attacks.decision_tree_attack import DecisionTreeAttack
 from art.classifiers.scikitklearn import ScikitlearnDecisionTreeClassifier
+from art.utils import master_seed
 
 logger = logging.getLogger('testLogger')
 
@@ -41,8 +40,8 @@ class TestdecisionTreeattack(unittest.TestCase):
     def setUpClass(cls):
         # Get MNIST
         digits = load_digits()
-        self.X = digits.data
-        self.y = digits.target
+        cls..X = digits.data
+        cls.y = digits.target
 
     def setUp(self):
         # Set master seed
@@ -55,12 +54,12 @@ class TestdecisionTreeattack(unittest.TestCase):
         attack = DecisionTreeAttack(clf_art)
         adv = attack.generate(self.X[:25])
         #all crafting should succeed
-        self.assert(np.sum(clf.predict(adv) == clf.predict(self.X[:25])) == 0)
+        self.assertTrue(np.sum(clf.predict(adv) == clf.predict(self.X[:25])) == 0)
         targets = np.array([1, 1, 1, 2, 2, 2, 3, 3, 3, 4, 4,
                             4, 5, 5, 5, 6, 6, 6, 7, 7, 7, 8, 8, 8, 9])
         adv = attack.generate(self.X[:25], targets)
         #all targeted crafting should succeed as well
-        self.assert(np.sum(cl.predict(adv) == targets) == 25.0)
+        self.assertTrue(np.sum(clf.predict(adv) == targets) == 25.0)
 
 
 if __name__ == '__main__':
