@@ -5,12 +5,6 @@ import unittest
 
 import numpy as np
 
-from sklearn.tree import DecisionTreeClassifier, ExtraTreeClassifier
-from sklearn.ensemble import AdaBoostClassifier, BaggingClassifier, ExtraTreesClassifier, GradientBoostingClassifier, \
-    RandomForestClassifier
-from sklearn.linear_model import LogisticRegression
-from sklearn.svm import SVC, LinearSVC
-
 from art.classifiers import GPyGaussianProcessClassifier
 from art.utils import load_dataset
 
@@ -18,7 +12,7 @@ logger = logging.getLogger('testLogger')
 np.random.seed(seed=1234)
 
 
-class TestScikitlearnDecisionTreeClassifier(unittest.TestCase):
+class TestGPyGaussianProcessClassifier(unittest.TestCase):
 
     @classmethod
     def setUpClass(cls):
