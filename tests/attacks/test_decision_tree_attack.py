@@ -26,7 +26,7 @@ from sklearn.tree import DecisionTreeClassifier
 from sklearn.datasets import load_digits
 import numpy as np
 
-from art.attacks.decision_tree_attack import Decision_Tree_Attack
+from art.attacks.decision_tree_attack import DecisionTreeAttack
 from art.classifiers.scikitklearn import ScikitlearnDecisionTreeClassifier
 
 logger = logging.getLogger('testLogger')
@@ -52,7 +52,7 @@ class TestdecisionTreeattack(unittest.TestCase):
         clf = DecisionTreeClassifier()
         clf.fit(self.X, self.y)
         clf_art = ScikitlearnDecisionTreeClassifier(clf)
-        attack = Decision_Tree_Attack(clf_art)
+        attack = DecisionTreeAttack(clf_art)
         adv = attack.generate(self.X[:25])
         #all crafting should succeed
         self.assert(np.sum(clf.predict(adv) == clf.predict(self.X[:25])) == 0)
