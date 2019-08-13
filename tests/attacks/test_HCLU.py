@@ -21,6 +21,7 @@ import logging
 import unittest
 
 import numpy as np
+import GPy
 
 from art.attacks.HCLU import HCLU
 from art.classifiers.GPy import GPyGaussianProcessClassifier
