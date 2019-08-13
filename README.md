@@ -29,6 +29,8 @@ The library contains implementations of the following **evasion attacks**:
 * Decision-based attack ([Brendel et al., 2018](https://arxiv.org/abs/1712.04248))
 * Adversarial patch ([Brown et al., 2017](https://arxiv.org/abs/1712.09665))
 * HopSkipJump attack ([Chen et al., 2017](https://arxiv.org/abs/1904.02144))
+* Decision tree attack ([Papernot et al., 2016](https://arxiv.org/pdf/1605.07277.pdf))
+* High Confidence Low Uncertainty adversarial examples ([Grosse et al., 2018](https://arxiv.org/abs/1812.02606)) 
 
 The following **defence** methods are also supported:
 * Feature squeezing ([Xu et al., 2017](http://arxiv.org/abs/1704.01155))
