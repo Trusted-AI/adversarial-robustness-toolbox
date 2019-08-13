@@ -25,7 +25,7 @@ from sklearn.datasets import load_digits
 import numpy as np
 
 from art.attacks.decision_tree_attack import DecisionTreeAttack
-from art.classifiers.scikitklearn import ScikitlearnDecisionTreeClassifier
+from art.classifiers.scikitlearn import ScikitlearnDecisionTreeClassifier
 from art.utils import master_seed
 
 logger = logging.getLogger('testLogger')
@@ -40,7 +40,7 @@ class TestdecisionTreeattack(unittest.TestCase):
     def setUpClass(cls):
         # Get MNIST
         digits = load_digits()
-        cls..X = digits.data
+        cls.X = digits.data
         cls.y = digits.target
 
     def setUp(self):

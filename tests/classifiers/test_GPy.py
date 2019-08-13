@@ -6,7 +6,7 @@ import unittest
 import numpy as np
 import GPy
 
-from art.classifiers import GPyGaussianProcessClassifier
+from art.classifiers.GPy import GPyGaussianProcessClassifier
 from art.utils import load_dataset
 
 logger = logging.getLogger('testLogger')
@@ -50,7 +50,7 @@ class TestGPyGaussianProcessClassifier(unittest.TestCase):
 
     def test_loss_gradient(self):
         (_, _), (x_test, y_test) = self.iris
-        grads = self.classifier.loss_gradient(x_test[0:1], y_test[0:1]))
+        grads = self.classifier.loss_gradient(x_test[0:1], y_test[0:1])
         # gradfs wiuth given seed should be [[-2.25244234e-11 -5.63282695e-11  1.74214328e-11 -1.21877914e-11]]
         # we test roughly: amount of positive/negative and largest gradient
         self.assertTrue(np.sum(grads < 0.0) == 3.0)
@@ -59,7 +59,7 @@ class TestGPyGaussianProcessClassifier(unittest.TestCase):
 
     def test_class_gradient(self):
         (_, _), (x_test, y_test)=self.iris
-        grads=self.classifier.class_gradient(x_test[0:1], int(y_test[0:1])))
+        grads=self.classifier.class_gradient(x_test[0:1], int(y_test[0:1]))
         # gradfs wiuth given seed should be [[[2.25244234e-11  5.63282695e-11 -1.74214328e-11  1.21877914e-11]]]
         # we test roughly: amount of positive/negative and largest gradient
         self.assertTrue(np.sum(grads < 0.0) == 1.0)
