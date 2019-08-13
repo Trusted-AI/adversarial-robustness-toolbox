@@ -15,25 +15,29 @@
 # AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT,
 # TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 # SOFTWARE.
-""" Scanner scoring functions """
+"""
+Scanner scoring functions
+"""
 
 import numpy as np
 
 
 class ScoringFunctions:
-    """ Scanner scoring functions
-        These functions are used in the scanner to determine the score of a subset
+    """
+    Scanner scoring functions. These functions are used in the scanner to determine the score of a subset.
     """
 
     @staticmethod
     def get_score_bj_fast(n_alpha, no_records, alpha):
-        """ BerkJones
+        """
+        BerkJones
+
         :param n_alpha: no of records less than alpha
         :type n_alpha: `list`
         :param no_records: no of records
         :type no_records: `list`
         :param alpha: alpha threshold
-        :type alpha: `list`
+        :type alpha: `np.ndarray`
         :return: score
         :rtype: `list`
         """
@@ -51,8 +55,7 @@ class ScoringFunctions:
 
         factor2 = (no_records[inds_pos_not_tie] - n_alpha[inds_pos_not_tie])
 
-        factor3 = np.log(np.true_divide(no_records[inds_pos_not_tie] -
-                                        n_alpha[inds_pos_not_tie],
+        factor3 = np.log(np.true_divide(no_records[inds_pos_not_tie] - n_alpha[inds_pos_not_tie],
                                         no_records[inds_pos_not_tie] * (1 - alpha[inds_pos_not_tie])))
 
         score[inds_pos_not_tie] = factor1 + factor2 * factor3
@@ -61,10 +64,12 @@ class ScoringFunctions:
 
     @staticmethod
     def get_score_hc_fast(n_alpha, no_records, alpha):
-        """ Higher criticism
-        Similar to a traditional wald test statistic:  (Observed - expected) / standard deviation.
-        In this case we use the binomial distribution.  The observed is N_a.  The expected (under null) is N*a.
-        and the standard deviation is sqrt(N*a(1-a))
+        """
+        Higher criticism
+        Similar to a traditional wald test statistic: (Observed - expected) / standard deviation.
+        In this case we use the binomial distribution. The observed is N_a.  The expected (under null) is N*a
+        and the standard deviation is sqrt(N*a(1-a)).
+
         :param n_alpha: no of records less than alpha
         :type n_alpha: `list`
         :param no_records: no of records
@@ -74,8 +79,6 @@ class ScoringFunctions:
         :return: score
         :rtype: `list`
         """
-
-        # nds = np.array(range(0, valpha.shape[0])) #count over these
         score = np.zeros(alpha.shape[0])
         inds = n_alpha > no_records * alpha
         factor1 = n_alpha[inds] - no_records[inds] * alpha[inds]
@@ -85,17 +88,18 @@ class ScoringFunctions:
 
     @staticmethod
     def get_score_ks_fast(n_alpha, no_records, alpha):
-        """ KolmarovSmirnov
+        """
+        KolmarovSmirnov
+
         :param n_alpha: no of records less than alpha
         :type n_alpha: `list`
         :param no_records: no of records
         :type no_records: `list`
         :param alpha: alpha threshold
-        :type alpha: `list`
+        :type alpha: `np.ndarray`
         :return: score
         :rtype: `list`
         """
-
         score = np.zeros(alpha.shape[0])
         inds = n_alpha > no_records * alpha
         score[inds] = np.true_divide(n_alpha[inds] - no_records[inds] * alpha[inds], np.sqrt(no_records[inds]))

@@ -12,6 +12,11 @@ Query-Efficient Black-Box Attack
 .. autoclass:: QueryEfficientBBGradientEstimation
    :members:
 
+Randomized Smoothing
+--------------------
+.. autoclass:: RandomizedSmoothing
+   :members:
+
 Base Wrapper
 ------------
 .. autoclass:: ClassifierWrapper

@@ -302,7 +302,8 @@ def get_labels_np_array(preds):
 
 
 def preprocess(x, y, nb_classes=10, clip_values=None):
-    """Scales `x` to [0, 1] and converts `y` to class categorical confidences.
+    """
+    Scales `x` to [0, 1] and converts `y` to class categorical confidences.
 
     :param x: Data instances.
     :type x: `np.ndarray`
@@ -357,11 +358,40 @@ def compute_success(classifier, x_clean, labels, x_adv, targeted=False, batch_si
     return rate
 
 
+def compute_accuracy(preds, labels, abstain=True):
+    """
+    Compute the accuracy rate and coverage rate of predictions
+    In the case where predictions are abstained, those samples are ignored.
+
+    :param preds: Predictions.
+    :type preds: `np.ndarray`
+    :param labels: Correct labels of `x`.
+    :type labels: `np.ndarray`
+    :param abstain: True if ignore abstained prediction, False if count them as incorrect.
+    :type abstain: `boolean`
+    :return: Tuple of accuracy rate and coverage rate
+    :rtype: `tuple`
+    """
+    has_pred = np.sum(preds, axis=1)
+    idx_pred = np.where(has_pred)[0]
+    labels = np.argmax(labels[idx_pred], axis=1)
+    num_correct = np.sum(np.argmax(preds[idx_pred], axis=1) == labels)
+    coverage_rate = len(idx_pred) / preds.shape[0]
+
+    if abstain:
+        acc_rate = num_correct / preds[idx_pred].shape[0]
+    else:
+        acc_rate = num_correct / preds.shape[0]
+
+    return acc_rate, coverage_rate
+
+
 # -------------------------------------------------------------------------------------------------------- IO FUNCTIONS
 
 
 def load_cifar10(raw=False):
-    """Loads CIFAR10 dataset from config.CIFAR10_PATH or downloads it if necessary.
+    """
+    Loads CIFAR10 dataset from config.CIFAR10_PATH or downloads it if necessary.
 
     :param raw: `True` if no preprocessing should be applied to the data. Otherwise, data is normalized to 1.
     :type raw: `bool`
@@ -429,7 +459,8 @@ def load_cifar10(raw=False):
 
 
 def load_mnist(raw=False):
-    """Loads MNIST dataset from `DATA_PATH` or downloads it if necessary.
+    """
+    Loads MNIST dataset from `DATA_PATH` or downloads it if necessary.
 
     :param raw: `True` if no preprocessing should be applied to the data. Otherwise, data is normalized to 1.
     :type raw: `bool`
@@ -469,7 +500,7 @@ def load_stl():
     from os.path import join
     from art import DATA_PATH
 
-    min_, max_ = 0., 1.
+    min_, max_ = 0.0, 1.0
 
     # Download and extract data if needed
     path = get_file('stl10_binary', path=DATA_PATH, extract=True,
@@ -523,11 +554,7 @@ def load_iris(raw=False, test_set=.3):
 
     # Preprocess
     if not raw:
-        label_map = {
-            'Iris-setosa': 0,
-            'Iris-versicolor': 1,
-            'Iris-virginica': 2
-        }
+        label_map = {'Iris-setosa': 0, 'Iris-versicolor': 1, 'Iris-virginica': 2}
         labels = np.array([label_map[labels[i]] for i in range(labels.size)], dtype=np.int32)
         data, labels = preprocess(data, labels, nb_classes=3)
     min_, max_ = np.amin(data), np.amax(data)

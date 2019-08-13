@@ -183,10 +183,6 @@ class TestFastGradientMethodImages(unittest.TestCase):
                     (acc * 100))
 
     def test_with_defences(self):
-        self._test_with_defences(custom_activation=False)
-        self._test_with_defences(custom_activation=True)
-
-    def _test_with_defences(self, custom_activation=False):
         from art.defences import FeatureSqueezing
 
         # Get MNIST
@@ -195,7 +191,7 @@ class TestFastGradientMethodImages(unittest.TestCase):
         # Get the ready-trained Keras model
         model = self.classifier_k._model
         fs = FeatureSqueezing(bit_depth=1, clip_values=(0, 1))
-        classifier = KerasClassifier(model=model, clip_values=(0, 1), defences=fs, custom_activation=custom_activation)
+        classifier = KerasClassifier(model=model, clip_values=(0, 1), defences=fs)
 
         attack = FastGradientMethod(classifier, eps=1, batch_size=128)
         x_train_adv = attack.generate(x_train)
@@ -269,7 +265,7 @@ class TestFastGradientMethodImages(unittest.TestCase):
 
     def test_classifier_type_check_fail_gradients(self):
         # Use a test classifier not providing gradients required by white-box attack
-        from art.classifiers.scikitklearn import ScikitlearnDecisionTreeClassifier
+        from art.classifiers.scikitlearn import ScikitlearnDecisionTreeClassifier
         from sklearn.tree import DecisionTreeClassifier
 
         classifier = ScikitlearnDecisionTreeClassifier(model=DecisionTreeClassifier())
@@ -278,7 +274,7 @@ class TestFastGradientMethodImages(unittest.TestCase):
 
         self.assertIn('For `FastGradientMethod` classifier must be an instance of '
                       '`art.classifiers.classifier.ClassifierGradients`, the provided classifier is instance of '
-                      '(<class \'art.classifiers.scikitklearn.ScikitlearnClassifier\'>,).', str(context.exception))
+                      '(<class \'art.classifiers.scikitlearn.ScikitlearnClassifier\'>,).', str(context.exception))
 
 
 class TestFastGradientVectors(unittest.TestCase):
@@ -399,7 +395,7 @@ class TestFastGradientVectors(unittest.TestCase):
         from sklearn.linear_model import LogisticRegression
         from sklearn.svm import SVC, LinearSVC
 
-        from art.classifiers.scikitklearn import ScikitlearnLogisticRegression, ScikitlearnSVC
+        from art.classifiers.scikitlearn import ScikitlearnLogisticRegression, ScikitlearnSVC
 
         scikitlearn_test_cases = {LogisticRegression: ScikitlearnLogisticRegression,
                                   SVC: ScikitlearnSVC,
