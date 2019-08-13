@@ -25,7 +25,7 @@ from art.classifiers.scikitklearn import ScikitlearnDecisionTreeClassifier
 logger = logging.getLogger(__name__)
 
 
-class Decision_Tree_Attack(Attack):
+class DecisionTreeAttack(Attack):
     '''
         Close Implementation of the Decision Tree adversarial example formulation by Papernot et al. (2016), algorithm 2.
         Paper link:
@@ -40,7 +40,7 @@ class Decision_Tree_Attack(Attack):
         :param offset: How much the value is pushed away from tree's threshold. default 0.001
         :type classifier: :float:
         """
-        super(Decision_Tree_Attack, self).__init__(classifier=classifier)
+        super(DecisionTreeAttack, self).__init__(classifier=classifier)
         if not isinstance(classifier, ScikitlearnDecisionTreeClassifier):
             raise TypeError('Model must be a decision tree model!')
         params = {'offset': offset}
@@ -156,7 +156,7 @@ class Decision_Tree_Attack(Attack):
         :type kwargs: `dict`
         :return: `True` when parsing was successful
         """
-        super(Decision_Tree_Attack, self).set_params(**kwargs)
+        super(DecisionTreeAttack, self).set_params(**kwargs)
 
         if self.offset <= 0:
             raise ValueError("The offset parameter must be strictly positive.")

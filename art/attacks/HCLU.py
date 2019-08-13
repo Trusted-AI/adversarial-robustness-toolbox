@@ -52,13 +52,13 @@ class HCLU(Attack):
         if not isinstance(classifier, GPyGaussianProcessClassifier):
             raise TypeError('Model must be a GPy Gaussian Process classifier!')
         params = {'conf': conf,
-              'unc_increase': unc_increase,
-              'min_val': min_val,
-              'max_val': max_val
-        }
+                  'unc_increase': unc_increase,
+                  'min_val': min_val,
+                  'max_val': max_val
+                  }
         self.set_params(**params)
 
-    def generate(self, x, y=None,**kwargs):
+    def generate(self, x, y=None, **kwargs):
         """
         Generate adversarial examples and return them as an array. This method should be overridden by all concrete
         attack implementations.
@@ -96,8 +96,10 @@ class HCLU(Attack):
                 adv_x[i].reshape(1, -1))[0, 0] < 0.5
             init_args = {'classifier': self.classifier,
                          'class_zero': class_zero, 'max_uncertainty': max_uncertainty}
-            constr_conf = {'type': 'ineq', 'fun': constraint_conf, 'args': (init_args,)}
-            constr_unc = {'type': 'ineq', 'fun': constraint_unc, 'args': (init_args,)}
+            constr_conf = {'type': 'ineq',
+                           'fun': constraint_conf, 'args': (init_args,)}
+            constr_unc = {'type': 'ineq',
+                          'fun': constraint_unc, 'args': (init_args,)}
             args = {'args': init_args, 'orig': x[i].reshape(-1)}
             # #finally, run optimization
             adv_x[i] = minimize(minfun, adv_x[i], args=args,
@@ -114,9 +116,10 @@ class HCLU(Attack):
         """
         super(HCLU, self).set_params(**kwargs)
         if self.conf <= 0.5 or self.conf > 1.0:
-            raise ValueError("Confidence value has to bea value between 0.5 and 1.0.")
+            raise ValueError(
+                "Confidence value has to bea value between 0.5 and 1.0.")
         if self.unc_increase < 0.0:
             raise ValueError(
                 "Uncertainty increase value has to be a positive number.")
-        if self.min_val>self.max_val:
+        if self.min_val > self.max_val:
             raise ValueError("Maximum has to be larger than minimum.")
