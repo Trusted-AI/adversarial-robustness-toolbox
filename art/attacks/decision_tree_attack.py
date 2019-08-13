@@ -19,9 +19,6 @@ from __future__ import absolute_import, division, print_function, unicode_litera
 
 import logging
 
-import abc
-import sys
-
 import numpy as np
 from art.attacks.attack import Attack
 from art.classifiers.scikitklearn import ScikitlearnDecisionTreeClassifier
@@ -29,23 +26,25 @@ logger = logging.getLogger(__name__)
 
 
 class Decision_Tree_Attack(Attack):
-    """
-    # Close implementation of papernots attack on decision trees from https://arxiv.org/pdf/1605.07277.pdf , Algorithm 2. 
-    # Implementation after Algorthim 2 and communication with the authors.  
-    """
+    '''
+        Close Implementation of the Decision Tree adversarial example formulation by Papernot et al. (2016), algorithm 2.
+        Paper link:
+        https://arxiv.org/pdf/1605.07277.pdf
+    '''
     attack_params = ['classifier', 'offset']
 
     def __init__(self, classifier, offset=0.001):
         """
         :param classifier: A trained model of type scikit decision tree.
         :type classifier: :class:`.Classifier.ScikitlearnDecisionTreeClassifier`
-        :param offset: How much the value is pushed away from tree's threshold
+        :param offset: How much the value is pushed away from tree's threshold. default 0.001
         :type classifier: :float:
         """
-        self.classifier = classifier
+        super(Decision_Tree_Attack, self).__init__(classifier=classifier)
         if not isinstance(classifier, ScikitlearnDecisionTreeClassifier):
             raise TypeError('Model must be a decision tree model!')
-        self.offset = offset
+        params = {'offset': offset}
+        self.set_params(**params)
 
     def _DFSubtree(self, position, original_class, target=None):
         """
@@ -91,7 +90,7 @@ class Decision_Tree_Attack(Attack):
                 res.append(position)
                 return res
 
-    def generate(self, x, y=None):
+    def generate(self, x, y=None, **kwargs):
         """
         Generate adversarial examples and return them as an array. This method should be overridden by all concrete
         attack implementations.

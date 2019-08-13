@@ -19,8 +19,6 @@ from __future__ import absolute_import, division, print_function, unicode_litera
 
 import logging
 
-import abc
-import sys
 import copy
 import numpy as np
 from scipy.optimize import minimize
@@ -30,33 +28,37 @@ logger = logging.getLogger(__name__)
 
 
 class HCLU(Attack):
-    """
-    # Implementation of the HCLU formulation in https://arxiv.org/abs/1812.02606 by Grosse et al.  
-    """
-    attack_params = ['conf', 'unc_increase']
+    '''
+        Implementation of the High-Confidence-Low-Uncertainty (HCLU) adversarial example formulation by Grosse et al. (2018)
+        Paper link:
+        https://arxiv.org/abs/1812.02606 
+    '''
+    attack_params = ['conf', 'unc_increase', 'min_val', 'max_val']
 
-    def __init__(self, classifier, conf=0.95, unc_increase=100.0, minVal=0.0, maxVal=1.0):
+    def __init__(self, classifier, conf=0.95, unc_increase=100.0, min_val=0.0, max_val=1.0):
         """
-        :param classifier: A trained model of type scikit decision tree.
+        :param classifier: A trained model of type GPYGaussianProcessClassifier.
         :type classifier: :class:`.Classifier.GPyGaussianProcessClassifier
         :param conf: Confidence that examples should have, if there were to be classified as 1.0 maximally
         :type conf: :float: 
         :param unc_increase: Value uncertainty is allowed to deviate, where 1.0 is original value
         :type unc_increase: :float:
-        :param minVal: minimal value any feature can take
-        :type minVal: :float:
-        :param maxVal: maximal value any feature can take
-        :type maxVal: :float:
+        :param min_val: minimal value any feature can take, defaults to 0.0
+        :type min_val: :float:
+        :param max_val: maximal value any feature can take, defaults to 1.0
+        :type max_val: :float:
         """
-        self.classifier = classifier
+        super(HCLU, self).__init__(classifier=classifier)
         if not isinstance(classifier, GPyGaussianProcessClassifier):
             raise TypeError('Model must be a GPy Gaussian Process classifier!')
-        self.conf = conf
-        self.unc_increase = unc_increase
-        self.minVal = minVal
-        self.maxVal = maxVal
+        params = {'conf': conf,
+              'unc_increase': unc_increase,
+              'min_val': min_val,
+              'max_val': max_val
+        }
+        self.set_params(**params)
 
-    def generate(self, x, y=None):
+    def generate(self, x, y=None,**kwargs):
         """
         Generate adversarial examples and return them as an array. This method should be overridden by all concrete
         attack implementations.
@@ -85,7 +87,7 @@ class HCLU(Attack):
         bounds = []
         # adding bounds, to not go away from original data
         for i in range(np.shape(x)[1]):
-            bounds.append((self.minVal, self.maxVal))
+            bounds.append((self.min_val, self.max_val))
         for i in range(np.shape(x)[0]):  # go though data amd craft
             # get properties for attack
             max_uncertainty = self.unc_increase * \
@@ -112,7 +114,9 @@ class HCLU(Attack):
         """
         super(HCLU, self).set_params(**kwargs)
         if self.conf <= 0.5 or self.conf > 1.0:
-            raise ValueError("Confidence value has to be between 0.5 and 1.0.")
+            raise ValueError("Confidence value has to bea value between 0.5 and 1.0.")
         if self.unc_increase < 0.0:
             raise ValueError(
-                "Uncertainty increase value has to be a positive nubmer.")
+                "Uncertainty increase value has to be a positive number.")
+        if self.min_val>self.max_val:
+            raise ValueError("Maximum has to be larger than minimum.")
