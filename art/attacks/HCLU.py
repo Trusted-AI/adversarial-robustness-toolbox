@@ -31,7 +31,9 @@ logger = logging.getLogger(__name__)
 
 class HCLU(Attack):
     """
-    # Implementation of the HCLU formulation in https://arxiv.org/abs/1812.02606 by Grosse et al.  
+    Implementation of the High-Confidence-Low-Uncertainty (HCLU) adversarial example formulation by Grosse et al. (2018)
+    Paper link:
+        https://arxiv.org/abs/1812.02606 
     """
     attack_params = ['conf', 'unc_increase']
 
