@@ -41,7 +41,7 @@ class ClassifierNeuralNetworkInstance(ClassifierNeuralNetwork, ClassifierGradien
     def loss_gradient(self, x, y, **kwargs):
         pass
 
-    def predict(self, x, logits=False, batch_size=128, **kwargs):
+    def predict(self, x, batch_size=128, **kwargs):
         pass
 
     def save(self, filename, path=None):

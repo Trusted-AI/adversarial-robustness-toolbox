@@ -52,7 +52,8 @@ ART also implements **detection** methods of adversarial samples:
 The following **detector of poisoning attacks** is also supported:
 * Detector based on activations analysis ([Chen et al., 2018](https://arxiv.org/abs/1811.03728))
 
-**Robustness metrics**:
+**Robustness metrics and certifications**:
+* Randomized Smoothing ([Cohen et al., 2019](https://arxiv.org/abs/1902.02918))
 * CLEVER ([Weng et al., 2018](https://arxiv.org/abs/1801.10578))
 * Empirical robustness ([Moosavi-Dezfooli et al., 2015](https://arxiv.org/abs/1511.04599))
 * Loss sensitivity ([Arpit et al., 2017](https://arxiv.org/abs/1706.05394))

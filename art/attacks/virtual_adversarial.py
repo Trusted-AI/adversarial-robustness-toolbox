@@ -80,7 +80,7 @@ class VirtualAdversarialMethod(Attack):
         :rtype: `np.ndarray`
         """
         x_adv = x.astype(NUMPY_DTYPE)
-        preds = self.classifier.predict(x_adv, logits=False, batch_size=self.batch_size)
+        preds = self.classifier.predict(x_adv, batch_size=self.batch_size)
 
         # Pick a small scalar to avoid division by 0
         tol = 1e-10
@@ -97,8 +97,7 @@ class VirtualAdversarialMethod(Attack):
             # Main loop of the algorithm
             for _ in range(self.max_iter):
                 var_d = self._normalize(var_d)
-                preds_new = self.classifier.predict((batch + var_d).reshape((-1,) + self.classifier.input_shape),
-                                                    logits=False)
+                preds_new = self.classifier.predict((batch + var_d).reshape((-1,) + self.classifier.input_shape))
 
                 from scipy.stats import entropy
                 kl_div1 = entropy(np.transpose(preds[batch_index_1:batch_index_2]), np.transpose(preds_new))
@@ -106,8 +105,7 @@ class VirtualAdversarialMethod(Attack):
                 var_d_new = np.zeros(var_d.shape)
                 for current_index in range(var_d.shape[1]):
                     var_d[:, current_index] += self.finite_diff
-                    preds_new = self.classifier.predict((batch + var_d).reshape((-1,) + self.classifier.input_shape),
-                                                        logits=False)
+                    preds_new = self.classifier.predict((batch + var_d).reshape((-1,) + self.classifier.input_shape))
                     kl_div2 = entropy(np.transpose(preds[batch_index_1:batch_index_2]), np.transpose(preds_new))
                     var_d_new[:, current_index] = (kl_div2 - kl_div1) / (self.finite_diff + tol)
                     var_d[:, current_index] -= self.finite_diff

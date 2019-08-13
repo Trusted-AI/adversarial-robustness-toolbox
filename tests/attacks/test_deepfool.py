@@ -160,7 +160,7 @@ class TestDeepFool(unittest.TestCase):
 
     def test_classifier_type_check_fail_gradients(self):
         # Use a test classifier not providing gradients required by white-box attack
-        from art.classifiers.scikitklearn import ScikitlearnDecisionTreeClassifier
+        from art.classifiers.scikitlearn import ScikitlearnDecisionTreeClassifier
         from sklearn.tree import DecisionTreeClassifier
 
         classifier = ScikitlearnDecisionTreeClassifier(model=DecisionTreeClassifier())
@@ -170,7 +170,7 @@ class TestDeepFool(unittest.TestCase):
         self.assertIn('For `DeepFool` classifier must be an instance of '
                       '`art.classifiers.classifier.ClassifierNeuralNetwork` and '
                       '`art.classifiers.classifier.ClassifierGradients`, the provided classifier is instance of '
-                      '(<class \'art.classifiers.scikitklearn.ScikitlearnClassifier\'>,).', str(context.exception))
+                      '(<class \'art.classifiers.scikitlearn.ScikitlearnClassifier\'>,).', str(context.exception))
 
 
 class TestDeepFoolVectors(unittest.TestCase):

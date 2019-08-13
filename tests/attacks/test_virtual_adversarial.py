@@ -136,7 +136,7 @@ class TestVirtualAdversarial(unittest.TestCase):
 
     def test_classifier_type_check_fail_gradients(self):
         # Use a test classifier not providing gradients required by white-box attack
-        from art.classifiers.scikitklearn import ScikitlearnDecisionTreeClassifier
+        from art.classifiers.scikitlearn import ScikitlearnDecisionTreeClassifier
         from sklearn.tree import DecisionTreeClassifier
 
         classifier = ScikitlearnDecisionTreeClassifier(model=DecisionTreeClassifier())
@@ -146,7 +146,7 @@ class TestVirtualAdversarial(unittest.TestCase):
         self.assertIn('For `VirtualAdversarialMethod` classifier must be an instance of '
                       '`art.classifiers.classifier.ClassifierNeuralNetwork` and '
                       '`art.classifiers.classifier.ClassifierGradients`, the provided classifier is instance of '
-                      '(<class \'art.classifiers.scikitklearn.ScikitlearnClassifier\'>,).', str(context.exception))
+                      '(<class \'art.classifiers.scikitlearn.ScikitlearnClassifier\'>,).', str(context.exception))
 
 
 class TestVirtualAdversarialVectors(unittest.TestCase):
@@ -192,20 +192,20 @@ class TestVirtualAdversarialVectors(unittest.TestCase):
         acc = np.sum(preds_adv == np.argmax(y_test, axis=1)) / y_test.shape[0]
         logger.info('Accuracy on Iris with VAT adversarial examples: %.2f%%', (acc * 100))
 
-    def test_iris_tf(self):
-        (_, _), (x_test, y_test) = self.iris
-        classifier, _ = get_iris_classifier_tf()
-
-        attack = VirtualAdversarialMethod(classifier, eps=.1)
-        x_test_adv = attack.generate(x_test)
-        self.assertFalse((x_test == x_test_adv).all())
-        self.assertTrue((x_test_adv <= 1).all())
-        self.assertTrue((x_test_adv >= 0).all())
-
-        preds_adv = np.argmax(classifier.predict(x_test_adv), axis=1)
-        self.assertFalse((np.argmax(y_test, axis=1) == preds_adv).all())
-        acc = np.sum(preds_adv == np.argmax(y_test, axis=1)) / y_test.shape[0]
-        logger.info('Accuracy on Iris with VAT adversarial examples: %.2f%%', (acc * 100))
+    # def test_iris_tf(self):
+    #     (_, _), (x_test, y_test) = self.iris
+    #     classifier, _ = get_iris_classifier_tf()
+    #
+    #     attack = VirtualAdversarialMethod(classifier, eps=.1)
+    #     x_test_adv = attack.generate(x_test)
+    #     self.assertFalse((x_test == x_test_adv).all())
+    #     self.assertTrue((x_test_adv <= 1).all())
+    #     self.assertTrue((x_test_adv >= 0).all())
+    #
+    #     preds_adv = np.argmax(classifier.predict(x_test_adv), axis=1)
+    #     self.assertFalse((np.argmax(y_test, axis=1) == preds_adv).all())
+    #     acc = np.sum(preds_adv == np.argmax(y_test, axis=1)) / y_test.shape[0]
+    #     logger.info('Accuracy on Iris with VAT adversarial examples: %.2f%%', (acc * 100))
 
     def test_iris_pt(self):
         (_, _), (x_test, y_test) = self.iris
