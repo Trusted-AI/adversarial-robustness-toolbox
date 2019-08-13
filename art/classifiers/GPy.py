@@ -27,18 +27,18 @@ logger = logging.getLogger(__name__)
 
 class GPyGaussianProcessClassifier(Classifier, ClassifierGradients):
     """
-    Wrapper class for scikit-learn Decision Tree Classifier models.
+    Wrapper class for GPY Gaussian Process classification models.
     """
 
     def __init__(self, model=None, channel_index=None, clip_values=None, defences=None, preprocessing=(0, 1)):
         """
-        Create a `Classifier` instance from a scikit-learn Decision Tree Classifier model.
+        Create a `Classifier` instance GPY Gaussian Process classification models.
 
         :param clip_values: Tuple of the form `(min, max)` representing the minimum and maximum values allowed
                for features.
         :type clip_values: `tuple`
-        :param model: scikit-learn Decision Tree Classifier model.
-        :type model: `sklearn.tree.DecisionTree`
+        :param model: GPY Gaussian Process Classification model.
+        :type model: `Gpy.models.GPClassification`
         :param channel_index: Index of the axis in data containing the color channels or features. Not used in this
                class.
         :type channel_index: `int`
@@ -159,9 +159,9 @@ class GPyGaussianProcessClassifier(Classifier, ClassifierGradients):
         """
         Fit the classifier on the training set `(x, y)`.
 
-        :param x: Training data. Not used, as goven to model in initialized earlier.
+        :param x: Training data. Not used, as given to model in initialized earlier.
         :type x: `np.ndarray`
-        :param y: Labels, one-vs-rest encoding. Not used, as goven to model in initialized earlier.
+        :param y: Labels, one-vs-rest encoding. Not used, as given to model in initialized earlier.
         :type y: `np.ndarray`
         :param batch_size: Size of batches. Not used in this class
         :type batch_size: `int`
