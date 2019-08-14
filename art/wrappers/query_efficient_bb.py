@@ -36,7 +36,8 @@ class QueryEfficientBBGradientEstimation(ClassifierWrapper, ClassifierGradients,
     """
     Implementation of Query-Efficient Black-box Adversarial Examples. The attack approximates the gradient by
     maximizing the loss function over samples drawn from random Gaussian noise around the input.
-    Paper link: https://arxiv.org/abs/1712.07113
+
+    | Paper link: https://arxiv.org/abs/1712.07113
     """
     attack_params = ['num_basis', 'sigma', 'round_samples']
 

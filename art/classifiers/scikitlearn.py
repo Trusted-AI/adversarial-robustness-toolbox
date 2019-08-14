@@ -693,8 +693,9 @@ class ScikitlearnLogisticRegression(ScikitlearnClassifier, ClassifierGradients):
     def class_gradient(self, x, label=None, **kwargs):
         """
         Compute per-class derivatives w.r.t. `x`.
-        Paper link: http://cs229.stanford.edu/proj2016/report/ItkinaWu-AdversarialAttacksonImageRecognition-report.pdf
-        Typo in https://arxiv.org/abs/1605.07277 (equation 6)
+
+        | Paper link: http://cs229.stanford.edu/proj2016/report/ItkinaWu-AdversarialAttacksonImageRecognition-report.pdf
+        | Typo in https://arxiv.org/abs/1605.07277 (equation 6)
 
         :param x: Sample input with shape as expected by the model.
         :type x: `np.ndarray`
@@ -792,8 +793,9 @@ class ScikitlearnLogisticRegression(ScikitlearnClassifier, ClassifierGradients):
     def loss_gradient(self, x, y, **kwargs):
         """
         Compute the gradient of the loss function w.r.t. `x`.
-        Paper link: http://cs229.stanford.edu/proj2016/report/ItkinaWu-AdversarialAttacksonImageRecognition-report.pdf
-        Typo in https://arxiv.org/abs/1605.07277 (equation 6)
+
+        | Paper link: http://cs229.stanford.edu/proj2016/report/ItkinaWu-AdversarialAttacksonImageRecognition-report.pdf
+        | Typo in https://arxiv.org/abs/1605.07277 (equation 6)
 
         :param x: Sample input with shape as expected by the model.
         :type x: `np.ndarray`
@@ -936,7 +938,8 @@ class ScikitlearnSVC(ScikitlearnClassifier, ClassifierGradients):
         """
         Compute the gradient of the loss function w.r.t. `x`.
         Following equation (1) with lambda=0.
-        Paper link: https://pralab.diee.unica.it/sites/default/files/biggio14-svm-chapter.pdf
+
+        | Paper link: https://pralab.diee.unica.it/sites/default/files/biggio14-svm-chapter.pdf
 
         :param x: Sample input with shape as expected by the model.
         :type x: `np.ndarray`

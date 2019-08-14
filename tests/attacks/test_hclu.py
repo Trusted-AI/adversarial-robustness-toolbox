@@ -23,10 +23,9 @@ import unittest
 import numpy as np
 import GPy
 
-from art.attacks import HCLU
+from art.attacks import HighConfidenceLowUncertainty
 from art.classifiers import GPyGaussianProcessClassifier
 from art.utils import load_dataset, master_seed
-
 
 logger = logging.getLogger('testLogger')
 
@@ -53,7 +52,7 @@ class TestHCLU(unittest.TestCase):
         m_art = GPyGaussianProcessClassifier(m)
         clean_acc = np.mean(np.argmin(m_art.predict(x_test), axis=1) == y_test)
         # get adversarial examples, accuracy, and uncertainty
-        attack = HCLU(m_art, conf=0.9, min_val=-0.0, max_val=1.0)
+        attack = HighConfidenceLowUncertainty(m_art, conf=0.9, min_val=-0.0, max_val=1.0)
         adv = attack.generate(x_test)
         adv_acc = np.mean(np.argmin(m_art.predict(adv), axis=1) == y_test)
         unc_f = m_art.predict_uncertainty(adv)
@@ -61,8 +60,7 @@ class TestHCLU(unittest.TestCase):
         self.assertTrue(clean_acc > adv_acc)
 
         # now take into account uncertainty
-        attack = HCLU(m_art, unc_increase=0.9,
-                      conf=0.9, min_val=0.0, max_val=1.0)
+        attack = HighConfidenceLowUncertainty(m_art, unc_increase=0.9, conf=0.9, min_val=0.0, max_val=1.0)
         adv = attack.generate(x_test)
         adv_acc = np.mean(np.argmin(m_art.predict(adv), axis=1) == y_test)
         unc_o = m_art.predict_uncertainty(adv)

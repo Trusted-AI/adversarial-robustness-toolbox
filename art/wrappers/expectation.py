@@ -18,8 +18,7 @@
 """
 This module implements the Expectation Over Transformation applied to classifier predictions and gradients.
 
-Paper link:
-    https://arxiv.org/pdf/1707.07397.pdf
+| Paper link: https://arxiv.org/abs/1707.07397
 """
 from __future__ import absolute_import, division, print_function, unicode_literals
 
@@ -35,7 +34,8 @@ class ExpectationOverTransformations(ClassifierWrapper, ClassifierGradients, Cla
     """
     Implementation of Expectation Over Transformations applied to classifier predictions and gradients, as introduced
     in Athalye et al. (2017).
-    Paper link: https://arxiv.org/pdf/1707.07397.pdf
+
+    | Paper link: https://arxiv.org/abs/1707.07397
     """
 
     def __init__(self, classifier, sample_size, transformation):

@@ -20,8 +20,7 @@ This module implements the zeroth-order optimization attack `ZooAttack`. This is
 variant of the Carlini and Wagner attack which uses ADAM coordinate descent to perform numerical estimation of
 gradients.
 
-Paper link:
-    https://arxiv.org/abs/1708.03999.
+| Paper link: https://arxiv.org/abs/1708.03999
 """
 from __future__ import absolute_import, division, print_function, unicode_literals
 
@@ -41,7 +40,8 @@ class ZooAttack(Attack):
     """
     The black-box zeroth-order optimization attack from Pin-Yu Chen et al. (2018). This attack is a variant of the
     C&W attack which uses ADAM coordinate descent to perform numerical estimation of gradients.
-    Paper link: https://arxiv.org/abs/1708.03999.
+
+    | Paper link: https://arxiv.org/abs/1708.03999
     """
     attack_params = Attack.attack_params + ['confidence', 'targeted', 'learning_rate', 'max_iter',
                                             'binary_search_steps', 'initial_const', 'abort_early', 'use_resize',
