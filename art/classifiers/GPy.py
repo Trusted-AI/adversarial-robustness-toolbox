@@ -18,6 +18,7 @@
 from __future__ import absolute_import, division, print_function, unicode_literals
 
 import logging
+
 import numpy as np
 
 from art.classifiers import Classifier, ClassifierGradients
@@ -57,7 +58,7 @@ class GPyGaussianProcessClassifier(Classifier, ClassifierGradients):
         self._nb_classes = 2  # always binary
         self.model = model
 
-    def class_gradient(self, x, label=None, logits=False, eps=0.0001):
+    def class_gradient(self, x, label=None, eps=0.0001):
         """
         Compute per-class derivatives w.r.t. `x`.
 
@@ -68,8 +69,6 @@ class GPyGaussianProcessClassifier(Classifier, ClassifierGradients):
                       match the batch size of `x`, and each value will be used as target for its corresponding sample in
                       `x`. If `None`, then gradients for all classes will be computed for each sample.
         :type label: `int` or `list`
-        :param logits: `True` if the prediction should be done at the logits layer.
-        :type logits: `bool`
         :return: Array of gradients of input features w.r.t. each class in the form
                  `(batch_size, nb_classes, input_shape)` when computing for all classes, otherwise shape becomes
                  `(batch_size, 1, input_shape)` when `label` parameter is specified.
@@ -81,12 +80,13 @@ class GPyGaussianProcessClassifier(Classifier, ClassifierGradients):
             for c in range(2):
                 ind = self.predict(x[i].reshape(1, -1))[0, c]
                 sur = self.predict(np.repeat(x[i].reshape(1, -1),
-                                             np.shape(x)[1], 0) + eps*np.eye(np.shape(x)[1]))[:, c]
-                grads[i, c] = ((sur-ind)*eps).reshape(1, -1)
-        if not(label is None):
+                                             np.shape(x)[1], 0) + eps * np.eye(np.shape(x)[1]))[:, c]
+                grads[i, c] = ((sur - ind) * eps).reshape(1, -1)
+
+        if label is not None:
             return grads[:, label, :].reshape(np.shape(x)[0], 1, np.shape(x)[1])
-        else:
-            return grads
+
+        return grads
 
     def get_activations(self, x, layer, batch_size):
         raise NotImplementedError
@@ -106,10 +106,10 @@ class GPyGaussianProcessClassifier(Classifier, ClassifierGradients):
         grads = np.zeros(np.shape(x))
         for i in range(np.shape(x)[0]):
             # 1.0 - to mimic loss, [0,np.argmax] to get right class
-            ind = 1.0-self.predict(x[i].reshape(1, -1))[0, np.argmax(y[i])]
-            sur = 1.0-self.predict(np.repeat(x[i].reshape(1, -1), np.shape(x)[1], 0)
-                                   + eps*np.eye(np.shape(x)[1]))[:, np.argmax(y[i])]
-            grads[i] = ((sur-ind)*eps).reshape(1, -1)
+            ind = 1.0 - self.predict(x[i].reshape(1, -1))[0, np.argmax(y[i])]
+            sur = 1.0 - self.predict(np.repeat(x[i].reshape(1, -1), np.shape(x)[1], 0)
+                                     + eps * np.eye(np.shape(x)[1]))[:, np.argmax(y[i])]
+            grads[i] = ((sur - ind) * eps).reshape(1, -1)
         return grads
 
     def predict(self, x, logits=False):
@@ -126,11 +126,11 @@ class GPyGaussianProcessClassifier(Classifier, ClassifierGradients):
         out = np.zeros((np.shape(x)[0], 2))
         if logits:  # output the non-squashed version
             out[:, 0] = self.model.predict_noiseless(x)[0].reshape(-1)
-            out[:, 1] = -1.0*out[:, 0]
+            out[:, 1] = -1.0 * out[:, 0]
             return out
         # output normal prediction, scale up to two values
         out[:, 0] = self.model.predict(x)[0].reshape(-1)
-        out[:, 1] = 1.0-out[:, 0]
+        out[:, 1] = 1.0 - out[:, 0]
         return out
 
     def predict_uncertainty(self, x):
