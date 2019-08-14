@@ -55,7 +55,7 @@ class HighConfidenceLowUncertainty(Attack):
         :param max_val: maximal value any feature can take, defaults to 1.0
         :type max_val: :float:
         """
-        super(HCLU, self).__init__(classifier=classifier)
+        super(HighConfidenceLowUncertainty, self).__init__(classifier=classifier)
         if not isinstance(classifier, GPyGaussianProcessClassifier):
             raise TypeError('Model must be a GPy Gaussian Process classifier!')
         params = {'conf': conf,
@@ -116,7 +116,7 @@ class HighConfidenceLowUncertainty(Attack):
         :type kwargs: `dict`
         :return: `True` when parsing was successful
         """
-        super(HCLU, self).set_params(**kwargs)
+        super(HighConfidenceLowUncertainty, self).set_params(**kwargs)
         if self.conf <= 0.5 or self.conf > 1.0:
             raise ValueError(
                 "Confidence value has to bea value between 0.5 and 1.0.")
