@@ -24,14 +24,14 @@ from sklearn.tree import DecisionTreeClassifier
 from sklearn.datasets import load_digits
 import numpy as np
 
-from art.attacks.decision_tree_attack import DecisionTreeAttack
-from art.classifiers.scikitlearn import ScikitlearnDecisionTreeClassifier
+from art.attacks import DecisionTreeAttack
+from art.classifiers import SklearnClassifier
 from art.utils import master_seed
 
 logger = logging.getLogger('testLogger')
 
 
-class TestdecisionTreeattack(unittest.TestCase):
+class TestDecisionTreeAttack(unittest.TestCase):
     """
     A unittest class for testing the decision tree attack.
     """
@@ -50,15 +50,14 @@ class TestdecisionTreeattack(unittest.TestCase):
     def test_scikitlearn(self):
         clf = DecisionTreeClassifier()
         clf.fit(self.X, self.y)
-        clf_art = ScikitlearnDecisionTreeClassifier(clf)
+        clf_art = SklearnClassifier(clf)
         attack = DecisionTreeAttack(clf_art)
         adv = attack.generate(self.X[:25])
-        #all crafting should succeed
+        # all crafting should succeed
         self.assertTrue(np.sum(clf.predict(adv) == clf.predict(self.X[:25])) == 0)
-        targets = np.array([1, 1, 1, 2, 2, 2, 3, 3, 3, 4, 4,
-                            4, 5, 5, 5, 6, 6, 6, 7, 7, 7, 8, 8, 8, 9])
+        targets = np.array([1, 1, 1, 2, 2, 2, 3, 3, 3, 4, 4, 4, 5, 5, 5, 6, 6, 6, 7, 7, 7, 8, 8, 8, 9])
         adv = attack.generate(self.X[:25], targets)
-        #all targeted crafting should succeed as well
+        # all targeted crafting should succeed as well
         self.assertTrue(np.sum(clf.predict(adv) == targets) == 25.0)
 
 

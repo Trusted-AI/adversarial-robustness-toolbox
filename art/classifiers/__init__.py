@@ -12,3 +12,4 @@ from art.classifiers.scikitlearn import SklearnClassifier
 from art.classifiers.lightgbm import LightGBMClassifier
 from art.classifiers.xgboost import XGBoostClassifier
 from art.classifiers.catboost import CatBoostARTClassifier
+from art.classifiers.GPy import GPyGaussianProcessClassifier
