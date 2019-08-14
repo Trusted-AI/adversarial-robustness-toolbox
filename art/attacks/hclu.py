@@ -15,6 +15,12 @@
 # AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT,
 # TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 # SOFTWARE.
+"""
+Implementation of the High-Confidence-Low-Uncertainty (HCLU) adversarial example formulation by Grosse et al. (2018)
+
+Paper link:
+    https://arxiv.org/abs/1812.02606
+"""
 from __future__ import absolute_import, division, print_function, unicode_literals
 
 import logging
@@ -32,8 +38,9 @@ logger = logging.getLogger(__name__)
 class HCLU(Attack):
     """
     Implementation of the High-Confidence-Low-Uncertainty (HCLU) adversarial example formulation by Grosse et al. (2018)
+
     Paper link:
-        https://arxiv.org/abs/1812.02606 
+        https://arxiv.org/abs/1812.02606
     """
     attack_params = ['conf', 'unc_increase', 'min_val', 'max_val']
 
@@ -76,36 +83,31 @@ class HCLU(Attack):
         adv_x = copy.copy(x)
 
         def minfun(x, args):  # minimize L2 norm
-            return np.sum(np.sqrt((x-args['orig'])**2))
+            return np.sum(np.sqrt((x - args['orig']) ** 2))
 
         def constraint_conf(x, args):  # constraint for confidence
             pred = args['classifier'].predict(x.reshape(1, -1))[0, 0]
             if args['class_zero']:
-                pred = 1.0-pred
-            return (pred-0.95).reshape(-1)
+                pred = 1.0 - pred
+            return (pred - 0.95).reshape(-1)
 
         def constraint_unc(x, args):  # constraint for uncertainty
-            return (args['max_uncertainty']-(args['classifier'].predict_uncertainty(x.reshape(1, -1))).reshape(-1))[0]
+            return (args['max_uncertainty'] - (args['classifier'].predict_uncertainty(x.reshape(1, -1))).reshape(-1))[0]
+
         bounds = []
         # adding bounds, to not go away from original data
         for i in range(np.shape(x)[1]):
             bounds.append((self.min_val, self.max_val))
         for i in range(np.shape(x)[0]):  # go though data amd craft
             # get properties for attack
-            max_uncertainty = self.unc_increase * \
-                self.classifier.predict_uncertainty(adv_x[i].reshape(1, -1))
-            class_zero = not self.classifier.predict(
-                adv_x[i].reshape(1, -1))[0, 0] < 0.5
-            init_args = {'classifier': self.classifier,
-                         'class_zero': class_zero, 'max_uncertainty': max_uncertainty}
-            constr_conf = {'type': 'ineq',
-                           'fun': constraint_conf, 'args': (init_args,)}
-            constr_unc = {'type': 'ineq',
-                          'fun': constraint_unc, 'args': (init_args,)}
+            max_uncertainty = self.unc_increase * self.classifier.predict_uncertainty(adv_x[i].reshape(1, -1))
+            class_zero = not self.classifier.predict(adv_x[i].reshape(1, -1))[0, 0] < 0.5
+            init_args = {'classifier': self.classifier, 'class_zero': class_zero, 'max_uncertainty': max_uncertainty}
+            constr_conf = {'type': 'ineq', 'fun': constraint_conf, 'args': (init_args,)}
+            constr_unc = {'type': 'ineq', 'fun': constraint_unc, 'args': (init_args,)}
             args = {'args': init_args, 'orig': x[i].reshape(-1)}
             # #finally, run optimization
-            adv_x[i] = minimize(minfun, adv_x[i], args=args,
-                                bounds=bounds, constraints=[constr_conf, constr_unc])['x']
+            adv_x[i] = minimize(minfun, adv_x[i], args=args, bounds=bounds, constraints=[constr_conf, constr_unc])['x']
         return adv_x
 
     def set_params(self, **kwargs):
