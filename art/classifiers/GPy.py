@@ -15,13 +15,16 @@
 # AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT,
 # TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 # SOFTWARE.
+"""
+This module implements a wrapper class for GPy Gaussian Process classification models.
+"""
 from __future__ import absolute_import, division, print_function, unicode_literals
 
 import logging
 
 import numpy as np
 
-from art.classifiers import Classifier, ClassifierGradients
+from art.classifiers.classifier import Classifier, ClassifierGradients
 
 logger = logging.getLogger(__name__)
 
@@ -77,19 +80,16 @@ class GPyGaussianProcessClassifier(Classifier, ClassifierGradients):
         grads = np.zeros((np.shape(x)[0], 2, np.shape(x)[1]))
         for i in range(np.shape(x)[0]):
             # get gradient for the two classes GPC can maximally have
-            for c in range(2):
-                ind = self.predict(x[i].reshape(1, -1))[0, c]
+            for i_c in range(2):
+                ind = self.predict(x[i].reshape(1, -1))[0, i_c]
                 sur = self.predict(np.repeat(x[i].reshape(1, -1),
-                                             np.shape(x)[1], 0) + eps * np.eye(np.shape(x)[1]))[:, c]
-                grads[i, c] = ((sur - ind) * eps).reshape(1, -1)
+                                             np.shape(x)[1], 0) + eps * np.eye(np.shape(x)[1]))[:, i_c]
+                grads[i, i_c] = ((sur - ind) * eps).reshape(1, -1)
 
         if label is not None:
             return grads[:, label, :].reshape(np.shape(x)[0], 1, np.shape(x)[1])
 
         return grads
-
-    def get_activations(self, x, layer, batch_size):
-        raise NotImplementedError
 
     def loss_gradient(self, x, y, **kwargs):
         """

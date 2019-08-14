@@ -42,7 +42,7 @@ class HCLU(Attack):
         :param classifier: A trained model of type scikit decision tree.
         :type classifier: :class:`.Classifier.GPyGaussianProcessClassifier
         :param conf: Confidence that examples should have, if there were to be classified as 1.0 maximally
-        :type conf: :float: 
+        :type conf: :float:
         :param unc_increase: Value uncertainty is allowed to deviate, where 1.0 is original value
         :type unc_increase: :float:
         :param minVal: minimal value any feature can take
