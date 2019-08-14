@@ -23,8 +23,8 @@ import unittest
 import numpy as np
 import GPy
 
-from art.attacks.HCLU import HCLU
-from art.classifiers.GPy import GPyGaussianProcessClassifier
+from art.attacks import HCLU
+from art.classifiers import GPyGaussianProcessClassifier
 from art.utils import load_dataset, master_seed
 
 
