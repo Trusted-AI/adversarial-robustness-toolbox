@@ -49,7 +49,8 @@ class XGBoostClassifier(Classifier):
                used for data preprocessing. The first value will be subtracted from the input. The input will then
                be divided by the second one.
         :type preprocessing: `tuple`
-        :param num_features: The number of features in the training data. Only used if it cannot be extracted from model.
+        :param num_features: The number of features in the training data. Only used if it cannot be extracted from
+                             model.
         :type num_features: `int` or `None`
         :param nb_classes: The number of classes in the training data. Only used if it cannot be extracted from model.
         :type nb_classes: `int` or `None`
@@ -74,7 +75,8 @@ class XGBoostClassifier(Classifier):
         :param y: Labels, one-vs-rest encoding.
         :type y: `np.ndarray`
         :param kwargs: Dictionary of framework-specific arguments. These should be parameters supported by the
-               `fit` function in `xgboost.Booster` or `xgboost.XGBClassifier` and will be passed to this function as such.
+                       `fit` function in `xgboost.Booster` or `xgboost.XGBClassifier` and will be passed to this
+                       function as such.
         :type kwargs: `dict`
         :raises: `NotImplementedException`
         :return: `None`
