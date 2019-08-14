@@ -27,7 +27,8 @@ from art.detection.subsetscanning.scanningops import ScanningOps
 class Scanner:
     """
     Fast generalized subset scan
-    Paper link: https://www.cs.cmu.edu/~neill/papers/mcfowland13a.pdf
+
+    | Paper link: https://www.cs.cmu.edu/~neill/papers/mcfowland13a.pdf
     """
 
     @staticmethod

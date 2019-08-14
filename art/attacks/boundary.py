@@ -19,8 +19,7 @@
 This module implements the boundary attack `BoundaryAttack`. This is a black-box attack which only requires class
 predictions.
 
-Paper link:
-    https://arxiv.org/abs/1712.04248
+| Paper link: https://arxiv.org/abs/1712.04248
 """
 from __future__ import absolute_import, division, print_function, unicode_literals
 
@@ -39,7 +38,8 @@ class BoundaryAttack(Attack):
     """
     Implementation of the boundary attack from Brendel et al. (2018). This is a powerful black-box attack that
     only requires final class prediction.
-    Paper link: https://arxiv.org/abs/1712.04248
+
+    | Paper link: https://arxiv.org/abs/1712.04248
     """
     attack_params = Attack.attack_params + ['targeted', 'delta', 'epsilon', 'step_adapt', 'max_iter', 'num_trial',
                                             'sample_size', 'init_size', 'batch_size']

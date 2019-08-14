@@ -18,8 +18,7 @@
 """
 Implementation of the High-Confidence-Low-Uncertainty (HCLU) adversarial example formulation by Grosse et al. (2018)
 
-Paper link:
-    https://arxiv.org/abs/1812.02606
+| Paper link: https://arxiv.org/abs/1812.02606
 """
 from __future__ import absolute_import, division, print_function, unicode_literals
 
@@ -35,12 +34,11 @@ from art.classifiers.GPy import GPyGaussianProcessClassifier
 logger = logging.getLogger(__name__)
 
 
-class HCLU(Attack):
+class HighConfidenceLowUncertainty(Attack):
     """
     Implementation of the High-Confidence-Low-Uncertainty (HCLU) adversarial example formulation by Grosse et al. (2018)
 
-    Paper link:
-        https://arxiv.org/abs/1812.02606
+    | Paper link: https://arxiv.org/abs/1812.02606
     """
     attack_params = ['conf', 'unc_increase', 'min_val', 'max_val']
 

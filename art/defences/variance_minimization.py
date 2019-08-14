@@ -18,8 +18,7 @@
 """
 This module implements the total variance minimization defence `TotalVarMin`.
 
-Paper link:
-    https://openreview.net/forum?id=SyJ7ClWCb
+| Paper link: https://openreview.net/forum?id=SyJ7ClWCb
 """
 from __future__ import absolute_import, division, print_function, unicode_literals
 
@@ -37,7 +36,8 @@ logger = logging.getLogger(__name__)
 class TotalVarMin(Preprocessor):
     """
     Implement the total variance minimization defence approach.
-    Paper link: https://openreview.net/forum?id=SyJ7ClWCb
+
+    | Paper link: https://openreview.net/forum?id=SyJ7ClWCb
     """
     params = ['prob', 'norm', 'lamb', 'solver', 'max_iter', 'clip_values']
 

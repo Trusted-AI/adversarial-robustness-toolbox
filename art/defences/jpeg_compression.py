@@ -18,9 +18,7 @@
 """
 This module implements the JPEG compression defence `JpegCompression`.
 
-Paper link:
-    https://arxiv.org/pdf/1705.02900.pdf
-    https://arxiv.org/abs/1608.00853
+| Paper link: https://arxiv.org/abs/1705.02900, https://arxiv.org/abs/1608.00853
 """
 from __future__ import absolute_import, division, print_function, unicode_literals
 
@@ -38,7 +36,8 @@ logger = logging.getLogger(__name__)
 class JpegCompression(Preprocessor):
     """
     Implement the jpeg compression defence approach.
-    Paper links: https://arxiv.org/pdf/1705.02900.pdf, https://arxiv.org/abs/1608.00853
+
+    | Paper link: https://arxiv.org/abs/1705.02900, https://arxiv.org/abs/1608.00853
     """
     params = ['quality', 'channel_index', 'clip_values']
 

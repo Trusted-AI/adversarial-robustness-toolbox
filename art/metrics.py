@@ -69,7 +69,9 @@ def empirical_robustness(classifier, x, attack_name, attack_params=None):
     """
     Compute the Empirical Robustness of a classifier object over the sample `x` for a given adversarial crafting
     method `attack`. This is equivalent to computing the minimal perturbation that the attacker must introduce for a
-    successful attack. Paper link: https://arxiv.org/abs/1511.04599
+    successful attack.
+
+    | Paper link: https://arxiv.org/abs/1511.04599
 
     :param classifier: A trained model
     :type classifier: :class:`.Classifier`
@@ -164,7 +166,9 @@ def loss_sensitivity(classifier, x, y):
 def clever(classifier, x, nb_batches, batch_size, radius, norm, target=None, target_sort=False, c_init=1,
            pool_factor=10):
     """
-    Compute CLEVER score for an untargeted attack. Paper link: https://arxiv.org/abs/1801.10578
+    Compute CLEVER score for an untargeted attack.
+
+    | Paper link: https://arxiv.org/abs/1801.10578
 
     :param classifier: A trained model.
     :type classifier: :class:`.Classifier`
@@ -216,7 +220,9 @@ def clever(classifier, x, nb_batches, batch_size, radius, norm, target=None, tar
 
 def clever_u(classifier, x, nb_batches, batch_size, radius, norm, c_init=1, pool_factor=10):
     """
-    Compute CLEVER score for an untargeted attack. Paper link: https://arxiv.org/abs/1801.10578
+    Compute CLEVER score for an untargeted attack.
+
+    | Paper link: https://arxiv.org/abs/1801.10578
 
     :param classifier: A trained model.
     :type classifier: :class:`.Classifier`
@@ -253,7 +259,9 @@ def clever_u(classifier, x, nb_batches, batch_size, radius, norm, c_init=1, pool
 
 def clever_t(classifier, x, target_class, nb_batches, batch_size, radius, norm, c_init=1, pool_factor=10):
     """
-    Compute CLEVER score for a targeted attack. Paper link: https://arxiv.org/abs/1801.10578
+    Compute CLEVER score for a targeted attack.
+
+    | Paper link: https://arxiv.org/abs/1801.10578
 
     :param classifier: A trained model
     :type classifier: :class:`.Classifier`

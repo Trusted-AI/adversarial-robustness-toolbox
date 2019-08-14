@@ -84,7 +84,7 @@ def master_seed(seed):
         logger.info('Could not set random seed for PyTorch.')
 
 
-# ----------------------------------------------------------------------------------------------------- MATHS UTILITIES
+# ----------------------------------------------------------------------------------------------------- MATH OPERATIONS
 
 
 def projection(values, eps, norm_p):
@@ -198,7 +198,7 @@ def tanh_to_original(x_tanh, clip_min, clip_max, tanh_smoother=0.999999):
     return x_original * (clip_max - clip_min) + clip_min
 
 
-# --------------------------------------------------------------------------------------- LABELS MANIPULATION FUNCTIONS
+# --------------------------------------------------------------------------------------------------- LABELS OPERATIONS
 
 
 def to_categorical(labels, nb_classes=None):
@@ -249,7 +249,9 @@ def random_targets(labels, nb_classes):
 def least_likely_class(x, classifier):
     """
     Compute the least likely class predictions for sample `x`. This strategy for choosing attack targets was used in
-    (Kurakin et al., 2016). See https://arxiv.org/abs/1607.02533.
+    (Kurakin et al., 2016).
+
+    | Paper link: https://arxiv.org/abs/1607.02533
 
     :param x: A data sample of shape accepted by `classifier`.
     :type x: `np.ndarray`
@@ -279,6 +281,7 @@ def second_most_likely_class(x, classifier):
 def get_label_conf(y_vec):
     """
     Returns the confidence and the label of the most probable class given a vector of class confidences
+
     :param y_vec: (np.ndarray) vector of class confidences, nb of instances as first dimension
     :return: (np.ndarray, np.ndarray) confidences and labels
     """
@@ -299,33 +302,6 @@ def get_labels_np_array(preds):
     y = (preds == preds_max).astype(float)
 
     return y
-
-
-def preprocess(x, y, nb_classes=10, clip_values=None):
-    """
-    Scales `x` to [0, 1] and converts `y` to class categorical confidences.
-
-    :param x: Data instances.
-    :type x: `np.ndarray`
-    :param y: Labels.
-    :type y: `np.ndarray`
-    :param nb_classes: Number of classes in dataset.
-    :type nb_classes: `int`
-    :param clip_values: Original data range allowed value for features, either one respective scalar or one value per
-           feature.
-    :type clip_values: `tuple(float, float)` or `tuple(np.ndarray, np.ndarray)`
-    :return: Rescaled values of `x`, `y`
-    :rtype: `tuple`
-    """
-    if clip_values is None:
-        min_, max_ = np.amin(x), np.amax(x)
-    else:
-        min_, max_ = clip_values
-
-    normalized_x = (x - min_) / (max_ - min_)
-    categorical_y = to_categorical(y, nb_classes)
-
-    return normalized_x, categorical_y
 
 
 def compute_success(classifier, x_clean, labels, x_adv, targeted=False, batch_size=1):
@@ -386,7 +362,7 @@ def compute_accuracy(preds, labels, abstain=True):
     return acc_rate, coverage_rate
 
 
-# -------------------------------------------------------------------------------------------------------- IO FUNCTIONS
+# -------------------------------------------------------------------------------------------------- DATASET OPERATIONS
 
 
 def load_cifar10(raw=False):
@@ -731,3 +707,30 @@ def clip_and_round(x, clip_values, round_samples):
         np.clip(x, clip_values[0], clip_values[1], out=x)
     x = np.around(x / round_samples) * round_samples
     return x
+
+
+def preprocess(x, y, nb_classes=10, clip_values=None):
+    """
+    Scales `x` to [0, 1] and converts `y` to class categorical confidences.
+
+    :param x: Data instances.
+    :type x: `np.ndarray`
+    :param y: Labels.
+    :type y: `np.ndarray`
+    :param nb_classes: Number of classes in dataset.
+    :type nb_classes: `int`
+    :param clip_values: Original data range allowed value for features, either one respective scalar or one value per
+           feature.
+    :type clip_values: `tuple(float, float)` or `tuple(np.ndarray, np.ndarray)`
+    :return: Rescaled values of `x`, `y`
+    :rtype: `tuple`
+    """
+    if clip_values is None:
+        min_, max_ = np.amin(x), np.amax(x)
+    else:
+        min_, max_ = clip_values
+
+    normalized_x = (x - min_) / (max_ - min_)
+    categorical_y = to_categorical(y, nb_classes)
+
+    return normalized_x, categorical_y

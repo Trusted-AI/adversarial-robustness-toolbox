@@ -32,6 +32,16 @@ Ensemble Wrapper
    :members:
    :special-members:
 
+Scikit-learn Classifier Wrapper
+-------------------------------
+.. autofunction:: SklearnClassifier
+
+GPy Gaussian Process Wrapper
+----------------------------
+.. autoclass:: GPyGaussianProcessClassifier
+   :members:
+   :special-members:
+
 Base Class
 ----------
 .. autoclass:: Classifier
@@ -42,66 +52,7 @@ Base Class Neural Network
 .. autoclass:: ClassifierNeuralNetwork
    :members:
 
-Base Class Gradient
--------------------
-.. autoclass:: ClassifierGradient
+Base Class Gradients
+--------------------
+.. autoclass:: ClassifierGradients
    :members:
-
-Base Class Scikit-Learn
------------------------
-.. autoclass:: ScikitlearnClassifier
-   :members:
-
-Scikit-learn DecisionTreeClassifier Wrapper
--------------------------------------------
-.. autoclass:: ScikitlearnDecisionTreeClassifier
-   :members:
-   :special-members:
-
-Scikit-learn ExtraTreeClassifier Wrapper
-----------------------------------------
-.. autoclass:: ScikitlearnExtraTreeClassifier
-   :members:
-   :special-members:
-
-Scikit-learn AdaBoostClassifier Wrapper
----------------------------------------
-.. autoclass:: ScikitlearnAdaBoostClassifier
-   :members:
-   :special-members:
-
-Scikit-learn BaggingClassifier Wrapper
---------------------------------------
-.. autoclass:: ScikitlearnBaggingClassifier
-   :members:
-   :special-members:
-
-Scikit-learn ExtraTreesClassifier Wrapper
------------------------------------------
-.. autoclass:: ScikitlearnExtraTreesClassifier
-   :members:
-   :special-members:
-
-Scikit-learn GradientBoostingClassifier Wrapper
------------------------------------------------
-.. autoclass:: ScikitlearnGradientBoostingClassifier
-   :members:
-   :special-members:
-
-Scikit-learn RandomForestClassifier Wrapper
--------------------------------------------
-.. autoclass:: ScikitlearnRandomForestClassifier
-   :members:
-   :special-members:
-
-Scikit-learn LogisticRegression Wrapper
----------------------------------------
-.. autoclass:: ScikitlearnLogisticRegression
-   :members:
-   :special-members:
-
-Scikit-learn SVC Wrapper
-------------------------
-.. autoclass:: ScikitlearnSVC
-   :members:
-   :special-members:

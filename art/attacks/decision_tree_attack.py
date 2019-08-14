@@ -34,7 +34,8 @@ class DecisionTreeAttack(Attack):
     """
     Close implementation of Papernot's attack on decision trees following Algorithm 2 and communication with the
     authors.
-    Paper link: https://arxiv.org/pdf/1605.07277.pdf
+
+    | Paper link: https://arxiv.org/abs/1605.07277
     """
 
     attack_params = ['classifier', 'offset']
