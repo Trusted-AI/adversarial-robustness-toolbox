@@ -18,21 +18,23 @@
 from __future__ import absolute_import, division, print_function, unicode_literals
 
 import logging
-
 import copy
+
 import numpy as np
 from scipy.optimize import minimize
+
 from art.attacks.attack import Attack
 from art.classifiers.GPy import GPyGaussianProcessClassifier
+
 logger = logging.getLogger(__name__)
 
 
 class HCLU(Attack):
-    '''
-        Implementation of the High-Confidence-Low-Uncertainty (HCLU) adversarial example formulation by Grosse et al. (2018)
-        Paper link:
+    """
+    Implementation of the High-Confidence-Low-Uncertainty (HCLU) adversarial example formulation by Grosse et al. (2018)
+    Paper link:
         https://arxiv.org/abs/1812.02606 
-    '''
+    """
     attack_params = ['conf', 'unc_increase', 'min_val', 'max_val']
 
     def __init__(self, classifier, conf=0.95, unc_increase=100.0, min_val=0.0, max_val=1.0):
