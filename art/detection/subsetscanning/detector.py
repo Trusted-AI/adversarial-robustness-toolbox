@@ -26,7 +26,7 @@ import six
 # pylint: disable=E0001
 import numpy as np
 
-from art.classifiers import Classifier, ClassifierNeuralNetwork, ClassifierGradients
+from art.classifiers.classifier import Classifier, ClassifierNeuralNetwork, ClassifierGradients
 from art.detection.subsetscanning.scanner import Scanner
 
 logger = logging.getLogger(__name__)

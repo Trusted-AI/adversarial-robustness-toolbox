@@ -25,7 +25,7 @@ import logging
 
 import six
 
-from art.classifiers import Classifier, ClassifierNeuralNetwork, ClassifierGradients
+from art.classifiers.classifier import Classifier, ClassifierNeuralNetwork, ClassifierGradients
 
 logger = logging.getLogger(__name__)
 
