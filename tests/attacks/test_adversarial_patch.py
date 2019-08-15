@@ -70,7 +70,7 @@ class TestAdversarialPatch(unittest.TestCase):
 
         self.assertAlmostEqual(patch_adv[8, 8, 0], -3.1106631027725005, delta=.1)
         self.assertAlmostEqual(patch_adv[14, 14, 0], 18.101, delta=.1)
-        self.assertAlmostEqual(np.sum(patch_adv), 624.867, delta=.1)
+        self.assertAlmostEqual(float(np.sum(patch_adv)), 624.867, delta=.1)
 
         sess.close()
         tf.reset_default_graph()
@@ -93,7 +93,7 @@ class TestAdversarialPatch(unittest.TestCase):
 
         self.assertAlmostEqual(patch_adv[8, 8, 0], -3.336, delta=.1)
         self.assertAlmostEqual(patch_adv[14, 14, 0], 18.574, delta=.1)
-        self.assertAlmostEqual(np.sum(patch_adv), 1054.587, delta=.1)
+        self.assertAlmostEqual(float(np.sum(patch_adv)), 1054.587, delta=.1)
 
         k.clear_session()
 
@@ -116,7 +116,7 @@ class TestAdversarialPatch(unittest.TestCase):
 
         self.assertAlmostEqual(patch_adv[0, 8, 8], -3.143605902784875, delta=.1)
         self.assertAlmostEqual(patch_adv[0, 14, 14], 19.790434152473054, delta=.1)
-        self.assertAlmostEqual(np.sum(patch_adv), 382.163, delta=.1)
+        self.assertAlmostEqual(float(np.sum(patch_adv)), 382.163, delta=.1)
 
     def test_failure_feature_vectors(self):
         attack_params = {"rotation_max": 22.5, "scale_min": 0.1, "scale_max": 1.0,

@@ -307,7 +307,7 @@ class TestBoundaryVectors(unittest.TestCase):
             self.assertFalse((np.argmax(y_test, axis=1) == preds_adv).all())
             acc = np.sum(preds_adv == np.argmax(y_test, axis=1)) / y_test.shape[0]
             logger.info('Accuracy of ' + classifier.__class__.__name__ + ' on Iris with BoundaryAttack adversarial '
-                        'examples: %.2f%%', (acc * 100))
+                                                                         'examples: %.2f%%', (acc * 100))
 
 
 if __name__ == '__main__':
