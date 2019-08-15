@@ -24,7 +24,7 @@ import tensorflow as tf
 import keras.backend as k
 import numpy as np
 
-from art.attacks.projected_gradient_descent import ProjectedGradientDescent
+from art.attacks import ProjectedGradientDescent
 from art.classifiers import KerasClassifier
 from art.utils import load_dataset, get_labels_np_array, master_seed, random_targets
 from art.utils_test import get_classifier_tf, get_classifier_kr, get_classifier_pt
@@ -172,6 +172,7 @@ class TestPGD(unittest.TestCase):
         self.assertIn('For `ProjectedGradientDescent` classifier must be an instance of '
                       '`art.classifiers.classifier.ClassifierGradients`, the provided classifier is instance of '
                       '(<class \'art.classifiers.scikitlearn.ScikitlearnClassifier\'>,).', str(context.exception))
+
 
 class TestPGDVectors(unittest.TestCase):
     @classmethod

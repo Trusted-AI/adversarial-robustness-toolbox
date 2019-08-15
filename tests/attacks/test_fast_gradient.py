@@ -24,7 +24,7 @@ import tensorflow as tf
 import keras.backend as k
 import numpy as np
 
-from art.attacks.fast_gradient import FastGradientMethod
+from art.attacks import FastGradientMethod
 from art.classifiers import KerasClassifier
 from art.utils import load_dataset, get_labels_np_array, master_seed, random_targets
 from art.utils_test import get_classifier_tf, get_classifier_kr, get_classifier_pt

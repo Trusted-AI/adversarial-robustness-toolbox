@@ -22,7 +22,7 @@ import unittest
 
 import numpy as np
 
-from art.attacks.universal_perturbation import UniversalPerturbation
+from art.attacks import UniversalPerturbation
 from art.classifiers import KerasClassifier
 from art.utils import load_dataset, master_seed
 from art.utils_test import get_classifier_tf, get_classifier_kr, get_classifier_pt

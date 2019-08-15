@@ -24,7 +24,7 @@ import keras.backend as k
 import numpy as np
 import tensorflow as tf
 
-from art.attacks.virtual_adversarial import VirtualAdversarialMethod
+from art.attacks import VirtualAdversarialMethod
 from art.classifiers import KerasClassifier
 from art.utils import load_dataset, get_labels_np_array, master_seed
 from art.utils_test import get_classifier_tf, get_classifier_kr, get_classifier_pt
