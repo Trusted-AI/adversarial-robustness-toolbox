@@ -32,7 +32,6 @@ im_shape = x_train[0].shape
 
 # Create Keras convolutional neural network - basic architecture from Keras examples
 # Source here: https://github.com/keras-team/keras/blob/master/examples/cifar10_cnn.py
-k.set_learning_phase(1)
 model = Sequential()
 model.add(Conv2D(32, (3, 3), padding='same', input_shape=x_train.shape[1:]))
 model.add(Activation('relu'))
