@@ -112,7 +112,7 @@ class GPyGaussianProcessClassifier(Classifier, ClassifierGradients):
             grads[i] = ((sur - ind) * eps).reshape(1, -1)
         return grads
 
-    def predict(self, x, logits=False):
+    def predict(self, x, logits=False, **kwargs):
         """
         Perform prediction for a batch of inputs.
 
