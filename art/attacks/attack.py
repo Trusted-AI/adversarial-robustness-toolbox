@@ -25,6 +25,8 @@ import logging
 import abc
 import sys
 
+from art.classifiers.classifier import Classifier
+
 logger = logging.getLogger(__name__)
 
 # Ensure compatibility with Python 2 and 3 when using ABCMeta
@@ -38,13 +40,17 @@ class Attack(ABC):
     """
     Abstract base class for all attack classes.
     """
-    attack_params = ['classifier']
+    attack_params = []
 
     def __init__(self, classifier):
         """
-        :param classifier: A trained model.
+        :param classifier: A trained classifier.
         :type classifier: :class:`.Classifier`
         """
+        if not isinstance(classifier, Classifier):
+            raise (TypeError('For `' + self.__class__.__name__ + '` classifier must be an instance of '
+                             '`art.classifiers.classifier.Classifier`, the provided classifier is instance of ' + str(
+                                 classifier.__class__.__bases__) + '.'))
         self.classifier = classifier
 
     def generate(self, x, y=None, **kwargs):

@@ -24,12 +24,12 @@ import logging
 
 import numpy as np
 
-from art.classifiers.classifier import Classifier
+from art.classifiers.classifier import Classifier, ClassifierNeuralNetwork, ClassifierGradients
 
 logger = logging.getLogger(__name__)
 
 
-class EnsembleClassifier(Classifier):
+class EnsembleClassifier(ClassifierNeuralNetwork, ClassifierGradients, Classifier):
     """
     Class allowing to aggregate multiple classifiers as an ensemble. The individual classifiers are expected to be
     trained when the ensemble is created and no training procedures are provided through this class.
@@ -69,7 +69,7 @@ class EnsembleClassifier(Classifier):
 
         # Assert all classifiers are the right shape(s)
         for classifier in classifiers:
-            if not isinstance(classifier, Classifier):
+            if not isinstance(classifier, ClassifierNeuralNetwork):
                 raise TypeError('Expected type `Classifier`, found %s instead.' % type(classifier))
 
             if clip_values != classifier.clip_values:
@@ -137,6 +137,7 @@ class EnsembleClassifier(Classifier):
         :type nb_epochs: `int`
         :param kwargs: Dictionary of framework-specific arguments.
         :type kwargs: `dict`
+        :raises: `NotImplementedException`
         :return: `None`
         """
         raise NotImplementedError
@@ -153,6 +154,7 @@ class EnsembleClassifier(Classifier):
         :type nb_epochs: `int`
         :param kwargs: Dictionary of framework-specific argument.
         :type kwargs: `dict`
+        :raises: `NotImplementedException`
         :return: `None`
         """
         raise NotImplementedError
@@ -162,6 +164,7 @@ class EnsembleClassifier(Classifier):
         """
         Return the hidden layers in the model, if applicable. This function is not supported for ensembles.
 
+        :raises: `NotImplementedException`
         :return: The hidden layers in the model, input and output layers excluded.
         :rtype: `list`
 
@@ -184,6 +187,7 @@ class EnsembleClassifier(Classifier):
         :type layer: `int` or `str`
         :param batch_size: Size of batches.
         :type batch_size: `int`
+        :raises: `NotImplementedException`
         :return: The output of `layer`, where the first dimension is the batch size corresponding to `x`.
         :rtype: `np.ndarray`
         """
@@ -273,6 +277,7 @@ class EnsembleClassifier(Classifier):
         :param path: Path of the folder where to store the model. If no path is specified, the model will be stored in
                      the default data location of the library `DATA_PATH`.
         :type path: `str`
+        :raises: `NotImplementedException`
         :return: None
         """
         raise NotImplementedError

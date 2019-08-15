@@ -24,9 +24,9 @@ import keras.backend as k
 import numpy as np
 import tensorflow as tf
 
-from art.attacks.zoo import ZooAttack
+from art.attacks import ZooAttack
 from art.utils import load_dataset, random_targets, master_seed
-from art.utils_test import get_classifier_kr, get_classifier_pt, get_classifier_tf, get_iris_classifier_pt
+from art.utils_test import get_classifier_kr, get_classifier_pt, get_classifier_tf
 
 logger = logging.getLogger('testLogger')
 
@@ -121,22 +121,43 @@ class TestZooAttack(unittest.TestCase):
         # Get MNIST and test with 3 channels
         x_test, y_test = self.mnist
 
-        # Targeted attack
-        zoo = ZooAttack(classifier=krc, targeted=True, batch_size=5)
-        params = {'y': random_targets(y_test, krc.nb_classes)}
-        x_test_adv = zoo.generate(x_test, **params)
-        self.assertFalse((x_test == x_test_adv).all())
-        self.assertTrue((x_test_adv <= 1.0001).all())
-        self.assertTrue((x_test_adv >= -0.0001).all())
-        target = np.argmax(params['y'], axis=1)
-        y_pred_adv = np.argmax(krc.predict(x_test_adv), axis=1)
-        logger.debug('ZOO target: %s', target)
-        logger.debug('ZOO actual: %s', y_pred_adv)
-        logger.info('ZOO success rate on MNIST: %.2f', (sum(target == y_pred_adv) / float(len(target))))
+        # # Targeted attack
+        # zoo = ZooAttack(classifier=krc, targeted=True, batch_size=5)
+        # params = {'y': random_targets(y_test, krc.nb_classes)}
+        # x_test_adv = zoo.generate(x_test, **params)
+        #
+        # self.assertFalse((x_test == x_test_adv).all())
+        # self.assertTrue((x_test_adv <= 1.0001).all())
+        # self.assertTrue((x_test_adv >= -0.0001).all())
+        # target = np.argmax(params['y'], axis=1)
+        # y_pred_adv = np.argmax(krc.predict(x_test_adv), axis=1)
+        # logger.debug('ZOO target: %s', target)
+        # logger.debug('ZOO actual: %s', y_pred_adv)
+        # logger.info('ZOO success rate on MNIST: %.2f', (sum(target == y_pred_adv) / float(len(target))))
 
         # Untargeted attack
-        zoo = ZooAttack(classifier=krc, targeted=False, max_iter=20)
-        x_test_adv = zoo.generate(x_test)
+        # zoo = ZooAttack(classifier=krc, targeted=False, max_iter=20)
+        zoo = ZooAttack(classifier=krc, targeted=False, batch_size=5)
+        # x_test_adv = zoo.generate(x_test)
+        params = {'y': random_targets(y_test, krc.nb_classes)}
+        x_test_adv = zoo.generate(x_test, **params)
+
+        # from matplotlib import pyplot as plt
+        # plt.matshow(x_test_adv[0, :, :, 0] - x_test[0, :, :, 0])
+        # plt.show()
+        # print(x_test_adv[0, 14, :, 0])
+
+        # x_test_adv_true = [0.00000000e+00, 2.50167388e-04, 1.50529508e-04, 4.69674182e-04,
+        #                    0.00000000e+00, 0.00000000e+00, 0.00000000e+00, 0.00000000e+00,
+        #                    1.67321396e-05, 0.00000000e+00, 0.00000000e+00, 0.00000000e+00,
+        #                    0.00000000e+00, 2.08451956e-06, 0.00000000e+00, 0.00000000e+00,
+        #                    2.53360748e-01, 9.60119188e-01, 9.85227525e-01, 2.53600776e-01,
+        #                    0.00000000e+00, 0.00000000e+00, 5.23251540e-04, 0.00000000e+00,
+        #                    0.00000000e+00, 0.00000000e+00, 1.08632184e-05, 0.00000000e+00]
+        #
+        # for i in range(14):
+        #     self.assertAlmostEqual(x_test_adv_true[i], x_test_adv[0, 14, i, 0])
+
         # self.assertFalse((x_test == x_test_adv).all())
         self.assertTrue((x_test_adv <= 1.0001).all())
         self.assertTrue((x_test_adv >= -0.0001).all())
@@ -183,20 +204,17 @@ class TestZooAttack(unittest.TestCase):
         logger.debug('ZOO actual: %s', y_pred_adv)
         logger.info('ZOO success rate on MNIST: %.2f', (sum(y_pred != y_pred_adv) / float(len(y_pred))))
 
-    def test_failure_feature_vectors(self):
-        attack_params = {"rotation_max": 22.5, "scale_min": 0.1, "scale_max": 1.0,
-                         "learning_rate": 5.0, "number_of_steps": 5, "patch_shape": (1, 28, 28), "batch_size": 10}
-        classifier = get_iris_classifier_pt()
-        data = np.random.rand(10, 4)
+    def test_classifier_type_check_fail_classifier(self):
+        # Use a useless test classifier to test basic classifier properties
+        class ClassifierNoAPI:
+            pass
 
-        # Assert that value error is raised for feature vectors
-        with self.assertRaises(ValueError) as context:
-            attack = ZooAttack(classifier=classifier)
-            attack.set_params(**attack_params)
-            attack.generate(data)
+        classifier = ClassifierNoAPI
+        with self.assertRaises(TypeError) as context:
+            _ = ZooAttack(classifier=classifier)
 
-        self.assertIn('Feature vectors detected.', str(context.exception))
+        self.assertIn('For `ZooAttack` classifier must be an instance of `art.classifiers.classifier.Classifier`, the '
+                      'provided classifier is instance of (<class \'object\'>,).', str(context.exception))
 
-
-if __name__ == '__main__':
-    unittest.main()
+    if __name__ == '__main__':
+        unittest.main()

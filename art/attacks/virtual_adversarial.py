@@ -18,8 +18,7 @@
 """
 This module implements the virtual adversarial attack. It was originally was used for virtual adversarial training.
 
-Paper link:
-    https://arxiv.org/abs/1507.00677
+| Paper link: https://arxiv.org/abs/1507.00677
 """
 from __future__ import absolute_import, division, print_function, unicode_literals
 
@@ -28,6 +27,7 @@ import logging
 import numpy as np
 
 from art import NUMPY_DTYPE
+from art.classifiers.classifier import ClassifierNeuralNetwork, ClassifierGradients
 from art.attacks.attack import Attack
 
 logger = logging.getLogger(__name__)
@@ -36,7 +36,8 @@ logger = logging.getLogger(__name__)
 class VirtualAdversarialMethod(Attack):
     """
     This attack was originally proposed by Miyato et al. (2016) and was used for virtual adversarial training.
-    Paper link: https://arxiv.org/abs/1507.00677
+
+    | Paper link: https://arxiv.org/abs/1507.00677
     """
     attack_params = Attack.attack_params + ['eps', 'finite_diff', 'max_iter', 'batch_size']
 
@@ -44,7 +45,7 @@ class VirtualAdversarialMethod(Attack):
         """
         Create a VirtualAdversarialMethod instance.
 
-        :param classifier: A trained model.
+        :param classifier: A trained classifier.
         :type classifier: :class:`.Classifier`
         :param eps: Attack step (max input variation).
         :type eps: `float`
@@ -56,6 +57,11 @@ class VirtualAdversarialMethod(Attack):
         :type batch_size: `int`
         """
         super(VirtualAdversarialMethod, self).__init__(classifier)
+        if not isinstance(classifier, ClassifierNeuralNetwork) or not isinstance(classifier, ClassifierGradients):
+            raise (TypeError('For `' + self.__class__.__name__ + '` classifier must be an instance of '
+                             '`art.classifiers.classifier.ClassifierNeuralNetwork` and '
+                             '`art.classifiers.classifier.ClassifierGradients`, the provided classifier is instance of '
+                             + str(classifier.__class__.__bases__) + '.'))
         kwargs = {'finite_diff': finite_diff,
                   'eps': eps,
                   'max_iter': max_iter,
@@ -96,7 +102,7 @@ class VirtualAdversarialMethod(Attack):
                 from scipy.stats import entropy
                 kl_div1 = entropy(np.transpose(preds[batch_index_1:batch_index_2]), np.transpose(preds_new))
 
-                var_d_new = np.zeros_like(var_d)
+                var_d_new = np.zeros(var_d.shape)
                 for current_index in range(var_d.shape[1]):
                     var_d[:, current_index] += self.finite_diff
                     preds_new = self.classifier.predict((batch + var_d).reshape((-1,) + self.classifier.input_shape))

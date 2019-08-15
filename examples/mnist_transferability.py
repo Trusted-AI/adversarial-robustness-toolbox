@@ -12,7 +12,7 @@ from keras.layers import Dense, Flatten, Conv2D, MaxPooling2D
 import numpy as np
 import tensorflow as tf
 
-from art.attacks.deepfool import DeepFool
+from art.attacks import DeepFool
 from art.classifiers import KerasClassifier, TFClassifier
 from art.utils import load_mnist
 

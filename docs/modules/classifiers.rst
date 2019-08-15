@@ -32,7 +32,27 @@ Ensemble Wrapper
    :members:
    :special-members:
 
+Scikit-learn Classifier Wrapper
+-------------------------------
+.. autofunction:: SklearnClassifier
+
+GPy Gaussian Process Wrapper
+----------------------------
+.. autoclass:: GPyGaussianProcessClassifier
+   :members:
+   :special-members:
+
 Base Class
 ----------
 .. autoclass:: Classifier
+   :members:
+
+Base Class Neural Network
+-------------------------
+.. autoclass:: ClassifierNeuralNetwork
+   :members:
+
+Base Class Gradients
+--------------------
+.. autoclass:: ClassifierGradients
    :members:

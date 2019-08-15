@@ -25,12 +25,12 @@ import logging
 import numpy as np
 import six
 
-from art.classifiers.classifier import Classifier
+from art.classifiers.classifier import Classifier, ClassifierNeuralNetwork, ClassifierGradients
 
 logger = logging.getLogger(__name__)
 
 
-class KerasClassifier(Classifier):
+class KerasClassifier(ClassifierNeuralNetwork, ClassifierGradients, Classifier):
     """
     Wrapper class for importing Keras models. The supported backends for Keras are TensorFlow and Theano.
     """
@@ -63,8 +63,8 @@ class KerasClassifier(Classifier):
         :param output_layer: Which layer to consider as the output when the model has multiple output layers.
         :type output_layer: `int`
         """
-        super(KerasClassifier, self).__init__(clip_values=clip_values, channel_index=channel_index, defences=defences,
-                                              preprocessing=preprocessing)
+        super(KerasClassifier, self).__init__(clip_values=clip_values, defences=defences,
+                                              preprocessing=preprocessing, channel_index=channel_index)
 
         self._model = model
         self._input_layer = input_layer

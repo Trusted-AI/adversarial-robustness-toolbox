@@ -32,8 +32,6 @@ logger = logging.getLogger('testLogger')
 class TestKerasDataGenerator(unittest.TestCase):
     def setUp(self):
         import keras
-
-        # Set master seed
         master_seed(42)
 
         class DummySequence(keras.utils.Sequence):
@@ -159,8 +157,6 @@ class TestPyTorchGenerator(unittest.TestCase):
     def setUp(self):
         import torch
         from torch.utils.data import DataLoader
-
-        # Set master seed
         master_seed(42)
 
         class DummyDataset(torch.utils.data.Dataset):
@@ -208,8 +204,6 @@ class TestPyTorchGenerator(unittest.TestCase):
 class TestMXGenerator(unittest.TestCase):
     def setUp(self):
         import mxnet as mx
-
-        # Set master seed
         master_seed(42)
 
         x = mx.random.uniform(shape=(10, 1, 5, 5))
@@ -248,8 +242,6 @@ class TestMXGenerator(unittest.TestCase):
 class TestTFDataGenerator(unittest.TestCase):
     def setUp(self):
         import tensorflow as tf
-
-        # Set master seed
         master_seed(42)
 
         def generator(batch_size=5):

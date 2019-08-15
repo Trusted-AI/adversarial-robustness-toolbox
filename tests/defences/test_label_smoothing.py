@@ -22,7 +22,7 @@ import unittest
 
 import numpy as np
 
-from art.defences.label_smoothing import LabelSmoothing
+from art.defences import LabelSmoothing
 from art.utils import master_seed
 
 logger = logging.getLogger('testLogger')

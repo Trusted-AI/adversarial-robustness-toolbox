@@ -10,9 +10,9 @@ This is a library dedicated to **adversarial machine learning**. Its purpose is 
 
 The library is still under development. Feedback, bug reports and extensions are highly appreciated. Get in touch with us on [Slack](https://ibm-art.slack.com) (invite [here](https://join.slack.com/t/ibm-art/shared_invite/enQtMzkyOTkyODE4NzM4LTlkMWY3MzgyZDA4ZDdiNzUzY2NhMjc5YmFhZTYzZGYwNDM4YTE1ODhhNDYyNmFlMGFjNWY4ODgyM2EwYTFjYTc))!
 
-## Supported attacks, defences and metrics
+## Implemented Attacks, Defences, Detections, Metrics and Certifications
 
-The library contains implementations of the following **evasion attacks**:
+**Evasion Attacks:**
 * DeepFool ([Moosavi-Dezfooli et al., 2015](https://arxiv.org/abs/1511.04599))
 * Fast gradient method ([Goodfellow et al., 2014](https://arxiv.org/abs/1412.6572))
 * Basic iterative method ([Kurakin et al., 2016](https://arxiv.org/abs/1607.02533))
@@ -29,8 +29,10 @@ The library contains implementations of the following **evasion attacks**:
 * Decision-based attack ([Brendel et al., 2018](https://arxiv.org/abs/1712.04248))
 * Adversarial patch ([Brown et al., 2017](https://arxiv.org/abs/1712.09665))
 * HopSkipJump attack ([Chen et al., 2017](https://arxiv.org/abs/1904.02144))
+* Decision tree attack ([Papernot et al., 2016](https://arxiv.org/pdf/1605.07277.pdf))
+* High Confidence Low Uncertainty adversarial examples ([Grosse et al., 2018](https://arxiv.org/abs/1812.02606)) 
 
-The following **defence** methods are also supported:
+**Defences:**
 * Feature squeezing ([Xu et al., 2017](http://arxiv.org/abs/1704.01155))
 * Spatial smoothing ([Xu et al., 2017](http://arxiv.org/abs/1704.01155))
 * Label smoothing ([Warde-Farley and Goodfellow, 2016](https://pdfs.semanticscholar.org/b5ec/486044c6218dd41b17d8bba502b32a12b91a.pdf))
@@ -42,12 +44,12 @@ The following **defence** methods are also supported:
 * JPEG compression ([Dziugaite et al., 2016](https://arxiv.org/abs/1608.00853))
 * PixelDefend ([Song et al., 2017](https://arxiv.org/abs/1710.10766))
 
-ART also implements **detection** methods of adversarial samples:
+**Detection of adversarial samples:**
 * Basic detector based on inputs
 * Detector trained on the activations of a specific layer
 * Detector based on Fast Generalized Subset Scan ([Speakman et al., 2018](https://arxiv.org/pdf/1810.08676))
 
-The following **detector of poisoning attacks** is also supported:
+**Detectoion of poisoning attacks:**
 * Detector based on activations analysis ([Chen et al., 2018](https://arxiv.org/abs/1811.03728))
 
 **Robustness metrics and certifications**:
@@ -117,7 +119,7 @@ If you use ART for research, please consider citing the following reference pape
     title = {Adversarial Robustness Toolbox v0.10.0},
     author = {Nicolae, Maria-Irina and Sinn, Mathieu and Tran, Minh~Ngoc and Buesser, Beat and Rawat, Ambrish and Wistuba, Martin and Zantedeschi, Valentina and Baracaldo, Nathalie and Chen, Bryant and Ludwig, Heiko and Molloy, Ian and Edwards, Ben},
     journal = {CoRR},
-    volume = {1807.01069}
+    volume = {1807.01069},
     year = {2018},
     url = {https://arxiv.org/pdf/1807.01069}
 }

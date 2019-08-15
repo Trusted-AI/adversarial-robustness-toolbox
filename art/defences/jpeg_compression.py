@@ -18,9 +18,7 @@
 """
 This module implements the JPEG compression defence `JpegCompression`.
 
-Paper link:
-    https://arxiv.org/pdf/1705.02900.pdf
-    https://arxiv.org/abs/1608.00853
+| Paper link: https://arxiv.org/abs/1705.02900, https://arxiv.org/abs/1608.00853
 """
 from __future__ import absolute_import, division, print_function, unicode_literals
 
@@ -28,7 +26,6 @@ from io import BytesIO
 import logging
 
 import numpy as np
-from PIL import Image
 
 from art.defences.preprocessor import Preprocessor
 from art import NUMPY_DTYPE
@@ -38,8 +35,9 @@ logger = logging.getLogger(__name__)
 
 class JpegCompression(Preprocessor):
     """
-    Implement the jpeg compression defence approach. Some related papers: https://arxiv.org/pdf/1705.02900.pdf,
-    https://arxiv.org/abs/1608.00853
+    Implement the jpeg compression defence approach.
+
+    | Paper link: https://arxiv.org/abs/1705.02900, https://arxiv.org/abs/1608.00853
     """
     params = ['quality', 'channel_index', 'clip_values']
 
@@ -85,6 +83,8 @@ class JpegCompression(Preprocessor):
         :return: compressed sample.
         :rtype: `np.ndarray`
         """
+        from PIL import Image
+
         if len(x.shape) == 2:
             raise ValueError('Feature vectors detected. JPEG compression can only be applied to data with spatial'
                              'dimensions.')

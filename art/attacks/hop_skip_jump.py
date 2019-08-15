@@ -19,8 +19,7 @@
 This module implements the HopSkipJump attack `HopSkipJump`. This is a black-box attack that only requires class
 predictions. It is an advanced version of the boundary attack.
 
-Paper link:
-    https://arxiv.org/abs/1904.02144
+| Paper link: https://arxiv.org/abs/1904.02144
 """
 from __future__ import absolute_import, division, print_function, unicode_literals
 
@@ -30,8 +29,7 @@ import numpy as np
 
 from art import NUMPY_DTYPE
 from art.attacks.attack import Attack
-from art.utils import compute_success
-from art.utils import to_categorical
+from art.utils import compute_success, to_categorical
 
 logger = logging.getLogger(__name__)
 
@@ -40,7 +38,8 @@ class HopSkipJump(Attack):
     """
     Implementation of the HopSkipJump attack from Jianbo et al. (2019). This is a powerful black-box attack that
     only requires final class prediction, and is an advanced version of the boundary attack.
-    Paper link: https://arxiv.org/abs/1904.02144
+
+    | Paper link: https://arxiv.org/abs/1904.02144
     """
     attack_params = Attack.attack_params + ['targeted', 'norm', 'max_iter', 'max_eval',
                                             'init_eval', 'init_size', 'curr_iter', 'batch_size']
@@ -49,7 +48,7 @@ class HopSkipJump(Attack):
         """
         Create a HopSkipJump attack instance.
 
-        :param classifier: A trained model.
+        :param classifier: A trained classifier.
         :type classifier: :class:`.Classifier`
         :param targeted: Should the attack target one specific class.
         :type targeted: `bool`
@@ -105,8 +104,9 @@ class HopSkipJump(Attack):
         preds = np.argmax(self.classifier.predict(x, batch_size=self.batch_size), axis=1)
 
         # Prediction from the initial adversarial examples if not None
-        if 'x_adv_init' in kwargs:
-            x_adv_init = kwargs['x_adv_init']
+        x_adv_init = kwargs.get('x_adv_init')
+
+        if x_adv_init is not None:
             init_preds = np.argmax(self.classifier.predict(x_adv_init, batch_size=self.batch_size), axis=1)
         else:
             init_preds = [None] * len(x)
