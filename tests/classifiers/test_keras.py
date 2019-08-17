@@ -181,8 +181,8 @@ class TestKerasClassifier(unittest.TestCase):
     def test_shapes(self):
         classifier = get_classifier_kr()
 
-        preds = classifier.predict(self.x_test)
-        self.assertEqual(preds.shape, self.y_test.shape)
+        predictions = classifier.predict(self.x_test)
+        self.assertEqual(predictions.shape, self.y_test.shape)
 
         self.assertEqual(classifier.nb_classes, 10)
 
@@ -202,7 +202,7 @@ class TestKerasClassifier(unittest.TestCase):
         classifier = KerasClassifier(clip_values=clip_values, model=classifier_._model, defences=[fs, jpeg, smooth])
         self.assertEqual(len(classifier.defences), 3)
 
-        preds_classifier = classifier.predict(self.x_test)
+        predictions_classifier = classifier.predict(self.x_test)
 
         # Apply the same defences by hand
         x_test_defense = self.x_test
@@ -210,10 +210,10 @@ class TestKerasClassifier(unittest.TestCase):
         x_test_defense, _ = jpeg(x_test_defense, self.y_test)
         x_test_defense, _ = smooth(x_test_defense, self.y_test)
         classifier = get_classifier_kr()
-        preds_check = classifier._model.predict(x_test_defense)
+        predictions_check = classifier._model.predict(x_test_defense)
 
         # Check that the prediction results match
-        np.testing.assert_array_almost_equal(preds_classifier, preds_check, decimal=4)
+        np.testing.assert_array_almost_equal(predictions_classifier, predictions_check, decimal=4)
 
     def test_class_gradient(self):
         classifier = get_classifier_kr()
@@ -376,12 +376,12 @@ class TestKerasClassifier(unittest.TestCase):
         with open(full_path, 'rb') as load_file:
             loaded = pickle.load(load_file)
 
-            self.assertEqual(keras_model._clip_values, loaded._clip_values)
-            self.assertEqual(keras_model._channel_index, loaded._channel_index)
-            self.assertEqual(keras_model._use_logits, loaded._use_logits)
-            self.assertEqual(keras_model._input_layer, loaded._input_layer)
-            self.assertEqual(self.functional_model.get_config(), loaded._model.get_config())
-            self.assertTrue(isinstance(loaded.defences[0], FeatureSqueezing))
+        self.assertEqual(keras_model._clip_values, loaded._clip_values)
+        self.assertEqual(keras_model._channel_index, loaded._channel_index)
+        self.assertEqual(keras_model._use_logits, loaded._use_logits)
+        self.assertEqual(keras_model._input_layer, loaded._input_layer)
+        self.assertEqual(self.functional_model.get_config(), loaded._model.get_config())
+        self.assertTrue(isinstance(loaded.defences[0], FeatureSqueezing))
 
         os.remove(full_path)
 
