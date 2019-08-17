@@ -26,9 +26,9 @@ from keras.layers import Dense, Flatten, Conv2D, MaxPooling2D
 from keras.models import Sequential
 import numpy as np
 
-from art.attacks.fast_gradient import FastGradientMethod
-from art.classifiers.keras import KerasClassifier
-from art.detection.detector import BinaryInputDetector, BinaryActivationDetector
+from art.attacks import FastGradientMethod
+from art.classifiers import KerasClassifier
+from art.detection import BinaryInputDetector, BinaryActivationDetector
 from art.utils import load_mnist, master_seed
 from art.utils_test import get_classifier_kr
 

@@ -306,9 +306,9 @@ class TestCarliniL2Vectors(unittest.TestCase):
 
         from art.classifiers.scikitlearn import ScikitlearnLogisticRegression, ScikitlearnSVC
 
-        scikitlearn_test_cases = {LogisticRegression: ScikitlearnLogisticRegression}#,
-                                  # SVC: ScikitlearnSVC,
-                                  # LinearSVC: ScikitlearnSVC}
+        scikitlearn_test_cases = {LogisticRegression: ScikitlearnLogisticRegression}  # ,
+        # SVC: ScikitlearnSVC,
+        # LinearSVC: ScikitlearnSVC}
 
         (_, _), (x_test, y_test) = self.iris
 

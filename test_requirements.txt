@@ -7,6 +7,8 @@ torch==0.4.0
 tensorflow
 xgboost
 lightgbm
+GPy
+SciPy
 # Comment out because of compatibility issues with numpy versions
 # catboost
 statsmodels

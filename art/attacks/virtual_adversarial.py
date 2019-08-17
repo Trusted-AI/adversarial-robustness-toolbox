@@ -18,8 +18,7 @@
 """
 This module implements the virtual adversarial attack. It was originally was used for virtual adversarial training.
 
-Paper link:
-    https://arxiv.org/abs/1507.00677
+| Paper link: https://arxiv.org/abs/1507.00677
 """
 from __future__ import absolute_import, division, print_function, unicode_literals
 
@@ -37,7 +36,8 @@ logger = logging.getLogger(__name__)
 class VirtualAdversarialMethod(Attack):
     """
     This attack was originally proposed by Miyato et al. (2016) and was used for virtual adversarial training.
-    Paper link: https://arxiv.org/abs/1507.00677
+
+    | Paper link: https://arxiv.org/abs/1507.00677
     """
     attack_params = Attack.attack_params + ['eps', 'finite_diff', 'max_iter', 'batch_size']
 

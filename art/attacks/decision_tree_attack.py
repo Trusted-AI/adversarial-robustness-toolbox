@@ -34,22 +34,25 @@ class DecisionTreeAttack(Attack):
     """
     Close implementation of Papernot's attack on decision trees following Algorithm 2 and communication with the
     authors.
-    Paper link: https://arxiv.org/pdf/1605.07277.pdf
+
+    | Paper link: https://arxiv.org/abs/1605.07277
     """
+
     attack_params = ['classifier', 'offset']
 
     def __init__(self, classifier, offset=0.001):
         """
         :param classifier: A trained model of type scikit decision tree.
         :type classifier: :class:`.Classifier.ScikitlearnDecisionTreeClassifier`
-        :param offset: How much the value is pushed away from tree's threshold
+        :param offset: How much the value is pushed away from tree's threshold. default 0.001
         :type classifier: :float:
         """
         super(DecisionTreeAttack, self).__init__(classifier)
-        self.classifier = classifier
+
         if not isinstance(classifier, ScikitlearnDecisionTreeClassifier):
             raise TypeError('Model must be a decision tree model!')
-        self.offset = offset
+        params = {'offset': offset}
+        self.set_params(**params)
 
     def _df_subtree(self, position, original_class, target=None):
         """
@@ -78,10 +81,12 @@ class DecisionTreeAttack(Attack):
                 else:
                     path = [-1]
         else:  # go deeper, depths first
-            res = self._df_subtree(self.classifier.get_left_child(position), original_class, target)
+            res = self._df_subtree(self.classifier.get_left_child(
+                position), original_class, target)
             if res[0] == -1:
                 # no result, try right subtree
-                res = self._df_subtree(self.classifier.get_right_child(position), original_class, target)
+                res = self._df_subtree(self.classifier.get_right_child(
+                    position), original_class, target)
                 if res[0] == -1:
                     # no desired result
                     path = [-1]
@@ -115,7 +120,8 @@ class DecisionTreeAttack(Attack):
                 y = np.argmax(y)
         for index in range(np.shape(x)[0]):
             path = self.classifier.get_decision_path(x[index])
-            legitimate_class = np.argmax(self.classifier.predict(x[index].reshape(1, -1)))
+            legitimate_class = np.argmax(
+                self.classifier.predict(x[index].reshape(1, -1)))
             position = -2
             adv_path = [-1]
             ancestor = path[position]
@@ -125,13 +131,15 @@ class DecisionTreeAttack(Attack):
                 # search in right subtree
                 if current_child == self.classifier.get_left_child(ancestor):
                     if y is None:
-                        adv_path = self._df_subtree(self.classifier.get_right_child(ancestor), legitimate_class)
+                        adv_path = self._df_subtree(
+                            self.classifier.get_right_child(ancestor), legitimate_class)
                     else:
                         adv_path = self._df_subtree(self.classifier.get_right_child(ancestor), legitimate_class,
                                                     y[index])
                 else:  # search in left subtree
                     if y is None:
-                        adv_path = self._df_subtree(self.classifier.get_left_child(ancestor), legitimate_class)
+                        adv_path = self._df_subtree(
+                            self.classifier.get_left_child(ancestor), legitimate_class)
                     else:
                         adv_path = self._df_subtree(self.classifier.get_left_child(ancestor), legitimate_class,
                                                     y[index])

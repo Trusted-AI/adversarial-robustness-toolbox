@@ -22,7 +22,7 @@ import unittest
 
 import numpy as np
 
-from art.defences.spatial_smoothing import SpatialSmoothing
+from art.defences import SpatialSmoothing
 from art.utils import master_seed
 
 logger = logging.getLogger('testLogger')

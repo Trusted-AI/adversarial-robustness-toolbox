@@ -18,8 +18,7 @@
 """
 This module implements the white-box attack `DeepFool`.
 
-Paper link:
-    https://arxiv.org/abs/1511.04599
+| Paper link: https://arxiv.org/abs/1511.04599
 """
 from __future__ import absolute_import, division, print_function, unicode_literals
 
@@ -37,7 +36,8 @@ logger = logging.getLogger(__name__)
 class DeepFool(Attack):
     """
     Implementation of the attack from Moosavi-Dezfooli et al. (2015).
-    Paper link: https://arxiv.org/abs/1511.04599
+
+    | Paper link: https://arxiv.org/abs/1511.04599
     """
     attack_params = Attack.attack_params + ['max_iter', 'epsilon', 'nb_grads', 'batch_size']
 

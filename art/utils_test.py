@@ -214,10 +214,12 @@ def get_iris_classifier_tf():
     Standard Tensorflow classifier for unit testing.
 
     The following hyper-parameters were used to obtain the weights and biases:
-    - learning_rate: 0.01
-    - batch size: 5
-    - number of epochs: 200
-    - optimizer: tf.train.AdamOptimizer
+
+    * learning_rate: 0.01
+    * batch size: 5
+    * number of epochs: 200
+    * optimizer: tf.train.AdamOptimizer
+
     The model is trained of 70% of the dataset, and 30% of the training set is used as validation split.
 
     :return: The trained model for Iris dataset and the session.

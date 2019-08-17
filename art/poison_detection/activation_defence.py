@@ -18,8 +18,7 @@
 """
 This module implements methods performing poisoning detection based on activations clustering.
 
-Paper link:
-    https://arxiv.org/abs/1811.03728
+| Paper link: https://arxiv.org/abs/1811.03728
 """
 from __future__ import absolute_import, division, print_function, unicode_literals
 
@@ -39,7 +38,8 @@ logger = logging.getLogger(__name__)
 class ActivationDefence(PoisonFilteringDefence):
     """
     Method from Chen et al., 2018 performing poisoning detection based on activations clustering.
-    Paper link: https://arxiv.org/abs/1811.03728
+
+    | Paper link: https://arxiv.org/abs/1811.03728
     """
     defence_params = ['nb_clusters', 'clustering_method', 'nb_dims', 'reduce', 'cluster_analysis']
     valid_clustering = ['KMeans']
@@ -209,7 +209,7 @@ class ActivationDefence(PoisonFilteringDefence):
         """
         Revert poison attack by continue training the current classifier with `x`, `y_fix`. `test_set_split` determines
         the percentage in x that will be used as training set, while `1-test_set_split` determines how many data points
-         to use for test set.
+        to use for test set.
 
         :param classifier: Classifier to be fixed
         :type classifier: :class:`.Classifier`
@@ -368,9 +368,9 @@ class ActivationDefence(PoisonFilteringDefence):
         :type folder: `str`
         :param kwargs: a dictionary of cluster-analysis-specific parameters
         :type kwargs: `dict`
-        :return: sprites_by_class: Array with sprite images sprites_by_class, where sprites_by_class[i][j] contains the
-                 sprite of class i cluster j.
-        :rtype: sprites_by_class: `np.ndarray`
+        :return: Array with sprite images sprites_by_class, where sprites_by_class[i][j] contains the
+                                  sprite of class i cluster j.
+        :rtype: `np.ndarray`
         """
         self.set_params(**kwargs)
 

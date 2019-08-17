@@ -22,7 +22,7 @@ import unittest
 
 import numpy as np
 
-from art.attacks.newtonfool import NewtonFool
+from art.attacks import NewtonFool
 from art.classifiers import KerasClassifier
 from art.utils import load_dataset, master_seed
 from art.utils_test import get_classifier_tf, get_classifier_kr, get_classifier_pt
@@ -206,9 +206,9 @@ class TestNewtonFoolVectors(unittest.TestCase):
 
         from art.classifiers.scikitlearn import ScikitlearnLogisticRegression, ScikitlearnSVC
 
-        scikitlearn_test_cases = {LogisticRegression: ScikitlearnLogisticRegression}#,
-                                  # SVC: ScikitlearnSVC,
-                                  # LinearSVC: ScikitlearnSVC}
+        scikitlearn_test_cases = {LogisticRegression: ScikitlearnLogisticRegression}  # ,
+        # SVC: ScikitlearnSVC,
+        # LinearSVC: ScikitlearnSVC}
 
         (_, _), (x_test, y_test) = self.iris
 
@@ -227,7 +227,7 @@ class TestNewtonFoolVectors(unittest.TestCase):
             self.assertFalse((np.argmax(y_test, axis=1) == preds_adv).all())
             acc = np.sum(preds_adv == np.argmax(y_test, axis=1)) / y_test.shape[0]
             logger.info('Accuracy of ' + classifier.__class__.__name__ + ' on Iris with NewtonFool adversarial examples'
-                        ': %.2f%%', (acc * 100))
+                                                                         ': %.2f%%', (acc * 100))
 
 
 if __name__ == '__main__':

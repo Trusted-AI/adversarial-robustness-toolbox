@@ -18,8 +18,7 @@
 """
 This module implements the elastic net attack `ElasticNet`. This is a white-box attack.
 
-Paper link:
-    https://arxiv.org/abs/1709.04114.
+| Paper link: https://arxiv.org/abs/1709.04114
 """
 from __future__ import absolute_import, division, print_function, unicode_literals
 
@@ -39,7 +38,8 @@ logger = logging.getLogger(__name__)
 class ElasticNet(Attack):
     """
     The elastic net attack of Pin-Yu Chen et al. (2018).
-    Paper link: https://arxiv.org/abs/1709.04114.
+
+    | Paper link: https://arxiv.org/abs/1709.04114
     """
     attack_params = Attack.attack_params + ['confidence', 'targeted', 'learning_rate', 'max_iter', 'beta',
                                             'binary_search_steps', 'initial_const', 'batch_size', 'decision_rule']
