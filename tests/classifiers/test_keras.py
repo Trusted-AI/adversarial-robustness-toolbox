@@ -39,7 +39,7 @@ from art import DATA_PATH
 from art.classifiers import KerasClassifier
 from art.classifiers.keras import generator_fit
 from art.defences import FeatureSqueezing, JpegCompression, SpatialSmoothing
-from art.utils import load_mnist, master_seed
+from art.utils import load_dataset, master_seed
 from art.utils_test import get_classifier_kr
 from art.data_generators import KerasDataGenerator
 
@@ -56,10 +56,12 @@ class TestKerasClassifier(unittest.TestCase):
         k.clear_session()
         k.set_learning_phase(1)
 
-        # Get MNIST
-        (x_train, y_train), (x_test, y_test), _, _ = load_mnist()
-        x_train, y_train, x_test, y_test = x_train[:NB_TRAIN], y_train[:NB_TRAIN], x_test[:NB_TEST], y_test[:NB_TEST]
-        cls.mnist = (x_train, y_train), (x_test, y_test)
+        (x_train, y_train), (x_test, y_test), _, _ = load_dataset('mnist')
+
+        cls.x_train = x_train[:NB_TRAIN]
+        cls.y_train = y_train[:NB_TRAIN]
+        cls.x_test = x_test[:NB_TEST]
+        cls.y_test = y_test[:NB_TEST]
 
         # Load small Keras model
         cls.functional_model = cls.functional_model()
@@ -82,7 +84,6 @@ class TestKerasClassifier(unittest.TestCase):
         shutil.rmtree(cls.test_dir)
 
     def setUp(self):
-        # Set master seed
         master_seed(1234)
 
     @staticmethod
@@ -115,47 +116,46 @@ class TestKerasClassifier(unittest.TestCase):
         return model
 
     def test_fit(self):
-        labels = np.argmax(self.mnist[1][1], axis=1)
+        labels = np.argmax(self.y_test, axis=1)
         classifier = get_classifier_kr()
-        acc = np.sum(np.argmax(classifier.predict(self.mnist[1][0]), axis=1) == labels) / NB_TEST
+        acc = np.sum(np.argmax(classifier.predict(self.x_test), axis=1) == labels) / NB_TEST
         logger.info('Accuracy: %.2f%%', (acc * 100))
 
-        classifier.fit(self.mnist[0][0], self.mnist[0][1], batch_size=BATCH_SIZE, nb_epochs=2)
-        acc2 = np.sum(np.argmax(classifier.predict(self.mnist[1][0]), axis=1) == labels) / NB_TEST
+        classifier.fit(self.x_train, self.y_train, batch_size=BATCH_SIZE, nb_epochs=2)
+        acc2 = np.sum(np.argmax(classifier.predict(self.x_test), axis=1) == labels) / NB_TEST
         logger.info('Accuracy: %.2f%%', (acc2 * 100))
 
         self.assertEqual(acc, 0.32)
         self.assertEqual(acc2, 0.73)
 
     def test_fit_generator(self):
-        labels = np.argmax(self.mnist[1][1], axis=1)
+        labels = np.argmax(self.y_test, axis=1)
         classifier = get_classifier_kr()
-        acc = np.sum(np.argmax(classifier.predict(self.mnist[1][0]), axis=1) == labels) / NB_TEST
+        acc = np.sum(np.argmax(classifier.predict(self.x_test), axis=1) == labels) / NB_TEST
         logger.info('Accuracy: %.2f%%', (acc * 100))
 
-        gen = generator_fit(self.mnist[0][0], self.mnist[0][1], batch_size=BATCH_SIZE)
+        gen = generator_fit(self.x_train, self.y_train, batch_size=BATCH_SIZE)
         data_gen = KerasDataGenerator(generator=gen, size=NB_TRAIN, batch_size=BATCH_SIZE)
         classifier.fit_generator(generator=data_gen, nb_epochs=2)
-        acc2 = np.sum(np.argmax(classifier.predict(self.mnist[1][0]), axis=1) == labels) / NB_TEST
+        acc2 = np.sum(np.argmax(classifier.predict(self.x_test), axis=1) == labels) / NB_TEST
         logger.info('Accuracy: %.2f%%', (acc2 * 100))
 
         self.assertEqual(acc, 0.32)
         self.assertEqual(acc2, 0.36)
 
     def test_fit_image_generator(self):
-        x_train, y_train = self.mnist[0]
-        labels_test = np.argmax(self.mnist[1][1], axis=1)
+        labels_test = np.argmax(self.y_test, axis=1)
         classifier = get_classifier_kr()
-        acc = np.sum(np.argmax(classifier.predict(self.mnist[1][0]), axis=1) == labels_test) / NB_TEST
+        acc = np.sum(np.argmax(classifier.predict(self.x_test), axis=1) == labels_test) / NB_TEST
         logger.info('Accuracy: %.2f%%', (acc * 100))
 
         keras_gen = ImageDataGenerator(width_shift_range=0.075, height_shift_range=0.075, rotation_range=12,
                                        shear_range=0.075, zoom_range=0.05, fill_mode='constant', cval=0)
-        keras_gen.fit(x_train)
-        data_gen = KerasDataGenerator(generator=keras_gen.flow(x_train, y_train, batch_size=BATCH_SIZE),
+        keras_gen.fit(self.x_train)
+        data_gen = KerasDataGenerator(generator=keras_gen.flow(self.x_train, self.y_train, batch_size=BATCH_SIZE),
                                       size=NB_TRAIN, batch_size=BATCH_SIZE)
         classifier.fit_generator(generator=data_gen, nb_epochs=2)
-        acc2 = np.sum(np.argmax(classifier.predict(self.mnist[1][0]), axis=1) == labels_test) / NB_TEST
+        acc2 = np.sum(np.argmax(classifier.predict(self.x_test), axis=1) == labels_test) / NB_TEST
         logger.info('Accuracy: %.2f%%', (acc2 * 100))
 
         self.assertEqual(acc, 0.32)
@@ -169,33 +169,30 @@ class TestKerasClassifier(unittest.TestCase):
         # Test a valid callback
         classifier = get_classifier_kr()
         kwargs = {'callbacks': [LearningRateScheduler(get_lr)]}
-        classifier.fit(self.mnist[0][0], self.mnist[0][1], batch_size=BATCH_SIZE, nb_epochs=1, **kwargs)
+        classifier.fit(self.x_train, self.y_train, batch_size=BATCH_SIZE, nb_epochs=1, **kwargs)
 
         # Test failure for invalid parameters
         kwargs = {'epochs': 1}
         with self.assertRaises(TypeError) as context:
-            classifier.fit(self.mnist[0][0], self.mnist[0][1], batch_size=BATCH_SIZE, nb_epochs=1, **kwargs)
+            classifier.fit(self.x_train, self.y_train, batch_size=BATCH_SIZE, nb_epochs=1, **kwargs)
 
         self.assertIn('multiple values for keyword argument', str(context.exception))
 
     def test_shapes(self):
-        x_test, y_test = self.mnist[1]
         classifier = get_classifier_kr()
 
-        preds = classifier.predict(self.mnist[1][0])
-        self.assertEqual(preds.shape, y_test.shape)
+        preds = classifier.predict(self.x_test)
+        self.assertEqual(preds.shape, self.y_test.shape)
 
         self.assertEqual(classifier.nb_classes, 10)
 
-        class_grads = classifier.class_gradient(x_test[:11])
-        self.assertEqual(class_grads.shape, tuple([11, 10] + list(x_test[1].shape)))
+        class_grads = classifier.class_gradient(self.x_test[:11])
+        self.assertEqual(class_grads.shape, tuple([11, 10] + list(self.x_test[1].shape)))
 
-        loss_grads = classifier.loss_gradient(x_test[:11], y_test[:11])
-        self.assertEqual(loss_grads.shape, x_test[:11].shape)
+        loss_grads = classifier.loss_gradient(self.x_test[:11], self.y_test[:11])
+        self.assertEqual(loss_grads.shape, self.x_test[:11].shape)
 
     def test_defences_predict(self):
-
-        (_, _), (x_test, y_test) = self.mnist
 
         clip_values = (0, 1)
         fs = FeatureSqueezing(clip_values=clip_values, bit_depth=2)
@@ -205,13 +202,13 @@ class TestKerasClassifier(unittest.TestCase):
         classifier = KerasClassifier(clip_values=clip_values, model=classifier_._model, defences=[fs, jpeg, smooth])
         self.assertEqual(len(classifier.defences), 3)
 
-        preds_classifier = classifier.predict(x_test)
+        preds_classifier = classifier.predict(self.x_test)
 
         # Apply the same defences by hand
-        x_test_defense = x_test
-        x_test_defense, _ = fs(x_test_defense, y_test)
-        x_test_defense, _ = jpeg(x_test_defense, y_test)
-        x_test_defense, _ = smooth(x_test_defense, y_test)
+        x_test_defense = self.x_test
+        x_test_defense, _ = fs(x_test_defense, self.y_test)
+        x_test_defense, _ = jpeg(x_test_defense, self.y_test)
+        x_test_defense, _ = smooth(x_test_defense, self.y_test)
         classifier = get_classifier_kr()
         preds_check = classifier._model.predict(x_test_defense)
 
@@ -219,11 +216,10 @@ class TestKerasClassifier(unittest.TestCase):
         np.testing.assert_array_almost_equal(preds_classifier, preds_check, decimal=4)
 
     def test_class_gradient(self):
-        (_, _), (x_test, _) = self.mnist
         classifier = get_classifier_kr()
 
         # Test all gradients label
-        gradients = classifier.class_gradient(x_test)
+        gradients = classifier.class_gradient(self.x_test)
 
         self.assertTrue(gradients.shape == (NB_TEST, 10, 28, 28, 1))
 
@@ -244,7 +240,7 @@ class TestKerasClassifier(unittest.TestCase):
         np.testing.assert_array_almost_equal(gradients[0, 5, :, 14, 0], expected_grads_2, decimal=4)
 
         # Test 1 gradient label = 5
-        gradients = classifier.class_gradient(x_test, label=5)
+        gradients = classifier.class_gradient(self.x_test, label=5)
 
         self.assertTrue(gradients.shape == (NB_TEST, 1, 28, 28, 1))
 
@@ -266,7 +262,7 @@ class TestKerasClassifier(unittest.TestCase):
 
         # Test a set of gradients label = array
         label = np.random.randint(5, size=NB_TEST)
-        gradients = classifier.class_gradient(x_test, label=label)
+        gradients = classifier.class_gradient(self.x_test, label=label)
 
         self.assertTrue(gradients.shape == (NB_TEST, 1, 28, 28, 1))
 
@@ -287,11 +283,10 @@ class TestKerasClassifier(unittest.TestCase):
         np.testing.assert_array_almost_equal(gradients[0, 0, :, 14, 0], expected_grads_2, decimal=4)
 
     def test_loss_gradient(self):
-        (_, _), (x_test, y_test) = self.mnist
         classifier = get_classifier_kr()
 
         # Test gradient
-        gradients = classifier.loss_gradient(x_test, y_test)
+        gradients = classifier.loss_gradient(self.x_test, self.y_test)
 
         self.assertTrue(gradients.shape == (NB_TEST, 28, 28, 1))
 
@@ -320,17 +315,13 @@ class TestKerasClassifier(unittest.TestCase):
         self.assertTrue(keras_model._output.name, "output0")
 
     def test_layers(self):
-        # Get MNIST
-        (_, _), (x_test, _), _, _ = load_mnist()
-        x_test = x_test[:NB_TEST]
-
         classifier = get_classifier_kr()
         self.assertEqual(len(classifier.layer_names), 3)
 
         layer_names = classifier.layer_names
         for i, name in enumerate(layer_names):
-            act_i = classifier.get_activations(x_test, i)
-            act_name = classifier.get_activations(x_test, name)
+            act_i = classifier.get_activations(self.x_test, i)
+            act_name = classifier.get_activations(self.x_test, name)
             np.testing.assert_array_equal(act_name, act_i)
 
     def test_resnet(self):
