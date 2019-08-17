@@ -182,8 +182,6 @@ class KerasClassifier(ClassifierNeuralNetwork, ClassifierGradients, Classifier):
         if self._reduce_labels:
             y_preprocessed = np.argmax(y_preprocessed, axis=1)
 
-        print('y_preprocessed.shape', y_preprocessed.shape)
-
         # Compute gradients
         gradients = self._loss_gradients([x_preprocessed, y_preprocessed])[0]
         gradients = self._apply_preprocessing_gradient(x, gradients)
