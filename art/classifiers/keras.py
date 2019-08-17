@@ -86,6 +86,7 @@ class KerasClassifier(ClassifierNeuralNetwork, ClassifierGradients, Classifier):
         :param output_layer: Which layer to consider as the Output when the model has multiple output layers.
         :type output_layer: `int`
         """
+        import keras
         import keras.backend as k
 
         if hasattr(model, 'inputs'):
@@ -109,15 +110,25 @@ class KerasClassifier(ClassifierNeuralNetwork, ClassifierGradients, Classifier):
 
         # Get predictions and loss function
         self._use_logits = use_logits
-        label_ph = k.placeholder(shape=self._output.shape)
         if not hasattr(self._model, 'loss'):
             logger.warning('Keras model has no loss set. Trying to use `k.sparse_categorical_crossentropy`.')
             loss_function = k.sparse_categorical_crossentropy
         else:
             if isinstance(self._model.loss, six.string_types):
                 loss_function = getattr(k, self._model.loss)
+            elif self._model.loss.__name__ in ['categorical_hinge', 'kullback_leibler_divergence', 'cosine_proximity']:
+                loss_function = getattr(keras.losses, self._model.loss.__name__)
             else:
                 loss_function = getattr(k, self._model.loss.__name__)
+
+        if loss_function.__name__ in ['categorical_hinge', 'categorical_crossentropy', 'binary_crossentropy', 'kullback_leibler_divergence', 'cosine_proximity']:
+            self._reduce_labels = False
+            label_ph = k.placeholder(shape=self._output.shape)
+        elif loss_function.__name__ in ['sparse_categorical_crossentropy']:
+            self._reduce_labels = True
+            label_ph = k.placeholder(shape=[None, ])
+        else:
+            raise ValueError('Loss function not recognised.')
 
         # The implementation of categorical_crossentropy is different in keras and tensorflow.keras. To ensure
         # consistent behavior of `KerasClassifier` for keras and tensorflow.keras we follow the approach of
@@ -126,14 +137,17 @@ class KerasClassifier(ClassifierNeuralNetwork, ClassifierGradients, Classifier):
                 and loss_function.__name__ == 'categorical_crossentropy':
             preds = self._output
             loss_ = loss_function(label_ph, self._output.op.inputs[-1], from_logits=True)
+        elif loss_function.__name__ in ['categorical_hinge', 'cosine_proximity', 'kullback_leibler_divergence']:
+            preds = self._output
+            loss_ = loss_function(label_ph, self._output.op.inputs[-1])
         else:
             preds = self._output
             loss_ = loss_function(label_ph, self._output, from_logits=use_logits)
 
         if preds == self._input:  # recent Tensorflow version does not allow a model with an output same as the input.
             preds = k.identity(preds)
-        loss_grads = k.gradients(loss_, self._input)
 
+        loss_grads = k.gradients(loss_, self._input)
         if k.backend() == 'tensorflow':
             loss_grads = loss_grads[0]
         elif k.backend() == 'cntk':
@@ -144,11 +158,6 @@ class KerasClassifier(ClassifierNeuralNetwork, ClassifierGradients, Classifier):
         self._loss = loss_
         self._loss_grads = k.function([self._input, label_ph], [loss_grads])
         self._preds = k.function([self._input], [preds])
-
-        # Set check for the shape of y for loss functions that do not take labels in one-hot encoding
-        self._reduce_labels = (hasattr(self._loss.op, 'inputs') and
-                               not all(len(input_.shape) == len(self._loss.op.inputs[0].shape)
-                                       for input_ in self._loss.op.inputs))
 
         # Get the internal layer
         self._layer_names = self._get_layers()
@@ -170,6 +179,8 @@ class KerasClassifier(ClassifierNeuralNetwork, ClassifierGradients, Classifier):
         # Adjust the shape of y for loss functions that do not take labels in one-hot encoding
         if self._reduce_labels:
             y_preprocessed = np.argmax(y_preprocessed, axis=1)
+
+        print('y_preprocessed.shape', y_preprocessed.shape)
 
         # Compute gradients
         grads = self._loss_grads([x_preprocessed, y_preprocessed])[0]

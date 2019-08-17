@@ -391,3 +391,14 @@ class TestKerasClassifier(unittest.TestCase):
         self.assertIn('use_logits=False, channel_index=3', repr_)
         self.assertIn('clip_values=(0, 1), defences=None, preprocessing=(0, 1)', repr_)
         self.assertIn('input_layer=0, output_layer=0', repr_)
+
+    def test_loss_functions(self):
+        loss_names = ['categorical_hinge', 'categorical_crossentropy', 'sparse_categorical_crossentropy',
+                      'binary_crossentropy', 'kullback_leibler_divergence', 'cosine_proximity']
+
+        for loss_name in loss_names:
+            classifier = get_classifier_kr(loss_name=loss_name)
+            classifier.fit(x=self.x_test, y=self.y_test, nb_epochs=1)
+            classifier.predict(x=self.x_test)
+            classifier.class_gradient(self.x_test, label=5)
+            classifier.loss_gradient(x=self.x_test, y=self.y_test)
