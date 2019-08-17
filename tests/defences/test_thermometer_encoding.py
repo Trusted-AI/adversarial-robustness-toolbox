@@ -22,7 +22,7 @@ import unittest
 
 import numpy as np
 
-from art.defences.thermometer_encoding import ThermometerEncoding
+from art.defences import ThermometerEncoding
 from art.utils import master_seed
 
 logger = logging.getLogger('testLogger')

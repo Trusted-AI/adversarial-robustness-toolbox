@@ -25,8 +25,7 @@ with their adversarial counterpart.
 .. warning:: Both successful and unsuccessful adversarial samples are used for training. In the case of
               unbounded attacks (e.g., DeepFool), this can result in invalid (very noisy) samples being included.
 
-Paper link:
-    https://arxiv.org/abs/1705.07204
+| Paper link: https://arxiv.org/abs/1705.07204
 """
 from __future__ import absolute_import, division, print_function, unicode_literals
 

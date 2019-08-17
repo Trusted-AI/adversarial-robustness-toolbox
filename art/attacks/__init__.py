@@ -17,3 +17,5 @@ from art.attacks.universal_perturbation import UniversalPerturbation
 from art.attacks.virtual_adversarial import VirtualAdversarialMethod
 from art.attacks.zoo import ZooAttack
 from art.attacks.hop_skip_jump import HopSkipJump
+from art.attacks.decision_tree_attack import DecisionTreeAttack
+from art.attacks.hclu import HighConfidenceLowUncertainty

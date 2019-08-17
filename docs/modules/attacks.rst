@@ -98,6 +98,18 @@ HopSkipJump Attack
    :members:
    :special-members:
 
+Decision Tree Attack
+--------------------
+.. autoclass:: DecisionTreeAttack
+   :members:
+   :special-members:
+
+High Confidence Low Uncertainty Attack
+--------------------------------------
+.. autoclass:: HighConfidenceLowUncertainty
+   :members:
+   :special-members:
+
 Base Class
 ----------
 .. autoclass:: Attack

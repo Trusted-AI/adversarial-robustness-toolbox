@@ -22,7 +22,7 @@ import unittest
 
 import numpy as np
 
-from art.defences.feature_squeezing import FeatureSqueezing
+from art.defences import FeatureSqueezing
 from art.utils import master_seed
 
 logger = logging.getLogger('testLogger')

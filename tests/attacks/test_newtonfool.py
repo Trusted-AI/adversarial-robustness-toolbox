@@ -22,7 +22,7 @@ import unittest
 
 import numpy as np
 
-from art.attacks.newtonfool import NewtonFool
+from art.attacks import NewtonFool
 from art.classifiers import KerasClassifier
 from art.utils import load_dataset, master_seed
 from art.utils_test import get_classifier_tf, get_classifier_kr, get_classifier_pt
@@ -76,6 +76,8 @@ class TestNewtonFool(unittest.TestCase):
         y_pred_adv_max = y_pred_adv[y_pred_bool]
         self.assertTrue((y_pred_max >= .9 * y_pred_adv_max).all())
 
+        sess.close()
+
     def test_krclassifier(self):
         """
         Second test with the KerasClassifier.
@@ -99,6 +101,8 @@ class TestNewtonFool(unittest.TestCase):
         y_pred_max = y_pred.max(axis=1)
         y_pred_adv_max = y_pred_adv[y_pred_bool]
         self.assertTrue((y_pred_max >= .9 * y_pred_adv_max).all())
+
+        sess.close()
 
     def test_ptclassifier(self):
         """
@@ -195,6 +199,35 @@ class TestNewtonFoolVectors(unittest.TestCase):
         self.assertFalse((np.argmax(y_test, axis=1) == preds_adv).all())
         acc = np.sum(preds_adv == np.argmax(y_test, axis=1)) / y_test.shape[0]
         logger.info('Accuracy on Iris with NewtonFool adversarial examples: %.2f%%', (acc * 100))
+
+    def test_scikitlearn(self):
+        from sklearn.linear_model import LogisticRegression
+        from sklearn.svm import SVC, LinearSVC
+
+        from art.classifiers.scikitlearn import ScikitlearnLogisticRegression, ScikitlearnSVC
+
+        scikitlearn_test_cases = {LogisticRegression: ScikitlearnLogisticRegression}  # ,
+        # SVC: ScikitlearnSVC,
+        # LinearSVC: ScikitlearnSVC}
+
+        (_, _), (x_test, y_test) = self.iris
+
+        for (model_class, classifier_class) in scikitlearn_test_cases.items():
+            model = model_class()
+            classifier = classifier_class(model=model, clip_values=(0, 1))
+            classifier.fit(x=x_test, y=y_test)
+
+            attack = NewtonFool(classifier, max_iter=5, batch_size=128)
+            x_test_adv = attack.generate(x_test)
+            self.assertFalse((x_test == x_test_adv).all())
+            self.assertTrue((x_test_adv <= 1).all())
+            self.assertTrue((x_test_adv >= 0).all())
+
+            preds_adv = np.argmax(classifier.predict(x_test_adv), axis=1)
+            self.assertFalse((np.argmax(y_test, axis=1) == preds_adv).all())
+            acc = np.sum(preds_adv == np.argmax(y_test, axis=1)) / y_test.shape[0]
+            logger.info('Accuracy of ' + classifier.__class__.__name__ + ' on Iris with NewtonFool adversarial examples'
+                                                                         ': %.2f%%', (acc * 100))
 
 
 if __name__ == '__main__':

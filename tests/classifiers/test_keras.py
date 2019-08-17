@@ -1,16 +1,33 @@
+# MIT License
+#
+# Copyright (C) IBM Corporation 2018
+#
+# Permission is hereby granted, free of charge, to any person obtaining a copy of this software and associated
+# documentation files (the "Software"), to deal in the Software without restriction, including without limitation the
+# rights to use, copy, modify, merge, publish, distribute, sublicense, and/or sell copies of the Software, and to permit
+# persons to whom the Software is furnished to do so, subject to the following conditions:
+#
+# The above copyright notice and this permission notice shall be included in all copies or substantial portions of the
+# Software.
+#
+# THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE
+# WARRANTIES OF MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+# AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT,
+# TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
+# SOFTWARE.
 from __future__ import absolute_import, division, print_function, unicode_literals
 
 import logging
 import unittest
 
+import numpy as np
 import keras
 import keras.backend as k
-import numpy as np
 from keras.layers import Dense, Conv2D, MaxPooling2D, Dropout, Input, Flatten
 from keras.models import Model
 
 from art.classifiers import KerasClassifier
-from art.defences import FeatureSqueezing
+from art.defences import FeatureSqueezing, JpegCompression, SpatialSmoothing
 from art.utils import load_mnist, master_seed
 from art.utils_test import get_classifier_kr
 
@@ -176,7 +193,6 @@ class TestKerasClassifier(unittest.TestCase):
         self.assertEqual(loss_grads.shape, x_test[:11].shape)
 
     def test_defences_predict(self):
-        from art.defences import FeatureSqueezing, JpegCompression, SpatialSmoothing
 
         (_, _), (x_test, y_test) = self.mnist
 

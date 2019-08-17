@@ -35,7 +35,6 @@ NB_TEST = 100
 
 class TestUtils(unittest.TestCase):
     def setUp(self):
-        # Set master seed
         master_seed(1234)
 
     def test_master_seed_mx(self):

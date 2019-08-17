@@ -26,12 +26,12 @@ import random
 import numpy as np
 import six
 
-from art.classifiers.classifier import Classifier
+from art.classifiers.classifier import Classifier, ClassifierNeuralNetwork, ClassifierGradients
 
 logger = logging.getLogger(__name__)
 
 
-class PyTorchClassifier(Classifier):
+class PyTorchClassifier(ClassifierNeuralNetwork, ClassifierGradients, Classifier):
     """
     This class implements a classifier with the PyTorch framework.
     """
@@ -53,6 +53,7 @@ class PyTorchClassifier(Classifier):
         :type input_shape: `tuple`
         :param nb_classes: The number of classes of the model.
         :type nb_classes: `int`
+        :param channel_index: Index of the axis in data containing the color channels or features.
         :param channel_index: Index of the axis in data containing the color channels or features.
         :type channel_index: `int`
         :param clip_values: Tuple of the form `(min, max)` of floats or `np.ndarray` representing the minimum and
@@ -222,6 +223,10 @@ class PyTorchClassifier(Classifier):
         :rtype: `np.ndarray`
         """
         import torch
+
+        logits = kwargs.get('logits')
+        if logits is None:
+            logits = False
 
         if not ((label is None) or (isinstance(label, (int, np.integer)) and label in range(self._nb_classes))
                 or (isinstance(label, np.ndarray) and len(label.shape) == 1 and (label < self._nb_classes).all()

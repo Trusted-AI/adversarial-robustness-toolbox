@@ -16,7 +16,7 @@
 # TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 # SOFTWARE.
 """
-This module implements the abstract base class `Classifier` for all classifiers.
+This module implements abstract base classes defining to properties for all classifiers.
 """
 from __future__ import absolute_import, division, print_function, unicode_literals
 
@@ -34,15 +34,14 @@ else:
 
 class Classifier(ABC):
     """
-    Base class for all classifiers.
+    Base class defining the minimum classifier functionality and is required for all classifiers. A classifier of this
+    type can be combined with black-box attacks.
     """
 
-    def __init__(self, channel_index, clip_values=None, defences=None, preprocessing=(0, 1)):
+    def __init__(self, clip_values=None, defences=None, preprocessing=None, **kwargs):
         """
         Initialize a `Classifier` object.
 
-        :param channel_index: Index of the axis in data containing the color channels or features.
-        :type channel_index: `int`
         :param clip_values: Tuple of the form `(min, max)` of floats or `np.ndarray` representing the minimum and
                maximum values allowed for features. If floats are provided, these will be used as the range of all
                features. If arrays are provided, each value will be considered the bound for a feature, thus
@@ -57,35 +56,186 @@ class Classifier(ABC):
         """
         from art.defences.preprocessor import Preprocessor
 
+        self._clip_values = clip_values
         if clip_values is not None:
             if len(clip_values) != 2:
                 raise ValueError('`clip_values` should be a tuple of 2 floats or arrays containing the allowed'
                                  'data range.')
             if np.array(clip_values[0] >= clip_values[1]).any():
                 raise ValueError('Invalid `clip_values`: min >= max.')
-        self._clip_values = clip_values
 
-        self._channel_index = channel_index
         if isinstance(defences, Preprocessor):
             self.defences = [defences]
         else:
             self.defences = defences
 
-        if len(preprocessing) != 2:
-            raise ValueError('`preprocessing` should be a tuple of 2 floats with the substract and divide values for'
+        if preprocessing is not None and len(preprocessing) != 2:
+            raise ValueError('`preprocessing` should be a tuple of 2 floats with the values to subtract and divide'
                              'the model inputs.')
         self.preprocessing = preprocessing
+
+        super().__init__(**kwargs)
+
+    @abc.abstractmethod
+    def predict(self, x, **kwargs):
+        """
+        Perform prediction of the classifier for input `x`.
+
+        :param x: Features in array of shape (nb_samples, nb_features) or (nb_samples, nb_pixels_1, nb_pixels_2,
+                  nb_channels) or (nb_samples, nb_channels, nb_pixels_1, nb_pixels_2)
+        :type x: `np.ndarray`
+        :return: Array of predictions of shape `(nb_inputs, nb_classes)`.
+        :rtype: `np.ndarray`
+        """
+        raise NotImplementedError
+
+    @abc.abstractmethod
+    def fit(self, x, y, **kwargs):
+        """
+        Fit the classifier using the training data `(x, y)`.
+
+        :param x: Features in array of shape (nb_samples, nb_features) or (nb_samples, nb_pixels_1, nb_pixels_2,
+                  nb_channels) or (nb_samples, nb_channels, nb_pixels_1, nb_pixels_2)
+        :type x: `np.ndarray`
+        :param y: Target values (class labels in classification) in array of shape (nb_samples, nb_classes) in
+                  One Hot Encoding format.
+        :type y: `np.ndarray`
+        :param kwargs: Dictionary of framework-specific arguments.
+        :type kwargs: `dict`
+        :return: `None`
+        """
+        raise NotImplementedError
+
+    @property
+    def clip_values(self):
+        """
+        :return: Tuple of form `(min, max)` containing the minimum and maximum values allowed for the input features.
+        :rtype: `tuple`
+        """
+        return self._clip_values
+
+    @property
+    def input_shape(self):
+        """
+        Return the shape of one input.
+
+        :return: Shape of one input for the classifier.
+        :rtype: `tuple`
+        """
+        return self._input_shape
+
+    @abc.abstractmethod
+    def save(self, filename, path=None):
+        """
+        Save a model to file specific to the backend framework.
+
+        :param filename: Name of the file where to save the model.
+        :type filename: `str`
+        :param path: Path of the directory where to save the model. If no path is specified, the model will be stored in
+                     the default data location of ART at `DATA_PATH`.
+        :type path: `str`
+        :return: None
+        """
+        raise NotImplementedError
+
+    def _apply_preprocessing(self, x, y, fit):
+        """
+        Apply all defences and preprocessing operations on the inputs `(x, y)`. This function has to be applied to all
+        raw inputs (x, y) provided to the classifier.
+
+        :param x: Features, where first dimension is the number of samples.
+        :type x: `np.ndarray`
+        :param y: Target values (class labels), where first dimension is the number of samples.
+        :type y: `np.ndarray` or `None`
+        :param fit: `True` if the defences are applied during training.
+        :return: Value of the data after applying the defences.
+        :rtype: `np.ndarray`
+        """
+        x_preprocessed, y_preprocessed = self._apply_preprocessing_defences(x, y, fit=fit)
+        x_preprocessed = self._apply_preprocessing_standardisation(x_preprocessed)
+        return x_preprocessed, y_preprocessed
+
+    def _apply_preprocessing_defences(self, x, y, fit=False):
+        """
+        Apply all defences of the classifier on the raw inputs `(x, y)`. This function is intended to only be called
+        from function `_apply_defences_and_preprocessing`.
+
+        :param x: Features, where first dimension is the number of samples.
+        :type x: `np.ndarray`
+        :param y: Target values (class labels), where first dimension is the number of samples.
+        :type y: `np.ndarray`
+        :param fit: `True` if the function is call before fit/training and `False` if the function is called before a
+                    predict operation
+        :return: Arrays for `x` and `y` after applying the defences.
+        :rtype: `np.ndarray`
+        """
+        if self.defences is not None:
+            for defence in self.defences:
+                if fit:
+                    if defence.apply_fit:
+                        x, y = defence(x, y)
+                else:
+                    if defence.apply_predict:
+                        x, y = defence(x, y)
+
+        return x, y
+
+    def _apply_preprocessing_standardisation(self, x):
+        """
+        Apply standardisation to input data `x`.
+
+        :param x: Input data, where first dimension is the number of samples.
+        :type x: `np.ndarray`
+        :return: Array for `x` with the standardized data.
+        :rtype: `np.ndarray`
+        """
+        if self.preprocessing is not None:
+            sub, div = self.preprocessing
+            sub = np.asarray(sub, dtype=x.dtype)
+            div = np.asarray(div, dtype=x.dtype)
+
+            res = x - sub
+            res = res / div
+
+        else:
+            res = x
+
+        return res
+
+    def __repr__(self):
+        class_name = self.__class__.__name__
+        attributes = {(k[1:], v) if k[0] == '_' else (k, v) for (k, v) in self.__dict__.items()}
+        attributes = ['{}={}'.format(k, v) for (k, v) in attributes]
+        repr_string = class_name + '(' + ', '.join(attributes) + ')'
+        return repr_string
+
+
+class ClassifierNeuralNetwork(ABC):
+    """
+    Base class defining additional classifier functionality required for all neural network classifiers. This base class
+    has to be mixed in with class `Classifier` to extend the minimum classifier functionality.
+    """
+
+    def __init__(self, channel_index=None, **kwargs):
+        """
+        Initialize a `ClassifierNeuralNetwork` object.
+
+        :param channel_index: Index of the axis in input (feature) array `x` representing the color channels.
+        :type channel_index: `int`
+        """
+        self._channel_index = channel_index
+        super().__init__(**kwargs)
 
     @abc.abstractmethod
     def predict(self, x, batch_size=128, **kwargs):
         """
-        Perform prediction for a batch of inputs.
+        Perform prediction of the classifier for input `x`.
 
-        :param x: Test set.
-        :type x: `np.ndarray`
-        :param batch_size: Size of batches.
+        :param x: Features in array of shape (nb_samples, nb_features) or (nb_samples, nb_pixels_1, nb_pixels_2,
+                  nb_channels) or (nb_samples, nb_channels, nb_pixels_1, nb_pixels_2)
+        :param batch_size: The batch size used for evaluating the classifer's `model`.
         :type batch_size: `int`
-        :return: Array of predictions of shape `(nb_inputs, self.nb_classes)`.
+        :return: Array of predictions of shape `(nb_inputs, nb_classes)`.
         :rtype: `np.ndarray`
         """
         raise NotImplementedError
@@ -95,11 +245,12 @@ class Classifier(ABC):
         """
         Fit the classifier on the training set `(x, y)`.
 
-        :param x: Training data.
-        :type x: `np.ndarray`
-        :param y: Labels, one-vs-rest encoding.
+        :param x: Features in array of shape (nb_samples, nb_features) or (nb_samples, nb_pixels_1, nb_pixels_2,
+                  nb_channels) or (nb_samples, nb_channels, nb_pixels_1, nb_pixels_2)
+        :param y: Target values (class labels in classification) in array of shape (nb_samples, nb_classes) in
+                  One Hot Encoding format.
         :type y: `np.ndarray`
-        :param batch_size: Size of batches.
+        :param batch_size: The batch size used for evaluating the classifer's `model`.
         :type batch_size: `int`
         :param nb_epochs: Number of epochs to use for training.
         :type nb_epochs: `int`
@@ -111,7 +262,7 @@ class Classifier(ABC):
 
     def fit_generator(self, generator, nb_epochs=20, **kwargs):
         """
-        Fit the classifier using the generator `gen` that yields batches as specified. Framework implementations can
+        Fit the classifier using `generator` yielding training batches as specified. Framework implementations can
         provide framework-specific versions of this function to speed-up computation.
 
         :param generator: Batch generator providing `(x, y)` for each epoch.
@@ -148,27 +299,9 @@ class Classifier(ABC):
         return self._nb_classes
 
     @property
-    def input_shape(self):
-        """
-        Return the shape of one input.
-
-        :return: Shape of one input for the classifier.
-        :rtype: `tuple`
-        """
-        return self._input_shape
-
-    @property
-    def clip_values(self):
-        """
-        :return: Tuple of the form `(min, max)` representing the minimum and maximum values allowed for features.
-        :rtype: `tuple`
-        """
-        return self._clip_values
-
-    @property
     def channel_index(self):
         """
-        :return: Index of the axis in data containing the color channels or features.
+        :return: Index of the axis in input data containing the color channels.
         :rtype: `int`
         """
         return self._channel_index
@@ -186,39 +319,6 @@ class Classifier(ABC):
         :rtype: `bool` or `None`
         """
         return self._learning_phase if hasattr(self, '_learning_phase') else None
-
-    @abc.abstractmethod
-    def class_gradient(self, x, label=None, **kwargs):
-        """
-        Compute per-class derivatives w.r.t. `x`.
-
-        :param x: Sample input with shape as expected by the model.
-        :type x: `np.ndarray`
-        :param label: Index of a specific per-class derivative. If an integer is provided, the gradient of that class
-                      output is computed for all samples. If multiple values as provided, the first dimension should
-                      match the batch size of `x`, and each value will be used as target for its corresponding sample in
-                      `x`. If `None`, then gradients for all classes will be computed for each sample.
-        :type label: `int` or `list`
-        :return: Array of gradients of input features w.r.t. each class in the form
-                 `(batch_size, nb_classes, input_shape)` when computing for all classes, otherwise shape becomes
-                 `(batch_size, 1, input_shape)` when `label` parameter is specified.
-        :rtype: `np.ndarray`
-        """
-        raise NotImplementedError
-
-    @abc.abstractmethod
-    def loss_gradient(self, x, y, **kwargs):
-        """
-        Compute the gradient of the loss function w.r.t. `x`.
-
-        :param x: Sample input with shape as expected by the model.
-        :type x: `np.ndarray`
-        :param y: Correct labels, one-vs-rest encoding.
-        :type y: `np.ndarray`
-        :return: Array of gradients of the same shape as `x`.
-        :rtype: `np.ndarray`
-        """
-        raise NotImplementedError
 
     @property
     def layer_names(self):
@@ -258,138 +358,125 @@ class Classifier(ABC):
         """
         Set the learning phase for the backend framework.
 
-        :param train: True to set the learning phase to training, False to set it to prediction.
+        :param train: `True` if the learning phase is training, `False` if learning phase is not training.
         :type train: `bool`
         """
         raise NotImplementedError
 
-    @abc.abstractmethod
-    def save(self, filename, path=None):
-        """
-        Save a model to file in the format specific to the backend framework.
+    def __repr__(self):
+        name = self.__class__.__name__
 
-        :param filename: Name of the file where to store the model.
-        :type filename: `str`
-        :param path: Path of the folder where to store the model. If no path is specified, the model will be stored in
-                     the default data location of the library `DATA_PATH`.
-        :type path: `str`
-        :return: None
+        attributes = {(k[1:], v) if k[0] == '_' else (k, v) for (k, v) in self.__dict__.items()}
+        attrs = ['{}={}'.format(k, v) for (k, v) in attributes]
+        repr_ = name + '(' + ', '.join(attrs) + ')'
+
+        return repr_
+
+
+class ClassifierGradients(ABC):
+    """
+    Base class defining additional classifier functionality for all classifiers providing access to loss and class
+    gradients. A classifier of this type can be combined with white-box attacks. This base class has to be mixed in with
+    class `Classifier` and optionally class `ClassifierNeuralNetwork` to extend the minimum classifier functionality.
+    """
+
+    @abc.abstractmethod
+    def class_gradient(self, x, label=None, **kwargs):
+        """
+        Compute per-class derivatives w.r.t. `x`.
+
+        :param x: Input with shape as expected by the classifier's model.
+        :type x: `np.ndarray`
+        :param label: Index of a specific per-class derivative. If an integer is provided, the gradient of that class
+                      output is computed for all samples. If multiple values as provided, the first dimension should
+                      match the batch size of `x`, and each value will be used as target for its corresponding sample in
+                      `x`. If `None`, then gradients for all classes will be computed for each sample.
+        :type label: `int` or `list`
+        :return: Array of gradients of input features w.r.t. each class in the form
+                 `(batch_size, nb_classes, input_shape)` when computing for all classes, otherwise shape becomes
+                 `(batch_size, 1, input_shape)` when `label` parameter is specified.
+        :rtype: `np.ndarray`
         """
         raise NotImplementedError
 
-    def _apply_preprocessing(self, x, y, fit):
+    @abc.abstractmethod
+    def loss_gradient(self, x, y, **kwargs):
         """
-        Apply all preprocessing steps of the classifier on inputs `(x, y)`.
+        Compute the gradient of the loss function w.r.t. `x`.
 
-        :param x: Input data, where first dimension is the batch size.
+        :param x: Input with shape as expected by the classifier's model.
         :type x: `np.ndarray`
-        :param y: Labels for input data, where first dimension is the batch size.
+        :param y: Correct labels, one-vs-rest encoding.
         :type y: `np.ndarray`
-        :param fit: `True` if the defences are applied during training.
-        :return: Value of the data after applying the defences.
+        :return: Array of gradients of the same shape as `x`.
         :rtype: `np.ndarray`
         """
-        x_preprocessed, y_preprocessed = self._apply_preprocessing_defences(x, y, fit=fit)
-        x_preprocessed = self._apply_preprocessing_normalization(x_preprocessed)
-        return x_preprocessed, y_preprocessed
+        raise NotImplementedError
 
-    def _apply_preprocessing_gradient(self, x, grads):
+    @property
+    def nb_classes(self):
         """
-        Apply the backward pass through all preprocessing steps to gradients.
+        Return the number of output classes.
 
-        :param x: Input data for which the gradient is estimated. First dimension is the batch size.
+        :return: Number of classes in the data.
+        :rtype: `int`
+        """
+        return self._nb_classes
+
+    def _apply_preprocessing_gradient(self, x, gradients):
+        """
+        Apply the backward pass through all preprocessing operations to the gradients.
+
+        Apply the backward pass through all preprocessing operations and defences on the inputs `(x, y)`. This function
+        has to be applied to all gradients returned by the classifier.
+
+        :param x: Features, where first dimension is the number of samples.
         :type x: `np.ndarray`
-        :param grads: Gradient value so far.
-        :type grads: `np.ndarray`
-        :param fit: `True` if the gradient is computed during training.
-        :return: Value of the gradient.
+        :param gradients: Input gradients.
+        :type gradients: `np.ndarray`
+        :return: Gradients after backward step through preprocessing operations and defences.
         :rtype: `np.ndarray`
         """
-        grads = self._apply_preprocessing_normalization_gradient(grads)
-        grads = self._apply_preprocessing_defences_gradient(x, grads)
-        return grads
+        gradients = self._apply_preprocessing_normalization_gradient(gradients)
+        gradients = self._apply_preprocessing_defences_gradient(x, gradients)
+        return gradients
 
-    def _apply_preprocessing_defences(self, x, y, fit=False):
-        """
-        Apply the defences specified for the classifier in inputs `(x, y)`.
-
-        :param x: Input data, where first dimension is the batch size.
-        :type x: `np.ndarray`
-        :param y: Labels for input data, where first dimension is the batch size.
-        :type y: `np.ndarray`
-        :param fit: `True` if the defences are applied during training.
-        :return: Value of the data after applying the defences.
-        :rtype: `np.ndarray`
-        """
-        if self.defences is not None:
-            for defence in self.defences:
-                if fit:
-                    if defence.apply_fit:
-                        x, y = defence(x, y)
-                else:
-                    if defence.apply_predict:
-                        x, y = defence(x, y)
-
-        return x, y
-
-    def _apply_preprocessing_defences_gradient(self, x, grads, fit=False):
+    def _apply_preprocessing_defences_gradient(self, x, gradients, fit=False):
         """
         Apply the backward pass through the preprocessing defences.
 
-        :param x: Input data for which the gradient is estimated. First dimension is the batch size.
+        Apply the backward pass through all defences of the classifier on the gradients. This function is intended to
+        only be called from function `_apply_preprocessing_gradient`.
+
+        :param x: Features, where first dimension is the number of samples.
         :type x: `np.ndarray`
-        :param grads: Gradient value so far.
-        :type grads: `np.ndarray`
+        :param gradients: Input gradient.
+        :type gradients: `np.ndarray`
         :param fit: `True` if the gradient is computed during training.
-        :return: Value of the gradient.
+        :return: Gradients after backward step through defences.
         :rtype: `np.ndarray`
         """
         if self.defences is not None:
             for defence in self.defences[::-1]:
                 if fit:
                     if defence.apply_fit:
-                        grads = defence.estimate_gradient(x, grads)
+                        gradients = defence.estimate_gradient(x, gradients)
                 else:
                     if defence.apply_predict:
-                        grads = defence.estimate_gradient(x, grads)
+                        gradients = defence.estimate_gradient(x, gradients)
 
-        return grads
+        return gradients
 
-    def _apply_preprocessing_normalization(self, x):
+    def _apply_preprocessing_normalization_gradient(self, gradients):
         """
-        Apply the data normalization steps specified for the classifier on `x`.
+        Apply the backward pass through standardisation of `x` to `gradients`.
 
-        :param x: Input data, where first dimension is the batch size.
-        :type x: `np.ndarray`
-        :return: Value of the preprocessed data.
-        :rtype: `np.ndarray`
-        """
-        sub, div = self.preprocessing
-        sub = np.asarray(sub, dtype=x.dtype)
-        div = np.asarray(div, dtype=x.dtype)
-
-        res = x - sub
-        res = res / div
-
-        return res
-
-    def _apply_preprocessing_normalization_gradient(self, grads):
-        """
-        Apply the backward pass through the data normalization steps.
-
-        :param grads: Gradient value so far.
-        :type grads: `np.ndarray`
-        :return: Value of the gradient.
-        :rtype: `np.ndarray`
+        :param gradients: Input gradients.
+        :type gradients: `np.ndarray`
+        :return: Gradients after backward step through standardisation.
+        :rtype: `np.ndarray
         """
         _, div = self.preprocessing
-        div = np.asarray(div, dtype=grads.dtype)
-        res = grads / div
+        div = np.asarray(div, dtype=gradients.dtype)
+        res = gradients / div
         return res
-
-    def __repr__(self):
-        repr_ = "%s(channel_index=%r, clip_values=%r, defences=%r, preprocessing=%r)" \
-                % (self.__module__ + '.' + self.__class__.__name__,
-                   self.channel_index, self.clip_values, self.defences, self.preprocessing)
-
-        return repr_

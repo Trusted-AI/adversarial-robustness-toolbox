@@ -18,8 +18,7 @@
 """
 This module implements the white-box attack `NewtonFool`.
 
-Paper link:
-    http://doi.acm.org/10.1145/3134600.3134635
+| Paper link: http://doi.acm.org/10.1145/3134600.3134635
 """
 from __future__ import absolute_import, division, print_function, unicode_literals
 
@@ -28,6 +27,7 @@ import logging
 import numpy as np
 
 from art import NUMPY_DTYPE
+from art.classifiers.classifier import ClassifierGradients
 from art.attacks.attack import Attack
 from art.utils import to_categorical
 
@@ -36,7 +36,9 @@ logger = logging.getLogger(__name__)
 
 class NewtonFool(Attack):
     """
-    Implementation of the attack from Uyeong Jang et al. (2017). Paper link: http://doi.acm.org/10.1145/3134600.3134635
+    Implementation of the attack from Uyeong Jang et al. (2017).
+
+    | Paper link: http://doi.acm.org/10.1145/3134600.3134635
     """
     attack_params = Attack.attack_params + ["max_iter", "eta", "batch_size"]
 
@@ -44,7 +46,7 @@ class NewtonFool(Attack):
         """
         Create a NewtonFool attack instance.
 
-        :param classifier: A trained model.
+        :param classifier: A trained classifier.
         :type classifier: :class:`.Classifier`
         :param max_iter: The maximum number of iterations.
         :type max_iter: `int`
@@ -54,6 +56,11 @@ class NewtonFool(Attack):
         :type batch_size: `int`
         """
         super(NewtonFool, self).__init__(classifier)
+        if not isinstance(classifier, ClassifierGradients):
+            raise (TypeError('For `' + self.__class__.__name__ + '` classifier must be an instance of '
+                             '`art.classifiers.classifier.ClassifierGradients`, the provided classifier is instance of '
+                             + str(classifier.__class__.__bases__) + '.'))
+
         params = {"max_iter": max_iter, "eta": eta, "batch_size": batch_size}
         self.set_params(**params)
 
@@ -91,7 +98,8 @@ class NewtonFool(Attack):
 
                 # Compute the gradients and norm
                 grads = self.classifier.class_gradient(batch, label=l_batch)
-                grads = np.squeeze(grads, axis=1)
+                if grads.shape[1] == 1:
+                    grads = np.squeeze(grads, axis=1)
                 norm_grad = np.linalg.norm(np.reshape(grads, (batch.shape[0], -1)), axis=1)
 
                 # Theta
