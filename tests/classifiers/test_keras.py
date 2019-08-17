@@ -17,19 +17,31 @@
 # SOFTWARE.
 from __future__ import absolute_import, division, print_function, unicode_literals
 
+import os
 import logging
 import unittest
+import requests
+import tempfile
+import shutil
+import pickle
 
 import numpy as np
 import keras
 import keras.backend as k
 from keras.layers import Dense, Conv2D, MaxPooling2D, Dropout, Input, Flatten
 from keras.models import Model
+from keras.preprocessing.image import ImageDataGenerator
+from keras.callbacks import LearningRateScheduler
+from keras.applications.resnet50 import ResNet50, decode_predictions
+from keras.preprocessing.image import load_img, img_to_array
 
+from art import DATA_PATH
 from art.classifiers import KerasClassifier
+from art.classifiers.keras import generator_fit
 from art.defences import FeatureSqueezing, JpegCompression, SpatialSmoothing
 from art.utils import load_mnist, master_seed
 from art.utils_test import get_classifier_kr
+from art.data_generators import KerasDataGenerator
 
 logger = logging.getLogger('testLogger')
 
@@ -53,10 +65,6 @@ class TestKerasClassifier(unittest.TestCase):
         cls.model_mnist, _ = get_classifier_kr()
         cls.functional_model = cls.functional_model()
 
-        import requests
-        import tempfile
-        import os
-
         # Temporary folder for tests
         cls.test_dir = tempfile.mkdtemp()
 
@@ -72,8 +80,6 @@ class TestKerasClassifier(unittest.TestCase):
     @classmethod
     def tearDownClass(cls):
         k.clear_session()
-
-        import shutil
         shutil.rmtree(cls.test_dir)
 
     def setUp(self):
@@ -122,9 +128,6 @@ class TestKerasClassifier(unittest.TestCase):
         self.assertGreaterEqual(acc2, 0.9 * acc)
 
     def test_fit_generator(self):
-        from art.classifiers.keras import generator_fit
-        from art.data_generators import KerasDataGenerator
-
         labels = np.argmax(self.mnist[1][1], axis=1)
         classifier = self.model_mnist
         acc = np.sum(np.argmax(classifier.predict(self.mnist[1][0]), axis=1) == labels) / NB_TEST
@@ -139,9 +142,6 @@ class TestKerasClassifier(unittest.TestCase):
         self.assertGreaterEqual(acc2, 0.8 * acc)
 
     def test_fit_image_generator(self):
-        from keras.preprocessing.image import ImageDataGenerator
-        from art.data_generators import KerasDataGenerator
-
         x_train, y_train = self.mnist[0]
         labels_test = np.argmax(self.mnist[1][1], axis=1)
         classifier = self.model_mnist
@@ -160,7 +160,6 @@ class TestKerasClassifier(unittest.TestCase):
         self.assertGreaterEqual(acc2, 0.8 * acc)
 
     def test_fit_kwargs(self):
-        from keras.callbacks import LearningRateScheduler
 
         def get_lr(_):
             return 0.01
@@ -274,11 +273,6 @@ class TestKerasClassifier(unittest.TestCase):
             self.assertAlmostEqual(np.sum(act_name - act_i), 0)
 
     def test_resnet(self):
-        import os
-
-        from keras.applications.resnet50 import ResNet50, decode_predictions
-        from keras.preprocessing.image import load_img, img_to_array
-
         keras.backend.set_learning_phase(0)
         model = ResNet50(weights='imagenet')
         classifier = KerasClassifier(model, clip_values=(0, 255))
@@ -301,8 +295,6 @@ class TestKerasClassifier(unittest.TestCase):
         self.assertTrue(hasattr(classifier, '_learning_phase'))
 
     def test_save(self):
-        import os
-
         path = 'tmp'
         filename = 'model.h5'
         self.model_mnist.save(filename, path=path)
@@ -312,15 +304,12 @@ class TestKerasClassifier(unittest.TestCase):
         os.remove(os.path.join(path, filename))
 
     def test_pickle(self):
-        import os
         filename = 'my_classifier.p'
-        from art import DATA_PATH
         full_path = os.path.join(DATA_PATH, filename)
         folder = os.path.split(full_path)[0]
         if not os.path.exists(folder):
             os.makedirs(folder)
 
-        import pickle
         fs = FeatureSqueezing(bit_depth=1, clip_values=(0, 1))
         keras_model = KerasClassifier(self.functional_model, clip_values=(0, 1), input_layer=1, output_layer=1,
                                       defences=fs)
