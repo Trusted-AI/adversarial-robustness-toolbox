@@ -55,8 +55,8 @@ class EnsembleClassifier(ClassifierNeuralNetwork, ClassifierGradients, Classifie
         :type clip_values: `tuple`
         :param defences: Defences to be activated with the classifier.
         :type defences: `str` or `list(str)`
-        :param preprocessing: Tuple of the form `(substractor, divider)` of floats or `np.ndarray` of values to be
-               used for data preprocessing. The first value will be substracted from the input. The input will then
+        :param preprocessing: Tuple of the form `(subtractor, divider)` of floats or `np.ndarray` of values to be
+               used for data preprocessing. The first value will be subtracted from the input. The input will then
                be divided by the second one.
         :type preprocessing: `tuple`
         """
