@@ -119,16 +119,10 @@ def get_classifier_kr():
     :return: KerasClassifier, tf.Session()
     """
     import keras
-    import keras.backend as k
     from keras.models import Sequential
     from keras.layers import Dense, Flatten, Conv2D, MaxPooling2D
-    import tensorflow as tf
 
     from art.classifiers import KerasClassifier
-
-    # Initialize a tf session
-    sess = tf.Session()
-    k.set_session(sess)
 
     # Create simple CNN
     model = Sequential()
@@ -146,7 +140,7 @@ def get_classifier_kr():
     # Get classifier
     krc = KerasClassifier(model, clip_values=(0, 1), use_logits=False)
 
-    return krc, sess
+    return krc
 
 
 def get_classifier_pt():
