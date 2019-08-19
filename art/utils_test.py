@@ -317,6 +317,41 @@ def get_classifier_mx():
     return mxc
 
 
+def get_classifier_mx():
+    """
+    Standard MXNet classifier for unit testing
+
+    :return: MXNetClassifier
+    """
+    import mxnet
+    from mxnet.gluon.nn import Conv2D, MaxPool2D, Flatten, Dense
+    from art.classifiers import MXClassifier
+
+    model = mxnet.gluon.nn.Sequential()
+    with model.name_scope():
+        model.add(Conv2D(channels=1, kernel_size=7, activation='relu'),
+                MaxPool2D(pool_size=4, strides=4),
+                Flatten(),
+                Dense(10))
+    model.initialize(init=mxnet.init.Xavier())
+
+    # Create optimizer
+    loss = mxnet.gluon.loss.SoftmaxCrossEntropyLoss()
+    trainer = mxnet.gluon.Trainer(model.collect_params(), 'sgd', {'learning_rate': 0.1})
+
+    # # Fit classifier
+    # classifier = MXClassifier(model=net, loss=loss, clip_values=(0, 1), input_shape=(1, 28, 28), nb_classes=10,
+    #                           optimizer=trainer)
+    # classifier.fit(x_train, y_train, batch_size=128, nb_epochs=2)
+    # cls.classifier = classifier
+
+    # Get classifier
+    mxc = MXClassifier(model=model, loss=loss, input_shape=(28, 28, 1), nb_classes=10, optimizer=trainer, ctx=None,
+                       channel_index=1, clip_values=(0, 1), defences=None, preprocessing=(0, 1))
+
+    return mxc
+
+
 # ------------------------------------------------------------------------------------------------ TEST MODELS FOR IRIS
 
 def get_iris_classifier_tf():
