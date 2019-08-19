@@ -84,7 +84,7 @@ class TestUniversalPerturbation(unittest.TestCase):
         :return:
         """
         # Build KerasClassifier
-        krc, sess = get_classifier_kr()
+        krc = get_classifier_kr()
 
         # Get MNIST
         (x_train, y_train), (x_test, y_test) = self.mnist
@@ -102,7 +102,7 @@ class TestUniversalPerturbation(unittest.TestCase):
         self.assertFalse((np.argmax(y_test, axis=1) == test_y_pred).all())
         self.assertFalse((np.argmax(y_train, axis=1) == train_y_pred).all())
 
-        sess.close()
+        # sess.close()
 
     def test_ptclassifier(self):
         """

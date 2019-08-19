@@ -61,7 +61,7 @@ class TestBinaryInputDetector(unittest.TestCase):
         x_test, y_test = x_test[:NB_TEST], y_test[:NB_TEST]
 
         # Keras classifier
-        classifier, _ = get_classifier_kr()
+        classifier = get_classifier_kr()
 
         # Generate adversarial samples:
         attacker = FastGradientMethod(classifier, eps=0.1)
@@ -122,7 +122,7 @@ class TestBinaryActivationDetector(unittest.TestCase):
         x_test, y_test = x_test[:NB_TEST], y_test[:NB_TEST]
 
         # Keras classifier
-        classifier, _ = get_classifier_kr()
+        classifier = get_classifier_kr()
 
         # Generate adversarial samples:
         attacker = FastGradientMethod(classifier, eps=0.1)
