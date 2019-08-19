@@ -47,7 +47,7 @@ class TestWrappingClassifierAttack(unittest.TestCase):
         cls.mnist = (x_train, y_train), (x_test, y_test)
 
         # Keras classifier
-        cls.classifier_k, _ = get_classifier_kr()
+        cls.classifier_k = get_classifier_kr()
 
     def setUp(self):
         master_seed(1234)
