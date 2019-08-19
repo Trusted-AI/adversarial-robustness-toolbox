@@ -104,7 +104,7 @@ class TestTFClassifier(unittest.TestCase):
 
     def test_input_shape(self):
         classifier, sess = get_classifier_tf()
-        self.assertTrue(classifier.input_shape == (28, 28, 1))
+        self.assertEqual(classifier.input_shape, (28, 28, 1))
         tf.reset_default_graph()
         sess.close()
 
@@ -114,7 +114,7 @@ class TestTFClassifier(unittest.TestCase):
         # Test all gradients label = None
         gradients = classifier.class_gradient(self.x_test)
 
-        self.assertTrue(gradients.shape == (NB_TEST, 10, 28, 28, 1))
+        self.assertEqual(gradients.shape, (NB_TEST, 10, 28, 28, 1))
 
         expected_gradients_1 = np.asarray([-0.03347399, -0.03195872, -0.02650188, 0.04111874, 0.08676253, 0.03339913,
                                            0.06925241, 0.09387045, 0.15184258, -0.00684002, 0.05070481, 0.01409407,
@@ -133,7 +133,7 @@ class TestTFClassifier(unittest.TestCase):
         # Test 1 gradient label = 5
         gradients = classifier.class_gradient(self.x_test, label=5)
 
-        self.assertTrue(gradients.shape == (NB_TEST, 1, 28, 28, 1))
+        self.assertEqual(gradients.shape, (NB_TEST, 1, 28, 28, 1))
 
         expected_gradients_1 = np.asarray([-0.03347399, -0.03195872, -0.02650188, 0.04111874, 0.08676253, 0.03339913,
                                            0.06925241, 0.09387045, 0.15184258, -0.00684002, 0.05070481, 0.01409407,
@@ -153,7 +153,7 @@ class TestTFClassifier(unittest.TestCase):
         label = np.random.randint(5, size=NB_TEST)
         gradients = classifier.class_gradient(self.x_test, label=label)
 
-        self.assertTrue(gradients.shape == (NB_TEST, 1, 28, 28, 1))
+        self.assertEqual(gradients.shape, (NB_TEST, 1, 28, 28, 1))
 
         expected_gradients_1 = np.asarray([0.06860766, 0.065502, 0.08539103, 0.13868105, -0.05520725, -0.18788849,
                                            0.02264893, 0.02980516, 0.2226511, 0.11288887, -0.00678776, 0.02045561,
@@ -175,13 +175,13 @@ class TestTFClassifier(unittest.TestCase):
     def test_loss_gradient(self):
         classifier, sess = get_classifier_tf()
         gradients = classifier.loss_gradient(self.x_test, self.y_test)
-        self.assertTrue(gradients.shape == (NB_TEST, 28, 28, 1))
+        self.assertEqual(gradients.shape, (NB_TEST, 28, 28, 1))
 
         expected_gradients_1 = np.asarray([0.00279603, 0.00266946, 0.0032446, 0.00396258, -0.00201465, -0.00564073,
                                            0.0009253, 0.00016253, 0.0040816, 0.00166697, 0.0015883, -0.00121023,
                                            -0.00390778, -0.00234937, 0.0053558, 0.00204322, -0.00172054, 0.00053564,
                                            -0.0021146, -0.00069308, 0.00141374, 0.0, 0.0, 0.0,
-                                           0.0, 0.0, 0.0, 0.0, ])
+                                           0.0, 0.0, 0.0, 0.0])
         np.testing.assert_array_almost_equal(gradients[0, 14, :, 0], expected_gradients_1, decimal=4)
 
         expected_gradients_2 = np.asarray([1.05401428e-04, 1.06959546e-04, 2.60490313e-04, 2.74000311e-04,
@@ -202,9 +202,9 @@ class TestTFClassifier(unittest.TestCase):
 
         for i, name in enumerate(layer_names):
             print(self.x_test.shape)
-            act_i = classifier.get_activations(self.x_test, i, batch_size=5)
-            act_name = classifier.get_activations(self.x_test, name, batch_size=5)
-            np.testing.assert_array_equal(act_name, act_i)
+            activation_i = classifier.get_activations(self.x_test, i, batch_size=5)
+            activation_name = classifier.get_activations(self.x_test, name, batch_size=5)
+            np.testing.assert_array_equal(activation_name, activation_i)
 
         tf.reset_default_graph()
         sess.close()
@@ -235,7 +235,6 @@ class TestTFClassifier(unittest.TestCase):
 
     def test_set_learning(self):
         classifier, sess = get_classifier_tf()
-
         self.assertEqual(classifier._feed_dict, {})
         classifier.set_learning_phase(False)
         self.assertFalse(classifier._feed_dict[classifier._learning])
@@ -256,7 +255,6 @@ class TestTFClassifier(unittest.TestCase):
 
     def test_pickle(self):
         classifier, sess = get_classifier_tf()
-
         full_path = os.path.join(DATA_PATH, 'my_classifier')
         folder = os.path.split(full_path)[0]
 
