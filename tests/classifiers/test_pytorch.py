@@ -17,16 +17,24 @@
 # SOFTWARE.
 from __future__ import absolute_import, division, print_function, unicode_literals
 
+import os
 import logging
 import unittest
+import tempfile
+import pickle
 
 import numpy as np
+import torch
 import torch.nn as nn
 import torch.nn.functional as F
 import torch.optim as optim
+from torch.utils.data import DataLoader
 
+from art import DATA_PATH
+from art.data_generators import PyTorchDataGenerator
 from art.classifiers import PyTorchClassifier
-from art.utils import load_mnist, master_seed
+from art.utils import load_dataset, master_seed
+from art.utils_test import get_classifier_pt
 
 logger = logging.getLogger('testLogger')
 
@@ -37,15 +45,14 @@ NB_TEST = 20
 class Model(nn.Module):
     def __init__(self):
         super(Model, self).__init__()
-        self.conv = nn.Conv2d(1, 16, 5)
+        self.conv = nn.Conv2d(1, 2, 5)
         self.pool = nn.MaxPool2d(2, 2)
-        self.fc = nn.Linear(2304, 10)
+        self.fc = nn.Linear(288, 10)
 
     def forward(self, x):
         x = self.pool(F.relu(self.conv(x)))
-        x = x.view(-1, 2304)
+        x = x.view(-1, 288)
         logit_output = self.fc(x)
-
         return logit_output
 
 
@@ -59,66 +66,61 @@ class Flatten(nn.Module):
 
 class TestPyTorchClassifier(unittest.TestCase):
     """
-    This class tests the functionalities of the PyTorch-based classifier.
+    This class tests the PyTorch classifier.
     """
 
     @classmethod
     def setUpClass(cls):
-        # Get MNIST
-        (x_train, y_train), (x_test, y_test), _, _ = load_mnist()
-        x_train, y_train = x_train[:NB_TRAIN], y_train[:NB_TRAIN]
-        x_test, y_test = x_test[:NB_TEST], y_test[:NB_TEST]
+        (x_train, y_train), (x_test, y_test), _, _ = load_dataset('mnist')
+
         x_train = np.swapaxes(x_train, 1, 3)
         x_test = np.swapaxes(x_test, 1, 3)
-        cls.mnist = (x_train, y_train), (x_test, y_test)
+
+        cls.x_train = x_train[:NB_TRAIN]
+        cls.y_train = y_train[:NB_TRAIN]
+        cls.x_test = x_test[:NB_TEST]
+        cls.y_test = y_test[:NB_TEST]
 
         # Define the network
-        model = nn.Sequential(nn.Conv2d(1, 16, 5), nn.ReLU(), nn.MaxPool2d(2, 2), Flatten(), nn.Linear(2304, 10))
+        model = nn.Sequential(nn.Conv2d(1, 2, 5), nn.ReLU(), nn.MaxPool2d(2, 2), Flatten(), nn.Linear(288, 10))
 
         # Define a loss function and optimizer
         loss_fn = nn.CrossEntropyLoss()
         optimizer = optim.Adam(model.parameters(), lr=0.01)
-        classifier = PyTorchClassifier(clip_values=(0, 1), model=model, loss=loss_fn, optimizer=optimizer,
+        classifier = PyTorchClassifier(model=model, clip_values=(0, 1), loss=loss_fn, optimizer=optimizer,
                                        input_shape=(1, 28, 28), nb_classes=10)
-        classifier.fit(x_train, y_train, batch_size=100, nb_epochs=2)
+        classifier.fit(cls.x_train, cls.y_train, batch_size=100, nb_epochs=1)
         cls.seq_classifier = classifier
 
         # Define the network
         model = Model()
         loss_fn = nn.CrossEntropyLoss()
         optimizer = optim.Adam(model.parameters(), lr=0.01)
-        classifier2 = PyTorchClassifier(clip_values=(0, 1), model=model, loss=loss_fn, optimizer=optimizer,
-                                        input_shape=(1, 28, 28), nb_classes=10)
-        classifier2.fit(x_train, y_train, batch_size=100, nb_epochs=2)
-        cls.module_classifier = classifier2
+        classifier_2 = PyTorchClassifier(model=model, clip_values=(0, 1), loss=loss_fn, optimizer=optimizer,
+                                         input_shape=(1, 28, 28), nb_classes=10)
+        classifier_2.fit(x_train, y_train, batch_size=100, nb_epochs=1)
+        cls.module_classifier = classifier_2
 
     def setUp(self):
-        # Set master seed
         master_seed(1234)
 
     def test_fit_predict(self):
-        # Get MNIST
-        (_, _), (x_test, y_test) = self.mnist
-
-        # Test predict
-        preds = self.module_classifier.predict(x_test)
-        acc = np.sum(np.argmax(preds, axis=1) == np.argmax(y_test, axis=1)) / len(y_test)
-        logger.info('Accuracy after fitting: %.2f%%', (acc * 100))
-        self.assertGreater(acc, 0.1)
+        classifier = get_classifier_pt()
+        predictions = classifier.predict(self.x_test)
+        accuracy = np.sum(np.argmax(predictions, axis=1) == np.argmax(self.y_test, axis=1)) / NB_TEST
+        logger.info('Accuracy after fitting: %.2f%%', (accuracy * 100))
+        self.assertEqual(accuracy, 0.3)
 
     def test_fit_generator(self):
-        import torch
-        from torch.utils.data import DataLoader
-        from art.data_generators import PyTorchDataGenerator
-
-        (x_train, y_train), (x_test, y_test) = self.mnist
-        acc = np.sum(np.argmax(self.module_classifier.predict(x_test), axis=1) == np.argmax(y_test, axis=1)) / NB_TEST
-        logger.info('Accuracy: %.2f%%', (acc * 100))
+        classifier = get_classifier_pt()
+        accuracy = np.sum(
+            np.argmax(classifier.predict(self.x_test), axis=1) == np.argmax(self.y_test, axis=1)) / NB_TEST
+        logger.info('Accuracy: %.2f%%', (accuracy * 100))
 
         # Create tensors from data
-        x_train_tens = torch.from_numpy(x_train)
+        x_train_tens = torch.from_numpy(self.x_train)
         x_train_tens = x_train_tens.float()
-        y_train_tens = torch.from_numpy(y_train)
+        y_train_tens = torch.from_numpy(self.y_train)
 
         # Create PyTorch dataset and loader
         dataset = torch.utils.data.TensorDataset(x_train_tens, y_train_tens)
@@ -126,92 +128,164 @@ class TestPyTorchClassifier(unittest.TestCase):
         data_gen = PyTorchDataGenerator(data_loader, size=NB_TRAIN, batch_size=5)
 
         # Fit model with generator
-        self.module_classifier.fit_generator(data_gen, nb_epochs=2)
-        acc2 = np.sum(np.argmax(self.module_classifier.predict(x_test), axis=1) == np.argmax(y_test, axis=1)) / NB_TEST
-        logger.info('Accuracy: %.2f%%', (acc * 100))
+        classifier.fit_generator(data_gen, nb_epochs=2)
+        accuracy_2 = np.sum(
+            np.argmax(classifier.predict(self.x_test), axis=1) == np.argmax(self.y_test, axis=1)) / NB_TEST
+        logger.info('Accuracy: %.2f%%', (accuracy_2 * 100))
 
-        self.assertGreaterEqual(acc2, 0.8 * acc)
+        self.assertEqual(accuracy, 0.3)
+        self.assertEqual(accuracy_2, 0.55)
 
     def test_nb_classes(self):
-        ptc = self.module_classifier
-        self.assertEqual(ptc.nb_classes, 10)
+        classifier = get_classifier_pt()
+        self.assertEqual(classifier.nb_classes, 10)
 
     def test_input_shape(self):
-        ptc = self.module_classifier
-        self.assertTrue(np.array(ptc.input_shape == (1, 28, 28)).all())
+        classifier = get_classifier_pt()
+        self.assertEqual(classifier.input_shape, (1, 28, 28))
 
     def test_class_gradient(self):
-        # Get MNIST
-        (_, _), (x_test, _) = self.mnist
+        classifier = get_classifier_pt()
 
         # Test all gradients label = None
-        ptc = self.module_classifier
-        grads = ptc.class_gradient(x_test)
+        gradients = classifier.class_gradient(self.x_test)
 
-        self.assertTrue(np.array(grads.shape == (NB_TEST, 10, 1, 28, 28)).all())
-        self.assertNotEqual(np.sum(grads), 0)
+        self.assertEqual(gradients.shape, (NB_TEST, 10, 1, 28, 28))
+
+        expected_gradients_1 = np.asarray([-1.5104107e-04, -1.4420391e-04, -8.5643369e-05, 4.2904957e-04,
+                                           4.6917787e-04, -3.3433505e-05, 4.3190207e-04, 5.4948201e-04,
+                                           9.0309686e-04, -1.3793766e-04, 6.4290554e-04, -2.8910500e-04,
+                                           -8.5047574e-04, -4.8866379e-04, 1.3007881e-03, 1.5724849e-04,
+                                           6.1079778e-04, -5.2589108e-05, -6.7920942e-04, -2.2616469e-04,
+                                           4.6133125e-04, 0.0000000e+00, 0.0000000e+00, 0.0000000e+00,
+                                           0.0000000e+00, 0.0000000e+00, 0.0000000e+00, 0.0000000e+00])
+        np.testing.assert_array_almost_equal(gradients[0, 5, 0, :, 14], expected_gradients_1, decimal=4)
+
+        expected_gradients_2 = np.asarray([-4.7446613e-04, -9.8460718e-05, -1.1919734e-04, -2.2912446e-04,
+                                           2.8542569e-04, -8.9842360e-06, 1.7257492e-04, 0.0000000e+00,
+                                           0.0000000e+00, -7.2422711e-04, -9.8898512e-05, 7.9051330e-04,
+                                           -3.9680302e-04, 7.3898572e-04, 1.3007881e-03, 7.1805675e-04,
+                                           7.7588821e-04, 9.9411258e-04, 4.4845918e-04, -1.9343558e-04,
+                                           -1.8357937e-04, 5.9276586e-04, -6.4391940e-04, 0.0000000e+00,
+                                           0.0000000e+00, 0.0000000e+00, 0.0000000e+00, 0.0000000e+00])
+        np.testing.assert_array_almost_equal(gradients[0, 5, 0, 14, :], expected_gradients_2, decimal=4)
 
         # Test 1 gradient label = 5
-        grads = ptc.class_gradient(x_test, label=5)
+        gradients = classifier.class_gradient(self.x_test, label=5)
 
-        self.assertTrue(np.array(grads.shape == (NB_TEST, 1, 1, 28, 28)).all())
-        self.assertNotEqual(np.sum(grads), 0)
+        self.assertEqual(gradients.shape, (NB_TEST, 1, 1, 28, 28))
+
+        expected_gradients_1 = np.asarray([-1.5104107e-04, -1.4420391e-04, -8.5643369e-05, 4.2904957e-04,
+                                           4.6917787e-04, -3.3433505e-05, 4.3190207e-04, 5.4948201e-04,
+                                           9.0309686e-04, -1.3793766e-04, 6.4290554e-04, -2.8910500e-04,
+                                           -8.5047574e-04, -4.8866379e-04, 1.3007881e-03, 1.5724849e-04,
+                                           6.1079778e-04, -5.2589108e-05, -6.7920942e-04, -2.2616469e-04,
+                                           4.6133125e-04, 0.0000000e+00, 0.0000000e+00, 0.0000000e+00,
+                                           0.0000000e+00, 0.0000000e+00, 0.0000000e+00, 0.0000000e+00])
+        np.testing.assert_array_almost_equal(gradients[0, 0, 0, :, 14], expected_gradients_1, decimal=4)
+
+        expected_gradients_2 = np.asarray([-4.7446613e-04, -9.8460718e-05, -1.1919734e-04, -2.2912446e-04,
+                                           2.8542569e-04, -8.9842360e-06, 1.7257492e-04, 0.0000000e+00,
+                                           0.0000000e+00, -7.2422711e-04, -9.8898512e-05, 7.9051330e-04,
+                                           -3.9680302e-04, 7.3898572e-04, 1.3007881e-03, 7.1805675e-04,
+                                           7.7588821e-04, 9.9411258e-04, 4.4845918e-04, -1.9343558e-04,
+                                           -1.8357937e-04, 5.9276586e-04, -6.4391940e-04, 0.0000000e+00,
+                                           0.0000000e+00, 0.0000000e+00, 0.0000000e+00, 0.0000000e+00])
+        np.testing.assert_array_almost_equal(gradients[0, 0, 0, 14, :], expected_gradients_2, decimal=4)
 
         # Test a set of gradients label = array
         label = np.random.randint(5, size=NB_TEST)
-        grads = ptc.class_gradient(x_test, label=label)
+        gradients = classifier.class_gradient(self.x_test, label=label)
 
-        self.assertTrue(np.array(grads.shape == (NB_TEST, 1, 1, 28, 28)).all())
-        self.assertNotEqual(np.sum(grads), 0)
+        self.assertEqual(gradients.shape, (NB_TEST, 1, 1, 28, 28))
+
+        expected_gradients_1 = np.asarray([-2.39315428e-04, -2.28482357e-04, -2.39842790e-04, -6.74667899e-05,
+                                           5.54567552e-04, 5.59428358e-04, 3.71058501e-04, 4.47539205e-04,
+                                           5.91437332e-04, -1.86359655e-04, 2.78284366e-04, 1.86634657e-04,
+                                           -3.62139835e-05, 1.46655992e-04, 7.07449333e-04, 1.51086148e-04,
+                                           1.42195524e-04, 5.60022090e-06, -3.43588385e-04, -1.13900256e-04,
+                                           2.32334001e-04, 0.00000000e+00, 0.00000000e+00, 0.00000000e+00,
+                                           0.00000000e+00, 0.00000000e+00, 0.00000000e+00, 0.00000000e+00])
+        np.testing.assert_array_almost_equal(gradients[0, 0, 0, :, 14], expected_gradients_1, decimal=4)
+
+        expected_gradients_2 = np.asarray([-3.3879644e-04, 1.1766610e-04, 4.3186071e-04, 3.2926403e-04,
+                                           8.9179150e-05, 4.6644508e-04, 5.1162497e-04, 0.0000000e+00,
+                                           0.0000000e+00, -3.7474511e-04, -4.9881939e-05, 4.0110818e-04,
+                                           -1.9942035e-04, 3.7868350e-04, 7.0744933e-04, 5.2536512e-04,
+                                           1.0788649e-04, -3.9121151e-06, 2.3214625e-04, 1.5785350e-05,
+                                           1.0586554e-05, -2.1646731e-04, 8.7655055e-05, 0.0000000e+00,
+                                           0.0000000e+00, 0.0000000e+00, 0.0000000e+00, 0.0000000e+00])
+        np.testing.assert_array_almost_equal(gradients[0, 0, 0, 14, :], expected_gradients_2, decimal=4)
 
     def test_class_gradient_target(self):
-        # Get MNIST
-        (_, _), (x_test, _) = self.mnist
+        classifier = get_classifier_pt()
+        gradients = classifier.class_gradient(self.x_test, label=3)
 
-        # Test gradient
-        ptc = self.module_classifier
-        grads = ptc.class_gradient(x_test, label=3)
+        self.assertEqual(gradients.shape, (NB_TEST, 1, 1, 28, 28))
 
-        self.assertTrue(np.array(grads.shape == (NB_TEST, 1, 1, 28, 28)).all())
-        self.assertNotEqual(np.sum(grads), 0)
+        expected_gradients_1 = np.asarray([-2.39315428e-04, -2.28482357e-04, -2.39842790e-04, -6.74667899e-05,
+                                           5.54567552e-04, 5.59428358e-04, 3.71058501e-04, 4.47539205e-04,
+                                           5.91437332e-04, -1.86359655e-04, 2.78284366e-04, 1.86634657e-04,
+                                           -3.62139835e-05, 1.46655992e-04, 7.07449333e-04, 1.51086148e-04,
+                                           1.42195524e-04, 5.60022090e-06, -3.43588385e-04, -1.13900256e-04,
+                                           2.32334001e-04, 0.00000000e+00, 0.00000000e+00, 0.00000000e+00,
+                                           0.00000000e+00, 0.00000000e+00, 0.00000000e+00, 0.00000000e+00])
+        np.testing.assert_array_almost_equal(gradients[0, 0, 0, :, 14], expected_gradients_1, decimal=4)
+
+        expected_gradients_2 = np.asarray([-3.3879644e-04, 1.1766610e-04, 4.3186071e-04, 3.2926403e-04,
+                                           8.9179150e-05, 4.6644508e-04, 5.1162497e-04, 0.0000000e+00,
+                                           0.0000000e+00, -3.7474511e-04, -4.9881939e-05, 4.0110818e-04,
+                                           -1.9942035e-04, 3.7868350e-04, 7.0744933e-04, 5.2536512e-04,
+                                           1.0788649e-04, -3.9121151e-06, 2.3214625e-04, 1.5785350e-05,
+                                           1.0586554e-05, -2.1646731e-04, 8.7655055e-05, 0.0000000e+00,
+                                           0.0000000e+00, 0.0000000e+00, 0.0000000e+00, 0.0000000e+00])
+        np.testing.assert_array_almost_equal(gradients[0, 0, 0, 14, :], expected_gradients_2, decimal=4)
 
     def test_loss_gradient(self):
-        # Get MNIST
-        (_, _), (x_test, y_test) = self.mnist
+        classifier = get_classifier_pt()
+        gradients = classifier.loss_gradient(self.x_test, self.y_test)
 
-        # Test gradient
-        ptc = self.module_classifier
-        grads = ptc.loss_gradient(x_test, y_test)
+        self.assertEqual(gradients.shape, (NB_TEST, 1, 28, 28))
 
-        self.assertTrue(np.array(grads.shape == (NB_TEST, 1, 28, 28)).all())
-        self.assertNotEqual(np.sum(grads), 0)
+        expected_gradients_1 = np.asarray([1.3249977e-05, 1.2650192e-05, 1.3294257e-05, 3.8435855e-06,
+                                           2.1136035e-05, 1.8405482e-05, 3.5095429e-05, 2.0741667e-05,
+                                           7.1921611e-05, -1.0196869e-05, 5.0357849e-05, 1.0525340e-05,
+                                           -4.8562586e-05, -1.0082738e-05, 2.0365241e-04, 7.0968767e-05,
+                                           -2.2902255e-05, 1.3952388e-05, -9.9061588e-05, -3.2644271e-05,
+                                           6.6587862e-05, 0.0000000e+00, 0.0000000e+00, 0.0000000e+00,
+                                           0.0000000e+00, 0.0000000e+00, 0.0000000e+00, 0.0000000e+00])
+        np.testing.assert_array_almost_equal(gradients[0, 0, :, 14], expected_gradients_1, decimal=4)
+
+        expected_gradients_2 = np.asarray([-7.47286831e-05, 3.47994683e-05, 1.19584052e-04, 9.58199744e-05,
+                                           1.42759436e-05, 1.25136401e-04, 1.31127046e-04, 0.00000000e+00,
+                                           0.00000000e+00, -7.15001079e-05, -1.40273305e-05, 1.04227758e-04,
+                                           -5.86470087e-05, 9.19737795e-05, 2.03652409e-04, 1.74126384e-04,
+                                           1.51715751e-04, 7.38586386e-05, 1.45048572e-04, 3.26555528e-05,
+                                           -1.42736426e-05, 8.72509190e-06, -3.97102558e-05, 0.00000000e+00,
+                                           0.00000000e+00, 0.00000000e+00, 0.00000000e+00, 0.00000000e+00])
+        np.testing.assert_array_almost_equal(gradients[0, 0, 14, :], expected_gradients_2, decimal=4)
 
     def test_layers(self):
-        # Get MNIST
-        (_, _), (x_test, _) = self.mnist
-
-        # Test and get layers
         ptc = self.seq_classifier
-
         layer_names = self.seq_classifier.layer_names
-        self.assertEqual(layer_names, ['0_Conv2d(1, 16, kernel_size=(5, 5), stride=(1, 1))', '1_ReLU()',
+        print(layer_names)
+        self.assertEqual(layer_names, ['0_Conv2d(1, 2, kernel_size=(5, 5), stride=(1, 1))', '1_ReLU()',
                                        '2_MaxPool2d(kernel_size=2, stride=2, padding=0, dilation=1, ceil_mode=False)',
-                                       '3_Flatten()', '4_Linear(in_features=2304, out_features=10, bias=True)'])
+                                       '3_Flatten()', '4_Linear(in_features=288, out_features=10, bias=True)'])
 
         for i, name in enumerate(layer_names):
-            act_i = ptc.get_activations(x_test, i, batch_size=5)
-            act_name = ptc.get_activations(x_test, name, batch_size=5)
-            self.assertEqual(np.sum(act_name - act_i), 0)
+            activation_i = ptc.get_activations(self.x_test, i, batch_size=5)
+            activation_name = ptc.get_activations(self.x_test, name, batch_size=5)
+            np.testing.assert_array_equal(activation_name, activation_i)
 
-        self.assertEqual(ptc.get_activations(x_test, 0, batch_size=5).shape, (20, 16, 24, 24))
-        self.assertEqual(ptc.get_activations(x_test, 1, batch_size=5).shape, (20, 16, 24, 24))
-        self.assertEqual(ptc.get_activations(x_test, 2, batch_size=5).shape, (20, 16, 12, 12))
-        self.assertEqual(ptc.get_activations(x_test, 3, batch_size=5).shape, (20, 2304))
-        self.assertEqual(ptc.get_activations(x_test, 4, batch_size=5).shape, (20, 10))
+        self.assertEqual(ptc.get_activations(self.x_test, 0, batch_size=5).shape, (20, 2, 24, 24))
+        self.assertEqual(ptc.get_activations(self.x_test, 1, batch_size=5).shape, (20, 2, 24, 24))
+        self.assertEqual(ptc.get_activations(self.x_test, 2, batch_size=5).shape, (20, 2, 12, 12))
+        self.assertEqual(ptc.get_activations(self.x_test, 3, batch_size=5).shape, (20, 288))
+        self.assertEqual(ptc.get_activations(self.x_test, 4, batch_size=5).shape, (20, 10))
 
     def test_set_learning(self):
         ptc = self.module_classifier
-
         self.assertTrue(ptc._model.training)
         ptc.set_learning_phase(False)
         self.assertFalse(ptc._model.training)
@@ -221,8 +295,6 @@ class TestPyTorchClassifier(unittest.TestCase):
 
     def test_save(self):
         model = self.module_classifier
-        import tempfile
-        import os
         t_file = tempfile.NamedTemporaryFile()
         full_path = t_file.name
         t_file.close()
@@ -242,14 +314,11 @@ class TestPyTorchClassifier(unittest.TestCase):
         self.assertIn('defences=None, preprocessing=(0, 1)', repr_)
 
     def test_pickle(self):
-        import os
-        from art import DATA_PATH
         full_path = os.path.join(DATA_PATH, 'my_classifier')
         folder = os.path.split(full_path)[0]
         if not os.path.exists(folder):
             os.makedirs(folder)
 
-        import pickle
         pickle.dump(self.module_classifier, open(full_path, 'wb'))
 
         # Unpickle:
@@ -259,15 +328,12 @@ class TestPyTorchClassifier(unittest.TestCase):
             self.assertEqual(self.module_classifier._channel_index, loaded._channel_index)
             self.assertEqual(set(self.module_classifier.__dict__.keys()), set(loaded.__dict__.keys()))
 
-        # Get MNIST
-        (_, _), (x_test, y_test) = self.mnist
-
         # Test predict
-        preds1 = self.module_classifier.predict(x_test)
-        acc1 = np.sum(np.argmax(preds1, axis=1) == np.argmax(y_test, axis=1)) / len(y_test)
-        preds2 = loaded.predict(x_test)
-        acc2 = np.sum(np.argmax(preds2, axis=1) == np.argmax(y_test, axis=1)) / len(y_test)
-        self.assertEqual(acc1, acc2)
+        predictions_1 = self.module_classifier.predict(self.x_test)
+        accuracy_1 = np.sum(np.argmax(predictions_1, axis=1) == np.argmax(self.y_test, axis=1)) / len(self.y_test)
+        predictions_2 = loaded.predict(self.x_test)
+        accuracy_2 = np.sum(np.argmax(predictions_2, axis=1) == np.argmax(self.y_test, axis=1)) / len(self.y_test)
+        self.assertEqual(accuracy_1, accuracy_2)
 
 
 if __name__ == '__main__':
