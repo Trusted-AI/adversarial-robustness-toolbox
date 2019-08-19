@@ -127,7 +127,7 @@ class TestHopSkipJump(unittest.TestCase):
         tf = import_tensorflow_v1()
 
         # Build KerasClassifier
-        krc, sess = get_classifier_kr()
+        krc = get_classifier_kr()
 
         # Get MNIST
         (_, _), (x_test, y_test) = self.mnist

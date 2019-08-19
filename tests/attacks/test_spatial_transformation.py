@@ -90,7 +90,7 @@ class TestSpatialTransformation(unittest.TestCase):
         :return:
         """
         # Build KerasClassifier
-        krc, sess = get_classifier_kr()
+        krc = get_classifier_kr()
 
         # Get MNIST
         (x_train, _), (x_test, _) = self.mnist
@@ -112,7 +112,6 @@ class TestSpatialTransformation(unittest.TestCase):
         self.assertLessEqual(abs(x_test_adv[0, 14, 14, 0] - 0.013572651), 0.01)
 
         k.clear_session()
-        sess.close()
 
     def test_ptclassifier(self):
         """

@@ -82,7 +82,7 @@ class TestAdversarialPatch(unittest.TestCase):
         :return:
         """
         # Build KerasClassifier
-        krc, _ = get_classifier_kr()
+        krc = get_classifier_kr()
 
         # Get MNIST
         (x_train, _), (_, _) = self.mnist

@@ -84,7 +84,7 @@ class TestNewtonFool(unittest.TestCase):
         :return:
         """
         # Build KerasClassifier
-        krc, sess = get_classifier_kr()
+        krc = get_classifier_kr()
 
         # Get MNIST
         (_, _), (x_test, _) = self.mnist
@@ -102,7 +102,7 @@ class TestNewtonFool(unittest.TestCase):
         y_pred_adv_max = y_pred_adv[y_pred_bool]
         self.assertTrue((y_pred_max >= .9 * y_pred_adv_max).all())
 
-        sess.close()
+        # sess.close()
 
     def test_ptclassifier(self):
         """
