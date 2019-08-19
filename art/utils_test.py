@@ -119,10 +119,16 @@ def get_classifier_kr(loss_name='categorical_crossentropy'):
     :return: KerasClassifier, tf.Session()
     """
     import keras
+    import keras.backend as k
     from keras.models import Sequential
     from keras.layers import Dense, Flatten, Conv2D, MaxPooling2D
+    import tensorflow as tf
 
     from art.classifiers import KerasClassifier
+
+    # Initialize a tf session
+    sess = tf.Session()
+    k.set_session(sess)
 
     # Create simple CNN
     model = Sequential()
