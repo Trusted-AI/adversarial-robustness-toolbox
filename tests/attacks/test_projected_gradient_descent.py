@@ -47,7 +47,7 @@ class TestPGD(unittest.TestCase):
         cls.mnist = (x_train, y_train), (x_test, y_test)
 
         # Keras classifier
-        cls.classifier_k, sess = get_classifier_kr()
+        cls.classifier_k = get_classifier_kr()
 
         scores = cls.classifier_k._model.evaluate(x_train, y_train)
         logger.info('[Keras, MNIST] Accuracy on training set: %.2f%%', scores[1] * 100)
