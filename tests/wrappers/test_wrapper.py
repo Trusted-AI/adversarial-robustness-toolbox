@@ -46,14 +46,13 @@ class TestMixinWKerasClassifier(unittest.TestCase):
         cls.mnist = (x_train, y_train), (x_test, y_test)
 
         # Load small Keras model
-        cls.model_mnist, _ = get_classifier_kr()
+        cls.model_mnist = get_classifier_kr()
 
     @classmethod
     def tearDownClass(cls):
         k.clear_session()
 
     def setUp(self):
-        # Set master seed
         master_seed(1234)
 
     def test_shapes(self):
@@ -105,7 +104,6 @@ class TestMixinWKerasClassifier(unittest.TestCase):
         self.assertNotEqual(np.sum(grads), 0)
 
     def test_layers(self):
-        # Get MNIST
         (_, _), (x_test, _), _, _ = load_mnist()
         x_test = x_test[:NB_TEST]
 

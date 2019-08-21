@@ -42,16 +42,14 @@ class TestWrappingClassifierAttack(unittest.TestCase):
     def setUpClass(cls):
         k.set_learning_phase(1)
 
-        # Get MNIST
         (x_train, y_train), (x_test, y_test), _, _ = load_dataset('mnist')
         x_train, y_train, x_test, y_test = x_train[:NB_TRAIN], y_train[:NB_TRAIN], x_test[:NB_TEST], y_test[:NB_TEST]
         cls.mnist = (x_train, y_train), (x_test, y_test)
 
         # Keras classifier
-        cls.classifier_k, _ = get_classifier_kr()
+        cls.classifier_k = get_classifier_kr()
 
     def setUp(self):
-        # Set master seed
         master_seed(1234)
 
     @classmethod
@@ -59,7 +57,6 @@ class TestWrappingClassifierAttack(unittest.TestCase):
         k.clear_session()
 
     def test_without_defences(self):
-        # Get MNIST
         (x_train, y_train), (x_test, y_test) = self.mnist
 
         # Get the ready-trained Keras model and wrap it in query efficient gradient estimator wrapper
@@ -88,7 +85,6 @@ class TestWrappingClassifierAttack(unittest.TestCase):
         logger.info('Accuracy on adversarial test examples with limited query info: %.2f%%', (acc * 100))
 
     def test_with_defences(self):
-        # Get MNIST
         (x_train, y_train), (x_test, y_test) = self.mnist
 
         # Get the ready-trained Keras model
@@ -130,7 +126,6 @@ class TestQueryEfficientVectors(unittest.TestCase):
         cls.iris = (x_train, y_train), (x_test, y_test)
 
     def setUp(self):
-        # Set master seed
         master_seed(1234)
 
     def test_iris_clipped(self):

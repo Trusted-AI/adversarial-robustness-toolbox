@@ -26,7 +26,7 @@ import tensorflow as tf
 
 from art.attacks import AdversarialPatch
 from art.utils import load_mnist, master_seed
-from art.utils_test import get_classifier_tf, get_classifier_kr, get_classifier_pt
+from art.utils_test import get_classifier_tf, get_classifier_kr, get_classifier_pt, get_iris_classifier_kr
 
 logger = logging.getLogger('testLogger')
 
@@ -70,7 +70,7 @@ class TestAdversarialPatch(unittest.TestCase):
 
         self.assertAlmostEqual(patch_adv[8, 8, 0], -3.1106631027725005, delta=.1)
         self.assertAlmostEqual(patch_adv[14, 14, 0], 18.101, delta=.1)
-        self.assertAlmostEqual(np.sum(patch_adv), 624.867, delta=.1)
+        self.assertAlmostEqual(float(np.sum(patch_adv)), 624.867, delta=.1)
 
         sess.close()
         tf.reset_default_graph()
@@ -81,7 +81,7 @@ class TestAdversarialPatch(unittest.TestCase):
         :return:
         """
         # Build KerasClassifier
-        krc, _ = get_classifier_kr()
+        krc = get_classifier_kr()
 
         # Get MNIST
         (x_train, _), (_, _) = self.mnist
@@ -93,7 +93,7 @@ class TestAdversarialPatch(unittest.TestCase):
 
         self.assertAlmostEqual(patch_adv[8, 8, 0], -3.336, delta=.1)
         self.assertAlmostEqual(patch_adv[14, 14, 0], 18.574, delta=.1)
-        self.assertAlmostEqual(np.sum(patch_adv), 1054.587, delta=.1)
+        self.assertAlmostEqual(float(np.sum(patch_adv)), 1054.587, delta=.1)
 
         k.clear_session()
 
@@ -116,12 +116,13 @@ class TestAdversarialPatch(unittest.TestCase):
 
         self.assertAlmostEqual(patch_adv[0, 8, 8], -3.143605902784875, delta=.1)
         self.assertAlmostEqual(patch_adv[0, 14, 14], 19.790434152473054, delta=.1)
-        self.assertAlmostEqual(np.sum(patch_adv), 382.163, delta=.1)
+        self.assertAlmostEqual(float(np.sum(patch_adv)), 382.163, delta=.1)
 
     def test_failure_feature_vectors(self):
         attack_params = {"rotation_max": 22.5, "scale_min": 0.1, "scale_max": 1.0,
                          "learning_rate": 5.0, "number_of_steps": 5, "batch_size": 10}
-        attack = AdversarialPatch(classifier=None)
+        classifier, _ = get_iris_classifier_kr()
+        attack = AdversarialPatch(classifier=classifier)
         attack.set_params(**attack_params)
         data = np.random.rand(10, 4)
 
@@ -130,6 +131,33 @@ class TestAdversarialPatch(unittest.TestCase):
             attack.generate(data)
 
         self.assertIn('Feature vectors detected.', str(context.exception))
+
+    def test_classifier_type_check_fail_classifier(self):
+        # Use a useless test classifier to test basic classifier properties
+        class ClassifierNoAPI:
+            pass
+
+        classifier = ClassifierNoAPI
+        with self.assertRaises(TypeError) as context:
+            _ = AdversarialPatch(classifier=classifier)
+
+        self.assertIn('For `AdversarialPatch` classifier must be an instance of '
+                      '`art.classifiers.classifier.Classifier`, the provided classifier is instance of '
+                      '(<class \'object\'>,).', str(context.exception))
+
+    def test_classifier_type_check_fail_gradients(self):
+        # Use a test classifier not providing gradients required by white-box attack
+        from art.classifiers.scikitlearn import ScikitlearnDecisionTreeClassifier
+        from sklearn.tree import DecisionTreeClassifier
+
+        classifier = ScikitlearnDecisionTreeClassifier(model=DecisionTreeClassifier())
+        with self.assertRaises(TypeError) as context:
+            _ = AdversarialPatch(classifier=classifier)
+
+        self.assertIn('For `AdversarialPatch` classifier must be an instance of '
+                      '`art.classifiers.classifier.ClassifierNeuralNetwork` and '
+                      '`art.classifiers.classifier.ClassifierGradients`, the provided classifier is instance of '
+                      '(<class \'art.classifiers.scikitlearn.ScikitlearnClassifier\'>,).', str(context.exception))
 
 
 if __name__ == '__main__':

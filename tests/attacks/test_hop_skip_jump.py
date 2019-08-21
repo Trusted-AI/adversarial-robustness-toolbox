@@ -40,6 +40,7 @@ class TestHopSkipJump(unittest.TestCase):
     """
     A unittest class for testing the HopSkipJump attack.
     """
+
     @classmethod
     def setUpClass(cls):
         # Get MNIST
@@ -123,7 +124,7 @@ class TestHopSkipJump(unittest.TestCase):
         :return:
         """
         # Build KerasClassifier
-        krc, sess = get_classifier_kr()
+        krc = get_classifier_kr()
 
         # Get MNIST
         (_, _), (x_test, y_test) = self.mnist
@@ -242,6 +243,18 @@ class TestHopSkipJump(unittest.TestCase):
         y_pred = np.argmax(ptc.predict(x_test), axis=1)
         y_pred_adv = np.argmax(ptc.predict(x_test_adv), axis=1)
         self.assertTrue((y_pred != y_pred_adv).any())
+
+    def test_classifier_type_check_fail_classifier(self):
+        # Use a useless test classifier to test basic classifier properties
+        class ClassifierNoAPI:
+            pass
+
+        classifier = ClassifierNoAPI
+        with self.assertRaises(TypeError) as context:
+            _ = HopSkipJump(classifier=classifier)
+
+        self.assertIn('For `HopSkipJump` classifier must be an instance of `art.classifiers.classifier.Classifier`, the'
+                      ' provided classifier is instance of (<class \'object\'>,).', str(context.exception))
 
 
 class TestHopSkipJumpVectors(unittest.TestCase):
@@ -400,6 +413,63 @@ class TestHopSkipJumpVectors(unittest.TestCase):
         self.assertFalse((np.argmax(y_test, axis=1) == preds_adv).all())
         acc = np.sum(preds_adv == np.argmax(y_test, axis=1)) / y_test.shape[0]
         logger.info('Accuracy on Iris with HopSkipJump adversarial examples: %.2f%%', (acc * 100))
+
+    def test_scikitlearn(self):
+        from sklearn.linear_model import LogisticRegression
+        from sklearn.svm import SVC, LinearSVC
+        from sklearn.tree import DecisionTreeClassifier, ExtraTreeClassifier
+        from sklearn.ensemble import AdaBoostClassifier, BaggingClassifier, ExtraTreesClassifier
+        from sklearn.ensemble import GradientBoostingClassifier, RandomForestClassifier
+
+        from art.classifiers.scikitlearn import ScikitlearnDecisionTreeClassifier, ScikitlearnExtraTreeClassifier
+        from art.classifiers.scikitlearn import ScikitlearnAdaBoostClassifier, ScikitlearnBaggingClassifier
+        from art.classifiers.scikitlearn import ScikitlearnExtraTreesClassifier, ScikitlearnGradientBoostingClassifier
+        from art.classifiers.scikitlearn import ScikitlearnRandomForestClassifier, ScikitlearnLogisticRegression
+        from art.classifiers.scikitlearn import ScikitlearnSVC
+
+        scikitlearn_test_cases = {DecisionTreeClassifier: ScikitlearnDecisionTreeClassifier,
+                                  ExtraTreeClassifier: ScikitlearnExtraTreeClassifier,
+                                  AdaBoostClassifier: ScikitlearnAdaBoostClassifier,
+                                  BaggingClassifier: ScikitlearnBaggingClassifier,
+                                  ExtraTreesClassifier: ScikitlearnExtraTreesClassifier,
+                                  GradientBoostingClassifier: ScikitlearnGradientBoostingClassifier,
+                                  RandomForestClassifier: ScikitlearnRandomForestClassifier,
+                                  LogisticRegression: ScikitlearnLogisticRegression,
+                                  SVC: ScikitlearnSVC,
+                                  LinearSVC: ScikitlearnSVC}
+
+        (_, _), (x_test, y_test) = self.iris
+
+        for (model_class, classifier_class) in scikitlearn_test_cases.items():
+            model = model_class()
+            classifier = classifier_class(model=model, clip_values=(0, 1))
+            classifier.fit(x=x_test, y=y_test)
+
+            # Norm=2
+            attack = HopSkipJump(classifier, targeted=False, max_iter=2, max_eval=100, init_eval=10)
+            x_test_adv = attack.generate(x_test)
+            self.assertFalse((x_test == x_test_adv).all())
+            self.assertTrue((x_test_adv <= 1).all())
+            self.assertTrue((x_test_adv >= 0).all())
+
+            preds_adv = np.argmax(classifier.predict(x_test_adv), axis=1)
+            self.assertFalse((np.argmax(y_test, axis=1) == preds_adv).all())
+            acc = np.sum(preds_adv == np.argmax(y_test, axis=1)) / y_test.shape[0]
+            logger.info('Accuracy of ' + classifier.__class__.__name__ + ' on Iris with HopSkipJump adversarial '
+                        'examples: %.2f%%', (acc * 100))
+
+            # Norm=np.inf
+            attack = HopSkipJump(classifier, targeted=False, max_iter=2, max_eval=100, init_eval=10, norm=np.Inf)
+            x_test_adv = attack.generate(x_test)
+            self.assertFalse((x_test == x_test_adv).all())
+            self.assertTrue((x_test_adv <= 1).all())
+            self.assertTrue((x_test_adv >= 0).all())
+
+            preds_adv = np.argmax(classifier.predict(x_test_adv), axis=1)
+            self.assertFalse((np.argmax(y_test, axis=1) == preds_adv).all())
+            acc = np.sum(preds_adv == np.argmax(y_test, axis=1)) / y_test.shape[0]
+            logger.info('Accuracy of ' + classifier.__class__.__name__ + ' on Iris with HopSkipJump adversarial '
+                        'examples: %.2f%%', (acc * 100))
 
 
 if __name__ == '__main__':

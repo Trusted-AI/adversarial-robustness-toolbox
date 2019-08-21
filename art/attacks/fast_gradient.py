@@ -19,8 +19,7 @@
 This module implements the Fast Gradient Method attack. This implementation includes the original Fast Gradient Sign
 Method attack and extends it to other norms, therefore it is called the Fast Gradient Method.
 
-Paper link:
-    https://arxiv.org/abs/1412.6572
+| Paper link: https://arxiv.org/abs/1412.6572
 """
 from __future__ import absolute_import, division, print_function, unicode_literals
 
@@ -29,6 +28,7 @@ import logging
 import numpy as np
 
 from art import NUMPY_DTYPE
+from art.classifiers.classifier import ClassifierGradients
 from art.attacks.attack import Attack
 from art.utils import compute_success, get_labels_np_array, random_sphere, projection
 
@@ -39,7 +39,9 @@ class FastGradientMethod(Attack):
     """
     This attack was originally implemented by Goodfellow et al. (2015) with the infinity norm (and is known as the "Fast
     Gradient Sign Method"). This implementation extends the attack to other norms, and is therefore called the Fast
-    Gradient Method. Paper link: https://arxiv.org/abs/1412.6572
+    Gradient Method.
+
+    | Paper link: https://arxiv.org/abs/1412.6572
     """
     attack_params = Attack.attack_params + ['norm', 'eps', 'eps_step', 'targeted', 'num_random_init', 'batch_size',
                                             'minimal']
@@ -49,7 +51,7 @@ class FastGradientMethod(Attack):
         """
         Create a :class:`.FastGradientMethod` instance.
 
-        :param classifier: A trained model.
+        :param classifier: A trained classifier.
         :type classifier: :class:`.Classifier`
         :param norm: Order of the norm. Possible values: np.inf, 1 or 2.
         :type norm: `int`
@@ -69,6 +71,11 @@ class FastGradientMethod(Attack):
 
         """
         super(FastGradientMethod, self).__init__(classifier)
+        if not isinstance(classifier, ClassifierGradients):
+            raise (TypeError('For `' + self.__class__.__name__ + '` classifier must be an instance of '
+                             '`art.classifiers.classifier.ClassifierGradients`, the provided classifier is instance of '
+                             + str(classifier.__class__.__bases__) + '.'))
+
         kwargs = {'norm': norm, 'eps': eps, 'eps_step': eps_step, 'targeted': targeted,
                   'num_random_init': num_random_init, 'batch_size': batch_size, 'minimal': minimal}
         FastGradientMethod.set_params(self, **kwargs)
@@ -171,6 +178,7 @@ class FastGradientMethod(Attack):
     def set_params(self, **kwargs):
         """
         Take in a dictionary of parameters and applies attack-specific checks before saving them as attributes.
+
         :param norm: Order of the norm. Possible values: np.inf, 1 or 2.
         :type norm: `int` or `float`
         :param eps: Attack step size (input variation)
@@ -180,7 +188,7 @@ class FastGradientMethod(Attack):
         :param targeted: Should the attack target one specific class
         :type targeted: `bool`
         :param num_random_init: Number of random initialisations within the epsilon ball. For random_init=0 starting at
-            the original input.
+                                the original input.
         :type num_random_init: `int`
         :param batch_size: Batch size
         :type batch_size: `int`
@@ -266,7 +274,6 @@ class FastGradientMethod(Attack):
 
             # Get perturbation
             perturbation = self._compute_perturbation(batch, batch_labels)
-            # print('--------- pert ', perturbation)
 
             # Apply perturbation and clip
             x_adv[batch_index_1:batch_index_2] = self._apply_perturbation(batch, perturbation, eps_step)

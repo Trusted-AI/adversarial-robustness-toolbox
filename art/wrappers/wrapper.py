@@ -16,9 +16,8 @@
 # TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 # SOFTWARE.
 """
-Wrapper class for any classifier.
-Subclass of the ClassifierWrapper can override the behavior of
-key functions, such as loss_gradient, to facilitate new attacks.
+Wrapper class for any classifier. Subclass of the ClassifierWrapper can override the behavior of key functions, such as
+loss_gradient, to facilitate new attacks.
 """
 
 
@@ -54,8 +53,7 @@ class ClassifierWrapper:
 
     def set_params(self, **kwargs):
         """
-        Take in a dictionary of parameters and pass them down to the underlying
-        wrapped classifier instance.
+        Take in a dictionary of parameters and pass them down to the underlying wrapped classifier instance.
 
         :param kwargs: A dictionary of attack-specific parameters.
         :type kwargs: `dict`

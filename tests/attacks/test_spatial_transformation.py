@@ -24,9 +24,9 @@ import keras.backend as k
 import numpy as np
 import tensorflow as tf
 
-from art.attacks.spatial_transformation import SpatialTransformation
+from art.attacks import SpatialTransformation
 from art.utils import load_mnist, master_seed
-from art.utils_test import get_classifier_tf, get_classifier_kr, get_classifier_pt
+from art.utils_test import get_classifier_tf, get_classifier_kr, get_classifier_pt, get_iris_classifier_kr
 
 logger = logging.getLogger('testLogger')
 
@@ -73,7 +73,7 @@ class TestSpatialTransformation(unittest.TestCase):
         self.assertLessEqual(abs(attack_st.fooling_rate - 0.707), 0.01)
 
         self.assertEqual(attack_st.attack_trans_x, 3)
-        self.assertEqual(attack_st.attack_trans_y,  3)
+        self.assertEqual(attack_st.attack_trans_y, 3)
         self.assertEqual(attack_st.attack_rot, 30.0)
 
         x_test_adv = attack_st.generate(x_test)
@@ -89,7 +89,7 @@ class TestSpatialTransformation(unittest.TestCase):
         :return:
         """
         # Build KerasClassifier
-        krc, sess = get_classifier_kr()
+        krc = get_classifier_kr()
 
         # Get MNIST
         (x_train, _), (x_test, _) = self.mnist
@@ -143,7 +143,8 @@ class TestSpatialTransformation(unittest.TestCase):
 
     def test_failure_feature_vectors(self):
         attack_params = {"max_translation": 10.0, "num_translations": 3, "max_rotation": 30.0, "num_rotations": 3}
-        attack = SpatialTransformation(classifier=None)
+        classifier, _ = get_iris_classifier_kr()
+        attack = SpatialTransformation(classifier=classifier)
         attack.set_params(**attack_params)
         data = np.random.rand(10, 4)
 
@@ -152,6 +153,19 @@ class TestSpatialTransformation(unittest.TestCase):
             attack.generate(data)
 
         self.assertIn('Feature vectors detected.', str(context.exception))
+
+    def test_classifier_type_check_fail_classifier(self):
+        # Use a useless test classifier to test basic classifier properties
+        class ClassifierNoAPI:
+            pass
+
+        classifier = ClassifierNoAPI
+        with self.assertRaises(TypeError) as context:
+            _ = SpatialTransformation(classifier=classifier)
+
+        self.assertIn('For `SpatialTransformation` classifier must be an instance of '
+                      '`art.classifiers.classifier.Classifier`, the provided classifier is instance of '
+                      '(<class \'object\'>,).', str(context.exception))
 
 
 if __name__ == '__main__':

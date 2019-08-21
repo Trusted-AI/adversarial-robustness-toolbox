@@ -62,21 +62,19 @@ class ClusteringAnalyzer:
         :param separated_clusters: list where separated_clusters[i] is the cluster assignments for the ith class
         :type separated_clusters: `list`
         :return: all_assigned_clean, summary_poison_clusters, report:
-        where all_assigned_clean[i] is a 1D boolean array indicating whether
-        a given data point was determined to be clean (as opposed to poisonous) and
-        summary_poison_clusters: array, where  summary_poison_clusters[i][j]=1 if cluster j of class i was classified as
-        poison, otherwise 0
-        report: Dictionary with summary of the analysis
+                 where all_assigned_clean[i] is a 1D boolean array indicating whether
+                 a given data point was determined to be clean (as opposed to poisonous) and
+                 summary_poison_clusters: array, where  summary_poison_clusters[i][j]=1 if cluster j of class i was
+                 classified as poison, otherwise 0
+                 report: Dictionary with summary of the analysis
         :rtype: all_assigned_clean: `ndarray`, summary_poison_clusters: `list`, report" `dic`
         """
-        report = {'cluster_analysis': 'smaller',
-                  'suspicious_clusters': 0
-                  }
+        report = {'cluster_analysis': 'smaller', 'suspicious_clusters': 0}
 
         all_assigned_clean = []
         nb_classes = len(separated_clusters)
         nb_clusters = len(np.unique(separated_clusters[0]))
-        summary_poison_clusters = [[[] for x in range(nb_clusters)] for y in range(nb_classes)]
+        summary_poison_clusters = [[[] for x in range(nb_clusters)] for _ in range(nb_classes)]
 
         for i, clusters in enumerate(separated_clusters):
 
@@ -112,24 +110,21 @@ class ClusteringAnalyzer:
     def analyze_by_distance(self, separated_clusters, separated_activations):
         """
         Assigns a cluster as poisonous if its median activation is closer to the median activation for another class
-        than it is to the median activation of its own class. Currently, this function assumes there are only
-        two clusters per class.
+        than it is to the median activation of its own class. Currently, this function assumes there are only two
+        clusters per class.
 
         :param separated_clusters: list where separated_clusters[i] is the cluster assignments for the ith class
         :type separated_clusters: `list`
         :param separated_activations: list where separated_activations[i] is a 1D array of [0,1] for [poison,clean]
         :type separated_clusters: `list`
         :return: all_assigned_clean, summary_poison_clusters, report:
-        where all_assigned_clean[i] is a 1D boolean array indicating whether
-        a given data point was determined to be clean (as opposed to poisonous) and
-        summary_poison_clusters: array, where  summary_poison_clusters[i][j]=1 if cluster j of class i was classified as
-        poison, otherwise 0
-        report: Dictionary with summary of the analysis
+                 where all_assigned_clean[i] is a 1D boolean array indicating whether a given data point was determined
+                 to be clean (as opposed to poisonous) and summary_poison_clusters: array, where
+                 summary_poison_clusters[i][j]=1 if cluster j of class i was classified as poison, otherwise 0
+                 report: Dictionary with summary of the analysis
         :rtype: all_assigned_clean: `ndarray`, summary_poison_clusters: `list`, report" `dic`
         """
-        report = {'cluster_analysis': 'distance'
-                  }
-
+        report = {'cluster_analysis': 'distance'}
         all_assigned_clean = []
         cluster_centers = []
 
@@ -213,18 +208,14 @@ class ClusteringAnalyzer:
         :param r_size: Round number used for size rate comparisons.
         :type r_size `int`
         :return: all_assigned_clean, summary_poison_clusters, report:
-        where all_assigned_clean[i] is a 1D boolean array indicating whether
-        a given data point was determined to be clean (as opposed to poisonous) and
-        summary_poison_clusters: array, where  summary_poison_clusters[i][j]=1 if cluster j of class i was classified as
-        poison, otherwise 0
-        report: Dictionary with summary of the analysis
+                 where all_assigned_clean[i] is a 1D boolean array indicating whether a given data point was determined
+                 to be clean (as opposed to poisonous) and summary_poison_clusters: array, where
+                 summary_poison_clusters[i][j]=1 if cluster j of class i was classified as poison, otherwise 0
+                 report: Dictionary with summary of the analysis
         :rtype: all_assigned_clean: `ndarray`, summary_poison_clusters: `list`, report" `dic`
         """
         size_threshold = round(size_threshold, r_size)
-        report = {'cluster_analysis': 'relative_size',
-                  'suspicious_clusters': 0,
-                  'size_threshold': size_threshold
-                  }
+        report = {'cluster_analysis': 'relative_size', 'suspicious_clusters': 0, 'size_threshold': size_threshold}
 
         all_assigned_clean = []
         nb_classes = len(separated_clusters)
@@ -294,11 +285,10 @@ class ClusteringAnalyzer:
         :param r_silhouette: Round number used for silhouette rate comparisons.
         :type r_silhouette: `int`
         :return: all_assigned_clean, summary_poison_clusters, report:
-        where all_assigned_clean[i] is a 1D boolean array indicating whether
-        a given data point was determined to be clean (as opposed to poisonous)
-        summary_poison_clusters: array, where  summary_poison_clusters[i][j]=1 if cluster j of class j was classified as
-        poison
-        report: Dictionary with summary of the analysis
+                 where all_assigned_clean[i] is a 1D boolean array indicating whether a given data point was determined
+                 to be clean (as opposed to poisonous) summary_poison_clusters: array, where
+                 summary_poison_clusters[i][j]=1 if cluster j of class j was classified as poison
+                 report: Dictionary with summary of the analysis
         :rtype: all_assigned_clean: `ndarray`, summary_poison_clusters: `list`, report" `dic`
         """
         # pylint: disable=E0001

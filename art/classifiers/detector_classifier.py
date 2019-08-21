@@ -27,12 +27,12 @@ import logging
 
 import numpy as np
 
-from art.classifiers.classifier import Classifier
+from art.classifiers.classifier import Classifier, ClassifierNeuralNetwork, ClassifierGradients
 
 logger = logging.getLogger(__name__)
 
 
-class DetectorClassifier(Classifier):
+class DetectorClassifier(ClassifierNeuralNetwork, ClassifierGradients, Classifier):
     """
     This class implements a Classifier extension that wraps a classifier and a detector.
     More details in https://arxiv.org/abs/1705.07263
@@ -48,8 +48,8 @@ class DetectorClassifier(Classifier):
         :type detector: :class:`.Detector`
         :param defences: Defences to be activated with the classifier.
         :type defences: `str` or `list(str)`
-        :param preprocessing: Tuple of the form `(substractor, divider)` of floats or `np.ndarray` of values to be
-               used for data preprocessing. The first value will be substracted from the input. The input will then
+        :param preprocessing: Tuple of the form `(subtractor, divider)` of floats or `np.ndarray` of values to be
+               used for data preprocessing. The first value will be subtracted from the input. The input will then
                be divided by the second one.
         :type preprocessing: `tuple`
         """
@@ -99,6 +99,7 @@ class DetectorClassifier(Classifier):
         :param kwargs: Dictionary of framework-specific arguments. This parameter is not currently supported for PyTorch
                and providing it takes no effect.
         :type kwargs: `dict`
+        :raises: `NotImplementedException`
         :return: `None`
         """
         raise NotImplementedError
@@ -114,6 +115,7 @@ class DetectorClassifier(Classifier):
         :param kwargs: Dictionary of framework-specific arguments. This parameter is not currently supported for PyTorch
                and providing it takes no effect.
         :type kwargs: `dict`
+        :raises: `NotImplementedException`
         :return: `None`
         """
         raise NotImplementedError
@@ -227,6 +229,7 @@ class DetectorClassifier(Classifier):
         :type x: `np.ndarray`
         :param y: Correct labels, one-vs-rest encoding.
         :type y: `np.ndarray`
+        :raises: `NotImplementedException`
         :return: Array of gradients of the same shape as `x`.
         :rtype: `np.ndarray`
         """
@@ -238,6 +241,7 @@ class DetectorClassifier(Classifier):
         Return the hidden layers in the model, if applicable. This function is not supported for the
         Classifier and Detector wrapper.
 
+        :raises: `NotImplementedException`
         :return: The hidden layers in the model, input and output layers excluded.
         :rtype: `list`
         """
@@ -255,6 +259,7 @@ class DetectorClassifier(Classifier):
         :type layer: `int` or `str`
         :param batch_size: Size of batches.
         :type batch_size: `int`
+        :raises: `NotImplementedException`
         :return: The output of `layer`, where the first dimension is the batch size corresponding to `x`.
         :rtype: `np.ndarray`
         """

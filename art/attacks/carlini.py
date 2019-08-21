@@ -22,8 +22,7 @@ evaluate potential defences. A major difference with respect to the original imp
 (https://github.com/carlini/nn_robust_attacks) is that this implementation uses line search in the optimization of the
 attack objective.
 
-Paper link:
-    https://arxiv.org/pdf/1608.04644.pdf
+| Paper link: https://arxiv.org/abs/1608.04644
 """
 from __future__ import absolute_import, division, print_function, unicode_literals
 
@@ -32,6 +31,7 @@ import logging
 import numpy as np
 
 from art import NUMPY_DTYPE
+from art.classifiers.classifier import ClassifierGradients
 from art.attacks.attack import Attack
 from art.utils import compute_success, get_labels_np_array, tanh_to_original, original_to_tanh
 
@@ -43,7 +43,9 @@ class CarliniL2Method(Attack):
     The L_2 optimized attack of Carlini and Wagner (2016). This attack is among the most effective and should be used
     among the primary attacks to evaluate potential defences. A major difference wrt to the original implementation
     (https://github.com/carlini/nn_robust_attacks) is that we use line search in the optimization of the attack
-    objective. Paper link: https://arxiv.org/pdf/1608.04644.pdf
+    objective.
+
+    | Paper link: https://arxiv.org/abs/1608.04644
     """
     attack_params = Attack.attack_params + ['confidence', 'targeted', 'learning_rate', 'max_iter',
                                             'binary_search_steps', 'initial_const', 'max_halving', 'max_doubling',
@@ -54,7 +56,7 @@ class CarliniL2Method(Attack):
         """
         Create a Carlini L_2 attack instance.
 
-        :param classifier: A trained model.
+        :param classifier: A trained classifier.
         :type classifier: :class:`.Classifier`
         :param confidence: Confidence of adversarial examples: a higher value produces examples that are farther away,
                 from the original input, but classified with higher confidence as the target class.
@@ -80,6 +82,10 @@ class CarliniL2Method(Attack):
         :type batch_size: `int`
         """
         super(CarliniL2Method, self).__init__(classifier)
+        if not isinstance(classifier, ClassifierGradients):
+            raise (TypeError('For `' + self.__class__.__name__ + '` classifier must be an instance of '
+                             '`art.classifiers.classifier.ClassifierGradients`, the provided classifier is instance of '
+                             + str(classifier.__class__.__bases__) + '.'))
 
         kwargs = {'confidence': confidence,
                   'targeted': targeted,
@@ -448,7 +454,7 @@ class CarliniLInfMethod(Attack):
         """
         Create a Carlini L_Inf attack instance.
 
-        :param classifier: A trained model.
+        :param classifier: A trained classifier.
         :type classifier: :class:`.Classifier`
         :param confidence: Confidence of adversarial examples: a higher value produces examples that are farther away,
                 from the original input, but classified with higher confidence as the target class.
@@ -473,6 +479,10 @@ class CarliniLInfMethod(Attack):
         :type expectation: :class:`.ExpectationOverTransformations`
         """
         super(CarliniLInfMethod, self).__init__(classifier)
+        if not isinstance(classifier, ClassifierGradients):
+            raise (TypeError('For `' + self.__class__.__name__ + '` classifier must be an instance of '
+                             '`art.classifiers.classifier.ClassifierGradients`, the provided classifier is instance of '
+                             + str(classifier.__class__.__bases__) + '.'))
 
         kwargs = {'confidence': confidence,
                   'targeted': targeted,

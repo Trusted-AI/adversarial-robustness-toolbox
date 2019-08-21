@@ -18,8 +18,7 @@
 """
 This module implements the local spatial smoothing defence in `SpatialSmoothing`.
 
-Paper link:
-    https://arxiv.org/abs/1704.01155
+| Paper link: https://arxiv.org/abs/1704.01155
 """
 from __future__ import absolute_import, division, print_function, unicode_literals
 
@@ -36,7 +35,9 @@ logger = logging.getLogger(__name__)
 
 class SpatialSmoothing(Preprocessor):
     """
-    Implement the local spatial smoothing defence approach. Defence method from https://arxiv.org/abs/1704.01155.
+    Implement the local spatial smoothing defence approach.
+
+    | Paper link: https://arxiv.org/abs/1704.01155
     """
     params = ['window_size', 'channel_index', 'clip_values']
 

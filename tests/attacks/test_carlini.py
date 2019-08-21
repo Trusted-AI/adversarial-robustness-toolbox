@@ -27,8 +27,8 @@ import tensorflow as tf
 from art.attacks import CarliniL2Method, CarliniLInfMethod
 from art.classifiers import KerasClassifier
 from art.utils import load_dataset, random_targets, master_seed
-from art.utils_test import get_classifier_tf, get_classifier_kr
-from art.utils_test import get_classifier_pt, get_iris_classifier_tf, get_iris_classifier_kr, get_iris_classifier_pt
+from art.utils_test import get_classifier_tf, get_classifier_kr, get_classifier_pt
+from art.utils_test import get_iris_classifier_tf, get_iris_classifier_kr, get_iris_classifier_pt
 
 logger = logging.getLogger('testLogger')
 
@@ -123,7 +123,7 @@ class TestCarliniL2(unittest.TestCase):
         :return:
         """
         # Build KerasClassifier
-        krc, sess = get_classifier_kr()
+        krc = get_classifier_kr()
 
         # Get MNIST
         (_, _), (x_test, y_test) = self.mnist
@@ -190,6 +190,31 @@ class TestCarliniL2(unittest.TestCase):
         y_pred_adv = np.argmax(ptc.predict(x_test_adv), axis=1)
         self.assertTrue((target != y_pred_adv).any())
         logger.info('CW2 Success Rate: %.2f', (sum(target != y_pred_adv) / float(len(target))))
+
+    def test_classifier_type_check_fail_classifier(self):
+        # Use a useless test classifier to test basic classifier properties
+        class ClassifierNoAPI:
+            pass
+
+        classifier = ClassifierNoAPI
+        with self.assertRaises(TypeError) as context:
+            _ = CarliniL2Method(classifier=classifier)
+
+        self.assertIn('For `CarliniL2Method` classifier must be an instance of `art.classifiers.classifier.Classifier`,'
+                      ' the provided classifier is instance of (<class \'object\'>,).', str(context.exception))
+
+    def test_classifier_type_check_fail_gradients(self):
+        # Use a test classifier not providing gradients required by white-box attack
+        from art.classifiers.scikitlearn import ScikitlearnDecisionTreeClassifier
+        from sklearn.tree import DecisionTreeClassifier
+
+        classifier = ScikitlearnDecisionTreeClassifier(model=DecisionTreeClassifier())
+        with self.assertRaises(TypeError) as context:
+            _ = CarliniL2Method(classifier=classifier)
+
+        self.assertIn('For `CarliniL2Method` classifier must be an instance of '
+                      '`art.classifiers.classifier.ClassifierGradients`, the provided classifier is instance of '
+                      '(<class \'art.classifiers.scikitlearn.ScikitlearnClassifier\'>,).', str(context.exception))
 
 
 class TestCarliniL2Vectors(unittest.TestCase):
@@ -273,6 +298,50 @@ class TestCarliniL2Vectors(unittest.TestCase):
         self.assertFalse((np.argmax(y_test, axis=1) == preds_adv).all())
         acc = np.sum(preds_adv == np.argmax(y_test, axis=1)) / y_test.shape[0]
         logger.info('Accuracy on Iris with C&W adversarial examples: %.2f%%', (acc * 100))
+
+    def test_scikitlearn(self):
+        from sklearn.linear_model import LogisticRegression
+        from sklearn.svm import SVC, LinearSVC
+
+        from art.classifiers.scikitlearn import ScikitlearnLogisticRegression, ScikitlearnSVC
+
+        scikitlearn_test_cases = {LogisticRegression: ScikitlearnLogisticRegression}  # ,
+        # SVC: ScikitlearnSVC,
+        # LinearSVC: ScikitlearnSVC}
+
+        (_, _), (x_test, y_test) = self.iris
+
+        for (model_class, classifier_class) in scikitlearn_test_cases.items():
+            model = model_class()
+            classifier = classifier_class(model=model, clip_values=(0, 1))
+            classifier.fit(x=x_test, y=y_test)
+
+            # Test untargeted attack
+            attack = CarliniL2Method(classifier, targeted=False, max_iter=10)
+            x_test_adv = attack.generate(x_test)
+            self.assertFalse((x_test == x_test_adv).all())
+            self.assertTrue((x_test_adv <= 1).all())
+            self.assertTrue((x_test_adv >= 0).all())
+
+            preds_adv = np.argmax(classifier.predict(x_test_adv), axis=1)
+            self.assertFalse((np.argmax(y_test, axis=1) == preds_adv).all())
+            acc = np.sum(preds_adv == np.argmax(y_test, axis=1)) / y_test.shape[0]
+            logger.info('Accuracy of ' + classifier.__class__.__name__ + ' on Iris with C&W adversarial examples: '
+                                                                         '%.2f%%', (acc * 100))
+
+            # Test targeted attack
+            targets = random_targets(y_test, nb_classes=3)
+            attack = CarliniL2Method(classifier, targeted=True, max_iter=10)
+            x_test_adv = attack.generate(x_test, **{'y': targets})
+            self.assertFalse((x_test == x_test_adv).all())
+            self.assertTrue((x_test_adv <= 1).all())
+            self.assertTrue((x_test_adv >= 0).all())
+
+            preds_adv = np.argmax(classifier.predict(x_test_adv), axis=1)
+            self.assertTrue((np.argmax(targets, axis=1) == preds_adv).any())
+            acc = np.sum(preds_adv == np.argmax(targets, axis=1)) / y_test.shape[0]
+            logger.info('Success rate of ' + classifier.__class__.__name__ + ' on targeted C&W on Iris: %.2f%%',
+                        (acc * 100))
 
 
 class TestCarliniLInf(TestCarliniL2):
@@ -383,6 +452,7 @@ class TestCarliniLInf(TestCarliniL2):
 
         # Clean-up
         k.clear_session()
+        sess.close()
 
     def test_ptclassifier(self):
         """
@@ -415,6 +485,32 @@ class TestCarliniLInf(TestCarliniL2):
         target = np.argmax(params['y'], axis=1)
         y_pred_adv = np.argmax(ptc.predict(x_test_adv), axis=1)
         self.assertTrue((target != y_pred_adv).any())
+
+    def test_classifier_type_check_fail_classifier(self):
+        # Use a useless test classifier to test basic classifier properties
+        class ClassifierNoAPI:
+            pass
+
+        classifier = ClassifierNoAPI
+        with self.assertRaises(TypeError) as context:
+            _ = CarliniLInfMethod(classifier=classifier)
+
+        self.assertIn('For `CarliniLInfMethod` classifier must be an instance of '
+                      '`art.classifiers.classifier.Classifier`, the provided classifier is instance of '
+                      '(<class \'object\'>,).', str(context.exception))
+
+    def test_classifier_type_check_fail_gradients(self):
+        # Use a test classifier not providing gradients required by white-box attack
+        from art.classifiers.scikitlearn import ScikitlearnDecisionTreeClassifier
+        from sklearn.tree import DecisionTreeClassifier
+
+        classifier = ScikitlearnDecisionTreeClassifier(model=DecisionTreeClassifier())
+        with self.assertRaises(TypeError) as context:
+            _ = CarliniLInfMethod(classifier=classifier)
+
+        self.assertIn('For `CarliniLInfMethod` classifier must be an instance of '
+                      '`art.classifiers.classifier.ClassifierGradients`, the provided classifier is instance of '
+                      '(<class \'art.classifiers.scikitlearn.ScikitlearnClassifier\'>,).', str(context.exception))
 
 
 class TestCarliniLInfVectors(TestCarliniL2Vectors):
@@ -489,6 +585,50 @@ class TestCarliniLInfVectors(TestCarliniL2Vectors):
         self.assertFalse((np.argmax(y_test, axis=1) == preds_adv).all())
         acc = np.sum(preds_adv == np.argmax(y_test, axis=1)) / y_test.shape[0]
         logger.info('Accuracy on Iris with C&W adversarial examples: %.2f%%', (acc * 100))
+
+    def test_scikitlearn(self):
+        from sklearn.linear_model import LogisticRegression
+        from sklearn.svm import SVC, LinearSVC
+
+        from art.classifiers.scikitlearn import ScikitlearnLogisticRegression, ScikitlearnSVC
+
+        scikitlearn_test_cases = {LogisticRegression: ScikitlearnLogisticRegression}#,
+                                  # SVC: ScikitlearnSVC,
+                                  # LinearSVC: ScikitlearnSVC}
+
+        (_, _), (x_test, y_test) = self.iris
+
+        for (model_class, classifier_class) in scikitlearn_test_cases.items():
+            model = model_class()
+            classifier = classifier_class(model=model, clip_values=(0, 1))
+            classifier.fit(x=x_test, y=y_test)
+
+            # Test untargeted attack
+            attack = CarliniLInfMethod(classifier, targeted=False, max_iter=10, eps=0.5)
+            x_test_adv = attack.generate(x_test)
+            self.assertFalse((x_test == x_test_adv).all())
+            self.assertTrue((x_test_adv <= 1).all())
+            self.assertTrue((x_test_adv >= 0).all())
+
+            preds_adv = np.argmax(classifier.predict(x_test_adv), axis=1)
+            self.assertFalse((np.argmax(y_test, axis=1) == preds_adv).all())
+            acc = np.sum(preds_adv == np.argmax(y_test, axis=1)) / y_test.shape[0]
+            logger.info('Accuracy of ' + classifier.__class__.__name__ + ' on Iris with C&W adversarial examples: '
+                                                                         '%.2f%%', (acc * 100))
+
+            # Test targeted attack
+            targets = random_targets(y_test, nb_classes=3)
+            attack = CarliniLInfMethod(classifier, targeted=True, max_iter=10, eps=0.5)
+            x_test_adv = attack.generate(x_test, **{'y': targets})
+            self.assertFalse((x_test == x_test_adv).all())
+            self.assertTrue((x_test_adv <= 1).all())
+            self.assertTrue((x_test_adv >= 0).all())
+
+            preds_adv = np.argmax(classifier.predict(x_test_adv), axis=1)
+            self.assertTrue((np.argmax(targets, axis=1) == preds_adv).any())
+            acc = np.sum(preds_adv == np.argmax(targets, axis=1)) / y_test.shape[0]
+            logger.info('Success rate of ' + classifier.__class__.__name__ + ' on targeted C&W on Iris: %.2f%%',
+                        (acc * 100))
 
 
 if __name__ == '__main__':
