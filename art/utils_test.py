@@ -124,7 +124,6 @@ def get_classifier_tf():
 
     return tfc, sess
 
-
 def get_classifier_tf_v2():
     """
     Standard Tensorflow v2 classifier for unit testing.
@@ -172,8 +171,8 @@ def get_classifier_tf_v2():
 
     return tfc
 
-
-def get_classifier_kr():
+  
+def get_classifier_kr(loss_name='categorical_crossentropy'):
     """
     Standard Keras classifier for unit testing
 
@@ -203,13 +202,31 @@ def get_classifier_kr():
     model.add(Dense(10, activation='softmax', kernel_initializer=_kr_weights_loader('MNIST', 'W', 'DENSE'),
                     bias_initializer=_kr_weights_loader('MNIST', 'B', 'DENSE')))
 
-    model.compile(loss=keras.losses.categorical_crossentropy, optimizer=keras.optimizers.Adam(lr=0.01),
-                  metrics=['accuracy'])
+    if loss_name == 'categorical_hinge':
+        loss = keras.losses.categorical_hinge
+    elif loss_name == 'categorical_crossentropy':
+        loss = keras.losses.categorical_crossentropy
+
+    elif loss_name == 'sparse_categorical_crossentropy':
+        loss = keras.losses.sparse_categorical_crossentropy
+
+    elif loss_name == 'binary_crossentropy':
+        loss = keras.losses.binary_crossentropy
+
+    elif loss_name == 'kullback_leibler_divergence':
+        loss = keras.losses.kullback_leibler_divergence
+
+    elif loss_name == 'cosine_proximity':
+        loss = keras.losses.cosine_proximity
+    else:
+        raise ValueError('Loss name not recognised.')
+
+    model.compile(loss=loss, optimizer=keras.optimizers.Adam(lr=0.01), metrics=['accuracy'])
 
     # Get classifier
     krc = KerasClassifier(model, clip_values=(0, 1), use_logits=False)
 
-    return krc, sess
+    return krc
 
 
 def get_classifier_pt():
@@ -277,10 +294,12 @@ def get_iris_classifier_tf():
     Standard Tensorflow classifier for unit testing.
 
     The following hyper-parameters were used to obtain the weights and biases:
-    - learning_rate: 0.01
-    - batch size: 5
-    - number of epochs: 200
-    - optimizer: tf.train.AdamOptimizer
+
+    * learning_rate: 0.01
+    * batch size: 5
+    * number of epochs: 200
+    * optimizer: tf.train.AdamOptimizer
+
     The model is trained of 70% of the dataset, and 30% of the training set is used as validation split.
 
     :return: The trained model for Iris dataset and the session.

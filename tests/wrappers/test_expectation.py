@@ -43,14 +43,12 @@ class TestExpectationOverTransformations(unittest.TestCase):
 
     @classmethod
     def setUpClass(cls):
-        # Get MNIST
         (x_train, y_train), (x_test, y_test), _, _ = load_dataset('mnist')
         x_train, y_train = x_train[:NB_TRAIN], y_train[:NB_TRAIN]
         x_test, y_test = x_test[:NB_TEST], y_test[:NB_TEST]
         cls.mnist = (x_train, y_train), (x_test, y_test)
 
     def setUp(self):
-        # Set master seed
         master_seed(1234)
 
     @unittest.skipIf(tf.__version__[0] == '2', reason='Skip unittests for Tensorflow v2 until Keras supports Tensorflow'
@@ -61,7 +59,7 @@ class TestExpectationOverTransformations(unittest.TestCase):
         :return:
         """
         # Build KerasClassifier
-        krc, sess = get_classifier_kr()
+        krc = get_classifier_kr()
 
         # Get MNIST
         (_, _), (x_test, y_test) = self.mnist
@@ -94,7 +92,6 @@ class TestExpectationVectors(unittest.TestCase):
         cls.iris = (x_train, y_train), (x_test, y_test)
 
     def setUp(self):
-        # Set master seed
         master_seed(1234)
 
     @unittest.skipIf(tf.__version__[0] == '2', reason='Skip unittests for Tensorflow v2 until Keras supports Tensorflow'

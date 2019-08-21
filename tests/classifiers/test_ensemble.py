@@ -21,10 +21,9 @@ import logging
 import unittest
 
 import tensorflow as tf
-
+import numpy as np
 import keras
 import keras.backend as k
-import numpy as np
 from keras.layers import Dense, Conv2D, MaxPooling2D, Flatten
 from keras.models import Sequential
 
@@ -112,7 +111,7 @@ class TestEnsembleClassifier(unittest.TestCase):
         self.assertFalse((grad2[0] == grad).all())
 
     def test_class_gradient(self):
-        grad = self.ensemble.class_gradient(self.mnist[1][0], raw=False)
+        grad = self.ensemble.class_gradient(self.mnist[1][0], None, raw=False)
         self.assertTrue(np.array(grad.shape == (NB_TEST, 10, 28, 28, 1)).all())
 
         grad2 = self.ensemble.class_gradient(self.mnist[1][0], raw=True)

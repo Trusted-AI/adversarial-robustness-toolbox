@@ -22,7 +22,7 @@ import logging
 import pprint
 import unittest
 
-from art.poison_detection.ground_truth_evaluator import GroundTruthEvaluator
+from art.poison_detection import GroundTruthEvaluator
 from art.utils import master_seed
 
 logger = logging.getLogger('testLogger')

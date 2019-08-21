@@ -47,11 +47,9 @@ R_LI = 0.1
 
 class TestMetrics(unittest.TestCase):
     def setUp(self):
-        # Set master seed
         master_seed(42)
 
     def test_emp_robustness_mnist(self):
-        # Get MNIST
         (x_train, y_train), (_, _), _, _ = load_mnist()
         x_train, y_train = x_train[:NB_TRAIN], y_train[:NB_TRAIN]
 
@@ -75,7 +73,6 @@ class TestMetrics(unittest.TestCase):
         self.assertLessEqual(emp_robust, 0.65)
 
     def test_loss_sensitivity(self):
-        # Get MNIST
         (x_train, y_train), (_, _), _, _ = load_mnist()
         x_train, y_train = x_train[:NB_TRAIN], y_train[:NB_TRAIN]
 

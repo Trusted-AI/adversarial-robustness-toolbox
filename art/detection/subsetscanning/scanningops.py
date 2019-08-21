@@ -15,18 +15,23 @@
 # AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT,
 # TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 # SOFTWARE.
-""" Scanning operations """
+"""
+Scanning operations
+"""
 import numpy as np
 
 
 class ScanningOps:
-    """ Specific operations done during scanning  """
+    """
+    Specific operations done during scanning
+    """
 
     @staticmethod
     def optimize_in_single_dimension(pvalues, a_max, image_to_node, score_function):
         """
-        Optimizes over all subsets of nodes for a given subset of images or \
-            over all subsets of images for a given subet of nodes
+        Optimizes over all subsets of nodes for a given subset of images or over all subsets of images for a given
+        subset of nodes.
+
         :param pvalues: pvalue ranges
         :type pvalues: `ndarray`
         :param a_max: alpha max. determines the significance level threshold
@@ -97,8 +102,7 @@ class ScanningOps:
             # cumulating count, alpha stays same.
             alpha_v = np.ones(number_of_elements) * alpha_threshold
 
-            n_alpha_v = np.cumsum(
-                unsort_priority[:, alpha_count][arg_sort_priority][:, alpha_count])
+            n_alpha_v = np.cumsum(unsort_priority[:, alpha_count][arg_sort_priority][:, alpha_count])
             count_increments_this = np.ones(number_of_elements) * size_of_given
             n_v = np.cumsum(count_increments_this)
 
@@ -123,13 +127,14 @@ class ScanningOps:
         for loc in range(0, best_size):
             subset[loc] = unsort[loc]
 
-        return (best_score_so_far, subset, best_alpha)
+        return best_score_so_far, subset, best_alpha
 
     @staticmethod
     def single_restart(pvalues, a_max, indices_of_seeds, image_to_node, score_function):
         """
-        Here we control the iteration between images->nodes and nodes->images
-        we start with a fixed subset of nodes by default
+        Here we control the iteration between images->nodes and nodes->images. It starts with a fixed subset of nodes by
+        default.
+
         :param pvalues: pvalue ranges
         :type pvalues: `ndarray`
         :param a_max: alpha max. determines the significance level threshold
@@ -143,9 +148,7 @@ class ScanningOps:
         :return: (best_score_so_far, best_sub_of_images, best_sub_of_nodes, best_alpha)
         :rtype: `float`, `np.array`, `np.array`, `float`
         """
-
         best_score_so_far = -100000
-
         count = 0
 
         while True:
@@ -158,16 +161,14 @@ class ScanningOps:
 
             if image_to_node:  # passed pvalues are only those belonging to fixed images, update nodes in return
                 # only sending sub of images
-                score_from_optimization, sub_of_nodes, optimal_alpha = \
-                    ScanningOps.optimize_in_single_dimension(pvalues[sub_of_images, :, :],
-                                                             a_max, image_to_node, score_function)
+                score_from_optimization, sub_of_nodes, optimal_alpha = ScanningOps.optimize_in_single_dimension(
+                    pvalues[sub_of_images, :, :], a_max, image_to_node, score_function)
             else:  # passed pvalues are only those belonging to fixed nodes, update images in return
                 # only sending sub of nodes
-                score_from_optimization, sub_of_images, optimal_alpha = \
-                    ScanningOps.optimize_in_single_dimension(pvalues[:, sub_of_nodes, :],
-                                                             a_max, image_to_node, score_function)
+                score_from_optimization, sub_of_images, optimal_alpha = ScanningOps.optimize_in_single_dimension(
+                    pvalues[:, sub_of_nodes, :], a_max, image_to_node, score_function)
 
-            if score_from_optimization > best_score_so_far:  # havent converged yet
+            if score_from_optimization > best_score_so_far:  # haven't converged yet
                 # update
                 best_score_so_far = score_from_optimization
                 best_sub_of_nodes = sub_of_nodes
@@ -176,7 +177,5 @@ class ScanningOps:
 
                 image_to_node = not image_to_node  # switch direction!
                 count = count + 1  # for printing and
-            else:  # converged!  Don't update from most recent optimiztion, return current best
-                return (best_score_so_far, best_sub_of_images, best_sub_of_nodes, best_alpha)
-
-            # end do while
+            else:  # converged!  Don't update from most recent optimization, return current best
+                return best_score_so_far, best_sub_of_images, best_sub_of_nodes, best_alpha

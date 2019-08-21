@@ -34,7 +34,6 @@ logger = logging.getLogger('testLogger')
 
 class TestVisualization(unittest.TestCase):
     def setUp(self):
-        # Set master seed
         master_seed(42)
 
     def test_save_image(self):

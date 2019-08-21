@@ -18,8 +18,7 @@
 """
 This module implements the Jacobian-based Saliency Map attack `SaliencyMapMethod`. This is a white-box attack.
 
-Paper link:
-    https://arxiv.org/pdf/1511.07528.pdf
+| Paper link: https://arxiv.org/abs/1511.07528
 """
 from __future__ import absolute_import, division, print_function, unicode_literals
 
@@ -28,6 +27,7 @@ import logging
 import numpy as np
 
 from art import NUMPY_DTYPE
+from art.classifiers.classifier import ClassifierGradients
 from art.attacks.attack import Attack
 
 logger = logging.getLogger(__name__)
@@ -36,7 +36,8 @@ logger = logging.getLogger(__name__)
 class SaliencyMapMethod(Attack):
     """
     Implementation of the Jacobian-based Saliency Map Attack (Papernot et al. 2016).
-    Paper link: https://arxiv.org/pdf/1511.07528.pdf
+
+    | Paper link: https://arxiv.org/abs/1511.07528
     """
     attack_params = Attack.attack_params + ['theta', 'gamma', 'batch_size']
 
@@ -44,7 +45,7 @@ class SaliencyMapMethod(Attack):
         """
         Create a SaliencyMapMethod instance.
 
-        :param classifier: A trained model.
+        :param classifier: A trained classifier.
         :type classifier: :class:`.Classifier`
         :param theta: Perturbation introduced to each modified feature per step (can be positive or negative).
         :type theta: `float`
@@ -54,6 +55,11 @@ class SaliencyMapMethod(Attack):
         :type batch_size: `int`
         """
         super(SaliencyMapMethod, self).__init__(classifier)
+        if not isinstance(classifier, ClassifierGradients):
+            raise (TypeError('For `' + self.__class__.__name__ + '` classifier must be an instance of '
+                             '`art.classifiers.classifier.ClassifierGradients`, the provided classifier is instance of '
+                             + str(classifier.__class__.__bases__) + '.'))
+
         kwargs = {'theta': theta, 'gamma': gamma, 'batch_size': batch_size}
         self.set_params(**kwargs)
 

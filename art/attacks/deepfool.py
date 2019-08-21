@@ -18,8 +18,7 @@
 """
 This module implements the white-box attack `DeepFool`.
 
-Paper link:
-    https://arxiv.org/abs/1511.04599
+| Paper link: https://arxiv.org/abs/1511.04599
 """
 from __future__ import absolute_import, division, print_function, unicode_literals
 
@@ -28,6 +27,7 @@ import logging
 import numpy as np
 
 from art import NUMPY_DTYPE
+from art.classifiers.classifier import ClassifierNeuralNetwork, ClassifierGradients
 from art.attacks.attack import Attack
 
 logger = logging.getLogger(__name__)
@@ -36,7 +36,8 @@ logger = logging.getLogger(__name__)
 class DeepFool(Attack):
     """
     Implementation of the attack from Moosavi-Dezfooli et al. (2015).
-    Paper link: https://arxiv.org/abs/1511.04599
+
+    | Paper link: https://arxiv.org/abs/1511.04599
     """
     attack_params = Attack.attack_params + ['max_iter', 'epsilon', 'nb_grads', 'batch_size']
 
@@ -44,7 +45,7 @@ class DeepFool(Attack):
         """
         Create a DeepFool attack instance.
 
-        :param classifier: A trained model.
+        :param classifier: A trained classifier.
         :type classifier: :class:`.Classifier`
         :param max_iter: The maximum number of iterations.
         :type max_iter: `int`
@@ -57,6 +58,12 @@ class DeepFool(Attack):
         :type batch_size: `int`
         """
         super(DeepFool, self).__init__(classifier=classifier)
+        if not isinstance(classifier, ClassifierNeuralNetwork) or not isinstance(classifier, ClassifierGradients):
+            raise (TypeError('For `' + self.__class__.__name__ + '` classifier must be an instance of '
+                             '`art.classifiers.classifier.ClassifierNeuralNetwork` and '
+                             '`art.classifiers.classifier.ClassifierGradients`, the provided classifier is instance of '
+                             + str(classifier.__class__.__bases__) + '.'))
+
         params = {'max_iter': max_iter, 'epsilon': epsilon, 'nb_grads': nb_grads, 'batch_size': batch_size}
         self.set_params(**params)
 
@@ -130,8 +137,8 @@ class DeepFool(Attack):
                     batch[active_indices] += r_var[active_indices]
 
                 # Recompute prediction for new x
-                f = self.classifier.predict(batch)
-                fk_i_hat = np.argmax(f, axis=1)
+                f_batch = self.classifier.predict(batch)
+                fk_i_hat = np.argmax(f_batch, axis=1)
 
                 # Recompute gradients for new x
                 if use_grads_subset:
