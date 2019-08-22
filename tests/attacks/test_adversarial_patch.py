@@ -118,6 +118,8 @@ class TestAdversarialPatch(unittest.TestCase):
         self.assertLess(patch_adv[0, 14, 14] - 19.790434152473054, 0.01)
         self.assertLess(np.sum(patch_adv) - 383.5670772794207, 0.01)
 
+    @unittest.skipIf(tf.__version__[0] == '2', reason='Skip unittests for Tensorflow v2 until Keras supports Tensorflow'
+                                                      ' v2 as backend.')
     def test_failure_feature_vectors(self):
         attack_params = {"rotation_max": 22.5, "scale_min": 0.1, "scale_max": 1.0,
                          "learning_rate": 5.0, "number_of_steps": 5, "batch_size": 10}
