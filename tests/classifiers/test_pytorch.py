@@ -134,7 +134,7 @@ class TestPyTorchClassifier(unittest.TestCase):
         logger.info('Accuracy: %.2f%%', (accuracy_2 * 100))
 
         self.assertEqual(accuracy, 0.3)
-        self.assertEqual(accuracy_2, 0.55)
+        self.assertAlmostEqual(accuracy_2, 0.55, delta=0.05)
 
     def test_nb_classes(self):
         classifier = get_classifier_pt()
