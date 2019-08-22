@@ -94,6 +94,9 @@ class KerasClassifier(ClassifierNeuralNetwork, ClassifierGradients, Classifier):
         :type output_layer: `int`
         """
         if self.is_tensorflow:
+            import tensorflow as tf
+            if tf.executing_eagerly():
+                raise ValueError('Tensorflow is executing eagerly. Please disable eager execution.')
             import tensorflow.keras as keras
             import tensorflow.keras.backend as k
         else:
