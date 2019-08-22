@@ -23,7 +23,6 @@ from __future__ import absolute_import, division, print_function, unicode_litera
 import logging
 
 import numpy as np
-from copy import deepcopy
 
 logger = logging.getLogger(__name__)
 
@@ -32,7 +31,8 @@ class RobustnessMetricTreeModelsCliqueMethod:
     """
     Robustness metric for tree-based models.
     Following the implementation in https://github.com/chenhongge/treeVerification (MIT License, 9 August 2019)
-    Paper link: https://arxiv.org/abs/1906.03849,
+
+    | Paper link: https://arxiv.org/abs/1906.03849
     """
 
     def __init__(self, classifier):
@@ -177,8 +177,7 @@ class RobustnessMetricTreeModelsCliqueMethod:
                 for clique in cliques_old:
                     # Loop over leaf nodes in tree
                     for accessible_leaf in accessible_leaves[i_tree]:
-                        leaf_box = deepcopy(accessible_leaf.box)
-                        leaf_box.intersect_with_box(clique['box'])
+                        leaf_box = accessible_leaf.box.get_intersection(clique['box'])
                         if leaf_box.intervals:
                             if self._classifier.nb_classes() > 2 and target_label is not None \
                                     and target_label == accessible_leaf.class_label:
@@ -366,6 +365,30 @@ class Box:
                     break
 
                 self.intervals[key] = Interval(lower_bound, upper_bound)
+
+    def get_intersection(self, box):
+        """
+        Intersect two interval boxes.
+
+        :param box: Interval box to intersect with.
+        :type box: `Box`
+        """
+        box_new = Box(intervals=self.intervals.copy())
+
+        for key, value in box.intervals.items():
+            if key not in box_new.intervals:
+                box_new.intervals[key] = value
+            else:
+                lower_bound = max(box_new.intervals[key].lower_bound, value.lower_bound)
+                upper_bound = min(box_new.intervals[key].upper_bound, value.upper_bound)
+
+                if lower_bound >= upper_bound:
+                    box_new.intervals.clear()
+                    return box_new
+
+                box_new.intervals[key] = Interval(lower_bound, upper_bound)
+
+        return box_new
 
     def __repr__(self):
         return self.__class__.__name__ + '({})'.format(self.intervals)
