@@ -122,6 +122,8 @@ class TestAdversarialPatch(unittest.TestCase):
         self.assertAlmostEqual(patch_adv[0, 14, 14], 19.790434152473054, delta=.1)
         self.assertAlmostEqual(float(np.sum(patch_adv)), 382.163, delta=.1)
 
+    @unittest.skipIf(tf.__version__[0] == '2', reason='Skip unittests for Tensorflow v2 until Keras supports Tensorflow'
+                                                      ' v2 as backend.')
     def test_failure_feature_vectors(self):
         attack_params = {"rotation_max": 22.5, "scale_min": 0.1, "scale_max": 1.0,
                          "learning_rate": 5.0, "number_of_steps": 5, "batch_size": 10}
