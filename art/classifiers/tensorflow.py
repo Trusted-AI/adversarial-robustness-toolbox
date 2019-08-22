@@ -644,7 +644,7 @@ class TFClassifier(ClassifierNeuralNetwork, ClassifierGradients, Classifier):
         return repr_
 
 
-class TensorflowV2Classifier(Classifier):
+class TensorflowV2Classifier(ClassifierNeuralNetwork, ClassifierGradients, Classifier):
     """
     This class implements a classifier with the Tensorflow framework.
     """
