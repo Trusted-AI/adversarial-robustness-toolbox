@@ -83,7 +83,7 @@ class TestZooAttack(unittest.TestCase):
         x_test, y_test = self.mnist
 
         # Targeted attack
-        zoo = ZooAttack(classifier=tfc, targeted=True)
+        zoo = ZooAttack(classifier=tfc, targeted=True, max_iter=100, binary_search_steps=10)
         params = {'y': random_targets(y_test, tfc.nb_classes)}
         x_test_adv = zoo.generate(x_test, **params)
         self.assertFalse((x_test == x_test_adv).all())
