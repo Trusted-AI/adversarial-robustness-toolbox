@@ -264,7 +264,7 @@ class ScikitlearnDecisionTreeClassifier(ScikitlearnClassifier):
 
     def _get_leaf_nodes(self, node_id, i_tree, class_label, box):
         from copy import deepcopy
-        from art.metrics.metrics_trees import LeafNode, Box, Interval
+        from art.metrics.verification_decisions_trees import LeafNode, Box, Interval
 
         leaf_nodes = list()
 
@@ -339,7 +339,7 @@ class ScikitlearnDecisionTreeRegressor(ScikitlearnDecisionTreeClassifier):
 
     def _get_leaf_nodes(self, node_id, i_tree, class_label, box):
         from copy import deepcopy
-        from art.metrics.metrics_trees import LeafNode, Box, Interval
+        from art.metrics.verification_decisions_trees import LeafNode, Box, Interval
 
         leaf_nodes = list()
 
@@ -506,7 +506,7 @@ class ScikitlearnExtraTreesClassifier(ScikitlearnClassifier, ClassifierDecisionT
         :return: A list of decision trees.
         :rtype: `[Tree]`
         """
-        from art.metrics.metrics_trees import Box, Tree
+        from art.metrics.verification_decisions_trees import Box, Tree
 
         trees = list()
 
@@ -567,7 +567,7 @@ class ScikitlearnGradientBoostingClassifier(ScikitlearnClassifier, ClassifierDec
         :return: A list of decision trees.
         :rtype: `[Tree]`
         """
-        from art.metrics.metrics_trees import Box, Tree
+        from art.metrics.verification_decisions_trees import Box, Tree
 
         trees = list()
         num_trees, num_classes = self._model.estimators_.shape
@@ -628,7 +628,7 @@ class ScikitlearnRandomForestClassifier(ScikitlearnClassifier):
         :return: A list of decision trees.
         :rtype: `[Tree]`
         """
-        from art.metrics.metrics_trees import Box, Tree
+        from art.metrics.verification_decisions_trees import Box, Tree
 
         trees = list()
 

@@ -27,7 +27,7 @@ from sklearn.ensemble import ExtraTreesClassifier, RandomForestClassifier, Gradi
 
 from art.classifiers import XGBoostClassifier, LightGBMClassifier, SklearnClassifier
 from art.utils import master_seed, load_dataset
-from art.metrics.metrics_trees import RobustnessMetricTreeModelsCliqueMethod
+from art.metrics import RobustnessVerificationTreeModelsCliqueMethod
 
 logger = logging.getLogger('testLogger')
 
@@ -62,7 +62,7 @@ class TestMetricsTrees(unittest.TestCase):
 
         classifier = XGBoostClassifier(model=model, num_features=self.n_features, nb_classes=self.n_classes)
 
-        rt = RobustnessMetricTreeModelsCliqueMethod(classifier=classifier)
+        rt = RobustnessVerificationTreeModelsCliqueMethod(classifier=classifier)
         average_bound, verified_error = rt.verify(x=self.x_test, y=np.argmax(self.y_test, axis=1), eps_init=0.3,
                                                   num_search_steps=10, max_clique=2, max_level=2)
 
@@ -93,7 +93,7 @@ class TestMetricsTrees(unittest.TestCase):
 
         classifier = LightGBMClassifier(model=model)
 
-        rt = RobustnessMetricTreeModelsCliqueMethod(classifier=classifier)
+        rt = RobustnessVerificationTreeModelsCliqueMethod(classifier=classifier)
         average_bound, verified_error = rt.verify(x=self.x_test, y=np.argmax(self.y_test, axis=1), eps_init=0.3,
                                                   num_search_steps=10, max_clique=2, max_level=2)
 
@@ -106,7 +106,7 @@ class TestMetricsTrees(unittest.TestCase):
 
         classifier = SklearnClassifier(model=model)
 
-        rt = RobustnessMetricTreeModelsCliqueMethod(classifier=classifier)
+        rt = RobustnessVerificationTreeModelsCliqueMethod(classifier=classifier)
         average_bound, verified_error = rt.verify(x=self.x_test, y=np.argmax(self.y_test, axis=1), eps_init=0.3,
                                                   num_search_steps=10, max_clique=2, max_level=2)
 
@@ -119,7 +119,7 @@ class TestMetricsTrees(unittest.TestCase):
 
         classifier = SklearnClassifier(model=model)
 
-        rt = RobustnessMetricTreeModelsCliqueMethod(classifier=classifier)
+        rt = RobustnessVerificationTreeModelsCliqueMethod(classifier=classifier)
         average_bound, verified_error = rt.verify(x=self.x_test, y=np.argmax(self.y_test, axis=1), eps_init=0.3,
                                                   num_search_steps=10, max_clique=2, max_level=2)
 
@@ -132,7 +132,7 @@ class TestMetricsTrees(unittest.TestCase):
 
         classifier = SklearnClassifier(model=model)
 
-        rt = RobustnessMetricTreeModelsCliqueMethod(classifier=classifier)
+        rt = RobustnessVerificationTreeModelsCliqueMethod(classifier=classifier)
         average_bound, verified_error = rt.verify(x=self.x_test, y=np.argmax(self.y_test, axis=1), eps_init=0.3,
                                                   num_search_steps=10, max_clique=2, max_level=2)
 

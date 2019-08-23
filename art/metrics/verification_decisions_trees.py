@@ -27,9 +27,9 @@ import numpy as np
 logger = logging.getLogger(__name__)
 
 
-class RobustnessMetricTreeModelsCliqueMethod:
+class RobustnessVerificationTreeModelsCliqueMethod:
     """
-    Robustness metric for tree-based models.
+    Robustness verification for decision-tree-based models.
     Following the implementation in https://github.com/chenhongge/treeVerification (MIT License, 9 August 2019)
 
     | Paper link: https://arxiv.org/abs/1906.03849
@@ -37,7 +37,7 @@ class RobustnessMetricTreeModelsCliqueMethod:
 
     def __init__(self, classifier):
         """
-        Create robustness metric for decision-tree-based classifier.
+        Create robustness verification for a decision-tree-based classifier.
 
         :param classifier: A trained decision-tree-based classifier.
         :type classifier: `art.classifiers.ClassifierDecisionTree`
