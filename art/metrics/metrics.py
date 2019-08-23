@@ -145,8 +145,9 @@ def empirical_robustness(classifier, x, attack_name, attack_params=None):
 
 def loss_sensitivity(classifier, x, y):
     """
-    Local loss sensitivity estimated through the gradients of the prediction at points in `x`, as defined in
-    https://arxiv.org/pdf/1706.05394.pdf.
+    Local loss sensitivity estimated through the gradients of the prediction at points in `x`.
+
+    | Paper link: https://arxiv.org/abs/1706.05394
 
     :param classifier: A trained model
     :type classifier: :class:`.Classifier`
