@@ -123,7 +123,7 @@ class TestCarliniL2(unittest.TestCase):
         :return:
         """
         # Build KerasClassifier
-        krc, sess = get_classifier_kr()
+        krc = get_classifier_kr()
 
         # Get MNIST
         (_, _), (x_test, y_test) = self.mnist
@@ -156,7 +156,6 @@ class TestCarliniL2(unittest.TestCase):
 
         # Clean-up
         k.clear_session()
-        sess.close()
 
     def test_ptclassifier(self):
         """

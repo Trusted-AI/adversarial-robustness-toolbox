@@ -116,7 +116,7 @@ class TestZooAttack(unittest.TestCase):
         :return:
         """
         # Build KerasClassifier
-        krc, _ = get_classifier_kr()
+        krc = get_classifier_kr()
 
         # Get MNIST and test with 3 channels
         x_test, y_test = self.mnist

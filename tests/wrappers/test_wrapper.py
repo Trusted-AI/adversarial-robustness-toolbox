@@ -46,7 +46,7 @@ class TestMixinWKerasClassifier(unittest.TestCase):
         cls.mnist = (x_train, y_train), (x_test, y_test)
 
         # Load small Keras model
-        cls.model_mnist, _ = get_classifier_kr()
+        cls.model_mnist = get_classifier_kr()
 
     @classmethod
     def tearDownClass(cls):
