@@ -148,7 +148,7 @@ class XGBoostClassifier(Classifier, ClassifierDecisionTree):
         """
 
         import json
-        from art.metrics.metrics_trees import Box, Tree
+        from art.metrics.verification_decisions_trees import Box, Tree
 
         booster_dump = self._model.get_booster().get_dump(dump_format='json')
         trees = list()
@@ -169,7 +169,7 @@ class XGBoostClassifier(Classifier, ClassifierDecisionTree):
 
     def _get_leaf_nodes(self, node, i_tree, class_label, box):
         from copy import deepcopy
-        from art.metrics.metrics_trees import LeafNode, Box, Interval
+        from art.metrics.verification_decisions_trees import LeafNode, Box, Interval
 
         leaf_nodes = list()
 
