@@ -53,9 +53,9 @@ class RobustnessVerificationTreeModelsCliqueMethod:
         """
         Verify the robustness of the classifier on the dataset `(x, y)`.
 
-        :param x: Feature data.
+        :param x: Feature data of shape (nb_samples, nb_features).
         :type x: `np.ndarray`
-        :param y: Labels, one-vs-rest encoding.
+        :param y: Labels, one-vs-rest encoding of shape (nb_samples, nb_classes).
         :type : `np.ndarray`
         :param eps_init: Attack budget for the first search step.
         :type eps_init: `double`
@@ -71,7 +71,7 @@ class RobustnessVerificationTreeModelsCliqueMethod:
         :rtype: `tuple`
         """
         self.x = x
-        self.y = y
+        self.y = np.argmax(y, axis=1)
         self.max_clique = max_clique
         self.max_level = max_level
 

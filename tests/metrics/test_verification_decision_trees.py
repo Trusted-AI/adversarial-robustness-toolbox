@@ -63,7 +63,7 @@ class TestMetricsTrees(unittest.TestCase):
         classifier = XGBoostClassifier(model=model, num_features=self.n_features, nb_classes=self.n_classes)
 
         rt = RobustnessVerificationTreeModelsCliqueMethod(classifier=classifier)
-        average_bound, verified_error = rt.verify(x=self.x_test, y=np.argmax(self.y_test, axis=1), eps_init=0.3,
+        average_bound, verified_error = rt.verify(x=self.x_test, y=self.y_test, eps_init=0.3,
                                                   num_search_steps=10, max_clique=2, max_level=2)
 
         self.assertEqual(average_bound, 0.035996093750000006)
@@ -94,7 +94,7 @@ class TestMetricsTrees(unittest.TestCase):
         classifier = LightGBMClassifier(model=model)
 
         rt = RobustnessVerificationTreeModelsCliqueMethod(classifier=classifier)
-        average_bound, verified_error = rt.verify(x=self.x_test, y=np.argmax(self.y_test, axis=1), eps_init=0.3,
+        average_bound, verified_error = rt.verify(x=self.x_test, y=self.y_test, eps_init=0.3,
                                                   num_search_steps=10, max_clique=2, max_level=2)
 
         self.assertEqual(average_bound, 0.07634765624999999)
@@ -107,7 +107,7 @@ class TestMetricsTrees(unittest.TestCase):
         classifier = SklearnClassifier(model=model)
 
         rt = RobustnessVerificationTreeModelsCliqueMethod(classifier=classifier)
-        average_bound, verified_error = rt.verify(x=self.x_test, y=np.argmax(self.y_test, axis=1), eps_init=0.3,
+        average_bound, verified_error = rt.verify(x=self.x_test, y=self.y_test, eps_init=0.3,
                                                   num_search_steps=10, max_clique=2, max_level=2)
 
         self.assertEqual(average_bound, 0.009234374999999996)
@@ -120,7 +120,7 @@ class TestMetricsTrees(unittest.TestCase):
         classifier = SklearnClassifier(model=model)
 
         rt = RobustnessVerificationTreeModelsCliqueMethod(classifier=classifier)
-        average_bound, verified_error = rt.verify(x=self.x_test, y=np.argmax(self.y_test, axis=1), eps_init=0.3,
+        average_bound, verified_error = rt.verify(x=self.x_test, y=self.y_test, eps_init=0.3,
                                                   num_search_steps=10, max_clique=2, max_level=2)
 
         self.assertEqual(average_bound, 0.016482421874999993)
@@ -133,7 +133,7 @@ class TestMetricsTrees(unittest.TestCase):
         classifier = SklearnClassifier(model=model)
 
         rt = RobustnessVerificationTreeModelsCliqueMethod(classifier=classifier)
-        average_bound, verified_error = rt.verify(x=self.x_test, y=np.argmax(self.y_test, axis=1), eps_init=0.3,
+        average_bound, verified_error = rt.verify(x=self.x_test, y=self.y_test, eps_init=0.3,
                                                   num_search_steps=10, max_clique=2, max_level=2)
 
         self.assertEqual(average_bound, 0.05406445312499999)
