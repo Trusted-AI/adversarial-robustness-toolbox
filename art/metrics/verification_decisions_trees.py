@@ -85,6 +85,8 @@ class RobustnessVerificationTreeModelsCliqueMethod:
             robust_log = list()
             i_robust = None
             i_not_robust = None
+            eps_robust = None
+            eps_not_robust = None
 
             for i_step in range(num_search_steps):
                 logger.info('Search step {0:d}: eps = {1:.4g}'.format(i_step, eps))
@@ -410,11 +412,11 @@ class LeafNode:
         Create a leaf node representation.
 
         :param tree_id: ID of the decision tree.
-        :type tree_id: `int`
+        :type tree_id: `int` or `None`
         :param class_label: ID of class to which this leaf node is contributing.
         :type class_label: `int`
         :param node_id: ID of this node.
-        :type node_id: `int`
+        :type node_id: `int` or `None`
         :param box: A box representing the n_feature-dimensional bounding intervals that reach this leaf node.
         :type box: `Box`
         :param value: Prediction value at this leaf node.
