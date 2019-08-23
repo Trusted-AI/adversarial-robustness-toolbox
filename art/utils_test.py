@@ -238,9 +238,9 @@ def get_classifier_mx():
     model = mxnet.gluon.nn.Sequential()
     with model.name_scope():
         model.add(Conv2D(channels=1, kernel_size=7, activation='relu'),
-                MaxPool2D(pool_size=4, strides=4),
-                Flatten(),
-                Dense(10))
+                  MaxPool2D(pool_size=4, strides=4),
+                  Flatten(),
+                  Dense(10))
     model.initialize(init=mxnet.init.Xavier())
 
     # Create optimizer
