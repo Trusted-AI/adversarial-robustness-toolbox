@@ -16,7 +16,7 @@
 # TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 # SOFTWARE.
 """
-This module implements robustness metrics for tree-based models.
+This module implements robustness verifications for decision-tree-based models.
 """
 from __future__ import absolute_import, division, print_function, unicode_literals
 
@@ -146,12 +146,12 @@ class RobustnessVerificationTreeModelsCliqueMethod:
         Find the K partite cliques among the accessible leaf nodes.
 
         :param accessible_leaves: List of lists of accessible leaf nodes.
-        :type accessible_leaves: `list(list(LeafNode))`
+        :type accessible_leaves: `list[(list[LeafNode]]`
         :param label: The try label of the current sample.
         :type label: `int`
         :param target_label: The target label.
         :type target_label: `int` or `None`
-        :return: `None`
+        :return: The best score and a list of new cliques
         """
         new_nodes_list = list()
         best_scores_sum = 0.0
@@ -294,7 +294,7 @@ class RobustnessVerificationTreeModelsCliqueMethod:
         :param target_label: The target label.
         :type target_label: `int`
         :return: A list of lists of leaf nodes.
-        :rtype: list(list(LeafNode))
+        :rtype: `list[list[LeafNode]]`
         """
         accessible_leaves = list()
 
@@ -318,21 +318,27 @@ class RobustnessVerificationTreeModelsCliqueMethod:
 
 
 class Interval:
+    """
+    Representation of an intervals bound.
+    """
 
     def __init__(self, lower_bound, upper_bound):
         """
-        An of interval of a feature.
+        An interval of a feature.
 
         :param lower_bound: The lower boundary of the feature.
         :type lower_bound: `double` or `-np.inf`
         :param upper_bound: The upper boundary of the feature.
-        :type upper_bound: `double` or `-np.inf`
+        :type upper_bound: `double` or `np.inf`
         """
         self.lower_bound = lower_bound
         self.upper_bound = upper_bound
 
 
 class Box:
+    """
+    Representation of a box of intervals bounds.
+    """
 
     def __init__(self, intervals=None):
         """
@@ -348,9 +354,9 @@ class Box:
 
     def intersect_with_box(self, box):
         """
-        Intersect two interval boxes.
+        Get the intersection of two interval boxes. This function modifies this box instance.
 
-        :param box: Interval box to intersect with.
+        :param box: Interval box to intersect with this box.
         :type box: `Box`
         """
         for key, value in box.intervals.items():
@@ -368,9 +374,9 @@ class Box:
 
     def get_intersection(self, box):
         """
-        Intersect two interval boxes.
+        Get the intersection of two interval boxes. This function creates a new box instance.
 
-        :param box: Interval box to intersect with.
+        :param box: Interval box to intersect with this box.
         :type box: `Box`
         """
         box_new = Box(intervals=self.intervals.copy())
@@ -395,8 +401,25 @@ class Box:
 
 
 class LeafNode:
+    """
+    Representation of a leaf node of a decision tree.
+    """
 
     def __init__(self, tree_id, class_label, node_id, box, value):
+        """
+        Create a leaf node representation.
+
+        :param tree_id: ID of the decision tree.
+        :type tree_id: `int`
+        :param class_label: ID of class to which this leaf node is contributing.
+        :type class_label: `int`
+        :param node_id: ID of this node.
+        :type node_id: `int`
+        :param box: A box representing the n_feature-dimensional bounding intervals that reach this leaf node.
+        :type box: `Box`
+        :param value: Prediction value at this leaf node.
+        :type value: `double`
+        """
         self.tree_id = tree_id
         self.class_label = class_label
         self.node_id = node_id
@@ -409,7 +432,18 @@ class LeafNode:
 
 
 class Tree:
+    """
+    Representation of a decision tree.
+    """
 
     def __init__(self, class_id, leaf_nodes):
+        """
+        Create a decision tree representation.
+
+        :param class_id: ID of the class to which this decision tree contributes.
+        :type class_id: `int`
+        :param leaf_nodes: A list of leaf nodes of this decision tree.
+        :type leaf_nodes: `list[LeafNode]`
+        """
         self.class_id = class_id
         self.leaf_nodes = leaf_nodes
