@@ -86,7 +86,7 @@ class ScikitlearnClassifier(Classifier):
                                                     preprocessing=preprocessing)
 
         self._model = model
-        self._input_shape = self._get_input_shape()
+        self._input_shape = self._get_input_shape(model)
 
     def fit(self, x, y, **kwargs):
         """
@@ -106,7 +106,7 @@ class ScikitlearnClassifier(Classifier):
         y_preprocessed = np.argmax(y_preprocessed, axis=1)
 
         self._model.fit(x_preprocessed, y_preprocessed, **kwargs)
-        self._input_shape = self._get_input_shape()
+        self._input_shape = self._get_input_shape(self._model)
 
     def predict(self, x, **kwargs):
         """
@@ -134,18 +134,20 @@ class ScikitlearnClassifier(Classifier):
         with open(filename + '.pickle', 'wb') as file_pickle:
             pickle.dump(self._model, file=file_pickle)
 
-    def _get_input_shape(self):
-        if hasattr(self._model, 'n_features_'):
-            _input_shape = (self._model.n_features_,)
-        elif hasattr(self._model, 'feature_importances_'):
-            _input_shape = (len(self._model.feature_importances_),)
-        elif hasattr(self._model, 'coef_'):
-            if len(self._model.coef_.shape) == 1:
-                _input_shape = (self._model.coef_.shape[0],)
+    def _get_input_shape(self, model):
+        if hasattr(model, 'n_features_'):
+            _input_shape = (model.n_features_,)
+        elif hasattr(model, 'feature_importances_'):
+            _input_shape = (len(model.feature_importances_),)
+        elif hasattr(model, 'coef_'):
+            if len(model.coef_.shape) == 1:
+                _input_shape = (model.coef_.shape[0],)
             else:
-                _input_shape = (self._model.coef_.shape[1],)
-        elif hasattr(self._model, 'support_vectors_'):
-            _input_shape = (self._model.support_vectors_.shape[1],)
+                _input_shape = (model.coef_.shape[1],)
+        elif hasattr(model, 'support_vectors_'):
+            _input_shape = (model.support_vectors_.shape[1],)
+        elif hasattr(model, 'steps'):
+            _input_shape = self._get_input_shape(model.steps[0][1])
         else:
             _input_shape = None
         return _input_shape
