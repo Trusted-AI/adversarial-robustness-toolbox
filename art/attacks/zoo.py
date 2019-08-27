@@ -31,7 +31,7 @@ from scipy.ndimage import zoom
 
 from art import NUMPY_DTYPE
 from art.attacks.attack import Attack
-from art.utils import compute_success, get_labels_np_array
+from art.utils import compute_success, get_labels_np_array, check_and_transform_label_format
 
 logger = logging.getLogger(__name__)
 
@@ -174,12 +174,14 @@ class ZooAttack(Attack):
 
         :param x: An array with the original inputs to be attacked.
         :type x: `np.ndarray`
-        :param y: If `self.targeted` is true, then `y` represents the target labels. Otherwise, the targets are the
-                  original class labels.
+        :param y: Target values (class labels) one-hot-encoded of shape (nb_samples, nb_classes) or indices of shape
+                  (nb_samples,).
         :type y: `np.ndarray`
         :return: An array holding the adversarial examples.
         :rtype: `np.ndarray`
         """
+        y = check_and_transform_label_format(y, self.classifier.nb_classes)
+
         # Check that `y` is provided for targeted attacks
         if self.targeted and y is None:
             raise ValueError('Target labels `y` need to be provided for a targeted attack.')

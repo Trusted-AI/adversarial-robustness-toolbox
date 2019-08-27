@@ -32,7 +32,7 @@ import numpy as np
 from art import NUMPY_DTYPE
 from art.classifiers.classifier import ClassifierGradients
 from art.attacks.fast_gradient import FastGradientMethod
-from art.utils import compute_success, get_labels_np_array
+from art.utils import compute_success, get_labels_np_array, check_and_transform_label_format
 
 logger = logging.getLogger(__name__)
 
@@ -90,14 +90,16 @@ class ProjectedGradientDescent(FastGradientMethod):
 
         :param x: An array with the original inputs.
         :type x: `np.ndarray`
-        :param y: The labels for the data `x`. Only provide this parameter if you'd like to use true
-                  labels when crafting adversarial samples. Otherwise, model predictions are used as labels to avoid the
-                  "label leaking" effect (explained in this paper: https://arxiv.org/abs/1611.01236). Default is `None`.
-                  Labels should be one-hot-encoded.
+        :param y: Target values (class labels) one-hot-encoded of shape (nb_samples, nb_classes) or indices of shape
+                  (nb_samples,). Only provide this parameter if you'd like to use true labels when crafting adversarial
+                  samples. Otherwise, model predictions are used as labels to avoid the "label leaking" effect
+                  (explained in this paper: https://arxiv.org/abs/1611.01236). Default is `None`.
         :type y: `np.ndarray`
         :return: An array holding the adversarial examples.
         :rtype: `np.ndarray`
         """
+        y = check_and_transform_label_format(y, self.classifier.nb_classes)
+
         if y is None:
             # Throw error if attack is targeted, but no targets are provided
             if self.targeted:
