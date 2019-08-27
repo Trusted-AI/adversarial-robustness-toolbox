@@ -30,7 +30,7 @@ logger = logging.getLogger('testLogger')
 np.random.seed(seed=1234)
 
 
-class TestXGBoostClassifier(unittest.TestCase):
+class TestLightGBMClassifier(unittest.TestCase):
 
     @classmethod
     def setUpClass(cls):

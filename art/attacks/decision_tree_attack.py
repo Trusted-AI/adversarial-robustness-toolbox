@@ -26,6 +26,7 @@ import numpy as np
 
 from art.attacks.attack import Attack
 from art.classifiers.scikitlearn import ScikitlearnDecisionTreeClassifier
+from art.utils import check_and_transform_label_format
 
 logger = logging.getLogger(__name__)
 
@@ -107,21 +108,18 @@ class DecisionTreeAttack(Attack):
 
         :param x: An array with the original inputs to be attacked.
         :type x: `np.ndarray`
-        :param y: Correct labels or target labels for `x`, depending if the attack is targeted
-               or not. This parameter is only used by some of the attacks.
+        :param y: Target values (class labels) one-hot-encoded of shape (nb_samples, nb_classes) or indices of shape
+                  (nb_samples,).
         :type y: `np.ndarray`
         :return: An array holding the adversarial examples.
         :rtype: `np.ndarray`
         """
+        y = check_and_transform_label_format(y, self.classifier.nb_classes, return_one_hot=False)
         x = x.copy()
-        if y is not None:
-            assert np.shape(y)[0] == np.shape(x)[0]
-            if len(np.shape(y)) > 1:
-                y = np.argmax(y)
+
         for index in range(np.shape(x)[0]):
             path = self.classifier.get_decision_path(x[index])
-            legitimate_class = np.argmax(
-                self.classifier.predict(x[index].reshape(1, -1)))
+            legitimate_class = np.argmax(self.classifier.predict(x[index].reshape(1, -1)))
             position = -2
             adv_path = [-1]
             ancestor = path[position]
@@ -131,8 +129,7 @@ class DecisionTreeAttack(Attack):
                 # search in right subtree
                 if current_child == self.classifier.get_left_child(ancestor):
                     if y is None:
-                        adv_path = self._df_subtree(
-                            self.classifier.get_right_child(ancestor), legitimate_class)
+                        adv_path = self._df_subtree(self.classifier.get_right_child(ancestor), legitimate_class)
                     else:
                         adv_path = self._df_subtree(self.classifier.get_right_child(ancestor), legitimate_class,
                                                     y[index])

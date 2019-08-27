@@ -29,6 +29,7 @@ import numpy as np
 from art import NUMPY_DTYPE
 from art.classifiers.classifier import ClassifierGradients
 from art.attacks.attack import Attack
+from art.utils import check_and_transform_label_format
 
 logger = logging.getLogger(__name__)
 
@@ -69,11 +70,14 @@ class SaliencyMapMethod(Attack):
 
         :param x: An array with the original inputs to be attacked.
         :type x: `np.ndarray`
-        :param y: Target values if the attack is targeted
+        :param y: Target values (class labels) one-hot-encoded of shape (nb_samples, nb_classes) or indices of shape
+                  (nb_samples,).
         :type y: `np.ndarray`
         :return: An array holding the adversarial examples.
         :rtype: `np.ndarray`
         """
+        y = check_and_transform_label_format(y, self.classifier.nb_classes)
+
         # Initialize variables
         dims = list(x.shape[1:])
         self._nb_features = np.product(dims)

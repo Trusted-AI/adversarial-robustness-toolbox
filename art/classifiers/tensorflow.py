@@ -134,7 +134,8 @@ class TFClassifier(ClassifierNeuralNetwork, ClassifierGradients, Classifier):
 
         :param x: Training data.
         :type x: `np.ndarray`
-        :param y: Labels, one-vs-rest encoding.
+        :param y: Target values (class labels) one-hot-encoded of shape (nb_samples, nb_classes) or indices of shape
+                  (nb_samples,).
         :type y: `np.ndarray`
         :param batch_size: Size of batches.
         :type batch_size: `int`
@@ -219,10 +220,6 @@ class TFClassifier(ClassifierNeuralNetwork, ClassifierGradients, Classifier):
                  `(batch_size, 1, input_shape)` when `label` parameter is specified.
         :rtype: `np.ndarray`
         """
-        logits = kwargs.get('logits')
-        if logits is None:
-            logits = False
-
         # Check value of label for computing gradients
         if not (label is None or (isinstance(label, (int, np.integer)) and label in range(self.nb_classes))
                 or (isinstance(label, np.ndarray) and len(label.shape) == 1 and (label < self._nb_classes).all()
@@ -268,7 +265,8 @@ class TFClassifier(ClassifierNeuralNetwork, ClassifierGradients, Classifier):
 
         :param x: Sample input with shape as expected by the model.
         :type x: `np.ndarray`
-        :param y: Correct labels, one-vs-rest encoding.
+        :param y: Target values (class labels) one-hot-encoded of shape (nb_samples, nb_classes) or indices of shape
+                  (nb_samples,).
         :type y: `np.ndarray`
         :return: Array of gradients of the same shape as `x`.
         :rtype: `np.ndarray`
