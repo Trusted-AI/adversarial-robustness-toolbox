@@ -16,7 +16,7 @@
 # TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 # SOFTWARE.
 """
-This module implements the classifier `KerasClassifier` for Keras models.
+This module implements the classifier `BlackBoxClassifier` for blackbox classifiers.
 """
 from __future__ import absolute_import, division, print_function, unicode_literals
 
@@ -39,6 +39,10 @@ class BlackBoxClassifier(Classifier):
         """
         Create a `Classifier` instance for a black box model.
 
+        :param predict: Function that takes in one input of the data and returns the one-hot encoded predicted class.
+        :type predict: `function`
+        :param input_shape: Size of input.
+        :type input_shape: `tuple`
         :param nb_classes: Number of prediction classes.
         :type nb_classes: `int`
         :param clip_values: Tuple of the form `(min, max)` of floats or `np.ndarray` representing the minimum and
@@ -92,10 +96,6 @@ class BlackBoxClassifier(Classifier):
         :type x: `np.ndarray`
         :param y: Labels, one-vs-rest encoding.
         :type y: `np.ndarray`
-        :param batch_size: Size of batches.
-        :type batch_size: `int`
-        :param nb_epochs: Number of epochs to use for training.
-        :type nb_epochs: `int`
         :param kwargs: Dictionary of framework-specific arguments. These should be parameters supported by the
                `fit_generator` function in Keras and will be passed to this function as such. Including the number of
                epochs or the number of steps per epoch as part of this argument will result in as error.
