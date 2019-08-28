@@ -22,12 +22,14 @@ from __future__ import absolute_import, division, print_function, unicode_litera
 
 import logging
 
-from art.classifiers.classifier import Classifier
+import numpy as np
+
+from art.classifiers.classifier import Classifier, ClassifierDecisionTree
 
 logger = logging.getLogger(__name__)
 
 
-class LightGBMClassifier(Classifier):
+class LightGBMClassifier(Classifier, ClassifierDecisionTree):
     """
     Wrapper class for importing LightGBM models.
     """
@@ -103,3 +105,61 @@ class LightGBMClassifier(Classifier):
         import pickle
         with open(filename + '.pickle', 'wb') as file_pickle:
             pickle.dump(self._model, file=file_pickle)
+
+    def get_trees(self):
+        """
+        Get the decision trees.
+
+        :return: A list of decision trees.
+        :rtype: `[Tree]`
+        """
+        from art.metrics.verification_decisions_trees import Box, Tree
+
+        booster_dump = self._model.dump_model()["tree_info"]
+        trees = list()
+
+        for i_tree, tree_dump in enumerate(booster_dump):
+            box = Box()
+
+            if self._model._Booster__num_class == 2:
+                class_label = -1
+            else:
+                class_label = i_tree % self._model._Booster__num_class
+
+            trees.append(Tree(class_id=class_label,
+                              leaf_nodes=self._get_leaf_nodes(tree_dump['tree_structure'], i_tree, class_label, box)))
+
+        return trees
+
+    def _get_leaf_nodes(self, node, i_tree, class_label, box):
+        from copy import deepcopy
+        from art.metrics.verification_decisions_trees import LeafNode, Box, Interval
+
+        leaf_nodes = list()
+
+        if 'split_index' in node:
+            node_left = node['left_child']
+            node_right = node['right_child']
+
+            box_left = deepcopy(box)
+            box_right = deepcopy(box)
+
+            feature = node['split_feature']
+            box_split_left = Box(intervals={feature: Interval(-np.inf, node['threshold'])})
+            box_split_right = Box(intervals={feature: Interval(node['threshold'], np.inf)})
+
+            if box.intervals:
+                box_left.intersect_with_box(box_split_left)
+                box_right.intersect_with_box(box_split_right)
+            else:
+                box_left = box_split_left
+                box_right = box_split_right
+
+            leaf_nodes += self._get_leaf_nodes(node_left, i_tree, class_label, box_left)
+            leaf_nodes += self._get_leaf_nodes(node_right, i_tree, class_label, box_right)
+
+        if 'leaf_index' in node:
+            leaf_nodes.append(LeafNode(tree_id=i_tree, class_label=class_label, node_id=node['leaf_index'], box=box,
+                                       value=node['leaf_value']))
+
+        return leaf_nodes
