@@ -58,7 +58,7 @@ class DetectorClassifier(ClassifierNeuralNetwork, ClassifierGradients, Classifie
 
         self.classifier = classifier
         self.detector = detector
-        self._nb_classes = classifier.nb_classes + 1
+        self._nb_classes = classifier.nb_classes() + 1
         self._input_shape = classifier.input_shape
 
     def predict(self, x, batch_size=128, **kwargs):
@@ -136,8 +136,8 @@ class DetectorClassifier(ClassifierNeuralNetwork, ClassifierGradients, Classifie
                  `(batch_size, 1, input_shape)` when `label` parameter is specified.
         :rtype: `np.ndarray`
         """
-        if not ((label is None) or (isinstance(label, (int, np.integer)) and label in range(self._nb_classes))
-                or (isinstance(label, np.ndarray) and len(label.shape) == 1 and (label < self._nb_classes).all()
+        if not ((label is None) or (isinstance(label, (int, np.integer)) and label in range(self.nb_classes()))
+                or (isinstance(label, np.ndarray) and len(label.shape) == 1 and (label < self.nb_classes()).all()
                     and label.shape[0] == x.shape[0])):
             raise ValueError('Label %s is out of range.' % label)
 
@@ -149,7 +149,7 @@ class DetectorClassifier(ClassifierNeuralNetwork, ClassifierGradients, Classifie
             combined_grads = self._compute_combined_grads(x, label=None)
 
         elif isinstance(label, (int, np.int)):
-            if label < self._nb_classes - 1:
+            if label < self.nb_classes() - 1:
                 # Compute and return from the classifier gradients
                 combined_grads = self.classifier.class_gradient(x=x_defences, label=label)
 
@@ -178,8 +178,8 @@ class DetectorClassifier(ClassifierNeuralNetwork, ClassifierGradients, Classifie
 
         else:
             # Compute indexes for classifier labels and detector labels
-            classifier_idx = np.where(label < self._nb_classes - 1)
-            detector_idx = np.where(label == self._nb_classes - 1)
+            classifier_idx = np.where(label < self.nb_classes() - 1)
+            detector_idx = np.where(label == self.nb_classes() - 1)
 
             # Initialize the combined gradients
             combined_grads = np.zeros(shape=(x_defences.shape[0], 1, x_defences.shape[1], x_defences.shape[2],
