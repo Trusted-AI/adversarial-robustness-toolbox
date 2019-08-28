@@ -145,8 +145,9 @@ def empirical_robustness(classifier, x, attack_name, attack_params=None):
 
 def loss_sensitivity(classifier, x, y):
     """
-    Local loss sensitivity estimated through the gradients of the prediction at points in `x`, as defined in
-    https://arxiv.org/pdf/1706.05394.pdf.
+    Local loss sensitivity estimated through the gradients of the prediction at points in `x`.
+
+    | Paper link: https://arxiv.org/abs/1706.05394
 
     :param classifier: A trained model
     :type classifier: :class:`.Classifier`
@@ -202,7 +203,7 @@ def clever(classifier, x, nb_batches, batch_size, radius, norm, target=None, tar
         if target_sort:
             target_classes = np.argsort(y_pred)[0][:-1]
         else:
-            target_classes = [i for i in range(classifier.nb_classes) if i != pred_class]
+            target_classes = [i for i in range(classifier.nb_classes()) if i != pred_class]
     elif isinstance(target, (int, np.integer)):
         target_classes = [target]
     else:
@@ -246,7 +247,7 @@ def clever_u(classifier, x, nb_batches, batch_size, radius, norm, c_init=1, pool
     # Get a list of untargeted classes
     y_pred = classifier.predict(np.array([x]))
     pred_class = np.argmax(y_pred, axis=1)[0]
-    untarget_classes = [i for i in range(classifier.nb_classes) if i != pred_class]
+    untarget_classes = [i for i in range(classifier.nb_classes()) if i != pred_class]
 
     # Compute CLEVER score for each untargeted class
     score_list = []

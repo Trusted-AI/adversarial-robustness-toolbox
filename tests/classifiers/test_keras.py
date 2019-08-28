@@ -185,7 +185,7 @@ class TestKerasClassifier(unittest.TestCase):
         predictions = classifier.predict(self.x_test)
         self.assertEqual(predictions.shape, self.y_test.shape)
 
-        self.assertEqual(classifier.nb_classes, 10)
+        self.assertEqual(classifier.nb_classes(), 10)
 
         class_gradients = classifier.class_gradient(self.x_test[:11])
         self.assertEqual(class_gradients.shape, tuple([11, 10] + list(self.x_test[1].shape)))

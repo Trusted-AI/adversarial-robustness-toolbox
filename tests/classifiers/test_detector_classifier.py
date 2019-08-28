@@ -110,7 +110,7 @@ class TestDetectorClassifier(unittest.TestCase):
 
     def test_nb_classes(self):
         dc = self.detector_classifier
-        self.assertEqual(dc.nb_classes, 11)
+        self.assertEqual(dc.nb_classes(), 11)
 
     def test_input_shape(self):
         dc = self.detector_classifier
