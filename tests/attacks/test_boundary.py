@@ -75,9 +75,11 @@ class TestBoundary(unittest.TestCase):
         self.assertLessEqual(np.max(x_test_adv), 1.0)
         self.assertGreaterEqual(np.min(x_test_adv), 0.0)
 
-        y_pred_adv = np.argmax(tfc.predict(x_test_adv), axis=1)
-        np.testing.assert_array_almost_equal(y_pred_adv[:-2],
-                                             np.asarray([7, 1, 7, 4, 9, 7, 9, 4, 1, 4, 4, 4, 4, 4, 7, 1, 4, 7]))
+        y_pred_adv = tfc.predict(x_test_adv)
+        y_pred_adv_expected = np.asarray([1.57103419e-01, -7.31061280e-01, -4.03979905e-02, -4.79048371e-01,
+                                          9.37852338e-02, -8.01057637e-01, -4.77534801e-01, 1.08687377e+00,
+                                          -3.06577891e-01, -5.74976981e-01])
+        np.testing.assert_array_almost_equal(y_pred_adv[0], y_pred_adv_expected, decimal=4)
 
         # Second untargeted attack
         boundary = BoundaryAttack(classifier=tfc, targeted=False, max_iter=20)
