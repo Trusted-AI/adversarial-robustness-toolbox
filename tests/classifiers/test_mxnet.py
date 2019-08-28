@@ -101,7 +101,7 @@ class TestMXClassifier(unittest.TestCase):
         self.assertGreaterEqual(acc2, 0.8 * acc)
 
     def test_nb_classes(self):
-        self.assertEqual(self.classifier.nb_classes, 10)
+        self.assertEqual(self.classifier.nb_classes(), 10)
 
     def test_input_shape(self):
         self.assertEqual(self.classifier.input_shape, (1, 28, 28))

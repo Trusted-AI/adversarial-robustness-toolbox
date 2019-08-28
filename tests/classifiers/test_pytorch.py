@@ -138,7 +138,7 @@ class TestPyTorchClassifier(unittest.TestCase):
 
     def test_nb_classes(self):
         classifier = get_classifier_pt()
-        self.assertEqual(classifier.nb_classes, 10)
+        self.assertEqual(classifier.nb_classes(), 10)
 
     def test_input_shape(self):
         classifier = get_classifier_pt()

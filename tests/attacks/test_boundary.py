@@ -63,9 +63,8 @@ class TestBoundary(unittest.TestCase):
 
         # First targeted attack
         boundary = BoundaryAttack(classifier=tfc, targeted=True, max_iter=200, delta=0.5)
-        params = {'y': random_targets(self.y_test, tfc.nb_classes)}
+        params = {'y': random_targets(self.y_test, tfc.nb_classes())}
         x_test_adv = boundary.generate(self.x_test, **params)
-
         expected_x_test_adv = np.asarray([0.42622495, 0.0, 0.0, 0.33005068, 0.2277837, 0.0,
                                           0.18348512, 0.42622495, 0.27452883, 0.0, 0.0, 0.0,
                                           0.1653487, 0.70523715, 0.7367977, 0.7974912, 0.28579983, 0.0,
@@ -106,7 +105,7 @@ class TestBoundary(unittest.TestCase):
 
         # First targeted attack
         boundary = BoundaryAttack(classifier=krc, targeted=True, max_iter=20)
-        params = {'y': random_targets(self.y_test, krc.nb_classes)}
+        params = {'y': random_targets(self.y_test, krc.nb_classes())}
         x_test_adv = boundary.generate(self.x_test, **params)
 
         self.assertFalse((self.x_test == x_test_adv).all())
@@ -144,7 +143,7 @@ class TestBoundary(unittest.TestCase):
 
         # First targeted attack
         boundary = BoundaryAttack(classifier=ptc, targeted=True, max_iter=20)
-        params = {'y': random_targets(self.y_test, ptc.nb_classes)}
+        params = {'y': random_targets(self.y_test, ptc.nb_classes())}
         x_test_adv = boundary.generate(x_test, **params)
 
         self.assertFalse((x_test == x_test_adv).all())

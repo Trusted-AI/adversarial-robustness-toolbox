@@ -110,7 +110,7 @@ class AdversarialPatch(Attack):
 
         self.patch = (np.random.standard_normal(size=self.classifier.input_shape)) * 20.0
 
-        y_target = to_categorical(np.broadcast_to(np.array(self.target), x.shape[0]), self.classifier.nb_classes)
+        y_target = to_categorical(np.broadcast_to(np.array(self.target), x.shape[0]), self.classifier.nb_classes())
 
         for i_step in range(self.max_iter):
             if i_step == 0 or (i_step + 1) % 100 == 0:

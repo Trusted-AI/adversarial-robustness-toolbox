@@ -84,7 +84,7 @@ class SaliencyMapMethod(Attack):
         if y is None:
             # Randomly choose target from the incorrect classes for each sample
             from art.utils import random_targets
-            targets = np.argmax(random_targets(preds, self.classifier.nb_classes), axis=1)
+            targets = np.argmax(random_targets(preds, self.classifier.nb_classes()), axis=1)
         else:
             targets = np.argmax(y, axis=1)
 

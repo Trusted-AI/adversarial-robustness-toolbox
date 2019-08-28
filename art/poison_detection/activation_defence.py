@@ -491,7 +491,7 @@ class ActivationDefence(PoisonFilteringDefence):
         :return: segmented data according to specified features.
         :rtype: `list`
         """
-        n_classes = self.classifier.nb_classes
+        n_classes = self.classifier.nb_classes()
         by_class = [[] for _ in range(n_classes)]
         for indx, feature in enumerate(features):
             if n_classes > 2:

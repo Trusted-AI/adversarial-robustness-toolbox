@@ -98,7 +98,7 @@ class TestTFClassifier(unittest.TestCase):
 
     def test_nb_classes(self):
         classifier, sess = get_classifier_tf()
-        self.assertEqual(classifier.nb_classes, 10)
+        self.assertEqual(classifier.nb_classes(), 10)
         tf.reset_default_graph()
         sess.close()
 

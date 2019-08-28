@@ -84,7 +84,7 @@ class TestZooAttack(unittest.TestCase):
 
         # Targeted attack
         zoo = ZooAttack(classifier=tfc, targeted=True, max_iter=100, binary_search_steps=10)
-        params = {'y': random_targets(y_test, tfc.nb_classes)}
+        params = {'y': random_targets(y_test, tfc.nb_classes())}
         x_test_adv = zoo.generate(x_test, **params)
         self.assertFalse((x_test == x_test_adv).all())
         self.assertTrue((x_test_adv <= 1.0001).all())
@@ -139,7 +139,7 @@ class TestZooAttack(unittest.TestCase):
         # zoo = ZooAttack(classifier=krc, targeted=False, max_iter=20)
         zoo = ZooAttack(classifier=krc, targeted=False, batch_size=5)
         # x_test_adv = zoo.generate(x_test)
-        params = {'y': random_targets(y_test, krc.nb_classes)}
+        params = {'y': random_targets(y_test, krc.nb_classes())}
         x_test_adv = zoo.generate(x_test, **params)
 
         # from matplotlib import pyplot as plt
