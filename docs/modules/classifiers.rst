@@ -2,6 +2,12 @@
 ======================
 .. automodule:: art.classifiers
 
+BlackBox Wrapper
+----------------
+.. autoclass:: BlackBoxClassifier
+   :members:
+   :special-members:
+
 Keras Wrapper
 -------------
 .. autoclass:: KerasClassifier
