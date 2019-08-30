@@ -78,9 +78,11 @@ class TestClassifier(unittest.TestCase):
     def test_preprocessing_normalisation(self):
         classifier = ClassifierInstance()
 
-        x = np.random.rand(100, 200)
-        new_x = classifier._apply_preprocessing_standardisation(x)
-        self.assertEqual(np.sum(x - new_x), 0)
+        x = np.random.rand(2, 3)
+        x_new = classifier._apply_preprocessing_standardisation(x)
+        x_new_expected = np.asarray([[0.19151945, 0.62210877, 0.43772774],
+                                     [0.78535858, 0.77997581, 0.27259261]])
+        np.testing.assert_array_almost_equal(x_new, x_new_expected)
 
     def test_repr(self):
         classifier = ClassifierInstance()
@@ -98,18 +100,15 @@ class TestClassifierNeuralNetwork(unittest.TestCase):
 
     def test_preprocessing_normalisation(self):
         classifier = ClassifierNeuralNetworkInstance((0, 1))
-
-        x = np.random.rand(100, 200)
-        new_x = classifier._apply_preprocessing_standardisation(x)
-        self.assertEqual(np.sum(x - new_x), 0)
+        x = np.random.rand(2, 3)
+        x_new_expected = np.asarray([[0.19151945, 0.62210877, 0.43772774],
+                                     [0.78535858, 0.77997581, 0.27259261]])
+        x_new = classifier._apply_preprocessing_standardisation(x)
+        np.testing.assert_array_almost_equal(x_new, x_new_expected, decimal=4)
 
     def test_repr(self):
         classifier = ClassifierNeuralNetworkInstance((0, 1))
-
         repr_ = repr(classifier)
-
-        print(repr_)
-
         self.assertIn('ClassifierNeuralNetworkInstance', repr_)
         self.assertIn('channel_index=1', repr_)
         self.assertIn('clip_values=(0, 1)', repr_)

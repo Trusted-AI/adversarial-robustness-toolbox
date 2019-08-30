@@ -190,9 +190,9 @@ def get_classifier_pt():
             w_dense = np.load(os.path.join(os.path.dirname(os.path.dirname(__file__)), 'models', 'W_DENSE_MNIST.npy'))
             b_dense = np.load(os.path.join(os.path.dirname(os.path.dirname(__file__)), 'models', 'B_DENSE_MNIST.npy'))
 
+            w_conv2d_pt = np.transpose(w_conv2d, (2, 3, 1, 0))
+
             self.conv = nn.Conv2d(in_channels=1, out_channels=1, kernel_size=7)
-            w_conv2d_pt = np.swapaxes(w_conv2d, 0, 2)
-            w_conv2d_pt = np.swapaxes(w_conv2d_pt, 1, 3)
             self.conv.weight = nn.Parameter(torch.Tensor(w_conv2d_pt))
             self.conv.bias = nn.Parameter(torch.Tensor(b_conv2d))
             self.pool = nn.MaxPool2d(4, 4)
@@ -203,13 +203,13 @@ def get_classifier_pt():
         # pylint: disable=W0221
         # disable pylint because of API requirements for function
         def forward(self, x):
-            import torch.nn.functional as f
-
-            x = self.pool(f.relu(self.conv(x)))
-            x = x.view(-1, 25)
-            logit_output = self.fullyconnected(x)
-
-            return logit_output
+            x = self.conv(x)
+            x = torch.nn.functional.relu(x)
+            x = self.pool(x)
+            x = x.reshape(-1, 25)
+            x = self.fullyconnected(x)
+            x = torch.nn.functional.softmax(x)
+            return x
 
     # Define the network
     model = Model()
@@ -237,6 +237,41 @@ def get_classifier_bb(defences=None):
 
     bb = BlackBoxClassifier(predict, (28, 28, 1), 10, clip_values=(0, 255), defences=defences)
     return bb
+
+def get_classifier_mx():
+    """
+    Standard MXNet classifier for unit testing
+
+    :return: MXNetClassifier
+    """
+    import mxnet
+    from mxnet.gluon.nn import Conv2D, MaxPool2D, Flatten, Dense
+    from art.classifiers import MXClassifier
+
+    model = mxnet.gluon.nn.Sequential()
+    with model.name_scope():
+        model.add(Conv2D(channels=1, kernel_size=7, activation='relu'),
+                  MaxPool2D(pool_size=4, strides=4),
+                  Flatten(),
+                  Dense(10))
+    model.initialize(init=mxnet.init.Xavier())
+
+    # Create optimizer
+    loss = mxnet.gluon.loss.SoftmaxCrossEntropyLoss()
+    trainer = mxnet.gluon.Trainer(model.collect_params(), 'sgd', {'learning_rate': 0.1})
+
+    # # Fit classifier
+    # classifier = MXClassifier(model=net, loss=loss, clip_values=(0, 1), input_shape=(1, 28, 28), nb_classes=10,
+    #                           optimizer=trainer)
+    # classifier.fit(x_train, y_train, batch_size=128, nb_epochs=2)
+    # cls.classifier = classifier
+
+    # Get classifier
+    mxc = MXClassifier(model=model, loss=loss, input_shape=(28, 28, 1), nb_classes=10, optimizer=trainer, ctx=None,
+                       channel_index=1, clip_values=(0, 1), defences=None, preprocessing=(0, 1))
+
+    return mxc
+
 
 # ------------------------------------------------------------------------------------------------ TEST MODELS FOR IRIS
 
