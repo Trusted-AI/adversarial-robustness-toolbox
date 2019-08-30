@@ -335,7 +335,11 @@ class TestKerasClassifierTF(unittest.TestCase):
         label = decode_predictions(prediction)[0][0]
 
         self.assertEqual(label[1], 'Weimaraner')
-        self.assertAlmostEqual(prediction[0, 178], 0.2658045, places=3)
+        if tf.__version__[0] == '2':
+            self.assertAlmostEqual(prediction[0, 178], 0.29494652, places=3)
+        else:
+            self.assertAlmostEqual(prediction[0, 178], 0.2658045, places=3)
+
 
     def test_learning_phase(self):
         classifier = get_classifier_kr_tf()
