@@ -21,8 +21,12 @@ This module implements the classifiers for scikit-learn models.
 from __future__ import absolute_import, division, print_function, unicode_literals
 
 import logging
+import os
+import time
+
 import numpy as np
 
+from art import DATA_PATH
 from art.classifiers.classifier import Classifier, ClassifierGradients
 from art.utils import to_categorical
 
@@ -115,9 +119,9 @@ class ScikitlearnClassifier(Classifier):
 
         return self.model.predict_proba(x_preprocessed) if prob else self.model.predict(x_preprocessed)
 
-    def save(self, filename, path=None):
+    def save(self, filename, path=''):
         import pickle
-        with open(filename + '.pickle', 'wb') as file_pickle:
+        with open(os.path.join(path, filename) + '.pickle', 'wb') as file_pickle:
             pickle.dump(self.model, file=file_pickle)
 
 
@@ -638,12 +642,39 @@ class ScikitlearnSVC(ScikitlearnClassifier, ClassifierGradients):
         super(ScikitlearnSVC, self).__init__(clip_values=clip_values, defences=defences, preprocessing=preprocessing)
 
         self.model = model
+        self.model_save_file = 'original_model_{}'.format(str(int(time.time())))
         self.kernel_func = self._kernel_func()
         self.kernel_grad = self._kernel_gradient_func
         if hasattr(self.model, 'classes_'):
             self._nb_classes = len(self.model.classes_)
         else:
             self._nb_classes = None
+
+    def save_model(self):
+        """
+        Save the model and delete previous saved version
+        :return: None
+        """
+        model_save_path = os.path.join(DATA_PATH, self.model_save_file) + '.pickle'
+        if os.path.exists(model_save_path):
+            os.remove(model_save_path)
+
+        self.model_save_file = 'original_model_{}'.format(str(int(time.time())))
+        print("saving model at {}.pickle".format(os.path.join(DATA_PATH, self.model_save_file)))
+        self.save(self.model_save_file, path=DATA_PATH)
+
+    def load_model(self):
+        """
+        Load the original saved model associated with this classifier
+
+        :return: an ART model
+        :rtype: `art.classifiers.scikitlearn.ScikitlearnSVC`
+        """
+        import pickle
+        model_save_path = os.path.join(DATA_PATH, self.model_save_file) + '.pickle'
+        svm_model = pickle.load(open(model_save_path, 'rb'))
+        return ScikitlearnSVC(model=svm_model, clip_values=self.clip_values, defences=self.defences,
+                              preprocessing=self.preprocessing)
 
     def class_gradient(self, x, label=None, **kwargs):
         """
@@ -663,7 +694,7 @@ class ScikitlearnSVC(ScikitlearnClassifier, ClassifierGradients):
         """
         raise NotImplementedError
 
-    def fit(self, x, y, **kwargs):
+    def fit(self, x, y, save=False, **kwargs):
         """
         Fit the classifier on the training set `(x, y)`.
 
@@ -674,6 +705,8 @@ class ScikitlearnSVC(ScikitlearnClassifier, ClassifierGradients):
         :param kwargs: Dictionary of framework-specific arguments. These should be parameters supported by the
                `fit` function in `sklearn.linear_model.LogisticRegression` and will be passed to this function as such.
         :type kwargs: `dict`
+        :param save: Whether or not to save a version of this file
+        :type save: `bool`
         :return: `None`
         """
         y_index = np.argmax(y, axis=1)
@@ -688,8 +721,12 @@ class ScikitlearnSVC(ScikitlearnClassifier, ClassifierGradients):
         elif hasattr(self.model, 'support_vectors_'):
             self._input_shape = (self.model.support_vectors_.shape[1],)
 
+        if save:
+            self.save_model()
+
     def _kernel_gradient_func(self, sv, x_sample):
         """
+        Applies the kernel gradient to a support vector
 
         :param sv: A support vector
         :type sv: `np.ndarray`
@@ -719,6 +756,15 @@ class ScikitlearnSVC(ScikitlearnClassifier, ClassifierGradients):
         return grad
 
     def _get_kernel_gradient_sv(self, i_sv, x_sample):
+        """
+        Applies the kernel gradient to all of a model's support vectors
+
+        :param i_sv: A support vector index
+        :type i_sv: int
+        :param x_sample: A sample vector
+        :return: The kernelized product of the vectors
+        :rtype: `np.ndarray`
+        """
 
         x_i = self.model.support_vectors_[i_sv, :]
         return self._kernel_gradient_func(x_i, x_sample)
