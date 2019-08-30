@@ -1006,7 +1006,7 @@ class ScikitlearnSVC(ScikitlearnClassifier, ClassifierGradients):
             for i_sample in range(num_samples):
 
                 i_label = y_index[i_sample]
-                if self.nb_classes == 2:
+                if self.nb_classes() == 2:
                     i_label_i = 0
                     if i_label == 0:
                         label_multiplier = 1
