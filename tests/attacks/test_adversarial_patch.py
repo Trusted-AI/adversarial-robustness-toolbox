@@ -23,10 +23,12 @@ import unittest
 import keras.backend as k
 import numpy as np
 import tensorflow as tf
+from sklearn.tree import DecisionTreeClassifier
 
 from art.attacks import AdversarialPatch
-from art.utils import load_mnist, master_seed, import_tensorflow_v1
+from art.utils import load_dataset, master_seed, import_tensorflow_v1
 from art.utils_test import get_classifier_tf, get_classifier_kr, get_classifier_pt, get_iris_classifier_kr
+from art.classifiers.scikitlearn import ScikitlearnDecisionTreeClassifier
 
 logger = logging.getLogger('testLogger')
 
@@ -42,14 +44,14 @@ class TestAdversarialPatch(unittest.TestCase):
 
     @classmethod
     def setUpClass(cls):
-        # Get MNIST
-        (x_train, y_train), (x_test, y_test), _, _ = load_mnist()
-        x_train, y_train = x_train[:NB_TRAIN], y_train[:NB_TRAIN]
-        x_test, y_test = x_test[:NB_TEST], y_test[:NB_TEST]
-        cls.mnist = (x_train, y_train), (x_test, y_test)
+        (x_train, y_train), (x_test, y_test), _, _ = load_dataset('mnist')
+
+        cls.x_train = x_train[:NB_TRAIN]
+        cls.y_train = y_train[:NB_TRAIN]
+        cls.x_test = x_test[:NB_TEST]
+        cls.y_test = y_test[:NB_TEST]
 
     def setUp(self):
-        # Set master seed
         master_seed(1234)
 
     def test_tfclassifier(self):
@@ -57,20 +59,15 @@ class TestAdversarialPatch(unittest.TestCase):
         First test with the TFClassifier.
         :return:
         """
-        # Build TFClassifier
         tfc, sess = get_classifier_tf()
 
-        # Get MNIST
-        (x_train, _), (_, _) = self.mnist
-
-        # Attack
         attack_ap = AdversarialPatch(tfc, rotation_max=22.5, scale_min=0.1, scale_max=1.0, learning_rate=5.0,
                                      batch_size=10, max_iter=500)
-        patch_adv, _ = attack_ap.generate(x_train)
+        patch_adv, _ = attack_ap.generate(self.x_train)
 
-        self.assertAlmostEqual(patch_adv[8, 8, 0], -3.1106631027725005, delta=.1)
-        self.assertAlmostEqual(patch_adv[14, 14, 0], 18.101, delta=.1)
-        self.assertAlmostEqual(float(np.sum(patch_adv)), 624.867, delta=.1)
+        self.assertAlmostEqual(patch_adv[8, 8, 0], -3.1106631027725005, delta=0.1)
+        self.assertAlmostEqual(patch_adv[14, 14, 0], 18.101, delta=0.1)
+        self.assertAlmostEqual(float(np.sum(patch_adv)), 624.867, delta=0.1)
 
         sess.close()
 
@@ -82,21 +79,15 @@ class TestAdversarialPatch(unittest.TestCase):
         :return:
         """
         tf = import_tensorflow_v1()
-
-        # Build KerasClassifier
         krc = get_classifier_kr()
 
-        # Get MNIST
-        (x_train, _), (_, _) = self.mnist
-
-        # Attack
         attack_ap = AdversarialPatch(krc, rotation_max=22.5, scale_min=0.1, scale_max=1.0, learning_rate=5.0,
                                      batch_size=10, max_iter=500)
-        patch_adv, _ = attack_ap.generate(x_train)
+        patch_adv, _ = attack_ap.generate(self.x_train)
 
-        self.assertAlmostEqual(patch_adv[8, 8, 0], -3.336, delta=.1)
-        self.assertAlmostEqual(patch_adv[14, 14, 0], 18.574, delta=.1)
-        self.assertAlmostEqual(float(np.sum(patch_adv)), 1054.587, delta=.1)
+        self.assertAlmostEqual(patch_adv[8, 8, 0], -3.336, delta=0.1)
+        self.assertAlmostEqual(patch_adv[14, 14, 0], 18.574, delta=0.1)
+        self.assertAlmostEqual(float(np.sum(patch_adv)), 1054.587, delta=0.1)
 
         k.clear_session()
         tf.reset_default_graph()
@@ -106,27 +97,23 @@ class TestAdversarialPatch(unittest.TestCase):
         Third test with the PyTorchClassifier.
         :return:
         """
-        # Build PyTorchClassifier
         ptc = get_classifier_pt()
 
-        # Get MNIST
-        (x_train, _), (_, _) = self.mnist
-        x_train = np.swapaxes(x_train, 1, 3)
+        x_train = np.swapaxes(self.x_train, 1, 3)
 
-        # Attack
         attack_ap = AdversarialPatch(ptc, rotation_max=22.5, scale_min=0.1, scale_max=1.0, learning_rate=5.0,
                                      batch_size=10, max_iter=500)
         patch_adv, _ = attack_ap.generate(x_train)
 
-        self.assertAlmostEqual(patch_adv[0, 8, 8], -3.143605902784875, delta=.1)
-        self.assertAlmostEqual(patch_adv[0, 14, 14], 19.790434152473054, delta=.1)
-        self.assertAlmostEqual(float(np.sum(patch_adv)), 382.163, delta=.1)
+        self.assertAlmostEqual(patch_adv[0, 8, 8], -3.143605902784875, delta=0.1)
+        self.assertAlmostEqual(patch_adv[0, 14, 14], 19.790434152473054, delta=0.1)
+        self.assertAlmostEqual(float(np.sum(patch_adv)), 384.826, delta=0.1)
 
     @unittest.skipIf(tf.__version__[0] == '2', reason='Skip unittests for Tensorflow v2 until Keras supports Tensorflow'
                                                       ' v2 as backend.')
     def test_failure_feature_vectors(self):
-        attack_params = {"rotation_max": 22.5, "scale_min": 0.1, "scale_max": 1.0,
-                         "learning_rate": 5.0, "number_of_steps": 5, "batch_size": 10}
+        attack_params = {"rotation_max": 22.5, "scale_min": 0.1, "scale_max": 1.0, "learning_rate": 5.0,
+                         "number_of_steps": 5, "batch_size": 10}
         classifier, _ = get_iris_classifier_kr()
         attack = AdversarialPatch(classifier=classifier)
         attack.set_params(**attack_params)
@@ -153,9 +140,6 @@ class TestAdversarialPatch(unittest.TestCase):
 
     def test_classifier_type_check_fail_gradients(self):
         # Use a test classifier not providing gradients required by white-box attack
-        from art.classifiers.scikitlearn import ScikitlearnDecisionTreeClassifier
-        from sklearn.tree import DecisionTreeClassifier
-
         classifier = ScikitlearnDecisionTreeClassifier(model=DecisionTreeClassifier())
         with self.assertRaises(TypeError) as context:
             _ = AdversarialPatch(classifier=classifier)

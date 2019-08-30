@@ -60,12 +60,13 @@ The library is still under development. Feedback, bug reports and extensions are
 
 * Detector based on activations analysis (`Chen et al., 2018`_)
 
-**Robustness metrics and certifications:**
+**Robustness metrics, certifications and verification:**
 
 * Randomized Smoothing (`Cohen et al., 2019`_)
 * CLEVER (`Weng et al., 2018`_)
 * Empirical robustness (`Moosavi-Dezfooli et al., 2015`_)
 * Loss sensitivity (`Arpit et al., 2017`_)
+* Clique Method Robustness Verification (`Hongge et al., 2019`_)
 
 
 .. toctree::
@@ -131,3 +132,4 @@ Indices and tables
 .. _Papernot et al., 2016b: https://arxiv.org/abs/1605.07277
 .. _Grosse et al., 2018: https://arxiv.org/abs/1812.02606
 .. _Cohen et al., 2019: https://arxiv.org/abs/1902.02918
+.. _Hongge et al., 2019: https://arxiv.org/abs/1906.03849

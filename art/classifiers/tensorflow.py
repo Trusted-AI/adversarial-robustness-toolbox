@@ -116,7 +116,7 @@ class TFClassifier(ClassifierNeuralNetwork, ClassifierGradients, Classifier):
         x_preprocessed, _ = self._apply_preprocessing(x, y=None, fit=False)
 
         # Run prediction with batch processing
-        results = np.zeros((x_preprocessed.shape[0], self.nb_classes), dtype=np.float32)
+        results = np.zeros((x_preprocessed.shape[0], self.nb_classes()), dtype=np.float32)
         num_batch = int(np.ceil(len(x_preprocessed) / float(batch_size)))
         for m in range(num_batch):
             # Batch indexes
@@ -222,13 +222,9 @@ class TFClassifier(ClassifierNeuralNetwork, ClassifierGradients, Classifier):
                  `(batch_size, 1, input_shape)` when `label` parameter is specified.
         :rtype: `np.ndarray`
         """
-        logits = kwargs.get('logits')
-        if logits is None:
-            logits = False
-
         # Check value of label for computing gradients
-        if not (label is None or (isinstance(label, (int, np.integer)) and label in range(self.nb_classes))
-                or (isinstance(label, np.ndarray) and len(label.shape) == 1 and (label < self._nb_classes).all()
+        if not (label is None or (isinstance(label, (int, np.integer)) and label in range(self.nb_classes()))
+                or (isinstance(label, np.ndarray) and len(label.shape) == 1 and (label < self.nb_classes()).all()
                     and label.shape[0] == x.shape[0])):
             raise ValueError('Label %s is out of range.' % label)
 
@@ -298,13 +294,13 @@ class TFClassifier(ClassifierNeuralNetwork, ClassifierGradients, Classifier):
         tf = import_tensorflow_v1()
 
         if not hasattr(self, '_class_grads'):
-            self._class_grads = [None for _ in range(self.nb_classes)]
+            self._class_grads = [None for _ in range(self.nb_classes())]
 
         # Construct the class gradients graph
         if label is None:
             if None in self._class_grads:
                 self._class_grads = [tf.gradients(self._output[:, i], self._input_ph)[0]
-                                     for i in range(self._nb_classes)]
+                                     for i in range(self.nb_classes())]
 
         elif isinstance(label, int):
             if self._class_grads[label] is None:

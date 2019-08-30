@@ -124,6 +124,15 @@ class Classifier(ABC):
         """
         return self._input_shape
 
+    def nb_classes(self):
+        """
+        Return the number of output classes.
+
+        :return: Number of classes in the data.
+        :rtype: `int`
+        """
+        raise NotImplementedError
+
     @abc.abstractmethod
     def save(self, filename, path=None):
         """
@@ -212,7 +221,7 @@ class Classifier(ABC):
 
 class ClassifierNeuralNetwork(ABC):
     """
-    Base class defining additional classifier functionality required for all neural network classifiers. This base class
+    Base class defining additional classifier functionality required for neural network classifiers. This base class
     has to be mixed in with class `Classifier` to extend the minimum classifier functionality.
     """
 
@@ -289,16 +298,6 @@ class ClassifierNeuralNetwork(ABC):
             self.fit(x_preprocessed, y_preprocessed, nb_epochs=1, batch_size=len(x), **kwargs)
 
     @property
-    def nb_classes(self):
-        """
-        Return the number of output classes.
-
-        :return: Number of classes in the data.
-        :rtype: `int`
-        """
-        return self._nb_classes
-
-    @property
     def channel_index(self):
         """
         :return: Index of the axis in input data containing the color channels.
@@ -363,6 +362,15 @@ class ClassifierNeuralNetwork(ABC):
         """
         raise NotImplementedError
 
+    def nb_classes(self):
+        """
+        Return the number of output classes.
+
+        :return: Number of classes in the data.
+        :rtype: `int`
+        """
+        return self._nb_classes
+
     def __repr__(self):
         name = self.__class__.__name__
 
@@ -375,7 +383,7 @@ class ClassifierNeuralNetwork(ABC):
 
 class ClassifierGradients(ABC):
     """
-    Base class defining additional classifier functionality for all classifiers providing access to loss and class
+    Base class defining additional classifier functionality for classifiers providing access to loss and class
     gradients. A classifier of this type can be combined with white-box attacks. This base class has to be mixed in with
     class `Classifier` and optionally class `ClassifierNeuralNetwork` to extend the minimum classifier functionality.
     """
@@ -412,16 +420,6 @@ class ClassifierGradients(ABC):
         :rtype: `np.ndarray`
         """
         raise NotImplementedError
-
-    @property
-    def nb_classes(self):
-        """
-        Return the number of output classes.
-
-        :return: Number of classes in the data.
-        :rtype: `int`
-        """
-        return self._nb_classes
 
     def _apply_preprocessing_gradient(self, x, gradients):
         """
@@ -480,3 +478,20 @@ class ClassifierGradients(ABC):
         div = np.asarray(div, dtype=gradients.dtype)
         res = gradients / div
         return res
+
+
+class ClassifierDecisionTree(ABC):
+    """
+    Base class defining additional classifier functionality for decision-tree-based classifiers This base class has to
+    be mixed in with class `Classifier` to extend the minimum classifier functionality.
+    """
+
+    @abc.abstractmethod
+    def get_trees(self):
+        """
+        Get the decision trees.
+
+        :return: A list of decision trees.
+        :rtype: `[Tree]`
+        """
+        raise NotImplementedError
