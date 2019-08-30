@@ -131,7 +131,10 @@ class KerasClassifier(ClassifierNeuralNetwork, ClassifierGradients, Classifier):
             if isinstance(self._model.loss, six.string_types):
                 loss_function = getattr(k, self._model.loss)
             elif self._model.loss.__name__ in ['categorical_hinge', 'kullback_leibler_divergence', 'cosine_proximity']:
-                loss_function = getattr(keras.losses, self._model.loss.__name__)
+                if self.is_tensorflow and self._model.loss.__name__ == 'cosine_proximity':
+                    loss_function = tf.keras.losses.cosine_similarity
+                else:
+                    loss_function = getattr(keras.losses, self._model.loss.__name__)
             else:
                 loss_function = getattr(k, self._model.loss.__name__)
 

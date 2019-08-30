@@ -78,6 +78,12 @@ def _kr_weights_loader(dataset, weights_type, layer='DENSE'):
     return _kr_initializer
 
 
+def _kr_tf_weights_loader(dataset, weights_type, layer='DENSE'):
+    filename = str(weights_type) + '_' + str(layer) + '_' + str(dataset) + '.npy'
+    weights = np.load(os.path.join(os.path.dirname(os.path.dirname(__file__)), 'models', filename))
+    return weights
+
+
 def get_classifier_tf():
     """
     Standard Tensorflow classifier for unit testing.
@@ -123,6 +129,7 @@ def get_classifier_tf():
                        loss=loss, learning=None, sess=sess)
 
     return tfc, sess
+
 
 def get_classifier_tf_v2():
     """
@@ -171,7 +178,7 @@ def get_classifier_tf_v2():
 
     return tfc
 
-  
+
 def get_classifier_kr(loss_name='categorical_crossentropy'):
     """
     Standard Keras classifier for unit testing
@@ -222,6 +229,58 @@ def get_classifier_kr(loss_name='categorical_crossentropy'):
         raise ValueError('Loss name not recognised.')
 
     model.compile(loss=loss, optimizer=keras.optimizers.Adam(lr=0.01), metrics=['accuracy'])
+
+    # Get classifier
+    krc = KerasClassifier(model, clip_values=(0, 1), use_logits=False)
+
+    return krc
+
+
+def get_classifier_kr_tf(loss_name='categorical_crossentropy'):
+    """
+    Standard Keras classifier for unit testing
+
+    The weights and biases are identical to the Tensorflow model in get_classifier_tf().
+
+    :return: KerasClassifier, tf.Session()
+    """
+    import tensorflow as tf
+    from tensorflow.keras.models import Sequential
+    from tensorflow.keras.layers import Dense, Flatten, Conv2D, MaxPooling2D
+
+    from art.classifiers import KerasClassifier
+
+    # Create simple CNN
+    model = Sequential()
+    model.add(Conv2D(1, kernel_size=(7, 7), activation='relu', input_shape=(28, 28, 1)))
+    model.layers[-1].set_weights(
+        [_kr_tf_weights_loader('MNIST', 'W', 'CONV2D'), _kr_tf_weights_loader('MNIST', 'B', 'CONV2D')])
+    model.add(MaxPooling2D(pool_size=(4, 4)))
+    model.add(Flatten())
+    model.add(Dense(10, activation='softmax'))
+    model.layers[-1].set_weights(
+        [_kr_tf_weights_loader('MNIST', 'W', 'DENSE'), _kr_tf_weights_loader('MNIST', 'B', 'DENSE')])
+
+    if loss_name == 'categorical_hinge':
+        loss = tf.keras.losses.categorical_hinge
+    elif loss_name == 'categorical_crossentropy':
+        loss = tf.keras.losses.categorical_crossentropy
+
+    elif loss_name == 'sparse_categorical_crossentropy':
+        loss = tf.keras.losses.sparse_categorical_crossentropy
+
+    elif loss_name == 'binary_crossentropy':
+        loss = tf.keras.losses.binary_crossentropy
+
+    elif loss_name == 'kullback_leibler_divergence':
+        loss = tf.keras.losses.kullback_leibler_divergence
+
+    elif loss_name == 'cosine_similarity':
+        loss = tf.keras.losses.cosine_similarity
+    else:
+        raise ValueError('Loss name not recognised.')
+
+    model.compile(loss=loss, optimizer=tf.keras.optimizers.Adam(lr=0.01), metrics=['accuracy'])
 
     # Get classifier
     krc = KerasClassifier(model, clip_values=(0, 1), use_logits=False)
