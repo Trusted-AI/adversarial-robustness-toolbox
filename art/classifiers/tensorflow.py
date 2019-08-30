@@ -27,7 +27,6 @@ import numpy as np
 import six
 
 from art.classifiers.classifier import Classifier, ClassifierNeuralNetwork, ClassifierGradients
-from art.utils import import_tensorflow_v1
 
 logger = logging.getLogger(__name__)
 
@@ -546,13 +545,14 @@ class TensorflowClassifier(ClassifierNeuralNetwork, ClassifierGradients, Classif
         if tf.__version__[0] == '2':
             import tensorflow.compat.v1 as tf
             tf.disable_eager_execution()
+        from tensorflow.python.saved_model import tag_constants
         from art import DATA_PATH
 
         full_path = os.path.join(DATA_PATH, state['model_name'])
 
         graph = tf.Graph()
         sess = tf.Session(graph=graph)
-        loaded = tf.saved_model.loader.load(sess, [tf.python.saved_model.tag_constants.SERVING], full_path)
+        loaded = tf.saved_model.loader.load(sess, [tag_constants.SERVING], full_path)
 
         # Recover session
         self._sess = sess
@@ -671,7 +671,7 @@ class TensorflowV2Classifier(ClassifierNeuralNetwork, ClassifierGradients, Class
         x_preprocessed, _ = self._apply_preprocessing(x, y=None, fit=False)
 
         # Run prediction with batch processing
-        results = np.zeros((x_preprocessed.shape[0], self.nb_classes), dtype=np.float32)
+        results = np.zeros((x_preprocessed.shape[0], self.nb_classes()), dtype=np.float32)
         num_batch = int(np.ceil(len(x_preprocessed) / float(batch_size)))
         for m in range(num_batch):
             # Batch indexes
@@ -753,7 +753,7 @@ class TensorflowV2Classifier(ClassifierNeuralNetwork, ClassifierGradients, Class
                 # Compute the gradients w.r.t. all classes
                 class_gradients = list()
 
-                for i in range(self.nb_classes):
+                for i in range(self.nb_classes()):
                     with tf.GradientTape() as tape:
                         x_preprocessed_tf = tf.convert_to_tensor(x_preprocessed)
                         tape.watch(x_preprocessed_tf)
