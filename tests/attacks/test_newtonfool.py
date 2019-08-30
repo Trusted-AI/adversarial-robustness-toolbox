@@ -204,7 +204,7 @@ class TestNewtonFoolVectors(unittest.TestCase):
         from sklearn.linear_model import LogisticRegression
         from sklearn.svm import SVC, LinearSVC
 
-        from art.classifiers.scikitklearn import ScikitlearnLogisticRegression, ScikitlearnSVC
+        from art.classifiers.scikitlearn import ScikitlearnLogisticRegression, ScikitlearnSVC
 
         scikitlearn_test_cases = {LogisticRegression: ScikitlearnLogisticRegression}#,
                                   # SVC: ScikitlearnSVC,

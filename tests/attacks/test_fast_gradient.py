@@ -265,7 +265,7 @@ class TestFastGradientMethodImages(unittest.TestCase):
 
     def test_classifier_type_check_fail_gradients(self):
         # Use a test classifier not providing gradients required by white-box attack
-        from art.classifiers.scikitklearn import ScikitlearnDecisionTreeClassifier
+        from art.classifiers.scikitlearn import ScikitlearnDecisionTreeClassifier
         from sklearn.tree import DecisionTreeClassifier
 
         classifier = ScikitlearnDecisionTreeClassifier(model=DecisionTreeClassifier())
@@ -395,7 +395,7 @@ class TestFastGradientVectors(unittest.TestCase):
         from sklearn.linear_model import LogisticRegression
         from sklearn.svm import SVC, LinearSVC
 
-        from art.classifiers.scikitklearn import ScikitlearnLogisticRegression, ScikitlearnSVC
+        from art.classifiers.scikitlearn import ScikitlearnLogisticRegression, ScikitlearnSVC
 
         scikitlearn_test_cases = {LogisticRegression: ScikitlearnLogisticRegression,
                                   SVC: ScikitlearnSVC,

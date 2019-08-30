@@ -421,11 +421,11 @@ class TestHopSkipJumpVectors(unittest.TestCase):
         from sklearn.ensemble import AdaBoostClassifier, BaggingClassifier, ExtraTreesClassifier
         from sklearn.ensemble import GradientBoostingClassifier, RandomForestClassifier
 
-        from art.classifiers.scikitklearn import ScikitlearnDecisionTreeClassifier, ScikitlearnExtraTreeClassifier
-        from art.classifiers.scikitklearn import ScikitlearnAdaBoostClassifier, ScikitlearnBaggingClassifier
-        from art.classifiers.scikitklearn import ScikitlearnExtraTreesClassifier, ScikitlearnGradientBoostingClassifier
-        from art.classifiers.scikitklearn import ScikitlearnRandomForestClassifier, ScikitlearnLogisticRegression
-        from art.classifiers.scikitklearn import ScikitlearnSVC
+        from art.classifiers.scikitlearn import ScikitlearnDecisionTreeClassifier, ScikitlearnExtraTreeClassifier
+        from art.classifiers.scikitlearn import ScikitlearnAdaBoostClassifier, ScikitlearnBaggingClassifier
+        from art.classifiers.scikitlearn import ScikitlearnExtraTreesClassifier, ScikitlearnGradientBoostingClassifier
+        from art.classifiers.scikitlearn import ScikitlearnRandomForestClassifier, ScikitlearnLogisticRegression
+        from art.classifiers.scikitlearn import ScikitlearnSVC
 
         scikitlearn_test_cases = {DecisionTreeClassifier: ScikitlearnDecisionTreeClassifier,
                                   ExtraTreeClassifier: ScikitlearnExtraTreeClassifier,
