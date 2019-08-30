@@ -96,7 +96,7 @@ class RobustnessVerificationTreeModelsCliqueMethod:
                 if self._classifier.nb_classes() <= 2:
                     best_score = self._get_best_score(i_sample, eps, norm, target_label=None)
                     is_robust = (self.y[i_sample] < 0.5 and best_score < 0) or (
-                            self.y[i_sample] > 0.5 and best_score > 0)
+                        self.y[i_sample] > 0.5 and best_score > 0)
                 else:
                     for i_class in range(self._classifier.nb_classes()):
                         if i_class != self.y[i_sample]:

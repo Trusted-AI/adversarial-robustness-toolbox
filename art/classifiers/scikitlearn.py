@@ -834,7 +834,7 @@ class ScikitlearnLogisticRegression(ScikitlearnClassifier, ClassifierGradients):
         for i_sample in range(num_samples):
             for i_class in range(self.nb_classes()):
                 gradients[i_sample, :] += class_weight[i_class] * (1.0 - y_preprocessed[i_sample, i_class]) * (
-                        weights[i_class, :] - w_weighted[i_sample, :])
+                    weights[i_class, :] - w_weighted[i_sample, :])
 
         gradients = self._apply_preprocessing_gradient(x, gradients)
 
@@ -925,7 +925,7 @@ class ScikitlearnSVC(ScikitlearnClassifier, ClassifierGradients):
             grad = x_i
         elif self._model.kernel == 'poly':
             grad = self._model.degree * (self._model._gamma * np.sum(x_sample * x_i) + self._model.coef0) ** (
-                    self._model.degree - 1) * x_i
+                self._model.degree - 1) * x_i
         elif self._model.kernel == 'rbf':
             grad = 2 * self._model._gamma * (-1) * np.exp(
                 -self._model._gamma * np.linalg.norm(x_sample - x_i, ord=2)) * (x_sample - x_i)
