@@ -142,11 +142,6 @@ class TestZooAttack(unittest.TestCase):
         params = {'y': random_targets(y_test, krc.nb_classes())}
         x_test_adv = zoo.generate(x_test, **params)
 
-        # from matplotlib import pyplot as plt
-        # plt.matshow(x_test_adv[0, :, :, 0] - x_test[0, :, :, 0])
-        # plt.show()
-        # print(x_test_adv[0, 14, :, 0])
-
         # x_test_adv_true = [0.00000000e+00, 2.50167388e-04, 1.50529508e-04, 4.69674182e-04,
         #                    0.00000000e+00, 0.00000000e+00, 0.00000000e+00, 0.00000000e+00,
         #                    1.67321396e-05, 0.00000000e+00, 0.00000000e+00, 0.00000000e+00,
