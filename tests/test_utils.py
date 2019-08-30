@@ -21,6 +21,7 @@ import logging
 import unittest
 
 import numpy as np
+import tensorflow as tf
 
 from art.utils import projection, random_sphere, to_categorical, least_likely_class
 from art.utils import load_iris, load_mnist, master_seed
@@ -83,10 +84,8 @@ class TestUtils(unittest.TestCase):
         self.assertTrue((x != y).any())
         self.assertTrue((z == x).all())
 
+    @unittest.skipIf(tf.__version__[0] != '1', reason='Skip unittests if not Tensorflow v1.')
     def test_master_seed_tf(self):
-        from art.utils import import_tensorflow_v1
-        tf = import_tensorflow_v1()
-
         tf.reset_default_graph()
         master_seed(1234)
         with tf.Session() as sess:
@@ -101,7 +100,21 @@ class TestUtils(unittest.TestCase):
             zv = sess.run([z])[0]
 
         self.assertTrue((xv != yv).any())
-        self.assertTrue((zv == xv).all())
+        np.testing.assert_array_almost_equal(zv, xv, decimal=4)
+
+    @unittest.skipIf(tf.__version__[0] != '2', reason='Skip unittests if not Tensorflow v2.')
+    def test_master_seed_tf_v2(self):
+        master_seed(1234)
+        x = tf.random.uniform(shape=(1, 10))
+        y = tf.random.uniform(shape=(1, 10))
+        xv, yv = x.numpy(), y.numpy()
+
+        master_seed(1234)
+        z = tf.random.uniform(shape=(1, 10))
+        zv = z.numpy()
+
+        self.assertTrue((xv != yv).any())
+        np.testing.assert_array_almost_equal(zv, xv, decimal=4)
 
     def test_projection(self):
         # Get MNIST

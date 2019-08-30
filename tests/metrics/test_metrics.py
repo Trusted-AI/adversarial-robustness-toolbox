@@ -148,8 +148,10 @@ class TestClever(unittest.TestCase):
         To create a simple TensorflowClassifier for testing.
         :return:
         """
-        from art.utils import import_tensorflow_v1
-        tf = import_tensorflow_v1()
+        import tensorflow as tf
+        if tf.__version__[0] == '2':
+            import tensorflow.compat.v1 as tf
+            tf.disable_eager_execution()
 
         # Define input and output placeholders
         input_ph = tf.placeholder(tf.float32, shape=[None, 28, 28, 1])
@@ -229,9 +231,6 @@ class TestClever(unittest.TestCase):
         Test with tensorflow.
         :return:
         """
-        from art.utils import import_tensorflow_v1
-        tf = import_tensorflow_v1()
-
         # Get MNIST
         batch_size, nb_train, nb_test = 100, 1000, 10
         (x_train, y_train), (x_test, y_test), _, _ = load_mnist()

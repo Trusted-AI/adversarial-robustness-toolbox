@@ -30,6 +30,7 @@ from art.utils_test import get_classifier_kr, get_classifier_pt, get_classifier_
 
 logger = logging.getLogger('testLogger')
 
+NB_TRAIN = 1
 NB_TEST = 1
 
 
@@ -40,13 +41,14 @@ class TestZooAttack(unittest.TestCase):
 
     @classmethod
     def setUpClass(cls):
-        # Get MNIST
-        (_, _), (x_test, y_test), _, _ = load_dataset('mnist')
-        x_test, y_test = x_test[:NB_TEST], y_test[:NB_TEST]
-        cls.mnist = x_test, y_test
+        (x_train, y_train), (x_test, y_test), _, _ = load_dataset('mnist')
+
+        cls.x_train = x_train[:NB_TRAIN]
+        cls.y_train = y_train[:NB_TRAIN]
+        cls.x_test = x_test[:NB_TEST]
+        cls.y_test = y_test[:NB_TEST]
 
     def setUp(self):
-        # Set master seed
         master_seed(1234)
 
     def test_failure_attack(self):
@@ -57,15 +59,12 @@ class TestZooAttack(unittest.TestCase):
         # Build TensorflowClassifier
         tfc, sess = get_classifier_tf()
 
-        # Get MNIST
-        x_test, _ = self.mnist
-
         # Failure attack
         zoo = ZooAttack(classifier=tfc, max_iter=0, binary_search_steps=0, learning_rate=0)
-        x_test_adv = zoo.generate(x_test)
-        self.assertTrue((x_test_adv <= 1.0001).all())
-        self.assertTrue((x_test_adv >= -0.0001).all())
-        np.testing.assert_almost_equal(x_test, x_test_adv, 3)
+        x_test_adv = zoo.generate(self.x_test)
+        self.assertLessEqual(np.amax(x_test_adv), 1.0)
+        self.assertGreaterEqual(np.amin(x_test_adv), 0.0)
+        np.testing.assert_almost_equal(self.x_test, x_test_adv, 3)
 
         # Clean-up session
         sess.close()
@@ -78,16 +77,13 @@ class TestZooAttack(unittest.TestCase):
         # Build TensorflowClassifier
         tfc, sess = get_classifier_tf()
 
-        # Get MNIST
-        x_test, y_test = self.mnist
-
         # Targeted attack
         zoo = ZooAttack(classifier=tfc, targeted=True, max_iter=100, binary_search_steps=10)
-        params = {'y': random_targets(y_test, tfc.nb_classes())}
-        x_test_adv = zoo.generate(x_test, **params)
-        self.assertFalse((x_test == x_test_adv).all())
-        self.assertTrue((x_test_adv <= 1.0001).all())
-        self.assertTrue((x_test_adv >= -0.0001).all())
+        params = {'y': random_targets(self.y_test, tfc.nb_classes())}
+        x_test_adv = zoo.generate(self.x_test, **params)
+        self.assertFalse((self.x_test == x_test_adv).all())
+        self.assertLessEqual(np.amax(x_test_adv), 1.0)
+        self.assertGreaterEqual(np.amin(x_test_adv), 0.0)
         target = np.argmax(params['y'], axis=1)
         y_pred_adv = np.argmax(tfc.predict(x_test_adv), axis=1)
         logger.debug('ZOO target: %s', target)
@@ -96,11 +92,11 @@ class TestZooAttack(unittest.TestCase):
 
         # Untargeted attack
         zoo = ZooAttack(classifier=tfc, targeted=False)
-        x_test_adv = zoo.generate(x_test)
+        x_test_adv = zoo.generate(self.x_test)
         # self.assertFalse((x_test == x_test_adv).all())
-        self.assertTrue((x_test_adv <= 1.0001).all())
-        self.assertTrue((x_test_adv >= -0.0001).all())
-        y_pred = np.argmax(tfc.predict(x_test), axis=1)
+        self.assertLessEqual(np.amax(x_test_adv), 1.0)
+        self.assertGreaterEqual(np.amin(x_test_adv), 0.0)
+        y_pred = np.argmax(tfc.predict(self.x_test), axis=1)
         y_pred_adv = np.argmax(tfc.predict(x_test_adv), axis=1)
         logger.debug('ZOO actual: %s', y_pred_adv)
         logger.info('ZOO success rate on MNIST: %.2f', (sum(y_pred != y_pred_adv) / float(len(y_pred))))
@@ -118,29 +114,26 @@ class TestZooAttack(unittest.TestCase):
         # Build KerasClassifier
         krc = get_classifier_kr()
 
-        # Get MNIST and test with 3 channels
-        x_test, y_test = self.mnist
+        # Targeted attack
+        zoo = ZooAttack(classifier=krc, targeted=True, batch_size=5)
+        params = {'y': random_targets(self.y_test, krc.nb_classes)}
+        x_test_adv = zoo.generate(self.x_test, **params)
 
-        # # Targeted attack
-        # zoo = ZooAttack(classifier=krc, targeted=True, batch_size=5)
-        # params = {'y': random_targets(y_test, krc.nb_classes)}
-        # x_test_adv = zoo.generate(x_test, **params)
-        #
-        # self.assertFalse((x_test == x_test_adv).all())
-        # self.assertTrue((x_test_adv <= 1.0001).all())
-        # self.assertTrue((x_test_adv >= -0.0001).all())
-        # target = np.argmax(params['y'], axis=1)
-        # y_pred_adv = np.argmax(krc.predict(x_test_adv), axis=1)
-        # logger.debug('ZOO target: %s', target)
-        # logger.debug('ZOO actual: %s', y_pred_adv)
-        # logger.info('ZOO success rate on MNIST: %.2f', (sum(target == y_pred_adv) / float(len(target))))
+        self.assertFalse((self.x_test == x_test_adv).all())
+        self.assertLessEqual(np.amax(x_test_adv), 1.0)
+        self.assertGreaterEqual(np.amin(x_test_adv), 0.0)
+        target = np.argmax(params['y'], axis=1)
+        y_pred_adv = np.argmax(krc.predict(x_test_adv), axis=1)
+        logger.debug('ZOO target: %s', target)
+        logger.debug('ZOO actual: %s', y_pred_adv)
+        logger.info('ZOO success rate on MNIST: %.2f', (sum(target == y_pred_adv) / float(len(target))))
 
         # Untargeted attack
         # zoo = ZooAttack(classifier=krc, targeted=False, max_iter=20)
         zoo = ZooAttack(classifier=krc, targeted=False, batch_size=5)
         # x_test_adv = zoo.generate(x_test)
-        params = {'y': random_targets(y_test, krc.nb_classes())}
-        x_test_adv = zoo.generate(x_test, **params)
+        params = {'y': random_targets(self.y_test, krc.nb_classes())}
+        x_test_adv = zoo.generate(self.x_test, **params)
 
         # x_test_adv_true = [0.00000000e+00, 2.50167388e-04, 1.50529508e-04, 4.69674182e-04,
         #                    0.00000000e+00, 0.00000000e+00, 0.00000000e+00, 0.00000000e+00,
@@ -154,10 +147,10 @@ class TestZooAttack(unittest.TestCase):
         #     self.assertAlmostEqual(x_test_adv_true[i], x_test_adv[0, 14, i, 0])
 
         # self.assertFalse((x_test == x_test_adv).all())
-        self.assertTrue((x_test_adv <= 1.0001).all())
-        self.assertTrue((x_test_adv >= -0.0001).all())
+        self.assertLessEqual(np.amax(x_test_adv), 1.0)
+        self.assertGreaterEqual(np.amin(x_test_adv), 0.0)
         y_pred_adv = np.argmax(krc.predict(x_test_adv), axis=1)
-        y_pred = np.argmax(krc.predict(x_test), axis=1)
+        y_pred = np.argmax(krc.predict(self.x_test), axis=1)
         logger.debug('ZOO actual: %s', y_pred_adv)
         logger.info('ZOO success rate on MNIST: %.2f', (sum(y_pred != y_pred_adv) / float(len(y_pred))))
 
@@ -172,17 +165,15 @@ class TestZooAttack(unittest.TestCase):
         # Build PyTorchClassifier
         ptc = get_classifier_pt()
 
-        # Get MNIST
-        x_test, y_test = self.mnist
-        x_test = np.swapaxes(x_test, 1, 3)
+        x_test = np.swapaxes(self.x_test, 1, 3)
 
         # First attack
         # zoo = ZooAttack(classifier=ptc, targeted=True, max_iter=10, binary_search_steps=10)
-        # params = {'y': random_targets(y_test, ptc.nb_classes)}
+        # params = {'y': random_targets(self.y_test, ptc.nb_classes())}
         # x_test_adv = zoo.generate(x_test, **params)
         # self.assertFalse((x_test == x_test_adv).all())
-        # self.assertTrue((x_test_adv <= 1.0001).all())
-        # self.assertTrue((x_test_adv >= -0.0001).all())
+        # self.assertLessEqual(np.amax(x_test_adv), 1.0)
+        # self.assertGreaterEqual(np.amin(x_test_adv), 0.0)
         # target = np.argmax(params['y'], axis=1)
         # y_pred_adv = np.argmax(ptc.predict(x_test_adv), axis=1)
         # logger.debug('ZOO target: %s', target)
@@ -190,14 +181,17 @@ class TestZooAttack(unittest.TestCase):
         # logger.info('ZOO success rate on MNIST: %.2f', (sum(target != y_pred_adv) / float(len(target))))
 
         # Second attack
-        zoo = ZooAttack(classifier=ptc, targeted=False, max_iter=10)
+        zoo = ZooAttack(classifier=ptc, targeted=False,learning_rate=1e-2, max_iter=15, binary_search_steps=10, abort_early=False, use_resize=False, use_importance=False)
         x_test_adv = zoo.generate(x_test)
-        self.assertTrue((x_test_adv <= 1.0001).all())
-        self.assertTrue((x_test_adv >= -0.0001).all())
-        y_pred_adv = np.argmax(ptc.predict(x_test_adv), axis=1)
-        y_pred = np.argmax(ptc.predict(x_test), axis=1)
-        logger.debug('ZOO actual: %s', y_pred_adv)
-        logger.info('ZOO success rate on MNIST: %.2f', (sum(y_pred != y_pred_adv) / float(len(y_pred))))
+        self.assertLessEqual(np.amax(x_test_adv), 1.0)
+        self.assertGreaterEqual(np.amin(x_test_adv), 0.0)
+
+        print(x_test[0, 0, 14, :])
+        print(x_test_adv[0, 0, 14, :])
+
+        print(np.amax(x_test - x_test_adv))
+
+        x_test_adv_expected = []
 
     def test_classifier_type_check_fail_classifier(self):
         # Use a useless test classifier to test basic classifier properties
