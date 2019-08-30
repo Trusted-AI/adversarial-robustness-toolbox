@@ -151,6 +151,9 @@ def get_classifier_tf_v2():
         raise ImportError('This function requires Tensorflow v2.')
 
     class TensorflowModel(Model):
+        """
+        Standard Tensorflow model for unit testing
+        """
         def __init__(self):
             super(TensorflowModel, self).__init__()
             self.conv1 = Conv2D(filters=1, kernel_size=7, activation='relu',
@@ -163,6 +166,12 @@ def get_classifier_tf_v2():
                                 bias_initializer=_tf_weights_loader('MNIST', 'B', 'DENSE', 2))
 
         def call(self, x):
+            """
+            Call function to evaluate the model
+
+            :param x: Input to the model
+            :return: Prediction of the model
+            """
             x = self.conv1(x)
             x = self.maxpool(x)
             x = self.flatten(x)
@@ -323,6 +332,11 @@ def get_classifier_pt():
         # pylint: disable=W0221
         # disable pylint because of API requirements for function
         def forward(self, x):
+            """
+            Forward function to evaluate the model
+            :param x: Input to the model
+            :return: Prediction of the model
+            """
             x = self.conv(x)
             x = torch.nn.functional.relu(x)
             x = self.pool(x)
@@ -344,19 +358,21 @@ def get_classifier_pt():
 
     return ptc
 
-def get_classifier_bb(defences=None):
 
+def get_classifier_bb(defences=None):
     from art.classifiers import BlackBoxClassifier
     from art.utils import to_categorical
 
     # define blackbox classifier
     def predict(x):
-        with open(os.path.join(os.path.dirname(os.path.dirname(__file__)), 'data/mnist', 'api_output.txt')) as json_file:
+        with open(os.path.join(os.path.dirname(os.path.dirname(__file__)),
+                               'data/mnist', 'api_output.txt')) as json_file:
             predictions = json.load(json_file)
         return to_categorical(predictions['values'][:len(x)], nb_classes=10)
 
-    bb = BlackBoxClassifier(predict, (28, 28, 1), 10, clip_values=(0, 255), defences=defences)
-    return bb
+    bbc = BlackBoxClassifier(predict, (28, 28, 1), 10, clip_values=(0, 255), defences=defences)
+    return bbc
+
 
 def get_classifier_mx():
     """

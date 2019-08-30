@@ -711,6 +711,7 @@ def clip_and_round(x, clip_values, round_samples):
     x = np.around(x / round_samples) * round_samples
     return x
 
+
 def preprocess(x, y, nb_classes=10, clip_values=None):
     """
     Scales `x` to [0, 1] and converts `y` to class categorical confidences.
