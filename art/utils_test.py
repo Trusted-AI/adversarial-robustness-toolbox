@@ -51,8 +51,6 @@ def _tf_weights_loader(dataset, weights_type, layer='DENSE', tf_version=1):
             weights = np.load(os.path.join(os.path.dirname(os.path.dirname(__file__)), 'models', filename))
             return tf.constant(weights, dtype)
 
-        return _tf_initializer
-
     elif tf_version == 2:
         def _tf_initializer(_, dtype):
             import tensorflow as tf
@@ -60,11 +58,10 @@ def _tf_weights_loader(dataset, weights_type, layer='DENSE', tf_version=1):
             weights = np.load(os.path.join(os.path.dirname(os.path.dirname(__file__)), 'models', filename))
             return tf.constant(weights, dtype)
 
-        return _tf_initializer
-
-
     else:
         raise ValueError('The Tensorflow version tf_version has to be wither 1 or 2.')
+
+    return _tf_initializer
 
 
 def _kr_weights_loader(dataset, weights_type, layer='DENSE'):
@@ -96,8 +93,10 @@ def get_classifier_tf():
 
     :return: TensorflowClassifier, tf.Session()
     """
-    from art.utils import import_tensorflow_v1
-    tf = import_tensorflow_v1()
+    import tensorflow as tf
+    if tf.__version__[0] == '2':
+        import tensorflow.compat.v1 as tf
+        tf.disable_eager_execution()
     from art.classifiers import TensorflowClassifier
 
     # Define input and output placeholders

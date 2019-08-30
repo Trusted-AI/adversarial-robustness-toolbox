@@ -711,18 +711,6 @@ def clip_and_round(x, clip_values, round_samples):
     x = np.around(x / round_samples) * round_samples
     return x
 
-def import_tensorflow_v1():
-    """
-    A function that import either Tensorflow v1 or Tensorflow v2 compatibility module.
-    :return tf: The imported module
-    :type tf: `module`
-    """
-    import tensorflow as tf
-    if tf.__version__[0] == '2':
-        import tensorflow.compat.v1 as tf
-        tf.disable_eager_execution()
-    return tf
-
 def preprocess(x, y, nb_classes=10, clip_values=None):
     """
     Scales `x` to [0, 1] and converts `y` to class categorical confidences.

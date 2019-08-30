@@ -74,8 +74,10 @@ class TensorflowClassifier(ClassifierNeuralNetwork, ClassifierGradients, Classif
                be divided by the second one.
         :type preprocessing: `tuple`
         """
-        from art.utils import import_tensorflow_v1
-        tf = import_tensorflow_v1()
+        import tensorflow as tf
+        if tf.__version__[0] == '2':
+            import tensorflow.compat.v1 as tf
+            tf.disable_eager_execution()
 
         super(TensorflowClassifier, self).__init__(clip_values=clip_values, channel_index=channel_index,
                                                    defences=defences,
@@ -292,7 +294,10 @@ class TensorflowClassifier(ClassifierNeuralNetwork, ClassifierGradients, Classif
         return grads
 
     def _init_class_grads(self, label=None):
-        tf = import_tensorflow_v1()
+        import tensorflow as tf
+        if tf.__version__[0] == '2':
+            import tensorflow.compat.v1 as tf
+            tf.disable_eager_execution()
 
         if not hasattr(self, '_class_grads'):
             self._class_grads = [None for _ in range(self.nb_classes())]
@@ -319,7 +324,10 @@ class TensorflowClassifier(ClassifierNeuralNetwork, ClassifierGradients, Classif
         :return: The hidden layers in the model, input and output layers excluded.
         :rtype: `list`
         """
-        tf = import_tensorflow_v1()
+        import tensorflow as tf
+        if tf.__version__[0] == '2':
+            import tensorflow.compat.v1 as tf
+            tf.disable_eager_execution()
 
         # Get the computational graph
         with self._sess.graph.as_default():
@@ -384,7 +392,10 @@ class TensorflowClassifier(ClassifierNeuralNetwork, ClassifierGradients, Classif
         :return: The output of `layer`, where the first dimension is the batch size corresponding to `x`.
         :rtype: `np.ndarray`
         """
-        tf = import_tensorflow_v1()
+        import tensorflow as tf
+        if tf.__version__[0] == '2':
+            import tensorflow.compat.v1 as tf
+            tf.disable_eager_execution()
 
         # Get the computational graph
         with self._sess.graph.as_default():
@@ -531,15 +542,17 @@ class TensorflowClassifier(ClassifierNeuralNetwork, ClassifierGradients, Classif
         # Load and update all functionality related to Tensorflow
         # pylint: disable=E0611
         import os
+        import tensorflow as tf
+        if tf.__version__[0] == '2':
+            import tensorflow.compat.v1 as tf
+            tf.disable_eager_execution()
         from art import DATA_PATH
-        tf = import_tensorflow_v1()
-        from tensorflow.python.saved_model import tag_constants
 
         full_path = os.path.join(DATA_PATH, state['model_name'])
 
         graph = tf.Graph()
         sess = tf.Session(graph=graph)
-        loaded = tf.saved_model.loader.load(sess, [tag_constants.SERVING], full_path)
+        loaded = tf.saved_model.loader.load(sess, [tf.python.saved_model.tag_constants.SERVING], full_path)
 
         # Recover session
         self._sess = sess
@@ -693,7 +706,7 @@ class TensorflowV2Classifier(ClassifierNeuralNetwork, ClassifierGradients, Class
 
         train_ds = tf.data.Dataset.from_tensor_slices((x_preprocessed, y_preprocessed)).shuffle(10000).batch(batch_size)
 
-        for epoch in range(nb_epochs):
+        for _ in range(nb_epochs):
             for images, labels in train_ds:
                 self._train_step(images, labels)
 
@@ -804,7 +817,7 @@ class TensorflowV2Classifier(ClassifierNeuralNetwork, ClassifierGradients, Class
         import tensorflow as tf
 
         # Apply preprocessing
-        x_preprocessed, y_preprocessed = self._apply_preprocessing(x, y, fit=False)
+        x_preprocessed, _ = self._apply_preprocessing(x, y, fit=False)
 
         if tf.executing_eagerly:
             with tf.GradientTape() as tape:

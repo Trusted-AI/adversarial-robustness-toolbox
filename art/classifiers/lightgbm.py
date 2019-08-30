@@ -92,6 +92,7 @@ class LightGBMClassifier(Classifier, ClassifierDecisionTree):
         return self._model.predict(x_preprocessed)
 
     def nb_classes(self):
+        # pylint: disable=W0212
         return self._model._Booster__num_class
 
     def save(self, filename, path=None):
@@ -114,6 +115,7 @@ class LightGBMClassifier(Classifier, ClassifierDecisionTree):
         for i_tree, tree_dump in enumerate(booster_dump):
             box = Box()
 
+            # pylint: disable=W0212
             if self._model._Booster__num_class == 2:
                 class_label = -1
             else:
