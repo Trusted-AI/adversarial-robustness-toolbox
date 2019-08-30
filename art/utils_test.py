@@ -22,7 +22,7 @@ from __future__ import absolute_import, division, print_function, unicode_litera
 
 import logging
 import os
-
+import json
 import numpy as np
 
 logger = logging.getLogger(__name__)
@@ -224,6 +224,19 @@ def get_classifier_pt():
 
     return ptc
 
+def get_classifier_bb(defences=None):
+
+    from art.classifiers import BlackBoxClassifier
+    from art.utils import to_categorical
+
+    # define blackbox classifier
+    def predict(x):
+        with open(os.path.join(os.path.dirname(os.path.dirname(__file__)), 'data/mnist', 'api_output.txt')) as json_file:
+            predictions = json.load(json_file)
+        return to_categorical(predictions['values'][:len(x)], nb_classes=10)
+
+    bb = BlackBoxClassifier(predict, (28, 28, 1), 10, clip_values=(0, 255), defences=defences)
+    return bb
 
 def get_classifier_mx():
     """
