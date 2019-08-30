@@ -134,7 +134,8 @@ class RobustnessMetricTreeModelsCliqueMethod:
                 clique_bound = eps_robust
                 average_bound += clique_bound
             else:
-                logger.info('point', i_sample, ': WARNING! no robust eps found, verification bound is set as 0 !')
+                logger.info(
+                    'point {}: WARNING! no robust eps found, verification bound is set as 0 !'.format(i_sample))
 
         verified_error = 1.0 - num_initial_successes / num_samples
         average_bound = average_bound / num_samples
@@ -278,7 +279,7 @@ class RobustnessMetricTreeModelsCliqueMethod:
             else:
                 resulting_distance += distance
 
-        if norm == 0 or norm == np.inf:
+        if norm in [0, np.inf]:
             resulting_distance = resulting_distance
         else:
             resulting_distance = pow(resulting_distance, 1.0 / norm)
