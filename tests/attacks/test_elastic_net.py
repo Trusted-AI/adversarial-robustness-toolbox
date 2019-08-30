@@ -61,7 +61,7 @@ class TestElasticNet(unittest.TestCase):
         """
         tf = import_tensorflow_v1()
 
-        # Build TFClassifier
+        # Build TensorflowClassifier
         tfc, sess = get_classifier_tf()
 
         # Get MNIST
@@ -82,12 +82,12 @@ class TestElasticNet(unittest.TestCase):
 
     def test_tfclassifier(self):
         """
-        First test with the TFClassifier.
+        First test with the TensorflowClassifier.
         :return:
         """
         tf = import_tensorflow_v1()
 
-        # Build TFClassifier
+        # Build TensorflowClassifier
         tfc, sess = get_classifier_tf()
 
         # Get MNIST

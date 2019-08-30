@@ -28,7 +28,7 @@ PyTorch Wrapper
 
 Tensorflow Wrapper
 ------------------
-.. autoclass:: TFClassifier
+.. autoclass:: TensorflowClassifier
    :members:
    :special-members:
 
