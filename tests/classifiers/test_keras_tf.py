@@ -26,15 +26,15 @@ import shutil
 import pickle
 
 import tensorflow as tf
-
-tf.compat.v1.disable_eager_execution()
-import numpy as np
+if tf.__version__[0] == '2':
+    tf.compat.v1.disable_eager_execution()
 from tensorflow.keras.layers import Dense, Conv2D, MaxPooling2D, Dropout, Input, Flatten
 from tensorflow.keras.models import Model
 from tensorflow.keras.preprocessing.image import ImageDataGenerator
 from tensorflow.keras.callbacks import LearningRateScheduler
 from tensorflow.keras.applications.resnet50 import ResNet50, decode_predictions
 from tensorflow.keras.preprocessing.image import load_img, img_to_array
+import numpy as np
 
 from art import DATA_PATH
 from art.classifiers import KerasClassifier
