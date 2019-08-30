@@ -221,8 +221,10 @@ class TFDataGenerator(DataGenerator):
         :type batch_size: `int`
         :raises: `TypeError`, `ValueError`
         """
-        from art.utils import import_tensorflow_v1
-        tf = import_tensorflow_v1()
+        import tensorflow as tf
+        if tf.__version__[0] == '2':
+            import tensorflow.compat.v1 as tf
+            tf.disable_eager_execution()
 
         super(TFDataGenerator, self).__init__(size=size, batch_size=batch_size)
         self.sess = sess
