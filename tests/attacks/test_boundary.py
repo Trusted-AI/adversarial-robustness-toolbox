@@ -26,7 +26,7 @@ import tensorflow as tf
 
 from art.attacks import BoundaryAttack
 from art.classifiers import KerasClassifier
-from art.utils import load_dataset, random_targets, master_seed, import_tensorflow_v1
+from art.utils import load_dataset, random_targets, master_seed
 from art.utils_test import get_classifier_tf, get_classifier_kr, get_classifier_pt
 from art.utils_test import get_iris_classifier_tf, get_iris_classifier_kr, get_iris_classifier_pt
 
@@ -58,8 +58,6 @@ class TestBoundary(unittest.TestCase):
         First test with the TensorflowClassifier.
         :return:
         """
-        tf = import_tensorflow_v1()
-
         # Build TensorflowClassifier
         tfc, sess = get_classifier_tf()
 
@@ -97,7 +95,6 @@ class TestBoundary(unittest.TestCase):
 
         # Clean-up session
         sess.close()
-        tf.reset_default_graph()
 
     @unittest.skipIf(tf.__version__[0] == '2', reason='Skip unittests for Tensorflow v2 until Keras supports Tensorflow'
                                                       'v2 as backend.')

@@ -411,8 +411,10 @@ def get_iris_classifier_tf():
     :return: The trained model for Iris dataset and the session.
     :rtype: `tuple(TensorflowClassifier, tf.Session)`
     """
-    from art.utils import import_tensorflow_v1
-    tf = import_tensorflow_v1()
+    import tensorflow as tf
+    if tf.__version__[0] == '2':
+        import tensorflow.compat.v1 as tf
+        tf.disable_eager_execution()
     from art.classifiers import TensorflowClassifier
 
     # Define input and output placeholders

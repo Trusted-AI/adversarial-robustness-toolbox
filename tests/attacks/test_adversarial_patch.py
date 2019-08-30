@@ -26,7 +26,7 @@ import tensorflow as tf
 from sklearn.tree import DecisionTreeClassifier
 
 from art.attacks import AdversarialPatch
-from art.utils import load_dataset, master_seed, import_tensorflow_v1
+from art.utils import load_dataset, master_seed
 from art.utils_test import get_classifier_tf, get_classifier_kr, get_classifier_pt, get_iris_classifier_kr
 from art.classifiers.scikitlearn import ScikitlearnDecisionTreeClassifier
 
@@ -78,7 +78,6 @@ class TestAdversarialPatch(unittest.TestCase):
         Second test with the KerasClassifier.
         :return:
         """
-        tf = import_tensorflow_v1()
         krc = get_classifier_kr()
 
         attack_ap = AdversarialPatch(krc, rotation_max=22.5, scale_min=0.1, scale_max=1.0, learning_rate=5.0,
@@ -90,7 +89,6 @@ class TestAdversarialPatch(unittest.TestCase):
         self.assertAlmostEqual(float(np.sum(patch_adv)), 1054.587, delta=0.1)
 
         k.clear_session()
-        tf.reset_default_graph()
 
     def test_ptclassifier(self):
         """

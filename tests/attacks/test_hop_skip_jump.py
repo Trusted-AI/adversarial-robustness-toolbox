@@ -26,7 +26,7 @@ import tensorflow as tf
 
 from art.attacks import HopSkipJump
 from art.classifiers import KerasClassifier
-from art.utils import load_dataset, random_targets, master_seed, import_tensorflow_v1
+from art.utils import load_dataset, random_targets, master_seed
 from art.utils_test import get_classifier_tf, get_classifier_kr, get_classifier_pt
 from art.utils_test import get_iris_classifier_tf, get_iris_classifier_kr, get_iris_classifier_pt
 
@@ -124,8 +124,6 @@ class TestHopSkipJump(unittest.TestCase):
         Second test with the KerasClassifier.
         :return:
         """
-        tf = import_tensorflow_v1()
-
         # Build KerasClassifier
         krc = get_classifier_kr()
 
@@ -337,8 +335,6 @@ class TestHopSkipJumpVectors(unittest.TestCase):
         k.clear_session()
 
     def test_iris_tf(self):
-        tf = import_tensorflow_v1()
-
         (_, _), (x_test, y_test) = self.iris
         classifier, sess = get_iris_classifier_tf()
 
@@ -394,7 +390,6 @@ class TestHopSkipJumpVectors(unittest.TestCase):
 
         # Clean-up session
         sess.close()
-        tf.reset_default_graph()
 
     def test_iris_pt(self):
         (_, _), (x_test, y_test) = self.iris

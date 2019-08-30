@@ -25,7 +25,7 @@ import numpy as np
 import tensorflow as tf
 
 from art.attacks import SpatialTransformation
-from art.utils import load_dataset, master_seed, import_tensorflow_v1
+from art.utils import load_dataset, master_seed
 from art.utils_test import get_classifier_tf, get_classifier_kr, get_classifier_pt, get_iris_classifier_kr
 
 logger = logging.getLogger('testLogger')
@@ -57,8 +57,6 @@ class TestSpatialTransformation(unittest.TestCase):
         First test with the TensorflowClassifier.
         :return:
         """
-        tf = import_tensorflow_v1()
-
         # Build TensorflowClassifier
         tfc, sess = get_classifier_tf()
 
@@ -79,7 +77,6 @@ class TestSpatialTransformation(unittest.TestCase):
         self.assertAlmostEqual(x_test_adv[0, 14, 14, 0], 0.013572651, delta=0.01)
 
         sess.close()
-        tf.reset_default_graph()
 
     @unittest.skipIf(tf.__version__[0] == '2', reason='Skip unittests for Tensorflow v2 until Keras supports Tensorflow'
                                                       ' v2 as backend.')
