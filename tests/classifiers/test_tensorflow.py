@@ -38,7 +38,7 @@ NB_TRAIN = 1000
 NB_TEST = 20
 
 
-class TestTFClassifier(unittest.TestCase):
+class TestTensorflowClassifier(unittest.TestCase):
     """
     This class tests the Tensorflow classifier.
     """
@@ -248,7 +248,7 @@ class TestTFClassifier(unittest.TestCase):
     def test_repr(self):
         classifier, sess = get_classifier_tf()
         repr_ = repr(classifier)
-        self.assertIn('art.classifiers.tensorflow.TFClassifier', repr_)
+        self.assertIn('art.classifiers.tensorflow.TensorflowClassifier', repr_)
         self.assertIn('channel_index=3, clip_values=(0, 1)', repr_)
         self.assertIn('defences=None, preprocessing=(0, 1)', repr_)
         tf.reset_default_graph()

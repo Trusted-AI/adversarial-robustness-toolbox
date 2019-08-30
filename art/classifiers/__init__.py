@@ -6,7 +6,7 @@ from art.classifiers.classifier import Classifier, ClassifierNeuralNetwork, Clas
 from art.classifiers.keras import KerasClassifier
 from art.classifiers.mxnet import MXClassifier
 from art.classifiers.pytorch import PyTorchClassifier
-from art.classifiers.tensorflow import TFClassifier, TensorflowV2Classifier
+from art.classifiers.tensorflow import TFClassifier, TensorflowClassifier, TensorflowV2Classifier
 from art.classifiers.ensemble import EnsembleClassifier
 from art.classifiers.scikitlearn import SklearnClassifier
 from art.classifiers.lightgbm import LightGBMClassifier

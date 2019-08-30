@@ -94,11 +94,11 @@ def get_classifier_tf():
     number of epochs: 2
     optimizer: tf.train.AdamOptimizer
 
-    :return: TFClassifier, tf.Session()
+    :return: TensorflowClassifier, tf.Session()
     """
     from art.utils import import_tensorflow_v1
     tf = import_tensorflow_v1()
-    from art.classifiers import TFClassifier
+    from art.classifiers import TensorflowClassifier
 
     # Define input and output placeholders
     input_ph = tf.placeholder(tf.float32, shape=[None, 28, 28, 1])
@@ -125,8 +125,8 @@ def get_classifier_tf():
     sess.run(tf.global_variables_initializer())
 
     # Create the classifier
-    tfc = TFClassifier(clip_values=(0, 1), input_ph=input_ph, output=logits, labels_ph=output_ph, train=train,
-                       loss=loss, learning=None, sess=sess)
+    tfc = TensorflowClassifier(clip_values=(0, 1), input_ph=input_ph, output=logits, labels_ph=output_ph, train=train,
+                               loss=loss, learning=None, sess=sess)
 
     return tfc, sess
 
@@ -397,11 +397,11 @@ def get_iris_classifier_tf():
     The model is trained of 70% of the dataset, and 30% of the training set is used as validation split.
 
     :return: The trained model for Iris dataset and the session.
-    :rtype: `tuple(TFClassifier, tf.Session)`
+    :rtype: `tuple(TensorflowClassifier, tf.Session)`
     """
     from art.utils import import_tensorflow_v1
     tf = import_tensorflow_v1()
-    from art.classifiers import TFClassifier
+    from art.classifiers import TensorflowClassifier
 
     # Define input and output placeholders
     input_ph = tf.placeholder(tf.float32, shape=[None, 4])
@@ -423,8 +423,8 @@ def get_iris_classifier_tf():
     sess.run(tf.global_variables_initializer())
 
     # Train the classifier
-    tfc = TFClassifier(clip_values=(0, 1), input_ph=input_ph, output=logits, labels_ph=output_ph, train=None,
-                       loss=loss, learning=None, sess=sess, channel_index=1)
+    tfc = TensorflowClassifier(clip_values=(0, 1), input_ph=input_ph, output=logits, labels_ph=output_ph, train=None,
+                               loss=loss, learning=None, sess=sess, channel_index=1)
 
     return tfc, sess
 

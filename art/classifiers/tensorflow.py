@@ -16,7 +16,7 @@
 # TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 # SOFTWARE.
 """
-This module implements the classifier `TFClassifier` for Tensorflow models.
+This module implements the classifier `TensorflowClassifier` for Tensorflow models.
 """
 from __future__ import absolute_import, division, print_function, unicode_literals
 
@@ -32,7 +32,7 @@ from art.utils import import_tensorflow_v1
 logger = logging.getLogger(__name__)
 
 
-class TFClassifier(ClassifierNeuralNetwork, ClassifierGradients, Classifier):
+class TensorflowClassifier(ClassifierNeuralNetwork, ClassifierGradients, Classifier):
     """
     This class implements a classifier with the Tensorflow framework.
     """
@@ -77,8 +77,9 @@ class TFClassifier(ClassifierNeuralNetwork, ClassifierGradients, Classifier):
         from art.utils import import_tensorflow_v1
         tf = import_tensorflow_v1()
 
-        super(TFClassifier, self).__init__(clip_values=clip_values, channel_index=channel_index, defences=defences,
-                                           preprocessing=preprocessing)
+        super(TensorflowClassifier, self).__init__(clip_values=clip_values, channel_index=channel_index,
+                                                   defences=defences,
+                                                   preprocessing=preprocessing)
         self._nb_classes = int(output.get_shape()[-1])
         self._input_shape = tuple(input_ph.get_shape().as_list()[1:])
         self._input_ph = input_ph
@@ -204,7 +205,7 @@ class TFClassifier(ClassifierNeuralNetwork, ClassifierGradients, Classifier):
 
                     # Run train step
                     self._sess.run(self._train, feed_dict=feed_dict)
-            super(TFClassifier, self).fit_generator(generator, nb_epochs=nb_epochs, **kwargs)
+            super(TensorflowClassifier, self).fit_generator(generator, nb_epochs=nb_epochs, **kwargs)
 
     def class_gradient(self, x, label=None, **kwargs):
         """
@@ -471,7 +472,7 @@ class TFClassifier(ClassifierNeuralNetwork, ClassifierGradients, Classifier):
 
     def __getstate__(self):
         """
-        Use to ensure `TFClassifier` can be pickled.
+        Use to ensure `TensorflowClassifier` can be pickled.
 
         :return: State dictionary with instance parameters.
         :rtype: `dict`
@@ -520,7 +521,7 @@ class TFClassifier(ClassifierNeuralNetwork, ClassifierGradients, Classifier):
 
     def __setstate__(self, state):
         """
-        Use to ensure `TFClassifier` can be unpickled.
+        Use to ensure `TensorflowClassifier` can be unpickled.
 
         :param state: State dictionary with instance parameters to restore.
         :type state: `dict`
@@ -595,6 +596,10 @@ class TFClassifier(ClassifierNeuralNetwork, ClassifierGradients, Classifier):
                    self.channel_index, self.clip_values, self.defences, self.preprocessing)
 
         return repr_
+
+
+# backward compatibility for ART v0.10 and earlier
+TFClassifier = TensorflowClassifier
 
 
 class TensorflowV2Classifier(ClassifierNeuralNetwork, ClassifierGradients, Classifier):
@@ -883,9 +888,9 @@ class TensorflowV2Classifier(ClassifierNeuralNetwork, ClassifierGradients, Class
     def __repr__(self):
 
         repr_ = "%s(model=%r, nb_classes=%r, loss_object=%r, learning=%r, train_step=%r, " \
-                    "channel_index=%r, clip_values=%r, defences=%r, preprocessing=%r)" \
-                    % (self.__module__ + '.' + self.__class__.__name__,
-                       self._model, self._nb_classes, self._loss_object, self._learning, self._train_step,
-                       self.channel_index, self.clip_values, self.defences, self.preprocessing)
+                "channel_index=%r, clip_values=%r, defences=%r, preprocessing=%r)" \
+                % (self.__module__ + '.' + self.__class__.__name__,
+                   self._model, self._nb_classes, self._loss_object, self._learning, self._train_step,
+                   self.channel_index, self.clip_values, self.defences, self.preprocessing)
 
         return repr_
