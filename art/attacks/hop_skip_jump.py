@@ -29,7 +29,7 @@ import numpy as np
 
 from art import NUMPY_DTYPE
 from art.attacks.attack import Attack
-from art.utils import compute_success, to_categorical
+from art.utils import compute_success, to_categorical, check_and_transform_label_format
 
 logger = logging.getLogger(__name__)
 
@@ -87,13 +87,16 @@ class HopSkipJump(Attack):
 
         :param x: An array with the original inputs to be attacked.
         :type x: `np.ndarray`
-        :param y: If `self.targeted` is true, then `y` represents the target labels.
+        :param y: Target values (class labels) one-hot-encoded of shape `(nb_samples, nb_classes)` or indices of shape
+                  (nb_samples,).
         :type y: `np.ndarray`
         :param x_adv_init: Initial array to act as initial adversarial examples. Same shape as `x`.
         :type x_adv_init: `np.ndarray`
         :return: An array holding the adversarial examples.
         :rtype: `np.ndarray`
         """
+        y = check_and_transform_label_format(y, self.classifier.nb_classes)
+
         # Get clip_min and clip_max from the classifier or infer them from data
         if hasattr(self.classifier, 'clip_values') and self.classifier.clip_values is not None:
             clip_min, clip_max = self.classifier.clip_values

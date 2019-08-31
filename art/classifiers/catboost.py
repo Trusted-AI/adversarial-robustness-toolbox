@@ -66,7 +66,8 @@ class CatBoostARTClassifier(Classifier):
 
         :param x: Training data.
         :type x: `np.ndarray`
-        :param y: Labels, one-vs-rest encoding.
+        :param y: Target values (class labels) one-hot-encoded of shape (nb_samples, nb_classes) or indices of shape
+                  (nb_samples,).
         :type y: `np.ndarray`
         :param kwargs: Dictionary of framework-specific arguments. These should be parameters supported by the
                `fit` function in `catboost.core.CatBoostClassifier` and will be passed to this function as such.
