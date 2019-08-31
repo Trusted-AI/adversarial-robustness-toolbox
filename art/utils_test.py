@@ -93,6 +93,7 @@ def get_classifier_tf():
 
     :return: TensorflowClassifier, tf.Session()
     """
+    # pylint: disable=E0401
     import tensorflow as tf
     if tf.__version__[0] == '2':
         import tensorflow.compat.v1 as tf
@@ -142,6 +143,7 @@ def get_classifier_tf_v2():
 
     :return: TensorflowV2Classifier,
     """
+    # pylint: disable=E0401
     import tensorflow as tf
     from tensorflow.keras import Model
     from tensorflow.keras.layers import Dense, Flatten, Conv2D, MaxPool2D
@@ -252,6 +254,7 @@ def get_classifier_kr_tf(loss_name='categorical_crossentropy'):
 
     :return: KerasClassifier, tf.Session()
     """
+    # pylint: disable=E0401
     import tensorflow as tf
     from tensorflow.keras.models import Sequential
     from tensorflow.keras.layers import Dense, Flatten, Conv2D, MaxPooling2D
@@ -360,6 +363,11 @@ def get_classifier_pt():
 
 
 def get_classifier_bb(defences=None):
+    """
+    Standard BlackBox classifier for unit testing
+
+    :return: BlackBoxClassifier
+    """
     from art.classifiers import BlackBoxClassifier
     from art.utils import to_categorical
 
@@ -429,6 +437,7 @@ def get_iris_classifier_tf():
     """
     import tensorflow as tf
     if tf.__version__[0] == '2':
+        # pylint: disable=E0401
         import tensorflow.compat.v1 as tf
         tf.disable_eager_execution()
     from art.classifiers import TensorflowClassifier

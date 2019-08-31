@@ -92,6 +92,15 @@ class CatBoostARTClassifier(Classifier):
 
         return self.model.predict_proba(x_preprocessed)
 
+    def nb_classes(self):
+        """
+        Return the number of output classes.
+
+        :return: Number of classes in the data.
+        :rtype: `int`
+        """
+        return len(self._model.classes_)
+
     def save(self, filename, path=None):
         import pickle
         with open(filename + '.pickle', 'wb') as file_pickle:

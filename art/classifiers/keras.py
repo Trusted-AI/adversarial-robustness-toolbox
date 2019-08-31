@@ -93,6 +93,7 @@ class KerasClassifier(ClassifierNeuralNetwork, ClassifierGradients, Classifier):
         :param output_layer: Which layer to consider as the Output when the model has multiple output layers.
         :type output_layer: `int`
         """
+        # pylint: disable=E0401
         if self.is_tensorflow:
             import tensorflow as tf
             if tf.executing_eagerly():
@@ -363,6 +364,7 @@ class KerasClassifier(ClassifierNeuralNetwork, ClassifierGradients, Classifier):
         :return: The output of `layer`, where the first dimension is the batch size corresponding to `x`.
         :rtype: `np.ndarray`
         """
+        # pylint: disable=E0401
         if self.is_tensorflow:
             import tensorflow.keras.backend as k
         else:
@@ -406,6 +408,7 @@ class KerasClassifier(ClassifierNeuralNetwork, ClassifierGradients, Classifier):
         return activations
 
     def _init_class_gradients(self, label=None):
+        # pylint: disable=E0401
         if self.is_tensorflow:
             import tensorflow.keras.backend as k
         else:
@@ -444,6 +447,7 @@ class KerasClassifier(ClassifierNeuralNetwork, ClassifierGradients, Classifier):
         :return: The hidden layers in the model, input and output layers excluded.
         :rtype: `list`
         """
+        # pylint: disable=E0401
         if self.is_tensorflow:
             from tensorflow.keras.layers import InputLayer
         else:
@@ -461,6 +465,7 @@ class KerasClassifier(ClassifierNeuralNetwork, ClassifierGradients, Classifier):
         :param train: True to set the learning phase to training, False to set it to prediction.
         :type train: `bool`
         """
+        # pylint: disable=E0401
         if self.is_tensorflow:
             import tensorflow.keras.backend as k
         else:
@@ -531,6 +536,7 @@ class KerasClassifier(ClassifierNeuralNetwork, ClassifierGradients, Classifier):
         self.__dict__.update(state)
 
         # Load and update all functionality related to Keras
+        # pylint: disable=E0401
         import os
         from art import DATA_PATH
         if self.is_tensorflow:
