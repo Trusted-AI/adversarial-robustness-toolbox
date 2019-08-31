@@ -87,6 +87,7 @@ class ScikitlearnClassifier(Classifier):
 
         self._model = model
         self._input_shape = self._get_input_shape(model)
+        self._nb_classes = self._get_nb_classes()
 
     def fit(self, x, y, **kwargs):
         """
@@ -94,7 +95,8 @@ class ScikitlearnClassifier(Classifier):
 
         :param x: Training data.
         :type x: `np.ndarray`
-        :param y: Labels, one-vs-rest encoding.
+        :param y: Target values (class labels) one-hot-encoded of shape (nb_samples, nb_classes) or indices of shape
+                  (nb_samples,).
         :type y: `np.ndarray`
         :param kwargs: Dictionary of framework-specific arguments. These should be parameters supported by the
                `fit` function in `sklearn` classifier and will be passed to this function as such.
@@ -107,6 +109,7 @@ class ScikitlearnClassifier(Classifier):
 
         self._model.fit(x_preprocessed, y_preprocessed, **kwargs)
         self._input_shape = self._get_input_shape(self._model)
+        self._nb_classes = self._get_nb_classes()
 
     def predict(self, x, **kwargs):
         """
@@ -163,8 +166,19 @@ class ScikitlearnClassifier(Classifier):
         elif hasattr(model, 'steps'):
             _input_shape = self._get_input_shape(model.steps[0][1])
         else:
+            logger.warning('Input shape not recognised. The model might not have been fitted.')
             _input_shape = None
         return _input_shape
+
+    def _get_nb_classes(self):
+        if hasattr(self._model, 'n_classes_'):
+            _nb_classes = self._model.n_classes_
+        elif hasattr(self._model, 'classes_'):
+            _nb_classes = self._model.classes_.shape[0]
+        else:
+            logger.warning('Number of classes not recognised. The model might not have been fitted.')
+            _nb_classes = None
+        return _nb_classes
 
 
 class ScikitlearnDecisionTreeClassifier(ScikitlearnClassifier):
@@ -770,28 +784,6 @@ class ScikitlearnLogisticRegression(ScikitlearnClassifier, ClassifierGradients):
 
         return gradients
 
-    def fit(self, x, y, **kwargs):
-        """
-        Fit the classifier on the training set `(x, y)`.
-
-        :param x: Training data.
-        :type x: `np.ndarray`
-        :param y: Labels, one-vs-rest encoding.
-        :type y: `np.ndarray`
-        :param kwargs: Dictionary of framework-specific arguments. These should be parameters supported by the
-               `fit` function in `sklearn.linear_model.LogisticRegression` and will be passed to this function as such.
-        :type kwargs: `dict`
-        :return: `None`
-        """
-        # Apply preprocessing
-        x_preprocessed, y_preprocessed = self._apply_preprocessing(
-            x, y, fit=True)
-
-        y_index = np.argmax(y_preprocessed, axis=1)
-        self._model.fit(X=x_preprocessed, y=y_index, **kwargs)
-        self._nb_classes = self._model.classes_.shape[0]
-        self._input_shape = (self._model.coef_.shape[1],)
-
     def loss_gradient(self, x, y, **kwargs):
         """
         Compute the gradient of the loss function w.r.t. `x`.
@@ -801,7 +793,8 @@ class ScikitlearnLogisticRegression(ScikitlearnClassifier, ClassifierGradients):
 
         :param x: Sample input with shape as expected by the model.
         :type x: `np.ndarray`
-        :param y: Correct labels, one-vs-rest encoding.
+        :param y: Target values (class labels) one-hot-encoded of shape (nb_samples, nb_classes) or indices of shape
+                  (nb_samples,).
         :type y: `np.ndarray`
         :return: Array of gradients of the same shape as `x`.
         :rtype: `np.ndarray`
@@ -814,8 +807,7 @@ class ScikitlearnLogisticRegression(ScikitlearnClassifier, ClassifierGradients):
             fitted model.""")
 
         # Apply preprocessing
-        x_preprocessed, y_preprocessed = self._apply_preprocessing(
-            x, y, fit=False)
+        x_preprocessed, y_preprocessed = self._apply_preprocessing(x, y, fit=False)
 
         num_samples, _ = x_preprocessed.shape
         gradients = np.zeros(x_preprocessed.shape)
@@ -891,31 +883,6 @@ class ScikitlearnSVC(ScikitlearnClassifier, ClassifierGradients):
         """
         raise NotImplementedError
 
-    def fit(self, x, y, **kwargs):
-        """
-        Fit the classifier on the training set `(x, y)`.
-
-        :param x: Training data.
-        :type x: `np.ndarray`
-        :param y: Labels, one-vs-rest encoding.
-        :type y: `np.ndarray`
-        :param kwargs: Dictionary of framework-specific arguments. These should be parameters supported by the
-               `fit` function in `sklearn.linear_model.LogisticRegression` and will be passed to this function as such.
-        :type kwargs: `dict`
-        :return: `None`
-        """
-        y_index = np.argmax(y, axis=1)
-        self._model.fit(X=x, y=y_index, **kwargs)
-        self._nb_classes = len(self._model.classes_)
-
-        if hasattr(self._model, 'coef_'):
-            if len(self._model.coef_.shape) == 1:
-                self._input_shape = (self._model.coef_.shape[0],)
-            else:
-                self._input_shape = (self._model.coef_.shape[1],)
-        elif hasattr(self._model, 'support_vectors_'):
-            self._input_shape = (self._model.support_vectors_.shape[1],)
-
     def _get_kernel_gradient(self, i_sv, x_sample):
         # pylint: disable=W0212
 
@@ -945,7 +912,8 @@ class ScikitlearnSVC(ScikitlearnClassifier, ClassifierGradients):
 
         :param x: Sample input with shape as expected by the model.
         :type x: `np.ndarray`
-        :param y: Correct labels, one-vs-rest encoding.
+        :param y: Target values (class labels) one-hot-encoded of shape (nb_samples, nb_classes) or indices of shape
+                  (nb_samples,).
         :type y: `np.ndarray`
         :return: Array of gradients of the same shape as `x`.
         :rtype: `np.ndarray`

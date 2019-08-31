@@ -30,7 +30,7 @@ import six
 from art import NUMPY_DTYPE
 from art.classifiers.classifier import ClassifierGradients
 from art.attacks.attack import Attack
-from art.utils import compute_success, get_labels_np_array
+from art.utils import compute_success, get_labels_np_array, check_and_transform_label_format
 
 logger = logging.getLogger(__name__)
 
@@ -174,12 +174,14 @@ class ElasticNet(Attack):
 
         :param x: An array with the original inputs to be attacked.
         :type x: `np.ndarray`
-        :param y: If `self.targeted` is true, then `y` represents the target labels. Otherwise, the targets are the
-                  original class labels.
+        :param y: Target values (class labels) one-hot-encoded of shape (nb_samples, nb_classes) or indices of shape
+                  (nb_samples,). If `self.targeted` is true, then `y` represents the target labels. Otherwise, the
+                  targets are the original class labels.
         :type y: `np.ndarray`
         :return: An array holding the adversarial examples.
         :rtype: `np.ndarray`
         """
+        y = check_and_transform_label_format(y, self.classifier.nb_classes)
         x_adv = x.astype(NUMPY_DTYPE)
 
         # Assert that, if attack is targeted, y is provided:

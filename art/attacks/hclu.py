@@ -72,13 +72,13 @@ class HighConfidenceLowUncertainty(Attack):
 
         :param x: An array with the original inputs to be attacked.
         :type x: `np.ndarray`
-        :param y: Correct labels or target labels for `x`, depending if the attack is targeted
-               or not. This parameter is only used by some of the attacks.
+        :param y: Target values (class labels) one-hot-encoded of shape (nb_samples, nb_classes) or indices of shape
+                  (nb_samples,).
         :type y: `np.ndarray`
         :return: An array holding the adversarial examples.
         :rtype: `np.ndarray`
         """
-        adv_x = copy.copy(x)
+        x_adv = copy.copy(x)
 
         def minfun(x, args):  # minimize L2 norm
             return np.sum(np.sqrt((x - args['orig']) ** 2))
@@ -98,15 +98,15 @@ class HighConfidenceLowUncertainty(Attack):
             bounds.append((self.min_val, self.max_val))
         for i in range(np.shape(x)[0]):  # go though data amd craft
             # get properties for attack
-            max_uncertainty = self.unc_increase * self.classifier.predict_uncertainty(adv_x[i].reshape(1, -1))
-            class_zero = not self.classifier.predict(adv_x[i].reshape(1, -1))[0, 0] < 0.5
+            max_uncertainty = self.unc_increase * self.classifier.predict_uncertainty(x_adv[i].reshape(1, -1))
+            class_zero = not self.classifier.predict(x_adv[i].reshape(1, -1))[0, 0] < 0.5
             init_args = {'classifier': self.classifier, 'class_zero': class_zero, 'max_uncertainty': max_uncertainty}
             constr_conf = {'type': 'ineq', 'fun': constraint_conf, 'args': (init_args,)}
             constr_unc = {'type': 'ineq', 'fun': constraint_unc, 'args': (init_args,)}
             args = {'args': init_args, 'orig': x[i].reshape(-1)}
             # #finally, run optimization
-            adv_x[i] = minimize(minfun, adv_x[i], args=args, bounds=bounds, constraints=[constr_conf, constr_unc])['x']
-        return adv_x
+            x_adv[i] = minimize(minfun, x_adv[i], args=args, bounds=bounds, constraints=[constr_conf, constr_unc])['x']
+        return x_adv
 
     def set_params(self, **kwargs):
         """

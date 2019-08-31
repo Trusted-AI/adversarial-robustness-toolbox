@@ -67,7 +67,8 @@ class LightGBMClassifier(Classifier, ClassifierDecisionTree):
 
         :param x: Training data.
         :type x: `np.ndarray`
-        :param y: Labels, one-vs-rest encoding.
+        :param y: Target values (class labels) one-hot-encoded of shape (nb_samples, nb_classes) or indices of shape
+                  (nb_samples,).
         :type y: `np.ndarray`
         :param kwargs: Dictionary of framework-specific arguments. These should be parameters supported by the
                `fit` function in `lightgbm.Booster` and will be passed to this function as such.
@@ -92,6 +93,12 @@ class LightGBMClassifier(Classifier, ClassifierDecisionTree):
         return self._model.predict(x_preprocessed)
 
     def nb_classes(self):
+        """
+        Return the number of output classes.
+
+        :return: Number of classes in the data.
+        :rtype: `int`
+        """
         return self._model._Booster__num_class
 
     def save(self, filename, path=None):

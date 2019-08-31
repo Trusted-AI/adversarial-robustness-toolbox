@@ -25,6 +25,8 @@ import sys
 
 import numpy as np
 
+from art.utils import check_and_transform_label_format
+
 # Ensure compatibility with Python 2 and 3 when using ABCMeta
 if sys.version_info >= (3, 4):
     ABC = abc.ABC
@@ -97,8 +99,8 @@ class Classifier(ABC):
         :param x: Features in array of shape (nb_samples, nb_features) or (nb_samples, nb_pixels_1, nb_pixels_2,
                   nb_channels) or (nb_samples, nb_channels, nb_pixels_1, nb_pixels_2)
         :type x: `np.ndarray`
-        :param y: Target values (class labels in classification) in array of shape (nb_samples, nb_classes) in
-                  One Hot Encoding format.
+        :param y: Target values (class labels) one-hot-encoded of shape (nb_samples, nb_classes) or indices of shape
+                  (nb_samples,).
         :type y: `np.ndarray`
         :param kwargs: Dictionary of framework-specific arguments.
         :type kwargs: `dict`
@@ -131,7 +133,7 @@ class Classifier(ABC):
         :return: Number of classes in the data.
         :rtype: `int`
         """
-        raise NotImplementedError
+        return self._nb_classes
 
     @abc.abstractmethod
     def save(self, filename, path=None):
@@ -160,6 +162,7 @@ class Classifier(ABC):
         :return: Value of the data after applying the defences.
         :rtype: `np.ndarray`
         """
+        y = check_and_transform_label_format(y, self.nb_classes)
         x_preprocessed, y_preprocessed = self._apply_preprocessing_defences(x, y, fit=fit)
         x_preprocessed = self._apply_preprocessing_standardisation(x_preprocessed)
         return x_preprocessed, y_preprocessed
@@ -256,8 +259,8 @@ class ClassifierNeuralNetwork(ABC):
 
         :param x: Features in array of shape (nb_samples, nb_features) or (nb_samples, nb_pixels_1, nb_pixels_2,
                   nb_channels) or (nb_samples, nb_channels, nb_pixels_1, nb_pixels_2)
-        :param y: Target values (class labels in classification) in array of shape (nb_samples, nb_classes) in
-                  One Hot Encoding format.
+        :param y: Target values (class labels) one-hot-encoded of shape (nb_samples, nb_classes) or indices of shape
+                  (nb_samples,).
         :type y: `np.ndarray`
         :param batch_size: The batch size used for evaluating the classifer's `model`.
         :type batch_size: `int`
@@ -414,7 +417,8 @@ class ClassifierGradients(ABC):
 
         :param x: Input with shape as expected by the classifier's model.
         :type x: `np.ndarray`
-        :param y: Correct labels, one-vs-rest encoding.
+        :param y: Target values (class labels) one-hot-encoded of shape (nb_samples, nb_classes) or indices of shape
+                  (nb_samples,).
         :type y: `np.ndarray`
         :return: Array of gradients of the same shape as `x`.
         :rtype: `np.ndarray`
