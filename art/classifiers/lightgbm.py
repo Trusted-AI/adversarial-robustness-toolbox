@@ -92,6 +92,12 @@ class LightGBMClassifier(Classifier, ClassifierDecisionTree):
         return self._model.predict(x_preprocessed)
 
     def nb_classes(self):
+        """
+        Return the number of output classes.
+
+        :return: Number of classes in the data.
+        :rtype: `int`
+        """
         # pylint: disable=W0212
         return self._model._Booster__num_class
 

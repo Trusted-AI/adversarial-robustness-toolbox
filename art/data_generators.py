@@ -221,6 +221,7 @@ class TFDataGenerator(DataGenerator):
         :type batch_size: `int`
         :raises: `TypeError`, `ValueError`
         """
+        # pylint: disable=E0401
         import tensorflow as tf
         if tf.__version__[0] == '2':
             import tensorflow.compat.v1 as tf

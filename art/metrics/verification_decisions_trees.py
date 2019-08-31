@@ -96,7 +96,7 @@ class RobustnessVerificationTreeModelsCliqueMethod:
                 if self._classifier.nb_classes() <= 2:
                     best_score = self._get_best_score(i_sample, eps, norm, target_label=None)
                     is_robust = (self.y[i_sample] < 0.5 and best_score < 0) or (
-                            self.y[i_sample] > 0.5 and best_score > 0)
+                        self.y[i_sample] > 0.5 and best_score > 0)
                 else:
                     for i_class in range(self._classifier.nb_classes()):
                         if i_class != self.y[i_sample]:
@@ -133,8 +133,7 @@ class RobustnessVerificationTreeModelsCliqueMethod:
                 clique_bound = eps_robust
                 average_bound += clique_bound
             else:
-                logger.info(
-                    'point {}: WARNING! no robust eps found, verification bound is set as 0 !'.format(i_sample))
+                logger.info('point %s: WARNING! no robust eps found, verification bound is set as 0 !', i_sample)
 
         verified_error = 1.0 - num_initial_successes / num_samples
         average_bound = average_bound / num_samples

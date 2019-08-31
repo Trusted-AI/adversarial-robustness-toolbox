@@ -73,6 +73,7 @@ class TensorflowClassifier(ClassifierNeuralNetwork, ClassifierGradients, Classif
                be divided by the second one.
         :type preprocessing: `tuple`
         """
+        # pylint: disable=E0401
         import tensorflow as tf
 
         super(TensorflowClassifier, self).__init__(clip_values=clip_values, channel_index=channel_index,
@@ -292,6 +293,7 @@ class TensorflowClassifier(ClassifierNeuralNetwork, ClassifierGradients, Classif
         return grads
 
     def _init_class_grads(self, label=None):
+        # pylint: disable=E0401
         import tensorflow as tf
 
         if not hasattr(self, '_class_grads'):
@@ -319,6 +321,7 @@ class TensorflowClassifier(ClassifierNeuralNetwork, ClassifierGradients, Classif
         :return: The hidden layers in the model, input and output layers excluded.
         :rtype: `list`
         """
+        # pylint: disable=E0401
         import tensorflow as tf
 
         # Get the computational graph
@@ -384,6 +387,7 @@ class TensorflowClassifier(ClassifierNeuralNetwork, ClassifierGradients, Classif
         :return: The output of `layer`, where the first dimension is the batch size corresponding to `x`.
         :rtype: `np.ndarray`
         """
+        # pylint: disable=E0401
         import tensorflow as tf
 
         # Get the computational graph
@@ -529,7 +533,7 @@ class TensorflowClassifier(ClassifierNeuralNetwork, ClassifierGradients, Classif
         self.__dict__.update(state)
 
         # Load and update all functionality related to Tensorflow
-        # pylint: disable=E0611
+        # pylint: disable=E0611, E0401
         import os
         from art import DATA_PATH
         import tensorflow as tf
