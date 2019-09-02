@@ -202,6 +202,7 @@ class TestAdversarialTrainer(TestBase):
 
         class MyDataGenerator(DataGenerator):
             def __init__(self, x, y, size, batch_size):
+                super().__init__(size=size, batch_size=batch_size)
                 self.x = x
                 self.y = y
                 self.size = size
@@ -211,7 +212,7 @@ class TestAdversarialTrainer(TestBase):
                 ids = np.random.choice(self.size, size=min(self.size, self.batch_size), replace=False)
                 return self.x[ids], self.y[ids]
 
-        generator = MyDataGenerator(x_train, y_train, x_train.shape[0], 128)
+        generator = MyDataGenerator(x_train, y_train, x_train.shape[0], 1)
 
         attack1 = FastGradientMethod(self.classifier_k)
         attack2 = DeepFool(self.classifier_tf)
