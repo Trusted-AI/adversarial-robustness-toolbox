@@ -51,6 +51,10 @@ NB_TEST = 100
 
 
 class TestKerasClassifier(unittest.TestCase):
+    """
+    This class tests the Keras classifier.
+    """
+
     @classmethod
     def setUpClass(cls):
         k.clear_session()
@@ -119,36 +123,36 @@ class TestKerasClassifier(unittest.TestCase):
     def test_fit(self):
         labels = np.argmax(self.y_test, axis=1)
         classifier = get_classifier_kr()
-        acc = np.sum(np.argmax(classifier.predict(self.x_test), axis=1) == labels) / NB_TEST
-        logger.info('Accuracy: %.2f%%', (acc * 100))
+        accuracy = np.sum(np.argmax(classifier.predict(self.x_test), axis=1) == labels) / NB_TEST
+        logger.info('Accuracy: %.2f%%', (accuracy * 100))
 
         classifier.fit(self.x_train, self.y_train, batch_size=BATCH_SIZE, nb_epochs=2)
-        acc2 = np.sum(np.argmax(classifier.predict(self.x_test), axis=1) == labels) / NB_TEST
-        logger.info('Accuracy: %.2f%%', (acc2 * 100))
+        accuracy_2 = np.sum(np.argmax(classifier.predict(self.x_test), axis=1) == labels) / NB_TEST
+        logger.info('Accuracy: %.2f%%', (accuracy_2 * 100))
 
-        self.assertEqual(acc, 0.32)
-        self.assertEqual(acc2, 0.73)
+        self.assertEqual(accuracy, 0.32)
+        self.assertEqual(accuracy_2, 0.73)
 
     def test_fit_generator(self):
-        labels = np.argmax(self.y_test, axis=1)
         classifier = get_classifier_kr()
-        acc = np.sum(np.argmax(classifier.predict(self.x_test), axis=1) == labels) / NB_TEST
-        logger.info('Accuracy: %.2f%%', (acc * 100))
+        labels = np.argmax(self.y_test, axis=1)
+        accuracy = np.sum(np.argmax(classifier.predict(self.x_test), axis=1) == labels) / NB_TEST
+        logger.info('Accuracy: %.2f%%', (accuracy * 100))
 
         gen = generator_fit(self.x_train, self.y_train, batch_size=BATCH_SIZE)
         data_gen = KerasDataGenerator(generator=gen, size=NB_TRAIN, batch_size=BATCH_SIZE)
         classifier.fit_generator(generator=data_gen, nb_epochs=2)
-        acc2 = np.sum(np.argmax(classifier.predict(self.x_test), axis=1) == labels) / NB_TEST
-        logger.info('Accuracy: %.2f%%', (acc2 * 100))
+        accuracy_2 = np.sum(np.argmax(classifier.predict(self.x_test), axis=1) == labels) / NB_TEST
+        logger.info('Accuracy: %.2f%%', (accuracy_2 * 100))
 
-        self.assertEqual(acc, 0.32)
-        self.assertEqual(acc2, 0.36)
+        self.assertEqual(accuracy, 0.32)
+        self.assertEqual(accuracy_2, 0.36)
 
     def test_fit_image_generator(self):
-        labels_test = np.argmax(self.y_test, axis=1)
         classifier = get_classifier_kr()
-        acc = np.sum(np.argmax(classifier.predict(self.x_test), axis=1) == labels_test) / NB_TEST
-        logger.info('Accuracy: %.2f%%', (acc * 100))
+        labels_test = np.argmax(self.y_test, axis=1)
+        accuracy = np.sum(np.argmax(classifier.predict(self.x_test), axis=1) == labels_test) / NB_TEST
+        logger.info('Accuracy: %.2f%%', (accuracy * 100))
 
         keras_gen = ImageDataGenerator(width_shift_range=0.075, height_shift_range=0.075, rotation_range=12,
                                        shear_range=0.075, zoom_range=0.05, fill_mode='constant', cval=0)
@@ -156,11 +160,11 @@ class TestKerasClassifier(unittest.TestCase):
         data_gen = KerasDataGenerator(generator=keras_gen.flow(self.x_train, self.y_train, batch_size=BATCH_SIZE),
                                       size=NB_TRAIN, batch_size=BATCH_SIZE)
         classifier.fit_generator(generator=data_gen, nb_epochs=2)
-        acc2 = np.sum(np.argmax(classifier.predict(self.x_test), axis=1) == labels_test) / NB_TEST
-        logger.info('Accuracy: %.2f%%', (acc2 * 100))
+        accuracy_2 = np.sum(np.argmax(classifier.predict(self.x_test), axis=1) == labels_test) / NB_TEST
+        logger.info('Accuracy: %.2f%%', (accuracy_2 * 100))
 
-        self.assertEqual(acc, 0.32)
-        self.assertAlmostEqual(acc2, 0.35, delta=0.02)
+        self.assertEqual(accuracy, 0.32)
+        self.assertAlmostEqual(accuracy_2, 0.35, delta=0.02)
 
     def test_fit_kwargs(self):
 
@@ -185,7 +189,7 @@ class TestKerasClassifier(unittest.TestCase):
         predictions = classifier.predict(self.x_test)
         self.assertEqual(predictions.shape, self.y_test.shape)
 
-        self.assertEqual(classifier.nb_classes, 10)
+        self.assertEqual(classifier.nb_classes(), 10)
 
         class_gradients = classifier.class_gradient(self.x_test[:11])
         self.assertEqual(class_gradients.shape, tuple([11, 10] + list(self.x_test[1].shape)))
@@ -221,7 +225,7 @@ class TestKerasClassifier(unittest.TestCase):
         # Test all gradients label
         gradients = classifier.class_gradient(self.x_test)
 
-        self.assertTrue(gradients.shape == (NB_TEST, 10, 28, 28, 1))
+        self.assertEqual(gradients.shape, (NB_TEST, 10, 28, 28, 1))
 
         expected_gradients_1 = np.asarray([-1.0557447e-03, -1.0079544e-03, -7.7426434e-04, 1.7387432e-03,
                                            2.1773507e-03, 5.0880699e-05, 1.6497371e-03, 2.6113100e-03,
@@ -242,7 +246,7 @@ class TestKerasClassifier(unittest.TestCase):
         # Test 1 gradient label = 5
         gradients = classifier.class_gradient(self.x_test, label=5)
 
-        self.assertTrue(gradients.shape == (NB_TEST, 1, 28, 28, 1))
+        self.assertEqual(gradients.shape, (NB_TEST, 1, 28, 28, 1))
 
         expected_gradients_1 = np.asarray([-1.0557447e-03, -1.0079544e-03, -7.7426434e-04, 1.7387432e-03,
                                            2.1773507e-03, 5.0880699e-05, 1.6497371e-03, 2.6113100e-03,
@@ -264,7 +268,7 @@ class TestKerasClassifier(unittest.TestCase):
         label = np.random.randint(5, size=NB_TEST)
         gradients = classifier.class_gradient(self.x_test, label=label)
 
-        self.assertTrue(gradients.shape == (NB_TEST, 1, 28, 28, 1))
+        self.assertEqual(gradients.shape, (NB_TEST, 1, 28, 28, 1))
 
         expected_gradients_1 = np.asarray([5.0867125e-03, 4.8564528e-03, 6.1040390e-03, 8.6531248e-03,
                                            -6.0958797e-03, -1.4114540e-02, -7.1085989e-04, -5.0330814e-04,
@@ -288,7 +292,7 @@ class TestKerasClassifier(unittest.TestCase):
         # Test gradient
         gradients = classifier.loss_gradient(self.x_test, self.y_test)
 
-        self.assertTrue(gradients.shape == (NB_TEST, 28, 28, 1))
+        self.assertEqual(gradients.shape, (NB_TEST, 28, 28, 1))
 
         expected_gradients_1 = np.asarray([0.0559206, 0.05338925, 0.0648919, 0.07925165, -0.04029291, -0.11281465,
                                            0.01850601, 0.00325054, 0.08163195, 0.03333949, 0.031766, -0.02420463,
@@ -305,7 +309,6 @@ class TestKerasClassifier(unittest.TestCase):
         np.testing.assert_array_almost_equal(gradients[0, :, 14, 0], expected_gradients_2, decimal=4)
 
     def test_functional_model(self):
-        # Need to update the functional_model code to produce a model with more than one input and output layers...
         keras_model = KerasClassifier(self.functional_model, clip_values=(0, 1), input_layer=1, output_layer=1)
         self.assertTrue(keras_model._input.name, "input1")
         self.assertTrue(keras_model._output.name, "output1")
@@ -320,16 +323,15 @@ class TestKerasClassifier(unittest.TestCase):
 
         layer_names = classifier.layer_names
         for i, name in enumerate(layer_names):
-            act_i = classifier.get_activations(self.x_test, i)
-            act_name = classifier.get_activations(self.x_test, name)
-            np.testing.assert_array_equal(act_name, act_i)
+            activation_i = classifier.get_activations(self.x_test, i)
+            activation_name = classifier.get_activations(self.x_test, name)
+            np.testing.assert_array_equal(activation_name, activation_i)
 
     def test_resnet(self):
         keras.backend.set_learning_phase(0)
         model = ResNet50(weights='imagenet')
         classifier = KerasClassifier(model, clip_values=(0, 255))
 
-        # Load image from file
         image = img_to_array(load_img(os.path.join(self.test_dir, 'test.jpg'), target_size=(224, 224)))
         image = image.reshape((1, image.shape[0], image.shape[1], image.shape[2]))
 
@@ -341,7 +343,6 @@ class TestKerasClassifier(unittest.TestCase):
 
     def test_learning_phase(self):
         classifier = get_classifier_kr()
-
         self.assertFalse(hasattr(classifier, '_learning_phase'))
         classifier.set_learning_phase(False)
         self.assertFalse(classifier.learning_phase)
@@ -355,8 +356,6 @@ class TestKerasClassifier(unittest.TestCase):
         classifier = get_classifier_kr()
         classifier.save(filename, path=path)
         self.assertTrue(os.path.isfile(os.path.join(path, filename)))
-
-        # Remove saved file
         os.remove(os.path.join(path, filename))
 
     # def test_pickle(self):

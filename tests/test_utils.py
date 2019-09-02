@@ -22,7 +22,7 @@ import unittest
 
 import numpy as np
 
-from art.utils import projection, random_sphere, to_categorical, least_likely_class
+from art.utils import projection, random_sphere, to_categorical, least_likely_class, check_and_transform_label_format
 from art.utils import load_iris, load_mnist, master_seed
 from art.utils import second_most_likely_class, random_targets, get_label_conf, get_labels_np_array, preprocess
 
@@ -148,6 +148,34 @@ class TestUtils(unittest.TestCase):
 
         y_ = to_categorical(y, 20)
         self.assertEqual(y_.shape, (6, 20))
+
+    def test_check_and_transform_label_format(self):
+        labels_expected = np.array([[0, 0, 0, 1, 0], [0, 1, 0, 0, 0], [0, 0, 0, 0, 1]])
+
+        # test input shape (nb_samples,)
+        labels = np.array([3, 1, 4])
+        labels_transformed = check_and_transform_label_format(labels)
+        np.testing.assert_array_equal(labels_transformed, labels_expected)
+
+        # test input shape (nb_samples, 1)
+        labels = np.array([[3], [1], [4]])
+        labels_transformed = check_and_transform_label_format(labels)
+        np.testing.assert_array_equal(labels_transformed, labels_expected)
+
+        # test input shape (nb_samples, nb_classes)
+        labels = np.array([[0, 0, 0, 1, 0], [0, 1, 0, 0, 0], [0, 0, 0, 0, 1]])
+        labels_transformed = check_and_transform_label_format(labels)
+        np.testing.assert_array_equal(labels_transformed, labels_expected)
+
+        # test input shape (nb_samples, nb_classes) with return_one_hot=False
+        labels = np.array([[0, 0, 0, 1, 0], [0, 1, 0, 0, 0], [0, 0, 0, 0, 1]])
+        labels_transformed = check_and_transform_label_format(labels, return_one_hot=False)
+        np.testing.assert_array_equal(labels_transformed, np.argmax(labels_expected, axis=1))
+
+        # ValueError for len(labels.shape) > 2
+        labels = np.array([[[0, 0, 0, 1, 0], [0, 1, 0, 0, 0], [0, 0, 0, 0, 1]]])
+        with self.assertRaises(ValueError):
+            check_and_transform_label_format(labels)
 
     def test_random_targets(self):
         y = np.array([3, 1, 4, 1, 5, 9])

@@ -60,7 +60,7 @@ def main():
 
     model.compile(loss='categorical_crossentropy', optimizer='adam', metrics=['accuracy'])
 
-    classifier = KerasClassifier(clip_values=(min_, max_), model=model)
+    classifier = KerasClassifier(model=model, clip_values=(min_, max_))
 
     classifier.fit(x_train, y_train, nb_epochs=30, batch_size=128)
 
@@ -156,8 +156,8 @@ def generate_backdoor(x_clean, y_clean, percent_poison, backdoor_type='pattern',
     :param targets: This array holds the target classes for each backdoor. Poisonous images from sources[i] will be
                     labeled as targets[i].
     :type targets: `np.ndarray`
-    :return: Returns is_poison, which is a boolean array indicating which points are poisonous, poison_x, which
-    contains all of the data both legitimate and poisoned, and poison_y, which contains all of the labels
+    :return: Returns is_poison, which is a boolean array indicating which points are poisonous, x_poison, which
+    contains all of the data both legitimate and poisoned, and y_poison, which contains all of the labels
     both legitimate and poisoned.
     :rtype: `tuple`
     """

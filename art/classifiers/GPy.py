@@ -77,17 +77,22 @@ class GPyGaussianProcessClassifier(Classifier, ClassifierGradients):
                  `(batch_size, 1, input_shape)` when `label` parameter is specified.
         :rtype: `np.ndarray`
         """
-        grads = np.zeros((np.shape(x)[0], 2, np.shape(x)[1]))
-        for i in range(np.shape(x)[0]):
+        # Apply preprocessing
+        x_preprocessed, _ = self._apply_preprocessing(x, y=None, fit=False)
+
+        grads = np.zeros((np.shape(x_preprocessed)[0], 2, np.shape(x)[1]))
+        for i in range(np.shape(x_preprocessed)[0]):
             # get gradient for the two classes GPC can maximally have
             for i_c in range(2):
                 ind = self.predict(x[i].reshape(1, -1))[0, i_c]
-                sur = self.predict(np.repeat(x[i].reshape(1, -1),
-                                             np.shape(x)[1], 0) + eps * np.eye(np.shape(x)[1]))[:, i_c]
+                sur = self.predict(np.repeat(x_preprocessed[i].reshape(1, -1),
+                                             np.shape(x_preprocessed)[1], 0) + eps * np.eye(np.shape(x_preprocessed)[1]))[:, i_c]
                 grads[i, i_c] = ((sur - ind) * eps).reshape(1, -1)
 
+        grads = self._apply_preprocessing_gradient(x, grads)
+
         if label is not None:
-            return grads[:, label, :].reshape(np.shape(x)[0], 1, np.shape(x)[1])
+            return grads[:, label, :].reshape(np.shape(x_preprocessed)[0], 1, np.shape(x_preprocessed)[1])
 
         return grads
 
@@ -97,19 +102,26 @@ class GPyGaussianProcessClassifier(Classifier, ClassifierGradients):
 
         :param x: Sample input with shape as expected by the model.
         :type x: `np.ndarray`
-        :param y: Correct labels, one-vs-rest encoding.
+        :param y: Target values (class labels) one-hot-encoded of shape (nb_samples, nb_classes) or indices of shape
+                  (nb_samples,).
         :type y: `np.ndarray`
         :return: Array of gradients of the same shape as `x`.
         :rtype: `np.ndarray`
         """
+        # Apply preprocessing
+        x_preprocessed, y_preprocessed = self._apply_preprocessing(x, y, fit=False)
+
         eps = 0.00001
         grads = np.zeros(np.shape(x))
         for i in range(np.shape(x)[0]):
             # 1.0 - to mimic loss, [0,np.argmax] to get right class
-            ind = 1.0 - self.predict(x[i].reshape(1, -1))[0, np.argmax(y[i])]
-            sur = 1.0 - self.predict(np.repeat(x[i].reshape(1, -1), np.shape(x)[1], 0)
-                                     + eps * np.eye(np.shape(x)[1]))[:, np.argmax(y[i])]
+            ind = 1.0 - self.predict(x_preprocessed[i].reshape(1, -1))[0, np.argmax(y[i])]
+            sur = 1.0 - self.predict(np.repeat(x_preprocessed[i].reshape(1, -1), np.shape(x_preprocessed)[1], 0)
+                                     + eps * np.eye(np.shape(x_preprocessed)[1]))[:, np.argmax(y[i])]
             grads[i] = ((sur - ind) * eps).reshape(1, -1)
+
+        grads = self._apply_preprocessing_gradient(x, grads)
+
         return grads
 
     def predict(self, x, logits=False, **kwargs):
@@ -123,13 +135,16 @@ class GPyGaussianProcessClassifier(Classifier, ClassifierGradients):
         :return: Array of predictions of shape `(nb_inputs, self.nb_classes)`.
         :rtype: `np.ndarray`
         """
-        out = np.zeros((np.shape(x)[0], 2))
+        # Apply preprocessing
+        x_preprocessed, _ = self._apply_preprocessing(x, y=None, fit=False)
+
+        out = np.zeros((np.shape(x_preprocessed)[0], 2))
         if logits:  # output the non-squashed version
-            out[:, 0] = self.model.predict_noiseless(x)[0].reshape(-1)
+            out[:, 0] = self.model.predict_noiseless(x_preprocessed)[0].reshape(-1)
             out[:, 1] = -1.0 * out[:, 0]
             return out
         # output normal prediction, scale up to two values
-        out[:, 0] = self.model.predict(x)[0].reshape(-1)
+        out[:, 0] = self.model.predict(x_preprocessed)[0].reshape(-1)
         out[:, 1] = 1.0 - out[:, 0]
         return out
 
@@ -142,7 +157,10 @@ class GPyGaussianProcessClassifier(Classifier, ClassifierGradients):
         :return: Array of uncertainty predictions of shape `(nb_inputs)`.
         :rtype: `np.ndarray`
         """
-        return self.model.predict_noiseless(x)[1]
+        # Apply preprocessing
+        x_preprocessed, _ = self._apply_preprocessing(x, y=None, fit=False)
+
+        return self.model.predict_noiseless(x_preprocessed)[1]
 
     def fit(self, x, y, **kwargs):
         """
@@ -150,7 +168,8 @@ class GPyGaussianProcessClassifier(Classifier, ClassifierGradients):
 
         :param x: Training data. Not used, as given to model in initialized earlier.
         :type x: `np.ndarray`
-        :param y: Labels, one-vs-rest encoding. Not used, as given to model in initialized earlier.
+        :param y: Target values (class labels) one-hot-encoded of shape (nb_samples, nb_classes) or indices of shape
+                  (nb_samples,).
         :type y: `np.ndarray`
         :type kwargs: `dict`
         :return: `None`

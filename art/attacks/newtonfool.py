@@ -89,7 +89,7 @@ class NewtonFool(Attack):
             # Main algorithm for each batch
             norm_batch = np.linalg.norm(np.reshape(batch, (batch.shape[0], -1)), axis=1)
             l_batch = pred_class[batch_index_1:batch_index_2]
-            l_b = to_categorical(l_batch, self.classifier.nb_classes).astype(bool)
+            l_b = to_categorical(l_batch, self.classifier.nb_classes()).astype(bool)
 
             # Main loop of the algorithm
             for _ in range(self.max_iter):
@@ -162,7 +162,7 @@ class NewtonFool(Attack):
         :rtype: `np.ndarray`
         """
         equ1 = self.eta * norm_batch * norm_grad
-        equ2 = score - 1.0 / self.classifier.nb_classes
+        equ2 = score - 1.0 / self.classifier.nb_classes()
         result = np.minimum.reduce([equ1, equ2])
 
         return result

@@ -76,16 +76,16 @@ class EnsembleClassifier(ClassifierNeuralNetwork, ClassifierGradients, Classifie
                 raise ValueError('Incompatible `clip_values` between classifiers in the ensemble. Found %s and %s.'
                                  % (str(clip_values), str(classifier.clip_values)))
 
-            if classifier.nb_classes != classifiers[0].nb_classes:
+            if classifier.nb_classes() != classifiers[0].nb_classes():
                 raise ValueError('Incompatible output shapes between classifiers in the ensemble. Found %s and %s.'
-                                 % (str(classifier.nb_classes), str(classifiers[0].nb_classes)))
+                                 % (str(classifier.nb_classes()), str(classifiers[0].nb_classes())))
 
             if classifier.input_shape != classifiers[0].input_shape:
                 raise ValueError('Incompatible input shapes between classifiers in the ensemble. Found %s and %s.'
                                  % (str(classifier.input_shape), str(classifiers[0].input_shape)))
 
         self._input_shape = classifiers[0].input_shape
-        self._nb_classes = classifiers[0].nb_classes
+        self._nb_classes = classifiers[0].nb_classes()
 
         # Set weights for classifiers
         if classifier_weights is None:
@@ -129,7 +129,8 @@ class EnsembleClassifier(ClassifierNeuralNetwork, ClassifierGradients, Classifie
 
         :param x: Training data.
         :type x: `np.ndarray`
-        :param y: Labels, one-vs-rest encoding.
+        :param y: Target values (class labels) one-hot-encoded of shape (nb_samples, nb_classes) or indices of shape
+                  (nb_samples,).
         :type y: `np.ndarray`
         :param batch_size: Size of batches.
         :type batch_size: `int`
@@ -227,7 +228,8 @@ class EnsembleClassifier(ClassifierNeuralNetwork, ClassifierGradients, Classifie
 
         :param x: Sample input with shape as expected by the model.
         :type x: `np.ndarray`
-        :param y: Correct labels, one-vs-rest encoding.
+        :param y: Target values (class labels) one-hot-encoded of shape (nb_samples, nb_classes) or indices of shape
+                  (nb_samples,).
         :type y: `np.ndarray`
         :param raw: Return the individual classifier raw outputs (not aggregated).
         :type raw: `bool`

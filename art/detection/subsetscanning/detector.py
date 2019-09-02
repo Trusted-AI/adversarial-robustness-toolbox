@@ -197,7 +197,6 @@ class SubsetScanningDetector(ClassifierNeuralNetwork, ClassifierGradients, Class
         """
         raise NotImplementedError
 
-    @property
     def nb_classes(self):
         return self.detector.nb_classes
 
