@@ -1,25 +1,62 @@
 # Adversarial Robustness Toolbox examples
 
-[cifar_adversarial_training.py](adversarial_training_cifar10.py)
-Trains a convolutional neural network on the CIFAR-10 dataset, then generates adversarial images using the
-DeepFool attack and retrains the network on the training set augmented with the adversarial images.
+## Getting Started
+These examples train a small model on the MNIST dataset and creates adversarial examples using the Fast Gradient Sign 
+Method. Here we use the ART classifier to train the model, it would also be possible to provide a pretrained model to 
+the ART classifier. The parameters are chosen for reduced computational requirements of the script and not optimised 
+for accuracy.
 
-[data_augmentation.py](adversarial_training_data_augmentation.py)
-This example shows how to use ART and Keras to perform adversarial training using data generators for CIFAR-10.
 
-[mnist_cnn_fgsm.py](mnist_cnn_fgsm.py)
-Trains a convolutional neural network on MNIST, then crafts FGSM attack examples on it.
+### Tensorflow
+[getting_started_tensorflow.py](getting_started_tensorflow.py) demonstrates a simple example of using ART with Tensorflow v1.x. 
 
-[mnist_poison_detection.py](mnist_poison_detection.py)
-Generates a backdoor for MNIST dataset, then trains a convolutional neural network on the poisoned dataset and runs activation defence to find poison.
+### Keras
+[getting_started_tensorflow.py](getting_started_keras.py) demonstrates a simple example of using ART with Keras. 
 
-[mnist_transferability.py](mnist_transferability.py)
-Trains a convolutional neural network on the MNIST dataset using the Keras backend, then generates adversarial images using DeepFool
-and uses them to attack a convolutional neural network trained on MNIST using TensorFlow. This is to show how to perform a
-black-box attack: the attack never has access to the parameters of the TensorFlow model.
+### PyTorch
+[getting_started_tensorflow.py](getting_started_pytorch.py) demonstrates a simple example of using ART with PyTorch. 
+
+### MXNet
+[getting_started_tensorflow.py](getting_started_mxnet.py) demonstrates a simple example of using ART with MXNet. 
+
+### Scikit-learn
+[getting_started_tensorflow.py](getting_started_scikit_learn.py) demonstrates a simple example of using ART with Scikit-learn. 
+This example uses the support vector machine SVC, but any other classifier of Scikit-learn can be used as well.
+
+### XGBoost
+[getting_started_tensorflow.py](getting_started_xgboost.py) demonstrates a simple example of using ART with XGBoost.
+Because gradient boosted tree classifier do not provide gradients, the adversarial examples are created with the 
+black-box method Zeroth Order Optimization.
+
+### LightGBM
+[getting_started_tensorflow.py](getting_started_lightgbm.py) demonstrates a simple example of using ART with LightGBM.
+Because gradient boosted tree classifier do not provide gradients, the adversarial examples are created with the 
+black-box method Zeroth Order Optimization.
+
+
+## Applications
+
+[cifar_adversarial_training.py](adversarial_training_cifar10.py) trains a convolutional neural network on the CIFAR-10 
+dataset, then generates adversarial images using the DeepFool attack and retrains the network on the training set 
+augmented with the adversarial images.
+
+[data_augmentation.py](adversarial_training_data_augmentation.py) shows how to use ART and Keras to perform adversarial
+training using data generators for CIFAR-10.
+
+[mnist_cnn_fgsm.py](mnist_cnn_fgsm.py) trains a convolutional neural network on MNIST, then crafts FGSM attack examples on it.
+
+[mnist_poison_detection.py](mnist_poison_detection.py) generates a backdoor for MNIST dataset, then trains a 
+convolutional neural network on the poisoned dataset and runs activation defence to find poison.
+
+[mnist_transferability.py](mnist_transferability.py) trains a convolutional neural network on the MNIST dataset using 
+the Keras backend, then generates adversarial images using DeepFool and uses them to attack a convolutional neural 
+network trained on MNIST using TensorFlow. This is to show how to perform a black-box attack: the attack never has
+access to the parameters of the TensorFlow model.
 
 ## Using Jupyter Notebooks to run ART
 
-We have also created a sample Jupyter notebook in [Fabric for Deep Learning](https://github.com/IBM/FfDL) repository which shows you how to launch training using FfDL, and then invoke ART to find model vulnerabilities. Fabric for Deep Learning (FfDL, pronounced fiddle) is a Deep Learning Platform offering TensorFlow, Caffe, PyTorch etc. as a Service on Kubernetes
+We have also created a sample Jupyter notebook in [Fabric for Deep Learning](https://github.com/IBM/FfDL) repository which
+shows you how to launch training using FfDL, and then invoke ART to find model vulnerabilities. Fabric for Deep Learning
+(FfDL, pronounced fiddle) is a Deep Learning Platform offering TensorFlow, Caffe, PyTorch etc. as a Service on Kubernetes
 
 Find more details in the [code pattern here](https://developer.ibm.com/code/patterns/integrate-adversarial-attacks-model-training-pipeline/).
