@@ -224,10 +224,6 @@ class PyTorchClassifier(ClassifierNeuralNetwork, ClassifierGradients, Classifier
         """
         import torch
 
-        logits = kwargs.get('logits')
-        if logits is None:
-            logits = False
-
         if not ((label is None) or (isinstance(label, (int, np.integer)) and label in range(self._nb_classes))
                 or (isinstance(label, np.ndarray) and len(label.shape) == 1 and (label < self._nb_classes).all()
                     and label.shape[0] == x.shape[0])):
