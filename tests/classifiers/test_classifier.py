@@ -38,6 +38,9 @@ class ClassifierInstance(Classifier):
     def predict(self, x):
         pass
 
+    def nb_classes(self):
+        pass
+
     def save(self, filename, path=None):
         pass
 
