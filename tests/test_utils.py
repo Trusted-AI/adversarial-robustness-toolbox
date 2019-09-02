@@ -222,7 +222,6 @@ class TestUtils(unittest.TestCase):
 
     def test_second_most_likely_class(self):
         class DummyClassifier:
-            @property
             def nb_classes(self):
                 return 4
 
@@ -265,7 +264,6 @@ class TestUtils(unittest.TestCase):
         self.assertTrue(np.all(labels == y_))
 
     def test_preprocess(self):
-        # Get MNIST
         (x, y), (_, _), _, _ = load_mnist()
 
         x = (255 * x).astype('int')[:100]
