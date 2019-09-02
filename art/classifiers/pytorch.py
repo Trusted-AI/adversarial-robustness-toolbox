@@ -551,9 +551,6 @@ class PyTorchClassifier(ClassifierNeuralNetwork, ClassifierGradients, Classifier
                         else:
                             raise TypeError("The input model must inherit from `nn.Module`.")
 
-                        output_layer = nn.functional.softmax(x, dim=1)
-                        result.append(output_layer)
-
                         return result
 
                     @property
@@ -581,7 +578,7 @@ class PyTorchClassifier(ClassifierNeuralNetwork, ClassifierGradients, Classifier
                                 result.append(name + "_" + str(module_))
 
                         elif isinstance(self._model, nn.Module):
-                            result.append("logit_layer")
+                            result.append("final_layer")
 
                         else:
                             raise TypeError("The input model must inherit from `nn.Module`.")
