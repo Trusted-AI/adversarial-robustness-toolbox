@@ -204,7 +204,6 @@ class TestUtils(unittest.TestCase):
 
     def test_least_likely_class(self):
         class DummyClassifier:
-            @property
             def nb_classes(self):
                 return 4
 
@@ -216,7 +215,7 @@ class TestUtils(unittest.TestCase):
         x = np.random.rand(batch_size, 10, 10, 1)
         classifier = DummyClassifier()
         predictions = least_likely_class(x, classifier)
-        self.assertEqual(predictions.shape, (batch_size, classifier.nb_classes))
+        self.assertEqual(predictions.shape, (batch_size, classifier.nb_classes()))
 
         expected_predictions = np.array([[0, 0, 1, 0]] * batch_size)
         self.assertTrue((predictions == expected_predictions).all())
@@ -235,7 +234,7 @@ class TestUtils(unittest.TestCase):
         x = np.random.rand(batch_size, 10, 10, 1)
         classifier = DummyClassifier()
         predictions = second_most_likely_class(x, classifier)
-        self.assertEqual(predictions.shape, (batch_size, classifier.nb_classes))
+        self.assertEqual(predictions.shape, (batch_size, classifier.nb_classes()))
 
         expected_predictions = np.array([[0, 1, 0, 0]] * batch_size)
         self.assertTrue((predictions == expected_predictions).all())

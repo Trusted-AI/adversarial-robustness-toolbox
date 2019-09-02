@@ -120,7 +120,7 @@ class KerasClassifier(ClassifierNeuralNetwork, ClassifierGradients, Classifier):
 
         _, self._nb_classes = k.int_shape(self._output)
         self._input_shape = k.int_shape(self._input)[1:]
-        logger.debug('Inferred %i classes and %s as input shape for Keras classifier.', self.nb_classes,
+        logger.debug('Inferred %i classes and %s as input shape for Keras classifier.', self.nb_classes(),
                      str(self.input_shape))
 
         # Get predictions and loss function
@@ -422,7 +422,7 @@ class KerasClassifier(ClassifierNeuralNetwork, ClassifierGradients, Classifier):
             raise ValueError('Unexpected output shape for classification in Keras model.')
 
         if label is None:
-            logger.debug('Computing class gradients for all %i classes.', self.nb_classes)
+            logger.debug('Computing class gradients for all %i classes.', self.nb_classes())
             if not hasattr(self, '_class_gradients'):
                 class_gradients = [k.gradients(self._predictions_op[:, i], self._input)[0] for i in range(nb_outputs)]
                 self._class_gradients = k.function([self._input], class_gradients)
