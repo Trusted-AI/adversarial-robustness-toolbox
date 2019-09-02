@@ -1,5 +1,5 @@
 """
-The script demonstrates a simple example of using ART with PyTorch. The example train a small model on the MNISt dataset
+The script demonstrates a simple example of using ART with PyTorch. The example train a small model on the MNIST dataset
 and creates adversarial examples using the Fast Gradient Sign Method. Here we use the ART classifier to train the model,
 it would also be possible to provide a pretrained model to the ART classifier.
 The parameters are chosen for reduced computational requirements of the script and not optimised for accuracy.
@@ -14,7 +14,7 @@ from art.classifiers import PyTorchClassifier
 from art.utils import load_mnist
 
 
-# Step 0: Create the neural network model, return logits instead of activation in forward method
+# Step 0: Define the neural network model, return logits instead of activation in forward method
 
 class Net(nn.Module):
     def __init__(self):
@@ -55,12 +55,12 @@ optimizer = optim.SGD(model.parameters(), lr=0.01, momentum=0.5)
 
 # Step 3: Create the ART classifier
 
-classifier = PyTorchClassifier(clip_values=(0, 1), model=model, loss=criterion, optimizer=optimizer,
-                               input_shape=(1, 28, 28), nb_classes=10)
+classifier = PyTorchClassifier(model=model, clip_values=(min_pixel_value, max_pixel_value), loss=criterion,
+                               optimizer=optimizer, input_shape=(1, 28, 28), nb_classes=10)
 
 # Step 4: Train the ART classifier
 
-classifier.fit(x_train, y_train, batch_size=64, nb_epochs=10)
+classifier.fit(x_train, y_train, batch_size=64, nb_epochs=3)
 
 # Step 5: Evaluate the ART classifier on benign test examples
 
@@ -69,9 +69,7 @@ accuracy = np.sum(np.argmax(predictions, axis=1) == np.argmax(y_test, axis=1)) /
 print('Accuracy on benign test examples: {}%'.format(accuracy * 100))
 
 # Step 6: Generate adversarial test examples
-
-epsilon = 0.2  # Maximum perturbation
-attack = FastGradientMethod(classifier=classifier, eps=epsilon)
+attack = FastGradientMethod(classifier=classifier, eps=0.2)
 x_test_adv = attack.generate(x=x_test)
 
 # Step 7: Evaluate the ART classifier on adversarial test examples
