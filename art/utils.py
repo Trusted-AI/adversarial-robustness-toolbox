@@ -551,7 +551,7 @@ def load_iris(raw=False, test_set=0.3):
     :param test_set: Proportion of the data to use as validation split. The value should be between o and 1.
     :type test_set: `float`
     :return: Entire dataset and labels.
-    :rtype: `(np.ndarray, np.ndarray)`
+    :rtype: `(np.ndarray, np.ndarray), (np.ndarray, np.ndarray), float, float`
     """
     from art import DATA_PATH, NUMPY_DTYPE
 
