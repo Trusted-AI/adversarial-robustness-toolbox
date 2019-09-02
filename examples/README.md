@@ -1,10 +1,10 @@
 # Adversarial Robustness Toolbox examples
 
-[cifar_adversarial_training.py](cifar_adversarial_training.py)
+[cifar_adversarial_training.py](adversarial_training_cifar10.py)
 Trains a convolutional neural network on the CIFAR-10 dataset, then generates adversarial images using the
 DeepFool attack and retrains the network on the training set augmented with the adversarial images.
 
-[data_augmentation.py](data_augmentation.py)
+[data_augmentation.py](adversarial_training_data_augmentation.py)
 This example shows how to use ART and Keras to perform adversarial training using data generators for CIFAR-10.
 
 [mnist_cnn_fgsm.py](mnist_cnn_fgsm.py)
