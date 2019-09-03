@@ -243,6 +243,16 @@ class RandomizedSmoothing(ClassifierWrapper, ClassifierGradients, Classifier):
         """
         raise NotImplementedError
 
+    def nb_classes(self):
+        """
+        Return the number of output classes.
+
+        :return: Number of classes in the data.
+        :rtype: `int`
+        """
+        # pylint: disable=W0212
+        return self.classifier.nb_classes()
+
     def save(self, filename, path=None):
         """
         Save a model to file specific to the backend framework.

@@ -30,7 +30,7 @@ import torch.nn as nn
 import torch.nn.functional as f
 import torch.optim as optim
 
-from art.classifiers import KerasClassifier, PyTorchClassifier, TFClassifier
+from art.classifiers import KerasClassifier, PyTorchClassifier, TensorflowClassifier
 from art.metrics.metrics import empirical_robustness, clever_t, clever_u, clever, loss_sensitivity
 from art.utils import load_mnist, master_seed
 
@@ -95,6 +95,8 @@ class TestMetrics(unittest.TestCase):
     #     dist = nearest_neighbour_dist(classifier, x_train, x_train, str('fgsm'))
     #     self.assertGreaterEqual(dist, 0)
 
+    @unittest.skipIf(tf.__version__[0] == '2', reason='Skip unittests for Tensorflow v2 until Keras supports Tensorflow'
+                                                      ' v2 as backend.')
     @staticmethod
     def _cnn_mnist_k(input_shape):
         # Create simple CNN
@@ -143,9 +145,14 @@ class TestClever(unittest.TestCase):
     @staticmethod
     def _create_tfclassifier():
         """
-        To create a simple TFClassifier for testing.
+        To create a simple TensorflowClassifier for testing.
         :return:
         """
+        import tensorflow as tf
+        if tf.__version__[0] == '2':
+            import tensorflow.compat.v1 as tf
+            tf.disable_eager_execution()
+
         # Define input and output placeholders
         input_ph = tf.placeholder(tf.float32, shape=[None, 28, 28, 1])
         labels_ph = tf.placeholder(tf.int32, shape=[None, 10])
@@ -153,7 +160,7 @@ class TestClever(unittest.TestCase):
         # Define the tensorflow graph
         conv = tf.layers.conv2d(input_ph, 4, 5, activation=tf.nn.relu)
         conv = tf.layers.max_pooling2d(conv, 2, 2)
-        fc = tf.contrib.layers.flatten(conv)
+        fc = tf.layers.flatten(conv)
 
         # Logits layer
         logits = tf.layers.dense(fc, 10)
@@ -168,11 +175,13 @@ class TestClever(unittest.TestCase):
         sess.run(tf.global_variables_initializer())
 
         # Create the classifier
-        tfc = TFClassifier(input_ph=input_ph, output=logits, labels_ph=labels_ph, train=train, loss=loss,
-                           learning=None, sess=sess, clip_values=(0, 1))
+        tfc = TensorflowClassifier(input_ph=input_ph, output=logits, labels_ph=labels_ph, train=train, loss=loss,
+                                   learning=None, sess=sess, clip_values=(0, 1))
 
         return tfc
 
+    @unittest.skipIf(tf.__version__[0] == '2', reason='Skip unittests for Tensorflow v2 until Keras supports Tensorflow'
+                                                      ' v2 as backend.')
     @staticmethod
     def _create_krclassifier():
         """

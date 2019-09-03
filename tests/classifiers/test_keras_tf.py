@@ -26,22 +26,22 @@ import shutil
 import pickle
 
 import tensorflow as tf
+if tf.__version__[0] == '2':
+    tf.compat.v1.disable_eager_execution()
+from tensorflow.keras.layers import Dense, Conv2D, MaxPooling2D, Dropout, Input, Flatten
+from tensorflow.keras.models import Model
+from tensorflow.keras.preprocessing.image import ImageDataGenerator
+from tensorflow.keras.callbacks import LearningRateScheduler
+from tensorflow.keras.applications.resnet50 import ResNet50, decode_predictions
+from tensorflow.keras.preprocessing.image import load_img, img_to_array
 import numpy as np
-import keras
-import keras.backend as k
-from keras.layers import Dense, Conv2D, MaxPooling2D, Dropout, Input, Flatten
-from keras.models import Model
-from keras.preprocessing.image import ImageDataGenerator
-from keras.callbacks import LearningRateScheduler
-from keras.applications.resnet50 import ResNet50, decode_predictions
-from keras.preprocessing.image import load_img, img_to_array
 
 from art import DATA_PATH
 from art.classifiers import KerasClassifier
 from art.classifiers.keras import generator_fit
 from art.defences import FeatureSqueezing, JpegCompression, SpatialSmoothing
 from art.utils import load_dataset, master_seed
-from art.utils_test import get_classifier_kr
+from art.utils_test import get_classifier_kr_tf
 from art.data_generators import KerasDataGenerator
 
 logger = logging.getLogger('testLogger')
@@ -50,18 +50,11 @@ BATCH_SIZE = 10
 NB_TRAIN = 500
 NB_TEST = 100
 
-@unittest.skipIf(tf.__version__[0] == '2', reason='Skip unittests for Tensorflow v2 until Keras supports Tensorflow v2 '
-                                                  'as backend.')
-class TestKerasClassifier(unittest.TestCase):
-    """
-    This class tests the Keras classifier.
-    """
+
+class TestKerasClassifierTF(unittest.TestCase):
 
     @classmethod
     def setUpClass(cls):
-        k.clear_session()
-        k.set_learning_phase(1)
-
         (x_train, y_train), (x_test, y_test), _, _ = load_dataset('mnist')
 
         cls.x_train = x_train[:NB_TRAIN]
@@ -87,7 +80,6 @@ class TestKerasClassifier(unittest.TestCase):
 
     @classmethod
     def tearDownClass(cls):
-        k.clear_session()
         shutil.rmtree(cls.test_dir)
 
     def setUp(self):
@@ -117,44 +109,44 @@ class TestKerasClassifier(unittest.TestCase):
 
         model = Model(inputs=[in_layer, in_layer_2], outputs=[out_layer, out_layer_2])
 
-        model.compile(loss=keras.losses.categorical_crossentropy, optimizer=keras.optimizers.Adadelta(),
+        model.compile(loss=tf.keras.losses.categorical_crossentropy, optimizer=tf.keras.optimizers.Adadelta(),
                       metrics=['accuracy'], loss_weights=[1.0, 1.0])
 
         return model
 
     def test_fit(self):
         labels = np.argmax(self.y_test, axis=1)
-        classifier = get_classifier_kr()
-        accuracy = np.sum(np.argmax(classifier.predict(self.x_test), axis=1) == labels) / NB_TEST
-        logger.info('Accuracy: %.2f%%', (accuracy * 100))
+        classifier = get_classifier_kr_tf()
+        acc = np.sum(np.argmax(classifier.predict(self.x_test), axis=1) == labels) / NB_TEST
+        logger.info('Accuracy: %.2f%%', (acc * 100))
 
         classifier.fit(self.x_train, self.y_train, batch_size=BATCH_SIZE, nb_epochs=2)
-        accuracy_2 = np.sum(np.argmax(classifier.predict(self.x_test), axis=1) == labels) / NB_TEST
-        logger.info('Accuracy: %.2f%%', (accuracy_2 * 100))
+        acc2 = np.sum(np.argmax(classifier.predict(self.x_test), axis=1) == labels) / NB_TEST
+        logger.info('Accuracy: %.2f%%', (acc2 * 100))
 
-        self.assertEqual(accuracy, 0.32)
-        self.assertEqual(accuracy_2, 0.73)
+        self.assertEqual(acc, 0.32)
+        self.assertEqual(acc2, 0.73)
 
     def test_fit_generator(self):
-        classifier = get_classifier_kr()
         labels = np.argmax(self.y_test, axis=1)
-        accuracy = np.sum(np.argmax(classifier.predict(self.x_test), axis=1) == labels) / NB_TEST
-        logger.info('Accuracy: %.2f%%', (accuracy * 100))
+        classifier = get_classifier_kr_tf()
+        acc = np.sum(np.argmax(classifier.predict(self.x_test), axis=1) == labels) / NB_TEST
+        logger.info('Accuracy: %.2f%%', (acc * 100))
 
         gen = generator_fit(self.x_train, self.y_train, batch_size=BATCH_SIZE)
         data_gen = KerasDataGenerator(generator=gen, size=NB_TRAIN, batch_size=BATCH_SIZE)
         classifier.fit_generator(generator=data_gen, nb_epochs=2)
-        accuracy_2 = np.sum(np.argmax(classifier.predict(self.x_test), axis=1) == labels) / NB_TEST
-        logger.info('Accuracy: %.2f%%', (accuracy_2 * 100))
+        acc2 = np.sum(np.argmax(classifier.predict(self.x_test), axis=1) == labels) / NB_TEST
+        logger.info('Accuracy: %.2f%%', (acc2 * 100))
 
-        self.assertEqual(accuracy, 0.32)
-        self.assertEqual(accuracy_2, 0.36)
+        self.assertEqual(acc, 0.32)
+        self.assertEqual(acc2, 0.36)
 
     def test_fit_image_generator(self):
-        classifier = get_classifier_kr()
         labels_test = np.argmax(self.y_test, axis=1)
-        accuracy = np.sum(np.argmax(classifier.predict(self.x_test), axis=1) == labels_test) / NB_TEST
-        logger.info('Accuracy: %.2f%%', (accuracy * 100))
+        classifier = get_classifier_kr_tf()
+        acc = np.sum(np.argmax(classifier.predict(self.x_test), axis=1) == labels_test) / NB_TEST
+        logger.info('Accuracy: %.2f%%', (acc * 100))
 
         keras_gen = ImageDataGenerator(width_shift_range=0.075, height_shift_range=0.075, rotation_range=12,
                                        shear_range=0.075, zoom_range=0.05, fill_mode='constant', cval=0)
@@ -162,11 +154,11 @@ class TestKerasClassifier(unittest.TestCase):
         data_gen = KerasDataGenerator(generator=keras_gen.flow(self.x_train, self.y_train, batch_size=BATCH_SIZE),
                                       size=NB_TRAIN, batch_size=BATCH_SIZE)
         classifier.fit_generator(generator=data_gen, nb_epochs=2)
-        accuracy_2 = np.sum(np.argmax(classifier.predict(self.x_test), axis=1) == labels_test) / NB_TEST
-        logger.info('Accuracy: %.2f%%', (accuracy_2 * 100))
+        acc2 = np.sum(np.argmax(classifier.predict(self.x_test), axis=1) == labels_test) / NB_TEST
+        logger.info('Accuracy: %.2f%%', (acc2 * 100))
 
-        self.assertEqual(accuracy, 0.32)
-        self.assertAlmostEqual(accuracy_2, 0.35, delta=0.02)
+        self.assertEqual(acc, 0.32)
+        self.assertAlmostEqual(acc2, 0.35, delta=0.02)
 
     def test_fit_kwargs(self):
 
@@ -174,7 +166,7 @@ class TestKerasClassifier(unittest.TestCase):
             return 0.01
 
         # Test a valid callback
-        classifier = get_classifier_kr()
+        classifier = get_classifier_kr_tf()
         kwargs = {'callbacks': [LearningRateScheduler(get_lr)]}
         classifier.fit(self.x_train, self.y_train, batch_size=BATCH_SIZE, nb_epochs=1, **kwargs)
 
@@ -186,7 +178,7 @@ class TestKerasClassifier(unittest.TestCase):
         self.assertIn('multiple values for keyword argument', str(context.exception))
 
     def test_shapes(self):
-        classifier = get_classifier_kr()
+        classifier = get_classifier_kr_tf()
 
         predictions = classifier.predict(self.x_test)
         self.assertEqual(predictions.shape, self.y_test.shape)
@@ -204,7 +196,7 @@ class TestKerasClassifier(unittest.TestCase):
         fs = FeatureSqueezing(clip_values=clip_values, bit_depth=2)
         jpeg = JpegCompression(clip_values=clip_values, apply_predict=True)
         smooth = SpatialSmoothing()
-        classifier_ = get_classifier_kr()
+        classifier_ = get_classifier_kr_tf()
         classifier = KerasClassifier(clip_values=clip_values, model=classifier_._model, defences=[fs, jpeg, smooth])
         self.assertEqual(len(classifier.defences), 3)
 
@@ -215,19 +207,19 @@ class TestKerasClassifier(unittest.TestCase):
         x_test_defense, _ = fs(x_test_defense, self.y_test)
         x_test_defense, _ = jpeg(x_test_defense, self.y_test)
         x_test_defense, _ = smooth(x_test_defense, self.y_test)
-        classifier = get_classifier_kr()
+        classifier = get_classifier_kr_tf()
         predictions_check = classifier._model.predict(x_test_defense)
 
         # Check that the prediction results match
         np.testing.assert_array_almost_equal(predictions_classifier, predictions_check, decimal=4)
 
     def test_class_gradient(self):
-        classifier = get_classifier_kr()
+        classifier = get_classifier_kr_tf()
 
         # Test all gradients label
         gradients = classifier.class_gradient(self.x_test)
 
-        self.assertEqual(gradients.shape, (NB_TEST, 10, 28, 28, 1))
+        self.assertTrue(gradients.shape == (NB_TEST, 10, 28, 28, 1))
 
         expected_gradients_1 = np.asarray([-1.0557447e-03, -1.0079544e-03, -7.7426434e-04, 1.7387432e-03,
                                            2.1773507e-03, 5.0880699e-05, 1.6497371e-03, 2.6113100e-03,
@@ -248,7 +240,7 @@ class TestKerasClassifier(unittest.TestCase):
         # Test 1 gradient label = 5
         gradients = classifier.class_gradient(self.x_test, label=5)
 
-        self.assertEqual(gradients.shape, (NB_TEST, 1, 28, 28, 1))
+        self.assertTrue(gradients.shape == (NB_TEST, 1, 28, 28, 1))
 
         expected_gradients_1 = np.asarray([-1.0557447e-03, -1.0079544e-03, -7.7426434e-04, 1.7387432e-03,
                                            2.1773507e-03, 5.0880699e-05, 1.6497371e-03, 2.6113100e-03,
@@ -270,7 +262,7 @@ class TestKerasClassifier(unittest.TestCase):
         label = np.random.randint(5, size=NB_TEST)
         gradients = classifier.class_gradient(self.x_test, label=label)
 
-        self.assertEqual(gradients.shape, (NB_TEST, 1, 28, 28, 1))
+        self.assertTrue(gradients.shape == (NB_TEST, 1, 28, 28, 1))
 
         expected_gradients_1 = np.asarray([5.0867125e-03, 4.8564528e-03, 6.1040390e-03, 8.6531248e-03,
                                            -6.0958797e-03, -1.4114540e-02, -7.1085989e-04, -5.0330814e-04,
@@ -289,12 +281,12 @@ class TestKerasClassifier(unittest.TestCase):
         np.testing.assert_array_almost_equal(gradients[0, 0, :, 14, 0], expected_gradients_2, decimal=4)
 
     def test_loss_gradient(self):
-        classifier = get_classifier_kr()
+        classifier = get_classifier_kr_tf()
 
         # Test gradient
         gradients = classifier.loss_gradient(self.x_test, self.y_test)
 
-        self.assertEqual(gradients.shape, (NB_TEST, 28, 28, 1))
+        self.assertTrue(gradients.shape == (NB_TEST, 28, 28, 1))
 
         expected_gradients_1 = np.asarray([0.0559206, 0.05338925, 0.0648919, 0.07925165, -0.04029291, -0.11281465,
                                            0.01850601, 0.00325054, 0.08163195, 0.03333949, 0.031766, -0.02420463,
@@ -311,6 +303,7 @@ class TestKerasClassifier(unittest.TestCase):
         np.testing.assert_array_almost_equal(gradients[0, :, 14, 0], expected_gradients_2, decimal=4)
 
     def test_functional_model(self):
+        # Need to update the functional_model code to produce a model with more than one input and output layers...
         keras_model = KerasClassifier(self.functional_model, clip_values=(0, 1), input_layer=1, output_layer=1)
         self.assertTrue(keras_model._input.name, "input1")
         self.assertTrue(keras_model._output.name, "output1")
@@ -320,20 +313,21 @@ class TestKerasClassifier(unittest.TestCase):
         self.assertTrue(keras_model._output.name, "output0")
 
     def test_layers(self):
-        classifier = get_classifier_kr()
+        classifier = get_classifier_kr_tf()
         self.assertEqual(len(classifier.layer_names), 3)
 
         layer_names = classifier.layer_names
         for i, name in enumerate(layer_names):
-            activation_i = classifier.get_activations(self.x_test, i)
-            activation_name = classifier.get_activations(self.x_test, name)
-            np.testing.assert_array_equal(activation_name, activation_i)
+            act_i = classifier.get_activations(self.x_test, i)
+            act_name = classifier.get_activations(self.x_test, name)
+            np.testing.assert_array_equal(act_name, act_i)
 
     def test_resnet(self):
-        keras.backend.set_learning_phase(0)
+        tf.keras.backend.set_learning_phase(0)
         model = ResNet50(weights='imagenet')
         classifier = KerasClassifier(model, clip_values=(0, 255))
 
+        # Load image from file
         image = img_to_array(load_img(os.path.join(self.test_dir, 'test.jpg'), target_size=(224, 224)))
         image = image.reshape((1, image.shape[0], image.shape[1], image.shape[2]))
 
@@ -341,10 +335,15 @@ class TestKerasClassifier(unittest.TestCase):
         label = decode_predictions(prediction)[0][0]
 
         self.assertEqual(label[1], 'Weimaraner')
-        self.assertAlmostEqual(prediction[0, 178], 0.2658045, places=3)
+        if tf.__version__[0] == '2':
+            self.assertAlmostEqual(prediction[0, 178], 0.29494652, places=3)
+        else:
+            self.assertAlmostEqual(prediction[0, 178], 0.2658045, places=3)
+
 
     def test_learning_phase(self):
-        classifier = get_classifier_kr()
+        classifier = get_classifier_kr_tf()
+
         self.assertFalse(hasattr(classifier, '_learning_phase'))
         classifier.set_learning_phase(False)
         self.assertFalse(classifier.learning_phase)
@@ -355,39 +354,41 @@ class TestKerasClassifier(unittest.TestCase):
     def test_save(self):
         path = 'tmp'
         filename = 'model.h5'
-        classifier = get_classifier_kr()
+        classifier = get_classifier_kr_tf()
         classifier.save(filename, path=path)
         self.assertTrue(os.path.isfile(os.path.join(path, filename)))
+
+        # Remove saved file
         os.remove(os.path.join(path, filename))
 
-    # def test_pickle(self):
-    #     filename = 'my_classifier.p'
-    #     full_path = os.path.join(DATA_PATH, filename)
-    #     folder = os.path.split(full_path)[0]
-    #     if not os.path.exists(folder):
-    #         os.makedirs(folder)
-    #
-    #     fs = FeatureSqueezing(bit_depth=1, clip_values=(0, 1))
-    #     keras_model = KerasClassifier(self.functional_model, clip_values=(0, 1), input_layer=1, output_layer=1,
-    #                                   defences=fs)
-    #     with open(full_path, 'wb') as save_file:
-    #         pickle.dump(keras_model, save_file)
-    #
-    #     # Unpickle:
-    #     with open(full_path, 'rb') as load_file:
-    #         loaded = pickle.load(load_file)
-    #
-    #     self.assertEqual(keras_model._clip_values, loaded._clip_values)
-    #     self.assertEqual(keras_model._channel_index, loaded._channel_index)
-    #     self.assertEqual(keras_model._use_logits, loaded._use_logits)
-    #     self.assertEqual(keras_model._input_layer, loaded._input_layer)
-    #     self.assertEqual(self.functional_model.get_config(), loaded._model.get_config())
-    #     self.assertTrue(isinstance(loaded.defences[0], FeatureSqueezing))
-    #
-    #     os.remove(full_path)
+    def test_pickle(self):
+        filename = 'my_classifier.p'
+        full_path = os.path.join(DATA_PATH, filename)
+        folder = os.path.split(full_path)[0]
+        if not os.path.exists(folder):
+            os.makedirs(folder)
+
+        fs = FeatureSqueezing(bit_depth=1, clip_values=(0, 1))
+        keras_model = KerasClassifier(self.functional_model, clip_values=(0, 1), input_layer=1, output_layer=1,
+                                      defences=fs)
+        with open(full_path, 'wb') as save_file:
+            pickle.dump(keras_model, save_file)
+
+        # Unpickle:
+        with open(full_path, 'rb') as load_file:
+            loaded = pickle.load(load_file)
+
+        self.assertEqual(keras_model._clip_values, loaded._clip_values)
+        self.assertEqual(keras_model._channel_index, loaded._channel_index)
+        self.assertEqual(keras_model._use_logits, loaded._use_logits)
+        self.assertEqual(keras_model._input_layer, loaded._input_layer)
+        self.assertEqual(self.functional_model.get_config(), loaded._model.get_config())
+        self.assertTrue(isinstance(loaded.defences[0], FeatureSqueezing))
+
+        os.remove(full_path)
 
     def test_repr(self):
-        classifier = get_classifier_kr()
+        classifier = get_classifier_kr_tf()
         repr_ = repr(classifier)
         self.assertIn('art.classifiers.keras.KerasClassifier', repr_)
         self.assertIn('use_logits=False, channel_index=3', repr_)
@@ -396,10 +397,11 @@ class TestKerasClassifier(unittest.TestCase):
 
     def test_loss_functions(self):
         loss_names = ['categorical_hinge', 'categorical_crossentropy', 'sparse_categorical_crossentropy',
-                      'binary_crossentropy', 'kullback_leibler_divergence', 'cosine_proximity']
+                      'binary_crossentropy', 'kullback_leibler_divergence', 'cosine_similarity']
 
         for loss_name in loss_names:
-            classifier = get_classifier_kr(loss_name=loss_name)
+            print(loss_name)
+            classifier = get_classifier_kr_tf(loss_name=loss_name)
             classifier.fit(x=self.x_test, y=self.y_test, nb_epochs=1)
             classifier.predict(x=self.x_test)
             classifier.class_gradient(self.x_test, label=5)
