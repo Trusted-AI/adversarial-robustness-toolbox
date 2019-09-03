@@ -96,15 +96,16 @@ class TestAdversarialPatch(unittest.TestCase):
         """
         ptc = get_classifier_pt()
 
-        x_train = np.swapaxes(self.x_train, 1, 3)
+        x_train = np.swapaxes(self.x_train, 1, 3).astype(np.float32)
 
         attack_ap = AdversarialPatch(ptc, rotation_max=22.5, scale_min=0.1, scale_max=1.0, learning_rate=5.0,
                                      batch_size=10, max_iter=500)
+
         patch_adv, _ = attack_ap.generate(x_train)
 
         self.assertAlmostEqual(patch_adv[0, 8, 8], -3.143605902784875, delta=0.1)
         self.assertAlmostEqual(patch_adv[0, 14, 14], 19.790434152473054, delta=0.1)
-        self.assertAlmostEqual(float(np.sum(patch_adv)), 384.826, delta=0.1)
+        self.assertAlmostEqual(float(np.sum(patch_adv)), 394.905, delta=0.1)
 
     def test_failure_feature_vectors(self):
         attack_params = {"rotation_max": 22.5, "scale_min": 0.1, "scale_max": 1.0, "learning_rate": 5.0,
