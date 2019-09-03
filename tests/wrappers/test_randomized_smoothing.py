@@ -21,6 +21,7 @@ import logging
 import unittest
 
 import numpy as np
+import tensorflow as tf
 
 from art.attacks import FastGradientMethod
 from art.classifiers import KerasClassifier
@@ -53,6 +54,8 @@ class TestRandomizedSmoothing(unittest.TestCase):
         # Set master seed
         master_seed(1234)
 
+    @unittest.skipIf(tf.__version__[0] == '2', reason='Skip unittests for Tensorflow v2 until Keras supports Tensorflow'
+                                                      ' v2 as backend.')
     def test_krclassifier(self):
         """
         Test with a KerasClassifier.
@@ -114,6 +117,8 @@ class TestRandomizedSmoothingVectors(unittest.TestCase):
         # Set master seed
         master_seed(1234)
 
+    @unittest.skipIf(tf.__version__[0] == '2', reason='Skip unittests for Tensorflow v2 until Keras supports Tensorflow'
+                                                      ' v2 as backend.')
     def test_iris_clipped(self):
         (_, _), (x_test, y_test) = self.iris
 
@@ -162,6 +167,8 @@ class TestRandomizedSmoothingVectors(unittest.TestCase):
         self.assertTrue((radius <= 1).all())
         self.assertTrue((pred < y_test.shape[1]).all())
 
+    @unittest.skipIf(tf.__version__[0] == '2', reason='Skip unittests for Tensorflow v2 until Keras supports Tensorflow'
+                                                      ' v2 as backend.')
     def test_iris_unbounded(self):
         (_, _), (x_test, y_test) = self.iris
         classifier, _ = get_iris_classifier_kr()

@@ -126,6 +126,7 @@ class Classifier(ABC):
         """
         return self._input_shape
 
+    @abc.abstractmethod
     def nb_classes(self):
         """
         Return the number of output classes.

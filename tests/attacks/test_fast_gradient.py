@@ -20,6 +20,7 @@ from __future__ import absolute_import, division, print_function, unicode_litera
 import logging
 import unittest
 
+import tensorflow as tf
 import numpy as np
 
 from art.attacks import FastGradientMethod
@@ -36,6 +37,8 @@ NB_TRAIN = 100
 NB_TEST = 11
 
 
+@unittest.skipIf(tf.__version__[0] == '2', reason='Skip unittests for Tensorflow v2 until Keras supports Tensorflow'
+                                                  ' v2 as backend.')
 class TestFastGradientMethodImages(unittest.TestCase):
     @classmethod
     def setUpClass(cls):
@@ -277,6 +280,8 @@ class TestFastGradientVectors(unittest.TestCase):
     def setUp(self):
         master_seed(1234)
 
+    @unittest.skipIf(tf.__version__[0] == '2', reason='Skip unittests for Tensorflow v2 until Keras supports Tensorflow'
+                                                      ' v2 as backend.')
     def test_iris_k_clipped(self):
         classifier, _ = get_iris_classifier_kr()
 
@@ -305,6 +310,8 @@ class TestFastGradientVectors(unittest.TestCase):
         accuracy = np.sum(predictions_adv == np.argmax(targets, axis=1)) / self.y_test.shape[0]
         logger.info('Success rate of targeted FGM on Iris: %.2f%%', (accuracy * 100))
 
+    @unittest.skipIf(tf.__version__[0] == '2', reason='Skip unittests for Tensorflow v2 until Keras supports Tensorflow'
+                                                      ' v2 as backend.')
     def test_iris_k_unbounded(self):
         classifier, _ = get_iris_classifier_kr()
 

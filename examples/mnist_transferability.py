@@ -13,7 +13,7 @@ import numpy as np
 import tensorflow as tf
 
 from art.attacks import DeepFool
-from art.classifiers import KerasClassifier, TFClassifier
+from art.classifiers import KerasClassifier, TensorflowClassifier
 from art.utils import load_mnist
 
 
@@ -37,8 +37,8 @@ def cnn_mnist_tf(input_shape):
     sess = tf.Session()
     sess.run(tf.global_variables_initializer())
 
-    classifier = TFClassifier(clip_values=(0, 1), input_ph=inputs_tf, output=logits, loss=loss, train=train_tf,
-                              labels_ph=labels_tf, sess=sess)
+    classifier = TensorflowClassifier(clip_values=(0, 1), input_ph=inputs_tf, output=logits, loss=loss, train=train_tf,
+                                      labels_ph=labels_tf, sess=sess)
     return classifier
 
 
