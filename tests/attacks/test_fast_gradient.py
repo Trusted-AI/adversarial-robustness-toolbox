@@ -69,11 +69,11 @@ class TestFastGradientMethodImages(unittest.TestCase):
         cls.classifier_py = get_classifier_pt()
         x_train, x_test = np.swapaxes(x_train, 1, 3), np.swapaxes(x_test, 1, 3)
 
-        scores = get_labels_np_array(cls.classifier_py.predict(x_train))
+        scores = get_labels_np_array(cls.classifier_py.predict(x_train.astype(np.float32)))
         accuracy = np.sum(np.argmax(scores, axis=1) == np.argmax(y_train, axis=1)) / y_train.shape[0]
         logger.info('[PyTorch, MNIST] Accuracy on training set: %.2f%%', (accuracy * 100))
 
-        scores = get_labels_np_array(cls.classifier_py.predict(x_test))
+        scores = get_labels_np_array(cls.classifier_py.predict(x_test.astype(np.float32)))
         accuracy = np.sum(np.argmax(scores, axis=1) == np.argmax(y_test, axis=1)) / y_test.shape[0]
         logger.info('[PyTorch, MNIST] Accuracy on test set: %.2f%%', (accuracy * 100))
 
@@ -89,9 +89,15 @@ class TestFastGradientMethodImages(unittest.TestCase):
         for classifier_name, classifier in backends.items():
             if classifier_name == 'pytorch':
                 self._swap_axes()
+                self.x_train = self.x_train.astype(np.float32)
+                self.x_test = self.x_test.astype(np.float32)
+
             self._test_backend_mnist(classifier)
+
             if classifier_name == 'pytorch':
                 self._swap_axes()
+                self.x_train = self.x_train.astype(np.float64)
+                self.x_test = self.x_test.astype(np.float64)
 
     def _swap_axes(self):
         self.x_train = np.swapaxes(self.x_train, 1, 3)
@@ -233,9 +239,15 @@ class TestFastGradientMethodImages(unittest.TestCase):
         for classifier_name, classifier in backends.items():
             if classifier_name == 'pytorch':
                 self._swap_axes()
+                self.x_train = self.x_train.astype(np.float32)
+                self.x_test = self.x_test.astype(np.float32)
+
             self._test_mnist_targeted(classifier)
+
             if classifier_name == 'pytorch':
                 self._swap_axes()
+                self.x_train = self.x_train.astype(np.float64)
+                self.x_test = self.x_test.astype(np.float64)
 
     def test_classifier_type_check_fail_classifier(self):
         # Use a useless test classifier to test basic classifier properties
