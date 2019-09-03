@@ -105,7 +105,7 @@ class KerasClassifier(ClassifierNeuralNetwork, ClassifierGradients, Classifier):
 
         _, self._nb_classes = k.int_shape(self._output)
         self._input_shape = k.int_shape(self._input)[1:]
-        logger.debug('Inferred %i classes and %s as input shape for Keras classifier.', self.nb_classes,
+        logger.debug('Inferred %i classes and %s as input shape for Keras classifier.', self.nb_classes(),
                      str(self.input_shape))
 
         # Get predictions and loss function
