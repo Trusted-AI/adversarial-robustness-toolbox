@@ -68,7 +68,8 @@ class TestDeepFool(unittest.TestCase):
 
         # Create basic PyTorch model
         cls.classifier_py = get_classifier_pt()
-        x_train, x_test = np.swapaxes(x_train, 1, 3), np.swapaxes(cls.x_test, 1, 3)
+        x_train, x_test = np.swapaxes(x_train, 1, 3).astype(np.float32), np.swapaxes(
+            cls.x_test, 1, 3).astype(np.float32)
 
         scores = get_labels_np_array(cls.classifier_py.predict(x_train))
         accuracy = np.sum(np.argmax(scores, axis=1) == np.argmax(cls.y_train, axis=1)) / cls.y_train.shape[0]
@@ -96,9 +97,15 @@ class TestDeepFool(unittest.TestCase):
         for _, classifier in backends.items():
             if _ == 'pytorch':
                 self._swap_axes()
+                self.x_train = self.x_train.astype(np.float32)
+                self.x_test = self.x_test.astype(np.float32)
+
             self._test_backend_mnist(classifier)
+
             if _ == 'pytorch':
                 self._swap_axes()
+                self.x_train = self.x_train.astype(np.float64)
+                self.x_test = self.x_test.astype(np.float64)
 
     def _swap_axes(self):
         self.x_train = np.swapaxes(self.x_train, 1, 3)
