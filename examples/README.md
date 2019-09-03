@@ -1,6 +1,6 @@
 # Adversarial Robustness Toolbox examples
 
-## Getting Started
+## Get Started with ART
 These examples train a small model on the MNIST dataset and creates adversarial examples using the Fast Gradient Sign 
 Method. Here we use the ART classifier to train the model, it would also be possible to provide a pretrained model to 
 the ART classifier. The parameters are chosen for reduced computational requirements of the script and not optimised 
@@ -8,28 +8,28 @@ for accuracy.
 
 
 ### Tensorflow
-[getting_started_tensorflow.py](getting_started_tensorflow.py) demonstrates a simple example of using ART with Tensorflow v1.x. 
+[get_started_tensorflow.py](get_started_tensorflow.py) demonstrates a simple example of using ART with Tensorflow v1.x. 
 
 ### Keras
-[getting_started_tensorflow.py](getting_started_keras.py) demonstrates a simple example of using ART with Keras. 
+[get_started_tensorflow.py](get_started_keras.py) demonstrates a simple example of using ART with Keras. 
 
 ### PyTorch
-[getting_started_tensorflow.py](getting_started_pytorch.py) demonstrates a simple example of using ART with PyTorch. 
+[get_started_tensorflow.py](get_started_pytorch.py) demonstrates a simple example of using ART with PyTorch. 
 
 ### MXNet
-[getting_started_tensorflow.py](getting_started_mxnet.py) demonstrates a simple example of using ART with MXNet. 
+[get_started_tensorflow.py](get_started_mxnet.py) demonstrates a simple example of using ART with MXNet. 
 
 ### Scikit-learn
-[getting_started_tensorflow.py](getting_started_scikit_learn.py) demonstrates a simple example of using ART with Scikit-learn. 
+[get_started_tensorflow.py](get_started_scikit_learn.py) demonstrates a simple example of using ART with Scikit-learn. 
 This example uses the support vector machine SVC, but any other classifier of Scikit-learn can be used as well.
 
 ### XGBoost
-[getting_started_tensorflow.py](getting_started_xgboost.py) demonstrates a simple example of using ART with XGBoost.
+[get_started_tensorflow.py](get_started_xgboost.py) demonstrates a simple example of using ART with XGBoost.
 Because gradient boosted tree classifier do not provide gradients, the adversarial examples are created with the 
 black-box method Zeroth Order Optimization.
 
 ### LightGBM
-[getting_started_tensorflow.py](getting_started_lightgbm.py) demonstrates a simple example of using ART with LightGBM.
+[get_started_tensorflow.py](get_started_lightgbm.py) demonstrates a simple example of using ART with LightGBM.
 Because gradient boosted tree classifier do not provide gradients, the adversarial examples are created with the 
 black-box method Zeroth Order Optimization.
 
