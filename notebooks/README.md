@@ -3,7 +3,7 @@
 ## Adversarial training
 
 [adversarial_retraining.ipynb](adversarial_retraining.ipynb) shows how to load and evaluate the MNIST and CIFAR-10 
-models synthesized and adversarially trained by [Sinn et al., 2019](https://drive.google.com/uc?export=download&id=1XmUSqU7qCYigVqgEKvoT2p__Fy-Dq9Cx)).
+models synthesized and adversarially trained by [Sinn et al., 2019](https://drive.google.com/uc?export=download&id=1XmUSqU7qCYigVqgEKvoT2p__Fy-Dq9Cx).
 
 [adversarial_training_mnist.ipynb](adversarial_training_mnist.ipynb) demonstrates adversarial training of a neural 
 network to harden the model against adversarial samples using the MNIST dataset.
@@ -17,7 +17,7 @@ patches that fool real-world object detection and classification models.
 Attack (Boundary) attack. This is a black-box attack which only requires class predictions.
 
 [attack_decision_tree.ipynb](attack_decision_tree.ipynb) shows how to compute adversarial examples on decision trees
-(Papernot et al. https://arxiv.org/abs/1605.07277). It traversing the structure of a decision tree classifier to create 
+([Papernot et al., 2016](https://arxiv.org/abs/1605.07277)). It traversing the structure of a decision tree classifier to create 
 adversarial examples can be computed without explicit gradients.
 
 [attack_defence_imagenet.ipynb](attack_defence_imagenet.ipynb) explains the basic workflow of using ART with defences
@@ -38,8 +38,8 @@ analyzes Zeroth Order Optimisation attacks using the Iris and MNIST datasets.
 
 [classifier_gpy_gaussian_process.ipynb](classifier_gpy_gaussian_process.ipynb) shows how to create adversarial examples
 for the Gaussian Process classifier of GPy. It crafts adversarial examples with the HighConfidenceLowUncertainty (HCLU) 
-attack [Grosse et al., 2018](https://arxiv.org/abs/1812.02606), specifically targeting Gaussian Process classifiers, and
-compares it to Projected Gradient Descent (PGD) [Madry et al., 2017](https://arxiv.org/abs/1706.06083).
+attack ([Grosse et al., 2018](https://arxiv.org/abs/1812.02606)), specifically targeting Gaussian Process classifiers, and
+compares it to Projected Gradient Descent (PGD) ([Madry et al., 2017](https://arxiv.org/abs/1706.06083)).
 
 [classifier_lightgbm.ipynb](classifier_lightgbm.ipynb) shows how to use ART with LightGBM models. It demonstrates and 
 analyzes Zeroth Order Optimisation attacks using the Iris and MNIST datasets.
