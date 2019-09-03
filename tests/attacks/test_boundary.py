@@ -141,7 +141,7 @@ class TestBoundary(unittest.TestCase):
         # Build PyTorchClassifier
         ptc = get_classifier_pt()
 
-        x_test = np.swapaxes(self.x_test, 1, 3)
+        x_test = np.swapaxes(self.x_test, 1, 3).astype(np.float32)
 
         # First targeted attack
         boundary = BoundaryAttack(classifier=ptc, targeted=True, max_iter=20)
@@ -253,7 +253,7 @@ class TestBoundaryVectors(unittest.TestCase):
     def test_iris_pt(self):
         classifier = get_iris_classifier_pt()
         attack = BoundaryAttack(classifier, targeted=False, max_iter=10)
-        x_test_adv = attack.generate(self.x_test)
+        x_test_adv = attack.generate(self.x_test.astype(np.float32))
         self.assertFalse((self.x_test == x_test_adv).all())
         self.assertTrue((x_test_adv <= 1).all())
         self.assertTrue((x_test_adv >= 0).all())
