@@ -65,6 +65,7 @@ class TestIterativeAttack(unittest.TestCase):
         # Create basic PyTorch model
         cls.classifier_py = get_classifier_pt()
         x_train, x_test = np.swapaxes(x_train, 1, 3), np.swapaxes(x_test, 1, 3)
+        x_train, x_test = x_train.astype(np.float32), x_test.astype(np.float32)
 
         scores = get_labels_np_array(cls.classifier_py.predict(x_train))
         acc = np.sum(np.argmax(scores, axis=1) == np.argmax(y_train, axis=1)) / y_train.shape[0]
@@ -87,9 +88,15 @@ class TestIterativeAttack(unittest.TestCase):
         for _, classifier in backends.items():
             if _ == 'pytorch':
                 self._swap_axes()
+                (x_train, y_train), (x_test, y_test) = self.mnist
+                self.mnist = (x_train.astype(np.float32), y_train), (x_test.astype(np.float32), y_test)
+
             self._test_backend_mnist(classifier)
+
             if _ == 'pytorch':
                 self._swap_axes()
+                (x_train, y_train), (x_test, y_test) = self.mnist
+                self.mnist = (x_train.astype(np.float64), y_train), (x_test.astype(np.float64), y_test)
 
     def _swap_axes(self):
         (x_train, y_train), (x_test, y_test) = self.mnist
@@ -151,9 +158,15 @@ class TestIterativeAttack(unittest.TestCase):
         for _, classifier in backends.items():
             if _ == 'pytorch':
                 self._swap_axes()
+                (x_train, y_train), (x_test, y_test) = self.mnist
+                self.mnist = (x_train.astype(np.float32), y_train), (x_test.astype(np.float32), y_test)
+
             self._test_mnist_targeted(classifier)
+
             if _ == 'pytorch':
                 self._swap_axes()
+                (x_train, y_train), (x_test, y_test) = self.mnist
+                self.mnist = (x_train.astype(np.float64), y_train), (x_test.astype(np.float64), y_test)
 
     def test_classifier_type_check_fail_classifier(self):
         # Use a useless test classifier to test basic classifier properties
