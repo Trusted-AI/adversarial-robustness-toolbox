@@ -35,7 +35,7 @@ Get in touch with us on [Slack](https://ibm-art.slack.com) (invite [here](https:
 * CatBoost (www.catboost.ai)
 * GPy (https://sheffieldml.github.io/GPy/)
 
-## Implemented Attacks, Defences, Detections, Metrics and Certifications
+## Implemented Attacks, Defences, Detections, Metrics, Certifications and Verifications
 
 **Evasion Attacks:**
 * HopSkipJump attack ([Chen et al., 2019](https://arxiv.org/abs/1904.02144))
@@ -49,7 +49,7 @@ Get in touch with us on [Slack](https://ibm-art.slack.com) (invite [here](https:
 * Decision-based attack ([Brendel et al., 2018](https://arxiv.org/abs/1712.04248))
 * Adversarial patch ([Brown et al., 2017](https://arxiv.org/abs/1712.09665))
 * Decision tree attack ([Papernot et al., 2016](https://arxiv.org/pdf/1605.07277.pdf))
-* C&amp;W `L_2` and `L_inf` attacks ([Carlini and Wagner, 2016](https://arxiv.org/abs/1608.04644))
+* Carlini & Wagner (C&W) `L_2` and `L_inf` attacks ([Carlini and Wagner, 2016](https://arxiv.org/abs/1608.04644))
 * Basic iterative method ([Kurakin et al., 2016](https://arxiv.org/abs/1607.02533))
 * Jacobian saliency map ([Papernot et al., 2016](https://arxiv.org/abs/1511.07528))
 * Universal perturbation ([Moosavi-Dezfooli et al., 2016](https://arxiv.org/abs/1610.08401))
@@ -69,7 +69,7 @@ Get in touch with us on [Slack](https://ibm-art.slack.com) (invite [here](https:
 * Virtual adversarial training ([Miyato et al., 2015](https://arxiv.org/abs/1507.00677))
 * Adversarial training ([Szegedy et al., 2013](http://arxiv.org/abs/1312.6199))
 
-**Robustness metrics, certifications and verification**:
+**Robustness metrics, certifications and verifications**:
 * Clique Method Robustness Verification ([Hongge et al., 2019](https://arxiv.org/abs/1906.03849))
 * Randomized Smoothing ([Cohen et al., 2019](https://arxiv.org/abs/1902.02918))
 * CLEVER ([Weng et al., 2018](https://arxiv.org/abs/1801.10578))

@@ -6,26 +6,44 @@
 Welcome to the Adversarial Robustness Toolbox
 =============================================
 
-This is a library dedicated to **adversarial machine learning**.
-Its purpose is to allow rapid crafting and analysis of attacks and defense methods for machine learning models.
-The Adversarial Robustness Toolbox provides an implementation for many state-of-the-art methods for attacking and defending classifiers.
-The code can be found on `GitHub`_.
+Adversarial Robustness Toolbox (ART) is a Python library supporting developers and researchers in defending Machine
+Learning models (Deep Neural Networks, Gradient Boosted Decision Trees, Support Vector Machines, Random Forests,
+Logistic Regression, Gaussian Processes, Decision Trees, Scikit-learn Pipelines, etc.) against adversarial threats and
+helps making AI systems more secure and trustworthy. Machine Learning models are vulnerable to adversarial examples,
+which are inputs (images, texts, tabular data, etc.) deliberately modified to produce a desired response by the Machine
+Learning model. ART provides the tools to build and deploy defences and test them with adversarial attacks.
 
-The library is still under development. Feedback, bug reports and extensions are highly appreciated.
+Defending Machine Learning models involves certifying and verifying model robustness and model hardening with approaches
+such as pre-processing inputs, augmenting training data with adversarial samples, and leveraging runtime detection
+methods to flag any inputs that might have been modified by an adversary. The attacks implemented in ART allow creating
+adversarial attacks against Machine Learning models which is required to test defenses with state-of-the-art threat
+models.
 
-## Implemented Attacks, Defences, Detections, Metrics and Verifications
------------------------------------------------------------------------
+The code of ART is on `GitHub`_.
+
+The library is under continuous development and feedback, bug reports and contributions are very welcome.
+
+Supported Machine Learning Libraries
+------------------------------------
+
+* Tensorflow (v1 and v2) (https://www.tensorflow.org)
+* Keras (https://www.keras.io)
+* PyTorch (https://www.pytorch.org)
+* MXNet (https://mxnet.apache.org)
+* Scikit-learn (https://www.scikit-learn.org)
+* XGBoost (https://www.xgboost.ai)
+* LightGBM (https://lightgbm.readthedocs.io)
+* CatBoost (https://www.catboost.ai)
+* GPy (https://sheffieldml.github.io/GPy/)
+
+Implemented Attacks, Defences, Detections, Metrics, Certifications and Verifications
+------------------------------------------------------------------------------------
 
 **Evasion Attacks:**
 
-* DeepFool (`Moosavi-Dezfooli et al., 2015`_)
-* Fast gradient method (`Goodfellow et al., 2014`_)
-* Basic iterative method (`Kurakin et al., 2016`_)
+* HopSkipJump attack (`Chen et al., 2019`_)
+* High Confidence Low Uncertainty adversarial examples (`Grosse et al., 2018`_)
 * Projected gradient descent (`Madry et al., 2017`_)
-* Jacobian saliency map (`Papernot et al., 2016a`_)
-* Universal perturbation (`Moosavi-Dezfooli et al., 2016`_)
-* Virtual adversarial method (`Miyato et al., 2015`_)
-* C&W L_2 and L_inf attacks (`Carlini and Wagner, 2016`_)
 * NewtonFool (`Jang et al., 2017`_)
 * Elastic net attack (`Chen et al., 2017a`_)
 * Spatial transformations attack (`Engstrom et al., 2017`_)
@@ -33,22 +51,35 @@ The library is still under development. Feedback, bug reports and extensions are
 * Zeroth-order optimization attack (`Chen et al., 2017b`_)
 * Decision-based attack (`Brendel et al., 2018`_)
 * Adversarial patch (`Brown et al., 2017`_)
-* HopSkipJump attack (`Chen et al., 2017`_)
 * Decision tree attack (`Papernot et al., 2016b`_)
-* High Confidence Low Uncertainty adversarial examples (`Grosse et al., 2018`_)
+* Carlini & Wagner (C&W) L_2 and L_inf attacks (`Carlini and Wagner, 2016`_)
+* Basic iterative method (`Kurakin et al., 2016`_)
+* Jacobian saliency map (`Papernot et al., 2016a`_)
+* Universal perturbation (`Moosavi-Dezfooli et al., 2016`_)
+* DeepFool (`Moosavi-Dezfooli et al., 2015`_)
+* Virtual adversarial method (`Miyato et al., 2015`_)
+* Fast gradient method (`Goodfellow et al., 2014`_)
 
 **Defences:**
 
-* Feature squeezing (`Xu et al., 2017`_)
-* Spatial smoothing (`Xu et al., 2017`_)
-* Label smoothing (`Warde-Farley and Goodfellow, 2016`_)
-* Adversarial training (`Szegedy et al., 2013`_)
-* Virtual adversarial training (`Miyato et al., 2015`_)
-* Gaussian data augmentation (`Zantedeschi et al., 2017`_)
 * Thermometer encoding (`Buckman et al., 2018`_)
 * Total variance minimization (`Guo et al., 2018`_)
-* JPEG compression (`Dziugaite et al., 2016`_)
 * PixelDefend (`Song et al., 2017`_)
+* Gaussian data augmentation (`Zantedeschi et al., 2017`_)
+* Feature squeezing (`Xu et al., 2017`_)
+* Spatial smoothing (`Xu et al., 2017`_)
+* JPEG compression (`Dziugaite et al., 2016`_)
+* Label smoothing (`Warde-Farley and Goodfellow, 2016`_)
+* Virtual adversarial training (`Miyato et al., 2015`_)
+* Adversarial training (`Szegedy et al., 2013`_)
+
+**Robustness metrics, certifications and verifications:**
+
+* Clique Method Robustness Verification (`Hongge et al., 2019`_)
+* Randomized Smoothing (`Cohen et al., 2019`_)
+* CLEVER (`Weng et al., 2018`_)
+* Loss sensitivity (`Arpit et al., 2017`_)
+* Empirical robustness (`Moosavi-Dezfooli et al., 2015`_)
 
 **Detection of adversarial samples:**
 
@@ -56,18 +87,9 @@ The library is still under development. Feedback, bug reports and extensions are
 * Detector trained on the activations of a specific layer
 * Detector based on Fast Generalized Subset Scan (`Speakman et al., 2018`_)
 
-**Detectoion of poisoning attacks:**
+**Detection of poisoning attacks:**
 
 * Detector based on activations analysis (`Chen et al., 2018`_)
-
-**Robustness metrics, certifications and verification:**
-
-* Randomized Smoothing (`Cohen et al., 2019`_)
-* CLEVER (`Weng et al., 2018`_)
-* Empirical robustness (`Moosavi-Dezfooli et al., 2015`_)
-* Loss sensitivity (`Arpit et al., 2017`_)
-* Clique Method Robustness Verification (`Hongge et al., 2019`_)
-
 
 .. toctree::
    :maxdepth: 2
@@ -101,6 +123,10 @@ Indices and tables
 * :ref:`search`
 
 .. _GitHub: https:github.com/IBM/adversarial-robustness-toolbox
+
+.. _Chen et al., 2019: https://arxiv.org/abs/1904.02144
+.. _Grosse et al., 2018: https://arxiv.org/abs/1812.02606
+
 .. _Moosavi-Dezfooli et al., 2015: https://arxiv.org/abs/1511.04599
 .. _Goodfellow et al., 2014: https://arxiv.org/abs/1412.6572
 .. _Kurakin et al., 2016: https://arxiv.org/abs/1607.02533
@@ -127,9 +153,9 @@ Indices and tables
 .. _Arpit et al., 2017: https://arxiv.org/abs/1706.05394
 .. _Brendel et al., 2018: https://arxiv.org/abs/1712.04248
 .. _Brown et al., 2017: https://arxiv.org/abs/1712.09665
-.. _Chen et al., 2017: https://arxiv.org/abs/1904.02144
+
 .. _Speakman et al., 2018: https://arxiv.org/pdf/1810.08676
 .. _Papernot et al., 2016b: https://arxiv.org/abs/1605.07277
-.. _Grosse et al., 2018: https://arxiv.org/abs/1812.02606
+
 .. _Cohen et al., 2019: https://arxiv.org/abs/1902.02918
 .. _Hongge et al., 2019: https://arxiv.org/abs/1906.03849
