@@ -61,7 +61,7 @@ class TestCarliniL2(unittest.TestCase):
         Test the corner case when attack is failed.
         :return:
         """
-        # Build TensorflowClassifier
+        # Build TensorFlowClassifier
         tfc, sess = get_classifier_tf()
 
         # Failure attack
@@ -78,10 +78,10 @@ class TestCarliniL2(unittest.TestCase):
 
     def test_tfclassifier(self):
         """
-        First test with the TensorflowClassifier.
+        First test with the TensorFlowClassifier.
         :return:
         """
-        # Build TensorflowClassifier
+        # Build TensorFlowClassifier
         tfc, sess = get_classifier_tf()
 
         # First attack
@@ -348,7 +348,7 @@ class TestCarliniLInf(TestCarliniL2):
         Test the corner case when attack is failed.
         :return:
         """
-        # Build TensorflowClassifier
+        # Build TensorFlowClassifier
         tfc, sess = get_classifier_tf()
 
         # Failure attack
@@ -364,10 +364,10 @@ class TestCarliniLInf(TestCarliniL2):
 
     def test_tfclassifier(self):
         """
-        First test with the TensorflowClassifier.
+        First test with the TensorFlowClassifier.
         :return:
         """
-        # Build TensorflowClassifier
+        # Build TensorFlowClassifier
         tfc, sess = get_classifier_tf()
 
         # First attack

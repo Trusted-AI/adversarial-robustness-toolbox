@@ -29,7 +29,7 @@ from keras.layers import Dense, Flatten, Conv2D, MaxPooling2D
 from keras.models import Sequential
 
 from art.attacks import FastGradientMethod, DeepFool
-from art.classifiers import TensorflowClassifier, KerasClassifier
+from art.classifiers import TensorFlowClassifier, KerasClassifier
 from art.data_generators import DataGenerator
 from art.defences import AdversarialTrainer
 from art.utils import load_mnist, get_labels_np_array, master_seed
@@ -108,7 +108,7 @@ class TestBase(unittest.TestCase):
         TestBase.sess = tf.Session()
         TestBase.sess.run(tf.global_variables_initializer())
 
-        classifier = TensorflowClassifier(input_ph=inputs_tf, output=logits, loss=loss, train=train_tf,
+        classifier = TensorFlowClassifier(input_ph=inputs_tf, output=logits, loss=loss, train=train_tf,
                                           labels_ph=labels_tf, sess=TestBase.sess, clip_values=(0, 1))
         return classifier
 

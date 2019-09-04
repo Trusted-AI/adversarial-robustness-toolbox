@@ -55,10 +55,10 @@ class TestHopSkipJump(unittest.TestCase):
 
     def test_tfclassifier(self):
         """
-        First test with the TensorflowClassifier.
+        First test with the TensorFlowClassifier.
         :return:
         """
-        # Build TensorflowClassifier
+        # Build TensorFlowClassifier
         tfc, sess = get_classifier_tf()
 
         # Get MNIST

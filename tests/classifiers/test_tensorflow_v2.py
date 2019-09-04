@@ -15,7 +15,7 @@ NB_TEST = 20
 
 
 @unittest.skipIf(tf.__version__[0] != '2', reason='Run unittests only for Tensorflow v2.')
-class TensorflowV2Classifier(unittest.TestCase):
+class TensorFlowV2Classifier(unittest.TestCase):
 
     @classmethod
     def setUpClass(cls):
