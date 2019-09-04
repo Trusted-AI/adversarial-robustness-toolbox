@@ -77,9 +77,12 @@ def empirical_robustness(classifier, x, attack_name, attack_params=None):
     :type classifier: :class:`.Classifier`
     :param x: Data sample of shape that can be fed into `classifier`
     :type x: `np.ndarray`
-    :param attack_name: adversarial attack name
+    :param attack_name: A string specifying the attack to be used. Currently supported attacks are {`fgsm'}
+                        (Fast Gradient Sign Method)
     :type attack_name: `str`
-    :param attack_params: Parameters specific to the adversarial attack
+    :param attack_params: A dictionary with attack-specific parameters. If the attack has a norm attribute, then it will
+                          be used as the norm for calculating the robustness; otherwise the standard Euclidean distance
+                          is used (norm=2).
     :type attack_params: `dict`
     :return: The average empirical robustness computed on `x`
     :rtype: `float`

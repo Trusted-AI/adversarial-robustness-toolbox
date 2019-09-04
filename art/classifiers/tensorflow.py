@@ -16,7 +16,7 @@
 # TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 # SOFTWARE.
 """
-This module implements the classifier `TensorflowClassifier` for Tensorflow models.
+This module implements the classifier `TensorFlowClassifier` for Tensorflow models.
 """
 from __future__ import absolute_import, division, print_function, unicode_literals
 
@@ -31,7 +31,7 @@ from art.classifiers.classifier import Classifier, ClassifierNeuralNetwork, Clas
 logger = logging.getLogger(__name__)
 
 
-class TensorflowClassifier(ClassifierNeuralNetwork, ClassifierGradients, Classifier):
+class TensorFlowClassifier(ClassifierNeuralNetwork, ClassifierGradients, Classifier):
     """
     This class implements a classifier with the Tensorflow framework.
     """
@@ -79,7 +79,7 @@ class TensorflowClassifier(ClassifierNeuralNetwork, ClassifierGradients, Classif
             import tensorflow.compat.v1 as tf
             tf.disable_eager_execution()
 
-        super(TensorflowClassifier, self).__init__(clip_values=clip_values, channel_index=channel_index,
+        super(TensorFlowClassifier, self).__init__(clip_values=clip_values, channel_index=channel_index,
                                                    defences=defences,
                                                    preprocessing=preprocessing)
         self._nb_classes = int(output.get_shape()[-1])
@@ -208,7 +208,7 @@ class TensorflowClassifier(ClassifierNeuralNetwork, ClassifierGradients, Classif
 
                     # Run train step
                     self._sess.run(self._train, feed_dict=feed_dict)
-            super(TensorflowClassifier, self).fit_generator(generator, nb_epochs=nb_epochs, **kwargs)
+            super(TensorFlowClassifier, self).fit_generator(generator, nb_epochs=nb_epochs, **kwargs)
 
     def class_gradient(self, x, label=None, **kwargs):
         """
@@ -488,7 +488,7 @@ class TensorflowClassifier(ClassifierNeuralNetwork, ClassifierGradients, Classif
 
     def __getstate__(self):
         """
-        Use to ensure `TensorflowClassifier` can be pickled.
+        Use to ensure `TensorFlowClassifier` can be pickled.
 
         :return: State dictionary with instance parameters.
         :rtype: `dict`
@@ -537,7 +537,7 @@ class TensorflowClassifier(ClassifierNeuralNetwork, ClassifierGradients, Classif
 
     def __setstate__(self, state):
         """
-        Use to ensure `TensorflowClassifier` can be unpickled.
+        Use to ensure `TensorFlowClassifier` can be unpickled.
 
         :param state: State dictionary with instance parameters to restore.
         :type state: `dict`
@@ -618,10 +618,10 @@ class TensorflowClassifier(ClassifierNeuralNetwork, ClassifierGradients, Classif
 
 
 # backward compatibility for ART v0.10 and earlier
-TFClassifier = TensorflowClassifier
+TFClassifier = TensorFlowClassifier
 
 
-class TensorflowV2Classifier(ClassifierNeuralNetwork, ClassifierGradients, Classifier):
+class TensorFlowV2Classifier(ClassifierNeuralNetwork, ClassifierGradients, Classifier):
     """
     This class implements a classifier with the Tensorflow v2 framework.
     """
@@ -654,7 +654,7 @@ class TensorflowV2Classifier(ClassifierNeuralNetwork, ClassifierGradients, Class
                be divided by the second one.
         :type preprocessing: `tuple`
         """
-        super(TensorflowV2Classifier, self).__init__(clip_values=clip_values, channel_index=channel_index,
+        super(TensorFlowV2Classifier, self).__init__(clip_values=clip_values, channel_index=channel_index,
                                                      defences=defences, preprocessing=preprocessing)
 
         self._model = model
