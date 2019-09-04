@@ -8,6 +8,14 @@ models synthesized and adversarially trained by [Sinn et al., 2019](https://driv
 [adversarial_training_mnist.ipynb](adversarial_training_mnist.ipynb) demonstrates adversarial training of a neural 
 network to harden the model against adversarial samples using the MNIST dataset.
 
+## Tensorflow v2
+
+[art-for-tensorflow-v2-callable.ipynb](art-for-tensorflow-v2-callable.ipynb) show how to use ART with Tensorflow v2
+in eager execution mode with a model in form of a callable class or python function.
+
+[art-for-tensorflow-v2-keras.ipynb](art-for-tensorflow-v2-keras.ipynb) demonstrates ART with Tensorflow v2 using 
+tensorflow.keras without eager execution.
+
 ## Attacks
 
 [attack_adversarial_patch.ipynb](attack_adversarial_patch.ipynb) shows how to use ART to create real-world adversarial
