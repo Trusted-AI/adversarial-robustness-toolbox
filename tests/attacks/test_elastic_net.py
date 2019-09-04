@@ -59,7 +59,7 @@ class TestElasticNet(unittest.TestCase):
         Test the corner case when attack fails.
         :return:
         """
-        # Build TFClassifier
+        # Build TensorflowClassifier
         tfc, sess = get_classifier_tf()
 
         # Failure attack
@@ -71,16 +71,15 @@ class TestElasticNet(unittest.TestCase):
         self.assertGreaterEqual(np.amin(x_test_adv), 0.0)
         np.testing.assert_almost_equal(self.x_test, x_test_adv, 3)
 
-        # Kill TF
+        # Clean-up session
         sess.close()
-        tf.reset_default_graph()
 
     def test_tfclassifier(self):
         """
-        First test with the TFClassifier.
+        First test with the TensorflowClassifier.
         :return:
         """
-        # Build TFClassifier
+        # Build TensorflowClassifier
         tfc, sess = get_classifier_tf()
 
         # First attack
@@ -168,8 +167,9 @@ class TestElasticNet(unittest.TestCase):
 
         # Close session
         sess.close()
-        tf.reset_default_graph()
 
+    @unittest.skipIf(tf.__version__[0] == '2', reason='Skip unittests for Tensorflow v2 until Keras supports Tensorflow'
+                                                      ' v2 as backend.')
     def test_krclassifier(self):
         """
         Second test with the KerasClassifier.
@@ -294,6 +294,8 @@ class TestElasticNetVectors(unittest.TestCase):
     def setUp(self):
         master_seed(1234)
 
+    @unittest.skipIf(tf.__version__[0] == '2', reason='Skip unittests for Tensorflow v2 until Keras supports Tensorflow'
+                                                      ' v2 as backend.')
     def test_iris_k_clipped(self):
         classifier, _ = get_iris_classifier_kr()
         attack = ElasticNet(classifier, targeted=False, max_iter=10)
@@ -309,6 +311,8 @@ class TestElasticNetVectors(unittest.TestCase):
         accuracy = 1.0 - np.sum(predictions_adv == np.argmax(self.y_test, axis=1)) / self.y_test.shape[0]
         logger.info('EAD success rate on Iris: %.2f%%', (accuracy * 100))
 
+    @unittest.skipIf(tf.__version__[0] == '2', reason='Skip unittests for Tensorflow v2 until Keras supports Tensorflow'
+                                                      ' v2 as backend.')
     def test_iris_k_unbounded(self):
         classifier, _ = get_iris_classifier_kr()
 

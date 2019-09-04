@@ -55,10 +55,10 @@ class TestBoundary(unittest.TestCase):
 
     def test_tfclassifier(self):
         """
-        First test with the TFClassifier.
+        First test with the TensorflowClassifier.
         :return:
         """
-        # Build TFClassifier
+        # Build TensorflowClassifier
         tfc, sess = get_classifier_tf()
 
         # First targeted attack
@@ -95,8 +95,9 @@ class TestBoundary(unittest.TestCase):
 
         # Clean-up session
         sess.close()
-        tf.reset_default_graph()
 
+    @unittest.skipIf(tf.__version__[0] == '2', reason='Skip unittests for Tensorflow v2 until Keras supports Tensorflow'
+                                                      'v2 as backend.')
     def test_krclassifier(self):
         """
         Second test with the KerasClassifier.
@@ -195,6 +196,8 @@ class TestBoundaryVectors(unittest.TestCase):
     def setUp(self):
         master_seed(1234)
 
+    @unittest.skipIf(tf.__version__[0] == '2', reason='Skip unittests for Tensorflow v2 until Keras supports Tensorflow'
+                                                      ' v2 as backend.')
     def test_iris_k_clipped(self):
         classifier, _ = get_iris_classifier_kr()
         attack = BoundaryAttack(classifier, targeted=False, max_iter=10)
@@ -208,6 +211,8 @@ class TestBoundaryVectors(unittest.TestCase):
         accuracy = np.sum(preds_adv == np.argmax(self.y_test, axis=1)) / self.y_test.shape[0]
         logger.info('Accuracy on Iris with boundary adversarial examples: %.2f%%', (accuracy * 100))
 
+    @unittest.skipIf(tf.__version__[0] == '2', reason='Skip unittests for Tensorflow v2 until Keras supports Tensorflow'
+                                                      ' v2 as backend.')
     def test_iris_k_unbounded(self):
         classifier, _ = get_iris_classifier_kr()
 

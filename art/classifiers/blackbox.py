@@ -34,8 +34,7 @@ class BlackBoxClassifier(Classifier):
     Wrapper class for black box classifiers.
     """
 
-    def __init__(self, predict, input_shape, nb_classes, clip_values=None,
-                 defences=None, preprocessing=(0, 1)):
+    def __init__(self, predict, input_shape, nb_classes, clip_values=None, defences=None, preprocessing=(0, 1)):
         """
         Create a `Classifier` instance for a black box model.
 
@@ -62,7 +61,7 @@ class BlackBoxClassifier(Classifier):
 
         self._predictions = predict
         self._input_shape = input_shape
-        self.nb_classes = nb_classes
+        self._nb_classes = nb_classes
 
     def predict(self, x, batch_size=128, **kwargs):
         """
@@ -81,7 +80,7 @@ class BlackBoxClassifier(Classifier):
         x_preprocessed, _ = self._apply_preprocessing(x, y=None, fit=False)
 
         # Run predictions with batching
-        predictions = np.zeros((x_preprocessed.shape[0], self.nb_classes), dtype=NUMPY_DTYPE)
+        predictions = np.zeros((x_preprocessed.shape[0], self.nb_classes()), dtype=NUMPY_DTYPE)
         for batch_index in range(int(np.ceil(x_preprocessed.shape[0] / float(batch_size)))):
             begin, end = batch_index * batch_size, min((batch_index + 1) * batch_size, x_preprocessed.shape[0])
             predictions[begin:end] = self._predictions(x_preprocessed[begin:end])
@@ -103,6 +102,15 @@ class BlackBoxClassifier(Classifier):
         :return: `None`
         """
         raise NotImplementedError
+
+    def nb_classes(self):
+        """
+        Return the number of output classes.
+
+        :return: Number of classes in the data.
+        :rtype: `int`
+        """
+        return self._nb_classes
 
     def save(self, filename, path=None):
         """

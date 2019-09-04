@@ -63,7 +63,10 @@ def master_seed(seed):
         import tensorflow as tf
 
         logger.info('Setting random seed for TensorFlow.')
-        tf.set_random_seed(seed)
+        if tf.__version__[0] == '2':
+            tf.random.set_seed(seed)
+        else:
+            tf.set_random_seed(seed)
     except ImportError:
         logger.info('Could not set random seed for TensorFlow.')
 
@@ -291,7 +294,7 @@ def least_likely_class(x, classifier):
     :return: Least-likely class predicted by `classifier` for sample `x` in one-hot encoding.
     :rtype: `np.ndarray`
     """
-    return to_categorical(np.argmin(classifier.predict(x), axis=1), nb_classes=classifier.nb_classes)
+    return to_categorical(np.argmin(classifier.predict(x), axis=1), nb_classes=classifier.nb_classes())
 
 
 def second_most_likely_class(x, classifier):
@@ -306,7 +309,7 @@ def second_most_likely_class(x, classifier):
     :return: Second most likely class predicted by `classifier` for sample `x` in one-hot encoding.
     :rtype: `np.ndarray`
     """
-    return to_categorical(np.argpartition(classifier.predict(x), -2, axis=1)[:, -2], nb_classes=classifier.nb_classes)
+    return to_categorical(np.argpartition(classifier.predict(x), -2, axis=1)[:, -2], nb_classes=classifier.nb_classes())
 
 
 def get_label_conf(y_vec):
@@ -488,7 +491,7 @@ def load_mnist(raw=False):
     # Add channel axis
     min_, max_ = 0, 255
     if not raw:
-        min_, max_ = 0., 1.
+        min_, max_ = 0.0, 1.0
         x_train = np.expand_dims(x_train, axis=3)
         x_test = np.expand_dims(x_test, axis=3)
         x_train, y_train = preprocess(x_train, y_train)
@@ -539,7 +542,7 @@ def load_stl():
     return (x_train, y_train), (x_test, y_test), min_, max_
 
 
-def load_iris(raw=False, test_set=.3):
+def load_iris(raw=False, test_set=0.3):
     """
     Loads the UCI Iris dataset from `DATA_PATH` or downloads it if necessary.
 
@@ -548,7 +551,7 @@ def load_iris(raw=False, test_set=.3):
     :param test_set: Proportion of the data to use as validation split. The value should be between o and 1.
     :type test_set: `float`
     :return: Entire dataset and labels.
-    :rtype: `(np.ndarray, np.ndarray)`
+    :rtype: `(np.ndarray, np.ndarray), (np.ndarray, np.ndarray), float, float`
     """
     from art import DATA_PATH, NUMPY_DTYPE
 

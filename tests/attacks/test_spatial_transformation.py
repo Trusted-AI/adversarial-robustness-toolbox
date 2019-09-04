@@ -54,10 +54,10 @@ class TestSpatialTransformation(unittest.TestCase):
 
     def test_tfclassifier(self):
         """
-        First test with the TFClassifier.
+        First test with the TensorflowClassifier.
         :return:
         """
-        # Build TFClassifier
+        # Build TensorflowClassifier
         tfc, sess = get_classifier_tf()
 
         # Attack
@@ -77,8 +77,9 @@ class TestSpatialTransformation(unittest.TestCase):
         self.assertAlmostEqual(x_test_adv[0, 14, 14, 0], 0.013572651, delta=0.01)
 
         sess.close()
-        tf.reset_default_graph()
 
+    @unittest.skipIf(tf.__version__[0] == '2', reason='Skip unittests for Tensorflow v2 until Keras supports Tensorflow'
+                                                      ' v2 as backend.')
     def test_krclassifier(self):
         """
         Second test with the KerasClassifier.
@@ -135,6 +136,8 @@ class TestSpatialTransformation(unittest.TestCase):
 
         self.assertLessEqual(abs(x_test_adv[0, 0, 14, 14] - 0.008591662), 0.01)
 
+    @unittest.skipIf(tf.__version__[0] == '2', reason='Skip unittests for Tensorflow v2 until Keras supports Tensorflow'
+                                                      ' v2 as backend.')
     def test_failure_feature_vectors(self):
         attack_params = {"max_translation": 10.0, "num_translations": 3, "max_rotation": 30.0, "num_rotations": 3}
         classifier, _ = get_iris_classifier_kr()

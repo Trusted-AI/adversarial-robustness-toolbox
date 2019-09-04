@@ -21,6 +21,7 @@ import logging
 import unittest
 
 import numpy as np
+import tensorflow as tf
 
 from art.utils import projection, random_sphere, to_categorical, least_likely_class, check_and_transform_label_format
 from art.utils import load_iris, load_mnist, master_seed
@@ -83,23 +84,37 @@ class TestUtils(unittest.TestCase):
         self.assertTrue((x != y).any())
         self.assertTrue((z == x).all())
 
+    @unittest.skipIf(tf.__version__[0] != '1', reason='Skip unittests if not Tensorflow v1.')
     def test_master_seed_tf(self):
-        import tensorflow as tf
         tf.reset_default_graph()
         master_seed(1234)
-
         with tf.Session() as sess:
             x = tf.random_uniform(shape=(1, 10))
             y = tf.random_uniform(shape=(1, 10))
             xv, yv = sess.run([x, y])
+
         tf.reset_default_graph()
         master_seed(1234)
-
         with tf.Session() as sess:
             z = tf.random_uniform(shape=(1, 10))
             zv = sess.run([z])[0]
+
         self.assertTrue((xv != yv).any())
-        self.assertTrue((zv == xv).all())
+        np.testing.assert_array_almost_equal(zv, xv, decimal=4)
+
+    @unittest.skipIf(tf.__version__[0] != '2', reason='Skip unittests if not Tensorflow v2.')
+    def test_master_seed_tf_v2(self):
+        master_seed(1234)
+        x = tf.random.uniform(shape=(1, 10))
+        y = tf.random.uniform(shape=(1, 10))
+        xv, yv = x.numpy(), y.numpy()
+
+        master_seed(1234)
+        z = tf.random.uniform(shape=(1, 10))
+        zv = z.numpy()
+
+        self.assertTrue((xv != yv).any())
+        np.testing.assert_array_almost_equal(zv, xv, decimal=4)
 
     def test_projection(self):
         # Get MNIST
@@ -189,7 +204,6 @@ class TestUtils(unittest.TestCase):
 
     def test_least_likely_class(self):
         class DummyClassifier:
-            @property
             def nb_classes(self):
                 return 4
 
@@ -201,14 +215,13 @@ class TestUtils(unittest.TestCase):
         x = np.random.rand(batch_size, 10, 10, 1)
         classifier = DummyClassifier()
         predictions = least_likely_class(x, classifier)
-        self.assertEqual(predictions.shape, (batch_size, classifier.nb_classes))
+        self.assertEqual(predictions.shape, (batch_size, classifier.nb_classes()))
 
         expected_predictions = np.array([[0, 0, 1, 0]] * batch_size)
         self.assertTrue((predictions == expected_predictions).all())
 
     def test_second_most_likely_class(self):
         class DummyClassifier:
-            @property
             def nb_classes(self):
                 return 4
 
@@ -220,7 +233,7 @@ class TestUtils(unittest.TestCase):
         x = np.random.rand(batch_size, 10, 10, 1)
         classifier = DummyClassifier()
         predictions = second_most_likely_class(x, classifier)
-        self.assertEqual(predictions.shape, (batch_size, classifier.nb_classes))
+        self.assertEqual(predictions.shape, (batch_size, classifier.nb_classes()))
 
         expected_predictions = np.array([[0, 1, 0, 0]] * batch_size)
         self.assertTrue((predictions == expected_predictions).all())
@@ -251,7 +264,6 @@ class TestUtils(unittest.TestCase):
         self.assertTrue(np.all(labels == y_))
 
     def test_preprocess(self):
-        # Get MNIST
         (x, y), (_, _), _, _ = load_mnist()
 
         x = (255 * x).astype('int')[:100]
