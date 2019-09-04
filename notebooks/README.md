@@ -57,7 +57,7 @@ with Scikit-learn AdaBoostClassifier. It demonstrates and analyzes Zeroth Order 
 MNIST datasets.
 
 [classifier_scikitlearn_BaggingClassifier.ipynb](classifier_scikitlearn_BaggingClassifier.ipynb) shows how to use ART 
-with Scikit-learn BaggindClassifier. It demonstrates and analyzes Zeroth Order Optimisation attacks using the Iris and
+with Scikit-learn BaggingClassifier. It demonstrates and analyzes Zeroth Order Optimisation attacks using the Iris and
 MNIST datasets.
 
 [classifier_scikitlearn_DecisionTreeClassifier.ipynb](classifier_scikitlearn_DecisionTreeClassifier.ipynb) shows how to
