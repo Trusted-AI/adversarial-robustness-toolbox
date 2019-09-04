@@ -96,7 +96,8 @@ Implemented Attacks, Defences, Detections, Metrics, Certifications and Verificat
    :caption: User guide
 
    guide/setup
-   guide/usage
+   guide/examples
+   guide/notebooks
 
 .. toctree::
    :maxdepth: 2
