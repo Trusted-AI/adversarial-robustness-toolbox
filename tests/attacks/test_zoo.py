@@ -179,7 +179,7 @@ class TestZooAttack(unittest.TestCase):
 
         # Get MNIST
         x_test, y_test = self.mnist
-        x_test = np.swapaxes(x_test, 1, 3)
+        x_test = np.swapaxes(x_test, 1, 3).astype(np.float32)
 
         # First attack
         # zoo = ZooAttack(classifier=ptc, targeted=True, max_iter=10, binary_search_steps=10)
