@@ -396,7 +396,7 @@ class KerasClassifier(ClassifierNeuralNetwork, ClassifierGradients, Classifier):
             raise ValueError('Unexpected output shape for classification in Keras model.')
 
         if label is None:
-            logger.debug('Computing class gradients for all %i classes.', self.nb_classes)
+            logger.debug('Computing class gradients for all %i classes.', self.nb_classes())
             if not hasattr(self, '_class_gradients'):
                 class_gradients = [k.gradients(self._predictions_op[:, i], self._input)[0] for i in range(nb_outputs)]
                 self._class_gradients = k.function([self._input], class_gradients)
