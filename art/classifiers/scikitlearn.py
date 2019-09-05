@@ -28,7 +28,6 @@ import numpy as np
 
 from art import DATA_PATH
 from art.classifiers.classifier import Classifier, ClassifierGradients
-from art.utils import to_categorical
 
 logger = logging.getLogger(__name__)
 
@@ -694,7 +693,7 @@ class ScikitlearnSVC(ScikitlearnClassifier, ClassifierGradients):
         """
         raise NotImplementedError
 
-    def fit(self, x, y, save=False, **kwargs):
+    def fit(self, x, y, **kwargs):
         """
         Fit the classifier on the training set `(x, y)`.
 
@@ -720,9 +719,6 @@ class ScikitlearnSVC(ScikitlearnClassifier, ClassifierGradients):
                 self._input_shape = (self.model.coef_.shape[1],)
         elif hasattr(self.model, 'support_vectors_'):
             self._input_shape = (self.model.support_vectors_.shape[1],)
-
-        if save:
-            self.save_model()
 
     def _kernel_gradient_func(self, sv, x_sample):
         """
