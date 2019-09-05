@@ -26,9 +26,9 @@ from keras.layers import Dense, Flatten, Conv2D, MaxPooling2D
 from keras.models import Sequential
 import numpy as np
 
-from art.attacks.fast_gradient import FastGradientMethod
-from art.classifiers.keras import KerasClassifier
-from art.detection.detector import BinaryInputDetector, BinaryActivationDetector
+from art.attacks import FastGradientMethod
+from art.classifiers import KerasClassifier
+from art.detection import BinaryInputDetector, BinaryActivationDetector
 from art.utils import load_mnist, master_seed
 from art.utils_test import get_classifier_kr
 
@@ -61,7 +61,7 @@ class TestBinaryInputDetector(unittest.TestCase):
         x_test, y_test = x_test[:NB_TEST], y_test[:NB_TEST]
 
         # Keras classifier
-        classifier, _ = get_classifier_kr()
+        classifier = get_classifier_kr()
 
         # Generate adversarial samples:
         attacker = FastGradientMethod(classifier, eps=0.1)
@@ -122,7 +122,7 @@ class TestBinaryActivationDetector(unittest.TestCase):
         x_test, y_test = x_test[:NB_TEST], y_test[:NB_TEST]
 
         # Keras classifier
-        classifier, _ = get_classifier_kr()
+        classifier = get_classifier_kr()
 
         # Generate adversarial samples:
         attacker = FastGradientMethod(classifier, eps=0.1)

@@ -24,7 +24,7 @@ import keras.backend as k
 import numpy as np
 import tensorflow as tf
 
-from art.attacks.saliency_map import SaliencyMapMethod
+from art.attacks import SaliencyMapMethod
 from art.classifiers import KerasClassifier
 from art.utils import load_dataset, get_labels_np_array, to_categorical, master_seed
 from art.utils_test import get_classifier_tf, get_classifier_kr, get_classifier_pt
@@ -48,7 +48,7 @@ class TestSaliencyMap(unittest.TestCase):
         cls.mnist = (x_train, y_train), (x_test, y_test)
 
         # Keras classifier
-        cls.classifier_k, sess = get_classifier_kr()
+        cls.classifier_k = get_classifier_kr()
 
         scores = cls.classifier_k._model.evaluate(x_train, y_train)
         logger.info('[Keras, MNIST] Accuracy on training set: %.2f%%', (scores[1] * 100))
@@ -171,7 +171,7 @@ class TestSaliencyMap(unittest.TestCase):
 
         self.assertIn('For `SaliencyMapMethod` classifier must be an instance of '
                       '`art.classifiers.classifier.ClassifierGradients`, the provided classifier is instance of '
-                      '(<class \'art.classifiers.scikitklearn.ScikitlearnClassifier\'>,).', str(context.exception))
+                      '(<class \'art.classifiers.scikitlearn.ScikitlearnClassifier\'>,).', str(context.exception))
 
 
 class TestSaliencyMapVectors(unittest.TestCase):
@@ -250,9 +250,9 @@ class TestSaliencyMapVectors(unittest.TestCase):
 
         from art.classifiers.scikitlearn import ScikitlearnLogisticRegression, ScikitlearnSVC
 
-        scikitlearn_test_cases = {LogisticRegression: ScikitlearnLogisticRegression}#,
-                                  # SVC: ScikitlearnSVC,
-                                  # LinearSVC: ScikitlearnSVC}
+        scikitlearn_test_cases = {LogisticRegression: ScikitlearnLogisticRegression}  # ,
+        # SVC: ScikitlearnSVC,
+        # LinearSVC: ScikitlearnSVC}
 
         (_, _), (x_test, y_test) = self.iris
 
@@ -271,7 +271,7 @@ class TestSaliencyMapVectors(unittest.TestCase):
             self.assertFalse((np.argmax(y_test, axis=1) == preds_adv).all())
             acc = np.sum(preds_adv == np.argmax(y_test, axis=1)) / y_test.shape[0]
             logger.info('Accuracy of ' + classifier.__class__.__name__ + ' on Iris with JSMA adversarial examples: '
-                        '%.2f%%', (acc * 100))
+                                                                         '%.2f%%', (acc * 100))
 
 
 if __name__ == '__main__':

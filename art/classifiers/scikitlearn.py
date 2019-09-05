@@ -117,7 +117,7 @@ class ScikitlearnClassifier(Classifier):
         """
         # Apply defences
         x_preprocessed, _ = self._apply_preprocessing(x, y=None, fit=False)
-        
+
         if hasattr(self._model, 'predict_proba') and callable(getattr(self._model, 'predict_proba')):
             y_pred = self._model.predict_proba(x_preprocessed)
         elif hasattr(self._model, 'predict') and callable(getattr(self._model, 'predict')):
@@ -165,7 +165,6 @@ class ScikitlearnDecisionTreeClassifier(ScikitlearnClassifier):
         :param clip_values: Tuple of the form `(min, max)` representing the minimum and maximum values allowed
                for features.
         :type clip_values: `tuple`
->>>>>>> development_sklearn
         :param defences: Defences to be activated with the classifier.
         :type defences: :class:`.Preprocessor` or `list(Preprocessor)` instances
         :param preprocessing: Tuple of the form `(subtractor, divider)` of floats or `np.ndarray` of values to be
@@ -341,6 +340,7 @@ class ScikitlearnExtraTreesClassifier(ScikitlearnClassifier):
     """
     Wrapper class for scikit-learn Extra Trees Classifier models.
     """
+
     def __init__(self, model, clip_values=None, defences=None, preprocessing=(0, 1)):
         """
         Create a `Classifier` instance from a scikit-learn Extra Trees Classifier model.
@@ -643,14 +643,13 @@ class ScikitlearnSVC(ScikitlearnClassifier, ClassifierGradients):
         super(ScikitlearnSVC, self).__init__(model=model, clip_values=clip_values, defences=defences, preprocessing=preprocessing)
 
         self.model = model
-        self.model_save_file = 'original_model_{}'.format(str(int(time.time())))
         self.kernel_func = self._kernel_func()
         self.kernel_grad = self._kernel_gradient_func
         if hasattr(self.model, 'classes_'):
             self._nb_classes = len(self.model.classes_)
         else:
             self._nb_classes = None
-            
+
     def class_gradient(self, x, label=None, **kwargs):
         """
         Compute per-class derivatives w.r.t. `x`.
@@ -746,6 +745,7 @@ class ScikitlearnSVC(ScikitlearnClassifier, ClassifierGradients):
         """
         Compute the gradient of the loss function w.r.t. `x`.
         Following equation (1) with lambda=0.
+        
         | Paper link: https://pralab.diee.unica.it/sites/default/files/biggio14-svm-chapter.pdf
 
         :param x: Sample input with shape as expected by the model.
@@ -769,6 +769,7 @@ class ScikitlearnSVC(ScikitlearnClassifier, ClassifierGradients):
         if isinstance(self.model, SVC):
 
             if self.model.fit_status_:
+
                 raise AssertionError('Model has not been fitted correctly.')
 
             if y_preprocessed.shape[1] == 2:
@@ -914,6 +915,8 @@ class ScikitlearnSVC(ScikitlearnClassifier, ClassifierGradients):
         :return: Array of predictions of shape `(nb_inputs, self.nb_classes)`.
         :rtype: `np.ndarray`
         """
+        # pylint: disable=E0001
+        from sklearn.svm import SVC
 
         # Apply defences
         x_preprocessed, _ = self._apply_preprocessing(x, y=None, fit=False)
@@ -930,4 +933,3 @@ class ScikitlearnSVC(ScikitlearnClassifier, ClassifierGradients):
 
 
 ScikitlearnLinearSVC = ScikitlearnSVC
-

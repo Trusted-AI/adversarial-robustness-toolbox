@@ -2,28 +2,34 @@
 ================
 .. automodule:: art.utils
 
-Load Datasets
--------------
-.. autofunction:: load_dataset
+Random Number Generators
+------------------------
+.. autofunction:: master_seed
 
-Maths Operations
-----------------
-.. autofunction:: original_to_tanh
+Math Operations
+---------------
 .. autofunction:: projection
 .. autofunction:: random_sphere
+.. autofunction:: original_to_tanh
 .. autofunction:: tanh_to_original
 
-Preprocess Labels
------------------
-.. autofunction:: least_likely_class
-.. autofunction:: random_targets
-.. autofunction:: second_most_likely_class
+Label Operations
+----------------
 .. autofunction:: to_categorical
+.. autofunction:: random_targets
+.. autofunction:: least_likely_class
+.. autofunction:: second_most_likely_class
+.. autofunction:: get_label_conf
+.. autofunction:: get_labels_np_array
+.. autofunction:: compute_success
+.. autofunction:: compute_accuracy
 
-Preprocess Datasets
--------------------
+Dataset Operations
+------------------
+.. autofunction:: load_dataset
+.. autofunction:: get_file
+.. autofunction:: make_directory
+.. autofunction:: clip_and_round
 .. autofunction:: preprocess
 
-Fix the Seed for Random Number Generators
------------------------------------------
-.. autofunction:: master_seed
+

@@ -19,8 +19,7 @@
 This module implements the Basic Iterative Method attack `BasicIterativeMethod` as the iterative version of FGM and
 FGSM. This is a white-box attack.
 
-Paper link:
-    https://arxiv.org/abs/1607.02533
+| Paper link: https://arxiv.org/abs/1607.02533
 """
 from __future__ import absolute_import, division, print_function, unicode_literals
 
@@ -36,7 +35,8 @@ logger = logging.getLogger(__name__)
 class BasicIterativeMethod(ProjectedGradientDescent):
     """
     The Basic Iterative Method is the iterative version of FGM and FGSM.
-    Paper link: https://arxiv.org/abs/1607.02533
+
+    | Paper link: https://arxiv.org/abs/1607.02533
     """
     attack_params = ProjectedGradientDescent.attack_params
 

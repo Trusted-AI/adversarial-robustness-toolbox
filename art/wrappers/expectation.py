@@ -18,8 +18,7 @@
 """
 This module implements the Expectation Over Transformation applied to classifier predictions and gradients.
 
-Paper link:
-    https://arxiv.org/pdf/1707.07397.pdf
+| Paper link: https://arxiv.org/abs/1707.07397
 """
 from __future__ import absolute_import, division, print_function, unicode_literals
 
@@ -35,7 +34,8 @@ class ExpectationOverTransformations(ClassifierWrapper, ClassifierGradients, Cla
     """
     Implementation of Expectation Over Transformations applied to classifier predictions and gradients, as introduced
     in Athalye et al. (2017).
-    Paper link: https://arxiv.org/pdf/1707.07397.pdf
+
+    | Paper link: https://arxiv.org/abs/1707.07397
     """
 
     def __init__(self, classifier, sample_size, transformation):
@@ -128,6 +128,21 @@ class ExpectationOverTransformations(ClassifierWrapper, ClassifierGradients, Cla
             class_gradient += self.classifier.class_gradient(next(self.transformation())(x), label)
 
         return class_gradient / self.sample_size
+
+    @property
+    def layer_names(self):
+        """
+        Return the hidden layers in the model, if applicable.
+
+        :return: The hidden layers in the model, input and output layers excluded.
+        :rtype: `list`
+
+        .. warning:: `layer_names` tries to infer the internal structure of the model.
+                     This feature comes with no guarantees on the correctness of the result.
+                     The intended order of the layers tries to match their order in the model, but this is not
+                     guaranteed either.
+        """
+        raise NotImplementedError
 
     def get_activations(self, x, layer, batch_size):
         """

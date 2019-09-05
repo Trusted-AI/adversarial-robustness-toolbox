@@ -22,7 +22,7 @@ import unittest
 
 import numpy as np
 
-from art.attacks.universal_perturbation import UniversalPerturbation
+from art.attacks import UniversalPerturbation
 from art.classifiers import KerasClassifier
 from art.utils import load_dataset, master_seed
 from art.utils_test import get_classifier_tf, get_classifier_kr, get_classifier_pt
@@ -84,7 +84,7 @@ class TestUniversalPerturbation(unittest.TestCase):
         :return:
         """
         # Build KerasClassifier
-        krc, sess = get_classifier_kr()
+        krc = get_classifier_kr()
 
         # Get MNIST
         (x_train, y_train), (x_test, y_test) = self.mnist
@@ -102,7 +102,7 @@ class TestUniversalPerturbation(unittest.TestCase):
         self.assertFalse((np.argmax(y_test, axis=1) == test_y_pred).all())
         self.assertFalse((np.argmax(y_train, axis=1) == train_y_pred).all())
 
-        sess.close()
+        # sess.close()
 
     def test_ptclassifier(self):
         """
@@ -155,7 +155,7 @@ class TestUniversalPerturbation(unittest.TestCase):
         self.assertIn('For `UniversalPerturbation` classifier must be an instance of '
                       '`art.classifiers.classifier.ClassifierNeuralNetwork` and '
                       '`art.classifiers.classifier.ClassifierGradients`, the provided classifier is instance of '
-                      '(<class \'art.classifiers.scikitklearn.ScikitlearnClassifier\'>,).', str(context.exception))
+                      '(<class \'art.classifiers.scikitlearn.ScikitlearnClassifier\'>,).', str(context.exception))
 
 
 class TestUniversalPerturbationVectors(unittest.TestCase):

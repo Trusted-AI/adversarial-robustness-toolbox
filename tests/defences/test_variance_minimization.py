@@ -22,7 +22,7 @@ import unittest
 
 import numpy as np
 
-from art.defences.variance_minimization import TotalVarMin
+from art.defences import TotalVarMin
 from art.utils import master_seed
 
 logger = logging.getLogger('testLogger')

@@ -25,7 +25,7 @@ import logging
 
 import six
 
-from art.classifiers import Classifier, ClassifierNeuralNetwork, ClassifierGradients
+from art.classifiers.classifier import Classifier, ClassifierNeuralNetwork, ClassifierGradients
 
 logger = logging.getLogger(__name__)
 
@@ -230,6 +230,10 @@ class BinaryActivationDetector(ClassifierNeuralNetwork, ClassifierGradients, Cla
 
     def learning_phase(self):
         return self.detector.learning_phase
+
+    @property
+    def layer_names(self):
+        raise NotImplementedError
 
     def class_gradient(self, x, label=None, **kwargs):
         return self.detector.class_gradient(x, label=label)

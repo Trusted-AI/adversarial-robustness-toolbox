@@ -19,8 +19,7 @@
 This module implements the HopSkipJump attack `HopSkipJump`. This is a black-box attack that only requires class
 predictions. It is an advanced version of the boundary attack.
 
-Paper link:
-    https://arxiv.org/abs/1904.02144
+| Paper link: https://arxiv.org/abs/1904.02144
 """
 from __future__ import absolute_import, division, print_function, unicode_literals
 
@@ -39,7 +38,8 @@ class HopSkipJump(Attack):
     """
     Implementation of the HopSkipJump attack from Jianbo et al. (2019). This is a powerful black-box attack that
     only requires final class prediction, and is an advanced version of the boundary attack.
-    Paper link: https://arxiv.org/abs/1904.02144
+
+    | Paper link: https://arxiv.org/abs/1904.02144
     """
     attack_params = Attack.attack_params + ['targeted', 'norm', 'max_iter', 'max_eval',
                                             'init_eval', 'init_size', 'curr_iter', 'batch_size']

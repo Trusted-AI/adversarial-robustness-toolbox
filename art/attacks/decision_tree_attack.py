@@ -32,38 +32,41 @@ logger = logging.getLogger(__name__)
 
 class DecisionTreeAttack(Attack):
     """
-    Close implementation of Papernot's attack on decision trees following Algorthim 2 and communication
-    with the authors.
-    Paper link: https://arxiv.org/pdf/1605.07277.pdf
+    Close implementation of Papernot's attack on decision trees following Algorithm 2 and communication with the
+    authors.
+
+    | Paper link: https://arxiv.org/abs/1605.07277
     """
+
     attack_params = ['classifier', 'offset']
 
     def __init__(self, classifier, offset=0.001):
         """
         :param classifier: A trained model of type scikit decision tree.
         :type classifier: :class:`.Classifier.ScikitlearnDecisionTreeClassifier`
-        :param offset: How much the value is pushed away from tree's threshold
+        :param offset: How much the value is pushed away from tree's threshold. default 0.001
         :type classifier: :float:
         """
         super(DecisionTreeAttack, self).__init__(classifier)
-        self.classifier = classifier
+
         if not isinstance(classifier, ScikitlearnDecisionTreeClassifier):
             raise TypeError('Model must be a decision tree model!')
-        self.offset = offset
+        params = {'offset': offset}
+        self.set_params(**params)
 
     def _df_subtree(self, position, original_class, target=None):
         """
-        Search a decision tree for a misclassifying instance.
+        Search a decision tree for a mis-classifying instance.
 
         :param position: An array with the original inputs to be attacked.
         :type position: `int`
-        :param original_class: original label for the instances we are searching misclassification for.
+        :param original_class: original label for the instances we are searching mis-classification for.
         :type original_class: `int`
         :param target: If the provided, specifies which output the leaf has to have to be accepted.
         :type target: `int`
         :return: An array specifying the path to the leaf where the classification is either != original class or
-               ==target class if provided.
-        :rtype: `np.ndarray`
+                 ==target class if provided.
+        :rtype: `list`
         """
         # base case, we're at a leaf
         if self.classifier.get_left_child(position) == self.classifier.get_right_child(position):
@@ -125,22 +128,22 @@ class DecisionTreeAttack(Attack):
             while np.abs(position) < (len(path) - 1) or adv_path[0] == -1:
                 ancestor = path[position]
                 current_child = path[position + 1]
-                # serach in right subtree
+                # search in right subtree
                 if current_child == self.classifier.get_left_child(ancestor):
                     if y is None:
                         adv_path = self._df_subtree(
                             self.classifier.get_right_child(ancestor), legitimate_class)
                     else:
-                        adv_path = self._df_subtree(self.classifier.get_right_child(
-                            ancestor), legitimate_class, y[index])
-                else:  # serach in left subtree
+                        adv_path = self._df_subtree(self.classifier.get_right_child(ancestor), legitimate_class,
+                                                    y[index])
+                else:  # search in left subtree
                     if y is None:
                         adv_path = self._df_subtree(
                             self.classifier.get_left_child(ancestor), legitimate_class)
                     else:
-                        adv_path = self._df_subtree(self.classifier.get_left_child(
-                            ancestor), legitimate_class, y[index])
-                position = position - 1  # we are going the decision path updwards
+                        adv_path = self._df_subtree(self.classifier.get_left_child(ancestor), legitimate_class,
+                                                    y[index])
+                position = position - 1  # we are going the decision path upwards
             adv_path.append(ancestor)
             # we figured out which is the way to the target, now perturb
             # first one is leaf-> no threshold, cannot be perturbed
@@ -148,7 +151,7 @@ class DecisionTreeAttack(Attack):
                 go_for = adv_path[i - 1]
                 threshold = self.classifier.get_threshold_at_node(adv_path[i])
                 feature = self.classifier.get_feature_at_node(adv_path[i])
-                # only perturb if the feature is acutally wrong
+                # only perturb if the feature is actually wrong
                 if x[index][feature] > threshold and go_for == self.classifier.get_left_child(adv_path[i]):
                     x[index][feature] = threshold - self.offset
                 elif x[index][feature] <= threshold and go_for == self.classifier.get_right_child(adv_path[i]):
