@@ -164,6 +164,16 @@ class QueryEfficientBBGradientEstimation(ClassifierWrapper, ClassifierGradients,
         """
         return self._predict(clip_and_round(x, self.clip_values, self.round_samples), **{'batch_size': batch_size})
 
+    def nb_classes(self):
+        """
+        Return the number of output classes.
+
+        :return: Number of classes in the data.
+        :rtype: `int`
+        """
+        # pylint: disable=W0212
+        return self.classifier.nb_classes()
+
     def save(self, filename, path=None):
         """
         Save a model to file specific to the backend framework.

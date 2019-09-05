@@ -4,9 +4,10 @@ preexisting model.
 """
 from art.classifiers.classifier import Classifier, ClassifierNeuralNetwork, ClassifierGradients
 from art.classifiers.keras import KerasClassifier
+from art.classifiers.blackbox import BlackBoxClassifier
 from art.classifiers.mxnet import MXClassifier
 from art.classifiers.pytorch import PyTorchClassifier
-from art.classifiers.tensorflow import TFClassifier
+from art.classifiers.tensorflow import TFClassifier, TensorflowClassifier, TensorflowV2Classifier
 from art.classifiers.ensemble import EnsembleClassifier
 from art.classifiers.scikitlearn import SklearnClassifier
 from art.classifiers.lightgbm import LightGBMClassifier

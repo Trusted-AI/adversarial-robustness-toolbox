@@ -379,7 +379,7 @@ class ActivationDefence(PoisonFilteringDefence):
             self.cluster_activations()
 
         x_raw_by_class = self._segment_by_class(x_raw, self.y_train)
-        x_raw_by_cluster = [[[] for _ in range(self.nb_clusters)] for y in range(self.classifier.nb_classes)]
+        x_raw_by_cluster = [[[] for _ in range(self.nb_clusters)] for y in range(self.classifier.nb_classes())]
 
         # Get all data in x_raw in the right cluster
         for n_class, cluster in enumerate(self.clusters_by_class):
@@ -387,7 +387,7 @@ class ActivationDefence(PoisonFilteringDefence):
                 x_raw_by_cluster[n_class][assigned_cluster].append(x_raw_by_class[n_class][j])
 
         # Now create sprites:
-        sprites_by_class = [[[] for _ in range(self.nb_clusters)] for y in range(self.classifier.nb_classes)]
+        sprites_by_class = [[[] for _ in range(self.nb_clusters)] for y in range(self.classifier.nb_classes())]
         for i, class_i in enumerate(x_raw_by_cluster):
             for j, images_cluster in enumerate(class_i):
                 title = 'Class_' + str(i) + '_cluster_' + str(j) + '_clusterSize_' + str(len(images_cluster))
@@ -492,7 +492,16 @@ class ActivationDefence(PoisonFilteringDefence):
         :return: segmented data according to specified features.
         :rtype: `list`
         """
-        return segment_by_class(data, features, self.classifier.nb_classes)
+        n_classes = self.classifier.nb_classes()
+        by_class = [[] for _ in range(n_classes)]
+        for indx, feature in enumerate(features):
+            if n_classes > 2:
+                assigned = np.argmax(feature)
+            else:
+                assigned = int(feature)
+            by_class[assigned].append(data[indx])
+
+        return [np.asarray(i) for i in by_class]
 
 
 def measure_misclassification(classifier, x_test, y_test):
