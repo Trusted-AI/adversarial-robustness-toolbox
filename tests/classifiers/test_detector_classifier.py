@@ -69,8 +69,8 @@ class TestDetectorClassifier(unittest.TestCase):
     def setUpClass(cls):
         (x_train, y_train), (x_test, y_test), _, _ = load_dataset('mnist')
 
-        x_train = np.swapaxes(x_train, 1, 3)
-        x_test = np.swapaxes(x_test, 1, 3)
+        x_train = np.swapaxes(x_train, 1, 3).astype(np.float32)
+        x_test = np.swapaxes(x_test, 1, 3).astype(np.float32)
 
         cls.x_train = x_train[:NB_TRAIN]
         cls.y_train = y_train[:NB_TRAIN]
@@ -104,11 +104,9 @@ class TestDetectorClassifier(unittest.TestCase):
 
     def test_predict(self):
         predictions = self.detector_classifier.predict(x=self.x_test[0:1])
-        predictions_expected = np.asarray([[3.8029796e-30, 8.4424327e-37, 2.9018356e-27, 7.3553483e-27, 1.9029507e-38,
-                                           2.0556368e-36, 0.0000000e+00, 1.0000000e+00, 4.1592952e-24, 4.9934537e-22,
-                                           2.0000000e+00]])
+        predictions_expected = 7
         self.assertEqual(predictions.shape, (1, 11))
-        np.testing.assert_array_almost_equal(predictions, predictions_expected, decimal=4)
+        self.assertEqual(np.argmax(predictions, axis=1), predictions_expected)
 
     def test_nb_classes(self):
         self.assertEqual(self.detector_classifier.nb_classes(), 11)
