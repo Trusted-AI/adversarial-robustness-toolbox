@@ -250,7 +250,7 @@ def attack_gradient(model, attack_point, valid_data, valid_labels):
     v = np.matmul(qss_inv, support_labels)
 
     for x_k, y_k in zip(valid_data, valid_labels):
-        y_k = np.expand_dims(np.argmax(y_k), axis=1)
+        y_k = np.expand_dims(np.argmax(y_k), axis=0)
 
         q_ks = art_model.q_submatrix(np.array([x_k]), support_vectors)
         m_k = (1.0 / zeta) * np.matmul(q_ks, zeta * qss_inv - np.matmul(v, v.T)) + np.matmul(y_k, v.T)
