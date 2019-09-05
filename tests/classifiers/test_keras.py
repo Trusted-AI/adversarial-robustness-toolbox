@@ -25,6 +25,7 @@ import tempfile
 import shutil
 import pickle
 
+import tensorflow as tf
 import numpy as np
 import keras
 import keras.backend as k
@@ -49,7 +50,8 @@ BATCH_SIZE = 10
 NB_TRAIN = 500
 NB_TEST = 100
 
-
+@unittest.skipIf(tf.__version__[0] == '2', reason='Skip unittests for Tensorflow v2 until Keras supports Tensorflow v2 '
+                                                  'as backend.')
 class TestKerasClassifier(unittest.TestCase):
     """
     This class tests the Keras classifier.

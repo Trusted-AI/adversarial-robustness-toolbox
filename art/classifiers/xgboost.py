@@ -33,21 +33,27 @@ class XGBoostClassifier(Classifier, ClassifierDecisionTree):
     Wrapper class for importing XGBoost models.
     """
 
-    def __init__(self, model=None, clip_values=None, defences=None, preprocessing=None, num_features=None):
+    def __init__(self, model=None, clip_values=None, defences=None, preprocessing=None, num_features=None,
+                 nb_classes=None):
         """
         Create a `Classifier` instance from a XGBoost model.
 
+        :param model: XGBoost model
+        :type model: `xgboost.Booster` or `xgboost.XGBClassifier`
         :param clip_values: Tuple of the form `(min, max)` representing the minimum and maximum values allowed
                for features.
         :type clip_values: `tuple`
-        :param model: XGBoost model
-        :type model: `xgboost.Booster` or `xgboost.XGBClassifier`
         :param defences: Defences to be activated with the classifier.
         :type defences: :class:`.Preprocessor` or `list(Preprocessor)` instances
         :param preprocessing: Tuple of the form `(subtractor, divider)` of floats or `np.ndarray` of values to be
                used for data preprocessing. The first value will be subtracted from the input. The input will then
                be divided by the second one.
         :type preprocessing: `tuple`
+        :param num_features: The number of features in the training data. Only used if it cannot be extracted from
+                             model.
+        :type num_features: `int` or `None`
+        :param nb_classes: The number of classes in the training data. Only used if it cannot be extracted from model.
+        :type nb_classes: `int` or `None`
         """
         from xgboost import Booster, XGBClassifier
 
@@ -58,6 +64,7 @@ class XGBoostClassifier(Classifier, ClassifierDecisionTree):
 
         self._model = model
         self._input_shape = (num_features,)
+        self._nb_classes = nb_classes
 
     def fit(self, x, y, **kwargs):
         """
@@ -69,7 +76,8 @@ class XGBoostClassifier(Classifier, ClassifierDecisionTree):
                   (nb_samples,).
         :type y: `np.ndarray`
         :param kwargs: Dictionary of framework-specific arguments. These should be parameters supported by the
-               `fit` function in `xgboost.Booster` or `xgboost.XGBClassifier` and will be passed to this function as such.
+                       `fit` function in `xgboost.Booster` or `xgboost.XGBClassifier` and will be passed to this
+                       function as such.
         :type kwargs: `dict`
         :raises: `NotImplementedException`
         :return: `None`
@@ -86,6 +94,7 @@ class XGBoostClassifier(Classifier, ClassifierDecisionTree):
         :rtype: `np.ndarray`
         """
         from xgboost import Booster, XGBClassifier
+        from art.utils import to_categorical
 
         # Apply defences
         x_preprocessed, _ = self._apply_preprocessing(x, y=None, fit=False)
@@ -94,12 +103,37 @@ class XGBoostClassifier(Classifier, ClassifierDecisionTree):
             from xgboost import DMatrix
             train_data = DMatrix(x_preprocessed, label=None)
             predictions = self._model.predict(train_data)
-            return np.asarray([line for line in predictions])
-        elif isinstance(self._model, XGBClassifier):
-            return self._model.predict(x_preprocessed)
+            y_prediction = np.asarray([line for line in predictions])
+            if len(y_prediction.shape) == 1:
+                y_prediction = to_categorical(labels=y_prediction, nb_classes=self.nb_classes())
+            return y_prediction
+
+        if isinstance(self._model, XGBClassifier):
+            return self._model.predict_proba(x_preprocessed)
+
+        return None
 
     def nb_classes(self):
-        return self._model.n_classes_
+        """
+        Return the number of output classes.
+
+        :return: Number of classes in the data.
+        :rtype: `int`
+        """
+        from xgboost import Booster, XGBClassifier
+        if isinstance(self._model, Booster):
+            try:
+                return int(len(self._model.get_dump(dump_format='json')) / self._model.n_estimators)
+            except AttributeError:
+                if self._nb_classes is not None:
+                    return self._nb_classes
+                raise NotImplementedError('Number of classes cannot be determined automatically. ' +
+                                          'Please manually set argument nb_classes in XGBoostClassifier.')
+
+        if isinstance(self._model, XGBClassifier):
+            return self._model.n_classes_
+
+        return None
 
     def save(self, filename, path=None):
         import pickle

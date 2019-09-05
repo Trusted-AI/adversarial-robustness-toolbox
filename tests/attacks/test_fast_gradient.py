@@ -21,7 +21,6 @@ import logging
 import unittest
 
 import tensorflow as tf
-import keras.backend as k
 import numpy as np
 
 from art.attacks import FastGradientMethod
@@ -43,8 +42,6 @@ NB_TEST = 11
 class TestFastGradientMethodImages(unittest.TestCase):
     @classmethod
     def setUpClass(cls):
-        # k.set_learning_phase(1)
-
         (x_train, y_train), (x_test, y_test), _, _ = load_dataset('mnist')
 
         cls.x_train = x_train[:NB_TRAIN]
@@ -292,8 +289,8 @@ class TestFastGradientVectors(unittest.TestCase):
         attack = FastGradientMethod(classifier, eps=.1)
         x_test_adv = attack.generate(self.x_test)
         self.assertFalse((self.x_test == x_test_adv).all())
-        self.assertTrue((x_test_adv <= 1).all())
-        self.assertTrue((x_test_adv >= 0).all())
+        self.assertLessEqual(np.amax(x_test_adv), 1.0)
+        self.assertGreaterEqual(np.amin(x_test_adv), 0.0)
 
         predictions_adv = np.argmax(classifier.predict(x_test_adv), axis=1)
         self.assertFalse((np.argmax(self.y_test, axis=1) == predictions_adv).all())
@@ -305,8 +302,8 @@ class TestFastGradientVectors(unittest.TestCase):
         attack = FastGradientMethod(classifier, targeted=True, eps=.1)
         x_test_adv = attack.generate(self.x_test, **{'y': targets})
         self.assertFalse((self.x_test == x_test_adv).all())
-        self.assertTrue((x_test_adv <= 1).all())
-        self.assertTrue((x_test_adv >= 0).all())
+        self.assertLessEqual(np.amax(x_test_adv), 1.0)
+        self.assertGreaterEqual(np.amin(x_test_adv), 0.0)
 
         predictions_adv = np.argmax(classifier.predict(x_test_adv), axis=1)
         self.assertTrue((np.argmax(targets, axis=1) == predictions_adv).any())
@@ -338,8 +335,8 @@ class TestFastGradientVectors(unittest.TestCase):
         attack = FastGradientMethod(classifier, eps=.1)
         x_test_adv = attack.generate(self.x_test)
         self.assertFalse((self.x_test == x_test_adv).all())
-        self.assertTrue((x_test_adv <= 1).all())
-        self.assertTrue((x_test_adv >= 0).all())
+        self.assertLessEqual(np.amax(x_test_adv), 1.0)
+        self.assertGreaterEqual(np.amin(x_test_adv), 0.0)
 
         predictions_adv = np.argmax(classifier.predict(x_test_adv), axis=1)
         self.assertFalse((np.argmax(self.y_test, axis=1) == predictions_adv).all())
@@ -351,8 +348,8 @@ class TestFastGradientVectors(unittest.TestCase):
         attack = FastGradientMethod(classifier, targeted=True, eps=.1, batch_size=128)
         x_test_adv = attack.generate(self.x_test, **{'y': targets})
         self.assertFalse((self.x_test == x_test_adv).all())
-        self.assertTrue((x_test_adv <= 1).all())
-        self.assertTrue((x_test_adv >= 0).all())
+        self.assertLessEqual(np.amax(x_test_adv), 1.0)
+        self.assertGreaterEqual(np.amin(x_test_adv), 0.0)
 
         predictions_adv = np.argmax(classifier.predict(x_test_adv), axis=1)
         self.assertTrue((np.argmax(targets, axis=1) == predictions_adv).any())
@@ -366,8 +363,8 @@ class TestFastGradientVectors(unittest.TestCase):
         attack = FastGradientMethod(classifier, eps=.1)
         x_test_adv = attack.generate(self.x_test)
         self.assertFalse((self.x_test == x_test_adv).all())
-        self.assertTrue((x_test_adv <= 1).all())
-        self.assertTrue((x_test_adv >= 0).all())
+        self.assertLessEqual(np.amax(x_test_adv), 1.0)
+        self.assertGreaterEqual(np.amin(x_test_adv), 0.0)
 
         predictions_adv = np.argmax(classifier.predict(x_test_adv), axis=1)
         self.assertFalse((np.argmax(self.y_test, axis=1) == predictions_adv).all())
@@ -379,8 +376,8 @@ class TestFastGradientVectors(unittest.TestCase):
         attack = FastGradientMethod(classifier, targeted=True, eps=.1, batch_size=128)
         x_test_adv = attack.generate(self.x_test, **{'y': targets})
         self.assertFalse((self.x_test == x_test_adv).all())
-        self.assertTrue((x_test_adv <= 1).all())
-        self.assertTrue((x_test_adv >= 0).all())
+        self.assertLessEqual(np.amax(x_test_adv), 1.0)
+        self.assertGreaterEqual(np.amin(x_test_adv), 0.0)
 
         predictions_adv = np.argmax(classifier.predict(x_test_adv), axis=1)
         self.assertTrue((np.argmax(targets, axis=1) == predictions_adv).any())
@@ -403,11 +400,12 @@ class TestFastGradientVectors(unittest.TestCase):
             classifier.fit(x=self.x_test, y=self.y_test)
 
             # Test untargeted attack
-            attack = FastGradientMethod(classifier, eps=0.1)
+            eps = 0.1
+            attack = FastGradientMethod(classifier, eps=eps)
             x_test_adv = attack.generate(self.x_test)
-            self.assertFalse((self.x_test == x_test_adv).all())
-            self.assertTrue((x_test_adv <= 1).all())
-            self.assertTrue((x_test_adv >= 0).all())
+            np.testing.assert_array_almost_equal(np.abs(x_test_adv - self.x_test), eps, decimal=5)
+            self.assertLessEqual(np.amax(x_test_adv), 1.0)
+            self.assertGreaterEqual(np.amin(x_test_adv), 0.0)
 
             predictions_adv = np.argmax(classifier.predict(x_test_adv), axis=1)
             self.assertFalse((np.argmax(self.y_test, axis=1) == predictions_adv).all())
@@ -420,8 +418,8 @@ class TestFastGradientVectors(unittest.TestCase):
             attack = FastGradientMethod(classifier, targeted=True, eps=0.1, batch_size=128)
             x_test_adv = attack.generate(self.x_test, **{'y': targets})
             self.assertFalse((self.x_test == x_test_adv).all())
-            self.assertTrue((x_test_adv <= 1).all())
-            self.assertTrue((x_test_adv >= 0).all())
+            self.assertLessEqual(np.amax(x_test_adv), 1.0)
+            self.assertGreaterEqual(np.amin(x_test_adv), 0.0)
 
             predictions_adv = np.argmax(classifier.predict(x_test_adv), axis=1)
             self.assertTrue((np.argmax(targets, axis=1) == predictions_adv).any())

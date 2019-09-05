@@ -75,6 +75,9 @@ class TensorflowClassifier(ClassifierNeuralNetwork, ClassifierGradients, Classif
         """
         # pylint: disable=E0401
         import tensorflow as tf
+        if tf.__version__[0] == '2':
+            import tensorflow.compat.v1 as tf
+            tf.disable_eager_execution()
 
         super(TensorflowClassifier, self).__init__(clip_values=clip_values, channel_index=channel_index,
                                                    defences=defences,
@@ -295,6 +298,9 @@ class TensorflowClassifier(ClassifierNeuralNetwork, ClassifierGradients, Classif
     def _init_class_grads(self, label=None):
         # pylint: disable=E0401
         import tensorflow as tf
+        if tf.__version__[0] == '2':
+            import tensorflow.compat.v1 as tf
+            tf.disable_eager_execution()
 
         if not hasattr(self, '_class_grads'):
             self._class_grads = [None for _ in range(self.nb_classes())]
@@ -323,6 +329,9 @@ class TensorflowClassifier(ClassifierNeuralNetwork, ClassifierGradients, Classif
         """
         # pylint: disable=E0401
         import tensorflow as tf
+        if tf.__version__[0] == '2':
+            import tensorflow.compat.v1 as tf
+            tf.disable_eager_execution()
 
         # Get the computational graph
         with self._sess.graph.as_default():
@@ -389,6 +398,9 @@ class TensorflowClassifier(ClassifierNeuralNetwork, ClassifierGradients, Classif
         """
         # pylint: disable=E0401
         import tensorflow as tf
+        if tf.__version__[0] == '2':
+            import tensorflow.compat.v1 as tf
+            tf.disable_eager_execution()
 
         # Get the computational graph
         with self._sess.graph.as_default():
@@ -535,9 +547,12 @@ class TensorflowClassifier(ClassifierNeuralNetwork, ClassifierGradients, Classif
         # Load and update all functionality related to Tensorflow
         # pylint: disable=E0611, E0401
         import os
-        from art import DATA_PATH
         import tensorflow as tf
+        if tf.__version__[0] == '2':
+            import tensorflow.compat.v1 as tf
+            tf.disable_eager_execution()
         from tensorflow.python.saved_model import tag_constants
+        from art import DATA_PATH
 
         full_path = os.path.join(DATA_PATH, state['model_name'])
 
@@ -662,7 +677,7 @@ class TensorflowV2Classifier(ClassifierNeuralNetwork, ClassifierGradients, Class
         x_preprocessed, _ = self._apply_preprocessing(x, y=None, fit=False)
 
         # Run prediction with batch processing
-        results = np.zeros((x_preprocessed.shape[0], self.nb_classes), dtype=np.float32)
+        results = np.zeros((x_preprocessed.shape[0], self.nb_classes()), dtype=np.float32)
         num_batch = int(np.ceil(len(x_preprocessed) / float(batch_size)))
         for m in range(num_batch):
             # Batch indexes
@@ -697,7 +712,7 @@ class TensorflowV2Classifier(ClassifierNeuralNetwork, ClassifierGradients, Class
 
         train_ds = tf.data.Dataset.from_tensor_slices((x_preprocessed, y_preprocessed)).shuffle(10000).batch(batch_size)
 
-        for epoch in range(nb_epochs):
+        for _ in range(nb_epochs):
             for images, labels in train_ds:
                 self._train_step(images, labels)
 
@@ -744,7 +759,7 @@ class TensorflowV2Classifier(ClassifierNeuralNetwork, ClassifierGradients, Class
                 # Compute the gradients w.r.t. all classes
                 class_gradients = list()
 
-                for i in range(self.nb_classes):
+                for i in range(self.nb_classes()):
                     with tf.GradientTape() as tape:
                         x_preprocessed_tf = tf.convert_to_tensor(x_preprocessed)
                         tape.watch(x_preprocessed_tf)
@@ -808,7 +823,7 @@ class TensorflowV2Classifier(ClassifierNeuralNetwork, ClassifierGradients, Class
         import tensorflow as tf
 
         # Apply preprocessing
-        x_preprocessed, y_preprocessed = self._apply_preprocessing(x, y, fit=False)
+        x_preprocessed, _ = self._apply_preprocessing(x, y, fit=False)
 
         if tf.executing_eagerly:
             with tf.GradientTape() as tape:

@@ -83,9 +83,9 @@ class ScikitlearnClassifier(Classifier):
         """
         super(ScikitlearnClassifier, self).__init__(clip_values=clip_values, defences=defences,
                                                     preprocessing=preprocessing)
-
         self._model = model
         self._input_shape = self._get_input_shape(model)
+        self._nb_classes = self._get_nb_classes()
 
     def fit(self, x, y, **kwargs):
         """
@@ -93,7 +93,8 @@ class ScikitlearnClassifier(Classifier):
 
         :param x: Training data.
         :type x: `np.ndarray`
-        :param y: Labels, one-vs-rest encoding.
+        :param y: Target values (class labels) one-hot-encoded of shape (nb_samples, nb_classes) or indices of shape
+                  (nb_samples,).
         :type y: `np.ndarray`
         :param kwargs: Dictionary of framework-specific arguments. These should be parameters supported by the
                `fit` function in `sklearn` classifier and will be passed to this function as such.
@@ -106,6 +107,7 @@ class ScikitlearnClassifier(Classifier):
 
         self._model.fit(x_preprocessed, y_preprocessed, **kwargs)
         self._input_shape = self._get_input_shape(self._model)
+        self._nb_classes = self._get_nb_classes()
 
     def predict(self, x, **kwargs):
         """
@@ -162,15 +164,26 @@ class ScikitlearnClassifier(Classifier):
         elif hasattr(model, 'steps'):
             _input_shape = self._get_input_shape(model.steps[0][1])
         else:
+            logger.warning('Input shape not recognised. The model might not have been fitted.')
             _input_shape = None
         return _input_shape
+
+    def _get_nb_classes(self):
+        if hasattr(self._model, 'n_classes_'):
+            _nb_classes = self._model.n_classes_
+        elif hasattr(self._model, 'classes_'):
+            _nb_classes = self._model.classes_.shape[0]
+        else:
+            logger.warning('Number of classes not recognised. The model might not have been fitted.')
+            _nb_classes = None
+        return _nb_classes
 
 
 class ScikitlearnDecisionTreeClassifier(ScikitlearnClassifier):
     """
     Wrapper class for scikit-learn Decision Tree Classifier models.
     """
-
+    
     def __init__(self, model, clip_values=None, defences=None, preprocessing=(0, 1)):
         """
         Create a `Classifier` instance from a scikit-learn Decision Tree Classifier model.
@@ -377,7 +390,7 @@ class ScikitlearnExtraTreeClassifier(ScikitlearnDecisionTreeClassifier):
     """
     Wrapper class for scikit-learn Extra TreeClassifier Classifier models.
     """
-
+    
     def __init__(self, model, clip_values=None, defences=None, preprocessing=(0, 1)):
         """
         Create a `Classifier` instance from a scikit-learn Extra TreeClassifier Classifier model.
@@ -772,28 +785,6 @@ class ScikitlearnLogisticRegression(ScikitlearnClassifier, ClassifierGradients):
 
         return gradients
 
-    def fit(self, x, y, **kwargs):
-        """
-        Fit the classifier on the training set `(x, y)`.
-
-        :param x: Training data.
-        :type x: `np.ndarray`
-        :param y: Labels, one-vs-rest encoding.
-        :type y: `np.ndarray`
-        :param kwargs: Dictionary of framework-specific arguments. These should be parameters supported by the
-               `fit` function in `sklearn.linear_model.LogisticRegression` and will be passed to this function as such.
-        :type kwargs: `dict`
-        :return: `None`
-        """
-        # Apply preprocessing
-        x_preprocessed, y_preprocessed = self._apply_preprocessing(
-            x, y, fit=True)
-
-        y_index = np.argmax(y_preprocessed, axis=1)
-        self._model.fit(X=x_preprocessed, y=y_index, **kwargs)
-        self._nb_classes = self._model.classes_.shape[0]
-        self._input_shape = (self._model.coef_.shape[1],)
-
     def loss_gradient(self, x, y, **kwargs):
         """
         Compute the gradient of the loss function w.r.t. `x`.
@@ -803,7 +794,8 @@ class ScikitlearnLogisticRegression(ScikitlearnClassifier, ClassifierGradients):
 
         :param x: Sample input with shape as expected by the model.
         :type x: `np.ndarray`
-        :param y: Correct labels, one-vs-rest encoding.
+        :param y: Target values (class labels) one-hot-encoded of shape (nb_samples, nb_classes) or indices of shape
+                  (nb_samples,).
         :type y: `np.ndarray`
         :return: Array of gradients of the same shape as `x`.
         :rtype: `np.ndarray`
@@ -816,8 +808,7 @@ class ScikitlearnLogisticRegression(ScikitlearnClassifier, ClassifierGradients):
             fitted model.""")
 
         # Apply preprocessing
-        x_preprocessed, y_preprocessed = self._apply_preprocessing(
-            x, y, fit=False)
+        x_preprocessed, y_preprocessed = self._apply_preprocessing(x, y, fit=False)
 
         num_samples, _ = x_preprocessed.shape
         gradients = np.zeros(x_preprocessed.shape)
@@ -868,11 +859,13 @@ class ScikitlearnSVC(ScikitlearnClassifier, ClassifierGradients):
         from sklearn.svm import SVC, LinearSVC
 
         if not isinstance(model, SVC) and not isinstance(model, LinearSVC):
-            raise TypeError('Model must be of type sklearn.svm.SVC or sklearn.svm.LinearSVC')
+            raise TypeError(
+                'Model must be of type sklearn.svm.SVC or sklearn.svm.LinearSVC. Found type {}'.format(type(model)))
 
-        super(ScikitlearnSVC, self).__init__(model=model, clip_values=clip_values, defences=defences,
-                                             preprocessing=preprocessing)
-        self._model = model
+        super(ScikitlearnSVC, self).__init__(model=model, clip_values=clip_values, defences=defences, preprocessing=preprocessing)
+
+        self.kernel_func = self._kernel_func()
+        self.kernel_grad = self._kernel_gradient_func
 
     def class_gradient(self, x, label=None, **kwargs):
         """
@@ -904,6 +897,8 @@ class ScikitlearnSVC(ScikitlearnClassifier, ClassifierGradients):
         :param kwargs: Dictionary of framework-specific arguments. These should be parameters supported by the
                `fit` function in `sklearn.linear_model.LogisticRegression` and will be passed to this function as such.
         :type kwargs: `dict`
+        :param save: Whether or not to save a version of this file
+        :type save: `bool`
         :return: `None`
         """
         y_index = np.argmax(y, axis=1)
@@ -918,36 +913,62 @@ class ScikitlearnSVC(ScikitlearnClassifier, ClassifierGradients):
         elif hasattr(self._model, 'support_vectors_'):
             self._input_shape = (self._model.support_vectors_.shape[1],)
 
-    def _get_kernel_gradient(self, i_sv, x_sample):
+    def _kernel_gradient_func(self, sv, x_sample):
+        """
+        Applies the kernel gradient to a support vector
+
+        :param sv: A support vector
+        :type sv: `np.ndarray`
+        :param x_sample: The sample the gradient is taken with respect to
+        :type x_sample: `np.ndarray`
+        :return: the kernel gradient
+        :rtype: `np.ndarray`
+        """
         # pylint: disable=W0212
 
-        x_i = self._model.support_vectors_[i_sv, :]
-
         if self._model.kernel == 'linear':
-            grad = x_i
+            grad = sv
         elif self._model.kernel == 'poly':
-            grad = self._model.degree * (self._model._gamma * np.sum(x_sample * x_i) + self._model.coef0) ** (
-                self._model.degree - 1) * x_i
+            grad = self._model.degree * (self._model._gamma * np.sum(x_sample * sv) + self._model.coef0) ** (
+                    self._model.degree - 1) * sv
         elif self._model.kernel == 'rbf':
-            grad = 2 * self._model._gamma * (-1) * np.exp(
-                -self._model._gamma * np.linalg.norm(x_sample - x_i, ord=2)) * (x_sample - x_i)
+            grad = 2 * self._model._gamma * (-1) * np.exp(-self._model._gamma * np.linalg.norm(x_sample - sv, ord=2)) * (
+                    x_sample - sv)
         elif self._model.kernel == 'sigmoid':
             raise NotImplementedError
+        elif callable(self._model.kernel):
+            raise NotImplementedError("Loss gradients for callable functions are not implemented")
         else:
             raise NotImplementedError(
                 'Loss gradients for kernel \'{}\' are not implemented.'.format(self._model.kernel))
+
         return grad
+
+    def _get_kernel_gradient_sv(self, i_sv, x_sample):
+        """
+        Applies the kernel gradient to all of a model's support vectors
+
+        :param i_sv: A support vector index
+        :type i_sv: int
+        :param x_sample: A sample vector
+        :return: The kernelized product of the vectors
+        :rtype: `np.ndarray`
+        """
+
+        x_i = self._model.support_vectors_[i_sv, :]
+        return self._kernel_gradient_func(x_i, x_sample)
 
     def loss_gradient(self, x, y, **kwargs):
         """
         Compute the gradient of the loss function w.r.t. `x`.
         Following equation (1) with lambda=0.
-
+        
         | Paper link: https://pralab.diee.unica.it/sites/default/files/biggio14-svm-chapter.pdf
 
         :param x: Sample input with shape as expected by the model.
         :type x: `np.ndarray`
-        :param y: Correct labels, one-vs-rest encoding.
+        :param y: Target values (class labels) one-hot-encoded of shape (nb_samples, nb_classes) or indices of shape
+                  (nb_samples,).
         :type y: `np.ndarray`
         :return: Array of gradients of the same shape as `x`.
         :rtype: `np.ndarray`
@@ -966,6 +987,7 @@ class ScikitlearnSVC(ScikitlearnClassifier, ClassifierGradients):
         if isinstance(self._model, SVC):
 
             if self._model.fit_status_:
+
                 raise AssertionError('Model has not been fitted correctly.')
 
             if y_preprocessed.shape[1] == 2:
@@ -994,14 +1016,20 @@ class ScikitlearnSVC(ScikitlearnClassifier, ClassifierGradients):
                             label_multiplier = 1
 
                         for i_label_sv in range(support_indices[i_label], support_indices[i_label + 1]):
-                            alpha_i_k_y_i = self._model.dual_coef_[i_not_label_i, i_label_sv] * label_multiplier
-                            grad_kernel = self._get_kernel_gradient(i_label_sv, x_preprocessed[i_sample])
-                            gradients[i_sample, :] += sign_multiplier * alpha_i_k_y_i * grad_kernel
+                            alpha_i_k_y_i = self._model.dual_coef_[
+                                                i_not_label_i, i_label_sv] * label_multiplier
+                            grad_kernel = self._get_kernel_gradient_sv(
+                                i_label_sv, x_preprocessed[i_sample])
+                            gradients[i_sample, :] += sign_multiplier * \
+                                                      alpha_i_k_y_i * grad_kernel
 
                         for i_not_label_sv in range(support_indices[i_not_label], support_indices[i_not_label + 1]):
-                            alpha_i_k_y_i = self._model.dual_coef_[i_not_label_i, i_not_label_sv] * label_multiplier
-                            grad_kernel = self._get_kernel_gradient(i_not_label_sv, x_preprocessed[i_sample])
-                            gradients[i_sample, :] += sign_multiplier * alpha_i_k_y_i * grad_kernel
+                            alpha_i_k_y_i = self._model.dual_coef_[
+                                                i_not_label_i, i_not_label_sv] * label_multiplier
+                            grad_kernel = self._get_kernel_gradient_sv(
+                                i_not_label_sv, x_preprocessed[i_sample])
+                            gradients[i_sample, :] += sign_multiplier * \
+                                                      alpha_i_k_y_i * grad_kernel
 
         elif isinstance(self._model, LinearSVC):
 
@@ -1028,6 +1056,61 @@ class ScikitlearnSVC(ScikitlearnClassifier, ClassifierGradients):
         gradients = self._apply_preprocessing_gradient(x, gradients)
 
         return gradients
+
+    def _kernel_func(self):
+        """
+        Return the function for the kernel of this SVM
+
+        :param kernel: A string preloaded function or callable Python function
+        :type kernel: str or callable
+        :return: A callable kernel function
+        """
+        # pylint: disable=E0001
+        from sklearn.svm import SVC, LinearSVC
+        from sklearn.metrics.pairwise import polynomial_kernel, linear_kernel, rbf_kernel
+
+        if isinstance(self._model, LinearSVC):
+            kernel = 'linear'
+        elif isinstance(self._model, SVC):
+            kernel = self._model.kernel
+        else:
+            raise NotImplementedError("SVM model not yet supported")
+
+        if kernel == 'linear':
+            kernel_func = linear_kernel
+        elif kernel == 'poly':
+            kernel_func = polynomial_kernel
+        elif kernel == 'rbf':
+            kernel_func = rbf_kernel
+        elif callable(kernel):
+            kernel_func = kernel
+        else:
+            raise NotImplementedError("Kernel '{}' not yet supported")
+
+        return kernel_func
+
+    def q_submatrix(self, rows, cols):
+        """
+        Returns the q submatrix of this SVM indexed by the arrays at rows and columns
+
+        :param rows: the row vectors
+        :type rows: `np.ndarray`
+        :param cols: the column vectors
+        :type cols: `np.ndarray`
+        :return: a submatrix of Q
+        :rtype: np.ndarray
+        """
+        submatrix_shape = (rows.shape[0], cols.shape[0])
+        y_row = self._model.predict(rows)
+        y_col = self._model.predict(cols)
+        y_row[y_row == 0] = -1
+        y_col[y_col == 0] = -1
+        q_rc = np.zeros(submatrix_shape)
+        for row in range(q_rc.shape[0]):
+            for col in range(q_rc.shape[1]):
+                q_rc[row][col] = self.kernel_func([rows[row]], [cols[col]])[0][0] * y_row[row] * y_col[col]
+
+        return q_rc
 
     def predict(self, x, **kwargs):
         """
