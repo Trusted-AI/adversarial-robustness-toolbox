@@ -902,16 +902,16 @@ class ScikitlearnSVC(ScikitlearnClassifier, ClassifierGradients):
         :return: `None`
         """
         y_index = np.argmax(y, axis=1)
-        self.model.fit(X=x, y=y_index, **kwargs)
-        self._nb_classes = len(self.model.classes_)
+        self._model.fit(X=x, y=y_index, **kwargs)
+        self._nb_classes = len(self._model.classes_)
 
-        if hasattr(self.model, 'coef_'):
-            if len(self.model.coef_.shape) == 1:
-                self._input_shape = (self.model.coef_.shape[0],)
+        if hasattr(self._model, 'coef_'):
+            if len(self._model.coef_.shape) == 1:
+                self._input_shape = (self._model.coef_.shape[0],)
             else:
-                self._input_shape = (self.model.coef_.shape[1],)
-        elif hasattr(self.model, 'support_vectors_'):
-            self._input_shape = (self.model.support_vectors_.shape[1],)
+                self._input_shape = (self._model.coef_.shape[1],)
+        elif hasattr(self._model, 'support_vectors_'):
+            self._input_shape = (self._model.support_vectors_.shape[1],)
 
     def _kernel_gradient_func(self, sv, x_sample):
         """
@@ -926,21 +926,21 @@ class ScikitlearnSVC(ScikitlearnClassifier, ClassifierGradients):
         """
         # pylint: disable=W0212
 
-        if self.model.kernel == 'linear':
+        if self._model.kernel == 'linear':
             grad = sv
-        elif self.model.kernel == 'poly':
-            grad = self.model.degree * (self.model._gamma * np.sum(x_sample * sv) + self.model.coef0) ** (
-                    self.model.degree - 1) * sv
-        elif self.model.kernel == 'rbf':
-            grad = 2 * self.model._gamma * (-1) * np.exp(-self.model._gamma * np.linalg.norm(x_sample - sv, ord=2)) * (
+        elif self._model.kernel == 'poly':
+            grad = self._model.degree * (self._model._gamma * np.sum(x_sample * sv) + self._model.coef0) ** (
+                    self._model.degree - 1) * sv
+        elif self._model.kernel == 'rbf':
+            grad = 2 * self._model._gamma * (-1) * np.exp(-self._model._gamma * np.linalg.norm(x_sample - sv, ord=2)) * (
                     x_sample - sv)
-        elif self.model.kernel == 'sigmoid':
+        elif self._model.kernel == 'sigmoid':
             raise NotImplementedError
-        elif callable(self.model.kernel):
+        elif callable(self._model.kernel):
             raise NotImplementedError("Loss gradients for callable functions are not implemented")
         else:
             raise NotImplementedError(
-                'Loss gradients for kernel \'{}\' are not implemented.'.format(self.model.kernel))
+                'Loss gradients for kernel \'{}\' are not implemented.'.format(self._model.kernel))
 
         return grad
 
@@ -955,7 +955,7 @@ class ScikitlearnSVC(ScikitlearnClassifier, ClassifierGradients):
         :rtype: `np.ndarray`
         """
 
-        x_i = self.model.support_vectors_[i_sv, :]
+        x_i = self._model.support_vectors_[i_sv, :]
         return self._kernel_gradient_func(x_i, x_sample)
 
     def loss_gradient(self, x, y, **kwargs):
@@ -984,9 +984,9 @@ class ScikitlearnSVC(ScikitlearnClassifier, ClassifierGradients):
 
         y_index = np.argmax(y_preprocessed, axis=1)
 
-        if isinstance(self.model, SVC):
+        if isinstance(self._model, SVC):
 
-            if self.model.fit_status_:
+            if self._model.fit_status_:
 
                 raise AssertionError('Model has not been fitted correctly.')
 
@@ -998,7 +998,7 @@ class ScikitlearnSVC(ScikitlearnClassifier, ClassifierGradients):
             i_not_label_i = None
             label_multiplier = None
 
-            support_indices = [0] + list(np.cumsum(self.model.n_support_))
+            support_indices = [0] + list(np.cumsum(self._model.n_support_))
 
             for i_sample in range(num_samples):
 
@@ -1016,7 +1016,7 @@ class ScikitlearnSVC(ScikitlearnClassifier, ClassifierGradients):
                             label_multiplier = 1
 
                         for i_label_sv in range(support_indices[i_label], support_indices[i_label + 1]):
-                            alpha_i_k_y_i = self.model.dual_coef_[
+                            alpha_i_k_y_i = self._model.dual_coef_[
                                                 i_not_label_i, i_label_sv] * label_multiplier
                             grad_kernel = self._get_kernel_gradient_sv(
                                 i_label_sv, x_preprocessed[i_sample])
@@ -1024,14 +1024,14 @@ class ScikitlearnSVC(ScikitlearnClassifier, ClassifierGradients):
                                                       alpha_i_k_y_i * grad_kernel
 
                         for i_not_label_sv in range(support_indices[i_not_label], support_indices[i_not_label + 1]):
-                            alpha_i_k_y_i = self.model.dual_coef_[
+                            alpha_i_k_y_i = self._model.dual_coef_[
                                                 i_not_label_i, i_not_label_sv] * label_multiplier
                             grad_kernel = self._get_kernel_gradient_sv(
                                 i_not_label_sv, x_preprocessed[i_sample])
                             gradients[i_sample, :] += sign_multiplier * \
                                                       alpha_i_k_y_i * grad_kernel
 
-        elif isinstance(self.model, LinearSVC):
+        elif isinstance(self._model, LinearSVC):
 
             for i_sample in range(num_samples):
 
@@ -1049,25 +1049,13 @@ class ScikitlearnSVC(ScikitlearnClassifier, ClassifierGradients):
                     i_label_i = i_label
                     label_multiplier = -1
 
-                gradients[i_sample] = label_multiplier * self.model.coef_[i_label_i]
+                gradients[i_sample] = label_multiplier * self._model.coef_[i_label_i]
         else:
             raise TypeError('Model not recognized.')
 
         gradients = self._apply_preprocessing_gradient(x, gradients)
 
         return gradients
-
-    def discriminant(self, x):
-        """
-        Calculates the discriminant g(x) of the SVM according to Chapter 4.2.1
-        Paper link: https://pralab.diee.unica.it/sites/default/files/biggio14-svm-chapter.pdf
-
-        :param x: input arrays
-        :type x: `np.ndarray`
-        :return: an output array
-        :rtype: `np.ndarray`
-        """
-        return self.model.decision_function(x)
 
     def _kernel_func(self):
         """
@@ -1081,10 +1069,10 @@ class ScikitlearnSVC(ScikitlearnClassifier, ClassifierGradients):
         from sklearn.svm import SVC, LinearSVC
         from sklearn.metrics.pairwise import polynomial_kernel, linear_kernel, rbf_kernel
 
-        if isinstance(self.model, LinearSVC):
+        if isinstance(self._model, LinearSVC):
             kernel = 'linear'
-        elif isinstance(self.model, SVC):
-            kernel = self.model.kernel
+        elif isinstance(self._model, SVC):
+            kernel = self._model.kernel
         else:
             raise NotImplementedError("SVM model not yet supported")
 
@@ -1113,8 +1101,8 @@ class ScikitlearnSVC(ScikitlearnClassifier, ClassifierGradients):
         :rtype: np.ndarray
         """
         submatrix_shape = (rows.shape[0], cols.shape[0])
-        y_row = self.model.predict(rows)
-        y_col = self.model.predict(cols)
+        y_row = self._model.predict(rows)
+        y_col = self._model.predict(cols)
         y_row[y_row == 0] = -1
         y_col[y_col == 0] = -1
         q_rc = np.zeros(submatrix_shape)
@@ -1139,10 +1127,10 @@ class ScikitlearnSVC(ScikitlearnClassifier, ClassifierGradients):
         # Apply defences
         x_preprocessed, _ = self._apply_preprocessing(x, y=None, fit=False)
 
-        if isinstance(self.model, SVC) and self.model.probability:
-            y_pred = self.model.predict_proba(X=x_preprocessed)
+        if isinstance(self._model, SVC) and self._model.probability:
+            y_pred = self._model.predict_proba(X=x_preprocessed)
         else:
-            y_pred_label = self.model.predict(X=x_preprocessed)
+            y_pred_label = self._model.predict(X=x_preprocessed)
             targets = np.array(y_pred_label).reshape(-1)
             one_hot_targets = np.eye(self.nb_classes())[targets]
             y_pred = one_hot_targets
