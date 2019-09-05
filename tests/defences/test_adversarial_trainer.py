@@ -20,15 +20,16 @@ from __future__ import absolute_import, division, print_function, unicode_litera
 import logging
 import unittest
 
+import tensorflow as tf
+
 import keras
 import keras.backend as k
 import numpy as np
-import tensorflow as tf
 from keras.layers import Dense, Flatten, Conv2D, MaxPooling2D
 from keras.models import Sequential
 
 from art.attacks import FastGradientMethod, DeepFool
-from art.classifiers import TFClassifier, KerasClassifier
+from art.classifiers import TensorflowClassifier, KerasClassifier
 from art.data_generators import DataGenerator
 from art.defences import AdversarialTrainer
 from art.utils import load_mnist, get_labels_np_array, master_seed
@@ -41,6 +42,8 @@ NB_TEST = 11
 ACCURACY_DROP = 0.0  # The unit tests are too inaccurate
 
 
+@unittest.skipIf(tf.__version__[0] == '2', reason='Skip AdversarialTrainer unittests for Tensorflow v2 until Keras '
+                                                  'supports it')
 class TestBase(unittest.TestCase):
     mnist = None
     classifier_k = None
@@ -105,8 +108,8 @@ class TestBase(unittest.TestCase):
         TestBase.sess = tf.Session()
         TestBase.sess.run(tf.global_variables_initializer())
 
-        classifier = TFClassifier(input_ph=inputs_tf, logits=logits, loss=loss, train=train_tf, output_ph=labels_tf,
-                                  sess=TestBase.sess, clip_values=(0, 1))
+        classifier = TensorflowClassifier(input_ph=inputs_tf, output=logits, loss=loss, train=train_tf,
+                                          labels_ph=labels_tf, sess=TestBase.sess, clip_values=(0, 1))
         return classifier
 
     @staticmethod

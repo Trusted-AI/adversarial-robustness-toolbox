@@ -67,7 +67,8 @@ class LightGBMClassifier(Classifier, ClassifierDecisionTree):
 
         :param x: Training data.
         :type x: `np.ndarray`
-        :param y: Labels, one-vs-rest encoding.
+        :param y: Target values (class labels) one-hot-encoded of shape (nb_samples, nb_classes) or indices of shape
+                  (nb_samples,).
         :type y: `np.ndarray`
         :param kwargs: Dictionary of framework-specific arguments. These should be parameters supported by the
                `fit` function in `lightgbm.Booster` and will be passed to this function as such.
@@ -91,8 +92,14 @@ class LightGBMClassifier(Classifier, ClassifierDecisionTree):
 
         return self._model.predict(x_preprocessed)
 
-    @property
     def nb_classes(self):
+        """
+        Return the number of output classes.
+
+        :return: Number of classes in the data.
+        :rtype: `int`
+        """
+        # pylint: disable=W0212
         return self._model._Booster__num_class
 
     def save(self, filename, path=None):
@@ -107,7 +114,7 @@ class LightGBMClassifier(Classifier, ClassifierDecisionTree):
         :return: A list of decision trees.
         :rtype: `[Tree]`
         """
-        from art.metrics.metrics_trees import Box, Tree
+        from art.metrics.verification_decisions_trees import Box, Tree
 
         booster_dump = self._model.dump_model()["tree_info"]
         trees = list()
@@ -115,23 +122,20 @@ class LightGBMClassifier(Classifier, ClassifierDecisionTree):
         for i_tree, tree_dump in enumerate(booster_dump):
             box = Box()
 
+            # pylint: disable=W0212
             if self._model._Booster__num_class == 2:
                 class_label = -1
             else:
                 class_label = i_tree % self._model._Booster__num_class
 
-            print(tree_dump)
-
-            print(type(tree_dump))
-
-            # tree_json = json.loads(tree_dump)
-            trees.append(Tree(class_id=class_label, leaf_nodes=self._get_leaf_nodes(tree_dump['tree_structure'], i_tree, class_label, box)))
+            trees.append(Tree(class_id=class_label,
+                              leaf_nodes=self._get_leaf_nodes(tree_dump['tree_structure'], i_tree, class_label, box)))
 
         return trees
 
     def _get_leaf_nodes(self, node, i_tree, class_label, box):
         from copy import deepcopy
-        from art.metrics.metrics_trees import LeafNode, Box, Interval
+        from art.metrics.verification_decisions_trees import LeafNode, Box, Interval
 
         leaf_nodes = list()
 

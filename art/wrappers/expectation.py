@@ -18,8 +18,7 @@
 """
 This module implements the Expectation Over Transformation applied to classifier predictions and gradients.
 
-Paper link:
-    https://arxiv.org/pdf/1707.07397.pdf
+| Paper link: https://arxiv.org/abs/1707.07397
 """
 from __future__ import absolute_import, division, print_function, unicode_literals
 
@@ -35,7 +34,8 @@ class ExpectationOverTransformations(ClassifierWrapper, ClassifierGradients, Cla
     """
     Implementation of Expectation Over Transformations applied to classifier predictions and gradients, as introduced
     in Athalye et al. (2017).
-    Paper link: https://arxiv.org/pdf/1707.07397.pdf
+
+    | Paper link: https://arxiv.org/abs/1707.07397
     """
 
     def __init__(self, classifier, sample_size, transformation):
@@ -54,23 +54,21 @@ class ExpectationOverTransformations(ClassifierWrapper, ClassifierGradients, Cla
         self.transformation = transformation
         self._predict = self.classifier.predict
 
-    def predict(self, x, logits=False, batch_size=128, **kwargs):
+    def predict(self, x, batch_size=128, **kwargs):
         """
         Perform prediction of the given classifier for a batch of inputs, taking an expectation over transformations.
 
         :param x: Test set.
         :type x: `np.ndarray`
-        :param logits: `True` if the prediction should be done at the logits layer.
-        :type logits: `bool`
         :param batch_size: Size of batches.
         :type batch_size: `int`
         :return: Array of predictions of shape `(nb_inputs, self.nb_classes)`.
         :rtype: `np.ndarray`
         """
         logger.info('Applying expectation over transformations.')
-        prediction = self._predict(next(self.transformation())(x), logits, batch_size)
+        prediction = self._predict(next(self.transformation())(x), batch_size)
         for _ in range(self.sample_size - 1):
-            prediction += self._predict(next(self.transformation())(x), logits, batch_size)
+            prediction += self._predict(next(self.transformation())(x), batch_size)
         return prediction / self.sample_size
 
     def fit(self, x, y, batch_size=128, nb_epochs=20, **kwargs):
@@ -118,22 +116,16 @@ class ExpectationOverTransformations(ClassifierWrapper, ClassifierGradients, Cla
                       match the batch size of `x`, and each value will be used as target for its corresponding sample in
                       `x`. If `None`, then gradients for all classes will be computed for each sample.
         :type label: `int` or `list`
-        :param logits: `True` if the prediction should be done at the logits layer.
-        :type logits: `bool`
         :return: Array of gradients of input features w.r.t. each class in the form
                  `(batch_size, nb_classes, input_shape)` when computing for all classes, otherwise shape becomes
                  `(batch_size, 1, input_shape)` when `label` parameter is specified.
         :rtype: `np.ndarray`
         """
         logger.info('Apply Expectation over Transformations.')
+        class_gradient = self.classifier.class_gradient(next(self.transformation())(x), label)
 
-        logits = kwargs.get('logits')
-        if logits is None:
-            logits = False
-
-        class_gradient = self.classifier.class_gradient(next(self.transformation())(x), label, logits)
         for _ in range(self.sample_size - 1):
-            class_gradient += self.classifier.class_gradient(next(self.transformation())(x), label, logits)
+            class_gradient += self.classifier.class_gradient(next(self.transformation())(x), label)
 
         return class_gradient / self.sample_size
 

@@ -55,10 +55,10 @@ class TestHopSkipJump(unittest.TestCase):
 
     def test_tfclassifier(self):
         """
-        First test with the TFClassifier.
+        First test with the TensorflowClassifier.
         :return:
         """
-        # Build TFClassifier
+        # Build TensorflowClassifier
         tfc, sess = get_classifier_tf()
 
         # Get MNIST
@@ -66,7 +66,7 @@ class TestHopSkipJump(unittest.TestCase):
 
         # First targeted attack and norm=2
         hsj = HopSkipJump(classifier=tfc, targeted=True, max_iter=2, max_eval=100, init_eval=10)
-        params = {'y': random_targets(y_test, tfc.nb_classes)}
+        params = {'y': random_targets(y_test, tfc.nb_classes())}
         x_test_adv = hsj.generate(x_test, **params)
 
         self.assertFalse((x_test == x_test_adv).all())
@@ -79,7 +79,7 @@ class TestHopSkipJump(unittest.TestCase):
 
         # First targeted attack and norm=np.inf
         hsj = HopSkipJump(classifier=tfc, targeted=True, max_iter=2, max_eval=100, init_eval=10, norm=np.Inf)
-        params = {'y': random_targets(y_test, tfc.nb_classes)}
+        params = {'y': random_targets(y_test, tfc.nb_classes())}
         x_test_adv = hsj.generate(x_test, **params)
 
         self.assertFalse((x_test == x_test_adv).all())
@@ -116,8 +116,9 @@ class TestHopSkipJump(unittest.TestCase):
 
         # Clean-up session
         sess.close()
-        tf.reset_default_graph()
 
+    @unittest.skipIf(tf.__version__[0] == '2', reason='Skip unittests for Tensorflow v2 until Keras supports Tensorflow'
+                                                      ' v2 as backend.')
     def test_krclassifier(self):
         """
         Second test with the KerasClassifier.
@@ -133,7 +134,7 @@ class TestHopSkipJump(unittest.TestCase):
 
         # First targeted attack and norm=2
         hsj = HopSkipJump(classifier=krc, targeted=True, max_iter=2, max_eval=100, init_eval=10)
-        params = {'y': random_targets(y_test, krc.nb_classes)}
+        params = {'y': random_targets(y_test, krc.nb_classes())}
         x_test_adv = hsj.generate(x_test, **params)
 
         self.assertFalse((x_test == x_test_adv).all())
@@ -146,7 +147,7 @@ class TestHopSkipJump(unittest.TestCase):
 
         # First targeted attack and norm=np.inf
         hsj = HopSkipJump(classifier=krc, targeted=True, max_iter=2, max_eval=100, init_eval=10, norm=np.Inf)
-        params = {'y': random_targets(y_test, krc.nb_classes)}
+        params = {'y': random_targets(y_test, krc.nb_classes())}
         x_test_adv = hsj.generate(x_test, **params)
 
         self.assertFalse((x_test == x_test_adv).all())
@@ -199,7 +200,7 @@ class TestHopSkipJump(unittest.TestCase):
 
         # First targeted attack and norm=2
         hsj = HopSkipJump(classifier=ptc, targeted=True, max_iter=2, max_eval=100, init_eval=10)
-        params = {'y': random_targets(y_test, ptc.nb_classes)}
+        params = {'y': random_targets(y_test, ptc.nb_classes())}
         x_test_adv = hsj.generate(x_test, **params)
 
         self.assertFalse((x_test == x_test_adv).all())
@@ -212,7 +213,7 @@ class TestHopSkipJump(unittest.TestCase):
 
         # First targeted attack and norm=np.inf
         hsj = HopSkipJump(classifier=ptc, targeted=True, max_iter=2, max_eval=100, init_eval=10, norm=np.Inf)
-        params = {'y': random_targets(y_test, ptc.nb_classes)}
+        params = {'y': random_targets(y_test, ptc.nb_classes())}
         x_test_adv = hsj.generate(x_test, **params)
 
         self.assertFalse((x_test == x_test_adv).all())
@@ -270,6 +271,8 @@ class TestHopSkipJumpVectors(unittest.TestCase):
     def setUp(self):
         master_seed(1234)
 
+    @unittest.skipIf(tf.__version__[0] == '2', reason='Skip unittests for Tensorflow v2 until Keras supports Tensorflow'
+                                                      ' v2 as backend.')
     def test_iris_k_clipped(self):
         (_, _), (x_test, y_test) = self.iris
         classifier, _ = get_iris_classifier_kr()
@@ -301,6 +304,8 @@ class TestHopSkipJumpVectors(unittest.TestCase):
         # Clean-up session
         k.clear_session()
 
+    @unittest.skipIf(tf.__version__[0] == '2', reason='Skip unittests for Tensorflow v2 until Keras supports Tensorflow'
+                                                      ' v2 as backend.')
     def test_iris_k_unbounded(self):
         (_, _), (x_test, y_test) = self.iris
         classifier, _ = get_iris_classifier_kr()
@@ -389,7 +394,6 @@ class TestHopSkipJumpVectors(unittest.TestCase):
 
         # Clean-up session
         sess.close()
-        tf.reset_default_graph()
 
     def test_iris_pt(self):
         (_, _), (x_test, y_test) = self.iris
@@ -426,11 +430,11 @@ class TestHopSkipJumpVectors(unittest.TestCase):
         from sklearn.ensemble import AdaBoostClassifier, BaggingClassifier, ExtraTreesClassifier
         from sklearn.ensemble import GradientBoostingClassifier, RandomForestClassifier
 
-        from art.classifiers.scikitklearn import ScikitlearnDecisionTreeClassifier, ScikitlearnExtraTreeClassifier
-        from art.classifiers.scikitklearn import ScikitlearnAdaBoostClassifier, ScikitlearnBaggingClassifier
-        from art.classifiers.scikitklearn import ScikitlearnExtraTreesClassifier, ScikitlearnGradientBoostingClassifier
-        from art.classifiers.scikitklearn import ScikitlearnRandomForestClassifier, ScikitlearnLogisticRegression
-        from art.classifiers.scikitklearn import ScikitlearnSVC
+        from art.classifiers.scikitlearn import ScikitlearnDecisionTreeClassifier, ScikitlearnExtraTreeClassifier
+        from art.classifiers.scikitlearn import ScikitlearnAdaBoostClassifier, ScikitlearnBaggingClassifier
+        from art.classifiers.scikitlearn import ScikitlearnExtraTreesClassifier, ScikitlearnGradientBoostingClassifier
+        from art.classifiers.scikitlearn import ScikitlearnRandomForestClassifier, ScikitlearnLogisticRegression
+        from art.classifiers.scikitlearn import ScikitlearnSVC
 
         scikitlearn_test_cases = {DecisionTreeClassifier: ScikitlearnDecisionTreeClassifier,
                                   ExtraTreeClassifier: ScikitlearnExtraTreeClassifier,

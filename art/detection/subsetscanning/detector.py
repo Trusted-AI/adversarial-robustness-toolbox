@@ -20,11 +20,12 @@ This module implements the fast generalized subset scan based detector.
 """
 
 from __future__ import absolute_import, division, print_function, unicode_literals
+
 import logging
-import six
 
 # pylint: disable=E0001
 import numpy as np
+import six
 
 from art.classifiers.classifier import Classifier, ClassifierNeuralNetwork, ClassifierGradients
 from art.detection.subsetscanning.scanner import Scanner
@@ -33,11 +34,14 @@ logger = logging.getLogger(__name__)
 
 
 class SubsetScanningDetector(ClassifierNeuralNetwork, ClassifierGradients, Classifier):
-    """ Fast generalized subset scan based detector"""
+    """
+    Fast generalized subset scan based detector by McFowland, E., Speakman, S., and Neill, D. B. (2013).
 
+    | Paper link: https://www.cs.cmu.edu/~neill/papers/mcfowland13a.pdf
+    """
     def __init__(self, classifier, bgd_data, layer):
         """
-        Create a `SubsetScanningDetector` instance which is used to the detect the presence of .
+        Create a `SubsetScanningDetector` instance which is used to the detect the presence of adversarial samples.
 
         :param classifier: The model being evaluated for its robustness to anomalies (eg. adversarial samples)
         :type classifier: :class:`.Classifier`
@@ -77,9 +81,9 @@ class SubsetScanningDetector(ClassifierNeuralNetwork, ClassifierGradients, Class
         """
         Returns computed p-value ranges.
 
-        :param eval_x: data being evaluted for anomalies
+        :param eval_x: Data being evaluated for anomalies.
         :type eval_x: `np.ndarray`
-        :return: pvalue ranges ndarray
+        :return: P-value ranges.
         :rtype: `np.ndarray`
         """
 
@@ -107,14 +111,18 @@ class SubsetScanningDetector(ClassifierNeuralNetwork, ClassifierGradients, Class
 
         return pvalue_ranges
 
-    def scan(self, clean_x, adv_x, cleanssize=None, advssize=None, run=10):
+    def scan(self, clean_x, adv_x, clean_size=None, advs_size=None, run=10):
         """
-        Returns scores of highest scoring subsets
+        Returns scores of highest scoring subsets.
 
-        :param clean_x: data presumably without anomalies
-        :type clean_x `np.ndarray`
-        :param clean_x: data presumably with anomalies
-        :type adv_x `np.ndarray`
+        :param clean_x: Data presumably without anomalies.
+        :type clean_x: `np.ndarray`
+        :param adv_x: Data presumably with anomalies (adversarial samples).
+        :type adv_x: `np.ndarray`
+        :param clean_size:
+        :type clean_size: `int`
+        :param advs_size:
+        :param advs_size: `int`
         :return: (clean_scores, adv_scores, detectionpower)
         :rtype: `list`, `list`, `float`
         """
@@ -126,9 +134,9 @@ class SubsetScanningDetector(ClassifierNeuralNetwork, ClassifierGradients, Class
         clean_scores = []
         adv_scores = []
 
-        if cleanssize is None and advssize is None:
+        if clean_size is None and advs_size is None:
 
-            # individualscan
+            # Individual scan
             for j, _ in enumerate(clean_pvalranges):
                 best_score, _, _, _ = Scanner.fgss_individ_for_nets(clean_pvalranges[j])
                 clean_scores.append(best_score)
@@ -144,8 +152,8 @@ class SubsetScanningDetector(ClassifierNeuralNetwork, ClassifierGradients, Class
             for _ in range(run):
                 np.random.seed()
 
-                advchoice = np.random.choice(range(len_adv_x), advssize, replace=False)
-                cleanchoice = np.random.choice(range(len_clean_x), cleanssize, replace=False)
+                advchoice = np.random.choice(range(len_adv_x), advs_size, replace=False)
+                cleanchoice = np.random.choice(range(len_clean_x), clean_size, replace=False)
 
                 combined_pvals = np.concatenate((clean_pvalranges[cleanchoice], adv_pvalranges[advchoice]), axis=0)
 
@@ -172,7 +180,7 @@ class SubsetScanningDetector(ClassifierNeuralNetwork, ClassifierGradients, Class
         """
         raise NotImplementedError
 
-    def predict(self, x, logits=False, batch_size=128, **kwargs):
+    def predict(self, x, batch_size=128, **kwargs):
         """
         Perform detection of adversarial data and return prediction as tuple.
 
@@ -189,7 +197,6 @@ class SubsetScanningDetector(ClassifierNeuralNetwork, ClassifierGradients, Class
         """
         raise NotImplementedError
 
-    @property
     def nb_classes(self):
         return self.detector.nb_classes
 
@@ -209,10 +216,7 @@ class SubsetScanningDetector(ClassifierNeuralNetwork, ClassifierGradients, Class
         return self.detector.learning_phase
 
     def class_gradient(self, x, label=None, **kwargs):
-        logits = kwargs.get('logits')
-        if logits is None:
-            logits = False
-        return self.detector.class_gradient(x, label=label, logits=logits)
+        return self.detector.class_gradient(x, label=label)
 
     def loss_gradient(self, x, y, **kwargs):
         return self.detector.loss_gradient(x, y)

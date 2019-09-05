@@ -49,7 +49,7 @@ art_datagen = KerasDataGenerator(datagen.flow(x=x_train, y=y_train, batch_size=b
                                  size=x_train.shape[0], batch_size=batch_size)
 
 # Create a toy Keras CNN architecture & wrap it under ART interface
-classifier = KerasClassifier((0, 1), build_model(), use_logits=False)
+classifier = KerasClassifier(build_model(), clip_values=(0, 1), use_logits=False)
 
 # Create attack for adversarial trainer; here, we use 2 attacks, both crafting adv examples on the target model
 pgd = ProjectedGradientDescent(classifier, eps=8, eps_step=2, max_iter=10, num_random_init=20)

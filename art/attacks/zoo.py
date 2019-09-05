@@ -20,8 +20,7 @@ This module implements the zeroth-order optimization attack `ZooAttack`. This is
 variant of the Carlini and Wagner attack which uses ADAM coordinate descent to perform numerical estimation of
 gradients.
 
-Paper link:
-    https://arxiv.org/abs/1708.03999.
+| Paper link: https://arxiv.org/abs/1708.03999
 """
 from __future__ import absolute_import, division, print_function, unicode_literals
 
@@ -32,7 +31,7 @@ from scipy.ndimage import zoom
 
 from art import NUMPY_DTYPE
 from art.attacks.attack import Attack
-from art.utils import compute_success, get_labels_np_array
+from art.utils import compute_success, get_labels_np_array, check_and_transform_label_format
 
 logger = logging.getLogger(__name__)
 
@@ -41,7 +40,8 @@ class ZooAttack(Attack):
     """
     The black-box zeroth-order optimization attack from Pin-Yu Chen et al. (2018). This attack is a variant of the
     C&W attack which uses ADAM coordinate descent to perform numerical estimation of gradients.
-    Paper link: https://arxiv.org/abs/1708.03999.
+
+    | Paper link: https://arxiv.org/abs/1708.03999
     """
     attack_params = Attack.attack_params + ['confidence', 'targeted', 'learning_rate', 'max_iter',
                                             'binary_search_steps', 'initial_const', 'abort_early', 'use_resize',
@@ -174,19 +174,21 @@ class ZooAttack(Attack):
 
         :param x: An array with the original inputs to be attacked.
         :type x: `np.ndarray`
-        :param y: If `self.targeted` is true, then `y` represents the target labels. Otherwise, the targets are the
-                  original class labels.
+        :param y: Target values (class labels) one-hot-encoded of shape (nb_samples, nb_classes) or indices of shape
+                  (nb_samples,).
         :type y: `np.ndarray`
         :return: An array holding the adversarial examples.
         :rtype: `np.ndarray`
         """
+        y = check_and_transform_label_format(y, self.classifier.nb_classes)
+
         # Check that `y` is provided for targeted attacks
         if self.targeted and y is None:
             raise ValueError('Target labels `y` need to be provided for a targeted attack.')
 
         # No labels provided, use model prediction as correct class
         if y is None:
-            y = get_labels_np_array(self.classifier.predict(x, logits=False, batch_size=self.batch_size))
+            y = get_labels_np_array(self.classifier.predict(x, batch_size=self.batch_size))
 
         # Compute adversarial examples with implicit batching
         nb_batches = int(np.ceil(x.shape[0] / float(self.batch_size)))

@@ -22,7 +22,7 @@ import unittest
 
 import numpy as np
 
-from art.defences.gaussian_augmentation import GaussianAugmentation
+from art.defences import GaussianAugmentation
 from art.utils import master_seed
 
 logger = logging.getLogger('testLogger')

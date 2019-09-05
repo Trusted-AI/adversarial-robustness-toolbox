@@ -18,8 +18,7 @@
 """
 This module implements the feature squeezing defence in `FeatureSqueezing`.
 
-Paper link:
-    https://arxiv.org/abs/1704.01155
+| Paper link: https://arxiv.org/abs/1704.01155
 """
 from __future__ import absolute_import, division, print_function, unicode_literals
 
@@ -35,7 +34,8 @@ logger = logging.getLogger(__name__)
 class FeatureSqueezing(Preprocessor):
     """
     Reduces the sensibility of the features of a sample.
-    Paper link: https://arxiv.org/abs/1704.01155.
+
+    | Paper link: https://arxiv.org/abs/1704.01155
     """
     params = ['clip_values', 'bit_depth']
 

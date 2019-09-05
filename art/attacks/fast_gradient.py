@@ -19,8 +19,7 @@
 This module implements the Fast Gradient Method attack. This implementation includes the original Fast Gradient Sign
 Method attack and extends it to other norms, therefore it is called the Fast Gradient Method.
 
-Paper link:
-    https://arxiv.org/abs/1412.6572
+| Paper link: https://arxiv.org/abs/1412.6572
 """
 from __future__ import absolute_import, division, print_function, unicode_literals
 
@@ -31,7 +30,7 @@ import numpy as np
 from art import NUMPY_DTYPE
 from art.classifiers.classifier import ClassifierGradients
 from art.attacks.attack import Attack
-from art.utils import compute_success, get_labels_np_array, random_sphere, projection
+from art.utils import compute_success, get_labels_np_array, random_sphere, projection, check_and_transform_label_format
 
 logger = logging.getLogger(__name__)
 
@@ -41,7 +40,8 @@ class FastGradientMethod(Attack):
     This attack was originally implemented by Goodfellow et al. (2015) with the infinity norm (and is known as the "Fast
     Gradient Sign Method"). This implementation extends the attack to other norms, and is therefore called the Fast
     Gradient Method.
-    Paper link: https://arxiv.org/abs/1412.6572
+
+    | Paper link: https://arxiv.org/abs/1412.6572
     """
     attack_params = Attack.attack_params + ['norm', 'eps', 'eps_step', 'targeted', 'num_random_init', 'batch_size',
                                             'minimal']
@@ -130,14 +130,16 @@ class FastGradientMethod(Attack):
 
         :param x: An array with the original inputs.
         :type x: `np.ndarray`
-        :param y: The labels for the data `x`. Only provide this parameter if you'd like to use true
-                  labels when crafting adversarial samples. Otherwise, model predictions are used as labels to avoid the
-                  "label leaking" effect (explained in this paper: https://arxiv.org/abs/1611.01236). Default is `None`.
-                  Labels should be one-hot-encoded.
+        :param y: Target values (class labels) one-hot-encoded of shape (nb_samples, nb_classes) or indices of shape
+                  (nb_samples,). Only provide this parameter if you'd like to use true labels when crafting adversarial
+                  samples. Otherwise, model predictions are used as labels to avoid the "label leaking" effect
+                  (explained in this paper: https://arxiv.org/abs/1611.01236). Default is `None`.
         :type y: `np.ndarray`
         :return: An array holding the adversarial examples.
         :rtype: `np.ndarray`
         """
+        y = check_and_transform_label_format(y, self.classifier.nb_classes)
+
         if y is None:
             # Throw error if attack is targeted, but no targets are provided
             if self.targeted:
@@ -178,6 +180,7 @@ class FastGradientMethod(Attack):
     def set_params(self, **kwargs):
         """
         Take in a dictionary of parameters and applies attack-specific checks before saving them as attributes.
+
         :param norm: Order of the norm. Possible values: np.inf, 1 or 2.
         :type norm: `int` or `float`
         :param eps: Attack step size (input variation)
@@ -187,7 +190,7 @@ class FastGradientMethod(Attack):
         :param targeted: Should the attack target one specific class
         :type targeted: `bool`
         :param num_random_init: Number of random initialisations within the epsilon ball. For random_init=0 starting at
-            the original input.
+                                the original input.
         :type num_random_init: `int`
         :param batch_size: Batch size
         :type batch_size: `int`

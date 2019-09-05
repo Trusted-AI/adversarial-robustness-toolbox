@@ -19,8 +19,7 @@
 This module implements the boundary attack `BoundaryAttack`. This is a black-box attack which only requires class
 predictions.
 
-Paper link:
-    https://arxiv.org/abs/1712.04248
+| Paper link: https://arxiv.org/abs/1712.04248
 """
 from __future__ import absolute_import, division, print_function, unicode_literals
 
@@ -29,9 +28,8 @@ import logging
 import numpy as np
 
 from art import NUMPY_DTYPE
-from art.classifiers.classifier import ClassifierNeuralNetwork, ClassifierGradients
 from art.attacks.attack import Attack
-from art.utils import compute_success, to_categorical
+from art.utils import compute_success, to_categorical, check_and_transform_label_format
 
 logger = logging.getLogger(__name__)
 
@@ -40,7 +38,8 @@ class BoundaryAttack(Attack):
     """
     Implementation of the boundary attack from Brendel et al. (2018). This is a powerful black-box attack that
     only requires final class prediction.
-    Paper link: https://arxiv.org/abs/1712.04248
+
+    | Paper link: https://arxiv.org/abs/1712.04248
     """
     attack_params = Attack.attack_params + ['targeted', 'delta', 'epsilon', 'step_adapt', 'max_iter', 'num_trial',
                                             'sample_size', 'init_size', 'batch_size']
@@ -70,10 +69,6 @@ class BoundaryAttack(Attack):
         :type init_size: `int`
         """
         super(BoundaryAttack, self).__init__(classifier=classifier)
-        if not isinstance(classifier, ClassifierGradients):
-            raise (TypeError('For `' + self.__class__.__name__ + '` classifier must be an instance of '
-                             '`art.classifiers.classifier.ClassifierGradients`, the provided classifier is instance of '
-                             + str(classifier.__class__.__bases__) + '.'))
 
         params = {'targeted': targeted,
                   'delta': delta,
@@ -93,13 +88,16 @@ class BoundaryAttack(Attack):
 
         :param x: An array with the original inputs to be attacked.
         :type x: `np.ndarray`
-        :param y: If `self.targeted` is true, then `y` represents the target labels.
+        :param y: Target values (class labels) one-hot-encoded of shape (nb_samples, nb_classes) or indices of shape
+                  (nb_samples,). If `self.targeted` is true, then `y` represents the target labels.
         :type y: `np.ndarray` or `None`
         :param x_adv_init: Initial array to act as initial adversarial examples. Same shape as `x`.
         :type x_adv_init: `np.ndarray`
         :return: An array holding the adversarial examples.
         :rtype: `np.ndarray`
         """
+        y = check_and_transform_label_format(y, self.classifier.nb_classes, return_one_hot=False)
+
         # Get clip_min and clip_max from the classifier or infer them from data
         if hasattr(self.classifier, 'clip_values') and self.classifier.clip_values is not None:
             clip_min, clip_max = self.classifier.clip_values
@@ -124,8 +122,6 @@ class BoundaryAttack(Attack):
 
         # Some initial setups
         x_adv = x.astype(NUMPY_DTYPE)
-        if y is not None:
-            y = np.argmax(y, axis=1)
 
         # Generate the adversarial samples
         for ind, val in enumerate(x_adv):
@@ -137,7 +133,7 @@ class BoundaryAttack(Attack):
                                            adv_init=x_adv_init[ind], clip_min=clip_min, clip_max=clip_max)
 
         if y is not None:
-            y = to_categorical(y, self.classifier.nb_classes)
+            y = to_categorical(y, self.classifier.nb_classes())
 
         logger.info('Success rate of Boundary attack: %.2f%%',
                     100 * compute_success(self.classifier, x, y, x_adv, self.targeted, batch_size=self.batch_size))

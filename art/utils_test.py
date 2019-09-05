@@ -51,8 +51,6 @@ def _tf_weights_loader(dataset, weights_type, layer='DENSE', tf_version=1):
             weights = np.load(os.path.join(os.path.dirname(os.path.dirname(__file__)), 'models', filename))
             return tf.constant(weights, dtype)
 
-        return _tf_initializer
-
     elif tf_version == 2:
         def _tf_initializer(_, dtype):
             import tensorflow as tf
@@ -60,11 +58,10 @@ def _tf_weights_loader(dataset, weights_type, layer='DENSE', tf_version=1):
             weights = np.load(os.path.join(os.path.dirname(os.path.dirname(__file__)), 'models', filename))
             return tf.constant(weights, dtype)
 
-        return _tf_initializer
-
-
     else:
         raise ValueError('The Tensorflow version tf_version has to be wither 1 or 2.')
+
+    return _tf_initializer
 
 
 def _kr_weights_loader(dataset, weights_type, layer='DENSE'):
@@ -78,6 +75,12 @@ def _kr_weights_loader(dataset, weights_type, layer='DENSE'):
     return _kr_initializer
 
 
+def _kr_tf_weights_loader(dataset, weights_type, layer='DENSE'):
+    filename = str(weights_type) + '_' + str(layer) + '_' + str(dataset) + '.npy'
+    weights = np.load(os.path.join(os.path.dirname(os.path.dirname(__file__)), 'models', filename))
+    return weights
+
+
 def get_classifier_tf():
     """
     Standard Tensorflow classifier for unit testing.
@@ -88,10 +91,14 @@ def get_classifier_tf():
     number of epochs: 2
     optimizer: tf.train.AdamOptimizer
 
-    :return: TFClassifier, tf.Session()
+    :return: TensorflowClassifier, tf.Session()
     """
+    # pylint: disable=E0401
     import tensorflow as tf
-    from art.classifiers import TFClassifier
+    if tf.__version__[0] == '2':
+        import tensorflow.compat.v1 as tf
+        tf.disable_eager_execution()
+    from art.classifiers import TensorflowClassifier
 
     # Define input and output placeholders
     input_ph = tf.placeholder(tf.float32, shape=[None, 28, 28, 1])
@@ -102,7 +109,7 @@ def get_classifier_tf():
                             kernel_initializer=_tf_weights_loader('MNIST', 'W', 'CONV2D'),
                             bias_initializer=_tf_weights_loader('MNIST', 'B', 'CONV2D'))
     conv = tf.layers.max_pooling2d(conv, 4, 4)
-    flattened = tf.contrib.layers.flatten(conv)
+    flattened = tf.layers.flatten(conv)
 
     # Logits layer
     logits = tf.layers.dense(flattened, 10, kernel_initializer=_tf_weights_loader('MNIST', 'W', 'DENSE'),
@@ -118,8 +125,8 @@ def get_classifier_tf():
     sess.run(tf.global_variables_initializer())
 
     # Create the classifier
-    tfc = TFClassifier(clip_values=(0, 1), input_ph=input_ph, output=logits, labels_ph=output_ph, train=train,
-                       loss=loss, learning=None, sess=sess)
+    tfc = TensorflowClassifier(clip_values=(0, 1), input_ph=input_ph, output=logits, labels_ph=output_ph, train=train,
+                               loss=loss, learning=None, sess=sess)
 
     return tfc, sess
 
@@ -136,6 +143,7 @@ def get_classifier_tf_v2():
 
     :return: TensorflowV2Classifier,
     """
+    # pylint: disable=E0401
     import tensorflow as tf
     from tensorflow.keras import Model
     from tensorflow.keras.layers import Dense, Flatten, Conv2D, MaxPool2D
@@ -181,7 +189,7 @@ def get_classifier_tf_v2():
     return tfc
 
 
-def get_classifier_kr():
+def get_classifier_kr(loss_name='categorical_crossentropy'):
     """
     Standard Keras classifier for unit testing
 
@@ -211,8 +219,79 @@ def get_classifier_kr():
     model.add(Dense(10, activation='softmax', kernel_initializer=_kr_weights_loader('MNIST', 'W', 'DENSE'),
                     bias_initializer=_kr_weights_loader('MNIST', 'B', 'DENSE')))
 
-    model.compile(loss=keras.losses.categorical_crossentropy, optimizer=keras.optimizers.Adam(lr=0.01),
-                  metrics=['accuracy'])
+    if loss_name == 'categorical_hinge':
+        loss = keras.losses.categorical_hinge
+    elif loss_name == 'categorical_crossentropy':
+        loss = keras.losses.categorical_crossentropy
+
+    elif loss_name == 'sparse_categorical_crossentropy':
+        loss = keras.losses.sparse_categorical_crossentropy
+
+    elif loss_name == 'binary_crossentropy':
+        loss = keras.losses.binary_crossentropy
+
+    elif loss_name == 'kullback_leibler_divergence':
+        loss = keras.losses.kullback_leibler_divergence
+
+    elif loss_name == 'cosine_proximity':
+        loss = keras.losses.cosine_proximity
+    else:
+        raise ValueError('Loss name not recognised.')
+
+    model.compile(loss=loss, optimizer=keras.optimizers.Adam(lr=0.01), metrics=['accuracy'])
+
+    # Get classifier
+    krc = KerasClassifier(model, clip_values=(0, 1), use_logits=False)
+
+    return krc
+
+
+def get_classifier_kr_tf(loss_name='categorical_crossentropy'):
+    """
+    Standard Keras classifier for unit testing
+
+    The weights and biases are identical to the Tensorflow model in get_classifier_tf().
+
+    :return: KerasClassifier, tf.Session()
+    """
+    # pylint: disable=E0401
+    import tensorflow as tf
+    from tensorflow.keras.models import Sequential
+    from tensorflow.keras.layers import Dense, Flatten, Conv2D, MaxPooling2D
+
+    from art.classifiers import KerasClassifier
+
+    # Create simple CNN
+    model = Sequential()
+    model.add(Conv2D(1, kernel_size=(7, 7), activation='relu', input_shape=(28, 28, 1)))
+    model.layers[-1].set_weights(
+        [_kr_tf_weights_loader('MNIST', 'W', 'CONV2D'), _kr_tf_weights_loader('MNIST', 'B', 'CONV2D')])
+    model.add(MaxPooling2D(pool_size=(4, 4)))
+    model.add(Flatten())
+    model.add(Dense(10, activation='softmax'))
+    model.layers[-1].set_weights(
+        [_kr_tf_weights_loader('MNIST', 'W', 'DENSE'), _kr_tf_weights_loader('MNIST', 'B', 'DENSE')])
+
+    if loss_name == 'categorical_hinge':
+        loss = tf.keras.losses.categorical_hinge
+    elif loss_name == 'categorical_crossentropy':
+        loss = tf.keras.losses.categorical_crossentropy
+
+    elif loss_name == 'sparse_categorical_crossentropy':
+        loss = tf.keras.losses.sparse_categorical_crossentropy
+
+    elif loss_name == 'binary_crossentropy':
+        loss = tf.keras.losses.binary_crossentropy
+
+    elif loss_name == 'kullback_leibler_divergence':
+        loss = tf.keras.losses.kullback_leibler_divergence
+
+    elif loss_name == 'cosine_similarity':
+        loss = tf.keras.losses.cosine_similarity
+    else:
+        raise ValueError('Loss name not recognised.')
+
+    model.compile(loss=loss, optimizer=tf.keras.optimizers.Adam(lr=0.01), metrics=['accuracy'])
 
     # Get classifier
     krc = KerasClassifier(model, clip_values=(0, 1), use_logits=False)
@@ -284,6 +363,11 @@ def get_classifier_pt():
 
 
 def get_classifier_bb(defences=None):
+    """
+    Standard BlackBox classifier for unit testing
+
+    :return: BlackBoxClassifier
+    """
     from art.classifiers import BlackBoxClassifier
     from art.utils import to_categorical
 
@@ -333,41 +417,6 @@ def get_classifier_mx():
     return mxc
 
 
-def get_classifier_mx():
-    """
-    Standard MXNet classifier for unit testing
-
-    :return: MXNetClassifier
-    """
-    import mxnet
-    from mxnet.gluon.nn import Conv2D, MaxPool2D, Flatten, Dense
-    from art.classifiers import MXClassifier
-
-    model = mxnet.gluon.nn.Sequential()
-    with model.name_scope():
-        model.add(Conv2D(channels=1, kernel_size=7, activation='relu'),
-                  MaxPool2D(pool_size=4, strides=4),
-                  Flatten(),
-                  Dense(10))
-    model.initialize(init=mxnet.init.Xavier())
-
-    # Create optimizer
-    loss = mxnet.gluon.loss.SoftmaxCrossEntropyLoss()
-    trainer = mxnet.gluon.Trainer(model.collect_params(), 'sgd', {'learning_rate': 0.1})
-
-    # # Fit classifier
-    # classifier = MXClassifier(model=net, loss=loss, clip_values=(0, 1), input_shape=(1, 28, 28), nb_classes=10,
-    #                           optimizer=trainer)
-    # classifier.fit(x_train, y_train, batch_size=128, nb_epochs=2)
-    # cls.classifier = classifier
-
-    # Get classifier
-    mxc = MXClassifier(model=model, loss=loss, input_shape=(28, 28, 1), nb_classes=10, optimizer=trainer, ctx=None,
-                       channel_index=1, clip_values=(0, 1), defences=None, preprocessing=(0, 1))
-
-    return mxc
-
-
 # ------------------------------------------------------------------------------------------------ TEST MODELS FOR IRIS
 
 def get_iris_classifier_tf():
@@ -375,17 +424,23 @@ def get_iris_classifier_tf():
     Standard Tensorflow classifier for unit testing.
 
     The following hyper-parameters were used to obtain the weights and biases:
-    - learning_rate: 0.01
-    - batch size: 5
-    - number of epochs: 200
-    - optimizer: tf.train.AdamOptimizer
+
+    * learning_rate: 0.01
+    * batch size: 5
+    * number of epochs: 200
+    * optimizer: tf.train.AdamOptimizer
+
     The model is trained of 70% of the dataset, and 30% of the training set is used as validation split.
 
     :return: The trained model for Iris dataset and the session.
-    :rtype: `tuple(TFClassifier, tf.Session)`
+    :rtype: `tuple(TensorflowClassifier, tf.Session)`
     """
     import tensorflow as tf
-    from art.classifiers import TFClassifier
+    if tf.__version__[0] == '2':
+        # pylint: disable=E0401
+        import tensorflow.compat.v1 as tf
+        tf.disable_eager_execution()
+    from art.classifiers import TensorflowClassifier
 
     # Define input and output placeholders
     input_ph = tf.placeholder(tf.float32, shape=[None, 4])
@@ -407,8 +462,8 @@ def get_iris_classifier_tf():
     sess.run(tf.global_variables_initializer())
 
     # Train the classifier
-    tfc = TFClassifier(clip_values=(0, 1), input_ph=input_ph, output=logits, labels_ph=output_ph, train=None,
-                       loss=loss, learning=None, sess=sess, channel_index=1)
+    tfc = TensorflowClassifier(clip_values=(0, 1), input_ph=input_ph, output=logits, labels_ph=output_ph, train=None,
+                               loss=loss, learning=None, sess=sess, channel_index=1)
 
     return tfc, sess
 

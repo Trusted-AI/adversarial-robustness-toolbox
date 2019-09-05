@@ -44,7 +44,6 @@ class TestDecisionTreeAttack(unittest.TestCase):
         cls.y = digits.target
 
     def setUp(self):
-        # Set master seed
         master_seed(1234)
 
     def test_scikitlearn(self):

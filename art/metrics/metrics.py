@@ -69,7 +69,9 @@ def empirical_robustness(classifier, x, attack_name, attack_params=None):
     """
     Compute the Empirical Robustness of a classifier object over the sample `x` for a given adversarial crafting
     method `attack`. This is equivalent to computing the minimal perturbation that the attacker must introduce for a
-    successful attack. Paper link: https://arxiv.org/abs/1511.04599
+    successful attack.
+
+    | Paper link: https://arxiv.org/abs/1511.04599
 
     :param classifier: A trained model
     :type classifier: :class:`.Classifier`
@@ -165,7 +167,9 @@ def loss_sensitivity(classifier, x, y):
 def clever(classifier, x, nb_batches, batch_size, radius, norm, target=None, target_sort=False, c_init=1,
            pool_factor=10):
     """
-    Compute CLEVER score for an untargeted attack. Paper link: https://arxiv.org/abs/1801.10578
+    Compute CLEVER score for an untargeted attack.
+
+    | Paper link: https://arxiv.org/abs/1801.10578
 
     :param classifier: A trained model.
     :type classifier: :class:`.Classifier`
@@ -192,14 +196,14 @@ def clever(classifier, x, nb_batches, batch_size, radius, norm, target=None, tar
     :rtype: array of `float`. None if target classes is predicted
     """
     # Find the predicted class first
-    y_pred = classifier.predict(np.array([x]), logits=False)
+    y_pred = classifier.predict(np.array([x]))
     pred_class = np.argmax(y_pred, axis=1)[0]
     if target is None:
         # Get a list of untargeted classes
         if target_sort:
             target_classes = np.argsort(y_pred)[0][:-1]
         else:
-            target_classes = [i for i in range(classifier.nb_classes) if i != pred_class]
+            target_classes = [i for i in range(classifier.nb_classes()) if i != pred_class]
     elif isinstance(target, (int, np.integer)):
         target_classes = [target]
     else:
@@ -217,7 +221,9 @@ def clever(classifier, x, nb_batches, batch_size, radius, norm, target=None, tar
 
 def clever_u(classifier, x, nb_batches, batch_size, radius, norm, c_init=1, pool_factor=10):
     """
-    Compute CLEVER score for an untargeted attack. Paper link: https://arxiv.org/abs/1801.10578
+    Compute CLEVER score for an untargeted attack.
+
+    | Paper link: https://arxiv.org/abs/1801.10578
 
     :param classifier: A trained model.
     :type classifier: :class:`.Classifier`
@@ -239,9 +245,9 @@ def clever_u(classifier, x, nb_batches, batch_size, radius, norm, c_init=1, pool
     :rtype: `float`
     """
     # Get a list of untargeted classes
-    y_pred = classifier.predict(np.array([x]), logits=True)
+    y_pred = classifier.predict(np.array([x]))
     pred_class = np.argmax(y_pred, axis=1)[0]
-    untarget_classes = [i for i in range(classifier.nb_classes) if i != pred_class]
+    untarget_classes = [i for i in range(classifier.nb_classes()) if i != pred_class]
 
     # Compute CLEVER score for each untargeted class
     score_list = []
@@ -254,7 +260,9 @@ def clever_u(classifier, x, nb_batches, batch_size, radius, norm, c_init=1, pool
 
 def clever_t(classifier, x, target_class, nb_batches, batch_size, radius, norm, c_init=1, pool_factor=10):
     """
-    Compute CLEVER score for a targeted attack. Paper link: https://arxiv.org/abs/1801.10578
+    Compute CLEVER score for a targeted attack.
+
+    | Paper link: https://arxiv.org/abs/1801.10578
 
     :param classifier: A trained model
     :type classifier: :class:`.Classifier`
@@ -278,7 +286,7 @@ def clever_t(classifier, x, target_class, nb_batches, batch_size, radius, norm, 
     :rtype: `float`
     """
     # Check if the targeted class is different from the predicted class
-    y_pred = classifier.predict(np.array([x]), logits=True)
+    y_pred = classifier.predict(np.array([x]))
     pred_class = np.argmax(y_pred, axis=1)[0]
     if target_class == pred_class:
         raise ValueError("The targeted class is the predicted class.")
@@ -315,7 +323,7 @@ def clever_t(classifier, x, target_class, nb_batches, batch_size, radius, norm, 
         sample_xs = rand_pool[np.random.choice(pool_factor * batch_size, batch_size)]
 
         # Compute gradients
-        grads = classifier.class_gradient(sample_xs, logits=True)
+        grads = classifier.class_gradient(sample_xs)
         if np.isnan(grads).any():
             raise Exception("The classifier results NaN gradients.")
 
@@ -328,7 +336,7 @@ def clever_t(classifier, x, target_class, nb_batches, batch_size, radius, norm, 
     [_, loc, _] = weibull_min.fit(-np.array(grad_norm_set), c_init, optimizer=scipy_optimizer)
 
     # Compute function value
-    values = classifier.predict(np.array([x]), logits=True)
+    values = classifier.predict(np.array([x]))
     value = values[:, pred_class] - values[:, target_class]
 
     # Compute scores

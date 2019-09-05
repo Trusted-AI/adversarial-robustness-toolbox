@@ -69,9 +69,7 @@ class TestBlackBoxClassifier(unittest.TestCase):
         classifier = get_classifier_bb()
         predictions = classifier.predict(self.x_test)
         self.assertEqual(predictions.shape, self.y_test.shape)
-
-        self.assertEqual(classifier.nb_classes, 10)
-
+        self.assertEqual(classifier.nb_classes(), 10)
         self.assertEqual(predictions.shape, self.y_test.shape)
 
     def test_defences_predict(self):

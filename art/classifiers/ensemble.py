@@ -76,16 +76,16 @@ class EnsembleClassifier(ClassifierNeuralNetwork, ClassifierGradients, Classifie
                 raise ValueError('Incompatible `clip_values` between classifiers in the ensemble. Found %s and %s.'
                                  % (str(clip_values), str(classifier.clip_values)))
 
-            if classifier.nb_classes != classifiers[0].nb_classes:
+            if classifier.nb_classes() != classifiers[0].nb_classes():
                 raise ValueError('Incompatible output shapes between classifiers in the ensemble. Found %s and %s.'
-                                 % (str(classifier.nb_classes), str(classifiers[0].nb_classes)))
+                                 % (str(classifier.nb_classes()), str(classifiers[0].nb_classes())))
 
             if classifier.input_shape != classifiers[0].input_shape:
                 raise ValueError('Incompatible input shapes between classifiers in the ensemble. Found %s and %s.'
                                  % (str(classifier.input_shape), str(classifiers[0].input_shape)))
 
         self._input_shape = classifiers[0].input_shape
-        self._nb_classes = classifiers[0].nb_classes
+        self._nb_classes = classifiers[0].nb_classes()
 
         # Set weights for classifiers
         if classifier_weights is None:
@@ -94,16 +94,15 @@ class EnsembleClassifier(ClassifierNeuralNetwork, ClassifierGradients, Classifie
 
         self._classifiers = classifiers
 
-    def predict(self, x, logits=False, batch_size=128, **kwargs):
+    def predict(self, x, batch_size=128, **kwargs):
         """
-        Perform prediction for a batch of inputs. Predictions from classifiers are aggregated at probabilities level,
-        as logits are not comparable between models. If logits prediction was specified, probabilities are converted
-        back to logits after aggregation.
+        Perform prediction for a batch of inputs. Predictions from classifiers should only be aggregated if they all
+        have the same type of output (e.g., probabilities). Otherwise, use `raw=True` to get predictions from all
+        models without aggregation. The same option should be used for logits output, as logits are not comparable
+        between models and should not be aggregated.
 
         :param x: Test set.
         :type x: `np.ndarray`
-        :param logits: `True` if the prediction should be done at the logits layer.
-        :type logits: `bool`
         :param raw: Return the individual classifier raw outputs (not aggregated).
         :type raw: `bool`
         :return: Array of predictions of shape `(nb_inputs, self.nb_classes)`, or of shape
@@ -115,18 +114,13 @@ class EnsembleClassifier(ClassifierNeuralNetwork, ClassifierGradients, Classifie
         else:
             raise ValueError('Missing argument `raw`.')
 
-        preds = np.array([self._classifier_weights[i] * self._classifiers[i].predict(x, raw and logits)
+        preds = np.array([self._classifier_weights[i] * self._classifiers[i].predict(x)
                           for i in range(self._nb_classifiers)])
         if raw:
             return preds
 
         # Aggregate predictions only at probabilities level, as logits are not comparable between models
         var_z = np.sum(preds, axis=0)
-
-        # Convert back to logits if needed
-        if logits:
-            eps = 10e-8
-            var_z = np.log(np.clip(var_z, eps, 1. - eps))
         return var_z
 
     def fit(self, x, y, batch_size=128, nb_epochs=20, **kwargs):
@@ -135,7 +129,8 @@ class EnsembleClassifier(ClassifierNeuralNetwork, ClassifierGradients, Classifie
 
         :param x: Training data.
         :type x: `np.ndarray`
-        :param y: Labels, one-vs-rest encoding.
+        :param y: Target values (class labels) one-hot-encoded of shape (nb_samples, nb_classes) or indices of shape
+                  (nb_samples,).
         :type y: `np.ndarray`
         :param batch_size: Size of batches.
         :type batch_size: `int`
@@ -208,8 +203,6 @@ class EnsembleClassifier(ClassifierNeuralNetwork, ClassifierGradients, Classifie
         :param label: Index of a specific per-class derivative. If `None`, then gradients for all
                       classes will be computed.
         :type label: `int`
-        :param logits: `True` if the prediction should be done at the logits layer.
-        :type logits: `bool`
         :param raw: Return the individual classifier raw outputs (not aggregated).
         :type raw: `bool`
         :return: Array of gradients of input features w.r.t. each class in the form
@@ -223,13 +216,8 @@ class EnsembleClassifier(ClassifierNeuralNetwork, ClassifierGradients, Classifie
         else:
             raise ValueError('Missing argument `raw`.')
 
-        logits = kwargs.get('logits')
-        if logits is None:
-            logits = False
-
-        grads = np.array(
-            [self._classifier_weights[i] * self._classifiers[i].class_gradient(x, label=label, logits=logits) for i in
-             range(self._nb_classifiers)])
+        grads = np.array([self._classifier_weights[i] * self._classifiers[i].class_gradient(x, label)
+                          for i in range(self._nb_classifiers)])
         if raw:
             return grads
         return np.sum(grads, axis=0)
@@ -240,7 +228,8 @@ class EnsembleClassifier(ClassifierNeuralNetwork, ClassifierGradients, Classifie
 
         :param x: Sample input with shape as expected by the model.
         :type x: `np.ndarray`
-        :param y: Correct labels, one-vs-rest encoding.
+        :param y: Target values (class labels) one-hot-encoded of shape (nb_samples, nb_classes) or indices of shape
+                  (nb_samples,).
         :type y: `np.ndarray`
         :param raw: Return the individual classifier raw outputs (not aggregated).
         :type raw: `bool`

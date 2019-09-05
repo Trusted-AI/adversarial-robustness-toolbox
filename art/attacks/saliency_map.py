@@ -18,8 +18,7 @@
 """
 This module implements the Jacobian-based Saliency Map attack `SaliencyMapMethod`. This is a white-box attack.
 
-Paper link:
-    https://arxiv.org/pdf/1511.07528.pdf
+| Paper link: https://arxiv.org/abs/1511.07528
 """
 from __future__ import absolute_import, division, print_function, unicode_literals
 
@@ -30,6 +29,7 @@ import numpy as np
 from art import NUMPY_DTYPE
 from art.classifiers.classifier import ClassifierGradients
 from art.attacks.attack import Attack
+from art.utils import check_and_transform_label_format
 
 logger = logging.getLogger(__name__)
 
@@ -37,7 +37,8 @@ logger = logging.getLogger(__name__)
 class SaliencyMapMethod(Attack):
     """
     Implementation of the Jacobian-based Saliency Map Attack (Papernot et al. 2016).
-    Paper link: https://arxiv.org/pdf/1511.07528.pdf
+
+    | Paper link: https://arxiv.org/abs/1511.07528
     """
     attack_params = Attack.attack_params + ['theta', 'gamma', 'batch_size']
 
@@ -69,11 +70,14 @@ class SaliencyMapMethod(Attack):
 
         :param x: An array with the original inputs to be attacked.
         :type x: `np.ndarray`
-        :param y: Target values if the attack is targeted
+        :param y: Target values (class labels) one-hot-encoded of shape `(nb_samples, nb_classes)` or indices of shape
+                  `(nb_samples,)`.
         :type y: `np.ndarray`
         :return: An array holding the adversarial examples.
         :rtype: `np.ndarray`
         """
+        y = check_and_transform_label_format(y, self.classifier.nb_classes)
+
         # Initialize variables
         dims = list(x.shape[1:])
         self._nb_features = np.product(dims)
@@ -84,7 +88,7 @@ class SaliencyMapMethod(Attack):
         if y is None:
             # Randomly choose target from the incorrect classes for each sample
             from art.utils import random_targets
-            targets = np.argmax(random_targets(preds, self.classifier.nb_classes), axis=1)
+            targets = np.argmax(random_targets(preds, self.classifier.nb_classes()), axis=1)
         else:
             targets = np.argmax(y, axis=1)
 
@@ -197,7 +201,7 @@ class SaliencyMapMethod(Attack):
         :return: The top 2 coefficients in `search_space` that maximize / minimize the saliency map
         :rtype: `np.ndarray`
         """
-        grads = self.classifier.class_gradient(x, label=target, logits=False)
+        grads = self.classifier.class_gradient(x, label=target)
         grads = np.reshape(grads, (-1, self._nb_features))
 
         # Remove gradients for already used features

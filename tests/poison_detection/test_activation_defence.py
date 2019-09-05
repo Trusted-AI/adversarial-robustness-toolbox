@@ -20,6 +20,7 @@ from __future__ import absolute_import, division, print_function, unicode_litera
 import logging
 import unittest
 
+import tensorflow as tf
 import numpy as np
 
 from art.poison_detection import ActivationDefence
@@ -30,9 +31,9 @@ logger = logging.getLogger('testLogger')
 NB_TRAIN, NB_TEST, BATCH_SIZE = 300, 10, 128
 
 
+@unittest.skipIf(tf.__version__[0] == '2', reason='Skip unittests for Tensorflow v2 until Keras supports Tensorflow'
+                                                  ' v2 as backend.')
 class TestActivationDefence(unittest.TestCase):
-
-    # python -m unittest discover art/ -p 'activation_defence_unittest.py'
 
     @classmethod
     def setUpClass(cls):
@@ -91,7 +92,7 @@ class TestActivationDefence(unittest.TestCase):
         # Get MNIST
         (x_train, _), (_, _), (_, _) = self.mnist
 
-        n_classes = self.classifier.nb_classes
+        n_classes = self.classifier.nb_classes()
         for nb_clusters in range(2, 5):
             clusters_by_class, _ = self.defence.cluster_activations(nb_clusters=nb_clusters)
 
@@ -157,7 +158,7 @@ class TestActivationDefence(unittest.TestCase):
         self.defence.analyze_clusters(cluster_analysis='silhouette-scores')
 
         report, dist_clean_by_class = self.defence.analyze_clusters(cluster_analysis='distance')
-        n_classes = self.classifier.nb_classes
+        n_classes = self.classifier.nb_classes()
         self.assertEqual(n_classes, len(dist_clean_by_class))
 
         # Check right amount of data
@@ -167,7 +168,7 @@ class TestActivationDefence(unittest.TestCase):
         self.assertEqual(len(x_train), n_dp)
 
         report, sz_clean_by_class = self.defence.analyze_clusters(cluster_analysis='smaller')
-        n_classes = self.classifier.nb_classes
+        n_classes = self.classifier.nb_classes()
         self.assertEqual(n_classes, len(sz_clean_by_class))
 
         # Check right amount of data

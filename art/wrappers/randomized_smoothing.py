@@ -18,9 +18,7 @@
 """
 This module implements Randomized Smoothing applied to classifier predictions.
 
-Paper link:
-    https://arxiv.org/pdf/1902.02918.pdf
-
+| Paper link: https://arxiv.org/abs/1902.02918
 """
 from __future__ import absolute_import, division, print_function, unicode_literals
 
@@ -37,7 +35,9 @@ logger = logging.getLogger(__name__)
 class RandomizedSmoothing(ClassifierWrapper, ClassifierGradients, Classifier):
     """
     Implementation of Randomized Smoothing applied to classifier predictions and gradients, as introduced
-    in Cohen et al. (2019). Paper link: https://arxiv.org/pdf/1902.02918.pdf
+    in Cohen et al. (2019).
+
+    | Paper link: https://arxiv.org/abs/1902.02918
     """
 
     def __init__(self, classifier, sample_size, scale=0.1, alpha=0.001):

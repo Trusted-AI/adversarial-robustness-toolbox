@@ -18,8 +18,7 @@
 """
 This module implements methods performing poisoning detection based on activations clustering.
 
-Paper link:
-    https://arxiv.org/abs/1811.03728
+| Paper link: https://arxiv.org/abs/1811.03728
 """
 from __future__ import absolute_import, division, print_function, unicode_literals
 
@@ -31,6 +30,7 @@ import numpy as np
 from art.poison_detection.clustering_analyzer import ClusteringAnalyzer
 from art.poison_detection.ground_truth_evaluator import GroundTruthEvaluator
 from art.poison_detection.poison_filtering_defence import PoisonFilteringDefence
+from art.poison_detection.utils import segment_by_class
 from art.visualization import create_sprite, save_image, plot_3d
 
 logger = logging.getLogger(__name__)
@@ -39,7 +39,8 @@ logger = logging.getLogger(__name__)
 class ActivationDefence(PoisonFilteringDefence):
     """
     Method from Chen et al., 2018 performing poisoning detection based on activations clustering.
-    Paper link: https://arxiv.org/abs/1811.03728
+
+    | Paper link: https://arxiv.org/abs/1811.03728
     """
     defence_params = ['nb_clusters', 'clustering_method', 'nb_dims', 'reduce', 'cluster_analysis']
     valid_clustering = ['KMeans']
@@ -209,7 +210,7 @@ class ActivationDefence(PoisonFilteringDefence):
         """
         Revert poison attack by continue training the current classifier with `x`, `y_fix`. `test_set_split` determines
         the percentage in x that will be used as training set, while `1-test_set_split` determines how many data points
-         to use for test set.
+        to use for test set.
 
         :param classifier: Classifier to be fixed
         :type classifier: :class:`.Classifier`
@@ -368,9 +369,9 @@ class ActivationDefence(PoisonFilteringDefence):
         :type folder: `str`
         :param kwargs: a dictionary of cluster-analysis-specific parameters
         :type kwargs: `dict`
-        :return: sprites_by_class: Array with sprite images sprites_by_class, where sprites_by_class[i][j] contains the
-                 sprite of class i cluster j.
-        :rtype: sprites_by_class: `np.ndarray`
+        :return: Array with sprite images sprites_by_class, where sprites_by_class[i][j] contains the
+                                  sprite of class i cluster j.
+        :rtype: `np.ndarray`
         """
         self.set_params(**kwargs)
 
@@ -378,7 +379,7 @@ class ActivationDefence(PoisonFilteringDefence):
             self.cluster_activations()
 
         x_raw_by_class = self._segment_by_class(x_raw, self.y_train)
-        x_raw_by_cluster = [[[] for _ in range(self.nb_clusters)] for y in range(self.classifier.nb_classes)]
+        x_raw_by_cluster = [[[] for _ in range(self.nb_clusters)] for y in range(self.classifier.nb_classes())]
 
         # Get all data in x_raw in the right cluster
         for n_class, cluster in enumerate(self.clusters_by_class):
@@ -386,7 +387,7 @@ class ActivationDefence(PoisonFilteringDefence):
                 x_raw_by_cluster[n_class][assigned_cluster].append(x_raw_by_class[n_class][j])
 
         # Now create sprites:
-        sprites_by_class = [[[] for _ in range(self.nb_clusters)] for y in range(self.classifier.nb_classes)]
+        sprites_by_class = [[[] for _ in range(self.nb_clusters)] for y in range(self.classifier.nb_classes())]
         for i, class_i in enumerate(x_raw_by_cluster):
             for j, images_cluster in enumerate(class_i):
                 title = 'Class_' + str(i) + '_cluster_' + str(j) + '_clusterSize_' + str(len(images_cluster))
@@ -472,7 +473,7 @@ class ActivationDefence(PoisonFilteringDefence):
         nb_layers = len(self.classifier.layer_names)
         activations = self.classifier.get_activations(self.x_train, layer=nb_layers - 1)
 
-        # wrong way to get activations activations = self.classifier.predict(self.x_train, logits=True)
+        # wrong way to get activations activations = self.classifier.predict(self.x_train)
         nodes_last_layer = np.shape(activations)[1]
 
         if nodes_last_layer <= self.TOO_SMALL_ACTIVATIONS:

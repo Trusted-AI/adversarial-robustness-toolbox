@@ -10,4 +10,5 @@ lightgbm
 GPy
 SciPy
 # Comment out because of compatibility issues with numpy versions
-# catbooststatsmodels
+# catboost
+statsmodels

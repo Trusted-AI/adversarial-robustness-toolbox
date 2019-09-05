@@ -36,7 +36,8 @@ class QueryEfficientBBGradientEstimation(ClassifierWrapper, ClassifierGradients,
     """
     Implementation of Query-Efficient Black-box Adversarial Examples. The attack approximates the gradient by
     maximizing the loss function over samples drawn from random Gaussian noise around the input.
-    Paper link: https://arxiv.org/abs/1712.07113
+
+    | Paper link: https://arxiv.org/abs/1712.07113
     """
     attack_params = ['num_basis', 'sigma', 'round_samples']
 
@@ -150,21 +151,28 @@ class QueryEfficientBBGradientEstimation(ClassifierWrapper, ClassifierGradients,
         grads = self._apply_preprocessing_normalization_gradient(np.array(grads))
         return grads
 
-    def _wrap_predict(self, x, logits=False, batch_size=128):
+    def _wrap_predict(self, x, batch_size=128):
         """
         Perform prediction for a batch of inputs. Rounds results first.
 
         :param x: Test set.
         :type x: `np.ndarray`
-        :param logits: `True` if the prediction should be done at the logits layer.
-        :type logits: `bool`
         :param batch_size: Size of batches.
         :type batch_size: `int`
         :return: Array of predictions of shape `(nb_inputs, self.nb_classes)`.
         :rtype: `np.ndarray`
         """
-        return self._predict(clip_and_round(x, self.clip_values, self.round_samples),
-                             **{'logits': logits, 'batch_size': batch_size})
+        return self._predict(clip_and_round(x, self.clip_values, self.round_samples), **{'batch_size': batch_size})
+
+    def nb_classes(self):
+        """
+        Return the number of output classes.
+
+        :return: Number of classes in the data.
+        :rtype: `int`
+        """
+        # pylint: disable=W0212
+        return self.classifier.nb_classes()
 
     def nb_classes(self):
         """

@@ -95,7 +95,8 @@ class MXClassifier(ClassifierNeuralNetwork, ClassifierGradients, Classifier):
 
         :param x: Training data.
         :type x: `np.ndarray`
-        :param y: Labels, one-vs-rest encoding.
+        :param y: Target values (class labels) one-hot-encoded of shape (nb_samples, nb_classes) or indices of shape
+                  (nb_samples,).
         :type y: `np.ndarray`
         :param batch_size: Size of batches.
         :type batch_size: `int`
@@ -178,14 +179,12 @@ class MXClassifier(ClassifierNeuralNetwork, ClassifierGradients, Classifier):
             # Fit a generic data generator through the API
             super(MXClassifier, self).fit_generator(generator, nb_epochs=nb_epochs)
 
-    def predict(self, x, logits=False, batch_size=128, **kwargs):
+    def predict(self, x, batch_size=128, **kwargs):
         """
         Perform prediction for a batch of inputs.
 
         :param x: Test set.
         :type x: `np.ndarray`
-        :param logits: `True` if the prediction should be done at the logits layer.
-        :type logits: `bool`
         :param batch_size: Size of batches.
         :type batch_size: `int`
         :return: Array of predictions of shape `(nb_inputs, self.nb_classes)`.
@@ -199,7 +198,7 @@ class MXClassifier(ClassifierNeuralNetwork, ClassifierGradients, Classifier):
         x_preprocessed, _ = self._apply_preprocessing(x, y=None, fit=False)
 
         # Run prediction with batch processing
-        results = np.zeros((x_preprocessed.shape[0], self.nb_classes), dtype=np.float32)
+        results = np.zeros((x_preprocessed.shape[0], self.nb_classes()), dtype=np.float32)
         num_batch = int(np.ceil(len(x_preprocessed) / float(batch_size)))
         for m in range(num_batch):
             # Batch indexes
@@ -210,9 +209,6 @@ class MXClassifier(ClassifierNeuralNetwork, ClassifierGradients, Classifier):
             x_batch.attach_grad()
             with mx.autograd.record(train_mode=train_mode):
                 preds = self._model(x_batch)
-
-            if logits is False:
-                preds = preds.softmax()
 
             results[begin:end] = preds.asnumpy()
 
@@ -229,8 +225,6 @@ class MXClassifier(ClassifierNeuralNetwork, ClassifierGradients, Classifier):
                       match the batch size of `x`, and each value will be used as target for its corresponding sample in
                       `x`. If `None`, then gradients for all classes will be computed for each sample.
         :type label: `int` or `list`
-        :param logits: `True` if the prediction should be done at the logits layer.
-        :type logits: `bool`
         :return: Array of gradients of input features w.r.t. each class in the form
                  `(batch_size, nb_classes, input_shape)` when computing for all classes, otherwise shape becomes
                  `(batch_size, 1, input_shape)` when `label` parameter is specified.
@@ -243,8 +237,8 @@ class MXClassifier(ClassifierNeuralNetwork, ClassifierGradients, Classifier):
             logits = False
 
         # Check value of label for computing gradients
-        if not (label is None or (isinstance(label, (int, np.integer)) and label in range(self.nb_classes))
-                or (isinstance(label, np.ndarray) and len(label.shape) == 1 and (label < self.nb_classes).all()
+        if not (label is None or (isinstance(label, (int, np.integer)) and label in range(self.nb_classes()))
+                or (isinstance(label, np.ndarray) and len(label.shape) == 1 and (label < self.nb_classes()).all()
                     and label.shape[0] == x.shape[0])):
             raise ValueError('Label %s is out of range.' % str(label))
 
@@ -258,11 +252,8 @@ class MXClassifier(ClassifierNeuralNetwork, ClassifierGradients, Classifier):
 
         if label is None:
             with mx.autograd.record(train_mode=False):
-                if logits is True:
-                    preds = self._model(x_preprocessed)
-                else:
-                    preds = self._model(x_preprocessed).softmax()
-                class_slices = [preds[:, i] for i in range(self.nb_classes)]
+                preds = self._model(x_preprocessed)
+                class_slices = [preds[:, i] for i in range(self.nb_classes())]
 
             grads = []
             for slice_ in class_slices:
@@ -272,10 +263,7 @@ class MXClassifier(ClassifierNeuralNetwork, ClassifierGradients, Classifier):
             grads = np.swapaxes(np.array(grads), 0, 1)
         elif isinstance(label, (int, np.integer)):
             with mx.autograd.record(train_mode=train_mode):
-                if logits is True:
-                    preds = self._model(x_preprocessed)
-                else:
-                    preds = self._model(x_preprocessed).softmax()
+                preds = self._model(x_preprocessed)
                 class_slice = preds[:, label]
 
             class_slice.backward()
@@ -284,10 +272,7 @@ class MXClassifier(ClassifierNeuralNetwork, ClassifierGradients, Classifier):
             unique_labels = list(np.unique(label))
 
             with mx.autograd.record(train_mode=train_mode):
-                if logits is True:
-                    preds = self._model(x_preprocessed)
-                else:
-                    preds = self._model(x_preprocessed).softmax()
+                preds = self._model(x_preprocessed)
                 class_slices = [preds[:, i] for i in unique_labels]
 
             grads = []
@@ -311,7 +296,8 @@ class MXClassifier(ClassifierNeuralNetwork, ClassifierGradients, Classifier):
 
         :param x: Sample input with shape as expected by the model.
         :type x: `np.ndarray`
-        :param y: Correct labels, one-vs-rest encoding.
+        :param y: Target values (class labels) one-hot-encoded of shape (nb_samples, nb_classes) or indices of shape
+                  (nb_samples,).
         :type y: `np.ndarray`
         :return: Array of gradients of the same shape as `x`.
         :rtype: `np.ndarray`
@@ -453,7 +439,7 @@ class MXClassifier(ClassifierNeuralNetwork, ClassifierGradients, Classifier):
         repr_ = "%s(model=%r, loss=%r, input_shape=%r, nb_classes=%r, optimizer=%r, ctx=%r, channel_index=%r, " \
                 "clip_values=%r, defences=%r, preprocessing=%r)" \
                 % (self.__module__ + '.' + self.__class__.__name__,
-                   self._model, self._loss, self.input_shape, self.nb_classes, self._optimizer, self._ctx,
+                   self._model, self._loss, self.input_shape, self.nb_classes(), self._optimizer, self._ctx,
                    self.channel_index, self.clip_values, self.defences, self.preprocessing)
 
         return repr_
