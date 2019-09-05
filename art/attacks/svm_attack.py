@@ -66,12 +66,12 @@ class SVMAttack(Attack):
 
         if not isinstance(classifier, ScikitlearnSVC):
             raise TypeError('Classifier must be a SVC')
-        if isinstance(self.classifier.model, LinearSVC):
-            self.classifier = ScikitlearnSVC(model=SVC(C=self.classifier.model.C, kernel='linear'),
+        if isinstance(self.classifier._model, LinearSVC):
+            self.classifier = ScikitlearnSVC(model=SVC(C=self.classifier._model.C, kernel='linear'),
                                              clip_values=self.classifier.clip_values)
             self.classifier.fit(x_train, y_train)
-        elif not isinstance(self.classifier.model, SVC):
-            raise NotImplementedError("Model type '{}' not yet supported".format(type(self.classifier.model)))
+        elif not isinstance(self.classifier._model, SVC):
+            raise NotImplementedError("Model type '{}' not yet supported".format(type(self.classifier._model)))
 
         self.step = step
         self.eps = eps
@@ -112,6 +112,7 @@ class SVMAttack(Attack):
             train_data = np.vstack([train_data, poison])
             train_labels = np.vstack([train_labels, attack_label])
 
+        self.classifier = classifier
         return np.array(all_poison).reshape((num_poison, num_features))
 
     def set_params(self, **kwargs):
@@ -160,7 +161,7 @@ def generate_attack_point(classifier, x_train, y_train, x_val, y_val, x_attack, 
     :return: a tuple containing the final attack point and the poisoned model
     :rtype: (`np.ndarray`, `art.classifiers.ScikitlearnSVC`)
     """
-    poisoned_model = SVC(kernel=classifier.model.kernel, probability=classifier.model.probability)
+    poisoned_model = SVC(kernel=classifier._model.kernel, probability=classifier._model.probability)
     y_t = np.argmax(y_train, axis=1)
     poisoned_model.fit(x_train, y_t)
     y_a = np.argmax(y_attack)
