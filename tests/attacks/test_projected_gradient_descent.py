@@ -23,7 +23,7 @@ import unittest
 import keras.backend as k
 import numpy as np
 
-from art.attacks.projected_gradient_descent import ProjectedGradientDescent
+from art.attacks import ProjectedGradientDescent
 from art.classifiers import KerasClassifier
 from art.utils import load_dataset, get_labels_np_array, master_seed, random_targets
 from art.utils_test import get_classifier_tf, get_classifier_kr, get_classifier_pt
@@ -47,7 +47,7 @@ class TestPGD(unittest.TestCase):
         cls.mnist = (x_train, y_train), (x_test, y_test)
 
         # Keras classifier
-        cls.classifier_k, sess = get_classifier_kr()
+        cls.classifier_k = get_classifier_kr()
 
         scores = cls.classifier_k._model.evaluate(x_train, y_train)
         logger.info('[Keras, MNIST] Accuracy on training set: %.2f%%', scores[1] * 100)
@@ -168,7 +168,8 @@ class TestPGD(unittest.TestCase):
 
         self.assertIn('For `ProjectedGradientDescent` classifier must be an instance of '
                       '`art.classifiers.classifier.ClassifierGradients`, the provided classifier is instance of '
-                      '(<class \'art.classifiers.scikitklearn.ScikitlearnClassifier\'>,).', str(context.exception))
+                      '(<class \'art.classifiers.scikitlearn.ScikitlearnClassifier\'>,).', str(context.exception))
+
 
 class TestPGDVectors(unittest.TestCase):
     @classmethod

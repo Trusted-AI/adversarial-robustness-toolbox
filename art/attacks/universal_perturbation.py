@@ -19,8 +19,7 @@
 This module implements the universal adversarial perturbations attack `UniversalPerturbation`. This is a white-box
 attack.
 
-Paper link:
-    https://arxiv.org/abs/1610.08401
+| Paper link: https://arxiv.org/abs/1610.08401
 """
 from __future__ import absolute_import, division, print_function, unicode_literals
 
@@ -40,7 +39,8 @@ class UniversalPerturbation(Attack):
     """
     Implementation of the attack from Moosavi-Dezfooli et al. (2016). Computes a fixed perturbation to be applied to all
     future inputs. To this end, it can use any adversarial attack method.
-    Paper link: https://arxiv.org/abs/1610.08401
+
+    | Paper link: https://arxiv.org/abs/1610.08401
     """
     attacks_dict = {'carlini': 'art.attacks.carlini.CarliniL2Method',
                     'carlini_inf': 'art.attacks.carlini.CarliniLInfMethod',

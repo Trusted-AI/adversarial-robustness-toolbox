@@ -24,7 +24,7 @@ import numpy as np
 from sklearn.svm import LinearSVC, NuSVC, SVC
 
 from art.attacks.svm_attack import SVMAttack
-from art.classifiers import ScikitlearnSVC
+from art.classifiers import SklearnClassifier
 from art.utils import master_seed, load_iris
 
 logger = logging.getLogger('testLogger')
@@ -101,14 +101,13 @@ class TestSVMAttack(unittest.TestCase):
         """
         Test using a attack on LinearSVC
         """
-        # Get MNIST
         (x_train, y_train), (x_test, y_test), min_, max_ = self.iris
 
         # Build Scikitlearn Classifier
         clip_values = (min_, max_)
-        clean = ScikitlearnSVC(model=LinearSVC(), clip_values=clip_values)
+        clean = SklearnClassifier(model=LinearSVC(), clip_values=clip_values)
         clean.fit(x_train, y_train)
-        poison = ScikitlearnSVC(model=LinearSVC(), clip_values=clip_values)
+        poison = SklearnClassifier(model=LinearSVC(), clip_values=clip_values)
         poison.fit(x_train, y_train)
         attack = SVMAttack(poison, 0.01, 1.0, x_train, y_train, x_test, y_test, 100)
         attack_point = attack.generate(np.array([x_train[0]]))
@@ -120,17 +119,17 @@ class TestSVMAttack(unittest.TestCase):
         logger.info("Clean Accuracy {}%".format(acc))
         logger.info("Poison Accuracy {}%".format(poison_acc))
 
-    def test_unsupportedSVC(self):
-        (x_train, y_train), (_, _), (x_val, y_val) = self.mnist
-        model = NuSVC()
-        self.assertRaises(NotImplementedError, callable=SVMAttack.__init__, classifier=model, step=0.01, eps=1.0,
-                          x_train=x_train, y_train=y_train, x_val=x_val, y_val=y_val)
-
     def test_unsupported_kernel(self):
-        (x_train, y_train), (_, _), (x_val, y_val) = self.mnist
+        (x_train, y_train), (x_test, y_test), min_, max_ = self.iris
+        model = SVC(kernel='sigmoid')
+        self.assertRaises(NotImplementedError, callable=SVMAttack.__init__, classifier=model, step=0.01, eps=1.0,
+                          x_train=x_train, y_train=y_train, x_val=x_test, y_val=y_test)
+
+    def test_unsupported_SVC(self):
+        (x_train, y_train), (x_test, y_test), _, _ = self.iris
         model = NuSVC()
         self.assertRaises(NotImplementedError, callable=SVMAttack.__init__, classifier=model, step=0.01, eps=1.0,
-                          x_train=x_train, y_train=y_train, x_val=x_val, y_val=y_val)
+                          x_train=x_train, y_train=y_train, x_val=x_test, y_val=y_test)
 
     def test_SVC_kernels(self):
         """
@@ -143,9 +142,9 @@ class TestSVMAttack(unittest.TestCase):
         # Build Scikitlearn Classifier
         clip_values = (min_, max_)
         for kernel in ['linear', 'poly', 'rbf']:
-            clean = ScikitlearnSVC(model=SVC(kernel=kernel), clip_values=clip_values)
+            clean = SklearnClassifier(model=SVC(kernel=kernel), clip_values=clip_values)
             clean.fit(x_train, y_train)
-            poison = ScikitlearnSVC(model=SVC(kernel=kernel), clip_values=clip_values)
+            poison = SklearnClassifier(model=SVC(kernel=kernel), clip_values=clip_values)
             poison.fit(x_train, y_train)
             attack = SVMAttack(poison, 0.01, 1.0, x_train, y_train, x_test, y_test, 100)
             attack_point = attack.generate(np.array([x_train[0]]))

@@ -64,8 +64,8 @@ class MXClassifier(ClassifierNeuralNetwork, ClassifierGradients, Classifier):
         :type clip_values: `tuple`
         :param defences: Defences to be activated with the classifier.
         :type defences: `str` or `list(str)`
-        :param preprocessing: Tuple of the form `(substractor, divider)` of floats or `np.ndarray` of values to be
-               used for data preprocessing. The first value will be substracted from the input. The input will then
+        :param preprocessing: Tuple of the form `(subtractor, divider)` of floats or `np.ndarray` of values to be
+               used for data preprocessing. The first value will be subtracted from the input. The input will then
                be divided by the second one.
         :type preprocessing: `tuple`
         """
@@ -176,7 +176,7 @@ class MXClassifier(ClassifierNeuralNetwork, ClassifierGradients, Classifier):
                     self._optimizer.step(x_batch.shape[0])
         else:
             # Fit a generic data generator through the API
-            super(MXClassifier, self).fit_generator(generator, num_epochs=nb_epochs)
+            super(MXClassifier, self).fit_generator(generator, nb_epochs=nb_epochs)
 
     def predict(self, x, batch_size=128, **kwargs):
         """

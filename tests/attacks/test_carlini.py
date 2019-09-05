@@ -123,7 +123,7 @@ class TestCarliniL2(unittest.TestCase):
         :return:
         """
         # Build KerasClassifier
-        krc, sess = get_classifier_kr()
+        krc = get_classifier_kr()
 
         # Get MNIST
         (_, _), (x_test, y_test) = self.mnist
@@ -156,7 +156,6 @@ class TestCarliniL2(unittest.TestCase):
 
         # Clean-up
         k.clear_session()
-        sess.close()
 
     def test_ptclassifier(self):
         """
@@ -215,7 +214,7 @@ class TestCarliniL2(unittest.TestCase):
 
         self.assertIn('For `CarliniL2Method` classifier must be an instance of '
                       '`art.classifiers.classifier.ClassifierGradients`, the provided classifier is instance of '
-                      '(<class \'art.classifiers.scikitklearn.ScikitlearnClassifier\'>,).', str(context.exception))
+                      '(<class \'art.classifiers.scikitlearn.ScikitlearnClassifier\'>,).', str(context.exception))
 
 
 class TestCarliniL2Vectors(unittest.TestCase):
@@ -306,9 +305,9 @@ class TestCarliniL2Vectors(unittest.TestCase):
 
         from art.classifiers.scikitlearn import ScikitlearnLogisticRegression, ScikitlearnSVC
 
-        scikitlearn_test_cases = {LogisticRegression: ScikitlearnLogisticRegression}#,
-                                  # SVC: ScikitlearnSVC,
-                                  # LinearSVC: ScikitlearnSVC}
+        scikitlearn_test_cases = {LogisticRegression: ScikitlearnLogisticRegression}  # ,
+        # SVC: ScikitlearnSVC,
+        # LinearSVC: ScikitlearnSVC}
 
         (_, _), (x_test, y_test) = self.iris
 
@@ -511,7 +510,7 @@ class TestCarliniLInf(TestCarliniL2):
 
         self.assertIn('For `CarliniLInfMethod` classifier must be an instance of '
                       '`art.classifiers.classifier.ClassifierGradients`, the provided classifier is instance of '
-                      '(<class \'art.classifiers.scikitklearn.ScikitlearnClassifier\'>,).', str(context.exception))
+                      '(<class \'art.classifiers.scikitlearn.ScikitlearnClassifier\'>,).', str(context.exception))
 
 
 class TestCarliniLInfVectors(TestCarliniL2Vectors):

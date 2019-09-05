@@ -23,7 +23,7 @@ import unittest
 from keras.datasets import cifar10
 import numpy as np
 
-from art.defences.jpeg_compression import JpegCompression
+from art.defences import JpegCompression
 from art.utils import load_mnist, master_seed
 
 logger = logging.getLogger('testLogger')

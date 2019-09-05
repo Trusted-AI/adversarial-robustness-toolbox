@@ -19,8 +19,7 @@
 This module implement the pixel defence in `PixelDefend`. It is based on PixelCNN that projects samples back to the data
 manifold.
 
-Paper link:
-    https://arxiv.org/abs/1710.10766
+| Paper link: https://arxiv.org/abs/1710.10766
 """
 from __future__ import absolute_import, division, print_function, unicode_literals
 
@@ -37,7 +36,8 @@ logger = logging.getLogger(__name__)
 class PixelDefend(Preprocessor):
     """
     Implement the pixel defence approach. Defense based on PixelCNN that projects samples back to the data manifold.
-    Paper link: https://arxiv.org/abs/1710.10766
+
+    | Paper link: https://arxiv.org/abs/1710.10766
     """
     params = ['clip_values', 'eps', 'pixel_cnn']
 
@@ -132,7 +132,6 @@ class PixelDefend(Preprocessor):
         """
         Take in a dictionary of parameters and applies defence-specific checks before saving them as attributes.
 
-        Defense-specific parameters:
         :param clip_values: Tuple of the form `(min, max)` representing the minimum and maximum values allowed
                for features.
         :type clip_values: `tuple`

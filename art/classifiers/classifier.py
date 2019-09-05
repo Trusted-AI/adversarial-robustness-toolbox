@@ -49,8 +49,8 @@ class Classifier(ABC):
         :type clip_values: `tuple`
         :param defences: Defence(s) to be activated with the classifier.
         :type defences: :class:`.Preprocessor` or `list(Preprocessor)` instances
-        :param preprocessing: Tuple of the form `(substractor, divider)` of floats or `np.ndarray` of values to be
-               used for data preprocessing. The first value will be substracted from the input. The input will then
+        :param preprocessing: Tuple of the form `(subtractor, divider)` of floats or `np.ndarray` of values to be
+               used for data preprocessing. The first value will be subtracted from the input. The input will then
                be divided by the second one.
         :type preprocessing: `tuple`
         """
@@ -146,7 +146,7 @@ class Classifier(ABC):
         :param x: Features, where first dimension is the number of samples.
         :type x: `np.ndarray`
         :param y: Target values (class labels), where first dimension is the number of samples.
-        :type y: `np.ndarray`
+        :type y: `np.ndarray` or `None`
         :param fit: `True` if the defences are applied during training.
         :return: Value of the data after applying the defences.
         :rtype: `np.ndarray`
@@ -434,7 +434,6 @@ class ClassifierGradients(ABC):
         :type x: `np.ndarray`
         :param gradients: Input gradients.
         :type gradients: `np.ndarray`
-        :param fit: `True` if the gradient is computed during training.
         :return: Gradients after backward step through preprocessing operations and defences.
         :rtype: `np.ndarray`
         """

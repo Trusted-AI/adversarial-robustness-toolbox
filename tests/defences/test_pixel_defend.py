@@ -24,8 +24,8 @@ import numpy as np
 import torch.nn as nn
 import torch.optim as optim
 
-from art.classifiers.pytorch import PyTorchClassifier
-from art.defences.pixel_defend import PixelDefend
+from art.classifiers import PyTorchClassifier
+from art.defences import PixelDefend
 from art.utils import load_mnist, master_seed
 
 logger = logging.getLogger('testLogger')

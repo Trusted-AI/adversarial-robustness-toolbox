@@ -36,7 +36,8 @@ class QueryEfficientBBGradientEstimation(ClassifierWrapper, ClassifierGradients,
     """
     Implementation of Query-Efficient Black-box Adversarial Examples. The attack approximates the gradient by
     maximizing the loss function over samples drawn from random Gaussian noise around the input.
-    Paper link: https://arxiv.org/abs/1712.07113
+
+    | Paper link: https://arxiv.org/abs/1712.07113
     """
     attack_params = ['num_basis', 'sigma', 'round_samples']
 
@@ -48,8 +49,8 @@ class QueryEfficientBBGradientEstimation(ClassifierWrapper, ClassifierGradients,
         :type num_basis: `int`
         :param sigma: Scaling on the Gaussian noise N(0,1)
         :type sigma: `float`
-        :param round_samples: The resolution of the input domain to round
-            the data to, e.g., 1.0, or 1/255. Set to 0 to disable.
+        :param round_samples: The resolution of the input domain to round the data to, e.g., 1.0, or 1/255. Set to 0 to
+                              disable.
         :type round_samples: `float`
         """
         super(QueryEfficientBBGradientEstimation, self).__init__(classifier)
@@ -162,7 +163,6 @@ class QueryEfficientBBGradientEstimation(ClassifierWrapper, ClassifierGradients,
         :rtype: `np.ndarray`
         """
         return self._predict(clip_and_round(x, self.clip_values, self.round_samples), **{'batch_size': batch_size})
-
 
     def save(self, filename, path=None):
         """

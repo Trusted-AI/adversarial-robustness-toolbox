@@ -20,8 +20,7 @@ This module implements the spatial transformation attack `SpatialTransformation`
 inputs. The attack conducts black-box queries to the target model in a grid search over possible translations and
 rotations to find optimal attack parameters.
 
-Paper link:
-    https://arxiv.org/abs/1712.02779
+| Paper link: https://arxiv.org/abs/1712.02779
 """
 from __future__ import absolute_import, division, print_function, unicode_literals
 
@@ -40,7 +39,8 @@ class SpatialTransformation(Attack):
     Implementation of the spatial transformation attack using translation and rotation of inputs. The attack conducts
     black-box queries to the target model in a grid search over possible translations and rotations to find optimal
     attack parameters.
-    Paper link: https://arxiv.org/abs/1712.02779
+
+    | Paper link: https://arxiv.org/abs/1712.02779
     """
 
     attack_params = Attack.attack_params + ['max_translation', 'num_translations', 'max_rotation', 'num_rotations']
