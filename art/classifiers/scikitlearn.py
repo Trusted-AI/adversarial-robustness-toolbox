@@ -165,7 +165,6 @@ class ScikitlearnDecisionTreeClassifier(ScikitlearnClassifier):
         :param clip_values: Tuple of the form `(min, max)` representing the minimum and maximum values allowed
                for features.
         :type clip_values: `tuple`
->>>>>>> development_sklearn
         :param defences: Defences to be activated with the classifier.
         :type defences: :class:`.Preprocessor` or `list(Preprocessor)` instances
         :param preprocessing: Tuple of the form `(subtractor, divider)` of floats or `np.ndarray` of values to be
@@ -643,7 +642,6 @@ class ScikitlearnSVC(ScikitlearnClassifier, ClassifierGradients):
         super(ScikitlearnSVC, self).__init__(model=model, clip_values=clip_values, defences=defences, preprocessing=preprocessing)
 
         self.model = model
-        self.model_save_file = 'original_model_{}'.format(str(int(time.time())))
         self.kernel_func = self._kernel_func()
         self.kernel_grad = self._kernel_gradient_func
         if hasattr(self.model, 'classes_'):
@@ -914,6 +912,8 @@ class ScikitlearnSVC(ScikitlearnClassifier, ClassifierGradients):
         :return: Array of predictions of shape `(nb_inputs, self.nb_classes)`.
         :rtype: `np.ndarray`
         """
+        # pylint: disable=E0001
+        from sklearn.svm import SVC
 
         # Apply defences
         x_preprocessed, _ = self._apply_preprocessing(x, y=None, fit=False)
