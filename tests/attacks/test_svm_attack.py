@@ -146,7 +146,7 @@ class TestSVMAttack(unittest.TestCase):
             clean.fit(x_train, y_train)
             poison = SklearnClassifier(model=SVC(kernel=kernel), clip_values=clip_values)
             poison.fit(x_train, y_train)
-            attack = SVMAttack(poison, 0.01, 1.0, x_train, y_train, x_test, y_test, 150)
+            attack = SVMAttack(poison, 0.01, 1.0, x_train, y_train, x_test, y_test, 100)
             attack_point = attack.generate(np.array([x_train[0]]))
             poison.fit(x=np.vstack([x_train, attack_point]), y=np.vstack([y_train, np.copy(y_train[0].reshape((1, 2)))]))
 
