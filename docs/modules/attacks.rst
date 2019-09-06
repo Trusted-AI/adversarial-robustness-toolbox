@@ -75,7 +75,7 @@ Spatial Transformations Attack
    :special-members:
 
 SVM Attack
-------------------------------
+----------
 .. autoclass:: SVMAttack
    :members:
    :special-members:
