@@ -45,6 +45,12 @@ Watson Machine Learning, https://cloud.ibm.com) using the HopSkiJump attack.
 OCR. It uses BlackBoxClassifier and HopSkipJump attack to change the image of one word into the image of another word 
 and shows how to apply pre-processing defences.
 
+<p align="center">
+  <img src="data/tesseract/assent_benign.png?raw=true" width="200" title="assent_benign">
+  <img src="data/tesseract/assent_adversarial.png?raw=true" width="200" title="assent_adversarial">
+</p>
+<br />
+
 [classifier_catboost.ipynb](classifier_catboost.ipynb) shows how to use ART with CatBoost models. It demonstrates and 
 analyzes Zeroth Order Optimisation attacks using the Iris and MNIST datasets.
 
