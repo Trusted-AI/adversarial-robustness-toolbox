@@ -126,16 +126,6 @@ class Classifier(ABC):
         """
         return self._input_shape
 
-    @property
-    def nb_classes(self):
-        """
-        Return the number of output classes.
-
-        :return: Number of classes in the data.
-        :rtype: `int`
-        """
-        raise NotImplementedError
-
     @abc.abstractmethod
     def nb_classes(self):
         """
