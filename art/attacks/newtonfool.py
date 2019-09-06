@@ -52,7 +52,7 @@ class NewtonFool(Attack):
         :type max_iter: `int`
         :param eta: The eta coefficient.
         :type eta: `float`
-        :param batch_size: Batch size
+        :param batch_size: Size of the batch on which adversarial samples are generated.
         :type batch_size: `int`
         """
         super(NewtonFool, self).__init__(classifier)

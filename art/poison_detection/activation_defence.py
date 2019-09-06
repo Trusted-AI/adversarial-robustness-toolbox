@@ -76,7 +76,7 @@ class ActivationDefence(PoisonFilteringDefence):
 
     def evaluate_defence(self, is_clean, **kwargs):
         """
-        Returns confusion matrix.
+        If ground truth is known, this function returns a confusion matrix in the form of a JSON object.
 
         :param is_clean: Ground truth, where is_clean[i]=1 means that x_train[i] is clean and is_clean[i]=0 means
                          x_train[i] is poisonous.
@@ -104,19 +104,39 @@ class ActivationDefence(PoisonFilteringDefence):
                                                                                     self.is_clean_by_class)
         return conf_matrix_json
 
-    def detect_poison(self, **kwargs):
+    def detect_poison(self, clustering_method='KMeans', n_clusters=2, reduce='PCA', ndims=2,
+                      cluster_analysis='smaller'):
         """
         Returns poison detected and a report.
 
-        :param kwargs: A dictionary of detection-specific parameters.
-        :type kwargs: `dict`
+        :param clustering_method: clustering algorithm to be used. Currently `KMeans` is the only method supported
+        :type clustering_method: `str`
+        :param n_clusters: number of clusters to find. This value needs to be greater or equal to one
+        :type n_clusters: `int`
+        :param reduce: method used to reduce dimensionality of the activations. Supported methods include  `PCA`,
+                       `FastICA` and `TSNE`
+        :type reduce: `str`
+        :param ndims: number of dimensions to be reduced
+        :type ndims: `int`
+        :param cluster_analysis: heuristic to automatically determine if a cluster contains poisonous data. Supported
+                                 methods include `smaller` and `distance`. The `smaller` method defines as poisonous the
+                                 cluster with less number of data points, while the `distance` heuristic uses the
+                                 distance between the clusters.
+        :type cluster_analysis: `str`
         :return: (report, is_clean_lst):
                 where a report is a dict object that contains information specified by the clustering analysis technique
                 where is_clean is a list, where is_clean_lst[i]=1 means that x_train[i]
                 there is clean and is_clean_lst[i]=0, means that x_train[i] was classified as poison.
         :rtype: `tuple`
         """
-        self.set_params(**kwargs)
+
+        args = {'clustering_method': clustering_method,
+                'n_clusters': n_clusters,
+                'reduce': reduce,
+                'ndims': ndims,
+                'cluster_analysis': cluster_analysis}
+
+        self.set_params(**args)
 
         if not self.activations_by_class:
             activations = self._get_activations()

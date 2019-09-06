@@ -58,9 +58,13 @@ class KerasClassifier(ClassifierNeuralNetwork, ClassifierGradients, Classifier):
                used for data preprocessing. The first value will be subtracted from the input. The input will then
                be divided by the second one.
         :type preprocessing: `tuple`
-        :param input_layer: Which layer to consider as the input when the model has multiple input layers.
+        :param input_layer: The index of the layer to consider as input for models with multiple input layers. The layer
+                            with this index will be considered for computing gradients. For models with only one input
+                            layer this values is not required.
         :type input_layer: `int`
-        :param output_layer: Which layer to consider as the output when the model has multiple output layers.
+        :param output_layer: Which layer to consider as the output when the models has multiple output layers. The layer
+                             with this index will be considered for computing gradients. For models with only one output
+                             layer this values is not required.
         :type output_layer: `int`
         """
         super(KerasClassifier, self).__init__(clip_values=clip_values, defences=defences,

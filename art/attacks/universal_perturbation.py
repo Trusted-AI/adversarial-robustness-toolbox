@@ -63,7 +63,8 @@ class UniversalPerturbation(Attack):
         :param attacker: Adversarial attack name. Default is 'deepfool'. Supported names: 'carlini', 'carlini_inf',
                          'deepfool', 'fgsm', 'bim', 'pgd', 'margin', 'ead', 'newtonfool', 'jsma', 'vat'.
         :type attacker: `str`
-        :param attacker_params: Parameters specific to the adversarial attack.
+        :param attacker_params: Parameters specific to the adversarial attack. If this parameter is not specified,
+                                the default parameters of the chosen attack will be used.
         :type attacker_params: `dict`
         :param delta: desired accuracy
         :type delta: `float`
@@ -71,7 +72,7 @@ class UniversalPerturbation(Attack):
         :type max_iter: `int`
         :param eps: Attack step size (input variation)
         :type eps: `float`
-        :param norm: Order of the norm. Possible values: np.inf, 2 (default is np.inf)
+        :param norm: The norm of the adversarial perturbation. Possible values: np.inf, 2
         :type norm: `int`
         """
         super(UniversalPerturbation, self).__init__(classifier)

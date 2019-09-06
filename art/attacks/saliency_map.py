@@ -48,11 +48,11 @@ class SaliencyMapMethod(Attack):
 
         :param classifier: A trained classifier.
         :type classifier: :class:`.Classifier`
-        :param theta: Perturbation introduced to each modified feature per step (can be positive or negative).
+        :param theta: Amount of Perturbation introduced to each modified feature per step (can be positive or negative).
         :type theta: `float`
-        :param gamma: Maximum percentage of perturbed features (between 0 and 1).
+        :param gamma: Maximum fraction of features being perturbed (between 0 and 1).
         :type gamma: `float`
-        :param batch_size: Batch size
+        :param batch_size: Size of the batch on which adversarial samples are generated.
         :type batch_size: `int`
         """
         super(SaliencyMapMethod, self).__init__(classifier)

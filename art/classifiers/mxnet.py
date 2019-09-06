@@ -50,8 +50,8 @@ class MXClassifier(ClassifierNeuralNetwork, ClassifierGradients, Classifier):
         :type input_shape: `tuple`
         :param nb_classes: The number of classes of the model.
         :type nb_classes: `int`
-        :param optimizer: The optimizer used to train the classifier. This parameter is not required if no training is
-               used.
+        :param optimizer: The optimizer used to train the classifier. This parameter is only required if fitting will
+                          be done with method fit.
         :type optimizer: `mxnet.gluon.Trainer`
         :param ctx: The device on which the model runs (CPU or GPU). If not provided, CPU is assumed.
         :type ctx: `mxnet.context.Context`

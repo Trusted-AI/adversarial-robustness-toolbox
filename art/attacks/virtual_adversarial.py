@@ -53,7 +53,7 @@ class VirtualAdversarialMethod(Attack):
         :type finite_diff: `float`
         :param max_iter: The maximum number of iterations.
         :type max_iter: `int`
-        :param batch_size: Batch size.
+        :param batch_size: Size of the batch on which adversarial samples are generated.
         :type batch_size: `int`
         """
         super(VirtualAdversarialMethod, self).__init__(classifier)

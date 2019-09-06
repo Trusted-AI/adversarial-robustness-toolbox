@@ -17,7 +17,7 @@
 # SOFTWARE.
 """
 This module implements the HopSkipJump attack `HopSkipJump`. This is a black-box attack that only requires class
-predictions. It is an advanced version of the boundary attack.
+predictions. It is an advanced version of the Boundary attack.
 
 | Paper link: https://arxiv.org/abs/1904.02144
 """

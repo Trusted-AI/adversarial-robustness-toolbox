@@ -103,8 +103,7 @@ class DecisionTreeAttack(Attack):
 
     def generate(self, x, y=None, **kwargs):
         """
-        Generate adversarial examples and return them as an array. This method should be overridden by all concrete
-        attack implementations.
+        Generate adversarial examples and return them as an array.
 
         :param x: An array with the original inputs to be attacked.
         :type x: `np.ndarray`
