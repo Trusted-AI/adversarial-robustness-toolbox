@@ -76,7 +76,7 @@ class SaliencyMapMethod(Attack):
         :return: An array holding the adversarial examples.
         :rtype: `np.ndarray`
         """
-        y = check_and_transform_label_format(y, self.classifier.nb_classes)
+        y = check_and_transform_label_format(y, self.classifier.nb_classes())
 
         # Initialize variables
         dims = list(x.shape[1:])

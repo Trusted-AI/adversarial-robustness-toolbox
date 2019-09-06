@@ -25,7 +25,7 @@ The library is under continuous development and feedback, bug reports and contri
 Get in touch with us on [Slack](https://ibm-art.slack.com) (invite [here](https://join.slack.com/t/ibm-art/shared_invite/enQtMzkyOTkyODE4NzM4LTlkMWY3MzgyZDA4ZDdiNzUzY2NhMjc5YmFhZTYzZGYwNDM4YTE1ODhhNDYyNmFlMGFjNWY4ODgyM2EwYTFjYTc))!
 
 ## Supported Machine Learning Libraries and Applications
-* Tensorflow (v1 and v2) (www.tensorflow.org)
+* TensorFlow (v1 and v2) (www.tensorflow.org)
 * Keras (www.keras.io)
 * PyTorch (www.pytorch.org)
 * MXNet (https://mxnet.apache.org)

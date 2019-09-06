@@ -16,7 +16,7 @@
 # TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 # SOFTWARE.
 """
-This module implements the classifier `TensorFlowClassifier` for Tensorflow models.
+This module implements the classifier `TensorFlowClassifier` for TensorFlow models.
 """
 from __future__ import absolute_import, division, print_function, unicode_literals
 
@@ -33,13 +33,13 @@ logger = logging.getLogger(__name__)
 
 class TensorFlowClassifier(ClassifierNeuralNetwork, ClassifierGradients, Classifier):
     """
-    This class implements a classifier with the Tensorflow framework.
+    This class implements a classifier with the TensorFlow framework.
     """
 
     def __init__(self, input_ph, output, labels_ph=None, train=None, loss=None, learning=None, sess=None,
                  channel_index=3, clip_values=None, defences=None, preprocessing=(0, 1)):
         """
-        Initialization specific to Tensorflow models implementation.
+        Initialization specific to TensorFlow models implementation.
 
         :param input_ph: The input placeholder.
         :type input_ph: `tf.Placeholder`
@@ -112,7 +112,7 @@ class TensorFlowClassifier(ClassifierNeuralNetwork, ClassifierGradients, Classif
         :type x: `np.ndarray`
         :param batch_size: Size of batches.
         :type batch_size: `int`
-        :return: Array of predictions of shape `(num_inputs, self.nb_classes)`.
+        :return: Array of predictions of shape `(num_inputs, nb_classes)`.
         :rtype: `np.ndarray`
         """
         # Apply preprocessing
@@ -195,7 +195,7 @@ class TensorFlowClassifier(ClassifierNeuralNetwork, ClassifierGradients, Classif
         """
         from art.data_generators import TFDataGenerator
 
-        # Train directly in Tensorflow
+        # Train directly in TensorFlow
         if isinstance(generator, TFDataGenerator) and not (
                 hasattr(self, 'label_smooth') or hasattr(self, 'feature_squeeze')):
             for _ in range(nb_epochs):
@@ -544,7 +544,7 @@ class TensorFlowClassifier(ClassifierNeuralNetwork, ClassifierGradients, Classif
         """
         self.__dict__.update(state)
 
-        # Load and update all functionality related to Tensorflow
+        # Load and update all functionality related to TensorFlow
         # pylint: disable=E0611, E0401
         import os
         import tensorflow as tf
@@ -623,13 +623,13 @@ TFClassifier = TensorFlowClassifier
 
 class TensorFlowV2Classifier(ClassifierNeuralNetwork, ClassifierGradients, Classifier):
     """
-    This class implements a classifier with the Tensorflow v2 framework.
+    This class implements a classifier with the TensorFlow v2 framework.
     """
 
     def __init__(self, model, nb_classes, loss_object=None, train_step=None, channel_index=3, clip_values=None,
                  defences=None, preprocessing=(0, 1)):
         """
-        Initialization specific to Tensorflow v2 models.
+        Initialization specific to TensorFlow v2 models.
 
         :param model: a python functions or callable class defining the model and providing it prediction as output.
         :type model: `function` or `callable class`
@@ -670,7 +670,7 @@ class TensorFlowV2Classifier(ClassifierNeuralNetwork, ClassifierGradients, Class
         :type x: `np.ndarray`
         :param batch_size: Size of batches.
         :type batch_size: `int`
-        :return: Array of predictions of shape `(nb_inputs, self.nb_classes)`.
+        :return: Array of predictions of shape `(nb_inputs, nb_classes)`.
         :rtype: `np.ndarray`
         """
         # Apply preprocessing

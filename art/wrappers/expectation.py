@@ -62,7 +62,7 @@ class ExpectationOverTransformations(ClassifierWrapper, ClassifierGradients, Cla
         :type x: `np.ndarray`
         :param batch_size: Size of batches.
         :type batch_size: `int`
-        :return: Array of predictions of shape `(nb_inputs, self.nb_classes)`.
+        :return: Array of predictions of shape `(nb_inputs, nb_classes)`.
         :rtype: `np.ndarray`
         """
         logger.info('Applying expectation over transformations.')

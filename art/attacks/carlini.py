@@ -206,7 +206,7 @@ class CarliniL2Method(Attack):
         :return: An array holding the adversarial examples.
         :rtype: `np.ndarray`
         """
-        y = check_and_transform_label_format(y, self.classifier.nb_classes)
+        y = check_and_transform_label_format(y, self.classifier.nb_classes())
         x_adv = x.astype(NUMPY_DTYPE)
 
         if hasattr(self.classifier, 'clip_values') and self.classifier.clip_values is not None:
@@ -488,7 +488,7 @@ class CarliniLInfMethod(Attack):
         super(CarliniLInfMethod, self).__init__(classifier)
         if not isinstance(classifier, ClassifierGradients):
             raise (TypeError('For `' + self.__class__.__name__ + '` classifier must be an instance of '
-                                                                 '`art.classifiers.classifier.ClassifierGradients`, the provided classifier is instance of '
+                             '`art.classifiers.classifier.ClassifierGradients`, the provided classifier is instance of '
                              + str(classifier.__class__.__bases__) + '.'))
 
         kwargs = {'confidence': confidence,
@@ -578,7 +578,7 @@ class CarliniLInfMethod(Attack):
         :return: An array holding the adversarial examples.
         :rtype: `np.ndarray`
         """
-        y = check_and_transform_label_format(y, self.classifier.nb_classes)
+        y = check_and_transform_label_format(y, self.classifier.nb_classes())
         x_adv = x.astype(NUMPY_DTYPE)
 
         if hasattr(self.classifier, 'clip_values') and self.classifier.clip_values is not None:

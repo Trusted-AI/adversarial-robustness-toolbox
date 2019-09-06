@@ -105,10 +105,10 @@ class NewtonFool(Attack):
                 # Theta
                 theta = self._compute_theta(norm_batch, score, norm_grad)
 
-                # Pertubation
+                # Perturbation
                 di_batch = self._compute_pert(theta, grads, norm_grad)
 
-                # Update xi and pertubation
+                # Update xi and perturbation
                 batch += di_batch
 
             # Apply clip
@@ -125,7 +125,8 @@ class NewtonFool(Attack):
         return x_adv
 
     def set_params(self, **kwargs):
-        """Take in a dictionary of parameters and applies attack-specific checks before saving them as attributes.
+        """
+        Take in a dictionary of parameters and applies attack-specific checks before saving them as attributes.
 
         :param max_iter: The maximum number of iterations.
         :type max_iter: `int`
@@ -170,7 +171,7 @@ class NewtonFool(Attack):
     @staticmethod
     def _compute_pert(theta, grads, norm_grad):
         """
-        Function to compute the pertubation at each step.
+        Function to compute the perturbation at each step.
 
         :param theta: Theta value at the current step.
         :type theta: `np.ndarray`

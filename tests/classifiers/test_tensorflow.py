@@ -42,7 +42,7 @@ NB_TEST = 20
 
 class TestTensorFlowClassifier(unittest.TestCase):
     """
-    This class tests the Tensorflow classifier.
+    This class tests the TensorFlow classifier.
     """
 
     @classmethod
@@ -79,7 +79,7 @@ class TestTensorFlowClassifier(unittest.TestCase):
     def test_fit_generator(self):
         classifier, sess = get_classifier_tf()
 
-        # Create Tensorflow data generator
+        # Create TensorFlow data generator
         x_tensor = tf.convert_to_tensor(self.x_train.reshape(10, 100, 28, 28, 1))
         y_tensor = tf.convert_to_tensor(self.y_train.reshape(10, 100, 10))
         dataset = tf.data.Dataset.from_tensor_slices((x_tensor, y_tensor))

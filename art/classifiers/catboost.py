@@ -85,7 +85,7 @@ class CatBoostARTClassifier(Classifier):
 
         :param x: Test set.
         :type x: `np.ndarray`
-        :return: Array of predictions of shape `(nb_inputs, self.nb_classes)`.
+        :return: Array of predictions of shape `(nb_inputs, nb_classes)`.
         :rtype: `np.ndarray`
         """
         # Apply defences

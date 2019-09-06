@@ -71,7 +71,7 @@ class TestAdversarialPatch(unittest.TestCase):
 
         sess.close()
 
-    @unittest.skipIf(tf.__version__[0] == '2', reason='Skip unittests for Tensorflow v2 until Keras supports Tensorflow'
+    @unittest.skipIf(tf.__version__[0] == '2', reason='Skip unittests for TensorFlow v2 until Keras supports TensorFlow'
                                                       ' v2 as backend.')
     def test_krclassifier(self):
         """
@@ -107,7 +107,7 @@ class TestAdversarialPatch(unittest.TestCase):
         self.assertAlmostEqual(patch_adv[0, 14, 14], 19.790434152473054, delta=0.1)
         self.assertAlmostEqual(float(np.sum(patch_adv)), 384.826, delta=0.1)
 
-    @unittest.skipIf(tf.__version__[0] == '2', reason='Skip unittests for Tensorflow v2 until Keras supports Tensorflow'
+    @unittest.skipIf(tf.__version__[0] == '2', reason='Skip unittests for TensorFlow v2 until Keras supports TensorFlow'
                                                       ' v2 as backend.')
     def test_failure_feature_vectors(self):
         attack_params = {"rotation_max": 22.5, "scale_min": 0.1, "scale_max": 1.0, "learning_rate": 5.0,

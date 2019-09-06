@@ -104,7 +104,7 @@ class TestZooAttack(unittest.TestCase):
         # Clean-up session
         sess.close()
 
-    @unittest.skipIf(tf.__version__[0] == '2', reason='Skip unittests for Tensorflow v2 until Keras supports Tensorflow'
+    @unittest.skipIf(tf.__version__[0] == '2', reason='Skip unittests for TensorFlow v2 until Keras supports TensorFlow'
                                                       ' v2 as backend.')
     def test_krclassifier(self):
         """

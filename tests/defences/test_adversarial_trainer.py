@@ -42,7 +42,7 @@ NB_TEST = 11
 ACCURACY_DROP = 0.0  # The unit tests are too inaccurate
 
 
-@unittest.skipIf(tf.__version__[0] == '2', reason='Skip AdversarialTrainer unittests for Tensorflow v2 until Keras '
+@unittest.skipIf(tf.__version__[0] == '2', reason='Skip AdversarialTrainer unittests for TensorFlow v2 until Keras '
                                                   'supports it')
 class TestBase(unittest.TestCase):
     mnist = None

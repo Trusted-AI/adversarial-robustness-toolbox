@@ -59,7 +59,7 @@ def _tf_weights_loader(dataset, weights_type, layer='DENSE', tf_version=1):
             return tf.constant(weights, dtype)
 
     else:
-        raise ValueError('The Tensorflow version tf_version has to be wither 1 or 2.')
+        raise ValueError('The TensorFlow version tf_version has to be wither 1 or 2.')
 
     return _tf_initializer
 
@@ -83,7 +83,7 @@ def _kr_tf_weights_loader(dataset, weights_type, layer='DENSE'):
 
 def get_classifier_tf():
     """
-    Standard Tensorflow classifier for unit testing.
+    Standard TensorFlow classifier for unit testing.
 
     The following hyper-parameters were used to obtain the weights and biases:
     learning_rate: 0.01
@@ -120,7 +120,7 @@ def get_classifier_tf():
     optimizer = tf.train.AdamOptimizer(learning_rate=0.01)
     train = optimizer.minimize(loss)
 
-    # Tensorflow session and initialization
+    # TensorFlow session and initialization
     sess = tf.Session()
     sess.run(tf.global_variables_initializer())
 
@@ -133,7 +133,7 @@ def get_classifier_tf():
 
 def get_classifier_tf_v2():
     """
-    Standard Tensorflow v2 classifier for unit testing.
+    Standard TensorFlow v2 classifier for unit testing.
 
     The following hyper-parameters were used to obtain the weights and biases:
     learning_rate: 0.01
@@ -150,14 +150,14 @@ def get_classifier_tf_v2():
     from art.classifiers import TensorFlowV2Classifier
 
     if tf.__version__[0] != '2':
-        raise ImportError('This function requires Tensorflow v2.')
+        raise ImportError('This function requires TensorFlow v2.')
 
-    class TensorflowModel(Model):
+    class TensorFlowModel(Model):
         """
-        Standard Tensorflow model for unit testing
+        Standard TensorFlow model for unit testing
         """
         def __init__(self):
-            super(TensorflowModel, self).__init__()
+            super(TensorFlowModel, self).__init__()
             self.conv1 = Conv2D(filters=1, kernel_size=7, activation='relu',
                                 kernel_initializer=_tf_weights_loader('MNIST', 'W', 'CONV2D', 2),
                                 bias_initializer=_tf_weights_loader('MNIST', 'B', 'CONV2D', 2))
@@ -180,7 +180,7 @@ def get_classifier_tf_v2():
             x = self.dense1(x)
             return x
 
-    model = TensorflowModel()
+    model = TensorFlowModel()
     loss_object = tf.keras.losses.SparseCategoricalCrossentropy()
 
     # Create the classifier
@@ -193,7 +193,7 @@ def get_classifier_kr(loss_name='categorical_crossentropy'):
     """
     Standard Keras classifier for unit testing
 
-    The weights and biases are identical to the Tensorflow model in get_classifier_tf().
+    The weights and biases are identical to the TensorFlow model in get_classifier_tf().
 
     :return: KerasClassifier, tf.Session()
     """

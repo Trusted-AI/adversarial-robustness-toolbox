@@ -138,7 +138,7 @@ class FastGradientMethod(Attack):
         :return: An array holding the adversarial examples.
         :rtype: `np.ndarray`
         """
-        y = check_and_transform_label_format(y, self.classifier.nb_classes)
+        y = check_and_transform_label_format(y, self.classifier.nb_classes())
 
         if y is None:
             # Throw error if attack is targeted, but no targets are provided

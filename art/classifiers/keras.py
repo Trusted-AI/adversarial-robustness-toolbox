@@ -101,7 +101,7 @@ class KerasClassifier(ClassifierNeuralNetwork, ClassifierGradients, Classifier):
         if self.is_tensorflow:
             import tensorflow as tf
             if tf.executing_eagerly():
-                raise ValueError('Tensorflow is executing eagerly. Please disable eager execution.')
+                raise ValueError('TensorFlow is executing eagerly. Please disable eager execution.')
             import tensorflow.keras as keras
             import tensorflow.keras.backend as k
         else:
@@ -167,7 +167,7 @@ class KerasClassifier(ClassifierNeuralNetwork, ClassifierGradients, Classifier):
             predictions = self._output
             loss_ = loss_function(label_ph, self._output, from_logits=use_logits)
 
-        # recent Tensorflow version does not allow a model with an output same as the input.
+        # recent TensorFlow version does not allow a model with an output same as the input.
         if predictions == self._input:
             predictions = k.identity(predictions)
 
@@ -268,7 +268,7 @@ class KerasClassifier(ClassifierNeuralNetwork, ClassifierGradients, Classifier):
         :type x: `np.ndarray`
         :param batch_size: Size of batches.
         :type batch_size: `int`
-        :return: Array of predictions of shape `(nb_inputs, self.nb_classes)`.
+        :return: Array of predictions of shape `(nb_inputs, nb_classes)`.
         :rtype: `np.ndarray`
         """
         from art import NUMPY_DTYPE

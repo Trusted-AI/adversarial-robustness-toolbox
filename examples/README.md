@@ -7,8 +7,8 @@ the ART classifier. The parameters are chosen for reduced computational requirem
 for accuracy.
 
 
-### Tensorflow
-[get_started_tensorflow.py](get_started_tensorflow.py) demonstrates a simple example of using ART with Tensorflow v1.x. 
+### TensorFlow
+[get_started_tensorflow.py](get_started_tensorflow.py) demonstrates a simple example of using ART with TensorFlow v1.x. 
 
 ### Keras
 [get_started_keras.py](get_started_keras.py) demonstrates a simple example of using ART with Keras. 

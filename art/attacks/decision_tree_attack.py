@@ -62,7 +62,7 @@ class DecisionTreeAttack(Attack):
         :param position: An array with the original inputs to be attacked.
         :type position: `int`
         :param original_class: original label for the instances we are searching mis-classification for.
-        :type original_class: `int`
+        :type original_class: `int` or `np.ndarray`
         :param target: If the provided, specifies which output the leaf has to have to be accepted.
         :type target: `int`
         :return: An array specifying the path to the leaf where the classification is either != original class or
@@ -113,7 +113,7 @@ class DecisionTreeAttack(Attack):
         :return: An array holding the adversarial examples.
         :rtype: `np.ndarray`
         """
-        y = check_and_transform_label_format(y, self.classifier.nb_classes, return_one_hot=False)
+        y = check_and_transform_label_format(y, self.classifier.nb_classes(), return_one_hot=False)
         x = x.copy()
 
         for index in range(np.shape(x)[0]):

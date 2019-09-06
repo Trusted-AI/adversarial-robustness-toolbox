@@ -30,6 +30,7 @@ from art.utils import to_categorical
 
 logger = logging.getLogger(__name__)
 
+
 # pylint: disable=C0103
 def SklearnClassifier(model, clip_values=None, defences=None, preprocessing=(0, 1)):
     """
@@ -116,7 +117,7 @@ class ScikitlearnClassifier(Classifier):
 
         :param x: Test set.
         :type x: `np.ndarray`
-        :return: Array of predictions of shape `(nb_inputs, self.nb_classes)`.
+        :return: Array of predictions of shape `(nb_inputs, nb_classes)`.
         :rtype: `np.ndarray`
         """
         # Apply defences
@@ -138,7 +139,6 @@ class ScikitlearnClassifier(Classifier):
         :return: Number of classes in the data.
         :rtype: `int` or `None`
         """
-        # return self._model.n_classes_
         if hasattr(self._model, 'n_classes_'):
             _nb_classes = self._model.n_classes_
         else:
@@ -1003,7 +1003,7 @@ class ScikitlearnSVC(ScikitlearnClassifier, ClassifierGradients):
 
         :param x: Test set.
         :type x: `np.ndarray`
-        :return: Array of predictions of shape `(nb_inputs, self.nb_classes)`.
+        :return: Array of predictions of shape `(nb_inputs, nb_classes)`.
         :rtype: `np.ndarray`
         """
         # pylint: disable=E0001
