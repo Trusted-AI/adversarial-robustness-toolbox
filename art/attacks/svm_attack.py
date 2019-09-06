@@ -153,7 +153,7 @@ def generate_attack_point(classifier, x_train, y_train, x_val, y_val, x_attack, 
     :param y_attack: the initial attack label
     :type y_attack: `np.ndarray`
     :param step: the step size
-    :type step: float
+    :type step: `float`
     :param eps: the min difference in loss to aim for
     :type eps: float
     :param max_iters: the maximum number of iterations the attack should run
