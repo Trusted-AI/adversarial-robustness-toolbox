@@ -860,11 +860,14 @@ class ScikitlearnSVC(ScikitlearnClassifier, ClassifierGradients):
         from sklearn.svm import SVC, LinearSVC
 
         if not isinstance(model, SVC) and not isinstance(model, LinearSVC):
-            raise TypeError('Model must be of type sklearn.svm.SVC or sklearn.svm.LinearSVC')
+            raise TypeError('Model must be of type sklearn.svm.SVC or sklearn.svm.LinearSVC. Found type {}'
+                            .format(type(model)))
 
         super(ScikitlearnSVC, self).__init__(model=model, clip_values=clip_values, defences=defences,
                                              preprocessing=preprocessing)
         self._model = model
+        self.kernel_func = self._kernel_func()
+        self.kernel_grad = self._kernel_gradient_func
 
     def class_gradient(self, x, label=None, **kwargs):
         """
@@ -885,25 +888,43 @@ class ScikitlearnSVC(ScikitlearnClassifier, ClassifierGradients):
         """
         raise NotImplementedError
 
-    def _get_kernel_gradient(self, i_sv, x_sample):
-        # pylint: disable=W0212
-
-        x_i = self._model.support_vectors_[i_sv, :]
-
+    def _kernel_gradient_func(self, sv, x_sample):
+        """
+        Applies the kernel gradient to a support vector
+        :param sv: A support vector
+        :type sv: `np.ndarray`
+        :param x_sample: The sample the gradient is taken with respect to
+        :type x_sample: `np.ndarray`
+        :return: the kernel gradient
+        :rtype: `np.ndarray`
+        """
         if self._model.kernel == 'linear':
-            grad = x_i
+            grad = sv
         elif self._model.kernel == 'poly':
-            grad = self._model.degree * (self._model._gamma * np.sum(x_sample * x_i) + self._model.coef0) ** (
-                self._model.degree - 1) * x_i
+            grad = self._model.degree * (self._model._gamma * np.sum(x_sample * sv) + self._model.coef0) ** (
+                self._model.degree - 1) * sv
         elif self._model.kernel == 'rbf':
             grad = 2 * self._model._gamma * (-1) * np.exp(
-                -self._model._gamma * np.linalg.norm(x_sample - x_i, ord=2)) * (x_sample - x_i)
+                -self._model._gamma * np.linalg.norm(x_sample - sv, ord=2)) * (x_sample - sv)
         elif self._model.kernel == 'sigmoid':
             raise NotImplementedError
         else:
             raise NotImplementedError(
                 'Loss gradients for kernel \'{}\' are not implemented.'.format(self._model.kernel))
         return grad
+
+    def _get_kernel_gradient_sv(self, i_sv, x_sample):
+        """
+                Applies the kernel gradient to all of a model's support vectors
+                :param i_sv: A support vector index
+                :type i_sv: int
+                :param x_sample: A sample vector
+                :return: The kernelized product of the vectors
+                :rtype: `np.ndarray`
+                """
+
+        x_i = self._model.support_vectors_[i_sv, :]
+        return self._kernel_gradient_func(x_i, x_sample)
 
     def loss_gradient(self, x, y, **kwargs):
         """
@@ -963,12 +984,12 @@ class ScikitlearnSVC(ScikitlearnClassifier, ClassifierGradients):
 
                         for i_label_sv in range(support_indices[i_label], support_indices[i_label + 1]):
                             alpha_i_k_y_i = self._model.dual_coef_[i_not_label_i, i_label_sv] * label_multiplier
-                            grad_kernel = self._get_kernel_gradient(i_label_sv, x_preprocessed[i_sample])
+                            grad_kernel = self._get_kernel_gradient_sv(i_label_sv, x_preprocessed[i_sample])
                             gradients[i_sample, :] += sign_multiplier * alpha_i_k_y_i * grad_kernel
 
                         for i_not_label_sv in range(support_indices[i_not_label], support_indices[i_not_label + 1]):
                             alpha_i_k_y_i = self._model.dual_coef_[i_not_label_i, i_not_label_sv] * label_multiplier
-                            grad_kernel = self._get_kernel_gradient(i_not_label_sv, x_preprocessed[i_sample])
+                            grad_kernel = self._get_kernel_gradient_sv(i_not_label_sv, x_preprocessed[i_sample])
                             gradients[i_sample, :] += sign_multiplier * alpha_i_k_y_i * grad_kernel
 
         elif isinstance(self._model, LinearSVC):
@@ -996,6 +1017,59 @@ class ScikitlearnSVC(ScikitlearnClassifier, ClassifierGradients):
         gradients = self._apply_preprocessing_gradient(x, gradients)
 
         return gradients
+
+    def _kernel_func(self):
+        """
+        Return the function for the kernel of this SVM
+        :param kernel: A string preloaded function or callable Python function
+        :type kernel: str or callable
+        :return: A callable kernel function
+        """
+        # pylint: disable=E0001
+        from sklearn.svm import SVC, LinearSVC
+        from sklearn.metrics.pairwise import polynomial_kernel, linear_kernel, rbf_kernel
+
+        if isinstance(self._model, LinearSVC):
+            kernel = 'linear'
+        elif isinstance(self._model, SVC):
+            kernel = self._model.kernel
+        else:
+            raise NotImplementedError("SVM model not yet supported")
+
+        if kernel == 'linear':
+            kernel_func = linear_kernel
+        elif kernel == 'poly':
+            kernel_func = polynomial_kernel
+        elif kernel == 'rbf':
+            kernel_func = rbf_kernel
+        elif callable(kernel):
+            kernel_func = kernel
+        else:
+            raise NotImplementedError("Kernel '{}' not yet supported")
+
+        return kernel_func
+
+    def q_submatrix(self, rows, cols):
+        """
+        Returns the q submatrix of this SVM indexed by the arrays at rows and columns
+        :param rows: the row vectors
+        :type rows: `np.ndarray`
+        :param cols: the column vectors
+        :type cols: `np.ndarray`
+        :return: a submatrix of Q
+        :rtype: np.ndarray
+        """
+        submatrix_shape = (rows.shape[0], cols.shape[0])
+        y_row = self._model.predict(rows)
+        y_col = self._model.predict(cols)
+        y_row[y_row == 0] = -1
+        y_col[y_col == 0] = -1
+        q_rc = np.zeros(submatrix_shape)
+        for row in range(q_rc.shape[0]):
+            for col in range(q_rc.shape[1]):
+                q_rc[row][col] = self.kernel_func([rows[row]], [cols[col]])[0][0] * y_row[row] * y_col[col]
+
+        return q_rc
 
     def predict(self, x, **kwargs):
         """
