@@ -866,7 +866,7 @@ class ScikitlearnSVC(ScikitlearnClassifier, ClassifierGradients):
         super(ScikitlearnSVC, self).__init__(model=model, clip_values=clip_values, defences=defences,
                                              preprocessing=preprocessing)
         self._model = model
-        self.kernel_func = self._kernel_func()
+        self._kernel = self._kernel_func()
 
     def class_gradient(self, x, label=None, **kwargs):
         """
@@ -1066,7 +1066,7 @@ class ScikitlearnSVC(ScikitlearnClassifier, ClassifierGradients):
         q_rc = np.zeros(submatrix_shape)
         for row in range(q_rc.shape[0]):
             for col in range(q_rc.shape[1]):
-                q_rc[row][col] = self.kernel_func([rows[row]], [cols[col]])[0][0] * y_row[row] * y_col[col]
+                q_rc[row][col] = self._kernel([rows[row]], [cols[col]])[0][0] * y_row[row] * y_col[col]
 
         return q_rc
 
