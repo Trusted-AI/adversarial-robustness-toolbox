@@ -262,7 +262,7 @@ def attack_gradient(model, attack_point, valid_data, valid_labels):
         m_k = (1.0 / zeta) * np.matmul(q_ks, zeta * qss_inv - np.matmul(v, v.T)) + np.matmul(y_k, v.T)
         d_q_sc = np.fromfunction(lambda i: art_model._get_kernel_gradient_sv(i, attack_point), (len(support_vectors),),
                                  dtype=int)
-        d_q_kc = art_model.kernel_grad(x_k, attack_point)
+        d_q_kc = art_model._kernel_grad(x_k, attack_point)
         grad += (np.matmul(m_k, d_q_sc) + d_q_kc) * alpha_c
 
     return grad
