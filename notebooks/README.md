@@ -46,8 +46,8 @@ OCR. It uses BlackBoxClassifier and HopSkipJump attack to change the image of on
 and shows how to apply pre-processing defences.
 
 <p align="center">
-  <img src="data/tesseract/assent_benign.png?raw=true" width="200" title="assent_benign">
-  <img src="data/tesseract/assent_adversarial.png?raw=true" width="200" title="assent_adversarial">
+  <img src="../data/tesseract/assent_benign.png?raw=true" width="200" title="assent_benign">
+  <img src="../data/tesseract/assent_adversarial.png?raw=true" width="200" title="assent_adversarial">
 </p>
 <br />
 
