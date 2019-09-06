@@ -41,6 +41,10 @@ versatile classifier of ART requiring only a single predict function definition 
 requirements. The notebook shows how use BlackBoxClassifier to attack a remote, deployed model (in this case on IBM
 Watson Machine Learning, https://cloud.ibm.com) using the HopSkiJump attack.
 
+[classifier_blackbox_tesseract.ipynb](classifier_blackbox_tesseract.ipynb) demonstrates a black-box attack on Tesseract
+OCR. It uses BlackBoxClassifier and HopSkipJump attack to change the image of one word into the image of another word 
+and shows how to apply pre-processing defences.
+
 [classifier_catboost.ipynb](classifier_catboost.ipynb) shows how to use ART with CatBoost models. It demonstrates and 
 analyzes Zeroth Order Optimisation attacks using the Iris and MNIST datasets.
 
