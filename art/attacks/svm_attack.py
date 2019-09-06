@@ -27,8 +27,6 @@ import numpy as np
 from art.attacks.attack import Attack
 from art.classifiers.scikitlearn import ScikitlearnSVC
 
-from sklearn.preprocessing import normalize
-from sklearn.svm import LinearSVC, SVC
 
 logger = logging.getLogger(__name__)
 
@@ -47,9 +45,9 @@ class SVMAttack(Attack):
         :param classifier: A trained ScikitlearnSVC classifier
         :type classifier: `art.classifiers.scikitlearn.ScikitlearnSVC`
         :param step: The step size of the classifier
-        :type step: float
+        :type step: `float`
         :param eps: The minimum difference in loss before convergence of the classifier
-        :type eps: float
+        :type eps: `float`
         :param x_train: The training data used for classification
         :type x_train: `np.ndarray`
         :param y_train: The training labels used for classification
@@ -59,9 +57,11 @@ class SVMAttack(Attack):
         :param y_val: The validation labels used to test the attack
         :type y_val: `np.ndarray`
         :param max_iters: The maximum number of iterations for the attack
-        :type max_iters: int
+        :type max_iters: `int`
         :param kwargs: Extra optional keyword arguments
         """
+        from sklearn.svm import LinearSVC, SVC
+
         super(SVMAttack, self).__init__(classifier)
 
         if not isinstance(classifier, ScikitlearnSVC):
@@ -82,20 +82,21 @@ class SVMAttack(Attack):
         self.max_iters = max_iters
         self.set_params(**kwargs)
 
-    def generate(self, x, **kwargs):
+    def generate(self, x, y=None, **kwargs):
         """
         Iteratively finds optimal attack points starting at values at x
 
         :param x: An array with the points that initialize attack points.
         :type x: `np.ndarray`
+        :param y: The target labels for
         :return: An array holding the adversarial examples.
         :rtype: `np.ndarray`
         """
 
-        if 'y' in kwargs:
-            y_attack = kwargs['y']
-        else:
+        if y is None:
             y_attack = self.classifier.predict(x)
+        else:
+            y_attack = np.copy(y)
 
         num_poison = len(x)
         if num_poison == 0:
@@ -134,9 +135,9 @@ class SVMAttack(Attack):
 
 def generate_attack_point(classifier, x_train, y_train, x_val, y_val, x_attack, y_attack, step, eps, max_iters):
     """
-    Generate a single poison attack the model, using x_val and y_val as validation points.
+    Generate a single poison attack the model, using `x_val` and `y_val` as validation points.
     The attack begins at the point init_attack. The attack class will be the opposite of the model's
-    classification for init_attack.
+    classification for `init_attack`.
 
     :param classifier: a trained SVC classifier
     :type classifier: `art.classifiers.ScikitlearnSVC`
@@ -155,12 +156,15 @@ def generate_attack_point(classifier, x_train, y_train, x_val, y_val, x_attack, 
     :param step: the step size
     :type step: `float`
     :param eps: the min difference in loss to aim for
-    :type eps: float
+    :type eps: `float`
     :param max_iters: the maximum number of iterations the attack should run
-    :type max_iters: int
+    :type max_iters: `int`
     :return: a tuple containing the final attack point and the poisoned model
     :rtype: (`np.ndarray`, `art.classifiers.ScikitlearnSVC`)
     """
+    from sklearn.preprocessing import normalize
+    from sklearn.svm import SVC
+
     poisoned_model = SVC(kernel=classifier._model.kernel, probability=classifier._model.probability)
     y_t = np.argmax(y_train, axis=1)
     poisoned_model.fit(x_train, y_t)
@@ -221,7 +225,7 @@ def attack_gradient(model, attack_point, valid_data, valid_labels):
     Calculates the attack gradient, or ∂P for this attack.
     See equation 8 in Biggio Ch. 14
 
-    :param model: a trained SVC classifier, trained with attack_point
+    :param model: a trained SVC classifier, trained with `attack_point`
     :type model: `sklearn.svm.classes.SVC`
     :param attack_point: the current attack point
     :type attack_point: `np.ndarray`

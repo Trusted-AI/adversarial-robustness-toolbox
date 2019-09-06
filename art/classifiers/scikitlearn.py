@@ -867,7 +867,6 @@ class ScikitlearnSVC(ScikitlearnClassifier, ClassifierGradients):
                                              preprocessing=preprocessing)
         self._model = model
         self.kernel_func = self._kernel_func()
-        self.kernel_grad = self._kernel_gradient_func
 
     def class_gradient(self, x, label=None, **kwargs):
         """
@@ -888,7 +887,7 @@ class ScikitlearnSVC(ScikitlearnClassifier, ClassifierGradients):
         """
         raise NotImplementedError
 
-    def _kernel_gradient_func(self, sv, x_sample):
+    def _kernel_grad(self, sv, x_sample):
         """
         Applies the kernel gradient to a support vector
         :param sv: A support vector
@@ -917,14 +916,14 @@ class ScikitlearnSVC(ScikitlearnClassifier, ClassifierGradients):
         """
                 Applies the kernel gradient to all of a model's support vectors
                 :param i_sv: A support vector index
-                :type i_sv: int
+                :type i_sv: `int`
                 :param x_sample: A sample vector
                 :return: The kernelized product of the vectors
                 :rtype: `np.ndarray`
                 """
 
         x_i = self._model.support_vectors_[i_sv, :]
-        return self._kernel_gradient_func(x_i, x_sample)
+        return self._kernel_grad(x_i, x_sample)
 
     def loss_gradient(self, x, y, **kwargs):
         """
@@ -1022,7 +1021,7 @@ class ScikitlearnSVC(ScikitlearnClassifier, ClassifierGradients):
         """
         Return the function for the kernel of this SVM
         :param kernel: A string preloaded function or callable Python function
-        :type kernel: str or callable
+        :type kernel: `str` or callable
         :return: A callable kernel function
         """
         # pylint: disable=E0001
@@ -1057,7 +1056,7 @@ class ScikitlearnSVC(ScikitlearnClassifier, ClassifierGradients):
         :param cols: the column vectors
         :type cols: `np.ndarray`
         :return: a submatrix of Q
-        :rtype: np.ndarray
+        :rtype: `np.ndarray`
         """
         submatrix_shape = (rows.shape[0], cols.shape[0])
         y_row = self._model.predict(rows)
