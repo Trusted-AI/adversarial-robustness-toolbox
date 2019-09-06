@@ -2,7 +2,7 @@ dist: trusty
 language: python
 env:
   - KERAS_BACKEND=tensorflow TENSORFLOW_V=1.12.3
-  - KERAS_BACKEND=tensorflow TENSORFLOW_V=1.13.1
+  - KERAS_BACKEND=tensorflow TENSORFLOW_V=1.13.2
   - KERAS_BACKEND=tensorflow TENSORFLOW_V=1.14.0
   - KERAS_BACKEND=tensorflow TENSORFLOW_V=2.0.0rc0
 python:
