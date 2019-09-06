@@ -36,7 +36,6 @@ class QueryEfficientBBGradientEstimation(ClassifierWrapper, ClassifierGradients,
     """
     Implementation of Query-Efficient Black-box Adversarial Examples. The attack approximates the gradient by
     maximizing the loss function over samples drawn from random Gaussian noise around the input.
-
     | Paper link: https://arxiv.org/abs/1712.07113
     """
     attack_params = ['num_basis', 'sigma', 'round_samples']
@@ -62,7 +61,6 @@ class QueryEfficientBBGradientEstimation(ClassifierWrapper, ClassifierGradients,
     def predict(self, x, **kwargs):
         """
         Perform prediction of the classifier for input `x`.
-
         :param x: Features in array of shape (nb_samples, nb_features) or (nb_samples, nb_pixels_1, nb_pixels_2,
                   nb_channels) or (nb_samples, nb_channels, nb_pixels_1, nb_pixels_2)
         :type x: `np.ndarray`
@@ -74,7 +72,6 @@ class QueryEfficientBBGradientEstimation(ClassifierWrapper, ClassifierGradients,
     def fit(self, x, y, **kwargs):
         """
         Fit the classifier using the training data `(x, y)`.
-
         :param x: Features in array of shape (nb_samples, nb_features) or (nb_samples, nb_pixels_1, nb_pixels_2,
                   nb_channels) or (nb_samples, nb_channels, nb_pixels_1, nb_pixels_2)
         :type x: `np.ndarray`
@@ -90,7 +87,6 @@ class QueryEfficientBBGradientEstimation(ClassifierWrapper, ClassifierGradients,
     def _generate_samples(self, x, epsilon_map):
         """
         Generate samples around the current image.
-
         :param x: Sample input with shape as expected by the model.
         :type x: `np.ndarray`
         :param epsilon_map: Samples drawn from search space
@@ -105,7 +101,6 @@ class QueryEfficientBBGradientEstimation(ClassifierWrapper, ClassifierGradients,
     def class_gradient(self, x, label=None, **kwargs):
         """
         Compute per-class derivatives w.r.t. `x`.
-
         :param x: Input with shape as expected by the classifier's model.
         :type x: `np.ndarray`
         :param label: Index of a specific per-class derivative. If an integer is provided, the gradient of that class
@@ -123,7 +118,6 @@ class QueryEfficientBBGradientEstimation(ClassifierWrapper, ClassifierGradients,
     def loss_gradient(self, x, y, **kwargs):
         """
         Compute the gradient of the loss function w.r.t. `x`.
-
         :param x: Sample input with shape as expected by the model.
         :type x: `np.ndarray`
         :param y: Correct labels, one-vs-rest encoding.
@@ -154,7 +148,6 @@ class QueryEfficientBBGradientEstimation(ClassifierWrapper, ClassifierGradients,
     def _wrap_predict(self, x, batch_size=128):
         """
         Perform prediction for a batch of inputs. Rounds results first.
-
         :param x: Test set.
         :type x: `np.ndarray`
         :param batch_size: Size of batches.
@@ -167,27 +160,6 @@ class QueryEfficientBBGradientEstimation(ClassifierWrapper, ClassifierGradients,
     def nb_classes(self):
         """
         Return the number of output classes.
-
-        :return: Number of classes in the data.
-        :rtype: `int`
-        """
-        # pylint: disable=W0212
-        return self.classifier.nb_classes()
-
-    def nb_classes(self):
-        """
-        Return the number of output classes.
-
-        :return: Number of classes in the data.
-        :rtype: `int`
-        """
-        # pylint: disable=W0212
-        return self.classifier.nb_classes()
-
-    def nb_classes(self):
-        """
-        Return the number of output classes.
-
         :return: Number of classes in the data.
         :rtype: `int`
         """
@@ -197,7 +169,6 @@ class QueryEfficientBBGradientEstimation(ClassifierWrapper, ClassifierGradients,
     def save(self, filename, path=None):
         """
         Save a model to file specific to the backend framework.
-
         :param filename: Name of the file where to save the model.
         :type filename: `str`
         :param path: Path of the directory where to save the model. If no path is specified, the model will be stored in

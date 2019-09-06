@@ -38,18 +38,6 @@ Tensorflow v2 Wrapper
    :members:
    :special-members:
 
-Tensorflow v2 Wrapper
----------------------
-.. autoclass:: TensorflowV2Classifier
-   :members:
-   :special-members:
-
-Tensorflow v2 Wrapper
----------------------
-.. autoclass:: TensorflowV2Classifier
-   :members:
-   :special-members:
-
 Ensemble Wrapper
 ----------------
 .. autoclass:: EnsembleClassifier
