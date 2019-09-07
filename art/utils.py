@@ -333,7 +333,7 @@ def get_labels_np_array(preds):
     :return: (np.ndarray) labels
     """
     preds_max = np.amax(preds, axis=1, keepdims=True)
-    y = (preds == preds_max).astype(float)
+    y = (preds == preds_max)
 
     return y
 

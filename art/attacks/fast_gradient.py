@@ -260,7 +260,7 @@ class FastGradientMethod(Attack):
         if random_init:
             n = x.shape[0]
             m = np.prod(x.shape[1:])
-            x_adv = x.astype(NUMPY_DTYPE) + random_sphere(n, m, eps, self.norm).reshape(x.shape)
+            x_adv = x.astype(NUMPY_DTYPE) + random_sphere(n, m, eps, self.norm).reshape(x.shape).astype(NUMPY_DTYPE)
 
             if hasattr(self.classifier, 'clip_values') and self.classifier.clip_values is not None:
                 clip_min, clip_max = self.classifier.clip_values

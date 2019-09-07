@@ -114,8 +114,8 @@ class TestSpatialTransformation(unittest.TestCase):
         # Build PyTorchClassifier
         ptc = get_classifier_pt()
 
-        x_train = np.swapaxes(self.x_train, 1, 3)
-        x_test = np.swapaxes(self.x_test, 1, 3)
+        x_train = np.swapaxes(self.x_train, 1, 3).astype(np.float32)
+        x_test = np.swapaxes(self.x_test, 1, 3).astype(np.float32)
 
         # Attack
         attack_st = SpatialTransformation(ptc, max_translation=10.0, num_translations=3, max_rotation=30.0,

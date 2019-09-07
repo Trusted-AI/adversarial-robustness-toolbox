@@ -25,11 +25,11 @@ import unittest
 import numpy as np
 import torch
 import torch.nn as nn
-import torch.nn.functional as F
 import torch.optim as optim
 
 from art.classifiers import PyTorchClassifier, DetectorClassifier
 from art.utils import load_dataset, master_seed
+from art.utils_test import get_classifier_pt
 
 logger = logging.getLogger('testLogger')
 
@@ -38,18 +38,15 @@ NB_TEST = 2
 
 
 class Model(nn.Module):
-    def __init__(self):
+    def __init__(self, model):
         super(Model, self).__init__()
-        self.conv = nn.Conv2d(1, 16, 5)
-        self.pool = nn.MaxPool2d(2, 2)
-        self.fc = nn.Linear(2304, 10)
+        self.model = model
 
     def forward(self, x):
-        x = self.pool(F.relu(self.conv(x)))
-        x = x.view(-1, 2304)
-        logit_output = self.fc(x)
+        x = self.model(x)
+        x = x - 100000
 
-        return logit_output
+        return x
 
 
 class Flatten(nn.Module):
@@ -69,8 +66,8 @@ class TestDetectorClassifier(unittest.TestCase):
     def setUpClass(cls):
         (x_train, y_train), (x_test, y_test), _, _ = load_dataset('mnist')
 
-        x_train = np.swapaxes(x_train, 1, 3)
-        x_test = np.swapaxes(x_test, 1, 3)
+        x_train = np.swapaxes(x_train, 1, 3).astype(np.float32)
+        x_test = np.swapaxes(x_test, 1, 3).astype(np.float32)
 
         cls.x_train = x_train[:NB_TRAIN]
         cls.y_train = y_train[:NB_TRAIN]
@@ -78,12 +75,7 @@ class TestDetectorClassifier(unittest.TestCase):
         cls.y_test = y_test[:NB_TEST]
 
         # Define the internal classifier
-        model = Model()
-        loss_fn = nn.CrossEntropyLoss()
-        optimizer = optim.Adam(model.parameters(), lr=0.01)
-        classifier = PyTorchClassifier(model=model, loss=loss_fn, optimizer=optimizer, input_shape=(1, 28, 28),
-                                       nb_classes=10, clip_values=(0, 1))
-        classifier.fit(x_train, y_train, batch_size=100, nb_epochs=2)
+        classifier = get_classifier_pt()
 
         # Define the internal detector
         conv = nn.Conv2d(1, 16, 5)
@@ -91,6 +83,7 @@ class TestDetectorClassifier(unittest.TestCase):
         torch.nn.init.xavier_uniform_(conv.weight)
         torch.nn.init.xavier_uniform_(linear.weight)
         model = nn.Sequential(conv, nn.ReLU(), nn.MaxPool2d(2, 2), Flatten(), linear)
+        model = Model(model)
         loss_fn = nn.CrossEntropyLoss()
         optimizer = optim.Adam(model.parameters(), lr=0.01)
         detector = PyTorchClassifier(model=model, loss=loss_fn, optimizer=optimizer, input_shape=(1, 28, 28),
@@ -104,11 +97,9 @@ class TestDetectorClassifier(unittest.TestCase):
 
     def test_predict(self):
         predictions = self.detector_classifier.predict(x=self.x_test[0:1])
-        predictions_expected = np.asarray([[3.8029796e-30, 8.4424327e-37, 2.9018356e-27, 7.3553483e-27, 1.9029507e-38,
-                                           2.0556368e-36, 0.0000000e+00, 1.0000000e+00, 4.1592952e-24, 4.9934537e-22,
-                                           2.0000000e+00]])
+        predictions_expected = 7
         self.assertEqual(predictions.shape, (1, 11))
-        np.testing.assert_array_almost_equal(predictions, predictions_expected, decimal=4)
+        self.assertEqual(np.argmax(predictions, axis=1)[0], predictions_expected)
 
     def test_nb_classes(self):
         self.assertEqual(self.detector_classifier.nb_classes(), 11)

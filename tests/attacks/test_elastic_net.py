@@ -222,17 +222,19 @@ class TestElasticNet(unittest.TestCase):
         # Build PyTorchClassifier
         ptc = get_classifier_pt()
 
-        x_test = np.swapaxes(self.x_test, 1, 3)
+        x_test = np.swapaxes(self.x_test, 1, 3).astype(np.float32)
 
         # First attack
         ead = ElasticNet(classifier=ptc, targeted=True, max_iter=2)
         params = {'y': random_targets(self.y_test, ptc.nb_classes())}
         x_test_adv = ead.generate(x_test, **params)
-        expected_x_test_adv = np.asarray([0.0, 0.00716884, 0.01701971, 0.01510455, 0.03105724, 0.19382477,
-                                          0.02843449, 0.01766543, 0.12377531, 0.19477448, 0.02747798, 0.00402385,
-                                          0.0386071, 0.42080346, 0.9968027, 0.6537438, 0.0, 0.01160131,
-                                          0.0, 0.18804488, 0.01606134, 0.17325118, 0.013341, 0.0,
-                                          0.0, 0.0, 0.0, 0.0])
+        expected_x_test_adv = np.asarray([0.00000000e+00, 6.04679435e-03, 1.45520847e-02, 1.29004084e-02,
+                                          2.48517413e-02, 1.63596720e-01, 7.24691432e-04, 1.05088735e-02,
+                                          9.19022262e-02, 1.68885738e-01, 3.47284265e-02, 4.27986681e-03,
+                                          2.06479151e-02, 4.37088609e-01, 9.97539043e-01, 6.54843807e-01,
+                                          0.00000000e+00, 9.68480576e-03, 0.00000000e+00, 1.69311762e-01,
+                                          1.41007369e-02, 1.57067597e-01, 1.11777689e-02, 0.00000000e+00,
+                                          0.00000000e+00, 0.00000000e+00, 0.00000000e+00, 0.00000000e+00])
         np.testing.assert_array_almost_equal(x_test_adv[2, 0, :, 14], expected_x_test_adv, decimal=6)
         self.assertLessEqual(np.amax(x_test_adv), 1.0)
         self.assertGreaterEqual(np.amin(x_test_adv), 0.0)
@@ -365,8 +367,8 @@ class TestElasticNetVectors(unittest.TestCase):
     def test_iris_pt(self):
         classifier = get_iris_classifier_pt()
         attack = ElasticNet(classifier, targeted=False, max_iter=10)
-        x_test_adv = attack.generate(self.x_test)
-        expected_x_test_adv = np.asarray([0.8461538, 0.42474526, 0.70196843, 0.28620046])
+        x_test_adv = attack.generate(self.x_test.astype(np.float32))
+        expected_x_test_adv = np.asarray([0.8479194, 0.42525578, 0.70166135, 0.28664517])
         np.testing.assert_array_almost_equal(x_test_adv[0, :], expected_x_test_adv, decimal=6)
         self.assertLessEqual(np.amax(x_test_adv), 1.0)
         self.assertGreaterEqual(np.amin(x_test_adv), 0.0)

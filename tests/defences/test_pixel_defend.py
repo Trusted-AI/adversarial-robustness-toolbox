@@ -65,6 +65,7 @@ class TestPixelDefend(unittest.TestCase):
     def test_one_channel(self):
         (x_train, _), (_, _), _, _ = load_mnist()
         x_train = x_train[:2, 10:15, 15:20, :]
+        x_train = x_train.astype(np.float32)
 
         # Define the network
         model = ModelImage()
@@ -87,7 +88,7 @@ class TestPixelDefend(unittest.TestCase):
         pixel_cnn = PyTorchClassifier(model=model, loss=loss_fn, optimizer=optimizer, input_shape=(4,),
                                       nb_classes=2, clip_values=(0, 1))
 
-        x = np.random.rand(5, 4)
+        x = np.random.rand(5, 4).astype(np.float32)
         preprocess = PixelDefend(eps=5, pixel_cnn=pixel_cnn)
         x_defended, _ = preprocess(x)
 

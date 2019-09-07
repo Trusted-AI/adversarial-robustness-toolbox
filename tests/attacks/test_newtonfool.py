@@ -115,7 +115,7 @@ class TestNewtonFool(unittest.TestCase):
 
         # Get MNIST
         (_, _), (x_test, _) = self.mnist
-        x_test = np.swapaxes(x_test, 1, 3)
+        x_test = np.swapaxes(x_test, 1, 3).astype(np.float32)
 
         # Attack
         nf = NewtonFool(ptc, max_iter=5, batch_size=100)

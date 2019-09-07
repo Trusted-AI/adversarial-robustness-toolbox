@@ -194,7 +194,7 @@ class TestHopSkipJump(unittest.TestCase):
 
         # Get MNIST
         (_, _), (x_test, y_test) = self.mnist
-        x_test = np.swapaxes(x_test, 1, 3)
+        x_test = np.swapaxes(x_test, 1, 3).astype(np.float32)
 
         # First targeted attack and norm=2
         hsj = HopSkipJump(classifier=ptc, targeted=True, max_iter=2, max_eval=100, init_eval=10)
@@ -394,6 +394,7 @@ class TestHopSkipJumpVectors(unittest.TestCase):
     def test_iris_pt(self):
         (_, _), (x_test, y_test) = self.iris
         classifier = get_iris_classifier_pt()
+        x_test = x_test.astype(np.float32)
 
         # Norm=2
         attack = HopSkipJump(classifier, targeted=False, max_iter=2, max_eval=100, init_eval=10)

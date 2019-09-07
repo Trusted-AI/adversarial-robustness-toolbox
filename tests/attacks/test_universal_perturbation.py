@@ -115,8 +115,8 @@ class TestUniversalPerturbation(unittest.TestCase):
 
         # Get MNIST
         (x_train, y_train), (x_test, y_test) = self.mnist
-        x_train = np.swapaxes(x_train, 1, 3)
-        x_test = np.swapaxes(x_test, 1, 3)
+        x_train = np.swapaxes(x_train, 1, 3).astype(np.float32)
+        x_test = np.swapaxes(x_test, 1, 3).astype(np.float32)
 
         # Attack
         up = UniversalPerturbation(ptc, max_iter=1, attacker="newtonfool", attacker_params={"max_iter": 5})

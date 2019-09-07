@@ -264,7 +264,7 @@ class BoundaryAttack(Attack):
         """
         # Generate perturbation randomly
         # input_shape = current_sample.shape
-        perturb = np.random.randn(*self.classifier.input_shape)
+        perturb = np.random.randn(*self.classifier.input_shape).astype(NUMPY_DTYPE)
 
         # Rescale the perturbation
         perturb /= np.linalg.norm(perturb)
