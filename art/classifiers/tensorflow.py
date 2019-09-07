@@ -519,11 +519,6 @@ class TensorflowClassifier(ClassifierNeuralNetwork, ClassifierGradients, Classif
         if self._train is not None:
             state['_train'] = self._train.name
 
-        if hasattr(self, '_logit_class_grads'):
-            state['_logit_class_grads'] = [ts if ts is None else ts.name for ts in self._logit_class_grads]
-        else:
-            state['_logit_class_grads'] = False
-
         if hasattr(self, '_class_grads'):
             state['_class_grads'] = [ts if ts is None else ts.name for ts in self._class_grads]
         else:
@@ -592,13 +587,6 @@ class TensorflowClassifier(ClassifierNeuralNetwork, ClassifierGradients, Classif
         if state['_train'] is not None:
             self._train = graph.get_operation_by_name(state['_train'])
 
-        # Recover logit_class_grads if any
-        if state['_logit_class_grads']:
-            self._logit_class_grads = [ts if ts is None else graph.get_tensor_by_name(ts)
-                                       for ts in state['_logit_class_grads']]
-        else:
-            self.__dict__.pop('_logit_class_grads', None)
-
         # Recover class_grads if any
         if state['_class_grads']:
             self._class_grads = [ts if ts is None else graph.get_tensor_by_name(ts) for ts in state['_class_grads']]
@@ -608,7 +596,7 @@ class TensorflowClassifier(ClassifierNeuralNetwork, ClassifierGradients, Classif
         self.__dict__.pop('model_name', None)
 
     def __repr__(self):
-        repr_ = "%s(input_ph=%r, output=%r, labels_ph=%r, train=%r, loss=%r, learnign=%r, " \
+        repr_ = "%s(input_ph=%r, output=%r, labels_ph=%r, train=%r, loss=%r, learning=%r, " \
                 "sess=%r, channel_index=%r, clip_values=%r, defences=%r, preprocessing=%r)" \
                 % (self.__module__ + '.' + self.__class__.__name__,
                    self._input_ph, self._output, self._labels_ph, self._train, self._loss, self._learning, self._sess,
