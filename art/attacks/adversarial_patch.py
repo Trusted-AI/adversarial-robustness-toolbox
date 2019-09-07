@@ -24,10 +24,12 @@ can be printed into the physical world with a common printer. The patch can be u
 from __future__ import absolute_import, division, print_function, unicode_literals
 
 import logging
+
 import random
 import numpy as np
 from scipy.ndimage import rotate, shift, zoom
 
+from art import NUMPY_DTYPE
 from art.classifiers.classifier import ClassifierNeuralNetwork, ClassifierGradients
 from art.attacks.attack import Attack
 from art.utils import check_and_transform_label_format
@@ -108,7 +110,7 @@ class AdversarialPatch(Attack):
             raise ValueError('Feature vectors detected. The adversarial patch can only be applied to data with spatial '
                              'dimensions.')
 
-        self.patch = (np.random.standard_normal(size=self.classifier.input_shape)) * 20.0
+        self.patch = ((np.random.standard_normal(size=self.classifier.input_shape)) * 20.0).astype(NUMPY_DTYPE)
 
         y_target = check_and_transform_label_format(labels=np.broadcast_to(np.array(self.target), x.shape[0]),
                                                     nb_classes=self.classifier.nb_classes())

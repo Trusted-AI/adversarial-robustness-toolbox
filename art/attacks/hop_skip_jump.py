@@ -411,9 +411,9 @@ class HopSkipJump(Attack):
         # Generate random noise
         rnd_noise_shape = [num_eval] + list(self.classifier.input_shape)
         if self.norm == 2:
-            rnd_noise = np.random.randn(*rnd_noise_shape)
+            rnd_noise = np.random.randn(*rnd_noise_shape).astype(NUMPY_DTYPE)
         else:
-            rnd_noise = np.random.uniform(low=-1, high=1, size=rnd_noise_shape)
+            rnd_noise = np.random.uniform(low=-1, high=1, size=rnd_noise_shape).astype(NUMPY_DTYPE)
 
         # Normalize random noise to fit into the range of input data
         rnd_noise = rnd_noise / np.sqrt(np.sum(rnd_noise ** 2, axis=tuple(range(len(rnd_noise_shape)))[1:],
@@ -426,6 +426,7 @@ class HopSkipJump(Attack):
         satisfied = self._adversarial_satisfactory(samples=eval_samples, target=target,
                                                    clip_min=clip_min, clip_max=clip_max)
         f_val = 2 * satisfied.reshape([num_eval] + [1] * len(self.classifier.input_shape)) - 1.0
+        f_val = f_val.astype(NUMPY_DTYPE)
 
         if np.mean(f_val) == 1.0:
             grad = np.mean(rnd_noise, axis=0)

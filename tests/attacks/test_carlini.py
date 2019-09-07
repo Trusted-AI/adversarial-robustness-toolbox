@@ -160,7 +160,7 @@ class TestCarliniL2(unittest.TestCase):
         # Build PyTorchClassifier
         ptc = get_classifier_pt()
 
-        x_test = np.swapaxes(self.x_test, 1, 3)
+        x_test = np.swapaxes(self.x_test, 1, 3).astype(np.float32)
 
         # First attack
         cl2m = CarliniL2Method(classifier=ptc, targeted=True, max_iter=10)
@@ -447,7 +447,7 @@ class TestCarliniLInf(TestCarliniL2):
         # Build PyTorchClassifier
         ptc = get_classifier_pt()
 
-        x_test = np.swapaxes(self.x_test, 1, 3)
+        x_test = np.swapaxes(self.x_test, 1, 3).astype(np.float32)
 
         # First attack
         clinfm = CarliniLInfMethod(classifier=ptc, targeted=True, max_iter=10, eps=0.5)
@@ -560,7 +560,7 @@ class TestCarliniLInfVectors(TestCarliniL2Vectors):
     def test_iris_pt(self):
         classifier = get_iris_classifier_pt()
         attack = CarliniLInfMethod(classifier, targeted=False, max_iter=10, eps=0.5)
-        x_test_adv = attack.generate(self.x_test)
+        x_test_adv = attack.generate(self.x_test.astype(np.float32))
         self.assertFalse((self.x_test == x_test_adv).all())
         self.assertLessEqual(np.amax(x_test_adv), 1.0)
         self.assertGreaterEqual(np.amin(x_test_adv), 0.0)
