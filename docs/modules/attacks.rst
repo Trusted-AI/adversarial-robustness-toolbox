@@ -74,6 +74,12 @@ Spatial Transformations Attack
    :members:
    :special-members:
 
+SVM Attack
+----------
+.. autoclass:: SVMAttack
+   :members:
+   :special-members:
+
 Universal Perturbation Attack
 -----------------------------
 .. autoclass:: UniversalPerturbation
