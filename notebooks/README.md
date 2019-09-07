@@ -8,6 +8,10 @@ models synthesized and adversarially trained by [Sinn et al., 2019](https://driv
 [adversarial_training_mnist.ipynb](adversarial_training_mnist.ipynb) demonstrates adversarial training of a neural 
 network to harden the model against adversarial samples using the MNIST dataset.
 
+<p align="center">
+  <img src="../data/images/adversarial_training.png?raw=true" width="200" title="adversarial_training">
+</p>
+
 ## Tensorflow v2
 
 [art-for-tensorflow-v2-callable.ipynb](art-for-tensorflow-v2-callable.ipynb) show how to use ART with Tensorflow v2
@@ -20,6 +24,10 @@ tensorflow.keras without eager execution.
 
 [attack_adversarial_patch.ipynb](attack_adversarial_patch.ipynb) shows how to use ART to create real-world adversarial
 patches that fool real-world object detection and classification models.
+
+<p align="center">
+  <img src="../data/images/adversarial_patch.png?raw=true" width="200" title="adversarial_patch">
+</p>
 
 [attack_decision_based_boundary.ipynb](attack_decision_based_boundary.ipynb) demonstrates Decision-Based Adversarial 
 Attack (Boundary) attack. This is a black-box attack which only requires class predictions.
@@ -49,7 +57,6 @@ and shows how to apply pre-processing defences.
   <img src="../data/tesseract/assent_benign.png?raw=true" width="200" title="assent_benign">
   <img src="../data/tesseract/assent_adversarial.png?raw=true" width="200" title="assent_adversarial">
 </p>
-<br />
 
 [classifier_catboost.ipynb](classifier_catboost.ipynb) shows how to use ART with CatBoost models. It demonstrates and 
 analyzes Zeroth Order Optimisation attacks using the Iris and MNIST datasets.
@@ -58,6 +65,10 @@ analyzes Zeroth Order Optimisation attacks using the Iris and MNIST datasets.
 for the Gaussian Process classifier of GPy. It crafts adversarial examples with the HighConfidenceLowUncertainty (HCLU) 
 attack ([Grosse et al., 2018](https://arxiv.org/abs/1812.02606)), specifically targeting Gaussian Process classifiers, and
 compares it to Projected Gradient Descent (PGD) ([Madry et al., 2017](https://arxiv.org/abs/1706.06083)).
+
+<p align="center">
+  <img src="../data/images/gaussian_process.png?raw=true" width="200" title="gaussian_process">
+</p>
 
 [classifier_lightgbm.ipynb](classifier_lightgbm.ipynb) shows how to use ART with LightGBM models. It demonstrates and 
 analyzes Zeroth Order Optimisation attacks using the Iris and MNIST datasets.
@@ -102,6 +113,10 @@ how to use ART with Scikit-learn SVC and LinearSVC support vector machines. It d
 Gradient Descent attacks using the Iris and MNIST dataset for binary and multiclass classification for linear and 
 radial-basis-function kernels.
 
+<p align="center">
+  <img src="../data/images/svc.png?raw=true" width="200" title="svc">
+</p>
+
 [classifier_xgboost.ipynb](classifier_xgboost.ipynb) shows how to use ART with XGBoost models. It demonstrates and 
 analyzes Zeroth Order Optimisation attacks using the Iris and MNIST datasets.
 
@@ -115,6 +130,10 @@ CIFAR-10 dataset.
 
 [poisoning_dataset_mnist.ipynb](poisoning_dataset_mnist.ipynb) demonstrates the generation and detection of backdoors
 into neural networks by poisoning the training dataset.
+
+<p align="center">
+  <img src="../data/images/poisoning.png?raw=true" width="200" title="poisoning">
+</p>
 
 ## Certification and Verification
 
