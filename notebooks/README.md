@@ -67,7 +67,7 @@ attack ([Grosse et al., 2018](https://arxiv.org/abs/1812.02606)), specifically t
 compares it to Projected Gradient Descent (PGD) ([Madry et al., 2017](https://arxiv.org/abs/1706.06083)).
 
 <p align="center">
-  <img src="../data/images/gaussian_process.png?raw=true" width="200" title="gaussian_process">
+  <img src="../data/images/gaussian_process_hclu.png?raw=true" width="200" title="gaussian_process_hclu">
 </p>
 
 [classifier_lightgbm.ipynb](classifier_lightgbm.ipynb) shows how to use ART with LightGBM models. It demonstrates and 
