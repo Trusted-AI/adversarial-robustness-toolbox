@@ -104,20 +104,20 @@ class ActivationDefence(PoisonFilteringDefence):
                                                                                     self.is_clean_by_class)
         return conf_matrix_json
 
-    def detect_poison(self, clustering_method='KMeans', n_clusters=2, reduce='PCA', ndims=2,
+    def detect_poison(self, clustering_method='KMeans', nb_clusters=2, reduce='PCA', nb_dims=2,
                       cluster_analysis='smaller'):
         """
         Returns poison detected and a report.
 
         :param clustering_method: clustering algorithm to be used. Currently `KMeans` is the only method supported
         :type clustering_method: `str`
-        :param n_clusters: number of clusters to find. This value needs to be greater or equal to one
-        :type n_clusters: `int`
+        :param nb_clusters: number of clusters to find. This value needs to be greater or equal to one
+        :type nb_clusters: `int`
         :param reduce: method used to reduce dimensionality of the activations. Supported methods include  `PCA`,
                        `FastICA` and `TSNE`
         :type reduce: `str`
-        :param ndims: number of dimensions to be reduced
-        :type ndims: `int`
+        :param nb_dims: number of dimensions to be reduced
+        :type nb_dims: `int`
         :param cluster_analysis: heuristic to automatically determine if a cluster contains poisonous data. Supported
                                  methods include `smaller` and `distance`. The `smaller` method defines as poisonous the
                                  cluster with less number of data points, while the `distance` heuristic uses the
@@ -131,9 +131,9 @@ class ActivationDefence(PoisonFilteringDefence):
         """
 
         args = {'clustering_method': clustering_method,
-                'n_clusters': n_clusters,
+                'nb_clusters': nb_clusters,
                 'reduce': reduce,
-                'ndims': ndims,
+                'nb_dims': nb_dims,
                 'cluster_analysis': cluster_analysis}
 
         self.set_params(**args)

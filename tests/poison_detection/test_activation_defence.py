@@ -122,7 +122,7 @@ class TestActivationDefence(unittest.TestCase):
         self.assertEqual(found_clusters, 2)
 
         _, is_clean_lst = self.defence.detect_poison(nb_clusters=3, nb_dims=10, reduce='PCA',
-                                                          cluster_analysis='distance')
+                                                     cluster_analysis='distance')
         self.assertEqual(len(x_train), len(is_clean_lst))
 
         # Test change of state to new number of clusters:
@@ -134,10 +134,10 @@ class TestActivationDefence(unittest.TestCase):
         self.assertNotEqual(sum_clean1, sum_clean2)
 
         _, is_clean_lst = self.defence.detect_poison(nb_clusters=2, nb_dims=10, reduce='PCA',
-                                                          cluster_analysis='distance')
+                                                     cluster_analysis='distance')
         sum_dist = sum(is_clean_lst)
         _, is_clean_lst = self.defence.detect_poison(nb_clusters=2, nb_dims=10, reduce='PCA',
-                                                          cluster_analysis='smaller')
+                                                     cluster_analysis='smaller')
         sum_size = sum(is_clean_lst)
         self.assertNotEqual(sum_dist, sum_size)
 
