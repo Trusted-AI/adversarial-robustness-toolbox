@@ -128,6 +128,12 @@ CIFAR-10 dataset.
 
 ## Poisoning
 
+[poisoning_attack_svm.ipynb](poisoning_attack_svm.ipynb) demonstrates a poisoning attack on a Support Vector Machine.
+
+<p align="center">
+  <img src="../data/images/svm_poly.gif?raw=true" width="200" title="svm_poly">
+</p>
+
 [poisoning_dataset_mnist.ipynb](poisoning_dataset_mnist.ipynb) demonstrates the generation and detection of backdoors
 into neural networks by poisoning the training dataset.
 
