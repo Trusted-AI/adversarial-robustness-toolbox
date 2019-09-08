@@ -16,7 +16,7 @@
 # TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 # SOFTWARE.
 """
-This module implements attacks on Support Vector Machines.
+This module implements poisoning attacks on Support Vector Machines.
 """
 from __future__ import absolute_import, division, print_function, unicode_literals
 
@@ -31,16 +31,17 @@ from art.classifiers.scikitlearn import ScikitlearnSVC
 logger = logging.getLogger(__name__)
 
 
-class SVMAttack(Attack):
+class PoisoningAttackSVM(Attack):
     """
-    Close implementation of Biggio's attack on SVMs
-    Paper link: https://arxiv.org/pdf/1206.6389.pdf
+    Close implementation of poisoning attack on Support Vector Machines (SVM) by Biggio et al.
+
+    | Paper link: https://arxiv.org/pdf/1206.6389.pdf
     """
     attack_params = ['classifier', 'step', 'eps', 'x_train', 'y_train', 'x_val', 'y_val']
 
     def __init__(self, classifier, step, eps, x_train, y_train, x_val, y_val, max_iters=100, **kwargs):
         """
-        Initialize an SVM attack
+        Initialize an SVM poisoning attack
 
         :param classifier: A trained ScikitlearnSVC classifier
         :type classifier: `art.classifiers.scikitlearn.ScikitlearnSVC`
@@ -62,7 +63,7 @@ class SVMAttack(Attack):
         """
         from sklearn.svm import LinearSVC, SVC
 
-        super(SVMAttack, self).__init__(classifier)
+        super(PoisoningAttackSVM, self).__init__(classifier)
 
         if not isinstance(classifier, ScikitlearnSVC):
             raise TypeError('Classifier must be a SVC')
@@ -121,7 +122,7 @@ class SVMAttack(Attack):
         :type kwargs: `dict`
         :return: `True` when parsing was successful
         """
-        super(SVMAttack, self).set_params(**kwargs)
+        super(PoisoningAttackSVM, self).set_params(**kwargs)
         if self.step <= 0:
             raise ValueError("Step size must be strictly positive")
         if self.eps <= 0:
