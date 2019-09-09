@@ -99,6 +99,10 @@ class VirtualAdversarialMethod(Attack):
                 var_d = self._normalize(var_d)
                 preds_new = self.classifier.predict((batch + var_d).reshape((-1,) + self.classifier.input_shape))
 
+                if (preds_new < 0).any():
+                    raise TypeError('This attack requires that the classifier must produce a probability output, '
+                                    'which seems not the case.')
+
                 from scipy.stats import entropy
                 kl_div1 = entropy(np.transpose(preds[batch_index_1:batch_index_2]), np.transpose(preds_new))
 
@@ -106,6 +110,11 @@ class VirtualAdversarialMethod(Attack):
                 for current_index in range(var_d.shape[1]):
                     var_d[:, current_index] += self.finite_diff
                     preds_new = self.classifier.predict((batch + var_d).reshape((-1,) + self.classifier.input_shape))
+
+                    if (preds_new < 0).any():
+                        raise TypeError('This attack requires that the classifier must produce a probability output, '
+                                        'which seems not the case.')
+
                     kl_div2 = entropy(np.transpose(preds[batch_index_1:batch_index_2]), np.transpose(preds_new))
                     var_d_new[:, current_index] = (kl_div2 - kl_div1) / (self.finite_diff + tol)
                     var_d[:, current_index] -= self.finite_diff
