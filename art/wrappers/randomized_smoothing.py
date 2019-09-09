@@ -18,29 +18,26 @@
 """
 This module implements Randomized Smoothing applied to classifier predictions.
 
-Paper link:
-    https://arxiv.org/pdf/1902.02918.pdf
-
+| Paper link: https://arxiv.org/abs/1902.02918
 """
 from __future__ import absolute_import, division, print_function, unicode_literals
 
 import logging
 
 import numpy as np
-from scipy.stats import norm, binom_test
 
 from art.wrappers.wrapper import ClassifierWrapper
-
-from scipy.stats import norm, binom_test
-
+from art.classifiers.classifier import Classifier, ClassifierGradients
 
 logger = logging.getLogger(__name__)
 
 
-class RandomizedSmoothing(ClassifierWrapper):
+class RandomizedSmoothing(ClassifierWrapper, ClassifierGradients, Classifier):
     """
     Implementation of Randomized Smoothing applied to classifier predictions and gradients, as introduced
-    in Cohen et al. (2019). Paper link: https://arxiv.org/pdf/1902.02918.pdf
+    in Cohen et al. (2019).
+
+    | Paper link: https://arxiv.org/abs/1902.02918
     """
 
     def __init__(self, classifier, sample_size, scale=0.1, alpha=0.001):
@@ -71,9 +68,11 @@ class RandomizedSmoothing(ClassifierWrapper):
         :type batch_size: `int`
         :param is_abstain: True if function will abstain from prediction and return 0s
         :type is_abstain: `boolean`
-        :return: Array of predictions of shape `(nb_inputs, self.nb_classes)`.
+        :return: Array of predictions of shape `(nb_inputs, nb_classes)`.
         :rtype: `np.ndarray`
         """
+        from scipy.stats import binom_test
+
         logger.info('Applying randomized smoothing.')
         n_abstained = 0
         prediction = []
@@ -94,10 +93,10 @@ class RandomizedSmoothing(ClassifierWrapper):
 
             prediction.append(smooth_prediction)
         if n_abstained > 0:
-            print('%s prediction(s) abstained.'% n_abstained)
+            print('%s prediction(s) abstained.' % n_abstained)
         return np.array(prediction)
 
-    def loss_gradient(self, x, y):
+    def loss_gradient(self, x, y, **kwargs):
         """
         Compute the gradient of the given classifier's loss function w.r.t. `x` of the original classifier.
 
@@ -111,7 +110,7 @@ class RandomizedSmoothing(ClassifierWrapper):
         logger.info('Applying randomized smoothing.')
         return self.classifier.loss_gradient(x, y)
 
-    def class_gradient(self, x, label=None):
+    def class_gradient(self, x, label=None, **kwargs):
         """
         Compute per-class derivatives of the given classifier w.r.t. `x` of original classifier.
 
@@ -141,6 +140,8 @@ class RandomizedSmoothing(ClassifierWrapper):
         :return: Tuple of length 2 of the selected class and certified radius
         :rtype: `tuple`
         """
+        from scipy.stats import norm
+
         prediction = []
         radius = []
         for x_i in x:
@@ -160,10 +161,9 @@ class RandomizedSmoothing(ClassifierWrapper):
                 radius.append(0.0)
             else:
                 prediction.append(class_select)
-                radius.append(self.scale*norm.ppf(prob_class))
+                radius.append(self.scale * norm.ppf(prob_class))
 
         return np.array(prediction), np.array(radius)
-
 
     def _noisy_samples(self, x, n=None):
         """
@@ -202,7 +202,7 @@ class RandomizedSmoothing(ClassifierWrapper):
         x_new = self._noisy_samples(x, n=n)
         predictions = self.classifier.predict(x_new, batch_size)
 
-         # convert to binary predictions
+        # convert to binary predictions
         idx = np.argmax(predictions, axis=-1)
         pred = np.zeros(predictions.shape)
         pred[np.arange(pred.shape[0]), idx] = 1
@@ -226,3 +226,42 @@ class RandomizedSmoothing(ClassifierWrapper):
         from statsmodels.stats.proportion import proportion_confint
 
         return proportion_confint(n_class_samples, n_total_samples, alpha=2 * self.alpha, method="beta")[0]
+
+    def fit(self, x, y, **kwargs):
+        """
+        Fit the classifier using the training data `(x, y)`.
+
+        :param x: Features in array of shape (nb_samples, nb_features) or (nb_samples, nb_pixels_1, nb_pixels_2,
+                  nb_channels) or (nb_samples, nb_channels, nb_pixels_1, nb_pixels_2)
+        :type x: `np.ndarray`
+        :param y: Target values (class labels in classification) in array of shape (nb_samples, nb_classes) in
+                  One Hot Encoding format.
+        :type y: `np.ndarray`
+        :param kwargs: Dictionary of framework-specific arguments.
+        :type kwargs: `dict`
+        :return: `None`
+        """
+        raise NotImplementedError
+
+    def nb_classes(self):
+        """
+        Return the number of output classes.
+
+        :return: Number of classes in the data.
+        :rtype: `int`
+        """
+        # pylint: disable=W0212
+        return self.classifier.nb_classes()
+
+    def save(self, filename, path=None):
+        """
+        Save a model to file specific to the backend framework.
+
+        :param filename: Name of the file where to save the model.
+        :type filename: `str`
+        :param path: Path of the directory where to save the model. If no path is specified, the model will be stored in
+                     the default data location of ART at `DATA_PATH`.
+        :type path: `str`
+        :return: None
+        """
+        raise NotImplementedError

@@ -19,8 +19,7 @@
 This module implements the Fast Gradient Method attack. This implementation includes the original Fast Gradient Sign
 Method attack and extends it to other norms, therefore it is called the Fast Gradient Method.
 
-Paper link:
-    https://arxiv.org/abs/1412.6572
+| Paper link: https://arxiv.org/abs/1412.6572
 """
 from __future__ import absolute_import, division, print_function, unicode_literals
 
@@ -29,8 +28,9 @@ import logging
 import numpy as np
 
 from art import NUMPY_DTYPE
+from art.classifiers.classifier import ClassifierGradients
 from art.attacks.attack import Attack
-from art.utils import compute_success, get_labels_np_array, random_sphere, projection
+from art.utils import compute_success, get_labels_np_array, random_sphere, projection, check_and_transform_label_format
 
 logger = logging.getLogger(__name__)
 
@@ -39,7 +39,9 @@ class FastGradientMethod(Attack):
     """
     This attack was originally implemented by Goodfellow et al. (2015) with the infinity norm (and is known as the "Fast
     Gradient Sign Method"). This implementation extends the attack to other norms, and is therefore called the Fast
-    Gradient Method. Paper link: https://arxiv.org/abs/1412.6572
+    Gradient Method.
+
+    | Paper link: https://arxiv.org/abs/1412.6572
     """
     attack_params = Attack.attack_params + ['norm', 'eps', 'eps_step', 'targeted', 'num_random_init', 'batch_size',
                                             'minimal']
@@ -49,26 +51,31 @@ class FastGradientMethod(Attack):
         """
         Create a :class:`.FastGradientMethod` instance.
 
-        :param classifier: A trained model.
+        :param classifier: A trained classifier.
         :type classifier: :class:`.Classifier`
-        :param norm: Order of the norm. Possible values: np.inf, 1 or 2.
+        :param norm: The norm of the adversarial perturbation. Possible values: np.inf, 1 or 2.
         :type norm: `int`
         :param eps: Attack step size (input variation)
         :type eps: `float`
         :param eps_step: Step size of input variation for minimal perturbation computation
         :type eps_step: `float`
-        :param targeted: Should the attack target one specific class
+        :param targeted: Indicates whether the attack is targeted (True) or untargeted (False)
         :type targeted: `bool`
         :param num_random_init: Number of random initialisations within the epsilon ball. For random_init=0 starting at
             the original input.
         :type num_random_init: `int`
-        :param batch_size: Batch size
+        :param batch_size: Size of the batch on which adversarial samples are generated.
         :type batch_size: `int`
-        :param minimal: Flag to compute the minimal perturbation.
+        :param minimal: Indicates if computing the minimal perturbation (True). If True, also define `eps_step` for
+                        the step size and eps for the maximum perturbation.
         :type minimal: `bool`
-
         """
         super(FastGradientMethod, self).__init__(classifier)
+        if not isinstance(classifier, ClassifierGradients):
+            raise (TypeError('For `' + self.__class__.__name__ + '` classifier must be an instance of '
+                             '`art.classifiers.classifier.ClassifierGradients`, the provided classifier is instance of '
+                             + str(classifier.__class__.__bases__) + '.'))
+
         kwargs = {'norm': norm, 'eps': eps, 'eps_step': eps_step, 'targeted': targeted,
                   'num_random_init': num_random_init, 'batch_size': batch_size, 'minimal': minimal}
         FastGradientMethod.set_params(self, **kwargs)
@@ -123,14 +130,16 @@ class FastGradientMethod(Attack):
 
         :param x: An array with the original inputs.
         :type x: `np.ndarray`
-        :param y: The labels for the data `x`. Only provide this parameter if you'd like to use true
-                  labels when crafting adversarial samples. Otherwise, model predictions are used as labels to avoid the
-                  "label leaking" effect (explained in this paper: https://arxiv.org/abs/1611.01236). Default is `None`.
-                  Labels should be one-hot-encoded.
+        :param y: Target values (class labels) one-hot-encoded of shape (nb_samples, nb_classes) or indices of shape
+                  (nb_samples,). Only provide this parameter if you'd like to use true labels when crafting adversarial
+                  samples. Otherwise, model predictions are used as labels to avoid the "label leaking" effect
+                  (explained in this paper: https://arxiv.org/abs/1611.01236). Default is `None`.
         :type y: `np.ndarray`
         :return: An array holding the adversarial examples.
         :rtype: `np.ndarray`
         """
+        y = check_and_transform_label_format(y, self.classifier.nb_classes())
+
         if y is None:
             # Throw error if attack is targeted, but no targets are provided
             if self.targeted:
@@ -171,6 +180,7 @@ class FastGradientMethod(Attack):
     def set_params(self, **kwargs):
         """
         Take in a dictionary of parameters and applies attack-specific checks before saving them as attributes.
+
         :param norm: Order of the norm. Possible values: np.inf, 1 or 2.
         :type norm: `int` or `float`
         :param eps: Attack step size (input variation)
@@ -180,7 +190,7 @@ class FastGradientMethod(Attack):
         :param targeted: Should the attack target one specific class
         :type targeted: `bool`
         :param num_random_init: Number of random initialisations within the epsilon ball. For random_init=0 starting at
-            the original input.
+                                the original input.
         :type num_random_init: `int`
         :param batch_size: Batch size
         :type batch_size: `int`
@@ -250,7 +260,7 @@ class FastGradientMethod(Attack):
         if random_init:
             n = x.shape[0]
             m = np.prod(x.shape[1:])
-            x_adv = x.astype(NUMPY_DTYPE) + random_sphere(n, m, eps, self.norm).reshape(x.shape)
+            x_adv = x.astype(NUMPY_DTYPE) + random_sphere(n, m, eps, self.norm).reshape(x.shape).astype(NUMPY_DTYPE)
 
             if hasattr(self.classifier, 'clip_values') and self.classifier.clip_values is not None:
                 clip_min, clip_max = self.classifier.clip_values
@@ -266,7 +276,6 @@ class FastGradientMethod(Attack):
 
             # Get perturbation
             perturbation = self._compute_perturbation(batch, batch_labels)
-            # print('--------- pert ', perturbation)
 
             # Apply perturbation and clip
             x_adv[batch_index_1:batch_index_2] = self._apply_perturbation(batch, perturbation, eps_step)

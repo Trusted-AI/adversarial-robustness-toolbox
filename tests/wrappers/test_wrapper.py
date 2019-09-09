@@ -20,6 +20,7 @@ from __future__ import absolute_import, division, print_function, unicode_litera
 import logging
 import unittest
 
+import tensorflow as tf
 import keras.backend as k
 import numpy as np
 
@@ -34,6 +35,8 @@ NB_TRAIN = 500
 NB_TEST = 100
 
 
+@unittest.skipIf(tf.__version__[0] == '2', reason='Skip unittests for TensorFlow v2 until Keras supports TensorFlow'
+                                                  ' v2 as backend.')
 class TestMixinWKerasClassifier(unittest.TestCase):
     @classmethod
     def setUpClass(cls):
@@ -46,14 +49,13 @@ class TestMixinWKerasClassifier(unittest.TestCase):
         cls.mnist = (x_train, y_train), (x_test, y_test)
 
         # Load small Keras model
-        cls.model_mnist, _ = get_classifier_kr()
+        cls.model_mnist = get_classifier_kr()
 
     @classmethod
     def tearDownClass(cls):
         k.clear_session()
 
     def setUp(self):
-        # Set master seed
         master_seed(1234)
 
     def test_shapes(self):
@@ -63,7 +65,7 @@ class TestMixinWKerasClassifier(unittest.TestCase):
         preds = classifier.predict(self.mnist[1][0])
         self.assertEqual(preds.shape, y_test.shape)
 
-        self.assertEqual(classifier.nb_classes, 10)
+        self.assertEqual(classifier.nb_classes(), 10)
 
         class_grads = classifier.class_gradient(x_test[:11])
         self.assertEqual(class_grads.shape, tuple([11, 10] + list(x_test[1].shape)))
@@ -105,7 +107,6 @@ class TestMixinWKerasClassifier(unittest.TestCase):
         self.assertNotEqual(np.sum(grads), 0)
 
     def test_layers(self):
-        # Get MNIST
         (_, _), (x_test, _), _, _ = load_mnist()
         x_test = x_test[:NB_TEST]
 

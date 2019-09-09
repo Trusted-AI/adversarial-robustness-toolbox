@@ -40,6 +40,7 @@ class TestHopSkipJump(unittest.TestCase):
     """
     A unittest class for testing the HopSkipJump attack.
     """
+
     @classmethod
     def setUpClass(cls):
         # Get MNIST
@@ -54,10 +55,10 @@ class TestHopSkipJump(unittest.TestCase):
 
     def test_tfclassifier(self):
         """
-        First test with the TFClassifier.
+        First test with the TensorFlowClassifier.
         :return:
         """
-        # Build TFClassifier
+        # Build TensorFlowClassifier
         tfc, sess = get_classifier_tf()
 
         # Get MNIST
@@ -65,7 +66,7 @@ class TestHopSkipJump(unittest.TestCase):
 
         # First targeted attack and norm=2
         hsj = HopSkipJump(classifier=tfc, targeted=True, max_iter=2, max_eval=100, init_eval=10)
-        params = {'y': random_targets(y_test, tfc.nb_classes)}
+        params = {'y': random_targets(y_test, tfc.nb_classes())}
         x_test_adv = hsj.generate(x_test, **params)
 
         self.assertFalse((x_test == x_test_adv).all())
@@ -78,7 +79,7 @@ class TestHopSkipJump(unittest.TestCase):
 
         # First targeted attack and norm=np.inf
         hsj = HopSkipJump(classifier=tfc, targeted=True, max_iter=2, max_eval=100, init_eval=10, norm=np.Inf)
-        params = {'y': random_targets(y_test, tfc.nb_classes)}
+        params = {'y': random_targets(y_test, tfc.nb_classes())}
         x_test_adv = hsj.generate(x_test, **params)
 
         self.assertFalse((x_test == x_test_adv).all())
@@ -115,22 +116,23 @@ class TestHopSkipJump(unittest.TestCase):
 
         # Clean-up session
         sess.close()
-        tf.reset_default_graph()
 
+    @unittest.skipIf(tf.__version__[0] == '2', reason='Skip unittests for TensorFlow v2 until Keras supports TensorFlow'
+                                                      ' v2 as backend.')
     def test_krclassifier(self):
         """
         Second test with the KerasClassifier.
         :return:
         """
         # Build KerasClassifier
-        krc, sess = get_classifier_kr()
+        krc = get_classifier_kr()
 
         # Get MNIST
         (_, _), (x_test, y_test) = self.mnist
 
         # First targeted attack and norm=2
         hsj = HopSkipJump(classifier=krc, targeted=True, max_iter=2, max_eval=100, init_eval=10)
-        params = {'y': random_targets(y_test, krc.nb_classes)}
+        params = {'y': random_targets(y_test, krc.nb_classes())}
         x_test_adv = hsj.generate(x_test, **params)
 
         self.assertFalse((x_test == x_test_adv).all())
@@ -143,7 +145,7 @@ class TestHopSkipJump(unittest.TestCase):
 
         # First targeted attack and norm=np.inf
         hsj = HopSkipJump(classifier=krc, targeted=True, max_iter=2, max_eval=100, init_eval=10, norm=np.Inf)
-        params = {'y': random_targets(y_test, krc.nb_classes)}
+        params = {'y': random_targets(y_test, krc.nb_classes())}
         x_test_adv = hsj.generate(x_test, **params)
 
         self.assertFalse((x_test == x_test_adv).all())
@@ -180,6 +182,7 @@ class TestHopSkipJump(unittest.TestCase):
 
         # Clean-up session
         k.clear_session()
+        tf.reset_default_graph()
 
     def test_ptclassifier(self):
         """
@@ -191,11 +194,11 @@ class TestHopSkipJump(unittest.TestCase):
 
         # Get MNIST
         (_, _), (x_test, y_test) = self.mnist
-        x_test = np.swapaxes(x_test, 1, 3)
+        x_test = np.swapaxes(x_test, 1, 3).astype(np.float32)
 
         # First targeted attack and norm=2
         hsj = HopSkipJump(classifier=ptc, targeted=True, max_iter=2, max_eval=100, init_eval=10)
-        params = {'y': random_targets(y_test, ptc.nb_classes)}
+        params = {'y': random_targets(y_test, ptc.nb_classes())}
         x_test_adv = hsj.generate(x_test, **params)
 
         self.assertFalse((x_test == x_test_adv).all())
@@ -208,7 +211,7 @@ class TestHopSkipJump(unittest.TestCase):
 
         # First targeted attack and norm=np.inf
         hsj = HopSkipJump(classifier=ptc, targeted=True, max_iter=2, max_eval=100, init_eval=10, norm=np.Inf)
-        params = {'y': random_targets(y_test, ptc.nb_classes)}
+        params = {'y': random_targets(y_test, ptc.nb_classes())}
         x_test_adv = hsj.generate(x_test, **params)
 
         self.assertFalse((x_test == x_test_adv).all())
@@ -243,6 +246,18 @@ class TestHopSkipJump(unittest.TestCase):
         y_pred_adv = np.argmax(ptc.predict(x_test_adv), axis=1)
         self.assertTrue((y_pred != y_pred_adv).any())
 
+    def test_classifier_type_check_fail_classifier(self):
+        # Use a useless test classifier to test basic classifier properties
+        class ClassifierNoAPI:
+            pass
+
+        classifier = ClassifierNoAPI
+        with self.assertRaises(TypeError) as context:
+            _ = HopSkipJump(classifier=classifier)
+
+        self.assertIn('For `HopSkipJump` classifier must be an instance of `art.classifiers.classifier.Classifier`, the'
+                      ' provided classifier is instance of (<class \'object\'>,).', str(context.exception))
+
 
 class TestHopSkipJumpVectors(unittest.TestCase):
     @classmethod
@@ -254,6 +269,8 @@ class TestHopSkipJumpVectors(unittest.TestCase):
     def setUp(self):
         master_seed(1234)
 
+    @unittest.skipIf(tf.__version__[0] == '2', reason='Skip unittests for TensorFlow v2 until Keras supports TensorFlow'
+                                                      ' v2 as backend.')
     def test_iris_k_clipped(self):
         (_, _), (x_test, y_test) = self.iris
         classifier, _ = get_iris_classifier_kr()
@@ -285,6 +302,8 @@ class TestHopSkipJumpVectors(unittest.TestCase):
         # Clean-up session
         k.clear_session()
 
+    @unittest.skipIf(tf.__version__[0] == '2', reason='Skip unittests for Tensorflow v2 until Keras supports Tensorflow'
+                                                      ' v2 as backend.')
     def test_iris_k_unbounded(self):
         (_, _), (x_test, y_test) = self.iris
         classifier, _ = get_iris_classifier_kr()
@@ -371,11 +390,11 @@ class TestHopSkipJumpVectors(unittest.TestCase):
 
         # Clean-up session
         sess.close()
-        tf.reset_default_graph()
 
     def test_iris_pt(self):
         (_, _), (x_test, y_test) = self.iris
         classifier = get_iris_classifier_pt()
+        x_test = x_test.astype(np.float32)
 
         # Norm=2
         attack = HopSkipJump(classifier, targeted=False, max_iter=2, max_eval=100, init_eval=10)
@@ -400,6 +419,63 @@ class TestHopSkipJumpVectors(unittest.TestCase):
         self.assertFalse((np.argmax(y_test, axis=1) == preds_adv).all())
         acc = np.sum(preds_adv == np.argmax(y_test, axis=1)) / y_test.shape[0]
         logger.info('Accuracy on Iris with HopSkipJump adversarial examples: %.2f%%', (acc * 100))
+
+    def test_scikitlearn(self):
+        from sklearn.linear_model import LogisticRegression
+        from sklearn.svm import SVC, LinearSVC
+        from sklearn.tree import DecisionTreeClassifier, ExtraTreeClassifier
+        from sklearn.ensemble import AdaBoostClassifier, BaggingClassifier, ExtraTreesClassifier
+        from sklearn.ensemble import GradientBoostingClassifier, RandomForestClassifier
+
+        from art.classifiers.scikitlearn import ScikitlearnDecisionTreeClassifier, ScikitlearnExtraTreeClassifier
+        from art.classifiers.scikitlearn import ScikitlearnAdaBoostClassifier, ScikitlearnBaggingClassifier
+        from art.classifiers.scikitlearn import ScikitlearnExtraTreesClassifier, ScikitlearnGradientBoostingClassifier
+        from art.classifiers.scikitlearn import ScikitlearnRandomForestClassifier, ScikitlearnLogisticRegression
+        from art.classifiers.scikitlearn import ScikitlearnSVC
+
+        scikitlearn_test_cases = {DecisionTreeClassifier: ScikitlearnDecisionTreeClassifier,
+                                  ExtraTreeClassifier: ScikitlearnExtraTreeClassifier,
+                                  AdaBoostClassifier: ScikitlearnAdaBoostClassifier,
+                                  BaggingClassifier: ScikitlearnBaggingClassifier,
+                                  ExtraTreesClassifier: ScikitlearnExtraTreesClassifier,
+                                  GradientBoostingClassifier: ScikitlearnGradientBoostingClassifier,
+                                  RandomForestClassifier: ScikitlearnRandomForestClassifier,
+                                  LogisticRegression: ScikitlearnLogisticRegression,
+                                  SVC: ScikitlearnSVC,
+                                  LinearSVC: ScikitlearnSVC}
+
+        (_, _), (x_test, y_test) = self.iris
+
+        for (model_class, classifier_class) in scikitlearn_test_cases.items():
+            model = model_class()
+            classifier = classifier_class(model=model, clip_values=(0, 1))
+            classifier.fit(x=x_test, y=y_test)
+
+            # Norm=2
+            attack = HopSkipJump(classifier, targeted=False, max_iter=2, max_eval=100, init_eval=10)
+            x_test_adv = attack.generate(x_test)
+            self.assertFalse((x_test == x_test_adv).all())
+            self.assertTrue((x_test_adv <= 1).all())
+            self.assertTrue((x_test_adv >= 0).all())
+
+            preds_adv = np.argmax(classifier.predict(x_test_adv), axis=1)
+            self.assertFalse((np.argmax(y_test, axis=1) == preds_adv).all())
+            acc = np.sum(preds_adv == np.argmax(y_test, axis=1)) / y_test.shape[0]
+            logger.info('Accuracy of ' + classifier.__class__.__name__ + ' on Iris with HopSkipJump adversarial '
+                        'examples: %.2f%%', (acc * 100))
+
+            # Norm=np.inf
+            attack = HopSkipJump(classifier, targeted=False, max_iter=2, max_eval=100, init_eval=10, norm=np.Inf)
+            x_test_adv = attack.generate(x_test)
+            self.assertFalse((x_test == x_test_adv).all())
+            self.assertTrue((x_test_adv <= 1).all())
+            self.assertTrue((x_test_adv >= 0).all())
+
+            preds_adv = np.argmax(classifier.predict(x_test_adv), axis=1)
+            self.assertFalse((np.argmax(y_test, axis=1) == preds_adv).all())
+            acc = np.sum(preds_adv == np.argmax(y_test, axis=1)) / y_test.shape[0]
+            logger.info('Accuracy of ' + classifier.__class__.__name__ + ' on Iris with HopSkipJump adversarial '
+                        'examples: %.2f%%', (acc * 100))
 
 
 if __name__ == '__main__':

@@ -18,8 +18,7 @@
 """
 This module implements the Jacobian-based Saliency Map attack `SaliencyMapMethod`. This is a white-box attack.
 
-Paper link:
-    https://arxiv.org/pdf/1511.07528.pdf
+| Paper link: https://arxiv.org/abs/1511.07528
 """
 from __future__ import absolute_import, division, print_function, unicode_literals
 
@@ -28,7 +27,9 @@ import logging
 import numpy as np
 
 from art import NUMPY_DTYPE
+from art.classifiers.classifier import ClassifierGradients
 from art.attacks.attack import Attack
+from art.utils import check_and_transform_label_format
 
 logger = logging.getLogger(__name__)
 
@@ -36,7 +37,8 @@ logger = logging.getLogger(__name__)
 class SaliencyMapMethod(Attack):
     """
     Implementation of the Jacobian-based Saliency Map Attack (Papernot et al. 2016).
-    Paper link: https://arxiv.org/pdf/1511.07528.pdf
+
+    | Paper link: https://arxiv.org/abs/1511.07528
     """
     attack_params = Attack.attack_params + ['theta', 'gamma', 'batch_size']
 
@@ -44,16 +46,21 @@ class SaliencyMapMethod(Attack):
         """
         Create a SaliencyMapMethod instance.
 
-        :param classifier: A trained model.
+        :param classifier: A trained classifier.
         :type classifier: :class:`.Classifier`
-        :param theta: Perturbation introduced to each modified feature per step (can be positive or negative).
+        :param theta: Amount of Perturbation introduced to each modified feature per step (can be positive or negative).
         :type theta: `float`
-        :param gamma: Maximum percentage of perturbed features (between 0 and 1).
+        :param gamma: Maximum fraction of features being perturbed (between 0 and 1).
         :type gamma: `float`
-        :param batch_size: Batch size
+        :param batch_size: Size of the batch on which adversarial samples are generated.
         :type batch_size: `int`
         """
         super(SaliencyMapMethod, self).__init__(classifier)
+        if not isinstance(classifier, ClassifierGradients):
+            raise (TypeError('For `' + self.__class__.__name__ + '` classifier must be an instance of '
+                             '`art.classifiers.classifier.ClassifierGradients`, the provided classifier is instance of '
+                             + str(classifier.__class__.__bases__) + '.'))
+
         kwargs = {'theta': theta, 'gamma': gamma, 'batch_size': batch_size}
         self.set_params(**kwargs)
 
@@ -63,11 +70,14 @@ class SaliencyMapMethod(Attack):
 
         :param x: An array with the original inputs to be attacked.
         :type x: `np.ndarray`
-        :param y: Target values if the attack is targeted
+        :param y: Target values (class labels) one-hot-encoded of shape `(nb_samples, nb_classes)` or indices of shape
+                  `(nb_samples,)`.
         :type y: `np.ndarray`
         :return: An array holding the adversarial examples.
         :rtype: `np.ndarray`
         """
+        y = check_and_transform_label_format(y, self.classifier.nb_classes())
+
         # Initialize variables
         dims = list(x.shape[1:])
         self._nb_features = np.product(dims)
@@ -78,7 +88,7 @@ class SaliencyMapMethod(Attack):
         if y is None:
             # Randomly choose target from the incorrect classes for each sample
             from art.utils import random_targets
-            targets = np.argmax(random_targets(preds, self.classifier.nb_classes), axis=1)
+            targets = np.argmax(random_targets(preds, self.classifier.nb_classes()), axis=1)
         else:
             targets = np.argmax(y, axis=1)
 

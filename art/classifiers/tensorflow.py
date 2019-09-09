@@ -16,7 +16,7 @@
 # TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 # SOFTWARE.
 """
-This module implements the classifier `TFClassifier` for Tensorflow models.
+This module implements the classifier `TensorFlowClassifier` for TensorFlow models.
 """
 from __future__ import absolute_import, division, print_function, unicode_literals
 
@@ -26,19 +26,20 @@ import random
 import numpy as np
 import six
 
-from art.classifiers.classifier import Classifier
+from art.classifiers.classifier import Classifier, ClassifierNeuralNetwork, ClassifierGradients
 
 logger = logging.getLogger(__name__)
 
 
-class TFClassifier(Classifier):
+class TensorFlowClassifier(ClassifierNeuralNetwork, ClassifierGradients, Classifier):
     """
-    This class implements a classifier with the Tensorflow framework.
+    This class implements a classifier with the TensorFlow framework.
     """
+
     def __init__(self, input_ph, output, labels_ph=None, train=None, loss=None, learning=None, sess=None,
                  channel_index=3, clip_values=None, defences=None, preprocessing=(0, 1)):
         """
-        Initialization specific to Tensorflow models implementation.
+        Initialization specific to TensorFlow models implementation.
 
         :param input_ph: The input placeholder.
         :type input_ph: `tf.Placeholder`
@@ -67,15 +68,20 @@ class TFClassifier(Classifier):
         :type clip_values: `tuple`
         :param defences: Defences to be activated with the classifier.
         :type defences: `str` or `list(str)`
-        :param preprocessing: Tuple of the form `(substractor, divider)` of floats or `np.ndarray` of values to be
-               used for data preprocessing. The first value will be substracted from the input. The input will then
+        :param preprocessing: Tuple of the form `(subtractor, divider)` of floats or `np.ndarray` of values to be
+               used for data preprocessing. The first value will be subtracted from the input. The input will then
                be divided by the second one.
         :type preprocessing: `tuple`
         """
+        # pylint: disable=E0401
         import tensorflow as tf
+        if tf.__version__[0] == '2':
+            import tensorflow.compat.v1 as tf
+            tf.disable_eager_execution()
 
-        super(TFClassifier, self).__init__(clip_values=clip_values, channel_index=channel_index, defences=defences,
-                                           preprocessing=preprocessing)
+        super(TensorFlowClassifier, self).__init__(clip_values=clip_values, channel_index=channel_index,
+                                                   defences=defences,
+                                                   preprocessing=preprocessing)
         self._nb_classes = int(output.get_shape()[-1])
         self._input_shape = tuple(input_ph.get_shape().as_list()[1:])
         self._input_ph = input_ph
@@ -106,14 +112,14 @@ class TFClassifier(Classifier):
         :type x: `np.ndarray`
         :param batch_size: Size of batches.
         :type batch_size: `int`
-        :return: Array of predictions of shape `(nb_inputs, self.nb_classes)`.
+        :return: Array of predictions of shape `(num_inputs, nb_classes)`.
         :rtype: `np.ndarray`
         """
         # Apply preprocessing
         x_preprocessed, _ = self._apply_preprocessing(x, y=None, fit=False)
 
         # Run prediction with batch processing
-        results = np.zeros((x_preprocessed.shape[0], self.nb_classes), dtype=np.float32)
+        results = np.zeros((x_preprocessed.shape[0], self.nb_classes()), dtype=np.float32)
         num_batch = int(np.ceil(len(x_preprocessed) / float(batch_size)))
         for m in range(num_batch):
             # Batch indexes
@@ -134,7 +140,8 @@ class TFClassifier(Classifier):
 
         :param x: Training data.
         :type x: `np.ndarray`
-        :param y: Labels, one-vs-rest encoding.
+        :param y: Target values (class labels) one-hot-encoded of shape (nb_samples, nb_classes) or indices of shape
+                  (nb_samples,).
         :type y: `np.ndarray`
         :param batch_size: Size of batches.
         :type batch_size: `int`
@@ -188,7 +195,7 @@ class TFClassifier(Classifier):
         """
         from art.data_generators import TFDataGenerator
 
-        # Train directly in Tensorflow
+        # Train directly in TensorFlow
         if isinstance(generator, TFDataGenerator) and not (
                 hasattr(self, 'label_smooth') or hasattr(self, 'feature_squeeze')):
             for _ in range(nb_epochs):
@@ -201,7 +208,7 @@ class TFClassifier(Classifier):
 
                     # Run train step
                     self._sess.run(self._train, feed_dict=feed_dict)
-            super(TFClassifier, self).fit_generator(generator, nb_epochs=nb_epochs, **kwargs)
+            super(TensorFlowClassifier, self).fit_generator(generator, nb_epochs=nb_epochs, **kwargs)
 
     def class_gradient(self, x, label=None, **kwargs):
         """
@@ -220,8 +227,8 @@ class TFClassifier(Classifier):
         :rtype: `np.ndarray`
         """
         # Check value of label for computing gradients
-        if not (label is None or (isinstance(label, (int, np.integer)) and label in range(self.nb_classes))
-                or (isinstance(label, np.ndarray) and len(label.shape) == 1 and (label < self._nb_classes).all()
+        if not (label is None or (isinstance(label, (int, np.integer)) and label in range(self.nb_classes()))
+                or (isinstance(label, np.ndarray) and len(label.shape) == 1 and (label < self.nb_classes()).all()
                     and label.shape[0] == x.shape[0])):
             raise ValueError('Label %s is out of range.' % label)
 
@@ -264,7 +271,8 @@ class TFClassifier(Classifier):
 
         :param x: Sample input with shape as expected by the model.
         :type x: `np.ndarray`
-        :param y: Correct labels, one-vs-rest encoding.
+        :param y: Target values (class labels) one-hot-encoded of shape (nb_samples, nb_classes) or indices of shape
+                  (nb_samples,).
         :type y: `np.ndarray`
         :return: Array of gradients of the same shape as `x`.
         :rtype: `np.ndarray`
@@ -288,16 +296,20 @@ class TFClassifier(Classifier):
         return grads
 
     def _init_class_grads(self, label=None):
+        # pylint: disable=E0401
         import tensorflow as tf
+        if tf.__version__[0] == '2':
+            import tensorflow.compat.v1 as tf
+            tf.disable_eager_execution()
 
         if not hasattr(self, '_class_grads'):
-            self._class_grads = [None for _ in range(self.nb_classes)]
+            self._class_grads = [None for _ in range(self.nb_classes())]
 
         # Construct the class gradients graph
         if label is None:
             if None in self._class_grads:
                 self._class_grads = [tf.gradients(self._output[:, i], self._input_ph)[0]
-                                     for i in range(self._nb_classes)]
+                                     for i in range(self.nb_classes())]
 
         elif isinstance(label, int):
             if self._class_grads[label] is None:
@@ -315,7 +327,11 @@ class TFClassifier(Classifier):
         :return: The hidden layers in the model, input and output layers excluded.
         :rtype: `list`
         """
+        # pylint: disable=E0401
         import tensorflow as tf
+        if tf.__version__[0] == '2':
+            import tensorflow.compat.v1 as tf
+            tf.disable_eager_execution()
 
         # Get the computational graph
         with self._sess.graph.as_default():
@@ -380,7 +396,11 @@ class TFClassifier(Classifier):
         :return: The output of `layer`, where the first dimension is the batch size corresponding to `x`.
         :rtype: `np.ndarray`
         """
+        # pylint: disable=E0401
         import tensorflow as tf
+        if tf.__version__[0] == '2':
+            import tensorflow.compat.v1 as tf
+            tf.disable_eager_execution()
 
         # Get the computational graph
         with self._sess.graph.as_default():
@@ -468,7 +488,7 @@ class TFClassifier(Classifier):
 
     def __getstate__(self):
         """
-        Use to ensure `TFClassifier` can be pickled.
+        Use to ensure `TensorFlowClassifier` can be pickled.
 
         :return: State dictionary with instance parameters.
         :rtype: `dict`
@@ -499,11 +519,6 @@ class TFClassifier(Classifier):
         if self._train is not None:
             state['_train'] = self._train.name
 
-        if hasattr(self, '_logit_class_grads'):
-            state['_logit_class_grads'] = [ts if ts is None else ts.name for ts in self._logit_class_grads]
-        else:
-            state['_logit_class_grads'] = False
-
         if hasattr(self, '_class_grads'):
             state['_class_grads'] = [ts if ts is None else ts.name for ts in self._class_grads]
         else:
@@ -517,19 +532,22 @@ class TFClassifier(Classifier):
 
     def __setstate__(self, state):
         """
-        Use to ensure `TFClassifier` can be unpickled.
+        Use to ensure `TensorFlowClassifier` can be unpickled.
 
         :param state: State dictionary with instance parameters to restore.
         :type state: `dict`
         """
         self.__dict__.update(state)
 
-        # Load and update all functionality related to Tensorflow
-        # pylint: disable=E0611
+        # Load and update all functionality related to TensorFlow
+        # pylint: disable=E0611, E0401
         import os
-        from art import DATA_PATH
         import tensorflow as tf
+        if tf.__version__[0] == '2':
+            import tensorflow.compat.v1 as tf
+            tf.disable_eager_execution()
         from tensorflow.python.saved_model import tag_constants
+        from art import DATA_PATH
 
         full_path = os.path.join(DATA_PATH, state['model_name'])
 
@@ -569,13 +587,6 @@ class TFClassifier(Classifier):
         if state['_train'] is not None:
             self._train = graph.get_operation_by_name(state['_train'])
 
-        # Recover logit_class_grads if any
-        if state['_logit_class_grads']:
-            self._logit_class_grads = [ts if ts is None else graph.get_tensor_by_name(ts)
-                                       for ts in state['_logit_class_grads']]
-        else:
-            self.__dict__.pop('_logit_class_grads', None)
-
         # Recover class_grads if any
         if state['_class_grads']:
             self._class_grads = [ts if ts is None else graph.get_tensor_by_name(ts) for ts in state['_class_grads']]
@@ -585,10 +596,308 @@ class TFClassifier(Classifier):
         self.__dict__.pop('model_name', None)
 
     def __repr__(self):
-        repr_ = "%s(input_ph=%r, output=%r, labels_ph=%r, train=%r, loss=%r, learnign=%r, " \
+        repr_ = "%s(input_ph=%r, output=%r, labels_ph=%r, train=%r, loss=%r, learning=%r, " \
                 "sess=%r, channel_index=%r, clip_values=%r, defences=%r, preprocessing=%r)" \
                 % (self.__module__ + '.' + self.__class__.__name__,
                    self._input_ph, self._output, self._labels_ph, self._train, self._loss, self._learning, self._sess,
+                   self.channel_index, self.clip_values, self.defences, self.preprocessing)
+
+        return repr_
+
+
+# backward compatibility for ART v0.10 and earlier
+TFClassifier = TensorFlowClassifier
+
+
+class TensorFlowV2Classifier(ClassifierNeuralNetwork, ClassifierGradients, Classifier):
+    """
+    This class implements a classifier with the TensorFlow v2 framework.
+    """
+
+    def __init__(self, model, nb_classes, loss_object=None, train_step=None, channel_index=3, clip_values=None,
+                 defences=None, preprocessing=(0, 1)):
+        """
+        Initialization specific to TensorFlow v2 models.
+
+        :param model: a python functions or callable class defining the model and providing it prediction as output.
+        :type model: `function` or `callable class`
+        :param nb_classes: the number of classes in the classification task
+        :type nb_classes: `int`
+        :param loss_object: The loss function for which to compute gradients. This parameter is applied for training
+            the model and computing gradients of the loss w.r.t. the input.
+        :type loss_object: `tf.keras.losses`
+        :param train_step: a function that applies a gradient update to the trainable variables
+        :type train_step: `function`
+        :param channel_index: Index of the axis in data containing the color channels or features.
+        :type channel_index: `int`
+        :param clip_values: Tuple of the form `(min, max)` of floats or `np.ndarray` representing the minimum and
+               maximum values allowed for features. If floats are provided, these will be used as the range of all
+               features. If arrays are provided, each value will be considered the bound for a feature, thus
+               the shape of clip values needs to match the total number of features.
+        :type clip_values: `tuple`
+        :param defences: Defences to be activated with the classifier.
+        :type defences: `str` or `list(str)`
+        :param preprocessing: Tuple of the form `(substractor, divider)` of floats or `np.ndarray` of values to be
+               used for data preprocessing. The first value will be substracted from the input. The input will then
+               be divided by the second one.
+        :type preprocessing: `tuple`
+        """
+        super(TensorFlowV2Classifier, self).__init__(clip_values=clip_values, channel_index=channel_index,
+                                                     defences=defences, preprocessing=preprocessing)
+
+        self._model = model
+        self._nb_classes = nb_classes
+        self._loss_object = loss_object
+        self._train_step = train_step
+
+    def predict(self, x, batch_size=128, **kwargs):
+        """
+        Perform prediction for a batch of inputs.
+
+        :param x: Test set.
+        :type x: `np.ndarray`
+        :param batch_size: Size of batches.
+        :type batch_size: `int`
+        :return: Array of predictions of shape `(nb_inputs, nb_classes)`.
+        :rtype: `np.ndarray`
+        """
+        # Apply preprocessing
+        x_preprocessed, _ = self._apply_preprocessing(x, y=None, fit=False)
+
+        # Run prediction with batch processing
+        results = np.zeros((x_preprocessed.shape[0], self.nb_classes()), dtype=np.float32)
+        num_batch = int(np.ceil(len(x_preprocessed) / float(batch_size)))
+        for m in range(num_batch):
+            # Batch indexes
+            begin, end = m * batch_size, min((m + 1) * batch_size, x_preprocessed.shape[0])
+
+            # Run prediction
+            results[begin:end] = self._model(x_preprocessed[begin:end])
+
+        return results
+
+    def fit(self, x, y, batch_size=128, nb_epochs=10, **kwargs):
+        """
+        Fit the classifier on the training set `(x, y)`.
+
+        :param x: Training data.
+        :type x: `np.ndarray`
+        :param y: Labels, one-vs-rest encoding.
+        :type y: `np.ndarray`
+        :param batch_size: Size of batches.
+        :type batch_size: `int`
+        :param nb_epochs: Number of epochs to use for training.
+        :type nb_epochs: `int`
+        :param kwargs: Dictionary of framework-specific arguments. This parameter is not currently supported for
+               TensorFlow and providing it takes no effect.
+        :type kwargs: `dict`
+        :return: `None`
+        """
+        import tensorflow as tf
+
+        # Apply preprocessing
+        x_preprocessed, y_preprocessed = self._apply_preprocessing(x, y, fit=True)
+
+        train_ds = tf.data.Dataset.from_tensor_slices((x_preprocessed, y_preprocessed)).shuffle(10000).batch(batch_size)
+
+        for _ in range(nb_epochs):
+            for images, labels in train_ds:
+                self._train_step(images, labels)
+
+    def fit_generator(self, generator, nb_epochs=20, **kwargs):
+        """
+        Fit the classifier using the generator that yields batches as specified.
+
+        :param generator: Batch generator providing `(x, y)` for each epoch. If the generator can be used for native
+                          training in TensorFlow, it will.
+        :type generator: :class:`.DataGenerator`
+        :param nb_epochs: Number of epochs to use for training.
+        :type nb_epochs: `int`
+        :param kwargs: Dictionary of framework-specific arguments. This parameter is not currently supported for
+               TensorFlow and providing it takes no effect.
+        :type kwargs: `dict`
+        :return: `None`
+        """
+        raise NotImplementedError
+
+    def class_gradient(self, x, label=None, **kwargs):
+        """
+        Compute per-class derivatives w.r.t. `x`.
+
+        :param x: Sample input with shape as expected by the model.
+        :type x: `np.ndarray`
+        :param label: Index of a specific per-class derivative. If an integer is provided, the gradient of that class
+                      output is computed for all samples. If multiple values as provided, the first dimension should
+                      match the batch size of `x`, and each value will be used as target for its corresponding sample in
+                      `x`. If `None`, then gradients for all classes will be computed for each sample.
+        :type label: `int` or `list`
+        :return: Array of gradients of input features w.r.t. each class in the form
+                 `(batch_size, nb_classes, input_shape)` when computing for all classes, otherwise shape becomes
+                 `(batch_size, 1, input_shape)` when `label` parameter is specified.
+        :rtype: `np.ndarray`
+        """
+        import tensorflow as tf
+
+        # Apply preprocessing
+        x_preprocessed, _ = self._apply_preprocessing(x, y=None, fit=False)
+
+        # Compute the gradients
+        if tf.executing_eagerly:
+            if label is None:
+                # Compute the gradients w.r.t. all classes
+                class_gradients = list()
+
+                for i in range(self.nb_classes()):
+                    with tf.GradientTape() as tape:
+                        x_preprocessed_tf = tf.convert_to_tensor(x_preprocessed)
+                        tape.watch(x_preprocessed_tf)
+                        predictions = self._model(x_preprocessed_tf)
+                        prediction = predictions[:, i]
+                        tape.watch(prediction)
+
+                    class_gradient = tape.gradient(prediction, x_preprocessed_tf).numpy()
+                    class_gradients.append(class_gradient)
+
+                gradients = np.swapaxes(np.array(class_gradients), 0, 1)
+
+            elif isinstance(label, (int, np.integer)):
+                # Compute the gradients only w.r.t. the provided label
+                with tf.GradientTape() as tape:
+                    x_preprocessed_tf = tf.convert_to_tensor(x_preprocessed)
+                    tape.watch(x_preprocessed_tf)
+                    predictions = self._model(x_preprocessed_tf)
+                    prediction = predictions[:, label]
+                    tape.watch(prediction)
+
+                class_gradient = tape.gradient(prediction, x_preprocessed_tf).numpy()
+                gradients = np.expand_dims(class_gradient, axis=1)
+
+            else:
+                # For each sample, compute the gradients w.r.t. the indicated target class (possibly distinct)
+                class_gradients = list()
+                unique_labels = list(np.unique(label))
+
+                for unique_label in unique_labels:
+                    with tf.GradientTape() as tape:
+                        x_preprocessed_tf = tf.convert_to_tensor(x_preprocessed)
+                        tape.watch(x_preprocessed_tf)
+                        predictions = self._model(x_preprocessed_tf)
+                        prediction = predictions[:, unique_label]
+                        tape.watch(prediction)
+
+                    class_gradient = tape.gradient(prediction, x_preprocessed_tf).numpy()
+                    class_gradients.append(class_gradient)
+
+                gradients = np.swapaxes(np.array(class_gradients), 0, 1)
+                lst = [unique_labels.index(i) for i in label]
+                gradients = np.expand_dims(gradients[np.arange(len(gradients)), lst], axis=1)
+
+        else:
+            raise ValueError('Expecting eager execution.')
+
+        return gradients
+
+    def loss_gradient(self, x, y, **kwargs):
+        """
+        Compute the gradient of the loss function w.r.t. `x`.
+
+        :param x: Sample input with shape as expected by the model.
+        :type x: `np.ndarray`
+        :param y: Correct labels, one-vs-rest encoding.
+        :type y: `np.ndarray`
+        :return: Array of gradients of the same shape as `x`.
+        :rtype: `np.ndarray`
+        """
+        import tensorflow as tf
+
+        # Apply preprocessing
+        x_preprocessed, _ = self._apply_preprocessing(x, y, fit=False)
+
+        if tf.executing_eagerly:
+            with tf.GradientTape() as tape:
+                x_preprocessed_tf = tf.convert_to_tensor(x_preprocessed)
+                tape.watch(x_preprocessed_tf)
+                predictions = self._model(x_preprocessed_tf)
+                loss = self._loss_object(np.argmax(y, axis=1), predictions)
+
+            gradients = tape.gradient(loss, x_preprocessed_tf).numpy()
+        else:
+            raise ValueError('Expecting eager execution.')
+
+        # Apply preprocessing gradients
+        gradients = self._apply_preprocessing_gradient(x, gradients)
+
+        return gradients
+
+    def _get_layers(self):
+        """
+        Return the hidden layers in the model, if applicable.
+
+        :return: The hidden layers in the model, input and output layers excluded.
+        :rtype: `list`
+        """
+        raise NotImplementedError
+
+    @property
+    def layer_names(self):
+        """
+        Return the hidden layers in the model, if applicable.
+
+        :return: The hidden layers in the model, input and output layers excluded.
+        :rtype: `list`
+
+        .. warning:: `layer_names` tries to infer the internal structure of the model.
+                     This feature comes with no guarantees on the correctness of the result.
+                     The intended order of the layers tries to match their order in the model, but this is not
+                     guaranteed either.
+        """
+        raise NotImplementedError
+
+    def get_activations(self, x, layer, batch_size=128):
+        """
+        Return the output of the specified layer for input `x`. `layer` is specified by layer index (between 0 and
+        `nb_layers - 1`) or by name. The number of layers can be determined by counting the results returned by
+        calling `layer_names`.
+
+        :param x: Input for computing the activations.
+        :type x: `np.ndarray`
+        :param layer: Layer for computing the activations
+        :type layer: `int` or `str`
+        :param batch_size: Size of batches.
+        :type batch_size: `int`
+        :return: The output of `layer`, where the first dimension is the batch size corresponding to `x`.
+        :rtype: `np.ndarray`
+        """
+        raise NotImplementedError
+
+    def set_learning_phase(self, train):
+        """
+        Set the learning phase for the backend framework.
+
+        :param train: True to set the learning phase to training, False to set it to prediction.
+        :type train: `bool`
+        """
+        raise NotImplementedError
+
+    def save(self, filename, path=None):
+        """
+        Save a model to file in the format specific to the backend framework. For TensorFlow, .ckpt is used.
+
+        :param filename: Name of the file where to store the model.
+        :type filename: `str`
+        :param path: Path of the folder where to store the model. If no path is specified, the model will be stored in
+                     the default data location of the library `DATA_PATH`.
+        :type path: `str`
+        :return: None
+        """
+        raise NotImplementedError
+
+    def __repr__(self):
+
+        repr_ = "%s(model=%r, nb_classes=%r, loss_object=%r, learning=%r, train_step=%r, " \
+                "channel_index=%r, clip_values=%r, defences=%r, preprocessing=%r)" \
+                % (self.__module__ + '.' + self.__class__.__name__,
+                   self._model, self._nb_classes, self._loss_object, self._learning, self._train_step,
                    self.channel_index, self.clip_values, self.defences, self.preprocessing)
 
         return repr_

@@ -7,7 +7,7 @@ from keras.models import Sequential
 from keras.layers import Dense, Flatten, Conv2D, MaxPooling2D, Dropout
 import numpy as np
 
-from art.attacks.fast_gradient import FastGradientMethod
+from art.attacks import FastGradientMethod
 from art.classifiers import KerasClassifier
 from art.utils import load_dataset
 
@@ -16,7 +16,6 @@ from art.utils import load_dataset
 
 # Create Keras convolutional neural network - basic architecture from Keras examples
 # Source here: https://github.com/keras-team/keras/blob/master/examples/mnist_cnn.py
-k.set_learning_phase(1)
 model = Sequential()
 model.add(Conv2D(32, kernel_size=(3, 3), activation='relu', input_shape=x_train.shape[1:]))
 model.add(Conv2D(64, (3, 3), activation='relu'))
@@ -29,7 +28,7 @@ model.add(Dense(10, activation='softmax'))
 
 model.compile(loss='categorical_crossentropy', optimizer='adam', metrics=['accuracy'])
 
-classifier = KerasClassifier(clip_values=(min_, max_), model=model, use_logits=False)
+classifier = KerasClassifier(model=model, clip_values=(min_, max_))
 classifier.fit(x_train, y_train, nb_epochs=5, batch_size=128)
 
 # Evaluate the classifier on the test set

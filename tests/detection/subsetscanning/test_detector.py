@@ -1,3 +1,20 @@
+# MIT License
+#
+# Copyright (C) IBM Corporation 2018
+#
+# Permission is hereby granted, free of charge, to any person obtaining a copy of this software and associated
+# documentation files (the "Software"), to deal in the Software without restriction, including without limitation the
+# rights to use, copy, modify, merge, publish, distribute, sublicense, and/or sell copies of the Software, and to permit
+# persons to whom the Software is furnished to do so, subject to the following conditions:
+#
+# The above copyright notice and this permission notice shall be included in all copies or substantial portions of the
+# Software.
+#
+# THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE
+# WARRANTIES OF MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+# AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT,
+# TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
+# SOFTWARE.
 """
 A unittest class for testing the subset scanning detector.
 """
@@ -6,11 +23,12 @@ from __future__ import absolute_import, division, print_function, unicode_litera
 import logging
 import unittest
 
+import tensorflow as tf
 import keras.backend as k
 import numpy as np
 
-from art.attacks.fast_gradient import FastGradientMethod
-from art.detection.subsetscanning.detector import SubsetScanningDetector
+from art.attacks import FastGradientMethod
+from art.detection import SubsetScanningDetector
 from art.utils import master_seed, load_dataset
 from art.utils_test import get_classifier_kr
 
@@ -21,6 +39,8 @@ NB_TRAIN = 100
 NB_TEST = 100
 
 
+@unittest.skipIf(tf.__version__[0] == '2', reason='Skip unittests for TensorFlow v2 until Keras supports TensorFlow'
+                                                  ' v2 as backend.')
 class TestSubsetScanningDetector(unittest.TestCase):
     """
     A unittest class for testing the subset scanning detector.
@@ -38,7 +58,7 @@ class TestSubsetScanningDetector(unittest.TestCase):
         x_test, y_test = x_test[:NB_TEST], y_test[:NB_TEST]
 
         # Keras classifier
-        classifier, _ = get_classifier_kr()
+        classifier = get_classifier_kr()
 
         # Generate adversarial samples:
         attacker = FastGradientMethod(classifier, eps=0.5)

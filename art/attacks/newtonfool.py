@@ -18,8 +18,7 @@
 """
 This module implements the white-box attack `NewtonFool`.
 
-Paper link:
-    http://doi.acm.org/10.1145/3134600.3134635
+| Paper link: http://doi.acm.org/10.1145/3134600.3134635
 """
 from __future__ import absolute_import, division, print_function, unicode_literals
 
@@ -28,6 +27,7 @@ import logging
 import numpy as np
 
 from art import NUMPY_DTYPE
+from art.classifiers.classifier import ClassifierGradients
 from art.attacks.attack import Attack
 from art.utils import to_categorical
 
@@ -36,7 +36,9 @@ logger = logging.getLogger(__name__)
 
 class NewtonFool(Attack):
     """
-    Implementation of the attack from Uyeong Jang et al. (2017). Paper link: http://doi.acm.org/10.1145/3134600.3134635
+    Implementation of the attack from Uyeong Jang et al. (2017).
+
+    | Paper link: http://doi.acm.org/10.1145/3134600.3134635
     """
     attack_params = Attack.attack_params + ["max_iter", "eta", "batch_size"]
 
@@ -44,16 +46,21 @@ class NewtonFool(Attack):
         """
         Create a NewtonFool attack instance.
 
-        :param classifier: A trained model.
+        :param classifier: A trained classifier.
         :type classifier: :class:`.Classifier`
         :param max_iter: The maximum number of iterations.
         :type max_iter: `int`
         :param eta: The eta coefficient.
         :type eta: `float`
-        :param batch_size: Batch size
+        :param batch_size: Size of the batch on which adversarial samples are generated.
         :type batch_size: `int`
         """
         super(NewtonFool, self).__init__(classifier)
+        if not isinstance(classifier, ClassifierGradients):
+            raise (TypeError('For `' + self.__class__.__name__ + '` classifier must be an instance of '
+                             '`art.classifiers.classifier.ClassifierGradients`, the provided classifier is instance of '
+                             + str(classifier.__class__.__bases__) + '.'))
+
         params = {"max_iter": max_iter, "eta": eta, "batch_size": batch_size}
         self.set_params(**params)
 
@@ -82,7 +89,7 @@ class NewtonFool(Attack):
             # Main algorithm for each batch
             norm_batch = np.linalg.norm(np.reshape(batch, (batch.shape[0], -1)), axis=1)
             l_batch = pred_class[batch_index_1:batch_index_2]
-            l_b = to_categorical(l_batch, self.classifier.nb_classes).astype(bool)
+            l_b = to_categorical(l_batch, self.classifier.nb_classes()).astype(bool)
 
             # Main loop of the algorithm
             for _ in range(self.max_iter):
@@ -91,16 +98,17 @@ class NewtonFool(Attack):
 
                 # Compute the gradients and norm
                 grads = self.classifier.class_gradient(batch, label=l_batch)
-                grads = np.squeeze(grads, axis=1)
+                if grads.shape[1] == 1:
+                    grads = np.squeeze(grads, axis=1)
                 norm_grad = np.linalg.norm(np.reshape(grads, (batch.shape[0], -1)), axis=1)
 
                 # Theta
                 theta = self._compute_theta(norm_batch, score, norm_grad)
 
-                # Pertubation
+                # Perturbation
                 di_batch = self._compute_pert(theta, grads, norm_grad)
 
-                # Update xi and pertubation
+                # Update xi and perturbation
                 batch += di_batch
 
             # Apply clip
@@ -117,7 +125,8 @@ class NewtonFool(Attack):
         return x_adv
 
     def set_params(self, **kwargs):
-        """Take in a dictionary of parameters and applies attack-specific checks before saving them as attributes.
+        """
+        Take in a dictionary of parameters and applies attack-specific checks before saving them as attributes.
 
         :param max_iter: The maximum number of iterations.
         :type max_iter: `int`
@@ -154,7 +163,7 @@ class NewtonFool(Attack):
         :rtype: `np.ndarray`
         """
         equ1 = self.eta * norm_batch * norm_grad
-        equ2 = score - 1.0 / self.classifier.nb_classes
+        equ2 = score - 1.0 / self.classifier.nb_classes()
         result = np.minimum.reduce([equ1, equ2])
 
         return result
@@ -162,7 +171,7 @@ class NewtonFool(Attack):
     @staticmethod
     def _compute_pert(theta, grads, norm_grad):
         """
-        Function to compute the pertubation at each step.
+        Function to compute the perturbation at each step.
 
         :param theta: Theta value at the current step.
         :type theta: `np.ndarray`

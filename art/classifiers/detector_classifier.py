@@ -27,12 +27,12 @@ import logging
 
 import numpy as np
 
-from art.classifiers.classifier import Classifier
+from art.classifiers.classifier import Classifier, ClassifierNeuralNetwork, ClassifierGradients
 
 logger = logging.getLogger(__name__)
 
 
-class DetectorClassifier(Classifier):
+class DetectorClassifier(ClassifierNeuralNetwork, ClassifierGradients, Classifier):
     """
     This class implements a Classifier extension that wraps a classifier and a detector.
     More details in https://arxiv.org/abs/1705.07263
@@ -48,8 +48,8 @@ class DetectorClassifier(Classifier):
         :type detector: :class:`.Detector`
         :param defences: Defences to be activated with the classifier.
         :type defences: `str` or `list(str)`
-        :param preprocessing: Tuple of the form `(substractor, divider)` of floats or `np.ndarray` of values to be
-               used for data preprocessing. The first value will be substracted from the input. The input will then
+        :param preprocessing: Tuple of the form `(subtractor, divider)` of floats or `np.ndarray` of values to be
+               used for data preprocessing. The first value will be subtracted from the input. The input will then
                be divided by the second one.
         :type preprocessing: `tuple`
         """
@@ -58,8 +58,9 @@ class DetectorClassifier(Classifier):
 
         self.classifier = classifier
         self.detector = detector
-        self._nb_classes = classifier.nb_classes + 1
+        self._nb_classes = classifier.nb_classes() + 1
         self._input_shape = classifier.input_shape
+        self._learning_phase = None
 
     def predict(self, x, batch_size=128, **kwargs):
         """
@@ -69,7 +70,7 @@ class DetectorClassifier(Classifier):
         :type x: `np.ndarray`
         :param batch_size: Size of batches.
         :type batch_size: `int`
-        :return: Array of predictions of shape `(nb_inputs, self.nb_classes)`.
+        :return: Array of predictions of shape `(nb_inputs, nb_classes)`.
         :rtype: `np.ndarray`
         """
         # Apply preprocessing
@@ -90,7 +91,8 @@ class DetectorClassifier(Classifier):
 
         :param x: Training data.
         :type x: `np.ndarray`
-        :param y: Labels, one-vs-rest encoding.
+        :param y: Target values (class labels) one-hot-encoded of shape (nb_samples, nb_classes) or indices of shape
+                  (nb_samples,).
         :type y: `np.ndarray`
         :param batch_size: Size of batches.
         :type batch_size: `int`
@@ -99,6 +101,7 @@ class DetectorClassifier(Classifier):
         :param kwargs: Dictionary of framework-specific arguments. This parameter is not currently supported for PyTorch
                and providing it takes no effect.
         :type kwargs: `dict`
+        :raises: `NotImplementedException`
         :return: `None`
         """
         raise NotImplementedError
@@ -114,6 +117,7 @@ class DetectorClassifier(Classifier):
         :param kwargs: Dictionary of framework-specific arguments. This parameter is not currently supported for PyTorch
                and providing it takes no effect.
         :type kwargs: `dict`
+        :raises: `NotImplementedException`
         :return: `None`
         """
         raise NotImplementedError
@@ -128,14 +132,14 @@ class DetectorClassifier(Classifier):
                       output is computed for all samples. If multiple values as provided, the first dimension should
                       match the batch size of `x`, and each value will be used as target for its corresponding sample in
                       `x`. If `None`, then gradients for all classes will be computed for each sample.
-        :type label: `int` or `list`
+        :type label: `int` or `list` or `None` or `np.ndarray`
         :return: Array of gradients of input features w.r.t. each class in the form
                  `(batch_size, nb_classes, input_shape)` when computing for all classes, otherwise shape becomes
                  `(batch_size, 1, input_shape)` when `label` parameter is specified.
         :rtype: `np.ndarray`
         """
-        if not ((label is None) or (isinstance(label, (int, np.integer)) and label in range(self._nb_classes))
-                or (isinstance(label, np.ndarray) and len(label.shape) == 1 and (label < self._nb_classes).all()
+        if not ((label is None) or (isinstance(label, (int, np.integer)) and label in range(self.nb_classes()))
+                or (isinstance(label, np.ndarray) and len(label.shape) == 1 and (label < self.nb_classes()).all()
                     and label.shape[0] == x.shape[0])):
             raise ValueError('Label %s is out of range.' % label)
 
@@ -147,7 +151,7 @@ class DetectorClassifier(Classifier):
             combined_grads = self._compute_combined_grads(x, label=None)
 
         elif isinstance(label, (int, np.int)):
-            if label < self._nb_classes - 1:
+            if label < self.nb_classes() - 1:
                 # Compute and return from the classifier gradients
                 combined_grads = self.classifier.class_gradient(x=x_defences, label=label)
 
@@ -176,8 +180,8 @@ class DetectorClassifier(Classifier):
 
         else:
             # Compute indexes for classifier labels and detector labels
-            classifier_idx = np.where(label < self._nb_classes - 1)
-            detector_idx = np.where(label == self._nb_classes - 1)
+            classifier_idx = np.where(label < self.nb_classes() - 1)
+            detector_idx = np.where(label == self.nb_classes() - 1)
 
             # Initialize the combined gradients
             combined_grads = np.zeros(shape=(x_defences.shape[0], 1, x_defences.shape[1], x_defences.shape[2],
@@ -225,8 +229,9 @@ class DetectorClassifier(Classifier):
 
         :param x: Sample input with shape as expected by the model.
         :type x: `np.ndarray`
-        :param y: Correct labels, one-vs-rest encoding.
-        :type y: `np.ndarray`
+        :param y: Target values (class labels) one-hot-encoded of shape (nb_samples, nb_classes) or indices of shape
+                  (nb_samples,).
+        :raises: `NotImplementedException`
         :return: Array of gradients of the same shape as `x`.
         :rtype: `np.ndarray`
         """
@@ -238,6 +243,7 @@ class DetectorClassifier(Classifier):
         Return the hidden layers in the model, if applicable. This function is not supported for the
         Classifier and Detector wrapper.
 
+        :raises: `NotImplementedException`
         :return: The hidden layers in the model, input and output layers excluded.
         :rtype: `list`
         """
@@ -255,6 +261,7 @@ class DetectorClassifier(Classifier):
         :type layer: `int` or `str`
         :param batch_size: Size of batches.
         :type batch_size: `int`
+        :raises: `NotImplementedException`
         :return: The output of `layer`, where the first dimension is the batch size corresponding to `x`.
         :rtype: `np.ndarray`
         """

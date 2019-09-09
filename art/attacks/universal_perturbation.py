@@ -19,8 +19,7 @@
 This module implements the universal adversarial perturbations attack `UniversalPerturbation`. This is a white-box
 attack.
 
-Paper link:
-    https://arxiv.org/abs/1610.08401
+| Paper link: https://arxiv.org/abs/1610.08401
 """
 from __future__ import absolute_import, division, print_function, unicode_literals
 
@@ -29,6 +28,7 @@ import random
 
 import numpy as np
 
+from art.classifiers.classifier import ClassifierNeuralNetwork, ClassifierGradients
 from art.attacks.attack import Attack
 from art.utils import projection
 
@@ -38,7 +38,9 @@ logger = logging.getLogger(__name__)
 class UniversalPerturbation(Attack):
     """
     Implementation of the attack from Moosavi-Dezfooli et al. (2016). Computes a fixed perturbation to be applied to all
-    future inputs. To this end, it can use any adversarial attack method. Paper link: https://arxiv.org/abs/1610.08401
+    future inputs. To this end, it can use any adversarial attack method.
+
+    | Paper link: https://arxiv.org/abs/1610.08401
     """
     attacks_dict = {'carlini': 'art.attacks.carlini.CarliniL2Method',
                     'carlini_inf': 'art.attacks.carlini.CarliniLInfMethod',
@@ -56,12 +58,13 @@ class UniversalPerturbation(Attack):
     def __init__(self, classifier, attacker='deepfool', attacker_params=None, delta=0.2, max_iter=20, eps=10.0,
                  norm=np.inf):
         """
-        :param classifier: A trained model.
+        :param classifier: A trained classifier.
         :type classifier: :class:`.Classifier`
         :param attacker: Adversarial attack name. Default is 'deepfool'. Supported names: 'carlini', 'carlini_inf',
                          'deepfool', 'fgsm', 'bim', 'pgd', 'margin', 'ead', 'newtonfool', 'jsma', 'vat'.
         :type attacker: `str`
-        :param attacker_params: Parameters specific to the adversarial attack.
+        :param attacker_params: Parameters specific to the adversarial attack. If this parameter is not specified,
+                                the default parameters of the chosen attack will be used.
         :type attacker_params: `dict`
         :param delta: desired accuracy
         :type delta: `float`
@@ -69,10 +72,16 @@ class UniversalPerturbation(Attack):
         :type max_iter: `int`
         :param eps: Attack step size (input variation)
         :type eps: `float`
-        :param norm: Order of the norm. Possible values: np.inf, 2 (default is np.inf)
+        :param norm: The norm of the adversarial perturbation. Possible values: np.inf, 2
         :type norm: `int`
         """
         super(UniversalPerturbation, self).__init__(classifier)
+        if not isinstance(classifier, ClassifierNeuralNetwork) or not isinstance(classifier, ClassifierGradients):
+            raise (TypeError('For `' + self.__class__.__name__ + '` classifier must be an instance of '
+                             '`art.classifiers.classifier.ClassifierNeuralNetwork` and '
+                             '`art.classifiers.classifier.ClassifierGradients`, the provided classifier is instance of '
+                             + str(classifier.__class__.__bases__) + '.'))
+
         kwargs = {'attacker': attacker,
                   'attacker_params': attacker_params,
                   'delta': delta,

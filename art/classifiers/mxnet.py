@@ -26,12 +26,12 @@ import numpy as np
 import six
 
 from art import NUMPY_DTYPE
-from art.classifiers.classifier import Classifier
+from art.classifiers.classifier import Classifier, ClassifierNeuralNetwork, ClassifierGradients
 
 logger = logging.getLogger(__name__)
 
 
-class MXClassifier(Classifier):
+class MXClassifier(ClassifierNeuralNetwork, ClassifierGradients, Classifier):
     """
     Wrapper class for importing MXNet Gluon models.
     """
@@ -50,8 +50,8 @@ class MXClassifier(Classifier):
         :type input_shape: `tuple`
         :param nb_classes: The number of classes of the model.
         :type nb_classes: `int`
-        :param optimizer: The optimizer used to train the classifier. This parameter is not required if no training is
-               used.
+        :param optimizer: The optimizer used to train the classifier. This parameter is only required if fitting will
+                          be done with method fit.
         :type optimizer: `mxnet.gluon.Trainer`
         :param ctx: The device on which the model runs (CPU or GPU). If not provided, CPU is assumed.
         :type ctx: `mxnet.context.Context`
@@ -64,8 +64,8 @@ class MXClassifier(Classifier):
         :type clip_values: `tuple`
         :param defences: Defences to be activated with the classifier.
         :type defences: `str` or `list(str)`
-        :param preprocessing: Tuple of the form `(substractor, divider)` of floats or `np.ndarray` of values to be
-               used for data preprocessing. The first value will be substracted from the input. The input will then
+        :param preprocessing: Tuple of the form `(subtractor, divider)` of floats or `np.ndarray` of values to be
+               used for data preprocessing. The first value will be subtracted from the input. The input will then
                be divided by the second one.
         :type preprocessing: `tuple`
         """
@@ -95,7 +95,8 @@ class MXClassifier(Classifier):
 
         :param x: Training data.
         :type x: `np.ndarray`
-        :param y: Labels, one-vs-rest encoding.
+        :param y: Target values (class labels) one-hot-encoded of shape (nb_samples, nb_classes) or indices of shape
+                  (nb_samples,).
         :type y: `np.ndarray`
         :param batch_size: Size of batches.
         :type batch_size: `int`
@@ -186,7 +187,7 @@ class MXClassifier(Classifier):
         :type x: `np.ndarray`
         :param batch_size: Size of batches.
         :type batch_size: `int`
-        :return: Array of predictions of shape `(nb_inputs, self.nb_classes)`.
+        :return: Array of predictions of shape `(nb_inputs, nb_classes)`.
         :rtype: `np.ndarray`
         """
         import mxnet as mx
@@ -197,7 +198,7 @@ class MXClassifier(Classifier):
         x_preprocessed, _ = self._apply_preprocessing(x, y=None, fit=False)
 
         # Run prediction with batch processing
-        results = np.zeros((x_preprocessed.shape[0], self.nb_classes), dtype=np.float32)
+        results = np.zeros((x_preprocessed.shape[0], self.nb_classes()), dtype=np.float32)
         num_batch = int(np.ceil(len(x_preprocessed) / float(batch_size)))
         for m in range(num_batch):
             # Batch indexes
@@ -231,9 +232,13 @@ class MXClassifier(Classifier):
         """
         import mxnet as mx
 
+        logits = kwargs.get('logits')
+        if logits is None:
+            logits = False
+
         # Check value of label for computing gradients
-        if not (label is None or (isinstance(label, (int, np.integer)) and label in range(self.nb_classes))
-                or (isinstance(label, np.ndarray) and len(label.shape) == 1 and (label < self.nb_classes).all()
+        if not (label is None or (isinstance(label, (int, np.integer)) and label in range(self.nb_classes()))
+                or (isinstance(label, np.ndarray) and len(label.shape) == 1 and (label < self.nb_classes()).all()
                     and label.shape[0] == x.shape[0])):
             raise ValueError('Label %s is out of range.' % str(label))
 
@@ -248,7 +253,7 @@ class MXClassifier(Classifier):
         if label is None:
             with mx.autograd.record(train_mode=False):
                 preds = self._model(x_preprocessed)
-                class_slices = [preds[:, i] for i in range(self.nb_classes)]
+                class_slices = [preds[:, i] for i in range(self.nb_classes())]
 
             grads = []
             for slice_ in class_slices:
@@ -291,7 +296,8 @@ class MXClassifier(Classifier):
 
         :param x: Sample input with shape as expected by the model.
         :type x: `np.ndarray`
-        :param y: Correct labels, one-vs-rest encoding.
+        :param y: Target values (class labels) one-hot-encoded of shape (nb_samples, nb_classes) or indices of shape
+                  (nb_samples,).
         :type y: `np.ndarray`
         :return: Array of gradients of the same shape as `x`.
         :rtype: `np.ndarray`
@@ -433,7 +439,7 @@ class MXClassifier(Classifier):
         repr_ = "%s(model=%r, loss=%r, input_shape=%r, nb_classes=%r, optimizer=%r, ctx=%r, channel_index=%r, " \
                 "clip_values=%r, defences=%r, preprocessing=%r)" \
                 % (self.__module__ + '.' + self.__class__.__name__,
-                   self._model, self._loss, self.input_shape, self.nb_classes, self._optimizer, self._ctx,
+                   self._model, self._loss, self.input_shape, self.nb_classes(), self._optimizer, self._ctx,
                    self.channel_index, self.clip_values, self.defences, self.preprocessing)
 
         return repr_

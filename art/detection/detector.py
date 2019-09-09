@@ -25,12 +25,12 @@ import logging
 
 import six
 
-from art.classifiers import Classifier
+from art.classifiers.classifier import Classifier, ClassifierNeuralNetwork, ClassifierGradients
 
 logger = logging.getLogger(__name__)
 
 
-class BinaryInputDetector(Classifier):
+class BinaryInputDetector(ClassifierNeuralNetwork, ClassifierGradients, Classifier):
     """
     Binary detector of adversarial samples coming from evasion attacks. The detector uses an architecture provided by
     the user and trains it on data labeled as clean (label 0) or adversarial (label 1).
@@ -90,9 +90,8 @@ class BinaryInputDetector(Classifier):
         """
         raise NotImplementedError
 
-    @property
     def nb_classes(self):
-        return self.detector.nb_classes
+        return self.detector.nb_classes()
 
     @property
     def input_shape(self):
@@ -132,7 +131,7 @@ class BinaryInputDetector(Classifier):
         self.detector.save(filename, path)
 
 
-class BinaryActivationDetector(Classifier):
+class BinaryActivationDetector(ClassifierNeuralNetwork, ClassifierGradients, Classifier):
     """
     Binary detector of adversarial samples coming from evasion attacks. The detector uses an architecture provided by
     the user and is trained on the values of the activations of a classifier at a given layer.
@@ -212,9 +211,8 @@ class BinaryActivationDetector(Classifier):
         """
         raise NotImplementedError
 
-    @property
     def nb_classes(self):
-        return self.detector.nb_classes
+        return self.detector.nb_classes()
 
     @property
     def input_shape(self):
@@ -230,6 +228,10 @@ class BinaryActivationDetector(Classifier):
 
     def learning_phase(self):
         return self.detector.learning_phase
+
+    @property
+    def layer_names(self):
+        raise NotImplementedError
 
     def class_gradient(self, x, label=None, **kwargs):
         return self.detector.class_gradient(x, label=label)

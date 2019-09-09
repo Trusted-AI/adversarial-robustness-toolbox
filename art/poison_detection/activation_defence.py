@@ -18,8 +18,7 @@
 """
 This module implements methods performing poisoning detection based on activations clustering.
 
-Paper link:
-    https://arxiv.org/abs/1811.03728
+| Paper link: https://arxiv.org/abs/1811.03728
 """
 from __future__ import absolute_import, division, print_function, unicode_literals
 
@@ -38,8 +37,9 @@ logger = logging.getLogger(__name__)
 
 class ActivationDefence(PoisonFilteringDefence):
     """
-    Method from [Chen et al., 2018] performing poisoning detection based on activations clustering.
-    Paper link: https://arxiv.org/abs/1811.03728
+    Method from Chen et al., 2018 performing poisoning detection based on activations clustering.
+
+    | Paper link: https://arxiv.org/abs/1811.03728
     """
     defence_params = ['nb_clusters', 'clustering_method', 'nb_dims', 'reduce', 'cluster_analysis']
     valid_clustering = ['KMeans']
@@ -76,7 +76,7 @@ class ActivationDefence(PoisonFilteringDefence):
 
     def evaluate_defence(self, is_clean, **kwargs):
         """
-        Returns confusion matrix.
+        If ground truth is known, this function returns a confusion matrix in the form of a JSON object.
 
         :param is_clean: Ground truth, where is_clean[i]=1 means that x_train[i] is clean and is_clean[i]=0 means
                          x_train[i] is poisonous.
@@ -104,19 +104,39 @@ class ActivationDefence(PoisonFilteringDefence):
                                                                                     self.is_clean_by_class)
         return conf_matrix_json
 
-    def detect_poison(self, **kwargs):
+    def detect_poison(self, clustering_method='KMeans', nb_clusters=2, reduce='PCA', nb_dims=2,
+                      cluster_analysis='smaller'):
         """
         Returns poison detected and a report.
 
-        :param kwargs: A dictionary of detection-specific parameters.
-        :type kwargs: `dict`
+        :param clustering_method: clustering algorithm to be used. Currently `KMeans` is the only method supported
+        :type clustering_method: `str`
+        :param nb_clusters: number of clusters to find. This value needs to be greater or equal to one
+        :type nb_clusters: `int`
+        :param reduce: method used to reduce dimensionality of the activations. Supported methods include  `PCA`,
+                       `FastICA` and `TSNE`
+        :type reduce: `str`
+        :param nb_dims: number of dimensions to be reduced
+        :type nb_dims: `int`
+        :param cluster_analysis: heuristic to automatically determine if a cluster contains poisonous data. Supported
+                                 methods include `smaller` and `distance`. The `smaller` method defines as poisonous the
+                                 cluster with less number of data points, while the `distance` heuristic uses the
+                                 distance between the clusters.
+        :type cluster_analysis: `str`
         :return: (report, is_clean_lst):
                 where a report is a dict object that contains information specified by the clustering analysis technique
                 where is_clean is a list, where is_clean_lst[i]=1 means that x_train[i]
                 there is clean and is_clean_lst[i]=0, means that x_train[i] was classified as poison.
         :rtype: `tuple`
         """
-        self.set_params(**kwargs)
+
+        args = {'clustering_method': clustering_method,
+                'nb_clusters': nb_clusters,
+                'reduce': reduce,
+                'nb_dims': nb_dims,
+                'cluster_analysis': cluster_analysis}
+
+        self.set_params(**args)
 
         if not self.activations_by_class:
             activations = self._get_activations()
@@ -140,10 +160,9 @@ class ActivationDefence(PoisonFilteringDefence):
 
     def cluster_activations(self, **kwargs):
         """
-        Clusters activations and returns cluster_by_class and red_activations_by_class,
-        where cluster_by_class[i][j] is the cluster to which the j-th datapoint in the
-        ith class belongs and the correspondent activations reduced by class
-        red_activations_by_class[i][j].
+        Clusters activations and returns cluster_by_class and red_activations_by_class, where cluster_by_class[i][j] is
+        the cluster to which the j-th datapoint in the ith class belongs and the correspondent activations reduced by
+        class red_activations_by_class[i][j].
 
         :param kwargs: A dictionary of cluster-specific parameters.
         :type kwargs: `dict`
@@ -208,9 +227,9 @@ class ActivationDefence(PoisonFilteringDefence):
     def relabel_poison_ground_truth(classifier, x, y_fix, test_set_split=0.7, tolerable_backdoor=0.01,
                                     max_epochs=50, batch_epochs=10):
         """
-        Revert poison attack by continue training the current classifier with `x`, `y_fix`.
-        `test_set_split` determines the percentage in x that will be used as training set, while `1-test_set_split`
-        determines how many data points to use for test set.
+        Revert poison attack by continue training the current classifier with `x`, `y_fix`. `test_set_split` determines
+        the percentage in x that will be used as training set, while `1-test_set_split` determines how many data points
+        to use for test set.
 
         :param classifier: Classifier to be fixed
         :type classifier: :class:`.Classifier`
@@ -256,8 +275,8 @@ class ActivationDefence(PoisonFilteringDefence):
     def relabel_poison_cross_validation(classifier, x, y_fix, n_splits=10, tolerable_backdoor=0.01,
                                         max_epochs=50, batch_epochs=10):
         """
-        Revert poison attack by continue training the current classifier with `x`, `y_fix`.
-        `n_splits` determine the number of cross validation splits.
+        Revert poison attack by continue training the current classifier with `x`, `y_fix`. `n_splits` determines the
+        number of cross validation splits.
 
         :param classifier: Classifier to be fixed
         :type classifier: :class:`.Classifier`
@@ -369,9 +388,9 @@ class ActivationDefence(PoisonFilteringDefence):
         :type folder: `str`
         :param kwargs: a dictionary of cluster-analysis-specific parameters
         :type kwargs: `dict`
-        :return: sprites_by_class: Array with sprite images sprites_by_class, where sprites_by_class[i][j] contains the
-                 sprite of class i cluster j.
-        :rtype: sprites_by_class: `np.ndarray`
+        :return: Array with sprite images sprites_by_class, where sprites_by_class[i][j] contains the
+                                  sprite of class i cluster j.
+        :rtype: `np.ndarray`
         """
         self.set_params(**kwargs)
 
@@ -379,7 +398,7 @@ class ActivationDefence(PoisonFilteringDefence):
             self.cluster_activations()
 
         x_raw_by_class = self._segment_by_class(x_raw, self.y_train)
-        x_raw_by_cluster = [[[] for x in range(self.nb_clusters)] for y in range(self.classifier.nb_classes)]
+        x_raw_by_cluster = [[[] for _ in range(self.nb_clusters)] for y in range(self.classifier.nb_classes())]
 
         # Get all data in x_raw in the right cluster
         for n_class, cluster in enumerate(self.clusters_by_class):
@@ -387,7 +406,7 @@ class ActivationDefence(PoisonFilteringDefence):
                 x_raw_by_cluster[n_class][assigned_cluster].append(x_raw_by_class[n_class][j])
 
         # Now create sprites:
-        sprites_by_class = [[[] for x in range(self.nb_clusters)] for y in range(self.classifier.nb_classes)]
+        sprites_by_class = [[[] for _ in range(self.nb_clusters)] for y in range(self.classifier.nb_classes())]
         for i, class_i in enumerate(x_raw_by_cluster):
             for j, images_cluster in enumerate(class_i):
                 title = 'Class_' + str(i) + '_cluster_' + str(j) + '_clusterSize_' + str(len(images_cluster))
@@ -402,8 +421,8 @@ class ActivationDefence(PoisonFilteringDefence):
 
     def plot_clusters(self, save=True, folder='.', **kwargs):
         """
-        Creates a 3D-plot to visualize each cluster each cluster is assigned a different color in the plot.
-        When save=True, it also stores the 3D-plot per cluster in DATA_PATH.
+        Creates a 3D-plot to visualize each cluster each cluster is assigned a different color in the plot. When
+        save=True, it also stores the 3D-plot per cluster in DATA_PATH.
 
         :param save: Boolean specifying if image should be saved
         :type  save: `bool`
@@ -492,7 +511,7 @@ class ActivationDefence(PoisonFilteringDefence):
         :return: segmented data according to specified features.
         :rtype: `list`
         """
-        n_classes = self.classifier.nb_classes
+        n_classes = self.classifier.nb_classes()
         by_class = [[] for _ in range(n_classes)]
         for indx, feature in enumerate(features):
             if n_classes > 2:

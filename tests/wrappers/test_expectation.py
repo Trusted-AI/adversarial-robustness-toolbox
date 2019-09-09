@@ -20,6 +20,7 @@ from __future__ import absolute_import, division, print_function, unicode_litera
 import logging
 import unittest
 
+import tensorflow as tf
 import numpy as np
 
 from art.attacks import FastGradientMethod
@@ -42,30 +43,30 @@ class TestExpectationOverTransformations(unittest.TestCase):
 
     @classmethod
     def setUpClass(cls):
-        # Get MNIST
         (x_train, y_train), (x_test, y_test), _, _ = load_dataset('mnist')
         x_train, y_train = x_train[:NB_TRAIN], y_train[:NB_TRAIN]
         x_test, y_test = x_test[:NB_TEST], y_test[:NB_TEST]
         cls.mnist = (x_train, y_train), (x_test, y_test)
 
     def setUp(self):
-        # Set master seed
         master_seed(1234)
 
+    @unittest.skipIf(tf.__version__[0] == '2', reason='Skip unittests for TensorFlow v2 until Keras supports TensorFlow'
+                                                      ' v2 as backend.')
     def test_krclassifier(self):
         """
         Test with a KerasClassifier.
         :return:
         """
         # Build KerasClassifier
-        krc, sess = get_classifier_kr()
+        krc = get_classifier_kr()
 
         # Get MNIST
         (_, _), (x_test, y_test) = self.mnist
 
         # First attack (without EoT):
         fgsm = FastGradientMethod(classifier=krc, targeted=True)
-        params = {'y': random_targets(y_test, krc.nb_classes)}
+        params = {'y': random_targets(y_test, krc.nb_classes())}
         x_test_adv = fgsm.generate(x_test, **params)
 
         # Second attack (with EoT):
@@ -91,9 +92,10 @@ class TestExpectationVectors(unittest.TestCase):
         cls.iris = (x_train, y_train), (x_test, y_test)
 
     def setUp(self):
-        # Set master seed
         master_seed(1234)
 
+    @unittest.skipIf(tf.__version__[0] == '2', reason='Skip unittests for TensorFlow v2 until Keras supports TensorFlow'
+                                                      ' v2 as backend.')
     def test_iris_clipped(self):
         (_, _), (x_test, y_test) = self.iris
 
@@ -119,6 +121,8 @@ class TestExpectationVectors(unittest.TestCase):
         acc = np.sum(preds_adv == np.argmax(y_test, axis=1)) / y_test.shape[0]
         logger.info('Accuracy on Iris with limited query info: %.2f%%', (acc * 100))
 
+    @unittest.skipIf(tf.__version__[0] == '2', reason='Skip unittests for TensorFlow v2 until Keras supports TensorFlow'
+                                                      ' v2 as backend.')
     def test_iris_unbounded(self):
         (_, _), (x_test, y_test) = self.iris
         classifier, _ = get_iris_classifier_kr()

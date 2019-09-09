@@ -20,9 +20,10 @@ from __future__ import absolute_import, division, print_function, unicode_litera
 import logging
 import unittest
 
+import tensorflow as tf
 import numpy as np
 
-from art.attacks.universal_perturbation import UniversalPerturbation
+from art.attacks import UniversalPerturbation
 from art.classifiers import KerasClassifier
 from art.utils import load_dataset, master_seed
 from art.utils_test import get_classifier_tf, get_classifier_kr, get_classifier_pt
@@ -54,10 +55,10 @@ class TestUniversalPerturbation(unittest.TestCase):
 
     def test_tfclassifier(self):
         """
-        First test with the TFClassifier.
+        First test with the TensorFlowClassifier.
         :return:
         """
-        # Build TFClassifier
+        # Build TensorFlowClassifier
         tfc, sess = get_classifier_tf()
 
         # Get MNIST
@@ -76,13 +77,15 @@ class TestUniversalPerturbation(unittest.TestCase):
         self.assertFalse((np.argmax(y_test, axis=1) == test_y_pred).all())
         self.assertFalse((np.argmax(y_train, axis=1) == train_y_pred).all())
 
+    @unittest.skipIf(tf.__version__[0] == '2', reason='Skip unittests for TensorFlow v2 until Keras supports TensorFlow'
+                                                      ' v2 as backend.')
     def test_krclassifier(self):
         """
         Second test with the KerasClassifier.
         :return:
         """
         # Build KerasClassifier
-        krc, sess = get_classifier_kr()
+        krc = get_classifier_kr()
 
         # Get MNIST
         (x_train, y_train), (x_test, y_test) = self.mnist
@@ -100,6 +103,8 @@ class TestUniversalPerturbation(unittest.TestCase):
         self.assertFalse((np.argmax(y_test, axis=1) == test_y_pred).all())
         self.assertFalse((np.argmax(y_train, axis=1) == train_y_pred).all())
 
+        # sess.close()
+
     def test_ptclassifier(self):
         """
         Third test with the PyTorchClassifier.
@@ -110,8 +115,8 @@ class TestUniversalPerturbation(unittest.TestCase):
 
         # Get MNIST
         (x_train, y_train), (x_test, y_test) = self.mnist
-        x_train = np.swapaxes(x_train, 1, 3)
-        x_test = np.swapaxes(x_test, 1, 3)
+        x_train = np.swapaxes(x_train, 1, 3).astype(np.float32)
+        x_test = np.swapaxes(x_test, 1, 3).astype(np.float32)
 
         # Attack
         up = UniversalPerturbation(ptc, max_iter=1, attacker="newtonfool", attacker_params={"max_iter": 5})
@@ -126,6 +131,33 @@ class TestUniversalPerturbation(unittest.TestCase):
         self.assertFalse((np.argmax(y_test, axis=1) == test_y_pred).all())
         self.assertFalse((np.argmax(y_train, axis=1) == train_y_pred).all())
 
+    def test_classifier_type_check_fail_classifier(self):
+        # Use a useless test classifier to test basic classifier properties
+        class ClassifierNoAPI:
+            pass
+
+        classifier = ClassifierNoAPI
+        with self.assertRaises(TypeError) as context:
+            _ = UniversalPerturbation(classifier=classifier)
+
+        self.assertIn('For `UniversalPerturbation` classifier must be an instance of '
+                      '`art.classifiers.classifier.Classifier`, the provided classifier is instance of '
+                      '(<class \'object\'>,).', str(context.exception))
+
+    def test_classifier_type_check_fail_gradients(self):
+        # Use a test classifier not providing gradients required by white-box attack
+        from art.classifiers.scikitlearn import ScikitlearnDecisionTreeClassifier
+        from sklearn.tree import DecisionTreeClassifier
+
+        classifier = ScikitlearnDecisionTreeClassifier(model=DecisionTreeClassifier())
+        with self.assertRaises(TypeError) as context:
+            _ = UniversalPerturbation(classifier=classifier)
+
+        self.assertIn('For `UniversalPerturbation` classifier must be an instance of '
+                      '`art.classifiers.classifier.ClassifierNeuralNetwork` and '
+                      '`art.classifiers.classifier.ClassifierGradients`, the provided classifier is instance of '
+                      '(<class \'art.classifiers.scikitlearn.ScikitlearnClassifier\'>,).', str(context.exception))
+
 
 class TestUniversalPerturbationVectors(unittest.TestCase):
     @classmethod
@@ -137,6 +169,8 @@ class TestUniversalPerturbationVectors(unittest.TestCase):
     def setUp(self):
         master_seed(1234)
 
+    @unittest.skipIf(tf.__version__[0] == '2', reason='Skip unittests for TensorFlow v2 until Keras supports TensorFlow'
+                                                      ' v2 as backend.')
     def test_iris_k_clipped(self):
         (_, _), (x_test, y_test) = self.iris
         classifier, _ = get_iris_classifier_kr()
@@ -155,6 +189,8 @@ class TestUniversalPerturbationVectors(unittest.TestCase):
         acc = np.sum(preds_adv == np.argmax(y_test, axis=1)) / y_test.shape[0]
         logger.info('Accuracy on Iris with universal adversarial examples: %.2f%%', (acc * 100))
 
+    @unittest.skipIf(tf.__version__[0] == '2', reason='Skip unittests for TensorFlow v2 until Keras supports TensorFlow'
+                                                      ' v2 as backend.')
     def test_iris_k_unbounded(self):
         (_, _), (x_test, y_test) = self.iris
         classifier, _ = get_iris_classifier_kr()
