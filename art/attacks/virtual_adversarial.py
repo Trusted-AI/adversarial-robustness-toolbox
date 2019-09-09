@@ -75,7 +75,7 @@ class VirtualAdversarialMethod(Attack):
         """
         x_adv = x.astype(NUMPY_DTYPE)
         preds = self.classifier.predict(x_adv, batch_size=self.batch_size)
-        # preds_rescaled = self._rescale(preds)
+        preds_rescaled = self._rescale(preds)
 
         # Compute perturbation with implicit batching
         for batch_id in range(int(np.ceil(x_adv.shape[0] / float(self.batch_size)))):
@@ -90,19 +90,19 @@ class VirtualAdversarialMethod(Attack):
             for _ in range(self.max_iter):
                 var_d = self._normalize(var_d)
                 preds_new = self.classifier.predict((batch + var_d).reshape((-1,) + self.classifier.input_shape))
-                # preds_new_rescaled = self._rescale(preds_new)
+                preds_new_rescaled = self._rescale(preds_new)
 
                 from scipy.stats import entropy
-                kl_div1 = entropy(np.transpose(preds[batch_index_1:batch_index_2]),
-                                  np.transpose(preds_new))
+                kl_div1 = entropy(np.transpose(preds_rescaled[batch_index_1:batch_index_2]),
+                                  np.transpose(preds_new_rescaled))
 
                 var_d_new = np.zeros_like(var_d)
                 for current_index in range(var_d.shape[1]):
                     var_d[:, current_index] += self.finite_diff
                     preds_new = self.classifier.predict((batch + var_d).reshape((-1,) + self.classifier.input_shape))
-                    # preds_new_rescaled = self._rescale(preds_new)
-                    kl_div2 = entropy(np.transpose(preds[batch_index_1:batch_index_2]),
-                                      np.transpose(preds_new))
+                    preds_new_rescaled = self._rescale(preds_new)
+                    kl_div2 = entropy(np.transpose(preds_rescaled[batch_index_1:batch_index_2]),
+                                      np.transpose(preds_new_rescaled))
                     var_d_new[:, current_index] = (kl_div2 - kl_div1) / self.finite_diff
                     var_d[:, current_index] -= self.finite_diff
                 var_d = var_d_new
@@ -135,18 +135,23 @@ class VirtualAdversarialMethod(Attack):
 
         return normalized_x
 
-    # @staticmethod
-    # def _rescale(x):
-    #     """
-    #     Rescale values of `x` to the range 0-1.
-    #
-    #     :param x: Input array.
-    #     :type x: `np.ndarray`
-    #     :return: Rescaled value of `x`.
-    #     """
-    #     current_range = np.amax(x, axis=1, keepdims=True) - np.amin(x, axis=1, keepdims=True)
-    #     current_range[current_range == 0] = 1
-    #     return (x - np.amin(x, axis=1, keepdims=True)) / current_range
+    @staticmethod
+    def _rescale(x):
+        """
+        Rescale values of `x` to the range (0, 1]. The interval is open on the left side, using values close to zero
+        instead. This is to avoid values that are invalid for further KL divergence computation.
+
+        :param x: Input array.
+        :type x: `np.ndarray`
+        :return: Rescaled value of `x`.
+        """
+        # Tolerance range avoids actually setting minimum value to 0, as this value is invalid for KL divergence
+        tol = 1e-5
+
+        current_range = np.amax(x, axis=1, keepdims=True) - np.amin(x, axis=1, keepdims=True)
+        current_range[current_range == 0] = 1
+        res = (x - np.amin(x, axis=1, keepdims=True) + tol) / current_range
+        return res
 
     def set_params(self, **kwargs):
         """
