@@ -75,9 +75,7 @@ class VirtualAdversarialMethod(Attack):
         """
         x_adv = x.astype(NUMPY_DTYPE)
         preds = self.classifier.predict(x_adv, batch_size=self.batch_size)
-
-        # Pick a small scalar to avoid division by 0
-        tol = 1e-10
+        # preds_rescaled = self._rescale(preds)
 
         # Compute perturbation with implicit batching
         for batch_id in range(int(np.ceil(x_adv.shape[0] / float(self.batch_size)))):
@@ -92,16 +90,20 @@ class VirtualAdversarialMethod(Attack):
             for _ in range(self.max_iter):
                 var_d = self._normalize(var_d)
                 preds_new = self.classifier.predict((batch + var_d).reshape((-1,) + self.classifier.input_shape))
+                # preds_new_rescaled = self._rescale(preds_new)
 
                 from scipy.stats import entropy
-                kl_div1 = entropy(np.transpose(preds[batch_index_1:batch_index_2]), np.transpose(preds_new))
+                kl_div1 = entropy(np.transpose(preds[batch_index_1:batch_index_2]),
+                                  np.transpose(preds_new))
 
                 var_d_new = np.zeros_like(var_d)
                 for current_index in range(var_d.shape[1]):
                     var_d[:, current_index] += self.finite_diff
                     preds_new = self.classifier.predict((batch + var_d).reshape((-1,) + self.classifier.input_shape))
-                    kl_div2 = entropy(np.transpose(preds[batch_index_1:batch_index_2]), np.transpose(preds_new))
-                    var_d_new[:, current_index] = (kl_div2 - kl_div1) / (self.finite_diff + tol)
+                    # preds_new_rescaled = self._rescale(preds_new)
+                    kl_div2 = entropy(np.transpose(preds[batch_index_1:batch_index_2]),
+                                      np.transpose(preds_new))
+                    var_d_new[:, current_index] = (kl_div2 - kl_div1) / self.finite_diff
                     var_d[:, current_index] -= self.finite_diff
                 var_d = var_d_new
 
@@ -127,12 +129,24 @@ class VirtualAdversarialMethod(Attack):
         :return: The normalized version of `x`.
         :rtype: `np.ndarray`
         """
-        tol = 1e-10
+        norm = np.atleast_1d(np.linalg.norm(x, axis=1))
+        norm[norm == 0] = 1
+        normalized_x = x / np.expand_dims(norm, axis=1)
 
-        inverse = (np.sum(x ** 2, axis=1) + tol) ** -.5
-        x = x * inverse[:, None]
+        return normalized_x
 
-        return x
+    # @staticmethod
+    # def _rescale(x):
+    #     """
+    #     Rescale values of `x` to the range 0-1.
+    #
+    #     :param x: Input array.
+    #     :type x: `np.ndarray`
+    #     :return: Rescaled value of `x`.
+    #     """
+    #     current_range = np.amax(x, axis=1, keepdims=True) - np.amin(x, axis=1, keepdims=True)
+    #     current_range[current_range == 0] = 1
+    #     return (x - np.amin(x, axis=1, keepdims=True)) / current_range
 
     def set_params(self, **kwargs):
         """
