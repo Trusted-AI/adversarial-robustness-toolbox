@@ -16,7 +16,7 @@
 # TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 # SOFTWARE.
 """
-This module implements attacks on Support Vector Machines.
+This module implements poisoning attacks on Support Vector Machines.
 """
 from __future__ import absolute_import, division, print_function, unicode_literals
 
@@ -27,20 +27,20 @@ import numpy as np
 from art.attacks.attack import Attack
 from art.classifiers.scikitlearn import ScikitlearnSVC
 
-
 logger = logging.getLogger(__name__)
 
 
-class SVMAttack(Attack):
+class PoisoningAttackSVM(Attack):
     """
-    Close implementation of Biggio's attack on SVMs
-    Paper link: https://arxiv.org/pdf/1206.6389.pdf
+    Close implementation of poisoning attack on Support Vector Machines (SVM) by Biggio et al.
+
+    | Paper link: https://arxiv.org/pdf/1206.6389.pdf
     """
     attack_params = ['classifier', 'step', 'eps', 'x_train', 'y_train', 'x_val', 'y_val']
 
     def __init__(self, classifier, step, eps, x_train, y_train, x_val, y_val, max_iters=100, **kwargs):
         """
-        Initialize an SVM attack
+        Initialize an SVM poisoning attack
 
         :param classifier: A trained ScikitlearnSVC classifier
         :type classifier: `art.classifiers.scikitlearn.ScikitlearnSVC`
@@ -62,7 +62,7 @@ class SVMAttack(Attack):
         """
         from sklearn.svm import LinearSVC, SVC
 
-        super(SVMAttack, self).__init__(classifier)
+        super(PoisoningAttackSVM, self).__init__(classifier)
 
         if not isinstance(classifier, ScikitlearnSVC):
             raise TypeError('Classifier must be a SVC')
@@ -121,7 +121,7 @@ class SVMAttack(Attack):
         :type kwargs: `dict`
         :return: `True` when parsing was successful
         """
-        super(SVMAttack, self).set_params(**kwargs)
+        super(PoisoningAttackSVM, self).set_params(**kwargs)
         if self.step <= 0:
             raise ValueError("Step size must be strictly positive")
         if self.eps <= 0:
@@ -195,7 +195,7 @@ class SVMAttack(Attack):
     def attack_gradient(self, attack_point):
         """
         Calculates the attack gradient, or ∂P for this attack.
-        See equation 8 in Biggio Ch. 14
+        See equation 8 in Biggio et al. Ch. 14
 
         :param attack_point: the current attack point
         :type attack_point: `np.ndarray`
@@ -227,7 +227,8 @@ class SVMAttack(Attack):
 
             q_ks = art_model.q_submatrix(np.array([x_k]), support_vectors)
             m_k = (1.0 / zeta) * np.matmul(q_ks, zeta * qss_inv - np.matmul(nu_k, nu_k.T)) + np.matmul(y_k, nu_k.T)
-            d_q_sc = np.fromfunction(lambda i: art_model._get_kernel_gradient_sv(i, attack_point), (len(support_vectors),),
+            d_q_sc = np.fromfunction(lambda i: art_model._get_kernel_gradient_sv(i, attack_point),
+                                     (len(support_vectors),),
                                      dtype=int)
             d_q_kc = art_model._kernel_grad(x_k, attack_point)
             grad += (np.matmul(m_k, d_q_sc) + d_q_kc) * alpha_c

@@ -40,9 +40,9 @@ NB_TRAIN = 1000
 NB_TEST = 20
 
 
-class TestTensorflowClassifier(unittest.TestCase):
+class TestTensorFlowClassifier(unittest.TestCase):
     """
-    This class tests the Tensorflow classifier.
+    This class tests the TensorFlow classifier.
     """
 
     @classmethod
@@ -79,7 +79,7 @@ class TestTensorflowClassifier(unittest.TestCase):
     def test_fit_generator(self):
         classifier, sess = get_classifier_tf()
 
-        # Create Tensorflow data generator
+        # Create TensorFlow data generator
         x_tensor = tf.convert_to_tensor(self.x_train.reshape(10, 100, 28, 28, 1))
         y_tensor = tf.convert_to_tensor(self.y_train.reshape(10, 100, 10))
         dataset = tf.data.Dataset.from_tensor_slices((x_tensor, y_tensor))
@@ -250,7 +250,7 @@ class TestTensorflowClassifier(unittest.TestCase):
     def test_repr(self):
         classifier, sess = get_classifier_tf()
         repr_ = repr(classifier)
-        self.assertIn('art.classifiers.tensorflow.TensorflowClassifier', repr_)
+        self.assertIn('art.classifiers.tensorflow.TensorFlowClassifier', repr_)
         self.assertIn('channel_index=3, clip_values=(0, 1)', repr_)
         self.assertIn('defences=None, preprocessing=(0, 1)', repr_)
         tf.reset_default_graph()

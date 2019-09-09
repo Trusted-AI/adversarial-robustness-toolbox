@@ -84,7 +84,7 @@ class TestUtils(unittest.TestCase):
         self.assertTrue((x != y).any())
         self.assertTrue((z == x).all())
 
-    @unittest.skipIf(tf.__version__[0] != '1', reason='Skip unittests if not Tensorflow v1.')
+    @unittest.skipIf(tf.__version__[0] != '1', reason='Skip unittests if not TensorFlow v1.')
     def test_master_seed_tf(self):
         tf.reset_default_graph()
         master_seed(1234)
@@ -102,7 +102,7 @@ class TestUtils(unittest.TestCase):
         self.assertTrue((xv != yv).any())
         np.testing.assert_array_almost_equal(zv, xv, decimal=4)
 
-    @unittest.skipIf(tf.__version__[0] != '2', reason='Skip unittests if not Tensorflow v2.')
+    @unittest.skipIf(tf.__version__[0] != '2', reason='Skip unittests if not TensorFlow v2.')
     def test_master_seed_tf_v2(self):
         master_seed(1234)
         x = tf.random.uniform(shape=(1, 10))

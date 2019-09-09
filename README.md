@@ -21,11 +21,13 @@ state-of-the-art threat models.
 
 Documentation of ART: https://adversarial-robustness-toolbox.readthedocs.io
 
-The library is under continuous development and feedback, bug reports and contributions are very welcome. 
+Get started with [examples](examples/README.md) and [tutorials](notebooks/README.md)
+
+The library is under continuous development. Feedback, bug reports and contributions are very welcome. 
 Get in touch with us on [Slack](https://ibm-art.slack.com) (invite [here](https://join.slack.com/t/ibm-art/shared_invite/enQtMzkyOTkyODE4NzM4LTlkMWY3MzgyZDA4ZDdiNzUzY2NhMjc5YmFhZTYzZGYwNDM4YTE1ODhhNDYyNmFlMGFjNWY4ODgyM2EwYTFjYTc))!
 
-## Supported Machine Learning Libraries
-* Tensorflow (v1 and v2) (www.tensorflow.org)
+## Supported Machine Learning Libraries and Applications
+* TensorFlow (v1 and v2) (www.tensorflow.org)
 * Keras (www.keras.io)
 * PyTorch (www.pytorch.org)
 * MXNet (https://mxnet.apache.org)
@@ -34,6 +36,7 @@ Get in touch with us on [Slack](https://ibm-art.slack.com) (invite [here](https:
 * LightGBM (https://lightgbm.readthedocs.io)
 * CatBoost (www.catboost.ai)
 * GPy (https://sheffieldml.github.io/GPy/)
+* Tesseract (https://github.com/tesseract-ocr/tesseract)
 
 ## Implemented Attacks, Defences, Detections, Metrics, Certifications and Verifications
 

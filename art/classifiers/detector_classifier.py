@@ -60,6 +60,7 @@ class DetectorClassifier(ClassifierNeuralNetwork, ClassifierGradients, Classifie
         self.detector = detector
         self._nb_classes = classifier.nb_classes() + 1
         self._input_shape = classifier.input_shape
+        self._learning_phase = None
 
     def predict(self, x, batch_size=128, **kwargs):
         """
@@ -69,7 +70,7 @@ class DetectorClassifier(ClassifierNeuralNetwork, ClassifierGradients, Classifie
         :type x: `np.ndarray`
         :param batch_size: Size of batches.
         :type batch_size: `int`
-        :return: Array of predictions of shape `(nb_inputs, self.nb_classes)`.
+        :return: Array of predictions of shape `(nb_inputs, nb_classes)`.
         :rtype: `np.ndarray`
         """
         # Apply preprocessing

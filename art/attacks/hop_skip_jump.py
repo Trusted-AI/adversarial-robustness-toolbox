@@ -17,7 +17,7 @@
 # SOFTWARE.
 """
 This module implements the HopSkipJump attack `HopSkipJump`. This is a black-box attack that only requires class
-predictions. It is an advanced version of the boundary attack.
+predictions. It is an advanced version of the Boundary attack.
 
 | Paper link: https://arxiv.org/abs/1904.02144
 """
@@ -95,7 +95,7 @@ class HopSkipJump(Attack):
         :return: An array holding the adversarial examples.
         :rtype: `np.ndarray`
         """
-        y = check_and_transform_label_format(y, self.classifier.nb_classes)
+        y = check_and_transform_label_format(y, self.classifier.nb_classes())
 
         # Get clip_min and clip_max from the classifier or infer them from data
         if hasattr(self.classifier, 'clip_values') and self.classifier.clip_values is not None:

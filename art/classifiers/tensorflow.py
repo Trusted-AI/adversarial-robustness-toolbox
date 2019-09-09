@@ -16,7 +16,7 @@
 # TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 # SOFTWARE.
 """
-This module implements the classifier `TensorflowClassifier` for Tensorflow models.
+This module implements the classifier `TensorFlowClassifier` for TensorFlow models.
 """
 from __future__ import absolute_import, division, print_function, unicode_literals
 
@@ -31,15 +31,15 @@ from art.classifiers.classifier import Classifier, ClassifierNeuralNetwork, Clas
 logger = logging.getLogger(__name__)
 
 
-class TensorflowClassifier(ClassifierNeuralNetwork, ClassifierGradients, Classifier):
+class TensorFlowClassifier(ClassifierNeuralNetwork, ClassifierGradients, Classifier):
     """
-    This class implements a classifier with the Tensorflow framework.
+    This class implements a classifier with the TensorFlow framework.
     """
 
     def __init__(self, input_ph, output, labels_ph=None, train=None, loss=None, learning=None, sess=None,
                  channel_index=3, clip_values=None, defences=None, preprocessing=(0, 1)):
         """
-        Initialization specific to Tensorflow models implementation.
+        Initialization specific to TensorFlow models implementation.
 
         :param input_ph: The input placeholder.
         :type input_ph: `tf.Placeholder`
@@ -79,7 +79,7 @@ class TensorflowClassifier(ClassifierNeuralNetwork, ClassifierGradients, Classif
             import tensorflow.compat.v1 as tf
             tf.disable_eager_execution()
 
-        super(TensorflowClassifier, self).__init__(clip_values=clip_values, channel_index=channel_index,
+        super(TensorFlowClassifier, self).__init__(clip_values=clip_values, channel_index=channel_index,
                                                    defences=defences,
                                                    preprocessing=preprocessing)
         self._nb_classes = int(output.get_shape()[-1])
@@ -112,7 +112,7 @@ class TensorflowClassifier(ClassifierNeuralNetwork, ClassifierGradients, Classif
         :type x: `np.ndarray`
         :param batch_size: Size of batches.
         :type batch_size: `int`
-        :return: Array of predictions of shape `(num_inputs, self.nb_classes)`.
+        :return: Array of predictions of shape `(num_inputs, nb_classes)`.
         :rtype: `np.ndarray`
         """
         # Apply preprocessing
@@ -195,7 +195,7 @@ class TensorflowClassifier(ClassifierNeuralNetwork, ClassifierGradients, Classif
         """
         from art.data_generators import TFDataGenerator
 
-        # Train directly in Tensorflow
+        # Train directly in TensorFlow
         if isinstance(generator, TFDataGenerator) and not (
                 hasattr(self, 'label_smooth') or hasattr(self, 'feature_squeeze')):
             for _ in range(nb_epochs):
@@ -208,7 +208,7 @@ class TensorflowClassifier(ClassifierNeuralNetwork, ClassifierGradients, Classif
 
                     # Run train step
                     self._sess.run(self._train, feed_dict=feed_dict)
-            super(TensorflowClassifier, self).fit_generator(generator, nb_epochs=nb_epochs, **kwargs)
+            super(TensorFlowClassifier, self).fit_generator(generator, nb_epochs=nb_epochs, **kwargs)
 
     def class_gradient(self, x, label=None, **kwargs):
         """
@@ -488,7 +488,7 @@ class TensorflowClassifier(ClassifierNeuralNetwork, ClassifierGradients, Classif
 
     def __getstate__(self):
         """
-        Use to ensure `TensorflowClassifier` can be pickled.
+        Use to ensure `TensorFlowClassifier` can be pickled.
 
         :return: State dictionary with instance parameters.
         :rtype: `dict`
@@ -532,14 +532,14 @@ class TensorflowClassifier(ClassifierNeuralNetwork, ClassifierGradients, Classif
 
     def __setstate__(self, state):
         """
-        Use to ensure `TensorflowClassifier` can be unpickled.
+        Use to ensure `TensorFlowClassifier` can be unpickled.
 
         :param state: State dictionary with instance parameters to restore.
         :type state: `dict`
         """
         self.__dict__.update(state)
 
-        # Load and update all functionality related to Tensorflow
+        # Load and update all functionality related to TensorFlow
         # pylint: disable=E0611, E0401
         import os
         import tensorflow as tf
@@ -606,18 +606,18 @@ class TensorflowClassifier(ClassifierNeuralNetwork, ClassifierGradients, Classif
 
 
 # backward compatibility for ART v0.10 and earlier
-TFClassifier = TensorflowClassifier
+TFClassifier = TensorFlowClassifier
 
 
-class TensorflowV2Classifier(ClassifierNeuralNetwork, ClassifierGradients, Classifier):
+class TensorFlowV2Classifier(ClassifierNeuralNetwork, ClassifierGradients, Classifier):
     """
-    This class implements a classifier with the Tensorflow v2 framework.
+    This class implements a classifier with the TensorFlow v2 framework.
     """
 
     def __init__(self, model, nb_classes, loss_object=None, train_step=None, channel_index=3, clip_values=None,
                  defences=None, preprocessing=(0, 1)):
         """
-        Initialization specific to Tensorflow v2 models.
+        Initialization specific to TensorFlow v2 models.
 
         :param model: a python functions or callable class defining the model and providing it prediction as output.
         :type model: `function` or `callable class`
@@ -642,7 +642,7 @@ class TensorflowV2Classifier(ClassifierNeuralNetwork, ClassifierGradients, Class
                be divided by the second one.
         :type preprocessing: `tuple`
         """
-        super(TensorflowV2Classifier, self).__init__(clip_values=clip_values, channel_index=channel_index,
+        super(TensorFlowV2Classifier, self).__init__(clip_values=clip_values, channel_index=channel_index,
                                                      defences=defences, preprocessing=preprocessing)
 
         self._model = model
@@ -658,7 +658,7 @@ class TensorflowV2Classifier(ClassifierNeuralNetwork, ClassifierGradients, Class
         :type x: `np.ndarray`
         :param batch_size: Size of batches.
         :type batch_size: `int`
-        :return: Array of predictions of shape `(nb_inputs, self.nb_classes)`.
+        :return: Array of predictions of shape `(nb_inputs, nb_classes)`.
         :rtype: `np.ndarray`
         """
         # Apply preprocessing

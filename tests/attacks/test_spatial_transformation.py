@@ -54,10 +54,10 @@ class TestSpatialTransformation(unittest.TestCase):
 
     def test_tfclassifier(self):
         """
-        First test with the TensorflowClassifier.
+        First test with the TensorFlowClassifier.
         :return:
         """
-        # Build TensorflowClassifier
+        # Build TensorFlowClassifier
         tfc, sess = get_classifier_tf()
 
         # Attack
@@ -78,7 +78,7 @@ class TestSpatialTransformation(unittest.TestCase):
 
         sess.close()
 
-    @unittest.skipIf(tf.__version__[0] == '2', reason='Skip unittests for Tensorflow v2 until Keras supports Tensorflow'
+    @unittest.skipIf(tf.__version__[0] == '2', reason='Skip unittests for TensorFlow v2 until Keras supports TensorFlow'
                                                       ' v2 as backend.')
     def test_krclassifier(self):
         """
@@ -136,7 +136,7 @@ class TestSpatialTransformation(unittest.TestCase):
 
         self.assertLessEqual(abs(x_test_adv[0, 0, 14, 14] - 0.008591662), 0.01)
 
-    @unittest.skipIf(tf.__version__[0] == '2', reason='Skip unittests for Tensorflow v2 until Keras supports Tensorflow'
+    @unittest.skipIf(tf.__version__[0] == '2', reason='Skip unittests for TensorFlow v2 until Keras supports TensorFlow'
                                                       ' v2 as backend.')
     def test_failure_feature_vectors(self):
         attack_params = {"max_translation": 10.0, "num_translations": 3, "max_rotation": 30.0, "num_rotations": 3}

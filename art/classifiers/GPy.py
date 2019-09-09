@@ -72,6 +72,8 @@ class GPyGaussianProcessClassifier(Classifier, ClassifierGradients):
                       match the batch size of `x`, and each value will be used as target for its corresponding sample in
                       `x`. If `None`, then gradients for all classes will be computed for each sample.
         :type label: `int` or `list`
+        :param eps: Fraction added to the diagonal elements of the input `x`.
+        :type eps: `float`
         :return: Array of gradients of input features w.r.t. each class in the form
                  `(batch_size, nb_classes, input_shape)` when computing for all classes, otherwise shape becomes
                  `(batch_size, 1, input_shape)` when `label` parameter is specified.
@@ -86,7 +88,8 @@ class GPyGaussianProcessClassifier(Classifier, ClassifierGradients):
             for i_c in range(2):
                 ind = self.predict(x[i].reshape(1, -1))[0, i_c]
                 sur = self.predict(np.repeat(x_preprocessed[i].reshape(1, -1),
-                                             np.shape(x_preprocessed)[1], 0) + eps * np.eye(np.shape(x_preprocessed)[1]))[:, i_c]
+                                             np.shape(x_preprocessed)[1], 0)
+                                   + eps * np.eye(np.shape(x_preprocessed)[1]))[:, i_c]
                 grads[i, i_c] = ((sur - ind) * eps).reshape(1, -1)
 
         grads = self._apply_preprocessing_gradient(x, grads)
@@ -132,7 +135,7 @@ class GPyGaussianProcessClassifier(Classifier, ClassifierGradients):
         :type x: `np.ndarray`
         :param logits: `True` if the prediction should be done without squashing function.
         :type logits: `bool`
-        :return: Array of predictions of shape `(nb_inputs, self.nb_classes)`.
+        :return: Array of predictions of shape `(nb_inputs, nb_classes)`.
         :rtype: `np.ndarray`
         """
         # Apply preprocessing

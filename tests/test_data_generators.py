@@ -33,7 +33,7 @@ from art.utils import master_seed
 logger = logging.getLogger('testLogger')
 
 
-@unittest.skipIf(tf.__version__[0] == '2', reason='Skip unittests for Tensorflow v2 until Keras supports Tensorflow'
+@unittest.skipIf(tf.__version__[0] == '2', reason='Skip unittests for TensorFlow v2 until Keras supports TensorFlow'
                                                   ' v2 as backend.')
 class TestKerasDataGenerator(unittest.TestCase):
     def setUp(self):

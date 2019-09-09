@@ -38,7 +38,7 @@ logger = logging.getLogger('testLogger')
 BATCH_SIZE, NB_TRAIN, NB_TEST = 100, 1000, 10
 
 
-@unittest.skipIf(tf.__version__[0] == '2', reason='Skip unittests for Tensorflow v2 until Keras supports Tensorflow'
+@unittest.skipIf(tf.__version__[0] == '2', reason='Skip unittests for TensorFlow v2 until Keras supports TensorFlow'
                                                   ' v2 as backend.')
 class TestBinaryInputDetector(unittest.TestCase):
     """
@@ -102,7 +102,7 @@ class TestBinaryInputDetector(unittest.TestCase):
         self.assertGreater(nb_true_negatives, 0)
 
 
-@unittest.skipIf(tf.__version__[0] == '2', reason='Skip unittests for Tensorflow v2 until Keras supports Tensorflow'
+@unittest.skipIf(tf.__version__[0] == '2', reason='Skip unittests for TensorFlow v2 until Keras supports TensorFlow'
                                                   ' v2 as backend.')
 class TestBinaryActivationDetector(unittest.TestCase):
     """

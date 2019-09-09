@@ -37,7 +37,7 @@ NB_TRAIN = 100
 NB_TEST = 11
 
 
-@unittest.skipIf(tf.__version__[0] == '2', reason='Skip unittests for Tensorflow v2 until Keras supports Tensorflow'
+@unittest.skipIf(tf.__version__[0] == '2', reason='Skip unittests for TensorFlow v2 until Keras supports TensorFlow'
                                                   ' v2 as backend.')
 class TestPGD(unittest.TestCase):
     @classmethod
@@ -191,7 +191,7 @@ class TestPGDVectors(unittest.TestCase):
     def setUp(self):
         master_seed(1234)
 
-    @unittest.skipIf(tf.__version__[0] == '2', reason='Skip unittests for Tensorflow v2 until Keras supports Tensorflow'
+    @unittest.skipIf(tf.__version__[0] == '2', reason='Skip unittests for TensorFlow v2 until Keras supports TensorFlow'
                                                       ' v2 as backend.')
     def test_iris_k_clipped(self):
         (_, _), (x_test, y_test) = self.iris
@@ -222,7 +222,7 @@ class TestPGDVectors(unittest.TestCase):
         acc = np.sum(preds_adv == np.argmax(targets, axis=1)) / y_test.shape[0]
         logger.info('Success rate of targeted PGD on Iris: %.2f%%', (acc * 100))
 
-    @unittest.skipIf(tf.__version__[0] == '2', reason='Skip unittests for Tensorflow v2 until Keras supports Tensorflow'
+    @unittest.skipIf(tf.__version__[0] == '2', reason='Skip unittests for TensorFlow v2 until Keras supports TensorFlow'
                                                       ' v2 as backend.')
     def test_iris_k_unbounded(self):
         (_, _), (x_test, y_test) = self.iris

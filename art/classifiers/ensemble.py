@@ -93,6 +93,7 @@ class EnsembleClassifier(ClassifierNeuralNetwork, ClassifierGradients, Classifie
         self._classifier_weights = classifier_weights
 
         self._classifiers = classifiers
+        self._learning_phase = None
 
     def predict(self, x, batch_size=128, **kwargs):
         """
@@ -105,8 +106,8 @@ class EnsembleClassifier(ClassifierNeuralNetwork, ClassifierGradients, Classifie
         :type x: `np.ndarray`
         :param raw: Return the individual classifier raw outputs (not aggregated).
         :type raw: `bool`
-        :return: Array of predictions of shape `(nb_inputs, self.nb_classes)`, or of shape
-                 `(nb_classifiers, nb_inputs, self.nb_classes)` if `raw=True`.
+        :return: Array of predictions of shape `(nb_inputs, nb_classes)`, or of shape
+                 `(nb_classifiers, nb_inputs, nb_classes)` if `raw=True`.
         :rtype: `np.ndarray`
         """
         if 'raw' in kwargs:

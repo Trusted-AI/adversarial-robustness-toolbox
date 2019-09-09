@@ -159,7 +159,7 @@ class QueryEfficientBBGradientEstimation(ClassifierWrapper, ClassifierGradients,
         :type x: `np.ndarray`
         :param batch_size: Size of batches.
         :type batch_size: `int`
-        :return: Array of predictions of shape `(nb_inputs, self.nb_classes)`.
+        :return: Array of predictions of shape `(nb_inputs, nb_classes)`.
         :rtype: `np.ndarray`
         """
         return self._predict(clip_and_round(x, self.clip_values, self.round_samples), **{'batch_size': batch_size})

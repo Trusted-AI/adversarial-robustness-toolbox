@@ -23,7 +23,7 @@ import unittest
 import numpy as np
 from sklearn.svm import LinearSVC, NuSVC, SVC
 
-from art.attacks.svm_attack import SVMAttack
+from art.attacks import PoisoningAttackSVM
 from art.classifiers import SklearnClassifier
 from art.utils import master_seed, load_iris
 
@@ -109,7 +109,7 @@ class TestSVMAttack(unittest.TestCase):
         clean.fit(x_train, y_train)
         poison = SklearnClassifier(model=LinearSVC(), clip_values=clip_values)
         poison.fit(x_train, y_train)
-        attack = SVMAttack(poison, 0.01, 1.0, x_train, y_train, x_test, y_test, 100)
+        attack = PoisoningAttackSVM(poison, 0.01, 1.0, x_train, y_train, x_test, y_test, 100)
         attack_point = attack.generate(np.array([x_train[0]]))
         poison.fit(x=np.vstack([x_train, attack_point]), y=np.vstack([y_train, np.copy(y_train[0].reshape((1, 2)))]))
 
@@ -122,14 +122,14 @@ class TestSVMAttack(unittest.TestCase):
     def test_unsupported_kernel(self):
         (x_train, y_train), (x_test, y_test), min_, max_ = self.iris
         model = SVC(kernel='sigmoid')
-        self.assertRaises(NotImplementedError, callable=SVMAttack.__init__, classifier=model, step=0.01, eps=1.0,
-                          x_train=x_train, y_train=y_train, x_val=x_test, y_val=y_test)
+        self.assertRaises(NotImplementedError, callable=PoisoningAttackSVM.__init__, classifier=model, step=0.01,
+                          eps=1.0, x_train=x_train, y_train=y_train, x_val=x_test, y_val=y_test)
 
     def test_unsupported_SVC(self):
         (x_train, y_train), (x_test, y_test), _, _ = self.iris
         model = NuSVC()
-        self.assertRaises(NotImplementedError, callable=SVMAttack.__init__, classifier=model, step=0.01, eps=1.0,
-                          x_train=x_train, y_train=y_train, x_val=x_test, y_val=y_test)
+        self.assertRaises(NotImplementedError, callable=PoisoningAttackSVM.__init__, classifier=model, step=0.01,
+                          eps=1.0, x_train=x_train, y_train=y_train, x_val=x_test, y_val=y_test)
 
     def test_SVC_kernels(self):
         """
@@ -146,9 +146,10 @@ class TestSVMAttack(unittest.TestCase):
             clean.fit(x_train, y_train)
             poison = SklearnClassifier(model=SVC(kernel=kernel), clip_values=clip_values)
             poison.fit(x_train, y_train)
-            attack = SVMAttack(poison, 0.01, 1.0, x_train, y_train, x_test, y_test, 100)
+            attack = PoisoningAttackSVM(poison, 0.01, 1.0, x_train, y_train, x_test, y_test, 100)
             attack_point = attack.generate(np.array([x_train[0]]))
-            poison.fit(x=np.vstack([x_train, attack_point]), y=np.vstack([y_train, np.copy(y_train[0].reshape((1, 2)))]))
+            poison.fit(x=np.vstack([x_train, attack_point]),
+                       y=np.vstack([y_train, np.copy(y_train[0].reshape((1, 2)))]))
 
             acc = np.average(np.all(clean.predict(x_test) == y_test, axis=1)) * 100
             poison_acc = np.average(np.all(poison.predict(x_test) == y_test, axis=1)) * 100

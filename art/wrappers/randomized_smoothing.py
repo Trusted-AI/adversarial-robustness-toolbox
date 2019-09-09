@@ -68,7 +68,7 @@ class RandomizedSmoothing(ClassifierWrapper, ClassifierGradients, Classifier):
         :type batch_size: `int`
         :param is_abstain: True if function will abstain from prediction and return 0s
         :type is_abstain: `boolean`
-        :return: Array of predictions of shape `(nb_inputs, self.nb_classes)`.
+        :return: Array of predictions of shape `(nb_inputs, nb_classes)`.
         :rtype: `np.ndarray`
         """
         from scipy.stats import binom_test

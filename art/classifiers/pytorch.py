@@ -76,6 +76,7 @@ class PyTorchClassifier(ClassifierNeuralNetwork, ClassifierGradients, Classifier
         self._model = self._make_model_wrapper(model)
         self._loss = loss
         self._optimizer = optimizer
+        self._learning_phase = None
 
         # Get the internal layers
         self._layer_names = self._model.get_layers
@@ -96,7 +97,7 @@ class PyTorchClassifier(ClassifierNeuralNetwork, ClassifierGradients, Classifier
         :type x: `np.ndarray`
         :param batch_size: Size of batches.
         :type batch_size: `int`
-        :return: Array of predictions of shape `(nb_inputs, self.nb_classes)`.
+        :return: Array of predictions of shape `(nb_inputs, nb_classes)`.
         :rtype: `np.ndarray`
         """
         import torch

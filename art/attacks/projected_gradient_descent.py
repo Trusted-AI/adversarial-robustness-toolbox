@@ -55,7 +55,7 @@ class ProjectedGradientDescent(FastGradientMethod):
 
         :param classifier: A trained classifier.
         :type classifier: :class:`.Classifier`
-        :param norm: Order of the norm. Possible values: np.inf, 1 or 2.
+        :param norm: The norm of the adversarial perturbation. Possible values: np.inf, 1 or 2.
         :type norm: `int`
         :param eps: Maximum perturbation that the attacker can introduce.
         :type eps: `float`
@@ -63,12 +63,12 @@ class ProjectedGradientDescent(FastGradientMethod):
         :type eps_step: `float`
         :param max_iter: The maximum number of iterations.
         :type max_iter: `int`
-        :param targeted: Should the attack target one specific class
+        :param targeted: Indicates whether the attack is targeted (True) or untargeted (False)
         :type targeted: `bool`
         :param num_random_init: Number of random initialisations within the epsilon ball. For num_random_init=0
             starting at the original input.
         :type num_random_init: `int`
-        :param batch_size: Batch size
+        :param batch_size: Size of the batch on which adversarial samples are generated.
         :type batch_size: `int`
         """
         super(ProjectedGradientDescent, self).__init__(classifier, norm=norm, eps=eps, eps_step=eps_step,
@@ -98,7 +98,7 @@ class ProjectedGradientDescent(FastGradientMethod):
         :return: An array holding the adversarial examples.
         :rtype: `np.ndarray`
         """
-        y = check_and_transform_label_format(y, self.classifier.nb_classes)
+        y = check_and_transform_label_format(y, self.classifier.nb_classes())
 
         if y is None:
             # Throw error if attack is targeted, but no targets are provided

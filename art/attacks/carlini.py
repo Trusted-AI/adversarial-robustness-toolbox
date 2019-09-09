@@ -67,7 +67,10 @@ class CarliniL2Method(Attack):
         :param learning_rate: The initial learning rate for the attack algorithm. Smaller values produce better results
                 but are slower to converge.
         :type learning_rate: `float`
-        :param binary_search_steps: number of times to adjust constant with binary search (positive value).
+        :param binary_search_steps: Number of times to adjust constant with binary search (positive value). If
+                                    `binary_search_steps` is large, then the algorithm is not very sensitive to the
+                                    value of `initial_const`. Note that the values gamma=0.999999 and c_upper=10e10 are
+                                    hardcoded with the same values used by the authors of the method.
         :type binary_search_steps: `int`
         :param max_iter: The maximum number of iterations.
         :type max_iter: `int`
@@ -79,7 +82,7 @@ class CarliniL2Method(Attack):
         :type max_halving: `int`
         :param max_doubling: Maximum number of doubling steps in the line search optimization.
         :type max_doubling: `int`
-        :param batch_size: Internal size of batches on which adversarial samples are generated.
+        :param batch_size: Size of the batch on which adversarial samples are generated.
         :type batch_size: `int`
         """
         super(CarliniL2Method, self).__init__(classifier)
@@ -203,7 +206,7 @@ class CarliniL2Method(Attack):
         :return: An array holding the adversarial examples.
         :rtype: `np.ndarray`
         """
-        y = check_and_transform_label_format(y, self.classifier.nb_classes)
+        y = check_and_transform_label_format(y, self.classifier.nb_classes())
         x_adv = x.astype(NUMPY_DTYPE)
 
         if hasattr(self.classifier, 'clip_values') and self.classifier.clip_values is not None:
@@ -453,8 +456,8 @@ class CarliniLInfMethod(Attack):
     attack_params = Attack.attack_params + ['confidence', 'targeted', 'learning_rate', 'max_iter',
                                             'max_halving', 'max_doubling', 'eps', 'batch_size']
 
-    def __init__(self, classifier, confidence=0.0, targeted=False, learning_rate=0.01,
-                 max_iter=10, max_halving=5, max_doubling=5, eps=0.3, batch_size=128):
+    def __init__(self, classifier, confidence=0.0, targeted=False, learning_rate=0.01, max_iter=10, max_halving=5,
+                 max_doubling=5, eps=0.3, batch_size=128):
         """
         Create a Carlini L_Inf attack instance.
 
@@ -476,7 +479,7 @@ class CarliniLInfMethod(Attack):
         :type max_doubling: `int`
         :param eps: An upper bound for the L_0 norm of the adversarial perturbation.
         :type eps: `float`
-        :param batch_size: Internal size of batches on which adversarial samples are generated.
+        :param batch_size: Size of the batch on which adversarial samples are generated.
         :type batch_size: `int`
         :param expectation: An expectation over transformations to be applied when computing
                             classifier gradients and predictions.
@@ -575,7 +578,7 @@ class CarliniLInfMethod(Attack):
         :return: An array holding the adversarial examples.
         :rtype: `np.ndarray`
         """
-        y = check_and_transform_label_format(y, self.classifier.nb_classes)
+        y = check_and_transform_label_format(y, self.classifier.nb_classes())
         x_adv = x.astype(NUMPY_DTYPE)
 
         if hasattr(self.classifier, 'clip_values') and self.classifier.clip_values is not None:
@@ -710,7 +713,7 @@ class CarliniLInfMethod(Attack):
                         best_lr_mult = best_lr_mult[:, np.newaxis]
 
                     x_adv_batch_tanh[active_and_update_adv] = x_adv_batch_tanh[active_and_update_adv] + best_lr_mult * \
-                        perturbation_tanh[update_adv]
+                                                              perturbation_tanh[update_adv]
                     x_adv_batch[active_and_update_adv] = tanh_to_original(x_adv_batch_tanh[active_and_update_adv],
                                                                           clip_min[active_and_update_adv],
                                                                           clip_max[active_and_update_adv])

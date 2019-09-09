@@ -52,11 +52,11 @@ class BasicIterativeMethod(ProjectedGradientDescent):
         :type eps_step: `float`
         :param max_iter: The maximum number of iterations.
         :type max_iter: `int`
-        :param targeted: Should the attack target one specific class
+        :param targeted: Indicates whether the attack is targeted (True) or untargeted (False)
         :type targeted: `bool`
-        :param batch_size: Batch size
+        :param batch_size: Size of the batch on which adversarial samples are generated.
         :type batch_size: `int`
         """
         super(BasicIterativeMethod, self).__init__(classifier, norm=np.inf, eps=eps, eps_step=eps_step,
-                                                   max_iter=max_iter, targeted=targeted,
-                                                   num_random_init=0, batch_size=batch_size)
+                                                   max_iter=max_iter, targeted=targeted, num_random_init=0,
+                                                   batch_size=batch_size)
