@@ -204,7 +204,7 @@ class ScikitlearnDecisionTreeClassifier(ScikitlearnClassifier):
         # pylint: disable=E0001
         from sklearn.tree import DecisionTreeClassifier
 
-        if not isinstance(model, DecisionTreeClassifier):
+        if not isinstance(model, DecisionTreeClassifier) and model is not None:
             raise TypeError('Model must be of type sklearn.tree.DecisionTreeClassifier')
 
         super(ScikitlearnDecisionTreeClassifier, self).__init__(model=model, clip_values=clip_values, defences=defences,
@@ -339,7 +339,7 @@ class ScikitlearnDecisionTreeRegressor(ScikitlearnDecisionTreeClassifier):
         if not isinstance(model, DecisionTreeRegressor):
             raise TypeError('Model must be of type sklearn.tree.DecisionTreeRegressor')
 
-        ScikitlearnDecisionTreeClassifier.__init__(self, model=model, clip_values=clip_values, defences=defences,
+        ScikitlearnDecisionTreeClassifier.__init__(self, model=None, clip_values=clip_values, defences=defences,
                                                    preprocessing=preprocessing)
         self._model = model
 
