@@ -60,6 +60,9 @@ Get in touch with us on [Slack](https://ibm-art.slack.com) (invite [here](https:
 * Virtual adversarial method ([Miyato et al., 2015](https://arxiv.org/abs/1507.00677))
 * Fast gradient method ([Goodfellow et al., 2014](https://arxiv.org/abs/1412.6572))
 
+**Poisoning Attacks:**
+* Poisoning Attack on SVM ([Biggio et al., 2013](https://arxiv.org/pdf/1206.6389.pdf))
+
 **Defences:**
 * Thermometer encoding ([Buckman et al., 2018](https://openreview.net/forum?id=S18Su--CW))
 * Total variance minimization ([Guo et al., 2018](https://openreview.net/forum?id=SyJ7ClWCb))
