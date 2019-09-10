@@ -28,7 +28,7 @@ from art.classifiers.classifier import Classifier, ClassifierGradients
 
 logger = logging.getLogger(__name__)
 
-
+# pylint: disable=C0103
 class GPyGaussianProcessClassifier(Classifier, ClassifierGradients):
     """
     Wrapper class for GPy Gaussian Process classification models.
@@ -112,7 +112,7 @@ class GPyGaussianProcessClassifier(Classifier, ClassifierGradients):
         :rtype: `np.ndarray`
         """
         # Apply preprocessing
-        x_preprocessed, y_preprocessed = self._apply_preprocessing(x, y, fit=False)
+        x_preprocessed, _ = self._apply_preprocessing(x, y, fit=False)
 
         eps = 0.00001
         grads = np.zeros(np.shape(x))

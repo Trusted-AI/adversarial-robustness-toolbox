@@ -79,6 +79,7 @@ class RobustnessVerificationTreeModelsCliqueMethod:
         num_initial_successes = 0
         num_samples = x.shape[0]
 
+        # pylint: disable=R1702
         for i_sample in range(num_samples):
 
             eps = eps_init
@@ -158,6 +159,7 @@ class RobustnessVerificationTreeModelsCliqueMethod:
         new_nodes_list = list()
         best_scores_sum = 0.0
 
+        # pylint: disable=R1702
         for start_tree in range(0, len(accessible_leaves), self.max_clique):
 
             cliques_old = list()

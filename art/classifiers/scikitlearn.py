@@ -339,8 +339,8 @@ class ScikitlearnDecisionTreeRegressor(ScikitlearnDecisionTreeClassifier):
         if not isinstance(model, DecisionTreeRegressor):
             raise TypeError('Model must be of type sklearn.tree.DecisionTreeRegressor')
 
-        ScikitlearnClassifier.__init__(self, model=model, clip_values=clip_values, defences=defences,
-                                       preprocessing=preprocessing)
+        ScikitlearnDecisionTreeClassifier.__init__(self, model=model, clip_values=clip_values, defences=defences,
+                                                   preprocessing=preprocessing)
         self._model = model
 
     def get_values_at_node(self, node_id):
@@ -897,6 +897,7 @@ class ScikitlearnSVC(ScikitlearnClassifier, ClassifierGradients):
         :return: the kernel gradient
         :rtype: `np.ndarray`
         """
+        # pylint: disable=W0212
         if self._model.kernel == 'linear':
             grad = sv
         elif self._model.kernel == 'poly':
