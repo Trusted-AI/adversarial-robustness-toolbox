@@ -61,7 +61,7 @@ Get in touch with us on [Slack](https://ibm-art.slack.com) (invite [here](https:
 * Fast gradient method ([Goodfellow et al., 2014](https://arxiv.org/abs/1412.6572))
 
 **Poisoning Attacks:**
-* Poisoning Attack on SVM ([Biggio et al., 2013](https://arxiv.org/pdf/1206.6389.pdf))
+* Poisoning Attack on SVM ([Biggio et al., 2013](https://arxiv.org/abs/1206.6389))
 
 **Defences:**
 * Thermometer encoding ([Buckman et al., 2018](https://openreview.net/forum?id=S18Su--CW))
