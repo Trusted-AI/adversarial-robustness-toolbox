@@ -98,6 +98,10 @@ class VirtualAdversarialMethod(Attack):
                 preds_new = self.classifier.predict((batch + var_d).reshape((-1,) + self.classifier.input_shape))
                 preds_new_rescaled = self._rescale(preds_new)
 
+                if (preds_new < 0).any():
+                    raise TypeError('This attack requires that the classifier must produce a probability output, '
+                                    'which seems not the case.')
+
                 from scipy.stats import entropy
                 kl_div1 = entropy(np.transpose(preds_rescaled[batch_index_1:batch_index_2]),
                                   np.transpose(preds_new_rescaled))
