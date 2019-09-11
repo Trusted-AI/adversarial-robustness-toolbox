@@ -81,7 +81,11 @@ class VirtualAdversarialMethod(Attack):
         """
         x_adv = x.astype(NUMPY_DTYPE)
         preds = self.classifier.predict(x_adv, batch_size=self.batch_size)
-        preds_rescaled = self._rescale(preds)
+        if (preds < 0.0).any() or (preds > 1.0).any():
+            raise TypeError('This attack requires a classifier predicting probabilities in the range [0, 1] as output.'
+                            'Values smaller than 0.0 or larger than 1.0 have been detected.')
+        # preds_rescaled = self._rescale(preds) # Rescaling needs more testing
+        preds_rescaled = preds
 
         # Compute perturbation with implicit batching
         for batch_id in range(int(np.ceil(x_adv.shape[0] / float(self.batch_size)))):
@@ -96,7 +100,11 @@ class VirtualAdversarialMethod(Attack):
             for _ in range(self.max_iter):
                 var_d = self._normalize(var_d)
                 preds_new = self.classifier.predict((batch + var_d).reshape((-1,) + self.classifier.input_shape))
-                preds_new_rescaled = self._rescale(preds_new)
+                if (preds_new < 0.0).any() or (preds_new > 1.0).any():
+                    raise TypeError('This attack requires a classifier predicting probabilities in the range [0, 1] as '
+                                    'output. Values smaller than 0.0 or larger than 1.0 have been detected.')
+                # preds_new_rescaled = self._rescale(preds_new) # Rescaling needs more testing
+                preds_new_rescaled = preds_new
 
                 from scipy.stats import entropy
                 kl_div1 = entropy(np.transpose(preds_rescaled[batch_index_1:batch_index_2]),
@@ -106,7 +114,12 @@ class VirtualAdversarialMethod(Attack):
                 for current_index in range(var_d.shape[1]):
                     var_d[:, current_index] += self.finite_diff
                     preds_new = self.classifier.predict((batch + var_d).reshape((-1,) + self.classifier.input_shape))
-                    preds_new_rescaled = self._rescale(preds_new)
+                    if (preds_new < 0.0).any() or (preds_new > 1.0).any():
+                        raise TypeError('This attack requires a classifier predicting probabilities in the range [0, 1]'
+                                        'as output. Values smaller than 0.0 or larger than 1.0 have been detected.')
+                    # preds_new_rescaled = self._rescale(preds_new) # Rescaling needs more testing
+                    preds_new_rescaled = preds_new
+
                     kl_div2 = entropy(np.transpose(preds_rescaled[batch_index_1:batch_index_2]),
                                       np.transpose(preds_new_rescaled))
                     var_d_new[:, current_index] = (kl_div2 - kl_div1) / self.finite_diff
