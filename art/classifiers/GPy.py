@@ -28,6 +28,7 @@ from art.classifiers.classifier import Classifier, ClassifierGradients
 
 logger = logging.getLogger(__name__)
 
+
 # pylint: disable=C0103
 class GPyGaussianProcessClassifier(Classifier, ClassifierGradients):
     """
