@@ -107,3 +107,6 @@ demo/pics/*
 
 # Exceptions for notebooks/
 !notebooks/*.ipynb
+
+# Exception for MNIST unittesting data hack
+!data/mnist/mnist_unittest.npz
