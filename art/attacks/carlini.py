@@ -22,8 +22,7 @@ evaluate potential defences. A major difference with respect to the original imp
 (https://github.com/carlini/nn_robust_attacks) is that this implementation uses line search in the optimization of the
 attack objective.
 
-Paper link:
-    https://arxiv.org/pdf/1608.04644.pdf
+| Paper link: https://arxiv.org/abs/1608.04644
 """
 from __future__ import absolute_import, division, print_function, unicode_literals
 
@@ -32,8 +31,10 @@ import logging
 import numpy as np
 
 from art import NUMPY_DTYPE
+from art.classifiers.classifier import ClassifierGradients
 from art.attacks.attack import Attack
 from art.utils import compute_success, get_labels_np_array, tanh_to_original, original_to_tanh
+from art.utils import check_and_transform_label_format
 
 logger = logging.getLogger(__name__)
 
@@ -43,7 +44,9 @@ class CarliniL2Method(Attack):
     The L_2 optimized attack of Carlini and Wagner (2016). This attack is among the most effective and should be used
     among the primary attacks to evaluate potential defences. A major difference wrt to the original implementation
     (https://github.com/carlini/nn_robust_attacks) is that we use line search in the optimization of the attack
-    objective. Paper link: https://arxiv.org/pdf/1608.04644.pdf
+    objective.
+
+    | Paper link: https://arxiv.org/abs/1608.04644
     """
     attack_params = Attack.attack_params + ['confidence', 'targeted', 'learning_rate', 'max_iter',
                                             'binary_search_steps', 'initial_const', 'max_halving', 'max_doubling',
@@ -54,7 +57,7 @@ class CarliniL2Method(Attack):
         """
         Create a Carlini L_2 attack instance.
 
-        :param classifier: A trained model.
+        :param classifier: A trained classifier.
         :type classifier: :class:`.Classifier`
         :param confidence: Confidence of adversarial examples: a higher value produces examples that are farther away,
                 from the original input, but classified with higher confidence as the target class.
@@ -64,7 +67,10 @@ class CarliniL2Method(Attack):
         :param learning_rate: The initial learning rate for the attack algorithm. Smaller values produce better results
                 but are slower to converge.
         :type learning_rate: `float`
-        :param binary_search_steps: number of times to adjust constant with binary search (positive value).
+        :param binary_search_steps: Number of times to adjust constant with binary search (positive value). If
+                                    `binary_search_steps` is large, then the algorithm is not very sensitive to the
+                                    value of `initial_const`. Note that the values gamma=0.999999 and c_upper=10e10 are
+                                    hardcoded with the same values used by the authors of the method.
         :type binary_search_steps: `int`
         :param max_iter: The maximum number of iterations.
         :type max_iter: `int`
@@ -76,10 +82,14 @@ class CarliniL2Method(Attack):
         :type max_halving: `int`
         :param max_doubling: Maximum number of doubling steps in the line search optimization.
         :type max_doubling: `int`
-        :param batch_size: Internal size of batches on which adversarial samples are generated.
+        :param batch_size: Size of the batch on which adversarial samples are generated.
         :type batch_size: `int`
         """
         super(CarliniL2Method, self).__init__(classifier)
+        if not isinstance(classifier, ClassifierGradients):
+            raise (TypeError('For `' + self.__class__.__name__ + '` classifier must be an instance of '
+                             '`art.classifiers.classifier.ClassifierGradients`, the provided classifier is instance of '
+                             + str(classifier.__class__.__bases__) + '.'))
 
         kwargs = {'confidence': confidence,
                   'targeted': targeted,
@@ -168,8 +178,8 @@ class CarliniL2Method(Attack):
             i_add = np.argmax(target, axis=1)
             i_sub = np.argmax(z_logits * (1 - target) + (np.min(z_logits, axis=1) - 1)[:, np.newaxis] * target, axis=1)
 
-        loss_gradient = self.classifier.class_gradient(x_adv, label=i_add, logits=True)
-        loss_gradient -= self.classifier.class_gradient(x_adv, label=i_sub, logits=True)
+        loss_gradient = self.classifier.class_gradient(x_adv, label=i_add)
+        loss_gradient -= self.classifier.class_gradient(x_adv, label=i_sub)
         loss_gradient = loss_gradient.reshape(x.shape)
 
         c_mult = c_weight
@@ -189,13 +199,16 @@ class CarliniL2Method(Attack):
 
         :param x: An array with the original inputs to be attacked.
         :type x: `np.ndarray`
-        :param y: If `self.targeted` is true, then `y_val` represents the target labels. Otherwise, the targets are
-                the original class labels.
-        :type y: `np.ndarray`
+        :param y: Target values (class labels) one-hot-encoded of shape (nb_samples, nb_classes) or indices of shape
+                  (nb_samples,). If `self.targeted` is true, then `y` represents the target labels. If `self.targeted`
+                  is true, then `y_val` represents the target labels. Otherwise, the targets are the original class
+                  labels.
         :return: An array holding the adversarial examples.
         :rtype: `np.ndarray`
         """
+        y = check_and_transform_label_format(y, self.classifier.nb_classes())
         x_adv = x.astype(NUMPY_DTYPE)
+
         if hasattr(self.classifier, 'clip_values') and self.classifier.clip_values is not None:
             clip_min, clip_max = self.classifier.clip_values
         else:
@@ -207,7 +220,7 @@ class CarliniL2Method(Attack):
 
         # No labels provided, use model prediction as correct class
         if y is None:
-            y = get_labels_np_array(self.classifier.predict(x, logits=False, batch_size=self.batch_size))
+            y = get_labels_np_array(self.classifier.predict(x, batch_size=self.batch_size))
 
         # Compute perturbation with implicit batching
         nb_batches = int(np.ceil(x_adv.shape[0] / float(self.batch_size)))
@@ -443,12 +456,12 @@ class CarliniLInfMethod(Attack):
     attack_params = Attack.attack_params + ['confidence', 'targeted', 'learning_rate', 'max_iter',
                                             'max_halving', 'max_doubling', 'eps', 'batch_size']
 
-    def __init__(self, classifier, confidence=0.0, targeted=False, learning_rate=0.01,
-                 max_iter=10, max_halving=5, max_doubling=5, eps=0.3, batch_size=128):
+    def __init__(self, classifier, confidence=0.0, targeted=False, learning_rate=0.01, max_iter=10, max_halving=5,
+                 max_doubling=5, eps=0.3, batch_size=128):
         """
         Create a Carlini L_Inf attack instance.
 
-        :param classifier: A trained model.
+        :param classifier: A trained classifier.
         :type classifier: :class:`.Classifier`
         :param confidence: Confidence of adversarial examples: a higher value produces examples that are farther away,
                 from the original input, but classified with higher confidence as the target class.
@@ -466,13 +479,17 @@ class CarliniLInfMethod(Attack):
         :type max_doubling: `int`
         :param eps: An upper bound for the L_0 norm of the adversarial perturbation.
         :type eps: `float`
-        :param batch_size: Internal size of batches on which adversarial samples are generated.
+        :param batch_size: Size of the batch on which adversarial samples are generated.
         :type batch_size: `int`
         :param expectation: An expectation over transformations to be applied when computing
                             classifier gradients and predictions.
         :type expectation: :class:`.ExpectationOverTransformations`
         """
         super(CarliniLInfMethod, self).__init__(classifier)
+        if not isinstance(classifier, ClassifierGradients):
+            raise (TypeError('For `' + self.__class__.__name__ + '` classifier must be an instance of '
+                             '`art.classifiers.classifier.ClassifierGradients`, the provided classifier is instance of '
+                             + str(classifier.__class__.__bases__) + '.'))
 
         kwargs = {'confidence': confidence,
                   'targeted': targeted,
@@ -497,11 +514,10 @@ class CarliniLInfMethod(Attack):
         :type x_adv: `np.ndarray`
         :param target: An array with the target class (one-hot encoded).
         :type target: `np.ndarray`
-        :return: A tuple holding the current logits and overall loss.
+        :return: A tuple holding the current predictions and overall loss.
         :rtype: `(float, float)`
         """
-        z_predicted = self.classifier.predict(np.array(x_adv, dtype=NUMPY_DTYPE), logits=True,
-                                              batch_size=self.batch_size)
+        z_predicted = self.classifier.predict(np.array(x_adv, dtype=NUMPY_DTYPE), batch_size=self.batch_size)
         z_target = np.sum(z_predicted * target, axis=1)
         z_other = np.max(z_predicted * (1 - target) + (np.min(z_predicted, axis=1) - 1)[:, np.newaxis] * target, axis=1)
 
@@ -518,7 +534,7 @@ class CarliniLInfMethod(Attack):
         """
         Compute the gradient of the loss function.
 
-        :param z_logits: An array with the current logits.
+        :param z_logits: An array with the current predictions.
         :type z_logits: `np.ndarray`
         :param target: An array with the target class (one-hot encoded).
         :type target: `np.ndarray`
@@ -540,8 +556,8 @@ class CarliniLInfMethod(Attack):
             i_add = np.argmax(target, axis=1)
             i_sub = np.argmax(z_logits * (1 - target) + (np.min(z_logits, axis=1) - 1)[:, np.newaxis] * target, axis=1)
 
-        loss_gradient = self.classifier.class_gradient(x_adv, label=i_add, logits=True)
-        loss_gradient -= self.classifier.class_gradient(x_adv, label=i_sub, logits=True)
+        loss_gradient = self.classifier.class_gradient(x_adv, label=i_add)
+        loss_gradient -= self.classifier.class_gradient(x_adv, label=i_sub)
         loss_gradient = loss_gradient.reshape(x_adv.shape)
 
         loss_gradient *= (clip_max - clip_min)
@@ -555,12 +571,14 @@ class CarliniLInfMethod(Attack):
 
         :param x: An array with the original inputs to be attacked.
         :type x: `np.ndarray`
-        :param y: If `self.targeted` is true, then `y_val` represents the target labels. Otherwise, the targets are
-                  the original class labels.
+        :param y: Target values (class labels) one-hot-encoded of shape (nb_samples, nb_classes) or indices of shape
+                  (nb_samples,). If `self.targeted` is true, then `y_val` represents the target labels. Otherwise, the
+                  targets are the original class labels.
         :type y: `np.ndarray`
         :return: An array holding the adversarial examples.
         :rtype: `np.ndarray`
         """
+        y = check_and_transform_label_format(y, self.classifier.nb_classes())
         x_adv = x.astype(NUMPY_DTYPE)
 
         if hasattr(self.classifier, 'clip_values') and self.classifier.clip_values is not None:
@@ -574,7 +592,7 @@ class CarliniLInfMethod(Attack):
 
         # No labels provided, use model prediction as correct class
         if y is None:
-            y = get_labels_np_array(self.classifier.predict(x, logits=False, batch_size=self.batch_size))
+            y = get_labels_np_array(self.classifier.predict(x, batch_size=self.batch_size))
 
         # Compute perturbation with implicit batching
         nb_batches = int(np.ceil(x_adv.shape[0] / float(self.batch_size)))

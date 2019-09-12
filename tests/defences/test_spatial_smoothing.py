@@ -22,7 +22,7 @@ import unittest
 
 import numpy as np
 
-from art.defences.spatial_smoothing import SpatialSmoothing
+from art.defences import SpatialSmoothing
 from art.utils import master_seed
 
 logger = logging.getLogger('testLogger')
@@ -62,11 +62,11 @@ class TestLocalSpatialSmoothing(unittest.TestCase):
             [[[[0.1], [0.2], [0.3]], [[0.7], [0.7], [0.8]], [[0.7], [0.7], [0.8]]]]).astype(np.float32)).all())
 
     def test_channels(self):
-        x = np.arange(9).reshape(1, 1, 3, 3)
+        x = np.arange(9).reshape((1, 1, 3, 3))
         preprocess = SpatialSmoothing(channel_index=1)
         x_smooth, _ = preprocess(x)
 
-        x_new = np.arange(9).reshape(1, 3, 3, 1)
+        x_new = np.arange(9).reshape((1, 3, 3, 1))
         preprocess = SpatialSmoothing()
         x_new_smooth, _ = preprocess(x_new)
 

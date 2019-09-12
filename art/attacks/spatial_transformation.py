@@ -20,8 +20,7 @@ This module implements the spatial transformation attack `SpatialTransformation`
 inputs. The attack conducts black-box queries to the target model in a grid search over possible translations and
 rotations to find optimal attack parameters.
 
-Paper link:
-    https://arxiv.org/abs/1712.02779
+| Paper link: https://arxiv.org/abs/1712.02779
 """
 from __future__ import absolute_import, division, print_function, unicode_literals
 
@@ -40,14 +39,15 @@ class SpatialTransformation(Attack):
     Implementation of the spatial transformation attack using translation and rotation of inputs. The attack conducts
     black-box queries to the target model in a grid search over possible translations and rotations to find optimal
     attack parameters.
-    Paper link: https://arxiv.org/abs/1712.02779
+
+    | Paper link: https://arxiv.org/abs/1712.02779
     """
 
     attack_params = Attack.attack_params + ['max_translation', 'num_translations', 'max_rotation', 'num_rotations']
 
     def __init__(self, classifier, max_translation=0.0, num_translations=1, max_rotation=0.0, num_rotations=1):
         """
-        :param classifier: A trained model.
+        :param classifier: A trained classifier.
         :type classifier: :class:`.Classifier`
         :param max_translation: The maximum translation in any direction as percentage of image size. The value is
                expected to be in the range `[0, 100]`.
@@ -92,7 +92,7 @@ class SpatialTransformation(Attack):
 
         if self.attack_trans_x is None or self.attack_trans_y is None or self.attack_rot is None:
 
-            y_pred = self.classifier.predict(x, logits=False, batch_size=1)
+            y_pred = self.classifier.predict(x, batch_size=1)
             y_pred_max = np.argmax(y_pred, axis=1)
 
             nb_instances = len(x)
@@ -131,7 +131,7 @@ class SpatialTransformation(Attack):
                         x_adv_i = self._perturb(x, trans_x_i, trans_y_i, rot_i)
 
                         # Compute the error rate
-                        y_adv_i = np.argmax(self.classifier.predict(x_adv_i, logits=False, batch_size=1), axis=1)
+                        y_adv_i = np.argmax(self.classifier.predict(x_adv_i, batch_size=1), axis=1)
                         fooling_rate_i = np.sum(y_pred_max != y_adv_i) / nb_instances
 
                         if fooling_rate_i > fooling_rate:

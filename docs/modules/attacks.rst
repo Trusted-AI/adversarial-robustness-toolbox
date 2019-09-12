@@ -74,6 +74,12 @@ Spatial Transformations Attack
    :members:
    :special-members:
 
+SVM Attack
+----------
+.. autoclass:: SVMAttack
+   :members:
+   :special-members:
+
 Universal Perturbation Attack
 -----------------------------
 .. autoclass:: UniversalPerturbation
@@ -95,6 +101,18 @@ Zeroth-Order Optimization Attack (ZOO)
 HopSkipJump Attack
 ------------------
 .. autoclass:: HopSkipJump
+   :members:
+   :special-members:
+
+Decision Tree Attack
+--------------------
+.. autoclass:: DecisionTreeAttack
+   :members:
+   :special-members:
+
+High Confidence Low Uncertainty Attack
+--------------------------------------
+.. autoclass:: HighConfidenceLowUncertainty
    :members:
    :special-members:
 

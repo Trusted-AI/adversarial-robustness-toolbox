@@ -78,7 +78,7 @@ class GaussianAugmentation(Preprocessor):
     def __call__(self, x, y=None):
         """
         Augment the sample `(x, y)` with Gaussian noise. The result is either an extended dataset containing the
-        original sample, as well as the newly created noisy samples (augmentation=True) or just the noisy counterparts
+        original sample, as well as the newly created noisy samples (`augmentation`=True) or just the noisy counterparts
         to the original samples.
 
         :param x: Sample to augment with shape `(batch_size, width, height, depth)`.

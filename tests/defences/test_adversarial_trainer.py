@@ -20,15 +20,16 @@ from __future__ import absolute_import, division, print_function, unicode_litera
 import logging
 import unittest
 
+import tensorflow as tf
+
 import keras
 import keras.backend as k
 import numpy as np
-import tensorflow as tf
 from keras.layers import Dense, Flatten, Conv2D, MaxPooling2D
 from keras.models import Sequential
 
 from art.attacks import FastGradientMethod, DeepFool
-from art.classifiers import TFClassifier, KerasClassifier
+from art.classifiers import TensorFlowClassifier, KerasClassifier
 from art.data_generators import DataGenerator
 from art.defences import AdversarialTrainer
 from art.utils import load_mnist, get_labels_np_array, master_seed
@@ -41,6 +42,8 @@ NB_TEST = 11
 ACCURACY_DROP = 0.0  # The unit tests are too inaccurate
 
 
+@unittest.skipIf(tf.__version__[0] == '2', reason='Skip AdversarialTrainer unittests for TensorFlow v2 until Keras '
+                                                  'supports it')
 class TestBase(unittest.TestCase):
     mnist = None
     classifier_k = None
@@ -105,8 +108,8 @@ class TestBase(unittest.TestCase):
         TestBase.sess = tf.Session()
         TestBase.sess.run(tf.global_variables_initializer())
 
-        classifier = TFClassifier(input_ph=inputs_tf, logits=logits, loss=loss, train=train_tf, output_ph=labels_tf,
-                                  sess=TestBase.sess, clip_values=(0, 1))
+        classifier = TensorFlowClassifier(input_ph=inputs_tf, output=logits, loss=loss, train=train_tf,
+                                          labels_ph=labels_tf, sess=TestBase.sess, clip_values=(0, 1))
         return classifier
 
     @staticmethod
@@ -199,6 +202,7 @@ class TestAdversarialTrainer(TestBase):
 
         class MyDataGenerator(DataGenerator):
             def __init__(self, x, y, size, batch_size):
+                super().__init__(size=size, batch_size=batch_size)
                 self.x = x
                 self.y = y
                 self.size = size
@@ -208,7 +212,7 @@ class TestAdversarialTrainer(TestBase):
                 ids = np.random.choice(self.size, size=min(self.size, self.batch_size), replace=False)
                 return self.x[ids], self.y[ids]
 
-        generator = MyDataGenerator(x_train, y_train, x_train.shape[0], 128)
+        generator = MyDataGenerator(x_train, y_train, x_train.shape[0], 1)
 
         attack1 = FastGradientMethod(self.classifier_k)
         attack2 = DeepFool(self.classifier_tf)

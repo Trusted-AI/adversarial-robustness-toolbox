@@ -26,30 +26,32 @@ import numpy as np
 import six
 
 from art import NUMPY_DTYPE
-from art.classifiers.classifier import Classifier
+from art.classifiers.classifier import Classifier, ClassifierNeuralNetwork, ClassifierGradients
 
 logger = logging.getLogger(__name__)
 
 
-class MXClassifier(Classifier):
+class MXClassifier(ClassifierNeuralNetwork, ClassifierGradients, Classifier):
     """
-    Wrapper class for importing MXNet Gluon model.
+    Wrapper class for importing MXNet Gluon models.
     """
 
-    def __init__(self, model, input_shape, nb_classes, optimizer=None, ctx=None, channel_index=1, clip_values=None,
-                 defences=None, preprocessing=(0, 1)):
+    def __init__(self, model, loss, input_shape, nb_classes, optimizer=None, ctx=None, channel_index=1,
+                 clip_values=None, defences=None, preprocessing=(0, 1)):
         """
-        Initialize an `MXClassifier` object. Assumes the `model` passed as parameter is a Gluon model and that the
-        loss function is the softmax cross-entropy.
+        Initialize an `MXClassifier` object. Assumes the `model` passed as parameter is a Gluon model.
 
-        :param model: The model with logits as expected output.
+        :param model: The Gluon model. The output of the model can be logits, probabilities or anything else. Logits
+               output should be preferred where possible to ensure attack efficiency.
         :type model: `mxnet.gluon.Block`
+        :param loss: The loss function for which to compute gradients for training.
+        :type loss: `mxnet.nd.loss` or `mxnet.gluon.Loss`
         :param input_shape: The shape of one input instance.
         :type input_shape: `tuple`
         :param nb_classes: The number of classes of the model.
         :type nb_classes: `int`
-        :param optimizer: The optimizer used to train the classifier. This parameter is not required if no training is
-               used.
+        :param optimizer: The optimizer used to train the classifier. This parameter is only required if fitting will
+                          be done with method fit.
         :type optimizer: `mxnet.gluon.Trainer`
         :param ctx: The device on which the model runs (CPU or GPU). If not provided, CPU is assumed.
         :type ctx: `mxnet.context.Context`
@@ -62,8 +64,8 @@ class MXClassifier(Classifier):
         :type clip_values: `tuple`
         :param defences: Defences to be activated with the classifier.
         :type defences: `str` or `list(str)`
-        :param preprocessing: Tuple of the form `(substractor, divider)` of floats or `np.ndarray` of values to be
-               used for data preprocessing. The first value will be substracted from the input. The input will then
+        :param preprocessing: Tuple of the form `(subtractor, divider)` of floats or `np.ndarray` of values to be
+               used for data preprocessing. The first value will be subtracted from the input. The input will then
                be divided by the second one.
         :type preprocessing: `tuple`
         """
@@ -73,6 +75,7 @@ class MXClassifier(Classifier):
                                            preprocessing=preprocessing)
 
         self._model = model
+        self._loss = loss
         self._nb_classes = nb_classes
         self._input_shape = input_shape
         self._device = ctx
@@ -92,7 +95,8 @@ class MXClassifier(Classifier):
 
         :param x: Training data.
         :type x: `np.ndarray`
-        :param y: Labels, one-vs-rest encoding.
+        :param y: Target values (class labels) one-hot-encoded of shape (nb_samples, nb_classes) or indices of shape
+                  (nb_samples,).
         :type y: `np.ndarray`
         :param batch_size: Size of batches.
         :type batch_size: `int`
@@ -130,7 +134,7 @@ class MXClassifier(Classifier):
 
                 with mx.autograd.record(train_mode=train_mode):
                     preds = self._model(x_batch)
-                    loss = mx.nd.softmax_cross_entropy(preds, y_batch)
+                    loss = self._loss(preds, y_batch)
                 loss.backward()
 
                 # Update parameters
@@ -166,7 +170,7 @@ class MXClassifier(Classifier):
 
                     with mx.autograd.record(train_mode=train_mode):
                         preds = self._model(x_batch)
-                        loss = mx.nd.softmax_cross_entropy(preds, y_batch)
+                        loss = self._loss(preds, y_batch)
                     loss.backward()
 
                     # Update parameters
@@ -175,17 +179,15 @@ class MXClassifier(Classifier):
             # Fit a generic data generator through the API
             super(MXClassifier, self).fit_generator(generator, nb_epochs=nb_epochs)
 
-    def predict(self, x, logits=False, batch_size=128, **kwargs):
+    def predict(self, x, batch_size=128, **kwargs):
         """
         Perform prediction for a batch of inputs.
 
         :param x: Test set.
         :type x: `np.ndarray`
-        :param logits: `True` if the prediction should be done at the logits layer.
-        :type logits: `bool`
         :param batch_size: Size of batches.
         :type batch_size: `int`
-        :return: Array of predictions of shape `(nb_inputs, self.nb_classes)`.
+        :return: Array of predictions of shape `(nb_inputs, nb_classes)`.
         :rtype: `np.ndarray`
         """
         import mxnet as mx
@@ -196,7 +198,7 @@ class MXClassifier(Classifier):
         x_preprocessed, _ = self._apply_preprocessing(x, y=None, fit=False)
 
         # Run prediction with batch processing
-        results = np.zeros((x_preprocessed.shape[0], self.nb_classes), dtype=np.float32)
+        results = np.zeros((x_preprocessed.shape[0], self.nb_classes()), dtype=np.float32)
         num_batch = int(np.ceil(len(x_preprocessed) / float(batch_size)))
         for m in range(num_batch):
             # Batch indexes
@@ -208,14 +210,11 @@ class MXClassifier(Classifier):
             with mx.autograd.record(train_mode=train_mode):
                 preds = self._model(x_batch)
 
-            if logits is False:
-                preds = preds.softmax()
-
             results[begin:end] = preds.asnumpy()
 
         return results
 
-    def class_gradient(self, x, label=None, logits=False, **kwargs):
+    def class_gradient(self, x, label=None, **kwargs):
         """
         Compute per-class derivatives w.r.t. `x`.
 
@@ -226,8 +225,6 @@ class MXClassifier(Classifier):
                       match the batch size of `x`, and each value will be used as target for its corresponding sample in
                       `x`. If `None`, then gradients for all classes will be computed for each sample.
         :type label: `int` or `list`
-        :param logits: `True` if the prediction should be done at the logits layer.
-        :type logits: `bool`
         :return: Array of gradients of input features w.r.t. each class in the form
                  `(batch_size, nb_classes, input_shape)` when computing for all classes, otherwise shape becomes
                  `(batch_size, 1, input_shape)` when `label` parameter is specified.
@@ -235,9 +232,13 @@ class MXClassifier(Classifier):
         """
         import mxnet as mx
 
+        logits = kwargs.get('logits')
+        if logits is None:
+            logits = False
+
         # Check value of label for computing gradients
-        if not (label is None or (isinstance(label, (int, np.integer)) and label in range(self.nb_classes))
-                or (isinstance(label, np.ndarray) and len(label.shape) == 1 and (label < self.nb_classes).all()
+        if not (label is None or (isinstance(label, (int, np.integer)) and label in range(self.nb_classes()))
+                or (isinstance(label, np.ndarray) and len(label.shape) == 1 and (label < self.nb_classes()).all()
                     and label.shape[0] == x.shape[0])):
             raise ValueError('Label %s is out of range.' % str(label))
 
@@ -251,11 +252,8 @@ class MXClassifier(Classifier):
 
         if label is None:
             with mx.autograd.record(train_mode=False):
-                if logits is True:
-                    preds = self._model(x_preprocessed)
-                else:
-                    preds = self._model(x_preprocessed).softmax()
-                class_slices = [preds[:, i] for i in range(self.nb_classes)]
+                preds = self._model(x_preprocessed)
+                class_slices = [preds[:, i] for i in range(self.nb_classes())]
 
             grads = []
             for slice_ in class_slices:
@@ -265,10 +263,7 @@ class MXClassifier(Classifier):
             grads = np.swapaxes(np.array(grads), 0, 1)
         elif isinstance(label, (int, np.integer)):
             with mx.autograd.record(train_mode=train_mode):
-                if logits is True:
-                    preds = self._model(x_preprocessed)
-                else:
-                    preds = self._model(x_preprocessed).softmax()
+                preds = self._model(x_preprocessed)
                 class_slice = preds[:, label]
 
             class_slice.backward()
@@ -277,10 +272,7 @@ class MXClassifier(Classifier):
             unique_labels = list(np.unique(label))
 
             with mx.autograd.record(train_mode=train_mode):
-                if logits is True:
-                    preds = self._model(x_preprocessed)
-                else:
-                    preds = self._model(x_preprocessed).softmax()
+                preds = self._model(x_preprocessed)
                 class_slices = [preds[:, i] for i in unique_labels]
 
             grads = []
@@ -304,7 +296,8 @@ class MXClassifier(Classifier):
 
         :param x: Sample input with shape as expected by the model.
         :type x: `np.ndarray`
-        :param y: Correct labels, one-vs-rest encoding.
+        :param y: Target values (class labels) one-hot-encoded of shape (nb_samples, nb_classes) or indices of shape
+                  (nb_samples,).
         :type y: `np.ndarray`
         :return: Array of gradients of the same shape as `x`.
         :rtype: `np.ndarray`
@@ -320,10 +313,9 @@ class MXClassifier(Classifier):
         x_preprocessed = mx.nd.array(x_preprocessed.astype(NUMPY_DTYPE), ctx=self._ctx)
         x_preprocessed.attach_grad()
 
-        loss = mx.gluon.loss.SoftmaxCrossEntropyLoss()
         with mx.autograd.record(train_mode=train_mode):
             preds = self._model(x_preprocessed)
-            loss = loss(preds, y_preprocessed)
+            loss = self._loss(preds, y_preprocessed)
 
         loss.backward()
 
@@ -444,10 +436,10 @@ class MXClassifier(Classifier):
         logger.info("Model parameters saved in path: %s.params.", full_path)
 
     def __repr__(self):
-        repr_ = "%s(model=%r, input_shape=%r, nb_classes=%r, optimizer=%r, ctx=%r, channel_index=%r, " \
+        repr_ = "%s(model=%r, loss=%r, input_shape=%r, nb_classes=%r, optimizer=%r, ctx=%r, channel_index=%r, " \
                 "clip_values=%r, defences=%r, preprocessing=%r)" \
                 % (self.__module__ + '.' + self.__class__.__name__,
-                   self._model, self.input_shape, self.nb_classes, self._optimizer, self._ctx,
+                   self._model, self._loss, self.input_shape, self.nb_classes(), self._optimizer, self._ctx,
                    self.channel_index, self.clip_values, self.defences, self.preprocessing)
 
         return repr_

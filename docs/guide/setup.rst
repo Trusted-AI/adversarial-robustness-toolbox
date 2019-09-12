@@ -1,7 +1,7 @@
 Setup
 =====
 
-The Adversarial Robustness Toolbox is designed to run with Python 3 and Python 2.
+The Adversarial Robustness 360 Toolbox is designed to run with Python 3.
 
 Installation with `pip`
 -----------------------
@@ -15,20 +15,19 @@ The library can be installed from the PyPi repository using `pip`:
 Manual installation
 -------------------
 
-For the most recent version of the library, either download the source code or clone the repository in your directory of choice:
+The most recent version of ART, can be downloaded or cloned from the repository:
 
 .. code-block:: bash
 
    git clone https://github.com/IBM/adversarial-robustness-toolbox
 
-To install ART, do the following in the project folder:
+Install ART with the following command from the project folder `art`:
 
 .. code-block:: bash
 
    pip install .
 
-The library comes with a basic set of unit tests.
-To check your install, you can run all the unit tests by calling in the library folder:
+ART provides unit tests that can be run with the following command:
 
 .. code-block:: bash
 

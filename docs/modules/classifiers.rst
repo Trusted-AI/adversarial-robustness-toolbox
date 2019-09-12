@@ -2,6 +2,12 @@
 ======================
 .. automodule:: art.classifiers
 
+BlackBox Wrapper
+----------------
+.. autoclass:: BlackBoxClassifier
+   :members:
+   :special-members:
+
 Keras Wrapper
 -------------
 .. autoclass:: KerasClassifier
@@ -20,9 +26,15 @@ PyTorch Wrapper
    :members:
    :special-members:
 
-Tensorflow Wrapper
+TensorFlow Wrapper
 ------------------
-.. autoclass:: TFClassifier
+.. autoclass:: TensorFlowClassifier
+   :members:
+   :special-members:
+
+TensorFlow v2 Wrapper
+---------------------
+.. autoclass:: TensorFlowV2Classifier
    :members:
    :special-members:
 
@@ -32,7 +44,27 @@ Ensemble Wrapper
    :members:
    :special-members:
 
+Scikit-learn Classifier Wrapper
+-------------------------------
+.. autofunction:: SklearnClassifier
+
+GPy Gaussian Process Wrapper
+----------------------------
+.. autoclass:: GPyGaussianProcessClassifier
+   :members:
+   :special-members:
+
 Base Class
 ----------
 .. autoclass:: Classifier
+   :members:
+
+Base Class Neural Network
+-------------------------
+.. autoclass:: ClassifierNeuralNetwork
+   :members:
+
+Base Class Gradients
+--------------------
+.. autoclass:: ClassifierGradients
    :members:

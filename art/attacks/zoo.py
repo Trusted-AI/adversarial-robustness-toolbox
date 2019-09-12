@@ -20,8 +20,7 @@ This module implements the zeroth-order optimization attack `ZooAttack`. This is
 variant of the Carlini and Wagner attack which uses ADAM coordinate descent to perform numerical estimation of
 gradients.
 
-Paper link:
-    https://arxiv.org/abs/1708.03999.
+| Paper link: https://arxiv.org/abs/1708.03999
 """
 from __future__ import absolute_import, division, print_function, unicode_literals
 
@@ -32,7 +31,7 @@ from scipy.ndimage import zoom
 
 from art import NUMPY_DTYPE
 from art.attacks.attack import Attack
-from art.utils import compute_success, get_labels_np_array
+from art.utils import compute_success, get_labels_np_array, check_and_transform_label_format
 
 logger = logging.getLogger(__name__)
 
@@ -41,19 +40,20 @@ class ZooAttack(Attack):
     """
     The black-box zeroth-order optimization attack from Pin-Yu Chen et al. (2018). This attack is a variant of the
     C&W attack which uses ADAM coordinate descent to perform numerical estimation of gradients.
-    Paper link: https://arxiv.org/abs/1708.03999.
+
+    | Paper link: https://arxiv.org/abs/1708.03999
     """
     attack_params = Attack.attack_params + ['confidence', 'targeted', 'learning_rate', 'max_iter',
                                             'binary_search_steps', 'initial_const', 'abort_early', 'use_resize',
-                                            'use_importance', 'nb_parallel', 'batch_size']
+                                            'use_importance', 'nb_parallel', 'batch_size', 'variable_h']
 
     def __init__(self, classifier, confidence=0.0, targeted=False, learning_rate=1e-2, max_iter=10,
                  binary_search_steps=1, initial_const=1e-3, abort_early=True, use_resize=True, use_importance=True,
-                 nb_parallel=128, batch_size=1):
+                 nb_parallel=128, batch_size=1, variable_h=1e-4):
         """
         Create a ZOO attack instance.
 
-        :param classifier: A trained model.
+        :param classifier: A trained classifier.
         :type classifier: :class:`.Classifier`
         :param confidence: Confidence of adversarial examples: a higher value produces examples that are farther
                away, from the original input, but classified with higher confidence as the target class.
@@ -85,12 +85,18 @@ class ZooAttack(Attack):
                encouraged for ZOO, as the algorithm already runs `nb_parallel` coordinate updates in parallel for each
                sample. The batch size is a multiplier of `nb_parallel` in terms of memory consumption.
         :type batch_size: `int`
+        :param variable_h: Step size for numerical estimation of derivatives.
+        :type variable_h: `float`
         """
         super(ZooAttack, self).__init__(classifier)
 
         if len(classifier.input_shape) == 1:
-            raise ValueError('Feature vectors detected. The ZOO attack can only be applied to data with spatial'
-                             'dimensions.')
+            self.input_is_feature_vector = True
+            if batch_size != 1:
+                raise ValueError('The current implementation of Zeroth-Order Optimisation attack only supports '
+                                 '`batch_size=1` with feature vectors as input.')
+        else:
+            self.input_is_feature_vector = False
 
         kwargs = {
             'confidence': confidence,
@@ -103,7 +109,8 @@ class ZooAttack(Attack):
             'use_resize': use_resize,
             'use_importance': use_importance,
             'nb_parallel': nb_parallel,
-            'batch_size': batch_size
+            'batch_size': batch_size,
+            'variable_h': variable_h
         }
         self.set_params(**kwargs)
 
@@ -114,6 +121,11 @@ class ZooAttack(Attack):
         self.nb_parallel = nb_parallel
 
         # Initialize noise variable to zero
+        if self.input_is_feature_vector:
+            self.use_resize = False
+            self.use_importance = False
+            logger.info('Disable resizing and importance sampling because feature vector input has been detected.')
+
         if self.use_resize:
             if self.classifier.channel_index == 3:
                 dims = (batch_size, self._init_size, self._init_size, self.classifier.input_shape[-1])
@@ -165,16 +177,13 @@ class ZooAttack(Attack):
 
         :param x: An array with the original inputs to be attacked.
         :type x: `np.ndarray`
-        :param y: If `self.targeted` is true, then `y` represents the target labels. Otherwise, the targets are the
-                  original class labels.
+        :param y: Target values (class labels) one-hot-encoded of shape (nb_samples, nb_classes) or indices of shape
+                  (nb_samples,).
         :type y: `np.ndarray`
         :return: An array holding the adversarial examples.
         :rtype: `np.ndarray`
         """
-        # ZOO can probably be extended to feature vectors if no zooming or resizing is applied
-        if len(x.shape) == 2:
-            raise ValueError('Feature vectors detected. The ZOO attack can only be applied to data with spatial'
-                             'dimensions.')
+        y = check_and_transform_label_format(y, self.classifier.nb_classes())
 
         # Check that `y` is provided for targeted attacks
         if self.targeted and y is None:
@@ -182,7 +191,7 @@ class ZooAttack(Attack):
 
         # No labels provided, use model prediction as correct class
         if y is None:
-            y = get_labels_np_array(self.classifier.predict(x, logits=False, batch_size=self.batch_size))
+            y = get_labels_np_array(self.classifier.predict(x, batch_size=self.batch_size))
 
         # Compute adversarial examples with implicit batching
         nb_batches = int(np.ceil(x.shape[0] / float(self.batch_size)))
@@ -314,6 +323,7 @@ class ZooAttack(Attack):
             x_orig = x_batch
             self._reset_adam(np.prod(self.classifier.input_shape))
             self._current_noise.fill(0)
+            x_adv = x_orig.copy()
 
         # Initialize best distortions, best changed labels and best attacks
         best_dist = np.inf * np.ones(x_adv.shape[0])
@@ -372,7 +382,6 @@ class ZooAttack(Attack):
 
     def _optimizer(self, x, targets, c_batch):
         # Variation of input for computing loss, same as in original implementation
-        tol = 1e-4
         coord_batch = np.repeat(self._current_noise, 2 * self.nb_parallel, axis=0)
         coord_batch = coord_batch.reshape(2 * self.nb_parallel * self._current_noise.shape[0], -1)
 
@@ -388,8 +397,8 @@ class ZooAttack(Attack):
 
         # Create the batch of modifications to run
         for i in range(self.nb_parallel * self._current_noise.shape[0]):
-            coord_batch[2 * i, indices[i]] += tol
-            coord_batch[2 * i + 1, indices[i]] -= tol
+            coord_batch[2 * i, indices[i]] += self.variable_h
+            coord_batch[2 * i + 1, indices[i]] -= self.variable_h
 
         # Compute loss for all samples and coordinates, then optimize
         expanded_x = np.repeat(x, 2 * self.nb_parallel, axis=0).reshape((-1,) + x.shape[1:])
@@ -401,7 +410,7 @@ class ZooAttack(Attack):
                                                               self._current_noise, self.learning_rate, self.adam_epochs,
                                                               True)
 
-        if self._current_noise.shape[2] > self._init_size:
+        if self.use_importance and self._current_noise.shape[2] > self._init_size:
             self._sample_prob = self._get_prob(self._current_noise).flatten()
 
         return x + self._current_noise
@@ -413,7 +422,7 @@ class ZooAttack(Attack):
         beta1, beta2 = .9, .999
 
         # Estimate grads from loss variation (constant `h` from the paper is fixed to .0001)
-        grads = np.array([(losses[i] - losses[i + 1]) / .0002 for i in range(0, len(losses), 2)])
+        grads = np.array([(losses[i] - losses[i + 1]) / (2 * self.variable_h) for i in range(0, len(losses), 2)])
 
         # ADAM update
         mean[index] = beta1 * mean[index] + (1 - beta1) * grads

@@ -113,10 +113,9 @@ def save_image(image_array, f_name):
 
 def plot_3d(points, labels, colors=None, save=True, f_name=''):
     """
-    Generates a 3-D plot in of the provided points where the labels define the
-    color that will be used to color each data point.
-    Concretely, the color of points[i] is defined by colors(labels[i]).
-    Thus, there should be as many labels as colors.
+    Generates a 3-D plot in of the provided points where the labels define the color that will be used to color each
+    data point. Concretely, the color of points[i] is defined by colors(labels[i]). Thus, there should be as many labels
+     as colors.
 
     :param points: arrays with 3-D coordinates of the plots to be plotted
     :type points: `np.ndarray`

@@ -18,8 +18,7 @@
 """
 This module implements the elastic net attack `ElasticNet`. This is a white-box attack.
 
-Paper link:
-    https://arxiv.org/abs/1709.04114.
+| Paper link: https://arxiv.org/abs/1709.04114
 """
 from __future__ import absolute_import, division, print_function, unicode_literals
 
@@ -29,15 +28,18 @@ import numpy as np
 import six
 
 from art import NUMPY_DTYPE
+from art.classifiers.classifier import ClassifierGradients
 from art.attacks.attack import Attack
-from art.utils import compute_success, get_labels_np_array
+from art.utils import compute_success, get_labels_np_array, check_and_transform_label_format
 
 logger = logging.getLogger(__name__)
 
 
 class ElasticNet(Attack):
     """
-    The elastic net attack of Pin-Yu Chen et al. (2018). Paper link: https://arxiv.org/abs/1709.04114.
+    The elastic net attack of Pin-Yu Chen et al. (2018).
+
+    | Paper link: https://arxiv.org/abs/1709.04114
     """
     attack_params = Attack.attack_params + ['confidence', 'targeted', 'learning_rate', 'max_iter', 'beta',
                                             'binary_search_steps', 'initial_const', 'batch_size', 'decision_rule']
@@ -47,7 +49,7 @@ class ElasticNet(Attack):
         """
         Create an ElasticNet attack instance.
 
-        :param classifier: A trained model.
+        :param classifier: A trained classifier.
         :type classifier: :class:`.Classifier`
         :param confidence: Confidence of adversarial examples: a higher value produces examples that are farther
                away, from the original input, but classified with higher confidence as the target class.
@@ -73,6 +75,10 @@ class ElasticNet(Attack):
         :type decision_rule: `string`
         """
         super(ElasticNet, self).__init__(classifier)
+        if not isinstance(classifier, ClassifierGradients):
+            raise (TypeError('For `' + self.__class__.__name__ + '` classifier must be an instance of '
+                             '`art.classifiers.classifier.ClassifierGradients`, the provided classifier is instance of '
+                             + str(classifier.__class__.__bases__) + '.'))
 
         kwargs = {'confidence': confidence,
                   'targeted': targeted,
@@ -94,15 +100,15 @@ class ElasticNet(Attack):
         :type x: `np.ndarray`
         :param x_adv: An array with the adversarial input.
         :type x_adv: `np.ndarray`
-        :return: A tuple holding the current logits, l1 distance, l2 distance and elastic net loss.
+        :return: A tuple holding the current predictions, l1 distance, l2 distance and elastic net loss.
         :rtype: `(np.ndarray, float, float, float)`
         """
         l1dist = np.sum(np.abs(x - x_adv).reshape(x.shape[0], -1), axis=1)
         l2dist = np.sum(np.square(x - x_adv).reshape(x.shape[0], -1), axis=1)
         endist = self.beta * l1dist + l2dist
-        logits = self.classifier.predict(np.array(x_adv, dtype=NUMPY_DTYPE), logits=True, batch_size=self.batch_size)
+        predictions = self.classifier.predict(np.array(x_adv, dtype=NUMPY_DTYPE), batch_size=self.batch_size)
 
-        return np.argmax(logits, axis=1), l1dist, l2dist, endist
+        return np.argmax(predictions, axis=1), l1dist, l2dist, endist
 
     def _gradient_of_loss(self, target, x, x_adv, c_weight):
         """
@@ -115,22 +121,24 @@ class ElasticNet(Attack):
         :param x_adv: An array with the adversarial input.
         :type x_adv: `np.ndarray`
         :param c_weight: Weight of the loss term aiming for classification as target.
-        :type c_weight: `float`
+        :type c_weight: `float` or `np.ndarray`
         :return: An array with the gradient of the loss function.
         :type target: `np.ndarray`
         """
-        # Compute the current logits
-        logits = self.classifier.predict(np.array(x_adv, dtype=NUMPY_DTYPE), logits=True, batch_size=self.batch_size)
+        # Compute the current predictions
+        predictions = self.classifier.predict(np.array(x_adv, dtype=NUMPY_DTYPE), batch_size=self.batch_size)
 
         if self.targeted:
             i_sub = np.argmax(target, axis=1)
-            i_add = np.argmax(logits * (1 - target) + (np.min(logits, axis=1) - 1)[:, np.newaxis] * target, axis=1)
+            i_add = np.argmax(predictions * (1 - target) + (np.min(predictions, axis=1) - 1)[:, np.newaxis] * target,
+                              axis=1)
         else:
             i_add = np.argmax(target, axis=1)
-            i_sub = np.argmax(logits * (1 - target) + (np.min(logits, axis=1) - 1)[:, np.newaxis] * target, axis=1)
+            i_sub = np.argmax(predictions * (1 - target) + (np.min(predictions, axis=1) - 1)[:, np.newaxis] * target,
+                              axis=1)
 
-        loss_gradient = self.classifier.class_gradient(x_adv, label=i_add, logits=True)
-        loss_gradient -= self.classifier.class_gradient(x_adv, label=i_sub, logits=True)
+        loss_gradient = self.classifier.class_gradient(x_adv, label=i_add)
+        loss_gradient -= self.classifier.class_gradient(x_adv, label=i_sub)
         loss_gradient = loss_gradient.reshape(x.shape)
 
         c_mult = c_weight
@@ -166,12 +174,14 @@ class ElasticNet(Attack):
 
         :param x: An array with the original inputs to be attacked.
         :type x: `np.ndarray`
-        :param y: If `self.targeted` is true, then `y` represents the target labels. Otherwise, the targets are the
-                  original class labels.
+        :param y: Target values (class labels) one-hot-encoded of shape (nb_samples, nb_classes) or indices of shape
+                  (nb_samples,). If `self.targeted` is true, then `y` represents the target labels. Otherwise, the
+                  targets are the original class labels.
         :type y: `np.ndarray`
         :return: An array holding the adversarial examples.
         :rtype: `np.ndarray`
         """
+        y = check_and_transform_label_format(y, self.classifier.nb_classes())
         x_adv = x.astype(NUMPY_DTYPE)
 
         # Assert that, if attack is targeted, y is provided:
@@ -180,7 +190,7 @@ class ElasticNet(Attack):
 
         # No labels provided, use model prediction as correct class
         if y is None:
-            y = get_labels_np_array(self.classifier.predict(x, logits=False, batch_size=self.batch_size))
+            y = get_labels_np_array(self.classifier.predict(x, batch_size=self.batch_size))
 
         # Compute adversarial examples with implicit batching
         nb_batches = int(np.ceil(x_adv.shape[0] / float(self.batch_size)))

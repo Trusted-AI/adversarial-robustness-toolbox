@@ -17,10 +17,9 @@
 # SOFTWARE.
 """
 This module implements the HopSkipJump attack `HopSkipJump`. This is a black-box attack that only requires class
-predictions. It is an advanced version of the boundary attack.
+predictions. It is an advanced version of the Boundary attack.
 
-Paper link:
-    https://arxiv.org/abs/1904.02144
+| Paper link: https://arxiv.org/abs/1904.02144
 """
 from __future__ import absolute_import, division, print_function, unicode_literals
 
@@ -30,8 +29,7 @@ import numpy as np
 
 from art import NUMPY_DTYPE
 from art.attacks.attack import Attack
-from art.utils import compute_success
-from art.utils import to_categorical
+from art.utils import compute_success, to_categorical, check_and_transform_label_format
 
 logger = logging.getLogger(__name__)
 
@@ -40,7 +38,8 @@ class HopSkipJump(Attack):
     """
     Implementation of the HopSkipJump attack from Jianbo et al. (2019). This is a powerful black-box attack that
     only requires final class prediction, and is an advanced version of the boundary attack.
-    Paper link: https://arxiv.org/abs/1904.02144
+
+    | Paper link: https://arxiv.org/abs/1904.02144
     """
     attack_params = Attack.attack_params + ['targeted', 'norm', 'max_iter', 'max_eval',
                                             'init_eval', 'init_size', 'curr_iter', 'batch_size']
@@ -49,7 +48,7 @@ class HopSkipJump(Attack):
         """
         Create a HopSkipJump attack instance.
 
-        :param classifier: A trained model.
+        :param classifier: A trained classifier.
         :type classifier: :class:`.Classifier`
         :param targeted: Should the attack target one specific class.
         :type targeted: `bool`
@@ -88,13 +87,16 @@ class HopSkipJump(Attack):
 
         :param x: An array with the original inputs to be attacked.
         :type x: `np.ndarray`
-        :param y: If `self.targeted` is true, then `y` represents the target labels.
+        :param y: Target values (class labels) one-hot-encoded of shape `(nb_samples, nb_classes)` or indices of shape
+                  (nb_samples,).
         :type y: `np.ndarray`
         :param x_adv_init: Initial array to act as initial adversarial examples. Same shape as `x`.
         :type x_adv_init: `np.ndarray`
         :return: An array holding the adversarial examples.
         :rtype: `np.ndarray`
         """
+        y = check_and_transform_label_format(y, self.classifier.nb_classes())
+
         # Get clip_min and clip_max from the classifier or infer them from data
         if hasattr(self.classifier, 'clip_values') and self.classifier.clip_values is not None:
             clip_min, clip_max = self.classifier.clip_values
@@ -105,8 +107,9 @@ class HopSkipJump(Attack):
         preds = np.argmax(self.classifier.predict(x, batch_size=self.batch_size), axis=1)
 
         # Prediction from the initial adversarial examples if not None
-        if 'x_adv_init' in kwargs:
-            x_adv_init = kwargs['x_adv_init']
+        x_adv_init = kwargs.get('x_adv_init')
+
+        if x_adv_init is not None:
             init_preds = np.argmax(self.classifier.predict(x_adv_init, batch_size=self.batch_size), axis=1)
         else:
             init_preds = [None] * len(x)
@@ -131,7 +134,7 @@ class HopSkipJump(Attack):
                                            adv_init=x_adv_init[ind], clip_min=clip_min, clip_max=clip_max)
 
         if y is not None:
-            y = to_categorical(y, self.classifier.nb_classes)
+            y = to_categorical(y, self.classifier.nb_classes())
 
         logger.info('Success rate of HopSkipJump attack: %.2f%%',
                     100 * compute_success(self.classifier, x, y, x_adv, self.targeted, batch_size=self.batch_size))
@@ -408,9 +411,9 @@ class HopSkipJump(Attack):
         # Generate random noise
         rnd_noise_shape = [num_eval] + list(self.classifier.input_shape)
         if self.norm == 2:
-            rnd_noise = np.random.randn(*rnd_noise_shape)
+            rnd_noise = np.random.randn(*rnd_noise_shape).astype(NUMPY_DTYPE)
         else:
-            rnd_noise = np.random.uniform(low=-1, high=1, size=rnd_noise_shape)
+            rnd_noise = np.random.uniform(low=-1, high=1, size=rnd_noise_shape).astype(NUMPY_DTYPE)
 
         # Normalize random noise to fit into the range of input data
         rnd_noise = rnd_noise / np.sqrt(np.sum(rnd_noise ** 2, axis=tuple(range(len(rnd_noise_shape)))[1:],
@@ -423,6 +426,7 @@ class HopSkipJump(Attack):
         satisfied = self._adversarial_satisfactory(samples=eval_samples, target=target,
                                                    clip_min=clip_min, clip_max=clip_max)
         f_val = 2 * satisfied.reshape([num_eval] + [1] * len(self.classifier.input_shape)) - 1.0
+        f_val = f_val.astype(NUMPY_DTYPE)
 
         if np.mean(f_val) == 1.0:
             grad = np.mean(rnd_noise, axis=0)

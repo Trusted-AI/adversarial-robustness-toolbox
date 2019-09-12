@@ -25,12 +25,12 @@ import logging
 
 import six
 
-from art.classifiers import Classifier
+from art.classifiers.classifier import Classifier, ClassifierNeuralNetwork, ClassifierGradients
 
 logger = logging.getLogger(__name__)
 
 
-class BinaryInputDetector(Classifier):
+class BinaryInputDetector(ClassifierNeuralNetwork, ClassifierGradients, Classifier):
     """
     Binary detector of adversarial samples coming from evasion attacks. The detector uses an architecture provided by
     the user and trains it on data labeled as clean (label 0) or adversarial (label 1).
@@ -67,21 +67,19 @@ class BinaryInputDetector(Classifier):
         """
         self.detector.fit(x, y, batch_size=batch_size, nb_epochs=nb_epochs, **kwargs)
 
-    def predict(self, x, logits=False, batch_size=128, **kwargs):
+    def predict(self, x, batch_size=128, **kwargs):
         """
         Perform detection of adversarial data and return prediction as tuple.
 
         :param x: Data sample on which to perform detection.
         :type x: `np.ndarray`
-        :param logits: `True` if the prediction should be done at the logits layer.
-        :type logits: `bool`
         :param batch_size: Size of batches.
         :type batch_size: `int`
         :return: Per-sample prediction whether data is adversarial or not, where `0` means non-adversarial.
                  Return variable has the same `batch_size` (first dimension) as `x`.
         :rtype: `np.ndarray`
         """
-        return self.detector.predict(x, logits=logits, batch_size=batch_size)
+        return self.detector.predict(x, batch_size=batch_size)
 
     def fit_generator(self, generator, nb_epochs=20, **kwargs):
         """
@@ -92,9 +90,8 @@ class BinaryInputDetector(Classifier):
         """
         raise NotImplementedError
 
-    @property
     def nb_classes(self):
-        return self.detector.nb_classes
+        return self.detector.nb_classes()
 
     @property
     def input_shape(self):
@@ -111,8 +108,8 @@ class BinaryInputDetector(Classifier):
     def learning_phase(self):
         return self.detector.learning_phase
 
-    def class_gradient(self, x, label=None, logits=False, **kwargs):
-        return self.detector.class_gradient(x, label=label, logits=logits)
+    def class_gradient(self, x, label=None, **kwargs):
+        return self.detector.class_gradient(x, label=label)
 
     def loss_gradient(self, x, y, **kwargs):
         return self.detector.loss_gradient(x, y)
@@ -134,7 +131,7 @@ class BinaryInputDetector(Classifier):
         self.detector.save(filename, path)
 
 
-class BinaryActivationDetector(Classifier):
+class BinaryActivationDetector(ClassifierNeuralNetwork, ClassifierGradients, Classifier):
     """
     Binary detector of adversarial samples coming from evasion attacks. The detector uses an architecture provided by
     the user and is trained on the values of the activations of a classifier at a given layer.
@@ -186,19 +183,17 @@ class BinaryActivationDetector(Classifier):
         :type nb_epochs: `int`
         :param kwargs: Other parameters.
         :type kwargs: `dict`
-        :return: None
+        :return: `None`
         """
         x_activations = self.classifier.get_activations(x, self._layer_name)
         self.detector.fit(x_activations, y, batch_size=batch_size, nb_epochs=nb_epochs, **kwargs)
 
-    def predict(self, x, logits=False, batch_size=128, **kwargs):
+    def predict(self, x, batch_size=128, **kwargs):
         """
         Perform detection of adversarial data and return prediction as tuple.
 
         :param x: Data sample on which to perform detection.
         :type x: `np.ndarray`
-        :param logits: `True` if the prediction should be done at the logits layer.
-        :type logits: `bool`
         :param batch_size: Size of batches.
         :type batch_size: `int`
         :return: Per-sample prediction whether data is adversarial or not, where `0` means non-adversarial.
@@ -216,9 +211,8 @@ class BinaryActivationDetector(Classifier):
         """
         raise NotImplementedError
 
-    @property
     def nb_classes(self):
-        return self.detector.nb_classes
+        return self.detector.nb_classes()
 
     @property
     def input_shape(self):
@@ -235,8 +229,12 @@ class BinaryActivationDetector(Classifier):
     def learning_phase(self):
         return self.detector.learning_phase
 
-    def class_gradient(self, x, label=None, logits=False, **kwargs):
-        return self.detector.class_gradient(x, label=label, logits=logits)
+    @property
+    def layer_names(self):
+        raise NotImplementedError
+
+    def class_gradient(self, x, label=None, **kwargs):
+        return self.detector.class_gradient(x, label=label)
 
     def loss_gradient(self, x, y, **kwargs):
         return self.detector.loss_gradient(x, y)

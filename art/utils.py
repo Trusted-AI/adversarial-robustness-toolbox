@@ -63,7 +63,10 @@ def master_seed(seed):
         import tensorflow as tf
 
         logger.info('Setting random seed for TensorFlow.')
-        tf.set_random_seed(seed)
+        if tf.__version__[0] == '2':
+            tf.random.set_seed(seed)
+        else:
+            tf.set_random_seed(seed)
     except ImportError:
         logger.info('Could not set random seed for TensorFlow.')
 
@@ -84,7 +87,7 @@ def master_seed(seed):
         logger.info('Could not set random seed for PyTorch.')
 
 
-# ----------------------------------------------------------------------------------------------------- MATHS UTILITIES
+# ----------------------------------------------------------------------------------------------------- MATH OPERATIONS
 
 
 def projection(values, eps, norm_p):
@@ -198,7 +201,7 @@ def tanh_to_original(x_tanh, clip_min, clip_max, tanh_smoother=0.999999):
     return x_original * (clip_max - clip_min) + clip_min
 
 
-# --------------------------------------------------------------------------------------- LABELS MANIPULATION FUNCTIONS
+# --------------------------------------------------------------------------------------------------- LABELS OPERATIONS
 
 
 def to_categorical(labels, nb_classes=None):
@@ -213,11 +216,42 @@ def to_categorical(labels, nb_classes=None):
     :rtype: `np.ndarray`
     """
     labels = np.array(labels, dtype=np.int32)
-    if not nb_classes:
+    if nb_classes is None:
         nb_classes = np.max(labels) + 1
     categorical = np.zeros((labels.shape[0], nb_classes), dtype=np.float32)
     categorical[np.arange(labels.shape[0]), np.squeeze(labels)] = 1
     return categorical
+
+
+def check_and_transform_label_format(labels, nb_classes=None, return_one_hot=True):
+    """
+    Check label format and transform to one-hot-encoded labels if necessary
+
+    :param labels: An array of integer labels of shape `(nb_samples,)`, `(nb_samples, 1)` or `(nb_samples, nb_classes)`
+    :type labels: `np.ndarray`
+    :param nb_classes: The number of classes
+    :type nb_classes: `int`
+    :param return_one_hot: True if returning one-hot encoded labels, False if returning index labels.
+    :return: Labels with shape `(nb_samples, nb_classes)` (one-hot) or `(nb_samples,)` (index)
+    :rtype: `np.ndarray`
+    """
+    if labels is not None:
+
+        if len(labels.shape) == 2 and labels.shape[1] > 1:
+            if not return_one_hot:
+                labels = np.argmax(labels, axis=1)
+        elif len(labels.shape) == 2 and labels.shape[1] == 1:
+            labels = np.squeeze(labels)
+            if return_one_hot:
+                labels = to_categorical(labels, nb_classes)
+        elif len(labels.shape) == 1:
+            if return_one_hot:
+                labels = to_categorical(labels, nb_classes)
+        else:
+            raise ValueError('Shape of labels not recognised.'
+                             'Please provide labels in shape (nb_samples,) or (nb_samples, nb_classes)')
+
+    return labels
 
 
 def random_targets(labels, nb_classes):
@@ -249,7 +283,9 @@ def random_targets(labels, nb_classes):
 def least_likely_class(x, classifier):
     """
     Compute the least likely class predictions for sample `x`. This strategy for choosing attack targets was used in
-    (Kurakin et al., 2016). See https://arxiv.org/abs/1607.02533.
+    (Kurakin et al., 2016).
+
+    | Paper link: https://arxiv.org/abs/1607.02533
 
     :param x: A data sample of shape accepted by `classifier`.
     :type x: `np.ndarray`
@@ -258,7 +294,7 @@ def least_likely_class(x, classifier):
     :return: Least-likely class predicted by `classifier` for sample `x` in one-hot encoding.
     :rtype: `np.ndarray`
     """
-    return to_categorical(np.argmin(classifier.predict(x), axis=1), nb_classes=classifier.nb_classes)
+    return to_categorical(np.argmin(classifier.predict(x), axis=1), nb_classes=classifier.nb_classes())
 
 
 def second_most_likely_class(x, classifier):
@@ -273,12 +309,13 @@ def second_most_likely_class(x, classifier):
     :return: Second most likely class predicted by `classifier` for sample `x` in one-hot encoding.
     :rtype: `np.ndarray`
     """
-    return to_categorical(np.argpartition(classifier.predict(x), -2, axis=1)[:, -2], nb_classes=classifier.nb_classes)
+    return to_categorical(np.argpartition(classifier.predict(x), -2, axis=1)[:, -2], nb_classes=classifier.nb_classes())
 
 
 def get_label_conf(y_vec):
     """
     Returns the confidence and the label of the most probable class given a vector of class confidences
+
     :param y_vec: (np.ndarray) vector of class confidences, nb of instances as first dimension
     :return: (np.ndarray, np.ndarray) confidences and labels
     """
@@ -296,35 +333,9 @@ def get_labels_np_array(preds):
     :return: (np.ndarray) labels
     """
     preds_max = np.amax(preds, axis=1, keepdims=True)
-    y = (preds == preds_max).astype(float)
+    y = (preds == preds_max)
 
     return y
-
-
-def preprocess(x, y, nb_classes=10, clip_values=None):
-    """Scales `x` to [0, 1] and converts `y` to class categorical confidences.
-
-    :param x: Data instances.
-    :type x: `np.ndarray`
-    :param y: Labels.
-    :type y: `np.ndarray`
-    :param nb_classes: Number of classes in dataset.
-    :type nb_classes: `int`
-    :param clip_values: Original data range allowed value for features, either one respective scalar or one value per
-           feature.
-    :type clip_values: `tuple(float, float)` or `tuple(np.ndarray, np.ndarray)`
-    :return: Rescaled values of `x`, `y`
-    :rtype: `tuple`
-    """
-    if clip_values is None:
-        min_, max_ = np.amin(x), np.amax(x)
-    else:
-        min_, max_ = clip_values
-
-    normalized_x = (x - min_) / (max_ - min_)
-    categorical_y = to_categorical(y, nb_classes)
-
-    return normalized_x, categorical_y
 
 
 def compute_success(classifier, x_clean, labels, x_adv, targeted=False, batch_size=1):
@@ -357,11 +368,40 @@ def compute_success(classifier, x_clean, labels, x_adv, targeted=False, batch_si
     return rate
 
 
-# -------------------------------------------------------------------------------------------------------- IO FUNCTIONS
+def compute_accuracy(preds, labels, abstain=True):
+    """
+    Compute the accuracy rate and coverage rate of predictions
+    In the case where predictions are abstained, those samples are ignored.
+
+    :param preds: Predictions.
+    :type preds: `np.ndarray`
+    :param labels: Correct labels of `x`.
+    :type labels: `np.ndarray`
+    :param abstain: True if ignore abstained prediction, False if count them as incorrect.
+    :type abstain: `boolean`
+    :return: Tuple of accuracy rate and coverage rate
+    :rtype: `tuple`
+    """
+    has_pred = np.sum(preds, axis=1)
+    idx_pred = np.where(has_pred)[0]
+    labels = np.argmax(labels[idx_pred], axis=1)
+    num_correct = np.sum(np.argmax(preds[idx_pred], axis=1) == labels)
+    coverage_rate = len(idx_pred) / preds.shape[0]
+
+    if abstain:
+        acc_rate = num_correct / preds[idx_pred].shape[0]
+    else:
+        acc_rate = num_correct / preds.shape[0]
+
+    return acc_rate, coverage_rate
+
+
+# -------------------------------------------------------------------------------------------------- DATASET OPERATIONS
 
 
 def load_cifar10(raw=False):
-    """Loads CIFAR10 dataset from config.CIFAR10_PATH or downloads it if necessary.
+    """
+    Loads CIFAR10 dataset from config.CIFAR10_PATH or downloads it if necessary.
 
     :param raw: `True` if no preprocessing should be applied to the data. Otherwise, data is normalized to 1.
     :type raw: `bool`
@@ -429,7 +469,8 @@ def load_cifar10(raw=False):
 
 
 def load_mnist(raw=False):
-    """Loads MNIST dataset from `DATA_PATH` or downloads it if necessary.
+    """
+    Loads MNIST dataset from `DATA_PATH` or downloads it if necessary.
 
     :param raw: `True` if no preprocessing should be applied to the data. Otherwise, data is normalized to 1.
     :type raw: `bool`
@@ -450,7 +491,7 @@ def load_mnist(raw=False):
     # Add channel axis
     min_, max_ = 0, 255
     if not raw:
-        min_, max_ = 0., 1.
+        min_, max_ = 0.0, 1.0
         x_train = np.expand_dims(x_train, axis=3)
         x_test = np.expand_dims(x_test, axis=3)
         x_train, y_train = preprocess(x_train, y_train)
@@ -469,7 +510,7 @@ def load_stl():
     from os.path import join
     from art import DATA_PATH
 
-    min_, max_ = 0., 1.
+    min_, max_ = 0.0, 1.0
 
     # Download and extract data if needed
     path = get_file('stl10_binary', path=DATA_PATH, extract=True,
@@ -501,7 +542,7 @@ def load_stl():
     return (x_train, y_train), (x_test, y_test), min_, max_
 
 
-def load_iris(raw=False, test_set=.3):
+def load_iris(raw=False, test_set=0.3):
     """
     Loads the UCI Iris dataset from `DATA_PATH` or downloads it if necessary.
 
@@ -510,7 +551,7 @@ def load_iris(raw=False, test_set=.3):
     :param test_set: Proportion of the data to use as validation split. The value should be between o and 1.
     :type test_set: `float`
     :return: Entire dataset and labels.
-    :rtype: `(np.ndarray, np.ndarray)`
+    :rtype: `(np.ndarray, np.ndarray), (np.ndarray, np.ndarray), float, float`
     """
     from art import DATA_PATH, NUMPY_DTYPE
 
@@ -523,11 +564,7 @@ def load_iris(raw=False, test_set=.3):
 
     # Preprocess
     if not raw:
-        label_map = {
-            'Iris-setosa': 0,
-            'Iris-versicolor': 1,
-            'Iris-virginica': 2
-        }
+        label_map = {'Iris-setosa': 0, 'Iris-versicolor': 1, 'Iris-virginica': 2}
         labels = np.array([label_map[labels[i]] for i in range(labels.size)], dtype=np.int32)
         data, labels = preprocess(data, labels, nb_classes=3)
     min_, max_ = np.amin(data), np.amax(data)
@@ -704,3 +741,30 @@ def clip_and_round(x, clip_values, round_samples):
         np.clip(x, clip_values[0], clip_values[1], out=x)
     x = np.around(x / round_samples) * round_samples
     return x
+
+
+def preprocess(x, y, nb_classes=10, clip_values=None):
+    """
+    Scales `x` to [0, 1] and converts `y` to class categorical confidences.
+
+    :param x: Data instances.
+    :type x: `np.ndarray`
+    :param y: Labels.
+    :type y: `np.ndarray`
+    :param nb_classes: Number of classes in dataset.
+    :type nb_classes: `int`
+    :param clip_values: Original data range allowed value for features, either one respective scalar or one value per
+           feature.
+    :type clip_values: `tuple(float, float)` or `tuple(np.ndarray, np.ndarray)`
+    :return: Rescaled values of `x`, `y`
+    :rtype: `tuple`
+    """
+    if clip_values is None:
+        min_, max_ = np.amin(x), np.amax(x)
+    else:
+        min_, max_ = clip_values
+
+    normalized_x = (x - min_) / (max_ - min_)
+    categorical_y = to_categorical(y, nb_classes)
+
+    return normalized_x, categorical_y

@@ -19,18 +19,20 @@
 This module implements the adversarial patch attack `AdversarialPatch`. This attack generates an adversarial patch that
 can be printed into the physical world with a common printer. The patch can be used to fool image classifiers.
 
-Paper link:
-    https://arxiv.org/abs/1712.09665
+| Paper link: https://arxiv.org/abs/1712.09665
 """
 from __future__ import absolute_import, division, print_function, unicode_literals
 
 import logging
+
 import random
 import numpy as np
 from scipy.ndimage import rotate, shift, zoom
 
+from art import NUMPY_DTYPE
+from art.classifiers.classifier import ClassifierNeuralNetwork, ClassifierGradients
 from art.attacks.attack import Attack
-from art.utils import to_categorical
+from art.utils import check_and_transform_label_format
 
 logger = logging.getLogger(__name__)
 
@@ -38,7 +40,8 @@ logger = logging.getLogger(__name__)
 class AdversarialPatch(Attack):
     """
     Implementation of the adversarial patch attack.
-    Paper link: https://arxiv.org/abs/1712.09665
+
+    | Paper link: https://arxiv.org/abs/1712.09665
     """
 
     attack_params = Attack.attack_params + ["target", "rotation_max", "scale_min", "scale_max", "learning_rate",
@@ -49,7 +52,7 @@ class AdversarialPatch(Attack):
         """
         Create an instance of the :class:`.AdversarialPatch`.
 
-        :param classifier: A trained model.
+        :param classifier: A trained classifier.
         :type classifier: :class:`.Classifier`
         :param target: The target label for the created patch.
         :type target: `int`
@@ -72,6 +75,11 @@ class AdversarialPatch(Attack):
         :type batch_size: `int`
         """
         super(AdversarialPatch, self).__init__(classifier=classifier)
+        if not isinstance(classifier, ClassifierNeuralNetwork) or not isinstance(classifier, ClassifierGradients):
+            raise (TypeError('For `' + self.__class__.__name__ + '` classifier must be an instance of '
+                             '`art.classifiers.classifier.ClassifierNeuralNetwork` and '
+                             '`art.classifiers.classifier.ClassifierGradients`, the provided classifier is instance of '
+                             + str(classifier.__class__.__bases__) + '.'))
 
         kwargs = {"target": target,
                   "rotation_max": rotation_max,
@@ -102,9 +110,10 @@ class AdversarialPatch(Attack):
             raise ValueError('Feature vectors detected. The adversarial patch can only be applied to data with spatial '
                              'dimensions.')
 
-        self.patch = (np.random.standard_normal(size=self.classifier.input_shape)) * 20.0
+        self.patch = ((np.random.standard_normal(size=self.classifier.input_shape)) * 20.0).astype(NUMPY_DTYPE)
 
-        y_target = to_categorical(np.broadcast_to(np.array(self.target), x.shape[0]), self.classifier.nb_classes)
+        y_target = check_and_transform_label_format(labels=np.broadcast_to(np.array(self.target), x.shape[0]),
+                                                    nb_classes=self.classifier.nb_classes())
 
         for i_step in range(self.max_iter):
             if i_step == 0 or (i_step + 1) % 100 == 0:

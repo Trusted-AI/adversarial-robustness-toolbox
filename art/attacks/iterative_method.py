@@ -19,8 +19,7 @@
 This module implements the Basic Iterative Method attack `BasicIterativeMethod` as the iterative version of FGM and
 FGSM. This is a white-box attack.
 
-Paper link:
-    https://arxiv.org/abs/1607.02533
+| Paper link: https://arxiv.org/abs/1607.02533
 """
 from __future__ import absolute_import, division, print_function, unicode_literals
 
@@ -36,7 +35,8 @@ logger = logging.getLogger(__name__)
 class BasicIterativeMethod(ProjectedGradientDescent):
     """
     The Basic Iterative Method is the iterative version of FGM and FGSM.
-    Paper link: https://arxiv.org/abs/1607.02533
+
+    | Paper link: https://arxiv.org/abs/1607.02533
     """
     attack_params = ProjectedGradientDescent.attack_params
 
@@ -44,7 +44,7 @@ class BasicIterativeMethod(ProjectedGradientDescent):
         """
         Create a :class:`.ProjectedGradientDescent` instance.
 
-        :param classifier: A trained model.
+        :param classifier: A trained classifier.
         :type classifier: :class:`.Classifier`
         :param eps: Maximum perturbation that the attacker can introduce.
         :type eps: `float`
@@ -52,11 +52,11 @@ class BasicIterativeMethod(ProjectedGradientDescent):
         :type eps_step: `float`
         :param max_iter: The maximum number of iterations.
         :type max_iter: `int`
-        :param targeted: Should the attack target one specific class
+        :param targeted: Indicates whether the attack is targeted (True) or untargeted (False)
         :type targeted: `bool`
-        :param batch_size: Batch size
+        :param batch_size: Size of the batch on which adversarial samples are generated.
         :type batch_size: `int`
         """
         super(BasicIterativeMethod, self).__init__(classifier, norm=np.inf, eps=eps, eps_step=eps_step,
-                                                   max_iter=max_iter, targeted=targeted,
-                                                   num_random_init=0, batch_size=batch_size)
+                                                   max_iter=max_iter, targeted=targeted, num_random_init=0,
+                                                   batch_size=batch_size)

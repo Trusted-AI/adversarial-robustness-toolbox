@@ -20,15 +20,16 @@ from __future__ import absolute_import, division, print_function, unicode_litera
 import logging
 import unittest
 
+import tensorflow as tf
 import keras.backend as k
 import numpy as np
 
 from art.attacks.fast_gradient import FastGradientMethod
-from art.wrappers.query_efficient_bb import QueryEfficientBBGradientEstimation
 from art.classifiers import KerasClassifier
 from art.defences import FeatureSqueezing
 from art.utils import load_dataset, get_labels_np_array, master_seed
 from art.utils_test import get_classifier_kr, get_iris_classifier_kr
+from art.wrappers.query_efficient_bb import QueryEfficientBBGradientEstimation
 
 logger = logging.getLogger('testLogger')
 
@@ -37,21 +38,21 @@ NB_TRAIN = 100
 NB_TEST = 11
 
 
+@unittest.skipIf(tf.__version__[0] == '2', reason='Skip unittests for TensorFlow v2 until Keras supports TensorFlow'
+                                                  ' v2 as backend.')
 class TestWrappingClassifierAttack(unittest.TestCase):
     @classmethod
     def setUpClass(cls):
         k.set_learning_phase(1)
 
-        # Get MNIST
         (x_train, y_train), (x_test, y_test), _, _ = load_dataset('mnist')
         x_train, y_train, x_test, y_test = x_train[:NB_TRAIN], y_train[:NB_TRAIN], x_test[:NB_TEST], y_test[:NB_TEST]
         cls.mnist = (x_train, y_train), (x_test, y_test)
 
         # Keras classifier
-        cls.classifier_k, _ = get_classifier_kr()
+        cls.classifier_k = get_classifier_kr()
 
     def setUp(self):
-        # Set master seed
         master_seed(1234)
 
     @classmethod
@@ -59,7 +60,6 @@ class TestWrappingClassifierAttack(unittest.TestCase):
         k.clear_session()
 
     def test_without_defences(self):
-        # Get MNIST
         (x_train, y_train), (x_test, y_test) = self.mnist
 
         # Get the ready-trained Keras model and wrap it in query efficient gradient estimator wrapper
@@ -88,7 +88,6 @@ class TestWrappingClassifierAttack(unittest.TestCase):
         logger.info('Accuracy on adversarial test examples with limited query info: %.2f%%', (acc * 100))
 
     def test_with_defences(self):
-        # Get MNIST
         (x_train, y_train), (x_test, y_test) = self.mnist
 
         # Get the ready-trained Keras model
@@ -130,9 +129,10 @@ class TestQueryEfficientVectors(unittest.TestCase):
         cls.iris = (x_train, y_train), (x_test, y_test)
 
     def setUp(self):
-        # Set master seed
         master_seed(1234)
 
+    @unittest.skipIf(tf.__version__[0] == '2', reason='Skip unittests for TensorFlow v2 until Keras supports TensorFlow'
+                                                      ' v2 as backend.')
     def test_iris_clipped(self):
         (_, _), (x_test, y_test) = self.iris
 
@@ -151,6 +151,8 @@ class TestQueryEfficientVectors(unittest.TestCase):
         acc = np.sum(preds_adv == np.argmax(y_test, axis=1)) / y_test.shape[0]
         logger.info('Accuracy on Iris with limited query info: %.2f%%', (acc * 100))
 
+    @unittest.skipIf(tf.__version__[0] == '2', reason='Skip unittests for TensorFlow v2 until Keras supports TensorFlow'
+                                                      ' v2 as backend.')
     def test_iris_unbounded(self):
         (_, _), (x_test, y_test) = self.iris
         classifier, _ = get_iris_classifier_kr()

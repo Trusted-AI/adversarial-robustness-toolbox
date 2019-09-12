@@ -20,14 +20,13 @@ from __future__ import absolute_import, division, print_function, unicode_litera
 import logging
 import unittest
 
-import keras
-import keras.backend as k
+import tensorflow as tf
 import numpy as np
-from keras.layers import Dense, Conv2D, MaxPooling2D, Flatten
-from keras.models import Sequential
+import keras.backend as k
 
-from art.classifiers import EnsembleClassifier, KerasClassifier
-from art.utils import load_mnist, master_seed
+from art.classifiers import EnsembleClassifier
+from art.utils import load_dataset, master_seed
+from art.utils_test import get_classifier_kr
 
 logger = logging.getLogger('testLogger')
 
@@ -36,20 +35,24 @@ NB_TRAIN = 500
 NB_TEST = 100
 
 
+@unittest.skipIf(tf.__version__[0] == '2', reason='Skip unittests for TensorFlow v2 until Keras supports TensorFlow'
+                                                  ' v2 as backend.')
 class TestEnsembleClassifier(unittest.TestCase):
     @classmethod
     def setUpClass(cls):
         k.clear_session()
-        k.set_learning_phase(1)
 
-        # Get MNIST
-        (x_train, y_train), (x_test, y_test), _, _ = load_mnist()
-        x_train, y_train, x_test, y_test = x_train[:NB_TRAIN], y_train[:NB_TRAIN], x_test[:NB_TEST], y_test[:NB_TEST]
-        cls.mnist = ((x_train, y_train), (x_test, y_test))
+        (x_train, y_train), (x_test, y_test), _, _ = load_dataset('mnist')
 
-        model_1 = KerasClassifier(model=cls._get_model(epochs=2), clip_values=(0, 1))
-        model_2 = KerasClassifier(model=cls._get_model(epochs=2), clip_values=(0, 1))
-        cls.ensemble = EnsembleClassifier(classifiers=[model_1, model_2], clip_values=(0, 1))
+        cls.x_train = x_train[:NB_TRAIN]
+        cls.y_train = y_train[:NB_TRAIN]
+        cls.x_test = x_test[:NB_TEST]
+        cls.y_test = y_test[:NB_TEST]
+
+        # Use twice the same classifier for unittesting, in application they would be different
+        classifier_1 = get_classifier_kr()
+        classifier_2 = get_classifier_kr()
+        cls.ensemble = EnsembleClassifier(classifiers=[classifier_1, classifier_2], clip_values=(0, 1))
 
     @classmethod
     def tearDownClass(cls):
@@ -60,7 +63,7 @@ class TestEnsembleClassifier(unittest.TestCase):
 
     def test_fit(self):
         with self.assertRaises(NotImplementedError):
-            self.ensemble.fit(self.mnist[0][0], self.mnist[0][1])
+            self.ensemble.fit(self.x_train, self.y_train)
 
     def test_fit_generator(self):
         with self.assertRaises(NotImplementedError):
@@ -68,60 +71,68 @@ class TestEnsembleClassifier(unittest.TestCase):
 
     def test_layers(self):
         with self.assertRaises(NotImplementedError):
-            self.ensemble.get_activations(self.mnist[1][0], layer=2)
-
-    @classmethod
-    def _get_model(cls, epochs=1):
-        im_shape = cls.mnist[0][0][0].shape
-
-        # Create basic CNN on MNIST; architecture from Keras examples
-        model = Sequential()
-        model.add(Conv2D(32, kernel_size=(3, 3), activation='relu', input_shape=im_shape))
-        model.add(Conv2D(64, (3, 3), activation='relu'))
-        model.add(MaxPooling2D(pool_size=(2, 2)))
-        model.add(Flatten())
-        model.add(Dense(128, activation='relu'))
-        model.add(Dense(10, activation='softmax'))
-
-        model.compile(loss=keras.losses.categorical_crossentropy, optimizer=keras.optimizers.Adadelta(),
-                      metrics=['accuracy'])
-
-        model.fit(cls.mnist[0][0], cls.mnist[0][1], batch_size=BATCH_SIZE, epochs=epochs)
-        return model
+            self.ensemble.get_activations(self.x_test, layer=2)
 
     def test_predict(self):
-        preds = self.ensemble.predict(self.mnist[1][0], logits=False, raw=False)
-        preds_logits = self.ensemble.predict(self.mnist[1][0], logits=True, raw=False)
-        self.assertEqual(preds.shape, preds_logits.shape)
-        self.assertTrue(np.array(preds.shape == (NB_TEST, 10)).all())
-        self.assertFalse((preds == preds_logits).all())
+        predictions = self.ensemble.predict(self.x_test, raw=False)
+        self.assertTrue(predictions.shape, (NB_TEST, 10))
 
-        preds_raw = self.ensemble.predict(self.mnist[1][0], logits=False, raw=True)
-        preds_raw_logits = self.ensemble.predict(self.mnist[1][0], logits=True, raw=True)
-        self.assertEqual(preds_raw.shape, preds_raw_logits.shape)
-        self.assertEqual(preds_raw.shape, (2, NB_TEST, 10))
-        self.assertFalse((preds_raw == preds_raw_logits).all())
+        expected_predictions_1 = np.asarray([0.12109935, 0.0498215, 0.0993958, 0.06410097, 0.11366927, 0.04645343,
+                                             0.06419807, 0.30685693, 0.07616713, 0.05823759])
+        np.testing.assert_array_almost_equal(predictions[0, :], expected_predictions_1, decimal=4)
 
-        self.assertFalse((preds == preds_raw[0]).all())
-        self.assertFalse((preds_logits == preds_raw_logits[0]).all())
+        predictions_raw = self.ensemble.predict(self.x_test, raw=True)
+        self.assertEqual(predictions_raw.shape, (2, NB_TEST, 10))
+
+        expected_predictions_2 = np.asarray([0.06054967, 0.02491075, 0.0496979, 0.03205048, 0.05683463, 0.02322672,
+                                             0.03209903, 0.15342847, 0.03808356, 0.02911879])
+        np.testing.assert_array_almost_equal(predictions_raw[0, 0, :], expected_predictions_2, decimal=4)
 
     def test_loss_gradient(self):
-        grad = self.ensemble.loss_gradient(self.mnist[1][0], self.mnist[1][1], raw=False)
-        self.assertTrue(np.array(grad.shape == (NB_TEST, 28, 28, 1)).all())
+        gradients = self.ensemble.loss_gradient(self.x_test, self.y_test, raw=False)
+        self.assertEqual(gradients.shape, (NB_TEST, 28, 28, 1))
 
-        grad2 = self.ensemble.loss_gradient(self.mnist[1][0], self.mnist[1][1], raw=True)
-        self.assertTrue(np.array(grad2.shape == (2, NB_TEST, 28, 28, 1)).all())
+        expected_predictions_1 = np.asarray([0.0559206, 0.05338925, 0.0648919, 0.07925165, -0.04029291, -0.11281465,
+                                             0.01850601, 0.00325054, 0.08163195, 0.03333949, 0.031766, -0.02420463,
+                                             -0.07815556, -0.04698735, 0.10711591, 0.04086434, -0.03441073, 0.01071284,
+                                             -0.04229195, -0.01386157, 0.02827487, 0.0, 0.0, 0.0,
+                                             0.0, 0.0, 0.0, 0.0])
+        np.testing.assert_array_almost_equal(gradients[0, 14, :, 0], expected_predictions_1, decimal=4)
 
-        self.assertFalse((grad2[0] == grad).all())
+        gradients_2 = self.ensemble.loss_gradient(self.x_test, self.y_test, raw=True)
+        self.assertEqual(gradients_2.shape, (2, NB_TEST, 28, 28, 1))
+
+        expected_predictions_2 = np.asarray([-0.02444103, -0.06092717, -0.0449727, 0.00737736, -0.0462507, -0.06225448,
+                                             -0.08359106, -0.00270847, -0.009243, -0.00214317, -0.04728884, 0.00369186,
+                                             0.02211389, 0.02094269, 0.00219593, -0.02638348, 0.00148741, -0.004582,
+                                             -0.00621604, 0.01604268, 0.0174383, -0.01077293, -0.00548703, -0.01247547,
+                                             0.0, 0.0, 0.0, 0.0])
+        np.testing.assert_array_almost_equal(gradients_2[0, 5, 14, :, 0], expected_predictions_2, decimal=4)
 
     def test_class_gradient(self):
-        grad = self.ensemble.class_gradient(self.mnist[1][0], raw=False)
-        self.assertTrue(np.array(grad.shape == (NB_TEST, 10, 28, 28, 1)).all())
+        gradients = self.ensemble.class_gradient(self.x_test, None, raw=False)
+        self.assertEqual(gradients.shape, (NB_TEST, 10, 28, 28, 1))
 
-        grad2 = self.ensemble.class_gradient(self.mnist[1][0], raw=True)
-        self.assertTrue(np.array(grad2.shape == (2, NB_TEST, 10, 28, 28, 1)).all())
+        expected_predictions_1 = np.asarray([-1.0557447e-03, -1.0079544e-03, -7.7426434e-04, 1.7387432e-03,
+                                             2.1773507e-03, 5.0880699e-05, 1.6497371e-03, 2.6113100e-03,
+                                             6.0904310e-03, 4.1080985e-04, 2.5268078e-03, -3.6661502e-04,
+                                             -3.0568996e-03, -1.1665225e-03, 3.8904310e-03, 3.1726385e-04,
+                                             1.3203260e-03, -1.1720930e-04, -1.4315104e-03, -4.7676818e-04,
+                                             9.7251288e-04, 0.0000000e+00, 0.0000000e+00, 0.0000000e+00,
+                                             0.0000000e+00, 0.0000000e+00, 0.0000000e+00, 0.0000000e+00])
+        np.testing.assert_array_almost_equal(gradients[0, 5, 14, :, 0], expected_predictions_1, decimal=4)
 
-        self.assertFalse((grad2[0] == grad).all())
+        gradients_2 = self.ensemble.class_gradient(self.x_test, raw=True)
+        self.assertEqual(gradients_2.shape, (2, NB_TEST, 10, 28, 28, 1))
+
+        expected_predictions_2 = np.asarray([-5.2787235e-04, -5.0397718e-04, -3.8713217e-04, 8.6937158e-04,
+                                             1.0886753e-03, 2.5440349e-05, 8.2486856e-04, 1.3056550e-03,
+                                             3.0452155e-03, 2.0540493e-04, 1.2634039e-03, -1.8330751e-04,
+                                             -1.5284498e-03, -5.8326125e-04, 1.9452155e-03, 1.5863193e-04,
+                                             6.6016300e-04, -5.8604652e-05, -7.1575522e-04, -2.3838409e-04,
+                                             4.8625644e-04, 0.0000000e+00, 0.0000000e+00, 0.0000000e+00,
+                                             0.0000000e+00, 0.0000000e+00, 0.0000000e+00, 0.0000000e+00])
+        np.testing.assert_array_almost_equal(gradients_2[0, 0, 5, 14, :, 0], expected_predictions_2, decimal=4)
 
     def test_repr(self):
         repr_ = repr(self.ensemble)

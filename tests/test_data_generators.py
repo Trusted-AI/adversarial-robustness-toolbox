@@ -20,6 +20,10 @@ from __future__ import absolute_import, division, print_function, unicode_litera
 import logging
 import unittest
 
+import tensorflow as tf
+if tf.__version__[0] == '2':
+    import tensorflow.compat.v1 as tf
+    tf.disable_eager_execution()
 import numpy as np
 from keras.preprocessing.image import ImageDataGenerator
 
@@ -29,11 +33,11 @@ from art.utils import master_seed
 logger = logging.getLogger('testLogger')
 
 
+@unittest.skipIf(tf.__version__[0] == '2', reason='Skip unittests for TensorFlow v2 until Keras supports TensorFlow'
+                                                  ' v2 as backend.')
 class TestKerasDataGenerator(unittest.TestCase):
     def setUp(self):
         import keras
-
-        # Set master seed
         master_seed(42)
 
         class DummySequence(keras.utils.Sequence):
@@ -53,7 +57,6 @@ class TestKerasDataGenerator(unittest.TestCase):
 
     def tearDown(self):
         import keras.backend as k
-
         k.clear_session()
 
     def test_gen_interface(self):
@@ -159,8 +162,6 @@ class TestPyTorchGenerator(unittest.TestCase):
     def setUp(self):
         import torch
         from torch.utils.data import DataLoader
-
-        # Set master seed
         master_seed(42)
 
         class DummyDataset(torch.utils.data.Dataset):
@@ -208,8 +209,6 @@ class TestPyTorchGenerator(unittest.TestCase):
 class TestMXGenerator(unittest.TestCase):
     def setUp(self):
         import mxnet as mx
-
-        # Set master seed
         master_seed(42)
 
         x = mx.random.uniform(shape=(10, 1, 5, 5))
@@ -247,9 +246,6 @@ class TestMXGenerator(unittest.TestCase):
 
 class TestTFDataGenerator(unittest.TestCase):
     def setUp(self):
-        import tensorflow as tf
-
-        # Set master seed
         master_seed(42)
 
         def generator(batch_size=5):
@@ -261,10 +257,7 @@ class TestTFDataGenerator(unittest.TestCase):
         self.dataset = tf.data.Dataset.from_generator(generator, (tf.float32, tf.int32))
 
     def tearDown(self):
-        import tensorflow as tf
-
         self.sess.close()
-        tf.reset_default_graph()
 
     def test_init(self):
         iter_ = self.dataset.make_initializable_iterator()
@@ -281,8 +274,6 @@ class TestTFDataGenerator(unittest.TestCase):
         self.assertEqual(y.shape, (5, 10))
 
     def test_reinit(self):
-        import tensorflow as tf
-
         iter_ = tf.data.Iterator.from_structure(self.dataset.output_types, self.dataset.output_shapes)
         init_op = iter_.make_initializer(self.dataset)
         data_gen = TFDataGenerator(sess=self.sess, iterator=iter_, iterator_type='reinitializable',
@@ -298,8 +289,6 @@ class TestTFDataGenerator(unittest.TestCase):
         self.assertEqual(y.shape, (5, 10))
 
     def test_feedable(self):
-        import tensorflow as tf
-
         handle = tf.placeholder(tf.string, shape=[])
         iter_ = tf.data.Iterator.from_string_handle(handle, self.dataset.output_types, self.dataset.output_shapes)
         feed_iterator = self.dataset.make_initializable_iterator()

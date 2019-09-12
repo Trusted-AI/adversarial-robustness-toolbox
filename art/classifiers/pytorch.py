@@ -26,12 +26,12 @@ import random
 import numpy as np
 import six
 
-from art.classifiers.classifier import Classifier
+from art.classifiers.classifier import Classifier, ClassifierNeuralNetwork, ClassifierGradients
 
 logger = logging.getLogger(__name__)
 
 
-class PyTorchClassifier(Classifier):
+class PyTorchClassifier(ClassifierNeuralNetwork, ClassifierGradients, Classifier):
     """
     This class implements a classifier with the PyTorch framework.
     """
@@ -41,8 +41,9 @@ class PyTorchClassifier(Classifier):
         """
         Initialization specifically for the PyTorch-based implementation.
 
-        :param model: PyTorch model. The forward function of the model must return the logit output.
-        :type model: is instance of `torch.nn.Module`
+        :param model: PyTorch model. The output of the model can be logits, probabilities or anything else. Logits
+               output should be preferred where possible to ensure attack efficiency.
+        :type model: `torch.nn.Module`
         :param loss: The loss function for which to compute gradients for training. The target label must be raw
                categorical, i.e. not converted to one-hot encoding.
         :type loss: `torch.nn.modules.loss._Loss`
@@ -53,6 +54,7 @@ class PyTorchClassifier(Classifier):
         :param nb_classes: The number of classes of the model.
         :type nb_classes: `int`
         :param channel_index: Index of the axis in data containing the color channels or features.
+        :param channel_index: Index of the axis in data containing the color channels or features.
         :type channel_index: `int`
         :param clip_values: Tuple of the form `(min, max)` of floats or `np.ndarray` representing the minimum and
                maximum values allowed for features. If floats are provided, these will be used as the range of all
@@ -61,8 +63,8 @@ class PyTorchClassifier(Classifier):
         :type clip_values: `tuple`
         :param defences: Defences to be activated with the classifier.
         :type defences: `str` or `list(str)`
-        :param preprocessing: Tuple of the form `(substractor, divider)` of floats or `np.ndarray` of values to be
-               used for data preprocessing. The first value will be substracted from the input. The input will then
+        :param preprocessing: Tuple of the form `(subtractor, divider)` of floats or `np.ndarray` of values to be
+               used for data preprocessing. The first value will be subtracted from the input. The input will then
                be divided by the second one.
         :type preprocessing: `tuple`
         """
@@ -74,12 +76,10 @@ class PyTorchClassifier(Classifier):
         self._model = self._make_model_wrapper(model)
         self._loss = loss
         self._optimizer = optimizer
+        self._learning_phase = None
 
         # Get the internal layers
         self._layer_names = self._model.get_layers
-
-        # # Store the logit layer
-        # self._logit_layer = len(list(model.modules())) - 2 if use_logits else len(list(model.modules())) - 3
 
         # Use GPU if possible
         import torch
@@ -89,17 +89,15 @@ class PyTorchClassifier(Classifier):
         # Index of layer at which the class gradients should be calculated
         self._layer_idx_gradients = -1
 
-    def predict(self, x, logits=False, batch_size=128, **kwargs):
+    def predict(self, x, batch_size=128, **kwargs):
         """
         Perform prediction for a batch of inputs.
 
         :param x: Test set.
         :type x: `np.ndarray`
-        :param logits: `True` if the prediction should be done at the logits layer.
-        :type logits: `bool`
         :param batch_size: Size of batches.
         :type batch_size: `int`
-        :return: Array of predictions of shape `(nb_inputs, self.nb_classes)`.
+        :return: Array of predictions of shape `(nb_inputs, nb_classes)`.
         :rtype: `np.ndarray`
         """
         import torch
@@ -108,19 +106,15 @@ class PyTorchClassifier(Classifier):
         x_preprocessed, _ = self._apply_preprocessing(x, y=None, fit=False)
 
         # Run prediction with batch processing
-        results = np.zeros((x_preprocessed.shape[0], self.nb_classes), dtype=np.float32)
+        results = np.zeros((x_preprocessed.shape[0], self.nb_classes()), dtype=np.float32)
         num_batch = int(np.ceil(len(x_preprocessed) / float(batch_size)))
         for m in range(num_batch):
             # Batch indexes
             begin, end = m * batch_size, min((m + 1) * batch_size, x_preprocessed.shape[0])
 
-            model_outputs = self._model(torch.from_numpy(x_preprocessed[begin:end]).to(self._device).float())
-            (logit_output, output) = (model_outputs[-2], model_outputs[-1])
-
-            if logits:
-                results[begin:end] = logit_output.detach().cpu().numpy()
-            else:
-                results[begin:end] = output.detach().cpu().numpy()
+            model_outputs = self._model(torch.from_numpy(x_preprocessed[begin:end]).to(self._device))
+            output = model_outputs[-1]
+            results[begin:end] = output.detach().cpu().numpy()
 
         return results
 
@@ -130,7 +124,8 @@ class PyTorchClassifier(Classifier):
 
         :param x: Training data.
         :type x: `np.ndarray`
-        :param y: Labels, one-vs-rest encoding.
+        :param y: Target values (class labels) one-hot-encoded of shape (nb_samples, nb_classes) or indices of shape
+                  (nb_samples,).
         :type y: `np.ndarray`
         :param batch_size: Size of batches.
         :type batch_size: `int`
@@ -145,7 +140,6 @@ class PyTorchClassifier(Classifier):
 
         # Apply preprocessing
         x_preprocessed, y_preprocessed = self._apply_preprocessing(x, y, fit=True)
-
         y_preprocessed = np.argmax(y_preprocessed, axis=1)
 
         num_batch = int(np.ceil(len(x_preprocessed) / float(batch_size)))
@@ -158,8 +152,7 @@ class PyTorchClassifier(Classifier):
 
             # Train for one epoch
             for m in range(num_batch):
-                i_batch = torch.from_numpy(x_preprocessed[ind[m * batch_size:(m + 1) * batch_size]]).to(
-                    self._device).float()
+                i_batch = torch.from_numpy(x_preprocessed[ind[m * batch_size:(m + 1) * batch_size]]).to(self._device)
                 o_batch = torch.from_numpy(y_preprocessed[ind[m * batch_size:(m + 1) * batch_size]]).to(self._device)
 
                 # Zero the parameter gradients
@@ -193,9 +186,9 @@ class PyTorchClassifier(Classifier):
             for _ in range(nb_epochs):
                 for i_batch, o_batch in generator.data_loader:
                     if isinstance(i_batch, np.ndarray):
-                        i_batch = torch.from_numpy(i_batch).to(self._device).float()
+                        i_batch = torch.from_numpy(i_batch).to(self._device)
                     else:
-                        i_batch = i_batch.to(self._device).float()
+                        i_batch = i_batch.to(self._device)
 
                     if isinstance(o_batch, np.ndarray):
                         o_batch = torch.argmax(torch.from_numpy(o_batch).to(self._device), dim=1)
@@ -214,7 +207,7 @@ class PyTorchClassifier(Classifier):
             # Fit a generic data generator through the API
             super(PyTorchClassifier, self).fit_generator(generator, nb_epochs=nb_epochs)
 
-    def class_gradient(self, x, label=None, logits=False, **kwargs):
+    def class_gradient(self, x, label=None, **kwargs):
         """
         Compute per-class derivatives w.r.t. `x`.
 
@@ -225,8 +218,6 @@ class PyTorchClassifier(Classifier):
                       match the batch size of `x`, and each value will be used as target for its corresponding sample in
                       `x`. If `None`, then gradients for all classes will be computed for each sample.
         :type label: `int` or `list`
-        :param logits: `True` if the prediction should be done at the logits layer.
-        :type logits: `bool`
         :return: Array of gradients of input features w.r.t. each class in the form
                  `(batch_size, nb_classes, input_shape)` when computing for all classes, otherwise shape becomes
                  `(batch_size, 1, input_shape)` when `label` parameter is specified.
@@ -241,8 +232,7 @@ class PyTorchClassifier(Classifier):
 
         # Apply preprocessing
         x_preprocessed, _ = self._apply_preprocessing(x, y=None, fit=False)
-
-        x_preprocessed = torch.from_numpy(x_preprocessed).to(self._device).float()
+        x_preprocessed = torch.from_numpy(x_preprocessed).to(self._device)
 
         # Compute gradients
         if self._layer_idx_gradients < 0:
@@ -258,11 +248,7 @@ class PyTorchClassifier(Classifier):
             input_grad = x_preprocessed
 
         # Set where to get gradient from
-        (logit_output, output) = (model_outputs[-2], model_outputs[-1])
-        if logits:
-            preds = logit_output
-        else:
-            preds = output
+        preds = model_outputs[-1]
 
         # Compute the gradient
         grads = []
@@ -278,7 +264,7 @@ class PyTorchClassifier(Classifier):
 
         self._model.zero_grad()
         if label is None:
-            for i in range(self.nb_classes):
+            for i in range(self.nb_classes()):
                 torch.autograd.backward(preds[:, i], torch.Tensor([1.] * len(preds[:, 0])).to(self._device),
                                         retain_graph=True)
 
@@ -308,7 +294,8 @@ class PyTorchClassifier(Classifier):
 
         :param x: Sample input with shape as expected by the model.
         :type x: `np.ndarray`
-        :param y: Correct labels, one-vs-rest encoding.
+        :param y: Target values (class labels) one-hot-encoded of shape (nb_samples, nb_classes) or indices of shape
+                  (nb_samples,).
         :type y: `np.ndarray`
         :return: Array of gradients of the same shape as `x`.
         :rtype: `np.ndarray`
@@ -320,7 +307,6 @@ class PyTorchClassifier(Classifier):
 
         # Convert the inputs to Tensors
         inputs_t = torch.from_numpy(x_preprocessed).to(self._device)
-        inputs_t = inputs_t.float()
         inputs_t.requires_grad = True
 
         # Convert the labels to Tensors
@@ -397,8 +383,7 @@ class PyTorchClassifier(Classifier):
             begin, end = m * batch_size, min((m + 1) * batch_size, x_preprocessed.shape[0])
 
             # Run prediction for the current batch
-            layer_output = self._model(torch.from_numpy(x_preprocessed[begin:end]).to(self._device).float())[
-                layer_index]
+            layer_output = self._model(torch.from_numpy(x_preprocessed[begin:end]).to(self._device))[layer_index]
             results.append(layer_output.detach().cpu().numpy())
 
         results = np.concatenate(results)
@@ -507,7 +492,7 @@ class PyTorchClassifier(Classifier):
         repr_ = "%s(model=%r, loss=%r, optimizer=%r, input_shape=%r, nb_classes=%r, " \
                 "channel_index=%r, clip_values=%r, defences=%r, preprocessing=%r)" \
                 % (self.__module__ + '.' + self.__class__.__name__,
-                   self._model, self._loss, self._optimizer, self._input_shape, self.nb_classes,
+                   self._model, self._loss, self._optimizer, self._input_shape, self.nb_classes(),
                    self.channel_index, self.clip_values, self.defences, self.preprocessing)
 
         return repr_
@@ -563,9 +548,6 @@ class PyTorchClassifier(Classifier):
                         else:
                             raise TypeError("The input model must inherit from `nn.Module`.")
 
-                        output_layer = nn.functional.softmax(x, dim=1)
-                        result.append(output_layer)
-
                         return result
 
                     @property
@@ -593,7 +575,7 @@ class PyTorchClassifier(Classifier):
                                 result.append(name + "_" + str(module_))
 
                         elif isinstance(self._model, nn.Module):
-                            result.append("logit_layer")
+                            result.append("final_layer")
 
                         else:
                             raise TypeError("The input model must inherit from `nn.Module`.")

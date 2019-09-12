@@ -20,6 +20,7 @@ from __future__ import absolute_import, division, print_function, unicode_litera
 import logging
 import unittest
 
+import tensorflow as tf
 import numpy as np
 
 from art.poison_detection import ActivationDefence
@@ -30,9 +31,9 @@ logger = logging.getLogger('testLogger')
 NB_TRAIN, NB_TEST, BATCH_SIZE = 300, 10, 128
 
 
+@unittest.skipIf(tf.__version__[0] == '2', reason='Skip unittests for TensorFlow v2 until Keras supports TensorFlow'
+                                                  ' v2 as backend.')
 class TestActivationDefence(unittest.TestCase):
-
-    # python -m unittest discover art/ -p 'activation_defence_unittest.py'
 
     @classmethod
     def setUpClass(cls):
@@ -91,7 +92,7 @@ class TestActivationDefence(unittest.TestCase):
         # Get MNIST
         (x_train, _), (_, _), (_, _) = self.mnist
 
-        n_classes = self.classifier.nb_classes
+        n_classes = self.classifier.nb_classes()
         for nb_clusters in range(2, 5):
             clusters_by_class, _ = self.defence.cluster_activations(nb_clusters=nb_clusters)
 
@@ -110,7 +111,7 @@ class TestActivationDefence(unittest.TestCase):
         # Get MNIST
         (x_train, _), (_, _), (_, _) = self.mnist
 
-        report, is_clean_lst = self.defence.detect_poison(nb_clusters=2, nb_dims=10, reduce='PCA')
+        _, is_clean_lst = self.defence.detect_poison(nb_clusters=2, nb_dims=10, reduce='PCA')
         sum_clean1 = sum(is_clean_lst)
 
         # Check number of items in is_clean
@@ -120,8 +121,8 @@ class TestActivationDefence(unittest.TestCase):
         found_clusters = len(np.unique(self.defence.clusters_by_class[0]))
         self.assertEqual(found_clusters, 2)
 
-        report, is_clean_lst = self.defence.detect_poison(nb_clusters=3, nb_dims=10, reduce='PCA',
-                                                          cluster_analysis='distance')
+        _, is_clean_lst = self.defence.detect_poison(nb_clusters=3, nb_dims=10, reduce='PCA',
+                                                     cluster_analysis='distance')
         self.assertEqual(len(x_train), len(is_clean_lst))
 
         # Test change of state to new number of clusters:
@@ -132,11 +133,11 @@ class TestActivationDefence(unittest.TestCase):
         sum_clean2 = sum(is_clean_lst)
         self.assertNotEqual(sum_clean1, sum_clean2)
 
-        report, is_clean_lst = self.defence.detect_poison(nb_clusters=2, nb_dims=10, reduce='PCA',
-                                                          cluster_analysis='distance')
+        _, is_clean_lst = self.defence.detect_poison(nb_clusters=2, nb_dims=10, reduce='PCA',
+                                                     cluster_analysis='distance')
         sum_dist = sum(is_clean_lst)
-        report, is_clean_lst = self.defence.detect_poison(nb_clusters=2, nb_dims=10, reduce='PCA',
-                                                          cluster_analysis='smaller')
+        _, is_clean_lst = self.defence.detect_poison(nb_clusters=2, nb_dims=10, reduce='PCA',
+                                                     cluster_analysis='smaller')
         sum_size = sum(is_clean_lst)
         self.assertNotEqual(sum_dist, sum_size)
 
@@ -157,7 +158,7 @@ class TestActivationDefence(unittest.TestCase):
         self.defence.analyze_clusters(cluster_analysis='silhouette-scores')
 
         report, dist_clean_by_class = self.defence.analyze_clusters(cluster_analysis='distance')
-        n_classes = self.classifier.nb_classes
+        n_classes = self.classifier.nb_classes()
         self.assertEqual(n_classes, len(dist_clean_by_class))
 
         # Check right amount of data
@@ -167,7 +168,7 @@ class TestActivationDefence(unittest.TestCase):
         self.assertEqual(len(x_train), n_dp)
 
         report, sz_clean_by_class = self.defence.analyze_clusters(cluster_analysis='smaller')
-        n_classes = self.classifier.nb_classes
+        n_classes = self.classifier.nb_classes()
         self.assertEqual(n_classes, len(sz_clean_by_class))
 
         # Check right amount of data

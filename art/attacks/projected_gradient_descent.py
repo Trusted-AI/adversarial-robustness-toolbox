@@ -21,8 +21,7 @@ after each iteration, the perturbation is projected on an lp-ball of specified r
 values of the adversarial sample so that it lies in the permitted data range). This is the attack proposed by Madry et
 al. for adversarial training.
 
-Paper link:
-    https://arxiv.org/abs/1706.06083
+| Paper link: https://arxiv.org/abs/1706.06083
 """
 from __future__ import absolute_import, division, print_function, unicode_literals
 
@@ -31,8 +30,9 @@ import logging
 import numpy as np
 
 from art import NUMPY_DTYPE
+from art.classifiers.classifier import ClassifierGradients
 from art.attacks.fast_gradient import FastGradientMethod
-from art.utils import compute_success, get_labels_np_array
+from art.utils import compute_success, get_labels_np_array, check_and_transform_label_format
 
 logger = logging.getLogger(__name__)
 
@@ -43,7 +43,8 @@ class ProjectedGradientDescent(FastGradientMethod):
     after each iteration, the perturbation is projected on an lp-ball of specified radius (in
     addition to clipping the values of the adversarial sample so that it lies in the permitted
     data range). This is the attack proposed by Madry et al. for adversarial training.
-    Paper link: https://arxiv.org/abs/1706.06083
+
+    | Paper link: https://arxiv.org/abs/1706.06083
     """
     attack_params = FastGradientMethod.attack_params + ['max_iter']
 
@@ -52,9 +53,9 @@ class ProjectedGradientDescent(FastGradientMethod):
         """
         Create a :class:`.ProjectedGradientDescent` instance.
 
-        :param classifier: A trained model.
+        :param classifier: A trained classifier.
         :type classifier: :class:`.Classifier`
-        :param norm: Order of the norm. Possible values: np.inf, 1 or 2.
+        :param norm: The norm of the adversarial perturbation. Possible values: np.inf, 1 or 2.
         :type norm: `int`
         :param eps: Maximum perturbation that the attacker can introduce.
         :type eps: `float`
@@ -62,17 +63,21 @@ class ProjectedGradientDescent(FastGradientMethod):
         :type eps_step: `float`
         :param max_iter: The maximum number of iterations.
         :type max_iter: `int`
-        :param targeted: Should the attack target one specific class
+        :param targeted: Indicates whether the attack is targeted (True) or untargeted (False)
         :type targeted: `bool`
         :param num_random_init: Number of random initialisations within the epsilon ball. For num_random_init=0
             starting at the original input.
         :type num_random_init: `int`
-        :param batch_size: Batch size
+        :param batch_size: Size of the batch on which adversarial samples are generated.
         :type batch_size: `int`
         """
         super(ProjectedGradientDescent, self).__init__(classifier, norm=norm, eps=eps, eps_step=eps_step,
                                                        targeted=targeted, num_random_init=num_random_init,
                                                        batch_size=batch_size, minimal=False)
+        if not isinstance(classifier, ClassifierGradients):
+            raise (TypeError('For `' + self.__class__.__name__ + '` classifier must be an instance of '
+                             '`art.classifiers.classifier.ClassifierGradients`, the provided classifier is instance of '
+                             + str(classifier.__class__.__bases__) + '.'))
 
         kwargs = {'max_iter': max_iter}
         ProjectedGradientDescent.set_params(self, **kwargs)
@@ -85,14 +90,16 @@ class ProjectedGradientDescent(FastGradientMethod):
 
         :param x: An array with the original inputs.
         :type x: `np.ndarray`
-        :param y: The labels for the data `x`. Only provide this parameter if you'd like to use true
-                  labels when crafting adversarial samples. Otherwise, model predictions are used as labels to avoid the
-                  "label leaking" effect (explained in this paper: https://arxiv.org/abs/1611.01236). Default is `None`.
-                  Labels should be one-hot-encoded.
+        :param y: Target values (class labels) one-hot-encoded of shape `(nb_samples, nb_classes)` or indices of shape
+                  (nb_samples,). Only provide this parameter if you'd like to use true labels when crafting adversarial
+                  samples. Otherwise, model predictions are used as labels to avoid the "label leaking" effect
+                  (explained in this paper: https://arxiv.org/abs/1611.01236). Default is `None`.
         :type y: `np.ndarray`
         :return: An array holding the adversarial examples.
         :rtype: `np.ndarray`
         """
+        y = check_and_transform_label_format(y, self.classifier.nb_classes())
+
         if y is None:
             # Throw error if attack is targeted, but no targets are provided
             if self.targeted:
