@@ -1,4 +1,4 @@
-Adversarial Robustness Toolbox (ART) v1.0.0
+# Adversarial Robustness Toolbox (ART) v1.0.0
 <p align="center">
   <img src="docs/images/art_logo.png?raw=true" width="200" title="ART logo">
 </p>
@@ -122,6 +122,7 @@ git commit -s -m 'Add new feature'
 
 ## 引用ART
 如果您使用ART进行研究，请考虑引用以下参考文件：
+```
 @article{art2018,
     title = {Adversarial Robustness Toolbox v0.10.0},
     author = {Nicolae, Maria-Irina and Sinn, Mathieu and Tran, Minh~Ngoc and Buesser, Beat and Rawat, Ambrish and Wistuba, Martin and Zantedeschi, Valentina and Baracaldo, Nathalie and Chen, Bryant and Ludwig, Heiko and Molloy, Ian and Edwards, Ben},
@@ -130,3 +131,4 @@ git commit -s -m 'Add new feature'
     year = {2018},
     url = {https://arxiv.org/pdf/1807.01069}
 }
+```
