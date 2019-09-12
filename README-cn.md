@@ -41,7 +41,7 @@ ART正在不断发展中。 我们欢迎您的反馈，错误报告和对ART建�
 * 基于决策的攻击 ([Brendel et al., 2018](https://arxiv.org/abs/1712.04248))
 * 对抗性补丁 ([Brown et al., 2017](https://arxiv.org/abs/1712.09665))
 * 决策树攻击 ([Papernot et al., 2016](https://arxiv.org/abs/1605.07277))
-* Carlini＆Wagner（C＆W）L_2和L_inf攻击 ([Carlini and Wagner, 2016](https://arxiv.org/abs/1608.04644))
+* Carlini＆Wagner（C＆W）`L_2`和`L_inf`攻击 ([Carlini and Wagner, 2016](https://arxiv.org/abs/1608.04644))
 * 基本迭代法 ([Kurakin et al., 2016](https://arxiv.org/abs/1607.02533))
 * 雅可比显着性图 ([Papernot et al., 2016](https://arxiv.org/abs/1511.07528))
 * 普遍扰动 ([Moosavi-Dezfooli et al., 2016](https://arxiv.org/abs/1610.08401))
