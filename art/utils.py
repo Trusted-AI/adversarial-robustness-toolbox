@@ -683,18 +683,7 @@ def get_file(filename, url, path=None, extract=False):
     download = not os.path.exists(full_path)
 
     import sys
-    print(sys.modules['__main__'].__file__)
-    print('filename', filename)
-    print('url', url)
-    print('path', path)
-    print('extract', extract)
-    print('full_path', full_path)
-    print('os.getcwd()', os.getcwd())
-    print(os.path.join(os.path.dirname(os.path.dirname(__file__)), 'data', 'mnist', 'mnist_unittest.npz'))
-
     if '_jb_unittest_runner' in sys.modules['__main__'].__file__:
-        print('_jb_unittest_runner')
-
         from shutil import copyfile
         copyfile(src=os.path.join(os.path.dirname(os.path.dirname(__file__)), 'data', 'mnist', 'mnist_unittest.npz'),
                  dst=full_path)
