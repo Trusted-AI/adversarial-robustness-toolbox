@@ -104,6 +104,7 @@ class ActivationDefence(PoisonFilteringDefence):
                                                                                     self.is_clean_by_class)
         return conf_matrix_json
 
+    # pylint: disable=W0221
     def detect_poison(self, clustering_method='KMeans', nb_clusters=2, reduce='PCA', nb_dims=2,
                       cluster_analysis='smaller'):
         """

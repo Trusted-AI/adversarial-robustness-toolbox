@@ -1,4 +1,4 @@
-# Adversarial Robustness Toolbox (ART v0.10.0)
+# Adversarial Robustness 360 Toolbox (ART v0.10.0)
 <p align="center">
   <img src="docs/images/art_logo.png?raw=true" width="200" title="ART logo">
 </p>
@@ -6,7 +6,9 @@
 
 [![Build Status](https://travis-ci.org/IBM/adversarial-robustness-toolbox.svg?branch=master)](https://travis-ci.org/IBM/adversarial-robustness-toolbox) [![Documentation Status](https://readthedocs.org/projects/adversarial-robustness-toolbox/badge/?version=latest)](http://adversarial-robustness-toolbox.readthedocs.io/en/latest/?badge=latest) [![GitHub version](https://badge.fury.io/gh/IBM%2Fadversarial-robustness-toolbox.svg)](https://badge.fury.io/gh/IBM%2Fadversarial-robustness-toolbox) [![Language grade: Python](https://img.shields.io/lgtm/grade/python/g/IBM/adversarial-robustness-toolbox.svg?logo=lgtm&logoWidth=18)](https://lgtm.com/projects/g/IBM/adversarial-robustness-toolbox/context:python) [![Total alerts](https://img.shields.io/lgtm/alerts/g/IBM/adversarial-robustness-toolbox.svg?logo=lgtm&logoWidth=18)](https://lgtm.com/projects/g/IBM/adversarial-robustness-toolbox/alerts/)
 
-Adversarial Robustness Toolbox (ART) is a Python library supporting developers and researchers in defending Machine 
+[中文README请按此处](README-cn.md)
+
+Adversarial Robustness 360 Toolbox (ART) is a Python library supporting developers and researchers in defending Machine 
 Learning models (Deep Neural Networks, Gradient Boosted Decision Trees, Support Vector Machines, Random Forests, 
 Logistic Regression, Gaussian Processes, Decision Trees, Scikit-learn Pipelines, etc.) against adversarial threats and 
 helps making AI systems more secure and trustworthy. Machine Learning models are vulnerable to adversarial examples, 
@@ -51,7 +53,7 @@ Get in touch with us on [Slack](https://ibm-art.slack.com) (invite [here](https:
 * Zeroth-order optimization attack ([Chen et al., 2017](https://arxiv.org/abs/1708.03999))
 * Decision-based attack ([Brendel et al., 2018](https://arxiv.org/abs/1712.04248))
 * Adversarial patch ([Brown et al., 2017](https://arxiv.org/abs/1712.09665))
-* Decision tree attack ([Papernot et al., 2016](https://arxiv.org/pdf/1605.07277.pdf))
+* Decision tree attack ([Papernot et al., 2016](https://arxiv.org/abs/1605.07277))
 * Carlini & Wagner (C&W) `L_2` and `L_inf` attacks ([Carlini and Wagner, 2016](https://arxiv.org/abs/1608.04644))
 * Basic iterative method ([Kurakin et al., 2016](https://arxiv.org/abs/1607.02533))
 * Jacobian saliency map ([Papernot et al., 2016](https://arxiv.org/abs/1511.07528))
@@ -59,6 +61,9 @@ Get in touch with us on [Slack](https://ibm-art.slack.com) (invite [here](https:
 * DeepFool ([Moosavi-Dezfooli et al., 2015](https://arxiv.org/abs/1511.04599))
 * Virtual adversarial method ([Miyato et al., 2015](https://arxiv.org/abs/1507.00677))
 * Fast gradient method ([Goodfellow et al., 2014](https://arxiv.org/abs/1412.6572))
+
+**Poisoning Attacks:**
+* Poisoning Attack on SVM ([Biggio et al., 2013](https://arxiv.org/abs/1206.6389))
 
 **Defences:**
 * Thermometer encoding ([Buckman et al., 2018](https://openreview.net/forum?id=S18Su--CW))
@@ -133,10 +138,10 @@ and overview and more information.
 
 Adding new features, improving documentation, fixing bugs, or writing tutorials are all examples of helpful 
 contributions. Furthermore, if you are publishing a new attack or defense, we strongly encourage you to add it to the 
-Adversarial Robustness Toolbox so that others may evaluate it fairly in their own work.
+Adversarial Robustness 360 Toolbox so that others may evaluate it fairly in their own work.
 
 Bug fixes can be initiated through GitHub pull requests. When making code contributions to the Adversarial Robustness 
-Toolbox, we ask that you follow the `PEP 8` coding standard and that you provide unit tests for the new features.
+360 Toolbox, we ask that you follow the `PEP 8` coding standard and that you provide unit tests for the new features.
 
 This project uses [DCO](https://developercertificate.org/). Be sure to sign off your commits using the `-s` flag or 
 adding `Signed-off-By: Name<Email>` in the commit message.

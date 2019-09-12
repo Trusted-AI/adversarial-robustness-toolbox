@@ -29,6 +29,7 @@ from art.classifiers.classifier import Classifier, ClassifierGradients
 logger = logging.getLogger(__name__)
 
 
+# pylint: disable=C0103
 class GPyGaussianProcessClassifier(Classifier, ClassifierGradients):
     """
     Wrapper class for GPy Gaussian Process classification models.
@@ -61,6 +62,7 @@ class GPyGaussianProcessClassifier(Classifier, ClassifierGradients):
         self._nb_classes = 2  # always binary
         self.model = model
 
+    # pylint: disable=W0221
     def class_gradient(self, x, label=None, eps=0.0001):
         """
         Compute per-class derivatives w.r.t. `x`.
@@ -112,7 +114,7 @@ class GPyGaussianProcessClassifier(Classifier, ClassifierGradients):
         :rtype: `np.ndarray`
         """
         # Apply preprocessing
-        x_preprocessed, y_preprocessed = self._apply_preprocessing(x, y, fit=False)
+        x_preprocessed, _ = self._apply_preprocessing(x, y, fit=False)
 
         eps = 0.00001
         grads = np.zeros(np.shape(x))
@@ -127,6 +129,7 @@ class GPyGaussianProcessClassifier(Classifier, ClassifierGradients):
 
         return grads
 
+    # pylint: disable=W0221
     def predict(self, x, logits=False, **kwargs):
         """
         Perform prediction for a batch of inputs.

@@ -126,8 +126,8 @@ class TestVirtualAdversarial(unittest.TestCase):
             with self.assertRaises(TypeError) as context:
                 x_test_adv = df.generate(x_test)
 
-            self.assertIn('This attack requires that the classifier must produce a probability output, '
-                          'which seems not the case.', str(context.exception))
+            self.assertIn('This attack requires a classifier predicting probabilities in the range [0, 1] as output.'
+                          'Values smaller than 0.0 or larger than 1.0 have been detected.', str(context.exception))
         else:
             x_test_adv = df.generate(x_test)
 
@@ -255,8 +255,8 @@ class TestVirtualAdversarialVectors(unittest.TestCase):
         with self.assertRaises(TypeError) as context:
             x_test_adv = attack.generate(x_test)
 
-        self.assertIn('This attack requires that the classifier must produce a probability output, '
-                      'which seems not the case.', str(context.exception))
+        self.assertIn('This attack requires a classifier predicting probabilities in the range [0, 1] as output.'
+                      'Values smaller than 0.0 or larger than 1.0 have been detected.', str(context.exception))
 
     def test_iris_pt(self):
         (_, _), (x_test, y_test) = self.iris
@@ -267,8 +267,8 @@ class TestVirtualAdversarialVectors(unittest.TestCase):
         with self.assertRaises(TypeError) as context:
             x_test_adv = attack.generate(x_test.astype(np.float32))
 
-        self.assertIn('This attack requires that the classifier must produce a probability output, '
-                      'which seems not the case.', str(context.exception))
+        self.assertIn('This attack requires a classifier predicting probabilities in the range [0, 1] as output.'
+                      'Values smaller than 0.0 or larger than 1.0 have been detected.', str(context.exception))
 
 
 if __name__ == '__main__':

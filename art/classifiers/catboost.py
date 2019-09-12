@@ -57,7 +57,7 @@ class CatBoostARTClassifier(Classifier):
         super(CatBoostARTClassifier, self).__init__(clip_values=clip_values, defences=defences,
                                                     preprocessing=preprocessing)
 
-        self.model = model
+        self._model = model
         self._input_shape = (nb_features,)
 
     def fit(self, x, y, **kwargs):
@@ -77,7 +77,7 @@ class CatBoostARTClassifier(Classifier):
         # Apply preprocessing
         x_preprocessed, y_preprocessed = self._apply_preprocessing(x, y, fit=True)
 
-        self.model.fit(x_preprocessed, y_preprocessed, **kwargs)
+        self._model.fit(x_preprocessed, y_preprocessed, **kwargs)
 
     def predict(self, x, **kwargs):
         """
@@ -91,7 +91,7 @@ class CatBoostARTClassifier(Classifier):
         # Apply defences
         x_preprocessed, _ = self._apply_preprocessing(x, y=None, fit=False)
 
-        return self.model.predict_proba(x_preprocessed)
+        return self._model.predict_proba(x_preprocessed)
 
     def nb_classes(self):
         """
@@ -105,4 +105,4 @@ class CatBoostARTClassifier(Classifier):
     def save(self, filename, path=None):
         import pickle
         with open(filename + '.pickle', 'wb') as file_pickle:
-            pickle.dump(self.model, file=file_pickle)
+            pickle.dump(self._model, file=file_pickle)
