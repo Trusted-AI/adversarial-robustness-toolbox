@@ -35,7 +35,8 @@ model = xgb.train(params=params, dtrain=dtrain, num_boost_round=10, evals=evals)
 
 # Step 3: Create the ART classifier
 
-classifier = XGBoostClassifier(model=model, clip_values=(min_pixel_value, max_pixel_value), num_features=28 * 28)
+classifier = XGBoostClassifier(model=model, clip_values=(min_pixel_value, max_pixel_value), nb_features=28 * 28,
+                               nb_classes=10)
 
 # Step 4: Train the ART classifier
 

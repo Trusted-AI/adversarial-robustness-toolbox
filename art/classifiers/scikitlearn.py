@@ -30,6 +30,7 @@ from art.utils import to_categorical
 
 logger = logging.getLogger(__name__)
 
+
 # pylint: disable=C0103
 def SklearnClassifier(model, clip_values=None, defences=None, preprocessing=(0, 1)):
     """
@@ -116,7 +117,7 @@ class ScikitlearnClassifier(Classifier):
 
         :param x: Test set.
         :type x: `np.ndarray`
-        :return: Array of predictions of shape `(nb_inputs, self.nb_classes)`.
+        :return: Array of predictions of shape `(nb_inputs, nb_classes)`.
         :rtype: `np.ndarray`
         """
         # Apply defences
@@ -138,7 +139,6 @@ class ScikitlearnClassifier(Classifier):
         :return: Number of classes in the data.
         :rtype: `int` or `None`
         """
-        # return self._model.n_classes_
         if hasattr(self._model, 'n_classes_'):
             _nb_classes = self._model.n_classes_
         else:
@@ -204,7 +204,7 @@ class ScikitlearnDecisionTreeClassifier(ScikitlearnClassifier):
         # pylint: disable=E0001
         from sklearn.tree import DecisionTreeClassifier
 
-        if not isinstance(model, DecisionTreeClassifier):
+        if not isinstance(model, DecisionTreeClassifier) and model is not None:
             raise TypeError('Model must be of type sklearn.tree.DecisionTreeClassifier')
 
         super(ScikitlearnDecisionTreeClassifier, self).__init__(model=model, clip_values=clip_values, defences=defences,
@@ -339,8 +339,8 @@ class ScikitlearnDecisionTreeRegressor(ScikitlearnDecisionTreeClassifier):
         if not isinstance(model, DecisionTreeRegressor):
             raise TypeError('Model must be of type sklearn.tree.DecisionTreeRegressor')
 
-        ScikitlearnClassifier.__init__(self, model=model, clip_values=clip_values, defences=defences,
-                                       preprocessing=preprocessing)
+        ScikitlearnDecisionTreeClassifier.__init__(self, model=None, clip_values=clip_values, defences=defences,
+                                                   preprocessing=preprocessing)
         self._model = model
 
     def get_values_at_node(self, node_id):
@@ -897,6 +897,7 @@ class ScikitlearnSVC(ScikitlearnClassifier, ClassifierGradients):
         :return: the kernel gradient
         :rtype: `np.ndarray`
         """
+        # pylint: disable=W0212
         if self._model.kernel == 'linear':
             grad = sv
         elif self._model.kernel == 'poly':
@@ -1076,7 +1077,7 @@ class ScikitlearnSVC(ScikitlearnClassifier, ClassifierGradients):
 
         :param x: Test set.
         :type x: `np.ndarray`
-        :return: Array of predictions of shape `(nb_inputs, self.nb_classes)`.
+        :return: Array of predictions of shape `(nb_inputs, nb_classes)`.
         :rtype: `np.ndarray`
         """
         # pylint: disable=E0001

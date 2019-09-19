@@ -16,7 +16,7 @@
 # TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 # SOFTWARE.
 """
-This module implements the classifier `BlackBoxClassifier` for blackbox classifiers.
+This module implements the classifier `BlackBoxClassifier` for black-box classifiers.
 """
 from __future__ import absolute_import, division, print_function, unicode_literals
 
@@ -31,12 +31,12 @@ logger = logging.getLogger(__name__)
 
 class BlackBoxClassifier(Classifier):
     """
-    Wrapper class for black box classifiers.
+    Wrapper class for black-box classifiers.
     """
 
     def __init__(self, predict, input_shape, nb_classes, clip_values=None, defences=None, preprocessing=(0, 1)):
         """
-        Create a `Classifier` instance for a black box model.
+        Create a `Classifier` instance for a black-box model.
 
         :param predict: Function that takes in one input of the data and returns the one-hot encoded predicted class.
         :type predict: `function`
@@ -63,6 +63,7 @@ class BlackBoxClassifier(Classifier):
         self._input_shape = input_shape
         self._nb_classes = nb_classes
 
+    # pylint: disable=W0221
     def predict(self, x, batch_size=128, **kwargs):
         """
         Perform prediction for a batch of inputs.
@@ -71,7 +72,7 @@ class BlackBoxClassifier(Classifier):
         :type x: `np.ndarray`
         :param batch_size: Size of batches.
         :type batch_size: `int`
-        :return: Array of predictions of shape `(nb_inputs, self.nb_classes)`.
+        :return: Array of predictions of shape `(nb_inputs, nb_classes)`.
         :rtype: `np.ndarray`
         """
         from art import NUMPY_DTYPE

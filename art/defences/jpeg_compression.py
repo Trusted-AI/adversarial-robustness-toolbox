@@ -35,7 +35,7 @@ logger = logging.getLogger(__name__)
 
 class JpegCompression(Preprocessor):
     """
-    Implement the jpeg compression defence approach.
+    Implement the JPEG compression defence approach.
 
     | Paper link: https://arxiv.org/abs/1705.02900, https://arxiv.org/abs/1608.00853
     """
@@ -43,7 +43,7 @@ class JpegCompression(Preprocessor):
 
     def __init__(self, clip_values, quality=50, channel_index=3, apply_fit=True, apply_predict=False):
         """
-        Create an instance of jpeg compression.
+        Create an instance of JPEG compression.
 
         :param clip_values: Tuple of the form `(min, max)` representing the minimum and maximum values allowed
                for features.

@@ -121,7 +121,7 @@ class ElasticNet(Attack):
         :param x_adv: An array with the adversarial input.
         :type x_adv: `np.ndarray`
         :param c_weight: Weight of the loss term aiming for classification as target.
-        :type c_weight: `float`
+        :type c_weight: `float` or `np.ndarray`
         :return: An array with the gradient of the loss function.
         :type target: `np.ndarray`
         """
@@ -181,7 +181,7 @@ class ElasticNet(Attack):
         :return: An array holding the adversarial examples.
         :rtype: `np.ndarray`
         """
-        y = check_and_transform_label_format(y, self.classifier.nb_classes)
+        y = check_and_transform_label_format(y, self.classifier.nb_classes())
         x_adv = x.astype(NUMPY_DTYPE)
 
         # Assert that, if attack is targeted, y is provided:

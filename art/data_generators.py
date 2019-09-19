@@ -206,7 +206,7 @@ class TFDataGenerator(DataGenerator):
         """
         Create a data generator wrapper for TensorFlow. Supported iterators: initializable, reinitializable, feedable.
 
-        :param sess: Tensorflow session.
+        :param sess: TensorFlow session.
         :type sess: `tf.Session`
         :param iterator: Data iterator from TensorFlow.
         :type iterator: `tensorflow.python.data.ops.iterator_ops.Iterator`

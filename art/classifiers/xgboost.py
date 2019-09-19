@@ -33,7 +33,7 @@ class XGBoostClassifier(Classifier, ClassifierDecisionTree):
     Wrapper class for importing XGBoost models.
     """
 
-    def __init__(self, model=None, clip_values=None, defences=None, preprocessing=None, num_features=None,
+    def __init__(self, model=None, clip_values=None, defences=None, preprocessing=None, nb_features=None,
                  nb_classes=None):
         """
         Create a `Classifier` instance from a XGBoost model.
@@ -49,9 +49,9 @@ class XGBoostClassifier(Classifier, ClassifierDecisionTree):
                used for data preprocessing. The first value will be subtracted from the input. The input will then
                be divided by the second one.
         :type preprocessing: `tuple`
-        :param num_features: The number of features in the training data. Only used if it cannot be extracted from
+        :param nb_features: The number of features in the training data. Only used if it cannot be extracted from
                              model.
-        :type num_features: `int` or `None`
+        :type nb_features: `int` or `None`
         :param nb_classes: The number of classes in the training data. Only used if it cannot be extracted from model.
         :type nb_classes: `int` or `None`
         """
@@ -63,7 +63,7 @@ class XGBoostClassifier(Classifier, ClassifierDecisionTree):
         super(XGBoostClassifier, self).__init__(clip_values=clip_values, defences=defences, preprocessing=preprocessing)
 
         self._model = model
-        self._input_shape = (num_features,)
+        self._input_shape = (nb_features,)
         self._nb_classes = nb_classes
 
     def fit(self, x, y, **kwargs):
@@ -90,7 +90,7 @@ class XGBoostClassifier(Classifier, ClassifierDecisionTree):
 
         :param x: Test set.
         :type x: `np.ndarray`
-        :return: Array of predictions of shape `(nb_inputs, self.nb_classes)`.
+        :return: Array of predictions of shape `(nb_inputs, nb_classes)`.
         :rtype: `np.ndarray`
         """
         from xgboost import Booster, XGBClassifier

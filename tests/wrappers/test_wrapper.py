@@ -35,7 +35,7 @@ NB_TRAIN = 500
 NB_TEST = 100
 
 
-@unittest.skipIf(tf.__version__[0] == '2', reason='Skip unittests for Tensorflow v2 until Keras supports Tensorflow'
+@unittest.skipIf(tf.__version__[0] == '2', reason='Skip unittests for TensorFlow v2 until Keras supports TensorFlow'
                                                   ' v2 as backend.')
 class TestMixinWKerasClassifier(unittest.TestCase):
     @classmethod

@@ -17,9 +17,9 @@ the ART classifier. The parameters are chosen for reduced computational requirem
 for accuracy.
 
 
-Tensorflow
+TensorFlow
 ^^^^^^^^^^
-`get_started_tensorflow.py`_ demonstrates a simple example of using ART with Tensorflow v1.x.
+`get_started_tensorflow.py`_ demonstrates a simple example of using ART with TensorFlow v1.x.
 
 Keras
 ^^^^^

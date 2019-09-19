@@ -85,7 +85,7 @@ def main():
     # End-to-end method:
     print("------------------- Results using size metric -------------------")
     print(defence.get_params())
-    defence.detect_poison(n_clusters=2, ndims=10, reduce="PCA")
+    defence.detect_poison(nb_clusters=2, nb_dims=10, reduce="PCA")
 
     # Evaluate method when ground truth is known:
     is_clean = (is_poison_train == 0)
@@ -115,7 +115,7 @@ def main():
     # Try again using distance analysis this time:
     print("------------------- Results using distance metric -------------------")
     print(defence.get_params())
-    defence.detect_poison(n_clusters=2, ndims=10, reduce="PCA", cluster_analysis='distance')
+    defence.detect_poison(nb_clusters=2, nb_dims=10, reduce="PCA", cluster_analysis='distance')
     confusion_matrix = defence.evaluate_defence(is_clean)
     print("Evaluation defence results for distance-based metric: ")
     jsonObject = json.loads(confusion_matrix)
@@ -124,12 +124,15 @@ def main():
         pprint.pprint(jsonObject[label])
 
     # Other ways to invoke the defence:
-    defence.cluster_activations(n_clusters=2, ndims=10, reduce='PCA')
+    kwargs = {'nb_clusters': 2, 'nb_dims': 10, 'reduce': 'PCA'}
+    defence.cluster_activations(**kwargs)
 
-    defence.analyze_clusters(cluster_analysis='distance')
+    kwargs = {'cluster_analysis': 'distance'}
+    defence.analyze_clusters(**kwargs)
     defence.evaluate_defence(is_clean)
 
-    defence.analyze_clusters(cluster_analysis='smaller')
+    kwargs = {'cluster_analysis': 'smaller'}
+    defence.analyze_clusters(**kwargs)
     defence.evaluate_defence(is_clean)
 
     print("done :) ")

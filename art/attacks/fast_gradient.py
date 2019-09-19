@@ -53,22 +53,22 @@ class FastGradientMethod(Attack):
 
         :param classifier: A trained classifier.
         :type classifier: :class:`.Classifier`
-        :param norm: Order of the norm. Possible values: np.inf, 1 or 2.
+        :param norm: The norm of the adversarial perturbation. Possible values: np.inf, 1 or 2.
         :type norm: `int`
         :param eps: Attack step size (input variation)
         :type eps: `float`
         :param eps_step: Step size of input variation for minimal perturbation computation
         :type eps_step: `float`
-        :param targeted: Should the attack target one specific class
+        :param targeted: Indicates whether the attack is targeted (True) or untargeted (False)
         :type targeted: `bool`
         :param num_random_init: Number of random initialisations within the epsilon ball. For random_init=0 starting at
             the original input.
         :type num_random_init: `int`
-        :param batch_size: Batch size
+        :param batch_size: Size of the batch on which adversarial samples are generated.
         :type batch_size: `int`
-        :param minimal: Flag to compute the minimal perturbation.
+        :param minimal: Indicates if computing the minimal perturbation (True). If True, also define `eps_step` for
+                        the step size and eps for the maximum perturbation.
         :type minimal: `bool`
-
         """
         super(FastGradientMethod, self).__init__(classifier)
         if not isinstance(classifier, ClassifierGradients):
@@ -138,7 +138,7 @@ class FastGradientMethod(Attack):
         :return: An array holding the adversarial examples.
         :rtype: `np.ndarray`
         """
-        y = check_and_transform_label_format(y, self.classifier.nb_classes)
+        y = check_and_transform_label_format(y, self.classifier.nb_classes())
 
         if y is None:
             # Throw error if attack is targeted, but no targets are provided

@@ -105,8 +105,7 @@ class AdversarialTrainer:
         for attack in self.attacks:
             if 'targeted' in attack.attack_params:
                 if attack.targeted:
-                    raise NotImplementedError("Adversarial training with targeted attacks is \
-                                               currently not implemented")
+                    raise NotImplementedError("Adversarial training with targeted attacks is currently not implemented")
 
             if attack.classifier != self.classifier:
                 if not logged:
@@ -188,8 +187,7 @@ class AdversarialTrainer:
         for attack in self.attacks:
             if 'targeted' in attack.attack_params:
                 if attack.targeted:
-                    raise NotImplementedError("Adversarial training with targeted attacks is \
-                                               currently not implemented")
+                    raise NotImplementedError("Adversarial training with targeted attacks is currently not implemented")
 
             if attack.classifier != self.classifier:
                 if not logged:

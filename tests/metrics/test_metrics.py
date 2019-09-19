@@ -30,7 +30,7 @@ import torch.nn as nn
 import torch.nn.functional as f
 import torch.optim as optim
 
-from art.classifiers import KerasClassifier, PyTorchClassifier, TensorflowClassifier
+from art.classifiers import KerasClassifier, PyTorchClassifier, TensorFlowClassifier
 from art.metrics.metrics import empirical_robustness, clever_t, clever_u, clever, loss_sensitivity
 from art.utils import load_mnist, master_seed
 
@@ -145,7 +145,7 @@ class TestClever(unittest.TestCase):
     @staticmethod
     def _create_tfclassifier():
         """
-        To create a simple TensorflowClassifier for testing.
+        To create a simple TensorFlowClassifier for testing.
         :return:
         """
         import tensorflow as tf
@@ -175,7 +175,7 @@ class TestClever(unittest.TestCase):
         sess.run(tf.global_variables_initializer())
 
         # Create the classifier
-        tfc = TensorflowClassifier(input_ph=input_ph, output=logits, labels_ph=labels_ph, train=train, loss=loss,
+        tfc = TensorFlowClassifier(input_ph=input_ph, output=logits, labels_ph=labels_ph, train=train, loss=loss,
                                    learning=None, sess=sess, clip_values=(0, 1))
 
         return tfc

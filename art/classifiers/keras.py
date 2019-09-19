@@ -58,9 +58,13 @@ class KerasClassifier(ClassifierNeuralNetwork, ClassifierGradients, Classifier):
                used for data preprocessing. The first value will be subtracted from the input. The input will then
                be divided by the second one.
         :type preprocessing: `tuple`
-        :param input_layer: Which layer to consider as the input when the model has multiple input layers.
+        :param input_layer: The index of the layer to consider as input for models with multiple input layers. The layer
+                            with this index will be considered for computing gradients. For models with only one input
+                            layer this values is not required.
         :type input_layer: `int`
-        :param output_layer: Which layer to consider as the output when the model has multiple output layers.
+        :param output_layer: Which layer to consider as the output when the models has multiple output layers. The layer
+                             with this index will be considered for computing gradients. For models with only one output
+                             layer this values is not required.
         :type output_layer: `int`
         """
         super(KerasClassifier, self).__init__(clip_values=clip_values, defences=defences,
@@ -97,7 +101,7 @@ class KerasClassifier(ClassifierNeuralNetwork, ClassifierGradients, Classifier):
         if self.is_tensorflow:
             import tensorflow as tf
             if tf.executing_eagerly():
-                raise ValueError('Tensorflow is executing eagerly. Please disable eager execution.')
+                raise ValueError('TensorFlow is executing eagerly. Please disable eager execution.')
             import tensorflow.keras as keras
             import tensorflow.keras.backend as k
         else:
@@ -163,7 +167,7 @@ class KerasClassifier(ClassifierNeuralNetwork, ClassifierGradients, Classifier):
             predictions = self._output
             loss_ = loss_function(label_ph, self._output, from_logits=use_logits)
 
-        # recent Tensorflow version does not allow a model with an output same as the input.
+        # recent TensorFlow version does not allow a model with an output same as the input.
         if predictions == self._input:
             predictions = k.identity(predictions)
 
@@ -264,7 +268,7 @@ class KerasClassifier(ClassifierNeuralNetwork, ClassifierGradients, Classifier):
         :type x: `np.ndarray`
         :param batch_size: Size of batches.
         :type batch_size: `int`
-        :return: Array of predictions of shape `(nb_inputs, self.nb_classes)`.
+        :return: Array of predictions of shape `(nb_inputs, nb_classes)`.
         :rtype: `np.ndarray`
         """
         from art import NUMPY_DTYPE

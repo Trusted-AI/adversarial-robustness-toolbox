@@ -120,15 +120,24 @@ class TestVirtualAdversarial(unittest.TestCase):
         x_test, y_test = x_test[:NB_TEST], y_test[:NB_TEST]
 
         df = VirtualAdversarialMethod(classifier, batch_size=100)
-        x_test_adv = df.generate(x_test)
 
-        self.assertFalse((x_test == x_test_adv).all())
+        from art.classifiers import TensorFlowClassifier
+        if isinstance(classifier, TensorFlowClassifier):
+            with self.assertRaises(TypeError) as context:
+                x_test_adv = df.generate(x_test)
 
-        y_pred = get_labels_np_array(classifier.predict(x_test_adv))
-        self.assertFalse((y_test == y_pred).all())
+            self.assertIn('This attack requires a classifier predicting probabilities in the range [0, 1] as output.'
+                          'Values smaller than 0.0 or larger than 1.0 have been detected.', str(context.exception))
+        else:
+            x_test_adv = df.generate(x_test)
 
-        acc = np.sum(np.argmax(y_pred, axis=1) == np.argmax(y_test, axis=1)) / y_test.shape[0]
-        logging.info('Accuracy on adversarial examples: %.2f%%', (acc * 100))
+            self.assertFalse((x_test == x_test_adv).all())
+
+            y_pred = get_labels_np_array(classifier.predict(x_test_adv))
+            self.assertFalse((y_test == y_pred).all())
+
+            acc = np.sum(np.argmax(y_pred, axis=1) == np.argmax(y_test, axis=1)) / y_test.shape[0]
+            logging.info('Accuracy on adversarial examples: %.2f%%', (acc * 100))
 
     def test_classifier_type_check_fail_classifier(self):
         # Use a useless test classifier to test basic classifier properties
@@ -236,6 +245,30 @@ class TestVirtualAdversarialVectors(unittest.TestCase):
     #     self.assertFalse((np.argmax(y_test, axis=1) == preds_adv).all())
     #     acc = np.sum(preds_adv == np.argmax(y_test, axis=1)) / y_test.shape[0]
     #     logger.info('Accuracy on Iris with VAT adversarial examples: %.2f%%', (acc * 100))
+
+    def test_iris_tf(self):
+        (_, _), (x_test, y_test) = self.iris
+        classifier, _ = get_iris_classifier_tf()
+
+        attack = VirtualAdversarialMethod(classifier, eps=.1)
+
+        with self.assertRaises(TypeError) as context:
+            x_test_adv = attack.generate(x_test)
+
+        self.assertIn('This attack requires a classifier predicting probabilities in the range [0, 1] as output.'
+                      'Values smaller than 0.0 or larger than 1.0 have been detected.', str(context.exception))
+
+    def test_iris_pt(self):
+        (_, _), (x_test, y_test) = self.iris
+        classifier = get_iris_classifier_pt()
+
+        attack = VirtualAdversarialMethod(classifier, eps=.1)
+
+        with self.assertRaises(TypeError) as context:
+            x_test_adv = attack.generate(x_test.astype(np.float32))
+
+        self.assertIn('This attack requires a classifier predicting probabilities in the range [0, 1] as output.'
+                      'Values smaller than 0.0 or larger than 1.0 have been detected.', str(context.exception))
 
 
 if __name__ == '__main__':

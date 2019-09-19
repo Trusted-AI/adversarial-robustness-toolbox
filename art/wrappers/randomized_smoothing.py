@@ -58,7 +58,8 @@ class RandomizedSmoothing(ClassifierWrapper, ClassifierGradients, Classifier):
         self.scale = scale
         self.alpha = alpha
 
-    def predict(self, x, batch_size=128, is_abstain=True):
+    # pylint: disable=W0221
+    def predict(self, x, batch_size=128, is_abstain=True, **kwargs):
         """
         Perform prediction of the given classifier for a batch of inputs, taking an expectation over transformations.
 
@@ -68,7 +69,7 @@ class RandomizedSmoothing(ClassifierWrapper, ClassifierGradients, Classifier):
         :type batch_size: `int`
         :param is_abstain: True if function will abstain from prediction and return 0s
         :type is_abstain: `boolean`
-        :return: Array of predictions of shape `(nb_inputs, self.nb_classes)`.
+        :return: Array of predictions of shape `(nb_inputs, nb_classes)`.
         :rtype: `np.ndarray`
         """
         from scipy.stats import binom_test

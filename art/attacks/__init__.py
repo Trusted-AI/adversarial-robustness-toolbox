@@ -13,7 +13,7 @@ from art.attacks.iterative_method import BasicIterativeMethod
 from art.attacks.newtonfool import NewtonFool
 from art.attacks.saliency_map import SaliencyMapMethod
 from art.attacks.spatial_transformation import SpatialTransformation
-from art.attacks.svm_attack import SVMAttack
+from art.attacks.poisoning_attack_svm import PoisoningAttackSVM
 from art.attacks.universal_perturbation import UniversalPerturbation
 from art.attacks.virtual_adversarial import VirtualAdversarialMethod
 from art.attacks.zoo import ZooAttack

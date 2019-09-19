@@ -26,15 +26,15 @@ PyTorch Wrapper
    :members:
    :special-members:
 
-Tensorflow Wrapper
+TensorFlow Wrapper
 ------------------
-.. autoclass:: TensorflowClassifier
+.. autoclass:: TensorFlowClassifier
    :members:
    :special-members:
 
-Tensorflow v2 Wrapper
+TensorFlow v2 Wrapper
 ---------------------
-.. autoclass:: TensorflowV2Classifier
+.. autoclass:: TensorFlowV2Classifier
    :members:
    :special-members:
 
