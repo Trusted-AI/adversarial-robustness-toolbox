@@ -1,4 +1,4 @@
-keras
+keras==2.2.5
 h5py
 mxnet
 Pillow
