@@ -125,7 +125,7 @@ bash run_tests.sh
 ## Get Started with ART
 
 Examples of using ART can be found in `examples` and [examples/README.md](examples/README.md) provides an overview and 
-additional information. It contains a minimal example for each machine learning framework. All examples cna be run with 
+additional information. It contains a minimal example for each machine learning framework. All examples can be run with
 the following command:
 ```bash
 python examples/<example_name>.py
