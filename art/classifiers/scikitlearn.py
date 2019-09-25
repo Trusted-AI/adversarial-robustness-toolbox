@@ -738,7 +738,15 @@ class ScikitlearnLogisticRegression(ScikitlearnClassifier, ClassifierGradients):
 
         y_pred = self._model.predict_proba(X=x_preprocessed)
         weights = self._model.coef_
-        w_weighted = np.matmul(y_pred, weights)
+
+        if self.nb_classes() > 2:
+            w_weighted = np.matmul(y_pred, weights)
+
+        def _f_class_gradient(i_class, i_sample):
+            if self.nb_classes() == 2:
+                return (-1.)**(i_class + 1.0) * y_pred[i_sample, 0] * y_pred[i_sample, 1] * weights[0, :]
+            else:
+                return weights[i_class, :] - w_weighted[i_sample, :]
 
         if label is None:
             # Compute the gradients w.r.t. all classes
@@ -747,7 +755,7 @@ class ScikitlearnLogisticRegression(ScikitlearnClassifier, ClassifierGradients):
             for i_class in range(self.nb_classes()):
                 class_gradient = np.zeros(x.shape)
                 for i_sample in range(nb_samples):
-                    class_gradient[i_sample, :] += (weights[i_class, :] - w_weighted[i_sample, :])
+                    class_gradient[i_sample, :] += _f_class_gradient(i_class, i_sample)
                 class_gradients.append(class_gradient)
 
             gradients = np.swapaxes(np.array(class_gradients), 0, 1)
@@ -756,7 +764,7 @@ class ScikitlearnLogisticRegression(ScikitlearnClassifier, ClassifierGradients):
             # Compute the gradients only w.r.t. the provided label
             class_gradient = np.zeros(x.shape)
             for i_sample in range(nb_samples):
-                class_gradient[i_sample, :] += (weights[label, :] - w_weighted[i_sample, :])
+                class_gradient[i_sample, :] +=  _f_class_gradient(label, i_sample)
 
             gradients = np.swapaxes(np.array([class_gradient]), 0, 1)
 
@@ -771,7 +779,7 @@ class ScikitlearnLogisticRegression(ScikitlearnClassifier, ClassifierGradients):
                 for i_sample in range(nb_samples):
                     # class_gradient[i_sample, :] += label[i_sample, unique_label] * (weights[unique_label, :]
                     # - w_weighted[i_sample, :])
-                    class_gradient[i_sample, :] += (weights[unique_label, :] - w_weighted[i_sample, :])
+                    class_gradient[i_sample, :] +=  _f_class_gradient(unique_label, i_sample)
 
                 class_gradients.append(class_gradient)
 
