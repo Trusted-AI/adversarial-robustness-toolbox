@@ -81,7 +81,7 @@ class RONIDefense(PoisonFilteringDefence):
         self.x_quiz = np.copy(self.x_train[quiz_idx])
         self.y_quiz = np.copy(self.y_train[quiz_idx])
         if self.calibrated:
-            _, self.x_cal, _, self.y_cal = train_test_split(np.copy(self.x_train), np.copy(self.y_train),
+            _, self.x_cal, _, self.y_cal = train_test_split(self.x_train, self.y_train,
                                                             test_size=pp_cal, shuffle=True)
         self.eps = eps
         self.evaluator = GroundTruthEvaluator()
