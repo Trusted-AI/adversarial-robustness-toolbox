@@ -185,12 +185,10 @@ class RONIDefense(PoisonFilteringDefence):
         :rtype: (`float`, `float`)
         """
         accs = []
-        x_trusted = self.x_val
-        y_trusted = self.y_val
 
         for x_c, y_c in zip(self.x_cal, self.y_cal):
             after_classifier = deepcopy(before_classifier)
-            after_classifier.fit(x=np.vstack([x_trusted, x_c]), y=np.vstack([y_trusted, y_c]))
+            after_classifier.fit(x=np.vstack([self.x_val, x_c]), y=np.vstack([self.y_val, y_c]))
             accs.append(performance_diff(before_classifier, after_classifier, self.x_quiz, self.y_quiz,
                                          perf_function=self.perf_func))
 
