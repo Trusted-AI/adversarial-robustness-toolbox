@@ -127,10 +127,10 @@ class RONIDefense(PoisonFilteringDefence):
         """
         self.set_params(**kwargs)
 
-        x_suspect = np.copy(self.x_train)
-        y_suspect = np.copy(self.y_train)
-        x_trusted = np.copy(self.x_val)
-        y_trusted = np.copy(self.y_val)
+        x_suspect = self.x_train
+        y_suspect = self.y_train
+        x_trusted = self.x_val
+        y_trusted = self.y_val
 
         self.is_clean_lst = [1 for _ in range(len(x_suspect))]
         report = {}
