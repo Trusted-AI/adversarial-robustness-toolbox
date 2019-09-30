@@ -138,7 +138,7 @@ class RONIDefense(PoisonFilteringDefence):
         before_classifier = deepcopy(self.classifier)
         before_classifier.fit(x_suspect, y_suspect)
 
-        for i, idx in enumerate(np.random.permutation(len(x_suspect))):
+        for idx in np.random.permutation(len(x_suspect)):
             x_i = x_suspect[idx]
             y_i = y_suspect[idx]
 
