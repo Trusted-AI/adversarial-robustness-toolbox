@@ -31,7 +31,7 @@ import numpy as np
 
 from art.poison_detection.ground_truth_evaluator import GroundTruthEvaluator
 from art.poison_detection.poison_filtering_defence import PoisonFilteringDefence
-from art.poison_detection.utils import performance_diff
+from art.utils import performance_diff
 
 from copy import deepcopy
 

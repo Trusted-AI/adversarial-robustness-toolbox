@@ -30,7 +30,7 @@ import numpy as np
 from art.poison_detection.clustering_analyzer import ClusteringAnalyzer
 from art.poison_detection.ground_truth_evaluator import GroundTruthEvaluator
 from art.poison_detection.poison_filtering_defence import PoisonFilteringDefence
-from art.poison_detection.utils import segment_by_class
+from art.utils import segment_by_class
 from art.visualization import create_sprite, save_image, plot_3d
 
 logger = logging.getLogger(__name__)
