@@ -105,8 +105,9 @@ class BinaryInputDetector(ClassifierNeuralNetwork, ClassifierGradients, Classifi
     def channel_index(self):
         return self.detector.channel_index
 
+    @property
     def learning_phase(self):
-        return self.detector.learning_phase
+        return self.detector._learning_phase
 
     def class_gradient(self, x, label=None, **kwargs):
         return self.detector.class_gradient(x, label=label)
@@ -226,8 +227,9 @@ class BinaryActivationDetector(ClassifierNeuralNetwork, ClassifierGradients, Cla
     def channel_index(self):
         return self.detector.channel_index
 
+    @property
     def learning_phase(self):
-        return self.detector.learning_phase
+        return self.detector._learning_phase
 
     @property
     def layer_names(self):
