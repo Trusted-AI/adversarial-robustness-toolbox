@@ -276,9 +276,7 @@ class RobustnessVerificationTreeModelsCliqueMethod:
             else:
                 resulting_distance += distance
 
-        if norm in [0, np.inf]:
-            resulting_distance = resulting_distance
-        else:
+        if norm not in [0, np.inf]:
             resulting_distance = pow(resulting_distance, 1.0 / norm)
 
         return resulting_distance

@@ -7,7 +7,6 @@ from os.path import abspath
 
 sys.path.append(abspath('.'))
 
-import keras.backend as k
 from keras.models import Model, Sequential
 from keras.layers import Input, Dense, Flatten, Conv2D, MaxPooling2D, Dropout
 import numpy as np
