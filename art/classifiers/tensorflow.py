@@ -742,7 +742,7 @@ class TensorFlowV2Classifier(ClassifierNeuralNetwork, ClassifierGradients, Class
         x_preprocessed, _ = self._apply_preprocessing(x, y=None, fit=False)
 
         # Compute the gradients
-        if tf.executing_eagerly:
+        if tf.executing_eagerly():
             if label is None:
                 # Compute the gradients w.r.t. all classes
                 class_gradients = list()
@@ -813,7 +813,7 @@ class TensorFlowV2Classifier(ClassifierNeuralNetwork, ClassifierGradients, Class
         # Apply preprocessing
         x_preprocessed, _ = self._apply_preprocessing(x, y, fit=False)
 
-        if tf.executing_eagerly:
+        if tf.executing_eagerly():
             with tf.GradientTape() as tape:
                 x_preprocessed_tf = tf.convert_to_tensor(x_preprocessed)
                 tape.watch(x_preprocessed_tf)
