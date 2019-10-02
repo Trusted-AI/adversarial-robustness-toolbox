@@ -835,10 +835,9 @@ class ScikitlearnLogisticRegression(ScikitlearnClassifier, ClassifierGradients):
         # Consider the special case of a binary logistic regression model:
         if self.nb_classes() == 2:
             for i_sample in range(num_samples):
-                if self.nb_classes() == 2:
-                    gradients[i_sample, :] += (class_weight[1] * (1.0 - y_preprocessed[i_sample, 1]) -
-                                               class_weight[0] * (1.0 - y_preprocessed[i_sample, 0])) * (
-                                               y_pred[i_sample, 0] * y_pred[i_sample, 1] * weights[0, :])
+                gradients[i_sample, :] += (class_weight[1] * (1.0 - y_preprocessed[i_sample, 1]) -
+                                           class_weight[0] * (1.0 - y_preprocessed[i_sample, 0])) * (
+                                           y_pred[i_sample, 0] * y_pred[i_sample, 1] * weights[0, :])
         else:
             w_weighted = np.matmul(y_pred, weights)
 
