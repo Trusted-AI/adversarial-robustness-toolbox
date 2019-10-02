@@ -533,14 +533,14 @@ class ScikitlearnExtraTreesClassifier(ScikitlearnClassifier, ClassifierDecisionT
             #     else:
             #         class_label = i_tree % num_classes
 
-            decision_tree_classifier = ScikitlearnExtraTreeClassifier(model=decision_tree_model)
+            extra_tree_classifier = ScikitlearnExtraTreeClassifier(model=decision_tree_model)
 
             for i_class in range(self._model.n_classes_):
                 class_label = i_class
 
                 # pylint: disable=W0212
                 trees.append(Tree(class_id=class_label,
-                                  leaf_nodes=decision_tree_classifier._get_leaf_nodes(0, i_tree, class_label, box)))
+                                  leaf_nodes=extra_tree_classifier._get_leaf_nodes(0, i_tree, class_label, box)))
 
         return trees
 
