@@ -88,7 +88,7 @@ class SubsetScanningDetector(ClassifierNeuralNetwork, ClassifierGradients, Class
         """
 
         bgd_activations = self.sorted_bgd_activations
-        eval_activations = self.classifier.get_activations(eval_x, self._layer_name)
+        eval_activations = self.classifier.get_activations(eval_x, self._layer_name, batch_size=128)
 
         if len(eval_activations.shape) == 4:
             dim2 = eval_activations.shape[1] * eval_activations.shape[2] * eval_activations.shape[3]
