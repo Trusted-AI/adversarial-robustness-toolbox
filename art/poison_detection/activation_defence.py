@@ -484,7 +484,7 @@ class ActivationDefence(PoisonFilteringDefence):
         logger.info('Getting activations')
 
         nb_layers = len(self.classifier.layer_names)
-        activations = self.classifier.get_activations(self.x_train, layer=nb_layers - 1)
+        activations = self.classifier.get_activations(self.x_train, layer=nb_layers - 1, batch_size=128)
 
         # wrong way to get activations activations = self.classifier.predict(self.x_train)
         nodes_last_layer = np.shape(activations)[1]
