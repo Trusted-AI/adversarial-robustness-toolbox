@@ -3,7 +3,6 @@
  and runs activation defence to find poison."""
 from __future__ import absolute_import, division, print_function, unicode_literals
 
-import keras.backend as k
 from keras.models import Sequential
 from keras.layers import Dense, Flatten, Conv2D, MaxPooling2D, Dropout
 import numpy as np

@@ -67,7 +67,7 @@ class BinaryInputDetector(ClassifierNeuralNetwork, ClassifierGradients, Classifi
         """
         self.detector.fit(x, y, batch_size=batch_size, nb_epochs=nb_epochs, **kwargs)
 
-    def predict(self, x, batch_size=128, **kwargs):
+    def predict(self, x, **kwargs):
         """
         Perform detection of adversarial data and return prediction as tuple.
 
@@ -79,6 +79,7 @@ class BinaryInputDetector(ClassifierNeuralNetwork, ClassifierGradients, Classifi
                  Return variable has the same `batch_size` (first dimension) as `x`.
         :rtype: `np.ndarray`
         """
+        batch_size = kwargs['batch_size'] if 'batch_size' in kwargs else 128
         return self.detector.predict(x, batch_size=batch_size)
 
     def fit_generator(self, generator, nb_epochs=20, **kwargs):
@@ -105,8 +106,9 @@ class BinaryInputDetector(ClassifierNeuralNetwork, ClassifierGradients, Classifi
     def channel_index(self):
         return self.detector.channel_index
 
+    @property
     def learning_phase(self):
-        return self.detector.learning_phase
+        return self.detector._learning_phase
 
     def class_gradient(self, x, label=None, **kwargs):
         return self.detector.class_gradient(x, label=label)
@@ -185,7 +187,7 @@ class BinaryActivationDetector(ClassifierNeuralNetwork, ClassifierGradients, Cla
         :type kwargs: `dict`
         :return: `None`
         """
-        x_activations = self.classifier.get_activations(x, self._layer_name)
+        x_activations = self.classifier.get_activations(x, self._layer_name, batch_size)
         self.detector.fit(x_activations, y, batch_size=batch_size, nb_epochs=nb_epochs, **kwargs)
 
     def predict(self, x, batch_size=128, **kwargs):
@@ -200,7 +202,7 @@ class BinaryActivationDetector(ClassifierNeuralNetwork, ClassifierGradients, Cla
                  Return variable has the same `batch_size` (first dimension) as `x`.
         :rtype: `np.ndarray`
         """
-        return self.detector.predict(self.classifier.get_activations(x, self._layer_name))
+        return self.detector.predict(self.classifier.get_activations(x, self._layer_name, batch_size))
 
     def fit_generator(self, generator, nb_epochs=20, **kwargs):
         """
@@ -226,8 +228,9 @@ class BinaryActivationDetector(ClassifierNeuralNetwork, ClassifierGradients, Cla
     def channel_index(self):
         return self.detector.channel_index
 
+    @property
     def learning_phase(self):
-        return self.detector.learning_phase
+        return self.detector._learning_phase
 
     @property
     def layer_names(self):

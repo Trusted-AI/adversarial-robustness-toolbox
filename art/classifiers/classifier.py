@@ -134,7 +134,7 @@ class Classifier(ABC):
         :return: Number of classes in the data.
         :rtype: `int`
         """
-        return self._nb_classes
+        raise NotImplementedError
 
     @abc.abstractmethod
     def save(self, filename, path=None):
@@ -365,15 +365,6 @@ class ClassifierNeuralNetwork(ABC):
         :type train: `bool`
         """
         raise NotImplementedError
-
-    def nb_classes(self):
-        """
-        Return the number of output classes.
-
-        :return: Number of classes in the data.
-        :rtype: `int`
-        """
-        return self._nb_classes
 
     def __repr__(self):
         name = self.__class__.__name__

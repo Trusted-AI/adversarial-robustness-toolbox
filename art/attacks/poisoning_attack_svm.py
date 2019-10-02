@@ -191,12 +191,7 @@ class PoisoningAttackSVM(Attack):
         """
         # pylint: disable=W0212
         preds = self.classifier._model.predict(vec)
-        one = 1
-        zero = 0
-        signs = np.zeros(preds.shape[0], )
-        signs[preds == one] = 1
-        signs[preds == zero] = -1
-        return signs
+        return 2 * preds - 1
 
     def attack_gradient(self, attack_point):
         """
@@ -229,9 +224,8 @@ class PoisoningAttackSVM(Attack):
         zeta = np.matmul(qss_inv, support_labels)
         zeta = np.matmul(support_labels.T, zeta)
         nu_k = np.matmul(qss_inv, support_labels)
-
         for x_k, y_k in zip(self.x_val, self.y_val):
-            y_k = np.expand_dims(np.argmax(y_k), axis=0)
+            y_k = 2 * np.expand_dims(np.argmax(y_k), axis=0) - 1
 
             q_ks = art_model.q_submatrix(np.array([x_k]), support_vectors)
             m_k = (1.0 / zeta) * np.matmul(q_ks, zeta * qss_inv - np.matmul(nu_k, nu_k.T)) + np.matmul(y_k, nu_k.T)

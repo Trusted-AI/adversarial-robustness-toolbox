@@ -313,32 +313,32 @@ class KerasClassifier(ClassifierNeuralNetwork, ClassifierGradients, Classifier):
         gen = generator_fit(x_preprocessed, y_preprocessed, batch_size)
         self._model.fit_generator(gen, steps_per_epoch=x_preprocessed.shape[0] / batch_size, epochs=nb_epochs, **kwargs)
 
-    def fit_generator(self, generator, nb_epochs=20, **kwargs):
-        """
-        Fit the classifier using the generator that yields batches as specified.
-
-        :param generator: Batch generator providing `(x, y)` for each epoch. If the generator can be used for native
-                          training in Keras, it will.
-        :type generator: :class:`.DataGenerator`
-        :param nb_epochs: Number of epochs to use for training.
-        :type nb_epochs: `int`
-        :param kwargs: Dictionary of framework-specific arguments. These should be parameters supported by the
-               `fit_generator` function in Keras and will be passed to this function as such. Including the number of
-               epochs as part of this argument will result in as error.
-        :type kwargs: `dict`
-        :return: `None`
-        """
-        from art.data_generators import KerasDataGenerator
-
-        # Try to use the generator as a Keras native generator, otherwise use it through the `DataGenerator` interface
-        if isinstance(generator, KerasDataGenerator) and not hasattr(self, 'defences'):
-            try:
-                self._model.fit_generator(generator.generator, epochs=nb_epochs, **kwargs)
-            except ValueError:
-                logger.info('Unable to use data generator as Keras generator. Now treating as framework-independent.')
-                super(KerasClassifier, self).fit_generator(generator, nb_epochs=nb_epochs, **kwargs)
-        else:
-            super(KerasClassifier, self).fit_generator(generator, nb_epochs=nb_epochs, **kwargs)
+    # def fit_generator(self, generator, nb_epochs=20, **kwargs):
+    #     """
+    #     Fit the classifier using the generator that yields batches as specified.
+    #
+    #     :param generator: Batch generator providing `(x, y)` for each epoch. If the generator can be used for native
+    #                       training in Keras, it will.
+    #     :type generator: :class:`.DataGenerator`
+    #     :param nb_epochs: Number of epochs to use for training.
+    #     :type nb_epochs: `int`
+    #     :param kwargs: Dictionary of framework-specific arguments. These should be parameters supported by the
+    #            `fit_generator` function in Keras and will be passed to this function as such. Including the number of
+    #            epochs as part of this argument will result in as error.
+    #     :type kwargs: `dict`
+    #     :return: `None`
+    #     """
+    #     from art.data_generators import KerasDataGenerator
+    #
+    #     # Try to use the generator as a Keras native generator, otherwise use it through the `DataGenerator` interface
+    #     if isinstance(generator, KerasDataGenerator) and not hasattr(self, 'defences'):
+    #         try:
+    #             self._model.fit_generator(generator.generator, epochs=nb_epochs, **kwargs)
+    #         except ValueError:
+    #             logger.info('Unable to use data generator as Keras generator. Now treating as framework-independent.')
+    #             super(KerasClassifier, self).fit_generator(generator, nb_epochs=nb_epochs, **kwargs)
+    #     else:
+    #         super(KerasClassifier, self).fit_generator(generator, nb_epochs=nb_epochs, **kwargs)
 
     @property
     def layer_names(self):
@@ -355,7 +355,7 @@ class KerasClassifier(ClassifierNeuralNetwork, ClassifierGradients, Classifier):
         """
         return self._layer_names
 
-    def get_activations(self, x, layer, batch_size=128):
+    def get_activations(self, x, layer, batch_size):
         """
         Return the output of the specified layer for input `x`. `layer` is specified by layer index (between 0 and
         `nb_layers - 1`) or by name. The number of layers can be determined by counting the results returned by
@@ -480,6 +480,15 @@ class KerasClassifier(ClassifierNeuralNetwork, ClassifierGradients, Classifier):
         if isinstance(train, bool):
             self._learning_phase = train
             k.set_learning_phase(int(train))
+
+    def nb_classes(self):
+        """
+        Return the number of output classes.
+
+        :return: Number of classes in the data.
+        :rtype: `int`
+        """
+        return self._nb_classes
 
     def save(self, filename, path=None):
         """

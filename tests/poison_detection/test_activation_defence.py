@@ -133,11 +133,11 @@ class TestActivationDefence(unittest.TestCase):
         sum_clean2 = sum(is_clean_lst)
         self.assertNotEqual(sum_clean1, sum_clean2)
 
-        _, is_clean_lst = self.defence.detect_poison(nb_clusters=2, nb_dims=10, reduce='PCA',
-                                                     cluster_analysis='distance')
+        kwargs = {'nb_clusters': 2, 'nb_dims': 10, 'reduce': 'PCA', 'cluster_analysis': 'distance'}
+        _, is_clean_lst = self.defence.detect_poison(**kwargs)
         sum_dist = sum(is_clean_lst)
-        _, is_clean_lst = self.defence.detect_poison(nb_clusters=2, nb_dims=10, reduce='PCA',
-                                                     cluster_analysis='smaller')
+        kwargs = {'nb_clusters': 2, 'nb_dims': 10, 'reduce': 'PCA', 'cluster_analysis': 'smaller'}
+        _, is_clean_lst = self.defence.detect_poison(**kwargs)
         sum_size = sum(is_clean_lst)
         self.assertNotEqual(sum_dist, sum_size)
 
@@ -145,7 +145,8 @@ class TestActivationDefence(unittest.TestCase):
         # Get MNIST
         (x_train, _), (_, _), (_, _) = self.mnist
 
-        _, _ = self.defence.detect_poison(nb_clusters=2, nb_dims=10, reduce='PCA')
+        kwargs = {'nb_clusters': 2, 'nb_dims': 10, 'reduce': 'PCA'}
+        _, _ = self.defence.detect_poison(**kwargs)
         is_clean = np.zeros(len(x_train))
         self.defence.evaluate_defence(is_clean)
 
