@@ -70,7 +70,7 @@ class SubsetScanningDetector(ClassifierNeuralNetwork, ClassifierGradients, Class
         else:
             raise TypeError('Layer must be of type `str` or `int`.')
 
-        bgd_activations = classifier.get_activations(bgd_data, self._layer_name)
+        bgd_activations = classifier.get_activations(bgd_data, self._layer_name, batch_size=128)
         if len(bgd_activations.shape) == 4:
             dim2 = bgd_activations.shape[1] * bgd_activations.shape[2] * bgd_activations.shape[3]
             bgd_activations = np.reshape(bgd_activations, (bgd_activations.shape[0], dim2))

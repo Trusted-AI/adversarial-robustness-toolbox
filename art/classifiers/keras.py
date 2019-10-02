@@ -355,7 +355,7 @@ class KerasClassifier(ClassifierNeuralNetwork, ClassifierGradients, Classifier):
         """
         return self._layer_names
 
-    def get_activations(self, x, layer, batch_size=128):
+    def get_activations(self, x, layer, batch_size):
         """
         Return the output of the specified layer for input `x`. `layer` is specified by layer index (between 0 and
         `nb_layers - 1`) or by name. The number of layers can be determined by counting the results returned by
