@@ -134,7 +134,7 @@ class Classifier(ABC):
         :return: Number of classes in the data.
         :rtype: `int`
         """
-        return self._nb_classes
+        raise NotImplementedError
 
     @abc.abstractmethod
     def save(self, filename, path=None):
