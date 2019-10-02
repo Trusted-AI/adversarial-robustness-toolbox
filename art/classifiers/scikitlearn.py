@@ -514,7 +514,7 @@ class ScikitlearnExtraTreesClassifier(ScikitlearnClassifier, ClassifierDecisionT
                                                               preprocessing=preprocessing)
         self._model = model
 
-    def get_trees(self):
+    def get_trees(self):  # lgtm [py/similar-function]
         """
         Get the decision trees.
 
@@ -638,7 +638,7 @@ class ScikitlearnRandomForestClassifier(ScikitlearnClassifier):
                                                                 preprocessing=preprocessing)
         self._model = model
 
-    def get_trees(self):
+    def get_trees(self):  # lgtm [py/similar-function]
         """
         Get the decision trees.
 
