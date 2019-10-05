@@ -89,7 +89,8 @@ class CarliniL2Method(Attack):
         if not isinstance(classifier, ClassifierGradients):
             raise (TypeError('For `' + self.__class__.__name__ + '` classifier must be an instance of '
                              '`art.classifiers.classifier.ClassifierGradients`, the provided classifier is instance of '
-                             + str(classifier.__class__.__bases__) + '.'))
+                             + str(classifier.__class__.__bases__) + '. '
+                             ' The classifier needs to provide gradients.'))
 
         kwargs = {'confidence': confidence,
                   'targeted': targeted,
@@ -489,7 +490,8 @@ class CarliniLInfMethod(Attack):
         if not isinstance(classifier, ClassifierGradients):
             raise (TypeError('For `' + self.__class__.__name__ + '` classifier must be an instance of '
                              '`art.classifiers.classifier.ClassifierGradients`, the provided classifier is instance of '
-                             + str(classifier.__class__.__bases__) + '.'))
+                             + str(classifier.__class__.__bases__) + '. '
+                             ' The classifier needs to provide gradients.'))
 
         kwargs = {'confidence': confidence,
                   'targeted': targeted,
