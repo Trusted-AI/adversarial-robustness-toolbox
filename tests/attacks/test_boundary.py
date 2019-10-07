@@ -74,10 +74,18 @@ class TestBoundary(unittest.TestCase):
                                             0.0126, 0.4338, 0.1566, 0.3061, 0., 0.296, 0.8318, 0.7267,
                                             0.2252, 0.074, 0., 0.1208, 0.4362, 0., 0., 0.,
                                             0., 0.0359, 0., 0.1191])
+
+        expected_x_test_adv_3 = np.asarray([0.0671, 0.0644, 0.3012, 0., 0., 0., 0.3407, 0.,
+                                            0.1507, 0.0478, 0.3253, 0., 0.3334, 0.3473, 1., 0.8649,
+                                            0.5639, 0.5198, 0., 0., 0.6173, 0., 0.3116, 0.,
+                                            0.3937, 0.6173, 0., 0.0021])
         try:
             np.testing.assert_array_almost_equal(x_test_adv[2, 14, :, 0], expected_x_test_adv_1, decimal=4)
         except AssertionError:
-            np.testing.assert_array_almost_equal(x_test_adv[2, 14, :, 0], expected_x_test_adv_2, decimal=4)
+            try:
+                np.testing.assert_array_almost_equal(x_test_adv[2, 14, :, 0], expected_x_test_adv_2, decimal=4)
+            except AssertionError:
+                np.testing.assert_array_almost_equal(x_test_adv[2, 14, :, 0], expected_x_test_adv_3, decimal=4)
         self.assertLessEqual(np.max(x_test_adv), 1.0)
         self.assertGreaterEqual(np.min(x_test_adv), 0.0)
 
