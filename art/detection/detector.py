@@ -67,7 +67,7 @@ class BinaryInputDetector(ClassifierNeuralNetwork, ClassifierGradients, Classifi
         """
         self.detector.fit(x, y, batch_size=batch_size, nb_epochs=nb_epochs, **kwargs)
 
-    def predict(self, x, **kwargs):
+    def predict(self, x, batch_size=128, **kwargs):
         """
         Perform detection of adversarial data and return prediction as tuple.
 
@@ -79,7 +79,6 @@ class BinaryInputDetector(ClassifierNeuralNetwork, ClassifierGradients, Classifi
                  Return variable has the same `batch_size` (first dimension) as `x`.
         :rtype: `np.ndarray`
         """
-        batch_size = kwargs['batch_size'] if 'batch_size' in kwargs else 128
         return self.detector.predict(x, batch_size=batch_size)
 
     def fit_generator(self, generator, nb_epochs=20, **kwargs):
