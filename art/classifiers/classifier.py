@@ -79,7 +79,7 @@ class Classifier(ABC):
         super().__init__(**kwargs)
 
     @abc.abstractmethod
-    def predict(self, x, **kwargs):
+    def predict(self, x, **kwargs):  # lgtm [py/inheritance/incorrect-overridden-signature]
         """
         Perform prediction of the classifier for input `x`.
 
@@ -92,7 +92,7 @@ class Classifier(ABC):
         raise NotImplementedError
 
     @abc.abstractmethod
-    def fit(self, x, y, **kwargs):
+    def fit(self, x, y, **kwargs):  # lgtm [py/inheritance/incorrect-overridden-signature]
         """
         Fit the classifier using the training data `(x, y)`.
 
@@ -134,7 +134,7 @@ class Classifier(ABC):
         :return: Number of classes in the data.
         :rtype: `int`
         """
-        return self._nb_classes
+        raise NotImplementedError
 
     @abc.abstractmethod
     def save(self, filename, path=None):
@@ -365,15 +365,6 @@ class ClassifierNeuralNetwork(ABC):
         :type train: `bool`
         """
         raise NotImplementedError
-
-    def nb_classes(self):
-        """
-        Return the number of output classes.
-
-        :return: Number of classes in the data.
-        :rtype: `int`
-        """
-        return self._nb_classes
 
     def __repr__(self):
         name = self.__class__.__name__

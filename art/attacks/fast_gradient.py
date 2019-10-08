@@ -74,7 +74,8 @@ class FastGradientMethod(Attack):
         if not isinstance(classifier, ClassifierGradients):
             raise (TypeError('For `' + self.__class__.__name__ + '` classifier must be an instance of '
                              '`art.classifiers.classifier.ClassifierGradients`, the provided classifier is instance of '
-                             + str(classifier.__class__.__bases__) + '.'))
+                             + str(classifier.__class__.__bases__) + '. '
+                             ' The classifier needs to provide gradients.'))
 
         kwargs = {'norm': norm, 'eps': eps, 'eps_step': eps_step, 'targeted': targeted,
                   'num_random_init': num_random_init, 'batch_size': batch_size, 'minimal': minimal}
@@ -88,8 +89,8 @@ class FastGradientMethod(Attack):
 
         :param x: An array with the original inputs
         :type x: `np.ndarray`
-        :param y:
-        :type y:
+        :param y: Target values (class labels) one-hot-encoded of shape (nb_samples, nb_classes)
+        :type y: `np.ndarray`
         :return: An array holding the adversarial examples
         :rtype: `np.ndarray`
         """

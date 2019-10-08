@@ -4,25 +4,33 @@ from setuptools import find_packages
 with open("README.md", "r") as fh:
     long_description = fh.read()
 
-install_requires = ['numpy',
+install_requires = ['matplotlib',
+                    'numpy',
                     'scipy',
                     'six',
                     'setuptools',
                     'scikit-learn']
 
-tests_require = ['mxnet',
+tests_require = ['keras==2.2.5',
                  'h5py',
-                 'keras',
+                 'mxnet',
                  'Pillow',
                  'requests',
+                 'torch==0.4.0',
                  'tensorflow',
-                 'torch == 0.4.0']
+                 'xgboost',
+                 'lightgbm',
+                 'GPy',
+                 'SciPy',
+                  # Comment out because of compatibility issues with numpy versions
+                  # 'catboost',
+                  'statsmodels']
 
 docs_require = ['sphinx >= 1.4',
                 'sphinx_rtd_theme']
 
 setup(name='Adversarial Robustness Toolbox',
-      version='0.10.0',
+      version='1.0.1',
       description='IBM Adversarial machine learning toolbox',
       long_description=long_description,
       long_description_content_type='text/markdown',
