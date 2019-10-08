@@ -79,7 +79,7 @@ class Classifier(ABC):
         super().__init__(**kwargs)
 
     @abc.abstractmethod
-    def predict(self, x, **kwargs):
+    def predict(self, x, **kwargs):  # lgtm [py/inheritance/incorrect-overridden-signature]
         """
         Perform prediction of the classifier for input `x`.
 
@@ -92,7 +92,7 @@ class Classifier(ABC):
         raise NotImplementedError
 
     @abc.abstractmethod
-    def fit(self, x, y, **kwargs):
+    def fit(self, x, y, **kwargs):  # lgtm [py/inheritance/incorrect-overridden-signature]
         """
         Fit the classifier using the training data `(x, y)`.
 
