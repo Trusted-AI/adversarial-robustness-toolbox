@@ -1,10 +1,11 @@
-keras==2.2.5
+keras
 h5py
 mxnet
 Pillow
 requests
 torch==0.4.0
 tensorflow
+scikit-learn
 xgboost
 lightgbm
 GPy
