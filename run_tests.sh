@@ -12,21 +12,35 @@ python -m unittest discover tests/attacks -p 'test_[q-t]*.py'
 if [[ $? -ne 0 ]]; then exit_code=1; fi
 python -m unittest discover tests/attacks -p 'test_[u-z]*.py'
 if [[ $? -ne 0 ]]; then exit_code=1; fi
+python -m unittest 'tests/classifiers/test_blackbox.py'
+if [[ $? -ne 0 ]]; then exit_code=1; fi
+python -m unittest 'tests/classifiers/test_catboost.py'
+if [[ $? -ne 0 ]]; then exit_code=1; fi
 python -m unittest 'tests/classifiers/test_classifier.py'
 if [[ $? -ne 0 ]]; then exit_code=1; fi
 python -m unittest 'tests/classifiers/test_detector_classifier.py'
 if [[ $? -ne 0 ]]; then exit_code=1; fi
 python -m unittest 'tests/classifiers/test_ensemble.py'
 if [[ $? -ne 0 ]]; then exit_code=1; fi
+python -m unittest 'tests/classifiers/test_GPy.py'
+if [[ $? -ne 0 ]]; then exit_code=1; fi
 python -m unittest 'tests/classifiers/test_keras.py'
+if [[ $? -ne 0 ]]; then exit_code=1; fi
+python -m unittest 'tests/classifiers/test_keras_tf.py'
+if [[ $? -ne 0 ]]; then exit_code=1; fi
+python -m unittest 'tests/classifiers/test_lightgbm.py'
 if [[ $? -ne 0 ]]; then exit_code=1; fi
 python -m unittest 'tests/classifiers/test_mxnet.py'
 if [[ $? -ne 0 ]]; then exit_code=1; fi
 python -m unittest 'tests/classifiers/test_pytorch.py'
 if [[ $? -ne 0 ]]; then exit_code=1; fi
+python -m unittest 'tests/classifiers/test_scikitlearn.py'
+if [[ $? -ne 0 ]]; then exit_code=1; fi
 python -m unittest 'tests/classifiers/test_tensorflow.py'
 if [[ $? -ne 0 ]]; then exit_code=1; fi
 python -m unittest 'tests/classifiers/test_tensorflow_v2.py'
+if [[ $? -ne 0 ]]; then exit_code=1; fi
+python -m unittest 'tests/classifiers/test_xgboost.py'
 if [[ $? -ne 0 ]]; then exit_code=1; fi
 python -m unittest discover tests/defences -p 'test_*.py'
 if [[ $? -ne 0 ]]; then exit_code=1; fi
