@@ -576,9 +576,9 @@ class TestCarliniLInfVectors(TestCarliniL2Vectors):
 
         from art.classifiers.scikitlearn import ScikitlearnLogisticRegression, ScikitlearnSVC
 
-        scikitlearn_test_cases = {LogisticRegression: ScikitlearnLogisticRegression}#,
-                                  # SVC: ScikitlearnSVC,
-                                  # LinearSVC: ScikitlearnSVC}
+        scikitlearn_test_cases = {LogisticRegression: ScikitlearnLogisticRegression}  # ,
+        # SVC: ScikitlearnSVC,
+        # LinearSVC: ScikitlearnSVC}
 
         for (model_class, classifier_class) in scikitlearn_test_cases.items():
             model = model_class()

@@ -29,7 +29,8 @@ from art.utils import load_dataset, random_targets, master_seed, compute_accurac
 from art.utils_test import get_classifier_kr, get_iris_classifier_kr
 from art.wrappers.randomized_smoothing import RandomizedSmoothing
 import os
-os.environ['KMP_DUPLICATE_LIB_OK']='True'
+
+os.environ['KMP_DUPLICATE_LIB_OK'] = 'True'
 logger = logging.getLogger('testLogger')
 
 BATCH_SIZE = 100
@@ -145,13 +146,12 @@ class TestRandomizedSmoothingVectors(unittest.TestCase):
         logger.info('Accuracy on Iris with smoothing: %.2f%%', (acc2 * 100))
         logger.info('Coverage on Iris with smoothing: %.2f%%', (cov2 * 100))
 
-
         # Check basic functionality of RS object
         # check predict
         y_test_smooth = rs.predict(x=x_test)
         self.assertEqual(y_test_smooth.shape, y_test.shape)
         self.assertTrue((np.sum(y_test_smooth, axis=1) <= 1).all())
-        
+
         # check gradients
         grad_smooth1 = rs.loss_gradient(x=x_test, y=y_test)
         grad_smooth2 = rs.class_gradient(x=x_test, label=None)
@@ -159,7 +159,7 @@ class TestRandomizedSmoothingVectors(unittest.TestCase):
         self.assertEqual(grad_smooth1.shape, x_test_adv.shape)
         self.assertEqual(grad_smooth2.shape[0], len(x_test))
         self.assertEqual(grad_smooth3.shape[0], len(x_test))
-        
+
         # check certification
         pred, radius = rs.certify(x=x_test, n=250)
         self.assertEqual(len(pred), len(x_test))

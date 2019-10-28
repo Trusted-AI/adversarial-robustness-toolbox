@@ -16,6 +16,7 @@ matrix:
       env: KERAS_BACKEND=tensorflow TENSORFLOW_V=1.14.0
       script:
         - (pycodestyle --max-line-length=120 art || exit 0) && (pylint -rn art || exit 0)
+        - py.test --pep8 -m pep8
 
 before_install:
   - wget https://repo.continuum.io/miniconda/Miniconda3-latest-Linux-x86_64.sh -O miniconda.sh;

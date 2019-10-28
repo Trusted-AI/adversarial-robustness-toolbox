@@ -24,8 +24,10 @@ import unittest
 import pickle
 
 import tensorflow as tf
+
 if tf.__version__[0] == '2':
     import tensorflow.compat.v1 as tf
+
     tf.disable_eager_execution()
 import numpy as np
 

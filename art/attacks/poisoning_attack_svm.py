@@ -215,7 +215,7 @@ class PoisoningAttackSVM(Attack):
         if not c_idx.any():
             return grad
 
-        c_idx = np.where(c_idx == True)[0][0]
+        c_idx = np.where(c_idx > 0)[0][0]
         alpha_c = model.dual_coef_[0, c_idx]
 
         assert support_labels.shape == (num_support, 1)

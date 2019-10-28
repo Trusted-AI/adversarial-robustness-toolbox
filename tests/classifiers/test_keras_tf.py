@@ -340,7 +340,6 @@ class TestKerasClassifierTF(unittest.TestCase):
         else:
             self.assertAlmostEqual(prediction[0, 178], 0.2658045, places=3)
 
-
     def test_learning_phase(self):
         classifier = get_classifier_kr_tf()
 

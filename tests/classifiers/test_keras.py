@@ -50,6 +50,7 @@ BATCH_SIZE = 10
 NB_TRAIN = 500
 NB_TEST = 100
 
+
 @unittest.skipIf(tf.__version__[0] == '2', reason='Skip unittests for TensorFlow v2 until Keras supports TensorFlow v2 '
                                                   'as backend.')
 class TestKerasClassifier(unittest.TestCase):
