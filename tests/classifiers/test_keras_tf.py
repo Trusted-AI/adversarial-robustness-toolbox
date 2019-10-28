@@ -397,7 +397,10 @@ class TestKerasClassifierTF(unittest.TestCase):
 
     def test_loss_functions(self):
         loss_names = ['categorical_hinge', 'categorical_crossentropy', 'sparse_categorical_crossentropy',
-                      'binary_crossentropy', 'kullback_leibler_divergence', 'cosine_similarity']
+                      'binary_crossentropy', 'kullback_leibler_divergence']
+
+        if tf.__version__[0] != '2':
+            loss_names.append('cosine_similarity')
 
         for loss_name in loss_names:
             print(loss_name)
