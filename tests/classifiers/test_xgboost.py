@@ -47,7 +47,7 @@ class TestXGBoostClassifierBoosterSoftprob(unittest.TestCase):
         evallist = [(train_data, 'train')]
         model = xgb.train(param, train_data, num_round, evallist)
 
-        cls.classifier = XGBoostClassifier(model=model)
+        cls.classifier = XGBoostClassifier(model=model, nb_classes=3)
 
     def test_predict(self):
         y_predicted = self.classifier.predict(self.x_test[0:1])
