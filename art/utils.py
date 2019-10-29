@@ -776,7 +776,7 @@ def segment_by_class(data, classes, num_classes):
 
     :param data: data to be segmented
     :type data: `np.ndarray`
-    :param classes: clesses used to segment data, e.g., segment according to predicted label or to `y_train` or other
+    :param classes: classes used to segment data, e.g., segment according to predicted label or to `y_train` or other
                     array of one hot encodings the same length as data
     :type classes: `np.ndarray`
     :param num_classes: how many features
