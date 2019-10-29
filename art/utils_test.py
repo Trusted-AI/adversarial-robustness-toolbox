@@ -282,6 +282,8 @@ def get_classifier_kr_tf(loss_name='categorical_crossentropy'):
         loss = tf.keras.losses.binary_crossentropy
     elif loss_name == 'kullback_leibler_divergence':
         loss = tf.keras.losses.kullback_leibler_divergence
+    elif loss_name == 'cosine_similarity':
+        loss = tf.keras.losses.cosine_similarity
     elif loss_name == 'cosine_proximity':
         loss = tf.keras.losses.cosine_proximity
     else:
