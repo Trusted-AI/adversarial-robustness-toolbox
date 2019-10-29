@@ -745,8 +745,8 @@ class ScikitlearnLogisticRegression(ScikitlearnClassifier, ClassifierGradients):
         def _f_class_gradient(i_class, i_sample):
             if self.nb_classes() == 2:
                 return (-1.)**(i_class + 1.0) * y_pred[i_sample, 0] * y_pred[i_sample, 1] * weights[0, :]
-            else:
-                return weights[i_class, :] - w_weighted[i_sample, :]
+
+            return weights[i_class, :] - w_weighted[i_sample, :]
 
         if label is None:
             # Compute the gradients w.r.t. all classes
