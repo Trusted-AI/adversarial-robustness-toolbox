@@ -135,16 +135,19 @@ class KerasClassifier(ClassifierNeuralNetwork, ClassifierGradients, Classifier):
         else:
             if isinstance(self._model.loss, six.string_types):
                 loss_function = getattr(k, self._model.loss)
-            elif self._model.loss.__name__ in ['categorical_hinge', 'kullback_leibler_divergence', 'cosine_proximity']:
+            elif self._model.loss.__name__ in ['categorical_hinge', 'kullback_leibler_divergence', 'cosine_proximity',
+                                               'cosine_similarity']:
                 if self.is_tensorflow and self._model.loss.__name__ == 'cosine_proximity':
                     loss_function = tf.keras.losses.cosine_proximity
+                elif self.is_tensorflow and self._model.loss.__name__ == 'cosine_similarity':
+                    loss_function = tf.keras.losses.cosine_similarity
                 else:
                     loss_function = getattr(keras.losses, self._model.loss.__name__)
             else:
                 loss_function = getattr(k, self._model.loss.__name__)
 
         if loss_function.__name__ in ['categorical_hinge', 'categorical_crossentropy', 'binary_crossentropy',
-                                      'kullback_leibler_divergence', 'cosine_proximity']:
+                                      'kullback_leibler_divergence', 'cosine_proximity', 'cosine_similarity']:
             self._reduce_labels = False
             label_ph = k.placeholder(shape=self._output.shape)
         elif loss_function.__name__ in ['sparse_categorical_crossentropy']:
@@ -160,7 +163,8 @@ class KerasClassifier(ClassifierNeuralNetwork, ClassifierGradients, Classifier):
                 and loss_function.__name__ == 'categorical_crossentropy':
             predictions = self._output
             loss_ = loss_function(label_ph, self._output.op.inputs[-1], from_logits=True)
-        elif loss_function.__name__ in ['categorical_hinge', 'cosine_proximity', 'kullback_leibler_divergence']:
+        elif loss_function.__name__ in ['categorical_hinge', 'cosine_proximity', 'cosine_similarity',
+                                        'kullback_leibler_divergence']:
             predictions = self._output
             loss_ = loss_function(label_ph, self._output.op.inputs[-1])
         else:
