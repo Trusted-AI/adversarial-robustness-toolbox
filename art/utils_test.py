@@ -276,18 +276,14 @@ def get_classifier_kr_tf(loss_name='categorical_crossentropy'):
         loss = tf.keras.losses.categorical_hinge
     elif loss_name == 'categorical_crossentropy':
         loss = tf.keras.losses.categorical_crossentropy
-
     elif loss_name == 'sparse_categorical_crossentropy':
         loss = tf.keras.losses.sparse_categorical_crossentropy
-
     elif loss_name == 'binary_crossentropy':
         loss = tf.keras.losses.binary_crossentropy
-
     elif loss_name == 'kullback_leibler_divergence':
         loss = tf.keras.losses.kullback_leibler_divergence
-
-    elif loss_name == 'cosine_similarity':
-        loss = tf.keras.losses.cosine_similarity
+    elif loss_name == 'cosine_proximity':
+        loss = tf.keras.losses.cosine_proximity
     else:
         raise ValueError('Loss name not recognised.')
 
