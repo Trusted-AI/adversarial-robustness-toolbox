@@ -311,7 +311,8 @@ class KerasClassifier(ClassifierNeuralNetwork, ClassifierGradients, Classifier):
             y_preprocessed = np.argmax(y_preprocessed, axis=1)
 
         gen = generator_fit(x_preprocessed, y_preprocessed, batch_size)
-        self._model.fit_generator(gen, steps_per_epoch=x_preprocessed.shape[0] / batch_size, epochs=nb_epochs, **kwargs)
+        steps_per_epoch = min(int(x_preprocessed.shape[0] / batch_size), 1)
+        self._model.fit_generator(gen, steps_per_epoch=steps_per_epoch, epochs=nb_epochs, **kwargs)
 
     # def fit_generator(self, generator, nb_epochs=20, **kwargs):
     #     """
