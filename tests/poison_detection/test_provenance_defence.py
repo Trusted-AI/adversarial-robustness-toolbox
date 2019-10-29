@@ -39,6 +39,7 @@ class TestProvenanceDefence(unittest.TestCase):
 
     @classmethod
     def setUpClass(cls):
+        master_seed(301)
         (x_train, y_train), (x_test, y_test), min_, max_ = load_mnist()
         y_train = np.argmax(y_train, axis=1)
         y_test = np.argmax(y_test, axis=1)
