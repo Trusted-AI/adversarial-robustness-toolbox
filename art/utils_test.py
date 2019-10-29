@@ -250,7 +250,7 @@ def get_classifier_kr_tf(loss_name='categorical_crossentropy'):
     """
     Standard Keras classifier for unit testing
 
-    The weights and biases are identical to the Tensorflow model in get_classifier_tf().
+    The weights and biases are identical to the TensorFlow model in get_classifier_tf().
 
     :return: KerasClassifier, tf.Session()
     """
@@ -309,7 +309,7 @@ def get_classifier_pt():
         """
         Create model for pytorch.
 
-        The weights and biases are identical to the Tensorflow model in get_classifier_tf().
+        The weights and biases are identical to the TensorFlow model in get_classifier_tf().
         """
 
         def __init__(self):
@@ -419,7 +419,7 @@ def get_classifier_mx():
 
 def get_iris_classifier_tf():
     """
-    Standard Tensorflow classifier for unit testing.
+    Standard TensorFlow classifier for unit testing.
 
     The following hyper-parameters were used to obtain the weights and biases:
 
@@ -455,7 +455,7 @@ def get_iris_classifier_tf():
     # Train operator
     loss = tf.reduce_mean(tf.losses.softmax_cross_entropy(logits=logits, onehot_labels=output_ph))
 
-    # Tensorflow session and initialization
+    # TensorFlow session and initialization
     sess = tf.Session()
     sess.run(tf.global_variables_initializer())
 
@@ -468,7 +468,7 @@ def get_iris_classifier_tf():
 
 def get_iris_classifier_kr():
     """
-    Standard Keras classifier for unit testing on Iris dataset. The weights and biases are identical to the Tensorflow
+    Standard Keras classifier for unit testing on Iris dataset. The weights and biases are identical to the TensorFlow
     model in `get_iris_classifier_tf`.
 
     :return: The trained model for Iris dataset and the session.
@@ -516,7 +516,7 @@ def get_iris_classifier_pt():
         """
         Create Iris model for PyTorch.
 
-        The weights and biases are identical to the Tensorflow model in `get_iris_classifier_tf`.
+        The weights and biases are identical to the TensorFlow model in `get_iris_classifier_tf`.
         """
 
         def __init__(self):
