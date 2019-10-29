@@ -13,7 +13,7 @@ python:
 matrix:
   include:
     - python: 3.6
-      env: KERAS_BACKEND=tensorflow TENSORFLOW_V=1.14.0
+      env: KERAS_BACKEND=tensorflow TENSORFLOW_V=1.14.0 KERAS_V=2.2.5
       script:
         - (pycodestyle --max-line-length=120 art || exit 0) && (pylint -rn art || exit 0)
         - py.test --pep8 -m pep8
