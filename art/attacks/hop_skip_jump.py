@@ -92,6 +92,8 @@ class HopSkipJump(Attack):
         :type y: `np.ndarray`
         :param x_adv_init: Initial array to act as initial adversarial examples. Same shape as `x`.
         :type x_adv_init: `np.ndarray`
+        :param resume: Allow users to continue their previous attack.
+        :type resume: `bool`
         :return: An array holding the adversarial examples.
         :rtype: `np.ndarray`
         """
