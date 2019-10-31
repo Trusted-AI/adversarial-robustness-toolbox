@@ -268,6 +268,42 @@ class TestScikitlearnLogisticRegression(unittest.TestCase):
             self.assertAlmostEqual(grad_predicted[0, i], grad_expected[i], 3)
 
 
+class TestScikitlearnBinaryLogisticRegression(unittest.TestCase):
+
+    @classmethod
+    def setUpClass(cls):
+        np.random.seed(seed=1234)
+
+        binary_class_index = (np.argmax(y_train, axis=1) < 2)
+        x_train_binary = x_train[binary_class_index,]
+        y_train_binary = y_train[binary_class_index,][:, [0, 1]]
+
+        sklearn_model = LogisticRegression(verbose=0, C=1, solver='newton-cg', dual=False, fit_intercept=True)
+        cls.classifier = ScikitlearnLogisticRegression(model=sklearn_model)
+        assert (type(cls.classifier) == type(SklearnClassifier(model=sklearn_model)))
+        cls.classifier.fit(x=x_train_binary, y=y_train_binary)
+
+    def test_class_gradient(self):
+        grad_predicted = self.classifier.class_gradient(x_test[0:1], label=None)
+        grad_expected = [[[-0.1428355,  0.12111039, -0.45059183, -0.17579888],
+                          [0.1428355, -0.12111039,  0.45059183,  0.17579888]]]
+
+        for i_class in range(2):
+            for i_shape in range(4):
+                self.assertAlmostEqual(grad_predicted[0, i_class, i_shape], grad_expected[0][i_class][i_shape], 3)
+
+    def test_loss_gradient(self):
+        binary_class_index = (np.argmax(y_test, axis=1) < 2)
+        x_test_binary = x_test[binary_class_index, ]
+        y_test_binary = y_test[binary_class_index, ][:, [0, 1]]
+
+        grad_predicted = self.classifier.loss_gradient(x_test_binary[0:1], y_test_binary[0:1])
+        grad_expected = [-0.25267282, 0.21424159, -0.79708695, -0.31098431]
+
+        for i in range(4):
+            self.assertAlmostEqual(grad_predicted[0, i], grad_expected[i], 3)
+
+
 class TestScikitlearnSVCSVC(unittest.TestCase):
 
     @classmethod

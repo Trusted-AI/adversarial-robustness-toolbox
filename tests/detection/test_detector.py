@@ -139,7 +139,7 @@ class TestBinaryActivationDetector(unittest.TestCase):
         y_train_detector = np.concatenate((np.array([[1, 0]] * NB_TRAIN), np.array([[0, 1]] * NB_TRAIN)), axis=0)
 
         # Create a simple CNN for the detector
-        activation_shape = classifier.get_activations(x_test[:1], 0).shape[1:]
+        activation_shape = classifier.get_activations(x_test[:1], 0, batch_size=128).shape[1:]
         number_outputs = 2
         model = Sequential()
         model.add(MaxPooling2D(pool_size=(2, 2), input_shape=activation_shape))

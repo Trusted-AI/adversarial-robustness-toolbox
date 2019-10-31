@@ -115,8 +115,8 @@ class TestMixinWKerasClassifier(unittest.TestCase):
 
         layer_names = classifier.layer_names
         for i, name in enumerate(layer_names):
-            act_i = classifier.get_activations(x_test, i)
-            act_name = classifier.get_activations(x_test, name)
+            act_i = classifier.get_activations(x_test, i, batch_size=128)
+            act_name = classifier.get_activations(x_test, name, batch_size=128)
             self.assertAlmostEqual(np.sum(act_name - act_i), 0)
 
     def test_save(self):

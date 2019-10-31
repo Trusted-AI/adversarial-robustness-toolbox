@@ -325,8 +325,8 @@ class TestKerasClassifier(unittest.TestCase):
 
         layer_names = classifier.layer_names
         for i, name in enumerate(layer_names):
-            activation_i = classifier.get_activations(self.x_test, i)
-            activation_name = classifier.get_activations(self.x_test, name)
+            activation_i = classifier.get_activations(self.x_test, i, batch_size=128)
+            activation_name = classifier.get_activations(self.x_test, name, batch_size=128)
             np.testing.assert_array_equal(activation_name, activation_i)
 
     def test_resnet(self):
