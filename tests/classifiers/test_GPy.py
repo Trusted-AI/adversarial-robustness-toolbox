@@ -24,14 +24,12 @@ import numpy as np
 import GPy
 
 from art.classifiers import GPyGaussianProcessClassifier
-from art.utils import load_dataset
+from art.utils import load_dataset, master_seed
 
-logger = logging.getLogger('testLogger')
-np.random.seed(seed=1234)
+logger = logging.getLogger(__name__)
 
 
 class TestGPyGaussianProcessClassifier(unittest.TestCase):
-
     @classmethod
     def setUpClass(cls):
         np.random.seed(seed=1234)
@@ -47,6 +45,9 @@ class TestGPyGaussianProcessClassifier(unittest.TestCase):
         m.optimize(messages=True, optimizer='lbfgs')
         # get ART classifier + clean accuracy
         cls.classifier = GPyGaussianProcessClassifier(m)
+
+    def setUp(self):
+        master_seed(1234)
 
     def test_predict(self):
         (_, _), (x_test, y_test) = self.iris
@@ -82,3 +83,7 @@ class TestGPyGaussianProcessClassifier(unittest.TestCase):
         self.assertTrue(np.sum(grads < 0.0) == 1.0)
         self.assertTrue(np.sum(grads > 0.0) == 3.0)
         self.assertTrue(np.argmax(grads) == 1)
+
+
+if __name__ == '__main__':
+    unittest.main()

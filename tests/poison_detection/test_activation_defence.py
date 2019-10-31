@@ -26,7 +26,7 @@ import numpy as np
 from art.poison_detection import ActivationDefence
 from art.utils import load_mnist, master_seed
 
-logger = logging.getLogger('testLogger')
+logger = logging.getLogger(__name__)
 
 NB_TRAIN, NB_TEST, BATCH_SIZE = 300, 10, 128
 

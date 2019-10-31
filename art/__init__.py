@@ -30,10 +30,10 @@ LOGGING = {
         }
     },
     'loggers': {
-        '': {
+        'art': {
             'handlers': ['default']
         },
-        'testLogger': {
+        'tests': {
             'handlers': ['test'],
             'level': 'INFO',
             'propagate': True

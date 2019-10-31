@@ -36,7 +36,7 @@ from art.classifiers import PyTorchClassifier
 from art.utils import load_dataset, master_seed
 from art.utils_test import get_classifier_pt
 
-logger = logging.getLogger('testLogger')
+logger = logging.getLogger(__name__)
 
 NB_TRAIN = 1000
 NB_TEST = 20

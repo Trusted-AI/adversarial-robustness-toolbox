@@ -28,7 +28,7 @@ from art.classifiers import EnsembleClassifier
 from art.utils import load_dataset, master_seed
 from art.utils_test import get_classifier_kr
 
-logger = logging.getLogger('testLogger')
+logger = logging.getLogger(__name__)
 
 BATCH_SIZE = 10
 NB_TRAIN = 500
@@ -139,3 +139,7 @@ class TestEnsembleClassifier(unittest.TestCase):
         self.assertIn('art.classifiers.ensemble.EnsembleClassifier', repr_)
         self.assertIn('classifier_weights=array([0.5, 0.5])', repr_)
         self.assertIn('channel_index=3, clip_values=(0, 1), defences=None, preprocessing=(0, 1)', repr_)
+
+
+if __name__ == '__main__':
+    unittest.main()

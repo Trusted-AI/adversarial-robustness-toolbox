@@ -28,7 +28,7 @@ from art.classifiers import PyTorchClassifier
 from art.defences import PixelDefend
 from art.utils import load_mnist, master_seed
 
-logger = logging.getLogger('testLogger')
+logger = logging.getLogger(__name__)
 
 
 class ModelImage(nn.Module):

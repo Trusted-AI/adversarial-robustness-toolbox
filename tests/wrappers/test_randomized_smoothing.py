@@ -18,6 +18,7 @@
 from __future__ import absolute_import, division, print_function, unicode_literals
 
 import logging
+import os
 import unittest
 
 import numpy as np
@@ -28,9 +29,9 @@ from art.classifiers import KerasClassifier
 from art.utils import load_dataset, random_targets, master_seed, compute_accuracy
 from art.utils_test import get_classifier_kr, get_iris_classifier_kr
 from art.wrappers.randomized_smoothing import RandomizedSmoothing
-import os
-os.environ['KMP_DUPLICATE_LIB_OK']='True'
-logger = logging.getLogger('testLogger')
+
+os.environ['KMP_DUPLICATE_LIB_OK'] = 'True'
+logger = logging.getLogger(__name__)
 
 BATCH_SIZE = 100
 NB_TRAIN = 5000
@@ -132,7 +133,6 @@ class TestRandomizedSmoothingVectors(unittest.TestCase):
         self.assertTrue((x_test_adv <= 1).all())
         self.assertTrue((x_test_adv >= 0).all())
 
-        preds_base = np.argmax(rs.predict(x_test), axis=1)
         preds_smooth = np.argmax(rs.predict(x_test_adv), axis=1)
         self.assertFalse((np.argmax(y_test, axis=1) == preds_smooth).all())
 
@@ -144,7 +144,6 @@ class TestRandomizedSmoothingVectors(unittest.TestCase):
         logger.info('Coverage on Iris with smoothing on adversarial examples: %.2f%%', (cov * 100))
         logger.info('Accuracy on Iris with smoothing: %.2f%%', (acc2 * 100))
         logger.info('Coverage on Iris with smoothing: %.2f%%', (cov2 * 100))
-
 
         # Check basic functionality of RS object
         # check predict
@@ -182,7 +181,6 @@ class TestRandomizedSmoothingVectors(unittest.TestCase):
         self.assertTrue((x_test_adv > 1).any())
         self.assertTrue((x_test_adv < 0).any())
 
-        preds_base = np.argmax(rs.predict(x_test), axis=1)
         preds_smooth = np.argmax(rs.predict(x_test_adv), axis=1)
         self.assertFalse((np.argmax(y_test, axis=1) == preds_smooth).all())
 

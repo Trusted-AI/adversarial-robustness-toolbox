@@ -34,7 +34,7 @@ from art.classifiers import KerasClassifier, PyTorchClassifier, TensorFlowClassi
 from art.metrics.metrics import empirical_robustness, clever_t, clever_u, clever, loss_sensitivity
 from art.utils import load_mnist, master_seed
 
-logger = logging.getLogger('testLogger')
+logger = logging.getLogger(__name__)
 
 BATCH_SIZE = 10
 NB_TRAIN = 100
