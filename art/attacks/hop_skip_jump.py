@@ -97,6 +97,14 @@ class HopSkipJump(Attack):
         """
         y = check_and_transform_label_format(y, self.classifier.nb_classes())
 
+        # Check whether users need a stateful attack
+        resume = kwargs.get('resume')
+
+        if resume is not None and resume:
+            start = self.curr_iter
+        else:
+            start = 0
+
         # Get clip_min and clip_max from the classifier or infer them from data
         if hasattr(self.classifier, 'clip_values') and self.classifier.clip_values is not None:
             clip_min, clip_max = self.classifier.clip_values
@@ -126,6 +134,8 @@ class HopSkipJump(Attack):
 
         # Generate the adversarial samples
         for ind, val in enumerate(x_adv):
+            self.curr_iter = start
+
             if self.targeted:
                 x_adv[ind] = self._perturb(x=val, y=y[ind], y_p=preds[ind], init_pred=init_preds[ind],
                                            adv_init=x_adv_init[ind], clip_min=clip_min, clip_max=clip_max)
