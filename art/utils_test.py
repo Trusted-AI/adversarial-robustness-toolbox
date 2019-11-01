@@ -205,9 +205,10 @@ def get_classifier_kr(loss_name='categorical_crossentropy'):
 
     from art.classifiers import KerasClassifier
 
-    # Initialize a tf session
-    sess = tf.Session()
-    k.set_session(sess)
+    if tf.__version__[0] == '1':
+        # Initialize a tf session
+        sess = tf.Session()
+        k.set_session(sess)
 
     # Create simple CNN
     model = Sequential()
@@ -478,9 +479,10 @@ def get_iris_classifier_kr():
 
     from art.classifiers import KerasClassifier
 
-    # Initialize a tf session
-    sess = tf.Session()
-    k.set_session(sess)
+    if tf.__version__[0] == '1':
+        # Initialize a tf session
+        sess = tf.Session()
+        k.set_session(sess)
 
     # Create simple CNN
     model = Sequential()
@@ -496,7 +498,7 @@ def get_iris_classifier_kr():
     # Get classifier
     krc = KerasClassifier(model, clip_values=(0, 1), use_logits=False, channel_index=1)
 
-    return krc, sess
+    return krc
 
 
 def get_iris_classifier_pt():

@@ -172,8 +172,8 @@ class KerasClassifier(ClassifierNeuralNetwork, ClassifierGradients, Classifier):
             loss_ = loss_function(label_ph, self._output, from_logits=use_logits)
 
         # recent TensorFlow version does not allow a model with an output same as the input.
-        if predictions == self._input:
-            predictions = k.identity(predictions)
+        # if predictions == self._input:
+        #     predictions = k.identity(predictions)
 
         loss_gradients = k.gradients(loss_, self._input)
         if k.backend() == 'tensorflow':

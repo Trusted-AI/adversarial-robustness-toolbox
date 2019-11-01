@@ -20,7 +20,6 @@ from __future__ import absolute_import, division, print_function, unicode_litera
 import logging
 import unittest
 
-import tensorflow as tf
 import numpy as np
 
 from art.poison_detection import ActivationDefence
@@ -31,8 +30,6 @@ logger = logging.getLogger('testLogger')
 NB_TRAIN, NB_TEST, BATCH_SIZE = 300, 10, 128
 
 
-@unittest.skipIf(tf.__version__[0] == '2', reason='Skip unittests for TensorFlow v2 until Keras supports TensorFlow'
-                                                  ' v2 as backend.')
 class TestActivationDefence(unittest.TestCase):
 
     @classmethod
