@@ -295,7 +295,7 @@ class TestFastGradientVectors(unittest.TestCase):
     @unittest.skipIf(tf.__version__[0] == '2', reason='Skip unittests for TensorFlow v2 until Keras supports TensorFlow'
                                                       ' v2 as backend.')
     def test_iris_k_clipped(self):
-        classifier, _ = get_iris_classifier_kr()
+        classifier = get_iris_classifier_kr()
 
         # Test untargeted attack
         attack = FastGradientMethod(classifier, eps=.1)
@@ -325,7 +325,7 @@ class TestFastGradientVectors(unittest.TestCase):
     @unittest.skipIf(tf.__version__[0] == '2', reason='Skip unittests for TensorFlow v2 until Keras supports TensorFlow'
                                                       ' v2 as backend.')
     def test_iris_k_unbounded(self):
-        classifier, _ = get_iris_classifier_kr()
+        classifier = get_iris_classifier_kr()
 
         # Recreate a classifier without clip values
         classifier = KerasClassifier(model=classifier._model, use_logits=False, channel_index=1)

@@ -273,7 +273,7 @@ class TestHopSkipJumpVectors(unittest.TestCase):
                                                       ' v2 as backend.')
     def test_iris_k_clipped(self):
         (_, _), (x_test, y_test) = self.iris
-        classifier, _ = get_iris_classifier_kr()
+        classifier = get_iris_classifier_kr()
 
         # Norm=2
         attack = HopSkipJump(classifier, targeted=False, max_iter=2, max_eval=100, init_eval=10)
@@ -306,7 +306,7 @@ class TestHopSkipJumpVectors(unittest.TestCase):
                                                       ' v2 as backend.')
     def test_iris_k_unbounded(self):
         (_, _), (x_test, y_test) = self.iris
-        classifier, _ = get_iris_classifier_kr()
+        classifier = get_iris_classifier_kr()
 
         # Recreate a classifier without clip values
         classifier = KerasClassifier(model=classifier._model, use_logits=False, channel_index=1)

@@ -173,7 +173,7 @@ class TestUniversalPerturbationVectors(unittest.TestCase):
                                                       ' v2 as backend.')
     def test_iris_k_clipped(self):
         (_, _), (x_test, y_test) = self.iris
-        classifier, _ = get_iris_classifier_kr()
+        classifier = get_iris_classifier_kr()
 
         # Test untargeted attack
         attack_params = {"max_iter": 1, "attacker": "newtonfool", "attacker_params": {"max_iter": 5}}
@@ -193,7 +193,7 @@ class TestUniversalPerturbationVectors(unittest.TestCase):
                                                       ' v2 as backend.')
     def test_iris_k_unbounded(self):
         (_, _), (x_test, y_test) = self.iris
-        classifier, _ = get_iris_classifier_kr()
+        classifier = get_iris_classifier_kr()
 
         # Recreate a classifier without clip values
         classifier = KerasClassifier(model=classifier._model, use_logits=False, channel_index=1)

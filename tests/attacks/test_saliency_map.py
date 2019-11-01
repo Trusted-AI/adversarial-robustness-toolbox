@@ -197,7 +197,7 @@ class TestSaliencyMapVectors(unittest.TestCase):
                                                       ' v2 as backend.')
     def test_iris_k_clipped(self):
         (_, _), (x_test, y_test) = self.iris
-        classifier, _ = get_iris_classifier_kr()
+        classifier = get_iris_classifier_kr()
 
         attack = SaliencyMapMethod(classifier, theta=1)
         x_test_adv = attack.generate(x_test)
@@ -214,7 +214,7 @@ class TestSaliencyMapVectors(unittest.TestCase):
                                                       ' v2 as backend.')
     def test_iris_k_unbounded(self):
         (_, _), (x_test, y_test) = self.iris
-        classifier, _ = get_iris_classifier_kr()
+        classifier = get_iris_classifier_kr()
 
         # Recreate a classifier without clip values
         classifier = KerasClassifier(model=classifier._model, use_logits=False, channel_index=1)

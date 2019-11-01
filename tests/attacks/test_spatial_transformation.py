@@ -140,7 +140,7 @@ class TestSpatialTransformation(unittest.TestCase):
                                                       ' v2 as backend.')
     def test_failure_feature_vectors(self):
         attack_params = {"max_translation": 10.0, "num_translations": 3, "max_rotation": 30.0, "num_rotations": 3}
-        classifier, _ = get_iris_classifier_kr()
+        classifier = get_iris_classifier_kr()
         attack = SpatialTransformation(classifier=classifier)
         attack.set_params(**attack_params)
         data = np.random.rand(10, 4)

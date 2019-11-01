@@ -226,7 +226,7 @@ class TestCarliniL2Vectors(unittest.TestCase):
     @unittest.skipIf(tf.__version__[0] == '2', reason='Skip unittests for Tensorflow v2 until Keras supports Tensorflow'
                                                       ' v2 as backend.')
     def test_iris_k_clipped(self):
-        classifier, _ = get_iris_classifier_kr()
+        classifier = get_iris_classifier_kr()
         attack = CarliniL2Method(classifier, targeted=False, max_iter=10)
         x_test_adv = attack.generate(self.x_test)
         self.assertFalse((self.x_test == x_test_adv).all())
@@ -241,7 +241,7 @@ class TestCarliniL2Vectors(unittest.TestCase):
     @unittest.skipIf(tf.__version__[0] == '2', reason='Skip unittests for Tensorflow v2 until Keras supports Tensorflow'
                                                       ' v2 as backend.')
     def test_iris_k_unbounded(self):
-        classifier, _ = get_iris_classifier_kr()
+        classifier = get_iris_classifier_kr()
 
         # Recreate a classifier without clip values
         classifier = KerasClassifier(model=classifier._model, use_logits=False, channel_index=1)
@@ -501,7 +501,7 @@ class TestCarliniLInfVectors(TestCarliniL2Vectors):
     @unittest.skipIf(tf.__version__[0] == '2', reason='Skip unittests for Tensorflow v2 until Keras supports Tensorflow'
                                                       ' v2 as backend.')
     def test_iris_k_clipped(self):
-        classifier, _ = get_iris_classifier_kr()
+        classifier = get_iris_classifier_kr()
         attack = CarliniLInfMethod(classifier, targeted=False, max_iter=10, eps=0.5)
         x_test_adv = attack.generate(self.x_test)
         self.assertFalse((self.x_test == x_test_adv).all())
@@ -516,7 +516,7 @@ class TestCarliniLInfVectors(TestCarliniL2Vectors):
     @unittest.skipIf(tf.__version__[0] == '2', reason='Skip unittests for Tensorflow v2 until Keras supports Tensorflow'
                                                       ' v2 as backend.')
     def test_iris_k_unbounded(self):
-        classifier, _ = get_iris_classifier_kr()
+        classifier = get_iris_classifier_kr()
 
         # Recreate a classifier without clip values
         classifier = KerasClassifier(model=classifier._model, use_logits=False, channel_index=1)

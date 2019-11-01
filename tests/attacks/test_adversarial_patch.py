@@ -113,7 +113,7 @@ class TestAdversarialPatch(unittest.TestCase):
     def test_failure_feature_vectors(self):
         attack_params = {"rotation_max": 22.5, "scale_min": 0.1, "scale_max": 1.0, "learning_rate": 5.0,
                          "number_of_steps": 5, "batch_size": 10}
-        classifier, _ = get_iris_classifier_kr()
+        classifier = get_iris_classifier_kr()
         attack = AdversarialPatch(classifier=classifier)
         attack.set_params(**attack_params)
         data = np.random.rand(10, 4)
