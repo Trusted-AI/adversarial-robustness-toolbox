@@ -223,16 +223,12 @@ def get_classifier_kr(loss_name='categorical_crossentropy'):
         loss = keras.losses.categorical_hinge
     elif loss_name == 'categorical_crossentropy':
         loss = keras.losses.categorical_crossentropy
-
     elif loss_name == 'sparse_categorical_crossentropy':
         loss = keras.losses.sparse_categorical_crossentropy
-
     elif loss_name == 'binary_crossentropy':
         loss = keras.losses.binary_crossentropy
-
     elif loss_name == 'kullback_leibler_divergence':
         loss = keras.losses.kullback_leibler_divergence
-
     elif loss_name == 'cosine_proximity':
         loss = keras.losses.cosine_proximity
     else:
