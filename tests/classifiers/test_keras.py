@@ -76,7 +76,6 @@ def _functional_model():
     model.compile(loss=keras.losses.categorical_crossentropy, optimizer=keras.optimizers.Adadelta(),
                   metrics=['accuracy'], loss_weights=[1.0, 1.0])
 
-
     return model
 
 
