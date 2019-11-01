@@ -165,7 +165,7 @@ class TestKerasClassifier(unittest.TestCase):
         logger.info('Accuracy: %.2f%%', (accuracy_2 * 100))
 
         self.assertEqual(accuracy, 0.32)
-        self.assertAlmostEqual(accuracy_2, 0.35, delta=0.02)
+        self.assertAlmostEqual(accuracy_2, 0.35, delta=0.04)
 
     def test_fit_kwargs(self):
 
