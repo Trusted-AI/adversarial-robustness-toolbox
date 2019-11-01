@@ -29,7 +29,7 @@ from art.classifiers.scikitlearn import ScikitlearnSVC
 from art.poison_detection.roni import RONIDefense
 from art.utils import load_mnist, master_seed
 
-logger = logging.getLogger('testLogger')
+logger = logging.getLogger(__name__)
 
 NB_TRAIN, NB_POISON, NB_VALID, NB_TRUSTED = 40, 5, 40, 25
 kernel = 'linear'
