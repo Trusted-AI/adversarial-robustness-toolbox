@@ -768,3 +768,74 @@ def preprocess(x, y, nb_classes=10, clip_values=None):
     categorical_y = to_categorical(y, nb_classes)
 
     return normalized_x, categorical_y
+
+
+def segment_by_class(data, classes, num_classes):
+    """
+    Returns segmented data according to specified features.
+
+    :param data: data to be segmented
+    :type data: `np.ndarray`
+    :param classes: classes used to segment data, e.g., segment according to predicted label or to `y_train` or other
+                    array of one hot encodings the same length as data
+    :type classes: `np.ndarray`
+    :param num_classes: how many features
+    :type num_classes:
+    :return: segmented data according to specified features.
+    :rtype: `list`
+    """
+    by_class = [[] for _ in range(num_classes)]
+    for indx, feature in enumerate(classes):
+        if num_classes > 2:
+            assigned = np.argmax(feature)
+        else:
+            assigned = int(feature)
+        by_class[assigned].append(data[indx])
+
+    return [np.asarray(i) for i in by_class]
+
+
+def performance_diff(model1, model2, test_data, test_labels, perf_function='accuracy', **kwargs):
+    """
+    Calculates the difference in performance between two models on the test_data with
+    a performance function.
+
+    Returns performance(model1) - performance(model2)
+
+    Note: For multi-label classification, f1 scores will use 'micro' averaging unless otherwise specified.
+
+    :param model1: A trained ART classifier
+    :type model1: `art.classifiers.classifier.Classifier`
+    :param model2: A trained ART classifier
+    :type model2: `art.classifiers.classifier.Classifier`
+    :param test_data: The data to test both model's performance
+    :type test_data: `np.ndarray`
+    :param test_labels: The labels to the testing data
+    :type test_labels: `np.ndarray`
+    :param perf_function: The performance metric to be used
+    :type perf_function: one of ['accuracy', 'f1'] or a callable function (true_labels, model_labels[, kwargs]) -> float
+    :param kwargs: arguments to add to performance function
+    :type kwargs: `Dict[str, _]`
+    :return: the difference in performance
+    :rtype: `float`
+    """
+    from sklearn.metrics import accuracy_score
+    from sklearn.metrics import f1_score
+
+    model1_labels = model1.predict(test_data)
+    model2_labels = model2.predict(test_data)
+    if perf_function == 'accuracy':
+        model1_acc = accuracy_score(test_labels, model1_labels, **kwargs)
+        model2_acc = accuracy_score(test_labels, model2_labels, **kwargs)
+        return model1_acc - model2_acc
+    elif perf_function == 'f1':
+        n_classes = test_labels.shape[1]
+        if n_classes > 2 and 'average' not in kwargs:
+            kwargs['average'] = 'micro'
+        model1_f1 = f1_score(test_labels, model1_labels, **kwargs)
+        model2_f1 = f1_score(test_labels, model2_labels, **kwargs)
+        return model1_f1 - model2_f1
+    elif callable(perf_function):
+        return perf_function(test_labels, model1_labels, **kwargs) - perf_function(test_labels, model2_labels, **kwargs)
+    else:
+        raise NotImplementedError("Performance function '{}' not supported".format(str(perf_function)))
