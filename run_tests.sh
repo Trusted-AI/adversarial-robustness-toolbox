@@ -1,17 +1,47 @@
 #!/usr/bin/env bash
 exit_code=0
-python -m unittest discover tests/attacks -p 'test_[a-d]*.py'
+
+# attacks
+python -m unittest 'tests/attacks/test_blackbox.py'
 if [[ $? -ne 0 ]]; then exit_code=1; fi
-python -m unittest discover tests/attacks -p 'test_[e-h]*.py'
+python -m unittest 'tests/attacks/test_adversarial_patch.py'
 if [[ $? -ne 0 ]]; then exit_code=1; fi
-python -m unittest discover tests/attacks -p 'test_[i-l]*.py'
+python -m unittest 'tests/attacks/test_boundary.py'
 if [[ $? -ne 0 ]]; then exit_code=1; fi
-python -m unittest discover tests/attacks -p 'test_[m-p]*.py'
+python -m unittest 'tests/attacks/test_carlini.py'
 if [[ $? -ne 0 ]]; then exit_code=1; fi
-python -m unittest discover tests/attacks -p 'test_[q-t]*.py'
+python -m unittest 'tests/attacks/test_decision_tree_attack.py'
 if [[ $? -ne 0 ]]; then exit_code=1; fi
-python -m unittest discover tests/attacks -p 'test_[u-z]*.py'
+python -m unittest 'tests/attacks/test_deepfool.py'
 if [[ $? -ne 0 ]]; then exit_code=1; fi
+python -m unittest 'tests/attacks/test_elastic_net.py'
+if [[ $? -ne 0 ]]; then exit_code=1; fi
+python -m unittest 'tests/attacks/test_fast_gradient.py'
+if [[ $? -ne 0 ]]; then exit_code=1; fi
+python -m unittest 'tests/attacks/test_hclu.py'
+if [[ $? -ne 0 ]]; then exit_code=1; fi
+python -m unittest 'tests/attacks/test_hop_skip_jump.py'
+if [[ $? -ne 0 ]]; then exit_code=1; fi
+python -m unittest 'tests/attacks/test_iterative_method.py'
+if [[ $? -ne 0 ]]; then exit_code=1; fi
+python -m unittest 'tests/attacks/test_newtonfool.py'
+if [[ $? -ne 0 ]]; then exit_code=1; fi
+python -m unittest 'tests/attacks/test_poisoning_attack_svm.py'
+if [[ $? -ne 0 ]]; then exit_code=1; fi
+python -m unittest 'tests/attacks/test_projected_gradient_descent.py'
+if [[ $? -ne 0 ]]; then exit_code=1; fi
+python -m unittest 'tests/attacks/test_saliency_map.py'
+if [[ $? -ne 0 ]]; then exit_code=1; fi
+python -m unittest 'tests/attacks/test_spatial_transformation.py'
+if [[ $? -ne 0 ]]; then exit_code=1; fi
+python -m unittest 'tests/attacks/test_universal_perturbation.py'
+if [[ $? -ne 0 ]]; then exit_code=1; fi
+python -m unittest 'tests/attacks/test_virtual_adversarial.py'
+if [[ $? -ne 0 ]]; then exit_code=1; fi
+python -m unittest 'tests/attacks/test_zoo.py'
+if [[ $? -ne 0 ]]; then exit_code=1; fi
+
+# classifiers
 python -m unittest 'tests/classifiers/test_blackbox.py'
 if [[ $? -ne 0 ]]; then exit_code=1; fi
 python -m unittest 'tests/classifiers/test_catboost.py'
@@ -42,20 +72,37 @@ python -m unittest 'tests/classifiers/test_tensorflow_v2.py'
 if [[ $? -ne 0 ]]; then exit_code=1; fi
 python -m unittest 'tests/classifiers/test_xgboost.py'
 if [[ $? -ne 0 ]]; then exit_code=1; fi
+
+# defences
 python -m unittest discover tests/defences -p 'test_*.py'
 if [[ $? -ne 0 ]]; then exit_code=1; fi
+
+# detection
 python -m unittest discover tests/detection -p 'test_*.py'
 if [[ $? -ne 0 ]]; then exit_code=1; fi
+
+# poison detection
 python -m unittest discover tests/poison_detection -p 'test_*.py'
 if [[ $? -ne 0 ]]; then exit_code=1; fi
+
+# wrappers
 python -m unittest discover tests/wrappers -p 'test_*.py'
 if [[ $? -ne 0 ]]; then exit_code=1; fi
+
+# generators
 python -m unittest tests.test_data_generators
 if [[ $? -ne 0 ]]; then exit_code=1; fi
+
+# metrics
 python -m unittest discover tests/metrics -p 'test_*.py'
 if [[ $? -ne 0 ]]; then exit_code=1; fi
+
+# utils
 python -m unittest tests.test_utils
 if [[ $? -ne 0 ]]; then exit_code=1; fi
+
+# visualization
 python -m unittest tests.test_visualization
 if [[ $? -ne 0 ]]; then exit_code=1; fi
+
 exit $exit_code
