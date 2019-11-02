@@ -28,7 +28,7 @@ from art.utils import load_iris, load_mnist, master_seed
 from art.utils import second_most_likely_class, random_targets, get_label_conf, get_labels_np_array, preprocess
 from art.utils import segment_by_class, performance_diff
 
-logger = logging.getLogger('testLogger')
+logger = logging.getLogger(__name__)
 
 BATCH_SIZE = 10
 NB_TRAIN = 100

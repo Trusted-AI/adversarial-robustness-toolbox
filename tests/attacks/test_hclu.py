@@ -27,7 +27,7 @@ from art.attacks import HighConfidenceLowUncertainty
 from art.classifiers import GPyGaussianProcessClassifier
 from art.utils import load_dataset, master_seed
 
-logger = logging.getLogger('testLogger')
+logger = logging.getLogger(__name__)
 
 
 class TestHCLU(unittest.TestCase):

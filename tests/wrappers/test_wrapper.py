@@ -28,7 +28,7 @@ from art.wrappers.wrapper import ClassifierWrapper
 from art.utils import load_mnist, master_seed
 from art.utils_test import get_classifier_kr
 
-logger = logging.getLogger('testLogger')
+logger = logging.getLogger(__name__)
 
 BATCH_SIZE = 10
 NB_TRAIN = 500
@@ -130,3 +130,7 @@ class TestMixinWKerasClassifier(unittest.TestCase):
 
         # Remove saved file
         os.remove(os.path.join(path, filename))
+
+
+if __name__ == '__main__':
+    unittest.main()

@@ -219,10 +219,10 @@ class HopSkipJump(Attack):
                                                      clip_min=clip_min, clip_max=clip_max, threshold=0.001)
                     initial_sample = random_img, random_class
 
-                    logging.info('Found initial adversarial image for targeted attack.')
+                    logger.info('Found initial adversarial image for targeted attack.')
                     break
             else:
-                logging.warning('Failed to draw a random image that is adversarial, attack failed.')
+                logger.warning('Failed to draw a random image that is adversarial, attack failed.')
 
         else:
             # The initial image satisfied
@@ -241,10 +241,10 @@ class HopSkipJump(Attack):
                                                      clip_min=clip_min, clip_max=clip_max, threshold=0.001)
                     initial_sample = random_img, y_p
 
-                    logging.info('Found initial adversarial image for untargeted attack.')
+                    logger.info('Found initial adversarial image for untargeted attack.')
                     break
             else:
-                logging.warning('Failed to draw a random image that is adversarial, attack failed.')
+                logger.warning('Failed to draw a random image that is adversarial, attack failed.')
 
         return initial_sample
 

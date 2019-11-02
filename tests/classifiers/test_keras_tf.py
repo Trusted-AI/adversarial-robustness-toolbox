@@ -44,7 +44,7 @@ from art.utils import load_dataset, master_seed
 from art.utils_test import get_classifier_kr_tf
 from art.data_generators import KerasDataGenerator
 
-logger = logging.getLogger('testLogger')
+logger = logging.getLogger(__name__)
 
 BATCH_SIZE = 10
 NB_TRAIN = 500
@@ -340,7 +340,6 @@ class TestKerasClassifierTF(unittest.TestCase):
         else:
             self.assertAlmostEqual(prediction[0, 178], 0.2658045, places=3)
 
-
     def test_learning_phase(self):
         classifier = get_classifier_kr_tf()
 
@@ -400,9 +399,13 @@ class TestKerasClassifierTF(unittest.TestCase):
                       'binary_crossentropy', 'kullback_leibler_divergence', 'cosine_similarity']
 
         for loss_name in loss_names:
-            print(loss_name)
+            logger.debug(loss_name)
             classifier = get_classifier_kr_tf(loss_name=loss_name)
             classifier.fit(x=self.x_test, y=self.y_test, nb_epochs=1)
             classifier.predict(x=self.x_test)
             classifier.class_gradient(self.x_test, label=5)
             classifier.loss_gradient(x=self.x_test, y=self.y_test)
+
+
+if __name__ == '__main__':
+    unittest.main()

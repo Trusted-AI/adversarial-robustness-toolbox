@@ -25,7 +25,7 @@ import unittest
 from art.poison_detection import GroundTruthEvaluator
 from art.utils import master_seed
 
-logger = logging.getLogger('testLogger')
+logger = logging.getLogger(__name__)
 
 
 class TestGroundTruth(unittest.TestCase):

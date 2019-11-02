@@ -28,7 +28,7 @@ from art.attacks import DecisionTreeAttack
 from art.classifiers import SklearnClassifier
 from art.utils import master_seed
 
-logger = logging.getLogger('testLogger')
+logger = logging.getLogger(__name__)
 
 
 class TestDecisionTreeAttack(unittest.TestCase):

@@ -25,7 +25,7 @@ import numpy as np
 from art.defences import GaussianAugmentation
 from art.utils import master_seed
 
-logger = logging.getLogger('testLogger')
+logger = logging.getLogger(__name__)
 
 
 class TestGaussianAugmentation(unittest.TestCase):
@@ -76,5 +76,6 @@ class TestGaussianAugmentation(unittest.TestCase):
         self.assertTrue('If `augmentation` is `True`, then `apply_fit` must be `True` and `apply_predict`'
                         ' must be `False`.' in str(context.exception))
 
-        if __name__ == '__main__':
-            unittest.main()
+
+if __name__ == '__main__':
+    unittest.main()
