@@ -59,7 +59,7 @@ class TestBoundary(unittest.TestCase):
         First test with the TensorFlowClassifier.
         :return:
         """
-        (x_train, y_train), (x_test, y_test) = self.mnist
+        (_, _), (x_test, y_test) = self.mnist
 
         # Build TensorFlowClassifier
         tfc, sess = get_classifier_tf()
@@ -118,7 +118,7 @@ class TestBoundary(unittest.TestCase):
         Second test with the KerasClassifier.
         :return:
         """
-        (x_train, y_train), (x_test, y_test) = self.mnist
+        (_, _), (x_test, y_test) = self.mnist
 
         # Build KerasClassifier
         krc = get_classifier_kr()
@@ -156,7 +156,7 @@ class TestBoundary(unittest.TestCase):
         Third test with the PyTorchClassifier.
         :return:
         """
-        (x_train, y_train), (x_test, y_test) = self.mnist
+        (_, _), (x_test, y_test) = self.mnist
 
         # Build PyTorchClassifier
         ptc = get_classifier_pt()
@@ -201,7 +201,7 @@ class TestBoundary(unittest.TestCase):
                       'the provided classifier is instance of (<class \'object\'>,).', str(context.exception))
 
     def test_keras_iris_clipped(self):
-        (x_train, y_train), (x_test, y_test) = self.iris
+        (_, _), (x_test, y_test) = self.iris
         classifier = get_iris_classifier_kr()
         attack = BoundaryAttack(classifier, targeted=False, max_iter=10)
         x_test_adv = attack.generate(x_test)
@@ -215,7 +215,7 @@ class TestBoundary(unittest.TestCase):
         logger.info('Accuracy on Iris with boundary adversarial examples: %.2f%%', (accuracy * 100))
 
     def test_keras_iris_unbounded(self):
-        (x_train, y_train), (x_test, y_test) = self.iris
+        (_, _), (x_test, y_test) = self.iris
         classifier = get_iris_classifier_kr()
 
         # Recreate a classifier without clip values
@@ -230,7 +230,7 @@ class TestBoundary(unittest.TestCase):
         logger.info('Accuracy on Iris with boundary adversarial examples: %.2f%%', (accuracy * 100))
 
     def test_tensorflow_iris(self):
-        (x_train, y_train), (x_test, y_test) = self.iris
+        (_, _), (x_test, y_test) = self.iris
         classifier, _ = get_iris_classifier_tf()
 
         # Test untargeted attack
@@ -259,7 +259,7 @@ class TestBoundary(unittest.TestCase):
         logger.info('Success rate of targeted boundary on Iris: %.2f%%', (accuracy * 100))
 
     def test_pytorch_iris(self):
-        (x_train, y_train), (x_test, y_test) = self.iris
+        (_, _), (x_test, y_test) = self.iris
         classifier = get_iris_classifier_pt()
         attack = BoundaryAttack(classifier, targeted=False, max_iter=10)
         x_test_adv = attack.generate(x_test.astype(np.float32))
@@ -296,7 +296,7 @@ class TestBoundary(unittest.TestCase):
                                   SVC: ScikitlearnSVC,
                                   LinearSVC: ScikitlearnSVC}
 
-        (x_train, y_train), (x_test, y_test) = self.iris
+        (_, _), (x_test, y_test) = self.iris
 
         for (model_class, classifier_class) in scikitlearn_test_cases.items():
             model = model_class()
