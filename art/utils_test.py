@@ -198,17 +198,10 @@ def get_classifier_kr(loss_name='categorical_crossentropy'):
     :return: KerasClassifier, tf.Session()
     """
     import keras
-    import keras.backend as k
     from keras.models import Sequential
     from keras.layers import Dense, Flatten, Conv2D, MaxPooling2D
-    import tensorflow as tf
 
     from art.classifiers import KerasClassifier
-
-    if tf.__version__[0] == '1':
-        # Initialize a tf session
-        sess = tf.Session()
-        k.set_session(sess)
 
     # Create simple CNN
     model = Sequential()
@@ -472,17 +465,10 @@ def get_iris_classifier_kr():
     :rtype: `tuple(KerasClassifier, tf.Session)`
     """
     import keras
-    import keras.backend as k
     from keras.models import Sequential
     from keras.layers import Dense
-    import tensorflow as tf
 
     from art.classifiers import KerasClassifier
-
-    if tf.__version__[0] == '1':
-        # Initialize a tf session
-        sess = tf.Session()
-        k.set_session(sess)
 
     # Create simple CNN
     model = Sequential()
