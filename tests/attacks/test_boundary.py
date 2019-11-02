@@ -60,7 +60,7 @@ class TestBoundary(unittest.TestCase):
         :return:
         """
         (x_train, y_train), (x_test, y_test) = self.mnist
-        
+
         # Build TensorFlowClassifier
         tfc, sess = get_classifier_tf()
 
@@ -119,7 +119,7 @@ class TestBoundary(unittest.TestCase):
         :return:
         """
         (x_train, y_train), (x_test, y_test) = self.mnist
-        
+
         # Build KerasClassifier
         krc = get_classifier_kr()
 
@@ -157,7 +157,7 @@ class TestBoundary(unittest.TestCase):
         :return:
         """
         (x_train, y_train), (x_test, y_test) = self.mnist
-        
+
         # Build PyTorchClassifier
         ptc = get_classifier_pt()
 
