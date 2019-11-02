@@ -22,7 +22,6 @@ import unittest
 
 import keras.backend as k
 import numpy as np
-import tensorflow as tf
 
 from art.attacks import DeepFool
 from art.classifiers import KerasClassifier
