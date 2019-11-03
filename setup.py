@@ -8,7 +8,8 @@ install_requires = ['numpy',
                     'scipy',
                     'six',
                     'setuptools',
-                    'scikit-learn']
+                    'scikit-learn',
+                    'tqdm']
 
 tests_require = ['mxnet',
                  'h5py',
