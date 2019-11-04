@@ -186,8 +186,7 @@ class TestElasticNet(unittest.TestCase):
 
         # First attack
         ead = ElasticNet(classifier=krc, targeted=True, max_iter=2)
-        # random_targets(y_test, krc.nb_classes())
-        y_target = to_categorical([6, 6, 7, 4, 9, 7, 9, 0, 1, 0], nb_classes=10)
+        y_target = to_categorical(np.asarray([6, 6, 7, 4, 9, 7, 9, 0, 1, 0]), nb_classes=10)
         x_test_adv = ead.generate(x_test, y=y_target)
         expected_x_test_adv = np.asarray([0.0, 0.0, 0.0, 0.0, 0.0, 0.0,
                                           0.0, 0.0, 0.0, 0.0, 0.00183569, 0.0,
@@ -206,13 +205,12 @@ class TestElasticNet(unittest.TestCase):
 
         # Second attack
         ead = ElasticNet(classifier=krc, targeted=False, max_iter=2)
-        params = {'y': random_targets(y_test, krc.nb_classes())}
-        x_test_adv = ead.generate(x_test, **params)
+        y_target = to_categorical(np.asarray([9, 5, 6, 7, 1, 6, 1, 5, 8, 5]), nb_classes=10)
+        x_test_adv = ead.generate(x_test, y=y_target)
         self.assertLessEqual(np.amax(x_test_adv), 1.0)
         self.assertGreaterEqual(np.amin(x_test_adv), 0.0)
-        target = np.argmax(params['y'], axis=1)
         y_pred_adv = np.argmax(krc.predict(x_test_adv), axis=1)
-        logger.debug('EAD target: %s', target)
+        logger.debug('EAD target: %s', y_target)
         logger.debug('EAD actual: %s', y_pred_adv)
         logger.info('EAD success rate: %.2f', (100 * sum(target != y_pred_adv) / float(len(target))))
         self.assertTrue((target != y_pred_adv).any())
