@@ -39,6 +39,7 @@ class TestLocalSpatialSmoothing(unittest.TestCase):
 
         # Start to test
         for window_size in range(1, 20):
+            logger.info('Window size: {}'.format(window_size))
             preprocess = SpatialSmoothing(window_size=window_size)
             smoothed_x, _ = preprocess(x)
             np.testing.assert_array_almost_equal(smoothed_x, x, decimal=2)
