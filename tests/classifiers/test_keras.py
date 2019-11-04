@@ -23,7 +23,7 @@ import unittest
 import requests
 import tempfile
 import shutil
-import pickle
+# import pickle
 
 import numpy as np
 import keras
@@ -35,7 +35,7 @@ from keras.callbacks import LearningRateScheduler
 from keras.applications.resnet50 import ResNet50, decode_predictions
 from keras.preprocessing.image import load_img, img_to_array
 
-from art import DATA_PATH
+# from art import DATA_PATH
 from art.classifiers import KerasClassifier
 from art.classifiers.keras import generator_fit
 from art.defences import FeatureSqueezing, JpegCompression, SpatialSmoothing
@@ -43,7 +43,7 @@ from art.utils import load_dataset, master_seed
 from art.utils_test import get_classifier_kr
 from art.data_generators import KerasDataGenerator
 
-logger = logging.getLogger('testLogger')
+logger = logging.getLogger(__name__)
 
 BATCH_SIZE = 10
 NB_TRAIN = 500

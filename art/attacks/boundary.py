@@ -222,7 +222,7 @@ class BoundaryAttack(Attack):
                     x_advs = np.array(potential_advs)[np.where(satisfied)[0]]
                     break
             else:
-                logging.warning('Adversarial example found but not optimal.')
+                logger.warning('Adversarial example found but not optimal.')
                 return x_adv
 
             # Trust region method to adjust epsilon
@@ -244,7 +244,7 @@ class BoundaryAttack(Attack):
                     x_adv = potential_advs[np.where(satisfied)[0][0]]
                     break
             else:
-                logging.warning('Adversarial example found but not optimal.')
+                logger.warning('Adversarial example found but not optimal.')
                 return x_advs[0]
 
         return x_adv
@@ -330,10 +330,10 @@ class BoundaryAttack(Attack):
                 if random_class == y:
                     initial_sample = random_img, random_class
 
-                    logging.info('Found initial adversarial image for targeted attack.')
+                    logger.info('Found initial adversarial image for targeted attack.')
                     break
             else:
-                logging.warning('Failed to draw a random image that is adversarial, attack failed.')
+                logger.warning('Failed to draw a random image that is adversarial, attack failed.')
 
         else:
             # The initial image satisfied
@@ -349,10 +349,10 @@ class BoundaryAttack(Attack):
                 if random_class != y_p:
                     initial_sample = random_img, random_class
 
-                    logging.info('Found initial adversarial image for untargeted attack.')
+                    logger.info('Found initial adversarial image for untargeted attack.')
                     break
             else:
-                logging.warning('Failed to draw a random image that is adversarial, attack failed.')
+                logger.warning('Failed to draw a random image that is adversarial, attack failed.')
 
         return initial_sample
 

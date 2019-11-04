@@ -27,7 +27,7 @@ from mxnet.gluon import nn
 from art.classifiers import MXClassifier
 from art.utils import load_mnist, master_seed
 
-logger = logging.getLogger('testLogger')
+logger = logging.getLogger(__name__)
 
 NB_TRAIN = 1000
 NB_TEST = 20

@@ -28,7 +28,7 @@ from art.utils import load_dataset, master_seed
 from art.utils_test import get_classifier_tf, get_classifier_kr, get_classifier_pt
 from art.utils_test import get_iris_classifier_tf, get_iris_classifier_kr, get_iris_classifier_pt
 
-logger = logging.getLogger('testLogger')
+logger = logging.getLogger(__name__)
 
 BATCH_SIZE = 100
 NB_TRAIN = 1000

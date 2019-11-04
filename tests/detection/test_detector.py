@@ -32,7 +32,7 @@ from art.detection import BinaryInputDetector, BinaryActivationDetector
 from art.utils import load_mnist, master_seed
 from art.utils_test import get_classifier_kr
 
-logger = logging.getLogger('testLogger')
+logger = logging.getLogger(__name__)
 
 BATCH_SIZE, NB_TRAIN, NB_TEST = 100, 1000, 10
 

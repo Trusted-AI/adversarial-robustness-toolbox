@@ -37,7 +37,7 @@ from art.classifiers.scikitlearn import ScikitlearnDecisionTreeClassifier, Sciki
 from art.classifiers import SklearnClassifier
 from art.utils import load_dataset
 
-logger = logging.getLogger('testLogger')
+logger = logging.getLogger(__name__)
 np.random.seed(seed=1234)
 
 (x_train, y_train), (x_test, y_test), _, _ = load_dataset('iris')
@@ -399,3 +399,7 @@ class TestScikitlearnPipeline(unittest.TestCase):
 
     def test_input_shape(self):
         self.assertEqual(self.classifier.input_shape, (4,))
+
+
+if __name__ == '__main__':
+    unittest.main()

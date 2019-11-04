@@ -28,7 +28,7 @@ from art.utils import load_dataset, get_labels_np_array, master_seed
 from art.utils_test import get_classifier_tf, get_classifier_kr, get_classifier_pt
 from art.utils_test import get_iris_classifier_tf, get_iris_classifier_kr, get_iris_classifier_pt
 
-logger = logging.getLogger('testLogger')
+logger = logging.getLogger(__name__)
 
 BATCH_SIZE = 10
 NB_TRAIN = 100
@@ -67,11 +67,11 @@ class TestVirtualAdversarial(unittest.TestCase):
 
         scores = get_labels_np_array(classifier.predict(x_train))
         acc = np.sum(np.argmax(scores, axis=1) == np.argmax(y_train, axis=1)) / y_train.shape[0]
-        logging.info('[TF, MNIST] Accuracy on training set: %.2f%%', (acc * 100))
+        logger.info('[TF, MNIST] Accuracy on training set: %.2f%%', (acc * 100))
 
         scores = get_labels_np_array(classifier.predict(x_test))
         acc = np.sum(np.argmax(scores, axis=1) == np.argmax(y_test, axis=1)) / y_test.shape[0]
-        logging.info('[TF, MNIST] Accuracy on test set: %.2f%%', (acc * 100))
+        logger.info('[TF, MNIST] Accuracy on test set: %.2f%%', (acc * 100))
 
         self._test_backend_mnist(classifier, x_test, y_test)
 
@@ -83,11 +83,11 @@ class TestVirtualAdversarial(unittest.TestCase):
 
         scores = get_labels_np_array(classifier.predict(x_train))
         acc = np.sum(np.argmax(scores, axis=1) == np.argmax(y_train, axis=1)) / y_train.shape[0]
-        logging.info('[PyTorch, MNIST] Accuracy on training set: %.2f%%', (acc * 100))
+        logger.info('[PyTorch, MNIST] Accuracy on training set: %.2f%%', (acc * 100))
 
         scores = get_labels_np_array(classifier.predict(x_test))
         acc = np.sum(np.argmax(scores, axis=1) == np.argmax(y_test, axis=1)) / y_test.shape[0]
-        logging.info('[PyTorch, MNIST] Accuracy on test set: %.2f%%', (acc * 100))
+        logger.info('[PyTorch, MNIST] Accuracy on test set: %.2f%%', (acc * 100))
 
         self._test_backend_mnist(classifier, x_test, y_test)
 
@@ -110,7 +110,7 @@ class TestVirtualAdversarial(unittest.TestCase):
             self.assertFalse((y_test == y_pred).all())
 
             acc = np.sum(np.argmax(y_pred, axis=1) == np.argmax(y_test, axis=1)) / y_test.shape[0]
-            logging.info('Accuracy on adversarial examples: %.2f%%', (acc * 100))
+            logger.info('Accuracy on adversarial examples: %.2f%%', (acc * 100))
 
     def test_classifier_type_check_fail_classifier(self):
         # Use a useless test classifier to test basic classifier properties

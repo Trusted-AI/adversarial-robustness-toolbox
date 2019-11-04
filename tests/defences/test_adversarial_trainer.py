@@ -33,7 +33,7 @@ from art.data_generators import DataGenerator
 from art.defences import AdversarialTrainer
 from art.utils import load_mnist, get_labels_np_array, master_seed
 
-logger = logging.getLogger('testLogger')
+logger = logging.getLogger(__name__)
 
 BATCH_SIZE = 10
 NB_TRAIN = 100
