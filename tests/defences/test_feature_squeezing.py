@@ -25,7 +25,7 @@ import numpy as np
 from art.defences import FeatureSqueezing
 from art.utils import master_seed
 
-logger = logging.getLogger('testLogger')
+logger = logging.getLogger(__name__)
 
 
 class TestFeatureSqueezing(unittest.TestCase):

@@ -27,7 +27,7 @@ from art.attacks import PoisoningAttackSVM
 from art.classifiers import SklearnClassifier
 from art.utils import master_seed, load_iris
 
-logger = logging.getLogger('testLogger')
+logger = logging.getLogger(__name__)
 
 BATCH_SIZE = 10
 NB_TRAIN = 10

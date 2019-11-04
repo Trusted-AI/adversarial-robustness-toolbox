@@ -32,7 +32,7 @@ from art.detection import SubsetScanningDetector
 from art.utils import master_seed, load_dataset
 from art.utils_test import get_classifier_kr
 
-logger = logging.getLogger('testLogger')
+logger = logging.getLogger(__name__)
 
 BATCH_SIZE = 100
 NB_TRAIN = 100
@@ -80,3 +80,7 @@ class TestSubsetScanningDetector(unittest.TestCase):
 
         _, _, dpwr = detector.scan(clean, x_train_detector, 85, 15)
         self.assertGreater(dpwr, 0.5)
+
+
+if __name__ == '__main__':
+    unittest.main()

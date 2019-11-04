@@ -17,26 +17,17 @@
 # SOFTWARE.
 from __future__ import absolute_import, division, print_function, unicode_literals
 
-import os
 import logging
-import unittest
-import requests
 import tempfile
-import shutil
-import pickle
-import json
+import unittest
 
 import numpy as np
 
-from art import DATA_PATH
-from art.classifiers import BlackBoxClassifier
-from art.classifiers.keras import generator_fit
-from art.data_generators import KerasDataGenerator
 from art.defences import FeatureSqueezing, JpegCompression, SpatialSmoothing
-from art.utils import load_dataset, master_seed, to_categorical
+from art.utils import load_dataset, master_seed
 from art.utils_test import get_classifier_bb
 
-logger = logging.getLogger('testLogger')
+logger = logging.getLogger(__name__)
 
 BATCH_SIZE = 10
 NB_TRAIN = 500
@@ -56,15 +47,13 @@ class TestBlackBoxClassifier(unittest.TestCase):
         # Temporary folder for tests
         cls.test_dir = tempfile.mkdtemp()
 
-    @classmethod
     def setUp(self):
         master_seed(1234)
 
     def test_fit(self):
         classifier = get_classifier_bb()
-
-        self.assertRaises(NotImplementedError,
-                          lambda: classifier.fit(self.x_train, self.y_train, batch_size=BATCH_SIZE, nb_epochs=2))
+        self.assertRaises(NotImplementedError, lambda: classifier.fit(self.x_train, self.y_train, batch_size=BATCH_SIZE,
+                                                                      nb_epochs=2))
 
     def test_shapes(self):
         classifier = get_classifier_bb()
@@ -104,10 +93,7 @@ class TestBlackBoxClassifier(unittest.TestCase):
 
     def test_repr(self):
         classifier = get_classifier_bb()
-
         repr_ = repr(classifier)
-
-        print(repr_)
 
         self.assertIn('BlackBoxClassifier', repr_)
         self.assertIn('clip_values=(0, 255)', repr_)

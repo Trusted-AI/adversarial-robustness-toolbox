@@ -44,7 +44,7 @@ from art.utils import load_dataset, master_seed
 from art.utils_test import get_classifier_kr_tf
 from art.data_generators import KerasDataGenerator
 
-logger = logging.getLogger('testLogger')
+logger = logging.getLogger(__name__)
 
 BATCH_SIZE = 10
 NB_TRAIN = 500
@@ -404,9 +404,13 @@ class TestKerasClassifierTF(unittest.TestCase):
             loss_names.append('cosine_proximity')
 
         for loss_name in loss_names:
-            print(loss_name)
+            logger.debug(loss_name)
             classifier = get_classifier_kr_tf(loss_name=loss_name)
             classifier.fit(x=self.x_test, y=self.y_test, nb_epochs=1)
             classifier.predict(x=self.x_test)
             classifier.class_gradient(self.x_test, label=5)
             classifier.loss_gradient(x=self.x_test, y=self.y_test)
+
+
+if __name__ == '__main__':
+    unittest.main()

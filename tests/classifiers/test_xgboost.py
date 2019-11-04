@@ -26,7 +26,7 @@ import numpy as np
 from art.classifiers import XGBoostClassifier
 from art.utils import load_dataset
 
-logger = logging.getLogger('testLogger')
+logger = logging.getLogger(__name__)
 
 
 class TestXGBoostClassifierBoosterSoftprob(unittest.TestCase):
@@ -105,3 +105,7 @@ class TestXGBoostClassifierPythonAPI(unittest.TestCase):
         y_expected = [0.02563512, 0.02925956, 0.94510525]
         for i in range(3):
             self.assertAlmostEqual(y_predicted[0, i], y_expected[i], 4)
+
+
+if __name__ == '__main__':
+    unittest.main()

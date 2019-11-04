@@ -24,10 +24,9 @@ import lightgbm as lgb
 import numpy as np
 
 from art.classifiers import LightGBMClassifier
-from art.utils import load_dataset
+from art.utils import load_dataset, master_seed
 
-logger = logging.getLogger('testLogger')
-np.random.seed(seed=1234)
+logger = logging.getLogger(__name__)
 
 
 class TestLightGBMClassifier(unittest.TestCase):
@@ -48,8 +47,15 @@ class TestLightGBMClassifier(unittest.TestCase):
 
         cls.classifier = LightGBMClassifier(model=model)
 
+    def setUp(self):
+        master_seed(1234)
+
     def test_predict(self):
         y_predicted = (self.classifier.predict(self.x_test[0:1]))
         y_expected = [0.14644158, 0.16454982, 0.68900861]
         for i in range(3):
             self.assertAlmostEqual(y_predicted[0, i], y_expected[i], 4)
+
+
+if __name__ == '__main__':
+    unittest.main()

@@ -24,7 +24,7 @@ import numpy as np
 
 from art.poison_detection import ClusteringAnalyzer
 
-logger = logging.getLogger('testLogger')
+logger = logging.getLogger(__name__)
 
 
 class TestActivationDefence(unittest.TestCase):
