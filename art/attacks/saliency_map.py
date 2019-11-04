@@ -120,8 +120,8 @@ class SaliencyMapMethod(Attack):
                                               target[active_indices], search_space[active_indices])
 
                 # Update used features
-                all_feat[active_indices][np.arange(len(active_indices)), feat_ind[:, 0]] = 1
-                all_feat[active_indices][np.arange(len(active_indices)), feat_ind[:, 1]] = 1
+                all_feat[active_indices, feat_ind[:, 0]] = 1
+                all_feat[active_indices, feat_ind[:, 1]] = 1
 
                 # Apply attack with clipping
                 if hasattr(self.classifier, 'clip_values') and self.classifier.clip_values is not None:
