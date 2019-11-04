@@ -45,13 +45,13 @@ explicit gradients.
 [attack_defence_imagenet.ipynb](attack_defence_imagenet.ipynb) [[on nbviewer](https://nbviewer.jupyter.org/github/IBM/adversarial-robustness-toolbox/blob/master/notebooks/attack_defence_imagenet.ipynb)]
 explains the basic workflow of using ART with defences and attacks on an neural network classifier for ImageNet.
 
-[attack_hopskipjump.ipynb](attack_hopskipjump.ipynb) [[on nbviewer](https://nbviewer.jupyter.org/github/IBM/adversarial-robustness-toolbox/blob/master/notebooks/classifier_blackbox.ipynb)]
+[attack_hopskipjump.ipynb](attack_hopskipjump.ipynb) [[on nbviewer](https://nbviewer.jupyter.org/github/IBM/adversarial-robustness-toolbox/blob/master/notebooks/attack_hopskipjump.ipynb)]
 demonstrates the HopSkipJumpAttack. This is a black-box attack that only requires class predictions. It is an advanced 
 version of the Boundary attack.
 
 ## Classifiers
 
-[classifier_blackbox.ipynb](classifier_blackbox.ipynb) [[on nbviewer](https://nbviewer.jupyter.org/github/IBM/adversarial-robustness-toolbox/blob/master/notebooks/adversarial_retraining.ipynb)] demonstrates BlackBoxClassifier, the most general and
+[classifier_blackbox.ipynb](classifier_blackbox.ipynb) [[on nbviewer](https://nbviewer.jupyter.org/github/IBM/adversarial-robustness-toolbox/blob/master/notebooks/classifier_blackbox.ipynb)] demonstrates BlackBoxClassifier, the most general and
 versatile classifier of ART requiring only a single predict function definition without any additional assumptions or 
 requirements. The notebook shows how use BlackBoxClassifier to attack a remote, deployed model (in this case on IBM
 Watson Machine Learning, https://cloud.ibm.com) using the HopSkiJump attack.
