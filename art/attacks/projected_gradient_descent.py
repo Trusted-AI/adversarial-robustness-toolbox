@@ -131,7 +131,7 @@ class ProjectedGradientDescent(FastGradientMethod):
                 adv_x_best = adv_x
 
         logger.info('Success rate of attack: %.2f%%', rate_best if rate_best is not None else
-                    100 * compute_success(self.classifier, x, y, adv_x, self.targeted, batch_size=self.batch_size))
+                    100 * compute_success(self.classifier, x, y, adv_x_best, self.targeted, batch_size=self.batch_size))
 
         return adv_x_best
 

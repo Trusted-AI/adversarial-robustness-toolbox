@@ -29,6 +29,7 @@ import numpy as np
 from art import NUMPY_DTYPE
 from art.classifiers.classifier import ClassifierNeuralNetwork, ClassifierGradients
 from art.attacks.attack import Attack
+from art.utils import compute_success
 
 logger = logging.getLogger(__name__)
 
@@ -163,9 +164,7 @@ class DeepFool(Attack):
                         self.classifier.clip_values[1], out=x_adv[batch_index_1:batch_index_2])
 
         logger.info('Success rate of DeepFool attack: %.2f%%',
-                    (np.sum(np.argmax(preds, axis=1) != np.argmax(self.classifier.predict(
-                        x_adv, batch_size=self.batch_size), axis=1)) / x.shape[0]))
-
+                    100 * compute_success(self.classifier, x, y, x_adv, batch_size=self.batch_size))
         return x_adv
 
     def set_params(self, **kwargs):
