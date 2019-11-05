@@ -141,7 +141,7 @@ class TestKerasClassifier(unittest.TestCase):
 
         gen = generator_fit(self.x_train, self.y_train, batch_size=BATCH_SIZE)
         data_gen = KerasDataGenerator(generator=gen, size=NB_TRAIN, batch_size=BATCH_SIZE)
-        classifier.fit_generator(generator=data_gen, nb_epochs=2)
+        classifier.fit_generator(generator=data_gen, nb_epochs=3)
         accuracy_2 = np.sum(np.argmax(classifier.predict(self.x_test), axis=1) == labels) / NB_TEST
         logger.info('Accuracy: %.2f%%', (accuracy_2 * 100))
 
