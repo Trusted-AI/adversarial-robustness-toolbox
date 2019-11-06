@@ -257,11 +257,9 @@ class TestHopSkipJump(unittest.TestCase):
     def test_pytorch_resume(self):
         (_, _), (x_test, y_test) = self.mnist
         x_test = np.swapaxes(x_test, 1, 3).astype(np.float32)
-        
+
         # Build PyTorchClassifier
         ptc = get_classifier_pt()
-
-
 
         # HSJ attack
         hsj = HopSkipJump(classifier=ptc, targeted=True, max_iter=10, max_eval=100, init_eval=10)
