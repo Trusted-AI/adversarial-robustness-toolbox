@@ -258,6 +258,29 @@ class TestHopSkipJump(unittest.TestCase):
         self.assertIn('For `HopSkipJump` classifier must be an instance of `art.classifiers.classifier.Classifier`, the'
                       ' provided classifier is instance of (<class \'object\'>,).', str(context.exception))
 
+    def test_resume(self):
+        # Build PyTorchClassifier
+        ptc = get_classifier_pt()
+
+        # Get MNIST
+        (_, _), (x_test, y_test) = self.mnist
+        x_test = np.swapaxes(x_test, 1, 3).astype(np.float32)
+
+        # HSJ attack
+        hsj = HopSkipJump(classifier=ptc, targeted=True, max_iter=10, max_eval=100, init_eval=10)
+
+        params = {'y': y_test[2:3], 'x_adv_init': x_test[2:3]}
+        x_test_adv1 = hsj.generate(x_test[0:1], **params)
+        diff1 = np.linalg.norm(x_test_adv1 - x_test)
+
+        params.update(resume=True, x_adv_init=x_test_adv1)
+        x_test_adv2 = hsj.generate(x_test[0:1], **params)
+        params.update(x_adv_init=x_test_adv2)
+        x_test_adv2 = hsj.generate(x_test[0:1], **params)
+        diff2 = np.linalg.norm(x_test_adv2 - x_test)
+
+        self.assertGreater(diff1, diff2)
+
 
 class TestHopSkipJumpVectors(unittest.TestCase):
     @classmethod
