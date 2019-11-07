@@ -249,7 +249,7 @@ class FastGradientMethod(Attack):
         return grad
 
     def _apply_perturbation(self, batch, perturbation, eps_step):
-        batch += eps_step * perturbation
+        batch = batch + eps_step * perturbation
 
         if hasattr(self.classifier, 'clip_values') and self.classifier.clip_values is not None:
             clip_min, clip_max = self.classifier.clip_values
