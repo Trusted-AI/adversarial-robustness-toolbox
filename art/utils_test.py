@@ -236,11 +236,19 @@ def get_classifier_kr(loss_name='categorical_crossentropy'):
     return krc
 
 
-def get_classifier_kr_tf(loss_name='categorical_crossentropy'):
+def get_classifier_kr_tf(loss_name='categorical_crossentropy', loss_type='function', from_logits=False):
     """
     Standard Keras classifier for unit testing
 
     The weights and biases are identical to the TensorFlow model in get_classifier_tf().
+
+    :param loss_name: Name of the loss
+    :type loss_name: `str`
+    :param loss_type: Type of loss definition ['label', 'function', 'class']
+    :type loss_type: `str`
+    :param from_logits: True if model predicts logits
+    :type from_logits: `bool`
+
 
     :return: KerasClassifier, tf.Session()
     """
@@ -258,31 +266,96 @@ def get_classifier_kr_tf(loss_name='categorical_crossentropy'):
         [_kr_tf_weights_loader('MNIST', 'W', 'CONV2D'), _kr_tf_weights_loader('MNIST', 'B', 'CONV2D')])
     model.add(MaxPooling2D(pool_size=(4, 4)))
     model.add(Flatten())
-    model.add(Dense(10, activation='softmax'))
+
+    if from_logits:
+        model.add(Dense(10, activation='linear'))
+    else:
+        model.add(Dense(10, activation='softmax'))
+
     model.layers[-1].set_weights(
         [_kr_tf_weights_loader('MNIST', 'W', 'DENSE'), _kr_tf_weights_loader('MNIST', 'B', 'DENSE')])
 
     if loss_name == 'categorical_hinge':
-        loss = tf.keras.losses.categorical_hinge
+        if loss_type == 'label':
+            loss = loss_name
+        elif loss_type == 'function':
+            loss = tf.keras.losses.categorical_hinge
+        elif loss_type == 'class':
+            if tf.__version__[0] == '2':
+                reduction = tf.keras.losses.Reduction.NONE
+            else:
+                reduction = tf.python.keras.utils.losses_utils.ReductionV2.NONE
+            loss = tf.keras.losses.CategoricalHinge(reduction=reduction)
     elif loss_name == 'categorical_crossentropy':
-        loss = tf.keras.losses.categorical_crossentropy
+        if loss_type == 'label':
+            if from_logits:
+                raise AttributeError
+            else:
+                loss = loss_name
+        elif loss_type == 'function':
+            if from_logits:
+                def categorical_crossentropy(y_true, y_pred):
+                    return tf.keras.losses.categorical_crossentropy(y_true, y_pred, from_logits=True)
+
+                loss = categorical_crossentropy
+            else:
+                loss = tf.keras.losses.categorical_crossentropy
+        elif loss_type == 'class':
+            if tf.__version__[0] == '2':
+                reduction = tf.keras.losses.Reduction.NONE
+            else:
+                reduction = tf.python.keras.utils.losses_utils.ReductionV2.NONE
+            loss = tf.keras.losses.CategoricalCrossentropy(from_logits=from_logits, reduction=reduction)
     elif loss_name == 'sparse_categorical_crossentropy':
-        loss = tf.keras.losses.sparse_categorical_crossentropy
-    elif loss_name == 'binary_crossentropy':
-        loss = tf.keras.losses.binary_crossentropy
+        if loss_type == 'label':
+            if from_logits:
+                raise AttributeError
+            else:
+                loss = loss_name
+        elif loss_type == 'function':
+            if from_logits:
+                def sparse_categorical_crossentropy(y_true, y_pred):
+                    return tf.keras.losses.sparse_categorical_crossentropy(y_true, y_pred, from_logits=True)
+
+                loss = sparse_categorical_crossentropy
+            else:
+                loss = tf.keras.losses.sparse_categorical_crossentropy
+        elif loss_type == 'class':
+            if tf.__version__[0] == '2':
+                reduction = tf.keras.losses.Reduction.NONE
+            else:
+                reduction = tf.python.keras.utils.losses_utils.ReductionV2.NONE
+            loss = tf.keras.losses.SparseCategoricalCrossentropy(from_logits=from_logits, reduction=reduction)
     elif loss_name == 'kullback_leibler_divergence':
-        loss = tf.keras.losses.kullback_leibler_divergence
+        if loss_type == 'label':
+            loss = loss_name
+        elif loss_type == 'function':
+            loss = tf.keras.losses.kullback_leibler_divergence
+        elif loss_type == 'class':
+            if tf.__version__[0] == '2':
+                reduction = tf.keras.losses.Reduction.NONE
+            else:
+                reduction = tf.python.keras.utils.losses_utils.ReductionV2.NONE
+            loss = tf.keras.losses.KLDivergence(reduction=reduction)
     elif loss_name == 'cosine_similarity':
-        loss = tf.keras.losses.cosine_similarity
-    elif loss_name == 'cosine_proximity':
-        loss = tf.keras.losses.cosine_proximity
+        if loss_type == 'label':
+            loss = loss_name
+        elif loss_type == 'function':
+            loss = tf.keras.losses.cosine_similarity
+        elif loss_type == 'class':
+            if tf.__version__[0] == '2':
+                reduction = tf.keras.losses.Reduction.NONE
+            else:
+                reduction = tf.python.keras.utils.losses_utils.ReductionV2.NONE
+            loss = tf.keras.losses.CosineSimilarity(reduction=reduction)
+
     else:
         raise ValueError('Loss name not recognised.')
 
     model.compile(loss=loss, optimizer=tf.keras.optimizers.Adam(lr=0.01), metrics=['accuracy'])
 
     # Get classifier
-    krc = KerasClassifier(model, clip_values=(0, 1), use_logits=False)
+    krc = KerasClassifier(model, clip_values=(0, 1), use_logits=from_logits)
 
     return krc
 

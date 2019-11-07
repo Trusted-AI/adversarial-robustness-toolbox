@@ -398,7 +398,7 @@ class TestKerasClassifier(unittest.TestCase):
 
     def test_loss_functions(self):
         loss_names = ['categorical_hinge', 'categorical_crossentropy', 'sparse_categorical_crossentropy',
-                      'binary_crossentropy', 'kullback_leibler_divergence', 'cosine_proximity']
+                      'binary_crossentropy', 'kullback_leibler_divergence']
 
         for loss_name in loss_names:
             classifier = get_classifier_kr(loss_name=loss_name)
