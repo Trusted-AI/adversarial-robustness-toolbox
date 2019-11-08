@@ -22,7 +22,6 @@ import os
 import unittest
 
 import numpy as np
-import tensorflow as tf
 
 from art.attacks import FastGradientMethod
 from art.classifiers import KerasClassifier
@@ -55,8 +54,6 @@ class TestRandomizedSmoothing(unittest.TestCase):
         # Set master seed
         master_seed(1234)
 
-    @unittest.skipIf(tf.__version__[0] == '2', reason='Skip unittests for Tensorflow v2 until Keras supports Tensorflow'
-                                                      ' v2 as backend.')
     def test_krclassifier(self):
         """
         Test with a KerasClassifier.
@@ -118,12 +115,10 @@ class TestRandomizedSmoothingVectors(unittest.TestCase):
         # Set master seed
         master_seed(1234)
 
-    @unittest.skipIf(tf.__version__[0] == '2', reason='Skip unittests for Tensorflow v2 until Keras supports Tensorflow'
-                                                      ' v2 as backend.')
     def test_iris_clipped(self):
         (_, _), (x_test, y_test) = self.iris
 
-        krc, _ = get_iris_classifier_kr()
+        krc = get_iris_classifier_kr()
         rs = RandomizedSmoothing(classifier=krc, sample_size=100, scale=0.01, alpha=0.001)
 
         # Test untargeted attack
@@ -150,7 +145,7 @@ class TestRandomizedSmoothingVectors(unittest.TestCase):
         y_test_smooth = rs.predict(x=x_test)
         self.assertEqual(y_test_smooth.shape, y_test.shape)
         self.assertTrue((np.sum(y_test_smooth, axis=1) <= 1).all())
-        
+
         # check gradients
         grad_smooth1 = rs.loss_gradient(x=x_test, y=y_test)
         grad_smooth2 = rs.class_gradient(x=x_test, label=None)
@@ -158,7 +153,7 @@ class TestRandomizedSmoothingVectors(unittest.TestCase):
         self.assertEqual(grad_smooth1.shape, x_test_adv.shape)
         self.assertEqual(grad_smooth2.shape[0], len(x_test))
         self.assertEqual(grad_smooth3.shape[0], len(x_test))
-        
+
         # check certification
         pred, radius = rs.certify(x=x_test, n=250)
         self.assertEqual(len(pred), len(x_test))
@@ -166,11 +161,9 @@ class TestRandomizedSmoothingVectors(unittest.TestCase):
         self.assertTrue((radius <= 1).all())
         self.assertTrue((pred < y_test.shape[1]).all())
 
-    @unittest.skipIf(tf.__version__[0] == '2', reason='Skip unittests for Tensorflow v2 until Keras supports Tensorflow'
-                                                      ' v2 as backend.')
     def test_iris_unbounded(self):
         (_, _), (x_test, y_test) = self.iris
-        classifier, _ = get_iris_classifier_kr()
+        classifier = get_iris_classifier_kr()
 
         # Recreate a classifier without clip values
         krc = KerasClassifier(model=classifier._model, use_logits=False, channel_index=1)

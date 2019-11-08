@@ -193,13 +193,15 @@ class PoisoningAttackSVM(Attack):
         preds = self.classifier._model.predict(vec)
         return 2 * preds - 1
 
-    def attack_gradient(self, attack_point):
+    def attack_gradient(self, attack_point, tol=0.0001):
         """
         Calculates the attack gradient, or ∂P for this attack.
         See equation 8 in Biggio et al. Ch. 14
 
         :param attack_point: the current attack point
         :type attack_point: `np.ndarray`
+        :param tol: tolerance level
+        :type attack_point: `float`
         :return: The attack gradient
         :rtype: `np.ndarray`
         """
@@ -215,12 +217,12 @@ class PoisoningAttackSVM(Attack):
         if not c_idx.any():
             return grad
 
-        c_idx = np.where(c_idx == True)[0][0]
+        c_idx = np.where(c_idx > 0)[0][0]
         alpha_c = model.dual_coef_[0, c_idx]
 
         assert support_labels.shape == (num_support, 1)
         qss = art_model.q_submatrix(support_vectors, support_vectors)
-        qss_inv = np.linalg.inv(qss + np.random.uniform(0, 0.01 * np.min(qss), (num_support, num_support)))
+        qss_inv = np.linalg.inv(qss + np.random.uniform(0, 0.01 * np.min(qss) + tol, (num_support, num_support)))
         zeta = np.matmul(qss_inv, support_labels)
         zeta = np.matmul(support_labels.T, zeta)
         nu_k = np.matmul(qss_inv, support_labels)

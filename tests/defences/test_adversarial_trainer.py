@@ -21,7 +21,6 @@ import logging
 import unittest
 
 import tensorflow as tf
-
 import keras
 import keras.backend as k
 import numpy as np
@@ -42,8 +41,7 @@ NB_TEST = 11
 ACCURACY_DROP = 0.0  # The unit tests are too inaccurate
 
 
-@unittest.skipIf(tf.__version__[0] == '2', reason='Skip AdversarialTrainer unittests for TensorFlow v2 until Keras '
-                                                  'supports it')
+@unittest.skipIf(tf.__version__[0] == '2', reason='Skip AdversarialTrainer unittests for TensorFlow v2.')
 class TestBase(unittest.TestCase):
     mnist = None
     classifier_k = None

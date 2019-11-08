@@ -331,8 +331,8 @@ class TestUtils(unittest.TestCase):
         limited_model = SklearnClassifier(model=SVC(kernel='linear'), clip_values=(min_, max_))
         limited_model.fit(x_train[:10], y_train[:10])
 
-        self.assertEqual(performance_diff(full_model, limited_model, x_test[:20], y_test[:20], perf_function='accuracy')
-                         , 0.35)
+        self.assertEqual(performance_diff(full_model, limited_model, x_test[:20], y_test[:20],
+                                          perf_function='accuracy'), 0.35)
         self.assertEqual(performance_diff(full_model, limited_model, x_test[:20], y_test[:20]), 0.35)
         diff = performance_diff(full_model, limited_model, x_test[:20], y_test[:20], perf_function='f1',
                                 average='weighted')
@@ -342,9 +342,10 @@ class TestUtils(unittest.TestCase):
         def first_class(true_labels, model_labels, idx=0):
             return np.average(np.argmax(model_labels, axis=1) == idx)
 
-        self.assertEqual(performance_diff(full_model, limited_model, x_test, y_test, perf_function=first_class), 1.0/3)
+        self.assertEqual(performance_diff(full_model, limited_model, x_test, y_test, perf_function=first_class),
+                         1.0 / 3)
         self.assertEqual(performance_diff(full_model, limited_model, x_test, y_test, perf_function=first_class, idx=1),
-                         -1.0/3)
+                         -1.0 / 3)
 
 
 if __name__ == '__main__':
