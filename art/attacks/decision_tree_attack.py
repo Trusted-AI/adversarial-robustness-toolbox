@@ -154,7 +154,7 @@ class DecisionTreeAttack(Attack):
                     x_adv[index][feature] = threshold + self.offset
 
         logger.info('Success rate of decision tree attack: %.2f%%',
-                    100 * compute_success(self.classifier, x, y, x_adv, batch_size=self.batch_size))
+                    100 * compute_success(self.classifier, x, y, x_adv))
         return x_adv
 
     def set_params(self, **kwargs):

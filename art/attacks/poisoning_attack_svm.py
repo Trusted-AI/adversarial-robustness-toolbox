@@ -120,7 +120,7 @@ class PoisoningAttackSVM(Attack):
         targeted = y is not None
 
         logger.info('Success rate of poisoning attack SVM attack: %.2f%%',
-                    100 * compute_success(self.classifier, x, y, x_adv, targeted=targeted, batch_size=self.batch_size))
+                    100 * compute_success(self.classifier, x, y, x_adv, targeted=targeted))
 
         return x_adv
 
