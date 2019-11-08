@@ -156,6 +156,7 @@ def get_classifier_tf_v2():
         """
         Standard TensorFlow model for unit testing
         """
+
         def __init__(self):
             super(TensorFlowModel, self).__init__()
             self.conv1 = Conv2D(filters=1, kernel_size=7, activation='relu',
@@ -189,7 +190,7 @@ def get_classifier_tf_v2():
     return tfc
 
 
-def get_classifier_kr(loss_name='categorical_crossentropy'):
+def get_classifier_kr(loss_name='categorical_crossentropy', loss_type='function_losses', from_logits=False):
     """
     Standard Keras classifier for unit testing
 
@@ -210,28 +211,91 @@ def get_classifier_kr(loss_name='categorical_crossentropy'):
                      bias_initializer=_kr_weights_loader('MNIST', 'B', 'CONV2D')))
     model.add(MaxPooling2D(pool_size=(4, 4)))
     model.add(Flatten())
-    model.add(Dense(10, activation='softmax', kernel_initializer=_kr_weights_loader('MNIST', 'W', 'DENSE'),
-                    bias_initializer=_kr_weights_loader('MNIST', 'B', 'DENSE')))
+
+    if from_logits:
+        model.add(Dense(10, activation='linear', kernel_initializer=_kr_weights_loader('MNIST', 'W', 'DENSE'),
+                        bias_initializer=_kr_weights_loader('MNIST', 'B', 'DENSE')))
+    else:
+        model.add(Dense(10, activation='softmax', kernel_initializer=_kr_weights_loader('MNIST', 'W', 'DENSE'),
+                        bias_initializer=_kr_weights_loader('MNIST', 'B', 'DENSE')))
 
     if loss_name == 'categorical_hinge':
-        loss = keras.losses.categorical_hinge
+        if loss_type == 'label':
+            raise AttributeError
+        elif loss_type == 'function_losses':
+            loss = keras.losses.categorical_hinge
     elif loss_name == 'categorical_crossentropy':
-        loss = keras.losses.categorical_crossentropy
+        if loss_type == 'label':
+            if from_logits:
+                raise AttributeError
+            else:
+                loss = loss_name
+        elif loss_type == 'function_losses':
+            if from_logits:
+                if int(keras.__version__.split('.')[0]) == 2 and int(keras.__version__.split('.')[1]) >= 3:
+                    def categorical_crossentropy(y_true, y_pred):
+                        return keras.losses.categorical_crossentropy(y_true, y_pred, from_logits=True)
+
+                    loss = categorical_crossentropy
+                else:
+                    raise AttributeError
+            else:
+                loss = keras.losses.categorical_crossentropy
+        elif loss_type == 'function_backend':
+            if from_logits:
+                def categorical_crossentropy(y_true, y_pred):
+                    return keras.backend.categorical_crossentropy(y_true, y_pred, from_logits=True)
+
+                loss = categorical_crossentropy
+            else:
+                loss = keras.backend.categorical_crossentropy
     elif loss_name == 'sparse_categorical_crossentropy':
-        loss = keras.losses.sparse_categorical_crossentropy
-    elif loss_name == 'binary_crossentropy':
-        loss = keras.losses.binary_crossentropy
+        if loss_type == 'label':
+            if from_logits:
+                raise AttributeError
+            else:
+                loss = loss_name
+        elif loss_type == 'function_losses':
+            if from_logits:
+                if int(keras.__version__.split('.')[0]) == 2 and int(keras.__version__.split('.')[1]) >= 3:
+                    def sparse_categorical_crossentropy(y_true, y_pred):
+                        return keras.losses.sparse_categorical_crossentropy(y_true, y_pred, from_logits=True)
+
+                    loss = sparse_categorical_crossentropy
+                else:
+                    raise AttributeError
+            else:
+                loss = keras.losses.sparse_categorical_crossentropy
+        elif loss_type == 'function_backend':
+            if from_logits:
+                def sparse_categorical_crossentropy(y_true, y_pred):
+                    return keras.backend.sparse_categorical_crossentropy(y_true, y_pred, from_logits=True)
+
+                loss = sparse_categorical_crossentropy
+            else:
+                loss = keras.backend.sparse_categorical_crossentropy
     elif loss_name == 'kullback_leibler_divergence':
-        loss = keras.losses.kullback_leibler_divergence
-    elif loss_name == 'cosine_proximity':
-        loss = keras.losses.cosine_proximity
+        if loss_type == 'label':
+            raise AttributeError
+        elif loss_type == 'function_losses':
+            loss = keras.losses.kullback_leibler_divergence
+        elif loss_type == 'function_backend':
+            raise AttributeError
+    elif loss_name == 'cosine_similarity':
+        if loss_type == 'label':
+            loss = loss_name
+        elif loss_type == 'function_losses':
+            loss = keras.losses.cosine_similarity
+        elif loss_type == 'function_backend':
+            loss = keras.backend.cosine_similarity
+
     else:
         raise ValueError('Loss name not recognised.')
 
     model.compile(loss=loss, optimizer=keras.optimizers.Adam(lr=0.01), metrics=['accuracy'])
 
     # Get classifier
-    krc = KerasClassifier(model, clip_values=(0, 1), use_logits=False)
+    krc = KerasClassifier(model, clip_values=(0, 1), use_logits=from_logits)
 
     return krc
 

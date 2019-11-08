@@ -142,7 +142,10 @@ class KerasClassifier(ClassifierNeuralNetwork, ClassifierGradients, Classifier):
             elif '__name__' in dir(self._model.loss) and self._model.loss.__name__ in \
                     ['categorical_hinge', 'categorical_crossentropy', 'sparse_categorical_crossentropy',
                      'binary_crossentropy', 'kullback_leibler_divergence']:
-                loss_function = getattr(keras.losses, self._model.loss.__name__)
+                if self._model.loss.__name__ in ['categorical_hinge', 'kullback_leibler_divergence']:
+                    loss_function = getattr(keras.losses, self._model.loss.__name__)
+                else:
+                    loss_function = getattr(keras.backend, self._model.loss.__name__)
 
             elif isinstance(self._model.loss, (keras.losses.CategoricalHinge,
                                                keras.losses.CategoricalCrossentropy,
@@ -157,10 +160,11 @@ class KerasClassifier(ClassifierNeuralNetwork, ClassifierGradients, Classifier):
                                                                             'categorical_crossentropy',
                                                                             'binary_crossentropy',
                                                                             'kullback_leibler_divergence']) \
-                or isinstance(loss_function, (keras.losses.CategoricalHinge,
-                                              keras.losses.CategoricalCrossentropy,
-                                              keras.losses.BinaryCrossentropy,
-                                              keras.losses.KLDivergence)):
+                or (int(keras.__version__.split('.')[1]) >= 3 and isinstance(loss_function, (
+                keras.losses.CategoricalHinge,
+                keras.losses.CategoricalCrossentropy,
+                keras.losses.BinaryCrossentropy,
+                keras.losses.KLDivergence))):
             self._reduce_labels = False
             label_ph = k.placeholder(shape=self._output.shape)
         elif ('__name__' in dir(loss_function) and loss_function.__name__ in ['sparse_categorical_crossentropy']) \
@@ -174,7 +178,7 @@ class KerasClassifier(ClassifierNeuralNetwork, ClassifierGradients, Classifier):
                                                                               'sparse_categorical_crossentropy',
                                                                               'binary_crossentropy']):
             predictions = self._output
-            loss_ = loss_function(label_ph, self._output, from_logits=use_logits)
+            loss_ = loss_function(label_ph, self._output, from_logits=self._use_logits)
 
         elif '__name__' in dir(loss_function) and loss_function.__name__ in ['categorical_hinge',
                                                                              'kullback_leibler_divergence']:
