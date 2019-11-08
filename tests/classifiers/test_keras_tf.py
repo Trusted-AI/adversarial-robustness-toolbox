@@ -396,11 +396,6 @@ class TestKerasClassifierTF(unittest.TestCase):
         self.assertIn('input_layer=0, output_layer=0', repr_)
 
     def test_loss_functions(self):
-        # loss_names = ['categorical_hinge', 'categorical_crossentropy', 'sparse_categorical_crossentropy',
-        #               'binary_crossentropy', 'kullback_leibler_divergence']
-
-        # if tf.__version__[0] == '2':
-        # loss_names.append('cosine_similarity')
 
         # prediction and class_gradient should be independent of logits/probabilities and of loss function
 
@@ -411,12 +406,12 @@ class TestKerasClassifierTF(unittest.TestCase):
 
         class_gradient_probabilities_expected = np.asarray([0.0000000e+00, 0.0000000e+00, 0.0000000e+00, 2.3582461e-03,
                                                             4.8802234e-04, 1.6699843e-03, -6.4777887e-05,
-                                                            -1.4215634e-03,
-                                                            -1.3359448e-04, 2.0448549e-03, 2.8171093e-04, 1.9665064e-04,
-                                                            1.5335126e-03, 1.7000455e-03, -2.0136381e-04, 6.4588618e-04,
-                                                            2.0524357e-03, 2.1990810e-03, 8.3692279e-04, 0.0000000e+00,
+                                                            -1.4215634e-03, -1.3359448e-04, 2.0448549e-03,
+                                                            2.8171093e-04, 1.9665064e-04, 1.5335126e-03, 1.7000455e-03,
+                                                            -2.0136381e-04, 6.4588618e-04, 2.0524357e-03, 2.1990810e-03,
+                                                            8.3692279e-04, 0.0000000e+00, 0.0000000e+00, 0.0000000e+00,
                                                             0.0000000e+00, 0.0000000e+00, 0.0000000e+00, 0.0000000e+00,
-                                                            0.0000000e+00, 0.0000000e+00, 0.0000000e+00, 0.0000000e+00])
+                                                            0.0000000e+00, 0.0000000e+00])
 
         class_gradient_logits_expected = np.asarray([0.0, 0.0, 0.0, 0.08147776, 0.01847786, 0.07045883, -0.00269106,
                                                      -0.03189164, 0.01643312, 0.1185048, 0.02166386, 0.00905327,
