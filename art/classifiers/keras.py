@@ -139,11 +139,9 @@ class KerasClassifier(ClassifierNeuralNetwork, ClassifierGradients, Classifier):
             if isinstance(self._model.loss, six.string_types):
                 loss_function = getattr(k, self._model.loss)
 
-            elif '__name__' in dir(self._model.loss) and self._model.loss.__name__ in ['categorical_hinge',
-                                                                                       'categorical_crossentropy'
-                                                                                       'sparse_categorical_crossentropy',
-                                                                                       'binary_crossentropy',
-                                                                                       'kullback_leibler_divergence']:
+            elif '__name__' in dir(self._model.loss) and self._model.loss.__name__ in \
+                    ['categorical_hinge', 'categorical_crossentropy', 'sparse_categorical_crossentropy',
+                     'binary_crossentropy', 'kullback_leibler_divergence']:
                 loss_function = getattr(keras.losses, self._model.loss.__name__)
 
             elif isinstance(self._model.loss, (keras.losses.CategoricalHinge,
