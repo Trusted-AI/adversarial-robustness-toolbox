@@ -160,11 +160,10 @@ class KerasClassifier(ClassifierNeuralNetwork, ClassifierGradients, Classifier):
                                                                             'categorical_crossentropy',
                                                                             'binary_crossentropy',
                                                                             'kullback_leibler_divergence']) \
-                or ((int(tf.__version__.split('.')[0]) >= 2 or int(keras.__version__.split('.')[1]) >= 3)
-                    and isinstance(loss_function, (keras.losses.CategoricalHinge,
-                                                   keras.losses.CategoricalCrossentropy,
-                                                   keras.losses.BinaryCrossentropy,
-                                                   keras.losses.KLDivergence))):
+                or (self.is_tensorflow and isinstance(loss_function, (keras.losses.CategoricalHinge,
+                                                                      keras.losses.CategoricalCrossentropy,
+                                                                      keras.losses.BinaryCrossentropy,
+                                                                      keras.losses.KLDivergence))):
             self._reduce_labels = False
             label_ph = k.placeholder(shape=self._output.shape)
         elif ('__name__' in dir(loss_function) and loss_function.__name__ in ['sparse_categorical_crossentropy']) \
