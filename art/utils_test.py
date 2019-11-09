@@ -128,8 +128,8 @@ def get_classifier_tf():
     sess.run(tf.global_variables_initializer())
 
     # Create the classifier
-    tfc = TensorFlowClassifier(clip_values=(0, 1), input_ph=input_ph, output=probabilities, labels_ph=output_ph, train=train,
-                               loss=loss, learning=None, sess=sess)
+    tfc = TensorFlowClassifier(clip_values=(0, 1), input_ph=input_ph, output=probabilities, labels_ph=output_ph,
+                               train=train, loss=loss, learning=None, sess=sess)
 
     return tfc, sess
 
