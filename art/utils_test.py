@@ -81,7 +81,7 @@ def _kr_tf_weights_loader(dataset, weights_type, layer='DENSE'):
     return weights
 
 
-def get_classifier_tf():
+def get_classifier_tf(from_logits=False):
     """
     Standard TensorFlow classifier for unit testing.
 
@@ -128,8 +128,12 @@ def get_classifier_tf():
     sess.run(tf.global_variables_initializer())
 
     # Create the classifier
-    tfc = TensorFlowClassifier(clip_values=(0, 1), input_ph=input_ph, output=probabilities, labels_ph=output_ph,
-                               train=train, loss=loss, learning=None, sess=sess)
+    if from_logits:
+        tfc = TensorFlowClassifier(clip_values=(0, 1), input_ph=input_ph, output=logits, labels_ph=output_ph,
+                                   train=train, loss=loss, learning=None, sess=sess)
+    else:
+        tfc = TensorFlowClassifier(clip_values=(0, 1), input_ph=input_ph, output=probabilities, labels_ph=output_ph,
+                                   train=train, loss=loss, learning=None, sess=sess)
 
     return tfc, sess
 
@@ -427,7 +431,7 @@ def get_classifier_kr_tf(loss_name='categorical_crossentropy', loss_type='functi
     return krc
 
 
-def get_classifier_pt():
+def get_classifier_pt(from_logits=False):
     """
     Standard PyTorch classifier for unit testing
 
@@ -473,7 +477,8 @@ def get_classifier_pt():
             x = self.pool(x)
             x = x.reshape(-1, 25)
             x = self.fullyconnected(x)
-            x = torch.nn.functional.softmax(x)
+            if not from_logits:
+                x = torch.nn.functional.softmax(x)
             return x
 
     # Define the network

@@ -109,10 +109,10 @@ class TestSpatialTransformation(unittest.TestCase):
         :return:
         """
         # Build PyTorchClassifier
-        ptc = get_classifier_pt()
+        ptc = get_classifier_pt(from_logits=True)
 
-        x_train = np.swapaxes(self.x_train, 1, 3).astype(np.float32)
-        x_test = np.swapaxes(self.x_test, 1, 3).astype(np.float32)
+        x_train = np.reshape(self.x_train, (self.x_train.shape[0], 1, 28, 28)).astype(np.float32)
+        x_test = np.reshape(self.x_test, (self.x_test.shape[0], 1, 28, 28)).astype(np.float32)
 
         # Attack
         attack_st = SpatialTransformation(ptc, max_translation=10.0, num_translations=3, max_rotation=30.0,
@@ -122,12 +122,12 @@ class TestSpatialTransformation(unittest.TestCase):
         print('abs(x_train_adv[0, 0, 13, :]', abs(x_train[0, 0, 13, :]))
         print('abs(x_train_adv[0, 0, 13, :]', abs(x_train_adv[0, 0, 13, :]))
 
-        self.assertAlmostEqual(x_train_adv[0, 0, 13, 7], 0.287, delta=0.01)
-        self.assertAlmostEqual(attack_st.fooling_rate, 0.82, delta=0.01)
+        self.assertAlmostEqual(x_train_adv[0, 0, 13, 18], 0.627451, delta=0.01)
+        self.assertAlmostEqual(attack_st.fooling_rate, 0.59, delta=0.01)
 
         self.assertEqual(attack_st.attack_trans_x, 0)
         self.assertEqual(attack_st.attack_trans_y, 3)
-        self.assertEqual(attack_st.attack_rot, -30.0)
+        self.assertEqual(attack_st.attack_rot, 0.0)
 
         x_test_adv = attack_st.generate(x_test)
 

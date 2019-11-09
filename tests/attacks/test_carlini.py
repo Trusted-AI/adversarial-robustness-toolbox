@@ -63,7 +63,7 @@ class TestCarlini(unittest.TestCase):
         (_, _), (x_test, y_test) = self.mnist
 
         # Build TensorFlowClassifier
-        tfc, sess = get_classifier_tf()
+        tfc, sess = get_classifier_tf(from_logits=True)
 
         # Failure attack
         cl2m = CarliniL2Method(classifier=tfc, targeted=True, max_iter=0, binary_search_steps=0, learning_rate=0,
@@ -124,7 +124,7 @@ class TestCarlini(unittest.TestCase):
         (_, _), (x_test, y_test) = self.mnist
 
         # Build KerasClassifier
-        krc = get_classifier_kr()
+        krc = get_classifier_kr(from_logits=True)
 
         # First attack
         cl2m = CarliniL2Method(classifier=krc, targeted=True, max_iter=10)
@@ -161,9 +161,9 @@ class TestCarlini(unittest.TestCase):
         (_, _), (x_test, y_test) = self.mnist
 
         # Build PyTorchClassifier
-        ptc = get_classifier_pt()
+        ptc = get_classifier_pt(from_logits=True)
 
-        x_test = np.swapaxes(x_test, 1, 3).astype(np.float32)
+        x_test = np.reshape(x_test, (x_test.shape[0], 1, 28, 28)).astype(np.float32)
 
         # First attack
         cl2m = CarliniL2Method(classifier=ptc, targeted=True, max_iter=10)
@@ -340,7 +340,7 @@ class TestCarlini(unittest.TestCase):
         (_, _), (x_test, y_test) = self.mnist
 
         # Build TensorFlowClassifier
-        tfc, sess = get_classifier_tf()
+        tfc, sess = get_classifier_tf(from_logits=True)
 
         # Failure attack
         clinfm = CarliniLInfMethod(classifier=tfc, targeted=True, max_iter=0, learning_rate=0, eps=0.5)
@@ -361,7 +361,7 @@ class TestCarlini(unittest.TestCase):
         (_, _), (x_test, y_test) = self.mnist
 
         # Build TensorFlowClassifier
-        tfc, sess = get_classifier_tf()
+        tfc, sess = get_classifier_tf(from_logits=True)
 
         # First attack
         clinfm = CarliniLInfMethod(classifier=tfc, targeted=True, max_iter=10, eps=0.5)
@@ -400,7 +400,7 @@ class TestCarlini(unittest.TestCase):
         (_, _), (x_test, y_test) = self.mnist
 
         # Build KerasClassifier
-        krc, sess = get_classifier_tf()
+        krc, sess = get_classifier_tf(from_logits=True)
 
         # First attack
         clinfm = CarliniLInfMethod(classifier=krc, targeted=True, max_iter=10, eps=0.5)
@@ -419,7 +419,7 @@ class TestCarlini(unittest.TestCase):
         # Second attack
         clinfm = CarliniLInfMethod(classifier=krc, targeted=False, max_iter=10, eps=0.5)
         x_test_adv = clinfm.generate(x_test)
-        self.assertLessEqual(np.amax(x_test_adv), 1.0)
+        self.assertLessEqual(np.amax(x_test_adv), 1.000001)
         self.assertGreaterEqual(np.amin(x_test_adv), -1e-6)
         target = np.argmax(params['y'], axis=1)
         y_pred_adv = np.argmax(krc.predict(x_test_adv), axis=1)
@@ -440,9 +440,9 @@ class TestCarlini(unittest.TestCase):
         (_, _), (x_test, y_test) = self.mnist
 
         # Build PyTorchClassifier
-        ptc = get_classifier_pt()
+        ptc = get_classifier_pt(from_logits=True)
 
-        x_test = np.swapaxes(x_test, 1, 3).astype(np.float32)
+        x_test = np.reshape(x_test, (x_test.shape[0], 1, 28, 28)).astype(np.float32)
 
         # First attack
         clinfm = CarliniLInfMethod(classifier=ptc, targeted=True, max_iter=10, eps=0.5)

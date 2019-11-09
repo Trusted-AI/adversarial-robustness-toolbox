@@ -256,7 +256,7 @@ class TestHopSkipJump(unittest.TestCase):
 
     def test_pytorch_resume(self):
         (_, _), (x_test, y_test) = self.mnist
-        x_test = np.swapaxes(x_test, 1, 3).astype(np.float32)
+        x_test = np.reshape(x_test, (x_test.shape[0], 1, 28, 28)).astype(np.float32)
 
         # Build PyTorchClassifier
         ptc = get_classifier_pt()

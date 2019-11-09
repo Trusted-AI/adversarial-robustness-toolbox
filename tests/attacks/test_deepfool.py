@@ -59,7 +59,7 @@ class TestDeepFool(unittest.TestCase):
         (x_train, y_train), (x_test, y_test) = self.mnist
 
         # Keras classifier
-        classifier = get_classifier_kr()
+        classifier = get_classifier_kr(from_logits=True)
 
         scores = classifier._model.evaluate(x_train, y_train)
         logger.info('[Keras, MNIST] Accuracy on training set: %.2f%%', (scores[1] * 100))
@@ -89,7 +89,7 @@ class TestDeepFool(unittest.TestCase):
         (x_train, y_train), (x_test, y_test) = self.mnist
 
         # Create basic CNN on MNIST using TensorFlow
-        classifier, sess = get_classifier_tf()
+        classifier, sess = get_classifier_tf(from_logits=True)
 
         scores = get_labels_np_array(classifier.predict(x_train))
         accuracy = np.sum(np.argmax(scores, axis=1) == np.argmax(y_train, axis=1)) / y_train.shape[0]
@@ -122,9 +122,9 @@ class TestDeepFool(unittest.TestCase):
         (x_train, y_train), (x_test, y_test) = self.mnist
 
         # Create basic PyTorch model
-        classifier = get_classifier_pt()
-        x_train = np.swapaxes(x_train, 1, 3).astype(np.float32)
-        x_test = np.swapaxes(x_test, 1, 3).astype(np.float32)
+        classifier = get_classifier_pt(from_logits=True)
+        x_train = np.reshape(x_train, (x_train.shape[0], 1, 28, 28)).astype(np.float32)
+        x_test = np.reshape(x_test, (x_test.shape[0], 1, 28, 28)).astype(np.float32)
 
         scores = get_labels_np_array(classifier.predict(x_train))
         accuracy = np.sum(np.argmax(scores, axis=1) == np.argmax(y_train, axis=1)) / y_train.shape[0]
@@ -155,7 +155,7 @@ class TestDeepFool(unittest.TestCase):
 
     def test_kera_mnist_partial_grads(self):
         (_, _), (x_test, y_test) = self.mnist
-        classifier = get_classifier_kr()
+        classifier = get_classifier_kr(from_logits=True)
         attack = DeepFool(classifier, max_iter=2, nb_grads=3)
         x_test_adv = attack.generate(x_test)
         self.assertFalse((x_test == x_test_adv).all())
