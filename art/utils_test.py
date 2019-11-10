@@ -345,10 +345,16 @@ def get_classifier_kr_tf(loss_name='categorical_crossentropy', loss_type='functi
         elif loss_type == 'function':
             loss = tf.keras.losses.categorical_hinge
         elif loss_type == 'class':
-            if tf.__version__[0] == '2':
+            try:
                 reduction = tf.keras.losses.Reduction.NONE
-            else:
-                reduction = tf.python.keras.utils.losses_utils.ReductionV2.NONE
+            except AttributeError:
+                try:
+                    reduction = tf.losses.Reduction.NONE
+                except AttributeError:
+                    try:
+                        reduction = tf.python.keras.utils.losses_utils.ReductionV2.NONE
+                    except AttributeError:
+                        raise ImportError
             loss = tf.keras.losses.CategoricalHinge(reduction=reduction)
     elif loss_name == 'categorical_crossentropy':
         if loss_type == 'label':
@@ -365,10 +371,16 @@ def get_classifier_kr_tf(loss_name='categorical_crossentropy', loss_type='functi
             else:
                 loss = tf.keras.losses.categorical_crossentropy
         elif loss_type == 'class':
-            if tf.__version__[0] == '2':
+            try:
                 reduction = tf.keras.losses.Reduction.NONE
-            else:
-                reduction = tf.python.keras.utils.losses_utils.ReductionV2.NONE
+            except AttributeError:
+                try:
+                    reduction = tf.losses.Reduction.NONE
+                except AttributeError:
+                    try:
+                        reduction = tf.python.keras.utils.losses_utils.ReductionV2.NONE
+                    except AttributeError:
+                        raise ImportError
             loss = tf.keras.losses.CategoricalCrossentropy(from_logits=from_logits, reduction=reduction)
     elif loss_name == 'sparse_categorical_crossentropy':
         if loss_type == 'label':
@@ -385,10 +397,16 @@ def get_classifier_kr_tf(loss_name='categorical_crossentropy', loss_type='functi
             else:
                 loss = tf.keras.losses.sparse_categorical_crossentropy
         elif loss_type == 'class':
-            if tf.__version__[0] == '2':
+            try:
                 reduction = tf.keras.losses.Reduction.NONE
-            else:
-                reduction = tf.python.keras.utils.losses_utils.ReductionV2.NONE
+            except AttributeError:
+                try:
+                    reduction = tf.losses.Reduction.NONE
+                except AttributeError:
+                    try:
+                        reduction = tf.python.keras.utils.losses_utils.ReductionV2.NONE
+                    except AttributeError:
+                        raise ImportError
             loss = tf.keras.losses.SparseCategoricalCrossentropy(from_logits=from_logits, reduction=reduction)
     elif loss_name == 'kullback_leibler_divergence':
         if loss_type == 'label':
@@ -396,10 +414,16 @@ def get_classifier_kr_tf(loss_name='categorical_crossentropy', loss_type='functi
         elif loss_type == 'function':
             loss = tf.keras.losses.kullback_leibler_divergence
         elif loss_type == 'class':
-            if tf.__version__[0] == '2':
+            try:
                 reduction = tf.keras.losses.Reduction.NONE
-            else:
-                reduction = tf.python.keras.utils.losses_utils.ReductionV2.NONE
+            except AttributeError:
+                try:
+                    reduction = tf.losses.Reduction.NONE
+                except AttributeError:
+                    try:
+                        reduction = tf.python.keras.utils.losses_utils.ReductionV2.NONE
+                    except AttributeError:
+                        raise ImportError
             loss = tf.keras.losses.KLDivergence(reduction=reduction)
     elif loss_name == 'cosine_similarity':
         if loss_type == 'label':
@@ -407,10 +431,16 @@ def get_classifier_kr_tf(loss_name='categorical_crossentropy', loss_type='functi
         elif loss_type == 'function':
             loss = tf.keras.losses.cosine_similarity
         elif loss_type == 'class':
-            if tf.__version__[0] == '2':
+            try:
                 reduction = tf.keras.losses.Reduction.NONE
-            else:
-                reduction = tf.python.keras.utils.losses_utils.ReductionV2.NONE
+            except AttributeError:
+                try:
+                    reduction = tf.losses.Reduction.NONE
+                except AttributeError:
+                    try:
+                        reduction = tf.python.keras.utils.losses_utils.ReductionV2.NONE
+                    except AttributeError:
+                        raise ImportError
             loss = tf.keras.losses.CosineSimilarity(reduction=reduction)
 
     else:
