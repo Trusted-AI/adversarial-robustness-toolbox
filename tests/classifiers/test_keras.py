@@ -420,6 +420,21 @@ class TestKerasClassifier(unittest.TestCase):
                                                      0.06857751, 0.00657996, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0,
                                                      0.0])
 
+        def _run_tests(_loss_name, _loss_type, _y_test_pred_expected, _class_gradient_probabilities_expected,
+                       _loss_gradient_expected, _from_logits):
+            master_seed(1234)
+            classifier = get_classifier_kr(loss_name=_loss_name, loss_type=_loss_type, from_logits=_from_logits)
+
+            y_test_pred = np.argmax(classifier.predict(x=self.x_test), axis=1)
+            np.testing.assert_array_equal(y_test_pred, _y_test_pred_expected)
+
+            class_gradient = classifier.class_gradient(self.x_test, label=5)
+            np.testing.assert_array_almost_equal(class_gradient[99, 0, 14, :, 0],
+                                                 _class_gradient_probabilities_expected)
+
+            loss_gradient = classifier.loss_gradient(x=self.x_test, y=self.y_test)
+            np.testing.assert_array_almost_equal(loss_gradient[99, 14, :, 0], _loss_gradient_expected)
+
         # ================= #
         # categorical_hinge #
         # ================= #
@@ -436,19 +451,10 @@ class TestKerasClassifier(unittest.TestCase):
         # testing with probabilities
 
         for loss_type in ['function_losses']:
-            logging.info('probabilities', loss_name, loss_type)
+            logger.info('probabilities', loss_name, loss_type)
 
-            master_seed(1234)
-            classifier = get_classifier_kr(loss_name=loss_name, loss_type=loss_type, from_logits=False)
-
-            y_test_pred = np.argmax(classifier.predict(x=self.x_test), axis=1)
-            np.testing.assert_array_equal(y_test_pred, y_test_pred_expected)
-
-            class_gradient = classifier.class_gradient(self.x_test, label=5)
-            np.testing.assert_array_almost_equal(class_gradient[99, 0, 14, :, 0], class_gradient_probabilities_expected)
-
-            loss_gradient = classifier.loss_gradient(x=self.x_test, y=self.y_test)
-            np.testing.assert_array_almost_equal(loss_gradient[99, 14, :, 0], loss_gradient_expected)
+            _run_tests(loss_name, loss_type, y_test_pred_expected, class_gradient_probabilities_expected,
+                       loss_gradient_expected, _from_logits=False)
 
         # ======================== #
         # categorical_crossentropy #
@@ -466,41 +472,18 @@ class TestKerasClassifier(unittest.TestCase):
         # testing with probabilities
 
         for loss_type in ['label', 'function_losses', 'function_backend']:
-            logging.info('probabilities', loss_name, loss_type)
+            logger.info('probabilities', loss_name, loss_type)
 
-            master_seed(1234)
-            classifier = get_classifier_kr(loss_name=loss_name, loss_type=loss_type, from_logits=False)
-
-            y_test_pred = np.argmax(classifier.predict(x=self.x_test), axis=1)
-            np.testing.assert_array_equal(y_test_pred, y_test_pred_expected)
-
-            class_gradient = classifier.class_gradient(self.x_test, label=5)
-            np.testing.assert_array_almost_equal(class_gradient[99, 0, 14, :, 0], class_gradient_probabilities_expected)
-
-            loss_gradient = classifier.loss_gradient(x=self.x_test, y=self.y_test)
-            np.testing.assert_array_almost_equal(loss_gradient[99, 14, :, 0], loss_gradient_expected)
+            _run_tests(loss_name, loss_type, y_test_pred_expected, class_gradient_probabilities_expected,
+                       loss_gradient_expected, _from_logits=False)
 
         # testing with logits
 
-        loss_types = ['function_backend']
+        for loss_type in ['function_backend']:
+            logger.info('logits', loss_name, loss_type)
 
-        if int(keras.__version__.split('.')[0]) == 2 and int(keras.__version__.split('.')[1]) >= 3:
-            loss_types.append('function_backend')
-
-        for loss_type in loss_types:
-            logging.info('logits', loss_name, loss_type)
-
-            master_seed(1234)
-            classifier = get_classifier_kr(loss_name=loss_name, loss_type=loss_type, from_logits=True)
-
-            y_test_pred = np.argmax(classifier.predict(x=self.x_test), axis=1)
-            np.testing.assert_array_equal(y_test_pred, y_test_pred_expected)
-
-            class_gradient = classifier.class_gradient(self.x_test, label=5)
-            np.testing.assert_array_almost_equal(class_gradient[99, 0, 14, :, 0], class_gradient_logits_expected)
-
-            loss_gradient = classifier.loss_gradient(x=self.x_test, y=self.y_test)
-            np.testing.assert_array_almost_equal(loss_gradient[99, 14, :, 0], loss_gradient_expected)
+            _run_tests(loss_name, loss_type, y_test_pred_expected, class_gradient_logits_expected,
+                       loss_gradient_expected, _from_logits=True)
 
         # =============================== #
         # sparse_categorical_crossentropy #
@@ -518,41 +501,18 @@ class TestKerasClassifier(unittest.TestCase):
         # testing with probabilities
 
         for loss_type in ['label', 'function_losses', 'function_backend']:
-            logging.info('probabilities', loss_name, loss_type)
+            logger.info('probabilities', loss_name, loss_type)
 
-            master_seed(1234)
-            classifier = get_classifier_kr(loss_name=loss_name, loss_type=loss_type, from_logits=False)
-
-            y_test_pred = np.argmax(classifier.predict(x=self.x_test), axis=1)
-            np.testing.assert_array_equal(y_test_pred, y_test_pred_expected)
-
-            class_gradient = classifier.class_gradient(self.x_test, label=5)
-            np.testing.assert_array_almost_equal(class_gradient[99, 0, 14, :, 0], class_gradient_probabilities_expected)
-
-            loss_gradient = classifier.loss_gradient(x=self.x_test, y=self.y_test)
-            np.testing.assert_array_almost_equal(loss_gradient[99, 14, :, 0], loss_gradient_expected)
+            _run_tests(loss_name, loss_type, y_test_pred_expected, class_gradient_probabilities_expected,
+                       loss_gradient_expected, _from_logits=False)
 
         # testing with logits
 
-        loss_types = ['function_backend']
+        for loss_type in ['function_backend']:
+            logger.info('logits', loss_name, loss_type)
 
-        if int(keras.__version__.split('.')[0]) == 2 and int(keras.__version__.split('.')[1]) >= 3:
-            loss_types.append('function_backend')
-
-        for loss_type in loss_types:
-            logging.info('logits', loss_name, loss_type)
-
-            master_seed(1234)
-            classifier = get_classifier_kr(loss_name=loss_name, loss_type=loss_type, from_logits=True)
-
-            y_test_pred = np.argmax(classifier.predict(x=self.x_test), axis=1)
-            np.testing.assert_array_equal(y_test_pred, y_test_pred_expected)
-
-            class_gradient = classifier.class_gradient(self.x_test, label=5)
-            np.testing.assert_array_almost_equal(class_gradient[99, 0, 14, :, 0], class_gradient_logits_expected)
-
-            loss_gradient = classifier.loss_gradient(x=self.x_test, y=self.y_test)
-            np.testing.assert_array_almost_equal(loss_gradient[99, 14, :, 0], loss_gradient_expected)
+            _run_tests(loss_name, loss_type, y_test_pred_expected, class_gradient_logits_expected,
+                       loss_gradient_expected, _from_logits=True)
 
         # =========================== #
         # kullback_leibler_divergence #
@@ -570,19 +530,10 @@ class TestKerasClassifier(unittest.TestCase):
         # testing with probabilities
 
         for loss_type in ['function_losses']:
-            logging.info('probabilities', loss_name, loss_type)
+            logger.info('probabilities', loss_name, loss_type)
 
-            master_seed(1234)
-            classifier = get_classifier_kr(loss_name=loss_name, loss_type=loss_type, from_logits=False)
-
-            y_test_pred = np.argmax(classifier.predict(x=self.x_test), axis=1)
-            np.testing.assert_array_equal(y_test_pred, y_test_pred_expected)
-
-            class_gradient = classifier.class_gradient(self.x_test, label=5)
-            np.testing.assert_array_almost_equal(class_gradient[99, 0, 14, :, 0], class_gradient_probabilities_expected)
-
-            loss_gradient = classifier.loss_gradient(x=self.x_test, y=self.y_test)
-            np.testing.assert_array_almost_equal(loss_gradient[99, 14, :, 0], loss_gradient_expected)
+            _run_tests(loss_name, loss_type, y_test_pred_expected, class_gradient_probabilities_expected,
+                       loss_gradient_expected, _from_logits=False)
 
         # # ================= #
         # # cosine_similarity #
@@ -600,20 +551,10 @@ class TestKerasClassifier(unittest.TestCase):
         # # testing with probabilities
         #
         # for loss_type in ['function', 'class']:
-        #     logging.info('probabilities', loss_name, loss_type)
+        #     logger.info('probabilities', loss_name, loss_type)
         #
-        #     master_seed(1234)
-        #     classifier = get_classifier_kr_tf(loss_name=loss_name, loss_type=loss_type, from_logits=False)
-        #
-        #     y_test_pred = np.argmax(classifier.predict(x=self.x_test), axis=1)
-        #     np.testing.assert_array_equal(y_test_pred, y_test_pred_expected)
-        #
-        #     class_gradient = classifier.class_gradient(self.x_test, label=5)
-        #     np.testing.assert_array_almost_equal(class_gradient[99, 0, 14, :, 0],
-        #                                          class_gradient_probabilities_expected)
-        #
-        #     loss_gradient = classifier.loss_gradient(x=self.x_test, y=self.y_test)
-        #     np.testing.assert_array_almost_equal(loss_gradient[99, 14, :, 0], loss_gradient_expected)
+        #     _run_tests(loss_name, loss_type, y_test_pred_expected, class_gradient_probabilities_expected,
+        #                loss_gradient_expected, _from_logits=False)
 
 
 if __name__ == '__main__':
