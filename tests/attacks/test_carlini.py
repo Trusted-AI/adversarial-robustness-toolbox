@@ -20,6 +20,7 @@ from __future__ import absolute_import, division, print_function, unicode_litera
 import logging
 import unittest
 
+import keras
 import keras.backend as k
 import numpy as np
 
@@ -116,6 +117,8 @@ class TestCarlini(unittest.TestCase):
         # Clean-up session
         sess.close()
 
+    @unittest.skipIf(not (int(keras.__version__.split('.')[0]) == 2 and int(keras.__version__.split('.')[1]) >= 3),
+                     reason='Minimal version of Keras or TensorFlow required.')
     def test_keras_mnist_L2(self):
         """
         Second test with the KerasClassifier.
@@ -392,6 +395,8 @@ class TestCarlini(unittest.TestCase):
         # Clean-up session
         sess.close()
 
+    @unittest.skipIf(not (int(keras.__version__.split('.')[0]) == 2 and int(keras.__version__.split('.')[1]) >= 3),
+                     reason='Minimal version of Keras or TensorFlow required.')
     def test_keras_mnist_LInf(self):
         """
         Second test with the KerasClassifier.
@@ -400,7 +405,7 @@ class TestCarlini(unittest.TestCase):
         (_, _), (x_test, y_test) = self.mnist
 
         # Build KerasClassifier
-        krc, sess = get_classifier_tf(from_logits=True)
+        krc, sess = get_classifier_kr(from_logits=True)
 
         # First attack
         clinfm = CarliniLInfMethod(classifier=krc, targeted=True, max_iter=10, eps=0.5)

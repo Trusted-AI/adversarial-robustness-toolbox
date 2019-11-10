@@ -66,8 +66,8 @@ class TestDetectorClassifier(unittest.TestCase):
     def setUpClass(cls):
         (x_train, y_train), (x_test, y_test), _, _ = load_dataset('mnist')
 
-        x_train = np.swapaxes(x_train, 1, 3).astype(np.float32)
-        x_test = np.swapaxes(x_test, 1, 3).astype(np.float32)
+        x_train = np.reshape(x_train, (x_train.shape[0], 1, 28, 28)).astype(np.float32)
+        x_test = np.reshape(x_test, (x_test.shape[0], 1, 28, 28)).astype(np.float32)
 
         cls.x_train = x_train[:NB_TRAIN]
         cls.y_train = y_train[:NB_TRAIN]

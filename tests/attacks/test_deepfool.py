@@ -20,6 +20,7 @@ from __future__ import absolute_import, division, print_function, unicode_litera
 import logging
 import unittest
 
+import keras
 import keras.backend as k
 import numpy as np
 
@@ -55,6 +56,8 @@ class TestDeepFool(unittest.TestCase):
     def tearDownClass(cls):
         k.clear_session()
 
+    @unittest.skipIf(not (int(keras.__version__.split('.')[0]) == 2 and int(keras.__version__.split('.')[1]) >= 3),
+                     reason='Minimal version of Keras or TensorFlow required.')
     def test_keras_mnist(self):
         (x_train, y_train), (x_test, y_test) = self.mnist
 
@@ -153,6 +156,8 @@ class TestDeepFool(unittest.TestCase):
         accuracy = np.sum(np.argmax(test_y_pred, axis=1) == np.argmax(y_test, axis=1)) / y_test.shape[0]
         logger.info('Accuracy on adversarial test examples: %.2f%%', (accuracy * 100))
 
+    @unittest.skipIf(not (int(keras.__version__.split('.')[0]) == 2 and int(keras.__version__.split('.')[1]) >= 3),
+                     reason='Minimal version of Keras or TensorFlow required.')
     def test_kera_mnist_partial_grads(self):
         (_, _), (x_test, y_test) = self.mnist
         classifier = get_classifier_kr(from_logits=True)
