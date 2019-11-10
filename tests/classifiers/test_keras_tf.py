@@ -428,7 +428,8 @@ class TestKerasClassifierTF(unittest.TestCase):
             np.testing.assert_array_equal(y_test_pred, _y_test_pred_expected)
 
             class_gradient = classifier.class_gradient(self.x_test, label=5)
-            np.testing.assert_array_almost_equal(class_gradient[99, 0, 14, :, 0], _class_gradient_probabilities_expected)
+            np.testing.assert_array_almost_equal(class_gradient[99, 0, 14, :, 0],
+                                                 _class_gradient_probabilities_expected)
 
             loss_gradient = classifier.loss_gradient(x=self.x_test, y=self.y_test)
             np.testing.assert_array_almost_equal(loss_gradient[99, 14, :, 0], _loss_gradient_expected)
