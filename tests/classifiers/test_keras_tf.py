@@ -395,6 +395,8 @@ class TestKerasClassifierTF(unittest.TestCase):
         self.assertIn('clip_values=(0, 1), defences=None, preprocessing=(0, 1)', repr_)
         self.assertIn('input_layer=0, output_layer=0', repr_)
 
+    @unittest.skipIf(int(tf.__version__.split('.')[0]) == 1 and int(tf.__version__.split('.')[1]) < 14,
+                     reason='Only for TensorFlow 1.14 and higher.')
     def test_loss_functions(self):
 
         # prediction and class_gradient should be independent of logits/probabilities and of loss function
