@@ -42,16 +42,16 @@ class UniversalPerturbation(Attack):
 
     | Paper link: https://arxiv.org/abs/1610.08401
     """
-    attacks_dict = {'carlini': 'art.attacks.carlini.CarliniL2Method',
-                    'carlini_inf': 'art.attacks.carlini.CarliniLInfMethod',
-                    'deepfool': 'art.attacks.deepfool.DeepFool',
-                    'ead': 'art.attacks.elastic_net.ElasticNet',
-                    'fgsm': 'art.attacks.fast_gradient.FastGradientMethod',
-                    'bim': 'art.attacks.iterative_method.BasicIterativeMethod',
-                    'pgd': 'art.attacks.projected_gradient_descent.ProjectedGradientDescent',
-                    'newtonfool': 'art.attacks.newtonfool.NewtonFool',
-                    'jsma': 'art.attacks.saliency_map.SaliencyMapMethod',
-                    'vat': 'art.attacks.virtual_adversarial.VirtualAdversarialMethod'
+    attacks_dict = {'carlini': 'art.attacks.evasion.carlini.CarliniL2Method',
+                    'carlini_inf': 'art.attacks.evasion.carlini.CarliniLInfMethod',
+                    'deepfool': 'art.attacks.evasion.deepfool.DeepFool',
+                    'ead': 'art.attacks.evasion.elastic_net.ElasticNet',
+                    'fgsm': 'art.attacks.evasion.fast_gradient.FastGradientMethod',
+                    'bim': 'art.attacks.evasion.iterative_method.BasicIterativeMethod',
+                    'pgd': 'art.attacks.evasion.projected_gradient_descent.ProjectedGradientDescent',
+                    'newtonfool': 'art.attacks.evasion.newtonfool.NewtonFool',
+                    'jsma': 'art.attacks.evasion.saliency_map.SaliencyMapMethod',
+                    'vat': 'art.attacks.evasion.virtual_adversarial.VirtualAdversarialMethod'
                     }
     attack_params = Attack.attack_params + ['attacker', 'attacker_params', 'delta', 'max_iter', 'eps', 'norm']
 
@@ -223,6 +223,7 @@ class UniversalPerturbation(Attack):
         :rtype: `module`
         """
         sub_mods = class_name.split(".")
+        print(class_name)
         module_ = __import__(".".join(sub_mods[:-1]), fromlist=sub_mods[-1])
         class_module = getattr(module_, sub_mods[-1])
 
