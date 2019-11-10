@@ -452,7 +452,8 @@ class TestKerasClassifierTF(unittest.TestCase):
         # testing with probabilities
 
         for loss_type in ['function', 'class']:
-            logger.info('probabilities', loss_name, loss_type)
+            logger.info('loss_name: {}, loss_type: {}, output: probabilities', loss_name,
+                        loss_type.format(loss_name, loss_type))
 
             _run_tests(loss_name, loss_type, y_test_pred_expected, class_gradient_probabilities_expected,
                        loss_gradient_expected, _from_logits=False)
@@ -473,7 +474,8 @@ class TestKerasClassifierTF(unittest.TestCase):
         # testing with probabilities
 
         for loss_type in ['label', 'function', 'class']:
-            logger.info('probabilities', loss_name, loss_type)
+            logger.info('loss_name: {}, loss_type: {}, output: probabilities', loss_name,
+                        loss_type.format(loss_name, loss_type))
 
             _run_tests(loss_name, loss_type, y_test_pred_expected, class_gradient_probabilities_expected,
                        loss_gradient_expected, _from_logits=False)
@@ -481,7 +483,8 @@ class TestKerasClassifierTF(unittest.TestCase):
         # testing with logits
 
         for loss_type in ['function', 'class']:
-            logger.info('logits', loss_name, loss_type)
+            logger.info('loss_name: {}, loss_type: {}, output: logits', loss_name,
+                        loss_type.format(loss_name, loss_type))
 
             _run_tests(loss_name, loss_type, y_test_pred_expected, class_gradient_logits_expected,
                        loss_gradient_expected, _from_logits=True)
@@ -502,7 +505,8 @@ class TestKerasClassifierTF(unittest.TestCase):
         # testing with probabilities
 
         for loss_type in ['label', 'function', 'class']:
-            logger.info('probabilities', loss_name, loss_type)
+            logger.info('loss_name: {}, loss_type: {}, output: probabilities', loss_name,
+                        loss_type.format(loss_name, loss_type))
 
             _run_tests(loss_name, loss_type, y_test_pred_expected, class_gradient_probabilities_expected,
                        loss_gradient_expected, _from_logits=False)
@@ -510,7 +514,8 @@ class TestKerasClassifierTF(unittest.TestCase):
         # testing with logits
 
         for loss_type in ['function', 'class']:
-            logger.info('logits', loss_name, loss_type)
+            logger.info('loss_name: {}, loss_type: {}, output: logits', loss_name,
+                        loss_type.format(loss_name, loss_type))
 
             _run_tests(loss_name, loss_type, y_test_pred_expected, class_gradient_logits_expected,
                        loss_gradient_expected, _from_logits=True)
@@ -531,7 +536,8 @@ class TestKerasClassifierTF(unittest.TestCase):
         # testing with probabilities
 
         for loss_type in ['function', 'class']:
-            logger.info('probabilities', loss_name, loss_type)
+            logger.info('loss_name: {}, loss_type: {}, output: probabilities', loss_name,
+                        loss_type.format(loss_name, loss_type))
 
             _run_tests(loss_name, loss_type, y_test_pred_expected, class_gradient_probabilities_expected,
                        loss_gradient_expected, _from_logits=False)
@@ -552,7 +558,8 @@ class TestKerasClassifierTF(unittest.TestCase):
         # # testing with probabilities
         #
         # for loss_type in ['function', 'class']:
-        #     logger.info('probabilities', loss_name, loss_type)
+        #     logger.info('loss_name: {}, loss_type: {}, output: probabilities', loss_name,
+        #                         loss_type.format(loss_name, loss_type))
         #
         #     _run_tests(loss_name, loss_type, y_test_pred_expected, class_gradient_probabilities_expected,
         #                loss_gradient_expected, _from_logits=False)
