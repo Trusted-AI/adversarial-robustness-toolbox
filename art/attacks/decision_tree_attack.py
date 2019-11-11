@@ -23,6 +23,7 @@ from __future__ import absolute_import, division, print_function, unicode_litera
 import logging
 
 import numpy as np
+from tqdm import trange
 
 from art.attacks.attack import Attack
 from art.classifiers.scikitlearn import ScikitlearnDecisionTreeClassifier
@@ -116,7 +117,7 @@ class DecisionTreeAttack(Attack):
         y = check_and_transform_label_format(y, self.classifier.nb_classes(), return_one_hot=False)
         x = x.copy()
 
-        for index in range(np.shape(x)[0]):
+        for index in trange(x.shape[0], desc='Decision tree attack'):
             path = self.classifier.get_decision_path(x[index])
             legitimate_class = np.argmax(self.classifier.predict(x[index].reshape(1, -1)))
             position = -2

@@ -27,6 +27,7 @@ import copy
 
 import numpy as np
 from scipy.optimize import minimize
+from tqdm import trange
 
 from art.attacks.attack import Attack
 from art.classifiers.GPy import GPyGaussianProcessClassifier
@@ -57,7 +58,7 @@ class HighConfidenceLowUncertainty(Attack):
         """
         super(HighConfidenceLowUncertainty, self).__init__(classifier=classifier)
         if not isinstance(classifier, GPyGaussianProcessClassifier):
-            raise TypeError('Model must be a GPy Gaussian Process classifier!')
+            raise TypeError('Model must be a GPy Gaussian Process classifier.')
         params = {'conf': conf,
                   'unc_increase': unc_increase,
                   'min_val': min_val,
@@ -67,8 +68,7 @@ class HighConfidenceLowUncertainty(Attack):
 
     def generate(self, x, y=None, **kwargs):
         """
-        Generate adversarial examples and return them as an array. This method should be overridden by all concrete
-        attack implementations.
+        Generate adversarial examples and return them as an array.
 
         :param x: An array with the original inputs to be attacked.
         :type x: `np.ndarray`
@@ -96,7 +96,7 @@ class HighConfidenceLowUncertainty(Attack):
         # adding bounds, to not go away from original data
         for i in range(np.shape(x)[1]):
             bounds.append((self.min_val, self.max_val))
-        for i in range(np.shape(x)[0]):  # go though data amd craft
+        for i in trange(x.shape[0], desc='HCLU'):  # go through data amd craft
             # get properties for attack
             max_uncertainty = self.unc_increase * self.classifier.predict_uncertainty(x_adv[i].reshape(1, -1))
             class_zero = not self.classifier.predict(x_adv[i].reshape(1, -1))[0, 0] < 0.5
@@ -104,7 +104,7 @@ class HighConfidenceLowUncertainty(Attack):
             constr_conf = {'type': 'ineq', 'fun': constraint_conf, 'args': (init_args,)}
             constr_unc = {'type': 'ineq', 'fun': constraint_unc, 'args': (init_args,)}
             args = {'args': init_args, 'orig': x[i].reshape(-1)}
-            # #finally, run optimization
+            # finally, run optimization
             x_adv[i] = minimize(minfun, x_adv[i], args=args, bounds=bounds, constraints=[constr_conf, constr_unc])['x']
         return x_adv
 
@@ -118,10 +118,8 @@ class HighConfidenceLowUncertainty(Attack):
         """
         super(HighConfidenceLowUncertainty, self).set_params(**kwargs)
         if self.conf <= 0.5 or self.conf > 1.0:
-            raise ValueError(
-                "Confidence value has to bea value between 0.5 and 1.0.")
+            raise ValueError("Confidence value has to bea value between 0.5 and 1.0.")
         if self.unc_increase < 0.0:
-            raise ValueError(
-                "Uncertainty increase value has to be a positive number.")
+            raise ValueError("Uncertainty increase value has to be a positive number.")
         if self.min_val > self.max_val:
             raise ValueError("Maximum has to be larger than minimum.")

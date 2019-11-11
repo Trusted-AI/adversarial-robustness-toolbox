@@ -28,6 +28,7 @@ import logging
 import random
 import numpy as np
 from scipy.ndimage import rotate, shift, zoom
+from tqdm import trange
 
 from art import NUMPY_DTYPE
 from art.classifiers.classifier import ClassifierNeuralNetwork, ClassifierGradients
@@ -115,10 +116,7 @@ class AdversarialPatch(Attack):
         y_target = check_and_transform_label_format(labels=np.broadcast_to(np.array(self.target), x.shape[0]),
                                                     nb_classes=self.classifier.nb_classes())
 
-        for i_step in range(self.max_iter):
-            if i_step == 0 or (i_step + 1) % 100 == 0:
-                logger.info('Training Step: %i', i_step + 1)
-
+        for _ in trange(self.max_iter, desc='Adversarial patch'):
             if self.clip_patch is not None:
                 for i_channel, (a_min, a_max) in enumerate(self.clip_patch):
                     self.patch[:, :, i_channel] = np.clip(self.patch[:, :, i_channel], a_min=a_min, a_max=a_max)
