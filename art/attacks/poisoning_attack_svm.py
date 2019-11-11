@@ -201,7 +201,7 @@ class PoisoningAttackSVM(Attack):
         :param attack_point: the current attack point
         :type attack_point: `np.ndarray`
         :param tol: tolerance level
-        :type attack_point: `float`
+        :type tol: `float`
         :return: The attack gradient
         :rtype: `np.ndarray`
         """
