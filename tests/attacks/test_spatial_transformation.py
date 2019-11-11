@@ -120,7 +120,7 @@ class TestSpatialTransformation(unittest.TestCase):
         """
         x_train = np.reshape(self.x_train, (self.x_train.shape[0], 1, 28, 28)).astype(np.float32)
         x_test = np.reshape(self.x_test, (self.x_test.shape[0], 1, 28, 28)).astype(np.float32)
-        x_test_original = self.x_test.copy()
+        x_test_original = x_test.copy()
 
         # Build PyTorchClassifier
         ptc = get_classifier_pt(from_logits=True)
