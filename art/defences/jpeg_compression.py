@@ -26,6 +26,7 @@ from io import BytesIO
 import logging
 
 import numpy as np
+from tqdm import tqdm
 
 from art.defences.preprocessor import Preprocessor
 from art import NUMPY_DTYPE
@@ -112,7 +113,7 @@ class JpegCompression(Preprocessor):
             x_local = np.reshape(x_local, x_local.shape[:-1])
 
         # Compress one image at a time
-        for i, x_i in enumerate(x_local):
+        for i, x_i in enumerate(tqdm(x_local, desc='JPEG compression')):
             if len(x_i.shape) == 2:
                 x_i = Image.fromarray(x_i, mode='L')
             elif x_i.shape[-1] == 3:

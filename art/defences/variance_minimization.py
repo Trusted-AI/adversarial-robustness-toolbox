@@ -26,6 +26,7 @@ import logging
 
 import numpy as np
 from scipy.optimize import minimize
+from tqdm import tqdm
 
 from art.defences.preprocessor import Preprocessor
 from art import NUMPY_DTYPE
@@ -96,7 +97,7 @@ class TotalVarMin(Preprocessor):
         x_preproc = x.copy()
 
         # Minimize one input at a time
-        for i, x_i in enumerate(x_preproc):
+        for i, x_i in enumerate(tqdm(x_preproc, desc='Variance minimization')):
             mask = (np.random.rand(*x_i.shape) < self.prob).astype('int')
             x_preproc[i] = self._minimize(x_i, mask)
 
