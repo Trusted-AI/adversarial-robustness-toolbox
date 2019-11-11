@@ -158,7 +158,7 @@ class TestAdversarialTrainer(TestBase):
         logger.info('Accuracy after adversarial training: %.2f%%', (acc_new * 100))
 
         # Check that x_test has not been modified by attack and classifier
-        self.assertAlmostEqual(float(np.max(x_test_original - x_test)), 0.0, delta=0.00001)
+        self.assertAlmostEqual(float(np.max(np.abs(x_test_original - x_test))), 0.0, delta=0.00001)
 
     def test_transfer(self):
         (x_train, y_train), (x_test, y_test) = self.mnist
@@ -180,7 +180,7 @@ class TestAdversarialTrainer(TestBase):
         logger.info('Accuracy after adversarial training: %.2f%%', (acc_new * 100))
 
         # Check that x_test has not been modified by attack and classifier
-        self.assertAlmostEqual(float(np.max(x_test_original - x_test)), 0.0, delta=0.00001)
+        self.assertAlmostEqual(float(np.max(np.abs(x_test_original - x_test))), 0.0, delta=0.00001)
 
     def test_two_attacks(self):
         (x_train, y_train), (x_test, y_test) = self.mnist
@@ -204,7 +204,7 @@ class TestAdversarialTrainer(TestBase):
         logger.info('\nAccuracy after adversarial training: %.2f%%', (acc_new * 100))
 
         # Check that x_test has not been modified by attack and classifier
-        self.assertAlmostEqual(float(np.max(x_test_original - x_test)), 0.0, delta=0.00001)
+        self.assertAlmostEqual(float(np.max(np.abs(x_test_original - x_test))), 0.0, delta=0.00001)
 
     def test_two_attacks_with_generator(self):
         (x_train, y_train), (x_test, y_test) = self.mnist
@@ -246,7 +246,7 @@ class TestAdversarialTrainer(TestBase):
         self.assertTrue((x_train == x_train_original).all())
 
         # Check that x_test has not been modified by attack and classifier
-        self.assertAlmostEqual(float(np.max(x_test_original - x_test)), 0.0, delta=0.00001)
+        self.assertAlmostEqual(float(np.max(np.abs(x_test_original - x_test))), 0.0, delta=0.00001)
 
     def test_targeted_attack_error(self):
         """

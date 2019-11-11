@@ -54,7 +54,7 @@ class TestTotalVarMin(unittest.TestCase):
         self.assertTrue((x_preprocessed <= clip_values[1]).all())
         self.assertFalse((x_preprocessed == x).all())
         # Check that x has not been modified by attack and classifier
-        self.assertAlmostEqual(float(np.max(x_original - x)), 0.0, delta=0.00001)
+        self.assertAlmostEqual(float(np.max(np.abs(x_original - x))), 0.0, delta=0.00001)
 
     def test_failure_feature_vectors(self):
         x = np.random.rand(10, 3)

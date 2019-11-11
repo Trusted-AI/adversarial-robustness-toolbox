@@ -169,7 +169,7 @@ class TestFastGradientMethodImages(unittest.TestCase):
         self.assertFalse((x_test == x_test_adv).all())
 
         # Check that x_test has not been modified by attack and classifier
-        self.assertAlmostEqual(float(np.max(x_test_original - x_test)), 0.0, delta=0.00001)
+        self.assertAlmostEqual(float(np.max(np.abs(x_test_original - x_test))), 0.0, delta=0.00001)
 
     def test_keras_with_defences(self):
         (x_train, y_train), (x_test, y_test) = self.mnist
@@ -332,12 +332,9 @@ class TestFastGradientMethodImages(unittest.TestCase):
 
     def test_pytorch_iris(self):
         (_, _), (x_test, y_test) = self.iris
-        print('x_test.shape', x_test.shape)
-        print('y_test.shape', y_test.shape)
         classifier = get_iris_classifier_pt()
 
         # Test untargeted attack
-        print('test', x_test.shape)
         attack = FastGradientMethod(classifier, eps=0.1)
         x_test_adv = attack.generate(x_test)
         self.assertFalse((x_test == x_test_adv).all())

@@ -68,7 +68,7 @@ class TestZooAttack(unittest.TestCase):
         np.testing.assert_almost_equal(self.x_test, x_test_adv, 3)
 
         # Check that x_test has not been modified by attack and classifier
-        self.assertAlmostEqual(float(np.max(x_test_original - x_test)), 0.0, delta=0.00001)
+        self.assertAlmostEqual(float(np.max(np.abs(x_test_original - self.x_test))), 0.0, delta=0.00001)
 
         # Clean-up session
         sess.close()
@@ -108,7 +108,7 @@ class TestZooAttack(unittest.TestCase):
         logger.info('ZOO success rate on MNIST: %.2f', (sum(y_pred != y_pred_adv) / float(len(y_pred))))
 
         # Check that x_test has not been modified by attack and classifier
-        self.assertAlmostEqual(float(np.max(x_test_original - x_test)), 0.0, delta=0.00001)
+        self.assertAlmostEqual(float(np.max(np.abs(x_test_original - self.x_test))), 0.0, delta=0.00001)
 
         # Clean-up session
         sess.close()
@@ -164,7 +164,7 @@ class TestZooAttack(unittest.TestCase):
         logger.info('ZOO success rate on MNIST: %.2f', (sum(y_pred != y_pred_adv) / float(len(y_pred))))
 
         # Check that x_test has not been modified by attack and classifier
-        self.assertAlmostEqual(float(np.max(x_test_original - x_test)), 0.0, delta=0.00001)
+        self.assertAlmostEqual(float(np.max(np.abs(x_test_original - self.x_test))), 0.0, delta=0.00001)
 
         # Clean-up
         k.clear_session()
@@ -207,7 +207,7 @@ class TestZooAttack(unittest.TestCase):
         x_test_adv_expected = []
 
         # Check that x_test has not been modified by attack and classifier
-        self.assertAlmostEqual(float(np.max(x_test_original - x_test)), 0.0, delta=0.00001)
+        self.assertAlmostEqual(float(np.max(np.abs(x_test_original - self.x_test))), 0.0, delta=0.00001)
 
     def test_classifier_type_check_fail_classifier(self):
         # Use a useless test classifier to test basic classifier properties

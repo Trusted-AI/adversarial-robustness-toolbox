@@ -78,7 +78,7 @@ class TestSpatialTransformation(unittest.TestCase):
         self.assertAlmostEqual(x_test_adv[0, 14, 14, 0], 0.013572651, delta=0.01)
 
         # Check that x_test has not been modified by attack and classifier
-        self.assertAlmostEqual(float(np.max(x_test_original - x_test)), 0.0, delta=0.00001)
+        self.assertAlmostEqual(float(np.max(np.abs(x_test_original - self.x_test))), 0.0, delta=0.00001)
 
         sess.close()
 
@@ -109,7 +109,7 @@ class TestSpatialTransformation(unittest.TestCase):
         self.assertAlmostEqual(x_test_adv[0, 14, 14, 0], 0.013572651, delta=0.01)
 
         # Check that x_test has not been modified by attack and classifier
-        self.assertAlmostEqual(float(np.max(x_test_original - x_test)), 0.0, delta=0.00001)
+        self.assertAlmostEqual(float(np.max(np.abs(x_test_original - self.x_test))), 0.0, delta=0.00001)
 
         k.clear_session()
 
@@ -118,13 +118,12 @@ class TestSpatialTransformation(unittest.TestCase):
         Third test with the PyTorchClassifier.
         :return:
         """
+        x_train = np.reshape(self.x_train, (self.x_train.shape[0], 1, 28, 28)).astype(np.float32)
+        x_test = np.reshape(self.x_test, (self.x_test.shape[0], 1, 28, 28)).astype(np.float32)
         x_test_original = self.x_test.copy()
 
         # Build PyTorchClassifier
         ptc = get_classifier_pt(from_logits=True)
-
-        x_train = np.reshape(self.x_train, (self.x_train.shape[0], 1, 28, 28)).astype(np.float32)
-        x_test = np.reshape(self.x_test, (self.x_test.shape[0], 1, 28, 28)).astype(np.float32)
 
         # Attack
         attack_st = SpatialTransformation(ptc, max_translation=10.0, num_translations=3, max_rotation=30.0,
@@ -143,7 +142,7 @@ class TestSpatialTransformation(unittest.TestCase):
         self.assertLessEqual(abs(x_test_adv[0, 0, 14, 14] - 0.008591662), 0.01)
 
         # Check that x_test has not been modified by attack and classifier
-        self.assertAlmostEqual(float(np.max(x_test_original - x_test)), 0.0, delta=0.00001)
+        self.assertAlmostEqual(float(np.max(np.abs(x_test_original - x_test))), 0.0, delta=0.00001)
 
     def test_failure_feature_vectors(self):
         attack_params = {"max_translation": 10.0, "num_translations": 3, "max_rotation": 30.0, "num_rotations": 3}

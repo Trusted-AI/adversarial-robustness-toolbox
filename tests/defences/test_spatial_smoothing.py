@@ -65,7 +65,7 @@ class TestLocalSpatialSmoothing(unittest.TestCase):
             [[[[0.1], [0.2], [0.3]], [[0.7], [0.7], [0.8]], [[0.7], [0.7], [0.8]]]]).astype(np.float32)).all())
 
         # Check that x has not been modified by attack and classifier
-        self.assertAlmostEqual(float(np.max(x_originalal - x)), 0.0, delta=0.00001)
+        self.assertAlmostEqual(float(np.max(np.abs(x_original - x))), 0.0, delta=0.00001)
 
     def test_channels(self):
         x = np.arange(9).reshape((1, 1, 3, 3))

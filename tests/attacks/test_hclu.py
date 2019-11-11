@@ -74,7 +74,7 @@ class TestHCLU(unittest.TestCase):
         self.assertGreater(np.mean(unc_f > unc_o), 0.65)
 
         # Check that x_test has not been modified by attack and classifier
-        self.assertAlmostEqual(float(np.max(x_test_original - x_test)), 0.0, delta=0.00001)
+        self.assertAlmostEqual(float(np.max(np.abs(x_test_original - self.x_test))), 0.0, delta=0.00001)
 
 
 if __name__ == '__main__':

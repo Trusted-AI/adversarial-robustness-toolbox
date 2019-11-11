@@ -113,7 +113,7 @@ class TestBoundary(unittest.TestCase):
         self.assertTrue((y_pred != y_pred_adv).any())
 
         # Check that x_test has not been modified by attack and classifier
-        self.assertAlmostEqual(float(np.max(x_test_original - x_test)), 0.0, delta=0.00001)
+        self.assertAlmostEqual(float(np.max(np.abs(x_test_original - x_test))), 0.0, delta=0.00001)
 
         # Clean-up session
         sess.close()
@@ -156,7 +156,7 @@ class TestBoundary(unittest.TestCase):
         self.assertTrue((y_pred != y_pred_adv).any())
 
         # Check that x_test has not been modified by attack and classifier
-        self.assertAlmostEqual(float(np.max(x_test_original - x_test)), 0.0, delta=0.00001)
+        self.assertAlmostEqual(float(np.max(np.abs(x_test_original - x_test))), 0.0, delta=0.00001)
 
         # Clean-up session
         k.clear_session()
@@ -167,13 +167,12 @@ class TestBoundary(unittest.TestCase):
         :return:
         """
         (_, _), (x_test, y_test) = self.mnist
-
+        x_test = np.swapaxes(x_test, 1, 3).astype(np.float32)
+        x_test = np.reshape(x_test, (x_test.shape[0], 1, 28, 28)).astype(np.float32)
         x_test_original = x_test.copy()
 
         # Build PyTorchClassifier
         ptc = get_classifier_pt()
-
-        x_test = np.swapaxes(x_test, 1, 3).astype(np.float32)
 
         # First targeted attack
         boundary = BoundaryAttack(classifier=ptc, targeted=True, max_iter=20)
@@ -201,7 +200,7 @@ class TestBoundary(unittest.TestCase):
         self.assertTrue((y_pred != y_pred_adv).any())
 
         # Check that x_test has not been modified by attack and classifier
-        self.assertAlmostEqual(float(np.max(x_test_original - x_test)), 0.0, delta=0.00001)
+        self.assertAlmostEqual(float(np.max(np.abs(x_test_original - x_test))), 0.0, delta=0.00001)
 
     def test_classifier_type_check_fail_classifier(self):
         # Use a useless test classifier to test basic classifier properties
@@ -333,7 +332,7 @@ class TestBoundary(unittest.TestCase):
                                                                          'examples: %.2f%%', (accuracy * 100))
 
             # Check that x_test has not been modified by attack and classifier
-            self.assertAlmostEqual(float(np.max(x_test_original - x_test)), 0.0, delta=0.00001)
+            self.assertAlmostEqual(float(np.max(np.abs(x_test_original - x_test))), 0.0, delta=0.00001)
 
 
 if __name__ == '__main__':

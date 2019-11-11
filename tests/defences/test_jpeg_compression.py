@@ -58,7 +58,7 @@ class TestJpegCompression(unittest.TestCase):
         self.assertAlmostEqual(x_compressed[0, 14, 14, 1], 0.8039216)
         self.assertAlmostEqual(x_compressed[0, 14, 14, 2], 0.6117647)
         # Check that x has not been modified by attack and classifier
-        self.assertAlmostEqual(float(np.max(x_original - x)), 0.0, delta=0.00001)
+        self.assertAlmostEqual(float(np.max(np.abs(x_original - x))), 0.0, delta=0.00001)
 
     def test_three_channels_0_255(self):
         clip_values = (0, 255)

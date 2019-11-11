@@ -60,7 +60,7 @@ class TestFeatureSqueezing(unittest.TestCase):
         self.assertFalse(np.logical_and(0.34 < x_squeezed, x_squeezed < 0.66).any())
         self.assertFalse(np.logical_and(0.67 < x_squeezed, x_squeezed < 1.).any())
         # Check that x has not been modified by attack and classifier
-        self.assertAlmostEqual(float(np.max(x_originalal - x)), 0.0, delta=0.00001)
+        self.assertAlmostEqual(float(np.max(np.abs(x_original - x))), 0.0, delta=0.00001)
 
     def test_data_range(self):
         x = np.arange(5)

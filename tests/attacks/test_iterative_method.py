@@ -113,7 +113,7 @@ class TestIterativeAttack(unittest.TestCase):
         logger.info('Accuracy on adversarial test examples: %.2f%%', (acc * 100))
 
         # Check that x_test has not been modified by attack and classifier
-        self.assertAlmostEqual(float(np.max(x_test_original - x_test)), 0.0, delta=0.00001)
+        self.assertAlmostEqual(float(np.max(np.abs(x_test_original - x_test))), 0.0, delta=0.00001)
 
     def _test_mnist_targeted(self, classifier, x_test):
         x_test_original = x_test.copy()
@@ -136,7 +136,7 @@ class TestIterativeAttack(unittest.TestCase):
         self.assertGreaterEqual((y_test_adv == test_y_pred).sum(), x_test.shape[0] // 2)
 
         # Check that x_test has not been modified by attack and classifier
-        self.assertAlmostEqual(float(np.max(x_test_original - x_test)), 0.0, delta=0.00001)
+        self.assertAlmostEqual(float(np.max(np.abs(x_test_original - x_test))), 0.0, delta=0.00001)
 
     def test_keras_mnist_targeted(self):
         (_, _), (x_test, _) = self.mnist
@@ -330,7 +330,7 @@ class TestIterativeAttack(unittest.TestCase):
                         (acc * 100))
 
             # Check that x_test has not been modified by attack and classifier
-            self.assertAlmostEqual(float(np.max(x_test_original - x_test)), 0.0, delta=0.00001)
+            self.assertAlmostEqual(float(np.max(np.abs(x_test_original - x_test))), 0.0, delta=0.00001)
 
 
 if __name__ == '__main__':

@@ -81,8 +81,8 @@ class TestPixelDefend(unittest.TestCase):
         self.assertTrue((x_defended <= 1.0).all())
         self.assertTrue((x_defended >= 0.0).all())
 
-        # Check that x has not been modified by attack and classifier
-        self.assertAlmostEqual(float(np.max(x_train_original - x_train)), 0.0, delta=0.00001)
+        # Check that x_train has not been modified by attack and classifier
+        self.assertAlmostEqual(float(np.max(np.abs(x_train_original - x_train))), 0.0, delta=0.00001)
 
     def test_feature_vectors(self):
         # Define the network

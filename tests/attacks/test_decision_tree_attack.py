@@ -59,8 +59,8 @@ class TestDecisionTreeAttack(unittest.TestCase):
         adv = attack.generate(self.X[:25], targets)
         # all targeted crafting should succeed as well
         self.assertTrue(np.sum(clf.predict(adv) == targets) == 25.0)
-        # Check that x_test has not been modified by attack and classifier
-        self.assertAlmostEqual(float(np.max(X_original - self.X)), 0.0, delta=0.00001)
+        # Check that X has not been modified by attack and classifier
+        self.assertAlmostEqual(float(np.max(np.abs(X_original - self.X))), 0.0, delta=0.00001)
 
 
 if __name__ == '__main__':

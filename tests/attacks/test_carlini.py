@@ -77,7 +77,7 @@ class TestCarlini(unittest.TestCase):
         np.testing.assert_array_almost_equal(x_test, x_test_adv, decimal=3)
 
         # Check that x_test has not been modified by attack and classifier
-        self.assertAlmostEqual(float(np.max(x_test_original - x_test)), 0.0, delta=0.00001)
+        self.assertAlmostEqual(float(np.max(np.abs(x_test_original - x_test))), 0.0, delta=0.00001)
 
         # Clean-up session
         sess.close()
@@ -120,7 +120,7 @@ class TestCarlini(unittest.TestCase):
         self.assertTrue((target != y_pred_adv).any())
 
         # Check that x_test has not been modified by attack and classifier
-        self.assertAlmostEqual(float(np.max(x_test_original - x_test)), 0.0, delta=0.00001)
+        self.assertAlmostEqual(float(np.max(np.abs(x_test_original - x_test))), 0.0, delta=0.00001)
 
         # Clean-up session
         sess.close()
@@ -163,7 +163,7 @@ class TestCarlini(unittest.TestCase):
         self.assertTrue((y_target != y_pred_adv).any())
 
         # Check that x_test has not been modified by attack and classifier
-        self.assertAlmostEqual(float(np.max(x_test_original - x_test)), 0.0, delta=0.00001)
+        self.assertAlmostEqual(float(np.max(np.abs(x_test_original - x_test))), 0.0, delta=0.00001)
 
         # Clean-up
         k.clear_session()
@@ -174,12 +174,11 @@ class TestCarlini(unittest.TestCase):
         :return:
         """
         (_, _), (x_test, y_test) = self.mnist
+        x_test = np.reshape(x_test, (x_test.shape[0], 1, 28, 28)).astype(np.float32)
         x_test_original = x_test.copy()
 
         # Build PyTorchClassifier
         ptc = get_classifier_pt(from_logits=True)
-
-        x_test = np.reshape(x_test, (x_test.shape[0], 1, 28, 28)).astype(np.float32)
 
         # First attack
         cl2m = CarliniL2Method(classifier=ptc, targeted=True, max_iter=10)
@@ -204,7 +203,7 @@ class TestCarlini(unittest.TestCase):
         logger.info('CW2 Success Rate: %.2f', (sum(target != y_pred_adv) / float(len(target))))
 
         # Check that x_test has not been modified by attack and classifier
-        self.assertAlmostEqual(float(np.max(x_test_original - x_test)), 0.0, delta=0.00001)
+        self.assertAlmostEqual(float(np.max(np.abs(x_test_original - x_test))), 0.0, delta=0.00001)
 
     def test_classifier_type_check_fail_classifier_L2(self):
         # Use a useless test classifier to test basic classifier properties
@@ -349,7 +348,7 @@ class TestCarlini(unittest.TestCase):
                         (accuracy * 100))
 
             # Check that x_test has not been modified by attack and classifier
-            self.assertAlmostEqual(float(np.max(x_test_original - x_test)), 0.0, delta=0.00001)
+            self.assertAlmostEqual(float(np.max(np.abs(x_test_original - x_test))), 0.0, delta=0.00001)
 
     """
     A unittest class for testing the Carlini LInf attack.
@@ -462,11 +461,10 @@ class TestCarlini(unittest.TestCase):
         :return:
         """
         (_, _), (x_test, y_test) = self.mnist
+        x_test = np.reshape(x_test, (x_test.shape[0], 1, 28, 28)).astype(np.float32)
 
         # Build PyTorchClassifier
         ptc = get_classifier_pt(from_logits=True)
-
-        x_test = np.reshape(x_test, (x_test.shape[0], 1, 28, 28)).astype(np.float32)
 
         # First attack
         clinfm = CarliniLInfMethod(classifier=ptc, targeted=True, max_iter=10, eps=0.5)

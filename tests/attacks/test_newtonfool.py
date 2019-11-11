@@ -79,7 +79,7 @@ class TestNewtonFool(unittest.TestCase):
         self.assertTrue((y_pred_max >= .9 * y_pred_adv_max).all())
 
         # Check that x_test has not been modified by attack and classifier
-        self.assertAlmostEqual(float(np.max(x_test_original - x_test)), 0.0, delta=0.00001)
+        self.assertAlmostEqual(float(np.max(np.abs(x_test_original - x_test))), 0.0, delta=0.00001)
 
     def test_keras_mnist(self):
         """
@@ -106,7 +106,7 @@ class TestNewtonFool(unittest.TestCase):
         self.assertTrue((y_pred_max >= .9 * y_pred_adv_max).all())
 
         # Check that x_test has not been modified by attack and classifier
-        self.assertAlmostEqual(float(np.max(x_test_original - x_test)), 0.0, delta=0.00001)
+        self.assertAlmostEqual(float(np.max(np.abs(x_test_original - x_test))), 0.0, delta=0.00001)
 
         # sess.close()
 
@@ -136,7 +136,7 @@ class TestNewtonFool(unittest.TestCase):
         self.assertTrue((y_pred_max >= .9 * y_pred_adv_max).all())
 
         # Check that x_test has not been modified by attack and classifier
-        self.assertAlmostEqual(float(np.max(x_test_original - x_test)), 0.0, delta=0.00001)
+        self.assertAlmostEqual(float(np.max(np.abs(x_test_original - x_test))), 0.0, delta=0.00001)
 
     def test_keras_iris_clipped(self):
         (_, _), (x_test, y_test) = self.iris
@@ -229,7 +229,7 @@ class TestNewtonFool(unittest.TestCase):
                                                                          ': %.2f%%', (acc * 100))
 
             # Check that x_test has not been modified by attack and classifier
-            self.assertAlmostEqual(float(np.max(x_test_original - x_test)), 0.0, delta=0.00001)
+            self.assertAlmostEqual(float(np.max(np.abs(x_test_original - x_test))), 0.0, delta=0.00001)
 
 
 if __name__ == '__main__':

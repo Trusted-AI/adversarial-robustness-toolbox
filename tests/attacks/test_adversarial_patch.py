@@ -54,7 +54,7 @@ class TestAdversarialPatch(unittest.TestCase):
     def setUp(self):
         master_seed(1234)
 
-    def test_tfclassifier(self):
+    def test_tensorflow(self):
         """
         First test with the TensorFlowClassifier.
         :return:
@@ -73,7 +73,7 @@ class TestAdversarialPatch(unittest.TestCase):
 
     @unittest.skipIf(tf.__version__[0] == '2', reason='Skip unittests for TensorFlow v2 until Keras supports TensorFlow'
                                                       ' v2 as backend.')
-    def test_krclassifier(self):
+    def test_keras(self):
         """
         Second test with the KerasClassifier.
         :return:
@@ -90,7 +90,7 @@ class TestAdversarialPatch(unittest.TestCase):
 
         k.clear_session()
 
-    def test_ptclassifier(self):
+    def test_pytorch(self):
         """
         Third test with the PyTorchClassifier.
         :return:

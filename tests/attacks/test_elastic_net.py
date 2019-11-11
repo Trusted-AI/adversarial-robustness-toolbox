@@ -173,7 +173,7 @@ class TestElasticNet(unittest.TestCase):
         np.testing.assert_array_equal(y_pred_adv, np.asarray([7, 1, 1, 4, 4, 1, 4, 4, 4, 4]))
 
         # Check that x_test has not been modified by attack and classifier
-        self.assertAlmostEqual(float(np.max(x_test_original - x_test)), 0.0, delta=0.00001)
+        self.assertAlmostEqual(float(np.max(np.abs(x_test_original - x_test))), 0.0, delta=0.00001)
 
         # Close session
         sess.close()
@@ -222,7 +222,7 @@ class TestElasticNet(unittest.TestCase):
         np.testing.assert_array_equal(y_pred_adv, np.asarray([7, 1, 1, 4, 4, 1, 4, 4, 4, 4]))
 
         # Check that x_test has not been modified by attack and classifier
-        self.assertAlmostEqual(float(np.max(x_test_original - x_test)), 0.0, delta=0.00001)
+        self.assertAlmostEqual(float(np.max(np.abs(x_test_original - x_test))), 0.0, delta=0.00001)
 
         k.clear_session()
 
@@ -232,12 +232,11 @@ class TestElasticNet(unittest.TestCase):
         :return:
         """
         (_, _), (x_test, y_test) = self.mnist
+        x_test = np.reshape(x_test, (x_test.shape[0], 1, 28, 28)).astype(np.float32)
         x_test_original = x_test.copy()
 
         # Build PyTorchClassifier
         ptc = get_classifier_pt(from_logits=False)
-
-        x_test = np.reshape(x_test, (x_test.shape[0], 1, 28, 28)).astype(np.float32)
 
         # First attack
         ead = ElasticNet(classifier=ptc, targeted=True, max_iter=2)
@@ -265,7 +264,7 @@ class TestElasticNet(unittest.TestCase):
         np.testing.assert_array_equal(y_pred_adv, np.asarray([7, 1, 1, 4, 4, 1, 4, 4, 4, 4]))
 
         # Check that x_test has not been modified by attack and classifier
-        self.assertAlmostEqual(float(np.max(x_test_original - x_test)), 0.0, delta=0.00001)
+        self.assertAlmostEqual(float(np.max(np.abs(x_test_original - x_test))), 0.0, delta=0.00001)
 
     def test_classifier_type_check_fail_classifier(self):
         # Use a useless test classifier to test basic classifier properties
@@ -425,7 +424,7 @@ class TestElasticNet(unittest.TestCase):
                         (accuracy * 100))
 
             # Check that x_test has not been modified by attack and classifier
-            self.assertAlmostEqual(float(np.max(x_test_original - x_test)), 0.0, delta=0.00001)
+            self.assertAlmostEqual(float(np.max(np.abs(x_test_original - x_test))), 0.0, delta=0.00001)
 
 
 if __name__ == '__main__':

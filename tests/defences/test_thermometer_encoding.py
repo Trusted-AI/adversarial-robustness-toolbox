@@ -84,7 +84,7 @@ class TestThermometerEncoding(unittest.TestCase):
         x_encoded, _ = encoder(x)
         self.assertEqual(x_encoded.shape, (10, 20))
         # Check that x has not been modified by attack and classifier
-        self.assertAlmostEqual(float(np.max(x_original - x)), 0.0, delta=0.00001)
+        self.assertAlmostEqual(float(np.max(np.abs(x_original - x))), 0.0, delta=0.00001)
 
 
 if __name__ == '__main__':
