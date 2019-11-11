@@ -47,6 +47,7 @@ class TestLocalSpatialSmoothing(unittest.TestCase):
 
     def test_fix(self):
         x = np.array([[[[0.1], [0.2], [0.3]], [[0.7], [0.8], [0.9]], [[0.4], [0.5], [0.6]]]]).astype(np.float32)
+        x_originalal = x.copy()
 
         # Start to test
         preprocess = SpatialSmoothing(window_size=3)
@@ -62,6 +63,9 @@ class TestLocalSpatialSmoothing(unittest.TestCase):
         x_smooth, _ = preprocess(x)
         self.assertTrue((x_smooth == np.array(
             [[[[0.1], [0.2], [0.3]], [[0.7], [0.7], [0.8]], [[0.7], [0.7], [0.8]]]]).astype(np.float32)).all())
+
+        # Check that x has not been modified by attack and classifier
+        self.assertAlmostEqual(float(np.max(x_originalal - x)), 0.0, delta=0.00001)
 
     def test_channels(self):
         x = np.arange(9).reshape((1, 1, 3, 3))

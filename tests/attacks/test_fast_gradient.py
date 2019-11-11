@@ -52,25 +52,24 @@ class TestFastGradientMethodImages(unittest.TestCase):
         master_seed(1234)
 
     def test_keras_mnist(self):
-        (x_train, y_train), (x_test, y_test) = self.mnist
+        (_, _), (x_test, y_test) = self.mnist
         classifier = get_classifier_kr()
         self._test_backend_mnist(classifier, x_test, y_test)
 
     def test_tensorflow_mnist(self):
-        (x_train, y_train), (x_test, y_test) = self.mnist
+        (_, _), (x_test, y_test) = self.mnist
         classifier, sess = get_classifier_tf()
         self._test_backend_mnist(classifier, x_test, y_test)
 
     def test_pytorch_mnist(self):
-        (x_train, y_train), (x_test, y_test) = self.mnist
-        x_train = np.reshape(x_train, (x_train.shape[0], 1, 28, 28)).astype(np.float32)
+        (_, _), (x_test, y_test) = self.mnist
         x_test = np.reshape(x_test, (x_test.shape[0], 1, 28, 28)).astype(np.float32)
         classifier = get_classifier_pt()
         self._test_backend_mnist(classifier, x_test, y_test)
 
     def _test_backend_mnist(self, classifier, x_test, y_test):
 
-        x_test_origin = x_test.copy()
+        x_test_original = x_test.copy()
 
         # Test FGSM with np.inf norm
         attack = FastGradientMethod(classifier, eps=1.0, batch_size=11)
@@ -130,7 +129,7 @@ class TestFastGradientMethodImages(unittest.TestCase):
         self.assertAlmostEqual(float(np.min(x_test_adv_min - x_test)), -0.30000000, delta=0.00001)
         self.assertAlmostEqual(float(np.max(x_test_adv_min - x_test)), 0.30000000, delta=0.00001)
 
-        self.assertAlmostEqual(float(np.max(x_test_origin - x_test)), 0.0, delta=0.00001)
+        self.assertAlmostEqual(float(np.max(x_test_original - x_test)), 0.0, delta=0.00001)
 
         y_test_pred = classifier.predict(x_test_adv_min)
 
@@ -170,7 +169,7 @@ class TestFastGradientMethodImages(unittest.TestCase):
         self.assertFalse((x_test == x_test_adv).all())
 
         # Check that x_test has not been modified by attack and classifier
-        self.assertAlmostEqual(float(np.max(x_test_origin - x_test)), 0.0, delta=0.00001)
+        self.assertAlmostEqual(float(np.max(x_test_original - x_test)), 0.0, delta=0.00001)
 
     def test_keras_with_defences(self):
         (x_train, y_train), (x_test, y_test) = self.mnist

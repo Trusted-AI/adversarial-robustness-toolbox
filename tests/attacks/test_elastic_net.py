@@ -84,6 +84,7 @@ class TestElasticNet(unittest.TestCase):
         :return:
         """
         (_, _), (x_test, y_test) = self.mnist
+        x_test_original = x_test.copy()
 
         # Build TensorFlowClassifier
         tfc, sess = get_classifier_tf(from_logits=True)
@@ -171,6 +172,9 @@ class TestElasticNet(unittest.TestCase):
         logger.info('EAD success rate: %.2f%%', (100 * sum(target != y_pred_adv) / float(len(target))))
         np.testing.assert_array_equal(y_pred_adv, np.asarray([7, 1, 1, 4, 4, 1, 4, 4, 4, 4]))
 
+        # Check that x_test has not been modified by attack and classifier
+        self.assertAlmostEqual(float(np.max(x_test_original - x_test)), 0.0, delta=0.00001)
+
         # Close session
         sess.close()
 
@@ -180,6 +184,7 @@ class TestElasticNet(unittest.TestCase):
         :return:
         """
         (_, _), (x_test, y_test) = self.mnist
+        x_test_original = x_test.copy()
 
         # Build KerasClassifier
         krc = get_classifier_kr()
@@ -216,6 +221,9 @@ class TestElasticNet(unittest.TestCase):
         self.assertTrue((target != y_pred_adv).any())
         np.testing.assert_array_equal(y_pred_adv, np.asarray([7, 1, 1, 4, 4, 1, 4, 4, 4, 4]))
 
+        # Check that x_test has not been modified by attack and classifier
+        self.assertAlmostEqual(float(np.max(x_test_original - x_test)), 0.0, delta=0.00001)
+
         k.clear_session()
 
     def test_pytorch_mnist(self):
@@ -224,6 +232,7 @@ class TestElasticNet(unittest.TestCase):
         :return:
         """
         (_, _), (x_test, y_test) = self.mnist
+        x_test_original = x_test.copy()
 
         # Build PyTorchClassifier
         ptc = get_classifier_pt(from_logits=False)
@@ -254,6 +263,9 @@ class TestElasticNet(unittest.TestCase):
         y_pred_adv = np.argmax(ptc.predict(x_test_adv), axis=1)
         self.assertTrue((target != y_pred_adv).any())
         np.testing.assert_array_equal(y_pred_adv, np.asarray([7, 1, 1, 4, 4, 1, 4, 4, 4, 4]))
+
+        # Check that x_test has not been modified by attack and classifier
+        self.assertAlmostEqual(float(np.max(x_test_original - x_test)), 0.0, delta=0.00001)
 
     def test_classifier_type_check_fail_classifier(self):
         # Use a useless test classifier to test basic classifier properties
@@ -379,6 +391,7 @@ class TestElasticNet(unittest.TestCase):
         # LinearSVC: ScikitlearnSVC}
 
         (_, _), (x_test, y_test) = self.iris
+        x_test_original = x_test.copy()
 
         for (model_class, classifier_class) in scikitlearn_test_cases.items():
             model = model_class()
@@ -410,6 +423,9 @@ class TestElasticNet(unittest.TestCase):
             accuracy = np.sum(predictions_adv == np.argmax(targets, axis=1)) / y_test.shape[0]
             logger.info('Targeted EAD success rate of ' + classifier.__class__.__name__ + ' on Iris: %.2f%%',
                         (accuracy * 100))
+
+            # Check that x_test has not been modified by attack and classifier
+            self.assertAlmostEqual(float(np.max(x_test_original - x_test)), 0.0, delta=0.00001)
 
 
 if __name__ == '__main__':

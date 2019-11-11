@@ -92,6 +92,8 @@ class TestPGD(unittest.TestCase):
         self._test_backend_mnist(classifier, x_train, y_train, x_test, y_test)
 
     def _test_backend_mnist(self, classifier, x_train, y_train, x_test, y_test):
+        x_test_original = x_test.copy()
+
         # Test PGD with np.inf norm
         attack = ProjectedGradientDescent(classifier, eps=1, eps_step=0.1)
         x_train_adv = attack.generate(x_train)
@@ -131,6 +133,9 @@ class TestPGD(unittest.TestCase):
 
         acc = np.sum(np.argmax(test_y_pred, axis=1) == np.argmax(y_test, axis=1)) / y_test.shape[0]
         logger.info('Accuracy on adversarial test examples with 3 random initialisations: %.2f%%', acc * 100)
+
+        # Check that x_test has not been modified by attack and classifier
+        self.assertAlmostEqual(float(np.max(x_test_original - x_test)), 0.0, delta=0.00001)
 
     def test_classifier_type_check_fail_classifier(self):
         # Use a useless test classifier to test basic classifier properties
@@ -273,6 +278,7 @@ class TestPGD(unittest.TestCase):
                                   LinearSVC: ScikitlearnSVC}
 
         (_, _), (x_test, y_test) = self.iris
+        x_test_original = x_test.copy()
 
         for (model_class, classifier_class) in scikitlearn_test_cases.items():
             model = model_class()
@@ -305,6 +311,9 @@ class TestPGD(unittest.TestCase):
             acc = np.sum(preds_adv == np.argmax(targets, axis=1)) / y_test.shape[0]
             logger.info('Success rate of ' + classifier.__class__.__name__ + ' on targeted PGD on Iris: %.2f%%',
                         (acc * 100))
+
+            # Check that x_test has not been modified by attack and classifier
+            self.assertAlmostEqual(float(np.max(x_test_original - x_test)), 0.0, delta=0.00001)
 
 
 if __name__ == '__main__':

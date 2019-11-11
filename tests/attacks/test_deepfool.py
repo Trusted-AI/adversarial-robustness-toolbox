@@ -60,6 +60,7 @@ class TestDeepFool(unittest.TestCase):
                      reason='Minimal version of Keras or TensorFlow required.')
     def test_keras_mnist(self):
         (x_train, y_train), (x_test, y_test) = self.mnist
+        x_test_original = x_test.copy()
 
         # Keras classifier
         classifier = get_classifier_kr(from_logits=True)
@@ -88,8 +89,12 @@ class TestDeepFool(unittest.TestCase):
         accuracy = np.sum(np.argmax(test_y_pred, axis=1) == np.argmax(y_test, axis=1)) / y_test.shape[0]
         logger.info('Accuracy on adversarial test examples: %.2f%%', (accuracy * 100))
 
+        # Check that x_test has not been modified by attack and classifier
+        self.assertAlmostEqual(float(np.max(x_test_original - x_test)), 0.0, delta=0.00001)
+
     def test_tensorflow_mnist(self):
         (x_train, y_train), (x_test, y_test) = self.mnist
+        x_test_original = x_test.copy()
 
         # Create basic CNN on MNIST using TensorFlow
         classifier, sess = get_classifier_tf(from_logits=True)
@@ -121,8 +126,12 @@ class TestDeepFool(unittest.TestCase):
         accuracy = np.sum(np.argmax(test_y_pred, axis=1) == np.argmax(y_test, axis=1)) / y_test.shape[0]
         logger.info('Accuracy on adversarial test examples: %.2f%%', (accuracy * 100))
 
+        # Check that x_test has not been modified by attack and classifier
+        self.assertAlmostEqual(float(np.max(x_test_original - x_test)), 0.0, delta=0.00001)
+
     def test_pytorch_mnist(self):
         (x_train, y_train), (x_test, y_test) = self.mnist
+        x_test_original = x_test.copy()
 
         # Create basic PyTorch model
         classifier = get_classifier_pt(from_logits=True)
@@ -155,6 +164,9 @@ class TestDeepFool(unittest.TestCase):
 
         accuracy = np.sum(np.argmax(test_y_pred, axis=1) == np.argmax(y_test, axis=1)) / y_test.shape[0]
         logger.info('Accuracy on adversarial test examples: %.2f%%', (accuracy * 100))
+
+        # Check that x_test has not been modified by attack and classifier
+        self.assertAlmostEqual(float(np.max(x_test_original - x_test)), 0.0, delta=0.00001)
 
     @unittest.skipIf(not (int(keras.__version__.split('.')[0]) == 2 and int(keras.__version__.split('.')[1]) >= 3),
                      reason='Minimal version of Keras or TensorFlow required.')

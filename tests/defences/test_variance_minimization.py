@@ -46,12 +46,15 @@ class TestTotalVarMin(unittest.TestCase):
     def test_three_channels(self):
         clip_values = (0, 1)
         x = np.random.rand(2, 32, 32, 3)
+        x_original = x.copy()
         preprocess = TotalVarMin(clip_values=clip_values)
         x_preprocessed, _ = preprocess(x)
         self.assertEqual(x_preprocessed.shape, x.shape)
         self.assertTrue((x_preprocessed >= clip_values[0]).all())
         self.assertTrue((x_preprocessed <= clip_values[1]).all())
         self.assertFalse((x_preprocessed == x).all())
+        # Check that x has not been modified by attack and classifier
+        self.assertAlmostEqual(float(np.max(x_original - x)), 0.0, delta=0.00001)
 
     def test_failure_feature_vectors(self):
         x = np.random.rand(10, 3)

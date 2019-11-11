@@ -60,6 +60,7 @@ class TestNewtonFool(unittest.TestCase):
         :return:
         """
         (_, _), (x_test, _) = self.mnist
+        x_test_original = x_test.copy()
 
         # Build TensorFlowClassifier
         tfc, sess = get_classifier_tf()
@@ -77,12 +78,16 @@ class TestNewtonFool(unittest.TestCase):
         y_pred_adv_max = y_pred_adv[y_pred_bool]
         self.assertTrue((y_pred_max >= .9 * y_pred_adv_max).all())
 
+        # Check that x_test has not been modified by attack and classifier
+        self.assertAlmostEqual(float(np.max(x_test_original - x_test)), 0.0, delta=0.00001)
+
     def test_keras_mnist(self):
         """
         Second test with the KerasClassifier.
         :return:
         """
         (_, _), (x_test, _) = self.mnist
+        x_test_original = x_test.copy()
 
         # Build KerasClassifier
         krc = get_classifier_kr()
@@ -100,6 +105,9 @@ class TestNewtonFool(unittest.TestCase):
         y_pred_adv_max = y_pred_adv[y_pred_bool]
         self.assertTrue((y_pred_max >= .9 * y_pred_adv_max).all())
 
+        # Check that x_test has not been modified by attack and classifier
+        self.assertAlmostEqual(float(np.max(x_test_original - x_test)), 0.0, delta=0.00001)
+
         # sess.close()
 
     def test_pytorch_mnist(self):
@@ -109,6 +117,7 @@ class TestNewtonFool(unittest.TestCase):
         """
         (_, _), (x_test, _) = self.mnist
         x_test = np.swapaxes(x_test, 1, 3).astype(np.float32)
+        x_test_original = x_test.copy()
 
         # Build PyTorchClassifier
         ptc = get_classifier_pt()
@@ -125,6 +134,9 @@ class TestNewtonFool(unittest.TestCase):
         y_pred_max = y_pred.max(axis=1)
         y_pred_adv_max = y_pred_adv[y_pred_bool]
         self.assertTrue((y_pred_max >= .9 * y_pred_adv_max).all())
+
+        # Check that x_test has not been modified by attack and classifier
+        self.assertAlmostEqual(float(np.max(x_test_original - x_test)), 0.0, delta=0.00001)
 
     def test_keras_iris_clipped(self):
         (_, _), (x_test, y_test) = self.iris
@@ -197,6 +209,7 @@ class TestNewtonFool(unittest.TestCase):
         # LinearSVC: ScikitlearnSVC}
 
         (_, _), (x_test, y_test) = self.iris
+        x_test_original = x_test.copy()
 
         for (model_class, classifier_class) in scikitlearn_test_cases.items():
             model = model_class()
@@ -214,6 +227,9 @@ class TestNewtonFool(unittest.TestCase):
             acc = np.sum(preds_adv == np.argmax(y_test, axis=1)) / y_test.shape[0]
             logger.info('Accuracy of ' + classifier.__class__.__name__ + ' on Iris with NewtonFool adversarial examples'
                                                                          ': %.2f%%', (acc * 100))
+
+            # Check that x_test has not been modified by attack and classifier
+            self.assertAlmostEqual(float(np.max(x_test_original - x_test)), 0.0, delta=0.00001)
 
 
 if __name__ == '__main__':

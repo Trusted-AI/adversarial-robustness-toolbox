@@ -61,6 +61,8 @@ class TestBoundary(unittest.TestCase):
         """
         (_, _), (x_test, y_test) = self.mnist
 
+        x_test_original = x_test.copy()
+
         # Build TensorFlowClassifier
         tfc, sess = get_classifier_tf()
 
@@ -110,6 +112,9 @@ class TestBoundary(unittest.TestCase):
         y_pred_adv = np.argmax(tfc.predict(x_test_adv), axis=1)
         self.assertTrue((y_pred != y_pred_adv).any())
 
+        # Check that x_test has not been modified by attack and classifier
+        self.assertAlmostEqual(float(np.max(x_test_original - x_test)), 0.0, delta=0.00001)
+
         # Clean-up session
         sess.close()
 
@@ -119,6 +124,8 @@ class TestBoundary(unittest.TestCase):
         :return:
         """
         (_, _), (x_test, y_test) = self.mnist
+
+        x_test_original = x_test.copy()
 
         # Build KerasClassifier
         krc = get_classifier_kr()
@@ -148,6 +155,9 @@ class TestBoundary(unittest.TestCase):
         y_pred_adv = np.argmax(krc.predict(x_test_adv), axis=1)
         self.assertTrue((y_pred != y_pred_adv).any())
 
+        # Check that x_test has not been modified by attack and classifier
+        self.assertAlmostEqual(float(np.max(x_test_original - x_test)), 0.0, delta=0.00001)
+
         # Clean-up session
         k.clear_session()
 
@@ -157,6 +167,8 @@ class TestBoundary(unittest.TestCase):
         :return:
         """
         (_, _), (x_test, y_test) = self.mnist
+
+        x_test_original = x_test.copy()
 
         # Build PyTorchClassifier
         ptc = get_classifier_pt()
@@ -187,6 +199,9 @@ class TestBoundary(unittest.TestCase):
         y_pred = np.argmax(ptc.predict(x_test), axis=1)
         y_pred_adv = np.argmax(ptc.predict(x_test_adv), axis=1)
         self.assertTrue((y_pred != y_pred_adv).any())
+
+        # Check that x_test has not been modified by attack and classifier
+        self.assertAlmostEqual(float(np.max(x_test_original - x_test)), 0.0, delta=0.00001)
 
     def test_classifier_type_check_fail_classifier(self):
         # Use a useless test classifier to test basic classifier properties
@@ -297,6 +312,7 @@ class TestBoundary(unittest.TestCase):
                                   LinearSVC: ScikitlearnSVC}
 
         (_, _), (x_test, y_test) = self.iris
+        x_test_original = x_test.copy()
 
         for (model_class, classifier_class) in scikitlearn_test_cases.items():
             model = model_class()
@@ -315,6 +331,9 @@ class TestBoundary(unittest.TestCase):
             accuracy = np.sum(preds_adv == np.argmax(y_test, axis=1)) / y_test.shape[0]
             logger.info('Accuracy of ' + classifier.__class__.__name__ + ' on Iris with BoundaryAttack adversarial '
                                                                          'examples: %.2f%%', (accuracy * 100))
+
+            # Check that x_test has not been modified by attack and classifier
+            self.assertAlmostEqual(float(np.max(x_test_original - x_test)), 0.0, delta=0.00001)
 
 
 if __name__ == '__main__':

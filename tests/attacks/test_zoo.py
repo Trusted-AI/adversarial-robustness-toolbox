@@ -55,6 +55,8 @@ class TestZooAttack(unittest.TestCase):
         Test the corner case when attack fails.
         :return:
         """
+        x_test_original = self.x_test.copy()
+
         # Build TensorFlowClassifier
         tfc, sess = get_classifier_tf()
 
@@ -65,6 +67,9 @@ class TestZooAttack(unittest.TestCase):
         self.assertGreaterEqual(np.amin(x_test_adv), 0.0)
         np.testing.assert_almost_equal(self.x_test, x_test_adv, 3)
 
+        # Check that x_test has not been modified by attack and classifier
+        self.assertAlmostEqual(float(np.max(x_test_original - x_test)), 0.0, delta=0.00001)
+
         # Clean-up session
         sess.close()
 
@@ -73,6 +78,8 @@ class TestZooAttack(unittest.TestCase):
         First test with the TensorFlowClassifier.
         :return:
         """
+        x_test_original = self.x_test.copy()
+
         # Build TensorFlowClassifier
         tfc, sess = get_classifier_tf()
 
@@ -100,6 +107,9 @@ class TestZooAttack(unittest.TestCase):
         logger.debug('ZOO actual: %s', y_pred_adv)
         logger.info('ZOO success rate on MNIST: %.2f', (sum(y_pred != y_pred_adv) / float(len(y_pred))))
 
+        # Check that x_test has not been modified by attack and classifier
+        self.assertAlmostEqual(float(np.max(x_test_original - x_test)), 0.0, delta=0.00001)
+
         # Clean-up session
         sess.close()
 
@@ -108,6 +118,8 @@ class TestZooAttack(unittest.TestCase):
         Second test with the KerasClassifier.
         :return:
         """
+        x_test_original = self.x_test.copy()
+
         # Build KerasClassifier
         krc = get_classifier_kr()
 
@@ -151,6 +163,9 @@ class TestZooAttack(unittest.TestCase):
         logger.debug('ZOO actual: %s', y_pred_adv)
         logger.info('ZOO success rate on MNIST: %.2f', (sum(y_pred != y_pred_adv) / float(len(y_pred))))
 
+        # Check that x_test has not been modified by attack and classifier
+        self.assertAlmostEqual(float(np.max(x_test_original - x_test)), 0.0, delta=0.00001)
+
         # Clean-up
         k.clear_session()
 
@@ -164,6 +179,7 @@ class TestZooAttack(unittest.TestCase):
 
         # Get MNIST
         x_test = np.swapaxes(self.x_test, 1, 3).astype(np.float32)
+        x_test_original = x_test.copy()
 
         # First attack
         # zoo = ZooAttack(classifier=ptc, targeted=True, max_iter=10, binary_search_steps=10)
@@ -189,6 +205,9 @@ class TestZooAttack(unittest.TestCase):
         # print(x_test_adv[0, 0, 14, :])
         # print(np.amax(x_test - x_test_adv))
         x_test_adv_expected = []
+
+        # Check that x_test has not been modified by attack and classifier
+        self.assertAlmostEqual(float(np.max(x_test_original - x_test)), 0.0, delta=0.00001)
 
     def test_classifier_type_check_fail_classifier(self):
         # Use a useless test classifier to test basic classifier properties

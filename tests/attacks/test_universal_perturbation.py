@@ -60,6 +60,7 @@ class TestUniversalPerturbation(unittest.TestCase):
         :return:
         """
         (x_train, y_train), (x_test, y_test) = self.mnist
+        x_test_original = x_test.copy()
 
         # Build TensorFlowClassifier
         tfc, sess = get_classifier_tf()
@@ -77,12 +78,16 @@ class TestUniversalPerturbation(unittest.TestCase):
         self.assertFalse((np.argmax(y_test, axis=1) == test_y_pred).all())
         self.assertFalse((np.argmax(y_train, axis=1) == train_y_pred).all())
 
+        # Check that x_test has not been modified by attack and classifier
+        self.assertAlmostEqual(float(np.max(x_test_original - x_test)), 0.0, delta=0.00001)
+
     def test_keras_mnist(self):
         """
         Second test with the KerasClassifier.
         :return:
         """
         (x_train, y_train), (x_test, y_test) = self.mnist
+        x_test_original = x_test.copy()
 
         # Build KerasClassifier
         krc = get_classifier_kr()
@@ -100,6 +105,9 @@ class TestUniversalPerturbation(unittest.TestCase):
         self.assertFalse((np.argmax(y_test, axis=1) == test_y_pred).all())
         self.assertFalse((np.argmax(y_train, axis=1) == train_y_pred).all())
 
+        # Check that x_test has not been modified by attack and classifier
+        self.assertAlmostEqual(float(np.max(x_test_original - x_test)), 0.0, delta=0.00001)
+
         # sess.close()
 
     def test_pytorch_mnist(self):
@@ -110,6 +118,7 @@ class TestUniversalPerturbation(unittest.TestCase):
         (x_train, y_train), (x_test, y_test) = self.mnist
         x_train = np.swapaxes(x_train, 1, 3).astype(np.float32)
         x_test = np.swapaxes(x_test, 1, 3).astype(np.float32)
+        x_test_original = x_test.copy()
 
         # Build PyTorchClassifier
         ptc = get_classifier_pt()
@@ -126,6 +135,9 @@ class TestUniversalPerturbation(unittest.TestCase):
         test_y_pred = np.argmax(ptc.predict(x_test_adv), axis=1)
         self.assertFalse((np.argmax(y_test, axis=1) == test_y_pred).all())
         self.assertFalse((np.argmax(y_train, axis=1) == train_y_pred).all())
+
+        # Check that x_test has not been modified by attack and classifier
+        self.assertAlmostEqual(float(np.max(x_test_original - x_test)), 0.0, delta=0.00001)
 
     def test_classifier_type_check_fail_classifier(self):
         # Use a useless test classifier to test basic classifier properties

@@ -78,10 +78,14 @@ class TestThermometerEncoding(unittest.TestCase):
 
     def test_feature_vectors(self):
         x = np.random.rand(10, 4)
+        x_original = x.copy()
         num_space = 5
         encoder = ThermometerEncoding(clip_values=(0, 1), num_space=num_space, channel_index=1)
         x_encoded, _ = encoder(x)
         self.assertEqual(x_encoded.shape, (10, 20))
+        # Check that x has not been modified by attack and classifier
+        self.assertAlmostEqual(float(np.max(x_original - x)), 0.0, delta=0.00001)
+
 
 
 if __name__ == '__main__':

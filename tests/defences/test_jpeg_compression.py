@@ -48,6 +48,7 @@ class TestJpegCompression(unittest.TestCase):
         clip_values = (0, 1)
         (train_features, _), (_, _) = cifar10.load_data()
         x = train_features[:2] / 255.0
+        x_original = x.copy()
         preprocess = JpegCompression(clip_values=clip_values, quality=80)
         x_compressed, _ = preprocess(x)
         self.assertEqual(x_compressed.shape, x.shape)
@@ -56,6 +57,8 @@ class TestJpegCompression(unittest.TestCase):
         self.assertAlmostEqual(x_compressed[0, 14, 14, 0], 0.92941177)
         self.assertAlmostEqual(x_compressed[0, 14, 14, 1], 0.8039216)
         self.assertAlmostEqual(x_compressed[0, 14, 14, 2], 0.6117647)
+        # Check that x has not been modified by attack and classifier
+        self.assertAlmostEqual(float(np.max(x_original - x)), 0.0, delta=0.00001)
 
     def test_three_channels_0_255(self):
         clip_values = (0, 255)
