@@ -87,6 +87,5 @@ class TestThermometerEncoding(unittest.TestCase):
         self.assertAlmostEqual(float(np.max(x_original - x)), 0.0, delta=0.00001)
 
 
-
 if __name__ == '__main__':
     unittest.main()
