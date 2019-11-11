@@ -26,6 +26,7 @@ import logging
 # pylint: disable=E0001
 import numpy as np
 import six
+from tqdm import trange, tqdm
 
 from art.classifiers.classifier import Classifier, ClassifierNeuralNetwork, ClassifierGradients
 from art.detection.subsetscanning.scanner import Scanner
@@ -43,11 +44,11 @@ class SubsetScanningDetector(ClassifierNeuralNetwork, ClassifierGradients, Class
         """
         Create a `SubsetScanningDetector` instance which is used to the detect the presence of adversarial samples.
 
-        :param classifier: The model being evaluated for its robustness to anomalies (eg. adversarial samples)
+        :param classifier: The model being evaluated for its robustness to anomalies (eg. adversarial samples).
         :type classifier: :class:`.Classifier`
-        :bgd_data: The background data used to learn a null model. Typically dataset used to train the classifier.
+        :param bgd_data: The background data used to learn a null model. Typically dataset used to train the classifier.
         :type bgd_data: `np.ndarray`
-        :layer: The layer from which to extract activations to perform scan
+        :param layer: The layer from which to extract activations to perform scan.
         :type layer: `int` or `str`
         """
         super(SubsetScanningDetector, self).__init__(clip_values=classifier.clip_values,
@@ -123,6 +124,8 @@ class SubsetScanningDetector(ClassifierNeuralNetwork, ClassifierGradients, Class
         :type clean_size: `int`
         :param advs_size:
         :param advs_size: `int`
+        :param run: Number of runs.
+        :type run: `int`
         :return: (clean_scores, adv_scores, detectionpower)
         :rtype: `list`, `list`, `float`
         """
@@ -137,19 +140,22 @@ class SubsetScanningDetector(ClassifierNeuralNetwork, ClassifierGradients, Class
         if clean_size is None and advs_size is None:
 
             # Individual scan
-            for j, _ in enumerate(clean_pvalranges):
-                best_score, _, _, _ = Scanner.fgss_individ_for_nets(clean_pvalranges[j])
-                clean_scores.append(best_score)
-            for j, _ in enumerate(adv_pvalranges):
-                best_score, _, _, _ = Scanner.fgss_individ_for_nets(adv_pvalranges[j])
-                adv_scores.append(best_score)
+            with tqdm(len(clean_pvalranges) + len(adv_pvalranges), desc='Subset scanning') as pbar:
+                for j in range(len(clean_pvalranges)):
+                    best_score, _, _, _ = Scanner.fgss_individ_for_nets(clean_pvalranges[j])
+                    clean_scores.append(best_score)
+                    pbar.update(1)
+                for j in range(len(adv_pvalranges)):
+                    best_score, _, _, _ = Scanner.fgss_individ_for_nets(adv_pvalranges[j])
+                    adv_scores.append(best_score)
+                    pbar.update(1)
 
         else:
 
             len_adv_x = len(adv_x)
             len_clean_x = len(clean_x)
 
-            for _ in range(run):
+            for _ in trange(run, desc='Subset scanning'):
                 np.random.seed()
 
                 advchoice = np.random.choice(range(len_adv_x), advs_size, replace=False)
