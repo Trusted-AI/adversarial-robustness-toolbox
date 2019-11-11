@@ -413,7 +413,7 @@ class TestCarlini(unittest.TestCase):
         x_test_adv = clinfm.generate(x_test, **params)
         self.assertFalse((x_test == x_test_adv).all())
         self.assertLessEqual(np.amax(x_test_adv), 1.000001)
-        self.assertGreaterEqual(np.amin(x_test_adv), 0.0)
+        self.assertGreaterEqual(np.amin(x_test_adv), -1e-6)
         target = np.argmax(params['y'], axis=1)
         y_pred_adv = np.argmax(krc.predict(x_test_adv), axis=1)
         logger.debug('CW0 Target: %s', target)
