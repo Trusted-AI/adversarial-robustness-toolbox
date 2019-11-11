@@ -38,7 +38,7 @@ class TestLocalSpatialSmoothing(unittest.TestCase):
         x = np.ones((1, m, n, 3))
 
         # Start to test
-        for window_size in range(1, 20):
+        for window_size in range(1, 10):
             print('Window size: {}'.format(window_size))
             logger.info('Window size: {}'.format(window_size))
             preprocess = SpatialSmoothing(window_size=window_size)
