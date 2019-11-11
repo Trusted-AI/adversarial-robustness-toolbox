@@ -405,7 +405,7 @@ class TestCarlini(unittest.TestCase):
         (_, _), (x_test, y_test) = self.mnist
 
         # Build KerasClassifier
-        krc, sess = get_classifier_kr(from_logits=True)
+        krc = get_classifier_kr(from_logits=True)
 
         # First attack
         clinfm = CarliniLInfMethod(classifier=krc, targeted=True, max_iter=10, eps=0.5)
@@ -435,7 +435,6 @@ class TestCarlini(unittest.TestCase):
 
         # Clean-up
         k.clear_session()
-        sess.close()
 
     def test_pytorch_mnist_LInf(self):
         """
