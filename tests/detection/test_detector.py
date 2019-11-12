@@ -20,7 +20,6 @@ from __future__ import absolute_import, division, print_function, unicode_litera
 import logging
 import unittest
 
-import tensorflow as tf
 import keras
 import keras.backend as k
 from keras.layers import Dense, Flatten, Conv2D, MaxPooling2D
@@ -38,8 +37,6 @@ logger = logging.getLogger(__name__)
 BATCH_SIZE, NB_TRAIN, NB_TEST = 100, 1000, 10
 
 
-@unittest.skipIf(tf.__version__[0] == '2', reason='Skip unittests for TensorFlow v2 until Keras supports TensorFlow'
-                                                  ' v2 as backend.')
 class TestBinaryInputDetector(unittest.TestCase):
     """
     A unittest class for testing the binary input detector.
@@ -102,8 +99,6 @@ class TestBinaryInputDetector(unittest.TestCase):
         self.assertGreater(nb_true_negatives, 0)
 
 
-@unittest.skipIf(tf.__version__[0] == '2', reason='Skip unittests for TensorFlow v2 until Keras supports TensorFlow'
-                                                  ' v2 as backend.')
 class TestBinaryActivationDetector(unittest.TestCase):
     """
     A unittest class for testing the binary activation detector.

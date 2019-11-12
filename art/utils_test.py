@@ -198,16 +198,10 @@ def get_classifier_kr(loss_name='categorical_crossentropy'):
     :return: KerasClassifier, tf.Session()
     """
     import keras
-    import keras.backend as k
     from keras.models import Sequential
     from keras.layers import Dense, Flatten, Conv2D, MaxPooling2D
-    import tensorflow as tf
 
     from art.classifiers import KerasClassifier
-
-    # Initialize a tf session
-    sess = tf.Session()
-    k.set_session(sess)
 
     # Create simple CNN
     model = Sequential()
@@ -223,16 +217,12 @@ def get_classifier_kr(loss_name='categorical_crossentropy'):
         loss = keras.losses.categorical_hinge
     elif loss_name == 'categorical_crossentropy':
         loss = keras.losses.categorical_crossentropy
-
     elif loss_name == 'sparse_categorical_crossentropy':
         loss = keras.losses.sparse_categorical_crossentropy
-
     elif loss_name == 'binary_crossentropy':
         loss = keras.losses.binary_crossentropy
-
     elif loss_name == 'kullback_leibler_divergence':
         loss = keras.losses.kullback_leibler_divergence
-
     elif loss_name == 'cosine_proximity':
         loss = keras.losses.cosine_proximity
     else:
@@ -250,7 +240,7 @@ def get_classifier_kr_tf(loss_name='categorical_crossentropy'):
     """
     Standard Keras classifier for unit testing
 
-    The weights and biases are identical to the Tensorflow model in get_classifier_tf().
+    The weights and biases are identical to the TensorFlow model in get_classifier_tf().
 
     :return: KerasClassifier, tf.Session()
     """
@@ -276,18 +266,16 @@ def get_classifier_kr_tf(loss_name='categorical_crossentropy'):
         loss = tf.keras.losses.categorical_hinge
     elif loss_name == 'categorical_crossentropy':
         loss = tf.keras.losses.categorical_crossentropy
-
     elif loss_name == 'sparse_categorical_crossentropy':
         loss = tf.keras.losses.sparse_categorical_crossentropy
-
     elif loss_name == 'binary_crossentropy':
         loss = tf.keras.losses.binary_crossentropy
-
     elif loss_name == 'kullback_leibler_divergence':
         loss = tf.keras.losses.kullback_leibler_divergence
-
     elif loss_name == 'cosine_similarity':
         loss = tf.keras.losses.cosine_similarity
+    elif loss_name == 'cosine_proximity':
+        loss = tf.keras.losses.cosine_proximity
     else:
         raise ValueError('Loss name not recognised.')
 
@@ -311,7 +299,7 @@ def get_classifier_pt():
         """
         Create model for pytorch.
 
-        The weights and biases are identical to the Tensorflow model in get_classifier_tf().
+        The weights and biases are identical to the TensorFlow model in get_classifier_tf().
         """
 
         def __init__(self):
@@ -421,7 +409,7 @@ def get_classifier_mx():
 
 def get_iris_classifier_tf():
     """
-    Standard Tensorflow classifier for unit testing.
+    Standard TensorFlow classifier for unit testing.
 
     The following hyper-parameters were used to obtain the weights and biases:
 
@@ -457,7 +445,7 @@ def get_iris_classifier_tf():
     # Train operator
     loss = tf.reduce_mean(tf.losses.softmax_cross_entropy(logits=logits, onehot_labels=output_ph))
 
-    # Tensorflow session and initialization
+    # TensorFlow session and initialization
     sess = tf.Session()
     sess.run(tf.global_variables_initializer())
 
@@ -470,23 +458,17 @@ def get_iris_classifier_tf():
 
 def get_iris_classifier_kr():
     """
-    Standard Keras classifier for unit testing on Iris dataset. The weights and biases are identical to the Tensorflow
+    Standard Keras classifier for unit testing on Iris dataset. The weights and biases are identical to the TensorFlow
     model in `get_iris_classifier_tf`.
 
     :return: The trained model for Iris dataset and the session.
     :rtype: `tuple(KerasClassifier, tf.Session)`
     """
     import keras
-    import keras.backend as k
     from keras.models import Sequential
     from keras.layers import Dense
-    import tensorflow as tf
 
     from art.classifiers import KerasClassifier
-
-    # Initialize a tf session
-    sess = tf.Session()
-    k.set_session(sess)
 
     # Create simple CNN
     model = Sequential()
@@ -502,7 +484,7 @@ def get_iris_classifier_kr():
     # Get classifier
     krc = KerasClassifier(model, clip_values=(0, 1), use_logits=False, channel_index=1)
 
-    return krc, sess
+    return krc
 
 
 def get_iris_classifier_pt():
@@ -518,7 +500,7 @@ def get_iris_classifier_pt():
         """
         Create Iris model for PyTorch.
 
-        The weights and biases are identical to the Tensorflow model in `get_iris_classifier_tf`.
+        The weights and biases are identical to the TensorFlow model in `get_iris_classifier_tf`.
         """
 
         def __init__(self):

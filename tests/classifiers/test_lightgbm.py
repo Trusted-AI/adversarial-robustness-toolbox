@@ -33,6 +33,7 @@ class TestLightGBMClassifier(unittest.TestCase):
 
     @classmethod
     def setUpClass(cls):
+        master_seed(1234)
         (x_train, y_train), (x_test, y_test), _, _ = load_dataset('iris')
 
         cls.x_train = x_train

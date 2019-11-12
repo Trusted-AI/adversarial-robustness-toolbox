@@ -335,7 +335,7 @@ class TestKerasClassifierTF(unittest.TestCase):
         label = decode_predictions(prediction)[0][0]
 
         self.assertEqual(label[1], 'Weimaraner')
-        if tf.__version__[0] == '2':
+        if tf.__version__[0] == '2' or (tf.__version__[0] == '1' and tf.__version__[2:4] == '15'):
             self.assertAlmostEqual(prediction[0, 178], 0.29494652, places=3)
         else:
             self.assertAlmostEqual(prediction[0, 178], 0.2658045, places=3)
@@ -396,7 +396,12 @@ class TestKerasClassifierTF(unittest.TestCase):
 
     def test_loss_functions(self):
         loss_names = ['categorical_hinge', 'categorical_crossentropy', 'sparse_categorical_crossentropy',
-                      'binary_crossentropy', 'kullback_leibler_divergence', 'cosine_similarity']
+                      'binary_crossentropy', 'kullback_leibler_divergence']
+
+        if tf.__version__[0] == '2':
+            loss_names.append('cosine_similarity')
+        else:
+            loss_names.append('cosine_proximity')
 
         for loss_name in loss_names:
             logger.debug(loss_name)
