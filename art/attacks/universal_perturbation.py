@@ -154,7 +154,7 @@ class UniversalPerturbation(Attack):
         self.fooling_rate = fooling_rate
         self.converged = nb_iter < self.max_iter
         self.noise = noise
-        logger.info('Success rate of universal perturbation attack: %.2f%%', 100*fooling_rate)
+        logger.info('Success rate of universal perturbation attack: %.2f%%', 100 * fooling_rate)
 
         return x_adv
 

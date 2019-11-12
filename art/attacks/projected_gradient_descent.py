@@ -48,7 +48,7 @@ class ProjectedGradientDescent(FastGradientMethod):
     """
     attack_params = FastGradientMethod.attack_params + ['max_iter']
 
-    def __init__(self, classifier, norm=np.inf, eps=.3, eps_step=0.1, max_iter=100, targeted=False, num_random_init=0,
+    def __init__(self, classifier, norm=np.inf, eps=0.3, eps_step=0.1, max_iter=100, targeted=False, num_random_init=0,
                  batch_size=1):
         """
         Create a :class:`.ProjectedGradientDescent` instance.

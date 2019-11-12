@@ -108,8 +108,7 @@ class HighConfidenceLowUncertainty(Attack):
             # #finally, run optimization
             x_adv[i] = minimize(minfun, x_adv[i], args=args, bounds=bounds, constraints=[constr_conf, constr_unc])['x']
 
-        logger.info('Success rate of HCLU attack: %.2f%%',
-                    100 * compute_success(self.classifier, x, y, x_adv))
+        logger.info('Success rate of HCLU attack: %.2f%%',  100 * compute_success(self.classifier, x, y, x_adv))
         return x_adv
 
     def set_params(self, **kwargs):

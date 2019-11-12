@@ -155,8 +155,8 @@ class FastGradientMethod(Attack):
         if self.minimal:
             logger.info('Performing minimal perturbation FGM.')
             adv_x_best = self._minimal_perturbation(x, y)
-            rate_best = 100 * compute_success(self.classifier, x, y, adv_x_best,
-                                              self.targeted, batch_size=self.batch_size)
+            rate_best = 100 * compute_success(self.classifier, x, y, adv_x_best, self.targeted,
+                                              batch_size=self.batch_size)
         else:
             adv_x_best = None
             rate_best = None

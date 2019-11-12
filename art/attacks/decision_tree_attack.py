@@ -153,8 +153,7 @@ class DecisionTreeAttack(Attack):
                 elif x_adv[index][feature] <= threshold and go_for == self.classifier.get_right_child(adv_path[i]):
                     x_adv[index][feature] = threshold + self.offset
 
-        logger.info('Success rate of decision tree attack: %.2f%%',
-                    100 * compute_success(self.classifier, x, y, x_adv))
+        logger.info('Success rate of decision tree attack: %.2f%%', 100 * compute_success(self.classifier, x, y, x_adv))
         return x_adv
 
     def set_params(self, **kwargs):
