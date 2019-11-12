@@ -1,6 +1,6 @@
 # MLOps
 
-This directory will contain samples and examples to show how to leverage ART for MLOps, in Machine Learning Platforms.
+This directory will contain samples and examples to show how to leverage ART for MLOps, in Machine Learning Platforms and Pipelines.
 
 The will contain designs, specifications, shared code and processes that meet the following goals:
 * Enable integration between MLOps Pipelines and ART e.g. Kubeflow Pipelines working with ART
