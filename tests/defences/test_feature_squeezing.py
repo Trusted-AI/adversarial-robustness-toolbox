@@ -45,7 +45,7 @@ class TestFeatureSqueezing(unittest.TestCase):
     def test_random(self):
         m, n = 1000, 20
         x = np.random.rand(m, n)
-        x_originalal = x.copy()
+        x_original = x.copy()
         x_zero = np.where(x < 0.5)
         x_one = np.where(x >= 0.5)
 

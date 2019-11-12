@@ -47,7 +47,7 @@ class TestLocalSpatialSmoothing(unittest.TestCase):
 
     def test_fix(self):
         x = np.array([[[[0.1], [0.2], [0.3]], [[0.7], [0.8], [0.9]], [[0.4], [0.5], [0.6]]]]).astype(np.float32)
-        x_originalal = x.copy()
+        x_original = x.copy()
 
         # Start to test
         preprocess = SpatialSmoothing(window_size=3)
