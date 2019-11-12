@@ -129,8 +129,7 @@ class KerasClassifier(ClassifierNeuralNetwork, ClassifierGradients, Classifier):
 
         self._use_logits = use_logits
 
-        # Get predictions and loss function
-
+        # Get loss function
         if not hasattr(self._model, 'loss'):
             logger.warning('Keras model has no loss set. Classifier tries to use `k.sparse_categorical_crossentropy`.')
             loss_function = k.sparse_categorical_crossentropy
@@ -156,6 +155,8 @@ class KerasClassifier(ClassifierNeuralNetwork, ClassifierGradients, Classifier):
             else:
                 loss_function = getattr(k, self._model.loss.__name__)
 
+        # Check if loss function is an instance of loss function generator, the try is required because some of the
+        # modules are not available in older Keras versions
         try:
             flag_is_instance = isinstance(loss_function, (keras.losses.CategoricalHinge,
                                                           keras.losses.CategoricalCrossentropy,
@@ -164,6 +165,7 @@ class KerasClassifier(ClassifierNeuralNetwork, ClassifierGradients, Classifier):
         except AttributeError:
             flag_is_instance = False
 
+        # Check if the labels have to be reduced to index labels and create placeholder for labels
         if ('__name__' in dir(loss_function) and loss_function.__name__ in ['categorical_hinge',
                                                                             'categorical_crossentropy',
                                                                             'binary_crossentropy',
@@ -178,15 +180,17 @@ class KerasClassifier(ClassifierNeuralNetwork, ClassifierGradients, Classifier):
         else:
             raise ValueError('Loss function not recognised.')
 
+        # Create predictions
+        predictions = self._output
+
+        # Define the loss using the loss function
         if ('__name__' in dir(loss_function, ) and loss_function.__name__ in ['categorical_crossentropy',
                                                                               'sparse_categorical_crossentropy',
                                                                               'binary_crossentropy']):
-            predictions = self._output
             loss_ = loss_function(label_ph, self._output, from_logits=self._use_logits)
 
         elif '__name__' in dir(loss_function) and loss_function.__name__ in ['categorical_hinge',
                                                                              'kullback_leibler_divergence']:
-            predictions = self._output
             loss_ = loss_function(label_ph, self._output)
 
         elif isinstance(loss_function, (keras.losses.CategoricalHinge,
@@ -194,9 +198,9 @@ class KerasClassifier(ClassifierNeuralNetwork, ClassifierGradients, Classifier):
                                         keras.losses.SparseCategoricalCrossentropy,
                                         keras.losses.KLDivergence,
                                         keras.losses.BinaryCrossentropy)):
-            predictions = self._output
             loss_ = loss_function(label_ph, self._output)
 
+        # Define loss gradients
         loss_gradients = k.gradients(loss_, self._input)
 
         if k.backend() == 'tensorflow':
