@@ -16,333 +16,519 @@
 # TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 # SOFTWARE.
 """
-Module implementing varying metrics for assessing model robustness. These fall mainly under two categories:
-attack-dependent and attack-independent.
+This module implements the HopSkipJump attack `HopSkipJump`. This is a black-box attack that only requires class
+predictions. It is an advanced version of the Boundary attack.
+
+| Paper link: https://arxiv.org/abs/1904.02144
 """
 from __future__ import absolute_import, division, print_function, unicode_literals
 
 import logging
-from functools import reduce
 
 import numpy as np
-import numpy.linalg as la
-from scipy.optimize import fmin as scipy_optimizer
-from scipy.stats import weibull_min
 
-from art.attacks import FastGradientMethod
-from art.utils import random_sphere
 from art import NUMPY_DTYPE
+from art.attacks.attack import Attack
+from art.utils import compute_success, to_categorical, check_and_transform_label_format
 
 logger = logging.getLogger(__name__)
 
-SUPPORTED_METHODS = {
-    "fgsm": {"class": FastGradientMethod, "params": {"eps_step": 0.1, "eps_max": 1., "clip_min": 0., "clip_max": 1.}},
-    # "jsma": {"class": SaliencyMapMethod, "params": {"theta": 1., "gamma": 0.01, "clip_min": 0., "clip_max": 1.}}
-}
 
-
-def get_crafter(classifier, attack, params=None):
+class HopSkipJump(Attack):
     """
-    Create an attack instance to craft adversarial samples.
+    Implementation of the HopSkipJump attack from Jianbo et al. (2019). This is a powerful black-box attack that
+    only requires final class prediction, and is an advanced version of the boundary attack.
 
-    :param classifier: A trained model
-    :type classifier: :class:`.Classifier`
-    :param attack: adversarial attack name
-    :type attack: `str`
-    :param params: Parameters specific to the adversarial attack
-    :type params: `dict`
-    :return: A crafter
-    :rtype: `Attack`
+    | Paper link: https://arxiv.org/abs/1904.02144
     """
-    try:
-        crafter = SUPPORTED_METHODS[attack]["class"](classifier)
-    except Exception:
-        raise NotImplementedError("{} crafting method not supported.".format(attack))
+    attack_params = Attack.attack_params + ['targeted', 'norm', 'max_iter', 'max_eval',
+                                            'init_eval', 'init_size', 'curr_iter', 'batch_size']
 
-    if params:
-        crafter.set_params(**params)
+    def __init__(self, classifier, targeted=False, norm=2, max_iter=50, max_eval=10000, init_eval=100, init_size=100):
+        """
+        Create a HopSkipJump attack instance.
 
-    return crafter
+        :param classifier: A trained classifier.
+        :type classifier: :class:`.Classifier`
+        :param targeted: Should the attack target one specific class.
+        :type targeted: `bool`
+        :param norm: Order of the norm. Possible values: np.inf or 2.
+        :type norm: `int`
+        :param max_iter: Maximum number of iterations.
+        :type max_iter: `int`
+        :param max_eval: Maximum number of evaluations for estimating gradient.
+        :type max_eval: `int`
+        :param init_eval: Initial number of evaluations for estimating gradient.
+        :type init_eval: `int`
+        :param init_size: Maximum number of trials for initial generation of adversarial examples.
+        :type init_size: `int`
+        """
+        super(HopSkipJump, self).__init__(classifier=classifier)
+        params = {'targeted': targeted,
+                  'norm': norm,
+                  'max_iter': max_iter,
+                  'max_eval': max_eval,
+                  'init_eval': init_eval,
+                  'init_size': init_size,
+                  'curr_iter': 0,
+                  'batch_size': 1
+                  }
+        self.set_params(**params)
 
-
-def empirical_robustness(classifier, x, attack_name, attack_params=None):
-    """
-    Compute the Empirical Robustness of a classifier object over the sample `x` for a given adversarial crafting
-    method `attack`. This is equivalent to computing the minimal perturbation that the attacker must introduce for a
-    successful attack.
-
-    | Paper link: https://arxiv.org/abs/1511.04599
-
-    :param classifier: A trained model
-    :type classifier: :class:`.Classifier`
-    :param x: Data sample of shape that can be fed into `classifier`
-    :type x: `np.ndarray`
-    :param attack_name: A string specifying the attack to be used. Currently supported attacks are {`fgsm'}
-                        (Fast Gradient Sign Method)
-    :type attack_name: `str`
-    :param attack_params: A dictionary with attack-specific parameters. If the attack has a norm attribute, then it will
-                          be used as the norm for calculating the robustness; otherwise the standard Euclidean distance
-                          is used (norm=2).
-    :type attack_params: `dict`
-    :return: The average empirical robustness computed on `x`
-    :rtype: `float`
-    """
-    crafter = get_crafter(classifier, attack_name, attack_params)
-    crafter.set_params(**{'minimal': True})
-    adv_x = crafter.generate(x)
-
-    # Predict the labels for adversarial examples
-    y = classifier.predict(x)
-    y_pred = classifier.predict(adv_x)
-
-    idxs = (np.argmax(y_pred, axis=1) != np.argmax(y, axis=1))
-    if np.sum(idxs) == 0.0:
-        return 0
-
-    norm_type = 2
-    if hasattr(crafter, 'norm'):
-        norm_type = crafter.norm
-    perts_norm = la.norm((adv_x - x).reshape(x.shape[0], -1), ord=norm_type, axis=1)
-    perts_norm = perts_norm[idxs]
-
-    return np.mean(perts_norm / la.norm(x[idxs].reshape(np.sum(idxs), -1), ord=norm_type, axis=1))
-
-
-# def nearest_neighbour_dist(classifier, x, x_ref, attack_name, attack_params=None):
-#     """
-#     Compute the (average) nearest neighbour distance between the sets `x` and `x_train`: for each point in `x`,
-#     measure the Euclidean distance to its closest point in `x_train`, then average over all points.
-#
-#     :param classifier: A trained model
-#     :type classifier: :class:`.Classifier`
-#     :param x: Data sample of shape that can be fed into `classifier`
-#     :type x: `np.ndarray`
-#     :param x_ref: Reference data sample to be considered as neighbors
-#     :type x_ref: `np.ndarray`
-#     :param attack_name: adversarial attack name
-#     :type attack_name: `str`
-#     :param attack_params: Parameters specific to the adversarial attack
-#     :type attack_params: `dict`
-#     :return: The average nearest neighbors distance
-#     :rtype: `float`
-#     """
-#     # Craft the adversarial examples
-#     crafter = get_crafter(classifier, attack_name, attack_params)
-#     adv_x = crafter.generate(x, minimal=True)
-#
-#     # Predict the labels for adversarial examples
-#     y = classifier.predict(x)
-#     y_pred = classifier.predict(adv_x)
-#
-#     adv_x_ = adv_x.reshape(adv_x.shape[0], np.prod(adv_x.shape[1:]))
-#     x_ = x_ref.reshape(x_ref.shape[0], np.prod(x_ref.shape[1:]))
-#     dists = la.norm(adv_x_ - x_, axis=1)
-#
-#     # TODO check if following computation is correct ?
-#     dists = np.min(dists, axis=1) / la.norm(x.reshape(x.shape[0], -1), ord=2, axis=1)
-#     idxs = (np.argmax(y_pred, axis=1) != np.argmax(y, axis=1))
-#     avg_nn_dist = np.mean(dists[idxs])
-#
-#     return avg_nn_dist
-
-
-def loss_sensitivity(classifier, x, y):
-    """
-    Local loss sensitivity estimated through the gradients of the prediction at points in `x`.
-
-    | Paper link: https://arxiv.org/abs/1706.05394
-
-    :param classifier: A trained model
-    :type classifier: :class:`.Classifier`
-    :param x: Data sample of shape that can be fed into `classifier`
-    :type x: `np.ndarray`
-    :param y: Labels for sample `x`, one-hot encoded.
-    :type y: `np.ndarray`
-    :return: The average loss sensitivity of the model
-    :rtype: `float`
-    """
-    grads = classifier.loss_gradient(x, y)
-    norm = la.norm(grads.reshape(grads.shape[0], -1), ord=2, axis=1)
-
-    return np.mean(norm)
-
-
-def clever(classifier, x, nb_batches, batch_size, radius, norm, target=None, target_sort=False, c_init=1,
-           pool_factor=10):
-    """
-    Compute CLEVER score for an untargeted attack.
-
-    | Paper link: https://arxiv.org/abs/1801.10578
-
-    :param classifier: A trained model.
-    :type classifier: :class:`.Classifier`
-    :param x: One input sample
-    :type x: `np.ndarray`
-    :param nb_batches: Number of repetitions of the estimate
-    :type nb_batches: `int`
-    :param batch_size: Number of random examples to sample per batch
-    :type batch_size: `int`
-    :param radius: Radius of the maximum perturbation
-    :type radius: `float`
-    :param norm: Current support: 1, 2, np.inf
-    :type norm: `int`
-    :param target: Class or classes to target. If `None`, targets all classes
-    :type target: `int` or iterable of `int`
-    :param target_sort: Should the target classes be sorted in prediction order. When `True` and `target` is `None`,
-           sort results.
-    :type target_sort: `bool`
-    :param c_init: initialization of Weibull distribution
-    :type c_init: `float`
-    :param pool_factor: The factor to create a pool of random samples with size pool_factor x n_s
-    :type pool_factor: `int`
-    :return: CLEVER score
-    :rtype: array of `float`. None if target classes is predicted
-    """
-    # Find the predicted class first
-    y_pred = classifier.predict(np.array([x]))
-    pred_class = np.argmax(y_pred, axis=1)[0]
-    if target is None:
-        # Get a list of untargeted classes
-        if target_sort:
-            target_classes = np.argsort(y_pred)[0][:-1]
+        # Set binary search threshold
+        if norm == 2:
+            self.theta = 0.01 / np.sqrt(np.prod(self.classifier.input_shape))
         else:
-            target_classes = [i for i in range(classifier.nb_classes()) if i != pred_class]
-    elif isinstance(target, (int, np.integer)):
-        target_classes = [target]
-    else:
-        # Assume it's iterable
-        target_classes = target
-    score_list = []
-    for j in target_classes:
-        if j == pred_class:
-            score_list.append(None)
-            continue
-        score = clever_t(classifier, x, j, nb_batches, batch_size, radius, norm, c_init, pool_factor)
-        score_list.append(score)
-    return np.array(score_list)
+            self.theta = 0.01 / np.prod(self.classifier.input_shape)
 
+    def generate(self, x, y=None, **kwargs):
+        """
+        Generate adversarial samples and return them in an array.
 
-def clever_u(classifier, x, nb_batches, batch_size, radius, norm, c_init=1, pool_factor=10):
-    """
-    Compute CLEVER score for an untargeted attack.
+        :param x: An array with the original inputs to be attacked.
+        :type x: `np.ndarray`
+        :param y: Target values (class labels) one-hot-encoded of shape `(nb_samples, nb_classes)` or indices of shape
+                  (nb_samples,).
+        :type y: `np.ndarray`
+        :param x_adv_init: Initial array to act as initial adversarial examples. Same shape as `x`.
+        :type x_adv_init: `np.ndarray`
+        :return: An array holding the adversarial examples.
+        :rtype: `np.ndarray`
+        """
+        y = check_and_transform_label_format(y, self.classifier.nb_classes())
 
-    | Paper link: https://arxiv.org/abs/1801.10578
+        # Get clip_min and clip_max from the classifier or infer them from data
+        if hasattr(self.classifier, 'clip_values') and self.classifier.clip_values is not None:
+            clip_min, clip_max = self.classifier.clip_values
+        else:
+            clip_min, clip_max = np.min(x), np.max(x)
 
-    :param classifier: A trained model.
-    :type classifier: :class:`.Classifier`
-    :param x: One input sample
-    :type x: `np.ndarray`
-    :param nb_batches: Number of repetitions of the estimate
-    :type nb_batches: `int`
-    :param batch_size: Number of random examples to sample per batch
-    :type batch_size: `int`
-    :param radius: Radius of the maximum perturbation
-    :type radius: `float`
-    :param norm: Current support: 1, 2, np.inf
-    :type norm: `int`
-    :param c_init: initialization of Weibull distribution
-    :type c_init: `float`
-    :param pool_factor: The factor to create a pool of random samples with size pool_factor x n_s
-    :type pool_factor: `int`
-    :return: CLEVER score
-    :rtype: `float`
-    """
-    # Get a list of untargeted classes
-    y_pred = classifier.predict(np.array([x]))
-    pred_class = np.argmax(y_pred, axis=1)[0]
-    untarget_classes = [i for i in range(classifier.nb_classes()) if i != pred_class]
+        # Prediction from the original images
+        preds = np.argmax(self.classifier.predict(x, batch_size=self.batch_size), axis=1)
 
-    # Compute CLEVER score for each untargeted class
-    score_list = []
-    for j in untarget_classes:
-        score = clever_t(classifier, x, j, nb_batches, batch_size, radius, norm, c_init, pool_factor)
-        score_list.append(score)
+        # Prediction from the initial adversarial examples if not None
+        x_adv_init = kwargs.get('x_adv_init')
 
-    return np.min(score_list)
+        if x_adv_init is not None:
+            init_preds = np.argmax(self.classifier.predict(x_adv_init, batch_size=self.batch_size), axis=1)
+        else:
+            init_preds = [None] * len(x)
+            x_adv_init = [None] * len(x)
 
+        # Assert that, if attack is targeted, y is provided
+        if self.targeted and y is None:
+            raise ValueError('Target labels `y` need to be provided for a targeted attack.')
 
-def clever_t(classifier, x, target_class, nb_batches, batch_size, radius, norm, c_init=1, pool_factor=10):
-    """
-    Compute CLEVER score for a targeted attack.
+        # Some initial setups
+        x_adv = x.astype(NUMPY_DTYPE)
+        if y is not None:
+            y = np.argmax(y, axis=1)
 
-    | Paper link: https://arxiv.org/abs/1801.10578
+        # Generate the adversarial samples
+        for ind, val in enumerate(x_adv):
+            if self.targeted:
+                x_adv[ind] = self._perturb(x=val, y=y[ind], y_p=preds[ind], init_pred=init_preds[ind],
+                                           adv_init=x_adv_init[ind], clip_min=clip_min, clip_max=clip_max)
+            else:
+                x_adv[ind] = self._perturb(x=val, y=-1, y_p=preds[ind], init_pred=init_preds[ind],
+                                           adv_init=x_adv_init[ind], clip_min=clip_min, clip_max=clip_max)
 
-    :param classifier: A trained model
-    :type classifier: :class:`.Classifier`
-    :param x: One input sample
-    :type x: `np.ndarray`
-    :param target_class: Targeted class
-    :type target_class: `int`
-    :param nb_batches: Number of repetitions of the estimate
-    :type nb_batches: `int`
-    :param batch_size: Number of random examples to sample per batch
-    :type batch_size: `int`
-    :param radius: Radius of the maximum perturbation
-    :type radius: `float`
-    :param norm: Current support: 1, 2, np.inf
-    :type norm: `int`
-    :param c_init: Initialization of Weibull distribution
-    :type c_init: `float`
-    :param pool_factor: The factor to create a pool of random samples with size pool_factor x n_s
-    :type pool_factor: `int`
-    :return: CLEVER score
-    :rtype: `float`
-    """
-    # Check if the targeted class is different from the predicted class
-    y_pred = classifier.predict(np.array([x]))
-    pred_class = np.argmax(y_pred, axis=1)[0]
-    if target_class == pred_class:
-        raise ValueError("The targeted class is the predicted class.")
+        if y is not None:
+            y = to_categorical(y, self.classifier.nb_classes())
 
-    # Check if pool_factor is smaller than 1
-    if pool_factor < 1:
-        raise ValueError("The `pool_factor` must be larger than 1.")
+        logger.info('Success rate of HopSkipJump attack: %.2f%%',
+                    100 * compute_success(self.classifier, x, y, x_adv, self.targeted, batch_size=self.batch_size))
 
-    # Some auxiliary vars
-    grad_norm_set = []
-    dim = reduce(lambda x_, y: x_ * y, x.shape, 1)
-    shape = [pool_factor * batch_size]
-    shape.extend(x.shape)
+        return x_adv
 
-    # Generate a pool of samples
-    rand_pool = np.reshape(random_sphere(nb_points=pool_factor * batch_size, nb_dims=dim, radius=radius, norm=norm),
-                           shape)
-    rand_pool += np.repeat(np.array([x]), pool_factor * batch_size, 0)
-    rand_pool = rand_pool.astype(NUMPY_DTYPE)
-    if hasattr(classifier, 'clip_values') and classifier.clip_values is not None:
-        np.clip(rand_pool, classifier.clip_values[0], classifier.clip_values[1], out=rand_pool)
+    def _perturb(self, x, y, y_p, init_pred, adv_init, clip_min, clip_max):
+        """
+        Internal attack function for one example.
 
-    # Change norm since q = p / (p-1)
-    if norm == 1:
-        norm = np.inf
-    elif norm == np.inf:
-        norm = 1
-    elif norm != 2:
-        raise ValueError("Norm {} not supported".format(norm))
+        :param x: An array with one original input to be attacked.
+        :type x: `np.ndarray`
+        :param y: If `self.targeted` is true, then `y` represents the target label.
+        :type y: `int`
+        :param y_p: The predicted label of x.
+        :type y_p: `int`
+        :param init_pred: The predicted label of the initial image.
+        :type init_pred: `int`
+        :param adv_init: Initial array to act as an initial adversarial example.
+        :type adv_init: `np.ndarray`
+        :param clip_min: Minimum value of an example.
+        :type clip_min: `float`
+        :param clip_max: Maximum value of an example.
+        :type clip_max: `float`
+        :return: an adversarial example.
+        :rtype: `np.ndarray`
+        """
+        # First, create an initial adversarial sample
+        initial_sample = self._init_sample(x, y, y_p, init_pred, adv_init, clip_min, clip_max)
 
-    # Loop over the batches
-    for _ in range(nb_batches):
-        # Random generation of data points
-        sample_xs = rand_pool[np.random.choice(pool_factor * batch_size, batch_size)]
+        # If an initial adversarial example is not found, then return the original image
+        if initial_sample is None:
+            return x
 
-        # Compute gradients
-        grads = classifier.class_gradient(sample_xs)
-        if np.isnan(grads).any():
-            raise Exception("The classifier results NaN gradients.")
+        # If an initial adversarial example found, then go with hopskipjump attack
+        x_adv = self._attack(initial_sample[0], x, initial_sample[1], clip_min, clip_max)
 
-        grad = grads[:, pred_class] - grads[:, target_class]
-        grad = np.reshape(grad, (batch_size, -1))
-        grad_norm = np.max(np.linalg.norm(grad, ord=norm, axis=1))
-        grad_norm_set.append(grad_norm)
+        return x_adv
 
-    # Maximum likelihood estimation for max gradient norms
-    [_, loc, _] = weibull_min.fit(-np.array(grad_norm_set), c_init, optimizer=scipy_optimizer)
+    def _init_sample(self, x, y, y_p, init_pred, adv_init, clip_min, clip_max):
+        """
+        Find initial adversarial example for the attack.
 
-    # Compute function value
-    values = classifier.predict(np.array([x]))
-    value = values[:, pred_class] - values[:, target_class]
+        :param x: An array with 1 original input to be attacked.
+        :type x: `np.ndarray`
+        :param y: If `self.targeted` is true, then `y` represents the target label.
+        :type y: `int`
+        :param y_p: The predicted label of x.
+        :type y_p: `int`
+        :param init_pred: The predicted label of the initial image.
+        :type init_pred: `int`
+        :param adv_init: Initial array to act as an initial adversarial example.
+        :type adv_init: `np.ndarray`
+        :param clip_min: Minimum value of an example.
+        :type clip_min: `float`
+        :param clip_max: Maximum value of an example.
+        :type clip_max: `float`
+        :return: an adversarial example.
+        :rtype: `np.ndarray`
+        """
+        nprd = np.random.RandomState()
+        initial_sample = None
 
-    # Compute scores
-    score = np.min([-value[0] / loc, radius])
+        if self.targeted:
+            # Attack satisfied
+            if y == y_p:
+                return None
 
-    return score
+            # Attack unsatisfied yet and the initial image satisfied
+            if adv_init is not None and init_pred == y:
+                return adv_init.astype(NUMPY_DTYPE), init_pred
+
+            # Attack unsatisfied yet and the initial image unsatisfied
+            for _ in range(self.init_size):
+                random_img = nprd.uniform(clip_min, clip_max, size=x.shape).astype(x.dtype)
+                random_class = np.argmax(self.classifier.predict(np.array([random_img]), batch_size=self.batch_size),
+                                         axis=1)[0]
+
+                if random_class == y:
+                    # Binary search to reduce the l2 distance to the original image
+                    random_img = self._binary_search(current_sample=random_img, original_sample=x, target=y, norm=2,
+                                                     clip_min=clip_min, clip_max=clip_max, threshold=0.001)
+                    initial_sample = random_img, random_class
+
+                    logging.info('Found initial adversarial image for targeted attack.')
+                    break
+            else:
+                logging.warning('Failed to draw a random image that is adversarial, attack failed.')
+
+        else:
+            # The initial image satisfied
+            if adv_init is not None and init_pred != y_p:
+                return adv_init.astype(NUMPY_DTYPE), y_p
+
+            # The initial image unsatisfied
+            for _ in range(self.init_size):
+                random_img = nprd.uniform(clip_min, clip_max, size=x.shape).astype(x.dtype)
+                random_class = np.argmax(self.classifier.predict(np.array([random_img]), batch_size=self.batch_size),
+                                         axis=1)[0]
+
+                if random_class != y_p:
+                    # Binary search to reduce the l2 distance to the original image
+                    random_img = self._binary_search(current_sample=random_img, original_sample=x, target=y_p, norm=2,
+                                                     clip_min=clip_min, clip_max=clip_max, threshold=0.001)
+                    initial_sample = random_img, y_p
+
+                    logging.info('Found initial adversarial image for untargeted attack.')
+                    break
+            else:
+                logging.warning('Failed to draw a random image that is adversarial, attack failed.')
+
+        return initial_sample
+
+    def _attack(self, initial_sample, original_sample, target, clip_min, clip_max):
+        """
+        Main function for the boundary attack.
+
+        :param initial_sample: An initial adversarial example.
+        :type initial_sample: `np.ndarray`
+        :param original_sample: The original input.
+        :type original_sample: `np.ndarray`
+        :param target: The target label.
+        :type target: `int`
+        :param clip_min: Minimum value of an example.
+        :type clip_min: `float`
+        :param clip_max: Maximum value of an example.
+        :type clip_max: `float`
+        :return: an adversarial example.
+        :rtype: `np.ndarray`
+        """
+        # Set current perturbed image to the initial image
+        current_sample = initial_sample
+
+        # Main loop to wander around the boundary
+        for _ in range(self.max_iter):
+            # First compute delta
+            delta = self._compute_delta(current_sample=current_sample, original_sample=original_sample,
+                                        clip_min=clip_min, clip_max=clip_max)
+
+            # Then run binary search
+            current_sample = self._binary_search(current_sample=current_sample, original_sample=original_sample,
+                                                 norm=self.norm, target=target, clip_min=clip_min, clip_max=clip_max)
+
+            # Next compute the number of evaluations and compute the update
+            num_eval = min(int(self.init_eval * np.sqrt(self.curr_iter + 1)), self.max_eval)
+            update = self._compute_update(current_sample=current_sample, num_eval=num_eval, delta=delta,
+                                          target=target, clip_min=clip_min, clip_max=clip_max)
+
+            # Finally run step size search by first computing epsilon
+            if self.norm == 2:
+                dist = np.linalg.norm(original_sample - current_sample)
+            else:
+                dist = np.max(abs(original_sample - current_sample))
+
+            epsilon = 2.0 * dist / np.sqrt(self.curr_iter + 1)
+            success = False
+
+            while not success:
+                epsilon /= 2.0
+                potential_sample = current_sample + epsilon * update
+                success = self._adversarial_satisfactory(samples=potential_sample[None], target=target,
+                                                         clip_min=clip_min, clip_max=clip_max)
+
+            # Update current sample
+            current_sample = np.clip(potential_sample, clip_min, clip_max)
+
+            # Update current iteration
+            self.curr_iter += 1
+
+        return current_sample
+
+    def _binary_search(self, current_sample, original_sample, target, norm, clip_min, clip_max, threshold=None):
+        """
+        Binary search to approach the boundary.
+
+        :param current_sample: Current adversarial example.
+        :type current_sample: `np.ndarray`
+        :param original_sample: The original input.
+        :type original_sample: `np.ndarray`
+        :param target: The target label.
+        :type target: `int`
+        :param norm: Order of the norm. Possible values: np.inf or 2.
+        :type norm: `int`
+        :param clip_min: Minimum value of an example.
+        :type clip_min: `float`
+        :param clip_max: Maximum value of an example.
+        :type clip_max: `float`
+        :param threshold: The upper threshold in binary search.
+        :type threshold: `float`
+        :return: an adversarial example.
+        :rtype: `np.ndarray`
+        """
+        # First set upper and lower bounds as well as the threshold for the binary search
+        if norm == 2:
+            (upper_bound, lower_bound) = (1, 0)
+
+            if threshold is None:
+                threshold = self.theta
+
+        else:
+            (upper_bound, lower_bound) = (np.max(abs(original_sample - current_sample)), 0)
+
+            if threshold is None:
+                threshold = np.minimum(upper_bound * self.theta, self.theta)
+
+        # Then start the binary search
+        while (upper_bound - lower_bound) > threshold:
+            # Interpolation point
+            alpha = (upper_bound + lower_bound) / 2.0
+            interpolated_sample = self._interpolate(current_sample=current_sample,
+                                                    original_sample=original_sample,
+                                                    alpha=alpha, norm=norm)
+
+            # Update upper_bound and lower_bound
+            satisfied = self._adversarial_satisfactory(samples=interpolated_sample[None], target=target,
+                                                       clip_min=clip_min, clip_max=clip_max)[0]
+            lower_bound = np.where(satisfied == 0, alpha, lower_bound)
+            upper_bound = np.where(satisfied == 1, alpha, upper_bound)
+
+        result = self._interpolate(current_sample=current_sample,
+                                   original_sample=original_sample,
+                                   alpha=upper_bound, norm=norm)
+
+        return result
+
+    def _compute_delta(self, current_sample, original_sample, clip_min, clip_max):
+        """
+        Compute the delta parameter.
+
+        :param current_sample: Current adversarial example.
+        :type current_sample: `np.ndarray`
+        :param original_sample: The original input.
+        :type original_sample: `np.ndarray`
+        :param clip_min: Minimum value of an example.
+        :type clip_min: `float`
+        :param clip_max: Maximum value of an example.
+        :type clip_max: `float`
+        :return: Delta value.
+        :rtype: `float`
+        """
+        # Note: This is a bit different from the original paper, instead we keep those that are
+        # implemented in the original source code of the authors
+        if self.curr_iter == 0:
+            return 0.1 * (clip_max - clip_min)
+
+        if self.norm == 2:
+            dist = np.linalg.norm(original_sample - current_sample)
+            delta = np.sqrt(np.prod(self.classifier.input_shape)) * self.theta * dist
+        else:
+            dist = np.max(abs(original_sample - current_sample))
+            delta = np.prod(self.classifier.input_shape) * self.theta * dist
+
+        return delta
+
+    def _compute_update(self, current_sample, num_eval, delta, target, clip_min, clip_max):
+        """
+        Compute the update in Eq.(14).
+
+        :param current_sample: Current adversarial example.
+        :type current_sample: `np.ndarray`
+        :param num_eval: The number of evaluations for estimating gradient.
+        :type num_eval: `int`
+        :param delta: The size of random perturbation.
+        :type delta: `float`
+        :param target: The target label.
+        :type target: `int`
+        :param clip_min: Minimum value of an example.
+        :type clip_min: `float`
+        :param clip_max: Maximum value of an example.
+        :type clip_max: `float`
+        :return: an updated perturbation.
+        :rtype: `np.ndarray`
+        """
+        # Generate random noise
+        rnd_noise_shape = [num_eval] + list(self.classifier.input_shape)
+        if self.norm == 2:
+            rnd_noise = np.random.randn(*rnd_noise_shape).astype(NUMPY_DTYPE)
+        else:
+            rnd_noise = np.random.uniform(low=-1, high=1, size=rnd_noise_shape).astype(NUMPY_DTYPE)
+
+        # Normalize random noise to fit into the range of input data
+        rnd_noise = rnd_noise / np.sqrt(np.sum(rnd_noise ** 2, axis=tuple(range(len(rnd_noise_shape)))[1:],
+                                               keepdims=True))
+        eval_samples = np.clip(current_sample + delta * rnd_noise, clip_min, clip_max)
+        rnd_noise = (eval_samples - current_sample) / delta
+
+        # Compute gradient: This is a bit different from the original paper, instead we keep those that are
+        # implemented in the original source code of the authors
+        satisfied = self._adversarial_satisfactory(samples=eval_samples, target=target,
+                                                   clip_min=clip_min, clip_max=clip_max)
+        f_val = 2 * satisfied.reshape([num_eval] + [1] * len(self.classifier.input_shape)) - 1.0
+        f_val = f_val.astype(NUMPY_DTYPE)
+
+        if np.mean(f_val) == 1.0:
+            grad = np.mean(rnd_noise, axis=0)
+        elif np.mean(f_val) == -1.0:
+            grad = -np.mean(rnd_noise, axis=0)
+        else:
+            f_val -= np.mean(f_val)
+            grad = np.mean(f_val * rnd_noise, axis=0)
+
+        # Compute update
+        if self.norm == 2:
+            result = grad / np.linalg.norm(grad)
+        else:
+            result = np.sign(grad)
+
+        return result
+
+    def _adversarial_satisfactory(self, samples, target, clip_min, clip_max):
+        """
+        Check whether an image is adversarial.
+
+        :param samples: A batch of examples.
+        :type samples: `np.ndarray`
+        :param target: The target label.
+        :type target: `int`
+        :param clip_min: Minimum value of an example.
+        :type clip_min: `float`
+        :param clip_max: Maximum value of an example.
+        :type clip_max: `float`
+        :return: An array of 0/1.
+        :rtype: `np.ndarray`
+        """
+        samples = np.clip(samples, clip_min, clip_max)
+        preds = np.argmax(self.classifier.predict(samples, batch_size=self.batch_size), axis=1)
+
+        if self.targeted:
+            result = (preds == target)
+        else:
+            result = (preds != target)
+
+        return result
+
+    @staticmethod
+    def _interpolate(current_sample, original_sample, alpha, norm):
+        """
+        Interpolate a new sample based on the original and the current samples.
+
+        :param current_sample: Current adversarial example.
+        :type current_sample: `np.ndarray`
+        :param original_sample: The original input.
+        :type original_sample: `np.ndarray`
+        :param alpha: The coefficient of interpolation.
+        :type alpha: `float`
+        :param norm: Order of the norm. Possible values: np.inf or 2.
+        :type norm: `int`
+        :return: an adversarial example.
+        :rtype: `np.ndarray`
+        """
+        if norm == 2:
+            result = (1 - alpha) * original_sample + alpha * current_sample
+        else:
+            result = np.clip(current_sample, original_sample - alpha, original_sample + alpha)
+
+        return result
+
+    def set_params(self, **kwargs):
+        """
+        Take in a dictionary of parameters and applies attack-specific checks before saving them as attributes.
+
+        :param targeted: Should the attack target one specific class.
+        :type targeted: `bool`
+        :param norm: Order of the norm. Possible values: np.inf or 2.
+        :type norm: `int`
+        :param max_iter: Maximum number of iterations.
+        :type max_iter: `int`
+        :param max_eval: Maximum number of evaluations for estimating gradient.
+        :type max_eval: `int`
+        :param init_eval: Initial number of evaluations for estimating gradient.
+        :type init_eval: `int`
+        :param init_size: Maximum number of trials for initial generation of adversarial examples.
+        :type init_size: `int`
+        """
+        # Save attack-specific parameters
+        super(HopSkipJump, self).set_params(**kwargs)
+
+        # Check if order of the norm is acceptable given current implementation
+        if self.norm not in [np.inf, int(2)]:
+            raise ValueError('Norm order must be either `np.inf` or 2.')
+
+        if not isinstance(self.max_iter, (int, np.int)) or self.max_iter < 0:
+            raise ValueError("The number of iterations must be a non-negative integer.")
+
+        if not isinstance(self.max_eval, (int, np.int)) or self.max_eval <= 0:
+            raise ValueError("The maximum number of evaluations must be a positive integer.")
+
+        if not isinstance(self.init_eval, (int, np.int)) or self.init_eval <= 0:
+            raise ValueError("The initial number of evaluations must be a positive integer.")
+
+        if self.init_eval > self.max_eval:
+            raise ValueError("The maximum number of evaluations must be larger than the initial number of evaluations.")
+
+        if not isinstance(self.init_size, (int, np.int)) or self.init_size <= 0:
+            raise ValueError("The number of initial trials must be a positive integer.")
+
+        return True
