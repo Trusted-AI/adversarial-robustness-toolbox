@@ -78,8 +78,6 @@ class TestProvenanceDefence(unittest.TestCase):
         x_test = x_test[NB_VALID:]
         y_test = y_test[NB_VALID:]
 
-
-
         clean_prov = np.random.randint(NB_DEVICES - 1, size=x_train.shape[0])
         p_train = np.eye(NB_DEVICES)[clean_prov]
 

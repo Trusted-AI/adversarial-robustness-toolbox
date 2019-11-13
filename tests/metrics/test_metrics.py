@@ -95,8 +95,6 @@ class TestMetrics(unittest.TestCase):
     #     dist = nearest_neighbour_dist(classifier, x_train, x_train, str('fgsm'))
     #     self.assertGreaterEqual(dist, 0)
 
-    @unittest.skipIf(tf.__version__[0] == '2', reason='Skip unittests for Tensorflow v2 until Keras supports Tensorflow'
-                                                      ' v2 as backend.')
     @staticmethod
     def _cnn_mnist_k(input_shape):
         # Create simple CNN
@@ -180,18 +178,12 @@ class TestClever(unittest.TestCase):
 
         return tfc
 
-    @unittest.skipIf(tf.__version__[0] == '2', reason='Skip unittests for Tensorflow v2 until Keras supports Tensorflow'
-                                                      ' v2 as backend.')
     @staticmethod
     def _create_krclassifier():
         """
         To create a simple KerasClassifier for testing.
         :return:
         """
-        # Initialize a tf session
-        session = tf.Session()
-        k.set_session(session)
-
         # Create simple CNN
         model = Sequential()
         model.add(Conv2D(4, kernel_size=(5, 5), activation='relu', input_shape=(28, 28, 1)))
@@ -226,6 +218,7 @@ class TestClever(unittest.TestCase):
 
         return ptc
 
+    @unittest.skipIf(tf.__version__[0] == '2', reason='Skip unittests for Tensorflow v2.')
     def test_clever_tf(self):
         """
         Test with tensorflow.
