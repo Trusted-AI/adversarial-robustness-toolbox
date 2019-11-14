@@ -37,7 +37,7 @@ from art.classifiers.scikitlearn import ScikitlearnDecisionTreeClassifier, Sciki
 from art.classifiers import SklearnClassifier
 from art.utils import load_dataset
 
-logger = logging.getLogger('testLogger')
+logger = logging.getLogger(__name__)
 np.random.seed(seed=1234)
 
 (x_train, y_train), (x_test, y_test), _, _ = load_dataset('iris')
@@ -49,10 +49,12 @@ class TestScikitlearnDecisionTreeClassifier(unittest.TestCase):
     def setUpClass(cls):
         np.random.seed(seed=1234)
 
-        sklearn_model = DecisionTreeClassifier()
-        cls.classifier = ScikitlearnDecisionTreeClassifier(model=sklearn_model)
-        assert (type(cls.classifier) == type(SklearnClassifier(model=sklearn_model)))
+        cls.sklearn_model = DecisionTreeClassifier()
+        cls.classifier = ScikitlearnDecisionTreeClassifier(model=cls.sklearn_model)
         cls.classifier.fit(x=x_train, y=y_train)
+
+    def test_type(self):
+        self.assertIsInstance(self.classifier, type(SklearnClassifier(model=self.sklearn_model)))
 
     def test_predict(self):
         y_predicted = self.classifier.predict(x_test[0:1])
@@ -68,10 +70,12 @@ class TestScikitlearnExtraTreeClassifier(unittest.TestCase):
     def setUpClass(cls):
         np.random.seed(seed=1234)
 
-        sklearn_model = ExtraTreeClassifier()
-        cls.classifier = ScikitlearnExtraTreeClassifier(model=sklearn_model)
-        assert (type(cls.classifier) == type(SklearnClassifier(model=sklearn_model)))
+        cls.sklearn_model = ExtraTreeClassifier()
+        cls.classifier = ScikitlearnExtraTreeClassifier(model=cls.sklearn_model)
         cls.classifier.fit(x=x_train, y=y_train)
+
+    def test_type(self):
+        self.assertIsInstance(self.classifier, type(SklearnClassifier(model=self.sklearn_model)))
 
     def test_predict(self):
         y_predicted = self.classifier.predict(x_test[0:1])
@@ -87,10 +91,12 @@ class TestScikitlearnAdaBoostClassifier(unittest.TestCase):
     def setUpClass(cls):
         np.random.seed(seed=1234)
 
-        sklearn_model = AdaBoostClassifier()
-        cls.classifier = ScikitlearnAdaBoostClassifier(model=sklearn_model)
-        assert (type(cls.classifier) == type(SklearnClassifier(model=sklearn_model)))
+        cls.sklearn_model = AdaBoostClassifier()
+        cls.classifier = ScikitlearnAdaBoostClassifier(model=cls.sklearn_model)
         cls.classifier.fit(x=x_train, y=y_train)
+
+    def test_type(self):
+        self.assertIsInstance(self.classifier, type(SklearnClassifier(model=self.sklearn_model)))
 
     def test_predict(self):
         y_predicted = self.classifier.predict(x_test[0:1])
@@ -106,10 +112,12 @@ class TestScikitlearnBaggingClassifier(unittest.TestCase):
     def setUpClass(cls):
         np.random.seed(seed=1234)
 
-        sklearn_model = BaggingClassifier()
-        cls.classifier = ScikitlearnBaggingClassifier(model=sklearn_model)
-        assert (type(cls.classifier) == type(SklearnClassifier(model=sklearn_model)))
+        cls.sklearn_model = BaggingClassifier()
+        cls.classifier = ScikitlearnBaggingClassifier(model=cls.sklearn_model)
         cls.classifier.fit(x=x_train, y=y_train)
+
+    def test_type(self):
+        self.assertIsInstance(self.classifier, type(SklearnClassifier(model=self.sklearn_model)))
 
     def test_predict(self):
         y_predicted = self.classifier.predict(x_test[0:1])
@@ -125,10 +133,12 @@ class TestScikitlearnExtraTreesClassifier(unittest.TestCase):
     def setUpClass(cls):
         np.random.seed(seed=1234)
 
-        sklearn_model = ExtraTreesClassifier()
-        cls.classifier = ScikitlearnExtraTreesClassifier(model=sklearn_model)
-        assert (type(cls.classifier) == type(SklearnClassifier(model=sklearn_model)))
+        cls.sklearn_model = ExtraTreesClassifier()
+        cls.classifier = ScikitlearnExtraTreesClassifier(model=cls.sklearn_model)
         cls.classifier.fit(x=x_train, y=y_train)
+
+    def test_type(self):
+        self.assertIsInstance(self.classifier, type(SklearnClassifier(model=self.sklearn_model)))
 
     def test_predict(self):
         y_predicted = self.classifier.predict(x_test[0:1])
@@ -144,10 +154,12 @@ class TestScikitlearnGradientBoostingClassifier(unittest.TestCase):
     def setUpClass(cls):
         np.random.seed(seed=1234)
 
-        sklearn_model = GradientBoostingClassifier()
-        cls.classifier = ScikitlearnGradientBoostingClassifier(model=sklearn_model)
-        assert (type(cls.classifier) == type(SklearnClassifier(model=sklearn_model)))
+        cls.sklearn_model = GradientBoostingClassifier()
+        cls.classifier = ScikitlearnGradientBoostingClassifier(model=cls.sklearn_model)
         cls.classifier.fit(x=x_train, y=y_train)
+
+    def test_type(self):
+        self.assertIsInstance(self.classifier, type(SklearnClassifier(model=self.sklearn_model)))
 
     def test_predict(self):
         y_predicted = self.classifier.predict(x_test[0:1])
@@ -163,10 +175,12 @@ class TestScikitlearnRandomForestClassifier(unittest.TestCase):
     def setUpClass(cls):
         np.random.seed(seed=1234)
 
-        sklearn_model = RandomForestClassifier()
-        cls.classifier = ScikitlearnRandomForestClassifier(model=sklearn_model)
-        assert (type(cls.classifier) == type(SklearnClassifier(model=sklearn_model)))
+        cls.sklearn_model = RandomForestClassifier()
+        cls.classifier = ScikitlearnRandomForestClassifier(model=cls.sklearn_model)
         cls.classifier.fit(x=x_train, y=y_train)
+
+    def test_type(self):
+        self.assertIsInstance(self.classifier, type(SklearnClassifier(model=self.sklearn_model)))
 
     def test_predict(self):
         y_predicted = self.classifier.predict(x_test[11:12])
@@ -182,10 +196,12 @@ class TestScikitlearnLogisticRegression(unittest.TestCase):
     def setUpClass(cls):
         np.random.seed(seed=1234)
 
-        sklearn_model = LogisticRegression(verbose=0, C=1, solver='newton-cg', dual=False, fit_intercept=True)
-        cls.classifier = ScikitlearnLogisticRegression(model=sklearn_model)
-        assert (type(cls.classifier) == type(SklearnClassifier(model=sklearn_model)))
+        cls.sklearn_model = LogisticRegression(verbose=0, C=1, solver='newton-cg', dual=False, fit_intercept=True)
+        cls.classifier = ScikitlearnLogisticRegression(model=cls.sklearn_model)
         cls.classifier.fit(x=x_train, y=y_train)
+
+    def test_type(self):
+        self.assertIsInstance(self.classifier, type(SklearnClassifier(model=self.sklearn_model)))
 
     def test_predict(self):
         y_predicted = self.classifier.predict(x_test[0:1])
@@ -268,16 +284,56 @@ class TestScikitlearnLogisticRegression(unittest.TestCase):
             self.assertAlmostEqual(grad_predicted[0, i], grad_expected[i], 3)
 
 
+class TestScikitlearnBinaryLogisticRegression(unittest.TestCase):
+
+    @classmethod
+    def setUpClass(cls):
+        np.random.seed(seed=1234)
+
+        binary_class_index = (np.argmax(y_train, axis=1) < 2)
+        x_train_binary = x_train[binary_class_index, ]
+        y_train_binary = y_train[binary_class_index, ][:, [0, 1]]
+
+        cls.sklearn_model = LogisticRegression(verbose=0, C=1, solver='newton-cg', dual=False, fit_intercept=True)
+        cls.classifier = ScikitlearnLogisticRegression(model=cls.sklearn_model)
+        cls.classifier.fit(x=x_train_binary, y=y_train_binary)
+
+    def test_type(self):
+        self.assertIsInstance(self.classifier, type(SklearnClassifier(model=self.sklearn_model)))
+
+    def test_class_gradient(self):
+        grad_predicted = self.classifier.class_gradient(x_test[0:1], label=None)
+        grad_expected = [[[-0.1428355, 0.12111039, -0.45059183, -0.17579888],
+                          [0.1428355, -0.12111039, 0.45059183, 0.17579888]]]
+
+        for i_class in range(2):
+            for i_shape in range(4):
+                self.assertAlmostEqual(grad_predicted[0, i_class, i_shape], grad_expected[0][i_class][i_shape], 3)
+
+    def test_loss_gradient(self):
+        binary_class_index = (np.argmax(y_test, axis=1) < 2)
+        x_test_binary = x_test[binary_class_index, ]
+        y_test_binary = y_test[binary_class_index, ][:, [0, 1]]
+
+        grad_predicted = self.classifier.loss_gradient(x_test_binary[0:1], y_test_binary[0:1])
+        grad_expected = [-0.25267282, 0.21424159, -0.79708695, -0.31098431]
+
+        for i in range(4):
+            self.assertAlmostEqual(grad_predicted[0, i], grad_expected[i], 3)
+
+
 class TestScikitlearnSVCSVC(unittest.TestCase):
 
     @classmethod
     def setUpClass(cls):
         np.random.seed(seed=1234)
 
-        sklearn_model = SVC()
-        cls.classifier = ScikitlearnSVC(model=sklearn_model)
-        assert (type(cls.classifier) == type(SklearnClassifier(model=sklearn_model)))
+        cls.sklearn_model = SVC()
+        cls.classifier = ScikitlearnSVC(model=cls.sklearn_model)
         cls.classifier.fit(x=x_train, y=y_train)
+
+    def test_type(self):
+        self.assertIsInstance(self.classifier, type(SklearnClassifier(model=self.sklearn_model)))
 
     def test_predict(self):
         y_predicted = self.classifier.predict(x_test[0:1])
@@ -300,10 +356,12 @@ class TestScikitlearnSVCLinearSVC(unittest.TestCase):
     def setUpClass(cls):
         np.random.seed(seed=1234)
 
-        sklearn_model = LinearSVC()
-        cls.classifier = ScikitlearnSVC(model=sklearn_model)
-        assert (type(cls.classifier) == type(SklearnClassifier(model=sklearn_model)))
+        cls.sklearn_model = LinearSVC()
+        cls.classifier = ScikitlearnSVC(model=cls.sklearn_model)
         cls.classifier.fit(x=x_train, y=y_train)
+
+    def test_type(self):
+        self.assertIsInstance(self.classifier, type(SklearnClassifier(model=self.sklearn_model)))
 
     def test_predict(self):
         y_predicted = self.classifier.predict(x_test[0:1])
@@ -341,3 +399,7 @@ class TestScikitlearnPipeline(unittest.TestCase):
 
     def test_input_shape(self):
         self.assertEqual(self.classifier.input_shape, (4,))
+
+
+if __name__ == '__main__':
+    unittest.main()

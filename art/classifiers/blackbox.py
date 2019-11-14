@@ -63,6 +63,7 @@ class BlackBoxClassifier(Classifier):
         self._input_shape = input_shape
         self._nb_classes = nb_classes
 
+    # pylint: disable=W0221
     def predict(self, x, batch_size=128, **kwargs):
         """
         Perform prediction for a batch of inputs.

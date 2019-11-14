@@ -49,7 +49,7 @@ class RobustnessVerificationTreeModelsCliqueMethod:
         self.max_clique = None
         self.max_level = None
 
-    def verify(self, x, y, eps_init, norm=np.inf, num_search_steps=10, max_clique=2, max_level=2):
+    def verify(self, x, y, eps_init, norm=np.inf, nb_search_steps=10, max_clique=2, max_level=2):
         """
         Verify the robustness of the classifier on the dataset `(x, y)`.
 
@@ -61,8 +61,8 @@ class RobustnessVerificationTreeModelsCliqueMethod:
         :type eps_init: `double`
         :param norm: The norm to apply epsilon.
         :type norm: `int` or `np.inf`
-        :param num_search_steps: The number of search steps.
-        :type num_search_steps: `int`
+        :param nb_search_steps: The number of search steps.
+        :type nb_search_steps: `int`
         :param max_clique: The maximum number of nodes in a clique.
         :type max_clique: `int`
         :param max_level: The maximum number of clique search levels.
@@ -79,6 +79,7 @@ class RobustnessVerificationTreeModelsCliqueMethod:
         num_initial_successes = 0
         num_samples = x.shape[0]
 
+        # pylint: disable=R1702
         for i_sample in range(num_samples):
 
             eps = eps_init
@@ -88,7 +89,7 @@ class RobustnessVerificationTreeModelsCliqueMethod:
             eps_robust = None
             eps_not_robust = None
 
-            for i_step in range(num_search_steps):
+            for i_step in range(nb_search_steps):
                 logger.info('Search step {0:d}: eps = {1:.4g}'.format(i_step, eps))
 
                 is_robust = True
@@ -158,6 +159,7 @@ class RobustnessVerificationTreeModelsCliqueMethod:
         new_nodes_list = list()
         best_scores_sum = 0.0
 
+        # pylint: disable=R1702
         for start_tree in range(0, len(accessible_leaves), self.max_clique):
 
             cliques_old = list()
@@ -274,9 +276,7 @@ class RobustnessVerificationTreeModelsCliqueMethod:
             else:
                 resulting_distance += distance
 
-        if norm in [0, np.inf]:
-            resulting_distance = resulting_distance
-        else:
+        if norm not in [0, np.inf]:
             resulting_distance = pow(resulting_distance, 1.0 / norm)
 
         return resulting_distance

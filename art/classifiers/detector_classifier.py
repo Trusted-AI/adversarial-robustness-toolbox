@@ -279,6 +279,15 @@ class DetectorClassifier(ClassifierNeuralNetwork, ClassifierGradients, Classifie
             self.classifier.set_learning_phase(train=train)
             self.detector.set_learning_phase(train=train)
 
+    def nb_classes(self):
+        """
+        Return the number of output classes.
+
+        :return: Number of classes in the data.
+        :rtype: `int`
+        """
+        return self._nb_classes
+
     def save(self, filename, path=None):
         """
         Save a model to file in the format specific to the backend framework.

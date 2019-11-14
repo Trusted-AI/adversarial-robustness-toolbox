@@ -92,10 +92,20 @@ class HopSkipJump(Attack):
         :type y: `np.ndarray`
         :param x_adv_init: Initial array to act as initial adversarial examples. Same shape as `x`.
         :type x_adv_init: `np.ndarray`
+        :param resume: Allow users to continue their previous attack.
+        :type resume: `bool`
         :return: An array holding the adversarial examples.
         :rtype: `np.ndarray`
         """
         y = check_and_transform_label_format(y, self.classifier.nb_classes())
+
+        # Check whether users need a stateful attack
+        resume = kwargs.get('resume')
+
+        if resume is not None and resume:
+            start = self.curr_iter
+        else:
+            start = 0
 
         # Get clip_min and clip_max from the classifier or infer them from data
         if hasattr(self.classifier, 'clip_values') and self.classifier.clip_values is not None:
@@ -126,6 +136,8 @@ class HopSkipJump(Attack):
 
         # Generate the adversarial samples
         for ind, val in enumerate(x_adv):
+            self.curr_iter = start
+
             if self.targeted:
                 x_adv[ind] = self._perturb(x=val, y=y[ind], y_p=preds[ind], init_pred=init_preds[ind],
                                            adv_init=x_adv_init[ind], clip_min=clip_min, clip_max=clip_max)
@@ -219,10 +231,10 @@ class HopSkipJump(Attack):
                                                      clip_min=clip_min, clip_max=clip_max, threshold=0.001)
                     initial_sample = random_img, random_class
 
-                    logging.info('Found initial adversarial image for targeted attack.')
+                    logger.info('Found initial adversarial image for targeted attack.')
                     break
             else:
-                logging.warning('Failed to draw a random image that is adversarial, attack failed.')
+                logger.warning('Failed to draw a random image that is adversarial, attack failed.')
 
         else:
             # The initial image satisfied
@@ -241,10 +253,10 @@ class HopSkipJump(Attack):
                                                      clip_min=clip_min, clip_max=clip_max, threshold=0.001)
                     initial_sample = random_img, y_p
 
-                    logging.info('Found initial adversarial image for untargeted attack.')
+                    logger.info('Found initial adversarial image for untargeted attack.')
                     break
             else:
-                logging.warning('Failed to draw a random image that is adversarial, attack failed.')
+                logger.warning('Failed to draw a random image that is adversarial, attack failed.')
 
         return initial_sample
 

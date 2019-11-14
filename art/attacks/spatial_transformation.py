@@ -146,7 +146,7 @@ class SpatialTransformation(Attack):
             self.attack_trans_y = trans_y
             self.attack_rot = rot
 
-            logger.info('Success rate of spatial transformation attack: %.2f%%', self.fooling_rate)
+            logger.info('Success rate of spatial transformation attack: %.2f%%', 100 * self.fooling_rate)
             logger.info('Attack-translation in x: %.2f%%', self.attack_trans_x)
             logger.info('Attack-translation in y: %.2f%%', self.attack_trans_y)
             logger.info('Attack-rotation: %.2f%%', self.attack_rot)

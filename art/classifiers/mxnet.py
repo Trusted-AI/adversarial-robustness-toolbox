@@ -232,10 +232,6 @@ class MXClassifier(ClassifierNeuralNetwork, ClassifierGradients, Classifier):
         """
         import mxnet as mx
 
-        logits = kwargs.get('logits')
-        if logits is None:
-            logits = False
-
         # Check value of label for computing gradients
         if not (label is None or (isinstance(label, (int, np.integer)) and label in range(self.nb_classes()))
                 or (isinstance(label, np.ndarray) and len(label.shape) == 1 and (label < self.nb_classes()).all()
@@ -407,6 +403,15 @@ class MXClassifier(ClassifierNeuralNetwork, ClassifierGradients, Classifier):
         """
         if isinstance(train, bool):
             self._learning_phase = train
+
+    def nb_classes(self):
+        """
+        Return the number of output classes.
+
+        :return: Number of classes in the data.
+        :rtype: `int`
+        """
+        return self._nb_classes
 
     def save(self, filename, path=None):
         """

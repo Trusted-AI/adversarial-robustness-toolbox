@@ -48,7 +48,7 @@ class ProjectedGradientDescent(FastGradientMethod):
     """
     attack_params = FastGradientMethod.attack_params + ['max_iter']
 
-    def __init__(self, classifier, norm=np.inf, eps=.3, eps_step=0.1, max_iter=100, targeted=False, num_random_init=0,
+    def __init__(self, classifier, norm=np.inf, eps=0.3, eps_step=0.1, max_iter=100, targeted=False, num_random_init=0,
                  batch_size=1):
         """
         Create a :class:`.ProjectedGradientDescent` instance.
@@ -77,7 +77,8 @@ class ProjectedGradientDescent(FastGradientMethod):
         if not isinstance(classifier, ClassifierGradients):
             raise (TypeError('For `' + self.__class__.__name__ + '` classifier must be an instance of '
                              '`art.classifiers.classifier.ClassifierGradients`, the provided classifier is instance of '
-                             + str(classifier.__class__.__bases__) + '.'))
+                             + str(classifier.__class__.__bases__) + '. '
+                             ' The classifier needs to provide gradients.'))
 
         kwargs = {'max_iter': max_iter}
         ProjectedGradientDescent.set_params(self, **kwargs)
@@ -130,7 +131,7 @@ class ProjectedGradientDescent(FastGradientMethod):
                 adv_x_best = adv_x
 
         logger.info('Success rate of attack: %.2f%%', rate_best if rate_best is not None else
-                    100 * compute_success(self.classifier, x, y, adv_x, self.targeted, batch_size=self.batch_size))
+                    100 * compute_success(self.classifier, x, y, adv_x_best, self.targeted, batch_size=self.batch_size))
 
         return adv_x_best
 

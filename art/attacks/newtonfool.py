@@ -29,7 +29,7 @@ import numpy as np
 from art import NUMPY_DTYPE
 from art.classifiers.classifier import ClassifierGradients
 from art.attacks.attack import Attack
-from art.utils import to_categorical
+from art.utils import to_categorical, compute_success
 
 logger = logging.getLogger(__name__)
 
@@ -59,7 +59,8 @@ class NewtonFool(Attack):
         if not isinstance(classifier, ClassifierGradients):
             raise (TypeError('For `' + self.__class__.__name__ + '` classifier must be an instance of '
                              '`art.classifiers.classifier.ClassifierGradients`, the provided classifier is instance of '
-                             + str(classifier.__class__.__bases__) + '.'))
+                             + str(classifier.__class__.__bases__) + '. '
+                             ' The classifier needs to provide gradients.'))
 
         params = {"max_iter": max_iter, "eta": eta, "batch_size": batch_size}
         self.set_params(**params)
@@ -119,9 +120,7 @@ class NewtonFool(Attack):
                 x_adv[batch_index_1:batch_index_2] = batch
 
         logger.info('Success rate of NewtonFool attack: %.2f%%',
-                    (np.sum(np.argmax(self.classifier.predict(x, batch_size=self.batch_size), axis=1) != np.argmax(
-                        self.classifier.predict(x_adv, batch_size=self.batch_size), axis=1)) / x.shape[0]))
-
+                    100 * compute_success(self.classifier, x, y, x_adv, batch_size=self.batch_size))
         return x_adv
 
     def set_params(self, **kwargs):

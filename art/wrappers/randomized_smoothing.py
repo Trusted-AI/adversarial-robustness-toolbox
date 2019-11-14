@@ -58,7 +58,8 @@ class RandomizedSmoothing(ClassifierWrapper, ClassifierGradients, Classifier):
         self.scale = scale
         self.alpha = alpha
 
-    def predict(self, x, batch_size=128, is_abstain=True):
+    # pylint: disable=W0221
+    def predict(self, x, batch_size=128, is_abstain=True, **kwargs):
         """
         Perform prediction of the given classifier for a batch of inputs, taking an expectation over transformations.
 

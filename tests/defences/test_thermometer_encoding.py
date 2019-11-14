@@ -25,7 +25,7 @@ import numpy as np
 from art.defences import ThermometerEncoding
 from art.utils import master_seed
 
-logger = logging.getLogger('testLogger')
+logger = logging.getLogger(__name__)
 
 
 class TestThermometerEncoding(unittest.TestCase):

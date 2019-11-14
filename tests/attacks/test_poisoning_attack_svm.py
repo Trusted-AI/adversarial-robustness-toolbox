@@ -27,7 +27,7 @@ from art.attacks import PoisoningAttackSVM
 from art.classifiers import SklearnClassifier
 from art.utils import master_seed, load_iris
 
-logger = logging.getLogger('testLogger')
+logger = logging.getLogger(__name__)
 
 BATCH_SIZE = 10
 NB_TRAIN = 10
@@ -42,6 +42,7 @@ class TestSVMAttack(unittest.TestCase):
 
     @classmethod
     def setUpClass(cls):
+        master_seed(301)
         cls.setUpIRIS()
 
     @staticmethod
@@ -149,7 +150,7 @@ class TestSVMAttack(unittest.TestCase):
             attack = PoisoningAttackSVM(poison, 0.01, 1.0, x_train, y_train, x_test, y_test, 100)
             attack_point = attack.generate(np.array([x_train[0]]))
             poison.fit(x=np.vstack([x_train, attack_point]),
-                       y=np.vstack([y_train, np.copy(y_train[0].reshape((1, 2)))]))
+                       y=np.vstack([y_train, np.array([1, 1]) - np.copy(y_train[0].reshape((1, 2)))]))
 
             acc = np.average(np.all(clean.predict(x_test) == y_test, axis=1)) * 100
             poison_acc = np.average(np.all(poison.predict(x_test) == y_test, axis=1)) * 100

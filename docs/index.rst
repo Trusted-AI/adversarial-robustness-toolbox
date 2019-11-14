@@ -3,10 +3,10 @@
    You can adapt this file completely to your liking, but it should at least
    contain the root `toctree` directive.
 
-Welcome to the Adversarial Robustness Toolbox
-=============================================
+Welcome to the Adversarial Robustness 360 Toolbox
+=================================================
 
-Adversarial Robustness Toolbox (ART) is a Python library supporting developers and researchers in defending Machine
+Adversarial Robustness 360 Toolbox (ART) is a Python library supporting developers and researchers in defending Machine
 Learning models (Deep Neural Networks, Gradient Boosted Decision Trees, Support Vector Machines, Random Forests,
 Logistic Regression, Gaussian Processes, Decision Trees, Scikit-learn Pipelines, etc.) against adversarial threats and
 helps making AI systems more secure and trustworthy. Machine Learning models are vulnerable to adversarial examples,
@@ -26,7 +26,7 @@ The library is under continuous development and feedback, bug reports and contri
 Supported Machine Learning Libraries
 ------------------------------------
 
-* Tensorflow (v1 and v2) (https://www.tensorflow.org)
+* TensorFlow (v1 and v2) (https://www.tensorflow.org)
 * Keras (https://www.keras.io)
 * PyTorch (https://www.pytorch.org)
 * MXNet (https://mxnet.apache.org)

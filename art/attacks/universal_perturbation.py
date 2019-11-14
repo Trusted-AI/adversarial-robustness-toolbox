@@ -80,7 +80,8 @@ class UniversalPerturbation(Attack):
             raise (TypeError('For `' + self.__class__.__name__ + '` classifier must be an instance of '
                              '`art.classifiers.classifier.ClassifierNeuralNetwork` and '
                              '`art.classifiers.classifier.ClassifierGradients`, the provided classifier is instance of '
-                             + str(classifier.__class__.__bases__) + '.'))
+                             + str(classifier.__class__.__bases__) + '. '
+                             ' The classifier needs to be a Neural Network and provide gradients.'))
 
         kwargs = {'attacker': attacker,
                   'attacker_params': attacker_params,
@@ -153,7 +154,7 @@ class UniversalPerturbation(Attack):
         self.fooling_rate = fooling_rate
         self.converged = nb_iter < self.max_iter
         self.noise = noise
-        logger.info('Success rate of universal perturbation attack: %.2f%%', fooling_rate)
+        logger.info('Success rate of universal perturbation attack: %.2f%%', 100 * fooling_rate)
 
         return x_adv
 

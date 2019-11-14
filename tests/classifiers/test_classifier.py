@@ -25,7 +25,7 @@ import numpy as np
 from art.classifiers import Classifier, ClassifierNeuralNetwork, ClassifierGradients
 from art.utils import master_seed
 
-logger = logging.getLogger('testLogger')
+logger = logging.getLogger(__name__)
 
 
 class ClassifierInstance(Classifier):
@@ -35,7 +35,7 @@ class ClassifierInstance(Classifier):
     def fit(self, x, y, **kwargs):
         pass
 
-    def predict(self, x):
+    def predict(self, x, **kwargs):
         pass
 
     def nb_classes(self):
@@ -62,6 +62,9 @@ class ClassifierNeuralNetworkInstance(ClassifierNeuralNetwork, ClassifierGradien
         pass
 
     def predict(self, x, batch_size=128, **kwargs):
+        pass
+
+    def nb_classes(self):
         pass
 
     def save(self, filename, path=None):
@@ -117,3 +120,7 @@ class TestClassifierNeuralNetwork(unittest.TestCase):
         self.assertIn('clip_values=(0, 1)', repr_)
         self.assertIn('defences=None', repr_)
         self.assertIn('preprocessing=None', repr_)
+
+
+if __name__ == '__main__':
+    unittest.main()

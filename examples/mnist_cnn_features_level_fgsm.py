@@ -1,5 +1,6 @@
 # -*- coding: utf-8 -*-
-"""Trains a convolutional neural network on the MNIST dataset, then attacks one of the hidden layers with the FGSM attack."""
+"""Trains a convolutional neural network on the MNIST dataset, then attacks one of the hidden layers with the FGSM
+attack."""
 from __future__ import absolute_import, division, print_function, unicode_literals
 
 import sys
@@ -7,7 +8,6 @@ from os.path import abspath
 
 sys.path.append(abspath('.'))
 
-import keras.backend as k
 from keras.models import Model, Sequential
 from keras.layers import Input, Dense, Flatten, Conv2D, MaxPooling2D, Dropout
 import numpy as np
@@ -38,7 +38,7 @@ classifier.fit(x_train, y_train, nb_epochs=5, batch_size=128)
 
 # Attack one of the inner layers, instead of the input one. In this example
 # we are going to attack the second convolutional layer. To this aim, we need to
-# split the network in 2 sub-nets, in order to have has input layer of the 
+# split the network in 2 sub-nets, in order to have has input layer of the
 # second network, the layer we want to attack
 
 HL_model = Model(inputs=model.input, outputs=model.layers[2].output)
@@ -51,7 +51,7 @@ DL_model = Model(inputs=DL_input, outputs=DL_model)
 
 classifier = KerasClassifier(model=DL_model)
 
-# Now we need to create the dataset for the DL_model, since the original one is 
+# Now we need to create the dataset for the DL_model, since the original one is
 # suited only for the "model" network (and thus for the HL_model). Note that it
 # is not needed to change the labels
 x_test_inner = HL_model.predict(x_test)

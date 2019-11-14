@@ -74,7 +74,8 @@ class FastGradientMethod(Attack):
         if not isinstance(classifier, ClassifierGradients):
             raise (TypeError('For `' + self.__class__.__name__ + '` classifier must be an instance of '
                              '`art.classifiers.classifier.ClassifierGradients`, the provided classifier is instance of '
-                             + str(classifier.__class__.__bases__) + '.'))
+                             + str(classifier.__class__.__bases__) + '. '
+                             ' The classifier needs to provide gradients.'))
 
         kwargs = {'norm': norm, 'eps': eps, 'eps_step': eps_step, 'targeted': targeted,
                   'num_random_init': num_random_init, 'batch_size': batch_size, 'minimal': minimal}
@@ -88,8 +89,8 @@ class FastGradientMethod(Attack):
 
         :param x: An array with the original inputs
         :type x: `np.ndarray`
-        :param y:
-        :type y:
+        :param y: Target values (class labels) one-hot-encoded of shape (nb_samples, nb_classes)
+        :type y: `np.ndarray`
         :return: An array holding the adversarial examples
         :rtype: `np.ndarray`
         """
@@ -154,8 +155,8 @@ class FastGradientMethod(Attack):
         if self.minimal:
             logger.info('Performing minimal perturbation FGM.')
             adv_x_best = self._minimal_perturbation(x, y)
-            rate_best = 100 * compute_success(self.classifier, x, y, adv_x_best,
-                                              self.targeted, batch_size=self.batch_size)
+            rate_best = 100 * compute_success(self.classifier, x, y, adv_x_best, self.targeted,
+                                              batch_size=self.batch_size)
         else:
             adv_x_best = None
             rate_best = None
@@ -173,7 +174,7 @@ class FastGradientMethod(Attack):
                     adv_x_best = adv_x
 
         logger.info('Success rate of FGM attack: %.2f%%', rate_best if rate_best is not None else
-                    100 * compute_success(self.classifier, x, y, adv_x, self.targeted, batch_size=self.batch_size))
+                    100 * compute_success(self.classifier, x, y, adv_x_best, self.targeted, batch_size=self.batch_size))
 
         return adv_x_best
 

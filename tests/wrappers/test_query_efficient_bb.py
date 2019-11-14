@@ -20,7 +20,6 @@ from __future__ import absolute_import, division, print_function, unicode_litera
 import logging
 import unittest
 
-import tensorflow as tf
 import keras.backend as k
 import numpy as np
 
@@ -31,15 +30,13 @@ from art.utils import load_dataset, get_labels_np_array, master_seed
 from art.utils_test import get_classifier_kr, get_iris_classifier_kr
 from art.wrappers.query_efficient_bb import QueryEfficientBBGradientEstimation
 
-logger = logging.getLogger('testLogger')
+logger = logging.getLogger(__name__)
 
 BATCH_SIZE = 10
 NB_TRAIN = 100
 NB_TEST = 11
 
 
-@unittest.skipIf(tf.__version__[0] == '2', reason='Skip unittests for TensorFlow v2 until Keras supports TensorFlow'
-                                                  ' v2 as backend.')
 class TestWrappingClassifierAttack(unittest.TestCase):
     @classmethod
     def setUpClass(cls):
@@ -131,12 +128,10 @@ class TestQueryEfficientVectors(unittest.TestCase):
     def setUp(self):
         master_seed(1234)
 
-    @unittest.skipIf(tf.__version__[0] == '2', reason='Skip unittests for TensorFlow v2 until Keras supports TensorFlow'
-                                                      ' v2 as backend.')
     def test_iris_clipped(self):
         (_, _), (x_test, y_test) = self.iris
 
-        classifier, _ = get_iris_classifier_kr()
+        classifier = get_iris_classifier_kr()
         classifier = QueryEfficientBBGradientEstimation(classifier, 20, 1 / 64., round_samples=1 / 255.)
 
         # Test untargeted attack
@@ -151,11 +146,9 @@ class TestQueryEfficientVectors(unittest.TestCase):
         acc = np.sum(preds_adv == np.argmax(y_test, axis=1)) / y_test.shape[0]
         logger.info('Accuracy on Iris with limited query info: %.2f%%', (acc * 100))
 
-    @unittest.skipIf(tf.__version__[0] == '2', reason='Skip unittests for TensorFlow v2 until Keras supports TensorFlow'
-                                                      ' v2 as backend.')
     def test_iris_unbounded(self):
         (_, _), (x_test, y_test) = self.iris
-        classifier, _ = get_iris_classifier_kr()
+        classifier = get_iris_classifier_kr()
 
         # Recreate a classifier without clip values
         classifier = KerasClassifier(model=classifier._model, use_logits=False, channel_index=1)

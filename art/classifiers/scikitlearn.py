@@ -204,7 +204,7 @@ class ScikitlearnDecisionTreeClassifier(ScikitlearnClassifier):
         # pylint: disable=E0001
         from sklearn.tree import DecisionTreeClassifier
 
-        if not isinstance(model, DecisionTreeClassifier):
+        if not isinstance(model, DecisionTreeClassifier) and model is not None:
             raise TypeError('Model must be of type sklearn.tree.DecisionTreeClassifier')
 
         super(ScikitlearnDecisionTreeClassifier, self).__init__(model=model, clip_values=clip_values, defences=defences,
@@ -339,8 +339,8 @@ class ScikitlearnDecisionTreeRegressor(ScikitlearnDecisionTreeClassifier):
         if not isinstance(model, DecisionTreeRegressor):
             raise TypeError('Model must be of type sklearn.tree.DecisionTreeRegressor')
 
-        ScikitlearnClassifier.__init__(self, model=model, clip_values=clip_values, defences=defences,
-                                       preprocessing=preprocessing)
+        ScikitlearnDecisionTreeClassifier.__init__(self, model=None, clip_values=clip_values, defences=defences,
+                                                   preprocessing=preprocessing)
         self._model = model
 
     def get_values_at_node(self, node_id):
@@ -514,7 +514,7 @@ class ScikitlearnExtraTreesClassifier(ScikitlearnClassifier, ClassifierDecisionT
                                                               preprocessing=preprocessing)
         self._model = model
 
-    def get_trees(self):
+    def get_trees(self):  # lgtm [py/similar-function]
         """
         Get the decision trees.
 
@@ -533,14 +533,14 @@ class ScikitlearnExtraTreesClassifier(ScikitlearnClassifier, ClassifierDecisionT
             #     else:
             #         class_label = i_tree % num_classes
 
-            decision_tree_classifier = ScikitlearnExtraTreeClassifier(model=decision_tree_model)
+            extra_tree_classifier = ScikitlearnExtraTreeClassifier(model=decision_tree_model)
 
             for i_class in range(self._model.n_classes_):
                 class_label = i_class
 
                 # pylint: disable=W0212
                 trees.append(Tree(class_id=class_label,
-                                  leaf_nodes=decision_tree_classifier._get_leaf_nodes(0, i_tree, class_label, box)))
+                                  leaf_nodes=extra_tree_classifier._get_leaf_nodes(0, i_tree, class_label, box)))
 
         return trees
 
@@ -638,7 +638,7 @@ class ScikitlearnRandomForestClassifier(ScikitlearnClassifier):
                                                                 preprocessing=preprocessing)
         self._model = model
 
-    def get_trees(self):
+    def get_trees(self):  # lgtm [py/similar-function]
         """
         Get the decision trees.
 
@@ -738,7 +738,15 @@ class ScikitlearnLogisticRegression(ScikitlearnClassifier, ClassifierGradients):
 
         y_pred = self._model.predict_proba(X=x_preprocessed)
         weights = self._model.coef_
-        w_weighted = np.matmul(y_pred, weights)
+
+        if self.nb_classes() > 2:
+            w_weighted = np.matmul(y_pred, weights)
+
+        def _f_class_gradient(i_class, i_sample):
+            if self.nb_classes() == 2:
+                return (-1.)**(i_class + 1.0) * y_pred[i_sample, 0] * y_pred[i_sample, 1] * weights[0, :]
+
+            return weights[i_class, :] - w_weighted[i_sample, :]
 
         if label is None:
             # Compute the gradients w.r.t. all classes
@@ -747,7 +755,7 @@ class ScikitlearnLogisticRegression(ScikitlearnClassifier, ClassifierGradients):
             for i_class in range(self.nb_classes()):
                 class_gradient = np.zeros(x.shape)
                 for i_sample in range(nb_samples):
-                    class_gradient[i_sample, :] += (weights[i_class, :] - w_weighted[i_sample, :])
+                    class_gradient[i_sample, :] += _f_class_gradient(i_class, i_sample)
                 class_gradients.append(class_gradient)
 
             gradients = np.swapaxes(np.array(class_gradients), 0, 1)
@@ -756,7 +764,7 @@ class ScikitlearnLogisticRegression(ScikitlearnClassifier, ClassifierGradients):
             # Compute the gradients only w.r.t. the provided label
             class_gradient = np.zeros(x.shape)
             for i_sample in range(nb_samples):
-                class_gradient[i_sample, :] += (weights[label, :] - w_weighted[i_sample, :])
+                class_gradient[i_sample, :] += _f_class_gradient(label, i_sample)
 
             gradients = np.swapaxes(np.array([class_gradient]), 0, 1)
 
@@ -771,7 +779,7 @@ class ScikitlearnLogisticRegression(ScikitlearnClassifier, ClassifierGradients):
                 for i_sample in range(nb_samples):
                     # class_gradient[i_sample, :] += label[i_sample, unique_label] * (weights[unique_label, :]
                     # - w_weighted[i_sample, :])
-                    class_gradient[i_sample, :] += (weights[unique_label, :] - w_weighted[i_sample, :])
+                    class_gradient[i_sample, :] += _f_class_gradient(unique_label, i_sample)
 
                 class_gradients.append(class_gradient)
 
@@ -823,12 +831,20 @@ class ScikitlearnLogisticRegression(ScikitlearnClassifier, ClassifierGradients):
 
         y_pred = self._model.predict_proba(X=x_preprocessed)
         weights = self._model.coef_
-        w_weighted = np.matmul(y_pred, weights)
 
-        for i_sample in range(num_samples):
-            for i_class in range(self.nb_classes()):
-                gradients[i_sample, :] += class_weight[i_class] * (1.0 - y_preprocessed[i_sample, i_class]) * (
-                    weights[i_class, :] - w_weighted[i_sample, :])
+        # Consider the special case of a binary logistic regression model:
+        if self.nb_classes() == 2:
+            for i_sample in range(num_samples):
+                gradients[i_sample, :] += (class_weight[1] * (1.0 - y_preprocessed[i_sample, 1]) -
+                                           class_weight[0] * (1.0 - y_preprocessed[i_sample, 0])) * \
+                                          (y_pred[i_sample, 0] * y_pred[i_sample, 1] * weights[0, :])
+        else:
+            w_weighted = np.matmul(y_pred, weights)
+
+            for i_sample in range(num_samples):
+                for i_class in range(self.nb_classes()):
+                    gradients[i_sample, :] += class_weight[i_class] * (1.0 - y_preprocessed[i_sample, i_class]) * (
+                        weights[i_class, :] - w_weighted[i_sample, :])
 
         gradients = self._apply_preprocessing_gradient(x, gradients)
 
@@ -1019,6 +1035,7 @@ class ScikitlearnSVC(ScikitlearnClassifier, ClassifierGradients):
         :return: the kernel gradient
         :rtype: `np.ndarray`
         """
+        # pylint: disable=W0212
         if self._model.kernel == 'linear':
             grad = sv
         elif self._model.kernel == 'poly':

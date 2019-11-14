@@ -92,6 +92,9 @@ class ZooAttack(Attack):
 
         if len(classifier.input_shape) == 1:
             self.input_is_feature_vector = True
+            if batch_size != 1:
+                raise ValueError('The current implementation of Zeroth-Order Optimisation attack only supports '
+                                 '`batch_size=1` with feature vectors as input.')
         else:
             self.input_is_feature_vector = False
 

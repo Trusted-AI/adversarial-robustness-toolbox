@@ -89,7 +89,8 @@ class CarliniL2Method(Attack):
         if not isinstance(classifier, ClassifierGradients):
             raise (TypeError('For `' + self.__class__.__name__ + '` classifier must be an instance of '
                              '`art.classifiers.classifier.ClassifierGradients`, the provided classifier is instance of '
-                             + str(classifier.__class__.__bases__) + '.'))
+                             + str(classifier.__class__.__bases__) + '. '
+                             ' The classifier needs to provide gradients.'))
 
         kwargs = {'confidence': confidence,
                   'targeted': targeted,
@@ -489,7 +490,8 @@ class CarliniLInfMethod(Attack):
         if not isinstance(classifier, ClassifierGradients):
             raise (TypeError('For `' + self.__class__.__name__ + '` classifier must be an instance of '
                              '`art.classifiers.classifier.ClassifierGradients`, the provided classifier is instance of '
-                             + str(classifier.__class__.__bases__) + '.'))
+                             + str(classifier.__class__.__bases__) + '. '
+                             ' The classifier needs to provide gradients.'))
 
         kwargs = {'confidence': confidence,
                   'targeted': targeted,
@@ -713,7 +715,7 @@ class CarliniLInfMethod(Attack):
                         best_lr_mult = best_lr_mult[:, np.newaxis]
 
                     x_adv_batch_tanh[active_and_update_adv] = x_adv_batch_tanh[active_and_update_adv] + best_lr_mult * \
-                                                              perturbation_tanh[update_adv]
+                        perturbation_tanh[update_adv]
                     x_adv_batch[active_and_update_adv] = tanh_to_original(x_adv_batch_tanh[active_and_update_adv],
                                                                           clip_min[active_and_update_adv],
                                                                           clip_max[active_and_update_adv])

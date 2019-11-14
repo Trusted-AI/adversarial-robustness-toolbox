@@ -20,19 +20,16 @@ from __future__ import absolute_import, division, print_function, unicode_litera
 import logging
 import unittest
 
-import tensorflow as tf
 import numpy as np
 
 from art.poison_detection import ActivationDefence
 from art.utils import load_mnist, master_seed
 
-logger = logging.getLogger('testLogger')
+logger = logging.getLogger(__name__)
 
 NB_TRAIN, NB_TEST, BATCH_SIZE = 300, 10, 128
 
 
-@unittest.skipIf(tf.__version__[0] == '2', reason='Skip unittests for TensorFlow v2 until Keras supports TensorFlow'
-                                                  ' v2 as backend.')
 class TestActivationDefence(unittest.TestCase):
 
     @classmethod
@@ -133,11 +130,11 @@ class TestActivationDefence(unittest.TestCase):
         sum_clean2 = sum(is_clean_lst)
         self.assertNotEqual(sum_clean1, sum_clean2)
 
-        _, is_clean_lst = self.defence.detect_poison(nb_clusters=2, nb_dims=10, reduce='PCA',
-                                                     cluster_analysis='distance')
+        kwargs = {'nb_clusters': 2, 'nb_dims': 10, 'reduce': 'PCA', 'cluster_analysis': 'distance'}
+        _, is_clean_lst = self.defence.detect_poison(**kwargs)
         sum_dist = sum(is_clean_lst)
-        _, is_clean_lst = self.defence.detect_poison(nb_clusters=2, nb_dims=10, reduce='PCA',
-                                                     cluster_analysis='smaller')
+        kwargs = {'nb_clusters': 2, 'nb_dims': 10, 'reduce': 'PCA', 'cluster_analysis': 'smaller'}
+        _, is_clean_lst = self.defence.detect_poison(**kwargs)
         sum_size = sum(is_clean_lst)
         self.assertNotEqual(sum_dist, sum_size)
 
@@ -145,7 +142,8 @@ class TestActivationDefence(unittest.TestCase):
         # Get MNIST
         (x_train, _), (_, _), (_, _) = self.mnist
 
-        _, _ = self.defence.detect_poison(nb_clusters=2, nb_dims=10, reduce='PCA')
+        kwargs = {'nb_clusters': 2, 'nb_dims': 10, 'reduce': 'PCA'}
+        _, _ = self.defence.detect_poison(**kwargs)
         is_clean = np.zeros(len(x_train))
         self.defence.evaluate_defence(is_clean)
 
