@@ -63,7 +63,8 @@ class DeepFool(Attack):
             raise (TypeError('For `' + self.__class__.__name__ + '` classifier must be an instance of '
                              '`art.classifiers.classifier.ClassifierNeuralNetwork` and '
                              '`art.classifiers.classifier.ClassifierGradients`, the provided classifier is instance of '
-                             + str(classifier.__class__.__bases__) + '.'))
+                             + str(classifier.__class__.__bases__) + '. '
+                             ' The classifier needs to be a Neural Network and provide gradients.'))
 
         params = {'max_iter': max_iter, 'epsilon': epsilon, 'nb_grads': nb_grads, 'batch_size': batch_size}
         self.set_params(**params)

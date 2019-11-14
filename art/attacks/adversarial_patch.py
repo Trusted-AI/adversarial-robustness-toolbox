@@ -80,7 +80,8 @@ class AdversarialPatch(Attack):
             raise (TypeError('For `' + self.__class__.__name__ + '` classifier must be an instance of '
                              '`art.classifiers.classifier.ClassifierNeuralNetwork` and '
                              '`art.classifiers.classifier.ClassifierGradients`, the provided classifier is instance of '
-                             + str(classifier.__class__.__bases__) + '.'))
+                             + str(classifier.__class__.__bases__) + '. '
+                             ' The classifier needs to be a Neural Network and provide gradients.'))
 
         kwargs = {"target": target,
                   "rotation_max": rotation_max,

@@ -77,7 +77,8 @@ class ProjectedGradientDescent(FastGradientMethod):
         if not isinstance(classifier, ClassifierGradients):
             raise (TypeError('For `' + self.__class__.__name__ + '` classifier must be an instance of '
                              '`art.classifiers.classifier.ClassifierGradients`, the provided classifier is instance of '
-                             + str(classifier.__class__.__bases__) + '.'))
+                             + str(classifier.__class__.__bases__) + '. '
+                             ' The classifier needs to provide gradients.'))
 
         kwargs = {'max_iter': max_iter}
         ProjectedGradientDescent.set_params(self, **kwargs)

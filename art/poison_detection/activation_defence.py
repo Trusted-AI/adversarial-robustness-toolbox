@@ -30,6 +30,7 @@ import numpy as np
 from art.poison_detection.clustering_analyzer import ClusteringAnalyzer
 from art.poison_detection.ground_truth_evaluator import GroundTruthEvaluator
 from art.poison_detection.poison_filtering_defence import PoisonFilteringDefence
+from art.utils import segment_by_class
 from art.visualization import create_sprite, save_image, plot_3d
 
 logger = logging.getLogger(__name__)
@@ -105,8 +106,7 @@ class ActivationDefence(PoisonFilteringDefence):
         return conf_matrix_json
 
     # pylint: disable=W0221
-    def detect_poison(self, clustering_method='KMeans', nb_clusters=2, reduce='PCA', nb_dims=2,
-                      cluster_analysis='smaller'):
+    def detect_poison(self, **kwargs):
         """
         Returns poison detected and a report.
 
@@ -131,13 +131,7 @@ class ActivationDefence(PoisonFilteringDefence):
         :rtype: `tuple`
         """
 
-        args = {'clustering_method': clustering_method,
-                'nb_clusters': nb_clusters,
-                'reduce': reduce,
-                'nb_dims': nb_dims,
-                'cluster_analysis': cluster_analysis}
-
-        self.set_params(**args)
+        self.set_params(**kwargs)
 
         if not self.activations_by_class:
             activations = self._get_activations()
@@ -491,7 +485,7 @@ class ActivationDefence(PoisonFilteringDefence):
         logger.info('Getting activations')
 
         nb_layers = len(self.classifier.layer_names)
-        activations = self.classifier.get_activations(self.x_train, layer=nb_layers - 1)
+        activations = self.classifier.get_activations(self.x_train, layer=nb_layers - 1, batch_size=128)
 
         # wrong way to get activations activations = self.classifier.predict(self.x_train)
         nodes_last_layer = np.shape(activations)[1]
@@ -513,15 +507,7 @@ class ActivationDefence(PoisonFilteringDefence):
         :rtype: `list`
         """
         n_classes = self.classifier.nb_classes()
-        by_class = [[] for _ in range(n_classes)]
-        for indx, feature in enumerate(features):
-            if n_classes > 2:
-                assigned = np.argmax(feature)
-            else:
-                assigned = int(feature)
-            by_class[assigned].append(data[indx])
-
-        return [np.asarray(i) for i in by_class]
+        return segment_by_class(data, features, n_classes)
 
 
 def measure_misclassification(classifier, x_test, y_test):

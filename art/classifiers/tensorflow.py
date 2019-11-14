@@ -450,6 +450,15 @@ class TensorFlowClassifier(ClassifierNeuralNetwork, ClassifierGradients, Classif
             self._learning_phase = train
             self._feed_dict[self._learning] = train
 
+    def nb_classes(self):
+        """
+        Return the number of output classes.
+
+        :return: Number of classes in the data.
+        :rtype: `int`
+        """
+        return self._nb_classes
+
     def save(self, filename, path=None):
         """
         Save a model to file in the format specific to the backend framework. For TensorFlow, .ckpt is used.
@@ -742,7 +751,7 @@ class TensorFlowV2Classifier(ClassifierNeuralNetwork, ClassifierGradients, Class
         x_preprocessed, _ = self._apply_preprocessing(x, y=None, fit=False)
 
         # Compute the gradients
-        if tf.executing_eagerly:
+        if tf.executing_eagerly():
             if label is None:
                 # Compute the gradients w.r.t. all classes
                 class_gradients = list()
@@ -813,7 +822,7 @@ class TensorFlowV2Classifier(ClassifierNeuralNetwork, ClassifierGradients, Class
         # Apply preprocessing
         x_preprocessed, _ = self._apply_preprocessing(x, y, fit=False)
 
-        if tf.executing_eagerly:
+        if tf.executing_eagerly():
             with tf.GradientTape() as tape:
                 x_preprocessed_tf = tf.convert_to_tensor(x_preprocessed)
                 tape.watch(x_preprocessed_tf)
@@ -878,6 +887,15 @@ class TensorFlowV2Classifier(ClassifierNeuralNetwork, ClassifierGradients, Class
         :type train: `bool`
         """
         raise NotImplementedError
+
+    def nb_classes(self):
+        """
+        Return the number of output classes.
+
+        :return: Number of classes in the data.
+        :rtype: `int`
+        """
+        return self._nb_classes
 
     def save(self, filename, path=None):
         """

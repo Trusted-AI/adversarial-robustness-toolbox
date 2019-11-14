@@ -64,6 +64,9 @@ class ClassifierNeuralNetworkInstance(ClassifierNeuralNetwork, ClassifierGradien
     def predict(self, x, batch_size=128, **kwargs):
         pass
 
+    def nb_classes(self):
+        pass
+
     def save(self, filename, path=None):
         pass
 

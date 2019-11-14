@@ -26,11 +26,11 @@ LOGGING = {
         'test': {
             'class': 'logging.StreamHandler',
             'formatter': 'std',
-            'level': logging.DEBUG
+            'level': logging.INFO
         }
     },
     'loggers': {
-        '': {
+        'art': {
             'handlers': ['default']
         },
         'testLogger': {

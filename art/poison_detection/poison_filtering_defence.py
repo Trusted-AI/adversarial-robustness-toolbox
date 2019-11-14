@@ -41,7 +41,7 @@ class PoisonFilteringDefence(ABC):
         Create an :class:`.ActivationDefence` object with the provided classifier.
 
         :param classifier: model evaluated for poison
-        :type classifier: :class:`.Classifier`
+        :type classifier: :class:`art.classifiers.classifier.Classifier`
         :param x_train: dataset used to train the classifier.
         :type x_train: :class:`numpy.ndarray`
         :param y_train: labels used to train the classifier.
