@@ -966,7 +966,8 @@ class ScikitlearnSVC(ScikitlearnClassifier, ClassifierGradients):
                                 grad_kernel = self._get_kernel_gradient_sv(not_label_sv, x_preprocessed[i_sample])
                                 gradients[i_sample, 0] += label_multiplier * alpha_i_k_y_i * grad_kernel
 
-            else:
+            elif (isinstance(label, list) and len(label) == num_samples) or \
+                    isinstance(label, np.ndarray) and label.shape == (num_samples,):
                 gradients = np.zeros((x_preprocessed.shape[0], 1, x_preprocessed.shape[1]))
 
                 for i_sample in range(num_samples):
@@ -990,6 +991,9 @@ class ScikitlearnSVC(ScikitlearnClassifier, ClassifierGradients):
                                 grad_kernel = self._get_kernel_gradient_sv(not_label_sv, x_preprocessed[i_sample])
                                 gradients[i_sample, 0] += label_multiplier * alpha_i_k_y_i * grad_kernel
 
+            else:
+                raise TypeError('Unrecognized type for argument `label` with type ' + str(type(label)))
+
             gradients = self._apply_preprocessing_gradient(x, gradients * sign_multiplier)
 
         elif isinstance(self._model, LinearSVC):
@@ -1012,7 +1016,8 @@ class ScikitlearnSVC(ScikitlearnClassifier, ClassifierGradients):
                     else:
                         gradients[i_sample, 0] = self._model.coef_[label]
 
-            else:
+            elif (isinstance(label, list) and len(label) == num_samples) or \
+                    isinstance(label, np.ndarray) and label.shape == (num_samples,):
                 gradients = np.zeros((x_preprocessed.shape[0], 1, x_preprocessed.shape[1]))
 
                 for i_sample in range(num_samples):
@@ -1020,6 +1025,9 @@ class ScikitlearnSVC(ScikitlearnClassifier, ClassifierGradients):
                         gradients[i_sample, 0] = self._model.coef_[0] * (2 * label[i_sample] - 1)
                     else:
                         gradients[i_sample, 0] = self._model.coef_[label[i_sample]]
+
+            else:
+                raise TypeError('Unrecognized type for argument `label` with type ' + str(type(label)))
 
             gradients = self._apply_preprocessing_gradient(x, gradients)
 
