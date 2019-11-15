@@ -2,13 +2,13 @@
 
 Please include a summary of the change, motivation and which issue is fixed. Any dependencies changes should also be included.
 
-Fixes # (issue)
+Fixes # 214
 
 ## Type of change
 
 Please check all relevant options.
 
-- [ ] Bug fix (non-breaking)
+- [x] Bug fix (non-breaking)
 - [ ] New feature (non-breaking)
 - [ ] Breaking change (fix or feature that would cause existing functionality to not work as expected)
 - [ ] This change requires a documentation update
@@ -17,21 +17,20 @@ Please check all relevant options.
 
 Please describe the tests that you ran to verify your changes. Consider listing any relevant details of your test configuration.
 
-- [ ] Test A
-- [ ] Test B
+- [x] tests/classifiers/test_ensemble.py
 
 **Test Configuration**:
-- OS
-- Python version
-- ART version or commit number
-- TensorFlow / Keras / PyTorch / MXNet version
+- Fedora Linux
+- python 3.6.7
+- dev_1.1.0
+- TensorFlow 1.12.0
 
 # Checklist
 
-- [ ] My code follows the style guidelines of this project
-- [ ] I have performed a self-review of my own code
-- [ ] I have commented my code
-- [ ] I have made corresponding changes to the documentation
-- [ ] My changes generate no new warnings
+- [x] My code follows the style guidelines of this project
+- [x] I have performed a self-review of my own code
+- [x] I have commented my code
+- [x] I have made corresponding changes to the documentation
+- [x] My changes generate no new warnings
 - [ ] I have added tests that prove my fix is effective or that my feature works
-- [ ] New and existing unit tests pass locally with my changes
+- [x] New and existing unit tests pass locally with my changes
