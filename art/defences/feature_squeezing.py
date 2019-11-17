@@ -19,6 +19,8 @@
 This module implements the feature squeezing defence in `FeatureSqueezing`.
 
 | Paper link: https://arxiv.org/abs/1704.01155
+
+| Please keep in mind the limitations of defences. For more information on the limitations of this defence, see https://arxiv.org/abs/1803.09868
 """
 from __future__ import absolute_import, division, print_function, unicode_literals
 
@@ -36,6 +38,8 @@ class FeatureSqueezing(Preprocessor):
     Reduces the sensibility of the features of a sample.
 
     | Paper link: https://arxiv.org/abs/1704.01155
+
+    | Please keep in mind the limitations of defences. For more information on the limitations of this defence, see https://arxiv.org/abs/1803.09868
     """
     params = ['clip_values', 'bit_depth']
 

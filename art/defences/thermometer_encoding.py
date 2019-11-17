@@ -19,6 +19,8 @@
 This module implements the thermometer encoding defence `ThermometerEncoding`.
 
 | Paper link: https://openreview.net/forum?id=S18Su--CW
+
+| Please keep in mind the limitations of defences. For more information on the limitations of this defence, see https://arxiv.org/abs/1802.00420
 """
 from __future__ import absolute_import, division, print_function, unicode_literals
 
@@ -38,6 +40,8 @@ class ThermometerEncoding(Preprocessor):
     Implement the thermometer encoding defence approach.
 
     | Paper link: https://openreview.net/forum?id=S18Su--CW
+
+    | Please keep in mind the limitations of defences. For more information on the limitations of this defence, see https://arxiv.org/abs/1802.00420
     """
     params = ['clip_values', 'num_space', 'channel_index']
 
