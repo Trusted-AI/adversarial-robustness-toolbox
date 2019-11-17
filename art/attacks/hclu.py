@@ -87,7 +87,7 @@ class HighConfidenceLowUncertainty(Attack):
             pred = args['classifier'].predict(x.reshape(1, -1))[0, 0]
             if args['class_zero']:
                 pred = 1.0 - pred
-            return (pred - 0.95).reshape(-1)
+            return (pred - args['conf']).reshape(-1)
 
         def constraint_unc(x, args):  # constraint for uncertainty
             return (args['max_uncertainty'] - (args['classifier'].predict_uncertainty(x.reshape(1, -1))).reshape(-1))[0]
@@ -100,7 +100,7 @@ class HighConfidenceLowUncertainty(Attack):
             # get properties for attack
             max_uncertainty = self.unc_increase * self.classifier.predict_uncertainty(x_adv[i].reshape(1, -1))
             class_zero = not self.classifier.predict(x_adv[i].reshape(1, -1))[0, 0] < 0.5
-            init_args = {'classifier': self.classifier, 'class_zero': class_zero, 'max_uncertainty': max_uncertainty}
+            init_args = {'classifier': self.classifier, 'class_zero': class_zero, 'max_uncertainty': max_uncertainty,'conf':self.conf}
             constr_conf = {'type': 'ineq', 'fun': constraint_conf, 'args': (init_args,)}
             constr_unc = {'type': 'ineq', 'fun': constraint_unc, 'args': (init_args,)}
             args = {'args': init_args, 'orig': x[i].reshape(-1)}
