@@ -26,6 +26,8 @@ with their adversarial counterpart.
               unbounded attacks (e.g., DeepFool), this can result in invalid (very noisy) samples being included.
 
 | Paper link: https://arxiv.org/abs/1705.07204
+
+| Please keep in mind the limitations of defences. Adversarial training is still an open research question.
 """
 from __future__ import absolute_import, division, print_function, unicode_literals
 
