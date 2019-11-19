@@ -195,11 +195,12 @@ def get_classifier_kr(loss_name='categorical_crossentropy', loss_type='function_
     Standard Keras classifier for unit testing
 
     The weights and biases are identical to the TensorFlow model in get_classifier_tf().
-    
+
     :param loss_name: The name of the loss function.
     :type loss_name: `str`
-    :param loss_type: The type of loss function definitions: label (loss function defined by string of its name), 
-                      function_losses (loss function), class (loss function generator)
+    :param loss_type: The type of loss function definitions: label (loss function defined by string of its name),
+                      function_losses (loss function imported from keras.losses), function_backend (loss function
+                      imported from keras.backend)
     :type loss_type: `str`
     :param from_logits: Flag if model should predict logits (True) or probabilities (False).
     :type from_logits: `bool`
@@ -316,16 +317,8 @@ def get_classifier_kr_tf(loss_name='categorical_crossentropy', loss_type='functi
 
     :param loss_name: The name of the loss function.
     :type loss_name: `str`
-    
-    :param loss_type: Type of loss definition ['label', 'function', 'class']
-    :type loss_type: `str`
-    :param from_logits: True if model predicts logits
-    :type from_logits: `bool`
-    
-    
-    :param loss_type: The type of loss function definitions: label (loss function defined by string of its name), 
-                      function_losses (loss function imported from keras.losses), function_backend (loss function 
-                      imported from keras.backend)
+    :param loss_type: The type of loss function definitions: label (loss function defined by string of its name),
+                      function_losses (loss function), class (loss function generator)
     :type loss_type: `str`
     :param from_logits: Flag if model should predict logits (True) or probabilities (False).
     :type from_logits: `bool`
