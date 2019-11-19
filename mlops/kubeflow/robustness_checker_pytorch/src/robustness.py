@@ -52,7 +52,8 @@ def get_metrics(model, x_original, x_adv_samples, y):
 # Compute the accuaracy and predicted label using the given test dataset
 def evaluate(model, X_test, y_test):
     device = torch.device('cuda:0' if torch.cuda.is_available() else 'cpu')
-    test = torch.utils.data.TensorDataset(Variable(torch.FloatTensor(X_test.astype('float32'))), Variable(torch.LongTensor(y_test.astype('float32'))))
+    test = torch.utils.data.TensorDataset(Variable(torch.FloatTensor(X_test.astype('float32'))),
+                                          Variable(torch.LongTensor(y_test.astype('float32'))))
     test_loader = torch.utils.data.DataLoader(test, batch_size=64, shuffle=False)
     model.eval()
     correct = 0
