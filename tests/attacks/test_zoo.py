@@ -22,13 +22,12 @@ import unittest
 
 import keras.backend as k
 import numpy as np
-import tensorflow as tf
 
 from art.attacks import ZooAttack
 from art.utils import load_dataset, random_targets, master_seed
 from art.utils_test import get_classifier_kr, get_classifier_pt, get_classifier_tf, get_iris_classifier_pt
 
-logger = logging.getLogger('testLogger')
+logger = logging.getLogger(__name__)
 
 NB_TRAIN = 1
 NB_TEST = 1
@@ -51,7 +50,7 @@ class TestZooAttack(unittest.TestCase):
     def setUp(self):
         master_seed(1234)
 
-    def test_failure_attack(self):
+    def test_tensorflow_failure_attack(self):
         """
         Test the corner case when attack fails.
         :return:
@@ -69,7 +68,7 @@ class TestZooAttack(unittest.TestCase):
         # Clean-up session
         sess.close()
 
-    def test_tfclassifier(self):
+    def test_tensorflow_mnist(self):
         """
         First test with the TensorFlowClassifier.
         :return:
@@ -104,9 +103,7 @@ class TestZooAttack(unittest.TestCase):
         # Clean-up session
         sess.close()
 
-    @unittest.skipIf(tf.__version__[0] == '2', reason='Skip unittests for TensorFlow v2 until Keras supports TensorFlow'
-                                                      ' v2 as backend.')
-    def test_krclassifier(self):
+    def test_keras_mnist(self):
         """
         Second test with the KerasClassifier.
         :return:
@@ -157,7 +154,7 @@ class TestZooAttack(unittest.TestCase):
         # Clean-up
         k.clear_session()
 
-    def test_ptclassifier(self):
+    def test_pytorch_mnist(self):
         """
         Third test with the PyTorchClassifier.
         :return:

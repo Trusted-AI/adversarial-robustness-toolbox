@@ -22,13 +22,12 @@ import unittest
 
 import keras.backend as k
 import numpy as np
-import tensorflow as tf
 
 from art.attacks import SpatialTransformation
 from art.utils import load_dataset, master_seed
 from art.utils_test import get_classifier_tf, get_classifier_kr, get_classifier_pt, get_iris_classifier_kr
 
-logger = logging.getLogger('testLogger')
+logger = logging.getLogger(__name__)
 
 BATCH_SIZE = 10
 NB_TRAIN = 100
@@ -78,8 +77,6 @@ class TestSpatialTransformation(unittest.TestCase):
 
         sess.close()
 
-    @unittest.skipIf(tf.__version__[0] == '2', reason='Skip unittests for TensorFlow v2 until Keras supports TensorFlow'
-                                                      ' v2 as backend.')
     def test_krclassifier(self):
         """
         Second test with the KerasClassifier.
@@ -136,11 +133,9 @@ class TestSpatialTransformation(unittest.TestCase):
 
         self.assertLessEqual(abs(x_test_adv[0, 0, 14, 14] - 0.008591662), 0.01)
 
-    @unittest.skipIf(tf.__version__[0] == '2', reason='Skip unittests for TensorFlow v2 until Keras supports TensorFlow'
-                                                      ' v2 as backend.')
     def test_failure_feature_vectors(self):
         attack_params = {"max_translation": 10.0, "num_translations": 3, "max_rotation": 30.0, "num_rotations": 3}
-        classifier, _ = get_iris_classifier_kr()
+        classifier = get_iris_classifier_kr()
         attack = SpatialTransformation(classifier=classifier)
         attack.set_params(**attack_params)
         data = np.random.rand(10, 4)

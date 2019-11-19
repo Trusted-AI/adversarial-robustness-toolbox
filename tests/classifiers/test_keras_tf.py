@@ -44,7 +44,7 @@ from art.utils import load_dataset, master_seed
 from art.utils_test import get_classifier_kr_tf
 from art.data_generators import KerasDataGenerator
 
-logger = logging.getLogger('testLogger')
+logger = logging.getLogger(__name__)
 
 BATCH_SIZE = 10
 NB_TRAIN = 500
@@ -335,11 +335,10 @@ class TestKerasClassifierTF(unittest.TestCase):
         label = decode_predictions(prediction)[0][0]
 
         self.assertEqual(label[1], 'Weimaraner')
-        if tf.__version__[0] == '2':
+        if tf.__version__[0] == '2' or (tf.__version__[0] == '1' and tf.__version__[2:4] == '15'):
             self.assertAlmostEqual(prediction[0, 178], 0.29494652, places=3)
         else:
             self.assertAlmostEqual(prediction[0, 178], 0.2658045, places=3)
-
 
     def test_learning_phase(self):
         classifier = get_classifier_kr_tf()
@@ -397,12 +396,21 @@ class TestKerasClassifierTF(unittest.TestCase):
 
     def test_loss_functions(self):
         loss_names = ['categorical_hinge', 'categorical_crossentropy', 'sparse_categorical_crossentropy',
-                      'binary_crossentropy', 'kullback_leibler_divergence', 'cosine_similarity']
+                      'binary_crossentropy', 'kullback_leibler_divergence']
+
+        if tf.__version__[0] == '2':
+            loss_names.append('cosine_similarity')
+        else:
+            loss_names.append('cosine_proximity')
 
         for loss_name in loss_names:
-            print(loss_name)
+            logger.debug(loss_name)
             classifier = get_classifier_kr_tf(loss_name=loss_name)
             classifier.fit(x=self.x_test, y=self.y_test, nb_epochs=1)
             classifier.predict(x=self.x_test)
             classifier.class_gradient(self.x_test, label=5)
             classifier.loss_gradient(x=self.x_test, y=self.y_test)
+
+
+if __name__ == '__main__':
+    unittest.main()

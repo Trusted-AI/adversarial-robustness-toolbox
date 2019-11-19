@@ -25,7 +25,7 @@ import numpy as np
 from art.defences import SpatialSmoothing
 from art.utils import master_seed
 
-logger = logging.getLogger('testLogger')
+logger = logging.getLogger(__name__)
 
 
 class TestLocalSpatialSmoothing(unittest.TestCase):
@@ -39,9 +39,10 @@ class TestLocalSpatialSmoothing(unittest.TestCase):
 
         # Start to test
         for window_size in range(1, 20):
+            logger.info('Window size: {}'.format(window_size))
             preprocess = SpatialSmoothing(window_size=window_size)
             smoothed_x, _ = preprocess(x)
-            self.assertTrue((smoothed_x == 1).all())
+            np.testing.assert_array_almost_equal(smoothed_x, x, decimal=2)
 
     def test_fix(self):
         x = np.array([[[[0.1], [0.2], [0.3]], [[0.7], [0.8], [0.9]], [[0.4], [0.5], [0.6]]]]).astype(np.float32)

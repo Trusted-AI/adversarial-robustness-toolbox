@@ -26,7 +26,7 @@ import numpy as np
 
 from art.attacks.attack import Attack
 from art.classifiers.scikitlearn import ScikitlearnDecisionTreeClassifier
-from art.utils import check_and_transform_label_format
+from art.utils import check_and_transform_label_format, compute_success
 
 logger = logging.getLogger(__name__)
 
@@ -114,11 +114,11 @@ class DecisionTreeAttack(Attack):
         :rtype: `np.ndarray`
         """
         y = check_and_transform_label_format(y, self.classifier.nb_classes(), return_one_hot=False)
-        x = x.copy()
+        x_adv = x.copy()
 
-        for index in range(np.shape(x)[0]):
-            path = self.classifier.get_decision_path(x[index])
-            legitimate_class = np.argmax(self.classifier.predict(x[index].reshape(1, -1)))
+        for index in range(np.shape(x_adv)[0]):
+            path = self.classifier.get_decision_path(x_adv[index])
+            legitimate_class = np.argmax(self.classifier.predict(x_adv[index].reshape(1, -1)))
             position = -2
             adv_path = [-1]
             ancestor = path[position]
@@ -148,11 +148,13 @@ class DecisionTreeAttack(Attack):
                 threshold = self.classifier.get_threshold_at_node(adv_path[i])
                 feature = self.classifier.get_feature_at_node(adv_path[i])
                 # only perturb if the feature is actually wrong
-                if x[index][feature] > threshold and go_for == self.classifier.get_left_child(adv_path[i]):
-                    x[index][feature] = threshold - self.offset
-                elif x[index][feature] <= threshold and go_for == self.classifier.get_right_child(adv_path[i]):
-                    x[index][feature] = threshold + self.offset
-        return x
+                if x_adv[index][feature] > threshold and go_for == self.classifier.get_left_child(adv_path[i]):
+                    x_adv[index][feature] = threshold - self.offset
+                elif x_adv[index][feature] <= threshold and go_for == self.classifier.get_right_child(adv_path[i]):
+                    x_adv[index][feature] = threshold + self.offset
+
+        logger.info('Success rate of decision tree attack: %.2f%%', 100 * compute_success(self.classifier, x, y, x_adv))
+        return x_adv
 
     def set_params(self, **kwargs):
         """

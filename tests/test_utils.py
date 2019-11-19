@@ -26,8 +26,9 @@ import tensorflow as tf
 from art.utils import projection, random_sphere, to_categorical, least_likely_class, check_and_transform_label_format
 from art.utils import load_iris, load_mnist, master_seed
 from art.utils import second_most_likely_class, random_targets, get_label_conf, get_labels_np_array, preprocess
+from art.utils import segment_by_class, performance_diff
 
-logger = logging.getLogger('testLogger')
+logger = logging.getLogger(__name__)
 
 BATCH_SIZE = 10
 NB_TRAIN = 100
@@ -302,6 +303,49 @@ class TestUtils(unittest.TestCase):
         self.assertEqual(y_train.shape[0], 150)
         self.assertIs(x_test, None)
         self.assertIs(y_test, None)
+
+    def test_segment_by_class(self):
+        data = np.array([[3, 2], [9, 2], [4, 0], [9, 0]])
+        classes = to_categorical(np.array([2, 1, 0, 1]))
+        num_classes = 3
+        segments = segment_by_class(data, classes, num_classes)
+        self.assertEqual(len(segments), num_classes)
+        self.assertEqual(len(segments[1]), 2)
+        self.assertTrue(np.all(np.equal(segments[0], np.array([data[2]]))))
+        self.assertTrue(np.all(np.equal(segments[1], np.array([data[1], data[3]]))))
+        self.assertTrue(np.all(np.equal(segments[2], np.array([data[0]]))))
+
+        num_classes = 4
+        segments = segment_by_class(data, classes, num_classes)
+        self.assertEqual(len(segments), num_classes)
+
+    def test_performance_diff(self):
+        from art.classifiers.scikitlearn import SklearnClassifier
+        from sklearn.svm import SVC
+
+        (x_train, y_train), (x_test, y_test), min_, max_ = load_iris()
+
+        full_model = SklearnClassifier(model=SVC(kernel='linear'), clip_values=(min_, max_))
+        full_model.fit(x_train, y_train)
+
+        limited_model = SklearnClassifier(model=SVC(kernel='linear'), clip_values=(min_, max_))
+        limited_model.fit(x_train[:10], y_train[:10])
+
+        self.assertEqual(performance_diff(full_model, limited_model, x_test[:20], y_test[:20],
+                                          perf_function='accuracy'), 0.35)
+        self.assertEqual(performance_diff(full_model, limited_model, x_test[:20], y_test[:20]), 0.35)
+        diff = performance_diff(full_model, limited_model, x_test[:20], y_test[:20], perf_function='f1',
+                                average='weighted')
+        self.assertGreater(diff, 0.43)
+        self.assertLess(diff, 0.44)
+
+        def first_class(true_labels, model_labels, idx=0):
+            return np.average(np.argmax(model_labels, axis=1) == idx)
+
+        self.assertEqual(performance_diff(full_model, limited_model, x_test, y_test, perf_function=first_class),
+                         1.0 / 3)
+        self.assertEqual(performance_diff(full_model, limited_model, x_test, y_test, perf_function=first_class, idx=1),
+                         -1.0 / 3)
 
 
 if __name__ == '__main__':

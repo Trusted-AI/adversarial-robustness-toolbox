@@ -26,7 +26,7 @@ import numpy as np
 from art.defences import JpegCompression
 from art.utils import load_mnist, master_seed
 
-logger = logging.getLogger('testLogger')
+logger = logging.getLogger(__name__)
 
 
 class TestJpegCompression(unittest.TestCase):
