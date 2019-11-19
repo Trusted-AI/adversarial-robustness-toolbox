@@ -39,7 +39,6 @@ class TestLocalSpatialSmoothing(unittest.TestCase):
 
         # Start to test
         for window_size in range(1, 20):
-            print('Window size: {}'.format(window_size))
             logger.info('Window size: {}'.format(window_size))
             preprocess = SpatialSmoothing(window_size=window_size)
             smoothed_x, _ = preprocess(x)
