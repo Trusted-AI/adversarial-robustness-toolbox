@@ -203,6 +203,15 @@ def get_classifier_kr(loss_name='categorical_crossentropy', loss_type='function_
 
     The weights and biases are identical to the TensorFlow model in get_classifier_tf().
 
+    :param loss_name: The name of the loss function.
+    :type loss_name: `str`
+    :param loss_type: The type of loss function definitions: label (loss function defined by string of its name),
+                      function_losses (loss function imported from keras.losses), function_backend (loss function
+                      imported from keras.backend)
+    :type loss_type: `str`
+    :param from_logits: Flag if model should predict logits (True) or probabilities (False).
+    :type from_logits: `bool`
+
     :return: KerasClassifier, tf.Session()
     """
     import keras
@@ -228,13 +237,13 @@ def get_classifier_kr(loss_name='categorical_crossentropy', loss_type='function_
 
     if loss_name == 'categorical_hinge':
         if loss_type == 'label':
-            raise AttributeError
+            raise AttributeError('This combination of loss function options is not supported.')
         elif loss_type == 'function_losses':
             loss = keras.losses.categorical_hinge
     elif loss_name == 'categorical_crossentropy':
         if loss_type == 'label':
             if from_logits:
-                raise AttributeError
+                raise AttributeError('This combination of loss function options is not supported.')
             else:
                 loss = loss_name
         elif loss_type == 'function_losses':
@@ -245,7 +254,7 @@ def get_classifier_kr(loss_name='categorical_crossentropy', loss_type='function_
 
                     loss = categorical_crossentropy
                 else:
-                    raise AttributeError
+                    raise AttributeError('This combination of loss function options is not supported.')
             else:
                 loss = keras.losses.categorical_crossentropy
         elif loss_type == 'function_backend':
@@ -259,7 +268,7 @@ def get_classifier_kr(loss_name='categorical_crossentropy', loss_type='function_
     elif loss_name == 'sparse_categorical_crossentropy':
         if loss_type == 'label':
             if from_logits:
-                raise AttributeError
+                raise AttributeError('This combination of loss function options is not supported.')
             else:
                 loss = loss_name
         elif loss_type == 'function_losses':
@@ -270,7 +279,7 @@ def get_classifier_kr(loss_name='categorical_crossentropy', loss_type='function_
 
                     loss = sparse_categorical_crossentropy
                 else:
-                    raise AttributeError
+                    raise AttributeError('This combination of loss function options is not supported.')
             else:
                 loss = keras.losses.sparse_categorical_crossentropy
         elif loss_type == 'function_backend':
@@ -283,11 +292,11 @@ def get_classifier_kr(loss_name='categorical_crossentropy', loss_type='function_
                 loss = keras.backend.sparse_categorical_crossentropy
     elif loss_name == 'kullback_leibler_divergence':
         if loss_type == 'label':
-            raise AttributeError
+            raise AttributeError('This combination of loss function options is not supported.')
         elif loss_type == 'function_losses':
             loss = keras.losses.kullback_leibler_divergence
         elif loss_type == 'function_backend':
-            raise AttributeError
+            raise AttributeError('This combination of loss function options is not supported.')
     elif loss_name == 'cosine_similarity':
         if loss_type == 'label':
             loss = loss_name
@@ -313,11 +322,12 @@ def get_classifier_kr_tf(loss_name='categorical_crossentropy', loss_type='functi
 
     The weights and biases are identical to the TensorFlow model in get_classifier_tf().
 
-    :param loss_name: Name of the loss
+    :param loss_name: The name of the loss function.
     :type loss_name: `str`
-    :param loss_type: Type of loss definition ['label', 'function', 'class']
+    :param loss_type: The type of loss function definitions: label (loss function defined by string of its name),
+                      function_losses (loss function), class (loss function generator)
     :type loss_type: `str`
-    :param from_logits: True if model predicts logits
+    :param from_logits: Flag if model should predict logits (True) or probabilities (False).
     :type from_logits: `bool`
 
 
@@ -361,7 +371,7 @@ def get_classifier_kr_tf(loss_name='categorical_crossentropy', loss_type='functi
                     try:
                         reduction = tf.python.keras.utils.losses_utils.ReductionV2.NONE
                     except AttributeError:
-                        raise ImportError
+                        raise ImportError('This combination of loss function options is not supported.')
             loss = tf.keras.losses.CategoricalHinge(reduction=reduction)
     elif loss_name == 'categorical_crossentropy':
         if loss_type == 'label':
@@ -387,7 +397,7 @@ def get_classifier_kr_tf(loss_name='categorical_crossentropy', loss_type='functi
                     try:
                         reduction = tf.python.keras.utils.losses_utils.ReductionV2.NONE
                     except AttributeError:
-                        raise ImportError
+                        raise ImportError('This combination of loss function options is not supported.')
             loss = tf.keras.losses.CategoricalCrossentropy(from_logits=from_logits, reduction=reduction)
     elif loss_name == 'sparse_categorical_crossentropy':
         if loss_type == 'label':
@@ -413,7 +423,7 @@ def get_classifier_kr_tf(loss_name='categorical_crossentropy', loss_type='functi
                     try:
                         reduction = tf.python.keras.utils.losses_utils.ReductionV2.NONE
                     except AttributeError:
-                        raise ImportError
+                        raise ImportError('This combination of loss function options is not supported.')
             loss = tf.keras.losses.SparseCategoricalCrossentropy(from_logits=from_logits, reduction=reduction)
     elif loss_name == 'kullback_leibler_divergence':
         if loss_type == 'label':
@@ -430,7 +440,7 @@ def get_classifier_kr_tf(loss_name='categorical_crossentropy', loss_type='functi
                     try:
                         reduction = tf.python.keras.utils.losses_utils.ReductionV2.NONE
                     except AttributeError:
-                        raise ImportError
+                        raise ImportError('This combination of loss function options is not supported.')
             loss = tf.keras.losses.KLDivergence(reduction=reduction)
     elif loss_name == 'cosine_similarity':
         if loss_type == 'label':
@@ -447,7 +457,7 @@ def get_classifier_kr_tf(loss_name='categorical_crossentropy', loss_type='functi
                     try:
                         reduction = tf.python.keras.utils.losses_utils.ReductionV2.NONE
                     except AttributeError:
-                        raise ImportError
+                        raise ImportError('This combination of loss function options is not supported.')
             loss = tf.keras.losses.CosineSimilarity(reduction=reduction)
 
     else:

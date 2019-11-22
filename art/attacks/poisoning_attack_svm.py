@@ -26,6 +26,7 @@ import numpy as np
 
 from art.attacks.attack import Attack
 from art.classifiers.scikitlearn import ScikitlearnSVC
+from art.utils import compute_success
 
 logger = logging.getLogger(__name__)
 
@@ -115,7 +116,13 @@ class PoisoningAttackSVM(Attack):
             train_data = np.vstack([train_data, poison])
             train_labels = np.vstack([train_labels, attack_label])
 
-        return np.array(all_poison).reshape((num_poison, num_features))
+        x_adv = np.array(all_poison).reshape((num_poison, num_features))
+        targeted = y is not None
+
+        logger.info('Success rate of poisoning attack SVM attack: %.2f%%',
+                    100 * compute_success(self.classifier, x, y, x_adv, targeted=targeted))
+
+        return x_adv
 
     def set_params(self, **kwargs):
         """
@@ -201,7 +208,7 @@ class PoisoningAttackSVM(Attack):
         :param attack_point: the current attack point
         :type attack_point: `np.ndarray`
         :param tol: tolerance level
-        :type attack_point: `float`
+        :type tol: `float`
         :return: The attack gradient
         :rtype: `np.ndarray`
         """

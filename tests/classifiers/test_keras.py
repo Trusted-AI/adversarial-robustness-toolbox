@@ -535,27 +535,6 @@ class TestKerasClassifier(unittest.TestCase):
             _run_tests(loss_name, loss_type, y_test_pred_expected, class_gradient_probabilities_expected,
                        loss_gradient_expected, _from_logits=False)
 
-        # # ================= #
-        # # cosine_similarity #
-        # # ================= #
-        #
-        # loss_name = 'cosine_similarity'
-        #
-        # # loss_gradient should be the same for probabilities and logits but dependent on loss function
-        #
-        # loss_gradient_expected = np.asarray([0.0, 0.0, 0.0, -0.01384802, -0.00177398, -0.00126348, 0.00053905,
-        #                                      0.01849065, 0.01422003, 0.01795243, 0.00634595, 0.00032641, 0.00058005,
-        #                                      -0.01127981, -0.00853991, 0.00819618, -0.00748622, -0.0100762,
-        #                                      -0.01203767, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0])
-        #
-        # # testing with probabilities
-        #
-        # for loss_type in ['function', 'class']:
-        #     logger.info('loss_name: {}, loss_type: {}, output: probabilities'.format(loss_name, loss_type))
-        #
-        #     _run_tests(loss_name, loss_type, y_test_pred_expected, class_gradient_probabilities_expected,
-        #                loss_gradient_expected, _from_logits=False)
-
 
 if __name__ == '__main__':
     unittest.main()
