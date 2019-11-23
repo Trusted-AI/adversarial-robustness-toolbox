@@ -49,6 +49,7 @@ class TestIterativeAttack(unittest.TestCase):
 
     def test_keras_mnist(self):
         (x_train, y_train), (x_test, y_test) = self.mnist
+
         classifier = get_classifier_kr()
 
         scores = classifier._model.evaluate(x_train, y_train)
@@ -89,6 +90,8 @@ class TestIterativeAttack(unittest.TestCase):
         self._test_backend_mnist(classifier, x_train, y_train, x_test, y_test)
 
     def _test_backend_mnist(self, classifier, x_train, y_train, x_test, y_test):
+        x_test_original = x_test.copy()
+
         # Test BIM with np.inf norm
         attack = BasicIterativeMethod(classifier, eps=1, eps_step=0.1, batch_size=128)
         x_train_adv = attack.generate(x_train)
@@ -109,7 +112,12 @@ class TestIterativeAttack(unittest.TestCase):
         acc = np.sum(np.argmax(test_y_pred, axis=1) == np.argmax(y_test, axis=1)) / y_test.shape[0]
         logger.info('Accuracy on adversarial test examples: %.2f%%', (acc * 100))
 
+        # Check that x_test has not been modified by attack and classifier
+        self.assertAlmostEqual(float(np.max(np.abs(x_test_original - x_test))), 0.0, delta=0.00001)
+
     def _test_mnist_targeted(self, classifier, x_test):
+        x_test_original = x_test.copy()
+
         # Test FGSM with np.inf norm
         attack = BasicIterativeMethod(classifier, eps=1.0, eps_step=0.01, targeted=True, batch_size=128)
         # y_test_adv = to_categorical((np.argmax(y_test, axis=1) + 1)  % 10, 10)
@@ -126,6 +134,9 @@ class TestIterativeAttack(unittest.TestCase):
         self.assertEqual(y_test_adv.shape, test_y_pred.shape)
         # This doesn't work all the time, especially with small networks
         self.assertGreaterEqual((y_test_adv == test_y_pred).sum(), x_test.shape[0] // 2)
+
+        # Check that x_test has not been modified by attack and classifier
+        self.assertAlmostEqual(float(np.max(np.abs(x_test_original - x_test))), 0.0, delta=0.00001)
 
     def test_keras_mnist_targeted(self):
         (_, _), (x_test, _) = self.mnist
@@ -284,6 +295,7 @@ class TestIterativeAttack(unittest.TestCase):
                                   LinearSVC: ScikitlearnSVC}
 
         (_, _), (x_test, y_test) = self.iris
+        x_test_original = x_test.copy()
 
         for (model_class, classifier_class) in scikitlearn_test_cases.items():
             model = model_class()
@@ -316,6 +328,9 @@ class TestIterativeAttack(unittest.TestCase):
             acc = np.sum(preds_adv == np.argmax(targets, axis=1)) / y_test.shape[0]
             logger.info('Success rate of ' + classifier.__class__.__name__ + ' on targeted BIM on Iris: %.2f%%',
                         (acc * 100))
+
+            # Check that x_test has not been modified by attack and classifier
+            self.assertAlmostEqual(float(np.max(np.abs(x_test_original - x_test))), 0.0, delta=0.00001)
 
 
 if __name__ == '__main__':

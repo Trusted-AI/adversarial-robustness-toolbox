@@ -20,6 +20,7 @@ from __future__ import absolute_import, division, print_function, unicode_litera
 import logging
 import unittest
 
+import keras
 import keras.backend as k
 import numpy as np
 
@@ -61,9 +62,10 @@ class TestCarlini(unittest.TestCase):
         :return:
         """
         (_, _), (x_test, y_test) = self.mnist
+        x_test_original = x_test.copy()
 
         # Build TensorFlowClassifier
-        tfc, sess = get_classifier_tf()
+        tfc, sess = get_classifier_tf(from_logits=True)
 
         # Failure attack
         cl2m = CarliniL2Method(classifier=tfc, targeted=True, max_iter=0, binary_search_steps=0, learning_rate=0,
@@ -74,6 +76,9 @@ class TestCarlini(unittest.TestCase):
         self.assertGreaterEqual(np.amin(x_test_adv), 0.0)
         np.testing.assert_array_almost_equal(x_test, x_test_adv, decimal=3)
 
+        # Check that x_test has not been modified by attack and classifier
+        self.assertAlmostEqual(float(np.max(np.abs(x_test_original - x_test))), 0.0, delta=0.00001)
+
         # Clean-up session
         sess.close()
 
@@ -83,6 +88,7 @@ class TestCarlini(unittest.TestCase):
         :return:
         """
         (_, _), (x_test, y_test) = self.mnist
+        x_test_original = x_test.copy()
 
         # Build TensorFlowClassifier
         tfc, sess = get_classifier_tf()
@@ -113,18 +119,24 @@ class TestCarlini(unittest.TestCase):
         logger.info('CW2 Success Rate: %.2f', (np.sum(target == y_pred_adv) / float(len(target))))
         self.assertTrue((target != y_pred_adv).any())
 
+        # Check that x_test has not been modified by attack and classifier
+        self.assertAlmostEqual(float(np.max(np.abs(x_test_original - x_test))), 0.0, delta=0.00001)
+
         # Clean-up session
         sess.close()
 
+    @unittest.skipIf(not (int(keras.__version__.split('.')[0]) == 2 and int(keras.__version__.split('.')[1]) >= 3),
+                     reason='Minimal version of Keras or TensorFlow required.')
     def test_keras_mnist_L2(self):
         """
         Second test with the KerasClassifier.
         :return:
         """
         (_, _), (x_test, y_test) = self.mnist
+        x_test_original = x_test.copy()
 
         # Build KerasClassifier
-        krc = get_classifier_kr()
+        krc = get_classifier_kr(from_logits=True)
 
         # First attack
         cl2m = CarliniL2Method(classifier=krc, targeted=True, max_iter=10)
@@ -150,6 +162,9 @@ class TestCarlini(unittest.TestCase):
         logger.info('CW2 Success Rate: %.2f', (np.sum(y_target != y_pred_adv) / float(len(y_target))))
         self.assertTrue((y_target != y_pred_adv).any())
 
+        # Check that x_test has not been modified by attack and classifier
+        self.assertAlmostEqual(float(np.max(np.abs(x_test_original - x_test))), 0.0, delta=0.00001)
+
         # Clean-up
         k.clear_session()
 
@@ -159,11 +174,11 @@ class TestCarlini(unittest.TestCase):
         :return:
         """
         (_, _), (x_test, y_test) = self.mnist
+        x_test = np.reshape(x_test, (x_test.shape[0], 1, 28, 28)).astype(np.float32)
+        x_test_original = x_test.copy()
 
         # Build PyTorchClassifier
-        ptc = get_classifier_pt()
-
-        x_test = np.swapaxes(x_test, 1, 3).astype(np.float32)
+        ptc = get_classifier_pt(from_logits=True)
 
         # First attack
         cl2m = CarliniL2Method(classifier=ptc, targeted=True, max_iter=10)
@@ -186,6 +201,9 @@ class TestCarlini(unittest.TestCase):
         y_pred_adv = np.argmax(ptc.predict(x_test_adv), axis=1)
         self.assertTrue((target != y_pred_adv).any())
         logger.info('CW2 Success Rate: %.2f', (sum(target != y_pred_adv) / float(len(target))))
+
+        # Check that x_test has not been modified by attack and classifier
+        self.assertAlmostEqual(float(np.max(np.abs(x_test_original - x_test))), 0.0, delta=0.00001)
 
     def test_classifier_type_check_fail_classifier_L2(self):
         # Use a useless test classifier to test basic classifier properties
@@ -295,6 +313,7 @@ class TestCarlini(unittest.TestCase):
         # LinearSVC: ScikitlearnSVC}
 
         (_, _), (x_test, y_test) = self.iris
+        x_test_original = x_test.copy()
 
         for (model_class, classifier_class) in scikitlearn_test_cases.items():
             model = model_class()
@@ -328,6 +347,9 @@ class TestCarlini(unittest.TestCase):
             logger.info('Success rate of ' + classifier.__class__.__name__ + ' on targeted C&W on Iris: %.2f%%',
                         (accuracy * 100))
 
+            # Check that x_test has not been modified by attack and classifier
+            self.assertAlmostEqual(float(np.max(np.abs(x_test_original - x_test))), 0.0, delta=0.00001)
+
     """
     A unittest class for testing the Carlini LInf attack.
     """
@@ -340,7 +362,7 @@ class TestCarlini(unittest.TestCase):
         (_, _), (x_test, y_test) = self.mnist
 
         # Build TensorFlowClassifier
-        tfc, sess = get_classifier_tf()
+        tfc, sess = get_classifier_tf(from_logits=True)
 
         # Failure attack
         clinfm = CarliniLInfMethod(classifier=tfc, targeted=True, max_iter=0, learning_rate=0, eps=0.5)
@@ -361,7 +383,7 @@ class TestCarlini(unittest.TestCase):
         (_, _), (x_test, y_test) = self.mnist
 
         # Build TensorFlowClassifier
-        tfc, sess = get_classifier_tf()
+        tfc, sess = get_classifier_tf(from_logits=True)
 
         # First attack
         clinfm = CarliniLInfMethod(classifier=tfc, targeted=True, max_iter=10, eps=0.5)
@@ -392,6 +414,8 @@ class TestCarlini(unittest.TestCase):
         # Clean-up session
         sess.close()
 
+    @unittest.skipIf(not (int(keras.__version__.split('.')[0]) == 2 and int(keras.__version__.split('.')[1]) >= 3),
+                     reason='Minimal version of Keras or TensorFlow required.')
     def test_keras_mnist_LInf(self):
         """
         Second test with the KerasClassifier.
@@ -400,15 +424,15 @@ class TestCarlini(unittest.TestCase):
         (_, _), (x_test, y_test) = self.mnist
 
         # Build KerasClassifier
-        krc, sess = get_classifier_tf()
+        krc = get_classifier_kr(from_logits=True)
 
         # First attack
         clinfm = CarliniLInfMethod(classifier=krc, targeted=True, max_iter=10, eps=0.5)
         params = {'y': random_targets(y_test, krc.nb_classes())}
         x_test_adv = clinfm.generate(x_test, **params)
         self.assertFalse((x_test == x_test_adv).all())
-        self.assertLessEqual(np.amax(x_test_adv), 1.0)
-        self.assertGreaterEqual(np.amin(x_test_adv), 0.0)
+        self.assertLessEqual(np.amax(x_test_adv), 1.000001)
+        self.assertGreaterEqual(np.amin(x_test_adv), -1e-6)
         target = np.argmax(params['y'], axis=1)
         y_pred_adv = np.argmax(krc.predict(x_test_adv), axis=1)
         logger.debug('CW0 Target: %s', target)
@@ -419,7 +443,7 @@ class TestCarlini(unittest.TestCase):
         # Second attack
         clinfm = CarliniLInfMethod(classifier=krc, targeted=False, max_iter=10, eps=0.5)
         x_test_adv = clinfm.generate(x_test)
-        self.assertLessEqual(np.amax(x_test_adv), 1.0)
+        self.assertLessEqual(np.amax(x_test_adv), 1.000001)
         self.assertGreaterEqual(np.amin(x_test_adv), -1e-6)
         target = np.argmax(params['y'], axis=1)
         y_pred_adv = np.argmax(krc.predict(x_test_adv), axis=1)
@@ -430,7 +454,6 @@ class TestCarlini(unittest.TestCase):
 
         # Clean-up
         k.clear_session()
-        sess.close()
 
     def test_pytorch_mnist_LInf(self):
         """
@@ -438,11 +461,10 @@ class TestCarlini(unittest.TestCase):
         :return:
         """
         (_, _), (x_test, y_test) = self.mnist
+        x_test = np.reshape(x_test, (x_test.shape[0], 1, 28, 28)).astype(np.float32)
 
         # Build PyTorchClassifier
-        ptc = get_classifier_pt()
-
-        x_test = np.swapaxes(x_test, 1, 3).astype(np.float32)
+        ptc = get_classifier_pt(from_logits=True)
 
         # First attack
         clinfm = CarliniLInfMethod(classifier=ptc, targeted=True, max_iter=10, eps=0.5)

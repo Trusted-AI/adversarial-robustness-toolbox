@@ -20,6 +20,7 @@ from __future__ import absolute_import, division, print_function, unicode_litera
 import logging
 import unittest
 
+import keras
 import keras.backend as k
 import numpy as np
 
@@ -55,11 +56,14 @@ class TestDeepFool(unittest.TestCase):
     def tearDownClass(cls):
         k.clear_session()
 
+    @unittest.skipIf(not (int(keras.__version__.split('.')[0]) == 2 and int(keras.__version__.split('.')[1]) >= 3),
+                     reason='Minimal version of Keras or TensorFlow required.')
     def test_keras_mnist(self):
         (x_train, y_train), (x_test, y_test) = self.mnist
+        x_test_original = x_test.copy()
 
         # Keras classifier
-        classifier = get_classifier_kr()
+        classifier = get_classifier_kr(from_logits=True)
 
         scores = classifier._model.evaluate(x_train, y_train)
         logger.info('[Keras, MNIST] Accuracy on training set: %.2f%%', (scores[1] * 100))
@@ -85,11 +89,15 @@ class TestDeepFool(unittest.TestCase):
         accuracy = np.sum(np.argmax(test_y_pred, axis=1) == np.argmax(y_test, axis=1)) / y_test.shape[0]
         logger.info('Accuracy on adversarial test examples: %.2f%%', (accuracy * 100))
 
+        # Check that x_test has not been modified by attack and classifier
+        self.assertAlmostEqual(float(np.max(np.abs(x_test_original - x_test))), 0.0, delta=0.00001)
+
     def test_tensorflow_mnist(self):
         (x_train, y_train), (x_test, y_test) = self.mnist
+        x_test_original = x_test.copy()
 
         # Create basic CNN on MNIST using TensorFlow
-        classifier, sess = get_classifier_tf()
+        classifier, sess = get_classifier_tf(from_logits=True)
 
         scores = get_labels_np_array(classifier.predict(x_train))
         accuracy = np.sum(np.argmax(scores, axis=1) == np.argmax(y_train, axis=1)) / y_train.shape[0]
@@ -118,13 +126,17 @@ class TestDeepFool(unittest.TestCase):
         accuracy = np.sum(np.argmax(test_y_pred, axis=1) == np.argmax(y_test, axis=1)) / y_test.shape[0]
         logger.info('Accuracy on adversarial test examples: %.2f%%', (accuracy * 100))
 
+        # Check that x_test has not been modified by attack and classifier
+        self.assertAlmostEqual(float(np.max(np.abs(x_test_original - x_test))), 0.0, delta=0.00001)
+
     def test_pytorch_mnist(self):
         (x_train, y_train), (x_test, y_test) = self.mnist
+        x_train = np.reshape(x_train, (x_train.shape[0], 1, 28, 28)).astype(np.float32)
+        x_test = np.reshape(x_test, (x_test.shape[0], 1, 28, 28)).astype(np.float32)
+        x_test_original = x_test.copy()
 
         # Create basic PyTorch model
-        classifier = get_classifier_pt()
-        x_train = np.swapaxes(x_train, 1, 3).astype(np.float32)
-        x_test = np.swapaxes(x_test, 1, 3).astype(np.float32)
+        classifier = get_classifier_pt(from_logits=True)
 
         scores = get_labels_np_array(classifier.predict(x_train))
         accuracy = np.sum(np.argmax(scores, axis=1) == np.argmax(y_train, axis=1)) / y_train.shape[0]
@@ -153,9 +165,14 @@ class TestDeepFool(unittest.TestCase):
         accuracy = np.sum(np.argmax(test_y_pred, axis=1) == np.argmax(y_test, axis=1)) / y_test.shape[0]
         logger.info('Accuracy on adversarial test examples: %.2f%%', (accuracy * 100))
 
+        # Check that x_test has not been modified by attack and classifier
+        self.assertAlmostEqual(float(np.max(np.abs(x_test_original - x_test))), 0.0, delta=0.00001)
+
+    @unittest.skipIf(not (int(keras.__version__.split('.')[0]) == 2 and int(keras.__version__.split('.')[1]) >= 3),
+                     reason='Minimal version of Keras or TensorFlow required.')
     def test_kera_mnist_partial_grads(self):
         (_, _), (x_test, y_test) = self.mnist
-        classifier = get_classifier_kr()
+        classifier = get_classifier_kr(from_logits=True)
         attack = DeepFool(classifier, max_iter=2, nb_grads=3)
         x_test_adv = attack.generate(x_test)
         self.assertFalse((x_test == x_test_adv).all())

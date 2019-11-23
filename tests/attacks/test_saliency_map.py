@@ -53,6 +53,7 @@ class TestSaliencyMap(unittest.TestCase):
     def test_keras_mnist(self):
 
         (x_train, y_train), (x_test, y_test) = self.mnist
+        x_test_original = x_test.copy()
 
         # Keras classifier
         classifier = get_classifier_kr()
@@ -97,9 +98,13 @@ class TestSaliencyMap(unittest.TestCase):
         accuracy = np.sum(np.argmax(y_pred, axis=1) == np.argmax(y_test, axis=1)) / y_test.shape[0]
         logger.info('Accuracy on adversarial examples: %.2f%%', (accuracy * 100))
 
+        # Check that x_test has not been modified by attack and classifier
+        self.assertAlmostEqual(float(np.max(np.abs(x_test_original - x_test))), 0.0, delta=0.00001)
+
     def test_tensorflow_mnist(self):
 
         (x_train, y_train), (x_test, y_test) = self.mnist
+        x_test_original = x_test.copy()
 
         # Create basic CNN on MNIST using TensorFlow
         classifier, sess = get_classifier_tf()
@@ -145,14 +150,18 @@ class TestSaliencyMap(unittest.TestCase):
         accuracy = np.sum(np.argmax(y_pred, axis=1) == np.argmax(y_test, axis=1)) / y_test.shape[0]
         logger.info('Accuracy on adversarial examples: %.2f%%', (accuracy * 100))
 
+        # Check that x_test has not been modified by attack and classifier
+        self.assertAlmostEqual(float(np.max(np.abs(x_test_original - x_test))), 0.0, delta=0.00001)
+
     def test_pytorch_mnist(self):
 
         (x_train, y_train), (x_test, y_test) = self.mnist
+        x_train = np.swapaxes(x_train, 1, 3).astype(np.float32)
+        x_test = np.swapaxes(x_test, 1, 3).astype(np.float32)
+        x_test_original = x_test.copy()
 
         # Create basic PyTorch model
         classifier = get_classifier_pt()
-        x_train = np.swapaxes(x_train, 1, 3).astype(np.float32)
-        x_test = np.swapaxes(x_test, 1, 3).astype(np.float32)
 
         scores = get_labels_np_array(classifier.predict(x_train))
         accuracy = np.sum(np.argmax(scores, axis=1) == np.argmax(y_train, axis=1)) / y_train.shape[0]
@@ -194,6 +203,9 @@ class TestSaliencyMap(unittest.TestCase):
 
         accuracy = np.sum(np.argmax(y_pred, axis=1) == np.argmax(y_test, axis=1)) / y_test.shape[0]
         logger.info('Accuracy on adversarial examples: %.2f%%', (accuracy * 100))
+
+        # Check that x_test has not been modified by attack and classifier
+        self.assertAlmostEqual(float(np.max(np.abs(x_test_original - x_test))), 0.0, delta=0.00001)
 
     def test_classifier_type_check_fail_classifier(self):
         # Use a useless test classifier to test basic classifier properties
@@ -295,6 +307,7 @@ class TestSaliencyMap(unittest.TestCase):
         # LinearSVC: ScikitlearnSVC}
 
         (_, _), (x_test, y_test) = self.iris
+        x_test_original = x_test.copy()
 
         for (model_class, classifier_class) in scikitlearn_test_cases.items():
             model = model_class()
@@ -312,6 +325,9 @@ class TestSaliencyMap(unittest.TestCase):
             accuracy = np.sum(preds_adv == np.argmax(y_test, axis=1)) / y_test.shape[0]
             logger.info('Accuracy of ' + classifier.__class__.__name__ + ' on Iris with JSMA adversarial examples: '
                                                                          '%.2f%%', (accuracy * 100))
+
+            # Check that x_test has not been modified by attack and classifier
+            self.assertAlmostEqual(float(np.max(np.abs(x_test_original - x_test))), 0.0, delta=0.00001)
 
 
 if __name__ == '__main__':

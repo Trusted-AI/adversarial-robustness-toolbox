@@ -81,7 +81,7 @@ def _kr_tf_weights_loader(dataset, weights_type, layer='DENSE'):
     return weights
 
 
-def get_classifier_tf():
+def get_classifier_tf(from_logits=False):
     """
     Standard TensorFlow classifier for unit testing.
 
@@ -115,6 +115,9 @@ def get_classifier_tf():
     logits = tf.layers.dense(flattened, 10, kernel_initializer=_tf_weights_loader('MNIST', 'W', 'DENSE'),
                              bias_initializer=_tf_weights_loader('MNIST', 'B', 'DENSE'))
 
+    # probabilities
+    probabilities = tf.keras.activations.softmax(x=logits)
+
     # Train operator
     loss = tf.reduce_mean(tf.losses.softmax_cross_entropy(logits=logits, onehot_labels=output_ph))
     optimizer = tf.train.AdamOptimizer(learning_rate=0.01)
@@ -125,8 +128,12 @@ def get_classifier_tf():
     sess.run(tf.global_variables_initializer())
 
     # Create the classifier
-    tfc = TensorFlowClassifier(clip_values=(0, 1), input_ph=input_ph, output=logits, labels_ph=output_ph, train=train,
-                               loss=loss, learning=None, sess=sess)
+    if from_logits:
+        tfc = TensorFlowClassifier(clip_values=(0, 1), input_ph=input_ph, output=logits, labels_ph=output_ph,
+                                   train=train, loss=loss, learning=None, sess=sess)
+    else:
+        tfc = TensorFlowClassifier(clip_values=(0, 1), input_ph=input_ph, output=probabilities, labels_ph=output_ph,
+                                   train=train, loss=loss, learning=None, sess=sess)
 
     return tfc, sess
 
@@ -464,7 +471,7 @@ def get_classifier_kr_tf(loss_name='categorical_crossentropy', loss_type='functi
     return krc
 
 
-def get_classifier_pt():
+def get_classifier_pt(from_logits=False):
     """
     Standard PyTorch classifier for unit testing
 
@@ -487,7 +494,7 @@ def get_classifier_pt():
             w_dense = np.load(os.path.join(os.path.dirname(os.path.dirname(__file__)), 'models', 'W_DENSE_MNIST.npy'))
             b_dense = np.load(os.path.join(os.path.dirname(os.path.dirname(__file__)), 'models', 'B_DENSE_MNIST.npy'))
 
-            w_conv2d_pt = np.transpose(w_conv2d, (2, 3, 1, 0))
+            w_conv2d_pt = w_conv2d.reshape((1, 1, 7, 7))
 
             self.conv = nn.Conv2d(in_channels=1, out_channels=1, kernel_size=7)
             self.conv.weight = nn.Parameter(torch.Tensor(w_conv2d_pt))
@@ -510,7 +517,8 @@ def get_classifier_pt():
             x = self.pool(x)
             x = x.reshape(-1, 25)
             x = self.fullyconnected(x)
-            x = torch.nn.functional.softmax(x)
+            if not from_logits:
+                x = torch.nn.functional.softmax(x)
             return x
 
     # Define the network
