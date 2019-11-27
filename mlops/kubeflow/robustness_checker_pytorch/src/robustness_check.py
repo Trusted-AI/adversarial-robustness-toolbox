@@ -19,7 +19,7 @@ import json
 import argparse
 import os
 
-from robustness import robustness_check
+from robustness import robustness_evaluation
 
 
 def get_secret(path, default=''):
