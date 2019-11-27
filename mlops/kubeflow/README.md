@@ -16,7 +16,7 @@ Each component has a component.yaml which will describe the functionality expose
 ```
 name: 'PyTorch - Fast Gradient Sign Method - Adversarial Robustness Evaluation'
 description: |
-  Perform a robustness check using fast gradient attack with ART to make sure the model is robust against simple gradient changes.
+  Perform an evaluation of the adversarial robustness using the Fast Gradient Sign Method of the Adversarial Robustness Toolbox (ART).
 metadata:
   annotations: {platform: 'OpenSource'}
 inputs:
