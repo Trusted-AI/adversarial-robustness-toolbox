@@ -92,6 +92,13 @@ class EnsembleClassifier(ClassifierNeuralNetwork, ClassifierGradients, Classifie
             classifier_weights = np.ones(self._nb_classifiers) / self._nb_classifiers
         self._classifier_weights = classifier_weights
 
+        # check for consistent channel_index in ensemble members
+        for i_cls, cls in enumerate(classifiers):
+            if cls.channel_index != self.channel_index:
+                raise ValueError('The channel_index value of classifier {} is {} while this ensemble expects a '
+                                 'channel_index value of {}. The channel_index values of all classifiers and the '
+                                 'ensemble need ot be identical.'.format(i_cls, cls.channel_index, self.channel_index))
+
         self._classifiers = classifiers
         self._learning_phase = None
 
