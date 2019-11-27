@@ -41,7 +41,7 @@ implementation:
     image: aipipeline/robustness-evaluation:pytorch
     command: ['python']
     args: [
-      -u, robustness_check.py,
+      -u, robustness_evaluation_fgsm_pytorch.py,
       --model_id, {inputValue: model_id},
       --model_class_file, {inputValue: model_class_file},
       --model_class_name, {inputValue: model_class_name},
