@@ -86,7 +86,7 @@ if __name__ == "__main__":
     object_storage_username = get_secret('/app/secrets/s3_access_key_id', 'minio')
     object_storage_password = get_secret('/app/secrets/s3_secret_access_key', 'minio123')
 
-    metrics = robustness_check(object_storage_url, object_storage_username, object_storage_password,
+    metrics = robustness_evaluation(object_storage_url, object_storage_username, object_storage_password,
                                data_bucket_name, result_bucket_name, model_id,
                                feature_testset_path=feature_testset_path,
                                label_testset_path=label_testset_path,
