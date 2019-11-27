@@ -14,28 +14,29 @@ Each task usually includes two parts:
 Each component has a component.yaml which will describe the functionality exposed by it, for e.g.
 
 ```
-name: 'PyTorch - Fast Gradient Sign Method - Adversarial Robustness Evaluation'
+name: 'Adversarial Robustness Evaluation'
 description: |
   Perform an evaluation of the adversarial robustness using the Fast Gradient Sign Method of the Adversarial Robustness Toolbox (ART).
 metadata:
   annotations: {platform: 'OpenSource'}
 inputs:
-  - {name: model_id,                     description: 'Required. Training model ID', default: 'training-dummy'}
-  - {name: epsilon,                      description: 'Required. Epsilon value for the FGSM attack'}
-  - {name: model_class_file,             description: 'Required. pytorch model class file'}
-  - {name: model_class_name,             description: 'Required. pytorch model class name', default: 'model'}
-  - {name: feature_testset_path,         description: 'Required. Feature test dataset path in the data bucket'}
-  - {name: label_testset_path,           description: 'Required. Label test dataset path in the data bucket'}
-  - {name: loss_fn,                      description: 'Required. PyTorch model loss function'}
-  - {name: optimizer,                    description: 'Required. pytorch model optimizer'}
-  - {name: clip_values,                  description: 'Required. pytorch model clip_values allowed for features (min, max)'}
-  - {name: nb_classes,                   description: 'Required. The number of classes of the model'}
-  - {name: input_shape,                  description: 'Required. The shape of one input instance for the pytorch model'}
-  - {name: data_bucket_name,             description: 'Bucket that has the processed data',  default: 'training-data'}
-  - {name: result_bucket_name,           description: 'Bucket that has the training results', default: 'training-result'}
+  - {name: model_id,                       description: 'Required. Training model ID', default: 'training-dummy'}
+  - {name: epsilon,                        description: 'Required. Epsilon value for the FGSM attack', default: '0.2'}
+  - {name: model_class_file,               description: 'Required. pytorch model class file'}
+  - {name: model_class_name,               description: 'Required. pytorch model class name', default: 'model'}
+  - {name: feature_testset_path,           description: 'Required. Feature test dataset path in the data bucket'}
+  - {name: label_testset_path,             description: 'Required. Label test dataset path in the data bucket'}
+  - {name: loss_fn,                        description: 'Required. PyTorch model loss function'}
+  - {name: optimizer,                      description: 'Required. PyTorch model optimizer'}
+  - {name: clip_values,                    description: 'Required. PyTorch model clip_values allowed for features (min, max)'}
+  - {name: nb_classes,                     description: 'Required. The number of classes of the model'}
+  - {name: input_shape,                    description: 'Required. The shape of one input instance for the pytorch model'}
+  - {name: data_bucket_name,               description: 'Bucket that has the processed data',  default: 'training-data'}
+  - {name: result_bucket_name,             description: 'Bucket that has the training results', default: 'training-result'}
+  - {name: adversarial_accuracy_threshold, description: 'Model accuracy threshold on adversarial samples', default: '0.2'}
 outputs:
-  - {name: metric_path,                  description: 'Path for robustness check output'}
-  - {name: robust_status,                description: 'Path for robustness status output'}
+  - {name: metric_path,                    description: 'Path for robustness check output'}
+  - {name: robust_status,                  description: 'Path for robustness status output'}
 implementation:
   container:
     image: aipipeline/robustness-evaluation:pytorch
@@ -56,7 +57,8 @@ implementation:
       --metric_path, {outputPath: metric_path},
       --robust_status, {outputPath: robust_status},
       --data_bucket_name, {inputValue: data_bucket_name},
-      --result_bucket_name, {inputValue: result_bucket_name}
+      --result_bucket_name, {inputValue: result_bucket_name},
+      --adversarial_accuracy_threshold, {inputValue: adversarial_accuracy_threshold}
     ]
 ```
 

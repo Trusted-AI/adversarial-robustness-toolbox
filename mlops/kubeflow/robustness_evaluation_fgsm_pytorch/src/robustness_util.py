@@ -16,6 +16,13 @@
 # TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 # SOFTWARE.
 
+import numpy as np
+import numpy.linalg as la
+
+import torch
+import torch.utils.data
+from torch.autograd import Variable
+
 def get_metrics(model, x_original, x_adv_samples, y):
     model_accuracy_on_non_adversarial_samples, y_pred = evaluate(model, x_original, y)
     model_accuracy_on_adversarial_samples, y_pred_adv = evaluate(model, x_adv_samples, y)

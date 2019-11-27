@@ -28,8 +28,8 @@ inputs:
   - {name: feature_testset_path,           description: 'Required. Feature test dataset path in the data bucket'}
   - {name: label_testset_path,             description: 'Required. Label test dataset path in the data bucket'}
   - {name: loss_fn,                        description: 'Required. PyTorch model loss function'}
-  - {name: optimizer,                      description: 'Required. pytorch model optimizer'}
-  - {name: clip_values,                    description: 'Required. pytorch model clip_values allowed for features (min, max)'}
+  - {name: optimizer,                      description: 'Required. PyTorch model optimizer'}
+  - {name: clip_values,                    description: 'Required. PyTorch model clip_values allowed for features (min, max)'}
   - {name: nb_classes,                     description: 'Required. The number of classes of the model'}
   - {name: input_shape,                    description: 'Required. The shape of one input instance for the pytorch model'}
   - {name: data_bucket_name,               description: 'Bucket that has the processed data',  default: 'training-data'}
