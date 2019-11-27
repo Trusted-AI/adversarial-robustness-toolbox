@@ -15,7 +15,7 @@
 # AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT,
 # TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 # SOFTWARE.
-name: 'Model Robustness Check'
+name: 'Adversarial Robustness Evaluation'
 description: |
   Perform a robustness check using fast gradient attack with ART to make sure the model is robust against simple gradient changes.
 metadata:
