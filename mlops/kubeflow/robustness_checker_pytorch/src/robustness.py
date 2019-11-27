@@ -104,7 +104,7 @@ def get_confidence_metric(y_pred, y_pred_adv):
     return np.mean((y_classconf[idxs] - y_adv_classconf[idxs]) / y_classconf[idxs])
 
 
-def robustness_check(object_storage_url, object_storage_username, object_storage_password,
+def robustness_evaluation(object_storage_url, object_storage_username, object_storage_password,
                      data_bucket_name, result_bucket_name, model_id,
                      feature_testset_path='processed_data/X_test.npy',
                      label_testset_path='processed_data/y_test.npy',
