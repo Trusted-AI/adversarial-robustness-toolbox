@@ -7,4 +7,4 @@ COPY src $APP_HOME
 WORKDIR $APP_HOME
 
 ENTRYPOINT ["python"]
-CMD ["robustness_check.py"]
+CMD ["robustness_evaluation_fgsm_pytorch.py"]
