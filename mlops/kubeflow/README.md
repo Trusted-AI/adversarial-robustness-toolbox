@@ -38,7 +38,7 @@ outputs:
   - {name: robust_status,                description: 'Path for robustness status output'}
 implementation:
   container:
-    image: aipipeline/robustness-checker:pytorch
+    image: aipipeline/robustness-evaluation:pytorch
     command: ['python']
     args: [
       -u, robustness_check.py,
