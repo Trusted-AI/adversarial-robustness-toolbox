@@ -64,6 +64,8 @@ if __name__ == "__main__":
                         help='Bucket that has the processed data', default="training-data")
     parser.add_argument('--result_bucket_name', type=str,
                         help='Bucket that has the training results', default="training-result")
+    parser.add_argument('--adversarial_accuracy_threshold', type=float,
+                        help='Model accuracy threshold on adversarial samples', default=0.2)
     args = parser.parse_args()
 
     epsilon = args.epsilon
@@ -81,6 +83,7 @@ if __name__ == "__main__":
     result_bucket_name = args.result_bucket_name
     clip_values = eval(args.clip_values)
     input_shape = eval(args.input_shape)
+    adversarial_accuracy_threshold = args.adversarial_accuracy_threshold
 
     object_storage_url = get_secret('/app/secrets/s3_url', 'minio-service:9000')
     object_storage_username = get_secret('/app/secrets/s3_access_key_id', 'minio')
@@ -105,7 +108,7 @@ if __name__ == "__main__":
         report.write(json.dumps(metrics))
 
     robust = "true"
-    if metrics['model accuracy on adversarial samples'] < 0.2:
+    if metrics['model accuracy on adversarial samples'] < adversarial_accuracy_threshold:
         robust = "false"
 
     if not os.path.exists(os.path.dirname(robust_status)):
