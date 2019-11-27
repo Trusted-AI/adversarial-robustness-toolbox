@@ -14,7 +14,7 @@ Each task usually includes two parts:
 Each component has a component.yaml which will describe the functionality exposed by it, for e.g.
 
 ```
-name: 'PyTorch - Model Robustness Check'
+name: 'PyTorch - Fast Gradient Sign Method - Adversarial Robustness Evaluation'
 description: |
   Perform a robustness check using fast gradient attack with ART to make sure the model is robust against simple gradient changes.
 metadata:
