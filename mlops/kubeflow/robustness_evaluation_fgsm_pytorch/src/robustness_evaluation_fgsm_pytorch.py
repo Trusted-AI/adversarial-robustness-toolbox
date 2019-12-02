@@ -30,8 +30,6 @@ def get_secret(path, default=''):
         return cred
     except Exception:
         return default
-    except:
-        pass
 
 
 if __name__ == "__main__":
