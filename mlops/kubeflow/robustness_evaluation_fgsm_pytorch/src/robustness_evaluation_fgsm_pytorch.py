@@ -28,8 +28,10 @@ def get_secret(path, default=''):
             cred = f.readline().strip('\'')
         f.close()
         return cred
-    except:
+    except Exception:
         return default
+    except:
+        pass
 
 
 if __name__ == "__main__":
@@ -90,17 +92,17 @@ if __name__ == "__main__":
     object_storage_password = get_secret('/app/secrets/s3_secret_access_key', 'minio123')
 
     metrics = robustness_evaluation(object_storage_url, object_storage_username, object_storage_password,
-                               data_bucket_name, result_bucket_name, model_id,
-                               feature_testset_path=feature_testset_path,
-                               label_testset_path=label_testset_path,
-                               clip_values=clip_values,
-                               nb_classes=nb_classes,
-                               input_shape=input_shape,
-                               model_class_file=model_class_file,
-                               model_class_name=model_class_name,
-                               LossFn=LossFn,
-                               Optimizer=Optimizer,
-                               epsilon=epsilon)
+                                    data_bucket_name, result_bucket_name, model_id,
+                                    feature_testset_path=feature_testset_path,
+                                    label_testset_path=label_testset_path,
+                                    clip_values=clip_values,
+                                    nb_classes=nb_classes,
+                                    input_shape=input_shape,
+                                    model_class_file=model_class_file,
+                                    model_class_name=model_class_name,
+                                    LossFn=LossFn,
+                                    Optimizer=Optimizer,
+                                    epsilon=epsilon)
 
     if not os.path.exists(os.path.dirname(metric_path)):
         os.makedirs(os.path.dirname(metric_path))
