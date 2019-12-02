@@ -17,7 +17,10 @@
 # SOFTWARE.
 name: 'Adversarial Robustness Evaluation'
 description: |
-  Perform an evaluation of the adversarial robustness using the Fast Gradient Sign Method of the Adversarial Robustness Toolbox (ART).
+  Evaluate the adversarial robustness using the Fast Gradient Sign Method of the Adversarial Robustness Toolbox (ART).
+  This is a simple demonstration of how to create evaluations using adversarial methods, and generally it is not recommended
+  to evaluate adversarial robustness solely using the Fast Gradient Sign Method. To create a thorough robustness assessment,
+  please refer to https://arxiv.org/abs/1902.06705 which provides widely accepted guidelines on different combinations of attacks.
 metadata:
   annotations: {platform: 'OpenSource'}
 inputs:
