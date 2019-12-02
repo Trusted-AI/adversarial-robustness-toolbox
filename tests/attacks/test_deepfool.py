@@ -206,7 +206,6 @@ class TestDeepFool(unittest.TestCase):
             _ = DeepFool(classifier=classifier)
 
         self.assertIn('For `DeepFool` classifier must be an instance of '
-                      '`art.classifiers.classifier.ClassifierNeuralNetwork` and '
                       '`art.classifiers.classifier.ClassifierGradients`, the provided classifier is instance of '
                       '(<class \'art.classifiers.scikitlearn.ScikitlearnClassifier\'>,).', str(context.exception))
 
