@@ -84,17 +84,24 @@ class CopycatCNN(Attack):
 
 
 
+
+
     def set_params(self, **kwargs):
         """
         Take in a dictionary of parameters and applies attack-specific checks before saving them as attributes.
 
         :param nb_epochs: Number of epochs to use for training.
         :type nb_epochs: `int`
+        :param nb_stolen: Number of examples to be stolen.
+        :type nb_stolen: `int`
         """
         # Save attack-specific parameters
         super(CopycatCNN, self).set_params(**kwargs)
 
         if not isinstance(self.nb_epochs, (int, np.int)) or self.nb_epochs <= 0:
             raise ValueError("The number of epochs must be a positive integer.")
+
+        if not isinstance(self.nb_stolen, (int, np.int)) or self.nb_stolen <= 0:
+            raise ValueError("The number of examples to be stolen must be a positive integer.")
 
         return True
