@@ -119,9 +119,9 @@ class HighConfidenceLowUncertainty(Attack):
         super(HighConfidenceLowUncertainty, self).set_params(**kwargs)
         if self.conf <= 0.5 or self.conf > 1.0:
             raise ValueError(
-                "Confidence value has to bea value between 0.5 and 1.0.")
-        if self.unc_increase < 0.0:
+                "Confidence value has to be a value between 0.5 and 1.0.")
+        if self.unc_increase <= 0.0:
             raise ValueError(
-                "Uncertainty increase value has to be a positive number.")
+                "Value by which we allow to increase uncertainty has to be a positive number.")
         if self.min_val > self.max_val:
             raise ValueError("Maximum has to be larger than minimum.")
