@@ -39,9 +39,9 @@ class CopycatCNN(Attack):
 
     | Paper link: https://arxiv.org/abs/1806.05476
     """
-    attack_params = Attack.attack_params + ['batch_size', 'nb_epochs']
+    attack_params = Attack.attack_params + ['batch_size', 'nb_epochs', 'nb_stolen']
 
-    def __init__(self, classifier, batch_size=1, nb_epochs=10):
+    def __init__(self, classifier, batch_size=1, nb_epochs=10, nb_stolen=1):
         """
         Create a copycat cnn attack instance.
 
@@ -51,27 +51,38 @@ class CopycatCNN(Attack):
         :type batch_size: `int`
         :param nb_epochs: Number of epochs to use for training.
         :type nb_epochs: `int`
+        :param nb_stolen: Number of examples to be stolen.
+        :type nb_stolen: `int`
         """
         super(CopycatCNN, self).__init__(classifier=classifier)
 
         params = {'batch_size': batch_size,
-                  'nb_epochs': nb_epochs}
+                  'nb_epochs': nb_epochs,
+                  'nb_stolen': nb_stolen}
         self.set_params(**params)
 
     def generate(self, x, y=None, **kwargs):
         """
         Generate a thieved classifier.
 
-        :param x: An array with the original inputs to be attacked
+        :param x: An array with the source input to the victim classifier.
         :type x: `np.ndarray`
         :param y: Target values (class labels) one-hot-encoded of shape (nb_samples, nb_classes) or indices of shape
-                  (nb_samples,). If `self.targeted` is true, then `y` represents the target labels
+                  (nb_samples,). Not used in this attack.
         :type y: `np.ndarray` or `None`
-        :param x_adv_init: Initial array to act as initial adversarial examples. Same shape as `x`
-        :type x_adv_init: `np.ndarray`
-        :return: An array holding the adversarial examples
-        :rtype: `np.ndarray`
+        :param thieved_classifier: A thieved classifier to be stolen.
+        :type thieved_classifier: :class:`.Classifier`
+
+        :return: The stolen classifier.
+        :rtype: :class:`.Classifier`
         """
+        # Warning to users if y is not None
+        if y is not None:
+            logger.warning("This attack does not use the provided label y.")
+
+        # Select data to
+
+
 
     def set_params(self, **kwargs):
         """
