@@ -62,14 +62,14 @@ class CopycatCNN(Attack):
         """
         Generate a thieved classifier.
 
-        :param x: An array with the original inputs to be attacked.
+        :param x: An array with the original inputs to be attacked
         :type x: `np.ndarray`
         :param y: Target values (class labels) one-hot-encoded of shape (nb_samples, nb_classes) or indices of shape
-                  (nb_samples,). If `self.targeted` is true, then `y` represents the target labels.
+                  (nb_samples,). If `self.targeted` is true, then `y` represents the target labels
         :type y: `np.ndarray` or `None`
-        :param x_adv_init: Initial array to act as initial adversarial examples. Same shape as `x`.
+        :param x_adv_init: Initial array to act as initial adversarial examples. Same shape as `x`
         :type x_adv_init: `np.ndarray`
-        :return: An array holding the adversarial examples.
+        :return: An array holding the adversarial examples
         :rtype: `np.ndarray`
         """
 
@@ -77,45 +77,13 @@ class CopycatCNN(Attack):
         """
         Take in a dictionary of parameters and applies attack-specific checks before saving them as attributes.
 
-        :param targeted: Should the attack target one specific class.
-        :type targeted: `bool`
-        :param delta: Initial step size for the orthogonal step.
-        :type delta: `float`
-        :param epsilon: Initial step size for the step towards the target.
-        :type epsilon: `float`
-        :param step_adapt: Factor by which the step sizes are multiplied or divided, must be in the range (0, 1).
-        :type step_adapt: `float`
-        :param max_iter: Maximum number of iterations.
-        :type max_iter: `int`
-        :param num_trial: Maximum number of trials per iteration.
-        :type num_trial: `int`
-        :param sample_size: Number of samples per trial.
-        :type sample_size: `int`
-        :param init_size: Maximum number of trials for initial generation of adversarial examples.
-        :type init_size: `int`
+        :param nb_epochs: Number of epochs to use for training.
+        :type nb_epochs: `int`
         """
         # Save attack-specific parameters
-        super(BoundaryAttack, self).set_params(**kwargs)
+        super(CopycatCNN, self).set_params(**kwargs)
 
-        if not isinstance(self.max_iter, (int, np.int)) or self.max_iter < 0:
-            raise ValueError("The number of iterations must be a non-negative integer.")
-
-        if not isinstance(self.num_trial, (int, np.int)) or self.num_trial < 0:
-            raise ValueError("The number of trials must be a non-negative integer.")
-
-        if not isinstance(self.sample_size, (int, np.int)) or self.sample_size <= 0:
-            raise ValueError("The number of samples must be a positive integer.")
-
-        if not isinstance(self.init_size, (int, np.int)) or self.init_size <= 0:
-            raise ValueError("The number of initial trials must be a positive integer.")
-
-        if self.epsilon <= 0:
-            raise ValueError("The initial step size for the step towards the target must be positive.")
-
-        if self.delta <= 0:
-            raise ValueError("The initial step size for the orthogonal step must be positive.")
-
-        if self.step_adapt <= 0 or self.step_adapt >= 1:
-            raise ValueError("The adaptation factor must be in the range (0, 1).")
+        if not isinstance(self.nb_epochs, (int, np.int)) or self.nb_epochs <= 0:
+            raise ValueError("The number of epochs must be a positive integer.")
 
         return True
