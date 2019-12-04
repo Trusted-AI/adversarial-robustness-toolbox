@@ -100,6 +100,19 @@ class CopycatCNN(Attack):
 
         return thieved_classifier
 
+    def _select_data(self, x):
+        """
+        Select data to attack.
+
+        :param x: An array with the source input to the victim classifier.
+        :type x: `np.ndarray`
+        :return: An array with the selected input to the victim classifier.
+        :rtype: `np.ndarray`
+        """
+        nb_stolen = np.minimum(self.nb_stolen, x.shape[0])
+        rnd_index = np.random.choice(x.shape[0], nb_stolen, replace=False)
+
+        return x[rnd_index]
 
 
 
