@@ -96,7 +96,7 @@ class CopycatCNN(Attack):
         fake_labels = self._query_label(selected_x)
 
         # Train the thieved classifier
-        thieved_classifier.fit(x=selected_x, y=fake_labels)
+        thieved_classifier.fit(x=selected_x, y=fake_labels, batch_size=self.batch_size, nb_epochs=self.nb_epochs)
 
         return thieved_classifier
 
@@ -123,7 +123,7 @@ class CopycatCNN(Attack):
         :return: Target values (class labels) one-hot-encoded of shape (nb_samples, nb_classes).
         :rtype: `np.ndarray`
         """
-        labels = self.classifier.predict(x=x)
+        labels = self.classifier.predict(x=x, batch_size=self.batch_size)
         labels = np.argmax(labels, axis=1)
         labels = to_categorical(labels=labels, nb_classes=self.classifier.nb_classes())
 
