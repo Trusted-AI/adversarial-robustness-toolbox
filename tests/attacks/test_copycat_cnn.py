@@ -21,6 +21,7 @@ import logging
 import unittest
 
 import tensorflow as tf
+import numpy as np
 
 from art.attacks.extraction.copycat_cnn import CopycatCNN
 from art.classifiers import TensorFlowClassifier
@@ -30,8 +31,9 @@ from art.utils_test import get_classifier_tf
 logger = logging.getLogger(__name__)
 
 BATCH_SIZE = 100
-NB_TRAIN = 10
-NB_TEST = 10
+NB_TRAIN = 1000
+NB_EPOCHS = 10
+NB_STOLEN = 1000
 
 
 class TestCopycatCNN(unittest.TestCase):
@@ -41,12 +43,10 @@ class TestCopycatCNN(unittest.TestCase):
 
     @classmethod
     def setUpClass(cls):
-        (x_train, y_train), (x_test, y_test), _, _ = load_dataset('mnist')
+        (x_train, y_train), (_, _), _, _ = load_dataset('mnist')
 
         cls.x_train = x_train[:NB_TRAIN]
         cls.y_train = y_train[:NB_TRAIN]
-        cls.x_test = x_test[:NB_TEST]
-        cls.y_test = y_test[:NB_TEST]
 
     def setUp(self):
         master_seed(1234)
@@ -73,18 +73,25 @@ class TestCopycatCNN(unittest.TestCase):
 
         # Train operator
         loss = tf.reduce_mean(tf.losses.softmax_cross_entropy(logits=logits, onehot_labels=output_ph))
-        optimizer = tf.train.AdamOptimizer(learning_rate=0.01)
+        optimizer = tf.train.AdamOptimizer(learning_rate=0.001)
         train = optimizer.minimize(loss)
+
+        # TensorFlow session and initialization
+        sess.run(tf.global_variables_initializer())
 
         # Create the classifier
         thieved_tfc = TensorFlowClassifier(clip_values=(0, 1), input_ph=input_ph, output=logits, labels_ph=output_ph,
                                            train=train, loss=loss, learning=None, sess=sess)
 
         # Create attack
-        copycat_cnn = CopycatCNN(classifier=victim_tfc, batch_size=10, nb_epochs=10, nb_stolen=100)
+        copycat_cnn = CopycatCNN(classifier=victim_tfc, batch_size=BATCH_SIZE, nb_epochs=NB_EPOCHS, nb_stolen=NB_STOLEN)
         thieved_tfc = copycat_cnn.generate(x=self.x_train, thieved_classifier=thieved_tfc)
 
+        victim_preds = np.argmax(victim_tfc.predict(x=self.x_train[:100]), axis=1)
+        thieved_preds = np.argmax(thieved_tfc.predict(x=self.x_train[:100]), axis=1)
+        acc = np.sum(victim_preds == thieved_preds) / len(victim_preds)
 
+        self.assertGreater(acc, 0.5)
 
         # Clean-up session
         sess.close()
