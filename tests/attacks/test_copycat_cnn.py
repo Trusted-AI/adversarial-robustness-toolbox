@@ -22,7 +22,10 @@ import unittest
 
 import tensorflow as tf
 
+from art.attacks.extraction.copycat_cnn import CopycatCNN
+from art.classifiers import TensorFlowClassifier
 from art.utils import load_dataset, random_targets, master_seed
+from art.utils_test import get_classifier_tf
 
 logger = logging.getLogger(__name__)
 
@@ -53,41 +56,75 @@ class TestCopycatCNN(unittest.TestCase):
         First test with the TensorFlowClassifier.
         :return:
         """
+        # Build TensorFlowClassifiers
+        victim_tfc, sess = get_classifier_tf()
 
-    @unittest.skipIf(tf.__version__[0] == '2', reason='Skip unittests for Tensorflow v2 until Keras supports Tensorflow'
-                                                      ' v2 as backend.')
-    def test_krclassifier(self):
-        """
-        Second test with the KerasClassifier.
-        :return:
-        """
+        # Define input and output placeholders
+        input_ph = tf.placeholder(tf.float32, shape=[None, 28, 28, 1])
+        output_ph = tf.placeholder(tf.int32, shape=[None, 10])
 
-    def test_ptclassifier(self):
-        """
-        Third test with the PyTorchClassifier.
-        :return:
-        """
+        # Define the tensorflow graph
+        conv = tf.layers.conv2d(input_ph, 1, 7, activation=tf.nn.relu)
+        conv = tf.layers.max_pooling2d(conv, 4, 4)
+        flattened = tf.layers.flatten(conv)
+
+        # Logits layer
+        logits = tf.layers.dense(flattened, 10)
+
+        # Train operator
+        loss = tf.reduce_mean(tf.losses.softmax_cross_entropy(logits=logits, onehot_labels=output_ph))
+        optimizer = tf.train.AdamOptimizer(learning_rate=0.01)
+        train = optimizer.minimize(loss)
+
+        # Create the classifier
+        thieved_tfc = TensorFlowClassifier(clip_values=(0, 1), input_ph=input_ph, output=logits, labels_ph=output_ph,
+                                           train=train, loss=loss, learning=None, sess=sess)
+
+        # Create attack
+        copycat_cnn = CopycatCNN(classifier=victim_tfc, batch_size=10, nb_epochs=10, nb_stolen=100)
+        thieved_tfc = copycat_cnn.generate(x=self.x_train, thieved_classifier=thieved_tfc)
 
 
 
-class TestCarliniL2Vectors(unittest.TestCase):
-    @classmethod
-    def setUpClass(cls):
-        (x_train, y_train), (x_test, y_test), _, _ = load_dataset('iris')
+        # Clean-up session
+        sess.close()
 
-        cls.x_train = x_train
-        cls.y_train = y_train
-        cls.x_test = x_test
-        cls.y_test = y_test
 
-    def setUp(self):
-        master_seed(1234)
 
-    def test_iris_tf(self):
-
-    def test_iris_pt(self):
-
-    def test_scikitlearn(self):
+#     @unittest.skipIf(tf.__version__[0] == '2', reason='Skip unittests for Tensorflow v2 until Keras supports Tensorflow'
+#                                                       ' v2 as backend.')
+#     def test_krclassifier(self):
+#         """
+#         Second test with the KerasClassifier.
+#         :return:
+#         """
+#
+#     def test_ptclassifier(self):
+#         """
+#         Third test with the PyTorchClassifier.
+#         :return:
+#         """
+#
+#
+#
+# class TestCarliniL2Vectors(unittest.TestCase):
+#     @classmethod
+#     def setUpClass(cls):
+#         (x_train, y_train), (x_test, y_test), _, _ = load_dataset('iris')
+#
+#         cls.x_train = x_train
+#         cls.y_train = y_train
+#         cls.x_test = x_test
+#         cls.y_test = y_test
+#
+#     def setUp(self):
+#         master_seed(1234)
+#
+#     def test_iris_tf(self):
+#
+#     def test_iris_pt(self):
+#
+#     def test_scikitlearn(self):
 
 
 if __name__ == '__main__':
