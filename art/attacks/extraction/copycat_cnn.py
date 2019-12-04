@@ -28,6 +28,7 @@ import numpy as np
 
 from art import NUMPY_DTYPE
 from art.attacks.attack import Attack
+from art.classifiers.classifier import Classifier
 
 
 logger = logging.getLogger(__name__)
@@ -72,7 +73,6 @@ class CopycatCNN(Attack):
         :type y: `np.ndarray` or `None`
         :param thieved_classifier: A thieved classifier to be stolen.
         :type thieved_classifier: :class:`.Classifier`
-
         :return: The stolen classifier.
         :rtype: :class:`.Classifier`
         """
@@ -80,7 +80,28 @@ class CopycatCNN(Attack):
         if y is not None:
             logger.warning("This attack does not use the provided label y.")
 
-        # Select data to
+        # Check the size of the source input vs nb_stolen
+        if x.shape[0] < self.nb_stolen:
+            logger.warning("The size of the source input is smaller than the number of expected stolen examples.")
+
+        # Check if there is a thieved classifier provided for training
+        thieved_classifier = kwargs.get('thieved_classifier')
+        if thieved_classifier is None or not isinstance(thieved_classifier, Classifier):
+            raise ValueError('A thieved classifier is needed.')
+
+        # Select data to attack
+        selected_x = self._select_data(x)
+
+        # Query the victim classifier
+        fake_labels = self._query_label(selected_x)
+
+        # Train the thieved classifier
+        thieved_classifier.fit(x=selected_x, y=fake_labels)
+
+        return thieved_classifier
+
+
+
 
 
 
