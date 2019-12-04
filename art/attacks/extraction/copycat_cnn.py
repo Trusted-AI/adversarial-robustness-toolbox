@@ -26,9 +26,9 @@ import logging
 
 import numpy as np
 
-from art import NUMPY_DTYPE
 from art.attacks.attack import Attack
 from art.classifiers.classifier import Classifier
+from art.utils import to_categorical
 
 
 logger = logging.getLogger(__name__)
@@ -114,11 +114,20 @@ class CopycatCNN(Attack):
 
         return x[rnd_index]
 
+    def _query_label(self, x):
+        """
+        Query the victim classifier.
 
+        :param x: An array with the source input to the victim classifier.
+        :type x: `np.ndarray`
+        :return: Target values (class labels) one-hot-encoded of shape (nb_samples, nb_classes).
+        :rtype: `np.ndarray`
+        """
+        labels = self.classifier.predict(x=x)
+        labels = np.argmax(labels, axis=1)
+        labels = to_categorical(labels=labels, nb_classes=self.classifier.nb_classes())
 
-
-
-
+        return labels
 
     def set_params(self, **kwargs):
         """
