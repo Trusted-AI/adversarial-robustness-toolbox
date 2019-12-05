@@ -21,7 +21,7 @@ vector of hard labels.
 
 | Paper link: https://pdfs.semanticscholar.org/b5ec/486044c6218dd41b17d8bba502b32a12b91a.pdf
 
-| Please keep in mind the limitations of defences.
+| Please keep in mind the limitations of defences. For details on how to evaluate classifier security in general, see https://arxiv.org/abs/1902.06705
 """
 from __future__ import absolute_import, division, print_function, unicode_literals
 
