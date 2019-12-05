@@ -14,27 +14,46 @@
 # AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT,
 # TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 # SOFTWARE.
+"""
+This module implements the Functionally Equivalent Extraction attack.
 
+| Paper link: https://arxiv.org/abs/1909.01838
+"""
 
 import os
+import logging
+
 import numpy as np
 from matplotlib import pyplot as plt
 from scipy.optimize import least_squares
 
 from art.classifiers import KerasClassifier
+
 NUMPY_DTYPE = np.float64
+
+logger = logging.getLogger(__name__)
+
 
 class FunctionallyEquivalentExtraction:
     """
+    This module implements the Functionally Equivalent Extraction attack.
 
     | Paper link: https://arxiv.org/abs/1909.01838
     """
 
-    def __init__(self, classifier, num_classes, num_neurons):
+    def __init__(self, classifier, num_neurons):
+        """
+        Create a `FunctionallyEquivalentExtraction` instance.
+
+        :param classifier: A trained ART classifier.
+        :type classifier: :class:`.Classifier`
+        :param num_neurons: A trained ART classifier.
+        :type num_neurons: :class:`.Classifier`
+        """
         self.classifier = classifier
-        self.num_classes = num_classes
         self.num_neurons = num_neurons
-        self.num_features = np.prod(classifier.input_shape)
+        self.num_classes = classifier.nb_classes()
+        self.num_features = int(np.prod(classifier.input_shape))
 
         self.u = np.random.normal(0, 1, (1, self.num_features)).astype(dtype=NUMPY_DTYPE)
         self.v = np.random.normal(0, 1, (1, self.num_features)).astype(dtype=NUMPY_DTYPE)
@@ -42,6 +61,11 @@ class FunctionallyEquivalentExtraction:
         self.critical_points = list()
 
     def extract(self):
+        """
+        Extract the targeted model.
+
+        :return:
+        """
         self._critical_point_search()
         self._weight_recovery()
         self._sign_recovery()
@@ -58,16 +82,18 @@ class FunctionallyEquivalentExtraction:
     def OL_x(self, x):
         return self.classifier.predict(x)[0, :].astype(NUMPY_DTYPE)
 
-    def _critical_point_search(self):
+    def _critical_point_search(self, delta_0=0.05):
+        """
+        Search for critical points.
 
-        h_square = self.num_neurons * self.num_neurons / 5
-        delta_0 = 0.05
+        :return:
+        """
+        h_square = self.num_neurons * self.num_neurons
 
         t = -h_square
         while t < h_square:
 
             delta = delta_0
-
             found_critical_point = False
 
             while not found_critical_point:
@@ -101,9 +127,9 @@ class FunctionallyEquivalentExtraction:
                 m_x_1 = (self.OL(x_mean + epsilon) - self.OL(x_mean)) / epsilon
                 m_x_2 = (self.OL(x_mean) - self.OL(x_mean - epsilon)) / epsilon
 
-                if np.sum(
-                        np.abs((y_hat - y) / y) < 0.000001) > 0.3 * self.num_classes and t_1 < x_mean < t_2 and np.sum(
-                    np.abs((m_x_1 - m_x_2) / m_x_1) > 0.00001) > 0.3 * self.num_classes:
+                if np.sum(np.abs((y_hat - y) / y) < 0.000001) > 0.3 * self.num_classes \
+                        and t_1 < x_mean < t_2 \
+                        and np.sum(np.abs((m_x_1 - m_x_2) / m_x_1) > 0.00001) > 0.3 * self.num_classes:
                     found_critical_point = True
                     self.critical_points.append(x_mean)
                     t = t_2
@@ -113,52 +139,49 @@ class FunctionallyEquivalentExtraction:
 
         print('count:', len(self.critical_points))
 
-    def _weight_recovery(self):
+    def _weight_recovery(self, delta_value=0.1, delta_value_max=50, d2_min=0.0004, d_step=0.01):
+        """
+        Recover the weights and biases of the first layer.
+
+        :return:
+        """
 
         # Absolute Value Recovery
 
         d2_OL_d2ej_xi = np.zeros((self.num_features, self.num_neurons), dtype=NUMPY_DTYPE)
 
         for i in range(self.num_neurons):
-
-            print('i:', i)
-
             for j in range(self.num_features):
 
-                d = 0.1
-
+                d = delta_value
                 e_j = np.zeros((1, self.num_features))
-
                 d2_OL_d2ej_xi_ok = False
 
                 while not d2_OL_d2ej_xi_ok:
 
                     e_j[0, j] = d
 
-                    d_OL_dej_xi_p_cej = (self.OL(self.critical_points[i], e_j=e_j) - self.OL(
-                        self.critical_points[i])) / d
-                    d_OL_dej_xi_m_cej = (self.OL(self.critical_points[i]) - self.OL(self.critical_points[i],
-                                                                                    e_j=-e_j)) / d
+                    d_OL_dej_xi_p_cej = (self.OL(self.critical_points[i], e_j=e_j)
+                                         - self.OL(self.critical_points[i])) / d
+                    d_OL_dej_xi_m_cej = (self.OL(self.critical_points[i])
+                                         - self.OL(self.critical_points[i], e_j=-e_j)) / d
 
                     d2_OL_d2ej_xi[j, i] = np.sum(np.abs(d_OL_dej_xi_p_cej - d_OL_dej_xi_m_cej)) / d
 
-                    if d2_OL_d2ej_xi[j, i] < 4e-4 and d < 50:
-                        d = d + 0.01
+                    if d2_OL_d2ej_xi[j, i] < d2_min and d < delta_value_max:
+                        d = d + d_step
                     else:
                         d2_OL_d2ej_xi_ok = True
 
         self.A0_pairwise_ratios = np.zeros((self.num_features, self.num_neurons), dtype=NUMPY_DTYPE)
 
-        for i in range(0, self.num_neurons):
-            for k in range(0, self.num_features):
+        for i in range(self.num_neurons):
+            for k in range(self.num_features):
                 self.A0_pairwise_ratios[k, i] = d2_OL_d2ej_xi[0, i] / d2_OL_d2ej_xi[k, i]
 
         # Weight Sign Recovery
 
         for i in range(self.num_neurons):
-
-            print('i:', i)
-
             for j in range(self.num_features):
 
                 d_0 = 0.02
@@ -168,10 +191,10 @@ class FunctionallyEquivalentExtraction:
                 e_j[0, 0] += d_0
                 e_j[0, j] += d_0
 
-                d_OL_dejek_xi_p_cejek = (self.OL(self.critical_points[i], e_j=e_j) - self.OL(
-                    self.critical_points[i])) / d_0
-                d_OL_dejek_xi_m_cejek = (self.OL(self.critical_points[i]) - self.OL(self.critical_points[i],
-                                                                                    e_j=-e_j)) / d_0
+                d_OL_dejek_xi_p_cejek = (self.OL(self.critical_points[i], e_j=e_j)
+                                         - self.OL(self.critical_points[i])) / d_0
+                d_OL_dejek_xi_m_cejek = (self.OL(self.critical_points[i])
+                                         - self.OL(self.critical_points[i], e_j=-e_j)) / d_0
 
                 d2_OL_dejek_xi = (d_OL_dejek_xi_p_cejek - d_OL_dejek_xi_m_cejek)
 
@@ -185,6 +208,11 @@ class FunctionallyEquivalentExtraction:
                     self.A0_pairwise_ratios[j, i] *= -1
 
     def _sign_recovery(self):
+        """
+        Recover the sign of weights in the first layer.
+
+        :return:
+        """
 
         A0_pairwise_ratios = 1.0 / self.A0_pairwise_ratios
 
@@ -213,10 +241,10 @@ class FunctionallyEquivalentExtraction:
 
             result_v_i = least_squares(f_v, v_0)
 
-            value_p = np.sum(np.abs(self.OL_x(np.expand_dims(result_z.x, axis=0)) - (
-                self.OL_x(np.expand_dims(result_z.x + result_v_i.x, axis=0)))))
-            value_m = np.sum(np.abs(self.OL_x(np.expand_dims(result_z.x, axis=0)) - (
-                self.OL_x(np.expand_dims(result_z.x - result_v_i.x, axis=0)))))
+            value_p = np.sum(np.abs(self.OL_x(np.expand_dims(result_z.x, axis=0))
+                                    - (self.OL_x(np.expand_dims(result_z.x + result_v_i.x, axis=0)))))
+            value_m = np.sum(np.abs(self.OL_x(np.expand_dims(result_z.x, axis=0))
+                                    - (self.OL_x(np.expand_dims(result_z.x - result_v_i.x, axis=0)))))
 
             if value_m < value_p:
                 A0_pairwise_ratios[:, i] *= -1
@@ -224,6 +252,11 @@ class FunctionallyEquivalentExtraction:
         self.A0_pairwise_ratios = A0_pairwise_ratios
 
     def _last_layer_extraction(self):
+        """
+        Extract weights and biases of the second layer.
+
+        :return:
+        """
 
         predictions = np.zeros((self.num_neurons, self.num_classes)).astype(dtype=NUMPY_DTYPE)
         x_h = np.zeros((self.num_neurons, self.num_features)).astype(dtype=NUMPY_DTYPE)
@@ -265,6 +298,7 @@ class FunctionallyEquivalentExtraction:
 
 if __name__ == '__main__':
     import tensorflow as tf
+
     tf.compat.v1.disable_eager_execution()
     np.random.seed(0)
 
@@ -275,5 +309,5 @@ if __name__ == '__main__':
 
     classifier = KerasClassifier(model=model, use_logits=True, clip_values=(0, 1))
 
-    fee = FunctionallyEquivalentExtraction(classifier=classifier, num_classes=10, num_neurons=16)
+    fee = FunctionallyEquivalentExtraction(classifier=classifier, num_neurons=16)
     fee.extract()
