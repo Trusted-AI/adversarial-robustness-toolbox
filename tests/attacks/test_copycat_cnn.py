@@ -30,15 +30,27 @@ from keras.layers import Dense, Flatten, Conv2D, MaxPooling2D
 from art.attacks.extraction.copycat_cnn import CopycatCNN
 from art.classifiers import TensorFlowClassifier
 from art.classifiers import KerasClassifier
+from art.classifiers import PyTorchClassifier
 from art.utils import load_dataset, random_targets, master_seed
 from art.utils_test import get_classifier_tf
 from art.utils_test import get_classifier_kr
+from art.utils_test import get_classifier_pt
+from art import NUMPY_DTYPE
 
 logger = logging.getLogger(__name__)
 
+try:
+    # Conditional import of `torch` to avoid segmentation fault errors this framework generates at import
+    import torch
+    import torch.nn as nn
+    import torch.optim as optim
+except ImportError:
+    logger.info('Could not import PyTorch in utilities.')
+
+
 BATCH_SIZE = 100
 NB_TRAIN = 1000
-NB_EPOCHS = 10
+NB_EPOCHS = 20
 NB_STOLEN = 1000
 
 
@@ -51,8 +63,8 @@ class TestCopycatCNN(unittest.TestCase):
     def setUpClass(cls):
         (x_train, y_train), (_, _), _, _ = load_dataset('mnist')
 
-        cls.x_train = x_train[:NB_TRAIN]
-        cls.y_train = y_train[:NB_TRAIN]
+        cls.x_train = x_train[:NB_TRAIN].astype(NUMPY_DTYPE)
+        cls.y_train = y_train[:NB_TRAIN].astype(NUMPY_DTYPE)
 
     def setUp(self):
         master_seed(1234)
@@ -137,12 +149,71 @@ class TestCopycatCNN(unittest.TestCase):
         # Clean-up
         k.clear_session()
 
+    def test_ptclassifier(self):
+        """
+        Third test with the PyTorchClassifier.
+        :return:
+        """
+        # Build PyTorchClassifier
+        victim_ptc = get_classifier_pt()
 
-#     def test_ptclassifier(self):
-#         """
-#         Third test with the PyTorchClassifier.
-#         :return:
-#         """
+        class Model(nn.Module):
+            """
+            Create model for pytorch.
+            """
+
+            def __init__(self):
+                super(Model, self).__init__()
+
+                self.conv = nn.Conv2d(in_channels=1, out_channels=1, kernel_size=7)
+                self.pool = nn.MaxPool2d(4, 4)
+                self.fullyconnected = nn.Linear(25, 10)
+
+            # pylint: disable=W0221
+            # disable pylint because of API requirements for function
+            def forward(self, x):
+                """
+                Forward function to evaluate the model
+
+                :param x: Input to the model
+                :return: Prediction of the model
+                """
+                x = self.conv(x)
+                x = torch.nn.functional.relu(x)
+                x = self.pool(x)
+                x = x.reshape(-1, 25)
+                x = self.fullyconnected(x)
+                x = torch.nn.functional.softmax(x)
+
+                return x
+
+        # Define the network
+        model = Model()
+
+        # Define a loss function and optimizer
+        loss_fn = nn.CrossEntropyLoss()
+        optimizer = optim.Adam(model.parameters(), lr=0.01)
+
+        # Get classifier
+        thieved_ptc = PyTorchClassifier(model=model, loss=loss_fn, optimizer=optimizer, input_shape=(1, 28, 28),
+                                        nb_classes=10, clip_values=(0, 1))
+
+        # Create attack
+        copycat_cnn = CopycatCNN(classifier=victim_ptc, batch_size=BATCH_SIZE, nb_epochs=NB_EPOCHS, nb_stolen=NB_STOLEN)
+
+        self.x_train = np.swapaxes(self.x_train, 1, 3)
+        thieved_ptc = copycat_cnn.generate(x=self.x_train, thieved_classifier=thieved_ptc)
+        victim_preds = np.argmax(victim_ptc.predict(x=self.x_train[:100]), axis=1)
+        thieved_preds = np.argmax(thieved_ptc.predict(x=self.x_train[:100]), axis=1)
+        self.x_train = np.swapaxes(self.x_train, 1, 3)
+
+        acc = np.sum(victim_preds == thieved_preds) / len(victim_preds)
+
+        self.assertGreater(0, 0.5)
+
+
+
+
 #
 #
 #
