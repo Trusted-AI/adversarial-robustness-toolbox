@@ -26,6 +26,7 @@ import logging
 
 import numpy as np
 
+from art import NUMPY_DTYPE
 from art.attacks.attack import Attack
 from art.classifiers.classifier import Classifier
 from art.utils import to_categorical
@@ -112,7 +113,7 @@ class CopycatCNN(Attack):
         nb_stolen = np.minimum(self.nb_stolen, x.shape[0])
         rnd_index = np.random.choice(x.shape[0], nb_stolen, replace=False)
 
-        return x[rnd_index]
+        return x[rnd_index].astype(NUMPY_DTYPE)
 
     def _query_label(self, x):
         """
