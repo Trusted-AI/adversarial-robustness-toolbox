@@ -23,3 +23,4 @@ from art.attacks.evasion.zoo import ZooAttack
 
 from art.attacks.poisoning.poisoning_attack_svm import PoisoningAttackSVM
 
+from art.attacks.extraction.functionally_equivalent_extraction import FunctionallyEquivalentExtraction
