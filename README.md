@@ -65,6 +65,9 @@ Get in touch with us on [Slack](https://ibm-art.slack.com) (invite [here](https:
 **Poisoning Attacks:**
 * Poisoning Attack on SVM ([Biggio et al., 2013](https://arxiv.org/abs/1206.6389))
 
+**Extraction Attacks:**
+* Functionally Equivalent Extraction ([Jagielski et al., 2019](https://arxiv.org/abs/1909.01838))
+
 **Defences:**
 * Thermometer encoding ([Buckman et al., 2018](https://openreview.net/forum?id=S18Su--CW))
 * Total variance minimization ([Guo et al., 2018](https://openreview.net/forum?id=SyJ7ClWCb))
