@@ -209,10 +209,7 @@ class TestCopycatCNN(unittest.TestCase):
 
         acc = np.sum(victim_preds == thieved_preds) / len(victim_preds)
 
-        self.assertGreater(0, 0.5)
-
-
-
+        self.assertGreater(acc, 0.5)
 
 #
 #
