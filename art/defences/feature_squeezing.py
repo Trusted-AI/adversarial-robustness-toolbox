@@ -20,7 +20,9 @@ This module implements the feature squeezing defence in `FeatureSqueezing`.
 
 | Paper link: https://arxiv.org/abs/1704.01155
 
-| Please keep in mind the limitations of defences. For more information on the limitations of this defence, see https://arxiv.org/abs/1803.09868 . For details on how to evaluate classifier security in general, see https://arxiv.org/abs/1902.06705
+| Please keep in mind the limitations of defences. For more information on the limitations of this defence, see 
+https://arxiv.org/abs/1803.09868 . For details on how to evaluate classifier security in general, see 
+https://arxiv.org/abs/1902.06705
 """
 from __future__ import absolute_import, division, print_function, unicode_literals
 
@@ -39,7 +41,9 @@ class FeatureSqueezing(Preprocessor):
 
     | Paper link: https://arxiv.org/abs/1704.01155
 
-    | Please keep in mind the limitations of defences. For more information on the limitations of this defence, see https://arxiv.org/abs/1803.09868
+    | Please keep in mind the limitations of defences. For more information on the limitations of this defence, 
+    see https://arxiv.org/abs/1803.09868 . For details on how to evaluate classifier security in general, see 
+    https://arxiv.org/abs/1902.06705
     """
     params = ['clip_values', 'bit_depth']
 
