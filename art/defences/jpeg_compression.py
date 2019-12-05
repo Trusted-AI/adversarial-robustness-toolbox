@@ -20,7 +20,9 @@ This module implements the JPEG compression defence `JpegCompression`.
 
 | Paper link: https://arxiv.org/abs/1705.02900, https://arxiv.org/abs/1608.00853
 
-| Please keep in mind the limitations of defences. For more information on the limitations of this defence, see https://arxiv.org/abs/1802.00420 . For details on how to evaluate classifier security in general, see https://arxiv.org/abs/1902.06705
+| Please keep in mind the limitations of defences. For more information on the limitations of this defence, see 
+https://arxiv.org/abs/1802.00420 . For details on how to evaluate classifier security in general, see 
+https://arxiv.org/abs/1902.06705
 """
 from __future__ import absolute_import, division, print_function, unicode_literals
 
@@ -42,7 +44,9 @@ class JpegCompression(Preprocessor):
     | Paper link: https://arxiv.org/abs/1705.02900, https://arxiv.org/abs/1608.00853
 
 
-    | Please keep in mind the limitations of defences. For more information on the limitations of this defence, see https://arxiv.org/abs/1802.00420
+    | Please keep in mind the limitations of defences. For more information on the limitations of this defence, 
+    see https://arxiv.org/abs/1802.00420 . For details on how to evaluate classifier security in general, see 
+    https://arxiv.org/abs/1902.06705
     """
     params = ['quality', 'channel_index', 'clip_values']
 
