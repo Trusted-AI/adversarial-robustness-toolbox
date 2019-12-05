@@ -43,7 +43,7 @@ class ActivationDefence(PoisonFilteringDefence):
 
     | Paper link: https://arxiv.org/abs/1811.03728
 
-    | Please keep in mind the limitations of defences. For more information on the limitations of this defence, see hhttps://arxiv.org/abs/1905.13409
+    | Please keep in mind the limitations of defences. For more information on the limitations of this defence, see https://arxiv.org/abs/1905.13409
     """
     defence_params = ['nb_clusters', 'clustering_method', 'nb_dims', 'reduce', 'cluster_analysis']
     valid_clustering = ['KMeans']
