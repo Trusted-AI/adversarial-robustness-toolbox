@@ -60,34 +60,67 @@ class FunctionallyEquivalentExtraction:
 
         self.critical_points = list()
 
-    def extract(self):
+        self.w_0 = None  # Weight matrix of first dense layer
+        self.b_0 = None  # Bias vector of first dense layer
+        self.w_1 = None  # weight matrix of second dense layer
+        self.b_1 = None  # Bias vector of second dense layer
+
+    def extract(self, delta_0=0.05, fraction_true=0.3, rel_diff_slope=0.00001, rel_diff_value=0.000001,
+                delta_init_value=0.1, delta_value_max=50, d2_min=0.0004, d_step=0.01, delta_sign=0.02,
+                unit_vector_scale=10000):
         """
         Extract the targeted model.
 
         :return:
         """
-        self._critical_point_search()
-        self._weight_recovery()
-        self._sign_recovery()
+        self._critical_point_search(delta_0=delta_0, fraction_true=fraction_true, rel_diff_slope=rel_diff_slope,
+                                    rel_diff_value=rel_diff_value)
+        self._weight_recovery(delta_init_value=delta_init_value, delta_value_max=delta_value_max, d2_min=d2_min,
+                              d_step=d_step, delta_sign=delta_sign)
+        self._sign_recovery(unit_vector_scale=unit_vector_scale)
         self._last_layer_extraction()
 
-    def OL(self, t_i, e_j=None):
-        x = self.u + t_i * self.v
+    def predict(self, x):
+        """
+        Predict extracted model.
 
+        :return:
+        """
+
+        x_h = np.zeros((self.num_neurons, self.num_features)).astype(dtype=NUMPY_DTYPE)
+
+        for i in range(self.num_neurons):
+            x_h[i, :] = self.critical_points[i]
+
+        x = x_h
+
+        layer_0 = np.maximum(np.matmul(self.w_0.T, x.T) + self.b_0, 0.0)
+        layer_1 = np.matmul(self.w_1.T, layer_0) + self.b_1
+
+        for i in range(self.num_neurons):
+            plt.figure()
+            plt.plot(layer_1[:, i], '-o')
+            plt.plot(self._o_l(self.critical_points[i]))
+
+        plt.show()
+
+        return 0
+
+    def _o_l(self, x, e_j=None):
         if e_j is not None:
             x = x + e_j
-
         return self.classifier.predict(x)[0, :].astype(NUMPY_DTYPE)
 
-    def OL_x(self, x):
-        return self.classifier.predict(x)[0, :].astype(NUMPY_DTYPE)
+    def _get_x(self, t):
+        return self.u + t * self.v
 
-    def _critical_point_search(self, delta_0=0.05):
+    def _critical_point_search(self, delta_0, fraction_true, rel_diff_slope, rel_diff_value):
         """
         Search for critical points.
 
         :return:
         """
+        logger.info('Searching for critical points.')
         h_square = self.num_neurons * self.num_neurons
 
         t = -h_square
@@ -103,153 +136,160 @@ class FunctionallyEquivalentExtraction:
                 t_1 = t
                 t_2 = t + delta
 
-                m_1 = (self.OL(t_1 + epsilon) - self.OL(t_1)) / epsilon
-                m_2 = (self.OL(t_2) - self.OL(t_2 - epsilon)) / epsilon
+                x_1 = self._get_x(t_1)
+                x_1_p = self._get_x(t_1 + epsilon)
+                x_2 = self.u + t_2 * self.v
+                x_2_m = self._get_x(t_2 - epsilon)
 
-                y_1 = self.OL(t_1)
-                y_2 = self.OL(t_2)
+                m_1 = (self._o_l(x_1_p) - self._o_l(x_1)) / epsilon
+                m_2 = (self._o_l(x_2) - self._o_l(x_2_m)) / epsilon
 
-                a = t_1
-                b = t_2
+                y_1 = self._o_l(x_1)
+                y_2 = self._o_l(x_2)
 
-                if np.sum(np.abs((m_1 - m_2) / m_1) < 0.0001) > 0.3 * self.num_classes:
+                if np.sum(np.abs((m_1 - m_2) / m_1) < rel_diff_slope) > fraction_true * self.num_classes:
                     t = t_2
                     break
 
-                x = a + np.divide(y_2 - y_1 - (b - a) * m_2, m_1 - m_2)
+                t_hat = t_1 + np.divide(y_2 - y_1 - (t_2 - t_1) * m_2, m_1 - m_2)
+                y_hat = y_1 + m_1 * np.divide(y_2 - y_1 - (t_2 - t_1) * m_2, m_1 - m_2)
 
-                y_hat = y_1 + m_1 * np.divide(y_2 - y_1 - (b - a) * m_2, m_1 - m_2)
+                t_mean = np.mean(t_hat[t_hat != -np.inf])
 
-                x_mean = np.mean(x[x != -np.inf])
+                x_mean = self._get_x(t_mean)
+                x_mean_p = self._get_x(t_mean + epsilon)
+                x_mean_m = self._get_x(t_mean - epsilon)
 
-                y = self.OL(x_mean)
+                y = self._o_l(x_mean)
 
-                m_x_1 = (self.OL(x_mean + epsilon) - self.OL(x_mean)) / epsilon
-                m_x_2 = (self.OL(x_mean) - self.OL(x_mean - epsilon)) / epsilon
+                m_x_1 = (self._o_l(x_mean_p) - self._o_l(x_mean)) / epsilon
+                m_x_2 = (self._o_l(x_mean) - self._o_l(x_mean_m)) / epsilon
 
-                if np.sum(np.abs((y_hat - y) / y) < 0.000001) > 0.3 * self.num_classes \
-                        and t_1 < x_mean < t_2 \
-                        and np.sum(np.abs((m_x_1 - m_x_2) / m_x_1) > 0.00001) > 0.3 * self.num_classes:
+                if np.sum(np.abs((y_hat - y) / y) < rel_diff_value) > fraction_true * self.num_classes \
+                        and t_1 < t_mean < t_2 \
+                        and np.sum(np.abs((m_x_1 - m_x_2) / m_x_1) > rel_diff_slope) > fraction_true * self.num_classes:
                     found_critical_point = True
                     self.critical_points.append(x_mean)
                     t = t_2
-
                 else:
                     delta = delta / 2
 
-        print('count:', len(self.critical_points))
+        if len(self.critical_points) != self.num_neurons:
+            raise AssertionError('The number of critical points found ({}) does not equal the number of expected'
+                                 'neurons in the first layer ({}).'.format(len(self.critical_points), self.num_neurons))
 
-    def _weight_recovery(self, delta_value=0.1, delta_value_max=50, d2_min=0.0004, d_step=0.01):
+    def _weight_recovery(self, delta_init_value, delta_value_max, d2_min, d_step, delta_sign):
         """
         Recover the weights and biases of the first layer.
 
         :return:
         """
+        logger.info('Recovering weights of first layer.')
 
         # Absolute Value Recovery
 
-        d2_OL_d2ej_xi = np.zeros((self.num_features, self.num_neurons), dtype=NUMPY_DTYPE)
+        d2_ol_d2ej_xi = np.zeros((self.num_features, self.num_neurons), dtype=NUMPY_DTYPE)
 
         for i in range(self.num_neurons):
             for j in range(self.num_features):
 
-                d = delta_value
+                d = delta_init_value
                 e_j = np.zeros((1, self.num_features))
-                d2_OL_d2ej_xi_ok = False
+                d2_ol_d2ej_xi_ok = False
 
-                while not d2_OL_d2ej_xi_ok:
+                while not d2_ol_d2ej_xi_ok:
 
                     e_j[0, j] = d
 
-                    d_OL_dej_xi_p_cej = (self.OL(self.critical_points[i], e_j=e_j)
-                                         - self.OL(self.critical_points[i])) / d
-                    d_OL_dej_xi_m_cej = (self.OL(self.critical_points[i])
-                                         - self.OL(self.critical_points[i], e_j=-e_j)) / d
+                    d_ol_dej_xi_p_cej = (self._o_l(self.critical_points[i], e_j=e_j)
+                                         - self._o_l(self.critical_points[i])) / d
+                    d_ol_dej_xi_m_cej = (self._o_l(self.critical_points[i])
+                                         - self._o_l(self.critical_points[i], e_j=-e_j)) / d
 
-                    d2_OL_d2ej_xi[j, i] = np.sum(np.abs(d_OL_dej_xi_p_cej - d_OL_dej_xi_m_cej)) / d
+                    d2_ol_d2ej_xi[j, i] = np.sum(np.abs(d_ol_dej_xi_p_cej - d_ol_dej_xi_m_cej)) / d
 
-                    if d2_OL_d2ej_xi[j, i] < d2_min and d < delta_value_max:
+                    if d2_ol_d2ej_xi[j, i] < d2_min and d < delta_value_max:
                         d = d + d_step
                     else:
-                        d2_OL_d2ej_xi_ok = True
+                        d2_ol_d2ej_xi_ok = True
 
         self.A0_pairwise_ratios = np.zeros((self.num_features, self.num_neurons), dtype=NUMPY_DTYPE)
 
         for i in range(self.num_neurons):
             for k in range(self.num_features):
-                self.A0_pairwise_ratios[k, i] = d2_OL_d2ej_xi[0, i] / d2_OL_d2ej_xi[k, i]
+                self.A0_pairwise_ratios[k, i] = d2_ol_d2ej_xi[0, i] / d2_ol_d2ej_xi[k, i]
 
         # Weight Sign Recovery
 
         for i in range(self.num_neurons):
+            d2_ol_dejek_xi_0 = None
             for j in range(self.num_features):
-
-                d_0 = 0.02
 
                 e_j = np.zeros((1, self.num_features), dtype=NUMPY_DTYPE)
 
-                e_j[0, 0] += d_0
-                e_j[0, j] += d_0
+                e_j[0, 0] += delta_sign
+                e_j[0, j] += delta_sign
 
-                d_OL_dejek_xi_p_cejek = (self.OL(self.critical_points[i], e_j=e_j)
-                                         - self.OL(self.critical_points[i])) / d_0
-                d_OL_dejek_xi_m_cejek = (self.OL(self.critical_points[i])
-                                         - self.OL(self.critical_points[i], e_j=-e_j)) / d_0
+                d_ol_dejek_xi_p_cejek = (self._o_l(self.critical_points[i], e_j=e_j)
+                                         - self._o_l(self.critical_points[i])) / delta_sign
+                d_ol_dejek_xi_m_cejek = (self._o_l(self.critical_points[i])
+                                         - self._o_l(self.critical_points[i], e_j=-e_j)) / delta_sign
 
-                d2_OL_dejek_xi = (d_OL_dejek_xi_p_cejek - d_OL_dejek_xi_m_cejek)
+                d2_ol_dejek_xi = (d_ol_dejek_xi_p_cejek - d_ol_dejek_xi_m_cejek)
 
                 if j == 0:
-                    d2_OL_dejek_xi_0 = d2_OL_dejek_xi / 2.0
+                    d2_ol_dejek_xi_0 = d2_ol_dejek_xi / 2.0
 
-                co_p = np.sum(np.abs(d2_OL_dejek_xi_0 * (1 + 1 / self.A0_pairwise_ratios[j, i]) - d2_OL_dejek_xi))
-                co_m = np.sum(np.abs(d2_OL_dejek_xi_0 * (1 - 1 / self.A0_pairwise_ratios[j, i]) - d2_OL_dejek_xi))
+                co_p = np.sum(np.abs(d2_ol_dejek_xi_0 * (1 + 1 / self.A0_pairwise_ratios[j, i]) - d2_ol_dejek_xi))
+                co_m = np.sum(np.abs(d2_ol_dejek_xi_0 * (1 - 1 / self.A0_pairwise_ratios[j, i]) - d2_ol_dejek_xi))
 
                 if co_m < co_p * np.max(1 / self.A0_pairwise_ratios[:, i]):
                     self.A0_pairwise_ratios[j, i] *= -1
 
-    def _sign_recovery(self):
+    def _sign_recovery(self, unit_vector_scale):
         """
         Recover the sign of weights in the first layer.
 
         :return:
         """
+        logger.info('Recover sign of the weights of the first layer.')
 
-        A0_pairwise_ratios = 1.0 / self.A0_pairwise_ratios
+        A0_pairwise_ratios_inverse = 1.0 / self.A0_pairwise_ratios
 
-        self.B0 = np.zeros((self.num_neurons, 1), dtype=NUMPY_DTYPE)
+        self.b_0 = np.zeros((self.num_neurons, 1), dtype=NUMPY_DTYPE)
 
         for i in range(self.num_neurons):
             x_i = (self.u + self.critical_points[i] * self.v).flatten()
-            self.B0[i] = - np.matmul(self.A0_pairwise_ratios[:, i], x_i)
+            self.b_0[i] = - np.matmul(self.A0_pairwise_ratios[:, i], x_i)
 
         z_0 = np.random.normal(0, 1, (self.num_features,)).astype(dtype=NUMPY_DTYPE)
 
         def f_z(z_i):
-            return np.squeeze(np.matmul(A0_pairwise_ratios.T, np.expand_dims(z_i, axis=0).T))
+            return np.squeeze(np.matmul(A0_pairwise_ratios_inverse.T, np.expand_dims(z_i, axis=0).T))
 
         result_z = least_squares(f_z, z_0)
 
         for i in range(self.num_neurons):
 
             e_i = np.zeros((self.num_neurons, 1), dtype=NUMPY_DTYPE)
-            e_i[i, 0] = 10000
+            e_i[i, 0] = unit_vector_scale
 
             def f_v(v_i):
-                return np.squeeze(np.matmul(-A0_pairwise_ratios.T, np.expand_dims(v_i, axis=0).T) - e_i)
+                return np.squeeze(np.matmul(-A0_pairwise_ratios_inverse.T, np.expand_dims(v_i, axis=0).T) - e_i)
 
-            v_0 = np.random.normal(0, 1, (self.num_features))
+            v_0 = np.random.normal(0, 1, self.num_features)
 
             result_v_i = least_squares(f_v, v_0)
 
-            value_p = np.sum(np.abs(self.OL_x(np.expand_dims(result_z.x, axis=0))
-                                    - (self.OL_x(np.expand_dims(result_z.x + result_v_i.x, axis=0)))))
-            value_m = np.sum(np.abs(self.OL_x(np.expand_dims(result_z.x, axis=0))
-                                    - (self.OL_x(np.expand_dims(result_z.x - result_v_i.x, axis=0)))))
+            value_p = np.sum(np.abs(self._o_l(np.expand_dims(result_z.x, axis=0))
+                                    - (self._o_l(np.expand_dims(result_z.x + result_v_i.x, axis=0)))))
+            value_m = np.sum(np.abs(self._o_l(np.expand_dims(result_z.x, axis=0))
+                                    - (self._o_l(np.expand_dims(result_z.x - result_v_i.x, axis=0)))))
 
             if value_m < value_p:
-                A0_pairwise_ratios[:, i] *= -1
+                A0_pairwise_ratios_inverse[:, i] *= -1
 
-        self.A0_pairwise_ratios = A0_pairwise_ratios
+        self.w_0 = A0_pairwise_ratios_inverse
 
     def _last_layer_extraction(self):
         """
@@ -257,57 +297,93 @@ class FunctionallyEquivalentExtraction:
 
         :return:
         """
+        logger.info('Extract second layer.')
 
         predictions = np.zeros((self.num_neurons, self.num_classes)).astype(dtype=NUMPY_DTYPE)
         x_h = np.zeros((self.num_neurons, self.num_features)).astype(dtype=NUMPY_DTYPE)
 
         for i in range(self.num_neurons):
-            predictions[i, :] = self.OL(self.critical_points[i])
-            x_h[i, :] = self.u + self.critical_points[i] * self.v
+            predictions[i, :] = self._o_l(self.critical_points[i])
+            x_h[i, :] = self.critical_points[i]
 
-        A1_B1_0 = np.random.normal(0, 1, ((self.num_neurons + 1) * self.num_classes)).astype(dtype=NUMPY_DTYPE)
+        w_1_b_1_0 = np.random.normal(0, 1, ((self.num_neurons + 1) * self.num_classes)).astype(dtype=NUMPY_DTYPE)
 
-        def f_a1_b1(a1_b1_i):
+        def f_w_1_b_1(w_1_b_1_i):
+            layer_0 = np.maximum(np.matmul(self.w_0.T, x_h.T) + self.b_0, 0.0)
 
-            layer_1 = np.maximum(np.matmul(self.A0_pairwise_ratios.T, x_h.T) + self.B0, 0.0)
+            w_1 = w_1_b_1_i[0:self.num_neurons * self.num_classes].reshape(self.num_neurons, self.num_classes)
+            b_1 = w_1_b_1_i[self.num_neurons * self.num_classes:].reshape(self.num_classes, 1)
 
-            A1 = a1_b1_i[0:self.num_neurons * self.num_classes].reshape(self.num_neurons, self.num_classes)
-            B1 = a1_b1_i[self.num_neurons * self.num_classes:].reshape(self.num_classes, 1)
+            layer_1 = np.matmul(w_1.T, layer_0) + b_1
 
-            layer_2 = np.matmul(A1.T, layer_1) + B1
+            return np.squeeze((layer_1.T - predictions).flatten())
 
-            return np.squeeze((layer_2.T - predictions).flatten())
+        result_a1_b1 = least_squares(f_w_1_b_1, w_1_b_1_0)
 
-        result_a1_b1 = least_squares(f_a1_b1, A1_B1_0)
-
-        A1 = result_a1_b1.x[0:self.num_neurons * self.num_classes].reshape(self.num_neurons, self.num_classes)
-        B1 = result_a1_b1.x[self.num_neurons * self.num_classes:].reshape(self.num_classes, 1)
-
-        x_test = x_h
-
-        layer_1 = np.maximum(np.matmul(self.A0_pairwise_ratios.T, x_test.T) + self.B0, 0.0)
-        layer_2 = np.matmul(A1.T, layer_1) + B1
-
-        for i in range(self.num_neurons):
-            plt.figure()
-            plt.plot(layer_2[:, i], '-o')
-            plt.plot(self.OL(self.critical_points[i]))
-
-        plt.show()
+        self.w_1 = result_a1_b1.x[0:self.num_neurons * self.num_classes].reshape(self.num_neurons, self.num_classes)
+        self.b_1 = result_a1_b1.x[self.num_neurons * self.num_classes:].reshape(self.num_classes, 1)
 
 
 if __name__ == '__main__':
     import tensorflow as tf
 
     tf.compat.v1.disable_eager_execution()
+
+    from tensorflow.keras.datasets import mnist
+    from tensorflow.keras.models import Sequential
+    from tensorflow.keras.layers import Dense
+
     np.random.seed(0)
+
+    num_neurons = 16
+
+    batch_size = 128
+    num_classes = 10
+    epochs = 10
+    img_rows = 28
+    img_cols = 28
+    num_channels = 1
+
+    (x_train, y_train), (x_test, y_test) = mnist.load_data()
+
+    x_train = x_train.reshape(x_train.shape[0], img_rows, img_cols, num_channels)
+    x_test = x_test.reshape(x_test.shape[0], img_rows, img_cols, num_channels)
+
+    input_shape = (num_channels * img_rows * img_cols,)
+
+    x_train = x_train.reshape((x_train.shape[0], num_channels * img_rows * img_cols)).astype('float64')
+    x_test = x_test.reshape((x_test.shape[0], num_channels * img_rows * img_cols)).astype('float64')
+
+    mean = np.mean(x_train)
+    std = np.std(x_train)
+
+    x_train = (x_train - mean) / std
+    x_test = (x_test - mean) / std
+
+    y_train = tf.keras.utils.to_categorical(y_train, num_classes)
+    y_test = tf.keras.utils.to_categorical(y_test, num_classes)
 
     if os.path.isfile('./model.h5'):
         model = tf.keras.models.load_model('./model.h5')
     else:
-        raise Exception('Model not found.')
+        model = Sequential()
+        model.add(Dense(num_neurons, activation='relu', input_shape=input_shape))
+        model.add(Dense(num_classes, activation='linear'))
+
+        model.compile(loss=tf.keras.losses.CategoricalCrossentropy(from_logits=True),
+                      optimizer=tf.keras.optimizers.Adam(learning_rate=0.0001, ), metrics=['accuracy'])
+
+        model.fit(x_train, y_train, batch_size=batch_size, epochs=epochs, verbose=1, validation_data=(x_test, y_test))
+
+        model.save('./model.h5')
+
+    score_target = model.evaluate(x_test, y_test, verbose=0)
 
     classifier = KerasClassifier(model=model, use_logits=True, clip_values=(0, 1))
 
-    fee = FunctionallyEquivalentExtraction(classifier=classifier, num_neurons=16)
+    fee = FunctionallyEquivalentExtraction(classifier=classifier, num_neurons=num_neurons)
     fee.extract()
+    y_test_predicted_extracted = fee.predict(x_test)
+
+    print('Target model - Test accuracy:', score_target[1])
+    print('Extracted model - Test accuracy:', score_target[1])
