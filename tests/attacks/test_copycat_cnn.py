@@ -22,11 +22,17 @@ import unittest
 
 import tensorflow as tf
 import numpy as np
+import keras.backend as k
+import keras
+from keras.models import Sequential
+from keras.layers import Dense, Flatten, Conv2D, MaxPooling2D
 
 from art.attacks.extraction.copycat_cnn import CopycatCNN
 from art.classifiers import TensorFlowClassifier
+from art.classifiers import KerasClassifier
 from art.utils import load_dataset, random_targets, master_seed
 from art.utils_test import get_classifier_tf
+from art.utils_test import get_classifier_kr
 
 logger = logging.getLogger(__name__)
 
@@ -96,16 +102,42 @@ class TestCopycatCNN(unittest.TestCase):
         # Clean-up session
         sess.close()
 
+    @unittest.skipIf(tf.__version__[0] == '2', reason='Skip unittests for Tensorflow v2 until Keras supports Tensorflow'
+                                                      ' v2 as backend.')
+    def test_krclassifier(self):
+        """
+        Second test with the KerasClassifier.
+        :return:
+        """
+        # Build KerasClassifier
+        victim_krc = get_classifier_kr()
+
+        # Create simple CNN
+        model = Sequential()
+        model.add(Conv2D(1, kernel_size=(7, 7), activation='relu', input_shape=(28, 28, 1)))
+        model.add(MaxPooling2D(pool_size=(4, 4)))
+        model.add(Flatten())
+        model.add(Dense(10, activation='softmax'))
+        loss = keras.losses.categorical_crossentropy
+        model.compile(loss=loss, optimizer=keras.optimizers.Adam(lr=0.001), metrics=['accuracy'])
+
+        # Get classifier
+        thieved_krc = KerasClassifier(model, clip_values=(0, 1), use_logits=False)
+
+        # Create attack
+        copycat_cnn = CopycatCNN(classifier=victim_krc, batch_size=BATCH_SIZE, nb_epochs=NB_EPOCHS, nb_stolen=NB_STOLEN)
+        thieved_krc = copycat_cnn.generate(x=self.x_train, thieved_classifier=thieved_krc)
+
+        victim_preds = np.argmax(victim_krc.predict(x=self.x_train[:100]), axis=1)
+        thieved_preds = np.argmax(thieved_krc.predict(x=self.x_train[:100]), axis=1)
+        acc = np.sum(victim_preds == thieved_preds) / len(victim_preds)
+
+        self.assertGreater(acc, 0.5)
+
+        # Clean-up
+        k.clear_session()
 
 
-#     @unittest.skipIf(tf.__version__[0] == '2', reason='Skip unittests for Tensorflow v2 until Keras supports Tensorflow'
-#                                                       ' v2 as backend.')
-#     def test_krclassifier(self):
-#         """
-#         Second test with the KerasClassifier.
-#         :return:
-#         """
-#
 #     def test_ptclassifier(self):
 #         """
 #         Third test with the PyTorchClassifier.
