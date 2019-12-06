@@ -17,6 +17,13 @@
 """
 This module implements the Functionally Equivalent Extraction attack.
 
+This module contains en example application for MNIST which can be run as `python functionally_equivalent_extraction.py`
+producing output like:
+
+Target model - Test accuracy: 0.9259
+Extracted model - Test accuracy: 0.9259
+Extracted model - Test Fidelity: 0.9977
+
 | Paper link: https://arxiv.org/abs/1909.01838
 """
 
@@ -24,7 +31,6 @@ import os
 import logging
 
 import numpy as np
-from matplotlib import pyplot as plt
 from scipy.optimize import least_squares
 
 from art.classifiers import KerasClassifier
@@ -65,7 +71,7 @@ class FunctionallyEquivalentExtraction:
         self.w_1 = None  # weight matrix of second dense layer
         self.b_1 = None  # Bias vector of second dense layer
 
-    def extract(self, delta_0=0.05, fraction_true=0.3, rel_diff_slope=0.00001, rel_diff_value=0.000001,
+    def extract(self, x, delta_0=0.05, fraction_true=0.3, rel_diff_slope=0.00001, rel_diff_value=0.000001,
                 delta_init_value=0.1, delta_value_max=50, d2_min=0.0004, d_step=0.01, delta_sign=0.02,
                 unit_vector_scale=10000):
         """
@@ -78,7 +84,7 @@ class FunctionallyEquivalentExtraction:
         self._weight_recovery(delta_init_value=delta_init_value, delta_value_max=delta_value_max, d2_min=d2_min,
                               d_step=d_step, delta_sign=delta_sign)
         self._sign_recovery(unit_vector_scale=unit_vector_scale)
-        self._last_layer_extraction()
+        self._last_layer_extraction(x)
 
     def predict(self, x):
         """
@@ -86,25 +92,9 @@ class FunctionallyEquivalentExtraction:
 
         :return:
         """
-
-        x_h = np.zeros((self.num_neurons, self.num_features)).astype(dtype=NUMPY_DTYPE)
-
-        for i in range(self.num_neurons):
-            x_h[i, :] = self.critical_points[i]
-
-        x = x_h
-
         layer_0 = np.maximum(np.matmul(self.w_0.T, x.T) + self.b_0, 0.0)
         layer_1 = np.matmul(self.w_1.T, layer_0) + self.b_1
-
-        for i in range(self.num_neurons):
-            plt.figure()
-            plt.plot(layer_1[:, i], '-o')
-            plt.plot(self._o_l(self.critical_points[i]))
-
-        plt.show()
-
-        return 0
+        return layer_1.T
 
     def _o_l(self, x, e_j=None):
         if e_j is not None:
@@ -259,13 +249,13 @@ class FunctionallyEquivalentExtraction:
         self.b_0 = np.zeros((self.num_neurons, 1), dtype=NUMPY_DTYPE)
 
         for i in range(self.num_neurons):
-            x_i = (self.u + self.critical_points[i] * self.v).flatten()
-            self.b_0[i] = - np.matmul(self.A0_pairwise_ratios[:, i], x_i)
+            x_i = self.critical_points[i].flatten()
+            self.b_0[i] = - np.matmul(A0_pairwise_ratios_inverse[:, i], x_i)
 
         z_0 = np.random.normal(0, 1, (self.num_features,)).astype(dtype=NUMPY_DTYPE)
 
         def f_z(z_i):
-            return np.squeeze(np.matmul(A0_pairwise_ratios_inverse.T, np.expand_dims(z_i, axis=0).T))
+            return np.squeeze(np.matmul(A0_pairwise_ratios_inverse.T, np.expand_dims(z_i, axis=0).T) + self.b_0)
 
         result_z = least_squares(f_z, z_0)
 
@@ -288,10 +278,11 @@ class FunctionallyEquivalentExtraction:
 
             if value_m < value_p:
                 A0_pairwise_ratios_inverse[:, i] *= -1
+                self.b_0[i, 0] *= -1
 
         self.w_0 = A0_pairwise_ratios_inverse
 
-    def _last_layer_extraction(self):
+    def _last_layer_extraction(self, x):
         """
         Extract weights and biases of the second layer.
 
@@ -299,17 +290,15 @@ class FunctionallyEquivalentExtraction:
         """
         logger.info('Extract second layer.')
 
-        predictions = np.zeros((self.num_neurons, self.num_classes)).astype(dtype=NUMPY_DTYPE)
-        x_h = np.zeros((self.num_neurons, self.num_features)).astype(dtype=NUMPY_DTYPE)
+        predictions = np.zeros((x.shape[0], self.num_classes)).astype(dtype=NUMPY_DTYPE)
 
-        for i in range(self.num_neurons):
-            predictions[i, :] = self._o_l(self.critical_points[i])
-            x_h[i, :] = self.critical_points[i]
+        for i in range(x.shape[0]):
+            predictions[i, :] = self._o_l(x[i:i + 1, :])
 
         w_1_b_1_0 = np.random.normal(0, 1, ((self.num_neurons + 1) * self.num_classes)).astype(dtype=NUMPY_DTYPE)
 
         def f_w_1_b_1(w_1_b_1_i):
-            layer_0 = np.maximum(np.matmul(self.w_0.T, x_h.T) + self.b_0, 0.0)
+            layer_0 = np.maximum(np.matmul(self.w_0.T, x.T) + self.b_0, 0.0)
 
             w_1 = w_1_b_1_i[0:self.num_neurons * self.num_classes].reshape(self.num_neurons, self.num_classes)
             b_1 = w_1_b_1_i[self.num_neurons * self.num_classes:].reshape(self.num_classes, 1)
@@ -382,8 +371,14 @@ if __name__ == '__main__':
     classifier = KerasClassifier(model=model, use_logits=True, clip_values=(0, 1))
 
     fee = FunctionallyEquivalentExtraction(classifier=classifier, num_neurons=num_neurons)
-    fee.extract()
+    fee.extract(x_test[0:100])
+
     y_test_predicted_extracted = fee.predict(x_test)
+    y_test_predicted_target = classifier.predict(x_test)
 
     print('Target model - Test accuracy:', score_target[1])
-    print('Extracted model - Test accuracy:', score_target[1])
+    print('Extracted model - Test accuracy:',
+          np.sum(np.argmax(y_test_predicted_extracted, axis=1) == np.argmax(y_test, axis=1)) / y_test.shape[0])
+    print('Extracted model - Test Fidelity:',
+          np.sum(np.argmax(y_test_predicted_extracted, axis=1) == np.argmax(y_test_predicted_target, axis=1)) /
+          y_test_predicted_target.shape[0])
