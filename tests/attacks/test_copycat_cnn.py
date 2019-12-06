@@ -36,6 +36,7 @@ from art.utils_test import get_classifier_tf
 from art.utils_test import get_classifier_kr
 from art.utils_test import get_classifier_pt
 from art.utils_test import get_iris_classifier_tf
+from art.utils_test import get_iris_classifier_kr
 from art import NUMPY_DTYPE
 
 logger = logging.getLogger(__name__)
@@ -214,7 +215,7 @@ class TestCopycatCNN(unittest.TestCase):
         self.assertGreater(acc, 0.5)
 
 
-class TestCarliniL2Vectors(unittest.TestCase):
+class TestCopycatCNNVectors(unittest.TestCase):
     @classmethod
     def setUpClass(cls):
         (x_train, y_train), (_, _), _, _ = load_dataset('iris')
@@ -267,6 +268,39 @@ class TestCarliniL2Vectors(unittest.TestCase):
         # Clean-up session
         sess.close()
         tf.reset_default_graph()
+
+    def test_iris_kr(self):
+        """
+        Second test for Keras.
+        :return:
+        """
+        # Build KerasClassifier
+        victim_krc, _ = get_iris_classifier_kr()
+
+        # Create simple CNN
+        model = Sequential()
+        model.add(Dense(10, input_shape=(4,), activation='relu'))
+        model.add(Dense(10, activation='relu'))
+        model.add(Dense(3, activation='softmax'))
+        model.compile(loss='categorical_crossentropy', optimizer=keras.optimizers.Adam(lr=0.001), metrics=['accuracy'])
+
+        # Get classifier
+        thieved_krc = KerasClassifier(model, clip_values=(0, 1), use_logits=False, channel_index=1)
+
+        # Create attack
+        copycat_cnn = CopycatCNN(classifier=victim_krc, batch_size=BATCH_SIZE, nb_epochs=NB_EPOCHS, nb_stolen=NB_STOLEN)
+        thieved_krc = copycat_cnn.generate(x=self.x_train, thieved_classifier=thieved_krc)
+
+        victim_preds = np.argmax(victim_krc.predict(x=self.x_train[:100]), axis=1)
+        thieved_preds = np.argmax(thieved_krc.predict(x=self.x_train[:100]), axis=1)
+        acc = np.sum(victim_preds == thieved_preds) / len(victim_preds)
+
+        self.assertGreater(acc, 0.5)
+
+        # Clean-up
+        k.clear_session()
+
+
 
 
 #
