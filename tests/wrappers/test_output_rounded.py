@@ -24,7 +24,7 @@ import numpy as np
 
 from art.utils import load_dataset, master_seed
 from art.utils_test import get_classifier_kr
-from art.wrappers.rounded_output import RoundedOutput
+from art.wrappers.output_rounded import OutputRounded
 
 logger = logging.getLogger(__name__)
 
@@ -49,10 +49,10 @@ class TestRoundedOutput(unittest.TestCase):
         :return:
         """
         (_, _), (x_test, _) = self.mnist
-        ro = RoundedOutput(classifier=self.classifier, decimals=2)
+        output_rounded = OutputRounded(classifier=self.classifier, decimals=2)
         expected_predictions = np.asarray([[0.12, 0.05, 0.1, 0.06, 0.11, 0.05, 0.06, 0.31, 0.08, 0.06]],
                                           dtype=np.float32)
-        np.testing.assert_array_equal(ro.predict(x_test[0:1]), expected_predictions)
+        np.testing.assert_array_equal(output_rounded.predict(x_test[0:1]), expected_predictions)
 
     def test_decimals_3(self):
         """
@@ -60,10 +60,10 @@ class TestRoundedOutput(unittest.TestCase):
         :return:
         """
         (_, _), (x_test, _) = self.mnist
-        ro = RoundedOutput(classifier=self.classifier, decimals=3)
+        output_rounded = OutputRounded(classifier=self.classifier, decimals=3)
         expected_predictions = np.asarray([[0.121, 0.05, 0.099, 0.064, 0.114, 0.046, 0.064, 0.307, 0.076, 0.058]],
                                           dtype=np.float32)
-        np.testing.assert_array_equal(ro.predict(x_test[0:1]), expected_predictions)
+        np.testing.assert_array_equal(output_rounded.predict(x_test[0:1]), expected_predictions)
 
 
 if __name__ == '__main__':

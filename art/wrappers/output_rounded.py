@@ -28,7 +28,7 @@ from art.classifiers.classifier import Classifier
 logger = logging.getLogger(__name__)
 
 
-class RoundedOutput(ClassifierWrapper, Classifier):
+class OutputRounded(ClassifierWrapper, Classifier):
     """
     Implementation of a classifier wrapper which is rounding the classfier's prediction output.
     """
@@ -42,7 +42,7 @@ class RoundedOutput(ClassifierWrapper, Classifier):
         :param decimals: Number of decimal places after the decimal point.
         :type decimals: `int`
         """
-        super(RoundedOutput, self).__init__(classifier)
+        super(OutputRounded, self).__init__(classifier)
         self.decimals = decimals
 
     # pylint: disable=W0221
