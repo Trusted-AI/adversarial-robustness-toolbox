@@ -35,6 +35,7 @@ from art.utils import load_dataset, random_targets, master_seed
 from art.utils_test import get_classifier_tf
 from art.utils_test import get_classifier_kr
 from art.utils_test import get_classifier_pt
+from art.utils_test import get_iris_classifier_tf
 from art import NUMPY_DTYPE
 
 logger = logging.getLogger(__name__)
@@ -211,23 +212,59 @@ class TestCopycatCNN(unittest.TestCase):
 
         self.assertGreater(acc, 0.5)
 
-#
-#
-#
-# class TestCarliniL2Vectors(unittest.TestCase):
-#     @classmethod
-#     def setUpClass(cls):
-#         (x_train, y_train), (x_test, y_test), _, _ = load_dataset('iris')
-#
-#         cls.x_train = x_train
-#         cls.y_train = y_train
-#         cls.x_test = x_test
-#         cls.y_test = y_test
-#
-#     def setUp(self):
-#         master_seed(1234)
-#
-#     def test_iris_tf(self):
+
+class TestCarliniL2Vectors(unittest.TestCase):
+    @classmethod
+    def setUpClass(cls):
+        (x_train, y_train), (_, _), _, _ = load_dataset('iris')
+
+        cls.x_train = x_train
+        cls.y_train = y_train
+
+    def setUp(self):
+        master_seed(1234)
+
+    def test_iris_tf(self):
+        """
+        First test for TF.
+        :return:
+        """
+        # Get the TF classifier
+        victim_tfc, sess = get_iris_classifier_tf()
+
+        # Define input and output placeholders
+        input_ph = tf.placeholder(tf.float32, shape=[None, 4])
+        output_ph = tf.placeholder(tf.int32, shape=[None, 3])
+
+        # Define the tensorflow graph
+        dense1 = tf.layers.dense(input_ph, 10)
+        dense2 = tf.layers.dense(dense1, 10)
+        logits = tf.layers.dense(dense2, 3)
+
+        # Train operator
+        loss = tf.reduce_mean(tf.losses.softmax_cross_entropy(logits=logits, onehot_labels=output_ph))
+
+        # Tensorflow session and initialization
+        sess.run(tf.global_variables_initializer())
+
+        # Train the classifier
+        thieved_tfc = TensorFlowClassifier(clip_values=(0, 1), input_ph=input_ph, output=logits, labels_ph=output_ph,
+                                           train=None, loss=loss, learning=None, sess=sess, channel_index=1)
+
+        # Create attack
+        copycat_cnn = CopycatCNN(classifier=victim_tfc, batch_size=BATCH_SIZE, nb_epochs=NB_EPOCHS, nb_stolen=NB_STOLEN)
+        thieved_tfc = copycat_cnn.generate(x=self.x_train, thieved_classifier=thieved_tfc)
+
+        victim_preds = np.argmax(victim_tfc.predict(x=self.x_train[:100]), axis=1)
+        thieved_preds = np.argmax(thieved_tfc.predict(x=self.x_train[:100]), axis=1)
+        acc = np.sum(victim_preds == thieved_preds) / len(victim_preds)
+
+        self.assertGreater(acc, 0.5)
+
+        # Clean-up session
+        sess.close()
+
+
 #
 #     def test_iris_pt(self):
 #
