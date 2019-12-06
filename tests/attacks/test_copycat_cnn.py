@@ -114,6 +114,7 @@ class TestCopycatCNN(unittest.TestCase):
 
         # Clean-up session
         sess.close()
+        tf.reset_default_graph()
 
     @unittest.skipIf(tf.__version__[0] == '2', reason='Skip unittests for Tensorflow v2 until Keras supports Tensorflow'
                                                       ' v2 as backend.')
@@ -243,13 +244,15 @@ class TestCarliniL2Vectors(unittest.TestCase):
 
         # Train operator
         loss = tf.reduce_mean(tf.losses.softmax_cross_entropy(logits=logits, onehot_labels=output_ph))
+        optimizer = tf.train.AdamOptimizer(learning_rate=0.001)
+        train = optimizer.minimize(loss)
 
         # Tensorflow session and initialization
         sess.run(tf.global_variables_initializer())
 
         # Train the classifier
         thieved_tfc = TensorFlowClassifier(clip_values=(0, 1), input_ph=input_ph, output=logits, labels_ph=output_ph,
-                                           train=None, loss=loss, learning=None, sess=sess, channel_index=1)
+                                           train=train, loss=loss, learning=None, sess=sess, channel_index=1)
 
         # Create attack
         copycat_cnn = CopycatCNN(classifier=victim_tfc, batch_size=BATCH_SIZE, nb_epochs=NB_EPOCHS, nb_stolen=NB_STOLEN)
@@ -263,6 +266,7 @@ class TestCarliniL2Vectors(unittest.TestCase):
 
         # Clean-up session
         sess.close()
+        tf.reset_default_graph()
 
 
 #
