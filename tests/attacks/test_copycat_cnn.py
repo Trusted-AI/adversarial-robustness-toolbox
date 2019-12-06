@@ -31,7 +31,7 @@ from art.attacks.extraction.copycat_cnn import CopycatCNN
 from art.classifiers import TensorFlowClassifier
 from art.classifiers import KerasClassifier
 from art.classifiers import PyTorchClassifier
-from art.utils import load_dataset, random_targets, master_seed
+from art.utils import load_dataset, master_seed
 from art.utils_test import get_classifier_tf
 from art.utils_test import get_classifier_kr
 from art.utils_test import get_classifier_pt
@@ -350,11 +350,6 @@ class TestCopycatCNNVectors(unittest.TestCase):
         acc = np.sum(victim_preds == thieved_preds) / len(victim_preds)
 
         self.assertGreater(acc, 0.3)
-
-
-
-#
-#     def test_scikitlearn(self):
 
 
 if __name__ == '__main__':
