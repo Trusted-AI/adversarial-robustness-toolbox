@@ -15,7 +15,7 @@
 # TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 # SOFTWARE.
 """
-This module implements the Functionally Equivalent Extraction attack.
+This module implements the Functionally Equivalent Extraction attack mainly following Jagielski et al, 2019.
 
 This module contains en example application for MNIST which can be run as `python functionally_equivalent_extraction.py`
 producing output like:
@@ -42,7 +42,8 @@ logger = logging.getLogger(__name__)
 
 class FunctionallyEquivalentExtraction:
     """
-    This module implements the Functionally Equivalent Extraction attack.
+    This module implements the Functionally Equivalent Extraction attack for neural networks with two dense layers,
+    ReLU activation at the first layer and logits output after the second layer.
 
     | Paper link: https://arxiv.org/abs/1909.01838
     """
@@ -53,8 +54,8 @@ class FunctionallyEquivalentExtraction:
 
         :param classifier: A trained ART classifier.
         :type classifier: :class:`.Classifier`
-        :param num_neurons: A trained ART classifier.
-        :type num_neurons: :class:`.Classifier`
+        :param num_neurons: The number of neurons in the first dense layer.
+        :type num_neurons: `int`
         """
         self.classifier = classifier
         self.num_neurons = num_neurons
@@ -77,7 +78,28 @@ class FunctionallyEquivalentExtraction:
         """
         Extract the targeted model.
 
-        :return:
+        :param x: Samples of input data of shape (num_samples, num_features).
+        :type x: `np.ndarray`
+        :param delta_0: Initial step size of binary search
+        :type delta_0: `float`
+        :param fraction_true: Fraction of output predictions that have to fulfill criteria for critical point
+        :type fraction_true: `float`
+        :param rel_diff_slope: Relative slope difference at critical points
+        :type rel_diff_slope: `float`
+        :param rel_diff_value: Relative value difference at critical points
+        :type rel_diff_value: `float`
+        :param delta_init_value: Initial delta of weight value search
+        :type delta_init_value: `float`
+        :param delta_value_max: Maximum delta  of weight value search
+        :type delta_value_max: `float`
+        :param d2_min: Minimum acceptable value of sum of absolute second derivatives
+        :type d2_min: `float`
+        :param d_step:  Step size of delta increase
+        :type d_step: `float`
+        :param delta_sign: Delta of weight sign search
+        :type delta_sign: `float`
+        :param unit_vector_scale: Multiplicative scale of the unit vector e_j.
+        :type unit_vector_scale: `int`
         """
         self._critical_point_search(delta_0=delta_0, fraction_true=fraction_true, rel_diff_slope=rel_diff_slope,
                                     rel_diff_value=rel_diff_value)
@@ -90,25 +112,54 @@ class FunctionallyEquivalentExtraction:
         """
         Predict extracted model.
 
-        :return:
+        :param x: Samples of input data of shape (num_samples, num_features)
+        :type x: `np.ndarray`
+
+        :return: Predictions with the extracted model of shape (num_samples, num_classes)
+        :rtype: `np.ndarray`
         """
         layer_0 = np.maximum(np.matmul(self.w_0.T, x.T) + self.b_0, 0.0)
         layer_1 = np.matmul(self.w_1.T, layer_0) + self.b_1
         return layer_1.T
 
     def _o_l(self, x, e_j=None):
+        """
+        Predict the target model.
+
+        :param x: Samples of input data of shape (num_samples, num_features)
+        :type x: `np.ndarray`
+        :param e_j: Additive delta vector of shape (1, num_features)
+        :type e_j: `np.ndarray`
+        :return: Prediction of the target model of shape (num_samples, num_classes)
+        :rtype: `np.ndarray`
+        """
         if e_j is not None:
             x = x + e_j
-        return self.classifier.predict(x)[0, :].astype(NUMPY_DTYPE)
+        return self.classifier.predict(x).astype(NUMPY_DTYPE)
 
     def _get_x(self, t):
+        """
+        Get input sample as function of multiplicative factor of random vector.
+
+        :param t: Multiplicative factor of second random vector for critical point search
+        :type t: `float`
+        :return: Input sample of shape (1, num_features)
+        :rtype: `np.ndarray`
+        """
         return self.u + t * self.v
 
     def _critical_point_search(self, delta_0, fraction_true, rel_diff_slope, rel_diff_value):
         """
         Search for critical points.
 
-        :return:
+        :param delta_0: Initial step size of binary search
+        :type delta_0: `float`
+        :param fraction_true: Fraction of output predictions that have to fulfill criteria for critical point
+        :type fraction_true: `float`
+        :param rel_diff_slope: Relative slope difference at critical points
+        :type rel_diff_slope: `float`
+        :param rel_diff_value: Relative value difference at critical points
+        :type rel_diff_value: `float`
         """
         logger.info('Searching for critical points.')
         h_square = self.num_neurons * self.num_neurons
@@ -172,7 +223,16 @@ class FunctionallyEquivalentExtraction:
         """
         Recover the weights and biases of the first layer.
 
-        :return:
+        :param delta_init_value: Initial delta of weight value search
+        :type delta_init_value: `float`
+        :param delta_value_max: Maximum delta  of weight value search
+        :type delta_value_max: `float`
+        :param d2_min: Minimum acceptable value of sum of absolute second derivatives
+        :type d2_min: `float`
+        :param d_step:  Step size of delta increase
+        :type d_step: `float`
+        :param delta_sign: Delta of weight sign search
+        :type delta_sign: `float`
         """
         logger.info('Recovering weights of first layer.')
 
@@ -240,7 +300,8 @@ class FunctionallyEquivalentExtraction:
         """
         Recover the sign of weights in the first layer.
 
-        :return:
+        :param unit_vector_scale: Multiplicative scale of the unit vector e_j.
+        :type unit_vector_scale: `int`
         """
         logger.info('Recover sign of the weights of the first layer.')
 
@@ -286,14 +347,12 @@ class FunctionallyEquivalentExtraction:
         """
         Extract weights and biases of the second layer.
 
-        :return:
+        :param x: Samples of input data of shape (num_samples, num_features).
+        :type x: `np.ndarray`
         """
         logger.info('Extract second layer.')
 
-        predictions = np.zeros((x.shape[0], self.num_classes)).astype(dtype=NUMPY_DTYPE)
-
-        for i in range(x.shape[0]):
-            predictions[i, :] = self._o_l(x[i:i + 1, :])
+        predictions = self._o_l(x)
 
         w_1_b_1_0 = np.random.normal(0, 1, ((self.num_neurons + 1) * self.num_classes)).astype(dtype=NUMPY_DTYPE)
 
