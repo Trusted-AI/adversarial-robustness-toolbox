@@ -107,47 +107,6 @@ class OutputRounded(ClassifierWrapper, Classifier):
         """
         raise NotImplementedError
 
-    @property
-    def layer_names(self):
-        """
-        Return the hidden layers in the model, if applicable.
-
-        :return: The hidden layers in the model, input and output layers excluded.
-        :rtype: `list`
-
-        .. warning:: `layer_names` tries to infer the internal structure of the model.
-                     This feature comes with no guarantees on the correctness of the result.
-                     The intended order of the layers tries to match their order in the model, but this is not
-                     guaranteed either.
-        """
-        raise NotImplementedError
-
-    def get_activations(self, x, layer, batch_size):
-        """
-        Return the output of the specified layer for input `x`. `layer` is specified by layer index (between 0 and
-        `nb_layers - 1`) or by name. The number of layers can be determined by counting the results returned by
-        calling `layer_names`.
-
-        :param x: Input for computing the activations.
-        :type x: `np.ndarray`
-        :param layer: Layer for computing the activations
-        :type layer: `int` or `str`
-        :param batch_size: Size of batches.
-        :type batch_size: `int`
-        :return: The output of `layer`, where the first dimension is the batch size corresponding to `x`.
-        :rtype: `np.ndarray`
-        """
-        raise NotImplementedError
-
-    def set_learning_phase(self, train):
-        """
-        Set the learning phase for the backend framework.
-
-        :param train: `True` if the learning phase is training, `False` if learning phase is not training.
-        :type train: `bool`
-        """
-        raise NotImplementedError
-
     def nb_classes(self):
         """
         Return the number of output classes.
@@ -179,6 +138,6 @@ if __name__ == '__main__':
     (x_train, y_train), (x_test, y_test), _, _ = load_dataset('mnist')
     classifier = get_classifier_kr()
 
-    rp = RoundedProbabilities(classifier=classifier, decimals=3)
+    rp = OutputRounded(classifier=classifier, decimals=3)
     print(rp.predict(x_test[0:1]))
     print(classifier.predict(x_test[0:1]))
