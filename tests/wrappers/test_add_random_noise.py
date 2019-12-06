@@ -24,14 +24,14 @@ import numpy as np
 
 from art.utils import load_dataset, master_seed
 from art.utils_test import get_classifier_kr
-from art.wrappers.output_class_labels import ClassLabels
+from art.wrappers.output_add_random_noise import RandomNoise
 
 logger = logging.getLogger(__name__)
 
 
-class TestRoundedOutput(unittest.TestCase):
+class TestRandomNoise(unittest.TestCase):
     """
-    A unittest class for testing the Class Labels wrapper.
+    A unittest class for testing the Random Noise wrapper.
     """
 
     @classmethod
@@ -43,14 +43,15 @@ class TestRoundedOutput(unittest.TestCase):
     def setUp(self):
         master_seed(1234)
 
-    def test_class_labels(self):
+    def test_random_noise(self):
         """
         Test class labels.
         """
         (_, _), (x_test, _) = self.mnist
-        wrapper = ClassLabels(classifier=self.classifier)
-        expected_predictions = np.asarray([[0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 1.0, 0.0, 0.0]], dtype=np.float32)
-        np.testing.assert_array_equal(wrapper.predict(x_test[0:1]), expected_predictions)
+        wrapper = RandomNoise(classifier=self.classifier, scale=0.1)
+        expected_predictions = np.asarray([[0.15412168, 0.0, 0.2222987, 0.03007976, 0.0381179, 0.12382449, 0.13755375,
+                                            0.22279163, 0.07121207, 0.0]], dtype=np.float32)
+        np.testing.assert_array_almost_equal(wrapper.predict(x_test[0:1]), expected_predictions, decimal=4)
 
 
 if __name__ == '__main__':

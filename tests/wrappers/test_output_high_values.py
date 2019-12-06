@@ -48,22 +48,20 @@ class TestRoundedOutput(unittest.TestCase):
         Test with cutoff of 0.1.
         """
         (_, _), (x_test, _) = self.mnist
-        output_rounded = OutputHighValues(classifier=self.classifier, cutoff=0.1)
-        print(output_rounded.predict(x_test[0:1]))
+        wrapper = OutputHighValues(classifier=self.classifier, cutoff=0.1)
         expected_predictions = np.asarray([[0.12109935, 0.0, 0.0, 0.0, 0.11366928, 0.0, 0.0, 0.30685693, 0.0, 0.0]],
                                           dtype=np.float32)
-        np.testing.assert_array_almost_equal(output_rounded.predict(x_test[0:1]), expected_predictions, decimal=4)
+        np.testing.assert_array_almost_equal(wrapper.predict(x_test[0:1]), expected_predictions, decimal=4)
 
     def test_decimals_0_2(self):
         """
         Test with cutoff of 0.2.
         """
         (_, _), (x_test, _) = self.mnist
-        output_rounded = OutputHighValues(classifier=self.classifier, cutoff=0.2)
-        print(output_rounded.predict(x_test[0:1]))
+        wrapper = OutputHighValues(classifier=self.classifier, cutoff=0.2)
         expected_predictions = np.asarray([[0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.30685693, 0.0, 0.0]],
                                           dtype=np.float32)
-        np.testing.assert_array_almost_equal(output_rounded.predict(x_test[0:1]), expected_predictions, decimal=4)
+        np.testing.assert_array_almost_equal(wrapper.predict(x_test[0:1]), expected_predictions, decimal=4)
 
 
 if __name__ == '__main__':

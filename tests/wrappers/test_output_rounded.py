@@ -48,20 +48,20 @@ class TestRoundedOutput(unittest.TestCase):
         Test with 2 decimal places.
         """
         (_, _), (x_test, _) = self.mnist
-        output_rounded = OutputRounded(classifier=self.classifier, decimals=2)
+        wrapper = OutputRounded(classifier=self.classifier, decimals=2)
         expected_predictions = np.asarray([[0.12, 0.05, 0.1, 0.06, 0.11, 0.05, 0.06, 0.31, 0.08, 0.06]],
                                           dtype=np.float32)
-        np.testing.assert_array_equal(output_rounded.predict(x_test[0:1]), expected_predictions)
+        np.testing.assert_array_equal(wrapper.predict(x_test[0:1]), expected_predictions)
 
     def test_decimals_3(self):
         """
         Test with 3 decimal places.
         """
         (_, _), (x_test, _) = self.mnist
-        output_rounded = OutputRounded(classifier=self.classifier, decimals=3)
+        wrapper = OutputRounded(classifier=self.classifier, decimals=3)
         expected_predictions = np.asarray([[0.121, 0.05, 0.099, 0.064, 0.114, 0.046, 0.064, 0.307, 0.076, 0.058]],
                                           dtype=np.float32)
-        np.testing.assert_array_equal(output_rounded.predict(x_test[0:1]), expected_predictions)
+        np.testing.assert_array_equal(wrapper.predict(x_test[0:1]), expected_predictions)
 
 
 if __name__ == '__main__':
