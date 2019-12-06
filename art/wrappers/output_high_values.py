@@ -133,7 +133,6 @@ class OutputHighValues(ClassifierWrapper, Classifier):
 
 
 if __name__ == '__main__':
-
     from art.utils import load_dataset
     from art.utils_test import get_classifier_kr
 
