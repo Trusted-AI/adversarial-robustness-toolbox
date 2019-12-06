@@ -37,6 +37,7 @@ from art.utils_test import get_classifier_kr
 from art.utils_test import get_classifier_pt
 from art.utils_test import get_iris_classifier_tf
 from art.utils_test import get_iris_classifier_kr
+from art.utils_test import get_iris_classifier_pt
 from art import NUMPY_DTYPE
 
 logger = logging.getLogger(__name__)
@@ -52,7 +53,7 @@ except ImportError:
 
 BATCH_SIZE = 100
 NB_TRAIN = 1000
-NB_EPOCHS = 20
+NB_EPOCHS = 10
 NB_STOLEN = 1000
 
 
@@ -111,7 +112,7 @@ class TestCopycatCNN(unittest.TestCase):
         thieved_preds = np.argmax(thieved_tfc.predict(x=self.x_train[:100]), axis=1)
         acc = np.sum(victim_preds == thieved_preds) / len(victim_preds)
 
-        self.assertGreater(acc, 0.5)
+        self.assertGreater(acc, 0.3)
 
         # Clean-up session
         sess.close()
@@ -147,7 +148,7 @@ class TestCopycatCNN(unittest.TestCase):
         thieved_preds = np.argmax(thieved_krc.predict(x=self.x_train[:100]), axis=1)
         acc = np.sum(victim_preds == thieved_preds) / len(victim_preds)
 
-        self.assertGreater(acc, 0.5)
+        self.assertGreater(acc, 0.3)
 
         # Clean-up
         k.clear_session()
@@ -212,7 +213,7 @@ class TestCopycatCNN(unittest.TestCase):
 
         acc = np.sum(victim_preds == thieved_preds) / len(victim_preds)
 
-        self.assertGreater(acc, 0.5)
+        self.assertGreater(acc, 0.3)
 
 
 class TestCopycatCNNVectors(unittest.TestCase):
@@ -263,7 +264,7 @@ class TestCopycatCNNVectors(unittest.TestCase):
         thieved_preds = np.argmax(thieved_tfc.predict(x=self.x_train[:100]), axis=1)
         acc = np.sum(victim_preds == thieved_preds) / len(victim_preds)
 
-        self.assertGreater(acc, 0.5)
+        self.assertGreater(acc, 0.3)
 
         # Clean-up session
         sess.close()
@@ -295,16 +296,63 @@ class TestCopycatCNNVectors(unittest.TestCase):
         thieved_preds = np.argmax(thieved_krc.predict(x=self.x_train[:100]), axis=1)
         acc = np.sum(victim_preds == thieved_preds) / len(victim_preds)
 
-        self.assertGreater(acc, 0.5)
+        self.assertGreater(acc, 0.3)
 
         # Clean-up
         k.clear_session()
 
+    def test_iris_pt(self):
+        """
+        Third test for Pytorch.
+        :return:
+        """
+        # Build PyTorchClassifier
+        victim_ptc = get_iris_classifier_pt()
+
+        class Model(nn.Module):
+            """
+            Create Iris model for PyTorch.
+            """
+
+            def __init__(self):
+                super(Model, self).__init__()
+
+                self.fully_connected1 = nn.Linear(4, 10)
+                self.fully_connected2 = nn.Linear(10, 10)
+                self.fully_connected3 = nn.Linear(10, 3)
+
+            # pylint: disable=W0221
+            # disable pylint because of API requirements for function
+            def forward(self, x):
+                x = self.fully_connected1(x)
+                x = self.fully_connected2(x)
+                logit_output = self.fully_connected3(x)
+
+                return logit_output
+
+        # Define the network
+        model = Model()
+
+        # Define a loss function and optimizer
+        loss_fn = nn.CrossEntropyLoss()
+        optimizer = optim.Adam(model.parameters(), lr=0.001)
+
+        # Get classifier
+        thieved_ptc = PyTorchClassifier(model=model, loss=loss_fn, optimizer=optimizer, input_shape=(4,),
+                                        nb_classes=3, clip_values=(0, 1), channel_index=1)
+
+        # Create attack
+        copycat_cnn = CopycatCNN(classifier=victim_ptc, batch_size=BATCH_SIZE, nb_epochs=NB_EPOCHS, nb_stolen=NB_STOLEN)
+        thieved_ptc = copycat_cnn.generate(x=self.x_train, thieved_classifier=thieved_ptc)
+
+        victim_preds = np.argmax(victim_ptc.predict(x=self.x_train[:100]), axis=1)
+        thieved_preds = np.argmax(thieved_ptc.predict(x=self.x_train[:100]), axis=1)
+        acc = np.sum(victim_preds == thieved_preds) / len(victim_preds)
+
+        self.assertGreater(acc, 0.3)
 
 
 
-#
-#     def test_iris_pt(self):
 #
 #     def test_scikitlearn(self):
 
