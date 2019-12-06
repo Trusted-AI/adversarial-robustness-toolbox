@@ -24,14 +24,14 @@ import numpy as np
 
 from art.utils import load_dataset, master_seed
 from art.utils_test import get_classifier_kr
-from art.wrappers.output_rounded import OutputRounded
+from art.wrappers.output_high_values import OutputHighValues
 
 logger = logging.getLogger(__name__)
 
 
 class TestRoundedOutput(unittest.TestCase):
     """
-    A unittest class for testing the Rounded Output wrapper.
+    A unittest class for testing the High Values Output wrapper.
     """
 
     @classmethod
@@ -43,25 +43,27 @@ class TestRoundedOutput(unittest.TestCase):
     def setUp(self):
         master_seed(1234)
 
-    def test_decimals_2(self):
+    def test_decimals_0_1(self):
         """
-        Test with 2 decimal places.
+        Test with cutoff of 0.1.
         """
         (_, _), (x_test, _) = self.mnist
-        output_rounded = OutputRounded(classifier=self.classifier, decimals=2)
-        expected_predictions = np.asarray([[0.12, 0.05, 0.1, 0.06, 0.11, 0.05, 0.06, 0.31, 0.08, 0.06]],
+        output_rounded = OutputHighValues(classifier=self.classifier, cutoff=0.1)
+        print(output_rounded.predict(x_test[0:1]))
+        expected_predictions = np.asarray([[0.12109935, 0.0, 0.0, 0.0, 0.11366928, 0.0, 0.0, 0.30685693, 0.0, 0.0]],
                                           dtype=np.float32)
-        np.testing.assert_array_equal(output_rounded.predict(x_test[0:1]), expected_predictions)
+        np.testing.assert_array_almost_equal(output_rounded.predict(x_test[0:1]), expected_predictions, decimal=4)
 
-    def test_decimals_3(self):
+    def test_decimals_0_2(self):
         """
-        Test with 3 decimal places.
+        Test with cutoff of 0.2.
         """
         (_, _), (x_test, _) = self.mnist
-        output_rounded = OutputRounded(classifier=self.classifier, decimals=3)
-        expected_predictions = np.asarray([[0.121, 0.05, 0.099, 0.064, 0.114, 0.046, 0.064, 0.307, 0.076, 0.058]],
+        output_rounded = OutputHighValues(classifier=self.classifier, cutoff=0.2)
+        print(output_rounded.predict(x_test[0:1]))
+        expected_predictions = np.asarray([[0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.30685693, 0.0, 0.0]],
                                           dtype=np.float32)
-        np.testing.assert_array_equal(output_rounded.predict(x_test[0:1]), expected_predictions)
+        np.testing.assert_array_almost_equal(output_rounded.predict(x_test[0:1]), expected_predictions, decimal=4)
 
 
 if __name__ == '__main__':
