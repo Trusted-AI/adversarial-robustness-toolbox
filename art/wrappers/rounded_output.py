@@ -16,9 +16,7 @@
 # TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 # SOFTWARE.
 """
-This module implements the defence against model extraction attacks by returning only rounded probabilities.
-
-| Paper link:
+This module implements a classifier wrapper which is rounding the classfier's prediction output.
 """
 import logging
 
@@ -32,14 +30,12 @@ logger = logging.getLogger(__name__)
 
 class RoundedOutput(ClassifierWrapper, Classifier):
     """
-    Implementation
-
-    | Paper link:
+    Implementation of a classifier wrapper which is rounding the classfier's prediction output.
     """
 
     def __init__(self, classifier, decimals=3):
         """
-        Create a wrapper for rounded output.
+        Create a wrapper for rounded prediction output.
 
         :param classifier: The Classifier we want to wrap the functionality for the purpose of smoothing.
         :type classifier: :class:`.Classifier`
