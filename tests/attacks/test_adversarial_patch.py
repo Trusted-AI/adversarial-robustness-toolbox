@@ -30,7 +30,7 @@ from art.utils import load_dataset, master_seed
 from art.utils_test import get_classifier_tf, get_classifier_kr, get_classifier_pt, get_iris_classifier_kr
 from art.classifiers.scikitlearn import ScikitlearnDecisionTreeClassifier
 
-logger = logging.getLogger('testLogger')
+logger = logging.getLogger(__name__)
 
 BATCH_SIZE = 10
 NB_TRAIN = 10
@@ -54,7 +54,7 @@ class TestAdversarialPatch(unittest.TestCase):
     def setUp(self):
         master_seed(1234)
 
-    def test_tfclassifier(self):
+    def test_tensorflow(self):
         """
         First test with the TensorFlowClassifier.
         :return:
@@ -73,7 +73,7 @@ class TestAdversarialPatch(unittest.TestCase):
 
     @unittest.skipIf(tf.__version__[0] == '2', reason='Skip unittests for TensorFlow v2 until Keras supports TensorFlow'
                                                       ' v2 as backend.')
-    def test_krclassifier(self):
+    def test_keras(self):
         """
         Second test with the KerasClassifier.
         :return:
@@ -90,14 +90,14 @@ class TestAdversarialPatch(unittest.TestCase):
 
         k.clear_session()
 
-    def test_ptclassifier(self):
+    def test_pytorch(self):
         """
         Third test with the PyTorchClassifier.
         :return:
         """
         ptc = get_classifier_pt()
 
-        x_train = np.swapaxes(self.x_train, 1, 3).astype(np.float32)
+        x_train = np.reshape(self.x_train, (self.x_train.shape[0], 1, 28, 28)).astype(np.float32)
 
         attack_ap = AdversarialPatch(ptc, rotation_max=22.5, scale_min=0.1, scale_max=1.0, learning_rate=5.0,
                                      batch_size=10, max_iter=500)
@@ -106,14 +106,14 @@ class TestAdversarialPatch(unittest.TestCase):
 
         self.assertAlmostEqual(patch_adv[0, 8, 8], -3.143605902784875, delta=0.1)
         self.assertAlmostEqual(patch_adv[0, 14, 14], 19.790434152473054, delta=0.1)
-        self.assertAlmostEqual(float(np.sum(patch_adv)), 394.905, delta=0.1)
+        self.assertAlmostEqual(float(np.sum(patch_adv)), 383.068, delta=0.1)
 
     @unittest.skipIf(tf.__version__[0] == '2', reason='Skip unittests for TensorFlow v2 until Keras supports TensorFlow'
                                                       ' v2 as backend.')
     def test_failure_feature_vectors(self):
         attack_params = {"rotation_max": 22.5, "scale_min": 0.1, "scale_max": 1.0, "learning_rate": 5.0,
                          "number_of_steps": 5, "batch_size": 10}
-        classifier, _ = get_iris_classifier_kr()
+        classifier = get_iris_classifier_kr()
         attack = AdversarialPatch(classifier=classifier)
         attack.set_params(**attack_params)
         data = np.random.rand(10, 4)

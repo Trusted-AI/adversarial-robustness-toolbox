@@ -30,6 +30,7 @@ from scipy.optimize import minimize
 
 from art.attacks.attack import Attack
 from art.classifiers.GPy import GPyGaussianProcessClassifier
+from art.utils import compute_success
 
 logger = logging.getLogger(__name__)
 
@@ -108,9 +109,10 @@ class HighConfidenceLowUncertainty(Attack):
                         constr_conf = {'type': 'ineq', 'fun': constraint_conf, 'args': (init_args,)}
                         constr_unc = {'type': 'ineq', 'fun': constraint_unc, 'args': (init_args,)}
                         args = {'args': init_args, 'orig': x[i].reshape(-1)}
-                        # #finally, run optimization
-                        x_adv[i] = \
-                        minimize(minfun, x_adv[i], args=args, bounds=bounds, constraints=[constr_conf, constr_unc])['x']
+                        #finally, run optimization
+                        x_adv[i] = minimize(minfun, x_adv[i], args=args, bounds=bounds, 
+                                            constraints=[constr_conf, constr_unc])['x']
+                logger.info('Success rate of HCLU attack: %.2f%%', 100 * compute_success(self.classifier, x, y, x_adv))
                 return x_adv
 
         def set_params(self, **kwargs):

@@ -28,7 +28,7 @@ from art.classifiers import PyTorchClassifier
 from art.defences import PixelDefend
 from art.utils import load_mnist, master_seed
 
-logger = logging.getLogger('testLogger')
+logger = logging.getLogger(__name__)
 
 
 class ModelImage(nn.Module):
@@ -66,6 +66,7 @@ class TestPixelDefend(unittest.TestCase):
         (x_train, _), (_, _), _, _ = load_mnist()
         x_train = x_train[:2, 10:15, 15:20, :]
         x_train = x_train.astype(np.float32)
+        x_train_original = x_train.copy()
 
         # Define the network
         model = ModelImage()
@@ -79,6 +80,9 @@ class TestPixelDefend(unittest.TestCase):
         self.assertEqual(x_defended.shape, x_train.shape)
         self.assertTrue((x_defended <= 1.0).all())
         self.assertTrue((x_defended >= 0.0).all())
+
+        # Check that x_train has not been modified by attack and classifier
+        self.assertAlmostEqual(float(np.max(np.abs(x_train_original - x_train))), 0.0, delta=0.00001)
 
     def test_feature_vectors(self):
         # Define the network

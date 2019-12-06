@@ -22,7 +22,6 @@ import unittest
 
 import keras.backend as k
 import numpy as np
-import tensorflow as tf
 
 from art.attacks import HopSkipJump
 from art.classifiers import KerasClassifier
@@ -30,7 +29,7 @@ from art.utils import load_dataset, random_targets, master_seed
 from art.utils_test import get_classifier_tf, get_classifier_kr, get_classifier_pt
 from art.utils_test import get_iris_classifier_tf, get_iris_classifier_kr, get_iris_classifier_pt
 
-logger = logging.getLogger('testLogger')
+logger = logging.getLogger(__name__)
 
 NB_TRAIN = 100
 NB_TEST = 10
@@ -43,26 +42,28 @@ class TestHopSkipJump(unittest.TestCase):
 
     @classmethod
     def setUpClass(cls):
-        # Get MNIST
+        # MNIST
         (x_train, y_train), (x_test, y_test), _, _ = load_dataset('mnist')
-        x_train, y_train = x_train[:NB_TRAIN], y_train[:NB_TRAIN]
-        x_test, y_test = x_test[:NB_TEST], y_test[:NB_TEST]
+        x_train, y_train, x_test, y_test = x_train[:NB_TRAIN], y_train[:NB_TRAIN], x_test[:NB_TEST], y_test[:NB_TEST]
         cls.mnist = (x_train, y_train), (x_test, y_test)
 
+        # Iris
+        (x_train, y_train), (x_test, y_test), _, _ = load_dataset('iris')
+        cls.iris = (x_train, y_train), (x_test, y_test)
+
     def setUp(self):
-        # Set master seed
         master_seed(1234)
 
-    def test_tfclassifier(self):
+    def test_tensorflow_mnist(self):
         """
         First test with the TensorFlowClassifier.
         :return:
         """
+        (_, _), (x_test, y_test) = self.mnist
+        x_test_original = x_test.copy()
+
         # Build TensorFlowClassifier
         tfc, sess = get_classifier_tf()
-
-        # Get MNIST
-        (_, _), (x_test, y_test) = self.mnist
 
         # First targeted attack and norm=2
         hsj = HopSkipJump(classifier=tfc, targeted=True, max_iter=2, max_eval=100, init_eval=10)
@@ -114,21 +115,22 @@ class TestHopSkipJump(unittest.TestCase):
         y_pred_adv = np.argmax(tfc.predict(x_test_adv), axis=1)
         self.assertTrue((y_pred != y_pred_adv).any())
 
+        # Check that x_test has not been modified by attack and classifier
+        self.assertAlmostEqual(float(np.max(np.abs(x_test_original - x_test))), 0.0, delta=0.00001)
+
         # Clean-up session
         sess.close()
 
-    @unittest.skipIf(tf.__version__[0] == '2', reason='Skip unittests for TensorFlow v2 until Keras supports TensorFlow'
-                                                      ' v2 as backend.')
-    def test_krclassifier(self):
+    def test_keras_mnist(self):
         """
         Second test with the KerasClassifier.
         :return:
         """
+        (_, _), (x_test, y_test) = self.mnist
+        x_test_original = x_test.copy()
+
         # Build KerasClassifier
         krc = get_classifier_kr()
-
-        # Get MNIST
-        (_, _), (x_test, y_test) = self.mnist
 
         # First targeted attack and norm=2
         hsj = HopSkipJump(classifier=krc, targeted=True, max_iter=2, max_eval=100, init_eval=10)
@@ -180,21 +182,23 @@ class TestHopSkipJump(unittest.TestCase):
         y_pred_adv = np.argmax(krc.predict(x_test_adv), axis=1)
         self.assertTrue((y_pred != y_pred_adv).any())
 
+        # Check that x_test has not been modified by attack and classifier
+        self.assertAlmostEqual(float(np.max(np.abs(x_test_original - x_test))), 0.0, delta=0.00001)
+
         # Clean-up session
         k.clear_session()
-        tf.reset_default_graph()
 
     def test_ptclassifier(self):
         """
         Third test with the PyTorchClassifier.
         :return:
         """
-        # Build PyTorchClassifier
-        ptc = get_classifier_pt()
-
-        # Get MNIST
         (_, _), (x_test, y_test) = self.mnist
         x_test = np.swapaxes(x_test, 1, 3).astype(np.float32)
+        x_test_original = x_test.copy()
+
+        # Build PyTorchClassifier
+        ptc = get_classifier_pt()
 
         # First targeted attack and norm=2
         hsj = HopSkipJump(classifier=ptc, targeted=True, max_iter=2, max_eval=100, init_eval=10)
@@ -246,6 +250,9 @@ class TestHopSkipJump(unittest.TestCase):
         y_pred_adv = np.argmax(ptc.predict(x_test_adv), axis=1)
         self.assertTrue((y_pred != y_pred_adv).any())
 
+        # Check that x_test has not been modified by attack and classifier
+        self.assertAlmostEqual(float(np.max(np.abs(x_test_original - x_test))), 0.0, delta=0.00001)
+
     def test_classifier_type_check_fail_classifier(self):
         # Use a useless test classifier to test basic classifier properties
         class ClassifierNoAPI:
@@ -258,22 +265,31 @@ class TestHopSkipJump(unittest.TestCase):
         self.assertIn('For `HopSkipJump` classifier must be an instance of `art.classifiers.classifier.Classifier`, the'
                       ' provided classifier is instance of (<class \'object\'>,).', str(context.exception))
 
+    def test_pytorch_resume(self):
+        (_, _), (x_test, y_test) = self.mnist
+        x_test = np.reshape(x_test, (x_test.shape[0], 1, 28, 28)).astype(np.float32)
 
-class TestHopSkipJumpVectors(unittest.TestCase):
-    @classmethod
-    def setUpClass(cls):
-        # Get Iris
-        (x_train, y_train), (x_test, y_test), _, _ = load_dataset('iris')
-        cls.iris = (x_train, y_train), (x_test, y_test)
+        # Build PyTorchClassifier
+        ptc = get_classifier_pt()
 
-    def setUp(self):
-        master_seed(1234)
+        # HSJ attack
+        hsj = HopSkipJump(classifier=ptc, targeted=True, max_iter=10, max_eval=100, init_eval=10)
 
-    @unittest.skipIf(tf.__version__[0] == '2', reason='Skip unittests for TensorFlow v2 until Keras supports TensorFlow'
-                                                      ' v2 as backend.')
-    def test_iris_k_clipped(self):
+        params = {'y': y_test[2:3], 'x_adv_init': x_test[2:3]}
+        x_test_adv1 = hsj.generate(x_test[0:1], **params)
+        diff1 = np.linalg.norm(x_test_adv1 - x_test)
+
+        params.update(resume=True, x_adv_init=x_test_adv1)
+        x_test_adv2 = hsj.generate(x_test[0:1], **params)
+        params.update(x_adv_init=x_test_adv2)
+        x_test_adv2 = hsj.generate(x_test[0:1], **params)
+        diff2 = np.linalg.norm(x_test_adv2 - x_test)
+
+        self.assertGreater(diff1, diff2)
+
+    def test_keras_iris_clipped(self):
         (_, _), (x_test, y_test) = self.iris
-        classifier, _ = get_iris_classifier_kr()
+        classifier = get_iris_classifier_kr()
 
         # Norm=2
         attack = HopSkipJump(classifier, targeted=False, max_iter=2, max_eval=100, init_eval=10)
@@ -302,11 +318,9 @@ class TestHopSkipJumpVectors(unittest.TestCase):
         # Clean-up session
         k.clear_session()
 
-    @unittest.skipIf(tf.__version__[0] == '2', reason='Skip unittests for Tensorflow v2 until Keras supports Tensorflow'
-                                                      ' v2 as backend.')
-    def test_iris_k_unbounded(self):
+    def test_keras_iris_unbounded(self):
         (_, _), (x_test, y_test) = self.iris
-        classifier, _ = get_iris_classifier_kr()
+        classifier = get_iris_classifier_kr()
 
         # Recreate a classifier without clip values
         classifier = KerasClassifier(model=classifier._model, use_logits=False, channel_index=1)
@@ -334,7 +348,7 @@ class TestHopSkipJumpVectors(unittest.TestCase):
         # Clean-up session
         k.clear_session()
 
-    def test_iris_tf(self):
+    def test_tensorflow_iris(self):
         (_, _), (x_test, y_test) = self.iris
         classifier, sess = get_iris_classifier_tf()
 
@@ -391,7 +405,7 @@ class TestHopSkipJumpVectors(unittest.TestCase):
         # Clean-up session
         sess.close()
 
-    def test_iris_pt(self):
+    def test_pytorch_iris(self):
         (_, _), (x_test, y_test) = self.iris
         classifier = get_iris_classifier_pt()
         x_test = x_test.astype(np.float32)
@@ -445,6 +459,7 @@ class TestHopSkipJumpVectors(unittest.TestCase):
                                   LinearSVC: ScikitlearnSVC}
 
         (_, _), (x_test, y_test) = self.iris
+        x_test_original = x_test.copy()
 
         for (model_class, classifier_class) in scikitlearn_test_cases.items():
             model = model_class()
@@ -476,6 +491,9 @@ class TestHopSkipJumpVectors(unittest.TestCase):
             acc = np.sum(preds_adv == np.argmax(y_test, axis=1)) / y_test.shape[0]
             logger.info('Accuracy of ' + classifier.__class__.__name__ + ' on Iris with HopSkipJump adversarial '
                         'examples: %.2f%%', (acc * 100))
+
+            # Check that x_test has not been modified by attack and classifier
+            self.assertAlmostEqual(float(np.max(np.abs(x_test_original - x_test))), 0.0, delta=0.00001)
 
 
 if __name__ == '__main__':

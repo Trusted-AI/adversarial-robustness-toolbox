@@ -25,7 +25,7 @@ import numpy as np
 from art.defences import SpatialSmoothing
 from art.utils import master_seed
 
-logger = logging.getLogger('testLogger')
+logger = logging.getLogger(__name__)
 
 
 class TestLocalSpatialSmoothing(unittest.TestCase):
@@ -38,13 +38,15 @@ class TestLocalSpatialSmoothing(unittest.TestCase):
         x = np.ones((1, m, n, 3))
 
         # Start to test
-        for window_size in range(1, 20):
+        for window_size in range(1, 10):
+            logger.info('Window size: {}'.format(window_size))
             preprocess = SpatialSmoothing(window_size=window_size)
             smoothed_x, _ = preprocess(x)
-            self.assertTrue((smoothed_x == 1).all())
+            np.testing.assert_array_almost_equal(smoothed_x, x, decimal=2)
 
     def test_fix(self):
         x = np.array([[[[0.1], [0.2], [0.3]], [[0.7], [0.8], [0.9]], [[0.4], [0.5], [0.6]]]]).astype(np.float32)
+        x_original = x.copy()
 
         # Start to test
         preprocess = SpatialSmoothing(window_size=3)
@@ -60,6 +62,9 @@ class TestLocalSpatialSmoothing(unittest.TestCase):
         x_smooth, _ = preprocess(x)
         self.assertTrue((x_smooth == np.array(
             [[[[0.1], [0.2], [0.3]], [[0.7], [0.7], [0.8]], [[0.7], [0.7], [0.8]]]]).astype(np.float32)).all())
+
+        # Check that x has not been modified by attack and classifier
+        self.assertAlmostEqual(float(np.max(np.abs(x_original - x))), 0.0, delta=0.00001)
 
     def test_channels(self):
         x = np.arange(9).reshape((1, 1, 3, 3))

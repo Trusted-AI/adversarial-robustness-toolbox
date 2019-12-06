@@ -201,7 +201,13 @@ class Classifier(ABC):
         :type x: `np.ndarray`
         :return: Array for `x` with the standardized data.
         :rtype: `np.ndarray`
+        :raises: `TypeError`
         """
+        if x.dtype in [np.uint8, np.uint16, np.uint32, np.uint64]:
+            raise TypeError('The data type of input data `x` is {} and cannot represent negative values. Consider '
+                            'changing the data type of the input data `x` to a type that supports negative values e.g. '
+                            'np.float32.'.format(x.dtype))
+
         if self.preprocessing is not None:
             sub, div = self.preprocessing
             sub = np.asarray(sub, dtype=x.dtype)

@@ -34,6 +34,7 @@ import numpy as np
 from art.poison_detection.clustering_analyzer import ClusteringAnalyzer
 from art.poison_detection.ground_truth_evaluator import GroundTruthEvaluator
 from art.poison_detection.poison_filtering_defence import PoisonFilteringDefence
+from art.utils import segment_by_class
 from art.visualization import create_sprite, save_image, plot_3d
 
 logger = logging.getLogger(__name__)
@@ -514,15 +515,7 @@ class ActivationDefence(PoisonFilteringDefence):
         :rtype: `list`
         """
         n_classes = self.classifier.nb_classes()
-        by_class = [[] for _ in range(n_classes)]
-        for indx, feature in enumerate(features):
-            if n_classes > 2:
-                assigned = np.argmax(feature)
-            else:
-                assigned = int(feature)
-            by_class[assigned].append(data[indx])
-
-        return [np.asarray(i) for i in by_class]
+        return segment_by_class(data, features, n_classes)
 
 
 def measure_misclassification(classifier, x_test, y_test):
