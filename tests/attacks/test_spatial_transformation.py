@@ -56,6 +56,8 @@ class TestSpatialTransformation(unittest.TestCase):
         First test with the TensorFlowClassifier.
         :return:
         """
+        x_test_original = self.x_test.copy()
+
         # Build TensorFlowClassifier
         tfc, sess = get_classifier_tf()
 
@@ -75,6 +77,9 @@ class TestSpatialTransformation(unittest.TestCase):
 
         self.assertAlmostEqual(x_test_adv[0, 14, 14, 0], 0.013572651, delta=0.01)
 
+        # Check that x_test has not been modified by attack and classifier
+        self.assertAlmostEqual(float(np.max(np.abs(x_test_original - self.x_test))), 0.0, delta=0.00001)
+
         sess.close()
 
     def test_krclassifier(self):
@@ -82,6 +87,8 @@ class TestSpatialTransformation(unittest.TestCase):
         Second test with the KerasClassifier.
         :return:
         """
+        x_test_original = self.x_test.copy()
+
         # Build KerasClassifier
         krc = get_classifier_kr()
 
@@ -101,6 +108,9 @@ class TestSpatialTransformation(unittest.TestCase):
 
         self.assertAlmostEqual(x_test_adv[0, 14, 14, 0], 0.013572651, delta=0.01)
 
+        # Check that x_test has not been modified by attack and classifier
+        self.assertAlmostEqual(float(np.max(np.abs(x_test_original - self.x_test))), 0.0, delta=0.00001)
+
         k.clear_session()
 
     def test_ptclassifier(self):
@@ -108,30 +118,31 @@ class TestSpatialTransformation(unittest.TestCase):
         Third test with the PyTorchClassifier.
         :return:
         """
-        # Build PyTorchClassifier
-        ptc = get_classifier_pt()
+        x_train = np.reshape(self.x_train, (self.x_train.shape[0], 1, 28, 28)).astype(np.float32)
+        x_test = np.reshape(self.x_test, (self.x_test.shape[0], 1, 28, 28)).astype(np.float32)
+        x_test_original = x_test.copy()
 
-        x_train = np.swapaxes(self.x_train, 1, 3).astype(np.float32)
-        x_test = np.swapaxes(self.x_test, 1, 3).astype(np.float32)
+        # Build PyTorchClassifier
+        ptc = get_classifier_pt(from_logits=True)
 
         # Attack
         attack_st = SpatialTransformation(ptc, max_translation=10.0, num_translations=3, max_rotation=30.0,
                                           num_rotations=3)
         x_train_adv = attack_st.generate(x_train)
 
-        print('abs(x_train_adv[0, 0, 13, :]', abs(x_train[0, 0, 13, :]))
-        print('abs(x_train_adv[0, 0, 13, :]', abs(x_train_adv[0, 0, 13, :]))
-
-        self.assertAlmostEqual(x_train_adv[0, 0, 13, 7], 0.287, delta=0.01)
-        self.assertAlmostEqual(attack_st.fooling_rate, 0.82, delta=0.01)
+        self.assertAlmostEqual(x_train_adv[0, 0, 13, 18], 0.627451, delta=0.01)
+        self.assertAlmostEqual(attack_st.fooling_rate, 0.59, delta=0.01)
 
         self.assertEqual(attack_st.attack_trans_x, 0)
         self.assertEqual(attack_st.attack_trans_y, 3)
-        self.assertEqual(attack_st.attack_rot, -30.0)
+        self.assertEqual(attack_st.attack_rot, 0.0)
 
         x_test_adv = attack_st.generate(x_test)
 
         self.assertLessEqual(abs(x_test_adv[0, 0, 14, 14] - 0.008591662), 0.01)
+
+        # Check that x_test has not been modified by attack and classifier
+        self.assertAlmostEqual(float(np.max(np.abs(x_test_original - x_test))), 0.0, delta=0.00001)
 
     def test_failure_feature_vectors(self):
         attack_params = {"max_translation": 10.0, "num_translations": 3, "max_rotation": 30.0, "num_rotations": 3}

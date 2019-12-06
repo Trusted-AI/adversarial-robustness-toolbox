@@ -103,6 +103,7 @@ class TestSVMAttack(unittest.TestCase):
         Test using a attack on LinearSVC
         """
         (x_train, y_train), (x_test, y_test), min_, max_ = self.iris
+        x_test_original = x_test.copy()
 
         # Build Scikitlearn Classifier
         clip_values = (min_, max_)
@@ -119,6 +120,9 @@ class TestSVMAttack(unittest.TestCase):
         logger.info("Clean Accuracy {}%".format(acc))
         logger.info("Poison Accuracy {}%".format(poison_acc))
         self.assertGreaterEqual(acc, poison_acc)
+
+        # Check that x_test has not been modified by attack and classifier
+        self.assertAlmostEqual(float(np.max(np.abs(x_test_original - x_test))), 0.0, delta=0.00001)
 
     def test_unsupported_kernel(self):
         (x_train, y_train), (x_test, y_test), min_, max_ = self.iris
@@ -139,6 +143,7 @@ class TestSVMAttack(unittest.TestCase):
         """
         # Get MNIST
         (x_train, y_train), (x_test, y_test), min_, max_ = self.iris
+        x_test_original = x_test.copy()
 
         # Build Scikitlearn Classifier
         clip_values = (min_, max_)
@@ -157,6 +162,9 @@ class TestSVMAttack(unittest.TestCase):
             logger.info("Clean Accuracy {}%".format(acc))
             logger.info("Poison Accuracy {}%".format(poison_acc))
             self.assertGreaterEqual(acc, poison_acc)
+
+            # Check that x_test has not been modified by attack and classifier
+            self.assertAlmostEqual(float(np.max(np.abs(x_test_original - x_test))), 0.0, delta=0.00001)
 
 
 if __name__ == '__main__':
