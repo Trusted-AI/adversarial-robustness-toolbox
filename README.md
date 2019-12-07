@@ -80,6 +80,13 @@ Get in touch with us on [Slack](https://ibm-art.slack.com) (invite [here](https:
 * Virtual adversarial training ([Miyato et al., 2015](https://arxiv.org/abs/1507.00677))
 * Adversarial training ([Szegedy et al., 2013](http://arxiv.org/abs/1312.6199))
 
+**Extraction Defences:**
+* Reverse Sigmoid ([Lee et al., 2018](https://arxiv.org/abs/1806.00054))
+* Random Noise ([Chandrasekaranet al., 2018](https://arxiv.org/abs/1811.02054))
+* Class Labels ([Tramer et al., 2016](https://arxiv.org/abs/1609.02943), [Chandrasekaranet al., 2018](https://arxiv.org/abs/1811.02054))
+* High Confidence ([Tramer et al., 2016](https://arxiv.org/abs/1609.02943))
+* Rounding ([Tramer et al., 2016](https://arxiv.org/abs/1609.02943))
+
 **Robustness metrics, certifications and verifications**:
 * Clique Method Robustness Verification ([Hongge et al., 2019](https://arxiv.org/abs/1906.03849))
 * Randomized Smoothing ([Cohen et al., 2019](https://arxiv.org/abs/1902.02918))

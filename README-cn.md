@@ -67,6 +67,13 @@ ART正在不断发展中。 我们欢迎您的反馈，错误报告和对ART建�
 * 虚拟对抗训练 ([Miyato et al., 2015](https://arxiv.org/abs/1507.00677))
 * 对抗训练 ([Szegedy et al., 2013](http://arxiv.org/abs/1312.6199))
 
+**提取防御:**
+* 反向乙状结肠 ([Lee et al., 2018](https://arxiv.org/abs/1806.00054))
+* 随机噪声 ([Chandrasekaranet al., 2018](https://arxiv.org/abs/1811.02054))
+* 类标签 ([Tramer et al., 2016](https://arxiv.org/abs/1609.02943), [Chandrasekaranet al., 2018](https://arxiv.org/abs/1811.02054))
+* 高信心 ([Tramer et al., 2016](https://arxiv.org/abs/1609.02943))
+* 四舍五入 ([Tramer et al., 2016](https://arxiv.org/abs/1609.02943))
+
 **稳健性指标，认证和验证：**
 * Clique方法稳健性验证 ([Hongge et al., 2019](https://arxiv.org/abs/1906.03849))
 * 随机平滑 ([Cohen et al., 2019](https://arxiv.org/abs/1902.02918))
