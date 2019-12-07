@@ -29,7 +29,7 @@ from art.wrappers.output_class_labels import ClassLabels
 logger = logging.getLogger(__name__)
 
 
-class TestRoundedOutput(unittest.TestCase):
+class TestClassLabels(unittest.TestCase):
     """
     A unittest class for testing the Class Labels wrapper.
     """

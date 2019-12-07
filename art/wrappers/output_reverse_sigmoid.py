@@ -38,9 +38,9 @@ class ReverseSigmoid(ClassifierWrapper, Classifier):
 
     def __init__(self, classifier, beta=1.0, gamma=0.1):
         """
-        Create a wrapper for rounded prediction output.
+        Create a wrapper for the Reverse Sigmoid output perturbation.
 
-        :param classifier: The Classifier we want to wrap the functionality for the purpose of smoothing.
+        :param classifier: A trained classifier.
         :type classifier: :class:`.Classifier`
                 :param beta: A positive magnitude parameter
         :type beta: `float`
@@ -144,15 +144,3 @@ class ReverseSigmoid(ClassifierWrapper, Classifier):
         :return: None
         """
         raise NotImplementedError
-
-
-if __name__ == '__main__':
-    from art.utils import load_dataset
-    from art.utils_test import get_classifier_kr
-
-    (x_train, y_train), (x_test, y_test), _, _ = load_dataset('mnist')
-    classifier = get_classifier_kr()
-
-    rp = ReverseSigmoid(classifier=classifier, beta=1.0, gamma=0.1)
-    print(rp.predict(x_test[0:1]))
-    print(classifier.predict(x_test[0:1]))

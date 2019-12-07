@@ -37,7 +37,7 @@ class ClassLabels(ClassifierWrapper, Classifier):
         """
         Create a wrapper for class label predictions.
 
-        :param classifier: The Classifier we want to wrap the functionality for the purpose of smoothing.
+        :param classifier: A trained classifier.
         :type classifier: :class:`.Classifier`
         """
         super(ClassLabels, self).__init__(classifier)
@@ -45,7 +45,7 @@ class ClassLabels(ClassifierWrapper, Classifier):
     # pylint: disable=W0221
     def predict(self, x, batch_size=128, **kwargs):
         """
-        Prediction the wrapped classifier and class labels.
+        Make a prediction with the wrapped classifier and return class labels.
 
         :param x: Input data
         :type x: `np.ndarray`
@@ -129,15 +129,3 @@ class ClassLabels(ClassifierWrapper, Classifier):
         :return: None
         """
         raise NotImplementedError
-
-
-if __name__ == '__main__':
-    from art.utils import load_dataset
-    from art.utils_test import get_classifier_kr
-
-    (x_train, y_train), (x_test, y_test), _, _ = load_dataset('mnist')
-    classifier = get_classifier_kr()
-
-    rp = ClassLabels(classifier=classifier)
-    print(rp.predict(x_test[0:1]))
-    print(classifier.predict(x_test[0:1]))

@@ -29,7 +29,7 @@ from art.wrappers.output_high_values import OutputHighValues
 logger = logging.getLogger(__name__)
 
 
-class TestRoundedOutput(unittest.TestCase):
+class TestOutputHighValues(unittest.TestCase):
     """
     A unittest class for testing the High Values Output wrapper.
     """

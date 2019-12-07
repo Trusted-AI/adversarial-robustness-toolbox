@@ -16,7 +16,7 @@
 # TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 # SOFTWARE.
 """
-This module implements wrapper adding random noise to the classifier output.
+This module implements wrapper adding random Gaussian noise to the classifier output.
 """
 import logging
 
@@ -30,14 +30,14 @@ logger = logging.getLogger(__name__)
 
 class RandomNoise(ClassifierWrapper, Classifier):
     """
-    Implementation of a classifier wrapper adding random noise to the classifier output.
+    Implementation of a classifier wrapper adding random Gaussian noise to the classifier output.
     """
 
     def __init__(self, classifier, scale=0.2):
         """
         Create a wrapper for rounded prediction output.
 
-        :param classifier: The Classifier we want to wrap the functionality for the purpose of smoothing.
+        :param classifier: A trained classifier.
         :type classifier: :class:`.Classifier`
         :param scale: Standard deviation of the distribution.
         :type scale: `float`
@@ -48,7 +48,7 @@ class RandomNoise(ClassifierWrapper, Classifier):
     # pylint: disable=W0221
     def predict(self, x, batch_size=128, **kwargs):
         """
-        Prediction the wrapped classifier and round output to provided number of decimal places.
+        Make a prediction with the wrapped classifier, add random Gaussian noise and re-normalize predicted output.
 
         :param x: Input data
         :type x: `np.ndarray`
@@ -134,16 +134,3 @@ class RandomNoise(ClassifierWrapper, Classifier):
         :return: None
         """
         raise NotImplementedError
-
-
-if __name__ == '__main__':
-    from art.utils import load_dataset
-    from art.utils_test import get_classifier_kr
-
-    (x_train, y_train), (x_test, y_test), _, _ = load_dataset('mnist')
-    classifier = get_classifier_kr()
-
-    rp = RandomNoise(classifier=classifier, scale=0.1)
-    print(rp.predict(x_test[0:1]))
-    print(classifier.predict(x_test[0:1]))
-
