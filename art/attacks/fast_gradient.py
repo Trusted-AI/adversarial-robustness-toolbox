@@ -155,8 +155,8 @@ class FastGradientMethod(Attack):
         if self.minimal:
             logger.info('Performing minimal perturbation FGM.')
             adv_x_best = self._minimal_perturbation(x, y)
-            rate_best = 100 * compute_success(self.classifier, x, y, adv_x_best,
-                                              self.targeted, batch_size=self.batch_size)
+            rate_best = 100 * compute_success(self.classifier, x, y, adv_x_best, self.targeted,
+                                              batch_size=self.batch_size)
         else:
             adv_x_best = None
             rate_best = None
@@ -174,7 +174,7 @@ class FastGradientMethod(Attack):
                     adv_x_best = adv_x
 
         logger.info('Success rate of FGM attack: %.2f%%', rate_best if rate_best is not None else
-                    100 * compute_success(self.classifier, x, y, adv_x, self.targeted, batch_size=self.batch_size))
+                    100 * compute_success(self.classifier, x, y, adv_x_best, self.targeted, batch_size=self.batch_size))
 
         return adv_x_best
 
@@ -249,7 +249,7 @@ class FastGradientMethod(Attack):
         return grad
 
     def _apply_perturbation(self, batch, perturbation, eps_step):
-        batch += eps_step * perturbation
+        batch = batch + eps_step * perturbation
 
         if hasattr(self.classifier, 'clip_values') and self.classifier.clip_values is not None:
             clip_min, clip_max = self.classifier.clip_values

@@ -21,7 +21,6 @@ import logging
 import unittest
 
 import tensorflow as tf
-
 import keras
 import keras.backend as k
 import numpy as np
@@ -42,8 +41,7 @@ NB_TEST = 11
 ACCURACY_DROP = 0.0  # The unit tests are too inaccurate
 
 
-@unittest.skipIf(tf.__version__[0] == '2', reason='Skip AdversarialTrainer unittests for TensorFlow v2 until Keras '
-                                                  'supports it')
+@unittest.skipIf(tf.__version__[0] == '2', reason='Skip AdversarialTrainer unittests for TensorFlow v2.')
 class TestBase(unittest.TestCase):
     mnist = None
     classifier_k = None
@@ -142,6 +140,7 @@ class TestAdversarialTrainer(TestBase):
 
     def test_fit_predict(self):
         (x_train, y_train), (x_test, y_test) = self.mnist
+        x_test_original = x_test.copy()
 
         attack = FastGradientMethod(self.classifier_k)
         x_test_adv = attack.generate(x_test)
@@ -158,8 +157,12 @@ class TestAdversarialTrainer(TestBase):
         logger.info('Accuracy before adversarial training: %.2f%%', (acc * 100))
         logger.info('Accuracy after adversarial training: %.2f%%', (acc_new * 100))
 
+        # Check that x_test has not been modified by attack and classifier
+        self.assertAlmostEqual(float(np.max(np.abs(x_test_original - x_test))), 0.0, delta=0.00001)
+
     def test_transfer(self):
         (x_train, y_train), (x_test, y_test) = self.mnist
+        x_test_original = x_test.copy()
 
         attack = DeepFool(self.classifier_tf)
         x_test_adv = attack.generate(x_test)
@@ -176,8 +179,12 @@ class TestAdversarialTrainer(TestBase):
         logger.info('Accuracy before adversarial training: %.2f%%', (acc * 100))
         logger.info('Accuracy after adversarial training: %.2f%%', (acc_new * 100))
 
+        # Check that x_test has not been modified by attack and classifier
+        self.assertAlmostEqual(float(np.max(np.abs(x_test_original - x_test))), 0.0, delta=0.00001)
+
     def test_two_attacks(self):
         (x_train, y_train), (x_test, y_test) = self.mnist
+        x_test_original = x_test.copy()
 
         attack1 = FastGradientMethod(self.classifier_k)
         attack2 = DeepFool(self.classifier_tf)
@@ -196,9 +203,13 @@ class TestAdversarialTrainer(TestBase):
         logger.info('Accuracy before adversarial training: %.2f%%', (acc * 100))
         logger.info('\nAccuracy after adversarial training: %.2f%%', (acc_new * 100))
 
+        # Check that x_test has not been modified by attack and classifier
+        self.assertAlmostEqual(float(np.max(np.abs(x_test_original - x_test))), 0.0, delta=0.00001)
+
     def test_two_attacks_with_generator(self):
         (x_train, y_train), (x_test, y_test) = self.mnist
         x_train_original = x_train.copy()
+        x_test_original = x_test.copy()
 
         class MyDataGenerator(DataGenerator):
             def __init__(self, x, y, size, batch_size):
@@ -233,6 +244,9 @@ class TestAdversarialTrainer(TestBase):
 
         # Finally assert that the original training data hasn't changed:
         self.assertTrue((x_train == x_train_original).all())
+
+        # Check that x_test has not been modified by attack and classifier
+        self.assertAlmostEqual(float(np.max(np.abs(x_test_original - x_test))), 0.0, delta=0.00001)
 
     def test_targeted_attack_error(self):
         """

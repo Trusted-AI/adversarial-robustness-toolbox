@@ -81,7 +81,7 @@ def _kr_tf_weights_loader(dataset, weights_type, layer='DENSE'):
     return weights
 
 
-def get_classifier_tf():
+def get_classifier_tf(from_logits=False):
     """
     Standard TensorFlow classifier for unit testing.
 
@@ -115,6 +115,9 @@ def get_classifier_tf():
     logits = tf.layers.dense(flattened, 10, kernel_initializer=_tf_weights_loader('MNIST', 'W', 'DENSE'),
                              bias_initializer=_tf_weights_loader('MNIST', 'B', 'DENSE'))
 
+    # probabilities
+    probabilities = tf.keras.activations.softmax(x=logits)
+
     # Train operator
     loss = tf.reduce_mean(tf.losses.softmax_cross_entropy(logits=logits, onehot_labels=output_ph))
     optimizer = tf.train.AdamOptimizer(learning_rate=0.01)
@@ -125,8 +128,12 @@ def get_classifier_tf():
     sess.run(tf.global_variables_initializer())
 
     # Create the classifier
-    tfc = TensorFlowClassifier(clip_values=(0, 1), input_ph=input_ph, output=logits, labels_ph=output_ph, train=train,
-                               loss=loss, learning=None, sess=sess)
+    if from_logits:
+        tfc = TensorFlowClassifier(clip_values=(0, 1), input_ph=input_ph, output=logits, labels_ph=output_ph,
+                                   train=train, loss=loss, learning=None, sess=sess)
+    else:
+        tfc = TensorFlowClassifier(clip_values=(0, 1), input_ph=input_ph, output=probabilities, labels_ph=output_ph,
+                                   train=train, loss=loss, learning=None, sess=sess)
 
     return tfc, sess
 
@@ -156,6 +163,7 @@ def get_classifier_tf_v2():
         """
         Standard TensorFlow model for unit testing
         """
+
         def __init__(self):
             super(TensorFlowModel, self).__init__()
             self.conv1 = Conv2D(filters=1, kernel_size=7, activation='relu',
@@ -189,25 +197,28 @@ def get_classifier_tf_v2():
     return tfc
 
 
-def get_classifier_kr(loss_name='categorical_crossentropy'):
+def get_classifier_kr(loss_name='categorical_crossentropy', loss_type='function_losses', from_logits=False):
     """
     Standard Keras classifier for unit testing
 
     The weights and biases are identical to the TensorFlow model in get_classifier_tf().
 
+    :param loss_name: The name of the loss function.
+    :type loss_name: `str`
+    :param loss_type: The type of loss function definitions: label (loss function defined by string of its name),
+                      function_losses (loss function imported from keras.losses), function_backend (loss function
+                      imported from keras.backend)
+    :type loss_type: `str`
+    :param from_logits: Flag if model should predict logits (True) or probabilities (False).
+    :type from_logits: `bool`
+
     :return: KerasClassifier, tf.Session()
     """
     import keras
-    import keras.backend as k
     from keras.models import Sequential
     from keras.layers import Dense, Flatten, Conv2D, MaxPooling2D
-    import tensorflow as tf
 
     from art.classifiers import KerasClassifier
-
-    # Initialize a tf session
-    sess = tf.Session()
-    k.set_session(sess)
 
     # Create simple CNN
     model = Sequential()
@@ -216,41 +227,109 @@ def get_classifier_kr(loss_name='categorical_crossentropy'):
                      bias_initializer=_kr_weights_loader('MNIST', 'B', 'CONV2D')))
     model.add(MaxPooling2D(pool_size=(4, 4)))
     model.add(Flatten())
-    model.add(Dense(10, activation='softmax', kernel_initializer=_kr_weights_loader('MNIST', 'W', 'DENSE'),
-                    bias_initializer=_kr_weights_loader('MNIST', 'B', 'DENSE')))
+
+    if from_logits:
+        model.add(Dense(10, activation='linear', kernel_initializer=_kr_weights_loader('MNIST', 'W', 'DENSE'),
+                        bias_initializer=_kr_weights_loader('MNIST', 'B', 'DENSE')))
+    else:
+        model.add(Dense(10, activation='softmax', kernel_initializer=_kr_weights_loader('MNIST', 'W', 'DENSE'),
+                        bias_initializer=_kr_weights_loader('MNIST', 'B', 'DENSE')))
 
     if loss_name == 'categorical_hinge':
-        loss = keras.losses.categorical_hinge
+        if loss_type == 'label':
+            raise AttributeError('This combination of loss function options is not supported.')
+        elif loss_type == 'function_losses':
+            loss = keras.losses.categorical_hinge
     elif loss_name == 'categorical_crossentropy':
-        loss = keras.losses.categorical_crossentropy
+        if loss_type == 'label':
+            if from_logits:
+                raise AttributeError('This combination of loss function options is not supported.')
+            else:
+                loss = loss_name
+        elif loss_type == 'function_losses':
+            if from_logits:
+                if int(keras.__version__.split('.')[0]) == 2 and int(keras.__version__.split('.')[1]) >= 3:
+                    def categorical_crossentropy(y_true, y_pred):
+                        return keras.losses.categorical_crossentropy(y_true, y_pred, from_logits=True)
 
+                    loss = categorical_crossentropy
+                else:
+                    raise AttributeError('This combination of loss function options is not supported.')
+            else:
+                loss = keras.losses.categorical_crossentropy
+        elif loss_type == 'function_backend':
+            if from_logits:
+                def categorical_crossentropy(y_true, y_pred):
+                    return keras.backend.categorical_crossentropy(y_true, y_pred, from_logits=True)
+
+                loss = categorical_crossentropy
+            else:
+                loss = keras.backend.categorical_crossentropy
     elif loss_name == 'sparse_categorical_crossentropy':
-        loss = keras.losses.sparse_categorical_crossentropy
+        if loss_type == 'label':
+            if from_logits:
+                raise AttributeError('This combination of loss function options is not supported.')
+            else:
+                loss = loss_name
+        elif loss_type == 'function_losses':
+            if from_logits:
+                if int(keras.__version__.split('.')[0]) == 2 and int(keras.__version__.split('.')[1]) >= 3:
+                    def sparse_categorical_crossentropy(y_true, y_pred):
+                        return keras.losses.sparse_categorical_crossentropy(y_true, y_pred, from_logits=True)
 
-    elif loss_name == 'binary_crossentropy':
-        loss = keras.losses.binary_crossentropy
+                    loss = sparse_categorical_crossentropy
+                else:
+                    raise AttributeError('This combination of loss function options is not supported.')
+            else:
+                loss = keras.losses.sparse_categorical_crossentropy
+        elif loss_type == 'function_backend':
+            if from_logits:
+                def sparse_categorical_crossentropy(y_true, y_pred):
+                    return keras.backend.sparse_categorical_crossentropy(y_true, y_pred, from_logits=True)
 
+                loss = sparse_categorical_crossentropy
+            else:
+                loss = keras.backend.sparse_categorical_crossentropy
     elif loss_name == 'kullback_leibler_divergence':
-        loss = keras.losses.kullback_leibler_divergence
+        if loss_type == 'label':
+            raise AttributeError('This combination of loss function options is not supported.')
+        elif loss_type == 'function_losses':
+            loss = keras.losses.kullback_leibler_divergence
+        elif loss_type == 'function_backend':
+            raise AttributeError('This combination of loss function options is not supported.')
+    elif loss_name == 'cosine_similarity':
+        if loss_type == 'label':
+            loss = loss_name
+        elif loss_type == 'function_losses':
+            loss = keras.losses.cosine_similarity
+        elif loss_type == 'function_backend':
+            loss = keras.backend.cosine_similarity
 
-    elif loss_name == 'cosine_proximity':
-        loss = keras.losses.cosine_proximity
     else:
         raise ValueError('Loss name not recognised.')
 
     model.compile(loss=loss, optimizer=keras.optimizers.Adam(lr=0.01), metrics=['accuracy'])
 
     # Get classifier
-    krc = KerasClassifier(model, clip_values=(0, 1), use_logits=False)
+    krc = KerasClassifier(model, clip_values=(0, 1), use_logits=from_logits)
 
     return krc
 
 
-def get_classifier_kr_tf(loss_name='categorical_crossentropy'):
+def get_classifier_kr_tf(loss_name='categorical_crossentropy', loss_type='function', from_logits=False):
     """
     Standard Keras classifier for unit testing
 
-    The weights and biases are identical to the Tensorflow model in get_classifier_tf().
+    The weights and biases are identical to the TensorFlow model in get_classifier_tf().
+
+    :param loss_name: The name of the loss function.
+    :type loss_name: `str`
+    :param loss_type: The type of loss function definitions: label (loss function defined by string of its name),
+                      function_losses (loss function), class (loss function generator)
+    :type loss_type: `str`
+    :param from_logits: Flag if model should predict logits (True) or probabilities (False).
+    :type from_logits: `bool`
+
 
     :return: KerasClassifier, tf.Session()
     """
@@ -268,38 +347,131 @@ def get_classifier_kr_tf(loss_name='categorical_crossentropy'):
         [_kr_tf_weights_loader('MNIST', 'W', 'CONV2D'), _kr_tf_weights_loader('MNIST', 'B', 'CONV2D')])
     model.add(MaxPooling2D(pool_size=(4, 4)))
     model.add(Flatten())
-    model.add(Dense(10, activation='softmax'))
+
+    if from_logits:
+        model.add(Dense(10, activation='linear'))
+    else:
+        model.add(Dense(10, activation='softmax'))
+
     model.layers[-1].set_weights(
         [_kr_tf_weights_loader('MNIST', 'W', 'DENSE'), _kr_tf_weights_loader('MNIST', 'B', 'DENSE')])
 
     if loss_name == 'categorical_hinge':
-        loss = tf.keras.losses.categorical_hinge
+        if loss_type == 'label':
+            loss = loss_name
+        elif loss_type == 'function':
+            loss = tf.keras.losses.categorical_hinge
+        elif loss_type == 'class':
+            try:
+                reduction = tf.keras.losses.Reduction.NONE
+            except AttributeError:
+                try:
+                    reduction = tf.losses.Reduction.NONE
+                except AttributeError:
+                    try:
+                        reduction = tf.python.keras.utils.losses_utils.ReductionV2.NONE
+                    except AttributeError:
+                        raise ImportError('This combination of loss function options is not supported.')
+            loss = tf.keras.losses.CategoricalHinge(reduction=reduction)
     elif loss_name == 'categorical_crossentropy':
-        loss = tf.keras.losses.categorical_crossentropy
+        if loss_type == 'label':
+            if from_logits:
+                raise AttributeError
+            else:
+                loss = loss_name
+        elif loss_type == 'function':
+            if from_logits:
+                def categorical_crossentropy(y_true, y_pred):
+                    return tf.keras.losses.categorical_crossentropy(y_true, y_pred, from_logits=True)
 
+                loss = categorical_crossentropy
+            else:
+                loss = tf.keras.losses.categorical_crossentropy
+        elif loss_type == 'class':
+            try:
+                reduction = tf.keras.losses.Reduction.NONE
+            except AttributeError:
+                try:
+                    reduction = tf.losses.Reduction.NONE
+                except AttributeError:
+                    try:
+                        reduction = tf.python.keras.utils.losses_utils.ReductionV2.NONE
+                    except AttributeError:
+                        raise ImportError('This combination of loss function options is not supported.')
+            loss = tf.keras.losses.CategoricalCrossentropy(from_logits=from_logits, reduction=reduction)
     elif loss_name == 'sparse_categorical_crossentropy':
-        loss = tf.keras.losses.sparse_categorical_crossentropy
+        if loss_type == 'label':
+            if from_logits:
+                raise AttributeError
+            else:
+                loss = loss_name
+        elif loss_type == 'function':
+            if from_logits:
+                def sparse_categorical_crossentropy(y_true, y_pred):
+                    return tf.keras.losses.sparse_categorical_crossentropy(y_true, y_pred, from_logits=True)
 
-    elif loss_name == 'binary_crossentropy':
-        loss = tf.keras.losses.binary_crossentropy
-
+                loss = sparse_categorical_crossentropy
+            else:
+                loss = tf.keras.losses.sparse_categorical_crossentropy
+        elif loss_type == 'class':
+            try:
+                reduction = tf.keras.losses.Reduction.NONE
+            except AttributeError:
+                try:
+                    reduction = tf.losses.Reduction.NONE
+                except AttributeError:
+                    try:
+                        reduction = tf.python.keras.utils.losses_utils.ReductionV2.NONE
+                    except AttributeError:
+                        raise ImportError('This combination of loss function options is not supported.')
+            loss = tf.keras.losses.SparseCategoricalCrossentropy(from_logits=from_logits, reduction=reduction)
     elif loss_name == 'kullback_leibler_divergence':
-        loss = tf.keras.losses.kullback_leibler_divergence
-
+        if loss_type == 'label':
+            loss = loss_name
+        elif loss_type == 'function':
+            loss = tf.keras.losses.kullback_leibler_divergence
+        elif loss_type == 'class':
+            try:
+                reduction = tf.keras.losses.Reduction.NONE
+            except AttributeError:
+                try:
+                    reduction = tf.losses.Reduction.NONE
+                except AttributeError:
+                    try:
+                        reduction = tf.python.keras.utils.losses_utils.ReductionV2.NONE
+                    except AttributeError:
+                        raise ImportError('This combination of loss function options is not supported.')
+            loss = tf.keras.losses.KLDivergence(reduction=reduction)
     elif loss_name == 'cosine_similarity':
-        loss = tf.keras.losses.cosine_similarity
+        if loss_type == 'label':
+            loss = loss_name
+        elif loss_type == 'function':
+            loss = tf.keras.losses.cosine_similarity
+        elif loss_type == 'class':
+            try:
+                reduction = tf.keras.losses.Reduction.NONE
+            except AttributeError:
+                try:
+                    reduction = tf.losses.Reduction.NONE
+                except AttributeError:
+                    try:
+                        reduction = tf.python.keras.utils.losses_utils.ReductionV2.NONE
+                    except AttributeError:
+                        raise ImportError('This combination of loss function options is not supported.')
+            loss = tf.keras.losses.CosineSimilarity(reduction=reduction)
+
     else:
         raise ValueError('Loss name not recognised.')
 
     model.compile(loss=loss, optimizer=tf.keras.optimizers.Adam(lr=0.01), metrics=['accuracy'])
 
     # Get classifier
-    krc = KerasClassifier(model, clip_values=(0, 1), use_logits=False)
+    krc = KerasClassifier(model, clip_values=(0, 1), use_logits=from_logits)
 
     return krc
 
 
-def get_classifier_pt():
+def get_classifier_pt(from_logits=False):
     """
     Standard PyTorch classifier for unit testing
 
@@ -311,7 +483,7 @@ def get_classifier_pt():
         """
         Create model for pytorch.
 
-        The weights and biases are identical to the Tensorflow model in get_classifier_tf().
+        The weights and biases are identical to the TensorFlow model in get_classifier_tf().
         """
 
         def __init__(self):
@@ -322,7 +494,7 @@ def get_classifier_pt():
             w_dense = np.load(os.path.join(os.path.dirname(os.path.dirname(__file__)), 'models', 'W_DENSE_MNIST.npy'))
             b_dense = np.load(os.path.join(os.path.dirname(os.path.dirname(__file__)), 'models', 'B_DENSE_MNIST.npy'))
 
-            w_conv2d_pt = np.transpose(w_conv2d, (2, 3, 1, 0))
+            w_conv2d_pt = w_conv2d.reshape((1, 1, 7, 7))
 
             self.conv = nn.Conv2d(in_channels=1, out_channels=1, kernel_size=7)
             self.conv.weight = nn.Parameter(torch.Tensor(w_conv2d_pt))
@@ -345,7 +517,8 @@ def get_classifier_pt():
             x = self.pool(x)
             x = x.reshape(-1, 25)
             x = self.fullyconnected(x)
-            x = torch.nn.functional.softmax(x)
+            if not from_logits:
+                x = torch.nn.functional.softmax(x)
             return x
 
     # Define the network
@@ -421,7 +594,7 @@ def get_classifier_mx():
 
 def get_iris_classifier_tf():
     """
-    Standard Tensorflow classifier for unit testing.
+    Standard TensorFlow classifier for unit testing.
 
     The following hyper-parameters were used to obtain the weights and biases:
 
@@ -457,7 +630,7 @@ def get_iris_classifier_tf():
     # Train operator
     loss = tf.reduce_mean(tf.losses.softmax_cross_entropy(logits=logits, onehot_labels=output_ph))
 
-    # Tensorflow session and initialization
+    # TensorFlow session and initialization
     sess = tf.Session()
     sess.run(tf.global_variables_initializer())
 
@@ -470,23 +643,17 @@ def get_iris_classifier_tf():
 
 def get_iris_classifier_kr():
     """
-    Standard Keras classifier for unit testing on Iris dataset. The weights and biases are identical to the Tensorflow
+    Standard Keras classifier for unit testing on Iris dataset. The weights and biases are identical to the TensorFlow
     model in `get_iris_classifier_tf`.
 
     :return: The trained model for Iris dataset and the session.
     :rtype: `tuple(KerasClassifier, tf.Session)`
     """
     import keras
-    import keras.backend as k
     from keras.models import Sequential
     from keras.layers import Dense
-    import tensorflow as tf
 
     from art.classifiers import KerasClassifier
-
-    # Initialize a tf session
-    sess = tf.Session()
-    k.set_session(sess)
 
     # Create simple CNN
     model = Sequential()
@@ -502,7 +669,7 @@ def get_iris_classifier_kr():
     # Get classifier
     krc = KerasClassifier(model, clip_values=(0, 1), use_logits=False, channel_index=1)
 
-    return krc, sess
+    return krc
 
 
 def get_iris_classifier_pt():
@@ -518,7 +685,7 @@ def get_iris_classifier_pt():
         """
         Create Iris model for PyTorch.
 
-        The weights and biases are identical to the Tensorflow model in `get_iris_classifier_tf`.
+        The weights and biases are identical to the TensorFlow model in `get_iris_classifier_tf`.
         """
 
         def __init__(self):

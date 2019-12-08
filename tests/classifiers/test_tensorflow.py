@@ -24,8 +24,10 @@ import unittest
 import pickle
 
 import tensorflow as tf
+
 if tf.__version__[0] == '2':
     import tensorflow.compat.v1 as tf
+
     tf.disable_eager_execution()
 import numpy as np
 
@@ -112,7 +114,7 @@ class TestTensorFlowClassifier(unittest.TestCase):
         sess.close()
 
     def test_class_gradient(self):
-        classifier, sess = get_classifier_tf()
+        classifier, sess = get_classifier_tf(from_logits=True)
 
         # Test all gradients label = None
         gradients = classifier.class_gradient(self.x_test)

@@ -26,6 +26,7 @@ import numpy as np
 
 from art.attacks.attack import Attack
 from art.classifiers.scikitlearn import ScikitlearnSVC
+from art.utils import compute_success
 
 logger = logging.getLogger(__name__)
 
@@ -115,7 +116,13 @@ class PoisoningAttackSVM(Attack):
             train_data = np.vstack([train_data, poison])
             train_labels = np.vstack([train_labels, attack_label])
 
-        return np.array(all_poison).reshape((num_poison, num_features))
+        x_adv = np.array(all_poison).reshape((num_poison, num_features))
+        targeted = y is not None
+
+        logger.info('Success rate of poisoning attack SVM attack: %.2f%%',
+                    100 * compute_success(self.classifier, x, y, x_adv, targeted=targeted))
+
+        return x_adv
 
     def set_params(self, **kwargs):
         """
@@ -193,13 +200,15 @@ class PoisoningAttackSVM(Attack):
         preds = self.classifier._model.predict(vec)
         return 2 * preds - 1
 
-    def attack_gradient(self, attack_point):
+    def attack_gradient(self, attack_point, tol=0.0001):
         """
         Calculates the attack gradient, or ∂P for this attack.
         See equation 8 in Biggio et al. Ch. 14
 
         :param attack_point: the current attack point
         :type attack_point: `np.ndarray`
+        :param tol: tolerance level
+        :type tol: `float`
         :return: The attack gradient
         :rtype: `np.ndarray`
         """
@@ -215,12 +224,12 @@ class PoisoningAttackSVM(Attack):
         if not c_idx.any():
             return grad
 
-        c_idx = np.where(c_idx == True)[0][0]
+        c_idx = np.where(c_idx > 0)[0][0]
         alpha_c = model.dual_coef_[0, c_idx]
 
         assert support_labels.shape == (num_support, 1)
         qss = art_model.q_submatrix(support_vectors, support_vectors)
-        qss_inv = np.linalg.inv(qss + np.random.uniform(0, 0.01 * np.min(qss), (num_support, num_support)))
+        qss_inv = np.linalg.inv(qss + np.random.uniform(0, 0.01 * np.min(qss) + tol, (num_support, num_support)))
         zeta = np.matmul(qss_inv, support_labels)
         zeta = np.matmul(support_labels.T, zeta)
         nu_k = np.matmul(qss_inv, support_labels)

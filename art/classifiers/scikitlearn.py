@@ -745,8 +745,8 @@ class ScikitlearnLogisticRegression(ScikitlearnClassifier, ClassifierGradients):
         def _f_class_gradient(i_class, i_sample):
             if self.nb_classes() == 2:
                 return (-1.)**(i_class + 1.0) * y_pred[i_sample, 0] * y_pred[i_sample, 1] * weights[0, :]
-            else:
-                return weights[i_class, :] - w_weighted[i_sample, :]
+
+            return weights[i_class, :] - w_weighted[i_sample, :]
 
         if label is None:
             # Compute the gradients w.r.t. all classes
@@ -764,7 +764,7 @@ class ScikitlearnLogisticRegression(ScikitlearnClassifier, ClassifierGradients):
             # Compute the gradients only w.r.t. the provided label
             class_gradient = np.zeros(x.shape)
             for i_sample in range(nb_samples):
-                class_gradient[i_sample, :] +=  _f_class_gradient(label, i_sample)
+                class_gradient[i_sample, :] += _f_class_gradient(label, i_sample)
 
             gradients = np.swapaxes(np.array([class_gradient]), 0, 1)
 
@@ -779,7 +779,7 @@ class ScikitlearnLogisticRegression(ScikitlearnClassifier, ClassifierGradients):
                 for i_sample in range(nb_samples):
                     # class_gradient[i_sample, :] += label[i_sample, unique_label] * (weights[unique_label, :]
                     # - w_weighted[i_sample, :])
-                    class_gradient[i_sample, :] +=  _f_class_gradient(unique_label, i_sample)
+                    class_gradient[i_sample, :] += _f_class_gradient(unique_label, i_sample)
 
                 class_gradients.append(class_gradient)
 
@@ -836,8 +836,8 @@ class ScikitlearnLogisticRegression(ScikitlearnClassifier, ClassifierGradients):
         if self.nb_classes() == 2:
             for i_sample in range(num_samples):
                 gradients[i_sample, :] += (class_weight[1] * (1.0 - y_preprocessed[i_sample, 1]) -
-                                           class_weight[0] * (1.0 - y_preprocessed[i_sample, 0])) * (
-                                           y_pred[i_sample, 0] * y_pred[i_sample, 1] * weights[0, :])
+                                           class_weight[0] * (1.0 - y_preprocessed[i_sample, 0])) * \
+                                          (y_pred[i_sample, 0] * y_pred[i_sample, 1] * weights[0, :])
         else:
             w_weighted = np.matmul(y_pred, weights)
 
@@ -895,13 +895,143 @@ class ScikitlearnSVC(ScikitlearnClassifier, ClassifierGradients):
                       match the batch size of `x`, and each value will be used as target for its corresponding sample in
                       `x`. If `None`, then gradients for all classes will be computed for each sample.
         :type label: `int` or `list`
-        :raises: `NotImplementedException`
         :return: Array of gradients of input features w.r.t. each class in the form
                  `(batch_size, nb_classes, input_shape)` when computing for all classes, otherwise shape becomes
                  `(batch_size, 1, input_shape)` when `label` parameter is specified.
         :rtype: `np.ndarray`
         """
-        raise NotImplementedError
+        # pylint: disable=E0001
+        from sklearn.svm import SVC, LinearSVC
+
+        # Apply preprocessing
+        x_preprocessed, _ = self._apply_preprocessing(x, y=None, fit=False)
+
+        num_samples, _ = x_preprocessed.shape
+
+        if isinstance(self._model, SVC):
+            if self._model.fit_status_:
+                raise AssertionError('Model has not been fitted correctly.')
+
+            support_indices = [0] + list(np.cumsum(self._model.n_support_))
+
+            if self.nb_classes() == 2:
+                sign_multiplier = -1
+            else:
+                sign_multiplier = 1
+
+            if label is None:
+                gradients = np.zeros((x_preprocessed.shape[0], self.nb_classes(), x_preprocessed.shape[1]))
+
+                for label in range(self.nb_classes()):
+                    for i_sample in range(num_samples):
+                        for not_label in range(self.nb_classes()):
+                            if label != not_label:
+                                if not_label < label:
+                                    label_multiplier = -1
+                                else:
+                                    label_multiplier = 1
+
+                                for label_sv in range(support_indices[label], support_indices[label + 1]):
+                                    alpha_i_k_y_i = self._model.dual_coef_[
+                                        not_label if not_label < label else not_label - 1, label_sv]
+                                    grad_kernel = self._get_kernel_gradient_sv(label_sv, x_preprocessed[i_sample])
+                                    gradients[i_sample, label] += label_multiplier * alpha_i_k_y_i * grad_kernel
+
+                                for not_label_sv in range(support_indices[not_label], support_indices[not_label + 1]):
+                                    alpha_i_k_y_i = self._model.dual_coef_[
+                                        label if label < not_label else label - 1, not_label_sv]
+                                    grad_kernel = self._get_kernel_gradient_sv(not_label_sv, x_preprocessed[i_sample])
+                                    gradients[i_sample, label] += label_multiplier * alpha_i_k_y_i * grad_kernel
+
+            elif isinstance(label, (int, np.integer)):
+                gradients = np.zeros((x_preprocessed.shape[0], 1, x_preprocessed.shape[1]))
+
+                for i_sample in range(num_samples):
+                    for not_label in range(self.nb_classes()):
+                        if label != not_label:
+                            if not_label < label:
+                                label_multiplier = -1
+                            else:
+                                label_multiplier = 1
+
+                            for label_sv in range(support_indices[label], support_indices[label + 1]):
+                                alpha_i_k_y_i = self._model.dual_coef_[not_label if not_label < label else
+                                                                       not_label - 1, label_sv]
+                                grad_kernel = self._get_kernel_gradient_sv(label_sv, x_preprocessed[i_sample])
+                                gradients[i_sample, 0] += label_multiplier * alpha_i_k_y_i * grad_kernel
+
+                            for not_label_sv in range(support_indices[not_label], support_indices[not_label + 1]):
+                                alpha_i_k_y_i = self._model.dual_coef_[label if label < not_label else
+                                                                       label - 1, not_label_sv]
+                                grad_kernel = self._get_kernel_gradient_sv(not_label_sv, x_preprocessed[i_sample])
+                                gradients[i_sample, 0] += label_multiplier * alpha_i_k_y_i * grad_kernel
+
+            elif (isinstance(label, list) and len(label) == num_samples) or \
+                    isinstance(label, np.ndarray) and label.shape == (num_samples,):
+                gradients = np.zeros((x_preprocessed.shape[0], 1, x_preprocessed.shape[1]))
+
+                for i_sample in range(num_samples):
+                    for not_label in range(self.nb_classes()):
+                        if label[i_sample] != not_label:
+                            if not_label < label[i_sample]:
+                                label_multiplier = -1
+                            else:
+                                label_multiplier = 1
+
+                            for label_sv in range(support_indices[label[i_sample]],
+                                                  support_indices[label[i_sample] + 1]):
+                                alpha_i_k_y_i = self._model.dual_coef_[not_label if not_label < label[i_sample] else
+                                                                       not_label - 1, label_sv]
+                                grad_kernel = self._get_kernel_gradient_sv(label_sv, x_preprocessed[i_sample])
+                                gradients[i_sample, 0] += label_multiplier * alpha_i_k_y_i * grad_kernel
+
+                            for not_label_sv in range(support_indices[not_label], support_indices[not_label + 1]):
+                                alpha_i_k_y_i = self._model.dual_coef_[label[i_sample] if label[i_sample] < not_label
+                                                                       else label[i_sample] - 1, not_label_sv]
+                                grad_kernel = self._get_kernel_gradient_sv(not_label_sv, x_preprocessed[i_sample])
+                                gradients[i_sample, 0] += label_multiplier * alpha_i_k_y_i * grad_kernel
+
+            else:
+                raise TypeError('Unrecognized type for argument `label` with type ' + str(type(label)))
+
+            gradients = self._apply_preprocessing_gradient(x, gradients * sign_multiplier)
+
+        elif isinstance(self._model, LinearSVC):
+            if label is None:
+                gradients = np.zeros((x_preprocessed.shape[0], self.nb_classes(), x_preprocessed.shape[1]))
+
+                for i in range(self.nb_classes()):
+                    for i_sample in range(num_samples):
+                        if self.nb_classes() == 2:
+                            gradients[i_sample, i] = self._model.coef_[0] * (2 * i - 1)
+                        else:
+                            gradients[i_sample, i] = self._model.coef_[i]
+
+            elif isinstance(label, (int, np.integer)):
+                gradients = np.zeros((x_preprocessed.shape[0], 1, x_preprocessed.shape[1]))
+
+                for i_sample in range(num_samples):
+                    if self.nb_classes() == 2:
+                        gradients[i_sample, 0] = self._model.coef_[0] * (2 * label - 1)
+                    else:
+                        gradients[i_sample, 0] = self._model.coef_[label]
+
+            elif (isinstance(label, list) and len(label) == num_samples) or \
+                    isinstance(label, np.ndarray) and label.shape == (num_samples,):
+                gradients = np.zeros((x_preprocessed.shape[0], 1, x_preprocessed.shape[1]))
+
+                for i_sample in range(num_samples):
+                    if self.nb_classes() == 2:
+                        gradients[i_sample, 0] = self._model.coef_[0] * (2 * label[i_sample] - 1)
+                    else:
+                        gradients[i_sample, 0] = self._model.coef_[label[i_sample]]
+
+            else:
+                raise TypeError('Unrecognized type for argument `label` with type ' + str(type(label)))
+
+            gradients = self._apply_preprocessing_gradient(x, gradients)
+
+        return gradients
 
     def _kernel_grad(self, sv, x_sample):
         """

@@ -29,6 +29,7 @@ import numpy as np
 from art.utils import NUMPY_DTYPE
 from art.classifiers.classifier import ClassifierNeuralNetwork, ClassifierGradients
 from art.attacks.attack import Attack
+from art.utils import compute_success
 
 logger = logging.getLogger(__name__)
 
@@ -136,6 +137,9 @@ class VirtualAdversarialMethod(Attack):
             else:
                 x_adv[batch_index_1:batch_index_2] = (batch + self.eps * self._normalize(var_d)) \
                     .reshape((-1,) + self.classifier.input_shape)
+
+        logger.info('Success rate of virtual adversarial attack: %.2f%%',
+                    100 * compute_success(self.classifier, x, y, x_adv, batch_size=self.batch_size))
 
         return x_adv
 

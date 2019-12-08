@@ -28,7 +28,8 @@ model.add(Flatten())
 model.add(Dense(100, activation='relu'))
 model.add(Dense(10, activation='softmax'))
 
-model.compile(loss=keras.losses.categorical_crossentropy, optimizer=keras.optimizers.SGD(lr=0.01), metrics=['accuracy'])
+model.compile(loss=keras.losses.categorical_crossentropy, optimizer=keras.optimizers.Adam(lr=0.01),
+              metrics=['accuracy'])
 
 # Step 3: Create the ART classifier
 
