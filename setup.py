@@ -31,6 +31,7 @@ tests_require = ['keras==2.2.5',
 docs_require = ['sphinx >= 1.4',
                 'sphinx_rtd_theme']
 
+
 def read(rel_path):
     here = os.path.abspath(os.path.dirname(__file__))
     with codecs.open(os.path.join(here, rel_path), 'r') as fp:
