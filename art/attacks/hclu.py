@@ -92,8 +92,8 @@ class HighConfidenceLowUncertainty(Attack):
 
                 def constraint_unc(x, args):  # constraint for uncertainty
                         return (
-                        args['max_uncertainty'] - (args['classifier'].predict_uncertainty(x.reshape(1, -1))).reshape(
-                                -1))[0]
+                        args['max_uncertainty'] - (args['classifier'].predict_uncertainty(
+                                x.reshape(1, -1))).reshape(-1))[0]
 
                 bounds = []
                 # adding bounds, to not go away from original data
@@ -109,7 +109,7 @@ class HighConfidenceLowUncertainty(Attack):
                         constr_conf = {'type': 'ineq', 'fun': constraint_conf, 'args': (init_args,)}
                         constr_unc = {'type': 'ineq', 'fun': constraint_unc, 'args': (init_args,)}
                         args = {'args': init_args, 'orig': x[i].reshape(-1)}
-                        #finally, run optimization
+                        # finally, run optimization
                         x_adv[i] = minimize(minfun, x_adv[i], args=args, bounds=bounds,
                                             constraints=[constr_conf, constr_unc])['x']
                 logger.info('Success rate of HCLU attack: %.2f%%', 100 * compute_success(self.classifier, x, y, x_adv))
@@ -125,10 +125,8 @@ class HighConfidenceLowUncertainty(Attack):
                 """
                 super(HighConfidenceLowUncertainty, self).set_params(**kwargs)
                 if self.conf <= 0.5 or self.conf > 1.0:
-                        raise ValueError(
-                                "Confidence value has to be a value between 0.5 and 1.0.")
+                        raise ValueError("Confidence value has to be a value between 0.5 and 1.0.")
                 if self.unc_increase <= 0.0:
-                        raise ValueError(
-                                "Value by which we allow to increase uncertainty has to be a positive number.")
+                        raise ValueError("Value to increase uncertainty must be positive.")
                 if self.min_val > self.max_val:
                         raise ValueError("Maximum has to be larger than minimum.")
