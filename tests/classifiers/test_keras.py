@@ -36,7 +36,7 @@ from keras.callbacks import LearningRateScheduler
 from keras.applications.resnet50 import ResNet50, decode_predictions
 from keras.preprocessing.image import load_img, img_to_array
 
-# from art import DATA_PATH
+# from art.utils import DATA_PATH
 from art.classifiers import KerasClassifier
 from art.classifiers.keras import generator_fit
 from art.defences import FeatureSqueezing, JpegCompression, SpatialSmoothing

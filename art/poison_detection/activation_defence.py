@@ -332,7 +332,7 @@ class ActivationDefence(PoisonFilteringDefence):
         :return: None
         """
         import pickle
-        from art import DATA_PATH
+        from art.utils import DATA_PATH
         full_path = os.path.join(DATA_PATH, file_name)
         folder = os.path.split(full_path)[0]
         if not os.path.exists(folder):
@@ -349,7 +349,7 @@ class ActivationDefence(PoisonFilteringDefence):
         :param file_name:
         :return:
         """
-        from art import DATA_PATH
+        from art.utils import DATA_PATH
         import pickle
 
         full_path = os.path.join(DATA_PATH, file_name)
@@ -366,7 +366,7 @@ class ActivationDefence(PoisonFilteringDefence):
         :param file_name: File name without directory
         :return: None
         """
-        from art import DATA_PATH
+        from art.utils import DATA_PATH
         full_path = os.path.join(DATA_PATH, file_name)
         os.remove(full_path)
 

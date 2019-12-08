@@ -28,7 +28,7 @@ import numpy as np
 
 from art.defences.preprocessor import Preprocessor
 from art.utils import to_categorical
-from art import NUMPY_DTYPE
+from art.utils import NUMPY_DTYPE
 
 logger = logging.getLogger(__name__)
 

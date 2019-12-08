@@ -425,7 +425,7 @@ class PyTorchClassifier(ClassifierNeuralNetwork, ClassifierGradients, Classifier
         import torch
 
         if path is None:
-            from art import DATA_PATH
+            from art.utils import DATA_PATH
             full_path = os.path.join(DATA_PATH, filename)
         else:
             full_path = os.path.join(path, filename)
@@ -478,7 +478,7 @@ class PyTorchClassifier(ClassifierNeuralNetwork, ClassifierGradients, Classifier
         # Load and update all functionality related to Pytorch
         import os
         import torch
-        from art import DATA_PATH
+        from art.utils import DATA_PATH
 
         # Recover model
         full_path = os.path.join(DATA_PATH, state['model_name'])

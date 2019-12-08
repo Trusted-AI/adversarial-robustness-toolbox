@@ -75,7 +75,7 @@ class BlackBoxClassifier(Classifier):
         :return: Array of predictions of shape `(nb_inputs, nb_classes)`.
         :rtype: `np.ndarray`
         """
-        from art import NUMPY_DTYPE
+        from art.utils import NUMPY_DTYPE
 
         # Apply defences
         x_preprocessed, _ = self._apply_preprocessing(x, y=None, fit=False)

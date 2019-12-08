@@ -29,7 +29,7 @@ if tf.__version__[0] == '2':
     tf.disable_eager_execution()
 import numpy as np
 
-from art import DATA_PATH
+from art.utils import DATA_PATH
 from art.utils import load_dataset, master_seed
 from art.utils_test import get_classifier_tf
 from art.data_generators import TFDataGenerator

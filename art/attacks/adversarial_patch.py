@@ -29,7 +29,7 @@ import random
 import numpy as np
 from scipy.ndimage import rotate, shift, zoom
 
-from art import NUMPY_DTYPE
+from art.utils import NUMPY_DTYPE
 from art.classifiers.classifier import ClassifierNeuralNetwork, ClassifierGradients
 from art.attacks.attack import Attack
 from art.utils import check_and_transform_label_format

@@ -271,7 +271,7 @@ class KerasClassifier(ClassifierNeuralNetwork, ClassifierGradients, Classifier):
         :return: Array of predictions of shape `(nb_inputs, nb_classes)`.
         :rtype: `np.ndarray`
         """
-        from art import NUMPY_DTYPE
+        from art.utils import NUMPY_DTYPE
 
         # Apply defences
         x_preprocessed, _ = self._apply_preprocessing(x, y=None, fit=False)
@@ -375,7 +375,7 @@ class KerasClassifier(ClassifierNeuralNetwork, ClassifierGradients, Classifier):
             import tensorflow.keras.backend as k
         else:
             import keras.backend as k
-        from art import NUMPY_DTYPE
+        from art.utils import NUMPY_DTYPE
 
         if isinstance(layer, six.string_types):
             if layer not in self._layer_names:
@@ -504,7 +504,7 @@ class KerasClassifier(ClassifierNeuralNetwork, ClassifierGradients, Classifier):
         import os
 
         if path is None:
-            from art import DATA_PATH
+            from art.utils import DATA_PATH
             full_path = os.path.join(DATA_PATH, filename)
         else:
             full_path = os.path.join(path, filename)
@@ -553,7 +553,7 @@ class KerasClassifier(ClassifierNeuralNetwork, ClassifierGradients, Classifier):
         # Load and update all functionality related to Keras
         # pylint: disable=E0401
         import os
-        from art import DATA_PATH
+        from art.utils import DATA_PATH
         if self.is_tensorflow:
             from tensorflow.keras.models import load_model
         else:

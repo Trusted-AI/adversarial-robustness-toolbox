@@ -31,7 +31,7 @@ from scipy.stats import weibull_min
 
 from art.attacks import FastGradientMethod
 from art.utils import random_sphere
-from art import NUMPY_DTYPE
+from art.utils import NUMPY_DTYPE
 
 logger = logging.getLogger(__name__)
 

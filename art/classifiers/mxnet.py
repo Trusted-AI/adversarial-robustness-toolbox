@@ -25,7 +25,7 @@ import logging
 import numpy as np
 import six
 
-from art import NUMPY_DTYPE
+from art.utils import NUMPY_DTYPE
 from art.classifiers.classifier import Classifier, ClassifierNeuralNetwork, ClassifierGradients
 
 logger = logging.getLogger(__name__)
@@ -429,7 +429,7 @@ class MXClassifier(ClassifierNeuralNetwork, ClassifierGradients, Classifier):
         import os
 
         if path is None:
-            from art import DATA_PATH
+            from art.utils import DATA_PATH
             full_path = os.path.join(DATA_PATH, filename)
         else:
             full_path = os.path.join(path, filename)

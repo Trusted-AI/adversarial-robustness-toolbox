@@ -25,7 +25,7 @@ import os.path
 
 import numpy as np
 
-from art import DATA_PATH
+from art.utils import DATA_PATH
 
 logger = logging.getLogger(__name__)
 

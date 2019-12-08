@@ -20,6 +20,7 @@ Module providing convenience functions.
 """
 from __future__ import absolute_import, division, print_function, unicode_literals
 
+import json
 import logging
 import os
 
@@ -32,6 +33,44 @@ try:
     import torch
 except ImportError:
     logger.info('Could not import PyTorch in utilities.')
+
+
+# -------------------------------------------------------------------------------------------- DEFUALT PACKAGE CONFIGS
+
+
+NUMPY_DTYPE = np.float32
+
+_folder = os.path.expanduser('~')
+if not os.access(_folder, os.W_OK):
+    _folder = '/tmp'
+_folder = os.path.join(_folder, '.art')
+
+_config_path = os.path.expanduser(os.path.join(_folder, 'config.json'))
+if os.path.exists(_config_path):
+    try:
+        with open(_config_path) as f:
+            _config = json.load(f)
+    except ValueError:
+        _config = {}
+
+if not os.path.exists(_folder):
+    try:
+        os.makedirs(_folder)
+    except OSError:
+        logger.warning('Unable to create folder for configuration file.', exc_info=True)
+
+if not os.path.exists(_config_path):
+    # Generate default config
+    _config = {'DATA_PATH': os.path.join(_folder, 'data')}
+
+    try:
+        with open(_config_path, 'w') as f:
+            f.write(json.dumps(_config, indent=4))
+    except IOError:
+        logger.warning('Unable to create configuration file', exc_info=True)
+
+if 'DATA_PATH' in _config:
+    DATA_PATH = _config['DATA_PATH']
 
 
 # -------------------------------------------------------------------------------------------- RANDOM NUMBER GENERATORS
@@ -434,7 +473,7 @@ def load_cifar10(raw=False):
         data = data.reshape(data.shape[0], 3, 32, 32)
         return data, labels
 
-    from art import DATA_PATH
+    from art.utils import DATA_PATH
 
     path = get_file('cifar-10-batches-py', extract=True, path=DATA_PATH,
                     url='http://www.cs.toronto.edu/~kriz/cifar-10-python.tar.gz')
@@ -477,7 +516,7 @@ def load_mnist(raw=False):
     :return: `(x_train, y_train), (x_test, y_test), min, max`
     :rtype: `(np.ndarray, np.ndarray), (np.ndarray, np.ndarray), float, float`
     """
-    from art import DATA_PATH
+    from art.utils import DATA_PATH
 
     path = get_file('mnist.npz', path=DATA_PATH, url='https://s3.amazonaws.com/img-datasets/mnist.npz')
 
@@ -508,7 +547,7 @@ def load_stl():
     :rtype: `(np.ndarray, np.ndarray), (np.ndarray, np.ndarray), float, float`
     """
     from os.path import join
-    from art import DATA_PATH
+    from art.utils import DATA_PATH
 
     min_, max_ = 0.0, 1.0
 
@@ -553,7 +592,7 @@ def load_iris(raw=False, test_set=0.3):
     :return: Entire dataset and labels.
     :rtype: `(np.ndarray, np.ndarray), (np.ndarray, np.ndarray), float, float`
     """
-    from art import DATA_PATH, NUMPY_DTYPE
+    from art.utils import DATA_PATH, NUMPY_DTYPE
 
     # Download data if needed
     path = get_file('iris.data', path=DATA_PATH, extract=False,
@@ -664,7 +703,7 @@ def get_file(filename, url, path=None, extract=False):
     :rtype: `str`
     """
     if path is None:
-        from art import DATA_PATH
+        from art.utils import DATA_PATH
         path_ = os.path.expanduser(DATA_PATH)
     else:
         path_ = os.path.expanduser(path)

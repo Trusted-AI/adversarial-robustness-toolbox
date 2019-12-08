@@ -29,7 +29,7 @@ import logging
 import numpy as np
 from scipy.ndimage import zoom
 
-from art import NUMPY_DTYPE
+from art.utils import NUMPY_DTYPE
 from art.attacks.attack import Attack
 from art.utils import compute_success, get_labels_np_array, check_and_transform_label_format
 

@@ -30,7 +30,7 @@ import torch.nn.functional as F
 import torch.optim as optim
 from torch.utils.data import DataLoader
 
-from art import DATA_PATH
+from art.utils import DATA_PATH
 from art.data_generators import PyTorchDataGenerator
 from art.classifiers import PyTorchClassifier
 from art.utils import load_dataset, master_seed

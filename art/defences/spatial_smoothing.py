@@ -28,7 +28,7 @@ import numpy as np
 from scipy import ndimage
 
 from art.defences.preprocessor import Preprocessor
-from art import NUMPY_DTYPE
+from art.utils import NUMPY_DTYPE
 
 logger = logging.getLogger(__name__)
 
