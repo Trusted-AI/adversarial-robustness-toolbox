@@ -38,8 +38,7 @@ logger = logging.getLogger(__name__)
 
 SUPPORTED_METHODS = {
     "fgsm": {"class": FastGradientMethod, "params": {"eps_step": 0.1, "eps_max": 1., "clip_min": 0., "clip_max": 1.}},
-    "hsj":{"class": HopSkipJump, "params":{'targeted': targeted,
-                  'norm': norm,
+    "hsj":{"class": HopSkipJump, "params":{
                   'max_iter': 50,
                   'max_eval': 10000,
                   'init_eval': 100,
