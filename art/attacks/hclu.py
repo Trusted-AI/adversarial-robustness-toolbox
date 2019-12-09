@@ -101,7 +101,7 @@ class HighConfidenceLowUncertainty(Attack):
                 for i in range(np.shape(x)[0]):  # go though data amd craft
                         # get properties for attack
                         max_uncertainty = self.unc_increase * self.classifier.predict_uncertainty(
-                                     x_adv[i].reshape(1, -1))
+                            x_adv[i].reshape(1, -1))
                         class_zero = not self.classifier.predict(x_adv[i].reshape(1, -1))[0, 0] < 0.5
                         init_args = {'classifier': self.classifier, 'class_zero': class_zero,
                                      'max_uncertainty': max_uncertainty, 'conf': self.conf}
