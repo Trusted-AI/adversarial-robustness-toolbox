@@ -27,7 +27,7 @@ import logging
 
 import numpy as np
 
-from art.utils import NUMPY_DTYPE
+from art.config import ART_NUMPY_DTYPE
 from art.attacks.attack import Attack
 from art.utils import compute_success, to_categorical, check_and_transform_label_format
 
@@ -130,7 +130,7 @@ class HopSkipJump(Attack):
             raise ValueError('Target labels `y` need to be provided for a targeted attack.')
 
         # Some initial setups
-        x_adv = x.astype(NUMPY_DTYPE)
+        x_adv = x.astype(ART_NUMPY_DTYPE)
         if y is not None:
             y = np.argmax(y, axis=1)
 
@@ -217,7 +217,7 @@ class HopSkipJump(Attack):
 
             # Attack unsatisfied yet and the initial image satisfied
             if adv_init is not None and init_pred == y:
-                return adv_init.astype(NUMPY_DTYPE), init_pred
+                return adv_init.astype(ART_NUMPY_DTYPE), init_pred
 
             # Attack unsatisfied yet and the initial image unsatisfied
             for _ in range(self.init_size):
@@ -239,7 +239,7 @@ class HopSkipJump(Attack):
         else:
             # The initial image satisfied
             if adv_init is not None and init_pred != y_p:
-                return adv_init.astype(NUMPY_DTYPE), y_p
+                return adv_init.astype(ART_NUMPY_DTYPE), y_p
 
             # The initial image unsatisfied
             for _ in range(self.init_size):
@@ -423,9 +423,9 @@ class HopSkipJump(Attack):
         # Generate random noise
         rnd_noise_shape = [num_eval] + list(self.classifier.input_shape)
         if self.norm == 2:
-            rnd_noise = np.random.randn(*rnd_noise_shape).astype(NUMPY_DTYPE)
+            rnd_noise = np.random.randn(*rnd_noise_shape).astype(ART_NUMPY_DTYPE)
         else:
-            rnd_noise = np.random.uniform(low=-1, high=1, size=rnd_noise_shape).astype(NUMPY_DTYPE)
+            rnd_noise = np.random.uniform(low=-1, high=1, size=rnd_noise_shape).astype(ART_NUMPY_DTYPE)
 
         # Normalize random noise to fit into the range of input data
         rnd_noise = rnd_noise / np.sqrt(np.sum(rnd_noise ** 2, axis=tuple(range(len(rnd_noise_shape)))[1:],
@@ -438,7 +438,7 @@ class HopSkipJump(Attack):
         satisfied = self._adversarial_satisfactory(samples=eval_samples, target=target,
                                                    clip_min=clip_min, clip_max=clip_max)
         f_val = 2 * satisfied.reshape([num_eval] + [1] * len(self.classifier.input_shape)) - 1.0
-        f_val = f_val.astype(NUMPY_DTYPE)
+        f_val = f_val.astype(ART_NUMPY_DTYPE)
 
         if np.mean(f_val) == 1.0:
             grad = np.mean(rnd_noise, axis=0)

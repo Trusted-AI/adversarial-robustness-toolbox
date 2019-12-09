@@ -31,7 +31,7 @@ if tf.__version__[0] == '2':
     tf.disable_eager_execution()
 import numpy as np
 
-from art.utils import DATA_PATH
+from art.config import ART_DATA_PATH
 from art.utils import load_dataset, master_seed
 from art.utils_test import get_classifier_tf
 from art.data_generators import TFDataGenerator
@@ -260,7 +260,7 @@ class TestTensorFlowClassifier(unittest.TestCase):
 
     def test_pickle(self):
         classifier, sess = get_classifier_tf()
-        full_path = os.path.join(DATA_PATH, 'my_classifier')
+        full_path = os.path.join(ART_DATA_PATH, 'my_classifier')
         folder = os.path.split(full_path)[0]
 
         if not os.path.exists(folder):

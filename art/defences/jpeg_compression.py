@@ -28,7 +28,7 @@ import logging
 import numpy as np
 
 from art.defences.preprocessor import Preprocessor
-from art.utils import NUMPY_DTYPE
+from art.config import ART_NUMPY_DTYPE
 
 logger = logging.getLogger(__name__)
 
@@ -135,7 +135,7 @@ class JpegCompression(Preprocessor):
         # Convert to old dtype
         if self.clip_values[1] == 1.0:
             x_local = x_local / 255.0
-        x_local = x_local.astype(NUMPY_DTYPE)
+        x_local = x_local.astype(ART_NUMPY_DTYPE)
 
         # Swap channel index
         if self.channel_index < 3:

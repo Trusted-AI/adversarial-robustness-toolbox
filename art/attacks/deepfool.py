@@ -26,7 +26,7 @@ import logging
 
 import numpy as np
 
-from art.utils import NUMPY_DTYPE
+from art.config import ART_NUMPY_DTYPE
 from art.classifiers.classifier import ClassifierGradients
 from art.attacks.attack import Attack
 from art.utils import compute_success
@@ -79,7 +79,7 @@ class DeepFool(Attack):
         :return: An array holding the adversarial examples.
         :rtype: `np.ndarray`
         """
-        x_adv = x.astype(NUMPY_DTYPE)
+        x_adv = x.astype(ART_NUMPY_DTYPE)
         preds = self.classifier.predict(x, batch_size=self.batch_size)
 
         # Determine the class labels for which to compute the gradients

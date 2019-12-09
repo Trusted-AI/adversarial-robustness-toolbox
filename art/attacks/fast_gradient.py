@@ -27,7 +27,7 @@ import logging
 
 import numpy as np
 
-from art.utils import NUMPY_DTYPE
+from art.config import ART_NUMPY_DTYPE
 from art.classifiers.classifier import ClassifierGradients
 from art.attacks.attack import Attack
 from art.utils import compute_success, get_labels_np_array, random_sphere, projection, check_and_transform_label_format
@@ -261,13 +261,13 @@ class FastGradientMethod(Attack):
         if random_init:
             n = x.shape[0]
             m = np.prod(x.shape[1:])
-            x_adv = x.astype(NUMPY_DTYPE) + random_sphere(n, m, eps, self.norm).reshape(x.shape).astype(NUMPY_DTYPE)
+            x_adv = x.astype(ART_NUMPY_DTYPE) + random_sphere(n, m, eps, self.norm).reshape(x.shape).astype(ART_NUMPY_DTYPE)
 
             if hasattr(self.classifier, 'clip_values') and self.classifier.clip_values is not None:
                 clip_min, clip_max = self.classifier.clip_values
                 x_adv = np.clip(x_adv, clip_min, clip_max)
         else:
-            x_adv = x.astype(NUMPY_DTYPE)
+            x_adv = x.astype(ART_NUMPY_DTYPE)
 
         # Compute perturbation with implicit batching
         for batch_id in range(int(np.ceil(x.shape[0] / float(self.batch_size)))):

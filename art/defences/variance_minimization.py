@@ -28,7 +28,7 @@ import numpy as np
 from scipy.optimize import minimize
 
 from art.defences.preprocessor import Preprocessor
-from art.utils import NUMPY_DTYPE
+from art.config import ART_NUMPY_DTYPE
 
 logger = logging.getLogger(__name__)
 
@@ -103,7 +103,7 @@ class TotalVarMin(Preprocessor):
         if self.clip_values is not None:
             np.clip(x_preproc, self.clip_values[0], self.clip_values[1], out=x_preproc)
 
-        return x_preproc.astype(NUMPY_DTYPE), y
+        return x_preproc.astype(ART_NUMPY_DTYPE), y
 
     def estimate_gradient(self, x, grad):
         return grad

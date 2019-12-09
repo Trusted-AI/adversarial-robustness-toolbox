@@ -30,7 +30,7 @@ import logging
 
 import numpy as np
 
-from art.utils import NUMPY_DTYPE
+from art.config import ART_NUMPY_DTYPE
 from art.classifiers.classifier import ClassifierGradients
 from art.attacks.attack import Attack
 from art.utils import compute_success, get_labels_np_array, tanh_to_original, original_to_tanh
@@ -129,7 +129,7 @@ class CarliniL2Method(Attack):
         :rtype: `(float, float, float)`
         """
         l2dist = np.sum(np.square(x - x_adv).reshape(x.shape[0], -1), axis=1)
-        z_predicted = self.classifier.predict(np.array(x_adv, dtype=NUMPY_DTYPE), logits=True,
+        z_predicted = self.classifier.predict(np.array(x_adv, dtype=ART_NUMPY_DTYPE), logits=True,
                                               batch_size=self.batch_size)
         z_target = np.sum(z_predicted * target, axis=1)
         z_other = np.max(z_predicted * (1 - target) + (np.min(z_predicted, axis=1) - 1)[:, np.newaxis] * target, axis=1)
@@ -208,7 +208,7 @@ class CarliniL2Method(Attack):
         :rtype: `np.ndarray`
         """
         y = check_and_transform_label_format(y, self.classifier.nb_classes())
-        x_adv = x.astype(NUMPY_DTYPE)
+        x_adv = x.astype(ART_NUMPY_DTYPE)
 
         if hasattr(self.classifier, 'clip_values') and self.classifier.clip_values is not None:
             clip_min, clip_max = self.classifier.clip_values
@@ -519,7 +519,7 @@ class CarliniLInfMethod(Attack):
         :return: A tuple holding the current predictions and overall loss.
         :rtype: `(float, float)`
         """
-        z_predicted = self.classifier.predict(np.array(x_adv, dtype=NUMPY_DTYPE), batch_size=self.batch_size)
+        z_predicted = self.classifier.predict(np.array(x_adv, dtype=ART_NUMPY_DTYPE), batch_size=self.batch_size)
         z_target = np.sum(z_predicted * target, axis=1)
         z_other = np.max(z_predicted * (1 - target) + (np.min(z_predicted, axis=1) - 1)[:, np.newaxis] * target, axis=1)
 
@@ -581,7 +581,7 @@ class CarliniLInfMethod(Attack):
         :rtype: `np.ndarray`
         """
         y = check_and_transform_label_format(y, self.classifier.nb_classes())
-        x_adv = x.astype(NUMPY_DTYPE)
+        x_adv = x.astype(ART_NUMPY_DTYPE)
 
         if hasattr(self.classifier, 'clip_values') and self.classifier.clip_values is not None:
             clip_min_per_pixel, clip_max_per_pixel = self.classifier.clip_values

@@ -25,7 +25,7 @@ import os.path
 
 import numpy as np
 
-from art.utils import DATA_PATH
+from art.config import ART_DATA_PATH
 
 logger = logging.getLogger(__name__)
 
@@ -92,7 +92,7 @@ def convert_to_rgb(images):
 
 def save_image(image_array, f_name):
     """
-    Saves image into a file inside `DATA_PATH` with the name `f_name`.
+    Saves image into a file inside `ART_DATA_PATH` with the name `f_name`.
 
     :param image_array: Image to be saved
     :type image_array: `np.ndarray`
@@ -100,7 +100,7 @@ def save_image(image_array, f_name):
     :type f_name: `str`
     :return: `None`
     """
-    file_name = os.path.join(DATA_PATH, f_name)
+    file_name = os.path.join(ART_DATA_PATH, f_name)
     folder = os.path.split(file_name)[0]
     if not os.path.exists(folder):
         os.makedirs(folder)
@@ -125,7 +125,7 @@ def plot_3d(points, labels, colors=None, save=True, f_name=''):
     :param colors: Optional argument to specify colors to be used in the plot. If provided, this array should contain
     as many colors as labels.
     :type `lst`
-    :param save:  When set to True, saves image into a file inside `DATA_PATH` with the name `f_name`.
+    :param save:  When set to True, saves image into a file inside `ART_DATA_PATH` with the name `f_name`.
     :type save: `bool`
     :param f_name: Name used to save the file when save is set to True
     :type f_name: `str`
@@ -157,7 +157,7 @@ def plot_3d(points, labels, colors=None, save=True, f_name=''):
             except IndexError:
                 raise ValueError('Labels outside the range. Should start from zero and be sequential there after')
         if save:
-            file_name = os.path.realpath(os.path.join(DATA_PATH, f_name))
+            file_name = os.path.realpath(os.path.join(ART_DATA_PATH, f_name))
             folder = os.path.split(file_name)[0]
 
             if not os.path.exists(folder):
