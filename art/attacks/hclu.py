@@ -91,9 +91,8 @@ class HighConfidenceLowUncertainty(Attack):
                         return (pred - args['conf']).reshape(-1)
 
                 def constraint_unc(x, args):  # constraint for uncertainty
-                        return (
-                        args['max_uncertainty'] - (args['classifier'].predict_uncertainty(
-                                x.reshape(1, -1))).reshape(-1))[0]
+                        cur_unc = args['classifier'].predict_uncertainty(x.reshape(1, -1))
+                        return (args['max_uncertainty'] - (cur_unc.reshape(-1))[0]
 
                 bounds = []
                 # adding bounds, to not go away from original data
@@ -102,7 +101,7 @@ class HighConfidenceLowUncertainty(Attack):
                 for i in range(np.shape(x)[0]):  # go though data amd craft
                         # get properties for attack
                         max_uncertainty = self.unc_increase * self.classifier.predict_uncertainty(
-                                x_adv[i].reshape(1, -1))
+                                     x_adv[i].reshape(1, -1))
                         class_zero = not self.classifier.predict(x_adv[i].reshape(1, -1))[0, 0] < 0.5
                         init_args = {'classifier': self.classifier, 'class_zero': class_zero,
                                      'max_uncertainty': max_uncertainty, 'conf': self.conf}
