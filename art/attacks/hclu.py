@@ -92,7 +92,7 @@ class HighConfidenceLowUncertainty(Attack):
 
                 def constraint_unc(x, args):  # constraint for uncertainty
                         cur_unc = args['classifier'].predict_uncertainty(x.reshape(1, -1))
-                        return (args['max_uncertainty'] - (cur_unc.reshape(-1))[0]
+                        return (args['max_uncertainty'] - cur_unc.reshape(-1)[0])
 
                 bounds = []
                 # adding bounds, to not go away from original data
