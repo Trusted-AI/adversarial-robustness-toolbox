@@ -270,6 +270,8 @@ class TestCopycatCNNVectors(unittest.TestCase):
         sess.close()
         tf.reset_default_graph()
 
+    @unittest.skipIf(tf.__version__[0] == '2', reason='Skip unittests for Tensorflow v2 until Keras supports Tensorflow'
+                                                      ' v2 as backend.')
     def test_iris_kr(self):
         """
         Second test for Keras.
