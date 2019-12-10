@@ -1,11 +1,11 @@
 pytest-pep8
-keras>=2.2.5
+keras
 h5py
 mxnet
 Pillow
 requests
 torch>=1.2.0
-tensorflow>=1.13.2
+tensorflow
 scikit-learn
 xgboost
 lightgbm
