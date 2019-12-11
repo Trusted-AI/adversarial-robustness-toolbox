@@ -40,6 +40,8 @@ class DataframeWrapper(np.ndarray):
         
     #the order input is ignored. It's just there for compatibility
     def copy(self, order='C'):
+        if(len(self.shape) == 1):
+            self = self[np.newaxis,:]
         if(self.__copy_dataframe): #If true, then we can copy the dataframe with the array
             return self.__new__(DataframeWrapper, pd.DataFrame(self, columns=self.__dataframe.columns.values), copy=True)
         else:
