@@ -31,7 +31,7 @@ tests_require = ['pytest-pep8',
 docs_require = ['sphinx >= 1.4',
                 'sphinx_rtd_theme']
 
-setup(name='Adversarial Robustness Toolbox',
+setup(name='adversarial_robustness_toolbox',
       version='1.0.1',
       description='Toolbox for adversarial machine learning.',
       long_description=long_description,
