@@ -8,6 +8,9 @@ import os
 
 from numpy import float32
 
+# Semantic Version
+__version__ = "1.1.0"
+
 # pylint: disable=C0103
 
 LOGGING = {
