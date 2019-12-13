@@ -50,7 +50,7 @@ def get_version(rel_path):
 
 setup(name='adversarial_robustness_toolbox',
       version=get_version("art/__init__.py"),
-      description='IBM Adversarial machine learning toolbox',
+      description='Toolbox for adversarial machine learning.',
       long_description=long_description,
       long_description_content_type='text/markdown',
       author='Irina Nicolae',
