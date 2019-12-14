@@ -37,7 +37,8 @@ logger = logging.getLogger(__name__)
 
 class HighConfidenceLowUncertainty(Attack):
         """
-        Implementation of the High-Confidence-Low-Uncertainty (HCLU) adversarial example formulation by Grosse et al. (2018)
+        Implementation of the High-Confidence-Low-Uncertainty (HCLU) adversarial example formulation 
+        by Grosse et al. (2018)
 
         | Paper link: https://arxiv.org/abs/1812.02606
         """
@@ -68,13 +69,13 @@ class HighConfidenceLowUncertainty(Attack):
 
         def generate(self, x, y=None, **kwargs):
                 """
-                Generate adversarial examples and return them as an array. This method should be overridden by all concrete
-                attack implementations.
+                Generate adversarial examples and return them as an array. This method should be overridden by 
+                all concrete attack implementations.
 
                 :param x: An array with the original inputs to be attacked.
                 :type x: `np.ndarray`
-                :param y: Target values (class labels) one-hot-encoded of shape (nb_samples, nb_classes) or indices of shape
-                          (nb_samples,).
+                :param y: Target values (class labels) one-hot-encoded of shape (nb_samples, nb_classes) or 
+                          indices of shape (nb_samples,).
                 :type y: `np.ndarray`
                 :return: An array holding the adversarial examples.
                 :rtype: `np.ndarray`
@@ -91,8 +92,8 @@ class HighConfidenceLowUncertainty(Attack):
                         return (pred - args['conf']).reshape(-1)
 
                 def constraint_unc(x, args):  # constraint for uncertainty
-                        cur_unc = args['classifier'].predict_uncertainty(x.reshape(1, -1))
-                        return (args['max_uncertainty'] - cur_unc.reshape(-1)[0])
+                        cur_unc =  (args['classifier'].predict_uncertainty(x.reshape(1, -1))).reshape(-1)
+                        return (args['max_uncertainty'] - cur_unc)[0]
 
                 bounds = []
                 # adding bounds, to not go away from original data
