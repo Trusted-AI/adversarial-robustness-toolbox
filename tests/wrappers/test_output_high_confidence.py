@@ -24,14 +24,14 @@ import numpy as np
 
 from art.utils import load_dataset, master_seed
 from art.utils_test import get_classifier_kr
-from art.wrappers.output_high_values import OutputHighValues
+from art.wrappers.output_high_confidence import OutputHighConfidence
 
 logger = logging.getLogger(__name__)
 
 
-class TestOutputHighValues(unittest.TestCase):
+class TestOutputHighConfidence(unittest.TestCase):
     """
-    A unittest class for testing the High Values Output wrapper.
+    A unittest class for testing the High Confidence Output wrapper.
     """
 
     @classmethod
@@ -48,7 +48,7 @@ class TestOutputHighValues(unittest.TestCase):
         Test with cutoff of 0.1.
         """
         (_, _), (x_test, _) = self.mnist
-        wrapper = OutputHighValues(classifier=self.classifier, cutoff=0.1)
+        wrapper = OutputHighConfidence(classifier=self.classifier, cutoff=0.1)
         expected_predictions = np.asarray([[0.12109935, 0.0, 0.0, 0.0, 0.11366928, 0.0, 0.0, 0.30685693, 0.0, 0.0]],
                                           dtype=np.float32)
         np.testing.assert_array_almost_equal(wrapper.predict(x_test[0:1]), expected_predictions, decimal=4)
@@ -58,7 +58,7 @@ class TestOutputHighValues(unittest.TestCase):
         Test with cutoff of 0.2.
         """
         (_, _), (x_test, _) = self.mnist
-        wrapper = OutputHighValues(classifier=self.classifier, cutoff=0.2)
+        wrapper = OutputHighConfidence(classifier=self.classifier, cutoff=0.2)
         expected_predictions = np.asarray([[0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.30685693, 0.0, 0.0]],
                                           dtype=np.float32)
         np.testing.assert_array_almost_equal(wrapper.predict(x_test[0:1]), expected_predictions, decimal=4)

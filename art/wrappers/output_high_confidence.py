@@ -16,7 +16,7 @@
 # TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 # SOFTWARE.
 """
-This module implements a classifier wrapper which only returns prediction output higher than a cutoff value.
+This module implements a classifier wrapper which only returns predictions with high confidence.
 """
 import logging
 
@@ -28,27 +28,27 @@ from art.classifiers.classifier import Classifier
 logger = logging.getLogger(__name__)
 
 
-class OutputHighValues(ClassifierWrapper, Classifier):
+class OutputHighConfidence(ClassifierWrapper, Classifier):
     """
-    Implementation of a classifier wrapper which only returns prediction output higher than a cutoff value.
+    Implementation of a classifier wrapper which only returns predictions with high confidence.
     """
 
     def __init__(self, classifier, cutoff=0.25):
         """
-        Create a wrapper which only returns prediction output higher than a cutoff value.
+        Create a wrapper which only returns predictions with high confidence.
 
         :param classifier: A trained classifier.
         :type classifier: :class:`.Classifier`
         :param cutoff: Minimal value for returned prediction output.
         :type cutoff: `float`
         """
-        super(OutputHighValues, self).__init__(classifier)
+        super(OutputHighConfidence, self).__init__(classifier)
         self.cutoff = cutoff
 
     # pylint: disable=W0221
     def predict(self, x, batch_size=128, **kwargs):
         """
-        Make a prediction with the wrapped classifier and return only predictions larger than cutoff.
+        Make a prediction with the wrapped classifier and return only predictions with high confidence.
 
         :param x: Input data
         :type x: `np.ndarray`
