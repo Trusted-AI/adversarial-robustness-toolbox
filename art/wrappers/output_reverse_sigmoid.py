@@ -78,8 +78,10 @@ class ReverseSigmoid(ClassifierWrapper, Classifier):
         else:
             predictions_1 = predictions
             predictions_2 = 1.0 - predictions
-            perturbation_r_1 = self.beta * (sigmoid(-self.gamma * (np.log((1.00001 - predictions_1) / predictions_1))) - 0.5)
-            perturbation_r_2 = self.beta * (sigmoid(-self.gamma * (np.log((1.00001 - predictions_2) / predictions_2))) - 0.5)
+            perturbation_r_1 = self.beta * (
+                        sigmoid(-self.gamma * (np.log((1.00001 - predictions_1) / predictions_1))) - 0.5)
+            perturbation_r_2 = self.beta * (
+                        sigmoid(-self.gamma * (np.log((1.00001 - predictions_2) / predictions_2))) - 0.5)
             predictions_perturbed_1 = predictions_1 - perturbation_r_1
             predictions_perturbed_2 = predictions_2 - perturbation_r_2
             predictions_perturbed_1 = np.clip(predictions_perturbed_1, 0.0, np.finfo(NUMPY_DTYPE).max)
