@@ -53,6 +53,7 @@ class Attack(ABC):
                                  classifier.__class__.__bases__) + '.'))
         self.classifier = classifier
 
+    @abc.abstractmethod
     def generate(self, x, y=None, **kwargs):
         """
         Generate adversarial examples and return them as an array. This method should be overridden by all concrete
