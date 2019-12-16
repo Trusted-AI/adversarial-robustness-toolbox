@@ -57,7 +57,7 @@ class OutputHighValues(ClassifierWrapper, Classifier):
         :return: Rounded predictions of shape `(nb_inputs, nb_classes)`.
         :rtype: `np.ndarray`
         """
-        predictions = self.classifier.predict(x, batch_size=batch_size)
+        predictions = self.classifier.predict(x, batch_size=batch_size, **kwargs)
         predictions[predictions < self.cutoff] = 0.0
         return predictions
 

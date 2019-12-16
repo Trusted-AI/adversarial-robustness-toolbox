@@ -61,8 +61,9 @@ class RandomNoise(ClassifierWrapper, Classifier):
         noise = np.random.normal(loc=0.0, scale=self.scale, size=predictions.shape)
         predictions += noise
         predictions[predictions < 0.0] = 0.0
-        sums = np.sum(predictions, axis=1)
-        predictions /= sums
+        if predictions.shape[1] > 1:
+            sums = np.sum(predictions, axis=1)
+            predictions /= sums
         return predictions
 
     def fit(self, x, y, batch_size=128, nb_epochs=20, **kwargs):

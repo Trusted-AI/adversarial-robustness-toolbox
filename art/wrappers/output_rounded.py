@@ -57,7 +57,7 @@ class OutputRounded(ClassifierWrapper, Classifier):
         :return: Rounded predictions of shape `(nb_inputs, nb_classes)`.
         :rtype: `np.ndarray`
         """
-        return np.around(self.classifier.predict(x, batch_size=batch_size), decimals=self.decimals)
+        return np.around(self.classifier.predict(x, batch_size=batch_size, **kwargs), decimals=self.decimals)
 
     def fit(self, x, y, batch_size=128, nb_epochs=20, **kwargs):
         """

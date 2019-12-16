@@ -54,10 +54,13 @@ class ClassLabels(ClassifierWrapper, Classifier):
         :return: Rounded predictions of shape `(nb_inputs, nb_classes)`.
         :rtype: `np.ndarray`
         """
-        predictions = self.classifier.predict(x, batch_size=batch_size)
-        index_labels = np.argmax(predictions, axis=1)
+        predictions = self.classifier.predict(x, batch_size=batch_size, **kwargs)
         class_labels = np.zeros_like(predictions)
-        class_labels[:, index_labels] = 1
+        if predictions.shape[1] > 1:
+            index_labels = np.argmax(predictions, axis=1)
+            class_labels[:, index_labels] = 1
+        else:
+            class_labels[predictions > 0.5] = 1
         return class_labels
 
     def fit(self, x, y, batch_size=128, nb_epochs=20, **kwargs):
