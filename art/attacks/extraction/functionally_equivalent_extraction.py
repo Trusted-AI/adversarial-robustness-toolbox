@@ -179,7 +179,7 @@ class FunctionallyEquivalentExtraction:
 
                 x_1 = self._get_x(t_1)
                 x_1_p = self._get_x(t_1 + epsilon)
-                x_2 = self.u + t_2 * self.v
+                x_2 = self._get_x(t_2)
                 x_2_m = self._get_x(t_2 - epsilon)
 
                 m_1 = (self._o_l(x_1_p) - self._o_l(x_1)) / epsilon
