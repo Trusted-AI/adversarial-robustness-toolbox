@@ -20,8 +20,6 @@ This module implements a classifier wrapper which only returns predictions with 
 """
 import logging
 
-import numpy as np
-
 from art.wrappers.wrapper import ClassifierWrapper
 from art.classifiers.classifier import Classifier
 
