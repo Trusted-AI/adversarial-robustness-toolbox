@@ -57,7 +57,7 @@ class RandomNoise(ClassifierWrapper, Classifier):
         :return: Rounded predictions of shape `(nb_inputs, nb_classes)`.
         :rtype: `np.ndarray`
         """
-        predictions = self.classifier.predict(x, batch_size=batch_size)
+        predictions = self.classifier.predict(x, batch_size=batch_size, **kwargs)
         noise = np.random.normal(loc=0.0, scale=self.scale, size=predictions.shape)
         predictions += noise
         predictions[predictions < 0.0] = 0.0
