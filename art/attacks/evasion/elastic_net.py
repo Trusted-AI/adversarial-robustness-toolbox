@@ -42,7 +42,8 @@ class ElasticNet(EvasionAttack):
     | Paper link: https://arxiv.org/abs/1709.04114
     """
     attack_params = EvasionAttack.attack_params + ['confidence', 'targeted', 'learning_rate', 'max_iter', 'beta',
-                                            'binary_search_steps', 'initial_const', 'batch_size', 'decision_rule']
+                                                   'binary_search_steps', 'initial_const', 'batch_size',
+                                                   'decision_rule']
 
     def __init__(self, classifier, confidence=0.0, targeted=False, learning_rate=1e-2, binary_search_steps=9,
                  max_iter=100, beta=1e-3, initial_const=1e-3, batch_size=1, decision_rule='EN'):
