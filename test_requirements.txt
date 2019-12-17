@@ -1,16 +1,21 @@
 pytest-pep8
-keras
 h5py
-mxnet
 Pillow
 requests
+
+keras
+mxnet
 #torch>=1.2.0
 tensorflow
 scikit-learn==0.21.3
 xgboost
 lightgbm
-GPy
-SciPy
 # Comment out because of compatibility issues with numpy versions
 # catboost
+GPy
+
 statsmodels
+matplotlib
+numpy
+scipy
+six
