@@ -23,6 +23,9 @@ if [[ $? -ne 0 ]]; then exit_code=1; echo 'Failed test_elastic_net.py'; fi
 python -m unittest 'tests/attacks/test_fast_gradient.py'
 if [[ $? -ne 0 ]]; then exit_code=1; echo 'Failed test_fast_gradient.py'; fi
 
+python -m unittest 'tests/attacks/test_functionally_equivalent_extraction.py'
+if [[ $? -ne 0 ]]; then exit_code=1; echo 'Failed test_functionally_equivalent_extraction.py'; fi
+
 python -m unittest 'tests/attacks/test_hclu.py'
 if [[ $? -ne 0 ]]; then exit_code=1; echo 'Failed test_hclu.py'; fi
 
