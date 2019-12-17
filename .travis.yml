@@ -28,7 +28,7 @@ before_install:
   - conda info -a
 
 install:
-  - conda create -q -n test-environment python=$TRAVIS_PYTHON_VERSION --yes --file requirements.txt
+  - conda create -q -n test-environment python=$TRAVIS_PYTHON_VERSION --yes
   - source activate test-environment
   - pip install -q -r test_requirements.txt
   - pip install pylint pycodestyle
