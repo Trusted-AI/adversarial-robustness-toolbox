@@ -74,8 +74,8 @@ class FunctionallyEquivalentExtraction(Attack):
         self.b_1 = None  # Bias vector of second dense layer
 
     def generate(self, x, delta_0=0.05, fraction_true=0.3, rel_diff_slope=0.00001, rel_diff_value=0.000001,
-                delta_init_value=0.1, delta_value_max=50, d2_min=0.0004, d_step=0.01, delta_sign=0.02,
-                unit_vector_scale=10000):
+                 delta_init_value=0.1, delta_value_max=50, d2_min=0.0004, d_step=0.01, delta_sign=0.02,
+                 unit_vector_scale=10000):
         """
         Extract the targeted model.
 

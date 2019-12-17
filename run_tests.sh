@@ -16,6 +16,8 @@ python -m unittest 'tests/attacks/test_elastic_net.py'
 if [[ $? -ne 0 ]]; then exit_code=1; fi
 python -m unittest 'tests/attacks/test_fast_gradient.py'
 if [[ $? -ne 0 ]]; then exit_code=1; fi
+python -m unittest 'tests/attacks/test_functionally_equivalent_extraction.py'
+if [[ $? -ne 0 ]]; then exit_code=1; fi
 python -m unittest 'tests/attacks/test_hclu.py'
 if [[ $? -ne 0 ]]; then exit_code=1; fi
 python -m unittest 'tests/attacks/test_hop_skip_jump.py'
