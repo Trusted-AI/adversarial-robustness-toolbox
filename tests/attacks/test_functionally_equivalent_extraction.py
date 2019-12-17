@@ -70,7 +70,7 @@ class TestFastGradientMethodImages(unittest.TestCase):
         classifier = KerasClassifier(model=model, use_logits=True, clip_values=(0, 1))
 
         cls.fee = FunctionallyEquivalentExtraction(classifier=classifier, num_neurons=num_neurons)
-        cls.fee.generate(x_test[0:100])
+        cls.fee.extract(x_test[0:100])
 
     def setUp(self):
         master_seed(1234)
