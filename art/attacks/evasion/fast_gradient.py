@@ -29,13 +29,13 @@ import numpy as np
 
 from art import NUMPY_DTYPE
 from art.classifiers.classifier import ClassifierGradients
-from art.attacks.attack import Attack
+from art.attacks import EvasionAttack
 from art.utils import compute_success, get_labels_np_array, random_sphere, projection, check_and_transform_label_format
 
 logger = logging.getLogger(__name__)
 
 
-class FastGradientMethod(Attack):
+class FastGradientMethod(EvasionAttack):
     """
     This attack was originally implemented by Goodfellow et al. (2015) with the infinity norm (and is known as the "Fast
     Gradient Sign Method"). This implementation extends the attack to other norms, and is therefore called the Fast
@@ -43,8 +43,8 @@ class FastGradientMethod(Attack):
 
     | Paper link: https://arxiv.org/abs/1412.6572
     """
-    attack_params = Attack.attack_params + ['norm', 'eps', 'eps_step', 'targeted', 'num_random_init', 'batch_size',
-                                            'minimal']
+    attack_params = EvasionAttack.attack_params + ['norm', 'eps', 'eps_step', 'targeted', 'num_random_init',
+                                                   'batch_size', 'minimal']
 
     def __init__(self, classifier, norm=np.inf, eps=.3, eps_step=0.1, targeted=False, num_random_init=0, batch_size=1,
                  minimal=False):

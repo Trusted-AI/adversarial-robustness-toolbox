@@ -24,14 +24,14 @@ import logging
 
 import numpy as np
 
-from art.attacks.attack import Attack
+from art.attacks import EvasionAttack
 from art.classifiers.scikitlearn import ScikitlearnDecisionTreeClassifier
 from art.utils import check_and_transform_label_format, compute_success
 
 logger = logging.getLogger(__name__)
 
 
-class DecisionTreeAttack(Attack):
+class DecisionTreeAttack(EvasionAttack):
     """
     Close implementation of Papernot's attack on decision trees following Algorithm 2 and communication with the
     authors.

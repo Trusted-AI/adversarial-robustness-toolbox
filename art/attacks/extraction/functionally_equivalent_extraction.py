@@ -33,7 +33,7 @@ import logging
 import numpy as np
 from scipy.optimize import least_squares
 
-from art.attacks import Attack
+from art.attacks import ExtractionAttack
 from art.classifiers import KerasClassifier
 
 NUMPY_DTYPE = np.float64
@@ -41,7 +41,7 @@ NUMPY_DTYPE = np.float64
 logger = logging.getLogger(__name__)
 
 
-class FunctionallyEquivalentExtraction(Attack):
+class FunctionallyEquivalentExtraction(ExtractionAttack):
     """
     This module implements the Functionally Equivalent Extraction attack for neural networks with two dense layers,
     ReLU activation at the first layer and logits output after the second layer.
@@ -73,9 +73,9 @@ class FunctionallyEquivalentExtraction(Attack):
         self.w_1 = None  # weight matrix of second dense layer
         self.b_1 = None  # Bias vector of second dense layer
 
-    def generate(self, x, delta_0=0.05, fraction_true=0.3, rel_diff_slope=0.00001, rel_diff_value=0.000001,
-                 delta_init_value=0.1, delta_value_max=50, d2_min=0.0004, d_step=0.01, delta_sign=0.02,
-                 unit_vector_scale=10000):
+    def extract(self, x, delta_0=0.05, fraction_true=0.3, rel_diff_slope=0.00001, rel_diff_value=0.000001,
+                delta_init_value=0.1, delta_value_max=50, d2_min=0.0004, d_step=0.01, delta_sign=0.02,
+                unit_vector_scale=10000):
         """
         Extract the targeted model.
 

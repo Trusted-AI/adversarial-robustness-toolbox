@@ -28,17 +28,16 @@ import copy
 import numpy as np
 from scipy.optimize import minimize
 
-from art.attacks.attack import Attack
+from art.attacks import EvasionAttack
 from art.classifiers.GPy import GPyGaussianProcessClassifier
 from art.utils import compute_success
 
 logger = logging.getLogger(__name__)
 
 
-class HighConfidenceLowUncertainty(Attack):
+class HighConfidenceLowUncertainty(EvasionAttack):
     """
-    Implementation of the High-Confidence-Low-Uncertainty (HCLU) adversarial example formulation
-    by Grosse et al. (2018)
+    Implementation of the High-Confidence-Low-Uncertainty (HCLU) adversarial example formulation by Grosse et al. (2018)
 
     | Paper link: https://arxiv.org/abs/1812.02606
     """
@@ -57,8 +56,7 @@ class HighConfidenceLowUncertainty(Attack):
         :param max_val: maximal value any feature can take, defaults to 1.0
         :type max_val: :float:
         """
-        super(HighConfidenceLowUncertainty, self).__init__(
-            classifier=classifier)
+        super(HighConfidenceLowUncertainty, self).__init__(classifier=classifier)
         if not isinstance(classifier, GPyGaussianProcessClassifier):
             raise TypeError('Model must be a GPy Gaussian Process classifier!')
         params = {'conf': conf,
@@ -70,13 +68,13 @@ class HighConfidenceLowUncertainty(Attack):
 
     def generate(self, x, y=None, **kwargs):
         """
-        Generate adversarial examples and return them as an array. This method should be overridden by
-        all concrete attack implementations.
+        Generate adversarial examples and return them as an array. This method should be overridden by all concrete
+        attack implementations.
 
         :param x: An array with the original inputs to be attacked.
         :type x: `np.ndarray`
-        :param y: Target values (class labels) one-hot-encoded of shape (nb_samples, nb_classes) or
-                  indices of shape (nb_samples,).
+        :param y: Target values (class labels) one-hot-encoded of shape (nb_samples, nb_classes) or indices of shape
+                  (nb_samples,).
         :type y: `np.ndarray`
         :return: An array holding the adversarial examples.
         :rtype: `np.ndarray`
@@ -103,10 +101,8 @@ class HighConfidenceLowUncertainty(Attack):
             bounds.append((self.min_val, self.max_val))
         for i in range(np.shape(x)[0]):  # go though data amd craft
             # get properties for attack
-            max_uncertainty = self.unc_increase * self.classifier.predict_uncertainty(
-                x_adv[i].reshape(1, -1))
-            class_zero = not self.classifier.predict(
-                x_adv[i].reshape(1, -1))[0, 0] < 0.5
+            max_uncertainty = self.unc_increase * self.classifier.predict_uncertainty(x_adv[i].reshape(1, -1))
+            class_zero = not self.classifier.predict(x_adv[i].reshape(1, -1))[0, 0] < 0.5
             init_args = {'classifier': self.classifier, 'class_zero': class_zero,
                          'max_uncertainty': max_uncertainty, 'conf': self.conf}
             constr_conf = {'type': 'ineq',
@@ -115,10 +111,8 @@ class HighConfidenceLowUncertainty(Attack):
                           'fun': constraint_unc, 'args': (init_args,)}
             args = {'args': init_args, 'orig': x[i].reshape(-1)}
             # finally, run optimization
-            x_adv[i] = minimize(minfun, x_adv[i], args=args, bounds=bounds,
-                                constraints=[constr_conf, constr_unc])['x']
-        logger.info('Success rate of HCLU attack: %.2f%%', 100 *
-                    compute_success(self.classifier, x, y, x_adv))
+            x_adv[i] = minimize(minfun, x_adv[i], args=args, bounds=bounds, constraints=[constr_conf, constr_unc])['x']
+        logger.info('Success rate of HCLU attack: %.2f%%', 100 * compute_success(self.classifier, x, y, x_adv))
         return x_adv
 
     def set_params(self, **kwargs):
@@ -131,8 +125,7 @@ class HighConfidenceLowUncertainty(Attack):
         """
         super(HighConfidenceLowUncertainty, self).set_params(**kwargs)
         if self.conf <= 0.5 or self.conf > 1.0:
-            raise ValueError(
-                "Confidence value has to be a value between 0.5 and 1.0.")
+            raise ValueError("Confidence value has to be a value between 0.5 and 1.0.")
         if self.unc_increase <= 0.0:
             raise ValueError("Value to increase uncertainty must be positive.")
         if self.min_val > self.max_val:

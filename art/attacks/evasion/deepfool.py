@@ -28,19 +28,19 @@ import numpy as np
 
 from art import NUMPY_DTYPE
 from art.classifiers.classifier import ClassifierGradients
-from art.attacks.attack import Attack
+from art.attacks import EvasionAttack
 from art.utils import compute_success
 
 logger = logging.getLogger(__name__)
 
 
-class DeepFool(Attack):
+class DeepFool(EvasionAttack):
     """
     Implementation of the attack from Moosavi-Dezfooli et al. (2015).
 
     | Paper link: https://arxiv.org/abs/1511.04599
     """
-    attack_params = Attack.attack_params + ['max_iter', 'epsilon', 'nb_grads', 'batch_size']
+    attack_params = EvasionAttack.attack_params + ['max_iter', 'epsilon', 'nb_grads', 'batch_size']
 
     def __init__(self, classifier, max_iter=100, epsilon=1e-6, nb_grads=10, batch_size=1):
         """

@@ -29,12 +29,12 @@ import logging
 import numpy as np
 from scipy.ndimage import rotate, shift
 
-from art.attacks.attack import Attack
+from art.attacks import EvasionAttack
 
 logger = logging.getLogger(__name__)
 
 
-class SpatialTransformation(Attack):
+class SpatialTransformation(EvasionAttack):
     """
     Implementation of the spatial transformation attack using translation and rotation of inputs. The attack conducts
     black-box queries to the target model in a grid search over possible translations and rotations to find optimal
@@ -43,7 +43,8 @@ class SpatialTransformation(Attack):
     | Paper link: https://arxiv.org/abs/1712.02779
     """
 
-    attack_params = Attack.attack_params + ['max_translation', 'num_translations', 'max_rotation', 'num_rotations']
+    attack_params = EvasionAttack.attack_params + ['max_translation', 'num_translations', 'max_rotation',
+                                                   'num_rotations']
 
     def __init__(self, classifier, max_translation=0.0, num_translations=1, max_rotation=0.0, num_rotations=1):
         """
