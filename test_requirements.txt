@@ -15,7 +15,4 @@ lightgbm
 GPy
 
 statsmodels
-matplotlib
-numpy
-scipy
-six
+
