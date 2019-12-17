@@ -37,7 +37,8 @@ logger = logging.getLogger(__name__)
 
 class HighConfidenceLowUncertainty(Attack):
     """
-    Implementation of the High-Confidence-Low-Uncertainty (HCLU) adversarial example formulation by Grosse et al. (2018)
+    Implementation of the High-Confidence-Low-Uncertainty (HCLU) adversarial example formulation
+    by Grosse et al. (2018)
 
     | Paper link: https://arxiv.org/abs/1812.02606
     """
@@ -56,7 +57,8 @@ class HighConfidenceLowUncertainty(Attack):
         :param max_val: maximal value any feature can take, defaults to 1.0
         :type max_val: :float:
         """
-        super(HighConfidenceLowUncertainty, self).__init__(classifier=classifier)
+        super(HighConfidenceLowUncertainty, self).__init__(
+            classifier=classifier)
         if not isinstance(classifier, GPyGaussianProcessClassifier):
             raise TypeError('Model must be a GPy Gaussian Process classifier!')
         params = {'conf': conf,
@@ -68,13 +70,13 @@ class HighConfidenceLowUncertainty(Attack):
 
     def generate(self, x, y=None, **kwargs):
         """
-        Generate adversarial examples and return them as an array. This method should be overridden by all concrete
-        attack implementations.
+        Generate adversarial examples and return them as an array. This method should be overridden by
+        all concrete attack implementations.
 
         :param x: An array with the original inputs to be attacked.
         :type x: `np.ndarray`
-        :param y: Target values (class labels) one-hot-encoded of shape (nb_samples, nb_classes) or indices of shape
-                  (nb_samples,).
+        :param y: Target values (class labels) one-hot-encoded of shape (nb_samples, nb_classes) or
+                  indices of shape (nb_samples,).
         :type y: `np.ndarray`
         :return: An array holding the adversarial examples.
         :rtype: `np.ndarray`
@@ -88,10 +90,12 @@ class HighConfidenceLowUncertainty(Attack):
             pred = args['classifier'].predict(x.reshape(1, -1))[0, 0]
             if args['class_zero']:
                 pred = 1.0 - pred
-            return (pred - 0.95).reshape(-1)
+            return (pred - args['conf']).reshape(-1)
 
         def constraint_unc(x, args):  # constraint for uncertainty
-            return (args['max_uncertainty'] - (args['classifier'].predict_uncertainty(x.reshape(1, -1))).reshape(-1))[0]
+            cur_unc = (args['classifier'].predict_uncertainty(
+                x.reshape(1, -1))).reshape(-1)
+            return (args['max_uncertainty'] - cur_unc)[0]
 
         bounds = []
         # adding bounds, to not go away from original data
@@ -99,16 +103,22 @@ class HighConfidenceLowUncertainty(Attack):
             bounds.append((self.min_val, self.max_val))
         for i in range(np.shape(x)[0]):  # go though data amd craft
             # get properties for attack
-            max_uncertainty = self.unc_increase * self.classifier.predict_uncertainty(x_adv[i].reshape(1, -1))
-            class_zero = not self.classifier.predict(x_adv[i].reshape(1, -1))[0, 0] < 0.5
-            init_args = {'classifier': self.classifier, 'class_zero': class_zero, 'max_uncertainty': max_uncertainty}
-            constr_conf = {'type': 'ineq', 'fun': constraint_conf, 'args': (init_args,)}
-            constr_unc = {'type': 'ineq', 'fun': constraint_unc, 'args': (init_args,)}
+            max_uncertainty = self.unc_increase * self.classifier.predict_uncertainty(
+                x_adv[i].reshape(1, -1))
+            class_zero = not self.classifier.predict(
+                x_adv[i].reshape(1, -1))[0, 0] < 0.5
+            init_args = {'classifier': self.classifier, 'class_zero': class_zero,
+                         'max_uncertainty': max_uncertainty, 'conf': self.conf}
+            constr_conf = {'type': 'ineq',
+                           'fun': constraint_conf, 'args': (init_args,)}
+            constr_unc = {'type': 'ineq',
+                          'fun': constraint_unc, 'args': (init_args,)}
             args = {'args': init_args, 'orig': x[i].reshape(-1)}
-            # #finally, run optimization
-            x_adv[i] = minimize(minfun, x_adv[i], args=args, bounds=bounds, constraints=[constr_conf, constr_unc])['x']
-
-        logger.info('Success rate of HCLU attack: %.2f%%', 100 * compute_success(self.classifier, x, y, x_adv))
+            # finally, run optimization
+            x_adv[i] = minimize(minfun, x_adv[i], args=args, bounds=bounds,
+                                constraints=[constr_conf, constr_unc])['x']
+        logger.info('Success rate of HCLU attack: %.2f%%', 100 *
+                    compute_success(self.classifier, x, y, x_adv))
         return x_adv
 
     def set_params(self, **kwargs):
@@ -122,9 +132,8 @@ class HighConfidenceLowUncertainty(Attack):
         super(HighConfidenceLowUncertainty, self).set_params(**kwargs)
         if self.conf <= 0.5 or self.conf > 1.0:
             raise ValueError(
-                "Confidence value has to bea value between 0.5 and 1.0.")
-        if self.unc_increase < 0.0:
-            raise ValueError(
-                "Uncertainty increase value has to be a positive number.")
+                "Confidence value has to be a value between 0.5 and 1.0.")
+        if self.unc_increase <= 0.0:
+            raise ValueError("Value to increase uncertainty must be positive.")
         if self.min_val > self.max_val:
             raise ValueError("Maximum has to be larger than minimum.")
