@@ -623,8 +623,8 @@ class TensorFlowV2Classifier(ClassifierNeuralNetwork, ClassifierGradients, Class
     This class implements a classifier with the TensorFlow v2 framework.
     """
 
-    def __init__(self, model, nb_classes, input_shape, loss_object=None, train_step=None, channel_index=3, clip_values=None,
-                 defences=None, preprocessing=(0, 1)):
+    def __init__(self, model, nb_classes, input_shape, loss_object=None, train_step=None, channel_index=3,
+                 clip_values=None, defences=None, preprocessing=(0, 1)):
         """
         Initialization specific to TensorFlow v2 models.
 
