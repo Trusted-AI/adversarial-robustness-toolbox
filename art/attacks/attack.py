@@ -16,31 +16,23 @@
 # TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 # SOFTWARE.
 """
-This module implements the abstract base class `Attack` for all attacks.
+This module implements the abstract base classes for all attacks.
 """
 from __future__ import absolute_import, division, print_function, unicode_literals
 
 import logging
-
 import abc
-import sys
 
 from art.classifiers.classifier import Classifier
 
 logger = logging.getLogger(__name__)
 
-# Ensure compatibility with Python 2 and 3 when using ABCMeta
-if sys.version_info >= (3, 4):
-    ABC = abc.ABC
-else:
-    ABC = abc.ABCMeta(str('ABC'), (), {})
 
-
-class Attack(ABC):
+class Attack(abc.ABC):
     """
-    Abstract base class for all attack classes.
+    Abstract base class for all attack abstract base classes.
     """
-    attack_params = []
+    attack_params = list()
 
     def __init__(self, classifier):
         """
@@ -52,22 +44,6 @@ class Attack(ABC):
                              '`art.classifiers.classifier.Classifier`, the provided classifier is instance of ' + str(
                                  classifier.__class__.__bases__) + '.'))
         self.classifier = classifier
-
-    @abc.abstractmethod
-    def generate(self, x, y=None, **kwargs):
-        """
-        Generate adversarial examples and return them as an array. This method should be overridden by all concrete
-        attack implementations.
-
-        :param x: An array with the original inputs to be attacked.
-        :type x: `np.ndarray`
-        :param y: Correct labels or target labels for `x`, depending if the attack is targeted
-               or not. This parameter is only used by some of the attacks.
-        :type y: `np.ndarray`
-        :return: An array holding the adversarial examples.
-        :rtype: `np.ndarray`
-        """
-        raise NotImplementedError
 
     def set_params(self, **kwargs):
         """
@@ -81,3 +57,90 @@ class Attack(ABC):
             if key in self.attack_params:
                 setattr(self, key, value)
         return True
+
+
+class EvasionAttack(Attack):
+    """
+    Abstract base class for evasion attack classes.
+    """
+
+    def __init__(self, classifier):
+        """
+        :param classifier: A trained classifier.
+        :type classifier: :class:`.Classifier`
+        """
+        super().__init__(classifier)
+
+    @abc.abstractmethod
+    def generate(self, x, y=None, **kwargs):
+        """
+        Generate adversarial examples and return them as an array. This method should be overridden by all concrete
+        evasion attack implementations.
+
+        :param x: An array with the original inputs to be attacked.
+        :type x: `np.ndarray`
+        :param y: Correct labels or target labels for `x`, depending if the attack is targeted
+               or not. This parameter is only used by some of the attacks.
+        :type y: `np.ndarray`
+        :return: An array holding the adversarial examples.
+        :rtype: `np.ndarray`
+        """
+        raise NotImplementedError
+
+
+class PoisoningAttack(Attack):
+    """
+    Abstract base class for poisoning attack classes.
+    """
+
+    def __init__(self, classifier):
+        """
+        :param classifier: A trained classifier.
+        :type classifier: :class:`.Classifier`
+        """
+        super().__init__(classifier)
+
+    @abc.abstractmethod
+    def generate(self, x, y=None, **kwargs):
+        """
+        Generate poisoning examples and return them as an array. This method should be overridden by all concrete
+        poisoning attack implementations.
+
+        :param x: An array with the original inputs to be attacked.
+        :type x: `np.ndarray`
+        :param y: Correct labels or target labels for `x`, depending if the attack is targeted
+               or not. This parameter is only used by some of the attacks.
+        :type y: `np.ndarray`
+        :return: An array holding the poisoning examples.
+        :rtype: `np.ndarray`
+        """
+        raise NotImplementedError
+
+
+class ExtractionAttack(Attack):
+    """
+    Abstract base class for extraction attack classes.
+    """
+
+    def __init__(self, classifier):
+        """
+        :param classifier: A trained classifier targeted for extraction.
+        :type classifier: :class:`.Classifier`
+        """
+        super().__init__(classifier)
+
+    @abc.abstractmethod
+    def extract(self, x, y=None, **kwargs):
+        """
+        Extract models and return them as an ART classifier. This method should be overridden by all concrete extraction
+        attack implementations.
+
+        :param x: An array with the original inputs to be attacked.
+        :type x: `np.ndarray`
+        :param y: Correct labels or target labels for `x`, depending if the attack is targeted
+               or not. This parameter is only used by some of the attacks.
+        :type y: `np.ndarray`
+        :return: ART classifier of the extracted model.
+        :rtype: :class:`.Classifier`
+        """
+        raise NotImplementedError
