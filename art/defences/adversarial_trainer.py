@@ -66,20 +66,20 @@ class AdversarialTrainer:
         :param classifier: Model to train adversarially.
         :type classifier: :class:`.Classifier`
         :param attacks: attacks to use for data augmentation in adversarial training
-        :type attacks: :class:`.Attack` or `list(Attack)`
+        :type attacks: :class:`.EvasionAttack` or `list(EvasionAttack)`
         :param ratio: The proportion of samples in each batch to be replaced with their adversarial counterparts.
                       Setting this value to 1 allows to train only on adversarial samples.
         :type ratio: `float`
         """
-        from art.attacks import Attack
+        from art.attacks import EvasionAttack
 
         self.classifier = classifier
-        if isinstance(attacks, Attack):
+        if isinstance(attacks, EvasionAttack):
             self.attacks = [attacks]
         elif isinstance(attacks, list):
             self.attacks = attacks
         else:
-            raise ValueError('Only Attack instances or list of attacks supported.')
+            raise ValueError('Only EvasionAttack instances or list of attacks supported.')
 
         if ratio <= 0 or ratio > 1:
             raise ValueError('The `ratio` of adversarial samples in each batch has to be between 0 and 1.')
