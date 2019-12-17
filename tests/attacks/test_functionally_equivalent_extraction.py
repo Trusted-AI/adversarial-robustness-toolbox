@@ -39,6 +39,8 @@ NB_TRAIN = 100
 NB_TEST = 11
 
 
+@unittest.skipIf(tf.__version__[0] != '2' or (tf.__version__[0] == '1' and tf.__version__.split('.')[1] != '15'),
+                 reason='Skip unittests if not TensorFlow v2.')
 class TestFastGradientMethodImages(unittest.TestCase):
     @classmethod
     def setUpClass(cls):
