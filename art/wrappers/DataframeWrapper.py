@@ -5,17 +5,16 @@ import logging
 logger = logging.getLogger(__name__)
 
 class DataframeWrapper(np.ndarray):
-    
+
+
     """
-    Wrapper class for pandas dataframes and series. Note that the attacks will always return a 
+    Wrapper class for pandas dataframes and series. Note that the attacks will always return a
     numpy array even if this wrapper is used.
     """
-    
+
     logger.warning("This is experimental. Use with caution")
     __copy_dataframe = True
-    __dataframe = None  # The underlying dataframe used to create the array. This can change due to changes in the
-                                # numpy array such as slicing. So long as the # of columns
-                                # remains consistent and the array is 2D, the dataframe should remain the same.
+    __dataframe = None
 
     def __new__(cls, dataframe, copy=True):
         if(len(np.shape(dataframe)) > 2):
@@ -34,7 +33,7 @@ class DataframeWrapper(np.ndarray):
             else:
                 obj = dataframe.to_numpy().view(cls)
                 obj.__dataframe = dataframe
-   
+
             return obj
         else:
             logger.error("Input must be a dataframe or a series")
@@ -51,7 +50,7 @@ class DataframeWrapper(np.ndarray):
             return np.ndarray.copy(self, order)
 
     def __array_finalize__(self, obj):
-        if obj is None: 
+        if obj is None:
             return
 
         self.__copy_dataframe = getattr(obj, '__copy_dataframe', True)
