@@ -20,8 +20,6 @@ from __future__ import absolute_import, division, print_function, unicode_litera
 import logging
 import unittest
 
-import keras.backend as k
-# import tensorflow as tf
 import pandas as pd
 import numpy as np
 
