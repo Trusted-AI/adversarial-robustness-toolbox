@@ -30,22 +30,22 @@ import numpy as np
 from scipy.ndimage import zoom
 
 from art import NUMPY_DTYPE
-from art.attacks.attack import Attack
+from art.attacks import EvasionAttack
 from art.utils import compute_success, get_labels_np_array, check_and_transform_label_format
 
 logger = logging.getLogger(__name__)
 
 
-class ZooAttack(Attack):
+class ZooAttack(EvasionAttack):
     """
     The black-box zeroth-order optimization attack from Pin-Yu Chen et al. (2018). This attack is a variant of the
     C&W attack which uses ADAM coordinate descent to perform numerical estimation of gradients.
 
     | Paper link: https://arxiv.org/abs/1708.03999
     """
-    attack_params = Attack.attack_params + ['confidence', 'targeted', 'learning_rate', 'max_iter',
-                                            'binary_search_steps', 'initial_const', 'abort_early', 'use_resize',
-                                            'use_importance', 'nb_parallel', 'batch_size', 'variable_h']
+    attack_params = EvasionAttack.attack_params + ['confidence', 'targeted', 'learning_rate', 'max_iter',
+                                                   'binary_search_steps', 'initial_const', 'abort_early', 'use_resize',
+                                                   'use_importance', 'nb_parallel', 'batch_size', 'variable_h']
 
     def __init__(self, classifier, confidence=0.0, targeted=False, learning_rate=1e-2, max_iter=10,
                  binary_search_steps=1, initial_const=1e-3, abort_early=True, use_resize=True, use_importance=True,

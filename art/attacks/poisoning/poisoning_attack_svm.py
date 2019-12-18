@@ -24,20 +24,21 @@ import logging
 
 import numpy as np
 
-from art.attacks.attack import Attack
+from art.attacks import PoisoningAttack
 from art.classifiers.scikitlearn import ScikitlearnSVC
 from art.utils import compute_success
 
 logger = logging.getLogger(__name__)
 
 
-class PoisoningAttackSVM(Attack):
+class PoisoningAttackSVM(PoisoningAttack):
     """
     Close implementation of poisoning attack on Support Vector Machines (SVM) by Biggio et al.
 
     | Paper link: https://arxiv.org/pdf/1206.6389.pdf
     """
-    attack_params = ['classifier', 'step', 'eps', 'x_train', 'y_train', 'x_val', 'y_val']
+    attack_params = PoisoningAttack.attack_params + ['classifier', 'step', 'eps', 'x_train', 'y_train', 'x_val',
+                                                     'y_val']
 
     def __init__(self, classifier, step, eps, x_train, y_train, x_val, y_val, max_iter=100, **kwargs):
         """

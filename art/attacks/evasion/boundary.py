@@ -28,21 +28,21 @@ import logging
 import numpy as np
 
 from art import NUMPY_DTYPE
-from art.attacks.attack import Attack
+from art.attacks import EvasionAttack
 from art.utils import compute_success, to_categorical, check_and_transform_label_format
 
 logger = logging.getLogger(__name__)
 
 
-class BoundaryAttack(Attack):
+class BoundaryAttack(EvasionAttack):
     """
     Implementation of the boundary attack from Brendel et al. (2018). This is a powerful black-box attack that
     only requires final class prediction.
 
     | Paper link: https://arxiv.org/abs/1712.04248
     """
-    attack_params = Attack.attack_params + ['targeted', 'delta', 'epsilon', 'step_adapt', 'max_iter', 'num_trial',
-                                            'sample_size', 'init_size', 'batch_size']
+    attack_params = EvasionAttack.attack_params + ['targeted', 'delta', 'epsilon', 'step_adapt', 'max_iter',
+                                                   'num_trial', 'sample_size', 'init_size', 'batch_size']
 
     def __init__(self, classifier, targeted=True, delta=0.01, epsilon=0.01, step_adapt=0.667, max_iter=5000,
                  num_trial=25, sample_size=20, init_size=100):

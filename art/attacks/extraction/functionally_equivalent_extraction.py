@@ -33,15 +33,15 @@ import logging
 import numpy as np
 from scipy.optimize import least_squares
 
-from art.attacks import Attack
-from art.classifiers import KerasClassifier
+from art.attacks import ExtractionAttack
+from art.classifiers import KerasClassifier, BlackBoxClassifier
 
 NUMPY_DTYPE = np.float64
 
 logger = logging.getLogger(__name__)
 
 
-class FunctionallyEquivalentExtraction(Attack):
+class FunctionallyEquivalentExtraction(ExtractionAttack):
     """
     This module implements the Functionally Equivalent Extraction attack for neural networks with two dense layers,
     ReLU activation at the first layer and logits output after the second layer.
@@ -73,9 +73,9 @@ class FunctionallyEquivalentExtraction(Attack):
         self.w_1 = None  # weight matrix of second dense layer
         self.b_1 = None  # Bias vector of second dense layer
 
-    def generate(self, x, delta_0=0.05, fraction_true=0.3, rel_diff_slope=0.00001, rel_diff_value=0.000001,
-                 delta_init_value=0.1, delta_value_max=50, d2_min=0.0004, d_step=0.01, delta_sign=0.02,
-                 unit_vector_scale=10000):
+    def extract(self, x, delta_0=0.05, fraction_true=0.3, rel_diff_slope=0.00001, rel_diff_value=0.000001,
+                delta_init_value=0.1, delta_value_max=50, d2_min=0.0004, d_step=0.01, delta_sign=0.02,
+                unit_vector_scale=10000):
         """
         Extract the targeted model.
 
@@ -101,6 +101,9 @@ class FunctionallyEquivalentExtraction(Attack):
         :type delta_sign: `float`
         :param unit_vector_scale: Multiplicative scale of the unit vector e_j.
         :type unit_vector_scale: `int`
+
+        :return: ART BlackBoxClassifier of the extracted model.
+        :rtype: :class:`.BlackBoxClassifier`
         """
         self._critical_point_search(delta_0=delta_0, fraction_true=fraction_true, rel_diff_slope=rel_diff_slope,
                                     rel_diff_value=rel_diff_value)
@@ -109,19 +112,26 @@ class FunctionallyEquivalentExtraction(Attack):
         self._sign_recovery(unit_vector_scale=unit_vector_scale)
         self._last_layer_extraction(x)
 
-    def predict(self, x):
-        """
-        Predict extracted model.
+        def predict(x):
+            """
+            Predict extracted model.
 
-        :param x: Samples of input data of shape (num_samples, num_features)
-        :type x: `np.ndarray`
+            :param x: Samples of input data of shape (num_samples, num_features)
+            :type x: `np.ndarray`
 
-        :return: Predictions with the extracted model of shape (num_samples, num_classes)
-        :rtype: `np.ndarray`
-        """
-        layer_0 = np.maximum(np.matmul(self.w_0.T, x.T) + self.b_0, 0.0)
-        layer_1 = np.matmul(self.w_1.T, layer_0) + self.b_1
-        return layer_1.T
+            :return: Predictions with the extracted model of shape (num_samples, num_classes)
+            :rtype: `np.ndarray`
+            """
+            layer_0 = np.maximum(np.matmul(self.w_0.T, x.T) + self.b_0, 0.0)
+            layer_1 = np.matmul(self.w_1.T, layer_0) + self.b_1
+            return layer_1.T
+
+        bbc = BlackBoxClassifier(predict, input_shape=self.classifier.input_shape,
+                                 nb_classes=self.classifier.nb_classes(),
+                                 clip_values=self.classifier.clip_values, defences=self.classifier.defences,
+                                 preprocessing=self.classifier.preprocessing)
+
+        return bbc
 
     def _o_l(self, x, e_j=None):
         """
@@ -431,9 +441,9 @@ if __name__ == '__main__':
     classifier = KerasClassifier(model=model, use_logits=True, clip_values=(0, 1))
 
     fee = FunctionallyEquivalentExtraction(classifier=classifier, num_neurons=num_neurons)
-    fee.generate(x_test[0:100])
+    bbc = fee.extract(x_test[0:100])
 
-    y_test_predicted_extracted = fee.predict(x_test)
+    y_test_predicted_extracted = bbc.predict(x_test)
     y_test_predicted_target = classifier.predict(x_test)
 
     print('Target model - Test accuracy:', score_target[1])

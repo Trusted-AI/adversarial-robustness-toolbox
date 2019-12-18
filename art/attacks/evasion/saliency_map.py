@@ -28,19 +28,19 @@ import numpy as np
 
 from art import NUMPY_DTYPE
 from art.classifiers.classifier import ClassifierGradients
-from art.attacks.attack import Attack
+from art.attacks import EvasionAttack
 from art.utils import check_and_transform_label_format, compute_success
 
 logger = logging.getLogger(__name__)
 
 
-class SaliencyMapMethod(Attack):
+class SaliencyMapMethod(EvasionAttack):
     """
     Implementation of the Jacobian-based Saliency Map Attack (Papernot et al. 2016).
 
     | Paper link: https://arxiv.org/abs/1511.07528
     """
-    attack_params = Attack.attack_params + ['theta', 'gamma', 'batch_size']
+    attack_params = EvasionAttack.attack_params + ['theta', 'gamma', 'batch_size']
 
     def __init__(self, classifier, theta=0.1, gamma=1.0, batch_size=1):
         """
