@@ -192,7 +192,8 @@ def get_classifier_tf_v2():
     loss_object = tf.keras.losses.SparseCategoricalCrossentropy()
 
     # Create the classifier
-    tfc = TensorFlowV2Classifier(model=model, loss_object=loss_object, nb_classes=10, clip_values=(0, 1))
+    tfc = TensorFlowV2Classifier(model=model, loss_object=loss_object, nb_classes=10, input_shape=(28, 28, 1),
+                                 clip_values=(0, 1))
 
     return tfc
 

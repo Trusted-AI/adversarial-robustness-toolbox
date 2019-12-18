@@ -623,8 +623,8 @@ class TensorFlowV2Classifier(ClassifierNeuralNetwork, ClassifierGradients, Class
     This class implements a classifier with the TensorFlow v2 framework.
     """
 
-    def __init__(self, model, nb_classes, loss_object=None, train_step=None, channel_index=3, clip_values=None,
-                 defences=None, preprocessing=(0, 1)):
+    def __init__(self, model, nb_classes, input_shape, loss_object=None, train_step=None, channel_index=3,
+                 clip_values=None, defences=None, preprocessing=(0, 1)):
         """
         Initialization specific to TensorFlow v2 models.
 
@@ -632,6 +632,8 @@ class TensorFlowV2Classifier(ClassifierNeuralNetwork, ClassifierGradients, Class
         :type model: `function` or `callable class`
         :param nb_classes: the number of classes in the classification task
         :type nb_classes: `int`
+        :param input_shape: shape of one input for the classifier, e.g. for MNIST input_shape=(28, 28, 1)
+        :type input_shape: `tuple`
         :param loss_object: The loss function for which to compute gradients. This parameter is applied for training
             the model and computing gradients of the loss w.r.t. the input.
         :type loss_object: `tf.keras.losses`
@@ -656,6 +658,7 @@ class TensorFlowV2Classifier(ClassifierNeuralNetwork, ClassifierGradients, Class
 
         self._model = model
         self._nb_classes = nb_classes
+        self._input_shape = input_shape
         self._loss_object = loss_object
         self._train_step = train_step
 
