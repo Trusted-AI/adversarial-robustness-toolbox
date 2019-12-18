@@ -33,6 +33,7 @@ import logging
 import numpy as np
 from scipy.optimize import least_squares
 
+from art.attacks import Attack
 from art.classifiers import KerasClassifier
 
 NUMPY_DTYPE = np.float64
@@ -40,7 +41,7 @@ NUMPY_DTYPE = np.float64
 logger = logging.getLogger(__name__)
 
 
-class FunctionallyEquivalentExtraction:
+class FunctionallyEquivalentExtraction(Attack):
     """
     This module implements the Functionally Equivalent Extraction attack for neural networks with two dense layers,
     ReLU activation at the first layer and logits output after the second layer.
@@ -57,7 +58,7 @@ class FunctionallyEquivalentExtraction:
         :param num_neurons: The number of neurons in the first dense layer.
         :type num_neurons: `int`
         """
-        self.classifier = classifier
+        super().__init__(classifier)
         self.num_neurons = num_neurons
         self.num_classes = classifier.nb_classes()
         self.num_features = int(np.prod(classifier.input_shape))
@@ -72,9 +73,9 @@ class FunctionallyEquivalentExtraction:
         self.w_1 = None  # weight matrix of second dense layer
         self.b_1 = None  # Bias vector of second dense layer
 
-    def extract(self, x, delta_0=0.05, fraction_true=0.3, rel_diff_slope=0.00001, rel_diff_value=0.000001,
-                delta_init_value=0.1, delta_value_max=50, d2_min=0.0004, d_step=0.01, delta_sign=0.02,
-                unit_vector_scale=10000):
+    def generate(self, x, delta_0=0.05, fraction_true=0.3, rel_diff_slope=0.00001, rel_diff_value=0.000001,
+                 delta_init_value=0.1, delta_value_max=50, d2_min=0.0004, d_step=0.01, delta_sign=0.02,
+                 unit_vector_scale=10000):
         """
         Extract the targeted model.
 
@@ -179,7 +180,7 @@ class FunctionallyEquivalentExtraction:
 
                 x_1 = self._get_x(t_1)
                 x_1_p = self._get_x(t_1 + epsilon)
-                x_2 = self.u + t_2 * self.v
+                x_2 = self._get_x(t_2)
                 x_2_m = self._get_x(t_2 - epsilon)
 
                 m_1 = (self._o_l(x_1_p) - self._o_l(x_1)) / epsilon
@@ -430,7 +431,7 @@ if __name__ == '__main__':
     classifier = KerasClassifier(model=model, use_logits=True, clip_values=(0, 1))
 
     fee = FunctionallyEquivalentExtraction(classifier=classifier, num_neurons=num_neurons)
-    fee.extract(x_test[0:100])
+    fee.generate(x_test[0:100])
 
     y_test_predicted_extracted = fee.predict(x_test)
     y_test_predicted_target = classifier.predict(x_test)

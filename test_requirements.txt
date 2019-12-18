@@ -4,9 +4,9 @@ h5py
 mxnet
 Pillow
 requests
-torch==0.4.0
+#torch>=1.2.0
 tensorflow
-scikit-learn
+scikit-learn==0.21.3
 xgboost
 lightgbm
 GPy
