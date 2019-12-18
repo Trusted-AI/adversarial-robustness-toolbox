@@ -1,8 +1,8 @@
 
 
-import keras
-from keras.models import Sequential
-from keras.layers import Dense, Flatten, Conv2D, MaxPooling2D
+import tensorflow as tf
+from tensorflow.keras.models import Sequential
+from tensorflow.keras.layers import Dense, Flatten, Conv2D, MaxPooling2D
 
 import numpy as np
 
@@ -18,7 +18,7 @@ def main_mnist_binary():
     model.add(Flatten())
     model.add(Dense(1, activation='sigmoid'))
 
-    model.compile(loss='binary_crossentropy', optimizer=keras.optimizers.Adam(lr=0.01), metrics=['accuracy'])
+    model.compile(loss='binary_crossentropy', optimizer=tf.keras.optimizers.Adam(lr=0.01), metrics=['accuracy'])
 
     (x_train, y_train), (_, _), _, _ = load_dataset('mnist')
 
