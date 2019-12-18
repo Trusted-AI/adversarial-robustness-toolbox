@@ -472,6 +472,7 @@ def get_classifier_kr_tf(loss_name='categorical_crossentropy', loss_type='functi
 
     return krc
 
+
 def get_classifier_kr_tf_binary():
     """
     Standard Tensorflow-Keras binary classifier for unit testing
@@ -505,6 +506,7 @@ def get_classifier_kr_tf_binary():
     krc = KerasClassifier(model, clip_values=(0, 1), use_logits=False)
 
     return krc
+
 
 def get_classifier_pt(from_logits=False):
     """
