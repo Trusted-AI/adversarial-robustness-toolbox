@@ -1,3 +1,23 @@
+# MIT License
+#
+# Copyright (C) IBM Corporation 2018
+#
+# Permission is hereby granted, free of charge, to any person obtaining a copy of this software and associated
+# documentation files (the "Software"), to deal in the Software without restriction, including without limitation the
+# rights to use, copy, modify, merge, publish, distribute, sublicense, and/or sell copies of the Software, and to permit
+# persons to whom the Software is furnished to do so, subject to the following conditions:
+#
+# The above copyright notice and this permission notice shall be included in all copies or substantial portions of the
+# Software.
+#
+# THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE
+# WARRANTIES OF MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+# AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT,
+# TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
+# SOFTWARE.
+"""
+This module includes a wrapper for pandas Dataframes
+"""
 import logging
 import numpy as np
 import pandas as pd
@@ -14,17 +34,17 @@ class DataframeWrapper(np.ndarray):
     __dataframe = None
 
     def __new__(cls, dataframe, copy=True):
-    """
-    This function is called before __init__ for numpy arrays. Makes __init optional
-    :param cls: This is a DataframeWrapper type for view casting
-    :type cls: DataframeWrapper
-    :param dataframe: A pandas dataframe used to initilize the ndarray
-    :type dataframe: pd.DataFrame
-    :param copy: If True, the a new instance of the supplied dataframe will be created. This ensures that
-                 modifications to the array will not effect the original dataframe used to create the
-                 wrapper object
-    :rtype: `DataframeWrapper`
-    """   
+        """
+        This function is called before __init__ for numpy arrays. Makes __init optional
+        :param cls: This is a DataframeWrapper type for view casting
+        :type cls: DataframeWrapper
+        :param dataframe: A pandas dataframe used to initilize the ndarray
+        :type dataframe: pd.DataFrame
+        :param copy: If True, the a new instance of the supplied dataframe will be created. This ensures that
+                     modifications to the array will not effect the original dataframe used to create the
+                     wrapper object
+        :rtype: `DataframeWrapper`
+        """   
         if len(np.shape(dataframe)) > 2:
             logging.error("Input must have no more than 2 dimensions")
             return
@@ -64,11 +84,11 @@ class DataframeWrapper(np.ndarray):
             return np.ndarray.copy(self, order)
 
     def __array_finalize__(self, obj):
-    """
-    This function is called whenever a new object is made. Mainly, the dataframe
-    object is preserved when possible
-    :param obj: This is the DataframeWrapper object that is being used to create a new instance
-    """   
+        """
+        This function is called whenever a new object is made. Mainly, the dataframe
+        object is preserved when possible
+        :param obj: This is the DataframeWrapper object that is being used to create a new instance
+        """   
         if obj is None:
             return
 
@@ -91,14 +111,14 @@ class DataframeWrapper(np.ndarray):
 
     @property
     def dataframe(self):
-    """
-    An attribute containing the dataframe equivalent of the numpy array
-    """   
+        """
+        An attribute containing the dataframe equivalent of the numpy array
+        """   
         return self.__dataframe
 
     @property
     def copy_dataframe(self):
-    """
-    An attribute that tracks if the dataframe matches the numpy array
-    """   
+        """
+        An attribute that tracks if the dataframe matches the numpy array
+        """   
         return self.__copy_dataframe
