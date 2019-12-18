@@ -21,7 +21,7 @@ import logging
 import unittest
 
 import keras.backend as k
-import tensorflow as tf
+# import tensorflow as tf
 import pandas as pd
 import numpy as np
 
@@ -33,10 +33,8 @@ from art.attacks import HopSkipJump
 
 logger = logging.getLogger('testLogger')
 
-
-
 class TestDataframeWrapper(unittest.TestCase):
-    
+
     @classmethod
     def setUpClass(cls):
         #Get Default DataFrame
@@ -46,17 +44,17 @@ class TestDataframeWrapper(unittest.TestCase):
         (x_train, y_train), (x_test, y_test), _, _ = load_dataset('iris')
         print(type(x_test))
         cls.iris = (DataframeWrapper(pd.DataFrame(x_train)), y_train), (DataframeWrapper(pd.DataFrame(x_test)), y_test)
-        
+
     def setUp(self):
         master_seed(1234)
-        
+
     def test_class_creation(self):
         #Create from new
         test_frame = DataframeWrapper(self.test_data)
         self.assertTrue(isinstance(test_frame, DataframeWrapper))
         self.assertTrue(isinstance(test_frame.dataframe, pd.DataFrame))
         self.assertTrue((test_frame == test_frame.dataframe.to_numpy()).all())
-        
+
         #Create from template
         test_frame2 = test_frame
         self.assertTrue(isinstance(test_frame2, DataframeWrapper))
@@ -64,53 +62,52 @@ class TestDataframeWrapper(unittest.TestCase):
         self.assertTrue((test_frame2 == test_frame2.dataframe.to_numpy()).all())
         self.assertTrue((test_frame == test_frame2).all())
         self.assertTrue((test_frame.dataframe.to_numpy() == test_frame2.dataframe.to_numpy()).all())
-        
+
         #Create from template slice
         test_frame2 = test_frame[0]
         self.assertTrue(isinstance(test_frame2, DataframeWrapper))
         self.assertTrue(isinstance(test_frame2.dataframe, pd.DataFrame))
         self.assertTrue((test_frame2 == test_frame2.dataframe.to_numpy()).all())
-        
+
         test_frame2 = test_frame[:2]
         self.assertTrue(isinstance(test_frame2, DataframeWrapper))
         self.assertTrue(isinstance(test_frame2.dataframe, pd.DataFrame))
         self.assertTrue((test_frame2 == test_frame2.dataframe.to_numpy()).all())
-        
+
         test_frame2 = test_frame[:2]
         self.assertTrue(isinstance(test_frame2, DataframeWrapper))
         self.assertTrue(isinstance(test_frame2.dataframe, pd.DataFrame))
         self.assertTrue((test_frame2 == test_frame2.dataframe.to_numpy()).all()) 
-        
+
     def test_copy(self):
         #Test copy during creation
         test_frame = DataframeWrapper(self.test_data, copy=False)
         self.assertTrue(test_frame.dataframe is self.test_data)
-        
+
         test_frame = DataframeWrapper(self.test_data)
         self.assertFalse(test_frame.dataframe is self.test_data)
-        
+
         #Test explicit copy
         test_frame2 = test_frame.copy()
         self.assertFalse(test_frame2 is test_frame)
         self.assertFalse(test_frame2.dataframe is test_frame.dataframe)
         
-        
         #Test explicit copy slice
         test_frame2 = test_frame[0].copy()
         self.assertTrue((test_frame2 == test_frame2.dataframe.to_numpy()).all()) 
         self.assertFalse(test_frame2 is test_frame[0])
-        
+
         test_frame2 = test_frame[:2].copy()
         self.assertTrue((test_frame2 == test_frame2.dataframe.to_numpy()).all()) 
         self.assertFalse(test_frame2 is test_frame[:2])
-        
+
         test_frame2 = test_frame[2:].copy()
         self.assertTrue((test_frame2 == test_frame2.dataframe.to_numpy()).all()) 
         self.assertFalse(test_frame2 is test_frame[2:])
-        
+ 
     def test_operators(self):
         test_frame = DataframeWrapper(self.test_data)
-        
+
         #Test the basic operators and broadcasting
         test_frame = test_frame + 1
         self.assertTrue((test_frame == test_frame.dataframe.to_numpy()).all())
@@ -120,12 +117,12 @@ class TestDataframeWrapper(unittest.TestCase):
         self.assertTrue((test_frame == test_frame.dataframe.to_numpy()).all())
         test_frame = test_frame / 2
         self.assertTrue((test_frame == test_frame.dataframe.to_numpy()).all())
-        
+
     def test_basic_np_functions(self):
         test_frame = DataframeWrapper(self.test_data)
-        
+
         #Test the common numpy functions
-        
+
         #These first two should fail because they don't actually care what the input class type is. They always returns an array
         test_frame2 = np.concatenate((test_frame, test_frame))
         with self.assertRaises(AttributeError):
@@ -133,40 +130,40 @@ class TestDataframeWrapper(unittest.TestCase):
         test_frame2 = np.stack((test_frame, test_frame))
         with self.assertRaises(AttributeError):
             print(test_frame2.dataframe)
-            
+
         #Now we check some of the commonly used numpy or ndarray functions    
         test_frame2 = np.repeat(test_frame, 2, axis=0)
         self.assertTrue(isinstance(test_frame2, DataframeWrapper))
         self.assertTrue(np.shape(test_frame2) == np.shape(test_frame2.dataframe.to_numpy()))
         self.assertTrue((test_frame2 == test_frame2.dataframe.to_numpy()).all())
-        
+
         test_frame2 = np.repeat(test_frame, 2, axis=1)
         self.assertTrue(isinstance(test_frame2, DataframeWrapper))
         self.assertFalse(np.shape(test_frame2) == np.shape(test_frame2.dataframe.to_numpy()))
-        
+
         test_frame2 = np.reshape(test_frame, (8,1))
         self.assertTrue(isinstance(test_frame2, DataframeWrapper))
         self.assertFalse(np.shape(test_frame2) == np.shape(test_frame2.dataframe.to_numpy()))
         test_frame2 = test_frame.reshape((8,1))
         self.assertTrue(isinstance(test_frame2, DataframeWrapper))
         self.assertFalse(np.shape(test_frame2) == np.shape(test_frame2.dataframe.to_numpy()))
-        
+
         #Note that argmax will return a Dataframewrapper object too with a modified dataframe, technically this is a bug
         test_max = np.max(test_frame,axis=0)
         self.assertTrue(isinstance(test_max, DataframeWrapper))
         self.assertTrue((test_max == np.max(self.test_data.to_numpy(),axis=0)).all())
-        
+
         test_max = np.max(test_frame,axis=1)
         self.assertTrue(isinstance(test_max, DataframeWrapper))
         self.assertFalse(np.shape(test_max) == np.shape(test_max.dataframe.to_numpy()))
         self.assertTrue((test_max == np.max(self.test_data.to_numpy(),axis=1)).all())
-        
+
         test_frame.fill(2)
         self.assertTrue(isinstance(test_frame, DataframeWrapper))
         self.assertTrue(np.shape(test_frame) == np.shape(test_frame.dataframe.to_numpy()))
 
-        
-
+    @unittest.skipIf(tf.__version__[0] == '2', reason='Skip unittests for TensorFlow v2 until Keras supports TensorFlow'
+                                                  ' v2 as backend.')
     def test_iris_tf(self):
         (_, _), (x_test, y_test) = self.iris
         classifier, sess = get_iris_classifier_tf()
