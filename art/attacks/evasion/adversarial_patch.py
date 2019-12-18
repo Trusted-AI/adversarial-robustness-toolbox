@@ -31,21 +31,21 @@ from scipy.ndimage import rotate, shift, zoom
 
 from art.config import ART_NUMPY_DTYPE
 from art.classifiers.classifier import ClassifierNeuralNetwork, ClassifierGradients
-from art.attacks.attack import Attack
+from art.attacks import EvasionAttack
 from art.utils import check_and_transform_label_format
 
 logger = logging.getLogger(__name__)
 
 
-class AdversarialPatch(Attack):
+class AdversarialPatch(EvasionAttack):
     """
     Implementation of the adversarial patch attack.
 
     | Paper link: https://arxiv.org/abs/1712.09665
     """
 
-    attack_params = Attack.attack_params + ["target", "rotation_max", "scale_min", "scale_max", "learning_rate",
-                                            "max_iter", "batch_size", "clip_patch"]
+    attack_params = EvasionAttack.attack_params + ["target", "rotation_max", "scale_min", "scale_max", "learning_rate",
+                                                   "max_iter", "batch_size", "clip_patch"]
 
     def __init__(self, classifier, target=0, rotation_max=22.5, scale_min=0.1, scale_max=1.0, learning_rate=5.0,
                  max_iter=500, clip_patch=None, batch_size=16):

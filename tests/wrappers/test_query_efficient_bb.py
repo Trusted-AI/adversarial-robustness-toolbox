@@ -23,7 +23,7 @@ import unittest
 import keras.backend as k
 import numpy as np
 
-from art.attacks.fast_gradient import FastGradientMethod
+from art.attacks.evasion.fast_gradient import FastGradientMethod
 from art.classifiers import KerasClassifier
 from art.defences import FeatureSqueezing
 from art.utils import load_dataset, get_labels_np_array, master_seed

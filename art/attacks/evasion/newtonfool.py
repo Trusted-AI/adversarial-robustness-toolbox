@@ -28,19 +28,19 @@ import numpy as np
 
 from art.config import ART_NUMPY_DTYPE
 from art.classifiers.classifier import ClassifierGradients
-from art.attacks.attack import Attack
+from art.attacks import EvasionAttack
 from art.utils import to_categorical, compute_success
 
 logger = logging.getLogger(__name__)
 
 
-class NewtonFool(Attack):
+class NewtonFool(EvasionAttack):
     """
     Implementation of the attack from Uyeong Jang et al. (2017).
 
     | Paper link: http://doi.acm.org/10.1145/3134600.3134635
     """
-    attack_params = Attack.attack_params + ["max_iter", "eta", "batch_size"]
+    attack_params = EvasionAttack.attack_params + ["max_iter", "eta", "batch_size"]
 
     def __init__(self, classifier, max_iter=100, eta=0.01, batch_size=1):
         """

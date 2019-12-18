@@ -28,21 +28,21 @@ import logging
 import numpy as np
 
 from art.config import ART_NUMPY_DTYPE
-from art.attacks.attack import Attack
+from art.attacks import EvasionAttack
 from art.utils import compute_success, to_categorical, check_and_transform_label_format
 
 logger = logging.getLogger(__name__)
 
 
-class HopSkipJump(Attack):
+class HopSkipJump(EvasionAttack):
     """
     Implementation of the HopSkipJump attack from Jianbo et al. (2019). This is a powerful black-box attack that
     only requires final class prediction, and is an advanced version of the boundary attack.
 
     | Paper link: https://arxiv.org/abs/1904.02144
     """
-    attack_params = Attack.attack_params + ['targeted', 'norm', 'max_iter', 'max_eval',
-                                            'init_eval', 'init_size', 'curr_iter', 'batch_size']
+    attack_params = EvasionAttack.attack_params + ['targeted', 'norm', 'max_iter', 'max_eval', 'init_eval', 'init_size',
+                                                   'curr_iter', 'batch_size']
 
     def __init__(self, classifier, targeted=False, norm=2, max_iter=50, max_eval=10000, init_eval=100, init_size=100):
         """

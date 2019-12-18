@@ -28,19 +28,19 @@ import numpy as np
 
 from art.config import ART_NUMPY_DTYPE
 from art.classifiers.classifier import ClassifierNeuralNetwork, ClassifierGradients
-from art.attacks.attack import Attack
+from art.attacks import EvasionAttack
 from art.utils import compute_success
 
 logger = logging.getLogger(__name__)
 
 
-class VirtualAdversarialMethod(Attack):
+class VirtualAdversarialMethod(EvasionAttack):
     """
     This attack was originally proposed by Miyato et al. (2016) and was used for virtual adversarial training.
 
     | Paper link: https://arxiv.org/abs/1507.00677
     """
-    attack_params = Attack.attack_params + ['eps', 'finite_diff', 'max_iter', 'batch_size']
+    attack_params = EvasionAttack.attack_params + ['eps', 'finite_diff', 'max_iter', 'batch_size']
 
     def __init__(self, classifier, max_iter=10, finite_diff=1e-6, eps=.1, batch_size=1):
         """

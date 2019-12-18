@@ -12,6 +12,9 @@ from art import metrics
 from art import poison_detection
 from art import wrappers
 
+# Semantic Version
+__version__ = "1.1.0"
+
 # pylint: disable=C0103
 
 LOGGING = {

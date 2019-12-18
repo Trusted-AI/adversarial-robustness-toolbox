@@ -29,20 +29,21 @@ import six
 
 from art.config import ART_NUMPY_DTYPE
 from art.classifiers.classifier import ClassifierGradients
-from art.attacks.attack import Attack
+from art.attacks import EvasionAttack
 from art.utils import compute_success, get_labels_np_array, check_and_transform_label_format
 
 logger = logging.getLogger(__name__)
 
 
-class ElasticNet(Attack):
+class ElasticNet(EvasionAttack):
     """
     The elastic net attack of Pin-Yu Chen et al. (2018).
 
     | Paper link: https://arxiv.org/abs/1709.04114
     """
-    attack_params = Attack.attack_params + ['confidence', 'targeted', 'learning_rate', 'max_iter', 'beta',
-                                            'binary_search_steps', 'initial_const', 'batch_size', 'decision_rule']
+    attack_params = EvasionAttack.attack_params + ['confidence', 'targeted', 'learning_rate', 'max_iter', 'beta',
+                                                   'binary_search_steps', 'initial_const', 'batch_size',
+                                                   'decision_rule']
 
     def __init__(self, classifier, confidence=0.0, targeted=False, learning_rate=1e-2, binary_search_steps=9,
                  max_iter=100, beta=1e-3, initial_const=1e-3, batch_size=1, decision_rule='EN'):

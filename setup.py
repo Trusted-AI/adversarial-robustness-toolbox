@@ -1,3 +1,5 @@
+import codecs
+import os
 from setuptools import setup
 from setuptools import find_packages
 
@@ -14,13 +16,13 @@ install_requires = ['matplotlib',
 # Comment out because of compatibility issues with numpy versions
 # 'catboost',
 tests_require = ['pytest-pep8',
-                 'keras',
+                 'keras>=2.2.5',
                  'h5py',
                  'mxnet',
                  'Pillow',
                  'requests',
-                 'torch==0.4.0',
-                 'tensorflow',
+                 'torch>=1.2.0',
+                 'tensorflow>=1.13.2',
                  'scikit-learn',
                  'xgboost',
                  'lightgbm',
@@ -31,13 +33,30 @@ tests_require = ['pytest-pep8',
 docs_require = ['sphinx >= 1.4',
                 'sphinx_rtd_theme']
 
-setup(name='Adversarial Robustness Toolbox',
-      version='1.0.1',
-      description='IBM Adversarial machine learning toolbox',
+
+def read(rel_path):
+    here = os.path.abspath(os.path.dirname(__file__))
+    with codecs.open(os.path.join(here, rel_path), 'r') as fp:
+        return fp.read()
+
+
+def get_version(rel_path):
+    for line in read(rel_path).splitlines():
+        if line.startswith('__version__'):
+            delim = '"' if '"' in line else "'"
+            return line.split(delim)[1]
+    raise RuntimeError("Unable to find version string.")
+
+
+setup(name='adversarial_robustness_toolbox',
+      version=get_version("art/__init__.py"),
+      description='Toolbox for adversarial machine learning.',
       long_description=long_description,
       long_description_content_type='text/markdown',
       author='Irina Nicolae',
-      author_email='maria-irina.nicolae@ibm.com',
+      author_email='irinutza.n@gmail.com',
+      maintainer='Beat Buesser',
+      maintainer_email='beat.buesser@ie.ibm.com',
       url='https://github.com/IBM/adversarial-robustness-toolbox',
       license='MIT',
       install_requires=install_requires,
