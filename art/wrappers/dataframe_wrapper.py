@@ -44,7 +44,7 @@ class DataframeWrapper(np.ndarray):
                      modifications to the array will not effect the original dataframe used to create the
                      wrapper object
         :rtype: `DataframeWrapper`
-        """   
+        """
         if len(np.shape(dataframe)) > 2:
             logging.error("Input must have no more than 2 dimensions")
             return
@@ -52,9 +52,9 @@ class DataframeWrapper(np.ndarray):
         if isinstance(dataframe, pd.DataFrame) or isinstance(dataframe, pd.Series):
 
             # If the input is a series, we have to change it into a row
-            if(isinstance(dataframe, pd.Series)):
+            if isinstance(dataframe, pd.Series):
                 dataframe = pd.DataFrame(dataframe.to_numpy()[np.newaxis, :], columns=dataframe.index.values)
-            if(copy):
+            if copy:
                 dataframe_copy = dataframe.copy()
                 obj = dataframe_copy.to_numpy().view(cls)
                 obj.__dataframe = dataframe_copy
@@ -74,10 +74,10 @@ class DataframeWrapper(np.ndarray):
         :param order: This is ignored usually. It exists so the call signature remains consistent
         :type order: string
         :rtype: `DataframeWrapper`
-        """   
+        """
         if len(self.shape) == 1:
             self = self[np.newaxis, :]
-        if(self.__copy_dataframe):  # If true, then we can copy the dataframe with the array
+        if self.__copy_dataframe:  # If true, then we can copy the dataframe with the array
             column_names = self.__dataframe.columns.values
             return self.__new__(DataframeWrapper, pd.DataFrame(self, columns=column_names), copy=True)
         else:
@@ -88,7 +88,7 @@ class DataframeWrapper(np.ndarray):
         This function is called whenever a new object is made. Mainly, the dataframe
         object is preserved when possible
         :param obj: This is the DataframeWrapper object that is being used to create a new instance
-        """   
+        """
         if obj is None:
             return
 
@@ -113,12 +113,12 @@ class DataframeWrapper(np.ndarray):
     def dataframe(self):
         """
         An attribute containing the dataframe equivalent of the numpy array
-        """   
+        """
         return self.__dataframe
 
     @property
     def copy_dataframe(self):
         """
         An attribute that tracks if the dataframe matches the numpy array
-        """   
+        """
         return self.__copy_dataframe
