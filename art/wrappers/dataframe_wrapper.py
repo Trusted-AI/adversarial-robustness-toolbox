@@ -69,12 +69,12 @@ class DataframeWrapper(np.ndarray):
 
     # The order input is ignored. It's just there for compatibility
     def copy(self, order='C'):
-    """
-    This function overrides ndarray copy in order to preserve the dataframe when the object is copied.
-    :param order: This is ignored usually. It exists so the call signature remains consistent
-    :type order: string
-    :rtype: `DataframeWrapper`
-    """   
+        """
+        This function overrides ndarray copy in order to preserve the dataframe when the object is copied.
+        :param order: This is ignored usually. It exists so the call signature remains consistent
+        :type order: string
+        :rtype: `DataframeWrapper`
+        """   
         if len(self.shape) == 1:
             self = self[np.newaxis, :]
         if(self.__copy_dataframe):  # If true, then we can copy the dataframe with the array
