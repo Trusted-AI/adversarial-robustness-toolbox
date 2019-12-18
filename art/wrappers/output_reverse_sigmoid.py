@@ -64,28 +64,32 @@ class ReverseSigmoid(ClassifierWrapper, Classifier):
         :rtype: `np.ndarray`
         """
 
+        clip_min = 1e-9
+        clip_max = 1e9
+
         def sigmoid(z):
             return 1.0 / (1.0 + np.exp(-z))
 
         predictions = self.classifier.predict(x, batch_size=batch_size, **kwargs)
 
         if predictions.shape[1] > 1:
-            perturbation_r = self.beta * (sigmoid(-self.gamma * (np.log((1.00001 - predictions) / predictions))) - 0.5)
+            perturbation_r = self.beta * (sigmoid(
+                -self.gamma * (np.log(np.clip((1.0 - predictions) / predictions, clip_min, clip_max)))) - 0.5)
             predictions_perturbed = predictions - perturbation_r
-            predictions_perturbed = np.clip(predictions_perturbed, 0.0, np.finfo(NUMPY_DTYPE).max)
+            predictions_perturbed = np.clip(predictions_perturbed, 0.0, 1.0)
             alpha = 1.0 / np.sum(predictions_perturbed, axis=-1, keepdims=True)
             rs = alpha * predictions_perturbed
         else:
             predictions_1 = predictions
             predictions_2 = 1.0 - predictions
-            perturbation_r_1 = self.beta * (
-                sigmoid(-self.gamma * (np.log((1.00001 - predictions_1) / predictions_1))) - 0.5)
-            perturbation_r_2 = self.beta * (
-                sigmoid(-self.gamma * (np.log((1.00001 - predictions_2) / predictions_2))) - 0.5)
+            perturbation_r_1 = self.beta * (sigmoid(
+                -self.gamma * (np.log(np.clip((1.0 - predictions_1) / predictions_1, clip_min, clip_max)))) - 0.5)
+            perturbation_r_2 = self.beta * (sigmoid(
+                -self.gamma * (np.log(np.clip((1.0 - predictions_2) / predictions_2, clip_min, clip_max)))) - 0.5)
             predictions_perturbed_1 = predictions_1 - perturbation_r_1
             predictions_perturbed_2 = predictions_2 - perturbation_r_2
-            predictions_perturbed_1 = np.clip(predictions_perturbed_1, 0.0, np.finfo(NUMPY_DTYPE).max)
-            predictions_perturbed_2 = np.clip(predictions_perturbed_2, 0.0, np.finfo(NUMPY_DTYPE).max)
+            predictions_perturbed_1 = np.clip(predictions_perturbed_1, 0.0, 1.0)
+            predictions_perturbed_2 = np.clip(predictions_perturbed_2, 0.0, 1.0)
             alpha = 1.0 / (predictions_perturbed_1 + predictions_perturbed_2)
             rs = alpha * predictions_perturbed_1
 
