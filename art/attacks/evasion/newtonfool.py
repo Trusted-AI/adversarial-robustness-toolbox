@@ -26,7 +26,7 @@ import logging
 
 import numpy as np
 
-from art import NUMPY_DTYPE
+from art.config import ART_NUMPY_DTYPE
 from art.classifiers.classifier import ClassifierGradients
 from art.attacks import EvasionAttack
 from art.utils import to_categorical, compute_success
@@ -76,7 +76,7 @@ class NewtonFool(EvasionAttack):
         :return: An array holding the adversarial examples.
         :rtype: `np.ndarray`
         """
-        x_adv = x.astype(NUMPY_DTYPE)
+        x_adv = x.astype(ART_NUMPY_DTYPE)
 
         # Initialize variables
         y_pred = self.classifier.predict(x, batch_size=self.batch_size)

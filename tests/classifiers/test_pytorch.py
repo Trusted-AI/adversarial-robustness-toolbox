@@ -30,7 +30,7 @@ import torch.nn.functional as F
 import torch.optim as optim
 from torch.utils.data import DataLoader
 
-from art import DATA_PATH
+from art.config import ART_DATA_PATH
 from art.data_generators import PyTorchDataGenerator
 from art.classifiers import PyTorchClassifier
 from art.utils import load_dataset, master_seed
@@ -306,7 +306,7 @@ class TestPyTorchClassifier(unittest.TestCase):
         self.assertIn('defences=None, preprocessing=(0, 1)', repr_)
 
     def test_pickle(self):
-        full_path = os.path.join(DATA_PATH, 'my_classifier')
+        full_path = os.path.join(ART_DATA_PATH, 'my_classifier')
         folder = os.path.split(full_path)[0]
         if not os.path.exists(folder):
             os.makedirs(folder)

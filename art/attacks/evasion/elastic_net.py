@@ -27,7 +27,7 @@ import logging
 import numpy as np
 import six
 
-from art import NUMPY_DTYPE
+from art.config import ART_NUMPY_DTYPE
 from art.classifiers.classifier import ClassifierGradients
 from art.attacks import EvasionAttack
 from art.utils import compute_success, get_labels_np_array, check_and_transform_label_format
@@ -108,7 +108,7 @@ class ElasticNet(EvasionAttack):
         l1dist = np.sum(np.abs(x - x_adv).reshape(x.shape[0], -1), axis=1)
         l2dist = np.sum(np.square(x - x_adv).reshape(x.shape[0], -1), axis=1)
         endist = self.beta * l1dist + l2dist
-        predictions = self.classifier.predict(np.array(x_adv, dtype=NUMPY_DTYPE), batch_size=self.batch_size)
+        predictions = self.classifier.predict(np.array(x_adv, dtype=ART_NUMPY_DTYPE), batch_size=self.batch_size)
 
         return np.argmax(predictions, axis=1), l1dist, l2dist, endist
 
@@ -128,7 +128,7 @@ class ElasticNet(EvasionAttack):
         :type target: `np.ndarray`
         """
         # Compute the current predictions
-        predictions = self.classifier.predict(np.array(x_adv, dtype=NUMPY_DTYPE), batch_size=self.batch_size)
+        predictions = self.classifier.predict(np.array(x_adv, dtype=ART_NUMPY_DTYPE), batch_size=self.batch_size)
 
         if self.targeted:
             i_sub = np.argmax(target, axis=1)
@@ -184,7 +184,7 @@ class ElasticNet(EvasionAttack):
         :rtype: `np.ndarray`
         """
         y = check_and_transform_label_format(y, self.classifier.nb_classes())
-        x_adv = x.astype(NUMPY_DTYPE)
+        x_adv = x.astype(ART_NUMPY_DTYPE)
 
         # Assert that, if attack is targeted, y is provided:
         if self.targeted and y is None:

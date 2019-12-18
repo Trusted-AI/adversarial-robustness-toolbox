@@ -35,7 +35,7 @@ from keras.callbacks import LearningRateScheduler
 from keras.applications.resnet50 import ResNet50, decode_predictions
 from keras.preprocessing.image import load_img, img_to_array
 
-# from art import DATA_PATH
+# from art.config import ART_DATA_PATH
 from art.classifiers import KerasClassifier
 from art.classifiers.keras import generator_fit
 from art.defences import FeatureSqueezing, JpegCompression, SpatialSmoothing
@@ -364,7 +364,7 @@ class TestKerasClassifier(unittest.TestCase):
 
     # def test_pickle(self):
     #     filename = 'my_classifier.p'
-    #     full_path = os.path.join(DATA_PATH, filename)
+    #     full_path = os.path.join(ART_DATA_PATH, filename)
     #     folder = os.path.split(full_path)[0]
     #     if not os.path.exists(folder):
     #         os.makedirs(folder)

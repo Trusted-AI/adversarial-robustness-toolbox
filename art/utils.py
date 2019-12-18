@@ -434,9 +434,9 @@ def load_cifar10(raw=False):
         data = data.reshape(data.shape[0], 3, 32, 32)
         return data, labels
 
-    from art import DATA_PATH
+    from art.config import ART_DATA_PATH
 
-    path = get_file('cifar-10-batches-py', extract=True, path=DATA_PATH,
+    path = get_file('cifar-10-batches-py', extract=True, path=ART_DATA_PATH,
                     url='http://www.cs.toronto.edu/~kriz/cifar-10-python.tar.gz')
 
     num_train_samples = 50000
@@ -470,16 +470,16 @@ def load_cifar10(raw=False):
 
 def load_mnist(raw=False):
     """
-    Loads MNIST dataset from `DATA_PATH` or downloads it if necessary.
+    Loads MNIST dataset from `ART_DATA_PATH` or downloads it if necessary.
 
     :param raw: `True` if no preprocessing should be applied to the data. Otherwise, data is normalized to 1.
     :type raw: `bool`
     :return: `(x_train, y_train), (x_test, y_test), min, max`
     :rtype: `(np.ndarray, np.ndarray), (np.ndarray, np.ndarray), float, float`
     """
-    from art import DATA_PATH
+    from art.config import ART_DATA_PATH
 
-    path = get_file('mnist.npz', path=DATA_PATH, url='https://s3.amazonaws.com/img-datasets/mnist.npz')
+    path = get_file('mnist.npz', path=ART_DATA_PATH, url='https://s3.amazonaws.com/img-datasets/mnist.npz')
 
     dict_mnist = np.load(path)
     x_train = dict_mnist['x_train']
@@ -502,18 +502,18 @@ def load_mnist(raw=False):
 
 def load_stl():
     """
-    Loads the STL-10 dataset from `DATA_PATH` or downloads it if necessary.
+    Loads the STL-10 dataset from `ART_DATA_PATH` or downloads it if necessary.
 
     :return: `(x_train, y_train), (x_test, y_test), min, max`
     :rtype: `(np.ndarray, np.ndarray), (np.ndarray, np.ndarray), float, float`
     """
     from os.path import join
-    from art import DATA_PATH
+    from art.config import ART_DATA_PATH
 
     min_, max_ = 0.0, 1.0
 
     # Download and extract data if needed
-    path = get_file('stl10_binary', path=DATA_PATH, extract=True,
+    path = get_file('stl10_binary', path=ART_DATA_PATH, extract=True,
                     url='https://ai.stanford.edu/~acoates/stl10/stl10_binary.tar.gz')
 
     with open(join(path, 'train_X.bin'), 'rb') as f_numpy:
@@ -544,7 +544,7 @@ def load_stl():
 
 def load_iris(raw=False, test_set=0.3):
     """
-    Loads the UCI Iris dataset from `DATA_PATH` or downloads it if necessary.
+    Loads the UCI Iris dataset from `ART_DATA_PATH` or downloads it if necessary.
 
     :param raw: `True` if no preprocessing should be applied to the data. Otherwise, data is normalized to 1.
     :type raw: `bool`
@@ -553,13 +553,13 @@ def load_iris(raw=False, test_set=0.3):
     :return: Entire dataset and labels.
     :rtype: `(np.ndarray, np.ndarray), (np.ndarray, np.ndarray), float, float`
     """
-    from art import DATA_PATH, NUMPY_DTYPE
+    from art.config import ART_DATA_PATH, ART_NUMPY_DTYPE
 
     # Download data if needed
-    path = get_file('iris.data', path=DATA_PATH, extract=False,
+    path = get_file('iris.data', path=ART_DATA_PATH, extract=False,
                     url='https://archive.ics.uci.edu/ml/machine-learning-databases/iris/iris.data')
 
-    data = np.loadtxt(path, delimiter=',', usecols=(0, 1, 2, 3), dtype=NUMPY_DTYPE)
+    data = np.loadtxt(path, delimiter=',', usecols=(0, 1, 2, 3), dtype=ART_NUMPY_DTYPE)
     labels = np.loadtxt(path, delimiter=',', usecols=4, dtype=str)
 
     # Preprocess
@@ -664,8 +664,8 @@ def get_file(filename, url, path=None, extract=False):
     :rtype: `str`
     """
     if path is None:
-        from art import DATA_PATH
-        path_ = os.path.expanduser(DATA_PATH)
+        from art.config import ART_DATA_PATH
+        path_ = os.path.expanduser(ART_DATA_PATH)
     else:
         path_ = os.path.expanduser(path)
     if not os.access(path_, os.W_OK):

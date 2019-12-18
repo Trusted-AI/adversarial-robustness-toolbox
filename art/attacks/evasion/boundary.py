@@ -27,7 +27,7 @@ import logging
 
 import numpy as np
 
-from art import NUMPY_DTYPE
+from art.config import ART_NUMPY_DTYPE
 from art.attacks import EvasionAttack
 from art.utils import compute_success, to_categorical, check_and_transform_label_format
 
@@ -121,7 +121,7 @@ class BoundaryAttack(EvasionAttack):
             raise ValueError('Target labels `y` need to be provided for a targeted attack.')
 
         # Some initial setups
-        x_adv = x.astype(NUMPY_DTYPE)
+        x_adv = x.astype(ART_NUMPY_DTYPE)
 
         # Generate the adversarial samples
         for ind, val in enumerate(x_adv):
@@ -264,7 +264,7 @@ class BoundaryAttack(EvasionAttack):
         """
         # Generate perturbation randomly
         # input_shape = current_sample.shape
-        perturb = np.random.randn(*self.classifier.input_shape).astype(NUMPY_DTYPE)
+        perturb = np.random.randn(*self.classifier.input_shape).astype(ART_NUMPY_DTYPE)
 
         # Rescale the perturbation
         perturb /= np.linalg.norm(perturb)
@@ -319,7 +319,7 @@ class BoundaryAttack(EvasionAttack):
 
             # Attack unsatisfied yet and the initial image satisfied
             if adv_init is not None and init_pred == y:
-                return adv_init.astype(NUMPY_DTYPE), init_pred
+                return adv_init.astype(ART_NUMPY_DTYPE), init_pred
 
             # Attack unsatisfied yet and the initial image unsatisfied
             for _ in range(self.init_size):
@@ -338,7 +338,7 @@ class BoundaryAttack(EvasionAttack):
         else:
             # The initial image satisfied
             if adv_init is not None and init_pred != y_p:
-                return adv_init.astype(NUMPY_DTYPE), init_pred
+                return adv_init.astype(ART_NUMPY_DTYPE), init_pred
 
             # The initial image unsatisfied
             for _ in range(self.init_size):

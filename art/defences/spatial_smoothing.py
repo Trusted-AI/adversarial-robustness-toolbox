@@ -33,7 +33,7 @@ import numpy as np
 from scipy import ndimage
 
 from art.defences.preprocessor import Preprocessor
-from art import NUMPY_DTYPE
+from art.config import ART_NUMPY_DTYPE
 
 logger = logging.getLogger(__name__)
 
@@ -105,7 +105,7 @@ class SpatialSmoothing(Preprocessor):
         if self.clip_values is not None:
             np.clip(result, self.clip_values[0], self.clip_values[1], out=result)
 
-        return result.astype(NUMPY_DTYPE), y
+        return result.astype(ART_NUMPY_DTYPE), y
 
     def estimate_gradient(self, x, grad):
         return grad

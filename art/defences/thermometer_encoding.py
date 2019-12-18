@@ -32,7 +32,7 @@ import numpy as np
 
 from art.defences.preprocessor import Preprocessor
 from art.utils import to_categorical
-from art import NUMPY_DTYPE
+from art.config import ART_NUMPY_DTYPE
 
 logger = logging.getLogger(__name__)
 
@@ -92,7 +92,7 @@ class ThermometerEncoding(Preprocessor):
         """
         result = np.apply_along_axis(self._perchannel, self.channel_index, x)
         np.clip(result, self.clip_values[0], self.clip_values[1], out=result)
-        return result.astype(NUMPY_DTYPE), y
+        return result.astype(ART_NUMPY_DTYPE), y
 
     def _perchannel(self, x):
         """

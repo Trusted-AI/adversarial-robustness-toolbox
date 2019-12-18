@@ -26,7 +26,7 @@ import logging
 
 import numpy as np
 
-from art import NUMPY_DTYPE
+from art.config import ART_NUMPY_DTYPE
 from art.classifiers.classifier import ClassifierNeuralNetwork, ClassifierGradients
 from art.attacks import EvasionAttack
 from art.utils import compute_success
@@ -81,7 +81,7 @@ class VirtualAdversarialMethod(EvasionAttack):
         :return: An array holding the adversarial examples.
         :rtype: `np.ndarray`
         """
-        x_adv = x.astype(NUMPY_DTYPE)
+        x_adv = x.astype(ART_NUMPY_DTYPE)
         preds = self.classifier.predict(x_adv, batch_size=self.batch_size)
         if (preds < 0.0).any() or (preds > 1.0).any():
             raise TypeError('This attack requires a classifier predicting probabilities in the range [0, 1] as output.'
@@ -96,7 +96,7 @@ class VirtualAdversarialMethod(EvasionAttack):
             batch = batch.reshape((batch.shape[0], -1))
 
             # Main algorithm for each batch
-            var_d = np.random.randn(*batch.shape).astype(NUMPY_DTYPE)
+            var_d = np.random.randn(*batch.shape).astype(ART_NUMPY_DTYPE)
 
             # Main loop of the algorithm
             for _ in range(self.max_iter):
@@ -112,7 +112,7 @@ class VirtualAdversarialMethod(EvasionAttack):
                 kl_div1 = entropy(np.transpose(preds_rescaled[batch_index_1:batch_index_2]),
                                   np.transpose(preds_new_rescaled))
 
-                var_d_new = np.zeros(var_d.shape).astype(NUMPY_DTYPE)
+                var_d_new = np.zeros(var_d.shape).astype(ART_NUMPY_DTYPE)
                 for current_index in range(var_d.shape[1]):
                     var_d[:, current_index] += self.finite_diff
                     preds_new = self.classifier.predict((batch + var_d).reshape((-1,) + self.classifier.input_shape))

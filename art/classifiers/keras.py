@@ -302,13 +302,13 @@ class KerasClassifier(ClassifierNeuralNetwork, ClassifierGradients, Classifier):
         :return: Array of predictions of shape `(nb_inputs, nb_classes)`.
         :rtype: `np.ndarray`
         """
-        from art import NUMPY_DTYPE
+        from art.config import ART_NUMPY_DTYPE
 
         # Apply defences
         x_preprocessed, _ = self._apply_preprocessing(x, y=None, fit=False)
 
         # Run predictions with batching
-        predictions = np.zeros((x_preprocessed.shape[0], self.nb_classes()), dtype=NUMPY_DTYPE)
+        predictions = np.zeros((x_preprocessed.shape[0], self.nb_classes()), dtype=ART_NUMPY_DTYPE)
         for batch_index in range(int(np.ceil(x_preprocessed.shape[0] / float(batch_size)))):
             begin, end = batch_index * batch_size, min((batch_index + 1) * batch_size, x_preprocessed.shape[0])
             predictions[begin:end] = self._predictions([x_preprocessed[begin:end]])[0]
@@ -407,7 +407,7 @@ class KerasClassifier(ClassifierNeuralNetwork, ClassifierGradients, Classifier):
             import tensorflow.keras.backend as k
         else:
             import keras.backend as k
-        from art import NUMPY_DTYPE
+        from art.config import ART_NUMPY_DTYPE
 
         if isinstance(layer, six.string_types):
             if layer not in self._layer_names:
@@ -436,7 +436,7 @@ class KerasClassifier(ClassifierNeuralNetwork, ClassifierGradients, Classifier):
 
         # Determine shape of expected output and prepare array
         output_shape = output_func([x_preprocessed[0][None, ...]])[0].shape
-        activations = np.zeros((x_preprocessed.shape[0],) + output_shape[1:], dtype=NUMPY_DTYPE)
+        activations = np.zeros((x_preprocessed.shape[0],) + output_shape[1:], dtype=ART_NUMPY_DTYPE)
 
         # Get activations with batching
         for batch_index in range(int(np.ceil(x_preprocessed.shape[0] / float(batch_size)))):
@@ -529,15 +529,15 @@ class KerasClassifier(ClassifierNeuralNetwork, ClassifierGradients, Classifier):
         :param filename: Name of the file where to store the model.
         :type filename: `str`
         :param path: Path of the folder where to store the model. If no path is specified, the model will be stored in
-                     the default data location of the library `DATA_PATH`.
+                     the default data location of the library `ART_DATA_PATH`.
         :type path: `str`
         :return: None
         """
         import os
 
         if path is None:
-            from art import DATA_PATH
-            full_path = os.path.join(DATA_PATH, filename)
+            from art.config import ART_DATA_PATH
+            full_path = os.path.join(ART_DATA_PATH, filename)
         else:
             full_path = os.path.join(path, filename)
         folder = os.path.split(full_path)[0]
@@ -585,13 +585,13 @@ class KerasClassifier(ClassifierNeuralNetwork, ClassifierGradients, Classifier):
         # Load and update all functionality related to Keras
         # pylint: disable=E0401
         import os
-        from art import DATA_PATH
+        from art.config import ART_DATA_PATH
         if self.is_tensorflow:
             from tensorflow.keras.models import load_model
         else:
             from keras.models import load_model
 
-        full_path = os.path.join(DATA_PATH, state['model_name'])
+        full_path = os.path.join(ART_DATA_PATH, state['model_name'])
         model = load_model(str(full_path))
 
         self._model = model

@@ -26,7 +26,7 @@ import logging
 
 import numpy as np
 
-from art import NUMPY_DTYPE
+from art.config import ART_NUMPY_DTYPE
 from art.classifiers.classifier import ClassifierGradients
 from art.attacks import EvasionAttack
 from art.utils import check_and_transform_label_format, compute_success
@@ -82,7 +82,7 @@ class SaliencyMapMethod(EvasionAttack):
         # Initialize variables
         dims = list(x.shape[1:])
         self._nb_features = np.product(dims)
-        x_adv = np.reshape(x.astype(NUMPY_DTYPE), (-1, self._nb_features))
+        x_adv = np.reshape(x.astype(ART_NUMPY_DTYPE), (-1, self._nb_features))
         preds = np.argmax(self.classifier.predict(x, batch_size=self.batch_size), axis=1)
 
         # Determine target classes for attack

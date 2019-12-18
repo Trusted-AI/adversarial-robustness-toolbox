@@ -32,7 +32,7 @@ import logging
 import numpy as np
 
 from art.defences.preprocessor import Preprocessor
-from art import NUMPY_DTYPE
+from art.config import ART_NUMPY_DTYPE
 
 logger = logging.getLogger(__name__)
 
@@ -120,7 +120,7 @@ class PixelDefend(Preprocessor):
 
         # Convert to old dtype
         x = x / 255.0
-        x = x.astype(NUMPY_DTYPE).reshape(original_shape)
+        x = x.astype(ART_NUMPY_DTYPE).reshape(original_shape)
 
         # Clip to clip_values
         x = np.clip(x, self.clip_values[0], self.clip_values[1])

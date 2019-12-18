@@ -29,7 +29,7 @@ import logging
 
 import numpy as np
 
-from art import NUMPY_DTYPE
+from art.config import ART_NUMPY_DTYPE
 from art.classifiers.classifier import ClassifierGradients
 from art.attacks.evasion.fast_gradient import FastGradientMethod
 from art.utils import compute_success, get_labels_np_array, check_and_transform_label_format
@@ -115,7 +115,7 @@ class ProjectedGradientDescent(FastGradientMethod):
         rate_best = None
 
         for _ in range(max(1, self.num_random_init)):
-            adv_x = x.astype(NUMPY_DTYPE)
+            adv_x = x.astype(ART_NUMPY_DTYPE)
 
             for i_max_iter in range(self.max_iter):
                 adv_x = self._compute(adv_x, x, targets, self.eps, self.eps_step, self._project,
