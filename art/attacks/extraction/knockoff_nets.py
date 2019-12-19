@@ -110,7 +110,7 @@ class KnockoffNets(ExtractionAttack):
         if self.sampling_strategy == 'random':
             thieved_classifier = self._random_extraction(x, thieved_classifier)
         else:
-            thieved_classifier = self._adaptive_extraction(x, thieved_classifier)
+            thieved_classifier = self._adaptive_extraction(x, y, thieved_classifier)
 
         return thieved_classifier
 
@@ -164,6 +164,22 @@ class KnockoffNets(ExtractionAttack):
         labels = to_categorical(labels=labels, nb_classes=self.classifier.nb_classes())
 
         return labels
+
+    def _adaptive_extraction(self, x, y, thieved_classifier):
+        """
+        Extract with the adaptive sampling strategy.
+
+        :param x: An array with the source input to the victim classifier.
+        :type x: `np.ndarray`
+        :param y: Target values (class labels) one-hot-encoded of shape (nb_samples, nb_classes) or indices of shape
+                  (nb_samples,).
+        :type y: `np.ndarray`
+        :param thieved_classifier: A thieved classifier to be stolen.
+        :type thieved_classifier: :class:`.Classifier`
+        :return: The stolen classifier.
+        :rtype: :class:`.Classifier`
+        """
+        return thieved_classifier
 
     def set_params(self, **kwargs):
         """
