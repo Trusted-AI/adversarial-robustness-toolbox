@@ -74,72 +74,40 @@ class KnockoffNets(ExtractionAttack):
                   'reward': reward}
         self.set_params(**params)
 
-    def generate(self, x, y=None, **kwargs):
+    def extract(self, x, y=None, **kwargs):
         """
-        Generate a thieved classifier.
+        Extract a thieved classifier.
 
         :param x: An array with the source input to the victim classifier.
         :type x: `np.ndarray`
         :param y: Target values (class labels) one-hot-encoded of shape (nb_samples, nb_classes) or indices of shape
-                  (nb_samples,). Not used in this attack.
+                  (nb_samples,).
         :type y: `np.ndarray` or `None`
         :param thieved_classifier: A thieved classifier to be stolen.
         :type thieved_classifier: :class:`.Classifier`
         :return: The stolen classifier.
         :rtype: :class:`.Classifier`
         """
-        # Warning to users if y is not None
-        if y is not None:
-            logger.warning("This attack does not use the provided label y.")
+        # Check prerequisite for random strategy
+        if self.sampling_strategy == 'random' and y is not None:
+            logger.warning("This attack with random sampling strategy does not use the provided label y.")
+
+        # Check prerequisite for adaptive strategy
+        if self.sampling_strategy == 'adaptive' and y is None:
+            raise ValueError("This attack with adaptive sampling strategy needs label y.")
 
         # Check the size of the source input vs nb_stolen
         if x.shape[0] < self.nb_stolen:
-            logger.warning("The size of the source input is smaller than the number of expected stolen examples.")
+            logger.warning("The size of the source input is smaller than the expected number of queries submitted "
+                           "to the victim classifier.")
 
         # Check if there is a thieved classifier provided for training
         thieved_classifier = kwargs.get('thieved_classifier')
         if thieved_classifier is None or not isinstance(thieved_classifier, Classifier):
             raise ValueError('A thieved classifier is needed.')
 
-        # Select data to attack
-        selected_x = self._select_data(x)
-
-        # Query the victim classifier
-        fake_labels = self._query_label(selected_x)
-
-        # Train the thieved classifier
-        thieved_classifier.fit(x=selected_x, y=fake_labels, batch_size=self.batch_size, nb_epochs=self.nb_epochs)
 
         return thieved_classifier
-
-    def _select_data(self, x):
-        """
-        Select data to attack.
-
-        :param x: An array with the source input to the victim classifier.
-        :type x: `np.ndarray`
-        :return: An array with the selected input to the victim classifier.
-        :rtype: `np.ndarray`
-        """
-        nb_stolen = np.minimum(self.nb_stolen, x.shape[0])
-        rnd_index = np.random.choice(x.shape[0], nb_stolen, replace=False)
-
-        return x[rnd_index].astype(NUMPY_DTYPE)
-
-    def _query_label(self, x):
-        """
-        Query the victim classifier.
-
-        :param x: An array with the source input to the victim classifier.
-        :type x: `np.ndarray`
-        :return: Target values (class labels) one-hot-encoded of shape (nb_samples, nb_classes).
-        :rtype: `np.ndarray`
-        """
-        labels = self.classifier.predict(x=x, batch_size=self.batch_size)
-        labels = np.argmax(labels, axis=1)
-        labels = to_categorical(labels=labels, nb_classes=self.classifier.nb_classes())
-
-        return labels
 
     def set_params(self, **kwargs):
         """
