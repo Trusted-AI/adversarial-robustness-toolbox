@@ -25,20 +25,21 @@ import numpy as np
 
 from art.wrappers import DataframeWrapper
 from art.utils import load_dataset, random_targets, master_seed
-from art.utils_test import get_iris_classifier_tf, get_iris_classifier_kr, get_iris_classifier_pt
+from art.utils_test import get_iris_classifier_kr, get_iris_classifier_pt
 
 from art.attacks import HopSkipJump
 
 logger = logging.getLogger('testLogger')
 
+
 class TestDataframeWrapper(unittest.TestCase):
 
     @classmethod
     def setUpClass(cls):
-        #Get Default DataFrame
-        cls.test_data = pd.DataFrame({'Name':[0, 1, 2, 3], 'Age':[20, 21, 19, 18]})
+        #  Get Default DataFrame
+        cls.test_data = pd.DataFrame({'Name': [0, 1, 2, 3], 'Age': [20, 21, 19, 18]})
 
-        # Get Iris
+        #  Get Iris
         (x_train, y_train), (x_test, y_test), _, _ = load_dataset('iris')
         print(type(x_test))
         cls.iris = (DataframeWrapper(pd.DataFrame(x_train)), y_train), (DataframeWrapper(pd.DataFrame(x_test)), y_test)
@@ -47,13 +48,13 @@ class TestDataframeWrapper(unittest.TestCase):
         master_seed(1234)
 
     def test_class_creation(self):
-        #Create from new
+        #  Create from new
         test_frame = DataframeWrapper(self.test_data)
         self.assertTrue(isinstance(test_frame, DataframeWrapper))
         self.assertTrue(isinstance(test_frame.dataframe, pd.DataFrame))
         self.assertTrue((test_frame == test_frame.dataframe.to_numpy()).all())
 
-        #Create from template
+        #  Create from template
         test_frame2 = test_frame
         self.assertTrue(isinstance(test_frame2, DataframeWrapper))
         self.assertTrue(isinstance(test_frame2.dataframe, pd.DataFrame))
@@ -61,7 +62,7 @@ class TestDataframeWrapper(unittest.TestCase):
         self.assertTrue((test_frame == test_frame2).all())
         self.assertTrue((test_frame.dataframe.to_numpy() == test_frame2.dataframe.to_numpy()).all())
 
-        #Create from template slice
+        #  Create from template slice
         test_frame2 = test_frame[0]
         self.assertTrue(isinstance(test_frame2, DataframeWrapper))
         self.assertTrue(isinstance(test_frame2.dataframe, pd.DataFrame))
@@ -75,38 +76,38 @@ class TestDataframeWrapper(unittest.TestCase):
         test_frame2 = test_frame[:2]
         self.assertTrue(isinstance(test_frame2, DataframeWrapper))
         self.assertTrue(isinstance(test_frame2.dataframe, pd.DataFrame))
-        self.assertTrue((test_frame2 == test_frame2.dataframe.to_numpy()).all()) 
+        self.assertTrue((test_frame2 == test_frame2.dataframe.to_numpy()).all())
 
     def test_copy(self):
-        #Test copy during creation
+        #  Test copy during creation
         test_frame = DataframeWrapper(self.test_data, copy=False)
         self.assertTrue(test_frame.dataframe is self.test_data)
 
         test_frame = DataframeWrapper(self.test_data)
         self.assertFalse(test_frame.dataframe is self.test_data)
 
-        #Test explicit copy
+        #  Test explicit copy
         test_frame2 = test_frame.copy()
         self.assertFalse(test_frame2 is test_frame)
         self.assertFalse(test_frame2.dataframe is test_frame.dataframe)
         
-        #Test explicit copy slice
+        #  Test explicit copy slice
         test_frame2 = test_frame[0].copy()
-        self.assertTrue((test_frame2 == test_frame2.dataframe.to_numpy()).all()) 
+        self.assertTrue((test_frame2 == test_frame2.dataframe.to_numpy()).all())
         self.assertFalse(test_frame2 is test_frame[0])
 
         test_frame2 = test_frame[:2].copy()
-        self.assertTrue((test_frame2 == test_frame2.dataframe.to_numpy()).all()) 
+        self.assertTrue((test_frame2 == test_frame2.dataframe.to_numpy()).all())
         self.assertFalse(test_frame2 is test_frame[:2])
 
         test_frame2 = test_frame[2:].copy()
-        self.assertTrue((test_frame2 == test_frame2.dataframe.to_numpy()).all()) 
+        self.assertTrue((test_frame2 == test_frame2.dataframe.to_numpy()).all())
         self.assertFalse(test_frame2 is test_frame[2:])
- 
+
     def test_operators(self):
         test_frame = DataframeWrapper(self.test_data)
 
-        #Test the basic operators and broadcasting
+        #  Test the basic operators and broadcasting
         test_frame = test_frame + 1
         self.assertTrue((test_frame == test_frame.dataframe.to_numpy()).all())
         test_frame = test_frame - 1
@@ -119,9 +120,9 @@ class TestDataframeWrapper(unittest.TestCase):
     def test_basic_np_functions(self):
         test_frame = DataframeWrapper(self.test_data)
 
-        #Test the common numpy functions
+        #  Test the common numpy functions
 
-        #These first two should fail because they don't actually care what the input class type is. They always returns an array
+        #  These first two should fail because they don't actually care what the input class type is.
         test_frame2 = np.concatenate((test_frame, test_frame))
         with self.assertRaises(AttributeError):
             print(test_frame2.dataframe)
@@ -129,7 +130,7 @@ class TestDataframeWrapper(unittest.TestCase):
         with self.assertRaises(AttributeError):
             print(test_frame2.dataframe)
 
-        #Now we check some of the commonly used numpy or ndarray functions    
+        #  Now we check some of the commonly used numpy or ndarray functions
         test_frame2 = np.repeat(test_frame, 2, axis=0)
         self.assertTrue(isinstance(test_frame2, DataframeWrapper))
         self.assertTrue(np.shape(test_frame2) == np.shape(test_frame2.dataframe.to_numpy()))
@@ -139,30 +140,31 @@ class TestDataframeWrapper(unittest.TestCase):
         self.assertTrue(isinstance(test_frame2, DataframeWrapper))
         self.assertFalse(np.shape(test_frame2) == np.shape(test_frame2.dataframe.to_numpy()))
 
-        test_frame2 = np.reshape(test_frame, (8,1))
+        test_frame2 = np.reshape(test_frame, (8, 1))
         self.assertTrue(isinstance(test_frame2, DataframeWrapper))
         self.assertFalse(np.shape(test_frame2) == np.shape(test_frame2.dataframe.to_numpy()))
-        test_frame2 = test_frame.reshape((8,1))
+        test_frame2 = test_frame.reshape((8, 1))
         self.assertTrue(isinstance(test_frame2, DataframeWrapper))
         self.assertFalse(np.shape(test_frame2) == np.shape(test_frame2.dataframe.to_numpy()))
 
-        #Note that argmax will return a Dataframewrapper object too with a modified dataframe, technically this is a bug
-        test_max = np.max(test_frame,axis=0)
+        #  Note that argmax will return a Dataframewrapper object too with a modified dataframe, technically this is a bug
+        test_max = np.max(test_frame, axis=0)
         self.assertTrue(isinstance(test_max, DataframeWrapper))
-        self.assertTrue((test_max == np.max(self.test_data.to_numpy(),axis=0)).all())
+        self.assertTrue((test_max == np.max(self.test_data.to_numpy(), axis=0)).all())
 
-        test_max = np.max(test_frame,axis=1)
+        test_max = np.max(test_frame, axis=1)
         self.assertTrue(isinstance(test_max, DataframeWrapper))
         self.assertFalse(np.shape(test_max) == np.shape(test_max.dataframe.to_numpy()))
-        self.assertTrue((test_max == np.max(self.test_data.to_numpy(),axis=1)).all())
+        self.assertTrue((test_max == np.max(self.test_data.to_numpy(), axis=1)).all())
 
         test_frame.fill(2)
         self.assertTrue(isinstance(test_frame, DataframeWrapper))
         self.assertTrue(np.shape(test_frame) == np.shape(test_frame.dataframe.to_numpy()))
 
-    def test_iris_tf(self):
+
+    def test_iris_kr(self):
         (_, _), (x_test, y_test) = self.iris
-        classifier, sess = get_iris_classifier_tf()
+        classifier = get_iris_classifier_kr()
 
         # Test untargeted attack and norm=2
         attack = HopSkipJump(classifier, targeted=False, max_iter=2, max_eval=100, init_eval=10)
@@ -213,9 +215,6 @@ class TestDataframeWrapper(unittest.TestCase):
         self.assertTrue((np.argmax(targets, axis=1) == preds_adv).any())
         acc = np.sum(preds_adv == np.argmax(targets, axis=1)) / y_test.shape[0]
         logger.info('Success rate of targeted HopSkipJump on Iris: %.2f%%', (acc * 100))
-
-        # Clean-up session
-        sess.close()
 
     def test_iris_pt(self):
         (_, _), (x_test, y_test) = self.iris
