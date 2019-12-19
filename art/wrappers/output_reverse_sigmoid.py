@@ -24,7 +24,6 @@ import logging
 
 import numpy as np
 
-from art import NUMPY_DTYPE
 from art.wrappers.wrapper import ClassifierWrapper
 from art.classifiers.classifier import Classifier
 
