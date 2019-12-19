@@ -150,6 +150,21 @@ class KnockoffNets(ExtractionAttack):
 
         return x[rnd_index].astype(ART_NUMPY_DTYPE)
 
+    def _query_label(self, x):
+        """
+        Query the victim classifier.
+
+        :param x: An array with the source input to the victim classifier.
+        :type x: `np.ndarray`
+        :return: Target values (class labels) one-hot-encoded of shape (nb_samples, nb_classes).
+        :rtype: `np.ndarray`
+        """
+        labels = self.classifier.predict(x=x, batch_size=self.batch_size_query)
+        labels = np.argmax(labels, axis=1)
+        labels = to_categorical(labels=labels, nb_classes=self.classifier.nb_classes())
+
+        return labels
+
     def set_params(self, **kwargs):
         """
         Take in a dictionary of parameters and applies attack-specific checks before saving them as attributes.
