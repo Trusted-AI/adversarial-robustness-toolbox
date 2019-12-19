@@ -75,6 +75,8 @@ class HopSkipJump(EvasionAttack):
                   }
         self.set_params(**params)
 
+        self.curr_iter = None
+
         # Set binary search threshold
         if norm == 2:
             self.theta = 0.01 / np.sqrt(np.prod(self.classifier.input_shape))
