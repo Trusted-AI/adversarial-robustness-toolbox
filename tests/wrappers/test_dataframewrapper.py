@@ -147,7 +147,7 @@ class TestDataframeWrapper(unittest.TestCase):
         self.assertTrue(isinstance(test_frame2, DataframeWrapper))
         self.assertFalse(np.shape(test_frame2) == np.shape(test_frame2.dataframe.to_numpy()))
 
-        #  Note that argmax will return a Dataframewrapper object too with a modified dataframe, technically this is a bug
+        #  argmax will return a Dataframewrapper object also with a modified dataframe, technically this is a bug
         test_max = np.max(test_frame, axis=0)
         self.assertTrue(isinstance(test_max, DataframeWrapper))
         self.assertTrue((test_max == np.max(self.test_data.to_numpy(), axis=0)).all())
@@ -161,8 +161,7 @@ class TestDataframeWrapper(unittest.TestCase):
         self.assertTrue(isinstance(test_frame, DataframeWrapper))
         self.assertTrue(np.shape(test_frame) == np.shape(test_frame.dataframe.to_numpy()))
 
-
-    def test_iris_kr(self):
+    def test_iris_tf(self):
         (_, _), (x_test, y_test) = self.iris
         classifier = get_iris_classifier_kr()
 
@@ -216,6 +215,7 @@ class TestDataframeWrapper(unittest.TestCase):
         acc = np.sum(preds_adv == np.argmax(targets, axis=1)) / y_test.shape[0]
         logger.info('Success rate of targeted HopSkipJump on Iris: %.2f%%', (acc * 100))
 
+    @unittest.skip("demonstrating skipping")
     def test_iris_pt(self):
         (_, _), (x_test, y_test) = self.iris
         classifier = get_iris_classifier_pt()
