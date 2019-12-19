@@ -64,16 +64,17 @@ class ReverseSigmoid(ClassifierWrapper, Classifier):
         """
 
         clip_min = 1e-9
-        clip_max = 1e9
+        clip_max = 1.0 - clip_min
 
         def sigmoid(z):
             return 1.0 / (1.0 + np.exp(-z))
 
         predictions = self.classifier.predict(x, batch_size=batch_size, **kwargs)
+        predictions_clipped = np.clip(predictions, clip_min, clip_max)
 
         if predictions.shape[1] > 1:
             perturbation_r = self.beta * (sigmoid(
-                -self.gamma * (np.log(np.clip((1.0 - predictions) / predictions, clip_min, clip_max)))) - 0.5)
+                -self.gamma * np.log((1.0 - predictions_clipped) / predictions_clipped)) - 0.5)
             predictions_perturbed = predictions - perturbation_r
             predictions_perturbed = np.clip(predictions_perturbed, 0.0, 1.0)
             alpha = 1.0 / np.sum(predictions_perturbed, axis=-1, keepdims=True)
@@ -81,15 +82,23 @@ class ReverseSigmoid(ClassifierWrapper, Classifier):
         else:
             predictions_1 = predictions
             predictions_2 = 1.0 - predictions
-            perturbation_r_1 = self.beta * (sigmoid(
-                -self.gamma * (np.log(np.clip((1.0 - predictions_1) / predictions_1, clip_min, clip_max)))) - 0.5)
-            perturbation_r_2 = self.beta * (sigmoid(
-                -self.gamma * (np.log(np.clip((1.0 - predictions_2) / predictions_2, clip_min, clip_max)))) - 0.5)
+
+            predictions_clipped_1 = predictions_clipped
+            predictions_clipped_2 = 1.0 - predictions_clipped
+
+            perturbation_r_1 = self.beta * (
+                        sigmoid(-self.gamma * np.log((1.0 - predictions_clipped_1) / predictions_clipped_1)) - 0.5)
+            perturbation_r_2 = self.beta * (
+                    sigmoid(-self.gamma * np.log((1.0 - predictions_clipped_2) / predictions_clipped_2)) - 0.5)
+
             predictions_perturbed_1 = predictions_1 - perturbation_r_1
             predictions_perturbed_2 = predictions_2 - perturbation_r_2
+
             predictions_perturbed_1 = np.clip(predictions_perturbed_1, 0.0, 1.0)
             predictions_perturbed_2 = np.clip(predictions_perturbed_2, 0.0, 1.0)
+
             alpha = 1.0 / (predictions_perturbed_1 + predictions_perturbed_2)
+
             rs = alpha * predictions_perturbed_1
 
         return rs
