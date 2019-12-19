@@ -27,7 +27,7 @@ import logging
 import numpy as np
 
 from art.config import ART_NUMPY_DTYPE
-from art.attacks.attack import Attack
+from art.attacks.attack import ExtractionAttack
 from art.classifiers.classifier import Classifier
 from art.utils import to_categorical
 
@@ -35,13 +35,13 @@ from art.utils import to_categorical
 logger = logging.getLogger(__name__)
 
 
-class CopycatCNN(Attack):
+class CopycatCNN(ExtractionAttack):
     """
     Implementation of the copycat cnn attack from Jacson et al. (2018).
 
     | Paper link: https://arxiv.org/abs/1806.05476
     """
-    attack_params = Attack.attack_params + ['batch_size', 'nb_epochs', 'nb_stolen']
+    attack_params = ExtractionAttack.attack_params + ['batch_size', 'nb_epochs', 'nb_stolen']
 
     def __init__(self, classifier, batch_size=1, nb_epochs=10, nb_stolen=1):
         """
@@ -63,9 +63,9 @@ class CopycatCNN(Attack):
                   'nb_stolen': nb_stolen}
         self.set_params(**params)
 
-    def generate(self, x, y=None, **kwargs):
+    def extract(self, x, y=None, **kwargs):
         """
-        Generate a thieved classifier.
+        Extract a thieved classifier.
 
         :param x: An array with the source input to the victim classifier.
         :type x: `np.ndarray`
