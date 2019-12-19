@@ -106,6 +106,11 @@ class KnockoffNets(ExtractionAttack):
         if thieved_classifier is None or not isinstance(thieved_classifier, Classifier):
             raise ValueError('A thieved classifier is needed.')
 
+        # Implement model extractions
+        if self.sampling_strategy == 'random':
+            thieved_classifier = self._random_extraction(x, thieved_classifier)
+        else:
+            thieved_classifier = self._adaptive_extraction(x, thieved_classifier)
 
         return thieved_classifier
 
