@@ -41,16 +41,18 @@ class CopycatCNN(ExtractionAttack):
 
     | Paper link: https://arxiv.org/abs/1806.05476
     """
-    attack_params = ExtractionAttack.attack_params + ['batch_size', 'nb_epochs', 'nb_stolen']
+    attack_params = ExtractionAttack.attack_params + ['batch_size_fit', 'batch_size_query', 'nb_epochs', 'nb_stolen']
 
-    def __init__(self, classifier, batch_size=1, nb_epochs=10, nb_stolen=1):
+    def __init__(self, classifier, batch_size_fit=1, batch_size_query=1, nb_epochs=10, nb_stolen=1):
         """
         Create a copycat cnn attack instance.
 
         :param classifier: A victim classifier.
         :type classifier: :class:`.Classifier`
-        :param batch_size: Size of batches.
-        :type batch_size: `int`
+        :param batch_size_fit: Size of batches for fitting the thieved classifier.
+        :type batch_size_fit: `int`
+        :param batch_size_query: Size of batches for querying the victim classifier.
+        :type batch_size_query: `int`
         :param nb_epochs: Number of epochs to use for training.
         :type nb_epochs: `int`
         :param nb_stolen: Number of queries submitted to the victim classifier to steal it.
@@ -58,7 +60,8 @@ class CopycatCNN(ExtractionAttack):
         """
         super(CopycatCNN, self).__init__(classifier=classifier)
 
-        params = {'batch_size': batch_size,
+        params = {'batch_size_fit': batch_size_fit,
+                  'batch_size_query': batch_size_query,
                   'nb_epochs': nb_epochs,
                   'nb_stolen': nb_stolen}
         self.set_params(**params)
@@ -83,7 +86,8 @@ class CopycatCNN(ExtractionAttack):
 
         # Check the size of the source input vs nb_stolen
         if x.shape[0] < self.nb_stolen:
-            logger.warning("The size of the source input is smaller than the number of expected stolen examples.")
+            logger.warning("The size of the source input is smaller than the expected number of queries submitted "
+                           "to the victim classifier.")
 
         # Check if there is a thieved classifier provided for training
         thieved_classifier = kwargs.get('thieved_classifier')
@@ -97,7 +101,7 @@ class CopycatCNN(ExtractionAttack):
         fake_labels = self._query_label(selected_x)
 
         # Train the thieved classifier
-        thieved_classifier.fit(x=selected_x, y=fake_labels, batch_size=self.batch_size, nb_epochs=self.nb_epochs)
+        thieved_classifier.fit(x=selected_x, y=fake_labels, batch_size=self.batch_size_fit, nb_epochs=self.nb_epochs)
 
         return thieved_classifier
 
@@ -124,7 +128,7 @@ class CopycatCNN(ExtractionAttack):
         :return: Target values (class labels) one-hot-encoded of shape (nb_samples, nb_classes).
         :rtype: `np.ndarray`
         """
-        labels = self.classifier.predict(x=x, batch_size=self.batch_size)
+        labels = self.classifier.predict(x=x, batch_size=self.batch_size_query)
         labels = np.argmax(labels, axis=1)
         labels = to_categorical(labels=labels, nb_classes=self.classifier.nb_classes())
 
@@ -134,6 +138,10 @@ class CopycatCNN(ExtractionAttack):
         """
         Take in a dictionary of parameters and applies attack-specific checks before saving them as attributes.
 
+        :param batch_size_fit: Size of batches for fitting the thieved classifier.
+        :type batch_size_fit: `int`
+        :param batch_size_query: Size of batches for querying the victim classifier.
+        :type batch_size_query: `int`
         :param nb_epochs: Number of epochs to use for training.
         :type nb_epochs: `int`
         :param nb_stolen: Number of queries submitted to the victim classifier to steal it.
@@ -141,6 +149,12 @@ class CopycatCNN(ExtractionAttack):
         """
         # Save attack-specific parameters
         super(CopycatCNN, self).set_params(**kwargs)
+
+        if not isinstance(self.batch_size_fit, (int, np.int)) or self.batch_size_fit <= 0:
+            raise ValueError("The size of batches for fitting the thieved classifier must be a positive integer.")
+
+        if not isinstance(self.batch_size_query, (int, np.int)) or self.batch_size_query <= 0:
+            raise ValueError("The size of batches for querying the victim classifier must be a positive integer.")
 
         if not isinstance(self.nb_epochs, (int, np.int)) or self.nb_epochs <= 0:
             raise ValueError("The number of epochs must be a positive integer.")
