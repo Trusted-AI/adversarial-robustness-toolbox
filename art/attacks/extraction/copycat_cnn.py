@@ -53,7 +53,7 @@ class CopycatCNN(Attack):
         :type batch_size: `int`
         :param nb_epochs: Number of epochs to use for training.
         :type nb_epochs: `int`
-        :param nb_stolen: Number of examples to be stolen.
+        :param nb_stolen: Number of queries submitted to the victim classifier to steal it.
         :type nb_stolen: `int`
         """
         super(CopycatCNN, self).__init__(classifier=classifier)
@@ -136,7 +136,7 @@ class CopycatCNN(Attack):
 
         :param nb_epochs: Number of epochs to use for training.
         :type nb_epochs: `int`
-        :param nb_stolen: Number of examples to be stolen.
+        :param nb_stolen: Number of queries submitted to the victim classifier to steal it.
         :type nb_stolen: `int`
         """
         # Save attack-specific parameters
@@ -146,6 +146,6 @@ class CopycatCNN(Attack):
             raise ValueError("The number of epochs must be a positive integer.")
 
         if not isinstance(self.nb_stolen, (int, np.int)) or self.nb_stolen <= 0:
-            raise ValueError("The number of examples to be stolen must be a positive integer.")
+            raise ValueError("The number of queries submitted to the victim classifier must be a positive integer.")
 
         return True
