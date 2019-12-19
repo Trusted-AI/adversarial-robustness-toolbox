@@ -112,8 +112,9 @@ class TestCopycatCNN(unittest.TestCase):
                                            train=train, loss=loss, learning=None, sess=sess)
 
         # Create attack
-        copycat_cnn = CopycatCNN(classifier=victim_tfc, batch_size=BATCH_SIZE, nb_epochs=NB_EPOCHS, nb_stolen=NB_STOLEN)
-        thieved_tfc = copycat_cnn.generate(x=self.x_train, thieved_classifier=thieved_tfc)
+        copycat_cnn = CopycatCNN(classifier=victim_tfc, batch_size_query=BATCH_SIZE, batch_size_fit=BATCH_SIZE,
+                                 nb_epochs=NB_EPOCHS, nb_stolen=NB_STOLEN)
+        thieved_tfc = copycat_cnn.extract(x=self.x_train, thieved_classifier=thieved_tfc)
 
         victim_preds = np.argmax(victim_tfc.predict(x=self.x_train[:100]), axis=1)
         thieved_preds = np.argmax(thieved_tfc.predict(x=self.x_train[:100]), axis=1)
@@ -148,8 +149,9 @@ class TestCopycatCNN(unittest.TestCase):
         thieved_krc = KerasClassifier(model, clip_values=(0, 1), use_logits=False)
 
         # Create attack
-        copycat_cnn = CopycatCNN(classifier=victim_krc, batch_size=BATCH_SIZE, nb_epochs=NB_EPOCHS, nb_stolen=NB_STOLEN)
-        thieved_krc = copycat_cnn.generate(x=self.x_train, thieved_classifier=thieved_krc)
+        copycat_cnn = CopycatCNN(classifier=victim_krc, batch_size_fit=BATCH_SIZE, batch_size_query=BATCH_SIZE,
+                                 nb_epochs=NB_EPOCHS, nb_stolen=NB_STOLEN)
+        thieved_krc = copycat_cnn.extract(x=self.x_train, thieved_classifier=thieved_krc)
 
         victim_preds = np.argmax(victim_krc.predict(x=self.x_train[:100]), axis=1)
         thieved_preds = np.argmax(thieved_krc.predict(x=self.x_train[:100]), axis=1)
@@ -210,10 +212,11 @@ class TestCopycatCNN(unittest.TestCase):
                                         nb_classes=10, clip_values=(0, 1))
 
         # Create attack
-        copycat_cnn = CopycatCNN(classifier=victim_ptc, batch_size=BATCH_SIZE, nb_epochs=NB_EPOCHS, nb_stolen=NB_STOLEN)
+        copycat_cnn = CopycatCNN(classifier=victim_ptc, batch_size_fit=BATCH_SIZE, batch_size_query=BATCH_SIZE,
+                                 nb_epochs=NB_EPOCHS, nb_stolen=NB_STOLEN)
 
         self.x_train = np.swapaxes(self.x_train, 1, 3)
-        thieved_ptc = copycat_cnn.generate(x=self.x_train, thieved_classifier=thieved_ptc)
+        thieved_ptc = copycat_cnn.extract(x=self.x_train, thieved_classifier=thieved_ptc)
         victim_preds = np.argmax(victim_ptc.predict(x=self.x_train[:100]), axis=1)
         thieved_preds = np.argmax(thieved_ptc.predict(x=self.x_train[:100]), axis=1)
         self.x_train = np.swapaxes(self.x_train, 1, 3)
@@ -264,8 +267,9 @@ class TestCopycatCNNVectors(unittest.TestCase):
                                            train=train, loss=loss, learning=None, sess=sess, channel_index=1)
 
         # Create attack
-        copycat_cnn = CopycatCNN(classifier=victim_tfc, batch_size=BATCH_SIZE, nb_epochs=NB_EPOCHS, nb_stolen=NB_STOLEN)
-        thieved_tfc = copycat_cnn.generate(x=self.x_train, thieved_classifier=thieved_tfc)
+        copycat_cnn = CopycatCNN(classifier=victim_tfc, batch_size_fit=BATCH_SIZE, batch_size_query=BATCH_SIZE,
+                                 nb_epochs=NB_EPOCHS, nb_stolen=NB_STOLEN)
+        thieved_tfc = copycat_cnn.extract(x=self.x_train, thieved_classifier=thieved_tfc)
 
         victim_preds = np.argmax(victim_tfc.predict(x=self.x_train[:100]), axis=1)
         thieved_preds = np.argmax(thieved_tfc.predict(x=self.x_train[:100]), axis=1)
@@ -298,8 +302,9 @@ class TestCopycatCNNVectors(unittest.TestCase):
         thieved_krc = KerasClassifier(model, clip_values=(0, 1), use_logits=False, channel_index=1)
 
         # Create attack
-        copycat_cnn = CopycatCNN(classifier=victim_krc, batch_size=BATCH_SIZE, nb_epochs=NB_EPOCHS, nb_stolen=NB_STOLEN)
-        thieved_krc = copycat_cnn.generate(x=self.x_train, thieved_classifier=thieved_krc)
+        copycat_cnn = CopycatCNN(classifier=victim_krc, batch_size_fit=BATCH_SIZE, batch_size_query=BATCH_SIZE,
+                                 nb_epochs=NB_EPOCHS, nb_stolen=NB_STOLEN)
+        thieved_krc = copycat_cnn.extract(x=self.x_train, thieved_classifier=thieved_krc)
 
         victim_preds = np.argmax(victim_krc.predict(x=self.x_train[:100]), axis=1)
         thieved_preds = np.argmax(thieved_krc.predict(x=self.x_train[:100]), axis=1)
@@ -351,8 +356,9 @@ class TestCopycatCNNVectors(unittest.TestCase):
                                         nb_classes=3, clip_values=(0, 1), channel_index=1)
 
         # Create attack
-        copycat_cnn = CopycatCNN(classifier=victim_ptc, batch_size=BATCH_SIZE, nb_epochs=NB_EPOCHS, nb_stolen=NB_STOLEN)
-        thieved_ptc = copycat_cnn.generate(x=self.x_train, thieved_classifier=thieved_ptc)
+        copycat_cnn = CopycatCNN(classifier=victim_ptc, batch_size_fit=BATCH_SIZE, batch_size_query=BATCH_SIZE,
+                                 nb_epochs=NB_EPOCHS, nb_stolen=NB_STOLEN)
+        thieved_ptc = copycat_cnn.extract(x=self.x_train, thieved_classifier=thieved_ptc)
 
         victim_preds = np.argmax(victim_ptc.predict(x=self.x_train[:100]), axis=1)
         thieved_preds = np.argmax(thieved_ptc.predict(x=self.x_train[:100]), axis=1)
