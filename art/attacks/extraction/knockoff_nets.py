@@ -61,7 +61,7 @@ class KnockoffNets(ExtractionAttack):
         :type nb_stolen: `int`
         :param sampling_strategy: Sampling strategy, either `random` or `adaptive`.
         :type sampling_strategy: `string`
-        :param reward: Reward type, in ['cert', 'div', 'loss', 'all']
+        :param reward: Reward type, in ['cert', 'div', 'loss', 'all'].
         :type reward: `string`
         """
         super(KnockoffNets, self).__init__(classifier=classifier)
@@ -145,18 +145,38 @@ class KnockoffNets(ExtractionAttack):
         """
         Take in a dictionary of parameters and applies attack-specific checks before saving them as attributes.
 
+        :param batch_size_fit: Size of batches for fitting the thieved classifier.
+        :type batch_size_fit: `int`
+        :param batch_size_query: Size of batches for querying the victim classifier.
+        :type batch_size_query: `int`
         :param nb_epochs: Number of epochs to use for training.
         :type nb_epochs: `int`
-        :param nb_stolen: Number of examples to be stolen.
+        :param nb_stolen: Number of queries submitted to the victim classifier to steal it.
         :type nb_stolen: `int`
+        :param sampling_strategy: Sampling strategy, either `random` or `adaptive`.
+        :type sampling_strategy: `string`
+        :param reward: Reward type, in ['cert', 'div', 'loss', 'all'].
+        :type reward: `string`
         """
         # Save attack-specific parameters
-        super(CopycatCNN, self).set_params(**kwargs)
+        super(KnockoffNets, self).set_params(**kwargs)
+
+        if not isinstance(self.batch_size_fit, (int, np.int)) or self.batch_size_fit <= 0:
+            raise ValueError("The size of batches for fitting the thieved classifier must be a positive integer.")
+
+        if not isinstance(self.batch_size_query, (int, np.int)) or self.batch_size_query <= 0:
+            raise ValueError("The size of batches for querying the victim classifier must be a positive integer.")
 
         if not isinstance(self.nb_epochs, (int, np.int)) or self.nb_epochs <= 0:
             raise ValueError("The number of epochs must be a positive integer.")
 
         if not isinstance(self.nb_stolen, (int, np.int)) or self.nb_stolen <= 0:
-            raise ValueError("The number of examples to be stolen must be a positive integer.")
+            raise ValueError("The number of queries submitted to the victim classifier must be a positive integer.")
+
+        if self.sampling_strategy not in ['random', 'adaptive']:
+            raise ValueError("Sampling strategy must be either `random` or `adaptive`.")
+
+        if self.reward not in ['cert', 'div', 'loss', 'all']:
+            raise ValueError("Reward type must be in ['cert', 'div', 'loss', 'all'].")
 
         return True
