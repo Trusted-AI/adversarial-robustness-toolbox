@@ -289,7 +289,7 @@ class TestCopycatCNNVectors(unittest.TestCase):
         :return:
         """
         # Build KerasClassifier
-        victim_krc, _ = get_iris_classifier_kr()
+        victim_krc = get_iris_classifier_kr()
 
         # Create simple CNN
         model = Sequential()
