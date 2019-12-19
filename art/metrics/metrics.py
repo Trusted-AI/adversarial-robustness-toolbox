@@ -38,12 +38,7 @@ logger = logging.getLogger(__name__)
 
 SUPPORTED_METHODS = {
     "fgsm": {"class": FastGradientMethod, "params": {"eps_step": 0.1, "eps_max": 1., "clip_min": 0., "clip_max": 1.}},
-    "hsj":{"class": HopSkipJump, "params":{
-                  'max_iter': 50,
-                  'max_eval': 10000,
-                  'init_eval': 100,
-                  'init_size': 100,
-                  }}
+    "hsj":{"class": HopSkipJump, "params":{'max_iter': 50, 'max_eval': 10000, 'init_eval': 100,'init_size': 100}}
     # "jsma": {"class": SaliencyMapMethod, "params": {"theta": 1., "gamma": 0.01, "clip_min": 0., "clip_max": 1.}}
 }
 
@@ -91,8 +86,6 @@ def empirical_robustness(classifier, x, attack_name, attack_params=None):
                           be used as the norm for calculating the robustness; otherwise the standard Euclidean distance
                           is used (norm=2).
     :type attack_params: `dict`
-    :param round: Round the features if they are one-hot encoded
-    :type round: 'bool'
     :return: The average empirical robustness computed on `x`
     :rtype: `float`
     """
