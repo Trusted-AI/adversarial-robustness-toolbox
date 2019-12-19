@@ -73,14 +73,17 @@ class FunctionallyEquivalentExtraction(ExtractionAttack):
         self.w_1 = None  # weight matrix of second dense layer
         self.b_1 = None  # Bias vector of second dense layer
 
-    def extract(self, x, delta_0=0.05, fraction_true=0.3, rel_diff_slope=0.00001, rel_diff_value=0.000001,
+    def extract(self, x, y=None, delta_0=0.05, fraction_true=0.3, rel_diff_slope=0.00001, rel_diff_value=0.000001,
                 delta_init_value=0.1, delta_value_max=50, d2_min=0.0004, d_step=0.01, delta_sign=0.02,
-                unit_vector_scale=10000):
+                unit_vector_scale=10000, **kwargs):
         """
         Extract the targeted model.
 
         :param x: Samples of input data of shape (num_samples, num_features).
         :type x: `np.ndarray`
+        :param y: Correct labels or target labels for `x`, depending if the attack is targeted
+               or not. This parameter is only used by some of the attacks.
+        :type y: `np.ndarray`
         :param delta_0: Initial step size of binary search
         :type delta_0: `float`
         :param fraction_true: Fraction of output predictions that have to fulfill criteria for critical point
