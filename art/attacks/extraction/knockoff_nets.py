@@ -26,8 +26,8 @@ import logging
 
 import numpy as np
 
-from art import NUMPY_DTYPE
-from art.attacks.attack import Attack
+from art.config import ART_NUMPY_DTYPE
+from art.attacks.attack import ExtractionAttack
 from art.classifiers.classifier import Classifier
 from art.utils import to_categorical
 
@@ -35,32 +35,43 @@ from art.utils import to_categorical
 logger = logging.getLogger(__name__)
 
 
-class KnockoffNets(Attack):
+class KnockoffNets(ExtractionAttack):
     """
     Implementation of the Knockoff Nets attack from Orekondy et al. (2018).
 
     | Paper link: https://arxiv.org/abs/1812.02766
     """
-    attack_params = Attack.attack_params + ['batch_size', 'nb_epochs', 'nb_stolen']
+    attack_params = ExtractionAttack.attack_params + ['batch_size_fit', 'batch_size_query', 'nb_epochs',
+                                                      'nb_stolen', 'sampling_strategy', 'reward']
 
-    def __init__(self, classifier, batch_size=1, nb_epochs=10, nb_stolen=1):
+    def __init__(self, classifier, batch_size_fit=1, batch_size_query=1, nb_epochs=10, nb_stolen=1,
+                 sampling_strategy='random', reward='all'):
         """
         Create a copycat cnn attack instance.
 
         :param classifier: A victim classifier.
         :type classifier: :class:`.Classifier`
-        :param batch_size: Size of batches.
-        :type batch_size: `int`
+        :param batch_size_fit: Size of batches for fitting the thieved classifier.
+        :type batch_size_fit: `int`
+        :param batch_size_query: Size of batches for querying the victim classifier.
+        :type batch_size_query: `int`
         :param nb_epochs: Number of epochs to use for training.
         :type nb_epochs: `int`
-        :param nb_stolen: Number of examples to be stolen.
+        :param nb_stolen: Number of queries submitted to the victim classifier to steal it.
         :type nb_stolen: `int`
+        :param sampling_strategy: Sampling strategy, either `random` or `adaptive`.
+        :type sampling_strategy: `string`
+        :param reward: Reward type, in ['cert', 'div', 'loss', 'all']
+        :type reward: `string`
         """
-        super(CopycatCNN, self).__init__(classifier=classifier)
+        super(KnockoffNets, self).__init__(classifier=classifier)
 
-        params = {'batch_size': batch_size,
+        params = {'batch_size_fit': batch_size_fit,
+                  'batch_size_query': batch_size_query,
                   'nb_epochs': nb_epochs,
-                  'nb_stolen': nb_stolen}
+                  'nb_stolen': nb_stolen,
+                  'sampling_strategy': sampling_strategy,
+                  'reward': reward}
         self.set_params(**params)
 
     def generate(self, x, y=None, **kwargs):
