@@ -52,6 +52,9 @@ ART正在不断发展中。 我们欢迎您的反馈，错误报告和对ART建�
 **中毒攻击**
 * 对SVM的中毒攻击 ([Biggio et al., 2013](https://arxiv.org/abs/1206.6389))
 
+**提取攻击:**
+* 功能等效提取 ([Jagielski et al., 2019](https://arxiv.org/abs/1909.01838))
+
 **防御：**
 * 温度计编码 ([Buckman et al., 2018](https://openreview.net/forum?id=S18Su--CW))
 * 总方差最小化 ([Guo et al., 2018](https://openreview.net/forum?id=SyJ7ClWCb))

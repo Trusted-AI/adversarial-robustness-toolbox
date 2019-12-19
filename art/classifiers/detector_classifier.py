@@ -295,7 +295,7 @@ class DetectorClassifier(ClassifierNeuralNetwork, ClassifierGradients, Classifie
         :param filename: Name of the file where to store the model.
         :type filename: `str`
         :param path: Path of the folder where to store the model. If no path is specified, the model will be stored in
-                     the default data location of the library `DATA_PATH`.
+                     the default data location of the library `ART_DATA_PATH`.
         :type path: `str`
         :return: None
         """

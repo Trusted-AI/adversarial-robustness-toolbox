@@ -19,6 +19,10 @@
 This module implements methods performing poisoning detection based on activations clustering.
 
 | Paper link: https://arxiv.org/abs/1811.03728
+
+| Please keep in mind the limitations of defences. For more information on the limitations of this
+defence, see https://arxiv.org/abs/1905.13409 . For details on how to evaluate classifier security
+in general, see https://arxiv.org/abs/1902.06705
 """
 from __future__ import absolute_import, division, print_function, unicode_literals
 
@@ -41,6 +45,10 @@ class ActivationDefence(PoisonFilteringDefence):
     Method from Chen et al., 2018 performing poisoning detection based on activations clustering.
 
     | Paper link: https://arxiv.org/abs/1811.03728
+
+    | Please keep in mind the limitations of defences. For more information on the limitations of this
+    defence, see https://arxiv.org/abs/1905.13409 . For details on how to evaluate classifier security
+    in general, see https://arxiv.org/abs/1902.06705
     """
     defence_params = ['nb_clusters', 'clustering_method', 'nb_dims', 'reduce', 'cluster_analysis']
     valid_clustering = ['KMeans']
@@ -324,7 +332,7 @@ class ActivationDefence(PoisonFilteringDefence):
     @staticmethod
     def _pickle_classifier(classifier, file_name):
         """
-        Pickles the self.classifier and stores it using the provided file_name in folder `art.DATA_PATH`.
+        Pickles the self.classifier and stores it using the provided file_name in folder `art.ART_DATA_PATH`.
 
         :param classifier: Classifier to be pickled.
         :type classifier: :class:`.Classifier`
@@ -332,8 +340,8 @@ class ActivationDefence(PoisonFilteringDefence):
         :return: None
         """
         import pickle
-        from art import DATA_PATH
-        full_path = os.path.join(DATA_PATH, file_name)
+        from art.config import ART_DATA_PATH
+        full_path = os.path.join(ART_DATA_PATH, file_name)
         folder = os.path.split(full_path)[0]
         if not os.path.exists(folder):
             os.makedirs(folder)
@@ -344,15 +352,15 @@ class ActivationDefence(PoisonFilteringDefence):
     @staticmethod
     def _unpickle_classifier(file_name):
         """
-        Unpickles classifier using the filename provided. Function assumes that the pickle is in `art.DATA_PATH`.
+        Unpickles classifier using the filename provided. Function assumes that the pickle is in `art.ART_DATA_PATH`.
 
         :param file_name:
         :return:
         """
-        from art import DATA_PATH
+        from art.config import ART_DATA_PATH
         import pickle
 
-        full_path = os.path.join(DATA_PATH, file_name)
+        full_path = os.path.join(ART_DATA_PATH, file_name)
         logger.info('Loading classifier from %s', full_path)
         with open(full_path, 'rb') as f_classifier:
             loaded_classifier = pickle.load(f_classifier)
@@ -366,20 +374,20 @@ class ActivationDefence(PoisonFilteringDefence):
         :param file_name: File name without directory
         :return: None
         """
-        from art import DATA_PATH
-        full_path = os.path.join(DATA_PATH, file_name)
+        from art.config import ART_DATA_PATH
+        full_path = os.path.join(ART_DATA_PATH, file_name)
         os.remove(full_path)
 
     def visualize_clusters(self, x_raw, save=True, folder='.', **kwargs):
         """
         This function creates the sprite/mosaic visualization for clusters. When save=True,
-        it also stores a sprite (mosaic) per cluster in DATA_PATH.
+        it also stores a sprite (mosaic) per cluster in ART_DATA_PATH.
 
         :param x_raw: Images used to train the classifier (before pre-processing)
         :type x_raw: `np.darray`
         :param save: Boolean specifying if image should be saved
         :type  save: `bool`
-        :param folder: Directory where the sprites will be saved inside DATA_PATH folder
+        :param folder: Directory where the sprites will be saved inside ART_DATA_PATH folder
         :type folder: `str`
         :param kwargs: a dictionary of cluster-analysis-specific parameters
         :type kwargs: `dict`
@@ -417,11 +425,11 @@ class ActivationDefence(PoisonFilteringDefence):
     def plot_clusters(self, save=True, folder='.', **kwargs):
         """
         Creates a 3D-plot to visualize each cluster each cluster is assigned a different color in the plot. When
-        save=True, it also stores the 3D-plot per cluster in DATA_PATH.
+        save=True, it also stores the 3D-plot per cluster in ART_DATA_PATH.
 
         :param save: Boolean specifying if image should be saved
         :type  save: `bool`
-        :param folder: Directory where the sprites will be saved inside DATA_PATH folder
+        :param folder: Directory where the sprites will be saved inside ART_DATA_PATH folder
         :type folder: `str`
         :param kwargs: a dictionary of cluster-analysis-specific parameters
         :type kwargs: `dict`

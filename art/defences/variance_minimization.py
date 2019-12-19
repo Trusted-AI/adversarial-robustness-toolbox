@@ -19,6 +19,10 @@
 This module implements the total variance minimization defence `TotalVarMin`.
 
 | Paper link: https://openreview.net/forum?id=SyJ7ClWCb
+
+| Please keep in mind the limitations of defences. For more information on the limitations of this defence,
+see https://arxiv.org/abs/1802.00420 . For details on how to evaluate classifier security in general, see
+https://arxiv.org/abs/1902.06705
 """
 from __future__ import absolute_import, division, print_function, unicode_literals
 
@@ -28,7 +32,7 @@ import numpy as np
 from scipy.optimize import minimize
 
 from art.defences.preprocessor import Preprocessor
-from art import NUMPY_DTYPE
+from art.config import ART_NUMPY_DTYPE
 
 logger = logging.getLogger(__name__)
 
@@ -38,6 +42,10 @@ class TotalVarMin(Preprocessor):
     Implement the total variance minimization defence approach.
 
     | Paper link: https://openreview.net/forum?id=SyJ7ClWCb
+
+    | Please keep in mind the limitations of defences. For more information on the limitations of this
+    defence, see https://arxiv.org/abs/1802.00420 . For details on how to evaluate classifier security in general,
+    see https://arxiv.org/abs/1902.06705
     """
     params = ['prob', 'norm', 'lamb', 'solver', 'max_iter', 'clip_values']
 
@@ -103,7 +111,7 @@ class TotalVarMin(Preprocessor):
         if self.clip_values is not None:
             np.clip(x_preproc, self.clip_values[0], self.clip_values[1], out=x_preproc)
 
-        return x_preproc.astype(NUMPY_DTYPE), y
+        return x_preproc.astype(ART_NUMPY_DTYPE), y
 
     def estimate_gradient(self, x, grad):
         return grad

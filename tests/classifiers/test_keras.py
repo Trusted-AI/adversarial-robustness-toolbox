@@ -25,7 +25,6 @@ import tempfile
 import shutil
 # import pickle
 
-import tensorflow as tf
 import numpy as np
 import keras
 import keras.backend as k
@@ -36,7 +35,7 @@ from keras.callbacks import LearningRateScheduler
 from keras.applications.resnet50 import ResNet50, decode_predictions
 from keras.preprocessing.image import load_img, img_to_array
 
-# from art import DATA_PATH
+# from art.config import ART_DATA_PATH
 from art.classifiers import KerasClassifier
 from art.classifiers.keras import generator_fit
 from art.defences import FeatureSqueezing, JpegCompression, SpatialSmoothing
@@ -50,8 +49,36 @@ BATCH_SIZE = 10
 NB_TRAIN = 500
 NB_TEST = 100
 
-@unittest.skipIf(tf.__version__[0] == '2', reason='Skip unittests for TensorFlow v2 until Keras supports TensorFlow v2 '
-                                                  'as backend.')
+
+def _functional_model():
+    in_layer = Input(shape=(28, 28, 1), name="input0")
+    layer = Conv2D(32, kernel_size=(3, 3), activation='relu')(in_layer)
+    layer = Conv2D(64, (3, 3), activation='relu')(layer)
+    layer = MaxPooling2D(pool_size=(2, 2))(layer)
+    layer = Dropout(0.25)(layer)
+    layer = Flatten()(layer)
+    layer = Dense(128, activation='relu')(layer)
+    layer = Dropout(0.5)(layer)
+    out_layer = Dense(10, activation='softmax', name="output0")(layer)
+
+    in_layer_2 = Input(shape=(28, 28, 1), name="input1")
+    layer = Conv2D(32, kernel_size=(3, 3), activation='relu')(in_layer_2)
+    layer = Conv2D(64, (3, 3), activation='relu')(layer)
+    layer = MaxPooling2D(pool_size=(2, 2))(layer)
+    layer = Dropout(0.25)(layer)
+    layer = Flatten()(layer)
+    layer = Dense(128, activation='relu')(layer)
+    layer = Dropout(0.5)(layer)
+    out_layer_2 = Dense(10, activation='softmax', name="output1")(layer)
+
+    model = Model(inputs=[in_layer, in_layer_2], outputs=[out_layer, out_layer_2])
+
+    model.compile(loss=keras.losses.categorical_crossentropy, optimizer=keras.optimizers.Adadelta(),
+                  metrics=['accuracy'], loss_weights=[1.0, 1.0])
+
+    return model
+
+
 class TestKerasClassifier(unittest.TestCase):
     """
     This class tests the Keras classifier.
@@ -70,7 +97,7 @@ class TestKerasClassifier(unittest.TestCase):
         cls.y_test = y_test[:NB_TEST]
 
         # Load small Keras model
-        cls.functional_model = cls.functional_model()
+        cls.functional_model = _functional_model()
         cls.functional_model.fit([cls.x_train, cls.x_train], [cls.y_train, cls.y_train], nb_epoch=3)
 
         # Temporary folder for tests
@@ -93,35 +120,6 @@ class TestKerasClassifier(unittest.TestCase):
     def setUp(self):
         master_seed(1234)
 
-    @staticmethod
-    def functional_model():
-        in_layer = Input(shape=(28, 28, 1), name="input0")
-        layer = Conv2D(32, kernel_size=(3, 3), activation='relu')(in_layer)
-        layer = Conv2D(64, (3, 3), activation='relu')(layer)
-        layer = MaxPooling2D(pool_size=(2, 2))(layer)
-        layer = Dropout(0.25)(layer)
-        layer = Flatten()(layer)
-        layer = Dense(128, activation='relu')(layer)
-        layer = Dropout(0.5)(layer)
-        out_layer = Dense(10, activation='softmax', name="output0")(layer)
-
-        in_layer_2 = Input(shape=(28, 28, 1), name="input1")
-        layer = Conv2D(32, kernel_size=(3, 3), activation='relu')(in_layer_2)
-        layer = Conv2D(64, (3, 3), activation='relu')(layer)
-        layer = MaxPooling2D(pool_size=(2, 2))(layer)
-        layer = Dropout(0.25)(layer)
-        layer = Flatten()(layer)
-        layer = Dense(128, activation='relu')(layer)
-        layer = Dropout(0.5)(layer)
-        out_layer_2 = Dense(10, activation='softmax', name="output1")(layer)
-
-        model = Model(inputs=[in_layer, in_layer_2], outputs=[out_layer, out_layer_2])
-
-        model.compile(loss=keras.losses.categorical_crossentropy, optimizer=keras.optimizers.Adadelta(),
-                      metrics=['accuracy'], loss_weights=[1.0, 1.0])
-
-        return model
-
     def test_fit(self):
         labels = np.argmax(self.y_test, axis=1)
         classifier = get_classifier_kr()
@@ -133,7 +131,7 @@ class TestKerasClassifier(unittest.TestCase):
         logger.info('Accuracy: %.2f%%', (accuracy_2 * 100))
 
         self.assertEqual(accuracy, 0.32)
-        self.assertEqual(accuracy_2, 0.73)
+        self.assertAlmostEqual(accuracy_2, 0.735, delta=0.02)
 
     def test_fit_generator(self):
         classifier = get_classifier_kr()
@@ -143,12 +141,12 @@ class TestKerasClassifier(unittest.TestCase):
 
         gen = generator_fit(self.x_train, self.y_train, batch_size=BATCH_SIZE)
         data_gen = KerasDataGenerator(generator=gen, size=NB_TRAIN, batch_size=BATCH_SIZE)
-        classifier.fit_generator(generator=data_gen, nb_epochs=2)
+        classifier.fit_generator(generator=data_gen, nb_epochs=3)
         accuracy_2 = np.sum(np.argmax(classifier.predict(self.x_test), axis=1) == labels) / NB_TEST
         logger.info('Accuracy: %.2f%%', (accuracy_2 * 100))
 
         self.assertEqual(accuracy, 0.32)
-        self.assertEqual(accuracy_2, 0.36)
+        self.assertAlmostEqual(accuracy_2, 0.36, delta=0.02)
 
     def test_fit_image_generator(self):
         classifier = get_classifier_kr()
@@ -161,12 +159,12 @@ class TestKerasClassifier(unittest.TestCase):
         keras_gen.fit(self.x_train)
         data_gen = KerasDataGenerator(generator=keras_gen.flow(self.x_train, self.y_train, batch_size=BATCH_SIZE),
                                       size=NB_TRAIN, batch_size=BATCH_SIZE)
-        classifier.fit_generator(generator=data_gen, nb_epochs=2)
+        classifier.fit_generator(generator=data_gen, nb_epochs=5)
         accuracy_2 = np.sum(np.argmax(classifier.predict(self.x_test), axis=1) == labels_test) / NB_TEST
         logger.info('Accuracy: %.2f%%', (accuracy_2 * 100))
 
         self.assertEqual(accuracy, 0.32)
-        self.assertAlmostEqual(accuracy_2, 0.35, delta=0.02)
+        self.assertAlmostEqual(accuracy_2, 0.35, delta=0.04)
 
     def test_fit_kwargs(self):
 
@@ -267,7 +265,11 @@ class TestKerasClassifier(unittest.TestCase):
         np.testing.assert_array_almost_equal(gradients[0, 0, :, 14, 0], expected_gradients_2, decimal=4)
 
         # Test a set of gradients label = array
-        label = np.random.randint(5, size=NB_TEST)
+        # label = np.random.randint(5, size=NB_TEST)
+        label = np.asarray([3, 4, 4, 0, 1, 1, 1, 2, 3, 4, 4, 2, 2, 0, 0, 4, 0, 1, 2, 0, 3, 4, 2, 2, 3, 3, 0, 1, 3, 0, 3,
+                            2, 3, 4, 1, 3, 3, 3, 2, 1, 3, 4, 2, 3, 4, 1, 4, 0, 4, 1, 1, 4, 1, 4, 0, 1, 0, 0, 4, 0, 4, 2,
+                            3, 1, 2, 2, 4, 3, 4, 2, 2, 4, 4, 2, 1, 3, 2, 1, 4, 1, 0, 1, 2, 1, 2, 1, 2, 1, 1, 4, 1, 2, 4,
+                            0, 4, 1, 2, 1, 1, 3])
         gradients = classifier.class_gradient(self.x_test, label=label)
 
         self.assertEqual(gradients.shape, (NB_TEST, 1, 28, 28, 1))
@@ -362,7 +364,7 @@ class TestKerasClassifier(unittest.TestCase):
 
     # def test_pickle(self):
     #     filename = 'my_classifier.p'
-    #     full_path = os.path.join(DATA_PATH, filename)
+    #     full_path = os.path.join(ART_DATA_PATH, filename)
     #     folder = os.path.split(full_path)[0]
     #     if not os.path.exists(folder):
     #         os.makedirs(folder)
@@ -395,12 +397,144 @@ class TestKerasClassifier(unittest.TestCase):
         self.assertIn('input_layer=0, output_layer=0', repr_)
 
     def test_loss_functions(self):
-        loss_names = ['categorical_hinge', 'categorical_crossentropy', 'sparse_categorical_crossentropy',
-                      'binary_crossentropy', 'kullback_leibler_divergence', 'cosine_proximity']
 
-        for loss_name in loss_names:
-            classifier = get_classifier_kr(loss_name=loss_name)
-            classifier.fit(x=self.x_test, y=self.y_test, nb_epochs=1)
-            classifier.predict(x=self.x_test)
-            classifier.class_gradient(self.x_test, label=5)
-            classifier.loss_gradient(x=self.x_test, y=self.y_test)
+        # prediction and class_gradient should be independent of logits/probabilities and of loss function
+
+        y_test_pred_expected = np.asarray([7, 1, 1, 4, 4, 1, 4, 4, 4, 4, 4, 4, 4, 4, 1, 4, 4, 7, 8, 4, 4, 4, 4, 3, 4, 4,
+                                           7, 4, 4, 4, 7, 4, 3, 4, 7, 0, 7, 7, 1, 1, 7, 7, 4, 0, 1, 4, 4, 4, 4, 4, 4, 7,
+                                           4, 4, 4, 4, 4, 1, 4, 4, 7, 4, 4, 4, 4, 4, 4, 4, 3, 0, 7, 4, 0, 1, 7, 4, 4, 7,
+                                           4, 4, 4, 4, 4, 7, 4, 4, 4, 4, 4, 1, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4])
+
+        class_gradient_probabilities_expected = np.asarray([0.0000000e+00, 0.0000000e+00, 0.0000000e+00, 2.3582461e-03,
+                                                            4.8802234e-04, 1.6699843e-03, -6.4777887e-05,
+                                                            -1.4215634e-03, -1.3359448e-04, 2.0448549e-03,
+                                                            2.8171093e-04, 1.9665064e-04, 1.5335126e-03, 1.7000455e-03,
+                                                            -2.0136381e-04, 6.4588618e-04, 2.0524357e-03, 2.1990810e-03,
+                                                            8.3692279e-04, 0.0000000e+00, 0.0000000e+00, 0.0000000e+00,
+                                                            0.0000000e+00, 0.0000000e+00, 0.0000000e+00, 0.0000000e+00,
+                                                            0.0000000e+00, 0.0000000e+00])
+
+        class_gradient_logits_expected = np.asarray([0.0, 0.0, 0.0, 0.08147776, 0.01847786, 0.07045883, -0.00269106,
+                                                     -0.03189164, 0.01643312, 0.1185048, 0.02166386, 0.00905327,
+                                                     0.06592228, 0.04471018, -0.02879605, 0.04668707, 0.06856851,
+                                                     0.06857751, 0.00657996, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0,
+                                                     0.0])
+
+        def _run_tests(_loss_name, _loss_type, _y_test_pred_expected, _class_gradient_probabilities_expected,
+                       _loss_gradient_expected, _from_logits):
+            master_seed(1234)
+            classifier = get_classifier_kr(loss_name=_loss_name, loss_type=_loss_type, from_logits=_from_logits)
+
+            y_test_pred = np.argmax(classifier.predict(x=self.x_test), axis=1)
+            np.testing.assert_array_equal(y_test_pred, _y_test_pred_expected)
+
+            class_gradient = classifier.class_gradient(self.x_test, label=5)
+            np.testing.assert_array_almost_equal(class_gradient[99, 0, 14, :, 0],
+                                                 _class_gradient_probabilities_expected)
+
+            loss_gradient = classifier.loss_gradient(x=self.x_test, y=self.y_test)
+            np.testing.assert_array_almost_equal(loss_gradient[99, 14, :, 0], _loss_gradient_expected)
+
+        # ================= #
+        # categorical_hinge #
+        # ================= #
+
+        loss_name = 'categorical_hinge'
+
+        # loss_gradient should be the same for probabilities and logits but dependent on loss function
+
+        loss_gradient_expected = np.asarray([0.0, 0.0, 0.0, -0.00644846, -0.00274792, -0.01334668, -0.01417109,
+                                             0.03608133, 0.00670766, 0.02741555, -0.00938758, 0.002172, 0.01400783,
+                                             -0.00224488, -0.01445661, 0.01775403, 0.00643058, 0.00382644, -0.01077214,
+                                             0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0])
+
+        # testing with probabilities
+
+        for loss_type in ['function_losses']:
+            logger.info('loss_name: {}, loss_type: {}, output: probabilities'.format(loss_name, loss_type))
+
+            _run_tests(loss_name, loss_type, y_test_pred_expected, class_gradient_probabilities_expected,
+                       loss_gradient_expected, _from_logits=False)
+
+        # ======================== #
+        # categorical_crossentropy #
+        # ======================== #
+
+        loss_name = 'categorical_crossentropy'
+
+        # loss_gradient should be the same for probabilities and logits but dependent on loss function
+
+        loss_gradient_expected = np.asarray([0.0, 0.0, 0.0, -0.09573442, -0.0089094, 0.01402334, 0.0258659, 0.08960329,
+                                             0.10324767, 0.10624839, 0.06578761, -0.00018638, -0.01345262, -0.08770822,
+                                             -0.04990875, 0.04288402, -0.06845165, -0.08588978, -0.08277036, 0.0, 0.0,
+                                             0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0])
+
+        # testing with probabilities
+
+        for loss_type in ['label', 'function_losses', 'function_backend']:
+            logger.info('loss_name: {}, loss_type: {}, output: probabilities'.format(loss_name, loss_type))
+
+            _run_tests(loss_name, loss_type, y_test_pred_expected, class_gradient_probabilities_expected,
+                       loss_gradient_expected, _from_logits=False)
+
+        # testing with logits
+
+        for loss_type in ['function_backend']:
+            logger.info('loss_name: {}, loss_type: {}, output: logits'.format(loss_name, loss_type))
+
+            _run_tests(loss_name, loss_type, y_test_pred_expected, class_gradient_logits_expected,
+                       loss_gradient_expected, _from_logits=True)
+
+        # =============================== #
+        # sparse_categorical_crossentropy #
+        # =============================== #
+
+        loss_name = 'sparse_categorical_crossentropy'
+
+        # loss_gradient should be the same for probabilities and logits but dependent on loss function
+
+        loss_gradient_expected = np.asarray([0.0, 0.0, 0.0, -0.09573442, -0.0089094, 0.01402334, 0.0258659,
+                                             0.08960329, 0.10324767, 0.10624839, 0.06578761, -0.00018638,
+                                             -0.01345262, -0.08770822, -0.04990875, 0.04288402, -0.06845165,
+                                             -0.08588978, -0.08277036, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0])
+
+        # testing with probabilities
+
+        for loss_type in ['label', 'function_losses', 'function_backend']:
+            logger.info('loss_name: {}, loss_type: {}, output: probabilities'.format(loss_name, loss_type))
+
+            _run_tests(loss_name, loss_type, y_test_pred_expected, class_gradient_probabilities_expected,
+                       loss_gradient_expected, _from_logits=False)
+
+        # testing with logits
+
+        for loss_type in ['function_backend']:
+            logger.info('loss_name: {}, loss_type: {}, output: logits'.format(loss_name, loss_type))
+
+            _run_tests(loss_name, loss_type, y_test_pred_expected, class_gradient_logits_expected,
+                       loss_gradient_expected, _from_logits=True)
+
+        # =========================== #
+        # kullback_leibler_divergence #
+        # =========================== #
+
+        loss_name = 'kullback_leibler_divergence'
+
+        # loss_gradient should be the same for probabilities and logits but dependent on loss function
+
+        loss_gradient_expected = np.asarray([0.0, 0.0, 0.0, -0.09573442, -0.0089094, 0.01402334, 0.0258659, 0.08960329,
+                                             0.10324767, 0.10624839, 0.06578761, -0.00018638, -0.01345262, -0.08770822,
+                                             -0.04990875, 0.04288402, -0.06845165, -0.08588978, -0.08277036, 0.0, 0.0,
+                                             0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0])
+
+        # testing with probabilities
+
+        for loss_type in ['function_losses']:
+            logger.info('loss_name: {}, loss_type: {}, output: logits'.format(loss_name, loss_type))
+
+            _run_tests(loss_name, loss_type, y_test_pred_expected, class_gradient_probabilities_expected,
+                       loss_gradient_expected, _from_logits=False)
+
+
+if __name__ == '__main__':
+    unittest.main()

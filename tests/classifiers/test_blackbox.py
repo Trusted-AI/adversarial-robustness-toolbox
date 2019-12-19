@@ -52,7 +52,6 @@ class TestBlackBoxClassifier(unittest.TestCase):
 
     def test_fit(self):
         classifier = get_classifier_bb()
-
         self.assertRaises(NotImplementedError, lambda: classifier.fit(self.x_train, self.y_train, batch_size=BATCH_SIZE,
                                                                       nb_epochs=2))
 
@@ -89,7 +88,7 @@ class TestBlackBoxClassifier(unittest.TestCase):
         filename = 'model.h5'
 
         classifier = get_classifier_bb()
-        
+
         self.assertRaises(NotImplementedError, lambda: classifier.save(filename, path=path))
 
     def test_repr(self):
@@ -100,4 +99,3 @@ class TestBlackBoxClassifier(unittest.TestCase):
         self.assertIn('clip_values=(0, 255)', repr_)
         self.assertIn('defences=None', repr_)
         self.assertIn('preprocessing=(0, 1)', repr_)
-

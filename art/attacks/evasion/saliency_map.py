@@ -26,23 +26,23 @@ import logging
 
 import numpy as np
 
-from art import NUMPY_DTYPE
+from art.config import ART_NUMPY_DTYPE
 from art.classifiers.classifier import ClassifierGradients
-from art.attacks.attack import Attack
-from art.utils import check_and_transform_label_format
+from art.attacks import EvasionAttack
+from art.utils import check_and_transform_label_format, compute_success
 
 logger = logging.getLogger(__name__)
 
 
-class SaliencyMapMethod(Attack):
+class SaliencyMapMethod(EvasionAttack):
     """
     Implementation of the Jacobian-based Saliency Map Attack (Papernot et al. 2016).
 
     | Paper link: https://arxiv.org/abs/1511.07528
     """
-    attack_params = Attack.attack_params + ['theta', 'gamma', 'batch_size']
+    attack_params = EvasionAttack.attack_params + ['theta', 'gamma', 'batch_size']
 
-    def __init__(self, classifier, theta=0.1, gamma=1., batch_size=1):
+    def __init__(self, classifier, theta=0.1, gamma=1.0, batch_size=1):
         """
         Create a SaliencyMapMethod instance.
 
@@ -82,7 +82,7 @@ class SaliencyMapMethod(Attack):
         # Initialize variables
         dims = list(x.shape[1:])
         self._nb_features = np.product(dims)
-        x_adv = np.reshape(x.astype(NUMPY_DTYPE), (-1, self._nb_features))
+        x_adv = np.reshape(x.astype(ART_NUMPY_DTYPE), (-1, self._nb_features))
         preds = np.argmax(self.classifier.predict(x, batch_size=self.batch_size), axis=1)
 
         # Determine target classes for attack
@@ -160,9 +160,9 @@ class SaliencyMapMethod(Attack):
             x_adv[batch_index_1:batch_index_2] = batch
 
         x_adv = np.reshape(x_adv, x.shape)
+
         logger.info('Success rate of JSMA attack: %.2f%%',
-                    (np.sum(np.argmax(self.classifier.predict(x, batch_size=self.batch_size), axis=1) != np.argmax(
-                        self.classifier.predict(x_adv, batch_size=self.batch_size), axis=1)) / x.shape[0]))
+                    100 * compute_success(self.classifier, x, y, x_adv, batch_size=self.batch_size))
 
         return x_adv
 

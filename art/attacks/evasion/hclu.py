@@ -28,13 +28,14 @@ import copy
 import numpy as np
 from scipy.optimize import minimize
 
-from art.attacks.attack import Attack
+from art.attacks import EvasionAttack
 from art.classifiers.GPy import GPyGaussianProcessClassifier
+from art.utils import compute_success
 
 logger = logging.getLogger(__name__)
 
 
-class HighConfidenceLowUncertainty(Attack):
+class HighConfidenceLowUncertainty(EvasionAttack):
     """
     Implementation of the High-Confidence-Low-Uncertainty (HCLU) adversarial example formulation by Grosse et al. (2018)
 
@@ -87,10 +88,12 @@ class HighConfidenceLowUncertainty(Attack):
             pred = args['classifier'].predict(x.reshape(1, -1))[0, 0]
             if args['class_zero']:
                 pred = 1.0 - pred
-            return (pred - 0.95).reshape(-1)
+            return (pred - args['conf']).reshape(-1)
 
         def constraint_unc(x, args):  # constraint for uncertainty
-            return (args['max_uncertainty'] - (args['classifier'].predict_uncertainty(x.reshape(1, -1))).reshape(-1))[0]
+            cur_unc = (args['classifier'].predict_uncertainty(
+                x.reshape(1, -1))).reshape(-1)
+            return (args['max_uncertainty'] - cur_unc)[0]
 
         bounds = []
         # adding bounds, to not go away from original data
@@ -100,12 +103,16 @@ class HighConfidenceLowUncertainty(Attack):
             # get properties for attack
             max_uncertainty = self.unc_increase * self.classifier.predict_uncertainty(x_adv[i].reshape(1, -1))
             class_zero = not self.classifier.predict(x_adv[i].reshape(1, -1))[0, 0] < 0.5
-            init_args = {'classifier': self.classifier, 'class_zero': class_zero, 'max_uncertainty': max_uncertainty}
-            constr_conf = {'type': 'ineq', 'fun': constraint_conf, 'args': (init_args,)}
-            constr_unc = {'type': 'ineq', 'fun': constraint_unc, 'args': (init_args,)}
+            init_args = {'classifier': self.classifier, 'class_zero': class_zero,
+                         'max_uncertainty': max_uncertainty, 'conf': self.conf}
+            constr_conf = {'type': 'ineq',
+                           'fun': constraint_conf, 'args': (init_args,)}
+            constr_unc = {'type': 'ineq',
+                          'fun': constraint_unc, 'args': (init_args,)}
             args = {'args': init_args, 'orig': x[i].reshape(-1)}
-            # #finally, run optimization
+            # finally, run optimization
             x_adv[i] = minimize(minfun, x_adv[i], args=args, bounds=bounds, constraints=[constr_conf, constr_unc])['x']
+        logger.info('Success rate of HCLU attack: %.2f%%', 100 * compute_success(self.classifier, x, y, x_adv))
         return x_adv
 
     def set_params(self, **kwargs):
@@ -118,10 +125,8 @@ class HighConfidenceLowUncertainty(Attack):
         """
         super(HighConfidenceLowUncertainty, self).set_params(**kwargs)
         if self.conf <= 0.5 or self.conf > 1.0:
-            raise ValueError(
-                "Confidence value has to bea value between 0.5 and 1.0.")
-        if self.unc_increase < 0.0:
-            raise ValueError(
-                "Uncertainty increase value has to be a positive number.")
+            raise ValueError("Confidence value has to be a value between 0.5 and 1.0.")
+        if self.unc_increase <= 0.0:
+            raise ValueError("Value to increase uncertainty must be positive.")
         if self.min_val > self.max_val:
             raise ValueError("Maximum has to be larger than minimum.")

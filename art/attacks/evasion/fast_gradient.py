@@ -27,15 +27,15 @@ import logging
 
 import numpy as np
 
-from art import NUMPY_DTYPE
+from art.config import ART_NUMPY_DTYPE
 from art.classifiers.classifier import ClassifierGradients
-from art.attacks.attack import Attack
+from art.attacks import EvasionAttack
 from art.utils import compute_success, get_labels_np_array, random_sphere, projection, check_and_transform_label_format
 
 logger = logging.getLogger(__name__)
 
 
-class FastGradientMethod(Attack):
+class FastGradientMethod(EvasionAttack):
     """
     This attack was originally implemented by Goodfellow et al. (2015) with the infinity norm (and is known as the "Fast
     Gradient Sign Method"). This implementation extends the attack to other norms, and is therefore called the Fast
@@ -43,8 +43,8 @@ class FastGradientMethod(Attack):
 
     | Paper link: https://arxiv.org/abs/1412.6572
     """
-    attack_params = Attack.attack_params + ['norm', 'eps', 'eps_step', 'targeted', 'num_random_init', 'batch_size',
-                                            'minimal']
+    attack_params = EvasionAttack.attack_params + ['norm', 'eps', 'eps_step', 'targeted', 'num_random_init',
+                                                   'batch_size', 'minimal']
 
     def __init__(self, classifier, norm=np.inf, eps=.3, eps_step=0.1, targeted=False, num_random_init=0, batch_size=1,
                  minimal=False):
@@ -155,8 +155,8 @@ class FastGradientMethod(Attack):
         if self.minimal:
             logger.info('Performing minimal perturbation FGM.')
             adv_x_best = self._minimal_perturbation(x, y)
-            rate_best = 100 * compute_success(self.classifier, x, y, adv_x_best,
-                                              self.targeted, batch_size=self.batch_size)
+            rate_best = 100 * compute_success(self.classifier, x, y, adv_x_best, self.targeted,
+                                              batch_size=self.batch_size)
         else:
             adv_x_best = None
             rate_best = None
@@ -174,7 +174,7 @@ class FastGradientMethod(Attack):
                     adv_x_best = adv_x
 
         logger.info('Success rate of FGM attack: %.2f%%', rate_best if rate_best is not None else
-                    100 * compute_success(self.classifier, x, y, adv_x, self.targeted, batch_size=self.batch_size))
+                    100 * compute_success(self.classifier, x, y, adv_x_best, self.targeted, batch_size=self.batch_size))
 
         return adv_x_best
 
@@ -249,7 +249,7 @@ class FastGradientMethod(Attack):
         return grad
 
     def _apply_perturbation(self, batch, perturbation, eps_step):
-        batch += eps_step * perturbation
+        batch = batch + eps_step * perturbation
 
         if hasattr(self.classifier, 'clip_values') and self.classifier.clip_values is not None:
             clip_min, clip_max = self.classifier.clip_values
@@ -261,13 +261,14 @@ class FastGradientMethod(Attack):
         if random_init:
             n = x.shape[0]
             m = np.prod(x.shape[1:])
-            x_adv = x.astype(NUMPY_DTYPE) + random_sphere(n, m, eps, self.norm).reshape(x.shape).astype(NUMPY_DTYPE)
+            x_adv = x.astype(ART_NUMPY_DTYPE) + (random_sphere(n, m, eps, self.norm)
+                                                 .reshape(x.shape).astype(ART_NUMPY_DTYPE))
 
             if hasattr(self.classifier, 'clip_values') and self.classifier.clip_values is not None:
                 clip_min, clip_max = self.classifier.clip_values
                 x_adv = np.clip(x_adv, clip_min, clip_max)
         else:
-            x_adv = x.astype(NUMPY_DTYPE)
+            x_adv = x.astype(ART_NUMPY_DTYPE)
 
         # Compute perturbation with implicit batching
         for batch_id in range(int(np.ceil(x.shape[0] / float(self.batch_size)))):

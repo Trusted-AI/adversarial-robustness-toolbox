@@ -29,13 +29,13 @@ import random
 import numpy as np
 
 from art.classifiers.classifier import ClassifierNeuralNetwork, ClassifierGradients
-from art.attacks.attack import Attack
+from art.attacks import EvasionAttack
 from art.utils import projection
 
 logger = logging.getLogger(__name__)
 
 
-class UniversalPerturbation(Attack):
+class UniversalPerturbation(EvasionAttack):
     """
     Implementation of the attack from Moosavi-Dezfooli et al. (2016). Computes a fixed perturbation to be applied to all
     future inputs. To this end, it can use any adversarial attack method.
@@ -53,7 +53,7 @@ class UniversalPerturbation(Attack):
                     'jsma': 'art.attacks.evasion.saliency_map.SaliencyMapMethod',
                     'vat': 'art.attacks.evasion.virtual_adversarial.VirtualAdversarialMethod'
                     }
-    attack_params = Attack.attack_params + ['attacker', 'attacker_params', 'delta', 'max_iter', 'eps', 'norm']
+    attack_params = EvasionAttack.attack_params + ['attacker', 'attacker_params', 'delta', 'max_iter', 'eps', 'norm']
 
     def __init__(self, classifier, attacker='deepfool', attacker_params=None, delta=0.2, max_iter=20, eps=10.0,
                  norm=np.inf):
@@ -154,7 +154,7 @@ class UniversalPerturbation(Attack):
         self.fooling_rate = fooling_rate
         self.converged = nb_iter < self.max_iter
         self.noise = noise
-        logger.info('Success rate of universal perturbation attack: %.2f%%', fooling_rate)
+        logger.info('Success rate of universal perturbation attack: %.2f%%', 100 * fooling_rate)
 
         return x_adv
 

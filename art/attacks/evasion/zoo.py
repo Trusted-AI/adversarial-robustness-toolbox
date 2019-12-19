@@ -29,23 +29,23 @@ import logging
 import numpy as np
 from scipy.ndimage import zoom
 
-from art import NUMPY_DTYPE
-from art.attacks.attack import Attack
+from art.config import ART_NUMPY_DTYPE
+from art.attacks import EvasionAttack
 from art.utils import compute_success, get_labels_np_array, check_and_transform_label_format
 
 logger = logging.getLogger(__name__)
 
 
-class ZooAttack(Attack):
+class ZooAttack(EvasionAttack):
     """
     The black-box zeroth-order optimization attack from Pin-Yu Chen et al. (2018). This attack is a variant of the
     C&W attack which uses ADAM coordinate descent to perform numerical estimation of gradients.
 
     | Paper link: https://arxiv.org/abs/1708.03999
     """
-    attack_params = Attack.attack_params + ['confidence', 'targeted', 'learning_rate', 'max_iter',
-                                            'binary_search_steps', 'initial_const', 'abort_early', 'use_resize',
-                                            'use_importance', 'nb_parallel', 'batch_size', 'variable_h']
+    attack_params = EvasionAttack.attack_params + ['confidence', 'targeted', 'learning_rate', 'max_iter',
+                                                   'binary_search_steps', 'initial_const', 'abort_early', 'use_resize',
+                                                   'use_importance', 'nb_parallel', 'batch_size', 'variable_h']
 
     def __init__(self, classifier, confidence=0.0, targeted=False, learning_rate=1e-2, max_iter=10,
                  binary_search_steps=1, initial_const=1e-3, abort_early=True, use_resize=True, use_importance=True,
@@ -131,10 +131,10 @@ class ZooAttack(Attack):
                 dims = (batch_size, self._init_size, self._init_size, self.classifier.input_shape[-1])
             elif self.classifier.channel_index == 1:
                 dims = (batch_size, self.classifier.input_shape[0], self._init_size, self._init_size)
-            self._current_noise = np.zeros(dims, dtype=NUMPY_DTYPE)
+            self._current_noise = np.zeros(dims, dtype=ART_NUMPY_DTYPE)
         else:
-            self._current_noise = np.zeros((batch_size,) + self.classifier.input_shape, dtype=NUMPY_DTYPE)
-        self._sample_prob = np.ones(self._current_noise.size, dtype=NUMPY_DTYPE) / self._current_noise.size
+            self._current_noise = np.zeros((batch_size,) + self.classifier.input_shape, dtype=ART_NUMPY_DTYPE)
+        self._sample_prob = np.ones(self._current_noise.size, dtype=ART_NUMPY_DTYPE) / self._current_noise.size
 
         self.adam_mean = None
         self.adam_var = None
@@ -309,7 +309,7 @@ class ZooAttack(Attack):
         def compare(object1, object2):
             return object1 == object2 if self.targeted else object1 != object2
 
-        x_orig = x_batch.astype(NUMPY_DTYPE)
+        x_orig = x_batch.astype(ART_NUMPY_DTYPE)
         fine_tuning = np.full(x_batch.shape[0], False, dtype=bool)
         prev_loss = 1e6 * np.ones(x_batch.shape[0])
         prev_l2dist = np.zeros(x_batch.shape[0])
@@ -453,8 +453,8 @@ class ZooAttack(Attack):
                 self.adam_epochs[indices] = 1
         else:
             # Allocate Adam variables
-            self.adam_mean = np.zeros(nb_vars, dtype=NUMPY_DTYPE)
-            self.adam_var = np.zeros(nb_vars, dtype=NUMPY_DTYPE)
+            self.adam_mean = np.zeros(nb_vars, dtype=ART_NUMPY_DTYPE)
+            self.adam_var = np.zeros(nb_vars, dtype=ART_NUMPY_DTYPE)
             self.adam_epochs = np.ones(nb_vars, dtype=np.int32)
 
     def _resize_image(self, x, size_x, size_y, reset=False):
@@ -471,13 +471,13 @@ class ZooAttack(Attack):
                 self._current_noise.fill(0)
             else:
                 resized_x = zoom(x, (1, dims[1] / x.shape[1], dims[2] / x.shape[2], dims[3] / x.shape[3]))
-                self._current_noise = np.zeros(dims, dtype=NUMPY_DTYPE)
-            self._sample_prob = np.ones(nb_vars, dtype=NUMPY_DTYPE) / nb_vars
+                self._current_noise = np.zeros(dims, dtype=ART_NUMPY_DTYPE)
+            self._sample_prob = np.ones(nb_vars, dtype=ART_NUMPY_DTYPE) / nb_vars
         else:
             # Rescale variables and reset values
             resized_x = zoom(x, (1, dims[1] / x.shape[1], dims[2] / x.shape[2], dims[3] / x.shape[3]))
             self._sample_prob = self._get_prob(self._current_noise, double=True).flatten()
-            self._current_noise = np.zeros(dims, dtype=NUMPY_DTYPE)
+            self._current_noise = np.zeros(dims, dtype=ART_NUMPY_DTYPE)
 
         # Reset Adam
         self._reset_adam(nb_vars)
