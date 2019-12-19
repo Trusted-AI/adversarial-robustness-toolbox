@@ -75,7 +75,7 @@ class CopycatCNN(ExtractionAttack):
         :param y: Target values (class labels) one-hot-encoded of shape (nb_samples, nb_classes) or indices of shape
                   (nb_samples,). Not used in this attack.
         :type y: `np.ndarray` or `None`
-        :param thieved_classifier: A thieved classifier to be stolen.
+        :param thieved_classifier: A classifier to be stolen, currently always trained on one-hot labels.
         :type thieved_classifier: :class:`.Classifier`
         :return: The stolen classifier.
         :rtype: :class:`.Classifier`
