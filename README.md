@@ -16,7 +16,7 @@ which are inputs (images, texts, tabular data, etc.) deliberately modified to pr
 Learning model. ART provides the tools to build and deploy defences and test them with adversarial attacks. 
 
 Defending Machine Learning models involves certifying and verifying model robustness and model hardening with 
-approaches such as pre-processing inputs, augmenting training data with adversarial samples, and leveraging runtime 
+approaches such as pre-processing inputs, augmenting training data with adversarial examples, and leveraging runtime 
 detection methods to flag any inputs that might have been modified by an adversary. The attacks implemented in ART 
 allow creating adversarial attacks against Machine Learning models which is required to test defenses with 
 state-of-the-art threat models.
@@ -44,7 +44,7 @@ Get in touch with us on [Slack](https://ibm-art.slack.com) (invite [here](https:
 
 **Evasion Attacks:**
 * HopSkipJump attack ([Chen et al., 2019](https://arxiv.org/abs/1904.02144))
-* High Confidence Low Uncertainty adversarial examples ([Grosse et al., 2018](https://arxiv.org/abs/1812.02606))
+* High Confidence Low Uncertainty adversarial samples ([Grosse et al., 2018](https://arxiv.org/abs/1812.02606))
 * Projected gradient descent ([Madry et al., 2017](https://arxiv.org/abs/1706.06083))
 * NewtonFool ([Jang et al., 2017](http://doi.acm.org/10.1145/3134600.3134635))
 * Elastic net attack ([Chen et al., 2017](https://arxiv.org/abs/1709.04114))
@@ -64,6 +64,9 @@ Get in touch with us on [Slack](https://ibm-art.slack.com) (invite [here](https:
 
 **Poisoning Attacks:**
 * Poisoning Attack on SVM ([Biggio et al., 2013](https://arxiv.org/abs/1206.6389))
+
+**Extraction Attacks:**
+* Functionally Equivalent Extraction ([Jagielski et al., 2019](https://arxiv.org/abs/1909.01838))
 
 **Defences:**
 * Thermometer encoding ([Buckman et al., 2018](https://openreview.net/forum?id=S18Su--CW))
@@ -89,7 +92,7 @@ Get in touch with us on [Slack](https://ibm-art.slack.com) (invite [here](https:
 * Detector trained on the activations of a specific layer
 * Detector based on Fast Generalized Subset Scan ([Speakman et al., 2018](https://arxiv.org/pdf/1810.08676))
 
-**Detectoion of poisoning attacks:**
+**Detection of poisoning attacks:**
 * Detector based on activations analysis ([Chen et al., 2018](https://arxiv.org/abs/1811.03728))
 
 ## Setup

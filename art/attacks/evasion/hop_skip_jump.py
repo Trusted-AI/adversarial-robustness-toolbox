@@ -27,22 +27,22 @@ import logging
 
 import numpy as np
 
-from art import NUMPY_DTYPE
-from art.attacks.attack import Attack
+from art.config import ART_NUMPY_DTYPE
+from art.attacks import EvasionAttack
 from art.utils import compute_success, to_categorical, check_and_transform_label_format
 
 logger = logging.getLogger(__name__)
 
 
-class HopSkipJump(Attack):
+class HopSkipJump(EvasionAttack):
     """
     Implementation of the HopSkipJump attack from Jianbo et al. (2019). This is a powerful black-box attack that
     only requires final class prediction, and is an advanced version of the boundary attack.
 
     | Paper link: https://arxiv.org/abs/1904.02144
     """
-    attack_params = Attack.attack_params + ['targeted', 'norm', 'max_iter', 'max_eval',
-                                            'init_eval', 'init_size', 'curr_iter', 'batch_size']
+    attack_params = EvasionAttack.attack_params + ['targeted', 'norm', 'max_iter', 'max_eval', 'init_eval', 'init_size',
+                                                   'curr_iter', 'batch_size']
 
     def __init__(self, classifier, targeted=False, norm=2, max_iter=50, max_eval=10000, init_eval=100, init_size=100):
         """
@@ -92,10 +92,20 @@ class HopSkipJump(Attack):
         :type y: `np.ndarray`
         :param x_adv_init: Initial array to act as initial adversarial examples. Same shape as `x`.
         :type x_adv_init: `np.ndarray`
+        :param resume: Allow users to continue their previous attack.
+        :type resume: `bool`
         :return: An array holding the adversarial examples.
         :rtype: `np.ndarray`
         """
         y = check_and_transform_label_format(y, self.classifier.nb_classes())
+
+        # Check whether users need a stateful attack
+        resume = kwargs.get('resume')
+
+        if resume is not None and resume:
+            start = self.curr_iter
+        else:
+            start = 0
 
         # Get clip_min and clip_max from the classifier or infer them from data
         if hasattr(self.classifier, 'clip_values') and self.classifier.clip_values is not None:
@@ -120,12 +130,14 @@ class HopSkipJump(Attack):
             raise ValueError('Target labels `y` need to be provided for a targeted attack.')
 
         # Some initial setups
-        x_adv = x.astype(NUMPY_DTYPE)
+        x_adv = x.astype(ART_NUMPY_DTYPE)
         if y is not None:
             y = np.argmax(y, axis=1)
 
         # Generate the adversarial samples
         for ind, val in enumerate(x_adv):
+            self.curr_iter = start
+
             if self.targeted:
                 x_adv[ind] = self._perturb(x=val, y=y[ind], y_p=preds[ind], init_pred=init_preds[ind],
                                            adv_init=x_adv_init[ind], clip_min=clip_min, clip_max=clip_max)
@@ -205,7 +217,7 @@ class HopSkipJump(Attack):
 
             # Attack unsatisfied yet and the initial image satisfied
             if adv_init is not None and init_pred == y:
-                return adv_init.astype(NUMPY_DTYPE), init_pred
+                return adv_init.astype(ART_NUMPY_DTYPE), init_pred
 
             # Attack unsatisfied yet and the initial image unsatisfied
             for _ in range(self.init_size):
@@ -219,15 +231,15 @@ class HopSkipJump(Attack):
                                                      clip_min=clip_min, clip_max=clip_max, threshold=0.001)
                     initial_sample = random_img, random_class
 
-                    logging.info('Found initial adversarial image for targeted attack.')
+                    logger.info('Found initial adversarial image for targeted attack.')
                     break
             else:
-                logging.warning('Failed to draw a random image that is adversarial, attack failed.')
+                logger.warning('Failed to draw a random image that is adversarial, attack failed.')
 
         else:
             # The initial image satisfied
             if adv_init is not None and init_pred != y_p:
-                return adv_init.astype(NUMPY_DTYPE), y_p
+                return adv_init.astype(ART_NUMPY_DTYPE), y_p
 
             # The initial image unsatisfied
             for _ in range(self.init_size):
@@ -241,10 +253,10 @@ class HopSkipJump(Attack):
                                                      clip_min=clip_min, clip_max=clip_max, threshold=0.001)
                     initial_sample = random_img, y_p
 
-                    logging.info('Found initial adversarial image for untargeted attack.')
+                    logger.info('Found initial adversarial image for untargeted attack.')
                     break
             else:
-                logging.warning('Failed to draw a random image that is adversarial, attack failed.')
+                logger.warning('Failed to draw a random image that is adversarial, attack failed.')
 
         return initial_sample
 
@@ -411,9 +423,9 @@ class HopSkipJump(Attack):
         # Generate random noise
         rnd_noise_shape = [num_eval] + list(self.classifier.input_shape)
         if self.norm == 2:
-            rnd_noise = np.random.randn(*rnd_noise_shape).astype(NUMPY_DTYPE)
+            rnd_noise = np.random.randn(*rnd_noise_shape).astype(ART_NUMPY_DTYPE)
         else:
-            rnd_noise = np.random.uniform(low=-1, high=1, size=rnd_noise_shape).astype(NUMPY_DTYPE)
+            rnd_noise = np.random.uniform(low=-1, high=1, size=rnd_noise_shape).astype(ART_NUMPY_DTYPE)
 
         # Normalize random noise to fit into the range of input data
         rnd_noise = rnd_noise / np.sqrt(np.sum(rnd_noise ** 2, axis=tuple(range(len(rnd_noise_shape)))[1:],
@@ -426,7 +438,7 @@ class HopSkipJump(Attack):
         satisfied = self._adversarial_satisfactory(samples=eval_samples, target=target,
                                                    clip_min=clip_min, clip_max=clip_max)
         f_val = 2 * satisfied.reshape([num_eval] + [1] * len(self.classifier.input_shape)) - 1.0
-        f_val = f_val.astype(NUMPY_DTYPE)
+        f_val = f_val.astype(ART_NUMPY_DTYPE)
 
         if np.mean(f_val) == 1.0:
             grad = np.mean(rnd_noise, axis=0)

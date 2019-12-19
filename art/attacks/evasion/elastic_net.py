@@ -27,22 +27,23 @@ import logging
 import numpy as np
 import six
 
-from art import NUMPY_DTYPE
+from art.config import ART_NUMPY_DTYPE
 from art.classifiers.classifier import ClassifierGradients
-from art.attacks.attack import Attack
+from art.attacks import EvasionAttack
 from art.utils import compute_success, get_labels_np_array, check_and_transform_label_format
 
 logger = logging.getLogger(__name__)
 
 
-class ElasticNet(Attack):
+class ElasticNet(EvasionAttack):
     """
     The elastic net attack of Pin-Yu Chen et al. (2018).
 
     | Paper link: https://arxiv.org/abs/1709.04114
     """
-    attack_params = Attack.attack_params + ['confidence', 'targeted', 'learning_rate', 'max_iter', 'beta',
-                                            'binary_search_steps', 'initial_const', 'batch_size', 'decision_rule']
+    attack_params = EvasionAttack.attack_params + ['confidence', 'targeted', 'learning_rate', 'max_iter', 'beta',
+                                                   'binary_search_steps', 'initial_const', 'batch_size',
+                                                   'decision_rule']
 
     def __init__(self, classifier, confidence=0.0, targeted=False, learning_rate=1e-2, binary_search_steps=9,
                  max_iter=100, beta=1e-3, initial_const=1e-3, batch_size=1, decision_rule='EN'):
@@ -107,7 +108,7 @@ class ElasticNet(Attack):
         l1dist = np.sum(np.abs(x - x_adv).reshape(x.shape[0], -1), axis=1)
         l2dist = np.sum(np.square(x - x_adv).reshape(x.shape[0], -1), axis=1)
         endist = self.beta * l1dist + l2dist
-        predictions = self.classifier.predict(np.array(x_adv, dtype=NUMPY_DTYPE), batch_size=self.batch_size)
+        predictions = self.classifier.predict(np.array(x_adv, dtype=ART_NUMPY_DTYPE), batch_size=self.batch_size)
 
         return np.argmax(predictions, axis=1), l1dist, l2dist, endist
 
@@ -127,7 +128,7 @@ class ElasticNet(Attack):
         :type target: `np.ndarray`
         """
         # Compute the current predictions
-        predictions = self.classifier.predict(np.array(x_adv, dtype=NUMPY_DTYPE), batch_size=self.batch_size)
+        predictions = self.classifier.predict(np.array(x_adv, dtype=ART_NUMPY_DTYPE), batch_size=self.batch_size)
 
         if self.targeted:
             i_sub = np.argmax(target, axis=1)
@@ -183,7 +184,7 @@ class ElasticNet(Attack):
         :rtype: `np.ndarray`
         """
         y = check_and_transform_label_format(y, self.classifier.nb_classes())
-        x_adv = x.astype(NUMPY_DTYPE)
+        x_adv = x.astype(ART_NUMPY_DTYPE)
 
         # Assert that, if attack is targeted, y is provided:
         if self.targeted and y is None:

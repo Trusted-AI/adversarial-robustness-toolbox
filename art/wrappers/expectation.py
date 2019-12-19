@@ -186,7 +186,7 @@ class ExpectationOverTransformations(ClassifierWrapper, ClassifierGradients, Cla
         :param filename: Name of the file where to save the model.
         :type filename: `str`
         :param path: Path of the directory where to save the model. If no path is specified, the model will be stored in
-                     the default data location of ART at `DATA_PATH`.
+                     the default data location of ART at `ART_DATA_PATH`.
         :type path: `str`
         :return: None
         """
