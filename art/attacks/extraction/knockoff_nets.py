@@ -114,6 +114,28 @@ class KnockoffNets(ExtractionAttack):
 
         return thieved_classifier
 
+    def _random_extraction(self, x, thieved_classifier):
+        """
+        Extract with the random sampling strategy.
+
+        :param x: An array with the source input to the victim classifier.
+        :type x: `np.ndarray`
+        :param thieved_classifier: A thieved classifier to be stolen.
+        :type thieved_classifier: :class:`.Classifier`
+        :return: The stolen classifier.
+        :rtype: :class:`.Classifier`
+        """
+        # Select data to attack
+        selected_x = self._select_data(x)
+
+        # Query the victim classifier
+        fake_labels = self._query_label(selected_x)
+
+        # Train the thieved classifier
+        thieved_classifier.fit(x=selected_x, y=fake_labels, batch_size=self.batch_size_fit, nb_epochs=self.nb_epochs)
+
+        return thieved_classifier
+
     def set_params(self, **kwargs):
         """
         Take in a dictionary of parameters and applies attack-specific checks before saving them as attributes.
