@@ -63,8 +63,8 @@ class FunctionallyEquivalentExtraction(ExtractionAttack):
         self.num_classes = classifier.nb_classes()
         self.num_features = int(np.prod(classifier.input_shape))
 
-        self.u = np.random.normal(0, 1, (1, self.num_features)).astype(dtype=NUMPY_DTYPE)
-        self.v = np.random.normal(0, 1, (1, self.num_features)).astype(dtype=NUMPY_DTYPE)
+        self.vector_u = np.random.normal(0, 1, (1, self.num_features)).astype(dtype=NUMPY_DTYPE)
+        self.vector_v = np.random.normal(0, 1, (1, self.num_features)).astype(dtype=NUMPY_DTYPE)
 
         self.critical_points = list()
 
@@ -157,7 +157,7 @@ class FunctionallyEquivalentExtraction(ExtractionAttack):
         :return: Input sample of shape (1, num_features)
         :rtype: `np.ndarray`
         """
-        return self.u + t * self.v
+        return self.vector_u + t * self.vector_v
 
     def _critical_point_search(self, delta_0, fraction_true, rel_diff_slope, rel_diff_value):
         """
@@ -383,6 +383,7 @@ class FunctionallyEquivalentExtraction(ExtractionAttack):
         self.b_1 = result_a1_b1.x[self.num_neurons * self.num_classes:].reshape(self.num_classes, 1)
 
 
+# pylint: disable=C0103, E0401
 if __name__ == '__main__':
     import tensorflow as tf
 
