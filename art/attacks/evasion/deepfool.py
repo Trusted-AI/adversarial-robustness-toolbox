@@ -26,20 +26,21 @@ import logging
 
 import numpy as np
 
-from art import NUMPY_DTYPE
-from art.classifiers.classifier import ClassifierNeuralNetwork, ClassifierGradients
-from art.attacks.attack import Attack
+from art.config import ART_NUMPY_DTYPE
+from art.classifiers.classifier import ClassifierGradients
+from art.attacks import EvasionAttack
+from art.utils import compute_success
 
 logger = logging.getLogger(__name__)
 
 
-class DeepFool(Attack):
+class DeepFool(EvasionAttack):
     """
     Implementation of the attack from Moosavi-Dezfooli et al. (2015).
 
     | Paper link: https://arxiv.org/abs/1511.04599
     """
-    attack_params = Attack.attack_params + ['max_iter', 'epsilon', 'nb_grads', 'batch_size']
+    attack_params = EvasionAttack.attack_params + ['max_iter', 'epsilon', 'nb_grads', 'batch_size']
 
     def __init__(self, classifier, max_iter=100, epsilon=1e-6, nb_grads=10, batch_size=1):
         """
@@ -58,9 +59,8 @@ class DeepFool(Attack):
         :type batch_size: `int`
         """
         super(DeepFool, self).__init__(classifier=classifier)
-        if not isinstance(classifier, ClassifierNeuralNetwork) or not isinstance(classifier, ClassifierGradients):
+        if not isinstance(classifier, ClassifierGradients):
             raise (TypeError('For `' + self.__class__.__name__ + '` classifier must be an instance of '
-                             '`art.classifiers.classifier.ClassifierNeuralNetwork` and '
                              '`art.classifiers.classifier.ClassifierGradients`, the provided classifier is instance of '
                              + str(classifier.__class__.__bases__) + '. '
                              ' The classifier needs to be a Neural Network and provide gradients.'))
@@ -79,7 +79,7 @@ class DeepFool(Attack):
         :return: An array holding the adversarial examples.
         :rtype: `np.ndarray`
         """
-        x_adv = x.astype(NUMPY_DTYPE)
+        x_adv = x.astype(ART_NUMPY_DTYPE)
         preds = self.classifier.predict(x, batch_size=self.batch_size)
 
         # Determine the class labels for which to compute the gradients
@@ -163,9 +163,7 @@ class DeepFool(Attack):
                         self.classifier.clip_values[1], out=x_adv[batch_index_1:batch_index_2])
 
         logger.info('Success rate of DeepFool attack: %.2f%%',
-                    (np.sum(np.argmax(preds, axis=1) != np.argmax(self.classifier.predict(
-                        x_adv, batch_size=self.batch_size), axis=1)) / x.shape[0]))
-
+                    100 * compute_success(self.classifier, x, y, x_adv, batch_size=self.batch_size))
         return x_adv
 
     def set_params(self, **kwargs):

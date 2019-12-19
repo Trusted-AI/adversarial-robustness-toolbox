@@ -30,16 +30,16 @@ import logging
 
 import numpy as np
 
-from art import NUMPY_DTYPE
+from art.config import ART_NUMPY_DTYPE
 from art.classifiers.classifier import ClassifierGradients
-from art.attacks.attack import Attack
+from art.attacks import EvasionAttack
 from art.utils import compute_success, get_labels_np_array, tanh_to_original, original_to_tanh
 from art.utils import check_and_transform_label_format
 
 logger = logging.getLogger(__name__)
 
 
-class CarliniL2Method(Attack):
+class CarliniL2Method(EvasionAttack):
     """
     The L_2 optimized attack of Carlini and Wagner (2016). This attack is among the most effective and should be used
     among the primary attacks to evaluate potential defences. A major difference wrt to the original implementation
@@ -48,9 +48,9 @@ class CarliniL2Method(Attack):
 
     | Paper link: https://arxiv.org/abs/1608.04644
     """
-    attack_params = Attack.attack_params + ['confidence', 'targeted', 'learning_rate', 'max_iter',
-                                            'binary_search_steps', 'initial_const', 'max_halving', 'max_doubling',
-                                            'batch_size']
+    attack_params = EvasionAttack.attack_params + ['confidence', 'targeted', 'learning_rate', 'max_iter',
+                                                   'binary_search_steps', 'initial_const', 'max_halving',
+                                                   'max_doubling', 'batch_size']
 
     def __init__(self, classifier, confidence=0.0, targeted=False, learning_rate=0.01, binary_search_steps=10,
                  max_iter=10, initial_const=0.01, max_halving=5, max_doubling=5, batch_size=1):
@@ -129,7 +129,7 @@ class CarliniL2Method(Attack):
         :rtype: `(float, float, float)`
         """
         l2dist = np.sum(np.square(x - x_adv).reshape(x.shape[0], -1), axis=1)
-        z_predicted = self.classifier.predict(np.array(x_adv, dtype=NUMPY_DTYPE), logits=True,
+        z_predicted = self.classifier.predict(np.array(x_adv, dtype=ART_NUMPY_DTYPE), logits=True,
                                               batch_size=self.batch_size)
         z_target = np.sum(z_predicted * target, axis=1)
         z_other = np.max(z_predicted * (1 - target) + (np.min(z_predicted, axis=1) - 1)[:, np.newaxis] * target, axis=1)
@@ -208,7 +208,7 @@ class CarliniL2Method(Attack):
         :rtype: `np.ndarray`
         """
         y = check_and_transform_label_format(y, self.classifier.nb_classes())
-        x_adv = x.astype(NUMPY_DTYPE)
+        x_adv = x.astype(ART_NUMPY_DTYPE)
 
         if hasattr(self.classifier, 'clip_values') and self.classifier.clip_values is not None:
             clip_min, clip_max = self.classifier.clip_values
@@ -449,13 +449,13 @@ class CarliniL2Method(Attack):
         return True
 
 
-class CarliniLInfMethod(Attack):
+class CarliniLInfMethod(EvasionAttack):
     """
     This is a modified version of the L_2 optimized attack of Carlini and Wagner (2016). It controls the L_Inf
     norm, i.e. the maximum perturbation applied to each pixel.
     """
-    attack_params = Attack.attack_params + ['confidence', 'targeted', 'learning_rate', 'max_iter',
-                                            'max_halving', 'max_doubling', 'eps', 'batch_size']
+    attack_params = EvasionAttack.attack_params + ['confidence', 'targeted', 'learning_rate', 'max_iter',
+                                                   'max_halving', 'max_doubling', 'eps', 'batch_size']
 
     def __init__(self, classifier, confidence=0.0, targeted=False, learning_rate=0.01, max_iter=10, max_halving=5,
                  max_doubling=5, eps=0.3, batch_size=128):
@@ -519,7 +519,7 @@ class CarliniLInfMethod(Attack):
         :return: A tuple holding the current predictions and overall loss.
         :rtype: `(float, float)`
         """
-        z_predicted = self.classifier.predict(np.array(x_adv, dtype=NUMPY_DTYPE), batch_size=self.batch_size)
+        z_predicted = self.classifier.predict(np.array(x_adv, dtype=ART_NUMPY_DTYPE), batch_size=self.batch_size)
         z_target = np.sum(z_predicted * target, axis=1)
         z_other = np.max(z_predicted * (1 - target) + (np.min(z_predicted, axis=1) - 1)[:, np.newaxis] * target, axis=1)
 
@@ -581,7 +581,7 @@ class CarliniLInfMethod(Attack):
         :rtype: `np.ndarray`
         """
         y = check_and_transform_label_format(y, self.classifier.nb_classes())
-        x_adv = x.astype(NUMPY_DTYPE)
+        x_adv = x.astype(ART_NUMPY_DTYPE)
 
         if hasattr(self.classifier, 'clip_values') and self.classifier.clip_values is not None:
             clip_min_per_pixel, clip_max_per_pixel = self.classifier.clip_values

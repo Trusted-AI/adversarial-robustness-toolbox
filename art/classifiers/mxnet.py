@@ -25,7 +25,7 @@ import logging
 import numpy as np
 import six
 
-from art import NUMPY_DTYPE
+from art.config import ART_NUMPY_DTYPE
 from art.classifiers.classifier import Classifier, ClassifierNeuralNetwork, ClassifierGradients
 
 logger = logging.getLogger(__name__)
@@ -128,8 +128,9 @@ class MXClassifier(ClassifierNeuralNetwork, ClassifierGradients, Classifier):
 
             # Train for one epoch
             for m in range(nb_batch):
-                x_batch = mx.nd.array(x_preprocessed[ind[m * batch_size:(m + 1) * batch_size]].astype(NUMPY_DTYPE)) \
-                    .as_in_context(self._ctx)
+                x_batch = (mx.nd.array(x_preprocessed[ind[m * batch_size:(m + 1) * batch_size]]
+                           .astype(ART_NUMPY_DTYPE))
+                           .as_in_context(self._ctx))
                 y_batch = mx.nd.array(y_preprocessed[ind[m * batch_size:(m + 1) * batch_size]]).as_in_context(self._ctx)
 
                 with mx.autograd.record(train_mode=train_mode):
@@ -164,7 +165,7 @@ class MXClassifier(ClassifierNeuralNetwork, ClassifierGradients, Classifier):
             # Train directly in MXNet
             for _ in range(nb_epochs):
                 for x_batch, y_batch in generator.data_loader:
-                    x_batch = mx.nd.array(x_batch.astype(NUMPY_DTYPE)).as_in_context(self._ctx)
+                    x_batch = mx.nd.array(x_batch.astype(ART_NUMPY_DTYPE)).as_in_context(self._ctx)
                     y_batch = mx.nd.argmax(y_batch, axis=1)
                     y_batch = mx.nd.array(y_batch).as_in_context(self._ctx)
 
@@ -205,7 +206,7 @@ class MXClassifier(ClassifierNeuralNetwork, ClassifierGradients, Classifier):
             begin, end = m * batch_size, min((m + 1) * batch_size, x_preprocessed.shape[0])
 
             # Predict
-            x_batch = mx.nd.array(x_preprocessed[begin:end].astype(NUMPY_DTYPE), ctx=self._ctx)
+            x_batch = mx.nd.array(x_preprocessed[begin:end].astype(ART_NUMPY_DTYPE), ctx=self._ctx)
             x_batch.attach_grad()
             with mx.autograd.record(train_mode=train_mode):
                 preds = self._model(x_batch)
@@ -243,7 +244,7 @@ class MXClassifier(ClassifierNeuralNetwork, ClassifierGradients, Classifier):
         # Apply preprocessing
         x_preprocessed, _ = self._apply_preprocessing(x, y=None, fit=False)
 
-        x_preprocessed = mx.nd.array(x_preprocessed.astype(NUMPY_DTYPE), ctx=self._ctx)
+        x_preprocessed = mx.nd.array(x_preprocessed.astype(ART_NUMPY_DTYPE), ctx=self._ctx)
         x_preprocessed.attach_grad()
 
         if label is None:
@@ -306,7 +307,7 @@ class MXClassifier(ClassifierNeuralNetwork, ClassifierGradients, Classifier):
         x_preprocessed, y_preprocessed = self._apply_preprocessing(x, y, fit=False)
 
         y_preprocessed = mx.nd.array([np.argmax(y_preprocessed, axis=1)]).T
-        x_preprocessed = mx.nd.array(x_preprocessed.astype(NUMPY_DTYPE), ctx=self._ctx)
+        x_preprocessed = mx.nd.array(x_preprocessed.astype(ART_NUMPY_DTYPE), ctx=self._ctx)
         x_preprocessed.attach_grad()
 
         with mx.autograd.record(train_mode=train_mode):
@@ -384,7 +385,7 @@ class MXClassifier(ClassifierNeuralNetwork, ClassifierGradients, Classifier):
             begin, end = batch_index * batch_size, min((batch_index + 1) * batch_size, x_preprocessed.shape[0])
 
             # Predict
-            x_batch = mx.nd.array(x_preprocessed[begin:end].astype(NUMPY_DTYPE), ctx=self._ctx)
+            x_batch = mx.nd.array(x_preprocessed[begin:end].astype(ART_NUMPY_DTYPE), ctx=self._ctx)
             x_batch.attach_grad()
             with mx.autograd.record(train_mode=train_mode):
                 preds = self._model[layer_ind](x_batch)
@@ -422,15 +423,15 @@ class MXClassifier(ClassifierNeuralNetwork, ClassifierGradients, Classifier):
         :param filename: Name of the file where to store the model.
         :type filename: `str`
         :param path: Path of the folder where to store the model. If no path is specified, the model will be stored in
-                     the default data location of the library `DATA_PATH`.
+                     the default data location of the library `ART_DATA_PATH`.
         :type path: `str`
         :return: None
         """
         import os
 
         if path is None:
-            from art import DATA_PATH
-            full_path = os.path.join(DATA_PATH, filename)
+            from art.config import ART_DATA_PATH
+            full_path = os.path.join(ART_DATA_PATH, filename)
         else:
             full_path = os.path.join(path, filename)
         folder = os.path.split(full_path)[0]

@@ -127,51 +127,82 @@ class KerasClassifier(ClassifierNeuralNetwork, ClassifierGradients, Classifier):
         logger.debug('Inferred %i classes and %s as input shape for Keras classifier.', self.nb_classes(),
                      str(self.input_shape))
 
-        # Get predictions and loss function
         self._use_logits = use_logits
+
+        # Get loss function
         if not hasattr(self._model, 'loss'):
             logger.warning('Keras model has no loss set. Classifier tries to use `k.sparse_categorical_crossentropy`.')
             loss_function = k.sparse_categorical_crossentropy
         else:
+
             if isinstance(self._model.loss, six.string_types):
                 loss_function = getattr(k, self._model.loss)
-            elif self._model.loss.__name__ in ['categorical_hinge', 'kullback_leibler_divergence', 'cosine_proximity']:
-                if self.is_tensorflow and self._model.loss.__name__ == 'cosine_proximity':
-                    loss_function = tf.keras.losses.cosine_similarity
-                else:
+
+            elif '__name__' in dir(self._model.loss) and self._model.loss.__name__ in \
+                    ['categorical_hinge', 'categorical_crossentropy', 'sparse_categorical_crossentropy',
+                     'binary_crossentropy', 'kullback_leibler_divergence']:
+                if self._model.loss.__name__ in ['categorical_hinge', 'kullback_leibler_divergence']:
                     loss_function = getattr(keras.losses, self._model.loss.__name__)
+                else:
+                    loss_function = getattr(keras.backend, self._model.loss.__name__)
+
+            elif isinstance(self._model.loss, (keras.losses.CategoricalHinge,
+                                               keras.losses.CategoricalCrossentropy,
+                                               keras.losses.SparseCategoricalCrossentropy,
+                                               keras.losses.BinaryCrossentropy,
+                                               keras.losses.KLDivergence)):
+                loss_function = self._model.loss
             else:
                 loss_function = getattr(k, self._model.loss.__name__)
 
-        if loss_function.__name__ in ['categorical_hinge', 'categorical_crossentropy', 'binary_crossentropy',
-                                      'kullback_leibler_divergence', 'cosine_proximity']:
+        # Check if loss function is an instance of loss function generator, the try is required because some of the
+        # modules are not available in older Keras versions
+        try:
+            flag_is_instance = isinstance(loss_function, (keras.losses.CategoricalHinge,
+                                                          keras.losses.CategoricalCrossentropy,
+                                                          keras.losses.BinaryCrossentropy,
+                                                          keras.losses.KLDivergence))
+        except AttributeError:
+            flag_is_instance = False
+
+        # Check if the labels have to be reduced to index labels and create placeholder for labels
+        if ('__name__' in dir(loss_function) and loss_function.__name__ in ['categorical_hinge',
+                                                                            'categorical_crossentropy',
+                                                                            'binary_crossentropy',
+                                                                            'kullback_leibler_divergence']) \
+                or (self.is_tensorflow and flag_is_instance):
             self._reduce_labels = False
             label_ph = k.placeholder(shape=self._output.shape)
-        elif loss_function.__name__ in ['sparse_categorical_crossentropy']:
+        elif ('__name__' in dir(loss_function) and loss_function.__name__ in ['sparse_categorical_crossentropy']) \
+                or isinstance(loss_function, keras.losses.SparseCategoricalCrossentropy):
             self._reduce_labels = True
             label_ph = k.placeholder(shape=[None, ])
         else:
             raise ValueError('Loss function not recognised.')
 
-        # The implementation of categorical_crossentropy is different in keras and tensorflow.keras. To ensure
-        # consistent behavior of `KerasClassifier` for keras and tensorflow.keras we follow the approach of
-        # tensorflow.keras for all cases of `from_logits` if the loss_function is categorical_crossentropy.
-        if hasattr(self._model, 'loss') and isinstance(self._model.loss, six.string_types) \
-                and loss_function.__name__ == 'categorical_crossentropy':
-            predictions = self._output
-            loss_ = loss_function(label_ph, self._output.op.inputs[-1], from_logits=True)
-        elif loss_function.__name__ in ['categorical_hinge', 'cosine_proximity', 'kullback_leibler_divergence']:
-            predictions = self._output
-            loss_ = loss_function(label_ph, self._output.op.inputs[-1])
-        else:
-            predictions = self._output
-            loss_ = loss_function(label_ph, self._output, from_logits=use_logits)
+        # Create predictions
+        predictions = self._output
 
-        # recent TensorFlow version does not allow a model with an output same as the input.
-        if predictions == self._input:
-            predictions = k.identity(predictions)
+        # Define the loss using the loss function
+        if ('__name__' in dir(loss_function, ) and loss_function.__name__ in ['categorical_crossentropy',
+                                                                              'sparse_categorical_crossentropy',
+                                                                              'binary_crossentropy']):
+            loss_ = loss_function(label_ph, self._output, from_logits=self._use_logits)
 
+        elif '__name__' in dir(loss_function) and loss_function.__name__ in ['categorical_hinge',
+                                                                             'kullback_leibler_divergence']:
+            loss_ = loss_function(label_ph, self._output)
+
+        elif isinstance(loss_function, (keras.losses.CategoricalHinge,
+                                        keras.losses.CategoricalCrossentropy,
+                                        keras.losses.SparseCategoricalCrossentropy,
+                                        keras.losses.KLDivergence,
+                                        keras.losses.BinaryCrossentropy)):
+            loss_ = loss_function(label_ph, self._output)
+
+        # Define loss gradients
         loss_gradients = k.gradients(loss_, self._input)
+
         if k.backend() == 'tensorflow':
             loss_gradients = loss_gradients[0]
         elif k.backend() == 'cntk':
@@ -271,13 +302,13 @@ class KerasClassifier(ClassifierNeuralNetwork, ClassifierGradients, Classifier):
         :return: Array of predictions of shape `(nb_inputs, nb_classes)`.
         :rtype: `np.ndarray`
         """
-        from art import NUMPY_DTYPE
+        from art.config import ART_NUMPY_DTYPE
 
         # Apply defences
         x_preprocessed, _ = self._apply_preprocessing(x, y=None, fit=False)
 
         # Run predictions with batching
-        predictions = np.zeros((x_preprocessed.shape[0], self.nb_classes()), dtype=NUMPY_DTYPE)
+        predictions = np.zeros((x_preprocessed.shape[0], self.nb_classes()), dtype=ART_NUMPY_DTYPE)
         for batch_index in range(int(np.ceil(x_preprocessed.shape[0] / float(batch_size)))):
             begin, end = batch_index * batch_size, min((batch_index + 1) * batch_size, x_preprocessed.shape[0])
             predictions[begin:end] = self._predictions([x_preprocessed[begin:end]])[0]
@@ -311,7 +342,8 @@ class KerasClassifier(ClassifierNeuralNetwork, ClassifierGradients, Classifier):
             y_preprocessed = np.argmax(y_preprocessed, axis=1)
 
         gen = generator_fit(x_preprocessed, y_preprocessed, batch_size)
-        self._model.fit_generator(gen, steps_per_epoch=x_preprocessed.shape[0] / batch_size, epochs=nb_epochs, **kwargs)
+        steps_per_epoch = max(int(x_preprocessed.shape[0] / batch_size), 1)
+        self._model.fit_generator(gen, steps_per_epoch=steps_per_epoch, epochs=nb_epochs, **kwargs)
 
     # def fit_generator(self, generator, nb_epochs=20, **kwargs):
     #     """
@@ -375,7 +407,7 @@ class KerasClassifier(ClassifierNeuralNetwork, ClassifierGradients, Classifier):
             import tensorflow.keras.backend as k
         else:
             import keras.backend as k
-        from art import NUMPY_DTYPE
+        from art.config import ART_NUMPY_DTYPE
 
         if isinstance(layer, six.string_types):
             if layer not in self._layer_names:
@@ -404,7 +436,7 @@ class KerasClassifier(ClassifierNeuralNetwork, ClassifierGradients, Classifier):
 
         # Determine shape of expected output and prepare array
         output_shape = output_func([x_preprocessed[0][None, ...]])[0].shape
-        activations = np.zeros((x_preprocessed.shape[0],) + output_shape[1:], dtype=NUMPY_DTYPE)
+        activations = np.zeros((x_preprocessed.shape[0],) + output_shape[1:], dtype=ART_NUMPY_DTYPE)
 
         # Get activations with batching
         for batch_index in range(int(np.ceil(x_preprocessed.shape[0] / float(batch_size)))):
@@ -497,15 +529,15 @@ class KerasClassifier(ClassifierNeuralNetwork, ClassifierGradients, Classifier):
         :param filename: Name of the file where to store the model.
         :type filename: `str`
         :param path: Path of the folder where to store the model. If no path is specified, the model will be stored in
-                     the default data location of the library `DATA_PATH`.
+                     the default data location of the library `ART_DATA_PATH`.
         :type path: `str`
         :return: None
         """
         import os
 
         if path is None:
-            from art import DATA_PATH
-            full_path = os.path.join(DATA_PATH, filename)
+            from art.config import ART_DATA_PATH
+            full_path = os.path.join(ART_DATA_PATH, filename)
         else:
             full_path = os.path.join(path, filename)
         folder = os.path.split(full_path)[0]
@@ -553,13 +585,13 @@ class KerasClassifier(ClassifierNeuralNetwork, ClassifierGradients, Classifier):
         # Load and update all functionality related to Keras
         # pylint: disable=E0401
         import os
-        from art import DATA_PATH
+        from art.config import ART_DATA_PATH
         if self.is_tensorflow:
             from tensorflow.keras.models import load_model
         else:
             from keras.models import load_model
 
-        full_path = os.path.join(DATA_PATH, state['model_name'])
+        full_path = os.path.join(ART_DATA_PATH, state['model_name'])
         model = load_model(str(full_path))
 
         self._model = model

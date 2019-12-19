@@ -417,7 +417,7 @@ class PyTorchClassifier(ClassifierNeuralNetwork, ClassifierGradients, Classifier
         :param filename: Name of the file where to store the model.
         :type filename: `str`
         :param path: Path of the folder where to store the model. If no path is specified, the model will be stored in
-                     the default data location of the library `DATA_PATH`.
+                     the default data location of the library `ART_DATA_PATH`.
         :type path: `str`
         :return: None
         """
@@ -425,8 +425,8 @@ class PyTorchClassifier(ClassifierNeuralNetwork, ClassifierGradients, Classifier
         import torch
 
         if path is None:
-            from art import DATA_PATH
-            full_path = os.path.join(DATA_PATH, filename)
+            from art.config import ART_DATA_PATH
+            full_path = os.path.join(ART_DATA_PATH, filename)
         else:
             full_path = os.path.join(path, filename)
         folder = os.path.split(full_path)[0]
@@ -478,10 +478,10 @@ class PyTorchClassifier(ClassifierNeuralNetwork, ClassifierGradients, Classifier
         # Load and update all functionality related to Pytorch
         import os
         import torch
-        from art import DATA_PATH
+        from art.config import ART_DATA_PATH
 
         # Recover model
-        full_path = os.path.join(DATA_PATH, state['model_name'])
+        full_path = os.path.join(ART_DATA_PATH, state['model_name'])
         model = state['inner_model']
         model.load_state_dict(torch.load(str(full_path) + '.model'))
         model.eval()

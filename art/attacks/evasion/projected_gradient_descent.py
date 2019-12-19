@@ -29,7 +29,7 @@ import logging
 
 import numpy as np
 
-from art import NUMPY_DTYPE
+from art.config import ART_NUMPY_DTYPE
 from art.classifiers.classifier import ClassifierGradients
 from art.attacks.evasion.fast_gradient import FastGradientMethod
 from art.utils import compute_success, get_labels_np_array, check_and_transform_label_format
@@ -48,7 +48,7 @@ class ProjectedGradientDescent(FastGradientMethod):
     """
     attack_params = FastGradientMethod.attack_params + ['max_iter']
 
-    def __init__(self, classifier, norm=np.inf, eps=.3, eps_step=0.1, max_iter=100, targeted=False, num_random_init=0,
+    def __init__(self, classifier, norm=np.inf, eps=0.3, eps_step=0.1, max_iter=100, targeted=False, num_random_init=0,
                  batch_size=1):
         """
         Create a :class:`.ProjectedGradientDescent` instance.
@@ -115,7 +115,7 @@ class ProjectedGradientDescent(FastGradientMethod):
         rate_best = None
 
         for _ in range(max(1, self.num_random_init)):
-            adv_x = x.astype(NUMPY_DTYPE)
+            adv_x = x.astype(ART_NUMPY_DTYPE)
 
             for i_max_iter in range(self.max_iter):
                 adv_x = self._compute(adv_x, x, targets, self.eps, self.eps_step, self._project,
@@ -131,7 +131,7 @@ class ProjectedGradientDescent(FastGradientMethod):
                 adv_x_best = adv_x
 
         logger.info('Success rate of attack: %.2f%%', rate_best if rate_best is not None else
-                    100 * compute_success(self.classifier, x, y, adv_x, self.targeted, batch_size=self.batch_size))
+                    100 * compute_success(self.classifier, x, y, adv_x_best, self.targeted, batch_size=self.batch_size))
 
         return adv_x_best
 

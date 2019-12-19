@@ -45,6 +45,7 @@ class TestFeatureSqueezing(unittest.TestCase):
     def test_random(self):
         m, n = 1000, 20
         x = np.random.rand(m, n)
+        x_original = x.copy()
         x_zero = np.where(x < 0.5)
         x_one = np.where(x >= 0.5)
 
@@ -58,6 +59,8 @@ class TestFeatureSqueezing(unittest.TestCase):
         self.assertFalse(np.logical_and(0. < x_squeezed, x_squeezed < 0.33).any())
         self.assertFalse(np.logical_and(0.34 < x_squeezed, x_squeezed < 0.66).any())
         self.assertFalse(np.logical_and(0.67 < x_squeezed, x_squeezed < 1.).any())
+        # Check that x has not been modified by attack and classifier
+        self.assertAlmostEqual(float(np.max(np.abs(x_original - x))), 0.0, delta=0.00001)
 
     def test_data_range(self):
         x = np.arange(5)
