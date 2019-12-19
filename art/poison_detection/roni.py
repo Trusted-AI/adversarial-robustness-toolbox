@@ -16,26 +16,22 @@
 # TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 # SOFTWARE.
 """
-This module implements the Reject on Negative Impact (RONI) defense
-from Nelson et. al. 2019
+This module implements the Reject on Negative Impact (RONI) defense by Nelson et al. (2019)
 
-Paper link:
-    https://people.eecs.berkeley.edu/~tygar/papers/SML/misleading.learners.pdf
+| Paper link: https://people.eecs.berkeley.edu/~tygar/papers/SML/misleading.learners.pdf
 """
 
 from __future__ import absolute_import, division, print_function, unicode_literals
 
 import logging
+from copy import deepcopy
 
 import numpy as np
+from sklearn.model_selection import train_test_split
 
 from art.poison_detection.ground_truth_evaluator import GroundTruthEvaluator
 from art.poison_detection.poison_filtering_defence import PoisonFilteringDefence
 from art.utils import performance_diff
-
-from copy import deepcopy
-
-from sklearn.model_selection import train_test_split
 
 logger = logging.getLogger(__name__)
 
@@ -44,12 +40,13 @@ class RONIDefense(PoisonFilteringDefence):
     """
     Close implementation based on description in Nelson
     'Behavior of Machine Learning Algorithms in Adversarial Environments' Ch. 4.4
-    Textbook link: https://people.eecs.berkeley.edu/~adj/publications/paper-files/EECS-2010-140.pdf
+
+    | Textbook link: https://people.eecs.berkeley.edu/~adj/publications/paper-files/EECS-2010-140.pdf
     """
     defence_params = ['classifier', 'x_train', 'y_train', 'x_val', 'y_val', 'perf_func', 'calibrated', 'eps']
 
-    def __init__(self, classifier, x_train, y_train, x_val, y_val, perf_func='accuracy', pp_cal=0.2,
-                 pp_quiz=0.2, calibrated=True, eps=0.1, **kwargs):
+    def __init__(self, classifier, x_train, y_train, x_val, y_val, perf_func='accuracy', pp_cal=0.2, pp_quiz=0.2,
+                 calibrated=True, eps=0.1, **kwargs):
         """
         Create an :class:`.ActivationDefence` object with the provided classifier.
 
@@ -81,14 +78,13 @@ class RONIDefense(PoisonFilteringDefence):
         self.x_quiz = np.copy(self.x_train[quiz_idx])
         self.y_quiz = np.copy(self.y_train[quiz_idx])
         if self.calibrated:
-            _, self.x_cal, _, self.y_cal = train_test_split(self.x_train, self.y_train,
-                                                            test_size=pp_cal, shuffle=True)
+            _, self.x_cal, _, self.y_cal = train_test_split(self.x_train, self.y_train, test_size=pp_cal, shuffle=True)
         self.eps = eps
         self.evaluator = GroundTruthEvaluator()
         self.x_val = x_val
         self.y_val = y_val
         self.perf_func = perf_func
-        self.is_clean_lst = []
+        self.is_clean_lst = list()
         self.set_params(**kwargs)
 
     def evaluate_defence(self, is_clean, **kwargs):
@@ -171,8 +167,8 @@ class RONIDefense(PoisonFilteringDefence):
         if self.calibrated:
             median, std_dev = self.get_calibration_info(before_classifier)
             return perf_shift < median - 3 * std_dev
-        else:
-            return perf_shift < -self.eps
+
+        return perf_shift < -self.eps
 
     def get_calibration_info(self, before_classifier):
         """
@@ -203,7 +199,8 @@ class RONIDefense(PoisonFilteringDefence):
 
         if len(self.x_train) != len(self.y_train):
             raise ValueError("x_train and y_train do not match shape")
-        elif self.eps < 0:
+
+        if self.eps < 0:
             raise ValueError("Value of epsilon must be at least 0")
 
         return True
