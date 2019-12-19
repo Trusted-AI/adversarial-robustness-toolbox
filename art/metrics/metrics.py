@@ -26,7 +26,6 @@ from functools import reduce
 
 import numpy as np
 import numpy.linalg as la
-import matplotlib.pyplot as plt
 from scipy.optimize import fmin as scipy_optimizer
 from scipy.stats import weibull_min
 
