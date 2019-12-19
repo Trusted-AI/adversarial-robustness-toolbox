@@ -24,6 +24,7 @@ import pandas as pd
 
 logger = logging.getLogger(__name__)
 
+
 class DataframeWrapper(np.ndarray):
     """
     Wrapper class for pandas dataframes and series. Note that the attacks will always return a
