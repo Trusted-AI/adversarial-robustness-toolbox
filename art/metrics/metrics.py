@@ -38,7 +38,7 @@ logger = logging.getLogger(__name__)
 
 SUPPORTED_METHODS = {
     "fgsm": {"class": FastGradientMethod, "params": {"eps_step": 0.1, "eps_max": 1., "clip_min": 0., "clip_max": 1.}},
-    "hsj":{"class": HopSkipJump, "params":{'max_iter': 50, 'max_eval': 10000, 'init_eval': 100,'init_size': 100}}
+    "hsj": {"class": HopSkipJump, "params": {'max_iter': 50, 'max_eval': 10000, 'init_eval': 100, 'init_size': 100}}
     # "jsma": {"class": SaliencyMapMethod, "params": {"theta": 1., "gamma": 0.01, "clip_min": 0., "clip_max": 1.}}
 }
 
