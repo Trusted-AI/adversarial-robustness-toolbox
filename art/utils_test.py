@@ -332,10 +332,12 @@ def get_classifier_kr_tf(loss_name='categorical_crossentropy', loss_type='functi
     :type from_logits: `bool`
 
 
-    :return: KerasClassifier, tf.Session()
+    :return: KerasClassifier
     """
     # pylint: disable=E0401
     import tensorflow as tf
+    if tf.__version__[0] == '2':
+        tf.compat.v1.disable_eager_execution()
     from tensorflow.keras.models import Sequential
     from tensorflow.keras.layers import Dense, Flatten, Conv2D, MaxPooling2D
 
@@ -468,6 +470,41 @@ def get_classifier_kr_tf(loss_name='categorical_crossentropy', loss_type='functi
 
     # Get classifier
     krc = KerasClassifier(model, clip_values=(0, 1), use_logits=from_logits)
+
+    return krc
+
+
+def get_classifier_kr_tf_binary():
+    """
+    Standard Tensorflow-Keras binary classifier for unit testing
+
+    :return: KerasClassifier
+    """
+    # pylint: disable=E0401
+    import tensorflow as tf
+    if tf.__version__[0] == '2':
+        tf.compat.v1.disable_eager_execution()
+    from tensorflow.keras.models import Sequential
+    from tensorflow.keras.layers import Dense, Flatten, Conv2D, MaxPooling2D
+
+    from art.classifiers import KerasClassifier
+
+    # Create simple CNN
+    model = Sequential()
+    model.add(Conv2D(1, kernel_size=(7, 7), activation='relu', input_shape=(28, 28, 1)))
+    model.layers[-1].set_weights(
+        [_kr_tf_weights_loader('MNIST_BINARY', 'W', 'CONV2D'), _kr_tf_weights_loader('MNIST_BINARY', 'B', 'CONV2D')])
+    model.add(MaxPooling2D(pool_size=(4, 4)))
+    model.add(Flatten())
+    model.add(Dense(1, activation='sigmoid'))
+
+    model.layers[-1].set_weights(
+        [_kr_tf_weights_loader('MNIST_BINARY', 'W', 'DENSE'), _kr_tf_weights_loader('MNIST_BINARY', 'B', 'DENSE')])
+
+    model.compile(loss='binary_crossentropy', optimizer=tf.keras.optimizers.Adam(lr=0.01), metrics=['accuracy'])
+
+    # Get classifier
+    krc = KerasClassifier(model, clip_values=(0, 1), use_logits=False)
 
     return krc
 
