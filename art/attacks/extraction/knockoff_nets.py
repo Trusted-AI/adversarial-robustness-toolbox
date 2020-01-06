@@ -261,6 +261,15 @@ class KnockoffNets(ExtractionAttack):
 
         return x_[rnd_idx]
 
+    def _reward(self, action, y_hat):
+        if self.reward == 'cert':
+            return self._reward_cert()
+        elif self.reward == 'div':
+            return self._reward_div()
+        elif self.reward == 'loss':
+            return self._reward_loss()
+        else:
+            return self._reward_all()
 
     def set_params(self, **kwargs):
         """
