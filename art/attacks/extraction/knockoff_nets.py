@@ -186,28 +186,34 @@ class KnockoffNets(ExtractionAttack):
             nb_actions = len(np.unique(y))
         else:
             raise ValueError('Target values `y` has a wrong shape.')
-        
-        H = np.zeros(k)
-        P = np.ones(k) / k
-        N = np.zeros(k)
 
-         = np.zeros(iterations)
+        # Implement the bandit gradients algorithm
+        h_func = np.zeros(nb_actions)
+        learning_rate = np.zeros(nb_actions)
+        probs = np.ones(nb_actions) / nb_actions
+
         avg_reward = 0
-        for t in range(1, iterations + 1):
-            A = np.argmax(P)
+        for it in range(1, self.nb_stolen + 1):
+            # Sample an action
+            action = np.random.choice(np.arange(0, nb_actions), p=probs)
 
-            R = .reward(A)
-            avg_reward = avg_reward + (1.0 / t) * (R - avg_reward)
-            baseline = 0.0 if no_baseline else avg_reward
+            # Update learning rate
+            learning_rate[action] += 1
 
-            H[A] = H[A] + step_size * (R - baseline) * (1 - P[A])
-            for a in range(k):
-                if a != A:
-                    H[a] = H[a] - step_size * (R - baseline) * P[a]
+            # Compute rewards
+            reward = self._reward(action)
+            avg_reward = avg_reward + (1.0 / it) * (reward - avg_reward)
 
-            aux_exp = np.exp(H)
-            P = aux_exp / np.sum(aux_exp)
-            [t - 1] = int(.(A)) * 1.0
+            # Update H function
+            for a in range(nb_actions):
+                if a != action:
+                    h_func[a] = h_func[a] - 1.0 / learning_rate[action] * (reward - avg_reward) * probs[a]
+                else:
+                    h_func[a] = h_func[a] + 1.0 / learning_rate[action] * (reward - avg_reward) * (1 - probs[a])
+
+            # Update probs
+            aux_exp = np.exp(h_func)
+            probs = aux_exp / np.sum(aux_exp)
 
         return thieved_classifier
 
