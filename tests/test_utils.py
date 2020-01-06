@@ -28,7 +28,7 @@ from art.utils import load_iris, load_mnist, master_seed
 from art.utils import second_most_likely_class, random_targets, get_label_conf, get_labels_np_array, preprocess
 from art.utils import segment_by_class, performance_diff
 
-logger = logging.getLogger('testLogger')
+logger = logging.getLogger(__name__)
 
 BATCH_SIZE = 10
 NB_TRAIN = 100
@@ -331,8 +331,8 @@ class TestUtils(unittest.TestCase):
         limited_model = SklearnClassifier(model=SVC(kernel='linear'), clip_values=(min_, max_))
         limited_model.fit(x_train[:10], y_train[:10])
 
-        self.assertEqual(performance_diff(full_model, limited_model, x_test[:20], y_test[:20], perf_function='accuracy')
-                         , 0.35)
+        self.assertEqual(performance_diff(full_model, limited_model, x_test[:20], y_test[:20],
+                                          perf_function='accuracy'), 0.35)
         self.assertEqual(performance_diff(full_model, limited_model, x_test[:20], y_test[:20]), 0.35)
         diff = performance_diff(full_model, limited_model, x_test[:20], y_test[:20], perf_function='f1',
                                 average='weighted')
@@ -342,9 +342,10 @@ class TestUtils(unittest.TestCase):
         def first_class(true_labels, model_labels, idx=0):
             return np.average(np.argmax(model_labels, axis=1) == idx)
 
-        self.assertEqual(performance_diff(full_model, limited_model, x_test, y_test, perf_function=first_class), 1.0/3)
+        self.assertEqual(performance_diff(full_model, limited_model, x_test, y_test, perf_function=first_class),
+                         1.0 / 3)
         self.assertEqual(performance_diff(full_model, limited_model, x_test, y_test, perf_function=first_class, idx=1),
-                         -1.0/3)
+                         -1.0 / 3)
 
 
 if __name__ == '__main__':

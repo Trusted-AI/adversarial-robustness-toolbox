@@ -34,7 +34,7 @@ from art.classifiers import KerasClassifier, PyTorchClassifier, TensorFlowClassi
 from art.metrics.metrics import empirical_robustness, clever_t, clever_u, clever, loss_sensitivity
 from art.utils import load_mnist, master_seed
 
-logger = logging.getLogger('testLogger')
+logger = logging.getLogger(__name__)
 
 BATCH_SIZE = 10
 NB_TRAIN = 100
@@ -62,13 +62,11 @@ class TestMetrics(unittest.TestCase):
         emp_robust = empirical_robustness(classifier, x_train, str('fgsm'), params)
         self.assertEqual(emp_robust, 0.)
 
-        params = {"eps_step": 1.,
-                  "eps": 1.}
+        params = {"eps_step": 1.0, "eps": 1.}
         emp_robust = empirical_robustness(classifier, x_train, str('fgsm'), params)
-        self.assertAlmostEqual(emp_robust, 0.5006149157681419, 3)
+        self.assertAlmostEqual(emp_robust, 1.000369094488189, 4)
 
-        params = {"eps_step": 0.1,
-                  "eps": 0.2}
+        params = {"eps_step": 0.1, "eps": 0.2}
         emp_robust = empirical_robustness(classifier, x_train, str('fgsm'), params)
         self.assertLessEqual(emp_robust, 0.65)
 
@@ -95,8 +93,6 @@ class TestMetrics(unittest.TestCase):
     #     dist = nearest_neighbour_dist(classifier, x_train, x_train, str('fgsm'))
     #     self.assertGreaterEqual(dist, 0)
 
-    @unittest.skipIf(tf.__version__[0] == '2', reason='Skip unittests for Tensorflow v2 until Keras supports Tensorflow'
-                                                      ' v2 as backend.')
     @staticmethod
     def _cnn_mnist_k(input_shape):
         # Create simple CNN
@@ -180,18 +176,12 @@ class TestClever(unittest.TestCase):
 
         return tfc
 
-    @unittest.skipIf(tf.__version__[0] == '2', reason='Skip unittests for Tensorflow v2 until Keras supports Tensorflow'
-                                                      ' v2 as backend.')
     @staticmethod
     def _create_krclassifier():
         """
         To create a simple KerasClassifier for testing.
         :return:
         """
-        # Initialize a tf session
-        session = tf.Session()
-        k.set_session(session)
-
         # Create simple CNN
         model = Sequential()
         model.add(Conv2D(4, kernel_size=(5, 5), activation='relu', input_shape=(28, 28, 1)))
@@ -226,6 +216,7 @@ class TestClever(unittest.TestCase):
 
         return ptc
 
+    @unittest.skipIf(tf.__version__[0] == '2', reason='Skip unittests for Tensorflow v2.')
     def test_clever_tf(self):
         """
         Test with tensorflow.

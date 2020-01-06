@@ -20,7 +20,6 @@ from __future__ import absolute_import, division, print_function, unicode_litera
 import logging
 import unittest
 
-import tensorflow as tf
 import keras.backend as k
 import numpy as np
 
@@ -28,15 +27,13 @@ from art.wrappers.wrapper import ClassifierWrapper
 from art.utils import load_mnist, master_seed
 from art.utils_test import get_classifier_kr
 
-logger = logging.getLogger('testLogger')
+logger = logging.getLogger(__name__)
 
 BATCH_SIZE = 10
 NB_TRAIN = 500
 NB_TEST = 100
 
 
-@unittest.skipIf(tf.__version__[0] == '2', reason='Skip unittests for TensorFlow v2 until Keras supports TensorFlow'
-                                                  ' v2 as backend.')
 class TestMixinWKerasClassifier(unittest.TestCase):
     @classmethod
     def setUpClass(cls):
@@ -130,3 +127,7 @@ class TestMixinWKerasClassifier(unittest.TestCase):
 
         # Remove saved file
         os.remove(os.path.join(path, filename))
+
+
+if __name__ == '__main__':
+    unittest.main()

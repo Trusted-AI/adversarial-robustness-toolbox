@@ -26,6 +26,10 @@ with their adversarial counterpart.
               unbounded attacks (e.g., DeepFool), this can result in invalid (very noisy) samples being included.
 
 | Paper link: https://arxiv.org/abs/1705.07204
+
+| Please keep in mind the limitations of defences. While adversarial training is widely regarded as a promising,
+principled approach to making classifiers more robust (see https://arxiv.org/abs/1802.00420), very careful evaluations
+are required to assess its effectiveness case by case (see https://arxiv.org/abs/1902.06705).
 """
 from __future__ import absolute_import, division, print_function, unicode_literals
 
@@ -48,6 +52,12 @@ class AdversarialTrainer:
 
      .. warning:: Both successful and unsuccessful adversarial samples are used for training. In the case of
                   unbounded attacks (e.g., DeepFool), this can result in invalid (very noisy) samples being included.
+
+    | Paper link: https://arxiv.org/abs/1705.07204
+
+    | Please keep in mind the limitations of defences. While adversarial training is widely regarded as a promising,
+    principled approach to making classifiers more robust (see https://arxiv.org/abs/1802.00420), very careful
+    evaluations are required to assess its effectiveness case by case (see https://arxiv.org/abs/1902.06705).
     """
 
     def __init__(self, classifier, attacks, ratio=.5):
@@ -57,20 +67,20 @@ class AdversarialTrainer:
         :param classifier: Model to train adversarially.
         :type classifier: :class:`.Classifier`
         :param attacks: attacks to use for data augmentation in adversarial training
-        :type attacks: :class:`.Attack` or `list(Attack)`
+        :type attacks: :class:`.EvasionAttack` or `list(EvasionAttack)`
         :param ratio: The proportion of samples in each batch to be replaced with their adversarial counterparts.
                       Setting this value to 1 allows to train only on adversarial samples.
         :type ratio: `float`
         """
-        from art.attacks import Attack
+        from art.attacks import EvasionAttack
 
         self.classifier = classifier
-        if isinstance(attacks, Attack):
+        if isinstance(attacks, EvasionAttack):
             self.attacks = [attacks]
         elif isinstance(attacks, list):
             self.attacks = attacks
         else:
-            raise ValueError('Only Attack instances or list of attacks supported.')
+            raise ValueError('Only EvasionAttack instances or list of attacks supported.')
 
         if ratio <= 0 or ratio > 1:
             raise ValueError('The `ratio` of adversarial samples in each batch has to be between 0 and 1.')

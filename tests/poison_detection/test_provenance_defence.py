@@ -29,7 +29,7 @@ from art.classifiers.scikitlearn import ScikitlearnSVC
 from art.poison_detection.provenance_defense import ProvenanceDefense
 from art.utils import load_mnist, master_seed
 
-logger = logging.getLogger('testLogger')
+logger = logging.getLogger(__name__)
 
 NB_TRAIN, NB_POISON, NB_VALID, NB_TRUSTED, NB_DEVICES = 40, 5, 40, 25, 4
 kernel = 'linear'
@@ -77,8 +77,6 @@ class TestProvenanceDefence(unittest.TestCase):
         valid_labels = y_test[:NB_VALID]
         x_test = x_test[NB_VALID:]
         y_test = y_test[NB_VALID:]
-
-
 
         clean_prov = np.random.randint(NB_DEVICES - 1, size=x_train.shape[0])
         p_train = np.eye(NB_DEVICES)[clean_prov]
