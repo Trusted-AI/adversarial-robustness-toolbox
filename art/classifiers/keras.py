@@ -432,8 +432,6 @@ class KerasClassifier(ClassifierNeuralNetwork, ClassifierGradients, Classifier):
         # Apply preprocessing
         x_preprocessed, _ = self._apply_preprocessing(x=x_expanded, y=None, fit=False)
 
-        assert len(x_preprocessed.shape) == 4
-
         # Determine shape of expected output and prepare array
         output_shape = output_func([x_preprocessed[0][None, ...]])[0].shape
         activations = np.zeros((x_preprocessed.shape[0],) + output_shape[1:], dtype=ART_NUMPY_DTYPE)

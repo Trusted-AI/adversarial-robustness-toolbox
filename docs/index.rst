@@ -104,6 +104,9 @@ Implemented Attacks, Defences, Detections, Metrics, Certifications and Verificat
    :caption: Modules
 
    modules/attacks
+   modules/attacks/evasion
+   modules/attacks/extraction
+   modules/attacks/poisoning
    modules/classifiers
    modules/classifiers/classifiers_scikitlearn
    modules/data_generators
