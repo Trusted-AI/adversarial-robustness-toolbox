@@ -179,29 +179,35 @@ class KnockoffNets(ExtractionAttack):
         :return: The stolen classifier.
         :rtype: :class:`.Classifier`
         """
+        # Compute number of actions
+        if len(y.shape) == 2:
+            nb_actions = len(np.unique(np.argmax(y, axis=1)))
+        elif len(y.shape) == 1:
+            nb_actions = len(np.unique(y))
+        else:
+            raise ValueError('Target values `y` has a wrong shape.')
+        
+        H = np.zeros(k)
+        P = np.ones(k) / k
+        N = np.zeros(k)
 
-        # k = len()
-        # H = np.zeros(k)
-        # P = np.ones(k) / k
-        # N = np.zeros(k)
-        #
-        #  = np.zeros(iterations)
-        # avg_reward = 0
-        # for t in range(1, iterations + 1):
-        #     A = np.argmax(P)
-        #
-        #     R = .reward(A)
-        #     avg_reward = avg_reward + (1.0 / t) * (R - avg_reward)
-        #     baseline = 0.0 if no_baseline else avg_reward
-        #
-        #     H[A] = H[A] + step_size * (R - baseline) * (1 - P[A])
-        #     for a in range(k):
-        #         if a != A:
-        #             H[a] = H[a] - step_size * (R - baseline) * P[a]
-        #
-        #     aux_exp = np.exp(H)
-        #     P = aux_exp / np.sum(aux_exp)
-        #     [t - 1] = int(.(A)) * 1.0
+         = np.zeros(iterations)
+        avg_reward = 0
+        for t in range(1, iterations + 1):
+            A = np.argmax(P)
+
+            R = .reward(A)
+            avg_reward = avg_reward + (1.0 / t) * (R - avg_reward)
+            baseline = 0.0 if no_baseline else avg_reward
+
+            H[A] = H[A] + step_size * (R - baseline) * (1 - P[A])
+            for a in range(k):
+                if a != A:
+                    H[a] = H[a] - step_size * (R - baseline) * P[a]
+
+            aux_exp = np.exp(H)
+            P = aux_exp / np.sum(aux_exp)
+            [t - 1] = int(.(A)) * 1.0
 
         return thieved_classifier
 
