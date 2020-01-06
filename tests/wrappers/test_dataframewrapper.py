@@ -90,7 +90,7 @@ class TestDataframeWrapper(unittest.TestCase):
         test_frame2 = test_frame.copy()
         self.assertFalse(test_frame2 is test_frame)
         self.assertFalse(test_frame2.dataframe is test_frame.dataframe)
-        
+
         #  Test explicit copy slice
         test_frame2 = test_frame[0].copy()
         self.assertTrue((test_frame2 == test_frame2.dataframe.to_numpy()).all())
