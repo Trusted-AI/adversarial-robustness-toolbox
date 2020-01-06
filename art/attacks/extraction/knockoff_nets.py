@@ -237,6 +237,31 @@ class KnockoffNets(ExtractionAttack):
 
         return thieved_classifier
 
+    def _sample_data(self, x, y, action):
+        """
+        Sample data with a specific action.
+
+        :param x: An array with the source input to the victim classifier.
+        :type x: `np.ndarray`
+        :param y: Target values (class labels) one-hot-encoded of shape (nb_samples, nb_classes) or indices of shape
+                  (nb_samples,).
+        :type y: `np.ndarray`
+        :param action: The action index returned from the action sampling.
+        :type action: `int`
+        :return: An array with one input to the victim classifier.
+        :rtype: `np.ndarray`
+        """
+        if len(y.shape) == 2:
+            y_ = np.argmax(y, axis=1)
+        else:
+            y_ = y
+
+        x_ = x[y_ == action]
+        rnd_idx = np.random.choice(len(x_))
+
+        return x_[rnd_idx]
+
+
     def set_params(self, **kwargs):
         """
         Take in a dictionary of parameters and applies attack-specific checks before saving them as attributes.
