@@ -197,12 +197,24 @@ class KnockoffNets(ExtractionAttack):
             # Sample an action
             action = np.random.choice(np.arange(0, nb_actions), p=probs)
 
-            # Update learning rate
-            learning_rate[action] += 1
+            # Sample data to attack
+            sampled_x = self._sample_data(x, y, action)
+
+            # Query the victim classifier
+            fake_labels = self._query_label(sampled_x)
+
+            # Train the thieved classifier
+            thieved_classifier.fit(x=sampled_x, y=fake_labels, batch_size=self.batch_size_fit, nb_epochs=1)
+
+
+
 
             # Compute rewards
             reward = self._reward(action)
             avg_reward = avg_reward + (1.0 / it) * (reward - avg_reward)
+
+            # Update learning rate
+            learning_rate[action] += 1
 
             # Update H function
             for a in range(nb_actions):
