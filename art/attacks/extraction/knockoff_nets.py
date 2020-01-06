@@ -191,6 +191,8 @@ class KnockoffNets(ExtractionAttack):
         h_func = np.zeros(nb_actions)
         learning_rate = np.zeros(nb_actions)
         probs = np.ones(nb_actions) / nb_actions
+        selected_x = []
+        queried_labels = []
 
         avg_reward = 0
         for it in range(1, self.nb_stolen + 1):
@@ -199,18 +201,20 @@ class KnockoffNets(ExtractionAttack):
 
             # Sample data to attack
             sampled_x = self._sample_data(x, y, action)
+            selected_x.append(sampled_x)
 
             # Query the victim classifier
-            fake_labels = self._query_label(sampled_x)
+            fake_labels = self._query_label(np.array([sampled_x]))
+            queried_labels.append(fake_labels[0])
 
             # Train the thieved classifier
-            thieved_classifier.fit(x=sampled_x, y=fake_labels, batch_size=self.batch_size_fit, nb_epochs=1)
+            thieved_classifier.fit(x=np.array([sampled_x]), y=fake_labels, batch_size=self.batch_size_fit, nb_epochs=1)
 
-
-
+            # Test new labels
+            y_hat = thieved_classifier.predict(x=sampled_x, batch_size=self.batch_size_query)
 
             # Compute rewards
-            reward = self._reward(action)
+            reward = self._reward(action, y_hat)
             avg_reward = avg_reward + (1.0 / it) * (reward - avg_reward)
 
             # Update learning rate
@@ -226,6 +230,10 @@ class KnockoffNets(ExtractionAttack):
             # Update probs
             aux_exp = np.exp(h_func)
             probs = aux_exp / np.sum(aux_exp)
+
+        # Train the thieved classifier the final time
+        thieved_classifier.fit(x=np.array(selected_x), y=np.array(queried_labels), batch_size=self.batch_size_fit,
+                               nb_epochs=self.nb_epochs)
 
         return thieved_classifier
 
