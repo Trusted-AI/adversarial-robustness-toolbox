@@ -28,7 +28,7 @@ import copy
 import numpy as np
 from scipy.optimize import minimize
 
-from art.attacks import EvasionAttack
+from art.attacks.attack import EvasionAttack
 from art.classifiers.GPy import GPyGaussianProcessClassifier
 from art.utils import compute_success
 

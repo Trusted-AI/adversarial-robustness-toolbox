@@ -12,7 +12,7 @@ matrix:
     - python: 3.6
       env: KERAS_BACKEND=tensorflow TENSORFLOW_V=1.14.0 KERAS_V=2.2.5
       script:
-        - (pycodestyle --max-line-length=120 art || exit 0) && (pylint --disable=C0415 -rn art || exit 0)
+        - (pycodestyle --max-line-length=120 art || exit 0) && (pylint --disable=C0415,E1136 -rn art || exit 0)
         - py.test --pep8 -m pep8
 
 before_install:
