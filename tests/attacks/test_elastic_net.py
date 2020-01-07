@@ -26,8 +26,8 @@ import numpy as np
 from art.attacks import ElasticNet
 from art.classifiers import KerasClassifier
 from art.utils import load_dataset, random_targets, master_seed, to_categorical
-from art.utils_test import get_classifier_tf, get_classifier_kr
-from art.utils_test import get_classifier_pt, get_iris_classifier_tf, get_iris_classifier_kr, get_iris_classifier_pt
+from tests.utils_test import get_classifier_tf, get_classifier_kr
+from tests.utils_test import get_classifier_pt, get_iris_classifier_tf, get_iris_classifier_kr, get_iris_classifier_pt
 
 logger = logging.getLogger(__name__)
 
@@ -381,9 +381,8 @@ class TestElasticNet(unittest.TestCase):
 
     def test_scikitlearn(self):
         from sklearn.linear_model import LogisticRegression
-        from sklearn.svm import SVC, LinearSVC
 
-        from art.classifiers.scikitlearn import ScikitlearnLogisticRegression, ScikitlearnSVC
+        from art.classifiers.scikitlearn import ScikitlearnLogisticRegression
 
         scikitlearn_test_cases = {LogisticRegression: ScikitlearnLogisticRegression}  # ,
         # SVC: ScikitlearnSVC,

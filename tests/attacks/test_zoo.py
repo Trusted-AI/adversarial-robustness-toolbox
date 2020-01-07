@@ -25,7 +25,7 @@ import numpy as np
 
 from art.attacks import ZooAttack
 from art.utils import load_dataset, random_targets, master_seed
-from art.utils_test import get_classifier_kr, get_classifier_pt, get_classifier_tf, get_iris_classifier_pt
+from tests.utils_test import get_classifier_kr, get_classifier_pt, get_classifier_tf
 
 logger = logging.getLogger(__name__)
 

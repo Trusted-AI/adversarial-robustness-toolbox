@@ -26,7 +26,7 @@ import numpy as np
 from art.attacks import FastGradientMethod
 from art.classifiers import KerasClassifier
 from art.utils import load_dataset, random_targets, master_seed, compute_accuracy
-from art.utils_test import get_classifier_kr, get_iris_classifier_kr
+from tests.utils_test import get_classifier_kr, get_iris_classifier_kr
 from art.wrappers.randomized_smoothing import RandomizedSmoothing
 
 os.environ['KMP_DUPLICATE_LIB_OK'] = 'True'

@@ -23,7 +23,7 @@ import unittest
 import numpy as np
 
 from art.utils import load_dataset, master_seed
-from art.utils_test import get_classifier_kr_tf, get_classifier_kr_tf_binary
+from tests.utils_test import get_classifier_kr_tf, get_classifier_kr_tf_binary
 from art.wrappers.output_class_labels import OutputClassLabels
 
 logger = logging.getLogger(__name__)

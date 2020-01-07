@@ -66,8 +66,8 @@ class OutputReverseSigmoid(ClassifierWrapper, Classifier):
         clip_min = 1e-9
         clip_max = 1.0 - clip_min
 
-        def sigmoid(z):
-            return 1.0 / (1.0 + np.exp(-z))
+        def sigmoid(var_z):
+            return 1.0 / (1.0 + np.exp(-var_z))
 
         predictions = self.classifier.predict(x, batch_size=batch_size, **kwargs)
         predictions_clipped = np.clip(predictions, clip_min, clip_max)
@@ -78,7 +78,7 @@ class OutputReverseSigmoid(ClassifierWrapper, Classifier):
             predictions_perturbed = predictions - perturbation_r
             predictions_perturbed = np.clip(predictions_perturbed, 0.0, 1.0)
             alpha = 1.0 / np.sum(predictions_perturbed, axis=-1, keepdims=True)
-            rs = alpha * predictions_perturbed
+            reverse_sigmoid = alpha * predictions_perturbed
         else:
             predictions_1 = predictions
             predictions_2 = 1.0 - predictions
@@ -99,9 +99,9 @@ class OutputReverseSigmoid(ClassifierWrapper, Classifier):
 
             alpha = 1.0 / (predictions_perturbed_1 + predictions_perturbed_2)
 
-            rs = alpha * predictions_perturbed_1
+            reverse_sigmoid = alpha * predictions_perturbed_1
 
-        return rs
+        return reverse_sigmoid
 
     def fit(self, x, y, batch_size=128, nb_epochs=20, **kwargs):
         """
