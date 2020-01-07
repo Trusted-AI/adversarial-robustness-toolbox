@@ -29,7 +29,7 @@ import logging
 import numpy as np
 from scipy.ndimage import rotate, shift
 
-from art.attacks import EvasionAttack
+from art.attacks.attack import EvasionAttack
 
 logger = logging.getLogger(__name__)
 
