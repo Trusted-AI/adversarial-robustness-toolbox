@@ -29,7 +29,7 @@ import random
 import numpy as np
 
 from art.classifiers.classifier import ClassifierNeuralNetwork, ClassifierGradients
-from art.attacks import EvasionAttack
+from art.attacks.attack import EvasionAttack
 from art.utils import projection
 
 logger = logging.getLogger(__name__)
