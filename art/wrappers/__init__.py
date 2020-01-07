@@ -1,4 +1,4 @@
-"""RandomizedSmoothing
+"""
 Module providing wrappers for :class:`.Classifier` instances to simulate different capacities and behaviours, like
 black-box gradient estimation.
 """
