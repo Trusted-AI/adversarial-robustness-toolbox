@@ -18,7 +18,7 @@
 """
 This module implements methods performing poisoning detection based on data provenance.
 
-Paper link: https://ieeexplore.ieee.org/stamp/stamp.jsp?tp=&arnumber=8473440
+| Paper link: https://ieeexplore.ieee.org/stamp/stamp.jsp?tp=&arnumber=8473440
 """
 from __future__ import absolute_import, division, print_function, unicode_literals
 

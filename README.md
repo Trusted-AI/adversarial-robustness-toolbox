@@ -48,10 +48,10 @@ Get in touch with us on [Slack](https://ibm-art.slack.com) (invite [here](https:
 * Projected gradient descent ([Madry et al., 2017](https://arxiv.org/abs/1706.06083))
 * NewtonFool ([Jang et al., 2017](http://doi.acm.org/10.1145/3134600.3134635))
 * Elastic net attack ([Chen et al., 2017](https://arxiv.org/abs/1709.04114))
-* Spatial transformations attack ([Engstrom et al., 2017](https://arxiv.org/abs/1712.02779))
+* Spatial transformation attack ([Engstrom et al., 2017](https://arxiv.org/abs/1712.02779))
 * Query-efficient black-box attack ([Ilyas et al., 2017](https://arxiv.org/abs/1712.07113))
 * Zeroth-order optimization attack ([Chen et al., 2017](https://arxiv.org/abs/1708.03999))
-* Decision-based attack ([Brendel et al., 2018](https://arxiv.org/abs/1712.04248))
+* Decision-based attack / Boundary attack ([Brendel et al., 2018](https://arxiv.org/abs/1712.04248))
 * Adversarial patch ([Brown et al., 2017](https://arxiv.org/abs/1712.09665))
 * Decision tree attack ([Papernot et al., 2016](https://arxiv.org/abs/1605.07277))
 * Carlini & Wagner (C&W) `L_2` and `L_inf` attacks ([Carlini and Wagner, 2016](https://arxiv.org/abs/1608.04644))
@@ -62,11 +62,12 @@ Get in touch with us on [Slack](https://ibm-art.slack.com) (invite [here](https:
 * Virtual adversarial method ([Miyato et al., 2015](https://arxiv.org/abs/1507.00677))
 * Fast gradient method ([Goodfellow et al., 2014](https://arxiv.org/abs/1412.6572))
 
-**Poisoning Attacks:**
-* Poisoning Attack on SVM ([Biggio et al., 2013](https://arxiv.org/abs/1206.6389))
-
 **Extraction Attacks:**
 * Functionally Equivalent Extraction ([Jagielski et al., 2019](https://arxiv.org/abs/1909.01838))
+* Copycat CNN ([Correia-Silva et al., 2018](https://arxiv.org/abs/1806.05476))
+
+**Poisoning Attacks:**
+* Poisoning Attack on SVM ([Biggio et al., 2013](https://arxiv.org/abs/1206.6389))
 
 **Defences:**
 * Thermometer encoding ([Buckman et al., 2018](https://openreview.net/forum?id=S18Su--CW))
@@ -87,20 +88,21 @@ Get in touch with us on [Slack](https://ibm-art.slack.com) (invite [here](https:
 * High Confidence ([Tramer et al., 2016](https://arxiv.org/abs/1609.02943))
 * Rounding ([Tramer et al., 2016](https://arxiv.org/abs/1609.02943))
 
-**Robustness metrics, certifications and verifications**:
+**Robustness Metrics, Certifications and Verifications**:
 * Clique Method Robustness Verification ([Hongge et al., 2019](https://arxiv.org/abs/1906.03849))
 * Randomized Smoothing ([Cohen et al., 2019](https://arxiv.org/abs/1902.02918))
 * CLEVER ([Weng et al., 2018](https://arxiv.org/abs/1801.10578))
 * Loss sensitivity ([Arpit et al., 2017](https://arxiv.org/abs/1706.05394))
 * Empirical robustness ([Moosavi-Dezfooli et al., 2015](https://arxiv.org/abs/1511.04599))
 
-**Detection of adversarial samples:**
+**Detection of Adversarial Examples:**
 * Basic detector based on inputs
 * Detector trained on the activations of a specific layer
 * Detector based on Fast Generalized Subset Scan ([Speakman et al., 2018](https://arxiv.org/pdf/1810.08676))
 
-**Detection of poisoning attacks:**
-* Detector based on activations analysis ([Chen et al., 2018](https://arxiv.org/abs/1811.03728))
+**Detection of Poisoning Attacks:**
+* Detection based on activations analysis ([Chen et al., 2018](https://arxiv.org/abs/1811.03728))
+* Detection based on data provenance ([Baracaldo et al., 2018](https://ieeexplore.ieee.org/stamp/stamp.jsp?tp=&arnumber=8473440))
 
 ## Setup
 
