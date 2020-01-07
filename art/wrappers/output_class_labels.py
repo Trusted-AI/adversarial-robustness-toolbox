@@ -28,7 +28,7 @@ from art.classifiers.classifier import Classifier
 logger = logging.getLogger(__name__)
 
 
-class ClassLabels(ClassifierWrapper, Classifier):
+class OutputClassLabels(ClassifierWrapper, Classifier):
     """
     Implementation of a classifier wrapper which returns class labels.
     """
@@ -40,7 +40,7 @@ class ClassLabels(ClassifierWrapper, Classifier):
         :param classifier: A trained classifier.
         :type classifier: :class:`.Classifier`
         """
-        super(ClassLabels, self).__init__(classifier)
+        super(OutputClassLabels, self).__init__(classifier)
 
     # pylint: disable=W0221
     def predict(self, x, batch_size=128, **kwargs):

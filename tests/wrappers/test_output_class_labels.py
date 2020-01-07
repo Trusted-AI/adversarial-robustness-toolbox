@@ -24,7 +24,7 @@ import numpy as np
 
 from art.utils import load_dataset, master_seed
 from art.utils_test import get_classifier_kr_tf, get_classifier_kr_tf_binary
-from art.wrappers.output_class_labels import ClassLabels
+from art.wrappers.output_class_labels import OutputClassLabels
 
 logger = logging.getLogger(__name__)
 
@@ -48,7 +48,7 @@ class TestClassLabels(unittest.TestCase):
         """
         (_, _), (x_test, _) = self.mnist
         classifier = get_classifier_kr_tf()
-        wrapped_classifier = ClassLabels(classifier=classifier)
+        wrapped_classifier = OutputClassLabels(classifier=classifier)
 
         classifier_prediction_expected = np.asarray([[0.12109935, 0.0498215, 0.0993958, 0.06410096, 0.11366928,
                                                       0.04645343, 0.06419807, 0.30685693, 0.07616714, 0.05823757]],
@@ -66,7 +66,7 @@ class TestClassLabels(unittest.TestCase):
         """
         (_, _), (x_test, _) = self.mnist
         classifier = get_classifier_kr_tf_binary()
-        wrapped_classifier = ClassLabels(classifier=classifier)
+        wrapped_classifier = OutputClassLabels(classifier=classifier)
 
         classifier_prediction_expected = np.asarray([[0.5301345]], dtype=np.float32)
         wrapped_classifier_prediction_expected = np.asarray([[1.0]], dtype=np.float32)

@@ -30,7 +30,7 @@ from art.classifiers.classifier import Classifier
 logger = logging.getLogger(__name__)
 
 
-class ReverseSigmoid(ClassifierWrapper, Classifier):
+class OutputReverseSigmoid(ClassifierWrapper, Classifier):
     """
     Implementation of a classifier wrapper for the Reverse Sigmoid output perturbation.
     """
@@ -46,7 +46,7 @@ class ReverseSigmoid(ClassifierWrapper, Classifier):
         :param gamma: A positive dataset and model specific convergence parameter
         :type gamma: `float`
         """
-        super(ReverseSigmoid, self).__init__(classifier)
+        super(OutputReverseSigmoid, self).__init__(classifier)
         self.beta = beta
         self.gamma = gamma
 
