@@ -1,4 +1,4 @@
-# Adversarial Robustness 360 Toolbox (ART) v1.0
+# Adversarial Robustness 360 Toolbox (ART) v1.1
 <p align="center">
   <img src="docs/images/art_logo.png?raw=true" width="200" title="ART logo">
 </p>
@@ -168,7 +168,7 @@ git commit -s -m 'Add new feature'
 If you use ART for research, please consider citing the following reference paper:
 ```
 @article{art2018,
-    title = {Adversarial Robustness Toolbox v1.0.1},
+    title = {Adversarial Robustness Toolbox v1.1.0},
     author = {Nicolae, Maria-Irina and Sinn, Mathieu and Tran, Minh~Ngoc and Buesser, Beat and Rawat, Ambrish and Wistuba, Martin and Zantedeschi, Valentina and Baracaldo, Nathalie and Chen, Bryant and Ludwig, Heiko and Molloy, Ian and Edwards, Ben},
     journal = {CoRR},
     volume = {1807.01069},
