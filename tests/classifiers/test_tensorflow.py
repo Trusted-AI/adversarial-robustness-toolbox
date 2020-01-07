@@ -33,7 +33,7 @@ import numpy as np
 
 from art.config import ART_DATA_PATH
 from art.utils import load_dataset, master_seed
-from art.utils_test import get_classifier_tf
+from tests.utils_test import get_classifier_tf
 from art.data_generators import TFDataGenerator
 
 logger = logging.getLogger(__name__)

@@ -30,7 +30,7 @@ from art.attacks import FastGradientMethod
 from art.classifiers import KerasClassifier
 from art.detection import BinaryInputDetector, BinaryActivationDetector
 from art.utils import load_mnist, master_seed
-from art.utils_test import get_classifier_kr
+from tests.utils_test import get_classifier_kr
 
 logger = logging.getLogger(__name__)
 

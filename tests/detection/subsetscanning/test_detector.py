@@ -23,14 +23,13 @@ from __future__ import absolute_import, division, print_function, unicode_litera
 import logging
 import unittest
 
-import tensorflow as tf
 import keras.backend as k
 import numpy as np
 
 from art.attacks import FastGradientMethod
 from art.detection import SubsetScanningDetector
 from art.utils import master_seed, load_dataset
-from art.utils_test import get_classifier_kr
+from tests.utils_test import get_classifier_kr
 
 logger = logging.getLogger(__name__)
 

@@ -38,6 +38,8 @@ logger = logging.getLogger(__name__)
 class ProvenanceDefense(PoisonFilteringDefence):
     """
     Implements methods performing poisoning detection based on data provenance.
+
+    | Paper link: https://ieeexplore.ieee.org/stamp/stamp.jsp?tp=&arnumber=8473440
     """
 
     defence_params = ['classifier', 'x_train', 'y_train', 'p_train', 'x_val', 'y_val', 'eps', 'perf_func', 'pp_valid']

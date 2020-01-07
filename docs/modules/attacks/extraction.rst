@@ -2,7 +2,7 @@
 =============================
 .. automodule:: art.attacks.extraction
 
-CopyCat CNN
+Copycat CNN
 -----------
 .. autoclass:: CopycatCNN
    :members:
