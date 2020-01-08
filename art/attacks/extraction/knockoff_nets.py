@@ -192,6 +192,11 @@ class KnockoffNets(ExtractionAttack):
         if self.reward == 'div' or self.reward == 'all':
             self.y_avg = np.zeros(self.classifier.nb_classes())
 
+        # We need to keep an average and variance version of rewards
+        if self.reward == 'all':
+            self.reward_avg = np.zeros(3)
+            self.reward_var = np.zeros(3)
+
         # Implement the bandit gradients algorithm
         h_func = np.zeros(nb_actions)
         learning_rate = np.zeros(nb_actions)
@@ -288,7 +293,7 @@ class KnockoffNets(ExtractionAttack):
         elif self.reward == 'loss':
             return self._reward_loss(y_output, y_hat)
         else:
-            return self._reward_all()
+            return self._reward_all(y_output, y_hat, n)
 
     @staticmethod
     def _reward_cert(y_output):
@@ -351,6 +356,36 @@ class KnockoffNets(ExtractionAttack):
             reward += -probs_output[k] * np.log(probs_hat[k])
 
         return reward
+
+    def _reward_all(self, y_output, y_hat, n):
+        """
+        Compute `all` reward value.
+
+        :param y_output: Output of the victim classifier.
+        :type y_output: `np.ndarray`
+        :param y_hat: Output of the thieved classifier.
+        :type y_hat: `np.ndarray`
+        :param n: Current iteration.
+        :type n: `int`
+        :return: Reward value.
+        :rtype: `float`
+        """
+        reward_cert = self._reward_cert(y_output)
+        reward_div = self._reward_div(y_output, n)
+        reward_loss = self._reward_loss(y_output, y_hat)
+        reward = [reward_cert, reward_div, reward_loss]
+        self.reward_avg = self.reward_avg + (1.0 / n) * (reward - self.reward_avg)
+        self.reward_var = self.reward_var + (1.0 / n) * ((reward - self.reward_avg)**2 - self.reward_var)
+
+        # Normalize rewards
+        reward = (reward - self.reward_avg) / np.sqrt(self.reward_var)
+
+        return np.mean(reward)
+
+
+
+
+
 
 
 
