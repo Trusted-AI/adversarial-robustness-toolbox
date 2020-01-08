@@ -47,7 +47,8 @@ class KnockoffNets(ExtractionAttack):
     def __init__(self, classifier, batch_size_fit=1, batch_size_query=1, nb_epochs=10, nb_stolen=1,
                  sampling_strategy='random', reward='all'):
         """
-        Create a copycat cnn attack instance.
+        Create a KnockoffNets attack instance. Note, it is assumed that both the victim classifier and the thieved
+        classifier produce logit outputs.
 
         :param classifier: A victim classifier.
         :type classifier: :class:`.Classifier`
@@ -285,7 +286,7 @@ class KnockoffNets(ExtractionAttack):
         elif self.reward == 'div':
             return self._reward_div(y_output, n)
         elif self.reward == 'loss':
-            return self._reward_loss()
+            return self._reward_loss(y_output, y_hat)
         else:
             return self._reward_all()
 
@@ -322,6 +323,32 @@ class KnockoffNets(ExtractionAttack):
         reward = 0
         for k in range(self.classifier.nb_classes()):
             reward += np.maximum(0, y_output[0][k] - self.y_avg[k])
+
+        return reward
+
+    def _reward_loss(self, y_output, y_hat):
+        """
+        Compute `loss` reward value.
+
+        :param y_output: Output of the victim classifier.
+        :type y_output: `np.ndarray`
+        :param y_hat: Output of the thieved classifier.
+        :type y_hat: `np.ndarray`
+        :return: Reward value.
+        :rtype: `float`
+        """
+        # Compute victim probs
+        aux_exp = np.exp(y_output[0])
+        probs_output = aux_exp / np.sum(aux_exp)
+
+        # Compute thieved probs
+        aux_exp = np.exp(y_hat)
+        probs_hat = aux_exp / np.sum(aux_exp)
+
+        # Compute reward
+        reward = 0
+        for k in range(self.classifier.nb_classes()):
+            reward += -probs_output[k] * np.log(probs_hat[k])
 
         return reward
 
