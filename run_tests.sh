@@ -118,6 +118,9 @@ python -m unittest discover tests/poison_detection -p 'test_*.py'
 if [[ $? -ne 0 ]]; then exit_code=1; echo 'Failed tests/poison_detection'; fi
 
 # wrappers
+python -m unittest 'tests/wrappers/test_dataframewrapper.py'
+if [[ $? -ne 0 ]]; then exit_code=1; echo 'Failed test_dataframewrapper.py'; fi
+
 python -m unittest 'tests/wrappers/test_expectation.py'
 if [[ $? -ne 0 ]]; then exit_code=1; echo 'Failed test_expectation.py'; fi
 
