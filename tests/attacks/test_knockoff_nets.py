@@ -20,7 +20,24 @@ from __future__ import absolute_import, division, print_function, unicode_litera
 import logging
 import unittest
 
-from art.utils import load_dataset, random_targets, master_seed, to_categorical
+import tensorflow as tf
+import numpy as np
+import keras.backend as k
+import keras
+from keras.models import Sequential
+from keras.layers import Dense, Flatten, Conv2D, MaxPooling2D
+
+from art.attacks.extraction.knockoff_nets import KnockoffNets
+from art.classifiers import TensorFlowClassifier
+from art.classifiers import KerasClassifier
+from art.classifiers import PyTorchClassifier
+from art.utils import load_dataset, master_seed
+from art.utils_test import get_classifier_tf
+from art.utils_test import get_classifier_kr
+from art.utils_test import get_classifier_pt
+from art.utils_test import get_iris_classifier_tf
+from art.utils_test import get_iris_classifier_kr
+from art.utils_test import get_iris_classifier_pt
 from art import NUMPY_DTYPE
 
 logger = logging.getLogger(__name__)
@@ -46,6 +63,53 @@ class TestKnockoffNets(unittest.TestCase):
 
     def setUp(self):
         master_seed(1234)
+
+    def test_tfclassifier(self):
+        """
+        First test with the TensorFlowClassifier.
+        :return:
+        """
+        # Build TensorFlowClassifiers
+        victim_tfc, sess = get_classifier_tf()
+
+        # Define input and output placeholders
+        input_ph = tf.placeholder(tf.float32, shape=[None, 28, 28, 1])
+        output_ph = tf.placeholder(tf.int32, shape=[None, 10])
+
+        # Define the tensorflow graph
+        conv = tf.layers.conv2d(input_ph, 1, 7, activation=tf.nn.relu)
+        conv = tf.layers.max_pooling2d(conv, 4, 4)
+        flattened = tf.layers.flatten(conv)
+
+        # Logits layer
+        logits = tf.layers.dense(flattened, 10)
+
+        # Train operator
+        loss = tf.reduce_mean(tf.losses.softmax_cross_entropy(logits=logits, onehot_labels=output_ph))
+        optimizer = tf.train.AdamOptimizer(learning_rate=0.001)
+        train = optimizer.minimize(loss)
+
+        # TensorFlow session and initialization
+        sess.run(tf.global_variables_initializer())
+
+        # Create the classifier
+        thieved_tfc = TensorFlowClassifier(clip_values=(0, 1), input_ph=input_ph, output=logits, labels_ph=output_ph,
+                                           train=train, loss=loss, learning=None, sess=sess)
+
+        # Create random attack
+        attack = KnockoffNets(classifier=victim_tfc, batch_size_fit=BATCH_SIZE, batch_size_query=BATCH_SIZE,
+                              nb_epochs=NB_EPOCHS, nb_stolen=NB_STOLEN, sampling_strategy='random')
+        thieved_tfc = attack.extract(x=self.x_train, thieved_classifier=thieved_tfc)
+
+        victim_preds = np.argmax(victim_tfc.predict(x=self.x_train[:100]), axis=1)
+        thieved_preds = np.argmax(thieved_tfc.predict(x=self.x_train[:100]), axis=1)
+        acc = np.sum(victim_preds == thieved_preds) / len(victim_preds)
+
+        self.assertGreater(acc, 0.3)
+
+        # Clean-up session
+        sess.close()
+        tf.reset_default_graph()
 
 
 if __name__ == '__main__':
