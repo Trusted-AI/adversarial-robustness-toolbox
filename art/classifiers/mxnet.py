@@ -129,8 +129,7 @@ class MXClassifier(ClassifierNeuralNetwork, ClassifierGradients, Classifier):
             # Train for one epoch
             for m in range(nb_batch):
                 x_batch = (mx.nd.array(x_preprocessed[ind[m * batch_size:(m + 1) * batch_size]]
-                           .astype(ART_NUMPY_DTYPE))
-                           .as_in_context(self._ctx))
+                                       .astype(ART_NUMPY_DTYPE)).as_in_context(self._ctx))
                 y_batch = mx.nd.array(y_preprocessed[ind[m * batch_size:(m + 1) * batch_size]]).as_in_context(self._ctx)
 
                 with mx.autograd.record(train_mode=train_mode):

@@ -25,7 +25,7 @@ import numpy as np
 from art.attacks import FastGradientMethod
 from art.classifiers import KerasClassifier
 from art.utils import load_dataset, random_targets, master_seed
-from art.utils_test import get_classifier_kr, get_iris_classifier_kr
+from tests.utils_test import get_classifier_kr, get_iris_classifier_kr
 from art.wrappers.expectation import ExpectationOverTransformations
 
 logger = logging.getLogger(__name__)

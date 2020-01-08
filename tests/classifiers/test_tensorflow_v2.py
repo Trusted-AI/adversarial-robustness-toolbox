@@ -4,7 +4,7 @@ import logging
 import unittest
 
 from art.utils import load_mnist, master_seed
-from art.utils_test import get_classifier_tf_v2
+from tests.utils_test import get_classifier_tf_v2
 
 import tensorflow as tf
 

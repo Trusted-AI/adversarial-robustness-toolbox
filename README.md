@@ -1,4 +1,4 @@
-# Adversarial Robustness 360 Toolbox (ART) v1.0
+# Adversarial Robustness 360 Toolbox (ART) v1.1
 <p align="center">
   <img src="docs/images/art_logo.png?raw=true" width="200" title="ART logo">
 </p>
@@ -10,16 +10,16 @@
 
 Adversarial Robustness 360 Toolbox (ART) is a Python library supporting developers and researchers in defending Machine 
 Learning models (Deep Neural Networks, Gradient Boosted Decision Trees, Support Vector Machines, Random Forests, 
-Logistic Regression, Gaussian Processes, Decision Trees, Scikit-learn Pipelines, etc.) against adversarial threats and 
-helps making AI systems more secure and trustworthy. Machine Learning models are vulnerable to adversarial examples, 
-which are inputs (images, texts, tabular data, etc.) deliberately modified to produce a desired response by the Machine 
-Learning model. ART provides the tools to build and deploy defences and test them with adversarial attacks. 
+Logistic Regression, Gaussian Processes, Decision Trees, Scikit-learn Pipelines, etc.) against adversarial threats 
+(including evasion, extraction and poisoning) and helps making AI systems more secure and trustworthy. Machine Learning 
+models are vulnerable to adversarial examples, which are inputs (images, texts, tabular data, etc.) deliberately crafted 
+to produce a desired response by the Machine Learning model. ART provides the tools to build and deploy defences and 
+test them with adversarial attacks. 
 
 Defending Machine Learning models involves certifying and verifying model robustness and model hardening with 
 approaches such as pre-processing inputs, augmenting training data with adversarial examples, and leveraging runtime 
-detection methods to flag any inputs that might have been modified by an adversary. The attacks implemented in ART 
-allow creating adversarial attacks against Machine Learning models which is required to test defenses with 
-state-of-the-art threat models.
+detection methods to flag any inputs that might have been modified by an adversary. ART includes attacks for testing 
+defenses with state-of-the-art threat models.
 
 Documentation of ART: https://adversarial-robustness-toolbox.readthedocs.io
 
@@ -38,7 +38,6 @@ Get in touch with us on [Slack](https://ibm-art.slack.com) (invite [here](https:
 * LightGBM (https://lightgbm.readthedocs.io)
 * CatBoost (www.catboost.ai)
 * GPy (https://sheffieldml.github.io/GPy/)
-* Tesseract (https://github.com/tesseract-ocr/tesseract)
 
 ## Implemented Attacks, Defences, Detections, Metrics, Certifications and Verifications
 
@@ -48,10 +47,10 @@ Get in touch with us on [Slack](https://ibm-art.slack.com) (invite [here](https:
 * Projected gradient descent ([Madry et al., 2017](https://arxiv.org/abs/1706.06083))
 * NewtonFool ([Jang et al., 2017](http://doi.acm.org/10.1145/3134600.3134635))
 * Elastic net attack ([Chen et al., 2017](https://arxiv.org/abs/1709.04114))
-* Spatial transformations attack ([Engstrom et al., 2017](https://arxiv.org/abs/1712.02779))
+* Spatial transformation attack ([Engstrom et al., 2017](https://arxiv.org/abs/1712.02779))
 * Query-efficient black-box attack ([Ilyas et al., 2017](https://arxiv.org/abs/1712.07113))
 * Zeroth-order optimization attack ([Chen et al., 2017](https://arxiv.org/abs/1708.03999))
-* Decision-based attack ([Brendel et al., 2018](https://arxiv.org/abs/1712.04248))
+* Decision-based attack / Boundary attack ([Brendel et al., 2018](https://arxiv.org/abs/1712.04248))
 * Adversarial patch ([Brown et al., 2017](https://arxiv.org/abs/1712.09665))
 * Decision tree attack ([Papernot et al., 2016](https://arxiv.org/abs/1605.07277))
 * Carlini & Wagner (C&W) `L_2` and `L_inf` attacks ([Carlini and Wagner, 2016](https://arxiv.org/abs/1608.04644))
@@ -62,11 +61,12 @@ Get in touch with us on [Slack](https://ibm-art.slack.com) (invite [here](https:
 * Virtual adversarial method ([Miyato et al., 2015](https://arxiv.org/abs/1507.00677))
 * Fast gradient method ([Goodfellow et al., 2014](https://arxiv.org/abs/1412.6572))
 
-**Poisoning Attacks:**
-* Poisoning Attack on SVM ([Biggio et al., 2013](https://arxiv.org/abs/1206.6389))
-
 **Extraction Attacks:**
 * Functionally Equivalent Extraction ([Jagielski et al., 2019](https://arxiv.org/abs/1909.01838))
+* Copycat CNN ([Correia-Silva et al., 2018](https://arxiv.org/abs/1806.05476))
+
+**Poisoning Attacks:**
+* Poisoning Attack on SVM ([Biggio et al., 2013](https://arxiv.org/abs/1206.6389))
 
 **Defences:**
 * Thermometer encoding ([Buckman et al., 2018](https://openreview.net/forum?id=S18Su--CW))
@@ -80,20 +80,28 @@ Get in touch with us on [Slack](https://ibm-art.slack.com) (invite [here](https:
 * Virtual adversarial training ([Miyato et al., 2015](https://arxiv.org/abs/1507.00677))
 * Adversarial training ([Szegedy et al., 2013](http://arxiv.org/abs/1312.6199))
 
-**Robustness metrics, certifications and verifications**:
+**Extraction Defences:**
+* Reverse Sigmoid ([Lee et al., 2018](https://arxiv.org/abs/1806.00054))
+* Random Noise ([Chandrasekaranet al., 2018](https://arxiv.org/abs/1811.02054))
+* Class Labels ([Tramer et al., 2016](https://arxiv.org/abs/1609.02943), [Chandrasekaranet al., 2018](https://arxiv.org/abs/1811.02054))
+* High Confidence ([Tramer et al., 2016](https://arxiv.org/abs/1609.02943))
+* Rounding ([Tramer et al., 2016](https://arxiv.org/abs/1609.02943))
+
+**Robustness Metrics, Certifications and Verifications**:
 * Clique Method Robustness Verification ([Hongge et al., 2019](https://arxiv.org/abs/1906.03849))
 * Randomized Smoothing ([Cohen et al., 2019](https://arxiv.org/abs/1902.02918))
 * CLEVER ([Weng et al., 2018](https://arxiv.org/abs/1801.10578))
 * Loss sensitivity ([Arpit et al., 2017](https://arxiv.org/abs/1706.05394))
 * Empirical robustness ([Moosavi-Dezfooli et al., 2015](https://arxiv.org/abs/1511.04599))
 
-**Detection of adversarial samples:**
+**Detection of Adversarial Examples:**
 * Basic detector based on inputs
 * Detector trained on the activations of a specific layer
 * Detector based on Fast Generalized Subset Scan ([Speakman et al., 2018](https://arxiv.org/pdf/1810.08676))
 
-**Detection of poisoning attacks:**
-* Detector based on activations analysis ([Chen et al., 2018](https://arxiv.org/abs/1811.03728))
+**Detection of Poisoning Attacks:**
+* Detection based on activations analysis ([Chen et al., 2018](https://arxiv.org/abs/1811.03728))
+* Detection based on data provenance ([Baracaldo et al., 2018](https://ieeexplore.ieee.org/stamp/stamp.jsp?tp=&arnumber=8473440))
 
 ## Setup
 
@@ -160,7 +168,7 @@ git commit -s -m 'Add new feature'
 If you use ART for research, please consider citing the following reference paper:
 ```
 @article{art2018,
-    title = {Adversarial Robustness Toolbox v1.0.1},
+    title = {Adversarial Robustness Toolbox v1.1.0},
     author = {Nicolae, Maria-Irina and Sinn, Mathieu and Tran, Minh~Ngoc and Buesser, Beat and Rawat, Ambrish and Wistuba, Martin and Zantedeschi, Valentina and Baracaldo, Nathalie and Chen, Bryant and Ludwig, Heiko and Molloy, Ian and Edwards, Ben},
     journal = {CoRR},
     volume = {1807.01069},

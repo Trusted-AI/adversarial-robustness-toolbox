@@ -30,6 +30,7 @@ from scipy.optimize import fmin as scipy_optimizer
 from scipy.stats import weibull_min
 
 from art.attacks import FastGradientMethod
+from art.attacks import HopSkipJump
 from art.utils import random_sphere
 from art.config import ART_NUMPY_DTYPE
 
@@ -37,7 +38,7 @@ logger = logging.getLogger(__name__)
 
 SUPPORTED_METHODS = {
     "fgsm": {"class": FastGradientMethod, "params": {"eps_step": 0.1, "eps_max": 1., "clip_min": 0., "clip_max": 1.}},
-    # "jsma": {"class": SaliencyMapMethod, "params": {"theta": 1., "gamma": 0.01, "clip_min": 0., "clip_max": 1.}}
+    "hsj": {"class": HopSkipJump, "params": {'max_iter': 50, 'max_eval': 10000, 'init_eval': 100, 'init_size': 100}}
 }
 
 
@@ -77,8 +78,8 @@ def empirical_robustness(classifier, x, attack_name, attack_params=None):
     :type classifier: :class:`.Classifier`
     :param x: Data sample of shape that can be fed into `classifier`
     :type x: `np.ndarray`
-    :param attack_name: A string specifying the attack to be used. Currently supported attacks are {`fgsm'}
-                        (Fast Gradient Sign Method)
+    :param attack_name: A string specifying the attack to be used. Currently supported attacks are {`fgsm', `hsj`}
+                        (Fast Gradient Sign Method, Hop Skip Jump)
     :type attack_name: `str`
     :param attack_params: A dictionary with attack-specific parameters. If the attack has a norm attribute, then it will
                           be used as the norm for calculating the robustness; otherwise the standard Euclidean distance

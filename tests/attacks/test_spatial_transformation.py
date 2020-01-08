@@ -25,7 +25,7 @@ import numpy as np
 
 from art.attacks import SpatialTransformation
 from art.utils import load_dataset, master_seed
-from art.utils_test import get_classifier_tf, get_classifier_kr, get_classifier_pt, get_iris_classifier_kr
+from tests.utils_test import get_classifier_tf, get_classifier_kr, get_classifier_pt, get_iris_classifier_kr
 
 logger = logging.getLogger(__name__)
 

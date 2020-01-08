@@ -118,8 +118,32 @@ python -m unittest discover tests/poison_detection -p 'test_*.py'
 if [[ $? -ne 0 ]]; then exit_code=1; echo 'Failed tests/poison_detection'; fi
 
 # wrappers
-python -m unittest discover tests/wrappers -p 'test_*.py'
-if [[ $? -ne 0 ]]; then exit_code=1; echo 'Failed tests/wrappers'; fi
+python -m unittest 'tests/wrappers/test_expectation.py'
+if [[ $? -ne 0 ]]; then exit_code=1; echo 'Failed test_expectation.py'; fi
+
+python -m unittest 'tests/wrappers/test_output_add_random_noise.py'
+if [[ $? -ne 0 ]]; then exit_code=1; echo 'Failed test_output_add_random_noise.py'; fi
+
+python -m unittest 'tests/wrappers/test_output_class_labels.py'
+if [[ $? -ne 0 ]]; then exit_code=1; echo 'Failed test_output_class_labels.py'; fi
+
+python -m unittest 'tests/wrappers/test_output_high_confidence.py'
+if [[ $? -ne 0 ]]; then exit_code=1; echo 'Failed test_output_high_confidence.py'; fi
+
+python -m unittest 'tests/wrappers/test_output_reverse_sigmoid.py'
+if [[ $? -ne 0 ]]; then exit_code=1; echo 'Failed test_output_reverse_sigmoid.py'; fi
+
+python -m unittest 'tests/wrappers/test_output_rounded.py'
+if [[ $? -ne 0 ]]; then exit_code=1; echo 'Failed test_output_rounded.py'; fi
+
+python -m unittest 'tests/wrappers/test_query_efficient_bb.py'
+if [[ $? -ne 0 ]]; then exit_code=1; echo 'Failed test_query_efficient_bb.py'; fi
+
+python -m unittest 'tests/wrappers/test_randomized_smoothing.py'
+if [[ $? -ne 0 ]]; then exit_code=1; echo 'Failed test_randomized_smoothing.py'; fi
+
+python -m unittest 'tests/wrappers/test_expectation.py'
+if [[ $? -ne 0 ]]; then exit_code=1; echo 'Failed test_wrapper.py'; fi
 
 # generators
 python -m unittest tests.test_data_generators
