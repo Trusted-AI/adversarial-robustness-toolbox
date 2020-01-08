@@ -49,11 +49,7 @@ class ProjectedGradientDescent(FastGradientMethod):
     """
     attack_params = FastGradientMethod.attack_params + ['max_iter', 'random_eps']
 
-<<<<<<< HEAD:art/attacks/projected_gradient_descent.py
     def __init__(self, classifier, norm=np.inf, eps=0.3, eps_step=0.1, max_iter=100, targeted=False, num_random_init=0,
-=======
-    def __init__(self, classifier, norm=np.inf, eps=0.3, eps_step=0.1, max_iter=100, targeted=False, num_random_init=0,
->>>>>>> origin/dev_1.1.0:art/attacks/evasion/projected_gradient_descent.py
                  batch_size=1, random_eps=False):
         """
         Create a :class:`.ProjectedGradientDescent` instance.
@@ -131,13 +127,8 @@ class ProjectedGradientDescent(FastGradientMethod):
             self.eps_step = self.eps / (self.max_iter * 0.8)
 
         for _ in range(max(1, self.num_random_init)):
-<<<<<<< HEAD:art/attacks/projected_gradient_descent.py
-            
-=======
-
             adv_x = x.astype(ART_NUMPY_DTYPE)
 
->>>>>>> origin/dev_1.1.0:art/attacks/evasion/projected_gradient_descent.py
             for i_max_iter in range(self.max_iter):
                 adv_x = self._compute(adv_x, x, targets, self.eps, self.eps_step, self._project,
                                       self.num_random_init > 0 and i_max_iter == 0)
