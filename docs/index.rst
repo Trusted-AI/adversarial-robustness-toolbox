@@ -8,16 +8,16 @@ Welcome to the Adversarial Robustness 360 Toolbox
 
 Adversarial Robustness 360 Toolbox (ART) is a Python library supporting developers and researchers in defending Machine
 Learning models (Deep Neural Networks, Gradient Boosted Decision Trees, Support Vector Machines, Random Forests,
-Logistic Regression, Gaussian Processes, Decision Trees, Scikit-learn Pipelines, etc.) against adversarial threats and
-helps making AI systems more secure and trustworthy. Machine Learning models are vulnerable to adversarial examples,
-which are inputs (images, texts, tabular data, etc.) deliberately modified to produce a desired response by the Machine
-Learning model. ART provides the tools to build and deploy defences and test them with adversarial attacks.
+Logistic Regression, Gaussian Processes, Decision Trees, Scikit-learn Pipelines, etc.) against adversarial threats
+(including evasion, extraction and poisoning) and helps making AI systems more secure and trustworthy. Machine Learning
+models are vulnerable to adversarial examples, which are inputs (images, texts, tabular data, etc.) deliberately crafted
+to produce a desired response by the Machine Learning model. ART provides the tools to build and deploy defences and
+test them with adversarial attacks.
 
-Defending Machine Learning models involves certifying and verifying model robustness and model hardening with approaches
-such as pre-processing inputs, augmenting training data with adversarial samples, and leveraging runtime detection
-methods to flag any inputs that might have been modified by an adversary. The attacks implemented in ART allow creating
-adversarial attacks against Machine Learning models which is required to test defenses with state-of-the-art threat
-models.
+Defending Machine Learning models involves certifying and verifying model robustness and model hardening with
+approaches such as pre-processing inputs, augmenting training data with adversarial examples, and leveraging runtime
+detection methods to flag any inputs that might have been modified by an adversary. ART includes attacks for testing
+defenses with state-of-the-art threat models.
 
 The code of ART is on `GitHub`_.
 
@@ -46,10 +46,10 @@ Implemented Attacks, Defences, Detections, Metrics, Certifications and Verificat
 * Projected gradient descent (`Madry et al., 2017`_)
 * NewtonFool (`Jang et al., 2017`_)
 * Elastic net attack (`Chen et al., 2017a`_)
-* Spatial transformations attack (`Engstrom et al., 2017`_)
+* Spatial transformation attack (`Engstrom et al., 2017`_)
 * Query-efficient black-box attack (`Ilyas et al., 2017`_)
 * Zeroth-order optimization attack (`Chen et al., 2017b`_)
-* Decision-based attack (`Brendel et al., 2018`_)
+* Decision-based attack / Boundary attack (`Brendel et al., 2018`_)
 * Adversarial patch (`Brown et al., 2017`_)
 * Decision tree attack (`Papernot et al., 2016b`_)
 * Carlini & Wagner (C&W) L_2 and L_inf attacks (`Carlini and Wagner, 2016`_)
@@ -59,6 +59,15 @@ Implemented Attacks, Defences, Detections, Metrics, Certifications and Verificat
 * DeepFool (`Moosavi-Dezfooli et al., 2015`_)
 * Virtual adversarial method (`Miyato et al., 2015`_)
 * Fast gradient method (`Goodfellow et al., 2014`_)
+
+**Extraction Attacks:**
+
+* Functionally Equivalent Extraction (`Jagielski et al., 2019`_)
+* Copycat CNN (`Correia-Silva et al., 2018`_)
+
+**Poisoning Attacks:**
+
+* Poisoning Attack on SVM (`Biggio et al., 2013`_)
 
 **Defences:**
 
@@ -73,7 +82,15 @@ Implemented Attacks, Defences, Detections, Metrics, Certifications and Verificat
 * Virtual adversarial training (`Miyato et al., 2015`_)
 * Adversarial training (`Szegedy et al., 2013`_)
 
-**Robustness metrics, certifications and verifications:**
+**Extraction Defences:**
+
+* Reverse Sigmoid (`Lee et al., 2018`_)
+* Random Noise (`Chandrasekaranet al., 2018`_)
+* Class Labels (`Tramer et al., 2016`_, `Chandrasekaranet al., 2018`_)
+* High Confidence (`Tramer et al., 2016`_)
+* Rounding (`Tramer et al., 2016`_)
+
+**Robustness Metrics, Certifications and Verifications:**
 
 * Clique Method Robustness Verification (`Hongge et al., 2019`_)
 * Randomized Smoothing (`Cohen et al., 2019`_)
@@ -81,7 +98,7 @@ Implemented Attacks, Defences, Detections, Metrics, Certifications and Verificat
 * Loss sensitivity (`Arpit et al., 2017`_)
 * Empirical robustness (`Moosavi-Dezfooli et al., 2015`_)
 
-**Detection of adversarial samples:**
+**Detection of adversarial Examples:**
 
 * Basic detector based on inputs
 * Detector trained on the activations of a specific layer
@@ -89,7 +106,8 @@ Implemented Attacks, Defences, Detections, Metrics, Certifications and Verificat
 
 **Detection of poisoning attacks:**
 
-* Detector based on activations analysis (`Chen et al., 2018`_)
+* Detection based on activations analysis (`Chen et al., 2018`_)
+* Detection based on data provenance (`Baracaldo et al., 2018`_)
 
 .. toctree::
    :maxdepth: 2
@@ -104,6 +122,9 @@ Implemented Attacks, Defences, Detections, Metrics, Certifications and Verificat
    :caption: Modules
 
    modules/attacks
+   modules/attacks/evasion
+   modules/attacks/extraction
+   modules/attacks/poisoning
    modules/classifiers
    modules/classifiers/classifiers_scikitlearn
    modules/data_generators
@@ -155,8 +176,19 @@ Indices and tables
 .. _Brendel et al., 2018: https://arxiv.org/abs/1712.04248
 .. _Brown et al., 2017: https://arxiv.org/abs/1712.09665
 
+.. _Jagielski et al., 2019: https://arxiv.org/abs/1909.01838
+.. _Correia-Silva et al., 2018: https://arxiv.org/abs/1806.05476
+
+.. _Lee et al., 2018: https://arxiv.org/abs/1806.00054
+.. _Chandrasekaranet al., 2018: https://arxiv.org/abs/1811.02054
+.. _Tramer et al., 2016: https://arxiv.org/abs/1609.02943
+
+.. _Biggio et al., 2013: https://arxiv.org/abs/1206.6389
+
 .. _Speakman et al., 2018: https://arxiv.org/pdf/1810.08676
 .. _Papernot et al., 2016b: https://arxiv.org/abs/1605.07277
 
 .. _Cohen et al., 2019: https://arxiv.org/abs/1902.02918
 .. _Hongge et al., 2019: https://arxiv.org/abs/1906.03849
+
+.. _Baracaldo et al., 2018: https://ieeexplore.ieee.org/stamp/stamp.jsp?tp=&arnumber=8473440

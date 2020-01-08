@@ -22,13 +22,12 @@ import unittest
 
 import keras.backend as k
 import numpy as np
-import tensorflow as tf
 
 from art.attacks import ZooAttack
 from art.utils import load_dataset, random_targets, master_seed
-from art.utils_test import get_classifier_kr, get_classifier_pt, get_classifier_tf, get_iris_classifier_pt
+from tests.utils_test import get_classifier_kr, get_classifier_pt, get_classifier_tf
 
-logger = logging.getLogger('testLogger')
+logger = logging.getLogger(__name__)
 
 NB_TRAIN = 1
 NB_TEST = 1
@@ -51,11 +50,13 @@ class TestZooAttack(unittest.TestCase):
     def setUp(self):
         master_seed(1234)
 
-    def test_failure_attack(self):
+    def test_tensorflow_failure_attack(self):
         """
         Test the corner case when attack fails.
         :return:
         """
+        x_test_original = self.x_test.copy()
+
         # Build TensorFlowClassifier
         tfc, sess = get_classifier_tf()
 
@@ -66,14 +67,19 @@ class TestZooAttack(unittest.TestCase):
         self.assertGreaterEqual(np.amin(x_test_adv), 0.0)
         np.testing.assert_almost_equal(self.x_test, x_test_adv, 3)
 
+        # Check that x_test has not been modified by attack and classifier
+        self.assertAlmostEqual(float(np.max(np.abs(x_test_original - self.x_test))), 0.0, delta=0.00001)
+
         # Clean-up session
         sess.close()
 
-    def test_tfclassifier(self):
+    def test_tensorflow_mnist(self):
         """
         First test with the TensorFlowClassifier.
         :return:
         """
+        x_test_original = self.x_test.copy()
+
         # Build TensorFlowClassifier
         tfc, sess = get_classifier_tf()
 
@@ -101,16 +107,19 @@ class TestZooAttack(unittest.TestCase):
         logger.debug('ZOO actual: %s', y_pred_adv)
         logger.info('ZOO success rate on MNIST: %.2f', (sum(y_pred != y_pred_adv) / float(len(y_pred))))
 
+        # Check that x_test has not been modified by attack and classifier
+        self.assertAlmostEqual(float(np.max(np.abs(x_test_original - self.x_test))), 0.0, delta=0.00001)
+
         # Clean-up session
         sess.close()
 
-    @unittest.skipIf(tf.__version__[0] == '2', reason='Skip unittests for TensorFlow v2 until Keras supports TensorFlow'
-                                                      ' v2 as backend.')
-    def test_krclassifier(self):
+    def test_keras_mnist(self):
         """
         Second test with the KerasClassifier.
         :return:
         """
+        x_test_original = self.x_test.copy()
+
         # Build KerasClassifier
         krc = get_classifier_kr()
 
@@ -154,10 +163,13 @@ class TestZooAttack(unittest.TestCase):
         logger.debug('ZOO actual: %s', y_pred_adv)
         logger.info('ZOO success rate on MNIST: %.2f', (sum(y_pred != y_pred_adv) / float(len(y_pred))))
 
+        # Check that x_test has not been modified by attack and classifier
+        self.assertAlmostEqual(float(np.max(np.abs(x_test_original - self.x_test))), 0.0, delta=0.00001)
+
         # Clean-up
         k.clear_session()
 
-    def test_ptclassifier(self):
+    def test_pytorch_mnist(self):
         """
         Third test with the PyTorchClassifier.
         :return:
@@ -167,6 +179,7 @@ class TestZooAttack(unittest.TestCase):
 
         # Get MNIST
         x_test = np.swapaxes(self.x_test, 1, 3).astype(np.float32)
+        x_test_original = x_test.copy()
 
         # First attack
         # zoo = ZooAttack(classifier=ptc, targeted=True, max_iter=10, binary_search_steps=10)
@@ -192,6 +205,9 @@ class TestZooAttack(unittest.TestCase):
         # print(x_test_adv[0, 0, 14, :])
         # print(np.amax(x_test - x_test_adv))
         x_test_adv_expected = []
+
+        # Check that x_test has not been modified by attack and classifier
+        self.assertAlmostEqual(float(np.max(np.abs(x_test_original - x_test))), 0.0, delta=0.00001)
 
     def test_classifier_type_check_fail_classifier(self):
         # Use a useless test classifier to test basic classifier properties

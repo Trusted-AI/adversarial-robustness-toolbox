@@ -434,9 +434,9 @@ def load_cifar10(raw=False):
         data = data.reshape(data.shape[0], 3, 32, 32)
         return data, labels
 
-    from art import DATA_PATH
+    from art.config import ART_DATA_PATH
 
-    path = get_file('cifar-10-batches-py', extract=True, path=DATA_PATH,
+    path = get_file('cifar-10-batches-py', extract=True, path=ART_DATA_PATH,
                     url='http://www.cs.toronto.edu/~kriz/cifar-10-python.tar.gz')
 
     num_train_samples = 50000
@@ -470,16 +470,16 @@ def load_cifar10(raw=False):
 
 def load_mnist(raw=False):
     """
-    Loads MNIST dataset from `DATA_PATH` or downloads it if necessary.
+    Loads MNIST dataset from `ART_DATA_PATH` or downloads it if necessary.
 
     :param raw: `True` if no preprocessing should be applied to the data. Otherwise, data is normalized to 1.
     :type raw: `bool`
     :return: `(x_train, y_train), (x_test, y_test), min, max`
     :rtype: `(np.ndarray, np.ndarray), (np.ndarray, np.ndarray), float, float`
     """
-    from art import DATA_PATH
+    from art.config import ART_DATA_PATH
 
-    path = get_file('mnist.npz', path=DATA_PATH, url='https://s3.amazonaws.com/img-datasets/mnist.npz')
+    path = get_file('mnist.npz', path=ART_DATA_PATH, url='https://s3.amazonaws.com/img-datasets/mnist.npz')
 
     dict_mnist = np.load(path)
     x_train = dict_mnist['x_train']
@@ -502,18 +502,18 @@ def load_mnist(raw=False):
 
 def load_stl():
     """
-    Loads the STL-10 dataset from `DATA_PATH` or downloads it if necessary.
+    Loads the STL-10 dataset from `ART_DATA_PATH` or downloads it if necessary.
 
     :return: `(x_train, y_train), (x_test, y_test), min, max`
     :rtype: `(np.ndarray, np.ndarray), (np.ndarray, np.ndarray), float, float`
     """
     from os.path import join
-    from art import DATA_PATH
+    from art.config import ART_DATA_PATH
 
     min_, max_ = 0.0, 1.0
 
     # Download and extract data if needed
-    path = get_file('stl10_binary', path=DATA_PATH, extract=True,
+    path = get_file('stl10_binary', path=ART_DATA_PATH, extract=True,
                     url='https://ai.stanford.edu/~acoates/stl10/stl10_binary.tar.gz')
 
     with open(join(path, 'train_X.bin'), 'rb') as f_numpy:
@@ -544,7 +544,7 @@ def load_stl():
 
 def load_iris(raw=False, test_set=0.3):
     """
-    Loads the UCI Iris dataset from `DATA_PATH` or downloads it if necessary.
+    Loads the UCI Iris dataset from `ART_DATA_PATH` or downloads it if necessary.
 
     :param raw: `True` if no preprocessing should be applied to the data. Otherwise, data is normalized to 1.
     :type raw: `bool`
@@ -553,13 +553,13 @@ def load_iris(raw=False, test_set=0.3):
     :return: Entire dataset and labels.
     :rtype: `(np.ndarray, np.ndarray), (np.ndarray, np.ndarray), float, float`
     """
-    from art import DATA_PATH, NUMPY_DTYPE
+    from art.config import ART_DATA_PATH, ART_NUMPY_DTYPE
 
     # Download data if needed
-    path = get_file('iris.data', path=DATA_PATH, extract=False,
+    path = get_file('iris.data', path=ART_DATA_PATH, extract=False,
                     url='https://archive.ics.uci.edu/ml/machine-learning-databases/iris/iris.data')
 
-    data = np.loadtxt(path, delimiter=',', usecols=(0, 1, 2, 3), dtype=NUMPY_DTYPE)
+    data = np.loadtxt(path, delimiter=',', usecols=(0, 1, 2, 3), dtype=ART_NUMPY_DTYPE)
     labels = np.loadtxt(path, delimiter=',', usecols=4, dtype=str)
 
     # Preprocess
@@ -664,8 +664,8 @@ def get_file(filename, url, path=None, extract=False):
     :rtype: `str`
     """
     if path is None:
-        from art import DATA_PATH
-        path_ = os.path.expanduser(DATA_PATH)
+        from art.config import ART_DATA_PATH
+        path_ = os.path.expanduser(ART_DATA_PATH)
     else:
         path_ = os.path.expanduser(path)
     if not os.access(path_, os.W_OK):
@@ -768,3 +768,76 @@ def preprocess(x, y, nb_classes=10, clip_values=None):
     categorical_y = to_categorical(y, nb_classes)
 
     return normalized_x, categorical_y
+
+
+def segment_by_class(data, classes, num_classes):
+    """
+    Returns segmented data according to specified features.
+
+    :param data: data to be segmented
+    :type data: `np.ndarray`
+    :param classes: classes used to segment data, e.g., segment according to predicted label or to `y_train` or other
+                    array of one hot encodings the same length as data
+    :type classes: `np.ndarray`
+    :param num_classes: how many features
+    :type num_classes:
+    :return: segmented data according to specified features.
+    :rtype: `list`
+    """
+    by_class = [[] for _ in range(num_classes)]
+    for indx, feature in enumerate(classes):
+        if num_classes > 2:
+            assigned = np.argmax(feature)
+        else:
+            assigned = int(feature)
+        by_class[assigned].append(data[indx])
+
+    return [np.asarray(i) for i in by_class]
+
+
+def performance_diff(model1, model2, test_data, test_labels, perf_function='accuracy', **kwargs):
+    """
+    Calculates the difference in performance between two models on the test_data with a performance function.
+
+    Returns performance(model1) - performance(model2)
+
+    Note: For multi-label classification, f1 scores will use 'micro' averaging unless otherwise specified.
+
+    :param model1: A trained ART classifier
+    :type model1: `art.classifiers.classifier.Classifier`
+    :param model2: A trained ART classifier
+    :type model2: `art.classifiers.classifier.Classifier`
+    :param test_data: The data to test both model's performance
+    :type test_data: `np.ndarray`
+    :param test_labels: The labels to the testing data
+    :type test_labels: `np.ndarray`
+    :param perf_function: The performance metric to be used
+    :type perf_function: one of ['accuracy', 'f1'] or a callable function (true_labels, model_labels[, kwargs]) -> float
+    :param kwargs: arguments to add to performance function
+    :type kwargs: `Dict[str, _]`
+    :return: the difference in performance
+    :rtype: `float`
+    """
+    from sklearn.metrics import accuracy_score
+    from sklearn.metrics import f1_score
+
+    model1_labels = model1.predict(test_data)
+    model2_labels = model2.predict(test_data)
+
+    if perf_function == 'accuracy':
+        model1_acc = accuracy_score(test_labels, model1_labels, **kwargs)
+        model2_acc = accuracy_score(test_labels, model2_labels, **kwargs)
+        return model1_acc - model2_acc
+
+    if perf_function == 'f1':
+        n_classes = test_labels.shape[1]
+        if n_classes > 2 and 'average' not in kwargs:
+            kwargs['average'] = 'micro'
+        model1_f1 = f1_score(test_labels, model1_labels, **kwargs)
+        model2_f1 = f1_score(test_labels, model2_labels, **kwargs)
+        return model1_f1 - model2_f1
+
+    if callable(perf_function):
+        return perf_function(test_labels, model1_labels, **kwargs) - perf_function(test_labels, model2_labels, **kwargs)
+
+    raise NotImplementedError("Performance function '{}' not supported".format(str(perf_function)))

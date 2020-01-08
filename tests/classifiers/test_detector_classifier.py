@@ -29,9 +29,9 @@ import torch.optim as optim
 
 from art.classifiers import PyTorchClassifier, DetectorClassifier
 from art.utils import load_dataset, master_seed
-from art.utils_test import get_classifier_pt
+from tests.utils_test import get_classifier_pt
 
-logger = logging.getLogger('testLogger')
+logger = logging.getLogger(__name__)
 
 NB_TRAIN = 1000
 NB_TEST = 2
@@ -66,8 +66,8 @@ class TestDetectorClassifier(unittest.TestCase):
     def setUpClass(cls):
         (x_train, y_train), (x_test, y_test), _, _ = load_dataset('mnist')
 
-        x_train = np.swapaxes(x_train, 1, 3).astype(np.float32)
-        x_test = np.swapaxes(x_test, 1, 3).astype(np.float32)
+        x_train = np.reshape(x_train, (x_train.shape[0], 1, 28, 28)).astype(np.float32)
+        x_test = np.reshape(x_test, (x_test.shape[0], 1, 28, 28)).astype(np.float32)
 
         cls.x_train = x_train[:NB_TRAIN]
         cls.y_train = y_train[:NB_TRAIN]

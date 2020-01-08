@@ -4,11 +4,11 @@ import logging
 import unittest
 
 from art.utils import load_mnist, master_seed
-from art.utils_test import get_classifier_tf_v2
+from tests.utils_test import get_classifier_tf_v2
 
 import tensorflow as tf
 
-logger = logging.getLogger('testLogger')
+logger = logging.getLogger(__name__)
 
 NB_TRAIN = 1000
 NB_TEST = 20

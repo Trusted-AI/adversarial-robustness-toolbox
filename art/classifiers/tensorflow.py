@@ -466,7 +466,7 @@ class TensorFlowClassifier(ClassifierNeuralNetwork, ClassifierGradients, Classif
         :param filename: Name of the file where to store the model.
         :type filename: `str`
         :param path: Path of the folder where to store the model. If no path is specified, the model will be stored in
-                     the default data location of the library `DATA_PATH`.
+                     the default data location of the library `ART_DATA_PATH`.
         :type path: `str`
         :return: None
         """
@@ -478,8 +478,8 @@ class TensorFlowClassifier(ClassifierNeuralNetwork, ClassifierGradients, Classif
         from tensorflow.python.saved_model.signature_def_utils_impl import predict_signature_def
 
         if path is None:
-            from art import DATA_PATH
-            full_path = os.path.join(DATA_PATH, filename)
+            from art.config import ART_DATA_PATH
+            full_path = os.path.join(ART_DATA_PATH, filename)
         else:
             full_path = os.path.join(path, filename)
 
@@ -556,9 +556,9 @@ class TensorFlowClassifier(ClassifierNeuralNetwork, ClassifierGradients, Classif
             import tensorflow.compat.v1 as tf
             tf.disable_eager_execution()
         from tensorflow.python.saved_model import tag_constants
-        from art import DATA_PATH
+        from art.config import ART_DATA_PATH
 
-        full_path = os.path.join(DATA_PATH, state['model_name'])
+        full_path = os.path.join(ART_DATA_PATH, state['model_name'])
 
         graph = tf.Graph()
         sess = tf.Session(graph=graph)
@@ -623,8 +623,8 @@ class TensorFlowV2Classifier(ClassifierNeuralNetwork, ClassifierGradients, Class
     This class implements a classifier with the TensorFlow v2 framework.
     """
 
-    def __init__(self, model, nb_classes, loss_object=None, train_step=None, channel_index=3, clip_values=None,
-                 defences=None, preprocessing=(0, 1)):
+    def __init__(self, model, nb_classes, input_shape, loss_object=None, train_step=None, channel_index=3,
+                 clip_values=None, defences=None, preprocessing=(0, 1)):
         """
         Initialization specific to TensorFlow v2 models.
 
@@ -632,6 +632,8 @@ class TensorFlowV2Classifier(ClassifierNeuralNetwork, ClassifierGradients, Class
         :type model: `function` or `callable class`
         :param nb_classes: the number of classes in the classification task
         :type nb_classes: `int`
+        :param input_shape: shape of one input for the classifier, e.g. for MNIST input_shape=(28, 28, 1)
+        :type input_shape: `tuple`
         :param loss_object: The loss function for which to compute gradients. This parameter is applied for training
             the model and computing gradients of the loss w.r.t. the input.
         :type loss_object: `tf.keras.losses`
@@ -656,6 +658,7 @@ class TensorFlowV2Classifier(ClassifierNeuralNetwork, ClassifierGradients, Class
 
         self._model = model
         self._nb_classes = nb_classes
+        self._input_shape = input_shape
         self._loss_object = loss_object
         self._train_step = train_step
 
@@ -904,7 +907,7 @@ class TensorFlowV2Classifier(ClassifierNeuralNetwork, ClassifierGradients, Class
         :param filename: Name of the file where to store the model.
         :type filename: `str`
         :param path: Path of the folder where to store the model. If no path is specified, the model will be stored in
-                     the default data location of the library `DATA_PATH`.
+                     the default data location of the library `ART_DATA_PATH`.
         :type path: `str`
         :return: None
         """

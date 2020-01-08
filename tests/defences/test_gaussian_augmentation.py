@@ -25,7 +25,7 @@ import numpy as np
 from art.defences import GaussianAugmentation
 from art.utils import master_seed
 
-logger = logging.getLogger('testLogger')
+logger = logging.getLogger(__name__)
 
 
 class TestGaussianAugmentation(unittest.TestCase):
@@ -41,15 +41,21 @@ class TestGaussianAugmentation(unittest.TestCase):
 
     def test_double_size(self):
         x = np.arange(12).reshape((4, 3))
+        x_original = x.copy()
         ga = GaussianAugmentation()
         x_new, _ = ga(x)
         self.assertEqual(x_new.shape[0], 2 * x.shape[0])
+        # Check that x has not been modified by attack and classifier
+        self.assertAlmostEqual(float(np.max(np.abs(x_original - x))), 0.0, delta=0.00001)
 
     def test_multiple_size(self):
         x = np.arange(12).reshape((4, 3))
+        x_original = x.copy()
         ga = GaussianAugmentation(ratio=3.5)
         x_new, _ = ga(x)
         self.assertEqual(int(4.5 * x.shape[0]), x_new.shape[0])
+        # Check that x has not been modified by attack and classifier
+        self.assertAlmostEqual(float(np.max(np.abs(x_original - x))), 0.0, delta=0.00001)
 
     def test_labels(self):
         x = np.arange(12).reshape((4, 3))
@@ -76,5 +82,6 @@ class TestGaussianAugmentation(unittest.TestCase):
         self.assertTrue('If `augmentation` is `True`, then `apply_fit` must be `True` and `apply_predict`'
                         ' must be `False`.' in str(context.exception))
 
-        if __name__ == '__main__':
-            unittest.main()
+
+if __name__ == '__main__':
+    unittest.main()
