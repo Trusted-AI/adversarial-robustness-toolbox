@@ -38,7 +38,7 @@ from art.utils_test import get_classifier_pt
 from art.utils_test import get_iris_classifier_tf
 from art.utils_test import get_iris_classifier_kr
 from art.utils_test import get_iris_classifier_pt
-from art import NUMPY_DTYPE
+from art.config import ART_NUMPY_DTYPE
 
 logger = logging.getLogger(__name__)
 
@@ -58,8 +58,8 @@ class TestKnockoffNets(unittest.TestCase):
     def setUpClass(cls):
         (x_train, y_train), (_, _), _, _ = load_dataset('mnist')
 
-        cls.x_train = x_train[:NB_TRAIN].astype(NUMPY_DTYPE)
-        cls.y_train = y_train[:NB_TRAIN].astype(NUMPY_DTYPE)
+        cls.x_train = x_train[:NB_TRAIN].astype(ART_NUMPY_DTYPE)
+        cls.y_train = y_train[:NB_TRAIN].astype(ART_NUMPY_DTYPE)
 
     def setUp(self):
         master_seed(1234)
