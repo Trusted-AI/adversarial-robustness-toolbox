@@ -187,6 +187,10 @@ class KnockoffNets(ExtractionAttack):
         else:
             raise ValueError('Target values `y` has a wrong shape.')
 
+        # We need to keep an average version of the victim output
+        if self.reward == 'div' or self.reward == 'all':
+            self.y_avg = np.zeros(self.classifier.nb_classes())
+
         # Implement the bandit gradients algorithm
         h_func = np.zeros(nb_actions)
         learning_rate = np.zeros(nb_actions)
@@ -216,7 +220,7 @@ class KnockoffNets(ExtractionAttack):
             y_hat = thieved_classifier.predict(x=np.array([sampled_x]), batch_size=self.batch_size_query)
 
             # Compute rewards
-            reward = self._reward(y_output, y_hat)
+            reward = self._reward(y_output, y_hat, it)
             avg_reward = avg_reward + (1.0 / it) * (reward - avg_reward)
 
             # Update learning rate
@@ -263,7 +267,7 @@ class KnockoffNets(ExtractionAttack):
 
         return x_[rnd_idx]
 
-    def _reward(self, y_output, y_hat):
+    def _reward(self, y_output, y_hat, n):
         """
         Compute reward value.
 
@@ -271,19 +275,22 @@ class KnockoffNets(ExtractionAttack):
         :type y_output: `np.ndarray`
         :param y_hat: Output of the thieved classifier.
         :type y_hat: `np.ndarray`
+        :param n: Current iteration.
+        :type n: `int`
         :return: Reward value.
         :rtype: `float`
         """
         if self.reward == 'cert':
             return self._reward_cert(y_output)
         elif self.reward == 'div':
-            return self._reward_div()
+            return self._reward_div(y_output, n)
         elif self.reward == 'loss':
             return self._reward_loss()
         else:
             return self._reward_all()
 
-    def _reward_cert(self, y_output):
+    @staticmethod
+    def _reward_cert(y_output):
         """
         Compute `cert` reward value.
 
@@ -296,6 +303,34 @@ class KnockoffNets(ExtractionAttack):
         reward = largests[1] - largests[0]
 
         return reward
+
+    def _reward_div(self, y_output, n):
+        """
+        Compute `div` reward value.
+
+        :param y_output: Output of the victim classifier.
+        :type y_output: `np.ndarray`
+        :param n: Current iteration.
+        :type n: `int`
+        :return: Reward value.
+        :rtype: `float`
+        """
+        # First update y_avg
+        self.y_avg = self.y_avg + (1.0 / n) * (y_output[0] - self.y_avg)
+
+        # Then compute reward
+        reward = 0
+        for k in range(self.classifier.nb_classes()):
+            reward += np.maximum(0, y_output[0][k] - self.y_avg[k])
+
+        return reward
+
+
+
+
+
+
+
 
 
     def set_params(self, **kwargs):
