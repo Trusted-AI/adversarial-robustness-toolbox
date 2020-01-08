@@ -382,19 +382,6 @@ class KnockoffNets(ExtractionAttack):
 
         return np.mean(reward)
 
-
-
-
-
-
-
-
-
-
-
-
-
-
     def set_params(self, **kwargs):
         """
         Take in a dictionary of parameters and applies attack-specific checks before saving them as attributes.
