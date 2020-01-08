@@ -347,7 +347,7 @@ class KnockoffNets(ExtractionAttack):
         probs_output = aux_exp / np.sum(aux_exp)
 
         # Compute thieved probs
-        aux_exp = np.exp(y_hat)
+        aux_exp = np.exp(y_hat[0])
         probs_hat = aux_exp / np.sum(aux_exp)
 
         # Compute reward
@@ -378,7 +378,10 @@ class KnockoffNets(ExtractionAttack):
         self.reward_var = self.reward_var + (1.0 / n) * ((reward - self.reward_avg)**2 - self.reward_var)
 
         # Normalize rewards
-        reward = (reward - self.reward_avg) / np.sqrt(self.reward_var)
+        if n > 1:
+            reward = (reward - self.reward_avg) / np.sqrt(self.reward_var)
+        else:
+            reward = [max(min(r, 1), 0) for r in reward]
 
         return np.mean(reward)
 
