@@ -263,9 +263,19 @@ class KnockoffNets(ExtractionAttack):
 
         return x_[rnd_idx]
 
-    def _reward(self, action, y_hat):
+    def _reward(self, y_output, y_hat):
+        """
+        Compute reward value.
+
+        :param y_output: Output of the victim classifier.
+        :type y_output: `np.ndarray`
+        :param y_hat: Output of the thieved classifier.
+        :type y_hat: `np.ndarray`
+        :return: Reward value.
+        :rtype: `float`
+        """
         if self.reward == 'cert':
-            return self._reward_cert()
+            return self._reward_cert(y_output)
         elif self.reward == 'div':
             return self._reward_div()
         elif self.reward == 'loss':
@@ -273,8 +283,20 @@ class KnockoffNets(ExtractionAttack):
         else:
             return self._reward_all()
 
-    def _reward_cert(self):
-        
+    def _reward_cert(self, y_output):
+        """
+        Compute `cert` reward value.
+
+        :param y_output: Output of the victim classifier.
+        :type y_output: `np.ndarray`
+        :return: Reward value.
+        :rtype: `float`
+        """
+        largests = np.partition(y_output.flatten(), -2)[-2:]
+        reward = largests[1] - largests[0]
+
+        return reward
+
 
     def set_params(self, **kwargs):
         """
