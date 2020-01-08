@@ -30,11 +30,9 @@ from keras.preprocessing.image import ImageDataGenerator
 from art.data_generators import KerasDataGenerator, PyTorchDataGenerator, MXDataGenerator, TFDataGenerator
 from art.utils import master_seed
 
-logger = logging.getLogger('testLogger')
+logger = logging.getLogger(__name__)
 
 
-@unittest.skipIf(tf.__version__[0] == '2', reason='Skip unittests for TensorFlow v2 until Keras supports TensorFlow'
-                                                  ' v2 as backend.')
 class TestKerasDataGenerator(unittest.TestCase):
     def setUp(self):
         import keras

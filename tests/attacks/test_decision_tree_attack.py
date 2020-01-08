@@ -28,7 +28,7 @@ from art.attacks import DecisionTreeAttack
 from art.classifiers import SklearnClassifier
 from art.utils import master_seed
 
-logger = logging.getLogger('testLogger')
+logger = logging.getLogger(__name__)
 
 
 class TestDecisionTreeAttack(unittest.TestCase):
@@ -48,6 +48,7 @@ class TestDecisionTreeAttack(unittest.TestCase):
 
     def test_scikitlearn(self):
         clf = DecisionTreeClassifier()
+        X_original = self.X.copy()
         clf.fit(self.X, self.y)
         clf_art = SklearnClassifier(clf)
         attack = DecisionTreeAttack(clf_art)
@@ -58,6 +59,8 @@ class TestDecisionTreeAttack(unittest.TestCase):
         adv = attack.generate(self.X[:25], targets)
         # all targeted crafting should succeed as well
         self.assertTrue(np.sum(clf.predict(adv) == targets) == 25.0)
+        # Check that X has not been modified by attack and classifier
+        self.assertAlmostEqual(float(np.max(np.abs(X_original - self.X))), 0.0, delta=0.00001)
 
 
 if __name__ == '__main__':

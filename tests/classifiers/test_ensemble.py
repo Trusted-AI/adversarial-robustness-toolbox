@@ -20,7 +20,6 @@ from __future__ import absolute_import, division, print_function, unicode_litera
 import logging
 import unittest
 
-import tensorflow as tf
 import numpy as np
 import keras.backend as k
 
@@ -28,15 +27,13 @@ from art.classifiers import EnsembleClassifier
 from art.utils import load_dataset, master_seed
 from art.utils_test import get_classifier_kr
 
-logger = logging.getLogger('testLogger')
+logger = logging.getLogger(__name__)
 
 BATCH_SIZE = 10
 NB_TRAIN = 500
 NB_TEST = 100
 
 
-@unittest.skipIf(tf.__version__[0] == '2', reason='Skip unittests for TensorFlow v2 until Keras supports TensorFlow'
-                                                  ' v2 as backend.')
 class TestEnsembleClassifier(unittest.TestCase):
     @classmethod
     def setUpClass(cls):
@@ -139,3 +136,7 @@ class TestEnsembleClassifier(unittest.TestCase):
         self.assertIn('art.classifiers.ensemble.EnsembleClassifier', repr_)
         self.assertIn('classifier_weights=array([0.5, 0.5])', repr_)
         self.assertIn('channel_index=3, clip_values=(0, 1), defences=None, preprocessing=(0, 1)', repr_)
+
+
+if __name__ == '__main__':
+    unittest.main()

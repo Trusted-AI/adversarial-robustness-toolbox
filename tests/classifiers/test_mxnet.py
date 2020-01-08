@@ -27,7 +27,7 @@ from mxnet.gluon import nn
 from art.classifiers import MXClassifier
 from art.utils import load_mnist, master_seed
 
-logger = logging.getLogger('testLogger')
+logger = logging.getLogger(__name__)
 
 NB_TRAIN = 1000
 NB_TEST = 20
@@ -121,7 +121,7 @@ class TestMXClassifier(unittest.TestCase):
         self.assertNotEqual(np.sum(grads), 0)
 
         # Assert gradient computed for the same class on same input are equal
-        self.assertAlmostEqual(float(np.sum(grads_all[:, 3] - grads)), 0, places=5)
+        self.assertAlmostEqual(float(np.sum(grads_all[:, 3] - grads)), 0, places=4)
 
         # Test a set of gradients label = array
         labels = np.random.randint(5, size=NB_TEST)

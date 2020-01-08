@@ -1,12 +1,19 @@
 """
 The Adversarial Robustness Toolbox (ART).
 """
-import json
 import logging
 import logging.config
-import os
 
-from numpy import float32
+# Project Imports
+from art import attacks
+from art import classifiers
+from art import defences
+from art import metrics
+from art import poison_detection
+from art import wrappers
+
+# Semantic Version
+__version__ = "1.1.0"
 
 # pylint: disable=C0103
 
@@ -26,14 +33,14 @@ LOGGING = {
         'test': {
             'class': 'logging.StreamHandler',
             'formatter': 'std',
-            'level': logging.DEBUG
+            'level': logging.INFO
         }
     },
     'loggers': {
-        '': {
+        'art': {
             'handlers': ['default']
         },
-        'testLogger': {
+        'tests': {
             'handlers': ['test'],
             'level': 'INFO',
             'propagate': True
@@ -42,37 +49,3 @@ LOGGING = {
 }
 logging.config.dictConfig(LOGGING)
 logger = logging.getLogger(__name__)
-
-_folder = os.path.expanduser('~')
-if not os.access(_folder, os.W_OK):
-    _folder = '/tmp'
-_folder = os.path.join(_folder, '.art')
-
-_config_path = os.path.expanduser(os.path.join(_folder, 'config.json'))
-if os.path.exists(_config_path):
-    try:
-        with open(_config_path) as f:
-            _config = json.load(f)
-    except ValueError:
-        _config = {}
-
-if not os.path.exists(_folder):
-    try:
-        os.makedirs(_folder)
-    except OSError:
-        logger.warning('Unable to create folder for configuration file.', exc_info=True)
-
-if not os.path.exists(_config_path):
-    # Generate default config
-    _config = {'DATA_PATH': os.path.join(_folder, 'data')}
-
-    try:
-        with open(_config_path, 'w') as f:
-            f.write(json.dumps(_config, indent=4))
-    except IOError:
-        logger.warning('Unable to create configuration file', exc_info=True)
-
-if 'DATA_PATH' in _config:
-    DATA_PATH = _config['DATA_PATH']
-
-NUMPY_DTYPE = float32

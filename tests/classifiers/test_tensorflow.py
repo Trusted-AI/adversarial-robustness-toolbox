@@ -24,17 +24,19 @@ import unittest
 import pickle
 
 import tensorflow as tf
+
 if tf.__version__[0] == '2':
     import tensorflow.compat.v1 as tf
+
     tf.disable_eager_execution()
 import numpy as np
 
-from art import DATA_PATH
+from art.config import ART_DATA_PATH
 from art.utils import load_dataset, master_seed
 from art.utils_test import get_classifier_tf
 from art.data_generators import TFDataGenerator
 
-logger = logging.getLogger('testLogger')
+logger = logging.getLogger(__name__)
 
 NB_TRAIN = 1000
 NB_TEST = 20
@@ -112,7 +114,7 @@ class TestTensorFlowClassifier(unittest.TestCase):
         sess.close()
 
     def test_class_gradient(self):
-        classifier, sess = get_classifier_tf()
+        classifier, sess = get_classifier_tf(from_logits=True)
 
         # Test all gradients label = None
         gradients = classifier.class_gradient(self.x_test)
@@ -258,7 +260,7 @@ class TestTensorFlowClassifier(unittest.TestCase):
 
     def test_pickle(self):
         classifier, sess = get_classifier_tf()
-        full_path = os.path.join(DATA_PATH, 'my_classifier')
+        full_path = os.path.join(ART_DATA_PATH, 'my_classifier')
         folder = os.path.split(full_path)[0]
 
         if not os.path.exists(folder):

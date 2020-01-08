@@ -27,7 +27,7 @@ from art.attacks import HighConfidenceLowUncertainty
 from art.classifiers import GPyGaussianProcessClassifier
 from art.utils import load_dataset, master_seed
 
-logger = logging.getLogger('testLogger')
+logger = logging.getLogger(__name__)
 
 
 class TestHCLU(unittest.TestCase):
@@ -45,6 +45,7 @@ class TestHCLU(unittest.TestCase):
         master_seed(1234)
 
     def test_GPy(self):
+        x_test_original = self.x_test.copy()
         # set up GPclassifier
         gpkern = GPy.kern.RBF(np.shape(self.x_train)[1])
         m = GPy.models.GPClassification(self.x_train, self.y_train.reshape(-1, 1), kernel=gpkern)
@@ -70,7 +71,10 @@ class TestHCLU(unittest.TestCase):
         self.assertGreater(clean_acc, adv_acc)
         # uncertainty should indeed be lower when used as a constraint
         # however, same as above, crafting might fail
-        self.assertGreater(np.mean(unc_f > unc_o), 0.7)
+        self.assertGreater(np.mean(unc_f > unc_o), 0.65)
+
+        # Check that x_test has not been modified by attack and classifier
+        self.assertAlmostEqual(float(np.max(np.abs(x_test_original - self.x_test))), 0.0, delta=0.00001)
 
 
 if __name__ == '__main__':

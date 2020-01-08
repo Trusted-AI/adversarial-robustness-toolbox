@@ -20,7 +20,6 @@ from __future__ import absolute_import, division, print_function, unicode_litera
 import logging
 import unittest
 
-import tensorflow as tf
 import numpy as np
 
 from art.attacks import FastGradientMethod
@@ -29,7 +28,7 @@ from art.utils import load_dataset, random_targets, master_seed
 from art.utils_test import get_classifier_kr, get_iris_classifier_kr
 from art.wrappers.expectation import ExpectationOverTransformations
 
-logger = logging.getLogger('testLogger')
+logger = logging.getLogger(__name__)
 
 BATCH_SIZE = 100
 NB_TRAIN = 5000
@@ -51,8 +50,6 @@ class TestExpectationOverTransformations(unittest.TestCase):
     def setUp(self):
         master_seed(1234)
 
-    @unittest.skipIf(tf.__version__[0] == '2', reason='Skip unittests for TensorFlow v2 until Keras supports TensorFlow'
-                                                      ' v2 as backend.')
     def test_krclassifier(self):
         """
         Test with a KerasClassifier.
@@ -94,8 +91,6 @@ class TestExpectationVectors(unittest.TestCase):
     def setUp(self):
         master_seed(1234)
 
-    @unittest.skipIf(tf.__version__[0] == '2', reason='Skip unittests for TensorFlow v2 until Keras supports TensorFlow'
-                                                      ' v2 as backend.')
     def test_iris_clipped(self):
         (_, _), (x_test, y_test) = self.iris
 
@@ -106,7 +101,7 @@ class TestExpectationVectors(unittest.TestCase):
             while True:
                 yield t
 
-        classifier, _ = get_iris_classifier_kr()
+        classifier = get_iris_classifier_kr()
         classifier = ExpectationOverTransformations(classifier, sample_size=1, transformation=transformation)
 
         # Test untargeted attack
@@ -121,11 +116,9 @@ class TestExpectationVectors(unittest.TestCase):
         acc = np.sum(preds_adv == np.argmax(y_test, axis=1)) / y_test.shape[0]
         logger.info('Accuracy on Iris with limited query info: %.2f%%', (acc * 100))
 
-    @unittest.skipIf(tf.__version__[0] == '2', reason='Skip unittests for TensorFlow v2 until Keras supports TensorFlow'
-                                                      ' v2 as backend.')
     def test_iris_unbounded(self):
         (_, _), (x_test, y_test) = self.iris
-        classifier, _ = get_iris_classifier_kr()
+        classifier = get_iris_classifier_kr()
 
         def t(x):
             return x

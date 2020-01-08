@@ -52,6 +52,9 @@ ART正在不断发展中。 我们欢迎您的反馈，错误报告和对ART建�
 **中毒攻击**
 * 对SVM的中毒攻击 ([Biggio et al., 2013](https://arxiv.org/abs/1206.6389))
 
+**提取攻击:**
+* 功能等效提取 ([Jagielski et al., 2019](https://arxiv.org/abs/1909.01838))
+
 **防御：**
 * 温度计编码 ([Buckman et al., 2018](https://openreview.net/forum?id=S18Su--CW))
 * 总方差最小化 ([Guo et al., 2018](https://openreview.net/forum?id=SyJ7ClWCb))
@@ -63,6 +66,13 @@ ART正在不断发展中。 我们欢迎您的反馈，错误报告和对ART建�
 * 标签平滑 ([Warde-Farley and Goodfellow, 2016](https://pdfs.semanticscholar.org/b5ec/486044c6218dd41b17d8bba502b32a12b91a.pdf))
 * 虚拟对抗训练 ([Miyato et al., 2015](https://arxiv.org/abs/1507.00677))
 * 对抗训练 ([Szegedy et al., 2013](http://arxiv.org/abs/1312.6199))
+
+**提取防御:**
+* 反向乙状结肠 ([Lee et al., 2018](https://arxiv.org/abs/1806.00054))
+* 随机噪声 ([Chandrasekaranet al., 2018](https://arxiv.org/abs/1811.02054))
+* 类标签 ([Tramer et al., 2016](https://arxiv.org/abs/1609.02943), [Chandrasekaranet al., 2018](https://arxiv.org/abs/1811.02054))
+* 高信心 ([Tramer et al., 2016](https://arxiv.org/abs/1609.02943))
+* 四舍五入 ([Tramer et al., 2016](https://arxiv.org/abs/1609.02943))
 
 **稳健性指标，认证和验证：**
 * Clique方法稳健性验证 ([Hongge et al., 2019](https://arxiv.org/abs/1906.03849))
