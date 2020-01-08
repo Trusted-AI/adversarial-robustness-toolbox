@@ -25,7 +25,7 @@ import numpy as np
 
 from art.wrappers import DataframeWrapper
 from art.utils import load_dataset, random_targets, master_seed
-from art.utils_test import get_iris_classifier_kr, get_iris_classifier_pt
+from tests.utils_test import get_iris_classifier_kr, get_iris_classifier_pt
 
 from art.attacks import HopSkipJump
 
