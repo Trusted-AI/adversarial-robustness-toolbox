@@ -126,7 +126,7 @@ class ProjectedGradientDescent(FastGradientMethod):
         if self.random_eps:
             self.eps = np.round(self.norm_dist.rvs(1)[0], 10)
             self.eps_step = (self.eps * 1.2) / self.max_iter
-            
+
         for _ in range(max(1, self.num_random_init)):
             adv_x = x.astype(ART_NUMPY_DTYPE)
 
