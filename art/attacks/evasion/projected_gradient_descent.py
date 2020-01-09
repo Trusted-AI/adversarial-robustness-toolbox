@@ -132,7 +132,7 @@ class ProjectedGradientDescent(FastGradientMethod):
             for i_max_iter in range(self.max_iter):
                 adv_x = self._compute(adv_x, x, targets, self.eps, self.eps_step, self._project,
                                       self.num_random_init > 0 and i_max_iter == 0)
-                
+
             if self.num_random_init > 1:
                 rate = 100 * compute_success(self.classifier, x, targets, adv_x,
                                              self.targeted, batch_size=self.batch_size)
