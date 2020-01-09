@@ -2,6 +2,12 @@
 ==================
 .. automodule:: art.metrics
 
+Clique Method Robustness Verification
+-------------------------------------
+.. autoclass:: RobustnessVerificationTreeModelsCliqueMethod
+   :members:
+   :special-members:
+
 Loss Sensitivity
 ----------------
 .. autofunction:: loss_sensitivity

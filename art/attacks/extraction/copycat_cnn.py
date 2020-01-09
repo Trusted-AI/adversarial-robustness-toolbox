@@ -37,7 +37,7 @@ logger = logging.getLogger(__name__)
 
 class CopycatCNN(ExtractionAttack):
     """
-    Implementation of the copycat cnn attack from Jacson et al. (2018).
+    Implementation of the Copycat CNN attack from Jacson et al. (2018).
 
     | Paper link: https://arxiv.org/abs/1806.05476
     """
@@ -45,7 +45,7 @@ class CopycatCNN(ExtractionAttack):
 
     def __init__(self, classifier, batch_size_fit=1, batch_size_query=1, nb_epochs=10, nb_stolen=1):
         """
-        Create a copycat cnn attack instance.
+        Create a Copycat CNN attack instance.
 
         :param classifier: A victim classifier.
         :type classifier: :class:`.Classifier`

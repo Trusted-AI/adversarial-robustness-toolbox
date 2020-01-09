@@ -922,26 +922,26 @@ class ScikitlearnSVC(ScikitlearnClassifier, ClassifierGradients):
             if label is None:
                 gradients = np.zeros((x_preprocessed.shape[0], self.nb_classes(), x_preprocessed.shape[1]))
 
-                for label in range(self.nb_classes()):
+                for i_label in range(self.nb_classes()):
                     for i_sample in range(num_samples):
                         for not_label in range(self.nb_classes()):
-                            if label != not_label:
-                                if not_label < label:
+                            if i_label != not_label:
+                                if not_label < i_label:
                                     label_multiplier = -1
                                 else:
                                     label_multiplier = 1
 
-                                for label_sv in range(support_indices[label], support_indices[label + 1]):
+                                for label_sv in range(support_indices[i_label], support_indices[i_label + 1]):
                                     alpha_i_k_y_i = self._model.dual_coef_[
-                                        not_label if not_label < label else not_label - 1, label_sv]
+                                        not_label if not_label < i_label else not_label - 1, label_sv]
                                     grad_kernel = self._get_kernel_gradient_sv(label_sv, x_preprocessed[i_sample])
-                                    gradients[i_sample, label] += label_multiplier * alpha_i_k_y_i * grad_kernel
+                                    gradients[i_sample, i_label] += label_multiplier * alpha_i_k_y_i * grad_kernel
 
                                 for not_label_sv in range(support_indices[not_label], support_indices[not_label + 1]):
                                     alpha_i_k_y_i = self._model.dual_coef_[
-                                        label if label < not_label else label - 1, not_label_sv]
+                                        i_label if i_label < not_label else i_label - 1, not_label_sv]
                                     grad_kernel = self._get_kernel_gradient_sv(not_label_sv, x_preprocessed[i_sample])
-                                    gradients[i_sample, label] += label_multiplier * alpha_i_k_y_i * grad_kernel
+                                    gradients[i_sample, i_label] += label_multiplier * alpha_i_k_y_i * grad_kernel
 
             elif isinstance(label, (int, np.integer)):
                 gradients = np.zeros((x_preprocessed.shape[0], 1, x_preprocessed.shape[1]))

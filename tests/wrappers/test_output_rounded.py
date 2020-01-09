@@ -23,7 +23,7 @@ import unittest
 import numpy as np
 
 from art.utils import load_dataset, master_seed
-from art.utils_test import get_classifier_kr
+from tests.utils_test import get_classifier_kr
 from art.wrappers.output_rounded import OutputRounded
 
 logger = logging.getLogger(__name__)

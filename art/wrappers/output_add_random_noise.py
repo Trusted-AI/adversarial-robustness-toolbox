@@ -28,7 +28,7 @@ from art.classifiers.classifier import Classifier
 logger = logging.getLogger(__name__)
 
 
-class RandomNoise(ClassifierWrapper, Classifier):
+class OutputRandomNoise(ClassifierWrapper, Classifier):
     """
     Implementation of a classifier wrapper adding random Gaussian noise to the classifier output.
     """
@@ -42,7 +42,7 @@ class RandomNoise(ClassifierWrapper, Classifier):
         :param scale: Standard deviation of the distribution.
         :type scale: `float`
         """
-        super(RandomNoise, self).__init__(classifier)
+        super(OutputRandomNoise, self).__init__(classifier)
         self.scale = scale
 
     # pylint: disable=W0221

@@ -30,7 +30,7 @@ from art.classifiers.classifier import Classifier
 logger = logging.getLogger(__name__)
 
 
-class ReverseSigmoid(ClassifierWrapper, Classifier):
+class OutputReverseSigmoid(ClassifierWrapper, Classifier):
     """
     Implementation of a classifier wrapper for the Reverse Sigmoid output perturbation.
     """
@@ -46,7 +46,7 @@ class ReverseSigmoid(ClassifierWrapper, Classifier):
         :param gamma: A positive dataset and model specific convergence parameter
         :type gamma: `float`
         """
-        super(ReverseSigmoid, self).__init__(classifier)
+        super(OutputReverseSigmoid, self).__init__(classifier)
         self.beta = beta
         self.gamma = gamma
 
@@ -66,8 +66,8 @@ class ReverseSigmoid(ClassifierWrapper, Classifier):
         clip_min = 1e-9
         clip_max = 1.0 - clip_min
 
-        def sigmoid(z):
-            return 1.0 / (1.0 + np.exp(-z))
+        def sigmoid(var_z):
+            return 1.0 / (1.0 + np.exp(-var_z))
 
         predictions = self.classifier.predict(x, batch_size=batch_size, **kwargs)
         predictions_clipped = np.clip(predictions, clip_min, clip_max)
@@ -78,7 +78,7 @@ class ReverseSigmoid(ClassifierWrapper, Classifier):
             predictions_perturbed = predictions - perturbation_r
             predictions_perturbed = np.clip(predictions_perturbed, 0.0, 1.0)
             alpha = 1.0 / np.sum(predictions_perturbed, axis=-1, keepdims=True)
-            rs = alpha * predictions_perturbed
+            reverse_sigmoid = alpha * predictions_perturbed
         else:
             predictions_1 = predictions
             predictions_2 = 1.0 - predictions
@@ -99,9 +99,9 @@ class ReverseSigmoid(ClassifierWrapper, Classifier):
 
             alpha = 1.0 / (predictions_perturbed_1 + predictions_perturbed_2)
 
-            rs = alpha * predictions_perturbed_1
+            reverse_sigmoid = alpha * predictions_perturbed_1
 
-        return rs
+        return reverse_sigmoid
 
     def fit(self, x, y, batch_size=128, nb_epochs=20, **kwargs):
         """
