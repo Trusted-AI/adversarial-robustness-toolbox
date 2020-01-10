@@ -91,7 +91,6 @@ class ProjectedGradientDescent(FastGradientMethod):
             mu, sigma = 0, (eps / 2)
             self.norm_dist = truncnorm((lower - mu) / sigma, (upper - mu) / sigma, loc=mu, scale=sigma)
 
-
         self._project = True
 
     def generate(self, x, y=None, **kwargs):
