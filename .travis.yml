@@ -37,6 +37,7 @@ install:
   - conda install libgcc
   - export LD_LIBRARY_PATH=$LD_LIBRARY_PATH:/home/travis/miniconda/envs/test-environment/lib
   - export PYTHONPATH=".":$PYTHONPATH
+  - codecov
 
 script:
   - travis_wait 40 ./run_tests.sh
