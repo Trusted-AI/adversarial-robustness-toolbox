@@ -387,6 +387,7 @@ echo "test_data_generators"
 echo "####################"
 coverage run 'tests/test_data_generators.py'
 if [[ $? -ne 0 ]]; then exit_code=1; echo 'Failed test_data_generators'; fi
+codecov
 
 # utils
 
@@ -395,6 +396,7 @@ echo "test_utils"
 echo "##########"
 coverage run 'tests/test_utils.py'
 if [[ $? -ne 0 ]]; then exit_code=1; echo 'Failed test_utils'; fi
+codecov
 
 # visualization
 
