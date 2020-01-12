@@ -40,6 +40,3 @@ install:
 
 script:
   - travis_wait 40 ./run_tests.sh
-
-after_success:
-  - codecov
