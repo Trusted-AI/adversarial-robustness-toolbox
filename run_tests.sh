@@ -388,7 +388,7 @@ echo "test_data_generators"
 echo "######################################################################"
 coverage run 'tests/test_data_generators.py'
 if [[ $? -ne 0 ]]; then exit_code=1; echo 'Failed test_data_generators'; fi
-bash <(curl -s https://codecov.io/bash)
+bash <(curl -s https://codecov.io/bash) -cF test_data_generators
 
 # utils
 
@@ -397,7 +397,7 @@ echo "test_utils"
 echo "######################################################################"
 coverage run 'tests/test_utils.py'
 if [[ $? -ne 0 ]]; then exit_code=1; echo 'Failed test_utils'; fi
-bash <(curl -s https://codecov.io/bash)
+bash <(curl -s https://codecov.io/bash) -cF test_utils
 
 # visualization
 
@@ -406,6 +406,6 @@ echo "test_visualization"
 echo "######################################################################"
 coverage run 'tests/test_visualization.py'
 if [[ $? -ne 0 ]]; then exit_code=1; echo 'Failed test_visualization'; fi
-bash <(curl -s https://codecov.io/bash)
+bash <(curl -s https://codecov.io/bash) -cF test_visualization
 
 exit $exit_code
