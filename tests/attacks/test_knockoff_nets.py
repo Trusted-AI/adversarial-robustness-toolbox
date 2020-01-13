@@ -418,8 +418,16 @@ class TestKnockoffNetsVectors(unittest.TestCase):
 
         self.assertGreater(acc, 0.3)
 
+        # Create adaptive attack
+        attack = KnockoffNets(classifier=victim_ptc, batch_size_fit=BATCH_SIZE, batch_size_query=BATCH_SIZE,
+                              nb_epochs=NB_EPOCHS, nb_stolen=NB_STOLEN, sampling_strategy='adaptive', reward='all')
+        thieved_ptc = attack.extract(x=self.x_train, y=self.y_train, thieved_classifier=thieved_ptc)
 
+        victim_preds = np.argmax(victim_ptc.predict(x=self.x_train[:100]), axis=1)
+        thieved_preds = np.argmax(thieved_ptc.predict(x=self.x_train[:100]), axis=1)
+        acc = np.sum(victim_preds == thieved_preds) / len(victim_preds)
 
+        self.assertGreater(acc, 0.4)
 
 
 if __name__ == '__main__':
