@@ -88,12 +88,13 @@ declare -a art=("tests/test_data_generators.py" \
 
 run_test () {
   test=$1
+  test_file_name="$(echo $test | rev | cut -d'/' -f1 | rev)"
   echo "######################################################################"
   echo $test
   echo "######################################################################"
   coverage run $test
   if [[ $? -ne 0 ]]; then exit_code=1; echo "Failed $test"; fi
-  bash <(curl -s https://codecov.io/bash) -cF $test
+  bash <(curl -s https://codecov.io/bash) -cF $test_file_name
 }
 
 for tests_module in "${tests_modules[@]}"; do
