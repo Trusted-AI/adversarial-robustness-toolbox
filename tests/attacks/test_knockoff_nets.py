@@ -256,6 +256,18 @@ class TestKnockoffNets(unittest.TestCase):
         self.x_train = np.swapaxes(self.x_train, 1, 3)
 
 
+class TestKnockoffNetsVectors(unittest.TestCase):
+    @classmethod
+    def setUpClass(cls):
+        (x_train, y_train), (_, _), _, _ = load_dataset('iris')
+
+        cls.x_train = x_train
+        cls.y_train = y_train
+
+    def setUp(self):
+        master_seed(1234)
+
+
 
 
 
