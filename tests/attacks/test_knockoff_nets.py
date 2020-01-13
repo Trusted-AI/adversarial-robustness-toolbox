@@ -165,9 +165,71 @@ class TestKnockoffNets(unittest.TestCase):
         acc = np.sum(victim_preds == thieved_preds) / len(victim_preds)
 
         self.assertGreater(acc, 0.4)
-        
+
         # Clean-up
         k.clear_session()
+
+    def test_ptclassifier(self):
+        """
+        Third test with the PyTorchClassifier.
+        :return:
+        """
+        # Build PyTorchClassifier
+        victim_ptc = get_classifier_pt()
+
+        class Model(nn.Module):
+            """
+            Create model for pytorch.
+            """
+
+            def __init__(self):
+                super(Model, self).__init__()
+
+                self.conv = nn.Conv2d(in_channels=1, out_channels=1, kernel_size=7)
+                self.pool = nn.MaxPool2d(4, 4)
+                self.fullyconnected = nn.Linear(25, 10)
+
+            # pylint: disable=W0221
+            # disable pylint because of API requirements for function
+            def forward(self, x):
+                """
+                Forward function to evaluate the model
+
+                :param x: Input to the model
+                :return: Prediction of the model
+                """
+                x = self.conv(x)
+                x = torch.nn.functional.relu(x)
+                x = self.pool(x)
+                x = x.reshape(-1, 25)
+                x = self.fullyconnected(x)
+                x = torch.nn.functional.softmax(x)
+
+                return x
+
+        # Define the network
+        model = Model()
+
+        # Define a loss function and optimizer
+        loss_fn = nn.CrossEntropyLoss()
+        optimizer = optim.Adam(model.parameters(), lr=0.01)
+
+        # Get classifier
+        thieved_ptc = PyTorchClassifier(model=model, loss=loss_fn, optimizer=optimizer, input_shape=(1, 28, 28),
+                                        nb_classes=10, clip_values=(0, 1))
+
+        # Create random attack
+        attack = KnockoffNets(classifier=victim_ptc, batch_size_fit=BATCH_SIZE, batch_size_query=BATCH_SIZE,
+                              nb_epochs=NB_EPOCHS, nb_stolen=NB_STOLEN, sampling_strategy='random')
+        self.x_train = np.swapaxes(self.x_train, 1, 3)
+        thieved_ptc = attack.extract(x=self.x_train, thieved_classifier=thieved_ptc)
+        victim_preds = np.argmax(victim_ptc.predict(x=self.x_train[:100]), axis=1)
+        thieved_preds = np.argmax(thieved_ptc.predict(x=self.x_train[:100]), axis=1)
+        self.x_train = np.swapaxes(self.x_train, 1, 3)
+
+        acc = np.sum(victim_preds == thieved_preds) / len(victim_preds)
+
+        self.assertGreater(acc, 0.3)
 
 
 
