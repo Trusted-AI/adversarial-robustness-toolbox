@@ -322,6 +322,40 @@ class TestKnockoffNetsVectors(unittest.TestCase):
         sess.close()
         tf.reset_default_graph()
 
+    @unittest.skipIf(tf.__version__[0] == '2', reason='Skip unittests for Tensorflow v2 until Keras supports Tensorflow'
+                                                      ' v2 as backend.')
+    def test_iris_kr(self):
+        """
+        Second test for Keras.
+        :return:
+        """
+        # Build KerasClassifier
+        victim_krc, _ = get_iris_classifier_kr()
+
+        # Create simple CNN
+        model = Sequential()
+        model.add(Dense(10, input_shape=(4,), activation='relu'))
+        model.add(Dense(10, activation='relu'))
+        model.add(Dense(3, activation='softmax'))
+        model.compile(loss='categorical_crossentropy', optimizer=keras.optimizers.Adam(lr=0.001), metrics=['accuracy'])
+
+        # Get classifier
+        thieved_krc = KerasClassifier(model, clip_values=(0, 1), use_logits=False, channel_index=1)
+
+        # Create random attack
+        attack = KnockoffNets(classifier=victim_krc, batch_size_fit=BATCH_SIZE, batch_size_query=BATCH_SIZE,
+                              nb_epochs=NB_EPOCHS, nb_stolen=NB_STOLEN, sampling_strategy='random')
+        thieved_krc = attack.extract(x=self.x_train, thieved_classifier=thieved_krc)
+
+        victim_preds = np.argmax(victim_krc.predict(x=self.x_train[:100]), axis=1)
+        thieved_preds = np.argmax(thieved_krc.predict(x=self.x_train[:100]), axis=1)
+        acc = np.sum(victim_preds == thieved_preds) / len(victim_preds)
+
+        self.assertGreater(acc, 0.3)
+
+        # Clean-up
+        k.clear_session()
+
 
 
 
