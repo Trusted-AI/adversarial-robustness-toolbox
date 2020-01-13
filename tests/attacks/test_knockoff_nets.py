@@ -367,6 +367,57 @@ class TestKnockoffNetsVectors(unittest.TestCase):
         # Clean-up
         k.clear_session()
 
+    def test_iris_pt(self):
+        """
+        Third test for Pytorch.
+        :return:
+        """
+        # Build PyTorchClassifier
+        victim_ptc = get_iris_classifier_pt()
+
+        class Model(nn.Module):
+            """
+            Create Iris model for PyTorch.
+            """
+
+            def __init__(self):
+                super(Model, self).__init__()
+
+                self.fully_connected1 = nn.Linear(4, 10)
+                self.fully_connected2 = nn.Linear(10, 10)
+                self.fully_connected3 = nn.Linear(10, 3)
+
+            # pylint: disable=W0221
+            # disable pylint because of API requirements for function
+            def forward(self, x):
+                x = self.fully_connected1(x)
+                x = self.fully_connected2(x)
+                logit_output = self.fully_connected3(x)
+
+                return logit_output
+
+        # Define the network
+        model = Model()
+
+        # Define a loss function and optimizer
+        loss_fn = nn.CrossEntropyLoss()
+        optimizer = optim.Adam(model.parameters(), lr=0.001)
+
+        # Get classifier
+        thieved_ptc = PyTorchClassifier(model=model, loss=loss_fn, optimizer=optimizer, input_shape=(4,),
+                                        nb_classes=3, clip_values=(0, 1), channel_index=1)
+
+        # Create random attack
+        attack = KnockoffNets(classifier=victim_ptc, batch_size_fit=BATCH_SIZE, batch_size_query=BATCH_SIZE,
+                              nb_epochs=NB_EPOCHS, nb_stolen=NB_STOLEN, sampling_strategy='random')
+        thieved_ptc = attack.extract(x=self.x_train, thieved_classifier=thieved_ptc)
+
+        victim_preds = np.argmax(victim_ptc.predict(x=self.x_train[:100]), axis=1)
+        thieved_preds = np.argmax(thieved_ptc.predict(x=self.x_train[:100]), axis=1)
+        acc = np.sum(victim_preds == thieved_preds) / len(victim_preds)
+
+        self.assertGreater(acc, 0.3)
+
 
 
 
