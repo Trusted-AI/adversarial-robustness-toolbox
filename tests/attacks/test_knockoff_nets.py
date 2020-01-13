@@ -267,6 +267,51 @@ class TestKnockoffNetsVectors(unittest.TestCase):
     def setUp(self):
         master_seed(1234)
 
+    def test_iris_tf(self):
+        """
+        First test for TF.
+        :return:
+        """
+        # Get the TF classifier
+        victim_tfc, sess = get_iris_classifier_tf()
+
+        # Define input and output placeholders
+        input_ph = tf.placeholder(tf.float32, shape=[None, 4])
+        output_ph = tf.placeholder(tf.int32, shape=[None, 3])
+
+        # Define the tensorflow graph
+        dense1 = tf.layers.dense(input_ph, 10)
+        dense2 = tf.layers.dense(dense1, 10)
+        logits = tf.layers.dense(dense2, 3)
+
+        # Train operator
+        loss = tf.reduce_mean(tf.losses.softmax_cross_entropy(logits=logits, onehot_labels=output_ph))
+        optimizer = tf.train.AdamOptimizer(learning_rate=0.001)
+        train = optimizer.minimize(loss)
+
+        # Tensorflow session and initialization
+        sess.run(tf.global_variables_initializer())
+
+        # Train the classifier
+        thieved_tfc = TensorFlowClassifier(clip_values=(0, 1), input_ph=input_ph, output=logits, labels_ph=output_ph,
+                                           train=train, loss=loss, learning=None, sess=sess, channel_index=1)
+
+        # Create random attack
+        attack = KnockoffNets(classifier=victim_tfc, batch_size_fit=BATCH_SIZE, batch_size_query=BATCH_SIZE,
+                              nb_epochs=NB_EPOCHS, nb_stolen=NB_STOLEN, sampling_strategy='random')
+        thieved_tfc = attack.extract(x=self.x_train, thieved_classifier=thieved_tfc)
+
+        victim_preds = np.argmax(victim_tfc.predict(x=self.x_train[:100]), axis=1)
+        thieved_preds = np.argmax(thieved_tfc.predict(x=self.x_train[:100]), axis=1)
+        acc = np.sum(victim_preds == thieved_preds) / len(victim_preds)
+
+        self.assertGreater(acc, 0.3)
+
+
+        # Clean-up session
+        sess.close()
+        tf.reset_default_graph()
+
 
 
 
