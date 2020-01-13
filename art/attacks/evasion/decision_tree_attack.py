@@ -24,7 +24,7 @@ import logging
 
 import numpy as np
 
-from art.attacks import EvasionAttack
+from art.attacks.attack import EvasionAttack
 from art.classifiers.scikitlearn import ScikitlearnDecisionTreeClassifier
 from art.utils import check_and_transform_label_format, compute_success
 

@@ -29,7 +29,7 @@ import torch.optim as optim
 
 from art.classifiers import PyTorchClassifier, DetectorClassifier
 from art.utils import load_dataset, master_seed
-from art.utils_test import get_classifier_pt
+from tests.utils_test import get_classifier_pt
 
 logger = logging.getLogger(__name__)
 

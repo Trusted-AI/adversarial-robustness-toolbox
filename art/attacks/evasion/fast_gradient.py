@@ -29,7 +29,7 @@ import numpy as np
 
 from art.config import ART_NUMPY_DTYPE
 from art.classifiers.classifier import ClassifierGradients
-from art.attacks import EvasionAttack
+from art.attacks.attack import EvasionAttack
 from art.utils import compute_success, get_labels_np_array, random_sphere, projection, check_and_transform_label_format
 
 logger = logging.getLogger(__name__)

@@ -24,7 +24,7 @@ import logging
 
 import numpy as np
 
-from art.attacks import PoisoningAttack
+from art.attacks.attack import PoisoningAttack
 from art.classifiers.scikitlearn import ScikitlearnSVC
 from art.utils import compute_success
 

@@ -40,7 +40,7 @@ from art.classifiers import KerasClassifier
 from art.classifiers.keras import generator_fit
 from art.defences import FeatureSqueezing, JpegCompression, SpatialSmoothing
 from art.utils import load_dataset, master_seed
-from art.utils_test import get_classifier_kr
+from tests.utils_test import get_classifier_kr
 from art.data_generators import KerasDataGenerator
 
 logger = logging.getLogger(__name__)

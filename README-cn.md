@@ -1,4 +1,4 @@
-# Adversarial Robustness 360 Toolbox (ART) v1.0
+# Adversarial Robustness 360 Toolbox (ART) v1.1
 <p align="center">
   <img src="docs/images/art_logo.png?raw=true" width="200" title="ART logo">
 </p>
@@ -25,7 +25,6 @@ ART正在不断发展中。 我们欢迎您的反馈，错误报告和对ART建�
 * LightGBM (https://lightgbm.readthedocs.io)
 * CatBoost (www.catboost.ai)
 * GPy (https://sheffieldml.github.io/GPy/)
-* Tesseract (https://github.com/tesseract-ocr/tesseract)
 
 ## ART中实施的攻击，防御，检测，指标，认证和验证
 
@@ -49,11 +48,12 @@ ART正在不断发展中。 我们欢迎您的反馈，错误报告和对ART建�
 * 虚拟对抗方法 ([Miyato et al., 2015](https://arxiv.org/abs/1507.00677))
 * 快速梯度法 ([Goodfellow et al., 2014](https://arxiv.org/abs/1412.6572))
 
-**中毒攻击**
-* 对SVM的中毒攻击 ([Biggio et al., 2013](https://arxiv.org/abs/1206.6389))
-
 **提取攻击:**
 * 功能等效提取 ([Jagielski et al., 2019](https://arxiv.org/abs/1909.01838))
+* Copycat CNN ([Correia-Silva et al., 2018](https://arxiv.org/abs/1806.05476))
+
+**中毒攻击**
+* 对SVM的中毒攻击 ([Biggio et al., 2013](https://arxiv.org/abs/1206.6389))
 
 **防御：**
 * 温度计编码 ([Buckman et al., 2018](https://openreview.net/forum?id=S18Su--CW))
@@ -66,6 +66,13 @@ ART正在不断发展中。 我们欢迎您的反馈，错误报告和对ART建�
 * 标签平滑 ([Warde-Farley and Goodfellow, 2016](https://pdfs.semanticscholar.org/b5ec/486044c6218dd41b17d8bba502b32a12b91a.pdf))
 * 虚拟对抗训练 ([Miyato et al., 2015](https://arxiv.org/abs/1507.00677))
 * 对抗训练 ([Szegedy et al., 2013](http://arxiv.org/abs/1312.6199))
+
+**提取防御:**
+* 反向乙状结肠 ([Lee et al., 2018](https://arxiv.org/abs/1806.00054))
+* 随机噪声 ([Chandrasekaranet al., 2018](https://arxiv.org/abs/1811.02054))
+* 类标签 ([Tramer et al., 2016](https://arxiv.org/abs/1609.02943), [Chandrasekaranet al., 2018](https://arxiv.org/abs/1811.02054))
+* 高信心 ([Tramer et al., 2016](https://arxiv.org/abs/1609.02943))
+* 四舍五入 ([Tramer et al., 2016](https://arxiv.org/abs/1609.02943))
 
 **稳健性指标，认证和验证：**
 * Clique方法稳健性验证 ([Hongge et al., 2019](https://arxiv.org/abs/1906.03849))
@@ -81,6 +88,8 @@ ART正在不断发展中。 我们欢迎您的反馈，错误报告和对ART建�
 
 **检测中毒攻击：**
 * 基于激活分析的探测器 ([Chen et al., 2018](https://arxiv.org/abs/1811.03728))
+* 根据数据来源进行检测 ([Baracaldo et al., 2018](https://ieeexplore.ieee.org/stamp/stamp.jsp?tp=&arnumber=8473440))
+
 
 ## 建立
 ### 用`pip`安装

@@ -18,25 +18,29 @@
 """
 This module implements methods performing poisoning detection based on data provenance.
 
-Paper link: https://ieeexplore.ieee.org/stamp/stamp.jsp?tp=&arnumber=8473440
+| Paper link: https://ieeexplore.ieee.org/stamp/stamp.jsp?tp=&arnumber=8473440
 """
 from __future__ import absolute_import, division, print_function, unicode_literals
 
 import logging
+from copy import deepcopy
 
 import numpy as np
+from sklearn.model_selection import train_test_split
 
 from art.poison_detection.ground_truth_evaluator import GroundTruthEvaluator
 from art.poison_detection.poison_filtering_defence import PoisonFilteringDefence
 from art.utils import segment_by_class, performance_diff
 
-from copy import deepcopy
-from sklearn.model_selection import train_test_split
-
 logger = logging.getLogger(__name__)
 
 
 class ProvenanceDefense(PoisonFilteringDefence):
+    """
+    Implements methods performing poisoning detection based on data provenance.
+
+    | Paper link: https://ieeexplore.ieee.org/stamp/stamp.jsp?tp=&arnumber=8473440
+    """
 
     defence_params = ['classifier', 'x_train', 'y_train', 'p_train', 'x_val', 'y_val', 'eps', 'perf_func', 'pp_valid']
 
@@ -159,9 +163,10 @@ class ProvenanceDefense(PoisonFilteringDefence):
             unfiltered_model.fit(unfiltered_data, unfiltered_labels)
             filtered_model.fit(filtered_data, filtered_labels)
 
-            w = performance_diff(filtered_model, unfiltered_model, self.x_val, self.y_val, perf_function=self.perf_func)
-            if self.eps < w:
-                suspected[device_idx] = w
+            var_w = performance_diff(filtered_model, unfiltered_model, self.x_val, self.y_val,
+                                     perf_function=self.perf_func)
+            if self.eps < var_w:
+                suspected[device_idx] = var_w
                 unfiltered_data = filtered_data
                 unfiltered_labels = filtered_labels
 
@@ -195,11 +200,11 @@ class ProvenanceDefense(PoisonFilteringDefence):
 
             valid_non_device_data, valid_non_device_labels = \
                 self.filter_input(valid_data, valid_labels, valid_segment)
-            w = performance_diff(filtered_model, unfiltered_model, valid_non_device_data, valid_non_device_labels,
-                                 perf_function=self.perf_func)
+            var_w = performance_diff(filtered_model, unfiltered_model, valid_non_device_data, valid_non_device_labels,
+                                     perf_function=self.perf_func)
 
-            if self.eps < w:
-                suspected[device_idx] = w
+            if self.eps < var_w:
+                suspected[device_idx] = var_w
                 train_data = filtered_data
                 train_labels = filtered_labels
                 valid_data = valid_non_device_data
@@ -236,11 +241,14 @@ class ProvenanceDefense(PoisonFilteringDefence):
 
         if self.eps < 0:
             raise ValueError("Value of epsilon must be at least 0")
-        elif self.pp_valid < 0:
+
+        if self.pp_valid < 0:
             raise ValueError("Value of pp_valid must be at least 0")
-        elif len(self.x_train) != len(self.y_train):
+
+        if len(self.x_train) != len(self.y_train):
             raise ValueError("x_train and y_train do not match in shape")
-        elif len(self.x_train) != len(self.p_train):
+
+        if len(self.x_train) != len(self.p_train):
             raise ValueError("Provenance features do not match data")
 
         return True

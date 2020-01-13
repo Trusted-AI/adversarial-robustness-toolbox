@@ -797,8 +797,7 @@ def segment_by_class(data, classes, num_classes):
 
 def performance_diff(model1, model2, test_data, test_labels, perf_function='accuracy', **kwargs):
     """
-    Calculates the difference in performance between two models on the test_data with
-    a performance function.
+    Calculates the difference in performance between two models on the test_data with a performance function.
 
     Returns performance(model1) - performance(model2)
 
@@ -824,18 +823,21 @@ def performance_diff(model1, model2, test_data, test_labels, perf_function='accu
 
     model1_labels = model1.predict(test_data)
     model2_labels = model2.predict(test_data)
+
     if perf_function == 'accuracy':
         model1_acc = accuracy_score(test_labels, model1_labels, **kwargs)
         model2_acc = accuracy_score(test_labels, model2_labels, **kwargs)
         return model1_acc - model2_acc
-    elif perf_function == 'f1':
+
+    if perf_function == 'f1':
         n_classes = test_labels.shape[1]
         if n_classes > 2 and 'average' not in kwargs:
             kwargs['average'] = 'micro'
         model1_f1 = f1_score(test_labels, model1_labels, **kwargs)
         model2_f1 = f1_score(test_labels, model2_labels, **kwargs)
         return model1_f1 - model2_f1
-    elif callable(perf_function):
+
+    if callable(perf_function):
         return perf_function(test_labels, model1_labels, **kwargs) - perf_function(test_labels, model2_labels, **kwargs)
-    else:
-        raise NotImplementedError("Performance function '{}' not supported".format(str(perf_function)))
+
+    raise NotImplementedError("Performance function '{}' not supported".format(str(perf_function)))

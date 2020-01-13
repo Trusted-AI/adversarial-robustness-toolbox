@@ -25,7 +25,7 @@ import keras.backend as k
 
 from art.classifiers import EnsembleClassifier
 from art.utils import load_dataset, master_seed
-from art.utils_test import get_classifier_kr
+from tests.utils_test import get_classifier_kr
 
 logger = logging.getLogger(__name__)
 
