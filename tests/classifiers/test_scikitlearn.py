@@ -328,7 +328,7 @@ class TestScikitlearnSVCSVC(unittest.TestCase):
     def setUpClass(cls):
         np.random.seed(seed=1234)
 
-        cls.sklearn_model = SVC()
+        cls.sklearn_model = SVC(gamma='auto')
         cls.classifier = ScikitlearnSVC(model=cls.sklearn_model)
         cls.classifier.fit(x=x_train, y=y_train)
 
@@ -459,7 +459,7 @@ class TestScikitlearnPipeline(unittest.TestCase):
     def setUpClass(cls):
         np.random.seed(seed=1234)
 
-        svc = SVC(C=1.0, kernel='rbf')
+        svc = SVC(C=1.0, kernel='rbf', gamma='auto')
         pca = PCA()
         sklearn_model = Pipeline(steps=[('pca', pca), ('svc', svc)])
         cls.classifier = SklearnClassifier(model=sklearn_model)

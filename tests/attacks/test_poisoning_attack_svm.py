@@ -126,7 +126,7 @@ class TestSVMAttack(unittest.TestCase):
 
     def test_unsupported_kernel(self):
         (x_train, y_train), (x_test, y_test), min_, max_ = self.iris
-        model = SVC(kernel='sigmoid')
+        model = SVC(kernel='sigmoid', gamma='auto')
         self.assertRaises(NotImplementedError, callable=PoisoningAttackSVM.__init__, classifier=model, step=0.01,
                           eps=1.0, x_train=x_train, y_train=y_train, x_val=x_test, y_val=y_test)
 
@@ -148,9 +148,9 @@ class TestSVMAttack(unittest.TestCase):
         # Build Scikitlearn Classifier
         clip_values = (min_, max_)
         for kernel in ['linear', 'poly', 'rbf']:
-            clean = SklearnClassifier(model=SVC(kernel=kernel), clip_values=clip_values)
+            clean = SklearnClassifier(model=SVC(kernel=kernel, gamma='auto'), clip_values=clip_values)
             clean.fit(x_train, y_train)
-            poison = SklearnClassifier(model=SVC(kernel=kernel), clip_values=clip_values)
+            poison = SklearnClassifier(model=SVC(kernel=kernel, gamma='auto'), clip_values=clip_values)
             poison.fit(x_train, y_train)
             attack = PoisoningAttackSVM(poison, 0.01, 1.0, x_train, y_train, x_test, y_test, 100)
             attack_point = attack.generate(np.array([x_train[0]]))

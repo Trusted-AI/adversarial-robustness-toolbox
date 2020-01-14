@@ -451,7 +451,7 @@ class TestHopSkipJump(unittest.TestCase):
                                   GradientBoostingClassifier(n_estimators=10),
                                   RandomForestClassifier(n_estimators=10),
                                   LogisticRegression(),
-                                  SVC(),
+                                  SVC(gamma='auto'),
                                   LinearSVC()]
 
         (_, _), (x_test, y_test) = self.iris

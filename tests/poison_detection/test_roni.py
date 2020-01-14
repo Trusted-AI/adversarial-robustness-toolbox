@@ -78,7 +78,7 @@ class TestRONI(unittest.TestCase):
         x_test = x_test[NB_VALID:]
         y_test = y_test[NB_VALID:]
 
-        no_defense = ScikitlearnSVC(model=SVC(kernel=kernel), clip_values=(min_, max_))
+        no_defense = ScikitlearnSVC(model=SVC(kernel=kernel, gamma='auto'), clip_values=(min_, max_))
         no_defense.fit(x=x_train, y=y_train)
         poison_points = np.random.randint(no_defense._model.support_vectors_.shape[0], size=NB_POISON)
         all_poison_init = np.copy(no_defense._model.support_vectors_[poison_points])
@@ -93,7 +93,7 @@ class TestRONI(unittest.TestCase):
         all_data = np.vstack([x_train, poisoned_data])
         all_labels = np.vstack([y_train, poison_labels])
 
-        model = SVC(kernel=kernel)
+        model = SVC(kernel=kernel, gamma='auto')
         cls.mnist = (all_data, all_labels), (x_test, y_test), (trusted_data, trusted_labels), \
                     (valid_data, valid_labels), (min_, max_)
         cls.classifier = SklearnClassifier(model=model, clip_values=(min_, max_))

@@ -81,7 +81,7 @@ class TestProvenanceDefence(unittest.TestCase):
         clean_prov = np.random.randint(NB_DEVICES - 1, size=x_train.shape[0])
         p_train = np.eye(NB_DEVICES)[clean_prov]
 
-        no_defense = ScikitlearnSVC(model=SVC(kernel=kernel), clip_values=(min_, max_))
+        no_defense = ScikitlearnSVC(model=SVC(kernel=kernel, gamma='auto'), clip_values=(min_, max_))
         no_defense.fit(x=x_train, y=y_train)
         poison_points = np.random.randint(no_defense._model.support_vectors_.shape[0], size=NB_POISON)
         all_poison_init = np.copy(no_defense._model.support_vectors_[poison_points])
@@ -99,7 +99,7 @@ class TestProvenanceDefence(unittest.TestCase):
         poison_prov[:, NB_DEVICES - 1] = 1
         all_p = np.vstack([p_train, poison_prov])
 
-        model = SVC(kernel=kernel)
+        model = SVC(kernel=kernel, gamma='auto')
         cls.mnist = (all_data, all_labels, all_p), (x_test, y_test), (trusted_data, trusted_labels), \
                     (valid_data, valid_labels), (min_, max_)
         cls.classifier = SklearnClassifier(model=model, clip_values=(min_, max_))
