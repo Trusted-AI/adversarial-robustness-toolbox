@@ -556,7 +556,7 @@ def get_classifier_pt(from_logits=False):
             x = x.reshape(-1, 25)
             x = self.fullyconnected(x)
             if not from_logits:
-                x = torch.nn.functional.softmax(x)
+                x = torch.nn.functional.softmax(x, dim=1)
             return x
 
     # Define the network
