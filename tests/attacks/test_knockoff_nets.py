@@ -32,12 +32,12 @@ from art.classifiers import TensorFlowClassifier
 from art.classifiers import KerasClassifier
 from art.classifiers import PyTorchClassifier
 from art.utils import load_dataset, master_seed
-from art.utils_test import get_classifier_tf
-from art.utils_test import get_classifier_kr
-from art.utils_test import get_classifier_pt
-from art.utils_test import get_iris_classifier_tf
-from art.utils_test import get_iris_classifier_kr
-from art.utils_test import get_iris_classifier_pt
+from tests.utils_test import get_classifier_tf
+from tests.utils_test import get_classifier_kr
+from tests.utils_test import get_classifier_pt
+from tests.utils_test import get_iris_classifier_tf
+from tests.utils_test import get_iris_classifier_kr
+from tests.utils_test import get_iris_classifier_pt
 from art.config import ART_NUMPY_DTYPE
 
 logger = logging.getLogger(__name__)
