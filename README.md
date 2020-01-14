@@ -122,7 +122,7 @@ The most recent version of ART can be downloaded or cloned from this repository:
 git clone https://github.com/IBM/adversarial-robustness-toolbox
 ```
 
-Install ART with the following command from the project folder `art`:
+Install ART with the following command from the main project folder:
 ```bash
 pip install .
 ```
