@@ -154,7 +154,7 @@ class TestScikitlearnGradientBoostingClassifier(unittest.TestCase):
     def setUpClass(cls):
         np.random.seed(seed=1234)
 
-        cls.sklearn_model = GradientBoostingClassifier(n_estimators=10)
+        cls.sklearn_model = GradientBoostingClassifier(n_estimators=100)
         cls.classifier = ScikitlearnGradientBoostingClassifier(model=cls.sklearn_model)
         cls.classifier.fit(x=x_train, y=y_train)
 
