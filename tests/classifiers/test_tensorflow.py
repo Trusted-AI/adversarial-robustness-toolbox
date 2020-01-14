@@ -206,7 +206,6 @@ class TestTensorFlowClassifier(unittest.TestCase):
         layer_names = classifier.layer_names
 
         for i, name in enumerate(layer_names):
-            print(self.x_test.shape)
             activation_i = classifier.get_activations(self.x_test, i, batch_size=5)
             activation_name = classifier.get_activations(self.x_test, name, batch_size=5)
             np.testing.assert_array_equal(activation_name, activation_i)
