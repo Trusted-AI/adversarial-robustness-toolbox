@@ -23,6 +23,7 @@ from __future__ import absolute_import, division, print_function, unicode_litera
 import logging
 import os
 import json
+import warnings
 import numpy as np
 
 logger = logging.getLogger(__name__)
@@ -100,40 +101,42 @@ def get_classifier_tf(from_logits=False):
         tf.disable_eager_execution()
     from art.classifiers import TensorFlowClassifier
 
-    # Define input and output placeholders
-    input_ph = tf.placeholder(tf.float32, shape=[None, 28, 28, 1])
-    output_ph = tf.placeholder(tf.int32, shape=[None, 10])
+    with warnings.catch_warnings():
 
-    # Define the tensorflow graph
-    conv = tf.layers.conv2d(input_ph, 1, 7, activation=tf.nn.relu,
-                            kernel_initializer=_tf_weights_loader('MNIST', 'W', 'CONV2D'),
-                            bias_initializer=_tf_weights_loader('MNIST', 'B', 'CONV2D'))
-    conv = tf.layers.max_pooling2d(conv, 4, 4)
-    flattened = tf.layers.flatten(conv)
+        # Define input and output placeholders
+        input_ph = tf.placeholder(tf.float32, shape=[None, 28, 28, 1])
+        output_ph = tf.placeholder(tf.int32, shape=[None, 10])
 
-    # Logits layer
-    logits = tf.layers.dense(flattened, 10, kernel_initializer=_tf_weights_loader('MNIST', 'W', 'DENSE'),
-                             bias_initializer=_tf_weights_loader('MNIST', 'B', 'DENSE'))
+        # Define the tensorflow graph
+        conv = tf.layers.conv2d(input_ph, 1, 7, activation=tf.nn.relu,
+                                kernel_initializer=_tf_weights_loader('MNIST', 'W', 'CONV2D'),
+                                bias_initializer=_tf_weights_loader('MNIST', 'B', 'CONV2D'))
+        conv = tf.layers.max_pooling2d(conv, 4, 4)
+        flattened = tf.layers.flatten(conv)
 
-    # probabilities
-    probabilities = tf.keras.activations.softmax(x=logits)
+        # Logits layer
+        logits = tf.layers.dense(flattened, 10, kernel_initializer=_tf_weights_loader('MNIST', 'W', 'DENSE'),
+                                 bias_initializer=_tf_weights_loader('MNIST', 'B', 'DENSE'))
 
-    # Train operator
-    loss = tf.reduce_mean(tf.losses.softmax_cross_entropy(logits=logits, onehot_labels=output_ph))
-    optimizer = tf.train.AdamOptimizer(learning_rate=0.01)
-    train = optimizer.minimize(loss)
+        # probabilities
+        probabilities = tf.keras.activations.softmax(x=logits)
 
-    # TensorFlow session and initialization
-    sess = tf.Session()
-    sess.run(tf.global_variables_initializer())
+        # Train operator
+        loss = tf.reduce_mean(tf.losses.softmax_cross_entropy(logits=logits, onehot_labels=output_ph))
+        optimizer = tf.train.AdamOptimizer(learning_rate=0.01)
+        train = optimizer.minimize(loss)
 
-    # Create the classifier
-    if from_logits:
-        tfc = TensorFlowClassifier(clip_values=(0, 1), input_ph=input_ph, output=logits, labels_ph=output_ph,
-                                   train=train, loss=loss, learning=None, sess=sess)
-    else:
-        tfc = TensorFlowClassifier(clip_values=(0, 1), input_ph=input_ph, output=probabilities, labels_ph=output_ph,
-                                   train=train, loss=loss, learning=None, sess=sess)
+        # TensorFlow session and initialization
+        sess = tf.Session()
+        sess.run(tf.global_variables_initializer())
+
+        # Create the classifier
+        if from_logits:
+            tfc = TensorFlowClassifier(clip_values=(0, 1), input_ph=input_ph, output=logits, labels_ph=output_ph,
+                                       train=train, loss=loss, learning=None, sess=sess)
+        else:
+            tfc = TensorFlowClassifier(clip_values=(0, 1), input_ph=input_ph, output=probabilities, labels_ph=output_ph,
+                                       train=train, loss=loss, learning=None, sess=sess)
 
     return tfc, sess
 
