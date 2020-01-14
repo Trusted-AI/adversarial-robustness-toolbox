@@ -133,7 +133,7 @@ class TestScikitlearnExtraTreesClassifier(unittest.TestCase):
     def setUpClass(cls):
         np.random.seed(seed=1234)
 
-        cls.sklearn_model = ExtraTreesClassifier()
+        cls.sklearn_model = ExtraTreesClassifier(n_estimators=10)
         cls.classifier = ScikitlearnExtraTreesClassifier(model=cls.sklearn_model)
         cls.classifier.fit(x=x_train, y=y_train)
 
@@ -154,7 +154,7 @@ class TestScikitlearnGradientBoostingClassifier(unittest.TestCase):
     def setUpClass(cls):
         np.random.seed(seed=1234)
 
-        cls.sklearn_model = GradientBoostingClassifier()
+        cls.sklearn_model = GradientBoostingClassifier(n_estimators=10)
         cls.classifier = ScikitlearnGradientBoostingClassifier(model=cls.sklearn_model)
         cls.classifier.fit(x=x_train, y=y_train)
 
@@ -175,7 +175,7 @@ class TestScikitlearnRandomForestClassifier(unittest.TestCase):
     def setUpClass(cls):
         np.random.seed(seed=1234)
 
-        cls.sklearn_model = RandomForestClassifier()
+        cls.sklearn_model = RandomForestClassifier(n_estimators=10)
         cls.classifier = ScikitlearnRandomForestClassifier(model=cls.sklearn_model)
         cls.classifier.fit(x=x_train, y=y_train)
 

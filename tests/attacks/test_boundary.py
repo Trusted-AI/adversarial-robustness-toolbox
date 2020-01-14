@@ -293,29 +293,24 @@ class TestBoundary(unittest.TestCase):
         from sklearn.ensemble import AdaBoostClassifier, BaggingClassifier, ExtraTreesClassifier
         from sklearn.ensemble import GradientBoostingClassifier, RandomForestClassifier
 
-        from art.classifiers.scikitlearn import ScikitlearnDecisionTreeClassifier, ScikitlearnExtraTreeClassifier
-        from art.classifiers.scikitlearn import ScikitlearnAdaBoostClassifier, ScikitlearnBaggingClassifier
-        from art.classifiers.scikitlearn import ScikitlearnExtraTreesClassifier, ScikitlearnGradientBoostingClassifier
-        from art.classifiers.scikitlearn import ScikitlearnRandomForestClassifier, ScikitlearnLogisticRegression
-        from art.classifiers.scikitlearn import ScikitlearnSVC
+        from art.classifiers.scikitlearn import SklearnClassifier
 
-        scikitlearn_test_cases = {DecisionTreeClassifier: ScikitlearnDecisionTreeClassifier,
-                                  ExtraTreeClassifier: ScikitlearnExtraTreeClassifier,
-                                  AdaBoostClassifier: ScikitlearnAdaBoostClassifier,
-                                  BaggingClassifier: ScikitlearnBaggingClassifier,
-                                  ExtraTreesClassifier: ScikitlearnExtraTreesClassifier,
-                                  GradientBoostingClassifier: ScikitlearnGradientBoostingClassifier,
-                                  RandomForestClassifier: ScikitlearnRandomForestClassifier,
-                                  LogisticRegression: ScikitlearnLogisticRegression,
-                                  SVC: ScikitlearnSVC,
-                                  LinearSVC: ScikitlearnSVC}
+        scikitlearn_test_cases = [DecisionTreeClassifier(),
+                                  ExtraTreeClassifier(),
+                                  AdaBoostClassifier(),
+                                  BaggingClassifier(),
+                                  ExtraTreesClassifier(n_estimators=10),
+                                  GradientBoostingClassifier(n_estimators=10),
+                                  RandomForestClassifier(n_estimators=10),
+                                  LogisticRegression(),
+                                  SVC(),
+                                  LinearSVC()]
 
         (_, _), (x_test, y_test) = self.iris
         x_test_original = x_test.copy()
 
-        for (model_class, classifier_class) in scikitlearn_test_cases.items():
-            model = model_class()
-            classifier = classifier_class(model=model, clip_values=(0, 1))
+        for model in scikitlearn_test_cases:
+            classifier = SklearnClassifier(model=model, clip_values=(0, 1))
             classifier.fit(x=x_test, y=y_test)
 
             attack = BoundaryAttack(classifier, targeted=False, delta=0.01, epsilon=0.01, step_adapt=0.667, max_iter=50,
