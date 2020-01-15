@@ -109,8 +109,8 @@ class TestKnockoffNets(unittest.TestCase):
                               nb_epochs=NB_EPOCHS, nb_stolen=NB_STOLEN, sampling_strategy='random')
         thieved_tfc = attack.extract(x=self.x_train, thieved_classifier=thieved_tfc)
 
-        victim_preds = np.argmax(victim_tfc.predict(x=self.x_train[:100]), axis=1)
-        thieved_preds = np.argmax(thieved_tfc.predict(x=self.x_train[:100]), axis=1)
+        victim_preds = np.argmax(victim_tfc.predict(x=self.x_train), axis=1)
+        thieved_preds = np.argmax(thieved_tfc.predict(x=self.x_train), axis=1)
         acc = np.sum(victim_preds == thieved_preds) / len(victim_preds)
 
         self.assertGreater(acc, 0.3)
@@ -120,8 +120,8 @@ class TestKnockoffNets(unittest.TestCase):
                               nb_epochs=NB_EPOCHS, nb_stolen=NB_STOLEN, sampling_strategy='adaptive', reward='all')
         thieved_tfc = attack.extract(x=self.x_train, y=self.y_train, thieved_classifier=thieved_tfc)
 
-        victim_preds = np.argmax(victim_tfc.predict(x=self.x_train[:100]), axis=1)
-        thieved_preds = np.argmax(thieved_tfc.predict(x=self.x_train[:100]), axis=1)
+        victim_preds = np.argmax(victim_tfc.predict(x=self.x_train), axis=1)
+        thieved_preds = np.argmax(thieved_tfc.predict(x=self.x_train), axis=1)
         acc = np.sum(victim_preds == thieved_preds) / len(victim_preds)
 
         self.assertGreater(acc, 0.4)
@@ -155,8 +155,8 @@ class TestKnockoffNets(unittest.TestCase):
                               nb_epochs=NB_EPOCHS, nb_stolen=NB_STOLEN, sampling_strategy='random')
         thieved_krc = attack.extract(x=self.x_train, thieved_classifier=thieved_krc)
 
-        victim_preds = np.argmax(victim_krc.predict(x=self.x_train[:100]), axis=1)
-        thieved_preds = np.argmax(thieved_krc.predict(x=self.x_train[:100]), axis=1)
+        victim_preds = np.argmax(victim_krc.predict(x=self.x_train), axis=1)
+        thieved_preds = np.argmax(thieved_krc.predict(x=self.x_train), axis=1)
         acc = np.sum(victim_preds == thieved_preds) / len(victim_preds)
 
         self.assertGreater(acc, 0.3)
@@ -166,8 +166,8 @@ class TestKnockoffNets(unittest.TestCase):
                               nb_epochs=NB_EPOCHS, nb_stolen=NB_STOLEN, sampling_strategy='adaptive', reward='all')
         thieved_krc = attack.extract(x=self.x_train, y=self.y_train, thieved_classifier=thieved_krc)
 
-        victim_preds = np.argmax(victim_krc.predict(x=self.x_train[:100]), axis=1)
-        thieved_preds = np.argmax(thieved_krc.predict(x=self.x_train[:100]), axis=1)
+        victim_preds = np.argmax(victim_krc.predict(x=self.x_train), axis=1)
+        thieved_preds = np.argmax(thieved_krc.predict(x=self.x_train), axis=1)
         acc = np.sum(victim_preds == thieved_preds) / len(victim_preds)
 
         self.assertGreater(acc, 0.4)
@@ -230,8 +230,8 @@ class TestKnockoffNets(unittest.TestCase):
         self.x_train = np.swapaxes(self.x_train, 1, 3)
         thieved_ptc = attack.extract(x=self.x_train, thieved_classifier=thieved_ptc)
 
-        victim_preds = np.argmax(victim_ptc.predict(x=self.x_train[:100]), axis=1)
-        thieved_preds = np.argmax(thieved_ptc.predict(x=self.x_train[:100]), axis=1)
+        victim_preds = np.argmax(victim_ptc.predict(x=self.x_train), axis=1)
+        thieved_preds = np.argmax(thieved_ptc.predict(x=self.x_train), axis=1)
         acc = np.sum(victim_preds == thieved_preds) / len(victim_preds)
 
         self.assertGreater(acc, 0.3)
@@ -241,8 +241,8 @@ class TestKnockoffNets(unittest.TestCase):
                               nb_epochs=NB_EPOCHS, nb_stolen=NB_STOLEN, sampling_strategy='adaptive', reward='all')
         thieved_ptc = attack.extract(x=self.x_train, y=self.y_train, thieved_classifier=thieved_ptc)
 
-        victim_preds = np.argmax(victim_ptc.predict(x=self.x_train[:100]), axis=1)
-        thieved_preds = np.argmax(thieved_ptc.predict(x=self.x_train[:100]), axis=1)
+        victim_preds = np.argmax(victim_ptc.predict(x=self.x_train), axis=1)
+        thieved_preds = np.argmax(thieved_ptc.predict(x=self.x_train), axis=1)
         acc = np.sum(victim_preds == thieved_preds) / len(victim_preds)
 
         self.assertGreater(acc, 0.4)
@@ -294,8 +294,8 @@ class TestKnockoffNetsVectors(unittest.TestCase):
                               nb_epochs=NB_EPOCHS, nb_stolen=NB_STOLEN, sampling_strategy='random')
         thieved_tfc = attack.extract(x=self.x_train, thieved_classifier=thieved_tfc)
 
-        victim_preds = np.argmax(victim_tfc.predict(x=self.x_train[:100]), axis=1)
-        thieved_preds = np.argmax(thieved_tfc.predict(x=self.x_train[:100]), axis=1)
+        victim_preds = np.argmax(victim_tfc.predict(x=self.x_train), axis=1)
+        thieved_preds = np.argmax(thieved_tfc.predict(x=self.x_train), axis=1)
         acc = np.sum(victim_preds == thieved_preds) / len(victim_preds)
 
         self.assertGreater(acc, 0.3)
@@ -305,8 +305,8 @@ class TestKnockoffNetsVectors(unittest.TestCase):
                               nb_epochs=NB_EPOCHS, nb_stolen=NB_STOLEN, sampling_strategy='adaptive', reward='all')
         thieved_tfc = attack.extract(x=self.x_train, y=self.y_train, thieved_classifier=thieved_tfc)
 
-        victim_preds = np.argmax(victim_tfc.predict(x=self.x_train[:100]), axis=1)
-        thieved_preds = np.argmax(thieved_tfc.predict(x=self.x_train[:100]), axis=1)
+        victim_preds = np.argmax(victim_tfc.predict(x=self.x_train), axis=1)
+        thieved_preds = np.argmax(thieved_tfc.predict(x=self.x_train), axis=1)
         acc = np.sum(victim_preds == thieved_preds) / len(victim_preds)
 
         self.assertGreater(acc, 0.4)
@@ -338,8 +338,8 @@ class TestKnockoffNetsVectors(unittest.TestCase):
                               nb_epochs=NB_EPOCHS, nb_stolen=NB_STOLEN, sampling_strategy='random')
         thieved_krc = attack.extract(x=self.x_train, thieved_classifier=thieved_krc)
 
-        victim_preds = np.argmax(victim_krc.predict(x=self.x_train[:100]), axis=1)
-        thieved_preds = np.argmax(thieved_krc.predict(x=self.x_train[:100]), axis=1)
+        victim_preds = np.argmax(victim_krc.predict(x=self.x_train), axis=1)
+        thieved_preds = np.argmax(thieved_krc.predict(x=self.x_train), axis=1)
         acc = np.sum(victim_preds == thieved_preds) / len(victim_preds)
 
         self.assertGreater(acc, 0.3)
@@ -349,8 +349,8 @@ class TestKnockoffNetsVectors(unittest.TestCase):
                               nb_epochs=NB_EPOCHS, nb_stolen=NB_STOLEN, sampling_strategy='adaptive', reward='all')
         thieved_krc = attack.extract(x=self.x_train, y=self.y_train, thieved_classifier=thieved_krc)
 
-        victim_preds = np.argmax(victim_krc.predict(x=self.x_train[:100]), axis=1)
-        thieved_preds = np.argmax(thieved_krc.predict(x=self.x_train[:100]), axis=1)
+        victim_preds = np.argmax(victim_krc.predict(x=self.x_train), axis=1)
+        thieved_preds = np.argmax(thieved_krc.predict(x=self.x_train), axis=1)
         acc = np.sum(victim_preds == thieved_preds) / len(victim_preds)
 
         self.assertGreater(acc, 0.4)
@@ -403,8 +403,8 @@ class TestKnockoffNetsVectors(unittest.TestCase):
                               nb_epochs=NB_EPOCHS, nb_stolen=NB_STOLEN, sampling_strategy='random')
         thieved_ptc = attack.extract(x=self.x_train, thieved_classifier=thieved_ptc)
 
-        victim_preds = np.argmax(victim_ptc.predict(x=self.x_train[:100]), axis=1)
-        thieved_preds = np.argmax(thieved_ptc.predict(x=self.x_train[:100]), axis=1)
+        victim_preds = np.argmax(victim_ptc.predict(x=self.x_train), axis=1)
+        thieved_preds = np.argmax(thieved_ptc.predict(x=self.x_train), axis=1)
         acc = np.sum(victim_preds == thieved_preds) / len(victim_preds)
 
         self.assertGreater(acc, 0.3)
@@ -414,8 +414,8 @@ class TestKnockoffNetsVectors(unittest.TestCase):
                               nb_epochs=NB_EPOCHS, nb_stolen=NB_STOLEN, sampling_strategy='adaptive', reward='all')
         thieved_ptc = attack.extract(x=self.x_train, y=self.y_train, thieved_classifier=thieved_ptc)
 
-        victim_preds = np.argmax(victim_ptc.predict(x=self.x_train[:100]), axis=1)
-        thieved_preds = np.argmax(thieved_ptc.predict(x=self.x_train[:100]), axis=1)
+        victim_preds = np.argmax(victim_ptc.predict(x=self.x_train), axis=1)
+        thieved_preds = np.argmax(thieved_ptc.predict(x=self.x_train), axis=1)
         acc = np.sum(victim_preds == thieved_preds) / len(victim_preds)
 
         self.assertGreater(acc, 0.4)
