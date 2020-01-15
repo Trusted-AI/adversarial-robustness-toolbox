@@ -249,6 +249,7 @@ class KnockoffNets(ExtractionAttack):
 
         return thieved_classifier
 
+    @staticmethod
     def _sample_data(self, x, y, action):
         """
         Sample data with a specific action.
