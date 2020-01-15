@@ -81,7 +81,7 @@ def _kr_tf_weights_loader(dataset, weights_type, layer='DENSE'):
     return weights
 
 
-def get_classifier_tf(from_logits=False):
+def get_classifier_tf(from_logits=False, load_init=True, sess=None):
     """
     Standard TensorFlow classifier for unit testing.
 
@@ -91,6 +91,12 @@ def get_classifier_tf(from_logits=False):
     number of epochs: 2
     optimizer: tf.train.AdamOptimizer
 
+    :param from_logits: The classifier produces logit outputs if True, probability outputs if False.
+    :type from_logits: `bool`
+    :param load_init: Load the initial weights if True.
+    :type load_init: `bool`
+    :param sess: Computation session.
+    :type sess: `tf.Session`
     :return: TensorFlowClassifier, tf.Session()
     """
     # pylint: disable=E0401
@@ -105,15 +111,22 @@ def get_classifier_tf(from_logits=False):
     output_ph = tf.placeholder(tf.int32, shape=[None, 10])
 
     # Define the tensorflow graph
-    conv = tf.layers.conv2d(input_ph, 1, 7, activation=tf.nn.relu,
-                            kernel_initializer=_tf_weights_loader('MNIST', 'W', 'CONV2D'),
-                            bias_initializer=_tf_weights_loader('MNIST', 'B', 'CONV2D'))
+    if load_init:
+        conv = tf.layers.conv2d(input_ph, 1, 7, activation=tf.nn.relu,
+                                kernel_initializer=_tf_weights_loader('MNIST', 'W', 'CONV2D'),
+                                bias_initializer=_tf_weights_loader('MNIST', 'B', 'CONV2D'))
+    else:
+        conv = tf.layers.conv2d(input_ph, 1, 7, activation=tf.nn.relu)
+
     conv = tf.layers.max_pooling2d(conv, 4, 4)
     flattened = tf.layers.flatten(conv)
 
     # Logits layer
-    logits = tf.layers.dense(flattened, 10, kernel_initializer=_tf_weights_loader('MNIST', 'W', 'DENSE'),
-                             bias_initializer=_tf_weights_loader('MNIST', 'B', 'DENSE'))
+    if load_init:
+        logits = tf.layers.dense(flattened, 10, kernel_initializer=_tf_weights_loader('MNIST', 'W', 'DENSE'),
+                                 bias_initializer=_tf_weights_loader('MNIST', 'B', 'DENSE'))
+    else:
+        logits = tf.layers.dense(flattened, 10)
 
     # probabilities
     probabilities = tf.keras.activations.softmax(x=logits)
@@ -124,7 +137,11 @@ def get_classifier_tf(from_logits=False):
     train = optimizer.minimize(loss)
 
     # TensorFlow session and initialization
-    sess = tf.Session()
+    if sess is None:
+        sess = tf.Session()
+    elif not isinstance(sess, tf.Session):
+        raise TypeError('An instance of `tf.Session` should be passed to `sess`.')
+
     sess.run(tf.global_variables_initializer())
 
     # Create the classifier
@@ -148,7 +165,7 @@ def get_classifier_tf_v2():
     number of epochs: 2
     optimizer: tf.train.AdamOptimizer
 
-    :return: TensorFlowV2Classifier,
+    :return: TensorFlowV2Classifier
     """
     # pylint: disable=E0401
     import tensorflow as tf
@@ -161,7 +178,7 @@ def get_classifier_tf_v2():
 
     class TensorFlowModel(Model):
         """
-        Standard TensorFlow model for unit testing
+        Standard TensorFlow model for unit testing.
         """
 
         def __init__(self):
@@ -177,7 +194,7 @@ def get_classifier_tf_v2():
 
         def call(self, x):
             """
-            Call function to evaluate the model
+            Call function to evaluate the model.
 
             :param x: Input to the model
             :return: Prediction of the model
