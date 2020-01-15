@@ -63,7 +63,7 @@ class TestVirtualAdversarial(unittest.TestCase):
 
     def test_tensorflow_mnist(self):
         (x_train, y_train), (x_test, y_test) = self.mnist
-        classifier, sess = get_classifier_tf(from_logits=True)
+        classifier, sess = get_classifier_tf(from_logits=False)
 
         scores = get_labels_np_array(classifier.predict(x_train))
         acc = np.sum(np.argmax(scores, axis=1) == np.argmax(y_train, axis=1)) / y_train.shape[0]
