@@ -915,10 +915,10 @@ class TensorFlowV2Classifier(ClassifierNeuralNetwork, ClassifierGradients, Class
 
     def __repr__(self):
 
-        repr_ = "%s(model=%r, nb_classes=%r, loss_object=%r, learning=%r, train_step=%r, " \
-                "channel_index=%r, clip_values=%r, defences=%r, preprocessing=%r)" \
+        repr_ = "%s(model=%r, nb_classes=%r, input_shape=%r, loss_object=%r, train_step=%r, channel_index=%r, " \
+                "clip_values=%r, defences=%r, preprocessing=%r)" \
                 % (self.__module__ + '.' + self.__class__.__name__,
-                   self._model, self._nb_classes, self._loss_object, self._learning, self._train_step,
+                   self._model, self._nb_classes, self._input_shape, self._loss_object, self._train_step,
                    self.channel_index, self.clip_values, self.defences, self.preprocessing)
 
         return repr_
