@@ -830,7 +830,10 @@ class TensorFlowV2Classifier(ClassifierNeuralNetwork, ClassifierGradients, Class
                 x_preprocessed_tf = tf.convert_to_tensor(x_preprocessed)
                 tape.watch(x_preprocessed_tf)
                 predictions = self._model(x_preprocessed_tf)
-                loss = self._loss_object(np.argmax(y, axis=1), predictions)
+                if isinstance(self._loss_object, tf.keras.losses.SparseCategoricalCrossentropy):
+                    loss = self._loss_object(np.argmax(y, axis=1), predictions)
+                else:
+                    loss = self._loss_object(y, predictions)
 
             gradients = tape.gradient(loss, x_preprocessed_tf).numpy()
         else:
