@@ -541,8 +541,12 @@ def get_classifier_kr_tf_binary():
 
 def get_classifier_pt(from_logits=False, load_init=True):
     """
-    Standard PyTorch classifier for unit testing
+    Standard PyTorch classifier for unit testing.
 
+    :param from_logits: Flag if model should predict logits (True) or probabilities (False).
+    :type from_logits: `bool`
+    :param load_init: Load the initial weights if True.
+    :type load_init: `bool`
     :return: PyTorchClassifier
     """
     from art.classifiers import PyTorchClassifier
@@ -557,20 +561,22 @@ def get_classifier_pt(from_logits=False, load_init=True):
         def __init__(self):
             super(Model, self).__init__()
 
-            w_conv2d = np.load(os.path.join(os.path.dirname(os.path.dirname(__file__)), 'models', 'W_CONV2D_MNIST.npy'))
-            b_conv2d = np.load(os.path.join(os.path.dirname(os.path.dirname(__file__)), 'models', 'B_CONV2D_MNIST.npy'))
-            w_dense = np.load(os.path.join(os.path.dirname(os.path.dirname(__file__)), 'models', 'W_DENSE_MNIST.npy'))
-            b_dense = np.load(os.path.join(os.path.dirname(os.path.dirname(__file__)), 'models', 'B_DENSE_MNIST.npy'))
-
-            w_conv2d_pt = w_conv2d.reshape((1, 1, 7, 7))
-
             self.conv = nn.Conv2d(in_channels=1, out_channels=1, kernel_size=7)
-            self.conv.weight = nn.Parameter(torch.Tensor(w_conv2d_pt))
-            self.conv.bias = nn.Parameter(torch.Tensor(b_conv2d))
             self.pool = nn.MaxPool2d(4, 4)
             self.fullyconnected = nn.Linear(25, 10)
-            self.fullyconnected.weight = nn.Parameter(torch.Tensor(np.transpose(w_dense)))
-            self.fullyconnected.bias = nn.Parameter(torch.Tensor(b_dense))
+
+            if load_init:
+                w_conv2d = np.load(os.path.join(os.path.dirname(os.path.dirname(__file__)), 'models', 'W_CONV2D_MNIST.npy'))
+                b_conv2d = np.load(os.path.join(os.path.dirname(os.path.dirname(__file__)), 'models', 'B_CONV2D_MNIST.npy'))
+                w_dense = np.load(os.path.join(os.path.dirname(os.path.dirname(__file__)), 'models', 'W_DENSE_MNIST.npy'))
+                b_dense = np.load(os.path.join(os.path.dirname(os.path.dirname(__file__)), 'models', 'B_DENSE_MNIST.npy'))
+
+                w_conv2d_pt = w_conv2d.reshape((1, 1, 7, 7))
+
+                self.conv.weight = nn.Parameter(torch.Tensor(w_conv2d_pt))
+                self.conv.bias = nn.Parameter(torch.Tensor(b_conv2d))
+                self.fullyconnected.weight = nn.Parameter(torch.Tensor(np.transpose(w_dense)))
+                self.fullyconnected.bias = nn.Parameter(torch.Tensor(b_dense))
 
         # pylint: disable=W0221
         # disable pylint because of API requirements for function
