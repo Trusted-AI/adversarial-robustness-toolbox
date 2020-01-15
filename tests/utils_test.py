@@ -114,7 +114,7 @@ def get_classifier_tf(from_logits=False):
 
     # Logits layer
     logits = tf.layers.dense(flattened, 10, kernel_initializer=_tf_weights_loader('MNIST', 'W', 'DENSE'),
-                                 bias_initializer=_tf_weights_loader('MNIST', 'B', 'DENSE'))
+                             bias_initializer=_tf_weights_loader('MNIST', 'B', 'DENSE'))
 
     # probabilities
     probabilities = tf.keras.activations.softmax(x=logits)
