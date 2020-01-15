@@ -2,4 +2,4 @@ matplotlib
 numpy
 scipy
 six
-scikit-learn==0.21.3
+scikit-learn==0.22.1

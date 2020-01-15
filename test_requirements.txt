@@ -9,7 +9,7 @@ keras
 mxnet
 #torch>=1.2.0
 tensorflow
-scikit-learn==0.21.3
+scikit-learn==0.22.1
 xgboost
 lightgbm
 # Comment out because of compatibility issues with numpy versions
