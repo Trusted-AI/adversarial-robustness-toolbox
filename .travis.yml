@@ -1,10 +1,10 @@
 dist: trusty
 language: python
 env:
-  - KERAS_BACKEND=tensorflow TENSORFLOW_V=1.13.2 KERAS_V=2.2.5
   - KERAS_BACKEND=tensorflow TENSORFLOW_V=1.14.0 KERAS_V=2.2.5
   - KERAS_BACKEND=tensorflow TENSORFLOW_V=1.15.0 KERAS_V=2.2.5
   - KERAS_BACKEND=tensorflow TENSORFLOW_V=2.0.0 KERAS_V=2.3.1
+  - KERAS_BACKEND=tensorflow TENSORFLOW_V=2.1.0 KERAS_V=2.3.1
 python:
    - "3.6"
 matrix:
