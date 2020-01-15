@@ -115,7 +115,7 @@ def get_classifier_tf_v1(from_logits=False):
     input_ph = tf.placeholder(tf.float32, shape=[None, 28, 28, 1])
     output_ph = tf.placeholder(tf.int32, shape=[None, 10])
 
-    # Define the tensorflow graph
+    # Define the TensorFlow graph
     conv = tf.layers.conv2d(input_ph, 1, 7, activation=tf.nn.relu,
                             kernel_initializer=_tf_weights_loader('MNIST', 'W', 'CONV2D'),
                             bias_initializer=_tf_weights_loader('MNIST', 'B', 'CONV2D'))
@@ -678,7 +678,7 @@ def get_iris_classifier_tf_v1():
     input_ph = tf.placeholder(tf.float32, shape=[None, 4])
     output_ph = tf.placeholder(tf.int32, shape=[None, 3])
 
-    # Define the tensorflow graph
+    # Define the TensorFlow graph
     dense1 = tf.layers.dense(input_ph, 10, kernel_initializer=_tf_weights_loader('IRIS', 'W', 'DENSE1'),
                              bias_initializer=_tf_weights_loader('IRIS', 'B', 'DENSE1'))
     dense2 = tf.layers.dense(dense1, 10, kernel_initializer=_tf_weights_loader('IRIS', 'W', 'DENSE2'),

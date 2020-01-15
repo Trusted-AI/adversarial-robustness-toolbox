@@ -90,7 +90,7 @@ class TestBase(unittest.TestCase):
         labels_tf = tf.placeholder(tf.float32, [None, 10])
         inputs_tf = tf.placeholder(tf.float32, [None] + list(input_shape))
 
-        # Define the tensorflow graph
+        # Define the TensorFlow graph
         conv = tf.layers.conv2d(inputs_tf, 4, 5, activation=tf.nn.relu)
         conv = tf.layers.max_pooling2d(conv, 2, 2)
         fc = tf.contrib.layers.flatten(conv)

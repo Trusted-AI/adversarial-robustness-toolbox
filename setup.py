@@ -11,7 +11,7 @@ install_requires = ['matplotlib',
                     'scipy',
                     'six',
                     'setuptools',
-                    'scikit-learn']
+                    'scikit-learn==0.22.1']
 
 # Comment out because of compatibility issues with numpy versions
 # 'catboost',

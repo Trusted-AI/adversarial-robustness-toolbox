@@ -153,7 +153,7 @@ class TestClever(unittest.TestCase):
         input_ph = tf.placeholder(tf.float32, shape=[None, 28, 28, 1])
         labels_ph = tf.placeholder(tf.int32, shape=[None, 10])
 
-        # Define the tensorflow graph
+        # Define the TensorFlow graph
         conv = tf.layers.conv2d(input_ph, 4, 5, activation=tf.nn.relu)
         conv = tf.layers.max_pooling2d(conv, 2, 2)
         fc = tf.layers.flatten(conv)
@@ -219,7 +219,7 @@ class TestClever(unittest.TestCase):
     @unittest.skipIf(tf.__version__[0] == '2', reason='Skip unittests for Tensorflow v2.')
     def test_clever_tf(self):
         """
-        Test with tensorflow.
+        Test with TensorFlow.
         :return:
         """
         # Get MNIST
