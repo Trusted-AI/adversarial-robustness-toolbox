@@ -566,10 +566,14 @@ def get_classifier_pt(from_logits=False, load_init=True):
             self.fullyconnected = nn.Linear(25, 10)
 
             if load_init:
-                w_conv2d = np.load(os.path.join(os.path.dirname(os.path.dirname(__file__)), 'models', 'W_CONV2D_MNIST.npy'))
-                b_conv2d = np.load(os.path.join(os.path.dirname(os.path.dirname(__file__)), 'models', 'B_CONV2D_MNIST.npy'))
-                w_dense = np.load(os.path.join(os.path.dirname(os.path.dirname(__file__)), 'models', 'W_DENSE_MNIST.npy'))
-                b_dense = np.load(os.path.join(os.path.dirname(os.path.dirname(__file__)), 'models', 'B_DENSE_MNIST.npy'))
+                w_conv2d = np.load(os.path.join(os.path.dirname(os.path.dirname(__file__)),
+                                                'models', 'W_CONV2D_MNIST.npy'))
+                b_conv2d = np.load(os.path.join(os.path.dirname(os.path.dirname(__file__)),
+                                                'models', 'B_CONV2D_MNIST.npy'))
+                w_dense = np.load(os.path.join(os.path.dirname(os.path.dirname(__file__)),
+                                               'models', 'W_DENSE_MNIST.npy'))
+                b_dense = np.load(os.path.join(os.path.dirname(os.path.dirname(__file__)),
+                                               'models', 'B_DENSE_MNIST.npy'))
 
                 w_conv2d_pt = w_conv2d.reshape((1, 1, 7, 7))
 
@@ -666,7 +670,7 @@ def get_classifier_mx():
 
 # ------------------------------------------------------------------------------------------------ TEST MODELS FOR IRIS
 
-def get_iris_classifier_tf():
+def get_iris_classifier_tf(load_init=True, sess=None):
     """
     Standard TensorFlow classifier for unit testing.
 
@@ -679,6 +683,10 @@ def get_iris_classifier_tf():
 
     The model is trained of 70% of the dataset, and 30% of the training set is used as validation split.
 
+    :param load_init: Load the initial weights if True.
+    :type load_init: `bool`
+    :param sess: Computation session.
+    :type sess: `tf.Session`
     :return: The trained model for Iris dataset and the session.
     :rtype: `tuple(TensorFlowClassifier, tf.Session)`
     """
@@ -694,18 +702,27 @@ def get_iris_classifier_tf():
     output_ph = tf.placeholder(tf.int32, shape=[None, 3])
 
     # Define the tensorflow graph
-    dense1 = tf.layers.dense(input_ph, 10, kernel_initializer=_tf_weights_loader('IRIS', 'W', 'DENSE1'),
-                             bias_initializer=_tf_weights_loader('IRIS', 'B', 'DENSE1'))
-    dense2 = tf.layers.dense(dense1, 10, kernel_initializer=_tf_weights_loader('IRIS', 'W', 'DENSE2'),
-                             bias_initializer=_tf_weights_loader('IRIS', 'B', 'DENSE2'))
-    logits = tf.layers.dense(dense2, 3, kernel_initializer=_tf_weights_loader('IRIS', 'W', 'DENSE3'),
-                             bias_initializer=_tf_weights_loader('IRIS', 'B', 'DENSE3'))
+    if load_init:
+        dense1 = tf.layers.dense(input_ph, 10, kernel_initializer=_tf_weights_loader('IRIS', 'W', 'DENSE1'),
+                                 bias_initializer=_tf_weights_loader('IRIS', 'B', 'DENSE1'))
+        dense2 = tf.layers.dense(dense1, 10, kernel_initializer=_tf_weights_loader('IRIS', 'W', 'DENSE2'),
+                                 bias_initializer=_tf_weights_loader('IRIS', 'B', 'DENSE2'))
+        logits = tf.layers.dense(dense2, 3, kernel_initializer=_tf_weights_loader('IRIS', 'W', 'DENSE3'),
+                                 bias_initializer=_tf_weights_loader('IRIS', 'B', 'DENSE3'))
+    else:
+        dense1 = tf.layers.dense(input_ph, 10)
+        dense2 = tf.layers.dense(dense1, 10)
+        logits = tf.layers.dense(dense2, 3)
 
     # Train operator
     loss = tf.reduce_mean(tf.losses.softmax_cross_entropy(logits=logits, onehot_labels=output_ph))
 
     # TensorFlow session and initialization
-    sess = tf.Session()
+    if sess is None:
+        sess = tf.Session()
+    elif not isinstance(sess, tf.Session):
+        raise TypeError('An instance of `tf.Session` should be passed to `sess`.')
+
     sess.run(tf.global_variables_initializer())
 
     # Train the classifier
