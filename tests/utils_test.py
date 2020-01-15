@@ -59,7 +59,7 @@ def _tf_weights_loader(dataset, weights_type, layer='DENSE', tf_version=1):
             return tf.constant(weights, dtype)
 
     else:
-        raise ValueError('The TensorFlow version tf_version has to be wither 1 or 2.')
+        raise ValueError('The TensorFlow version tf_version has to be either 1 or 2.')
 
     return _tf_initializer
 
@@ -82,6 +82,16 @@ def _kr_tf_weights_loader(dataset, weights_type, layer='DENSE'):
 
 
 def get_classifier_tf(from_logits=False):
+    import tensorflow as tf
+    if tf.__version__[0] == '2':
+        # sess is not required but set to None to return 2 values for v1 and v2
+        classifier, sess = get_classifier_tf_v2(), None
+    else:
+        classifier, sess = get_classifier_tf_v1(from_logits=from_logits)
+    return classifier, sess
+
+
+def get_classifier_tf_v1(from_logits=False):
     """
     Standard TensorFlow classifier for unit testing.
 
@@ -632,6 +642,16 @@ def get_classifier_mx():
 # ------------------------------------------------------------------------------------------------ TEST MODELS FOR IRIS
 
 def get_iris_classifier_tf():
+    import tensorflow as tf
+    if tf.__version__[0] == '2':
+        # sess is not required but set to None to return 2 values for v1 and v2
+        classifier, sess = get_iris_classifier_tf_v2(), None
+    else:
+        classifier, sess = get_iris_classifier_tf_v1()
+    return classifier, sess
+
+
+def get_iris_classifier_tf_v1():
     """
     Standard TensorFlow classifier for unit testing.
 
@@ -678,6 +698,70 @@ def get_iris_classifier_tf():
                                loss=loss, learning=None, sess=sess, channel_index=1)
 
     return tfc, sess
+
+
+def get_iris_classifier_tf_v2():
+    """
+    Standard TensorFlow v2 classifier for unit testing.
+
+    The following hyper-parameters were used to obtain the weights and biases:
+
+    * learning_rate: 0.01
+    * batch size: 5
+    * number of epochs: 200
+    * optimizer: tf.train.AdamOptimizer
+
+    The model is trained of 70% of the dataset, and 30% of the training set is used as validation split.
+
+    :return: The trained model for Iris dataset and the session.
+    :rtype: `TensorFlowV2Classifier`
+    """
+    # pylint: disable=E0401
+    import tensorflow as tf
+    from tensorflow.keras import Model
+    from tensorflow.keras.layers import Dense
+    from art.classifiers import TensorFlowV2Classifier
+
+    if tf.__version__[0] != '2':
+        raise ImportError('This function requires TensorFlow v2.')
+
+    class TensorFlowModel(Model):
+        """
+        Standard TensorFlow model for unit testing
+        """
+
+        def __init__(self):
+            super(TensorFlowModel, self).__init__()
+            self.dense1 = Dense(10, activation='linear',
+                                kernel_initializer=_tf_weights_loader('IRIS', 'W', 'DENSE1', tf_version=2),
+                                bias_initializer=_tf_weights_loader('IRIS', 'B', 'DENSE1', tf_version=2))
+            self.dense2 = Dense(10, activation='linear',
+                                kernel_initializer=_tf_weights_loader('IRIS', 'W', 'DENSE2', tf_version=2),
+                                bias_initializer=_tf_weights_loader('IRIS', 'B', 'DENSE2', tf_version=2))
+            self.logits = Dense(3, activation='linear',
+                                kernel_initializer=_tf_weights_loader('IRIS', 'W', 'DENSE3', tf_version=2),
+                                bias_initializer=_tf_weights_loader('IRIS', 'B', 'DENSE3', tf_version=2))
+
+        def call(self, x):
+            """
+            Call function to evaluate the model
+
+            :param x: Input to the model
+            :return: Prediction of the model
+            """
+            x = self.dense1(x)
+            x = self.dense2(x)
+            x = self.logits(x)
+            return x
+
+    model = TensorFlowModel()
+    loss_object = tf.keras.losses.SparseCategoricalCrossentropy(from_logits=True)
+
+    # Create the classifier
+    tfc = TensorFlowV2Classifier(model=model, loss_object=loss_object, nb_classes=3, input_shape=(4,),
+                                 clip_values=(0, 1))
+
+    return tfc
 
 
 def get_iris_classifier_kr():
