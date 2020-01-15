@@ -96,26 +96,18 @@ class TestVirtualAdversarial(unittest.TestCase):
 
         df = VirtualAdversarialMethod(classifier, batch_size=100)
 
-        from art.classifiers import TensorFlowClassifier
-        if isinstance(classifier, TensorFlowClassifier):
-            with self.assertRaises(TypeError) as context:
-                x_test_adv = df.generate(x_test)
+        x_test_adv = df.generate(x_test)
 
-            self.assertIn('This attack requires a classifier predicting probabilities in the range [0, 1] as output.'
-                          'Values smaller than 0.0 or larger than 1.0 have been detected.', str(context.exception))
-        else:
-            x_test_adv = df.generate(x_test)
+        self.assertFalse((x_test == x_test_adv).all())
 
-            self.assertFalse((x_test == x_test_adv).all())
+        y_pred = get_labels_np_array(classifier.predict(x_test_adv))
+        self.assertFalse((y_test == y_pred).all())
 
-            y_pred = get_labels_np_array(classifier.predict(x_test_adv))
-            self.assertFalse((y_test == y_pred).all())
+        acc = np.sum(np.argmax(y_pred, axis=1) == np.argmax(y_test, axis=1)) / y_test.shape[0]
+        logger.info('Accuracy on adversarial examples: %.2f%%', (acc * 100))
 
-            acc = np.sum(np.argmax(y_pred, axis=1) == np.argmax(y_test, axis=1)) / y_test.shape[0]
-            logger.info('Accuracy on adversarial examples: %.2f%%', (acc * 100))
-
-            # Check that x_test has not been modified by attack and classifier
-            self.assertAlmostEqual(float(np.max(np.abs(x_test_original - x_test))), 0.0, delta=0.00001)
+        # Check that x_test has not been modified by attack and classifier
+        self.assertAlmostEqual(float(np.max(np.abs(x_test_original - x_test))), 0.0, delta=0.00001)
 
     def test_classifier_type_check_fail_classifier(self):
         # Use a useless test classifier to test basic classifier properties
