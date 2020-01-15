@@ -37,7 +37,7 @@ class TestGPyGaussianProcessClassifier(unittest.TestCase):
         (x_train, y_train), (x_test, y_test), _, _ = load_dataset('iris')
         # change iris to binary problem, so it is learnable for GPC
         cls.iris = (x_train, y_train[:, 1]), (x_test, y_test[:, 1])
-        (X, y), (x_test, y_test) = cls.iris
+        (X, y), (_, _) = cls.iris
         # set up GPclassifier
         gpkern = GPy.kern.RBF(np.shape(X)[1])
         m = GPy.models.GPClassification(X, y.reshape(-1, 1), kernel=gpkern)
