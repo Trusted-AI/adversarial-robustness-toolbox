@@ -55,7 +55,7 @@ class TestMetrics(unittest.TestCase):
 
         # Get classifier
         classifier = self._cnn_mnist_k([28, 28, 1])
-        classifier.fit(x_train, y_train, batch_size=BATCH_SIZE, nb_epochs=2)
+        classifier.fit(x_train, y_train, batch_size=BATCH_SIZE, nb_epochs=2, verbose=0)
 
         # Compute minimal perturbations
         params = {"eps_step": 1.1}
@@ -76,7 +76,7 @@ class TestMetrics(unittest.TestCase):
 
         # Get classifier
         classifier = self._cnn_mnist_k([28, 28, 1])
-        classifier.fit(x_train, y_train, batch_size=BATCH_SIZE, nb_epochs=2)
+        classifier.fit(x_train, y_train, batch_size=BATCH_SIZE, nb_epochs=2, verbose=0)
 
         l = loss_sensitivity(classifier, x_train, y_train)
         self.assertGreaterEqual(l, 0)
@@ -264,7 +264,7 @@ class TestClever(unittest.TestCase):
 
         # Get the classifier
         krc = self._create_krclassifier()
-        krc.fit(x_train, y_train, batch_size=batch_size, nb_epochs=1)
+        krc.fit(x_train, y_train, batch_size=batch_size, nb_epochs=1, verbose=0)
 
         # Test targeted clever
         res0 = clever_t(krc, x_test[-1], 2, 10, 5, R_L1, norm=1, pool_factor=3)
@@ -325,7 +325,7 @@ class TestClever(unittest.TestCase):
 
         # Get the classifier
         krc = self._create_krclassifier()
-        krc.fit(x_train, y_train, batch_size=batch_size, nb_epochs=2)
+        krc.fit(x_train, y_train, batch_size=batch_size, nb_epochs=2, verbose=0)
 
         scores = clever(krc, x_test[0], 5, 5, 3, 2, target=None, c_init=1, pool_factor=10)
         logger.info("Clever scores for n-1 classes: %s %s", str(scores), str(scores.shape))
@@ -337,7 +337,7 @@ class TestClever(unittest.TestCase):
 
         # Get the classifier
         krc = self._create_krclassifier()
-        krc.fit(x_train, y_train, batch_size=batch_size, nb_epochs=2)
+        krc.fit(x_train, y_train, batch_size=batch_size, nb_epochs=2, verbose=0)
 
         scores = clever(krc, x_test[0], 5, 5, 3, 2, target=None, target_sort=True, c_init=1, pool_factor=10)
         logger.info("Clever scores for n-1 classes: %s %s", str(scores), str(scores.shape))
@@ -350,7 +350,7 @@ class TestClever(unittest.TestCase):
 
         # Get the classifier
         krc = self._create_krclassifier()
-        krc.fit(x_train, y_train, batch_size=batch_size, nb_epochs=2)
+        krc.fit(x_train, y_train, batch_size=batch_size, nb_epochs=2, verbose=0)
 
         scores = clever(krc, x_test[0], 5, 5, 3, 2, target=np.argmax(krc.predict(x_test[:1])), c_init=1, pool_factor=10)
         self.assertIsNone(scores[0], msg='Clever scores for the predicted class should be `None`.')
