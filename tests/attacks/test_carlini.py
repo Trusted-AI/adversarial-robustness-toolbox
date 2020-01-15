@@ -80,7 +80,8 @@ class TestCarlini(unittest.TestCase):
         self.assertAlmostEqual(float(np.max(np.abs(x_test_original - x_test))), 0.0, delta=0.00001)
 
         # Clean-up session
-        sess.close()
+        if sess is not None:
+            sess.close()
 
     def test_tensorflow_mnist_L2(self):
         """
@@ -123,7 +124,8 @@ class TestCarlini(unittest.TestCase):
         self.assertAlmostEqual(float(np.max(np.abs(x_test_original - x_test))), 0.0, delta=0.00001)
 
         # Clean-up session
-        sess.close()
+        if sess is not None:
+            sess.close()
 
     @unittest.skipIf(not (int(keras.__version__.split('.')[0]) == 2 and int(keras.__version__.split('.')[1]) >= 3),
                      reason='Minimal version of Keras or TensorFlow required.')
@@ -372,7 +374,8 @@ class TestCarlini(unittest.TestCase):
         self.assertTrue(np.allclose(x_test, x_test_adv, atol=1e-3))
 
         # Clean-up session
-        sess.close()
+        if sess is not None:
+            sess.close()
 
     def test_tensorflow_mnist_LInf(self):
         """
@@ -411,10 +414,12 @@ class TestCarlini(unittest.TestCase):
         self.assertTrue((target != y_pred_adv).any())
 
         # Clean-up session
-        sess.close()
+        if sess is not None:
+            sess.close()
 
     @unittest.skipIf(not (int(keras.__version__.split('.')[0]) == 2 and int(keras.__version__.split('.')[1]) >= 3),
-                     reason='Minimal version of Keras or TensorFlow required.')
+                     reason='Keras 2.3 or later or TensorFlow-Keras required to support selected combination of loss '
+                            'function and logits.')
     def test_keras_mnist_LInf(self):
         """
         Second test with the KerasClassifier.

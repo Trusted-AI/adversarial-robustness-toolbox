@@ -76,7 +76,8 @@ class TestElasticNet(unittest.TestCase):
         np.testing.assert_almost_equal(x_test, x_test_adv, 3)
 
         # Clean-up session
-        sess.close()
+        if sess is not None:
+            sess.close()
 
     def test_tensorflow_mnist(self):
         """
@@ -176,7 +177,8 @@ class TestElasticNet(unittest.TestCase):
         self.assertAlmostEqual(float(np.max(np.abs(x_test_original - x_test))), 0.0, delta=0.00001)
 
         # Close session
-        sess.close()
+        if sess is not None:
+            sess.close()
 
     def test_keras_mnist(self):
         """

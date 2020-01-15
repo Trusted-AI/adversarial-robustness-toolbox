@@ -116,7 +116,8 @@ class TestBoundary(unittest.TestCase):
         self.assertAlmostEqual(float(np.max(np.abs(x_test_original - x_test))), 0.0, delta=0.00001)
 
         # Clean-up session
-        sess.close()
+        if sess is not None:
+            sess.close()
 
     def test_keras_mnist(self):
         """
