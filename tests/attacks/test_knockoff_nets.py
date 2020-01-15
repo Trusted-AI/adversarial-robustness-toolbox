@@ -72,7 +72,7 @@ class TestKnockoffNets(unittest.TestCase):
     def setUp(self):
         master_seed(1234)
 
-    def test_tfclassifier(self):
+    def test_tensorflow_classifier(self):
         """
         First test with the TensorFlowClassifier.
         :return:
@@ -84,7 +84,7 @@ class TestKnockoffNets(unittest.TestCase):
         input_ph = tf.placeholder(tf.float32, shape=[None, 28, 28, 1])
         output_ph = tf.placeholder(tf.int32, shape=[None, 10])
 
-        # Define the tensorflow graph
+        # Define the Tensorflow graph
         conv = tf.layers.conv2d(input_ph, 1, 7, activation=tf.nn.relu)
         conv = tf.layers.max_pooling2d(conv, 4, 4)
         flattened = tf.layers.flatten(conv)
@@ -130,9 +130,7 @@ class TestKnockoffNets(unittest.TestCase):
         sess.close()
         tf.reset_default_graph()
 
-    @unittest.skipIf(tf.__version__[0] == '2', reason='Skip unittests for Tensorflow v2 until Keras supports Tensorflow'
-                                                      ' v2 as backend.')
-    def test_krclassifier(self):
+    def test_keras_classifier(self):
         """
         Second test with the KerasClassifier.
         :return:
@@ -177,7 +175,7 @@ class TestKnockoffNets(unittest.TestCase):
         # Clean-up
         k.clear_session()
 
-    def test_ptclassifier(self):
+    def test_pytorch_classifier(self):
         """
         Third test with the PyTorchClassifier.
         :return:
@@ -262,19 +260,19 @@ class TestKnockoffNetsVectors(unittest.TestCase):
     def setUp(self):
         master_seed(1234)
 
-    def test_iris_tf(self):
+    def test_tensorflow_iris(self):
         """
-        First test for TF.
+        First test for TensorFlow.
         :return:
         """
-        # Get the TF classifier
+        # Get the TensorFlow classifier
         victim_tfc, sess = get_iris_classifier_tf()
 
         # Define input and output placeholders
         input_ph = tf.placeholder(tf.float32, shape=[None, 4])
         output_ph = tf.placeholder(tf.int32, shape=[None, 3])
 
-        # Define the tensorflow graph
+        # Define the Tensorflow graph
         dense1 = tf.layers.dense(input_ph, 10)
         dense2 = tf.layers.dense(dense1, 10)
         logits = tf.layers.dense(dense2, 3)
@@ -317,9 +315,7 @@ class TestKnockoffNetsVectors(unittest.TestCase):
         sess.close()
         tf.reset_default_graph()
 
-    @unittest.skipIf(tf.__version__[0] == '2', reason='Skip unittests for Tensorflow v2 until Keras supports Tensorflow'
-                                                      ' v2 as backend.')
-    def test_iris_kr(self):
+    def test_keras_iris(self):
         """
         Second test for Keras.
         :return:
@@ -362,7 +358,7 @@ class TestKnockoffNetsVectors(unittest.TestCase):
         # Clean-up
         k.clear_session()
 
-    def test_iris_pt(self):
+    def test_pytorch_iris(self):
         """
         Third test for Pytorch.
         :return:
