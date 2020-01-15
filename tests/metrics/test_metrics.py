@@ -166,7 +166,7 @@ class TestClever(unittest.TestCase):
         optimizer = tf.train.AdamOptimizer(learning_rate=0.01)
         train = optimizer.minimize(loss)
 
-        # Tensorflow session and initialization
+        # TensorFlow session and initialization
         sess = tf.Session()
         sess.run(tf.global_variables_initializer())
 
@@ -216,7 +216,7 @@ class TestClever(unittest.TestCase):
 
         return ptc
 
-    @unittest.skipIf(tf.__version__[0] == '2', reason='Skip unittests for Tensorflow v2.')
+    @unittest.skipIf(tf.__version__[0] == '2', reason='Skip unittests for TensorFlow v2.')
     def test_clever_tf(self):
         """
         Test with TensorFlow.

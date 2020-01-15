@@ -40,9 +40,7 @@ from tests.utils_test import get_iris_classifier_kr
 from tests.utils_test import get_iris_classifier_pt
 from art.config import ART_NUMPY_DTYPE
 
-
 logger = logging.getLogger(__name__)
-
 
 try:
     # Conditional import of `torch` to avoid segmentation fault errors this framework generates at import
@@ -51,12 +49,6 @@ try:
     import torch.optim as optim
 except ImportError:
     logger.info('Could not import PyTorch in utilities.')
-
-if tf.__version__[0] == '2':
-    # pylint: disable=E0401
-    import tensorflow.compat.v1 as tf
-    tf.disable_eager_execution()
-
 
 BATCH_SIZE = 100
 NB_TRAIN = 1000
@@ -79,7 +71,7 @@ class TestCopycatCNN(unittest.TestCase):
     def setUp(self):
         master_seed(1234)
 
-    def test_tfclassifier(self):
+    def test_tensorflow_classifier(self):
         """
         First test with the TensorFlowClassifier.
         :return:
@@ -123,12 +115,11 @@ class TestCopycatCNN(unittest.TestCase):
         self.assertGreater(acc, 0.3)
 
         # Clean-up session
-        sess.close()
-        tf.reset_default_graph()
+        if sess is not None:
+            sess.close()
+            tf.reset_default_graph()
 
-    @unittest.skipIf(tf.__version__[0] == '2', reason='Skip unittests for Tensorflow v2 until Keras supports Tensorflow'
-                                                      ' v2 as backend.')
-    def test_krclassifier(self):
+    def test_keras_classifier(self):
         """
         Second test with the KerasClassifier.
         :return:
@@ -162,7 +153,7 @@ class TestCopycatCNN(unittest.TestCase):
         # Clean-up
         k.clear_session()
 
-    def test_ptclassifier(self):
+    def test_pytorch_classifier(self):
         """
         Third test with the PyTorchClassifier.
         :return:
@@ -237,12 +228,12 @@ class TestCopycatCNNVectors(unittest.TestCase):
     def setUp(self):
         master_seed(1234)
 
-    def test_iris_tf(self):
+    def test_tensorflow_iris(self):
         """
-        First test for TF.
+        First test for TensorFlow.
         :return:
         """
-        # Get the TF classifier
+        # Get the TensorFlow classifier
         victim_tfc, sess = get_iris_classifier_tf()
 
         # Define input and output placeholders
@@ -278,12 +269,11 @@ class TestCopycatCNNVectors(unittest.TestCase):
         self.assertGreater(acc, 0.3)
 
         # Clean-up session
-        sess.close()
-        tf.reset_default_graph()
+        if sess is not None:
+            sess.close()
+            tf.reset_default_graph()
 
-    @unittest.skipIf(tf.__version__[0] == '2', reason='Skip unittests for Tensorflow v2 until Keras supports Tensorflow'
-                                                      ' v2 as backend.')
-    def test_iris_kr(self):
+    def test_keras_iris(self):
         """
         Second test for Keras.
         :return:
@@ -315,7 +305,7 @@ class TestCopycatCNNVectors(unittest.TestCase):
         # Clean-up
         k.clear_session()
 
-    def test_iris_pt(self):
+    def test_pytorch_iris(self):
         """
         Third test for Pytorch.
         :return:
