@@ -450,7 +450,7 @@ class TestHopSkipJump(unittest.TestCase):
                                   ExtraTreesClassifier(n_estimators=10),
                                   GradientBoostingClassifier(n_estimators=10),
                                   RandomForestClassifier(n_estimators=10),
-                                  LogisticRegression(),
+                                  LogisticRegression(solver='lbfgs', multi_class='auto'),
                                   SVC(gamma='auto'),
                                   LinearSVC()]
 

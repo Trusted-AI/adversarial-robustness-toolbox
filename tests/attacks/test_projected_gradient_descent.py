@@ -271,18 +271,17 @@ class TestPGD(unittest.TestCase):
         from sklearn.linear_model import LogisticRegression
         from sklearn.svm import SVC, LinearSVC
 
-        from art.classifiers.scikitlearn import ScikitlearnLogisticRegression, ScikitlearnSVC
+        from art.classifiers.scikitlearn import SklearnClassifier
 
-        scikitlearn_test_cases = {LogisticRegression: ScikitlearnLogisticRegression,
-                                  SVC: ScikitlearnSVC,
-                                  LinearSVC: ScikitlearnSVC}
+        scikitlearn_test_cases = [LogisticRegression(solver='lbfgs', multi_class='auto'),
+                                  SVC(gamma='auto'),
+                                  LinearSVC()]
 
         (_, _), (x_test, y_test) = self.iris
         x_test_original = x_test.copy()
 
-        for (model_class, classifier_class) in scikitlearn_test_cases.items():
-            model = model_class()
-            classifier = classifier_class(model=model, clip_values=(0, 1))
+        for model in scikitlearn_test_cases:
+            classifier = SklearnClassifier(model=model, clip_values=(0, 1))
             classifier.fit(x=x_test, y=y_test)
 
             # Test untargeted attack

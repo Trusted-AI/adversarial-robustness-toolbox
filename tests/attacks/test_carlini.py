@@ -304,19 +304,19 @@ class TestCarlini(unittest.TestCase):
 
     def test_scikitlearn_L2(self):
         from sklearn.linear_model import LogisticRegression
+        from sklearn.svm import SVC, LinearSVC
 
-        from art.classifiers.scikitlearn import ScikitlearnLogisticRegression
+        from art.classifiers.scikitlearn import SklearnClassifier
 
-        scikitlearn_test_cases = {LogisticRegression: ScikitlearnLogisticRegression}  # ,
-        # SVC: ScikitlearnSVC,
-        # LinearSVC: ScikitlearnSVC}
+        scikitlearn_test_cases = [LogisticRegression(solver='lbfgs', multi_class='auto'),
+                                  SVC(gamma='auto'),
+                                  LinearSVC()]
 
         (_, _), (x_test, y_test) = self.iris
         x_test_original = x_test.copy()
 
-        for (model_class, classifier_class) in scikitlearn_test_cases.items():
-            model = model_class()
-            classifier = classifier_class(model=model, clip_values=(0, 1))
+        for model in scikitlearn_test_cases:
+            classifier = SklearnClassifier(model=model, clip_values=(0, 1))
             classifier.fit(x=x_test, y=y_test)
 
             # Test untargeted attack
@@ -586,18 +586,19 @@ class TestCarlini(unittest.TestCase):
 
     def test_scikitlearn_LInf(self):
         from sklearn.linear_model import LogisticRegression
+        from sklearn.svm import SVC, LinearSVC
 
-        from art.classifiers.scikitlearn import ScikitlearnLogisticRegression
+        from art.classifiers.scikitlearn import SklearnClassifier
 
-        scikitlearn_test_cases = {LogisticRegression: ScikitlearnLogisticRegression}  # ,
-        # SVC: ScikitlearnSVC,
-        # LinearSVC: ScikitlearnSVC}
+        scikitlearn_test_cases = [LogisticRegression(solver='lbfgs', multi_class='auto'),
+                                  SVC(gamma='auto'),
+                                  LinearSVC()]
 
         (_, _), (x_test, y_test) = self.iris
+        x_test_original = x_test.copy()
 
-        for (model_class, classifier_class) in scikitlearn_test_cases.items():
-            model = model_class()
-            classifier = classifier_class(model=model, clip_values=(0, 1))
+        for model in scikitlearn_test_cases:
+            classifier = SklearnClassifier(model=model, clip_values=(0, 1))
             classifier.fit(x=x_test, y=y_test)
 
             # Test untargeted attack
@@ -626,6 +627,9 @@ class TestCarlini(unittest.TestCase):
             accuracy = np.sum(predictions_adv == np.argmax(targets, axis=1)) / y_test.shape[0]
             logger.info('Success rate of ' + classifier.__class__.__name__ + ' on targeted C&W on Iris: %.2f%%',
                         (accuracy * 100))
+
+            # Check that x_test has not been modified by attack and classifier
+            self.assertAlmostEqual(float(np.max(np.abs(x_test_original - x_test))), 0.0, delta=0.00001)
 
 
 if __name__ == '__main__':

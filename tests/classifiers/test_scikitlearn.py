@@ -196,7 +196,8 @@ class TestScikitlearnLogisticRegression(unittest.TestCase):
     def setUpClass(cls):
         np.random.seed(seed=1234)
 
-        cls.sklearn_model = LogisticRegression(verbose=0, C=1, solver='newton-cg', dual=False, fit_intercept=True)
+        cls.sklearn_model = LogisticRegression(verbose=0, C=1, solver='newton-cg', dual=False, fit_intercept=True,
+                                               multi_class='ovr')
         cls.classifier = ScikitlearnLogisticRegression(model=cls.sklearn_model)
         cls.classifier.fit(x=x_train, y=y_train)
 
@@ -294,7 +295,8 @@ class TestScikitlearnBinaryLogisticRegression(unittest.TestCase):
         x_train_binary = x_train[binary_class_index, ]
         y_train_binary = y_train[binary_class_index, ][:, [0, 1]]
 
-        cls.sklearn_model = LogisticRegression(verbose=0, C=1, solver='newton-cg', dual=False, fit_intercept=True)
+        cls.sklearn_model = LogisticRegression(verbose=0, C=1, solver='newton-cg', dual=False, fit_intercept=True,
+                                               multi_class='ovr')
         cls.classifier = ScikitlearnLogisticRegression(model=cls.sklearn_model)
         cls.classifier.fit(x=x_train_binary, y=y_train_binary)
 
