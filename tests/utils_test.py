@@ -85,7 +85,7 @@ def get_classifier_tf(from_logits=False):
     import tensorflow as tf
     if tf.__version__[0] == '2':
         # sess is not required but set to None to return 2 values for v1 and v2
-        classifier, sess = get_classifier_tf_v2(), None
+        classifier, sess = get_classifier_tf_v2(from_logits=from_logits), None
     else:
         classifier, sess = get_classifier_tf_v1(from_logits=from_logits)
     return classifier, sess
@@ -149,7 +149,7 @@ def get_classifier_tf_v1(from_logits=False):
     return tfc, sess
 
 
-def get_classifier_tf_v2():
+def get_classifier_tf_v2(from_logits=False):
     """
     Standard TensorFlow v2 classifier for unit testing.
 
@@ -185,6 +185,9 @@ def get_classifier_tf_v2():
             self.dense1 = Dense(10, activation='softmax',
                                 kernel_initializer=_tf_weights_loader('MNIST', 'W', 'DENSE', 2),
                                 bias_initializer=_tf_weights_loader('MNIST', 'B', 'DENSE', 2))
+            self.logits = Dense(10, activation='linear',
+                                kernel_initializer=_tf_weights_loader('MNIST', 'W', 'DENSE', 2),
+                                bias_initializer=_tf_weights_loader('MNIST', 'B', 'DENSE', 2))
 
         def call(self, x):
             """
@@ -196,7 +199,10 @@ def get_classifier_tf_v2():
             x = self.conv1(x)
             x = self.maxpool(x)
             x = self.flatten(x)
-            x = self.dense1(x)
+            if from_logits:
+                x = self.logits(x)
+            else:
+                x = self.dense1(x)
             return x
 
     model = TensorFlowModel()

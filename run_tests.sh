@@ -36,7 +36,6 @@ declare -a classifiers=("tests/classifiers/test_blackbox.py" \
                         "tests/classifiers/test_pytorch.py" \
                         "tests/classifiers/test_scikitlearn.py" \
                         "tests/classifiers/test_tensorflow.py" \
-                        "tests/classifiers/test_tensorflow_v2.py" \
                         "tests/classifiers/test_xgboost.py" )
 
 declare -a defences=("tests/defences/test_adversarial_trainer.py" \
