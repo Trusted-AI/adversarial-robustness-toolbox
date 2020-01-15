@@ -50,11 +50,6 @@ try:
 except ImportError:
     logger.info('Could not import PyTorch in utilities.')
 
-if tf.__version__[0] == '2':
-    # pylint: disable=E0401
-    import tensorflow.compat.v1 as tf
-    tf.disable_eager_execution()
-
 
 BATCH_SIZE = 100
 NB_TRAIN = 1000
