@@ -91,7 +91,7 @@ def get_classifier_tf(from_logits=False, load_init=True, sess=None):
     number of epochs: 2
     optimizer: tf.train.AdamOptimizer
 
-    :param from_logits: The classifier produces logit outputs if True, probability outputs if False.
+    :param from_logits: Flag if model should predict logits (True) or probabilities (False).
     :type from_logits: `bool`
     :param load_init: Load the initial weights if True.
     :type load_init: `bool`
@@ -215,7 +215,8 @@ def get_classifier_tf_v2():
     return tfc
 
 
-def get_classifier_kr(loss_name='categorical_crossentropy', loss_type='function_losses', from_logits=False):
+def get_classifier_kr(loss_name='categorical_crossentropy', loss_type='function_losses', from_logits=False,
+                      load_init=True):
     """
     Standard Keras classifier for unit testing
 
@@ -229,7 +230,8 @@ def get_classifier_kr(loss_name='categorical_crossentropy', loss_type='function_
     :type loss_type: `str`
     :param from_logits: Flag if model should predict logits (True) or probabilities (False).
     :type from_logits: `bool`
-
+    :param load_init: Load the initial weights if True.
+    :type load_init: `bool`
     :return: KerasClassifier, tf.Session()
     """
     import keras
@@ -240,18 +242,29 @@ def get_classifier_kr(loss_name='categorical_crossentropy', loss_type='function_
 
     # Create simple CNN
     model = Sequential()
-    model.add(Conv2D(1, kernel_size=(7, 7), activation='relu', input_shape=(28, 28, 1),
-                     kernel_initializer=_kr_weights_loader('MNIST', 'W', 'CONV2D'),
-                     bias_initializer=_kr_weights_loader('MNIST', 'B', 'CONV2D')))
+
+    if load_init:
+        model.add(Conv2D(1, kernel_size=(7, 7), activation='relu', input_shape=(28, 28, 1),
+                         kernel_initializer=_kr_weights_loader('MNIST', 'W', 'CONV2D'),
+                         bias_initializer=_kr_weights_loader('MNIST', 'B', 'CONV2D')))
+    else:
+        model.add(Conv2D(1, kernel_size=(7, 7), activation='relu', input_shape=(28, 28, 1)))
+
     model.add(MaxPooling2D(pool_size=(4, 4)))
     model.add(Flatten())
 
     if from_logits:
-        model.add(Dense(10, activation='linear', kernel_initializer=_kr_weights_loader('MNIST', 'W', 'DENSE'),
-                        bias_initializer=_kr_weights_loader('MNIST', 'B', 'DENSE')))
+        if load_init:
+            model.add(Dense(10, activation='linear', kernel_initializer=_kr_weights_loader('MNIST', 'W', 'DENSE'),
+                            bias_initializer=_kr_weights_loader('MNIST', 'B', 'DENSE')))
+        else:
+            model.add(Dense(10, activation='linear'))
     else:
-        model.add(Dense(10, activation='softmax', kernel_initializer=_kr_weights_loader('MNIST', 'W', 'DENSE'),
-                        bias_initializer=_kr_weights_loader('MNIST', 'B', 'DENSE')))
+        if load_init:
+            model.add(Dense(10, activation='softmax', kernel_initializer=_kr_weights_loader('MNIST', 'W', 'DENSE'),
+                            bias_initializer=_kr_weights_loader('MNIST', 'B', 'DENSE')))
+        else:
+            model.add(Dense(10, activation='softmax'))
 
     if loss_name == 'categorical_hinge':
         if loss_type == 'label':
@@ -526,7 +539,7 @@ def get_classifier_kr_tf_binary():
     return krc
 
 
-def get_classifier_pt(from_logits=False):
+def get_classifier_pt(from_logits=False, load_init=True):
     """
     Standard PyTorch classifier for unit testing
 
