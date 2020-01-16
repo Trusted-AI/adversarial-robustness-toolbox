@@ -716,6 +716,8 @@ def get_iris_classifier_tf(load_init=True, sess=None):
 
     # Train operator
     loss = tf.reduce_mean(tf.losses.softmax_cross_entropy(logits=logits, onehot_labels=output_ph))
+    optimizer = tf.train.AdamOptimizer(learning_rate=0.01)
+    train = optimizer.minimize(loss)
 
     # TensorFlow session and initialization
     if sess is None:
@@ -726,7 +728,7 @@ def get_iris_classifier_tf(load_init=True, sess=None):
     sess.run(tf.global_variables_initializer())
 
     # Train the classifier
-    tfc = TensorFlowClassifier(clip_values=(0, 1), input_ph=input_ph, output=logits, labels_ph=output_ph, train=None,
+    tfc = TensorFlowClassifier(clip_values=(0, 1), input_ph=input_ph, output=logits, labels_ph=output_ph, train=train,
                                loss=loss, learning=None, sess=sess, channel_index=1)
 
     return tfc, sess
