@@ -34,7 +34,7 @@ class TestEnsembleClassifier(TestBase):
     """
     This class tests the ensemble classifier.
     """
-    
+
     @classmethod
     def setUpClass(cls):
         super().setUpClass()

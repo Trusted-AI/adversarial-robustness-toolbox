@@ -144,7 +144,8 @@ class TestKerasClassifier(TestBase):
         keras_gen = ImageDataGenerator(width_shift_range=0.075, height_shift_range=0.075, rotation_range=12,
                                        shear_range=0.075, zoom_range=0.05, fill_mode='constant', cval=0)
         keras_gen.fit(self.x_train_mnist)
-        data_gen = KerasDataGenerator(generator=keras_gen.flow(self.x_train_mnist, self.y_train_mnist, batch_size=self.batch_size),
+        data_gen = KerasDataGenerator(generator=keras_gen.flow(self.x_train_mnist, self.y_train_mnist,
+                                                               batch_size=self.batch_size),
                                       size=self.n_train, batch_size=self.batch_size)
         classifier.fit_generator(generator=data_gen, nb_epochs=5)
         accuracy_2 = np.sum(np.argmax(classifier.predict(self.x_test_mnist), axis=1) == labels_test) / self.n_test
