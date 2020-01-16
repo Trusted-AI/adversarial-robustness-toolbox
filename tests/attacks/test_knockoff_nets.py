@@ -77,32 +77,11 @@ class TestKnockoffNets(unittest.TestCase):
         First test with the TensorFlowClassifier.
         :return:
         """
-        # Build TensorFlowClassifiers
+        # Build TensorFlowClassifier
         victim_tfc, sess = get_classifier_tf()
 
-        # Define input and output placeholders
-        input_ph = tf.placeholder(tf.float32, shape=[None, 28, 28, 1])
-        output_ph = tf.placeholder(tf.int32, shape=[None, 10])
-
-        # Define the Tensorflow graph
-        conv = tf.layers.conv2d(input_ph, 1, 7, activation=tf.nn.relu)
-        conv = tf.layers.max_pooling2d(conv, 4, 4)
-        flattened = tf.layers.flatten(conv)
-
-        # Logits layer
-        logits = tf.layers.dense(flattened, 10)
-
-        # Train operator
-        loss = tf.reduce_mean(tf.losses.softmax_cross_entropy(logits=logits, onehot_labels=output_ph))
-        optimizer = tf.train.AdamOptimizer(learning_rate=0.001)
-        train = optimizer.minimize(loss)
-
-        # TensorFlow session and initialization
-        sess.run(tf.global_variables_initializer())
-
-        # Create the classifier
-        thieved_tfc = TensorFlowClassifier(clip_values=(0, 1), input_ph=input_ph, output=logits, labels_ph=output_ph,
-                                           train=train, loss=loss, learning=None, sess=sess)
+        # Create the thieved classifier
+        thieved_tfc, _ = get_classifier_tf(load_init=False, sess=sess)
 
         # Create random attack
         attack = KnockoffNets(classifier=victim_tfc, batch_size_fit=BATCH_SIZE, batch_size_query=BATCH_SIZE,
@@ -138,17 +117,8 @@ class TestKnockoffNets(unittest.TestCase):
         # Build KerasClassifier
         victim_krc = get_classifier_kr()
 
-        # Create simple CNN
-        model = Sequential()
-        model.add(Conv2D(1, kernel_size=(7, 7), activation='relu', input_shape=(28, 28, 1)))
-        model.add(MaxPooling2D(pool_size=(4, 4)))
-        model.add(Flatten())
-        model.add(Dense(10, activation='softmax'))
-        loss = keras.losses.categorical_crossentropy
-        model.compile(loss=loss, optimizer=keras.optimizers.Adam(lr=0.001), metrics=['accuracy'])
-
-        # Get classifier
-        thieved_krc = KerasClassifier(model, clip_values=(0, 1), use_logits=False)
+        # Create the thieved classifier
+        thieved_krc = get_classifier_kr(load_init=False)
 
         # Create random attack
         attack = KnockoffNets(classifier=victim_krc, batch_size_fit=BATCH_SIZE, batch_size_query=BATCH_SIZE,
@@ -183,46 +153,8 @@ class TestKnockoffNets(unittest.TestCase):
         # Build PyTorchClassifier
         victim_ptc = get_classifier_pt()
 
-        class Model(nn.Module):
-            """
-            Create model for pytorch.
-            """
-
-            def __init__(self):
-                super(Model, self).__init__()
-
-                self.conv = nn.Conv2d(in_channels=1, out_channels=1, kernel_size=7)
-                self.pool = nn.MaxPool2d(4, 4)
-                self.fullyconnected = nn.Linear(25, 10)
-
-            # pylint: disable=W0221
-            # disable pylint because of API requirements for function
-            def forward(self, x):
-                """
-                Forward function to evaluate the model
-
-                :param x: Input to the model
-                :return: Prediction of the model
-                """
-                x = self.conv(x)
-                x = torch.nn.functional.relu(x)
-                x = self.pool(x)
-                x = x.reshape(-1, 25)
-                x = self.fullyconnected(x)
-                x = torch.nn.functional.softmax(x)
-
-                return x
-
-        # Define the network
-        model = Model()
-
-        # Define a loss function and optimizer
-        loss_fn = nn.CrossEntropyLoss()
-        optimizer = optim.Adam(model.parameters(), lr=0.01)
-
-        # Get classifier
-        thieved_ptc = PyTorchClassifier(model=model, loss=loss_fn, optimizer=optimizer, input_shape=(1, 28, 28),
-                                        nb_classes=10, clip_values=(0, 1))
+        # Create the thieved classifier
+        thieved_ptc = get_classifier_pt(load_init=False)
 
         # Create random attack
         attack = KnockoffNets(classifier=victim_ptc, batch_size_fit=BATCH_SIZE, batch_size_query=BATCH_SIZE,
@@ -268,26 +200,8 @@ class TestKnockoffNetsVectors(unittest.TestCase):
         # Get the TensorFlow classifier
         victim_tfc, sess = get_iris_classifier_tf()
 
-        # Define input and output placeholders
-        input_ph = tf.placeholder(tf.float32, shape=[None, 4])
-        output_ph = tf.placeholder(tf.int32, shape=[None, 3])
-
-        # Define the Tensorflow graph
-        dense1 = tf.layers.dense(input_ph, 10)
-        dense2 = tf.layers.dense(dense1, 10)
-        logits = tf.layers.dense(dense2, 3)
-
-        # Train operator
-        loss = tf.reduce_mean(tf.losses.softmax_cross_entropy(logits=logits, onehot_labels=output_ph))
-        optimizer = tf.train.AdamOptimizer(learning_rate=0.001)
-        train = optimizer.minimize(loss)
-
-        # Tensorflow session and initialization
-        sess.run(tf.global_variables_initializer())
-
-        # Train the classifier
-        thieved_tfc = TensorFlowClassifier(clip_values=(0, 1), input_ph=input_ph, output=logits, labels_ph=output_ph,
-                                           train=train, loss=loss, learning=None, sess=sess, channel_index=1)
+        # Create the thieved classifier
+        thieved_tfc, _ = get_iris_classifier_tf(load_init=False, sess=sess)
 
         # Create random attack
         attack = KnockoffNets(classifier=victim_tfc, batch_size_fit=BATCH_SIZE, batch_size_query=BATCH_SIZE,
@@ -323,15 +237,8 @@ class TestKnockoffNetsVectors(unittest.TestCase):
         # Build KerasClassifier
         victim_krc = get_iris_classifier_kr()
 
-        # Create simple CNN
-        model = Sequential()
-        model.add(Dense(10, input_shape=(4,), activation='relu'))
-        model.add(Dense(10, activation='relu'))
-        model.add(Dense(3, activation='softmax'))
-        model.compile(loss='categorical_crossentropy', optimizer=keras.optimizers.Adam(lr=0.001), metrics=['accuracy'])
-
-        # Get classifier
-        thieved_krc = KerasClassifier(model, clip_values=(0, 1), use_logits=False, channel_index=1)
+        # Create the thieved classifier
+        thieved_krc = get_iris_classifier_kr(load_init=False)
 
         # Create random attack
         attack = KnockoffNets(classifier=victim_krc, batch_size_fit=BATCH_SIZE, batch_size_query=BATCH_SIZE,
@@ -366,37 +273,8 @@ class TestKnockoffNetsVectors(unittest.TestCase):
         # Build PyTorchClassifier
         victim_ptc = get_iris_classifier_pt()
 
-        class Model(nn.Module):
-            """
-            Create Iris model for PyTorch.
-            """
-
-            def __init__(self):
-                super(Model, self).__init__()
-
-                self.fully_connected1 = nn.Linear(4, 10)
-                self.fully_connected2 = nn.Linear(10, 10)
-                self.fully_connected3 = nn.Linear(10, 3)
-
-            # pylint: disable=W0221
-            # disable pylint because of API requirements for function
-            def forward(self, x):
-                x = self.fully_connected1(x)
-                x = self.fully_connected2(x)
-                logit_output = self.fully_connected3(x)
-
-                return logit_output
-
-        # Define the network
-        model = Model()
-
-        # Define a loss function and optimizer
-        loss_fn = nn.CrossEntropyLoss()
-        optimizer = optim.Adam(model.parameters(), lr=0.001)
-
-        # Get classifier
-        thieved_ptc = PyTorchClassifier(model=model, loss=loss_fn, optimizer=optimizer, input_shape=(4,),
-                                        nb_classes=3, clip_values=(0, 1), channel_index=1)
+        # Create the thieved classifier
+        thieved_ptc = get_iris_classifier_pt(load_init=False)
 
         # Create random attack
         attack = KnockoffNets(classifier=victim_ptc, batch_size_fit=BATCH_SIZE, batch_size_query=BATCH_SIZE,
