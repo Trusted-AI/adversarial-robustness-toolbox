@@ -40,7 +40,7 @@ NB_TEST = 11
 
 
 @unittest.skipIf(tf.__version__[0] != '2' or (tf.__version__[0] == '1' and tf.__version__.split('.')[1] != '15'),
-                 reason='Skip unittests if not TensorFlow v2.')
+                 reason='Skip unittests if not TensorFlow v2 or 1.15 because of pre-trained model.')
 class TestFastGradientMethodImages(unittest.TestCase):
     @classmethod
     def setUpClass(cls):
