@@ -77,7 +77,7 @@ class TestTensorFlowClassifier(TestBase):
             accuracy = np.sum(predictions_class == true_class) / len(true_class)
 
             logger.info('Accuracy after fitting TensorFlow classifier with generator: %.2f%%', (accuracy * 100))
-            self.assertEqual(accuracy, 0.65)
+            self.assertAlmostEqual(accuracy, 0.65, delta=0.02)
 
     def test_nb_classes(self):
         self.assertEqual(self.classifier.nb_classes(), 10)
@@ -173,8 +173,8 @@ class TestTensorFlowClassifier(TestBase):
             layer_names = self.classifier.layer_names
 
             for i, name in enumerate(layer_names):
-                activation_i = self.classifier.get_activations(self.x_test, i, batch_size=5)
-                activation_name = self.classifier.get_activations(self.x_test, name, batch_size=5)
+                activation_i = self.classifier.get_activations(self.x_test_mnist, i, batch_size=5)
+                activation_name = self.classifier.get_activations(self.x_test_mnist, name, batch_size=5)
                 np.testing.assert_array_equal(activation_name, activation_i)
 
     # Commented because of problems with multiple classifiers in the same test module
