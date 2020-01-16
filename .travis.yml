@@ -39,4 +39,4 @@ install:
   - export PYTHONPATH=".":$PYTHONPATH
 
 script:
-  - travis_wait 60 ./run_tests.sh
+  - travis_wait 80 ./run_tests.sh
