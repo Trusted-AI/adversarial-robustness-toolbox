@@ -205,12 +205,21 @@ def get_classifier_tf_v2(from_logits=False):
                 x = self.dense1(x)
             return x
 
+    optimizer = tf.keras.optimizers.Adam(learning_rate=0.01)
+
+    def train_step(images, labels):
+        with tf.GradientTape() as tape:
+            predictions = model(images, training=True)
+            loss = loss_object(np.argmax(labels, axis=1), predictions)
+        gradients = tape.gradient(loss, model.trainable_variables)
+        optimizer.apply_gradients(zip(gradients, model.trainable_variables))
+
     model = TensorFlowModel()
     loss_object = tf.keras.losses.SparseCategoricalCrossentropy()
 
     # Create the classifier
-    tfc = TensorFlowV2Classifier(model=model, loss_object=loss_object, nb_classes=10, input_shape=(28, 28, 1),
-                                 clip_values=(0, 1))
+    tfc = TensorFlowV2Classifier(model=model, loss_object=loss_object, train_step=train_step, nb_classes=10,
+                                 input_shape=(28, 28, 1), clip_values=(0, 1))
 
     return tfc
 

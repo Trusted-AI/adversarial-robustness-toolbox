@@ -32,7 +32,7 @@ logger = logging.getLogger(__name__)
 
 BATCH_SIZE = 10
 NB_TRAIN = 100
-NB_TEST = 11
+NB_TEST = 100
 
 
 class TestAdversarialTrainer(unittest.TestCase):
@@ -74,8 +74,8 @@ class TestAdversarialTrainer(unittest.TestCase):
         predictions_new = np.argmax(adv_trainer.predict(x_test_adv), axis=1)
         accuracy_new = np.sum(predictions_new == np.argmax(y_test, axis=1)) / NB_TEST
 
-        self.assertEqual(accuracy_new, 0.09090909090909091)
-        self.assertEqual(accuracy, 0.18181818181818182)
+        self.assertEqual(accuracy_new, 0.12)
+        self.assertEqual(accuracy, 0.13)
 
         # Check that x_test has not been modified by attack and classifier
         self.assertAlmostEqual(float(np.max(np.abs(x_test_original - x_test))), 0.0, delta=0.00001)
@@ -84,21 +84,20 @@ class TestAdversarialTrainer(unittest.TestCase):
         (x_train, y_train), (x_test, y_test) = self.mnist
         x_test_original = x_test.copy()
 
-        attack1 = FastGradientMethod(self.classifier)
-        attack2 = DeepFool(self.classifier)
+        attack1 = FastGradientMethod(classifier=self.classifier, batch_size=16)
+        attack2 = DeepFool(classifier=self.classifier, max_iter=5, batch_size=16)
         x_test_adv = attack1.generate(x_test)
         predictions = np.argmax(self.classifier.predict(x_test_adv), axis=1)
         accuracy = np.sum(predictions == np.argmax(y_test, axis=1)) / NB_TEST
 
         adv_trainer = AdversarialTrainer(self.classifier, attacks=[attack1, attack2])
-        adv_trainer.fit(x_train, y_train, nb_epochs=5, batch_size=128)
+        adv_trainer.fit(x_train, y_train, nb_epochs=2, batch_size=16)
 
         predictions_new = np.argmax(adv_trainer.predict(x_test_adv), axis=1)
         accuracy_new = np.sum(predictions_new == np.argmax(y_test, axis=1)) / NB_TEST
-        self.assertGreaterEqual(accuracy_new, accuracy)
 
-        self.assertEqual(accuracy_new, 0.18181818181818182)
-        self.assertEqual(accuracy, 0.18181818181818182)
+        self.assertEqual(accuracy_new, 0.36)
+        self.assertEqual(accuracy, 0.13)
 
         # Check that x_test has not been modified by attack and classifier
         self.assertAlmostEqual(float(np.max(np.abs(x_test_original - x_test))), 0.0, delta=0.00001)
@@ -120,27 +119,25 @@ class TestAdversarialTrainer(unittest.TestCase):
                 ids = np.random.choice(self.size, size=min(self.size, self.batch_size), replace=False)
                 return self.x[ids], self.y[ids]
 
-        generator = MyDataGenerator(x_train, y_train, x_train.shape[0], 1)
+        generator = MyDataGenerator(x_train, y_train, size=x_train.shape[0], batch_size=16)
 
-        attack1 = FastGradientMethod(self.classifier)
-        attack2 = DeepFool(self.classifier)
+        attack1 = FastGradientMethod(classifier=self.classifier, batch_size=16)
+        attack2 = DeepFool(classifier=self.classifier, max_iter=5, batch_size=16)
         x_test_adv = attack1.generate(x_test)
         predictions = np.argmax(self.classifier.predict(x_test_adv), axis=1)
         accuracy = np.sum(predictions == np.argmax(y_test, axis=1)) / NB_TEST
 
         adv_trainer = AdversarialTrainer(self.classifier, attacks=[attack1, attack2])
-        adv_trainer.fit_generator(generator, nb_epochs=5)
+        adv_trainer.fit_generator(generator, nb_epochs=3)
 
         predictions_new = np.argmax(adv_trainer.predict(x_test_adv), axis=1)
         accuracy_new = np.sum(predictions_new == np.argmax(y_test, axis=1)) / NB_TEST
 
-        self.assertAlmostEqual(accuracy_new, 0.8181818181818182, delta=0.2)
-        self.assertAlmostEqual(accuracy, 0.18181818181818182, delta=0.2)
+        self.assertAlmostEqual(accuracy_new, 0.25, delta=0.02)
+        self.assertAlmostEqual(accuracy, 0.11, delta=0.0)
 
-        # Assert that the original training data has not changed
+        # Check that x_train and x_test has not been modified by attack and classifier
         self.assertAlmostEqual(float(np.max(np.abs(x_train_original - x_train))), 0.0, delta=0.00001)
-
-        # Check that x_test has not been modified by attack and classifier
         self.assertAlmostEqual(float(np.max(np.abs(x_test_original - x_test))), 0.0, delta=0.00001)
 
     def test_targeted_attack_error(self):

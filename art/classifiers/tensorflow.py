@@ -691,6 +691,10 @@ class TensorFlowV2Classifier(ClassifierNeuralNetwork, ClassifierGradients, Class
         """
         import tensorflow as tf
 
+        if self._train_step is None:
+            raise TypeError('The training function `train_step` is required for fitting a model but it has not been '
+                            'defined.')
+
         # Apply preprocessing
         x_preprocessed, y_preprocessed = self._apply_preprocessing(x, y, fit=True)
 
