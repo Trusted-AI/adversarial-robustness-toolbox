@@ -772,10 +772,12 @@ def get_iris_classifier_kr(load_init=True):
     return krc
 
 
-def get_iris_classifier_pt():
+def get_iris_classifier_pt(load_init=True):
     """
     Standard PyTorch classifier for unit testing on Iris dataset.
 
+    :param load_init: Load the initial weights if True.
+    :type load_init: `bool`
     :return: Trained model for Iris dataset.
     :rtype: :class:`.PyTorchClassifier`
     """
@@ -791,22 +793,30 @@ def get_iris_classifier_pt():
         def __init__(self):
             super(Model, self).__init__()
 
-            w_dense1 = np.load(os.path.join(os.path.dirname(os.path.dirname(__file__)), 'models', 'W_DENSE1_IRIS.npy'))
-            b_dense1 = np.load(os.path.join(os.path.dirname(os.path.dirname(__file__)), 'models', 'B_DENSE1_IRIS.npy'))
-            w_dense2 = np.load(os.path.join(os.path.dirname(os.path.dirname(__file__)), 'models', 'W_DENSE2_IRIS.npy'))
-            b_dense2 = np.load(os.path.join(os.path.dirname(os.path.dirname(__file__)), 'models', 'B_DENSE2_IRIS.npy'))
-            w_dense3 = np.load(os.path.join(os.path.dirname(os.path.dirname(__file__)), 'models', 'W_DENSE3_IRIS.npy'))
-            b_dense3 = np.load(os.path.join(os.path.dirname(os.path.dirname(__file__)), 'models', 'B_DENSE3_IRIS.npy'))
-
             self.fully_connected1 = nn.Linear(4, 10)
-            self.fully_connected1.weight = nn.Parameter(torch.Tensor(np.transpose(w_dense1)))
-            self.fully_connected1.bias = nn.Parameter(torch.Tensor(b_dense1))
             self.fully_connected2 = nn.Linear(10, 10)
-            self.fully_connected2.weight = nn.Parameter(torch.Tensor(np.transpose(w_dense2)))
-            self.fully_connected2.bias = nn.Parameter(torch.Tensor(b_dense2))
             self.fully_connected3 = nn.Linear(10, 3)
-            self.fully_connected3.weight = nn.Parameter(torch.Tensor(np.transpose(w_dense3)))
-            self.fully_connected3.bias = nn.Parameter(torch.Tensor(b_dense3))
+
+            if load_init:
+                w_dense1 = np.load(os.path.join(os.path.dirname(os.path.dirname(__file__)),
+                                                'models', 'W_DENSE1_IRIS.npy'))
+                b_dense1 = np.load(os.path.join(os.path.dirname(os.path.dirname(__file__)),
+                                                'models', 'B_DENSE1_IRIS.npy'))
+                w_dense2 = np.load(os.path.join(os.path.dirname(os.path.dirname(__file__)),
+                                                'models', 'W_DENSE2_IRIS.npy'))
+                b_dense2 = np.load(os.path.join(os.path.dirname(os.path.dirname(__file__)),
+                                                'models', 'B_DENSE2_IRIS.npy'))
+                w_dense3 = np.load(os.path.join(os.path.dirname(os.path.dirname(__file__)),
+                                                'models', 'W_DENSE3_IRIS.npy'))
+                b_dense3 = np.load(os.path.join(os.path.dirname(os.path.dirname(__file__)),
+                                                'models', 'B_DENSE3_IRIS.npy'))
+
+                self.fully_connected1.weight = nn.Parameter(torch.Tensor(np.transpose(w_dense1)))
+                self.fully_connected1.bias = nn.Parameter(torch.Tensor(b_dense1))
+                self.fully_connected2.weight = nn.Parameter(torch.Tensor(np.transpose(w_dense2)))
+                self.fully_connected2.bias = nn.Parameter(torch.Tensor(b_dense2))
+                self.fully_connected3.weight = nn.Parameter(torch.Tensor(np.transpose(w_dense3)))
+                self.fully_connected3.bias = nn.Parameter(torch.Tensor(b_dense3))
 
         # pylint: disable=W0221
         # disable pylint because of API requirements for function
