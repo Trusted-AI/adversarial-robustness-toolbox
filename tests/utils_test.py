@@ -732,11 +732,13 @@ def get_iris_classifier_tf(load_init=True, sess=None):
     return tfc, sess
 
 
-def get_iris_classifier_kr():
+def get_iris_classifier_kr(load_init=True):
     """
     Standard Keras classifier for unit testing on Iris dataset. The weights and biases are identical to the TensorFlow
     model in `get_iris_classifier_tf`.
 
+    :param load_init: Load the initial weights if True.
+    :type load_init: `bool`
     :return: The trained model for Iris dataset and the session.
     :rtype: `tuple(KerasClassifier, tf.Session)`
     """
@@ -748,13 +750,20 @@ def get_iris_classifier_kr():
 
     # Create simple CNN
     model = Sequential()
-    model.add(Dense(10, input_shape=(4,), activation='relu',
-                    kernel_initializer=_kr_weights_loader('IRIS', 'W', 'DENSE1'),
-                    bias_initializer=_kr_weights_loader('IRIS', 'B', 'DENSE1')))
-    model.add(Dense(10, activation='relu', kernel_initializer=_kr_weights_loader('IRIS', 'W', 'DENSE2'),
-                    bias_initializer=_kr_weights_loader('IRIS', 'B', 'DENSE2')))
-    model.add(Dense(3, activation='softmax', kernel_initializer=_kr_weights_loader('IRIS', 'W', 'DENSE3'),
-                    bias_initializer=_kr_weights_loader('IRIS', 'B', 'DENSE3')))
+
+    if load_init:
+        model.add(Dense(10, input_shape=(4,), activation='relu',
+                        kernel_initializer=_kr_weights_loader('IRIS', 'W', 'DENSE1'),
+                        bias_initializer=_kr_weights_loader('IRIS', 'B', 'DENSE1')))
+        model.add(Dense(10, activation='relu', kernel_initializer=_kr_weights_loader('IRIS', 'W', 'DENSE2'),
+                        bias_initializer=_kr_weights_loader('IRIS', 'B', 'DENSE2')))
+        model.add(Dense(3, activation='softmax', kernel_initializer=_kr_weights_loader('IRIS', 'W', 'DENSE3'),
+                        bias_initializer=_kr_weights_loader('IRIS', 'B', 'DENSE3')))
+    else:
+        model.add(Dense(10, input_shape=(4,), activation='relu'))
+        model.add(Dense(10, activation='relu'))
+        model.add(Dense(3, activation='softmax'))
+
     model.compile(loss='categorical_crossentropy', optimizer=keras.optimizers.Adam(lr=0.001), metrics=['accuracy'])
 
     # Get classifier
