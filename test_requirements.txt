@@ -17,5 +17,5 @@ lightgbm
 GPy
 
 
-scipy==1.4.1
+scipy
 statsmodels
