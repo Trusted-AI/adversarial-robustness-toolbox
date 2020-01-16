@@ -134,8 +134,8 @@ class TestAdversarialTrainer(unittest.TestCase):
         predictions_new = np.argmax(adv_trainer.predict(x_test_adv), axis=1)
         accuracy_new = np.sum(predictions_new == np.argmax(y_test, axis=1)) / NB_TEST
 
-        self.assertEqual(accuracy_new, 0.8181818181818182)
-        self.assertEqual(accuracy, 0.18181818181818182)
+        self.assertAlmostEqual(accuracy_new, 0.8181818181818182, delta=0.2)
+        self.assertAlmostEqual(accuracy, 0.18181818181818182, delta=0.2)
 
         # Assert that the original training data has not changed
         self.assertAlmostEqual(float(np.max(np.abs(x_train_original - x_train))), 0.0, delta=0.00001)
