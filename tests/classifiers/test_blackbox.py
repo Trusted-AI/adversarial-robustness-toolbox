@@ -24,7 +24,6 @@ import unittest
 import numpy as np
 
 from art.defences import FeatureSqueezing, JpegCompression, SpatialSmoothing
-from art.utils import load_dataset, master_seed
 
 from tests.utils_test import TestBase, get_classifier_bb
 
@@ -91,3 +90,7 @@ class TestBlackBoxClassifier(TestBase):
         self.assertIn('clip_values=(0, 255)', repr_)
         self.assertIn('defences=None', repr_)
         self.assertIn('preprocessing=(0, 1)', repr_)
+
+
+if __name__ == '__main__':
+    unittest.main()
