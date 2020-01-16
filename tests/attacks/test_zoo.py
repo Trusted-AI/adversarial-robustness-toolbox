@@ -71,7 +71,8 @@ class TestZooAttack(unittest.TestCase):
         self.assertAlmostEqual(float(np.max(np.abs(x_test_original - self.x_test))), 0.0, delta=0.00001)
 
         # Clean-up session
-        sess.close()
+        if sess is not None:
+            sess.close()
 
     def test_tensorflow_mnist(self):
         """
@@ -111,7 +112,8 @@ class TestZooAttack(unittest.TestCase):
         self.assertAlmostEqual(float(np.max(np.abs(x_test_original - self.x_test))), 0.0, delta=0.00001)
 
         # Clean-up session
-        sess.close()
+        if sess is not None:
+            sess.close()
 
     def test_keras_mnist(self):
         """
@@ -221,5 +223,6 @@ class TestZooAttack(unittest.TestCase):
         self.assertIn('For `ZooAttack` classifier must be an instance of `art.classifiers.classifier.Classifier`, the '
                       'provided classifier is instance of (<class \'object\'>,).', str(context.exception))
 
-    if __name__ == '__main__':
-        unittest.main()
+
+if __name__ == '__main__':
+    unittest.main()
