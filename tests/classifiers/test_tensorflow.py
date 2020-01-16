@@ -17,16 +17,16 @@
 # SOFTWARE.
 from __future__ import absolute_import, division, print_function, unicode_literals
 
-import os
-import shutil
+# import os
+# import shutil
 import logging
 import unittest
-import pickle
+# import pickle
 
 import tensorflow as tf
 import numpy as np
 
-from art.config import ART_DATA_PATH
+# from art.config import ART_DATA_PATH
 from art.utils import load_dataset, master_seed
 from tests.utils_test import get_classifier_tf
 from art.data_generators import TFDataGenerator
