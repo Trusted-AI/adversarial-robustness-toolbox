@@ -20,10 +20,15 @@ Module providing convenience functions specifically for unit tests.
 """
 from __future__ import absolute_import, division, print_function, unicode_literals
 
-import logging
 import os
+import logging
 import json
+import time
+import unittest
+
 import numpy as np
+
+from art.utils import master_seed, load_dataset
 
 logger = logging.getLogger(__name__)
 
@@ -36,8 +41,46 @@ except ImportError:
     logger.info('Could not import PyTorch in utilities.')
 
 
-# ----------------------------------------------------------------------------------------------- TEST MODELS FOR MNIST
+# ----------------------------------------------------------------------------------------------------- TEST BASE CLASS
 
+class TestBase(unittest.TestCase):
+    """
+    This class implements the base class for all unit tests.
+    """
+
+    @classmethod
+    def setUpClass(cls):
+        master_seed(1234)
+
+        cls.n_train = 1000
+        cls.n_test = 100
+        cls.batch_size = 16
+
+        (x_train_mnist, y_train_mnist), (x_test_mnist, y_test_mnist), _, _ = load_dataset('mnist')
+
+        cls.x_train_mnist = x_train_mnist[:cls.n_train]
+        cls.y_train_mnist = y_train_mnist[:cls.n_train]
+        cls.x_test_mnist = x_test_mnist[:cls.n_test]
+        cls.y_test_mnist = y_test_mnist[:cls.n_test]
+
+        (x_train_iris, y_train_iris), (x_test_iris, y_test_iris), _, _ = load_dataset('iris')
+
+        cls.x_train_iris = x_train_iris[:cls.n_train]
+        cls.y_train_iris = y_train_iris[:cls.n_train]
+        cls.x_test_iris = x_test_iris[:cls.n_test]
+        cls.y_test_iris = y_test_iris[:cls.n_test]
+
+    def setUp(self):
+        master_seed(1234)
+        self.time_start = time.time()
+
+    def tearDown(self):
+        time_end = time.time() - self.time_start
+        test_name = self.id().split(' ')[0]
+        logger.info('%s: completed in %.3f seconds' % (test_name, time_end))
+
+
+# ----------------------------------------------------------------------------------------------- TEST MODELS FOR MNIST
 
 def _tf_weights_loader(dataset, weights_type, layer='DENSE', tf_version=1):
     filename = str(weights_type) + '_' + str(layer) + '_' + str(dataset) + '.npy'

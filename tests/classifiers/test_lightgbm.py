@@ -24,38 +24,32 @@ import lightgbm as lgb
 import numpy as np
 
 from art.classifiers import LightGBMClassifier
-from art.utils import load_dataset, master_seed
+
+from tests.utils_test import TestBase
 
 logger = logging.getLogger(__name__)
 
 
-class TestLightGBMClassifier(unittest.TestCase):
+class TestLightGBMClassifier(TestBase):
 
     @classmethod
     def setUpClass(cls):
-        master_seed(1234)
-        (x_train, y_train), (x_test, y_test), _, _ = load_dataset('iris')
+        super().setUpClass()
 
-        cls.x_train = x_train
-        cls.y_train = np.argmax(y_train, axis=1)
-        cls.x_test = x_test
-        cls.y_test = np.argmax(y_test, axis=1)
+        cls.y_train_iris = np.argmax(cls.y_train_iris, axis=1)
+        cls.y_test_iris = np.argmax(cls.y_test_iris, axis=1)
 
         num_round = 10
         param = {'objective': 'multiclass', 'metric': 'multi_logloss', 'num_class': 3}
-        train_data = lgb.Dataset(cls.x_train, label=cls.y_train)
+        train_data = lgb.Dataset(cls.x_train_iris, label=cls.y_train_iris)
         model = lgb.train(param, train_data, num_round, valid_sets=[train_data])
 
         cls.classifier = LightGBMClassifier(model=model)
 
-    def setUp(self):
-        master_seed(1234)
-
     def test_predict(self):
-        y_predicted = (self.classifier.predict(self.x_test[0:1]))
-        y_expected = [0.14644158, 0.16454982, 0.68900861]
-        for i in range(3):
-            self.assertAlmostEqual(y_predicted[0, i], y_expected[i], 4)
+        y_predicted = (self.classifier.predict(self.x_test_iris[0:1]))
+        y_expected = np.asarray([[0.14644158, 0.16454982, 0.68900861]])
+        np.testing.assert_array_almost_equal(y_predicted, y_expected, decimal=4)
 
 
 if __name__ == '__main__':

@@ -27,29 +27,21 @@ import tensorflow as tf
 import numpy as np
 
 # from art.config import ART_DATA_PATH
-from art.utils import load_dataset, master_seed
-from tests.utils_test import get_classifier_tf
 from art.data_generators import TFDataGenerator
+
+from tests.utils_test import TestBase, get_classifier_tf
 
 logger = logging.getLogger(__name__)
 
-NB_TRAIN = 1000
-NB_TEST = 20
 
-
-class TestTensorFlowClassifier(unittest.TestCase):
+class TestTensorFlowClassifier(TestBase):
     """
     This class tests the TensorFlow classifier.
     """
 
     @classmethod
     def setUpClass(cls):
-        (x_train, y_train), (x_test, y_test), _, _ = load_dataset('mnist')
-
-        cls.x_train = x_train[:NB_TRAIN]
-        cls.y_train = y_train[:NB_TRAIN]
-        cls.x_test = x_test[:NB_TEST]
-        cls.y_test = y_test[:NB_TEST]
+        super().setUpClass()
 
         cls.classifier, cls.sess = get_classifier_tf()
         cls.classifier_logits, _ = get_classifier_tf(from_logits=True)
@@ -59,24 +51,19 @@ class TestTensorFlowClassifier(unittest.TestCase):
         else:
             cls.is_version_2 = False
 
-    def setUp(self):
-        master_seed(1234)
-
     def test_predict(self):
-        y_predicted = self.classifier.predict(self.x_test[0:1])
-        y_expected = [[0.12109935, 0.0498215, 0.0993958, 0.06410097, 0.11366927, 0.04645343, 0.06419806, 0.30685693,
-                       0.07616713, 0.05823758]]
-
-        for i in range(10):
-            self.assertAlmostEqual(y_predicted[0, i], y_expected[0][i], places=4)
+        y_predicted = self.classifier.predict(self.x_test_mnist[0:1])
+        y_expected = np.asarray([[0.12109935, 0.0498215, 0.0993958, 0.06410097, 0.11366927, 0.04645343, 0.06419806,
+                                  0.30685693, 0.07616713, 0.05823758]])
+        np.testing.assert_array_almost_equal(y_predicted, y_expected, decimal=4)
 
     def test_fit_generator(self):
         if not self.is_version_2:
             classifier, sess = get_classifier_tf()
 
             # Create TensorFlow data generator
-            x_tensor = tf.convert_to_tensor(self.x_train.reshape(10, 100, 28, 28, 1))
-            y_tensor = tf.convert_to_tensor(self.y_train.reshape(10, 100, 10))
+            x_tensor = tf.convert_to_tensor(self.x_train_mnist.reshape(10, 100, 28, 28, 1))
+            y_tensor = tf.convert_to_tensor(self.y_train_mnist.reshape(10, 100, 10))
             dataset = tf.data.Dataset.from_tensor_slices((x_tensor, y_tensor))
             iterator = dataset.make_initializable_iterator()
             data_gen = TFDataGenerator(sess=sess, iterator=iterator, iterator_type='initializable', iterator_arg={},
@@ -84,9 +71,9 @@ class TestTensorFlowClassifier(unittest.TestCase):
 
             # Test fit and predict
             classifier.fit_generator(data_gen, nb_epochs=2)
-            predictions = classifier.predict(self.x_test)
+            predictions = classifier.predict(self.x_test_mnist)
             predictions_class = np.argmax(predictions, axis=1)
-            true_class = np.argmax(self.y_test, axis=1)
+            true_class = np.argmax(self.y_test_mnist, axis=1)
             accuracy = np.sum(predictions_class == true_class) / len(true_class)
 
             logger.info('Accuracy after fitting TensorFlow classifier with generator: %.2f%%', (accuracy * 100))
@@ -101,9 +88,9 @@ class TestTensorFlowClassifier(unittest.TestCase):
     def test_class_gradient(self):
 
         # Test all gradients label = None
-        gradients = self.classifier_logits.class_gradient(self.x_test)
+        gradients = self.classifier_logits.class_gradient(self.x_test_mnist)
 
-        self.assertEqual(gradients.shape, (NB_TEST, 10, 28, 28, 1))
+        self.assertEqual(gradients.shape, (self.n_test, 10, 28, 28, 1))
 
         expected_gradients_1 = np.asarray([-0.03347399, -0.03195872, -0.02650188, 0.04111874, 0.08676253, 0.03339913,
                                            0.06925241, 0.09387045, 0.15184258, -0.00684002, 0.05070481, 0.01409407,
@@ -120,9 +107,9 @@ class TestTensorFlowClassifier(unittest.TestCase):
         np.testing.assert_array_almost_equal(gradients[0, 5, :, 14, 0], expected_gradients_2, decimal=4)
 
         # Test 1 gradient label = 5
-        gradients = self.classifier_logits.class_gradient(self.x_test, label=5)
+        gradients = self.classifier_logits.class_gradient(self.x_test_mnist, label=5)
 
-        self.assertEqual(gradients.shape, (NB_TEST, 1, 28, 28, 1))
+        self.assertEqual(gradients.shape, (self.n_test, 1, 28, 28, 1))
 
         expected_gradients_1 = np.asarray([-0.03347399, -0.03195872, -0.02650188, 0.04111874, 0.08676253, 0.03339913,
                                            0.06925241, 0.09387045, 0.15184258, -0.00684002, 0.05070481, 0.01409407,
@@ -139,16 +126,15 @@ class TestTensorFlowClassifier(unittest.TestCase):
         np.testing.assert_array_almost_equal(gradients[0, 0, :, 14, 0], expected_gradients_2, decimal=4)
 
         # Test a set of gradients label = array
-        label = np.random.randint(5, size=NB_TEST)
-        gradients = self.classifier_logits.class_gradient(self.x_test, label=label)
+        label = np.random.randint(5, size=self.n_test)
+        gradients = self.classifier_logits.class_gradient(self.x_test_mnist, label=label)
 
-        self.assertEqual(gradients.shape, (NB_TEST, 1, 28, 28, 1))
+        self.assertEqual(gradients.shape, (self.n_test, 1, 28, 28, 1))
 
         expected_gradients_1 = np.asarray([0.06860766, 0.065502, 0.08539103, 0.13868105, -0.05520725, -0.18788849,
                                            0.02264893, 0.02980516, 0.2226511, 0.11288887, -0.00678776, 0.02045561,
                                            -0.03120914, 0.00642691, 0.08449504, 0.02848018, -0.03251382, 0.00854315,
-                                           -0.02354656, -0.00767687, 0.01565931, 0.0, 0.0, 0.0,
-                                           0.0, 0.0, 0.0, 0.0])
+                                           -0.02354656, -0.00767687, 0.01565931, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0])
         np.testing.assert_array_almost_equal(gradients[0, 0, 14, :, 0], expected_gradients_1, decimal=4)
 
         expected_gradients_2 = np.asarray([-0.0487146, -0.0171556, -0.03161772, -0.0420007, 0.03360246, -0.01864819,
@@ -160,9 +146,9 @@ class TestTensorFlowClassifier(unittest.TestCase):
 
     def test_loss_gradient(self):
 
-        gradients = self.classifier.loss_gradient(self.x_test, self.y_test)
+        gradients = self.classifier.loss_gradient(self.x_test_mnist, self.y_test_mnist)
 
-        self.assertEqual(gradients.shape, (NB_TEST, 28, 28, 1))
+        self.assertEqual(gradients.shape, (self.n_test, 28, 28, 1))
 
         expected_gradients_1 = np.asarray([0.00279603, 0.00266946, 0.0032446, 0.00396258, -0.00201465, -0.00564073,
                                            0.0009253, 0.00016253, 0.0040816, 0.00166697, 0.0015883, -0.00121023,

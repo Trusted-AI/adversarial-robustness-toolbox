@@ -33,13 +33,10 @@ from torch.utils.data import DataLoader
 from art.config import ART_DATA_PATH
 from art.data_generators import PyTorchDataGenerator
 from art.classifiers import PyTorchClassifier
-from art.utils import load_dataset, master_seed
-from tests.utils_test import get_classifier_pt
+
+from tests.utils_test import TestBase, get_classifier_pt
 
 logger = logging.getLogger(__name__)
-
-NB_TRAIN = 1000
-NB_TEST = 20
 
 
 class Model(nn.Module):
@@ -64,22 +61,17 @@ class Flatten(nn.Module):
         return result
 
 
-class TestPyTorchClassifier(unittest.TestCase):
+class TestPyTorchClassifier(TestBase):
     """
     This class tests the PyTorch classifier.
     """
 
     @classmethod
     def setUpClass(cls):
-        (x_train, y_train), (x_test, y_test), _, _ = load_dataset('mnist')
+        super().setUpClass()
 
-        x_train = np.reshape(x_train, (x_train.shape[0], 1, 28, 28)).astype(np.float32)
-        x_test = np.reshape(x_test, (x_test.shape[0], 1, 28, 28)).astype(np.float32)
-
-        cls.x_train = x_train[:NB_TRAIN]
-        cls.y_train = y_train[:NB_TRAIN]
-        cls.x_test = x_test[:NB_TEST]
-        cls.y_test = y_test[:NB_TEST]
+        cls.x_train_mnist = np.reshape(cls.x_train_mnist, (cls.x_train_mnist.shape[0], 1, 28, 28)).astype(np.float32)
+        cls.x_test_mnist = np.reshape(cls.x_test_mnist, (cls.x_test_mnist.shape[0], 1, 28, 28)).astype(np.float32)
 
         # Define the network
         model = nn.Sequential(nn.Conv2d(1, 2, 5), nn.ReLU(), nn.MaxPool2d(2, 2), Flatten(), nn.Linear(288, 10))
@@ -89,7 +81,7 @@ class TestPyTorchClassifier(unittest.TestCase):
         optimizer = optim.Adam(model.parameters(), lr=0.01)
         classifier = PyTorchClassifier(model=model, clip_values=(0, 1), loss=loss_fn, optimizer=optimizer,
                                        input_shape=(1, 28, 28), nb_classes=10)
-        classifier.fit(cls.x_train, cls.y_train, batch_size=100, nb_epochs=1)
+        classifier.fit(cls.x_train_mnist, cls.y_train_mnist, batch_size=100, nb_epochs=1)
         cls.seq_classifier = classifier
 
         # Define the network
@@ -98,39 +90,38 @@ class TestPyTorchClassifier(unittest.TestCase):
         optimizer = optim.Adam(model.parameters(), lr=0.01)
         classifier_2 = PyTorchClassifier(model=model, clip_values=(0, 1), loss=loss_fn, optimizer=optimizer,
                                          input_shape=(1, 28, 28), nb_classes=10)
-        classifier_2.fit(x_train, y_train, batch_size=100, nb_epochs=1)
+        classifier_2.fit(cls.x_train_mnist, cls.y_train_mnist, batch_size=100, nb_epochs=1)
         cls.module_classifier = classifier_2
-
-    def setUp(self):
-        master_seed(1234)
 
     def test_fit_predict(self):
         classifier = get_classifier_pt()
-        predictions = classifier.predict(self.x_test)
-        accuracy = np.sum(np.argmax(predictions, axis=1) == np.argmax(self.y_test, axis=1)) / NB_TEST
+        predictions = classifier.predict(self.x_test_mnist)
+        accuracy = np.sum(np.argmax(predictions, axis=1) == np.argmax(self.y_test_mnist, axis=1)) / self.n_test
         logger.info('Accuracy after fitting: %.2f%%', (accuracy * 100))
         self.assertEqual(accuracy, 0.4)
 
     def test_fit_generator(self):
         classifier = get_classifier_pt()
         accuracy = np.sum(
-            np.argmax(classifier.predict(self.x_test), axis=1) == np.argmax(self.y_test, axis=1)) / NB_TEST
+            np.argmax(classifier.predict(self.x_test_mnist), axis=1) == np.argmax(self.y_test_mnist,
+                                                                                  axis=1)) / self.n_test
         logger.info('Accuracy: %.2f%%', (accuracy * 100))
 
         # Create tensors from data
-        x_train_tens = torch.from_numpy(self.x_train)
+        x_train_tens = torch.from_numpy(self.x_train_mnist)
         x_train_tens = x_train_tens.float()
-        y_train_tens = torch.from_numpy(self.y_train)
+        y_train_tens = torch.from_numpy(self.y_train_mnist)
 
         # Create PyTorch dataset and loader
         dataset = torch.utils.data.TensorDataset(x_train_tens, y_train_tens)
         data_loader = DataLoader(dataset=dataset, batch_size=5, shuffle=True)
-        data_gen = PyTorchDataGenerator(data_loader, size=NB_TRAIN, batch_size=5)
+        data_gen = PyTorchDataGenerator(data_loader, size=self.n_train, batch_size=5)
 
         # Fit model with generator
         classifier.fit_generator(data_gen, nb_epochs=2)
         accuracy_2 = np.sum(
-            np.argmax(classifier.predict(self.x_test), axis=1) == np.argmax(self.y_test, axis=1)) / NB_TEST
+            np.argmax(classifier.predict(self.x_test_mnist), axis=1) == np.argmax(self.y_test_mnist,
+                                                                                  axis=1)) / self.n_test
         logger.info('Accuracy: %.2f%%', (accuracy_2 * 100))
 
         self.assertEqual(accuracy, 0.4)
@@ -148,9 +139,9 @@ class TestPyTorchClassifier(unittest.TestCase):
         classifier = get_classifier_pt()
 
         # Test all gradients label = None
-        gradients = classifier.class_gradient(self.x_test)
+        gradients = classifier.class_gradient(self.x_test_mnist)
 
-        self.assertEqual(gradients.shape, (NB_TEST, 10, 1, 28, 28))
+        self.assertEqual(gradients.shape, (self.n_test, 10, 1, 28, 28))
 
         expected_gradients_1 = np.asarray([-0.00367321, -0.0002892, 0.00037825, -0.00053344, 0.00192121, 0.00112047,
                                            0.0023135, 0.0, 0.0, -0.00391743, -0.0002264, 0.00238103,
@@ -169,9 +160,9 @@ class TestPyTorchClassifier(unittest.TestCase):
         np.testing.assert_array_almost_equal(gradients[0, 5, 0, 14, :], expected_gradients_2, decimal=4)
 
         # Test 1 gradient label = 5
-        gradients = classifier.class_gradient(self.x_test, label=5)
+        gradients = classifier.class_gradient(self.x_test_mnist, label=5)
 
-        self.assertEqual(gradients.shape, (NB_TEST, 1, 1, 28, 28))
+        self.assertEqual(gradients.shape, (self.n_test, 1, 1, 28, 28))
 
         expected_gradients_1 = np.asarray([-0.00367321, -0.0002892, 0.00037825, -0.00053344, 0.00192121, 0.00112047,
                                            0.0023135, 0.0, 0.0, -0.00391743, -0.0002264, 0.00238103,
@@ -190,10 +181,10 @@ class TestPyTorchClassifier(unittest.TestCase):
         np.testing.assert_array_almost_equal(gradients[0, 0, 0, 14, :], expected_gradients_2, decimal=4)
 
         # Test a set of gradients label = array
-        label = np.random.randint(5, size=NB_TEST)
-        gradients = classifier.class_gradient(self.x_test, label=label)
+        label = np.random.randint(5, size=self.n_test)
+        gradients = classifier.class_gradient(self.x_test_mnist, label=label)
 
-        self.assertEqual(gradients.shape, (NB_TEST, 1, 1, 28, 28))
+        self.assertEqual(gradients.shape, (self.n_test, 1, 1, 28, 28))
 
         expected_gradients_1 = np.asarray([-0.00195835, -0.00134457, -0.00307221, -0.00340564, 0.00175022, -0.00239714,
                                            -0.00122619, 0.0, 0.0, -0.00520899, -0.00046105, 0.00414874,
@@ -213,9 +204,9 @@ class TestPyTorchClassifier(unittest.TestCase):
 
     def test_class_gradient_target(self):
         classifier = get_classifier_pt()
-        gradients = classifier.class_gradient(self.x_test, label=3)
+        gradients = classifier.class_gradient(self.x_test_mnist, label=3)
 
-        self.assertEqual(gradients.shape, (NB_TEST, 1, 1, 28, 28))
+        self.assertEqual(gradients.shape, (self.n_test, 1, 1, 28, 28))
 
         expected_gradients_1 = np.asarray([-0.00195835, -0.00134457, -0.00307221, -0.00340564, 0.00175022, -0.00239714,
                                            -0.00122619, 0.0, 0.0, -0.00520899, -0.00046105, 0.00414874,
@@ -235,9 +226,9 @@ class TestPyTorchClassifier(unittest.TestCase):
 
     def test_loss_gradient(self):
         classifier = get_classifier_pt()
-        gradients = classifier.loss_gradient(self.x_test, self.y_test)
+        gradients = classifier.loss_gradient(self.x_test_mnist, self.y_test_mnist)
 
-        self.assertEqual(gradients.shape, (NB_TEST, 1, 28, 28))
+        self.assertEqual(gradients.shape, (self.n_test, 1, 28, 28))
 
         expected_gradients_1 = np.asarray([3.6839640e-05, 3.2549749e-05, 7.7749821e-05, 8.3091691e-05,
                                            -3.7349419e-05, 6.3347623e-05, 3.8059810e-05, 0.0000000e+00,
@@ -260,21 +251,20 @@ class TestPyTorchClassifier(unittest.TestCase):
     def test_layers(self):
         ptc = self.seq_classifier
         layer_names = self.seq_classifier.layer_names
-        print(layer_names)
         self.assertEqual(layer_names, ['0_Conv2d(1, 2, kernel_size=(5, 5), stride=(1, 1))', '1_ReLU()',
                                        '2_MaxPool2d(kernel_size=2, stride=2, padding=0, dilation=1, ceil_mode=False)',
                                        '3_Flatten()', '4_Linear(in_features=288, out_features=10, bias=True)'])
 
         for i, name in enumerate(layer_names):
-            activation_i = ptc.get_activations(self.x_test, i, batch_size=5)
-            activation_name = ptc.get_activations(self.x_test, name, batch_size=5)
+            activation_i = ptc.get_activations(self.x_test_mnist, i, batch_size=5)
+            activation_name = ptc.get_activations(self.x_test_mnist, name, batch_size=5)
             np.testing.assert_array_equal(activation_name, activation_i)
 
-        self.assertEqual(ptc.get_activations(self.x_test, 0, batch_size=5).shape, (20, 2, 24, 24))
-        self.assertEqual(ptc.get_activations(self.x_test, 1, batch_size=5).shape, (20, 2, 24, 24))
-        self.assertEqual(ptc.get_activations(self.x_test, 2, batch_size=5).shape, (20, 2, 12, 12))
-        self.assertEqual(ptc.get_activations(self.x_test, 3, batch_size=5).shape, (20, 288))
-        self.assertEqual(ptc.get_activations(self.x_test, 4, batch_size=5).shape, (20, 10))
+        self.assertEqual(ptc.get_activations(self.x_test_mnist, 0, batch_size=5).shape, (20, 2, 24, 24))
+        self.assertEqual(ptc.get_activations(self.x_test_mnist, 1, batch_size=5).shape, (20, 2, 24, 24))
+        self.assertEqual(ptc.get_activations(self.x_test_mnist, 2, batch_size=5).shape, (20, 2, 12, 12))
+        self.assertEqual(ptc.get_activations(self.x_test_mnist, 3, batch_size=5).shape, (20, 288))
+        self.assertEqual(ptc.get_activations(self.x_test_mnist, 4, batch_size=5).shape, (20, 10))
 
     def test_set_learning(self):
         ptc = self.module_classifier
@@ -321,10 +311,10 @@ class TestPyTorchClassifier(unittest.TestCase):
             self.assertEqual(set(self.module_classifier.__dict__.keys()), set(loaded.__dict__.keys()))
 
         # Test predict
-        predictions_1 = self.module_classifier.predict(self.x_test)
-        accuracy_1 = np.sum(np.argmax(predictions_1, axis=1) == np.argmax(self.y_test, axis=1)) / len(self.y_test)
-        predictions_2 = loaded.predict(self.x_test)
-        accuracy_2 = np.sum(np.argmax(predictions_2, axis=1) == np.argmax(self.y_test, axis=1)) / len(self.y_test)
+        predictions_1 = self.module_classifier.predict(self.x_test_mnist)
+        accuracy_1 = np.sum(np.argmax(predictions_1, axis=1) == np.argmax(self.y_test_mnist, axis=1)) / self.n_test
+        predictions_2 = loaded.predict(self.x_test_mnist)
+        accuracy_2 = np.sum(np.argmax(predictions_2, axis=1) == np.argmax(self.y_test_mnist, axis=1)) / self.n_test
         self.assertEqual(accuracy_1, accuracy_2)
 
 
