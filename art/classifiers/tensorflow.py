@@ -75,13 +75,9 @@ class TensorFlowClassifier(ClassifierNeuralNetwork, ClassifierGradients, Classif
         """
         # pylint: disable=E0401
         import tensorflow as tf
-        if tf.__version__[0] == '2':
-            import tensorflow.compat.v1 as tf
-            tf.disable_eager_execution()
 
         super(TensorFlowClassifier, self).__init__(clip_values=clip_values, channel_index=channel_index,
-                                                   defences=defences,
-                                                   preprocessing=preprocessing)
+                                                   defences=defences, preprocessing=preprocessing)
         self._nb_classes = int(output.get_shape()[-1])
         self._input_shape = tuple(input_ph.get_shape().as_list()[1:])
         self._input_ph = input_ph
@@ -298,9 +294,6 @@ class TensorFlowClassifier(ClassifierNeuralNetwork, ClassifierGradients, Classif
     def _init_class_grads(self, label=None):
         # pylint: disable=E0401
         import tensorflow as tf
-        if tf.__version__[0] == '2':
-            import tensorflow.compat.v1 as tf
-            tf.disable_eager_execution()
 
         if not hasattr(self, '_class_grads'):
             self._class_grads = [None for _ in range(self.nb_classes())]
@@ -329,9 +322,6 @@ class TensorFlowClassifier(ClassifierNeuralNetwork, ClassifierGradients, Classif
         """
         # pylint: disable=E0401
         import tensorflow as tf
-        if tf.__version__[0] == '2':
-            import tensorflow.compat.v1 as tf
-            tf.disable_eager_execution()
 
         # Get the computational graph
         with self._sess.graph.as_default():
@@ -398,9 +388,6 @@ class TensorFlowClassifier(ClassifierNeuralNetwork, ClassifierGradients, Classif
         """
         # pylint: disable=E0401
         import tensorflow as tf
-        if tf.__version__[0] == '2':
-            import tensorflow.compat.v1 as tf
-            tf.disable_eager_execution()
 
         # Get the computational graph
         with self._sess.graph.as_default():
@@ -552,9 +539,6 @@ class TensorFlowClassifier(ClassifierNeuralNetwork, ClassifierGradients, Classif
         # pylint: disable=E0611, E0401
         import os
         import tensorflow as tf
-        if tf.__version__[0] == '2':
-            import tensorflow.compat.v1 as tf
-            tf.disable_eager_execution()
         from tensorflow.python.saved_model import tag_constants
         from art.config import ART_DATA_PATH
 
