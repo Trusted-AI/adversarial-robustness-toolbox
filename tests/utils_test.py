@@ -80,6 +80,10 @@ class TestBase(unittest.TestCase):
         cls._x_test_iris_original = cls.x_test_iris.copy()
         cls._y_test_iris_original = cls.y_test_iris.copy()
 
+        import warnings
+        # Filter warning for scipy, removed with scipy 0.14
+        warnings.filterwarnings('ignore', '.*the output shape of zoom.*')
+
     def setUp(self):
         master_seed(1234)
         self.time_start = time.time()
