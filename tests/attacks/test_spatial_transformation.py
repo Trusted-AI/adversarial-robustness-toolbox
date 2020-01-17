@@ -63,7 +63,7 @@ class TestSpatialTransformation(TestBase):
         x_train_adv = attack_st.generate(self.x_train_mnist)
 
         self.assertAlmostEqual(x_train_adv[0, 8, 13, 0], 0.49004024, delta=0.01)
-        self.assertAlmostEqual(attack_st.fooling_rate, 0.707, delta=0.01)
+        self.assertAlmostEqual(attack_st.fooling_rate, 0.71, delta=0.02)
 
         self.assertEqual(attack_st.attack_trans_x, 3)
         self.assertEqual(attack_st.attack_trans_y, 3)
@@ -95,7 +95,7 @@ class TestSpatialTransformation(TestBase):
         x_train_adv = attack_st.generate(self.x_train_mnist)
 
         self.assertAlmostEqual(x_train_adv[0, 8, 13, 0], 0.49004024, delta=0.01)
-        self.assertAlmostEqual(attack_st.fooling_rate, 0.707, delta=0.01)
+        self.assertAlmostEqual(attack_st.fooling_rate, 0.71, delta=0.02)
 
         self.assertEqual(attack_st.attack_trans_x, 3)
         self.assertEqual(attack_st.attack_trans_y, 3)
@@ -128,7 +128,7 @@ class TestSpatialTransformation(TestBase):
         x_train__mnistadv = attack_st.generate(x_train_mnist)
 
         self.assertAlmostEqual(x_train__mnistadv[0, 0, 13, 18], 0.627451, delta=0.01)
-        self.assertAlmostEqual(attack_st.fooling_rate, 0.568, delta=0.01)
+        self.assertAlmostEqual(attack_st.fooling_rate, 0.57, delta=0.03)
 
         self.assertEqual(attack_st.attack_trans_x, 0)
         self.assertEqual(attack_st.attack_trans_y, 3)
