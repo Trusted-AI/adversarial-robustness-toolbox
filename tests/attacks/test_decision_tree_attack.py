@@ -39,6 +39,8 @@ class TestDecisionTreeAttack(TestBase):
 
     @classmethod
     def setUpClass(cls):
+        super().setUpClass()
+
         # Get MNIST
         digits = load_digits()
         cls.X = digits.data
