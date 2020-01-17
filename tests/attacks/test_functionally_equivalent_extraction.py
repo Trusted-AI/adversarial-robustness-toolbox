@@ -24,6 +24,7 @@ from os.path import dirname, join
 import numpy as np
 
 import tensorflow as tf
+
 tf.compat.v1.disable_eager_execution()
 from tensorflow.keras.models import load_model
 
@@ -43,7 +44,7 @@ class TestFastGradientMethodImages(TestBase):
     @classmethod
     def setUpClass(cls):
         super().setUpClass()
-        
+
         model = load_model(join(join(join(dirname(dirname(dirname(__file__))), 'data'), 'test_models'),
                                 'model_test_functionally_equivalent_extraction.h5'))
 
