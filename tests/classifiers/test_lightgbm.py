@@ -36,12 +36,12 @@ class TestLightGBMClassifier(TestBase):
     def setUpClass(cls):
         super().setUpClass()
 
-        cls.y_train_iris = np.argmax(cls.y_train_iris, axis=1)
-        cls.y_test_iris = np.argmax(cls.y_test_iris, axis=1)
+        cls.y_train_iris_index = np.argmax(cls.y_train_iris, axis=1)
+        cls.y_test_iris_index = np.argmax(cls.y_test_iris, axis=1)
 
         num_round = 10
         param = {'objective': 'multiclass', 'metric': 'multi_logloss', 'num_class': 3}
-        train_data = lgb.Dataset(cls.x_train_iris, label=cls.y_train_iris)
+        train_data = lgb.Dataset(cls.x_train_iris, label=cls.y_train_iris_index)
         model = lgb.train(param, train_data, num_round, valid_sets=[train_data])
 
         cls.classifier = LightGBMClassifier(model=model)

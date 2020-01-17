@@ -36,8 +36,6 @@ class TestXGBoostClassifierBoosterSoftprob(TestBase):
     def setUpClass(cls):
         super().setUpClass()
 
-        cls.y_test_iris = np.argmax(cls.y_test_iris, axis=1)
-
         num_round = 10
         param = {'objective': 'multi:softprob', 'metric': 'multi_logloss', 'num_class': 3}
         train_data = xgb.DMatrix(cls.x_train_iris, label=cls.y_train_iris)
@@ -58,8 +56,6 @@ class TestXGBoostClassifierBoosterSoftmax(TestBase):
     def setUpClass(cls):
         super().setUpClass()
 
-        cls.y_test_iris = np.argmax(cls.y_test_iris, axis=1)
-
         num_round = 10
         param = {'objective': 'multi:softmax', 'metric': 'multi_logloss', 'num_class': 3}
         train_data = xgb.DMatrix(cls.x_train_iris, label=cls.y_train_iris)
@@ -79,8 +75,6 @@ class TestXGBoostClassifierPythonAPI(TestBase):
     @classmethod
     def setUpClass(cls):
         super().setUpClass()
-
-        cls.y_test_iris = np.argmax(cls.y_test_iris, axis=1)
 
         model = xgb.XGBClassifier(n_estimators=30, max_depth=5)
         model.fit(cls.x_train_iris, np.argmax(cls.y_train_iris, axis=1))

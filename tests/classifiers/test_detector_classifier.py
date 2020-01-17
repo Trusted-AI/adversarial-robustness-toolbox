@@ -63,8 +63,8 @@ class TestDetectorClassifier(TestBase):
     def setUpClass(cls):
         super().setUpClass()
 
-        cls.x_train_mnist_pt = np.reshape(cls.x_train_mnist, (cls.x_train_mnist.shape[0], 1, 28, 28)).astype(np.float32)
-        cls.x_test_mnist_pt = np.reshape(cls.x_test_mnist, (cls.x_test_mnist.shape[0], 1, 28, 28)).astype(np.float32)
+        cls.x_train_mnist = np.reshape(cls.x_train_mnist, (cls.x_train_mnist.shape[0], 1, 28, 28)).astype(np.float32)
+        cls.x_test_mnist = np.reshape(cls.x_test_mnist, (cls.x_test_mnist.shape[0], 1, 28, 28)).astype(np.float32)
 
         # Define the internal classifier
         classifier = get_classifier_pt()
@@ -83,6 +83,19 @@ class TestDetectorClassifier(TestBase):
 
         # Define the detector-classifier
         cls.detector_classifier = DetectorClassifier(classifier=classifier, detector=detector)
+
+        cls.x_train_mnist = np.reshape(cls.x_train_mnist, (cls.x_train_mnist.shape[0], 28, 28, 1)).astype(np.float32)
+        cls.x_test_mnist = np.reshape(cls.x_test_mnist, (cls.x_test_mnist.shape[0], 28, 28, 1)).astype(np.float32)
+
+    def setUp(self):
+        self.x_train_mnist = np.reshape(self.x_train_mnist, (self.x_train_mnist.shape[0], 1, 28, 28)).astype(np.float32)
+        self.x_test_mnist = np.reshape(self.x_test_mnist, (self.x_test_mnist.shape[0], 1, 28, 28)).astype(np.float32)
+        super().setUp()
+
+    def tearDown(self):
+        self.x_train_mnist = np.reshape(self.x_train_mnist, (self.x_train_mnist.shape[0], 28, 28, 1)).astype(np.float32)
+        self.x_test_mnist = np.reshape(self.x_test_mnist, (self.x_test_mnist.shape[0], 28, 28, 1)).astype(np.float32)
+        super().tearDown()
 
     def test_predict(self):
         predictions = self.detector_classifier.predict(x=self.x_test_mnist_pt[0:1])

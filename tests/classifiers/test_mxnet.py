@@ -70,6 +70,19 @@ class TestMXClassifier(TestBase):
         classifier.fit(cls.x_train_mnist, cls.y_train_mnist, batch_size=128, nb_epochs=2)
         cls.classifier = classifier
 
+        cls.x_train_mnist = np.swapaxes(cls.x_train_mnist, 1, 3)
+        cls.x_test_mnist = np.swapaxes(cls.x_test_mnist, 1, 3)
+
+    def setUp(self):
+        self.x_train_mnist = np.swapaxes(self.x_train_mnist, 1, 3)
+        self.x_test_mnist = np.swapaxes(self.x_test_mnist, 1, 3)
+        super().setUp()
+
+    def tearDown(self):
+        self.x_train_mnist = np.swapaxes(self.x_train_mnist, 1, 3)
+        self.x_test_mnist = np.swapaxes(self.x_test_mnist, 1, 3)
+        super().tearDown()
+
     def test_predict(self):
         preds = self.classifier.predict(self.x_test_mnist)
         acc = np.sum(np.argmax(preds, axis=1) == np.argmax(self.y_test_mnist, axis=1)) / self.n_test
