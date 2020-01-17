@@ -46,7 +46,6 @@ class TestSaliencyMap(TestBase):
         cls.x_test_mnist = cls.x_test_mnist[0:cls.n_test]
         cls.y_test_mnist = cls.y_test_mnist[0:cls.n_test]
 
-
     def test_keras_mnist(self):
         x_test_original = self.x_test_mnist.copy()
 
