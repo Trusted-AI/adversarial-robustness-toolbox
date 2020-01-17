@@ -48,7 +48,7 @@ def get_version(rel_path):
     raise RuntimeError("Unable to find version string.")
 
 
-setup(name='adversarial_robustness_toolbox',
+setup(name='adversarial-robustness-toolbox',
       version=get_version("art/__init__.py"),
       description='Toolbox for adversarial machine learning.',
       long_description=long_description,
