@@ -73,11 +73,11 @@ class TestDeepFool(TestBase):
         self.assertFalse((self.y_test_mnist == test_y_pred).all())
 
         accuracy = np.sum(np.argmax(train_y_pred, axis=1) == np.argmax(self.y_train_mnist, axis=1)) / \
-                   self.y_train_mnist.shape[0]
+            self.y_train_mnist.shape[0]
         logger.info('Accuracy on adversarial train examples: %.2f%%', (accuracy * 100))
 
         accuracy = np.sum(np.argmax(test_y_pred, axis=1) == np.argmax(self.y_test_mnist, axis=1)) / \
-                   self.y_test_mnist.shape[0]
+            self.y_test_mnist.shape[0]
         logger.info('Accuracy on adversarial test examples: %.2f%%', (accuracy * 100))
 
         # Check that x_test has not been modified by attack and classifier
@@ -113,11 +113,11 @@ class TestDeepFool(TestBase):
         self.assertFalse((self.y_test_mnist == test_y_pred).all())
 
         accuracy = np.sum(np.argmax(train_y_pred, axis=1) == np.argmax(self.y_train_mnist, axis=1)) / \
-                   self.y_train_mnist.shape[0]
+            self.y_train_mnist.shape[0]
         logger.info('Accuracy on adversarial train examples: %.2f%%', (accuracy * 100))
 
         accuracy = np.sum(np.argmax(test_y_pred, axis=1) == np.argmax(self.y_test_mnist, axis=1)) / \
-                   self.y_test_mnist.shape[0]
+            self.y_test_mnist.shape[0]
         logger.info('Accuracy on adversarial test examples: %.2f%%', (accuracy * 100))
 
         # Check that x_test has not been modified by attack and classifier
@@ -133,7 +133,7 @@ class TestDeepFool(TestBase):
 
         scores = get_labels_np_array(classifier.predict(x_train))
         accuracy = np.sum(np.argmax(scores, axis=1) == np.argmax(self.y_train_mnist, axis=1)) / \
-                   self.y_train_mnist.shape[0]
+            self.y_train_mnist.shape[0]
         logger.info('[PyTorch, MNIST] Accuracy on training set: %.2f%%', (accuracy * 100))
 
         scores = get_labels_np_array(classifier.predict(x_test))
@@ -155,11 +155,11 @@ class TestDeepFool(TestBase):
         self.assertFalse((self.y_test_mnist == test_y_pred).all())
 
         accuracy = np.sum(np.argmax(train_y_pred, axis=1) == np.argmax(self.y_train_mnist, axis=1)) / \
-                   self.y_train_mnist.shape[0]
+            self.y_train_mnist.shape[0]
         logger.info('Accuracy on adversarial train examples: %.2f%%', (accuracy * 100))
 
         accuracy = np.sum(np.argmax(test_y_pred, axis=1) == np.argmax(self.y_test_mnist, axis=1)) / \
-                   self.y_test_mnist.shape[0]
+            self.y_test_mnist.shape[0]
         logger.info('Accuracy on adversarial test examples: %.2f%%', (accuracy * 100))
 
         # Check that x_test has not been modified by attack and classifier
@@ -177,7 +177,7 @@ class TestDeepFool(TestBase):
         self.assertFalse((self.y_test_mnist == test_y_pred).all())
 
         accuracy = np.sum(np.argmax(test_y_pred, axis=1) == np.argmax(self.y_test_mnist, axis=1)) / \
-                   self.y_test_mnist.shape[0]
+            self.y_test_mnist.shape[0]
         logger.info('Accuracy on adversarial test examples: %.2f%%', (accuracy * 100))
 
     def test_classifier_type_check_fail_classifier(self):
