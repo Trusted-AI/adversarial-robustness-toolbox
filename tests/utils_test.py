@@ -63,12 +63,22 @@ class TestBase(unittest.TestCase):
         cls.x_test_mnist = x_test_mnist[:cls.n_test]
         cls.y_test_mnist = y_test_mnist[:cls.n_test]
 
+        cls._x_train_mnist_original = cls.x_train_mnist.copy()
+        cls._y_train_mnist_original = cls.y_train_mnist.copy()
+        cls._x_test_mnist_original = cls.x_test_mnist.copy()
+        cls._y_test_mnist_original = cls.y_test_mnist.copy()
+
         (x_train_iris, y_train_iris), (x_test_iris, y_test_iris), _, _ = load_dataset('iris')
 
-        cls.x_train_iris = x_train_iris[:cls.n_train]
-        cls.y_train_iris = y_train_iris[:cls.n_train]
-        cls.x_test_iris = x_test_iris[:cls.n_test]
-        cls.y_test_iris = y_test_iris[:cls.n_test]
+        cls.x_train_iris = x_train_iris
+        cls.y_train_iris = y_train_iris
+        cls.x_test_iris = x_test_iris
+        cls.y_test_iris = y_test_iris
+
+        cls._x_train_iris_original = cls.x_train_iris.copy()
+        cls._y_train_iris_original = cls.y_train_iris.copy()
+        cls._x_test_iris_original = cls.x_test_iris.copy()
+        cls._y_test_iris_original = cls.y_test_iris.copy()
 
     def setUp(self):
         master_seed(1234)
@@ -79,6 +89,21 @@ class TestBase(unittest.TestCase):
         time_end = time.time() - self.time_start
         test_name = self.id().split(' ')[0]
         logger.info('%s: completed in %.3f seconds' % (test_name, time_end))
+
+        # Check that the test data has not been modified, only catches changes in attack.generate if self has been used
+        np.testing.assert_array_almost_equal(self._x_train_mnist_original[0:self.n_train], self.x_train_mnist,
+                                             decimal=3)
+        np.testing.assert_array_almost_equal(self._y_train_mnist_original[0:self.n_train], self.y_train_mnist,
+                                             decimal=3)
+        np.testing.assert_array_almost_equal(self._x_test_mnist_original[0:self.n_test], self.x_test_mnist,
+                                             decimal=3)
+        np.testing.assert_array_almost_equal(self._y_test_mnist_original[0:self.n_test], self.y_test_mnist,
+                                             decimal=3)
+
+        np.testing.assert_array_almost_equal(self._x_train_iris_original, self.x_train_iris, decimal=3)
+        np.testing.assert_array_almost_equal(self._y_train_iris_original, self.y_train_iris, decimal=3)
+        np.testing.assert_array_almost_equal(self._x_test_iris_original, self.x_test_iris, decimal=3)
+        np.testing.assert_array_almost_equal(self._y_test_iris_original, self.y_test_iris, decimal=3)
 
 
 # ----------------------------------------------------------------------------------------------- TEST MODELS FOR MNIST
