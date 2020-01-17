@@ -30,7 +30,6 @@ from tensorflow.keras.models import load_model
 
 from art.attacks import FunctionallyEquivalentExtraction
 from art.classifiers import KerasClassifier
-from art.utils import master_seed
 
 from tests.utils_test import TestBase
 
@@ -44,6 +43,13 @@ class TestFastGradientMethodImages(TestBase):
     @classmethod
     def setUpClass(cls):
         super().setUpClass()
+
+        cls.n_train = 100
+        cls.n_test = 11
+        cls.x_train_mnist = cls.x_train_mnist[0:cls.n_train]
+        cls.y_train_mnist = cls.y_train_mnist[0:cls.n_train]
+        cls.x_test_mnist = cls.x_test_mnist[0:cls.n_test]
+        cls.y_test_mnist = cls.y_test_mnist[0:cls.n_test]
 
         model = load_model(join(join(join(dirname(dirname(dirname(__file__))), 'data'), 'test_models'),
                                 'model_test_functionally_equivalent_extraction.h5'))
@@ -69,9 +75,6 @@ class TestFastGradientMethodImages(TestBase):
 
         cls.fee = FunctionallyEquivalentExtraction(classifier=classifier, num_neurons=num_neurons)
         cls.fee.extract(x_test[0:100])
-
-    def setUp(self):
-        master_seed(1234)
 
     def test_critical_points(self):
         critical_points_expected_15 = np.array([[3.61953106e+00, 9.77733178e-01, 3.03710564e+00,
