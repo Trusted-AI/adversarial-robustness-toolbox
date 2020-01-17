@@ -30,7 +30,7 @@ from tensorflow.keras.models import load_model
 
 from art.attacks import FunctionallyEquivalentExtraction
 from art.classifiers import KerasClassifier
-from art.utils import load_dataset, master_seed
+from art.utils import master_seed
 
 from tests.utils_test import TestBase
 

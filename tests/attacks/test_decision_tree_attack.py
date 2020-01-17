@@ -26,7 +26,6 @@ import numpy as np
 
 from art.attacks import DecisionTreeAttack
 from art.classifiers import SklearnClassifier
-from art.utils import master_seed
 
 from tests.utils_test import TestBase
 

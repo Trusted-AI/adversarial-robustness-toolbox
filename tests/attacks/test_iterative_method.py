@@ -21,7 +21,7 @@ import numpy as np
 
 from art.attacks import BasicIterativeMethod
 from art.classifiers import KerasClassifier
-from art.utils import load_dataset, get_labels_np_array, master_seed, random_targets
+from art.utils import get_labels_np_array, random_targets
 
 from tests.utils_test import TestBase
 from tests.utils_test import get_classifier_tf, get_classifier_kr, get_classifier_pt

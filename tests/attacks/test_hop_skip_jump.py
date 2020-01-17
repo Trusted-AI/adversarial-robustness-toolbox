@@ -25,7 +25,7 @@ import numpy as np
 
 from art.attacks import HopSkipJump
 from art.classifiers import KerasClassifier
-from art.utils import load_dataset, random_targets, master_seed
+from art.utils import random_targets
 
 from tests.utils_test import TestBase
 from tests.utils_test import get_classifier_tf, get_classifier_kr, get_classifier_pt
@@ -454,7 +454,7 @@ class TestHopSkipJump(TestBase):
             self.assertFalse((np.argmax(self.y_test_iris, axis=1) == preds_adv).all())
             acc = np.sum(preds_adv == np.argmax(self.y_test_iris, axis=1)) / self.y_test_iris.shape[0]
             logger.info('Accuracy of ' + classifier.__class__.__name__ + ' on Iris with HopSkipJump adversarial '
-                        'examples: %.2f%%', (acc * 100))
+                                                                         'examples: %.2f%%', (acc * 100))
 
             # Norm=np.inf
             attack = HopSkipJump(classifier, targeted=False, max_iter=2, max_eval=100, init_eval=10, norm=np.Inf)
@@ -467,7 +467,7 @@ class TestHopSkipJump(TestBase):
             self.assertFalse((np.argmax(self.y_test_iris, axis=1) == preds_adv).all())
             acc = np.sum(preds_adv == np.argmax(self.y_test_iris, axis=1)) / self.y_test_iris.shape[0]
             logger.info('Accuracy of ' + classifier.__class__.__name__ + ' on Iris with HopSkipJump adversarial '
-                        'examples: %.2f%%', (acc * 100))
+                                                                         'examples: %.2f%%', (acc * 100))
 
             # Check that x_test has not been modified by attack and classifier
             self.assertAlmostEqual(float(np.max(np.abs(x_test_original - self.x_test_iris))), 0.0, delta=0.00001)

@@ -27,12 +27,10 @@ import keras
 from keras.models import Sequential
 from keras.layers import Dense, Flatten, Conv2D, MaxPooling2D
 
-from art.config import ART_NUMPY_DTYPE
 from art.attacks.extraction.copycat_cnn import CopycatCNN
 from art.classifiers import TensorFlowClassifier
 from art.classifiers import KerasClassifier
 from art.classifiers import PyTorchClassifier
-from art.utils import load_dataset, master_seed
 
 from tests.utils_test import TestBase
 from tests.utils_test import get_classifier_tf, get_classifier_kr, get_classifier_pt

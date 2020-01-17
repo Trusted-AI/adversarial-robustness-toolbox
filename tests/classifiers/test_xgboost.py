@@ -24,7 +24,6 @@ import xgboost as xgb
 import numpy as np
 
 from art.classifiers import XGBoostClassifier
-from art.utils import load_dataset
 
 from tests.utils_test import TestBase
 
