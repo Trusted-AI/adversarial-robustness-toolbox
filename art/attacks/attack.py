@@ -28,6 +28,7 @@ from art.classifiers.classifier import Classifier
 
 logger = logging.getLogger(__name__)
 
+
 class input_filter(abc.ABCMeta):
     """
     Metaclass to ensure that inputs are ndarray for all of the subclass generate and extract calls
@@ -41,8 +42,8 @@ class input_filter(abc.ABCMeta):
         if 'generate' in clsdict:
             def new_generate(self, *args, **kwargs):
                 """
-                Generate adversarial examples and return them as an array. This method should be overridden by all concrete
-                attack implementations.
+                Generate adversarial examples and return them as an array. 
+                This method should be overridden by all concrete attack implementations.
 
                 :param x: An array with the original inputs to be attacked.
                 :type x: `np.ndarray`
@@ -64,8 +65,8 @@ class input_filter(abc.ABCMeta):
         if 'extract' in clsdict:
             def new_extract(self, *args, **kwargs):
                 """
-                Extract models and return them as an ART classifier. This method should be overridden by all concrete extraction
-                attack implementations.
+                Extract models and return them as an ART classifier. 
+                This method should be overridden by all concrete extraction attack implementations.
 
                 :param x: An array with the original inputs to be attacked.
                 :type x: `np.ndarray`
@@ -83,6 +84,7 @@ class input_filter(abc.ABCMeta):
                     args = tuple(lst)
                 return clsdict['extract'](self, *args, **kwargs)
             setattr(cls, 'extract', new_extract)
+
 
 class Attack(abc.ABC, metaclass=input_filter):
     """
@@ -119,7 +121,7 @@ class EvasionAttack(Attack):
     """
     Abstract base class for evasion attack classes.
     """
-        
+
     def __init__(self, classifier):
         """
         :param classifier: A trained classifier.
