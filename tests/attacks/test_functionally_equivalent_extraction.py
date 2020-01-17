@@ -32,21 +32,19 @@ from art.attacks import FunctionallyEquivalentExtraction
 from art.classifiers import KerasClassifier
 from art.utils import load_dataset, master_seed
 
-logger = logging.getLogger(__name__)
+from tests.utils_test import TestBase
 
-BATCH_SIZE = 10
-NB_TRAIN = 100
-NB_TEST = 11
+logger = logging.getLogger(__name__)
 
 
 @unittest.skipIf(tf.__version__[0] != '2' or (tf.__version__[0] == '1' and tf.__version__.split('.')[1] != '15'),
                  reason='Skip unittests if not TensorFlow v2 or 1.15 because of pre-trained model.')
-class TestFastGradientMethodImages(unittest.TestCase):
+class TestFastGradientMethodImages(TestBase):
+
     @classmethod
     def setUpClass(cls):
-        # MNIST
-        (x_train, y_train), (x_test, y_test), _, _ = load_dataset('mnist')
-        x_train, y_train, x_test, y_test = x_train[:NB_TRAIN], y_train[:NB_TRAIN], x_test[:NB_TEST], y_test[:NB_TEST]
+        super().setUpClass()
+        
         model = load_model(join(join(join(dirname(dirname(dirname(__file__))), 'data'), 'test_models'),
                                 'model_test_functionally_equivalent_extraction.h5'))
 
@@ -56,8 +54,8 @@ class TestFastGradientMethodImages(unittest.TestCase):
         img_cols = 28
         num_channels = 1
 
-        x_train = x_train.reshape(x_train.shape[0], img_rows, img_cols, num_channels)
-        x_test = x_test.reshape(x_test.shape[0], img_rows, img_cols, num_channels)
+        x_train = cls.x_train_mnist.reshape(cls.n_train, img_rows, img_cols, num_channels)
+        x_test = cls.x_test_mnist.reshape(cls.n_test, img_rows, img_cols, num_channels)
 
         x_train = x_train.reshape((x_train.shape[0], num_channels * img_rows * img_cols)).astype('float64')
         x_test = x_test.reshape((x_test.shape[0], num_channels * img_rows * img_cols)).astype('float64')

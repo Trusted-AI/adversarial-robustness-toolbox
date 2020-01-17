@@ -25,51 +25,45 @@ import numpy as np
 
 from art.attacks import BoundaryAttack
 from art.classifiers import KerasClassifier
-from art.utils import load_dataset, random_targets, master_seed
+from art.utils import random_targets
+
+from tests.utils_test import TestBase
 from tests.utils_test import get_classifier_tf, get_classifier_kr, get_classifier_pt
 from tests.utils_test import get_iris_classifier_tf, get_iris_classifier_kr, get_iris_classifier_pt
 
 logger = logging.getLogger(__name__)
 
-NB_TRAIN = 100
-NB_TEST = 20
 
-
-class TestBoundary(unittest.TestCase):
+class TestBoundary(TestBase):
     """
     A unittest class for testing the Boundary attack.
     """
 
     @classmethod
     def setUpClass(cls):
-        # MNIST
-        (x_train, y_train), (x_test, y_test), _, _ = load_dataset('mnist')
-        x_train, y_train, x_test, y_test = x_train[:NB_TRAIN], y_train[:NB_TRAIN], x_test[:NB_TEST], y_test[:NB_TEST]
-        cls.mnist = (x_train, y_train), (x_test, y_test)
+        super().setUpClass()
 
-        # Iris
-        (x_train, y_train), (x_test, y_test), _, _ = load_dataset('iris')
-        cls.iris = (x_train, y_train), (x_test, y_test)
-
-    def setUp(self):
-        master_seed(1234)
+        cls.n_train = 10
+        cls.n_test = 10
+        cls.x_train_mnist = cls.x_train_mnist[0:cls.n_train]
+        cls.y_train_mnist = cls.y_train_mnist[0:cls.n_train]
+        cls.x_test_mnist = cls.x_test_mnist[0:cls.n_test]
+        cls.y_test_mnist = cls.y_test_mnist[0:cls.n_test]
 
     def test_tensorflow_mnist(self):
         """
         First test with the TensorFlowClassifier.
         :return:
         """
-        (_, _), (x_test, y_test) = self.mnist
-
-        x_test_original = x_test.copy()
+        x_test_original = self.x_test_mnist.copy()
 
         # Build TensorFlowClassifier
         tfc, sess = get_classifier_tf()
 
         # First targeted attack
         boundary = BoundaryAttack(classifier=tfc, targeted=True, max_iter=200, delta=0.5)
-        params = {'y': random_targets(y_test, tfc.nb_classes())}
-        x_test_adv = boundary.generate(x_test, **params)
+        params = {'y': random_targets(self.y_test_mnist, tfc.nb_classes())}
+        x_test_adv = boundary.generate(self.x_test_mnist, **params)
         # expected_x_test_adv_1 = np.asarray([0.42622495, 0.0, 0.0, 0.33005068, 0.2277837, 0.0,
         #                                     0.18348512, 0.42622495, 0.27452883, 0.0, 0.0, 0.0,
         #                                     0.1653487, 0.70523715, 0.7367977, 0.7974912, 0.28579983, 0.0,
@@ -102,18 +96,18 @@ class TestBoundary(unittest.TestCase):
 
         # Second untargeted attack
         boundary = BoundaryAttack(classifier=tfc, targeted=False, max_iter=20)
-        x_test_adv = boundary.generate(x_test)
+        x_test_adv = boundary.generate(self.x_test_mnist)
 
-        self.assertFalse((x_test == x_test_adv).all())
+        self.assertFalse((self.x_test_mnist == x_test_adv).all())
         self.assertTrue((x_test_adv <= 1.0001).all())
         self.assertTrue((x_test_adv >= -0.0001).all())
 
-        y_pred = np.argmax(tfc.predict(x_test), axis=1)
+        y_pred = np.argmax(tfc.predict(self.x_test_mnist), axis=1)
         y_pred_adv = np.argmax(tfc.predict(x_test_adv), axis=1)
         self.assertTrue((y_pred != y_pred_adv).any())
 
         # Check that x_test has not been modified by attack and classifier
-        self.assertAlmostEqual(float(np.max(np.abs(x_test_original - x_test))), 0.0, delta=0.00001)
+        self.assertAlmostEqual(float(np.max(np.abs(x_test_original - self.x_test_mnist))), 0.0, delta=0.00001)
 
         # Clean-up session
         if sess is not None:
@@ -124,19 +118,17 @@ class TestBoundary(unittest.TestCase):
         Second test with the KerasClassifier.
         :return:
         """
-        (_, _), (x_test, y_test) = self.mnist
-
-        x_test_original = x_test.copy()
+        x_test_original = self.x_test_mnist.copy()
 
         # Build KerasClassifier
         krc = get_classifier_kr()
 
         # First targeted attack
         boundary = BoundaryAttack(classifier=krc, targeted=True, max_iter=20)
-        params = {'y': random_targets(y_test, krc.nb_classes())}
-        x_test_adv = boundary.generate(x_test, **params)
+        params = {'y': random_targets(self.y_test_mnist, krc.nb_classes())}
+        x_test_adv = boundary.generate(self.x_test_mnist, **params)
 
-        self.assertFalse((x_test == x_test_adv).all())
+        self.assertFalse((self.x_test_mnist == x_test_adv).all())
         self.assertTrue((x_test_adv <= 1.0001).all())
         self.assertTrue((x_test_adv >= -0.0001).all())
 
@@ -146,18 +138,18 @@ class TestBoundary(unittest.TestCase):
 
         # Second untargeted attack
         boundary = BoundaryAttack(classifier=krc, targeted=False, max_iter=20)
-        x_test_adv = boundary.generate(x_test)
+        x_test_adv = boundary.generate(self.x_test_mnist)
 
-        self.assertFalse((x_test == x_test_adv).all())
+        self.assertFalse((self.x_test_mnist == x_test_adv).all())
         self.assertTrue((x_test_adv <= 1.0001).all())
         self.assertTrue((x_test_adv >= -0.0001).all())
 
-        y_pred = np.argmax(krc.predict(x_test), axis=1)
+        y_pred = np.argmax(krc.predict(self.x_test_mnist), axis=1)
         y_pred_adv = np.argmax(krc.predict(x_test_adv), axis=1)
         self.assertTrue((y_pred != y_pred_adv).any())
 
         # Check that x_test has not been modified by attack and classifier
-        self.assertAlmostEqual(float(np.max(np.abs(x_test_original - x_test))), 0.0, delta=0.00001)
+        self.assertAlmostEqual(float(np.max(np.abs(x_test_original - self.x_test_mnist))), 0.0, delta=0.00001)
 
         # Clean-up session
         k.clear_session()
@@ -167,9 +159,7 @@ class TestBoundary(unittest.TestCase):
         Third test with the PyTorchClassifier.
         :return:
         """
-        (_, _), (x_test, y_test) = self.mnist
-        x_test = np.swapaxes(x_test, 1, 3).astype(np.float32)
-        x_test = np.reshape(x_test, (x_test.shape[0], 1, 28, 28)).astype(np.float32)
+        x_test = np.reshape(self.x_test_mnist, (self.x_test_mnist.shape[0], 1, 28, 28)).astype(np.float32)
         x_test_original = x_test.copy()
 
         # Build PyTorchClassifier
@@ -177,7 +167,7 @@ class TestBoundary(unittest.TestCase):
 
         # First targeted attack
         boundary = BoundaryAttack(classifier=ptc, targeted=True, max_iter=20)
-        params = {'y': random_targets(y_test, ptc.nb_classes())}
+        params = {'y': random_targets(self.y_test_mnist, ptc.nb_classes())}
         x_test_adv = boundary.generate(x_test, **params)
 
         self.assertFalse((x_test == x_test_adv).all())
@@ -216,75 +206,71 @@ class TestBoundary(unittest.TestCase):
                       'the provided classifier is instance of (<class \'object\'>,).', str(context.exception))
 
     def test_keras_iris_clipped(self):
-        (_, _), (x_test, y_test) = self.iris
         classifier = get_iris_classifier_kr()
         attack = BoundaryAttack(classifier, targeted=False, max_iter=10)
-        x_test_adv = attack.generate(x_test)
-        self.assertFalse((x_test == x_test_adv).all())
+        x_test_adv = attack.generate(self.x_test_iris)
+        self.assertFalse((self.x_test_iris == x_test_adv).all())
         self.assertTrue((x_test_adv <= 1).all())
         self.assertTrue((x_test_adv >= 0).all())
 
         preds_adv = np.argmax(classifier.predict(x_test_adv), axis=1)
-        self.assertFalse((np.argmax(y_test, axis=1) == preds_adv).all())
-        accuracy = np.sum(preds_adv == np.argmax(y_test, axis=1)) / y_test.shape[0]
+        self.assertFalse((np.argmax(self.y_test_iris, axis=1) == preds_adv).all())
+        accuracy = np.sum(preds_adv == np.argmax(self.y_test_iris, axis=1)) / self.y_test_iris.shape[0]
         logger.info('Accuracy on Iris with boundary adversarial examples: %.2f%%', (accuracy * 100))
 
     def test_keras_iris_unbounded(self):
-        (_, _), (x_test, y_test) = self.iris
         classifier = get_iris_classifier_kr()
 
         # Recreate a classifier without clip values
         classifier = KerasClassifier(model=classifier._model, use_logits=False, channel_index=1)
         attack = BoundaryAttack(classifier, targeted=False, max_iter=10)
-        x_test_adv = attack.generate(x_test)
-        self.assertFalse((x_test == x_test_adv).all())
+        x_test_adv = attack.generate(self.x_test_iris)
+        self.assertFalse((self.x_test_iris == x_test_adv).all())
 
         preds_adv = np.argmax(classifier.predict(x_test_adv), axis=1)
-        self.assertFalse((np.argmax(y_test, axis=1) == preds_adv).all())
-        accuracy = np.sum(preds_adv == np.argmax(y_test, axis=1)) / y_test.shape[0]
+        self.assertFalse((np.argmax(self.y_test_iris, axis=1) == preds_adv).all())
+        accuracy = np.sum(preds_adv == np.argmax(self.y_test_iris, axis=1)) / self.y_test_iris.shape[0]
         logger.info('Accuracy on Iris with boundary adversarial examples: %.2f%%', (accuracy * 100))
 
     def test_tensorflow_iris(self):
-        (_, _), (x_test, y_test) = self.iris
         classifier, _ = get_iris_classifier_tf()
 
         # Test untargeted attack
         attack = BoundaryAttack(classifier, targeted=False, max_iter=10)
-        x_test_adv = attack.generate(x_test)
-        self.assertFalse((x_test == x_test_adv).all())
+        x_test_adv = attack.generate(self.x_test_iris)
+        self.assertFalse((self.x_test_iris == x_test_adv).all())
         self.assertTrue((x_test_adv <= 1).all())
         self.assertTrue((x_test_adv >= 0).all())
 
         preds_adv = np.argmax(classifier.predict(x_test_adv), axis=1)
-        self.assertFalse((np.argmax(y_test, axis=1) == preds_adv).all())
-        accuracy = np.sum(preds_adv == np.argmax(y_test, axis=1)) / y_test.shape[0]
+        self.assertFalse((np.argmax(self.y_test_iris, axis=1) == preds_adv).all())
+        accuracy = np.sum(preds_adv == np.argmax(self.y_test_iris, axis=1)) / self.y_test_iris.shape[0]
         logger.info('Accuracy on Iris with boundary adversarial examples: %.2f%%', (accuracy * 100))
 
         # Test targeted attack
-        targets = random_targets(y_test, nb_classes=3)
+        targets = random_targets(self.y_test_iris, nb_classes=3)
         attack = BoundaryAttack(classifier, targeted=True, max_iter=10)
-        x_test_adv = attack.generate(x_test, **{'y': targets})
-        self.assertFalse((x_test == x_test_adv).all())
+        x_test_adv = attack.generate(self.x_test_iris, **{'y': targets})
+        self.assertFalse((self.x_test_iris == x_test_adv).all())
         self.assertTrue((x_test_adv <= 1).all())
         self.assertTrue((x_test_adv >= 0).all())
 
         preds_adv = np.argmax(classifier.predict(x_test_adv), axis=1)
         self.assertTrue((np.argmax(targets, axis=1) == preds_adv).any())
-        accuracy = np.sum(preds_adv == np.argmax(targets, axis=1)) / y_test.shape[0]
+        accuracy = np.sum(preds_adv == np.argmax(targets, axis=1)) / self.y_test_iris.shape[0]
         logger.info('Success rate of targeted boundary on Iris: %.2f%%', (accuracy * 100))
 
     def test_pytorch_iris(self):
-        (_, _), (x_test, y_test) = self.iris
         classifier = get_iris_classifier_pt()
         attack = BoundaryAttack(classifier, targeted=False, max_iter=10)
-        x_test_adv = attack.generate(x_test.astype(np.float32))
-        self.assertFalse((x_test == x_test_adv).all())
+        x_test_adv = attack.generate(self.x_test_iris.astype(np.float32))
+        self.assertFalse((self.x_test_iris == x_test_adv).all())
         self.assertTrue((x_test_adv <= 1).all())
         self.assertTrue((x_test_adv >= 0).all())
 
         preds_adv = np.argmax(classifier.predict(x_test_adv), axis=1)
-        self.assertFalse((np.argmax(y_test, axis=1) == preds_adv).all())
-        accuracy = np.sum(preds_adv == np.argmax(y_test, axis=1)) / y_test.shape[0]
+        self.assertFalse((np.argmax(self.y_test_iris, axis=1) == preds_adv).all())
+        accuracy = np.sum(preds_adv == np.argmax(self.y_test_iris, axis=1)) / self.y_test_iris.shape[0]
         logger.info('Accuracy on Iris with boundary adversarial examples: %.2f%%', (accuracy * 100))
 
     def test_scikitlearn(self):
@@ -307,28 +293,27 @@ class TestBoundary(unittest.TestCase):
                                   SVC(gamma='auto'),
                                   LinearSVC()]
 
-        (_, _), (x_test, y_test) = self.iris
-        x_test_original = x_test.copy()
+        x_test_original = self.x_test_iris.copy()
 
         for model in scikitlearn_test_cases:
             classifier = SklearnClassifier(model=model, clip_values=(0, 1))
-            classifier.fit(x=x_test, y=y_test)
+            classifier.fit(x=self.x_test_iris, y=self.y_test_iris)
 
             attack = BoundaryAttack(classifier, targeted=False, delta=0.01, epsilon=0.01, step_adapt=0.667, max_iter=50,
                                     num_trial=25, sample_size=20, init_size=100)
-            x_test_adv = attack.generate(x_test)
-            self.assertFalse((x_test == x_test_adv).all())
+            x_test_adv = attack.generate(self.x_test_iris)
+            self.assertFalse((self.x_test_iris == x_test_adv).all())
             self.assertTrue((x_test_adv <= 1).all())
             self.assertTrue((x_test_adv >= 0).all())
 
             preds_adv = np.argmax(classifier.predict(x_test_adv), axis=1)
-            self.assertFalse((np.argmax(y_test, axis=1) == preds_adv).all())
-            accuracy = np.sum(preds_adv == np.argmax(y_test, axis=1)) / y_test.shape[0]
+            self.assertFalse((np.argmax(self.y_test_iris, axis=1) == preds_adv).all())
+            accuracy = np.sum(preds_adv == np.argmax(self.y_test_iris, axis=1)) / self.y_test_iris.shape[0]
             logger.info('Accuracy of ' + classifier.__class__.__name__ + ' on Iris with BoundaryAttack adversarial '
                                                                          'examples: %.2f%%', (accuracy * 100))
 
             # Check that x_test has not been modified by attack and classifier
-            self.assertAlmostEqual(float(np.max(np.abs(x_test_original - x_test))), 0.0, delta=0.00001)
+            self.assertAlmostEqual(float(np.max(np.abs(x_test_original - self.x_test_iris))), 0.0, delta=0.00001)
 
 
 if __name__ == '__main__':

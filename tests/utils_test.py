@@ -73,7 +73,7 @@ class TestBase(unittest.TestCase):
     def setUp(self):
         master_seed(1234)
         self.time_start = time.time()
-        logger.info('######################################################################')
+        logger.info('\n----------------------------------------------------------------------')
 
     def tearDown(self):
         time_end = time.time() - self.time_start

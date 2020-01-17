@@ -28,10 +28,12 @@ from art.attacks import DecisionTreeAttack
 from art.classifiers import SklearnClassifier
 from art.utils import master_seed
 
+from tests.utils_test import TestBase
+
 logger = logging.getLogger(__name__)
 
 
-class TestDecisionTreeAttack(unittest.TestCase):
+class TestDecisionTreeAttack(TestBase):
     """
     A unittest class for testing the decision tree attack.
     """
@@ -42,9 +44,6 @@ class TestDecisionTreeAttack(unittest.TestCase):
         digits = load_digits()
         cls.X = digits.data
         cls.y = digits.target
-
-    def setUp(self):
-        master_seed(1234)
 
     def test_scikitlearn(self):
         clf = DecisionTreeClassifier()

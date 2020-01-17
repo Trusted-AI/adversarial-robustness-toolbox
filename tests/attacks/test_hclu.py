@@ -25,24 +25,22 @@ import GPy
 
 from art.attacks import HighConfidenceLowUncertainty
 from art.classifiers import GPyGaussianProcessClassifier
-from art.utils import load_dataset, master_seed
+
+from tests.utils_test import TestBase
 
 logger = logging.getLogger(__name__)
 
 
-class TestHCLU(unittest.TestCase):
+class TestHCLU(TestBase):
     @classmethod
     def setUpClass(cls):
-        (x_train, y_train), (x_test, y_test), _, _ = load_dataset('iris')
+        super().setUpClass()
 
-        # change iris to binary problem, so it is learnable for GPC
-        cls.x_train = x_train
-        cls.y_train = y_train[:, 1]
-        cls.x_test = x_test
-        cls.y_test = y_test[:, 1]
-
-    def setUp(self):
-        master_seed(1234)
+        # change iris to a binary problem
+        cls.x_train = cls.x_train_iris
+        cls.y_train = cls.y_train_iris[:, 1]
+        cls.x_test = cls.x_test_iris
+        cls.y_test = cls.y_test_iris[:, 1]
 
     def test_GPy(self):
         x_test_original = self.x_test.copy()
