@@ -6,6 +6,7 @@ exit_code=0
 declare -a attacks=("tests/attacks/test_adversarial_patch.py" \
                     "tests/attacks/test_boundary.py" \
                     "tests/attacks/test_carlini.py" \
+                    "tests/attacks/test_copycat_cnn.py" \
                     "tests/attacks/test_decision_tree_attack.py" \
                     "tests/attacks/test_deepfool.py" \
                     "tests/attacks/test_elastic_net.py" \
