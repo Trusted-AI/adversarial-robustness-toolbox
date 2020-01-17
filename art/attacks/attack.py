@@ -52,13 +52,13 @@ class input_filter(abc.ABCMeta):
                 :return: An array holding the adversarial examples.
                 :rtype: `np.ndarray`
                 """
-                if('x' in kwargs):
+                if 'x' in kwargs:
                     kwargs['x'] = np.array(kwargs['x'])
                 else:
                     lst = list(args)
                     lst[0] = np.array(args[0])
                     args = tuple(lst)
-                clsdict['generate'](self, *args, **kwargs)
+                return clsdict['generate'](self, *args, **kwargs)
             setattr(cls, 'generate', new_generate)
 
         if 'extract' in clsdict:
@@ -75,13 +75,13 @@ class input_filter(abc.ABCMeta):
                 :return: ART classifier of the extracted model.
                 :rtype: :class:`.Classifier`
                 """
-                if('x' in kwargs):
+                if 'x' in kwargs:
                     kwargs['x'] = np.array(kwargs['x'])
                 else:
                     lst = list(args)
                     lst[0] = np.array(args[0])
                     args = tuple(lst)
-                clsdict['extract'](self, *args, **kwargs)
+                return clsdict['extract'](self, *args, **kwargs)
             setattr(cls, 'extract', new_extract)
 
 class Attack(abc.ABC, metaclass=input_filter):
