@@ -42,7 +42,7 @@ class input_filter(abc.ABCMeta):
         if 'generate' in clsdict:
             def new_generate(self, *args, **kwargs):
                 """
-                Generate adversarial examples and return them as an array. 
+                Generate adversarial examples and return them as an array.
                 This method should be overridden by all concrete attack implementations.
 
                 :param x: An array with the original inputs to be attacked.
@@ -65,7 +65,7 @@ class input_filter(abc.ABCMeta):
         if 'extract' in clsdict:
             def new_extract(self, *args, **kwargs):
                 """
-                Extract models and return them as an ART classifier. 
+                Extract models and return them as an ART classifier.
                 This method should be overridden by all concrete extraction attack implementations.
 
                 :param x: An array with the original inputs to be attacked.
