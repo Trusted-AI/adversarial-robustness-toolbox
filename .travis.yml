@@ -1,16 +1,14 @@
 dist: trusty
 language: python
 env:
-  - KERAS_BACKEND=tensorflow TENSORFLOW_V=1.14.0 KERAS_V=2.2.5
   - KERAS_BACKEND=tensorflow TENSORFLOW_V=1.15.0 KERAS_V=2.2.5
-  - KERAS_BACKEND=tensorflow TENSORFLOW_V=2.0.0 KERAS_V=2.3.1
   - KERAS_BACKEND=tensorflow TENSORFLOW_V=2.1.0 KERAS_V=2.3.1
 python:
    - "3.6"
 matrix:
   include:
     - python: 3.6
-      env: KERAS_BACKEND=tensorflow TENSORFLOW_V=1.14.0 KERAS_V=2.2.5
+      env: KERAS_BACKEND=tensorflow TENSORFLOW_V=1.15.0 KERAS_V=2.2.5
       script:
         - (pycodestyle --max-line-length=120 art || exit 0) && (pylint --disable=C0415,E1136 -rn art || exit 0)
         - py.test --pep8 -m pep8
@@ -20,11 +18,12 @@ before_install:
   - sed -i "s/keras/keras==${KERAS_V}/" test_requirements.txt
 
 install:
-  - pip3 install -q -r requirements.txt
-  - pip3 install -q -r test_requirements.txt
-  - pip3 install -q pylint pycodestyle
-  - pip3 install -q torch==1.3.1+cpu torchvision==0.4.2+cpu -f https://download.pytorch.org/whl/torch_stable.html
-  - pip3 list
+  - pip install --upgrade pip
+  - pip install -q -r requirements.txt
+  - pip install -q -r test_requirements.txt
+  - pip install -q pylint pycodestyle
+  - pip install -q torch==1.3.1+cpu torchvision==0.4.2+cpu -f https://download.pytorch.org/whl/torch_stable.html
+  - pip list
 
 script:
   - travis_wait 80 ./run_tests.sh
