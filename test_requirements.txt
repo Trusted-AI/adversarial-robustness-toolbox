@@ -6,7 +6,7 @@ Pillow
 requests
 
 keras
-mxnet
+mxnet==1.4.1
 #torch>=1.2.0
 tensorflow
 scikit-learn==0.22.1
