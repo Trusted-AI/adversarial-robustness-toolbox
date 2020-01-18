@@ -118,7 +118,7 @@ class TestKerasClassifier(TestBase):
         logger.info('Accuracy: %.2f%%', (accuracy_2 * 100))
 
         self.assertEqual(accuracy, 0.32)
-        self.assertAlmostEqual(accuracy_2, 0.73, delta=0.04)
+        self.assertAlmostEqual(accuracy_2, 0.73, delta=0.06)
 
     def test_fit_generator(self):
         classifier = get_classifier_kr()
