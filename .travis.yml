@@ -30,10 +30,10 @@ before_install:
 install:
   - conda create -q -n test-environment python=$TRAVIS_PYTHON_VERSION --yes --file requirements.txt
   - source activate test-environment
-  - pip install -q -r test_requirements.txt
-  - pip install pylint pycodestyle
-  - pip install torch==1.3.1+cpu torchvision==0.4.2+cpu -f https://download.pytorch.org/whl/torch_stable.html
-  - pip freeze
+  - conda install --file test_requirements.txt
+  - conda install pylint pycodestyle
+  - conda install pytorch==1.3.1 torchvision cpuonly -c pytorch
+  - conda list
   - conda install libgcc
   - export LD_LIBRARY_PATH=$LD_LIBRARY_PATH:/home/travis/miniconda/envs/test-environment/lib
   - export PYTHONPATH=".":$PYTHONPATH
