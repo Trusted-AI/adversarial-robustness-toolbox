@@ -24,7 +24,7 @@ coverage:
       default:
         # basic
         target: 50
-        threshold: 95
+        threshold: 5
         base: auto
         flags: null
         paths: null
@@ -34,6 +34,11 @@ coverage:
         if_ci_failed: error
         informational: False
         only_pulls: false
+
+    patch:
+      default:
+        target: auto
+        threshold: 95
 
 parsers:
   gcov:
