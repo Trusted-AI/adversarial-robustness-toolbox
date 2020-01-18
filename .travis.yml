@@ -1,4 +1,4 @@
-dist: trusty
+dist: xenial
 language: python
 env:
   - KERAS_BACKEND=tensorflow TENSORFLOW_V=1.15.0 KERAS_V=2.2.5
@@ -26,4 +26,4 @@ install:
   - pip list
 
 script:
-  - travis_wait 80 ./run_tests.sh
+  - ./run_tests.sh
