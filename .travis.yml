@@ -20,10 +20,10 @@ before_install:
   - sed -i "s/keras/keras==${KERAS_V}/" test_requirements.txt
 
 install:
-  - pip install -r requirements.txt
-  - pip install -r test_requirements.txt
-  - pip install pylint pycodestyle
-  - pip install torch==1.3.1+cpu torchvision==0.4.2+cpu -f https://download.pytorch.org/whl/torch_stable.html
+  - pip install -q -r requirements.txt
+  - pip install -q -r test_requirements.txt
+  - pip install -q pylint pycodestyle
+  - pip install -q torch==1.3.1+cpu torchvision==0.4.2+cpu -f https://download.pytorch.org/whl/torch_stable.html
   - pip list
 
 script:
