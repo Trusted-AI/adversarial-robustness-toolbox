@@ -24,7 +24,7 @@ coverage:
       default:
         # basic
         target: 50
-        threshold: 5
+        threshold: 95
         base: auto
         flags: null
         paths: null

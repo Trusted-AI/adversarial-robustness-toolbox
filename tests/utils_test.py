@@ -81,7 +81,7 @@ class TestBase(unittest.TestCase):
         cls._y_test_iris_original = cls.y_test_iris.copy()
 
         import warnings
-        # Filter warning for scipy, removed with scipy 0.14
+        # Filter warning for scipy, removed with scipy 1.4
         warnings.filterwarnings('ignore', '.*the output shape of zoom.*')
 
     def setUp(self):
