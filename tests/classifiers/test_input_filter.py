@@ -55,7 +55,7 @@ class TestInputFilter(unittest.TestCase):
     def test_fit(self):
         labels = np.argmax(self.y_test, axis=1)
         classifier = get_classifier_kr_tf()
-        
+
         acc = np.sum(np.argmax(classifier.predict(self.x_test), axis=1) == labels) / NB_TEST
         logger.info('Accuracy: %.2f%%', (acc * 100))
 
@@ -68,7 +68,6 @@ class TestInputFilter(unittest.TestCase):
 
         classifier.fit(self.x_train, y=self.y_train, batch_size=BATCH_SIZE, nb_epochs=2)
         classifier.fit(x=self.x_train, y=self.y_train, batch_size=BATCH_SIZE, nb_epochs=2)
-
 
     def test_class_gradient(self):
         classifier = get_classifier_kr_tf()
