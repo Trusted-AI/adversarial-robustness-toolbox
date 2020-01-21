@@ -64,7 +64,7 @@ class input_filter(abc.ABCMeta):
                 if 'y' in kwargs:
                     if kwargs['y'] is not None and not isinstance(kwargs['y'], np.ndarray):
                         kwargs['y'] = np.array(kwargs['y'])
-                elif hasy:
+                elif has_y:
                     if not isinstance(args[1], np.ndarray):
                         lst[1] = np.array(args[1])
 
@@ -88,7 +88,7 @@ class input_filter(abc.ABCMeta):
                 setattr(cls, item, new_function)
 
 
-class Classifier(ABC):
+class Classifier(ABC, metaclass=input_filter):
     """
     Base class defining the minimum classifier functionality and is required for all classifiers. A classifier of this
     type can be combined with black-box attacks.
@@ -283,7 +283,7 @@ class Classifier(ABC):
         return repr_string
 
 
-class ClassifierNeuralNetwork(ABC):
+class ClassifierNeuralNetwork(ABC, metaclass=input_filter):
     """
     Base class defining additional classifier functionality required for neural network classifiers. This base class
     has to be mixed in with class `Classifier` to extend the minimum classifier functionality.
@@ -436,7 +436,7 @@ class ClassifierNeuralNetwork(ABC):
         return repr_
 
 
-class ClassifierGradients(ABC):
+class ClassifierGradients(ABC, metaclass=input_filter):
     """
     Base class defining additional classifier functionality for classifiers providing access to loss and class
     gradients. A classifier of this type can be combined with white-box attacks. This base class has to be mixed in with

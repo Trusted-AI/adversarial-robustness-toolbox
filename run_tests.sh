@@ -32,6 +32,9 @@ if [[ $? -ne 0 ]]; then exit_code=1; echo 'Failed test_hclu.py'; fi
 python -m unittest 'tests/attacks/test_hop_skip_jump.py'
 if [[ $? -ne 0 ]]; then exit_code=1; echo 'Failed test_hop_skip_jump.py'; fi
 
+python -m unittest 'tests/attacks/test_input_filter.py'
+if [[ $? -ne 0 ]]; then exit_code=1; echo 'Failed test_input_filter.py'; fi
+
 python -m unittest 'tests/attacks/test_iterative_method.py'
 if [[ $? -ne 0 ]]; then exit_code=1; echo 'Failed test_iterative_method.py'; fi
 
@@ -77,6 +80,9 @@ if [[ $? -ne 0 ]]; then exit_code=1; echo 'Failed test_ensemble.py'; fi
 
 python -m unittest 'tests/classifiers/test_GPy.py'
 if [[ $? -ne 0 ]]; then exit_code=1; echo 'Failed test_GPy.py'; fi
+
+python -m unittest 'tests/classifiers/test_input_filter.py'
+if [[ $? -ne 0 ]]; then exit_code=1; echo 'Failed test_input_filter.py'; fi
 
 python -m unittest 'tests/classifiers/test_keras.py'
 if [[ $? -ne 0 ]]; then exit_code=1; echo 'Failed test_keras.py'; fi
