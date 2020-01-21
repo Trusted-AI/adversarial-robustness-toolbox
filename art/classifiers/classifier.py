@@ -87,6 +87,7 @@ class input_filter(abc.ABCMeta):
                 new_function = make_replacement(clsdict, item, True)
                 setattr(cls, item, new_function)
 
+
 class Classifier(ABC):
     """
     Base class defining the minimum classifier functionality and is required for all classifiers. A classifier of this

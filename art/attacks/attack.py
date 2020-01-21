@@ -76,6 +76,7 @@ class input_filter(abc.ABCMeta):
                 new_function = make_replacement(clsdict, item)
                 setattr(cls, item, new_function)
 
+
 class Attack(abc.ABC, metaclass=input_filter):
     """
     Abstract base class for all attack abstract base classes.
