@@ -39,7 +39,7 @@ class input_filter(abc.ABCMeta):
         ensures the input is an ndarray. There is an assumption that the input object has implemented
         __array__ with np.array calls.
         """
-        
+
         def make_replacement(fdict, func_name):
             """
             This function overrides creates replacement functions dynamically
@@ -67,9 +67,9 @@ class input_filter(abc.ABCMeta):
                     args = tuple(lst)
                 return fdict[func_name](self, *args, **kwargs)
             replacement_function.__doc__ = fdict[func_name].__doc__
-            replacement_function.__name__ = "new_"+func_name
+            replacement_function.__name__ = "new_" + func_name
             return replacement_function
-                
+
         replacement_list = ['generate', 'extract']
         for item in replacement_list:
             if item in clsdict:
