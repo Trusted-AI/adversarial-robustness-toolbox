@@ -62,9 +62,9 @@ class ProjectedGradientDescent(FastGradientMethod):
         :type eps: `float`
         :param eps_step: Attack step size (input variation) at each iteration.
         :type eps_step: `float`
-        :param random_eps: When True, epsilon is drawn randomly from truncated normal distribution. The literature 
+        :param random_eps: When True, epsilon is drawn randomly from truncated normal distribution. The literature
                            suggests this for FGSM based training to generalize across different epsilons. eps_step
-                           is modified to preserve the ratio of eps / eps_step. The effectiveness of this 
+                           is modified to preserve the ratio of eps / eps_step. The effectiveness of this
                            method with PGD is untested (https://arxiv.org/pdf/1611.01236.pdf).
         :type random_eps: `bool`
         :param max_iter: The maximum number of iterations.
