@@ -23,14 +23,8 @@ import unittest
 import tensorflow as tf
 import numpy as np
 import keras.backend as k
-import keras
-from keras.models import Sequential
-from keras.layers import Dense, Flatten, Conv2D, MaxPooling2D
 
 from art.attacks.extraction.knockoff_nets import KnockoffNets
-from art.classifiers import TensorFlowClassifier
-from art.classifiers import KerasClassifier
-from art.classifiers import PyTorchClassifier
 from art.utils import load_dataset, master_seed
 from tests.utils_test import get_classifier_tf
 from tests.utils_test import get_classifier_kr
@@ -107,7 +101,6 @@ class TestKnockoffNets(unittest.TestCase):
 
         # Clean-up session
         sess.close()
-        tf.reset_default_graph()
 
     def test_keras_classifier(self):
         """
@@ -227,7 +220,6 @@ class TestKnockoffNetsVectors(unittest.TestCase):
 
         # Clean-up session
         sess.close()
-        tf.reset_default_graph()
 
     def test_keras_iris(self):
         """
