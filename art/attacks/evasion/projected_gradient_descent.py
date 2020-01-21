@@ -62,7 +62,10 @@ class ProjectedGradientDescent(FastGradientMethod):
         :type eps: `float`
         :param eps_step: Attack step size (input variation) at each iteration.
         :type eps_step: `float`
-        :param random_eps: When True, epsilon is drawn randomly from truncated normal distribution
+        :param random_eps: When True, epsilon is drawn randomly from truncated normal distribution. The literature 
+                           suggests this for FGSM based training to generalize across different epsilons. eps_step
+                           is modified to preserve the ratio of eps / eps_step. The effectiveness of this 
+                           method with PGD is untested (https://arxiv.org/pdf/1611.01236.pdf).
         :type random_eps: `bool`
         :param max_iter: The maximum number of iterations.
         :type max_iter: `int`
@@ -123,8 +126,9 @@ class ProjectedGradientDescent(FastGradientMethod):
         rate_best = None
 
         if self.random_eps:
+            ratio = self.eps_step / self.eps
             self.eps = np.round(self.norm_dist.rvs(1)[0], 10)
-            self.eps_step = (self.eps * 1.2) / self.max_iter
+            self.eps_step = ratio * self.eps
 
         for _ in range(max(1, self.num_random_init)):
             adv_x = x.astype(ART_NUMPY_DTYPE)
