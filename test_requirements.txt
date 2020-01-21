@@ -1,4 +1,6 @@
 pytest-pep8
+codecov
+
 h5py
 Pillow
 requests
