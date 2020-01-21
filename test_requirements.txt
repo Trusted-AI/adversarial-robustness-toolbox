@@ -2,7 +2,6 @@ pytest-pep8
 h5py
 Pillow
 requests
-
 keras
 mxnet
 #torch>=1.2.0
@@ -13,7 +12,7 @@ lightgbm
 # Comment out because of compatibility issues with numpy versions
 # catboost
 GPy
-
-
 scipy
 statsmodels
+
+
