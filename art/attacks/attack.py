@@ -39,52 +39,42 @@ class input_filter(abc.ABCMeta):
         ensures the input is an ndarray. There is an assumption that the input object has implemented
         __array__ with np.array calls.
         """
-        if 'generate' in clsdict:
-            def new_generate(self, *args, **kwargs):
-                """
-                Generate adversarial examples and return them as an array.
-                This method should be overridden by all concrete attack implementations.
+        
+        def make_replacement(fdict, func_name):
+            """
+            This function overrides creates replacement functions dynamically
+            """
 
-                :param x: An array with the original inputs to be attacked.
-                :type x: `np.ndarray`
-                :param y: Correct labels or target labels for `x`, depending if the attack is targeted
-                       or not. This parameter is only used by some of the attacks.
-                :type y: `np.ndarray`
-                :return: An array holding the adversarial examples.
-                :rtype: `np.ndarray`
-                """
-                if 'x' in kwargs:
-                    kwargs['x'] = np.array(kwargs['x'])
-                else:
+            def replacement_function(self, *args, **kwargs):
+                if(len(args) > 0):
                     lst = list(args)
-                    lst[0] = np.array(args[0])
-                    args = tuple(lst)
-                return clsdict['generate'](self, *args, **kwargs)
-            setattr(cls, 'generate', new_generate)
 
-        if 'extract' in clsdict:
-            def new_extract(self, *args, **kwargs):
-                """
-                Extract models and return them as an ART classifier.
-                This method should be overridden by all concrete extraction attack implementations.
-
-                :param x: An array with the original inputs to be attacked.
-                :type x: `np.ndarray`
-                :param y: Correct labels or target labels for `x`, depending if the attack is targeted
-                       or not. This parameter is only used by some of the attacks.
-                :type y: `np.ndarray`
-                :return: ART classifier of the extracted model.
-                :rtype: :class:`.Classifier`
-                """
                 if 'x' in kwargs:
-                    kwargs['x'] = np.array(kwargs['x'])
+                    if not isinstance(kwargs['x'], np.ndarray):
+                        kwargs['x'] = np.array(kwargs['x'])
                 else:
-                    lst = list(args)
-                    lst[0] = np.array(args[0])
-                    args = tuple(lst)
-                return clsdict['extract'](self, *args, **kwargs)
-            setattr(cls, 'extract', new_extract)
+                    if not isinstance(args[0], np.ndarray):
+                        lst[0] = np.array(args[0])
 
+                if 'y' in kwargs:
+                    if kwargs['y'] is not None and not isinstance(kwargs['y'], np.ndarray):
+                        kwargs['y'] = np.array(kwargs['y'])
+                elif len(args) == 2:
+                    if not isinstance(args[1], np.ndarray):
+                        lst[1] = np.array(args[1])
+
+                if(len(args) > 0):
+                    args = tuple(lst)
+                return fdict[func_name](self, *args, **kwargs)
+            replacement_function.__doc__ = fdict[func_name].__doc__
+            replacement_function.__name__ = "new_"+func_name
+            return replacement_function
+                
+        replacement_list = ['generate', 'extract']
+        for item in replacement_list:
+            if item in clsdict:
+                new_function = make_replacement(clsdict, item)
+                setattr(cls, item, new_function)
 
 class Attack(abc.ABC, metaclass=input_filter):
     """
