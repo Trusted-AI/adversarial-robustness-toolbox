@@ -307,6 +307,17 @@ class TestFastGradientMethodImages(unittest.TestCase):
         self.assertLessEqual(np.amax(x_test_adv), max, "x_test_adv values should have all been below {0}".format(max))
         self.assertGreaterEqual(np.amin(x_test_adv), min, "x_test_adv values should have all been above {0}".format(min))
 
+    def test_tensorflow_iris(self):
+        (_, _), (x_test, y_test) = self.iris
+        classifier, _ = get_iris_classifier_tf()
+        self._test_backend_iris(classifier, x_test, y_test)
+
+    def test_pytorch_iris(self):
+        (_, _), (x_test, y_test) = self.iris
+        classifier = get_iris_classifier_pt()
+
+        self._test_backend_iris(classifier, x_test, y_test)
+
     def _test_backend_iris(self, classifier, x_test, y_test):
         # Test untargeted attack
         attack = FastGradientMethod(classifier, eps=.1)
@@ -317,8 +328,10 @@ class TestFastGradientMethodImages(unittest.TestCase):
         y_pred_test_adv = np.argmax(classifier.predict(x_test_adv), axis=1)
         y_pred_test = np.argmax(y_test, axis=1)
 
-        self.assertTrue((y_pred_test == y_pred_test_adv).any(), "An untargeted attack should have changed SOME predictions")
-        self.assertFalse((y_pred_test == y_pred_test_adv).all(), "An untargeted attack should NOT have changed all predictions")
+        self.assertTrue((y_pred_test == y_pred_test_adv).any(),
+                        "An untargeted attack should have changed SOME predictions")
+        self.assertFalse((y_pred_test == y_pred_test_adv).all(),
+                         "An untargeted attack should NOT have changed all predictions")
         accuracy = np.sum(y_pred_test_adv == y_pred_test) / y_pred_test.shape[0]
         logger.info('Accuracy on Iris with FGM adversarial examples: %.2f%%', (accuracy * 100))
 
@@ -334,19 +347,7 @@ class TestFastGradientMethodImages(unittest.TestCase):
         self.assertTrue((y_targeted == y_pred_test_adv).any())
         accuracy = np.sum(y_pred_test_adv == y_targeted) / y_pred_test.shape[0]
         logger.info('Success rate of targeted FGM on Iris: %.2f%%', (accuracy * 100))
-
-    def test_tensorflow_iris(self):
-        (_, _), (x_test, y_test) = self.iris
-        classifier, _ = get_iris_classifier_tf()
-        self._test_backend_iris(classifier, x_test, y_test)
-
-
-    def test_pytorch_iris(self):
-        (_, _), (x_test, y_test) = self.iris
-        classifier = get_iris_classifier_pt()
-
-        self._test_backend_iris(classifier, x_test, y_test)
-
+        
     def test_scikitlearn(self):
         from sklearn.linear_model import LogisticRegression
         from sklearn.svm import SVC, LinearSVC
