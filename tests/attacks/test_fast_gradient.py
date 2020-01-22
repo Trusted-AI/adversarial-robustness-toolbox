@@ -181,17 +181,18 @@ class TestFastGradientMethodImages(unittest.TestCase):
         classifier = KerasClassifier(model=model, clip_values=(0, 1), defences=fs)
 
         attack = FastGradientMethod(classifier, eps=1, batch_size=128)
+
         x_train_adv = attack.generate(x_train)
-        x_test_adv = attack.generate(x_test)
-
         self._check_x_adv(x_train_adv, x_train)
+        y_train_pred_adv = get_labels_np_array(classifier.predict(x_train_adv))
+        y_train_labels = get_labels_np_array(y_train)
+        # TODO Shouldn't the y_adv and y_expected labels be the same for the defence to be correct?
+        self._check_y_pred_adv(y_train_pred_adv, y_train_labels)
+
+        x_test_adv = attack.generate(x_test)
         self._check_x_adv(x_test_adv, x_test)
-
-        train_y_pred = get_labels_np_array(classifier.predict(x_train_adv))
-        test_y_pred = get_labels_np_array(classifier.predict(x_test_adv))
-
-        self.assertFalse((y_train == train_y_pred).all())
-        self.assertFalse((y_test == test_y_pred).all())
+        y_test_pred_adv = get_labels_np_array(classifier.predict(x_test_adv))
+        self._check_y_pred_adv(y_test_pred_adv, y_test)
 
     def _test_mnist_targeted(self, classifier, x_test, y_test):
         # Test FGSM with np.inf norm
@@ -362,24 +363,27 @@ class TestFastGradientMethodImages(unittest.TestCase):
             logger.info('Success rate of ' + classifier.__class__.__name__ + ' on targeted FGM on Iris: %.2f%%',
                         (accuracy * 100))
 
-    def _check_x_adv(self, x_test_adv, x_test, max=1.0, min=0.0, bounded=True):
+    def _check_x_adv(self, x_adv, x_original, max=1.0, min=0.0, bounded=True):
         '''
         Performs basic checks on generated adversarial inputs (whether x_test or x_train)
-        :param x_test_adv:
-        :param x_test:
+        :param x_adv:
+        :param x_original:
         :param max:
         :param min:
         :param bounded:
         :return:
         '''
-        self.assertFalse((x_test == x_test_adv).all(), "x_test_adv should have been different from x_test")
+        self.assertFalse((x_original == x_adv).all(), "x_test_adv should have been different from x_test")
 
         if bounded:
-            self.assertLessEqual(np.amax(x_test_adv), max, "x_test_adv values should have all been below {0}".format(max))
-            self.assertGreaterEqual(np.amin(x_test_adv), min, "x_test_adv values should have all been above {0}".format(min))
+            self.assertLessEqual(np.amax(x_adv), max, "x_test_adv values should have all been below {0}".format(max))
+            self.assertGreaterEqual(np.amin(x_adv), min, "x_test_adv values should have all been above {0}".format(min))
         else:
-            self.assertTrue((x_test_adv > max).any(),"some x_test_adv values should been above 1".format(max))
-            self.assertTrue((x_test_adv < min).any()," some x_test_adv values should have all been below {0}".format(min))
+            self.assertTrue((x_adv > max).any(), "some x_test_adv values should been above 1".format(max))
+            self.assertTrue((x_adv < min).any(), " some x_test_adv values should have all been below {0}".format(min))
+
+    def _check_y_pred_adv(self, y_pred_adv, y_expected):
+        self.assertFalse((y_expected == y_pred_adv).all())
 
 if __name__ == '__main__':
     unittest.main()
