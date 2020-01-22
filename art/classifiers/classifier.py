@@ -56,7 +56,7 @@ class Classifier(ABC):
                be divided by the second one.
         :type preprocessing: `tuple`
         """
-        from art.defences.preprocessor import Preprocessor
+        from art.defences.preprocess.preprocessor import Preprocessor
 
         self._clip_values = clip_values
         if clip_values is not None:

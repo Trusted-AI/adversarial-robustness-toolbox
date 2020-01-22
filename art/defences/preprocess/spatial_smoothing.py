@@ -32,7 +32,7 @@ import logging
 import numpy as np
 from scipy import ndimage
 
-from art.defences.preprocessor import Preprocessor
+from art.defences.preprocess.preprocessor import Preprocessor
 from art.config import ART_NUMPY_DTYPE
 
 logger = logging.getLogger(__name__)
