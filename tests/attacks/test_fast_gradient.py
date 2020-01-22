@@ -73,31 +73,6 @@ class TestFastGradientMethodImages(unittest.TestCase):
         classifier = get_classifier_pt()
         self._test_backend_mnist(test_mnist, classifier)
 
-    def test_mnist_keras_with_defences(self):
-        (x_train, y_train), (x_test, y_test) = self.mnist
-        classifier = get_classifier_kr()
-
-        # Get the ready-trained Keras model
-        model = classifier._model
-        fs = FeatureSqueezing(bit_depth=1, clip_values=(0, 1))
-        classifier = KerasClassifier(model=model, clip_values=(0, 1), defences=fs)
-
-        attack = FastGradientMethod(classifier, eps=1, batch_size=128)
-
-        x_train_adv = attack.generate(x_train)
-        self._check_x_adv(x_train_adv, x_train)
-        y_train_pred_adv = get_labels_np_array(classifier.predict(x_train_adv))
-        y_train_labels = get_labels_np_array(y_train)
-        # TODO Shouldn't the y_adv and y_expected labels be the same for the defence to be correct?
-        self._check_y_pred_adv(y_train_pred_adv, y_train_labels)
-
-        x_test_adv = attack.generate(x_test)
-        self._check_x_adv(x_test_adv, x_test)
-        y_test_pred_adv = get_labels_np_array(classifier.predict(x_test_adv))
-        self._check_y_pred_adv(y_test_pred_adv, y_test)
-
-
-
     def test_classifier_type_check_fail_classifier(self):
         # Use a useless test classifier to test basic classifier properties
         class ClassifierNoAPI:
@@ -291,19 +266,20 @@ class TestFastGradientMethodImages(unittest.TestCase):
         self._test_mnist_targeted(classifier, x_test, y_test)
 
         # Defended classifier
-        # attack = FastGradientMethod(defended_classifier, eps=1, batch_size=128)
-        #
-        # x_train_adv = attack.generate(x_train)
-        # self._check_x_adv(x_train_adv, x_train)
-        # y_train_pred_adv = get_labels_np_array(defended_classifier.predict(x_train_adv))
-        # y_train_labels = get_labels_np_array(y_train)
-        # # TODO Shouldn't the y_adv and y_expected labels be the same for the defence to be correct?
-        # self._check_y_pred_adv(y_train_pred_adv, y_train_labels)
-        #
-        # x_test_adv = attack.generate(x_test)
-        # self._check_x_adv(x_test_adv, x_test)
-        # y_test_pred_adv = get_labels_np_array(defended_classifier.predict(x_test_adv))
-        # self._check_y_pred_adv(y_test_pred_adv, y_test)
+        if defended_classifier is not None:
+            attack = FastGradientMethod(defended_classifier, eps=1, batch_size=128)
+
+            x_train_adv = attack.generate(x_train)
+            self._check_x_adv(x_train_adv, x_train)
+            y_train_pred_adv = get_labels_np_array(defended_classifier.predict(x_train_adv))
+            y_train_labels = get_labels_np_array(y_train)
+            # TODO Shouldn't the y_adv and y_expected labels be the same for the defence to be correct?
+            self._check_y_pred_adv(y_train_pred_adv, y_train_labels)
+
+            x_test_adv = attack.generate(x_test)
+            self._check_x_adv(x_test_adv, x_test)
+            y_test_pred_adv = get_labels_np_array(defended_classifier.predict(x_test_adv))
+            self._check_y_pred_adv(y_test_pred_adv, y_test)
 
         # Check that x_test has not been modified by attack and classifier
         self.assertAlmostEqual(float(np.max(np.abs(x_test_original - x_test))), 0.0, delta=0.00001)
