@@ -255,32 +255,7 @@ class TestFastGradientMethodImages(unittest.TestCase):
                       '`art.classifiers.classifier.ClassifierGradients`, the provided classifier is instance of '
                       '(<class \'art.classifiers.scikitlearn.ScikitlearnClassifier\'>,).', str(context.exception))
 
-    def test_keras_iris_clipped(self):
-        (_, _), (x_test, y_test) = self.iris
-        classifier = get_iris_classifier_kr()
 
-        # Test untargeted attack
-        attack = FastGradientMethod(classifier, eps=.1)
-        x_test_adv = attack.generate(x_test)
-
-        self._check_x_test_adv(x_test_adv, x_test)
-
-        predictions_adv = np.argmax(classifier.predict(x_test_adv), axis=1)
-        self.assertFalse((np.argmax(y_test, axis=1) == predictions_adv).all())
-        accuracy = np.sum(predictions_adv == np.argmax(y_test, axis=1)) / y_test.shape[0]
-        logger.info('Accuracy on Iris with FGM adversarial examples: %.2f%%', (accuracy * 100))
-
-        # Test targeted attack
-        targets = random_targets(y_test, nb_classes=3)
-        attack = FastGradientMethod(classifier, targeted=True, eps=.1)
-        x_test_adv = attack.generate(x_test, **{'y': targets})
-
-        self._check_x_test_adv(x_test_adv, x_test)
-
-        predictions_adv = np.argmax(classifier.predict(x_test_adv), axis=1)
-        self.assertTrue((np.argmax(targets, axis=1) == predictions_adv).any())
-        accuracy = np.sum(predictions_adv == np.argmax(targets, axis=1)) / y_test.shape[0]
-        logger.info('Success rate of targeted FGM on Iris: %.2f%%', (accuracy * 100))
 
     def test_iris_unbounded_keras(self):
         (_, _), (x_test, y_test) = self.iris
@@ -313,15 +288,52 @@ class TestFastGradientMethodImages(unittest.TestCase):
     def test_tensorflow_iris(self):
         (_, _), (x_test, y_test) = self.iris
         classifier, _ = get_iris_classifier_tf()
-        self._test_backend_iris(classifier, x_test, y_test)
+        self._test_backend_iris(classifier, x_test, y_test, batch_size=128)
 
     def test_pytorch_iris(self):
         (_, _), (x_test, y_test) = self.iris
         classifier = get_iris_classifier_pt()
 
+        self._test_backend_iris(classifier, x_test, y_test, batch_size=128)
+
+    # def test_keras_iris_clipped(self):
+    #     (_, _), (x_test, y_test) = self.iris
+    #     classifier = get_iris_classifier_kr()
+    #
+    #     # Test untargeted attack
+    #     attack = FastGradientMethod(classifier, eps=.1)
+    #     x_test_adv = attack.generate(x_test)
+    #
+    #     self._check_x_test_adv(x_test_adv, x_test)
+    #
+    #     y_pred_test_adv = np.argmax(classifier.predict(x_test_adv), axis=1)
+    #     y_pred_test = np.argmax(y_test, axis=1)
+    #
+    #     self.assertFalse((y_pred_test == y_pred_test_adv).all())
+    #     accuracy = np.sum(y_pred_test_adv == y_pred_test) / y_test.shape[0]
+    #     logger.info('Accuracy on Iris with FGM adversarial examples: %.2f%%', (accuracy * 100))
+    #
+    #     # Test targeted attack
+    #     targets = random_targets(y_test, nb_classes=3)
+    #     attack = FastGradientMethod(classifier, targeted=True, eps=.1)
+    #     x_test_adv = attack.generate(x_test, **{'y': targets})
+    #
+    #     self._check_x_test_adv(x_test_adv, x_test)
+    #
+    #     y_pred_test_adv = np.argmax(classifier.predict(x_test_adv), axis=1)
+    #     y_targeted = np.argmax(targets, axis=1)
+    #
+    #     self.assertTrue((y_targeted == y_pred_test_adv).any())
+    #     accuracy = np.sum(y_pred_test_adv == y_targeted) / y_test.shape[0]
+    #     logger.info('Success rate of targeted FGM on Iris: %.2f%%', (accuracy * 100))
+
+    def test_keras_iris_clipped(self):
+        (_, _), (x_test, y_test) = self.iris
+        classifier = get_iris_classifier_kr()
+
         self._test_backend_iris(classifier, x_test, y_test)
 
-    def _test_backend_iris(self, classifier, x_test, y_test):
+    def _test_backend_iris(self, classifier, x_test, y_test, batch_size=1):
         # Test untargeted attack
         attack = FastGradientMethod(classifier, eps=.1)
         x_test_adv = attack.generate(x_test)
@@ -341,7 +353,7 @@ class TestFastGradientMethodImages(unittest.TestCase):
         # Test targeted attack
         targets = random_targets(y_test, nb_classes=3)
         y_targeted = np.argmax(targets, axis=1)
-        attack = FastGradientMethod(classifier, targeted=True, eps=.1, batch_size=128)
+        attack = FastGradientMethod(classifier, targeted=True, eps=.1, batch_size=batch_size)
         x_test_adv = attack.generate(x_test, **{'y': targets})
 
         self._check_x_test_adv(x_test_adv, x_test)
