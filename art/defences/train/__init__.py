@@ -1,4 +1,4 @@
 """
-The IBM License 2019.
-Contact: Tran Ngoc Minh (M.N.Tran@ibm.com).
+Module implementing train-based defences against adversarial attacks.
 """
+from art.defences.train.adversarial_trainer import AdversarialTrainer
