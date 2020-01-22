@@ -256,8 +256,8 @@ def check_and_transform_label_format(labels, nb_classes=None, return_one_hot=Tru
 
 def random_targets(labels, nb_classes):
     """
-    Given a set of correct labels, randomly choose target labels different from the original ones. These can be
-    one-hot encoded or integers.
+    Given a set of correct labels, randomly changes some correct labels to target labels different from the original
+    ones. These can be one-hot encoded or integers.
 
     :param labels: The correct labels
     :type labels: `np.ndarray`

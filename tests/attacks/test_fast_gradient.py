@@ -51,6 +51,7 @@ class TestFastGradientMethodImages(unittest.TestCase):
     def setUp(self):
         master_seed(1234)
 
+
     def test_keras_mnist(self):
         (_, _), (x_test, y_test) = self.mnist
         classifier = get_classifier_kr()
@@ -60,6 +61,8 @@ class TestFastGradientMethodImages(unittest.TestCase):
         (_, _), (x_test, y_test) = self.mnist
         classifier, sess = get_classifier_tf()
         self._test_backend_mnist(classifier, x_test, y_test)
+
+
 
     def test_pytorch_mnist(self):
         (_, _), (x_test, y_test) = self.mnist
@@ -168,6 +171,9 @@ class TestFastGradientMethodImages(unittest.TestCase):
         x_test_adv = attack.generate(x_test)
         self.assertFalse((x_test == x_test_adv).all())
 
+        #Test targeted
+        self._test_mnist_targeted(classifier, x_test, y_test)
+
         # Check that x_test has not been modified by attack and classifier
         self.assertAlmostEqual(float(np.max(np.abs(x_test_original - x_test))), 0.0, delta=0.00001)
 
@@ -198,37 +204,21 @@ class TestFastGradientMethodImages(unittest.TestCase):
         # Test FGSM with np.inf norm
         attack = FastGradientMethod(classifier, eps=1.0, targeted=True)
 
-        pred_sort = classifier.predict(x_test).argsort(axis=1)
-        y_test_adv = np.zeros((x_test.shape[0], 10))
+        y_test_pred_sort = classifier.predict(x_test).argsort(axis=1)
+        targets = np.zeros((x_test.shape[0], 10))
         for i in range(x_test.shape[0]):
-            y_test_adv[i, pred_sort[i, -2]] = 1.0
+            targets[i, y_test_pred_sort[i, -2]] = 1.0
 
         attack_params = {"minimal": True, "eps_step": 0.01, "eps": 1.0}
         attack.set_params(**attack_params)
 
-        x_test_adv = attack.generate(x_test, y=y_test_adv)
+        x_test_adv = attack.generate(x_test, y=targets)
         self.assertFalse((x_test == x_test_adv).all())
 
-        test_y_pred = get_labels_np_array(classifier.predict(x_test_adv))
+        y_test_pred_adv = get_labels_np_array(classifier.predict(x_test_adv))
 
-        self.assertEqual(y_test_adv.shape, test_y_pred.shape)
-        self.assertGreaterEqual((y_test_adv == test_y_pred).sum(), x_test.shape[0] // 2)
-
-    def test_keras_mnist_targeted(self):
-        (_, _), (x_test, y_test) = self.mnist
-        classifier = get_classifier_kr()
-        self._test_mnist_targeted(classifier, x_test, y_test)
-
-    def test_tensorflow_mnist_targeted(self):
-        (_, _), (x_test, y_test) = self.mnist
-        classifier, sess = get_classifier_tf()
-        self._test_mnist_targeted(classifier, x_test, y_test)
-
-    def test_pytorch_mnist_targeted(self):
-        (_, _), (x_test, y_test) = self.mnist
-        x_test = np.swapaxes(x_test, 1, 3).astype(np.float32)
-        classifier = get_classifier_pt()
-        self._test_mnist_targeted(classifier, x_test, y_test)
+        self.assertEqual(targets.shape, y_test_pred_adv.shape)
+        self.assertGreaterEqual((targets == y_test_pred_adv).sum(), x_test.shape[0] // 2)
 
     def test_classifier_type_check_fail_classifier(self):
         # Use a useless test classifier to test basic classifier properties
