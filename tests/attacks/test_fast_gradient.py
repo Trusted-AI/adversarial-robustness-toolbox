@@ -262,9 +262,8 @@ class TestFastGradientMethodImages(unittest.TestCase):
         # Test untargeted attack
         attack = FastGradientMethod(classifier, eps=.1)
         x_test_adv = attack.generate(x_test)
-        self.assertFalse((x_test == x_test_adv).all())
-        self.assertLessEqual(np.amax(x_test_adv), 1.0)
-        self.assertGreaterEqual(np.amin(x_test_adv), 0.0)
+
+        self._check_x_test_adv(x_test_adv, x_test)
 
         predictions_adv = np.argmax(classifier.predict(x_test_adv), axis=1)
         self.assertFalse((np.argmax(y_test, axis=1) == predictions_adv).all())
@@ -275,9 +274,8 @@ class TestFastGradientMethodImages(unittest.TestCase):
         targets = random_targets(y_test, nb_classes=3)
         attack = FastGradientMethod(classifier, targeted=True, eps=.1)
         x_test_adv = attack.generate(x_test, **{'y': targets})
-        self.assertFalse((x_test == x_test_adv).all())
-        self.assertLessEqual(np.amax(x_test_adv), 1.0)
-        self.assertGreaterEqual(np.amin(x_test_adv), 0.0)
+
+        self._check_x_test_adv(x_test_adv, x_test)
 
         predictions_adv = np.argmax(classifier.predict(x_test_adv), axis=1)
         self.assertTrue((np.argmax(targets, axis=1) == predictions_adv).any())
@@ -293,19 +291,24 @@ class TestFastGradientMethodImages(unittest.TestCase):
         attack = FastGradientMethod(classifier, eps=1)
 
         x_test_adv = attack.generate(x_test)
-        self.assertFalse((x_test == x_test_adv).all())
-        self.assertTrue((x_test_adv > 1).any())
-        self.assertTrue((x_test_adv < 0).any())
+
+        self._check_x_test_adv(x_test_adv, x_test, bounded=False)
 
         predictions_adv = np.argmax(classifier.predict(x_test_adv), axis=1)
         self.assertFalse((np.argmax(y_test, axis=1) == predictions_adv).all())
         accuracy = np.sum(predictions_adv == np.argmax(y_test, axis=1)) / y_test.shape[0]
         logger.info('Accuracy on Iris with FGM adversarial examples: %.2f%%', (accuracy * 100))
 
-    def _check_x_test_adv(self, x_test_adv, x_test, max=1.0, min=0.0):
+    def _check_x_test_adv(self, x_test_adv, x_test, max=1.0, min=0.0, bounded=True):
         self.assertFalse((x_test == x_test_adv).all(), "x_test_adv should have been different from x_test")
-        self.assertLessEqual(np.amax(x_test_adv), max, "x_test_adv values should have all been below {0}".format(max))
-        self.assertGreaterEqual(np.amin(x_test_adv), min, "x_test_adv values should have all been above {0}".format(min))
+
+        if bounded:
+            self.assertLessEqual(np.amax(x_test_adv), max, "x_test_adv values should have all been below {0}".format(max))
+            self.assertGreaterEqual(np.amin(x_test_adv), min, "x_test_adv values should have all been above {0}".format(min))
+        else:
+            self.assertTrue((x_test_adv > max).any(),"some x_test_adv values should been above 1".format(max))
+            self.assertTrue((x_test_adv < min).any()," some x_test_adv values should have all been below {0}".format(min))
+
 
     def test_tensorflow_iris(self):
         (_, _), (x_test, y_test) = self.iris
@@ -347,7 +350,7 @@ class TestFastGradientMethodImages(unittest.TestCase):
         self.assertTrue((y_targeted == y_pred_test_adv).any())
         accuracy = np.sum(y_pred_test_adv == y_targeted) / y_pred_test.shape[0]
         logger.info('Success rate of targeted FGM on Iris: %.2f%%', (accuracy * 100))
-        
+
     def test_scikitlearn(self):
         from sklearn.linear_model import LogisticRegression
         from sklearn.svm import SVC, LinearSVC
