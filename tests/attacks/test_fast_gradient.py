@@ -53,25 +53,25 @@ class TestFastGradientMethodImages(unittest.TestCase):
 
 
     def test_keras_mnist(self):
-        (_, _), (x_test, y_test) = self.mnist
         classifier = get_classifier_kr()
 
         # Get the ready-trained Keras model
         fs = FeatureSqueezing(bit_depth=1, clip_values=(0, 1))
         defended_classifier = KerasClassifier(model=classifier._model, clip_values=(0, 1), defences=fs)
 
-        self._test_backend_mnist(x_test, y_test, classifier, defended_classifier)
+        self._test_backend_mnist(self.mnist, classifier, defended_classifier)
 
     def test_tensorflow_mnist(self):
-        (_, _), (x_test, y_test) = self.mnist
         classifier, sess = get_classifier_tf()
-        self._test_backend_mnist(x_test, y_test, classifier)
+        self._test_backend_mnist(self.mnist, classifier)
 
     def test_pytorch_mnist(self):
-        (_, _), (x_test, y_test) = self.mnist
+        (x_train, y_train), (x_test, y_test) = self.mnist
         x_test = np.reshape(x_test, (x_test.shape[0], 1, 28, 28)).astype(np.float32)
+        test_mnist = (x_train, y_train), (x_test, y_test)
+
         classifier = get_classifier_pt()
-        self._test_backend_mnist(x_test, y_test, classifier)
+        self._test_backend_mnist(test_mnist, classifier)
 
     def test_mnist_keras_with_defences(self):
         (x_train, y_train), (x_test, y_test) = self.mnist
@@ -186,8 +186,8 @@ class TestFastGradientMethodImages(unittest.TestCase):
             accuracy = np.sum(y_pred_test_adv == y_test_true) / y_test_true.shape[0]
             logger.info('Accuracy on Iris with FGM adversarial examples: %.2f%%', (accuracy * 100))
 
-    def _test_backend_mnist(self, x_test, y_test, classifier, defended_classifier=None):
-
+    def _test_backend_mnist(self, mnist_param, classifier, defended_classifier=None):
+        (x_train, y_train), (x_test, y_test) = mnist_param
         x_test_original = x_test.copy()
 
         # Test FGSM with np.inf norm
