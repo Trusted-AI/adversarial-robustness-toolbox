@@ -55,22 +55,138 @@ class TestFastGradientMethodImages(unittest.TestCase):
     def test_keras_mnist(self):
         (_, _), (x_test, y_test) = self.mnist
         classifier = get_classifier_kr()
-        self._test_backend_mnist(classifier, x_test, y_test)
+
+        # Get the ready-trained Keras model
+        fs = FeatureSqueezing(bit_depth=1, clip_values=(0, 1))
+        defended_classifier = KerasClassifier(model=classifier._model, clip_values=(0, 1), defences=fs)
+
+        self._test_backend_mnist(x_test, y_test, classifier, defended_classifier)
 
     def test_tensorflow_mnist(self):
         (_, _), (x_test, y_test) = self.mnist
         classifier, sess = get_classifier_tf()
-        self._test_backend_mnist(classifier, x_test, y_test)
-
-
+        self._test_backend_mnist(x_test, y_test, classifier)
 
     def test_pytorch_mnist(self):
         (_, _), (x_test, y_test) = self.mnist
         x_test = np.reshape(x_test, (x_test.shape[0], 1, 28, 28)).astype(np.float32)
         classifier = get_classifier_pt()
-        self._test_backend_mnist(classifier, x_test, y_test)
+        self._test_backend_mnist(x_test, y_test, classifier)
 
-    def _test_backend_mnist(self, classifier, x_test, y_test):
+    def test_mnist_keras_with_defences(self):
+        (x_train, y_train), (x_test, y_test) = self.mnist
+        classifier = get_classifier_kr()
+
+        # Get the ready-trained Keras model
+        model = classifier._model
+        fs = FeatureSqueezing(bit_depth=1, clip_values=(0, 1))
+        classifier = KerasClassifier(model=model, clip_values=(0, 1), defences=fs)
+
+        attack = FastGradientMethod(classifier, eps=1, batch_size=128)
+
+        x_train_adv = attack.generate(x_train)
+        self._check_x_adv(x_train_adv, x_train)
+        y_train_pred_adv = get_labels_np_array(classifier.predict(x_train_adv))
+        y_train_labels = get_labels_np_array(y_train)
+        # TODO Shouldn't the y_adv and y_expected labels be the same for the defence to be correct?
+        self._check_y_pred_adv(y_train_pred_adv, y_train_labels)
+
+        x_test_adv = attack.generate(x_test)
+        self._check_x_adv(x_test_adv, x_test)
+        y_test_pred_adv = get_labels_np_array(classifier.predict(x_test_adv))
+        self._check_y_pred_adv(y_test_pred_adv, y_test)
+
+
+
+    def test_classifier_type_check_fail_classifier(self):
+        # Use a useless test classifier to test basic classifier properties
+        class ClassifierNoAPI:
+            pass
+
+        classifier = ClassifierNoAPI
+        with self.assertRaises(TypeError) as context:
+            _ = FastGradientMethod(classifier=classifier)
+
+        self.assertIn('For `FastGradientMethod` classifier must be an instance of '
+                      '`art.classifiers.classifier.Classifier`, the provided classifier is instance of '
+                      '(<class \'object\'>,).', str(context.exception))
+
+    def test_classifier_type_check_fail_gradients(self):
+        # Use a test classifier not providing gradients required by white-box attack
+        from art.classifiers.scikitlearn import ScikitlearnDecisionTreeClassifier
+        from sklearn.tree import DecisionTreeClassifier
+
+        classifier = ScikitlearnDecisionTreeClassifier(model=DecisionTreeClassifier())
+        with self.assertRaises(TypeError) as context:
+            _ = FastGradientMethod(classifier=classifier)
+
+        self.assertIn('For `FastGradientMethod` classifier must be an instance of '
+                      '`art.classifiers.classifier.ClassifierGradients`, the provided classifier is instance of '
+                      '(<class \'art.classifiers.scikitlearn.ScikitlearnClassifier\'>,).', str(context.exception))
+
+    def test_keras_iris(self):
+        (_, _), (x_test, y_test) = self.iris
+        classifier_clipped = get_iris_classifier_kr()
+        classifier_no_clip_values = KerasClassifier(model=classifier_clipped._model, use_logits=False, channel_index=1)
+
+        self._test_backend_iris(x_test, y_test, classifier_clipped, classifier_no_clip_values)
+
+    def test_tensorflow_iris(self):
+        (_, _), (x_test, y_test) = self.iris
+        classifier, _ = get_iris_classifier_tf()
+        self._test_backend_iris(x_test, y_test, classifier, batch_size=128)
+
+    def test_pytorch_iris(self):
+        (_, _), (x_test, y_test) = self.iris
+        classifier = get_iris_classifier_pt()
+
+        self._test_backend_iris(x_test, y_test, classifier, batch_size=128)
+
+    def _test_backend_iris(self, x_test, y_test, classifier, classifier_no_clip_values=None, batch_size=1):
+        # Test untargeted attack
+        attack = FastGradientMethod(classifier, eps=.1)
+        x_test_adv = attack.generate(x_test)
+
+        self._check_x_adv(x_test_adv, x_test)
+
+        y_pred_test_adv = np.argmax(classifier.predict(x_test_adv), axis=1)
+        y_test_true = np.argmax(y_test, axis=1)
+
+        self.assertTrue((y_test_true == y_pred_test_adv).any(),
+                        "An untargeted attack should have changed SOME predictions")
+        self.assertFalse((y_test_true == y_pred_test_adv).all(),
+                         "An untargeted attack should NOT have changed all predictions")
+        accuracy = np.sum(y_pred_test_adv == y_test_true) / y_test_true.shape[0]
+        logger.info('Accuracy on Iris with FGM adversarial examples: %.2f%%', (accuracy * 100))
+
+        # Test targeted attack
+        targets = random_targets(y_test, nb_classes=3)
+        y_targeted = np.argmax(targets, axis=1)
+        attack = FastGradientMethod(classifier, targeted=True, eps=.1, batch_size=batch_size)
+        x_test_adv = attack.generate(x_test, **{'y': targets})
+
+        self._check_x_adv(x_test_adv, x_test)
+
+        y_pred_test_adv = np.argmax(classifier.predict(x_test_adv), axis=1)
+        self.assertTrue((y_targeted == y_pred_test_adv).any())
+        accuracy = np.sum(y_pred_test_adv == y_targeted) / y_test_true.shape[0]
+        logger.info('Success rate of targeted FGM on Iris: %.2f%%', (accuracy * 100))
+
+        # Recreate a classifier without clip values
+        if classifier_no_clip_values is not None:
+            attack = FastGradientMethod(classifier_no_clip_values, eps=1)
+
+            x_test_adv = attack.generate(x_test)
+
+            self._check_x_adv(x_test_adv, x_test, bounded=False)
+
+            y_test_true = np.argmax(y_test, axis=1)
+            y_pred_test_adv = np.argmax(classifier_no_clip_values.predict(x_test_adv), axis=1)
+            self.assertFalse((y_test_true == y_pred_test_adv).all())
+            accuracy = np.sum(y_pred_test_adv == y_test_true) / y_test_true.shape[0]
+            logger.info('Accuracy on Iris with FGM adversarial examples: %.2f%%', (accuracy * 100))
+
+    def _test_backend_mnist(self, x_test, y_test, classifier, defended_classifier=None):
 
         x_test_original = x_test.copy()
 
@@ -171,34 +287,26 @@ class TestFastGradientMethodImages(unittest.TestCase):
         x_test_adv = attack.generate(x_test)
         self.assertFalse((x_test == x_test_adv).all())
 
-        #Test targeted
+        # Test targeted
         self._test_mnist_targeted(classifier, x_test, y_test)
+
+        # Defended classifier
+        # attack = FastGradientMethod(defended_classifier, eps=1, batch_size=128)
+        #
+        # x_train_adv = attack.generate(x_train)
+        # self._check_x_adv(x_train_adv, x_train)
+        # y_train_pred_adv = get_labels_np_array(defended_classifier.predict(x_train_adv))
+        # y_train_labels = get_labels_np_array(y_train)
+        # # TODO Shouldn't the y_adv and y_expected labels be the same for the defence to be correct?
+        # self._check_y_pred_adv(y_train_pred_adv, y_train_labels)
+        #
+        # x_test_adv = attack.generate(x_test)
+        # self._check_x_adv(x_test_adv, x_test)
+        # y_test_pred_adv = get_labels_np_array(defended_classifier.predict(x_test_adv))
+        # self._check_y_pred_adv(y_test_pred_adv, y_test)
 
         # Check that x_test has not been modified by attack and classifier
         self.assertAlmostEqual(float(np.max(np.abs(x_test_original - x_test))), 0.0, delta=0.00001)
-
-    def test_mnist_keras_with_defences(self):
-        (x_train, y_train), (x_test, y_test) = self.mnist
-        classifier = get_classifier_kr()
-
-        # Get the ready-trained Keras model
-        model = classifier._model
-        fs = FeatureSqueezing(bit_depth=1, clip_values=(0, 1))
-        classifier = KerasClassifier(model=model, clip_values=(0, 1), defences=fs)
-
-        attack = FastGradientMethod(classifier, eps=1, batch_size=128)
-
-        x_train_adv = attack.generate(x_train)
-        self._check_x_adv(x_train_adv, x_train)
-        y_train_pred_adv = get_labels_np_array(classifier.predict(x_train_adv))
-        y_train_labels = get_labels_np_array(y_train)
-        # TODO Shouldn't the y_adv and y_expected labels be the same for the defence to be correct?
-        self._check_y_pred_adv(y_train_pred_adv, y_train_labels)
-
-        x_test_adv = attack.generate(x_test)
-        self._check_x_adv(x_test_adv, x_test)
-        y_test_pred_adv = get_labels_np_array(classifier.predict(x_test_adv))
-        self._check_y_pred_adv(y_test_pred_adv, y_test)
 
     def _test_mnist_targeted(self, classifier, x_test, y_test):
         # Test FGSM with np.inf norm
@@ -219,94 +327,6 @@ class TestFastGradientMethodImages(unittest.TestCase):
 
         self.assertEqual(targets.shape, y_test_pred_adv.shape)
         self.assertGreaterEqual((targets == y_test_pred_adv).sum(), x_test.shape[0] // 2)
-
-    def test_classifier_type_check_fail_classifier(self):
-        # Use a useless test classifier to test basic classifier properties
-        class ClassifierNoAPI:
-            pass
-
-        classifier = ClassifierNoAPI
-        with self.assertRaises(TypeError) as context:
-            _ = FastGradientMethod(classifier=classifier)
-
-        self.assertIn('For `FastGradientMethod` classifier must be an instance of '
-                      '`art.classifiers.classifier.Classifier`, the provided classifier is instance of '
-                      '(<class \'object\'>,).', str(context.exception))
-
-    def test_classifier_type_check_fail_gradients(self):
-        # Use a test classifier not providing gradients required by white-box attack
-        from art.classifiers.scikitlearn import ScikitlearnDecisionTreeClassifier
-        from sklearn.tree import DecisionTreeClassifier
-
-        classifier = ScikitlearnDecisionTreeClassifier(model=DecisionTreeClassifier())
-        with self.assertRaises(TypeError) as context:
-            _ = FastGradientMethod(classifier=classifier)
-
-        self.assertIn('For `FastGradientMethod` classifier must be an instance of '
-                      '`art.classifiers.classifier.ClassifierGradients`, the provided classifier is instance of '
-                      '(<class \'art.classifiers.scikitlearn.ScikitlearnClassifier\'>,).', str(context.exception))
-
-    def test_keras_iris(self):
-        (_, _), (x_test, y_test) = self.iris
-        classifier_clipped = get_iris_classifier_kr()
-        classifier_no_clip_values = KerasClassifier(model=classifier_clipped._model, use_logits=False, channel_index=1)
-
-        self._test_backend_iris(x_test, y_test, classifier_clipped, classifier_no_clip_values)
-
-    def test_tensorflow_iris(self):
-        (_, _), (x_test, y_test) = self.iris
-        classifier, _ = get_iris_classifier_tf()
-        self._test_backend_iris(x_test, y_test, classifier, batch_size=128)
-
-    def test_pytorch_iris(self):
-        (_, _), (x_test, y_test) = self.iris
-        classifier = get_iris_classifier_pt()
-
-        self._test_backend_iris(x_test, y_test, classifier, batch_size=128)
-
-    def _test_backend_iris(self, x_test, y_test, classifier, classifier_no_clip_values=None, batch_size=1):
-        # Test untargeted attack
-        attack = FastGradientMethod(classifier, eps=.1)
-        x_test_adv = attack.generate(x_test)
-
-        self._check_x_adv(x_test_adv, x_test)
-
-        y_pred_test_adv = np.argmax(classifier.predict(x_test_adv), axis=1)
-        y_pred_test = np.argmax(y_test, axis=1)
-
-        self.assertTrue((y_pred_test == y_pred_test_adv).any(),
-                        "An untargeted attack should have changed SOME predictions")
-        self.assertFalse((y_pred_test == y_pred_test_adv).all(),
-                         "An untargeted attack should NOT have changed all predictions")
-        accuracy = np.sum(y_pred_test_adv == y_pred_test) / y_pred_test.shape[0]
-        logger.info('Accuracy on Iris with FGM adversarial examples: %.2f%%', (accuracy * 100))
-
-        # Test targeted attack
-        targets = random_targets(y_test, nb_classes=3)
-        y_targeted = np.argmax(targets, axis=1)
-        attack = FastGradientMethod(classifier, targeted=True, eps=.1, batch_size=batch_size)
-        x_test_adv = attack.generate(x_test, **{'y': targets})
-
-        self._check_x_adv(x_test_adv, x_test)
-
-        y_pred_test_adv = np.argmax(classifier.predict(x_test_adv), axis=1)
-        self.assertTrue((y_targeted == y_pred_test_adv).any())
-        accuracy = np.sum(y_pred_test_adv == y_targeted) / y_pred_test.shape[0]
-        logger.info('Success rate of targeted FGM on Iris: %.2f%%', (accuracy * 100))
-
-        # Recreate a classifier without clip values
-        if classifier_no_clip_values is not None:
-            attack = FastGradientMethod(classifier_no_clip_values, eps=1)
-
-            x_test_adv = attack.generate(x_test)
-
-            self._check_x_adv(x_test_adv, x_test, bounded=False)
-
-            y_pred_test = np.argmax(y_test, axis=1)
-            y_pred_test_adv = np.argmax(classifier_no_clip_values.predict(x_test_adv), axis=1)
-            self.assertFalse((y_pred_test == y_pred_test_adv).all())
-            accuracy = np.sum(y_pred_test_adv == y_pred_test) / y_pred_test.shape[0]
-            logger.info('Accuracy on Iris with FGM adversarial examples: %.2f%%', (accuracy * 100))
 
     def test_scikitlearn(self):
         from sklearn.linear_model import LogisticRegression
