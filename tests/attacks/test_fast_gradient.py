@@ -284,13 +284,14 @@ class TestFastGradientMethodImages(unittest.TestCase):
         accuracy = np.sum(predictions_adv == np.argmax(targets, axis=1)) / y_test.shape[0]
         logger.info('Success rate of targeted FGM on Iris: %.2f%%', (accuracy * 100))
 
-    def test_keras_iris_unbounded(self):
+    def test_iris_unbounded_keras(self):
         (_, _), (x_test, y_test) = self.iris
         classifier = get_iris_classifier_kr()
 
         # Recreate a classifier without clip values
         classifier = KerasClassifier(model=classifier._model, use_logits=False, channel_index=1)
         attack = FastGradientMethod(classifier, eps=1)
+
         x_test_adv = attack.generate(x_test)
         self.assertFalse((x_test == x_test_adv).all())
         self.assertTrue((x_test_adv > 1).any())
@@ -301,13 +302,21 @@ class TestFastGradientMethodImages(unittest.TestCase):
         accuracy = np.sum(predictions_adv == np.argmax(y_test, axis=1)) / y_test.shape[0]
         logger.info('Accuracy on Iris with FGM adversarial examples: %.2f%%', (accuracy * 100))
 
+    def check_test_adv(self, x_test_adv, x_test, max=1.0, min=0.0):
+        self.assertFalse((x_test == x_test_adv).all(), "x_test_adv should have been different from x_test")
+        self.assertLessEqual(np.amax(x_test_adv), max, "x_test_adv values should have all been below {0}".format(max))
+        self.assertGreaterEqual(np.amin(x_test_adv), min, "x_test_adv values should have all been above {0}".format(min))
+
     def _test_backend_iris(self, classifier, x_test, y_test):
         # Test untargeted attack
         attack = FastGradientMethod(classifier, eps=.1)
         x_test_adv = attack.generate(x_test)
-        self.assertFalse((x_test == x_test_adv).all())
-        self.assertLessEqual(np.amax(x_test_adv), 1.0)
-        self.assertGreaterEqual(np.amin(x_test_adv), 0.0)
+
+        self.check_test_adv(x_test_adv, x_test)
+
+        # self.assertFalse((x_test == x_test_adv).all())
+        # self.assertLessEqual(np.amax(x_test_adv), 1.0)
+        # self.assertGreaterEqual(np.amin(x_test_adv), 0.0)
 
         predictions_adv = np.argmax(classifier.predict(x_test_adv), axis=1)
         self.assertFalse((np.argmax(y_test, axis=1) == predictions_adv).all())
