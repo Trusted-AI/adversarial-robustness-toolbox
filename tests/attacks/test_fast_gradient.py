@@ -314,21 +314,25 @@ class TestFastGradientMethodImages(unittest.TestCase):
 
         self._check_x_test_adv(x_test_adv, x_test)
 
-        predictions_adv = np.argmax(classifier.predict(x_test_adv), axis=1)
-        self.assertFalse((np.argmax(y_test, axis=1) == predictions_adv).all())
-        accuracy = np.sum(predictions_adv == np.argmax(y_test, axis=1)) / y_test.shape[0]
+        y_pred_test_adv = np.argmax(classifier.predict(x_test_adv), axis=1)
+        y_pred_test = np.argmax(y_test, axis=1)
+
+        self.assertTrue((y_pred_test == y_pred_test_adv).any(), "An untargeted attack should have changed SOME predictions")
+        self.assertFalse((y_pred_test == y_pred_test_adv).all(), "An untargeted attack should NOT have changed all predictions")
+        accuracy = np.sum(y_pred_test_adv == y_pred_test) / y_pred_test.shape[0]
         logger.info('Accuracy on Iris with FGM adversarial examples: %.2f%%', (accuracy * 100))
 
         # Test targeted attack
         targets = random_targets(y_test, nb_classes=3)
+        y_targeted = np.argmax(targets, axis=1)
         attack = FastGradientMethod(classifier, targeted=True, eps=.1, batch_size=128)
         x_test_adv = attack.generate(x_test, **{'y': targets})
 
         self._check_x_test_adv(x_test_adv, x_test)
 
-        predictions_adv = np.argmax(classifier.predict(x_test_adv), axis=1)
-        self.assertTrue((np.argmax(targets, axis=1) == predictions_adv).any())
-        accuracy = np.sum(predictions_adv == np.argmax(targets, axis=1)) / y_test.shape[0]
+        y_pred_test_adv = np.argmax(classifier.predict(x_test_adv), axis=1)
+        self.assertTrue((y_targeted == y_pred_test_adv).any())
+        accuracy = np.sum(y_pred_test_adv == y_targeted) / y_pred_test.shape[0]
         logger.info('Success rate of targeted FGM on Iris: %.2f%%', (accuracy * 100))
 
     def test_tensorflow_iris(self):
