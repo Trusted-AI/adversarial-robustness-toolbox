@@ -255,53 +255,25 @@ class TestFastGradientMethodImages(unittest.TestCase):
                       '`art.classifiers.classifier.ClassifierGradients`, the provided classifier is instance of '
                       '(<class \'art.classifiers.scikitlearn.ScikitlearnClassifier\'>,).', str(context.exception))
 
-
-
-    def test_iris_unbounded_keras(self):
+    def test_keras_iris(self):
         (_, _), (x_test, y_test) = self.iris
-        classifier = get_iris_classifier_kr()
+        classifier_clipped = get_iris_classifier_kr()
+        classifier_no_clip_values = KerasClassifier(model=classifier_clipped._model, use_logits=False, channel_index=1)
 
-        # Recreate a classifier without clip values
-        classifier = KerasClassifier(model=classifier._model, use_logits=False, channel_index=1)
-        attack = FastGradientMethod(classifier, eps=1)
-
-        x_test_adv = attack.generate(x_test)
-
-        self._check_x_test_adv(x_test_adv, x_test, bounded=False)
-
-        predictions_adv = np.argmax(classifier.predict(x_test_adv), axis=1)
-        self.assertFalse((np.argmax(y_test, axis=1) == predictions_adv).all())
-        accuracy = np.sum(predictions_adv == np.argmax(y_test, axis=1)) / y_test.shape[0]
-        logger.info('Accuracy on Iris with FGM adversarial examples: %.2f%%', (accuracy * 100))
-
-    def _check_x_test_adv(self, x_test_adv, x_test, max=1.0, min=0.0, bounded=True):
-        self.assertFalse((x_test == x_test_adv).all(), "x_test_adv should have been different from x_test")
-
-        if bounded:
-            self.assertLessEqual(np.amax(x_test_adv), max, "x_test_adv values should have all been below {0}".format(max))
-            self.assertGreaterEqual(np.amin(x_test_adv), min, "x_test_adv values should have all been above {0}".format(min))
-        else:
-            self.assertTrue((x_test_adv > max).any(),"some x_test_adv values should been above 1".format(max))
-            self.assertTrue((x_test_adv < min).any()," some x_test_adv values should have all been below {0}".format(min))
-
-    def test_keras_iris_clipped(self):
-        (_, _), (x_test, y_test) = self.iris
-        classifier = get_iris_classifier_kr()
-
-        self._test_backend_iris(classifier, x_test, y_test)
+        self._test_backend_iris(x_test, y_test, classifier_clipped, classifier_no_clip_values)
 
     def test_tensorflow_iris(self):
         (_, _), (x_test, y_test) = self.iris
         classifier, _ = get_iris_classifier_tf()
-        self._test_backend_iris(classifier, x_test, y_test, batch_size=128)
+        self._test_backend_iris(x_test, y_test, classifier, batch_size=128)
 
     def test_pytorch_iris(self):
         (_, _), (x_test, y_test) = self.iris
         classifier = get_iris_classifier_pt()
 
-        self._test_backend_iris(classifier, x_test, y_test, batch_size=128)
+        self._test_backend_iris(x_test, y_test, classifier, batch_size=128)
 
-    def _test_backend_iris(self, classifier, x_test, y_test, batch_size=1):
+    def _test_backend_iris(self, x_test, y_test, classifier, classifier_no_clip_values=None, batch_size=1):
         # Test untargeted attack
         attack = FastGradientMethod(classifier, eps=.1)
         x_test_adv = attack.generate(x_test)
@@ -330,6 +302,20 @@ class TestFastGradientMethodImages(unittest.TestCase):
         self.assertTrue((y_targeted == y_pred_test_adv).any())
         accuracy = np.sum(y_pred_test_adv == y_targeted) / y_pred_test.shape[0]
         logger.info('Success rate of targeted FGM on Iris: %.2f%%', (accuracy * 100))
+
+        # Recreate a classifier without clip values
+        if classifier_no_clip_values is not None:
+            attack = FastGradientMethod(classifier_no_clip_values, eps=1)
+
+            x_test_adv = attack.generate(x_test)
+
+            self._check_x_test_adv(x_test_adv, x_test, bounded=False)
+
+            y_pred_test = np.argmax(y_test, axis=1)
+            y_pred_test_adv = np.argmax(classifier_no_clip_values.predict(x_test_adv), axis=1)
+            self.assertFalse((y_pred_test == y_pred_test_adv).all())
+            accuracy = np.sum(y_pred_test_adv == y_pred_test) / y_pred_test.shape[0]
+            logger.info('Accuracy on Iris with FGM adversarial examples: %.2f%%', (accuracy * 100))
 
     def test_scikitlearn(self):
         from sklearn.linear_model import LogisticRegression
@@ -376,6 +362,15 @@ class TestFastGradientMethodImages(unittest.TestCase):
             logger.info('Success rate of ' + classifier.__class__.__name__ + ' on targeted FGM on Iris: %.2f%%',
                         (accuracy * 100))
 
+    def _check_x_test_adv(self, x_test_adv, x_test, max=1.0, min=0.0, bounded=True):
+        self.assertFalse((x_test == x_test_adv).all(), "x_test_adv should have been different from x_test")
+
+        if bounded:
+            self.assertLessEqual(np.amax(x_test_adv), max, "x_test_adv values should have all been below {0}".format(max))
+            self.assertGreaterEqual(np.amin(x_test_adv), min, "x_test_adv values should have all been above {0}".format(min))
+        else:
+            self.assertTrue((x_test_adv > max).any(),"some x_test_adv values should been above 1".format(max))
+            self.assertTrue((x_test_adv < min).any()," some x_test_adv values should have all been below {0}".format(min))
 
 if __name__ == '__main__':
     unittest.main()
