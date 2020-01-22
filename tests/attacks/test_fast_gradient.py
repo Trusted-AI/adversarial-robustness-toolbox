@@ -171,7 +171,7 @@ class TestFastGradientMethodImages(unittest.TestCase):
         # Check that x_test has not been modified by attack and classifier
         self.assertAlmostEqual(float(np.max(np.abs(x_test_original - x_test))), 0.0, delta=0.00001)
 
-    def test_keras_with_defences(self):
+    def test_mnist_keras_with_defences(self):
         (x_train, y_train), (x_test, y_test) = self.mnist
         classifier = get_classifier_kr()
 
@@ -184,8 +184,8 @@ class TestFastGradientMethodImages(unittest.TestCase):
         x_train_adv = attack.generate(x_train)
         x_test_adv = attack.generate(x_test)
 
-        self.assertFalse((x_train == x_train_adv).all())
-        self.assertFalse((x_test == x_test_adv).all())
+        self._check_x_adv(x_train_adv, x_train)
+        self._check_x_adv(x_test_adv, x_test)
 
         train_y_pred = get_labels_np_array(classifier.predict(x_train_adv))
         test_y_pred = get_labels_np_array(classifier.predict(x_test_adv))
@@ -278,7 +278,7 @@ class TestFastGradientMethodImages(unittest.TestCase):
         attack = FastGradientMethod(classifier, eps=.1)
         x_test_adv = attack.generate(x_test)
 
-        self._check_x_test_adv(x_test_adv, x_test)
+        self._check_x_adv(x_test_adv, x_test)
 
         y_pred_test_adv = np.argmax(classifier.predict(x_test_adv), axis=1)
         y_pred_test = np.argmax(y_test, axis=1)
@@ -296,7 +296,7 @@ class TestFastGradientMethodImages(unittest.TestCase):
         attack = FastGradientMethod(classifier, targeted=True, eps=.1, batch_size=batch_size)
         x_test_adv = attack.generate(x_test, **{'y': targets})
 
-        self._check_x_test_adv(x_test_adv, x_test)
+        self._check_x_adv(x_test_adv, x_test)
 
         y_pred_test_adv = np.argmax(classifier.predict(x_test_adv), axis=1)
         self.assertTrue((y_targeted == y_pred_test_adv).any())
@@ -309,7 +309,7 @@ class TestFastGradientMethodImages(unittest.TestCase):
 
             x_test_adv = attack.generate(x_test)
 
-            self._check_x_test_adv(x_test_adv, x_test, bounded=False)
+            self._check_x_adv(x_test_adv, x_test, bounded=False)
 
             y_pred_test = np.argmax(y_test, axis=1)
             y_pred_test_adv = np.argmax(classifier_no_clip_values.predict(x_test_adv), axis=1)
@@ -362,7 +362,16 @@ class TestFastGradientMethodImages(unittest.TestCase):
             logger.info('Success rate of ' + classifier.__class__.__name__ + ' on targeted FGM on Iris: %.2f%%',
                         (accuracy * 100))
 
-    def _check_x_test_adv(self, x_test_adv, x_test, max=1.0, min=0.0, bounded=True):
+    def _check_x_adv(self, x_test_adv, x_test, max=1.0, min=0.0, bounded=True):
+        '''
+        Performs basic checks on generated adversarial inputs (whether x_test or x_train)
+        :param x_test_adv:
+        :param x_test:
+        :param max:
+        :param min:
+        :param bounded:
+        :return:
+        '''
         self.assertFalse((x_test == x_test_adv).all(), "x_test_adv should have been different from x_test")
 
         if bounded:
