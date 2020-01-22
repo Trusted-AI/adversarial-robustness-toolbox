@@ -301,10 +301,7 @@ class TestFastGradientMethodImages(unittest.TestCase):
         accuracy = np.sum(predictions_adv == np.argmax(y_test, axis=1)) / y_test.shape[0]
         logger.info('Accuracy on Iris with FGM adversarial examples: %.2f%%', (accuracy * 100))
 
-    def test_tensorflow_iris(self):
-        (_, _), (x_test, y_test) = self.iris
-        classifier, _ = get_iris_classifier_tf()
-
+    def _test_backend_iris(self, classifier, x_test, y_test):
         # Test untargeted attack
         attack = FastGradientMethod(classifier, eps=.1)
         x_test_adv = attack.generate(x_test)
@@ -330,34 +327,17 @@ class TestFastGradientMethodImages(unittest.TestCase):
         accuracy = np.sum(predictions_adv == np.argmax(targets, axis=1)) / y_test.shape[0]
         logger.info('Success rate of targeted FGM on Iris: %.2f%%', (accuracy * 100))
 
+    def test_tensorflow_iris(self):
+        (_, _), (x_test, y_test) = self.iris
+        classifier, _ = get_iris_classifier_tf()
+        self._test_backend_iris(classifier, x_test, y_test)
+
+
     def test_pytorch_iris(self):
         (_, _), (x_test, y_test) = self.iris
         classifier = get_iris_classifier_pt()
 
-        # Test untargeted attack
-        attack = FastGradientMethod(classifier, eps=0.1)
-        x_test_adv = attack.generate(x_test)
-        self.assertFalse((x_test == x_test_adv).all())
-        self.assertLessEqual(np.amax(x_test_adv), 1.0)
-        self.assertGreaterEqual(np.amin(x_test_adv), 0.0)
-
-        predictions_adv = np.argmax(classifier.predict(x_test_adv), axis=1)
-        self.assertFalse((np.argmax(y_test, axis=1) == predictions_adv).all())
-        accuracy = np.sum(predictions_adv == np.argmax(y_test, axis=1)) / y_test.shape[0]
-        logger.info('Accuracy on Iris with FGM adversarial examples: %.2f%%', (accuracy * 100))
-
-        # Test targeted attack
-        targets = random_targets(y_test, nb_classes=3)
-        attack = FastGradientMethod(classifier, targeted=True, eps=0.1, batch_size=128)
-        x_test_adv = attack.generate(x_test, **{'y': targets})
-        self.assertFalse((x_test == x_test_adv).all())
-        self.assertLessEqual(np.amax(x_test_adv), 1.0)
-        self.assertGreaterEqual(np.amin(x_test_adv), 0.0)
-
-        predictions_adv = np.argmax(classifier.predict(x_test_adv), axis=1)
-        self.assertTrue((np.argmax(targets, axis=1) == predictions_adv).any())
-        accuracy = np.sum(predictions_adv == np.argmax(targets, axis=1)) / y_test.shape[0]
-        logger.info('Success rate of targeted FGM on Iris: %.2f%%', (accuracy * 100))
+        self._test_backend_iris(classifier, x_test, y_test)
 
     def test_scikitlearn(self):
         from sklearn.linear_model import LogisticRegression
