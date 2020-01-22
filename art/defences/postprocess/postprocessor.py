@@ -38,9 +38,9 @@ class Postprocessor(abc.ABC):
     @property
     def is_fitted(self):
         """
-        Return the state of the preprocessing object.
+        Return the state of the postprocessing object.
 
-        :return: `True` if the preprocessing model has been fitted (if this applies).
+        :return: `True` if the postprocessing model has been fitted (if this applies).
         :rtype: `bool`
         """
         return self._is_fitted
@@ -68,27 +68,24 @@ class Postprocessor(abc.ABC):
         raise NotImplementedError
 
     @abc.abstractmethod
-    def __call__(self, x, y=None):
+    def __call__(self, preds):
         """
-        Perform data preprocessing and return preprocessed data as tuple.
+        Perform model postprocessing and return postprocessed output.
 
-        :param x: Dataset to be preprocessed.
-        :type x: `np.ndarray`
-        :param y: Labels to be preprocessed.
-        :type y: `np.ndarray`
-        :return: Preprocessed data
+        :param preds: model output to be postprocessed.
+        :type preds: `np.ndarray`
+        :return: Postprocessed model output.
+        :rtype: `np.ndarray`
         """
         raise NotImplementedError
 
     @abc.abstractmethod
-    def fit(self, x, y=None, **kwargs):
+    def fit(self, preds, **kwargs):
         """
-        Fit the parameters of the data preprocessor if it has any.
+        Fit the parameters of the postprocessor if it has any.
 
-        :param x: Training set to fit the preprocessor.
-        :type x: `np.ndarray`
-        :param y: Labels for the training set.
-        :type y: `np.ndarray`
+        :param preds: Training set to fit the postprocessor.
+        :type preds: `np.ndarray`
         :param kwargs: Other parameters.
         :type kwargs: `dict`
         :return: None
