@@ -16,29 +16,22 @@
 # TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 # SOFTWARE.
 """
-This module implements the abstract base class for defences that pre-process input data.
+This module implements the abstract base class for defences that post-process classifier output.
 """
 from __future__ import absolute_import, division, print_function, unicode_literals
 
 import abc
-import sys
-
-# Ensure compatibility with Python 2 and 3 when using ABCMeta
-if sys.version_info >= (3, 4):
-    ABC = abc.ABC
-else:
-    ABC = abc.ABCMeta(str('ABC'), (), {})
 
 
-class Preprocessor(ABC):
+class Postprocessor(abc.ABC):
     """
-    Abstract base class for defences performing model hardening by preprocessing data.
+    Abstract base class for defences performing model hardening by postprocessing model output.
     """
     params = []
 
     def __init__(self):
         """
-        Create a preprocessing object
+        Create a postprocessing object
         """
         self._is_fitted = False
 
