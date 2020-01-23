@@ -33,15 +33,30 @@ class GaussianNoise(Postprocessor):
     Implementation of a postprocessor based on adding Gaussian noise to classifier output.
     """
 
-    def __init__(self, scale=0.2):
+    def __init__(self, scale=0.2, apply_fit=False, apply_predict=True):
         """
         Create a GaussianNoise postprocessor.
 
         :param scale: Standard deviation of the distribution.
         :type scale: `float`
+        :param apply_fit: True if applied during fitting/training.
+        :type apply_fit: `bool`
+        :param apply_predict: True if applied during predicting.
+        :type apply_predict: `bool`
         """
         super(GaussianNoise, self).__init__()
-        self.scale = scale
+        self._is_fitted = True
+        self._apply_fit = apply_fit
+        self._apply_predict = apply_predict
+        self.set_params(scale=scale)
+
+    @property
+    def apply_fit(self):
+        return self._apply_fit
+
+    @property
+    def apply_predict(self):
+        return self._apply_predict
 
     def __call__(self, preds):
         """
@@ -76,8 +91,17 @@ class GaussianNoise(Postprocessor):
 
         return preds
 
+    def estimate_gradient(self, x, grad):
+        """
+        Provide an estimate of the gradients of the defence for the backward pass. If the defence is not differentiable,
+        this is an estimate of the gradient, most often replacing the computation performed by the defence with the
+        identity function.
 
-
-
-
-
+        :param x: Input data for which the gradient is estimated. First dimension is the batch size.
+        :type x: `np.ndarray`
+        :param grad: Gradient value so far.
+        :type grad: `np.ndarray`
+        :return: The gradient (estimate) of the defence.
+        :rtype: `np.ndarray`
+        """
+        return grad
