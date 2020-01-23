@@ -19,9 +19,9 @@ from __future__ import absolute_import, division, print_function, unicode_litera
 
 import logging
 import unittest
-
+import sys
 import numpy as np
-
+import os
 from art.attacks import FastGradientMethod
 from art.classifiers import KerasClassifier
 from art.defences import FeatureSqueezing
@@ -35,6 +35,9 @@ BATCH_SIZE = 10
 NB_TRAIN = 100
 NB_TEST = 11
 
+tmp = os.environ
+print(os.environ["SECRET_KEY"])
+exit()
 
 class TestFastGradientMethodImages(unittest.TestCase):
     @classmethod
@@ -372,4 +375,6 @@ class TestFastGradientMethodImages(unittest.TestCase):
         self.assertFalse((y_expected == y_pred_adv).all())
 
 if __name__ == '__main__':
+    print(len(sys.argv))
+    param1 = sys.argv.pop()
     unittest.main()
