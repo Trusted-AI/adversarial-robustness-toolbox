@@ -138,7 +138,7 @@ class GaussianAugmentation(Preprocessor):
                for features.
         :type clip_values: `tuple`
         """
-        # Save attack-specific parameters
+        # Save defence-specific parameters
         super(GaussianAugmentation, self).set_params(**kwargs)
 
         if self.augmentation and self.ratio <= 0:

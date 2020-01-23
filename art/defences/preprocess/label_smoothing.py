@@ -109,7 +109,7 @@ class LabelSmoothing(Preprocessor):
         :param max_value: Value to affect to correct label
         :type max_value: `float`
         """
-        # Save attack-specific parameters
+        # Save defence-specific parameters
         super(LabelSmoothing, self).set_params(**kwargs)
 
         if self.max_value <= 0 or self.max_value > 1:

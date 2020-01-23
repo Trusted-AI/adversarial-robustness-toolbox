@@ -154,7 +154,7 @@ class ThermometerEncoding(Preprocessor):
         :param channel_index: Index of the axis in data containing the color channels or features.
         :type channel_index: `int`
         """
-        # Save attack-specific parameters
+        # Save defence-specific parameters
         super(ThermometerEncoding, self).set_params(**kwargs)
 
         if not isinstance(self.num_space, (int, np.int)) or self.num_space <= 0:
