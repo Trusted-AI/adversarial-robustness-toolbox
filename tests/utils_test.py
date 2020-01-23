@@ -779,7 +779,7 @@ def get_iris_classifier_tf(load_init=True, sess=None):
     return classifier, sess
 
 
-def get_iris_classifier_tf_v1():
+def get_iris_classifier_tf_v1(load_init=True, sess=None):
     """
     Standard TensorFlow classifier for unit testing.
 
