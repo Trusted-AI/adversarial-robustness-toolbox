@@ -18,7 +18,7 @@ before_install:
   - sed -i "s/keras/keras==${KERAS_V}/" test_requirements.txt
 
 install:
-  - python -m pip install --upgrade pip setuptools wheel
+  - python -m pip install --upgrade pip==19.3.1 setuptools wheel
   - pip install -q -r requirements.txt
   - pip install --upgrade --force-reinstall mxnet
   - pip install -q -r test_requirements.txt
