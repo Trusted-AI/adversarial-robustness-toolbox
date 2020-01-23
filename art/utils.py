@@ -852,4 +852,5 @@ def is_probability(vector):
     :return: True if it is a probability vector.
     :rtype: `bool`
     """
-    return np.sum(vector) == 1.0
+    import math
+    return math.isclose(np.sum(vector), 1.0, rel_tol=1e-03)
