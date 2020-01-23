@@ -20,6 +20,7 @@ before_install:
 install:
   - python -m pip install --upgrade pip setuptools wheel
   - pip install -q -r requirements.txt
+  - pip install mxnet
   - pip install -q -r test_requirements.txt
   - pip install -q pylint pycodestyle
   - pip install -q torch==1.3.1+cpu torchvision==0.4.2+cpu -f https://download.pytorch.org/whl/torch_stable.html
