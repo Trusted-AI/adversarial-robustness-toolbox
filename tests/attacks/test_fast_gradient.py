@@ -52,7 +52,7 @@ class TestFastGradientMethodImages(unittest.TestCase):
         master_seed(1234)
 
 
-    def test_mnist_keras(self):
+    def test_0_mnist_keras(self):
         classifier = get_classifier_kr()
 
         # Get the ready-trained Keras model
@@ -61,11 +61,11 @@ class TestFastGradientMethodImages(unittest.TestCase):
 
         self._test_backend_mnist(self.mnist, classifier, defended_classifier)
 
-    def test_mnist_tensorflow(self):
+    def test_1_mnist_tensorflow(self):
         classifier, sess = get_classifier_tf()
         self._test_backend_mnist(self.mnist, classifier)
 
-    def test_mnist_pytorch(self):
+    def test_3_mnist_pytorch(self):
         (x_train, y_train), (x_test, y_test) = self.mnist
         x_test = np.reshape(x_test, (x_test.shape[0], 1, 28, 28)).astype(np.float32)
         test_mnist = (x_train, y_train), (x_test, y_test)
@@ -99,19 +99,19 @@ class TestFastGradientMethodImages(unittest.TestCase):
                       '`art.classifiers.classifier.ClassifierGradients`, the provided classifier is instance of '
                       '(<class \'art.classifiers.scikitlearn.ScikitlearnClassifier\'>,).', str(context.exception))
 
-    def test_iris_keras(self):
+    def test_0_iris_keras(self):
         (_, _), (x_test, y_test) = self.iris
         classifier_clipped = get_iris_classifier_kr()
         classifier_no_clip_values = KerasClassifier(model=classifier_clipped._model, use_logits=False, channel_index=1)
 
         self._test_backend_iris(x_test, y_test, classifier_clipped, classifier_no_clip_values)
 
-    def test_iris_tensorflow(self):
+    def test_1_iris_tensorflow(self):
         (_, _), (x_test, y_test) = self.iris
         classifier, _ = get_iris_classifier_tf()
         self._test_backend_iris(x_test, y_test, classifier, batch_size=128)
 
-    def test_iris_pytorch(self):
+    def test_2_iris_pytorch(self):
         (_, _), (x_test, y_test) = self.iris
         classifier = get_iris_classifier_pt()
 
