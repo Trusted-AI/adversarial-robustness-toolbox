@@ -1,6 +1,6 @@
 # MIT License
 #
-# Copyright (C) IBM Corporation 2019
+# Copyright (C) IBM Corporation 2020
 #
 # Permission is hereby granted, free of charge, to any person obtaining a copy of this software and associated
 # documentation files (the "Software"), to deal in the Software without restriction, including without limitation the
@@ -105,3 +105,21 @@ class GaussianNoise(Postprocessor):
         :rtype: `np.ndarray`
         """
         return grad
+
+    def fit(self, preds, **kwargs):
+        """
+        No parameters to learn for this method; do nothing.
+        """
+        pass
+
+    def set_params(self, **kwargs):
+        """
+        Take in a dictionary of parameters and apply checks before saving them as attributes.
+
+        :return: `True` when parsing was successful
+        """
+        # Save defence-specific parameters
+        super(GaussianNoise, self).set_params(**kwargs)
+
+        if self.scale <= 0:
+            raise ValueError('Standard deviation must be positive.')
