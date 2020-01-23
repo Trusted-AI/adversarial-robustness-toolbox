@@ -15,6 +15,7 @@ declare -a attacks=("tests/attacks/test_adversarial_patch.py" \
                     "tests/attacks/test_hclu.py" \
                     "tests/attacks/test_hop_skip_jump.py" \
                     "tests/attacks/test_iterative_method.py" \
+                    "tests/attacks/test_knockoff_nets.py" \
                     "tests/attacks/test_newtonfool.py" \
                     "tests/attacks/test_poisoning_attack_svm.py" \
                     "tests/attacks/test_projected_gradient_descent.py" \
