@@ -220,7 +220,8 @@ class TestKnockoffNetsVectors(unittest.TestCase):
         self.assertGreater(acc, 0.4)
 
         # Clean-up session
-        sess.close()
+        if sess is not None:
+            sess.close()
 
     def test_keras_iris(self):
         """
