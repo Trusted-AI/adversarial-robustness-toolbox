@@ -20,7 +20,10 @@ This module implements Gaussian noise added to the classifier output.
 """
 import logging
 
+import numpy as np
+
 from art.defences import Postprocessor
+from art.utils import is_probability
 
 logger = logging.getLogger(__name__)
 
@@ -39,4 +42,42 @@ class GaussianNoise(Postprocessor):
         """
         super(GaussianNoise, self).__init__()
         self.scale = scale
+
+    def __call__(self, preds):
+        """
+        Perform model postprocessing and return postprocessed output.
+
+        :param preds: model output to be postprocessed.
+        :type preds: `np.ndarray`
+        :return: Postprocessed model output.
+        :rtype: `np.ndarray`
+        """
+        # Generate random noise
+        noise = np.random.normal(loc=0.0, scale=self.scale, size=preds.shape)
+
+        if preds.shape[1] > 1:
+            # Check if model output is logit or probability
+            are_probability = [is_probability(x) for x in preds]
+            all_probability = np.sum(are_probability) == preds.shape[0]
+
+            # Add noise to model output
+            preds += noise
+
+            # Finally normalize probability output
+            if all_probability:
+                preds[preds < 0.0] = 0.0
+                sums = np.sum(preds, axis=1)
+                preds /= sums
+
+        else:
+            # Add noise to model output
+            preds += noise
+            preds[preds < 0.0] = 0.0
+
+        return preds
+
+
+
+
+
 
