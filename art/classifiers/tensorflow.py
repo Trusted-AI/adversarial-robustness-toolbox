@@ -75,13 +75,9 @@ class TensorFlowClassifier(ClassifierNeuralNetwork, ClassifierGradients, Classif
         """
         # pylint: disable=E0401
         import tensorflow as tf
-        if tf.__version__[0] == '2':
-            import tensorflow.compat.v1 as tf
-            tf.disable_eager_execution()
 
         super(TensorFlowClassifier, self).__init__(clip_values=clip_values, channel_index=channel_index,
-                                                   defences=defences,
-                                                   preprocessing=preprocessing)
+                                                   defences=defences, preprocessing=preprocessing)
         self._nb_classes = int(output.get_shape()[-1])
         self._input_shape = tuple(input_ph.get_shape().as_list()[1:])
         self._input_ph = input_ph
@@ -298,9 +294,6 @@ class TensorFlowClassifier(ClassifierNeuralNetwork, ClassifierGradients, Classif
     def _init_class_grads(self, label=None):
         # pylint: disable=E0401
         import tensorflow as tf
-        if tf.__version__[0] == '2':
-            import tensorflow.compat.v1 as tf
-            tf.disable_eager_execution()
 
         if not hasattr(self, '_class_grads'):
             self._class_grads = [None for _ in range(self.nb_classes())]
@@ -329,9 +322,6 @@ class TensorFlowClassifier(ClassifierNeuralNetwork, ClassifierGradients, Classif
         """
         # pylint: disable=E0401
         import tensorflow as tf
-        if tf.__version__[0] == '2':
-            import tensorflow.compat.v1 as tf
-            tf.disable_eager_execution()
 
         # Get the computational graph
         with self._sess.graph.as_default():
@@ -398,9 +388,6 @@ class TensorFlowClassifier(ClassifierNeuralNetwork, ClassifierGradients, Classif
         """
         # pylint: disable=E0401
         import tensorflow as tf
-        if tf.__version__[0] == '2':
-            import tensorflow.compat.v1 as tf
-            tf.disable_eager_execution()
 
         # Get the computational graph
         with self._sess.graph.as_default():
@@ -552,9 +539,6 @@ class TensorFlowClassifier(ClassifierNeuralNetwork, ClassifierGradients, Classif
         # pylint: disable=E0611, E0401
         import os
         import tensorflow as tf
-        if tf.__version__[0] == '2':
-            import tensorflow.compat.v1 as tf
-            tf.disable_eager_execution()
         from tensorflow.python.saved_model import tag_constants
         from art.config import ART_DATA_PATH
 
@@ -707,6 +691,10 @@ class TensorFlowV2Classifier(ClassifierNeuralNetwork, ClassifierGradients, Class
         """
         import tensorflow as tf
 
+        if self._train_step is None:
+            raise TypeError('The training function `train_step` is required for fitting a model but it has not been '
+                            'defined.')
+
         # Apply preprocessing
         x_preprocessed, y_preprocessed = self._apply_preprocessing(x, y, fit=True)
 
@@ -830,7 +818,10 @@ class TensorFlowV2Classifier(ClassifierNeuralNetwork, ClassifierGradients, Class
                 x_preprocessed_tf = tf.convert_to_tensor(x_preprocessed)
                 tape.watch(x_preprocessed_tf)
                 predictions = self._model(x_preprocessed_tf)
-                loss = self._loss_object(np.argmax(y, axis=1), predictions)
+                if isinstance(self._loss_object, tf.keras.losses.SparseCategoricalCrossentropy):
+                    loss = self._loss_object(np.argmax(y, axis=1), predictions)
+                else:
+                    loss = self._loss_object(y, predictions)
 
             gradients = tape.gradient(loss, x_preprocessed_tf).numpy()
         else:
@@ -915,10 +906,10 @@ class TensorFlowV2Classifier(ClassifierNeuralNetwork, ClassifierGradients, Class
 
     def __repr__(self):
 
-        repr_ = "%s(model=%r, nb_classes=%r, loss_object=%r, learning=%r, train_step=%r, " \
-                "channel_index=%r, clip_values=%r, defences=%r, preprocessing=%r)" \
+        repr_ = "%s(model=%r, nb_classes=%r, input_shape=%r, loss_object=%r, train_step=%r, channel_index=%r, " \
+                "clip_values=%r, defences=%r, preprocessing=%r)" \
                 % (self.__module__ + '.' + self.__class__.__name__,
-                   self._model, self._nb_classes, self._loss_object, self._learning, self._train_step,
+                   self._model, self._nb_classes, self._input_shape, self._loss_object, self._train_step,
                    self.channel_index, self.clip_values, self.defences, self.preprocessing)
 
         return repr_

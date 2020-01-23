@@ -24,39 +24,35 @@ import keras.backend as k
 import numpy as np
 
 from art.attacks import SpatialTransformation
-from art.utils import load_dataset, master_seed
+
+from tests.utils_test import TestBase
 from tests.utils_test import get_classifier_tf, get_classifier_kr, get_classifier_pt, get_iris_classifier_kr
 
 logger = logging.getLogger(__name__)
 
-BATCH_SIZE = 10
-NB_TRAIN = 100
-NB_TEST = 10
 
-
-class TestSpatialTransformation(unittest.TestCase):
+class TestSpatialTransformation(TestBase):
     """
     A unittest class for testing Spatial attack.
     """
 
     @classmethod
     def setUpClass(cls):
-        (x_train, y_train), (x_test, y_test), _, _ = load_dataset('mnist')
+        super().setUpClass()
 
-        cls.x_train = x_train[:NB_TRAIN]
-        cls.y_train = y_train[:NB_TRAIN]
-        cls.x_test = x_test[:NB_TEST]
-        cls.y_test = y_test[:NB_TEST]
+        cls.n_train = 100
+        cls.n_test = 10
+        cls.x_train_mnist = cls.x_train_mnist[0:cls.n_train]
+        cls.y_train_mnist = cls.y_train_mnist[0:cls.n_train]
+        cls.x_test_mnist = cls.x_test_mnist[0:cls.n_test]
+        cls.y_test_mnist = cls.y_test_mnist[0:cls.n_test]
 
-    def setUp(self):
-        master_seed(1234)
-
-    def test_tfclassifier(self):
+    def test_tensorflow_classifier(self):
         """
         First test with the TensorFlowClassifier.
         :return:
         """
-        x_test_original = self.x_test.copy()
+        x_test_original = self.x_test_mnist.copy()
 
         # Build TensorFlowClassifier
         tfc, sess = get_classifier_tf()
@@ -64,30 +60,31 @@ class TestSpatialTransformation(unittest.TestCase):
         # Attack
         attack_st = SpatialTransformation(tfc, max_translation=10.0, num_translations=3, max_rotation=30.0,
                                           num_rotations=3)
-        x_train_adv = attack_st.generate(self.x_train)
+        x_train_adv = attack_st.generate(self.x_train_mnist)
 
         self.assertAlmostEqual(x_train_adv[0, 8, 13, 0], 0.49004024, delta=0.01)
-        self.assertAlmostEqual(attack_st.fooling_rate, 0.72, delta=0.01)
+        self.assertAlmostEqual(attack_st.fooling_rate, 0.71, delta=0.02)
 
         self.assertEqual(attack_st.attack_trans_x, 3)
         self.assertEqual(attack_st.attack_trans_y, 3)
         self.assertEqual(attack_st.attack_rot, 30.0)
 
-        x_test_adv = attack_st.generate(self.x_test)
+        x_test_adv = attack_st.generate(self.x_test_mnist)
 
         self.assertAlmostEqual(x_test_adv[0, 14, 14, 0], 0.013572651, delta=0.01)
 
         # Check that x_test has not been modified by attack and classifier
-        self.assertAlmostEqual(float(np.max(np.abs(x_test_original - self.x_test))), 0.0, delta=0.00001)
+        self.assertAlmostEqual(float(np.max(np.abs(x_test_original - self.x_test_mnist))), 0.0, delta=0.00001)
 
-        sess.close()
+        if sess is not None:
+            sess.close()
 
-    def test_krclassifier(self):
+    def test_keras_classifier(self):
         """
         Second test with the KerasClassifier.
         :return:
         """
-        x_test_original = self.x_test.copy()
+        x_test_original = self.x_test_mnist.copy()
 
         # Build KerasClassifier
         krc = get_classifier_kr()
@@ -95,32 +92,32 @@ class TestSpatialTransformation(unittest.TestCase):
         # Attack
         attack_st = SpatialTransformation(krc, max_translation=10.0, num_translations=3, max_rotation=30.0,
                                           num_rotations=3)
-        x_train_adv = attack_st.generate(self.x_train)
+        x_train_adv = attack_st.generate(self.x_train_mnist)
 
         self.assertAlmostEqual(x_train_adv[0, 8, 13, 0], 0.49004024, delta=0.01)
-        self.assertAlmostEqual(attack_st.fooling_rate, 0.72, delta=0.01)
+        self.assertAlmostEqual(attack_st.fooling_rate, 0.71, delta=0.02)
 
         self.assertEqual(attack_st.attack_trans_x, 3)
         self.assertEqual(attack_st.attack_trans_y, 3)
         self.assertEqual(attack_st.attack_rot, 30.0)
 
-        x_test_adv = attack_st.generate(self.x_test)
+        x_test_adv = attack_st.generate(self.x_test_mnist)
 
         self.assertAlmostEqual(x_test_adv[0, 14, 14, 0], 0.013572651, delta=0.01)
 
         # Check that x_test has not been modified by attack and classifier
-        self.assertAlmostEqual(float(np.max(np.abs(x_test_original - self.x_test))), 0.0, delta=0.00001)
+        self.assertAlmostEqual(float(np.max(np.abs(x_test_original - self.x_test_mnist))), 0.0, delta=0.00001)
 
         k.clear_session()
 
-    def test_ptclassifier(self):
+    def test_pytorch_classifier(self):
         """
         Third test with the PyTorchClassifier.
         :return:
         """
-        x_train = np.reshape(self.x_train, (self.x_train.shape[0], 1, 28, 28)).astype(np.float32)
-        x_test = np.reshape(self.x_test, (self.x_test.shape[0], 1, 28, 28)).astype(np.float32)
-        x_test_original = x_test.copy()
+        x_train_mnist = np.reshape(self.x_train_mnist, (self.x_train_mnist.shape[0], 1, 28, 28)).astype(np.float32)
+        x_test_mnist = np.reshape(self.x_test_mnist, (self.x_test_mnist.shape[0], 1, 28, 28)).astype(np.float32)
+        x_test_original = x_test_mnist.copy()
 
         # Build PyTorchClassifier
         ptc = get_classifier_pt(from_logits=True)
@@ -128,21 +125,21 @@ class TestSpatialTransformation(unittest.TestCase):
         # Attack
         attack_st = SpatialTransformation(ptc, max_translation=10.0, num_translations=3, max_rotation=30.0,
                                           num_rotations=3)
-        x_train_adv = attack_st.generate(x_train)
+        x_train__mnistadv = attack_st.generate(x_train_mnist)
 
-        self.assertAlmostEqual(x_train_adv[0, 0, 13, 18], 0.627451, delta=0.01)
-        self.assertAlmostEqual(attack_st.fooling_rate, 0.59, delta=0.01)
+        self.assertAlmostEqual(x_train__mnistadv[0, 0, 13, 18], 0.627451, delta=0.01)
+        self.assertAlmostEqual(attack_st.fooling_rate, 0.57, delta=0.03)
 
         self.assertEqual(attack_st.attack_trans_x, 0)
         self.assertEqual(attack_st.attack_trans_y, 3)
         self.assertEqual(attack_st.attack_rot, 0.0)
 
-        x_test_adv = attack_st.generate(x_test)
+        x_test_adv = attack_st.generate(x_test_mnist)
 
         self.assertLessEqual(abs(x_test_adv[0, 0, 14, 14] - 0.008591662), 0.01)
 
         # Check that x_test has not been modified by attack and classifier
-        self.assertAlmostEqual(float(np.max(np.abs(x_test_original - x_test))), 0.0, delta=0.00001)
+        self.assertAlmostEqual(float(np.max(np.abs(x_test_original - x_test_mnist))), 0.0, delta=0.00001)
 
     def test_failure_feature_vectors(self):
         attack_params = {"max_translation": 10.0, "num_translations": 3, "max_rotation": 30.0, "num_rotations": 3}

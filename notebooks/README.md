@@ -14,14 +14,14 @@ dataset.
   <img src="../data/images/adversarial_training.png?raw=true" width="200" title="adversarial_training">
 </p>
 
-## Tensorflow v2
+## TensorFlow v2
 
 [art-for-tensorflow-v2-callable.ipynb](art-for-tensorflow-v2-callable.ipynb) [[on nbviewer](https://nbviewer.jupyter.org/github/IBM/adversarial-robustness-toolbox/blob/master/notebooks/art-for-tensorflow-v2-callable.ipynb)]
-show how to use ART with Tensorflow v2 in eager execution mode with a model in form of a callable class or python 
+show how to use ART with TensorFlow v2 in eager execution mode with a model in form of a callable class or python 
 function.
 
 [art-for-tensorflow-v2-keras.ipynb](art-for-tensorflow-v2-keras.ipynb) [[on nbviewer](https://nbviewer.jupyter.org/github/IBM/adversarial-robustness-toolbox/blob/master/notebooks/art-for-tensorflow-v2-keras.ipynb)]
-demonstrates ART with Tensorflow v2 using tensorflow.keras without eager execution.
+demonstrates ART with TensorFlow v2 using tensorflow.keras without eager execution.
 
 ## Attacks
 

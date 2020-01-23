@@ -23,7 +23,8 @@ import unittest
 import numpy as np
 
 from art.classifiers import Classifier, ClassifierNeuralNetwork, ClassifierGradients
-from art.utils import master_seed
+
+from tests.utils_test import TestBase
 
 logger = logging.getLogger(__name__)
 
@@ -77,9 +78,7 @@ class ClassifierNeuralNetworkInstance(ClassifierNeuralNetwork, ClassifierGradien
         pass
 
 
-class TestClassifier(unittest.TestCase):
-    def setUp(self):
-        master_seed(1234)
+class TestClassifier(TestBase):
 
     def test_preprocessing_normalisation(self):
         classifier = ClassifierInstance()
@@ -100,9 +99,7 @@ class TestClassifier(unittest.TestCase):
         self.assertIn('preprocessing=None', repr_)
 
 
-class TestClassifierNeuralNetwork(unittest.TestCase):
-    def setUp(self):
-        master_seed(1234)
+class TestClassifierNeuralNetwork(TestBase):
 
     def test_preprocessing_normalisation(self):
         classifier = ClassifierNeuralNetworkInstance((0, 1))

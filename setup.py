@@ -11,7 +11,7 @@ install_requires = ['matplotlib',
                     'scipy',
                     'six',
                     'setuptools',
-                    'scikit-learn']
+                    'scikit-learn==0.22.1']
 
 # Comment out because of compatibility issues with numpy versions
 # 'catboost',
@@ -23,7 +23,7 @@ tests_require = ['pytest-pep8',
                  'requests',
                  'torch>=1.2.0',
                  'tensorflow>=1.13.2',
-                 'scikit-learn',
+                 'scikit-learn==0.22.1',
                  'xgboost',
                  'lightgbm',
                  'GPy',
@@ -48,7 +48,7 @@ def get_version(rel_path):
     raise RuntimeError("Unable to find version string.")
 
 
-setup(name='adversarial_robustness_toolbox',
+setup(name='adversarial-robustness-toolbox',
       version=get_version("art/__init__.py"),
       description='Toolbox for adversarial machine learning.',
       long_description=long_description,

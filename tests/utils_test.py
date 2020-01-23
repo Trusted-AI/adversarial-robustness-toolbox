@@ -20,10 +20,15 @@ Module providing convenience functions specifically for unit tests.
 """
 from __future__ import absolute_import, division, print_function, unicode_literals
 
-import logging
 import os
+import logging
 import json
+import time
+import unittest
+
 import numpy as np
+
+from art.utils import master_seed, load_dataset
 
 logger = logging.getLogger(__name__)
 
@@ -36,8 +41,76 @@ except ImportError:
     logger.info('Could not import PyTorch in utilities.')
 
 
-# ----------------------------------------------------------------------------------------------- TEST MODELS FOR MNIST
+# ----------------------------------------------------------------------------------------------------- TEST BASE CLASS
 
+class TestBase(unittest.TestCase):
+    """
+    This class implements the base class for all unit tests.
+    """
+
+    @classmethod
+    def setUpClass(cls):
+        master_seed(1234)
+
+        cls.n_train = 1000
+        cls.n_test = 100
+        cls.batch_size = 16
+
+        (x_train_mnist, y_train_mnist), (x_test_mnist, y_test_mnist), _, _ = load_dataset('mnist')
+
+        cls.x_train_mnist = x_train_mnist[:cls.n_train]
+        cls.y_train_mnist = y_train_mnist[:cls.n_train]
+        cls.x_test_mnist = x_test_mnist[:cls.n_test]
+        cls.y_test_mnist = y_test_mnist[:cls.n_test]
+
+        cls._x_train_mnist_original = cls.x_train_mnist.copy()
+        cls._y_train_mnist_original = cls.y_train_mnist.copy()
+        cls._x_test_mnist_original = cls.x_test_mnist.copy()
+        cls._y_test_mnist_original = cls.y_test_mnist.copy()
+
+        (x_train_iris, y_train_iris), (x_test_iris, y_test_iris), _, _ = load_dataset('iris')
+
+        cls.x_train_iris = x_train_iris
+        cls.y_train_iris = y_train_iris
+        cls.x_test_iris = x_test_iris
+        cls.y_test_iris = y_test_iris
+
+        cls._x_train_iris_original = cls.x_train_iris.copy()
+        cls._y_train_iris_original = cls.y_train_iris.copy()
+        cls._x_test_iris_original = cls.x_test_iris.copy()
+        cls._y_test_iris_original = cls.y_test_iris.copy()
+
+        import warnings
+        # Filter warning for scipy, removed with scipy 1.4
+        warnings.filterwarnings('ignore', '.*the output shape of zoom.*')
+
+    def setUp(self):
+        master_seed(1234)
+        self.time_start = time.time()
+        logger.info('\n----------------------------------------------------------------------')
+
+    def tearDown(self):
+        time_end = time.time() - self.time_start
+        test_name = self.id().split(' ')[0]
+        logger.info('%s: completed in %.3f seconds' % (test_name, time_end))
+
+        # Check that the test data has not been modified, only catches changes in attack.generate if self has been used
+        np.testing.assert_array_almost_equal(self._x_train_mnist_original[0:self.n_train], self.x_train_mnist,
+                                             decimal=3)
+        np.testing.assert_array_almost_equal(self._y_train_mnist_original[0:self.n_train], self.y_train_mnist,
+                                             decimal=3)
+        np.testing.assert_array_almost_equal(self._x_test_mnist_original[0:self.n_test], self.x_test_mnist,
+                                             decimal=3)
+        np.testing.assert_array_almost_equal(self._y_test_mnist_original[0:self.n_test], self.y_test_mnist,
+                                             decimal=3)
+
+        np.testing.assert_array_almost_equal(self._x_train_iris_original, self.x_train_iris, decimal=3)
+        np.testing.assert_array_almost_equal(self._y_train_iris_original, self.y_train_iris, decimal=3)
+        np.testing.assert_array_almost_equal(self._x_test_iris_original, self.x_test_iris, decimal=3)
+        np.testing.assert_array_almost_equal(self._y_test_iris_original, self.y_test_iris, decimal=3)
+
+
+# ----------------------------------------------------------------------------------------------- TEST MODELS FOR MNIST
 
 def _tf_weights_loader(dataset, weights_type, layer='DENSE', tf_version=1):
     filename = str(weights_type) + '_' + str(layer) + '_' + str(dataset) + '.npy'
@@ -59,7 +132,7 @@ def _tf_weights_loader(dataset, weights_type, layer='DENSE', tf_version=1):
             return tf.constant(weights, dtype)
 
     else:
-        raise ValueError('The TensorFlow version tf_version has to be wither 1 or 2.')
+        raise ValueError('The TensorFlow version tf_version has to be either 1 or 2.')
 
     return _tf_initializer
 
@@ -82,6 +155,16 @@ def _kr_tf_weights_loader(dataset, weights_type, layer='DENSE'):
 
 
 def get_classifier_tf(from_logits=False, load_init=True, sess=None):
+    import tensorflow as tf
+    if tf.__version__[0] == '2':
+        # sess is not required but set to None to return 2 values for v1 and v2
+        classifier, sess = get_classifier_tf_v2(from_logits=from_logits), None
+    else:
+        classifier, sess = get_classifier_tf_v1(from_logits=from_logits, load_init=load_init, sess=sess)
+    return classifier, sess
+
+
+def get_classifier_tf_v1(from_logits=False, load_init=True, sess=None):
     """
     Standard TensorFlow classifier for unit testing.
 
@@ -101,6 +184,7 @@ def get_classifier_tf(from_logits=False, load_init=True, sess=None):
     """
     # pylint: disable=E0401
     import tensorflow as tf
+    tf.compat.v1.logging.set_verbosity(tf.compat.v1.logging.ERROR)
     if tf.__version__[0] == '2':
         import tensorflow.compat.v1 as tf
         tf.disable_eager_execution()
@@ -110,7 +194,7 @@ def get_classifier_tf(from_logits=False, load_init=True, sess=None):
     input_ph = tf.placeholder(tf.float32, shape=[None, 28, 28, 1])
     output_ph = tf.placeholder(tf.int32, shape=[None, 10])
 
-    # Define the tensorflow graph
+    # Define the TensorFlow graph
     if load_init:
         conv = tf.layers.conv2d(input_ph, 1, 7, activation=tf.nn.relu,
                                 kernel_initializer=_tf_weights_loader('MNIST', 'W', 'CONV2D'),
@@ -155,7 +239,7 @@ def get_classifier_tf(from_logits=False, load_init=True, sess=None):
     return tfc, sess
 
 
-def get_classifier_tf_v2():
+def get_classifier_tf_v2(from_logits=False):
     """
     Standard TensorFlow v2 classifier for unit testing.
 
@@ -191,6 +275,9 @@ def get_classifier_tf_v2():
             self.dense1 = Dense(10, activation='softmax',
                                 kernel_initializer=_tf_weights_loader('MNIST', 'W', 'DENSE', 2),
                                 bias_initializer=_tf_weights_loader('MNIST', 'B', 'DENSE', 2))
+            self.logits = Dense(10, activation='linear',
+                                kernel_initializer=_tf_weights_loader('MNIST', 'W', 'DENSE', 2),
+                                bias_initializer=_tf_weights_loader('MNIST', 'B', 'DENSE', 2))
 
         def call(self, x):
             """
@@ -202,15 +289,27 @@ def get_classifier_tf_v2():
             x = self.conv1(x)
             x = self.maxpool(x)
             x = self.flatten(x)
-            x = self.dense1(x)
+            if from_logits:
+                x = self.logits(x)
+            else:
+                x = self.dense1(x)
             return x
+
+    optimizer = tf.keras.optimizers.Adam(learning_rate=0.01)
+
+    def train_step(images, labels):
+        with tf.GradientTape() as tape:
+            predictions = model(images, training=True)
+            loss = loss_object(np.argmax(labels, axis=1), predictions)
+        gradients = tape.gradient(loss, model.trainable_variables)
+        optimizer.apply_gradients(zip(gradients, model.trainable_variables))
 
     model = TensorFlowModel()
     loss_object = tf.keras.losses.SparseCategoricalCrossentropy()
 
     # Create the classifier
-    tfc = TensorFlowV2Classifier(model=model, loss_object=loss_object, nb_classes=10, input_shape=(28, 28, 1),
-                                 clip_values=(0, 1))
+    tfc = TensorFlowV2Classifier(model=model, loss_object=loss_object, train_step=train_step, nb_classes=10,
+                                 input_shape=(28, 28, 1), clip_values=(0, 1))
 
     return tfc
 
@@ -596,7 +695,7 @@ def get_classifier_pt(from_logits=False, load_init=True):
             x = x.reshape(-1, 25)
             x = self.fullyconnected(x)
             if not from_logits:
-                x = torch.nn.functional.softmax(x)
+                x = torch.nn.functional.softmax(x, dim=1)
             return x
 
     # Define the network
@@ -671,6 +770,16 @@ def get_classifier_mx():
 # ------------------------------------------------------------------------------------------------ TEST MODELS FOR IRIS
 
 def get_iris_classifier_tf(load_init=True, sess=None):
+    import tensorflow as tf
+    if tf.__version__[0] == '2':
+        # sess is not required but set to None to return 2 values for v1 and v2
+        classifier, sess = get_iris_classifier_tf_v2(), None
+    else:
+        classifier, sess = get_iris_classifier_tf_v1(load_init=load_init, sess=sess)
+    return classifier, sess
+
+
+def get_iris_classifier_tf_v1(load_init=True, sess=None):
     """
     Standard TensorFlow classifier for unit testing.
 
@@ -701,7 +810,7 @@ def get_iris_classifier_tf(load_init=True, sess=None):
     input_ph = tf.placeholder(tf.float32, shape=[None, 4])
     output_ph = tf.placeholder(tf.int32, shape=[None, 3])
 
-    # Define the tensorflow graph
+    # Define the TensorFlow graph
     if load_init:
         dense1 = tf.layers.dense(input_ph, 10, kernel_initializer=_tf_weights_loader('IRIS', 'W', 'DENSE1'),
                                  bias_initializer=_tf_weights_loader('IRIS', 'B', 'DENSE1'))
@@ -732,6 +841,79 @@ def get_iris_classifier_tf(load_init=True, sess=None):
                                loss=loss, learning=None, sess=sess, channel_index=1)
 
     return tfc, sess
+
+
+def get_iris_classifier_tf_v2():
+    """
+    Standard TensorFlow v2 classifier for unit testing.
+
+    The following hyper-parameters were used to obtain the weights and biases:
+
+    * learning_rate: 0.01
+    * batch size: 5
+    * number of epochs: 200
+    * optimizer: tf.train.AdamOptimizer
+
+    The model is trained of 70% of the dataset, and 30% of the training set is used as validation split.
+
+    :return: The trained model for Iris dataset and the session.
+    :rtype: `TensorFlowV2Classifier`
+    """
+    # pylint: disable=E0401
+    import tensorflow as tf
+    from tensorflow.keras import Model
+    from tensorflow.keras.layers import Dense
+    from art.classifiers import TensorFlowV2Classifier
+
+    if tf.__version__[0] != '2':
+        raise ImportError('This function requires TensorFlow v2.')
+
+    class TensorFlowModel(Model):
+        """
+        Standard TensorFlow model for unit testing
+        """
+
+        def __init__(self):
+            super(TensorFlowModel, self).__init__()
+            self.dense1 = Dense(10, activation='linear',
+                                kernel_initializer=_tf_weights_loader('IRIS', 'W', 'DENSE1', tf_version=2),
+                                bias_initializer=_tf_weights_loader('IRIS', 'B', 'DENSE1', tf_version=2))
+            self.dense2 = Dense(10, activation='linear',
+                                kernel_initializer=_tf_weights_loader('IRIS', 'W', 'DENSE2', tf_version=2),
+                                bias_initializer=_tf_weights_loader('IRIS', 'B', 'DENSE2', tf_version=2))
+            self.logits = Dense(3, activation='linear',
+                                kernel_initializer=_tf_weights_loader('IRIS', 'W', 'DENSE3', tf_version=2),
+                                bias_initializer=_tf_weights_loader('IRIS', 'B', 'DENSE3', tf_version=2))
+
+        def call(self, x):
+            """
+            Call function to evaluate the model
+
+            :param x: Input to the model
+            :return: Prediction of the model
+            """
+            x = self.dense1(x)
+            x = self.dense2(x)
+            x = self.logits(x)
+            return x
+
+    optimizer = tf.keras.optimizers.Adam(learning_rate=0.01)
+
+    def train_step(images, labels):
+        with tf.GradientTape() as tape:
+            predictions = model(images, training=True)
+            loss = loss_object(np.argmax(labels, axis=1), predictions)
+        gradients = tape.gradient(loss, model.trainable_variables)
+        optimizer.apply_gradients(zip(gradients, model.trainable_variables))
+
+    model = TensorFlowModel()
+    loss_object = tf.keras.losses.SparseCategoricalCrossentropy(from_logits=True)
+
+    # Create the classifier
+    tfc = TensorFlowV2Classifier(model=model, loss_object=loss_object, train_step=train_step, nb_classes=3,
+                                 input_shape=(4,), clip_values=(0, 1))
+
+    return tfc
 
 
 def get_iris_classifier_kr(load_init=True):

@@ -6,6 +6,7 @@ exit_code=0
 declare -a attacks=("tests/attacks/test_adversarial_patch.py" \
                     "tests/attacks/test_boundary.py" \
                     "tests/attacks/test_carlini.py" \
+                    "tests/attacks/test_copycat_cnn.py" \
                     "tests/attacks/test_decision_tree_attack.py" \
                     "tests/attacks/test_deepfool.py" \
                     "tests/attacks/test_elastic_net.py" \
@@ -37,7 +38,6 @@ declare -a classifiers=("tests/classifiers/test_blackbox.py" \
                         "tests/classifiers/test_pytorch.py" \
                         "tests/classifiers/test_scikitlearn.py" \
                         "tests/classifiers/test_tensorflow.py" \
-                        "tests/classifiers/test_tensorflow_v2.py" \
                         "tests/classifiers/test_xgboost.py" )
 
 declare -a defences=("tests/defences/test_adversarial_trainer.py" \
@@ -89,23 +89,23 @@ declare -a art=("tests/test_data_generators.py" \
 
 run_test () {
   test=$1
-  test_file_name="$(echo $test | rev | cut -d'/' -f1 | rev)"
+  test_file_name="$(echo ${test} | rev | cut -d'/' -f1 | rev)"
 
   echo $'\n\n'
   echo "######################################################################"
-  echo $test
+  echo ${test}
   echo "######################################################################"
-  coverage run --append $test
+  coverage run --append -m unittest -v ${test}
   if [[ $? -ne 0 ]]; then exit_code=1; echo "Failed $test"; fi
 }
 
 for tests_module in "${tests_modules[@]}"; do
   tests="$tests_module[@]"
   for test in "${!tests}"; do
-     run_test $test
+     run_test ${test}
   done
 done
 
 bash <(curl -s https://codecov.io/bash)
 
-exit $exit_code
+exit ${exit_code}
