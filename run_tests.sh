@@ -13,6 +13,7 @@ declare -a attacks=("tests/attacks/test_adversarial_patch.py" \
                     "tests/attacks/test_fast_gradient.py" \
                     "tests/attacks/test_functionally_equivalent_extraction.py" \
                     "tests/attacks/test_hclu.py" \
+                    "tests/attacks/test_input_filter.py" \
                     "tests/attacks/test_hop_skip_jump.py" \
                     "tests/attacks/test_iterative_method.py" \
                     "tests/attacks/test_knockoff_nets.py" \
@@ -31,6 +32,7 @@ declare -a classifiers=("tests/classifiers/test_blackbox.py" \
                         "tests/classifiers/test_detector_classifier.py" \
                         "tests/classifiers/test_ensemble.py" \
                         "tests/classifiers/test_GPy.py" \
+                        "tests/classifiers/test_input_filter.py" \
                         "tests/classifiers/test_keras.py" \
                         "tests/classifiers/test_keras_tf.py" \
                         "tests/classifiers/test_lightgbm.py" \

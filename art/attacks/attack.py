@@ -22,13 +22,62 @@ from __future__ import absolute_import, division, print_function, unicode_litera
 
 import logging
 import abc
+import numpy as np
 
 from art.classifiers.classifier import Classifier
 
 logger = logging.getLogger(__name__)
 
 
-class Attack(abc.ABC):
+class input_filter(abc.ABCMeta):
+    """
+    Metaclass to ensure that inputs are ndarray for all of the subclass generate and extract calls
+    """
+    def __init__(cls, name, bases, clsdict):
+        """
+        This function overrides any existing generate or extract methods with a new method that
+        ensures the input is an ndarray. There is an assumption that the input object has implemented
+        __array__ with np.array calls.
+        """
+
+        def make_replacement(fdict, func_name):
+            """
+            This function overrides creates replacement functions dynamically
+            """
+
+            def replacement_function(self, *args, **kwargs):
+                if(len(args) > 0):
+                    lst = list(args)
+
+                if 'x' in kwargs:
+                    if not isinstance(kwargs['x'], np.ndarray):
+                        kwargs['x'] = np.array(kwargs['x'])
+                else:
+                    if not isinstance(args[0], np.ndarray):
+                        lst[0] = np.array(args[0])
+
+                if 'y' in kwargs:
+                    if kwargs['y'] is not None and not isinstance(kwargs['y'], np.ndarray):
+                        kwargs['y'] = np.array(kwargs['y'])
+                elif len(args) == 2:
+                    if not isinstance(args[1], np.ndarray):
+                        lst[1] = np.array(args[1])
+
+                if(len(args) > 0):
+                    args = tuple(lst)
+                return fdict[func_name](self, *args, **kwargs)
+            replacement_function.__doc__ = fdict[func_name].__doc__
+            replacement_function.__name__ = "new_" + func_name
+            return replacement_function
+
+        replacement_list = ['generate', 'extract']
+        for item in replacement_list:
+            if item in clsdict:
+                new_function = make_replacement(clsdict, item)
+                setattr(cls, item, new_function)
+
+
+class Attack(abc.ABC, metaclass=input_filter):
     """
     Abstract base class for all attack abstract base classes.
     """
