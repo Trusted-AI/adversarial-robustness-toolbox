@@ -28,6 +28,7 @@ from __future__ import absolute_import, division, print_function, unicode_litera
 import logging
 
 import numpy as np
+from scipy.stats import truncnorm
 
 from art.config import ART_NUMPY_DTYPE
 from art.classifiers.classifier import ClassifierGradients
@@ -46,10 +47,10 @@ class ProjectedGradientDescent(FastGradientMethod):
 
     | Paper link: https://arxiv.org/abs/1706.06083
     """
-    attack_params = FastGradientMethod.attack_params + ['max_iter']
+    attack_params = FastGradientMethod.attack_params + ['max_iter', 'random_eps']
 
     def __init__(self, classifier, norm=np.inf, eps=0.3, eps_step=0.1, max_iter=100, targeted=False, num_random_init=0,
-                 batch_size=1):
+                 batch_size=1, random_eps=False):
         """
         Create a :class:`.ProjectedGradientDescent` instance.
 
@@ -61,6 +62,11 @@ class ProjectedGradientDescent(FastGradientMethod):
         :type eps: `float`
         :param eps_step: Attack step size (input variation) at each iteration.
         :type eps_step: `float`
+        :param random_eps: When True, epsilon is drawn randomly from truncated normal distribution. The literature
+                           suggests this for FGSM based training to generalize across different epsilons. eps_step
+                           is modified to preserve the ratio of eps / eps_step. The effectiveness of this
+                           method with PGD is untested (https://arxiv.org/pdf/1611.01236.pdf).
+        :type random_eps: `bool`
         :param max_iter: The maximum number of iterations.
         :type max_iter: `int`
         :param targeted: Indicates whether the attack is targeted (True) or untargeted (False)
@@ -80,8 +86,13 @@ class ProjectedGradientDescent(FastGradientMethod):
                              + str(classifier.__class__.__bases__) + '. '
                              ' The classifier needs to provide gradients.'))
 
-        kwargs = {'max_iter': max_iter}
+        kwargs = {'max_iter': max_iter, 'random_eps': random_eps}
         ProjectedGradientDescent.set_params(self, **kwargs)
+
+        if self.random_eps:
+            lower, upper = 0, eps
+            mu, sigma = 0, (eps / 2)
+            self.norm_dist = truncnorm((lower - mu) / sigma, (upper - mu) / sigma, loc=mu, scale=sigma)
 
         self._project = True
 
@@ -113,6 +124,11 @@ class ProjectedGradientDescent(FastGradientMethod):
 
         adv_x_best = None
         rate_best = None
+
+        if self.random_eps:
+            ratio = self.eps_step / self.eps
+            self.eps = np.round(self.norm_dist.rvs(1)[0], 10)
+            self.eps_step = ratio * self.eps
 
         for _ in range(max(1, self.num_random_init)):
             adv_x = x.astype(ART_NUMPY_DTYPE)
