@@ -123,3 +123,5 @@ class GaussianNoise(Postprocessor):
 
         if self.scale <= 0:
             raise ValueError('Standard deviation must be positive.')
+
+        return True

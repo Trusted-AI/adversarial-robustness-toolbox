@@ -117,4 +117,5 @@ class Postprocessor(abc.ABC):
         for key, value in kwargs.items():
             if key in self.params:
                 setattr(self, key, value)
+
         return True
