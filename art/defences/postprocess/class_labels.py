@@ -20,6 +20,8 @@ This module implements class labels added to the classifier output.
 """
 import logging
 
+import numpy as np
+
 from art.defences import Postprocessor
 
 logger = logging.getLogger(__name__)
@@ -44,3 +46,49 @@ class ClassLabels(Postprocessor):
         self._apply_fit = apply_fit
         self._apply_predict = apply_predict
 
+    @property
+    def apply_fit(self):
+        return self._apply_fit
+
+    @property
+    def apply_predict(self):
+        return self._apply_predict
+
+    def __call__(self, preds):
+        """
+        Perform model postprocessing and return postprocessed output.
+
+        :param preds: model output to be postprocessed.
+        :type preds: `np.ndarray`
+        :return: Postprocessed model output.
+        :rtype: `np.ndarray`
+        """
+        class_labels = np.zeros_like(preds)
+        if preds.shape[1] > 1:
+            index_labels = np.argmax(preds, axis=1)
+            class_labels[:, index_labels] = 1
+        else:
+            class_labels[preds > 0.5] = 1
+
+        return class_labels
+
+    def estimate_gradient(self, x, grad):
+        """
+        Provide an estimate of the gradients of the defence for the backward pass. If the defence is not differentiable,
+        this is an estimate of the gradient, most often replacing the computation performed by the defence with the
+        identity function.
+
+        :param x: Input data for which the gradient is estimated. First dimension is the batch size.
+        :type x: `np.ndarray`
+        :param grad: Gradient value so far.
+        :type grad: `np.ndarray`
+        :return: The gradient (estimate) of the defence.
+        :rtype: `np.ndarray`
+        """
+        raise NotImplementedError
+
+    def fit(self, preds, **kwargs):
+        """
+        No parameters to learn for this method; do nothing.
+        """
+        pass
