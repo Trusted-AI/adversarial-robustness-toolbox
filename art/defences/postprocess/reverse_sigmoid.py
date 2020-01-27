@@ -109,4 +109,40 @@ class ReverseSigmoid(Postprocessor):
 
         return reverse_sigmoid
 
+    def estimate_gradient(self, x, grad):
+        """
+        Provide an estimate of the gradients of the defence for the backward pass. If the defence is not differentiable,
+        this is an estimate of the gradient, most often replacing the computation performed by the defence with the
+        identity function.
 
+        :param x: Input data for which the gradient is estimated. First dimension is the batch size.
+        :type x: `np.ndarray`
+        :param grad: Gradient value so far.
+        :type grad: `np.ndarray`
+        :return: The gradient (estimate) of the defence.
+        :rtype: `np.ndarray`
+        """
+        raise NotImplementedError
+
+    def fit(self, preds, **kwargs):
+        """
+        No parameters to learn for this method; do nothing.
+        """
+        pass
+
+    def set_params(self, **kwargs):
+        """
+        Take in a dictionary of parameters and apply checks before saving them as attributes.
+
+        :return: `True` when parsing was successful
+        """
+        # Save defence-specific parameters
+        super(ReverseSigmoid, self).set_params(**kwargs)
+
+        if self.beta <= 0:
+            raise ValueError('Magnitude parameter must be positive.')
+
+        if self.gamma <= 0:
+            raise ValueError('Convergence parameter must be positive.')
+
+        return True
