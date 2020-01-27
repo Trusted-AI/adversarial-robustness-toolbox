@@ -47,6 +47,26 @@ class HighConfidence(Postprocessor):
         self._apply_predict = apply_predict
         self.set_params(cutoff=cutoff)
 
+    @property
+    def apply_fit(self):
+        return self._apply_fit
+
+    @property
+    def apply_predict(self):
+        return self._apply_predict
+
+    def __call__(self, preds):
+        """
+        Perform model postprocessing and return postprocessed output.
+
+        :param preds: model output to be postprocessed.
+        :type preds: `np.ndarray`
+        :return: Postprocessed model output.
+        :rtype: `np.ndarray`
+        """
+        preds[preds < self.cutoff] = 0.0
+
+        return preds
 
 
 
