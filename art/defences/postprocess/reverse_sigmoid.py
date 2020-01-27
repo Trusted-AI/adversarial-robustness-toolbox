@@ -55,5 +55,58 @@ class ReverseSigmoid(Postprocessor):
         kwargs = {'beta': beta, 'gamma': gamma}
         self.set_params(**kwargs)
 
+    @property
+    def apply_fit(self):
+        return self._apply_fit
+
+    @property
+    def apply_predict(self):
+        return self._apply_predict
+
+    def __call__(self, preds):
+        """
+        Perform model postprocessing and return postprocessed output.
+
+        :param preds: model output to be postprocessed.
+        :type preds: `np.ndarray`
+        :return: Postprocessed model output.
+        :rtype: `np.ndarray`
+        """
+        clip_min = 1e-9
+        clip_max = 1.0 - clip_min
+
+        def sigmoid(var_z):
+            return 1.0 / (1.0 + np.exp(-var_z))
+
+        preds_clipped = np.clip(preds, clip_min, clip_max)
+
+        if preds.shape[1] > 1:
+            perturbation_r = self.beta * (sigmoid(-self.gamma * np.log((1.0 - preds_clipped) / preds_clipped)) - 0.5)
+            preds_perturbed = preds - perturbation_r
+            preds_perturbed = np.clip(preds_perturbed, 0.0, 1.0)
+            alpha = 1.0 / np.sum(preds_perturbed, axis=-1, keepdims=True)
+            reverse_sigmoid = alpha * preds_perturbed
+        else:
+            preds_1 = preds
+            preds_2 = 1.0 - preds
+
+            preds_clipped_1 = preds_clipped
+            preds_clipped_2 = 1.0 - preds_clipped
+
+            perturbation_r_1 = self.beta * (sigmoid(-self.gamma * np.log((1.0 - preds_clipped_1)
+                                                                         / preds_clipped_1)) - 0.5)
+            perturbation_r_2 = self.beta * (sigmoid(-self.gamma * np.log((1.0 - preds_clipped_2)
+                                                                         / preds_clipped_2)) - 0.5)
+
+            preds_perturbed_1 = preds_1 - perturbation_r_1
+            preds_perturbed_2 = preds_2 - perturbation_r_2
+
+            preds_perturbed_1 = np.clip(preds_perturbed_1, 0.0, 1.0)
+            preds_perturbed_2 = np.clip(preds_perturbed_2, 0.0, 1.0)
+
+            alpha = 1.0 / (preds_perturbed_1 + preds_perturbed_2)
+            reverse_sigmoid = alpha * preds_perturbed_1
+
+        return reverse_sigmoid
 
 
