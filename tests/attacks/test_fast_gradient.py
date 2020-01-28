@@ -33,8 +33,8 @@ from tests.utils_test import get_iris_classifier_tf, get_iris_classifier_kr, get
 
 logger = logging.getLogger(__name__)
 
-tmp = os.environ
-print(os.environ["SECRET_KEY"])
+# tmp = os.environ
+# print(os.environ["SECRET_KEY"])
 
 
 class TestFastGradientMethodImages(TestBase):
