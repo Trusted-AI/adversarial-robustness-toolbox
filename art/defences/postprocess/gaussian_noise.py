@@ -22,7 +22,7 @@ import logging
 
 import numpy as np
 
-from art.defences import Postprocessor
+from art.defences.postprocess.postprocessor import Postprocessor
 from art.utils import is_probability
 
 logger = logging.getLogger(__name__)
@@ -32,6 +32,7 @@ class GaussianNoise(Postprocessor):
     """
     Implementation of a postprocessor based on adding Gaussian noise to classifier output.
     """
+    params = ['scale']
 
     def __init__(self, scale=0.2, apply_fit=False, apply_predict=True):
         """
@@ -70,26 +71,24 @@ class GaussianNoise(Postprocessor):
         # Generate random noise
         noise = np.random.normal(loc=0.0, scale=self.scale, size=preds.shape)
 
+        # Add noise to model output
+        post_preds = preds.copy()
+        post_preds += noise
+
         if preds.shape[1] > 1:
             # Check if model output is logit or probability
             are_probability = [is_probability(x) for x in preds]
             all_probability = np.sum(are_probability) == preds.shape[0]
 
-            # Add noise to model output
-            preds += noise
-
             # Finally normalize probability output
             if all_probability:
-                preds[preds < 0.0] = 0.0
-                sums = np.sum(preds, axis=1)
-                preds /= sums
-
+                post_preds[post_preds < 0.0] = 0.0
+                sums = np.sum(post_preds, axis=1)
+                post_preds /= sums
         else:
-            # Add noise to model output
-            preds += noise
-            preds[preds < 0.0] = 0.0
+            post_preds[post_preds < 0.0] = 0.0
 
-        return preds
+        return post_preds
 
     def estimate_gradient(self, x, grad):
         """
