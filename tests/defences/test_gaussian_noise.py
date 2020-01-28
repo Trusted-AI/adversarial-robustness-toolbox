@@ -27,7 +27,7 @@ from art.defences.postprocess import GaussianNoise
 logger = logging.getLogger(__name__)
 
 
-class TestRandomNoise(unittest.TestCase):
+class TestGaussianNoise(unittest.TestCase):
     """
     A unittest class for testing the GaussianNoise postprocessor.
     """
@@ -60,7 +60,7 @@ class TestRandomNoise(unittest.TestCase):
         np.testing.assert_array_almost_equal(preds, classifier_prediction_expected, decimal=4)
         np.testing.assert_array_almost_equal(post_preds, post_classifier_prediction_expected, decimal=4)
 
-    def test_random_noise_binary(self):
+    def test_gaussian_noise_binary(self):
         """
         Test Gaussian noise for binary classifier.
         """
