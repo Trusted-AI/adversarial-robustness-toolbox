@@ -314,24 +314,6 @@ class TestKerasClassifierTensorFlow(TestBase):
             act_name = classifier.get_activations(self.x_test_mnist, name, batch_size=128)
             np.testing.assert_array_equal(act_name, act_i)
 
-    def test_resnet(self):
-        tf.keras.backend.set_learning_phase(0)
-        model = ResNet50(weights='imagenet')
-        classifier = KerasClassifier(model, clip_values=(0, 255))
-
-        # Load image from file
-        image = img_to_array(load_img(os.path.join(self.test_dir, 'test.jpg'), target_size=(224, 224)))
-        image = image.reshape((1, image.shape[0], image.shape[1], image.shape[2]))
-
-        prediction = classifier.predict(image)
-        label = decode_predictions(prediction)[0][0]
-
-        self.assertEqual(label[1], 'Weimaraner')
-        if tf.__version__[0] == '2' or (tf.__version__[0] == '1' and tf.__version__[2:4] == '15'):
-            self.assertAlmostEqual(prediction[0, 178], 0.29494652, places=3)
-        else:
-            self.assertAlmostEqual(prediction[0, 178], 0.2658045, places=3)
-
     def test_learning_phase(self):
         classifier = get_classifier_kr_tf()
 

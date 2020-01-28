@@ -319,20 +319,6 @@ class TestKerasClassifier(TestBase):
             activation_name = classifier.get_activations(self.x_test_mnist, name, batch_size=128)
             np.testing.assert_array_equal(activation_name, activation_i)
 
-    def test_resnet(self):
-        keras.backend.set_learning_phase(0)
-        model = ResNet50(weights='imagenet')
-        classifier = KerasClassifier(model, clip_values=(0, 255))
-
-        image = img_to_array(load_img(os.path.join(self.test_dir, 'test.jpg'), target_size=(224, 224)))
-        image = image.reshape((1, image.shape[0], image.shape[1], image.shape[2]))
-
-        prediction = classifier.predict(image)
-        label = decode_predictions(prediction)[0][0]
-
-        self.assertEqual(label[1], 'Weimaraner')
-        self.assertAlmostEqual(prediction[0, 178], 0.2658045, places=3)
-
     def test_learning_phase(self):
         classifier = get_classifier_kr()
         self.assertFalse(hasattr(classifier, '_learning_phase'))
