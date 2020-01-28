@@ -19,36 +19,38 @@ from __future__ import absolute_import, division, print_function, unicode_litera
 
 import logging
 import unittest
-import sys
+
 import numpy as np
-import os
+
 from art.attacks import FastGradientMethod
 from art.classifiers import KerasClassifier
 from art.defences import FeatureSqueezing
-from art.utils import get_labels_np_array, random_targets
-
-from tests.utils_test import TestBase
+from art.utils import load_dataset, get_labels_np_array, master_seed, random_targets
 from tests.utils_test import get_classifier_tf, get_classifier_kr, get_classifier_pt
 from tests.utils_test import get_iris_classifier_tf, get_iris_classifier_kr, get_iris_classifier_pt
 
 logger = logging.getLogger(__name__)
 
-tmp = os.environ
-print(os.environ["SECRET_KEY"])
+BATCH_SIZE = 10
+NB_TRAIN = 100
+NB_TEST = 11
 
 
-class TestFastGradientMethodImages(TestBase):
-
+class TestFastGradientMethodImages(unittest.TestCase):
     @classmethod
     def setUpClass(cls):
-        super().setUpClass()
+        # MNIST
+        (x_train, y_train), (x_test, y_test), _, _ = load_dataset('mnist')
+        x_train, y_train, x_test, y_test = x_train[:NB_TRAIN], y_train[:NB_TRAIN], x_test[:NB_TEST], y_test[:NB_TEST]
+        cls.mnist = (x_train, y_train), (x_test, y_test)
 
-        cls.n_train = 100
-        cls.n_test = 11
-        cls.x_train_mnist = cls.x_train_mnist[0:cls.n_train]
-        cls.y_train_mnist = cls.y_train_mnist[0:cls.n_train]
-        cls.x_test_mnist = cls.x_test_mnist[0:cls.n_test]
-        cls.y_test_mnist = cls.y_test_mnist[0:cls.n_test]
+        # Iris
+        (x_train, y_train), (x_test, y_test), _, _ = load_dataset('iris')
+        cls.iris = (x_train, y_train), (x_test, y_test)
+
+    def setUp(self):
+        master_seed(1234)
+
 
     def test_0_mnist_keras(self):
         classifier = get_classifier_kr()
@@ -59,11 +61,18 @@ class TestFastGradientMethodImages(TestBase):
 
         self._test_backend_mnist(self.mnist, classifier, defended_classifier)
 
-    def test_1_mnist_tensorflow(self):
+    def test_0_iris_keras(self):
+        (_, _), (x_test, y_test) = self.iris
+        classifier_clipped = get_iris_classifier_kr()
+        classifier_no_clip_values = KerasClassifier(model=classifier_clipped._model, use_logits=False, channel_index=1)
+
+        self._test_backend_iris(x_test, y_test, classifier_clipped, classifier_no_clip_values)
+
+    def test_mnist_tensorflow(self):
         classifier, sess = get_classifier_tf()
         self._test_backend_mnist(self.mnist, classifier)
 
-    def test_3_mnist_pytorch(self):
+    def test_mnist_pytorch(self):
         (x_train, y_train), (x_test, y_test) = self.mnist
         x_test = np.reshape(x_test, (x_test.shape[0], 1, 28, 28)).astype(np.float32)
         test_mnist = (x_train, y_train), (x_test, y_test)
@@ -97,19 +106,14 @@ class TestFastGradientMethodImages(TestBase):
                       '`art.classifiers.classifier.ClassifierGradients`, the provided classifier is instance of '
                       '(<class \'art.classifiers.scikitlearn.ScikitlearnClassifier\'>,).', str(context.exception))
 
-    def test_0_iris_keras(self):
-        (_, _), (x_test, y_test) = self.iris
-        classifier_clipped = get_iris_classifier_kr()
-        classifier_no_clip_values = KerasClassifier(model=classifier_clipped._model, use_logits=False, channel_index=1)
 
-        self._test_backend_iris(x_test, y_test, classifier_clipped, classifier_no_clip_values)
 
-    def test_1_iris_tensorflow(self):
+    def test_iris_tensorflow(self):
         (_, _), (x_test, y_test) = self.iris
         classifier, _ = get_iris_classifier_tf()
         self._test_backend_iris(x_test, y_test, classifier, batch_size=128)
 
-    def test_2_iris_pytorch(self):
+    def test_iris_pytorch(self):
         (_, _), (x_test, y_test) = self.iris
         classifier = get_iris_classifier_pt()
 
@@ -161,7 +165,6 @@ class TestFastGradientMethodImages(TestBase):
 
     def _test_backend_mnist(self, mnist_param, classifier, defended_classifier=None):
         (x_train, y_train), (x_test, y_test) = mnist_param
-
         x_test_original = x_test.copy()
 
         # Test FGSM with np.inf norm
@@ -283,7 +286,6 @@ class TestFastGradientMethodImages(TestBase):
         # Check that x_test has not been modified by attack and classifier
         self.assertAlmostEqual(float(np.max(np.abs(x_test_original - x_test))), 0.0, delta=0.00001)
 
-
     def _test_mnist_targeted(self, classifier, x_test, y_test):
         # Test FGSM with np.inf norm
         attack = FastGradientMethod(classifier, eps=1.0, targeted=True)
@@ -304,46 +306,48 @@ class TestFastGradientMethodImages(TestBase):
         self.assertEqual(targets.shape, y_test_pred_adv.shape)
         self.assertGreaterEqual((targets == y_test_pred_adv).sum(), x_test.shape[0] // 2)
 
-
     def test_scikitlearn(self):
         from sklearn.linear_model import LogisticRegression
         from sklearn.svm import SVC, LinearSVC
 
-        from art.classifiers.scikitlearn import SklearnClassifier
+        from art.classifiers.scikitlearn import ScikitlearnLogisticRegression, ScikitlearnSVC
 
-        scikitlearn_test_cases = [LogisticRegression(solver='lbfgs', multi_class='auto'),
-                                  SVC(gamma='auto'),
-                                  LinearSVC()]
+        scikitlearn_test_cases = {LogisticRegression: ScikitlearnLogisticRegression,
+                                  SVC: ScikitlearnSVC,
+                                  LinearSVC: ScikitlearnSVC}
 
-        for model in scikitlearn_test_cases:
-            classifier = SklearnClassifier(model=model, clip_values=(0, 1))
-            classifier.fit(x=self.x_test_iris, y=self.y_test_iris)
+        (_, _), (x_test, y_test) = self.iris
+
+        for (model_class, classifier_class) in scikitlearn_test_cases.items():
+            model = model_class()
+            classifier = classifier_class(model=model, clip_values=(0, 1))
+            classifier.fit(x=x_test, y=y_test)
 
             # Test untargeted attack
             eps = 0.1
             attack = FastGradientMethod(classifier, eps=eps)
-            x_test_adv = attack.generate(self.x_test_iris)
-            np.testing.assert_array_almost_equal(np.abs(x_test_adv - self.x_test_iris), eps, decimal=5)
+            x_test_adv = attack.generate(x_test)
+            np.testing.assert_array_almost_equal(np.abs(x_test_adv - x_test), eps, decimal=5)
             self.assertLessEqual(np.amax(x_test_adv), 1.0)
             self.assertGreaterEqual(np.amin(x_test_adv), 0.0)
 
             predictions_adv = np.argmax(classifier.predict(x_test_adv), axis=1)
-            self.assertFalse((np.argmax(self.y_test_iris, axis=1) == predictions_adv).all())
-            accuracy = np.sum(predictions_adv == np.argmax(self.y_test_iris, axis=1)) / self.y_test_iris.shape[0]
+            self.assertFalse((np.argmax(y_test, axis=1) == predictions_adv).all())
+            accuracy = np.sum(predictions_adv == np.argmax(y_test, axis=1)) / y_test.shape[0]
             logger.info('Accuracy of ' + classifier.__class__.__name__ + ' on Iris with FGM adversarial examples: '
                                                                          '%.2f%%', (accuracy * 100))
 
             # Test targeted attack
-            targets = random_targets(self.y_test_iris, nb_classes=3)
+            targets = random_targets(y_test, nb_classes=3)
             attack = FastGradientMethod(classifier, targeted=True, eps=0.1, batch_size=128)
-            x_test_adv = attack.generate(self.x_test_iris, **{'y': targets})
-            self.assertFalse((self.x_test_iris == x_test_adv).all())
+            x_test_adv = attack.generate(x_test, **{'y': targets})
+            self.assertFalse((x_test == x_test_adv).all())
             self.assertLessEqual(np.amax(x_test_adv), 1.0)
             self.assertGreaterEqual(np.amin(x_test_adv), 0.0)
 
             predictions_adv = np.argmax(classifier.predict(x_test_adv), axis=1)
             self.assertTrue((np.argmax(targets, axis=1) == predictions_adv).any())
-            accuracy = np.sum(predictions_adv == np.argmax(targets, axis=1)) / self.y_test_iris.shape[0]
+            accuracy = np.sum(predictions_adv == np.argmax(targets, axis=1)) / y_test.shape[0]
             logger.info('Success rate of ' + classifier.__class__.__name__ + ' on targeted FGM on Iris: %.2f%%',
                         (accuracy * 100))
 
@@ -370,6 +374,4 @@ class TestFastGradientMethodImages(TestBase):
         self.assertFalse((y_expected == y_pred_adv).all())
 
 if __name__ == '__main__':
-    print(len(sys.argv))
-    param1 = sys.argv.pop()
     unittest.main()
