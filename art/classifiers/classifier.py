@@ -34,7 +34,61 @@ else:
     ABC = abc.ABCMeta(str('ABC'), (), {})
 
 
-class Classifier(ABC):
+class input_filter(abc.ABCMeta):
+    """
+    Metaclass to ensure that inputs are ndarray for all of the subclass generate and extract calls
+    """
+    def __init__(cls, name, bases, clsdict):
+        """
+        This function overrides any existing generate or extract methods with a new method that
+        ensures the input is an ndarray. There is an assumption that the input object has implemented
+        __array__ with np.array calls.
+        """
+
+        def make_replacement(fdict, func_name, has_y):
+            """
+            This function overrides creates replacement functions dynamically
+            """
+
+            def replacement_function(self, *args, **kwargs):
+                if(len(args) > 0):
+                    lst = list(args)
+
+                if 'x' in kwargs:
+                    if not isinstance(kwargs['x'], np.ndarray):
+                        kwargs['x'] = np.array(kwargs['x'])
+                else:
+                    if not isinstance(args[0], np.ndarray):
+                        lst[0] = np.array(args[0])
+
+                if 'y' in kwargs:
+                    if kwargs['y'] is not None and not isinstance(kwargs['y'], np.ndarray):
+                        kwargs['y'] = np.array(kwargs['y'])
+                elif has_y:
+                    if not isinstance(args[1], np.ndarray):
+                        lst[1] = np.array(args[1])
+
+                if(len(args) > 0):
+                    args = tuple(lst)
+                return fdict[func_name](self, *args, **kwargs)
+            replacement_function.__doc__ = fdict[func_name].__doc__
+            replacement_function.__name__ = "new_" + func_name
+            return replacement_function
+
+        replacement_list_no_y = ['predict', 'get_activations', 'class_gradient']
+        replacement_list_has_y = ['fit', 'loss_gradient']
+
+        for item in replacement_list_no_y:
+            if item in clsdict:
+                new_function = make_replacement(clsdict, item, False)
+                setattr(cls, item, new_function)
+        for item in replacement_list_has_y:
+            if item in clsdict:
+                new_function = make_replacement(clsdict, item, True)
+                setattr(cls, item, new_function)
+
+
+class Classifier(ABC, metaclass=input_filter):
     """
     Base class defining the minimum classifier functionality and is required for all classifiers. A classifier of this
     type can be combined with black-box attacks.
@@ -229,7 +283,7 @@ class Classifier(ABC):
         return repr_string
 
 
-class ClassifierNeuralNetwork(ABC):
+class ClassifierNeuralNetwork(ABC, metaclass=input_filter):
     """
     Base class defining additional classifier functionality required for neural network classifiers. This base class
     has to be mixed in with class `Classifier` to extend the minimum classifier functionality.
@@ -382,7 +436,7 @@ class ClassifierNeuralNetwork(ABC):
         return repr_
 
 
-class ClassifierGradients(ABC):
+class ClassifierGradients(ABC, metaclass=input_filter):
     """
     Base class defining additional classifier functionality for classifiers providing access to loss and class
     gradients. A classifier of this type can be combined with white-box attacks. This base class has to be mixed in with

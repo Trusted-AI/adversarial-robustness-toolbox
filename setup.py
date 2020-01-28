@@ -11,7 +11,7 @@ install_requires = ['matplotlib',
                     'scipy',
                     'six',
                     'setuptools',
-                    'scikit-learn']
+                    'scikit-learn==0.22.1']
 
 # Comment out because of compatibility issues with numpy versions
 # 'catboost',
@@ -23,7 +23,7 @@ tests_require = ['pytest-pep8',
                  'requests',
                  'torch>=1.2.0',
                  'tensorflow>=1.13.2',
-                 'scikit-learn',
+                 'scikit-learn==0.22.1',
                  'xgboost',
                  'lightgbm',
                  'GPy',

@@ -325,10 +325,10 @@ class TestUtils(unittest.TestCase):
 
         (x_train, y_train), (x_test, y_test), min_, max_ = load_iris()
 
-        full_model = SklearnClassifier(model=SVC(kernel='linear'), clip_values=(min_, max_))
+        full_model = SklearnClassifier(model=SVC(kernel='linear', gamma='auto'), clip_values=(min_, max_))
         full_model.fit(x_train, y_train)
 
-        limited_model = SklearnClassifier(model=SVC(kernel='linear'), clip_values=(min_, max_))
+        limited_model = SklearnClassifier(model=SVC(kernel='linear', gamma='auto'), clip_values=(min_, max_))
         limited_model.fit(x_train[:10], y_train[:10])
 
         self.assertEqual(performance_diff(full_model, limited_model, x_test[:20], y_test[:20],

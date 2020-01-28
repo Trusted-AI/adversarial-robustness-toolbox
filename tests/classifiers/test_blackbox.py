@@ -24,43 +24,34 @@ import unittest
 import numpy as np
 
 from art.defences import FeatureSqueezing, JpegCompression, SpatialSmoothing
-from art.utils import load_dataset, master_seed
-from tests.utils_test import get_classifier_bb
+
+from tests.utils_test import TestBase, get_classifier_bb
 
 logger = logging.getLogger(__name__)
 
-BATCH_SIZE = 10
-NB_TRAIN = 500
-NB_TEST = 100
 
+class TestBlackBoxClassifier(TestBase):
+    """
+    This class tests the BlackBox classifier.
+    """
 
-class TestBlackBoxClassifier(unittest.TestCase):
     @classmethod
     def setUpClass(cls):
-        (x_train, y_train), (x_test, y_test), _, _ = load_dataset('mnist')
-
-        cls.x_train = x_train[:NB_TRAIN]
-        cls.y_train = y_train[:NB_TRAIN]
-        cls.x_test = x_test[:NB_TEST]
-        cls.y_test = y_test[:NB_TEST]
-
-        # Temporary folder for tests
+        super().setUpClass()
         cls.test_dir = tempfile.mkdtemp()
-
-    def setUp(self):
-        master_seed(1234)
 
     def test_fit(self):
         classifier = get_classifier_bb()
-        self.assertRaises(NotImplementedError, lambda: classifier.fit(self.x_train, self.y_train, batch_size=BATCH_SIZE,
-                                                                      nb_epochs=2))
+        self.assertRaises(NotImplementedError,
+                          lambda: classifier.fit(self.x_train_mnist, self.y_train_mnist, batch_size=self.batch_size,
+                                                 nb_epochs=2))
 
     def test_shapes(self):
         classifier = get_classifier_bb()
-        predictions = classifier.predict(self.x_test)
-        self.assertEqual(predictions.shape, self.y_test.shape)
+        predictions = classifier.predict(self.x_test_mnist)
+        self.assertEqual(predictions.shape, self.y_test_mnist.shape)
         self.assertEqual(classifier.nb_classes(), 10)
-        self.assertEqual(predictions.shape, self.y_test.shape)
+        self.assertEqual(predictions.shape, self.y_test_mnist.shape)
 
     def test_defences_predict(self):
         clip_values = (0, 1)
@@ -70,13 +61,13 @@ class TestBlackBoxClassifier(unittest.TestCase):
         classifier = get_classifier_bb(defences=[fs, jpeg, smooth])
         self.assertEqual(len(classifier.defences), 3)
 
-        predictions_classifier = classifier.predict(self.x_test)
+        predictions_classifier = classifier.predict(self.x_test_mnist)
 
         # Apply the same defences by hand
-        x_test_defense = self.x_test
-        x_test_defense, _ = fs(x_test_defense, self.y_test)
-        x_test_defense, _ = jpeg(x_test_defense, self.y_test)
-        x_test_defense, _ = smooth(x_test_defense, self.y_test)
+        x_test_defense = self.x_test_mnist
+        x_test_defense, _ = fs(x_test_defense, self.y_test_mnist)
+        x_test_defense, _ = jpeg(x_test_defense, self.y_test_mnist)
+        x_test_defense, _ = smooth(x_test_defense, self.y_test_mnist)
         classifier = get_classifier_bb()
         predictions_check = classifier.predict(x_test_defense)
 
@@ -99,3 +90,7 @@ class TestBlackBoxClassifier(unittest.TestCase):
         self.assertIn('clip_values=(0, 255)', repr_)
         self.assertIn('defences=None', repr_)
         self.assertIn('preprocessing=(0, 1)', repr_)
+
+
+if __name__ == '__main__':
+    unittest.main()

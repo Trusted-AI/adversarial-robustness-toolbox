@@ -46,7 +46,7 @@ def create_sprite(images):
         raise ValueError('Images provided for sprite have wrong dimensions ' + str(len(shape)))
 
     if len(shape) == 3:
-        # Check to see if it's mnist type of images and add axis to show image is gray-scale
+        # Check to see if it's MNIST type of images and add axis to show image is gray-scale
         images = np.expand_dims(images, axis=3)
         shape = np.shape(images)
 

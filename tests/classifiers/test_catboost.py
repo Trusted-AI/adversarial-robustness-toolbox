@@ -29,7 +29,7 @@
 # logger = logging.getLogger(__name__)
 #
 #
-# class TestCatBoostClassifier(unittest.TestCase):
+# class TestCatBoostClassifier(TestBase):
 #
 #     @classmethod
 #     def setUpClass(cls):

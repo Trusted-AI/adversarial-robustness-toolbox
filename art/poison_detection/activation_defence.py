@@ -384,7 +384,7 @@ class ActivationDefence(PoisonFilteringDefence):
         it also stores a sprite (mosaic) per cluster in ART_DATA_PATH.
 
         :param x_raw: Images used to train the classifier (before pre-processing)
-        :type x_raw: `np.darray`
+        :type x_raw: `np.ndarray`
         :param save: Boolean specifying if image should be saved
         :type  save: `bool`
         :param folder: Directory where the sprites will be saved inside ART_DATA_PATH folder
@@ -524,9 +524,9 @@ def measure_misclassification(classifier, x_test, y_test):
 
     :param classifier: art.classifier to be used for predictions
     :param x_test: test set
-    :type x_test: `np.darray`
+    :type x_test: `np.ndarray`
     :param y_test: labels test set
-    :type y_test: `np.darray`
+    :type y_test: `np.ndarray`
     :return: 1-accuracy
     :rtype `float`
     """

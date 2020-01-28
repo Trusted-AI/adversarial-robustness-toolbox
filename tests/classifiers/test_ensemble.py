@@ -24,29 +24,22 @@ import numpy as np
 import keras.backend as k
 
 from art.classifiers import EnsembleClassifier
-from art.utils import load_dataset, master_seed
-from tests.utils_test import get_classifier_kr
+
+from tests.utils_test import TestBase, get_classifier_kr
 
 logger = logging.getLogger(__name__)
 
-BATCH_SIZE = 10
-NB_TRAIN = 500
-NB_TEST = 100
 
+class TestEnsembleClassifier(TestBase):
+    """
+    This class tests the ensemble classifier.
+    """
 
-class TestEnsembleClassifier(unittest.TestCase):
     @classmethod
     def setUpClass(cls):
-        k.clear_session()
+        super().setUpClass()
 
-        (x_train, y_train), (x_test, y_test), _, _ = load_dataset('mnist')
-
-        cls.x_train = x_train[:NB_TRAIN]
-        cls.y_train = y_train[:NB_TRAIN]
-        cls.x_test = x_test[:NB_TEST]
-        cls.y_test = y_test[:NB_TEST]
-
-        # Use twice the same classifier for unittesting, in application they would be different
+        # Use twice the same classifier for unit-testing, in application they would be different
         classifier_1 = get_classifier_kr()
         classifier_2 = get_classifier_kr()
         cls.ensemble = EnsembleClassifier(classifiers=[classifier_1, classifier_2], clip_values=(0, 1))
@@ -55,12 +48,9 @@ class TestEnsembleClassifier(unittest.TestCase):
     def tearDownClass(cls):
         k.clear_session()
 
-    def setUp(self):
-        master_seed(1234)
-
     def test_fit(self):
         with self.assertRaises(NotImplementedError):
-            self.ensemble.fit(self.x_train, self.y_train)
+            self.ensemble.fit(self.x_train_mnist, self.y_train_mnist)
 
     def test_fit_generator(self):
         with self.assertRaises(NotImplementedError):
@@ -68,26 +58,26 @@ class TestEnsembleClassifier(unittest.TestCase):
 
     def test_layers(self):
         with self.assertRaises(NotImplementedError):
-            self.ensemble.get_activations(self.x_test, layer=2)
+            self.ensemble.get_activations(self.x_test_mnist, layer=2)
 
     def test_predict(self):
-        predictions = self.ensemble.predict(self.x_test, raw=False)
-        self.assertTrue(predictions.shape, (NB_TEST, 10))
+        predictions = self.ensemble.predict(self.x_test_mnist, raw=False)
+        self.assertTrue(predictions.shape, (self.n_test, 10))
 
         expected_predictions_1 = np.asarray([0.12109935, 0.0498215, 0.0993958, 0.06410097, 0.11366927, 0.04645343,
                                              0.06419807, 0.30685693, 0.07616713, 0.05823759])
         np.testing.assert_array_almost_equal(predictions[0, :], expected_predictions_1, decimal=4)
 
-        predictions_raw = self.ensemble.predict(self.x_test, raw=True)
-        self.assertEqual(predictions_raw.shape, (2, NB_TEST, 10))
+        predictions_raw = self.ensemble.predict(self.x_test_mnist, raw=True)
+        self.assertEqual(predictions_raw.shape, (2, self.n_test, 10))
 
         expected_predictions_2 = np.asarray([0.06054967, 0.02491075, 0.0496979, 0.03205048, 0.05683463, 0.02322672,
                                              0.03209903, 0.15342847, 0.03808356, 0.02911879])
         np.testing.assert_array_almost_equal(predictions_raw[0, 0, :], expected_predictions_2, decimal=4)
 
     def test_loss_gradient(self):
-        gradients = self.ensemble.loss_gradient(self.x_test, self.y_test, raw=False)
-        self.assertEqual(gradients.shape, (NB_TEST, 28, 28, 1))
+        gradients = self.ensemble.loss_gradient(self.x_test_mnist, self.y_test_mnist, raw=False)
+        self.assertEqual(gradients.shape, (self.n_test, 28, 28, 1))
 
         expected_predictions_1 = np.asarray([0.0559206, 0.05338925, 0.0648919, 0.07925165, -0.04029291, -0.11281465,
                                              0.01850601, 0.00325054, 0.08163195, 0.03333949, 0.031766, -0.02420463,
@@ -96,8 +86,8 @@ class TestEnsembleClassifier(unittest.TestCase):
                                              0.0, 0.0, 0.0, 0.0])
         np.testing.assert_array_almost_equal(gradients[0, 14, :, 0], expected_predictions_1, decimal=4)
 
-        gradients_2 = self.ensemble.loss_gradient(self.x_test, self.y_test, raw=True)
-        self.assertEqual(gradients_2.shape, (2, NB_TEST, 28, 28, 1))
+        gradients_2 = self.ensemble.loss_gradient(self.x_test_mnist, self.y_test_mnist, raw=True)
+        self.assertEqual(gradients_2.shape, (2, self.n_test, 28, 28, 1))
 
         expected_predictions_2 = np.asarray([-0.02444103, -0.06092717, -0.0449727, 0.00737736, -0.0462507, -0.06225448,
                                              -0.08359106, -0.00270847, -0.009243, -0.00214317, -0.04728884, 0.00369186,
@@ -107,8 +97,8 @@ class TestEnsembleClassifier(unittest.TestCase):
         np.testing.assert_array_almost_equal(gradients_2[0, 5, 14, :, 0], expected_predictions_2, decimal=4)
 
     def test_class_gradient(self):
-        gradients = self.ensemble.class_gradient(self.x_test, None, raw=False)
-        self.assertEqual(gradients.shape, (NB_TEST, 10, 28, 28, 1))
+        gradients = self.ensemble.class_gradient(self.x_test_mnist, None, raw=False)
+        self.assertEqual(gradients.shape, (self.n_test, 10, 28, 28, 1))
 
         expected_predictions_1 = np.asarray([-1.0557447e-03, -1.0079544e-03, -7.7426434e-04, 1.7387432e-03,
                                              2.1773507e-03, 5.0880699e-05, 1.6497371e-03, 2.6113100e-03,
@@ -119,8 +109,8 @@ class TestEnsembleClassifier(unittest.TestCase):
                                              0.0000000e+00, 0.0000000e+00, 0.0000000e+00, 0.0000000e+00])
         np.testing.assert_array_almost_equal(gradients[0, 5, 14, :, 0], expected_predictions_1, decimal=4)
 
-        gradients_2 = self.ensemble.class_gradient(self.x_test, raw=True)
-        self.assertEqual(gradients_2.shape, (2, NB_TEST, 10, 28, 28, 1))
+        gradients_2 = self.ensemble.class_gradient(self.x_test_mnist, raw=True)
+        self.assertEqual(gradients_2.shape, (2, self.n_test, 10, 28, 28, 1))
 
         expected_predictions_2 = np.asarray([-5.2787235e-04, -5.0397718e-04, -3.8713217e-04, 8.6937158e-04,
                                              1.0886753e-03, 2.5440349e-05, 8.2486856e-04, 1.3056550e-03,
