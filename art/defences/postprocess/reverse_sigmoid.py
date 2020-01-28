@@ -134,6 +134,10 @@ class ReverseSigmoid(Postprocessor):
         """
         Take in a dictionary of parameters and apply checks before saving them as attributes.
 
+        :param beta: A positive magnitude parameter.
+        :type beta: `float`
+        :param gamma: A positive dataset and model specific convergence parameter.
+        :type gamma: `float`
         :return: `True` when parsing was successful
         """
         # Save defence-specific parameters

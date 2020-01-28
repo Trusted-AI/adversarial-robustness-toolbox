@@ -93,6 +93,8 @@ class HighConfidence(Postprocessor):
         """
         Take in a dictionary of parameters and apply checks before saving them as attributes.
 
+        :param cutoff: Minimal value for returned prediction output.
+        :type cutoff: `float`
         :return: `True` when parsing was successful
         """
         # Save defence-specific parameters

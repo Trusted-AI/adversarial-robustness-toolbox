@@ -116,6 +116,8 @@ class GaussianNoise(Postprocessor):
         """
         Take in a dictionary of parameters and apply checks before saving them as attributes.
 
+        :param scale: Standard deviation of the distribution.
+        :type scale: `float`
         :return: `True` when parsing was successful
         """
         # Save defence-specific parameters
