@@ -87,7 +87,7 @@ class TestVirtualAdversarial(TestBase):
     def _test_backend_mnist(self, classifier, x_test, y_test):
         x_test_original = x_test.copy()
 
-        df = VirtualAdversarialMethod(classifier, batch_size=100)
+        df = VirtualAdversarialMethod(classifier, batch_size=100, max_iter=2)
 
         x_test_adv = df.generate(x_test)
 

@@ -308,7 +308,7 @@ class TestCarlini(TestBase):
             classifier.fit(x=self.x_test_iris, y=self.y_test_iris)
 
             # Test untargeted attack
-            attack = CarliniL2Method(classifier, targeted=False, max_iter=10)
+            attack = CarliniL2Method(classifier, targeted=False, max_iter=2)
             x_test_adv = attack.generate(self.x_test_iris)
             self.assertFalse((self.x_test_iris == x_test_adv).all())
             self.assertLessEqual(np.amax(x_test_adv), 1.0)
@@ -322,7 +322,7 @@ class TestCarlini(TestBase):
 
             # Test targeted attack
             targets = random_targets(self.y_test_iris, nb_classes=3)
-            attack = CarliniL2Method(classifier, targeted=True, max_iter=10)
+            attack = CarliniL2Method(classifier, targeted=True, max_iter=2)
             x_test_adv = attack.generate(self.x_test_iris, **{'y': targets})
             self.assertFalse((self.x_test_iris == x_test_adv).all())
             self.assertLessEqual(np.amax(x_test_adv), 1.0)

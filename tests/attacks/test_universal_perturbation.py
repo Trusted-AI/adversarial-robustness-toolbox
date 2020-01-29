@@ -85,7 +85,7 @@ class TestUniversalPerturbation(TestBase):
         krc = get_classifier_kr()
 
         # Attack
-        up = UniversalPerturbation(krc, max_iter=1, attacker="ead", attacker_params={"max_iter": 5, "targeted": False})
+        up = UniversalPerturbation(krc, max_iter=1, attacker="ead", attacker_params={"max_iter": 2, "targeted": False})
         x_train_adv = up.generate(self.x_train_mnist)
         self.assertTrue((up.fooling_rate >= 0.2) or not up.converged)
 
@@ -99,8 +99,6 @@ class TestUniversalPerturbation(TestBase):
 
         # Check that x_test has not been modified by attack and classifier
         self.assertAlmostEqual(float(np.max(np.abs(x_test_original - self.x_test_mnist))), 0.0, delta=0.00001)
-
-        # sess.close()
 
     def test_pytorch_mnist(self):
         """

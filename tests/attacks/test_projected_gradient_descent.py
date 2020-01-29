@@ -162,7 +162,7 @@ class TestPGD(TestBase):
         classifier = get_iris_classifier_kr()
 
         # Test untargeted attack
-        attack = ProjectedGradientDescent(classifier, eps=1, eps_step=0.1)
+        attack = ProjectedGradientDescent(classifier, eps=1, eps_step=0.1, max_iter=5)
         x_test_adv = attack.generate(self.x_test_iris)
         self.assertFalse((self.x_test_iris == x_test_adv).all())
         self.assertTrue((x_test_adv <= 1).all())
@@ -175,7 +175,7 @@ class TestPGD(TestBase):
 
         # Test targeted attack
         targets = random_targets(self.y_test_iris, nb_classes=3)
-        attack = ProjectedGradientDescent(classifier, targeted=True, eps=1, eps_step=0.1)
+        attack = ProjectedGradientDescent(classifier, targeted=True, eps=1, eps_step=0.1, max_iter=5)
         x_test_adv = attack.generate(self.x_test_iris, **{'y': targets})
         self.assertFalse((self.x_test_iris == x_test_adv).all())
         self.assertTrue((x_test_adv <= 1).all())
@@ -191,7 +191,7 @@ class TestPGD(TestBase):
 
         # Recreate a classifier without clip values
         classifier = KerasClassifier(model=classifier._model, use_logits=False, channel_index=1)
-        attack = ProjectedGradientDescent(classifier, eps=1, eps_step=0.2)
+        attack = ProjectedGradientDescent(classifier, eps=1, eps_step=0.2, max_iter=5)
         x_test_adv = attack.generate(self.x_test_iris)
         self.assertFalse((self.x_test_iris == x_test_adv).all())
         self.assertTrue((x_test_adv > 1).any())
@@ -206,7 +206,7 @@ class TestPGD(TestBase):
         classifier, _ = get_iris_classifier_tf()
 
         # Test untargeted attack
-        attack = ProjectedGradientDescent(classifier, eps=1, eps_step=0.1)
+        attack = ProjectedGradientDescent(classifier, eps=1, eps_step=0.1, max_iter=5)
         x_test_adv = attack.generate(self.x_test_iris)
         self.assertFalse((self.x_test_iris == x_test_adv).all())
         self.assertTrue((x_test_adv <= 1).all())
@@ -219,7 +219,7 @@ class TestPGD(TestBase):
 
         # Test targeted attack
         targets = random_targets(self.y_test_iris, nb_classes=3)
-        attack = ProjectedGradientDescent(classifier, targeted=True, eps=1, eps_step=0.1)
+        attack = ProjectedGradientDescent(classifier, targeted=True, eps=1, eps_step=0.1, max_iter=5)
         x_test_adv = attack.generate(self.x_test_iris, **{'y': targets})
         self.assertFalse((self.x_test_iris == x_test_adv).all())
         self.assertTrue((x_test_adv <= 1).all())
@@ -234,7 +234,7 @@ class TestPGD(TestBase):
         classifier = get_iris_classifier_pt()
 
         # Test untargeted attack
-        attack = ProjectedGradientDescent(classifier, eps=1, eps_step=0.1)
+        attack = ProjectedGradientDescent(classifier, eps=1, eps_step=0.1, max_iter=5)
         x_test_adv = attack.generate(self.x_test_iris)
         self.assertFalse((self.x_test_iris == x_test_adv).all())
         self.assertTrue((x_test_adv <= 1).all())
@@ -247,7 +247,7 @@ class TestPGD(TestBase):
 
         # Test targeted attack
         targets = random_targets(self.y_test_iris, nb_classes=3)
-        attack = ProjectedGradientDescent(classifier, targeted=True, eps=1, eps_step=0.1)
+        attack = ProjectedGradientDescent(classifier, targeted=True, eps=1, eps_step=0.1, max_iter=5)
         x_test_adv = attack.generate(self.x_test_iris, **{'y': targets})
         self.assertFalse((self.x_test_iris == x_test_adv).all())
         self.assertTrue((x_test_adv <= 1).all())
@@ -275,7 +275,7 @@ class TestPGD(TestBase):
             classifier.fit(x=self.x_test_iris, y=self.y_test_iris)
 
             # Test untargeted attack
-            attack = ProjectedGradientDescent(classifier, eps=1, eps_step=0.1)
+            attack = ProjectedGradientDescent(classifier, eps=1, eps_step=0.1, max_iter=5)
             x_test_adv = attack.generate(self.x_test_iris)
             self.assertFalse((self.x_test_iris == x_test_adv).all())
             self.assertTrue((x_test_adv <= 1).all())
@@ -289,7 +289,7 @@ class TestPGD(TestBase):
 
             # Test targeted attack
             targets = random_targets(self.y_test_iris, nb_classes=3)
-            attack = ProjectedGradientDescent(classifier, targeted=True, eps=1, eps_step=0.1)
+            attack = ProjectedGradientDescent(classifier, targeted=True, eps=1, eps_step=0.1, max_iter=5)
             x_test_adv = attack.generate(self.x_test_iris, **{'y': targets})
             self.assertFalse((self.x_test_iris == x_test_adv).all())
             self.assertTrue((x_test_adv <= 1).all())
