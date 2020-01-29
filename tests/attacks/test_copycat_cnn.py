@@ -22,10 +22,13 @@ import unittest
 
 import tensorflow as tf
 import numpy as np
-import keras.backend as k
 import keras
+import keras.backend as k
 from keras.models import Sequential
 from keras.layers import Dense, Flatten, Conv2D, MaxPooling2D
+import torch
+import torch.nn as nn
+import torch.optim as optim
 
 from art.attacks.extraction.copycat_cnn import CopycatCNN
 from art.classifiers import TensorFlowClassifier
@@ -37,14 +40,6 @@ from tests.utils_test import get_classifier_tf, get_classifier_kr, get_classifie
 from tests.utils_test import get_iris_classifier_tf, get_iris_classifier_kr, get_iris_classifier_pt
 
 logger = logging.getLogger(__name__)
-
-try:
-    # Conditional import of `torch` to avoid segmentation fault errors this framework generates at import
-    import torch
-    import torch.nn as nn
-    import torch.optim as optim
-except ImportError:
-    logger.info('Could not import PyTorch in utilities.')
 
 NB_EPOCHS = 10
 NB_STOLEN = 1000
@@ -179,7 +174,7 @@ class TestCopycatCNN(TestBase):
                 x = self.pool(x)
                 x = x.reshape(-1, 25)
                 x = self.fullyconnected(x)
-                x = torch.nn.functional.softmax(x)
+                x = torch.nn.functional.softmax(x, dim=1)
 
                 return x
 

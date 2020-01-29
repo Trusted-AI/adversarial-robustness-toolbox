@@ -20,71 +20,81 @@ Module providing convenience functions.
 """
 from __future__ import absolute_import, division, print_function, unicode_literals
 
-import logging
 import os
+import logging
 
 import numpy as np
 
 logger = logging.getLogger(__name__)
 
-try:
-    # Conditional import of `torch` to avoid segmentation fault errors this framework generates at import
-    import torch
-except ImportError:
-    logger.info('Could not import PyTorch in utilities.')
-
 
 # -------------------------------------------------------------------------------------------- RANDOM NUMBER GENERATORS
 
 
-def master_seed(seed):
+def master_seed(seed=1234, set_random=True, set_numpy=True, set_tensorflow=True, set_mxnet=True, set_torch=True):
     """
     Set the seed for all random number generators used in the library. This ensures experiments reproducibility and
     stable testing.
 
     :param seed: The value to be seeded in the random number generators.
     :type seed: `int`
+    :param set_random: The flag to set seed for `random`.
+    :type set_random: `bool`
+    :param set_numpy: The flag to set seed for `numpy`.
+    :type set_numpy: `bool`
+    :param set_tensorflow: The flag to set seed for `tensorflow`.
+    :type set_tensorflow: `bool`
+    :param set_mxnet: The flag to set seed for `mxnet`.
+    :type set_mxnet: `bool`
+    :param set_torch: The flag to set seed for `torch`.
+    :type set_torch: `bool`
     """
     import numbers
-    import random
 
     if not isinstance(seed, numbers.Integral):
         raise TypeError('The seed for random number generators has to be an integer.')
 
     # Set Python seed
-    random.seed(seed)
+    if set_random:
+        import random
+        random.seed(seed)
 
     # Set Numpy seed
-    np.random.seed(seed)
-    np.random.RandomState(seed)
+    if set_numpy:
+        np.random.seed(seed)
+        np.random.RandomState(seed)
 
     # Now try to set seed for all specific frameworks
-    try:
-        import tensorflow as tf
+    if set_tensorflow:
+        try:
+            import tensorflow as tf
 
-        logger.info('Setting random seed for TensorFlow.')
-        if tf.__version__[0] == '2':
-            tf.random.set_seed(seed)
-        else:
-            tf.set_random_seed(seed)
-    except ImportError:
-        logger.info('Could not set random seed for TensorFlow.')
+            logger.info('Setting random seed for TensorFlow.')
+            if tf.__version__[0] == '2':
+                tf.random.set_seed(seed)
+            else:
+                tf.set_random_seed(seed)
+        except ImportError:
+            logger.info('Could not set random seed for TensorFlow.')
 
-    try:
-        import mxnet as mx
+    if set_mxnet:
+        try:
+            import mxnet as mx
 
-        logger.info('Setting random seed for MXNet.')
-        mx.random.seed(seed)
-    except ImportError:
-        logger.info('Could not set random seed for MXNet.')
+            logger.info('Setting random seed for MXNet.')
+            mx.random.seed(seed)
+        except ImportError:
+            logger.info('Could not set random seed for MXNet.')
 
-    try:
-        logger.info('Setting random seed for PyTorch.')
-        torch.manual_seed(seed)
-        if torch.cuda.is_available():
-            torch.cuda.manual_seed_all(seed)
-    except ImportError:
-        logger.info('Could not set random seed for PyTorch.')
+    if set_torch:
+        try:
+            logger.info('Setting random seed for PyTorch.')
+            import torch
+            torch.manual_seed(seed)
+            if torch.cuda.is_available():
+                torch.cuda.manual_seed_all(seed)
+        except ImportError:
+            logger.info('Could not set random seed for PyTorch.')
 
 
 # ----------------------------------------------------------------------------------------------------- MATH OPERATIONS

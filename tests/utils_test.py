@@ -28,17 +28,10 @@ import unittest
 
 import numpy as np
 
-from art.utils import master_seed, load_dataset
+from art.config import ART_NUMPY_DTYPE
+from art.utils import load_dataset
 
 logger = logging.getLogger(__name__)
-
-try:
-    # Conditional import of `torch` to avoid segmentation fault errors this framework generates at import
-    import torch
-    import torch.nn as nn
-    import torch.optim as optim
-except ImportError:
-    logger.info('Could not import PyTorch in utilities.')
 
 
 # ----------------------------------------------------------------------------------------------------- TEST BASE CLASS
@@ -50,17 +43,15 @@ class TestBase(unittest.TestCase):
 
     @classmethod
     def setUpClass(cls):
-        master_seed(1234)
-
         cls.n_train = 1000
         cls.n_test = 100
         cls.batch_size = 16
 
         (x_train_mnist, y_train_mnist), (x_test_mnist, y_test_mnist), _, _ = load_dataset('mnist')
 
-        cls.x_train_mnist = x_train_mnist[:cls.n_train]
+        cls.x_train_mnist = x_train_mnist[:cls.n_train].astype(ART_NUMPY_DTYPE)
         cls.y_train_mnist = y_train_mnist[:cls.n_train]
-        cls.x_test_mnist = x_test_mnist[:cls.n_test]
+        cls.x_test_mnist = x_test_mnist[:cls.n_test].astype(ART_NUMPY_DTYPE)
         cls.y_test_mnist = y_test_mnist[:cls.n_test]
 
         cls._x_train_mnist_original = cls.x_train_mnist.copy()
@@ -85,7 +76,6 @@ class TestBase(unittest.TestCase):
         warnings.filterwarnings('ignore', '.*the output shape of zoom.*')
 
     def setUp(self):
-        master_seed(1234)
         self.time_start = time.time()
         print('\n\n\n----------------------------------------------------------------------')
 
@@ -648,9 +638,11 @@ def get_classifier_pt(from_logits=False, load_init=True):
     :type load_init: `bool`
     :return: PyTorchClassifier
     """
+    import torch
+
     from art.classifiers import PyTorchClassifier
 
-    class Model(nn.Module):
+    class Model(torch.nn.Module):
         """
         Create model for pytorch.
 
@@ -660,9 +652,9 @@ def get_classifier_pt(from_logits=False, load_init=True):
         def __init__(self):
             super(Model, self).__init__()
 
-            self.conv = nn.Conv2d(in_channels=1, out_channels=1, kernel_size=7)
-            self.pool = nn.MaxPool2d(4, 4)
-            self.fullyconnected = nn.Linear(25, 10)
+            self.conv = torch.nn.Conv2d(in_channels=1, out_channels=1, kernel_size=7)
+            self.pool = torch.nn.MaxPool2d(4, 4)
+            self.fullyconnected = torch.nn.Linear(25, 10)
 
             if load_init:
                 w_conv2d = np.load(os.path.join(os.path.dirname(os.path.dirname(__file__)),
@@ -676,10 +668,10 @@ def get_classifier_pt(from_logits=False, load_init=True):
 
                 w_conv2d_pt = w_conv2d.reshape((1, 1, 7, 7))
 
-                self.conv.weight = nn.Parameter(torch.Tensor(w_conv2d_pt))
-                self.conv.bias = nn.Parameter(torch.Tensor(b_conv2d))
-                self.fullyconnected.weight = nn.Parameter(torch.Tensor(np.transpose(w_dense)))
-                self.fullyconnected.bias = nn.Parameter(torch.Tensor(b_dense))
+                self.conv.weight = torch.nn.Parameter(torch.Tensor(w_conv2d_pt))
+                self.conv.bias = torch.nn.Parameter(torch.Tensor(b_conv2d))
+                self.fullyconnected.weight = torch.nn.Parameter(torch.Tensor(np.transpose(w_dense)))
+                self.fullyconnected.bias = torch.nn.Parameter(torch.Tensor(b_dense))
 
         # pylint: disable=W0221
         # disable pylint because of API requirements for function
@@ -702,8 +694,8 @@ def get_classifier_pt(from_logits=False, load_init=True):
     model = Model()
 
     # Define a loss function and optimizer
-    loss_fn = nn.CrossEntropyLoss()
-    optimizer = optim.Adam(model.parameters(), lr=0.01)
+    loss_fn = torch.nn.CrossEntropyLoss()
+    optimizer = torch.optim.Adam(model.parameters(), lr=0.01)
 
     # Get classifier
     ptc = PyTorchClassifier(model=model, loss=loss_fn, optimizer=optimizer, input_shape=(1, 28, 28), nb_classes=10,
@@ -965,9 +957,11 @@ def get_iris_classifier_pt(load_init=True):
     :return: Trained model for Iris dataset.
     :rtype: :class:`.PyTorchClassifier`
     """
+    import torch
+
     from art.classifiers import PyTorchClassifier
 
-    class Model(nn.Module):
+    class Model(torch.nn.Module):
         """
         Create Iris model for PyTorch.
 
@@ -977,9 +971,9 @@ def get_iris_classifier_pt(load_init=True):
         def __init__(self):
             super(Model, self).__init__()
 
-            self.fully_connected1 = nn.Linear(4, 10)
-            self.fully_connected2 = nn.Linear(10, 10)
-            self.fully_connected3 = nn.Linear(10, 3)
+            self.fully_connected1 = torch.nn.Linear(4, 10)
+            self.fully_connected2 = torch.nn.Linear(10, 10)
+            self.fully_connected3 = torch.nn.Linear(10, 3)
 
             if load_init:
                 w_dense1 = np.load(os.path.join(os.path.dirname(os.path.dirname(__file__)),
@@ -995,12 +989,12 @@ def get_iris_classifier_pt(load_init=True):
                 b_dense3 = np.load(os.path.join(os.path.dirname(os.path.dirname(__file__)),
                                                 'models', 'B_DENSE3_IRIS.npy'))
 
-                self.fully_connected1.weight = nn.Parameter(torch.Tensor(np.transpose(w_dense1)))
-                self.fully_connected1.bias = nn.Parameter(torch.Tensor(b_dense1))
-                self.fully_connected2.weight = nn.Parameter(torch.Tensor(np.transpose(w_dense2)))
-                self.fully_connected2.bias = nn.Parameter(torch.Tensor(b_dense2))
-                self.fully_connected3.weight = nn.Parameter(torch.Tensor(np.transpose(w_dense3)))
-                self.fully_connected3.bias = nn.Parameter(torch.Tensor(b_dense3))
+                self.fully_connected1.weight = torch.nn.Parameter(torch.Tensor(np.transpose(w_dense1)))
+                self.fully_connected1.bias = torch.nn.Parameter(torch.Tensor(b_dense1))
+                self.fully_connected2.weight = torch.nn.Parameter(torch.Tensor(np.transpose(w_dense2)))
+                self.fully_connected2.bias = torch.nn.Parameter(torch.Tensor(b_dense2))
+                self.fully_connected3.weight = torch.nn.Parameter(torch.Tensor(np.transpose(w_dense3)))
+                self.fully_connected3.bias = torch.nn.Parameter(torch.Tensor(b_dense3))
 
         # pylint: disable=W0221
         # disable pylint because of API requirements for function
@@ -1015,8 +1009,8 @@ def get_iris_classifier_pt(load_init=True):
     model = Model()
 
     # Define a loss function and optimizer
-    loss_fn = nn.CrossEntropyLoss()
-    optimizer = optim.Adam(model.parameters(), lr=0.01)
+    loss_fn = torch.nn.CrossEntropyLoss()
+    optimizer = torch.optim.Adam(model.parameters(), lr=0.01)
 
     # Get classifier
     ptc = PyTorchClassifier(model=model, loss=loss_fn, optimizer=optimizer, input_shape=(4,), nb_classes=3,
