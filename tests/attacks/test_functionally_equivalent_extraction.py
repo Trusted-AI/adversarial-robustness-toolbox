@@ -376,7 +376,7 @@ class TestFastGradientMethodImages(TestBase):
                                             [-1.02489274],
                                             [-0.48252173],
                                             [1.92286191]])
-        np.testing.assert_array_almost_equal(self.fee.b_1, layer_1_biases_expected)
+        np.testing.assert_array_almost_equal(self.fee.b_1, layer_1_biases_expected, decimal=4)
 
 
 if __name__ == '__main__':
