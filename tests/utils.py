@@ -81,7 +81,7 @@ class TestBase(unittest.TestCase):
 
     def tearDown(self):
         time_end = time.time() - self.time_start
-        test_name = '.'.join(self.id().split(' ')[0].split('.')[-3:-1])
+        test_name = '.'.join(self.id().split(' ')[0].split('.')[-2:])
         logger.info('%s: completed in %.3f seconds' % (test_name, time_end))
 
         # Check that the test data has not been modified, only catches changes in attack.generate if self has been used
