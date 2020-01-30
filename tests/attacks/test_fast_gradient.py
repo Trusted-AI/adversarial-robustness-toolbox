@@ -242,16 +242,8 @@ class TestFastGradientMethodImages(TestBase):
 
         np.testing.assert_array_equal(np.argmax(y_test_pred, axis=1), y_test_pred_expected)
 
-    def _test_backend_mnist(self, mnist_param, classifier, defended_classifier=None):
+    def _test_l1_norm(self, mnist_param, classifier):
         (x_train, y_train), (x_test, y_test) = mnist_param
-
-        x_test_original = x_test.copy()
-
-        self._test_no_norm(mnist_param, classifier)
-
-        self._test_minimal_perturbations(mnist_param, classifier, x_test_original)
-
-        # L_1 norm
         attack = FastGradientMethod(classifier, eps=1, norm=1, batch_size=128)
         x_test_adv = attack.generate(x_test)
 
@@ -264,7 +256,8 @@ class TestFastGradientMethodImages(TestBase):
                                             0.05271865, 0.12600125, 0.0811625, 0.0424339]])
         np.testing.assert_array_almost_equal(y_test_pred, y_test_pred_expected, decimal=4)
 
-        # L_2 norm
+    def _test_l2_norm(self, mnist_param, classifier):
+        (x_train, y_train), (x_test, y_test) = mnist_param
         attack = FastGradientMethod(classifier, eps=1, norm=2, batch_size=128)
         x_test_adv = attack.generate(x_test)
 
@@ -276,6 +269,22 @@ class TestFastGradientMethodImages(TestBase):
         y_test_pred_expected = np.asarray([[0.19395831, 0.11625732, 0.08293699, 0.04129186, 0.17826456, 0.06290703,
                                             0.06270657, 0.14066935, 0.07419015, 0.04681788]])
         np.testing.assert_array_almost_equal(y_test_pred, y_test_pred_expected, decimal=2)
+
+    def _test_backend_mnist(self, mnist_param, classifier, defended_classifier=None):
+        (x_train, y_train), (x_test, y_test) = mnist_param
+
+        x_test_original = x_test.copy()
+
+        self._test_no_norm(mnist_param, classifier)
+
+        self._test_minimal_perturbations(mnist_param, classifier, x_test_original)
+
+        self._test_l1_norm(mnist_param, classifier)
+
+        self._test_l2_norm(mnist_param, classifier)
+
+
+
 
         # Test random initialisations
         attack = FastGradientMethod(classifier, num_random_init=3)
