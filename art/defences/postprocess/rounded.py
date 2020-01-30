@@ -22,7 +22,7 @@ import logging
 
 import numpy as np
 
-from art.defences import Postprocessor
+from art.defences.postprocess.postprocessor import Postprocessor
 
 logger = logging.getLogger(__name__)
 
@@ -31,6 +31,7 @@ class Rounded(Postprocessor):
     """
     Implementation of a postprocessor based on rounding classifier output.
     """
+    params = ['decimals']
 
     def __init__(self, decimals=3, apply_fit=False, apply_predict=True):
         """

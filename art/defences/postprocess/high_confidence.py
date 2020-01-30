@@ -20,7 +20,7 @@ This module implements confidence added to the classifier output.
 """
 import logging
 
-from art.defences import Postprocessor
+from art.defences.postprocess.postprocessor import Postprocessor
 
 logger = logging.getLogger(__name__)
 
@@ -29,6 +29,7 @@ class HighConfidence(Postprocessor):
     """
     Implementation of a postprocessor based on selecting high confidence predictions to return as classifier output.
     """
+    params = ['cutoff']
 
     def __init__(self, cutoff=0.25, apply_fit=False, apply_predict=True):
         """
@@ -64,9 +65,10 @@ class HighConfidence(Postprocessor):
         :return: Postprocessed model output.
         :rtype: `np.ndarray`
         """
-        preds[preds < self.cutoff] = 0.0
+        post_preds = preds.copy()
+        post_preds[post_preds < self.cutoff] = 0.0
 
-        return preds
+        return post_preds
 
     def estimate_gradient(self, x, grad):
         """

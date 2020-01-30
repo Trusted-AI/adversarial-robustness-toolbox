@@ -24,7 +24,7 @@ import logging
 
 import numpy as np
 
-from art.defences import Postprocessor
+from art.defences.postprocess.postprocessor import Postprocessor
 
 logger = logging.getLogger(__name__)
 
@@ -33,6 +33,7 @@ class ReverseSigmoid(Postprocessor):
     """
     Implementation of a postprocessor based on adding the Reverse Sigmoid perturbation to classifier output.
     """
+    params = ['beta', 'gamma']
 
     def __init__(self, beta=1.0, gamma=0.1, apply_fit=False, apply_predict=True):
         """
