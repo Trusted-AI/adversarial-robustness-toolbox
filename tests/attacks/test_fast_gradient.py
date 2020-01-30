@@ -47,7 +47,7 @@ class TestFastGradientMethodImages(TestBase):
         cls.n_train = 100
         cls.n_test = 11
         cls.create_image_dataset(n_train=cls.n_train, n_test=cls.n_test)
-    
+
         cls.mnist = (cls.x_train_mnist, cls.y_train_mnist), (cls.x_test_mnist, cls.y_test_mnist)
         cls.iris = (cls.x_train_iris, cls.y_train_iris), (cls.x_test_iris, cls.y_test_iris)
 
@@ -69,9 +69,9 @@ class TestFastGradientMethodImages(TestBase):
 
     @unittest.skipUnless(os.environ["mlFramework"] == "keras", "Not a Keras Method hence Skipping this test")
     def test_no_norm_images_keras(self):
-        classifier = utils_test.get_image_classifier()
 
-        self._test_no_norm_images(self.mnist, classifier)
+
+        self._test_no_norm_images()
 
     @unittest.skipUnless(os.environ["mlFramework"] == "keras", "Not a Keras Method hence Skipping this test")
     def test_minimal_perturbations_images_keras(self):
@@ -219,17 +219,18 @@ class TestFastGradientMethodImages(TestBase):
             accuracy = np.sum(y_pred_test_adv == y_test_true) / y_test_true.shape[0]
             logger.info('Accuracy on Iris with FGM adversarial examples: %.2f%%', (accuracy * 100))
 
-    def _test_no_norm_images(self, mnist_param, classifier):
+    def _test_no_norm_images(self):
         (self.x_train_mnist, self.y_train_mnist), (self.x_test_mnist, self.y_test_mnist)
-        (x_train, y_train), (x_test, y_test) = mnist_param
+        classifier = utils_test.get_image_classifier()
+        # (x_train, y_train), (x_test, y_test) = mnist_param
 
         # Test FGSM with np.inf norm
         attack = FastGradientMethod(classifier, eps=1.0, batch_size=11)
-        x_test_adv = attack.generate(x_test)
+        x_test_adv = attack.generate(self.x_test_mnist)
 
-        self.assertAlmostEqual(float(np.mean(x_test_adv - x_test)), 0.2346725, delta=0.002)
-        self.assertAlmostEqual(float(np.min(x_test_adv - x_test)), -1.0, delta=0.00001)
-        self.assertAlmostEqual(float(np.max(x_test_adv - x_test)), 1.0, delta=0.00001)
+        self.assertAlmostEqual(float(np.mean(x_test_adv - self.x_test_mnist)), 0.2346725, delta=0.002)
+        self.assertAlmostEqual(float(np.min(x_test_adv - self.x_test_mnist)), -1.0, delta=0.00001)
+        self.assertAlmostEqual(float(np.max(x_test_adv - self.x_test_mnist)), 1.0, delta=0.00001)
 
         y_test_pred = classifier.predict(x_test_adv)
 
@@ -268,7 +269,7 @@ class TestFastGradientMethodImages(TestBase):
                                             4.61629629e-02, 7.41390288e-02, 2.49474458e-02, 3.12782317e-01,
                                             2.46306900e-02, 2.41311267e-02]])
 
-        np.testing.assert_array_equal(np.argmax(y_test, axis=1), y_test_expected)
+        np.testing.assert_array_equal(np.argmax(self.y_test_mnist, axis=1), y_test_expected)
         np.testing.assert_array_almost_equal(y_test_pred[0:3], y_test_pred_expected[0:3], decimal=2)
 
     def _test_minimal_perturbations(self,  mnist_param, classifier):
