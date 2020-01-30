@@ -219,9 +219,9 @@ class TestFastGradientMethodImages(TestBase):
     def test_untargeted_attack_tabular(self):
         classifier = utils_test.get_tabular_classifier()
 
-        # Test untargeted attack
         attack = FastGradientMethod(classifier, eps=.1)
         x_test_adv = attack.generate(self.x_test_iris)
+
 
         self._check_x_adv(x_test_adv, self.x_test_iris)
 
@@ -233,7 +233,9 @@ class TestFastGradientMethodImages(TestBase):
         self.assertFalse((y_test_true == y_pred_test_adv).all(),
                          "An untargeted attack should NOT have changed all predictions")
         accuracy = np.sum(y_pred_test_adv == y_test_true) / y_test_true.shape[0]
-        logger.info('Accuracy on Iris with FGM adversarial examples: %.2f%%', (accuracy * 100))
+        logger.info('Accuracy of ' + classifier.__class__.__name__ + ' on Iris with FGM adversarial examples: '
+                                                                     '%.2f%%', (accuracy * 100))
+
 
     def test_classifier_defended_images(self):
         defended_classifier = utils_test.get_image_classifier(defended=True)
@@ -297,7 +299,7 @@ class TestFastGradientMethodImages(TestBase):
                       '(<class \'art.classifiers.scikitlearn.ScikitlearnClassifier\'>,).', str(context.exception))
 
 
-    @unittest.skipUnless(os.environ["mlFramework"] == "scikitlearn", "Not a scikitlearn method hence Skipping this test")
+    # @unittest.skipUnless(os.environ["mlFramework"] == "scikitlearn", "Not a scikitlearn method hence Skipping this test")
     def test_tabular_scikitlearn(self):
         from sklearn.linear_model import LogisticRegression
         from sklearn.svm import SVC, LinearSVC
@@ -313,18 +315,26 @@ class TestFastGradientMethodImages(TestBase):
             classifier.fit(x=self.x_test_iris, y=self.y_test_iris)
 
             # Test untargeted attack
-            eps = 0.1
-            attack = FastGradientMethod(classifier, eps=eps)
+            attack = FastGradientMethod(classifier, eps=.1)
             x_test_adv = attack.generate(self.x_test_iris)
-            np.testing.assert_array_almost_equal(np.abs(x_test_adv - self.x_test_iris), eps, decimal=5)
-            self.assertLessEqual(np.amax(x_test_adv), 1.0)
-            self.assertGreaterEqual(np.amin(x_test_adv), 0.0)
 
-            predictions_adv = np.argmax(classifier.predict(x_test_adv), axis=1)
-            self.assertFalse((np.argmax(self.y_test_iris, axis=1) == predictions_adv).all())
-            accuracy = np.sum(predictions_adv == np.argmax(self.y_test_iris, axis=1)) / self.y_test_iris.shape[0]
+            #SCIKIT LEARN SPECIFIC
+            np.testing.assert_array_almost_equal(np.abs(x_test_adv - self.x_test_iris), .1, decimal=5)
+            self._check_x_adv(x_test_adv, self.x_test_iris)
+
+            y_pred_test_adv = np.argmax(classifier.predict(x_test_adv), axis=1)
+            y_test_true = np.argmax(self.y_test_iris, axis=1)
+
+            self.assertTrue((y_test_true == y_pred_test_adv).any(),
+                            "An untargeted attack should have changed SOME predictions")
+            self.assertFalse((y_test_true == y_pred_test_adv).all(),
+                             "An untargeted attack should NOT have changed all predictions")
+
+            accuracy = np.sum(y_pred_test_adv == y_test_true) / y_test_true.shape[0]
             logger.info('Accuracy of ' + classifier.__class__.__name__ + ' on Iris with FGM adversarial examples: '
                                                                          '%.2f%%', (accuracy * 100))
+
+
 
             # Test targeted attack
             targets = random_targets(self.y_test_iris, nb_classes=3)
@@ -334,9 +344,9 @@ class TestFastGradientMethodImages(TestBase):
             self.assertLessEqual(np.amax(x_test_adv), 1.0)
             self.assertGreaterEqual(np.amin(x_test_adv), 0.0)
 
-            predictions_adv = np.argmax(classifier.predict(x_test_adv), axis=1)
-            self.assertTrue((np.argmax(targets, axis=1) == predictions_adv).any())
-            accuracy = np.sum(predictions_adv == np.argmax(targets, axis=1)) / self.y_test_iris.shape[0]
+            y_pred_test_adv = np.argmax(classifier.predict(x_test_adv), axis=1)
+            self.assertTrue((np.argmax(targets, axis=1) == y_pred_test_adv).any())
+            accuracy = np.sum(y_pred_test_adv == np.argmax(targets, axis=1)) / self.y_test_iris.shape[0]
             logger.info('Success rate of ' + classifier.__class__.__name__ + ' on targeted FGM on Iris: %.2f%%',
                         (accuracy * 100))
 
