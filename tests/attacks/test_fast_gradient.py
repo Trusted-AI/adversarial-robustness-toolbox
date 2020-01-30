@@ -246,26 +246,17 @@ class TestFastGradientMethodImages(TestBase):
                       '`art.classifiers.classifier.ClassifierGradients`, the provided classifier is instance of '
                       '(<class \'art.classifiers.scikitlearn.ScikitlearnClassifier\'>,).', str(context.exception))
 
-    @unittest.skipUnless(os.environ["mlFramework"] == "keras", "Not a Keras Method hence Skipping this test")
-    def test_tabular_keras(self):
-        (_, _), (x_test, y_test) = self.iris
+
+
+    def test_tabular(self):
+        self._test_backend_iris()
+
+    def _test_backend_iris(self):
+
         classifier = utils_test.get_tabular_classifier()
         classifier_no_clip_values = utils_test.get_tabular_classifier(clipped=False)
-        self._test_backend_iris(x_test, y_test, classifier, classifier_no_clip_values)
-
-    @unittest.skipUnless(os.environ["mlFramework"] == "tensorflow", "Not a Tensorflow Method hence Skipping this test")
-    def test_tabular_tensorflow(self):
         (_, _), (x_test, y_test) = self.iris
-        classifier = utils_test.get_tabular_classifier()
-        self._test_backend_iris(x_test, y_test, classifier, batch_size=128)
 
-    @unittest.skipUnless(os.environ["mlFramework"] == "pytorch", "Not a pyTorch Method hence Skipping this test")
-    def test_tabular_pytorch(self):
-        (_, _), (x_test, y_test) = self.iris
-        classifier = utils_test.get_tabular_classifier()
-        self._test_backend_iris(x_test, y_test, classifier, batch_size=128)
-
-    def _test_backend_iris(self, x_test, y_test, classifier, classifier_no_clip_values=None, batch_size=1):
         # Test untargeted attack
         attack = FastGradientMethod(classifier, eps=.1)
         x_test_adv = attack.generate(x_test)
@@ -283,6 +274,9 @@ class TestFastGradientMethodImages(TestBase):
         logger.info('Accuracy on Iris with FGM adversarial examples: %.2f%%', (accuracy * 100))
 
         # Test targeted attack
+        batch_size = 1
+        if os.environ["mlFramework"] in ["pytorch", "tensorflow"]:
+            batch_size = 128
         targets = random_targets(y_test, nb_classes=3)
         y_targeted = np.argmax(targets, axis=1)
         attack = FastGradientMethod(classifier, targeted=True, eps=.1, batch_size=batch_size)

@@ -165,7 +165,7 @@ def get_tabular_classifier(clipped=True):
 
     elif os.environ["mlFramework"] == "tensorflow":
         classifier, _ = get_iris_classifier_tf()
-        return classifier  if clipped else None
+        return classifier if clipped else None
     elif os.environ["mlFramework"] == "pytorch":
         return get_iris_classifier_pt() if clipped else None
     elif os.environ["mlFramework"] == "scikitlearn":
