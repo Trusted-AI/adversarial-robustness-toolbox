@@ -24,6 +24,7 @@ import keras
 import keras.backend as k
 import numpy as np
 
+from art.utils import master_seed
 from art.attacks import CarliniL2Method, CarliniLInfMethod
 from art.classifiers import KerasClassifier
 from art.utils import random_targets, to_categorical
@@ -42,6 +43,7 @@ class TestCarlini(TestBase):
 
     @classmethod
     def setUpClass(cls):
+        master_seed(seed=1234)
         super().setUpClass()
 
         cls.n_train = 10
@@ -50,6 +52,10 @@ class TestCarlini(TestBase):
         cls.y_train_mnist = cls.y_train_mnist[0:cls.n_train]
         cls.x_test_mnist = cls.x_test_mnist[0:cls.n_test]
         cls.y_test_mnist = cls.y_test_mnist[0:cls.n_test]
+
+    def setUp(self):
+        master_seed(seed=1234)
+        super().setUp()
 
     def test_tensorflow_failure_attack_L2(self):
         """
@@ -85,7 +91,7 @@ class TestCarlini(TestBase):
         x_test_original = self.x_test_mnist.copy()
 
         # Build TensorFlowClassifier
-        tfc, sess = get_classifier_tf()
+        tfc, sess = get_classifier_tf(from_logits=True)
 
         # First attack
         cl2m = CarliniL2Method(classifier=tfc, targeted=True, max_iter=10)

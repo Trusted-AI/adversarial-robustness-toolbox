@@ -27,6 +27,7 @@ import tensorflow as tf
 import numpy as np
 
 # from art.config import ART_DATA_PATH
+from art.utils import master_seed
 from art.data_generators import TFDataGenerator
 
 from tests.utils_test import TestBase, get_classifier_tf
@@ -41,6 +42,7 @@ class TestTensorFlowClassifier(TestBase):
 
     @classmethod
     def setUpClass(cls):
+        master_seed(seed=1234, set_mxnet=False, set_torch=False)
         super().setUpClass()
 
         cls.classifier, cls.sess = get_classifier_tf()
@@ -50,6 +52,10 @@ class TestTensorFlowClassifier(TestBase):
             cls.is_version_2 = True
         else:
             cls.is_version_2 = False
+
+    def setUp(self):
+        master_seed(seed=1234, set_mxnet=False, set_torch=False)
+        super().setUp()
 
     def test_predict(self):
         y_predicted = self.classifier.predict(self.x_test_mnist[0:1])

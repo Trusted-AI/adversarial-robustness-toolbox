@@ -22,6 +22,7 @@ import unittest
 
 import numpy as np
 
+from art.utils import master_seed
 from art.classifiers import Classifier, ClassifierNeuralNetwork, ClassifierGradients
 
 from tests.utils_test import TestBase
@@ -80,6 +81,15 @@ class ClassifierNeuralNetworkInstance(ClassifierNeuralNetwork, ClassifierGradien
 
 class TestClassifier(TestBase):
 
+    @classmethod
+    def setUpClass(cls):
+        master_seed(seed=1234, set_tensorflow=False, set_mxnet=False, set_torch=False)
+        super().setUpClass()
+
+    def setUp(self):
+        master_seed(seed=1234, set_tensorflow=False, set_mxnet=False, set_torch=False)
+        super().setUp()
+
     def test_preprocessing_normalisation(self):
         classifier = ClassifierInstance()
 
@@ -100,6 +110,15 @@ class TestClassifier(TestBase):
 
 
 class TestClassifierNeuralNetwork(TestBase):
+
+    @classmethod
+    def setUpClass(cls):
+        master_seed(seed=1234, set_tensorflow=False, set_mxnet=False, set_torch=False)
+        super().setUpClass()
+
+    def setUp(self):
+        master_seed(seed=1234, set_tensorflow=False, set_mxnet=False, set_torch=False)
+        super().setUp()
 
     def test_preprocessing_normalisation(self):
         classifier = ClassifierNeuralNetworkInstance((0, 1))

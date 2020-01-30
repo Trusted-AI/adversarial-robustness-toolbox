@@ -25,7 +25,7 @@ import numpy as np
 
 from art.attacks import ElasticNet
 from art.classifiers import KerasClassifier
-from art.utils import random_targets, to_categorical
+from art.utils import random_targets, to_categorical, master_seed
 
 from tests.utils_test import TestBase
 from tests.utils_test import get_classifier_tf, get_classifier_kr
@@ -41,6 +41,7 @@ class TestElasticNet(TestBase):
 
     @classmethod
     def setUpClass(cls):
+        master_seed(seed=1234)
         super().setUpClass()
 
         cls.n_train = 500
@@ -49,6 +50,10 @@ class TestElasticNet(TestBase):
         cls.y_train_mnist = cls.y_train_mnist[0:cls.n_train]
         cls.x_test_mnist = cls.x_test_mnist[0:cls.n_test]
         cls.y_test_mnist = cls.y_test_mnist[0:cls.n_test]
+
+    def setUp(self):
+        master_seed(seed=1234)
+        super().setUp()
 
     def test_tensorflow_failure_attack(self):
         """

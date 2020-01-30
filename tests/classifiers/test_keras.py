@@ -20,9 +20,6 @@ from __future__ import absolute_import, division, print_function, unicode_litera
 import os
 import logging
 import unittest
-import requests
-import tempfile
-import shutil
 # import pickle
 
 import numpy as np
@@ -32,8 +29,6 @@ from keras.layers import Dense, Conv2D, MaxPooling2D, Dropout, Input, Flatten
 from keras.models import Model
 from keras.preprocessing.image import ImageDataGenerator
 from keras.callbacks import LearningRateScheduler
-from keras.applications.resnet50 import ResNet50, decode_predictions
-from keras.preprocessing.image import load_img, img_to_array
 
 # from art.config import ART_DATA_PATH
 from art.classifiers import KerasClassifier
@@ -83,29 +78,17 @@ class TestKerasClassifier(TestBase):
 
     @classmethod
     def setUpClass(cls):
+        master_seed(seed=1234, set_tensorflow=False, set_mxnet=False, set_torch=False)
         super().setUpClass()
 
         # Load small Keras model
         cls.functional_model = _functional_model()
         cls.functional_model.fit([cls.x_train_mnist, cls.x_train_mnist], [cls.y_train_mnist, cls.y_train_mnist],
-                                 nb_epoch=3)
-
-        # Temporary folder for tests
-        cls.test_dir = tempfile.mkdtemp()
-
-        # Download one ImageNet pic for tests
-        url = 'http://farm1.static.flickr.com/163/381342603_81db58bea4.jpg'
-        result = requests.get(url, stream=True)
-        if result.status_code == 200:
-            image = result.raw.read()
-            f = open(os.path.join(cls.test_dir, 'test.jpg'), 'wb')
-            f.write(image)
-            f.close()
+                                 epochs=3)
 
     @classmethod
     def tearDownClass(cls):
         k.clear_session()
-        shutil.rmtree(cls.test_dir)
 
     def test_fit(self):
         labels = np.argmax(self.y_test_mnist, axis=1)
@@ -396,7 +379,7 @@ class TestKerasClassifier(TestBase):
 
         def _run_tests(_loss_name, _loss_type, _y_test_pred_expected, _class_gradient_probabilities_expected,
                        _loss_gradient_expected, _from_logits):
-            master_seed(1234)
+            master_seed(seed=1234, set_tensorflow=False, set_mxnet=False, set_torch=False)
             classifier = get_classifier_kr(loss_name=_loss_name, loss_type=_loss_type, from_logits=_from_logits)
 
             y_test_pred = np.argmax(classifier.predict(x=self.x_test_mnist), axis=1)

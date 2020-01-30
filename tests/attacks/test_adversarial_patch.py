@@ -23,8 +23,8 @@ import unittest
 import numpy as np
 from sklearn.tree import DecisionTreeClassifier
 
-from art.attacks import AdversarialPatch
 from art.utils import master_seed
+from art.attacks import AdversarialPatch
 from art.classifiers.scikitlearn import ScikitlearnDecisionTreeClassifier
 
 from tests.utils_test import TestBase
@@ -40,6 +40,7 @@ class TestAdversarialPatch(TestBase):
 
     @classmethod
     def setUpClass(cls):
+        master_seed(seed=1234)
         super().setUpClass()
 
         cls.n_train = 10
@@ -48,6 +49,10 @@ class TestAdversarialPatch(TestBase):
         cls.y_train_mnist = cls.y_train_mnist[0:cls.n_train]
         cls.x_test_mnist = cls.x_test_mnist[0:cls.n_test]
         cls.y_test_mnist = cls.y_test_mnist[0:cls.n_test]
+
+    def setUp(self):
+        master_seed(seed=1234)
+        super().setUp()
 
     def test_tensorflow(self):
         """

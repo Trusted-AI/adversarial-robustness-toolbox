@@ -31,6 +31,7 @@ import torch.optim as optim
 from torch.utils.data import DataLoader
 
 from art.config import ART_DATA_PATH
+from art.utils import master_seed
 from art.data_generators import PyTorchDataGenerator
 from art.classifiers import PyTorchClassifier
 
@@ -68,6 +69,7 @@ class TestPyTorchClassifier(TestBase):
 
     @classmethod
     def setUpClass(cls):
+        master_seed(seed=1234, set_tensorflow=False, set_mxnet=False)
         super().setUpClass()
 
         cls.x_train_mnist = np.reshape(cls.x_train_mnist, (cls.x_train_mnist.shape[0], 1, 28, 28)).astype(np.float32)
@@ -97,6 +99,7 @@ class TestPyTorchClassifier(TestBase):
         cls.x_test_mnist = np.reshape(cls.x_test_mnist, (cls.x_test_mnist.shape[0], 28, 28, 1)).astype(np.float32)
 
     def setUp(self):
+        master_seed(seed=1234, set_tensorflow=False, set_mxnet=False)
         self.x_train_mnist = np.reshape(self.x_train_mnist, (self.x_train_mnist.shape[0], 1, 28, 28)).astype(np.float32)
         self.x_test_mnist = np.reshape(self.x_test_mnist, (self.x_test_mnist.shape[0], 1, 28, 28)).astype(np.float32)
         super().setUp()
