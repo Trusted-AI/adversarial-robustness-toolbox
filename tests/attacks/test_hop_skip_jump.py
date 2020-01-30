@@ -51,6 +51,10 @@ class TestHopSkipJump(TestBase):
         cls.x_test_mnist = cls.x_test_mnist[0:cls.n_test]
         cls.y_test_mnist = cls.y_test_mnist[0:cls.n_test]
 
+    def setUp(self):
+        master_seed(seed=1234, set_tensorflow=True, set_torch=True)
+        super().setUp()
+
     def test_tensorflow_mnist(self):
         """
         First test with the TensorFlowClassifier.
