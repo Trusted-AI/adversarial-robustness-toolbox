@@ -64,17 +64,19 @@ class TestBase(unittest.TestCase):
         cls.n_test = 100
         cls.batch_size = 16
 
-        (x_train_mnist, y_train_mnist), (x_test_mnist, y_test_mnist), _, _ = load_dataset('mnist')
+        # (x_train_mnist, y_train_mnist), (x_test_mnist, y_test_mnist), _, _ = load_dataset('mnist')
+        # cls.x_train_mnist = x_train_mnist[:cls.n_train]
+        # cls.y_train_mnist = y_train_mnist[:cls.n_train]
+        # cls.x_test_mnist = x_test_mnist[:cls.n_test]
+        # cls.y_test_mnist = y_test_mnist[:cls.n_test]
 
-        cls.x_train_mnist = x_train_mnist[:cls.n_train]
-        cls.y_train_mnist = y_train_mnist[:cls.n_train]
-        cls.x_test_mnist = x_test_mnist[:cls.n_test]
-        cls.y_test_mnist = y_test_mnist[:cls.n_test]
+        # cls._x_train_mnist_original = cls.x_train_mnist.copy()
+        # cls._y_train_mnist_original = cls.y_train_mnist.copy()
+        # cls._x_test_mnist_original = cls.x_test_mnist.copy()
+        # cls._y_test_mnist_original = cls.y_test_mnist.copy()
 
-        cls._x_train_mnist_original = cls.x_train_mnist.copy()
-        cls._y_train_mnist_original = cls.y_train_mnist.copy()
-        cls._x_test_mnist_original = cls.x_test_mnist.copy()
-        cls._y_test_mnist_original = cls.y_test_mnist.copy()
+        cls.create_image_dataset(n_train=cls.n_train, n_test=cls.n_test)
+
 
         (x_train_iris, y_train_iris), (x_test_iris, y_test_iris), _, _ = load_dataset('iris')
 
@@ -92,6 +94,18 @@ class TestBase(unittest.TestCase):
         # Filter warning for scipy, removed with scipy 1.4
         warnings.filterwarnings('ignore', '.*the output shape of zoom.*')
 
+    @classmethod
+    def create_image_dataset(cls, n_train, n_test):
+        (x_train_mnist, y_train_mnist), (x_test_mnist, y_test_mnist), _, _ = load_dataset('mnist')
+        cls.x_train_mnist = x_train_mnist[:n_train]
+        cls.y_train_mnist = y_train_mnist[:n_train]
+        cls.x_test_mnist = x_test_mnist[:n_test]
+        cls.y_test_mnist = y_test_mnist[:n_test]
+
+        cls._x_train_mnist_original = cls.x_train_mnist.copy()
+        cls._y_train_mnist_original = cls.y_train_mnist.copy()
+        cls._x_test_mnist_original = cls.x_test_mnist.copy()
+        cls._y_test_mnist_original = cls.y_test_mnist.copy()
 
     def setUp(self):
         master_seed(1234)
