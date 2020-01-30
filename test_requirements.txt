@@ -1,21 +1,20 @@
-pytest-pep8
-codecov
-
+#Duplicated in main requirements file - pytest-pep8
+#Duplicated in main requirements file - codecov
 h5py
-Pillow
-requests
-keras
-mxnet
-#torch>=1.2.0
-tensorflow
-scikit-learn==0.22.1
-xgboost
-lightgbm
+#Duplicated in main requirements file - Pillow
+#Duplicated in main requirements file - requests
+#Duplicated in main requirements file - keras
+#Duplicated in main requirements file - mxnet
+#Duplicated in main requirements file - #torch>=1.2.0
+#Duplicated in main requirements file - tensorflow
+#Duplicated in main requirements file - scikit-learn==0.22.1
+#Duplicated in main requirements file - xgboost
+#Duplicated in main requirements file - lightgbm
 # Comment out because of compatibility issues with numpy versions
 # catboost
-GPy
-numpy==1.18.1
-scipy
-statsmodels
+#Duplicated in main requirements file - GPy
+#Duplicated in main requirements file - numpy==1.18.1
+#Duplicated in main requirements file - scipy
+#Duplicated in main requirements file - statsmodels
 
 
