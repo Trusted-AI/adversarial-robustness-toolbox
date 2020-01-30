@@ -50,8 +50,10 @@ class TestFastGradientMethodImages(TestBase):
         cls.y_train_mnist = cls.y_train_mnist[0:cls.n_train]
         cls.x_test_mnist = cls.x_test_mnist[0:cls.n_test]
         cls.y_test_mnist = cls.y_test_mnist[0:cls.n_test]
+
         cls.mnist = (cls.x_train_mnist, cls.y_train_mnist), (cls.x_test_mnist, cls.y_test_mnist)
         cls.iris = (cls.x_train_iris, cls.y_train_iris), (cls.x_test_iris, cls.y_test_iris)
+
 
     def setUp(self):
         super().setUp()
@@ -68,7 +70,7 @@ class TestFastGradientMethodImages(TestBase):
     def test_no_norm_images_keras(self):
         classifier = utils_test.get_image_classifier()
 
-        self._test_no_norm(self.mnist, classifier)
+        self._test_no_norm_images(self.mnist, classifier)
 
     @unittest.skipUnless(os.environ["mlFramework"] == "keras", "Not a Keras Method hence Skipping this test")
     def test_minimal_perturbations_images_keras(self):
@@ -109,11 +111,11 @@ class TestFastGradientMethodImages(TestBase):
 
         self._test_defended_classifier(self.mnist, classifier, defended_classifier)
 
-    @unittest.skipUnless(os.environ["mlFramework"] == "tensorflow", "Not a Tensorflow Method hence Skipping this test")
-    def test_images_tensorflow(self):
-        # classifier, sess = get_classifier_tf()
-        classifier = utils_test.get_image_classifier()
-        self._test_backend_mnist(self.mnist, classifier)
+    # @unittest.skipUnless(os.environ["mlFramework"] == "tensorflow", "Not a Tensorflow Method hence Skipping this test")
+    # def test_images_tensorflow(self):
+    #     # classifier, sess = get_classifier_tf()
+    #     classifier = utils_test.get_image_classifier()
+    #     self._test_backend_mnist(self.mnist, classifier)
 
     @unittest.skipUnless(os.environ["mlFramework"] == "pytorch", "Not a pyTorch Method hence Skipping this test")
     def test_images_pytorch(self):
@@ -216,7 +218,8 @@ class TestFastGradientMethodImages(TestBase):
             accuracy = np.sum(y_pred_test_adv == y_test_true) / y_test_true.shape[0]
             logger.info('Accuracy on Iris with FGM adversarial examples: %.2f%%', (accuracy * 100))
 
-    def _test_no_norm(self, mnist_param, classifier):
+    def _test_no_norm_images(self, mnist_param, classifier):
+        (self.x_train_mnist, self.y_train_mnist), (self.x_test_mnist, self.y_test_mnist)
         (x_train, y_train), (x_test, y_test) = mnist_param
 
         # Test FGSM with np.inf norm

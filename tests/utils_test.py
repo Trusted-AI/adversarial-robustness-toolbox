@@ -92,6 +92,7 @@ class TestBase(unittest.TestCase):
         # Filter warning for scipy, removed with scipy 1.4
         warnings.filterwarnings('ignore', '.*the output shape of zoom.*')
 
+
     def setUp(self):
         master_seed(1234)
         self.time_start = time.time()
