@@ -131,6 +131,7 @@ class TestFastGradientMethodImages(TestBase):
 
         self._check_x_adv(x_test_adv, x_test)
 
+
         y_pred_test_adv = np.argmax(classifier.predict(x_test_adv), axis=1)
         y_test_true = np.argmax(y_test, axis=1)
 
