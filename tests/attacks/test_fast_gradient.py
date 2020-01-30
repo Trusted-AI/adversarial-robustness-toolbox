@@ -270,31 +270,15 @@ class TestFastGradientMethodImages(TestBase):
                                             0.06270657, 0.14066935, 0.07419015, 0.04681788]])
         np.testing.assert_array_almost_equal(y_test_pred, y_test_pred_expected, decimal=2)
 
-    def _test_backend_mnist(self, mnist_param, classifier, defended_classifier=None):
+    def _test_random_initialisation(self, mnist_param, classifier):
         (x_train, y_train), (x_test, y_test) = mnist_param
-
-        x_test_original = x_test.copy()
-
-        self._test_no_norm(mnist_param, classifier)
-
-        self._test_minimal_perturbations(mnist_param, classifier, x_test_original)
-
-        self._test_l1_norm(mnist_param, classifier)
-
-        self._test_l2_norm(mnist_param, classifier)
-
-
-
-
-        # Test random initialisations
         attack = FastGradientMethod(classifier, num_random_init=3)
         x_test_adv = attack.generate(x_test)
         self.assertFalse((x_test == x_test_adv).all())
 
-        # Test targeted
-        self._test_mnist_targeted(classifier, x_test, y_test)
+    def _test_defended_classifier(self, mnist_param, classifier, defended_classifier=None):
+        (x_train, y_train), (x_test, y_test) = mnist_param
 
-        # Defended classifier
         if defended_classifier is not None:
             attack = FastGradientMethod(defended_classifier, eps=1, batch_size=128)
 
@@ -309,6 +293,25 @@ class TestFastGradientMethodImages(TestBase):
             self._check_x_adv(x_test_adv, x_test)
             y_test_pred_adv = get_labels_np_array(defended_classifier.predict(x_test_adv))
             self._check_y_pred_adv(y_test_pred_adv, y_test)
+
+    def _test_backend_mnist(self, mnist_param, classifier, defended_classifier=None):
+        (x_train, y_train), (x_test, y_test) = mnist_param
+
+        x_test_original = x_test.copy()
+
+        self._test_no_norm(mnist_param, classifier)
+
+        self._test_minimal_perturbations(mnist_param, classifier, x_test_original)
+
+        self._test_l1_norm(mnist_param, classifier)
+
+        self._test_l2_norm(mnist_param, classifier)
+
+        self._test_random_initialisation(mnist_param, classifier)
+
+        self._test_mnist_targeted(classifier, x_test, y_test)
+
+        self._test_defended_classifier(mnist_param, classifier, defended_classifier)
 
         # Check that x_test has not been modified by attack and classifier
         self.assertAlmostEqual(float(np.max(np.abs(x_test_original - x_test))), 0.0, delta=0.00001)
