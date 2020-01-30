@@ -56,7 +56,6 @@ class TestFastGradientMethodImages(TestBase):
         # Check that x_test has not been modified by attack and classifier
         self.assertAlmostEqual(float(np.max(np.abs(self.x_test_original - self.x_test_potentially_modified))), 0.0, delta=0.00001)
 
-
     def test_no_norm_images(self):
         (self.x_train_mnist, self.y_train_mnist), (self.x_test_mnist, self.y_test_mnist)
         classifier = utils_test.get_image_classifier()
@@ -241,11 +240,8 @@ class TestFastGradientMethodImages(TestBase):
                       '`art.classifiers.classifier.ClassifierGradients`, the provided classifier is instance of '
                       '(<class \'art.classifiers.scikitlearn.ScikitlearnClassifier\'>,).', str(context.exception))
 
-
-    def test_tabular(self):
-
+    def test_untargeted_tabular(self):
         classifier = utils_test.get_tabular_classifier()
-        classifier_no_clip_values = utils_test.get_tabular_classifier(clipped=False)
 
         # Test untargeted attack
         attack = FastGradientMethod(classifier, eps=.1)
@@ -263,10 +259,15 @@ class TestFastGradientMethodImages(TestBase):
         accuracy = np.sum(y_pred_test_adv == y_test_true) / y_test_true.shape[0]
         logger.info('Accuracy on Iris with FGM adversarial examples: %.2f%%', (accuracy * 100))
 
+    def test_tabular(self):
+
+        classifier = utils_test.get_tabular_classifier()
+
         # Test targeted attack
         batch_size = 1
         if os.environ["mlFramework"] in ["pytorch", "tensorflow"]:
             batch_size = 128
+        y_test_true = np.argmax(self.y_test_iris, axis=1)
         targets = random_targets(self.y_test_iris, nb_classes=3)
         y_targeted = np.argmax(targets, axis=1)
         attack = FastGradientMethod(classifier, targeted=True, eps=.1, batch_size=batch_size)
@@ -280,6 +281,7 @@ class TestFastGradientMethodImages(TestBase):
         logger.info('Success rate of targeted FGM on Iris: %.2f%%', (accuracy * 100))
 
         # Recreate a classifier without clip values
+        classifier_no_clip_values = utils_test.get_tabular_classifier(clipped=False)
         if classifier_no_clip_values is not None:
             attack = FastGradientMethod(classifier_no_clip_values, eps=1)
 
