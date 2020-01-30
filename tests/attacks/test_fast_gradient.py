@@ -169,10 +169,8 @@ class TestFastGradientMethodImages(TestBase):
             accuracy = np.sum(y_pred_test_adv == y_test_true) / y_test_true.shape[0]
             logger.info('Accuracy on Iris with FGM adversarial examples: %.2f%%', (accuracy * 100))
 
-    def _test_backend_mnist(self, mnist_param, classifier, defended_classifier=None):
+    def _test_no_norm(self, mnist_param, classifier):
         (x_train, y_train), (x_test, y_test) = mnist_param
-
-        x_test_original = x_test.copy()
 
         # Test FGSM with np.inf norm
         attack = FastGradientMethod(classifier, eps=1.0, batch_size=11)
@@ -222,7 +220,16 @@ class TestFastGradientMethodImages(TestBase):
         np.testing.assert_array_equal(np.argmax(y_test, axis=1), y_test_expected)
         np.testing.assert_array_almost_equal(y_test_pred[0:3], y_test_pred_expected[0:3], decimal=2)
 
+    def _test_backend_mnist(self, mnist_param, classifier, defended_classifier=None):
+        (x_train, y_train), (x_test, y_test) = mnist_param
+
+        x_test_original = x_test.copy()
+
+        self._test_no_norm(mnist_param, classifier)
+
+
         # Test minimal perturbations
+        attack = FastGradientMethod(classifier, eps=1.0, batch_size=11)
         attack_params = {"minimal": True, "eps_step": 0.1, "eps": 5.0}
         attack.set_params(**attack_params)
 
