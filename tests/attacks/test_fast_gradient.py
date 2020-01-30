@@ -49,8 +49,6 @@ class TestFastGradientMethodImages(TestBase):
         cls.mnist = (cls.x_train_mnist, cls.y_train_mnist), (cls.x_test_mnist, cls.y_test_mnist)
         cls.iris = (cls.x_train_iris, cls.y_train_iris), (cls.x_test_iris, cls.y_test_iris)
 
-
-
     def setUp(self):
         super().setUp()
         # (x_train, y_train), (x_test, y_test) = self.mnist
@@ -59,8 +57,6 @@ class TestFastGradientMethodImages(TestBase):
 
     def tearDown(self):
         super().tearDown()
-        #TODO super().tearDown() should be put back
-
 
         # Check that x_test has not been modified by attack and classifier
         self.assertAlmostEqual(float(np.max(np.abs(self.x_test_original - self.x_test_potentially_modified))), 0.0, delta=0.00001)
