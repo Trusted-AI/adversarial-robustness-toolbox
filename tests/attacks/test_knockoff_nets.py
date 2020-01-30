@@ -169,6 +169,7 @@ class TestKnockoffNetsVectors(TestBase):
         super().setUpClass()
 
     def setUp(self):
+        master_seed(seed=1234, set_tensorflow=True)
         super().setUp()
 
     def test_tensorflow_iris(self):
