@@ -220,14 +220,9 @@ class TestFastGradientMethodImages(TestBase):
         np.testing.assert_array_equal(np.argmax(y_test, axis=1), y_test_expected)
         np.testing.assert_array_almost_equal(y_test_pred[0:3], y_test_pred_expected[0:3], decimal=2)
 
-    def _test_backend_mnist(self, mnist_param, classifier, defended_classifier=None):
+    def _test_minimal_perturbations(self,  mnist_param, classifier, x_test_original):
+
         (x_train, y_train), (x_test, y_test) = mnist_param
-
-        x_test_original = x_test.copy()
-
-        self._test_no_norm(mnist_param, classifier)
-
-
         # Test minimal perturbations
         attack = FastGradientMethod(classifier, eps=1.0, batch_size=11)
         attack_params = {"minimal": True, "eps_step": 0.1, "eps": 5.0}
@@ -246,6 +241,15 @@ class TestFastGradientMethodImages(TestBase):
         y_test_pred_expected = np.asarray([4, 2, 4, 7, 0, 4, 7, 2, 0, 7, 0])
 
         np.testing.assert_array_equal(np.argmax(y_test_pred, axis=1), y_test_pred_expected)
+
+    def _test_backend_mnist(self, mnist_param, classifier, defended_classifier=None):
+        (x_train, y_train), (x_test, y_test) = mnist_param
+
+        x_test_original = x_test.copy()
+
+        self._test_no_norm(mnist_param, classifier)
+
+        self._test_minimal_perturbations(mnist_param, classifier, x_test_original)
 
         # L_1 norm
         attack = FastGradientMethod(classifier, eps=1, norm=1, batch_size=128)
