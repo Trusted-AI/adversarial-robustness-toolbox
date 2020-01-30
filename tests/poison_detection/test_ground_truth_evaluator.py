@@ -23,14 +23,14 @@ import pprint
 import unittest
 
 from art.poison_detection import GroundTruthEvaluator
-from art.utils import master_seed
+
+from tests.utils import master_seed
 
 logger = logging.getLogger(__name__)
 
 
 class TestGroundTruth(unittest.TestCase):
     def setUp(self):
-        # Set master seed
         master_seed(1234)
 
     @classmethod

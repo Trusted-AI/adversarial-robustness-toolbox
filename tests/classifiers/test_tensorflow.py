@@ -17,20 +17,15 @@
 # SOFTWARE.
 from __future__ import absolute_import, division, print_function, unicode_literals
 
-# import os
-# import shutil
 import logging
 import unittest
-# import pickle
 
 import tensorflow as tf
 import numpy as np
 
-# from art.config import ART_DATA_PATH
-from art.utils import master_seed
 from art.data_generators import TFDataGenerator
 
-from tests.utils import TestBase, get_classifier_tf
+from tests.utils import TestBase, master_seed, get_classifier_tf
 
 logger = logging.getLogger(__name__)
 
@@ -42,7 +37,7 @@ class TestTensorFlowClassifier(TestBase):
 
     @classmethod
     def setUpClass(cls):
-        master_seed(seed=1234, set_mxnet=False, set_torch=False)
+        master_seed(seed=1234)
         super().setUpClass()
 
         cls.classifier, cls.sess = get_classifier_tf()
@@ -54,7 +49,6 @@ class TestTensorFlowClassifier(TestBase):
             cls.is_version_2 = False
 
     def setUp(self):
-        master_seed(seed=1234, set_mxnet=False, set_torch=False)
         super().setUp()
 
     def test_predict(self):

@@ -30,13 +30,12 @@ import torch
 import torch.nn as nn
 import torch.optim as optim
 
-from art.utils import master_seed
 from art.attacks.extraction.copycat_cnn import CopycatCNN
 from art.classifiers import TensorFlowClassifier
 from art.classifiers import KerasClassifier
 from art.classifiers import PyTorchClassifier
 
-from tests.utils import TestBase
+from tests.utils import TestBase, master_seed
 from tests.utils import get_classifier_tf, get_classifier_kr, get_classifier_pt
 from tests.utils import get_iris_classifier_tf, get_iris_classifier_kr, get_iris_classifier_pt
 

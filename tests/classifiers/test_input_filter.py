@@ -17,19 +17,18 @@
 # SOFTWARE.
 from __future__ import absolute_import, division, print_function, unicode_literals
 
-import os
 import logging
 import unittest
 
+import numpy as np
 import tensorflow as tf
 
 if tf.__version__[0] == '2':
     tf.compat.v1.disable_eager_execution()
 
-import numpy as np
+from art.utils import load_dataset
 
-from art.utils import load_dataset, master_seed
-from tests.utils import get_classifier_kr_tf
+from tests.utils import master_seed, get_classifier_kr_tf
 
 logger = logging.getLogger(__name__)
 
@@ -169,6 +168,7 @@ class TestInputFilter(unittest.TestCase):
             act_i = classifier.get_activations(self.x_test, i, batch_size=128)
             act_name = classifier.get_activations(self.x_test, name, batch_size=128)
             np.testing.assert_array_equal(act_name, act_i)
+
 
 if __name__ == '__main__':
     unittest.main()

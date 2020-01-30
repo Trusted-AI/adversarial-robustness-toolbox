@@ -77,6 +77,10 @@ class TestFastGradientMethodImages(TestBase):
         cls.fee = FunctionallyEquivalentExtraction(classifier=classifier, num_neurons=num_neurons)
         cls.fee.extract(x_test[0:100])
 
+    def setUp(self):
+        master_seed(seed=1234, set_tensorflow=True)
+        super().setUp()
+
     def test_critical_points(self):
         critical_points_expected_15 = np.array([[3.61953106e+00, 9.77733178e-01, 3.03710564e+00,
                                                  3.88522344e+00, -3.42297003e+00, -1.13835691e+00,

@@ -25,9 +25,9 @@ import numpy as np
 
 from art.attacks import ElasticNet
 from art.classifiers import KerasClassifier
-from art.utils import random_targets, to_categorical, master_seed
+from art.utils import random_targets, to_categorical
 
-from tests.utils import TestBase
+from tests.utils import TestBase, master_seed
 from tests.utils import get_classifier_tf, get_classifier_kr
 from tests.utils import get_classifier_pt, get_iris_classifier_tf, get_iris_classifier_kr, get_iris_classifier_pt
 

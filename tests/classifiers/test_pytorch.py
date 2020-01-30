@@ -31,11 +31,10 @@ import torch.optim as optim
 from torch.utils.data import DataLoader
 
 from art.config import ART_DATA_PATH
-from art.utils import master_seed
 from art.data_generators import PyTorchDataGenerator
 from art.classifiers import PyTorchClassifier
 
-from tests.utils import TestBase, get_classifier_pt
+from tests.utils import TestBase, master_seed, get_classifier_pt
 
 logger = logging.getLogger(__name__)
 

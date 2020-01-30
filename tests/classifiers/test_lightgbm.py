@@ -23,10 +23,9 @@ import unittest
 import lightgbm as lgb
 import numpy as np
 
-from art.utils import master_seed
 from art.classifiers import LightGBMClassifier
 
-from tests.utils import TestBase
+from tests.utils import TestBase, master_seed
 
 logger = logging.getLogger(__name__)
 
@@ -35,7 +34,7 @@ class TestLightGBMClassifier(TestBase):
 
     @classmethod
     def setUpClass(cls):
-        master_seed(seed=1234, set_tensorflow=False, set_mxnet=False, set_torch=False)
+        master_seed(seed=1234)
         super().setUpClass()
 
         cls.y_train_iris_index = np.argmax(cls.y_train_iris, axis=1)

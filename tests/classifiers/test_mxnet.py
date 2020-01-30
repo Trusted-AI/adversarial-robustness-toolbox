@@ -26,10 +26,9 @@ import numpy as np
 from mxnet import init, gluon
 from mxnet.gluon import nn
 
-from art.utils import master_seed
 from art.classifiers import MXClassifier
 
-from tests.utils import TestBase
+from tests.utils import TestBase, master_seed
 
 logger = logging.getLogger(__name__)
 
@@ -41,7 +40,7 @@ class TestMXClassifier(TestBase):
 
     @classmethod
     def setUpClass(cls):
-        master_seed(seed=1234, set_tensorflow=False, set_torch=False)
+        master_seed(seed=1234, set_mxnet=True)
         super().setUpClass()
 
         cls.x_train_mnist = np.swapaxes(cls.x_train_mnist, 1, 3)
@@ -76,7 +75,6 @@ class TestMXClassifier(TestBase):
         cls.x_test_mnist = np.swapaxes(cls.x_test_mnist, 1, 3)
 
     def setUp(self):
-        master_seed(seed=1234, set_tensorflow=False, set_torch=False)
         self.x_train_mnist = np.swapaxes(self.x_train_mnist, 1, 3)
         self.x_test_mnist = np.swapaxes(self.x_test_mnist, 1, 3)
         super().setUp()
