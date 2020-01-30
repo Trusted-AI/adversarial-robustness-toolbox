@@ -139,6 +139,19 @@ def get_image_classifier():
     elif is_valid_framework(os.environ["mlFramework"]):
         raise Exception("A classifier factory method needs to be implemented for framework {0}".format(os.environ["mlFramework"]))
 
+def get_tabular_classifier():
+    if os.environ["mlFramework"] == "keras":
+        return get_iris_classifier_kr()
+    elif os.environ["mlFramework"] == "tensorflow":
+        classifier, _ = get_iris_classifier_tf()
+        return classifier
+    elif os.environ["mlFramework"] == "pytorch":
+        return get_iris_classifier_pt()
+    elif os.environ["mlFramework"] == "scikitlearn":
+        raise Exception("TODO needs to be implemented")
+    elif is_valid_framework(os.environ["mlFramework"]):
+        raise Exception("A classifier factory method needs to be implemented for framework {0}".format(os.environ["mlFramework"]))
+
 
 def _tf_weights_loader(dataset, weights_type, layer='DENSE', tf_version=1):
     filename = str(weights_type) + '_' + str(layer) + '_' + str(dataset) + '.npy'

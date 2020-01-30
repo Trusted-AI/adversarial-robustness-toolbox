@@ -120,22 +120,22 @@ class TestFastGradientMethodImages(TestBase):
     @unittest.skipUnless(os.environ["mlFramework"] == "keras", "Not a Keras Method hence Skipping this test")
     def test_tabular_keras(self):
         (_, _), (x_test, y_test) = self.iris
-        classifier_clipped = get_iris_classifier_kr()
-        classifier_no_clip_values = KerasClassifier(model=classifier_clipped._model, use_logits=False, channel_index=1)
+        classifier = utils_test.get_tabular_classifier()
 
-        self._test_backend_iris(x_test, y_test, classifier_clipped, classifier_no_clip_values)
+        classifier_no_clip_values = KerasClassifier(model=classifier._model, use_logits=False, channel_index=1)
+
+        self._test_backend_iris(x_test, y_test, classifier, classifier_no_clip_values)
 
     @unittest.skipUnless(os.environ["mlFramework"] == "tensorflow", "Not a Tensorflow Method hence Skipping this test")
     def test_tabular_tensorflow(self):
         (_, _), (x_test, y_test) = self.iris
-        classifier, _ = get_iris_classifier_tf()
+        classifier = utils_test.get_tabular_classifier()
         self._test_backend_iris(x_test, y_test, classifier, batch_size=128)
 
     @unittest.skipUnless(os.environ["mlFramework"] == "pytorch", "Not a pyTorch Method hence Skipping this test")
     def test_tabular_pytorch(self):
         (_, _), (x_test, y_test) = self.iris
-        classifier = get_iris_classifier_pt()
-
+        classifier = utils_test.get_tabular_classifier()
         self._test_backend_iris(x_test, y_test, classifier, batch_size=128)
 
     def _test_backend_iris(self, x_test, y_test, classifier, classifier_no_clip_values=None, batch_size=1):
@@ -144,7 +144,6 @@ class TestFastGradientMethodImages(TestBase):
         x_test_adv = attack.generate(x_test)
 
         self._check_x_adv(x_test_adv, x_test)
-
 
         y_pred_test_adv = np.argmax(classifier.predict(x_test_adv), axis=1)
         y_test_true = np.argmax(y_test, axis=1)
