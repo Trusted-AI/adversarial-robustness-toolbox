@@ -64,17 +64,6 @@ class TestBase(unittest.TestCase):
         cls.n_test = 100
         cls.batch_size = 16
 
-        # (x_train_mnist, y_train_mnist), (x_test_mnist, y_test_mnist), _, _ = load_dataset('mnist')
-        # cls.x_train_mnist = x_train_mnist[:cls.n_train]
-        # cls.y_train_mnist = y_train_mnist[:cls.n_train]
-        # cls.x_test_mnist = x_test_mnist[:cls.n_test]
-        # cls.y_test_mnist = y_test_mnist[:cls.n_test]
-
-        # cls._x_train_mnist_original = cls.x_train_mnist.copy()
-        # cls._y_train_mnist_original = cls.y_train_mnist.copy()
-        # cls._x_test_mnist_original = cls.x_test_mnist.copy()
-        # cls._y_test_mnist_original = cls.y_test_mnist.copy()
-
         cls.create_image_dataset(n_train=cls.n_train, n_test=cls.n_test)
 
 
@@ -101,6 +90,11 @@ class TestBase(unittest.TestCase):
         cls.y_train_mnist = y_train_mnist[:n_train]
         cls.x_test_mnist = x_test_mnist[:n_test]
         cls.y_test_mnist = y_test_mnist[:n_test]
+
+        if os.environ["mlFramework"] == "pytorch":
+            # (x_train, y_train), (x_test, y_test) = self.mnist
+            cls.x_test_mnist = np.reshape(cls.x_test_mnist, (cls.x_test_mnist.shape[0], 1, 28, 28)).astype(np.float32)
+            # test_mnist = (x_train, y_train), (x_test, y_test)
 
         cls._x_train_mnist_original = cls.x_train_mnist.copy()
         cls._y_train_mnist_original = cls.y_train_mnist.copy()

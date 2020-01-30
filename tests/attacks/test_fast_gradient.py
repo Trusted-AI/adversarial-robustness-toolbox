@@ -47,11 +47,7 @@ class TestFastGradientMethodImages(TestBase):
         cls.n_train = 100
         cls.n_test = 11
         cls.create_image_dataset(n_train=cls.n_train, n_test=cls.n_test)
-        # cls.x_train_mnist = cls.x_train_mnist[0:cls.n_train]
-        # cls.y_train_mnist = cls.y_train_mnist[0:cls.n_train]
-        # cls.x_test_mnist = cls.x_test_mnist[0:cls.n_test]
-        # cls.y_test_mnist = cls.y_test_mnist[0:cls.n_test]
-
+    
         cls.mnist = (cls.x_train_mnist, cls.y_train_mnist), (cls.x_test_mnist, cls.y_test_mnist)
         cls.iris = (cls.x_train_iris, cls.y_train_iris), (cls.x_test_iris, cls.y_test_iris)
 
@@ -64,8 +60,10 @@ class TestFastGradientMethodImages(TestBase):
         self.x_test_potentially_modified = self.x_test_mnist
 
     def tearDown(self):
+        super().tearDown()
         #TODO super().tearDown() should be put back
-        # super().tearDown()
+
+
         # Check that x_test has not been modified by attack and classifier
         self.assertAlmostEqual(float(np.max(np.abs(self.x_test_original - self.x_test_potentially_modified))), 0.0, delta=0.00001)
 
@@ -120,15 +118,15 @@ class TestFastGradientMethodImages(TestBase):
     #     classifier = utils_test.get_image_classifier()
     #     self._test_backend_mnist(self.mnist, classifier)
 
-    @unittest.skipUnless(os.environ["mlFramework"] == "pytorch", "Not a pyTorch Method hence Skipping this test")
-    def test_images_pytorch(self):
-        (x_train, y_train), (x_test, y_test) = self.mnist
-        x_test = np.reshape(x_test, (x_test.shape[0], 1, 28, 28)).astype(np.float32)
-        test_mnist = (x_train, y_train), (x_test, y_test)
-
-        classifier = get_classifier_pt()
-        classifier = utils_test.get_image_classifier()
-        self._test_backend_mnist(test_mnist, classifier)
+    # @unittest.skipUnless(os.environ["mlFramework"] == "pytorch", "Not a pyTorch Method hence Skipping this test")
+    # def test_images_pytorch(self):
+    #     # (x_train, y_train), (x_test, y_test) = self.mnist
+    #     # x_test = np.reshape(x_test, (x_test.shape[0], 1, 28, 28)).astype(np.float32)
+    #     # test_mnist = (x_train, y_train), (x_test, y_test)
+    #
+    #     # classifier = get_classifier_pt()
+    #     # classifier = utils_test.get_image_classifier()
+    #     # self._test_backend_mnist(self.mnist, classifier)
 
     def test_classifier_type_check_fail_classifier(self):
         # Use a useless test classifier to test basic classifier properties
