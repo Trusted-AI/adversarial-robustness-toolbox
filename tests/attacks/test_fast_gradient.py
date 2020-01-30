@@ -170,28 +170,10 @@ class TestFastGradientMethodImages(TestBase):
         x_test_adv = attack.generate(self.x_test_mnist)
         self.assertFalse((self.x_test_mnist == x_test_adv).all())
 
-    def test_defended_classifier(self):
-        defended_classifier = utils_test.get_image_classifier(defended=True)
-        # (x_train, y_train), (x_test, y_test) = mnist_param
-        (self.x_train_mnist, self.y_train_mnist), (self.x_test_mnist, self.y_test_mnist)
-
-        if defended_classifier is not None:
-            attack = FastGradientMethod(defended_classifier, eps=1, batch_size=128)
-
-            x_train_adv = attack.generate(self.x_train_mnist)
-            self._check_x_adv(x_train_adv, self.x_train_mnist)
-            y_train_pred_adv = get_labels_np_array(defended_classifier.predict(x_train_adv))
-            y_train_labels = get_labels_np_array(self.y_train_mnist)
-            # TODO Shouldn't the y_adv and y_expected labels be the same for the defence to be correct?
-            self._check_y_pred_adv(y_train_pred_adv, y_train_labels)
-
-            x_test_adv = attack.generate(self.x_test_mnist)
-            self._check_x_adv(x_test_adv, self.x_test_mnist)
-            y_test_pred_adv = get_labels_np_array(defended_classifier.predict(x_test_adv))
-            self._check_y_pred_adv(y_test_pred_adv, self.y_test_mnist)
 
 
-    def test_targeted_images(self):
+
+    def test_targeted_attack_images(self):
         classifier = utils_test.get_image_classifier()
         # (x_train, y_train), (x_test, y_test) = mnist_param
         (self.x_train_mnist, self.y_train_mnist), (self.x_test_mnist, self.y_test_mnist)
@@ -213,6 +195,80 @@ class TestFastGradientMethodImages(TestBase):
 
         self.assertEqual(targets.shape, y_test_pred_adv.shape)
         self.assertGreaterEqual((targets == y_test_pred_adv).sum(), self.x_test_mnist.shape[0] // 2)
+
+    def test_targeted_attack_tabular(self):
+        classifier = utils_test.get_tabular_classifier()
+
+        # Test targeted attack
+        batch_size = 1
+        if os.environ["mlFramework"] in ["pytorch", "tensorflow"]:
+            batch_size = 128
+        y_test_true = np.argmax(self.y_test_iris, axis=1)
+        targets = random_targets(self.y_test_iris, nb_classes=3)
+        y_targeted = np.argmax(targets, axis=1)
+        attack = FastGradientMethod(classifier, targeted=True, eps=.1, batch_size=batch_size)
+        x_test_adv = attack.generate(self.x_test_iris, **{'y': targets})
+
+        self._check_x_adv(x_test_adv, self.x_test_iris)
+
+        y_pred_test_adv = np.argmax(classifier.predict(x_test_adv), axis=1)
+        self.assertTrue((y_targeted == y_pred_test_adv).any())
+        accuracy = np.sum(y_pred_test_adv == y_targeted) / y_test_true.shape[0]
+        logger.info('Success rate of targeted FGM on Iris: %.2f%%', (accuracy * 100))
+
+    def test_untargeted_attack_tabular(self):
+        classifier = utils_test.get_tabular_classifier()
+
+        # Test untargeted attack
+        attack = FastGradientMethod(classifier, eps=.1)
+        x_test_adv = attack.generate(self.x_test_iris)
+
+        self._check_x_adv(x_test_adv, self.x_test_iris)
+
+        y_pred_test_adv = np.argmax(classifier.predict(x_test_adv), axis=1)
+        y_test_true = np.argmax(self.y_test_iris, axis=1)
+
+        self.assertTrue((y_test_true == y_pred_test_adv).any(),
+                        "An untargeted attack should have changed SOME predictions")
+        self.assertFalse((y_test_true == y_pred_test_adv).all(),
+                         "An untargeted attack should NOT have changed all predictions")
+        accuracy = np.sum(y_pred_test_adv == y_test_true) / y_test_true.shape[0]
+        logger.info('Accuracy on Iris with FGM adversarial examples: %.2f%%', (accuracy * 100))
+
+    def test_classifier_defended_images(self):
+        defended_classifier = utils_test.get_image_classifier(defended=True)
+        # (x_train, y_train), (x_test, y_test) = mnist_param
+        (self.x_train_mnist, self.y_train_mnist), (self.x_test_mnist, self.y_test_mnist)
+
+        if defended_classifier is not None:
+            attack = FastGradientMethod(defended_classifier, eps=1, batch_size=128)
+
+            x_train_adv = attack.generate(self.x_train_mnist)
+            self._check_x_adv(x_train_adv, self.x_train_mnist)
+            y_train_pred_adv = get_labels_np_array(defended_classifier.predict(x_train_adv))
+            y_train_labels = get_labels_np_array(self.y_train_mnist)
+            # TODO Shouldn't the y_adv and y_expected labels be the same for the defence to be correct?
+            self._check_y_pred_adv(y_train_pred_adv, y_train_labels)
+
+            x_test_adv = attack.generate(self.x_test_mnist)
+            self._check_x_adv(x_test_adv, self.x_test_mnist)
+            y_test_pred_adv = get_labels_np_array(defended_classifier.predict(x_test_adv))
+            self._check_y_pred_adv(y_test_pred_adv, self.y_test_mnist)
+
+    def test_classifier_without_clipped_values_tabular(self):
+        classifier_no_clip_values = utils_test.get_tabular_classifier(clipped=False)
+        if classifier_no_clip_values is not None:
+            attack = FastGradientMethod(classifier_no_clip_values, eps=1)
+
+            x_test_adv = attack.generate(self.x_test_iris)
+
+            self._check_x_adv(x_test_adv, self.x_test_iris, bounded=False)
+
+            y_test_true = np.argmax(self.y_test_iris, axis=1)
+            y_pred_test_adv = np.argmax(classifier_no_clip_values.predict(x_test_adv), axis=1)
+            self.assertFalse((y_test_true == y_pred_test_adv).all())
+            accuracy = np.sum(y_pred_test_adv == y_test_true) / y_test_true.shape[0]
+            logger.info('Accuracy on Iris with FGM adversarial examples: %.2f%%', (accuracy * 100))
 
     def test_classifier_type_check_fail_classifier(self):
         # Use a useless test classifier to test basic classifier properties
@@ -239,61 +295,6 @@ class TestFastGradientMethodImages(TestBase):
         self.assertIn('For `FastGradientMethod` classifier must be an instance of '
                       '`art.classifiers.classifier.ClassifierGradients`, the provided classifier is instance of '
                       '(<class \'art.classifiers.scikitlearn.ScikitlearnClassifier\'>,).', str(context.exception))
-
-    def test_untargeted_tabular(self):
-        classifier = utils_test.get_tabular_classifier()
-
-        # Test untargeted attack
-        attack = FastGradientMethod(classifier, eps=.1)
-        x_test_adv = attack.generate(self.x_test_iris)
-
-        self._check_x_adv(x_test_adv, self.x_test_iris)
-
-        y_pred_test_adv = np.argmax(classifier.predict(x_test_adv), axis=1)
-        y_test_true = np.argmax(self.y_test_iris, axis=1)
-
-        self.assertTrue((y_test_true == y_pred_test_adv).any(),
-                        "An untargeted attack should have changed SOME predictions")
-        self.assertFalse((y_test_true == y_pred_test_adv).all(),
-                         "An untargeted attack should NOT have changed all predictions")
-        accuracy = np.sum(y_pred_test_adv == y_test_true) / y_test_true.shape[0]
-        logger.info('Accuracy on Iris with FGM adversarial examples: %.2f%%', (accuracy * 100))
-
-    def test_tabular(self):
-
-        classifier = utils_test.get_tabular_classifier()
-
-        # Test targeted attack
-        batch_size = 1
-        if os.environ["mlFramework"] in ["pytorch", "tensorflow"]:
-            batch_size = 128
-        y_test_true = np.argmax(self.y_test_iris, axis=1)
-        targets = random_targets(self.y_test_iris, nb_classes=3)
-        y_targeted = np.argmax(targets, axis=1)
-        attack = FastGradientMethod(classifier, targeted=True, eps=.1, batch_size=batch_size)
-        x_test_adv = attack.generate(self.x_test_iris, **{'y': targets})
-
-        self._check_x_adv(x_test_adv, self.x_test_iris)
-
-        y_pred_test_adv = np.argmax(classifier.predict(x_test_adv), axis=1)
-        self.assertTrue((y_targeted == y_pred_test_adv).any())
-        accuracy = np.sum(y_pred_test_adv == y_targeted) / y_test_true.shape[0]
-        logger.info('Success rate of targeted FGM on Iris: %.2f%%', (accuracy * 100))
-
-        # Recreate a classifier without clip values
-        classifier_no_clip_values = utils_test.get_tabular_classifier(clipped=False)
-        if classifier_no_clip_values is not None:
-            attack = FastGradientMethod(classifier_no_clip_values, eps=1)
-
-            x_test_adv = attack.generate(self.x_test_iris)
-
-            self._check_x_adv(x_test_adv, self.x_test_iris, bounded=False)
-
-            y_test_true = np.argmax(self.y_test_iris, axis=1)
-            y_pred_test_adv = np.argmax(classifier_no_clip_values.predict(x_test_adv), axis=1)
-            self.assertFalse((y_test_true == y_pred_test_adv).all())
-            accuracy = np.sum(y_pred_test_adv == y_test_true) / y_test_true.shape[0]
-            logger.info('Accuracy on Iris with FGM adversarial examples: %.2f%%', (accuracy * 100))
 
 
     @unittest.skipUnless(os.environ["mlFramework"] == "scikitlearn", "Not a scikitlearn method hence Skipping this test")
