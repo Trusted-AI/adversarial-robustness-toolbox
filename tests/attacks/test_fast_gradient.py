@@ -43,6 +43,7 @@ class TestFastGradientMethodImages(TestBase):
     def setUpClass(cls):
         super().setUpClass()
 
+        tmp = os.environ["mlFramework"]
         cls.n_train = 100
         cls.n_test = 11
         cls.x_train_mnist = cls.x_train_mnist[0:cls.n_train]
@@ -52,6 +53,7 @@ class TestFastGradientMethodImages(TestBase):
         cls.mnist = (cls.x_train_mnist, cls.y_train_mnist), (cls.x_test_mnist, cls.y_test_mnist)
         cls.iris = (cls.x_train_iris, cls.y_train_iris), (cls.x_test_iris, cls.y_test_iris)
 
+    @unittest.skipUnless(os.environ["mlFramework"] == "keras", "Not a Keras Method hence Skipping this test")
     def test_0_mnist_keras(self):
         classifier = get_classifier_kr()
 
@@ -61,10 +63,12 @@ class TestFastGradientMethodImages(TestBase):
 
         self._test_backend_mnist(self.mnist, classifier, defended_classifier)
 
+    @unittest.skipUnless(os.environ["mlFramework"] == "tensorflow", "Not a Tensorflow Method hence Skipping this test")
     def test_1_mnist_tensorflow(self):
         classifier, sess = get_classifier_tf()
         self._test_backend_mnist(self.mnist, classifier)
 
+    @unittest.skipUnless(os.environ["mlFramework"] == "pytorch", "Not a pyTorch Method hence Skipping this test")
     def test_3_mnist_pytorch(self):
         (x_train, y_train), (x_test, y_test) = self.mnist
         x_test = np.reshape(x_test, (x_test.shape[0], 1, 28, 28)).astype(np.float32)
@@ -99,6 +103,7 @@ class TestFastGradientMethodImages(TestBase):
                       '`art.classifiers.classifier.ClassifierGradients`, the provided classifier is instance of '
                       '(<class \'art.classifiers.scikitlearn.ScikitlearnClassifier\'>,).', str(context.exception))
 
+    @unittest.skipUnless(os.environ["mlFramework"] == "keras", "Not a Keras Method hence Skipping this test")
     def test_0_iris_keras(self):
         (_, _), (x_test, y_test) = self.iris
         classifier_clipped = get_iris_classifier_kr()
@@ -106,11 +111,13 @@ class TestFastGradientMethodImages(TestBase):
 
         self._test_backend_iris(x_test, y_test, classifier_clipped, classifier_no_clip_values)
 
+    @unittest.skipUnless(os.environ["mlFramework"] == "tensorflow", "Not a Tensorflow Method hence Skipping this test")
     def test_1_iris_tensorflow(self):
         (_, _), (x_test, y_test) = self.iris
         classifier, _ = get_iris_classifier_tf()
         self._test_backend_iris(x_test, y_test, classifier, batch_size=128)
 
+    @unittest.skipUnless(os.environ["mlFramework"] == "pytorch", "Not a pyTorch Method hence Skipping this test")
     def test_2_iris_pytorch(self):
         (_, _), (x_test, y_test) = self.iris
         classifier = get_iris_classifier_pt()
@@ -306,7 +313,7 @@ class TestFastGradientMethodImages(TestBase):
         self.assertEqual(targets.shape, y_test_pred_adv.shape)
         self.assertGreaterEqual((targets == y_test_pred_adv).sum(), x_test.shape[0] // 2)
 
-
+    @unittest.skipUnless(os.environ["mlFramework"] == "scikitlearn", "Not a scikitlearn method hence Skipping this test")
     def test_scikitlearn(self):
         from sklearn.linear_model import LogisticRegression
         from sklearn.svm import SVC, LinearSVC

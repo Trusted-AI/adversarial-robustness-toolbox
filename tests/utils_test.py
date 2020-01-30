@@ -52,6 +52,15 @@ class TestBase(unittest.TestCase):
     def setUpClass(cls):
         master_seed(1234)
 
+        if "mlFramework" not in os.environ:
+            raise Exception(
+                "ART tests require you to set the environment variable mlFramework. See readme file for further instructions")
+
+        art_supported_frameworks = ["keras", "tensorflow", "pytorch", "scikitlearn"]
+        if os.environ["mlFramework"] not in art_supported_frameworks:
+            raise Exception("mlFramework value {0} is unsupported. Please use one of these valid values: {1}".format(
+                os.environ["mlFramework"], " ".join(art_supported_frameworks)))
+
         cls.n_train = 1000
         cls.n_test = 100
         cls.batch_size = 16
