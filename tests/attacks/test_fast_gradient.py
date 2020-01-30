@@ -30,6 +30,7 @@ from art.utils import get_labels_np_array, random_targets
 from tests.utils_test import TestBase
 from tests.utils_test import get_classifier_tf, get_classifier_kr, get_classifier_pt
 from tests.utils_test import get_iris_classifier_tf, get_iris_classifier_kr, get_iris_classifier_pt
+from tests import utils_test
 
 logger = logging.getLogger(__name__)
 
@@ -54,17 +55,19 @@ class TestFastGradientMethodImages(TestBase):
         cls.iris = (cls.x_train_iris, cls.y_train_iris), (cls.x_test_iris, cls.y_test_iris)
 
     def setUp(self):
+        super().setUp()
         (x_train, y_train), (x_test, y_test) = self.mnist
         self.x_test_original = x_test.copy()
         self.x_test_potentially_modified = x_test
 
     def tearDown(self):
+        super().tearDown()
         # Check that x_test has not been modified by attack and classifier
         self.assertAlmostEqual(float(np.max(np.abs(self.x_test_original - self.x_test_potentially_modified))), 0.0, delta=0.00001)
 
     @unittest.skipUnless(os.environ["mlFramework"] == "keras", "Not a Keras Method hence Skipping this test")
     def test_images_keras(self):
-        classifier = get_classifier_kr()
+        classifier = utils_test.get_image_classifier()
 
         # Get the ready-trained Keras model
         fs = FeatureSqueezing(bit_depth=1, clip_values=(0, 1))
@@ -74,7 +77,8 @@ class TestFastGradientMethodImages(TestBase):
 
     @unittest.skipUnless(os.environ["mlFramework"] == "tensorflow", "Not a Tensorflow Method hence Skipping this test")
     def test_images_tensorflow(self):
-        classifier, sess = get_classifier_tf()
+        # classifier, sess = get_classifier_tf()
+        classifier = utils_test.get_image_classifier()
         self._test_backend_mnist(self.mnist, classifier)
 
     @unittest.skipUnless(os.environ["mlFramework"] == "pytorch", "Not a pyTorch Method hence Skipping this test")
@@ -84,6 +88,7 @@ class TestFastGradientMethodImages(TestBase):
         test_mnist = (x_train, y_train), (x_test, y_test)
 
         classifier = get_classifier_pt()
+        classifier = utils_test.get_image_classifier()
         self._test_backend_mnist(test_mnist, classifier)
 
     def test_classifier_type_check_fail_classifier(self):

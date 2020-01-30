@@ -42,6 +42,7 @@ except ImportError:
 
 
 # ----------------------------------------------------------------------------------------------------- TEST BASE CLASS
+art_supported_frameworks = ["keras", "tensorflow", "pytorch", "scikitlearn"]
 
 class TestBase(unittest.TestCase):
     """
@@ -56,10 +57,8 @@ class TestBase(unittest.TestCase):
             raise Exception(
                 "ART tests require you to set the environment variable mlFramework. See readme file for further instructions")
 
-        art_supported_frameworks = ["keras", "tensorflow", "pytorch", "scikitlearn"]
-        if os.environ["mlFramework"] not in art_supported_frameworks:
-            raise Exception("mlFramework value {0} is unsupported. Please use one of these valid values: {1}".format(
-                os.environ["mlFramework"], " ".join(art_supported_frameworks)))
+        is_valid_framework(os.environ["mlFramework"])
+
 
         cls.n_train = 1000
         cls.n_test = 100
@@ -120,6 +119,26 @@ class TestBase(unittest.TestCase):
 
 
 # ----------------------------------------------------------------------------------------------- TEST MODELS FOR MNIST
+
+def is_valid_framework(framework):
+    if framework not in art_supported_frameworks:
+        raise Exception("mlFramework value {0} is unsupported. Please use one of these valid values: {1}".format(
+            framework, " ".join(art_supported_frameworks)))
+    return True
+
+def get_image_classifier():
+    if os.environ["mlFramework"] == "keras":
+        return get_classifier_kr()
+    elif os.environ["mlFramework"] == "tensorflow":
+        classifier, sess = get_classifier_tf()
+        return classifier
+    elif os.environ["mlFramework"] == "pytorch":
+        return get_classifier_pt()
+    elif os.environ["mlFramework"] == "scikitlearn":
+        raise Exception("TODO needs to be implemented")
+    elif is_valid_framework(os.environ["mlFramework"]):
+        raise Exception("A classifier factory method needs to be implemented for framework {0}".format(os.environ["mlFramework"]))
+
 
 def _tf_weights_loader(dataset, weights_type, layer='DENSE', tf_version=1):
     filename = str(weights_type) + '_' + str(layer) + '_' + str(dataset) + '.npy'
