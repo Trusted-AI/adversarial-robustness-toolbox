@@ -247,24 +247,21 @@ class TestFastGradientMethodImages(TestBase):
                       '(<class \'art.classifiers.scikitlearn.ScikitlearnClassifier\'>,).', str(context.exception))
 
 
-
     def test_tabular(self):
-        self._test_backend_iris()
-
-    def _test_backend_iris(self):
 
         classifier = utils_test.get_tabular_classifier()
         classifier_no_clip_values = utils_test.get_tabular_classifier(clipped=False)
-        (_, _), (x_test, y_test) = self.iris
+        # (_, _), (x_test, y_test) =
+        # (self.x_train_iris, self.y_train_iris), (self.x_test_iris, self.y_test_iris)
 
         # Test untargeted attack
         attack = FastGradientMethod(classifier, eps=.1)
-        x_test_adv = attack.generate(x_test)
+        x_test_adv = attack.generate(self.x_test_iris)
 
-        self._check_x_adv(x_test_adv, x_test)
+        self._check_x_adv(x_test_adv, self.x_test_iris)
 
         y_pred_test_adv = np.argmax(classifier.predict(x_test_adv), axis=1)
-        y_test_true = np.argmax(y_test, axis=1)
+        y_test_true = np.argmax(self.y_test_iris, axis=1)
 
         self.assertTrue((y_test_true == y_pred_test_adv).any(),
                         "An untargeted attack should have changed SOME predictions")
@@ -277,12 +274,12 @@ class TestFastGradientMethodImages(TestBase):
         batch_size = 1
         if os.environ["mlFramework"] in ["pytorch", "tensorflow"]:
             batch_size = 128
-        targets = random_targets(y_test, nb_classes=3)
+        targets = random_targets(self.y_test_iris, nb_classes=3)
         y_targeted = np.argmax(targets, axis=1)
         attack = FastGradientMethod(classifier, targeted=True, eps=.1, batch_size=batch_size)
-        x_test_adv = attack.generate(x_test, **{'y': targets})
+        x_test_adv = attack.generate(self.x_test_iris, **{'y': targets})
 
-        self._check_x_adv(x_test_adv, x_test)
+        self._check_x_adv(x_test_adv, self.x_test_iris)
 
         y_pred_test_adv = np.argmax(classifier.predict(x_test_adv), axis=1)
         self.assertTrue((y_targeted == y_pred_test_adv).any())
@@ -293,11 +290,11 @@ class TestFastGradientMethodImages(TestBase):
         if classifier_no_clip_values is not None:
             attack = FastGradientMethod(classifier_no_clip_values, eps=1)
 
-            x_test_adv = attack.generate(x_test)
+            x_test_adv = attack.generate(self.x_test_iris)
 
-            self._check_x_adv(x_test_adv, x_test, bounded=False)
+            self._check_x_adv(x_test_adv, self.x_test_iris, bounded=False)
 
-            y_test_true = np.argmax(y_test, axis=1)
+            y_test_true = np.argmax(self.y_test_iris, axis=1)
             y_pred_test_adv = np.argmax(classifier_no_clip_values.predict(x_test_adv), axis=1)
             self.assertFalse((y_test_true == y_pred_test_adv).all())
             accuracy = np.sum(y_pred_test_adv == y_test_true) / y_test_true.shape[0]
