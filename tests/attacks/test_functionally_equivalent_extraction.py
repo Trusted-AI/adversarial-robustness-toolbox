@@ -28,6 +28,7 @@ import tensorflow as tf
 tf.compat.v1.disable_eager_execution()
 from tensorflow.keras.models import load_model
 
+from art.utils import master_seed
 from art.attacks import FunctionallyEquivalentExtraction
 from art.classifiers import KerasClassifier
 
@@ -42,6 +43,7 @@ class TestFastGradientMethodImages(TestBase):
 
     @classmethod
     def setUpClass(cls):
+        master_seed(seed=1234, set_tensorflow=False, set_mxnet=False, set_torch=False)
         super().setUpClass()
 
         cls.n_train = 100

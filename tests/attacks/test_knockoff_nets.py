@@ -23,6 +23,7 @@ import unittest
 import numpy as np
 import keras.backend as k
 
+from art.utils import master_seed
 from art.attacks.extraction.knockoff_nets import KnockoffNets
 
 from tests.utils_test import TestBase
@@ -44,6 +45,7 @@ class TestKnockoffNets(TestBase):
 
     @classmethod
     def setUpClass(cls):
+        master_seed(seed=1234)
         super().setUpClass()
 
     def setUp(self):

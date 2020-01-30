@@ -30,6 +30,7 @@ import torch
 import torch.nn as nn
 import torch.optim as optim
 
+from art.utils import master_seed
 from art.attacks.extraction.copycat_cnn import CopycatCNN
 from art.classifiers import TensorFlowClassifier
 from art.classifiers import KerasClassifier
@@ -52,6 +53,7 @@ class TestCopycatCNN(TestBase):
 
     @classmethod
     def setUpClass(cls):
+        master_seed(seed=1234)
         super().setUpClass()
 
     @unittest.skipIf(tf.__version__[0] == '2', reason='Skip unittests for TensorFlow v2.')
