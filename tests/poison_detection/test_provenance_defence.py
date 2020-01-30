@@ -75,21 +75,14 @@ class TestProvenanceDefence(unittest.TestCase):
         x_train = x_train[:NB_TRAIN]
         y_train = y_train[:NB_TRAIN]
 
-        print(x_test.shape)
-
         trusted_data = x_test[:NB_TRUSTED]
         trusted_labels = y_test[:NB_TRUSTED]
         x_test = x_test[NB_TRUSTED:]
         y_test = y_test[NB_TRUSTED:]
-        print('NB_TRUSTED', NB_TRUSTED)
-        print(x_test.shape)
         valid_data = x_test[:NB_VALID]
         valid_labels = y_test[:NB_VALID]
         x_test = x_test[NB_VALID:]
         y_test = y_test[NB_VALID:]
-
-        print('NB_VALID', NB_VALID)
-        print(x_test.shape)
 
         clean_prov = np.random.randint(NB_DEVICES - 1, size=x_train.shape[0])
         p_train = np.eye(NB_DEVICES)[clean_prov]
