@@ -66,14 +66,81 @@ class TestFastGradientMethodImages(TestBase):
         self.assertAlmostEqual(float(np.max(np.abs(self.x_test_original - self.x_test_potentially_modified))), 0.0, delta=0.00001)
 
     @unittest.skipUnless(os.environ["mlFramework"] == "keras", "Not a Keras Method hence Skipping this test")
-    def test_images_keras(self):
+    def test_no_norm_images_keras(self):
         classifier = utils_test.get_image_classifier()
 
         # Get the ready-trained Keras model
         fs = FeatureSqueezing(bit_depth=1, clip_values=(0, 1))
         defended_classifier = KerasClassifier(model=classifier._model, clip_values=(0, 1), defences=fs)
 
-        self._test_backend_mnist(self.mnist, classifier, defended_classifier)
+        # self._test_backend_mnist(self.mnist, classifier, defended_classifier)
+        self._test_no_norm(self.mnist, classifier)
+
+    @unittest.skipUnless(os.environ["mlFramework"] == "keras", "Not a Keras Method hence Skipping this test")
+    def test_minimal_perturbations_images_keras(self):
+        classifier = utils_test.get_image_classifier()
+
+        # Get the ready-trained Keras model
+        fs = FeatureSqueezing(bit_depth=1, clip_values=(0, 1))
+        defended_classifier = KerasClassifier(model=classifier._model, clip_values=(0, 1), defences=fs)
+
+        # self._test_backend_mnist(self.mnist, classifier, defended_classifier)
+        self._test_minimal_perturbations(self.mnist, classifier)
+
+    @unittest.skipUnless(os.environ["mlFramework"] == "keras", "Not a Keras Method hence Skipping this test")
+    def test_l1_norm_images_keras(self):
+        classifier = utils_test.get_image_classifier()
+
+        # Get the ready-trained Keras model
+        fs = FeatureSqueezing(bit_depth=1, clip_values=(0, 1))
+        defended_classifier = KerasClassifier(model=classifier._model, clip_values=(0, 1), defences=fs)
+
+        # self._test_backend_mnist(self.mnist, classifier, defended_classifier)
+        self._test_l1_norm(self.mnist, classifier)
+
+    @unittest.skipUnless(os.environ["mlFramework"] == "keras", "Not a Keras Method hence Skipping this test")
+    def test_l2_norm_images_keras(self):
+        classifier = utils_test.get_image_classifier()
+
+        # Get the ready-trained Keras model
+        fs = FeatureSqueezing(bit_depth=1, clip_values=(0, 1))
+        defended_classifier = KerasClassifier(model=classifier._model, clip_values=(0, 1), defences=fs)
+
+        # self._test_backend_mnist(self.mnist, classifier, defended_classifier)
+        self._test_l2_norm(self.mnist, classifier)
+
+    @unittest.skipUnless(os.environ["mlFramework"] == "keras", "Not a Keras Method hence Skipping this test")
+    def test_random_initialisation_images_keras(self):
+        classifier = utils_test.get_image_classifier()
+
+        # Get the ready-trained Keras model
+        fs = FeatureSqueezing(bit_depth=1, clip_values=(0, 1))
+        defended_classifier = KerasClassifier(model=classifier._model, clip_values=(0, 1), defences=fs)
+
+        # self._test_backend_mnist(self.mnist, classifier, defended_classifier)
+        self._test_random_initialisation(self.mnist, classifier)
+
+    @unittest.skipUnless(os.environ["mlFramework"] == "keras", "Not a Keras Method hence Skipping this test")
+    def test_mnist_targeted_images_keras(self):
+        classifier = utils_test.get_image_classifier()
+
+        # Get the ready-trained Keras model
+        fs = FeatureSqueezing(bit_depth=1, clip_values=(0, 1))
+        defended_classifier = KerasClassifier(model=classifier._model, clip_values=(0, 1), defences=fs)
+
+        # self._test_backend_mnist(self.mnist, classifier, defended_classifier)
+        self._test_mnist_targeted(self.mnist, classifier)
+
+    @unittest.skipUnless(os.environ["mlFramework"] == "keras", "Not a Keras Method hence Skipping this test")
+    def test_defended_classifier_images_keras(self):
+        classifier = utils_test.get_image_classifier()
+
+        # Get the ready-trained Keras model
+        fs = FeatureSqueezing(bit_depth=1, clip_values=(0, 1))
+        defended_classifier = KerasClassifier(model=classifier._model, clip_values=(0, 1), defences=fs)
+
+        # self._test_backend_mnist(self.mnist, classifier, defended_classifier)
+        self._test_defended_classifier(self.mnist, classifier, defended_classifier)
 
     @unittest.skipUnless(os.environ["mlFramework"] == "tensorflow", "Not a Tensorflow Method hence Skipping this test")
     def test_images_tensorflow(self):
@@ -318,12 +385,13 @@ class TestFastGradientMethodImages(TestBase):
 
         self._test_random_initialisation(mnist_param, classifier)
 
-        self._test_mnist_targeted(classifier, x_test, y_test)
+        self._test_mnist_targeted(mnist_param, classifier)
 
         self._test_defended_classifier(mnist_param, classifier, defended_classifier)
 
 
-    def _test_mnist_targeted(self, classifier, x_test, y_test):
+    def _test_mnist_targeted(self, mnist_param, classifier):
+        (x_train, y_train), (x_test, y_test) = mnist_param
         # Test FGSM with np.inf norm
         attack = FastGradientMethod(classifier, eps=1.0, targeted=True)
 
