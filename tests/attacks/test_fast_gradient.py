@@ -250,9 +250,7 @@ class TestFastGradientMethodImages(TestBase):
     def test_tabular_keras(self):
         (_, _), (x_test, y_test) = self.iris
         classifier = utils_test.get_tabular_classifier()
-
-        classifier_no_clip_values = KerasClassifier(model=classifier._model, use_logits=False, channel_index=1)
-
+        classifier_no_clip_values = utils_test.get_tabular_classifier(clipped=False)
         self._test_backend_iris(x_test, y_test, classifier, classifier_no_clip_values)
 
     @unittest.skipUnless(os.environ["mlFramework"] == "tensorflow", "Not a Tensorflow Method hence Skipping this test")

@@ -155,14 +155,19 @@ def get_image_classifier(defended=False):
     elif is_valid_framework(os.environ["mlFramework"]):
         raise Exception("A classifier factory method needs to be implemented for framework {0}".format(os.environ["mlFramework"]))
 
-def get_tabular_classifier():
+def get_tabular_classifier(clipped=True):
     if os.environ["mlFramework"] == "keras":
-        return get_iris_classifier_kr()
+        classifier = get_iris_classifier_kr()
+        if clipped:
+            return classifier
+        else:
+            return KerasClassifier(model=classifier._model, use_logits=False, channel_index=1)
+
     elif os.environ["mlFramework"] == "tensorflow":
         classifier, _ = get_iris_classifier_tf()
-        return classifier
+        return classifier  if clipped else None
     elif os.environ["mlFramework"] == "pytorch":
-        return get_iris_classifier_pt()
+        return get_iris_classifier_pt() if clipped else None
     elif os.environ["mlFramework"] == "scikitlearn":
         raise Exception("TODO needs to be implemented")
     elif is_valid_framework(os.environ["mlFramework"]):
