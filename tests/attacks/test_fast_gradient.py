@@ -61,31 +61,24 @@ class TestFastGradientMethodImages(TestBase):
         # Check that x_test has not been modified by attack and classifier
         self.assertAlmostEqual(float(np.max(np.abs(self.x_test_original - self.x_test_potentially_modified))), 0.0, delta=0.00001)
 
-    @unittest.skipUnless(os.environ["mlFramework"] == "keras", "Not a Keras Method hence Skipping this test")
     def test_no_norm_images_keras(self):
         self._test_no_norm_images()
 
-    @unittest.skipUnless(os.environ["mlFramework"] == "keras", "Not a Keras Method hence Skipping this test")
     def test_minimal_perturbations_images_keras(self):
         self._test_minimal_perturbations_images(self.mnist)
 
-    @unittest.skipUnless(os.environ["mlFramework"] == "keras", "Not a Keras Method hence Skipping this test")
     def test_l1_norm_images_keras(self):
         self._test_l1_norm_images(self.mnist)
 
-    @unittest.skipUnless(os.environ["mlFramework"] == "keras", "Not a Keras Method hence Skipping this test")
     def test_l2_norm_images_keras(self):
         self._test_l2_norm_images(self.mnist)
 
-    @unittest.skipUnless(os.environ["mlFramework"] == "keras", "Not a Keras Method hence Skipping this test")
     def test_random_initialisation_images_keras(self):
         self._test_random_initialisation_images(self.mnist)
 
-    @unittest.skipUnless(os.environ["mlFramework"] == "keras", "Not a Keras Method hence Skipping this test")
     def test_targeted_images_keras(self):
         self._test_targeted_images(self.mnist)
 
-    @unittest.skipUnless(os.environ["mlFramework"] == "keras", "Not a Keras Method hence Skipping this test")
     def test_defended_classifier_images_keras(self):
         self._test_defended_classifier(self.mnist)
 
