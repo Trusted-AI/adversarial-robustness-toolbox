@@ -23,12 +23,11 @@ import unittest
 import numpy as np
 from sklearn.tree import DecisionTreeClassifier
 
-from art.utils import master_seed
 from art.attacks import AdversarialPatch
 from art.classifiers.scikitlearn import ScikitlearnDecisionTreeClassifier
 
-from tests.utils_test import TestBase
-from tests.utils_test import get_classifier_tf, get_classifier_kr, get_classifier_pt, get_iris_classifier_kr
+from tests.utils import TestBase, master_seed
+from tests.utils import get_classifier_tf, get_classifier_kr, get_classifier_pt, get_iris_classifier_kr
 
 logger = logging.getLogger(__name__)
 
@@ -81,7 +80,7 @@ class TestAdversarialPatch(TestBase):
 
         attack_ap = AdversarialPatch(krc, rotation_max=22.5, scale_min=0.1, scale_max=1.0, learning_rate=5.0,
                                      batch_size=10, max_iter=500)
-        master_seed(1234)
+        master_seed(seed=1234)
         patch_adv, _ = attack_ap.generate(self.x_train_mnist)
 
         self.assertAlmostEqual(patch_adv[8, 8, 0], -3.494, delta=0.2)

@@ -23,10 +23,9 @@ import unittest
 import numpy as np
 import GPy
 
-from art.utils import master_seed
 from art.classifiers import GPyGaussianProcessClassifier
 
-from tests.utils_test import TestBase
+from tests.utils import TestBase, master_seed
 
 logger = logging.getLogger(__name__)
 
@@ -38,7 +37,7 @@ class TestGPyGaussianProcessClassifier(TestBase):
 
     @classmethod
     def setUpClass(cls):
-        master_seed(seed=1234, set_tensorflow=False, set_mxnet=False, set_torch=False)
+        master_seed(seed=1234)
         super().setUpClass()
 
         # change iris to binary problem, so it is learnable for GPC
@@ -55,7 +54,7 @@ class TestGPyGaussianProcessClassifier(TestBase):
         cls.classifier = GPyGaussianProcessClassifier(m)
 
     def setUp(self):
-        master_seed(seed=1234, set_tensorflow=False, set_mxnet=False, set_torch=False)
+        master_seed(seed=1234)
         super().setUp()
 
     def test_predict(self):

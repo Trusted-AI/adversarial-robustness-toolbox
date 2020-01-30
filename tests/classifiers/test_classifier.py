@@ -22,10 +22,9 @@ import unittest
 
 import numpy as np
 
-from art.utils import master_seed
 from art.classifiers import Classifier, ClassifierNeuralNetwork, ClassifierGradients
 
-from tests.utils_test import TestBase
+from tests.utils import TestBase, master_seed
 
 logger = logging.getLogger(__name__)
 
@@ -83,11 +82,11 @@ class TestClassifier(TestBase):
 
     @classmethod
     def setUpClass(cls):
-        master_seed(seed=1234, set_tensorflow=False, set_mxnet=False, set_torch=False)
+        master_seed(seed=1234)
         super().setUpClass()
 
     def setUp(self):
-        master_seed(seed=1234, set_tensorflow=False, set_mxnet=False, set_torch=False)
+        master_seed(seed=1234)
         super().setUp()
 
     def test_preprocessing_normalisation(self):
@@ -113,11 +112,11 @@ class TestClassifierNeuralNetwork(TestBase):
 
     @classmethod
     def setUpClass(cls):
-        master_seed(seed=1234, set_tensorflow=False, set_mxnet=False, set_torch=False)
+        master_seed(seed=1234)
         super().setUpClass()
 
     def setUp(self):
-        master_seed(seed=1234, set_tensorflow=False, set_mxnet=False, set_torch=False)
+        master_seed(seed=1234)
         super().setUp()
 
     def test_preprocessing_normalisation(self):

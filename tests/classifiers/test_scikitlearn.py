@@ -30,14 +30,13 @@ from sklearn.svm import SVC, LinearSVC
 from sklearn.decomposition import PCA
 from sklearn.pipeline import Pipeline
 
-from art.utils import master_seed
 from art.classifiers.scikitlearn import ScikitlearnDecisionTreeClassifier, ScikitlearnExtraTreeClassifier, \
     ScikitlearnAdaBoostClassifier, ScikitlearnBaggingClassifier, ScikitlearnExtraTreesClassifier, \
     ScikitlearnGradientBoostingClassifier, ScikitlearnRandomForestClassifier, ScikitlearnLogisticRegression, \
     ScikitlearnSVC
 from art.classifiers import SklearnClassifier
 
-from tests.utils_test import TestBase
+from tests.utils import TestBase, master_seed
 
 logger = logging.getLogger(__name__)
 

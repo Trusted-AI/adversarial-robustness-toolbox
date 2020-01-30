@@ -22,9 +22,10 @@ import unittest
 
 import numpy as np
 
-from art.utils import load_dataset, master_seed
-from tests.utils_test import get_classifier_kr_tf, get_classifier_kr_tf_binary
+from art.utils import load_dataset
 from art.wrappers.output_reverse_sigmoid import OutputReverseSigmoid
+
+from tests.utils import master_seed, get_classifier_kr_tf, get_classifier_kr_tf_binary
 
 logger = logging.getLogger(__name__)
 
@@ -40,7 +41,7 @@ class TestReverseSigmoid(unittest.TestCase):
         cls.mnist = (x_train, y_train), (x_test, y_test)
 
     def setUp(self):
-        master_seed(1234)
+        master_seed(seed=1234)
 
     def test_reverse_sigmoid(self):
         """

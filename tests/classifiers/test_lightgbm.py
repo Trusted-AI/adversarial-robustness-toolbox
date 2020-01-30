@@ -26,7 +26,7 @@ import numpy as np
 from art.utils import master_seed
 from art.classifiers import LightGBMClassifier
 
-from tests.utils_test import TestBase
+from tests.utils import TestBase
 
 logger = logging.getLogger(__name__)
 

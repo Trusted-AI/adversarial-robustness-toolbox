@@ -25,7 +25,7 @@ import numpy as np
 
 from art.defences import FeatureSqueezing, JpegCompression, SpatialSmoothing
 
-from tests.utils_test import TestBase, get_classifier_bb
+from tests.utils import TestBase, get_classifier_bb
 
 logger = logging.getLogger(__name__)
 

@@ -29,7 +29,7 @@ from mxnet.gluon import nn
 from art.utils import master_seed
 from art.classifiers import MXClassifier
 
-from tests.utils_test import TestBase
+from tests.utils import TestBase
 
 logger = logging.getLogger(__name__)
 

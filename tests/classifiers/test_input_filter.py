@@ -29,7 +29,7 @@ if tf.__version__[0] == '2':
 import numpy as np
 
 from art.utils import load_dataset, master_seed
-from tests.utils_test import get_classifier_kr_tf
+from tests.utils import get_classifier_kr_tf
 
 logger = logging.getLogger(__name__)
 

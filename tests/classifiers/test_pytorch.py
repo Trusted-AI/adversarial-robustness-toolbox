@@ -35,7 +35,7 @@ from art.utils import master_seed
 from art.data_generators import PyTorchDataGenerator
 from art.classifiers import PyTorchClassifier
 
-from tests.utils_test import TestBase, get_classifier_pt
+from tests.utils import TestBase, get_classifier_pt
 
 logger = logging.getLogger(__name__)
 

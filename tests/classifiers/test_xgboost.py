@@ -23,10 +23,9 @@ import unittest
 import xgboost as xgb
 import numpy as np
 
-from art.utils import master_seed
 from art.classifiers import XGBoostClassifier
 
-from tests.utils_test import TestBase
+from tests.utils import TestBase, master_seed
 
 logger = logging.getLogger(__name__)
 
@@ -35,7 +34,7 @@ class TestXGBoostClassifierBoosterSoftprob(TestBase):
 
     @classmethod
     def setUpClass(cls):
-        master_seed(seed=1234, set_tensorflow=False, set_mxnet=False, set_torch=False)
+        master_seed(seed=1234)
         super().setUpClass()
 
         num_round = 10
@@ -56,7 +55,7 @@ class TestXGBoostClassifierBoosterSoftmax(TestBase):
 
     @classmethod
     def setUpClass(cls):
-        master_seed(seed=1234, set_tensorflow=False, set_mxnet=False, set_torch=False)
+        master_seed(seed=1234)
         super().setUpClass()
 
         num_round = 10
@@ -77,7 +76,7 @@ class TestXGBoostClassifierPythonAPI(TestBase):
 
     @classmethod
     def setUpClass(cls):
-        master_seed(seed=1234, set_tensorflow=False, set_mxnet=False, set_torch=False)
+        master_seed(seed=1234)
         super().setUpClass()
 
         model = xgb.XGBClassifier(n_estimators=30, max_depth=5)

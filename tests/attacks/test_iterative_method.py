@@ -23,9 +23,9 @@ from art.attacks import BasicIterativeMethod
 from art.classifiers import KerasClassifier
 from art.utils import get_labels_np_array, random_targets
 
-from tests.utils_test import TestBase
-from tests.utils_test import get_classifier_tf, get_classifier_kr, get_classifier_pt
-from tests.utils_test import get_iris_classifier_tf, get_iris_classifier_kr, get_iris_classifier_pt
+from tests.utils import TestBase
+from tests.utils import get_classifier_tf, get_classifier_kr, get_classifier_pt
+from tests.utils import get_iris_classifier_tf, get_iris_classifier_kr, get_iris_classifier_pt
 
 logger = logging.getLogger(__name__)
 

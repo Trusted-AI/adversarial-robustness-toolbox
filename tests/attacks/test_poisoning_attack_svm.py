@@ -25,7 +25,9 @@ from sklearn.svm import LinearSVC, NuSVC, SVC
 
 from art.attacks import PoisoningAttackSVM
 from art.classifiers import SklearnClassifier
-from art.utils import master_seed, load_iris
+from art.utils import load_iris
+
+from tests.utils import master_seed
 
 logger = logging.getLogger(__name__)
 
@@ -42,7 +44,7 @@ class TestSVMAttack(unittest.TestCase):
 
     @classmethod
     def setUpClass(cls):
-        master_seed(seed=1234, set_tensorflow=False, set_mxnet=False, set_torch=False)
+        master_seed(seed=1234)
         cls.setUpIRIS()
 
     @staticmethod

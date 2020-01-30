@@ -25,8 +25,9 @@ import numpy as np
 from art.attacks import FastGradientMethod, DeepFool
 from art.data_generators import DataGenerator
 from art.defences import AdversarialTrainer
-from art.utils import load_mnist, master_seed
-from tests.utils_test import get_classifier_tf
+from art.utils import load_mnist
+
+from tests.utils import master_seed, get_classifier_tf
 
 logger = logging.getLogger(__name__)
 
@@ -50,7 +51,7 @@ class TestAdversarialTrainer(unittest.TestCase):
         cls.classifier, _ = get_classifier_tf()
 
     def setUp(self):
-        master_seed(1234)
+        master_seed(seed=1234)
 
     def test_classifier_match(self):
         attack = FastGradientMethod(self.classifier)

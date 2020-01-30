@@ -24,11 +24,10 @@ from sklearn.tree import DecisionTreeClassifier
 from sklearn.datasets import load_digits
 import numpy as np
 
-from art.utils import master_seed
 from art.attacks import DecisionTreeAttack
 from art.classifiers import SklearnClassifier
 
-from tests.utils_test import TestBase
+from tests.utils import TestBase, master_seed
 
 logger = logging.getLogger(__name__)
 
@@ -40,7 +39,7 @@ class TestDecisionTreeAttack(TestBase):
 
     @classmethod
     def setUpClass(cls):
-        master_seed(seed=1234, set_tensorflow=False, set_mxnet=False, set_torch=False)
+        master_seed(seed=1234)
         super().setUpClass()
 
         # Get MNIST

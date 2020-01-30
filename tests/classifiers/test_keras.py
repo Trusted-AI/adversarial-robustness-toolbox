@@ -34,10 +34,9 @@ from keras.callbacks import LearningRateScheduler
 from art.classifiers import KerasClassifier
 from art.classifiers.keras import generator_fit
 from art.defences import FeatureSqueezing, JpegCompression, SpatialSmoothing
-from art.utils import master_seed
 from art.data_generators import KerasDataGenerator
 
-from tests.utils_test import TestBase, get_classifier_kr
+from tests.utils import TestBase, master_seed, get_classifier_kr
 
 logger = logging.getLogger(__name__)
 
@@ -78,7 +77,7 @@ class TestKerasClassifier(TestBase):
 
     @classmethod
     def setUpClass(cls):
-        master_seed(seed=1234, set_tensorflow=False, set_mxnet=False, set_torch=False)
+        master_seed(seed=1234)
         super().setUpClass()
 
         # Load small Keras model
@@ -379,7 +378,7 @@ class TestKerasClassifier(TestBase):
 
         def _run_tests(_loss_name, _loss_type, _y_test_pred_expected, _class_gradient_probabilities_expected,
                        _loss_gradient_expected, _from_logits):
-            master_seed(seed=1234, set_tensorflow=False, set_mxnet=False, set_torch=False)
+            master_seed(seed=1234)
             classifier = get_classifier_kr(loss_name=_loss_name, loss_type=_loss_type, from_logits=_from_logits)
 
             y_test_pred = np.argmax(classifier.predict(x=self.x_test_mnist), axis=1)

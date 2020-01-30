@@ -30,7 +30,7 @@ import numpy as np
 from art.utils import master_seed
 from art.data_generators import TFDataGenerator
 
-from tests.utils_test import TestBase, get_classifier_tf
+from tests.utils import TestBase, get_classifier_tf
 
 logger = logging.getLogger(__name__)
 

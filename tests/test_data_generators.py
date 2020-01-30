@@ -28,7 +28,8 @@ import numpy as np
 from keras.preprocessing.image import ImageDataGenerator
 
 from art.data_generators import KerasDataGenerator, PyTorchDataGenerator, MXDataGenerator, TFDataGenerator
-from art.utils import master_seed
+
+from tests.utils import master_seed
 
 logger = logging.getLogger(__name__)
 
@@ -36,7 +37,7 @@ logger = logging.getLogger(__name__)
 class TestKerasDataGenerator(unittest.TestCase):
     def setUp(self):
         import keras
-        master_seed(42)
+        master_seed(seed=42)
 
         class DummySequence(keras.utils.Sequence):
             def __init__(self):
@@ -160,7 +161,7 @@ class TestPyTorchGenerator(unittest.TestCase):
     def setUp(self):
         import torch
         from torch.utils.data import DataLoader
-        master_seed(42)
+        master_seed(seed=42)
 
         class DummyDataset(torch.utils.data.Dataset):
             def __init__(self):
@@ -207,7 +208,7 @@ class TestPyTorchGenerator(unittest.TestCase):
 class TestMXGenerator(unittest.TestCase):
     def setUp(self):
         import mxnet as mx
-        master_seed(42)
+        master_seed(seed=42, set_mxnet=True)
 
         x = mx.random.uniform(shape=(10, 1, 5, 5))
         y = mx.random.uniform(shape=10)
@@ -244,7 +245,7 @@ class TestMXGenerator(unittest.TestCase):
 
 class TestTensorFlowDataGenerator(unittest.TestCase):
     def setUp(self):
-        master_seed(42)
+        master_seed(seed=42)
 
         def generator(batch_size=5):
             while True:
