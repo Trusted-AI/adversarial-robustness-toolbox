@@ -28,7 +28,7 @@ from art.utils import master_seed
 from art.classifiers.scikitlearn import ScikitlearnDecisionTreeClassifier
 
 from tests.utils_test import TestBase
-from tests.utils_test import get_classifier_tf, get_classifier_kr, get_classifier_pt, get_iris_classifier_kr
+from tests.utils_test import get_image_classifier_tf, get_image_classifier_kr, get_image_classifier_pt, get_tabular_classifier_kr
 
 logger = logging.getLogger(__name__)
 
@@ -54,7 +54,7 @@ class TestAdversarialPatch(TestBase):
         First test with the TensorFlowClassifier.
         :return:
         """
-        tfc, sess = get_classifier_tf()
+        tfc, sess = get_image_classifier_tf()
 
         attack_ap = AdversarialPatch(tfc, rotation_max=22.5, scale_min=0.1, scale_max=1.0, learning_rate=5.0,
                                      batch_size=10, max_iter=500)
@@ -72,7 +72,7 @@ class TestAdversarialPatch(TestBase):
         Second test with the KerasClassifier.
         :return:
         """
-        krc = get_classifier_kr()
+        krc = get_image_classifier_kr()
 
         attack_ap = AdversarialPatch(krc, rotation_max=22.5, scale_min=0.1, scale_max=1.0, learning_rate=5.0,
                                      batch_size=10, max_iter=500)
@@ -88,7 +88,7 @@ class TestAdversarialPatch(TestBase):
         Third test with the PyTorchClassifier.
         :return:
         """
-        ptc = get_classifier_pt()
+        ptc = get_image_classifier_pt()
 
         x_train = np.reshape(self.x_train_mnist, (self.n_train, 1, 28, 28)).astype(np.float32)
 
@@ -104,7 +104,7 @@ class TestAdversarialPatch(TestBase):
     def test_failure_feature_vectors(self):
         attack_params = {"rotation_max": 22.5, "scale_min": 0.1, "scale_max": 1.0, "learning_rate": 5.0,
                          "number_of_steps": 5, "batch_size": 10}
-        classifier = get_iris_classifier_kr()
+        classifier = get_tabular_classifier_kr()
         attack = AdversarialPatch(classifier=classifier)
         attack.set_params(**attack_params)
         data = np.random.rand(10, 4)

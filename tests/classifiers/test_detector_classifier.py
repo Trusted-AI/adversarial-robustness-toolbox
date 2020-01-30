@@ -29,7 +29,7 @@ import torch.optim as optim
 
 from art.classifiers import PyTorchClassifier, DetectorClassifier
 
-from tests.utils_test import TestBase, get_classifier_pt
+from tests.utils_test import TestBase, get_image_classifier_pt
 
 logger = logging.getLogger(__name__)
 
@@ -67,7 +67,7 @@ class TestDetectorClassifier(TestBase):
         cls.x_test_mnist = np.reshape(cls.x_test_mnist, (cls.x_test_mnist.shape[0], 1, 28, 28)).astype(np.float32)
 
         # Define the internal classifier
-        classifier = get_classifier_pt()
+        classifier = get_image_classifier_pt()
 
         # Define the internal detector
         conv = nn.Conv2d(1, 16, 5)

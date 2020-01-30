@@ -23,7 +23,7 @@ import unittest
 import numpy as np
 
 from art.utils import load_dataset, master_seed
-from tests.utils_test import get_classifier_kr_tf, get_classifier_kr_tf_binary
+from tests.utils_test import get_image_classifier_kr_tf, get_image_classifier_kr_tf_binary
 from art.wrappers.output_add_random_noise import OutputRandomNoise
 
 logger = logging.getLogger(__name__)
@@ -47,7 +47,7 @@ class TestRandomNoise(unittest.TestCase):
         Test random noise.
         """
         (_, _), (x_test, _) = self.mnist
-        classifier = get_classifier_kr_tf()
+        classifier = get_image_classifier_kr_tf()
         wrapped_classifier = OutputRandomNoise(classifier=classifier, scale=0.1)
 
         classifier_prediction_expected = np.asarray([[0.12109935, 0.0498215, 0.0993958, 0.06410096, 0.11366928,
@@ -66,7 +66,7 @@ class TestRandomNoise(unittest.TestCase):
         Test random noise for binary classifier.
         """
         (_, _), (x_test, _) = self.mnist
-        classifier = get_classifier_kr_tf_binary()
+        classifier = get_image_classifier_kr_tf_binary()
         wrapped_classifier = OutputRandomNoise(classifier=classifier, scale=0.1)
 
         classifier_prediction_expected = np.asarray([[0.5301345]], dtype=np.float32)

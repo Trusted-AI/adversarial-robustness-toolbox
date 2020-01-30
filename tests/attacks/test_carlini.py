@@ -29,8 +29,8 @@ from art.classifiers import KerasClassifier
 from art.utils import random_targets, to_categorical
 
 from tests.utils_test import TestBase
-from tests.utils_test import get_classifier_tf, get_classifier_kr, get_classifier_pt
-from tests.utils_test import get_iris_classifier_tf, get_iris_classifier_kr, get_iris_classifier_pt
+from tests.utils_test import get_image_classifier_tf, get_image_classifier_kr, get_image_classifier_pt
+from tests.utils_test import get_tabular_classifier_tf, get_tabular_classifier_kr, get_tabular_classifier_pt
 
 logger = logging.getLogger(__name__)
 
@@ -59,7 +59,7 @@ class TestCarlini(TestBase):
         x_test_original = self.x_test_mnist.copy()
 
         # Build TensorFlowClassifier
-        tfc, sess = get_classifier_tf(from_logits=True)
+        tfc, sess = get_image_classifier_tf(from_logits=True)
 
         # Failure attack
         cl2m = CarliniL2Method(classifier=tfc, targeted=True, max_iter=0, binary_search_steps=0, learning_rate=0,
@@ -85,7 +85,7 @@ class TestCarlini(TestBase):
         x_test_original = self.x_test_mnist.copy()
 
         # Build TensorFlowClassifier
-        tfc, sess = get_classifier_tf()
+        tfc, sess = get_image_classifier_tf()
 
         # First attack
         cl2m = CarliniL2Method(classifier=tfc, targeted=True, max_iter=10)
@@ -130,7 +130,7 @@ class TestCarlini(TestBase):
         x_test_original = self.x_test_mnist.copy()
 
         # Build KerasClassifier
-        krc = get_classifier_kr(from_logits=True)
+        krc = get_image_classifier_kr(from_logits=True)
 
         # First attack
         cl2m = CarliniL2Method(classifier=krc, targeted=True, max_iter=10)
@@ -171,7 +171,7 @@ class TestCarlini(TestBase):
         x_test_original = x_test.copy()
 
         # Build PyTorchClassifier
-        ptc = get_classifier_pt(from_logits=True)
+        ptc = get_image_classifier_pt(from_logits=True)
 
         # First attack
         cl2m = CarliniL2Method(classifier=ptc, targeted=True, max_iter=10)
@@ -224,7 +224,7 @@ class TestCarlini(TestBase):
                       '(<class \'art.classifiers.scikitlearn.ScikitlearnClassifier\'>,).', str(context.exception))
 
     def test_keras_iris_clipped_L2(self):
-        classifier = get_iris_classifier_kr()
+        classifier = get_tabular_classifier_kr()
         attack = CarliniL2Method(classifier, targeted=False, max_iter=10)
         x_test_adv = attack.generate(self.x_test_iris)
         self.assertFalse((self.x_test_iris == x_test_adv).all())
@@ -237,7 +237,7 @@ class TestCarlini(TestBase):
         logger.info('Accuracy on Iris with C&W adversarial examples: %.2f%%', (accuracy * 100))
 
     def test_keras_iris_unbounded_L2(self):
-        classifier = get_iris_classifier_kr()
+        classifier = get_tabular_classifier_kr()
 
         # Recreate a classifier without clip values
         classifier = KerasClassifier(model=classifier._model, use_logits=False, channel_index=1)
@@ -251,7 +251,7 @@ class TestCarlini(TestBase):
         logger.info('Accuracy on Iris with C&W adversarial examples: %.2f%%', (accuracy * 100))
 
     def test_tensorflow_iris_L2(self):
-        classifier, _ = get_iris_classifier_tf()
+        classifier, _ = get_tabular_classifier_tf()
 
         # Test untargeted attack
         attack = CarliniL2Method(classifier, targeted=False, max_iter=10)
@@ -279,7 +279,7 @@ class TestCarlini(TestBase):
         logger.info('Success rate of targeted C&W on Iris: %.2f%%', (accuracy * 100))
 
     def test_pytorch_iris_L2(self):
-        classifier = get_iris_classifier_pt()
+        classifier = get_tabular_classifier_pt()
         attack = CarliniL2Method(classifier, targeted=False, max_iter=10)
         x_test_adv = attack.generate(self.x_test_iris)
         self.assertFalse((self.x_test_iris == x_test_adv).all())
@@ -347,7 +347,7 @@ class TestCarlini(TestBase):
         :return:
         """
         # Build TensorFlowClassifier
-        tfc, sess = get_classifier_tf(from_logits=True)
+        tfc, sess = get_image_classifier_tf(from_logits=True)
 
         # Failure attack
         clinfm = CarliniLInfMethod(classifier=tfc, targeted=True, max_iter=0, learning_rate=0, eps=0.5)
@@ -367,7 +367,7 @@ class TestCarlini(TestBase):
         :return:
         """
         # Build TensorFlowClassifier
-        tfc, sess = get_classifier_tf(from_logits=True)
+        tfc, sess = get_image_classifier_tf(from_logits=True)
 
         # First attack
         clinfm = CarliniLInfMethod(classifier=tfc, targeted=True, max_iter=10, eps=0.5)
@@ -408,7 +408,7 @@ class TestCarlini(TestBase):
         :return:
         """
         # Build KerasClassifier
-        krc = get_classifier_kr(from_logits=True)
+        krc = get_image_classifier_kr(from_logits=True)
 
         # First attack
         clinfm = CarliniLInfMethod(classifier=krc, targeted=True, max_iter=10, eps=0.5)
@@ -447,7 +447,7 @@ class TestCarlini(TestBase):
         x_test = np.reshape(self.x_test_mnist, (self.x_test_mnist.shape[0], 1, 28, 28)).astype(np.float32)
 
         # Build PyTorchClassifier
-        ptc = get_classifier_pt(from_logits=True)
+        ptc = get_image_classifier_pt(from_logits=True)
 
         # First attack
         clinfm = CarliniLInfMethod(classifier=ptc, targeted=True, max_iter=10, eps=0.5)
@@ -497,7 +497,7 @@ class TestCarlini(TestBase):
                       '(<class \'art.classifiers.scikitlearn.ScikitlearnClassifier\'>,).', str(context.exception))
 
     def test_keras_iris_clipped_LInf(self):
-        classifier = get_iris_classifier_kr()
+        classifier = get_tabular_classifier_kr()
         attack = CarliniLInfMethod(classifier, targeted=False, max_iter=10, eps=0.5)
         x_test_adv = attack.generate(self.x_test_iris)
         self.assertFalse((self.x_test_iris == x_test_adv).all())
@@ -510,7 +510,7 @@ class TestCarlini(TestBase):
         logger.info('Accuracy on Iris with C&W adversarial examples: %.2f%%', (accuracy * 100))
 
     def test_keras_iris_unbounded_LInf(self):
-        classifier = get_iris_classifier_kr()
+        classifier = get_tabular_classifier_kr()
 
         # Recreate a classifier without clip values
         classifier = KerasClassifier(model=classifier._model, use_logits=False, channel_index=1)
@@ -524,7 +524,7 @@ class TestCarlini(TestBase):
         logger.info('Accuracy on Iris with C&W adversarial examples: %.2f%%', (accuracy * 100))
 
     def test_tensorflow_iris_LInf(self):
-        classifier, _ = get_iris_classifier_tf()
+        classifier, _ = get_tabular_classifier_tf()
 
         # Test untargeted attack
         attack = CarliniLInfMethod(classifier, targeted=False, max_iter=10, eps=0.5)
@@ -552,7 +552,7 @@ class TestCarlini(TestBase):
         logger.info('Success rate of targeted C&W on Iris: %.2f%%', (accuracy * 100))
 
     def test_pytorch_iris_LInf(self):
-        classifier = get_iris_classifier_pt()
+        classifier = get_tabular_classifier_pt()
         attack = CarliniLInfMethod(classifier, targeted=False, max_iter=10, eps=0.5)
         x_test_adv = attack.generate(self.x_test_iris.astype(np.float32))
         self.assertFalse((self.x_test_iris == x_test_adv).all())

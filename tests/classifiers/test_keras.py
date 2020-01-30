@@ -42,7 +42,7 @@ from art.defences import FeatureSqueezing, JpegCompression, SpatialSmoothing
 from art.utils import master_seed
 from art.data_generators import KerasDataGenerator
 
-from tests.utils_test import TestBase, get_classifier_kr
+from tests.utils_test import TestBase, get_image_classifier_kr
 
 logger = logging.getLogger(__name__)
 
@@ -109,7 +109,7 @@ class TestKerasClassifier(TestBase):
 
     def test_fit(self):
         labels = np.argmax(self.y_test_mnist, axis=1)
-        classifier = get_classifier_kr()
+        classifier = get_image_classifier_kr()
         accuracy = np.sum(np.argmax(classifier.predict(self.x_test_mnist), axis=1) == labels) / self.n_test
         logger.info('Accuracy: %.2f%%', (accuracy * 100))
 
@@ -121,7 +121,7 @@ class TestKerasClassifier(TestBase):
         self.assertAlmostEqual(accuracy_2, 0.73, delta=0.06)
 
     def test_fit_generator(self):
-        classifier = get_classifier_kr()
+        classifier = get_image_classifier_kr()
         labels = np.argmax(self.y_test_mnist, axis=1)
         accuracy = np.sum(np.argmax(classifier.predict(self.x_test_mnist), axis=1) == labels) / self.n_test
         logger.info('Accuracy: %.2f%%', (accuracy * 100))
@@ -136,7 +136,7 @@ class TestKerasClassifier(TestBase):
         self.assertAlmostEqual(accuracy_2, 0.36, delta=0.06)
 
     def test_fit_image_generator(self):
-        classifier = get_classifier_kr()
+        classifier = get_image_classifier_kr()
         labels_test = np.argmax(self.y_test_mnist, axis=1)
         accuracy = np.sum(np.argmax(classifier.predict(self.x_test_mnist), axis=1) == labels_test) / self.n_test
         logger.info('Accuracy: %.2f%%', (accuracy * 100))
@@ -160,7 +160,7 @@ class TestKerasClassifier(TestBase):
             return 0.01
 
         # Test a valid callback
-        classifier = get_classifier_kr()
+        classifier = get_image_classifier_kr()
         kwargs = {'callbacks': [LearningRateScheduler(get_lr)]}
         classifier.fit(self.x_train_mnist, self.y_train_mnist, batch_size=self.batch_size, nb_epochs=1, **kwargs)
 
@@ -172,7 +172,7 @@ class TestKerasClassifier(TestBase):
         self.assertIn('multiple values for keyword argument', str(context.exception))
 
     def test_shapes(self):
-        classifier = get_classifier_kr()
+        classifier = get_image_classifier_kr()
 
         predictions = classifier.predict(self.x_test_mnist)
         self.assertEqual(predictions.shape, self.y_test_mnist.shape)
@@ -190,7 +190,7 @@ class TestKerasClassifier(TestBase):
         fs = FeatureSqueezing(clip_values=clip_values, bit_depth=2)
         jpeg = JpegCompression(clip_values=clip_values, apply_predict=True)
         smooth = SpatialSmoothing()
-        classifier_ = get_classifier_kr()
+        classifier_ = get_image_classifier_kr()
         classifier = KerasClassifier(clip_values=clip_values, model=classifier_._model, defences=[fs, jpeg, smooth])
         self.assertEqual(len(classifier.defences), 3)
 
@@ -201,14 +201,14 @@ class TestKerasClassifier(TestBase):
         x_test_defense, _ = fs(x_test_defense, self.y_test_mnist)
         x_test_defense, _ = jpeg(x_test_defense, self.y_test_mnist)
         x_test_defense, _ = smooth(x_test_defense, self.y_test_mnist)
-        classifier = get_classifier_kr()
+        classifier = get_image_classifier_kr()
         predictions_check = classifier._model.predict(x_test_defense)
 
         # Check that the prediction results match
         np.testing.assert_array_almost_equal(predictions_classifier, predictions_check, decimal=4)
 
     def test_class_gradient(self):
-        classifier = get_classifier_kr()
+        classifier = get_image_classifier_kr()
 
         # Test all gradients label
         gradients = classifier.class_gradient(self.x_test_mnist)
@@ -279,7 +279,7 @@ class TestKerasClassifier(TestBase):
         np.testing.assert_array_almost_equal(gradients[0, 0, :, 14, 0], expected_gradients_2, decimal=4)
 
     def test_loss_gradient(self):
-        classifier = get_classifier_kr()
+        classifier = get_image_classifier_kr()
 
         # Test gradient
         gradients = classifier.loss_gradient(self.x_test_mnist, self.y_test_mnist)
@@ -310,7 +310,7 @@ class TestKerasClassifier(TestBase):
         self.assertTrue(keras_model._output.name, "output0")
 
     def test_layers(self):
-        classifier = get_classifier_kr()
+        classifier = get_image_classifier_kr()
         self.assertEqual(len(classifier.layer_names), 3)
 
         layer_names = classifier.layer_names
@@ -334,7 +334,7 @@ class TestKerasClassifier(TestBase):
         self.assertAlmostEqual(prediction[0, 178], 0.2658045, places=3)
 
     def test_learning_phase(self):
-        classifier = get_classifier_kr()
+        classifier = get_image_classifier_kr()
         self.assertFalse(hasattr(classifier, '_learning_phase'))
         classifier.set_learning_phase(False)
         self.assertFalse(classifier.learning_phase)
@@ -345,7 +345,7 @@ class TestKerasClassifier(TestBase):
     def test_save(self):
         path = 'tmp'
         filename = 'model.h5'
-        classifier = get_classifier_kr()
+        classifier = get_image_classifier_kr()
         classifier.save(filename, path=path)
         self.assertTrue(os.path.isfile(os.path.join(path, filename)))
         os.remove(os.path.join(path, filename))
@@ -377,7 +377,7 @@ class TestKerasClassifier(TestBase):
     #     os.remove(full_path)
 
     def test_repr(self):
-        classifier = get_classifier_kr()
+        classifier = get_image_classifier_kr()
         repr_ = repr(classifier)
         self.assertIn('art.classifiers.keras.KerasClassifier', repr_)
         self.assertIn('use_logits=False, channel_index=3', repr_)
@@ -411,7 +411,7 @@ class TestKerasClassifier(TestBase):
         def _run_tests(_loss_name, _loss_type, _y_test_pred_expected, _class_gradient_probabilities_expected,
                        _loss_gradient_expected, _from_logits):
             master_seed(1234)
-            classifier = get_classifier_kr(loss_name=_loss_name, loss_type=_loss_type, from_logits=_from_logits)
+            classifier = get_image_classifier_kr(loss_name=_loss_name, loss_type=_loss_type, from_logits=_from_logits)
 
             y_test_pred = np.argmax(classifier.predict(x=self.x_test_mnist), axis=1)
             np.testing.assert_array_equal(y_test_pred, _y_test_pred_expected)

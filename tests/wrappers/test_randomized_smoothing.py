@@ -26,7 +26,7 @@ import numpy as np
 from art.attacks import FastGradientMethod
 from art.classifiers import KerasClassifier
 from art.utils import load_dataset, random_targets, master_seed, compute_accuracy
-from tests.utils_test import get_classifier_kr, get_iris_classifier_kr
+from tests.utils_test import get_image_classifier_kr, get_tabular_classifier_kr
 from art.wrappers.randomized_smoothing import RandomizedSmoothing
 
 os.environ['KMP_DUPLICATE_LIB_OK'] = 'True'
@@ -60,7 +60,7 @@ class TestRandomizedSmoothing(unittest.TestCase):
         :return:
         """
         # Build KerasClassifier
-        krc = get_classifier_kr()
+        krc = get_image_classifier_kr()
 
         # Get MNIST
         (_, _), (x_test, y_test) = self.mnist
@@ -118,7 +118,7 @@ class TestRandomizedSmoothingVectors(unittest.TestCase):
     def test_iris_clipped(self):
         (_, _), (x_test, y_test) = self.iris
 
-        krc = get_iris_classifier_kr()
+        krc = get_tabular_classifier_kr()
         rs = RandomizedSmoothing(classifier=krc, sample_size=100, scale=0.01, alpha=0.001)
 
         # Test untargeted attack
@@ -163,7 +163,7 @@ class TestRandomizedSmoothingVectors(unittest.TestCase):
 
     def test_iris_unbounded(self):
         (_, _), (x_test, y_test) = self.iris
-        classifier = get_iris_classifier_kr()
+        classifier = get_tabular_classifier_kr()
 
         # Recreate a classifier without clip values
         krc = KerasClassifier(model=classifier._model, use_logits=False, channel_index=1)

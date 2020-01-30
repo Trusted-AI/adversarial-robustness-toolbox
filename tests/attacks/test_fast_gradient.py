@@ -26,8 +26,8 @@ from art.attacks import FastGradientMethod
 from art.classifiers import KerasClassifier
 from art.utils import get_labels_np_array, random_targets
 from tests.utils_test import TestBase
-from tests.utils_test import get_classifier_tf, get_classifier_kr, get_classifier_pt
-from tests.utils_test import get_iris_classifier_tf, get_iris_classifier_kr, get_iris_classifier_pt
+from tests.utils_test import get_image_classifier_tf, get_image_classifier_kr, get_image_classifier_pt
+from tests.utils_test import get_tabular_classifier_tf, get_tabular_classifier_kr, get_tabular_classifier_pt
 from tests import utils_test
 
 logger = logging.getLogger(__name__)
@@ -57,11 +57,8 @@ class TestFastGradientMethodImages(TestBase):
         self.assertAlmostEqual(float(np.max(np.abs(self.x_test_original - self.x_test_potentially_modified))), 0.0, delta=0.00001)
 
     def test_no_norm_images(self):
-        (self.x_train_mnist, self.y_train_mnist), (self.x_test_mnist, self.y_test_mnist)
         classifier = utils_test.get_image_classifier()
-        # (x_train, y_train), (x_test, y_test) = mnist_param
 
-        # Test FGSM with np.inf norm
         attack = FastGradientMethod(classifier, eps=1.0, batch_size=11)
         x_test_adv = attack.generate(self.x_test_mnist)
 
@@ -110,10 +107,8 @@ class TestFastGradientMethodImages(TestBase):
         np.testing.assert_array_almost_equal(y_test_pred[0:3], y_test_pred_expected[0:3], decimal=2)
 
     def test_minimal_perturbations_images(self):
-        (self.x_train_mnist, self.y_train_mnist), (self.x_test_mnist, self.y_test_mnist)
+
         classifier = utils_test.get_image_classifier()
-        # (x_train, y_train), (x_test, y_test) = mnist_param
-        # Test minimal perturbations
         attack = FastGradientMethod(classifier, eps=1.0, batch_size=11)
         attack_params = {"minimal": True, "eps_step": 0.1, "eps": 5.0}
         attack.set_params(**attack_params)
@@ -132,8 +127,7 @@ class TestFastGradientMethodImages(TestBase):
 
     def test_l1_norm_images(self):
         classifier = utils_test.get_image_classifier()
-        (self.x_train_mnist, self.y_train_mnist), (self.x_test_mnist, self.y_test_mnist)
-        # (x_train, y_train), (x_test, y_test) = mnist_param
+
         attack = FastGradientMethod(classifier, eps=1, norm=1, batch_size=128)
         x_test_adv = attack.generate(self.x_test_mnist)
 
@@ -148,8 +142,7 @@ class TestFastGradientMethodImages(TestBase):
 
     def test_l2_norm_images(self):
         classifier = utils_test.get_image_classifier()
-        # (x_train, y_train), (x_test, y_test) = mnist_param
-        (self.x_train_mnist, self.y_train_mnist), (self.x_test_mnist, self.y_test_mnist)
+
         attack = FastGradientMethod(classifier, eps=1, norm=2, batch_size=128)
         x_test_adv = attack.generate(self.x_test_mnist)
 
@@ -164,20 +157,14 @@ class TestFastGradientMethodImages(TestBase):
 
     def test_random_initialisation_images(self):
         classifier = utils_test.get_image_classifier()
-        # (x_train, y_train), (x_test, y_test) = mnist_param
-        (self.x_train_mnist, self.y_train_mnist), (self.x_test_mnist, self.y_test_mnist)
+
         attack = FastGradientMethod(classifier, num_random_init=3)
         x_test_adv = attack.generate(self.x_test_mnist)
         self.assertFalse((self.x_test_mnist == x_test_adv).all())
 
-
-
-
     def test_targeted_attack_images(self):
         classifier = utils_test.get_image_classifier()
-        # (x_train, y_train), (x_test, y_test) = mnist_param
-        (self.x_train_mnist, self.y_train_mnist), (self.x_test_mnist, self.y_test_mnist)
-        # Test FGSM with np.inf norm
+
         attack = FastGradientMethod(classifier, eps=1.0, targeted=True)
 
         y_test_pred_sort = classifier.predict(self.x_test_mnist).argsort(axis=1)
@@ -199,7 +186,6 @@ class TestFastGradientMethodImages(TestBase):
     def test_targeted_attack_tabular(self):
         classifier = utils_test.get_tabular_classifier()
 
-        # Test targeted attack
         batch_size = 1
         if os.environ["mlFramework"] in ["pytorch", "tensorflow"]:
             batch_size = 128
@@ -222,7 +208,6 @@ class TestFastGradientMethodImages(TestBase):
         attack = FastGradientMethod(classifier, eps=.1)
         x_test_adv = attack.generate(self.x_test_iris)
 
-
         self._check_x_adv(x_test_adv, self.x_test_iris)
 
         y_pred_test_adv = np.argmax(classifier.predict(x_test_adv), axis=1)
@@ -239,8 +224,6 @@ class TestFastGradientMethodImages(TestBase):
 
     def test_classifier_defended_images(self):
         defended_classifier = utils_test.get_image_classifier(defended=True)
-        # (x_train, y_train), (x_test, y_test) = mnist_param
-        (self.x_train_mnist, self.y_train_mnist), (self.x_test_mnist, self.y_test_mnist)
 
         if defended_classifier is not None:
             attack = FastGradientMethod(defended_classifier, eps=1, batch_size=128)
@@ -298,14 +281,13 @@ class TestFastGradientMethodImages(TestBase):
                       '`art.classifiers.classifier.ClassifierGradients`, the provided classifier is instance of '
                       '(<class \'art.classifiers.scikitlearn.ScikitlearnClassifier\'>,).', str(context.exception))
 
-
-    # @unittest.skipUnless(os.environ["mlFramework"] == "scikitlearn", "Not a scikitlearn method hence Skipping this test")
     def test_tabular_scikitlearn(self):
         from sklearn.linear_model import LogisticRegression
         from sklearn.svm import SVC, LinearSVC
 
         from art.classifiers.scikitlearn import SklearnClassifier
 
+        #White box attack with gradients
         scikitlearn_test_cases = [LogisticRegression(solver='lbfgs', multi_class='auto'),
                                   SVC(gamma='auto'),
                                   LinearSVC()]

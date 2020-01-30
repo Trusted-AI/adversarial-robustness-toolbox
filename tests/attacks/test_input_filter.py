@@ -26,8 +26,8 @@ import pandas as pd
 from art.attacks import ProjectedGradientDescent
 from art.classifiers import KerasClassifier
 from art.utils import load_dataset, get_labels_np_array, master_seed, random_targets
-from tests.utils_test import get_classifier_tf, get_classifier_kr, get_classifier_pt
-from tests.utils_test import get_iris_classifier_tf, get_iris_classifier_kr, get_iris_classifier_pt
+from tests.utils_test import get_image_classifier_tf, get_image_classifier_kr, get_image_classifier_pt
+from tests.utils_test import get_tabular_classifier_tf, get_tabular_classifier_kr, get_tabular_classifier_pt
 
 logger = logging.getLogger(__name__)
 
@@ -64,7 +64,7 @@ class TestInputFilter(unittest.TestCase):
 
     def test_tensorflow_mnist(self):
         (x_train, y_train), (x_test, y_test) = self.mnist
-        classifier, sess = get_classifier_tf()
+        classifier, sess = get_image_classifier_tf()
 
         scores = get_labels_np_array(classifier.predict(x_train))
         acc = np.sum(np.argmax(scores, axis=1) == np.argmax(y_train, axis=1)) / len(y_train)
@@ -80,7 +80,7 @@ class TestInputFilter(unittest.TestCase):
         (x_train, y_train), (x_test, y_test) = self.mnist
         x_train = np.swapaxes(x_train, 1, 3).astype(np.float32)
         x_test = np.swapaxes(x_test, 1, 3).astype(np.float32)
-        classifier = get_classifier_pt()
+        classifier = get_image_classifier_pt()
 
         scores = get_labels_np_array(classifier.predict(x_train))
         acc = np.sum(np.argmax(scores, axis=1) == np.argmax(y_train, axis=1)) / len(y_train)
@@ -166,7 +166,7 @@ class TestInputFilter(unittest.TestCase):
 
     def test_keras_iris_clipped(self):
         (_, _), (x_test, y_test) = self.iris
-        classifier = get_iris_classifier_kr()
+        classifier = get_tabular_classifier_kr()
 
         # Test untargeted attack
         attack = ProjectedGradientDescent(classifier, eps=1, eps_step=0.1)
@@ -182,7 +182,7 @@ class TestInputFilter(unittest.TestCase):
 
     def test_keras_iris_unbounded(self):
         (_, _), (x_test, y_test) = self.iris
-        classifier = get_iris_classifier_kr()
+        classifier = get_tabular_classifier_kr()
 
         # Recreate a classifier without clip values
         classifier = KerasClassifier(model=classifier._model, use_logits=False, channel_index=1)
@@ -199,7 +199,7 @@ class TestInputFilter(unittest.TestCase):
 
     def test_tensorflow_iris(self):
         (_, _), (x_test, y_test) = self.iris
-        classifier, _ = get_iris_classifier_tf()
+        classifier, _ = get_tabular_classifier_tf()
 
         # Test untargeted attack
         attack = ProjectedGradientDescent(classifier, eps=1, eps_step=0.1)
@@ -215,7 +215,7 @@ class TestInputFilter(unittest.TestCase):
 
     def test_pytorch_iris_pt(self):
         (_, _), (x_test, y_test) = self.iris
-        classifier = get_iris_classifier_pt()
+        classifier = get_tabular_classifier_pt()
 
         # Test untargeted attack
         attack = ProjectedGradientDescent(classifier, eps=1, eps_step=0.1)

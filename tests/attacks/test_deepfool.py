@@ -28,8 +28,8 @@ from art.classifiers import KerasClassifier
 from art.utils import get_labels_np_array
 
 from tests.utils_test import TestBase
-from tests.utils_test import get_classifier_tf, get_classifier_kr, get_classifier_pt
-from tests.utils_test import get_iris_classifier_tf, get_iris_classifier_kr, get_iris_classifier_pt
+from tests.utils_test import get_image_classifier_tf, get_image_classifier_kr, get_image_classifier_pt
+from tests.utils_test import get_tabular_classifier_tf, get_tabular_classifier_kr, get_tabular_classifier_pt
 
 logger = logging.getLogger(__name__)
 
@@ -52,7 +52,7 @@ class TestDeepFool(TestBase):
         x_test_original = self.x_test_mnist.copy()
 
         # Keras classifier
-        classifier = get_classifier_kr(from_logits=True)
+        classifier = get_image_classifier_kr(from_logits=True)
 
         scores = classifier._model.evaluate(self.x_train_mnist, self.y_train_mnist)
         logger.info('[Keras, MNIST] Accuracy on training set: %.2f%%', (scores[1] * 100))
@@ -87,7 +87,7 @@ class TestDeepFool(TestBase):
         x_test_original = self.x_test_mnist.copy()
 
         # Create basic CNN on MNIST using TensorFlow
-        classifier, sess = get_classifier_tf(from_logits=True)
+        classifier, sess = get_image_classifier_tf(from_logits=True)
 
         scores = get_labels_np_array(classifier.predict(self.x_train_mnist))
         accuracy = np.sum(np.argmax(scores, axis=1) == np.argmax(self.y_train_mnist, axis=1)) / \
@@ -129,7 +129,7 @@ class TestDeepFool(TestBase):
         x_test_original = x_test.copy()
 
         # Create basic PyTorch model
-        classifier = get_classifier_pt(from_logits=True)
+        classifier = get_image_classifier_pt(from_logits=True)
 
         scores = get_labels_np_array(classifier.predict(x_train))
         accuracy = np.sum(np.argmax(scores, axis=1) == np.argmax(self.y_train_mnist, axis=1)) / \
@@ -168,7 +168,7 @@ class TestDeepFool(TestBase):
     @unittest.skipIf(not (int(keras.__version__.split('.')[0]) == 2 and int(keras.__version__.split('.')[1]) >= 3),
                      reason='Minimal version of Keras or TensorFlow required.')
     def test_kera_mnist_partial_grads(self):
-        classifier = get_classifier_kr(from_logits=True)
+        classifier = get_image_classifier_kr(from_logits=True)
         attack = DeepFool(classifier, max_iter=2, nb_grads=3)
         x_test_adv = attack.generate(self.x_test_mnist)
         self.assertFalse((self.x_test_mnist == x_test_adv).all())
@@ -207,7 +207,7 @@ class TestDeepFool(TestBase):
                       '(<class \'art.classifiers.scikitlearn.ScikitlearnClassifier\'>,).', str(context.exception))
 
     def test_keras_iris_clipped(self):
-        classifier = get_iris_classifier_kr()
+        classifier = get_tabular_classifier_kr()
 
         attack = DeepFool(classifier, max_iter=5)
         x_test_adv = attack.generate(self.x_test_iris)
@@ -221,7 +221,7 @@ class TestDeepFool(TestBase):
         logger.info('Accuracy on Iris with DeepFool adversarial examples: %.2f%%', (accuracy * 100))
 
     def test_keras_iris_unbounded(self):
-        classifier = get_iris_classifier_kr()
+        classifier = get_tabular_classifier_kr()
 
         # Recreate a classifier without clip values
         classifier = KerasClassifier(model=classifier._model, use_logits=False, channel_index=1)
@@ -235,7 +235,7 @@ class TestDeepFool(TestBase):
         logger.info('Accuracy on Iris with DeepFool adversarial examples: %.2f%%', (accuracy * 100))
 
     def test_tensorflow_iris(self):
-        classifier, _ = get_iris_classifier_tf()
+        classifier, _ = get_tabular_classifier_tf()
 
         attack = DeepFool(classifier, max_iter=5, batch_size=128)
         x_test_adv = attack.generate(self.x_test_iris)
@@ -249,7 +249,7 @@ class TestDeepFool(TestBase):
         logger.info('Accuracy on Iris with DeepFool adversarial examples: %.2f%%', (accuracy * 100))
 
     def test_pytorch_iris(self):
-        classifier = get_iris_classifier_pt()
+        classifier = get_tabular_classifier_pt()
 
         attack = DeepFool(classifier, max_iter=5, batch_size=128)
         x_test_adv = attack.generate(self.x_test_iris)

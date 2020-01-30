@@ -25,7 +25,7 @@ import numpy as np
 from art.attacks import FastGradientMethod
 from art.classifiers import KerasClassifier
 from art.utils import load_dataset, random_targets, master_seed
-from tests.utils_test import get_classifier_kr, get_iris_classifier_kr
+from tests.utils_test import get_image_classifier_kr, get_tabular_classifier_kr
 from art.wrappers.expectation import ExpectationOverTransformations
 
 logger = logging.getLogger(__name__)
@@ -56,7 +56,7 @@ class TestExpectationOverTransformations(unittest.TestCase):
         :return:
         """
         # Build KerasClassifier
-        krc = get_classifier_kr()
+        krc = get_image_classifier_kr()
 
         # Get MNIST
         (_, _), (x_test, y_test) = self.mnist
@@ -101,7 +101,7 @@ class TestExpectationVectors(unittest.TestCase):
             while True:
                 yield t
 
-        classifier = get_iris_classifier_kr()
+        classifier = get_tabular_classifier_kr()
         classifier = ExpectationOverTransformations(classifier, sample_size=1, transformation=transformation)
 
         # Test untargeted attack
@@ -118,7 +118,7 @@ class TestExpectationVectors(unittest.TestCase):
 
     def test_iris_unbounded(self):
         (_, _), (x_test, y_test) = self.iris
-        classifier = get_iris_classifier_kr()
+        classifier = get_tabular_classifier_kr()
 
         def t(x):
             return x

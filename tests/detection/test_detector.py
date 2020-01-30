@@ -30,7 +30,7 @@ from art.attacks import FastGradientMethod
 from art.classifiers import KerasClassifier
 from art.detection import BinaryInputDetector, BinaryActivationDetector
 from art.utils import load_mnist, master_seed
-from tests.utils_test import get_classifier_kr
+from tests.utils_test import get_image_classifier_kr
 
 logger = logging.getLogger(__name__)
 
@@ -61,7 +61,7 @@ class TestBinaryInputDetector(unittest.TestCase):
         x_test, y_test = x_test[:NB_TEST], y_test[:NB_TEST]
 
         # Keras classifier
-        classifier = get_classifier_kr()
+        classifier = get_image_classifier_kr()
 
         # Generate adversarial samples:
         attacker = FastGradientMethod(classifier, eps=0.1)
@@ -122,7 +122,7 @@ class TestBinaryActivationDetector(unittest.TestCase):
         x_test, y_test = x_test[:NB_TEST], y_test[:NB_TEST]
 
         # Keras classifier
-        classifier = get_classifier_kr()
+        classifier = get_image_classifier_kr()
 
         # Generate adversarial samples:
         attacker = FastGradientMethod(classifier, eps=0.1)

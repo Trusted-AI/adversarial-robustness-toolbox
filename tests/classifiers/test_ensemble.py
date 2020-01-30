@@ -25,7 +25,7 @@ import keras.backend as k
 
 from art.classifiers import EnsembleClassifier
 
-from tests.utils_test import TestBase, get_classifier_kr
+from tests.utils_test import TestBase, get_image_classifier_kr
 
 logger = logging.getLogger(__name__)
 
@@ -40,8 +40,8 @@ class TestEnsembleClassifier(TestBase):
         super().setUpClass()
 
         # Use twice the same classifier for unit-testing, in application they would be different
-        classifier_1 = get_classifier_kr()
-        classifier_2 = get_classifier_kr()
+        classifier_1 = get_image_classifier_kr()
+        classifier_2 = get_image_classifier_kr()
         cls.ensemble = EnsembleClassifier(classifiers=[classifier_1, classifier_2], clip_values=(0, 1))
 
     @classmethod

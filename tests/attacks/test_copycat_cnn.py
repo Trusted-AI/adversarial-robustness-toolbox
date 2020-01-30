@@ -33,8 +33,8 @@ from art.classifiers import KerasClassifier
 from art.classifiers import PyTorchClassifier
 
 from tests.utils_test import TestBase
-from tests.utils_test import get_classifier_tf, get_classifier_kr, get_classifier_pt
-from tests.utils_test import get_iris_classifier_tf, get_iris_classifier_kr, get_iris_classifier_pt
+from tests.utils_test import get_image_classifier_tf, get_image_classifier_kr, get_image_classifier_pt
+from tests.utils_test import get_tabular_classifier_tf, get_tabular_classifier_kr, get_tabular_classifier_pt
 
 logger = logging.getLogger(__name__)
 
@@ -66,7 +66,7 @@ class TestCopycatCNN(TestBase):
         :return:
         """
         # Build TensorFlowClassifiers
-        victim_tfc, sess = get_classifier_tf()
+        victim_tfc, sess = get_image_classifier_tf()
 
         # Define input and output placeholders
         input_ph = tf.placeholder(tf.float32, shape=[None, 28, 28, 1])
@@ -115,7 +115,7 @@ class TestCopycatCNN(TestBase):
         :return:
         """
         # Build KerasClassifier
-        victim_krc = get_classifier_kr()
+        victim_krc = get_image_classifier_kr()
 
         # Create simple CNN
         model = Sequential()
@@ -151,7 +151,7 @@ class TestCopycatCNN(TestBase):
         x_train = np.reshape(self.x_train_mnist, (self.x_train_mnist.shape[0], 1, 28, 28)).astype(np.float32)
 
         # Build PyTorchClassifier
-        victim_ptc = get_classifier_pt()
+        victim_ptc = get_image_classifier_pt()
 
         class Model(nn.Module):
             """
@@ -220,7 +220,7 @@ class TestCopycatCNNVectors(TestBase):
         :return:
         """
         # Get the TensorFlow classifier
-        victim_tfc, sess = get_iris_classifier_tf()
+        victim_tfc, sess = get_tabular_classifier_tf()
 
         # Define input and output placeholders
         input_ph = tf.placeholder(tf.float32, shape=[None, 4])
@@ -265,7 +265,7 @@ class TestCopycatCNNVectors(TestBase):
         :return:
         """
         # Build KerasClassifier
-        victim_krc = get_iris_classifier_kr()
+        victim_krc = get_tabular_classifier_kr()
 
         # Create simple CNN
         model = Sequential()
@@ -298,7 +298,7 @@ class TestCopycatCNNVectors(TestBase):
         :return:
         """
         # Build PyTorchClassifier
-        victim_ptc = get_iris_classifier_pt()
+        victim_ptc = get_tabular_classifier_pt()
 
         class Model(nn.Module):
             """

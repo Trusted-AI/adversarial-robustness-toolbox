@@ -23,7 +23,7 @@ import unittest
 import numpy as np
 
 from art.utils import load_dataset, master_seed
-from tests.utils_test import get_classifier_kr_tf, get_classifier_kr_tf_binary
+from tests.utils_test import get_image_classifier_kr_tf, get_image_classifier_kr_tf_binary
 from art.wrappers.output_reverse_sigmoid import OutputReverseSigmoid
 
 logger = logging.getLogger(__name__)
@@ -47,7 +47,7 @@ class TestReverseSigmoid(unittest.TestCase):
         Test reverse sigmoid
         """
         (_, _), (x_test, _) = self.mnist
-        classifier = get_classifier_kr_tf()
+        classifier = get_image_classifier_kr_tf()
         wrapped_classifier = OutputReverseSigmoid(classifier=classifier, beta=1.0, gamma=0.1)
 
         classifier_prediction_expected = np.asarray([[0.12109935, 0.0498215, 0.0993958, 0.06410096, 0.11366928,
@@ -66,7 +66,7 @@ class TestReverseSigmoid(unittest.TestCase):
         Test reverse sigmoid parameter beta
         """
         (_, _), (x_test, _) = self.mnist
-        classifier = get_classifier_kr_tf()
+        classifier = get_image_classifier_kr_tf()
         wrapped_classifier = OutputReverseSigmoid(classifier=classifier, beta=0.75, gamma=0.1)
 
         classifier_prediction_expected = np.asarray([[0.12109935, 0.0498215, 0.0993958, 0.06410096, 0.11366928,
@@ -85,7 +85,7 @@ class TestReverseSigmoid(unittest.TestCase):
         Test reverse sigmoid parameter gamma
         """
         (_, _), (x_test, _) = self.mnist
-        classifier = get_classifier_kr_tf()
+        classifier = get_image_classifier_kr_tf()
         wrapped_classifier = OutputReverseSigmoid(classifier=classifier, beta=1.0, gamma=0.5)
 
         classifier_prediction_expected = np.asarray([[0.12109935, 0.0498215, 0.0993958, 0.06410096, 0.11366928,
@@ -104,7 +104,7 @@ class TestReverseSigmoid(unittest.TestCase):
         Test reverse sigmoid for binary classifier
         """
         (_, _), (x_test, _) = self.mnist
-        classifier = get_classifier_kr_tf_binary()
+        classifier = get_image_classifier_kr_tf_binary()
         wrapped_classifier = OutputReverseSigmoid(classifier=classifier, beta=1.0, gamma=0.1)
 
         classifier_prediction_expected = np.asarray([[0.5301345]], dtype=np.float32)
@@ -119,7 +119,7 @@ class TestReverseSigmoid(unittest.TestCase):
         Test reverse sigmoid parameter beta for binary classifier
         """
         (_, _), (x_test, _) = self.mnist
-        classifier = get_classifier_kr_tf_binary()
+        classifier = get_image_classifier_kr_tf_binary()
         wrapped_classifier = OutputReverseSigmoid(classifier=classifier, beta=0.75, gamma=0.1)
 
         classifier_prediction_expected = np.asarray([[0.5301345]], dtype=np.float32)
@@ -134,7 +134,7 @@ class TestReverseSigmoid(unittest.TestCase):
         Test reverse sigmoid parameter gamma for binary classifier
         """
         (_, _), (x_test, _) = self.mnist
-        classifier = get_classifier_kr_tf_binary()
+        classifier = get_image_classifier_kr_tf_binary()
         wrapped_classifier = OutputReverseSigmoid(classifier=classifier, beta=1.0, gamma=0.5)
 
         classifier_prediction_expected = np.asarray([[0.5301345]], dtype=np.float32)

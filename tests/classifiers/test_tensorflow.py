@@ -29,7 +29,7 @@ import numpy as np
 # from art.config import ART_DATA_PATH
 from art.data_generators import TFDataGenerator
 
-from tests.utils_test import TestBase, get_classifier_tf
+from tests.utils_test import TestBase, get_image_classifier_tf
 
 logger = logging.getLogger(__name__)
 
@@ -43,8 +43,8 @@ class TestTensorFlowClassifier(TestBase):
     def setUpClass(cls):
         super().setUpClass()
 
-        cls.classifier, cls.sess = get_classifier_tf()
-        cls.classifier_logits, _ = get_classifier_tf(from_logits=True)
+        cls.classifier, cls.sess = get_image_classifier_tf()
+        cls.classifier_logits, _ = get_image_classifier_tf(from_logits=True)
 
         if tf.__version__[0] == '2':
             cls.is_version_2 = True
@@ -59,7 +59,7 @@ class TestTensorFlowClassifier(TestBase):
 
     def test_fit_generator(self):
         if not self.is_version_2:
-            classifier, sess = get_classifier_tf()
+            classifier, sess = get_image_classifier_tf()
 
             # Create TensorFlow data generator
             x_tensor = tf.convert_to_tensor(self.x_train_mnist.reshape(10, 100, 28, 28, 1))

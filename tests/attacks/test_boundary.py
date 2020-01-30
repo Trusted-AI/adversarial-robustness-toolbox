@@ -28,8 +28,8 @@ from art.classifiers import KerasClassifier
 from art.utils import random_targets
 
 from tests.utils_test import TestBase
-from tests.utils_test import get_classifier_tf, get_classifier_kr, get_classifier_pt
-from tests.utils_test import get_iris_classifier_tf, get_iris_classifier_kr, get_iris_classifier_pt
+from tests.utils_test import get_image_classifier_tf, get_image_classifier_kr, get_image_classifier_pt
+from tests.utils_test import get_tabular_classifier_tf, get_tabular_classifier_kr, get_tabular_classifier_pt
 
 logger = logging.getLogger(__name__)
 
@@ -58,7 +58,7 @@ class TestBoundary(TestBase):
         x_test_original = self.x_test_mnist.copy()
 
         # Build TensorFlowClassifier
-        tfc, sess = get_classifier_tf()
+        tfc, sess = get_image_classifier_tf()
 
         # First targeted attack
         boundary = BoundaryAttack(classifier=tfc, targeted=True, max_iter=200, delta=0.5)
@@ -121,7 +121,7 @@ class TestBoundary(TestBase):
         x_test_original = self.x_test_mnist.copy()
 
         # Build KerasClassifier
-        krc = get_classifier_kr()
+        krc = get_image_classifier_kr()
 
         # First targeted attack
         boundary = BoundaryAttack(classifier=krc, targeted=True, max_iter=20)
@@ -163,7 +163,7 @@ class TestBoundary(TestBase):
         x_test_original = x_test.copy()
 
         # Build PyTorchClassifier
-        ptc = get_classifier_pt()
+        ptc = get_image_classifier_pt()
 
         # First targeted attack
         boundary = BoundaryAttack(classifier=ptc, targeted=True, max_iter=20)
@@ -206,7 +206,7 @@ class TestBoundary(TestBase):
                       'the provided classifier is instance of (<class \'object\'>,).', str(context.exception))
 
     def test_keras_iris_clipped(self):
-        classifier = get_iris_classifier_kr()
+        classifier = get_tabular_classifier_kr()
         attack = BoundaryAttack(classifier, targeted=False, max_iter=10)
         x_test_adv = attack.generate(self.x_test_iris)
         self.assertFalse((self.x_test_iris == x_test_adv).all())
@@ -219,7 +219,7 @@ class TestBoundary(TestBase):
         logger.info('Accuracy on Iris with boundary adversarial examples: %.2f%%', (accuracy * 100))
 
     def test_keras_iris_unbounded(self):
-        classifier = get_iris_classifier_kr()
+        classifier = get_tabular_classifier_kr()
 
         # Recreate a classifier without clip values
         classifier = KerasClassifier(model=classifier._model, use_logits=False, channel_index=1)
@@ -233,7 +233,7 @@ class TestBoundary(TestBase):
         logger.info('Accuracy on Iris with boundary adversarial examples: %.2f%%', (accuracy * 100))
 
     def test_tensorflow_iris(self):
-        classifier, _ = get_iris_classifier_tf()
+        classifier, _ = get_tabular_classifier_tf()
 
         # Test untargeted attack
         attack = BoundaryAttack(classifier, targeted=False, max_iter=10)
@@ -261,7 +261,7 @@ class TestBoundary(TestBase):
         logger.info('Success rate of targeted boundary on Iris: %.2f%%', (accuracy * 100))
 
     def test_pytorch_iris(self):
-        classifier = get_iris_classifier_pt()
+        classifier = get_tabular_classifier_pt()
         attack = BoundaryAttack(classifier, targeted=False, max_iter=10)
         x_test_adv = attack.generate(self.x_test_iris.astype(np.float32))
         self.assertFalse((self.x_test_iris == x_test_adv).all())

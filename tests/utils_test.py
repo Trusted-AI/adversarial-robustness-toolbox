@@ -137,7 +137,7 @@ def is_valid_framework(framework):
 
 def get_image_classifier(defended=False):
     if os.environ["mlFramework"] == "keras":
-        classifier = get_classifier_kr()
+        classifier = get_image_classifier_kr()
         if defended:
             # Get the ready-trained Keras model
             fs = FeatureSqueezing(bit_depth=1, clip_values=(0, 1))
@@ -146,10 +146,10 @@ def get_image_classifier(defended=False):
             return classifier
 
     elif os.environ["mlFramework"] == "tensorflow":
-        classifier, sess = get_classifier_tf()
+        classifier, sess = get_image_classifier_tf()
         return None if defended else classifier
     elif os.environ["mlFramework"] == "pytorch":
-        return None if defended else get_classifier_pt()
+        return None if defended else get_image_classifier_pt()
     elif os.environ["mlFramework"] == "scikitlearn":
         raise Exception("TODO needs to be implemented")
     elif is_valid_framework(os.environ["mlFramework"]):
@@ -157,17 +157,17 @@ def get_image_classifier(defended=False):
 
 def get_tabular_classifier(clipped=True):
     if os.environ["mlFramework"] == "keras":
-        classifier = get_iris_classifier_kr()
+        classifier = get_tabular_classifier_kr()
         if clipped:
             return classifier
         else:
             return KerasClassifier(model=classifier._model, use_logits=False, channel_index=1)
 
     elif os.environ["mlFramework"] == "tensorflow":
-        classifier, _ = get_iris_classifier_tf()
+        classifier, _ = get_tabular_classifier_tf()
         return classifier if clipped else None
     elif os.environ["mlFramework"] == "pytorch":
-        return get_iris_classifier_pt() if clipped else None
+        return get_tabular_classifier_pt() if clipped else None
     elif os.environ["mlFramework"] == "scikitlearn":
         raise Exception("TODO needs to be implemented")
     elif is_valid_framework(os.environ["mlFramework"]):
@@ -216,17 +216,17 @@ def _kr_tf_weights_loader(dataset, weights_type, layer='DENSE'):
     return weights
 
 
-def get_classifier_tf(from_logits=False, load_init=True, sess=None):
+def get_image_classifier_tf(from_logits=False, load_init=True, sess=None):
     import tensorflow as tf
     if tf.__version__[0] == '2':
         # sess is not required but set to None to return 2 values for v1 and v2
-        classifier, sess = get_classifier_tf_v2(from_logits=from_logits), None
+        classifier, sess = get_image_classifier_tf_v2(from_logits=from_logits), None
     else:
-        classifier, sess = get_classifier_tf_v1(from_logits=from_logits, load_init=load_init, sess=sess)
+        classifier, sess = get_image_classifier_tf_v1(from_logits=from_logits, load_init=load_init, sess=sess)
     return classifier, sess
 
 
-def get_classifier_tf_v1(from_logits=False, load_init=True, sess=None):
+def get_image_classifier_tf_v1(from_logits=False, load_init=True, sess=None):
     """
     Standard TensorFlow classifier for unit testing.
 
@@ -301,7 +301,7 @@ def get_classifier_tf_v1(from_logits=False, load_init=True, sess=None):
     return tfc, sess
 
 
-def get_classifier_tf_v2(from_logits=False):
+def get_image_classifier_tf_v2(from_logits=False):
     """
     Standard TensorFlow v2 classifier for unit testing.
 
@@ -376,8 +376,8 @@ def get_classifier_tf_v2(from_logits=False):
     return tfc
 
 
-def get_classifier_kr(loss_name='categorical_crossentropy', loss_type='function_losses', from_logits=False,
-                      load_init=True):
+def get_image_classifier_kr(loss_name='categorical_crossentropy', loss_type='function_losses', from_logits=False,
+                            load_init=True):
     """
     Standard Keras classifier for unit testing
 
@@ -508,7 +508,7 @@ def get_classifier_kr(loss_name='categorical_crossentropy', loss_type='function_
     return krc
 
 
-def get_classifier_kr_tf(loss_name='categorical_crossentropy', loss_type='function', from_logits=False):
+def get_image_classifier_kr_tf(loss_name='categorical_crossentropy', loss_type='function', from_logits=False):
     """
     Standard Keras classifier for unit testing
 
@@ -665,7 +665,7 @@ def get_classifier_kr_tf(loss_name='categorical_crossentropy', loss_type='functi
     return krc
 
 
-def get_classifier_kr_tf_binary():
+def get_image_classifier_kr_tf_binary():
     """
     Standard Tensorflow-Keras binary classifier for unit testing
 
@@ -700,7 +700,7 @@ def get_classifier_kr_tf_binary():
     return krc
 
 
-def get_classifier_pt(from_logits=False, load_init=True):
+def get_image_classifier_pt(from_logits=False, load_init=True):
     """
     Standard PyTorch classifier for unit testing.
 
@@ -831,17 +831,17 @@ def get_classifier_mx():
 
 # ------------------------------------------------------------------------------------------------ TEST MODELS FOR IRIS
 
-def get_iris_classifier_tf(load_init=True, sess=None):
+def get_tabular_classifier_tf(load_init=True, sess=None):
     import tensorflow as tf
     if tf.__version__[0] == '2':
         # sess is not required but set to None to return 2 values for v1 and v2
-        classifier, sess = get_iris_classifier_tf_v2(), None
+        classifier, sess = get_tabular_classifier_tf_v2(), None
     else:
-        classifier, sess = get_iris_classifier_tf_v1(load_init=load_init, sess=sess)
+        classifier, sess = get_tabular_classifier_tf_v1(load_init=load_init, sess=sess)
     return classifier, sess
 
 
-def get_iris_classifier_tf_v1(load_init=True, sess=None):
+def get_tabular_classifier_tf_v1(load_init=True, sess=None):
     """
     Standard TensorFlow classifier for unit testing.
 
@@ -905,7 +905,7 @@ def get_iris_classifier_tf_v1(load_init=True, sess=None):
     return tfc, sess
 
 
-def get_iris_classifier_tf_v2():
+def get_tabular_classifier_tf_v2():
     """
     Standard TensorFlow v2 classifier for unit testing.
 
@@ -978,7 +978,7 @@ def get_iris_classifier_tf_v2():
     return tfc
 
 
-def get_iris_classifier_kr(load_init=True):
+def get_tabular_classifier_kr(load_init=True):
     """
     Standard Keras classifier for unit testing on Iris dataset. The weights and biases are identical to the TensorFlow
     model in `get_iris_classifier_tf`.
@@ -1018,7 +1018,7 @@ def get_iris_classifier_kr(load_init=True):
     return krc
 
 
-def get_iris_classifier_pt(load_init=True):
+def get_tabular_classifier_pt(load_init=True):
     """
     Standard PyTorch classifier for unit testing on Iris dataset.
 

@@ -25,7 +25,7 @@ import numpy as np
 
 from art.wrappers.wrapper import ClassifierWrapper
 from art.utils import load_mnist, master_seed
-from tests.utils_test import get_classifier_kr
+from tests.utils_test import get_image_classifier_kr
 
 logger = logging.getLogger(__name__)
 
@@ -46,7 +46,7 @@ class TestMixinWKerasClassifier(unittest.TestCase):
         cls.mnist = (x_train, y_train), (x_test, y_test)
 
         # Load small Keras model
-        cls.model_mnist = get_classifier_kr()
+        cls.model_mnist = get_image_classifier_kr()
 
     @classmethod
     def tearDownClass(cls):

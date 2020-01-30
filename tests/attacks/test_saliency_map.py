@@ -27,8 +27,8 @@ from art.classifiers import KerasClassifier
 from art.utils import get_labels_np_array, to_categorical
 
 from tests.utils_test import TestBase
-from tests.utils_test import get_classifier_tf, get_classifier_kr, get_classifier_pt
-from tests.utils_test import get_iris_classifier_tf, get_iris_classifier_kr, get_iris_classifier_pt
+from tests.utils_test import get_image_classifier_tf, get_image_classifier_kr, get_image_classifier_pt
+from tests.utils_test import get_tabular_classifier_tf, get_tabular_classifier_kr, get_tabular_classifier_pt
 
 logger = logging.getLogger(__name__)
 
@@ -50,7 +50,7 @@ class TestSaliencyMap(TestBase):
         x_test_original = self.x_test_mnist.copy()
 
         # Keras classifier
-        classifier = get_classifier_kr()
+        classifier = get_image_classifier_kr()
 
         scores = classifier._model.evaluate(self.x_train_mnist, self.y_train_mnist)
         logger.info('[Keras, MNIST] Accuracy on training set: %.2f%%', (scores[1] * 100))
@@ -99,7 +99,7 @@ class TestSaliencyMap(TestBase):
         x_test_original = self.x_test_mnist.copy()
 
         # Create basic CNN on MNIST using TensorFlow
-        classifier, sess = get_classifier_tf()
+        classifier, sess = get_image_classifier_tf()
 
         scores = get_labels_np_array(classifier.predict(self.x_train_mnist))
         accuracy = np.sum(np.argmax(scores, axis=1) == np.argmax(self.y_train_mnist, axis=1)) / self.n_train
@@ -151,7 +151,7 @@ class TestSaliencyMap(TestBase):
         x_test_original = x_test_mnist.copy()
 
         # Create basic PyTorch model
-        classifier = get_classifier_pt()
+        classifier = get_image_classifier_pt()
 
         scores = get_labels_np_array(classifier.predict(x_train_mnist))
         accuracy = np.sum(np.argmax(scores, axis=1) == np.argmax(self.y_train_mnist, axis=1)) / self.n_train
@@ -224,7 +224,7 @@ class TestSaliencyMap(TestBase):
                       '(<class \'art.classifiers.scikitlearn.ScikitlearnClassifier\'>,).', str(context.exception))
 
     def test_keras_iris_vector_clipped(self):
-        classifier = get_iris_classifier_kr()
+        classifier = get_tabular_classifier_kr()
 
         attack = SaliencyMapMethod(classifier, theta=1)
         x_test_iris_adv = attack.generate(self.x_test_iris)
@@ -238,7 +238,7 @@ class TestSaliencyMap(TestBase):
         logger.info('Accuracy on Iris with JSMA adversarial examples: %.2f%%', (accuracy * 100))
 
     def test_keras_iris_vector_unbounded(self):
-        classifier = get_iris_classifier_kr()
+        classifier = get_tabular_classifier_kr()
 
         # Recreate a classifier without clip values
         classifier = KerasClassifier(model=classifier._model, use_logits=False, channel_index=1)
@@ -247,7 +247,7 @@ class TestSaliencyMap(TestBase):
         self.assertFalse((self.x_test_iris == x_test_iris_adv).all())
 
     def test_tensorflow_iris_vector(self):
-        classifier, _ = get_iris_classifier_tf()
+        classifier, _ = get_tabular_classifier_tf()
 
         attack = SaliencyMapMethod(classifier, theta=1)
         x_test_iris_adv = attack.generate(self.x_test_iris)
@@ -261,7 +261,7 @@ class TestSaliencyMap(TestBase):
         logger.info('Accuracy on Iris with JSMA adversarial examples: %.2f%%', (accuracy * 100))
 
     def test_pytorch_iris_vector(self):
-        classifier = get_iris_classifier_pt()
+        classifier = get_tabular_classifier_pt()
 
         attack = SaliencyMapMethod(classifier, theta=1)
         x_test_iris_adv = attack.generate(self.x_test_iris)

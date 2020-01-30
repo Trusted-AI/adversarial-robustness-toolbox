@@ -28,8 +28,8 @@ from art.classifiers import KerasClassifier
 from art.utils import random_targets, to_categorical
 
 from tests.utils_test import TestBase
-from tests.utils_test import get_classifier_tf, get_classifier_kr
-from tests.utils_test import get_classifier_pt, get_iris_classifier_tf, get_iris_classifier_kr, get_iris_classifier_pt
+from tests.utils_test import get_image_classifier_tf, get_image_classifier_kr
+from tests.utils_test import get_image_classifier_pt, get_tabular_classifier_tf, get_tabular_classifier_kr, get_tabular_classifier_pt
 
 logger = logging.getLogger(__name__)
 
@@ -56,7 +56,7 @@ class TestElasticNet(TestBase):
         :return:
         """
         # Build TensorFlowClassifier
-        tfc, sess = get_classifier_tf()
+        tfc, sess = get_image_classifier_tf()
 
         # Failure attack
         ead = ElasticNet(classifier=tfc, targeted=True, max_iter=0, binary_search_steps=0, learning_rate=0,
@@ -79,7 +79,7 @@ class TestElasticNet(TestBase):
         x_test_original = self.x_test_mnist.copy()
 
         # Build TensorFlowClassifier
-        tfc, sess = get_classifier_tf(from_logits=True)
+        tfc, sess = get_image_classifier_tf(from_logits=True)
 
         # First attack
         ead = ElasticNet(classifier=tfc, targeted=True, max_iter=2)
@@ -179,7 +179,7 @@ class TestElasticNet(TestBase):
         x_test_original = self.x_test_mnist.copy()
 
         # Build KerasClassifier
-        krc = get_classifier_kr()
+        krc = get_image_classifier_kr()
 
         # First attack
         ead = ElasticNet(classifier=krc, targeted=True, max_iter=2)
@@ -227,7 +227,7 @@ class TestElasticNet(TestBase):
         x_test_original = x_test.copy()
 
         # Build PyTorchClassifier
-        ptc = get_classifier_pt(from_logits=False)
+        ptc = get_image_classifier_pt(from_logits=False)
 
         # First attack
         ead = ElasticNet(classifier=ptc, targeted=True, max_iter=2)
@@ -284,7 +284,7 @@ class TestElasticNet(TestBase):
                       '(<class \'art.classifiers.scikitlearn.ScikitlearnClassifier\'>,).', str(context.exception))
 
     def test_keras_iris_clipped(self):
-        classifier = get_iris_classifier_kr()
+        classifier = get_tabular_classifier_kr()
         attack = ElasticNet(classifier, targeted=False, max_iter=10)
         x_test_adv = attack.generate(self.x_test_iris)
         expected_x_test_adv = np.asarray([0.85931635, 0.44633555, 0.65658355, 0.23840423])
@@ -299,7 +299,7 @@ class TestElasticNet(TestBase):
         logger.info('EAD success rate on Iris: %.2f%%', (accuracy * 100))
 
     def test_keras_iris_unbounded(self):
-        classifier = get_iris_classifier_kr()
+        classifier = get_tabular_classifier_kr()
 
         # Recreate a classifier without clip values
         classifier = KerasClassifier(model=classifier._model, use_logits=False, channel_index=1)
@@ -315,7 +315,7 @@ class TestElasticNet(TestBase):
         logger.info('EAD success rate on Iris: %.2f%%', (accuracy * 100))
 
     def test_tensorflow_iris(self):
-        classifier, _ = get_iris_classifier_tf()
+        classifier, _ = get_tabular_classifier_tf()
 
         # Test untargeted attack
         attack = ElasticNet(classifier, targeted=False, max_iter=10)
@@ -350,7 +350,7 @@ class TestElasticNet(TestBase):
         logger.info('Targeted EAD success rate on Iris: %.2f%%', (accuracy * 100))
 
     def test_pytorch_iris(self):
-        classifier = get_iris_classifier_pt()
+        classifier = get_tabular_classifier_pt()
         attack = ElasticNet(classifier, targeted=False, max_iter=10)
         x_test_adv = attack.generate(self.x_test_iris.astype(np.float32))
         expected_x_test_adv = np.asarray([0.8479194, 0.42525578, 0.70166135, 0.28664517])
