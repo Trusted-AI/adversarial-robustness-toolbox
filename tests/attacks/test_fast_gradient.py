@@ -53,6 +53,15 @@ class TestFastGradientMethodImages(TestBase):
         cls.mnist = (cls.x_train_mnist, cls.y_train_mnist), (cls.x_test_mnist, cls.y_test_mnist)
         cls.iris = (cls.x_train_iris, cls.y_train_iris), (cls.x_test_iris, cls.y_test_iris)
 
+    def setUp(self):
+        (x_train, y_train), (x_test, y_test) = self.mnist
+        self.x_test_original = x_test.copy()
+        self.x_test_potentially_modified = x_test
+
+    def tearDown(self):
+        # Check that x_test has not been modified by attack and classifier
+        self.assertAlmostEqual(float(np.max(np.abs(self.x_test_original - self.x_test_potentially_modified))), 0.0, delta=0.00001)
+
     @unittest.skipUnless(os.environ["mlFramework"] == "keras", "Not a Keras Method hence Skipping this test")
     def test_images_keras(self):
         classifier = get_classifier_kr()
@@ -220,7 +229,7 @@ class TestFastGradientMethodImages(TestBase):
         np.testing.assert_array_equal(np.argmax(y_test, axis=1), y_test_expected)
         np.testing.assert_array_almost_equal(y_test_pred[0:3], y_test_pred_expected[0:3], decimal=2)
 
-    def _test_minimal_perturbations(self,  mnist_param, classifier, x_test_original):
+    def _test_minimal_perturbations(self,  mnist_param, classifier):
 
         (x_train, y_train), (x_test, y_test) = mnist_param
         # Test minimal perturbations
@@ -233,8 +242,6 @@ class TestFastGradientMethodImages(TestBase):
         self.assertAlmostEqual(float(np.mean(x_test_adv_min - x_test)), 0.03896513, delta=0.01)
         self.assertAlmostEqual(float(np.min(x_test_adv_min - x_test)), -0.30000000, delta=0.00001)
         self.assertAlmostEqual(float(np.max(x_test_adv_min - x_test)), 0.30000000, delta=0.00001)
-
-        self.assertAlmostEqual(float(np.max(x_test_original - x_test)), 0.0, delta=0.00001)
 
         y_test_pred = classifier.predict(x_test_adv_min)
 
@@ -297,11 +304,9 @@ class TestFastGradientMethodImages(TestBase):
     def _test_backend_mnist(self, mnist_param, classifier, defended_classifier=None):
         (x_train, y_train), (x_test, y_test) = mnist_param
 
-        x_test_original = x_test.copy()
-
         self._test_no_norm(mnist_param, classifier)
 
-        self._test_minimal_perturbations(mnist_param, classifier, x_test_original)
+        self._test_minimal_perturbations(mnist_param, classifier)
 
         self._test_l1_norm(mnist_param, classifier)
 
@@ -312,9 +317,6 @@ class TestFastGradientMethodImages(TestBase):
         self._test_mnist_targeted(classifier, x_test, y_test)
 
         self._test_defended_classifier(mnist_param, classifier, defended_classifier)
-
-        # Check that x_test has not been modified by attack and classifier
-        self.assertAlmostEqual(float(np.max(np.abs(x_test_original - x_test))), 0.0, delta=0.00001)
 
 
     def _test_mnist_targeted(self, classifier, x_test, y_test):
