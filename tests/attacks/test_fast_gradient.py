@@ -24,9 +24,7 @@ import numpy as np
 import os
 from art.attacks import FastGradientMethod
 from art.classifiers import KerasClassifier
-from art.defences import FeatureSqueezing
 from art.utils import get_labels_np_array, random_targets
-
 from tests.utils_test import TestBase
 from tests.utils_test import get_classifier_tf, get_classifier_kr, get_classifier_pt
 from tests.utils_test import get_iris_classifier_tf, get_iris_classifier_kr, get_iris_classifier_pt
@@ -69,48 +67,33 @@ class TestFastGradientMethodImages(TestBase):
 
     @unittest.skipUnless(os.environ["mlFramework"] == "keras", "Not a Keras Method hence Skipping this test")
     def test_no_norm_images_keras(self):
-
-
         self._test_no_norm_images()
 
     @unittest.skipUnless(os.environ["mlFramework"] == "keras", "Not a Keras Method hence Skipping this test")
     def test_minimal_perturbations_images_keras(self):
-        classifier = utils_test.get_image_classifier()
-
-        self._test_minimal_perturbations(self.mnist, classifier)
+        self._test_minimal_perturbations_images(self.mnist)
 
     @unittest.skipUnless(os.environ["mlFramework"] == "keras", "Not a Keras Method hence Skipping this test")
     def test_l1_norm_images_keras(self):
-        classifier = utils_test.get_image_classifier()
-
-        self._test_l1_norm(self.mnist, classifier)
+        self._test_l1_norm_images(self.mnist)
 
     @unittest.skipUnless(os.environ["mlFramework"] == "keras", "Not a Keras Method hence Skipping this test")
     def test_l2_norm_images_keras(self):
-        classifier = utils_test.get_image_classifier()
-
-        self._test_l2_norm(self.mnist, classifier)
+        self._test_l2_norm_images(self.mnist)
 
     @unittest.skipUnless(os.environ["mlFramework"] == "keras", "Not a Keras Method hence Skipping this test")
     def test_random_initialisation_images_keras(self):
-        classifier = utils_test.get_image_classifier()
-        self._test_random_initialisation(self.mnist, classifier)
+        self._test_random_initialisation_images(self.mnist)
 
     @unittest.skipUnless(os.environ["mlFramework"] == "keras", "Not a Keras Method hence Skipping this test")
-    def test_mnist_targeted_images_keras(self):
-        classifier = utils_test.get_image_classifier()
-
-        self._test_mnist_targeted(self.mnist, classifier)
+    def test_targeted_images_keras(self):
+        self._test_targeted_images(self.mnist)
 
     @unittest.skipUnless(os.environ["mlFramework"] == "keras", "Not a Keras Method hence Skipping this test")
     def test_defended_classifier_images_keras(self):
-        classifier = utils_test.get_image_classifier()
+        self._test_defended_classifier(self.mnist)
 
-        # Get the ready-trained Keras model
-        fs = FeatureSqueezing(bit_depth=1, clip_values=(0, 1))
-        defended_classifier = KerasClassifier(model=classifier._model, clip_values=(0, 1), defences=fs)
 
-        self._test_defended_classifier(self.mnist, classifier, defended_classifier)
 
     # @unittest.skipUnless(os.environ["mlFramework"] == "tensorflow", "Not a Tensorflow Method hence Skipping this test")
     # def test_images_tensorflow(self):
@@ -272,8 +255,8 @@ class TestFastGradientMethodImages(TestBase):
         np.testing.assert_array_equal(np.argmax(self.y_test_mnist, axis=1), y_test_expected)
         np.testing.assert_array_almost_equal(y_test_pred[0:3], y_test_pred_expected[0:3], decimal=2)
 
-    def _test_minimal_perturbations(self,  mnist_param, classifier):
-
+    def _test_minimal_perturbations_images(self, mnist_param):
+        classifier = utils_test.get_image_classifier()
         (x_train, y_train), (x_test, y_test) = mnist_param
         # Test minimal perturbations
         attack = FastGradientMethod(classifier, eps=1.0, batch_size=11)
@@ -292,7 +275,8 @@ class TestFastGradientMethodImages(TestBase):
 
         np.testing.assert_array_equal(np.argmax(y_test_pred, axis=1), y_test_pred_expected)
 
-    def _test_l1_norm(self, mnist_param, classifier):
+    def _test_l1_norm_images(self, mnist_param):
+        classifier = utils_test.get_image_classifier()
         (x_train, y_train), (x_test, y_test) = mnist_param
         attack = FastGradientMethod(classifier, eps=1, norm=1, batch_size=128)
         x_test_adv = attack.generate(x_test)
@@ -306,7 +290,8 @@ class TestFastGradientMethodImages(TestBase):
                                             0.05271865, 0.12600125, 0.0811625, 0.0424339]])
         np.testing.assert_array_almost_equal(y_test_pred, y_test_pred_expected, decimal=4)
 
-    def _test_l2_norm(self, mnist_param, classifier):
+    def _test_l2_norm_images(self, mnist_param):
+        classifier = utils_test.get_image_classifier()
         (x_train, y_train), (x_test, y_test) = mnist_param
         attack = FastGradientMethod(classifier, eps=1, norm=2, batch_size=128)
         x_test_adv = attack.generate(x_test)
@@ -320,13 +305,15 @@ class TestFastGradientMethodImages(TestBase):
                                             0.06270657, 0.14066935, 0.07419015, 0.04681788]])
         np.testing.assert_array_almost_equal(y_test_pred, y_test_pred_expected, decimal=2)
 
-    def _test_random_initialisation(self, mnist_param, classifier):
+    def _test_random_initialisation_images(self, mnist_param):
+        classifier = utils_test.get_image_classifier()
         (x_train, y_train), (x_test, y_test) = mnist_param
         attack = FastGradientMethod(classifier, num_random_init=3)
         x_test_adv = attack.generate(x_test)
         self.assertFalse((x_test == x_test_adv).all())
 
-    def _test_defended_classifier(self, mnist_param, classifier, defended_classifier=None):
+    def _test_defended_classifier(self, mnist_param, ):
+        defended_classifier = utils_test.get_image_classifier(defended=True)
         (x_train, y_train), (x_test, y_test) = mnist_param
 
         if defended_classifier is not None:
@@ -345,7 +332,8 @@ class TestFastGradientMethodImages(TestBase):
             self._check_y_pred_adv(y_test_pred_adv, y_test)
 
 
-    def _test_mnist_targeted(self, mnist_param, classifier):
+    def _test_targeted_images(self, mnist_param):
+        classifier = utils_test.get_image_classifier()
         (x_train, y_train), (x_test, y_test) = mnist_param
         # Test FGSM with np.inf norm
         attack = FastGradientMethod(classifier, eps=1.0, targeted=True)
