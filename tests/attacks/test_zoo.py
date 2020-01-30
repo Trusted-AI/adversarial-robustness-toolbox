@@ -26,7 +26,7 @@ import numpy as np
 from art.attacks import ZooAttack
 from art.utils import random_targets
 
-from tests.utils import TestBase, get_classifier_kr, get_classifier_pt, get_classifier_tf
+from tests.utils import TestBase, master_seed, get_classifier_kr, get_classifier_pt, get_classifier_tf
 
 logger = logging.getLogger(__name__)
 
@@ -38,6 +38,7 @@ class TestZooAttack(TestBase):
 
     @classmethod
     def setUpClass(cls):
+        master_seed(seed=1234)
         super().setUpClass()
 
         cls.n_train = 1

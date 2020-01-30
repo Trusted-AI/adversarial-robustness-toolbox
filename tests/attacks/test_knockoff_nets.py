@@ -165,6 +165,7 @@ class TestKnockoffNets(TestBase):
 class TestKnockoffNetsVectors(TestBase):
     @classmethod
     def setUpClass(cls):
+        master_seed(seed=1234, set_tensorflow=True)
         super().setUpClass()
 
     def setUp(self):
