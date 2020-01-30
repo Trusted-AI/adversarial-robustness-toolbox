@@ -65,40 +65,22 @@ class TestFastGradientMethodImages(TestBase):
         self._test_no_norm_images()
 
     def test_minimal_perturbations_images_keras(self):
-        self._test_minimal_perturbations_images(self.mnist)
+        self._test_minimal_perturbations_images()
 
     def test_l1_norm_images_keras(self):
-        self._test_l1_norm_images(self.mnist)
+        self._test_l1_norm_images()
 
     def test_l2_norm_images_keras(self):
-        self._test_l2_norm_images(self.mnist)
+        self._test_l2_norm_images()
 
     def test_random_initialisation_images_keras(self):
-        self._test_random_initialisation_images(self.mnist)
+        self._test_random_initialisation_images()
 
     def test_targeted_images_keras(self):
-        self._test_targeted_images(self.mnist)
+        self._test_targeted_images()
 
     def test_defended_classifier_images_keras(self):
-        self._test_defended_classifier(self.mnist)
-
-
-
-    # @unittest.skipUnless(os.environ["mlFramework"] == "tensorflow", "Not a Tensorflow Method hence Skipping this test")
-    # def test_images_tensorflow(self):
-    #     # classifier, sess = get_classifier_tf()
-    #     classifier = utils_test.get_image_classifier()
-    #     self._test_backend_mnist(self.mnist, classifier)
-
-    # @unittest.skipUnless(os.environ["mlFramework"] == "pytorch", "Not a pyTorch Method hence Skipping this test")
-    # def test_images_pytorch(self):
-    #     # (x_train, y_train), (x_test, y_test) = self.mnist
-    #     # x_test = np.reshape(x_test, (x_test.shape[0], 1, 28, 28)).astype(np.float32)
-    #     # test_mnist = (x_train, y_train), (x_test, y_test)
-    #
-    #     # classifier = get_classifier_pt()
-    #     # classifier = utils_test.get_image_classifier()
-    #     # self._test_backend_mnist(self.mnist, classifier)
+        self._test_defended_classifier()
 
     def test_classifier_type_check_fail_classifier(self):
         # Use a useless test classifier to test basic classifier properties
@@ -244,19 +226,20 @@ class TestFastGradientMethodImages(TestBase):
         np.testing.assert_array_equal(np.argmax(self.y_test_mnist, axis=1), y_test_expected)
         np.testing.assert_array_almost_equal(y_test_pred[0:3], y_test_pred_expected[0:3], decimal=2)
 
-    def _test_minimal_perturbations_images(self, mnist_param):
+    def _test_minimal_perturbations_images(self):
+        (self.x_train_mnist, self.y_train_mnist), (self.x_test_mnist, self.y_test_mnist)
         classifier = utils_test.get_image_classifier()
-        (x_train, y_train), (x_test, y_test) = mnist_param
+        # (x_train, y_train), (x_test, y_test) = mnist_param
         # Test minimal perturbations
         attack = FastGradientMethod(classifier, eps=1.0, batch_size=11)
         attack_params = {"minimal": True, "eps_step": 0.1, "eps": 5.0}
         attack.set_params(**attack_params)
 
-        x_test_adv_min = attack.generate(x_test)
+        x_test_adv_min = attack.generate(self.x_test_mnist)
 
-        self.assertAlmostEqual(float(np.mean(x_test_adv_min - x_test)), 0.03896513, delta=0.01)
-        self.assertAlmostEqual(float(np.min(x_test_adv_min - x_test)), -0.30000000, delta=0.00001)
-        self.assertAlmostEqual(float(np.max(x_test_adv_min - x_test)), 0.30000000, delta=0.00001)
+        self.assertAlmostEqual(float(np.mean(x_test_adv_min - self.x_test_mnist)), 0.03896513, delta=0.01)
+        self.assertAlmostEqual(float(np.min(x_test_adv_min - self.x_test_mnist)), -0.30000000, delta=0.00001)
+        self.assertAlmostEqual(float(np.max(x_test_adv_min - self.x_test_mnist)), 0.30000000, delta=0.00001)
 
         y_test_pred = classifier.predict(x_test_adv_min)
 
@@ -264,84 +247,89 @@ class TestFastGradientMethodImages(TestBase):
 
         np.testing.assert_array_equal(np.argmax(y_test_pred, axis=1), y_test_pred_expected)
 
-    def _test_l1_norm_images(self, mnist_param):
+    def _test_l1_norm_images(self):
         classifier = utils_test.get_image_classifier()
-        (x_train, y_train), (x_test, y_test) = mnist_param
+        (self.x_train_mnist, self.y_train_mnist), (self.x_test_mnist, self.y_test_mnist)
+        # (x_train, y_train), (x_test, y_test) = mnist_param
         attack = FastGradientMethod(classifier, eps=1, norm=1, batch_size=128)
-        x_test_adv = attack.generate(x_test)
+        x_test_adv = attack.generate(self.x_test_mnist)
 
-        self.assertAlmostEqual(float(np.mean(x_test_adv - x_test)), 0.00051375, delta=0.002)
-        self.assertAlmostEqual(float(np.min(x_test_adv - x_test)), -0.01486498, delta=0.001)
-        self.assertAlmostEqual(float(np.max(x_test_adv - x_test)), 0.014761963, delta=0.001)
+        self.assertAlmostEqual(float(np.mean(x_test_adv - self.x_test_mnist)), 0.00051375, delta=0.002)
+        self.assertAlmostEqual(float(np.min(x_test_adv - self.x_test_mnist)), -0.01486498, delta=0.001)
+        self.assertAlmostEqual(float(np.max(x_test_adv - self.x_test_mnist)), 0.014761963, delta=0.001)
 
         y_test_pred = classifier.predict(x_test_adv[8:9])
         y_test_pred_expected = np.asarray([[0.17114946, 0.08205127, 0.07427921, 0.03722004, 0.28262928, 0.05035441,
                                             0.05271865, 0.12600125, 0.0811625, 0.0424339]])
         np.testing.assert_array_almost_equal(y_test_pred, y_test_pred_expected, decimal=4)
 
-    def _test_l2_norm_images(self, mnist_param):
+    def _test_l2_norm_images(self):
         classifier = utils_test.get_image_classifier()
-        (x_train, y_train), (x_test, y_test) = mnist_param
+        # (x_train, y_train), (x_test, y_test) = mnist_param
+        (self.x_train_mnist, self.y_train_mnist), (self.x_test_mnist, self.y_test_mnist)
         attack = FastGradientMethod(classifier, eps=1, norm=2, batch_size=128)
-        x_test_adv = attack.generate(x_test)
+        x_test_adv = attack.generate(self.x_test_mnist)
 
-        self.assertAlmostEqual(float(np.mean(x_test_adv - x_test)), 0.007636424, delta=0.002)
-        self.assertAlmostEqual(float(np.min(x_test_adv - x_test)), -0.211054801, delta=0.001)
-        self.assertAlmostEqual(float(np.max(x_test_adv - x_test)), 0.209592223, delta=0.001)
+        self.assertAlmostEqual(float(np.mean(x_test_adv - self.x_test_mnist)), 0.007636424, delta=0.002)
+        self.assertAlmostEqual(float(np.min(x_test_adv - self.x_test_mnist)), -0.211054801, delta=0.001)
+        self.assertAlmostEqual(float(np.max(x_test_adv - self.x_test_mnist)), 0.209592223, delta=0.001)
 
         y_test_pred = classifier.predict(x_test_adv[8:9])
         y_test_pred_expected = np.asarray([[0.19395831, 0.11625732, 0.08293699, 0.04129186, 0.17826456, 0.06290703,
                                             0.06270657, 0.14066935, 0.07419015, 0.04681788]])
         np.testing.assert_array_almost_equal(y_test_pred, y_test_pred_expected, decimal=2)
 
-    def _test_random_initialisation_images(self, mnist_param):
+    def _test_random_initialisation_images(self):
         classifier = utils_test.get_image_classifier()
-        (x_train, y_train), (x_test, y_test) = mnist_param
+        # (x_train, y_train), (x_test, y_test) = mnist_param
+        (self.x_train_mnist, self.y_train_mnist), (self.x_test_mnist, self.y_test_mnist)
         attack = FastGradientMethod(classifier, num_random_init=3)
-        x_test_adv = attack.generate(x_test)
-        self.assertFalse((x_test == x_test_adv).all())
+        x_test_adv = attack.generate(self.x_test_mnist)
+        self.assertFalse((self.x_test_mnist == x_test_adv).all())
 
-    def _test_defended_classifier(self, mnist_param, ):
+    def _test_defended_classifier(self):
         defended_classifier = utils_test.get_image_classifier(defended=True)
-        (x_train, y_train), (x_test, y_test) = mnist_param
+        # (x_train, y_train), (x_test, y_test) = mnist_param
+        (self.x_train_mnist, self.y_train_mnist), (self.x_test_mnist, self.y_test_mnist)
 
         if defended_classifier is not None:
             attack = FastGradientMethod(defended_classifier, eps=1, batch_size=128)
 
-            x_train_adv = attack.generate(x_train)
-            self._check_x_adv(x_train_adv, x_train)
+            x_train_adv = attack.generate(self.x_train_mnist)
+            self._check_x_adv(x_train_adv, self.x_train_mnist)
             y_train_pred_adv = get_labels_np_array(defended_classifier.predict(x_train_adv))
-            y_train_labels = get_labels_np_array(y_train)
+            y_train_labels = get_labels_np_array(self.y_train_mnist)
             # TODO Shouldn't the y_adv and y_expected labels be the same for the defence to be correct?
             self._check_y_pred_adv(y_train_pred_adv, y_train_labels)
 
-            x_test_adv = attack.generate(x_test)
-            self._check_x_adv(x_test_adv, x_test)
+            x_test_adv = attack.generate(self.x_test_mnist)
+            self._check_x_adv(x_test_adv, self.x_test_mnist)
             y_test_pred_adv = get_labels_np_array(defended_classifier.predict(x_test_adv))
-            self._check_y_pred_adv(y_test_pred_adv, y_test)
+            self._check_y_pred_adv(y_test_pred_adv, self.y_test_mnist)
 
 
-    def _test_targeted_images(self, mnist_param):
+    def _test_targeted_images(self):
         classifier = utils_test.get_image_classifier()
-        (x_train, y_train), (x_test, y_test) = mnist_param
+        # (x_train, y_train), (x_test, y_test) = mnist_param
+        (self.x_train_mnist, self.y_train_mnist), (self.x_test_mnist, self.y_test_mnist)
         # Test FGSM with np.inf norm
         attack = FastGradientMethod(classifier, eps=1.0, targeted=True)
 
-        y_test_pred_sort = classifier.predict(x_test).argsort(axis=1)
-        targets = np.zeros((x_test.shape[0], 10))
-        for i in range(x_test.shape[0]):
+        y_test_pred_sort = classifier.predict(self.x_test_mnist).argsort(axis=1)
+        targets = np.zeros((self.x_test_mnist.shape[0], 10))
+        for i in range(self.x_test_mnist.shape[0]):
             targets[i, y_test_pred_sort[i, -2]] = 1.0
 
         attack_params = {"minimal": True, "eps_step": 0.01, "eps": 1.0}
         attack.set_params(**attack_params)
 
-        x_test_adv = attack.generate(x_test, y=targets)
-        self.assertFalse((x_test == x_test_adv).all())
+        x_test_adv = attack.generate(self.x_test_mnist, y=targets)
+        self.assertFalse((self.x_test_mnist == x_test_adv).all())
 
         y_test_pred_adv = get_labels_np_array(classifier.predict(x_test_adv))
 
         self.assertEqual(targets.shape, y_test_pred_adv.shape)
-        self.assertGreaterEqual((targets == y_test_pred_adv).sum(), x_test.shape[0] // 2)
+        self.assertGreaterEqual((targets == y_test_pred_adv).sum(), self.x_test_mnist.shape[0] // 2)
 
     @unittest.skipUnless(os.environ["mlFramework"] == "scikitlearn", "Not a scikitlearn method hence Skipping this test")
     def test_tabular_scikitlearn(self):
