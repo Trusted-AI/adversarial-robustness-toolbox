@@ -43,7 +43,7 @@ class TestFastGradientMethodImages(TestBase):
 
     @classmethod
     def setUpClass(cls):
-        master_seed(seed=1234, set_tensorflow=False, set_mxnet=False, set_torch=False)
+        master_seed(seed=1234, set_tensorflow=True, set_mxnet=False, set_torch=False)
         super().setUpClass()
 
         cls.n_train = 100
