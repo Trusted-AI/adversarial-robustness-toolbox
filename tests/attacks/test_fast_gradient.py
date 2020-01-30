@@ -41,17 +41,12 @@ class TestFastGradientMethodImages(TestBase):
     @classmethod
     def setUpClass(cls):
         super().setUpClass()
-
         cls.n_train = 100
         cls.n_test = 11
         cls.create_image_dataset(n_train=cls.n_train, n_test=cls.n_test)
 
-        cls.mnist = (cls.x_train_mnist, cls.y_train_mnist), (cls.x_test_mnist, cls.y_test_mnist)
-        cls.iris = (cls.x_train_iris, cls.y_train_iris), (cls.x_test_iris, cls.y_test_iris)
-
     def setUp(self):
         super().setUp()
-        # (x_train, y_train), (x_test, y_test) = self.mnist
         self.x_test_original = self.x_test_mnist.copy()
         self.x_test_potentially_modified = self.x_test_mnist
 
@@ -251,8 +246,6 @@ class TestFastGradientMethodImages(TestBase):
 
         classifier = utils_test.get_tabular_classifier()
         classifier_no_clip_values = utils_test.get_tabular_classifier(clipped=False)
-        # (_, _), (x_test, y_test) =
-        # (self.x_train_iris, self.y_train_iris), (self.x_test_iris, self.y_test_iris)
 
         # Test untargeted attack
         attack = FastGradientMethod(classifier, eps=.1)
