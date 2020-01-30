@@ -44,7 +44,6 @@ class TestFastGradientMethodImages(TestBase):
     def setUpClass(cls):
         super().setUpClass()
 
-        tmp = os.environ["mlFramework"]
         cls.n_train = 100
         cls.n_test = 11
         cls.x_train_mnist = cls.x_train_mnist[0:cls.n_train]
@@ -69,66 +68,35 @@ class TestFastGradientMethodImages(TestBase):
     def test_no_norm_images_keras(self):
         classifier = utils_test.get_image_classifier()
 
-        # Get the ready-trained Keras model
-        fs = FeatureSqueezing(bit_depth=1, clip_values=(0, 1))
-        defended_classifier = KerasClassifier(model=classifier._model, clip_values=(0, 1), defences=fs)
-
-        # self._test_backend_mnist(self.mnist, classifier, defended_classifier)
         self._test_no_norm(self.mnist, classifier)
 
     @unittest.skipUnless(os.environ["mlFramework"] == "keras", "Not a Keras Method hence Skipping this test")
     def test_minimal_perturbations_images_keras(self):
         classifier = utils_test.get_image_classifier()
 
-        # Get the ready-trained Keras model
-        fs = FeatureSqueezing(bit_depth=1, clip_values=(0, 1))
-        defended_classifier = KerasClassifier(model=classifier._model, clip_values=(0, 1), defences=fs)
-
-        # self._test_backend_mnist(self.mnist, classifier, defended_classifier)
         self._test_minimal_perturbations(self.mnist, classifier)
 
     @unittest.skipUnless(os.environ["mlFramework"] == "keras", "Not a Keras Method hence Skipping this test")
     def test_l1_norm_images_keras(self):
         classifier = utils_test.get_image_classifier()
 
-        # Get the ready-trained Keras model
-        fs = FeatureSqueezing(bit_depth=1, clip_values=(0, 1))
-        defended_classifier = KerasClassifier(model=classifier._model, clip_values=(0, 1), defences=fs)
-
-        # self._test_backend_mnist(self.mnist, classifier, defended_classifier)
         self._test_l1_norm(self.mnist, classifier)
 
     @unittest.skipUnless(os.environ["mlFramework"] == "keras", "Not a Keras Method hence Skipping this test")
     def test_l2_norm_images_keras(self):
         classifier = utils_test.get_image_classifier()
 
-        # Get the ready-trained Keras model
-        fs = FeatureSqueezing(bit_depth=1, clip_values=(0, 1))
-        defended_classifier = KerasClassifier(model=classifier._model, clip_values=(0, 1), defences=fs)
-
-        # self._test_backend_mnist(self.mnist, classifier, defended_classifier)
         self._test_l2_norm(self.mnist, classifier)
 
     @unittest.skipUnless(os.environ["mlFramework"] == "keras", "Not a Keras Method hence Skipping this test")
     def test_random_initialisation_images_keras(self):
         classifier = utils_test.get_image_classifier()
-
-        # Get the ready-trained Keras model
-        fs = FeatureSqueezing(bit_depth=1, clip_values=(0, 1))
-        defended_classifier = KerasClassifier(model=classifier._model, clip_values=(0, 1), defences=fs)
-
-        # self._test_backend_mnist(self.mnist, classifier, defended_classifier)
         self._test_random_initialisation(self.mnist, classifier)
 
     @unittest.skipUnless(os.environ["mlFramework"] == "keras", "Not a Keras Method hence Skipping this test")
     def test_mnist_targeted_images_keras(self):
         classifier = utils_test.get_image_classifier()
 
-        # Get the ready-trained Keras model
-        fs = FeatureSqueezing(bit_depth=1, clip_values=(0, 1))
-        defended_classifier = KerasClassifier(model=classifier._model, clip_values=(0, 1), defences=fs)
-
-        # self._test_backend_mnist(self.mnist, classifier, defended_classifier)
         self._test_mnist_targeted(self.mnist, classifier)
 
     @unittest.skipUnless(os.environ["mlFramework"] == "keras", "Not a Keras Method hence Skipping this test")
@@ -139,7 +107,6 @@ class TestFastGradientMethodImages(TestBase):
         fs = FeatureSqueezing(bit_depth=1, clip_values=(0, 1))
         defended_classifier = KerasClassifier(model=classifier._model, clip_values=(0, 1), defences=fs)
 
-        # self._test_backend_mnist(self.mnist, classifier, defended_classifier)
         self._test_defended_classifier(self.mnist, classifier, defended_classifier)
 
     @unittest.skipUnless(os.environ["mlFramework"] == "tensorflow", "Not a Tensorflow Method hence Skipping this test")
@@ -371,23 +338,6 @@ class TestFastGradientMethodImages(TestBase):
             self._check_x_adv(x_test_adv, x_test)
             y_test_pred_adv = get_labels_np_array(defended_classifier.predict(x_test_adv))
             self._check_y_pred_adv(y_test_pred_adv, y_test)
-
-    def _test_backend_mnist(self, mnist_param, classifier, defended_classifier=None):
-        (x_train, y_train), (x_test, y_test) = mnist_param
-
-        self._test_no_norm(mnist_param, classifier)
-
-        self._test_minimal_perturbations(mnist_param, classifier)
-
-        self._test_l1_norm(mnist_param, classifier)
-
-        self._test_l2_norm(mnist_param, classifier)
-
-        self._test_random_initialisation(mnist_param, classifier)
-
-        self._test_mnist_targeted(mnist_param, classifier)
-
-        self._test_defended_classifier(mnist_param, classifier, defended_classifier)
 
 
     def _test_mnist_targeted(self, mnist_param, classifier):
