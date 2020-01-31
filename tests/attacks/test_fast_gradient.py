@@ -378,27 +378,7 @@ class TestFastGradientMethodImages(TestBase):
                       '(<class \'art.classifiers.scikitlearn.ScikitlearnClassifier\'>,).', str(context.exception))
 
 
-    def _check_x_adv(self, x_adv, x_original, max=1.0, min=0.0, bounded=True):
-        '''
-        Performs basic checks on generated adversarial inputs (whether x_test or x_train)
-        :param x_adv:
-        :param x_original:
-        :param max:
-        :param min:
-        :param bounded:
-        :return:
-        '''
-        self.assertFalse((x_original == x_adv).all(), "x_test_adv should have been different from x_test")
 
-        if bounded:
-            self.assertLessEqual(np.amax(x_adv), max, "x_test_adv values should have all been below {0}".format(max))
-            self.assertGreaterEqual(np.amin(x_adv), min, "x_test_adv values should have all been above {0}".format(min))
-        else:
-            self.assertTrue((x_adv > max).any(), "some x_test_adv values should been above 1".format(max))
-            self.assertTrue((x_adv < min).any(), " some x_test_adv values should have all been below {0}".format(min))
-
-    def _check_y_pred_adv(self, y_pred_adv, y_expected):
-        self.assertFalse((y_expected == y_pred_adv).all())
 
 if __name__ == '__main__':
     print(len(sys.argv))
