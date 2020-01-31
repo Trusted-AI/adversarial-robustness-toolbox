@@ -23,18 +23,11 @@ import sys
 import numpy as np
 import os
 from art.attacks import FastGradientMethod
-from art.classifiers import KerasClassifier
 from art.utils import get_labels_np_array, random_targets
 from tests.utils_test import TestBase
-from tests.utils_test import get_image_classifier_tf, get_image_classifier_kr, get_image_classifier_pt
-from tests.utils_test import get_tabular_classifier_tf, get_tabular_classifier_kr, get_tabular_classifier_pt
 from tests import utils_test
 
 logger = logging.getLogger(__name__)
-
-# tmp = os.environ
-# print(os.environ["SECRET_KEY"])
-
 
 class TestFastGradientMethodImages(TestBase):
 
