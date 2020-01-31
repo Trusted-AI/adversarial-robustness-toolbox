@@ -31,7 +31,7 @@ logger = logging.getLogger(__name__)
 
 class TestGroundTruth(unittest.TestCase):
     def setUp(self):
-        master_seed(1234)
+        master_seed(seed=1234)
 
     @classmethod
     def setUpClass(cls):
