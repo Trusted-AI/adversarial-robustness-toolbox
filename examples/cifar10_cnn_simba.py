@@ -1,0 +1,98 @@
+# -*- coding: utf-8 -*-
+"""
+Trains a convolutional neural network on the CIFAR-10 dataset, then generated adversarial images using the
+DeepFool attack and retrains the network on the training set augmented with the adversarial images.
+"""
+from __future__ import absolute_import, division, print_function, unicode_literals
+
+import logging
+
+from keras.models import Sequential
+from keras.layers import Dense, Flatten, Conv2D, MaxPooling2D, Activation, Dropout
+import numpy as np
+
+from art.attacks import DeepFool, SimBA_pixel
+from art.classifiers import KerasClassifier
+from art.utils import load_dataset
+
+import matplotlib.pyplot as plt
+
+# Configure a logger to capture ART outputs; these are printed in console and the level of detail is set to INFO
+logger = logging.getLogger()
+logger.setLevel(logging.INFO)
+handler = logging.StreamHandler()
+formatter = logging.Formatter('[%(levelname)s] %(message)s')
+handler.setFormatter(formatter)
+logger.addHandler(handler)
+
+# Read CIFAR10 dataset
+(x_train, y_train), (x_test, y_test), min_, max_ = load_dataset(str('cifar10'))
+x_train, y_train = x_train[:5000], y_train[:5000]
+x_test, y_test = x_test[:500], y_test[:500]
+im_shape = x_train[0].shape
+
+# Create Keras convolutional neural network - basic architecture from Keras examples
+# Source here: https://github.com/keras-team/keras/blob/master/examples/cifar10_cnn.py
+model = Sequential()
+model.add(Conv2D(32, (3, 3), padding='same', input_shape=x_train.shape[1:]))
+model.add(Activation('relu'))
+model.add(Conv2D(32, (3, 3)))
+model.add(Activation('relu'))
+model.add(MaxPooling2D(pool_size=(2, 2)))
+model.add(Dropout(0.25))
+
+model.add(Conv2D(64, (3, 3), padding='same'))
+model.add(Activation('relu'))
+model.add(Conv2D(64, (3, 3)))
+model.add(Activation('relu'))
+model.add(MaxPooling2D(pool_size=(2, 2)))
+model.add(Dropout(0.25))
+
+model.add(Flatten())
+model.add(Dense(512))
+model.add(Activation('relu'))
+model.add(Dropout(0.5))
+model.add(Dense(10))
+model.add(Activation('softmax'))
+
+model.compile(loss='categorical_crossentropy', optimizer='adam', metrics=['accuracy'])
+
+# Create classifier wrapper
+classifier = KerasClassifier(model=model, clip_values=(min_, max_))
+classifier.fit(x_train, y_train, nb_epochs=3, batch_size=128)
+
+# Evaluate the classifier on the train samples
+preds = np.argmax(classifier.predict(x_train), axis=1)
+acc = np.sum(preds == np.argmax(y_train, axis=1)) / y_train.shape[0]
+logger.info('Accuracy on train samples: %.2f%%', (acc * 100))
+
+idx = 1
+
+# Craft adversarial samples with SimBA for single image
+logger.info('Create SimBA pixel attack')
+adv_crafter = SimBA_pixel(classifier, epsilon=0.01)
+logger.info('Craft attack on training examples')
+x_train_adv, convergent = adv_crafter.generate(x_train[idx].reshape(1,32,32,3))
+logger.info('Craft attack test examples')
+preds_adv = np.argmax(classifier.predict(x_train_adv), axis=1)
+print(preds[idx],preds_adv[0],convergent)
+
+label = [
+    'airplane', 'automobile', 'bird', 'cat', 'deer', 'dog', 'frog', 'horse',
+    'ship', 'truck'
+]
+
+plt.subplot(1, 3, 1)
+plt.imshow(x_train[idx])
+plt.title(label[preds[idx]])
+
+plt.subplot(1, 3, 2)
+plt.imshow(x_train_adv[0] - x_train[idx])
+plt.title("perturbation")
+
+plt.subplot(1, 3, 3)
+plt.imshow(x_train_adv[0])
+plt.title(label[preds_adv[0]])
+
+plt.show()
+

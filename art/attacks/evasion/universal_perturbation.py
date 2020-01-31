@@ -45,6 +45,7 @@ class UniversalPerturbation(EvasionAttack):
     attacks_dict = {'carlini': 'art.attacks.evasion.carlini.CarliniL2Method',
                     'carlini_inf': 'art.attacks.evasion.carlini.CarliniLInfMethod',
                     'deepfool': 'art.attacks.evasion.deepfool.DeepFool',
+                    'simba_px': 'art.attacks.evasion.simba_pixel.SimBA_pixel',
                     'ead': 'art.attacks.evasion.elastic_net.ElasticNet',
                     'fgsm': 'art.attacks.evasion.fast_gradient.FastGradientMethod',
                     'bim': 'art.attacks.evasion.iterative_method.BasicIterativeMethod',
@@ -61,7 +62,7 @@ class UniversalPerturbation(EvasionAttack):
         :param classifier: A trained classifier.
         :type classifier: :class:`.Classifier`
         :param attacker: Adversarial attack name. Default is 'deepfool'. Supported names: 'carlini', 'carlini_inf',
-                         'deepfool', 'fgsm', 'bim', 'pgd', 'margin', 'ead', 'newtonfool', 'jsma', 'vat'.
+                         'deepfool', 'simba_px', 'fgsm', 'bim', 'pgd', 'margin', 'ead', 'newtonfool', 'jsma', 'vat'.
         :type attacker: `str`
         :param attacker_params: Parameters specific to the adversarial attack. If this parameter is not specified,
                                 the default parameters of the chosen attack will be used.
