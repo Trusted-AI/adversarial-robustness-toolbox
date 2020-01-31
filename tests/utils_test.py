@@ -177,14 +177,9 @@ def get_tabular_classifiers(clipped=True):
                       SVC(gamma='auto'),
                       LinearSVC()]
         if clipped is False:
-            # return [SklearnClassifier(model=model, clip_values=(0, 1)) for model in model_list]
-            return None
+            return [SklearnClassifier(model=model) for model in model_list]
         else:
             return [SklearnClassifier(model=model, clip_values=(0, 1)) for model in model_list]
-        # scikitlearn_test_cases = [LogisticRegression(solver='lbfgs', multi_class='auto'),
-        #                           SVC(gamma='auto'),
-        #                           LinearSVC()]
-        # raise Exception("TODO needs to be implemented")
     elif is_valid_framework(os.environ["mlFramework"]):
         raise Exception("A classifier factory method needs to be implemented for framework {0}".format(os.environ["mlFramework"]))
 
