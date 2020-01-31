@@ -29,7 +29,7 @@ import numpy as np
 from art.config import ART_NUMPY_DTYPE
 from art.classifiers.classifier import ClassifierGradients
 from art.attacks.attack import EvasionAttack
-from art.utils import compute_success,random_sphere
+from art.utils import compute_success
 
 logger = logging.getLogger(__name__)
 
@@ -78,7 +78,9 @@ class SimBA_pixel(EvasionAttack):
         """
         x = x.astype(ART_NUMPY_DTYPE)
         preds = self.classifier.predict(x, batch_size=self.batch_size)
-        original_label = np.argmax(preds, axis=1)[0]
+        if y is None:
+            y = np.argmax(preds, axis=1)[0]
+        original_label = y
         current_label = original_label
         last_prob = preds.reshape(-1)[original_label]
 
@@ -91,12 +93,9 @@ class SimBA_pixel(EvasionAttack):
             diff = np.zeros(n_dims)
             diff[np.random.choice(range(n_dims))] = self.epsilon
             preds = self.classifier.predict(np.clip(x - diff.reshape(x.shape), clip_min, clip_max), batch_size=self.batch_size)
-            #diff = random_sphere(nb_points=1, nb_dims=n_dims, radius=epsilon, norm=2)
-            #preds = self.classifier.predict(x + diff, batch_size=self.batch_size)
             left_prob = preds.reshape(-1)[original_label]
             if left_prob < last_prob:
                 x = np.clip(x - diff.reshape(x.shape), clip_min, clip_max)
-                #x = x - diff
                 last_prob = left_prob
                 current_label = np.argmax(preds, axis=1)[0]
             else:
@@ -108,8 +107,13 @@ class SimBA_pixel(EvasionAttack):
                     current_label = np.argmax(preds, axis=1)[0]
             
             nb_iter = nb_iter + 1
-        
-        return x, nb_iter < self.max_iter
+
+        if nb_iter < self.max_iter:
+            logger.info('SimBA (pixel) attack succeed')
+        else:
+            logger.info('SimBA (pixel) attack failed')
+
+        return x
 
 
     def set_params(self, **kwargs):

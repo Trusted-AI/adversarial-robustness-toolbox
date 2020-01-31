@@ -1,7 +1,7 @@
 # -*- coding: utf-8 -*-
 """
 Trains a convolutional neural network on the CIFAR-10 dataset, then generated adversarial images using the
-DeepFool attack and retrains the network on the training set augmented with the adversarial images.
+SimBA (pixel) attack and retrains the network on the training set augmented with the adversarial images.
 """
 from __future__ import absolute_import, division, print_function, unicode_literals
 
@@ -11,9 +11,9 @@ from keras.models import Sequential
 from keras.layers import Dense, Flatten, Conv2D, MaxPooling2D, Activation, Dropout
 import numpy as np
 
-from art.attacks import DeepFool, SimBA_pixel
+from art.attacks import DeepFool, SimBA_pixel, UniversalPerturbation
 from art.classifiers import KerasClassifier
-from art.utils import load_dataset
+from art.utils import load_dataset, random_sphere
 
 import matplotlib.pyplot as plt
 
@@ -69,14 +69,48 @@ logger.info('Accuracy on train samples: %.2f%%', (acc * 100))
 idx = 1
 
 # Craft adversarial samples with SimBA for single image
-logger.info('Create SimBA pixel attack')
-adv_crafter = SimBA_pixel(classifier, epsilon=0.01)
-logger.info('Craft attack on training examples')
-x_train_adv, convergent = adv_crafter.generate(x_train[idx].reshape(1,32,32,3))
-logger.info('Craft attack test examples')
+logger.info('Create SimBA (pixel) attack')
+adv_crafter = SimBA_pixel(classifier, epsilon=0.05)
+logger.info('Craft attack on a training example')
+x_train_adv = adv_crafter.generate(x_train[idx].reshape(1,32,32,3))
+logger.info('Craft attack the training example')
 preds_adv = np.argmax(classifier.predict(x_train_adv), axis=1)
-print(preds[idx],preds_adv[0],convergent)
+print(preds[idx],preds_adv[0])
 
+x_train, y_train = x_train[:100], y_train[:100]
+preds = np.argmax(classifier.predict(x_train), axis=1)
+
+# Craft adversarial samples with universal pertubation and SimBA
+attack_params = {"attacker": "simba_px", "attacker_params": {"max_iter": 3000, "epsilon": 0.05}, "delta": 0.01, "max_iter": 1, "eps": 6, "norm": 2}
+adv_crafter_simba = UniversalPerturbation(classifier)
+adv_crafter_simba.set_params(**attack_params)
+x_train_adv_simba = adv_crafter_simba.generate(x_train, y=1, **attack_params)
+norm2_simba = np.linalg.norm(adv_crafter_simba.noise.reshape(-1), ord=2)
+# compute fooling rate
+preds_adv = np.argmax(classifier.predict(x_train_adv_simba), axis=1)
+acc = np.sum(preds != preds_adv) / y_train.shape[0]
+logger.info('Fooling rate on SimBA universal adversarial examples: %.2f%%', (acc * 100))
+
+# Craft adversarial samples with random universal pertubation
+x_train_adv_random = x_train + random_sphere(nb_points=1, nb_dims=32*32*3, radius=6, norm=2).reshape(1,32,32,3)
+preds_adv = np.argmax(classifier.predict(x_train_adv_random), axis=1)
+acc = np.sum(preds != preds_adv) / y_train.shape[0]
+logger.info('Fooling rate on random adversarial examples: %.2f%%', (acc * 100))
+
+# Craft adversarial samples with universal pertubation and FGSM
+attack_params = {"attacker": "fgsm", "delta": 0.01, "max_iter": 1, "eps": 6, "norm": 2}
+adv_crafter_fgsm = UniversalPerturbation(classifier)
+adv_crafter_fgsm.set_params(**attack_params)
+x_train_adv_fgsm = adv_crafter_fgsm.generate(x_train, **attack_params)
+np.linalg.norm(adv_crafter_fgsm.noise.reshape(-1), ord=2)
+
+preds_adv = np.argmax(classifier.predict(x_train_adv_fgsm), axis=1)
+acc = np.sum(preds != preds_adv) / y_train.shape[0]
+logger.info('Fooling rate on fgsm universal adversarial examples: %.2f%%', (acc * 100))
+
+
+
+# plot
 label = [
     'airplane', 'automobile', 'bird', 'cat', 'deer', 'dog', 'frog', 'horse',
     'ship', 'truck'

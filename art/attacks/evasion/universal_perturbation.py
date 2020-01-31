@@ -131,7 +131,11 @@ class UniversalPerturbation(EvasionAttack):
 
                 if current_label == original_label:
                     # Compute adversarial perturbation
-                    adv_xi = attacker.generate(x_i + noise)
+                    if y is None:
+                        adv_xi = attacker.generate(x_i + noise)
+                    else:
+                        adv_xi = attacker.generate(x_i + noise, y=original_label)
+
                     new_label = np.argmax(self.classifier.predict(adv_xi)[0])
 
                     # If the class has changed, update v
