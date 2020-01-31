@@ -29,6 +29,9 @@ from art.defences import FeatureSqueezing
 import numpy as np
 from art.classifiers import KerasClassifier
 from art.utils import master_seed, load_dataset
+from sklearn.linear_model import LogisticRegression
+from sklearn.svm import SVC, LinearSVC
+from art.classifiers.scikitlearn import SklearnClassifier
 
 logger = logging.getLogger(__name__)
 
@@ -135,41 +138,53 @@ def is_valid_framework(framework):
             framework, " ".join(art_supported_frameworks)))
     return True
 
-def get_image_classifier(defended=False):
+def get_image_classifiers(defended=False):
     if os.environ["mlFramework"] == "keras":
         classifier = get_image_classifier_kr()
         if defended:
             # Get the ready-trained Keras model
             fs = FeatureSqueezing(bit_depth=1, clip_values=(0, 1))
-            return KerasClassifier(model=classifier._model, clip_values=(0, 1), defences=fs)
+            return [KerasClassifier(model=classifier._model, clip_values=(0, 1), defences=fs)]
         else:
-            return classifier
+            return [classifier]
 
     elif os.environ["mlFramework"] == "tensorflow":
         classifier, sess = get_image_classifier_tf()
-        return None if defended else classifier
+        return None if defended else [classifier]
     elif os.environ["mlFramework"] == "pytorch":
-        return None if defended else get_image_classifier_pt()
+        return None if defended else [get_image_classifier_pt()]
     elif os.environ["mlFramework"] == "scikitlearn":
-        raise Exception("TODO needs to be implemented")
+        logging.warning("{0} doesn't have an image classifier defined yet".format(os.environ["mlFramework"]))
+        return None
     elif is_valid_framework(os.environ["mlFramework"]):
         raise Exception("A classifier factory method needs to be implemented for framework {0}".format(os.environ["mlFramework"]))
 
-def get_tabular_classifier(clipped=True):
+def get_tabular_classifiers(clipped=True):
     if os.environ["mlFramework"] == "keras":
         classifier = get_tabular_classifier_kr()
         if clipped:
-            return classifier
+            return [classifier]
         else:
-            return KerasClassifier(model=classifier._model, use_logits=False, channel_index=1)
+            return [KerasClassifier(model=classifier._model, use_logits=False, channel_index=1)]
 
     elif os.environ["mlFramework"] == "tensorflow":
         classifier, _ = get_tabular_classifier_tf()
-        return classifier if clipped else None
+        return [classifier] if clipped else None
     elif os.environ["mlFramework"] == "pytorch":
-        return get_tabular_classifier_pt() if clipped else None
+        return [get_tabular_classifier_pt()] if clipped else None
     elif os.environ["mlFramework"] == "scikitlearn":
-        raise Exception("TODO needs to be implemented")
+        model_list = [LogisticRegression(solver='lbfgs', multi_class='auto'),
+                      SVC(gamma='auto'),
+                      LinearSVC()]
+        if clipped is False:
+            # return [SklearnClassifier(model=model, clip_values=(0, 1)) for model in model_list]
+            return None
+        else:
+            return [SklearnClassifier(model=model, clip_values=(0, 1)) for model in model_list]
+        # scikitlearn_test_cases = [LogisticRegression(solver='lbfgs', multi_class='auto'),
+        #                           SVC(gamma='auto'),
+        #                           LinearSVC()]
+        # raise Exception("TODO needs to be implemented")
     elif is_valid_framework(os.environ["mlFramework"]):
         raise Exception("A classifier factory method needs to be implemented for framework {0}".format(os.environ["mlFramework"]))
 
