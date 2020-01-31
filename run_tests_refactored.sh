@@ -5,7 +5,7 @@ mlFrameworkList=("tensorflow" "keras" "pytorch" "scikitlearn")
 for mlFramework in "${mlFrameworkList[@]}"; do
   echo "Running tests with framework $mlFramework"
   export mlFramework=$mlFramework
-  python -m unittest tests.attacks.test_fast_gradient
+  python -m unittest tests.attacks.evasion.test_fast_gradient
 done
 
 exit ${exit_code}
