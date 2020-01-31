@@ -29,8 +29,9 @@ import numpy as np
 from art.attacks import FastGradientMethod
 from art.classifiers import KerasClassifier
 from art.detection import BinaryInputDetector, BinaryActivationDetector
-from art.utils import load_mnist, master_seed
-from tests.utils_test import get_classifier_kr
+from art.utils import load_mnist
+
+from tests.utils import master_seed, get_classifier_kr
 
 logger = logging.getLogger(__name__)
 
@@ -43,8 +44,7 @@ class TestBinaryInputDetector(unittest.TestCase):
     """
 
     def setUp(self):
-        # Set master seed
-        master_seed(1234)
+        master_seed(seed=1234)
 
     def tearDown(self):
         k.clear_session()
@@ -105,8 +105,7 @@ class TestBinaryActivationDetector(unittest.TestCase):
     """
 
     def setUp(self):
-        # Set master seed
-        master_seed(1234)
+        master_seed(seed=1234)
 
     def tearDown(self):
         k.clear_session()

@@ -20,71 +20,12 @@ Module providing convenience functions.
 """
 from __future__ import absolute_import, division, print_function, unicode_literals
 
-import logging
 import os
+import logging
 
 import numpy as np
 
 logger = logging.getLogger(__name__)
-
-try:
-    # Conditional import of `torch` to avoid segmentation fault errors this framework generates at import
-    import torch
-except ImportError:
-    logger.info('Could not import PyTorch in utilities.')
-
-
-# -------------------------------------------------------------------------------------------- RANDOM NUMBER GENERATORS
-
-
-def master_seed(seed):
-    """
-    Set the seed for all random number generators used in the library. This ensures experiments reproducibility and
-    stable testing.
-
-    :param seed: The value to be seeded in the random number generators.
-    :type seed: `int`
-    """
-    import numbers
-    import random
-
-    if not isinstance(seed, numbers.Integral):
-        raise TypeError('The seed for random number generators has to be an integer.')
-
-    # Set Python seed
-    random.seed(seed)
-
-    # Set Numpy seed
-    np.random.seed(seed)
-    np.random.RandomState(seed)
-
-    # Now try to set seed for all specific frameworks
-    try:
-        import tensorflow as tf
-
-        logger.info('Setting random seed for TensorFlow.')
-        if tf.__version__[0] == '2':
-            tf.random.set_seed(seed)
-        else:
-            tf.set_random_seed(seed)
-    except ImportError:
-        logger.info('Could not set random seed for TensorFlow.')
-
-    try:
-        import mxnet as mx
-
-        logger.info('Setting random seed for MXNet.')
-        mx.random.seed(seed)
-    except ImportError:
-        logger.info('Could not set random seed for MXNet.')
-
-    try:
-        logger.info('Setting random seed for PyTorch.')
-        torch.manual_seed(seed)
-        if torch.cuda.is_available():
-            torch.cuda.manual_seed_all(seed)
-    except ImportError:
-        logger.info('Could not set random seed for PyTorch.')
 
 
 # ----------------------------------------------------------------------------------------------------- MATH OPERATIONS

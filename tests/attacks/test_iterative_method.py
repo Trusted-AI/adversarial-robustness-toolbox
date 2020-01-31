@@ -23,9 +23,9 @@ from art.attacks import BasicIterativeMethod
 from art.classifiers import KerasClassifier
 from art.utils import get_labels_np_array, random_targets
 
-from tests.utils_test import TestBase
-from tests.utils_test import get_classifier_tf, get_classifier_kr, get_classifier_pt
-from tests.utils_test import get_iris_classifier_tf, get_iris_classifier_kr, get_iris_classifier_pt
+from tests.utils import TestBase
+from tests.utils import get_classifier_tf, get_classifier_kr, get_classifier_pt
+from tests.utils import get_iris_classifier_tf, get_iris_classifier_kr, get_iris_classifier_pt
 
 logger = logging.getLogger(__name__)
 
@@ -219,7 +219,7 @@ class TestIterativeAttack(TestBase):
         classifier, _ = get_iris_classifier_tf()
 
         # Test untargeted attack
-        attack = BasicIterativeMethod(classifier, eps=1, eps_step=0.1)
+        attack = BasicIterativeMethod(classifier, eps=1, eps_step=0.1, max_iter=5)
         x_test_adv = attack.generate(self.x_test_iris)
         self.assertFalse((self.x_test_iris == x_test_adv).all())
         self.assertTrue((x_test_adv <= 1).all())
@@ -232,7 +232,7 @@ class TestIterativeAttack(TestBase):
 
         # Test targeted attack
         targets = random_targets(self.y_test_iris, nb_classes=3)
-        attack = BasicIterativeMethod(classifier, targeted=True, eps=1, eps_step=0.1)
+        attack = BasicIterativeMethod(classifier, targeted=True, eps=1, eps_step=0.1, max_iter=5)
         x_test_adv = attack.generate(self.x_test_iris, **{'y': targets})
         self.assertFalse((self.x_test_iris == x_test_adv).all())
         self.assertTrue((x_test_adv <= 1).all())
@@ -288,7 +288,7 @@ class TestIterativeAttack(TestBase):
             classifier.fit(x=self.x_test_iris, y=self.y_test_iris)
 
             # Test untargeted attack
-            attack = BasicIterativeMethod(classifier, eps=1, eps_step=0.1)
+            attack = BasicIterativeMethod(classifier, eps=1, eps_step=0.1, max_iter=5)
             x_test_adv = attack.generate(self.x_test_iris)
             self.assertFalse((self.x_test_iris == x_test_adv).all())
             self.assertTrue((x_test_adv <= 1).all())
@@ -302,7 +302,7 @@ class TestIterativeAttack(TestBase):
 
             # Test targeted attack
             targets = random_targets(self.y_test_iris, nb_classes=3)
-            attack = BasicIterativeMethod(classifier, targeted=True, eps=1, eps_step=0.1, batch_size=128)
+            attack = BasicIterativeMethod(classifier, targeted=True, eps=1, eps_step=0.1, batch_size=128, max_iter=5)
             x_test_adv = attack.generate(self.x_test_iris, **{'y': targets})
             self.assertFalse((self.x_test_iris == x_test_adv).all())
             self.assertTrue((x_test_adv <= 1).all())

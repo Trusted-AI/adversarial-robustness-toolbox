@@ -1,6 +1,9 @@
 #!/usr/bin/env bash
 exit_code=0
 
+# Set TensorFlow logging to minimum level ERROR
+export TF_CPP_MIN_LOG_LEVEL="3"
+
 # --------------------------------------------------------------------------------------------------------------- TESTS
 
 declare -a attacks=("tests/attacks/test_adversarial_patch.py" \

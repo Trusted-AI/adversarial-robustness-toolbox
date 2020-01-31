@@ -27,9 +27,9 @@ from art.attacks import HopSkipJump
 from art.classifiers import KerasClassifier
 from art.utils import random_targets
 
-from tests.utils_test import TestBase
-from tests.utils_test import get_classifier_tf, get_classifier_kr, get_classifier_pt
-from tests.utils_test import get_iris_classifier_tf, get_iris_classifier_kr, get_iris_classifier_pt
+from tests.utils import TestBase, master_seed
+from tests.utils import get_classifier_tf, get_classifier_kr, get_classifier_pt
+from tests.utils import get_iris_classifier_tf, get_iris_classifier_kr, get_iris_classifier_pt
 
 logger = logging.getLogger(__name__)
 
@@ -41,6 +41,7 @@ class TestHopSkipJump(TestBase):
 
     @classmethod
     def setUpClass(cls):
+        master_seed(seed=1234, set_tensorflow=True, set_torch=True)
         super().setUpClass()
 
         cls.n_train = 100
@@ -49,6 +50,10 @@ class TestHopSkipJump(TestBase):
         cls.y_train_mnist = cls.y_train_mnist[0:cls.n_train]
         cls.x_test_mnist = cls.x_test_mnist[0:cls.n_test]
         cls.y_test_mnist = cls.y_test_mnist[0:cls.n_test]
+
+    def setUp(self):
+        master_seed(seed=1234, set_tensorflow=True, set_torch=True)
+        super().setUp()
 
     def test_tensorflow_mnist(self):
         """

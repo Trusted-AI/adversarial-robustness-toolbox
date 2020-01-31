@@ -26,9 +26,10 @@ import numpy as np
 from art.attacks.evasion.fast_gradient import FastGradientMethod
 from art.classifiers import KerasClassifier
 from art.defences import FeatureSqueezing
-from art.utils import load_dataset, get_labels_np_array, master_seed
-from tests.utils_test import get_classifier_kr, get_iris_classifier_kr
+from art.utils import load_dataset, get_labels_np_array
 from art.wrappers.query_efficient_bb import QueryEfficientBBGradientEstimation
+
+from tests.utils import master_seed, get_classifier_kr, get_iris_classifier_kr
 
 logger = logging.getLogger(__name__)
 
@@ -50,7 +51,7 @@ class TestWrappingClassifierAttack(unittest.TestCase):
         cls.classifier_k = get_classifier_kr()
 
     def setUp(self):
-        master_seed(1234)
+        master_seed(seed=1234)
 
     @classmethod
     def tearDownClass(cls):
@@ -126,7 +127,7 @@ class TestQueryEfficientVectors(unittest.TestCase):
         cls.iris = (x_train, y_train), (x_test, y_test)
 
     def setUp(self):
-        master_seed(1234)
+        master_seed(seed=1234)
 
     def test_iris_clipped(self):
         (_, _), (x_test, y_test) = self.iris

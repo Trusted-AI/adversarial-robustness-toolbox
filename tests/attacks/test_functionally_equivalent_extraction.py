@@ -31,7 +31,7 @@ from tensorflow.keras.models import load_model
 from art.attacks import FunctionallyEquivalentExtraction
 from art.classifiers import KerasClassifier
 
-from tests.utils_test import TestBase
+from tests.utils import TestBase, master_seed
 
 logger = logging.getLogger(__name__)
 
@@ -42,6 +42,7 @@ class TestFastGradientMethodImages(TestBase):
 
     @classmethod
     def setUpClass(cls):
+        master_seed(seed=1234, set_tensorflow=True)
         super().setUpClass()
 
         cls.n_train = 100
@@ -75,6 +76,10 @@ class TestFastGradientMethodImages(TestBase):
 
         cls.fee = FunctionallyEquivalentExtraction(classifier=classifier, num_neurons=num_neurons)
         cls.fee.extract(x_test[0:100])
+
+    def setUp(self):
+        master_seed(seed=1234, set_tensorflow=True)
+        super().setUp()
 
     def test_critical_points(self):
         critical_points_expected_15 = np.array([[3.61953106e+00, 9.77733178e-01, 3.03710564e+00,
@@ -371,7 +376,7 @@ class TestFastGradientMethodImages(TestBase):
                                             [-1.02489274],
                                             [-0.48252173],
                                             [1.92286191]])
-        np.testing.assert_array_almost_equal(self.fee.b_1, layer_1_biases_expected)
+        np.testing.assert_array_almost_equal(self.fee.b_1, layer_1_biases_expected, decimal=4)
 
 
 if __name__ == '__main__':

@@ -20,9 +20,6 @@ from __future__ import absolute_import, division, print_function, unicode_litera
 import os
 import logging
 import unittest
-import requests
-import tempfile
-import shutil
 import pickle
 
 import tensorflow as tf
@@ -33,18 +30,16 @@ from tensorflow.keras.layers import Dense, Conv2D, MaxPooling2D, Dropout, Input,
 from tensorflow.keras.models import Model
 from tensorflow.keras.preprocessing.image import ImageDataGenerator
 from tensorflow.keras.callbacks import LearningRateScheduler
-from tensorflow.keras.applications.resnet50 import ResNet50, decode_predictions
-from tensorflow.keras.preprocessing.image import load_img, img_to_array
+
 import numpy as np
 
 from art.config import ART_DATA_PATH
 from art.classifiers import KerasClassifier
 from art.classifiers.keras import generator_fit
 from art.defences import FeatureSqueezing, JpegCompression, SpatialSmoothing
-from art.utils import master_seed
 from art.data_generators import KerasDataGenerator
 
-from tests.utils_test import TestBase, get_classifier_kr_tf
+from tests.utils import TestBase, master_seed, get_classifier_kr_tf
 
 logger = logging.getLogger(__name__)
 
@@ -53,28 +48,17 @@ class TestKerasClassifierTensorFlow(TestBase):
 
     @classmethod
     def setUpClass(cls):
+        master_seed(seed=1234, set_tensorflow=True)
         super().setUpClass()
 
         # Load small Keras model
         cls.functional_model = cls.functional_model()
         cls.functional_model.fit([cls.x_train_mnist, cls.x_train_mnist], [cls.y_train_mnist, cls.y_train_mnist],
-                                 nb_epoch=3)
+                                 epochs=3)
 
-        # Temporary folder for tests
-        cls.test_dir = tempfile.mkdtemp()
-
-        # Download one ImageNet pic for tests
-        url = 'http://farm1.static.flickr.com/163/381342603_81db58bea4.jpg'
-        result = requests.get(url, stream=True)
-        if result.status_code == 200:
-            image = result.raw.read()
-            f = open(os.path.join(cls.test_dir, 'test.jpg'), 'wb')
-            f.write(image)
-            f.close()
-
-    @classmethod
-    def tearDownClass(cls):
-        shutil.rmtree(cls.test_dir)
+    def setUp(self):
+        master_seed(seed=1234, set_tensorflow=True)
+        super().setUp()
 
     @staticmethod
     def functional_model():
@@ -314,24 +298,6 @@ class TestKerasClassifierTensorFlow(TestBase):
             act_name = classifier.get_activations(self.x_test_mnist, name, batch_size=128)
             np.testing.assert_array_equal(act_name, act_i)
 
-    def test_resnet(self):
-        tf.keras.backend.set_learning_phase(0)
-        model = ResNet50(weights='imagenet')
-        classifier = KerasClassifier(model, clip_values=(0, 255))
-
-        # Load image from file
-        image = img_to_array(load_img(os.path.join(self.test_dir, 'test.jpg'), target_size=(224, 224)))
-        image = image.reshape((1, image.shape[0], image.shape[1], image.shape[2]))
-
-        prediction = classifier.predict(image)
-        label = decode_predictions(prediction)[0][0]
-
-        self.assertEqual(label[1], 'Weimaraner')
-        if tf.__version__[0] == '2' or (tf.__version__[0] == '1' and tf.__version__[2:4] == '15'):
-            self.assertAlmostEqual(prediction[0, 178], 0.29494652, places=3)
-        else:
-            self.assertAlmostEqual(prediction[0, 178], 0.2658045, places=3)
-
     def test_learning_phase(self):
         classifier = get_classifier_kr_tf()
 
@@ -414,7 +380,7 @@ class TestKerasClassifierTensorFlow(TestBase):
 
         def _run_tests(_loss_name, _loss_type, _y_test_pred_expected, _class_gradient_probabilities_expected,
                        _loss_gradient_expected, _from_logits):
-            master_seed(1234)
+            master_seed(seed=1234)
             classifier = get_classifier_kr_tf(loss_name=_loss_name, loss_type=_loss_type, from_logits=_from_logits)
 
             y_test_pred = np.argmax(classifier.predict(x=self.x_test_mnist), axis=1)

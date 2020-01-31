@@ -34,7 +34,7 @@ from art.config import ART_DATA_PATH
 from art.data_generators import PyTorchDataGenerator
 from art.classifiers import PyTorchClassifier
 
-from tests.utils_test import TestBase, get_classifier_pt
+from tests.utils import TestBase, master_seed, get_classifier_pt
 
 logger = logging.getLogger(__name__)
 
@@ -68,6 +68,7 @@ class TestPyTorchClassifier(TestBase):
 
     @classmethod
     def setUpClass(cls):
+        master_seed(seed=1234)
         super().setUpClass()
 
         cls.x_train_mnist = np.reshape(cls.x_train_mnist, (cls.x_train_mnist.shape[0], 1, 28, 28)).astype(np.float32)
@@ -97,6 +98,7 @@ class TestPyTorchClassifier(TestBase):
         cls.x_test_mnist = np.reshape(cls.x_test_mnist, (cls.x_test_mnist.shape[0], 28, 28, 1)).astype(np.float32)
 
     def setUp(self):
+        master_seed(seed=1234)
         self.x_train_mnist = np.reshape(self.x_train_mnist, (self.x_train_mnist.shape[0], 1, 28, 28)).astype(np.float32)
         self.x_test_mnist = np.reshape(self.x_test_mnist, (self.x_test_mnist.shape[0], 1, 28, 28)).astype(np.float32)
         super().setUp()

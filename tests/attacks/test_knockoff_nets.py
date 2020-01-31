@@ -20,51 +20,35 @@ from __future__ import absolute_import, division, print_function, unicode_litera
 import logging
 import unittest
 
-import tensorflow as tf
 import numpy as np
 import keras.backend as k
 
 from art.attacks.extraction.knockoff_nets import KnockoffNets
-from art.utils import load_dataset, master_seed
-from tests.utils_test import get_classifier_tf
-from tests.utils_test import get_classifier_kr
-from tests.utils_test import get_classifier_pt
-from tests.utils_test import get_iris_classifier_tf
-from tests.utils_test import get_iris_classifier_kr
-from tests.utils_test import get_iris_classifier_pt
-from art.config import ART_NUMPY_DTYPE
+
+from tests.utils import TestBase, master_seed
+from tests.utils import get_classifier_tf, get_classifier_kr, get_classifier_pt
+from tests.utils import get_iris_classifier_tf, get_iris_classifier_kr, get_iris_classifier_pt
 
 logger = logging.getLogger(__name__)
 
-try:
-    # Conditional import of `torch` to avoid segmentation fault errors this framework generates at import
-    import torch
-    import torch.nn as nn
-    import torch.optim as optim
-except ImportError:
-    logger.info('Could not import PyTorch in utilities.')
+BATCH_SIZE = 10
+NB_TRAIN = 100
+NB_EPOCHS = 1
+NB_STOLEN = 100
 
 
-BATCH_SIZE = 100
-NB_TRAIN = 1000
-NB_EPOCHS = 10
-NB_STOLEN = 1000
-
-
-class TestKnockoffNets(unittest.TestCase):
+class TestKnockoffNets(TestBase):
     """
     A unittest class for testing the KnockoffNets attack.
     """
 
     @classmethod
     def setUpClass(cls):
-        (x_train, y_train), (_, _), _, _ = load_dataset('mnist')
-
-        cls.x_train = x_train[:NB_TRAIN].astype(ART_NUMPY_DTYPE)
-        cls.y_train = y_train[:NB_TRAIN].astype(ART_NUMPY_DTYPE)
+        master_seed(seed=1234, set_tensorflow=True)
+        super().setUpClass()
 
     def setUp(self):
-        master_seed(1234)
+        super().setUp()
 
     def test_tensorflow_classifier(self):
         """
@@ -80,10 +64,10 @@ class TestKnockoffNets(unittest.TestCase):
         # Create random attack
         attack = KnockoffNets(classifier=victim_tfc, batch_size_fit=BATCH_SIZE, batch_size_query=BATCH_SIZE,
                               nb_epochs=NB_EPOCHS, nb_stolen=NB_STOLEN, sampling_strategy='random')
-        thieved_tfc = attack.extract(x=self.x_train, thieved_classifier=thieved_tfc)
+        thieved_tfc = attack.extract(x=self.x_train_mnist, thieved_classifier=thieved_tfc)
 
-        victim_preds = np.argmax(victim_tfc.predict(x=self.x_train), axis=1)
-        thieved_preds = np.argmax(thieved_tfc.predict(x=self.x_train), axis=1)
+        victim_preds = np.argmax(victim_tfc.predict(x=self.x_train_mnist), axis=1)
+        thieved_preds = np.argmax(thieved_tfc.predict(x=self.x_train_mnist), axis=1)
         acc = np.sum(victim_preds == thieved_preds) / len(victim_preds)
 
         self.assertGreater(acc, 0.3)
@@ -91,10 +75,10 @@ class TestKnockoffNets(unittest.TestCase):
         # Create adaptive attack
         attack = KnockoffNets(classifier=victim_tfc, batch_size_fit=BATCH_SIZE, batch_size_query=BATCH_SIZE,
                               nb_epochs=NB_EPOCHS, nb_stolen=NB_STOLEN, sampling_strategy='adaptive', reward='all')
-        thieved_tfc = attack.extract(x=self.x_train, y=self.y_train, thieved_classifier=thieved_tfc)
+        thieved_tfc = attack.extract(x=self.x_train_mnist, y=self.y_train_mnist, thieved_classifier=thieved_tfc)
 
-        victim_preds = np.argmax(victim_tfc.predict(x=self.x_train), axis=1)
-        thieved_preds = np.argmax(thieved_tfc.predict(x=self.x_train), axis=1)
+        victim_preds = np.argmax(victim_tfc.predict(x=self.x_train_mnist), axis=1)
+        thieved_preds = np.argmax(thieved_tfc.predict(x=self.x_train_mnist), axis=1)
         acc = np.sum(victim_preds == thieved_preds) / len(victim_preds)
 
         self.assertGreater(acc, 0.4)
@@ -117,10 +101,10 @@ class TestKnockoffNets(unittest.TestCase):
         # Create random attack
         attack = KnockoffNets(classifier=victim_krc, batch_size_fit=BATCH_SIZE, batch_size_query=BATCH_SIZE,
                               nb_epochs=NB_EPOCHS, nb_stolen=NB_STOLEN, sampling_strategy='random')
-        thieved_krc = attack.extract(x=self.x_train, thieved_classifier=thieved_krc)
+        thieved_krc = attack.extract(x=self.x_train_mnist, thieved_classifier=thieved_krc)
 
-        victim_preds = np.argmax(victim_krc.predict(x=self.x_train), axis=1)
-        thieved_preds = np.argmax(thieved_krc.predict(x=self.x_train), axis=1)
+        victim_preds = np.argmax(victim_krc.predict(x=self.x_train_mnist), axis=1)
+        thieved_preds = np.argmax(thieved_krc.predict(x=self.x_train_mnist), axis=1)
         acc = np.sum(victim_preds == thieved_preds) / len(victim_preds)
 
         self.assertGreater(acc, 0.3)
@@ -128,10 +112,10 @@ class TestKnockoffNets(unittest.TestCase):
         # Create adaptive attack
         attack = KnockoffNets(classifier=victim_krc, batch_size_fit=BATCH_SIZE, batch_size_query=BATCH_SIZE,
                               nb_epochs=NB_EPOCHS, nb_stolen=NB_STOLEN, sampling_strategy='adaptive', reward='all')
-        thieved_krc = attack.extract(x=self.x_train, y=self.y_train, thieved_classifier=thieved_krc)
+        thieved_krc = attack.extract(x=self.x_train_mnist, y=self.y_train_mnist, thieved_classifier=thieved_krc)
 
-        victim_preds = np.argmax(victim_krc.predict(x=self.x_train), axis=1)
-        thieved_preds = np.argmax(thieved_krc.predict(x=self.x_train), axis=1)
+        victim_preds = np.argmax(victim_krc.predict(x=self.x_train_mnist), axis=1)
+        thieved_preds = np.argmax(thieved_krc.predict(x=self.x_train_mnist), axis=1)
         acc = np.sum(victim_preds == thieved_preds) / len(victim_preds)
 
         self.assertGreater(acc, 0.4)
@@ -144,6 +128,8 @@ class TestKnockoffNets(unittest.TestCase):
         Third test with the PyTorchClassifier.
         :return:
         """
+        self.x_train_mnist = np.reshape(self.x_train_mnist, (self.x_train_mnist.shape[0], 1, 28, 28)).astype(np.float32)
+
         # Build PyTorchClassifier
         victim_ptc = get_classifier_pt()
 
@@ -153,11 +139,11 @@ class TestKnockoffNets(unittest.TestCase):
         # Create random attack
         attack = KnockoffNets(classifier=victim_ptc, batch_size_fit=BATCH_SIZE, batch_size_query=BATCH_SIZE,
                               nb_epochs=NB_EPOCHS, nb_stolen=NB_STOLEN, sampling_strategy='random')
-        self.x_train = np.swapaxes(self.x_train, 1, 3)
-        thieved_ptc = attack.extract(x=self.x_train, thieved_classifier=thieved_ptc)
 
-        victim_preds = np.argmax(victim_ptc.predict(x=self.x_train), axis=1)
-        thieved_preds = np.argmax(thieved_ptc.predict(x=self.x_train), axis=1)
+        thieved_ptc = attack.extract(x=self.x_train_mnist, thieved_classifier=thieved_ptc)
+
+        victim_preds = np.argmax(victim_ptc.predict(x=self.x_train_mnist), axis=1)
+        thieved_preds = np.argmax(thieved_ptc.predict(x=self.x_train_mnist), axis=1)
         acc = np.sum(victim_preds == thieved_preds) / len(victim_preds)
 
         self.assertGreater(acc, 0.3)
@@ -165,26 +151,26 @@ class TestKnockoffNets(unittest.TestCase):
         # Create adaptive attack
         attack = KnockoffNets(classifier=victim_ptc, batch_size_fit=BATCH_SIZE, batch_size_query=BATCH_SIZE,
                               nb_epochs=NB_EPOCHS, nb_stolen=NB_STOLEN, sampling_strategy='adaptive', reward='all')
-        thieved_ptc = attack.extract(x=self.x_train, y=self.y_train, thieved_classifier=thieved_ptc)
+        thieved_ptc = attack.extract(x=self.x_train_mnist, y=self.y_train_mnist, thieved_classifier=thieved_ptc)
 
-        victim_preds = np.argmax(victim_ptc.predict(x=self.x_train), axis=1)
-        thieved_preds = np.argmax(thieved_ptc.predict(x=self.x_train), axis=1)
+        victim_preds = np.argmax(victim_ptc.predict(x=self.x_train_mnist), axis=1)
+        thieved_preds = np.argmax(thieved_ptc.predict(x=self.x_train_mnist), axis=1)
         acc = np.sum(victim_preds == thieved_preds) / len(victim_preds)
 
         self.assertGreater(acc, 0.4)
-        self.x_train = np.swapaxes(self.x_train, 1, 3)
+
+        self.x_train_mnist = np.reshape(self.x_train_mnist, (self.x_train_mnist.shape[0], 28, 28, 1)).astype(np.float32)
 
 
-class TestKnockoffNetsVectors(unittest.TestCase):
+class TestKnockoffNetsVectors(TestBase):
     @classmethod
     def setUpClass(cls):
-        (x_train, y_train), (_, _), _, _ = load_dataset('iris')
-
-        cls.x_train = x_train
-        cls.y_train = y_train
+        master_seed(seed=1234, set_tensorflow=True)
+        super().setUpClass()
 
     def setUp(self):
-        master_seed(1234)
+        master_seed(seed=1234, set_tensorflow=True)
+        super().setUp()
 
     def test_tensorflow_iris(self):
         """
@@ -200,10 +186,10 @@ class TestKnockoffNetsVectors(unittest.TestCase):
         # Create random attack
         attack = KnockoffNets(classifier=victim_tfc, batch_size_fit=BATCH_SIZE, batch_size_query=BATCH_SIZE,
                               nb_epochs=NB_EPOCHS, nb_stolen=NB_STOLEN, sampling_strategy='random')
-        thieved_tfc = attack.extract(x=self.x_train, thieved_classifier=thieved_tfc)
+        thieved_tfc = attack.extract(x=self.x_train_iris, thieved_classifier=thieved_tfc)
 
-        victim_preds = np.argmax(victim_tfc.predict(x=self.x_train), axis=1)
-        thieved_preds = np.argmax(thieved_tfc.predict(x=self.x_train), axis=1)
+        victim_preds = np.argmax(victim_tfc.predict(x=self.x_train_iris), axis=1)
+        thieved_preds = np.argmax(thieved_tfc.predict(x=self.x_train_iris), axis=1)
         acc = np.sum(victim_preds == thieved_preds) / len(victim_preds)
 
         self.assertGreater(acc, 0.3)
@@ -211,10 +197,10 @@ class TestKnockoffNetsVectors(unittest.TestCase):
         # Create adaptive attack
         attack = KnockoffNets(classifier=victim_tfc, batch_size_fit=BATCH_SIZE, batch_size_query=BATCH_SIZE,
                               nb_epochs=NB_EPOCHS, nb_stolen=NB_STOLEN, sampling_strategy='adaptive', reward='all')
-        thieved_tfc = attack.extract(x=self.x_train, y=self.y_train, thieved_classifier=thieved_tfc)
+        thieved_tfc = attack.extract(x=self.x_train_iris, y=self.y_train_iris, thieved_classifier=thieved_tfc)
 
-        victim_preds = np.argmax(victim_tfc.predict(x=self.x_train), axis=1)
-        thieved_preds = np.argmax(thieved_tfc.predict(x=self.x_train), axis=1)
+        victim_preds = np.argmax(victim_tfc.predict(x=self.x_train_iris), axis=1)
+        thieved_preds = np.argmax(thieved_tfc.predict(x=self.x_train_iris), axis=1)
         acc = np.sum(victim_preds == thieved_preds) / len(victim_preds)
 
         self.assertGreater(acc, 0.4)
@@ -237,10 +223,10 @@ class TestKnockoffNetsVectors(unittest.TestCase):
         # Create random attack
         attack = KnockoffNets(classifier=victim_krc, batch_size_fit=BATCH_SIZE, batch_size_query=BATCH_SIZE,
                               nb_epochs=NB_EPOCHS, nb_stolen=NB_STOLEN, sampling_strategy='random')
-        thieved_krc = attack.extract(x=self.x_train, thieved_classifier=thieved_krc)
+        thieved_krc = attack.extract(x=self.x_train_iris, thieved_classifier=thieved_krc)
 
-        victim_preds = np.argmax(victim_krc.predict(x=self.x_train), axis=1)
-        thieved_preds = np.argmax(thieved_krc.predict(x=self.x_train), axis=1)
+        victim_preds = np.argmax(victim_krc.predict(x=self.x_train_iris), axis=1)
+        thieved_preds = np.argmax(thieved_krc.predict(x=self.x_train_iris), axis=1)
         acc = np.sum(victim_preds == thieved_preds) / len(victim_preds)
 
         self.assertGreater(acc, 0.3)
@@ -248,10 +234,10 @@ class TestKnockoffNetsVectors(unittest.TestCase):
         # Create adaptive attack
         attack = KnockoffNets(classifier=victim_krc, batch_size_fit=BATCH_SIZE, batch_size_query=BATCH_SIZE,
                               nb_epochs=NB_EPOCHS, nb_stolen=NB_STOLEN, sampling_strategy='adaptive', reward='all')
-        thieved_krc = attack.extract(x=self.x_train, y=self.y_train, thieved_classifier=thieved_krc)
+        thieved_krc = attack.extract(x=self.x_train_iris, y=self.y_train_iris, thieved_classifier=thieved_krc)
 
-        victim_preds = np.argmax(victim_krc.predict(x=self.x_train), axis=1)
-        thieved_preds = np.argmax(thieved_krc.predict(x=self.x_train), axis=1)
+        victim_preds = np.argmax(victim_krc.predict(x=self.x_train_iris), axis=1)
+        thieved_preds = np.argmax(thieved_krc.predict(x=self.x_train_iris), axis=1)
         acc = np.sum(victim_preds == thieved_preds) / len(victim_preds)
 
         self.assertGreater(acc, 0.4)
@@ -273,10 +259,10 @@ class TestKnockoffNetsVectors(unittest.TestCase):
         # Create random attack
         attack = KnockoffNets(classifier=victim_ptc, batch_size_fit=BATCH_SIZE, batch_size_query=BATCH_SIZE,
                               nb_epochs=NB_EPOCHS, nb_stolen=NB_STOLEN, sampling_strategy='random')
-        thieved_ptc = attack.extract(x=self.x_train, thieved_classifier=thieved_ptc)
+        thieved_ptc = attack.extract(x=self.x_train_iris, thieved_classifier=thieved_ptc)
 
-        victim_preds = np.argmax(victim_ptc.predict(x=self.x_train), axis=1)
-        thieved_preds = np.argmax(thieved_ptc.predict(x=self.x_train), axis=1)
+        victim_preds = np.argmax(victim_ptc.predict(x=self.x_train_iris), axis=1)
+        thieved_preds = np.argmax(thieved_ptc.predict(x=self.x_train_iris), axis=1)
         acc = np.sum(victim_preds == thieved_preds) / len(victim_preds)
 
         self.assertGreater(acc, 0.3)
@@ -284,10 +270,10 @@ class TestKnockoffNetsVectors(unittest.TestCase):
         # Create adaptive attack
         attack = KnockoffNets(classifier=victim_ptc, batch_size_fit=BATCH_SIZE, batch_size_query=BATCH_SIZE,
                               nb_epochs=NB_EPOCHS, nb_stolen=NB_STOLEN, sampling_strategy='adaptive', reward='all')
-        thieved_ptc = attack.extract(x=self.x_train, y=self.y_train, thieved_classifier=thieved_ptc)
+        thieved_ptc = attack.extract(x=self.x_train_iris, y=self.y_train_iris, thieved_classifier=thieved_ptc)
 
-        victim_preds = np.argmax(victim_ptc.predict(x=self.x_train), axis=1)
-        thieved_preds = np.argmax(thieved_ptc.predict(x=self.x_train), axis=1)
+        victim_preds = np.argmax(victim_ptc.predict(x=self.x_train_iris), axis=1)
+        thieved_preds = np.argmax(thieved_ptc.predict(x=self.x_train_iris), axis=1)
         acc = np.sum(victim_preds == thieved_preds) / len(victim_preds)
 
         self.assertGreater(acc, 0.4)

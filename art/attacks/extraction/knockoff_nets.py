@@ -133,7 +133,8 @@ class KnockoffNets(ExtractionAttack):
         fake_labels = self._query_label(selected_x)
 
         # Train the thieved classifier
-        thieved_classifier.fit(x=selected_x, y=fake_labels, batch_size=self.batch_size_fit, nb_epochs=self.nb_epochs)
+        thieved_classifier.fit(x=selected_x, y=fake_labels, batch_size=self.batch_size_fit, nb_epochs=self.nb_epochs,
+                               verbose=0)
 
         return thieved_classifier
 
@@ -220,7 +221,8 @@ class KnockoffNets(ExtractionAttack):
             queried_labels.append(fake_label[0])
 
             # Train the thieved classifier
-            thieved_classifier.fit(x=np.array([sampled_x]), y=fake_label, batch_size=self.batch_size_fit, nb_epochs=1)
+            thieved_classifier.fit(x=np.array([sampled_x]), y=fake_label, batch_size=self.batch_size_fit, nb_epochs=1,
+                                   verbose=0)
 
             # Test new labels
             y_hat = thieved_classifier.predict(x=np.array([sampled_x]), batch_size=self.batch_size_query)
