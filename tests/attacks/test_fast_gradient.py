@@ -29,6 +29,7 @@ from tests import utils_test
 
 logger = logging.getLogger(__name__)
 
+
 class TestFastGradientMethodImages(TestBase):
 
     @classmethod
