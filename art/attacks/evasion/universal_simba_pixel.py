@@ -34,12 +34,12 @@ from art.utils import compute_success
 logger = logging.getLogger(__name__)
 
 
-class SimBA_pixel(EvasionAttack):
-    attack_params = EvasionAttack.attack_params + ['max_iter', 'epsilon', 'batch_size']
+class Universal_SimBA_pixel(EvasionAttack):
+    attack_params = EvasionAttack.attack_params + ['max_iter', 'epsilon', 'delta' ,'batch_size']
 
-    def __init__(self, classifier, max_iter=3000, epsilon=0.1, batch_size=1):
+    def __init__(self, classifier, max_iter=3000, epsilon=0.1, delta=0.1, batch_size=1):
         """
-        Create a SimBA (pixel) attack instance.
+        Create a universal SimBA (pixel) attack instance.
 
         :param classifier: A trained classifier.
         :type classifier: :class:`.Classifier`
@@ -47,17 +47,19 @@ class SimBA_pixel(EvasionAttack):
         :type max_iter: `int`
         :param epsilon: Overshoot parameter.
         :type epsilon: `float`
+        :param delta: desired accuracy
+        :type delta: `float`
         :param batch_size: Batch size (but, batch process unavailable in this implementation)
         :type batch_size: `int`
         """
-        super(SimBA_pixel, self).__init__(classifier=classifier)
+        super(Universal_SimBA_pixel, self).__init__(classifier=classifier)
         if not isinstance(classifier, ClassifierGradients):
             raise (TypeError('For `' + self.__class__.__name__ + '` classifier must be an instance of '
                              '`art.classifiers.classifier.ClassifierGradients`, the provided classifier is instance of '
                              + str(classifier.__class__.__bases__) + '. '
                              ' The classifier needs to be a Neural Network and provide gradients.'))
 
-        params = {'max_iter': max_iter, 'epsilon': epsilon, 'batch_size': batch_size}
+        params = {'max_iter': max_iter, 'epsilon': epsilon, 'delta': delta, 'batch_size': batch_size}
         self.set_params(**params)
 
     def generate(self, x, y=None, **kwargs):
@@ -72,42 +74,46 @@ class SimBA_pixel(EvasionAttack):
         :rtype: `np.ndarray`
         """
         x = x.astype(ART_NUMPY_DTYPE)
+        nb_instances = x.shape[0]
         preds = self.classifier.predict(x, batch_size=self.batch_size)
         if y is None:
-            y = np.argmax(preds, axis=1)[0]
-        original_label = y
-        current_label = original_label
-        last_prob = preds.reshape(-1)[original_label]
+            y = np.argmax(preds, axis=1)
+        original_labels = y
+        current_labels = original_labels
+        last_probs = preds[(range(nb_instances),original_labels)]
 
-        n_dims = np.prod(x.shape)
+        n_dims = np.prod(x[0].shape)
 
         clip_min, clip_max = self.classifier.clip_values
 
+        fooling_rate = 0.0
         nb_iter = 0
-        while original_label == current_label and nb_iter < self.max_iter:
+        while fooling_rate < 1. - self.delta and nb_iter < self.max_iter:
             diff = np.zeros(n_dims)
             diff[np.random.choice(range(n_dims))] = self.epsilon
-            preds = self.classifier.predict(np.clip(x - diff.reshape(x.shape), clip_min, clip_max), batch_size=self.batch_size)
-            left_prob = preds.reshape(-1)[original_label]
-            if left_prob < last_prob:
-                x = np.clip(x - diff.reshape(x.shape), clip_min, clip_max)
-                last_prob = left_prob
-                current_label = np.argmax(preds, axis=1)[0]
+            preds = self.classifier.predict(np.clip(x - diff.reshape(x[0][None, ...].shape), clip_min, clip_max), batch_size=self.batch_size)
+            left_probs = preds[(range(nb_instances),original_labels)]
+            if np.sum(left_probs - last_probs) < 0.0:
+                x = np.clip(x - diff.reshape(x[0][None, ...].shape), clip_min, clip_max)
+                last_probs = left_probs
+                current_labels = np.argmax(preds, axis=1)
             else:
-                preds = self.classifier.predict(np.clip(x + diff.reshape(x.shape), clip_min, clip_max), batch_size=self.batch_size)
-                right_prob = preds.reshape(-1)[original_label]
-                if right_prob < last_prob:
-                    x = np.clip(x + diff.reshape(x.shape), clip_min, clip_max)
-                    last_prob = right_prob
-                    current_label = np.argmax(preds, axis=1)[0]
+                preds = self.classifier.predict(np.clip(x + diff.reshape(x[0][None, ...].shape), clip_min, clip_max), batch_size=self.batch_size)
+                right_probs = preds[(range(nb_instances),original_labels)]
+                if np.sum(right_probs - last_probs) < 0.0:
+                    x = np.clip(x + diff.reshape(x[0][None, ...].shape), clip_min, clip_max)
+                    last_probs = right_probs
+                    current_labels = np.argmax(preds, axis=1)
+            
+            # Compute the error rate
+            fooling_rate = np.sum(original_labels != current_labels) / nb_instances
             
             nb_iter = nb_iter + 1
 
-        if nb_iter < self.max_iter:
-            logger.info('SimBA (pixel) attack succeed')
-        else:
-            logger.info('SimBA (pixel) attack failed')
+            if nb_iter % 50 == 0:
+                logger.info('Fooling rate of Universal SimBA (pixel) attack at %d iterations: %.2f%%', nb_iter, 100 * fooling_rate)
 
+        logger.info('Final fooling rate of Universal SimBA (pixel) attack: %.2f%%', 100 * fooling_rate)
         return x
 
 
@@ -119,17 +125,22 @@ class SimBA_pixel(EvasionAttack):
         :type max_iter: `int`
         :param epsilon: Overshoot parameter.
         :type epsilon: `float`
+        :param delta: desired accuracy
+        :type delta: `float`
         :param batch_size: Internal size of batches on which adversarial samples are generated.
         :type batch_size: `int`
         """
         # Save attack-specific parameters
-        super(SimBA_pixel, self).set_params(**kwargs)
+        super(Universal_SimBA_pixel, self).set_params(**kwargs)
 
         if not isinstance(self.max_iter, (int, np.int)) or self.max_iter <= 0:
             raise ValueError("The number of iterations must be a positive integer.")
 
         if self.epsilon < 0:
             raise ValueError("The overshoot parameter must not be negative.")
+        
+        if not isinstance(self.delta, (float, int)) or self.delta < 0 or self.delta > 1:
+            raise ValueError("The desired accuracy must be in the range [0, 1].")
 
         if self.batch_size <= 0:
             raise ValueError('The batch size `batch_size` has to be positive.')

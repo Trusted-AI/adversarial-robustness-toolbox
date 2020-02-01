@@ -66,42 +66,29 @@ preds = np.argmax(classifier.predict(x_train), axis=1)
 acc = np.sum(preds == np.argmax(y_train, axis=1)) / y_train.shape[0]
 logger.info('Accuracy on train samples: %.2f%%', (acc * 100))
 
-"""
-### Single Attack ###########
-idx = 1
-# Craft adversarial samples with SimBA for single image
-logger.info('Create SimBA (pixel) attack')
-adv_crafter = SimBA_pixel(classifier, epsilon=0.05)
-logger.info('Craft attack on a training example')
-x_train_adv = adv_crafter.generate(x_train[idx].reshape(1,32,32,3))
-logger.info('Craft attack the training example')
-preds_adv = np.argmax(classifier.predict(x_train_adv), axis=1)
-print(preds[idx],preds_adv[0])
-"""
-
-### Universal Attack  ##########
 x_train, y_train = x_train[:100], y_train[:100]
 preds = np.argmax(classifier.predict(x_train), axis=1)
 
-# Craft adversarial samples with universal pertubation based on SimBA
-attack_params = {"attacker": "simba_px", "attacker_params": {"max_iter": 3000, "epsilon": 0.02}, "delta": 0.01, "max_iter": 1, "eps": 2, "norm": 2}
-adv_crafter_simba = UniversalPerturbation(classifier)
-adv_crafter_simba.set_params(**attack_params)
-x_train_adv_simba = adv_crafter_simba.generate(x_train, y=1, **attack_params)
-norm2_simba = np.linalg.norm(adv_crafter_simba.noise.reshape(-1), ord=2)
+# Craft adversarial samples with SimBA for single image
+logger.info('Create universal SimBA (pixel) attack')
+adv_crafter = Universal_SimBA_pixel(classifier, epsilon=0.05)
+logger.info('Craft attack on a training example')
+x_train_adv_univ_simba = adv_crafter.generate(x_train)
+logger.info('Craft attack the training example')
+norm2 = np.linalg.norm((x_train_adv_univ_simba[0] - x_train[0]).reshape(-1), ord=2)
 # compute fooling rate
-preds_adv = np.argmax(classifier.predict(x_train_adv_simba), axis=1)
+preds_adv = np.argmax(classifier.predict(x_train_adv_univ_simba), axis=1)
 acc = np.sum(preds != preds_adv) / y_train.shape[0]
-logger.info('Fooling rate on SimBA universal adversarial examples: %.2f%%', (acc * 100))
+logger.info('Fooling rate on universal SimBA adversarial examples: %.2f%%', (acc * 100))
 
 # Craft adversarial samples with random universal pertubation
-x_train_adv_random = x_train + random_sphere(nb_points=1, nb_dims=32*32*3, radius=norm2_simba, norm=2).reshape(1,32,32,3)
+x_train_adv_random = x_train + random_sphere(nb_points=1, nb_dims=32*32*3, radius=norm2, norm=2).reshape(1,32,32,3)
 preds_adv = np.argmax(classifier.predict(x_train_adv_random), axis=1)
 acc = np.sum(preds != preds_adv) / y_train.shape[0]
 logger.info('Fooling rate on random adversarial examples: %.2f%%', (acc * 100))
 
 # Craft adversarial samples with universal pertubation and FGSM
-attack_params = {"attacker": "fgsm", "delta": 0.01, "max_iter": 1, "eps": 2, "norm": 2}
+attack_params = {"attacker": "fgsm", "delta": 0.01, "max_iter": 1, "eps": norm2, "norm": 2}
 adv_crafter_fgsm = UniversalPerturbation(classifier)
 adv_crafter_fgsm.set_params(**attack_params)
 x_train_adv_fgsm = adv_crafter_fgsm.generate(x_train, **attack_params)
@@ -110,26 +97,3 @@ np.linalg.norm(adv_crafter_fgsm.noise.reshape(-1), ord=2)
 preds_adv = np.argmax(classifier.predict(x_train_adv_fgsm), axis=1)
 acc = np.sum(preds != preds_adv) / y_train.shape[0]
 logger.info('Fooling rate on fgsm universal adversarial examples: %.2f%%', (acc * 100))
-
-
-"""
-# plot
-label = [
-    'airplane', 'automobile', 'bird', 'cat', 'deer', 'dog', 'frog', 'horse',
-    'ship', 'truck'
-]
-
-plt.subplot(1, 3, 1)
-plt.imshow(x_train[idx])
-plt.title(label[preds[idx]])
-
-plt.subplot(1, 3, 2)
-plt.imshow(x_train_adv[0] - x_train[idx])
-plt.title("perturbation")
-
-plt.subplot(1, 3, 3)
-plt.imshow(x_train_adv[0])
-plt.title(label[preds_adv[0]])
-
-plt.show()
-"""
