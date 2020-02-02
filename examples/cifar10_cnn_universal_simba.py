@@ -82,7 +82,7 @@ acc = np.sum(preds != preds_adv) / y_train.shape[0]
 logger.info('Fooling rate on universal SimBA adversarial examples: %.2f%%', (acc * 100))
 
 # Craft adversarial samples with random universal pertubation
-x_train_adv_random = x_train + random_sphere(nb_points=1, nb_dims=32*32*3, radius=norm2, norm=2).reshape(1,32,32,3)
+x_train_adv_random = np.clip(x_train + random_sphere(nb_points=1, nb_dims=32*32*3, radius=norm2, norm=2).reshape(1,32,32,3), min_, max_)
 preds_adv = np.argmax(classifier.predict(x_train_adv_random), axis=1)
 acc = np.sum(preds != preds_adv) / y_train.shape[0]
 logger.info('Fooling rate on random adversarial examples: %.2f%%', (acc * 100))

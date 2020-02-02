@@ -84,18 +84,18 @@ x_train, y_train = x_train[:100], y_train[:100]
 preds = np.argmax(classifier.predict(x_train), axis=1)
 
 # Craft adversarial samples with universal pertubation based on SimBA
-attack_params = {"attacker": "simba_px", "attacker_params": {"max_iter": 3000, "epsilon": 0.02}, "delta": 0.01, "max_iter": 1, "eps": 2, "norm": 2}
+attack_params = {"attacker": "simba_px", "attacker_params": {"max_iter": 3000, "epsilon": 0.05}, "delta": 0.01, "max_iter": 1, "eps": 2, "norm": 2}
 adv_crafter_simba = UniversalPerturbation(classifier)
 adv_crafter_simba.set_params(**attack_params)
 x_train_adv_simba = adv_crafter_simba.generate(x_train, y=1, **attack_params)
-norm2_simba = np.linalg.norm(adv_crafter_simba.noise.reshape(-1), ord=2)
+norm2 = np.linalg.norm(adv_crafter_simba.noise.reshape(-1), ord=2)
 # compute fooling rate
 preds_adv = np.argmax(classifier.predict(x_train_adv_simba), axis=1)
 acc = np.sum(preds != preds_adv) / y_train.shape[0]
 logger.info('Fooling rate on SimBA universal adversarial examples: %.2f%%', (acc * 100))
 
 # Craft adversarial samples with random universal pertubation
-x_train_adv_random = x_train + random_sphere(nb_points=1, nb_dims=32*32*3, radius=norm2_simba, norm=2).reshape(1,32,32,3)
+x_train_adv_random = np.clip(x_train + random_sphere(nb_points=1, nb_dims=32*32*3, radius=norm2, norm=2).reshape(1,32,32,3), min_, max_)
 preds_adv = np.argmax(classifier.predict(x_train_adv_random), axis=1)
 acc = np.sum(preds != preds_adv) / y_train.shape[0]
 logger.info('Fooling rate on random adversarial examples: %.2f%%', (acc * 100))
