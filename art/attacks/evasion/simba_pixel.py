@@ -81,7 +81,10 @@ class SimBA_pixel(EvasionAttack):
 
         n_dims = np.prod(x.shape)
 
-        clip_min, clip_max = self.classifier.clip_values
+        clip_min = -np.inf
+        clip_max = np.inf 
+        if hasattr(self.classifier, 'clip_values') and self.classifier.clip_values is not None:
+            clip_min, clip_max = self.classifier.clip_values
 
         nb_iter = 0
         while original_label == current_label and nb_iter < self.max_iter:

@@ -16,5 +16,6 @@ from art.attacks.evasion.projected_gradient_descent import ProjectedGradientDesc
 from art.attacks.evasion.saliency_map import SaliencyMapMethod
 from art.attacks.evasion.spatial_transformation import SpatialTransformation
 from art.attacks.evasion.universal_perturbation import UniversalPerturbation
+from art.attacks.evasion.targeted_universal_perturbation import TargetedUniversalPerturbation
 from art.attacks.evasion.virtual_adversarial import VirtualAdversarialMethod
 from art.attacks.evasion.zoo import ZooAttack
