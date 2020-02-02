@@ -1,7 +1,9 @@
-We are modifying Adversarial Robustness 360 Toolbox (ART) v1.1.
+# NOTE
+In this repository, we are modifying Adversarial Robustness 360 Toolbox (ART) v1.1.
 
 * Targeted universal adversarial perturbation ([Hirano and Takemoto, 2019](https://arxiv.org/abs/1911.06502)) added.
 * Simple blackbox attack (SimBA based on pixel attacks; [Guo et al., 2019](https://arxiv.org/abs/1905.07121)) added.
+
 
 # Adversarial Robustness 360 Toolbox (ART) v1.1
 <p align="center">
