@@ -11,7 +11,7 @@ from keras.models import Sequential
 from keras.layers import Dense, Flatten, Conv2D, MaxPooling2D, Activation, Dropout
 import numpy as np
 
-from art.attacks import DeepFool, SimBA_pixel, UniversalPerturbation, Universal_SimBA_pixel
+from art.attacks import UniversalPerturbation, Universal_SimBA_pixel
 from art.classifiers import KerasClassifier
 from art.utils import load_dataset, random_sphere
 
@@ -59,7 +59,7 @@ model.compile(loss='categorical_crossentropy', optimizer='adam', metrics=['accur
 
 # Create classifier wrapper
 classifier = KerasClassifier(model=model, clip_values=(min_, max_))
-classifier.fit(x_train, y_train, nb_epochs=3, batch_size=128)
+classifier.fit(x_train, y_train, nb_epochs=5, batch_size=128)
 
 # Evaluate the classifier on the train samples
 preds = np.argmax(classifier.predict(x_train), axis=1)
@@ -80,12 +80,14 @@ norm2 = np.linalg.norm((x_train_adv_univ_simba[0] - x_train[0]).reshape(-1), ord
 preds_adv = np.argmax(classifier.predict(x_train_adv_univ_simba), axis=1)
 acc = np.sum(preds != preds_adv) / y_train.shape[0]
 logger.info('Fooling rate on universal SimBA adversarial examples: %.2f%%', (acc * 100))
+logger.info('Perturbation norm: %.2f%%', norm2)
 
 # Craft adversarial samples with random universal pertubation
 x_train_adv_random = np.clip(x_train + random_sphere(nb_points=1, nb_dims=32*32*3, radius=norm2, norm=2).reshape(1,32,32,3), min_, max_)
 preds_adv = np.argmax(classifier.predict(x_train_adv_random), axis=1)
 acc = np.sum(preds != preds_adv) / y_train.shape[0]
 logger.info('Fooling rate on random adversarial examples: %.2f%%', (acc * 100))
+logger.info('Perturbation norm: %.2f%%', np.linalg.norm((x_train_adv_random[0]-x_train[0]).reshape(-1), ord=2))
 
 # Craft adversarial samples with universal pertubation and FGSM
 attack_params = {"attacker": "fgsm", "delta": 0.01, "max_iter": 1, "eps": norm2, "norm": 2}
@@ -97,3 +99,4 @@ np.linalg.norm(adv_crafter_fgsm.noise.reshape(-1), ord=2)
 preds_adv = np.argmax(classifier.predict(x_train_adv_fgsm), axis=1)
 acc = np.sum(preds != preds_adv) / y_train.shape[0]
 logger.info('Fooling rate on fgsm universal adversarial examples: %.2f%%', (acc * 100))
+logger.info('Perturbation norm: %.2f%%', np.linalg.norm(adv_crafter_fgsm.noise.reshape(-1), ord=2))

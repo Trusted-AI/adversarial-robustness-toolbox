@@ -90,19 +90,27 @@ class SimBA_pixel(EvasionAttack):
         while original_label == current_label and nb_iter < self.max_iter:
             diff = np.zeros(n_dims)
             diff[np.random.choice(range(n_dims))] = self.epsilon
-            preds = self.classifier.predict(np.clip(x - diff.reshape(x.shape), clip_min, clip_max), batch_size=self.batch_size)
-            left_prob = preds.reshape(-1)[original_label]
+
+            left_preds = self.classifier.predict(np.clip(x - diff.reshape(x.shape), clip_min, clip_max), batch_size=self.batch_size)
+            left_prob = left_preds.reshape(-1)[original_label]
+
+            right_preds = self.classifier.predict(np.clip(x + diff.reshape(x.shape), clip_min, clip_max), batch_size=self.batch_size)
+            right_prob = right_preds.reshape(-1)[original_label]
+
             if left_prob < last_prob:
-                x = np.clip(x - diff.reshape(x.shape), clip_min, clip_max)
-                last_prob = left_prob
-                current_label = np.argmax(preds, axis=1)[0]
+                if left_prob < right_prob:
+                    x = np.clip(x - diff.reshape(x.shape), clip_min, clip_max)
+                    last_prob = left_prob
+                    current_label = np.argmax(left_preds, axis=1)[0]
+                else:
+                    x = np.clip(x + diff.reshape(x.shape), clip_min, clip_max)
+                    last_prob = right_prob
+                    current_label = np.argmax(right_preds, axis=1)[0]
             else:
-                preds = self.classifier.predict(np.clip(x + diff.reshape(x.shape), clip_min, clip_max), batch_size=self.batch_size)
-                right_prob = preds.reshape(-1)[original_label]
                 if right_prob < last_prob:
                     x = np.clip(x + diff.reshape(x.shape), clip_min, clip_max)
                     last_prob = right_prob
-                    current_label = np.argmax(preds, axis=1)[0]
+                    current_label = np.argmax(right_preds, axis=1)[0]
             
             nb_iter = nb_iter + 1
 

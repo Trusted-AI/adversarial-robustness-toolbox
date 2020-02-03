@@ -94,19 +94,27 @@ class Universal_SimBA_pixel(EvasionAttack):
         while fooling_rate < 1. - self.delta and nb_iter < self.max_iter:
             diff = np.zeros(n_dims)
             diff[np.random.choice(range(n_dims))] = self.epsilon
-            preds = self.classifier.predict(np.clip(x - diff.reshape(x[0][None, ...].shape), clip_min, clip_max), batch_size=self.batch_size)
-            left_probs = preds[(range(nb_instances),original_labels)]
+
+            left_preds = self.classifier.predict(np.clip(x - diff.reshape(x[0][None, ...].shape), clip_min, clip_max), batch_size=self.batch_size)
+            left_probs = left_preds[(range(nb_instances),original_labels)]
+
+            right_preds = self.classifier.predict(np.clip(x + diff.reshape(x[0][None, ...].shape), clip_min, clip_max), batch_size=self.batch_size)
+            right_probs = right_preds[(range(nb_instances),original_labels)]
+
             if np.sum(left_probs - last_probs) < 0.0:
-                x = np.clip(x - diff.reshape(x[0][None, ...].shape), clip_min, clip_max)
-                last_probs = left_probs
-                current_labels = np.argmax(preds, axis=1)
+                if np.sum(left_probs - right_probs) < 0.0:
+                    x = np.clip(x - diff.reshape(x[0][None, ...].shape), clip_min, clip_max)
+                    last_probs = left_probs
+                    current_labels = np.argmax(left_preds, axis=1)
+                else:
+                    x = np.clip(x + diff.reshape(x[0][None, ...].shape), clip_min, clip_max)
+                    last_probs = right_probs
+                    current_labels = np.argmax(right_preds, axis=1)
             else:
-                preds = self.classifier.predict(np.clip(x + diff.reshape(x[0][None, ...].shape), clip_min, clip_max), batch_size=self.batch_size)
-                right_probs = preds[(range(nb_instances),original_labels)]
                 if np.sum(right_probs - last_probs) < 0.0:
                     x = np.clip(x + diff.reshape(x[0][None, ...].shape), clip_min, clip_max)
                     last_probs = right_probs
-                    current_labels = np.argmax(preds, axis=1)
+                    current_labels = np.argmax(right_preds, axis=1)
             
             # Compute the error rate
             fooling_rate = np.sum(original_labels != current_labels) / nb_instances
