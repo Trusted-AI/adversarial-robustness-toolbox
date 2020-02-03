@@ -106,7 +106,7 @@ logger.info('Perturbation norm: %.2f%%', np.linalg.norm((x_train_adv_random[0]-x
 attack_params = {"attacker": "fgsm", "delta": 0.01, "max_iter": 1, "eps": 2, "norm": 2}
 adv_crafter_fgsm = UniversalPerturbation(classifier)
 adv_crafter_fgsm.set_params(**attack_params)
-x_train_adv_fgsm = adv_crafter_fgsm.generate(x_train, **attack_params)
+x_train_adv_fgsm = adv_crafter_fgsm.generate(x_train, y=1, **attack_params)
 np.linalg.norm(adv_crafter_fgsm.noise.reshape(-1), ord=2)
 # compute fooling rate
 preds_adv = np.argmax(classifier.predict(x_train_adv_fgsm), axis=1)
