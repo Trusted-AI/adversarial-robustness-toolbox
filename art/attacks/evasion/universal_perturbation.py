@@ -134,7 +134,7 @@ class UniversalPerturbation(EvasionAttack):
                     if y is None:
                         adv_xi = attacker.generate(x_i + noise)
                     else:
-                        adv_xi = attacker.generate(x_i + noise, y=original_label)
+                        adv_xi = attacker.generate(x_i + noise, y=np.array([original_label]))
 
                     new_label = np.argmax(self.classifier.predict(adv_xi)[0])
 

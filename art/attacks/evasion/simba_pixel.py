@@ -74,8 +74,8 @@ class SimBA_pixel(EvasionAttack):
         x = x.astype(ART_NUMPY_DTYPE)
         preds = self.classifier.predict(x, batch_size=self.batch_size)
         if y is None:
-            y = np.argmax(preds, axis=1)[0]
-        original_label = y
+            y = np.argmax(preds, axis=1)
+        original_label = y[0]
         current_label = original_label
         last_prob = preds.reshape(-1)[original_label]
 
