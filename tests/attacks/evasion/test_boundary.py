@@ -6,7 +6,8 @@ import keras.backend as k
 from art.attacks import BoundaryAttack
 from art.classifiers import KerasClassifier
 from art.utils import random_targets
-
+from art import utils
+from art.classifiers.classifier import Classifier, ClassifierGradients
 from tests import utils_test
 from tests.utils_test import TestBase
 from tests.utils_test import get_image_classifier_tf, get_image_classifier_kr, get_image_classifier_pt
@@ -41,7 +42,26 @@ def test_targeted_images(fix_get_mnist_subset, image_classifier_list, fix_mlFram
         if fix_mlFramework in ["keras"]:
             k.clear_session()
 
-def test_untargeted_tabular(fix_get_iris, clipped_tabular_classifier_list, fix_mlFramework):
+def test_targeted_tabular(fix_get_iris, clipped_tabular_classifier_list, fix_mlFramework):
+    (x_train_iris, y_train_iris), (x_test_iris, y_test_iris) = fix_get_iris
+    for classifier in clipped_tabular_classifier_list:
+        targets = random_targets(y_test_iris, nb_classes=3)
+        attack = BoundaryAttack(classifier, targeted=True, max_iter=10)
+        x_test_adv = attack.generate(x_test_iris, **{'y': targets})
+
+        utils_test.check_adverse_example_x(x_test_adv, x_test_iris)
+        # self.assertFalse((x_test_iris == x_test_adv).all())
+        # self.assertTrue((x_test_adv <= 1).all())
+        # self.assertTrue((x_test_adv >= 0).all())
+
+        y_pred_adv = np.argmax(classifier.predict(x_test_adv), axis=1)
+        target = np.argmax(targets, axis=1)
+        assert (target == y_pred_adv).any()
+
+        accuracy = np.sum(y_pred_adv == np.argmax(targets, axis=1)) / y_test_iris.shape[0]
+        logger.info('Success rate of targeted boundary on Iris: %.2f%%', (accuracy * 100))
+
+def test_untargeted_clipped_tabular(fix_get_iris, clipped_tabular_classifier_list, fix_mlFramework):
     (x_train_iris, y_train_iris), (x_test_iris, y_test_iris) = fix_get_iris
 
     for classifier in clipped_tabular_classifier_list:
@@ -54,6 +74,20 @@ def test_untargeted_tabular(fix_get_iris, clipped_tabular_classifier_list, fix_m
         y_pred_adv = np.argmax(classifier.predict(x_test_adv), axis=1)
         assert(y_pred == y_pred_adv).all() == False
         accuracy = np.sum(y_pred_adv == y_pred) / y_test_iris.shape[0]
+        logger.info('Accuracy on Iris with boundary adversarial examples: %.2f%%', (accuracy * 100))
+
+def test_untargeted_unclipped_tabular(fix_get_iris, clipped_tabular_classifier_list, fix_mlFramework):
+    (x_train_iris, y_train_iris), (x_test_iris, y_test_iris) = fix_get_iris
+    for classifier in clipped_tabular_classifier_list:
+        # Recreate a classifier without clip values
+        # classifier = KerasClassifier(model=classifier._model, use_logits=False, channel_index=1)
+        attack = BoundaryAttack(classifier, targeted=False, max_iter=10)
+        x_test_adv = attack.generate(x_test_iris)
+        assert (x_test_iris == x_test_adv).all() == False
+
+        preds_adv = np.argmax(classifier.predict(x_test_adv), axis=1)
+        assert (np.argmax(y_test_iris, axis=1) == preds_adv).all() == False
+        accuracy = np.sum(preds_adv == np.argmax(y_test_iris, axis=1)) / y_test_iris.shape[0]
         logger.info('Accuracy on Iris with boundary adversarial examples: %.2f%%', (accuracy * 100))
 
 def test_untargeted_images(fix_get_mnist_subset, image_classifier_list, fix_mlFramework):
@@ -73,4 +107,14 @@ def test_untargeted_images(fix_get_mnist_subset, image_classifier_list, fix_mlFr
             k.clear_session()
 
 
+def test_classifier_type_check_fail_classifier():
+    # Use a useless test classifier to test basic classifier properties
+    class ClassifierNoAPI:
+        pass
 
+    classifier = ClassifierNoAPI
+
+    with pytest.raises(utils.WrongClassifer) as exception:
+        _ = BoundaryAttack(classifier=classifier)
+
+    assert exception.value.class_expected == Classifier
