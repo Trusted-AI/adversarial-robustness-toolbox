@@ -468,6 +468,16 @@ def load_cifar10(raw=False):
     return (x_train, y_train), (x_test, y_test), min_, max_
 
 
+class WrongClassifer(TypeError):
+
+    def __init__(self, this_class, class_expected, classifier_given):
+        self.this_class = this_class
+        self.class_expected = class_expected
+        self.classifier_given = classifier_given
+        self.message = "For {0} classifier must be an instance of {1}, the provided classifier is instance of {2}.".format(
+            this_class.__name__, class_expected, classifier_given)
+
+
 def load_mnist(raw=False):
     """
     Loads MNIST dataset from `ART_DATA_PATH` or downloads it if necessary.

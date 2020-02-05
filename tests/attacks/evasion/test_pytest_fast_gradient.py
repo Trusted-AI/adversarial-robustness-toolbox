@@ -27,6 +27,9 @@ from art.utils import get_labels_np_array, random_targets
 from tests.utils_test import TestBase
 from tests import utils_test
 import pytest
+from art import utils
+from art.classifiers.classifier import Classifier, ClassifierGradients
+
 
 logger = logging.getLogger(__name__)
 
@@ -251,6 +254,30 @@ def test_l2_norm_images(fix_get_mnist_subset, image_classifier_list):
                                             0.06270657, 0.14066935, 0.07419015, 0.04681788]])
 
         np.testing.assert_array_almost_equal(y_test_pred, y_test_pred_expected, decimal=2)
+
+def test_classifier_type_check_fail_gradients():
+    # Use a test classifier not providing gradients required by white-box attack
+    from art.classifiers.scikitlearn import ScikitlearnDecisionTreeClassifier
+    from sklearn.tree import DecisionTreeClassifier
+
+    classifier = ScikitlearnDecisionTreeClassifier(model=DecisionTreeClassifier())
+    with pytest.raises(utils.WrongClassifer) as exception:
+        _ = FastGradientMethod(classifier=classifier)
+
+    assert exception.value.class_expected == ClassifierGradients
+
+def test_classifier_type_check_fail_classifier():
+    # Use a useless test classifier to test basic classifier properties
+    class ClassifierNoAPI:
+        pass
+
+    classifier = ClassifierNoAPI
+
+    with pytest.raises(utils.WrongClassifer) as exception:
+        _ = FastGradientMethod(classifier=classifier)
+
+    assert exception.value.class_expected == Classifier
+
 
 
 if __name__ == '__main__':

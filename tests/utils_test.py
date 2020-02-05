@@ -56,11 +56,11 @@ class TestBase(unittest.TestCase):
     def setUpClass(cls):
         master_seed(1234)
 
-        if "mlFramework" not in os.environ:
-            raise Exception(
-                "ART tests require you to set the environment variable mlFramework. See readme file for further instructions")
-
-        is_valid_framework(os.environ["mlFramework"])
+        # if "mlFramework" not in os.environ:
+        #     raise Exception(
+        #         "ART tests require you to set the environment variable mlFramework. See readme file for further instructions")
+        #
+        # is_valid_framework(os.environ["mlFramework"])
 
 
         cls.n_train = 1000
@@ -969,7 +969,6 @@ def get_tabular_classifier_tf_v1(load_init=True, sess=None):
                                loss=loss, learning=None, sess=sess, channel_index=1)
 
     return tfc, sess
-
 
 def get_tabular_classifier_tf_v2():
     """

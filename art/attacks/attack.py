@@ -23,8 +23,9 @@ from __future__ import absolute_import, division, print_function, unicode_litera
 import logging
 import abc
 import numpy as np
-
+from art import utils
 from art.classifiers.classifier import Classifier
+from art import classifiers
 
 logger = logging.getLogger(__name__)
 
@@ -89,9 +90,11 @@ class Attack(abc.ABC, metaclass=input_filter):
         :type classifier: :class:`.Classifier`
         """
         if not isinstance(classifier, Classifier):
-            raise (TypeError('For `' + self.__class__.__name__ + '` classifier must be an instance of '
-                             '`art.classifiers.classifier.Classifier`, the provided classifier is instance of ' + str(
-                                 classifier.__class__.__bases__) + '.'))
+            # raise TypeError(classifier.__class__.__bases__, art.classifiers.classifier.Classifier, "Wrong type of classifier")
+            raise utils.WrongClassifer(self.__class__, Classifier, classifier)
+            # raise (TypeError('For `' + self.__class__.__name__ + '` classifier must be an instance of '
+            #                  '`art.classifiers.classifier.Classifier`, the provided classifier is instance of ' + str(
+            #                      classifier.__class__.__bases__) + '.'))
         self.classifier = classifier
 
     def set_params(self, **kwargs):
