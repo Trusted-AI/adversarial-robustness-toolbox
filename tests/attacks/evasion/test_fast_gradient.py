@@ -255,7 +255,7 @@ class TestFastGradientMethodImages(TestBase):
             attack = FastGradientMethod(classifier, targeted=True, eps=.1, batch_size=batch_size)
             x_test_adv = attack.generate(self.x_test_iris, **{'y': targets})
 
-            self._check_x_adv(x_test_adv, self.x_test_iris)
+            self.check_adverse_example(x_test_adv, self.x_test_iris)
 
             y_pred_test_adv = np.argmax(classifier.predict(x_test_adv), axis=1)
             self.assertTrue((y_targeted == y_pred_test_adv).any())
@@ -280,7 +280,7 @@ class TestFastGradientMethodImages(TestBase):
             # TODO remove that platform specific case
             if os.environ["mlFramework"] in ["scikitlearn"]:
                 np.testing.assert_array_almost_equal(np.abs(x_test_adv - self.x_test_iris), .1, decimal=5)
-            self._check_x_adv(x_test_adv, self.x_test_iris)
+            self.check_adverse_example(x_test_adv, self.x_test_iris)
 
             y_pred_test_adv = np.argmax(classifier.predict(x_test_adv), axis=1)
             y_test_true = np.argmax(self.y_test_iris, axis=1)
@@ -310,14 +310,14 @@ class TestFastGradientMethodImages(TestBase):
             attack = FastGradientMethod(classifier, eps=1, batch_size=128)
 
             x_train_adv = attack.generate(self.x_train_mnist)
-            self._check_x_adv(x_train_adv, self.x_train_mnist)
+            self.check_adverse_example(x_train_adv, self.x_train_mnist)
             y_train_pred_adv = get_labels_np_array(classifier.predict(x_train_adv))
             y_train_labels = get_labels_np_array(self.y_train_mnist)
             # TODO Shouldn't the y_adv and y_expected labels be the same for the defence to be correct?
             self._check_y_pred_adv(y_train_pred_adv, y_train_labels)
 
             x_test_adv = attack.generate(self.x_test_mnist)
-            self._check_x_adv(x_test_adv, self.x_test_mnist)
+            self.check_adverse_example(x_test_adv, self.x_test_mnist)
             y_test_pred_adv = get_labels_np_array(classifier.predict(x_test_adv))
             self._check_y_pred_adv(y_test_pred_adv, self.y_test_mnist)
 
@@ -337,7 +337,7 @@ class TestFastGradientMethodImages(TestBase):
 
             x_test_adv = attack.generate(self.x_test_iris)
 
-            self._check_x_adv(x_test_adv, self.x_test_iris, bounded=False)
+            self.check_adverse_example(x_test_adv, self.x_test_iris, bounded=False)
 
             y_test_true = np.argmax(self.y_test_iris, axis=1)
             y_pred_test_adv = np.argmax(classifier.predict(x_test_adv), axis=1)

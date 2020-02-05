@@ -129,7 +129,7 @@ class TestBase(unittest.TestCase):
         np.testing.assert_array_almost_equal(self._x_test_iris_original, self.x_test_iris, decimal=3)
         np.testing.assert_array_almost_equal(self._y_test_iris_original, self.y_test_iris, decimal=3)
 
-    def _check_x_adv(self, x_adv, x_original, max=1.0, min=0.0, bounded=True):
+    def check_adverse_example(self, x_adv, x_original, max=1.0, min=0.0, bounded=True):
         '''
         Performs basic checks on generated adversarial inputs (whether x_test or x_train)
         :param x_adv:
