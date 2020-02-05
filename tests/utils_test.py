@@ -209,13 +209,15 @@ def get_tabular_classifiers(clipped=True):
         raise Exception("A classifier factory method needs to be implemented for framework {0}".format(os.environ["mlFramework"]))
 
 
-def assert_almost_equal_mean(x_test, x_test_adv, equality, decimal):
+def assert_almost_equal_mean(x_test, x_test_adv, equality, decimal=0.002):
     np.testing.assert_array_almost_equal(float(np.mean(x_test_adv - x_test)), equality, decimal=decimal)
 
-def assert_almost_equal_min(x_test, x_test_adv, equality, decimal):
+
+def assert_almost_equal_min(x_test, x_test_adv, equality, decimal=0.001):
     np.testing.assert_array_almost_equal(float(np.min(x_test_adv - x_test)), equality, decimal=decimal)
 
-def assert_almost_equal_max(x_test, x_test_adv, equality, decimal):
+
+def assert_almost_equal_max(x_test, x_test_adv, equality, decimal=0.001):
     np.testing.assert_array_almost_equal(float(np.max(x_test_adv - x_test)), equality, decimal=decimal)
 
 

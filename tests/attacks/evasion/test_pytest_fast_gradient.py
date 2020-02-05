@@ -29,6 +29,8 @@ from tests import utils_test
 import pytest
 
 logger = logging.getLogger(__name__)
+
+
 # or pytest -q tests/attacks/evasion/test_pytest_fast_gradient.py --mlFramework=pytorch --durations=0
 
 @pytest.fixture()
@@ -37,6 +39,7 @@ def fix_get_mnist_subset(fix_get_mnist):
     n_train = 100
     n_test = 11
     yield (x_train_mnist[:n_train], y_train_mnist[:n_train], x_test_mnist[:n_test], y_test_mnist[:n_test])
+
 
 def test_no_norm_images(fix_get_mnist_subset, image_classifier_list):
     (x_train_mnist, y_train_mnist, x_test_mnist, y_test_mnist) = fix_get_mnist_subset
@@ -97,7 +100,6 @@ def test_no_norm_images(fix_get_mnist_subset, image_classifier_list):
                                             4.61629629e-02, 7.41390288e-02, 2.49474458e-02, 3.12782317e-01,
                                             2.46306900e-02, 2.41311267e-02]])
 
-
         np.testing.assert_array_almost_equal(y_test_pred[0:3], y_test_pred_expected[0:3], decimal=2)
 
 
@@ -126,6 +128,7 @@ def test_minimal_perturbations_images(fix_get_mnist_subset, image_classifier_lis
 
         np.testing.assert_array_equal(np.argmax(y_test_pred, axis=1), y_test_pred_expected)
 
+
 def test_l1_norm_images(fix_get_mnist_subset, image_classifier_list):
     (x_train_mnist, y_train_mnist, x_test_mnist, y_test_mnist) = fix_get_mnist_subset
 
@@ -147,11 +150,39 @@ def test_l1_norm_images(fix_get_mnist_subset, image_classifier_list):
         utils_test.assert_almost_equal_min(x_test_mnist, x_test_adv, -0.01486498, decimal=0.001)
         utils_test.assert_almost_equal_max(x_test_mnist, x_test_adv, 0.014761963, decimal=0.001)
 
-
         y_test_pred = classifier.predict(x_test_adv[8:9])
         y_test_pred_expected = np.asarray([[0.17114946, 0.08205127, 0.07427921, 0.03722004, 0.28262928, 0.05035441,
                                             0.05271865, 0.12600125, 0.0811625, 0.0424339]])
+
         np.testing.assert_array_almost_equal(y_test_pred, y_test_pred_expected, decimal=4)
+
+
+def test_l2_norm_images(fix_get_mnist_subset, image_classifier_list):
+    (x_train_mnist, y_train_mnist, x_test_mnist, y_test_mnist) = fix_get_mnist_subset
+
+    # TODO this if statement must be removed once we have a classifier for both image and tabular data
+    if image_classifier_list is None:
+        logging.warning("Couldn't perform  this test because no classifier is defined")
+        return
+
+    for classifier in image_classifier_list:
+        # TODO this if statement must be removed once we have a classifier for both image and tabular data
+        if classifier is None:
+            logging.warning("Couldn't perform  this test because no classifier is defined")
+            return
+
+        attack = FastGradientMethod(classifier, eps=1, norm=2, batch_size=128)
+        x_test_adv = attack.generate(x_test_mnist)
+
+        utils_test.assert_almost_equal_mean(x_test_mnist, x_test_adv, 0.007636424, decimal=0.002)
+        utils_test.assert_almost_equal_min(x_test_mnist, x_test_adv, -0.211054801, decimal=0.001)
+        utils_test.assert_almost_equal_max(x_test_mnist, x_test_adv, 0.209592223, decimal=0.001)
+
+        y_test_pred = classifier.predict(x_test_adv[8:9])
+        y_test_pred_expected = np.asarray([[0.19395831, 0.11625732, 0.08293699, 0.04129186, 0.17826456, 0.06290703,
+                                            0.06270657, 0.14066935, 0.07419015, 0.04681788]])
+
+        np.testing.assert_array_almost_equal(y_test_pred, y_test_pred_expected, decimal=2)
 
 
 if __name__ == '__main__':

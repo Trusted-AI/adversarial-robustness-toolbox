@@ -139,57 +139,57 @@ class TestFastGradientMethodImages(TestBase):
     #
     #         np.testing.assert_array_equal(np.argmax(y_test_pred, axis=1), y_test_pred_expected)
 
-    def test_l1_norm_images(self):
-        classifier_list = utils_test.deprecated_get_image_classifiers()
+    # def test_l1_norm_images(self):
+    #     classifier_list = utils_test.deprecated_get_image_classifiers()
+    #
+    #     # TODO this if statement must be removed once we have a classifier for both image and tabular data
+    #     if classifier_list is None:
+    #         logging.warning("Couldn't perform  this test because no classifier is defined")
+    #         return
+    #
+    #     for classifier in classifier_list:
+    #         # TODO this if statement must be removed once we have a classifier for both image and tabular data
+    #         if classifier is None:
+    #             logging.warning("Couldn't perform  this test because no classifier is defined")
+    #             return
+    #
+    #         attack = FastGradientMethod(classifier, eps=1, norm=1, batch_size=128)
+    #         x_test_adv = attack.generate(self.x_test_mnist)
+    #
+    #         self.assertAlmostEqual(float(np.mean(x_test_adv - self.x_test_mnist)), 0.00051375, delta=0.002)
+    #         self.assertAlmostEqual(float(np.min(x_test_adv - self.x_test_mnist)), -0.01486498, delta=0.001)
+    #         self.assertAlmostEqual(float(np.max(x_test_adv - self.x_test_mnist)), 0.014761963, delta=0.001)
+    #
+    #         y_test_pred = classifier.predict(x_test_adv[8:9])
+    #         y_test_pred_expected = np.asarray([[0.17114946, 0.08205127, 0.07427921, 0.03722004, 0.28262928, 0.05035441,
+    #                                             0.05271865, 0.12600125, 0.0811625, 0.0424339]])
+    #         np.testing.assert_array_almost_equal(y_test_pred, y_test_pred_expected, decimal=4)
 
-        # TODO this if statement must be removed once we have a classifier for both image and tabular data
-        if classifier_list is None:
-            logging.warning("Couldn't perform  this test because no classifier is defined")
-            return
-
-        for classifier in classifier_list:
-            # TODO this if statement must be removed once we have a classifier for both image and tabular data
-            if classifier is None:
-                logging.warning("Couldn't perform  this test because no classifier is defined")
-                return
-
-            attack = FastGradientMethod(classifier, eps=1, norm=1, batch_size=128)
-            x_test_adv = attack.generate(self.x_test_mnist)
-
-            self.assertAlmostEqual(float(np.mean(x_test_adv - self.x_test_mnist)), 0.00051375, delta=0.002)
-            self.assertAlmostEqual(float(np.min(x_test_adv - self.x_test_mnist)), -0.01486498, delta=0.001)
-            self.assertAlmostEqual(float(np.max(x_test_adv - self.x_test_mnist)), 0.014761963, delta=0.001)
-
-            y_test_pred = classifier.predict(x_test_adv[8:9])
-            y_test_pred_expected = np.asarray([[0.17114946, 0.08205127, 0.07427921, 0.03722004, 0.28262928, 0.05035441,
-                                                0.05271865, 0.12600125, 0.0811625, 0.0424339]])
-            np.testing.assert_array_almost_equal(y_test_pred, y_test_pred_expected, decimal=4)
-
-    def test_l2_norm_images(self):
-        classifier_list = utils_test.deprecated_get_image_classifiers()
-
-        # TODO this if statement must be removed once we have a classifier for both image and tabular data
-        if classifier_list is None:
-            logging.warning("Couldn't perform  this test because no classifier is defined")
-            return
-
-        for classifier in classifier_list:
-            # TODO this if statement must be removed once we have a classifier for both image and tabular data
-            if classifier is None:
-                logging.warning("Couldn't perform  this test because no classifier is defined")
-                return
-
-            attack = FastGradientMethod(classifier, eps=1, norm=2, batch_size=128)
-            x_test_adv = attack.generate(self.x_test_mnist)
-
-            self.assertAlmostEqual(float(np.mean(x_test_adv - self.x_test_mnist)), 0.007636424, delta=0.002)
-            self.assertAlmostEqual(float(np.min(x_test_adv - self.x_test_mnist)), -0.211054801, delta=0.001)
-            self.assertAlmostEqual(float(np.max(x_test_adv - self.x_test_mnist)), 0.209592223, delta=0.001)
-
-            y_test_pred = classifier.predict(x_test_adv[8:9])
-            y_test_pred_expected = np.asarray([[0.19395831, 0.11625732, 0.08293699, 0.04129186, 0.17826456, 0.06290703,
-                                                0.06270657, 0.14066935, 0.07419015, 0.04681788]])
-            np.testing.assert_array_almost_equal(y_test_pred, y_test_pred_expected, decimal=2)
+    # def test_l2_norm_images(self):
+    #     classifier_list = utils_test.deprecated_get_image_classifiers()
+    #
+    #     # TODO this if statement must be removed once we have a classifier for both image and tabular data
+    #     if classifier_list is None:
+    #         logging.warning("Couldn't perform  this test because no classifier is defined")
+    #         return
+    #
+    #     for classifier in classifier_list:
+    #         # TODO this if statement must be removed once we have a classifier for both image and tabular data
+    #         if classifier is None:
+    #             logging.warning("Couldn't perform  this test because no classifier is defined")
+    #             return
+    #
+    #         attack = FastGradientMethod(classifier, eps=1, norm=2, batch_size=128)
+    #         x_test_adv = attack.generate(self.x_test_mnist)
+    #
+    #         self.assertAlmostEqual(float(np.mean(x_test_adv - self.x_test_mnist)), 0.007636424, delta=0.002)
+    #         self.assertAlmostEqual(float(np.min(x_test_adv - self.x_test_mnist)), -0.211054801, delta=0.001)
+    #         self.assertAlmostEqual(float(np.max(x_test_adv - self.x_test_mnist)), 0.209592223, delta=0.001)
+    #
+    #         y_test_pred = classifier.predict(x_test_adv[8:9])
+    #         y_test_pred_expected = np.asarray([[0.19395831, 0.11625732, 0.08293699, 0.04129186, 0.17826456, 0.06290703,
+    #                                             0.06270657, 0.14066935, 0.07419015, 0.04681788]])
+    #         np.testing.assert_array_almost_equal(y_test_pred, y_test_pred_expected, decimal=2)
 
     def test_random_initialisation_images(self):
         classifier_list = utils_test.deprecated_get_image_classifiers()
