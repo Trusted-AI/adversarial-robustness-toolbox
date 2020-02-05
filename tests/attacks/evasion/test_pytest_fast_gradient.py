@@ -102,6 +102,7 @@ def test_no_norm_images(fix_get_mnist_subset, image_classifier_list):
 
         np.testing.assert_array_almost_equal(y_test_pred[0:3], y_test_pred_expected[0:3], decimal=2)
 
+
 def test_classifier_defended_images(fix_get_mnist_subset, defended_image_classifier_list):
     (x_train_mnist, y_train_mnist, x_test_mnist, y_test_mnist) = fix_get_mnist_subset
     # TODO this if statement must be removed once we have a classifier for both image and tabular data
@@ -123,6 +124,26 @@ def test_classifier_defended_images(fix_get_mnist_subset, defended_image_classif
         utils_test.check_adverse_example(x_test_adv, x_test_mnist)
         y_test_pred_adv = get_labels_np_array(classifier.predict(x_test_adv))
         utils_test.check_adverse_predicted_sample(y_test_pred_adv, y_test_mnist)
+
+def test_random_initialisation_images(fix_get_mnist_subset, image_classifier_list):
+    (x_train_mnist, y_train_mnist, x_test_mnist, y_test_mnist) = fix_get_mnist_subset
+
+    # TODO this if statement must be removed once we have a classifier for both image and tabular data
+    if image_classifier_list is None:
+        logging.warning("Couldn't perform  this test because no classifier is defined")
+        return
+
+    for classifier in image_classifier_list:
+        # TODO this if statement must be removed once we have a classifier for both image and tabular data
+        # TODO this if statement must be removed once we have a classifier for both image and tabular data
+        if classifier is None:
+            logging.warning("Couldn't perform  this test because no classifier is defined")
+            return
+
+        attack = FastGradientMethod(classifier, num_random_init=3)
+        x_test_adv = attack.generate(x_test_mnist)
+        assert (x_test_mnist == x_test_adv).all() == False
+
 
 def test_minimal_perturbations_images(fix_get_mnist_subset, image_classifier_list):
     (x_train_mnist, y_train_mnist, x_test_mnist, y_test_mnist) = fix_get_mnist_subset

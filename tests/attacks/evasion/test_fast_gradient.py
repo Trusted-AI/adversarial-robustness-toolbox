@@ -191,24 +191,24 @@ class TestFastGradientMethodImages(TestBase):
     #                                             0.06270657, 0.14066935, 0.07419015, 0.04681788]])
     #         np.testing.assert_array_almost_equal(y_test_pred, y_test_pred_expected, decimal=2)
 
-    def test_random_initialisation_images(self):
-        classifier_list = utils_test.deprecated_get_image_classifiers()
-
-        # TODO this if statement must be removed once we have a classifier for both image and tabular data
-        if classifier_list is None:
-            logging.warning("Couldn't perform  this test because no classifier is defined")
-            return
-
-        for classifier in classifier_list:
-            # TODO this if statement must be removed once we have a classifier for both image and tabular data
-            # TODO this if statement must be removed once we have a classifier for both image and tabular data
-            if classifier is None:
-                logging.warning("Couldn't perform  this test because no classifier is defined")
-                return
-
-            attack = FastGradientMethod(classifier, num_random_init=3)
-            x_test_adv = attack.generate(self.x_test_mnist)
-            self.assertFalse((self.x_test_mnist == x_test_adv).all())
+    # def test_random_initialisation_images(self):
+    #     classifier_list = utils_test.deprecated_get_image_classifiers()
+    #
+    #     # TODO this if statement must be removed once we have a classifier for both image and tabular data
+    #     if classifier_list is None:
+    #         logging.warning("Couldn't perform  this test because no classifier is defined")
+    #         return
+    #
+    #     for classifier in classifier_list:
+    #         # TODO this if statement must be removed once we have a classifier for both image and tabular data
+    #         # TODO this if statement must be removed once we have a classifier for both image and tabular data
+    #         if classifier is None:
+    #             logging.warning("Couldn't perform  this test because no classifier is defined")
+    #             return
+    #
+    #         attack = FastGradientMethod(classifier, num_random_init=3)
+    #         x_test_adv = attack.generate(self.x_test_mnist)
+    #         self.assertFalse((self.x_test_mnist == x_test_adv).all())
 
     def test_targeted_attack_images(self):
         classifier_list = utils_test.deprecated_get_image_classifiers()
