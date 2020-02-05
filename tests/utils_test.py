@@ -209,6 +209,16 @@ def get_tabular_classifiers(clipped=True):
         raise Exception("A classifier factory method needs to be implemented for framework {0}".format(os.environ["mlFramework"]))
 
 
+def assert_almost_equal_mean(x_test, x_test_adv, equality, decimal):
+    np.testing.assert_array_almost_equal(float(np.mean(x_test_adv - x_test)), equality, decimal=decimal)
+
+def assert_almost_equal_min(x_test, x_test_adv, equality, decimal):
+    np.testing.assert_array_almost_equal(float(np.min(x_test_adv - x_test)), equality, decimal=decimal)
+
+def assert_almost_equal_max(x_test, x_test_adv, equality, decimal):
+    np.testing.assert_array_almost_equal(float(np.max(x_test_adv - x_test)), equality, decimal=decimal)
+
+
 def _tf_weights_loader(dataset, weights_type, layer='DENSE', tf_version=1):
     filename = str(weights_type) + '_' + str(layer) + '_' + str(dataset) + '.npy'
 

@@ -38,6 +38,69 @@ def fix_get_mnist_subset(fix_get_mnist):
     n_test = 11
     yield (x_train_mnist[:n_train], y_train_mnist[:n_train], x_test_mnist[:n_test], y_test_mnist[:n_test])
 
+def test_no_norm_images(fix_get_mnist_subset, image_classifier_list):
+    (x_train_mnist, y_train_mnist, x_test_mnist, y_test_mnist) = fix_get_mnist_subset
+
+    # TODO this if statement must be removed once we have a classifier for both image and tabular data
+    if image_classifier_list is None:
+        logging.warning("Couldn't perform  this test because no classifier is defined")
+        return
+
+    for classifier in image_classifier_list:
+        # TODO this if statement must be removed once we have a classifier for both image and tabular data
+        if classifier is None:
+            logging.warning("Couldn't perform  this test because no classifier is defined")
+            return
+
+        attack = FastGradientMethod(classifier, eps=1.0, batch_size=11)
+        x_test_adv = attack.generate(x_test_mnist)
+
+        utils_test.assert_almost_equal_mean(x_test_mnist, x_test_adv, 0.2346725, decimal=0.002)
+        utils_test.assert_almost_equal_min(x_test_mnist, x_test_adv, -1.0, decimal=0.00001)
+        utils_test.assert_almost_equal_max(x_test_mnist, x_test_adv, 1.0, decimal=0.00001)
+
+        y_test_pred = classifier.predict(x_test_adv)
+
+        np.testing.assert_array_equal(np.argmax(y_test_mnist, axis=1), np.asarray([7, 2, 1, 0, 4, 1, 4, 9, 5, 9, 0]))
+
+        y_test_pred_expected = np.asarray([[7.32060298e-02, 4.03153598e-02, 2.08138078e-01, 2.27986258e-02,
+                                            4.08675969e-01, 1.64286494e-02, 8.81226882e-02, 2.71510370e-02,
+                                            6.36906400e-02, 5.14728837e-02],
+                                           [1.10022835e-01, 2.53075064e-04, 3.09050769e-01, 8.28748848e-03,
+                                            4.23537999e-01, 1.58944018e-02, 3.54500744e-03, 7.03897625e-02,
+                                            5.08272983e-02, 8.19133688e-03],
+                                           [8.34077671e-02, 1.68634069e-04, 1.14863992e-01, 1.49999780e-03,
+                                            7.81848907e-01, 2.06214096e-03, 1.57082418e-03, 7.90233351e-03,
+                                            3.35145928e-03, 3.32383858e-03],
+                                           [7.94695988e-02, 6.41014650e-02, 1.19662583e-01, 6.82745054e-02,
+                                            5.87757975e-02, 5.54384440e-02, 4.47857119e-02, 4.73252147e-01,
+                                            2.29432248e-02, 1.32965213e-02],
+                                           [1.37778342e-01, 5.23229912e-02, 8.03085491e-02, 7.07063973e-02,
+                                            1.13677077e-01, 7.50706568e-02, 4.73172851e-02, 3.50361735e-01,
+                                            5.30573502e-02, 1.93995778e-02],
+                                           [8.26486796e-02, 2.93200690e-04, 1.66191280e-01, 2.23751366e-03,
+                                            7.05350637e-01, 8.26103613e-03, 3.88561003e-03, 1.66236982e-02,
+                                            9.51580610e-03, 4.99255396e-03],
+                                           [9.07047242e-02, 1.30164847e-01, 1.11855730e-01, 1.26194224e-01,
+                                            9.42349583e-02, 7.18590096e-02, 7.08150640e-02, 2.04494953e-01,
+                                            7.27845579e-02, 2.68919170e-02],
+                                           [1.95148319e-01, 4.02570218e-02, 2.53095001e-01, 1.19175367e-01,
+                                            7.29087070e-02, 6.70288056e-02, 3.26904431e-02, 1.72511339e-01,
+                                            3.19005176e-02, 1.52844433e-02],
+                                           [2.34931588e-01, 1.05211824e-01, 2.23802328e-01, 1.19600385e-01,
+                                            4.32376936e-02, 4.33373451e-02, 5.49205467e-02, 1.05997942e-01,
+                                            3.16798575e-02, 3.72803509e-02],
+                                           [1.16207518e-01, 7.97201619e-02, 1.15341313e-01, 2.22322136e-01,
+                                            6.16359413e-02, 1.39247745e-01, 5.34978770e-02, 1.17801160e-01,
+                                            6.38158098e-02, 3.04102581e-02],
+                                           [3.33993286e-01, 4.45333160e-02, 6.64125085e-02, 4.82672676e-02,
+                                            4.61629629e-02, 7.41390288e-02, 2.49474458e-02, 3.12782317e-01,
+                                            2.46306900e-02, 2.41311267e-02]])
+
+
+        np.testing.assert_array_almost_equal(y_test_pred[0:3], y_test_pred_expected[0:3], decimal=2)
+
+
 def test_minimal_perturbations_images(fix_get_mnist_subset, image_classifier_list):
     (x_train_mnist, y_train_mnist, x_test_mnist, y_test_mnist) = fix_get_mnist_subset
 
@@ -53,15 +116,42 @@ def test_minimal_perturbations_images(fix_get_mnist_subset, image_classifier_lis
 
         x_test_adv_min = attack.generate(x_test_mnist)
 
-        np.testing.assert_array_almost_equal(float(np.mean(x_test_adv_min - x_test_mnist)), 0.03896513, decimal=0.01)
-        np.testing.assert_array_almost_equal(float(np.min(x_test_adv_min - x_test_mnist)), -0.30000000, decimal=0.00001)
-        np.testing.assert_array_almost_equal(float(np.max(x_test_adv_min - x_test_mnist)), 0.30000000, decimal=0.00001)
+        utils_test.assert_almost_equal_mean(x_test_mnist, x_test_adv_min, 0.03896513, decimal=0.01)
+        utils_test.assert_almost_equal_min(x_test_mnist, x_test_adv_min, -0.30000000, decimal=0.00001)
+        utils_test.assert_almost_equal_max(x_test_mnist, x_test_adv_min, 0.30000000, decimal=0.00001)
 
         y_test_pred = classifier.predict(x_test_adv_min)
 
         y_test_pred_expected = np.asarray([4, 2, 4, 7, 0, 4, 7, 2, 0, 7, 0])
 
         np.testing.assert_array_equal(np.argmax(y_test_pred, axis=1), y_test_pred_expected)
+
+def test_l1_norm_images(fix_get_mnist_subset, image_classifier_list):
+    (x_train_mnist, y_train_mnist, x_test_mnist, y_test_mnist) = fix_get_mnist_subset
+
+    # TODO this if statement must be removed once we have a classifier for both image and tabular data
+    if image_classifier_list is None:
+        logging.warning("Couldn't perform  this test because no classifier is defined")
+        return
+
+    for classifier in image_classifier_list:
+        # TODO this if statement must be removed once we have a classifier for both image and tabular data
+        if classifier is None:
+            logging.warning("Couldn't perform  this test because no classifier is defined")
+            return
+
+        attack = FastGradientMethod(classifier, eps=1, norm=1, batch_size=128)
+        x_test_adv = attack.generate(x_test_mnist)
+
+        utils_test.assert_almost_equal_mean(x_test_mnist, x_test_adv, 0.00051375, decimal=0.002)
+        utils_test.assert_almost_equal_min(x_test_mnist, x_test_adv, -0.01486498, decimal=0.001)
+        utils_test.assert_almost_equal_max(x_test_mnist, x_test_adv, 0.014761963, decimal=0.001)
+
+
+        y_test_pred = classifier.predict(x_test_adv[8:9])
+        y_test_pred_expected = np.asarray([[0.17114946, 0.08205127, 0.07427921, 0.03722004, 0.28262928, 0.05035441,
+                                            0.05271865, 0.12600125, 0.0811625, 0.0424339]])
+        np.testing.assert_array_almost_equal(y_test_pred, y_test_pred_expected, decimal=4)
 
 
 if __name__ == '__main__':
