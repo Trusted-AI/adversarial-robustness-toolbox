@@ -29,6 +29,7 @@ from tests import utils_test
 import pytest
 
 logger = logging.getLogger(__name__)
+# or pytest -q tests/attacks/evasion/test_pytest_fast_gradient.py --mlFramework=pytorch --durations=0
 
 @pytest.fixture()
 def fix_get_mnist_subset(fix_get_mnist):
@@ -55,7 +56,7 @@ def test_minimal_perturbations_images(fix_get_mnist_subset, image_classifier_lis
         np.testing.assert_array_almost_equal(float(np.mean(x_test_adv_min - x_test_mnist)), 0.03896513, decimal=0.01)
         np.testing.assert_array_almost_equal(float(np.min(x_test_adv_min - x_test_mnist)), -0.30000000, decimal=0.00001)
         np.testing.assert_array_almost_equal(float(np.max(x_test_adv_min - x_test_mnist)), 0.30000000, decimal=0.00001)
- 
+
         y_test_pred = classifier.predict(x_test_adv_min)
 
         y_test_pred_expected = np.asarray([4, 2, 4, 7, 0, 4, 7, 2, 0, 7, 0])
