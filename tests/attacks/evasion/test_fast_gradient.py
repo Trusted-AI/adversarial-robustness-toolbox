@@ -237,31 +237,31 @@ class TestFastGradientMethodImages(TestBase):
     #         self.assertEqual(targets.shape, y_test_pred_adv.shape)
     #         self.assertGreaterEqual((targets == y_test_pred_adv).sum(), self.x_test_mnist.shape[0] // 2)
 
-    def test_targeted_attack_tabular(self):
-        classifier_list = utils_test.deprecated_get_tabular_classifiers()
-
-        for classifier in classifier_list:
-            # TODO remove that platform specific case
-            if os.environ["mlFramework"] in ["scikitlearn"]:
-                classifier.fit(x=self.x_test_iris, y=self.y_test_iris)
-
-            batch_size = 1
-            # TODO remove that platform specific case
-            if os.environ["mlFramework"] in ["pytorch", "tensorflow", "scikitlearn"]:
-                batch_size = 128
-            y_test_true = np.argmax(self.y_test_iris, axis=1)
-            targets = random_targets(self.y_test_iris, nb_classes=3)
-            y_targeted = np.argmax(targets, axis=1)
-            attack = FastGradientMethod(classifier, targeted=True, eps=.1, batch_size=batch_size)
-            x_test_adv = attack.generate(self.x_test_iris, **{'y': targets})
-
-            self.deprecated_check_adverse_example(x_test_adv, self.x_test_iris)
-
-            y_pred_test_adv = np.argmax(classifier.predict(x_test_adv), axis=1)
-            self.assertTrue((y_targeted == y_pred_test_adv).any())
-            accuracy = np.sum(y_pred_test_adv == y_targeted) / y_test_true.shape[0]
-            logger.info('Success rate of ' + classifier.__class__.__name__ + ' on targeted FGM on Iris: %.2f%%',
-                        (accuracy * 100))
+    # def test_targeted_attack_tabular(self):
+    #     classifier_list = utils_test.deprecated_get_tabular_classifiers()
+    #
+    #     for classifier in classifier_list:
+    #         # TODO remove that platform specific case
+    #         if os.environ["mlFramework"] in ["scikitlearn"]:
+    #             classifier.fit(x=self.x_test_iris, y=self.y_test_iris)
+    #
+    #         batch_size = 1
+    #         # TODO remove that platform specific case
+    #         if os.environ["mlFramework"] in ["pytorch", "tensorflow", "scikitlearn"]:
+    #             batch_size = 128
+    #         y_test_true = np.argmax(self.y_test_iris, axis=1)
+    #         targets = random_targets(self.y_test_iris, nb_classes=3)
+    #         y_targeted = np.argmax(targets, axis=1)
+    #         attack = FastGradientMethod(classifier, targeted=True, eps=.1, batch_size=batch_size)
+    #         x_test_adv = attack.generate(self.x_test_iris, **{'y': targets})
+    #
+    #         self.deprecated_check_adverse_example(x_test_adv, self.x_test_iris)
+    #
+    #         y_pred_test_adv = np.argmax(classifier.predict(x_test_adv), axis=1)
+    #         self.assertTrue((y_targeted == y_pred_test_adv).any())
+    #         accuracy = np.sum(y_pred_test_adv == y_targeted) / y_test_true.shape[0]
+    #         logger.info('Success rate of ' + classifier.__class__.__name__ + ' on targeted FGM on Iris: %.2f%%',
+    #                     (accuracy * 100))
 
 
 

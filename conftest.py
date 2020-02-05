@@ -130,7 +130,7 @@ def unclipped_tabular_classifier_list(fix_mlFramework):
 
 
 @pytest.fixture
-def clipped_tabular_classifier_list():
+def clipped_tabular_classifier_list(fix_mlFramework):
     if fix_mlFramework == "keras":
         return [utils_test.get_tabular_classifier_kr()]
 
