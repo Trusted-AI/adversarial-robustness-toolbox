@@ -144,6 +144,32 @@ def test_random_initialisation_images(fix_get_mnist_subset, image_classifier_lis
         x_test_adv = attack.generate(x_test_mnist)
         assert (x_test_mnist == x_test_adv).all() == False
 
+def test_targeted_attack_images(fix_get_mnist_subset, image_classifier_list):
+    (x_train_mnist, y_train_mnist, x_test_mnist, y_test_mnist) = fix_get_mnist_subset
+
+    # TODO this if statement must be removed once we have a classifier for both image and tabular data
+    if image_classifier_list is None:
+        logging.warning("Couldn't perform  this test because no classifier is defined")
+        return
+
+    for classifier in image_classifier_list:
+        attack = FastGradientMethod(classifier, eps=1.0, targeted=True)
+
+        y_test_pred_sort = classifier.predict(x_test_mnist).argsort(axis=1)
+        targets = np.zeros((x_test_mnist.shape[0], 10))
+        for i in range(x_test_mnist.shape[0]):
+            targets[i, y_test_pred_sort[i, -2]] = 1.0
+
+        attack_params = {"minimal": True, "eps_step": 0.01, "eps": 1.0}
+        attack.set_params(**attack_params)
+
+        x_test_adv = attack.generate(x_test_mnist, y=targets)
+        assert (x_test_mnist == x_test_adv).all() == False
+
+        y_test_pred_adv = get_labels_np_array(classifier.predict(x_test_adv))
+
+        assert targets.shape == y_test_pred_adv.shape
+        assert (targets == y_test_pred_adv).sum() >= (x_test_mnist.shape[0] // 2)
 
 def test_minimal_perturbations_images(fix_get_mnist_subset, image_classifier_list):
     (x_train_mnist, y_train_mnist, x_test_mnist, y_test_mnist) = fix_get_mnist_subset

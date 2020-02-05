@@ -210,32 +210,32 @@ class TestFastGradientMethodImages(TestBase):
     #         x_test_adv = attack.generate(self.x_test_mnist)
     #         self.assertFalse((self.x_test_mnist == x_test_adv).all())
 
-    def test_targeted_attack_images(self):
-        classifier_list = utils_test.deprecated_get_image_classifiers()
-
-        # TODO this if statement must be removed once we have a classifier for both image and tabular data
-        if classifier_list is None:
-            logging.warning("Couldn't perform  this test because no classifier is defined")
-            return
-
-        for classifier in classifier_list:
-            attack = FastGradientMethod(classifier, eps=1.0, targeted=True)
-
-            y_test_pred_sort = classifier.predict(self.x_test_mnist).argsort(axis=1)
-            targets = np.zeros((self.x_test_mnist.shape[0], 10))
-            for i in range(self.x_test_mnist.shape[0]):
-                targets[i, y_test_pred_sort[i, -2]] = 1.0
-
-            attack_params = {"minimal": True, "eps_step": 0.01, "eps": 1.0}
-            attack.set_params(**attack_params)
-
-            x_test_adv = attack.generate(self.x_test_mnist, y=targets)
-            self.assertFalse((self.x_test_mnist == x_test_adv).all())
-
-            y_test_pred_adv = get_labels_np_array(classifier.predict(x_test_adv))
-
-            self.assertEqual(targets.shape, y_test_pred_adv.shape)
-            self.assertGreaterEqual((targets == y_test_pred_adv).sum(), self.x_test_mnist.shape[0] // 2)
+    # def test_targeted_attack_images(self):
+    #     classifier_list = utils_test.deprecated_get_image_classifiers()
+    #
+    #     # TODO this if statement must be removed once we have a classifier for both image and tabular data
+    #     if classifier_list is None:
+    #         logging.warning("Couldn't perform  this test because no classifier is defined")
+    #         return
+    #
+    #     for classifier in classifier_list:
+    #         attack = FastGradientMethod(classifier, eps=1.0, targeted=True)
+    #
+    #         y_test_pred_sort = classifier.predict(self.x_test_mnist).argsort(axis=1)
+    #         targets = np.zeros((self.x_test_mnist.shape[0], 10))
+    #         for i in range(self.x_test_mnist.shape[0]):
+    #             targets[i, y_test_pred_sort[i, -2]] = 1.0
+    #
+    #         attack_params = {"minimal": True, "eps_step": 0.01, "eps": 1.0}
+    #         attack.set_params(**attack_params)
+    #
+    #         x_test_adv = attack.generate(self.x_test_mnist, y=targets)
+    #         self.assertFalse((self.x_test_mnist == x_test_adv).all())
+    #
+    #         y_test_pred_adv = get_labels_np_array(classifier.predict(x_test_adv))
+    #
+    #         self.assertEqual(targets.shape, y_test_pred_adv.shape)
+    #         self.assertGreaterEqual((targets == y_test_pred_adv).sum(), self.x_test_mnist.shape[0] // 2)
 
     def test_targeted_attack_tabular(self):
         classifier_list = utils_test.get_tabular_classifiers()
