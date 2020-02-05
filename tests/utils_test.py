@@ -129,7 +129,7 @@ class TestBase(unittest.TestCase):
         np.testing.assert_array_almost_equal(self._x_test_iris_original, self.x_test_iris, decimal=3)
         np.testing.assert_array_almost_equal(self._y_test_iris_original, self.y_test_iris, decimal=3)
 
-    def check_adverse_example(self, x_adv, x_original, max=1.0, min=0.0, bounded=True):
+    def deprecated_check_adverse_example(self, x_adv, x_original, max=1.0, min=0.0, bounded=True):
         '''
         Performs basic checks on generated adversarial inputs (whether x_test or x_train)
         :param x_adv:
@@ -148,11 +148,30 @@ class TestBase(unittest.TestCase):
             self.assertTrue((x_adv > max).any(), "some x_test_adv values should been above 1".format(max))
             self.assertTrue((x_adv < min).any(), " some x_test_adv values should have all been below {0}".format(min))
 
-    def check_adverse_predicted_sample(self, y_pred_adv, y_expected):
+    def deprecated_check_adverse_predicted_sample(self, y_pred_adv, y_expected):
         self.assertFalse((y_expected == y_pred_adv).all())
 
 
 # ----------------------------------------------------------------------------------------------- TEST MODELS FOR MNIST
+
+def check_adverse_example(x_adv, x_original, max=1.0, min=0.0, bounded=True):
+    '''
+    Performs basic checks on generated adversarial inputs (whether x_test or x_train)
+    :param x_adv:
+    :param x_original:
+    :param max:
+    :param min:
+    :param bounded:
+    :return:
+    '''
+    assert (x_original == x_adv).all() == False, "x_test_adv should have been different from x_test"
+
+    if bounded:
+        assert np.amax(x_adv) <= max, "x_test_adv values should have all been below {0}".format(max)
+        assert np.amin(x_adv) >= min, "x_test_adv values should have all been above {0}".format(min)
+    else:
+        assert (x_adv > max).any(), "some x_test_adv values should been above 1".format(max)
+        assert (x_adv < min).any(), " some x_test_adv values should have all been below {0}".format(min)
 
 def check_adverse_predicted_sample(y_pred_adv, y_expected):
     assert (y_expected == y_pred_adv).all(), "Adverse predicted sample was not what was expected"
