@@ -117,18 +117,18 @@ def test_classifier_defended_images(fix_get_mnist_subset, defended_image_classif
         attack = FastGradientMethod(classifier, eps=1, batch_size=128)
 
         x_train_adv = attack.generate(x_train_mnist)
-        utils_test.check_adverse_example(x_train_adv, x_train_mnist)
+        utils_test.check_adverse_example_x(x_train_adv, x_train_mnist)
 
         y_train_pred_adv = get_labels_np_array(classifier.predict(x_train_adv))
         y_train_labels = get_labels_np_array(y_train_mnist)
         # TODO Shouldn't the y_adv and y_expected labels be the same for the defence to be correct?
-        utils_test.check_adverse_predicted_sample(y_train_pred_adv, y_train_labels)
+        utils_test.check_adverse_predicted_sample_y(y_train_pred_adv, y_train_labels)
 
         x_test_adv = attack.generate(x_test_mnist)
-        utils_test.check_adverse_example(x_test_adv, x_test_mnist)
+        utils_test.check_adverse_example_x(x_test_adv, x_test_mnist)
 
         y_test_pred_adv = get_labels_np_array(classifier.predict(x_test_adv))
-        utils_test.check_adverse_predicted_sample(y_test_pred_adv, y_test_mnist)
+        utils_test.check_adverse_predicted_sample_y(y_test_pred_adv, y_test_mnist)
 
 def test_random_initialisation_images(fix_get_mnist_subset, image_classifier_list):
     (x_train_mnist, y_train_mnist, x_test_mnist, y_test_mnist) = fix_get_mnist_subset
@@ -273,7 +273,7 @@ def test_classifier_unclipped_values_tabular(fix_get_iris, unclipped_tabular_cla
 
         x_test_adv = attack.generate(x_test_iris)
 
-        utils_test.check_adverse_example(x_test_adv, x_test_iris, bounded=False)
+        utils_test.check_adverse_example_x(x_test_adv, x_test_iris, bounded=False)
 
         y_test_true = np.argmax(y_test_iris, axis=1)
         y_pred_test_adv = np.argmax(classifier.predict(x_test_adv), axis=1)
@@ -295,7 +295,7 @@ def test_untargeted_attack_tabular(fix_get_iris, clipped_tabular_classifier_list
         # TODO remove that platform specific case
         if fix_mlFramework in ["scikitlearn"]:
             np.testing.assert_array_almost_equal(np.abs(x_test_adv - x_test_iris), .1, decimal=5)
-        utils_test.check_adverse_example(x_test_adv, x_test_iris)
+        utils_test.check_adverse_example_x(x_test_adv, x_test_iris)
 
         y_pred_test_adv = np.argmax(classifier.predict(x_test_adv), axis=1)
         y_test_true = np.argmax(y_test_iris, axis=1)
@@ -324,7 +324,7 @@ def test_targeted_attack_tabular(fix_get_iris, clipped_tabular_classifier_list, 
         attack = FastGradientMethod(classifier, targeted=True, eps=.1, batch_size=batch_size)
         x_test_adv = attack.generate(x_test_iris, **{'y': targets})
 
-        utils_test.check_adverse_example(x_test_adv, x_test_iris)
+        utils_test.check_adverse_example_x(x_test_adv, x_test_iris)
 
         y_pred_test_adv = np.argmax(classifier.predict(x_test_adv), axis=1)
         assert (y_targeted == y_pred_test_adv).any()

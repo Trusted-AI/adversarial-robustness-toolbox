@@ -152,9 +152,10 @@ class TestBase(unittest.TestCase):
         self.assertFalse((y_expected == y_pred_adv).all())
 
 
+
 # ----------------------------------------------------------------------------------------------- TEST MODELS FOR MNIST
 
-def check_adverse_example(x_adv, x_original, max=1.0, min=0.0, bounded=True):
+def check_adverse_example_x(x_adv, x_original, max=1.0, min=0.0, bounded=True):
     '''
     Performs basic checks on generated adversarial inputs (whether x_test or x_train)
     :param x_adv:
@@ -173,8 +174,8 @@ def check_adverse_example(x_adv, x_original, max=1.0, min=0.0, bounded=True):
         assert (x_adv > max).any(), "some x_test_adv values should been above 1".format(max)
         assert (x_adv < min).any(), " some x_test_adv values should have all been below {0}".format(min)
 
-def check_adverse_predicted_sample(y_pred_adv, y_expected):
-    assert (y_expected == y_pred_adv).all(), "Adverse predicted sample was not what was expected"
+def check_adverse_predicted_sample_y(y_pred_adv, y_expected):
+    assert (y_expected == y_pred_adv).all() == False, "Adverse predicted sample was not what was expected"
 
 def is_valid_framework(framework):
     if framework not in art_supported_frameworks:

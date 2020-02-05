@@ -30,7 +30,7 @@ def test_targeted_images(fix_get_mnist_subset, image_classifier_list, fix_mlFram
         params = {'y': random_targets(y_test_mnist, classifier.nb_classes())}
         x_test_adv = boundary.generate(x_test_mnist, **params)
 
-        utils_test.check_adverse_example(x_test_adv, x_test_mnist)
+        utils_test.check_adverse_example_x(x_test_adv, x_test_mnist)
 
         target = np.argmax(params['y'], axis=1)
         y_pred_adv = np.argmax(classifier.predict(x_test_adv), axis=1)
@@ -47,7 +47,7 @@ def test_untargeted_images(fix_get_mnist_subset, image_classifier_list, fix_mlFr
         boundary = BoundaryAttack(classifier=classifier, targeted=False, max_iter=20)
         x_test_adv = boundary.generate(x_test_mnist)
 
-        utils_test.check_adverse_example(x_test_adv, x_test_mnist)
+        utils_test.check_adverse_example_x(x_test_adv, x_test_mnist)
 
         y_pred = np.argmax(classifier.predict(x_test_mnist), axis=1)
         y_pred_adv = np.argmax(classifier.predict(x_test_adv), axis=1)
