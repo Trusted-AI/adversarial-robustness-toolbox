@@ -19,11 +19,8 @@ def fix_get_mnist_subset(fix_get_mnist):
     n_test = 10
     yield (x_train_mnist[:n_train], y_train_mnist[:n_train], x_test_mnist[:n_test], y_test_mnist[:n_test])
 
-def test_targeted_images(fix_get_mnist_subset, image_classifier_list):
-    """
-    Second test with the KerasClassifier.
-    :return:
-    """
+def test_targeted_images(fix_get_mnist_subset, image_classifier_list, fix_mlFramework):
+
     (x_train_mnist, y_train_mnist, x_test_mnist, y_test_mnist) = fix_get_mnist_subset
 
     for classifier in image_classifier_list:
@@ -39,14 +36,11 @@ def test_targeted_images(fix_get_mnist_subset, image_classifier_list):
         y_pred_adv = np.argmax(classifier.predict(x_test_adv), axis=1)
         assert (target == y_pred_adv).any()
 
-        # Clean-up session
-        k.clear_session()
+        if fix_mlFramework in ["keras"]:
+            k.clear_session()
 
-def test_untargeted_images(fix_get_mnist_subset, image_classifier_list):
-    """
-    Second test with the KerasClassifier.
-    :return:
-    """
+
+def test_untargeted_images(fix_get_mnist_subset, image_classifier_list, fix_mlFramework):
     (x_train_mnist, y_train_mnist, x_test_mnist, y_test_mnist) = fix_get_mnist_subset
 
     for classifier in image_classifier_list:
@@ -59,5 +53,6 @@ def test_untargeted_images(fix_get_mnist_subset, image_classifier_list):
         y_pred_adv = np.argmax(classifier.predict(x_test_adv), axis=1)
         assert (y_pred != y_pred_adv).any()
 
-        # Clean-up session
-        k.clear_session()
+        if fix_mlFramework in ["keras"]:
+            k.clear_session()
+
