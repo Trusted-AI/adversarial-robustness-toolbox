@@ -298,28 +298,28 @@ class TestFastGradientMethodImages(TestBase):
 
 
 
-    # def test_classifier_defended_images(self):
-    #     classifier_list = utils_test.deprecated_get_image_classifiers(defended=True)
-    #
-    #     # TODO this if statement must be removed once we have a classifier for both image and tabular data
-    #     if classifier_list is None:
-    #         logging.warning("Couldn't perform  this test because no classifier is defined")
-    #         return
-    #
-    #     for classifier in classifier_list:
-    #         attack = FastGradientMethod(classifier, eps=1, batch_size=128)
-    #
-    #         x_train_adv = attack.generate(self.x_train_mnist)
-    #         self.check_adverse_example(x_train_adv, self.x_train_mnist)
-    #         y_train_pred_adv = get_labels_np_array(classifier.predict(x_train_adv))
-    #         y_train_labels = get_labels_np_array(self.y_train_mnist)
-    #         # TODO Shouldn't the y_adv and y_expected labels be the same for the defence to be correct?
-    #         self.check_adverse_predicted_sample(y_train_pred_adv, y_train_labels)
-    #
-    #         x_test_adv = attack.generate(self.x_test_mnist)
-    #         self.check_adverse_example(x_test_adv, self.x_test_mnist)
-    #         y_test_pred_adv = get_labels_np_array(classifier.predict(x_test_adv))
-    #         self.check_adverse_predicted_sample(y_test_pred_adv, self.y_test_mnist)
+    def test_classifier_defended_images(self):
+        classifier_list = utils_test.deprecated_get_image_classifiers(defended=True)
+
+        # TODO this if statement must be removed once we have a classifier for both image and tabular data
+        if classifier_list is None:
+            logging.warning("Couldn't perform  this test because no classifier is defined")
+            return
+
+        for classifier in classifier_list:
+            attack = FastGradientMethod(classifier, eps=1, batch_size=128)
+
+            x_train_adv = attack.generate(self.x_train_mnist)
+            self.deprecated_check_adverse_example(x_train_adv, self.x_train_mnist)
+            y_train_pred_adv = get_labels_np_array(classifier.predict(x_train_adv))
+            y_train_labels = get_labels_np_array(self.y_train_mnist)
+            # TODO Shouldn't the y_adv and y_expected labels be the same for the defence to be correct?
+            self.deprecated_check_adverse_predicted_sample(y_train_pred_adv, y_train_labels)
+
+            x_test_adv = attack.generate(self.x_test_mnist)
+            self.deprecated_check_adverse_example(x_test_adv, self.x_test_mnist)
+            y_test_pred_adv = get_labels_np_array(classifier.predict(x_test_adv))
+            self.deprecated_check_adverse_predicted_sample(y_test_pred_adv, self.y_test_mnist)
 
     # def test_classifier_without_clipped_values_tabular(self):
     #     classifier_list = utils_test.deprecated_get_tabular_classifiers(clipped=False)

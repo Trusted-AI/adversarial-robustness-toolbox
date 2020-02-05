@@ -118,6 +118,7 @@ def test_classifier_defended_images(fix_get_mnist_subset, defended_image_classif
 
         x_train_adv = attack.generate(x_train_mnist)
         utils_test.check_adverse_example(x_train_adv, x_train_mnist)
+
         y_train_pred_adv = get_labels_np_array(classifier.predict(x_train_adv))
         y_train_labels = get_labels_np_array(y_train_mnist)
         # TODO Shouldn't the y_adv and y_expected labels be the same for the defence to be correct?
@@ -125,6 +126,7 @@ def test_classifier_defended_images(fix_get_mnist_subset, defended_image_classif
 
         x_test_adv = attack.generate(x_test_mnist)
         utils_test.check_adverse_example(x_test_adv, x_test_mnist)
+
         y_test_pred_adv = get_labels_np_array(classifier.predict(x_test_adv))
         utils_test.check_adverse_predicted_sample(y_test_pred_adv, y_test_mnist)
 
