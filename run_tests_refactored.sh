@@ -1,11 +1,11 @@
 #!/usr/bin/env bash
 exit_code=0
 
-mlFrameworkList=("tensorflow" "keras" "pytorch" "scikitlearn")
+#mlFrameworkList=("tensorflow" "keras" "pytorch" "scikitlearn")
+mlFrameworkList=("tensorflow" "keras" "pytorch")
 for mlFramework in "${mlFrameworkList[@]}"; do
   echo "Running tests with framework $mlFramework"
-  export mlFramework=$mlFramework
-  python -m unittest tests.attacks.evasion.test_fast_gradient
+  pytest -q tests/attacks/evasion/ --mlFramework=$mlFramework --durations=0
 done
 
 exit ${exit_code}

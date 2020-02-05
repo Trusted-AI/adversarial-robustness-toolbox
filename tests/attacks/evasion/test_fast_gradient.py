@@ -34,7 +34,7 @@ from art.classifiers.classifier import Classifier, ClassifierGradients
 logger = logging.getLogger(__name__)
 
 
-# or pytest -q tests/attacks/evasion/test_fast_gradient.py --mlFramework=pytorch --durations=0
+
 
 @pytest.fixture()
 def fix_get_mnist_subset(fix_get_mnist):
