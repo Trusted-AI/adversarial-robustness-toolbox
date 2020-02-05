@@ -50,10 +50,7 @@ def test_targeted_tabular(fix_get_iris, clipped_tabular_classifier_list, fix_mlF
         x_test_adv = attack.generate(x_test_iris, **{'y': targets})
 
         utils_test.check_adverse_example_x(x_test_adv, x_test_iris)
-        # self.assertFalse((x_test_iris == x_test_adv).all())
-        # self.assertTrue((x_test_adv <= 1).all())
-        # self.assertTrue((x_test_adv >= 0).all())
-
+  
         y_pred_adv = np.argmax(classifier.predict(x_test_adv), axis=1)
         target = np.argmax(targets, axis=1)
         assert (target == y_pred_adv).any()
