@@ -127,8 +127,6 @@ def unclipped_tabular_classifier_list(fix_mlFramework):
 
     raise Exception("A classifier factory method needs to be implemented for framework {0}".format(fix_mlFramework))
 
-
-
 @pytest.fixture
 def clipped_tabular_classifier_list(fix_mlFramework):
     if fix_mlFramework == "keras":

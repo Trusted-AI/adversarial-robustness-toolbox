@@ -154,44 +154,44 @@ class TestBoundary(TestBase):
         # Clean-up session
         k.clear_session()
 
-    def test_pytorch_mnist(self):
-        """
-        Third test with the PyTorchClassifier.
-        :return:
-        """
-        x_test = np.reshape(self.x_test_mnist, (self.x_test_mnist.shape[0], 1, 28, 28)).astype(np.float32)
-        x_test_original = x_test.copy()
-
-        # Build PyTorchClassifier
-        ptc = get_image_classifier_pt()
-
-        # First targeted attack
-        boundary = BoundaryAttack(classifier=ptc, targeted=True, max_iter=20)
-        params = {'y': random_targets(self.y_test_mnist, ptc.nb_classes())}
-        x_test_adv = boundary.generate(x_test, **params)
-
-        self.assertFalse((x_test == x_test_adv).all())
-        self.assertTrue((x_test_adv <= 1.0001).all())
-        self.assertTrue((x_test_adv >= -0.0001).all())
-
-        target = np.argmax(params['y'], axis=1)
-        y_pred_adv = np.argmax(ptc.predict(x_test_adv), axis=1)
-        self.assertTrue((target == y_pred_adv).any())
-
-        # Second untargeted attack
-        boundary = BoundaryAttack(classifier=ptc, targeted=False, max_iter=20)
-        x_test_adv = boundary.generate(x_test)
-
-        self.assertFalse((x_test == x_test_adv).all())
-        self.assertTrue((x_test_adv <= 1.0001).all())
-        self.assertTrue((x_test_adv >= -0.0001).all())
-
-        y_pred = np.argmax(ptc.predict(x_test), axis=1)
-        y_pred_adv = np.argmax(ptc.predict(x_test_adv), axis=1)
-        self.assertTrue((y_pred != y_pred_adv).any())
-
-        # Check that x_test has not been modified by attack and classifier
-        self.assertAlmostEqual(float(np.max(np.abs(x_test_original - x_test))), 0.0, delta=0.00001)
+    # def test_pytorch_mnist(self):
+    #     """
+    #     Third test with the PyTorchClassifier.
+    #     :return:
+    #     """
+    #     x_test = np.reshape(self.x_test_mnist, (self.x_test_mnist.shape[0], 1, 28, 28)).astype(np.float32)
+    #     x_test_original = x_test.copy()
+    #
+    #     # Build PyTorchClassifier
+    #     ptc = get_image_classifier_pt()
+    #
+    #     # First targeted attack
+    #     boundary = BoundaryAttack(classifier=ptc, targeted=True, max_iter=20)
+    #     params = {'y': random_targets(self.y_test_mnist, ptc.nb_classes())}
+    #     x_test_adv = boundary.generate(x_test, **params)
+    #
+    #     self.assertFalse((x_test == x_test_adv).all())
+    #     self.assertTrue((x_test_adv <= 1.0001).all())
+    #     self.assertTrue((x_test_adv >= -0.0001).all())
+    #
+    #     target = np.argmax(params['y'], axis=1)
+    #     y_pred_adv = np.argmax(ptc.predict(x_test_adv), axis=1)
+    #     self.assertTrue((target == y_pred_adv).any())
+    #
+    #     # Second untargeted attack
+    #     boundary = BoundaryAttack(classifier=ptc, targeted=False, max_iter=20)
+    #     x_test_adv = boundary.generate(x_test)
+    #
+    #     self.assertFalse((x_test == x_test_adv).all())
+    #     self.assertTrue((x_test_adv <= 1.0001).all())
+    #     self.assertTrue((x_test_adv >= -0.0001).all())
+    #
+    #     y_pred = np.argmax(ptc.predict(x_test), axis=1)
+    #     y_pred_adv = np.argmax(ptc.predict(x_test_adv), axis=1)
+    #     self.assertTrue((y_pred != y_pred_adv).any())
+    #
+    #     # Check that x_test has not been modified by attack and classifier
+    #     self.assertAlmostEqual(float(np.max(np.abs(x_test_original - x_test))), 0.0, delta=0.00001)
 
     def test_classifier_type_check_fail_classifier(self):
         # Use a useless test classifier to test basic classifier properties
@@ -260,18 +260,18 @@ class TestBoundary(TestBase):
         accuracy = np.sum(preds_adv == np.argmax(targets, axis=1)) / self.y_test_iris.shape[0]
         logger.info('Success rate of targeted boundary on Iris: %.2f%%', (accuracy * 100))
 
-    def test_pytorch_iris(self):
-        classifier = get_tabular_classifier_pt()
-        attack = BoundaryAttack(classifier, targeted=False, max_iter=10)
-        x_test_adv = attack.generate(self.x_test_iris.astype(np.float32))
-        self.assertFalse((self.x_test_iris == x_test_adv).all())
-        self.assertTrue((x_test_adv <= 1).all())
-        self.assertTrue((x_test_adv >= 0).all())
-
-        preds_adv = np.argmax(classifier.predict(x_test_adv), axis=1)
-        self.assertFalse((np.argmax(self.y_test_iris, axis=1) == preds_adv).all())
-        accuracy = np.sum(preds_adv == np.argmax(self.y_test_iris, axis=1)) / self.y_test_iris.shape[0]
-        logger.info('Accuracy on Iris with boundary adversarial examples: %.2f%%', (accuracy * 100))
+    # def test_pytorch_iris(self):
+    #     classifier = get_tabular_classifier_pt()
+    #     attack = BoundaryAttack(classifier, targeted=False, max_iter=10)
+    #     x_test_adv = attack.generate(self.x_test_iris.astype(np.float32))
+    #     self.assertFalse((self.x_test_iris == x_test_adv).all())
+    #     self.assertTrue((x_test_adv <= 1).all())
+    #     self.assertTrue((x_test_adv >= 0).all())
+    #
+    #     preds_adv = np.argmax(classifier.predict(x_test_adv), axis=1)
+    #     self.assertFalse((np.argmax(self.y_test_iris, axis=1) == preds_adv).all())
+    #     accuracy = np.sum(preds_adv == np.argmax(self.y_test_iris, axis=1)) / self.y_test_iris.shape[0]
+    #     logger.info('Accuracy on Iris with boundary adversarial examples: %.2f%%', (accuracy * 100))
 
     def test_scikitlearn(self):
         from sklearn.linear_model import LogisticRegression

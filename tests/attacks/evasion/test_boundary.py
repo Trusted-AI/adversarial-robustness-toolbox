@@ -11,6 +11,7 @@ from tests import utils_test
 from tests.utils_test import TestBase
 from tests.utils_test import get_image_classifier_tf, get_image_classifier_kr, get_image_classifier_pt
 from tests.utils_test import get_tabular_classifier_tf, get_tabular_classifier_kr, get_tabular_classifier_pt
+logger = logging.getLogger(__name__)
 
 @pytest.fixture()
 def fix_get_mnist_subset(fix_get_mnist):
@@ -18,6 +19,7 @@ def fix_get_mnist_subset(fix_get_mnist):
     n_train = 10
     n_test = 10
     yield (x_train_mnist[:n_train], y_train_mnist[:n_train], x_test_mnist[:n_test], y_test_mnist[:n_test])
+
 
 def test_targeted_images(fix_get_mnist_subset, image_classifier_list, fix_mlFramework):
 
@@ -39,14 +41,28 @@ def test_targeted_images(fix_get_mnist_subset, image_classifier_list, fix_mlFram
         if fix_mlFramework in ["keras"]:
             k.clear_session()
 
+def test_pytorch_iris(fix_get_iris, clipped_tabular_classifier_list, fix_mlFramework):
+    (x_train_iris, y_train_iris), (x_test_iris, y_test_iris) = fix_get_iris
+
+    for classifier in clipped_tabular_classifier_list:
+        attack = BoundaryAttack(classifier, targeted=False, max_iter=10)
+
+        x_test_adv = attack.generate(x_test_iris.astype(np.float32))
+        utils_test.check_adverse_example_x(x_test_adv, x_test_iris)
+
+        y_pred = np.argmax(y_test_iris, axis=1)
+        y_pred_adv = np.argmax(classifier.predict(x_test_adv), axis=1)
+        assert(y_pred == y_pred_adv).all() == False
+        accuracy = np.sum(y_pred_adv == y_pred) / y_test_iris.shape[0]
+        logger.info('Accuracy on Iris with boundary adversarial examples: %.2f%%', (accuracy * 100))
 
 def test_untargeted_images(fix_get_mnist_subset, image_classifier_list, fix_mlFramework):
     (x_train_mnist, y_train_mnist, x_test_mnist, y_test_mnist) = fix_get_mnist_subset
 
     for classifier in image_classifier_list:
         boundary = BoundaryAttack(classifier=classifier, targeted=False, max_iter=20)
-        x_test_adv = boundary.generate(x_test_mnist)
 
+        x_test_adv = boundary.generate(x_test_mnist)
         utils_test.check_adverse_example_x(x_test_adv, x_test_mnist)
 
         y_pred = np.argmax(classifier.predict(x_test_mnist), axis=1)
@@ -55,4 +71,6 @@ def test_untargeted_images(fix_get_mnist_subset, image_classifier_list, fix_mlFr
 
         if fix_mlFramework in ["keras"]:
             k.clear_session()
+
+
 
