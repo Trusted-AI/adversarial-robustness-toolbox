@@ -203,7 +203,7 @@ def deprecated_get_image_classifiers(defended=False):
     elif is_valid_framework(os.environ["mlFramework"]):
         raise Exception("A classifier factory method needs to be implemented for framework {0}".format(os.environ["mlFramework"]))
 
-def get_tabular_classifiers(clipped=True):
+def deprecated_get_tabular_classifiers(clipped=True):
     if os.environ["mlFramework"] == "keras":
         classifier = get_tabular_classifier_kr()
         if clipped:

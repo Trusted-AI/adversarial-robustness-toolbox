@@ -255,6 +255,30 @@ def test_l2_norm_images(fix_get_mnist_subset, image_classifier_list):
 
         np.testing.assert_array_almost_equal(y_test_pred, y_test_pred_expected, decimal=2)
 
+def test_classifier_unclipped_values_tabular(fix_get_iris, unclipped_tabular_classifier_list, fix_mlFramework):
+    (x_train_iris, y_train_iris), (x_test_iris, y_test_iris) = fix_get_iris
+
+    # TODO this if statement must be removed once we have a classifier for both image and tabular data
+    if unclipped_tabular_classifier_list is None:
+        logging.warning("Couldn't perform  this test because no classifier is defined")
+        return
+
+    for classifier in unclipped_tabular_classifier_list:
+        if fix_mlFramework in ["scikitlearn"]:
+            classifier.fit(x=x_test_iris, y=y_test_iris)
+
+        attack = FastGradientMethod(classifier, eps=1)
+
+        x_test_adv = attack.generate(x_test_iris)
+
+        utils_test.check_adverse_example(x_test_adv, x_test_iris, bounded=False)
+
+        y_test_true = np.argmax(y_test_iris, axis=1)
+        y_pred_test_adv = np.argmax(classifier.predict(x_test_adv), axis=1)
+        assert(y_test_true == y_pred_test_adv).all() == False
+        accuracy = np.sum(y_pred_test_adv == y_test_true) / y_test_true.shape[0]
+        logger.info('Accuracy on Iris with FGM adversarial examples: %.2f%%', (accuracy * 100))
+
 def test_classifier_type_check_fail_gradients():
     # Use a test classifier not providing gradients required by white-box attack
     from art.classifiers.scikitlearn import ScikitlearnDecisionTreeClassifier

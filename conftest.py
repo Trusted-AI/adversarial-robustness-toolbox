@@ -5,6 +5,9 @@ from tests import utils_test
 import numpy as np
 from art.defences import FeatureSqueezing
 from art.classifiers import KerasClassifier
+from sklearn.linear_model import LogisticRegression
+from sklearn.svm import SVC, LinearSVC
+from art.classifiers.scikitlearn import SklearnClassifier
 
 logger = logging.getLogger(__name__)
 art_supported_frameworks = ["keras", "tensorflow", "pytorch", "scikitlearn"]
@@ -23,6 +26,31 @@ def fix_mlFramework(request):
     # if utils_test.is_valid_framework(mlFramework):
     #     raise Exception("The mlFramework specified was incorrect. Valid options available are {0}".format(art_supported_frameworks))
     return mlFramework
+
+
+@pytest.fixture(scope="session")
+def fix_load_iris_dataset():
+    logging.info("Loading Iris dataset")
+    (x_train_iris, y_train_iris), (x_test_iris, y_test_iris), _, _ = utils.load_dataset('iris')
+
+    yield (x_train_iris, y_train_iris), (x_test_iris, y_test_iris)
+
+@pytest.fixture(scope="function")
+def fix_get_iris(fix_load_iris_dataset, fix_mlFramework):
+    (x_train_iris, y_train_iris), (x_test_iris, y_test_iris) = fix_load_iris_dataset
+
+    x_train_iris_original = x_train_iris.copy()
+    y_train_iris_original = y_train_iris.copy()
+    x_test_iris_original = x_test_iris.copy()
+    y_test_iris_original = y_test_iris.copy()
+
+    yield (x_train_iris, y_train_iris), (x_test_iris, y_test_iris)
+
+    np.testing.assert_array_almost_equal(x_train_iris_original, x_train_iris, decimal=3)
+    np.testing.assert_array_almost_equal(y_train_iris_original, y_train_iris, decimal=3)
+    np.testing.assert_array_almost_equal(x_test_iris_original, x_test_iris, decimal=3)
+    np.testing.assert_array_almost_equal(y_test_iris_original, y_test_iris, decimal=3)
+
 
 @pytest.fixture(scope="session")
 def fix_load_mnist_dataset():
@@ -74,5 +102,49 @@ def image_classifier_list(fix_mlFramework):
     if fix_mlFramework == "scikitlearn":
         logging.warning("{0} doesn't have an image classifier defined yet".format(fix_mlFramework))
         return None
+
+    raise Exception("A classifier factory method needs to be implemented for framework {0}".format(fix_mlFramework))
+
+@pytest.fixture
+def unclipped_tabular_classifier_list(fix_mlFramework):
+    if fix_mlFramework == "keras":
+        classifier = utils_test.get_tabular_classifier_kr()
+        return [KerasClassifier(model=classifier._model, use_logits=False, channel_index=1)]
+
+    if fix_mlFramework == "tensorflow":
+        logging.warning("{0} doesn't have an uncliped classifier defined yet".format(fix_mlFramework))
+        return None
+
+    if fix_mlFramework == "pytorch":
+        logging.warning("{0} doesn't have an uncliped classifier defined yet".format(fix_mlFramework))
+        return None
+
+    if fix_mlFramework == "scikitlearn":
+        model_list = [LogisticRegression(solver='lbfgs', multi_class='auto'),
+                      SVC(gamma='auto'),
+                      LinearSVC()]
+        return [SklearnClassifier(model=model) for model in model_list]
+
+    raise Exception("A classifier factory method needs to be implemented for framework {0}".format(fix_mlFramework))
+
+
+
+@pytest.fixture
+def clipped_tabular_classifier_list():
+    if fix_mlFramework == "keras":
+        return [utils_test.get_tabular_classifier_kr()]
+
+    if fix_mlFramework == "tensorflow":
+        classifier, _ = utils_test.get_tabular_classifier_tf()
+        return [classifier]
+
+    if fix_mlFramework == "pytorch":
+        return [utils_test.get_tabular_classifier_pt()]
+
+    if fix_mlFramework == "scikitlearn":
+        model_list = [LogisticRegression(solver='lbfgs', multi_class='auto'),
+                      SVC(gamma='auto'),
+                      LinearSVC()]
+        return [SklearnClassifier(model=model, clip_values=(0, 1)) for model in model_list]
 
     raise Exception("A classifier factory method needs to be implemented for framework {0}".format(fix_mlFramework))

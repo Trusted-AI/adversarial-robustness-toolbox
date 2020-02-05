@@ -238,7 +238,7 @@ class TestFastGradientMethodImages(TestBase):
     #         self.assertGreaterEqual((targets == y_test_pred_adv).sum(), self.x_test_mnist.shape[0] // 2)
 
     def test_targeted_attack_tabular(self):
-        classifier_list = utils_test.get_tabular_classifiers()
+        classifier_list = utils_test.deprecated_get_tabular_classifiers()
 
         for classifier in classifier_list:
             # TODO remove that platform specific case
@@ -267,7 +267,7 @@ class TestFastGradientMethodImages(TestBase):
 
 
     def test_untargeted_attack_tabular(self):
-        classifier_list = utils_test.get_tabular_classifiers()
+        classifier_list = utils_test.deprecated_get_tabular_classifiers()
 
         for classifier in classifier_list:
             #TODO remove that platform specific case
@@ -321,29 +321,29 @@ class TestFastGradientMethodImages(TestBase):
     #         y_test_pred_adv = get_labels_np_array(classifier.predict(x_test_adv))
     #         self.check_adverse_predicted_sample(y_test_pred_adv, self.y_test_mnist)
 
-    def test_classifier_without_clipped_values_tabular(self):
-        classifier_list = utils_test.get_tabular_classifiers(clipped=False)
-
-        # TODO this if statement must be removed once we have a classifier for both image and tabular data
-        if classifier_list is None:
-            logging.warning("Couldn't perform  this test because no classifier is defined")
-            return
-
-        for classifier in classifier_list:
-            if os.environ["mlFramework"] in ["scikitlearn"]:
-                classifier.fit(x=self.x_test_iris, y=self.y_test_iris)
-
-            attack = FastGradientMethod(classifier, eps=1)
-
-            x_test_adv = attack.generate(self.x_test_iris)
-
-            self.deprecated_check_adverse_example(x_test_adv, self.x_test_iris, bounded=False)
-
-            y_test_true = np.argmax(self.y_test_iris, axis=1)
-            y_pred_test_adv = np.argmax(classifier.predict(x_test_adv), axis=1)
-            self.assertFalse((y_test_true == y_pred_test_adv).all())
-            accuracy = np.sum(y_pred_test_adv == y_test_true) / y_test_true.shape[0]
-            logger.info('Accuracy on Iris with FGM adversarial examples: %.2f%%', (accuracy * 100))
+    # def test_classifier_without_clipped_values_tabular(self):
+    #     classifier_list = utils_test.deprecated_get_tabular_classifiers(clipped=False)
+    #
+    #     # TODO this if statement must be removed once we have a classifier for both image and tabular data
+    #     if classifier_list is None:
+    #         logging.warning("Couldn't perform  this test because no classifier is defined")
+    #         return
+    #
+    #     for classifier in classifier_list:
+    #         if os.environ["mlFramework"] in ["scikitlearn"]:
+    #             classifier.fit(x=self.x_test_iris, y=self.y_test_iris)
+    #
+    #         attack = FastGradientMethod(classifier, eps=1)
+    #
+    #         x_test_adv = attack.generate(self.x_test_iris)
+    #
+    #         self.deprecated_check_adverse_example(x_test_adv, self.x_test_iris, bounded=False)
+    #
+    #         y_test_true = np.argmax(self.y_test_iris, axis=1)
+    #         y_pred_test_adv = np.argmax(classifier.predict(x_test_adv), axis=1)
+    #         self.assertFalse((y_test_true == y_pred_test_adv).all())
+    #         accuracy = np.sum(y_pred_test_adv == y_test_true) / y_test_true.shape[0]
+    #         logger.info('Accuracy on Iris with FGM adversarial examples: %.2f%%', (accuracy * 100))
 
     # def test_classifier_type_check_fail_classifier(self):
     #     # Use a useless test classifier to test basic classifier properties
