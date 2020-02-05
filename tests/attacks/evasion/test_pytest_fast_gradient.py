@@ -30,73 +30,37 @@ import pytest
 
 logger = logging.getLogger(__name__)
 
-
-@pytest.fixture(scope="function")
-def fix_get_mnist_subset(fix_get_mnist_dataset):
-    (x_train_mnist, y_train_mnist), (x_test_mnist, y_test_mnist) = fix_get_mnist_dataset
+@pytest.fixture()
+def fix_get_mnist_subset(fix_get_mnist):
+    (x_train_mnist, y_train_mnist), (x_test_mnist, y_test_mnist) = fix_get_mnist
     n_train = 100
     n_test = 11
     yield (x_train_mnist[:n_train], y_train_mnist[:n_train], x_test_mnist[:n_test], y_test_mnist[:n_test])
-    print("tmp")
 
-def test_minimal_perturbations_images(fix_get_mnist_subset):
-    print("tmp1")
-    tmp = fix_get_mnist_subset
-    print("tmp2")
+def test_minimal_perturbations_images(fix_get_mnist_subset, image_classifier_list):
+    (x_train_mnist, y_train_mnist, x_test_mnist, y_test_mnist) = fix_get_mnist_subset
 
-def test_minimal_perturbations_images_2(fix_get_mnist_subset):
-    print("tmp1")
-    tmp = fix_get_mnist_subset
-    print("tmp2")
+    # TODO this if statement must be removed once we have a classifier for both image and tabular data
+    if image_classifier_list is None:
+        logging.warning("Couldn't perform  this test because no classifier is defined")
+        return
 
-# class TestFastGradientMethodImages(TestBase):
-#
-#     @classmethod
-#     def setUpClass(cls):
-#         super().setUpClass()
-#         cls.n_train = 100
-#         cls.n_test = 11
-#         cls.create_image_dataset(n_train=cls.n_train, n_test=cls.n_test)
-#
-#     def setUp(self):
-#         super().setUp()
-#         self.x_test_original = self.x_test_mnist.copy()
-#         self.x_test_potentially_modified = self.x_test_mnist
-#
-#     def tearDown(self):
-#         super().tearDown()
-#
-#         # Check that x_test has not been modified by attack and classifier
-#         self.assertAlmostEqual(float(np.max(np.abs(self.x_test_original - self.x_test_potentially_modified))), 0.0, delta=0.00001)
-#
-#     def test_minimal_perturbations_images(self):
-#
-#         classifier_list = utils_test.get_image_classifiers()
-#
-#         # TODO this if statement must be removed once we have a classifier for both image and tabular data
-#         if classifier_list is None:
-#             logging.warning("Couldn't perform  this test because no classifier is defined")
-#             return
-#
-#         for classifier in classifier_list:
-#
-#
-#             attack = FastGradientMethod(classifier, eps=1.0, batch_size=11)
-#             attack_params = {"minimal": True, "eps_step": 0.1, "eps": 5.0}
-#             attack.set_params(**attack_params)
-#
-#             x_test_adv_min = attack.generate(self.x_test_mnist)
-#
-#             self.assertAlmostEqual(float(np.mean(x_test_adv_min - self.x_test_mnist)), 0.03896513, delta=0.01)
-#             self.assertAlmostEqual(float(np.min(x_test_adv_min - self.x_test_mnist)), -0.30000000, delta=0.00001)
-#             self.assertAlmostEqual(float(np.max(x_test_adv_min - self.x_test_mnist)), 0.30000000, delta=0.00001)
-#
-#             y_test_pred = classifier.predict(x_test_adv_min)
-#
-#             y_test_pred_expected = np.asarray([4, 2, 4, 7, 0, 4, 7, 2, 0, 7, 0])
-#
-#             np.testing.assert_array_equal(np.argmax(y_test_pred, axis=1), y_test_pred_expected)
+    for classifier in image_classifier_list:
+        attack = FastGradientMethod(classifier, eps=1.0, batch_size=11)
+        attack_params = {"minimal": True, "eps_step": 0.1, "eps": 5.0}
+        attack.set_params(**attack_params)
 
+        x_test_adv_min = attack.generate(x_test_mnist)
+
+        np.testing.assert_array_almost_equal(float(np.mean(x_test_adv_min - x_test_mnist)), 0.03896513, decimal=0.01)
+        np.testing.assert_array_almost_equal(float(np.min(x_test_adv_min - x_test_mnist)), -0.30000000, decimal=0.00001)
+        np.testing.assert_array_almost_equal(float(np.max(x_test_adv_min - x_test_mnist)), 0.30000000, decimal=0.00001)
+ 
+        y_test_pred = classifier.predict(x_test_adv_min)
+
+        y_test_pred_expected = np.asarray([4, 2, 4, 7, 0, 4, 7, 2, 0, 7, 0])
+
+        np.testing.assert_array_equal(np.argmax(y_test_pred, axis=1), y_test_pred_expected)
 
 
 if __name__ == '__main__':

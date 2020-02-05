@@ -148,11 +148,14 @@ class TestBase(unittest.TestCase):
             self.assertTrue((x_adv > max).any(), "some x_test_adv values should been above 1".format(max))
             self.assertTrue((x_adv < min).any(), " some x_test_adv values should have all been below {0}".format(min))
 
-    def _check_y_pred_adv(self, y_pred_adv, y_expected):
+    def check_adverse_predicted_sample(self, y_pred_adv, y_expected):
         self.assertFalse((y_expected == y_pred_adv).all())
 
 
 # ----------------------------------------------------------------------------------------------- TEST MODELS FOR MNIST
+
+def check_adverse_predicted_sample(y_pred_adv, y_expected):
+    assert (y_expected == y_pred_adv).all(), "Adverse predicted sample was not what was expected"
 
 def is_valid_framework(framework):
     if framework not in art_supported_frameworks:
@@ -160,7 +163,7 @@ def is_valid_framework(framework):
             framework, " ".join(art_supported_frameworks)))
     return True
 
-def get_image_classifiers(defended=False):
+def deprecated_get_image_classifiers(defended=False):
     if os.environ["mlFramework"] == "keras":
         classifier = get_image_classifier_kr()
         if defended:

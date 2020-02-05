@@ -51,7 +51,7 @@ class TestFastGradientMethodImages(TestBase):
         self.assertAlmostEqual(float(np.max(np.abs(self.x_test_original - self.x_test_potentially_modified))), 0.0, delta=0.00001)
 
     def test_no_norm_images(self):
-        classifier_list = utils_test.get_image_classifiers()
+        classifier_list = utils_test.deprecated_get_image_classifiers()
 
         # TODO this if statement must be removed once we have a classifier for both image and tabular data
         if classifier_list is None:
@@ -113,7 +113,7 @@ class TestFastGradientMethodImages(TestBase):
 
     def test_minimal_perturbations_images(self):
 
-        classifier_list = utils_test.get_image_classifiers()
+        classifier_list = utils_test.deprecated_get_image_classifiers()
 
         # TODO this if statement must be removed once we have a classifier for both image and tabular data
         if classifier_list is None:
@@ -140,7 +140,7 @@ class TestFastGradientMethodImages(TestBase):
             np.testing.assert_array_equal(np.argmax(y_test_pred, axis=1), y_test_pred_expected)
 
     def test_l1_norm_images(self):
-        classifier_list = utils_test.get_image_classifiers()
+        classifier_list = utils_test.deprecated_get_image_classifiers()
 
         # TODO this if statement must be removed once we have a classifier for both image and tabular data
         if classifier_list is None:
@@ -166,7 +166,7 @@ class TestFastGradientMethodImages(TestBase):
             np.testing.assert_array_almost_equal(y_test_pred, y_test_pred_expected, decimal=4)
 
     def test_l2_norm_images(self):
-        classifier_list = utils_test.get_image_classifiers()
+        classifier_list = utils_test.deprecated_get_image_classifiers()
 
         # TODO this if statement must be removed once we have a classifier for both image and tabular data
         if classifier_list is None:
@@ -192,7 +192,7 @@ class TestFastGradientMethodImages(TestBase):
             np.testing.assert_array_almost_equal(y_test_pred, y_test_pred_expected, decimal=2)
 
     def test_random_initialisation_images(self):
-        classifier_list = utils_test.get_image_classifiers()
+        classifier_list = utils_test.deprecated_get_image_classifiers()
 
         # TODO this if statement must be removed once we have a classifier for both image and tabular data
         if classifier_list is None:
@@ -211,7 +211,7 @@ class TestFastGradientMethodImages(TestBase):
             self.assertFalse((self.x_test_mnist == x_test_adv).all())
 
     def test_targeted_attack_images(self):
-        classifier_list = utils_test.get_image_classifiers()
+        classifier_list = utils_test.deprecated_get_image_classifiers()
 
         # TODO this if statement must be removed once we have a classifier for both image and tabular data
         if classifier_list is None:
@@ -299,7 +299,7 @@ class TestFastGradientMethodImages(TestBase):
 
 
     def test_classifier_defended_images(self):
-        classifier_list = utils_test.get_image_classifiers(defended=True)
+        classifier_list = utils_test.deprecated_get_image_classifiers(defended=True)
 
         # TODO this if statement must be removed once we have a classifier for both image and tabular data
         if classifier_list is None:
@@ -314,12 +314,12 @@ class TestFastGradientMethodImages(TestBase):
             y_train_pred_adv = get_labels_np_array(classifier.predict(x_train_adv))
             y_train_labels = get_labels_np_array(self.y_train_mnist)
             # TODO Shouldn't the y_adv and y_expected labels be the same for the defence to be correct?
-            self._check_y_pred_adv(y_train_pred_adv, y_train_labels)
+            self.check_adverse_predicted_sample(y_train_pred_adv, y_train_labels)
 
             x_test_adv = attack.generate(self.x_test_mnist)
             self.check_adverse_example(x_test_adv, self.x_test_mnist)
             y_test_pred_adv = get_labels_np_array(classifier.predict(x_test_adv))
-            self._check_y_pred_adv(y_test_pred_adv, self.y_test_mnist)
+            self.check_adverse_predicted_sample(y_test_pred_adv, self.y_test_mnist)
 
     def test_classifier_without_clipped_values_tabular(self):
         classifier_list = utils_test.get_tabular_classifiers(clipped=False)
