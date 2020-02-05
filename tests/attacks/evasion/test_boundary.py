@@ -41,7 +41,7 @@ def test_targeted_images(fix_get_mnist_subset, image_classifier_list, fix_mlFram
         if fix_mlFramework in ["keras"]:
             k.clear_session()
 
-def test_pytorch_iris(fix_get_iris, clipped_tabular_classifier_list, fix_mlFramework):
+def test_untargeted_tabular(fix_get_iris, clipped_tabular_classifier_list, fix_mlFramework):
     (x_train_iris, y_train_iris), (x_test_iris, y_test_iris) = fix_get_iris
 
     for classifier in clipped_tabular_classifier_list:
