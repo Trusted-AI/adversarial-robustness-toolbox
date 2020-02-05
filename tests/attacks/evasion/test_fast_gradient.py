@@ -266,32 +266,32 @@ class TestFastGradientMethodImages(TestBase):
 
 
 
-    def test_untargeted_attack_tabular(self):
-        classifier_list = utils_test.deprecated_get_tabular_classifiers()
-
-        for classifier in classifier_list:
-            #TODO remove that platform specific case
-            if os.environ["mlFramework"] in ["scikitlearn"]:
-                classifier.fit(x=self.x_test_iris, y=self.y_test_iris)
-
-            attack = FastGradientMethod(classifier, eps=.1)
-            x_test_adv = attack.generate(self.x_test_iris)
-
-            # TODO remove that platform specific case
-            if os.environ["mlFramework"] in ["scikitlearn"]:
-                np.testing.assert_array_almost_equal(np.abs(x_test_adv - self.x_test_iris), .1, decimal=5)
-            self.deprecated_check_adverse_example(x_test_adv, self.x_test_iris)
-
-            y_pred_test_adv = np.argmax(classifier.predict(x_test_adv), axis=1)
-            y_test_true = np.argmax(self.y_test_iris, axis=1)
-
-            self.assertTrue((y_test_true == y_pred_test_adv).any(),
-                            "An untargeted attack should have changed SOME predictions")
-            self.assertFalse((y_test_true == y_pred_test_adv).all(),
-                             "An untargeted attack should NOT have changed all predictions")
-            accuracy = np.sum(y_pred_test_adv == y_test_true) / y_test_true.shape[0]
-            logger.info('Accuracy of ' + classifier.__class__.__name__ + ' on Iris with FGM adversarial examples: '
-                                                                         '%.2f%%', (accuracy * 100))
+    # def test_untargeted_attack_tabular(self):
+    #     classifier_list = utils_test.deprecated_get_tabular_classifiers()
+    #
+    #     for classifier in classifier_list:
+    #         #TODO remove that platform specific case
+    #         if os.environ["mlFramework"] in ["scikitlearn"]:
+    #             classifier.fit(x=self.x_test_iris, y=self.y_test_iris)
+    #
+    #         attack = FastGradientMethod(classifier, eps=.1)
+    #         x_test_adv = attack.generate(self.x_test_iris)
+    #
+    #         # TODO remove that platform specific case
+    #         if os.environ["mlFramework"] in ["scikitlearn"]:
+    #             np.testing.assert_array_almost_equal(np.abs(x_test_adv - self.x_test_iris), .1, decimal=5)
+    #         self.deprecated_check_adverse_example(x_test_adv, self.x_test_iris)
+    #
+    #         y_pred_test_adv = np.argmax(classifier.predict(x_test_adv), axis=1)
+    #         y_test_true = np.argmax(self.y_test_iris, axis=1)
+    #
+    #         self.assertTrue((y_test_true == y_pred_test_adv).any(),
+    #                         "An untargeted attack should have changed SOME predictions")
+    #         self.assertFalse((y_test_true == y_pred_test_adv).all(),
+    #                          "An untargeted attack should NOT have changed all predictions")
+    #         accuracy = np.sum(y_pred_test_adv == y_test_true) / y_test_true.shape[0]
+    #         logger.info('Accuracy of ' + classifier.__class__.__name__ + ' on Iris with FGM adversarial examples: '
+    #                                                                      '%.2f%%', (accuracy * 100))
 
 
 
