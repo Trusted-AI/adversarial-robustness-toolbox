@@ -45,10 +45,19 @@ def test_targeted_tabular(fix_get_iris, clipped_tabular_classifier_list, fix_mlF
 
 
 
-#TODO to parameterization on dataset AND clipped/Unclipped
-def test_untargeted_tabular(tabular_classifier_list, fix_mlFramework, fix_get_iris):
+# @pytest.fixture(scope="module", params=["smtp.gmail.com", "mail.python.org"])
 
-    classifier_list = tabular_classifier_list(clipped=True)
+#TODO to parameterization on dataset AND clipped/Unclipped
+
+@pytest.mark.parametrize("test_input,expected", [("3+5", 8), ("2+4", 6), ("6*9", 42)])
+def test_untargeted_tabular1(test_input, expected, fix_mlFramework):
+    tmp = ""
+
+    tmp2 = ""
+
+@pytest.mark.parametrize("clipped_classifier,expected", [(True, 8), (False, 6)])
+def test_untargeted_tabular(tabular_classifier_list, fix_mlFramework, fix_get_iris, clipped_classifier, expected):
+    classifier_list = tabular_classifier_list(clipped=clipped_classifier)
     if classifier_list is None:
         logging.warning("Couldn't perform  this test because no classifier is defined")
         return
@@ -61,28 +70,7 @@ def test_untargeted_tabular(tabular_classifier_list, fix_mlFramework, fix_get_ir
         utils_attack._backend_untargeted_tabular(attack, fix_get_iris, classifier, fix_mlFramework,
                                                  clipped=False)
 
-#TODO to parameterization on dataset AND clipped/Unclipped
-# def test_untargeted_tabular(clipped_tabular_classifier_list, unclipped_tabular_classifier_list, fix_mlFramework, fix_get_iris):
-#
-#     for classifier in clipped_tabular_classifier_list:
-#         if BoundaryAttack.is_valid_classifier_type(classifier) is False:
-#             continue
-#
-#         attack = BoundaryAttack(classifier, targeted=False, max_iter=10)
-#         utils_attack._backend_untargeted_tabular(attack, fix_get_iris, classifier, fix_mlFramework,
-#                                                  clipped=True)
-#
-#     if unclipped_tabular_classifier_list is None:
-#         logging.warning("Couldn't perform  this test because no classifier is defined")
-#         return
-#
-#     for classifier in unclipped_tabular_classifier_list:
-#         if BoundaryAttack.is_valid_classifier_type(classifier) is False:
-#             continue
-#
-#         attack = BoundaryAttack(classifier, targeted=False, max_iter=10)
-#         utils_attack._backend_untargeted_tabular(attack, fix_get_iris, classifier, fix_mlFramework,
-#                                                  clipped=False)
+
 
 
 def test_untargeted_images(fix_get_mnist_subset, image_classifier_list, fix_mlFramework):
