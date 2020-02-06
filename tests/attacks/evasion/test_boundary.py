@@ -29,14 +29,12 @@ def fix_get_mnist_subset(fix_get_mnist):
 @pytest.mark.parametrize("clipped_classifier, targeted", [(True, True), (True, False), (False, True), (False, False)])
 def test_tabular(tabular_classifier_list, fix_mlFramework, fix_get_iris, clipped_classifier, targeted):
 
-    classifier_list = tabular_classifier_list(clipped=clipped_classifier)
+    classifier_list = tabular_classifier_list(BoundaryAttack, clipped=clipped_classifier)
     if classifier_list is None:
         logging.warning("Couldn't perform  this test because no classifier is defined")
         return
 
     for classifier in classifier_list:
-        if BoundaryAttack.is_valid_classifier_type(classifier) is False:
-            continue
 
         attack = BoundaryAttack(classifier, targeted=targeted, max_iter=10)
         if targeted:
