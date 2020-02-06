@@ -24,6 +24,10 @@ def fix_get_mnist_subset(fix_get_mnist):
 
 def test_targeted_images(fix_get_mnist_subset, image_classifier_list, fix_mlFramework):
 
+    if image_classifier_list is None:
+        logging.warning("Couldn't perform  this test because no classifier is defined")
+        return
+
     (x_train_mnist, y_train_mnist, x_test_mnist, y_test_mnist) = fix_get_mnist_subset
 
     for classifier in image_classifier_list:
@@ -44,8 +48,17 @@ def test_targeted_images(fix_get_mnist_subset, image_classifier_list, fix_mlFram
 
 
 def test_targeted_tabular(fix_get_iris, clipped_tabular_classifier_list, fix_mlFramework):
+
+    if clipped_tabular_classifier_list is None:
+        logging.warning("Couldn't perform  this test because no classifier is defined")
+        return
+
     (x_train_iris, y_train_iris), (x_test_iris, y_test_iris) = fix_get_iris
     for classifier in clipped_tabular_classifier_list:
+
+        if fix_mlFramework in ["scikitlearn"]:
+            classifier.fit(x=x_test_iris, y=y_test_iris)
+
         targets = random_targets(y_test_iris, nb_classes=3)
         attack = BoundaryAttack(classifier, targeted=True, max_iter=10)
         x_test_adv = attack.generate(x_test_iris, **{'y': targets})
@@ -60,9 +73,18 @@ def test_targeted_tabular(fix_get_iris, clipped_tabular_classifier_list, fix_mlF
         logger.info('Success rate of targeted boundary on Iris: %.2f%%', (accuracy * 100))
 
 def test_untargeted_clipped_tabular(fix_get_iris, clipped_tabular_classifier_list, fix_mlFramework):
+
+    if clipped_tabular_classifier_list is None:
+        logging.warning("Couldn't perform  this test because no classifier is defined")
+        return
+
     (x_train_iris, y_train_iris), (x_test_iris, y_test_iris) = fix_get_iris
 
     for classifier in clipped_tabular_classifier_list:
+
+        if fix_mlFramework in ["scikitlearn"]:
+            classifier.fit(x=x_test_iris, y=y_test_iris)
+
         attack = BoundaryAttack(classifier, targeted=False, max_iter=10)
 
         x_test_adv = attack.generate(x_test_iris.astype(np.float32))
@@ -75,8 +97,16 @@ def test_untargeted_clipped_tabular(fix_get_iris, clipped_tabular_classifier_lis
         logger.info('Accuracy on Iris with boundary adversarial examples: %.2f%%', (accuracy * 100))
 
 def test_untargeted_unclipped_tabular(fix_get_iris, clipped_tabular_classifier_list, fix_mlFramework):
+    if clipped_tabular_classifier_list is None:
+        logging.warning("Couldn't perform  this test because no classifier is defined")
+        return
+
     (x_train_iris, y_train_iris), (x_test_iris, y_test_iris) = fix_get_iris
     for classifier in clipped_tabular_classifier_list:
+
+        if fix_mlFramework in ["scikitlearn"]:
+            classifier.fit(x=x_test_iris, y=y_test_iris)
+
         # Recreate a classifier without clip values
         # classifier = KerasClassifier(model=classifier._model, use_logits=False, channel_index=1)
         attack = BoundaryAttack(classifier, targeted=False, max_iter=10)
@@ -89,6 +119,10 @@ def test_untargeted_unclipped_tabular(fix_get_iris, clipped_tabular_classifier_l
         logger.info('Accuracy on Iris with boundary adversarial examples: %.2f%%', (accuracy * 100))
 
 def test_untargeted_images(fix_get_mnist_subset, image_classifier_list, fix_mlFramework):
+    if image_classifier_list is None:
+        logging.warning("Couldn't perform  this test because no classifier is defined")
+        return
+
     (x_train_mnist, y_train_mnist, x_test_mnist, y_test_mnist) = fix_get_mnist_subset
 
     for classifier in image_classifier_list:
