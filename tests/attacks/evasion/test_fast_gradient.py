@@ -26,6 +26,7 @@ from art.attacks import FastGradientMethod
 from art.utils import get_labels_np_array, random_targets
 from tests.utils_test import TestBase
 from tests import utils_test
+from tests import utils_test_attributes
 import pytest
 from art import utils
 from art.classifiers.classifier import Classifier, ClassifierGradients
@@ -312,61 +313,12 @@ def test_untargeted_tabular(fix_get_iris, clipped_tabular_classifier_list, fix_m
         accuracy = np.sum(y_pred_test_adv == y_test_true) / y_test_true.shape[0]
         logger.info('Accuracy of ' + classifier.__class__.__name__ + ' on Iris with FGM adversarial examples: '
                                                                      '%.2f%%', (accuracy * 100))
-def _backend_targeted_tabular(attack, classifier, fix_get_iris, fix_mlFramework):
-    (x_train_iris, y_train_iris), (x_test_iris, y_test_iris) = fix_get_iris
-
-    if fix_mlFramework in ["scikitlearn"]:
-        classifier.fit(x=x_test_iris, y=y_test_iris)
-
-    targets = random_targets(y_test_iris, nb_classes=3)
-    x_test_adv = attack.generate(x_test_iris, **{'y': targets})
-
-    utils_test.check_adverse_example_x(x_test_adv, x_test_iris)
-
-    y_pred_adv = np.argmax(classifier.predict(x_test_adv), axis=1)
-    target = np.argmax(targets, axis=1)
-    assert (target == y_pred_adv).any()
-
-    accuracy = np.sum(y_pred_adv == np.argmax(targets, axis=1)) / y_test_iris.shape[0]
-    logger.info('Success rate of targeted boundary on Iris: %.2f%%', (accuracy * 100))
 
 def test_targeted_tabular(fix_get_iris, clipped_tabular_classifier_list, fix_mlFramework):
-    batch_size = 1
-    # TODO remove that platform specific case
-    if fix_mlFramework in ["pytorch", "tensorflow", "scikitlearn"]:
-        batch_size = 128
-
     for classifier in clipped_tabular_classifier_list:
-        attack = FastGradientMethod(classifier, targeted=True, eps=.1, batch_size=batch_size)
-        _backend_targeted_tabular(attack, classifier, fix_get_iris, fix_mlFramework)
+        attack = FastGradientMethod(classifier, targeted=True, eps=.1, batch_size=128)
+        utils_test_attributes._backend_targeted_tabular(attack, classifier, fix_get_iris, fix_mlFramework)
 
-def test_targeted_tabular_deprecated(fix_get_iris, clipped_tabular_classifier_list, fix_mlFramework):
-    (x_train_iris, y_train_iris), (x_test_iris, y_test_iris) = fix_get_iris
-
-    for classifier in clipped_tabular_classifier_list:
-        if FastGradientMethod.is_valid_classifier_type(classifier) is False:
-            continue
-
-        # TODO remove that platform specific case
-        if fix_mlFramework in ["scikitlearn"]:
-            classifier.fit(x=x_test_iris, y=y_test_iris)
-
-        batch_size = 1
-        # TODO remove that platform specific case
-        if fix_mlFramework in ["pytorch", "tensorflow", "scikitlearn"]:
-            batch_size = 128
-        y_test_true = np.argmax(y_test_iris, axis=1)
-        targets = random_targets(y_test_iris, nb_classes=3)
-        y_targeted = np.argmax(targets, axis=1)
-        attack = FastGradientMethod(classifier, targeted=True, eps=.1, batch_size=batch_size)
-        x_test_adv = attack.generate(x_test_iris, **{'y': targets})
-
-        utils_test.check_adverse_example_x(x_test_adv, x_test_iris)
-
-        y_pred_test_adv = np.argmax(classifier.predict(x_test_adv), axis=1)
-        assert (y_targeted == y_pred_test_adv).any()
-        accuracy = np.sum(y_pred_test_adv == y_targeted) / y_test_true.shape[0]
-        logger.info('Success rate of ' + classifier.__class__.__name__ + ' on targeted FGM on Iris: %.2f%%', (accuracy * 100))
 
 def test_classifier_type_check_fail_gradients():
     # Use a test classifier not providing gradients required by white-box attack
