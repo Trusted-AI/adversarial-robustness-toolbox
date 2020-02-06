@@ -47,13 +47,14 @@ class DetectorClassifier(ClassifierNeuralNetwork, ClassifierGradients, Classifie
         :type classifier: :class:`.Classifier`
         :param detector: A trained detector applied for the binary classification.
         :type detector: :class:`.Detector`
-        :param preprocessing_defences: Preprocessing defence(s) to be activated with the classifier.
+        :param preprocessing_defences: Preprocessing defence(s) to be activated with the classifier. Not applicable
+               in this classifier.
         :type preprocessing_defences: :class:`.Preprocessor` or `list(Preprocessor)` instances
         :param postprocessing_defences: Postprocessing defence(s) to be activated with the classifier.
         :type postprocessing_defences: :class:`.Postprocessor` or `list(Postprocessor)` instances
         :param preprocessing: Tuple of the form `(subtractor, divider)` of floats or `np.ndarray` of values to be
                used for data preprocessing. The first value will be subtracted from the input. The input will then
-               be divided by the second one.
+               be divided by the second one. Not applicable in this classifier.
         :type preprocessing: `tuple`
         """
         super(DetectorClassifier, self).__init__(clip_values=classifier.clip_values,
@@ -79,12 +80,9 @@ class DetectorClassifier(ClassifierNeuralNetwork, ClassifierGradients, Classifie
         :return: Array of predictions of shape `(nb_inputs, nb_classes)`.
         :rtype: `np.ndarray`
         """
-        # Apply preprocessing defences
-        x_defences, _ = self._apply_preprocessing(x, y=None, fit=False)
-
         # Compute the prediction logits
-        classifier_outputs = self.classifier.predict(x=x_defences, batch_size=batch_size)
-        detector_outputs = self.detector.predict(x=x_defences, batch_size=batch_size)
+        classifier_outputs = self.classifier.predict(x=x, batch_size=batch_size)
+        detector_outputs = self.detector.predict(x=x, batch_size=batch_size)
         detector_outputs = (np.reshape(detector_outputs, [-1]) + 1) * np.max(classifier_outputs, axis=1)
         detector_outputs = np.reshape(detector_outputs, [-1, 1])
         combined_outputs = np.concatenate([classifier_outputs, detector_outputs], axis=1)
@@ -152,9 +150,6 @@ class DetectorClassifier(ClassifierNeuralNetwork, ClassifierGradients, Classifie
                     and label.shape[0] == x.shape[0])):
             raise ValueError('Label %s is out of range.' % label)
 
-        # Apply preprocessing
-        x_defences, _ = self._apply_preprocessing(x, y=None, fit=False)
-
         # Compute the gradient and return
         if label is None:
             combined_grads = self._compute_combined_grads(x, label=None)
@@ -162,24 +157,24 @@ class DetectorClassifier(ClassifierNeuralNetwork, ClassifierGradients, Classifie
         elif isinstance(label, (int, np.int)):
             if label < self.nb_classes() - 1:
                 # Compute and return from the classifier gradients
-                combined_grads = self.classifier.class_gradient(x=x_defences, label=label)
+                combined_grads = self.classifier.class_gradient(x=x, label=label)
 
             else:
                 # First compute the classifier gradients
-                classifier_grads = self.classifier.class_gradient(x=x_defences, label=None)
+                classifier_grads = self.classifier.class_gradient(x=x, label=None)
 
                 # Then compute the detector gradients
-                detector_grads = self.detector.class_gradient(x=x_defences, label=0)
+                detector_grads = self.detector.class_gradient(x=x, label=0)
 
                 # Chain the detector gradients for the first component
-                classifier_preds = self.classifier.predict(x=x_defences)
+                classifier_preds = self.classifier.predict(x=x)
                 maxind_classifier_preds = np.argmax(classifier_preds, axis=1)
-                max_classifier_preds = classifier_preds[np.arange(x_defences.shape[0]), maxind_classifier_preds]
+                max_classifier_preds = classifier_preds[np.arange(x.shape[0]), maxind_classifier_preds]
                 first_detector_grads = max_classifier_preds[:, None, None, None, None] * detector_grads
 
                 # Chain the detector gradients for the second component
                 max_classifier_grads = classifier_grads[np.arange(len(classifier_grads)), maxind_classifier_preds]
-                detector_preds = self.detector.predict(x=x_defences)
+                detector_preds = self.detector.predict(x=x)
                 second_detector_grads = max_classifier_grads * (detector_preds + 1)[:, None, None]
                 second_detector_grads = second_detector_grads[None, ...]
                 second_detector_grads = np.swapaxes(second_detector_grads, 0, 1)
@@ -193,31 +188,30 @@ class DetectorClassifier(ClassifierNeuralNetwork, ClassifierGradients, Classifie
             detector_idx = np.where(label == self.nb_classes() - 1)
 
             # Initialize the combined gradients
-            combined_grads = np.zeros(shape=(x_defences.shape[0], 1, x_defences.shape[1], x_defences.shape[2],
-                                             x_defences.shape[3]))
+            combined_grads = np.zeros(shape=(x.shape[0], 1, x.shape[1], x.shape[2], x.shape[3]))
 
             # First compute the classifier gradients for classifier_idx
             if classifier_idx:
-                combined_grads[classifier_idx] = self.classifier.class_gradient(x=x_defences[classifier_idx],
+                combined_grads[classifier_idx] = self.classifier.class_gradient(x=x[classifier_idx],
                                                                                 label=label[classifier_idx])
 
             # Then compute the detector gradients for detector_idx
             if detector_idx:
                 # First compute the classifier gradients for detector_idx
-                classifier_grads = self.classifier.class_gradient(x=x_defences[detector_idx], label=None)
+                classifier_grads = self.classifier.class_gradient(x=x[detector_idx], label=None)
 
                 # Then compute the detector gradients for detector_idx
-                detector_grads = self.detector.class_gradient(x=x_defences[detector_idx], label=0)
+                detector_grads = self.detector.class_gradient(x=x[detector_idx], label=0)
 
                 # Chain the detector gradients for the first component
-                classifier_preds = self.classifier.predict(x=x_defences[detector_idx])
+                classifier_preds = self.classifier.predict(x=x[detector_idx])
                 maxind_classifier_preds = np.argmax(classifier_preds, axis=1)
                 max_classifier_preds = classifier_preds[np.arange(len(detector_idx)), maxind_classifier_preds]
                 first_detector_grads = max_classifier_preds[:, None, None, None, None] * detector_grads
 
                 # Chain the detector gradients for the second component
                 max_classifier_grads = classifier_grads[np.arange(len(classifier_grads)), maxind_classifier_preds]
-                detector_preds = self.detector.predict(x=x_defences[detector_idx])
+                detector_preds = self.detector.predict(x=x[detector_idx])
                 second_detector_grads = max_classifier_grads * (detector_preds + 1)[:, None, None]
                 second_detector_grads = second_detector_grads[None, ...]
                 second_detector_grads = np.swapaxes(second_detector_grads, 0, 1)
@@ -227,8 +221,6 @@ class DetectorClassifier(ClassifierNeuralNetwork, ClassifierGradients, Classifie
 
                 # Reassign the combined gradients
                 combined_grads[detector_idx] = detector_grads
-
-        combined_grads = self._apply_preprocessing_gradient(x, combined_grads)
 
         return combined_grads
 
