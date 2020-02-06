@@ -26,35 +26,33 @@ def fix_get_mnist_subset(fix_get_mnist):
     yield (x_train_mnist[:n_train], y_train_mnist[:n_train], x_test_mnist[:n_test], y_test_mnist[:n_test])
 
 
-@pytest.mark.parametrize("clipped_classifier, targeted", [(True, True), (True, False), (False, True), (False, False)])
-def test_tabular(tabular_classifier_list, fix_mlFramework, fix_get_iris, clipped_classifier, targeted):
+# @pytest.mark.parametrize("clipped_classifier, targeted", [(True, True), (True, False), (False, True), (False, False)])
+# def test_tabular(tabular_classifier_list, fix_mlFramework, fix_get_iris, clipped_classifier, targeted):
+#
+#     classifier_list = tabular_classifier_list(BoundaryAttack, clipped=clipped_classifier)
+#     if classifier_list is None:
+#         logging.warning("Couldn't perform  this test because no classifier is defined")
+#         return
+#
+#     for classifier in classifier_list:
+#
+#         attack = BoundaryAttack(classifier, targeted=targeted, max_iter=10)
+#         if targeted:
+#             utils_attack._backend_targeted_tabular(attack,  classifier, fix_get_iris, fix_mlFramework)
+#         else:
+#             utils_attack._backend_untargeted_tabular(attack, fix_get_iris, classifier, fix_mlFramework,
+#                                                      clipped=clipped_classifier)
 
-    classifier_list = tabular_classifier_list(BoundaryAttack, clipped=clipped_classifier)
+@pytest.mark.parametrize("targeted", [True, False])
+def test_images(fix_get_mnist_subset, new_image_classifier_list, fix_mlFramework, targeted):
+    classifier_list = new_image_classifier_list(BoundaryAttack)
     if classifier_list is None:
-        logging.warning("Couldn't perform  this test because no classifier is defined")
-        return
-
-    for classifier in classifier_list:
-
-        attack = BoundaryAttack(classifier, targeted=targeted, max_iter=10)
-        if targeted:
-            utils_attack._backend_targeted_tabular(attack,  classifier, fix_get_iris, fix_mlFramework)
-        else:
-            utils_attack._backend_untargeted_tabular(attack, fix_get_iris, classifier, fix_mlFramework,
-                                                     clipped=clipped_classifier)
-
-@pytest.mark.parametrize("targeted", [(True), (False)])
-def test_images(fix_get_mnist_subset, image_classifier_list, fix_mlFramework, targeted):
-
-    if image_classifier_list is None:
         logging.warning("Couldn't perform  this test because no classifier is defined")
         return
 
     (x_train_mnist, y_train_mnist, x_test_mnist, y_test_mnist) = fix_get_mnist_subset
 
-    for classifier in image_classifier_list:
-        if BoundaryAttack.is_valid_classifier_type(classifier) is False:
-            continue
+    for classifier in classifier_list:
 
         attack = BoundaryAttack(classifier=classifier, targeted=targeted, max_iter=20)
         if targeted:

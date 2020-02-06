@@ -78,6 +78,44 @@ def fix_get_mnist(fix_load_mnist_dataset, fix_mlFramework):
     np.testing.assert_array_almost_equal(x_test_mnist_original, x_test_mnist, decimal=3)
     np.testing.assert_array_almost_equal(y_test_mnist_original, y_test_mnist, decimal=3)
 
+@pytest.fixture
+def new_image_classifier_list(fix_mlFramework):
+    def _new_image_classifier_list(attack, defended=False):
+        if fix_mlFramework == "keras":
+            if defended:
+                classifier = utils_test.get_image_classifier_kr()
+                # Get the ready-trained Keras model
+                fs = FeatureSqueezing(bit_depth=1, clip_values=(0, 1))
+                classifier_list = [KerasClassifier(model=classifier._model, clip_values=(0, 1), defences=fs)]
+            else:
+                classifier_list = [utils_test.get_image_classifier_kr()]
+        if fix_mlFramework == "tensorflow":
+            if defended:
+                logging.warning("{0} doesn't have a defended image classifier defined yet".format(fix_mlFramework))
+                classifier_list =  None
+            else:
+                classifier, sess = utils_test.get_image_classifier_tf()
+            classifier_list =  [classifier]
+        if fix_mlFramework == "pytorch":
+            if defended:
+                logging.warning("{0} doesn't have a defended image classifier defined yet".format(fix_mlFramework))
+                classifier_list =  None
+            else:
+                classifier_list =  [utils_test.get_image_classifier_pt()]
+        if fix_mlFramework == "scikitlearn":
+            if defended:
+                logging.warning("{0} doesn't have a defended image classifier defined yet".format(fix_mlFramework))
+                classifier_list =  None
+            else:
+                logging.warning("{0} doesn't have an image classifier defined yet".format(fix_mlFramework))
+            classifier_list =  None
+
+        if classifier_list is None:
+            return None
+
+        return [potential_classier for potential_classier in classifier_list if
+                attack.is_valid_classifier_type(classifier)]
+    return _new_image_classifier_list
 
 @pytest.fixture
 def defended_image_classifier_list(fix_mlFramework):
@@ -115,37 +153,39 @@ def make_customer_record():
 @pytest.fixture
 def tabular_classifier_list(fix_mlFramework):
     def _tabular_classifier_list(attack, clipped=True):
-        if fix_mlFramework == "keras" and clipped is False:
-            classifier = utils_test.get_tabular_classifier_kr()
-            classifier_list =  [KerasClassifier(model=classifier._model, use_logits=False, channel_index=1)]
 
-        if fix_mlFramework == "tensorflow" and clipped is False:
-            logging.warning("{0} doesn't have an uncliped classifier defined yet".format(fix_mlFramework))
-            classifier_list =  None
+        if fix_mlFramework == "keras":
+            if clipped:
+                classifier_list = [utils_test.get_tabular_classifier_kr()]
+            else:
+                classifier = utils_test.get_tabular_classifier_kr()
+                classifier_list = [KerasClassifier(model=classifier._model, use_logits=False, channel_index=1)]
 
-        if fix_mlFramework == "pytorch" and clipped is False:
-            logging.warning("{0} doesn't have an uncliped classifier defined yet".format(fix_mlFramework))
-            classifier_list =  None
+        if fix_mlFramework == "tensorflow":
+            if clipped:
+                classifier, _ = utils_test.get_tabular_classifier_tf()
+                classifier_list = [classifier]
+            else:
+                logging.warning("{0} doesn't have an uncliped classifier defined yet".format(fix_mlFramework))
+                classifier_list =  None
 
-        if fix_mlFramework == "scikitlearn" and clipped is False:
-            model_list = utils_test.get_tabular_classifier_scikit_list()
-            classifier_list =  [SklearnClassifier(model=model) for model in model_list]
+        if fix_mlFramework == "pytorch":
+            if clipped:
+                classifier_list = [utils_test.get_tabular_classifier_pt()]
+            else:
+                logging.warning("{0} doesn't have an uncliped classifier defined yet".format(fix_mlFramework))
+                classifier_list = None
 
-        if fix_mlFramework == "keras" and clipped is True:
-            classifier_list =  [utils_test.get_tabular_classifier_kr()]
+        if fix_mlFramework == "scikitlearn":
+            if clipped:
+                model_list = utils_test.get_tabular_classifier_scikit_list()
+                classifier_list =  [SklearnClassifier(model=model, clip_values=(0, 1)) for model in model_list]
+            else:
+                model_list = utils_test.get_tabular_classifier_scikit_list()
+                classifier_list = [SklearnClassifier(model=model) for model in model_list]
 
-        if fix_mlFramework == "tensorflow" and clipped is True:
-            classifier, _ = utils_test.get_tabular_classifier_tf()
-            classifier_list = [classifier]
-
-        if fix_mlFramework == "pytorch" and clipped is True:
-            classifier_list =  [utils_test.get_tabular_classifier_pt()]
-
-        if fix_mlFramework == "scikitlearn" and clipped is True:
-            model_list = utils_test.get_tabular_classifier_scikit_list()
-            classifier_list =  [SklearnClassifier(model=model, clip_values=(0, 1)) for model in model_list]
-
-        if classifier_list is None: return None
+        if classifier_list is None:
+            return None
 
         return [potential_classier for potential_classier in classifier_list if attack.is_valid_classifier_type(classifier)]
 
