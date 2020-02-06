@@ -117,8 +117,8 @@ def test_classifier_defended_images(fix_get_mnist_subset, defended_image_classif
             continue
 
         attack = FastGradientMethod(classifier, eps=1, batch_size=128)
-
         x_train_adv = attack.generate(x_train_mnist)
+
         utils_test.check_adverse_example_x(x_train_adv, x_train_mnist)
 
         y_train_pred_adv = get_labels_np_array(classifier.predict(x_train_adv))
@@ -312,6 +312,7 @@ def test_untargeted_tabular(fix_get_iris, clipped_tabular_classifier_list, fix_m
         accuracy = np.sum(y_pred_test_adv == y_test_true) / y_test_true.shape[0]
         logger.info('Accuracy of ' + classifier.__class__.__name__ + ' on Iris with FGM adversarial examples: '
                                                                      '%.2f%%', (accuracy * 100))
+
 
 def test_targeted_tabular(fix_get_iris, clipped_tabular_classifier_list, fix_mlFramework):
     (x_train_iris, y_train_iris), (x_test_iris, y_test_iris) = fix_get_iris
