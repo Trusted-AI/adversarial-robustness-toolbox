@@ -53,6 +53,7 @@ class Classifier(abc.ABC):
         :type preprocessing: `tuple`
         """
         from art.defences.preprocess.preprocessor import Preprocessor
+        from art.defences.postprocess.postprocessor import Postprocessor
 
         self._clip_values = clip_values
         if clip_values is not None:
@@ -66,6 +67,11 @@ class Classifier(abc.ABC):
             self.preprocessing_defences = [preprocessing_defences]
         else:
             self.preprocessing_defences = preprocessing_defences
+
+        if isinstance(postprocessing_defences, Postprocessor):
+            self.postprocessing_defences = [postprocessing_defences]
+        else:
+            self.postprocessing_defences = postprocessing_defences
 
         if preprocessing is not None and len(preprocessing) != 2:
             raise ValueError('`preprocessing` should be a tuple of 2 floats with the values to subtract and divide'
@@ -156,6 +162,7 @@ class Classifier(abc.ABC):
         :param y: Target values (class labels), where first dimension is the number of samples.
         :type y: `np.ndarray` or `None`
         :param fit: `True` if the defences are applied during training.
+        :type fit: `bool`
         :return: Value of the data after applying the defences.
         :rtype: `np.ndarray`
         """
@@ -174,7 +181,8 @@ class Classifier(abc.ABC):
         :param y: Target values (class labels), where first dimension is the number of samples.
         :type y: `np.ndarray`
         :param fit: `True` if the function is call before fit/training and `False` if the function is called before a
-                    predict operation
+                    predict operation.
+        :type fit: `bool`
         :return: Arrays for `x` and `y` after applying the defences.
         :rtype: `np.ndarray`
         """
@@ -217,6 +225,29 @@ class Classifier(abc.ABC):
 
         return res
 
+    def _apply_postprocessing(self, preds, fit):
+        """
+        Apply all defences operations on model output.
+
+        :param preds: model output to be postprocessed.
+        :type preds: `np.ndarray`
+        :param fit: `True` if the defences are applied during training.
+        :type fit: `bool`
+        :return: Postprocessed model output.
+        :rtype: `np.ndarray`
+        """
+        post_preds = preds.copy()
+        if self.postprocessing_defences is not None:
+            for defence in self.postprocessing_defences:
+                if fit:
+                    if defence.apply_fit:
+                        post_preds = defence(post_preds)
+                else:
+                    if defence.apply_predict:
+                        post_preds = defence(post_preds)
+
+        return post_preds
+
     def __repr__(self):
         class_name = self.__class__.__name__
         attributes = {(k[1:], v) if k[0] == '_' else (k, v) for (k, v) in self.__dict__.items()}
@@ -247,7 +278,8 @@ class ClassifierNeuralNetwork(abc.ABC):
         Perform prediction of the classifier for input `x`.
 
         :param x: Features in array of shape (nb_samples, nb_features) or (nb_samples, nb_pixels_1, nb_pixels_2,
-                  nb_channels) or (nb_samples, nb_channels, nb_pixels_1, nb_pixels_2)
+                  nb_channels) or (nb_samples, nb_channels, nb_pixels_1, nb_pixels_2).
+        :type x: `np.ndarray`
         :param batch_size: The batch size used for evaluating the classifer's `model`.
         :type batch_size: `int`
         :return: Array of predictions of shape `(nb_inputs, nb_classes)`.
@@ -261,7 +293,8 @@ class ClassifierNeuralNetwork(abc.ABC):
         Fit the classifier on the training set `(x, y)`.
 
         :param x: Features in array of shape (nb_samples, nb_features) or (nb_samples, nb_pixels_1, nb_pixels_2,
-                  nb_channels) or (nb_samples, nb_channels, nb_pixels_1, nb_pixels_2)
+                  nb_channels) or (nb_samples, nb_channels, nb_pixels_1, nb_pixels_2).
+        :type x: `np.ndarray`
         :param y: Target values (class labels) one-hot-encoded of shape (nb_samples, nb_classes) or indices of shape
                   (nb_samples,).
         :type y: `np.ndarray`
