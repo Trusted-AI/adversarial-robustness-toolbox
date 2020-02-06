@@ -8,8 +8,9 @@ import keras.backend as k
 logger = logging.getLogger(__name__)
 
 
-def _backend_targeted_images(attack, targets, classifier, fix_get_mnist_subset):
+def _backend_targeted_images(attack, classifier, fix_get_mnist_subset):
     (x_train_mnist, y_train_mnist, x_test_mnist, y_test_mnist) = fix_get_mnist_subset
+    targets = utils.random_targets(y_test_mnist, classifier.nb_classes())
     x_test_adv = attack.generate(x_test_mnist, y=targets)
     assert (x_test_mnist == x_test_adv).all() == False
 

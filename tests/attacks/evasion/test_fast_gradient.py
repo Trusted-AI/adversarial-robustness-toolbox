@@ -151,7 +151,6 @@ def test_random_initialisation_images(fix_get_mnist_subset, image_classifier_lis
 
 
 def test_targeted_images(fix_get_mnist_subset, image_classifier_list):
-    (x_train_mnist, y_train_mnist, x_test_mnist, y_test_mnist) = fix_get_mnist_subset
 
     # TODO this if statement must be removed once we have a classifier for both image and tabular data
     if image_classifier_list is None:
@@ -166,12 +165,7 @@ def test_targeted_images(fix_get_mnist_subset, image_classifier_list):
         attack_params = {"minimal": True, "eps_step": 0.01, "eps": 1.0}
         attack.set_params(**attack_params)
 
-        y_test_pred_sort = classifier.predict(x_test_mnist).argsort(axis=1)
-        targets = np.zeros((x_test_mnist.shape[0], 10))
-        for i in range(x_test_mnist.shape[0]):
-            targets[i, y_test_pred_sort[i, -2]] = 1.0
-
-        utils_attack._backend_targeted_images(attack, targets, classifier, fix_get_mnist_subset)
+        utils_attack._backend_targeted_images(attack, classifier, fix_get_mnist_subset)
 
 
 
@@ -297,7 +291,7 @@ def test_untargeted_tabular(clipped_tabular_classifier_list, fix_mlFramework, fi
 
 
 def test_targeted_tabular(fix_get_iris, clipped_tabular_classifier_list, fix_mlFramework):
-    
+
     for classifier in clipped_tabular_classifier_list:
         if FastGradientMethod.is_valid_classifier_type(classifier) is False:
             continue

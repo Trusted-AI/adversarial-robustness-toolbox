@@ -50,14 +50,11 @@ def test_images(fix_get_mnist_subset, new_image_classifier_list, fix_mlFramework
         logging.warning("Couldn't perform  this test because no classifier is defined")
         return
 
-    (x_train_mnist, y_train_mnist, x_test_mnist, y_test_mnist) = fix_get_mnist_subset
-
     for classifier in classifier_list:
 
         attack = BoundaryAttack(classifier=classifier, targeted=targeted, max_iter=20)
         if targeted:
-            targets = random_targets(y_test_mnist, classifier.nb_classes())
-            utils_attack._backend_targeted_images(attack, targets, classifier, fix_get_mnist_subset)
+            utils_attack._backend_targeted_images(attack, classifier, fix_get_mnist_subset)
         else:
             utils_attack._back_end_untargeted_images(attack, classifier, fix_get_mnist_subset, fix_mlFramework)
 
