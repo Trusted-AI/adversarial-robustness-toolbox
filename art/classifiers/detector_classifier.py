@@ -38,7 +38,8 @@ class DetectorClassifier(ClassifierNeuralNetwork, ClassifierGradients, Classifie
     More details in https://arxiv.org/abs/1705.07263
     """
 
-    def __init__(self, classifier, detector, defences=None, preprocessing=(0, 1)):
+    def __init__(self, classifier, detector, preprocessing_defences=None, postprocessing_defences=None,
+                 preprocessing=(0, 1)):
         """
         Initialization for the DetectorClassifier.
 
@@ -46,15 +47,20 @@ class DetectorClassifier(ClassifierNeuralNetwork, ClassifierGradients, Classifie
         :type classifier: :class:`.Classifier`
         :param detector: A trained detector applied for the binary classification.
         :type detector: :class:`.Detector`
-        :param defences: Defences to be activated with the classifier.
-        :type defences: `str` or `list(str)`
+        :param preprocessing_defences: Preprocessing defence(s) to be activated with the classifier.
+        :type preprocessing_defences: :class:`.Preprocessor` or `list(Preprocessor)` instances
+        :param postprocessing_defences: Postprocessing defence(s) to be activated with the classifier.
+        :type postprocessing_defences: :class:`.Postprocessor` or `list(Postprocessor)` instances
         :param preprocessing: Tuple of the form `(subtractor, divider)` of floats or `np.ndarray` of values to be
                used for data preprocessing. The first value will be subtracted from the input. The input will then
                be divided by the second one.
         :type preprocessing: `tuple`
         """
-        super(DetectorClassifier, self).__init__(clip_values=classifier.clip_values, preprocessing=preprocessing,
-                                                 channel_index=classifier.channel_index, defences=defences)
+        super(DetectorClassifier, self).__init__(clip_values=classifier.clip_values,
+                                                 preprocessing=preprocessing,
+                                                 channel_index=classifier.channel_index,
+                                                 preprocessing_defences=preprocessing_defences,
+                                                 postprocessing_defences=postprocessing_defences)
 
         self.classifier = classifier
         self.detector = detector
@@ -73,7 +79,7 @@ class DetectorClassifier(ClassifierNeuralNetwork, ClassifierGradients, Classifie
         :return: Array of predictions of shape `(nb_inputs, nb_classes)`.
         :rtype: `np.ndarray`
         """
-        # Apply preprocessing
+        # Apply preprocessing defences
         x_defences, _ = self._apply_preprocessing(x, y=None, fit=False)
 
         # Compute the prediction logits
@@ -83,7 +89,10 @@ class DetectorClassifier(ClassifierNeuralNetwork, ClassifierGradients, Classifie
         detector_outputs = np.reshape(detector_outputs, [-1, 1])
         combined_outputs = np.concatenate([classifier_outputs, detector_outputs], axis=1)
 
-        return combined_outputs
+        # Apply postprocessing defences
+        predictions = self._apply_postprocessing(preds=combined_outputs, fit=False)
+
+        return predictions
 
     def fit(self, x, y, batch_size=128, nb_epochs=10, **kwargs):
         """
@@ -334,4 +343,5 @@ class DetectorClassifier(ClassifierNeuralNetwork, ClassifierGradients, Classifie
 
         # Combine the gradients
         combined_logits_grads = np.concatenate([classifier_grads, detector_grads], axis=1)
+
         return combined_logits_grads
