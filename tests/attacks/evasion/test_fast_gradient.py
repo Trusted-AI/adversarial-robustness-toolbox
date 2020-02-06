@@ -214,14 +214,12 @@ def test_l2_norm_images(fix_get_mnist_subset, image_classifier_list):
 
     for classifier in classifier_list:
         attack = FastGradientMethod(classifier, eps=1, norm=2, batch_size=128)
-        expected_values = {}
-
-        expected_values["x_test_mean"] = ExpectedValue(0.007636424, 0.001)
-        expected_values["x_test_min"] = ExpectedValue(-0.211054801, 0.001)
-        expected_values["x_test_max"] = ExpectedValue(0.209592223, 0.001)
-        expected_values["y_test_pred_adv_expected"] = ExpectedValue(
+        expected_values = {"x_test_mean":ExpectedValue(0.007636424, 0.001),
+                           "x_test_min":ExpectedValue(-0.211054801, 0.001),
+                           "x_test_max":ExpectedValue(0.209592223, 0.001),
+                           "y_test_pred_adv_expected":ExpectedValue(
         np.asarray([[0.19395831, 0.11625732, 0.08293699, 0.04129186, 0.17826456, 0.06290703,
-                     0.06270657, 0.14066935, 0.07419015, 0.04681788]]), 2)
+                     0.06270657, 0.14066935, 0.07419015, 0.04681788]]), 2)}
         utils_attack._backend_norm_images(attack, classifier, fix_get_mnist_subset, expected_values)
 
 
