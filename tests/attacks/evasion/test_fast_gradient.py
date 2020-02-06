@@ -149,7 +149,7 @@ def test_random_initialisation_images(fix_get_mnist_subset, image_classifier_lis
         x_test_adv = attack.generate(x_test_mnist)
         assert (x_test_mnist == x_test_adv).all() == False
 
-def test_targeted_attack_images(fix_get_mnist_subset, image_classifier_list):
+def test_targeted_images(fix_get_mnist_subset, image_classifier_list):
     (x_train_mnist, y_train_mnist, x_test_mnist, y_test_mnist) = fix_get_mnist_subset
 
     # TODO this if statement must be removed once we have a classifier for both image and tabular data
@@ -281,7 +281,7 @@ def test_classifier_unclipped_values_tabular(fix_get_iris, unclipped_tabular_cla
         accuracy = np.sum(y_pred_test_adv == y_test_true) / y_test_true.shape[0]
         logger.info('Accuracy on Iris with FGM adversarial examples: %.2f%%', (accuracy * 100))
 
-def test_untargeted_attack_tabular(fix_get_iris, clipped_tabular_classifier_list, fix_mlFramework):
+def test_untargeted_tabular(fix_get_iris, clipped_tabular_classifier_list, fix_mlFramework):
     (x_train_iris, y_train_iris), (x_test_iris, y_test_iris) = fix_get_iris
 
     for classifier in clipped_tabular_classifier_list:
@@ -306,7 +306,7 @@ def test_untargeted_attack_tabular(fix_get_iris, clipped_tabular_classifier_list
         logger.info('Accuracy of ' + classifier.__class__.__name__ + ' on Iris with FGM adversarial examples: '
                                                                      '%.2f%%', (accuracy * 100))
 
-def test_targeted_attack_tabular(fix_get_iris, clipped_tabular_classifier_list, fix_mlFramework):
+def test_targeted_tabular(fix_get_iris, clipped_tabular_classifier_list, fix_mlFramework):
     (x_train_iris, y_train_iris), (x_test_iris, y_test_iris) = fix_get_iris
 
     for classifier in clipped_tabular_classifier_list:
