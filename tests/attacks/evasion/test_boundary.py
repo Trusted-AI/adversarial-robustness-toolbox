@@ -46,8 +46,31 @@ def test_targeted_images(fix_get_mnist_subset, image_classifier_list, fix_mlFram
         if fix_mlFramework in ["keras"]:
             k.clear_session()
 
+def _backend_targeted_tabular(attack, classifier, fix_get_iris, fix_mlFramework):
+    (x_train_iris, y_train_iris), (x_test_iris, y_test_iris) = fix_get_iris
+
+    if fix_mlFramework in ["scikitlearn"]:
+        classifier.fit(x=x_test_iris, y=y_test_iris)
+
+    targets = random_targets(y_test_iris, nb_classes=3)
+    x_test_adv = attack.generate(x_test_iris, **{'y': targets})
+
+    utils_test.check_adverse_example_x(x_test_adv, x_test_iris)
+
+    y_pred_adv = np.argmax(classifier.predict(x_test_adv), axis=1)
+    target = np.argmax(targets, axis=1)
+    assert (target == y_pred_adv).any()
+
+    accuracy = np.sum(y_pred_adv == np.argmax(targets, axis=1)) / y_test_iris.shape[0]
+    logger.info('Success rate of targeted boundary on Iris: %.2f%%', (accuracy * 100))
 
 def test_targeted_tabular(fix_get_iris, clipped_tabular_classifier_list, fix_mlFramework):
+    for classifier in clipped_tabular_classifier_list:
+        attack = BoundaryAttack(classifier, targeted=True, max_iter=10)
+        _backend_targeted_tabular(attack, classifier, fix_get_iris, fix_mlFramework)
+
+
+def test_targeted_tabular_deprecated(fix_get_iris, clipped_tabular_classifier_list, fix_mlFramework):
 
     if clipped_tabular_classifier_list is None:
         logging.warning("Couldn't perform  this test because no classifier is defined")
