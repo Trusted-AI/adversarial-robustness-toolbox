@@ -1,42 +1,30 @@
-dist: trusty
+dist: xenial
 language: python
 env:
-  - KERAS_BACKEND=tensorflow TENSORFLOW_V=1.13.2 KERAS_V=2.2.5
-  - KERAS_BACKEND=tensorflow TENSORFLOW_V=1.14.0 KERAS_V=2.2.5
   - KERAS_BACKEND=tensorflow TENSORFLOW_V=1.15.0 KERAS_V=2.2.5
-  - KERAS_BACKEND=tensorflow TENSORFLOW_V=2.0.0 KERAS_V=2.3.1
+  - KERAS_BACKEND=tensorflow TENSORFLOW_V=2.1.0 KERAS_V=2.3.1
 python:
    - "3.6"
 matrix:
   include:
     - python: 3.6
-      env: KERAS_BACKEND=tensorflow TENSORFLOW_V=1.14.0 KERAS_V=2.2.5
+      env: KERAS_BACKEND=tensorflow TENSORFLOW_V=1.15.0 KERAS_V=2.2.5
       script:
         - (pycodestyle --max-line-length=120 art || exit 0) && (pylint --disable=C0415,E1136 -rn art || exit 0)
         - py.test --pep8 -m pep8
 
 before_install:
-  - wget https://repo.continuum.io/miniconda/Miniconda3-latest-Linux-x86_64.sh -O miniconda.sh;
   - sed -i "s/tensorflow/tensorflow==${TENSORFLOW_V}/" test_requirements.txt
   - sed -i "s/keras/keras==${KERAS_V}/" test_requirements.txt
-  - bash miniconda.sh -b -p $HOME/miniconda
-  - export PATH="$HOME/miniconda/bin:$PATH"
-  - hash -r
-  - conda config --set always_yes yes --set changeps1 no
-  - conda config --add channels pytorch
-  - conda update -q conda
-  - conda info -a
 
 install:
-  - conda create -q -n test-environment python=$TRAVIS_PYTHON_VERSION --yes --file requirements.txt
-  - source activate test-environment
+  - python -m pip install --upgrade pip==19.3.1 setuptools wheel
+  - pip install -q -r requirements.txt
+  - pip install --upgrade --force-reinstall mxnet
   - pip install -q -r test_requirements.txt
-  - pip install pylint pycodestyle
-  - pip install torch==1.3.1+cpu torchvision==0.4.2+cpu -f https://download.pytorch.org/whl/torch_stable.html
-  - pip freeze
-  - conda install libgcc
-  - export LD_LIBRARY_PATH=$LD_LIBRARY_PATH:/home/travis/miniconda/envs/test-environment/lib
-  - export PYTHONPATH=".":$PYTHONPATH
+  - pip install -q pylint pycodestyle
+  - pip install -q torch==1.3.1+cpu torchvision==0.4.2+cpu -f https://download.pytorch.org/whl/torch_stable.html
+  - pip list
 
 script:
-  - travis_wait 40 ./run_tests.sh
+  - ./run_tests.sh
