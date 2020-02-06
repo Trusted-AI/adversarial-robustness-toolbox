@@ -226,9 +226,9 @@ class KerasClassifier(ClassifierNeuralNetwork, ClassifierGradients, Classifier):
         :rtype: `np.ndarray`
         """
         # Check shape of `x` because of custom function for `_loss_gradients`
-        if self._model.layers[self._input_layer].input_shape[0][1:] != x.shape[1:]:
+        if self._input_shape != x.shape[1:]:
             raise ValueError('Error when checking x: expected x to have shape {} but got array with shape {}'.format(
-                self._model.layers[self._input_layer].input_shape[0][1:], x.shape[1:]))
+                self._input_shape, x.shape[1:]))
 
         # Apply preprocessing
         x_preprocessed, y_preprocessed = self._apply_preprocessing(x, y, fit=False)
@@ -267,9 +267,9 @@ class KerasClassifier(ClassifierNeuralNetwork, ClassifierGradients, Classifier):
             raise ValueError('Label %s is out of range.' % str(label))
 
         # Check shape of `x` because of custom function for `_loss_gradients`
-        if self._model.layers[self._input_layer].input_shape[0][1:] != x.shape[1:]:
+        if self._input_shape != x.shape[1:]:
             raise ValueError('Error when checking x: expected x to have shape {} but got array with shape {}'.format(
-                self._model.layers[self._input_layer].input_shape[0][1:], x.shape[1:]))
+                self._input_shape, x.shape[1:]))
 
         self._init_class_gradients(label=label)
 
