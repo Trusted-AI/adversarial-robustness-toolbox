@@ -42,6 +42,7 @@ def test_targeted_images(fix_get_mnist_subset, image_classifier_list, fix_mlFram
         if fix_mlFramework in ["keras"]:
             k.clear_session()
 
+
 def test_targeted_tabular(fix_get_iris, clipped_tabular_classifier_list, fix_mlFramework):
     (x_train_iris, y_train_iris), (x_test_iris, y_test_iris) = fix_get_iris
     for classifier in clipped_tabular_classifier_list:
@@ -50,7 +51,7 @@ def test_targeted_tabular(fix_get_iris, clipped_tabular_classifier_list, fix_mlF
         x_test_adv = attack.generate(x_test_iris, **{'y': targets})
 
         utils_test.check_adverse_example_x(x_test_adv, x_test_iris)
-  
+
         y_pred_adv = np.argmax(classifier.predict(x_test_adv), axis=1)
         target = np.argmax(targets, axis=1)
         assert (target == y_pred_adv).any()
