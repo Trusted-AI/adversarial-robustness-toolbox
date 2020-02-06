@@ -92,10 +92,10 @@ def new_image_classifier_list(fix_mlFramework):
         if fix_mlFramework == "tensorflow":
             if defended:
                 logging.warning("{0} doesn't have a defended image classifier defined yet".format(fix_mlFramework))
-                classifier_list =  None
+                classifier_list = None
             else:
                 classifier, sess = utils_test.get_image_classifier_tf()
-            classifier_list =  [classifier]
+                classifier_list = [classifier]
         if fix_mlFramework == "pytorch":
             if defended:
                 logging.warning("{0} doesn't have a defended image classifier defined yet".format(fix_mlFramework))
@@ -105,16 +105,16 @@ def new_image_classifier_list(fix_mlFramework):
         if fix_mlFramework == "scikitlearn":
             if defended:
                 logging.warning("{0} doesn't have a defended image classifier defined yet".format(fix_mlFramework))
-                classifier_list =  None
+                classifier_list = None
             else:
                 logging.warning("{0} doesn't have an image classifier defined yet".format(fix_mlFramework))
-            classifier_list =  None
+                classifier_list =  None
 
         if classifier_list is None:
             return None
 
         return [potential_classier for potential_classier in classifier_list if
-                attack.is_valid_classifier_type(classifier)]
+                attack.is_valid_classifier_type(potential_classier)]
     return _new_image_classifier_list
 
 @pytest.fixture
@@ -187,7 +187,7 @@ def tabular_classifier_list(fix_mlFramework):
         if classifier_list is None:
             return None
 
-        return [potential_classier for potential_classier in classifier_list if attack.is_valid_classifier_type(classifier)]
+        return [potential_classier for potential_classier in classifier_list if attack.is_valid_classifier_type(potential_classier)]
 
 
     return _tabular_classifier_list
