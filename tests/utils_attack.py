@@ -26,13 +26,13 @@ def _backend_targeted_images(attack, targets, classifier, fix_get_mnist_subset):
     target = np.argmax(targets, axis=1)
     assert (target == y_pred_adv).any()
 
-def _backend_targeted_tabular(attack, classifier, fix_get_iris, fix_mlFramework):
+def _backend_targeted_tabular(attack, targets, classifier, fix_get_iris, fix_mlFramework):
     (x_train_iris, y_train_iris), (x_test_iris, y_test_iris) = fix_get_iris
 
     if fix_mlFramework in ["scikitlearn"]:
         classifier.fit(x=x_test_iris, y=y_test_iris)
 
-    targets = utils.random_targets(y_test_iris, nb_classes=3)
+
     x_test_adv = attack.generate(x_test_iris, **{'y': targets})
 
     utils_test.check_adverse_example_x(x_test_adv, x_test_iris)
