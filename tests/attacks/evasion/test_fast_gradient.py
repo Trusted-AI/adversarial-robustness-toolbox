@@ -44,19 +44,15 @@ def fix_get_mnist_subset(fix_get_mnist):
     yield (x_train_mnist[:n_train], y_train_mnist[:n_train], x_test_mnist[:n_test], y_test_mnist[:n_test])
 
 
-def test_no_norm_images(fix_get_mnist_subset, image_classifier_list):
+def test_no_norm_images(fix_get_mnist_subset, new_image_classifier_list):
     (x_train_mnist, y_train_mnist, x_test_mnist, y_test_mnist) = fix_get_mnist_subset
-
+    classifier_list = new_image_classifier_list(FastGradientMethod)
     # TODO this if statement must be removed once we have a classifier for both image and tabular data
-    if image_classifier_list is None:
+    if classifier_list is None:
         logging.warning("Couldn't perform  this test because no classifier is defined")
         return
 
-    for classifier in image_classifier_list:
-
-        if FastGradientMethod.is_valid_classifier_type(classifier) is False:
-            continue
-
+    for classifier in classifier_list:
         attack = FastGradientMethod(classifier, eps=1.0, batch_size=11)
         x_test_adv = attack.generate(x_test_mnist)
 
@@ -105,17 +101,15 @@ def test_no_norm_images(fix_get_mnist_subset, image_classifier_list):
         np.testing.assert_array_almost_equal(y_test_pred[0:3], y_test_pred_expected[0:3], decimal=2)
 
 
-def test_classifier_defended_images(fix_get_mnist_subset, defended_image_classifier_list):
+def test_classifier_defended_images(fix_get_mnist_subset, new_image_classifier_list):
     (x_train_mnist, y_train_mnist, x_test_mnist, y_test_mnist) = fix_get_mnist_subset
+    classifier_list = new_image_classifier_list(FastGradientMethod, defended=True)
     # TODO this if statement must be removed once we have a classifier for both image and tabular data
-    if defended_image_classifier_list is None:
+    if classifier_list is None:
         logging.warning("Couldn't perform  this test because no classifier is defined")
         return
 
-    for classifier in defended_image_classifier_list:
-        if FastGradientMethod.is_valid_classifier_type(classifier) is False:
-            continue
-
+    for classifier in classifier_list:
         attack = FastGradientMethod(classifier, eps=1, batch_size=128)
         x_train_adv = attack.generate(x_train_mnist)
 
@@ -132,35 +126,29 @@ def test_classifier_defended_images(fix_get_mnist_subset, defended_image_classif
         y_test_pred_adv = utils.get_labels_np_array(classifier.predict(x_test_adv))
         utils_test.check_adverse_predicted_sample_y(y_test_pred_adv, y_test_mnist)
 
-def test_random_initialisation_images(fix_get_mnist_subset, image_classifier_list):
-    (x_train_mnist, y_train_mnist, x_test_mnist, y_test_mnist) = fix_get_mnist_subset
 
+def test_random_initialisation_images(fix_get_mnist_subset, new_image_classifier_list):
+    (x_train_mnist, y_train_mnist, x_test_mnist, y_test_mnist) = fix_get_mnist_subset
+    classifier_list = new_image_classifier_list(FastGradientMethod)
     # TODO this if statement must be removed once we have a classifier for both image and tabular data
-    if image_classifier_list is None:
+    if classifier_list is None:
         logging.warning("Couldn't perform  this test because no classifier is defined")
         return
 
-    for classifier in image_classifier_list:
-
-        if FastGradientMethod.is_valid_classifier_type(classifier) is False:
-            continue
-
+    for classifier in classifier_list:
         attack = FastGradientMethod(classifier, num_random_init=3)
         x_test_adv = attack.generate(x_test_mnist)
         assert (x_test_mnist == x_test_adv).all() == False
 
 
-def test_targeted_images(fix_get_mnist_subset, image_classifier_list):
-
+def test_targeted_images(fix_get_mnist_subset, new_image_classifier_list):
+    classifier_list = new_image_classifier_list(FastGradientMethod)
     # TODO this if statement must be removed once we have a classifier for both image and tabular data
-    if image_classifier_list is None:
+    if classifier_list is None:
         logging.warning("Couldn't perform  this test because no classifier is defined")
         return
 
-    for classifier in image_classifier_list:
-        if FastGradientMethod.is_valid_classifier_type(classifier) is False:
-            continue
-
+    for classifier in classifier_list:
         attack = FastGradientMethod(classifier, eps=1.0, targeted=True)
         attack_params = {"minimal": True, "eps_step": 0.01, "eps": 1.0}
         attack.set_params(**attack_params)
@@ -169,20 +157,15 @@ def test_targeted_images(fix_get_mnist_subset, image_classifier_list):
 
 
 
-
-
-def test_minimal_perturbations_images(fix_get_mnist_subset, image_classifier_list):
+def test_minimal_perturbations_images(fix_get_mnist_subset, new_image_classifier_list):
     (x_train_mnist, y_train_mnist, x_test_mnist, y_test_mnist) = fix_get_mnist_subset
-
+    classifier_list = new_image_classifier_list(FastGradientMethod)
     # TODO this if statement must be removed once we have a classifier for both image and tabular data
-    if image_classifier_list is None:
+    if classifier_list is None:
         logging.warning("Couldn't perform  this test because no classifier is defined")
         return
 
-    for classifier in image_classifier_list:
-        if FastGradientMethod.is_valid_classifier_type(classifier) is False:
-            continue
-
+    for classifier in classifier_list:
         attack = FastGradientMethod(classifier, eps=1.0, batch_size=11)
         attack_params = {"minimal": True, "eps_step": 0.1, "eps": 5.0}
         attack.set_params(**attack_params)
@@ -200,17 +183,15 @@ def test_minimal_perturbations_images(fix_get_mnist_subset, image_classifier_lis
         np.testing.assert_array_equal(np.argmax(y_test_pred, axis=1), y_test_pred_expected)
 
 
-def test_l1_norm_images(fix_get_mnist_subset, image_classifier_list):
+def test_l1_norm_images(fix_get_mnist_subset, new_image_classifier_list):
     (x_train_mnist, y_train_mnist, x_test_mnist, y_test_mnist) = fix_get_mnist_subset
-
+    classifier_list = new_image_classifier_list(FastGradientMethod)
     # TODO this if statement must be removed once we have a classifier for both image and tabular data
-    if image_classifier_list is None:
+    if classifier_list is None:
         logging.warning("Couldn't perform  this test because no classifier is defined")
         return
 
-    for classifier in image_classifier_list:
-        if FastGradientMethod.is_valid_classifier_type(classifier) is False:
-            continue
+    for classifier in classifier_list:
         attack = FastGradientMethod(classifier, eps=1, norm=1, batch_size=128)
         x_test_adv = attack.generate(x_test_mnist)
 
@@ -225,18 +206,15 @@ def test_l1_norm_images(fix_get_mnist_subset, image_classifier_list):
         np.testing.assert_array_almost_equal(y_test_pred, y_test_pred_expected, decimal=4)
 
 
-def test_l2_norm_images(fix_get_mnist_subset, image_classifier_list):
+def test_l2_norm_images(fix_get_mnist_subset, new_image_classifier_list):
     (x_train_mnist, y_train_mnist, x_test_mnist, y_test_mnist) = fix_get_mnist_subset
-
+    classifier_list = new_image_classifier_list(FastGradientMethod)
     # TODO this if statement must be removed once we have a classifier for both image and tabular data
-    if image_classifier_list is None:
+    if classifier_list is None:
         logging.warning("Couldn't perform  this test because no classifier is defined")
         return
 
-    for classifier in image_classifier_list:
-        if FastGradientMethod.is_valid_classifier_type(classifier) is False:
-            continue
-
+    for classifier in classifier_list:
         attack = FastGradientMethod(classifier, eps=1, norm=2, batch_size=128)
         x_test_adv = attack.generate(x_test_mnist)
 
