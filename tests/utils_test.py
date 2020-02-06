@@ -174,7 +174,7 @@ def check_adverse_example_x(x_adv, x_original, max=1.0, min=0.0, bounded=True):
         assert np.amax(x_adv) <= max, "x_test_adv values should have all been below {0}".format(max)
         assert np.amin(x_adv) >= min, "x_test_adv values should have all been above {0}".format(min)
     else:
-        assert (x_adv > max).any(), "some x_test_adv values should been above 1".format(max)
+        assert (x_adv > max).any(), "some x_test_adv values should have been above 1".format(max)
         assert (x_adv < min).any(), " some x_test_adv values should have all been below {0}".format(min)
 
 def check_adverse_predicted_sample_y(y_pred_adv, y_expected):

@@ -23,14 +23,13 @@ import sys
 import numpy as np
 import os
 from art.attacks import FastGradientMethod
-from art.utils import get_labels_np_array, random_targets
 from tests.utils_test import TestBase
 from tests import utils_test
 from tests import utils_attack
 import pytest
 from art import utils
 from art.classifiers.classifier import Classifier, ClassifierGradients
-
+import keras.backend as k
 
 logger = logging.getLogger(__name__)
 
@@ -122,15 +121,15 @@ def test_classifier_defended_images(fix_get_mnist_subset, defended_image_classif
 
         utils_test.check_adverse_example_x(x_train_adv, x_train_mnist)
 
-        y_train_pred_adv = get_labels_np_array(classifier.predict(x_train_adv))
-        y_train_labels = get_labels_np_array(y_train_mnist)
+        y_train_pred_adv = utils.get_labels_np_array(classifier.predict(x_train_adv))
+        y_train_labels = utils.get_labels_np_array(y_train_mnist)
         # TODO Shouldn't the y_adv and y_expected labels be the same for the defence to be correct?
         utils_test.check_adverse_predicted_sample_y(y_train_pred_adv, y_train_labels)
 
         x_test_adv = attack.generate(x_test_mnist)
         utils_test.check_adverse_example_x(x_test_adv, x_test_mnist)
 
-        y_test_pred_adv = get_labels_np_array(classifier.predict(x_test_adv))
+        y_test_pred_adv = utils.get_labels_np_array(classifier.predict(x_test_adv))
         utils_test.check_adverse_predicted_sample_y(y_test_pred_adv, y_test_mnist)
 
 def test_random_initialisation_images(fix_get_mnist_subset, image_classifier_list):
@@ -150,6 +149,7 @@ def test_random_initialisation_images(fix_get_mnist_subset, image_classifier_lis
         x_test_adv = attack.generate(x_test_mnist)
         assert (x_test_mnist == x_test_adv).all() == False
 
+
 def test_targeted_images(fix_get_mnist_subset, image_classifier_list):
     (x_train_mnist, y_train_mnist, x_test_mnist, y_test_mnist) = fix_get_mnist_subset
 
@@ -163,22 +163,19 @@ def test_targeted_images(fix_get_mnist_subset, image_classifier_list):
             continue
 
         attack = FastGradientMethod(classifier, eps=1.0, targeted=True)
+        attack_params = {"minimal": True, "eps_step": 0.01, "eps": 1.0}
+        attack.set_params(**attack_params)
 
         y_test_pred_sort = classifier.predict(x_test_mnist).argsort(axis=1)
         targets = np.zeros((x_test_mnist.shape[0], 10))
         for i in range(x_test_mnist.shape[0]):
             targets[i, y_test_pred_sort[i, -2]] = 1.0
 
-        attack_params = {"minimal": True, "eps_step": 0.01, "eps": 1.0}
-        attack.set_params(**attack_params)
+        utils_attack._backend_targeted_images(attack, targets, classifier, fix_get_mnist_subset)
 
-        x_test_adv = attack.generate(x_test_mnist, y=targets)
-        assert (x_test_mnist == x_test_adv).all() == False
 
-        y_test_pred_adv = get_labels_np_array(classifier.predict(x_test_adv))
 
-        assert targets.shape == y_test_pred_adv.shape
-        assert (targets == y_test_pred_adv).sum() >= (x_test_mnist.shape[0] // 2)
+
 
 def test_minimal_perturbations_images(fix_get_mnist_subset, image_classifier_list):
     (x_train_mnist, y_train_mnist, x_test_mnist, y_test_mnist) = fix_get_mnist_subset
@@ -286,36 +283,24 @@ def test_classifier_unclipped_values_tabular(fix_get_iris, unclipped_tabular_cla
         accuracy = np.sum(y_pred_test_adv == y_test_true) / y_test_true.shape[0]
         logger.info('Accuracy on Iris with FGM adversarial examples: %.2f%%', (accuracy * 100))
 
-def test_untargeted_tabular(fix_get_iris, clipped_tabular_classifier_list, fix_mlFramework):
-    (x_train_iris, y_train_iris), (x_test_iris, y_test_iris) = fix_get_iris
+
+
+def test_untargeted_tabular(clipped_tabular_classifier_list, fix_mlFramework, fix_get_iris):
 
     for classifier in clipped_tabular_classifier_list:
         if FastGradientMethod.is_valid_classifier_type(classifier) is False:
             continue
 
-        #TODO remove that platform specific case
-        if fix_mlFramework in ["scikitlearn"]:
-            classifier.fit(x=x_test_iris, y=y_test_iris)
-
         attack = FastGradientMethod(classifier, eps=.1)
-        x_test_adv = attack.generate(x_test_iris)
+        utils_attack._backend_untargeted_tabular(attack, fix_get_iris, classifier, fix_mlFramework,
+                                                 clipped=True)
 
-        # TODO remove that platform specific case
-        if fix_mlFramework in ["scikitlearn"]:
-            np.testing.assert_array_almost_equal(np.abs(x_test_adv - x_test_iris), .1, decimal=5)
-        utils_test.check_adverse_example_x(x_test_adv, x_test_iris)
-
-        y_pred_test_adv = np.argmax(classifier.predict(x_test_adv), axis=1)
-        y_test_true = np.argmax(y_test_iris, axis=1)
-
-        assert (y_test_true == y_pred_test_adv).any(), "An untargeted attack should have changed SOME predictions"
-        assert(y_test_true == y_pred_test_adv).all()==False, "An untargeted attack should NOT have changed all predictions"
-        accuracy = np.sum(y_pred_test_adv == y_test_true) / y_test_true.shape[0]
-        logger.info('Accuracy of ' + classifier.__class__.__name__ + ' on Iris with FGM adversarial examples: '
-                                                                     '%.2f%%', (accuracy * 100))
 
 def test_targeted_tabular(fix_get_iris, clipped_tabular_classifier_list, fix_mlFramework):
     for classifier in clipped_tabular_classifier_list:
+        if FastGradientMethod.is_valid_classifier_type(classifier) is False:
+            continue
+
         attack = FastGradientMethod(classifier, targeted=True, eps=.1, batch_size=128)
         utils_attack._backend_targeted_tabular(attack, classifier, fix_get_iris, fix_mlFramework)
 
