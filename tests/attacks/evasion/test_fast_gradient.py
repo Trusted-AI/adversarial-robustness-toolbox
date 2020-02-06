@@ -297,15 +297,14 @@ def test_untargeted_tabular(clipped_tabular_classifier_list, fix_mlFramework, fi
 
 
 def test_targeted_tabular(fix_get_iris, clipped_tabular_classifier_list, fix_mlFramework):
-    (x_train_iris, y_train_iris), (x_test_iris, y_test_iris) = fix_get_iris
-
+    
     for classifier in clipped_tabular_classifier_list:
         if FastGradientMethod.is_valid_classifier_type(classifier) is False:
             continue
 
         attack = FastGradientMethod(classifier, targeted=True, eps=.1, batch_size=128)
-        targets = utils.random_targets(y_test_iris, nb_classes=3)
-        utils_attack._backend_targeted_tabular(attack, targets, classifier, fix_get_iris, fix_mlFramework)
+
+        utils_attack._backend_targeted_tabular(attack, classifier, fix_get_iris, fix_mlFramework)
 
 
 def test_classifier_type_check_fail_gradients():
