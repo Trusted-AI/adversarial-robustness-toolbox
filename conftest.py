@@ -8,6 +8,11 @@ from art.classifiers import KerasClassifier
 from sklearn.linear_model import LogisticRegression
 from sklearn.svm import SVC, LinearSVC
 from art.classifiers.scikitlearn import SklearnClassifier
+from sklearn.linear_model import LogisticRegression
+from sklearn.svm import SVC, LinearSVC
+from sklearn.tree import DecisionTreeClassifier, ExtraTreeClassifier
+from sklearn.ensemble import AdaBoostClassifier, BaggingClassifier, ExtraTreesClassifier
+from sklearn.ensemble import GradientBoostingClassifier, RandomForestClassifier
 
 logger = logging.getLogger(__name__)
 art_supported_frameworks = ["keras", "tensorflow", "pytorch", "scikitlearn"]
@@ -140,7 +145,17 @@ def clipped_tabular_classifier_list(fix_mlFramework):
         return [utils_test.get_tabular_classifier_pt()]
 
     if fix_mlFramework == "scikitlearn":
-        model_list = [LogisticRegression(solver='lbfgs', multi_class='auto'),
+        # model_list = [LogisticRegression(solver='lbfgs', multi_class='auto'),
+        #               SVC(gamma='auto'),
+        #               LinearSVC()]
+        model_list = [DecisionTreeClassifier(),
+                      ExtraTreeClassifier(),
+                      AdaBoostClassifier(),
+                      BaggingClassifier(),
+                      ExtraTreesClassifier(n_estimators=10),
+                      GradientBoostingClassifier(n_estimators=10),
+                      RandomForestClassifier(n_estimators=10),
+                      LogisticRegression(solver='lbfgs', multi_class='auto'),
                       SVC(gamma='auto'),
                       LinearSVC()]
         return [SklearnClassifier(model=model, clip_values=(0, 1)) for model in model_list]

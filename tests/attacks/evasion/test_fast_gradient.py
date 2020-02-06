@@ -285,6 +285,10 @@ def test_untargeted_tabular(fix_get_iris, clipped_tabular_classifier_list, fix_m
     (x_train_iris, y_train_iris), (x_test_iris, y_test_iris) = fix_get_iris
 
     for classifier in clipped_tabular_classifier_list:
+
+        if FastGradientMethod.is_valid_classifier_type(classifier) is False:
+            continue
+
         #TODO remove that platform specific case
         if fix_mlFramework in ["scikitlearn"]:
             classifier.fit(x=x_test_iris, y=y_test_iris)
