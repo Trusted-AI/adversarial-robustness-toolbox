@@ -1,22 +1,10 @@
 import pytest
-import numpy as np
 import logging
-import unittest
-import keras.backend as k
 from art.attacks import BoundaryAttack
-from art.classifiers import KerasClassifier
-from art.utils import random_targets
 from art import utils
 from tests import utils_attack
 from art.classifiers.classifier import Classifier, ClassifierGradients
-from tests import utils_test
-from tests.utils_test import TestBase
-from tests.utils_test import get_image_classifier_tf, get_image_classifier_kr, get_image_classifier_pt
-from tests.utils_test import get_tabular_classifier_tf, get_tabular_classifier_kr, get_tabular_classifier_pt
 logger = logging.getLogger(__name__)
-
-
-# @pytest.mark.parametrize("n_train, n_test", [(10, 10)])
 
 @pytest.fixture()
 def fix_get_mnist_subset(fix_get_mnist):
@@ -43,9 +31,10 @@ def test_tabular(tabular_classifier_list, fix_mlFramework, fix_get_iris, clipped
             utils_attack._backend_untargeted_tabular(attack, fix_get_iris, classifier, fix_mlFramework,
                                                      clipped=clipped_classifier)
 
+
 @pytest.mark.parametrize("targeted", [True, False])
-def test_images(fix_get_mnist_subset, new_image_classifier_list, fix_mlFramework, targeted):
-    classifier_list = new_image_classifier_list(BoundaryAttack)
+def test_images(fix_get_mnist_subset, image_classifier_list, fix_mlFramework, targeted):
+    classifier_list = image_classifier_list(BoundaryAttack)
     if classifier_list is None:
         logging.warning("Couldn't perform  this test because no classifier is defined")
         return

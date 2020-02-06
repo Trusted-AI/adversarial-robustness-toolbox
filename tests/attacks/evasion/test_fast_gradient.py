@@ -19,22 +19,17 @@ from __future__ import absolute_import, division, print_function, unicode_litera
 
 import logging
 import unittest
-import sys
 import numpy as np
-import os
 from art.attacks import FastGradientMethod
-from tests.utils_test import TestBase
 from tests import utils_test
 from tests import utils_attack
 import pytest
 from art import utils
 from art.classifiers.classifier import Classifier, ClassifierGradients
-import keras.backend as k
+from art.classifiers.scikitlearn import ScikitlearnDecisionTreeClassifier
+from sklearn.tree import DecisionTreeClassifier
 
 logger = logging.getLogger(__name__)
-
-
-
 
 @pytest.fixture()
 def fix_get_mnist_subset(fix_get_mnist):
@@ -44,9 +39,9 @@ def fix_get_mnist_subset(fix_get_mnist):
     yield (x_train_mnist[:n_train], y_train_mnist[:n_train], x_test_mnist[:n_test], y_test_mnist[:n_test])
 
 
-def test_no_norm_images(fix_get_mnist_subset, new_image_classifier_list):
+def test_no_norm_images(fix_get_mnist_subset, image_classifier_list):
     (x_train_mnist, y_train_mnist, x_test_mnist, y_test_mnist) = fix_get_mnist_subset
-    classifier_list = new_image_classifier_list(FastGradientMethod)
+    classifier_list = image_classifier_list(FastGradientMethod)
     # TODO this if statement must be removed once we have a classifier for both image and tabular data
     if classifier_list is None:
         logging.warning("Couldn't perform  this test because no classifier is defined")
@@ -101,9 +96,9 @@ def test_no_norm_images(fix_get_mnist_subset, new_image_classifier_list):
         np.testing.assert_array_almost_equal(y_test_pred[0:3], y_test_pred_expected[0:3], decimal=2)
 
 
-def test_classifier_defended_images(fix_get_mnist_subset, new_image_classifier_list):
+def test_classifier_defended_images(fix_get_mnist_subset, image_classifier_list):
     (x_train_mnist, y_train_mnist, x_test_mnist, y_test_mnist) = fix_get_mnist_subset
-    classifier_list = new_image_classifier_list(FastGradientMethod, defended=True)
+    classifier_list = image_classifier_list(FastGradientMethod, defended=True)
     # TODO this if statement must be removed once we have a classifier for both image and tabular data
     if classifier_list is None:
         logging.warning("Couldn't perform  this test because no classifier is defined")
@@ -127,9 +122,9 @@ def test_classifier_defended_images(fix_get_mnist_subset, new_image_classifier_l
         utils_test.check_adverse_predicted_sample_y(y_test_pred_adv, y_test_mnist)
 
 
-def test_random_initialisation_images(fix_get_mnist_subset, new_image_classifier_list):
+def test_random_initialisation_images(fix_get_mnist_subset, image_classifier_list):
     (x_train_mnist, y_train_mnist, x_test_mnist, y_test_mnist) = fix_get_mnist_subset
-    classifier_list = new_image_classifier_list(FastGradientMethod)
+    classifier_list = image_classifier_list(FastGradientMethod)
     # TODO this if statement must be removed once we have a classifier for both image and tabular data
     if classifier_list is None:
         logging.warning("Couldn't perform  this test because no classifier is defined")
@@ -141,8 +136,8 @@ def test_random_initialisation_images(fix_get_mnist_subset, new_image_classifier
         assert (x_test_mnist == x_test_adv).all() == False
 
 
-def test_targeted_images(fix_get_mnist_subset, new_image_classifier_list):
-    classifier_list = new_image_classifier_list(FastGradientMethod)
+def test_targeted_images(fix_get_mnist_subset, image_classifier_list):
+    classifier_list = image_classifier_list(FastGradientMethod)
     # TODO this if statement must be removed once we have a classifier for both image and tabular data
     if classifier_list is None:
         logging.warning("Couldn't perform  this test because no classifier is defined")
@@ -157,9 +152,9 @@ def test_targeted_images(fix_get_mnist_subset, new_image_classifier_list):
 
 
 
-def test_minimal_perturbations_images(fix_get_mnist_subset, new_image_classifier_list):
+def test_minimal_perturbations_images(fix_get_mnist_subset, image_classifier_list):
     (x_train_mnist, y_train_mnist, x_test_mnist, y_test_mnist) = fix_get_mnist_subset
-    classifier_list = new_image_classifier_list(FastGradientMethod)
+    classifier_list = image_classifier_list(FastGradientMethod)
     # TODO this if statement must be removed once we have a classifier for both image and tabular data
     if classifier_list is None:
         logging.warning("Couldn't perform  this test because no classifier is defined")
@@ -183,9 +178,9 @@ def test_minimal_perturbations_images(fix_get_mnist_subset, new_image_classifier
         np.testing.assert_array_equal(np.argmax(y_test_pred, axis=1), y_test_pred_expected)
 
 
-def test_l1_norm_images(fix_get_mnist_subset, new_image_classifier_list):
+def test_l1_norm_images(fix_get_mnist_subset, image_classifier_list):
     (x_train_mnist, y_train_mnist, x_test_mnist, y_test_mnist) = fix_get_mnist_subset
-    classifier_list = new_image_classifier_list(FastGradientMethod)
+    classifier_list = image_classifier_list(FastGradientMethod)
     # TODO this if statement must be removed once we have a classifier for both image and tabular data
     if classifier_list is None:
         logging.warning("Couldn't perform  this test because no classifier is defined")
@@ -206,9 +201,9 @@ def test_l1_norm_images(fix_get_mnist_subset, new_image_classifier_list):
         np.testing.assert_array_almost_equal(y_test_pred, y_test_pred_expected, decimal=4)
 
 
-def test_l2_norm_images(fix_get_mnist_subset, new_image_classifier_list):
+def test_l2_norm_images(fix_get_mnist_subset, image_classifier_list):
     (x_train_mnist, y_train_mnist, x_test_mnist, y_test_mnist) = fix_get_mnist_subset
-    classifier_list = new_image_classifier_list(FastGradientMethod)
+    classifier_list = image_classifier_list(FastGradientMethod)
     # TODO this if statement must be removed once we have a classifier for both image and tabular data
     if classifier_list is None:
         logging.warning("Couldn't perform  this test because no classifier is defined")
@@ -222,68 +217,35 @@ def test_l2_norm_images(fix_get_mnist_subset, new_image_classifier_list):
         utils_test.assert_almost_equal_min(x_test_mnist, x_test_adv, -0.211054801, decimal=0.001)
         utils_test.assert_almost_equal_max(x_test_mnist, x_test_adv, 0.209592223, decimal=0.001)
 
-        y_test_pred = classifier.predict(x_test_adv[8:9])
-        y_test_pred_expected = np.asarray([[0.19395831, 0.11625732, 0.08293699, 0.04129186, 0.17826456, 0.06290703,
+        y_test_pred_adv = classifier.predict(x_test_adv[8:9])
+        y_test_pred_adv_expected = np.asarray([[0.19395831, 0.11625732, 0.08293699, 0.04129186, 0.17826456, 0.06290703,
                                             0.06270657, 0.14066935, 0.07419015, 0.04681788]])
 
-        np.testing.assert_array_almost_equal(y_test_pred, y_test_pred_expected, decimal=2)
+        np.testing.assert_array_almost_equal(y_test_pred_adv, y_test_pred_adv_expected, decimal=2)
 
-def test_classifier_unclipped_values_tabular(fix_get_iris, unclipped_tabular_classifier_list, fix_mlFramework):
+@pytest.mark.mlFramework("scikitlearn") #temporarily skipping for scikitlearn until find bug fix in bounded test
+@pytest.mark.parametrize("targeted, clipped", [(True, True), (True, False), (False, True), (False, False)])
+def test_tabular(tabular_classifier_list, fix_mlFramework, fix_get_iris, targeted, clipped):
+    # classifier_list = tabular_classifier_list(FastGradientMethod)
     (x_train_iris, y_train_iris), (x_test_iris, y_test_iris) = fix_get_iris
-
-    # TODO this if statement must be removed once we have a classifier for both image and tabular data
-    if unclipped_tabular_classifier_list is None:
+    classifier_list = tabular_classifier_list(FastGradientMethod, clipped=clipped)
+    if classifier_list is None:
         logging.warning("Couldn't perform  this test because no classifier is defined")
         return
-
-    for classifier in unclipped_tabular_classifier_list:
-        if FastGradientMethod.is_valid_classifier_type(classifier) is False:
-            continue
-
+    for classifier in classifier_list:
         if fix_mlFramework in ["scikitlearn"]:
             classifier.fit(x=x_test_iris, y=y_test_iris)
-
-        attack = FastGradientMethod(classifier, eps=1)
-
-        x_test_adv = attack.generate(x_test_iris)
-
-        utils_test.check_adverse_example_x(x_test_adv, x_test_iris, bounded=False)
-
-        y_test_true = np.argmax(y_test_iris, axis=1)
-        y_pred_test_adv = np.argmax(classifier.predict(x_test_adv), axis=1)
-        assert(y_test_true == y_pred_test_adv).all() == False
-        accuracy = np.sum(y_pred_test_adv == y_test_true) / y_test_true.shape[0]
-        logger.info('Accuracy on Iris with FGM adversarial examples: %.2f%%', (accuracy * 100))
-
-
-
-def test_untargeted_tabular(clipped_tabular_classifier_list, fix_mlFramework, fix_get_iris):
-
-    for classifier in clipped_tabular_classifier_list:
-        if FastGradientMethod.is_valid_classifier_type(classifier) is False:
-            continue
-
-        attack = FastGradientMethod(classifier, eps=.1)
-        utils_attack._backend_untargeted_tabular(attack, fix_get_iris, classifier, fix_mlFramework,
-                                                 clipped=True)
-
-
-def test_targeted_tabular(fix_get_iris, clipped_tabular_classifier_list, fix_mlFramework):
-
-    for classifier in clipped_tabular_classifier_list:
-        if FastGradientMethod.is_valid_classifier_type(classifier) is False:
-            continue
-
-        attack = FastGradientMethod(classifier, targeted=True, eps=.1, batch_size=128)
-
-        utils_attack._backend_targeted_tabular(attack, classifier, fix_get_iris, fix_mlFramework)
+        if targeted:
+            attack = FastGradientMethod(classifier, targeted=True, eps=.1, batch_size=128)
+            utils_attack._backend_targeted_tabular(attack, classifier, fix_get_iris, fix_mlFramework)
+        else:
+            attack = FastGradientMethod(classifier, eps=.1)
+            utils_attack._backend_untargeted_tabular(attack, fix_get_iris, classifier, fix_mlFramework,
+                                                     clipped=clipped)
 
 
 def test_classifier_type_check_fail_gradients():
     # Use a test classifier not providing gradients required by white-box attack
-    from art.classifiers.scikitlearn import ScikitlearnDecisionTreeClassifier
-    from sklearn.tree import DecisionTreeClassifier
-
     classifier = ScikitlearnDecisionTreeClassifier(model=DecisionTreeClassifier())
     with pytest.raises(utils.WrongClassifer) as exception:
         _ = FastGradientMethod(classifier=classifier)

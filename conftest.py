@@ -8,7 +8,6 @@ from art.classifiers import KerasClassifier
 
 from art.classifiers.scikitlearn import SklearnClassifier
 
-
 logger = logging.getLogger(__name__)
 art_supported_frameworks = ["keras", "tensorflow", "pytorch", "scikitlearn"]
 
@@ -79,8 +78,8 @@ def fix_get_mnist(fix_load_mnist_dataset, fix_mlFramework):
     np.testing.assert_array_almost_equal(y_test_mnist_original, y_test_mnist, decimal=3)
 
 @pytest.fixture
-def new_image_classifier_list(fix_mlFramework):
-    def _new_image_classifier_list(attack, defended=False):
+def image_classifier_list(fix_mlFramework):
+    def _image_classifier_list(attack, defended=False):
         if fix_mlFramework == "keras":
             if defended:
                 classifier = utils_test.get_image_classifier_kr()
@@ -115,33 +114,15 @@ def new_image_classifier_list(fix_mlFramework):
 
         return [potential_classier for potential_classier in classifier_list if
                 attack.is_valid_classifier_type(potential_classier)]
-    return _new_image_classifier_list
+    return _image_classifier_list
 
-@pytest.fixture
-def defended_image_classifier_list(fix_mlFramework):
-    if fix_mlFramework == "keras":
-        classifier = utils_test.get_image_classifier_kr()
-        # Get the ready-trained Keras model
-        fs = FeatureSqueezing(bit_depth=1, clip_values=(0, 1))
-        return [KerasClassifier(model=classifier._model, clip_values=(0, 1), defences=fs)]
-    else:
-        logging.warning("{0} doesn't have a defended image classifier defined yet".format(fix_mlFramework))
-        return None
-
-@pytest.fixture
-def image_classifier_list(fix_mlFramework):
-    if fix_mlFramework == "keras":
-        return [utils_test.get_image_classifier_kr()]
-    if fix_mlFramework == "tensorflow":
-        classifier, sess = utils_test.get_image_classifier_tf()
-        return [classifier]
-    if fix_mlFramework == "pytorch":
-        return [utils_test.get_image_classifier_pt()]
-    if fix_mlFramework == "scikitlearn":
-        logging.warning("{0} doesn't have an image classifier defined yet".format(fix_mlFramework))
-        return None
-
-    raise Exception("A classifier factory method needs to be implemented for framework {0}".format(fix_mlFramework))
+# ART test fixture to skip test for specific mlFramework values
+# eg: @pytest.mark.mlFramework("tensorflow","scikitlearn")
+@pytest.fixture(autouse=True)
+def skip_by_platform(request, fix_mlFramework):
+    if request.node.get_closest_marker('mlFramework'):
+        if fix_mlFramework in request.node.get_closest_marker('mlFramework').args:
+            pytest.skip('skipped on this platform: {}'.format(fix_mlFramework))
 
 @pytest.fixture
 def make_customer_record():
@@ -153,7 +134,6 @@ def make_customer_record():
 @pytest.fixture
 def tabular_classifier_list(fix_mlFramework):
     def _tabular_classifier_list(attack, clipped=True):
-
         if fix_mlFramework == "keras":
             if clipped:
                 classifier_list = [utils_test.get_tabular_classifier_kr()]
@@ -191,42 +171,3 @@ def tabular_classifier_list(fix_mlFramework):
 
 
     return _tabular_classifier_list
-
-
-@pytest.fixture
-def unclipped_tabular_classifier_list(fix_mlFramework):
-    if fix_mlFramework == "keras":
-        classifier = utils_test.get_tabular_classifier_kr()
-        return [KerasClassifier(model=classifier._model, use_logits=False, channel_index=1)]
-
-    if fix_mlFramework == "tensorflow":
-        logging.warning("{0} doesn't have an uncliped classifier defined yet".format(fix_mlFramework))
-        return None
-
-    if fix_mlFramework == "pytorch":
-        logging.warning("{0} doesn't have an uncliped classifier defined yet".format(fix_mlFramework))
-        return None
-
-    if fix_mlFramework == "scikitlearn":
-        model_list = utils_test.get_tabular_classifier_scikit_list()
-        return [SklearnClassifier(model=model) for model in model_list]
-
-    raise Exception("A classifier factory method needs to be implemented for framework {0}".format(fix_mlFramework))
-
-@pytest.fixture
-def clipped_tabular_classifier_list(fix_mlFramework):
-    if fix_mlFramework == "keras":
-        return [utils_test.get_tabular_classifier_kr()]
-
-    if fix_mlFramework == "tensorflow":
-        classifier, _ = utils_test.get_tabular_classifier_tf()
-        return [classifier]
-
-    if fix_mlFramework == "pytorch":
-        return [utils_test.get_tabular_classifier_pt()]
-
-    if fix_mlFramework == "scikitlearn":
-        model_list = utils_test.get_tabular_classifier_scikit_list()
-        return [SklearnClassifier(model=model, clip_values=(0, 1)) for model in model_list]
-
-    raise Exception("A classifier factory method needs to be implemented for framework {0}".format(fix_mlFramework))
