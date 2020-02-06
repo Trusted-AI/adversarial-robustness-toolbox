@@ -106,6 +106,51 @@ def image_classifier_list(fix_mlFramework):
     raise Exception("A classifier factory method needs to be implemented for framework {0}".format(fix_mlFramework))
 
 @pytest.fixture
+def make_customer_record():
+    def _make_customer_record(name):
+        return {"name": name, "orders": []}
+
+    return _make_customer_record
+
+@pytest.fixture
+def tabular_classifier_list(fix_mlFramework):
+    def _tabular_classifier_list(clipped=True):
+        if fix_mlFramework == "keras" and clipped is False:
+            classifier = utils_test.get_tabular_classifier_kr()
+            return [KerasClassifier(model=classifier._model, use_logits=False, channel_index=1)]
+
+        if fix_mlFramework == "tensorflow" and clipped is False:
+            logging.warning("{0} doesn't have an uncliped classifier defined yet".format(fix_mlFramework))
+            return None
+
+        if fix_mlFramework == "pytorch" and clipped is False:
+            logging.warning("{0} doesn't have an uncliped classifier defined yet".format(fix_mlFramework))
+            return None
+
+        if fix_mlFramework == "scikitlearn" and clipped is False:
+            model_list = utils_test.get_tabular_classifier_scikit_list()
+            return [SklearnClassifier(model=model) for model in model_list]
+
+        if fix_mlFramework == "keras" and clipped is True:
+            return [utils_test.get_tabular_classifier_kr()]
+
+        if fix_mlFramework == "tensorflow" and clipped is True:
+            classifier, _ = utils_test.get_tabular_classifier_tf()
+            return [classifier]
+
+        if fix_mlFramework == "pytorch" and clipped is True:
+            return [utils_test.get_tabular_classifier_pt()]
+
+        if fix_mlFramework == "scikitlearn" and clipped is True:
+            model_list = utils_test.get_tabular_classifier_scikit_list()
+            return [SklearnClassifier(model=model, clip_values=(0, 1)) for model in model_list]
+
+        raise Exception("A classifier factory method needs to be implemented for framework {0}".format(fix_mlFramework))
+
+    return _tabular_classifier_list
+
+
+@pytest.fixture
 def unclipped_tabular_classifier_list(fix_mlFramework):
     if fix_mlFramework == "keras":
         classifier = utils_test.get_tabular_classifier_kr()
