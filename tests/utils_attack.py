@@ -28,25 +28,29 @@ def _backend_targeted_images(attack, classifier, fix_get_mnist_subset):
     target = np.argmax(targets, axis=1)
     assert (target == y_pred_adv).any()
 
-# def _backend_test(attack, classifier, mnist_dataset, expected_values):
-#     (x_train_mnist, y_train_mnist, x_test_mnist, y_test_mnist) = mnist_dataset
-#     x_test_adv = attack.generate(x_test_mnist)
-#     y_test_pred_adv_matrix = classifier.predict(x_test_adv)
-#     y_test_pred_adv = np.argmax(y_test_pred_adv_matrix, axis=1)
-#
-#     if "x_test_mean" in expected_values:
-#         utils_test.assert_almost_equal_mean(x_test_mnist, x_test_adv, expected_values["x_test_mean"].value, decimal=expected_values["x_test_mean"].decimals)
-#     if "x_test_min" in expected_values:
-#         utils_test.assert_almost_equal_min(x_test_mnist, x_test_adv, expected_values["x_test_min"].value, decimal=expected_values["x_test_min"].decimals)
-#     if "x_test_max" in expected_values:
-#         utils_test.assert_almost_equal_max(x_test_mnist, x_test_adv, expected_values["x_test_max"].value, decimal=expected_values["x_test_max"].decimals)
-#     if "y_test_pred_adv_expected" in expected_values:
-#         np.testing.assert_array_equal(y_test_pred_adv, expected_values["y_test_pred_adv_expected"].value)
+def _backend_test_defended_images(attack, classifier, mnist_dataset):
+    (x_train_mnist, y_train_mnist, x_test_mnist, y_test_mnist) = mnist_dataset
+    x_train_adv = attack.generate(x_train_mnist)
 
+    utils_test.check_adverse_example_x(x_train_adv, x_train_mnist)
 
+    y_train_pred_adv = utils.get_labels_np_array(classifier.predict(x_train_adv))
+    y_train_labels = utils.get_labels_np_array(y_train_mnist)
 
+    utils_test.check_adverse_predicted_sample_y(y_train_pred_adv, y_train_labels)
 
-def _backend_norm_images(attack, classifier, mnist_dataset, expected_values):
+    x_test_adv = attack.generate(x_test_mnist)
+    utils_test.check_adverse_example_x(x_test_adv, x_test_mnist)
+
+    y_test_pred_adv = utils.get_labels_np_array(classifier.predict(x_test_adv))
+    utils_test.check_adverse_predicted_sample_y(y_test_pred_adv, y_test_mnist)
+
+def _backend_test_random_initialisation_images(attack, mnist_dataset):
+    (x_train_mnist, y_train_mnist, x_test_mnist, y_test_mnist) = mnist_dataset
+    x_test_adv = attack.generate(x_test_mnist)
+    assert (x_test_mnist == x_test_adv).all() == False
+
+def _backend_check_adverse_values(attack, classifier, mnist_dataset, expected_values):
     (x_train_mnist, y_train_mnist, x_test_mnist, y_test_mnist) = mnist_dataset
     x_test_adv = attack.generate(x_test_mnist)
     y_test_pred_adv = np.argmax(classifier.predict(x_test_adv), axis=1)

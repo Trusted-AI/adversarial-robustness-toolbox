@@ -51,24 +51,10 @@ def test_classifier_defended_images(fix_get_mnist_subset, image_classifier_list)
 
     for classifier in classifier_list:
         attack = FastGradientMethod(classifier, eps=1, batch_size=128)
-        x_train_adv = attack.generate(x_train_mnist)
-
-        utils_test.check_adverse_example_x(x_train_adv, x_train_mnist)
-
-        y_train_pred_adv = utils.get_labels_np_array(classifier.predict(x_train_adv))
-        y_train_labels = utils.get_labels_np_array(y_train_mnist)
-
-        utils_test.check_adverse_predicted_sample_y(y_train_pred_adv, y_train_labels)
-
-        x_test_adv = attack.generate(x_test_mnist)
-        utils_test.check_adverse_example_x(x_test_adv, x_test_mnist)
-
-        y_test_pred_adv = utils.get_labels_np_array(classifier.predict(x_test_adv))
-        utils_test.check_adverse_predicted_sample_y(y_test_pred_adv, y_test_mnist)
+        utils_attack._backend_test_defended_images(attack, classifier, fix_get_mnist_subset)
 
 
 def test_random_initialisation_images(fix_get_mnist_subset, image_classifier_list):
-    (x_train_mnist, y_train_mnist, x_test_mnist, y_test_mnist) = fix_get_mnist_subset
     classifier_list = image_classifier_list(FastGradientMethod)
     # TODO this if statement must be removed once we have a classifier for both image and tabular data
     if classifier_list is None:
@@ -77,8 +63,8 @@ def test_random_initialisation_images(fix_get_mnist_subset, image_classifier_lis
 
     for classifier in classifier_list:
         attack = FastGradientMethod(classifier, num_random_init=3)
-        x_test_adv = attack.generate(x_test_mnist)
-        assert (x_test_mnist == x_test_adv).all() == False
+        utils_attack._backend_test_random_initialisation_images(attack, fix_get_mnist_subset)
+
 
 
 def test_targeted_images(fix_get_mnist_subset, image_classifier_list):
@@ -112,7 +98,7 @@ def test_minimal_perturbations_images(fix_get_mnist_subset, image_classifier_lis
                            "x_test_min": ExpectedValue(-0.30000000, 0.00001),
                            "x_test_max": ExpectedValue(0.30000000, 0.00001),
                            "y_test_pred_adv_expected": ExpectedValue(np.asarray([4, 2, 4, 7, 0, 4, 7, 2, 0, 7, 0]), 2)}
-        utils_attack._backend_norm_images(attack, classifier, fix_get_mnist_subset, expected_values)
+        utils_attack._backend_check_adverse_values(attack, classifier, fix_get_mnist_subset, expected_values)
 
 
 @pytest.mark.parametrize("norm", [np.inf, 1, 2])
@@ -147,7 +133,7 @@ def test_norm_images(norm, fix_get_mnist_subset, image_classifier_list):
     for classifier in classifier_list:
         attack = FastGradientMethod(classifier, eps=1, norm=norm, batch_size=128)
 
-        utils_attack._backend_norm_images(attack, classifier, fix_get_mnist_subset, expected_values)
+        utils_attack._backend_check_adverse_values(attack, classifier, fix_get_mnist_subset, expected_values)
 
 
 
@@ -163,6 +149,7 @@ def test_tabular(tabular_classifier_list, fix_mlFramework, fix_get_iris, targete
     for classifier in classifier_list:
         if fix_mlFramework in ["scikitlearn"]:
             classifier.fit(x=x_test_iris, y=y_test_iris)
+
         if targeted:
             attack = FastGradientMethod(classifier, targeted=True, eps=.1, batch_size=128)
             utils_attack._backend_targeted_tabular(attack, classifier, fix_get_iris, fix_mlFramework)
