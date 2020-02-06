@@ -22,6 +22,7 @@ import unittest
 import numpy as np
 from art.attacks import FastGradientMethod
 from tests import utils_test
+from tests.utils_test import ExpectedValue
 from tests import utils_attack
 import pytest
 from art import utils
@@ -201,8 +202,10 @@ def test_l1_norm_images(fix_get_mnist_subset, image_classifier_list):
         np.testing.assert_array_almost_equal(y_test_pred, y_test_pred_expected, decimal=4)
 
 
+
+
 def test_l2_norm_images(fix_get_mnist_subset, image_classifier_list):
-    (x_train_mnist, y_train_mnist, x_test_mnist, y_test_mnist) = fix_get_mnist_subset
+
     classifier_list = image_classifier_list(FastGradientMethod)
     # TODO this if statement must be removed once we have a classifier for both image and tabular data
     if classifier_list is None:
@@ -211,22 +214,20 @@ def test_l2_norm_images(fix_get_mnist_subset, image_classifier_list):
 
     for classifier in classifier_list:
         attack = FastGradientMethod(classifier, eps=1, norm=2, batch_size=128)
-        x_test_adv = attack.generate(x_test_mnist)
+        expected_values = {}
 
-        utils_test.assert_almost_equal_mean(x_test_mnist, x_test_adv, 0.007636424, decimal=0.002)
-        utils_test.assert_almost_equal_min(x_test_mnist, x_test_adv, -0.211054801, decimal=0.001)
-        utils_test.assert_almost_equal_max(x_test_mnist, x_test_adv, 0.209592223, decimal=0.001)
+        expected_values["x_test_mean"] = ExpectedValue(0.007636424, 0.001)
+        expected_values["x_test_min"] = ExpectedValue(-0.211054801, 0.001)
+        expected_values["x_test_max"] = ExpectedValue(0.209592223, 0.001)
+        expected_values["y_test_pred_adv_expected"] = ExpectedValue(
+        np.asarray([[0.19395831, 0.11625732, 0.08293699, 0.04129186, 0.17826456, 0.06290703,
+                     0.06270657, 0.14066935, 0.07419015, 0.04681788]]), 2)
+        utils_attack._backend_norm_images(attack, classifier, fix_get_mnist_subset, expected_values)
 
-        y_test_pred_adv = classifier.predict(x_test_adv[8:9])
-        y_test_pred_adv_expected = np.asarray([[0.19395831, 0.11625732, 0.08293699, 0.04129186, 0.17826456, 0.06290703,
-                                            0.06270657, 0.14066935, 0.07419015, 0.04681788]])
-
-        np.testing.assert_array_almost_equal(y_test_pred_adv, y_test_pred_adv_expected, decimal=2)
 
 @pytest.mark.mlFramework("scikitlearn") #temporarily skipping for scikitlearn until find bug fix in bounded test
 @pytest.mark.parametrize("targeted, clipped", [(True, True), (True, False), (False, True), (False, False)])
 def test_tabular(tabular_classifier_list, fix_mlFramework, fix_get_iris, targeted, clipped):
-    # classifier_list = tabular_classifier_list(FastGradientMethod)
     (x_train_iris, y_train_iris), (x_test_iris, y_test_iris) = fix_get_iris
     classifier_list = tabular_classifier_list(FastGradientMethod, clipped=clipped)
     if classifier_list is None:

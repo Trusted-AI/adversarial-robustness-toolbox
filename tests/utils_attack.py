@@ -4,6 +4,7 @@ import logging
 from art import utils
 from tests import utils_test
 import keras.backend as k
+from tests.utils_test import ExpectedValue
 
 logger = logging.getLogger(__name__)
 
@@ -26,6 +27,25 @@ def _backend_targeted_images(attack, classifier, fix_get_mnist_subset):
 
     target = np.argmax(targets, axis=1)
     assert (target == y_pred_adv).any()
+
+def _backend_norm_images(attack, classifier, mnist_dataset, expected_values):
+    (x_train_mnist, y_train_mnist, x_test_mnist, y_test_mnist) = mnist_dataset
+    x_test_adv = attack.generate(x_test_mnist)
+
+    if "x_test_mean" in expected_values:
+        utils_test.assert_almost_equal_mean(x_test_mnist, x_test_adv, expected_values["x_test_mean"].value, decimal=expected_values["x_test_mean"].decimals)
+    if "x_test_min" in expected_values:
+        utils_test.assert_almost_equal_min(x_test_mnist, x_test_adv, expected_values["x_test_min"].value, decimal=expected_values["x_test_min"].decimals)
+    if "x_test_max" in expected_values:
+        utils_test.assert_almost_equal_max(x_test_mnist, x_test_adv, expected_values["x_test_max"].value, decimal=expected_values["x_test_max"].decimals)
+
+    y_test_pred_adv = classifier.predict(x_test_adv[8:9])
+
+    if "y_test_pred_adv_expected" in expected_values:
+        np.testing.assert_array_almost_equal(y_test_pred_adv, expected_values["y_test_pred_adv_expected"].value, decimal=expected_values["y_test_pred_adv_expected"].decimals)
+
+
+
 
 def _backend_targeted_tabular(attack, classifier, fix_get_iris, fix_mlFramework):
     (x_train_iris, y_train_iris), (x_test_iris, y_test_iris) = fix_get_iris

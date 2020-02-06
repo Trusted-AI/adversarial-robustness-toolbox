@@ -155,6 +155,10 @@ class TestBase(unittest.TestCase):
         self.assertFalse((y_expected == y_pred_adv).all())
 
 
+class ExpectedValue():
+    def __init__(self, value, decimals):
+        self.value = value
+        self.decimals = decimals
 
 # ----------------------------------------------------------------------------------------------- TEST MODELS FOR MNIST
 
