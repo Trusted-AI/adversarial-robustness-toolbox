@@ -15,6 +15,9 @@ from tests.utils_test import get_image_classifier_tf, get_image_classifier_kr, g
 from tests.utils_test import get_tabular_classifier_tf, get_tabular_classifier_kr, get_tabular_classifier_pt
 logger = logging.getLogger(__name__)
 
+
+# @pytest.mark.parametrize("n_train, n_test", [(10, 10)])
+
 @pytest.fixture()
 def fix_get_mnist_subset(fix_get_mnist):
     (x_train_mnist, y_train_mnist), (x_test_mnist, y_test_mnist) = fix_get_mnist
