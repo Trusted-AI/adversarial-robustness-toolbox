@@ -53,10 +53,9 @@ def test_no_norm_images(fix_get_mnist_subset, image_classifier_list):
         return
 
     for classifier in image_classifier_list:
-        # TODO this if statement must be removed once we have a classifier for both image and tabular data
-        if classifier is None:
-            logging.warning("Couldn't perform  this test because no classifier is defined")
-            return
+
+        if FastGradientMethod.is_valid_classifier_type(classifier) is False:
+            continue
 
         attack = FastGradientMethod(classifier, eps=1.0, batch_size=11)
         x_test_adv = attack.generate(x_test_mnist)
@@ -114,6 +113,9 @@ def test_classifier_defended_images(fix_get_mnist_subset, defended_image_classif
         return
 
     for classifier in defended_image_classifier_list:
+        if FastGradientMethod.is_valid_classifier_type(classifier) is False:
+            continue
+
         attack = FastGradientMethod(classifier, eps=1, batch_size=128)
 
         x_train_adv = attack.generate(x_train_mnist)
@@ -139,11 +141,9 @@ def test_random_initialisation_images(fix_get_mnist_subset, image_classifier_lis
         return
 
     for classifier in image_classifier_list:
-        # TODO this if statement must be removed once we have a classifier for both image and tabular data
-        # TODO this if statement must be removed once we have a classifier for both image and tabular data
-        if classifier is None:
-            logging.warning("Couldn't perform  this test because no classifier is defined")
-            return
+
+        if FastGradientMethod.is_valid_classifier_type(classifier) is False:
+            continue
 
         attack = FastGradientMethod(classifier, num_random_init=3)
         x_test_adv = attack.generate(x_test_mnist)
@@ -158,6 +158,9 @@ def test_targeted_images(fix_get_mnist_subset, image_classifier_list):
         return
 
     for classifier in image_classifier_list:
+        if FastGradientMethod.is_valid_classifier_type(classifier) is False:
+            continue
+
         attack = FastGradientMethod(classifier, eps=1.0, targeted=True)
 
         y_test_pred_sort = classifier.predict(x_test_mnist).argsort(axis=1)
@@ -185,6 +188,9 @@ def test_minimal_perturbations_images(fix_get_mnist_subset, image_classifier_lis
         return
 
     for classifier in image_classifier_list:
+        if FastGradientMethod.is_valid_classifier_type(classifier) is False:
+            continue
+
         attack = FastGradientMethod(classifier, eps=1.0, batch_size=11)
         attack_params = {"minimal": True, "eps_step": 0.1, "eps": 5.0}
         attack.set_params(**attack_params)
@@ -211,11 +217,8 @@ def test_l1_norm_images(fix_get_mnist_subset, image_classifier_list):
         return
 
     for classifier in image_classifier_list:
-        # TODO this if statement must be removed once we have a classifier for both image and tabular data
-        if classifier is None:
-            logging.warning("Couldn't perform  this test because no classifier is defined")
-            return
-
+        if FastGradientMethod.is_valid_classifier_type(classifier) is False:
+            continue
         attack = FastGradientMethod(classifier, eps=1, norm=1, batch_size=128)
         x_test_adv = attack.generate(x_test_mnist)
 
@@ -239,10 +242,8 @@ def test_l2_norm_images(fix_get_mnist_subset, image_classifier_list):
         return
 
     for classifier in image_classifier_list:
-        # TODO this if statement must be removed once we have a classifier for both image and tabular data
-        if classifier is None:
-            logging.warning("Couldn't perform  this test because no classifier is defined")
-            return
+        if FastGradientMethod.is_valid_classifier_type(classifier) is False:
+            continue
 
         attack = FastGradientMethod(classifier, eps=1, norm=2, batch_size=128)
         x_test_adv = attack.generate(x_test_mnist)
@@ -266,6 +267,9 @@ def test_classifier_unclipped_values_tabular(fix_get_iris, unclipped_tabular_cla
         return
 
     for classifier in unclipped_tabular_classifier_list:
+        if FastGradientMethod.is_valid_classifier_type(classifier) is False:
+            continue
+
         if fix_mlFramework in ["scikitlearn"]:
             classifier.fit(x=x_test_iris, y=y_test_iris)
 
@@ -285,7 +289,6 @@ def test_untargeted_tabular(fix_get_iris, clipped_tabular_classifier_list, fix_m
     (x_train_iris, y_train_iris), (x_test_iris, y_test_iris) = fix_get_iris
 
     for classifier in clipped_tabular_classifier_list:
-
         if FastGradientMethod.is_valid_classifier_type(classifier) is False:
             continue
 
@@ -314,6 +317,9 @@ def test_targeted_tabular(fix_get_iris, clipped_tabular_classifier_list, fix_mlF
     (x_train_iris, y_train_iris), (x_test_iris, y_test_iris) = fix_get_iris
 
     for classifier in clipped_tabular_classifier_list:
+        if FastGradientMethod.is_valid_classifier_type(classifier) is False:
+            continue
+
         # TODO remove that platform specific case
         if fix_mlFramework in ["scikitlearn"]:
             classifier.fit(x=x_test_iris, y=y_test_iris)

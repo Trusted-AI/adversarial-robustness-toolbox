@@ -29,9 +29,12 @@ from art.defences import FeatureSqueezing
 import numpy as np
 from art.classifiers import KerasClassifier
 from art.utils import master_seed, load_dataset
+from art.classifiers.scikitlearn import SklearnClassifier
 from sklearn.linear_model import LogisticRegression
 from sklearn.svm import SVC, LinearSVC
-from art.classifiers.scikitlearn import SklearnClassifier
+from sklearn.tree import DecisionTreeClassifier, ExtraTreeClassifier
+from sklearn.ensemble import AdaBoostClassifier, BaggingClassifier, ExtraTreesClassifier
+from sklearn.ensemble import GradientBoostingClassifier, RandomForestClassifier
 
 logger = logging.getLogger(__name__)
 
@@ -366,6 +369,7 @@ def get_image_classifier_tf_v1(from_logits=False, load_init=True, sess=None):
                                    train=train, loss=loss, learning=None, sess=sess)
 
     return tfc, sess
+
 
 
 def get_image_classifier_tf_v2(from_logits=False):
@@ -1042,6 +1046,19 @@ def get_tabular_classifier_tf_v2():
                                  input_shape=(4,), clip_values=(0, 1))
 
     return tfc
+
+
+def get_tabular_classifier_scikit_list():
+    return [DecisionTreeClassifier(),
+                  ExtraTreeClassifier(),
+                  AdaBoostClassifier(),
+                  BaggingClassifier(),
+                  ExtraTreesClassifier(n_estimators=10),
+                  GradientBoostingClassifier(n_estimators=10),
+                  RandomForestClassifier(n_estimators=10),
+                  LogisticRegression(solver='lbfgs', multi_class='auto'),
+                  SVC(gamma='auto'),
+                  LinearSVC()]
 
 
 def get_tabular_classifier_kr(load_init=True):
