@@ -26,7 +26,7 @@ from art.attacks import FastGradientMethod
 from art.utils import get_labels_np_array, random_targets
 from tests.utils_test import TestBase
 from tests import utils_test
-from tests import utils_test_attributes
+from tests import utils_attack
 import pytest
 from art import utils
 from art.classifiers.classifier import Classifier, ClassifierGradients
@@ -317,7 +317,7 @@ def test_untargeted_tabular(fix_get_iris, clipped_tabular_classifier_list, fix_m
 def test_targeted_tabular(fix_get_iris, clipped_tabular_classifier_list, fix_mlFramework):
     for classifier in clipped_tabular_classifier_list:
         attack = FastGradientMethod(classifier, targeted=True, eps=.1, batch_size=128)
-        utils_test_attributes._backend_targeted_tabular(attack, classifier, fix_get_iris, fix_mlFramework)
+        utils_attack._backend_targeted_tabular(attack, classifier, fix_get_iris, fix_mlFramework)
 
 
 def test_classifier_type_check_fail_gradients():

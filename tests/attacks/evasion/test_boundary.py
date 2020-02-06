@@ -7,7 +7,7 @@ from art.attacks import BoundaryAttack
 from art.classifiers import KerasClassifier
 from art.utils import random_targets
 from art import utils
-from tests import utils_test_attributes
+from tests import utils_attack
 from art.classifiers.classifier import Classifier, ClassifierGradients
 from tests import utils_test
 from tests.utils_test import TestBase
@@ -51,7 +51,7 @@ def test_targeted_images(fix_get_mnist_subset, image_classifier_list, fix_mlFram
 def test_targeted_tabular(fix_get_iris, clipped_tabular_classifier_list, fix_mlFramework):
     for classifier in clipped_tabular_classifier_list:
         attack = BoundaryAttack(classifier, targeted=True, max_iter=10)
-        utils_test_attributes._backend_targeted_tabular(attack, classifier, fix_get_iris, fix_mlFramework)
+        utils_attack._backend_targeted_tabular(attack, classifier, fix_get_iris, fix_mlFramework)
 
 
 
