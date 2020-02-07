@@ -35,7 +35,8 @@ class GPyGaussianProcessClassifier(Classifier, ClassifierGradients):
     Wrapper class for GPy Gaussian Process classification models.
     """
 
-    def __init__(self, model=None, clip_values=None, defences=None, preprocessing=(0, 1)):
+    def __init__(self, model=None, clip_values=None, preprocessing_defences=None, postprocessing_defences=None,
+                 preprocessing=(0, 1)):
         """
         Create a `Classifier` instance GPY Gaussian Process classification models.
 
@@ -44,8 +45,10 @@ class GPyGaussianProcessClassifier(Classifier, ClassifierGradients):
         :type clip_values: `tuple`
         :param model: GPY Gaussian Process Classification model.
         :type model: `Gpy.models.GPClassification`
-        :param defences: Defences to be activated with the classifier.
-        :type defences: :class:`.Preprocessor` or `list(Preprocessor)` instances
+        :param preprocessing_defences: Preprocessing defence(s) to be activated with the classifier.
+        :type preprocessing_defences: :class:`.Preprocessor` or `list(Preprocessor)` instances
+        :param postprocessing_defences: Postprocessing defence(s) to be activated with the classifier.
+        :type postprocessing_defences: :class:`.Postprocessor` or `list(Postprocessor)` instances
         :param preprocessing: Tuple of the form `(subtractor, divider)` of floats or `np.ndarray` of values to be
                used for data preprocessing. The first value will be subtracted from the input. The input will then
                be divided by the second one.
@@ -54,10 +57,11 @@ class GPyGaussianProcessClassifier(Classifier, ClassifierGradients):
         from GPy.models import GPClassification as GPC
 
         if not isinstance(model, GPC):
-            raise TypeError(
-                'Model must be of type GPy.models.GPClassification')
+            raise TypeError('Model must be of type GPy.models.GPClassification')
+
         super(GPyGaussianProcessClassifier, self).__init__(clip_values=clip_values,
-                                                           defences=defences,
+                                                           preprocessing_defences=preprocessing_defences,
+                                                           postprocessing_defences=postprocessing_defences,
                                                            preprocessing=preprocessing)
         self._nb_classes = 2  # always binary
         self.model = model
@@ -86,11 +90,10 @@ class GPyGaussianProcessClassifier(Classifier, ClassifierGradients):
 
         grads = np.zeros((np.shape(x_preprocessed)[0], 2, np.shape(x)[1]))
         for i in range(np.shape(x_preprocessed)[0]):
-            # get gradient for the two classes GPC can maximally have
+            # Get gradient for the two classes GPC can maximally have
             for i_c in range(2):
                 ind = self.predict(x[i].reshape(1, -1))[0, i_c]
-                sur = self.predict(np.repeat(x_preprocessed[i].reshape(1, -1),
-                                             np.shape(x_preprocessed)[1], 0)
+                sur = self.predict(np.repeat(x_preprocessed[i].reshape(1, -1), np.shape(x_preprocessed)[1], 0)
                                    + eps * np.eye(np.shape(x_preprocessed)[1]))[:, i_c]
                 grads[i, i_c] = ((sur - ind) * eps).reshape(1, -1)
 
@@ -141,18 +144,24 @@ class GPyGaussianProcessClassifier(Classifier, ClassifierGradients):
         :return: Array of predictions of shape `(nb_inputs, nb_classes)`.
         :rtype: `np.ndarray`
         """
-        # Apply preprocessing
+        # Apply preprocessing defences
         x_preprocessed, _ = self._apply_preprocessing(x, y=None, fit=False)
 
+        # Perform prediction
         out = np.zeros((np.shape(x_preprocessed)[0], 2))
-        if logits:  # output the non-squashed version
+        if logits:
+            # output the non-squashed version
             out[:, 0] = self.model.predict_noiseless(x_preprocessed)[0].reshape(-1)
             out[:, 1] = -1.0 * out[:, 0]
-            return out
-        # output normal prediction, scale up to two values
-        out[:, 0] = self.model.predict(x_preprocessed)[0].reshape(-1)
-        out[:, 1] = 1.0 - out[:, 0]
-        return out
+        else:
+            # output normal prediction, scale up to two values
+            out[:, 0] = self.model.predict(x_preprocessed)[0].reshape(-1)
+            out[:, 1] = 1.0 - out[:, 0]
+
+        # Apply postprocessing defences
+        predictions = self._apply_postprocessing(preds=out, fit=False)
+
+        return predictions
 
     def predict_uncertainty(self, x):
         """
@@ -163,10 +172,16 @@ class GPyGaussianProcessClassifier(Classifier, ClassifierGradients):
         :return: Array of uncertainty predictions of shape `(nb_inputs)`.
         :rtype: `np.ndarray`
         """
-        # Apply preprocessing
+        # Apply preprocessing defences
         x_preprocessed, _ = self._apply_preprocessing(x, y=None, fit=False)
 
-        return self.model.predict_noiseless(x_preprocessed)[1]
+        # Perform prediction
+        out = self.model.predict_noiseless(x_preprocessed)[1]
+
+        # Apply postprocessing defences
+        predictions = self._apply_postprocessing(preds=out, fit=False)
+
+        return predictions
 
     def fit(self, x, y, **kwargs):
         """
