@@ -37,7 +37,7 @@ class MXClassifier(ClassifierNeuralNetwork, ClassifierGradients, Classifier):
     """
 
     def __init__(self, model, loss, input_shape, nb_classes, optimizer=None, ctx=None, channel_index=1,
-                 clip_values=None, defences=None, preprocessing=(0, 1)):
+                 clip_values=None, preprocessing_defences=None, postprocessing_defences=None, preprocessing=(0, 1)):
         """
         Initialize an `MXClassifier` object. Assumes the `model` passed as parameter is a Gluon model.
 
@@ -62,8 +62,10 @@ class MXClassifier(ClassifierNeuralNetwork, ClassifierGradients, Classifier):
                features. If arrays are provided, each value will be considered the bound for a feature, thus
                the shape of clip values needs to match the total number of features.
         :type clip_values: `tuple`
-        :param defences: Defences to be activated with the classifier.
-        :type defences: `str` or `list(str)`
+        :param preprocessing_defences: Preprocessing defence(s) to be activated with the classifier.
+        :type preprocessing_defences: :class:`.Preprocessor` or `list(Preprocessor)` instances
+        :param postprocessing_defences: Postprocessing defence(s) to be activated with the classifier.
+        :type postprocessing_defences: :class:`.Postprocessor` or `list(Postprocessor)` instances
         :param preprocessing: Tuple of the form `(subtractor, divider)` of floats or `np.ndarray` of values to be
                used for data preprocessing. The first value will be subtracted from the input. The input will then
                be divided by the second one.
@@ -71,7 +73,10 @@ class MXClassifier(ClassifierNeuralNetwork, ClassifierGradients, Classifier):
         """
         import mxnet as mx
 
-        super(MXClassifier, self).__init__(clip_values=clip_values, channel_index=channel_index, defences=defences,
+        super(MXClassifier, self).__init__(clip_values=clip_values,
+                                           channel_index=channel_index,
+                                           preprocessing_defences=preprocessing_defences,
+                                           postprocessing_defences=postprocessing_defences,
                                            preprocessing=preprocessing)
 
         self._model = model
@@ -114,7 +119,7 @@ class MXClassifier(ClassifierNeuralNetwork, ClassifierGradients, Classifier):
 
         train_mode = self._learning_phase if hasattr(self, '_learning_phase') else True
 
-        # Apply preprocessing
+        # Apply preprocessing defences
         x_preprocessed, y_preprocessed = self._apply_preprocessing(x, y, fit=True)
 
         y_preprocessed = np.argmax(y_preprocessed, axis=1)
@@ -133,8 +138,15 @@ class MXClassifier(ClassifierNeuralNetwork, ClassifierGradients, Classifier):
                 y_batch = mx.nd.array(y_preprocessed[ind[m * batch_size:(m + 1) * batch_size]]).as_in_context(self._ctx)
 
                 with mx.autograd.record(train_mode=train_mode):
+                    # Perform prediction
                     preds = self._model(x_batch)
+
+                    # Apply postprocessing defences
+                    preds = self._apply_postprocessing(preds=preds, fit=True)
+
+                    # Form the loss function
                     loss = self._loss(preds, y_batch)
+
                 loss.backward()
 
                 # Update parameters
@@ -169,8 +181,15 @@ class MXClassifier(ClassifierNeuralNetwork, ClassifierGradients, Classifier):
                     y_batch = mx.nd.array(y_batch).as_in_context(self._ctx)
 
                     with mx.autograd.record(train_mode=train_mode):
+                        # Perform prediction
                         preds = self._model(x_batch)
+
+                        # Apply postprocessing defences
+                        preds = self._apply_postprocessing(preds=preds, fit=True)
+
+                        # Form the loss function
                         loss = self._loss(preds, y_batch)
+
                     loss.backward()
 
                     # Update parameters
@@ -194,7 +213,7 @@ class MXClassifier(ClassifierNeuralNetwork, ClassifierGradients, Classifier):
 
         train_mode = self._learning_phase if hasattr(self, '_learning_phase') else False
 
-        # Apply preprocessing
+        # Apply preprocessing defences
         x_preprocessed, _ = self._apply_preprocessing(x, y=None, fit=False)
 
         # Run prediction with batch processing
@@ -212,7 +231,10 @@ class MXClassifier(ClassifierNeuralNetwork, ClassifierGradients, Classifier):
 
             results[begin:end] = preds.asnumpy()
 
-        return results
+        # Apply postprocessing defences
+        predictions = self._apply_postprocessing(preds=results, fit=False)
+
+        return predictions
 
     def class_gradient(self, x, label=None, **kwargs):
         """
@@ -442,10 +464,10 @@ class MXClassifier(ClassifierNeuralNetwork, ClassifierGradients, Classifier):
 
     def __repr__(self):
         repr_ = "%s(model=%r, loss=%r, input_shape=%r, nb_classes=%r, optimizer=%r, ctx=%r, channel_index=%r, " \
-                "clip_values=%r, defences=%r, preprocessing=%r)" \
-                % (self.__module__ + '.' + self.__class__.__name__,
-                   self._model, self._loss, self.input_shape, self.nb_classes(), self._optimizer, self._ctx,
-                   self.channel_index, self.clip_values, self.defences, self.preprocessing)
+                "clip_values=%r, preprocessing_defences=%r, postprocessing_defences=%r, preprocessing=%r)" \
+                % (self.__module__ + '.' + self.__class__.__name__, self._model, self._loss, self.input_shape,
+                   self.nb_classes(), self._optimizer, self._ctx, self.channel_index, self.clip_values,
+                   self.preprocessing_defences, self.postprocessing_defences, self.preprocessing)
 
         return repr_
 
