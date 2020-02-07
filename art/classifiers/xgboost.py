@@ -33,18 +33,20 @@ class XGBoostClassifier(Classifier, ClassifierDecisionTree):
     Wrapper class for importing XGBoost models.
     """
 
-    def __init__(self, model=None, clip_values=None, defences=None, preprocessing=None, nb_features=None,
-                 nb_classes=None):
+    def __init__(self, model=None, clip_values=None, preprocessing_defences=None, postprocessing_defences=None,
+                 preprocessing=None, nb_features=None, nb_classes=None):
         """
         Create a `Classifier` instance from a XGBoost model.
 
-        :param model: XGBoost model
+        :param model: XGBoost model.
         :type model: `xgboost.Booster` or `xgboost.XGBClassifier`
         :param clip_values: Tuple of the form `(min, max)` representing the minimum and maximum values allowed
                for features.
         :type clip_values: `tuple`
-        :param defences: Defences to be activated with the classifier.
-        :type defences: :class:`.Preprocessor` or `list(Preprocessor)` instances
+        :param preprocessing_defences: Preprocessing defence(s) to be activated with the classifier.
+        :type preprocessing_defences: :class:`.Preprocessor` or `list(Preprocessor)` instances
+        :param postprocessing_defences: Postprocessing defence(s) to be activated with the classifier.
+        :type postprocessing_defences: :class:`.Postprocessor` or `list(Postprocessor)` instances
         :param preprocessing: Tuple of the form `(subtractor, divider)` of floats or `np.ndarray` of values to be
                used for data preprocessing. The first value will be subtracted from the input. The input will then
                be divided by the second one.
@@ -58,10 +60,12 @@ class XGBoostClassifier(Classifier, ClassifierDecisionTree):
         from xgboost import Booster, XGBClassifier
 
         if not isinstance(model, Booster) and not isinstance(model, XGBClassifier):
-            raise TypeError('Model must be of type xgboost.Booster or xgboost.XGBClassifier')
+            raise TypeError('Model must be of type xgboost.Booster or xgboost.XGBClassifier.')
 
-        super(XGBoostClassifier, self).__init__(clip_values=clip_values, defences=defences, preprocessing=preprocessing)
-
+        super(XGBoostClassifier, self).__init__(clip_values=clip_values,
+                                                preprocessing_defences=preprocessing_defences,
+                                                postprocessing_defences=postprocessing_defences,
+                                                preprocessing=preprocessing)
         self._model = model
         self._input_shape = (nb_features,)
         self._nb_classes = nb_classes
@@ -80,7 +84,6 @@ class XGBoostClassifier(Classifier, ClassifierDecisionTree):
                        function as such.
         :type kwargs: `dict`
         :raises: `NotImplementedException`
-        :return: `None`
         """
         raise NotImplementedError
 
@@ -96,7 +99,7 @@ class XGBoostClassifier(Classifier, ClassifierDecisionTree):
         from xgboost import Booster, XGBClassifier
         from art.utils import to_categorical
 
-        # Apply defences
+        # Apply preprocessing defences
         x_preprocessed, _ = self._apply_preprocessing(x, y=None, fit=False)
 
         if isinstance(self._model, Booster):
@@ -106,12 +109,13 @@ class XGBoostClassifier(Classifier, ClassifierDecisionTree):
             y_prediction = np.asarray([line for line in predictions])
             if len(y_prediction.shape) == 1:
                 y_prediction = to_categorical(labels=y_prediction, nb_classes=self.nb_classes())
-            return y_prediction
+        else:
+            y_prediction = self._model.predict_proba(x_preprocessed)
 
-        if isinstance(self._model, XGBClassifier):
-            return self._model.predict_proba(x_preprocessed)
+        # Apply postprocessing defences
+        y_prediction = self._apply_postprocessing(preds=y_prediction, fit=False)
 
-        return None
+        return y_prediction
 
     def nb_classes(self):
         """
