@@ -569,7 +569,6 @@ class KerasClassifier(ClassifierNeuralNetwork, ClassifierGradients, Classifier):
         del state['_predictions_op']
         del state['_loss']
         del state['_loss_gradients']
-        del state['_predictions']
         del state['_layer_names']
 
         model_name = str(time.time()) + '.h5'
