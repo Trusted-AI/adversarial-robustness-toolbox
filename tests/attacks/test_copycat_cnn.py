@@ -22,64 +22,41 @@ import unittest
 
 import tensorflow as tf
 import numpy as np
-import keras.backend as k
 import keras
+import keras.backend as k
 from keras.models import Sequential
 from keras.layers import Dense, Flatten, Conv2D, MaxPooling2D
+import torch
+import torch.nn as nn
+import torch.optim as optim
 
 from art.attacks.extraction.copycat_cnn import CopycatCNN
 from art.classifiers import TensorFlowClassifier
 from art.classifiers import KerasClassifier
 from art.classifiers import PyTorchClassifier
-from art.utils import load_dataset, master_seed
-from tests.utils_test import get_classifier_tf
-from tests.utils_test import get_classifier_kr
-from tests.utils_test import get_classifier_pt
-from tests.utils_test import get_iris_classifier_tf
-from tests.utils_test import get_iris_classifier_kr
-from tests.utils_test import get_iris_classifier_pt
-from art.config import ART_NUMPY_DTYPE
 
+from tests.utils import TestBase, master_seed
+from tests.utils import get_classifier_tf, get_classifier_kr, get_classifier_pt
+from tests.utils import get_iris_classifier_tf, get_iris_classifier_kr, get_iris_classifier_pt
 
 logger = logging.getLogger(__name__)
 
-
-try:
-    # Conditional import of `torch` to avoid segmentation fault errors this framework generates at import
-    import torch
-    import torch.nn as nn
-    import torch.optim as optim
-except ImportError:
-    logger.info('Could not import PyTorch in utilities.')
-
-if tf.__version__[0] == '2':
-    # pylint: disable=E0401
-    import tensorflow.compat.v1 as tf
-    tf.disable_eager_execution()
-
-
-BATCH_SIZE = 100
-NB_TRAIN = 1000
 NB_EPOCHS = 10
 NB_STOLEN = 1000
 
 
-class TestCopycatCNN(unittest.TestCase):
+class TestCopycatCNN(TestBase):
     """
     A unittest class for testing the CopycatCNN attack.
     """
 
     @classmethod
     def setUpClass(cls):
-        (x_train, y_train), (_, _), _, _ = load_dataset('mnist')
+        master_seed(seed=1234)
+        super().setUpClass()
 
-        cls.x_train = x_train[:NB_TRAIN].astype(ART_NUMPY_DTYPE)
-        cls.y_train = y_train[:NB_TRAIN].astype(ART_NUMPY_DTYPE)
-
-    def setUp(self):
-        master_seed(1234)
-
-    def test_tfclassifier(self):
+    @unittest.skipIf(tf.__version__[0] == '2', reason='Skip unittests for TensorFlow v2.')
+    def test_tensorflow_classifier(self):
         """
         First test with the TensorFlowClassifier.
         :return:
@@ -112,23 +89,23 @@ class TestCopycatCNN(unittest.TestCase):
                                            train=train, loss=loss, learning=None, sess=sess)
 
         # Create attack
-        copycat_cnn = CopycatCNN(classifier=victim_tfc, batch_size_query=BATCH_SIZE, batch_size_fit=BATCH_SIZE,
+        copycat_cnn = CopycatCNN(classifier=victim_tfc, batch_size_query=self.batch_size,
+                                 batch_size_fit=self.batch_size,
                                  nb_epochs=NB_EPOCHS, nb_stolen=NB_STOLEN)
-        thieved_tfc = copycat_cnn.extract(x=self.x_train, thieved_classifier=thieved_tfc)
+        thieved_tfc = copycat_cnn.extract(x=self.x_train_mnist, thieved_classifier=thieved_tfc)
 
-        victim_preds = np.argmax(victim_tfc.predict(x=self.x_train[:100]), axis=1)
-        thieved_preds = np.argmax(thieved_tfc.predict(x=self.x_train[:100]), axis=1)
+        victim_preds = np.argmax(victim_tfc.predict(x=self.x_train_mnist[:100]), axis=1)
+        thieved_preds = np.argmax(thieved_tfc.predict(x=self.x_train_mnist[:100]), axis=1)
         acc = np.sum(victim_preds == thieved_preds) / len(victim_preds)
 
         self.assertGreater(acc, 0.3)
 
         # Clean-up session
-        sess.close()
-        tf.reset_default_graph()
+        if sess is not None:
+            sess.close()
+            tf.reset_default_graph()
 
-    @unittest.skipIf(tf.__version__[0] == '2', reason='Skip unittests for Tensorflow v2 until Keras supports Tensorflow'
-                                                      ' v2 as backend.')
-    def test_krclassifier(self):
+    def test_keras_classifier(self):
         """
         Second test with the KerasClassifier.
         :return:
@@ -149,12 +126,12 @@ class TestCopycatCNN(unittest.TestCase):
         thieved_krc = KerasClassifier(model, clip_values=(0, 1), use_logits=False)
 
         # Create attack
-        copycat_cnn = CopycatCNN(classifier=victim_krc, batch_size_fit=BATCH_SIZE, batch_size_query=BATCH_SIZE,
-                                 nb_epochs=NB_EPOCHS, nb_stolen=NB_STOLEN)
-        thieved_krc = copycat_cnn.extract(x=self.x_train, thieved_classifier=thieved_krc)
+        copycat_cnn = CopycatCNN(classifier=victim_krc, batch_size_fit=self.batch_size,
+                                 batch_size_query=self.batch_size, nb_epochs=NB_EPOCHS, nb_stolen=NB_STOLEN)
+        thieved_krc = copycat_cnn.extract(x=self.x_train_mnist, thieved_classifier=thieved_krc)
 
-        victim_preds = np.argmax(victim_krc.predict(x=self.x_train[:100]), axis=1)
-        thieved_preds = np.argmax(thieved_krc.predict(x=self.x_train[:100]), axis=1)
+        victim_preds = np.argmax(victim_krc.predict(x=self.x_train_mnist[:100]), axis=1)
+        thieved_preds = np.argmax(thieved_krc.predict(x=self.x_train_mnist[:100]), axis=1)
         acc = np.sum(victim_preds == thieved_preds) / len(victim_preds)
 
         self.assertGreater(acc, 0.3)
@@ -162,11 +139,13 @@ class TestCopycatCNN(unittest.TestCase):
         # Clean-up
         k.clear_session()
 
-    def test_ptclassifier(self):
+    def test_pytorch_classifier(self):
         """
         Third test with the PyTorchClassifier.
         :return:
         """
+        x_train = np.reshape(self.x_train_mnist, (self.x_train_mnist.shape[0], 1, 28, 28)).astype(np.float32)
+
         # Build PyTorchClassifier
         victim_ptc = get_classifier_pt()
 
@@ -196,7 +175,7 @@ class TestCopycatCNN(unittest.TestCase):
                 x = self.pool(x)
                 x = x.reshape(-1, 25)
                 x = self.fullyconnected(x)
-                x = torch.nn.functional.softmax(x)
+                x = torch.nn.functional.softmax(x, dim=1)
 
                 return x
 
@@ -212,37 +191,31 @@ class TestCopycatCNN(unittest.TestCase):
                                         nb_classes=10, clip_values=(0, 1))
 
         # Create attack
-        copycat_cnn = CopycatCNN(classifier=victim_ptc, batch_size_fit=BATCH_SIZE, batch_size_query=BATCH_SIZE,
-                                 nb_epochs=NB_EPOCHS, nb_stolen=NB_STOLEN)
+        copycat_cnn = CopycatCNN(classifier=victim_ptc, batch_size_fit=self.batch_size,
+                                 batch_size_query=self.batch_size, nb_epochs=NB_EPOCHS, nb_stolen=NB_STOLEN)
 
-        self.x_train = np.swapaxes(self.x_train, 1, 3)
-        thieved_ptc = copycat_cnn.extract(x=self.x_train, thieved_classifier=thieved_ptc)
-        victim_preds = np.argmax(victim_ptc.predict(x=self.x_train[:100]), axis=1)
-        thieved_preds = np.argmax(thieved_ptc.predict(x=self.x_train[:100]), axis=1)
-        self.x_train = np.swapaxes(self.x_train, 1, 3)
+        thieved_ptc = copycat_cnn.extract(x=x_train, thieved_classifier=thieved_ptc)
+        victim_preds = np.argmax(victim_ptc.predict(x=x_train[:100]), axis=1)
+        thieved_preds = np.argmax(thieved_ptc.predict(x=x_train[:100]), axis=1)
 
         acc = np.sum(victim_preds == thieved_preds) / len(victim_preds)
 
         self.assertGreater(acc, 0.3)
 
 
-class TestCopycatCNNVectors(unittest.TestCase):
+class TestCopycatCNNVectors(TestBase):
+
     @classmethod
     def setUpClass(cls):
-        (x_train, y_train), (_, _), _, _ = load_dataset('iris')
+        super().setUpClass()
 
-        cls.x_train = x_train
-        cls.y_train = y_train
-
-    def setUp(self):
-        master_seed(1234)
-
-    def test_iris_tf(self):
+    @unittest.skipIf(tf.__version__[0] == '2', reason='Skip unittests for TensorFlow v2.')
+    def test_tensorflow_iris(self):
         """
-        First test for TF.
+        First test for TensorFlow.
         :return:
         """
-        # Get the TF classifier
+        # Get the TensorFlow classifier
         victim_tfc, sess = get_iris_classifier_tf()
 
         # Define input and output placeholders
@@ -267,23 +240,22 @@ class TestCopycatCNNVectors(unittest.TestCase):
                                            train=train, loss=loss, learning=None, sess=sess, channel_index=1)
 
         # Create attack
-        copycat_cnn = CopycatCNN(classifier=victim_tfc, batch_size_fit=BATCH_SIZE, batch_size_query=BATCH_SIZE,
-                                 nb_epochs=NB_EPOCHS, nb_stolen=NB_STOLEN)
-        thieved_tfc = copycat_cnn.extract(x=self.x_train, thieved_classifier=thieved_tfc)
+        copycat_cnn = CopycatCNN(classifier=victim_tfc, batch_size_fit=self.batch_size,
+                                 batch_size_query=self.batch_size, nb_epochs=NB_EPOCHS, nb_stolen=NB_STOLEN)
+        thieved_tfc = copycat_cnn.extract(x=self.x_train_iris, thieved_classifier=thieved_tfc)
 
-        victim_preds = np.argmax(victim_tfc.predict(x=self.x_train[:100]), axis=1)
-        thieved_preds = np.argmax(thieved_tfc.predict(x=self.x_train[:100]), axis=1)
+        victim_preds = np.argmax(victim_tfc.predict(x=self.x_train_iris[:100]), axis=1)
+        thieved_preds = np.argmax(thieved_tfc.predict(x=self.x_train_iris[:100]), axis=1)
         acc = np.sum(victim_preds == thieved_preds) / len(victim_preds)
 
         self.assertGreater(acc, 0.3)
 
         # Clean-up session
-        sess.close()
-        tf.reset_default_graph()
+        if sess is not None:
+            sess.close()
+            tf.reset_default_graph()
 
-    @unittest.skipIf(tf.__version__[0] == '2', reason='Skip unittests for Tensorflow v2 until Keras supports Tensorflow'
-                                                      ' v2 as backend.')
-    def test_iris_kr(self):
+    def test_keras_iris(self):
         """
         Second test for Keras.
         :return:
@@ -302,12 +274,13 @@ class TestCopycatCNNVectors(unittest.TestCase):
         thieved_krc = KerasClassifier(model, clip_values=(0, 1), use_logits=False, channel_index=1)
 
         # Create attack
-        copycat_cnn = CopycatCNN(classifier=victim_krc, batch_size_fit=BATCH_SIZE, batch_size_query=BATCH_SIZE,
+        copycat_cnn = CopycatCNN(classifier=victim_krc, batch_size_fit=self.batch_size,
+                                 batch_size_query=self.batch_size,
                                  nb_epochs=NB_EPOCHS, nb_stolen=NB_STOLEN)
-        thieved_krc = copycat_cnn.extract(x=self.x_train, thieved_classifier=thieved_krc)
+        thieved_krc = copycat_cnn.extract(x=self.x_train_iris, thieved_classifier=thieved_krc)
 
-        victim_preds = np.argmax(victim_krc.predict(x=self.x_train[:100]), axis=1)
-        thieved_preds = np.argmax(thieved_krc.predict(x=self.x_train[:100]), axis=1)
+        victim_preds = np.argmax(victim_krc.predict(x=self.x_train_iris[:100]), axis=1)
+        thieved_preds = np.argmax(thieved_krc.predict(x=self.x_train_iris[:100]), axis=1)
         acc = np.sum(victim_preds == thieved_preds) / len(victim_preds)
 
         self.assertGreater(acc, 0.3)
@@ -315,7 +288,7 @@ class TestCopycatCNNVectors(unittest.TestCase):
         # Clean-up
         k.clear_session()
 
-    def test_iris_pt(self):
+    def test_pytorch_iris(self):
         """
         Third test for Pytorch.
         :return:
@@ -356,12 +329,13 @@ class TestCopycatCNNVectors(unittest.TestCase):
                                         nb_classes=3, clip_values=(0, 1), channel_index=1)
 
         # Create attack
-        copycat_cnn = CopycatCNN(classifier=victim_ptc, batch_size_fit=BATCH_SIZE, batch_size_query=BATCH_SIZE,
+        copycat_cnn = CopycatCNN(classifier=victim_ptc, batch_size_fit=self.batch_size,
+                                 batch_size_query=self.batch_size,
                                  nb_epochs=NB_EPOCHS, nb_stolen=NB_STOLEN)
-        thieved_ptc = copycat_cnn.extract(x=self.x_train, thieved_classifier=thieved_ptc)
+        thieved_ptc = copycat_cnn.extract(x=self.x_train_iris, thieved_classifier=thieved_ptc)
 
-        victim_preds = np.argmax(victim_ptc.predict(x=self.x_train[:100]), axis=1)
-        thieved_preds = np.argmax(thieved_ptc.predict(x=self.x_train[:100]), axis=1)
+        victim_preds = np.argmax(victim_ptc.predict(x=self.x_train_iris[:100]), axis=1)
+        thieved_preds = np.argmax(thieved_ptc.predict(x=self.x_train_iris[:100]), axis=1)
         acc = np.sum(victim_preds == thieved_preds) / len(victim_preds)
 
         self.assertGreater(acc, 0.3)

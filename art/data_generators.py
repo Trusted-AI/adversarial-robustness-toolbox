@@ -241,7 +241,7 @@ class TFDataGenerator(DataGenerator):
                 raise TypeError("Need to pass a dictionary for iterator type %s" % iterator_type)
         elif iterator_type == 'reinitializable':
             if not isinstance(iterator_arg, tf.Operation):
-                raise TypeError("Need to pass a tensorflow operation for iterator type %s" % iterator_type)
+                raise TypeError("Need to pass a TensorFlow operation for iterator type %s" % iterator_type)
         elif iterator_type == 'feedable':
             if not isinstance(iterator_arg, tuple):
                 raise TypeError("Need to pass a tuple for iterator type %s" % iterator_type)

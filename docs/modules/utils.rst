@@ -2,10 +2,6 @@
 ================
 .. automodule:: art.utils
 
-Random Number Generators
-------------------------
-.. autofunction:: master_seed
-
 Math Operations
 ---------------
 .. autofunction:: projection

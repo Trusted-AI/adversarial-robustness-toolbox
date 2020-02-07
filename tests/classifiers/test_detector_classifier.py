@@ -28,13 +28,10 @@ import torch.nn as nn
 import torch.optim as optim
 
 from art.classifiers import PyTorchClassifier, DetectorClassifier
-from art.utils import load_dataset, master_seed
-from tests.utils_test import get_classifier_pt
+
+from tests.utils import TestBase, get_classifier_pt
 
 logger = logging.getLogger(__name__)
-
-NB_TRAIN = 1000
-NB_TEST = 2
 
 
 class Model(nn.Module):
@@ -57,22 +54,17 @@ class Flatten(nn.Module):
         return result
 
 
-class TestDetectorClassifier(unittest.TestCase):
+class TestDetectorClassifier(TestBase):
     """
-    This class tests the functionalities of the DetectorClassifier.
+    This class tests the Detector Classifier.
     """
 
     @classmethod
     def setUpClass(cls):
-        (x_train, y_train), (x_test, y_test), _, _ = load_dataset('mnist')
+        super().setUpClass()
 
-        x_train = np.reshape(x_train, (x_train.shape[0], 1, 28, 28)).astype(np.float32)
-        x_test = np.reshape(x_test, (x_test.shape[0], 1, 28, 28)).astype(np.float32)
-
-        cls.x_train = x_train[:NB_TRAIN]
-        cls.y_train = y_train[:NB_TRAIN]
-        cls.x_test = x_test[:NB_TEST]
-        cls.y_test = y_test[:NB_TEST]
+        cls.x_train_mnist = np.reshape(cls.x_train_mnist, (cls.x_train_mnist.shape[0], 1, 28, 28)).astype(np.float32)
+        cls.x_test_mnist = np.reshape(cls.x_test_mnist, (cls.x_test_mnist.shape[0], 1, 28, 28)).astype(np.float32)
 
         # Define the internal classifier
         classifier = get_classifier_pt()
@@ -92,11 +84,21 @@ class TestDetectorClassifier(unittest.TestCase):
         # Define the detector-classifier
         cls.detector_classifier = DetectorClassifier(classifier=classifier, detector=detector)
 
+        cls.x_train_mnist = np.reshape(cls.x_train_mnist, (cls.x_train_mnist.shape[0], 28, 28, 1)).astype(np.float32)
+        cls.x_test_mnist = np.reshape(cls.x_test_mnist, (cls.x_test_mnist.shape[0], 28, 28, 1)).astype(np.float32)
+
     def setUp(self):
-        master_seed(1234)
+        self.x_train_mnist = np.reshape(self.x_train_mnist, (self.x_train_mnist.shape[0], 1, 28, 28)).astype(np.float32)
+        self.x_test_mnist = np.reshape(self.x_test_mnist, (self.x_test_mnist.shape[0], 1, 28, 28)).astype(np.float32)
+        super().setUp()
+
+    def tearDown(self):
+        self.x_train_mnist = np.reshape(self.x_train_mnist, (self.x_train_mnist.shape[0], 28, 28, 1)).astype(np.float32)
+        self.x_test_mnist = np.reshape(self.x_test_mnist, (self.x_test_mnist.shape[0], 28, 28, 1)).astype(np.float32)
+        super().tearDown()
 
     def test_predict(self):
-        predictions = self.detector_classifier.predict(x=self.x_test[0:1])
+        predictions = self.detector_classifier.predict(x=self.x_test_mnist[0:1])
         predictions_expected = 7
         self.assertEqual(predictions.shape, (1, 11))
         self.assertEqual(np.argmax(predictions, axis=1)[0], predictions_expected)
@@ -109,24 +111,25 @@ class TestDetectorClassifier(unittest.TestCase):
 
     def test_class_gradient_1(self):
         # Test label = None
-        gradients = self.detector_classifier.class_gradient(x=self.x_test[0:1], label=None)
+        gradients = self.detector_classifier.class_gradient(x=self.x_test_mnist[0:1], label=None)
         self.assertEqual(gradients.shape, (1, 11, 1, 28, 28))
 
     def test_class_gradient_2(self):
         # Test label = 5
-        gradients = self.detector_classifier.class_gradient(x=self.x_test, label=5)
-        self.assertEqual(gradients.shape, (NB_TEST, 1, 1, 28, 28))
+        gradients = self.detector_classifier.class_gradient(x=self.x_test_mnist, label=5)
+        self.assertEqual(gradients.shape, (self.n_test, 1, 1, 28, 28))
 
     def test_class_gradient_3(self):
-        # Test label = 10
-        gradients = self.detector_classifier.class_gradient(x=self.x_test, label=10)
-        self.assertEqual(gradients.shape, (NB_TEST, 1, 1, 28, 28))
+        # Test label = 10 (detector classifier has 11 classes (10 + 1))
+        gradients = self.detector_classifier.class_gradient(x=self.x_test_mnist, label=10)
+        self.assertEqual(gradients.shape, (self.n_test, 1, 1, 28, 28))
 
     def test_class_gradient_4(self):
         # Test label = array
+        n_test_local = 2
         label = np.array([2, 10])
-        gradients = self.detector_classifier.class_gradient(x=self.x_test, label=label)
-        self.assertEqual(gradients.shape, (NB_TEST, 1, 1, 28, 28))
+        gradients = self.detector_classifier.class_gradient(x=self.x_test_mnist[0: n_test_local], label=label)
+        self.assertEqual(gradients.shape, (n_test_local, 1, 1, 28, 28))
 
     def test_set_learning(self):
         self.assertTrue(self.detector_classifier.classifier._model.training)

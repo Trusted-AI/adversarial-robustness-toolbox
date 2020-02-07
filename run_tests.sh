@@ -1,19 +1,25 @@
 #!/usr/bin/env bash
 exit_code=0
 
+# Set TensorFlow logging to minimum level ERROR
+export TF_CPP_MIN_LOG_LEVEL="3"
+
 # --------------------------------------------------------------------------------------------------------------- TESTS
 
 declare -a attacks=("tests/attacks/test_adversarial_patch.py" \
                     "tests/attacks/test_boundary.py" \
                     "tests/attacks/test_carlini.py" \
+                    "tests/attacks/test_copycat_cnn.py" \
                     "tests/attacks/test_decision_tree_attack.py" \
                     "tests/attacks/test_deepfool.py" \
                     "tests/attacks/test_elastic_net.py" \
                     "tests/attacks/test_fast_gradient.py" \
                     "tests/attacks/test_functionally_equivalent_extraction.py" \
                     "tests/attacks/test_hclu.py" \
+                    "tests/attacks/test_input_filter.py" \
                     "tests/attacks/test_hop_skip_jump.py" \
                     "tests/attacks/test_iterative_method.py" \
+                    "tests/attacks/test_knockoff_nets.py" \
                     "tests/attacks/test_newtonfool.py" \
                     "tests/attacks/test_poisoning_attack_svm.py" \
                     "tests/attacks/test_projected_gradient_descent.py" \
@@ -29,6 +35,7 @@ declare -a classifiers=("tests/classifiers/test_blackbox.py" \
                         "tests/classifiers/test_detector_classifier.py" \
                         "tests/classifiers/test_ensemble.py" \
                         "tests/classifiers/test_GPy.py" \
+                        "tests/classifiers/test_input_filter.py" \
                         "tests/classifiers/test_keras.py" \
                         "tests/classifiers/test_keras_tf.py" \
                         "tests/classifiers/test_lightgbm.py" \
@@ -36,7 +43,6 @@ declare -a classifiers=("tests/classifiers/test_blackbox.py" \
                         "tests/classifiers/test_pytorch.py" \
                         "tests/classifiers/test_scikitlearn.py" \
                         "tests/classifiers/test_tensorflow.py" \
-                        "tests/classifiers/test_tensorflow_v2.py" \
                         "tests/classifiers/test_xgboost.py" )
 
 declare -a defences=("tests/defences/test_adversarial_trainer.py" \
@@ -88,23 +94,23 @@ declare -a art=("tests/test_data_generators.py" \
 
 run_test () {
   test=$1
-  test_file_name="$(echo $test | rev | cut -d'/' -f1 | rev)"
+  test_file_name="$(echo ${test} | rev | cut -d'/' -f1 | rev)"
 
   echo $'\n\n'
   echo "######################################################################"
-  echo $test
+  echo ${test}
   echo "######################################################################"
-  coverage run --append $test
+  coverage run --append -m unittest -v ${test}
   if [[ $? -ne 0 ]]; then exit_code=1; echo "Failed $test"; fi
 }
 
 for tests_module in "${tests_modules[@]}"; do
   tests="$tests_module[@]"
   for test in "${!tests}"; do
-     run_test $test
+     run_test ${test}
   done
 done
 
 bash <(curl -s https://codecov.io/bash)
 
-exit $exit_code
+exit ${exit_code}

@@ -27,11 +27,17 @@ from art.attacks import PoisoningAttackSVM
 from art.classifiers import SklearnClassifier
 from art.classifiers.scikitlearn import ScikitlearnSVC
 from art.poison_detection.provenance_defense import ProvenanceDefense
-from art.utils import load_mnist, master_seed
+from art.utils import load_mnist
+
+from tests.utils import master_seed
 
 logger = logging.getLogger(__name__)
 
-NB_TRAIN, NB_POISON, NB_VALID, NB_TRUSTED, NB_DEVICES = 40, 5, 40, 25, 4
+NB_TRAIN = 40
+NB_POISON = 5
+NB_VALID = 10
+NB_TRUSTED = 10
+NB_DEVICES = 4
 kernel = 'linear'
 
 
@@ -39,11 +45,11 @@ class TestProvenanceDefence(unittest.TestCase):
 
     @classmethod
     def setUpClass(cls):
-        master_seed(301)
+        master_seed(seed=301)
         (x_train, y_train), (x_test, y_test), min_, max_ = load_mnist()
         y_train = np.argmax(y_train, axis=1)
         y_test = np.argmax(y_test, axis=1)
-        zero_or_four = np.logical_or(y_train == 4, y_train == 0)
+        zero_or_four = np.logical_or(y_train == 4, y_train == 0, y_train == 9)
         x_train = x_train[zero_or_four]
         y_train = y_train[zero_or_four]
         tr_labels = np.zeros((y_train.shape[0], 2))
@@ -81,7 +87,7 @@ class TestProvenanceDefence(unittest.TestCase):
         clean_prov = np.random.randint(NB_DEVICES - 1, size=x_train.shape[0])
         p_train = np.eye(NB_DEVICES)[clean_prov]
 
-        no_defense = ScikitlearnSVC(model=SVC(kernel=kernel), clip_values=(min_, max_))
+        no_defense = ScikitlearnSVC(model=SVC(kernel=kernel, gamma='auto'), clip_values=(min_, max_))
         no_defense.fit(x=x_train, y=y_train)
         poison_points = np.random.randint(no_defense._model.support_vectors_.shape[0], size=NB_POISON)
         all_poison_init = np.copy(no_defense._model.support_vectors_[poison_points])
@@ -99,7 +105,7 @@ class TestProvenanceDefence(unittest.TestCase):
         poison_prov[:, NB_DEVICES - 1] = 1
         all_p = np.vstack([p_train, poison_prov])
 
-        model = SVC(kernel=kernel)
+        model = SVC(kernel=kernel, gamma='auto')
         cls.mnist = (all_data, all_labels, all_p), (x_test, y_test), (trusted_data, trusted_labels), \
                     (valid_data, valid_labels), (min_, max_)
         cls.classifier = SklearnClassifier(model=model, clip_values=(min_, max_))
@@ -110,8 +116,7 @@ class TestProvenanceDefence(unittest.TestCase):
         cls.defence_no_trust = ProvenanceDefense(cls.classifier, all_data, all_labels, all_p, eps=0.1)
 
     def setUp(self):
-        # Set master seed
-        master_seed(301)
+        master_seed(seed=301)
 
     def test_wrong_parameters_1(self):
         self.assertRaises(ValueError, self.defence_no_trust.set_params, eps=-2.0)
