@@ -198,8 +198,9 @@ class TestKerasClassifierTF(unittest.TestCase):
         jpeg = JpegCompression(clip_values=clip_values, apply_predict=True)
         smooth = SpatialSmoothing()
         classifier_ = get_classifier_kr_tf()
-        classifier = KerasClassifier(clip_values=clip_values, model=classifier_._model, defences=[fs, jpeg, smooth])
-        self.assertEqual(len(classifier.defences), 3)
+        classifier = KerasClassifier(clip_values=clip_values, model=classifier_._model,
+                                     preprocessing_defences=[fs, jpeg, smooth])
+        self.assertEqual(len(classifier.preprocessing_defences), 3)
 
         predictions_classifier = classifier.predict(self.x_test)
 
@@ -370,7 +371,7 @@ class TestKerasClassifierTF(unittest.TestCase):
 
         fs = FeatureSqueezing(bit_depth=1, clip_values=(0, 1))
         keras_model = KerasClassifier(self.functional_model, clip_values=(0, 1), input_layer=1, output_layer=1,
-                                      defences=fs)
+                                      preprocessing_defences=fs)
         with open(full_path, 'wb') as save_file:
             pickle.dump(keras_model, save_file)
 
@@ -383,7 +384,7 @@ class TestKerasClassifierTF(unittest.TestCase):
         self.assertEqual(keras_model._use_logits, loaded._use_logits)
         self.assertEqual(keras_model._input_layer, loaded._input_layer)
         self.assertEqual(self.functional_model.get_config(), loaded._model.get_config())
-        self.assertTrue(isinstance(loaded.defences[0], FeatureSqueezing))
+        self.assertTrue(isinstance(loaded.preprocessing_defences[0], FeatureSqueezing))
 
         os.remove(full_path)
 
@@ -392,7 +393,8 @@ class TestKerasClassifierTF(unittest.TestCase):
         repr_ = repr(classifier)
         self.assertIn('art.classifiers.keras.KerasClassifier', repr_)
         self.assertIn('use_logits=False, channel_index=3', repr_)
-        self.assertIn('clip_values=(0, 1), defences=None, preprocessing=(0, 1)', repr_)
+        self.assertIn('clip_values=(0, 1), preprocessing_defences=None, postprocessing_defences=None, '
+                      'preprocessing=(0, 1)', repr_)
         self.assertIn('input_layer=0, output_layer=0', repr_)
 
     @unittest.skipIf(int(tf.__version__.split('.')[0]) == 1 and int(tf.__version__.split('.')[1]) < 14,

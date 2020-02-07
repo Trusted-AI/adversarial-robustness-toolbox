@@ -203,8 +203,9 @@ class TestKerasClassifier(unittest.TestCase):
         jpeg = JpegCompression(clip_values=clip_values, apply_predict=True)
         smooth = SpatialSmoothing()
         classifier_ = get_classifier_kr()
-        classifier = KerasClassifier(clip_values=clip_values, model=classifier_._model, defences=[fs, jpeg, smooth])
-        self.assertEqual(len(classifier.defences), 3)
+        classifier = KerasClassifier(clip_values=clip_values, model=classifier_._model,
+                                     preprocessing_defences=[fs, jpeg, smooth])
+        self.assertEqual(len(classifier.preprocessing_defences), 3)
 
         predictions_classifier = classifier.predict(self.x_test)
 
@@ -393,7 +394,8 @@ class TestKerasClassifier(unittest.TestCase):
         repr_ = repr(classifier)
         self.assertIn('art.classifiers.keras.KerasClassifier', repr_)
         self.assertIn('use_logits=False, channel_index=3', repr_)
-        self.assertIn('clip_values=(0, 1), defences=None, preprocessing=(0, 1)', repr_)
+        self.assertIn('clip_values=(0, 1), preprocessing_defences=None, postprocessing_defences=None, '
+                      'preprocessing=(0, 1)', repr_)
         self.assertIn('input_layer=0, output_layer=0', repr_)
 
     def test_loss_functions(self):

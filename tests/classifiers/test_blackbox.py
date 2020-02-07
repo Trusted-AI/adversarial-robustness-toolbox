@@ -68,7 +68,7 @@ class TestBlackBoxClassifier(unittest.TestCase):
         jpeg = JpegCompression(clip_values=clip_values, apply_predict=True)
         smooth = SpatialSmoothing()
         classifier = get_classifier_bb(defences=[fs, jpeg, smooth])
-        self.assertEqual(len(classifier.defences), 3)
+        self.assertEqual(len(classifier.preprocessing_defences), 3)
 
         predictions_classifier = classifier.predict(self.x_test)
 

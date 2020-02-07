@@ -589,7 +589,7 @@ def get_classifier_bb(defences=None):
             predictions = json.load(json_file)
         return to_categorical(predictions['values'][:len(x)], nb_classes=10)
 
-    bbc = BlackBoxClassifier(predict, (28, 28, 1), 10, clip_values=(0, 255), defences=defences)
+    bbc = BlackBoxClassifier(predict, (28, 28, 1), 10, clip_values=(0, 255), preprocessing_defences=defences)
     return bbc
 
 

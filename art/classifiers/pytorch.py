@@ -168,11 +168,8 @@ class PyTorchClassifier(ClassifierNeuralNetwork, ClassifierGradients, Classifier
                 # Perform prediction
                 model_outputs = self._model(i_batch)
 
-                # Apply postprocessing defences
-                preds = self._apply_postprocessing(preds=model_outputs[-1], fit=True)
-
                 # Form the loss function
-                loss = self._loss(preds, o_batch)
+                loss = self._loss(model_outputs[-1], o_batch)
 
                 # Actual training
                 loss.backward()
@@ -215,16 +212,12 @@ class PyTorchClassifier(ClassifierNeuralNetwork, ClassifierGradients, Classifier
                     # Perform prediction
                     model_outputs = self._model(i_batch)
 
-                    # Apply postprocessing defences
-                    preds = self._apply_postprocessing(preds=model_outputs[-1], fit=True)
-
                     # Form the loss function
-                    loss = self._loss(preds, o_batch)
+                    loss = self._loss(model_outputs[-1], o_batch)
 
                     # Actual training
                     loss.backward()
                     self._optimizer.step()
-
         else:
             # Fit a generic data generator through the API
             super(PyTorchClassifier, self).fit_generator(generator, nb_epochs=nb_epochs)
