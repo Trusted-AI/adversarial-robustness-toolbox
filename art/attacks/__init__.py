@@ -21,6 +21,10 @@ from art.attacks.evasion.universal_perturbation import UniversalPerturbation
 from art.attacks.evasion.virtual_adversarial import VirtualAdversarialMethod
 from art.attacks.evasion.zoo import ZooAttack
 
+# Added New Attacks
+from art.attacks.evasion.pixel_threshold import PixelAttack
+from art.attacks.evasion.pixel_threshold import ThresholdAttack
+
 from art.attacks.poisoning.poisoning_attack_svm import PoisoningAttackSVM
 
 from art.attacks.extraction.functionally_equivalent_extraction import FunctionallyEquivalentExtraction
