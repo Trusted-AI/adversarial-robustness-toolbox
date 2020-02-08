@@ -24,7 +24,9 @@ declare -a attacks=("tests/attacks/test_adversarial_patch.py" \
                     "tests/attacks/test_spatial_transformation.py" \
                     "tests/attacks/test_universal_perturbation.py" \
                     "tests/attacks/test_virtual_adversarial.py" \
-                    "tests/attacks/test_zoo.py" )
+                    "tests/attacks/test_zoo.py" \
+                    "tests/attacks/test_pixel_attack.py" \
+                    "tests/attacks/test_threshold_attack.py" )
 
 declare -a classifiers=("tests/classifiers/test_blackbox.py" \
                         "tests/classifiers/test_catboost.py" \
