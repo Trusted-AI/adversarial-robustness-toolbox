@@ -17,7 +17,7 @@ def pytest_addoption(parser):
     )
 
 @pytest.fixture
-def fix_mlFramework(request):
+def get_mlFramework(request):
     mlFramework = request.config.getoption("--mlFramework")
     if mlFramework not in art_supported_frameworks:
         raise Exception("mlFramework value {0} is unsupported. Please use one of these valid values: {1}".format(
@@ -28,15 +28,15 @@ def fix_mlFramework(request):
 
 
 @pytest.fixture(scope="session")
-def fix_load_iris_dataset():
+def load_iris_dataset():
     logging.info("Loading Iris dataset")
     (x_train_iris, y_train_iris), (x_test_iris, y_test_iris), _, _ = utils.load_dataset('iris')
 
     yield (x_train_iris, y_train_iris), (x_test_iris, y_test_iris)
 
 @pytest.fixture(scope="function")
-def fix_get_iris(fix_load_iris_dataset, fix_mlFramework):
-    (x_train_iris, y_train_iris), (x_test_iris, y_test_iris) = fix_load_iris_dataset
+def get_iris_dataset(load_iris_dataset, get_mlFramework):
+    (x_train_iris, y_train_iris), (x_test_iris, y_test_iris) = load_iris_dataset
 
     x_train_iris_original = x_train_iris.copy()
     y_train_iris_original = y_train_iris.copy()
@@ -52,16 +52,16 @@ def fix_get_iris(fix_load_iris_dataset, fix_mlFramework):
 
 
 @pytest.fixture(scope="session")
-def fix_load_mnist_dataset():
+def load_mnist_dataset():
     logging.info("Loading mnist")
     (x_train_mnist, y_train_mnist), (x_test_mnist, y_test_mnist), _, _ = utils.load_dataset('mnist')
     yield (x_train_mnist, y_train_mnist), (x_test_mnist, y_test_mnist)
 
 @pytest.fixture(scope="function")
-def fix_get_mnist(fix_load_mnist_dataset, fix_mlFramework):
-    (x_train_mnist, y_train_mnist), (x_test_mnist, y_test_mnist) = fix_load_mnist_dataset
+def get_mnist_dataset(load_mnist_dataset, get_mlFramework):
+    (x_train_mnist, y_train_mnist), (x_test_mnist, y_test_mnist) = load_mnist_dataset
 
-    if fix_mlFramework == "pytorch":
+    if get_mlFramework == "pytorch":
         x_test_mnist = np.reshape(x_test_mnist, (x_test_mnist.shape[0], 1, 28, 28)).astype(np.float32)
 
     x_train_mnist_original = x_train_mnist.copy()
@@ -78,9 +78,9 @@ def fix_get_mnist(fix_load_mnist_dataset, fix_mlFramework):
     np.testing.assert_array_almost_equal(y_test_mnist_original, y_test_mnist, decimal=3)
 
 @pytest.fixture
-def image_classifier_list(fix_mlFramework):
+def get_image_classifier_list(get_mlFramework):
     def _image_classifier_list(attack, defended=False):
-        if fix_mlFramework == "keras":
+        if get_mlFramework == "keras":
             if defended:
                 classifier = utils_test.get_image_classifier_kr()
                 # Get the ready-trained Keras model
@@ -88,25 +88,25 @@ def image_classifier_list(fix_mlFramework):
                 classifier_list = [KerasClassifier(model=classifier._model, clip_values=(0, 1), defences=fs)]
             else:
                 classifier_list = [utils_test.get_image_classifier_kr()]
-        if fix_mlFramework == "tensorflow":
+        if get_mlFramework == "tensorflow":
             if defended:
-                logging.warning("{0} doesn't have a defended image classifier defined yet".format(fix_mlFramework))
+                logging.warning("{0} doesn't have a defended image classifier defined yet".format(get_mlFramework))
                 classifier_list = None
             else:
                 classifier, sess = utils_test.get_image_classifier_tf()
                 classifier_list = [classifier]
-        if fix_mlFramework == "pytorch":
+        if get_mlFramework == "pytorch":
             if defended:
-                logging.warning("{0} doesn't have a defended image classifier defined yet".format(fix_mlFramework))
+                logging.warning("{0} doesn't have a defended image classifier defined yet".format(get_mlFramework))
                 classifier_list =  None
             else:
                 classifier_list =  [utils_test.get_image_classifier_pt()]
-        if fix_mlFramework == "scikitlearn":
+        if get_mlFramework == "scikitlearn":
             if defended:
-                logging.warning("{0} doesn't have a defended image classifier defined yet".format(fix_mlFramework))
+                logging.warning("{0} doesn't have a defended image classifier defined yet".format(get_mlFramework))
                 classifier_list = None
             else:
-                logging.warning("{0} doesn't have an image classifier defined yet".format(fix_mlFramework))
+                logging.warning("{0} doesn't have an image classifier defined yet".format(get_mlFramework))
                 classifier_list =  None
 
         if classifier_list is None:
@@ -119,10 +119,10 @@ def image_classifier_list(fix_mlFramework):
 # ART test fixture to skip test for specific mlFramework values
 # eg: @pytest.mark.mlFramework("tensorflow","scikitlearn")
 @pytest.fixture(autouse=True)
-def skip_by_platform(request, fix_mlFramework):
+def skip_by_platform(request, get_mlFramework):
     if request.node.get_closest_marker('skipMlFramework'):
-        if fix_mlFramework in request.node.get_closest_marker('skipMlFramework').args:
-            pytest.skip('skipped on this platform: {}'.format(fix_mlFramework))
+        if get_mlFramework in request.node.get_closest_marker('skipMlFramework').args:
+            pytest.skip('skipped on this platform: {}'.format(get_mlFramework))
 
 @pytest.fixture
 def make_customer_record():
@@ -132,31 +132,31 @@ def make_customer_record():
     return _make_customer_record
 
 @pytest.fixture
-def tabular_classifier_list(fix_mlFramework):
+def get_tabular_classifier_list(get_mlFramework):
     def _tabular_classifier_list(attack, clipped=True):
-        if fix_mlFramework == "keras":
+        if get_mlFramework == "keras":
             if clipped:
                 classifier_list = [utils_test.get_tabular_classifier_kr()]
             else:
                 classifier = utils_test.get_tabular_classifier_kr()
                 classifier_list = [KerasClassifier(model=classifier._model, use_logits=False, channel_index=1)]
 
-        if fix_mlFramework == "tensorflow":
+        if get_mlFramework == "tensorflow":
             if clipped:
                 classifier, _ = utils_test.get_tabular_classifier_tf()
                 classifier_list = [classifier]
             else:
-                logging.warning("{0} doesn't have an uncliped classifier defined yet".format(fix_mlFramework))
+                logging.warning("{0} doesn't have an uncliped classifier defined yet".format(get_mlFramework))
                 classifier_list =  None
 
-        if fix_mlFramework == "pytorch":
+        if get_mlFramework == "pytorch":
             if clipped:
                 classifier_list = [utils_test.get_tabular_classifier_pt()]
             else:
-                logging.warning("{0} doesn't have an uncliped classifier defined yet".format(fix_mlFramework))
+                logging.warning("{0} doesn't have an uncliped classifier defined yet".format(get_mlFramework))
                 classifier_list = None
 
-        if fix_mlFramework == "scikitlearn":
+        if get_mlFramework == "scikitlearn":
             if clipped:
                 model_list = utils_test.get_tabular_classifier_scikit_list()
                 classifier_list =  [SklearnClassifier(model=model, clip_values=(0, 1)) for model in model_list]

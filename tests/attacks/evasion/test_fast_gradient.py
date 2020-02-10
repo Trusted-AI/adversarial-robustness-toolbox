@@ -34,16 +34,16 @@ logger = logging.getLogger(__name__)
 
 
 @pytest.fixture()
-def fix_get_mnist_subset(fix_get_mnist):
-    (x_train_mnist, y_train_mnist), (x_test_mnist, y_test_mnist) = fix_get_mnist
+def fix_get_mnist_subset(get_mnist_dataset):
+    (x_train_mnist, y_train_mnist), (x_test_mnist, y_test_mnist) = get_mnist_dataset
     n_train = 100
     n_test = 11
     yield (x_train_mnist[:n_train], y_train_mnist[:n_train], x_test_mnist[:n_test], y_test_mnist[:n_test])
 
 
-def test_classifier_defended_images(fix_get_mnist_subset, image_classifier_list):
+def test_classifier_defended_images(fix_get_mnist_subset, get_image_classifier_list):
     (x_train_mnist, y_train_mnist, x_test_mnist, y_test_mnist) = fix_get_mnist_subset
-    classifier_list = image_classifier_list(FastGradientMethod, defended=True)
+    classifier_list = get_image_classifier_list(FastGradientMethod, defended=True)
     # TODO this if statement must be removed once we have a classifier for both image and tabular data
     if classifier_list is None:
         logging.warning("Couldn't perform  this test because no classifier is defined")
@@ -54,8 +54,8 @@ def test_classifier_defended_images(fix_get_mnist_subset, image_classifier_list)
         utils_attack.backend_test_defended_images(attack, fix_get_mnist_subset)
 
 
-def test_random_initialisation_images(fix_get_mnist_subset, image_classifier_list):
-    classifier_list = image_classifier_list(FastGradientMethod)
+def test_random_initialisation_images(fix_get_mnist_subset, get_image_classifier_list):
+    classifier_list = get_image_classifier_list(FastGradientMethod)
     # TODO this if statement must be removed once we have a classifier for both image and tabular data
     if classifier_list is None:
         logging.warning("Couldn't perform  this test because no classifier is defined")
@@ -67,8 +67,8 @@ def test_random_initialisation_images(fix_get_mnist_subset, image_classifier_lis
 
 
 
-def test_targeted_images(fix_get_mnist_subset, image_classifier_list):
-    classifier_list = image_classifier_list(FastGradientMethod)
+def test_targeted_images(fix_get_mnist_subset, get_image_classifier_list):
+    classifier_list = get_image_classifier_list(FastGradientMethod)
     # TODO this if statement must be removed once we have a classifier for both image and tabular data
     if classifier_list is None:
         logging.warning("Couldn't perform  this test because no classifier is defined")
@@ -82,8 +82,8 @@ def test_targeted_images(fix_get_mnist_subset, image_classifier_list):
         utils_attack.backend_targeted_images(attack, fix_get_mnist_subset)
 
 
-def test_minimal_perturbations_images(fix_get_mnist_subset, image_classifier_list):
-    classifier_list = image_classifier_list(FastGradientMethod)
+def test_minimal_perturbations_images(fix_get_mnist_subset, get_image_classifier_list):
+    classifier_list = get_image_classifier_list(FastGradientMethod)
     # TODO this if statement must be removed once we have a classifier for both image and tabular data
     if classifier_list is None:
         logging.warning("Couldn't perform  this test because no classifier is defined")
@@ -103,8 +103,8 @@ def test_minimal_perturbations_images(fix_get_mnist_subset, image_classifier_lis
 
 @pytest.mark.parametrize("norm", [np.inf, 1, 2])
 @pytest.mark.skipMlFramework("pytorch")  # temporarily skipping for pytorch until find bug fix in bounded test
-def test_norm_images(norm, fix_get_mnist_subset, image_classifier_list):
-    classifier_list = image_classifier_list(FastGradientMethod)
+def test_norm_images(norm, fix_get_mnist_subset, get_image_classifier_list):
+    classifier_list = get_image_classifier_list(FastGradientMethod)
     # TODO this if statement must be removed once we have a classifier for both image and tabular data
     if classifier_list is None:
         logging.warning("Couldn't perform  this test because no classifier is defined")
@@ -140,22 +140,22 @@ def test_norm_images(norm, fix_get_mnist_subset, image_classifier_list):
 
 @pytest.mark.skipMlFramework("scikitlearn")  # temporarily skipping for scikitlearn until find bug fix in bounded test
 @pytest.mark.parametrize("targeted, clipped", [(True, True), (True, False), (False, True), (False, False)])
-def test_tabular(tabular_classifier_list, fix_mlFramework, fix_get_iris, targeted, clipped):
-    (x_train_iris, y_train_iris), (x_test_iris, y_test_iris) = fix_get_iris
-    classifier_list = tabular_classifier_list(FastGradientMethod, clipped=clipped)
+def test_tabular(get_tabular_classifier_list, get_mlFramework, get_iris_dataset, targeted, clipped):
+    (x_train_iris, y_train_iris), (x_test_iris, y_test_iris) = get_iris_dataset
+    classifier_list = get_tabular_classifier_list(FastGradientMethod, clipped=clipped)
     if classifier_list is None:
         logging.warning("Couldn't perform  this test because no classifier is defined")
         return
     for classifier in classifier_list:
-        if fix_mlFramework in ["scikitlearn"]:
+        if get_mlFramework in ["scikitlearn"]:
             classifier.fit(x=x_test_iris, y=y_test_iris)
 
         if targeted:
             attack = FastGradientMethod(classifier, targeted=True, eps=.1, batch_size=128)
-            utils_attack.backend_targeted_tabular(attack, fix_get_iris, fix_mlFramework)
+            utils_attack.backend_targeted_tabular(attack, get_iris_dataset, get_mlFramework)
         else:
             attack = FastGradientMethod(classifier, eps=.1)
-            utils_attack.backend_untargeted_tabular(attack, fix_get_iris, fix_mlFramework,
+            utils_attack.backend_untargeted_tabular(attack, get_iris_dataset, get_mlFramework,
                                                     clipped=clipped)
 
 
