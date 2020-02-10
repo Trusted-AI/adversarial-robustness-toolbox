@@ -117,8 +117,17 @@ def get_image_classifier_list(get_mlFramework):
                 attack.is_valid_classifier_type(potential_classier)]
     return _image_classifier_list
 
+
 # ART test fixture to skip test for specific mlFramework values
-# eg: @pytest.mark.mlFramework("tensorflow","scikitlearn")
+# eg: @pytest.mark.only_with_platform("tensorflow")
+@pytest.fixture(autouse=True)
+def only_with_platform(request, get_mlFramework):
+    if request.node.get_closest_marker('only_with_platform'):
+        if get_mlFramework not in request.node.get_closest_marker('only_with_platform').args:
+            pytest.skip('skipped on this platform: {}'.format(get_mlFramework))
+
+# ART test fixture to skip test for specific mlFramework values
+# eg: @pytest.mark.skipMlFramework("tensorflow","scikitlearn")
 @pytest.fixture(autouse=True)
 def skip_by_platform(request, get_mlFramework):
     if request.node.get_closest_marker('skipMlFramework'):
@@ -159,29 +168,6 @@ def get_tabular_classifier_list(get_mlFramework):
 
         if get_mlFramework == "scikitlearn":
             return utils_test.get_tabular_classifier_scikit_list(clipped=False)
-            # model_list_names = ["decisionTreeClassifier",
-            #                     "extraTreeClassifier",
-            #                     "adaBoostClassifier",
-            #                     "baggingClassifier",
-            #                     "extraTreesClassifier",
-            #                     "gradientBoostingClassifier",
-            #                     "randomForestClassifier",
-            #                     "logisticRegression",
-            #                     "svc",
-            #                     "linearSVC"]
-            # if clipped:
-            #     # model_list = utils_test.get_tabular_classifier_scikit_list()
-            #     # classifier_list = [SklearnClassifier(model=model, clip_values=(0, 1)) for model in model_list]
-            #     classifier_list = [
-            #         pickle.load(open(os.path.join("../resources/models/scikit/", model_name + "iris_clipped.sav"), 'rb'))
-            #         for model_name in model_list_names]
-            # else:
-            #     # model_list = utils_test.get_tabular_classifier_scikit_list()
-            #     # classifier_list = [SklearnClassifier(model=model) for model in model_list]
-            #     classifier_list = [
-            #         pickle.load(open(os.path.join("../resources/models/scikit/", model_name + "iris_unclipped.sav"), 'rb'))
-            #         for model_name in model_list_names]
-
         if classifier_list is None:
             return None
 

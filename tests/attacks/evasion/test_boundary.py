@@ -26,10 +26,9 @@ def test_tabular(get_tabular_classifier_list, get_mlFramework, get_iris_dataset,
 
         attack = BoundaryAttack(classifier, targeted=targeted, max_iter=10)
         if targeted:
-            utils_attack.backend_targeted_tabular(attack, get_iris_dataset, get_mlFramework)
+            utils_attack.backend_targeted_tabular(attack, get_iris_dataset)
         else:
-            utils_attack.backend_untargeted_tabular(attack, get_iris_dataset, get_mlFramework,
-                                                    clipped=clipped_classifier)
+            utils_attack.backend_untargeted_tabular(attack, get_iris_dataset, clipped=clipped_classifier)
 
 
 @pytest.mark.parametrize("targeted", [True, False])

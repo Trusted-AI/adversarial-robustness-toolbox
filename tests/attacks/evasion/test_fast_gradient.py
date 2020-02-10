@@ -136,12 +136,9 @@ def test_norm_images(norm, fix_get_mnist_subset, get_image_classifier_list):
         utils_attack.backend_check_adverse_values(attack, fix_get_mnist_subset, expected_values)
 
 
-
-
 @pytest.mark.skipMlFramework("scikitlearn")  # temporarily skipping for scikitlearn until find bug fix in bounded test
 @pytest.mark.parametrize("targeted, clipped", [(True, True), (True, False), (False, True), (False, False)])
 def test_tabular(get_tabular_classifier_list, get_mlFramework, get_iris_dataset, targeted, clipped):
-    (x_train_iris, y_train_iris), (x_test_iris, y_test_iris) = get_iris_dataset
 
     classifier_list = get_tabular_classifier_list(FastGradientMethod, clipped=clipped)
 
@@ -151,11 +148,10 @@ def test_tabular(get_tabular_classifier_list, get_mlFramework, get_iris_dataset,
     for classifier in classifier_list:
         if targeted:
             attack = FastGradientMethod(classifier, targeted=True, eps=.1, batch_size=128)
-            utils_attack.backend_targeted_tabular(attack, get_iris_dataset, get_mlFramework)
+            utils_attack.backend_targeted_tabular(attack, get_iris_dataset)
         else:
             attack = FastGradientMethod(classifier, eps=.1)
-            utils_attack.backend_untargeted_tabular(attack, get_iris_dataset, get_mlFramework,
-                                                    clipped=clipped)
+            utils_attack.backend_untargeted_tabular(attack, get_iris_dataset, clipped=clipped)
 
 
 def test_classifier_type_check_fail_gradients():

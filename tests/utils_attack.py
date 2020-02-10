@@ -69,7 +69,7 @@ def backend_check_adverse_values(attack, mnist_dataset, expected_values):
         np.testing.assert_array_equal(y_test_pred_adv, expected_values["y_test_pred_adv_expected"].value)
 
 
-def backend_targeted_tabular(attack, fix_get_iris, fix_mlFramework):
+def backend_targeted_tabular(attack, fix_get_iris):
     (x_train_iris, y_train_iris), (x_test_iris, y_test_iris) = fix_get_iris
 
     targets = utils.random_targets(y_test_iris, nb_classes=3)
@@ -98,7 +98,7 @@ def back_end_untargeted_images(attack, fix_get_mnist_subset, fix_mlFramework):
     if fix_mlFramework in ["keras"]:
         k.clear_session()
 
-def backend_untargeted_tabular(attack, iris_dataset, mlFramework, clipped):
+def backend_untargeted_tabular(attack, iris_dataset, clipped):
     (x_train_iris, y_train_iris), (x_test_iris, y_test_iris) = iris_dataset
 
     x_test_adv = attack.generate(x_test_iris)
