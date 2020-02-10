@@ -52,7 +52,7 @@ class SubsetScanningDetector(ClassifierNeuralNetwork, ClassifierGradients, Class
         """
         super(SubsetScanningDetector, self).__init__(clip_values=classifier.clip_values,
                                                      channel_index=classifier.channel_index,
-                                                     defences=classifier.defences,
+                                                     preprocessing_defences=classifier.preprocessing_defences,
                                                      preprocessing=classifier.preprocessing)
         self.classifier = classifier
         self.bgd_data = bgd_data
