@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 exit_code=0
-tensorflow-keras
+
 mlFrameworkList=("tensorflow" "keras" "pytorch" "scikitlearn")
 for mlFramework in "${mlFrameworkList[@]}"; do
   echo "Running tests with framework $mlFramework"

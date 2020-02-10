@@ -51,7 +51,7 @@ def test_classifier_defended_images(fix_get_mnist_subset, image_classifier_list)
 
     for classifier in classifier_list:
         attack = FastGradientMethod(classifier, eps=1, batch_size=128)
-        utils_attack._backend_test_defended_images(attack, classifier, fix_get_mnist_subset)
+        utils_attack.backend_test_defended_images(attack, fix_get_mnist_subset)
 
 
 def test_random_initialisation_images(fix_get_mnist_subset, image_classifier_list):
@@ -63,7 +63,7 @@ def test_random_initialisation_images(fix_get_mnist_subset, image_classifier_lis
 
     for classifier in classifier_list:
         attack = FastGradientMethod(classifier, num_random_init=3)
-        utils_attack._backend_test_random_initialisation_images(attack, fix_get_mnist_subset)
+        utils_attack.backend_test_random_initialisation_images(attack, fix_get_mnist_subset)
 
 
 
@@ -79,7 +79,7 @@ def test_targeted_images(fix_get_mnist_subset, image_classifier_list):
         attack_params = {"minimal": True, "eps_step": 0.01, "eps": 1.0}
         attack.set_params(**attack_params)
 
-        utils_attack._backend_targeted_images(attack, classifier, fix_get_mnist_subset)
+        utils_attack.backend_targeted_images(attack, fix_get_mnist_subset)
 
 
 def test_minimal_perturbations_images(fix_get_mnist_subset, image_classifier_list):
@@ -98,11 +98,11 @@ def test_minimal_perturbations_images(fix_get_mnist_subset, image_classifier_lis
                            "x_test_min": ExpectedValue(-0.30000000, 0.00001),
                            "x_test_max": ExpectedValue(0.30000000, 0.00001),
                            "y_test_pred_adv_expected": ExpectedValue(np.asarray([4, 2, 4, 7, 0, 4, 7, 2, 0, 7, 0]), 2)}
-        utils_attack._backend_check_adverse_values(attack, classifier, fix_get_mnist_subset, expected_values)
+        utils_attack.backend_check_adverse_values(attack, fix_get_mnist_subset, expected_values)
 
 
 @pytest.mark.parametrize("norm", [np.inf, 1, 2])
-@pytest.mark.mlFramework("pytorch")  # temporarily skipping for pytorch until find bug fix in bounded test
+@pytest.mark.skipMlFramework("pytorch")  # temporarily skipping for pytorch until find bug fix in bounded test
 def test_norm_images(norm, fix_get_mnist_subset, image_classifier_list):
     classifier_list = image_classifier_list(FastGradientMethod)
     # TODO this if statement must be removed once we have a classifier for both image and tabular data
@@ -133,12 +133,12 @@ def test_norm_images(norm, fix_get_mnist_subset, image_classifier_list):
     for classifier in classifier_list:
         attack = FastGradientMethod(classifier, eps=1, norm=norm, batch_size=128)
 
-        utils_attack._backend_check_adverse_values(attack, classifier, fix_get_mnist_subset, expected_values)
+        utils_attack.backend_check_adverse_values(attack, fix_get_mnist_subset, expected_values)
 
 
 
 
-@pytest.mark.mlFramework("scikitlearn")  # temporarily skipping for scikitlearn until find bug fix in bounded test
+@pytest.mark.skipMlFramework("scikitlearn")  # temporarily skipping for scikitlearn until find bug fix in bounded test
 @pytest.mark.parametrize("targeted, clipped", [(True, True), (True, False), (False, True), (False, False)])
 def test_tabular(tabular_classifier_list, fix_mlFramework, fix_get_iris, targeted, clipped):
     (x_train_iris, y_train_iris), (x_test_iris, y_test_iris) = fix_get_iris
@@ -152,11 +152,11 @@ def test_tabular(tabular_classifier_list, fix_mlFramework, fix_get_iris, targete
 
         if targeted:
             attack = FastGradientMethod(classifier, targeted=True, eps=.1, batch_size=128)
-            utils_attack._backend_targeted_tabular(attack, classifier, fix_get_iris, fix_mlFramework)
+            utils_attack.backend_targeted_tabular(attack, fix_get_iris, fix_mlFramework)
         else:
             attack = FastGradientMethod(classifier, eps=.1)
-            utils_attack._backend_untargeted_tabular(attack, fix_get_iris, classifier, fix_mlFramework,
-                                                     clipped=clipped)
+            utils_attack.backend_untargeted_tabular(attack, fix_get_iris, fix_mlFramework,
+                                                    clipped=clipped)
 
 
 def test_classifier_type_check_fail_gradients():

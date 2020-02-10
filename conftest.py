@@ -120,8 +120,8 @@ def image_classifier_list(fix_mlFramework):
 # eg: @pytest.mark.mlFramework("tensorflow","scikitlearn")
 @pytest.fixture(autouse=True)
 def skip_by_platform(request, fix_mlFramework):
-    if request.node.get_closest_marker('mlFramework'):
-        if fix_mlFramework in request.node.get_closest_marker('mlFramework').args:
+    if request.node.get_closest_marker('skipMlFramework'):
+        if fix_mlFramework in request.node.get_closest_marker('skipMlFramework').args:
             pytest.skip('skipped on this platform: {}'.format(fix_mlFramework))
 
 @pytest.fixture
