@@ -250,15 +250,14 @@ def _tf_weights_loader(dataset, weights_type, layer='DENSE', tf_version=1):
     if tf_version == 1:
         def _tf_initializer(_, dtype, partition_info):
             import tensorflow as tf
-
-            weights = np.load(os.path.join(os.path.dirname(os.path.dirname(__file__)), 'models', filename))
+            weights = np.load(os.path.join(os.path.dirname(os.path.dirname(__file__)),'resouresourcrces/models', filename))
             return tf.constant(weights, dtype)
 
     elif tf_version == 2:
         def _tf_initializer(_, dtype):
             import tensorflow as tf
 
-            weights = np.load(os.path.join(os.path.dirname(os.path.dirname(__file__)), 'models', filename))
+            weights = np.load(os.path.join(os.path.dirname(os.path.dirname(__file__)),'resources/models', filename))
             return tf.constant(weights, dtype)
 
     else:
@@ -272,7 +271,7 @@ def _kr_weights_loader(dataset, weights_type, layer='DENSE'):
     filename = str(weights_type) + '_' + str(layer) + '_' + str(dataset) + '.npy'
 
     def _kr_initializer(_, dtype=None):
-        weights = np.load(os.path.join(os.path.dirname(os.path.dirname(__file__)), 'models', filename))
+        weights = np.load(os.path.join(os.path.dirname(os.path.dirname(__file__)),'resources/models', filename))
         return k.variable(value=weights, dtype=dtype)
 
     return _kr_initializer
@@ -280,7 +279,7 @@ def _kr_weights_loader(dataset, weights_type, layer='DENSE'):
 
 def _kr_tf_weights_loader(dataset, weights_type, layer='DENSE'):
     filename = str(weights_type) + '_' + str(layer) + '_' + str(dataset) + '.npy'
-    weights = np.load(os.path.join(os.path.dirname(os.path.dirname(__file__)), 'models', filename))
+    weights = np.load(os.path.join(os.path.dirname(os.path.dirname(__file__)),'resources/models', filename))
     return weights
 
 
