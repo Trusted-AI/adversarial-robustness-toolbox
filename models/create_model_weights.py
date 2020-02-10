@@ -16,9 +16,17 @@
 # TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 # SOFTWARE.
 import tensorflow as tf
+from art import utils
+import os
+import pickle
 from tensorflow.keras.models import Sequential
 from tensorflow.keras.layers import Dense, Flatten, Conv2D, MaxPooling2D
-
+from art.classifiers.scikitlearn import SklearnClassifier
+from sklearn.linear_model import LogisticRegression
+from sklearn.svm import SVC, LinearSVC
+from sklearn.tree import DecisionTreeClassifier, ExtraTreeClassifier
+from sklearn.ensemble import AdaBoostClassifier, BaggingClassifier, ExtraTreesClassifier
+from sklearn.ensemble import GradientBoostingClassifier, RandomForestClassifier
 import numpy as np
 
 from art.utils import load_dataset, master_seed
@@ -51,6 +59,39 @@ def main_mnist_binary():
     np.save('W_DENSE_MNIST_BINARY', w_3)
     np.save('B_DENSE_MNIST_BINARY', b_3)
 
+def create_scikit_model_weights():
+    master_seed(1234)
+
+    model_list = {"decisionTreeClassifier": DecisionTreeClassifier(),
+            "extraTreeClassifier":ExtraTreeClassifier(),
+            "adaBoostClassifier":AdaBoostClassifier(),
+            "baggingClassifier":BaggingClassifier(),
+            "extraTreesClassifier":ExtraTreesClassifier(n_estimators=10),
+            "gradientBoostingClassifier":GradientBoostingClassifier(n_estimators=10),
+            "randomForestClassifier":RandomForestClassifier(n_estimators=10),
+            "logisticRegression":LogisticRegression(solver='lbfgs', multi_class='auto'),
+            "svc":SVC(gamma='auto'),
+            "linearSVC":LinearSVC()}
+
+
+
+
+    clipped_models = {model_name: SklearnClassifier(model=model, clip_values=(0, 1)) for model_name, model in model_list.items()}
+    unclipped_models = {model_name:SklearnClassifier(model=model) for model_name, model in model_list.items()}
+
+    (x_train_iris, y_train_iris), (x_test_iris, y_test_iris), _, _ = utils.load_dataset('iris')
+
+    for model_name, model in clipped_models.items():
+        model.fit(x=x_train_iris, y=y_train_iris)
+        pickle.dump(model, open(os.path.join("../resources/models/scikit/", model_name+"iris_clipped.sav"), 'wb'))
+
+
+    for model_name, model in unclipped_models.items():
+        model.fit(x=x_train_iris, y=y_train_iris)
+        pickle.dump(model, open(os.path.join("../resources/models/scikit/", model_name+"iris_unclipped.sav"), 'wb'))
+
+
 
 if __name__ == '__main__':
-    main_mnist_binary()
+    # main_mnist_binary()
+    create_scikit_model_weights()

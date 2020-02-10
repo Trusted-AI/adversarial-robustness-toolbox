@@ -5,7 +5,8 @@ from tests import utils_test
 import numpy as np
 from art.defences import FeatureSqueezing
 from art.classifiers import KerasClassifier
-
+import os
+import pickle
 from art.classifiers.scikitlearn import SklearnClassifier
 
 logger = logging.getLogger(__name__)
@@ -157,12 +158,29 @@ def get_tabular_classifier_list(get_mlFramework):
                 classifier_list = None
 
         if get_mlFramework == "scikitlearn":
-            if clipped:
-                model_list = utils_test.get_tabular_classifier_scikit_list()
-                classifier_list =  [SklearnClassifier(model=model, clip_values=(0, 1)) for model in model_list]
-            else:
-                model_list = utils_test.get_tabular_classifier_scikit_list()
-                classifier_list = [SklearnClassifier(model=model) for model in model_list]
+            return utils_test.get_tabular_classifier_scikit_list(clipped=False)
+            # model_list_names = ["decisionTreeClassifier",
+            #                     "extraTreeClassifier",
+            #                     "adaBoostClassifier",
+            #                     "baggingClassifier",
+            #                     "extraTreesClassifier",
+            #                     "gradientBoostingClassifier",
+            #                     "randomForestClassifier",
+            #                     "logisticRegression",
+            #                     "svc",
+            #                     "linearSVC"]
+            # if clipped:
+            #     # model_list = utils_test.get_tabular_classifier_scikit_list()
+            #     # classifier_list = [SklearnClassifier(model=model, clip_values=(0, 1)) for model in model_list]
+            #     classifier_list = [
+            #         pickle.load(open(os.path.join("../resources/models/scikit/", model_name + "iris_clipped.sav"), 'rb'))
+            #         for model_name in model_list_names]
+            # else:
+            #     # model_list = utils_test.get_tabular_classifier_scikit_list()
+            #     # classifier_list = [SklearnClassifier(model=model) for model in model_list]
+            #     classifier_list = [
+            #         pickle.load(open(os.path.join("../resources/models/scikit/", model_name + "iris_unclipped.sav"), 'rb'))
+            #         for model_name in model_list_names]
 
         if classifier_list is None:
             return None
@@ -171,3 +189,4 @@ def get_tabular_classifier_list(get_mlFramework):
 
 
     return _tabular_classifier_list
+

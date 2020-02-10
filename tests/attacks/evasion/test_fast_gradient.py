@@ -16,7 +16,7 @@
 # TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 # SOFTWARE.
 from __future__ import absolute_import, division, print_function, unicode_literals
-
+import pickle
 import logging
 import unittest
 import numpy as np
@@ -142,14 +142,13 @@ def test_norm_images(norm, fix_get_mnist_subset, get_image_classifier_list):
 @pytest.mark.parametrize("targeted, clipped", [(True, True), (True, False), (False, True), (False, False)])
 def test_tabular(get_tabular_classifier_list, get_mlFramework, get_iris_dataset, targeted, clipped):
     (x_train_iris, y_train_iris), (x_test_iris, y_test_iris) = get_iris_dataset
+
     classifier_list = get_tabular_classifier_list(FastGradientMethod, clipped=clipped)
+
     if classifier_list is None:
         logging.warning("Couldn't perform  this test because no classifier is defined")
         return
     for classifier in classifier_list:
-        if get_mlFramework in ["scikitlearn"]:
-            classifier.fit(x=x_test_iris, y=y_test_iris)
-
         if targeted:
             attack = FastGradientMethod(classifier, targeted=True, eps=.1, batch_size=128)
             utils_attack.backend_targeted_tabular(attack, get_iris_dataset, get_mlFramework)

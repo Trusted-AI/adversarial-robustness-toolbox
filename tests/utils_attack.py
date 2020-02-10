@@ -72,9 +72,6 @@ def backend_check_adverse_values(attack, mnist_dataset, expected_values):
 def backend_targeted_tabular(attack, fix_get_iris, fix_mlFramework):
     (x_train_iris, y_train_iris), (x_test_iris, y_test_iris) = fix_get_iris
 
-    if fix_mlFramework in ["scikitlearn"]:
-        attack.classifier.fit(x=x_test_iris, y=y_test_iris)
-
     targets = utils.random_targets(y_test_iris, nb_classes=3)
     x_test_adv = attack.generate(x_test_iris, **{'y': targets})
 
@@ -103,10 +100,6 @@ def back_end_untargeted_images(attack, fix_get_mnist_subset, fix_mlFramework):
 
 def backend_untargeted_tabular(attack, iris_dataset, mlFramework, clipped):
     (x_train_iris, y_train_iris), (x_test_iris, y_test_iris) = iris_dataset
-
-    #TODO remove that platform specific case
-    if mlFramework in ["scikitlearn"]:
-        attack.classifier.fit(x=x_test_iris, y=y_test_iris)
 
     x_test_adv = attack.generate(x_test_iris)
 

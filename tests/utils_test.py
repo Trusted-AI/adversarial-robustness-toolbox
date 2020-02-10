@@ -24,6 +24,7 @@ import os
 import logging
 import json
 import time
+import pickle
 import unittest
 from art.defences import FeatureSqueezing
 import numpy as np
@@ -1040,17 +1041,28 @@ def get_tabular_classifier_tf_v2():
     return tfc
 
 
-def get_tabular_classifier_scikit_list():
-    return [DecisionTreeClassifier(),
-                  ExtraTreeClassifier(),
-                  AdaBoostClassifier(),
-                  BaggingClassifier(),
-                  ExtraTreesClassifier(n_estimators=10),
-                  GradientBoostingClassifier(n_estimators=10),
-                  RandomForestClassifier(n_estimators=10),
-                  LogisticRegression(solver='lbfgs', multi_class='auto'),
-                  SVC(gamma='auto'),
-                  LinearSVC()]
+def get_tabular_classifier_scikit_list(clipped=False):
+    model_list_names = ["decisionTreeClassifier",
+                        "extraTreeClassifier",
+                        "adaBoostClassifier",
+                        "baggingClassifier",
+                        "extraTreesClassifier",
+                        "gradientBoostingClassifier",
+                        "randomForestClassifier",
+                        "logisticRegression",
+                        "svc",
+                        "linearSVC"]
+    if clipped:
+        classifier_list = [
+            pickle.load(open(os.path.join("../resources/models/scikit/", model_name + "iris_clipped.sav"), 'rb'))
+            for model_name in model_list_names]
+    else:
+        classifier_list = [
+            pickle.load(open(os.path.join("../resources/models/scikit/", model_name + "iris_unclipped.sav"), 'rb'))
+            for model_name in model_list_names]
+
+    return classifier_list
+
 
 
 def get_tabular_classifier_kr(load_init=True):
