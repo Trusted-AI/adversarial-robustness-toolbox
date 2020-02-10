@@ -85,3 +85,13 @@ def test_fit_generator(get_is_tf_version_2, get_mnist_dataset):
 
         logger.info('Accuracy after fitting TensorFlow classifier with generator: %.2f%%', (accuracy * 100))
         np.testing.assert_array_almost_equal(accuracy, 0.65, decimal=0.02)
+
+@pytest.mark.only_with_platform("tensorflow")
+def test_nb_classes(get_classifier):
+   classifier, sess = get_classifier
+   assert classifier.nb_classes() == 10
+
+@pytest.mark.only_with_platform("tensorflow")
+def test_input_shape(get_classifier):
+   classifier, sess = get_classifier
+   assert classifier.input_shape == (28, 28, 1)
