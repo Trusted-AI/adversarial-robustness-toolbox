@@ -169,7 +169,7 @@ class TestFastGradientMethodImages(TestBase):
         # Get the ready-trained Keras model
         model = classifier._model
         fs = FeatureSqueezing(bit_depth=1, clip_values=(0, 1))
-        classifier = KerasClassifier(model=model, clip_values=(0, 1), defences=fs)
+        classifier = KerasClassifier(model=model, clip_values=(0, 1), preprocessing_defences=fs)
 
         attack = FastGradientMethod(classifier, eps=1, batch_size=128)
         x_train_adv = attack.generate(self.x_train_mnist)

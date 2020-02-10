@@ -81,14 +81,14 @@ declare -a art=("tests/test_data_generators.py" \
                 "tests/test_utils.py" \
                 "tests/test_visualization.py" )
 
- tests_modules=("attacks" \
-                "classifiers" \
-                "defences" \
-                "detection" \
-                "metrics" \
-                "poison_detection" \
-                "wrappers" \
-                "art" )
+tests_modules=("attacks" \
+               "classifiers" \
+               "defences" \
+               "detection" \
+               "metrics" \
+               "poison_detection" \
+               "wrappers" \
+               "art" )
 
 # --------------------------------------------------------------------------------------------------- CODE TO RUN TESTS
 

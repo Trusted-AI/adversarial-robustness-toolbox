@@ -45,7 +45,7 @@ class BinaryInputDetector(ClassifierNeuralNetwork, ClassifierGradients, Classifi
         """
         super(BinaryInputDetector, self).__init__(clip_values=detector.clip_values,
                                                   channel_index=detector.channel_index,
-                                                  defences=detector.defences,
+                                                  preprocessing_defences=detector.preprocessing_defences,
                                                   preprocessing=detector.preprocessing)
         self.detector = detector
 
@@ -152,7 +152,7 @@ class BinaryActivationDetector(ClassifierNeuralNetwork, ClassifierGradients, Cla
         """
         super(BinaryActivationDetector, self).__init__(clip_values=detector.clip_values,
                                                        channel_index=detector.channel_index,
-                                                       defences=detector.defences,
+                                                       preprocessing_defences=detector.preprocessing_defences,
                                                        preprocessing=detector.preprocessing)
         self.classifier = classifier
         self.detector = detector
