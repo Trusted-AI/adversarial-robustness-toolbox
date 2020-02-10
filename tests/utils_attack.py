@@ -57,11 +57,12 @@ def backend_check_adverse_values(attack, mnist_dataset, expected_values):
     y_test_pred_adv = np.argmax(y_test_pred_adv_matrix, axis=1)
 
     if "x_test_mean" in expected_values:
-        utils_test.assert_almost_equal_mean(x_test_mnist, x_test_adv, expected_values["x_test_mean"].value, decimal=expected_values["x_test_mean"].decimals)
+        np.testing.assert_array_almost_equal(float(np.mean(x_test_adv - x_test_mnist)), expected_values["x_test_mean"].value, decimal=expected_values["x_test_mean"].decimals)
     if "x_test_min" in expected_values:
-        utils_test.assert_almost_equal_min(x_test_mnist, x_test_adv, expected_values["x_test_min"].value, decimal=expected_values["x_test_min"].decimals)
+        # utils_test.assert_almost_equal_min(x_test_mnist, x_test_adv, expected_values["x_test_min"].value, decimal=expected_values["x_test_min"].decimals)
+        np.testing.assert_array_almost_equal(float(np.min(x_test_adv - x_test_mnist)), expected_values["x_test_min"].value, decimal=expected_values["x_test_min"].decimals)
     if "x_test_max" in expected_values:
-        utils_test.assert_almost_equal_max(x_test_mnist, x_test_adv, expected_values["x_test_max"].value, decimal=expected_values["x_test_max"].decimals)
+        np.testing.assert_array_almost_equal(float(np.max(x_test_adv - x_test_mnist)), expected_values["x_test_max"].value, decimal=expected_values["x_test_max"].decimals)
     if "y_test_pred_adv_expected_matrix" in expected_values:
         np.testing.assert_array_almost_equal(y_test_pred_adv_matrix, expected_values["y_test_pred_adv_expected_matrix"].value, decimal=expected_values["y_test_pred_adv_expected"].decimals)
     if "y_test_pred_adv_expected" in expected_values:
