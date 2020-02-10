@@ -126,8 +126,8 @@ class TestThresholdAttack(TestBase):
         if targeted:
             # Generate random target classes
             class_y_test = np.argmax(y_test, axis=1)
-            nb_classes   = np.unique(class_y_test).shape[0]
-            targets      = np.random.randint(nb_classes, size=self.n_test)
+            nb_classes = np.unique(class_y_test).shape[0]
+            targets = np.random.randint(nb_classes, size=self.n_test)
             for i in range(self.n_test):
                 if class_y_test[i] == targets[i]:
                     targets[i] -= 1
