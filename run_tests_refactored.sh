@@ -7,5 +7,7 @@ for mlFramework in "${mlFrameworkList[@]}"; do
   pytest -q tests/attacks/evasion/ --mlFramework=$mlFramework --durations=0
 done
 
+#pytest -q tests/classifiers/test_tensorflow.py --mlFramework=tensorflow --durations=0
+
 exit ${exit_code}
 
