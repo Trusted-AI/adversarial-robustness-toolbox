@@ -47,9 +47,9 @@ try:
 except ImportError:
     logger.info('Could not import PyTorch in utilities.')
 
-
 # ----------------------------------------------------------------------------------------------------- TEST BASE CLASS
 art_supported_frameworks = ["keras", "tensorflow", "pytorch", "scikitlearn"]
+
 
 class TestBase(unittest.TestCase):
     """
@@ -66,13 +66,11 @@ class TestBase(unittest.TestCase):
         #
         # is_valid_framework(os.environ["mlFramework"])
 
-
         cls.n_train = 1000
         cls.n_test = 100
         cls.batch_size = 16
 
         cls.create_image_dataset(n_train=cls.n_train, n_test=cls.n_test)
-
 
         (x_train_iris, y_train_iris), (x_test_iris, y_test_iris), _, _ = load_dataset('iris')
 
@@ -161,6 +159,7 @@ class ExpectedValue():
         self.value = value
         self.decimals = decimals
 
+
 # ----------------------------------------------------------------------------------------------- TEST MODELS FOR MNIST
 
 def check_adverse_example_x(x_adv, x_original, max=1.0, min=0.0, bounded=True):
@@ -182,14 +181,17 @@ def check_adverse_example_x(x_adv, x_original, max=1.0, min=0.0, bounded=True):
         assert (x_adv > max).any(), "some x_test_adv values should have been above 1".format(max)
         assert (x_adv < min).any(), " some x_test_adv values should have all been below {0}".format(min)
 
+
 def check_adverse_predicted_sample_y(y_pred_adv, y_non_adv):
     assert (y_non_adv == y_pred_adv).all() == False, "Adverse predicted sample was not what was expected"
+
 
 def is_valid_framework(framework):
     if framework not in art_supported_frameworks:
         raise Exception("mlFramework value {0} is unsupported. Please use one of these valid values: {1}".format(
             framework, " ".join(art_supported_frameworks)))
     return True
+
 
 def deprecated_get_image_classifiers(defended=False):
     if os.environ["mlFramework"] == "keras":
@@ -210,7 +212,9 @@ def deprecated_get_image_classifiers(defended=False):
         logging.warning("{0} doesn't have an image classifier defined yet".format(os.environ["mlFramework"]))
         return None
     elif is_valid_framework(os.environ["mlFramework"]):
-        raise Exception("A classifier factory method needs to be implemented for framework {0}".format(os.environ["mlFramework"]))
+        raise Exception(
+            "A classifier factory method needs to be implemented for framework {0}".format(os.environ["mlFramework"]))
+
 
 def deprecated_get_tabular_classifiers(clipped=True):
     if os.environ["mlFramework"] == "keras":
@@ -234,7 +238,8 @@ def deprecated_get_tabular_classifiers(clipped=True):
         else:
             return [SklearnClassifier(model=model, clip_values=(0, 1)) for model in model_list]
     elif is_valid_framework(os.environ["mlFramework"]):
-        raise Exception("A classifier factory method needs to be implemented for framework {0}".format(os.environ["mlFramework"]))
+        raise Exception(
+            "A classifier factory method needs to be implemented for framework {0}".format(os.environ["mlFramework"]))
 
 
 def _tf_weights_loader(dataset, weights_type, layer='DENSE', tf_version=1):
@@ -362,7 +367,6 @@ def get_image_classifier_tf_v1(from_logits=False, load_init=True, sess=None):
                                    train=train, loss=loss, learning=None, sess=sess)
 
     return tfc, sess
-
 
 
 def get_image_classifier_tf_v2(from_logits=False):
@@ -792,13 +796,13 @@ def get_image_classifier_pt(from_logits=False, load_init=True):
 
             if load_init:
                 w_conv2d = np.load(os.path.join(os.path.dirname(os.path.dirname(__file__)),
-                                                'models', 'W_CONV2D_MNIST.npy'))
+                                                'resources/models', 'W_CONV2D_MNIST.npy'))
                 b_conv2d = np.load(os.path.join(os.path.dirname(os.path.dirname(__file__)),
-                                                'models', 'B_CONV2D_MNIST.npy'))
+                                                'resources/models', 'B_CONV2D_MNIST.npy'))
                 w_dense = np.load(os.path.join(os.path.dirname(os.path.dirname(__file__)),
-                                               'models', 'W_DENSE_MNIST.npy'))
+                                               'resources/models', 'W_DENSE_MNIST.npy'))
                 b_dense = np.load(os.path.join(os.path.dirname(os.path.dirname(__file__)),
-                                               'models', 'B_DENSE_MNIST.npy'))
+                                               'resources/models', 'B_DENSE_MNIST.npy'))
 
                 w_conv2d_pt = w_conv2d.reshape((1, 1, 7, 7))
 
@@ -968,6 +972,7 @@ def get_tabular_classifier_tf_v1(load_init=True, sess=None):
 
     return tfc, sess
 
+
 def get_tabular_classifier_tf_v2():
     """
     Standard TensorFlow v2 classifier for unit testing.
@@ -1054,15 +1059,18 @@ def get_tabular_classifier_scikit_list(clipped=False):
                         "linearSVC"]
     if clipped:
         classifier_list = [
-            pickle.load(open(os.path.join("../resources/models/scikit/", model_name + "iris_clipped.sav"), 'rb'))
+
+            # os.path.join(os.path.dirname(os.path.dirname(__file__)),'resources/models', 'W_DENSE3_IRIS.npy')
+
+            pickle.load(open(os.path.join(os.path.dirname(os.path.dirname(__file__)), "resources/models/scikit/",
+                                          model_name + "iris_clipped.sav"), 'rb'))
             for model_name in model_list_names]
     else:
         classifier_list = [
-            pickle.load(open(os.path.join("../resources/models/scikit/", model_name + "iris_unclipped.sav"), 'rb'))
-            for model_name in model_list_names]
+            pickle.load(open(os.path.join(os.path.dirname(os.path.dirname(__file__)), "resources/models/scikit/",
+                                          model_name + "iris_unclipped.sav"), 'rb')) for model_name in model_list_names]
 
     return classifier_list
-
 
 
 def get_tabular_classifier_kr(load_init=True):
@@ -1132,17 +1140,17 @@ def get_tabular_classifier_pt(load_init=True):
 
             if load_init:
                 w_dense1 = np.load(os.path.join(os.path.dirname(os.path.dirname(__file__)),
-                                                'models', 'W_DENSE1_IRIS.npy'))
+                                                'resources/models', 'W_DENSE1_IRIS.npy'))
                 b_dense1 = np.load(os.path.join(os.path.dirname(os.path.dirname(__file__)),
-                                                'models', 'B_DENSE1_IRIS.npy'))
+                                                'resources/models', 'B_DENSE1_IRIS.npy'))
                 w_dense2 = np.load(os.path.join(os.path.dirname(os.path.dirname(__file__)),
-                                                'models', 'W_DENSE2_IRIS.npy'))
+                                                'resources/models', 'W_DENSE2_IRIS.npy'))
                 b_dense2 = np.load(os.path.join(os.path.dirname(os.path.dirname(__file__)),
-                                                'models', 'B_DENSE2_IRIS.npy'))
+                                                'resources/models', 'B_DENSE2_IRIS.npy'))
                 w_dense3 = np.load(os.path.join(os.path.dirname(os.path.dirname(__file__)),
-                                                'models', 'W_DENSE3_IRIS.npy'))
+                                                'resources/models', 'W_DENSE3_IRIS.npy'))
                 b_dense3 = np.load(os.path.join(os.path.dirname(os.path.dirname(__file__)),
-                                                'models', 'B_DENSE3_IRIS.npy'))
+                                                'resources/models', 'B_DENSE3_IRIS.npy'))
 
                 self.fully_connected1.weight = nn.Parameter(torch.Tensor(np.transpose(w_dense1)))
                 self.fully_connected1.bias = nn.Parameter(torch.Tensor(b_dense1))
