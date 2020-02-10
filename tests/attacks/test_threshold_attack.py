@@ -32,8 +32,8 @@ import unittest
 
 import numpy as np
 
-from tests.utils_test import TestBase
-from tests.utils_test import get_classifier_tf, get_classifier_kr, get_classifier_pt
+from tests.utils import TestBase
+from tests.utils import get_classifier_tf, get_classifier_kr, get_classifier_pt
 
 from art.attacks import ThresholdAttack
 from art.utils import get_labels_np_array
