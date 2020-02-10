@@ -19,6 +19,16 @@
 # LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
 # OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 # SOFTWARE.
+"""
+This module tests the Pixel Attack.
+The Pixel Attack is a generalisation of One Pixel Attack.
+
+| One Pixel Attack Paper link:
+    https://ieeexplore.ieee.org/abstract/document/8601309/citations#citations
+    (arXiv link: https://arxiv.org/pdf/1710.08864.pdf)
+| Pixel Attack Paper link:
+    https://arxiv.org/abs/1906.06026
+"""
 from __future__ import absolute_import, division, print_function, unicode_literals
 
 import logging
@@ -26,11 +36,11 @@ import unittest
 
 import numpy as np
 
-from tests.utils import TestBase
-from tests.utils import get_classifier_tf, get_classifier_kr, get_classifier_pt
+from tests.utils_test import TestBase
+from tests.utils_test import get_classifier_tf, get_classifier_kr, get_classifier_pt
 
 from art.attacks import PixelAttack
-from art.utils import get_labels_np_array, to_categorical
+from art.utils import get_labels_np_array
 
 logger = logging.getLogger(__name__)
 
@@ -47,10 +57,7 @@ class TestPixelAttack(TestBase):
         """
         super().setUpClass()
 
-        cls.n_train = 100
         cls.n_test = 2
-        cls.x_train_mnist = cls.x_train_mnist[0:cls.n_train]
-        cls.y_train_mnist = cls.y_train_mnist[0:cls.n_train]
         cls.x_test_mnist = cls.x_test_mnist[0:cls.n_test]
         cls.y_test_mnist = cls.y_test_mnist[0:cls.n_test]
 
@@ -58,386 +65,99 @@ class TestPixelAttack(TestBase):
         """
         TODO: Write Comment
         """
-        x_test_original = self.x_test_mnist.copy()
-
-        # Keras classifier
         classifier = get_classifier_kr()
-
-        scores = classifier._model.evaluate(
-            self.x_train_mnist, self.y_train_mnist)
-        logger.info(
-            '[Keras, MNIST] Accuracy on training set: %.2f%%',
-            (scores[1] * 100))
-
-        scores = classifier._model.evaluate(
-            self.x_test_mnist, self.y_test_mnist)
-        logger.info(
-            '[Keras, MNIST] Accuracy on test set: %.2f%%',
-            (scores[1] * 100))
-
-        # targeted
-
-        # Generate random target classes
-        nb_classes = np.unique(np.argmax(self.y_test_mnist, axis=1)).shape[0]
-        targets = np.random.randint(nb_classes, size=self.n_test)
-        while (targets == np.argmax(self.y_test_mnist, axis=1)).any():
-            targets = np.random.randint(nb_classes, size=self.n_test)
-
-        # Perform attack with DE optimizer
-        df = PixelAttack(classifier, th=64, es=0, targeted=True)
-        x_test_adv = df.generate(
-            self.x_test_mnist, y=to_categorical(
-                targets, nb_classes))
-
-        self.assertFalse((self.x_test_mnist == x_test_adv).all())
-        self.assertFalse((0.0 == x_test_adv).all())
-
-        y_pred = get_labels_np_array(classifier.predict(x_test_adv))
-        self.assertFalse((self.y_test_mnist == y_pred).all())
-
-        accuracy = np.sum(
-            np.argmax(
-                y_pred,
-                axis=1) == np.argmax(
-                    self.y_test_mnist,
-                    axis=1)) / self.n_test
-        logger.info(
-            'Accuracy on adversarial examples: %.2f%%',
-            (accuracy * 100))
-
-        # Perform attack with CMA-ES optimizer
-        df = PixelAttack(classifier, th=64, es=0, targeted=True)
-        x_test_adv = df.generate(
-            self.x_test_mnist, y=to_categorical(
-                targets, nb_classes))
-
-        self.assertFalse((self.x_test_mnist == x_test_adv).all())
-        self.assertFalse((0.0 == x_test_adv).all())
-
-        y_pred = get_labels_np_array(classifier.predict(x_test_adv))
-        self.assertFalse((self.y_test_mnist == y_pred).all())
-
-        accuracy = np.sum(
-            np.argmax(
-                y_pred,
-                axis=1) == np.argmax(
-                    self.y_test_mnist,
-                    axis=1)) / self.n_test
-        logger.info(
-            'Accuracy on adversarial examples: %.2f%%',
-            (accuracy * 100))
-
-        # untargeted
-        # Perform attack with DE optimizer
-        df = PixelAttack(classifier, th=64, es=0, targeted=False)
-        x_test_adv = df.generate(self.x_test_mnist)
-
-        self.assertFalse((self.x_test_mnist == x_test_adv).all())
-        self.assertFalse((0.0 == x_test_adv).all())
-
-        y_pred = get_labels_np_array(classifier.predict(x_test_adv))
-        self.assertFalse((self.y_test_mnist == y_pred).all())
-
-        accuracy = np.sum(
-            np.argmax(
-                y_pred,
-                axis=1) == np.argmax(
-                    self.y_test_mnist,
-                    axis=1)) / self.n_test
-        logger.info(
-            'Accuracy on adversarial examples: %.2f%%',
-            (accuracy * 100))
-
-        # Perform attack with CMA-ES optimizer
-        df = PixelAttack(classifier, th=64, es=1, targeted=False)
-        x_test_adv = df.generate(self.x_test_mnist)
-
-        self.assertFalse((self.x_test_mnist == x_test_adv).all())
-        self.assertFalse((0.0 == x_test_adv).all())
-
-        y_pred = get_labels_np_array(classifier.predict(x_test_adv))
-        self.assertFalse((self.y_test_mnist == y_pred).all())
-
-        accuracy = np.sum(
-            np.argmax(
-                y_pred,
-                axis=1) == np.argmax(
-                    self.y_test_mnist,
-                    axis=1)) / self.n_test
-        logger.info(
-            'Accuracy on adversarial examples: %.2f%%',
-            (accuracy * 100))
-
-        # Check that x_test has not been modified by attack and classifier
-        self.assertAlmostEqual(
-            float(
-                np.max(
-                    np.abs(
-                        x_test_original -
-                        self.x_test_mnist))),
-            0.0,
-            delta=0.00001)
+        self._test_attack(
+            classifier,
+            self.x_test_mnist,
+            self.y_test_mnist,
+            False)
 
     def test_tensorflow_mnist(self):
         """
         TODO: Write Comment
         """
-        x_test_original = self.x_test_mnist.copy()
-
-        # Create basic CNN on MNIST using TensorFlow
         classifier, sess = get_classifier_tf()
-
-        scores = get_labels_np_array(classifier.predict(self.x_train_mnist))
-        accuracy = np.sum(
-            np.argmax(
-                scores,
-                axis=1) == np.argmax(
-                    self.y_train_mnist,
-                    axis=1)) / self.n_train
-        logger.info(
-            '[TF, MNIST] Accuracy on training set: %.2f%%',
-            (accuracy * 100))
-
-        scores = get_labels_np_array(classifier.predict(self.x_test_mnist))
-        accuracy = np.sum(
-            np.argmax(
-                scores,
-                axis=1) == np.argmax(
-                    self.y_test_mnist,
-                    axis=1)) / self.n_train
-        logger.info(
-            '[TF, MNIST] Accuracy on test set: %.2f%%',
-            (accuracy * 100))
-
-        # targeted
-        # Generate random target classes
-        nb_classes = np.unique(np.argmax(self.y_test_mnist, axis=1)).shape[0]
-        targets = np.random.randint(nb_classes, size=self.n_test)
-        while (targets == np.argmax(self.y_test_mnist, axis=1)).any():
-            targets = np.random.randint(nb_classes, size=self.n_test)
-
-        # Perform attack with DE optimizer
-        df = PixelAttack(classifier, th=64, es=0, targeted=True)
-        x_test_adv = df.generate(
-            self.x_test_mnist, y=to_categorical(
-                targets, nb_classes))
-
-        self.assertFalse((self.x_test_mnist == x_test_adv).all())
-        self.assertFalse((0.0 == x_test_adv).all())
-
-        y_pred = get_labels_np_array(classifier.predict(x_test_adv))
-        self.assertFalse((self.y_test_mnist == y_pred).all())
-
-        accuracy = np.sum(
-            np.argmax(
-                y_pred,
-                axis=1) == np.argmax(
-                    self.y_test_mnist,
-                    axis=1)) / self.n_test
-        logger.info(
-            'Accuracy on adversarial examples: %.2f%%',
-            (accuracy * 100))
-
-        # Perform attack with CMA-ES optimizer
-        df = PixelAttack(classifier, th=64, es=0, targeted=True)
-        x_test_adv = df.generate(
-            self.x_test_mnist, y=to_categorical(
-                targets, nb_classes))
-
-        self.assertFalse((self.x_test_mnist == x_test_adv).all())
-        self.assertFalse((0.0 == x_test_adv).all())
-
-        y_pred = get_labels_np_array(classifier.predict(x_test_adv))
-        self.assertFalse((self.y_test_mnist == y_pred).all())
-
-        accuracy = np.sum(
-            np.argmax(
-                y_pred,
-                axis=1) == np.argmax(
-                    self.y_test_mnist,
-                    axis=1)) / self.n_test
-        logger.info(
-            'Accuracy on adversarial examples: %.2f%%',
-            (accuracy * 100))
-
-        # untargeted
-        # Perform attack with DE optimizer
-        df = PixelAttack(classifier, th=64, es=0, targeted=False)
-        x_test_adv = df.generate(self.x_test_mnist)
-
-        self.assertFalse((self.x_test_mnist == x_test_adv).all())
-        self.assertFalse((0.0 == x_test_adv).all())
-
-        y_pred = get_labels_np_array(classifier.predict(x_test_adv))
-        self.assertFalse((self.y_test_mnist == y_pred).all())
-
-        accuracy = np.sum(
-            np.argmax(
-                y_pred,
-                axis=1) == np.argmax(
-                    self.y_test_mnist,
-                    axis=1)) / self.n_test
-        logger.info(
-            'Accuracy on adversarial examples: %.2f%%',
-            (accuracy * 100))
-
-        # Perform attack with CMA-ES optimizer
-        df = PixelAttack(classifier, th=64, es=1, targeted=False)
-        x_test_adv = df.generate(self.x_test_mnist)
-
-        self.assertFalse((self.x_test_mnist == x_test_adv).all())
-        self.assertFalse((0.0 == x_test_adv).all())
-
-        y_pred = get_labels_np_array(classifier.predict(x_test_adv))
-        self.assertFalse((self.y_test_mnist == y_pred).all())
-
-        accuracy = np.sum(
-            np.argmax(
-                y_pred,
-                axis=1) == np.argmax(
-                    self.y_test_mnist,
-                    axis=1)) / self.n_test
-        logger.info(
-            'Accuracy on adversarial examples: %.2f%%',
-            (accuracy * 100))
-
-        # Check that x_test has not been modified by attack and classifier
-        self.assertAlmostEqual(
-            float(
-                np.max(
-                    np.abs(
-                        x_test_original -
-                        self.x_test_mnist))),
-            0.0,
-            delta=0.00001)
+        self._test_attack(
+            classifier,
+            self.x_test_mnist,
+            self.y_test_mnist,
+            False)
 
     def test_pytorch_mnist(self):
         """
         TODO: Write Comment
         """
-        x_train_mnist = np.swapaxes(
-            self.x_train_mnist, 1, 3).astype(
-                np.float32)
-        x_test_mnist = np.swapaxes(self.x_test_mnist, 1, 3).astype(np.float32)
-        x_test_original = x_test_mnist.copy()
-
-        # Create basic PyTorch model
+        x_test = np.swapaxes(self.x_test_mnist, 1, 3).astype(np.float32)
         classifier = get_classifier_pt()
+        self._test_attack(classifier, x_test, self.y_test_mnist, False)
 
-        scores = get_labels_np_array(classifier.predict(x_train_mnist))
-        accuracy = np.sum(
-            np.argmax(
-                scores,
-                axis=1) == np.argmax(
-                    self.y_train_mnist,
-                    axis=1)) / self.n_train
-        logger.info(
-            '[PyTorch, MNIST] Accuracy on training set: %.2f%%',
-            (accuracy * 100))
+    def test_keras_mnist_targeted(self):
+        """
+        TODO: Write Comment
+        """
+        classifier = get_classifier_kr()
+        self._test_attack(
+            classifier,
+            self.x_test_mnist,
+            self.y_test_mnist,
+            True)
 
-        scores = get_labels_np_array(classifier.predict(x_test_mnist))
-        accuracy = np.sum(
-            np.argmax(
-                scores,
-                axis=1) == np.argmax(
-                    self.y_test_mnist,
-                    axis=1)) / self.n_test
-        logger.info(
-            '\n[PyTorch, MNIST] Accuracy on test set: %.2f%%',
-            (accuracy * 100))
+    def test_tensorflow_mnist_targeted(self):
+        """
+        TODO: Write Comment
+        """
+        classifier, sess = get_classifier_tf()
+        self._test_attack(
+            classifier,
+            self.x_test_mnist,
+            self.y_test_mnist,
+            True)
 
-        # targeted
+    def test_pytorch_mnist_targeted(self):
+        """
+        TODO: Write Comment
+        """
+        x_test = np.swapaxes(self.x_test_mnist, 1, 3).astype(np.float32)
+        classifier = get_classifier_pt()
+        self._test_attack(classifier, x_test, self.y_test_mnist, True)
 
-        # Generate random target classes
-        nb_classes = np.unique(np.argmax(self.y_test_mnist, axis=1)).shape[0]
-        targets = np.random.randint(nb_classes, size=self.n_test)
-        while (targets == np.argmax(self.y_test_mnist, axis=1)).any():
-            targets = np.random.randint(nb_classes, size=self.n_test)
+    def _test_attack(self, classifier, x_test, y_test, targeted):
+        """
+        TODO: Write Comment
+        """
+        x_test_original = x_test.copy()
 
-        # Perform attack with DE optimizer
-        df = PixelAttack(classifier, th=64, es=0, targeted=True)
-        x_test_adv = df.generate(
-            self.x_test_mnist, y=to_categorical(
-                targets, nb_classes))
+        if targeted:
+            # Generate random target classes
+            class_y_test = np.argmax(y_test, axis=1)
+            nb_classes   = np.unique(class_y_test).shape[0]
+            targets      = np.random.randint(nb_classes, size=self.n_test)
+            for i in range(self.n_test):
+                if class_y_test[i] == targets[i]:
+                    targets[i] -= 1
+        else:
+            targets = y_test
 
-        self.assertFalse((self.x_test_mnist == x_test_adv).all())
-        self.assertFalse((0.0 == x_test_adv).all())
+        for es in [0, 1]:
 
-        y_pred = get_labels_np_array(classifier.predict(x_test_adv))
-        self.assertFalse((self.y_test_mnist == y_pred).all())
+            df = PixelAttack(classifier, th=64, es=es, targeted=targeted)
+            x_test_adv = df.generate(x_test_original, targets)
 
-        accuracy = np.sum(
-            np.argmax(
-                y_pred,
-                axis=1) == np.argmax(
-                    self.y_test_mnist,
-                    axis=1)) / self.n_test
-        logger.info(
-            'Accuracy on adversarial examples: %.2f%%',
-            (accuracy * 100))
+            self.assertFalse((x_test == x_test_adv).all())
+            self.assertFalse((0.0 == x_test_adv).all())
 
-        # Perform attack with CMA-ES optimizer
-        df = PixelAttack(classifier, th=64, es=0, targeted=True)
-        x_test_adv = df.generate(
-            self.x_test_mnist, y=to_categorical(
-                targets, nb_classes))
+            y_pred = get_labels_np_array(classifier.predict(x_test_adv))
+            self.assertFalse((y_test == y_pred).all())
 
-        self.assertFalse((self.x_test_mnist == x_test_adv).all())
-        self.assertFalse((0.0 == x_test_adv).all())
-
-        y_pred = get_labels_np_array(classifier.predict(x_test_adv))
-        self.assertFalse((self.y_test_mnist == y_pred).all())
-
-        accuracy = np.sum(
-            np.argmax(
-                y_pred,
-                axis=1) == np.argmax(
-                    self.y_test_mnist,
-                    axis=1)) / self.n_test
-        logger.info(
-            'Accuracy on adversarial examples: %.2f%%',
-            (accuracy * 100))
-
-        # untargeted
-        # Perform attack with DE optimizer
-        df = PixelAttack(classifier, th=64, es=0, targeted=False)
-        x_test_adv = df.generate(self.x_test_mnist)
-
-        self.assertFalse((self.x_test_mnist == x_test_adv).all())
-        self.assertFalse((0.0 == x_test_adv).all())
-
-        y_pred = get_labels_np_array(classifier.predict(x_test_adv))
-        self.assertFalse((self.y_test_mnist == y_pred).all())
-
-        accuracy = np.sum(
-            np.argmax(
-                y_pred,
-                axis=1) == np.argmax(
-                    self.y_test_mnist,
-                    axis=1)) / self.n_test
-        logger.info(
-            'Accuracy on adversarial examples: %.2f%%',
-            (accuracy * 100))
-
-        # Perform attack with CMA-ES optimizer
-        df = PixelAttack(classifier, th=64, es=1, targeted=False)
-        x_test_adv = df.generate(self.x_test_mnist)
-
-        self.assertFalse((self.x_test_mnist == x_test_adv).all())
-        self.assertFalse((0.0 == x_test_adv).all())
-
-        y_pred = get_labels_np_array(classifier.predict(x_test_adv))
-        self.assertFalse((self.y_test_mnist == y_pred).all())
-
-        accuracy = np.sum(
-            np.argmax(
-                y_pred,
-                axis=1) == np.argmax(
-                    self.y_test_mnist,
-                    axis=1)) / self.n_test
-        logger.info(
-            'Accuracy on adversarial examples: %.2f%%',
-            (accuracy * 100))
+            accuracy = np.sum(
+                np.argmax(
+                    y_pred,
+                    axis=1) == np.argmax(
+                        self.y_test_mnist,
+                        axis=1)) / self.n_test
+            logger.info(
+                'Accuracy on adversarial examples: %.2f%%',
+                (accuracy * 100))
 
         # Check that x_test has not been modified by attack and classifier
         self.assertAlmostEqual(
@@ -445,30 +165,9 @@ class TestPixelAttack(TestBase):
                 np.max(
                     np.abs(
                         x_test_original -
-                        self.x_test_mnist))),
+                        x_test))),
             0.0,
             delta=0.00001)
-
-    def test_classifier_type_check_fail_classifier(self):
-        """
-        TODO: Write Comment
-        """
-        # Use a useless test classifier to test basic classifier properties
-        class ClassifierNoAPI:
-            """
-            TODO: Write Comment
-            """
-            pass
-
-        classifier = ClassifierNoAPI
-        with self.assertRaises(TypeError) as context:
-            _ = PixelAttack(classifier=classifier)
-
-        self.assertIn(
-            'For `PixelAttack` classifier must be an instance of '
-            '`art.classifiers.classifier.Classifier`, the provided classifier is instance of '
-            '(<class \'object\'>,).', str(
-                context.exception))
 
 
 if __name__ == '__main__':

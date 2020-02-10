@@ -44,9 +44,9 @@ from scipy.optimize import OptimizeResult, minimize
 from cma import CMAEvolutionStrategy, CMAOptions
 # from scipy.optimize import differential_evolution
 
-from art.classifiers.classifier import ClassifierGradients
+from art.classifiers import PyTorchClassifier
 from art.attacks.attack import EvasionAttack
-from art.utils import compute_success
+from art.utils import compute_success, to_categorical, check_and_transform_label_format
 
 logger = logging.getLogger(__name__)
 
@@ -84,19 +84,6 @@ class PixelThreshold(EvasionAttack):
         :type  verbose:       `bool`
         """
         super(PixelThreshold, self).__init__(classifier)
-        if not isinstance(classifier, ClassifierGradients):
-            raise (
-                TypeError(
-                    'For `' +
-                    self.__class__.__name__ +
-                    '` classifier must be an instance of '
-                    '`art.classifiers.classifier.ClassifierGradients`, '
-                    'the provided classifier is instance of ' +
-                    str(
-                        classifier.__class__.__bases__) +
-                    '. '
-                    ' The classifier needs to provide gradients.'))
-
         self._project = True
         kwargs = {'th': th, 'es': es, 'targeted': targeted, 'verbose': verbose}
         PixelThreshold.set_params(self, **kwargs)
@@ -140,6 +127,9 @@ class PixelThreshold(EvasionAttack):
         :return: An array holding the adversarial examples.
         :rtype: `np.ndarray`
         """
+        y = check_and_transform_label_format(
+            y, self.classifier.nb_classes(), return_one_hot=False)
+
         if y is None:
             if self.targeted:
                 raise ValueError(
@@ -147,14 +137,18 @@ class PixelThreshold(EvasionAttack):
                     'attack.'
                 )
             y = np.argmax(self.classifier.predict(x), axis=1)
+        else:
+            if len(y.shape) > 1:
+                y = np.argmax(y, axis=1)
 
         if self.th is None:
             logger.info('Performing minimal perturbation Attack.')
 
-        if np.amax(x) > 1:
-            self.bound_limit = 255
-        else:
-            self.bound_limit = 1
+        if isinstance(self.classifier, PyTorchClassifier):
+            x = np.swapaxes(x, 1, 3).astype(np.float32)
+
+        if np.max(x) <= 1:
+            x = x * 255.
 
         adv_x_best = []
         for image, target_class in zip(x, y):
@@ -177,21 +171,42 @@ class PixelThreshold(EvasionAttack):
                     if end < start:
                         break
             else:
-                success, image_result = self.attack(x, y, self.th)
+                success, image_result = self.attack(
+                    image, target_class, self.th)
             adv_x_best += [image_result]
 
         adv_x_best = np.array(adv_x_best)
+
+        if np.max(x) <= 1:
+            x = x / 255.
+
+        if isinstance(self.classifier, PyTorchClassifier):
+            x = np.swapaxes(x, 1, 3).astype(np.float32)
+            adv_x_best = np.swapaxes(adv_x_best, 1, 3).astype(np.float32)
+
+        if y is not None:
+            y = to_categorical(y, self.classifier.nb_classes())
+
         rate_best = 100 * \
             compute_success(self.classifier, x, y, adv_x_best,
                             self.targeted, 1)
         logger.info('Success rate of Attack: %.2f%%', rate_best)
         return adv_x_best
 
+    def predict(self, test_x):
+        """
+        TODO: Write Comment
+        """
+        if isinstance(self.classifier, PyTorchClassifier):
+            test_x = np.swapaxes(test_x, 1, 3).astype(np.float32)
+
+        return self.classifier.predict(test_x)
+
     def predict_classes(self, adv_x, x, target_class):
         """
         TODO: Write Comment
         """
-        predictions = self.classifier.predict(
+        predictions = self.predict(
             self.perturb_image(adv_x, x))[:, target_class]
         return predictions if not self.targeted else 1 - predictions
 
@@ -200,7 +215,7 @@ class PixelThreshold(EvasionAttack):
         TODO: Write Comment
         """
         predicted_class = np.argmax(
-            self.classifier.predict(
+            self.predict(
                 self.perturb_image(
                     adv_x, x))[0])
         return bool((self.targeted and predicted_class == target_class) or (
@@ -212,8 +227,8 @@ class PixelThreshold(EvasionAttack):
         """
         bounds, initial = self.get_bounds(image, limit)
 
-        def predict_fn(xs):
-            return self.predict_classes(xs, image, target_class)
+        def predict_fn(x):
+            return self.predict_classes(x, image, target_class)
 
         def callback_fn(x, convergence=None):
 
@@ -241,10 +256,10 @@ class PixelThreshold(EvasionAttack):
             else:
                 std = limit
 
-            es = CMAEvolutionStrategy(initial, std / 4, opts)
+            strategy = CMAEvolutionStrategy(initial, std / 4, opts)
 
             try:
-                es.optimize(
+                strategy.optimize(
                     predict_fn,
                     maxfun=max(
                         1,
@@ -253,16 +268,16 @@ class PixelThreshold(EvasionAttack):
                     len(bounds) *
                     100,
                     callback=callback_fn)
-            except Exception as e:
+            except Exception as exception:
                 if self.verbose:
-                    print(e)
+                    print(exception)
                 pass
 
-            adv_x = es.result[0]
+            adv_x = strategy.result[0]
 
         else:
 
-            es = differential_evolution(
+            strategy = differential_evolution(
                 predict_fn,
                 bounds,
                 disp=self.verbose,
@@ -274,7 +289,7 @@ class PixelThreshold(EvasionAttack):
                 atol=-1,
                 callback=callback_fn,
                 polish=False)
-            adv_x = es.x
+            adv_x = strategy.x
 
         if self.attack_success(adv_x, image, target_class):
             return True, self.perturb_image(adv_x, image)[0]
@@ -315,21 +330,21 @@ class PixelAttack(PixelThreshold):
                 verbose)
         self.type_attack = 0
 
-    def perturb_image(self, xs, img):
+    def perturb_image(self, x, img):
         """
         TODO: Write Comment
         """
-        if xs.ndim < 2:
-            xs = np.array([xs])
-        imgs = np.tile(img, [len(xs)] + [1] * (xs.ndim + 1))
-        xs = xs.astype(int)
-        for x, im in zip(xs, imgs):
-            for pixel in np.split(x, len(x) // (2 + im.shape[-1])):
+        if x.ndim < 2:
+            x = np.array([x])
+        imgs = np.tile(img, [len(x)] + [1] * (x.ndim + 1))
+        x = x.astype(int)
+        for adv, image in zip(x, imgs):
+            for pixel in np.split(adv, len(adv) // (2 + image.shape[-1])):
                 x_pos, y_pos, *rgb = pixel
-                im[x_pos % im.shape[-3], y_pos % im.shape[-2]] = rgb
+                image[x_pos % image.shape[-3], y_pos % image.shape[-2]] = rgb
         return imgs
 
-    def get_bounds(self, img, th):
+    def get_bounds(self, img, limit):
         """
         TODO: Write Comment
         """
@@ -340,24 +355,24 @@ class PixelAttack(PixelThreshold):
                 initial += [i, j]
                 for k in range(img.shape[-1]):
                     initial += [img[i, j, k]]
-                if count == th - 1:
+                if count == limit - 1:
                     break
                 else:
                     continue
             min_bounds = [0, 0]
             for _ in range(img.shape[-1]):
                 min_bounds += [0]
-            min_bounds = min_bounds * th
+            min_bounds = min_bounds * limit
             max_bounds = [img.shape[-3], img.shape[-2]]
             for _ in range(img.shape[-1]):
-                max_bounds += [self.bound_limit]
-            max_bounds = max_bounds * th
+                max_bounds += [255]
+            max_bounds = max_bounds * limit
             bounds = [min_bounds, max_bounds]
         else:
             bounds = [(0, img.shape[-3]), (0, img.shape[-2])]
             for _ in range(img.shape[-1]):
-                bounds += [(0, self.bound_limit)]
-            bounds = bounds * th
+                bounds += [(0, 255)]
+            bounds = bounds * limit
         return bounds, initial
 
 
@@ -389,22 +404,22 @@ class ThresholdAttack(PixelThreshold):
                 verbose)
         self.type_attack = 1
 
-    def perturb_image(self, xs, img):
+    def perturb_image(self, x, img):
         """
         TODO: Write Comment
         """
-        if xs.ndim < 2:
-            xs = np.array([xs])
-        imgs = np.tile(img, [len(xs)] + [1] * (xs.ndim + 1))
-        xs = xs.astype(int)
-        for x, im in zip(xs, imgs):
+        if x.ndim < 2:
+            x = np.array([x])
+        imgs = np.tile(img, [len(x)] + [1] * (x.ndim + 1))
+        x = x.astype(int)
+        for adv, image in zip(x, imgs):
             for count, (i, j, k) in enumerate(
-                    product(range(im.shape[-3]), range(im.shape[-2]),
-                            range(im.shape[-1]))):
-                im[i, j, k] = x[count]
+                    product(range(image.shape[-3]), range(image.shape[-2]),
+                            range(image.shape[-1]))):
+                image[i, j, k] = adv[count]
         return imgs
 
-    def get_bounds(self, img, th):
+    def get_bounds(self, img, limit):
         """
         TODO: Write Comment
         """
@@ -412,13 +427,13 @@ class ThresholdAttack(PixelThreshold):
         def bound_limit(value):
             return (
                 np.clip(
-                    value - th,
+                    value - limit,
                     0,
-                    self.bound_limit),
+                    255),
                 np.clip(
-                    value + th,
+                    value + limit,
                     0,
-                    self.bound_limit))
+                    255))
 
         minbounds, maxbounds, bounds, initial = [], [], [], []
 
