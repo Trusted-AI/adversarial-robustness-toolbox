@@ -181,8 +181,8 @@ def check_adverse_example_x(x_adv, x_original, max=1.0, min=0.0, bounded=True):
         assert (x_adv > max).any(), "some x_test_adv values should have been above 1".format(max)
         assert (x_adv < min).any(), " some x_test_adv values should have all been below {0}".format(min)
 
-def check_adverse_predicted_sample_y(y_pred_adv, y_expected):
-    assert (y_expected == y_pred_adv).all() == False, "Adverse predicted sample was not what was expected"
+def check_adverse_predicted_sample_y(y_pred_adv, y_non_adv):
+    assert (y_non_adv == y_pred_adv).all() == False, "Adverse predicted sample was not what was expected"
 
 def is_valid_framework(framework):
     if framework not in art_supported_frameworks:
@@ -238,6 +238,8 @@ def deprecated_get_tabular_classifiers(clipped=True):
 
 def assert_almost_equal_mean(x_test, x_test_adv, equality, decimal=0.002):
     np.testing.assert_array_almost_equal(float(np.mean(x_test_adv - x_test)), equality, decimal=decimal)
+#TODO      CHECKing that mean difference is as expected
+# TODO rename equaity to expected Value
 
 
 def assert_almost_equal_min(x_test, x_test_adv, equality, decimal=0.001):

@@ -86,7 +86,7 @@ def _backend_targeted_tabular(attack, classifier, fix_get_iris, fix_mlFramework)
     target = np.argmax(targets, axis=1)
     assert (target == y_pred_adv).any()
 
-    accuracy = np.sum(y_pred_adv == np.argmax(targets, axis=1)) / y_test_iris.shape[0]
+    accuracy = np.sum(y_pred_adv == target) / y_test_iris.shape[0]
     logger.info('Success rate of targeted boundary on Iris: %.2f%%', (accuracy * 100))
 
 def _back_end_untargeted_images(attack, classifier, fix_get_mnist_subset, fix_mlFramework):
