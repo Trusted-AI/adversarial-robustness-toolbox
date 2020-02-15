@@ -73,9 +73,22 @@ class FunctionallyEquivalentExtraction(ExtractionAttack):
         self.w_1 = None  # weight matrix of second dense layer
         self.b_1 = None  # Bias vector of second dense layer
 
-    def extract(self, x, y=None, delta_0=0.05, fraction_true=0.3, rel_diff_slope=0.00001, rel_diff_value=0.000001,
-                delta_init_value=0.1, delta_value_max=50, d2_min=0.0004, d_step=0.01, delta_sign=0.02,
-                unit_vector_scale=10000, **kwargs):
+    def extract(
+        self,
+        x,
+        y=None,
+        delta_0=0.05,
+        fraction_true=0.3,
+        rel_diff_slope=0.00001,
+        rel_diff_value=0.000001,
+        delta_init_value=0.1,
+        delta_value_max=50,
+        d2_min=0.0004,
+        d_step=0.01,
+        delta_sign=0.02,
+        unit_vector_scale=10000,
+        **kwargs
+    ):
         """
         Extract the targeted model.
 
@@ -108,10 +121,16 @@ class FunctionallyEquivalentExtraction(ExtractionAttack):
         :return: ART BlackBoxClassifier of the extracted model.
         :rtype: :class:`.BlackBoxClassifier`
         """
-        self._critical_point_search(delta_0=delta_0, fraction_true=fraction_true, rel_diff_slope=rel_diff_slope,
-                                    rel_diff_value=rel_diff_value)
-        self._weight_recovery(delta_init_value=delta_init_value, delta_value_max=delta_value_max, d2_min=d2_min,
-                              d_step=d_step, delta_sign=delta_sign)
+        self._critical_point_search(
+            delta_0=delta_0, fraction_true=fraction_true, rel_diff_slope=rel_diff_slope, rel_diff_value=rel_diff_value
+        )
+        self._weight_recovery(
+            delta_init_value=delta_init_value,
+            delta_value_max=delta_value_max,
+            d2_min=d2_min,
+            d_step=d_step,
+            delta_sign=delta_sign,
+        )
         self._sign_recovery(unit_vector_scale=unit_vector_scale)
         self._last_layer_extraction(x)
 
@@ -129,11 +148,14 @@ class FunctionallyEquivalentExtraction(ExtractionAttack):
             layer_1 = np.matmul(self.w_1.T, layer_0) + self.b_1
             return layer_1.T
 
-        extracted_classifier = BlackBoxClassifier(predict, input_shape=self.classifier.input_shape,
-                                                  nb_classes=self.classifier.nb_classes(),
-                                                  clip_values=self.classifier.clip_values,
-                                                  defences=self.classifier.defences,
-                                                  preprocessing=self.classifier.preprocessing)
+        extracted_classifier = BlackBoxClassifier(
+            predict,
+            input_shape=self.classifier.input_shape,
+            nb_classes=self.classifier.nb_classes(),
+            clip_values=self.classifier.clip_values,
+            defences=self.classifier.defences,
+            preprocessing=self.classifier.preprocessing,
+        )
 
         return extracted_classifier
 
@@ -176,7 +198,7 @@ class FunctionallyEquivalentExtraction(ExtractionAttack):
         :param rel_diff_value: Relative value difference at critical points
         :type rel_diff_value: `float`
         """
-        logger.info('Searching for critical points.')
+        logger.info("Searching for critical points.")
         h_square = self.num_neurons * self.num_neurons
 
         t_current = -h_square
@@ -221,9 +243,11 @@ class FunctionallyEquivalentExtraction(ExtractionAttack):
                 m_x_1 = (self._o_l(x_mean_p) - self._o_l(x_mean)) / epsilon
                 m_x_2 = (self._o_l(x_mean) - self._o_l(x_mean_m)) / epsilon
 
-                if np.sum(np.abs((y_hat - y) / y) < rel_diff_value) > fraction_true * self.num_classes \
-                        and t_1 < t_mean < t_2 \
-                        and np.sum(np.abs((m_x_1 - m_x_2) / m_x_1) > rel_diff_slope) > fraction_true * self.num_classes:
+                if (
+                    np.sum(np.abs((y_hat - y) / y) < rel_diff_value) > fraction_true * self.num_classes
+                    and t_1 < t_mean < t_2
+                    and np.sum(np.abs((m_x_1 - m_x_2) / m_x_1) > rel_diff_slope) > fraction_true * self.num_classes
+                ):
                     found_critical_point = True
                     self.critical_points.append(x_mean)
                     t_current = t_2
@@ -231,8 +255,10 @@ class FunctionallyEquivalentExtraction(ExtractionAttack):
                     delta = delta / 2
 
         if len(self.critical_points) != self.num_neurons:
-            raise AssertionError('The number of critical points found ({}) does not equal the number of expected'
-                                 'neurons in the first layer ({}).'.format(len(self.critical_points), self.num_neurons))
+            raise AssertionError(
+                "The number of critical points found ({}) does not equal the number of expected"
+                "neurons in the first layer ({}).".format(len(self.critical_points), self.num_neurons)
+            )
 
     def _weight_recovery(self, delta_init_value, delta_value_max, d2_min, d_step, delta_sign):
         """
@@ -249,7 +275,7 @@ class FunctionallyEquivalentExtraction(ExtractionAttack):
         :param delta_sign: Delta of weight sign search
         :type delta_sign: `float`
         """
-        logger.info('Recovering weights of first layer.')
+        logger.info("Recovering weights of first layer.")
 
         # Absolute Value Recovery
 
@@ -266,10 +292,12 @@ class FunctionallyEquivalentExtraction(ExtractionAttack):
 
                     e_j[0, j] = delta
 
-                    d_ol_dej_xi_p_cej = (self._o_l(self.critical_points[i], e_j=e_j)
-                                         - self._o_l(self.critical_points[i])) / delta
-                    d_ol_dej_xi_m_cej = (self._o_l(self.critical_points[i])
-                                         - self._o_l(self.critical_points[i], e_j=-e_j)) / delta
+                    d_ol_dej_xi_p_cej = (
+                        self._o_l(self.critical_points[i], e_j=e_j) - self._o_l(self.critical_points[i])
+                    ) / delta
+                    d_ol_dej_xi_m_cej = (
+                        self._o_l(self.critical_points[i]) - self._o_l(self.critical_points[i], e_j=-e_j)
+                    ) / delta
 
                     d2_ol_d2ej_xi[j, i] = np.sum(np.abs(d_ol_dej_xi_p_cej - d_ol_dej_xi_m_cej)) / delta
 
@@ -295,12 +323,14 @@ class FunctionallyEquivalentExtraction(ExtractionAttack):
                 e_j[0, 0] += delta_sign
                 e_j[0, j] += delta_sign
 
-                d_ol_dejek_xi_p_cejek = (self._o_l(self.critical_points[i], e_j=e_j)
-                                         - self._o_l(self.critical_points[i])) / delta_sign
-                d_ol_dejek_xi_m_cejek = (self._o_l(self.critical_points[i])
-                                         - self._o_l(self.critical_points[i], e_j=-e_j)) / delta_sign
+                d_ol_dejek_xi_p_cejek = (
+                    self._o_l(self.critical_points[i], e_j=e_j) - self._o_l(self.critical_points[i])
+                ) / delta_sign
+                d_ol_dejek_xi_m_cejek = (
+                    self._o_l(self.critical_points[i]) - self._o_l(self.critical_points[i], e_j=-e_j)
+                ) / delta_sign
 
-                d2_ol_dejek_xi = (d_ol_dejek_xi_p_cejek - d_ol_dejek_xi_m_cejek)
+                d2_ol_dejek_xi = d_ol_dejek_xi_p_cejek - d_ol_dejek_xi_m_cejek
 
                 if j == 0:
                     d2_ol_dejek_xi_0 = d2_ol_dejek_xi / 2.0
@@ -318,7 +348,7 @@ class FunctionallyEquivalentExtraction(ExtractionAttack):
         :param unit_vector_scale: Multiplicative scale of the unit vector e_j.
         :type unit_vector_scale: `int`
         """
-        logger.info('Recover sign of the weights of the first layer.')
+        logger.info("Recover sign of the weights of the first layer.")
 
         a0_pairwise_ratios_inverse = 1.0 / self.a0_pairwise_ratios
 
@@ -326,7 +356,7 @@ class FunctionallyEquivalentExtraction(ExtractionAttack):
 
         for i in range(self.num_neurons):
             x_i = self.critical_points[i].flatten()
-            self.b_0[i] = - np.matmul(a0_pairwise_ratios_inverse[:, i], x_i)
+            self.b_0[i] = -np.matmul(a0_pairwise_ratios_inverse[:, i], x_i)
 
         z_0 = np.random.normal(0, 1, (self.num_features,)).astype(dtype=NUMPY_DTYPE)
 
@@ -348,10 +378,18 @@ class FunctionallyEquivalentExtraction(ExtractionAttack):
 
             result_v_i = least_squares(f_v, v_0)
 
-            value_p = np.sum(np.abs(self._o_l(np.expand_dims(result_z.x, axis=0))
-                                    - (self._o_l(np.expand_dims(result_z.x + result_v_i.x, axis=0)))))
-            value_m = np.sum(np.abs(self._o_l(np.expand_dims(result_z.x, axis=0))
-                                    - (self._o_l(np.expand_dims(result_z.x - result_v_i.x, axis=0)))))
+            value_p = np.sum(
+                np.abs(
+                    self._o_l(np.expand_dims(result_z.x, axis=0))
+                    - (self._o_l(np.expand_dims(result_z.x + result_v_i.x, axis=0)))
+                )
+            )
+            value_m = np.sum(
+                np.abs(
+                    self._o_l(np.expand_dims(result_z.x, axis=0))
+                    - (self._o_l(np.expand_dims(result_z.x - result_v_i.x, axis=0)))
+                )
+            )
 
             if value_m < value_p:
                 a0_pairwise_ratios_inverse[:, i] *= -1
@@ -366,7 +404,7 @@ class FunctionallyEquivalentExtraction(ExtractionAttack):
         :param x: Samples of input data of shape (num_samples, num_features).
         :type x: `np.ndarray`
         """
-        logger.info('Extract second layer.')
+        logger.info("Extract second layer.")
 
         predictions = self._o_l(x)
 
@@ -375,8 +413,8 @@ class FunctionallyEquivalentExtraction(ExtractionAttack):
         def f_w_1_b_1(w_1_b_1_i):
             layer_0 = np.maximum(np.matmul(self.w_0.T, x.T) + self.b_0, 0.0)
 
-            w_1 = w_1_b_1_i[0:self.num_neurons * self.num_classes].reshape(self.num_neurons, self.num_classes)
-            b_1 = w_1_b_1_i[self.num_neurons * self.num_classes:].reshape(self.num_classes, 1)
+            w_1 = w_1_b_1_i[0 : self.num_neurons * self.num_classes].reshape(self.num_neurons, self.num_classes)
+            b_1 = w_1_b_1_i[self.num_neurons * self.num_classes :].reshape(self.num_classes, 1)
 
             layer_1 = np.matmul(w_1.T, layer_0) + b_1
 
@@ -384,12 +422,12 @@ class FunctionallyEquivalentExtraction(ExtractionAttack):
 
         result_a1_b1 = least_squares(f_w_1_b_1, w_1_b_1_0)
 
-        self.w_1 = result_a1_b1.x[0:self.num_neurons * self.num_classes].reshape(self.num_neurons, self.num_classes)
-        self.b_1 = result_a1_b1.x[self.num_neurons * self.num_classes:].reshape(self.num_classes, 1)
+        self.w_1 = result_a1_b1.x[0 : self.num_neurons * self.num_classes].reshape(self.num_neurons, self.num_classes)
+        self.b_1 = result_a1_b1.x[self.num_neurons * self.num_classes :].reshape(self.num_classes, 1)
 
 
 # pylint: disable=C0103, E0401
-if __name__ == '__main__':
+if __name__ == "__main__":
     import tensorflow as tf
 
     tf.compat.v1.disable_eager_execution()
@@ -416,8 +454,8 @@ if __name__ == '__main__':
 
     input_shape = (number_channels * img_rows * img_cols,)
 
-    x_train = x_train.reshape((x_train.shape[0], number_channels * img_rows * img_cols)).astype('float64')
-    x_test = x_test.reshape((x_test.shape[0], number_channels * img_rows * img_cols)).astype('float64')
+    x_train = x_train.reshape((x_train.shape[0], number_channels * img_rows * img_cols)).astype("float64")
+    x_test = x_test.reshape((x_test.shape[0], number_channels * img_rows * img_cols)).astype("float64")
 
     mean = np.mean(x_train)
     std = np.std(x_train)
@@ -428,19 +466,22 @@ if __name__ == '__main__':
     y_train = tf.keras.utils.to_categorical(y_train, number_classes)
     y_test = tf.keras.utils.to_categorical(y_test, number_classes)
 
-    if os.path.isfile('./model.h5'):
-        model = tf.keras.models.load_model('./model.h5')
+    if os.path.isfile("./model.h5"):
+        model = tf.keras.models.load_model("./model.h5")
     else:
         model = Sequential()
-        model.add(Dense(number_neurons, activation='relu', input_shape=input_shape))
-        model.add(Dense(number_classes, activation='linear'))
+        model.add(Dense(number_neurons, activation="relu", input_shape=input_shape))
+        model.add(Dense(number_classes, activation="linear"))
 
-        model.compile(loss=tf.keras.losses.CategoricalCrossentropy(from_logits=True),
-                      optimizer=tf.keras.optimizers.Adam(learning_rate=0.0001, ), metrics=['accuracy'])
+        model.compile(
+            loss=tf.keras.losses.CategoricalCrossentropy(from_logits=True),
+            optimizer=tf.keras.optimizers.Adam(learning_rate=0.0001,),
+            metrics=["accuracy"],
+        )
 
         model.fit(x_train, y_train, batch_size=batch_size, epochs=epochs, verbose=1, validation_data=(x_test, y_test))
 
-        model.save('./model.h5')
+        model.save("./model.h5")
 
     score_target = model.evaluate(x_test, y_test, verbose=0)
 
@@ -452,9 +493,13 @@ if __name__ == '__main__':
     y_test_predicted_extracted = bbc.predict(x_test)
     y_test_predicted_target = target_classifier.predict(x_test)
 
-    print('Target model - Test accuracy:', score_target[1])
-    print('Extracted model - Test accuracy:',
-          np.sum(np.argmax(y_test_predicted_extracted, axis=1) == np.argmax(y_test, axis=1)) / y_test.shape[0])
-    print('Extracted model - Test Fidelity:',
-          np.sum(np.argmax(y_test_predicted_extracted, axis=1) == np.argmax(y_test_predicted_target, axis=1)) /
-          y_test_predicted_target.shape[0])
+    print("Target model - Test accuracy:", score_target[1])
+    print(
+        "Extracted model - Test accuracy:",
+        np.sum(np.argmax(y_test_predicted_extracted, axis=1) == np.argmax(y_test, axis=1)) / y_test.shape[0],
+    )
+    print(
+        "Extracted model - Test Fidelity:",
+        np.sum(np.argmax(y_test_predicted_extracted, axis=1) == np.argmax(y_test_predicted_target, axis=1))
+        / y_test_predicted_target.shape[0],
+    )
