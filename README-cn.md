@@ -11,6 +11,7 @@
 [![Total alerts](https://img.shields.io/lgtm/alerts/g/IBM/adversarial-robustness-toolbox.svg?logo=lgtm&logoWidth=18)](https://lgtm.com/projects/g/IBM/adversarial-robustness-toolbox/alerts/)
 [![codecov](https://codecov.io/gh/IBM/adversarial-robustness-toolbox/branch/master/graph/badge.svg)](https://codecov.io/gh/IBM/adversarial-robustness-toolbox)
 [![Code style: black](https://img.shields.io/badge/code%20style-black-000000.svg)](https://github.com/psf/black)
+[![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
 
 Adversarial Robustness Toolbox（ART）是一个Python库，支持研发人员保护机器学习模型（深度神经网络，梯度提升决策树，支持向量机，随机森林，Logistic回归，高斯过程，决策树，Scikit-learn管道，等）抵御对抗性威胁，使AI系统更安全。机器学习模型容易受到对抗性示例的影响，这些示例是经过特殊修改的输入（图像，文本，表格数据等），以通过机器学习模型达到预期的效果。 ART提供了构建和部署防御的工具， 并使用对抗性攻击对其进行测试。
 防御机器学习模型主要用于验证模型的稳健性和模型强化. 所用方法包括前期处理输入，利用对抗样本增加训练数据以及利用实时检测方法来标记可能已被对手修改的输入等。 ART中实施的攻击使用目前最先进的威胁模型测试防御， 以此来制造机器学习模型的对抗性攻击。 

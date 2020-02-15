@@ -11,6 +11,7 @@
 [![Total alerts](https://img.shields.io/lgtm/alerts/g/IBM/adversarial-robustness-toolbox.svg?logo=lgtm&logoWidth=18)](https://lgtm.com/projects/g/IBM/adversarial-robustness-toolbox/alerts/)
 [![codecov](https://codecov.io/gh/IBM/adversarial-robustness-toolbox/branch/master/graph/badge.svg)](https://codecov.io/gh/IBM/adversarial-robustness-toolbox)
 [![Code style: black](https://img.shields.io/badge/code%20style-black-000000.svg)](https://github.com/psf/black)
+[![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
 
 [中文README请按此处](README-cn.md)
 
