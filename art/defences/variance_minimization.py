@@ -47,10 +47,20 @@ class TotalVarMin(Preprocessor):
     defence, see https://arxiv.org/abs/1802.00420 . For details on how to evaluate classifier security in general,
     see https://arxiv.org/abs/1902.06705
     """
-    params = ['prob', 'norm', 'lamb', 'solver', 'max_iter', 'clip_values']
 
-    def __init__(self, prob=0.3, norm=2, lamb=0.5, solver='L-BFGS-B', max_iter=10, clip_values=None, apply_fit=False,
-                 apply_predict=True):
+    params = ["prob", "norm", "lamb", "solver", "max_iter", "clip_values"]
+
+    def __init__(
+        self,
+        prob=0.3,
+        norm=2,
+        lamb=0.5,
+        solver="L-BFGS-B",
+        max_iter=10,
+        clip_values=None,
+        apply_fit=False,
+        apply_predict=True,
+    ):
         """
         Create an instance of total variance minimization.
 
@@ -98,14 +108,15 @@ class TotalVarMin(Preprocessor):
         :rtype: `np.ndarray`
         """
         if len(x.shape) == 2:
-            raise ValueError('Feature vectors detected. Variance minimization can only be applied to data with spatial'
-                             'dimensions.')
+            raise ValueError(
+                "Feature vectors detected. Variance minimization can only be applied to data with spatial" "dimensions."
+            )
 
         x_preproc = x.copy()
 
         # Minimize one input at a time
         for i, x_i in enumerate(x_preproc):
-            mask = (np.random.rand(*x_i.shape) < self.prob).astype('int')
+            mask = (np.random.rand(*x_i.shape) < self.prob).astype("int")
             x_preproc[i] = self._minimize(x_i, mask)
 
         if self.clip_values is not None:
@@ -130,8 +141,14 @@ class TotalVarMin(Preprocessor):
         z_min = x.copy()
 
         for i in range(x.shape[2]):
-            res = minimize(self._loss_func, z_min[:, :, i].flatten(), (x[:, :, i], mask[:, :, i], self.norm, self.lamb),
-                           method=self.solver, jac=self._deri_loss_func, options={'maxiter': self.max_iter})
+            res = minimize(
+                self._loss_func,
+                z_min[:, :, i].flatten(),
+                (x[:, :, i], mask[:, :, i], self.norm, self.lamb),
+                method=self.solver,
+                jac=self._deri_loss_func,
+                options={"maxiter": self.max_iter},
+            )
             z_min[:, :, i] = np.reshape(res.x, z_min[:, :, i].shape)
 
         return z_min
@@ -239,27 +256,27 @@ class TotalVarMin(Preprocessor):
         super(TotalVarMin, self).set_params(**kwargs)
 
         if not isinstance(self.prob, (float, int)) or self.prob < 0.0 or self.prob > 1.0:
-            logger.error('Probability must be between 0 and 1.')
-            raise ValueError('Probability must be between 0 and 1.')
+            logger.error("Probability must be between 0 and 1.")
+            raise ValueError("Probability must be between 0 and 1.")
 
         if not isinstance(self.norm, (int, np.int)) or self.norm <= 0:
-            logger.error('Norm must be a positive integer.')
-            raise ValueError('Norm must be a positive integer.')
+            logger.error("Norm must be a positive integer.")
+            raise ValueError("Norm must be a positive integer.")
 
-        if not (self.solver == 'L-BFGS-B' or self.solver == 'CG' or self.solver == 'Newton-CG'):
-            logger.error('Current support only L-BFGS-B, CG, Newton-CG.')
-            raise ValueError('Current support only L-BFGS-B, CG, Newton-CG.')
+        if not (self.solver == "L-BFGS-B" or self.solver == "CG" or self.solver == "Newton-CG"):
+            logger.error("Current support only L-BFGS-B, CG, Newton-CG.")
+            raise ValueError("Current support only L-BFGS-B, CG, Newton-CG.")
 
         if not isinstance(self.max_iter, (int, np.int)) or self.max_iter <= 0:
-            logger.error('Number of iterations must be a positive integer.')
-            raise ValueError('Number of iterations must be a positive integer.')
+            logger.error("Number of iterations must be a positive integer.")
+            raise ValueError("Number of iterations must be a positive integer.")
 
         if self.clip_values is not None:
 
             if len(self.clip_values) != 2:
-                raise ValueError('`clip_values` should be a tuple of 2 floats containing the allowed data range.')
+                raise ValueError("`clip_values` should be a tuple of 2 floats containing the allowed data range.")
 
             if np.array(self.clip_values[0] >= self.clip_values[1]).any():
-                raise ValueError('Invalid `clip_values`: min >= max.')
+                raise ValueError("Invalid `clip_values`: min >= max.")
 
         return True

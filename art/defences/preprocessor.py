@@ -27,13 +27,14 @@ import sys
 if sys.version_info >= (3, 4):
     ABC = abc.ABC
 else:
-    ABC = abc.ABCMeta(str('ABC'), (), {})
+    ABC = abc.ABCMeta(str("ABC"), (), {})
 
 
 class Preprocessor(ABC):
     """
     Abstract base class for defences performing model hardening by preprocessing data.
     """
+
     params = []
 
     def __init__(self):
