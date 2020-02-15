@@ -1,7 +1,7 @@
 dist: xenial
 language: python
 env:
-  - KERAS_BACKEND=tensorflow TENSORFLOW_V=1.15.0 KERAS_V=2.2.5
+  - KERAS_BACKEND=tensorflow TENSORFLOW_V=1.15.2 KERAS_V=2.2.5
   - KERAS_BACKEND=tensorflow TENSORFLOW_V=2.1.0 KERAS_V=2.3.1
 python:
    - "3.6"
@@ -10,7 +10,7 @@ python:
 matrix:
   include:
     - python: 3.6
-      env: KERAS_BACKEND=tensorflow TENSORFLOW_V=1.15.0 KERAS_V=2.2.5
+      env: KERAS_BACKEND=tensorflow TENSORFLOW_V=1.15.2 KERAS_V=2.2.5
       script:
         - (pycodestyle --max-line-length=120 art || exit 0) && (pylint --disable=C0415,E1136 -rn art || exit 0)
         - py.test --pep8 -m pep8
