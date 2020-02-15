@@ -5,6 +5,8 @@ env:
   - KERAS_BACKEND=tensorflow TENSORFLOW_V=2.1.0 KERAS_V=2.3.1
 python:
    - "3.6"
+   - "3.7"
+   - "3.8"
 matrix:
   include:
     - python: 3.6
