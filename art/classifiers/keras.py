@@ -180,9 +180,6 @@ class KerasClassifier(ClassifierNeuralNetwork, ClassifierGradients, Classifier):
         else:
             raise ValueError('Loss function not recognised.')
 
-        # Create predictions
-        predictions = self._output
-
         # Define the loss using the loss function
         if ('__name__' in dir(loss_function, ) and loss_function.__name__ in ['categorical_crossentropy',
                                                                               'sparse_categorical_crossentropy',
@@ -209,10 +206,9 @@ class KerasClassifier(ClassifierNeuralNetwork, ClassifierGradients, Classifier):
             raise NotImplementedError('Only TensorFlow and Theano support is provided for Keras.')
 
         # Set loss, gradients and prediction functions
-        self._predictions_op = predictions
+        self._predictions_op = self._output
         self._loss = loss_
         self._loss_gradients = k.function([self._input, label_ph], [loss_gradients])
-        self._predictions = k.function([self._input], [predictions])
 
         # Get the internal layer
         self._layer_names = self._get_layers()
@@ -229,6 +225,11 @@ class KerasClassifier(ClassifierNeuralNetwork, ClassifierGradients, Classifier):
         :return: Array of gradients of the same shape as `x`.
         :rtype: `np.ndarray`
         """
+        # Check shape of `x` because of custom function for `_loss_gradients`
+        if self._input_shape != x.shape[1:]:
+            raise ValueError('Error when checking x: expected x to have shape {} but got array with shape {}'.format(
+                self._input_shape, x.shape[1:]))
+
         # Apply preprocessing
         x_preprocessed, y_preprocessed = self._apply_preprocessing(x, y, fit=False)
 
@@ -264,6 +265,11 @@ class KerasClassifier(ClassifierNeuralNetwork, ClassifierGradients, Classifier):
                 or (isinstance(label, np.ndarray) and len(label.shape) == 1 and (label < self.nb_classes()).all()
                     and label.shape[0] == x.shape[0])):
             raise ValueError('Label %s is out of range.' % str(label))
+
+        # Check shape of `x` because of custom function for `_loss_gradients`
+        if self._input_shape != x.shape[1:]:
+            raise ValueError('Error when checking x: expected x to have shape {} but got array with shape {}'.format(
+                self._input_shape, x.shape[1:]))
 
         self._init_class_gradients(label=label)
 
@@ -311,7 +317,7 @@ class KerasClassifier(ClassifierNeuralNetwork, ClassifierGradients, Classifier):
         predictions = np.zeros((x_preprocessed.shape[0], self.nb_classes()), dtype=ART_NUMPY_DTYPE)
         for batch_index in range(int(np.ceil(x_preprocessed.shape[0] / float(batch_size)))):
             begin, end = batch_index * batch_size, min((batch_index + 1) * batch_size, x_preprocessed.shape[0])
-            predictions[begin:end] = self._predictions([x_preprocessed[begin:end]])[0]
+            predictions[begin:end] = self._model.predict([x_preprocessed[begin:end]])
 
         return predictions
 
@@ -563,7 +569,6 @@ class KerasClassifier(ClassifierNeuralNetwork, ClassifierGradients, Classifier):
         del state['_predictions_op']
         del state['_loss']
         del state['_loss_gradients']
-        del state['_predictions']
         del state['_layer_names']
 
         model_name = str(time.time()) + '.h5'
