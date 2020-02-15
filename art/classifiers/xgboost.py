@@ -33,8 +33,9 @@ class XGBoostClassifier(Classifier, ClassifierDecisionTree):
     Wrapper class for importing XGBoost models.
     """
 
-    def __init__(self, model=None, clip_values=None, defences=None, preprocessing=None, nb_features=None,
-                 nb_classes=None):
+    def __init__(
+        self, model=None, clip_values=None, defences=None, preprocessing=None, nb_features=None, nb_classes=None
+    ):
         """
         Create a `Classifier` instance from a XGBoost model.
 
@@ -58,7 +59,7 @@ class XGBoostClassifier(Classifier, ClassifierDecisionTree):
         from xgboost import Booster, XGBClassifier
 
         if not isinstance(model, Booster) and not isinstance(model, XGBClassifier):
-            raise TypeError('Model must be of type xgboost.Booster or xgboost.XGBClassifier')
+            raise TypeError("Model must be of type xgboost.Booster or xgboost.XGBClassifier")
 
         super(XGBoostClassifier, self).__init__(clip_values=clip_values, defences=defences, preprocessing=preprocessing)
 
@@ -101,6 +102,7 @@ class XGBoostClassifier(Classifier, ClassifierDecisionTree):
 
         if isinstance(self._model, Booster):
             from xgboost import DMatrix
+
             train_data = DMatrix(x_preprocessed, label=None)
             predictions = self._model.predict(train_data)
             y_prediction = np.asarray([line for line in predictions])
@@ -121,14 +123,17 @@ class XGBoostClassifier(Classifier, ClassifierDecisionTree):
         :rtype: `int`
         """
         from xgboost import Booster, XGBClassifier
+
         if isinstance(self._model, Booster):
             try:
-                return int(len(self._model.get_dump(dump_format='json')) / self._model.n_estimators)
+                return int(len(self._model.get_dump(dump_format="json")) / self._model.n_estimators)
             except AttributeError:
                 if self._nb_classes is not None:
                     return self._nb_classes
-                raise NotImplementedError('Number of classes cannot be determined automatically. ' +
-                                          'Please manually set argument nb_classes in XGBoostClassifier.')
+                raise NotImplementedError(
+                    "Number of classes cannot be determined automatically. "
+                    + "Please manually set argument nb_classes in XGBoostClassifier."
+                )
 
         if isinstance(self._model, XGBClassifier):
             return self._model.n_classes_
@@ -137,7 +142,8 @@ class XGBoostClassifier(Classifier, ClassifierDecisionTree):
 
     def save(self, filename, path=None):
         import pickle
-        with open(filename + '.pickle', 'wb') as file_pickle:
+
+        with open(filename + ".pickle", "wb") as file_pickle:
             pickle.dump(self.model, file=file_pickle)
 
     def get_trees(self):
@@ -151,7 +157,7 @@ class XGBoostClassifier(Classifier, ClassifierDecisionTree):
         import json
         from art.metrics.verification_decisions_trees import Box, Tree
 
-        booster_dump = self._model.get_booster().get_dump(dump_format='json')
+        booster_dump = self._model.get_booster().get_dump(dump_format="json")
         trees = list()
 
         for i_tree, tree_dump in enumerate(booster_dump):
@@ -164,7 +170,8 @@ class XGBoostClassifier(Classifier, ClassifierDecisionTree):
 
             tree_json = json.loads(tree_dump)
             trees.append(
-                Tree(class_id=class_label, leaf_nodes=self._get_leaf_nodes(tree_json, i_tree, class_label, box)))
+                Tree(class_id=class_label, leaf_nodes=self._get_leaf_nodes(tree_json, i_tree, class_label, box))
+            )
 
         return trees
 
@@ -174,22 +181,22 @@ class XGBoostClassifier(Classifier, ClassifierDecisionTree):
 
         leaf_nodes = list()
 
-        if 'children' in node:
-            if node['children'][0]['nodeid'] == node['yes'] and node['children'][1]['nodeid'] == node['no']:
-                node_left = node['children'][0]
-                node_right = node['children'][1]
-            elif node['children'][1]['nodeid'] == node['yes'] and node['children'][0]['nodeid'] == node['no']:
-                node_left = node['children'][1]
-                node_right = node['children'][0]
+        if "children" in node:
+            if node["children"][0]["nodeid"] == node["yes"] and node["children"][1]["nodeid"] == node["no"]:
+                node_left = node["children"][0]
+                node_right = node["children"][1]
+            elif node["children"][1]["nodeid"] == node["yes"] and node["children"][0]["nodeid"] == node["no"]:
+                node_left = node["children"][1]
+                node_right = node["children"][0]
             else:
                 raise ValueError
 
             box_left = deepcopy(box)
             box_right = deepcopy(box)
 
-            feature = int(node['split'][1:])
-            box_split_left = Box(intervals={feature: Interval(-np.inf, node['split_condition'])})
-            box_split_right = Box(intervals={feature: Interval(node['split_condition'], np.inf)})
+            feature = int(node["split"][1:])
+            box_split_left = Box(intervals={feature: Interval(-np.inf, node["split_condition"])})
+            box_split_right = Box(intervals={feature: Interval(node["split_condition"], np.inf)})
 
             if box.intervals:
                 box_left.intersect_with_box(box_split_left)
@@ -201,8 +208,9 @@ class XGBoostClassifier(Classifier, ClassifierDecisionTree):
             leaf_nodes += self._get_leaf_nodes(node_left, i_tree, class_label, box_left)
             leaf_nodes += self._get_leaf_nodes(node_right, i_tree, class_label, box_right)
 
-        if 'leaf' in node:
-            leaf_nodes.append(LeafNode(tree_id=i_tree, class_label=class_label, node_id=node['nodeid'], box=box,
-                                       value=node['leaf']))
+        if "leaf" in node:
+            leaf_nodes.append(
+                LeafNode(tree_id=i_tree, class_label=class_label, node_id=node["nodeid"], box=box, value=node["leaf"])
+            )
 
         return leaf_nodes

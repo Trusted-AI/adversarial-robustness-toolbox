@@ -53,8 +53,12 @@ class DetectorClassifier(ClassifierNeuralNetwork, ClassifierGradients, Classifie
                be divided by the second one.
         :type preprocessing: `tuple`
         """
-        super(DetectorClassifier, self).__init__(clip_values=classifier.clip_values, preprocessing=preprocessing,
-                                                 channel_index=classifier.channel_index, defences=defences)
+        super(DetectorClassifier, self).__init__(
+            clip_values=classifier.clip_values,
+            preprocessing=preprocessing,
+            channel_index=classifier.channel_index,
+            defences=defences,
+        )
 
         self.classifier = classifier
         self.detector = detector
@@ -138,10 +142,17 @@ class DetectorClassifier(ClassifierNeuralNetwork, ClassifierGradients, Classifie
                  `(batch_size, 1, input_shape)` when `label` parameter is specified.
         :rtype: `np.ndarray`
         """
-        if not ((label is None) or (isinstance(label, (int, np.integer)) and label in range(self.nb_classes()))
-                or (isinstance(label, np.ndarray) and len(label.shape) == 1 and (label < self.nb_classes()).all()
-                    and label.shape[0] == x.shape[0])):
-            raise ValueError('Label %s is out of range.' % label)
+        if not (
+            (label is None)
+            or (isinstance(label, (int, np.integer)) and label in range(self.nb_classes()))
+            or (
+                isinstance(label, np.ndarray)
+                and len(label.shape) == 1
+                and (label < self.nb_classes()).all()
+                and label.shape[0] == x.shape[0]
+            )
+        ):
+            raise ValueError("Label %s is out of range." % label)
 
         # Apply preprocessing
         x_defences, _ = self._apply_preprocessing(x, y=None, fit=False)
@@ -184,13 +195,15 @@ class DetectorClassifier(ClassifierNeuralNetwork, ClassifierGradients, Classifie
             detector_idx = np.where(label == self.nb_classes() - 1)
 
             # Initialize the combined gradients
-            combined_grads = np.zeros(shape=(x_defences.shape[0], 1, x_defences.shape[1], x_defences.shape[2],
-                                             x_defences.shape[3]))
+            combined_grads = np.zeros(
+                shape=(x_defences.shape[0], 1, x_defences.shape[1], x_defences.shape[2], x_defences.shape[3])
+            )
 
             # First compute the classifier gradients for classifier_idx
             if classifier_idx:
-                combined_grads[classifier_idx] = self.classifier.class_gradient(x=x_defences[classifier_idx],
-                                                                                label=label[classifier_idx])
+                combined_grads[classifier_idx] = self.classifier.class_gradient(
+                    x=x_defences[classifier_idx], label=label[classifier_idx]
+                )
 
             # Then compute the detector gradients for detector_idx
             if detector_idx:
@@ -303,9 +316,13 @@ class DetectorClassifier(ClassifierNeuralNetwork, ClassifierGradients, Classifie
         self.detector.save(filename=filename + "_detector", path=path)
 
     def __repr__(self):
-        repr_ = "%s(classifier=%r, detector=%r, defences=%r, preprocessing=%r)" \
-                % (self.__module__ + '.' + self.__class__.__name__,
-                   self.classifier, self.detector, self.defences, self.preprocessing)
+        repr_ = "%s(classifier=%r, detector=%r, defences=%r, preprocessing=%r)" % (
+            self.__module__ + "." + self.__class__.__name__,
+            self.classifier,
+            self.detector,
+            self.defences,
+            self.preprocessing,
+        )
 
         return repr_
 

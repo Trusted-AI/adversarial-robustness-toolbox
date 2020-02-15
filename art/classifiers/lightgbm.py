@@ -53,10 +53,11 @@ class LightGBMClassifier(Classifier, ClassifierDecisionTree):
         from lightgbm import Booster
 
         if not isinstance(model, Booster):
-            raise TypeError('Model must be of type lightgbm.Booster')
+            raise TypeError("Model must be of type lightgbm.Booster")
 
-        super(LightGBMClassifier, self).__init__(clip_values=clip_values, defences=defences,
-                                                 preprocessing=preprocessing)
+        super(LightGBMClassifier, self).__init__(
+            clip_values=clip_values, defences=defences, preprocessing=preprocessing
+        )
 
         self._model = model
         self._input_shape = (self._model.num_feature(),)
@@ -104,7 +105,8 @@ class LightGBMClassifier(Classifier, ClassifierDecisionTree):
 
     def save(self, filename, path=None):
         import pickle
-        with open(filename + '.pickle', 'wb') as file_pickle:
+
+        with open(filename + ".pickle", "wb") as file_pickle:
             pickle.dump(self._model, file=file_pickle)
 
     def get_trees(self):
@@ -128,8 +130,12 @@ class LightGBMClassifier(Classifier, ClassifierDecisionTree):
             else:
                 class_label = i_tree % self._model._Booster__num_class
 
-            trees.append(Tree(class_id=class_label,
-                              leaf_nodes=self._get_leaf_nodes(tree_dump['tree_structure'], i_tree, class_label, box)))
+            trees.append(
+                Tree(
+                    class_id=class_label,
+                    leaf_nodes=self._get_leaf_nodes(tree_dump["tree_structure"], i_tree, class_label, box),
+                )
+            )
 
         return trees
 
@@ -139,16 +145,16 @@ class LightGBMClassifier(Classifier, ClassifierDecisionTree):
 
         leaf_nodes = list()
 
-        if 'split_index' in node:
-            node_left = node['left_child']
-            node_right = node['right_child']
+        if "split_index" in node:
+            node_left = node["left_child"]
+            node_right = node["right_child"]
 
             box_left = deepcopy(box)
             box_right = deepcopy(box)
 
-            feature = node['split_feature']
-            box_split_left = Box(intervals={feature: Interval(-np.inf, node['threshold'])})
-            box_split_right = Box(intervals={feature: Interval(node['threshold'], np.inf)})
+            feature = node["split_feature"]
+            box_split_left = Box(intervals={feature: Interval(-np.inf, node["threshold"])})
+            box_split_right = Box(intervals={feature: Interval(node["threshold"], np.inf)})
 
             if box.intervals:
                 box_left.intersect_with_box(box_split_left)
@@ -160,8 +166,15 @@ class LightGBMClassifier(Classifier, ClassifierDecisionTree):
             leaf_nodes += self._get_leaf_nodes(node_left, i_tree, class_label, box_left)
             leaf_nodes += self._get_leaf_nodes(node_right, i_tree, class_label, box_right)
 
-        if 'leaf_index' in node:
-            leaf_nodes.append(LeafNode(tree_id=i_tree, class_label=class_label, node_id=node['leaf_index'], box=box,
-                                       value=node['leaf_value']))
+        if "leaf_index" in node:
+            leaf_nodes.append(
+                LeafNode(
+                    tree_id=i_tree,
+                    class_label=class_label,
+                    node_id=node["leaf_index"],
+                    box=box,
+                    value=node["leaf_value"],
+                )
+            )
 
         return leaf_nodes

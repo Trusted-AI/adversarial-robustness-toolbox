@@ -36,8 +36,20 @@ class TensorFlowClassifier(ClassifierNeuralNetwork, ClassifierGradients, Classif
     This class implements a classifier with the TensorFlow framework.
     """
 
-    def __init__(self, input_ph, output, labels_ph=None, train=None, loss=None, learning=None, sess=None,
-                 channel_index=3, clip_values=None, defences=None, preprocessing=(0, 1)):
+    def __init__(
+        self,
+        input_ph,
+        output,
+        labels_ph=None,
+        train=None,
+        loss=None,
+        learning=None,
+        sess=None,
+        channel_index=3,
+        clip_values=None,
+        defences=None,
+        preprocessing=(0, 1),
+    ):
         """
         Initialization specific to TensorFlow models implementation.
 
@@ -76,8 +88,9 @@ class TensorFlowClassifier(ClassifierNeuralNetwork, ClassifierGradients, Classif
         # pylint: disable=E0401
         import tensorflow as tf
 
-        super(TensorFlowClassifier, self).__init__(clip_values=clip_values, channel_index=channel_index,
-                                                   defences=defences, preprocessing=preprocessing)
+        super(TensorFlowClassifier, self).__init__(
+            clip_values=clip_values, channel_index=channel_index, defences=defences, preprocessing=preprocessing
+        )
         self._nb_classes = int(output.get_shape()[-1])
         self._input_shape = tuple(input_ph.get_shape().as_list()[1:])
         self._input_ph = input_ph
@@ -165,8 +178,8 @@ class TensorFlowClassifier(ClassifierNeuralNetwork, ClassifierGradients, Classif
 
             # Train for one epoch
             for m in range(num_batch):
-                i_batch = x_preprocessed[ind[m * batch_size:(m + 1) * batch_size]]
-                o_batch = y_preprocessed[ind[m * batch_size:(m + 1) * batch_size]]
+                i_batch = x_preprocessed[ind[m * batch_size : (m + 1) * batch_size]]
+                o_batch = y_preprocessed[ind[m * batch_size : (m + 1) * batch_size]]
 
                 # Create feed_dict
                 feed_dict = {self._input_ph: i_batch, self._labels_ph: o_batch}
@@ -193,7 +206,8 @@ class TensorFlowClassifier(ClassifierNeuralNetwork, ClassifierGradients, Classif
 
         # Train directly in TensorFlow
         if isinstance(generator, TFDataGenerator) and not (
-                hasattr(self, 'label_smooth') or hasattr(self, 'feature_squeeze')):
+            hasattr(self, "label_smooth") or hasattr(self, "feature_squeeze")
+        ):
             for _ in range(nb_epochs):
                 for _ in range(int(generator.size / generator.batch_size)):
                     i_batch, o_batch = generator.get_batch()
@@ -223,10 +237,17 @@ class TensorFlowClassifier(ClassifierNeuralNetwork, ClassifierGradients, Classif
         :rtype: `np.ndarray`
         """
         # Check value of label for computing gradients
-        if not (label is None or (isinstance(label, (int, np.integer)) and label in range(self.nb_classes()))
-                or (isinstance(label, np.ndarray) and len(label.shape) == 1 and (label < self.nb_classes()).all()
-                    and label.shape[0] == x.shape[0])):
-            raise ValueError('Label %s is out of range.' % label)
+        if not (
+            label is None
+            or (isinstance(label, (int, np.integer)) and label in range(self.nb_classes()))
+            or (
+                isinstance(label, np.ndarray)
+                and len(label.shape) == 1
+                and (label < self.nb_classes()).all()
+                and label.shape[0] == x.shape[0]
+            )
+        ):
+            raise ValueError("Label %s is out of range." % label)
 
         self._init_class_grads(label=label)
 
@@ -277,7 +298,7 @@ class TensorFlowClassifier(ClassifierNeuralNetwork, ClassifierGradients, Classif
         x_preprocessed, y_preprocessed = self._apply_preprocessing(x, y, fit=False)
 
         # Check if loss available
-        if not hasattr(self, '_loss_grads') or self._loss_grads is None or self._labels_ph is None:
+        if not hasattr(self, "_loss_grads") or self._loss_grads is None or self._labels_ph is None:
             raise ValueError("Need the loss function and the labels placeholder to compute the loss gradient.")
 
         # Create feed_dict
@@ -295,14 +316,15 @@ class TensorFlowClassifier(ClassifierNeuralNetwork, ClassifierGradients, Classif
         # pylint: disable=E0401
         import tensorflow as tf
 
-        if not hasattr(self, '_class_grads'):
+        if not hasattr(self, "_class_grads"):
             self._class_grads = [None for _ in range(self.nb_classes())]
 
         # Construct the class gradients graph
         if label is None:
             if None in self._class_grads:
-                self._class_grads = [tf.gradients(self._output[:, i], self._input_ph)[0]
-                                     for i in range(self.nb_classes())]
+                self._class_grads = [
+                    tf.gradients(self._output[:, i], self._input_ph)[0] for i in range(self.nb_classes())
+                ]
 
         elif isinstance(label, int):
             if self._class_grads[label] is None:
@@ -352,7 +374,7 @@ class TensorFlowClassifier(ClassifierNeuralNetwork, ClassifierGradients, Classif
         for name in reversed(tmp_list[:-1]):
             if result[0].split("/")[0] != name.split("/")[0]:
                 result = [name] + result
-        logger.info('Inferred %i hidden layers on TensorFlow classifier.', len(result))
+        logger.info("Inferred %i hidden layers on TensorFlow classifier.", len(result))
 
         return result
 
@@ -466,6 +488,7 @@ class TensorFlowClassifier(ClassifierNeuralNetwork, ClassifierGradients, Classif
 
         if path is None:
             from art.config import ART_DATA_PATH
+
             full_path = os.path.join(ART_DATA_PATH, filename)
         else:
             full_path = os.path.join(path, filename)
@@ -474,13 +497,15 @@ class TensorFlowClassifier(ClassifierNeuralNetwork, ClassifierGradients, Classif
             shutil.rmtree(full_path)
 
         builder = saved_model.builder.SavedModelBuilder(full_path)
-        signature = predict_signature_def(inputs={'SavedInputPhD': self._input_ph},
-                                          outputs={'SavedOutput': self._output})
-        builder.add_meta_graph_and_variables(sess=self._sess, tags=[tag_constants.SERVING],
-                                             signature_def_map={'predict': signature})
+        signature = predict_signature_def(
+            inputs={"SavedInputPhD": self._input_ph}, outputs={"SavedOutput": self._output}
+        )
+        builder.add_meta_graph_and_variables(
+            sess=self._sess, tags=[tag_constants.SERVING], signature_def_map={"predict": signature}
+        )
         builder.save()
 
-        logger.info('Model saved in path: %s.', full_path)
+        logger.info("Model saved in path: %s.", full_path)
 
     def __getstate__(self):
         """
@@ -494,34 +519,34 @@ class TensorFlowClassifier(ClassifierNeuralNetwork, ClassifierGradients, Classif
         state = self.__dict__.copy()
 
         # Remove the unpicklable entries
-        del state['_sess']
-        del state['_input_ph']
-        state['_output'] = self._output.name
+        del state["_sess"]
+        del state["_input_ph"]
+        state["_output"] = self._output.name
 
         if self._labels_ph is not None:
-            state['_labels_ph'] = self._labels_ph.name
+            state["_labels_ph"] = self._labels_ph.name
 
         if self._loss is not None:
-            state['_loss'] = self._loss.name
+            state["_loss"] = self._loss.name
 
-        if hasattr(self, '_loss_grads'):
-            state['_loss_grads'] = self._loss_grads.name
+        if hasattr(self, "_loss_grads"):
+            state["_loss_grads"] = self._loss_grads.name
         else:
-            state['_loss_grads'] = False
+            state["_loss_grads"] = False
 
         if self._learning is not None:
-            state['_learning'] = self._learning.name
+            state["_learning"] = self._learning.name
 
         if self._train is not None:
-            state['_train'] = self._train.name
+            state["_train"] = self._train.name
 
-        if hasattr(self, '_class_grads'):
-            state['_class_grads'] = [ts if ts is None else ts.name for ts in self._class_grads]
+        if hasattr(self, "_class_grads"):
+            state["_class_grads"] = [ts if ts is None else ts.name for ts in self._class_grads]
         else:
-            state['_class_grads'] = False
+            state["_class_grads"] = False
 
         model_name = str(time.time())
-        state['model_name'] = model_name
+        state["model_name"] = model_name
         self.save(model_name)
 
         return state
@@ -542,7 +567,7 @@ class TensorFlowClassifier(ClassifierNeuralNetwork, ClassifierGradients, Classif
         from tensorflow.python.saved_model import tag_constants
         from art.config import ART_DATA_PATH
 
-        full_path = os.path.join(ART_DATA_PATH, state['model_name'])
+        full_path = os.path.join(ART_DATA_PATH, state["model_name"])
 
         graph = tf.Graph()
         sess = tf.Session(graph=graph)
@@ -552,48 +577,61 @@ class TensorFlowClassifier(ClassifierNeuralNetwork, ClassifierGradients, Classif
         self._sess = sess
 
         # Recover input_ph
-        input_tensor_name = loaded.signature_def['predict'].inputs['SavedInputPhD'].name
+        input_tensor_name = loaded.signature_def["predict"].inputs["SavedInputPhD"].name
         self._input_ph = graph.get_tensor_by_name(input_tensor_name)
 
         # Recover output layer
-        self._output = graph.get_tensor_by_name(state['_output'])
+        self._output = graph.get_tensor_by_name(state["_output"])
 
         # Recover labels' placeholder if any
-        if state['_labels_ph'] is not None:
-            self._labels_ph = graph.get_tensor_by_name(state['_labels_ph'])
+        if state["_labels_ph"] is not None:
+            self._labels_ph = graph.get_tensor_by_name(state["_labels_ph"])
 
         # Recover loss if any
-        if state['_loss'] is not None:
-            self._loss = graph.get_tensor_by_name(state['_loss'])
+        if state["_loss"] is not None:
+            self._loss = graph.get_tensor_by_name(state["_loss"])
 
         # Recover loss_grads if any
-        if state['_loss_grads']:
-            self._loss_grads = graph.get_tensor_by_name(state['_loss_grads'])
+        if state["_loss_grads"]:
+            self._loss_grads = graph.get_tensor_by_name(state["_loss_grads"])
         else:
-            self.__dict__.pop('_loss_grads', None)
+            self.__dict__.pop("_loss_grads", None)
 
         # Recover learning if any
-        if state['_learning'] is not None:
-            self._learning = graph.get_tensor_by_name(state['_learning'])
+        if state["_learning"] is not None:
+            self._learning = graph.get_tensor_by_name(state["_learning"])
 
         # Recover train if any
-        if state['_train'] is not None:
-            self._train = graph.get_operation_by_name(state['_train'])
+        if state["_train"] is not None:
+            self._train = graph.get_operation_by_name(state["_train"])
 
         # Recover class_grads if any
-        if state['_class_grads']:
-            self._class_grads = [ts if ts is None else graph.get_tensor_by_name(ts) for ts in state['_class_grads']]
+        if state["_class_grads"]:
+            self._class_grads = [ts if ts is None else graph.get_tensor_by_name(ts) for ts in state["_class_grads"]]
         else:
-            self.__dict__.pop('_class_grads', None)
+            self.__dict__.pop("_class_grads", None)
 
-        self.__dict__.pop('model_name', None)
+        self.__dict__.pop("model_name", None)
 
     def __repr__(self):
-        repr_ = "%s(input_ph=%r, output=%r, labels_ph=%r, train=%r, loss=%r, learning=%r, " \
-                "sess=%r, channel_index=%r, clip_values=%r, defences=%r, preprocessing=%r)" \
-                % (self.__module__ + '.' + self.__class__.__name__,
-                   self._input_ph, self._output, self._labels_ph, self._train, self._loss, self._learning, self._sess,
-                   self.channel_index, self.clip_values, self.defences, self.preprocessing)
+        repr_ = (
+            "%s(input_ph=%r, output=%r, labels_ph=%r, train=%r, loss=%r, learning=%r, "
+            "sess=%r, channel_index=%r, clip_values=%r, defences=%r, preprocessing=%r)"
+            % (
+                self.__module__ + "." + self.__class__.__name__,
+                self._input_ph,
+                self._output,
+                self._labels_ph,
+                self._train,
+                self._loss,
+                self._learning,
+                self._sess,
+                self.channel_index,
+                self.clip_values,
+                self.defences,
+                self.preprocessing,
+            )
+        )
 
         return repr_
 
@@ -607,8 +645,18 @@ class TensorFlowV2Classifier(ClassifierNeuralNetwork, ClassifierGradients, Class
     This class implements a classifier with the TensorFlow v2 framework.
     """
 
-    def __init__(self, model, nb_classes, input_shape, loss_object=None, train_step=None, channel_index=3,
-                 clip_values=None, defences=None, preprocessing=(0, 1)):
+    def __init__(
+        self,
+        model,
+        nb_classes,
+        input_shape,
+        loss_object=None,
+        train_step=None,
+        channel_index=3,
+        clip_values=None,
+        defences=None,
+        preprocessing=(0, 1),
+    ):
         """
         Initialization specific to TensorFlow v2 models.
 
@@ -637,8 +685,9 @@ class TensorFlowV2Classifier(ClassifierNeuralNetwork, ClassifierGradients, Class
                be divided by the second one.
         :type preprocessing: `tuple`
         """
-        super(TensorFlowV2Classifier, self).__init__(clip_values=clip_values, channel_index=channel_index,
-                                                     defences=defences, preprocessing=preprocessing)
+        super(TensorFlowV2Classifier, self).__init__(
+            clip_values=clip_values, channel_index=channel_index, defences=defences, preprocessing=preprocessing
+        )
 
         self._model = model
         self._nb_classes = nb_classes
@@ -692,8 +741,9 @@ class TensorFlowV2Classifier(ClassifierNeuralNetwork, ClassifierGradients, Class
         import tensorflow as tf
 
         if self._train_step is None:
-            raise TypeError('The training function `train_step` is required for fitting a model but it has not been '
-                            'defined.')
+            raise TypeError(
+                "The training function `train_step` is required for fitting a model but it has not been " "defined."
+            )
 
         # Apply preprocessing
         x_preprocessed, y_preprocessed = self._apply_preprocessing(x, y, fit=True)
@@ -793,7 +843,7 @@ class TensorFlowV2Classifier(ClassifierNeuralNetwork, ClassifierGradients, Class
                 gradients = np.expand_dims(gradients[np.arange(len(gradients)), lst], axis=1)
 
         else:
-            raise ValueError('Expecting eager execution.')
+            raise ValueError("Expecting eager execution.")
 
         return gradients
 
@@ -825,7 +875,7 @@ class TensorFlowV2Classifier(ClassifierNeuralNetwork, ClassifierGradients, Class
 
             gradients = tape.gradient(loss, x_preprocessed_tf).numpy()
         else:
-            raise ValueError('Expecting eager execution.')
+            raise ValueError("Expecting eager execution.")
 
         # Apply preprocessing gradients
         gradients = self._apply_preprocessing_gradient(x, gradients)
@@ -906,10 +956,21 @@ class TensorFlowV2Classifier(ClassifierNeuralNetwork, ClassifierGradients, Class
 
     def __repr__(self):
 
-        repr_ = "%s(model=%r, nb_classes=%r, input_shape=%r, loss_object=%r, train_step=%r, channel_index=%r, " \
-                "clip_values=%r, defences=%r, preprocessing=%r)" \
-                % (self.__module__ + '.' + self.__class__.__name__,
-                   self._model, self._nb_classes, self._input_shape, self._loss_object, self._train_step,
-                   self.channel_index, self.clip_values, self.defences, self.preprocessing)
+        repr_ = (
+            "%s(model=%r, nb_classes=%r, input_shape=%r, loss_object=%r, train_step=%r, channel_index=%r, "
+            "clip_values=%r, defences=%r, preprocessing=%r)"
+            % (
+                self.__module__ + "." + self.__class__.__name__,
+                self._model,
+                self._nb_classes,
+                self._input_shape,
+                self._loss_object,
+                self._train_step,
+                self.channel_index,
+                self.clip_values,
+                self.defences,
+                self.preprocessing,
+            )
+        )
 
         return repr_

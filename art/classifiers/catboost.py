@@ -52,10 +52,11 @@ class CatBoostARTClassifier(Classifier):
         from catboost.core import CatBoostClassifier
 
         if not isinstance(model, CatBoostClassifier):
-            raise TypeError('Model must be of type catboost.core.CatBoostClassifier')
+            raise TypeError("Model must be of type catboost.core.CatBoostClassifier")
 
-        super(CatBoostARTClassifier, self).__init__(clip_values=clip_values, defences=defences,
-                                                    preprocessing=preprocessing)
+        super(CatBoostARTClassifier, self).__init__(
+            clip_values=clip_values, defences=defences, preprocessing=preprocessing
+        )
 
         self._model = model
         self._input_shape = (nb_features,)
@@ -104,5 +105,6 @@ class CatBoostARTClassifier(Classifier):
 
     def save(self, filename, path=None):
         import pickle
-        with open(filename + '.pickle', 'wb') as file_pickle:
+
+        with open(filename + ".pickle", "wb") as file_pickle:
             pickle.dump(self._model, file=file_pickle)

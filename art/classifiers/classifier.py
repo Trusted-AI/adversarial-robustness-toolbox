@@ -31,13 +31,14 @@ from art.utils import check_and_transform_label_format
 if sys.version_info >= (3, 4):
     ABC = abc.ABC
 else:
-    ABC = abc.ABCMeta(str('ABC'), (), {})
+    ABC = abc.ABCMeta(str("ABC"), (), {})
 
 
 class input_filter(abc.ABCMeta):
     """
     Metaclass to ensure that inputs are ndarray for all of the subclass generate and extract calls
     """
+
     def __init__(cls, name, bases, clsdict):
         """
         This function overrides any existing generate or extract methods with a new method that
@@ -51,32 +52,33 @@ class input_filter(abc.ABCMeta):
             """
 
             def replacement_function(self, *args, **kwargs):
-                if(len(args) > 0):
+                if len(args) > 0:
                     lst = list(args)
 
-                if 'x' in kwargs:
-                    if not isinstance(kwargs['x'], np.ndarray):
-                        kwargs['x'] = np.array(kwargs['x'])
+                if "x" in kwargs:
+                    if not isinstance(kwargs["x"], np.ndarray):
+                        kwargs["x"] = np.array(kwargs["x"])
                 else:
                     if not isinstance(args[0], np.ndarray):
                         lst[0] = np.array(args[0])
 
-                if 'y' in kwargs:
-                    if kwargs['y'] is not None and not isinstance(kwargs['y'], np.ndarray):
-                        kwargs['y'] = np.array(kwargs['y'])
+                if "y" in kwargs:
+                    if kwargs["y"] is not None and not isinstance(kwargs["y"], np.ndarray):
+                        kwargs["y"] = np.array(kwargs["y"])
                 elif has_y:
                     if not isinstance(args[1], np.ndarray):
                         lst[1] = np.array(args[1])
 
-                if(len(args) > 0):
+                if len(args) > 0:
                     args = tuple(lst)
                 return fdict[func_name](self, *args, **kwargs)
+
             replacement_function.__doc__ = fdict[func_name].__doc__
             replacement_function.__name__ = "new_" + func_name
             return replacement_function
 
-        replacement_list_no_y = ['predict', 'get_activations', 'class_gradient']
-        replacement_list_has_y = ['fit', 'loss_gradient']
+        replacement_list_no_y = ["predict", "get_activations", "class_gradient"]
+        replacement_list_has_y = ["fit", "loss_gradient"]
 
         for item in replacement_list_no_y:
             if item in clsdict:
@@ -115,10 +117,11 @@ class Classifier(ABC, metaclass=input_filter):
         self._clip_values = clip_values
         if clip_values is not None:
             if len(clip_values) != 2:
-                raise ValueError('`clip_values` should be a tuple of 2 floats or arrays containing the allowed'
-                                 'data range.')
+                raise ValueError(
+                    "`clip_values` should be a tuple of 2 floats or arrays containing the allowed" "data range."
+                )
             if np.array(clip_values[0] >= clip_values[1]).any():
-                raise ValueError('Invalid `clip_values`: min >= max.')
+                raise ValueError("Invalid `clip_values`: min >= max.")
 
         if isinstance(defences, Preprocessor):
             self.defences = [defences]
@@ -126,8 +129,10 @@ class Classifier(ABC, metaclass=input_filter):
             self.defences = defences
 
         if preprocessing is not None and len(preprocessing) != 2:
-            raise ValueError('`preprocessing` should be a tuple of 2 floats with the values to subtract and divide'
-                             'the model inputs.')
+            raise ValueError(
+                "`preprocessing` should be a tuple of 2 floats with the values to subtract and divide"
+                "the model inputs."
+            )
         self.preprocessing = preprocessing
 
         super().__init__(**kwargs)
@@ -258,9 +263,11 @@ class Classifier(ABC, metaclass=input_filter):
         :raises: `TypeError`
         """
         if x.dtype in [np.uint8, np.uint16, np.uint32, np.uint64]:
-            raise TypeError('The data type of input data `x` is {} and cannot represent negative values. Consider '
-                            'changing the data type of the input data `x` to a type that supports negative values e.g. '
-                            'np.float32.'.format(x.dtype))
+            raise TypeError(
+                "The data type of input data `x` is {} and cannot represent negative values. Consider "
+                "changing the data type of the input data `x` to a type that supports negative values e.g. "
+                "np.float32.".format(x.dtype)
+            )
 
         if self.preprocessing is not None:
             sub, div = self.preprocessing
@@ -277,9 +284,9 @@ class Classifier(ABC, metaclass=input_filter):
 
     def __repr__(self):
         class_name = self.__class__.__name__
-        attributes = {(k[1:], v) if k[0] == '_' else (k, v) for (k, v) in self.__dict__.items()}
-        attributes = ['{}={}'.format(k, v) for (k, v) in attributes]
-        repr_string = class_name + '(' + ', '.join(attributes) + ')'
+        attributes = {(k[1:], v) if k[0] == "_" else (k, v) for (k, v) in self.__dict__.items()}
+        attributes = ["{}={}".format(k, v) for (k, v) in attributes]
+        repr_string = class_name + "(" + ", ".join(attributes) + ")"
         return repr_string
 
 
@@ -349,8 +356,9 @@ class ClassifierNeuralNetwork(ABC, metaclass=input_filter):
         from art.data_generators import DataGenerator
 
         if not isinstance(generator, DataGenerator):
-            raise ValueError('Expected instance of `DataGenerator` for `fit_generator`, got %s instead.'
-                             % str(type(generator)))
+            raise ValueError(
+                "Expected instance of `DataGenerator` for `fit_generator`, got %s instead." % str(type(generator))
+            )
 
         for _ in range(nb_epochs):
             x, y = generator.get_batch()
@@ -381,7 +389,7 @@ class ClassifierNeuralNetwork(ABC, metaclass=input_filter):
         :return: Value of the learning phase.
         :rtype: `bool` or `None`
         """
-        return self._learning_phase if hasattr(self, '_learning_phase') else None
+        return self._learning_phase if hasattr(self, "_learning_phase") else None
 
     @property
     def layer_names(self):
@@ -429,9 +437,9 @@ class ClassifierNeuralNetwork(ABC, metaclass=input_filter):
     def __repr__(self):
         name = self.__class__.__name__
 
-        attributes = {(k[1:], v) if k[0] == '_' else (k, v) for (k, v) in self.__dict__.items()}
-        attrs = ['{}={}'.format(k, v) for (k, v) in attributes]
-        repr_ = name + '(' + ', '.join(attrs) + ')'
+        attributes = {(k[1:], v) if k[0] == "_" else (k, v) for (k, v) in self.__dict__.items()}
+        attrs = ["{}={}".format(k, v) for (k, v) in attributes]
+        repr_ = name + "(" + ", ".join(attrs) + ")"
 
         return repr_
 

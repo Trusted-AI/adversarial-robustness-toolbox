@@ -56,8 +56,9 @@ class BlackBoxClassifier(Classifier):
                be divided by the second one.
         :type preprocessing: `tuple`
         """
-        super(BlackBoxClassifier, self).__init__(clip_values=clip_values, defences=defences,
-                                                 preprocessing=preprocessing)
+        super(BlackBoxClassifier, self).__init__(
+            clip_values=clip_values, defences=defences, preprocessing=preprocessing
+        )
 
         self._predictions = predict
         self._input_shape = input_shape

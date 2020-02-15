@@ -35,8 +35,15 @@ class EnsembleClassifier(ClassifierNeuralNetwork, ClassifierGradients, Classifie
     trained when the ensemble is created and no training procedures are provided through this class.
     """
 
-    def __init__(self, classifiers, classifier_weights=None, channel_index=3, clip_values=None, defences=None,
-                 preprocessing=(0, 1)):
+    def __init__(
+        self,
+        classifiers,
+        classifier_weights=None,
+        channel_index=3,
+        clip_values=None,
+        defences=None,
+        preprocessing=(0, 1),
+    ):
         """
         Initialize a :class:`.EnsembleClassifier` object. The data range values and colour channel index have to
         be consistent for all the classifiers in the ensemble.
@@ -60,29 +67,36 @@ class EnsembleClassifier(ClassifierNeuralNetwork, ClassifierGradients, Classifie
                be divided by the second one.
         :type preprocessing: `tuple`
         """
-        super(EnsembleClassifier, self).__init__(clip_values=clip_values, channel_index=channel_index,
-                                                 defences=defences, preprocessing=preprocessing)
+        super(EnsembleClassifier, self).__init__(
+            clip_values=clip_values, channel_index=channel_index, defences=defences, preprocessing=preprocessing
+        )
 
         if classifiers is None or not classifiers:
-            raise ValueError('No classifiers provided for the ensemble.')
+            raise ValueError("No classifiers provided for the ensemble.")
         self._nb_classifiers = len(classifiers)
 
         # Assert all classifiers are the right shape(s)
         for classifier in classifiers:
             if not isinstance(classifier, ClassifierNeuralNetwork):
-                raise TypeError('Expected type `Classifier`, found %s instead.' % type(classifier))
+                raise TypeError("Expected type `Classifier`, found %s instead." % type(classifier))
 
             if clip_values != classifier.clip_values:
-                raise ValueError('Incompatible `clip_values` between classifiers in the ensemble. Found %s and %s.'
-                                 % (str(clip_values), str(classifier.clip_values)))
+                raise ValueError(
+                    "Incompatible `clip_values` between classifiers in the ensemble. Found %s and %s."
+                    % (str(clip_values), str(classifier.clip_values))
+                )
 
             if classifier.nb_classes() != classifiers[0].nb_classes():
-                raise ValueError('Incompatible output shapes between classifiers in the ensemble. Found %s and %s.'
-                                 % (str(classifier.nb_classes()), str(classifiers[0].nb_classes())))
+                raise ValueError(
+                    "Incompatible output shapes between classifiers in the ensemble. Found %s and %s."
+                    % (str(classifier.nb_classes()), str(classifiers[0].nb_classes()))
+                )
 
             if classifier.input_shape != classifiers[0].input_shape:
-                raise ValueError('Incompatible input shapes between classifiers in the ensemble. Found %s and %s.'
-                                 % (str(classifier.input_shape), str(classifiers[0].input_shape)))
+                raise ValueError(
+                    "Incompatible input shapes between classifiers in the ensemble. Found %s and %s."
+                    % (str(classifier.input_shape), str(classifiers[0].input_shape))
+                )
 
         self._input_shape = classifiers[0].input_shape
         self._nb_classes = classifiers[0].nb_classes()
@@ -95,9 +109,11 @@ class EnsembleClassifier(ClassifierNeuralNetwork, ClassifierGradients, Classifie
         # check for consistent channel_index in ensemble members
         for i_cls, cls in enumerate(classifiers):
             if cls.channel_index != self.channel_index:
-                raise ValueError('The channel_index value of classifier {} is {} while this ensemble expects a '
-                                 'channel_index value of {}. The channel_index values of all classifiers and the '
-                                 'ensemble need ot be identical.'.format(i_cls, cls.channel_index, self.channel_index))
+                raise ValueError(
+                    "The channel_index value of classifier {} is {} while this ensemble expects a "
+                    "channel_index value of {}. The channel_index values of all classifiers and the "
+                    "ensemble need ot be identical.".format(i_cls, cls.channel_index, self.channel_index)
+                )
 
         self._classifiers = classifiers
         self._learning_phase = None
@@ -117,8 +133,9 @@ class EnsembleClassifier(ClassifierNeuralNetwork, ClassifierGradients, Classifie
                  `(nb_classifiers, nb_inputs, nb_classes)` if `raw=True`.
         :rtype: `np.ndarray`
         """
-        preds = np.array([self._classifier_weights[i] * self._classifiers[i].predict(x)
-                          for i in range(self._nb_classifiers)])
+        preds = np.array(
+            [self._classifier_weights[i] * self._classifiers[i].predict(x) for i in range(self._nb_classifiers)]
+        )
         if raw:
             return preds
 
@@ -214,8 +231,12 @@ class EnsembleClassifier(ClassifierNeuralNetwork, ClassifierGradients, Classifie
                  dimension is added at the beginning of the array, indexing the different classifiers.
         :rtype: `np.ndarray`
         """
-        grads = np.array([self._classifier_weights[i] * self._classifiers[i].class_gradient(x, label)
-                          for i in range(self._nb_classifiers)])
+        grads = np.array(
+            [
+                self._classifier_weights[i] * self._classifiers[i].class_gradient(x, label)
+                for i in range(self._nb_classifiers)
+            ]
+        )
         if raw:
             return grads
         return np.sum(grads, axis=0)
@@ -234,8 +255,12 @@ class EnsembleClassifier(ClassifierNeuralNetwork, ClassifierGradients, Classifie
         :return: Array of gradients of the same shape as `x`. If `raw=True`, shape becomes `[nb_classifiers, x.shape]`.
         :rtype: `np.ndarray`
         """
-        grads = np.array([self._classifier_weights[i] * self._classifiers[i].loss_gradient(x, y)
-                          for i in range(self._nb_classifiers)])
+        grads = np.array(
+            [
+                self._classifier_weights[i] * self._classifiers[i].loss_gradient(x, y)
+                for i in range(self._nb_classifiers)
+            ]
+        )
         if raw:
             return grads
 
@@ -263,11 +288,19 @@ class EnsembleClassifier(ClassifierNeuralNetwork, ClassifierGradients, Classifie
         return self._nb_classes
 
     def __repr__(self):
-        repr_ = "%s(classifiers=%r, classifier_weights=%r, channel_index=%r, clip_values=%r, defences=%r, " \
-                "preprocessing=%r)" \
-                % (self.__module__ + '.' + self.__class__.__name__,
-                   self._classifiers, self._classifier_weights, self.channel_index, self.clip_values, self.defences,
-                   self.preprocessing)
+        repr_ = (
+            "%s(classifiers=%r, classifier_weights=%r, channel_index=%r, clip_values=%r, defences=%r, "
+            "preprocessing=%r)"
+            % (
+                self.__module__ + "." + self.__class__.__name__,
+                self._classifiers,
+                self._classifier_weights,
+                self.channel_index,
+                self.clip_values,
+                self.defences,
+                self.preprocessing,
+            )
+        )
 
         return repr_
 
