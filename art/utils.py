@@ -49,15 +49,17 @@ def projection(values, eps, norm_p):
     values_tmp = values.reshape((values.shape[0], -1))
 
     if norm_p == 2:
-        values_tmp = values_tmp * np.expand_dims(np.minimum(1., eps / (np.linalg.norm(values_tmp, axis=1) + tol)),
-                                                 axis=1)
+        values_tmp = values_tmp * np.expand_dims(
+            np.minimum(1.0, eps / (np.linalg.norm(values_tmp, axis=1) + tol)), axis=1
+        )
     elif norm_p == 1:
         values_tmp = values_tmp * np.expand_dims(
-            np.minimum(1., eps / (np.linalg.norm(values_tmp, axis=1, ord=1) + tol)), axis=1)
+            np.minimum(1.0, eps / (np.linalg.norm(values_tmp, axis=1, ord=1) + tol)), axis=1
+        )
     elif norm_p == np.inf:
         values_tmp = np.sign(values_tmp) * np.minimum(abs(values_tmp), eps)
     else:
-        raise NotImplementedError('Values of `norm_p` different from 1, 2 and `np.inf` are currently not supported.')
+        raise NotImplementedError("Values of `norm_p` different from 1, 2 and `np.inf` are currently not supported.")
 
     values = values_tmp.reshape(values.shape)
     return values
@@ -189,8 +191,10 @@ def check_and_transform_label_format(labels, nb_classes=None, return_one_hot=Tru
             if return_one_hot:
                 labels = to_categorical(labels, nb_classes)
         else:
-            raise ValueError('Shape of labels not recognised.'
-                             'Please provide labels in shape (nb_samples,) or (nb_samples, nb_classes)')
+            raise ValueError(
+                "Shape of labels not recognised."
+                "Please provide labels in shape (nb_samples,) or (nb_samples, nb_classes)"
+            )
 
     return labels
 
@@ -274,7 +278,7 @@ def get_labels_np_array(preds):
     :return: (np.ndarray) labels
     """
     preds_max = np.amax(preds, axis=1, keepdims=True)
-    y = (preds == preds_max)
+    y = preds == preds_max
 
     return y
 
@@ -360,25 +364,29 @@ def load_cifar10(raw=False):
         import sys
         from six.moves import cPickle
 
-        with open(fpath, 'rb') as file_:
+        with open(fpath, "rb") as file_:
             if sys.version_info < (3,):
                 content = cPickle.load(file_)
             else:
-                content = cPickle.load(file_, encoding='bytes')
+                content = cPickle.load(file_, encoding="bytes")
                 content_decoded = {}
                 for key, value in content.items():
-                    content_decoded[key.decode('utf8')] = value
+                    content_decoded[key.decode("utf8")] = value
                 content = content_decoded
-        data = content['data']
-        labels = content['labels']
+        data = content["data"]
+        labels = content["labels"]
 
         data = data.reshape(data.shape[0], 3, 32, 32)
         return data, labels
 
     from art.config import ART_DATA_PATH
 
-    path = get_file('cifar-10-batches-py', extract=True, path=ART_DATA_PATH,
-                    url='http://www.cs.toronto.edu/~kriz/cifar-10-python.tar.gz')
+    path = get_file(
+        "cifar-10-batches-py",
+        extract=True,
+        path=ART_DATA_PATH,
+        url="http://www.cs.toronto.edu/~kriz/cifar-10-python.tar.gz",
+    )
 
     num_train_samples = 50000
 
@@ -386,12 +394,12 @@ def load_cifar10(raw=False):
     y_train = np.zeros((num_train_samples,), dtype=np.uint8)
 
     for i in range(1, 6):
-        fpath = os.path.join(path, 'data_batch_' + str(i))
+        fpath = os.path.join(path, "data_batch_" + str(i))
         data, labels = load_batch(fpath)
-        x_train[(i - 1) * 10000: i * 10000, :, :, :] = data
-        y_train[(i - 1) * 10000: i * 10000] = labels
+        x_train[(i - 1) * 10000 : i * 10000, :, :, :] = data
+        y_train[(i - 1) * 10000 : i * 10000] = labels
 
-    fpath = os.path.join(path, 'test_batch')
+    fpath = os.path.join(path, "test_batch")
     x_test, y_test = load_batch(fpath)
     y_train = np.reshape(y_train, (len(y_train), 1))
     y_test = np.reshape(y_test, (len(y_test), 1))
@@ -402,7 +410,7 @@ def load_cifar10(raw=False):
 
     min_, max_ = 0, 255
     if not raw:
-        min_, max_ = 0., 1.
+        min_, max_ = 0.0, 1.0
         x_train, y_train = preprocess(x_train, y_train, clip_values=(0, 255))
         x_test, y_test = preprocess(x_test, y_test, clip_values=(0, 255))
 
@@ -420,13 +428,13 @@ def load_mnist(raw=False):
     """
     from art.config import ART_DATA_PATH
 
-    path = get_file('mnist.npz', path=ART_DATA_PATH, url='https://s3.amazonaws.com/img-datasets/mnist.npz')
+    path = get_file("mnist.npz", path=ART_DATA_PATH, url="https://s3.amazonaws.com/img-datasets/mnist.npz")
 
     dict_mnist = np.load(path)
-    x_train = dict_mnist['x_train']
-    y_train = dict_mnist['y_train']
-    x_test = dict_mnist['x_test']
-    y_test = dict_mnist['y_test']
+    x_train = dict_mnist["x_train"]
+    y_train = dict_mnist["y_train"]
+    x_test = dict_mnist["x_test"]
+    y_test = dict_mnist["y_test"]
     dict_mnist.close()
 
     # Add channel axis
@@ -454,14 +462,18 @@ def load_stl():
     min_, max_ = 0.0, 1.0
 
     # Download and extract data if needed
-    path = get_file('stl10_binary', path=ART_DATA_PATH, extract=True,
-                    url='https://ai.stanford.edu/~acoates/stl10/stl10_binary.tar.gz')
+    path = get_file(
+        "stl10_binary",
+        path=ART_DATA_PATH,
+        extract=True,
+        url="https://ai.stanford.edu/~acoates/stl10/stl10_binary.tar.gz",
+    )
 
-    with open(join(path, 'train_X.bin'), 'rb') as f_numpy:
+    with open(join(path, "train_X.bin"), "rb") as f_numpy:
         x_train = np.fromfile(f_numpy, dtype=np.uint8)
         x_train = np.reshape(x_train, (-1, 3, 96, 96))
 
-    with open(join(path, 'test_X.bin'), 'rb') as f_numpy:
+    with open(join(path, "test_X.bin"), "rb") as f_numpy:
         x_test = np.fromfile(f_numpy, dtype=np.uint8)
         x_test = np.reshape(x_test, (-1, 3, 96, 96))
 
@@ -469,11 +481,11 @@ def load_stl():
     x_train = x_train.transpose(0, 2, 3, 1)
     x_test = x_test.transpose(0, 2, 3, 1)
 
-    with open(join(path, 'train_y.bin'), 'rb') as f_numpy:
+    with open(join(path, "train_y.bin"), "rb") as f_numpy:
         y_train = np.fromfile(f_numpy, dtype=np.uint8)
         y_train -= 1
 
-    with open(join(path, 'test_y.bin'), 'rb') as f_numpy:
+    with open(join(path, "test_y.bin"), "rb") as f_numpy:
         y_test = np.fromfile(f_numpy, dtype=np.uint8)
         y_test -= 1
 
@@ -497,30 +509,34 @@ def load_iris(raw=False, test_set=0.3):
     from art.config import ART_DATA_PATH, ART_NUMPY_DTYPE
 
     # Download data if needed
-    path = get_file('iris.data', path=ART_DATA_PATH, extract=False,
-                    url='https://archive.ics.uci.edu/ml/machine-learning-databases/iris/iris.data')
+    path = get_file(
+        "iris.data",
+        path=ART_DATA_PATH,
+        extract=False,
+        url="https://archive.ics.uci.edu/ml/machine-learning-databases/iris/iris.data",
+    )
 
-    data = np.loadtxt(path, delimiter=',', usecols=(0, 1, 2, 3), dtype=ART_NUMPY_DTYPE)
-    labels = np.loadtxt(path, delimiter=',', usecols=4, dtype=str)
+    data = np.loadtxt(path, delimiter=",", usecols=(0, 1, 2, 3), dtype=ART_NUMPY_DTYPE)
+    labels = np.loadtxt(path, delimiter=",", usecols=4, dtype=str)
 
     # Preprocess
     if not raw:
-        label_map = {'Iris-setosa': 0, 'Iris-versicolor': 1, 'Iris-virginica': 2}
+        label_map = {"Iris-setosa": 0, "Iris-versicolor": 1, "Iris-virginica": 2}
         labels = np.array([label_map[labels[i]] for i in range(labels.size)], dtype=np.int32)
         data, labels = preprocess(data, labels, nb_classes=3)
     min_, max_ = np.amin(data), np.amax(data)
 
     # Split training and test sets
     split_index = int((1 - test_set) * len(data) / 3)
-    x_train = np.vstack((data[:split_index], data[50:50 + split_index], data[100:100 + split_index]))
-    y_train = np.vstack((labels[:split_index], labels[50:50 + split_index], labels[100:100 + split_index]))
+    x_train = np.vstack((data[:split_index], data[50 : 50 + split_index], data[100 : 100 + split_index]))
+    y_train = np.vstack((labels[:split_index], labels[50 : 50 + split_index], labels[100 : 100 + split_index]))
 
     if split_index >= 49:
         x_test, y_test = None, None
     else:
 
-        x_test = np.vstack((data[split_index:50], data[50 + split_index:100], data[100 + split_index:]))
-        y_test = np.vstack((labels[split_index:50], labels[50 + split_index:100], labels[100 + split_index:]))
+        x_test = np.vstack((data[split_index:50], data[50 + split_index : 100], data[100 + split_index :]))
+        y_test = np.vstack((labels[split_index:50], labels[50 + split_index : 100], labels[100 + split_index :]))
         assert len(x_train) + len(x_test) == 150
 
         # Shuffle test set
@@ -561,13 +577,13 @@ def _extract(full_path, path):
     import zipfile
     import shutil
 
-    if full_path.endswith('tar'):
+    if full_path.endswith("tar"):
         if tarfile.is_tarfile(full_path):
             archive = tarfile.open(full_path, "r:")
-    elif full_path.endswith('tar.gz'):
+    elif full_path.endswith("tar.gz"):
         if tarfile.is_tarfile(full_path):
             archive = tarfile.open(full_path, "r:gz")
-    elif full_path.endswith('zip'):
+    elif full_path.endswith("zip"):
         if zipfile.is_zipfile(full_path):
             archive = zipfile.ZipFile(full_path)
         else:
@@ -606,17 +622,18 @@ def get_file(filename, url, path=None, extract=False):
     """
     if path is None:
         from art.config import ART_DATA_PATH
+
         path_ = os.path.expanduser(ART_DATA_PATH)
     else:
         path_ = os.path.expanduser(path)
     if not os.access(path_, os.W_OK):
-        path_ = os.path.join('/tmp', '.art')
+        path_ = os.path.join("/tmp", ".art")
     if not os.path.exists(path_):
         os.makedirs(path_)
 
     if extract:
         extract_path = os.path.join(path_, filename)
-        full_path = extract_path + '.tar.gz'
+        full_path = extract_path + ".tar.gz"
     else:
         full_path = os.path.join(path_, filename)
 
@@ -624,8 +641,8 @@ def get_file(filename, url, path=None, extract=False):
     download = not os.path.exists(full_path)
 
     if download:
-        logger.info('Downloading data from %s', url)
-        error_msg = 'URL fetch failure on {}: {} -- {}'
+        logger.info("Downloading data from %s", url)
+        error_msg = "URL fetch failure on {}: {} -- {}"
         try:
             try:
                 from six.moves.urllib.error import HTTPError, URLError
@@ -736,7 +753,7 @@ def segment_by_class(data, classes, num_classes):
     return [np.asarray(i) for i in by_class]
 
 
-def performance_diff(model1, model2, test_data, test_labels, perf_function='accuracy', **kwargs):
+def performance_diff(model1, model2, test_data, test_labels, perf_function="accuracy", **kwargs):
     """
     Calculates the difference in performance between two models on the test_data with a performance function.
 
@@ -765,15 +782,15 @@ def performance_diff(model1, model2, test_data, test_labels, perf_function='accu
     model1_labels = model1.predict(test_data)
     model2_labels = model2.predict(test_data)
 
-    if perf_function == 'accuracy':
+    if perf_function == "accuracy":
         model1_acc = accuracy_score(test_labels, model1_labels, **kwargs)
         model2_acc = accuracy_score(test_labels, model2_labels, **kwargs)
         return model1_acc - model2_acc
 
-    if perf_function == 'f1':
+    if perf_function == "f1":
         n_classes = test_labels.shape[1]
-        if n_classes > 2 and 'average' not in kwargs:
-            kwargs['average'] = 'micro'
+        if n_classes > 2 and "average" not in kwargs:
+            kwargs["average"] = "micro"
         model1_f1 = f1_score(test_labels, model1_labels, **kwargs)
         model2_f1 = f1_score(test_labels, model2_labels, **kwargs)
         return model1_f1 - model2_f1

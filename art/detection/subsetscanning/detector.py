@@ -39,6 +39,7 @@ class SubsetScanningDetector(ClassifierNeuralNetwork, ClassifierGradients, Class
 
     | Paper link: https://www.cs.cmu.edu/~neill/papers/mcfowland13a.pdf
     """
+
     def __init__(self, classifier, bgd_data, layer):
         """
         Create a `SubsetScanningDetector` instance which is used to the detect the presence of adversarial samples.
@@ -50,25 +51,28 @@ class SubsetScanningDetector(ClassifierNeuralNetwork, ClassifierGradients, Class
         :layer: The layer from which to extract activations to perform scan
         :type layer: `int` or `str`
         """
-        super(SubsetScanningDetector, self).__init__(clip_values=classifier.clip_values,
-                                                     channel_index=classifier.channel_index,
-                                                     defences=classifier.defences,
-                                                     preprocessing=classifier.preprocessing)
+        super(SubsetScanningDetector, self).__init__(
+            clip_values=classifier.clip_values,
+            channel_index=classifier.channel_index,
+            defences=classifier.defences,
+            preprocessing=classifier.preprocessing,
+        )
         self.classifier = classifier
         self.bgd_data = bgd_data
 
         # Ensure that layer is well-defined:
         if isinstance(layer, six.string_types):
             if layer not in classifier.layer_names:
-                raise ValueError('Layer name %s is not part of the graph.' % layer)
+                raise ValueError("Layer name %s is not part of the graph." % layer)
             self._layer_name = layer
         elif isinstance(layer, int):
             if layer < 0 or layer >= len(classifier.layer_names):
-                raise ValueError('Layer index %d is outside of range (0 to %d included).'
-                                 % (layer, len(classifier.layer_names) - 1))
+                raise ValueError(
+                    "Layer index %d is outside of range (0 to %d included)." % (layer, len(classifier.layer_names) - 1)
+                )
             self._layer_name = classifier.layer_names[layer]
         else:
-            raise TypeError('Layer must be of type `str` or `int`.')
+            raise TypeError("Layer must be of type `str` or `int`.")
 
         bgd_activations = classifier.get_activations(bgd_data, self._layer_name, batch_size=128)
         if len(bgd_activations.shape) == 4:
@@ -101,8 +105,8 @@ class SubsetScanningDetector(ClassifierNeuralNetwork, ClassifierGradients, Class
         pvalue_ranges = np.empty((records_n, atrr_n, 2))
 
         for j in range(atrr_n):
-            pvalue_ranges[:, j, 0] = np.searchsorted(bgd_activations[:, j], eval_activations[:, j], side='right')
-            pvalue_ranges[:, j, 1] = np.searchsorted(bgd_activations[:, j], eval_activations[:, j], side='left')
+            pvalue_ranges[:, j, 0] = np.searchsorted(bgd_activations[:, j], eval_activations[:, j], side="right")
+            pvalue_ranges[:, j, 1] = np.searchsorted(bgd_activations[:, j], eval_activations[:, j], side="left")
 
         pvalue_ranges = bgrecords_n - pvalue_ranges
 
