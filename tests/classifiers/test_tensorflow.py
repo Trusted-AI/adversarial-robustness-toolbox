@@ -41,6 +41,7 @@ def get_is_tf_version_2():
     else:
         yield False
 
+
 @pytest.fixture()
 def get_mnist_subset(get_mnist_dataset):
     (x_train_mnist, y_train_mnist), (x_test_mnist, y_test_mnist) = get_mnist_dataset
@@ -153,9 +154,9 @@ def test_class_gradient(get_classifier_logits, get_mnist_subset):
     assert gradients.shape == (n_test, 1, 28, 28, 1)
 
     expected_gradients_1 = np.asarray([0.06860766, 0.065502, 0.08539103, 0.13868105, -0.05520725, -0.18788849,
-                                       0.02264893, 0.02980516, 0.2226511, 0.11288887, -0.00678776, 0.02045561,
-                                       -0.03120914, 0.00642691, 0.08449504, 0.02848018, -0.03251382, 0.00854315,
-                                       -0.02354656, -0.00767687, 0.01565931, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0])
+                                           0.02264893, 0.02980516, 0.2226511, 0.11288887, -0.00678776, 0.02045561,
+                                           -0.03120914, 0.00642691, 0.08449504, 0.02848018, -0.03251382, 0.00854315,
+                                           -0.02354656, -0.00767687, 0.01565931, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0])
     np.testing.assert_array_almost_equal(gradients[0, 0, 14, :, 0], expected_gradients_1, decimal=4)
 
     expected_gradients_2 = np.asarray([-0.0487146, -0.0171556, -0.03161772, -0.0420007, 0.03360246, -0.01864819,
