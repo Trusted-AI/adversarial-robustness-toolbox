@@ -25,10 +25,12 @@ import numpy as np
 # from art.config import ART_DATA_PATH
 from art.data_generators import TFDataGenerator
 from tests import utils_test
+from art import utils
 
 logger = logging.getLogger(__name__)
 
 n_test = 100
+utils.master_seed(1234)
 
 @pytest.fixture(scope="module")
 def get_is_tf_version_2():
