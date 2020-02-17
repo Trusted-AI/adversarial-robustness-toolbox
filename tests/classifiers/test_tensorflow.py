@@ -29,7 +29,9 @@ from art import utils
 
 logger = logging.getLogger(__name__)
 
+#TODO put default subset values in a fixture
 n_test = 100
+n_train = 1000
 utils.master_seed(1234)
 
 @pytest.fixture(scope="module")
@@ -43,7 +45,6 @@ def get_is_tf_version_2():
 @pytest.fixture()
 def get_mnist_subset(get_mnist_dataset):
     (x_train_mnist, y_train_mnist), (x_test_mnist, y_test_mnist) = get_mnist_dataset
-    n_train = 1000
 
     yield (x_train_mnist[:n_train], y_train_mnist[:n_train]), (x_test_mnist[:n_test], y_test_mnist[:n_test])
 

@@ -43,8 +43,13 @@ from art.utils import master_seed
 from art.data_generators import KerasDataGenerator
 
 from tests.utils_test import TestBase, get_image_classifier_kr
+import pytest
+from art import utils
 
 logger = logging.getLogger(__name__)
+
+
+
 
 
 def _functional_model():
@@ -74,6 +79,50 @@ def _functional_model():
                   metrics=['accuracy'], loss_weights=[1.0, 1.0])
 
     return model
+
+
+#TODO do testBase class setup
+#TODO clear out keras after each test
+#TODO create/delete tmp folder
+
+utils.master_seed(1234)
+n_train = 1000
+n_test = 100
+batch_size = 16
+
+@pytest.fixture()
+def get_mnist_subset(get_mnist_dataset):
+    (x_train_mnist, y_train_mnist), (x_test_mnist, y_test_mnist) = get_mnist_dataset
+
+    yield (x_train_mnist[:n_train], y_train_mnist[:n_train]), (x_test_mnist[:n_test], y_test_mnist[:n_test])
+
+@pytest.fixture(scope="module")
+def get_functional_model(get_mnist_subset):
+    (x_train_mnist, y_train_mnist), (x_test_mnist, y_test_mnist) = get_mnist_subset
+
+    # Load small Keras model
+    functional_model = _functional_model()
+    functional_model.fit([x_train_mnist, x_train_mnist], [y_train_mnist, y_train_mnist], nb_epoch=3)
+
+    yield functional_model
+
+
+
+@pytest.mark.only_with_platform("keras")
+def test_fit(get_mnist_subset):
+    (x_train_mnist, y_train_mnist), (x_test_mnist, y_test_mnist) = get_mnist_subset
+
+    labels = np.argmax(y_test_mnist, axis=1)
+    classifier = get_image_classifier_kr()
+    accuracy = np.sum(np.argmax(classifier.predict(x_test_mnist), axis=1) == labels) / n_test
+    logger.info('Accuracy: %.2f%%', (accuracy * 100))
+
+    classifier.fit(x_train_mnist, y_train_mnist, batch_size=batch_size, nb_epochs=2)
+    accuracy_2 = np.sum(np.argmax(classifier.predict(x_test_mnist), axis=1) == labels) / n_test
+    logger.info('Accuracy: %.2f%%', (accuracy_2 * 100))
+
+    assert accuracy == 0.32
+    np.testing.assert_array_almost_equal(accuracy_2, 0.73, decimal=0.06)
 
 #
 # class TestKerasClassifier(TestBase):
@@ -107,18 +156,7 @@ def _functional_model():
 #         k.clear_session()
 #         shutil.rmtree(cls.test_dir)
 #
-#     def test_fit(self):
-#         labels = np.argmax(self.y_test_mnist, axis=1)
-#         classifier = get_image_classifier_kr()
-#         accuracy = np.sum(np.argmax(classifier.predict(self.x_test_mnist), axis=1) == labels) / self.n_test
-#         logger.info('Accuracy: %.2f%%', (accuracy * 100))
-#
-#         classifier.fit(self.x_train_mnist, self.y_train_mnist, batch_size=self.batch_size, nb_epochs=2)
-#         accuracy_2 = np.sum(np.argmax(classifier.predict(self.x_test_mnist), axis=1) == labels) / self.n_test
-#         logger.info('Accuracy: %.2f%%', (accuracy_2 * 100))
-#
-#         self.assertEqual(accuracy, 0.32)
-#         self.assertAlmostEqual(accuracy_2, 0.73, delta=0.06)
+
 #
 #     def test_fit_generator(self):
 #         classifier = get_image_classifier_kr()
