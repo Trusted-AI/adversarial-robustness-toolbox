@@ -140,7 +140,7 @@ class ScikitlearnClassifier(Classifier):
         else:
             raise ValueError('The provided model does not have methods `predict_proba` or `predict`.')
 
-        # Apply postprocessing defences
+        # Apply postprocessing
         predictions = self._apply_postprocessing(preds=y_pred, fit=False)
 
         return predictions
