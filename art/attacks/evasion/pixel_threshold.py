@@ -67,16 +67,15 @@ class PixelThreshold(EvasionAttack):
     def __init__(self, classifier, th, es, targeted, verbose):
         """
         Create a :class:`.PixelThreshold` instance.
-        
         :param classifier: A trained classifier.
         :type  classifier: :class:`.Classifier`
-        :param th: threshold value of the Pixel/ Threshold attack. th=None 
+        :param th: threshold value of the Pixel/ Threshold attack. th=None
                    indicates finding a minimum threshold.
         :type  th: `int` or `none`
-        :param es: Indicates whether the attack uses CMAES (0) or  DE (1) as 
+        :param es: Indicates whether the attack uses CMAES (0) or  DE (1) as
                    Evolutionary Strategy
         :type  es: `int`
-        :param targeted: Indicates whether the attack is targeted (True) or 
+        :param targeted: Indicates whether the attack is targeted (True) or
                          untargeted (False)
         :type  targeted: `bool`
         :param verbose: Indicates whether to print verbose messages of ES used
@@ -186,9 +185,9 @@ class PixelThreshold(EvasionAttack):
         if y is not None:
             y = to_categorical(y, self.classifier.nb_classes())
 
-        logger.info('Success rate of Attack: %.2f%%', 100 * \
-            compute_success(self.classifier, x, y, adv_x_best,
-                            self.targeted, 1))
+        logger.info('Success rate of Attack: %.2f%%', 100 *
+                    compute_success(self.classifier, x, y, adv_x_best,
+                                    self.targeted, 1))
         return adv_x_best
 
     def predict(self, test_x):
@@ -203,7 +202,7 @@ class PixelThreshold(EvasionAttack):
     def _attack_success(self, adv_x, x, target_class):
         """
         Checks whether the given pertubation `adv_x` for the image `img`
-        is successful. 
+        is successful.
         """
         predicted_class = np.argmax(
             self.predict(
@@ -214,8 +213,9 @@ class PixelThreshold(EvasionAttack):
 
     def _attack(self, image, target_class, limit):
         """
-        Attack the given image `image` with the threshold `limit` for the `target_class` 
-        which is true label for untargetted attack and targetted label for targetted attack. 
+        Attack the given image `image` with the threshold `limit` for the
+        `target_class` which is true label for untargetted attack and targetted
+        label for targetted attack.
         """
         bounds, initial = self._get_bounds(image, limit)
 
