@@ -306,7 +306,7 @@ def test_resnet(create_test_image):
 @pytest.mark.only_with_platform("keras")
 def test_learning_phase():
     classifier = get_image_classifier_kr()
-    assert hasattr(classifier != '_learning_phase')
+    assert hasattr(classifier, '_learning_phase') is False
     classifier.set_learning_phase(False)
     assert classifier.learning_phase is False
     classifier.set_learning_phase(True)
