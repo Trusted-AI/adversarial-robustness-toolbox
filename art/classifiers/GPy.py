@@ -158,7 +158,7 @@ class GPyGaussianProcessClassifier(Classifier, ClassifierGradients):
             out[:, 0] = self.model.predict(x_preprocessed)[0].reshape(-1)
             out[:, 1] = 1.0 - out[:, 0]
 
-        # Apply postprocessing defences
+        # Apply postprocessing
         predictions = self._apply_postprocessing(preds=out, fit=False)
 
         return predictions
