@@ -187,26 +187,27 @@ def test_set_learning(is_tf_version_2, get_image_classifier_tf_factory):
         assert classifier.learning_phase
 
 @pytest.mark.only_with_platform("tensorflow")
-def test_repr(is_tf_version_2, get_image_classifier_tf_factory):
-    classifier, sess = get_image_classifier_tf_factory()
-    repr_classifier = repr(classifier)
-
+def test_repr(is_tf_version_2, backend_test_repr):
     if is_tf_version_2:
-        assert 'TensorFlowV2Classifier' in repr_classifier
-        assert 'model=' in repr_classifier
-        assert 'nb_classes=10' in repr_classifier
-        assert 'input_shape=(28, 28, 1)' in repr_classifier
-        assert 'loss_object=<tensorflow.python.keras.losses.SparseCategoricalCrossentropy' in repr_classifier
-        assert 'train_step=<function get_classifier_tf_v2.<locals>.train_step' in repr_classifier
+        backend_test_repr(['TensorFlowV2Classifier',
+                           'model=',
+                           'nb_classes=10',
+                           'input_shape=(28, 28, 1)',
+                           'loss_object=<tensorflow.python.keras.losses.SparseCategoricalCrossentropy',
+                           'train_step=<function get_classifier_tf_v2.<locals>.train_step',
+                           'channel_index=3, clip_values=(0, 1), defences=None, preprocessing=(0, 1))'])
     else:
-        assert 'TensorFlowClassifier' in repr_classifier
-        assert 'input_ph=<tf.Tensor \'Placeholder:0\' shape=(?, 28, 28, 1) dtype=float32>' in  repr_classifier
-        assert 'output=<tf.Tensor \'Softmax:0\' shape=(?, 10) dtype=float32>' in repr_classifier
-        assert 'labels_ph=<tf.Tensor \'Placeholder_1:0\' shape=(?, 10) dtype=int32>' in repr_classifier
-        assert 'train=<tf.Operation \'Adam\' type=NoOp>' in repr_classifier
-        assert 'loss=<tf.Tensor \'Mean:0\' shape=() dtype=float32>' in repr_classifier
-        assert 'learning=None' in repr_classifier
-        assert 'sess=<tensorflow.python.client.session.Session object' in repr_classifier
-        assert 'TensorFlowClassifier' in repr_classifier
+        backend_test_repr(['TensorFlowClassifier',
+                           'input_ph=<tf.Tensor \'Placeholder:0\' shape=(?, 28, 28, 1) dtype=float32>',
+                           'output=<tf.Tensor \'Softmax:0\' shape=(?, 10) dtype=float32>',
+                           'labels_ph=<tf.Tensor \'Placeholder_1:0\' shape=(?, 10) dtype=int32>',
+                           'train=<tf.Operation \'Adam\' type=NoOp>',
+                           'loss=<tf.Tensor \'Mean:0\' shape=() dtype=float32>',
+                           'learning=None',
+                           'sess=<tensorflow.python.client.session.Session object',
+                           'TensorFlowClassifier',
+                           'channel_index=3, clip_values=(0, 1), defences=None, preprocessing=(0, 1))'])
 
-    assert 'channel_index=3, clip_values=(0, 1), defences=None, preprocessing=(0, 1))' in repr_classifier
+
+
+

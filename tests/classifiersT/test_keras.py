@@ -383,14 +383,15 @@ def test_class_gradient(get_default_mnist_subset):
     np.testing.assert_array_almost_equal(gradients[0, 0, :, 14, 0], expected_gradients_2, decimal=4)
 
 
+
+
 @pytest.mark.only_with_platform("keras")
-def test_repr():
-    classifier = get_image_classifier_kr()
-    repr_ = repr(classifier)
-    assert 'art.classifiers.keras.KerasClassifier' in repr_
-    assert 'use_logits=False, channel_index=3' in repr_
-    assert 'clip_values=(0, 1), defences=None, preprocessing=(0, 1)' in repr_
-    assert 'input_layer=0, output_layer=0' in repr_
+def test_repr(backend_test_repr):
+    backend_test_repr(['art.classifiers.keras.KerasClassifier',
+                       'use_logits=False, channel_index=3',
+                       'clip_values=(0, 1), defences=None, preprocessing=(0, 1)',
+                       'input_layer=0, output_layer=0'])
+
 
 
 @pytest.mark.only_with_platform("keras")

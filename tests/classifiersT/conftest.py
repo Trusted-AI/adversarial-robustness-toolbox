@@ -1,6 +1,18 @@
 import pytest
 import numpy as np
 
+
+@pytest.fixture
+def backend_test_repr(get_image_classifier_list):
+    classifier = get_image_classifier_list()[0]
+    def _backend_test_repr(message_list):
+        repr_ = repr(classifier)
+        for message in message_list:
+            assert message in repr_
+
+    yield _backend_test_repr
+
+
 @pytest.fixture
 def get_backend_test_layers(get_mlFramework, get_default_mnist_subset, get_image_classifier_list):
     (x_train_mnist, y_train_mnist), (x_test_mnist, y_test_mnist) = get_default_mnist_subset
