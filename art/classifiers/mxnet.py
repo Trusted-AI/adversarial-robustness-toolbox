@@ -231,7 +231,7 @@ class MXClassifier(ClassifierNeuralNetwork, ClassifierGradients, Classifier):
 
             results[begin:end] = preds.asnumpy()
 
-        # Apply postprocessing defences
+        # Apply postprocessing
         predictions = self._apply_postprocessing(preds=results, fit=False)
 
         return predictions
