@@ -16,39 +16,37 @@
 # TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 # SOFTWARE.
 """
-This module implements a rounding to the classifier output.
+This module implements confidence added to the classifier output.
 """
 import logging
 
-import numpy as np
-
-from art.defences.postprocess.postprocessor import Postprocessor
+from art.defences.postprocessor.postprocessor import Postprocessor
 
 logger = logging.getLogger(__name__)
 
 
-class Rounded(Postprocessor):
+class HighConfidence(Postprocessor):
     """
-    Implementation of a postprocessor based on rounding classifier output.
+    Implementation of a postprocessor based on selecting high confidence predictions to return as classifier output.
     """
-    params = ['decimals']
+    params = ['cutoff']
 
-    def __init__(self, decimals=3, apply_fit=False, apply_predict=True):
+    def __init__(self, cutoff=0.25, apply_fit=False, apply_predict=True):
         """
-        Create a Rounded postprocessor.
+        Create a HighConfidence postprocessor.
 
-        :param decimals: Number of decimal places after the decimal point.
-        :type decimals: `int`
+        :param cutoff: Minimal value for returned prediction output.
+        :type cutoff: `float`
         :param apply_fit: True if applied during fitting/training.
         :type apply_fit: `bool`
         :param apply_predict: True if applied during predicting.
         :type apply_predict: `bool`
         """
-        super(Rounded, self).__init__()
+        super(HighConfidence, self).__init__()
         self._is_fitted = True
         self._apply_fit = apply_fit
         self._apply_predict = apply_predict
-        self.set_params(decimals=decimals)
+        self.set_params(cutoff=cutoff)
 
     @property
     def apply_fit(self):
@@ -67,7 +65,10 @@ class Rounded(Postprocessor):
         :return: Postprocessed model output.
         :rtype: `np.ndarray`
         """
-        return np.around(preds, decimals=self.decimals)
+        post_preds = preds.copy()
+        post_preds[post_preds < self.cutoff] = 0.0
+
+        return post_preds
 
     def fit(self, preds, **kwargs):
         """
@@ -79,14 +80,14 @@ class Rounded(Postprocessor):
         """
         Take in a dictionary of parameters and apply checks before saving them as attributes.
 
-        :param decimals: Number of decimal places after the decimal point.
-        :type decimals: `int`
+        :param cutoff: Minimal value for returned prediction output.
+        :type cutoff: `float`
         :return: `True` when parsing was successful
         """
         # Save defence-specific parameters
-        super(Rounded, self).set_params(**kwargs)
+        super(HighConfidence, self).set_params(**kwargs)
 
-        if not isinstance(self.decimals, (int, np.int)) or self.decimals <= 0:
-            raise ValueError('Number of decimal places must be a positive integer.')
+        if self.cutoff <= 0:
+            raise ValueError('Minimal value must be positive.')
 
         return True

@@ -24,7 +24,7 @@ import logging
 
 import numpy as np
 
-from art.defences.postprocess.postprocessor import Postprocessor
+from art.defences.postprocessor.postprocessor import Postprocessor
 
 logger = logging.getLogger(__name__)
 
