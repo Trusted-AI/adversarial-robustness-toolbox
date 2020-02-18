@@ -33,7 +33,7 @@ logger = logging.getLogger(__name__)
 
 BATCH_SIZE = 10
 NB_TRAIN = 100
-NB_EPOCHS = 1
+NB_EPOCHS = 10
 NB_STOLEN = 100
 
 

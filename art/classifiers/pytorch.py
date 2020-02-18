@@ -37,7 +37,7 @@ class PyTorchClassifier(ClassifierNeuralNetwork, ClassifierGradients, Classifier
     """
 
     def __init__(self, model, loss, optimizer, input_shape, nb_classes, channel_index=1, clip_values=None,
-                 defences=None, preprocessing=(0, 1)):
+                 preprocessing_defences=None, postprocessing_defences=None, preprocessing=(0, 1)):
         """
         Initialization specifically for the PyTorch-based implementation.
 
@@ -54,21 +54,25 @@ class PyTorchClassifier(ClassifierNeuralNetwork, ClassifierGradients, Classifier
         :param nb_classes: The number of classes of the model.
         :type nb_classes: `int`
         :param channel_index: Index of the axis in data containing the color channels or features.
-        :param channel_index: Index of the axis in data containing the color channels or features.
         :type channel_index: `int`
         :param clip_values: Tuple of the form `(min, max)` of floats or `np.ndarray` representing the minimum and
                maximum values allowed for features. If floats are provided, these will be used as the range of all
                features. If arrays are provided, each value will be considered the bound for a feature, thus
                the shape of clip values needs to match the total number of features.
         :type clip_values: `tuple`
-        :param defences: Defences to be activated with the classifier.
-        :type defences: `str` or `list(str)`
+        :param preprocessing_defences: Preprocessing defence(s) to be applied by the classifier.
+        :type preprocessing_defences: :class:`.Preprocessor` or `list(Preprocessor)` instances
+        :param postprocessing_defences: Postprocessing defence(s) to be applied by the classifier.
+        :type postprocessing_defences: :class:`.Postprocessor` or `list(Postprocessor)` instances
         :param preprocessing: Tuple of the form `(subtractor, divider)` of floats or `np.ndarray` of values to be
                used for data preprocessing. The first value will be subtracted from the input. The input will then
                be divided by the second one.
         :type preprocessing: `tuple`
         """
-        super(PyTorchClassifier, self).__init__(clip_values=clip_values, channel_index=channel_index, defences=defences,
+        super(PyTorchClassifier, self).__init__(clip_values=clip_values,
+                                                channel_index=channel_index,
+                                                preprocessing_defences=preprocessing_defences,
+                                                postprocessing_defences=postprocessing_defences,
                                                 preprocessing=preprocessing)
 
         self._nb_classes = nb_classes
@@ -116,7 +120,10 @@ class PyTorchClassifier(ClassifierNeuralNetwork, ClassifierGradients, Classifier
             output = model_outputs[-1]
             results[begin:end] = output.detach().cpu().numpy()
 
-        return results
+        # Apply postprocessing
+        predictions = self._apply_postprocessing(preds=results, fit=False)
+
+        return predictions
 
     def fit(self, x, y, batch_size=128, nb_epochs=10, **kwargs):
         """
@@ -158,9 +165,13 @@ class PyTorchClassifier(ClassifierNeuralNetwork, ClassifierGradients, Classifier
                 # Zero the parameter gradients
                 self._optimizer.zero_grad()
 
-                # Actual training
+                # Perform prediction
                 model_outputs = self._model(i_batch)
+
+                # Form the loss function
                 loss = self._loss(model_outputs[-1], o_batch)
+
+                # Actual training
                 loss.backward()
                 self._optimizer.step()
 
@@ -198,9 +209,13 @@ class PyTorchClassifier(ClassifierNeuralNetwork, ClassifierGradients, Classifier
                     # Zero the parameter gradients
                     self._optimizer.zero_grad()
 
-                    # Actual training
+                    # Perform prediction
                     model_outputs = self._model(i_batch)
+
+                    # Form the loss function
                     loss = self._loss(model_outputs[-1], o_batch)
+
+                    # Actual training
                     loss.backward()
                     self._optimizer.step()
         else:
@@ -498,11 +513,11 @@ class PyTorchClassifier(ClassifierNeuralNetwork, ClassifierGradients, Classifier
         self.__dict__.pop('inner_model', None)
 
     def __repr__(self):
-        repr_ = "%s(model=%r, loss=%r, optimizer=%r, input_shape=%r, nb_classes=%r, " \
-                "channel_index=%r, clip_values=%r, defences=%r, preprocessing=%r)" \
-                % (self.__module__ + '.' + self.__class__.__name__,
-                   self._model, self._loss, self._optimizer, self._input_shape, self.nb_classes(),
-                   self.channel_index, self.clip_values, self.defences, self.preprocessing)
+        repr_ = "%s(model=%r, loss=%r, optimizer=%r, input_shape=%r, nb_classes=%r, channel_index=%r, " \
+                "clip_values=%r, preprocessing_defences=%r, postprocessing_defences=%r, preprocessing=%r)" \
+                % (self.__module__ + '.' + self.__class__.__name__, self._model, self._loss, self._optimizer,
+                   self._input_shape, self.nb_classes(), self.channel_index, self.clip_values,
+                   self.preprocessing_defences, self.postprocessing_defences, self.preprocessing)
 
         return repr_
 

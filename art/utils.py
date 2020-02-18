@@ -782,3 +782,16 @@ def performance_diff(model1, model2, test_data, test_labels, perf_function='accu
         return perf_function(test_labels, model1_labels, **kwargs) - perf_function(test_labels, model2_labels, **kwargs)
 
     raise NotImplementedError("Performance function '{}' not supported".format(str(perf_function)))
+
+
+def is_probability(vector):
+    """
+    Check if an 1D-array is a probability vector.
+
+    :param vector: An 1D-array.
+    :type vector: `np.ndarray`
+    :return: True if it is a probability vector.
+    :rtype: `bool`
+    """
+    import math
+    return math.isclose(np.sum(vector), 1.0, rel_tol=1e-03)

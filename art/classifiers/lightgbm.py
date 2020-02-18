@@ -34,17 +34,20 @@ class LightGBMClassifier(Classifier, ClassifierDecisionTree):
     Wrapper class for importing LightGBM models.
     """
 
-    def __init__(self, model=None, clip_values=None, defences=None, preprocessing=None):
+    def __init__(self, model=None, clip_values=None, preprocessing_defences=None, postprocessing_defences=None,
+                 preprocessing=None):
         """
         Create a `Classifier` instance from a LightGBM model.
 
+        :param model: LightGBM model.
+        :type model: `lightgbm.Booster`
         :param clip_values: Tuple of the form `(min, max)` representing the minimum and maximum values allowed
                for features.
         :type clip_values: `tuple`
-        :param model: LightGBM model
-        :type model: `lightgbm.Booster`
-        :param defences: Defences to be activated with the classifier.
-        :type defences: :class:`.Preprocessor` or `list(Preprocessor)` instances
+        :param preprocessing_defences: Preprocessing defence(s) to be applied by the classifier.
+        :type preprocessing_defences: :class:`.Preprocessor` or `list(Preprocessor)` instances
+        :param postprocessing_defences: Postprocessing defence(s) to be applied by the classifier.
+        :type postprocessing_defences: :class:`.Postprocessor` or `list(Postprocessor)` instances
         :param preprocessing: Tuple of the form `(subtractor, divider)` of floats or `np.ndarray` of values to be
                used for data preprocessing. The first value will be subtracted from the input. The input will then
                be divided by the second one.
@@ -55,7 +58,9 @@ class LightGBMClassifier(Classifier, ClassifierDecisionTree):
         if not isinstance(model, Booster):
             raise TypeError('Model must be of type lightgbm.Booster')
 
-        super(LightGBMClassifier, self).__init__(clip_values=clip_values, defences=defences,
+        super(LightGBMClassifier, self).__init__(clip_values=clip_values,
+                                                 preprocessing_defences=preprocessing_defences,
+                                                 postprocessing_defences=postprocessing_defences,
                                                  preprocessing=preprocessing)
 
         self._model = model
@@ -87,10 +92,16 @@ class LightGBMClassifier(Classifier, ClassifierDecisionTree):
         :return: Array of predictions of shape `(nb_inputs, nb_classes)`.
         :rtype: `np.ndarray`
         """
-        # Apply defences
+        # Apply preprocessing
         x_preprocessed, _ = self._apply_preprocessing(x, y=None, fit=False)
 
-        return self._model.predict(x_preprocessed)
+        # Perform prediction
+        predictions = self._model.predict(x_preprocessed)
+
+        # Apply postprocessing
+        predictions = self._apply_postprocessing(preds=predictions, fit=False)
+
+        return predictions
 
     def nb_classes(self):
         """

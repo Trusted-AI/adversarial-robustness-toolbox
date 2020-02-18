@@ -21,22 +21,15 @@ This module implements abstract base classes defining to properties for all clas
 from __future__ import absolute_import, division, print_function, unicode_literals
 
 import abc
-import sys
 
 import numpy as np
 
 from art.utils import check_and_transform_label_format
 
-# Ensure compatibility with Python 2 and 3 when using ABCMeta
-if sys.version_info >= (3, 4):
-    ABC = abc.ABC
-else:
-    ABC = abc.ABCMeta(str('ABC'), (), {})
-
 
 class input_filter(abc.ABCMeta):
     """
-    Metaclass to ensure that inputs are ndarray for all of the subclass generate and extract calls
+    Metaclass to ensure that inputs are ndarray for all of the subclass generate and extract calls.
     """
     def __init__(cls, name, bases, clsdict):
         """
@@ -47,7 +40,7 @@ class input_filter(abc.ABCMeta):
 
         def make_replacement(fdict, func_name, has_y):
             """
-            This function overrides creates replacement functions dynamically
+            This function overrides creates replacement functions dynamically.
             """
 
             def replacement_function(self, *args, **kwargs):
@@ -88,13 +81,14 @@ class input_filter(abc.ABCMeta):
                 setattr(cls, item, new_function)
 
 
-class Classifier(ABC, metaclass=input_filter):
+class Classifier(abc.ABC, metaclass=input_filter):
     """
     Base class defining the minimum classifier functionality and is required for all classifiers. A classifier of this
     type can be combined with black-box attacks.
     """
 
-    def __init__(self, clip_values=None, defences=None, preprocessing=None, **kwargs):
+    def __init__(self, clip_values=None, preprocessing_defences=None, postprocessing_defences=None,
+                 preprocessing=None, **kwargs):
         """
         Initialize a `Classifier` object.
 
@@ -103,14 +97,17 @@ class Classifier(ABC, metaclass=input_filter):
                features. If arrays are provided, each value will be considered the bound for a feature, thus
                the shape of clip values needs to match the total number of features.
         :type clip_values: `tuple`
-        :param defences: Defence(s) to be activated with the classifier.
-        :type defences: :class:`.Preprocessor` or `list(Preprocessor)` instances
+        :param preprocessing_defences: Preprocessing defence(s) to be applied by the classifier.
+        :type preprocessing_defences: :class:`.Preprocessor` or `list(Preprocessor)` instances
+        :param postprocessing_defences: Postprocessing defence(s) to be applied by the classifier.
+        :type postprocessing_defences: :class:`.Postprocessor` or `list(Postprocessor)` instances
         :param preprocessing: Tuple of the form `(subtractor, divider)` of floats or `np.ndarray` of values to be
                used for data preprocessing. The first value will be subtracted from the input. The input will then
                be divided by the second one.
         :type preprocessing: `tuple`
         """
-        from art.defences.preprocessor import Preprocessor
+        from art.defences.preprocess.preprocessor import Preprocessor
+        from art.defences.postprocess.postprocessor import Postprocessor
 
         self._clip_values = clip_values
         if clip_values is not None:
@@ -120,10 +117,15 @@ class Classifier(ABC, metaclass=input_filter):
             if np.array(clip_values[0] >= clip_values[1]).any():
                 raise ValueError('Invalid `clip_values`: min >= max.')
 
-        if isinstance(defences, Preprocessor):
-            self.defences = [defences]
+        if isinstance(preprocessing_defences, Preprocessor):
+            self.preprocessing_defences = [preprocessing_defences]
         else:
-            self.defences = defences
+            self.preprocessing_defences = preprocessing_defences
+
+        if isinstance(postprocessing_defences, Postprocessor):
+            self.postprocessing_defences = [postprocessing_defences]
+        else:
+            self.postprocessing_defences = postprocessing_defences
 
         if preprocessing is not None and len(preprocessing) != 2:
             raise ValueError('`preprocessing` should be a tuple of 2 floats with the values to subtract and divide'
@@ -214,6 +216,7 @@ class Classifier(ABC, metaclass=input_filter):
         :param y: Target values (class labels), where first dimension is the number of samples.
         :type y: `np.ndarray` or `None`
         :param fit: `True` if the defences are applied during training.
+        :type fit: `bool`
         :return: Value of the data after applying the defences.
         :rtype: `np.ndarray`
         """
@@ -224,20 +227,21 @@ class Classifier(ABC, metaclass=input_filter):
 
     def _apply_preprocessing_defences(self, x, y, fit=False):
         """
-        Apply all defences of the classifier on the raw inputs `(x, y)`. This function is intended to only be called
-        from function `_apply_defences_and_preprocessing`.
+        Apply all preprocessing defences of the classifier on the raw inputs `(x, y)`. This function is intended to
+        only be called from function `_apply_preprocessing`.
 
         :param x: Features, where first dimension is the number of samples.
         :type x: `np.ndarray`
         :param y: Target values (class labels), where first dimension is the number of samples.
         :type y: `np.ndarray`
         :param fit: `True` if the function is call before fit/training and `False` if the function is called before a
-                    predict operation
+                    predict operation.
+        :type fit: `bool`
         :return: Arrays for `x` and `y` after applying the defences.
         :rtype: `np.ndarray`
         """
-        if self.defences is not None:
-            for defence in self.defences:
+        if self.preprocessing_defences is not None:
+            for defence in self.preprocessing_defences:
                 if fit:
                     if defence.apply_fit:
                         x, y = defence(x, y)
@@ -275,6 +279,29 @@ class Classifier(ABC, metaclass=input_filter):
 
         return res
 
+    def _apply_postprocessing(self, preds, fit):
+        """
+        Apply all defences operations on model output.
+
+        :param preds: model output to be postprocessed.
+        :type preds: `np.ndarray`
+        :param fit: `True` if the defences are applied during training.
+        :type fit: `bool`
+        :return: Postprocessed model output.
+        :rtype: `np.ndarray`
+        """
+        post_preds = preds.copy()
+        if self.postprocessing_defences is not None:
+            for defence in self.postprocessing_defences:
+                if fit:
+                    if defence.apply_fit:
+                        post_preds = defence(post_preds)
+                else:
+                    if defence.apply_predict:
+                        post_preds = defence(post_preds)
+
+        return post_preds
+
     def __repr__(self):
         class_name = self.__class__.__name__
         attributes = {(k[1:], v) if k[0] == '_' else (k, v) for (k, v) in self.__dict__.items()}
@@ -283,7 +310,7 @@ class Classifier(ABC, metaclass=input_filter):
         return repr_string
 
 
-class ClassifierNeuralNetwork(ABC, metaclass=input_filter):
+class ClassifierNeuralNetwork(abc.ABC, metaclass=input_filter):
     """
     Base class defining additional classifier functionality required for neural network classifiers. This base class
     has to be mixed in with class `Classifier` to extend the minimum classifier functionality.
@@ -305,7 +332,8 @@ class ClassifierNeuralNetwork(ABC, metaclass=input_filter):
         Perform prediction of the classifier for input `x`.
 
         :param x: Features in array of shape (nb_samples, nb_features) or (nb_samples, nb_pixels_1, nb_pixels_2,
-                  nb_channels) or (nb_samples, nb_channels, nb_pixels_1, nb_pixels_2)
+                  nb_channels) or (nb_samples, nb_channels, nb_pixels_1, nb_pixels_2).
+        :type x: `np.ndarray`
         :param batch_size: The batch size used for evaluating the classifer's `model`.
         :type batch_size: `int`
         :return: Array of predictions of shape `(nb_inputs, nb_classes)`.
@@ -319,7 +347,8 @@ class ClassifierNeuralNetwork(ABC, metaclass=input_filter):
         Fit the classifier on the training set `(x, y)`.
 
         :param x: Features in array of shape (nb_samples, nb_features) or (nb_samples, nb_pixels_1, nb_pixels_2,
-                  nb_channels) or (nb_samples, nb_channels, nb_pixels_1, nb_pixels_2)
+                  nb_channels) or (nb_samples, nb_channels, nb_pixels_1, nb_pixels_2).
+        :type x: `np.ndarray`
         :param y: Target values (class labels) one-hot-encoded of shape (nb_samples, nb_classes) or indices of shape
                   (nb_samples,).
         :type y: `np.ndarray`
@@ -436,7 +465,7 @@ class ClassifierNeuralNetwork(ABC, metaclass=input_filter):
         return repr_
 
 
-class ClassifierGradients(ABC, metaclass=input_filter):
+class ClassifierGradients(abc.ABC, metaclass=input_filter):
     """
     Base class defining additional classifier functionality for classifiers providing access to loss and class
     gradients. A classifier of this type can be combined with white-box attacks. This base class has to be mixed in with
@@ -499,8 +528,8 @@ class ClassifierGradients(ABC, metaclass=input_filter):
         """
         Apply the backward pass through the preprocessing defences.
 
-        Apply the backward pass through all defences of the classifier on the gradients. This function is intended to
-        only be called from function `_apply_preprocessing_gradient`.
+        Apply the backward pass through all preprocessing defences of the classifier on the gradients. This function is
+        intended to only be called from function `_apply_preprocessing_gradient`.
 
         :param x: Features, where first dimension is the number of samples.
         :type x: `np.ndarray`
@@ -510,8 +539,8 @@ class ClassifierGradients(ABC, metaclass=input_filter):
         :return: Gradients after backward step through defences.
         :rtype: `np.ndarray`
         """
-        if self.defences is not None:
-            for defence in self.defences[::-1]:
+        if self.preprocessing_defences is not None:
+            for defence in self.preprocessing_defences[::-1]:
                 if fit:
                     if defence.apply_fit:
                         gradients = defence.estimate_gradient(x, gradients)
@@ -530,13 +559,17 @@ class ClassifierGradients(ABC, metaclass=input_filter):
         :return: Gradients after backward step through standardisation.
         :rtype: `np.ndarray
         """
-        _, div = self.preprocessing
-        div = np.asarray(div, dtype=gradients.dtype)
-        res = gradients / div
+        if self.preprocessing is not None:
+            _, div = self.preprocessing
+            div = np.asarray(div, dtype=gradients.dtype)
+            res = gradients / div
+        else:
+            res = gradients
+
         return res
 
 
-class ClassifierDecisionTree(ABC):
+class ClassifierDecisionTree(abc.ABC):
     """
     Base class defining additional classifier functionality for decision-tree-based classifiers This base class has to
     be mixed in with class `Classifier` to extend the minimum classifier functionality.

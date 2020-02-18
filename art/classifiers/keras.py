@@ -35,8 +35,8 @@ class KerasClassifier(ClassifierNeuralNetwork, ClassifierGradients, Classifier):
     Wrapper class for importing Keras models. The supported backends for Keras are TensorFlow and Theano.
     """
 
-    def __init__(self, model, use_logits=False, channel_index=3, clip_values=None, defences=None, preprocessing=(0, 1),
-                 input_layer=0, output_layer=0):
+    def __init__(self, model, use_logits=False, channel_index=3, clip_values=None, preprocessing_defences=None,
+                 postprocessing_defences=None, preprocessing=(0, 1), input_layer=0, output_layer=0):
         """
         Create a `Classifier` instance from a Keras model. Assumes the `model` passed as argument is compiled.
 
@@ -52,8 +52,10 @@ class KerasClassifier(ClassifierNeuralNetwork, ClassifierGradients, Classifier):
                features. If arrays are provided, each value will be considered the bound for a feature, thus
                the shape of clip values needs to match the total number of features.
         :type clip_values: `tuple`
-        :param defences: Defences to be activated with the classifier.
-        :type defences: :class:`.Preprocessor` or `list(Preprocessor)` instances
+        :param preprocessing_defences: Preprocessing defence(s) to be applied by the classifier.
+        :type preprocessing_defences: :class:`.Preprocessor` or `list(Preprocessor)` instances
+        :param postprocessing_defences: Postprocessing defence(s) to be applied by the classifier.
+        :type postprocessing_defences: :class:`.Postprocessor` or `list(Postprocessor)` instances
         :param preprocessing: Tuple of the form `(subtractor, divider)` of floats or `np.ndarray` of values to be
                used for data preprocessing. The first value will be subtracted from the input. The input will then
                be divided by the second one.
@@ -67,8 +69,11 @@ class KerasClassifier(ClassifierNeuralNetwork, ClassifierGradients, Classifier):
                              layer this values is not required.
         :type output_layer: `int`
         """
-        super(KerasClassifier, self).__init__(clip_values=clip_values, defences=defences,
-                                              preprocessing=preprocessing, channel_index=channel_index)
+        super(KerasClassifier, self).__init__(clip_values=clip_values,
+                                              preprocessing_defences=preprocessing_defences,
+                                              postprocessing_defences=postprocessing_defences,
+                                              preprocessing=preprocessing,
+                                              channel_index=channel_index)
 
         self._model = model
         self._input_layer = input_layer
@@ -310,7 +315,7 @@ class KerasClassifier(ClassifierNeuralNetwork, ClassifierGradients, Classifier):
         """
         from art.config import ART_NUMPY_DTYPE
 
-        # Apply defences
+        # Apply preprocessing
         x_preprocessed, _ = self._apply_preprocessing(x, y=None, fit=False)
 
         # Run predictions with batching
@@ -318,6 +323,9 @@ class KerasClassifier(ClassifierNeuralNetwork, ClassifierGradients, Classifier):
         for batch_index in range(int(np.ceil(x_preprocessed.shape[0] / float(batch_size)))):
             begin, end = batch_index * batch_size, min((batch_index + 1) * batch_size, x_preprocessed.shape[0])
             predictions[begin:end] = self._model.predict([x_preprocessed[begin:end]])
+
+        # Apply postprocessing
+        predictions = self._apply_postprocessing(preds=predictions, fit=False)
 
         return predictions
 
@@ -601,11 +609,11 @@ class KerasClassifier(ClassifierNeuralNetwork, ClassifierGradients, Classifier):
         self._initialize_params(model, state['_use_logits'], state['_input_layer'], state['_output_layer'])
 
     def __repr__(self):
-        repr_ = "%s(model=%r, use_logits=%r, channel_index=%r, clip_values=%r, defences=%r, preprocessing=%r, " \
-                "input_layer=%r, output_layer=%r)" \
-                % (self.__module__ + '.' + self.__class__.__name__,
-                   self._model, self._use_logits, self.channel_index, self.clip_values, self.defences,
-                   self.preprocessing, self._input_layer, self._output_layer)
+        repr_ = "%s(model=%r, use_logits=%r, channel_index=%r, clip_values=%r, preprocessing_defences=%r, " \
+                "postprocessing_defences=%r, preprocessing=%r, input_layer=%r, output_layer=%r)" \
+                % (self.__module__ + '.' + self.__class__.__name__, self._model, self._use_logits, self.channel_index,
+                   self.clip_values, self.preprocessing_defences, self.postprocessing_defences, self.preprocessing,
+                   self._input_layer, self._output_layer)
 
         return repr_
 

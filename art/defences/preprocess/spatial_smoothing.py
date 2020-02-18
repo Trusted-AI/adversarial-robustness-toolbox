@@ -32,7 +32,7 @@ import logging
 import numpy as np
 from scipy import ndimage
 
-from art.defences.preprocessor import Preprocessor
+from art.defences.preprocess.preprocessor import Preprocessor
 from art.config import ART_NUMPY_DTYPE
 
 logger = logging.getLogger(__name__)
@@ -128,7 +128,7 @@ class SpatialSmoothing(Preprocessor):
                for features.
         :type clip_values: `tuple`
         """
-        # Save attack-specific parameters
+        # Save defence-specific parameters
         super(SpatialSmoothing, self).set_params(**kwargs)
 
         if not isinstance(self.window_size, (int, np.int)) or self.window_size <= 0:
