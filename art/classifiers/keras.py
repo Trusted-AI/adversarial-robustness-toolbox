@@ -318,7 +318,7 @@ class KerasClassifier(ClassifierNeuralNetwork, ClassifierGradients, Classifier):
             begin, end = batch_index * batch_size, min((batch_index + 1) * batch_size, x_preprocessed.shape[0])
             predictions[begin:end] = self._predictions([x_preprocessed[begin:end]])[0]
 
-        # Apply postprocessing defences
+        # Apply postprocessing
         predictions = self._apply_postprocessing(preds=predictions, fit=False)
 
         return predictions
