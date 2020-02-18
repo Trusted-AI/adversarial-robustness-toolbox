@@ -99,7 +99,7 @@ class XGBoostClassifier(Classifier, ClassifierDecisionTree):
         from xgboost import Booster, XGBClassifier
         from art.utils import to_categorical
 
-        # Apply preprocessing defences
+        # Apply preprocessing
         x_preprocessed, _ = self._apply_preprocessing(x, y=None, fit=False)
 
         if isinstance(self._model, Booster):
