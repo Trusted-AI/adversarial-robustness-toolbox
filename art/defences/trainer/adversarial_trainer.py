@@ -37,10 +37,12 @@ import logging
 
 import numpy as np
 
+from art.defences.trainer.trainer import Trainer
+
 logger = logging.getLogger(__name__)
 
 
-class AdversarialTrainer:
+class AdversarialTrainer(Trainer):
     """
     Class performing adversarial training based on a model architecture and one or multiple attack methods.
 
