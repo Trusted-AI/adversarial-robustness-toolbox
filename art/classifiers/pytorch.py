@@ -120,7 +120,7 @@ class PyTorchClassifier(ClassifierNeuralNetwork, ClassifierGradients, Classifier
             output = model_outputs[-1]
             results[begin:end] = output.detach().cpu().numpy()
 
-        # Apply postprocessing defences
+        # Apply postprocessing
         predictions = self._apply_postprocessing(preds=results, fit=False)
 
         return predictions
