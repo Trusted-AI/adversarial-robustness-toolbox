@@ -94,6 +94,20 @@ def _functional_model():
 
     return model
 
+@pytest.fixture(scope="function")
+def create_test_image(create_test_dir):
+    test_dir = create_test_dir
+    # Download one ImageNet pic for tests
+    url = 'http://farm1.static.flickr.com/163/381342603_81db58bea4.jpg'
+    result = requests.get(url, stream=True)
+    if result.status_code == 200:
+        image = result.raw.read()
+        f = open(os.path.join(test_dir, 'test.jpg'), 'wb')
+        f.write(image)
+        f.close()
+
+    yield os.path.join(test_dir, 'test.jpg')
+
 #TODO this should be scope="module" no point doing it for each function
 @pytest.fixture()
 def get_functional_model(get_mnist_subset):
@@ -272,19 +286,21 @@ def test_layers(get_mnist_subset):
 
 
 @pytest.mark.only_with_platform("keras")
-def test_resnet():
+def test_resnet(create_test_image):
+    image_file_path = create_test_image
     keras.backend.set_learning_phase(0)
     model = ResNet50(weights='imagenet')
     classifier = KerasClassifier(model, clip_values=(0, 255))
 
-    image = img_to_array(load_img(os.path.join(self.test_dir, 'test.jpg'), target_size=(224, 224)))
+    image = img_to_array(load_img(image_file_path, target_size=(224, 224)))
     image = image.reshape((1, image.shape[0], image.shape[1], image.shape[2]))
 
     prediction = classifier.predict(image)
     label = decode_predictions(prediction)[0][0]
 
     assert label[1] == 'Weimaraner'
-    self.assertAlmostEqual(prediction[0, 178], 0.2658045, places=3)
+    np.testing.assert_array_almost_equal(prediction[0, 178], 0.2658045, decimal=3)
+
 
 
 @pytest.mark.only_with_platform("keras")

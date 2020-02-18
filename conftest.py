@@ -5,6 +5,8 @@ from tests import utils_test
 import numpy as np
 from art.defences import FeatureSqueezing
 from art.classifiers import KerasClassifier
+import tempfile
+import shutil
 import os
 import pickle
 from art.classifiers.scikitlearn import SklearnClassifier
@@ -57,6 +59,13 @@ def load_mnist_dataset():
     logging.info("Loading mnist")
     (x_train_mnist, y_train_mnist), (x_test_mnist, y_test_mnist), _, _ = utils.load_dataset('mnist')
     yield (x_train_mnist, y_train_mnist), (x_test_mnist, y_test_mnist)
+
+@pytest.fixture(scope="function")
+def create_test_dir():
+    test_dir = tempfile.mkdtemp()
+    yield test_dir
+    shutil.rmtree(test_dir)
+
 
 @pytest.fixture(scope="function")
 def get_mnist_dataset(load_mnist_dataset, get_mlFramework):
