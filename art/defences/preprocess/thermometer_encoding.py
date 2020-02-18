@@ -30,7 +30,7 @@ import logging
 
 import numpy as np
 
-from art.defences.preprocessor import Preprocessor
+from art.defences.preprocess.preprocessor import Preprocessor
 from art.utils import to_categorical
 from art.config import ART_NUMPY_DTYPE
 
@@ -155,7 +155,7 @@ class ThermometerEncoding(Preprocessor):
         :param channel_index: Index of the axis in data containing the color channels or features.
         :type channel_index: `int`
         """
-        # Save attack-specific parameters
+        # Save defence-specific parameters
         super(ThermometerEncoding, self).set_params(**kwargs)
 
         if not isinstance(self.num_space, (int, np.int)) or self.num_space <= 0:

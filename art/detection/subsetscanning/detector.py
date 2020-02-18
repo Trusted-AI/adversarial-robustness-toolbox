@@ -51,12 +51,10 @@ class SubsetScanningDetector(ClassifierNeuralNetwork, ClassifierGradients, Class
         :layer: The layer from which to extract activations to perform scan
         :type layer: `int` or `str`
         """
-        super(SubsetScanningDetector, self).__init__(
-            clip_values=classifier.clip_values,
-            channel_index=classifier.channel_index,
-            defences=classifier.defences,
-            preprocessing=classifier.preprocessing,
-        )
+        super(SubsetScanningDetector, self).__init__(clip_values=classifier.clip_values,
+                                                     channel_index=classifier.channel_index,
+                                                     preprocessing_defences=classifier.preprocessing_defences,
+                                                     preprocessing=classifier.preprocessing)
         self.classifier = classifier
         self.bgd_data = bgd_data
 

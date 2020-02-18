@@ -24,7 +24,7 @@ import logging
 
 import numpy as np
 
-from art.defences.preprocessor import Preprocessor
+from art.defences.preprocess.preprocessor import Preprocessor
 
 logger = logging.getLogger(__name__)
 
@@ -140,7 +140,7 @@ class GaussianAugmentation(Preprocessor):
                for features.
         :type clip_values: `tuple`
         """
-        # Save attack-specific parameters
+        # Save defence-specific parameters
         super(GaussianAugmentation, self).set_params(**kwargs)
 
         if self.augmentation and self.ratio <= 0:

@@ -34,7 +34,8 @@ class BlackBoxClassifier(Classifier):
     Wrapper class for black-box classifiers.
     """
 
-    def __init__(self, predict, input_shape, nb_classes, clip_values=None, defences=None, preprocessing=(0, 1)):
+    def __init__(self, predict, input_shape, nb_classes, clip_values=None, preprocessing_defences=None,
+                 postprocessing_defences=None, preprocessing=(0, 1)):
         """
         Create a `Classifier` instance for a black-box model.
 
@@ -49,16 +50,19 @@ class BlackBoxClassifier(Classifier):
                features. If arrays are provided, each value will be considered the bound for a feature, thus
                the shape of clip values needs to match the total number of features.
         :type clip_values: `tuple`
-        :param defences: Defences to be activated with the classifier.
-        :type defences: :class:`.Preprocessor` or `list(Preprocessor)` instances
+        :param preprocessing_defences: Preprocessing defence(s) to be applied by the classifier.
+        :type preprocessing_defences: :class:`.Preprocessor` or `list(Preprocessor)` instances
+        :param postprocessing_defences: Postprocessing defence(s) to be applied by the classifier.
+        :type postprocessing_defences: :class:`.Postprocessor` or `list(Postprocessor)` instances
         :param preprocessing: Tuple of the form `(subtractor, divider)` of floats or `np.ndarray` of values to be
                used for data preprocessing. The first value will be subtracted from the input. The input will then
                be divided by the second one.
         :type preprocessing: `tuple`
         """
-        super(BlackBoxClassifier, self).__init__(
-            clip_values=clip_values, defences=defences, preprocessing=preprocessing
-        )
+        super(BlackBoxClassifier, self).__init__(clip_values=clip_values,
+                                                 preprocessing_defences=preprocessing_defences,
+                                                 postprocessing_defences=postprocessing_defences,
+                                                 preprocessing=preprocessing)
 
         self._predictions = predict
         self._input_shape = input_shape
@@ -78,7 +82,7 @@ class BlackBoxClassifier(Classifier):
         """
         from art.config import ART_NUMPY_DTYPE
 
-        # Apply defences
+        # Apply preprocessing
         x_preprocessed, _ = self._apply_preprocessing(x, y=None, fit=False)
 
         # Run predictions with batching
@@ -86,6 +90,9 @@ class BlackBoxClassifier(Classifier):
         for batch_index in range(int(np.ceil(x_preprocessed.shape[0] / float(batch_size)))):
             begin, end = batch_index * batch_size, min((batch_index + 1) * batch_size, x_preprocessed.shape[0])
             predictions[begin:end] = self._predictions(x_preprocessed[begin:end])
+
+        # Apply postprocessing
+        predictions = self._apply_postprocessing(preds=predictions, fit=False)
 
         return predictions
 

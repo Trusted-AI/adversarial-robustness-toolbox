@@ -28,7 +28,7 @@ from __future__ import absolute_import, division, print_function, unicode_litera
 
 import logging
 
-from art.defences.preprocessor import Preprocessor
+from art.defences.preprocess.preprocessor import Preprocessor
 
 logger = logging.getLogger(__name__)
 
@@ -110,7 +110,7 @@ class LabelSmoothing(Preprocessor):
         :param max_value: Value to affect to correct label
         :type max_value: `float`
         """
-        # Save attack-specific parameters
+        # Save defence-specific parameters
         super(LabelSmoothing, self).set_params(**kwargs)
 
         if self.max_value <= 0 or self.max_value > 1:

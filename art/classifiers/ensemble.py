@@ -35,15 +35,8 @@ class EnsembleClassifier(ClassifierNeuralNetwork, ClassifierGradients, Classifie
     trained when the ensemble is created and no training procedures are provided through this class.
     """
 
-    def __init__(
-        self,
-        classifiers,
-        classifier_weights=None,
-        channel_index=3,
-        clip_values=None,
-        defences=None,
-        preprocessing=(0, 1),
-    ):
+    def __init__(self, classifiers, classifier_weights=None, channel_index=3, clip_values=None,
+                 preprocessing_defences=None, postprocessing_defences=None, preprocessing=(0, 1)):
         """
         Initialize a :class:`.EnsembleClassifier` object. The data range values and colour channel index have to
         be consistent for all the classifiers in the ensemble.
@@ -60,16 +53,23 @@ class EnsembleClassifier(ClassifierNeuralNetwork, ClassifierGradients, Classifie
                features. If arrays are provided, each value will be considered the bound for a feature, thus
                the shape of clip values needs to match the total number of features.
         :type clip_values: `tuple`
-        :param defences: Defences to be activated with the classifier.
-        :type defences: `str` or `list(str)`
+        :param preprocessing_defences: Preprocessing defence(s) to be applied by the classifier. Not applicable
+               in this classifier.
+        :type preprocessing_defences: :class:`.Preprocessor` or `list(Preprocessor)` instances
+        :param postprocessing_defences: Postprocessing defence(s) to be applied by the classifier.
+        :type postprocessing_defences: :class:`.Postprocessor` or `list(Postprocessor)` instances
         :param preprocessing: Tuple of the form `(subtractor, divider)` of floats or `np.ndarray` of values to be
                used for data preprocessing. The first value will be subtracted from the input. The input will then
-               be divided by the second one.
+               be divided by the second one. Not applicable in this classifier.
         :type preprocessing: `tuple`
         """
-        super(EnsembleClassifier, self).__init__(
-            clip_values=clip_values, channel_index=channel_index, defences=defences, preprocessing=preprocessing
-        )
+        if preprocessing_defences is not None:
+            raise NotImplementedError("Preprocessing is not applicable in this classifier.")
+
+        super(EnsembleClassifier, self).__init__(clip_values=clip_values, channel_index=channel_index,
+                                                 preprocessing_defences=preprocessing_defences,
+                                                 postprocessing_defences=postprocessing_defences,
+                                                 preprocessing=preprocessing)
 
         if classifiers is None or not classifiers:
             raise ValueError("No classifiers provided for the ensemble.")
@@ -141,7 +141,11 @@ class EnsembleClassifier(ClassifierNeuralNetwork, ClassifierGradients, Classifie
 
         # Aggregate predictions only at probabilities level, as logits are not comparable between models
         var_z = np.sum(preds, axis=0)
-        return var_z
+
+        # Apply postprocessing
+        predictions = self._apply_postprocessing(preds=var_z, fit=False)
+
+        return predictions
 
     def fit(self, x, y, batch_size=128, nb_epochs=20, **kwargs):
         """
@@ -239,6 +243,7 @@ class EnsembleClassifier(ClassifierNeuralNetwork, ClassifierGradients, Classifie
         )
         if raw:
             return grads
+
         return np.sum(grads, axis=0)
 
     def loss_gradient(self, x, y, raw=False, **kwargs):
@@ -288,19 +293,11 @@ class EnsembleClassifier(ClassifierNeuralNetwork, ClassifierGradients, Classifie
         return self._nb_classes
 
     def __repr__(self):
-        repr_ = (
-            "%s(classifiers=%r, classifier_weights=%r, channel_index=%r, clip_values=%r, defences=%r, "
-            "preprocessing=%r)"
-            % (
-                self.__module__ + "." + self.__class__.__name__,
-                self._classifiers,
-                self._classifier_weights,
-                self.channel_index,
-                self.clip_values,
-                self.defences,
-                self.preprocessing,
-            )
-        )
+        repr_ = "%s(classifiers=%r, classifier_weights=%r, channel_index=%r, clip_values=%r, " \
+                "preprocessing_defences=%r, postprocessing_defences=%r, preprocessing=%r)" \
+                % (self.__module__ + '.' + self.__class__.__name__, self._classifiers, self._classifier_weights,
+                   self.channel_index, self.clip_values, self.preprocessing_defences, self.postprocessing_defences,
+                   self.preprocessing)
 
         return repr_
 

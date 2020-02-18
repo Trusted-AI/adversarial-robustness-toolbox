@@ -1,6 +1,6 @@
 # MIT License
 #
-# Copyright (C) IBM Corporation 2018
+# Copyright (C) IBM Corporation 2020
 #
 # Permission is hereby granted, free of charge, to any person obtaining a copy of this software and associated
 # documentation files (the "Software"), to deal in the Software without restriction, including without limitation the
@@ -16,39 +16,32 @@
 # TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 # SOFTWARE.
 """
-This module implements the abstract base class for defences that pre-process input data.
+This module implements the abstract base class for defences that post-process classifier output.
 """
 from __future__ import absolute_import, division, print_function, unicode_literals
 
 import abc
-import sys
-
-# Ensure compatibility with Python 2 and 3 when using ABCMeta
-if sys.version_info >= (3, 4):
-    ABC = abc.ABC
-else:
-    ABC = abc.ABCMeta(str("ABC"), (), {})
 
 
-class Preprocessor(ABC):
+class Postprocessor(abc.ABC):
     """
-    Abstract base class for defences performing model hardening by preprocessing data.
+    Abstract base class for postprocessing defences. Postprocessing defences are not included in the loss function
+    evaluation for loss gradients or the calculation of class gradients.
     """
-
     params = []
 
     def __init__(self):
         """
-        Create a preprocessing object
+        Create a postprocessing object.
         """
         self._is_fitted = False
 
     @property
     def is_fitted(self):
         """
-        Return the state of the preprocessing object.
+        Return the state of the postprocessing object.
 
-        :return: `True` if the preprocessing model has been fitted (if this applies).
+        :return: `True` if the postprocessing model has been fitted (if this applies).
         :rtype: `bool`
         """
         return self._is_fitted
@@ -76,46 +69,27 @@ class Preprocessor(ABC):
         raise NotImplementedError
 
     @abc.abstractmethod
-    def __call__(self, x, y=None):
+    def __call__(self, preds):
         """
-        Perform data preprocessing and return preprocessed data as tuple.
+        Perform model postprocessing and return postprocessed output.
 
-        :param x: Dataset to be preprocessed.
-        :type x: `np.ndarray`
-        :param y: Labels to be preprocessed.
-        :type y: `np.ndarray`
-        :return: Preprocessed data
+        :param preds: model output to be postprocessed.
+        :type preds: `np.ndarray`
+        :return: Postprocessed model output.
+        :rtype: `np.ndarray`
         """
         raise NotImplementedError
 
     @abc.abstractmethod
-    def fit(self, x, y=None, **kwargs):
+    def fit(self, preds, **kwargs):
         """
-        Fit the parameters of the data preprocessor if it has any.
+        Fit the parameters of the postprocessor if it has any.
 
-        :param x: Training set to fit the preprocessor.
-        :type x: `np.ndarray`
-        :param y: Labels for the training set.
-        :type y: `np.ndarray`
+        :param preds: Training set to fit the postprocessor.
+        :type preds: `np.ndarray`
         :param kwargs: Other parameters.
         :type kwargs: `dict`
         :return: None
-        """
-        raise NotImplementedError
-
-    @abc.abstractmethod
-    def estimate_gradient(self, x, grad):
-        """
-        Provide an estimate of the gradients of the defence for the backward pass. If the defence is not differentiable,
-        this is an estimate of the gradient, most often replacing the computation performed by the defence with the
-        identity function.
-
-        :param x: Input data for which the gradient is estimated. First dimension is the batch size.
-        :type x: `np.ndarray`
-        :param grad: Gradient value so far.
-        :type grad: `np.ndarray`
-        :return: The gradient (estimate) of the defence.
-        :rtype: `np.ndarray`
         """
         raise NotImplementedError
 
@@ -128,4 +102,5 @@ class Preprocessor(ABC):
         for key, value in kwargs.items():
             if key in self.params:
                 setattr(self, key, value)
+
         return True
