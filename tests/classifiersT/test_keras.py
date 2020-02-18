@@ -108,15 +108,16 @@ def test_fit(get_default_mnist_subset, default_batch_size):
 def test_fit_generator(get_default_mnist_subset, default_batch_size, get_image_classifier_list):
     (x_train_mnist, y_train_mnist), (x_test_mnist, y_test_mnist) = get_default_mnist_subset
 
-    classifier = get_image_classifier_list()[0]
-
     gen = generator_fit(x_train_mnist, y_train_mnist, batch_size=default_batch_size)
     data_gen = KerasDataGenerator(generator=gen, size=x_train_mnist.shape[0], batch_size=default_batch_size)
+
+    classifier_list, _ = get_image_classifier_list()
+    classifier = classifier_list[0]
 
     expected_values = {"pre_fit_accuracy": ExpectedValue(0.32, 0.06),
                        "post_fit_accuracy": ExpectedValue(0.36, 0.06)}
 
-    utils_classifier.backend_fit_generator(expected_values, data_gen, get_default_mnist_subset, classifier, nb_epochs=3)
+    utils_classifier.backend_fit_generator(expected_values, classifier, data_gen, get_default_mnist_subset, nb_epochs=3)
 
 @pytest.mark.only_with_platform("keras")
 def test_fit_image_generator(get_default_mnist_subset, default_batch_size):

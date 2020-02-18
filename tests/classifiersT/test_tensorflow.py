@@ -65,8 +65,9 @@ def test_fit_generator(is_tf_version_2, get_image_classifier_tf_factory, get_def
 
         expected_values = {"post_fit_accuracy": ExpectedValue(0.65, 0.02)}
 
-        utils_classifier.backend_fit_generator(expected_values, data_gen, get_default_mnist_subset, classifier,
-                                               nb_epochs=2)
+
+        utils_classifier.backend_fit_generator(expected_values, classifier, data_gen,
+                                               get_default_mnist_subset, nb_epochs=2)
 
 @pytest.mark.only_with_platform("tensorflow")
 def test_nb_classes(get_image_classifier_tf_factory):

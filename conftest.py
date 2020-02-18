@@ -27,6 +27,7 @@ def pytest_addoption(parser):
 @pytest.fixture
 def get_image_classifier_list(get_mlFramework):
     def _get_image_classifier_list(defended=False):
+        sess = None
         if get_mlFramework == "keras":
             if defended:
                 classifier = utils_test.get_image_classifier_kr()
@@ -57,9 +58,9 @@ def get_image_classifier_list(get_mlFramework):
                 classifier_list = None
 
         if classifier_list is None:
-            return None
+            return None, None
 
-        return classifier_list
+        return classifier_list, sess
 
     return _get_image_classifier_list
 

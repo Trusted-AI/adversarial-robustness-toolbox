@@ -5,7 +5,7 @@ from tests.utils_test import ExpectedValue
 
 logger = logging.getLogger(__name__)
 
-def backend_fit_generator(expected_values, data_gen, get_default_mnist_subset, classifier, nb_epochs):
+def backend_fit_generator(expected_values, classifier, data_gen, get_default_mnist_subset, nb_epochs):
     (x_train_mnist, y_train_mnist), (x_test_mnist, y_test_mnist) = get_default_mnist_subset
 
     true_class = np.argmax(y_test_mnist, axis=1)
