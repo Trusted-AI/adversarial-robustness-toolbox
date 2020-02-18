@@ -87,7 +87,7 @@ class DetectorClassifier(ClassifierNeuralNetwork, ClassifierGradients, Classifie
         detector_outputs = np.reshape(detector_outputs, [-1, 1])
         combined_outputs = np.concatenate([classifier_outputs, detector_outputs], axis=1)
 
-        # Apply postprocessing defences
+        # Apply postprocessing
         predictions = self._apply_postprocessing(preds=combined_outputs, fit=False)
 
         return predictions
