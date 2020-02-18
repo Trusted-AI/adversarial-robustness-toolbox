@@ -43,9 +43,9 @@ def SklearnClassifier(model, clip_values=None, preprocessing_defences=None, post
     :param clip_values: Tuple of the form `(min, max)` representing the minimum and maximum values allowed
             for features.
     :type clip_values: `tuple`
-    :param preprocessing_defences: Preprocessing defence(s) to be activated with the classifier.
+    :param preprocessing_defences: Preprocessing defence(s) to be applied by the classifier.
     :type preprocessing_defences: :class:`.Preprocessor` or `list(Preprocessor)` instances
-    :param postprocessing_defences: Postprocessing defence(s) to be activated with the classifier.
+    :param postprocessing_defences: Postprocessing defence(s) to be applied by the classifier.
     :type postprocessing_defences: :class:`.Postprocessor` or `list(Postprocessor)` instances
     :param preprocessing: Tuple of the form `(subtractor, divider)` of floats or `np.ndarray` of values to be
             used for data preprocessing. The first value will be subtracted from the input. The input will then
@@ -82,9 +82,9 @@ class ScikitlearnClassifier(Classifier):
         :param clip_values: Tuple of the form `(min, max)` representing the minimum and maximum values allowed
                for features.
         :type clip_values: `tuple`
-        :param preprocessing_defences: Preprocessing defence(s) to be activated with the classifier.
+        :param preprocessing_defences: Preprocessing defence(s) to be applied by the classifier.
         :type preprocessing_defences: :class:`.Preprocessor` or `list(Preprocessor)` instances
-        :param postprocessing_defences: Postprocessing defence(s) to be activated with the classifier.
+        :param postprocessing_defences: Postprocessing defence(s) to be applied by the classifier.
         :type postprocessing_defences: :class:`.Postprocessor` or `list(Postprocessor)` instances
         :param preprocessing: Tuple of the form `(subtractor, divider)` of floats or `np.ndarray` of values to be
                used for data preprocessing. The first value will be subtracted from the input. The input will then
@@ -208,9 +208,9 @@ class ScikitlearnDecisionTreeClassifier(ScikitlearnClassifier):
         :param clip_values: Tuple of the form `(min, max)` representing the minimum and maximum values allowed
                for features.
         :type clip_values: `tuple`
-        :param preprocessing_defences: Preprocessing defence(s) to be activated with the classifier.
+        :param preprocessing_defences: Preprocessing defence(s) to be applied by the classifier.
         :type preprocessing_defences: :class:`.Preprocessor` or `list(Preprocessor)` instances
-        :param postprocessing_defences: Postprocessing defence(s) to be activated with the classifier.
+        :param postprocessing_defences: Postprocessing defence(s) to be applied by the classifier.
         :type postprocessing_defences: :class:`.Postprocessor` or `list(Postprocessor)` instances
         :param preprocessing: Tuple of the form `(subtractor, divider)` of floats or `np.ndarray` of values to be
                used for data preprocessing. The first value will be subtracted from the input. The input will then
@@ -345,9 +345,9 @@ class ScikitlearnDecisionTreeRegressor(ScikitlearnDecisionTreeClassifier):
         :param clip_values: Tuple of the form `(min, max)` representing the minimum and maximum values allowed
                for features.
         :type clip_values: `tuple`
-        :param preprocessing_defences: Preprocessing defence(s) to be activated with the classifier.
+        :param preprocessing_defences: Preprocessing defence(s) to be applied by the classifier.
         :type preprocessing_defences: :class:`.Preprocessor` or `list(Preprocessor)` instances
-        :param postprocessing_defences: Postprocessing defence(s) to be activated with the classifier.
+        :param postprocessing_defences: Postprocessing defence(s) to be applied by the classifier.
         :type postprocessing_defences: :class:`.Postprocessor` or `list(Postprocessor)` instances
         :param preprocessing: Tuple of the form `(subtractor, divider)` of floats or `np.ndarray` of values to be
                used for data preprocessing. The first value will be subtracted from the input. The input will then
@@ -425,9 +425,9 @@ class ScikitlearnExtraTreeClassifier(ScikitlearnDecisionTreeClassifier):
         :param clip_values: Tuple of the form `(min, max)` representing the minimum and maximum values allowed
                for features.
         :type clip_values: `tuple`
-        :param preprocessing_defences: Preprocessing defence(s) to be activated with the classifier.
+        :param preprocessing_defences: Preprocessing defence(s) to be applied by the classifier.
         :type preprocessing_defences: :class:`.Preprocessor` or `list(Preprocessor)` instances
-        :param postprocessing_defences: Postprocessing defence(s) to be activated with the classifier.
+        :param postprocessing_defences: Postprocessing defence(s) to be applied by the classifier.
         :type postprocessing_defences: :class:`.Postprocessor` or `list(Postprocessor)` instances
         :param preprocessing: Tuple of the form `(subtractor, divider)` of floats or `np.ndarray` of values to be
                used for data preprocessing. The first value will be subtracted from the input. The input will then
@@ -462,9 +462,9 @@ class ScikitlearnAdaBoostClassifier(ScikitlearnClassifier):
         :param clip_values: Tuple of the form `(min, max)` representing the minimum and maximum values allowed
                for features.
         :type clip_values: `tuple`
-        :param preprocessing_defences: Preprocessing defence(s) to be activated with the classifier.
+        :param preprocessing_defences: Preprocessing defence(s) to be applied by the classifier.
         :type preprocessing_defences: :class:`.Preprocessor` or `list(Preprocessor)` instances
-        :param postprocessing_defences: Postprocessing defence(s) to be activated with the classifier.
+        :param postprocessing_defences: Postprocessing defence(s) to be applied by the classifier.
         :type postprocessing_defences: :class:`.Postprocessor` or `list(Postprocessor)` instances
         :param preprocessing: Tuple of the form `(subtractor, divider)` of floats or `np.ndarray` of values to be
                used for data preprocessing. The first value will be subtracted from the input. The input will then
@@ -499,9 +499,9 @@ class ScikitlearnBaggingClassifier(ScikitlearnClassifier):
         :param clip_values: Tuple of the form `(min, max)` representing the minimum and maximum values allowed
                for features.
         :type clip_values: `tuple`
-        :param preprocessing_defences: Preprocessing defence(s) to be activated with the classifier.
+        :param preprocessing_defences: Preprocessing defence(s) to be applied by the classifier.
         :type preprocessing_defences: :class:`.Preprocessor` or `list(Preprocessor)` instances
-        :param postprocessing_defences: Postprocessing defence(s) to be activated with the classifier.
+        :param postprocessing_defences: Postprocessing defence(s) to be applied by the classifier.
         :type postprocessing_defences: :class:`.Postprocessor` or `list(Postprocessor)` instances
         :param preprocessing: Tuple of the form `(subtractor, divider)` of floats or `np.ndarray` of values to be
                used for data preprocessing. The first value will be subtracted from the input. The input will then
@@ -536,9 +536,9 @@ class ScikitlearnExtraTreesClassifier(ScikitlearnClassifier, ClassifierDecisionT
         :param clip_values: Tuple of the form `(min, max)` representing the minimum and maximum values allowed
                for features.
         :type clip_values: `tuple`
-        :param preprocessing_defences: Preprocessing defence(s) to be activated with the classifier.
+        :param preprocessing_defences: Preprocessing defence(s) to be applied by the classifier.
         :type preprocessing_defences: :class:`.Preprocessor` or `list(Preprocessor)` instances
-        :param postprocessing_defences: Postprocessing defence(s) to be activated with the classifier.
+        :param postprocessing_defences: Postprocessing defence(s) to be applied by the classifier.
         :type postprocessing_defences: :class:`.Postprocessor` or `list(Postprocessor)` instances
         :param preprocessing: Tuple of the form `(subtractor, divider)` of floats or `np.ndarray` of values to be
                used for data preprocessing. The first value will be subtracted from the input. The input will then
@@ -603,12 +603,10 @@ class ScikitlearnGradientBoostingClassifier(ScikitlearnClassifier, ClassifierDec
         :param clip_values: Tuple of the form `(min, max)` representing the minimum and maximum values allowed
                for features.
         :type clip_values: `tuple`
-        :param preprocessing_defences: Preprocessing defence(s) to be activated with the classifier.
+        :param preprocessing_defences: Preprocessing defence(s) to be applied by the classifier.
         :type preprocessing_defences: :class:`.Preprocessor` or `list(Preprocessor)` instances
-        :param postprocessing_defences: Postprocessing defence(s) to be activated with the classifier.
+        :param postprocessing_defences: Postprocessing defence(s) to be applied by the classifier.
         :type postprocessing_defences: :class:`.Postprocessor` or `list(Postprocessor)` instances
-        :param defences: Defences to be activated with the classifier.
-        :type defences: :class:`.Preprocessor` or `list(Preprocessor)` instances
         :param preprocessing: Tuple of the form `(subtractor, divider)` of floats or `np.ndarray` of values to be
                used for data preprocessing. The first value will be subtracted from the input. The input will then
                be divided by the second one.
@@ -672,9 +670,9 @@ class ScikitlearnRandomForestClassifier(ScikitlearnClassifier):
         :param clip_values: Tuple of the form `(min, max)` representing the minimum and maximum values allowed
                for features.
         :type clip_values: `tuple`
-        :param preprocessing_defences: Preprocessing defence(s) to be activated with the classifier.
+        :param preprocessing_defences: Preprocessing defence(s) to be applied by the classifier.
         :type preprocessing_defences: :class:`.Preprocessor` or `list(Preprocessor)` instances
-        :param postprocessing_defences: Postprocessing defence(s) to be activated with the classifier.
+        :param postprocessing_defences: Postprocessing defence(s) to be applied by the classifier.
         :type postprocessing_defences: :class:`.Postprocessor` or `list(Postprocessor)` instances
         :param preprocessing: Tuple of the form `(subtractor, divider)` of floats or `np.ndarray` of values to be
                used for data preprocessing. The first value will be subtracted from the input. The input will then
@@ -739,9 +737,9 @@ class ScikitlearnLogisticRegression(ScikitlearnClassifier, ClassifierGradients):
         :param clip_values: Tuple of the form `(min, max)` representing the minimum and maximum values allowed
                for features.
         :type clip_values: `tuple`
-        :param preprocessing_defences: Preprocessing defence(s) to be activated with the classifier.
+        :param preprocessing_defences: Preprocessing defence(s) to be applied by the classifier.
         :type preprocessing_defences: :class:`.Preprocessor` or `list(Preprocessor)` instances
-        :param postprocessing_defences: Postprocessing defence(s) to be activated with the classifier.
+        :param postprocessing_defences: Postprocessing defence(s) to be applied by the classifier.
         :type postprocessing_defences: :class:`.Postprocessor` or `list(Postprocessor)` instances
         :param preprocessing: Tuple of the form `(subtractor, divider)` of floats or `np.ndarray` of values to be
                used for data preprocessing. The first value will be subtracted from the input. The input will then
@@ -925,9 +923,9 @@ class ScikitlearnSVC(ScikitlearnClassifier, ClassifierGradients):
         :param clip_values: Tuple of the form `(min, max)` representing the minimum and maximum values allowed
                for features.
         :type clip_values: `tuple`
-        :param preprocessing_defences: Preprocessing defence(s) to be activated with the classifier.
+        :param preprocessing_defences: Preprocessing defence(s) to be applied by the classifier.
         :type preprocessing_defences: :class:`.Preprocessor` or `list(Preprocessor)` instances
-        :param postprocessing_defences: Postprocessing defence(s) to be activated with the classifier.
+        :param postprocessing_defences: Postprocessing defence(s) to be applied by the classifier.
         :type postprocessing_defences: :class:`.Postprocessor` or `list(Postprocessor)` instances
         :param preprocessing: Tuple of the form `(subtractor, divider)` of floats or `np.ndarray` of values to be
                used for data preprocessing. The first value will be subtracted from the input. The input will then

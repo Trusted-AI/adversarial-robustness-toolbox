@@ -67,9 +67,9 @@ class TensorFlowClassifier(ClassifierNeuralNetwork, ClassifierGradients, Classif
                features. If arrays are provided, each value will be considered the bound for a feature, thus
                the shape of clip values needs to match the total number of features.
         :type clip_values: `tuple`
-        :param preprocessing_defences: Preprocessing defence(s) to be activated with the classifier.
+        :param preprocessing_defences: Preprocessing defence(s) to be applied by the classifier.
         :type preprocessing_defences: :class:`.Preprocessor` or `list(Preprocessor)` instances
-        :param postprocessing_defences: Postprocessing defence(s) to be activated with the classifier.
+        :param postprocessing_defences: Postprocessing defence(s) to be applied by the classifier.
         :type postprocessing_defences: :class:`.Postprocessor` or `list(Postprocessor)` instances
         :param preprocessing: Tuple of the form `(subtractor, divider)` of floats or `np.ndarray` of values to be
                used for data preprocessing. The first value will be subtracted from the input. The input will then
@@ -637,9 +637,9 @@ class TensorFlowV2Classifier(ClassifierNeuralNetwork, ClassifierGradients, Class
                features. If arrays are provided, each value will be considered the bound for a feature, thus
                the shape of clip values needs to match the total number of features.
         :type clip_values: `tuple`
-        :param preprocessing_defences: Preprocessing defence(s) to be activated with the classifier.
+        :param preprocessing_defences: Preprocessing defence(s) to be applied by the classifier.
         :type preprocessing_defences: :class:`.Preprocessor` or `list(Preprocessor)` instances
-        :param postprocessing_defences: Postprocessing defence(s) to be activated with the classifier.
+        :param postprocessing_defences: Postprocessing defence(s) to be applied by the classifier.
         :type postprocessing_defences: :class:`.Postprocessor` or `list(Postprocessor)` instances
         :param preprocessing: Tuple of the form `(substractor, divider)` of floats or `np.ndarray` of values to be
                used for data preprocessing. The first value will be substracted from the input. The input will then
