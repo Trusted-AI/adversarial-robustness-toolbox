@@ -101,7 +101,7 @@ class CatBoostARTClassifier(Classifier):
         # Perform prediction
         predictions = self._model.predict_proba(x_preprocessed)
 
-        # Apply postprocessing defences
+        # Apply postprocessing
         predictions = self._apply_postprocessing(preds=predictions, fit=False)
 
         return predictions
