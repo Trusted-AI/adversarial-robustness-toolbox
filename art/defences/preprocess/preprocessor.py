@@ -25,7 +25,7 @@ import abc
 
 class Preprocessor(abc.ABC):
     """
-    Abstract base class for defences performing model hardening by preprocessing data.
+    Abstract base class for preprocessing defences.
     """
     params = []
 
