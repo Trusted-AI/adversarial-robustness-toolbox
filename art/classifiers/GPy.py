@@ -172,7 +172,7 @@ class GPyGaussianProcessClassifier(Classifier, ClassifierGradients):
         :return: Array of uncertainty predictions of shape `(nb_inputs)`.
         :rtype: `np.ndarray`
         """
-        # Apply preprocessing defences
+        # Apply preprocessing
         x_preprocessed, _ = self._apply_preprocessing(x, y=None, fit=False)
 
         # Perform prediction
