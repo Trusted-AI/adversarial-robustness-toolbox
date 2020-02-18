@@ -49,15 +49,11 @@ from art import utils
 logger = logging.getLogger(__name__)
 
 
-
-
-
-
-
 #TODO the master seed needs to be set up for ALL tests not just classifiers
 #TODO do testBase class setup
 #TODO clear out keras after each test
 #TODO create/delete tmp folder
+#%TODO classifier = get_image_classifier_kr() needs to be a fixture I think maybe?
 
 utils.master_seed(1234)
 n_train = 1000
@@ -108,7 +104,6 @@ def get_functional_model(get_mnist_subset):
     functional_model.fit([x_train_mnist, x_train_mnist], [y_train_mnist, y_train_mnist], nb_epoch=3)
 
     yield functional_model
-
 
 
 @pytest.mark.only_with_platform("keras")
@@ -179,10 +174,10 @@ def test_fit_kwargs(get_mnist_subset):
 
     # Test failure for invalid parameters
     kwargs = {'epochs': 1}
-    with self.assertRaises(TypeError) as context:
+    with pytest.raises(TypeError) as exception:
         classifier.fit(x_train_mnist, y_train_mnist, batch_size=batch_size, nb_epochs=1, **kwargs)
 
-    assert 'multiple values for keyword argument' in str(context.exception)
+    assert 'multiple values for keyword argument' in str(exception.value)
 
 @pytest.mark.only_with_platform("keras")
 def test_shapes(get_mnist_subset):
