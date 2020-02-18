@@ -178,7 +178,7 @@ class GPyGaussianProcessClassifier(Classifier, ClassifierGradients):
         # Perform prediction
         out = self.model.predict_noiseless(x_preprocessed)[1]
 
-        # Apply postprocessing defences
+        # Apply postprocessing
         predictions = self._apply_postprocessing(preds=out, fit=False)
 
         return predictions
