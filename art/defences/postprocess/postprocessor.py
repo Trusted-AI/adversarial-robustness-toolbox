@@ -25,7 +25,7 @@ import abc
 
 class Postprocessor(abc.ABC):
     """
-    Abstract base class for defences performing model hardening by postprocessing model output.
+    Abstract base class for postprocessing defences.
     """
     params = []
 
