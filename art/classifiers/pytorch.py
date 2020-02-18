@@ -145,7 +145,7 @@ class PyTorchClassifier(ClassifierNeuralNetwork, ClassifierGradients, Classifier
         """
         import torch
 
-        # Apply preprocessing defences
+        # Apply preprocessing
         x_preprocessed, y_preprocessed = self._apply_preprocessing(x, y, fit=True)
         y_preprocessed = np.argmax(y_preprocessed, axis=1)
 
