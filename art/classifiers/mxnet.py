@@ -213,7 +213,7 @@ class MXClassifier(ClassifierNeuralNetwork, ClassifierGradients, Classifier):
 
         train_mode = self._learning_phase if hasattr(self, '_learning_phase') else False
 
-        # Apply preprocessing defences
+        # Apply preprocessing
         x_preprocessed, _ = self._apply_preprocessing(x, y=None, fit=False)
 
         # Run prediction with batch processing
