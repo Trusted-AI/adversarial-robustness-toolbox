@@ -64,6 +64,40 @@ def get_image_classifier_list(get_mlFramework):
 
     return _get_image_classifier_list
 
+
+@pytest.fixture
+def get_tabular_classifier_list(get_mlFramework):
+
+    def _get_tabular_classifier_list(clipped = True):
+        if get_mlFramework == "keras":
+            if clipped:
+                classifier_list = [utils_test.get_tabular_classifier_kr()]
+            else:
+                classifier = utils_test.get_tabular_classifier_kr()
+                classifier_list = [KerasClassifier(model=classifier._model, use_logits=False, channel_index=1)]
+
+        if get_mlFramework == "tensorflow":
+            if clipped:
+                classifier, _ = utils_test.get_tabular_classifier_tf()
+                classifier_list = [classifier]
+            else:
+                logging.warning("{0} doesn't have an uncliped classifier defined yet".format(get_mlFramework))
+                classifier_list = None
+
+        if get_mlFramework == "pytorch":
+            if clipped:
+                classifier_list = [utils_test.get_tabular_classifier_pt()]
+            else:
+                logging.warning("{0} doesn't have an uncliped classifier defined yet".format(get_mlFramework))
+                classifier_list = None
+
+        if get_mlFramework == "scikitlearn":
+            return utils_test.get_tabular_classifier_scikit_list(clipped=False)
+
+        return classifier_list
+
+    return _get_tabular_classifier_list
+
 @pytest.fixture(scope="function")
 def create_test_image(create_test_dir):
     test_dir = create_test_dir
@@ -196,38 +230,4 @@ def make_customer_record():
 
     return _make_customer_record
 
-@pytest.fixture
-def get_tabular_classifier_list(get_mlFramework):
-    def _tabular_classifier_list(attack, clipped=True):
-        if get_mlFramework == "keras":
-            if clipped:
-                classifier_list = [utils_test.get_tabular_classifier_kr()]
-            else:
-                classifier = utils_test.get_tabular_classifier_kr()
-                classifier_list = [KerasClassifier(model=classifier._model, use_logits=False, channel_index=1)]
-
-        if get_mlFramework == "tensorflow":
-            if clipped:
-                classifier, _ = utils_test.get_tabular_classifier_tf()
-                classifier_list = [classifier]
-            else:
-                logging.warning("{0} doesn't have an uncliped classifier defined yet".format(get_mlFramework))
-                classifier_list =  None
-
-        if get_mlFramework == "pytorch":
-            if clipped:
-                classifier_list = [utils_test.get_tabular_classifier_pt()]
-            else:
-                logging.warning("{0} doesn't have an uncliped classifier defined yet".format(get_mlFramework))
-                classifier_list = None
-
-        if get_mlFramework == "scikitlearn":
-            return utils_test.get_tabular_classifier_scikit_list(clipped=False)
-        if classifier_list is None:
-            return None
-
-        return [potential_classier for potential_classier in classifier_list if attack.is_valid_classifier_type(potential_classier)]
-
-
-    return _tabular_classifier_list
 
