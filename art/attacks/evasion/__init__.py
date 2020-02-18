@@ -18,7 +18,5 @@ from art.attacks.evasion.spatial_transformation import SpatialTransformation
 from art.attacks.evasion.universal_perturbation import UniversalPerturbation
 from art.attacks.evasion.virtual_adversarial import VirtualAdversarialMethod
 from art.attacks.evasion.zoo import ZooAttack
-
-# Added New Attacks
 from art.attacks.evasion.pixel_threshold import PixelAttack
 from art.attacks.evasion.pixel_threshold import ThresholdAttack

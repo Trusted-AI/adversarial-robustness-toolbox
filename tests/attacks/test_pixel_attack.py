@@ -47,7 +47,16 @@ logger = logging.getLogger(__name__)
 
 class TestPixelAttack(TestBase):
     """
-    TODO: Write Comment
+    A unittest class for testing the Pixel Attack.
+
+    This module tests the Pixel Attack.
+    The Pixel Attack is a generalisation of One Pixel Attack.
+
+    | One Pixel Attack Paper link:
+        https://ieeexplore.ieee.org/abstract/document/8601309/citations#citations
+        (arXiv link: https://arxiv.org/pdf/1710.08864.pdf)
+    | Pixel Attack Paper link:
+        https://arxiv.org/abs/1906.06026
     """
 
     @classmethod
@@ -63,7 +72,8 @@ class TestPixelAttack(TestBase):
 
     def test_keras_mnist(self):
         """
-        TODO: Write Comment
+        Test with the KerasClassifier. (Untargetted Attack)
+        :return:
         """
         classifier = get_classifier_kr()
         self._test_attack(
@@ -74,7 +84,8 @@ class TestPixelAttack(TestBase):
 
     def test_tensorflow_mnist(self):
         """
-        TODO: Write Comment
+        Test with the TensorFlowClassifier. (Untargetted Attack)
+        :return:
         """
         classifier, sess = get_classifier_tf()
         self._test_attack(
@@ -85,7 +96,8 @@ class TestPixelAttack(TestBase):
 
     def test_pytorch_mnist(self):
         """
-        TODO: Write Comment
+        Test with the PyTorchClassifier. (Untargetted Attack)
+        :return:
         """
         x_test = np.swapaxes(self.x_test_mnist, 1, 3).astype(np.float32)
         classifier = get_classifier_pt()
@@ -93,7 +105,8 @@ class TestPixelAttack(TestBase):
 
     def test_keras_mnist_targeted(self):
         """
-        TODO: Write Comment
+        Test with the KerasClassifier. (Targetted Attack)
+        :return:
         """
         classifier = get_classifier_kr()
         self._test_attack(
@@ -104,7 +117,8 @@ class TestPixelAttack(TestBase):
 
     def test_tensorflow_mnist_targeted(self):
         """
-        TODO: Write Comment
+        Test with the TensorFlowClassifier. (Targetted Attack)
+        :return:
         """
         classifier, sess = get_classifier_tf()
         self._test_attack(
@@ -115,7 +129,8 @@ class TestPixelAttack(TestBase):
 
     def test_pytorch_mnist_targeted(self):
         """
-        TODO: Write Comment
+        Test with the PyTorchClassifier. (Targetted Attack)
+        :return:
         """
         x_test = np.swapaxes(self.x_test_mnist, 1, 3).astype(np.float32)
         classifier = get_classifier_pt()
@@ -123,7 +138,8 @@ class TestPixelAttack(TestBase):
 
     def _test_attack(self, classifier, x_test, y_test, targeted):
         """
-        TODO: Write Comment
+        Test with the Pixel Attack
+        :return:
         """
         x_test_original = x_test.copy()
 

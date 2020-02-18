@@ -19,3 +19,5 @@ GPy
 numpy==1.18.1
 scipy
 statsmodels
+
+cma==2.7.0

@@ -30,7 +30,6 @@ The Pixel Attack is a generalisation of One Pixel Attack.
     https://arxiv.org/abs/1906.06026
 """
 from __future__ import absolute_import, division, print_function, unicode_literals
-# import warnings
 import logging
 from itertools import product
 
@@ -62,26 +61,26 @@ class PixelThreshold(EvasionAttack):
     | Pixel and Threshold Attack Paper link:
         https://arxiv.org/abs/1906.06026
     """
-
     attack_params = EvasionAttack.attack_params + \
         ['th', 'es', 'targeted', 'verbose']
 
     def __init__(self, classifier, th, es, targeted, verbose):
         """
         Create a :class:`.PixelThreshold` instance.
-        :param classifier:    A trained classifier.
-        :type  classifier:    :class:`.Classifier`
-        :param th:            threshold value of the Pixel/ Threshold attack.
-                              A none indicates finding a minimum threshold.
-        :type  th:            `int` or `none`
-        :param es:            Indicates whether the attack uses CMAES (0) or
-                              DE (1) as Evolutionary Strategy
-        :type  es:            `int`
-        :param targeted:      Indicates whether the attack is targeted (True)
-                              or untargeted (False)
-        :type  targeted:      `bool`
-        :param verbose:       Indicates whether to print verbose messages of ES used
-        :type  verbose:       `bool`
+        
+        :param classifier: A trained classifier.
+        :type  classifier: :class:`.Classifier`
+        :param th: threshold value of the Pixel/ Threshold attack. th=None 
+                   indicates finding a minimum threshold.
+        :type  th: `int` or `none`
+        :param es: Indicates whether the attack uses CMAES (0) or  DE (1) as 
+                   Evolutionary Strategy
+        :type  es: `int`
+        :param targeted: Indicates whether the attack is targeted (True) or 
+                         untargeted (False)
+        :type  targeted: `bool`
+        :param verbose: Indicates whether to print verbose messages of ES used
+        :type  verbose: `bool`
         """
         super(PixelThreshold, self).__init__(classifier)
         self._project = True
@@ -158,7 +157,7 @@ class PixelThreshold(EvasionAttack):
                 while True:
                     image_result = []
                     threshold = (start + end) // 2
-                    success, trial_image_result = self.attack(
+                    success, trial_image_result = self._attack(
                         image, target_class, threshold)
                     if image_result or success:
                         image_result = trial_image_result
@@ -171,7 +170,7 @@ class PixelThreshold(EvasionAttack):
                     if end < start:
                         break
             else:
-                success, image_result = self.attack(
+                success, image_result = self._attack(
                     image, target_class, self.th)
             adv_x_best += [image_result]
 
@@ -187,57 +186,52 @@ class PixelThreshold(EvasionAttack):
         if y is not None:
             y = to_categorical(y, self.classifier.nb_classes())
 
-        rate_best = 100 * \
+        logger.info('Success rate of Attack: %.2f%%', 100 * \
             compute_success(self.classifier, x, y, adv_x_best,
-                            self.targeted, 1)
-        logger.info('Success rate of Attack: %.2f%%', rate_best)
+                            self.targeted, 1))
         return adv_x_best
 
     def predict(self, test_x):
         """
-        TODO: Write Comment
+        Wrapper for classifier.predict function.
         """
         if isinstance(self.classifier, PyTorchClassifier):
             test_x = np.swapaxes(test_x, 1, 3).astype(np.float32)
 
         return self.classifier.predict(test_x)
 
-    def predict_classes(self, adv_x, x, target_class):
+    def _attack_success(self, adv_x, x, target_class):
         """
-        TODO: Write Comment
-        """
-        predictions = self.predict(
-            self.perturb_image(adv_x, x))[:, target_class]
-        return predictions if not self.targeted else 1 - predictions
-
-    def attack_success(self, adv_x, x, target_class):
-        """
-        TODO: Write Comment
+        Checks whether the given pertubation `adv_x` for the image `img`
+        is successful. 
         """
         predicted_class = np.argmax(
             self.predict(
-                self.perturb_image(
+                self._perturb_image(
                     adv_x, x))[0])
         return bool((self.targeted and predicted_class == target_class) or (
             not self.targeted and predicted_class != target_class))
 
-    def attack(self, image, target_class, limit):
+    def _attack(self, image, target_class, limit):
         """
-        TODO: Write Comment
+        Attack the given image `image` with the threshold `limit` for the `target_class` 
+        which is true label for untargetted attack and targetted label for targetted attack. 
         """
-        bounds, initial = self.get_bounds(image, limit)
+        bounds, initial = self._get_bounds(image, limit)
 
         def predict_fn(x):
-            return self.predict_classes(x, image, target_class)
+            predictions = self.predict(
+                self._perturb_image(x, image))[:, target_class]
+            return predictions if not self.targeted else 1 - predictions
 
         def callback_fn(x, convergence=None):
 
             if self.es == 0:
-                if self.attack_success(x.result[0], image, target_class):
+                if self._attack_success(x.result[0], image, target_class):
                     raise Exception(
                         'Attack Completed :) Earlier than expected')
             else:
-                return self.attack_success(x, image, target_class)
+                return self._attack_success(x, image, target_class)
 
         if self.es == 0:
 
@@ -291,8 +285,8 @@ class PixelThreshold(EvasionAttack):
                 polish=False)
             adv_x = strategy.x
 
-        if self.attack_success(adv_x, image, target_class):
-            return True, self.perturb_image(adv_x, image)[0]
+        if self._attack_success(adv_x, image, target_class):
+            return True, self._perturb_image(adv_x, image)[0]
         else:
             return False, image
 
@@ -330,9 +324,9 @@ class PixelAttack(PixelThreshold):
                 verbose)
         self.type_attack = 0
 
-    def perturb_image(self, x, img):
+    def _perturb_image(self, x, img):
         """
-        TODO: Write Comment
+        Perturbs the given image `img` with the given perturbation `x`.
         """
         if x.ndim < 2:
             x = np.array([x])
@@ -344,9 +338,9 @@ class PixelAttack(PixelThreshold):
                 image[x_pos % image.shape[-3], y_pos % image.shape[-2]] = rgb
         return imgs
 
-    def get_bounds(self, img, limit):
+    def _get_bounds(self, img, limit):
         """
-        TODO: Write Comment
+        Define the bounds for the image `img` within the limits `limit`.
         """
         initial = []
         if self.es == 0:
@@ -392,7 +386,7 @@ class ThresholdAttack(PixelThreshold):
             targeted=False,
             verbose=False):
         """
-        Create a :class:`.PixelAttack` instance.
+        Create a :class:`.ThresholdAttack` instance.
         """
         super(
             ThresholdAttack,
@@ -404,9 +398,9 @@ class ThresholdAttack(PixelThreshold):
                 verbose)
         self.type_attack = 1
 
-    def perturb_image(self, x, img):
+    def _perturb_image(self, x, img):
         """
-        TODO: Write Comment
+        Perturbs the given image `img` with the given perturbation `x`.
         """
         if x.ndim < 2:
             x = np.array([x])
@@ -419,9 +413,9 @@ class ThresholdAttack(PixelThreshold):
                 image[i, j, k] = adv[count]
         return imgs
 
-    def get_bounds(self, img, limit):
+    def _get_bounds(self, img, limit):
         """
-        TODO: Write Comment
+        Define the bounds for the image `img` within the limits `limit`.
         """
 
         def bound_limit(value):
@@ -455,7 +449,6 @@ class ThresholdAttack(PixelThreshold):
 # TODO: Make the attack compatible with current version of SciPy Optimize
 # Differential Evolution
 
-
 """
 A slight modification to Scipy's implementation of differential evolution.
 To speed up predictions, the entire parameters array is passed to `self.func`,
@@ -470,6 +463,120 @@ https://github.com/scipy/scipy/blob/70e61dee181de23fdd8d893eaa9491100e2218d7/sci
 differential_evolution:The differential evolution global optimization algorithm
 Added by Andrew Nelson 2014
 """
+
+# Copyright (c) 2001, 2002 Enthought, Inc.
+# All rights reserved.
+# Copyright (c) 2003-2017 SciPy Developers.
+# All rights reserved.
+# Redistribution and use in source and binary forms, with or without
+# modification, are permitted provided that the following conditions are met:
+#   a. Redistributions of source code must retain the above copyright notice,
+#      this list of conditions and the following disclaimer.
+#   b. Redistributions in binary form must reproduce the above copyright
+#      notice, this list of conditions and the following disclaimer in the
+#      documentation and/or other materials provided with the distribution.
+#   c. Neither the name of Enthought nor the names of the SciPy Developers
+#      may be used to endorse or promote products derived from this software
+#      without specific prior written permission.
+# THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS"
+# AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE
+# IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE
+# ARE DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT HOLDERS OR CONTRIBUTORS
+# BE LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY,
+# OR CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF
+# SUBSTITUTE GOODS OR SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS
+# INTERRUPTION) HOWEVER CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN
+# CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE)
+# ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF
+# THE POSSIBILITY OF SUCH DAMAGE.
+# SciPy bundles a number of libraries that are compatibly licensed.  We list
+# these here.
+# Name: Numpydoc
+# Files: doc/sphinxext/numpydoc/*
+# License: 2-clause BSD
+#   For details, see doc/sphinxext/LICENSE.txt
+# Name: scipy-sphinx-theme
+# Files: doc/scipy-sphinx-theme/*
+# License: 3-clause BSD, PSF and Apache 2.0
+#   For details, see doc/sphinxext/LICENSE.txt
+# Name: Six
+# Files: scipy/_lib/six.py
+# License: MIT
+#   For details, see the header inside scipy/_lib/six.py
+# Name: Decorator
+# Files: scipy/_lib/decorator.py
+# License: 2-clause BSD
+#   For details, see the header inside scipy/_lib/decorator.py
+# Name: ID
+# Files: scipy/linalg/src/id_dist/*
+# License: 3-clause BSD
+#   For details, see scipy/linalg/src/id_dist/doc/doc.tex
+# Name: L-BFGS-B
+# Files: scipy/optimize/lbfgsb/*
+# License: BSD license
+#   For details, see scipy/optimize/lbfgsb/README
+# Name: SuperLU
+# Files: scipy/sparse/linalg/dsolve/SuperLU/*
+# License: 3-clause BSD
+#   For details, see scipy/sparse/linalg/dsolve/SuperLU/License.txt
+# Name: ARPACK
+# Files: scipy/sparse/linalg/eigen/arpack/ARPACK/*
+# License: 3-clause BSD
+#   For details, see scipy/sparse/linalg/eigen/arpack/ARPACK/COPYING
+# Name: Qhull
+# Files: scipy/spatial/qhull/*
+# License: Qhull license (BSD-like)
+#   For details, see scipy/spatial/qhull/COPYING.txt
+# Name: Cephes
+# Files: scipy/special/cephes/*
+# License: 3-clause BSD
+#   Distributed under 3-clause BSD license with permission from the author,
+#   see https://lists.debian.org/debian-legal/2004/12/msg00295.html
+#   Cephes Math Library Release 2.8:  June, 2000
+#   Copyright 1984, 1995, 2000 by Stephen L. Moshier
+#   This software is derived from the Cephes Math Library and is
+#   incorporated herein by permission of the author.
+#   All rights reserved.
+#   Redistribution and use in source and binary forms, with or without
+#   modification, are permitted provided that the following conditions are met:
+#       * Redistributions of source code must retain the above copyright
+#         notice, this list of conditions and the following disclaimer.
+#       * Redistributions in binary form must reproduce the above copyright
+#         notice, this list of conditions and the following disclaimer in the
+#         documentation and/or other materials provided with the distribution.
+#       * Neither the name of the <organization> nor the
+#         names of its contributors may be used to endorse or promote products
+#         derived from this software without specific prior written permission.
+#   THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS" AND
+#   ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE IMPLIED
+#   WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE
+#   DISCLAIMED. IN NO EVENT SHALL <COPYRIGHT HOLDER> BE LIABLE FOR ANY
+#   DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES
+#   (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES;
+#   LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND
+#   ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT
+#   (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS
+#   SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
+# Name: Faddeeva
+# Files: scipy/special/Faddeeva.*
+# License: MIT
+#   Copyright (c) 2012 Massachusetts Institute of Technology
+#   Permission is hereby granted, free of charge, to any person obtaining
+#   a copy of this software and associated documentation files (the
+#   "Software"), to deal in the Software without restriction, including
+#   without limitation the rights to use, copy, modify, merge, publish,
+#   distribute, sublicense, and/or sell copies of the Software, and to
+#   permit persons to whom the Software is furnished to do so, subject to
+#   the following conditions:
+#   The above copyright notice and this permission notice shall be
+#   included in all copies or substantial portions of the Software.
+#   THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND,
+#   EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF
+#   MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND
+#   NONINFRINGEMENT. IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT HOLDERS BE
+#   LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION
+#   OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION
+#   WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 
 __all__ = ['differential_evolution']
 

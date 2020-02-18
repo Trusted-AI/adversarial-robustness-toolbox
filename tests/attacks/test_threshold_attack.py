@@ -43,7 +43,12 @@ logger = logging.getLogger(__name__)
 
 class TestThresholdAttack(TestBase):
     """
-    TODO: Write Comment
+    A unittest class for testing the Threshold Attack.
+
+    This module tests the Threshold Attack.
+
+    | Threshold Attack Paper link:
+        https://arxiv.org/abs/1906.06026
     """
 
     @classmethod
@@ -59,7 +64,8 @@ class TestThresholdAttack(TestBase):
 
     def test_keras_mnist(self):
         """
-        TODO: Write Comment
+        Test with the KerasClassifier. (Untargetted Attack)
+        :return:
         """
         classifier = get_classifier_kr()
         self._test_attack(
@@ -70,7 +76,8 @@ class TestThresholdAttack(TestBase):
 
     def test_tensorflow_mnist(self):
         """
-        TODO: Write Comment
+        Test with the TensorFlowClassifier. (Untargetted Attack)
+        :return:
         """
         classifier, sess = get_classifier_tf()
         self._test_attack(
@@ -81,7 +88,8 @@ class TestThresholdAttack(TestBase):
 
     def test_pytorch_mnist(self):
         """
-        TODO: Write Comment
+        Test with the PyTorchClassifier. (Untargetted Attack)
+        :return:
         """
         x_test = np.swapaxes(self.x_test_mnist, 1, 3).astype(np.float32)
         classifier = get_classifier_pt()
@@ -89,7 +97,8 @@ class TestThresholdAttack(TestBase):
 
     def test_keras_mnist_targeted(self):
         """
-        TODO: Write Comment
+        Test with the KerasClassifier. (Targetted Attack)
+        :return:
         """
         classifier = get_classifier_kr()
         self._test_attack(
@@ -100,7 +109,8 @@ class TestThresholdAttack(TestBase):
 
     def test_tensorflow_mnist_targeted(self):
         """
-        TODO: Write Comment
+        Test with the TensorFlowClassifier. (Targetted Attack)
+        :return:
         """
         classifier, sess = get_classifier_tf()
         self._test_attack(
@@ -111,7 +121,8 @@ class TestThresholdAttack(TestBase):
 
     def test_pytorch_mnist_targeted(self):
         """
-        TODO: Write Comment
+        Test with the PyTorchClassifier. (Targetted Attack)
+        :return:
         """
         x_test = np.swapaxes(self.x_test_mnist, 1, 3).astype(np.float32)
         classifier = get_classifier_pt()
@@ -119,7 +130,8 @@ class TestThresholdAttack(TestBase):
 
     def _test_attack(self, classifier, x_test, y_test, targeted):
         """
-        TODO: Write Comment
+        Test with the Threshold Attack
+        :return:
         """
         x_test_original = x_test.copy()
 
