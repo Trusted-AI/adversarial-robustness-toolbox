@@ -8,7 +8,7 @@ logger = logging.getLogger(__name__)
 
 @pytest.fixture
 def get_image_classifier_list_for_attack(get_mlFramework):
-    def _image_classifier_list(attack, defended=False):
+    def get_image_classifier_list_for_attack(attack, defended=False):
         if get_mlFramework == "keras":
             if defended:
                 classifier = utils_test.get_image_classifier_kr()
@@ -43,4 +43,4 @@ def get_image_classifier_list_for_attack(get_mlFramework):
 
         return [potential_classier for potential_classier in classifier_list if
                 attack.is_valid_classifier_type(potential_classier)]
-    return _image_classifier_list
+    return get_image_classifier_list_for_attack
