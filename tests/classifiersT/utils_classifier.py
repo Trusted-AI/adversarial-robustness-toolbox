@@ -5,7 +5,24 @@ from tests.utils_test import ExpectedValue
 
 logger = logging.getLogger(__name__)
 
-def backend_fit_generator(expected_values, classifier, data_gen, get_default_mnist_subset, nb_epochs):
+
+def backend_test_loss_gradient(get_default_mnist_subset, get_image_classifier_list, expected_values):
+    (x_train_mnist, y_train_mnist), (x_test_mnist, y_test_mnist) = get_default_mnist_subset
+    classifier_list, _ = get_image_classifier_list()
+    classifier = classifier_list[0]
+
+    # Test gradient
+    gradients = classifier.loss_gradient(x_test_mnist, y_test_mnist)
+
+    assert gradients.shape == (x_test_mnist.shape[0], 28, 28, 1)
+
+    if "expected_gradients_1" in expected_values:
+        np.testing.assert_array_almost_equal(gradients[0, 14, :, 0], expected_values["expected_gradients_1"].value, decimal=expected_values["expected_gradients_1"].decimals)
+
+    if "expected_gradients_2" in expected_values:
+        np.testing.assert_array_almost_equal(gradients[0, :, 14, 0], expected_values["expected_gradients_2"].value, decimal=expected_values["expected_gradients_2"].decimals)
+
+def backend_test_fit_generator(expected_values, classifier, data_gen, get_default_mnist_subset, nb_epochs):
     (x_train_mnist, y_train_mnist), (x_test_mnist, y_test_mnist) = get_default_mnist_subset
 
     true_class = np.argmax(y_test_mnist, axis=1)
