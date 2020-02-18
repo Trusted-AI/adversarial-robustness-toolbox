@@ -30,8 +30,8 @@ from art import utils
 logger = logging.getLogger(__name__)
 
 #TODO put default subset values in a fixture
-n_test = 100
-n_train = 1000
+# n_test = 100
+# n_train = 1000
 utils.master_seed(1234)
 
 @pytest.fixture(scope="module")

@@ -55,6 +55,19 @@ def get_iris_dataset(load_iris_dataset, get_mlFramework):
 
 
 @pytest.fixture(scope="session")
+def default_dataset_subset_sizes():
+    n_train = 1000
+    n_test = 100
+    yield n_train, n_test
+
+@pytest.fixture()
+def get_default_mnist_subset(get_mnist_dataset, default_dataset_subset_sizes):
+    (x_train_mnist, y_train_mnist), (x_test_mnist, y_test_mnist) = get_mnist_dataset
+    n_train, n_test = default_dataset_subset_sizes
+
+    yield (x_train_mnist[:n_train], y_train_mnist[:n_train]), (x_test_mnist[:n_test], y_test_mnist[:n_test])
+
+@pytest.fixture(scope="session")
 def load_mnist_dataset():
     logging.info("Loading mnist")
     (x_train_mnist, y_train_mnist), (x_test_mnist, y_test_mnist), _, _ = utils.load_dataset('mnist')
