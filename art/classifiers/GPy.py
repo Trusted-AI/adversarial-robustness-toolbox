@@ -35,8 +35,14 @@ class GPyGaussianProcessClassifier(Classifier, ClassifierGradients):
     Wrapper class for GPy Gaussian Process classification models.
     """
 
-    def __init__(self, model=None, clip_values=None, preprocessing_defences=None, postprocessing_defences=None,
-                 preprocessing=(0, 1)):
+    def __init__(
+        self,
+        model=None,
+        clip_values=None,
+        preprocessing_defences=None,
+        postprocessing_defences=None,
+        preprocessing=(0, 1),
+    ):
         """
         Create a `Classifier` instance GPY Gaussian Process classification models.
 
@@ -57,12 +63,14 @@ class GPyGaussianProcessClassifier(Classifier, ClassifierGradients):
         from GPy.models import GPClassification as GPC
 
         if not isinstance(model, GPC):
-            raise TypeError('Model must be of type GPy.models.GPClassification')
+            raise TypeError("Model must be of type GPy.models.GPClassification")
 
-        super(GPyGaussianProcessClassifier, self).__init__(clip_values=clip_values,
-                                                           preprocessing_defences=preprocessing_defences,
-                                                           postprocessing_defences=postprocessing_defences,
-                                                           preprocessing=preprocessing)
+        super(GPyGaussianProcessClassifier, self).__init__(
+            clip_values=clip_values,
+            preprocessing_defences=preprocessing_defences,
+            postprocessing_defences=postprocessing_defences,
+            preprocessing=preprocessing,
+        )
         self._nb_classes = 2  # always binary
         self.model = model
 
@@ -93,8 +101,10 @@ class GPyGaussianProcessClassifier(Classifier, ClassifierGradients):
             # Get gradient for the two classes GPC can maximally have
             for i_c in range(2):
                 ind = self.predict(x[i].reshape(1, -1))[0, i_c]
-                sur = self.predict(np.repeat(x_preprocessed[i].reshape(1, -1), np.shape(x_preprocessed)[1], 0)
-                                   + eps * np.eye(np.shape(x_preprocessed)[1]))[:, i_c]
+                sur = self.predict(
+                    np.repeat(x_preprocessed[i].reshape(1, -1), np.shape(x_preprocessed)[1], 0)
+                    + eps * np.eye(np.shape(x_preprocessed)[1])
+                )[:, i_c]
                 grads[i, i_c] = ((sur - ind) * eps).reshape(1, -1)
 
         grads = self._apply_preprocessing_gradient(x, grads)
@@ -124,8 +134,13 @@ class GPyGaussianProcessClassifier(Classifier, ClassifierGradients):
         for i in range(np.shape(x)[0]):
             # 1.0 - to mimic loss, [0,np.argmax] to get right class
             ind = 1.0 - self.predict(x_preprocessed[i].reshape(1, -1))[0, np.argmax(y[i])]
-            sur = 1.0 - self.predict(np.repeat(x_preprocessed[i].reshape(1, -1), np.shape(x_preprocessed)[1], 0)
-                                     + eps * np.eye(np.shape(x_preprocessed)[1]))[:, np.argmax(y[i])]
+            sur = (
+                1.0
+                - self.predict(
+                    np.repeat(x_preprocessed[i].reshape(1, -1), np.shape(x_preprocessed)[1], 0)
+                    + eps * np.eye(np.shape(x_preprocessed)[1])
+                )[:, np.argmax(y[i])]
+            )
             grads[i] = ((sur - ind) * eps).reshape(1, -1)
 
         grads = self._apply_preprocessing_gradient(x, grads)

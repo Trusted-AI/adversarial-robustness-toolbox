@@ -48,7 +48,8 @@ class SpatialSmoothing(Preprocessor):
     see https://arxiv.org/abs/1803.09868 . For details on how to evaluate classifier security in general, see
     https://arxiv.org/abs/1902.06705
     """
-    params = ['window_size', 'channel_index', 'clip_values']
+
+    params = ["window_size", "channel_index", "clip_values"]
 
     def __init__(self, window_size=3, channel_index=3, clip_values=None, apply_fit=False, apply_predict=True):
         """
@@ -92,10 +93,11 @@ class SpatialSmoothing(Preprocessor):
         :rtype: `np.ndarray`
         """
         if len(x.shape) == 2:
-            raise ValueError('Feature vectors detected. Smoothing can only be applied to data with spatial '
-                             'dimensions.')
+            raise ValueError(
+                "Feature vectors detected. Smoothing can only be applied to data with spatial " "dimensions."
+            )
         if self.channel_index >= len(x.shape):
-            raise ValueError('Channel index does not match input shape.')
+            raise ValueError("Channel index does not match input shape.")
 
         size = [1] + [self.window_size] * (len(x.shape) - 1)
         size[self.channel_index] = 1
@@ -132,21 +134,23 @@ class SpatialSmoothing(Preprocessor):
         super(SpatialSmoothing, self).set_params(**kwargs)
 
         if not isinstance(self.window_size, (int, np.int)) or self.window_size <= 0:
-            logger.error('Sliding window size must be a positive integer.')
-            raise ValueError('Sliding window size must be a positive integer.')
+            logger.error("Sliding window size must be a positive integer.")
+            raise ValueError("Sliding window size must be a positive integer.")
 
         if not isinstance(self.channel_index, (int, np.int)) or self.channel_index <= 0:
-            logger.error('Data channel for smoothing must be a positive integer. The batch dimension is not a'
-                         'valid channel.')
-            raise ValueError('Data channel for smoothing must be a positive integer. The batch dimension is not a'
-                             'valid channel.')
+            logger.error(
+                "Data channel for smoothing must be a positive integer. The batch dimension is not a" "valid channel."
+            )
+            raise ValueError(
+                "Data channel for smoothing must be a positive integer. The batch dimension is not a" "valid channel."
+            )
 
         if self.clip_values is not None:
 
             if len(self.clip_values) != 2:
-                raise ValueError('`clip_values` should be a tuple of 2 floats containing the allowed data range.')
+                raise ValueError("`clip_values` should be a tuple of 2 floats containing the allowed data range.")
 
             if np.array(self.clip_values[0] >= self.clip_values[1]).any():
-                raise ValueError('Invalid `clip_values`: min >= max.')
+                raise ValueError("Invalid `clip_values`: min >= max.")
 
         return True

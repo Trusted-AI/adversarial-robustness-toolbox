@@ -47,7 +47,8 @@ class ThermometerEncoding(Preprocessor):
     see https://arxiv.org/abs/1802.00420 . For details on how to evaluate classifier security in general, see
     https://arxiv.org/abs/1902.06705
     """
-    params = ['clip_values', 'num_space', 'channel_index']
+
+    params = ["clip_values", "num_space", "channel_index"]
 
     def __init__(self, clip_values, num_space=10, channel_index=3, apply_fit=True, apply_predict=True):
         """
@@ -158,16 +159,16 @@ class ThermometerEncoding(Preprocessor):
         super(ThermometerEncoding, self).set_params(**kwargs)
 
         if not isinstance(self.num_space, (int, np.int)) or self.num_space <= 0:
-            logger.error('Number of evenly spaced levels must be a positive integer.')
-            raise ValueError('Number of evenly spaced levels must be a positive integer.')
+            logger.error("Number of evenly spaced levels must be a positive integer.")
+            raise ValueError("Number of evenly spaced levels must be a positive integer.")
 
         if len(self.clip_values) != 2:
-            raise ValueError('`clip_values` should be a tuple of 2 floats containing the allowed data range.')
+            raise ValueError("`clip_values` should be a tuple of 2 floats containing the allowed data range.")
 
         if self.clip_values[0] != 0:
-            raise ValueError('`clip_values` min value must be 0.')
+            raise ValueError("`clip_values` min value must be 0.")
 
         if self.clip_values[1] != 1:
-            raise ValueError('`clip_values` max value must be 1.')
+            raise ValueError("`clip_values` max value must be 1.")
 
         return True

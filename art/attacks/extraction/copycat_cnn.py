@@ -41,7 +41,8 @@ class CopycatCNN(ExtractionAttack):
 
     | Paper link: https://arxiv.org/abs/1806.05476
     """
-    attack_params = ExtractionAttack.attack_params + ['batch_size_fit', 'batch_size_query', 'nb_epochs', 'nb_stolen']
+
+    attack_params = ExtractionAttack.attack_params + ["batch_size_fit", "batch_size_query", "nb_epochs", "nb_stolen"]
 
     def __init__(self, classifier, batch_size_fit=1, batch_size_query=1, nb_epochs=10, nb_stolen=1):
         """
@@ -60,10 +61,12 @@ class CopycatCNN(ExtractionAttack):
         """
         super(CopycatCNN, self).__init__(classifier=classifier)
 
-        params = {'batch_size_fit': batch_size_fit,
-                  'batch_size_query': batch_size_query,
-                  'nb_epochs': nb_epochs,
-                  'nb_stolen': nb_stolen}
+        params = {
+            "batch_size_fit": batch_size_fit,
+            "batch_size_query": batch_size_query,
+            "nb_epochs": nb_epochs,
+            "nb_stolen": nb_stolen,
+        }
         self.set_params(**params)
 
     def extract(self, x, y=None, **kwargs):
@@ -86,13 +89,15 @@ class CopycatCNN(ExtractionAttack):
 
         # Check the size of the source input vs nb_stolen
         if x.shape[0] < self.nb_stolen:
-            logger.warning("The size of the source input is smaller than the expected number of queries submitted "
-                           "to the victim classifier.")
+            logger.warning(
+                "The size of the source input is smaller than the expected number of queries submitted "
+                "to the victim classifier."
+            )
 
         # Check if there is a thieved classifier provided for training
-        thieved_classifier = kwargs.get('thieved_classifier')
+        thieved_classifier = kwargs.get("thieved_classifier")
         if thieved_classifier is None or not isinstance(thieved_classifier, Classifier):
-            raise ValueError('A thieved classifier is needed.')
+            raise ValueError("A thieved classifier is needed.")
 
         # Select data to attack
         selected_x = self._select_data(x)

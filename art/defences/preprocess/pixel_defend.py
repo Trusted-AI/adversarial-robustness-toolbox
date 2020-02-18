@@ -47,7 +47,8 @@ class PixelDefend(Preprocessor):
     see https://arxiv.org/abs/1802.00420 . For details on how to evaluate classifier security in general, see
     https://arxiv.org/abs/1902.06705
     """
-    params = ['clip_values', 'eps', 'pixel_cnn']
+
+    params = ["clip_values", "eps", "pixel_cnn"]
 
     def __init__(self, clip_values=(0, 1), eps=16, pixel_cnn=None, apply_fit=False, apply_predict=True):
         """
@@ -156,16 +157,16 @@ class PixelDefend(Preprocessor):
         if not isinstance(self.eps, (int, np.int)) or self.eps < 0 or self.eps > 255:
             raise ValueError("The defense parameter must be between 0 and 255.")
 
-        if hasattr(self, 'pixel_cnn') and not isinstance(self.pixel_cnn, Classifier):
+        if hasattr(self, "pixel_cnn") and not isinstance(self.pixel_cnn, Classifier):
             raise TypeError("PixelCNN model must be of type Classifier.")
 
         if np.array(self.clip_values[0] >= self.clip_values[1]).any():
-            raise ValueError('Invalid `clip_values`: min >= max.')
+            raise ValueError("Invalid `clip_values`: min >= max.")
 
         if self.clip_values[0] != 0:
-            raise ValueError('`clip_values` min value must be 0.')
+            raise ValueError("`clip_values` min value must be 0.")
 
         if self.clip_values[1] != 1:
-            raise ValueError('`clip_values` max value must be 1.')
+            raise ValueError("`clip_values` max value must be 1.")
 
         return True

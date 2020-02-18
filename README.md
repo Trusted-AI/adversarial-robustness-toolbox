@@ -1,14 +1,22 @@
-# Adversarial Robustness 360 Toolbox (ART) v1.1
+# Adversarial Robustness Toolbox (ART) v1.1
 <p align="center">
   <img src="docs/images/art_logo.png?raw=true" width="200" title="ART logo">
 </p>
 <br />
 
-[![Build Status](https://travis-ci.org/IBM/adversarial-robustness-toolbox.svg?branch=master)](https://travis-ci.org/IBM/adversarial-robustness-toolbox) [![Documentation Status](https://readthedocs.org/projects/adversarial-robustness-toolbox/badge/?version=latest)](http://adversarial-robustness-toolbox.readthedocs.io/en/latest/?badge=latest) [![GitHub version](https://badge.fury.io/gh/IBM%2Fadversarial-robustness-toolbox.svg)](https://badge.fury.io/gh/IBM%2Fadversarial-robustness-toolbox) [![Language grade: Python](https://img.shields.io/lgtm/grade/python/g/IBM/adversarial-robustness-toolbox.svg?logo=lgtm&logoWidth=18)](https://lgtm.com/projects/g/IBM/adversarial-robustness-toolbox/context:python) [![Total alerts](https://img.shields.io/lgtm/alerts/g/IBM/adversarial-robustness-toolbox.svg?logo=lgtm&logoWidth=18)](https://lgtm.com/projects/g/IBM/adversarial-robustness-toolbox/alerts/) [![codecov](https://codecov.io/gh/IBM/adversarial-robustness-toolbox/branch/master/graph/badge.svg)](https://codecov.io/gh/IBM/adversarial-robustness-toolbox)
+[![Build Status](https://travis-ci.org/IBM/adversarial-robustness-toolbox.svg?branch=master)](https://travis-ci.org/IBM/adversarial-robustness-toolbox)
+[![Documentation Status](https://readthedocs.org/projects/adversarial-robustness-toolbox/badge/?version=latest)](http://adversarial-robustness-toolbox.readthedocs.io/en/latest/?badge=latest)
+[![GitHub version](https://badge.fury.io/gh/IBM%2Fadversarial-robustness-toolbox.svg)](https://badge.fury.io/gh/IBM%2Fadversarial-robustness-toolbox)
+[![Language grade: Python](https://img.shields.io/lgtm/grade/python/g/IBM/adversarial-robustness-toolbox.svg?logo=lgtm&logoWidth=18)](https://lgtm.com/projects/g/IBM/adversarial-robustness-toolbox/context:python)
+[![Total alerts](https://img.shields.io/lgtm/alerts/g/IBM/adversarial-robustness-toolbox.svg?logo=lgtm&logoWidth=18)](https://lgtm.com/projects/g/IBM/adversarial-robustness-toolbox/alerts/)
+[![codecov](https://codecov.io/gh/IBM/adversarial-robustness-toolbox/branch/master/graph/badge.svg)](https://codecov.io/gh/IBM/adversarial-robustness-toolbox)
+[![Code style: black](https://img.shields.io/badge/code%20style-black-000000.svg)](https://github.com/psf/black)
+[![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
+[![PyPI - Python Version](https://img.shields.io/pypi/pyversions/adversarial-robustness-toolbox)](https://pypi.org/project/adversarial-robustness-toolbox/)
 
 [中文README请按此处](README-cn.md)
 
-Adversarial Robustness 360 Toolbox (ART) is a Python library supporting developers and researchers in defending Machine 
+Adversarial Robustness Toolbox (ART) is a Python library supporting developers and researchers in defending Machine 
 Learning models (Deep Neural Networks, Gradient Boosted Decision Trees, Support Vector Machines, Random Forests, 
 Logistic Regression, Gaussian Processes, Decision Trees, Scikit-learn Pipelines, etc.) against adversarial threats 
 (including evasion, extraction and poisoning) and helps making AI systems more secure and trustworthy. Machine Learning 
@@ -149,10 +157,10 @@ and overview and more information.
 
 Adding new features, improving documentation, fixing bugs, or writing tutorials are all examples of helpful 
 contributions. Furthermore, if you are publishing a new attack or defense, we strongly encourage you to add it to the 
-Adversarial Robustness 360 Toolbox so that others may evaluate it fairly in their own work.
+Adversarial Robustness Toolbox so that others may evaluate it fairly in their own work.
 
 Bug fixes can be initiated through GitHub pull requests. When making code contributions to the Adversarial Robustness 
-360 Toolbox, we ask that you follow the `PEP 8` coding standard and that you provide unit tests for the new features.
+Toolbox, we ask that you follow the `PEP 8` coding standard and that you provide unit tests for the new features.
 
 This project uses [DCO](https://developercertificate.org/). Be sure to sign off your commits using the `-s` flag or 
 adding `Signed-off-By: Name<Email>` in the commit message.

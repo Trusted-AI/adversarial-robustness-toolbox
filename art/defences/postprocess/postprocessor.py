@@ -28,6 +28,7 @@ class Postprocessor(abc.ABC):
     Abstract base class for postprocessing defences. Postprocessing defences are not included in the loss function
     evaluation for loss gradients or the calculation of class gradients.
     """
+
     params = []
 
     def __init__(self):

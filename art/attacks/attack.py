@@ -33,6 +33,7 @@ class input_filter(abc.ABCMeta):
     """
     Metaclass to ensure that inputs are ndarray for all of the subclass generate and extract calls
     """
+
     def __init__(cls, name, bases, clsdict):
         """
         This function overrides any existing generate or extract methods with a new method that
@@ -46,31 +47,32 @@ class input_filter(abc.ABCMeta):
             """
 
             def replacement_function(self, *args, **kwargs):
-                if(len(args) > 0):
+                if len(args) > 0:
                     lst = list(args)
 
-                if 'x' in kwargs:
-                    if not isinstance(kwargs['x'], np.ndarray):
-                        kwargs['x'] = np.array(kwargs['x'])
+                if "x" in kwargs:
+                    if not isinstance(kwargs["x"], np.ndarray):
+                        kwargs["x"] = np.array(kwargs["x"])
                 else:
                     if not isinstance(args[0], np.ndarray):
                         lst[0] = np.array(args[0])
 
-                if 'y' in kwargs:
-                    if kwargs['y'] is not None and not isinstance(kwargs['y'], np.ndarray):
-                        kwargs['y'] = np.array(kwargs['y'])
+                if "y" in kwargs:
+                    if kwargs["y"] is not None and not isinstance(kwargs["y"], np.ndarray):
+                        kwargs["y"] = np.array(kwargs["y"])
                 elif len(args) == 2:
                     if not isinstance(args[1], np.ndarray):
                         lst[1] = np.array(args[1])
 
-                if(len(args) > 0):
+                if len(args) > 0:
                     args = tuple(lst)
                 return fdict[func_name](self, *args, **kwargs)
+
             replacement_function.__doc__ = fdict[func_name].__doc__
             replacement_function.__name__ = "new_" + func_name
             return replacement_function
 
-        replacement_list = ['generate', 'extract']
+        replacement_list = ["generate", "extract"]
         for item in replacement_list:
             if item in clsdict:
                 new_function = make_replacement(clsdict, item)
@@ -81,6 +83,7 @@ class Attack(abc.ABC, metaclass=input_filter):
     """
     Abstract base class for all attack abstract base classes.
     """
+
     attack_params = list()
 
     def __init__(self, classifier):
@@ -89,9 +92,14 @@ class Attack(abc.ABC, metaclass=input_filter):
         :type classifier: :class:`.Classifier`
         """
         if not isinstance(classifier, Classifier):
-            raise (TypeError('For `' + self.__class__.__name__ + '` classifier must be an instance of '
-                             '`art.classifiers.classifier.Classifier`, the provided classifier is instance of ' + str(
-                                 classifier.__class__.__bases__) + '.'))
+            raise (
+                TypeError(
+                    "For `" + self.__class__.__name__ + "` classifier must be an instance of "
+                    "`art.classifiers.classifier.Classifier`, the provided classifier is instance of "
+                    + str(classifier.__class__.__bases__)
+                    + "."
+                )
+            )
         self.classifier = classifier
 
     def set_params(self, **kwargs):
