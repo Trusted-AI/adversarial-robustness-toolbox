@@ -22,6 +22,7 @@ import tensorflow as tf
 import numpy as np
 from art.data_generators import TFDataGenerator
 from tests import utils_test
+from tests.classifiersT import utils_classifier
 
 logger = logging.getLogger(__name__)
 
@@ -45,10 +46,10 @@ def test_predict(get_image_classifier_tf_factory, get_default_mnist_subset):
     np.testing.assert_array_almost_equal(y_predicted, y_expected, decimal=4)
 
 @pytest.mark.only_with_platform("tensorflow")
-def test_fit_generator(get_is_tf_version_2, get_image_classifier_tf_factory, get_default_mnist_subset):
+def test_fit_generator(is_tf_version_2, get_image_classifier_tf_factory, get_default_mnist_subset):
     (x_train_mnist, y_train_mnist), (x_test_mnist, y_test_mnist) = get_default_mnist_subset
 
-    if not get_is_tf_version_2:
+    if not is_tf_version_2:
         classifier, sess = get_image_classifier_tf_factory()
 
         # Create TensorFlow data generator
@@ -169,22 +170,18 @@ def test_loss_gradient(get_image_classifier_tf_factory, get_default_mnist_subset
     np.testing.assert_array_almost_equal(gradients[0, :, 14, 0], expected_gradients_2, decimal=4)
 
 @pytest.mark.only_with_platform("tensorflow")
-def test_layers(get_is_tf_version_2, get_image_classifier_tf_factory, get_default_mnist_subset):
+def test_layers(is_tf_version_2, get_image_classifier_tf_factory, get_default_mnist_subset):
     (x_train_mnist, y_train_mnist), (x_test_mnist, y_test_mnist) = get_default_mnist_subset
     classifier, sess = get_image_classifier_tf_factory()
-    if not get_is_tf_version_2:
-        layer_names = classifier.layer_names
+    if not is_tf_version_2:
+        utils_classifier.backend_test_layers(classifier, x_test_mnist, batch_size=128)
 
-        for i, name in enumerate(layer_names):
-            activation_i = classifier.get_activations(x_test_mnist, i, batch_size=5)
-            activation_name = classifier.get_activations(x_test_mnist, name, batch_size=5)
-            np.testing.assert_array_equal(activation_name, activation_i)
 
 
 @pytest.mark.only_with_platform("tensorflow")
-def test_set_learning(get_is_tf_version_2, get_image_classifier_tf_factory):
+def test_set_learning(is_tf_version_2, get_image_classifier_tf_factory):
     classifier, sess = get_image_classifier_tf_factory()
-    if not get_is_tf_version_2:
+    if not is_tf_version_2:
         assert classifier._feed_dict == {}
         classifier.set_learning_phase(False)
         assert classifier._feed_dict[classifier._learning] == False
@@ -193,11 +190,11 @@ def test_set_learning(get_is_tf_version_2, get_image_classifier_tf_factory):
         assert classifier.learning_phase
 
 @pytest.mark.only_with_platform("tensorflow")
-def test_repr(get_is_tf_version_2, get_image_classifier_tf_factory):
+def test_repr(is_tf_version_2, get_image_classifier_tf_factory):
     classifier, sess = get_image_classifier_tf_factory()
     repr_classifier = repr(classifier)
 
-    if get_is_tf_version_2:
+    if is_tf_version_2:
         assert 'TensorFlowV2Classifier' in repr_classifier
         assert 'model=' in repr_classifier
         assert 'nb_classes=10' in repr_classifier

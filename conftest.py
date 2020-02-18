@@ -51,7 +51,7 @@ def default_batch_size():
     yield 16
 
 @pytest.fixture(scope="session")
-def get_is_tf_version_2():
+def is_tf_version_2():
     if tf.__version__[0] == '2':
         yield True
     else:

@@ -16,14 +16,12 @@
 # TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 # SOFTWARE.
 from __future__ import absolute_import, division, print_function, unicode_literals
-import pickle
 import logging
 import unittest
 import numpy as np
 from art.attacks import FastGradientMethod
-from tests import utils_test
 from tests.utils_test import ExpectedValue
-from tests import utils_attack
+from tests.attacks import utils_attack
 import pytest
 from art import utils
 from art.classifiers.classifier import Classifier, ClassifierGradients

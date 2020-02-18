@@ -2,8 +2,9 @@ import pytest
 import logging
 from art.attacks import BoundaryAttack
 from art import utils
-from tests import utils_attack
-from art.classifiers.classifier import Classifier, ClassifierGradients
+from tests.attacks import utils_attack
+from art.classifiers.classifier import Classifier
+
 logger = logging.getLogger(__name__)
 
 @pytest.fixture()

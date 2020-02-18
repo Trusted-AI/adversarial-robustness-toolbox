@@ -36,19 +36,12 @@ from art.defences import FeatureSqueezing, JpegCompression, SpatialSmoothing
 from art.utils import master_seed
 from art.data_generators import KerasDataGenerator
 from tests.utils_test import TestBase, get_image_classifier_kr
+from tests.classifiersT import utils_classifier
 import pytest
-
 
 logger = logging.getLogger(__name__)
 
-
-#TODO the master seed needs to be set up for ALL tests not just classifiers
-#TODO do testBase class setup and tear down
-#TODO clear out keras after each test
-#TODO create/delete tmp folder
 #%TODO classifier = get_image_classifier_kr() needs to be a fixture I think maybe?
-
-
 
 
 def _functional_model():
@@ -245,18 +238,17 @@ def test_functional_model(get_functional_model):
     assert keras_model._output.name == "output0/Softmax:0"
 
 
+
 @pytest.mark.only_with_platform("keras")
-def test_layers(get_default_mnist_subset):
+def test_layers(get_default_mnist_subset, get_backend_test_layers):
     (x_train_mnist, y_train_mnist), (x_test_mnist, y_test_mnist) = get_default_mnist_subset
 
-    classifier = get_image_classifier_kr()
-    assert len(classifier.layer_names) == 3
 
-    layer_names = classifier.layer_names
-    for i, name in enumerate(layer_names):
-        activation_i = classifier.get_activations(x_test_mnist, i, batch_size=128)
-        activation_name = classifier.get_activations(x_test_mnist, name, batch_size=128)
-        np.testing.assert_array_equal(activation_name, activation_i)
+    classifier = get_image_classifier_kr()
+
+    get_backend_test_layers(classifier, x_test_mnist, batch_size=128, layer_count=3)
+
+    # utils_classifier.backend_test_layers(classifier, x_test_mnist, batch_size=128, layer_count=3)
 
 
 @pytest.mark.only_with_platform("keras")
