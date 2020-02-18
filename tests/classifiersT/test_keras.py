@@ -52,6 +52,24 @@ logger = logging.getLogger(__name__)
 
 
 
+
+
+#TODO the master seed needs to be set up for ALL tests not just classifiers
+#TODO do testBase class setup
+#TODO clear out keras after each test
+#TODO create/delete tmp folder
+
+utils.master_seed(1234)
+n_train = 1000
+n_test = 100
+batch_size = 16
+
+@pytest.fixture()
+def get_mnist_subset(get_mnist_dataset):
+    (x_train_mnist, y_train_mnist), (x_test_mnist, y_test_mnist) = get_mnist_dataset
+
+    yield (x_train_mnist[:n_train], y_train_mnist[:n_train]), (x_test_mnist[:n_test], y_test_mnist[:n_test])
+
 def _functional_model():
     in_layer = Input(shape=(28, 28, 1), name="input0")
     layer = Conv2D(32, kernel_size=(3, 3), activation='relu')(in_layer)
@@ -80,23 +98,8 @@ def _functional_model():
 
     return model
 
-#TODO the master seed needs to be set up for ALL tests not just classifiers
-#TODO do testBase class setup
-#TODO clear out keras after each test
-#TODO create/delete tmp folder
-
-utils.master_seed(1234)
-n_train = 1000
-n_test = 100
-batch_size = 16
-
+#TODO this should be scope="module" no point doing it for each function
 @pytest.fixture()
-def get_mnist_subset(get_mnist_dataset):
-    (x_train_mnist, y_train_mnist), (x_test_mnist, y_test_mnist) = get_mnist_dataset
-
-    yield (x_train_mnist[:n_train], y_train_mnist[:n_train]), (x_test_mnist[:n_test], y_test_mnist[:n_test])
-
-@pytest.fixture(scope="module")
 def get_functional_model(get_mnist_subset):
     (x_train_mnist, y_train_mnist), (x_test_mnist, y_test_mnist) = get_mnist_subset
 
@@ -141,6 +144,7 @@ def test_fit_generator(get_mnist_subset):
     assert accuracy == 0.32
     np.testing.assert_array_almost_equal(accuracy_2, 0.36, decimal=0.06)
 
+@pytest.mark.only_with_platform("keras")
 def test_fit_image_generator(get_mnist_subset):
     (x_train_mnist, y_train_mnist), (x_test_mnist, y_test_mnist) = get_mnist_subset
 
@@ -162,6 +166,7 @@ def test_fit_image_generator(get_mnist_subset):
     assert accuracy==0.32
     np.testing.assert_array_almost_equal(accuracy_2, 0.35, decimal=0.06)
 
+@pytest.mark.only_with_platform("keras")
 def test_fit_kwargs(get_mnist_subset):
     (x_train_mnist, y_train_mnist), (x_test_mnist, y_test_mnist) = get_mnist_subset
     def get_lr(_):
@@ -179,6 +184,7 @@ def test_fit_kwargs(get_mnist_subset):
 
     assert 'multiple values for keyword argument' in str(context.exception)
 
+@pytest.mark.only_with_platform("keras")
 def test_shapes(get_mnist_subset):
     (x_train_mnist, y_train_mnist), (x_test_mnist, y_test_mnist) = get_mnist_subset
     classifier = get_image_classifier_kr()
@@ -194,6 +200,7 @@ def test_shapes(get_mnist_subset):
     loss_gradients = classifier.loss_gradient(x_test_mnist[:11], y_test_mnist[:11])
     assert loss_gradients.shape == x_test_mnist[:11].shape
 
+@pytest.mark.only_with_platform("keras")
 def test_defences_predict(get_mnist_subset):
     (x_train_mnist, y_train_mnist), (x_test_mnist, y_test_mnist) = get_mnist_subset
 
@@ -218,6 +225,7 @@ def test_defences_predict(get_mnist_subset):
     # Check that the prediction results match
     np.testing.assert_array_almost_equal(predictions_classifier, predictions_check, decimal=4)
 
+@pytest.mark.only_with_platform("keras")
 def test_loss_gradient(get_mnist_subset):
     (x_train_mnist, y_train_mnist), (x_test_mnist, y_test_mnist) = get_mnist_subset
     classifier = get_image_classifier_kr()
@@ -241,16 +249,20 @@ def test_loss_gradient(get_mnist_subset):
                                        0.0, 0.0, 0.0, 0.0])
     np.testing.assert_array_almost_equal(gradients[0, :, 14, 0], expected_gradients_2, decimal=4)
 
-def test_functional_model():
-    keras_model = KerasClassifier(self.functional_model, clip_values=(0, 1), input_layer=1, output_layer=1)
-    assert keras_model._input.name == "input1"
-    assert keras_model._output.name == "output1"
 
-    keras_model = KerasClassifier(self.functional_model, clip_values=(0, 1), input_layer=0, output_layer=0)
-    assert keras_model._input.name == "input0"
-    assert keras_model._output.name == "output0"
+@pytest.mark.only_with_platform("keras")
+def test_functional_model(get_functional_model):
+    functional_model = get_functional_model
+    keras_model = KerasClassifier(functional_model, clip_values=(0, 1), input_layer=1, output_layer=1)
+    assert keras_model._input.name == "input1:0"
+    assert keras_model._output.name == "output1/Softmax:0"
+
+    keras_model = KerasClassifier(functional_model, clip_values=(0, 1), input_layer=0, output_layer=0)
+    assert keras_model._input.name == "input0:0"
+    assert keras_model._output.name == "output0/Softmax:0"
 
 
+@pytest.mark.only_with_platform("keras")
 def test_layers(get_mnist_subset):
     (x_train_mnist, y_train_mnist), (x_test_mnist, y_test_mnist) = get_mnist_subset
 
@@ -263,6 +275,8 @@ def test_layers(get_mnist_subset):
         activation_name = classifier.get_activations(x_test_mnist, name, batch_size=128)
         np.testing.assert_array_equal(activation_name, activation_i)
 
+
+@pytest.mark.only_with_platform("keras")
 def test_resnet():
     keras.backend.set_learning_phase(0)
     model = ResNet50(weights='imagenet')
@@ -278,6 +292,7 @@ def test_resnet():
     self.assertAlmostEqual(prediction[0, 178], 0.2658045, places=3)
 
 
+@pytest.mark.only_with_platform("keras")
 def test_learning_phase():
     classifier = get_image_classifier_kr()
     assert hasattr(classifier != '_learning_phase')
@@ -287,6 +302,8 @@ def test_learning_phase():
     assert classifier.learning_phase
     assert hasattr(classifier, '_learning_phase')
 
+
+@pytest.mark.only_with_platform("keras")
 def test_save():
     path = 'tmp'
     filename = 'model.h5'
@@ -322,6 +339,7 @@ def test_save():
 #     os.remove(full_path)
 
 
+@pytest.mark.only_with_platform("keras")
 def test_class_gradient(get_mnist_subset):
     (x_train_mnist, y_train_mnist), (x_test_mnist, y_test_mnist) = get_mnist_subset
     classifier = get_image_classifier_kr()
@@ -395,7 +413,7 @@ def test_class_gradient(get_mnist_subset):
     np.testing.assert_array_almost_equal(gradients[0, 0, :, 14, 0], expected_gradients_2, decimal=4)
 
 
-
+@pytest.mark.only_with_platform("keras")
 def test_repr():
     classifier = get_image_classifier_kr()
     repr_ = repr(classifier)
@@ -404,6 +422,8 @@ def test_repr():
     assert 'clip_values=(0, 1), defences=None, preprocessing=(0, 1)' in repr_
     assert 'input_layer=0, output_layer=0' in repr_
 
+
+@pytest.mark.only_with_platform("keras")
 def test_loss_functions(get_mnist_subset):
     (x_train_mnist, y_train_mnist), (x_test_mnist, y_test_mnist) = get_mnist_subset
 
@@ -429,20 +449,21 @@ def test_loss_functions(get_mnist_subset):
                                                  0.06857751, 0.00657996, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0,
                                                  0.0])
 
-    def _run_tests(_loss_name, _loss_type, _y_test_pred_expected, _class_gradient_probabilities_expected,
-                   _loss_gradient_expected, _from_logits):
-        master_seed(1234)
-        classifier = get_image_classifier_kr(loss_name=_loss_name, loss_type=_loss_type, from_logits=_from_logits)
+@pytest.mark.only_with_platform("keras")
+def _run_tests(_loss_name, _loss_type, _y_test_pred_expected, _class_gradient_probabilities_expected,
+               _loss_gradient_expected, _from_logits):
+    master_seed(1234)
+    classifier = get_image_classifier_kr(loss_name=_loss_name, loss_type=_loss_type, from_logits=_from_logits)
 
-        y_test_pred = np.argmax(classifier.predict(x=x_test_mnist), axis=1)
-        np.testing.assert_array_equal(y_test_pred, _y_test_pred_expected)
+    y_test_pred = np.argmax(classifier.predict(x=x_test_mnist), axis=1)
+    np.testing.assert_array_equal(y_test_pred, _y_test_pred_expected)
 
-        class_gradient = classifier.class_gradient(x_test_mnist, label=5)
-        np.testing.assert_array_almost_equal(class_gradient[99, 0, 14, :, 0],
-                                             _class_gradient_probabilities_expected)
+    class_gradient = classifier.class_gradient(x_test_mnist, label=5)
+    np.testing.assert_array_almost_equal(class_gradient[99, 0, 14, :, 0],
+                                         _class_gradient_probabilities_expected)
 
-        loss_gradient = classifier.loss_gradient(x=x_test_mnist, y=y_test_mnist)
-        np.testing.assert_array_almost_equal(loss_gradient[99, 14, :, 0], _loss_gradient_expected)
+    loss_gradient = classifier.loss_gradient(x=x_test_mnist, y=y_test_mnist)
+    np.testing.assert_array_almost_equal(loss_gradient[99, 14, :, 0], _loss_gradient_expected)
 
     # ================= #
     # categorical_hinge #
