@@ -33,7 +33,8 @@ class ReverseSigmoid(Postprocessor):
     """
     Implementation of a postprocessor based on adding the Reverse Sigmoid perturbation to classifier output.
     """
-    params = ['beta', 'gamma']
+
+    params = ["beta", "gamma"]
 
     def __init__(self, beta=1.0, gamma=0.1, apply_fit=False, apply_predict=True):
         """
@@ -53,7 +54,7 @@ class ReverseSigmoid(Postprocessor):
         self._apply_fit = apply_fit
         self._apply_predict = apply_predict
 
-        kwargs = {'beta': beta, 'gamma': gamma}
+        kwargs = {"beta": beta, "gamma": gamma}
         self.set_params(**kwargs)
 
     @property
@@ -94,10 +95,12 @@ class ReverseSigmoid(Postprocessor):
             preds_clipped_1 = preds_clipped
             preds_clipped_2 = 1.0 - preds_clipped
 
-            perturbation_r_1 = self.beta * (sigmoid(-self.gamma * np.log((1.0 - preds_clipped_1)
-                                                                         / preds_clipped_1)) - 0.5)
-            perturbation_r_2 = self.beta * (sigmoid(-self.gamma * np.log((1.0 - preds_clipped_2)
-                                                                         / preds_clipped_2)) - 0.5)
+            perturbation_r_1 = self.beta * (
+                sigmoid(-self.gamma * np.log((1.0 - preds_clipped_1) / preds_clipped_1)) - 0.5
+            )
+            perturbation_r_2 = self.beta * (
+                sigmoid(-self.gamma * np.log((1.0 - preds_clipped_2) / preds_clipped_2)) - 0.5
+            )
 
             preds_perturbed_1 = preds_1 - perturbation_r_1
             preds_perturbed_2 = preds_2 - perturbation_r_2
@@ -130,9 +133,9 @@ class ReverseSigmoid(Postprocessor):
         super(ReverseSigmoid, self).set_params(**kwargs)
 
         if self.beta <= 0:
-            raise ValueError('Magnitude parameter must be positive.')
+            raise ValueError("Magnitude parameter must be positive.")
 
         if self.gamma <= 0:
-            raise ValueError('Convergence parameter must be positive.')
+            raise ValueError("Convergence parameter must be positive.")
 
         return True

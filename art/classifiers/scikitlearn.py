@@ -32,8 +32,9 @@ logger = logging.getLogger(__name__)
 
 
 # pylint: disable=C0103
-def SklearnClassifier(model, clip_values=None, preprocessing_defences=None, postprocessing_defences=None,
-                      preprocessing=(0, 1)):
+def SklearnClassifier(
+    model, clip_values=None, preprocessing_defences=None, postprocessing_defences=None, preprocessing=(0, 1)
+):
     """
     Create a `Classifier` instance from a scikit-learn Classifier model. This is a convenience function that
     instantiates the correct wrapper class for the given scikit-learn model.
@@ -56,12 +57,15 @@ def SklearnClassifier(model, clip_values=None, preprocessing_defences=None, post
         raise TypeError("Model is not an sklearn model. Received '%s'" % model.__class__)
 
     sklearn_name = model.__class__.__name__
-    module = importlib.import_module('art.classifiers.scikitlearn')
-    if hasattr(module, 'Scikitlearn%s' % sklearn_name):
-        return getattr(module, 'Scikitlearn%s' % sklearn_name)(model=model, clip_values=clip_values,
-                                                               preprocessing_defences=preprocessing_defences,
-                                                               postprocessing_defences=postprocessing_defences,
-                                                               preprocessing=preprocessing)
+    module = importlib.import_module("art.classifiers.scikitlearn")
+    if hasattr(module, "Scikitlearn%s" % sklearn_name):
+        return getattr(module, "Scikitlearn%s" % sklearn_name)(
+            model=model,
+            clip_values=clip_values,
+            preprocessing_defences=preprocessing_defences,
+            postprocessing_defences=postprocessing_defences,
+            preprocessing=preprocessing,
+        )
 
     # This basic class at least generically handles `fit`, `predict` and `save`
     return ScikitlearnClassifier(model, clip_values, preprocessing_defences, postprocessing_defences, preprocessing)
@@ -72,8 +76,9 @@ class ScikitlearnClassifier(Classifier):
     Wrapper class for scikit-learn classifier models.
     """
 
-    def __init__(self, model, clip_values=None, preprocessing_defences=None, postprocessing_defences=None,
-                 preprocessing=(0, 1)):
+    def __init__(
+        self, model, clip_values=None, preprocessing_defences=None, postprocessing_defences=None, preprocessing=(0, 1)
+    ):
         """
         Create a `Classifier` instance from a scikit-learn classifier model.
 
@@ -91,10 +96,12 @@ class ScikitlearnClassifier(Classifier):
                be divided by the second one.
         :type preprocessing: `tuple`
         """
-        super(ScikitlearnClassifier, self).__init__(clip_values=clip_values,
-                                                    preprocessing_defences=preprocessing_defences,
-                                                    postprocessing_defences=postprocessing_defences,
-                                                    preprocessing=preprocessing)
+        super(ScikitlearnClassifier, self).__init__(
+            clip_values=clip_values,
+            preprocessing_defences=preprocessing_defences,
+            postprocessing_defences=postprocessing_defences,
+            preprocessing=preprocessing,
+        )
         self._model = model
         self._input_shape = self._get_input_shape(model)
         self._nb_classes = self._get_nb_classes()
@@ -199,8 +206,9 @@ class ScikitlearnDecisionTreeClassifier(ScikitlearnClassifier):
     Wrapper class for scikit-learn Decision Tree Classifier models.
     """
 
-    def __init__(self, model, clip_values=None, preprocessing_defences=None, postprocessing_defences=None,
-                 preprocessing=(0, 1)):
+    def __init__(
+        self, model, clip_values=None, preprocessing_defences=None, postprocessing_defences=None, preprocessing=(0, 1)
+    ):
         """
         Create a `Classifier` instance from a scikit-learn Decision Tree Classifier model.
 
@@ -222,12 +230,15 @@ class ScikitlearnDecisionTreeClassifier(ScikitlearnClassifier):
         from sklearn.tree import DecisionTreeClassifier
 
         if not isinstance(model, DecisionTreeClassifier) and model is not None:
-            raise TypeError('Model must be of type sklearn.tree.DecisionTreeClassifier.')
+            raise TypeError("Model must be of type sklearn.tree.DecisionTreeClassifier.")
 
-        super(ScikitlearnDecisionTreeClassifier, self).__init__(model=model, clip_values=clip_values,
-                                                                preprocessing_defences=preprocessing_defences,
-                                                                postprocessing_defences=postprocessing_defences,
-                                                                preprocessing=preprocessing)
+        super(ScikitlearnDecisionTreeClassifier, self).__init__(
+            model=model,
+            clip_values=clip_values,
+            preprocessing_defences=preprocessing_defences,
+            postprocessing_defences=postprocessing_defences,
+            preprocessing=preprocessing,
+        )
         self._model = model
 
     def get_classes_at_node(self, node_id):
@@ -343,8 +354,9 @@ class ScikitlearnDecisionTreeRegressor(ScikitlearnDecisionTreeClassifier):
     Wrapper class for scikit-learn Decision Tree Regressor models.
     """
 
-    def __init__(self, model, clip_values=None, preprocessing_defences=None, postprocessing_defences=None,
-                 preprocessing=(0, 1)):
+    def __init__(
+        self, model, clip_values=None, preprocessing_defences=None, postprocessing_defences=None, preprocessing=(0, 1)
+    ):
         """
         Create a `Regressor` instance from a scikit-learn Decision Tree Regressor model.
 
@@ -366,12 +378,16 @@ class ScikitlearnDecisionTreeRegressor(ScikitlearnDecisionTreeClassifier):
         from sklearn.tree import DecisionTreeRegressor
 
         if not isinstance(model, DecisionTreeRegressor):
-            raise TypeError('Model must be of type sklearn.tree.DecisionTreeRegressor.')
+            raise TypeError("Model must be of type sklearn.tree.DecisionTreeRegressor.")
 
-        ScikitlearnDecisionTreeClassifier.__init__(self, model=None, clip_values=clip_values,
-                                                   preprocessing_defences=preprocessing_defences,
-                                                   postprocessing_defences=postprocessing_defences,
-                                                   preprocessing=preprocessing)
+        ScikitlearnDecisionTreeClassifier.__init__(
+            self,
+            model=None,
+            clip_values=clip_values,
+            preprocessing_defences=preprocessing_defences,
+            postprocessing_defences=postprocessing_defences,
+            preprocessing=preprocessing,
+        )
         self._model = model
 
     def get_values_at_node(self, node_id):
@@ -430,8 +446,9 @@ class ScikitlearnExtraTreeClassifier(ScikitlearnDecisionTreeClassifier):
     Wrapper class for scikit-learn Extra TreeClassifier Classifier models.
     """
 
-    def __init__(self, model, clip_values=None, preprocessing_defences=None, postprocessing_defences=None,
-                 preprocessing=(0, 1)):
+    def __init__(
+        self, model, clip_values=None, preprocessing_defences=None, postprocessing_defences=None, preprocessing=(0, 1)
+    ):
         """
         Create a `Classifier` instance from a scikit-learn Extra TreeClassifier Classifier model.
 
@@ -453,12 +470,15 @@ class ScikitlearnExtraTreeClassifier(ScikitlearnDecisionTreeClassifier):
         from sklearn.tree import ExtraTreeClassifier
 
         if not isinstance(model, ExtraTreeClassifier):
-            raise TypeError('Model must be of type sklearn.tree.ExtraTreeClassifier.')
+            raise TypeError("Model must be of type sklearn.tree.ExtraTreeClassifier.")
 
-        super(ScikitlearnExtraTreeClassifier, self).__init__(model=model, clip_values=clip_values,
-                                                             preprocessing_defences=preprocessing_defences,
-                                                             postprocessing_defences=postprocessing_defences,
-                                                             preprocessing=preprocessing)
+        super(ScikitlearnExtraTreeClassifier, self).__init__(
+            model=model,
+            clip_values=clip_values,
+            preprocessing_defences=preprocessing_defences,
+            postprocessing_defences=postprocessing_defences,
+            preprocessing=preprocessing,
+        )
         self._model = model
 
 
@@ -467,8 +487,9 @@ class ScikitlearnAdaBoostClassifier(ScikitlearnClassifier):
     Wrapper class for scikit-learn AdaBoost Classifier models.
     """
 
-    def __init__(self, model, clip_values=None, preprocessing_defences=None, postprocessing_defences=None,
-                 preprocessing=(0, 1)):
+    def __init__(
+        self, model, clip_values=None, preprocessing_defences=None, postprocessing_defences=None, preprocessing=(0, 1)
+    ):
         """
         Create a `Classifier` instance from a scikit-learn AdaBoost Classifier model.
 
@@ -490,12 +511,15 @@ class ScikitlearnAdaBoostClassifier(ScikitlearnClassifier):
         from sklearn.ensemble import AdaBoostClassifier
 
         if not isinstance(model, AdaBoostClassifier):
-            raise TypeError('Model must be of type sklearn.ensemble.AdaBoostClassifier.')
+            raise TypeError("Model must be of type sklearn.ensemble.AdaBoostClassifier.")
 
-        super(ScikitlearnAdaBoostClassifier, self).__init__(model=model, clip_values=clip_values,
-                                                            preprocessing_defences=preprocessing_defences,
-                                                            postprocessing_defences=postprocessing_defences,
-                                                            preprocessing=preprocessing)
+        super(ScikitlearnAdaBoostClassifier, self).__init__(
+            model=model,
+            clip_values=clip_values,
+            preprocessing_defences=preprocessing_defences,
+            postprocessing_defences=postprocessing_defences,
+            preprocessing=preprocessing,
+        )
         self._model = model
 
 
@@ -504,8 +528,9 @@ class ScikitlearnBaggingClassifier(ScikitlearnClassifier):
     Wrapper class for scikit-learn Bagging Classifier models.
     """
 
-    def __init__(self, model, clip_values=None, preprocessing_defences=None, postprocessing_defences=None,
-                 preprocessing=(0, 1)):
+    def __init__(
+        self, model, clip_values=None, preprocessing_defences=None, postprocessing_defences=None, preprocessing=(0, 1)
+    ):
         """
         Create a `Classifier` instance from a scikit-learn Bagging Classifier model.
 
@@ -527,12 +552,15 @@ class ScikitlearnBaggingClassifier(ScikitlearnClassifier):
         from sklearn.ensemble import BaggingClassifier
 
         if not isinstance(model, BaggingClassifier):
-            raise TypeError('Model must be of type sklearn.ensemble.BaggingClassifier.')
+            raise TypeError("Model must be of type sklearn.ensemble.BaggingClassifier.")
 
-        super(ScikitlearnBaggingClassifier, self).__init__(model=model, clip_values=clip_values,
-                                                           preprocessing_defences=preprocessing_defences,
-                                                           postprocessing_defences=postprocessing_defences,
-                                                           preprocessing=preprocessing)
+        super(ScikitlearnBaggingClassifier, self).__init__(
+            model=model,
+            clip_values=clip_values,
+            preprocessing_defences=preprocessing_defences,
+            postprocessing_defences=postprocessing_defences,
+            preprocessing=preprocessing,
+        )
         self._model = model
 
 
@@ -541,8 +569,9 @@ class ScikitlearnExtraTreesClassifier(ScikitlearnClassifier, ClassifierDecisionT
     Wrapper class for scikit-learn Extra Trees Classifier models.
     """
 
-    def __init__(self, model, clip_values=None, preprocessing_defences=None, postprocessing_defences=None,
-                 preprocessing=(0, 1)):
+    def __init__(
+        self, model, clip_values=None, preprocessing_defences=None, postprocessing_defences=None, preprocessing=(0, 1)
+    ):
         """
         Create a `Classifier` instance from a scikit-learn Extra Trees Classifier model.
 
@@ -564,12 +593,15 @@ class ScikitlearnExtraTreesClassifier(ScikitlearnClassifier, ClassifierDecisionT
         from sklearn.ensemble import ExtraTreesClassifier
 
         if not isinstance(model, ExtraTreesClassifier):
-            raise TypeError('Model must be of type sklearn.ensemble.ExtraTreesClassifier.')
+            raise TypeError("Model must be of type sklearn.ensemble.ExtraTreesClassifier.")
 
-        super(ScikitlearnExtraTreesClassifier, self).__init__(model=model, clip_values=clip_values,
-                                                              preprocessing_defences=preprocessing_defences,
-                                                              postprocessing_defences=postprocessing_defences,
-                                                              preprocessing=preprocessing)
+        super(ScikitlearnExtraTreesClassifier, self).__init__(
+            model=model,
+            clip_values=clip_values,
+            preprocessing_defences=preprocessing_defences,
+            postprocessing_defences=postprocessing_defences,
+            preprocessing=preprocessing,
+        )
         self._model = model
 
     def get_trees(self):  # lgtm [py/similar-function]
@@ -612,8 +644,9 @@ class ScikitlearnGradientBoostingClassifier(ScikitlearnClassifier, ClassifierDec
     Wrapper class for scikit-learn Gradient Boosting Classifier models.
     """
 
-    def __init__(self, model, clip_values=None, preprocessing_defences=None, postprocessing_defences=None,
-                 preprocessing=(0, 1)):
+    def __init__(
+        self, model, clip_values=None, preprocessing_defences=None, postprocessing_defences=None, preprocessing=(0, 1)
+    ):
         """
         Create a `Classifier` instance from a scikit-learn Gradient Boosting Classifier model.
 
@@ -635,12 +668,15 @@ class ScikitlearnGradientBoostingClassifier(ScikitlearnClassifier, ClassifierDec
         from sklearn.ensemble import GradientBoostingClassifier
 
         if not isinstance(model, GradientBoostingClassifier):
-            raise TypeError('Model must be of type sklearn.ensemble.GradientBoostingClassifier.')
+            raise TypeError("Model must be of type sklearn.ensemble.GradientBoostingClassifier.")
 
-        super(ScikitlearnGradientBoostingClassifier, self).__init__(model=model, clip_values=clip_values,
-                                                                    preprocessing_defences=preprocessing_defences,
-                                                                    postprocessing_defences=postprocessing_defences,
-                                                                    preprocessing=preprocessing)
+        super(ScikitlearnGradientBoostingClassifier, self).__init__(
+            model=model,
+            clip_values=clip_values,
+            preprocessing_defences=preprocessing_defences,
+            postprocessing_defences=postprocessing_defences,
+            preprocessing=preprocessing,
+        )
         self._model = model
 
     def get_trees(self):
@@ -684,8 +720,9 @@ class ScikitlearnRandomForestClassifier(ScikitlearnClassifier):
     Wrapper class for scikit-learn Random Forest Classifier models.
     """
 
-    def __init__(self, model, clip_values=None, preprocessing_defences=None, postprocessing_defences=None,
-                 preprocessing=(0, 1)):
+    def __init__(
+        self, model, clip_values=None, preprocessing_defences=None, postprocessing_defences=None, preprocessing=(0, 1)
+    ):
         """
         Create a `Classifier` instance from a scikit-learn Random Forest Classifier model.
 
@@ -707,12 +744,15 @@ class ScikitlearnRandomForestClassifier(ScikitlearnClassifier):
         from sklearn.ensemble import RandomForestClassifier
 
         if not isinstance(model, RandomForestClassifier):
-            raise TypeError('Model must be of type sklearn.ensemble.RandomForestClassifier.')
+            raise TypeError("Model must be of type sklearn.ensemble.RandomForestClassifier.")
 
-        super(ScikitlearnRandomForestClassifier, self).__init__(model=model, clip_values=clip_values,
-                                                                preprocessing_defences=preprocessing_defences,
-                                                                postprocessing_defences=postprocessing_defences,
-                                                                preprocessing=preprocessing)
+        super(ScikitlearnRandomForestClassifier, self).__init__(
+            model=model,
+            clip_values=clip_values,
+            preprocessing_defences=preprocessing_defences,
+            postprocessing_defences=postprocessing_defences,
+            preprocessing=preprocessing,
+        )
         self._model = model
 
     def get_trees(self):  # lgtm [py/similar-function]
@@ -755,8 +795,9 @@ class ScikitlearnLogisticRegression(ScikitlearnClassifier, ClassifierGradients):
     Wrapper class for scikit-learn Logistic Regression models.
     """
 
-    def __init__(self, model, clip_values=None, preprocessing_defences=None, postprocessing_defences=None,
-                 preprocessing=(0, 1)):
+    def __init__(
+        self, model, clip_values=None, preprocessing_defences=None, postprocessing_defences=None, preprocessing=(0, 1)
+    ):
         """
         Create a `Classifier` instance from a scikit-learn Logistic Regression model.
 
@@ -774,10 +815,13 @@ class ScikitlearnLogisticRegression(ScikitlearnClassifier, ClassifierGradients):
                be divided by the second one.
         :type preprocessing: `tuple`
         """
-        super(ScikitlearnLogisticRegression, self).__init__(model=model, clip_values=clip_values,
-                                                            preprocessing_defences=preprocessing_defences,
-                                                            postprocessing_defences=postprocessing_defences,
-                                                            preprocessing=preprocessing)
+        super(ScikitlearnLogisticRegression, self).__init__(
+            model=model,
+            clip_values=clip_values,
+            preprocessing_defences=preprocessing_defences,
+            postprocessing_defences=postprocessing_defences,
+            preprocessing=preprocessing,
+        )
         self._model = model
 
     def nb_classes(self):
@@ -953,8 +997,9 @@ class ScikitlearnSVC(ScikitlearnClassifier, ClassifierGradients):
     Wrapper class for scikit-learn C-Support Vector Classification models.
     """
 
-    def __init__(self, model, clip_values=None, preprocessing_defences=None, postprocessing_defences=None,
-                 preprocessing=(0, 1)):
+    def __init__(
+        self, model, clip_values=None, preprocessing_defences=None, postprocessing_defences=None, preprocessing=(0, 1)
+    ):
         """
         Create a `Classifier` instance from a scikit-learn C-Support Vector Classification model.
 
@@ -980,10 +1025,13 @@ class ScikitlearnSVC(ScikitlearnClassifier, ClassifierGradients):
                 "Model must be of type sklearn.svm.SVC or sklearn.svm.LinearSVC. Found type {}".format(type(model))
             )
 
-        super(ScikitlearnSVC, self).__init__(model=model, clip_values=clip_values,
-                                             preprocessing_defences=preprocessing_defences,
-                                             postprocessing_defences=postprocessing_defences,
-                                             preprocessing=preprocessing)
+        super(ScikitlearnSVC, self).__init__(
+            model=model,
+            clip_values=clip_values,
+            preprocessing_defences=preprocessing_defences,
+            postprocessing_defences=postprocessing_defences,
+            preprocessing=preprocessing,
+        )
         self._model = model
         self._kernel = self._kernel_func()
 

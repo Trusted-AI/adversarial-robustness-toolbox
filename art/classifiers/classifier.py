@@ -89,8 +89,9 @@ class Classifier(abc.ABC, metaclass=input_filter):
     type can be combined with black-box attacks.
     """
 
-    def __init__(self, clip_values=None, preprocessing_defences=None, postprocessing_defences=None,
-                 preprocessing=None, **kwargs):
+    def __init__(
+        self, clip_values=None, preprocessing_defences=None, postprocessing_defences=None, preprocessing=None, **kwargs
+    ):
         """
         Initialize a `Classifier` object.
 

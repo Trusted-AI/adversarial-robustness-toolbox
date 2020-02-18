@@ -29,7 +29,8 @@ class HighConfidence(Postprocessor):
     """
     Implementation of a postprocessor based on selecting high confidence predictions to return as classifier output.
     """
-    params = ['cutoff']
+
+    params = ["cutoff"]
 
     def __init__(self, cutoff=0.25, apply_fit=False, apply_predict=True):
         """
@@ -88,6 +89,6 @@ class HighConfidence(Postprocessor):
         super(HighConfidence, self).set_params(**kwargs)
 
         if self.cutoff <= 0:
-            raise ValueError('Minimal value must be positive.')
+            raise ValueError("Minimal value must be positive.")
 
         return True

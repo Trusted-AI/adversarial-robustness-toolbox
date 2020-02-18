@@ -38,8 +38,9 @@ class DetectorClassifier(ClassifierNeuralNetwork, ClassifierGradients, Classifie
     More details in https://arxiv.org/abs/1705.07263
     """
 
-    def __init__(self, classifier, detector, preprocessing_defences=None, postprocessing_defences=None,
-                 preprocessing=(0, 1)):
+    def __init__(
+        self, classifier, detector, preprocessing_defences=None, postprocessing_defences=None, preprocessing=(0, 1)
+    ):
         """
         Initialization for the DetectorClassifier.
 
@@ -60,11 +61,13 @@ class DetectorClassifier(ClassifierNeuralNetwork, ClassifierGradients, Classifie
         if preprocessing_defences is not None:
             raise NotImplementedError("Preprocessing is not applicable in this classifier.")
 
-        super(DetectorClassifier, self).__init__(clip_values=classifier.clip_values,
-                                                 preprocessing=preprocessing,
-                                                 channel_index=classifier.channel_index,
-                                                 preprocessing_defences=preprocessing_defences,
-                                                 postprocessing_defences=postprocessing_defences)
+        super(DetectorClassifier, self).__init__(
+            clip_values=classifier.clip_values,
+            preprocessing=preprocessing,
+            channel_index=classifier.channel_index,
+            preprocessing_defences=preprocessing_defences,
+            postprocessing_defences=postprocessing_defences,
+        )
 
         self.classifier = classifier
         self.detector = detector
@@ -202,8 +205,9 @@ class DetectorClassifier(ClassifierNeuralNetwork, ClassifierGradients, Classifie
 
             # First compute the classifier gradients for classifier_idx
             if classifier_idx:
-                combined_grads[classifier_idx] = self.classifier.class_gradient(x=x[classifier_idx],
-                                                                                label=label[classifier_idx])
+                combined_grads[classifier_idx] = self.classifier.class_gradient(
+                    x=x[classifier_idx], label=label[classifier_idx]
+                )
 
             # Then compute the detector gradients for detector_idx
             if detector_idx:
@@ -314,9 +318,18 @@ class DetectorClassifier(ClassifierNeuralNetwork, ClassifierGradients, Classifie
         self.detector.save(filename=filename + "_detector", path=path)
 
     def __repr__(self):
-        repr_ = "%s(classifier=%r, detector=%r, preprocessing_defences=%r, postprocessing_defences=%r, " \
-                "preprocessing=%r)" % (self.__module__ + '.' + self.__class__.__name__, self.classifier, self.detector,
-                                       self.preprocessing_defences, self.postprocessing_defences, self.preprocessing)
+        repr_ = (
+            "%s(classifier=%r, detector=%r, preprocessing_defences=%r, postprocessing_defences=%r, "
+            "preprocessing=%r)"
+            % (
+                self.__module__ + "." + self.__class__.__name__,
+                self.classifier,
+                self.detector,
+                self.preprocessing_defences,
+                self.postprocessing_defences,
+                self.preprocessing,
+            )
+        )
 
         return repr_
 

@@ -35,8 +35,16 @@ class EnsembleClassifier(ClassifierNeuralNetwork, ClassifierGradients, Classifie
     trained when the ensemble is created and no training procedures are provided through this class.
     """
 
-    def __init__(self, classifiers, classifier_weights=None, channel_index=3, clip_values=None,
-                 preprocessing_defences=None, postprocessing_defences=None, preprocessing=(0, 1)):
+    def __init__(
+        self,
+        classifiers,
+        classifier_weights=None,
+        channel_index=3,
+        clip_values=None,
+        preprocessing_defences=None,
+        postprocessing_defences=None,
+        preprocessing=(0, 1),
+    ):
         """
         Initialize a :class:`.EnsembleClassifier` object. The data range values and colour channel index have to
         be consistent for all the classifiers in the ensemble.
@@ -66,10 +74,13 @@ class EnsembleClassifier(ClassifierNeuralNetwork, ClassifierGradients, Classifie
         if preprocessing_defences is not None:
             raise NotImplementedError("Preprocessing is not applicable in this classifier.")
 
-        super(EnsembleClassifier, self).__init__(clip_values=clip_values, channel_index=channel_index,
-                                                 preprocessing_defences=preprocessing_defences,
-                                                 postprocessing_defences=postprocessing_defences,
-                                                 preprocessing=preprocessing)
+        super(EnsembleClassifier, self).__init__(
+            clip_values=clip_values,
+            channel_index=channel_index,
+            preprocessing_defences=preprocessing_defences,
+            postprocessing_defences=postprocessing_defences,
+            preprocessing=preprocessing,
+        )
 
         if classifiers is None or not classifiers:
             raise ValueError("No classifiers provided for the ensemble.")
@@ -293,11 +304,20 @@ class EnsembleClassifier(ClassifierNeuralNetwork, ClassifierGradients, Classifie
         return self._nb_classes
 
     def __repr__(self):
-        repr_ = "%s(classifiers=%r, classifier_weights=%r, channel_index=%r, clip_values=%r, " \
-                "preprocessing_defences=%r, postprocessing_defences=%r, preprocessing=%r)" \
-                % (self.__module__ + '.' + self.__class__.__name__, self._classifiers, self._classifier_weights,
-                   self.channel_index, self.clip_values, self.preprocessing_defences, self.postprocessing_defences,
-                   self.preprocessing)
+        repr_ = (
+            "%s(classifiers=%r, classifier_weights=%r, channel_index=%r, clip_values=%r, "
+            "preprocessing_defences=%r, postprocessing_defences=%r, preprocessing=%r)"
+            % (
+                self.__module__ + "." + self.__class__.__name__,
+                self._classifiers,
+                self._classifier_weights,
+                self.channel_index,
+                self.clip_values,
+                self.preprocessing_defences,
+                self.postprocessing_defences,
+                self.preprocessing,
+            )
+        )
 
         return repr_
 

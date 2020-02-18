@@ -34,8 +34,14 @@ class LightGBMClassifier(Classifier, ClassifierDecisionTree):
     Wrapper class for importing LightGBM models.
     """
 
-    def __init__(self, model=None, clip_values=None, preprocessing_defences=None, postprocessing_defences=None,
-                 preprocessing=None):
+    def __init__(
+        self,
+        model=None,
+        clip_values=None,
+        preprocessing_defences=None,
+        postprocessing_defences=None,
+        preprocessing=None,
+    ):
         """
         Create a `Classifier` instance from a LightGBM model.
 
@@ -58,10 +64,12 @@ class LightGBMClassifier(Classifier, ClassifierDecisionTree):
         if not isinstance(model, Booster):
             raise TypeError("Model must be of type lightgbm.Booster")
 
-        super(LightGBMClassifier, self).__init__(clip_values=clip_values,
-                                                 preprocessing_defences=preprocessing_defences,
-                                                 postprocessing_defences=postprocessing_defences,
-                                                 preprocessing=preprocessing)
+        super(LightGBMClassifier, self).__init__(
+            clip_values=clip_values,
+            preprocessing_defences=preprocessing_defences,
+            postprocessing_defences=postprocessing_defences,
+            preprocessing=preprocessing,
+        )
 
         self._model = model
         self._input_shape = (self._model.num_feature(),)

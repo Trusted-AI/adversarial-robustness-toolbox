@@ -35,8 +35,18 @@ class KerasClassifier(ClassifierNeuralNetwork, ClassifierGradients, Classifier):
     Wrapper class for importing Keras models. The supported backends for Keras are TensorFlow and Theano.
     """
 
-    def __init__(self, model, use_logits=False, channel_index=3, clip_values=None, preprocessing_defences=None,
-                 postprocessing_defences=None, preprocessing=(0, 1), input_layer=0, output_layer=0):
+    def __init__(
+        self,
+        model,
+        use_logits=False,
+        channel_index=3,
+        clip_values=None,
+        preprocessing_defences=None,
+        postprocessing_defences=None,
+        preprocessing=(0, 1),
+        input_layer=0,
+        output_layer=0,
+    ):
         """
         Create a `Classifier` instance from a Keras model. Assumes the `model` passed as argument is compiled.
 
@@ -69,11 +79,13 @@ class KerasClassifier(ClassifierNeuralNetwork, ClassifierGradients, Classifier):
                              layer this values is not required.
         :type output_layer: `int`
         """
-        super(KerasClassifier, self).__init__(clip_values=clip_values,
-                                              preprocessing_defences=preprocessing_defences,
-                                              postprocessing_defences=postprocessing_defences,
-                                              preprocessing=preprocessing,
-                                              channel_index=channel_index)
+        super(KerasClassifier, self).__init__(
+            clip_values=clip_values,
+            preprocessing_defences=preprocessing_defences,
+            postprocessing_defences=postprocessing_defences,
+            preprocessing=preprocessing,
+            channel_index=channel_index,
+        )
 
         self._model = model
         self._input_layer = input_layer
@@ -651,11 +663,22 @@ class KerasClassifier(ClassifierNeuralNetwork, ClassifierGradients, Classifier):
         self._initialize_params(model, state["_use_logits"], state["_input_layer"], state["_output_layer"])
 
     def __repr__(self):
-        repr_ = "%s(model=%r, use_logits=%r, channel_index=%r, clip_values=%r, preprocessing_defences=%r, " \
-                "postprocessing_defences=%r, preprocessing=%r, input_layer=%r, output_layer=%r)" \
-                % (self.__module__ + '.' + self.__class__.__name__, self._model, self._use_logits, self.channel_index,
-                   self.clip_values, self.preprocessing_defences, self.postprocessing_defences, self.preprocessing,
-                   self._input_layer, self._output_layer)
+        repr_ = (
+            "%s(model=%r, use_logits=%r, channel_index=%r, clip_values=%r, preprocessing_defences=%r, "
+            "postprocessing_defences=%r, preprocessing=%r, input_layer=%r, output_layer=%r)"
+            % (
+                self.__module__ + "." + self.__class__.__name__,
+                self._model,
+                self._use_logits,
+                self.channel_index,
+                self.clip_values,
+                self.preprocessing_defences,
+                self.postprocessing_defences,
+                self.preprocessing,
+                self._input_layer,
+                self._output_layer,
+            )
+        )
 
         return repr_
 

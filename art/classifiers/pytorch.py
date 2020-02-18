@@ -36,8 +36,19 @@ class PyTorchClassifier(ClassifierNeuralNetwork, ClassifierGradients, Classifier
     This class implements a classifier with the PyTorch framework.
     """
 
-    def __init__(self, model, loss, optimizer, input_shape, nb_classes, channel_index=1, clip_values=None,
-                 preprocessing_defences=None, postprocessing_defences=None, preprocessing=(0, 1)):
+    def __init__(
+        self,
+        model,
+        loss,
+        optimizer,
+        input_shape,
+        nb_classes,
+        channel_index=1,
+        clip_values=None,
+        preprocessing_defences=None,
+        postprocessing_defences=None,
+        preprocessing=(0, 1),
+    ):
         """
         Initialization specifically for the PyTorch-based implementation.
 
@@ -69,11 +80,13 @@ class PyTorchClassifier(ClassifierNeuralNetwork, ClassifierGradients, Classifier
                be divided by the second one.
         :type preprocessing: `tuple`
         """
-        super(PyTorchClassifier, self).__init__(clip_values=clip_values,
-                                                channel_index=channel_index,
-                                                preprocessing_defences=preprocessing_defences,
-                                                postprocessing_defences=postprocessing_defences,
-                                                preprocessing=preprocessing)
+        super(PyTorchClassifier, self).__init__(
+            clip_values=clip_values,
+            channel_index=channel_index,
+            preprocessing_defences=preprocessing_defences,
+            postprocessing_defences=postprocessing_defences,
+            preprocessing=preprocessing,
+        )
 
         self._nb_classes = nb_classes
         self._input_shape = input_shape
@@ -526,11 +539,23 @@ class PyTorchClassifier(ClassifierNeuralNetwork, ClassifierGradients, Classifier
         self.__dict__.pop("inner_model", None)
 
     def __repr__(self):
-        repr_ = "%s(model=%r, loss=%r, optimizer=%r, input_shape=%r, nb_classes=%r, channel_index=%r, " \
-                "clip_values=%r, preprocessing_defences=%r, postprocessing_defences=%r, preprocessing=%r)" \
-                % (self.__module__ + '.' + self.__class__.__name__, self._model, self._loss, self._optimizer,
-                   self._input_shape, self.nb_classes(), self.channel_index, self.clip_values,
-                   self.preprocessing_defences, self.postprocessing_defences, self.preprocessing)
+        repr_ = (
+            "%s(model=%r, loss=%r, optimizer=%r, input_shape=%r, nb_classes=%r, channel_index=%r, "
+            "clip_values=%r, preprocessing_defences=%r, postprocessing_defences=%r, preprocessing=%r)"
+            % (
+                self.__module__ + "." + self.__class__.__name__,
+                self._model,
+                self._loss,
+                self._optimizer,
+                self._input_shape,
+                self.nb_classes(),
+                self.channel_index,
+                self.clip_values,
+                self.preprocessing_defences,
+                self.postprocessing_defences,
+                self.preprocessing,
+            )
+        )
 
         return repr_
 

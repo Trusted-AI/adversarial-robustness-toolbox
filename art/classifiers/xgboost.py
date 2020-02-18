@@ -33,8 +33,16 @@ class XGBoostClassifier(Classifier, ClassifierDecisionTree):
     Wrapper class for importing XGBoost models.
     """
 
-    def __init__(self, model=None, clip_values=None, preprocessing_defences=None, postprocessing_defences=None,
-                 preprocessing=None, nb_features=None, nb_classes=None):
+    def __init__(
+        self,
+        model=None,
+        clip_values=None,
+        preprocessing_defences=None,
+        postprocessing_defences=None,
+        preprocessing=None,
+        nb_features=None,
+        nb_classes=None,
+    ):
         """
         Create a `Classifier` instance from a XGBoost model.
 
@@ -60,18 +68,14 @@ class XGBoostClassifier(Classifier, ClassifierDecisionTree):
         from xgboost import Booster, XGBClassifier
 
         if not isinstance(model, Booster) and not isinstance(model, XGBClassifier):
-<<<<<<< HEAD
-            raise TypeError("Model must be of type xgboost.Booster or xgboost.XGBClassifier")
+            raise TypeError("Model must be of type xgboost.Booster or xgboost.XGBClassifier.")
 
-        super(XGBoostClassifier, self).__init__(clip_values=clip_values, defences=defences, preprocessing=preprocessing)
-=======
-            raise TypeError('Model must be of type xgboost.Booster or xgboost.XGBClassifier.')
->>>>>>> origin/dev_1.2.0
-
-        super(XGBoostClassifier, self).__init__(clip_values=clip_values,
-                                                preprocessing_defences=preprocessing_defences,
-                                                postprocessing_defences=postprocessing_defences,
-                                                preprocessing=preprocessing)
+        super(XGBoostClassifier, self).__init__(
+            clip_values=clip_values,
+            preprocessing_defences=preprocessing_defences,
+            postprocessing_defences=postprocessing_defences,
+            preprocessing=preprocessing,
+        )
         self._model = model
         self._input_shape = (nb_features,)
         self._nb_classes = nb_classes

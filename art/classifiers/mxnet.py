@@ -36,8 +36,20 @@ class MXClassifier(ClassifierNeuralNetwork, ClassifierGradients, Classifier):
     Wrapper class for importing MXNet Gluon models.
     """
 
-    def __init__(self, model, loss, input_shape, nb_classes, optimizer=None, ctx=None, channel_index=1,
-                 clip_values=None, preprocessing_defences=None, postprocessing_defences=None, preprocessing=(0, 1)):
+    def __init__(
+        self,
+        model,
+        loss,
+        input_shape,
+        nb_classes,
+        optimizer=None,
+        ctx=None,
+        channel_index=1,
+        clip_values=None,
+        preprocessing_defences=None,
+        postprocessing_defences=None,
+        preprocessing=(0, 1),
+    ):
         """
         Initialize an `MXClassifier` object. Assumes the `model` passed as parameter is a Gluon model.
 
@@ -73,11 +85,13 @@ class MXClassifier(ClassifierNeuralNetwork, ClassifierGradients, Classifier):
         """
         import mxnet as mx
 
-        super(MXClassifier, self).__init__(clip_values=clip_values,
-                                           channel_index=channel_index,
-                                           preprocessing_defences=preprocessing_defences,
-                                           postprocessing_defences=postprocessing_defences,
-                                           preprocessing=preprocessing)
+        super(MXClassifier, self).__init__(
+            clip_values=clip_values,
+            channel_index=channel_index,
+            preprocessing_defences=preprocessing_defences,
+            postprocessing_defences=postprocessing_defences,
+            preprocessing=preprocessing,
+        )
 
         self._model = model
         self._loss = loss
@@ -476,11 +490,24 @@ class MXClassifier(ClassifierNeuralNetwork, ClassifierGradients, Classifier):
         logger.info("Model parameters saved in path: %s.params.", full_path)
 
     def __repr__(self):
-        repr_ = "%s(model=%r, loss=%r, input_shape=%r, nb_classes=%r, optimizer=%r, ctx=%r, channel_index=%r, " \
-                "clip_values=%r, preprocessing_defences=%r, postprocessing_defences=%r, preprocessing=%r)" \
-                % (self.__module__ + '.' + self.__class__.__name__, self._model, self._loss, self.input_shape,
-                   self.nb_classes(), self._optimizer, self._ctx, self.channel_index, self.clip_values,
-                   self.preprocessing_defences, self.postprocessing_defences, self.preprocessing)
+        repr_ = (
+            "%s(model=%r, loss=%r, input_shape=%r, nb_classes=%r, optimizer=%r, ctx=%r, channel_index=%r, "
+            "clip_values=%r, preprocessing_defences=%r, postprocessing_defences=%r, preprocessing=%r)"
+            % (
+                self.__module__ + "." + self.__class__.__name__,
+                self._model,
+                self._loss,
+                self.input_shape,
+                self.nb_classes(),
+                self._optimizer,
+                self._ctx,
+                self.channel_index,
+                self.clip_values,
+                self.preprocessing_defences,
+                self.postprocessing_defences,
+                self.preprocessing,
+            )
+        )
 
         return repr_
 

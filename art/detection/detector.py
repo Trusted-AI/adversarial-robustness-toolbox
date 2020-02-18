@@ -43,10 +43,12 @@ class BinaryInputDetector(ClassifierNeuralNetwork, ClassifierGradients, Classifi
         :param detector: The detector architecture to be trained and applied for the binary classification.
         :type detector: :class:`.Classifier`
         """
-        super(BinaryInputDetector, self).__init__(clip_values=detector.clip_values,
-                                                  channel_index=detector.channel_index,
-                                                  preprocessing_defences=detector.preprocessing_defences,
-                                                  preprocessing=detector.preprocessing)
+        super(BinaryInputDetector, self).__init__(
+            clip_values=detector.clip_values,
+            channel_index=detector.channel_index,
+            preprocessing_defences=detector.preprocessing_defences,
+            preprocessing=detector.preprocessing,
+        )
         self.detector = detector
 
     def fit(self, x, y, batch_size=128, nb_epochs=20, **kwargs):
@@ -150,10 +152,12 @@ class BinaryActivationDetector(ClassifierNeuralNetwork, ClassifierGradients, Cla
         :param layer: Layer for computing the activations to use for training the detector.
         :type layer: `int` or `str`
         """
-        super(BinaryActivationDetector, self).__init__(clip_values=detector.clip_values,
-                                                       channel_index=detector.channel_index,
-                                                       preprocessing_defences=detector.preprocessing_defences,
-                                                       preprocessing=detector.preprocessing)
+        super(BinaryActivationDetector, self).__init__(
+            clip_values=detector.clip_values,
+            channel_index=detector.channel_index,
+            preprocessing_defences=detector.preprocessing_defences,
+            preprocessing=detector.preprocessing,
+        )
         self.classifier = classifier
         self.detector = detector
 

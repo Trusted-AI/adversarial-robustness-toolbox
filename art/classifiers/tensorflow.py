@@ -36,9 +36,21 @@ class TensorFlowClassifier(ClassifierNeuralNetwork, ClassifierGradients, Classif
     This class implements a classifier with the TensorFlow framework.
     """
 
-    def __init__(self, input_ph, output, labels_ph=None, train=None, loss=None, learning=None, sess=None,
-                 channel_index=3, clip_values=None, preprocessing_defences=None, postprocessing_defences=None,
-                 preprocessing=(0, 1)):
+    def __init__(
+        self,
+        input_ph,
+        output,
+        labels_ph=None,
+        train=None,
+        loss=None,
+        learning=None,
+        sess=None,
+        channel_index=3,
+        clip_values=None,
+        preprocessing_defences=None,
+        postprocessing_defences=None,
+        preprocessing=(0, 1),
+    ):
         """
         Initialization specific to TensorFlow models implementation.
 
@@ -79,10 +91,13 @@ class TensorFlowClassifier(ClassifierNeuralNetwork, ClassifierGradients, Classif
         # pylint: disable=E0401
         import tensorflow as tf
 
-        super(TensorFlowClassifier, self).__init__(clip_values=clip_values, channel_index=channel_index,
-                                                   preprocessing_defences=preprocessing_defences,
-                                                   postprocessing_defences=postprocessing_defences,
-                                                   preprocessing=preprocessing)
+        super(TensorFlowClassifier, self).__init__(
+            clip_values=clip_values,
+            channel_index=channel_index,
+            preprocessing_defences=preprocessing_defences,
+            postprocessing_defences=postprocessing_defences,
+            preprocessing=preprocessing,
+        )
         self._nb_classes = int(output.get_shape()[-1])
         self._input_shape = tuple(input_ph.get_shape().as_list()[1:])
         self._input_ph = input_ph
@@ -608,11 +623,25 @@ class TensorFlowClassifier(ClassifierNeuralNetwork, ClassifierGradients, Classif
         self.__dict__.pop("model_name", None)
 
     def __repr__(self):
-        repr_ = "%s(input_ph=%r, output=%r, labels_ph=%r, train=%r, loss=%r, learning=%r, sess=%r, channel_index=%r, " \
-                "clip_values=%r, preprocessing_defences=%r, postprocessing_defences=%r, preprocessing=%r)" \
-                % (self.__module__ + '.' + self.__class__.__name__, self._input_ph, self._output, self._labels_ph,
-                   self._train, self._loss, self._learning, self._sess, self.channel_index, self.clip_values,
-                   self.preprocessing_defences, self.postprocessing_defences, self.preprocessing)
+        repr_ = (
+            "%s(input_ph=%r, output=%r, labels_ph=%r, train=%r, loss=%r, learning=%r, sess=%r, channel_index=%r, "
+            "clip_values=%r, preprocessing_defences=%r, postprocessing_defences=%r, preprocessing=%r)"
+            % (
+                self.__module__ + "." + self.__class__.__name__,
+                self._input_ph,
+                self._output,
+                self._labels_ph,
+                self._train,
+                self._loss,
+                self._learning,
+                self._sess,
+                self.channel_index,
+                self.clip_values,
+                self.preprocessing_defences,
+                self.postprocessing_defences,
+                self.preprocessing,
+            )
+        )
 
         return repr_
 
@@ -626,8 +655,19 @@ class TensorFlowV2Classifier(ClassifierNeuralNetwork, ClassifierGradients, Class
     This class implements a classifier with the TensorFlow v2 framework.
     """
 
-    def __init__(self, model, nb_classes, input_shape, loss_object=None, train_step=None, channel_index=3,
-                 clip_values=None, preprocessing_defences=None, postprocessing_defences=None, preprocessing=(0, 1)):
+    def __init__(
+        self,
+        model,
+        nb_classes,
+        input_shape,
+        loss_object=None,
+        train_step=None,
+        channel_index=3,
+        clip_values=None,
+        preprocessing_defences=None,
+        postprocessing_defences=None,
+        preprocessing=(0, 1),
+    ):
         """
         Initialization specific to TensorFlow v2 models.
 
@@ -658,10 +698,13 @@ class TensorFlowV2Classifier(ClassifierNeuralNetwork, ClassifierGradients, Class
                be divided by the second one.
         :type preprocessing: `tuple`
         """
-        super(TensorFlowV2Classifier, self).__init__(clip_values=clip_values, channel_index=channel_index,
-                                                     preprocessing_defences=preprocessing_defences,
-                                                     postprocessing_defences=postprocessing_defences,
-                                                     preprocessing=preprocessing)
+        super(TensorFlowV2Classifier, self).__init__(
+            clip_values=clip_values,
+            channel_index=channel_index,
+            preprocessing_defences=preprocessing_defences,
+            postprocessing_defences=postprocessing_defences,
+            preprocessing=preprocessing,
+        )
         self._model = model
         self._nb_classes = nb_classes
         self._input_shape = input_shape
@@ -928,10 +971,22 @@ class TensorFlowV2Classifier(ClassifierNeuralNetwork, ClassifierGradients, Class
         raise NotImplementedError
 
     def __repr__(self):
-        repr_ = "%s(model=%r, nb_classes=%r, input_shape=%r, loss_object=%r, train_step=%r, channel_index=%r, " \
-                "clip_values=%r, preprocessing_defences=%r, postprocessing_defences=%r, preprocessing=%r)" \
-                % (self.__module__ + '.' + self.__class__.__name__, self._model, self._nb_classes, self._input_shape,
-                   self._loss_object, self._train_step, self.channel_index, self.clip_values,
-                   self.preprocessing_defences, self.postprocessing_defences, self.preprocessing)
+        repr_ = (
+            "%s(model=%r, nb_classes=%r, input_shape=%r, loss_object=%r, train_step=%r, channel_index=%r, "
+            "clip_values=%r, preprocessing_defences=%r, postprocessing_defences=%r, preprocessing=%r)"
+            % (
+                self.__module__ + "." + self.__class__.__name__,
+                self._model,
+                self._nb_classes,
+                self._input_shape,
+                self._loss_object,
+                self._train_step,
+                self.channel_index,
+                self.clip_values,
+                self.preprocessing_defences,
+                self.postprocessing_defences,
+                self.preprocessing,
+            )
+        )
 
         return repr_

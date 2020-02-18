@@ -811,4 +811,5 @@ def is_probability(vector):
     :rtype: `bool`
     """
     import math
+
     return math.isclose(np.sum(vector), 1.0, rel_tol=1e-03)
