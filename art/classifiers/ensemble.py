@@ -130,7 +130,7 @@ class EnsembleClassifier(ClassifierNeuralNetwork, ClassifierGradients, Classifie
         # Aggregate predictions only at probabilities level, as logits are not comparable between models
         var_z = np.sum(preds, axis=0)
 
-        # Apply postprocessing defences
+        # Apply postprocessing
         predictions = self._apply_postprocessing(preds=var_z, fit=False)
 
         return predictions
