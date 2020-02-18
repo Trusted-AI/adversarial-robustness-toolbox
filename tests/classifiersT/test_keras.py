@@ -241,12 +241,10 @@ def test_functional_model(get_functional_model):
 
 @pytest.mark.only_with_platform("keras")
 def test_layers(get_default_mnist_subset, get_backend_test_layers):
-    (x_train_mnist, y_train_mnist), (x_test_mnist, y_test_mnist) = get_default_mnist_subset
-
 
     classifier = get_image_classifier_kr()
 
-    get_backend_test_layers(classifier, x_test_mnist, batch_size=128, layer_count=3)
+    get_backend_test_layers(classifier, batch_size=128, layer_count=3)
 
     # utils_classifier.backend_test_layers(classifier, x_test_mnist, batch_size=128, layer_count=3)
 

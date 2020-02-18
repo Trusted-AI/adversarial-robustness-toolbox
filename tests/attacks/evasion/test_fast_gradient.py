@@ -39,9 +39,9 @@ def fix_get_mnist_subset(get_mnist_dataset):
     yield (x_train_mnist[:n_train], y_train_mnist[:n_train], x_test_mnist[:n_test], y_test_mnist[:n_test])
 
 
-def test_classifier_defended_images(fix_get_mnist_subset, get_image_classifier_list):
+def test_classifier_defended_images(fix_get_mnist_subset, get_image_classifier_list_for_attack):
     (x_train_mnist, y_train_mnist, x_test_mnist, y_test_mnist) = fix_get_mnist_subset
-    classifier_list = get_image_classifier_list(FastGradientMethod, defended=True)
+    classifier_list = get_image_classifier_list_for_attack(FastGradientMethod, defended=True)
     # TODO this if statement must be removed once we have a classifier for both image and tabular data
     if classifier_list is None:
         logging.warning("Couldn't perform  this test because no classifier is defined")
@@ -52,8 +52,8 @@ def test_classifier_defended_images(fix_get_mnist_subset, get_image_classifier_l
         utils_attack.backend_test_defended_images(attack, fix_get_mnist_subset)
 
 
-def test_random_initialisation_images(fix_get_mnist_subset, get_image_classifier_list):
-    classifier_list = get_image_classifier_list(FastGradientMethod)
+def test_random_initialisation_images(fix_get_mnist_subset, get_image_classifier_list_for_attack):
+    classifier_list = get_image_classifier_list_for_attack(FastGradientMethod)
     # TODO this if statement must be removed once we have a classifier for both image and tabular data
     if classifier_list is None:
         logging.warning("Couldn't perform  this test because no classifier is defined")
@@ -65,8 +65,8 @@ def test_random_initialisation_images(fix_get_mnist_subset, get_image_classifier
 
 
 
-def test_targeted_images(fix_get_mnist_subset, get_image_classifier_list):
-    classifier_list = get_image_classifier_list(FastGradientMethod)
+def test_targeted_images(fix_get_mnist_subset, get_image_classifier_list_for_attack):
+    classifier_list = get_image_classifier_list_for_attack(FastGradientMethod)
     # TODO this if statement must be removed once we have a classifier for both image and tabular data
     if classifier_list is None:
         logging.warning("Couldn't perform  this test because no classifier is defined")
@@ -80,8 +80,8 @@ def test_targeted_images(fix_get_mnist_subset, get_image_classifier_list):
         utils_attack.backend_targeted_images(attack, fix_get_mnist_subset)
 
 
-def test_minimal_perturbations_images(fix_get_mnist_subset, get_image_classifier_list):
-    classifier_list = get_image_classifier_list(FastGradientMethod)
+def test_minimal_perturbations_images(fix_get_mnist_subset, get_image_classifier_list_for_attack):
+    classifier_list = get_image_classifier_list_for_attack(FastGradientMethod)
     # TODO this if statement must be removed once we have a classifier for both image and tabular data
     if classifier_list is None:
         logging.warning("Couldn't perform  this test because no classifier is defined")
@@ -101,8 +101,8 @@ def test_minimal_perturbations_images(fix_get_mnist_subset, get_image_classifier
 
 @pytest.mark.parametrize("norm", [np.inf, 1, 2])
 @pytest.mark.skipMlFramework("pytorch")  # temporarily skipping for pytorch until find bug fix in bounded test
-def test_norm_images(norm, fix_get_mnist_subset, get_image_classifier_list):
-    classifier_list = get_image_classifier_list(FastGradientMethod)
+def test_norm_images(norm, fix_get_mnist_subset, get_image_classifier_list_for_attack):
+    classifier_list = get_image_classifier_list_for_attack(FastGradientMethod)
     # TODO this if statement must be removed once we have a classifier for both image and tabular data
     if classifier_list is None:
         logging.warning("Couldn't perform  this test because no classifier is defined")
