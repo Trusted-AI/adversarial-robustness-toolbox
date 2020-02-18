@@ -38,10 +38,10 @@ import numpy as np
 from cma import CMAEvolutionStrategy, CMAOptions
 
 # Currently, a modified version of SciPy's differential evolution is used in
-# code. An ideal version would be using the import as follows, 
+# code. An ideal version would be using the import as follows,
 # from scipy.optimize import differential_evolution
 # In the meantime, the modified implementation is used which is defined in the
-# lines `453-1457`.  
+# lines `453-1457`.
 
 from scipy._lib.six import xrange, string_types
 from scipy._lib._util import check_random_state
