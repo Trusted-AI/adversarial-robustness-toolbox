@@ -112,7 +112,7 @@ class XGBoostClassifier(Classifier, ClassifierDecisionTree):
         else:
             y_prediction = self._model.predict_proba(x_preprocessed)
 
-        # Apply postprocessing defences
+        # Apply postprocessing
         y_prediction = self._apply_postprocessing(preds=y_prediction, fit=False)
 
         return y_prediction
