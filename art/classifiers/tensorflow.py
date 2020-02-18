@@ -680,7 +680,7 @@ class TensorFlowV2Classifier(ClassifierNeuralNetwork, ClassifierGradients, Class
             # Run prediction
             results[begin:end] = self._model(x_preprocessed[begin:end])
 
-        # Apply postprocessing defences
+        # Apply postprocessing
         predictions = self._apply_postprocessing(preds=results, fit=False)
 
         return predictions
