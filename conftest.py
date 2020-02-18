@@ -5,19 +5,35 @@ from tests import utils_test
 import numpy as np
 from art.defences import FeatureSqueezing
 from art.classifiers import KerasClassifier
+import tensorflow as tf
+import os
+import requests
 import tempfile
 import shutil
-import os
-import pickle
-from art.classifiers.scikitlearn import SklearnClassifier
 
 logger = logging.getLogger(__name__)
 art_supported_frameworks = ["keras", "tensorflow", "pytorch", "scikitlearn"]
+
+utils.master_seed(1234)
 
 def pytest_addoption(parser):
     parser.addoption(
         "--mlFramework", action="store", default="tensorflow", help="ART tests allow you to specify which mlFramework to use. The default mlFramework used is tensorflow. Other options available are {0}".format(art_supported_frameworks)
     )
+
+@pytest.fixture(scope="function")
+def create_test_image(create_test_dir):
+    test_dir = create_test_dir
+    # Download one ImageNet pic for tests
+    url = 'http://farm1.static.flickr.com/163/381342603_81db58bea4.jpg'
+    result = requests.get(url, stream=True)
+    if result.status_code == 200:
+        image = result.raw.read()
+        f = open(os.path.join(test_dir, 'test.jpg'), 'wb')
+        f.write(image)
+        f.close()
+
+    yield os.path.join(test_dir, 'test.jpg')
 
 @pytest.fixture
 def get_mlFramework(request):
@@ -29,6 +45,13 @@ def get_mlFramework(request):
     #     raise Exception("The mlFramework specified was incorrect. Valid options available are {0}".format(art_supported_frameworks))
     return mlFramework
 
+
+@pytest.fixture(scope="session")
+def get_is_tf_version_2():
+    if tf.__version__[0] == '2':
+        yield True
+    else:
+        yield False
 
 @pytest.fixture(scope="session")
 def load_iris_dataset():

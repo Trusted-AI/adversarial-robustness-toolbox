@@ -29,35 +29,10 @@ from art import utils
 
 logger = logging.getLogger(__name__)
 
-#TODO put default subset values in a fixture
-
-utils.master_seed(1234)
-
-@pytest.fixture(scope="module")
-def get_is_tf_version_2():
-    if tf.__version__[0] == '2':
-        yield True
-    else:
-        yield False
-
-
-# @pytest.fixture()
-# def get_mnist_subset(get_mnist_dataset):
-#     (x_train_mnist, y_train_mnist), (x_test_mnist, y_test_mnist) = get_mnist_dataset
-#
-#     yield (x_train_mnist[:n_train], y_train_mnist[:n_train]), (x_test_mnist[:n_test], y_test_mnist[:n_test])
-
-# @pytest.fixture(scope="module")
-# def get_classifier():
-#     classifier, sess = utils_test.get_image_classifier_tf()
-#     yield classifier, sess
-
-
 
 @pytest.fixture(scope="module")
 def get_image_classifier_tf_factory():
     def _get_image_classifier_tf(from_logits=False):
-        # classifier, sess = get_image_classifier_tf()
         classifier, sess = utils_test.get_image_classifier_tf(from_logits=from_logits)
         return classifier, sess
 

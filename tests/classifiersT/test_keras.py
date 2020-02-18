@@ -19,12 +19,6 @@ from __future__ import absolute_import, division, print_function, unicode_litera
 
 import os
 import logging
-import unittest
-import requests
-import tempfile
-import shutil
-# import pickle
-
 import numpy as np
 import keras
 import keras.backend as k
@@ -55,9 +49,8 @@ logger = logging.getLogger(__name__)
 #TODO create/delete tmp folder
 #%TODO classifier = get_image_classifier_kr() needs to be a fixture I think maybe?
 
-utils.master_seed(1234)
-batch_size = 16
 
+batch_size = 16
 
 
 def _functional_model():
@@ -88,19 +81,7 @@ def _functional_model():
 
     return model
 
-@pytest.fixture(scope="function")
-def create_test_image(create_test_dir):
-    test_dir = create_test_dir
-    # Download one ImageNet pic for tests
-    url = 'http://farm1.static.flickr.com/163/381342603_81db58bea4.jpg'
-    result = requests.get(url, stream=True)
-    if result.status_code == 200:
-        image = result.raw.read()
-        f = open(os.path.join(test_dir, 'test.jpg'), 'wb')
-        f.write(image)
-        f.close()
 
-    yield os.path.join(test_dir, 'test.jpg')
 
 #TODO this should be scope="module" no point doing it for each function
 @pytest.fixture()
