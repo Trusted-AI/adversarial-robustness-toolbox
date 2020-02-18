@@ -133,7 +133,7 @@ class TensorFlowClassifier(ClassifierNeuralNetwork, ClassifierGradients, Classif
             # Run prediction
             results[begin:end] = self._sess.run(self._output, feed_dict=feed_dict)
 
-        # Apply postprocessing defences
+        # Apply postprocessing
         predictions = self._apply_postprocessing(preds=results, fit=False)
 
         return predictions
