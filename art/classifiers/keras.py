@@ -309,7 +309,7 @@ class KerasClassifier(ClassifierNeuralNetwork, ClassifierGradients, Classifier):
         """
         from art.config import ART_NUMPY_DTYPE
 
-        # Apply preprocessing defences
+        # Apply preprocessing
         x_preprocessed, _ = self._apply_preprocessing(x, y=None, fit=False)
 
         # Run predictions with batching
