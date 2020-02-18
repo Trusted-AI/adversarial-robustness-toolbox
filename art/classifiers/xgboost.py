@@ -109,7 +109,7 @@ class XGBoostClassifier(Classifier, ClassifierDecisionTree):
             y_prediction = np.asarray([line for line in predictions])
             if len(y_prediction.shape) == 1:
                 y_prediction = to_categorical(labels=y_prediction, nb_classes=self.nb_classes())
-        elif isinstance(self._model, XGBClassifier)::
+        elif isinstance(self._model, XGBClassifier):
             y_prediction = self._model.predict_proba(x_preprocessed)
 
         # Apply postprocessing

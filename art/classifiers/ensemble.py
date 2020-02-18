@@ -63,6 +63,9 @@ class EnsembleClassifier(ClassifierNeuralNetwork, ClassifierGradients, Classifie
                be divided by the second one. Not applicable in this classifier.
         :type preprocessing: `tuple`
         """
+        if preprocessing_defences is not None:
+            raise NotImplementedError("Preprocessing is not applicable in this classifier.")
+
         super(EnsembleClassifier, self).__init__(clip_values=clip_values, channel_index=channel_index,
                                                  preprocessing_defences=preprocessing_defences,
                                                  postprocessing_defences=postprocessing_defences,

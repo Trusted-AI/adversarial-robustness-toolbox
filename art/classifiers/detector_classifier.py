@@ -57,6 +57,9 @@ class DetectorClassifier(ClassifierNeuralNetwork, ClassifierGradients, Classifie
                be divided by the second one. Not applicable in this classifier.
         :type preprocessing: `tuple`
         """
+        if preprocessing_defences is not None:
+            raise NotImplementedError("Preprocessing is not applicable in this classifier.")
+
         super(DetectorClassifier, self).__init__(clip_values=classifier.clip_values,
                                                  preprocessing=preprocessing,
                                                  channel_index=classifier.channel_index,

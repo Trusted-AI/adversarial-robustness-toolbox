@@ -356,6 +356,18 @@ class TestUtils(unittest.TestCase):
         self.assertTrue(is_probability(x))
         self.assertFalse(is_probability(y))
 
+        x = np.array([0.1, 0.3, 0.6001])
+        y = np.array([0.1, 0.3, 0.6011])
+
+        self.assertTrue(is_probability(x))
+        self.assertFalse(is_probability(y))
+
+        x = np.array([0.1, 0.3, 0.5999])
+        y = np.array([0.1, 0.3, -0.599])
+
+        self.assertFalse(is_probability(-x))
+        self.assertFalse(is_probability(y))
+
 
 if __name__ == '__main__':
     unittest.main()
