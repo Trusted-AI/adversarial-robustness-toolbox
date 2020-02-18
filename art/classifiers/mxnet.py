@@ -141,7 +141,7 @@ class MXClassifier(ClassifierNeuralNetwork, ClassifierGradients, Classifier):
                     # Perform prediction
                     preds = self._model(x_batch)
 
-                    # Apply postprocessing defences
+                    # Apply postprocessing
                     preds = self._apply_postprocessing(preds=preds, fit=True)
 
                     # Form the loss function
