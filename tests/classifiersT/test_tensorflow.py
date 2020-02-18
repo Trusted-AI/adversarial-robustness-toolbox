@@ -170,12 +170,9 @@ def test_loss_gradient(get_image_classifier_tf_factory, get_default_mnist_subset
     np.testing.assert_array_almost_equal(gradients[0, :, 14, 0], expected_gradients_2, decimal=4)
 
 @pytest.mark.only_with_platform("tensorflow")
-def test_layers(is_tf_version_2, get_image_classifier_tf_factory, get_default_mnist_subset):
-    (x_train_mnist, y_train_mnist), (x_test_mnist, y_test_mnist) = get_default_mnist_subset
-    classifier, sess = get_image_classifier_tf_factory()
+def test_layers(is_tf_version_2, get_backend_test_layers):
     if not is_tf_version_2:
-        utils_classifier.backend_test_layers(classifier, x_test_mnist, batch_size=128)
-
+        get_backend_test_layers(batch_size=5)
 
 
 @pytest.mark.only_with_platform("tensorflow")
