@@ -18,14 +18,10 @@
 from __future__ import absolute_import, division, print_function, unicode_literals
 import pytest
 import logging
-from tests import utils_test
 import tensorflow as tf
 import numpy as np
-
-# from art.config import ART_DATA_PATH
 from art.data_generators import TFDataGenerator
 from tests import utils_test
-from art import utils
 
 logger = logging.getLogger(__name__)
 

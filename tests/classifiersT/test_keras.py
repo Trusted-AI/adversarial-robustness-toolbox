@@ -35,22 +35,20 @@ from art.classifiers.keras import generator_fit
 from art.defences import FeatureSqueezing, JpegCompression, SpatialSmoothing
 from art.utils import master_seed
 from art.data_generators import KerasDataGenerator
-
 from tests.utils_test import TestBase, get_image_classifier_kr
 import pytest
-from art import utils
+
 
 logger = logging.getLogger(__name__)
 
 
 #TODO the master seed needs to be set up for ALL tests not just classifiers
-#TODO do testBase class setup
+#TODO do testBase class setup and tear down
 #TODO clear out keras after each test
 #TODO create/delete tmp folder
 #%TODO classifier = get_image_classifier_kr() needs to be a fixture I think maybe?
 
 
-batch_size = 16
 
 
 def _functional_model():
@@ -96,32 +94,32 @@ def get_functional_model(get_default_mnist_subset):
 
 
 @pytest.mark.only_with_platform("keras")
-def test_fit(get_default_mnist_subset, ):
+def test_fit(get_default_mnist_subset, default_batch_size):
     (x_train_mnist, y_train_mnist), (x_test_mnist, y_test_mnist) = get_default_mnist_subset
-
 
     labels = np.argmax(y_test_mnist, axis=1)
     classifier = get_image_classifier_kr()
     accuracy = np.sum(np.argmax(classifier.predict(x_test_mnist), axis=1) == labels) / x_test_mnist.shape[0]
     logger.info('Accuracy: %.2f%%', (accuracy * 100))
 
-    classifier.fit(x_train_mnist, y_train_mnist, batch_size=batch_size, nb_epochs=2)
+    classifier.fit(x_train_mnist, y_train_mnist, batch_size=default_batch_size, nb_epochs=2)
     accuracy_2 = np.sum(np.argmax(classifier.predict(x_test_mnist), axis=1) == labels) / x_test_mnist.shape[0]
     logger.info('Accuracy: %.2f%%', (accuracy_2 * 100))
 
     assert accuracy == 0.32
     np.testing.assert_array_almost_equal(accuracy_2, 0.73, decimal=0.06)
 
+
 @pytest.mark.only_with_platform("keras")
-def test_fit_generator(get_default_mnist_subset):
+def test_fit_generator(get_default_mnist_subset, default_batch_size):
     (x_train_mnist, y_train_mnist), (x_test_mnist, y_test_mnist) = get_default_mnist_subset
     classifier = get_image_classifier_kr()
     labels = np.argmax(y_test_mnist, axis=1)
     accuracy = np.sum(np.argmax(classifier.predict(x_test_mnist), axis=1) == labels) / x_test_mnist.shape[0]
     logger.info('Accuracy: %.2f%%', (accuracy * 100))
 
-    gen = generator_fit(x_train_mnist, y_train_mnist, batch_size=batch_size)
-    data_gen = KerasDataGenerator(generator=gen, size=x_train_mnist.shape[0], batch_size=batch_size)
+    gen = generator_fit(x_train_mnist, y_train_mnist, batch_size=default_batch_size)
+    data_gen = KerasDataGenerator(generator=gen, size=x_train_mnist.shape[0], batch_size=default_batch_size)
     classifier.fit_generator(generator=data_gen, nb_epochs=3)
     accuracy_2 = np.sum(np.argmax(classifier.predict(x_test_mnist), axis=1) == labels) / x_test_mnist.shape[0]
     logger.info('Accuracy: %.2f%%', (accuracy_2 * 100))
@@ -130,7 +128,7 @@ def test_fit_generator(get_default_mnist_subset):
     np.testing.assert_array_almost_equal(accuracy_2, 0.36, decimal=0.06)
 
 @pytest.mark.only_with_platform("keras")
-def test_fit_image_generator(get_default_mnist_subset):
+def test_fit_image_generator(get_default_mnist_subset, default_batch_size):
     (x_train_mnist, y_train_mnist), (x_test_mnist, y_test_mnist) = get_default_mnist_subset
 
     classifier = get_image_classifier_kr()
@@ -142,8 +140,8 @@ def test_fit_image_generator(get_default_mnist_subset):
                                    shear_range=0.075, zoom_range=0.05, fill_mode='constant', cval=0)
     keras_gen.fit(x_train_mnist)
     data_gen = KerasDataGenerator(generator=keras_gen.flow(x_train_mnist, y_train_mnist,
-                                                           batch_size=batch_size),
-                                  size=x_train_mnist.shape[0], batch_size=batch_size)
+                                                           batch_size=default_batch_size),
+                                  size=x_train_mnist.shape[0], batch_size=default_batch_size)
     classifier.fit_generator(generator=data_gen, nb_epochs=5)
     accuracy_2 = np.sum(np.argmax(classifier.predict(x_test_mnist), axis=1) == labels_test) / x_test_mnist.shape[0]
     logger.info('Accuracy: %.2f%%', (accuracy_2 * 100))
@@ -152,7 +150,7 @@ def test_fit_image_generator(get_default_mnist_subset):
     np.testing.assert_array_almost_equal(accuracy_2, 0.35, decimal=0.06)
 
 @pytest.mark.only_with_platform("keras")
-def test_fit_kwargs(get_default_mnist_subset):
+def test_fit_kwargs(get_default_mnist_subset, default_batch_size):
     (x_train_mnist, y_train_mnist), (x_test_mnist, y_test_mnist) = get_default_mnist_subset
     def get_lr(_):
         return 0.01
@@ -160,12 +158,12 @@ def test_fit_kwargs(get_default_mnist_subset):
     # Test a valid callback
     classifier = get_image_classifier_kr()
     kwargs = {'callbacks': [LearningRateScheduler(get_lr)]}
-    classifier.fit(x_train_mnist, y_train_mnist, batch_size=batch_size, nb_epochs=1, **kwargs)
+    classifier.fit(x_train_mnist, y_train_mnist, batch_size=default_batch_size, nb_epochs=1, **kwargs)
 
     # Test failure for invalid parameters
     kwargs = {'epochs': 1}
     with pytest.raises(TypeError) as exception:
-        classifier.fit(x_train_mnist, y_train_mnist, batch_size=batch_size, nb_epochs=1, **kwargs)
+        classifier.fit(x_train_mnist, y_train_mnist, batch_size=default_batch_size, nb_epochs=1, **kwargs)
 
     assert 'multiple values for keyword argument' in str(exception.value)
 
