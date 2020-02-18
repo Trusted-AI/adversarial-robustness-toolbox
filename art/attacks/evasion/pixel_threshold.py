@@ -35,15 +35,19 @@ from itertools import product
 
 import numpy as np
 
+from cma import CMAEvolutionStrategy, CMAOptions
+
+# Currently, a modified version of SciPy's differential evolution is used in
+# code. An ideal version would be using the import as follows, 
+# from scipy.optimize import differential_evolution
+# In the meantime, the modified implementation is used which is defined in the
+# lines `453-1457`.  
+
 from scipy._lib.six import xrange, string_types
 from scipy._lib._util import check_random_state
 from scipy.optimize.optimize import _status_message
 from scipy.optimize import OptimizeResult, minimize
 
-from cma import CMAEvolutionStrategy, CMAOptions
-# from scipy.optimize import differential_evolution
-
-from art.classifiers import PyTorchClassifier
 from art.attacks.attack import EvasionAttack
 from art.utils import compute_success, to_categorical, check_and_transform_label_format
 
@@ -142,7 +146,7 @@ class PixelThreshold(EvasionAttack):
         if self.th is None:
             logger.info('Performing minimal perturbation Attack.')
 
-        if isinstance(self.classifier, PyTorchClassifier):
+        if self.classifier.channel_index == 1:
             x = np.swapaxes(x, 1, 3).astype(np.float32)
 
         if np.max(x) <= 1:
@@ -178,7 +182,7 @@ class PixelThreshold(EvasionAttack):
         if np.max(x) <= 1:
             x = x / 255.
 
-        if isinstance(self.classifier, PyTorchClassifier):
+        if self.classifier.channel_index == 1:
             x = np.swapaxes(x, 1, 3).astype(np.float32)
             adv_x_best = np.swapaxes(adv_x_best, 1, 3).astype(np.float32)
 
@@ -194,7 +198,7 @@ class PixelThreshold(EvasionAttack):
         """
         Wrapper for classifier.predict function.
         """
-        if isinstance(self.classifier, PyTorchClassifier):
+        if self.classifier.channel_index == 1:
             test_x = np.swapaxes(test_x, 1, 3).astype(np.float32)
 
         return self.classifier.predict(test_x)

@@ -99,7 +99,7 @@ class TestPixelAttack(TestBase):
         Test with the PyTorchClassifier. (Untargetted Attack)
         :return:
         """
-        x_test = np.swapaxes(self.x_test_mnist, 1, 3).astype(np.float32)
+        x_test = np.reshape(self.x_test_mnist, (self.x_test_mnist.shape[0], 1, 28, 28)).astype(np.float32)
         classifier = get_classifier_pt()
         self._test_attack(classifier, x_test, self.y_test_mnist, False)
 
@@ -132,7 +132,7 @@ class TestPixelAttack(TestBase):
         Test with the PyTorchClassifier. (Targetted Attack)
         :return:
         """
-        x_test = np.swapaxes(self.x_test_mnist, 1, 3).astype(np.float32)
+        x_test = np.reshape(self.x_test_mnist, (self.x_test_mnist.shape[0], 1, 28, 28)).astype(np.float32)
         classifier = get_classifier_pt()
         self._test_attack(classifier, x_test, self.y_test_mnist, True)
 
