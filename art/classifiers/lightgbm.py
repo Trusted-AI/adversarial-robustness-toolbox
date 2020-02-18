@@ -98,7 +98,7 @@ class LightGBMClassifier(Classifier, ClassifierDecisionTree):
         # Perform prediction
         predictions = self._model.predict(x_preprocessed)
 
-        # Apply postprocessing defences
+        # Apply postprocessing
         predictions = self._apply_postprocessing(preds=predictions, fit=False)
 
         return predictions
