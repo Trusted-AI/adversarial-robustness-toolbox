@@ -25,13 +25,14 @@ import abc
 
 class Postprocessor(abc.ABC):
     """
-    Abstract base class for postprocessing defences.
+    Abstract base class for postprocessing defences. Postprocessing defences are not included in the loss function
+    evaluation for loss gradients or the calculation of class gradients.
     """
     params = []
 
     def __init__(self):
         """
-        Create a postprocessing object
+        Create a postprocessing object.
         """
         self._is_fitted = False
 
