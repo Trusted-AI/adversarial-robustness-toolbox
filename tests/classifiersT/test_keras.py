@@ -28,7 +28,7 @@ from keras.preprocessing.image import ImageDataGenerator
 from keras.callbacks import LearningRateScheduler
 from keras.applications.resnet50 import ResNet50, decode_predictions
 from keras.preprocessing.image import load_img, img_to_array
-
+from tests.utils_test import ExpectedValue
 # from art.config import ART_DATA_PATH
 from art.classifiers import KerasClassifier
 from art.classifiers.keras import generator_fit
@@ -103,22 +103,20 @@ def test_fit(get_default_mnist_subset, default_batch_size):
     np.testing.assert_array_almost_equal(accuracy_2, 0.73, decimal=0.06)
 
 
+
 @pytest.mark.only_with_platform("keras")
-def test_fit_generator(get_default_mnist_subset, default_batch_size):
+def test_fit_generator(get_default_mnist_subset, default_batch_size, get_image_classifier_list):
     (x_train_mnist, y_train_mnist), (x_test_mnist, y_test_mnist) = get_default_mnist_subset
-    classifier = get_image_classifier_kr()
-    labels = np.argmax(y_test_mnist, axis=1)
-    accuracy = np.sum(np.argmax(classifier.predict(x_test_mnist), axis=1) == labels) / x_test_mnist.shape[0]
-    logger.info('Accuracy: %.2f%%', (accuracy * 100))
+
+    classifier = get_image_classifier_list()[0]
 
     gen = generator_fit(x_train_mnist, y_train_mnist, batch_size=default_batch_size)
     data_gen = KerasDataGenerator(generator=gen, size=x_train_mnist.shape[0], batch_size=default_batch_size)
-    classifier.fit_generator(generator=data_gen, nb_epochs=3)
-    accuracy_2 = np.sum(np.argmax(classifier.predict(x_test_mnist), axis=1) == labels) / x_test_mnist.shape[0]
-    logger.info('Accuracy: %.2f%%', (accuracy_2 * 100))
 
-    assert accuracy == 0.32
-    np.testing.assert_array_almost_equal(accuracy_2, 0.36, decimal=0.06)
+    expected_values = {"pre_fit_accuracy": ExpectedValue(0.32, 0.06),
+                       "post_fit_accuracy": ExpectedValue(0.36, 0.06)}
+
+    utils_classifier.backend_fit_generator(expected_values, data_gen, get_default_mnist_subset, classifier, nb_epochs=3)
 
 @pytest.mark.only_with_platform("keras")
 def test_fit_image_generator(get_default_mnist_subset, default_batch_size):

@@ -23,6 +23,7 @@ import numpy as np
 from art.data_generators import TFDataGenerator
 from tests import utils_test
 from tests.classifiersT import utils_classifier
+from tests.utils_test import ExpectedValue
 
 logger = logging.getLogger(__name__)
 
@@ -46,7 +47,7 @@ def test_predict(get_image_classifier_tf_factory, get_default_mnist_subset):
     np.testing.assert_array_almost_equal(y_predicted, y_expected, decimal=4)
 
 @pytest.mark.only_with_platform("tensorflow")
-def test_fit_generator(is_tf_version_2, get_image_classifier_tf_factory, get_default_mnist_subset):
+def test_fit_generator(is_tf_version_2, get_image_classifier_tf_factory, get_default_mnist_subset, get_image_classifier_list):
     (x_train_mnist, y_train_mnist), (x_test_mnist, y_test_mnist) = get_default_mnist_subset
 
     if not is_tf_version_2:
@@ -56,19 +57,16 @@ def test_fit_generator(is_tf_version_2, get_image_classifier_tf_factory, get_def
         x_tensor = tf.convert_to_tensor(x_train_mnist.reshape(10, 100, 28, 28, 1))
         y_tensor = tf.convert_to_tensor(y_train_mnist.reshape(10, 100, 10))
         dataset = tf.data.Dataset.from_tensor_slices((x_tensor, y_tensor))
+
         iterator = dataset.make_initializable_iterator()
         data_gen = TFDataGenerator(sess=sess, iterator=iterator, iterator_type='initializable', iterator_arg={},
                                    size=1000, batch_size=100)
 
-        # Test fit and predict
-        classifier.fit_generator(data_gen, nb_epochs=2)
-        predictions = classifier.predict(x_test_mnist)
-        predictions_class = np.argmax(predictions, axis=1)
-        true_class = np.argmax(y_test_mnist, axis=1)
-        accuracy = np.sum(predictions_class == true_class) / len(true_class)
 
-        logger.info('Accuracy after fitting TensorFlow classifier with generator: %.2f%%', (accuracy * 100))
-        np.testing.assert_array_almost_equal(accuracy, 0.65, decimal=0.02)
+        expected_values = {"post_fit_accuracy": ExpectedValue(0.65, 0.02)}
+
+        utils_classifier.backend_fit_generator(expected_values, data_gen, get_default_mnist_subset, classifier,
+                                               nb_epochs=2)
 
 @pytest.mark.only_with_platform("tensorflow")
 def test_nb_classes(get_image_classifier_tf_factory):
