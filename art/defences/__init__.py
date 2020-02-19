@@ -2,6 +2,7 @@
 Module implementing multiple types of defences against adversarial attacks.
 """
 from art.defences.trainer.adversarial_trainer import AdversarialTrainer
+from art.defences.trainer.adversarial_trainer_madry_pgd import AdversarialTrainerMadryPGD
 
 from art.defences.preprocessor.feature_squeezing import FeatureSqueezing
 from art.defences.preprocessor.gaussian_augmentation import GaussianAugmentation

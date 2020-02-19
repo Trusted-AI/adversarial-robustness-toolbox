@@ -28,13 +28,14 @@ import logging
 
 import numpy as np
 
-from art.attacks.projected_gradient_descent import ProjectedGradientDescent
-from art.defences.adversarial_trainer import AdversarialTrainer
+from art.defences.trainer.trainer import Trainer
+from art.defences.trainer.adversarial_trainer import AdversarialTrainer
+from art.attacks.evasion.projected_gradient_descent import ProjectedGradientDescent
 
 logger = logging.getLogger(__name__)
 
 
-class AdversarialTrainerMadryPGD(AdversarialTrainer):
+class AdversarialTrainerMadryPGD(Trainer):
     """
     Class performing adversarial training following Madry's Protocol.
 
@@ -45,7 +46,7 @@ class AdversarialTrainerMadryPGD(AdversarialTrainer):
     evaluations are required to assess its effectiveness case by case (see https://arxiv.org/abs/1902.06705).
     """
 
-    def __init__(self, classifier, nb_epochs=391, batch_size=128, eps=8, eps_step=2, max_iter=7, random_init=True,
+    def __init__(self, classifier, nb_epochs=391, batch_size=128, eps=8, eps_step=2, max_iter=7, num_random_init=True,
                  **kwargs):
         """
         Create an :class:`.AdversarialTrainerMadryPGD` instance.
@@ -77,7 +78,7 @@ class AdversarialTrainerMadryPGD(AdversarialTrainer):
                                                eps=eps,
                                                eps_step=eps_step,
                                                max_iter=max_iter,
-                                               random_init=random_init)
+                                               num_random_init=num_random_init)
 
         self.trainer = AdversarialTrainer(classifier, self.attack, ratio=1.0)
 
