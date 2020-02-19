@@ -88,7 +88,7 @@ class FastGradientMethod(EvasionAttack):
         :type minimal: `bool`
         """
         super(FastGradientMethod, self).__init__(classifier)
-<<<<<<< HEAD
+
         if self.is_valid_classifier_type(classifier) is False:
         # if not isinstance(classifier, ClassifierGradients):
             # raise utils.WrongClassifer(self.__class__, Classifier, classifier)
@@ -100,28 +100,7 @@ class FastGradientMethod(EvasionAttack):
 
         kwargs = {'norm': norm, 'eps': eps, 'eps_step': eps_step, 'targeted': targeted,
                   'num_random_init': num_random_init, 'batch_size': batch_size, 'minimal': minimal}
-=======
-        if not isinstance(classifier, ClassifierGradients):
-            raise (
-                TypeError(
-                    "For `" + self.__class__.__name__ + "` classifier must be an instance of "
-                    "`art.classifiers.classifier.ClassifierGradients`, the provided classifier is instance of "
-                    + str(classifier.__class__.__bases__)
-                    + ". "
-                    " The classifier needs to provide gradients."
-                )
-            )
 
-        kwargs = {
-            "norm": norm,
-            "eps": eps,
-            "eps_step": eps_step,
-            "targeted": targeted,
-            "num_random_init": num_random_init,
-            "batch_size": batch_size,
-            "minimal": minimal,
-        }
->>>>>>> dev_1.2.0
         FastGradientMethod.set_params(self, **kwargs)
 
         self._project = True
@@ -178,7 +157,7 @@ class FastGradientMethod(EvasionAttack):
 
         return adv_x
 
-    def generate(self, x1, y=None, **kwargs):
+    def generate(self, x, y=None, **kwargs):
         """Generate adversarial samples and return them in an array.
 
         :param x: An array with the original inputs.
