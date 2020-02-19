@@ -41,7 +41,8 @@ import pytest
 
 logger = logging.getLogger(__name__)
 
-#%TODO classifier = get_image_classifier_kr() needs to be a fixture I think maybe?
+
+# %TODO classifier = get_image_classifier_kr() needs to be a fixture I think maybe?
 
 
 def _functional_model():
@@ -73,8 +74,7 @@ def _functional_model():
     return model
 
 
-
-#TODO this should be scope="module" no point doing it for each function
+# TODO this should be scope="module" no point doing it for each function
 @pytest.fixture()
 def get_functional_model(get_default_mnist_subset):
     (x_train_mnist, y_train_mnist), (x_test_mnist, y_test_mnist) = get_default_mnist_subset
@@ -103,7 +103,6 @@ def test_fit(get_default_mnist_subset, default_batch_size):
     np.testing.assert_array_almost_equal(accuracy_2, 0.73, decimal=0.06)
 
 
-
 @pytest.mark.only_with_platform("keras")
 def test_fit_generator(get_default_mnist_subset, default_batch_size, get_image_classifier_list):
     (x_train_mnist, y_train_mnist), (x_test_mnist, y_test_mnist) = get_default_mnist_subset
@@ -117,7 +116,9 @@ def test_fit_generator(get_default_mnist_subset, default_batch_size, get_image_c
     expected_values = {"pre_fit_accuracy": ExpectedValue(0.32, 0.06),
                        "post_fit_accuracy": ExpectedValue(0.36, 0.06)}
 
-    utils_classifier.backend_test_fit_generator(expected_values, classifier, data_gen, get_default_mnist_subset, nb_epochs=3)
+    utils_classifier.backend_test_fit_generator(expected_values, classifier, data_gen, get_default_mnist_subset,
+                                                nb_epochs=3)
+
 
 @pytest.mark.only_with_platform("keras")
 def test_fit_image_generator(get_default_mnist_subset, default_batch_size):
@@ -138,12 +139,14 @@ def test_fit_image_generator(get_default_mnist_subset, default_batch_size):
     accuracy_2 = np.sum(np.argmax(classifier.predict(x_test_mnist), axis=1) == labels_test) / x_test_mnist.shape[0]
     logger.info('Accuracy: %.2f%%', (accuracy_2 * 100))
 
-    assert accuracy==0.32
+    assert accuracy == 0.32
     np.testing.assert_array_almost_equal(accuracy_2, 0.35, decimal=0.06)
+
 
 @pytest.mark.only_with_platform("keras")
 def test_fit_kwargs(get_default_mnist_subset, default_batch_size):
     (x_train_mnist, y_train_mnist), (x_test_mnist, y_test_mnist) = get_default_mnist_subset
+
     def get_lr(_):
         return 0.01
 
@@ -158,6 +161,7 @@ def test_fit_kwargs(get_default_mnist_subset, default_batch_size):
         classifier.fit(x_train_mnist, y_train_mnist, batch_size=default_batch_size, nb_epochs=1, **kwargs)
 
     assert 'multiple values for keyword argument' in str(exception.value)
+
 
 @pytest.mark.only_with_platform("keras")
 def test_shapes(get_default_mnist_subset):
@@ -174,6 +178,7 @@ def test_shapes(get_default_mnist_subset):
 
     loss_gradients = classifier.loss_gradient(x_test_mnist[:11], y_test_mnist[:11])
     assert loss_gradients.shape == x_test_mnist[:11].shape
+
 
 @pytest.mark.only_with_platform("keras")
 def test_defences_predict(get_default_mnist_subset):
@@ -201,20 +206,20 @@ def test_defences_predict(get_default_mnist_subset):
     np.testing.assert_array_almost_equal(predictions_classifier, predictions_check, decimal=4)
 
 
-
 @pytest.mark.only_with_platform("keras")
 def test_loss_gradient(get_default_mnist_subset, get_image_classifier_list):
-
-    expected_values = {"expected_gradients_1": ExpectedValue(np.asarray([0.0559206, 0.05338925, 0.0648919, 0.07925165, -0.04029291, -0.11281465,
-                0.01850601, 0.00325054, 0.08163195, 0.03333949, 0.031766, -0.02420463,
-                -0.07815556, -0.04698735, 0.10711591, 0.04086434, -0.03441073, 0.01071284,
-                -0.04229195, -0.01386157, 0.02827487, 0.0, 0.0, 0.0,
-                0.0, 0.0, 0.0, 0.0]),4),
-                       "expected_gradients_2": ExpectedValue(np.asarray([0.00210803, 0.00213919, 0.00520981, 0.00548001, -0.0023059, 0.00432077,
-                0.00274945, 0.0, 0.0, -0.0583441, -0.00616604, 0.0526219,
-                -0.02373985, 0.05273106, 0.10711591, 0.12773865, 0.0689289, 0.01337799,
-                0.10032021, 0.01681096, -0.00028647, -0.05588859, 0.01474165, 0.0,
-                0.0, 0.0, 0.0, 0.0]),4)}
+    expected_values = {"expected_gradients_1": ExpectedValue(
+        np.asarray([0.0559206, 0.05338925, 0.0648919, 0.07925165, -0.04029291, -0.11281465,
+                    0.01850601, 0.00325054, 0.08163195, 0.03333949, 0.031766, -0.02420463,
+                    -0.07815556, -0.04698735, 0.10711591, 0.04086434, -0.03441073, 0.01071284,
+                    -0.04229195, -0.01386157, 0.02827487, 0.0, 0.0, 0.0,
+                    0.0, 0.0, 0.0, 0.0]), 4),
+        "expected_gradients_2": ExpectedValue(
+            np.asarray([0.00210803, 0.00213919, 0.00520981, 0.00548001, -0.0023059, 0.00432077,
+                        0.00274945, 0.0, 0.0, -0.0583441, -0.00616604, 0.0526219,
+                        -0.02373985, 0.05273106, 0.10711591, 0.12773865, 0.0689289, 0.01337799,
+                        0.10032021, 0.01681096, -0.00028647, -0.05588859, 0.01474165, 0.0,
+                        0.0, 0.0, 0.0, 0.0]), 4)}
 
     utils_classifier.backend_test_loss_gradient(get_default_mnist_subset, get_image_classifier_list, expected_values)
 
@@ -229,7 +234,6 @@ def test_functional_model(get_functional_model):
     keras_model = KerasClassifier(functional_model, clip_values=(0, 1), input_layer=0, output_layer=0)
     assert keras_model._input.name == "input0:0"
     assert keras_model._output.name == "output0/Softmax:0"
-
 
 
 @pytest.mark.only_with_platform("keras")
@@ -254,7 +258,6 @@ def test_resnet(create_test_image):
     np.testing.assert_array_almost_equal(prediction[0, 178], 0.2658045, decimal=3)
 
 
-
 @pytest.mark.only_with_platform("keras")
 def test_learning_phase():
     classifier = get_image_classifier_kr()
@@ -274,6 +277,7 @@ def test_save():
     classifier.save(filename, path=path)
     assert os.path.isfile(os.path.join(path, filename))
     os.remove(os.path.join(path, filename))
+
 
 # def test_pickle(self):
 #     filename = 'my_classifier.p'
@@ -302,52 +306,38 @@ def test_save():
 #     os.remove(full_path)
 
 
-@pytest.mark.only_with_platform("keras")
-def test_class_gradient(get_default_mnist_subset):
+def backend_test_class_gradient(get_default_mnist_subset, get_image_classifier_list, expected_values):
     (x_train_mnist, y_train_mnist), (x_test_mnist, y_test_mnist) = get_default_mnist_subset
-    classifier = get_image_classifier_kr()
+    classifier_list, _ = get_image_classifier_list()
+    classifier = classifier_list[0]
 
     # Test all gradients label
     gradients = classifier.class_gradient(x_test_mnist)
 
     assert gradients.shape == (x_test_mnist.shape[0], 10, 28, 28, 1)
 
-    expected_gradients_1 = np.asarray([-1.0557447e-03, -1.0079544e-03, -7.7426434e-04, 1.7387432e-03,
-                                       2.1773507e-03, 5.0880699e-05, 1.6497371e-03, 2.6113100e-03,
-                                       6.0904310e-03, 4.1080985e-04, 2.5268078e-03, -3.6661502e-04,
-                                       -3.0568996e-03, -1.1665225e-03, 3.8904310e-03, 3.1726385e-04,
-                                       1.3203260e-03, -1.1720930e-04, -1.4315104e-03, -4.7676818e-04,
-                                       9.7251288e-04, 0.0000000e+00, 0.0000000e+00, 0.0000000e+00,
-                                       0.0000000e+00, 0.0000000e+00, 0.0000000e+00, 0.0000000e+00])
-    np.testing.assert_array_almost_equal(gradients[0, 5, 14, :, 0], expected_gradients_1, decimal=4)
+    if "expected_gradients_1_all_labels" in expected_values:
+        np.testing.assert_array_almost_equal(gradients[0, 5, 14, :, 0],
+                                             expected_values["expected_gradients_1_all_labels"].value,
+                                             decimal=expected_values["expected_gradients_1_all_labels"].decimals)
 
-    expected_gradients_2 = np.asarray([-0.00367321, -0.0002892, 0.00037825, -0.00053344, 0.00192121, 0.00112047,
-                                       0.0023135, 0.0, 0.0, -0.00391743, -0.0002264, 0.00238103,
-                                       -0.00073711, 0.00270405, 0.00389043, 0.00440818, -0.00412769, -0.00441794,
-                                       0.00081916, -0.00091284, 0.00119645, -0.00849089, 0.00547925, 0.0,
-                                       0.0, 0.0, 0.0, 0.0])
-    np.testing.assert_array_almost_equal(gradients[0, 5, :, 14, 0], expected_gradients_2, decimal=4)
+    if "expected_gradients_2_all_labels" in expected_values:
+        np.testing.assert_array_almost_equal(gradients[0, 5, :, 14, 0],
+                                             expected_values["expected_gradients_2_all_labels"].value,
+                                             decimal=expected_values["expected_gradients_2_all_labels"].decimals)
 
     # Test 1 gradient label = 5
     gradients = classifier.class_gradient(x_test_mnist, label=5)
 
     assert gradients.shape == (x_test_mnist.shape[0], 1, 28, 28, 1)
 
-    expected_gradients_1 = np.asarray([-1.0557447e-03, -1.0079544e-03, -7.7426434e-04, 1.7387432e-03,
-                                       2.1773507e-03, 5.0880699e-05, 1.6497371e-03, 2.6113100e-03,
-                                       6.0904310e-03, 4.1080985e-04, 2.5268078e-03, -3.6661502e-04,
-                                       -3.0568996e-03, -1.1665225e-03, 3.8904310e-03, 3.1726385e-04,
-                                       1.3203260e-03, -1.1720930e-04, -1.4315104e-03, -4.7676818e-04,
-                                       9.7251288e-04, 0.0000000e+00, 0.0000000e+00, 0.0000000e+00,
-                                       0.0000000e+00, 0.0000000e+00, 0.0000000e+00, 0.0000000e+00])
-    np.testing.assert_array_almost_equal(gradients[0, 0, 14, :, 0], expected_gradients_1, decimal=4)
+    if "expected_gradients_1_label5" in expected_values:
+        np.testing.assert_array_almost_equal(gradients[0, 0, 14, :, 0], expected_values["expected_gradients_1_label5"].value, decimal=expected_values["expected_gradients_1_label5"].decimals)
 
-    expected_gradients_2 = np.asarray([-0.00367321, -0.0002892, 0.00037825, -0.00053344, 0.00192121, 0.00112047,
-                                       0.0023135, 0.0, 0.0, -0.00391743, -0.0002264, 0.00238103,
-                                       -0.00073711, 0.00270405, 0.00389043, 0.00440818, -0.00412769, -0.00441794,
-                                       0.00081916, -0.00091284, 0.00119645, -0.00849089, 0.00547925, 0.0,
-                                       0.0, 0.0, 0.0, 0.0])
-    np.testing.assert_array_almost_equal(gradients[0, 0, :, 14, 0], expected_gradients_2, decimal=4)
+    if "expected_gradients_2_label5" in expected_values:
+        np.testing.assert_array_almost_equal(gradients[0, 0, :, 14, 0], expected_values["expected_gradients_2_label5"].value, decimal=expected_values["expected_gradients_2_label5"].decimals)
+
+
 
     # Test a set of gradients label = array
     # label = np.random.randint(5, size=self.n_test)
@@ -359,21 +349,60 @@ def test_class_gradient(get_default_mnist_subset):
 
     assert gradients.shape == (x_test_mnist.shape[0], 1, 28, 28, 1)
 
-    expected_gradients_1 = np.asarray([5.0867125e-03, 4.8564528e-03, 6.1040390e-03, 8.6531248e-03,
-                                       -6.0958797e-03, -1.4114540e-02, -7.1085989e-04, -5.0330814e-04,
-                                       1.2943064e-02, 8.2416134e-03, -1.9859476e-04, -9.8109958e-05,
-                                       -3.8902222e-03, -1.2945873e-03, 7.5137997e-03, 1.7720886e-03,
-                                       3.1399424e-04, 2.3657181e-04, -3.0891625e-03, -1.0211229e-03,
-                                       2.0828887e-03, 0.0000000e+00, 0.0000000e+00, 0.0000000e+00,
-                                       0.0000000e+00, 0.0000000e+00, 0.0000000e+00, 0.0000000e+00])
-    np.testing.assert_array_almost_equal(gradients[0, 0, 14, :, 0], expected_gradients_1, decimal=4)
+    if "expected_gradients_1_labelArray" in expected_values:
+        np.testing.assert_array_almost_equal(gradients[0, 0, 14, :, 0], expected_values["expected_gradients_1_labelArray"].value, decimal=expected_values["expected_gradients_1_labelArray"].decimals)
+    if "expected_gradients_2_labelArray" in expected_values:
+        np.testing.assert_array_almost_equal(gradients[0, 0, :, 14, 0], expected_values["expected_gradients_2_labelArray"].value, decimal=expected_values["expected_gradients_2_labelArray"].decimals)
 
-    expected_gradients_2 = np.asarray([-0.00195835, -0.00134457, -0.00307221, -0.00340564, 0.00175022, -0.00239714,
-                                       -0.00122619, 0.0, 0.0, -0.00520899, -0.00046105, 0.00414874,
-                                       -0.00171095, 0.00429184, 0.0075138, 0.00792442, 0.0019566, 0.00035517,
-                                       0.00504575, -0.00037397, 0.00022343, -0.00530034, 0.0020528, 0.0,
-                                       0.0, 0.0, 0.0, 0.0])
-    np.testing.assert_array_almost_equal(gradients[0, 0, :, 14, 0], expected_gradients_2, decimal=4)
+
+
+@pytest.mark.only_with_platform("keras")
+def test_class_gradient(get_default_mnist_subset, get_image_classifier_list):
+    expected_values = {"expected_gradients_1_all_labels": ExpectedValue(
+        np.asarray([-1.0557447e-03, -1.0079544e-03, -7.7426434e-04, 1.7387432e-03,
+                    2.1773507e-03, 5.0880699e-05, 1.6497371e-03, 2.6113100e-03,
+                    6.0904310e-03, 4.1080985e-04, 2.5268078e-03, -3.6661502e-04,
+                    -3.0568996e-03, -1.1665225e-03, 3.8904310e-03, 3.1726385e-04,
+                    1.3203260e-03, -1.1720930e-04, -1.4315104e-03, -4.7676818e-04,
+                    9.7251288e-04, 0.0000000e+00, 0.0000000e+00, 0.0000000e+00,
+                    0.0000000e+00, 0.0000000e+00, 0.0000000e+00, 0.0000000e+00]), 4),
+        "expected_gradients_2_all_labels": ExpectedValue(
+            np.asarray([-0.00367321, -0.0002892, 0.00037825, -0.00053344, 0.00192121, 0.00112047,
+                        0.0023135, 0.0, 0.0, -0.00391743, -0.0002264, 0.00238103,
+                        -0.00073711, 0.00270405, 0.00389043, 0.00440818, -0.00412769, -0.00441794,
+                        0.00081916, -0.00091284, 0.00119645, -0.00849089, 0.00547925, 0.0,
+                        0.0, 0.0, 0.0, 0.0]), 4),
+        "expected_gradients_1_label5": ExpectedValue(
+            np.asarray([-1.0557447e-03, -1.0079544e-03, -7.7426434e-04, 1.7387432e-03,
+                        2.1773507e-03, 5.0880699e-05, 1.6497371e-03, 2.6113100e-03,
+                        6.0904310e-03, 4.1080985e-04, 2.5268078e-03, -3.6661502e-04,
+                        -3.0568996e-03, -1.1665225e-03, 3.8904310e-03, 3.1726385e-04,
+                        1.3203260e-03, -1.1720930e-04, -1.4315104e-03, -4.7676818e-04,
+                        9.7251288e-04, 0.0000000e+00, 0.0000000e+00, 0.0000000e+00,
+                        0.0000000e+00, 0.0000000e+00, 0.0000000e+00, 0.0000000e+00]), 4),
+        "expected_gradients_2_label5": ExpectedValue(
+            np.asarray([-0.00367321, -0.0002892, 0.00037825, -0.00053344, 0.00192121, 0.00112047,
+                        0.0023135, 0.0, 0.0, -0.00391743, -0.0002264, 0.00238103,
+                        -0.00073711, 0.00270405, 0.00389043, 0.00440818, -0.00412769, -0.00441794,
+                        0.00081916, -0.00091284, 0.00119645, -0.00849089, 0.00547925, 0.0,
+                        0.0, 0.0, 0.0, 0.0]), 4),
+        "expected_gradients_1_labelArray": ExpectedValue(
+            np.asarray([5.0867125e-03, 4.8564528e-03, 6.1040390e-03, 8.6531248e-03,
+                        -6.0958797e-03, -1.4114540e-02, -7.1085989e-04, -5.0330814e-04,
+                        1.2943064e-02, 8.2416134e-03, -1.9859476e-04, -9.8109958e-05,
+                        -3.8902222e-03, -1.2945873e-03, 7.5137997e-03, 1.7720886e-03,
+                        3.1399424e-04, 2.3657181e-04, -3.0891625e-03, -1.0211229e-03,
+                        2.0828887e-03, 0.0000000e+00, 0.0000000e+00, 0.0000000e+00,
+                        0.0000000e+00, 0.0000000e+00, 0.0000000e+00, 0.0000000e+00]), 4),
+        "expected_gradients_2_labelArray": ExpectedValue(
+        np.asarray([-0.00195835, -0.00134457, -0.00307221, -0.00340564, 0.00175022, -0.00239714,
+                    -0.00122619, 0.0, 0.0, -0.00520899, -0.00046105, 0.00414874,
+                    -0.00171095, 0.00429184, 0.0075138, 0.00792442, 0.0019566, 0.00035517,
+                    0.00504575, -0.00037397, 0.00022343, -0.00530034, 0.0020528, 0.0,
+                    0.0, 0.0, 0.0, 0.0]), 4)
+    }
+    backend_test_class_gradient(get_default_mnist_subset, get_image_classifier_list, expected_values)
+
 
 
 
@@ -384,7 +413,6 @@ def test_repr(backend_test_repr):
                        'use_logits=False, channel_index=3',
                        'clip_values=(0, 1), defences=None, preprocessing=(0, 1)',
                        'input_layer=0, output_layer=0'])
-
 
 
 @pytest.mark.only_with_platform("keras")
@@ -412,7 +440,6 @@ def test_loss_functions(get_default_mnist_subset):
                                                  0.06592228, 0.04471018, -0.02879605, 0.04668707, 0.06856851,
                                                  0.06857751, 0.00657996, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0,
                                                  0.0])
-
 
     def _run_tests(_loss_name, _loss_type, _y_test_pred_expected, _class_gradient_probabilities_expected,
                    _loss_gradient_expected, _from_logits):
