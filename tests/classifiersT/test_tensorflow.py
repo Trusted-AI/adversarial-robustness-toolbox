@@ -28,19 +28,12 @@ from tests.utils_test import ExpectedValue
 logger = logging.getLogger(__name__)
 
 
-@pytest.fixture(scope="module")
-def get_image_classifier_tf_factory():
-    def _get_image_classifier_tf(from_logits=False):
-        classifier, sess = utils_test.get_image_classifier_tf(from_logits=from_logits)
-        return classifier, sess
-
-    yield _get_image_classifier_tf
-
-
 @pytest.mark.only_with_platform("tensorflow")
-def test_predict(get_image_classifier_tf_factory, get_default_mnist_subset):
+def test_predict(get_image_classifier_list, get_default_mnist_subset):
     (x_train_mnist, y_train_mnist), (x_test_mnist, y_test_mnist) = get_default_mnist_subset
-    classifier, _ = get_image_classifier_tf_factory()
+
+    classifier, _ = get_image_classifier_list(one_classifier=True)
+
     y_predicted = classifier.predict(x_test_mnist[0:1])
     y_expected = np.asarray([[0.12109935, 0.0498215, 0.0993958, 0.06410097, 0.11366927, 0.04645343, 0.06419806,
                               0.30685693, 0.07616713, 0.05823758]])
@@ -48,12 +41,13 @@ def test_predict(get_image_classifier_tf_factory, get_default_mnist_subset):
 
 
 @pytest.mark.only_with_platform("tensorflow")
-def test_fit_generator(is_tf_version_2, get_image_classifier_tf_factory, get_default_mnist_subset,
+def test_fit_generator(is_tf_version_2, get_default_mnist_subset,
                        get_image_classifier_list):
     (x_train_mnist, y_train_mnist), (x_test_mnist, y_test_mnist) = get_default_mnist_subset
 
     if not is_tf_version_2:
-        classifier, sess = get_image_classifier_tf_factory()
+        classifier_list, sess = get_image_classifier_list()
+        classifier = classifier_list[0]
 
         # Create TensorFlow data generator
         x_tensor = tf.convert_to_tensor(x_train_mnist.reshape(10, 100, 28, 28, 1))
@@ -81,10 +75,13 @@ def test_input_shape(get_image_classifier_list):
 
 
 @pytest.mark.only_with_platform("tensorflow")
-def test_class_gradient(get_image_classifier_tf_factory, get_default_mnist_subset):
+def test_class_gradient(get_image_classifier_list, get_default_mnist_subset):
     (x_train_mnist, y_train_mnist), (x_test_mnist, y_test_mnist) = get_default_mnist_subset
 
-    classifier_logits, _ = get_image_classifier_tf_factory(from_logits=True)
+    classifier_logits, _ = get_image_classifier_list(one_classifier=True, from_logits=True)
+
+    # classifier_list, _ = get_image_classifier_list(from_logits=True)
+    # classifier_logits = classifier_list[0]
 
     expected_values = {"expected_gradients_1_all_labels": ExpectedValue(
         np.asarray([-0.03347399, -0.03195872, -0.02650188, 0.04111874, 0.08676253, 0.03339913,
@@ -161,8 +158,8 @@ def test_layers(is_tf_version_2, get_backend_test_layers):
 
 
 @pytest.mark.only_with_platform("tensorflow")
-def test_set_learning(is_tf_version_2, get_image_classifier_tf_factory):
-    classifier, sess = get_image_classifier_tf_factory()
+def test_set_learning(is_tf_version_2, get_image_classifier_list):
+    classifier, _ = get_image_classifier_list(one_classifier=True)
     if not is_tf_version_2:
         assert classifier._feed_dict == {}
         classifier.set_learning_phase(False)

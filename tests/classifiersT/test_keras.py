@@ -120,8 +120,7 @@ def test_fit_generator(get_default_mnist_subset, default_batch_size, get_image_c
     gen = generator_fit(x_train_mnist, y_train_mnist, batch_size=default_batch_size)
     data_gen = KerasDataGenerator(generator=gen, size=x_train_mnist.shape[0], batch_size=default_batch_size)
 
-    classifier_list, _ = get_image_classifier_list()
-    classifier = classifier_list[0]
+    classifier, _ = get_image_classifier_list(one_classifier=True)
 
     expected_values = {"pre_fit_accuracy": ExpectedValue(0.32, 0.06),
                        "post_fit_accuracy": ExpectedValue(0.36, 0.06)}
@@ -322,8 +321,7 @@ def test_save():
 @pytest.mark.only_with_platform("keras")
 def test_class_gradient(get_default_mnist_subset, get_image_classifier_list):
 
-    classifier_list, _ = get_image_classifier_list()
-    classifier = classifier_list[0]
+    classifier, _ = get_image_classifier_list(one_classifier=True)
 
     expected_values = {"expected_gradients_1_all_labels": ExpectedValue(
         np.asarray([-1.0557447e-03, -1.0079544e-03, -7.7426434e-04, 1.7387432e-03,
@@ -526,42 +524,3 @@ def test_loss_functions(get_default_mnist_subset):
         _run_tests(loss_name, loss_type, y_test_pred_expected, class_gradient_probabilities_expected,
                    loss_gradient_expected, _from_logits=False)
 
-#
-# class TestKerasClassifier(TestBase):
-#     """
-#     This class tests the Keras classifier.
-#     """
-#
-#     @classmethod
-#     def setUpClass(cls):
-#         super().setUpClass()
-#
-#         # Load small Keras model
-#         cls.functional_model = _functional_model()
-#         cls.functional_model.fit([cls.x_train_mnist, cls.x_train_mnist], [cls.y_train_mnist, cls.y_train_mnist],
-#                                  nb_epoch=3)
-#
-#         # Temporary folder for tests
-#         cls.test_dir = tempfile.mkdtemp()
-#
-#         # Download one ImageNet pic for tests
-#         url = 'http://farm1.static.flickr.com/163/381342603_81db58bea4.jpg'
-#         result = requests.get(url, stream=True)
-#         if result.status_code == 200:
-#             image = result.raw.read()
-#             f = open(os.path.join(cls.test_dir, 'test.jpg'), 'wb')
-#             f.write(image)
-#             f.close()
-#
-#     @classmethod
-#     def tearDownClass(cls):
-#         k.clear_session()
-#         shutil.rmtree(cls.test_dir)
-
-
-#
-
-#
-#
-# if __name__ == '__main__':
-#     unittest.main()

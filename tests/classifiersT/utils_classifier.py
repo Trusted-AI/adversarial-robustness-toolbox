@@ -48,19 +48,16 @@ def backend_test_class_gradient(get_default_mnist_subset, classifier, expected_v
         np.testing.assert_array_almost_equal(gradients[0, 0, :, 14, 0], expected_values["expected_gradients_2_labelArray"].value, decimal=expected_values["expected_gradients_2_labelArray"].decimals)
 
 def backend_test_nb_classes(get_image_classifier_list):
-    classifier_list, _ = get_image_classifier_list()
-    classifier = classifier_list[0]
+    classifier, _ = get_image_classifier_list(one_classifier=True)
     assert classifier.nb_classes() == 10
 
 def backend_test_input_shape(get_image_classifier_list):
-    classifier_list, _ = get_image_classifier_list()
-    classifier = classifier_list[0]
+    classifier, _ = get_image_classifier_list(one_classifier=True)
     assert classifier.input_shape == (28, 28, 1)
 
 def backend_test_loss_gradient(get_default_mnist_subset, get_image_classifier_list, expected_values):
     (x_train_mnist, y_train_mnist), (x_test_mnist, y_test_mnist) = get_default_mnist_subset
-    classifier_list, _ = get_image_classifier_list()
-    classifier = classifier_list[0]
+    classifier, _ = get_image_classifier_list(one_classifier=True)
 
     # Test gradient
     gradients = classifier.loss_gradient(x_test_mnist, y_test_mnist)

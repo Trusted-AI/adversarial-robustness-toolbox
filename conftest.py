@@ -26,7 +26,7 @@ def pytest_addoption(parser):
 
 @pytest.fixture
 def get_image_classifier_list(get_mlFramework):
-    def _get_image_classifier_list(defended=False):
+    def _get_image_classifier_list(one_classifier=False, defended=False, from_logits=False):
         sess = None
         if get_mlFramework == "keras":
             if defended:
@@ -41,7 +41,7 @@ def get_image_classifier_list(get_mlFramework):
                 logging.warning("{0} doesn't have a defended image classifier defined yet".format(get_mlFramework))
                 classifier_list = None
             else:
-                classifier, sess = utils_test.get_image_classifier_tf()
+                classifier, sess = utils_test.get_image_classifier_tf(from_logits=from_logits)
                 classifier_list = [classifier]
         if get_mlFramework == "pytorch":
             if defended:
@@ -59,6 +59,9 @@ def get_image_classifier_list(get_mlFramework):
 
         if classifier_list is None:
             return None, None
+
+        if one_classifier:
+            return classifier_list[0], None
 
         return classifier_list, sess
 
