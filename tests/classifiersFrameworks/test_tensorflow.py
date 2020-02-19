@@ -22,7 +22,7 @@ import tensorflow as tf
 import numpy as np
 from art.data_generators import TFDataGenerator
 from tests import utils_test
-from tests.classifiersT import utils_classifier
+from tests.classifiersFrameworks import utils_classifier
 from tests.utils_test import ExpectedValue
 import os
 

@@ -6,18 +6,19 @@ export TF_CPP_MIN_LOG_LEVEL="3"
 
 # --------------------------------------------------------------------------------------------------------------- TESTS
 
-# Refactored tests
+#### Refactored tests
 pytest -q tests/attacks/evasion/ --mlFramework="tensorflow" --durations=0
 
+#Only classifier tests need to be run for each frameworks
 mlFrameworkList=("tensorflow" "keras" "pytorch" "scikitlearn")
 for mlFramework in "${mlFrameworkList[@]}"; do
   echo "Running tests with framework $mlFramework"
 #  pytest -q tests/attacks/evasion/ --mlFramework=$mlFramework --durations=0
-  pytest -q tests/classifiersT/ --mlFramework=$mlFramework --durations=0
+  pytest -q tests/classifiersFrameworks/ --mlFramework=$mlFramework --durations=0
 done
 
 
-# Tests yet to be refactored
+#### Tests yet to be refactored
 declare -a attacks=("tests/attacks/test_adversarial_patch.py" \
                     "tests/attacks/test_carlini.py" \
                     "tests/attacks/test_copycat_cnn.py" \
