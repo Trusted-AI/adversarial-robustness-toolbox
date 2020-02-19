@@ -1,6 +1,9 @@
 #!/usr/bin/env bash
 exit_code=0
 
+# Set TensorFlow logging to minimum level ERROR
+export TF_CPP_MIN_LOG_LEVEL="3"
+
 # --------------------------------------------------------------------------------------------------------------- TESTS
 
 declare -a attacks=("tests/attacks/test_adversarial_patch.py" \
@@ -43,11 +46,16 @@ declare -a classifiers=("tests/classifiers/test_blackbox.py" \
                         "tests/classifiers/test_xgboost.py" )
 
 declare -a defences=("tests/defences/test_adversarial_trainer.py" \
+                     "tests/defences/test_class_labels.py" \
                      "tests/defences/test_feature_squeezing.py" \
                      "tests/defences/test_gaussian_augmentation.py" \
+                     "tests/defences/test_gaussian_noise.py" \
+                     "tests/defences/test_high_confidence.py" \
                      "tests/defences/test_jpeg_compression.py" \
                      "tests/defences/test_label_smoothing.py" \
                      "tests/defences/test_pixel_defend.py" \
+                     "tests/defences/test_reverse_sigmoid.py" \
+                     "tests/defences/test_rounded.py" \
                      "tests/defences/test_spatial_smoothing.py" \
                      "tests/defences/test_thermometer_encoding.py" \
                      "tests/defences/test_variance_minimization.py" )
@@ -65,11 +73,6 @@ declare -a poison_detection=("tests/poison_detection/test_activation_defence.py"
                              "tests/poison_detection/test_roni.py" )
 
 declare -a wrappers=("tests/wrappers/test_expectation.py" \
-                     "tests/wrappers/test_output_add_random_noise.py" \
-                     "tests/wrappers/test_output_class_labels.py" \
-                     "tests/wrappers/test_output_high_confidence.py" \
-                     "tests/wrappers/test_output_reverse_sigmoid.py" \
-                     "tests/wrappers/test_output_rounded.py" \
                      "tests/wrappers/test_query_efficient_bb.py" \
                      "tests/wrappers/test_randomized_smoothing.py" \
                      "tests/wrappers/test_wrapper.py" )
@@ -78,14 +81,14 @@ declare -a art=("tests/test_data_generators.py" \
                 "tests/test_utils.py" \
                 "tests/test_visualization.py" )
 
- tests_modules=("attacks" \
-                "classifiers" \
-                "defences" \
-                "detection" \
-                "metrics" \
-                "poison_detection" \
-                "wrappers" \
-                "art" )
+tests_modules=("attacks" \
+               "classifiers" \
+               "defences" \
+               "detection" \
+               "metrics" \
+               "poison_detection" \
+               "wrappers" \
+               "art" )
 
 # --------------------------------------------------------------------------------------------------- CODE TO RUN TESTS
 

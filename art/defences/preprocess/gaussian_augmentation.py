@@ -24,7 +24,7 @@ import logging
 
 import numpy as np
 
-from art.defences.preprocessor import Preprocessor
+from art.defences.preprocess.preprocessor import Preprocessor
 
 logger = logging.getLogger(__name__)
 
@@ -36,7 +36,8 @@ class GaussianAugmentation(Preprocessor):
     as part of a :class:`.Classifier` instance, the defense will be applied automatically only when training if
     `augmentation` is true, and only when performing prediction otherwise.
     """
-    params = ['sigma', 'augmentation', 'ratio', 'clip_values', '_apply_fit', '_apply_predict']
+
+    params = ["sigma", "augmentation", "ratio", "clip_values", "_apply_fit", "_apply_predict"]
 
     def __init__(self, sigma=1.0, augmentation=True, ratio=1.0, clip_values=None, apply_fit=True, apply_predict=False):
         """
@@ -61,8 +62,9 @@ class GaussianAugmentation(Preprocessor):
         super(GaussianAugmentation, self).__init__()
         self._is_fitted = True
         if augmentation and apply_fit and apply_predict:
-            raise ValueError("If `augmentation` is `True`, then `apply_fit` must be `True` and `apply_predict`"
-                             " must be `False`.")
+            raise ValueError(
+                "If `augmentation` is `True`, then `apply_fit` must be `True` and `apply_predict`" " must be `False`."
+            )
         self._apply_fit = apply_fit
         self._apply_predict = apply_predict
         self.set_params(sigma=sigma, augmentation=augmentation, ratio=ratio, clip_values=clip_values)
@@ -89,7 +91,7 @@ class GaussianAugmentation(Preprocessor):
         :return: The augmented dataset and (if provided) corresponding labels.
         :rtype:
         """
-        logger.info('Original dataset size: %d', x.shape[0])
+        logger.info("Original dataset size: %d", x.shape[0])
 
         # Select indices to augment
         if self.augmentation:
@@ -103,11 +105,11 @@ class GaussianAugmentation(Preprocessor):
                 y_aug = np.concatenate((y, y[indices]))
             else:
                 y_aug = y
-            logger.info('Augmented dataset size: %d', x_aug.shape[0])
+            logger.info("Augmented dataset size: %d", x_aug.shape[0])
         else:
             x_aug = np.random.normal(x, scale=self.sigma, size=x.shape)
             y_aug = y
-            logger.info('Created %i samples with Gaussian noise.')
+            logger.info("Created %i samples with Gaussian noise.")
 
         if self.clip_values is not None:
             x_aug = np.clip(x_aug, self.clip_values[0], self.clip_values[1])
@@ -138,7 +140,7 @@ class GaussianAugmentation(Preprocessor):
                for features.
         :type clip_values: `tuple`
         """
-        # Save attack-specific parameters
+        # Save defence-specific parameters
         super(GaussianAugmentation, self).set_params(**kwargs)
 
         if self.augmentation and self.ratio <= 0:
@@ -147,9 +149,10 @@ class GaussianAugmentation(Preprocessor):
         if self.clip_values is not None:
 
             if len(self.clip_values) != 2:
-                raise ValueError('`clip_values` should be a tuple of 2 floats or arrays containing the allowed'
-                                 'data range.')
+                raise ValueError(
+                    "`clip_values` should be a tuple of 2 floats or arrays containing the allowed" "data range."
+                )
             if np.array(self.clip_values[0] >= self.clip_values[1]).any():
-                raise ValueError('Invalid `clip_values`: min >= max.')
+                raise ValueError("Invalid `clip_values`: min >= max.")
 
         return True

@@ -27,9 +27,9 @@ from art.attacks import BoundaryAttack
 from art.classifiers import KerasClassifier
 from art.utils import random_targets
 
-from tests.utils_test import TestBase
-from tests.utils_test import get_classifier_tf, get_classifier_kr, get_classifier_pt
-from tests.utils_test import get_iris_classifier_tf, get_iris_classifier_kr, get_iris_classifier_pt
+from tests.utils import TestBase
+from tests.utils import get_classifier_tf, get_classifier_kr, get_classifier_pt
+from tests.utils import get_iris_classifier_tf, get_iris_classifier_kr, get_iris_classifier_pt
 
 logger = logging.getLogger(__name__)
 
@@ -61,7 +61,7 @@ class TestBoundary(TestBase):
         tfc, sess = get_classifier_tf()
 
         # First targeted attack
-        boundary = BoundaryAttack(classifier=tfc, targeted=True, max_iter=200, delta=0.5)
+        boundary = BoundaryAttack(classifier=tfc, targeted=True, max_iter=20, delta=0.5)
         params = {'y': random_targets(self.y_test_mnist, tfc.nb_classes())}
         x_test_adv = boundary.generate(self.x_test_mnist, **params)
         # expected_x_test_adv_1 = np.asarray([0.42622495, 0.0, 0.0, 0.33005068, 0.2277837, 0.0,
@@ -95,7 +95,7 @@ class TestBoundary(TestBase):
         # np.testing.assert_array_almost_equal(y_pred_adv[0], y_pred_adv_expected, decimal=4)
 
         # Second untargeted attack
-        boundary = BoundaryAttack(classifier=tfc, targeted=False, max_iter=20)
+        boundary = BoundaryAttack(classifier=tfc, targeted=False, max_iter=3)
         x_test_adv = boundary.generate(self.x_test_mnist)
 
         self.assertFalse((self.x_test_mnist == x_test_adv).all())
@@ -124,7 +124,7 @@ class TestBoundary(TestBase):
         krc = get_classifier_kr()
 
         # First targeted attack
-        boundary = BoundaryAttack(classifier=krc, targeted=True, max_iter=20)
+        boundary = BoundaryAttack(classifier=krc, targeted=True, max_iter=3)
         params = {'y': random_targets(self.y_test_mnist, krc.nb_classes())}
         x_test_adv = boundary.generate(self.x_test_mnist, **params)
 
@@ -137,7 +137,7 @@ class TestBoundary(TestBase):
         self.assertTrue((target == y_pred_adv).any())
 
         # Second untargeted attack
-        boundary = BoundaryAttack(classifier=krc, targeted=False, max_iter=20)
+        boundary = BoundaryAttack(classifier=krc, targeted=False, max_iter=3)
         x_test_adv = boundary.generate(self.x_test_mnist)
 
         self.assertFalse((self.x_test_mnist == x_test_adv).all())
@@ -166,7 +166,7 @@ class TestBoundary(TestBase):
         ptc = get_classifier_pt()
 
         # First targeted attack
-        boundary = BoundaryAttack(classifier=ptc, targeted=True, max_iter=20)
+        boundary = BoundaryAttack(classifier=ptc, targeted=True, max_iter=3)
         params = {'y': random_targets(self.y_test_mnist, ptc.nb_classes())}
         x_test_adv = boundary.generate(x_test, **params)
 
@@ -179,7 +179,7 @@ class TestBoundary(TestBase):
         self.assertTrue((target == y_pred_adv).any())
 
         # Second untargeted attack
-        boundary = BoundaryAttack(classifier=ptc, targeted=False, max_iter=20)
+        boundary = BoundaryAttack(classifier=ptc, targeted=False, max_iter=3)
         x_test_adv = boundary.generate(x_test)
 
         self.assertFalse((x_test == x_test_adv).all())
@@ -207,7 +207,7 @@ class TestBoundary(TestBase):
 
     def test_keras_iris_clipped(self):
         classifier = get_iris_classifier_kr()
-        attack = BoundaryAttack(classifier, targeted=False, max_iter=10)
+        attack = BoundaryAttack(classifier, targeted=False, max_iter=3)
         x_test_adv = attack.generate(self.x_test_iris)
         self.assertFalse((self.x_test_iris == x_test_adv).all())
         self.assertTrue((x_test_adv <= 1).all())
@@ -223,7 +223,7 @@ class TestBoundary(TestBase):
 
         # Recreate a classifier without clip values
         classifier = KerasClassifier(model=classifier._model, use_logits=False, channel_index=1)
-        attack = BoundaryAttack(classifier, targeted=False, max_iter=10)
+        attack = BoundaryAttack(classifier, targeted=False, max_iter=3)
         x_test_adv = attack.generate(self.x_test_iris)
         self.assertFalse((self.x_test_iris == x_test_adv).all())
 
@@ -236,7 +236,7 @@ class TestBoundary(TestBase):
         classifier, _ = get_iris_classifier_tf()
 
         # Test untargeted attack
-        attack = BoundaryAttack(classifier, targeted=False, max_iter=10)
+        attack = BoundaryAttack(classifier, targeted=False, max_iter=3)
         x_test_adv = attack.generate(self.x_test_iris)
         self.assertFalse((self.x_test_iris == x_test_adv).all())
         self.assertTrue((x_test_adv <= 1).all())
@@ -249,7 +249,7 @@ class TestBoundary(TestBase):
 
         # Test targeted attack
         targets = random_targets(self.y_test_iris, nb_classes=3)
-        attack = BoundaryAttack(classifier, targeted=True, max_iter=10)
+        attack = BoundaryAttack(classifier, targeted=True, max_iter=3)
         x_test_adv = attack.generate(self.x_test_iris, **{'y': targets})
         self.assertFalse((self.x_test_iris == x_test_adv).all())
         self.assertTrue((x_test_adv <= 1).all())
@@ -262,7 +262,7 @@ class TestBoundary(TestBase):
 
     def test_pytorch_iris(self):
         classifier = get_iris_classifier_pt()
-        attack = BoundaryAttack(classifier, targeted=False, max_iter=10)
+        attack = BoundaryAttack(classifier, targeted=False, max_iter=3)
         x_test_adv = attack.generate(self.x_test_iris.astype(np.float32))
         self.assertFalse((self.x_test_iris == x_test_adv).all())
         self.assertTrue((x_test_adv <= 1).all())
@@ -299,8 +299,8 @@ class TestBoundary(TestBase):
             classifier = SklearnClassifier(model=model, clip_values=(0, 1))
             classifier.fit(x=self.x_test_iris, y=self.y_test_iris)
 
-            attack = BoundaryAttack(classifier, targeted=False, delta=0.01, epsilon=0.01, step_adapt=0.667, max_iter=50,
-                                    num_trial=25, sample_size=20, init_size=100)
+            attack = BoundaryAttack(classifier, targeted=False, delta=0.01, epsilon=0.01, step_adapt=0.667, max_iter=5,
+                                    num_trial=5, sample_size=20, init_size=100)
             x_test_adv = attack.generate(self.x_test_iris)
             self.assertFalse((self.x_test_iris == x_test_adv).all())
             self.assertTrue((x_test_adv <= 1).all())

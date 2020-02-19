@@ -21,7 +21,6 @@ import logging
 import unittest
 
 import keras
-import keras.backend as k
 from keras.models import Sequential
 from keras.layers import Dense, Flatten, Conv2D, MaxPooling2D
 import numpy as np
@@ -32,7 +31,9 @@ import torch.optim as optim
 
 from art.classifiers import KerasClassifier, PyTorchClassifier, TensorFlowClassifier
 from art.metrics.metrics import empirical_robustness, clever_t, clever_u, clever, loss_sensitivity
-from art.utils import load_mnist, master_seed
+from art.utils import load_mnist
+
+from tests.utils import master_seed
 
 logger = logging.getLogger(__name__)
 
@@ -47,7 +48,7 @@ R_LI = 0.1
 
 class TestMetrics(unittest.TestCase):
     def setUp(self):
-        master_seed(42)
+        master_seed(seed=42)
 
     def test_emp_robustness_mnist(self):
         (x_train, y_train), (_, _), _, _ = load_mnist()
@@ -135,8 +136,7 @@ class TestClever(unittest.TestCase):
     """
 
     def setUp(self):
-        # Set master seed
-        master_seed(42)
+        master_seed(seed=42, set_tensorflow=True)
 
     @staticmethod
     def _create_tfclassifier():

@@ -25,7 +25,7 @@ import numpy as np
 
 from art.defences import FeatureSqueezing, JpegCompression, SpatialSmoothing
 
-from tests.utils_test import TestBase, get_classifier_bb
+from tests.utils import TestBase, get_classifier_bb
 
 logger = logging.getLogger(__name__)
 
@@ -59,7 +59,7 @@ class TestBlackBoxClassifier(TestBase):
         jpeg = JpegCompression(clip_values=clip_values, apply_predict=True)
         smooth = SpatialSmoothing()
         classifier = get_classifier_bb(defences=[fs, jpeg, smooth])
-        self.assertEqual(len(classifier.defences), 3)
+        self.assertEqual(len(classifier.preprocessing_defences), 3)
 
         predictions_classifier = classifier.predict(self.x_test_mnist)
 

@@ -32,30 +32,46 @@ class CatBoostARTClassifier(Classifier):
     Wrapper class for importing CatBoost models.
     """
 
-    def __init__(self, model=None, defences=None, preprocessing=None, clip_values=None, nb_features=None):
+    def __init__(
+        self,
+        model=None,
+        preprocessing_defences=None,
+        postprocessing_defences=None,
+        preprocessing=None,
+        clip_values=None,
+        nb_features=None,
+    ):
         """
         Create a `Classifier` instance from a CatBoost model.
 
-        :param clip_values: Tuple of the form `(min, max)` representing the minimum and maximum values allowed
-               for features.
-        :type clip_values: `tuple`
-        :param model: CatBoost model
+        :param model: CatBoost model.
         :type model: `catboost.core.CatBoostClassifier`
-        :param defences: Defences to be activated with the classifier.
-        :type defences: :class:`.Preprocessor` or `list(Preprocessor)` instances
+        :param preprocessing_defences: Preprocessing defence(s) to be applied by the classifier.
+        :type preprocessing_defences: :class:`.Preprocessor` or `list(Preprocessor)` instances
+        :param postprocessing_defences: Postprocessing defence(s) to be applied by the classifier.
+        :type postprocessing_defences: :class:`.Postprocessor` or `list(Postprocessor)` instances
         :param preprocessing: Tuple of the form `(subtractor, divider)` of floats or `np.ndarray` of values to be
                used for data preprocessing. The first value will be subtracted from the input. The input will then
                be divided by the second one.
         :type preprocessing: `tuple`
+        :param clip_values: Tuple of the form `(min, max)` representing the minimum and maximum values allowed
+               for features.
+        :type clip_values: `tuple`
+        :param nb_features: Number of features.
+        :type nb_features: `int`
         """
         # pylint: disable=E0611,E0401
         from catboost.core import CatBoostClassifier
 
         if not isinstance(model, CatBoostClassifier):
-            raise TypeError('Model must be of type catboost.core.CatBoostClassifier')
+            raise TypeError("Model must be of type catboost.core.CatBoostClassifier")
 
-        super(CatBoostARTClassifier, self).__init__(clip_values=clip_values, defences=defences,
-                                                    preprocessing=preprocessing)
+        super(CatBoostARTClassifier, self).__init__(
+            clip_values=clip_values,
+            preprocessing_defences=preprocessing_defences,
+            postprocessing_defences=postprocessing_defences,
+            preprocessing=preprocessing,
+        )
 
         self._model = model
         self._input_shape = (nb_features,)
@@ -88,10 +104,16 @@ class CatBoostARTClassifier(Classifier):
         :return: Array of predictions of shape `(nb_inputs, nb_classes)`.
         :rtype: `np.ndarray`
         """
-        # Apply defences
+        # Apply preprocessing
         x_preprocessed, _ = self._apply_preprocessing(x, y=None, fit=False)
 
-        return self._model.predict_proba(x_preprocessed)
+        # Perform prediction
+        predictions = self._model.predict_proba(x_preprocessed)
+
+        # Apply postprocessing
+        predictions = self._apply_postprocessing(preds=predictions, fit=False)
+
+        return predictions
 
     def nb_classes(self):
         """
@@ -104,5 +126,6 @@ class CatBoostARTClassifier(Classifier):
 
     def save(self, filename, path=None):
         import pickle
-        with open(filename + '.pickle', 'wb') as file_pickle:
+
+        with open(filename + ".pickle", "wb") as file_pickle:
             pickle.dump(self._model, file=file_pickle)

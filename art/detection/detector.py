@@ -43,10 +43,12 @@ class BinaryInputDetector(ClassifierNeuralNetwork, ClassifierGradients, Classifi
         :param detector: The detector architecture to be trained and applied for the binary classification.
         :type detector: :class:`.Classifier`
         """
-        super(BinaryInputDetector, self).__init__(clip_values=detector.clip_values,
-                                                  channel_index=detector.channel_index,
-                                                  defences=detector.defences,
-                                                  preprocessing=detector.preprocessing)
+        super(BinaryInputDetector, self).__init__(
+            clip_values=detector.clip_values,
+            channel_index=detector.channel_index,
+            preprocessing_defences=detector.preprocessing_defences,
+            preprocessing=detector.preprocessing,
+        )
         self.detector = detector
 
     def fit(self, x, y, batch_size=128, nb_epochs=20, **kwargs):
@@ -150,25 +152,28 @@ class BinaryActivationDetector(ClassifierNeuralNetwork, ClassifierGradients, Cla
         :param layer: Layer for computing the activations to use for training the detector.
         :type layer: `int` or `str`
         """
-        super(BinaryActivationDetector, self).__init__(clip_values=detector.clip_values,
-                                                       channel_index=detector.channel_index,
-                                                       defences=detector.defences,
-                                                       preprocessing=detector.preprocessing)
+        super(BinaryActivationDetector, self).__init__(
+            clip_values=detector.clip_values,
+            channel_index=detector.channel_index,
+            preprocessing_defences=detector.preprocessing_defences,
+            preprocessing=detector.preprocessing,
+        )
         self.classifier = classifier
         self.detector = detector
 
         # Ensure that layer is well-defined:
         if isinstance(layer, six.string_types):
             if layer not in classifier.layer_names:
-                raise ValueError('Layer name %s is not part of the graph.' % layer)
+                raise ValueError("Layer name %s is not part of the graph." % layer)
             self._layer_name = layer
         elif isinstance(layer, int):
             if layer < 0 or layer >= len(classifier.layer_names):
-                raise ValueError('Layer index %d is outside of range (0 to %d included).'
-                                 % (layer, len(classifier.layer_names) - 1))
+                raise ValueError(
+                    "Layer index %d is outside of range (0 to %d included)." % (layer, len(classifier.layer_names) - 1)
+                )
             self._layer_name = classifier.layer_names[layer]
         else:
-            raise TypeError('Layer must be of type `str` or `int`.')
+            raise TypeError("Layer must be of type `str` or `int`.")
 
     def fit(self, x, y, batch_size=128, nb_epochs=20, **kwargs):
         """

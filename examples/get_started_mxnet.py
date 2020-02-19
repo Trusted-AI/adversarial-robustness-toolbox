@@ -25,23 +25,32 @@ x_test = np.swapaxes(x_test, 1, 3)
 
 model = mxnet.gluon.nn.Sequential()
 with model.name_scope():
-    model.add(Conv2D(channels=4, kernel_size=5, activation='relu'))
+    model.add(Conv2D(channels=4, kernel_size=5, activation="relu"))
     model.add(MaxPool2D(pool_size=2, strides=1))
-    model.add(Conv2D(channels=10, kernel_size=5, activation='relu'))
+    model.add(Conv2D(channels=10, kernel_size=5, activation="relu"))
     model.add(MaxPool2D(pool_size=2, strides=1))
     model.add(Flatten())
-    model.add(Dense(100, activation='relu'))
+    model.add(Dense(100, activation="relu"))
     model.add(Dense(10))
     model.initialize()
 
 loss = mxnet.gluon.loss.SoftmaxCrossEntropyLoss()
-trainer = mxnet.gluon.Trainer(model.collect_params(), 'sgd', {'learning_rate': 0.01})
+trainer = mxnet.gluon.Trainer(model.collect_params(), "sgd", {"learning_rate": 0.01})
 
 # Step 3: Create the ART classifier
 
-classifier = MXClassifier(model=model, clip_values=(min_pixel_value, max_pixel_value), loss=loss,
-                          input_shape=(28, 28, 1), nb_classes=10, optimizer=trainer, ctx=None, channel_index=1,
-                          defences=None, preprocessing=(0, 1))
+classifier = MXClassifier(
+    model=model,
+    clip_values=(min_pixel_value, max_pixel_value),
+    loss=loss,
+    input_shape=(28, 28, 1),
+    nb_classes=10,
+    optimizer=trainer,
+    ctx=None,
+    channel_index=1,
+    defences=None,
+    preprocessing=(0, 1),
+)
 
 # Step 4: Train the ART classifier
 
@@ -51,7 +60,7 @@ classifier.fit(x_train, y_train, batch_size=64, nb_epochs=3)
 
 predictions = classifier.predict(x_test)
 accuracy = np.sum(np.argmax(predictions, axis=1) == np.argmax(y_test, axis=1)) / len(y_test)
-print('Accuracy on benign test examples: {}%'.format(accuracy * 100))
+print("Accuracy on benign test examples: {}%".format(accuracy * 100))
 
 # Step 6: Generate adversarial test examples
 attack = FastGradientMethod(classifier=classifier, eps=0.2)
@@ -61,4 +70,4 @@ x_test_adv = attack.generate(x=x_test)
 
 predictions = classifier.predict(x_test_adv)
 accuracy = np.sum(np.argmax(predictions, axis=1) == np.argmax(y_test, axis=1)) / len(y_test)
-print('Accuracy on adversarial test examples: {}%'.format(accuracy * 100))
+print("Accuracy on adversarial test examples: {}%".format(accuracy * 100))

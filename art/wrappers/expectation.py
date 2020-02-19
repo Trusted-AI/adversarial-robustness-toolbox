@@ -65,7 +65,7 @@ class ExpectationOverTransformations(ClassifierWrapper, ClassifierGradients, Cla
         :return: Array of predictions of shape `(nb_inputs, nb_classes)`.
         :rtype: `np.ndarray`
         """
-        logger.info('Applying expectation over transformations.')
+        logger.info("Applying expectation over transformations.")
         prediction = self._predict(next(self.transformation())(x), batch_size)
         for _ in range(self.sample_size - 1):
             prediction += self._predict(next(self.transformation())(x), batch_size)
@@ -99,7 +99,7 @@ class ExpectationOverTransformations(ClassifierWrapper, ClassifierGradients, Cla
         :return: Array of gradients of the same shape as `x`.
         :rtype: `np.ndarray`
         """
-        logger.info('Applying expectation over transformations.')
+        logger.info("Applying expectation over transformations.")
         loss_gradient = self.classifier.loss_gradient(next(self.transformation())(x), y)
         for _ in range(self.sample_size - 1):
             loss_gradient += self.classifier.loss_gradient(next(self.transformation())(x), y)
@@ -121,7 +121,7 @@ class ExpectationOverTransformations(ClassifierWrapper, ClassifierGradients, Cla
                  `(batch_size, 1, input_shape)` when `label` parameter is specified.
         :rtype: `np.ndarray`
         """
-        logger.info('Apply Expectation over Transformations.')
+        logger.info("Apply Expectation over Transformations.")
         class_gradient = self.classifier.class_gradient(next(self.transformation())(x), label)
 
         for _ in range(self.sample_size - 1):
