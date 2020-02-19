@@ -409,8 +409,14 @@ class ThresholdAttack(PixelThreshold):
         """
         if x.ndim < 2:
             x = np.array([x])
-        x = x.astype(int)
-        return x
+        imgs = np.tile(img, [len(x)] + [1] * (x.ndim + 1))	
+        x = x.astype(int)	        x = x.astype(int)
+        for adv, image in zip(x, imgs):	        return x
+            for count, (i, j, k) in enumerate(	
+                    product(range(image.shape[-3]), range(image.shape[-2]),	
+                            range(image.shape[-1]))):	
+                image[i, j, k] = adv[count]	
+        return imgs
 
     def _get_bounds(self, img, limit):
         """
@@ -430,12 +436,9 @@ class ThresholdAttack(PixelThreshold):
 
         minbounds, maxbounds, bounds, initial = [], [], [], []
 
-        for i, j, k in product(range(self.img_rows), range(self.img_cols),
-                               range(self.img_channels)):
-            if self.classifier.channel_index == 3:
-                temp = img[i, j, k]
-            else:
-                temp = img[k, i, j]
+        for i, j, k in product(range(image.shape[-3]), range(image.shape[-2]),
+                               range(image.shape[-1])):
+            temp = img[i, j, k]
             initial += [temp]
             bound = bound_limit(temp)
             if self.es == 0:
