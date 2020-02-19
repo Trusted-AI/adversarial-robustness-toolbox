@@ -306,54 +306,15 @@ def test_save():
 #     os.remove(full_path)
 
 
-def backend_test_class_gradient(get_default_mnist_subset, get_image_classifier_list, expected_values, labels):
-    (x_train_mnist, y_train_mnist), (x_test_mnist, y_test_mnist) = get_default_mnist_subset
-    classifier_list, _ = get_image_classifier_list()
-    classifier = classifier_list[0]
-
-    # Test all gradients label
-    gradients = classifier.class_gradient(x_test_mnist)
-
-    assert gradients.shape == (x_test_mnist.shape[0], 10, 28, 28, 1)
-
-    if "expected_gradients_1_all_labels" in expected_values:
-        np.testing.assert_array_almost_equal(gradients[0, 5, 14, :, 0],
-                                             expected_values["expected_gradients_1_all_labels"].value,
-                                             decimal=expected_values["expected_gradients_1_all_labels"].decimals)
-
-    if "expected_gradients_2_all_labels" in expected_values:
-        np.testing.assert_array_almost_equal(gradients[0, 5, :, 14, 0],
-                                             expected_values["expected_gradients_2_all_labels"].value,
-                                             decimal=expected_values["expected_gradients_2_all_labels"].decimals)
-
-    # Test 1 gradient label = 5
-    gradients = classifier.class_gradient(x_test_mnist, label=5)
-
-    assert gradients.shape == (x_test_mnist.shape[0], 1, 28, 28, 1)
-
-    if "expected_gradients_1_label5" in expected_values:
-        np.testing.assert_array_almost_equal(gradients[0, 0, 14, :, 0], expected_values["expected_gradients_1_label5"].value, decimal=expected_values["expected_gradients_1_label5"].decimals)
-
-    if "expected_gradients_2_label5" in expected_values:
-        np.testing.assert_array_almost_equal(gradients[0, 0, :, 14, 0], expected_values["expected_gradients_2_label5"].value, decimal=expected_values["expected_gradients_2_label5"].decimals)
-
-
-
-    # Test a set of gradients label = array
-    # label = np.random.randint(5, size=self.n_test)
-    gradients = classifier.class_gradient(x_test_mnist, label=labels)
-
-    assert gradients.shape == (x_test_mnist.shape[0], 1, 28, 28, 1)
-
-    if "expected_gradients_1_labelArray" in expected_values:
-        np.testing.assert_array_almost_equal(gradients[0, 0, 14, :, 0], expected_values["expected_gradients_1_labelArray"].value, decimal=expected_values["expected_gradients_1_labelArray"].decimals)
-    if "expected_gradients_2_labelArray" in expected_values:
-        np.testing.assert_array_almost_equal(gradients[0, 0, :, 14, 0], expected_values["expected_gradients_2_labelArray"].value, decimal=expected_values["expected_gradients_2_labelArray"].decimals)
 
 
 
 @pytest.mark.only_with_platform("keras")
 def test_class_gradient(get_default_mnist_subset, get_image_classifier_list):
+
+    classifier_list, _ = get_image_classifier_list()
+    classifier = classifier_list[0]
+
     expected_values = {"expected_gradients_1_all_labels": ExpectedValue(
         np.asarray([-1.0557447e-03, -1.0079544e-03, -7.7426434e-04, 1.7387432e-03,
                     2.1773507e-03, 5.0880699e-05, 1.6497371e-03, 2.6113100e-03,
@@ -402,7 +363,8 @@ def test_class_gradient(get_default_mnist_subset, get_image_classifier_list):
                         2, 3, 4, 1, 3, 3, 3, 2, 1, 3, 4, 2, 3, 4, 1, 4, 0, 4, 1, 1, 4, 1, 4, 0, 1, 0, 0, 4, 0, 4, 2,
                         3, 1, 2, 2, 4, 3, 4, 2, 2, 4, 4, 2, 1, 3, 2, 1, 4, 1, 0, 1, 2, 1, 2, 1, 2, 1, 1, 4, 1, 2, 4,
                         0, 4, 1, 2, 1, 1, 3])
-    backend_test_class_gradient(get_default_mnist_subset, get_image_classifier_list, expected_values, labels)
+
+    utils_classifier.backend_test_class_gradient(get_default_mnist_subset, classifier, expected_values, labels)
 
 
 
