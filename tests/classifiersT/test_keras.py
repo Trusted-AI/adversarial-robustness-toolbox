@@ -306,7 +306,7 @@ def test_save():
 #     os.remove(full_path)
 
 
-def backend_test_class_gradient(get_default_mnist_subset, get_image_classifier_list, expected_values):
+def backend_test_class_gradient(get_default_mnist_subset, get_image_classifier_list, expected_values, labels):
     (x_train_mnist, y_train_mnist), (x_test_mnist, y_test_mnist) = get_default_mnist_subset
     classifier_list, _ = get_image_classifier_list()
     classifier = classifier_list[0]
@@ -341,11 +341,7 @@ def backend_test_class_gradient(get_default_mnist_subset, get_image_classifier_l
 
     # Test a set of gradients label = array
     # label = np.random.randint(5, size=self.n_test)
-    label = np.asarray([3, 4, 4, 0, 1, 1, 1, 2, 3, 4, 4, 2, 2, 0, 0, 4, 0, 1, 2, 0, 3, 4, 2, 2, 3, 3, 0, 1, 3, 0, 3,
-                        2, 3, 4, 1, 3, 3, 3, 2, 1, 3, 4, 2, 3, 4, 1, 4, 0, 4, 1, 1, 4, 1, 4, 0, 1, 0, 0, 4, 0, 4, 2,
-                        3, 1, 2, 2, 4, 3, 4, 2, 2, 4, 4, 2, 1, 3, 2, 1, 4, 1, 0, 1, 2, 1, 2, 1, 2, 1, 1, 4, 1, 2, 4,
-                        0, 4, 1, 2, 1, 1, 3])
-    gradients = classifier.class_gradient(x_test_mnist, label=label)
+    gradients = classifier.class_gradient(x_test_mnist, label=labels)
 
     assert gradients.shape == (x_test_mnist.shape[0], 1, 28, 28, 1)
 
@@ -401,7 +397,12 @@ def test_class_gradient(get_default_mnist_subset, get_image_classifier_list):
                     0.00504575, -0.00037397, 0.00022343, -0.00530034, 0.0020528, 0.0,
                     0.0, 0.0, 0.0, 0.0]), 4)
     }
-    backend_test_class_gradient(get_default_mnist_subset, get_image_classifier_list, expected_values)
+
+    labels = np.asarray([3, 4, 4, 0, 1, 1, 1, 2, 3, 4, 4, 2, 2, 0, 0, 4, 0, 1, 2, 0, 3, 4, 2, 2, 3, 3, 0, 1, 3, 0, 3,
+                        2, 3, 4, 1, 3, 3, 3, 2, 1, 3, 4, 2, 3, 4, 1, 4, 0, 4, 1, 1, 4, 1, 4, 0, 1, 0, 0, 4, 0, 4, 2,
+                        3, 1, 2, 2, 4, 3, 4, 2, 2, 4, 4, 2, 1, 3, 2, 1, 4, 1, 0, 1, 2, 1, 2, 1, 2, 1, 1, 4, 1, 2, 4,
+                        0, 4, 1, 2, 1, 1, 3])
+    backend_test_class_gradient(get_default_mnist_subset, get_image_classifier_list, expected_values, labels)
 
 
 
