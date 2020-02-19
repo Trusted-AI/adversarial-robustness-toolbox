@@ -410,8 +410,8 @@ class ThresholdAttack(PixelThreshold):
         if x.ndim < 2:
             x = np.array([x])
         imgs = np.tile(img, [len(x)] + [1] * (x.ndim + 1))	
-        x = x.astype(int)	        x = x.astype(int)
-        for adv, image in zip(x, imgs):	        return x
+        x = x.astype(int)
+        for adv, image in zip(x, imgs):
             for count, (i, j, k) in enumerate(	
                     product(range(image.shape[-3]), range(image.shape[-2]),	
                             range(image.shape[-1]))):	
