@@ -47,6 +47,10 @@ def backend_test_class_gradient(get_default_mnist_subset, classifier, expected_v
     if "expected_gradients_2_labelArray" in expected_values:
         np.testing.assert_array_almost_equal(gradients[0, 0, :, 14, 0], expected_values["expected_gradients_2_labelArray"].value, decimal=expected_values["expected_gradients_2_labelArray"].decimals)
 
+def backend_test_nb_classes(get_image_classifier_list):
+    classifier_list, _ = get_image_classifier_list()
+    classifier = classifier_list[0]
+    assert classifier.nb_classes() == 10
 
 def backend_test_input_shape(get_image_classifier_list):
     classifier_list, _ = get_image_classifier_list()

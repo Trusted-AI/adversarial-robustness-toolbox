@@ -71,9 +71,8 @@ def test_fit_generator(is_tf_version_2, get_image_classifier_tf_factory, get_def
 
 
 @pytest.mark.only_with_platform("tensorflow")
-def test_nb_classes(get_image_classifier_tf_factory):
-    classifier, sess = get_image_classifier_tf_factory()
-    assert classifier.nb_classes() == 10
+def test_nb_classes(get_image_classifier_list):
+    utils_classifier.backend_test_nb_classes(get_image_classifier_list)
 
 
 @pytest.mark.only_with_platform("tensorflow")
