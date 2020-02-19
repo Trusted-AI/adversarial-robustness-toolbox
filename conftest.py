@@ -33,7 +33,7 @@ def get_image_classifier_list(get_mlFramework):
                 classifier = utils_test.get_image_classifier_kr()
                 # Get the ready-trained Keras model
                 fs = FeatureSqueezing(bit_depth=1, clip_values=(0, 1))
-                classifier_list = [KerasClassifier(model=classifier._model, clip_values=(0, 1), defences=fs)]
+                classifier_list = [KerasClassifier(model=classifier._model, clip_values=(0, 1), preprocessing_defences=fs)]
             else:
                 classifier_list = [utils_test.get_image_classifier_kr()]
         if get_mlFramework == "tensorflow":
