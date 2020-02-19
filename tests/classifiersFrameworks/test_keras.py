@@ -246,7 +246,8 @@ def test_functional_model(get_functional_model):
 
 @pytest.mark.only_with_platform("keras")
 def test_layers(get_default_mnist_subset, get_mlFramework, get_image_classifier_list):
-    utils_classifier.backend_test_layers(get_mlFramework, get_default_mnist_subset, get_image_classifier_list, batch_size=128, layer_count=3)
+    utils_classifier.backend_test_layers(get_mlFramework, get_default_mnist_subset, get_image_classifier_list,
+                                         batch_size=128, layer_count=3)
 
 
 @pytest.mark.only_with_platform("keras")
@@ -315,12 +316,8 @@ def test_save(get_image_classifier_list):
 #     os.remove(full_path)
 
 
-
-
-
 @pytest.mark.only_with_platform("keras")
 def test_class_gradient(get_default_mnist_subset, get_image_classifier_list):
-
     classifier, _ = get_image_classifier_list(one_classifier=True)
 
     expected_values = {"expected_gradients_1_all_labels": ExpectedValue(
@@ -360,17 +357,17 @@ def test_class_gradient(get_default_mnist_subset, get_image_classifier_list):
                         2.0828887e-03, 0.0000000e+00, 0.0000000e+00, 0.0000000e+00,
                         0.0000000e+00, 0.0000000e+00, 0.0000000e+00, 0.0000000e+00]), 4),
         "expected_gradients_2_labelArray": ExpectedValue(
-        np.asarray([-0.00195835, -0.00134457, -0.00307221, -0.00340564, 0.00175022, -0.00239714,
-                    -0.00122619, 0.0, 0.0, -0.00520899, -0.00046105, 0.00414874,
-                    -0.00171095, 0.00429184, 0.0075138, 0.00792442, 0.0019566, 0.00035517,
-                    0.00504575, -0.00037397, 0.00022343, -0.00530034, 0.0020528, 0.0,
-                    0.0, 0.0, 0.0, 0.0]), 4)
+            np.asarray([-0.00195835, -0.00134457, -0.00307221, -0.00340564, 0.00175022, -0.00239714,
+                        -0.00122619, 0.0, 0.0, -0.00520899, -0.00046105, 0.00414874,
+                        -0.00171095, 0.00429184, 0.0075138, 0.00792442, 0.0019566, 0.00035517,
+                        0.00504575, -0.00037397, 0.00022343, -0.00530034, 0.0020528, 0.0,
+                        0.0, 0.0, 0.0, 0.0]), 4)
     }
 
     labels = np.asarray([3, 4, 4, 0, 1, 1, 1, 2, 3, 4, 4, 2, 2, 0, 0, 4, 0, 1, 2, 0, 3, 4, 2, 2, 3, 3, 0, 1, 3, 0, 3,
-                        2, 3, 4, 1, 3, 3, 3, 2, 1, 3, 4, 2, 3, 4, 1, 4, 0, 4, 1, 1, 4, 1, 4, 0, 1, 0, 0, 4, 0, 4, 2,
-                        3, 1, 2, 2, 4, 3, 4, 2, 2, 4, 4, 2, 1, 3, 2, 1, 4, 1, 0, 1, 2, 1, 2, 1, 2, 1, 1, 4, 1, 2, 4,
-                        0, 4, 1, 2, 1, 1, 3])
+                         2, 3, 4, 1, 3, 3, 3, 2, 1, 3, 4, 2, 3, 4, 1, 4, 0, 4, 1, 1, 4, 1, 4, 0, 1, 0, 0, 4, 0, 4, 2,
+                         3, 1, 2, 2, 4, 3, 4, 2, 2, 4, 4, 2, 1, 3, 2, 1, 4, 1, 0, 1, 2, 1, 2, 1, 2, 1, 1, 4, 1, 2, 4,
+                         0, 4, 1, 2, 1, 1, 3])
 
     utils_classifier.backend_test_class_gradient(get_default_mnist_subset, classifier, expected_values, labels)
 
@@ -378,9 +375,9 @@ def test_class_gradient(get_default_mnist_subset, get_image_classifier_list):
 @pytest.mark.only_with_platform("keras")
 def test_repr(get_image_classifier_list):
     utils_classifier.backend_test_repr(get_image_classifier_list, ['art.classifiers.keras.KerasClassifier',
-                       'use_logits=False, channel_index=3',
-                       'clip_values=(0, 1), defences=None, preprocessing=(0, 1)',
-                       'input_layer=0, output_layer=0'])
+                                                                   'use_logits=False, channel_index=3',
+                                                                   'clip_values=(0, 1), preprocessing_defences=None, postprocessing_defences=None, preprocessing=(0, 1)',
+                                                                   'input_layer=0, output_layer=0'])
 
 
 @pytest.mark.only_with_platform("keras")
@@ -523,4 +520,3 @@ def test_loss_functions(get_default_mnist_subset):
 
         _run_tests(loss_name, loss_type, y_test_pred_expected, class_gradient_probabilities_expected,
                    loss_gradient_expected, _from_logits=False)
-
