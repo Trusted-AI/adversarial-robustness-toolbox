@@ -29,7 +29,8 @@ from sklearn.ensemble import AdaBoostClassifier, BaggingClassifier, ExtraTreesCl
 from sklearn.ensemble import GradientBoostingClassifier, RandomForestClassifier
 import numpy as np
 
-from art.utils import load_dataset, master_seed
+from art.utils import load_dataset
+
 
 
 def main_mnist_binary():
