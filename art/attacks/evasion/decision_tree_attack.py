@@ -39,7 +39,7 @@ class DecisionTreeAttack(EvasionAttack):
     | Paper link: https://arxiv.org/abs/1605.07277
     """
 
-    attack_params = ['classifier', 'offset']
+    attack_params = ["classifier", "offset"]
 
     def __init__(self, classifier, offset=0.001):
         """
@@ -51,8 +51,8 @@ class DecisionTreeAttack(EvasionAttack):
         super(DecisionTreeAttack, self).__init__(classifier)
 
         if not isinstance(classifier, ScikitlearnDecisionTreeClassifier):
-            raise TypeError('Model must be a decision tree model!')
-        params = {'offset': offset}
+            raise TypeError("Model must be a decision tree model!")
+        params = {"offset": offset}
         self.set_params(**params)
 
     def _df_subtree(self, position, original_class, target=None):
@@ -82,12 +82,10 @@ class DecisionTreeAttack(EvasionAttack):
                 else:
                     path = [-1]
         else:  # go deeper, depths first
-            res = self._df_subtree(self.classifier.get_left_child(
-                position), original_class, target)
+            res = self._df_subtree(self.classifier.get_left_child(position), original_class, target)
             if res[0] == -1:
                 # no result, try right subtree
-                res = self._df_subtree(self.classifier.get_right_child(
-                    position), original_class, target)
+                res = self._df_subtree(self.classifier.get_right_child(position), original_class, target)
                 if res[0] == -1:
                     # no desired result
                     path = [-1]
@@ -130,15 +128,16 @@ class DecisionTreeAttack(EvasionAttack):
                     if y is None:
                         adv_path = self._df_subtree(self.classifier.get_right_child(ancestor), legitimate_class)
                     else:
-                        adv_path = self._df_subtree(self.classifier.get_right_child(ancestor), legitimate_class,
-                                                    y[index])
+                        adv_path = self._df_subtree(
+                            self.classifier.get_right_child(ancestor), legitimate_class, y[index]
+                        )
                 else:  # search in left subtree
                     if y is None:
-                        adv_path = self._df_subtree(
-                            self.classifier.get_left_child(ancestor), legitimate_class)
+                        adv_path = self._df_subtree(self.classifier.get_left_child(ancestor), legitimate_class)
                     else:
-                        adv_path = self._df_subtree(self.classifier.get_left_child(ancestor), legitimate_class,
-                                                    y[index])
+                        adv_path = self._df_subtree(
+                            self.classifier.get_left_child(ancestor), legitimate_class, y[index]
+                        )
                 position = position - 1  # we are going the decision path upwards
             adv_path.append(ancestor)
             # we figured out which is the way to the target, now perturb
@@ -153,7 +152,7 @@ class DecisionTreeAttack(EvasionAttack):
                 elif x_adv[index][feature] <= threshold and go_for == self.classifier.get_right_child(adv_path[i]):
                     x_adv[index][feature] = threshold + self.offset
 
-        logger.info('Success rate of decision tree attack: %.2f%%', 100 * compute_success(self.classifier, x, y, x_adv))
+        logger.info("Success rate of decision tree attack: %.2f%%", 100 * compute_success(self.classifier, x, y, x_adv))
         return x_adv
 
     def set_params(self, **kwargs):

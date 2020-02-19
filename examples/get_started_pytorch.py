@@ -16,6 +16,7 @@ from art.utils import load_mnist
 
 # Step 0: Define the neural network model, return logits instead of activation in forward method
 
+
 class Net(nn.Module):
     def __init__(self):
         super(Net, self).__init__()
@@ -55,8 +56,14 @@ optimizer = optim.SGD(model.parameters(), lr=0.01, momentum=0.5)
 
 # Step 3: Create the ART classifier
 
-classifier = PyTorchClassifier(model=model, clip_values=(min_pixel_value, max_pixel_value), loss=criterion,
-                               optimizer=optimizer, input_shape=(1, 28, 28), nb_classes=10)
+classifier = PyTorchClassifier(
+    model=model,
+    clip_values=(min_pixel_value, max_pixel_value),
+    loss=criterion,
+    optimizer=optimizer,
+    input_shape=(1, 28, 28),
+    nb_classes=10,
+)
 
 # Step 4: Train the ART classifier
 
@@ -66,7 +73,7 @@ classifier.fit(x_train, y_train, batch_size=64, nb_epochs=3)
 
 predictions = classifier.predict(x_test)
 accuracy = np.sum(np.argmax(predictions, axis=1) == np.argmax(y_test, axis=1)) / len(y_test)
-print('Accuracy on benign test examples: {}%'.format(accuracy * 100))
+print("Accuracy on benign test examples: {}%".format(accuracy * 100))
 
 # Step 6: Generate adversarial test examples
 attack = FastGradientMethod(classifier=classifier, eps=0.2)
@@ -76,4 +83,4 @@ x_test_adv = attack.generate(x=x_test)
 
 predictions = classifier.predict(x_test_adv)
 accuracy = np.sum(np.argmax(predictions, axis=1) == np.argmax(y_test, axis=1)) / len(y_test)
-print('Accuracy on adversarial test examples: {}%'.format(accuracy * 100))
+print("Accuracy on adversarial test examples: {}%".format(accuracy * 100))

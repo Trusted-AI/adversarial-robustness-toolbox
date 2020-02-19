@@ -34,8 +34,16 @@ class BlackBoxClassifier(Classifier):
     Wrapper class for black-box classifiers.
     """
 
-    def __init__(self, predict, input_shape, nb_classes, clip_values=None, preprocessing_defences=None,
-                 postprocessing_defences=None, preprocessing=(0, 1)):
+    def __init__(
+        self,
+        predict,
+        input_shape,
+        nb_classes,
+        clip_values=None,
+        preprocessing_defences=None,
+        postprocessing_defences=None,
+        preprocessing=(0, 1),
+    ):
         """
         Create a `Classifier` instance for a black-box model.
 
@@ -59,10 +67,12 @@ class BlackBoxClassifier(Classifier):
                be divided by the second one.
         :type preprocessing: `tuple`
         """
-        super(BlackBoxClassifier, self).__init__(clip_values=clip_values,
-                                                 preprocessing_defences=preprocessing_defences,
-                                                 postprocessing_defences=postprocessing_defences,
-                                                 preprocessing=preprocessing)
+        super(BlackBoxClassifier, self).__init__(
+            clip_values=clip_values,
+            preprocessing_defences=preprocessing_defences,
+            postprocessing_defences=postprocessing_defences,
+            preprocessing=preprocessing,
+        )
 
         self._predictions = predict
         self._input_shape = input_shape

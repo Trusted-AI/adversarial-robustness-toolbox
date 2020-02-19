@@ -36,8 +36,20 @@ class MXClassifier(ClassifierNeuralNetwork, ClassifierGradients, Classifier):
     Wrapper class for importing MXNet Gluon models.
     """
 
-    def __init__(self, model, loss, input_shape, nb_classes, optimizer=None, ctx=None, channel_index=1,
-                 clip_values=None, preprocessing_defences=None, postprocessing_defences=None, preprocessing=(0, 1)):
+    def __init__(
+        self,
+        model,
+        loss,
+        input_shape,
+        nb_classes,
+        optimizer=None,
+        ctx=None,
+        channel_index=1,
+        clip_values=None,
+        preprocessing_defences=None,
+        postprocessing_defences=None,
+        preprocessing=(0, 1),
+    ):
         """
         Initialize an `MXClassifier` object. Assumes the `model` passed as parameter is a Gluon model.
 
@@ -73,11 +85,13 @@ class MXClassifier(ClassifierNeuralNetwork, ClassifierGradients, Classifier):
         """
         import mxnet as mx
 
-        super(MXClassifier, self).__init__(clip_values=clip_values,
-                                           channel_index=channel_index,
-                                           preprocessing_defences=preprocessing_defences,
-                                           postprocessing_defences=postprocessing_defences,
-                                           preprocessing=preprocessing)
+        super(MXClassifier, self).__init__(
+            clip_values=clip_values,
+            channel_index=channel_index,
+            preprocessing_defences=preprocessing_defences,
+            postprocessing_defences=postprocessing_defences,
+            preprocessing=preprocessing,
+        )
 
         self._model = model
         self._loss = loss
@@ -113,11 +127,11 @@ class MXClassifier(ClassifierNeuralNetwork, ClassifierGradients, Classifier):
         :return: `None`
         """
         if self._optimizer is None:
-            raise ValueError('An MXNet optimizer is required for fitting the model.')
+            raise ValueError("An MXNet optimizer is required for fitting the model.")
 
         import mxnet as mx
 
-        train_mode = self._learning_phase if hasattr(self, '_learning_phase') else True
+        train_mode = self._learning_phase if hasattr(self, "_learning_phase") else True
 
         # Apply preprocessing
         x_preprocessed, y_preprocessed = self._apply_preprocessing(x, y, fit=True)
@@ -133,9 +147,12 @@ class MXClassifier(ClassifierNeuralNetwork, ClassifierGradients, Classifier):
 
             # Train for one epoch
             for m in range(nb_batch):
-                x_batch = (mx.nd.array(x_preprocessed[ind[m * batch_size:(m + 1) * batch_size]]
-                                       .astype(ART_NUMPY_DTYPE)).as_in_context(self._ctx))
-                y_batch = mx.nd.array(y_preprocessed[ind[m * batch_size:(m + 1) * batch_size]]).as_in_context(self._ctx)
+                x_batch = mx.nd.array(
+                    x_preprocessed[ind[m * batch_size : (m + 1) * batch_size]].astype(ART_NUMPY_DTYPE)
+                ).as_in_context(self._ctx)
+                y_batch = mx.nd.array(y_preprocessed[ind[m * batch_size : (m + 1) * batch_size]]).as_in_context(
+                    self._ctx
+                )
 
                 with mx.autograd.record(train_mode=train_mode):
                     # Perform prediction
@@ -168,11 +185,12 @@ class MXClassifier(ClassifierNeuralNetwork, ClassifierGradients, Classifier):
         import mxnet as mx
         from art.data_generators import MXDataGenerator
 
-        train_mode = self._learning_phase if hasattr(self, '_learning_phase') else True
+        train_mode = self._learning_phase if hasattr(self, "_learning_phase") else True
 
         # TODO fix fit_generator w.r.t. defenses
-        if isinstance(generator, MXDataGenerator) and \
-                not (hasattr(self, 'label_smooth') or hasattr(self, 'feature_squeeze')):
+        if isinstance(generator, MXDataGenerator) and not (
+            hasattr(self, "label_smooth") or hasattr(self, "feature_squeeze")
+        ):
             # Train directly in MXNet
             for _ in range(nb_epochs):
                 for x_batch, y_batch in generator.data_loader:
@@ -211,7 +229,7 @@ class MXClassifier(ClassifierNeuralNetwork, ClassifierGradients, Classifier):
         """
         import mxnet as mx
 
-        train_mode = self._learning_phase if hasattr(self, '_learning_phase') else False
+        train_mode = self._learning_phase if hasattr(self, "_learning_phase") else False
 
         # Apply preprocessing
         x_preprocessed, _ = self._apply_preprocessing(x, y=None, fit=False)
@@ -255,12 +273,19 @@ class MXClassifier(ClassifierNeuralNetwork, ClassifierGradients, Classifier):
         import mxnet as mx
 
         # Check value of label for computing gradients
-        if not (label is None or (isinstance(label, (int, np.integer)) and label in range(self.nb_classes()))
-                or (isinstance(label, np.ndarray) and len(label.shape) == 1 and (label < self.nb_classes()).all()
-                    and label.shape[0] == x.shape[0])):
-            raise ValueError('Label %s is out of range.' % str(label))
+        if not (
+            label is None
+            or (isinstance(label, (int, np.integer)) and label in range(self.nb_classes()))
+            or (
+                isinstance(label, np.ndarray)
+                and len(label.shape) == 1
+                and (label < self.nb_classes()).all()
+                and label.shape[0] == x.shape[0]
+            )
+        ):
+            raise ValueError("Label %s is out of range." % str(label))
 
-        train_mode = self._learning_phase if hasattr(self, '_learning_phase') else False
+        train_mode = self._learning_phase if hasattr(self, "_learning_phase") else False
 
         # Apply preprocessing
         x_preprocessed, _ = self._apply_preprocessing(x, y=None, fit=False)
@@ -322,7 +347,7 @@ class MXClassifier(ClassifierNeuralNetwork, ClassifierGradients, Classifier):
         """
         import mxnet as mx
 
-        train_mode = self._learning_phase if hasattr(self, '_learning_phase') else False
+        train_mode = self._learning_phase if hasattr(self, "_learning_phase") else False
 
         # Apply preprocessing
         x_preprocessed, y_preprocessed = self._apply_preprocessing(x, y, fit=False)
@@ -376,19 +401,20 @@ class MXClassifier(ClassifierNeuralNetwork, ClassifierGradients, Classifier):
         """
         import mxnet as mx
 
-        train_mode = self._learning_phase if hasattr(self, '_learning_phase') else False
+        train_mode = self._learning_phase if hasattr(self, "_learning_phase") else False
 
         if isinstance(layer, six.string_types):
             if layer not in self._layer_names:
-                raise ValueError('Layer name %s is not part of the model.' % layer)
+                raise ValueError("Layer name %s is not part of the model." % layer)
             layer_ind = self._layer_names.index(layer)
         elif isinstance(layer, int):
             if layer < 0 or layer >= len(self._layer_names):
-                raise ValueError('Layer index %d is outside of range (0 to %d included).'
-                                 % (layer, len(self._layer_names) - 1))
+                raise ValueError(
+                    "Layer index %d is outside of range (0 to %d included)." % (layer, len(self._layer_names) - 1)
+                )
             layer_ind = layer
         else:
-            raise TypeError('Layer must be of type `str` or `int`.')
+            raise TypeError("Layer must be of type `str` or `int`.")
 
         # Apply preprocessing and defences
         if x.shape == self.input_shape:
@@ -452,6 +478,7 @@ class MXClassifier(ClassifierNeuralNetwork, ClassifierGradients, Classifier):
 
         if path is None:
             from art.config import ART_DATA_PATH
+
             full_path = os.path.join(ART_DATA_PATH, filename)
         else:
             full_path = os.path.join(path, filename)
@@ -459,15 +486,28 @@ class MXClassifier(ClassifierNeuralNetwork, ClassifierGradients, Classifier):
         if not os.path.exists(folder):
             os.makedirs(folder)
 
-        self._model.save_parameters(full_path + '.params')
+        self._model.save_parameters(full_path + ".params")
         logger.info("Model parameters saved in path: %s.params.", full_path)
 
     def __repr__(self):
-        repr_ = "%s(model=%r, loss=%r, input_shape=%r, nb_classes=%r, optimizer=%r, ctx=%r, channel_index=%r, " \
-                "clip_values=%r, preprocessing_defences=%r, postprocessing_defences=%r, preprocessing=%r)" \
-                % (self.__module__ + '.' + self.__class__.__name__, self._model, self._loss, self.input_shape,
-                   self.nb_classes(), self._optimizer, self._ctx, self.channel_index, self.clip_values,
-                   self.preprocessing_defences, self.postprocessing_defences, self.preprocessing)
+        repr_ = (
+            "%s(model=%r, loss=%r, input_shape=%r, nb_classes=%r, optimizer=%r, ctx=%r, channel_index=%r, "
+            "clip_values=%r, preprocessing_defences=%r, postprocessing_defences=%r, preprocessing=%r)"
+            % (
+                self.__module__ + "." + self.__class__.__name__,
+                self._model,
+                self._loss,
+                self.input_shape,
+                self.nb_classes(),
+                self._optimizer,
+                self._ctx,
+                self.channel_index,
+                self.clip_values,
+                self.preprocessing_defences,
+                self.postprocessing_defences,
+                self.preprocessing,
+            )
+        )
 
         return repr_
 
@@ -479,6 +519,6 @@ class MXClassifier(ClassifierNeuralNetwork, ClassifierGradients, Classifier):
         :rtype: `list`
         """
         layer_names = [layer.name for layer in self._model[:-1]]
-        logger.info('Inferred %i hidden layers on MXNet classifier.', len(layer_names))
+        logger.info("Inferred %i hidden layers on MXNet classifier.", len(layer_names))
 
         return layer_names

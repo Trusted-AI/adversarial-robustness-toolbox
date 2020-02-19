@@ -90,14 +90,15 @@ class RobustnessVerificationTreeModelsCliqueMethod:
             eps_not_robust = None
 
             for i_step in range(nb_search_steps):
-                logger.info('Search step {0:d}: eps = {1:.4g}'.format(i_step, eps))
+                logger.info("Search step {0:d}: eps = {1:.4g}".format(i_step, eps))
 
                 is_robust = True
 
                 if self._classifier.nb_classes() <= 2:
                     best_score = self._get_best_score(i_sample, eps, norm, target_label=None)
                     is_robust = (self.y[i_sample] < 0.5 and best_score < 0) or (
-                        self.y[i_sample] > 0.5 and best_score > 0)
+                        self.y[i_sample] > 0.5 and best_score > 0
+                    )
                 else:
                     for i_class in range(self._classifier.nb_classes()):
                         if i_class != self.y[i_sample]:
@@ -111,11 +112,11 @@ class RobustnessVerificationTreeModelsCliqueMethod:
                 if is_robust:
                     if i_step == 0:
                         num_initial_successes += 1
-                    logger.info('Model is robust at eps = {:.4g}'.format(eps))
+                    logger.info("Model is robust at eps = {:.4g}".format(eps))
                     i_robust = i_step
                     eps_robust = eps
                 else:
-                    logger.info('Model is not robust at eps = {:.4g}'.format(eps))
+                    logger.info("Model is not robust at eps = {:.4g}".format(eps))
                     i_not_robust = i_step
                     eps_not_robust = eps
 
@@ -124,7 +125,7 @@ class RobustnessVerificationTreeModelsCliqueMethod:
                 else:
                     if i_not_robust is None:
                         if eps >= 1.0:
-                            logger.info('Abort binary search because eps increased above 1.0')
+                            logger.info("Abort binary search because eps increased above 1.0")
                             break
                         eps = min(eps * 2.0, 1.0)
                     else:
@@ -134,13 +135,13 @@ class RobustnessVerificationTreeModelsCliqueMethod:
                 clique_bound = eps_robust
                 average_bound += clique_bound
             else:
-                logger.info('point %s: WARNING! no robust eps found, verification bound is set as 0 !', i_sample)
+                logger.info("point %s: WARNING! no robust eps found, verification bound is set as 0 !", i_sample)
 
         verified_error = 1.0 - num_initial_successes / num_samples
         average_bound = average_bound / num_samples
 
-        logger.info('The average interval bound is: {:.4g}'.format(average_bound))
-        logger.info('The verified error at eps = {0:.4g} is: {1:.4g}'.format(eps_init, verified_error))
+        logger.info("The average interval bound is: {:.4g}".format(average_bound))
+        logger.info("The verified error at eps = {0:.4g} is: {1:.4g}".format(eps_init, verified_error))
 
         return average_bound, verified_error
 
@@ -167,12 +168,15 @@ class RobustnessVerificationTreeModelsCliqueMethod:
 
             # Start searching for cliques
             for accessible_leaf in accessible_leaves[start_tree]:
-                if self._classifier.nb_classes() > 2 and target_label is not None \
-                        and target_label == accessible_leaf.class_label:
-                    new_leaf_value = - accessible_leaf.value
+                if (
+                    self._classifier.nb_classes() > 2
+                    and target_label is not None
+                    and target_label == accessible_leaf.class_label
+                ):
+                    new_leaf_value = -accessible_leaf.value
                 else:
                     new_leaf_value = accessible_leaf.value
-                cliques_old.append({'box': accessible_leaf.box, 'value': new_leaf_value})
+                cliques_old.append({"box": accessible_leaf.box, "value": new_leaf_value})
 
             # Loop over all all trees
             for i_tree in range(start_tree + 1, min(len(accessible_leaves), start_tree + self.max_clique)):
@@ -181,14 +185,17 @@ class RobustnessVerificationTreeModelsCliqueMethod:
                 for clique in cliques_old:
                     # Loop over leaf nodes in tree
                     for accessible_leaf in accessible_leaves[i_tree]:
-                        leaf_box = accessible_leaf.box.get_intersection(clique['box'])
+                        leaf_box = accessible_leaf.box.get_intersection(clique["box"])
                         if leaf_box.intervals:
-                            if self._classifier.nb_classes() > 2 and target_label is not None \
-                                    and target_label == accessible_leaf.class_label:
-                                new_leaf_value = - accessible_leaf.value
+                            if (
+                                self._classifier.nb_classes() > 2
+                                and target_label is not None
+                                and target_label == accessible_leaf.class_label
+                            ):
+                                new_leaf_value = -accessible_leaf.value
                             else:
                                 new_leaf_value = accessible_leaf.value
-                            cliques_new.append({'box': leaf_box, 'value': new_leaf_value + clique['value']})
+                            cliques_new.append({"box": leaf_box, "value": new_leaf_value + clique["value"]})
 
                 cliques_old = cliques_new.copy()
 
@@ -197,15 +204,16 @@ class RobustnessVerificationTreeModelsCliqueMethod:
             for i, clique in enumerate(cliques_old):
                 # Create a new node without tree_id and node_id to represent clique
                 new_nodes.append(
-                    LeafNode(tree_id=None, class_label=label, node_id=None, box=clique['box'], value=clique['value']))
+                    LeafNode(tree_id=None, class_label=label, node_id=None, box=clique["box"], value=clique["value"])
+                )
 
                 if i == 0:
-                    best_score = clique['value']
+                    best_score = clique["value"]
                 else:
                     if label < 0.5 and self._classifier.nb_classes() <= 2:
-                        best_score = max(best_score, clique['value'])
+                        best_score = max(best_score, clique["value"])
                     else:
-                        best_score = min(best_score, clique['value'])
+                        best_score = min(best_score, clique["value"])
 
             new_nodes_list.append(new_nodes)
             best_scores_sum += best_score
@@ -299,8 +307,11 @@ class RobustnessVerificationTreeModelsCliqueMethod:
         accessible_leaves = list()
 
         for tree in self._trees:
-            if self._classifier.nb_classes() <= 2 or target_label is None or tree.class_id in [self.y[i_sample],
-                                                                                               target_label]:
+            if (
+                self._classifier.nb_classes() <= 2
+                or target_label is None
+                or tree.class_id in [self.y[i_sample], target_label]
+            ):
 
                 leaves = list()
 
@@ -310,7 +321,7 @@ class RobustnessVerificationTreeModelsCliqueMethod:
                         leaves.append(leaf_node)
 
                 if not leaves:
-                    raise ValueError('No accessible leaves found.')
+                    raise ValueError("No accessible leaves found.")
 
                 accessible_leaves.append(leaves)
 
@@ -397,7 +408,7 @@ class Box:
         return box_new
 
     def __repr__(self):
-        return self.__class__.__name__ + '({})'.format(self.intervals)
+        return self.__class__.__name__ + "({})".format(self.intervals)
 
 
 class LeafNode:
@@ -427,8 +438,9 @@ class LeafNode:
         self.value = value
 
     def __repr__(self):
-        return self.__class__.__name__ + '({}, {}, {}, {}, {})'.format(self.tree_id, self.class_label, self.node_id,
-                                                                       self.box, self.value)
+        return self.__class__.__name__ + "({}, {}, {}, {}, {})".format(
+            self.tree_id, self.class_label, self.node_id, self.box, self.value
+        )
 
 
 class Tree:

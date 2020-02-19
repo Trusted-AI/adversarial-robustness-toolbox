@@ -45,7 +45,8 @@ class LabelSmoothing(Preprocessor):
     | Please keep in mind the limitations of defences. For details on how to evaluate classifier security in general,
     see https://arxiv.org/abs/1902.06705  .
     """
-    params = ['max_value']
+
+    params = ["max_value"]
 
     def __init__(self, max_value=0.9, apply_fit=True, apply_predict=False):
         """
@@ -88,8 +89,8 @@ class LabelSmoothing(Preprocessor):
         assert self.max_value >= min_value
 
         smooth_y = y.copy()
-        smooth_y[smooth_y == 1.] = self.max_value
-        smooth_y[smooth_y == 0.] = min_value
+        smooth_y[smooth_y == 1.0] = self.max_value
+        smooth_y[smooth_y == 0.0] = min_value
         return x, smooth_y
 
     def estimate_gradient(self, x, grad):

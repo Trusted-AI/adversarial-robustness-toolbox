@@ -48,7 +48,8 @@ class JpegCompression(Preprocessor):
     see https://arxiv.org/abs/1802.00420 . For details on how to evaluate classifier security in general, see
     https://arxiv.org/abs/1902.06705
     """
-    params = ['quality', 'channel_index', 'clip_values']
+
+    params = ["quality", "channel_index", "clip_values"]
 
     def __init__(self, clip_values, quality=50, channel_index=3, apply_fit=True, apply_predict=False):
         """
@@ -95,15 +96,17 @@ class JpegCompression(Preprocessor):
         from PIL import Image
 
         if len(x.shape) == 2:
-            raise ValueError('Feature vectors detected. JPEG compression can only be applied to data with spatial'
-                             'dimensions.')
+            raise ValueError(
+                "Feature vectors detected. JPEG compression can only be applied to data with spatial" "dimensions."
+            )
 
         if self.channel_index >= len(x.shape):
-            raise ValueError('Channel index does not match input shape.')
+            raise ValueError("Channel index does not match input shape.")
 
         if np.min(x) < 0.0:
-            raise ValueError('Negative values in input `x` detected. The JPEG compression defence requires unnormalized'
-                             'input.')
+            raise ValueError(
+                "Negative values in input `x` detected. The JPEG compression defence requires unnormalized" "input."
+            )
 
         # Swap channel index
         if self.channel_index < 3 and len(x.shape) == 4:
@@ -123,9 +126,9 @@ class JpegCompression(Preprocessor):
         # Compress one image at a time
         for i, x_i in enumerate(x_local):
             if len(x_i.shape) == 2:
-                x_i = Image.fromarray(x_i, mode='L')
+                x_i = Image.fromarray(x_i, mode="L")
             elif x_i.shape[-1] == 3:
-                x_i = Image.fromarray(x_i, mode='RGB')
+                x_i = Image.fromarray(x_i, mode="RGB")
             else:
                 logger.log(level=40, msg="Currently only support `RGB` and `L` images.")
                 raise NotImplementedError("Currently only support `RGB` and `L` images.")
@@ -177,24 +180,25 @@ class JpegCompression(Preprocessor):
         super(JpegCompression, self).set_params(**kwargs)
 
         if not isinstance(self.quality, (int, np.int)) or self.quality <= 0 or self.quality > 100:
-            logger.error('Image quality must be a positive integer <= 100.')
-            raise ValueError('Image quality must be a positive integer <= 100.')
+            logger.error("Image quality must be a positive integer <= 100.")
+            raise ValueError("Image quality must be a positive integer <= 100.")
 
         if not isinstance(self.channel_index, (int, np.int)) or self.channel_index <= 0:
-            logger.error('Data channel must be a positive integer. The batch dimension is not a valid channel.')
-            raise ValueError('Data channel must be a positive integer. The batch dimension is not a valid channel.')
+            logger.error("Data channel must be a positive integer. The batch dimension is not a valid channel.")
+            raise ValueError("Data channel must be a positive integer. The batch dimension is not a valid channel.")
 
         if len(self.clip_values) != 2:
-            raise ValueError('`clip_values` should be a tuple of 2 floats or arrays containing the allowed'
-                             'data range.')
+            raise ValueError(
+                "`clip_values` should be a tuple of 2 floats or arrays containing the allowed" "data range."
+            )
 
         if np.array(self.clip_values[0] >= self.clip_values[1]).any():
-            raise ValueError('Invalid `clip_values`: min >= max.')
+            raise ValueError("Invalid `clip_values`: min >= max.")
 
         if self.clip_values[0] != 0:
-            raise ValueError('`clip_values` min value must be 0.')
+            raise ValueError("`clip_values` min value must be 0.")
 
         if self.clip_values[1] != 1.0 and self.clip_values[1] != 255:
-            raise ValueError('`clip_values` max value must be either 1 or 255.')
+            raise ValueError("`clip_values` max value must be either 1 or 255.")
 
         return True

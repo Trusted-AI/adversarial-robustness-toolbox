@@ -27,6 +27,7 @@ class Preprocessor(abc.ABC):
     """
     Abstract base class for preprocessing defences.
     """
+
     params = []
 
     def __init__(self):

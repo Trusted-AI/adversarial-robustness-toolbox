@@ -31,7 +31,8 @@ class Rounded(Postprocessor):
     """
     Implementation of a postprocessor based on rounding classifier output.
     """
-    params = ['decimals']
+
+    params = ["decimals"]
 
     def __init__(self, decimals=3, apply_fit=False, apply_predict=True):
         """
@@ -87,6 +88,6 @@ class Rounded(Postprocessor):
         super(Rounded, self).set_params(**kwargs)
 
         if not isinstance(self.decimals, (int, np.int)) or self.decimals <= 0:
-            raise ValueError('Number of decimal places must be a positive integer.')
+            raise ValueError("Number of decimal places must be a positive integer.")
 
         return True

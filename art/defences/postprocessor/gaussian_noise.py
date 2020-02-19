@@ -32,7 +32,8 @@ class GaussianNoise(Postprocessor):
     """
     Implementation of a postprocessor based on adding Gaussian noise to classifier output.
     """
-    params = ['scale']
+
+    params = ["scale"]
 
     def __init__(self, scale=0.2, apply_fit=False, apply_predict=True):
         """
@@ -108,6 +109,6 @@ class GaussianNoise(Postprocessor):
         super(GaussianNoise, self).set_params(**kwargs)
 
         if self.scale <= 0:
-            raise ValueError('Standard deviation must be positive.')
+            raise ValueError("Standard deviation must be positive.")
 
         return True
