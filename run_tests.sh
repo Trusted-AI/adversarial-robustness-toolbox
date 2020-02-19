@@ -3,11 +3,19 @@ exit_code=0
 
 # --------------------------------------------------------------------------------------------------------------- TESTS
 
+# Refactored tests
+pytest -q tests/attacks/evasion/ --mlFramework="tensorflow" --durations=0
+
+mlFrameworkList=("tensorflow" "keras" "pytorch" "scikitlearn")
+for mlFramework in "${mlFrameworkList[@]}"; do
+  echo "Running tests with framework $mlFramework"
+#  pytest -q tests/attacks/evasion/ --mlFramework=$mlFramework --durations=0
+  pytest -q tests/classifiersT/ --mlFramework=$mlFramework --durations=0
+done
 
 
-
+# Tests yet to be refactored
 declare -a attacks=("tests/attacks/test_adversarial_patch.py" \
-#                    "tests/attacks/test_boundary.py" \
                     "tests/attacks/test_carlini.py" \
                     "tests/attacks/test_copycat_cnn.py" \
                     "tests/attacks/test_decision_tree_attack.py" \
@@ -35,13 +43,11 @@ declare -a classifiers=("tests/classifiers/test_blackbox.py" \
                         "tests/classifiers/test_ensemble.py" \
                         "tests/classifiers/test_GPy.py" \
                         "tests/classifiers/test_input_filter.py" \
-                        "tests/classifiers/test_keras.py" \
                         "tests/classifiers/test_keras_tf.py" \
                         "tests/classifiers/test_lightgbm.py" \
                         "tests/classifiers/test_mxnet.py" \
                         "tests/classifiers/test_pytorch.py" \
                         "tests/classifiers/test_scikitlearn.py" \
-                        "tests/classifiers/test_tensorflow.py" \
                         "tests/classifiers/test_xgboost.py" )
 
 declare -a defences=("tests/defences/test_adversarial_trainer.py" \

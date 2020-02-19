@@ -96,11 +96,6 @@ class TestBase(unittest.TestCase):
         cls.x_test_mnist = x_test_mnist[:n_test]
         cls.y_test_mnist = y_test_mnist[:n_test]
 
-        if os.environ["mlFramework"] == "pytorch":
-            # (x_train, y_train), (x_test, y_test) = self.mnist
-            cls.x_test_mnist = np.reshape(cls.x_test_mnist, (cls.x_test_mnist.shape[0], 1, 28, 28)).astype(np.float32)
-            # test_mnist = (x_train, y_train), (x_test, y_test)
-
         cls._x_train_mnist_original = cls.x_train_mnist.copy()
         cls._y_train_mnist_original = cls.y_train_mnist.copy()
         cls._x_test_mnist_original = cls.x_test_mnist.copy()
