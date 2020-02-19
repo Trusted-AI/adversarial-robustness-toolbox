@@ -24,9 +24,9 @@ from art.data_generators import TFDataGenerator
 from tests import utils_test
 from tests.classifiersT import utils_classifier
 from tests.utils_test import ExpectedValue
+import os
 
 logger = logging.getLogger(__name__)
-
 
 @pytest.mark.only_with_platform("tensorflow")
 def test_predict(get_image_classifier_list, get_default_mnist_subset):
