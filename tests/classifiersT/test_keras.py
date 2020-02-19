@@ -28,12 +28,11 @@ from keras.preprocessing.image import ImageDataGenerator
 from keras.callbacks import LearningRateScheduler
 from keras.applications.resnet50 import ResNet50, decode_predictions
 from keras.preprocessing.image import load_img, img_to_array
-from tests.utils_test import ExpectedValue
+from tests.utils_test import ExpectedValue, master_seed
 # from art.config import ART_DATA_PATH
 from art.classifiers import KerasClassifier
 from art.classifiers.keras import generator_fit
 from art.defences import FeatureSqueezing, JpegCompression, SpatialSmoothing
-from art.utils import master_seed
 from art.data_generators import KerasDataGenerator
 from tests.utils_test import TestBase, get_image_classifier_kr
 from tests.classifiersT import utils_classifier
@@ -246,8 +245,8 @@ def test_functional_model(get_functional_model):
 
 
 @pytest.mark.only_with_platform("keras")
-def test_layers(get_default_mnist_subset, get_backend_test_layers):
-    get_backend_test_layers(batch_size=128, layer_count=3)
+def test_layers(get_default_mnist_subset, get_mlFramework, get_image_classifier_list):
+    utils_classifier.backend_test_layers(get_mlFramework, get_default_mnist_subset, get_image_classifier_list, batch_size=128, layer_count=3)
 
 
 @pytest.mark.only_with_platform("keras")
@@ -377,8 +376,8 @@ def test_class_gradient(get_default_mnist_subset, get_image_classifier_list):
 
 
 @pytest.mark.only_with_platform("keras")
-def test_repr(backend_test_repr):
-    backend_test_repr(['art.classifiers.keras.KerasClassifier',
+def test_repr(get_image_classifier_list):
+    utils_classifier.backend_test_repr(get_image_classifier_list, ['art.classifiers.keras.KerasClassifier',
                        'use_logits=False, channel_index=3',
                        'clip_values=(0, 1), defences=None, preprocessing=(0, 1)',
                        'input_layer=0, output_layer=0'])

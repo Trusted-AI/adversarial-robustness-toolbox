@@ -16,7 +16,7 @@ from art.classifiers import KerasClassifier
 logger = logging.getLogger(__name__)
 art_supported_frameworks = ["keras", "tensorflow", "pytorch", "scikitlearn"]
 
-utils.master_seed(1234)
+utils_test.master_seed(1234)
 
 def pytest_addoption(parser):
     parser.addoption(

@@ -7,7 +7,7 @@ pytest -q tests/attacks/evasion/ --mlFramework="tensorflow" --durations=0
 mlFrameworkList=("tensorflow" "keras" "pytorch" "scikitlearn")
 for mlFramework in "${mlFrameworkList[@]}"; do
   echo "Running tests with framework $mlFramework"
-#  pytest -q tests/attacks/evasion/ --mlFramework=$mlFramework --durations=0
+  pytest -q tests/attacks/evasion/ --mlFramework=$mlFramework --durations=0
   pytest -q tests/classifiersT/ --mlFramework=$mlFramework --durations=0
 done
 

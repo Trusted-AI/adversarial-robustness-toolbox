@@ -30,10 +30,11 @@ from art.defences import FeatureSqueezing
 import numpy as np
 
 from art.classifiers import KerasClassifier
-from art.utils import master_seed, load_dataset
+from art.utils import load_dataset
 from art.classifiers.scikitlearn import SklearnClassifier
 from sklearn.linear_model import LogisticRegression
 from sklearn.svm import SVC, LinearSVC
+# from tests.test_utils import master_seed
 from sklearn.tree import DecisionTreeClassifier, ExtraTreeClassifier
 from sklearn.ensemble import AdaBoostClassifier, BaggingClassifier, ExtraTreesClassifier
 from sklearn.ensemble import GradientBoostingClassifier, RandomForestClassifier

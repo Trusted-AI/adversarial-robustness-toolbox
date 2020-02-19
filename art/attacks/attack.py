@@ -93,22 +93,12 @@ class Attack(abc.ABC, metaclass=input_filter):
         :type classifier: :class:`.Classifier`
         """
         if not isinstance(classifier, Classifier):
-<<<<<<< HEAD
             # raise TypeError(classifier.__class__.__bases__, art.classifiers.classifier.Classifier, "Wrong type of classifier")
             raise utils.WrongClassifer(self.__class__, Classifier, classifier)
             # raise (TypeError('For `' + self.__class__.__name__ + '` classifier must be an instance of '
             #                  '`art.classifiers.classifier.Classifier`, the provided classifier is instance of ' + str(
             #                      classifier.__class__.__bases__) + '.'))
-=======
-            raise (
-                TypeError(
-                    "For `" + self.__class__.__name__ + "` classifier must be an instance of "
-                    "`art.classifiers.classifier.Classifier`, the provided classifier is instance of "
-                    + str(classifier.__class__.__bases__)
-                    + "."
-                )
-            )
->>>>>>> dev_1.2.0
+
         self.classifier = classifier
 
     def set_params(self, **kwargs):

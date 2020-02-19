@@ -152,9 +152,9 @@ def test_loss_gradient(get_default_mnist_subset, get_image_classifier_list):
 
 
 @pytest.mark.only_with_platform("tensorflow")
-def test_layers(is_tf_version_2, get_backend_test_layers):
+def test_layers(is_tf_version_2, get_mlFramework, get_default_mnist_subset, get_image_classifier_list):
     if not is_tf_version_2:
-        get_backend_test_layers(batch_size=5)
+        utils_classifier.backend_test_layers(batch_size=5)
 
 
 @pytest.mark.only_with_platform("tensorflow")
@@ -170,17 +170,17 @@ def test_set_learning(is_tf_version_2, get_image_classifier_list):
 
 
 @pytest.mark.only_with_platform("tensorflow")
-def test_repr(is_tf_version_2, backend_test_repr):
+def test_repr(is_tf_version_2, get_image_classifier_list):
     if is_tf_version_2:
-        backend_test_repr(['TensorFlowV2Classifier',
+        utils_classifier.backend_test_repr(get_image_classifier_list, ['TensorFlowV2Classifier',
                            'model=',
                            'nb_classes=10',
                            'input_shape=(28, 28, 1)',
                            'loss_object=<tensorflow.python.keras.losses.SparseCategoricalCrossentropy',
-                           # 'train_step=<function get_classifier_tf_v2.<locals>.train_step',
-                           'channel_index=3, clip_values=(0, 1), defences=None, preprocessing=(0, 1))'])
+                           'train_step=<function get_classifier_tf_v2.<locals>.train_step'])
+        # 'channel_index=3, clip_values=(0, 1), defences=None, preprocessing=(0, 1))'
     else:
-        backend_test_repr(['TensorFlowClassifier',
+        utils_classifier.backend_test_repr(get_image_classifier_list, ['TensorFlowClassifier',
                            'input_ph=<tf.Tensor \'Placeholder:0\' shape=(?, 28, 28, 1) dtype=float32>',
                            'output=<tf.Tensor \'Softmax:0\' shape=(?, 10) dtype=float32>',
                            'labels_ph=<tf.Tensor \'Placeholder_1:0\' shape=(?, 10) dtype=int32>',
