@@ -80,7 +80,7 @@ class AdversarialTrainerMadryPGD(AdversarialTrainer):
 
         self.trainer = AdversarialTrainer(classifier, self.attack, ratio=1.0)
 
-    def fit(self, x, y, **kwargs):
+    def fit(self, x, y, validation_data=None, **kwargs):
         """
         Train a model adversarially. See class documentation for more information on the exact procedure.
 
@@ -92,7 +92,8 @@ class AdversarialTrainerMadryPGD(AdversarialTrainer):
         :type kwargs: `dict`
         :return: `None`
         """
-        self.trainer.fit(x, y, nb_epochs=self.nb_epochs, batch_size=self.batch_size, **kwargs)
+        self.trainer.fit(x, y, validation_data=validation_data, nb_epochs=self.nb_epochs, batch_size=self.batch_size,
+                         **kwargs)
 
     def get_classifier(self):
         return self.trainer.get_classifier()
