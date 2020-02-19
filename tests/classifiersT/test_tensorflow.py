@@ -28,6 +28,7 @@ import os
 
 logger = logging.getLogger(__name__)
 
+
 @pytest.mark.only_with_platform("tensorflow")
 def test_predict(get_image_classifier_list, get_default_mnist_subset):
     (x_train_mnist, y_train_mnist), (x_test_mnist, y_test_mnist) = get_default_mnist_subset
@@ -124,8 +125,6 @@ def test_class_gradient(get_image_classifier_list, get_default_mnist_subset):
     utils_classifier.backend_test_class_gradient(get_default_mnist_subset, classifier_logits, expected_values, labels)
 
 
-
-
 @pytest.mark.only_with_platform("tensorflow")
 def test_loss_gradient(get_default_mnist_subset, get_image_classifier_list):
     expected_values = {"expected_gradients_1": ExpectedValue(
@@ -144,8 +143,6 @@ def test_loss_gradient(get_default_mnist_subset, get_image_classifier_list):
                         6.89289009e-04, 1.33779933e-04, 1.00320193e-03, 1.68109560e-04,
                         -2.86467184e-06, -5.58885862e-04, 1.47416518e-04, 0.00000000e+00,
                         0.00000000e+00, 0.00000000e+00, 0.00000000e+00, 0.00000000e+00]), 4)}
-
-
 
     utils_classifier.backend_test_loss_gradient(get_default_mnist_subset, get_image_classifier_list,
                                                 expected_values)
@@ -173,20 +170,21 @@ def test_set_learning(is_tf_version_2, get_image_classifier_list):
 def test_repr(is_tf_version_2, get_image_classifier_list):
     if is_tf_version_2:
         utils_classifier.backend_test_repr(get_image_classifier_list, ['TensorFlowV2Classifier',
-                           'model=',
-                           'nb_classes=10',
-                           'input_shape=(28, 28, 1)',
-                           'loss_object=<tensorflow.python.keras.losses.SparseCategoricalCrossentropy',
-                           'train_step=<function get_classifier_tf_v2.<locals>.train_step'])
-        # 'channel_index=3, clip_values=(0, 1), defences=None, preprocessing=(0, 1))'
+                                                                       'model=',
+                                                                       'nb_classes=10',
+                                                                       'input_shape=(28, 28, 1)',
+                                                                       'loss_object=<tensorflow.python.keras.losses.SparseCategoricalCrossentropy',
+                                                                       'train_step=<function get_image_classifier_tf_v2.<locals>.train_step',
+                                                                       'channel_index=3, clip_values=(0, 1), preprocessing_defences=None, postprocessing_defences=None, preprocessing=(0, 1))'])
+
     else:
         utils_classifier.backend_test_repr(get_image_classifier_list, ['TensorFlowClassifier',
-                           'input_ph=<tf.Tensor \'Placeholder:0\' shape=(?, 28, 28, 1) dtype=float32>',
-                           'output=<tf.Tensor \'Softmax:0\' shape=(?, 10) dtype=float32>',
-                           'labels_ph=<tf.Tensor \'Placeholder_1:0\' shape=(?, 10) dtype=int32>',
-                           'train=<tf.Operation \'Adam\' type=NoOp>',
-                           'loss=<tf.Tensor \'Mean:0\' shape=() dtype=float32>',
-                           'learning=None',
-                           'sess=<tensorflow.python.client.session.Session object',
-                           'TensorFlowClassifier',
-                           'channel_index=3, clip_values=(0, 1), defences=None, preprocessing=(0, 1))'])
+                                                                       'input_ph=<tf.Tensor \'Placeholder:0\' shape=(?, 28, 28, 1) dtype=float32>',
+                                                                       'output=<tf.Tensor \'Softmax:0\' shape=(?, 10) dtype=float32>',
+                                                                       'labels_ph=<tf.Tensor \'Placeholder_1:0\' shape=(?, 10) dtype=int32>',
+                                                                       'train=<tf.Operation \'Adam\' type=NoOp>',
+                                                                       'loss=<tf.Tensor \'Mean:0\' shape=() dtype=float32>',
+                                                                       'learning=None',
+                                                                       'sess=<tensorflow.python.client.session.Session object',
+                                                                       'TensorFlowClassifier',
+                                                                       'channel_index=3, clip_values=(0, 1), defences=None, preprocessing=(0, 1))'])
