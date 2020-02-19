@@ -91,6 +91,16 @@ class PixelThreshold(EvasionAttack):
         PixelThreshold.set_params(self, **kwargs)
         self.type_attack = -1
 
+        if self.classifier.channel_index == 1:
+            self.img_rows = self.classifier.input_shape[-2]
+            self.img_cols = self.classifier.input_shape[-1]
+            self.img_channels = self.classifier.input_shape[-3]
+        else:
+            self.img_rows = self.classifier.input_shape[-3]
+            self.img_cols = self.classifier.input_shape[-2]
+            self.img_channels = self.classifier.input_shape[-1]
+
+
     def set_params(self, **kwargs):
         """
         Take in a dictionary of parameters and applies attack-specific checks
@@ -146,15 +156,6 @@ class PixelThreshold(EvasionAttack):
         if self.th is None:
             logger.info('Performing minimal perturbation Attack.')
 
-        if self.classifier.channel_index == 1:
-            self.img_rows = x.shape[-2]
-            self.img_cols = x.shape[-1]
-            self.img_channels = x.shape[-3]
-        else:
-            self.img_rows = x.shape[-3]
-            self.img_cols = x.shape[-2]
-            self.img_channels = x.shape[-1]
-
         if np.max(x) <= 1:
             x = x * 255.
 
@@ -196,19 +197,13 @@ class PixelThreshold(EvasionAttack):
                                     self.targeted, 1))
         return adv_x_best
 
-    def predict(self, test_x):
-        """
-        Wrapper for classifier.predict function.
-        """
-        return self.classifier.predict(test_x)
-
     def _attack_success(self, adv_x, x, target_class):
         """
         Checks whether the given pertubation `adv_x` for the image `img`
         is successful.
         """
         predicted_class = np.argmax(
-            self.predict(
+            self.classifier.predict(
                 self._perturb_image(
                     adv_x, x))[0])
         return bool((self.targeted and predicted_class == target_class) or (
@@ -223,7 +218,7 @@ class PixelThreshold(EvasionAttack):
         bounds, initial = self._get_bounds(image, limit)
 
         def predict_fn(x):
-            predictions = self.predict(
+            predictions = self.classifier.predict(
                 self._perturb_image(x, image))[:, target_class]
             return predictions if not self.targeted else 1 - predictions
 
@@ -338,7 +333,7 @@ class PixelAttack(PixelThreshold):
         for adv, image in zip(x, imgs):
             for pixel in np.split(adv, len(adv) // (2 + self.img_channels)):
                 x_pos, y_pos, *rgb = pixel
-                if self.classifer.channel_index == 3:
+                if self.classifier.channel_index == 3:
                     image[x_pos % self.img_rows, y_pos % self.img_cols] = rgb
                 else:
                     image[:, x_pos % self.img_rows, y_pos % self.img_cols] = rgb
@@ -354,7 +349,7 @@ class PixelAttack(PixelThreshold):
                     product(range(self.img_rows), range(self.img_cols))):
                 initial += [i, j]
                 for k in range(self.img_channels):
-                    if self.classifer.channel_index == 3:
+                    if self.classifier.channel_index == 3:
                         initial += [img[i, j, k]]
                     else:
                         initial += [img[k, i, j]]
@@ -437,11 +432,10 @@ class ThresholdAttack(PixelThreshold):
 
         for i, j, k in product(range(self.img_rows), range(self.img_cols),
                                range(self.img_channels)):
-            if self.classifer.channel_index == 3:
+            if self.classifier.channel_index == 3:
                 temp = img[i, j, k]
             else:
                 temp = img[k, i, j]
-                
             initial += [temp]
             bound = bound_limit(temp)
             if self.es == 0:
