@@ -17,6 +17,7 @@
 # SOFTWARE.
 import tensorflow as tf
 from art import utils
+from tests.utils_test import master_seed
 import os
 import pickle
 from tensorflow.keras.models import Sequential
