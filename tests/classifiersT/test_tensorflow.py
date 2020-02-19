@@ -187,4 +187,4 @@ def test_repr(is_tf_version_2, get_image_classifier_list):
                                                                        'learning=None',
                                                                        'sess=<tensorflow.python.client.session.Session object',
                                                                        'TensorFlowClassifier',
-                                                                       'channel_index=3, clip_values=(0, 1), defences=None, preprocessing=(0, 1))'])
+                                                                       'channel_index=3, clip_values=(0, 1), preprocessing_defences=None, postprocessing_defences=None, preprocessing=(0, 1))])
