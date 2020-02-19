@@ -87,6 +87,11 @@ def get_functional_model(get_default_mnist_subset):
 
 
 @pytest.mark.only_with_platform("keras")
+def test_input_shape(get_image_classifier_list):
+    utils_classifier.backend_test_input_shape(get_image_classifier_list)
+
+
+@pytest.mark.only_with_platform("keras")
 def test_fit(get_default_mnist_subset, default_batch_size):
     (x_train_mnist, y_train_mnist), (x_test_mnist, y_test_mnist) = get_default_mnist_subset
 
@@ -365,9 +370,6 @@ def test_class_gradient(get_default_mnist_subset, get_image_classifier_list):
                         0, 4, 1, 2, 1, 1, 3])
 
     utils_classifier.backend_test_class_gradient(get_default_mnist_subset, classifier, expected_values, labels)
-
-
-
 
 
 @pytest.mark.only_with_platform("keras")

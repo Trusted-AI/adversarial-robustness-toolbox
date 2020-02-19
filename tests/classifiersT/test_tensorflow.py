@@ -77,9 +77,8 @@ def test_nb_classes(get_image_classifier_tf_factory):
 
 
 @pytest.mark.only_with_platform("tensorflow")
-def test_input_shape(get_image_classifier_tf_factory):
-    classifier, sess = get_image_classifier_tf_factory()
-    assert classifier.input_shape == (28, 28, 1)
+def test_input_shape(get_image_classifier_list):
+    utils_classifier.backend_test_input_shape(get_image_classifier_list)
 
 
 @pytest.mark.only_with_platform("tensorflow")
