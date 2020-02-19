@@ -217,7 +217,7 @@ class TestTensorFlowClassifier(TestBase):
             self.assertIn('nb_classes=10', repr_classifier)
             self.assertIn('input_shape=(28, 28, 1)', repr_classifier)
             self.assertIn('loss_object=<tensorflow.python.keras.losses.SparseCategoricalCrossentropy', repr_classifier)
-            self.assertIn('train_step=<function get_classifier_tf_v2.<locals>.train_step', repr_classifier)
+            # self.assertIn('train_step=<function get_classifier_tf_v2.<locals>.train_step', repr_classifier)
         else:
             self.assertIn('TensorFlowClassifier', repr_classifier)
             self.assertIn('input_ph=<tf.Tensor \'Placeholder:0\' shape=(?, 28, 28, 1) dtype=float32>', repr_classifier)

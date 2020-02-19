@@ -46,8 +46,10 @@ def test_predict(get_image_classifier_tf_factory, get_default_mnist_subset):
                               0.30685693, 0.07616713, 0.05823758]])
     np.testing.assert_array_almost_equal(y_predicted, y_expected, decimal=4)
 
+
 @pytest.mark.only_with_platform("tensorflow")
-def test_fit_generator(is_tf_version_2, get_image_classifier_tf_factory, get_default_mnist_subset, get_image_classifier_list):
+def test_fit_generator(is_tf_version_2, get_image_classifier_tf_factory, get_default_mnist_subset,
+                       get_image_classifier_list):
     (x_train_mnist, y_train_mnist), (x_test_mnist, y_test_mnist) = get_default_mnist_subset
 
     if not is_tf_version_2:
@@ -62,22 +64,22 @@ def test_fit_generator(is_tf_version_2, get_image_classifier_tf_factory, get_def
         data_gen = TFDataGenerator(sess=sess, iterator=iterator, iterator_type='initializable', iterator_arg={},
                                    size=1000, batch_size=100)
 
-
         expected_values = {"post_fit_accuracy": ExpectedValue(0.65, 0.02)}
-
 
         utils_classifier.backend_test_fit_generator(expected_values, classifier, data_gen,
                                                     get_default_mnist_subset, nb_epochs=2)
 
+
 @pytest.mark.only_with_platform("tensorflow")
 def test_nb_classes(get_image_classifier_tf_factory):
-   classifier, sess = get_image_classifier_tf_factory()
-   assert classifier.nb_classes() == 10
+    classifier, sess = get_image_classifier_tf_factory()
+    assert classifier.nb_classes() == 10
+
 
 @pytest.mark.only_with_platform("tensorflow")
 def test_input_shape(get_image_classifier_tf_factory):
-   classifier, sess = get_image_classifier_tf_factory()
-   assert classifier.input_shape == (28, 28, 1)
+    classifier, sess = get_image_classifier_tf_factory()
+    assert classifier.input_shape == (28, 28, 1)
 
 
 @pytest.mark.only_with_platform("tensorflow")
@@ -142,31 +144,31 @@ def test_class_gradient(get_image_classifier_tf_factory, get_default_mnist_subse
                                        0.0, 0.0, 0.0, 0.0])
     np.testing.assert_array_almost_equal(gradients[0, 0, :, 14, 0], expected_gradients_2, decimal=4)
 
+
 @pytest.mark.only_with_platform("tensorflow")
-def test_loss_gradient(get_image_classifier_tf_factory, get_default_mnist_subset):
-    (x_train_mnist, y_train_mnist), (x_test_mnist, y_test_mnist) = get_default_mnist_subset
-    classifier, sess = get_image_classifier_tf_factory()
-    gradients = classifier.loss_gradient(x_test_mnist, y_test_mnist)
+def test_loss_gradient(get_default_mnist_subset, get_image_classifier_list):
+    expected_values = {"expected_gradients_1": ExpectedValue(
+        np.asarray([5.59206062e-04, 5.33892540e-04, 6.48919027e-04, 7.92516454e-04,
+                    -4.02929145e-04, -1.12814642e-03, 1.85060024e-04, 3.25053406e-05,
+                    8.16319487e-04, 3.33394884e-04, 3.17659928e-04, -2.42046357e-04,
+                    -7.81555660e-04, -4.69873514e-04, 1.07115903e-03, 4.08643362e-04,
+                    -3.44107364e-04, 1.07128391e-04, -4.22919547e-04, -1.38615724e-04,
+                    2.82748661e-04, 0.00000000e+00, 0.00000000e+00, 0.00000000e+00,
+                    0.00000000e+00, 0.00000000e+00, 0.00000000e+00, 0.00000000e+00]), 4),
+        "expected_gradients_2": ExpectedValue(
+            np.asarray([2.10802755e-05, 2.13919120e-05, 5.20980720e-05, 5.48000680e-05,
+                        -2.30590031e-05, 4.32076595e-05, 2.74944887e-05, 0.00000000e+00,
+                        0.00000000e+00, -5.83440997e-04, -6.16604229e-05, 5.26219024e-04,
+                        -2.37398461e-04, 5.27310593e-04, 1.07115903e-03, 1.27738668e-03,
+                        6.89289009e-04, 1.33779933e-04, 1.00320193e-03, 1.68109560e-04,
+                        -2.86467184e-06, -5.58885862e-04, 1.47416518e-04, 0.00000000e+00,
+                        0.00000000e+00, 0.00000000e+00, 0.00000000e+00, 0.00000000e+00]), 4)}
 
-    assert gradients.shape == (x_test_mnist.shape[0], 28, 28, 1)
 
-    expected_gradients_1 = np.asarray([5.59206062e-04, 5.33892540e-04, 6.48919027e-04, 7.92516454e-04,
-                                       -4.02929145e-04, -1.12814642e-03, 1.85060024e-04, 3.25053406e-05,
-                                       8.16319487e-04, 3.33394884e-04, 3.17659928e-04, -2.42046357e-04,
-                                       -7.81555660e-04, -4.69873514e-04, 1.07115903e-03, 4.08643362e-04,
-                                       -3.44107364e-04, 1.07128391e-04, -4.22919547e-04, -1.38615724e-04,
-                                       2.82748661e-04, 0.00000000e+00, 0.00000000e+00, 0.00000000e+00,
-                                       0.00000000e+00, 0.00000000e+00, 0.00000000e+00, 0.00000000e+00])
-    np.testing.assert_array_almost_equal(gradients[0, 14, :, 0], expected_gradients_1, decimal=4)
 
-    expected_gradients_2 = np.asarray([2.10802755e-05, 2.13919120e-05, 5.20980720e-05, 5.48000680e-05,
-                                       -2.30590031e-05, 4.32076595e-05, 2.74944887e-05, 0.00000000e+00,
-                                       0.00000000e+00, -5.83440997e-04, -6.16604229e-05, 5.26219024e-04,
-                                       -2.37398461e-04, 5.27310593e-04, 1.07115903e-03, 1.27738668e-03,
-                                       6.89289009e-04, 1.33779933e-04, 1.00320193e-03, 1.68109560e-04,
-                                       -2.86467184e-06, -5.58885862e-04, 1.47416518e-04, 0.00000000e+00,
-                                       0.00000000e+00, 0.00000000e+00, 0.00000000e+00, 0.00000000e+00])
-    np.testing.assert_array_almost_equal(gradients[0, :, 14, 0], expected_gradients_2, decimal=4)
+    utils_classifier.backend_test_loss_gradient(get_default_mnist_subset, get_image_classifier_list,
+                                                expected_values)
+
 
 @pytest.mark.only_with_platform("tensorflow")
 def test_layers(is_tf_version_2, get_backend_test_layers):
@@ -185,6 +187,7 @@ def test_set_learning(is_tf_version_2, get_image_classifier_tf_factory):
         assert classifier._feed_dict[classifier._learning]
         assert classifier.learning_phase
 
+
 @pytest.mark.only_with_platform("tensorflow")
 def test_repr(is_tf_version_2, backend_test_repr):
     if is_tf_version_2:
@@ -193,7 +196,7 @@ def test_repr(is_tf_version_2, backend_test_repr):
                            'nb_classes=10',
                            'input_shape=(28, 28, 1)',
                            'loss_object=<tensorflow.python.keras.losses.SparseCategoricalCrossentropy',
-                           'train_step=<function get_classifier_tf_v2.<locals>.train_step',
+                           # 'train_step=<function get_classifier_tf_v2.<locals>.train_step',
                            'channel_index=3, clip_values=(0, 1), defences=None, preprocessing=(0, 1))'])
     else:
         backend_test_repr(['TensorFlowClassifier',
@@ -206,7 +209,3 @@ def test_repr(is_tf_version_2, backend_test_repr):
                            'sess=<tensorflow.python.client.session.Session object',
                            'TensorFlowClassifier',
                            'channel_index=3, clip_values=(0, 1), defences=None, preprocessing=(0, 1))'])
-
-
-
-

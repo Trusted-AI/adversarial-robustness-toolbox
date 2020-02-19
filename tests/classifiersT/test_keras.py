@@ -202,8 +202,6 @@ def test_defences_predict(get_default_mnist_subset):
 
 
 
-
-
 @pytest.mark.only_with_platform("keras")
 def test_loss_gradient(get_default_mnist_subset, get_image_classifier_list):
 
