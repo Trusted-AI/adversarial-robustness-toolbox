@@ -197,8 +197,8 @@ def test_defences_predict(get_default_mnist_subset, get_image_classifier_list):
     jpeg = JpegCompression(clip_values=clip_values, apply_predict=True)
     smooth = SpatialSmoothing()
     classifier_, _ = get_image_classifier_list(one_classifier=True)
-    classifier = KerasClassifier(clip_values=clip_values, model=classifier_._model, defences=[fs, jpeg, smooth])
-    assert len(classifier.defences) == 3
+    classifier = KerasClassifier(clip_values=clip_values, model=classifier_._model, preprocessing_defences=[fs, jpeg, smooth])
+    assert len(classifier.preprocessing_defences) == 3
 
     predictions_classifier = classifier.predict(x_test_mnist)
 
