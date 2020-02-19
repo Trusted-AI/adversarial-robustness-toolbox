@@ -16,81 +16,63 @@
 # TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 # SOFTWARE.
 """
-This module implements the abstract base class for defences that post-process classifier output.
+This module implements the abstract base class for defences that transform one classifier to a more robust classifier.
 """
 from __future__ import absolute_import, division, print_function, unicode_literals
 
 import abc
 
 
-class Postprocessor(abc.ABC):
+class Transformer(abc.ABC):
     """
-    Abstract base class for postprocessing defences. Postprocessing defences are not included in the loss function
-    evaluation for loss gradients or the calculation of class gradients.
+    Abstract base class for transformation defences.
     """
 
-    params = []
+    params = ["batch_size", "nb_epochs"]
 
-    def __init__(self):
+    def __init__(self, classifier):
         """
-        Create a postprocessing object.
+        Create a transformation object.
         """
+        self.classifier = classifier
         self._is_fitted = False
 
     @property
     def is_fitted(self):
         """
-        Return the state of the postprocessing object.
+        Return the state of the transformation object.
 
-        :return: `True` if the postprocessing model has been fitted (if this applies).
+        :return: `True` if the transformation model has been fitted (if this applies).
         :rtype: `bool`
         """
         return self._is_fitted
 
-    @property
     @abc.abstractmethod
-    def apply_fit(self):
+    def __call__(self, x, modified_classifier):
         """
-        Property of the defence indicating if it should be applied at training time.
+        Perform the transformation defence and return a robust classifier.
 
-        :return: `True` if the defence should be applied when fitting a model, `False` otherwise.
-        :rtype: `bool`
-        """
-        raise NotImplementedError
-
-    @property
-    @abc.abstractmethod
-    def apply_predict(self):
-        """
-        Property of the defence indicating if it should be applied at test time.
-
-        :return: `True` if the defence should be applied at prediction time, `False` otherwise.
-        :rtype: `bool`
+        :param x: Dataset for training the modified classifier.
+        :type x: `np.ndarray`
+        :param modified_classifier: A classifier to be modified for robustness.
+        :type modified_classifier: :class:`.Classifier`
+        :return: The modified classifier.
+        :rtype: :class:`.Classifier`
         """
         raise NotImplementedError
 
     @abc.abstractmethod
-    def __call__(self, preds):
+    def fit(self, x, y=None, **kwargs):
         """
-        Perform model postprocessing and return postprocessed output.
+        Fit the parameters of the data preprocessor if it has any.
 
-        :param preds: model output to be postprocessed.
-        :type preds: `np.ndarray`
-        :return: Postprocessed model output.
-        :rtype: `np.ndarray`
-        """
-        raise NotImplementedError
-
-    @abc.abstractmethod
-    def fit(self, preds, **kwargs):
-        """
-        Fit the parameters of the postprocessor if it has any.
-
-        :param preds: Training set to fit the postprocessor.
-        :type preds: `np.ndarray`
+        :param x: Training set to fit the preprocessor.
+        :type x: `np.ndarray`
+        :param y: Labels for the training set.
+        :type y: `np.ndarray`
         :param kwargs: Other parameters.
         :type kwargs: `dict`
-        :return: None.
+        :return: None
         """
         raise NotImplementedError
 
@@ -98,10 +80,9 @@ class Postprocessor(abc.ABC):
         """
         Take in a dictionary of parameters and apply checks before saving them as attributes.
 
-        :return: `True` when parsing was successful.
+        :return: `True` when parsing was successful
         """
         for key, value in kwargs.items():
             if key in self.params:
                 setattr(self, key, value)
-
         return True
