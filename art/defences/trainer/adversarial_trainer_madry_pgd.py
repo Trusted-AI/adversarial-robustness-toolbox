@@ -45,8 +45,8 @@ class AdversarialTrainerMadryPGD(AdversarialTrainer):
     evaluations are required to assess its effectiveness case by case (see https://arxiv.org/abs/1902.06705).
     """
 
-    def __init__(self, classifier, max_num_training_steps=80000, batch_size=128, eps=8, eps_step=2, max_iter=7,
-                 random_init=True, **kwargs):
+    def __init__(self, classifier, nb_epochs=391, batch_size=128, eps=8, eps_step=2, max_iter=7, random_init=True,
+                 **kwargs):
         """
         Create an :class:`.AdversarialTrainerMadryPGD` instance.
 
@@ -54,6 +54,8 @@ class AdversarialTrainerMadryPGD(AdversarialTrainer):
 
         :param classifier: Classifier to train adversarially.
         :type classifier: :class:`.Classifier`
+        :param nb_epochs: Number of training epochs.
+        :type nb_epochs: `int`
         :param batch_size: Size of the batch on which adversarial samples are generated.
         :type batch_size: `int`
         :param eps: Maximum perturbation that the attacker can introduce.
@@ -67,9 +69,8 @@ class AdversarialTrainerMadryPGD(AdversarialTrainer):
         :type num_random_init: `int`
         """
 
-        self.max_num_training_steps = max_num_training_steps
         self.batch_size = batch_size
-        self.nb_epochs = int(max_num_training_steps / (50000 / batch_size))
+        self.nb_epochs = nb_epochs
 
         # Setting up adversary and perform adversarial training:
         self.attack = ProjectedGradientDescent(classifier,
