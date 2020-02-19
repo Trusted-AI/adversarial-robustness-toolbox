@@ -97,11 +97,11 @@ def test_input_shape(get_image_classifier_list):
 
 
 @pytest.mark.only_with_platform("keras")
-def test_fit(get_default_mnist_subset, default_batch_size):
+def test_fit(get_default_mnist_subset, default_batch_size, get_image_classifier_list):
     (x_train_mnist, y_train_mnist), (x_test_mnist, y_test_mnist) = get_default_mnist_subset
 
     labels = np.argmax(y_test_mnist, axis=1)
-    classifier = get_image_classifier_kr()
+    classifier, _ = get_image_classifier_list(one_classifier=True)
     accuracy = np.sum(np.argmax(classifier.predict(x_test_mnist), axis=1) == labels) / x_test_mnist.shape[0]
     logger.info('Accuracy: %.2f%%', (accuracy * 100))
 
@@ -130,10 +130,10 @@ def test_fit_generator(get_default_mnist_subset, default_batch_size, get_image_c
 
 
 @pytest.mark.only_with_platform("keras")
-def test_fit_image_generator(get_default_mnist_subset, default_batch_size):
+def test_fit_image_generator(get_default_mnist_subset, default_batch_size, get_image_classifier_list):
     (x_train_mnist, y_train_mnist), (x_test_mnist, y_test_mnist) = get_default_mnist_subset
 
-    classifier = get_image_classifier_kr()
+    classifier, _ = get_image_classifier_list(one_classifier=True)
     labels_test = np.argmax(y_test_mnist, axis=1)
     accuracy = np.sum(np.argmax(classifier.predict(x_test_mnist), axis=1) == labels_test) / x_test_mnist.shape[0]
     logger.info('Accuracy: %.2f%%', (accuracy * 100))
@@ -153,14 +153,14 @@ def test_fit_image_generator(get_default_mnist_subset, default_batch_size):
 
 
 @pytest.mark.only_with_platform("keras")
-def test_fit_kwargs(get_default_mnist_subset, default_batch_size):
+def test_fit_kwargs(get_default_mnist_subset, default_batch_size, get_image_classifier_list):
     (x_train_mnist, y_train_mnist), (x_test_mnist, y_test_mnist) = get_default_mnist_subset
 
     def get_lr(_):
         return 0.01
 
     # Test a valid callback
-    classifier = get_image_classifier_kr()
+    classifier, _ = get_image_classifier_list(one_classifier=True)
     kwargs = {'callbacks': [LearningRateScheduler(get_lr)]}
     classifier.fit(x_train_mnist, y_train_mnist, batch_size=default_batch_size, nb_epochs=1, **kwargs)
 
@@ -173,9 +173,9 @@ def test_fit_kwargs(get_default_mnist_subset, default_batch_size):
 
 
 @pytest.mark.only_with_platform("keras")
-def test_shapes(get_default_mnist_subset):
+def test_shapes(get_default_mnist_subset, get_image_classifier_list):
     (x_train_mnist, y_train_mnist), (x_test_mnist, y_test_mnist) = get_default_mnist_subset
-    classifier = get_image_classifier_kr()
+    classifier, _ = get_image_classifier_list(one_classifier=True)
 
     predictions = classifier.predict(x_test_mnist)
     assert predictions.shape == y_test_mnist.shape
@@ -190,14 +190,14 @@ def test_shapes(get_default_mnist_subset):
 
 
 @pytest.mark.only_with_platform("keras")
-def test_defences_predict(get_default_mnist_subset):
+def test_defences_predict(get_default_mnist_subset, get_image_classifier_list):
     (x_train_mnist, y_train_mnist), (x_test_mnist, y_test_mnist) = get_default_mnist_subset
 
     clip_values = (0, 1)
     fs = FeatureSqueezing(clip_values=clip_values, bit_depth=2)
     jpeg = JpegCompression(clip_values=clip_values, apply_predict=True)
     smooth = SpatialSmoothing()
-    classifier_ = get_image_classifier_kr()
+    classifier_, _ = get_image_classifier_list(one_classifier=True)
     classifier = KerasClassifier(clip_values=clip_values, model=classifier_._model, defences=[fs, jpeg, smooth])
     assert len(classifier.defences) == 3
 
@@ -268,8 +268,8 @@ def test_resnet(create_test_image):
 
 
 @pytest.mark.only_with_platform("keras")
-def test_learning_phase():
-    classifier = get_image_classifier_kr()
+def test_learning_phase(get_image_classifier_list):
+    classifier, _ = get_image_classifier_list(one_classifier=True)
     assert hasattr(classifier, '_learning_phase') is False
     classifier.set_learning_phase(False)
     assert classifier.learning_phase is False
@@ -279,10 +279,11 @@ def test_learning_phase():
 
 
 @pytest.mark.only_with_platform("keras")
-def test_save():
+def test_save(get_image_classifier_list):
     path = 'tmp'
     filename = 'model.h5'
-    classifier = get_image_classifier_kr()
+    # classifier = get_image_classifier_kr()
+    classifier, _ = get_image_classifier_list(one_classifier=True)
     classifier.save(filename, path=path)
     assert os.path.isfile(os.path.join(path, filename))
     os.remove(os.path.join(path, filename))
