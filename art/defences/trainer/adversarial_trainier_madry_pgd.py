@@ -45,9 +45,12 @@ class AdversarialTrainerMadryPGD(AdversarialTrainer):
     evaluations are required to assess its effectiveness case by case (see https://arxiv.org/abs/1902.06705).
     """
 
-    def __init__(self, classifier, max_num_training_steps, batch_size, eps, eps_step, max_iter, random_init, **kwargs):
+    def __init__(self, classifier, max_num_training_steps=80000, batch_size=128, eps=8, eps_step=2, max_iter=7,
+                 random_init=True, **kwargs):
         """
         Create an :class:`.AdversarialTrainerMadryPGD` instance.
+
+        Default values are for CIFAR-10 in pixel range 0-255.
 
         :param classifier: Classifier to train adversarially.
         :type classifier: :class:`.Classifier`
