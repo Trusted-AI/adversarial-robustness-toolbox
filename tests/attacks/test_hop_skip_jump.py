@@ -31,6 +31,7 @@ from tests.utils_test import TestBase
 from tests.utils_test import get_image_classifier_tf, get_image_classifier_kr, get_image_classifier_pt
 from tests.utils_test import get_tabular_classifier_tf, get_tabular_classifier_kr, get_tabular_classifier_pt
 
+
 logger = logging.getLogger(__name__)
 
 
@@ -41,6 +42,7 @@ class TestHopSkipJump(TestBase):
 
     @classmethod
     def setUpClass(cls):
+        master_seed(seed=1234, set_tensorflow=True, set_torch=True)
         super().setUpClass()
 
         cls.n_train = 100
@@ -49,6 +51,10 @@ class TestHopSkipJump(TestBase):
         cls.y_train_mnist = cls.y_train_mnist[0:cls.n_train]
         cls.x_test_mnist = cls.x_test_mnist[0:cls.n_test]
         cls.y_test_mnist = cls.y_test_mnist[0:cls.n_test]
+
+    def setUp(self):
+        master_seed(seed=1234, set_tensorflow=True, set_torch=True)
+        super().setUp()
 
     def test_tensorflow_mnist(self):
         """

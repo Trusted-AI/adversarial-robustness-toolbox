@@ -43,11 +43,28 @@ class FastGradientMethod(EvasionAttack):
 
     | Paper link: https://arxiv.org/abs/1412.6572
     """
-    attack_params = EvasionAttack.attack_params + ['norm', 'eps', 'eps_step', 'targeted', 'num_random_init',
-                                                   'batch_size', 'minimal']
 
-    def __init__(self, classifier, norm=np.inf, eps=.3, eps_step=0.1, targeted=False, num_random_init=0, batch_size=1,
-                 minimal=False):
+    attack_params = EvasionAttack.attack_params + [
+        "norm",
+        "eps",
+        "eps_step",
+        "targeted",
+        "num_random_init",
+        "batch_size",
+        "minimal",
+    ]
+
+    def __init__(
+        self,
+        classifier,
+        norm=np.inf,
+        eps=0.3,
+        eps_step=0.1,
+        targeted=False,
+        num_random_init=0,
+        batch_size=1,
+        minimal=False,
+    ):
         """
         Create a :class:`.FastGradientMethod` instance.
 
@@ -71,6 +88,7 @@ class FastGradientMethod(EvasionAttack):
         :type minimal: `bool`
         """
         super(FastGradientMethod, self).__init__(classifier)
+<<<<<<< HEAD
         if self.is_valid_classifier_type(classifier) is False:
         # if not isinstance(classifier, ClassifierGradients):
             # raise utils.WrongClassifer(self.__class__, Classifier, classifier)
@@ -82,6 +100,28 @@ class FastGradientMethod(EvasionAttack):
 
         kwargs = {'norm': norm, 'eps': eps, 'eps_step': eps_step, 'targeted': targeted,
                   'num_random_init': num_random_init, 'batch_size': batch_size, 'minimal': minimal}
+=======
+        if not isinstance(classifier, ClassifierGradients):
+            raise (
+                TypeError(
+                    "For `" + self.__class__.__name__ + "` classifier must be an instance of "
+                    "`art.classifiers.classifier.ClassifierGradients`, the provided classifier is instance of "
+                    + str(classifier.__class__.__bases__)
+                    + ". "
+                    " The classifier needs to provide gradients."
+                )
+            )
+
+        kwargs = {
+            "norm": norm,
+            "eps": eps,
+            "eps_step": eps_step,
+            "targeted": targeted,
+            "num_random_init": num_random_init,
+            "batch_size": batch_size,
+            "minimal": minimal,
+        }
+>>>>>>> dev_1.2.0
         FastGradientMethod.set_params(self, **kwargs)
 
         self._project = True
@@ -156,19 +196,20 @@ class FastGradientMethod(EvasionAttack):
         if y is None:
             # Throw error if attack is targeted, but no targets are provided
             if self.targeted:
-                raise ValueError('Target labels `y` need to be provided for a targeted attack.')
+                raise ValueError("Target labels `y` need to be provided for a targeted attack.")
 
             # Use model predictions as correct outputs
-            logger.info('Using model predictions as correct labels for FGM.')
+            logger.info("Using model predictions as correct labels for FGM.")
             y = get_labels_np_array(self.classifier.predict(x, batch_size=self.batch_size))
         y = y / np.sum(y, axis=1, keepdims=True)
 
         # Return adversarial examples computed with minimal perturbation if option is active
         if self.minimal:
-            logger.info('Performing minimal perturbation FGM.')
+            logger.info("Performing minimal perturbation FGM.")
             adv_x_best = self._minimal_perturbation(x, y)
-            rate_best = 100 * compute_success(self.classifier, x, y, adv_x_best, self.targeted,
-                                              batch_size=self.batch_size)
+            rate_best = 100 * compute_success(
+                self.classifier, x, y, adv_x_best, self.targeted, batch_size=self.batch_size
+            )
         else:
             adv_x_best = None
             rate_best = None
@@ -177,16 +218,21 @@ class FastGradientMethod(EvasionAttack):
                 adv_x = self._compute(x, x, y, self.eps, self.eps, self._project, self.num_random_init > 0)
 
                 if self.num_random_init > 1:
-                    rate = 100 * compute_success(self.classifier, x, y, adv_x,
-                                                 self.targeted, batch_size=self.batch_size)
+                    rate = 100 * compute_success(
+                        self.classifier, x, y, adv_x, self.targeted, batch_size=self.batch_size
+                    )
                     if rate_best is None or rate > rate_best or adv_x_best is None:
                         rate_best = rate
                         adv_x_best = adv_x
                 else:
                     adv_x_best = adv_x
 
-        logger.info('Success rate of FGM attack: %.2f%%', rate_best if rate_best is not None else
-                    100 * compute_success(self.classifier, x, y, adv_x_best, self.targeted, batch_size=self.batch_size))
+        logger.info(
+            "Success rate of FGM attack: %.2f%%",
+            rate_best
+            if rate_best is not None
+            else 100 * compute_success(self.classifier, x, y, adv_x_best, self.targeted, batch_size=self.batch_size),
+        )
 
         return adv_x_best
 
@@ -215,28 +261,28 @@ class FastGradientMethod(EvasionAttack):
 
         # Check if order of the norm is acceptable given current implementation
         if self.norm not in [np.inf, int(1), int(2)]:
-            raise ValueError('Norm order must be either `np.inf`, 1, or 2.')
+            raise ValueError("Norm order must be either `np.inf`, 1, or 2.")
 
         if self.eps <= 0:
-            raise ValueError('The perturbation size `eps` has to be positive.')
+            raise ValueError("The perturbation size `eps` has to be positive.")
 
         if self.eps_step <= 0:
-            raise ValueError('The perturbation step-size `eps_step` has to be positive.')
+            raise ValueError("The perturbation step-size `eps_step` has to be positive.")
 
         if not isinstance(self.targeted, bool):
-            raise ValueError('The flag `targeted` has to be of type bool.')
+            raise ValueError("The flag `targeted` has to be of type bool.")
 
         if not isinstance(self.num_random_init, (int, np.int)):
-            raise TypeError('The number of random initialisations has to be of type integer')
+            raise TypeError("The number of random initialisations has to be of type integer")
 
         if self.num_random_init < 0:
-            raise ValueError('The number of random initialisations `random_init` has to be greater than or equal to 0.')
+            raise ValueError("The number of random initialisations `random_init` has to be greater than or equal to 0.")
 
         if self.batch_size <= 0:
-            raise ValueError('The batch size `batch_size` has to be positive.')
+            raise ValueError("The batch size `batch_size` has to be positive.")
 
         if not isinstance(self.minimal, bool):
-            raise ValueError('The flag `minimal` has to be of type bool.')
+            raise ValueError("The flag `minimal` has to be of type bool.")
 
         return True
 
@@ -263,7 +309,7 @@ class FastGradientMethod(EvasionAttack):
     def _apply_perturbation(self, batch, perturbation, eps_step):
         batch = batch + eps_step * perturbation
 
-        if hasattr(self.classifier, 'clip_values') and self.classifier.clip_values is not None:
+        if hasattr(self.classifier, "clip_values") and self.classifier.clip_values is not None:
             clip_min, clip_max = self.classifier.clip_values
             batch = np.clip(batch, clip_min, clip_max)
 
@@ -273,10 +319,11 @@ class FastGradientMethod(EvasionAttack):
         if random_init:
             n = x.shape[0]
             m = np.prod(x.shape[1:])
-            x_adv = x.astype(ART_NUMPY_DTYPE) + (random_sphere(n, m, eps, self.norm)
-                                                 .reshape(x.shape).astype(ART_NUMPY_DTYPE))
+            x_adv = x.astype(ART_NUMPY_DTYPE) + (
+                random_sphere(n, m, eps, self.norm).reshape(x.shape).astype(ART_NUMPY_DTYPE)
+            )
 
-            if hasattr(self.classifier, 'clip_values') and self.classifier.clip_values is not None:
+            if hasattr(self.classifier, "clip_values") and self.classifier.clip_values is not None:
                 clip_min, clip_max = self.classifier.clip_values
                 x_adv = np.clip(x_adv, clip_min, clip_max)
         else:
@@ -295,8 +342,9 @@ class FastGradientMethod(EvasionAttack):
             x_adv[batch_index_1:batch_index_2] = self._apply_perturbation(batch, perturbation, eps_step)
 
             if project:
-                perturbation = projection(x_adv[batch_index_1:batch_index_2] - x_init[batch_index_1:batch_index_2],
-                                          eps, self.norm)
+                perturbation = projection(
+                    x_adv[batch_index_1:batch_index_2] - x_init[batch_index_1:batch_index_2], eps, self.norm
+                )
                 x_adv[batch_index_1:batch_index_2] = x_init[batch_index_1:batch_index_2] + perturbation
 
         return x_adv

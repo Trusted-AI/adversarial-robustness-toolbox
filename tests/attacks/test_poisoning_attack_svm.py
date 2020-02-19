@@ -25,7 +25,9 @@ from sklearn.svm import LinearSVC, NuSVC, SVC
 
 from art.attacks import PoisoningAttackSVM
 from art.classifiers import SklearnClassifier
-from art.utils import master_seed, load_iris
+from art.utils import load_iris
+
+from tests.utils_test import master_seed
 
 logger = logging.getLogger(__name__)
 
@@ -42,7 +44,7 @@ class TestSVMAttack(unittest.TestCase):
 
     @classmethod
     def setUpClass(cls):
-        master_seed(301)
+        master_seed(seed=1234)
         cls.setUpIRIS()
 
     @staticmethod
@@ -95,8 +97,7 @@ class TestSVMAttack(unittest.TestCase):
         self.iris = (x_train, y_train), (x_test, y_test), min_, max_
 
     def setUp(self):
-        # Set master seed
-        master_seed(1234)
+        super().setUp()
 
     def test_linearSVC(self):
         """
@@ -127,14 +128,16 @@ class TestSVMAttack(unittest.TestCase):
     def test_unsupported_kernel(self):
         (x_train, y_train), (x_test, y_test), min_, max_ = self.iris
         model = SVC(kernel='sigmoid', gamma='auto')
-        self.assertRaises(NotImplementedError, callable=PoisoningAttackSVM.__init__, classifier=model, step=0.01,
-                          eps=1.0, x_train=x_train, y_train=y_train, x_val=x_test, y_val=y_test)
+        with self.assertRaises(TypeError):
+            _ = PoisoningAttackSVM(classifier=model, step=0.01, eps=1.0, x_train=x_train, y_train=y_train,
+                                   x_val=x_test, y_val=y_test)
 
     def test_unsupported_SVC(self):
         (x_train, y_train), (x_test, y_test), _, _ = self.iris
         model = NuSVC()
-        self.assertRaises(NotImplementedError, callable=PoisoningAttackSVM.__init__, classifier=model, step=0.01,
-                          eps=1.0, x_train=x_train, y_train=y_train, x_val=x_test, y_val=y_test)
+        with self.assertRaises(TypeError):
+            _ = PoisoningAttackSVM(classifier=model, step=0.01, eps=1.0, x_train=x_train, y_train=y_train, x_val=x_test,
+                                   y_val=y_test)
 
     def test_SVC_kernels(self):
         """

@@ -23,7 +23,8 @@ import unittest
 import numpy as np
 
 from art.defences import TotalVarMin
-from art.utils import master_seed
+
+from tests.utils_test import master_seed
 
 logger = logging.getLogger(__name__)
 
@@ -31,7 +32,7 @@ logger = logging.getLogger(__name__)
 class TestTotalVarMin(unittest.TestCase):
     def setUp(self):
         # Set master seed
-        master_seed(1234)
+        master_seed(seed=1234)
 
     def test_one_channel(self):
         clip_values = (0, 1)

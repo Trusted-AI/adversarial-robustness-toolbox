@@ -69,7 +69,7 @@ class ClusteringAnalyzer:
                  report: Dictionary with summary of the analysis
         :rtype: all_assigned_clean: `ndarray`, summary_poison_clusters: `list`, report" `dic`
         """
-        report = {'cluster_analysis': 'smaller', 'suspicious_clusters': 0}
+        report = {"cluster_analysis": "smaller", "suspicious_clusters": 0}
 
         all_assigned_clean = []
         nb_classes = len(separated_clusters)
@@ -96,15 +96,15 @@ class ClusteringAnalyzer:
             report_class = dict()
             for cluster_id in range(nb_clusters):
                 ptc = sizes[cluster_id] / total_dp_in_class
-                susp = (cluster_id in poison_clusters)
+                susp = cluster_id in poison_clusters
                 dict_i = dict(ptc_data_in_cluster=round(ptc, 2), suspicious_cluster=susp)
 
-                dict_cluster = {'cluster_' + str(cluster_id): dict_i}
+                dict_cluster = {"cluster_" + str(cluster_id): dict_i}
                 report_class.update(dict_cluster)
 
-            report['Class_' + str(i)] = report_class
+            report["Class_" + str(i)] = report_class
 
-        report['suspicious_clusters'] = report['suspicious_clusters'] + np.sum(summary_poison_clusters).item()
+        report["suspicious_clusters"] = report["suspicious_clusters"] + np.sum(summary_poison_clusters).item()
         return np.asarray(all_assigned_clean), summary_poison_clusters, report
 
     def analyze_by_distance(self, separated_clusters, separated_activations):
@@ -124,7 +124,7 @@ class ClusteringAnalyzer:
                  report: Dictionary with summary of the analysis
         :rtype: all_assigned_clean: `ndarray`, summary_poison_clusters: `list`, report" `dic`
         """
-        report = {'cluster_analysis': 'distance'}
+        report = {"cluster_analysis": "distance"}
         all_assigned_clean = []
         cluster_centers = []
 
@@ -163,17 +163,17 @@ class ClusteringAnalyzer:
                     if cluster1_distance_to_k < cluster1_distance and cluster0_distance_to_k > cluster0_distance:
                         cluster1_is_poison = True
 
-                    dict_cluster_0['distance_to_class_' + str(k)] = str(cluster0_distance_to_k)
-                    dict_cluster_0['suspicious'] = str(cluster0_is_poison)
+                    dict_cluster_0["distance_to_class_" + str(k)] = str(cluster0_distance_to_k)
+                    dict_cluster_0["suspicious"] = str(cluster0_is_poison)
 
-                    dict_cluster_1['distance_to_class_' + str(k)] = str(cluster1_distance_to_k)
-                    dict_cluster_1['suspicious'] = cluster1_is_poison
+                    dict_cluster_1["distance_to_class_" + str(k)] = str(cluster1_distance_to_k)
+                    dict_cluster_1["suspicious"] = cluster1_is_poison
 
                     dict_k.update(dict_cluster_0)
                     dict_k.update(dict_cluster_1)
 
             report_class = dict(cluster_0=dict_cluster_0, cluster_1=dict_cluster_1)
-            report['Class_' + str(i)] = report_class
+            report["Class_" + str(i)] = report_class
 
             poison_clusters = []
             if cluster0_is_poison:
@@ -215,7 +215,7 @@ class ClusteringAnalyzer:
         :rtype: all_assigned_clean: `ndarray`, summary_poison_clusters: `list`, report" `dic`
         """
         size_threshold = round(size_threshold, r_size)
-        report = {'cluster_analysis': 'relative_size', 'suspicious_clusters': 0, 'size_threshold': size_threshold}
+        report = {"cluster_analysis": "relative_size", "suspicious_clusters": 0, "size_threshold": size_threshold}
 
         all_assigned_clean = []
         nb_classes = len(separated_clusters)
@@ -244,19 +244,26 @@ class ClusteringAnalyzer:
             report_class = dict()
             for cluster_id in range(nb_clusters):
                 ptc = sizes[cluster_id] / total_dp_in_class
-                susp = (cluster_id in poison_clusters)
+                susp = cluster_id in poison_clusters
                 dict_i = dict(ptc_data_in_cluster=round(ptc, 2), suspicious_cluster=susp)
 
-                dict_cluster = {'cluster_' + str(cluster_id): dict_i}
+                dict_cluster = {"cluster_" + str(cluster_id): dict_i}
                 report_class.update(dict_cluster)
 
-            report['Class_' + str(i)] = report_class
+            report["Class_" + str(i)] = report_class
 
-        report['suspicious_clusters'] = report['suspicious_clusters'] + np.sum(summary_poison_clusters).item()
+        report["suspicious_clusters"] = report["suspicious_clusters"] + np.sum(summary_poison_clusters).item()
         return np.asarray(all_assigned_clean), summary_poison_clusters, report
 
-    def analyze_by_silhouette_score(self, separated_clusters, reduced_activations_by_class, size_threshold=0.35,
-                                    silhouette_threshold=0.1, r_size=2, r_silhouette=4):
+    def analyze_by_silhouette_score(
+        self,
+        separated_clusters,
+        reduced_activations_by_class,
+        size_threshold=0.35,
+        silhouette_threshold=0.1,
+        r_size=2,
+        r_silhouette=4,
+    ):
         """
         Analyzes clusters to determine level of suspiciousness of poison based on the cluster's relative size
         and silhouette score.
@@ -293,10 +300,14 @@ class ClusteringAnalyzer:
         """
         # pylint: disable=E0001
         from sklearn.metrics import silhouette_score
+
         size_threshold = round(size_threshold, r_size)
         silhouette_threshold = round(silhouette_threshold, r_silhouette)
-        report = {'cluster_analysis': 'silhouette_score', 'size_threshold': str(size_threshold),
-                  'silhouette_threshold': str(silhouette_threshold)}
+        report = {
+            "cluster_analysis": "silhouette_score",
+            "size_threshold": str(size_threshold),
+            "silhouette_threshold": str(silhouette_threshold),
+        }
         all_assigned_clean = []
         nb_classes = len(separated_clusters)
         nb_clusters = len(np.unique(separated_clusters[0]))
@@ -312,16 +323,16 @@ class ClusteringAnalyzer:
 
             # Generate report for class
             silhouette_avg = round(silhouette_score(activations, clusters), r_silhouette)
-            dict_i = dict(sizes_clusters=str(bins),
-                          ptc_cluster=str(percentages),
-                          avg_silhouette_score=str(silhouette_avg))
+            dict_i = dict(
+                sizes_clusters=str(bins), ptc_cluster=str(percentages), avg_silhouette_score=str(silhouette_avg)
+            )
 
             if np.shape(poison_clusters)[1] != 0:
                 # Relative size of the clusters is suspicious
                 if silhouette_avg > silhouette_threshold:
                     # In this case the cluster is considered poisonous
                     clean_clusters = np.where(percentages < size_threshold)
-                    logger.info('computed silhouette score: %s', silhouette_avg)
+                    logger.info("computed silhouette score: %s", silhouette_avg)
                     dict_i.update(suspicious=True)
                 else:
                     poison_clusters = [[]]
@@ -331,7 +342,7 @@ class ClusteringAnalyzer:
                 # If relative size of the clusters is Not suspicious, we conclude it's not suspicious.
                 dict_i.update(suspicious=False)
 
-            report_class = {'class_' + str(i): dict_i}
+            report_class = {"class_" + str(i): dict_i}
 
             for p_id in poison_clusters[0]:
                 summary_poison_clusters[i][p_id] = 1

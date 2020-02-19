@@ -25,7 +25,7 @@ import numpy as np
 
 from art.classifiers import LightGBMClassifier
 
-from tests.utils_test import TestBase
+from tests.utils_test import TestBase, master_seed
 
 logger = logging.getLogger(__name__)
 
@@ -34,6 +34,7 @@ class TestLightGBMClassifier(TestBase):
 
     @classmethod
     def setUpClass(cls):
+        master_seed(seed=1234)
         super().setUpClass()
 
         cls.y_train_iris_index = np.argmax(cls.y_train_iris, axis=1)

@@ -25,9 +25,15 @@ import numpy as np
 
 from art.attacks import FastGradientMethod
 from art.classifiers import KerasClassifier
+<<<<<<< HEAD
 from art.utils import load_dataset, random_targets, master_seed, compute_accuracy
 from tests.utils_test import get_image_classifier_kr, get_tabular_classifier_kr
+=======
+from art.utils import load_dataset, random_targets, compute_accuracy
+>>>>>>> dev_1.2.0
 from art.wrappers.randomized_smoothing import RandomizedSmoothing
+
+from tests.utils_test import master_seed, get_classifier_kr, get_iris_classifier_kr
 
 os.environ['KMP_DUPLICATE_LIB_OK'] = 'True'
 logger = logging.getLogger(__name__)
@@ -51,8 +57,7 @@ class TestRandomizedSmoothing(unittest.TestCase):
         cls.mnist = (x_train, y_train), (x_test, y_test)
 
     def setUp(self):
-        # Set master seed
-        master_seed(1234)
+        master_seed(seed=1234)
 
     def test_krclassifier(self):
         """
@@ -112,8 +117,7 @@ class TestRandomizedSmoothingVectors(unittest.TestCase):
         cls.iris = (x_train, y_train), (x_test, y_test)
 
     def setUp(self):
-        # Set master seed
-        master_seed(1234)
+        master_seed(seed=1234)
 
     def test_iris_clipped(self):
         (_, _), (x_test, y_test) = self.iris

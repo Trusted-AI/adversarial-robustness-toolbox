@@ -26,7 +26,9 @@ import numpy as np
 from art.attacks import ZooAttack
 from art.utils import random_targets
 
-from tests.utils_test import TestBase, get_image_classifier_kr, get_image_classifier_pt, get_image_classifier_tf
+
+from tests.utils_test import TestBase, get_image_classifier_kr, get_image_classifier_pt, get_image_classifier_tf, master_seed
+
 
 logger = logging.getLogger(__name__)
 
@@ -38,6 +40,7 @@ class TestZooAttack(TestBase):
 
     @classmethod
     def setUpClass(cls):
+        master_seed(seed=1234)
         super().setUpClass()
 
         cls.n_train = 1
@@ -82,7 +85,7 @@ class TestZooAttack(TestBase):
         tfc, sess = get_image_classifier_tf()
 
         # Targeted attack
-        zoo = ZooAttack(classifier=tfc, targeted=True, max_iter=100, binary_search_steps=10)
+        zoo = ZooAttack(classifier=tfc, targeted=True, max_iter=30, binary_search_steps=8, batch_size=128)
         params = {'y': random_targets(self.y_test_mnist, tfc.nb_classes())}
         x_test_mnist_adv = zoo.generate(self.x_test_mnist, **params)
         self.assertFalse((self.x_test_mnist == x_test_mnist_adv).all())
@@ -95,7 +98,7 @@ class TestZooAttack(TestBase):
         logger.info('ZOO success rate on MNIST: %.2f', (sum(target == y_pred_adv) / float(len(target))))
 
         # Untargeted attack
-        zoo = ZooAttack(classifier=tfc, targeted=False)
+        zoo = ZooAttack(classifier=tfc, targeted=False, max_iter=10, binary_search_steps=3)
         x_test_mnist_adv = zoo.generate(self.x_test_mnist)
         # self.assertFalse((x_test == x_test_adv).all())
         self.assertLessEqual(np.amax(x_test_mnist_adv), 1.0)
@@ -138,7 +141,7 @@ class TestZooAttack(TestBase):
 
         # Untargeted attack
         # zoo = ZooAttack(classifier=krc, targeted=False, max_iter=20)
-        zoo = ZooAttack(classifier=krc, targeted=False, batch_size=5)
+        zoo = ZooAttack(classifier=krc, targeted=False, batch_size=5, max_iter=10, binary_search_steps=3)
         # x_test_adv = zoo.generate(x_test)
         params = {'y': random_targets(self.y_test_mnist, krc.nb_classes())}
         x_test_mnist_adv = zoo.generate(self.x_test_mnist, **params)
@@ -194,7 +197,7 @@ class TestZooAttack(TestBase):
         # logger.info('ZOO success rate on MNIST: %.2f', (sum(target != y_pred_adv) / float(len(target))))
 
         # Second attack
-        zoo = ZooAttack(classifier=ptc, targeted=False, learning_rate=1e-2, max_iter=15, binary_search_steps=10,
+        zoo = ZooAttack(classifier=ptc, targeted=False, learning_rate=1e-2, max_iter=10, binary_search_steps=3,
                         abort_early=False, use_resize=False, use_importance=False)
         x_test_mnist_adv = zoo.generate(x_test_mnist)
         self.assertLessEqual(np.amax(x_test_mnist_adv), 1.0)

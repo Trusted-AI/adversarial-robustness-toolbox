@@ -17,19 +17,19 @@
 # SOFTWARE.
 from __future__ import absolute_import, division, print_function, unicode_literals
 
-# import os
-# import shutil
 import logging
 import unittest
-# import pickle
 
 import tensorflow as tf
 import numpy as np
 
-# from art.config import ART_DATA_PATH
 from art.data_generators import TFDataGenerator
 
+<<<<<<< HEAD:tests/classifiersTMP/test_tensorflow_deprecated.py
 from tests.utils_test import TestBase, get_image_classifier_tf
+=======
+from tests.utils_test import TestBase, master_seed, get_classifier_tf
+>>>>>>> dev_1.2.0:tests/classifiers/test_tensorflow.py
 
 logger = logging.getLogger(__name__)
 
@@ -41,6 +41,7 @@ class TestTensorFlowClassifier(TestBase):
 
     @classmethod
     def setUpClass(cls):
+        master_seed(seed=1234)
         super().setUpClass()
 
         cls.classifier, cls.sess = get_image_classifier_tf()
@@ -50,6 +51,9 @@ class TestTensorFlowClassifier(TestBase):
             cls.is_version_2 = True
         else:
             cls.is_version_2 = False
+
+    def setUp(self):
+        super().setUp()
 
     def test_predict(self):
         y_predicted = self.classifier.predict(self.x_test_mnist[0:1])
@@ -229,7 +233,8 @@ class TestTensorFlowClassifier(TestBase):
             self.assertIn('sess=<tensorflow.python.client.session.Session object', repr_classifier)
             self.assertIn('TensorFlowClassifier', repr_classifier)
 
-        self.assertIn('channel_index=3, clip_values=(0, 1), defences=None, preprocessing=(0, 1))', repr_classifier)
+        self.assertIn('channel_index=3, clip_values=(0, 1), preprocessing_defences=None, postprocessing_defences=None, '
+                      'preprocessing=(0, 1))', repr_classifier)
 
     # Commented because of problems with multiple classifiers in the same test module
     # def test_pickle(self):

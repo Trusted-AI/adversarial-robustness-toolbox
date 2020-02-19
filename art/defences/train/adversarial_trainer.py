@@ -59,7 +59,7 @@ class AdversarialTrainer:
     evaluations are required to assess its effectiveness case by case (see https://arxiv.org/abs/1902.06705).
     """
 
-    def __init__(self, classifier, attacks, ratio=.5):
+    def __init__(self, classifier, attacks, ratio=0.5):
         """
         Create an :class:`.AdversarialTrainer` instance.
 
@@ -79,10 +79,10 @@ class AdversarialTrainer:
         elif isinstance(attacks, list):
             self.attacks = attacks
         else:
-            raise ValueError('Only EvasionAttack instances or list of attacks supported.')
+            raise ValueError("Only EvasionAttack instances or list of attacks supported.")
 
         if ratio <= 0 or ratio > 1:
-            raise ValueError('The `ratio` of adversarial samples in each batch has to be between 0 and 1.')
+            raise ValueError("The `ratio` of adversarial samples in each batch has to be between 0 and 1.")
         self.ratio = ratio
 
         self._precomputed_adv_samples = []
@@ -102,7 +102,7 @@ class AdversarialTrainer:
         :type kwargs: `dict`
         :return: `None`
         """
-        logger.info('Performing adversarial training using %i attacks.', len(self.attacks))
+        logger.info("Performing adversarial training using %i attacks.", len(self.attacks))
         size = generator.size
         batch_size = generator.batch_size
         nb_batches = int(np.ceil(size / batch_size))
@@ -113,13 +113,13 @@ class AdversarialTrainer:
         logged = False
         self._precomputed_adv_samples = []
         for attack in self.attacks:
-            if 'targeted' in attack.attack_params:
+            if "targeted" in attack.attack_params:
                 if attack.targeted:
                     raise NotImplementedError("Adversarial training with targeted attacks is currently not implemented")
 
             if attack.classifier != self.classifier:
                 if not logged:
-                    logger.info('Precomputing transferred adversarial samples.')
+                    logger.info("Precomputing transferred adversarial samples.")
                     logged = True
 
                 next_precomputed_adv_samples = None
@@ -136,7 +136,7 @@ class AdversarialTrainer:
                 self._precomputed_adv_samples.append(None)
 
         for i_epoch in range(nb_epochs):
-            logger.info('Adversarial training epoch %i/%i', i_epoch, nb_epochs)
+            logger.info("Adversarial training epoch %i/%i", i_epoch, nb_epochs)
 
             # Shuffle the indices of precomputed examples
             np.random.shuffle(ind)
@@ -162,7 +162,7 @@ class AdversarialTrainer:
                 # Otherwise, use precomputed adversarial samples
                 else:
                     x_adv = self._precomputed_adv_samples[attack_id]
-                    x_adv = x_adv[ind[batch_id * batch_size:min((batch_id + 1) * batch_size, size)]][adv_ids]
+                    x_adv = x_adv[ind[batch_id * batch_size : min((batch_id + 1) * batch_size, size)]][adv_ids]
                     x_batch[adv_ids] = x_adv
 
                 # Fit batch
@@ -186,7 +186,7 @@ class AdversarialTrainer:
         :type kwargs: `dict`
         :return: `None`
         """
-        logger.info('Performing adversarial training using %i attacks.', len(self.attacks))
+        logger.info("Performing adversarial training using %i attacks.", len(self.attacks))
         nb_batches = int(np.ceil(len(x) / batch_size))
         ind = np.arange(len(x))
         attack_id = 0
@@ -195,28 +195,28 @@ class AdversarialTrainer:
         logged = False
         self._precomputed_adv_samples = []
         for attack in self.attacks:
-            if 'targeted' in attack.attack_params:
+            if "targeted" in attack.attack_params:
                 if attack.targeted:
                     raise NotImplementedError("Adversarial training with targeted attacks is currently not implemented")
 
             if attack.classifier != self.classifier:
                 if not logged:
-                    logger.info('Precomputing transferred adversarial samples.')
+                    logger.info("Precomputing transferred adversarial samples.")
                     logged = True
                 self._precomputed_adv_samples.append(attack.generate(x, y=y))
             else:
                 self._precomputed_adv_samples.append(None)
 
         for i_epoch in range(nb_epochs):
-            logger.info('Adversarial training epoch %i/%i', i_epoch, nb_epochs)
+            logger.info("Adversarial training epoch %i/%i", i_epoch, nb_epochs)
 
             # Shuffle the examples
             np.random.shuffle(ind)
 
             for batch_id in range(nb_batches):
                 # Create batch data
-                x_batch = x[ind[batch_id * batch_size:min((batch_id + 1) * batch_size, x.shape[0])]].copy()
-                y_batch = y[ind[batch_id * batch_size:min((batch_id + 1) * batch_size, x.shape[0])]]
+                x_batch = x[ind[batch_id * batch_size : min((batch_id + 1) * batch_size, x.shape[0])]].copy()
+                y_batch = y[ind[batch_id * batch_size : min((batch_id + 1) * batch_size, x.shape[0])]]
 
                 # Choose indices to replace with adversarial samples
                 nb_adv = int(np.ceil(self.ratio * x_batch.shape[0]))
@@ -234,7 +234,7 @@ class AdversarialTrainer:
                 # Otherwise, use precomputed adversarial samples
                 else:
                     x_adv = self._precomputed_adv_samples[attack_id]
-                    x_adv = x_adv[ind[batch_id * batch_size:min((batch_id + 1) * batch_size, x.shape[0])]][adv_ids]
+                    x_adv = x_adv[ind[batch_id * batch_size : min((batch_id + 1) * batch_size, x.shape[0])]][adv_ids]
                     x_batch[adv_ids] = x_adv
 
                 # Fit batch

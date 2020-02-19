@@ -25,7 +25,7 @@ import GPy
 
 from art.classifiers import GPyGaussianProcessClassifier
 
-from tests.utils_test import TestBase
+from tests.utils_test import TestBase, master_seed
 
 logger = logging.getLogger(__name__)
 
@@ -37,6 +37,7 @@ class TestGPyGaussianProcessClassifier(TestBase):
 
     @classmethod
     def setUpClass(cls):
+        master_seed(seed=1234)
         super().setUpClass()
 
         # change iris to binary problem, so it is learnable for GPC
@@ -51,6 +52,10 @@ class TestGPyGaussianProcessClassifier(TestBase):
 
         # get ART classifier + clean accuracy
         cls.classifier = GPyGaussianProcessClassifier(m)
+
+    def setUp(self):
+        master_seed(seed=1234)
+        super().setUp()
 
     def test_predict(self):
         # predictions should be correct

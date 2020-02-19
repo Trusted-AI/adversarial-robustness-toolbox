@@ -53,7 +53,7 @@ class ScanningOps:
         alpha_thresholds = alpha_thresholds[0:last_alpha_index]
 
         step_for_50 = len(alpha_thresholds) / 50
-        alpha_thresholds = alpha_thresholds[0::int(step_for_50) + 1]
+        alpha_thresholds = alpha_thresholds[0 :: int(step_for_50) + 1]
         # add on the max value to check as well as it may not have been part of unique
         alpha_thresholds = np.append(alpha_thresholds, a_max)
 
@@ -62,13 +62,11 @@ class ScanningOps:
         if image_to_node:
             number_of_elements = pvalues.shape[1]  # searching over j columns
             size_of_given = pvalues.shape[0]  # for fixed this many images
-            unsort_priority = np.zeros(
-                (pvalues.shape[1], alpha_thresholds.shape[0]))  # number of columns
+            unsort_priority = np.zeros((pvalues.shape[1], alpha_thresholds.shape[0]))  # number of columns
         else:
             number_of_elements = pvalues.shape[0]  # searching over i rows
             size_of_given = pvalues.shape[1]  # for this many fixed nodes
-            unsort_priority = np.zeros(
-                (pvalues.shape[0], alpha_thresholds.shape[0]))  # number of rows
+            unsort_priority = np.zeros((pvalues.shape[0], alpha_thresholds.shape[0]))  # number of rows
 
         for elem_indx in range(0, number_of_elements):
             # sort all the range maxes
@@ -77,14 +75,16 @@ class ScanningOps:
                 arg_sort_max = np.argsort(pvalues[:, elem_indx, 1])
                 # arg_sort_min = np.argsort(pvalues[:,e,0]) #collect ranges over images(rows)
                 completely_included = np.searchsorted(
-                    pvalues[:, elem_indx, 1][arg_sort_max], alpha_thresholds, side='right')
+                    pvalues[:, elem_indx, 1][arg_sort_max], alpha_thresholds, side="right"
+                )
             else:
                 # collect ranges over nodes(columns)
                 arg_sort_max = np.argsort(pvalues[elem_indx, :, 1])
                 # arg_sort_min = np.argsort(pvalues[elem_indx,:,0])
 
                 completely_included = np.searchsorted(
-                    pvalues[elem_indx, :, 1][arg_sort_max], alpha_thresholds, side='right')
+                    pvalues[elem_indx, :, 1][arg_sort_max], alpha_thresholds, side="right"
+                )
 
             # should be num elements by num thresh
             unsort_priority[elem_indx, :] = completely_included
@@ -162,11 +162,13 @@ class ScanningOps:
             if image_to_node:  # passed pvalues are only those belonging to fixed images, update nodes in return
                 # only sending sub of images
                 score_from_optimization, sub_of_nodes, optimal_alpha = ScanningOps.optimize_in_single_dimension(
-                    pvalues[sub_of_images, :, :], a_max, image_to_node, score_function)
+                    pvalues[sub_of_images, :, :], a_max, image_to_node, score_function
+                )
             else:  # passed pvalues are only those belonging to fixed nodes, update images in return
                 # only sending sub of nodes
                 score_from_optimization, sub_of_images, optimal_alpha = ScanningOps.optimize_in_single_dimension(
-                    pvalues[:, sub_of_nodes, :], a_max, image_to_node, score_function)
+                    pvalues[:, sub_of_nodes, :], a_max, image_to_node, score_function
+                )
 
             if score_from_optimization > best_score_so_far:  # haven't converged yet
                 # update

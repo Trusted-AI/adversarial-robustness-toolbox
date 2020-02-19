@@ -24,15 +24,16 @@ from keras.datasets import cifar10
 import numpy as np
 
 from art.defences import JpegCompression
-from art.utils import load_mnist, master_seed
+from art.utils import load_mnist
+
+from tests.utils_test import master_seed
 
 logger = logging.getLogger(__name__)
 
 
 class TestJpegCompression(unittest.TestCase):
     def setUp(self):
-        # Set master seed
-        master_seed(1234)
+        master_seed(seed=1234)
 
     def test_one_channel(self):
         clip_values = (0, 1)

@@ -40,7 +40,8 @@ class DeepFool(EvasionAttack):
 
     | Paper link: https://arxiv.org/abs/1511.04599
     """
-    attack_params = EvasionAttack.attack_params + ['max_iter', 'epsilon', 'nb_grads', 'batch_size']
+
+    attack_params = EvasionAttack.attack_params + ["max_iter", "epsilon", "nb_grads", "batch_size"]
 
     def __init__(self, classifier, max_iter=100, epsilon=1e-6, nb_grads=10, batch_size=1):
         """
@@ -60,12 +61,17 @@ class DeepFool(EvasionAttack):
         """
         super(DeepFool, self).__init__(classifier=classifier)
         if not isinstance(classifier, ClassifierGradients):
-            raise (TypeError('For `' + self.__class__.__name__ + '` classifier must be an instance of '
-                             '`art.classifiers.classifier.ClassifierGradients`, the provided classifier is instance of '
-                             + str(classifier.__class__.__bases__) + '. '
-                             ' The classifier needs to be a Neural Network and provide gradients.'))
+            raise (
+                TypeError(
+                    "For `" + self.__class__.__name__ + "` classifier must be an instance of "
+                    "`art.classifiers.classifier.ClassifierGradients`, the provided classifier is instance of "
+                    + str(classifier.__class__.__bases__)
+                    + ". "
+                    " The classifier needs to be a Neural Network and provide gradients."
+                )
+            )
 
-        params = {'max_iter': max_iter, 'epsilon': epsilon, 'nb_grads': nb_grads, 'batch_size': batch_size}
+        params = {"max_iter": max_iter, "epsilon": epsilon, "nb_grads": nb_grads, "batch_size": batch_size}
         self.set_params(**params)
 
     def generate(self, x, y=None, **kwargs):
@@ -86,7 +92,7 @@ class DeepFool(EvasionAttack):
         use_grads_subset = self.nb_grads < self.classifier.nb_classes()
         if use_grads_subset:
             # TODO compute set of unique labels per batch
-            grad_labels = np.argsort(-preds, axis=1)[:, :self.nb_grads]
+            grad_labels = np.argsort(-preds, axis=1)[:, : self.nb_grads]
             labels_set = np.unique(grad_labels)
         else:
             labels_set = np.arange(self.classifier.nb_classes())
@@ -125,15 +131,23 @@ class DeepFool(EvasionAttack):
                 value = np.abs(f_diff) / norm
                 value[np.arange(len(value)), labels_indices] = np.inf
                 l_var = np.argmin(value, axis=1)
-                r_var = (abs(f_diff[np.arange(len(f_diff)), l_var]) / (pow(np.linalg.norm(grad_diff[np.arange(len(
-                    grad_diff)), l_var].reshape(len(grad_diff), -1), axis=1), 2) + tol))
+                r_var = abs(f_diff[np.arange(len(f_diff)), l_var]) / (
+                    pow(
+                        np.linalg.norm(grad_diff[np.arange(len(grad_diff)), l_var].reshape(len(grad_diff), -1), axis=1),
+                        2,
+                    )
+                    + tol
+                )
                 r_var = r_var.reshape((-1,) + (1,) * (len(x.shape) - 1))
                 r_var = r_var * grad_diff[np.arange(len(grad_diff)), l_var]
 
                 # Add perturbation and clip result
-                if hasattr(self.classifier, 'clip_values') and self.classifier.clip_values is not None:
-                    batch[active_indices] = np.clip(batch[active_indices] + r_var[active_indices],
-                                                    self.classifier.clip_values[0], self.classifier.clip_values[1])
+                if hasattr(self.classifier, "clip_values") and self.classifier.clip_values is not None:
+                    batch[active_indices] = np.clip(
+                        batch[active_indices] + r_var[active_indices],
+                        self.classifier.clip_values[0],
+                        self.classifier.clip_values[1],
+                    )
                 else:
                     batch[active_indices] += r_var[active_indices]
 
@@ -156,14 +170,21 @@ class DeepFool(EvasionAttack):
                 current_step += 1
 
             # Apply overshoot parameter
-            x_adv[batch_index_1:batch_index_2] = x_adv[batch_index_1:batch_index_2] + \
-                (1 + self.epsilon) * (batch - x_adv[batch_index_1:batch_index_2])
-            if hasattr(self.classifier, 'clip_values') and self.classifier.clip_values is not None:
-                np.clip(x_adv[batch_index_1:batch_index_2], self.classifier.clip_values[0],
-                        self.classifier.clip_values[1], out=x_adv[batch_index_1:batch_index_2])
+            x_adv[batch_index_1:batch_index_2] = x_adv[batch_index_1:batch_index_2] + (1 + self.epsilon) * (
+                batch - x_adv[batch_index_1:batch_index_2]
+            )
+            if hasattr(self.classifier, "clip_values") and self.classifier.clip_values is not None:
+                np.clip(
+                    x_adv[batch_index_1:batch_index_2],
+                    self.classifier.clip_values[0],
+                    self.classifier.clip_values[1],
+                    out=x_adv[batch_index_1:batch_index_2],
+                )
 
-        logger.info('Success rate of DeepFool attack: %.2f%%',
-                    100 * compute_success(self.classifier, x, y, x_adv, batch_size=self.batch_size))
+        logger.info(
+            "Success rate of DeepFool attack: %.2f%%",
+            100 * compute_success(self.classifier, x, y, x_adv, batch_size=self.batch_size),
+        )
         return x_adv
 
     def set_params(self, **kwargs):
@@ -193,6 +214,6 @@ class DeepFool(EvasionAttack):
             raise ValueError("The overshoot parameter must not be negative.")
 
         if self.batch_size <= 0:
-            raise ValueError('The batch size `batch_size` has to be positive.')
+            raise ValueError("The batch size `batch_size` has to be positive.")
 
         return True

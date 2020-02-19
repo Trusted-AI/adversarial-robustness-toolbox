@@ -44,11 +44,29 @@ class AdversarialPatch(EvasionAttack):
     | Paper link: https://arxiv.org/abs/1712.09665
     """
 
-    attack_params = EvasionAttack.attack_params + ["target", "rotation_max", "scale_min", "scale_max", "learning_rate",
-                                                   "max_iter", "batch_size", "clip_patch"]
+    attack_params = EvasionAttack.attack_params + [
+        "target",
+        "rotation_max",
+        "scale_min",
+        "scale_max",
+        "learning_rate",
+        "max_iter",
+        "batch_size",
+        "clip_patch",
+    ]
 
-    def __init__(self, classifier, target=0, rotation_max=22.5, scale_min=0.1, scale_max=1.0, learning_rate=5.0,
-                 max_iter=500, clip_patch=None, batch_size=16):
+    def __init__(
+        self,
+        classifier,
+        target=0,
+        rotation_max=22.5,
+        scale_min=0.1,
+        scale_max=1.0,
+        learning_rate=5.0,
+        max_iter=500,
+        clip_patch=None,
+        batch_size=16,
+    ):
         """
         Create an instance of the :class:`.AdversarialPatch`.
 
@@ -76,21 +94,27 @@ class AdversarialPatch(EvasionAttack):
         """
         super(AdversarialPatch, self).__init__(classifier=classifier)
         if not isinstance(classifier, ClassifierNeuralNetwork) or not isinstance(classifier, ClassifierGradients):
-            raise (TypeError('For `' + self.__class__.__name__ + '` classifier must be an instance of '
-                             '`art.classifiers.classifier.ClassifierNeuralNetwork` and '
-                             '`art.classifiers.classifier.ClassifierGradients`, the provided classifier is instance of '
-                             + str(classifier.__class__.__bases__) + '. '
-                             ' The classifier needs to be a Neural Network and provide gradients.'))
+            raise (
+                TypeError(
+                    "For `" + self.__class__.__name__ + "` classifier must be an instance of "
+                    "`art.classifiers.classifier.ClassifierNeuralNetwork` and "
+                    "`art.classifiers.classifier.ClassifierGradients`, the provided classifier is instance of "
+                    + str(classifier.__class__.__bases__)
+                    + ". "
+                    " The classifier needs to be a Neural Network and provide gradients."
+                )
+            )
 
-        kwargs = {"target": target,
-                  "rotation_max": rotation_max,
-                  "scale_min": scale_min,
-                  "scale_max": scale_max,
-                  "learning_rate": learning_rate,
-                  "max_iter": max_iter,
-                  "batch_size": batch_size,
-                  "clip_patch": clip_patch
-                  }
+        kwargs = {
+            "target": target,
+            "rotation_max": rotation_max,
+            "scale_min": scale_min,
+            "scale_max": scale_max,
+            "learning_rate": learning_rate,
+            "max_iter": max_iter,
+            "batch_size": batch_size,
+            "clip_patch": clip_patch,
+        }
         self.set_params(**kwargs)
         self.patch = None
 
@@ -105,20 +129,23 @@ class AdversarialPatch(EvasionAttack):
         :return: An array holding the adversarial patch.
         :rtype: `np.ndarray`
         """
-        logger.info('Creating adversarial patch.')
+        logger.info("Creating adversarial patch.")
 
         if len(x.shape) == 2:
-            raise ValueError('Feature vectors detected. The adversarial patch can only be applied to data with spatial '
-                             'dimensions.')
+            raise ValueError(
+                "Feature vectors detected. The adversarial patch can only be applied to data with spatial "
+                "dimensions."
+            )
 
         self.patch = ((np.random.standard_normal(size=self.classifier.input_shape)) * 20.0).astype(ART_NUMPY_DTYPE)
 
-        y_target = check_and_transform_label_format(labels=np.broadcast_to(np.array(self.target), x.shape[0]),
-                                                    nb_classes=self.classifier.nb_classes())
+        y_target = check_and_transform_label_format(
+            labels=np.broadcast_to(np.array(self.target), x.shape[0]), nb_classes=self.classifier.nb_classes()
+        )
 
         for i_step in range(self.max_iter):
             if i_step == 0 or (i_step + 1) % 100 == 0:
-                logger.info('Training Step: %i', i_step + 1)
+                logger.info("Training Step: %i", i_step + 1)
 
             if self.clip_patch is not None:
                 for i_channel, (a_min, a_max) in enumerate(self.clip_patch):
@@ -133,13 +160,14 @@ class AdversarialPatch(EvasionAttack):
                 i_batch_start = i_batch * self.batch_size
                 i_batch_end = (i_batch + 1) * self.batch_size
 
-                gradients = self.classifier.loss_gradient(patched_images[i_batch_start:i_batch_end],
-                                                          y_target[i_batch_start:i_batch_end])
+                gradients = self.classifier.loss_gradient(
+                    patched_images[i_batch_start:i_batch_end], y_target[i_batch_start:i_batch_end]
+                )
 
                 for i_image in range(self.batch_size):
-                    patch_gradients_i = self._reverse_transformation(gradients[i_image, :, :, :],
-                                                                     patch_mask_transformed[i_image, :, :, :],
-                                                                     transforms[i_image])
+                    patch_gradients_i = self._reverse_transformation(
+                        gradients[i_image, :, :, :], patch_mask_transformed[i_image, :, :, :], transforms[i_image]
+                    )
                     patch_gradients += patch_gradients_i
 
             patch_gradients = patch_gradients / (num_batches * self.batch_size)
@@ -199,7 +227,8 @@ class AdversarialPatch(EvasionAttack):
             raise ValueError("The minimum scale of the random patched must be of type float.")
         if self.scale_min < 0 or self.scale_min >= self.scale_max:
             raise ValueError(
-                "The minimum scale of the random patched must be greater than 0 and less than the maximum scaling.")
+                "The minimum scale of the random patched must be greater than 0 and less than the maximum scaling."
+            )
 
         if not isinstance(self.scale_max, float):
             raise ValueError("The maximum scale of the random patched must be of type float.")
@@ -237,7 +266,7 @@ class AdversarialPatch(EvasionAttack):
 
         pad_1 = int((self.classifier.input_shape[1] - mask.shape[1]) / 2)
         pad_2 = int(self.classifier.input_shape[1] - pad_1 - mask.shape[1])
-        mask = np.pad(mask, pad_width=(pad_1, pad_2), mode='constant', constant_values=(0, 0))
+        mask = np.pad(mask, pad_width=(pad_1, pad_2), mode="constant", constant_values=(0, 0))
 
         axis = self.classifier.channel_index - 1
         mask = np.expand_dims(mask, axis=axis)
@@ -255,10 +284,11 @@ class AdversarialPatch(EvasionAttack):
         for i_image in range(images.shape[0]):
             patch_transformed, patch_mask_transformed, transformation = self._random_transformation(patch, scale)
 
-            inverted_patch_mask_transformed = (1 - patch_mask_transformed)
+            inverted_patch_mask_transformed = 1 - patch_mask_transformed
 
-            patched_image = images[i_image, :, :, :] * inverted_patch_mask_transformed \
-                + patch_transformed * patch_mask_transformed
+            patched_image = (
+                images[i_image, :, :, :] * inverted_patch_mask_transformed + patch_transformed * patch_mask_transformed
+            )
             patched_image = np.expand_dims(patched_image, axis=0)
             patched_images.append(patched_image)
 
@@ -296,15 +326,15 @@ class AdversarialPatch(EvasionAttack):
                 pad_width = ((0, 0), (pad_1, pad_2), (pad_1, pad_2))
             else:
                 pad_width = None
-            x = np.pad(x, pad_width=pad_width, mode='constant', constant_values=(0, 0))
+            x = np.pad(x, pad_width=pad_width, mode="constant", constant_values=(0, 0))
         else:
             center = int(x.shape[1] / 2)
             patch_hw_1 = int(self.classifier.input_shape[1] / 2)
             patch_hw_2 = self.classifier.input_shape[1] - patch_hw_1
             if self.classifier.channel_index == 3:
-                x = x[center - patch_hw_1:center + patch_hw_2, center - patch_hw_1:center + patch_hw_2, :]
+                x = x[center - patch_hw_1 : center + patch_hw_2, center - patch_hw_1 : center + patch_hw_2, :]
             elif self.classifier.channel_index == 1:
-                x = x[:, center - patch_hw_1:center + patch_hw_2, center - patch_hw_1:center + patch_hw_2]
+                x = x[:, center - patch_hw_1 : center + patch_hw_2, center - patch_hw_1 : center + patch_hw_2]
             else:
                 x = None
 
@@ -328,7 +358,7 @@ class AdversarialPatch(EvasionAttack):
 
         # rotate
         angle = random.uniform(-self.rotation_max, self.rotation_max)
-        transformation['rotate'] = angle
+        transformation["rotate"] = angle
         patch = self._rotate(patch, angle)
         patch_mask = self._rotate(patch_mask, angle)
 
@@ -337,19 +367,19 @@ class AdversarialPatch(EvasionAttack):
             scale = random.uniform(self.scale_min, self.scale_max)
         patch = self._scale(patch, scale, shape)
         patch_mask = self._scale(patch_mask, scale, shape)
-        transformation['scale'] = scale
+        transformation["scale"] = scale
 
         # shift
-        shift_max = (self.classifier.input_shape[1] * (1. - scale)) / 2.0
+        shift_max = (self.classifier.input_shape[1] * (1.0 - scale)) / 2.0
         if shift_max > 0:
             shift_1 = random.uniform(-shift_max, shift_max)
             shift_2 = random.uniform(-shift_max, shift_max)
             patch, _, _ = self._shift(patch, shift_1, shift_2)
             patch_mask, shift_1, shift_2 = self._shift(patch_mask, shift_1, shift_2)
-            transformation['shift_1'] = shift_1
-            transformation['shift_2'] = shift_2
+            transformation["shift_1"] = shift_1
+            transformation["shift_2"] = shift_2
         else:
-            transformation['shift'] = (0, 0, 0)
+            transformation["shift"] = (0, 0, 0)
 
         return patch, patch_mask, transformation
 
@@ -358,15 +388,15 @@ class AdversarialPatch(EvasionAttack):
         gradients = gradients * patch_mask_transformed
 
         # shift
-        shift_1 = transformation['shift_1']
-        shift_2 = transformation['shift_2']
+        shift_1 = transformation["shift_1"]
+        shift_2 = transformation["shift_2"]
         gradients, _, _ = self._shift(gradients, -shift_1, -shift_2)
 
         # scale
-        scale = transformation['scale']
+        scale = transformation["scale"]
         gradients = self._scale(gradients, 1.0 / scale, shape)
 
         # rotate
-        angle = transformation['rotate']
+        angle = transformation["rotate"]
         gradients = self._rotate(gradients, -angle)
         return gradients

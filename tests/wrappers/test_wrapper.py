@@ -24,8 +24,14 @@ import keras.backend as k
 import numpy as np
 
 from art.wrappers.wrapper import ClassifierWrapper
+<<<<<<< HEAD
 from art.utils import load_mnist, master_seed
 from tests.utils_test import get_image_classifier_kr
+=======
+from art.utils import load_mnist
+
+from tests.utils_test import master_seed, get_classifier_kr
+>>>>>>> dev_1.2.0
 
 logger = logging.getLogger(__name__)
 
@@ -53,7 +59,7 @@ class TestMixinWKerasClassifier(unittest.TestCase):
         k.clear_session()
 
     def setUp(self):
-        master_seed(1234)
+        master_seed(seed=1234)
 
     def test_shapes(self):
         x_test, y_test = self.mnist[1]

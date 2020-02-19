@@ -27,7 +27,7 @@ import numpy as np
 from art.attacks import DecisionTreeAttack
 from art.classifiers import SklearnClassifier
 
-from tests.utils_test import TestBase
+from tests.utils_test import TestBase, master_seed
 
 logger = logging.getLogger(__name__)
 
@@ -39,6 +39,7 @@ class TestDecisionTreeAttack(TestBase):
 
     @classmethod
     def setUpClass(cls):
+        master_seed(seed=1234)
         super().setUpClass()
 
         # Get MNIST

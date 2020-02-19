@@ -17,3 +17,7 @@ Trained Models for Unittests, Iris
 .. autofunction:: get_iris_classifier_tf
 .. autofunction:: get_iris_classifier_kr
 .. autofunction:: get_iris_classifier_pt
+
+Random Number Generators
+------------------------
+.. autofunction:: master_seed

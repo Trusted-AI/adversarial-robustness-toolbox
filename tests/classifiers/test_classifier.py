@@ -24,7 +24,7 @@ import numpy as np
 
 from art.classifiers import Classifier, ClassifierNeuralNetwork, ClassifierGradients
 
-from tests.utils_test import TestBase
+from tests.utils_test import TestBase, master_seed
 
 logger = logging.getLogger(__name__)
 
@@ -80,6 +80,15 @@ class ClassifierNeuralNetworkInstance(ClassifierNeuralNetwork, ClassifierGradien
 
 class TestClassifier(TestBase):
 
+    @classmethod
+    def setUpClass(cls):
+        master_seed(seed=1234)
+        super().setUpClass()
+
+    def setUp(self):
+        master_seed(seed=1234)
+        super().setUp()
+
     def test_preprocessing_normalisation(self):
         classifier = ClassifierInstance()
 
@@ -100,6 +109,15 @@ class TestClassifier(TestBase):
 
 
 class TestClassifierNeuralNetwork(TestBase):
+
+    @classmethod
+    def setUpClass(cls):
+        master_seed(seed=1234)
+        super().setUpClass()
+
+    def setUp(self):
+        master_seed(seed=1234)
+        super().setUp()
 
     def test_preprocessing_normalisation(self):
         classifier = ClassifierNeuralNetworkInstance((0, 1))

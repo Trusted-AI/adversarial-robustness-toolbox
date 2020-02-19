@@ -26,9 +26,11 @@ from art.attacks import VirtualAdversarialMethod
 from art.classifiers import KerasClassifier
 from art.utils import get_labels_np_array
 
+
 from tests.utils_test import TestBase
 from tests.utils_test import get_image_classifier_tf, get_image_classifier_kr, get_image_classifier_pt
 from tests.utils_test import get_tabular_classifier_tf, get_tabular_classifier_kr, get_tabular_classifier_pt
+
 
 logger = logging.getLogger(__name__)
 
@@ -87,7 +89,7 @@ class TestVirtualAdversarial(TestBase):
     def _test_backend_mnist(self, classifier, x_test, y_test):
         x_test_original = x_test.copy()
 
-        df = VirtualAdversarialMethod(classifier, batch_size=100)
+        df = VirtualAdversarialMethod(classifier, batch_size=100, max_iter=2)
 
         x_test_adv = df.generate(x_test)
 

@@ -22,29 +22,26 @@ import unittest
 
 import tensorflow as tf
 import numpy as np
-import keras.backend as k
 import keras
+import keras.backend as k
 from keras.models import Sequential
 from keras.layers import Dense, Flatten, Conv2D, MaxPooling2D
+import torch
+import torch.nn as nn
+import torch.optim as optim
 
 from art.attacks.extraction.copycat_cnn import CopycatCNN
 from art.classifiers import TensorFlowClassifier
 from art.classifiers import KerasClassifier
 from art.classifiers import PyTorchClassifier
 
-from tests.utils_test import TestBase
+
+from tests.utils_test import TestBase, master_seed
 from tests.utils_test import get_image_classifier_tf, get_image_classifier_kr, get_image_classifier_pt
 from tests.utils_test import get_tabular_classifier_tf, get_tabular_classifier_kr, get_tabular_classifier_pt
 
-logger = logging.getLogger(__name__)
 
-try:
-    # Conditional import of `torch` to avoid segmentation fault errors this framework generates at import
-    import torch
-    import torch.nn as nn
-    import torch.optim as optim
-except ImportError:
-    logger.info('Could not import PyTorch in utilities.')
+logger = logging.getLogger(__name__)
 
 NB_EPOCHS = 10
 NB_STOLEN = 1000
@@ -57,6 +54,7 @@ class TestCopycatCNN(TestBase):
 
     @classmethod
     def setUpClass(cls):
+        master_seed(seed=1234)
         super().setUpClass()
 
     @unittest.skipIf(tf.__version__[0] == '2', reason='Skip unittests for TensorFlow v2.')
@@ -179,7 +177,7 @@ class TestCopycatCNN(TestBase):
                 x = self.pool(x)
                 x = x.reshape(-1, 25)
                 x = self.fullyconnected(x)
-                x = torch.nn.functional.softmax(x)
+                x = torch.nn.functional.softmax(x, dim=1)
 
                 return x
 

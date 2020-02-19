@@ -28,7 +28,7 @@ from mxnet.gluon import nn
 
 from art.classifiers import MXClassifier
 
-from tests.utils_test import TestBase
+from tests.utils_test import TestBase, master_seed
 
 logger = logging.getLogger(__name__)
 
@@ -40,6 +40,7 @@ class TestMXClassifier(TestBase):
 
     @classmethod
     def setUpClass(cls):
+        master_seed(seed=1234, set_mxnet=True)
         super().setUpClass()
 
         cls.x_train_mnist = np.swapaxes(cls.x_train_mnist, 1, 3)

@@ -1,6 +1,6 @@
 # MIT License
 #
-# Copyright (C) IBM Corporation 2019
+# Copyright (C) IBM Corporation 2020
 #
 # Permission is hereby granted, free of charge, to any person obtaining a copy of this software and associated
 # documentation files (the "Software"), to deal in the Software without restriction, including without limitation the
@@ -15,23 +15,27 @@
 # AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT,
 # TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 # SOFTWARE.
-from __future__ import absolute_import, division, print_function, unicode_literals
-
 import logging
 import unittest
 
 import numpy as np
 
+<<<<<<< HEAD:tests/wrappers/test_output_add_random_noise.py
 from art.utils import load_dataset, master_seed
 from tests.utils_test import get_image_classifier_kr_tf, get_image_classifier_kr_tf_binary
 from art.wrappers.output_add_random_noise import OutputRandomNoise
+=======
+from art.defences.postprocess import GaussianNoise
+from art.utils import load_dataset
+from tests.utils_test import master_seed, get_classifier_kr_tf, get_classifier_kr_tf_binary
+>>>>>>> dev_1.2.0:tests/defences/test_gaussian_noise.py
 
 logger = logging.getLogger(__name__)
 
 
-class TestRandomNoise(unittest.TestCase):
+class TestGaussianNoise(unittest.TestCase):
     """
-    A unittest class for testing the Random Noise wrapper.
+    A unittest class for testing the GaussianNoise postprocessor.
     """
 
     @classmethod
@@ -40,41 +44,53 @@ class TestRandomNoise(unittest.TestCase):
         cls.mnist = (x_train, y_train), (x_test, y_test)
 
     def setUp(self):
-        master_seed(1234)
+        master_seed(seed=1234)
 
-    def test_random_noise(self):
+    def test_gaussian_noise(self):
         """
-        Test random noise.
+        Test Gaussian noise.
         """
         (_, _), (x_test, _) = self.mnist
+<<<<<<< HEAD:tests/wrappers/test_output_add_random_noise.py
         classifier = get_image_classifier_kr_tf()
         wrapped_classifier = OutputRandomNoise(classifier=classifier, scale=0.1)
+=======
+        classifier = get_classifier_kr_tf()
+        preds = classifier.predict(x_test[0:1])
+        postprocessor = GaussianNoise(scale=0.1)
+        post_preds = postprocessor(preds=preds)
+>>>>>>> dev_1.2.0:tests/defences/test_gaussian_noise.py
 
         classifier_prediction_expected = np.asarray([[0.12109935, 0.0498215, 0.0993958, 0.06410096, 0.11366928,
                                                       0.04645343, 0.06419807, 0.30685693, 0.07616714, 0.05823757]],
                                                     dtype=np.float32)
-        wrapped_classifier_prediction_expected = np.asarray([[0.15412168, 0.0, 0.2222987, 0.03007976, 0.0381179,
-                                                              0.12382449, 0.13755375, 0.22279163, 0.07121207, 0.0]],
-                                                            dtype=np.float32)
+        post_classifier_prediction_expected = np.asarray([[0.15412168, 0.0, 0.2222987, 0.03007976, 0.0381179,
+                                                           0.12382449, 0.13755375, 0.22279163, 0.07121207, 0.0]],
+                                                         dtype=np.float32)
 
-        np.testing.assert_array_almost_equal(classifier.predict(x_test[0:1]), classifier_prediction_expected, decimal=4)
-        np.testing.assert_array_almost_equal(wrapped_classifier.predict(x_test[0:1]),
-                                             wrapped_classifier_prediction_expected, decimal=4)
+        np.testing.assert_array_almost_equal(preds, classifier_prediction_expected, decimal=4)
+        np.testing.assert_array_almost_equal(post_preds, post_classifier_prediction_expected, decimal=4)
 
-    def test_random_noise_binary(self):
+    def test_gaussian_noise_binary(self):
         """
-        Test random noise for binary classifier.
+        Test Gaussian noise for binary classifier.
         """
         (_, _), (x_test, _) = self.mnist
+<<<<<<< HEAD:tests/wrappers/test_output_add_random_noise.py
         classifier = get_image_classifier_kr_tf_binary()
         wrapped_classifier = OutputRandomNoise(classifier=classifier, scale=0.1)
+=======
+        classifier = get_classifier_kr_tf_binary()
+        preds = classifier.predict(x_test[0:1])
+        postprocessor = GaussianNoise(scale=0.1)
+        post_preds = postprocessor(preds=preds)
+>>>>>>> dev_1.2.0:tests/defences/test_gaussian_noise.py
 
         classifier_prediction_expected = np.asarray([[0.5301345]], dtype=np.float32)
-        wrapped_classifier_prediction_expected = np.asarray([[0.577278]], dtype=np.float32)
+        post_classifier_prediction_expected = np.asarray([[0.577278]], dtype=np.float32)
 
-        np.testing.assert_array_almost_equal(classifier.predict(x_test[0:1]), classifier_prediction_expected, decimal=4)
-        np.testing.assert_array_almost_equal(wrapped_classifier.predict(x_test[0:1]),
-                                             wrapped_classifier_prediction_expected, decimal=4)
+        np.testing.assert_array_almost_equal(preds, classifier_prediction_expected, decimal=4)
+        np.testing.assert_array_almost_equal(post_preds, post_classifier_prediction_expected, decimal=4)
 
 
 if __name__ == '__main__':

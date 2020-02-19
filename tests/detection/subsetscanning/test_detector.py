@@ -28,8 +28,14 @@ import numpy as np
 
 from art.attacks import FastGradientMethod
 from art.detection import SubsetScanningDetector
+<<<<<<< HEAD
 from art.utils import master_seed, load_dataset
 from tests.utils_test import get_image_classifier_kr
+=======
+from art.utils import load_dataset
+
+from tests.utils_test import master_seed, get_classifier_kr
+>>>>>>> dev_1.2.0
 
 logger = logging.getLogger(__name__)
 
@@ -44,7 +50,7 @@ class TestSubsetScanningDetector(unittest.TestCase):
     """
 
     def setUp(self):
-        master_seed(1234)
+        master_seed(seed=1234)
 
     def tearDown(self):
         k.clear_session()

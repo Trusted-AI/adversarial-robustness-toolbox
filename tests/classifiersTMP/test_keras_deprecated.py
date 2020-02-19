@@ -20,9 +20,6 @@ from __future__ import absolute_import, division, print_function, unicode_litera
 import os
 import logging
 import unittest
-import requests
-import tempfile
-import shutil
 # import pickle
 
 import numpy as np
@@ -32,17 +29,18 @@ from keras.layers import Dense, Conv2D, MaxPooling2D, Dropout, Input, Flatten
 from keras.models import Model
 from keras.preprocessing.image import ImageDataGenerator
 from keras.callbacks import LearningRateScheduler
-from keras.applications.resnet50 import ResNet50, decode_predictions
-from keras.preprocessing.image import load_img, img_to_array
 
 # from art.config import ART_DATA_PATH
 from art.classifiers import KerasClassifier
 from art.classifiers.keras import generator_fit
 from art.defences import FeatureSqueezing, JpegCompression, SpatialSmoothing
-from art.utils import master_seed
 from art.data_generators import KerasDataGenerator
 
+<<<<<<< HEAD:tests/classifiersTMP/test_keras_deprecated.py
 from tests.utils_test import TestBase, get_image_classifier_kr
+=======
+from tests.utils_test import TestBase, master_seed, get_classifier_kr
+>>>>>>> dev_1.2.0:tests/classifiers/test_keras.py
 
 logger = logging.getLogger(__name__)
 
@@ -83,29 +81,17 @@ class TestKerasClassifier(TestBase):
 
     @classmethod
     def setUpClass(cls):
+        master_seed(seed=1234)
         super().setUpClass()
 
         # Load small Keras model
         cls.functional_model = _functional_model()
         cls.functional_model.fit([cls.x_train_mnist, cls.x_train_mnist], [cls.y_train_mnist, cls.y_train_mnist],
-                                 nb_epoch=3)
-
-        # Temporary folder for tests
-        cls.test_dir = tempfile.mkdtemp()
-
-        # Download one ImageNet pic for tests
-        url = 'http://farm1.static.flickr.com/163/381342603_81db58bea4.jpg'
-        result = requests.get(url, stream=True)
-        if result.status_code == 200:
-            image = result.raw.read()
-            f = open(os.path.join(cls.test_dir, 'test.jpg'), 'wb')
-            f.write(image)
-            f.close()
+                                 epochs=3)
 
     @classmethod
     def tearDownClass(cls):
         k.clear_session()
-        shutil.rmtree(cls.test_dir)
 
     def test_fit(self):
         labels = np.argmax(self.y_test_mnist, axis=1)
@@ -118,7 +104,7 @@ class TestKerasClassifier(TestBase):
         logger.info('Accuracy: %.2f%%', (accuracy_2 * 100))
 
         self.assertEqual(accuracy, 0.32)
-        self.assertAlmostEqual(accuracy_2, 0.73, delta=0.06)
+        self.assertAlmostEqual(accuracy_2, 0.75, delta=0.06)
 
     def test_fit_generator(self):
         classifier = get_image_classifier_kr()
@@ -190,9 +176,16 @@ class TestKerasClassifier(TestBase):
         fs = FeatureSqueezing(clip_values=clip_values, bit_depth=2)
         jpeg = JpegCompression(clip_values=clip_values, apply_predict=True)
         smooth = SpatialSmoothing()
+<<<<<<< HEAD:tests/classifiersTMP/test_keras_deprecated.py
         classifier_ = get_image_classifier_kr()
         classifier = KerasClassifier(clip_values=clip_values, model=classifier_._model, defences=[fs, jpeg, smooth])
         self.assertEqual(len(classifier.defences), 3)
+=======
+        classifier_ = get_classifier_kr()
+        classifier = KerasClassifier(clip_values=clip_values, model=classifier_._model,
+                                     preprocessing_defences=[fs, jpeg, smooth])
+        self.assertEqual(len(classifier.preprocessing_defences), 3)
+>>>>>>> dev_1.2.0:tests/classifiers/test_keras.py
 
         predictions_classifier = classifier.predict(self.x_test_mnist)
 
@@ -319,20 +312,6 @@ class TestKerasClassifier(TestBase):
             activation_name = classifier.get_activations(self.x_test_mnist, name, batch_size=128)
             np.testing.assert_array_equal(activation_name, activation_i)
 
-    def test_resnet(self):
-        keras.backend.set_learning_phase(0)
-        model = ResNet50(weights='imagenet')
-        classifier = KerasClassifier(model, clip_values=(0, 255))
-
-        image = img_to_array(load_img(os.path.join(self.test_dir, 'test.jpg'), target_size=(224, 224)))
-        image = image.reshape((1, image.shape[0], image.shape[1], image.shape[2]))
-
-        prediction = classifier.predict(image)
-        label = decode_predictions(prediction)[0][0]
-
-        self.assertEqual(label[1], 'Weimaraner')
-        self.assertAlmostEqual(prediction[0, 178], 0.2658045, places=3)
-
     def test_learning_phase(self):
         classifier = get_image_classifier_kr()
         self.assertFalse(hasattr(classifier, '_learning_phase'))
@@ -381,7 +360,8 @@ class TestKerasClassifier(TestBase):
         repr_ = repr(classifier)
         self.assertIn('art.classifiers.keras.KerasClassifier', repr_)
         self.assertIn('use_logits=False, channel_index=3', repr_)
-        self.assertIn('clip_values=(0, 1), defences=None, preprocessing=(0, 1)', repr_)
+        self.assertIn('clip_values=(0, 1), preprocessing_defences=None, postprocessing_defences=None, '
+                      'preprocessing=(0, 1)', repr_)
         self.assertIn('input_layer=0, output_layer=0', repr_)
 
     def test_loss_functions(self):
@@ -410,8 +390,13 @@ class TestKerasClassifier(TestBase):
 
         def _run_tests(_loss_name, _loss_type, _y_test_pred_expected, _class_gradient_probabilities_expected,
                        _loss_gradient_expected, _from_logits):
+<<<<<<< HEAD:tests/classifiersTMP/test_keras_deprecated.py
             master_seed(1234)
             classifier = get_image_classifier_kr(loss_name=_loss_name, loss_type=_loss_type, from_logits=_from_logits)
+=======
+            master_seed(seed=1234)
+            classifier = get_classifier_kr(loss_name=_loss_name, loss_type=_loss_type, from_logits=_from_logits)
+>>>>>>> dev_1.2.0:tests/classifiers/test_keras.py
 
             y_test_pred = np.argmax(classifier.predict(x=self.x_test_mnist), axis=1)
             np.testing.assert_array_equal(y_test_pred, _y_test_pred_expected)

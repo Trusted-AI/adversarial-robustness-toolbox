@@ -26,7 +26,9 @@ import torch.optim as optim
 
 from art.classifiers import PyTorchClassifier
 from art.defences import PixelDefend
-from art.utils import load_mnist, master_seed
+from art.utils import load_mnist
+
+from tests.utils_test import master_seed
 
 logger = logging.getLogger(__name__)
 
@@ -60,7 +62,7 @@ class Model(nn.Module):
 class TestPixelDefend(unittest.TestCase):
     def setUp(self):
         # Set master seed
-        master_seed(1234)
+        master_seed(seed=1234)
 
     def test_one_channel(self):
         (x_train, _), (_, _), _, _ = load_mnist()

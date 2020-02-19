@@ -36,7 +36,7 @@ from art.classifiers.scikitlearn import ScikitlearnDecisionTreeClassifier, Sciki
     ScikitlearnSVC
 from art.classifiers import SklearnClassifier
 
-from tests.utils_test import TestBase
+from tests.utils_test import TestBase, master_seed
 
 logger = logging.getLogger(__name__)
 
@@ -45,6 +45,7 @@ class TestScikitlearnDecisionTreeClassifier(TestBase):
 
     @classmethod
     def setUpClass(cls):
+        master_seed(seed=1234)
         super().setUpClass()
 
         cls.sklearn_model = DecisionTreeClassifier()
@@ -64,6 +65,7 @@ class TestScikitlearnExtraTreeClassifier(TestBase):
 
     @classmethod
     def setUpClass(cls):
+        master_seed(seed=1234)
         super().setUpClass()
 
         cls.sklearn_model = ExtraTreeClassifier()
@@ -83,6 +85,7 @@ class TestScikitlearnAdaBoostClassifier(TestBase):
 
     @classmethod
     def setUpClass(cls):
+        master_seed(seed=1234)
         super().setUpClass()
 
         cls.sklearn_model = AdaBoostClassifier()
@@ -102,6 +105,7 @@ class TestScikitlearnBaggingClassifier(TestBase):
 
     @classmethod
     def setUpClass(cls):
+        master_seed(seed=1234)
         super().setUpClass()
 
         cls.sklearn_model = BaggingClassifier()
@@ -121,6 +125,7 @@ class TestScikitlearnExtraTreesClassifier(TestBase):
 
     @classmethod
     def setUpClass(cls):
+        master_seed(seed=1234)
         super().setUpClass()
 
         cls.sklearn_model = ExtraTreesClassifier(n_estimators=10)
@@ -140,6 +145,7 @@ class TestScikitlearnGradientBoostingClassifier(TestBase):
 
     @classmethod
     def setUpClass(cls):
+        master_seed(seed=1234)
         super().setUpClass()
 
         cls.sklearn_model = GradientBoostingClassifier(n_estimators=100)
@@ -159,6 +165,7 @@ class TestScikitlearnRandomForestClassifier(TestBase):
 
     @classmethod
     def setUpClass(cls):
+        master_seed(seed=1234)
         super().setUpClass()
 
         cls.sklearn_model = RandomForestClassifier(n_estimators=10)
@@ -178,6 +185,7 @@ class TestScikitlearnLogisticRegression(TestBase):
 
     @classmethod
     def setUpClass(cls):
+        master_seed(seed=1234)
         super().setUpClass()
 
         cls.sklearn_model = LogisticRegression(verbose=0, C=1, solver='newton-cg', dual=False, fit_intercept=True,
@@ -255,6 +263,7 @@ class TestScikitlearnBinaryLogisticRegression(TestBase):
 
     @classmethod
     def setUpClass(cls):
+        master_seed(seed=1234)
         super().setUpClass()
 
         binary_class_index = (np.argmax(cls.y_train_iris, axis=1) < 2)
@@ -289,6 +298,7 @@ class TestScikitlearnSVCSVC(TestBase):
 
     @classmethod
     def setUpClass(cls):
+        master_seed(seed=1234)
         super().setUpClass()
 
         cls.sklearn_model = SVC(gamma='auto')
@@ -359,6 +369,7 @@ class TestScikitlearnSVCLinearSVC(TestBase):
 
     @classmethod
     def setUpClass(cls):
+        master_seed(seed=1234)
         super().setUpClass()
 
         cls.sklearn_model = LinearSVC()
@@ -390,6 +401,7 @@ class TestScikitlearnPipeline(TestBase):
 
     @classmethod
     def setUpClass(cls):
+        master_seed(seed=1234)
         super().setUpClass()
 
         svc = SVC(C=1.0, kernel='rbf', gamma='auto')
