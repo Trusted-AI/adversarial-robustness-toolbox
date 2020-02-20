@@ -24,14 +24,12 @@ import keras.backend as k
 import numpy as np
 
 from art.wrappers.wrapper import ClassifierWrapper
-<<<<<<< HEAD
-from art.utils import load_mnist, master_seed
+
 from tests.utils_test import get_image_classifier_kr
-=======
 from art.utils import load_mnist
 
-from tests.utils_test import master_seed, get_classifier_kr
->>>>>>> dev_1.2.0
+from tests.utils_test import master_seed
+
 
 logger = logging.getLogger(__name__)
 
