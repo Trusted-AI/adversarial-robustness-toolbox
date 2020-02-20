@@ -178,6 +178,10 @@ class TensorFlowClassifier(ClassifierNeuralNetwork, ClassifierGradients, Classif
         # Apply preprocessing
         x_preprocessed, y_preprocessed = self._apply_preprocessing(x, y, fit=True)
 
+        # Check label shape
+        if len(self._labels_ph.shape) == 1:
+            y_preprocessed = np.argmax(y_preprocessed, axis=1)
+
         num_batch = int(np.ceil(len(x_preprocessed) / float(batch_size)))
         ind = np.arange(len(x_preprocessed))
 
