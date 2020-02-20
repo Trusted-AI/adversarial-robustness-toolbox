@@ -96,6 +96,12 @@ class Distillation(Transformer):
 
         return modified_classifier
 
+    def fit(self, x, y=None, **kwargs):
+        """
+        No parameters to learn for this method; do nothing.
+        """
+        pass
+
     def set_params(self, **kwargs):
         """
         Take in a dictionary of parameters and applies defence-specific checks before saving them as attributes.
