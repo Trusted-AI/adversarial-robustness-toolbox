@@ -30,23 +30,28 @@ from tensorflow.keras.models import load_model
 
 from art.attacks import FunctionallyEquivalentExtraction
 from art.classifiers import KerasClassifier
-from art.utils import load_dataset, master_seed
+
+from tests.utils import TestBase, master_seed
 
 logger = logging.getLogger(__name__)
 
-BATCH_SIZE = 10
-NB_TRAIN = 100
-NB_TEST = 11
-
 
 @unittest.skipIf(tf.__version__[0] != '2' or (tf.__version__[0] == '1' and tf.__version__.split('.')[1] != '15'),
-                 reason='Skip unittests if not TensorFlow v2.')
-class TestFastGradientMethodImages(unittest.TestCase):
+                 reason='Skip unittests if not TensorFlow v2 or 1.15 because of pre-trained model.')
+class TestFastGradientMethodImages(TestBase):
+
     @classmethod
     def setUpClass(cls):
-        # MNIST
-        (x_train, y_train), (x_test, y_test), _, _ = load_dataset('mnist')
-        x_train, y_train, x_test, y_test = x_train[:NB_TRAIN], y_train[:NB_TRAIN], x_test[:NB_TEST], y_test[:NB_TEST]
+        master_seed(seed=1234, set_tensorflow=True)
+        super().setUpClass()
+
+        cls.n_train = 100
+        cls.n_test = 11
+        cls.x_train_mnist = cls.x_train_mnist[0:cls.n_train]
+        cls.y_train_mnist = cls.y_train_mnist[0:cls.n_train]
+        cls.x_test_mnist = cls.x_test_mnist[0:cls.n_test]
+        cls.y_test_mnist = cls.y_test_mnist[0:cls.n_test]
+
         model = load_model(join(join(join(dirname(dirname(dirname(__file__))), 'data'), 'test_models'),
                                 'model_test_functionally_equivalent_extraction.h5'))
 
@@ -56,8 +61,8 @@ class TestFastGradientMethodImages(unittest.TestCase):
         img_cols = 28
         num_channels = 1
 
-        x_train = x_train.reshape(x_train.shape[0], img_rows, img_cols, num_channels)
-        x_test = x_test.reshape(x_test.shape[0], img_rows, img_cols, num_channels)
+        x_train = cls.x_train_mnist.reshape(cls.n_train, img_rows, img_cols, num_channels)
+        x_test = cls.x_test_mnist.reshape(cls.n_test, img_rows, img_cols, num_channels)
 
         x_train = x_train.reshape((x_train.shape[0], num_channels * img_rows * img_cols)).astype('float64')
         x_test = x_test.reshape((x_test.shape[0], num_channels * img_rows * img_cols)).astype('float64')
@@ -73,7 +78,8 @@ class TestFastGradientMethodImages(unittest.TestCase):
         cls.fee.extract(x_test[0:100])
 
     def setUp(self):
-        master_seed(1234)
+        master_seed(seed=1234, set_tensorflow=True)
+        super().setUp()
 
     def test_critical_points(self):
         critical_points_expected_15 = np.array([[3.61953106e+00, 9.77733178e-01, 3.03710564e+00,
@@ -370,7 +376,7 @@ class TestFastGradientMethodImages(unittest.TestCase):
                                             [-1.02489274],
                                             [-0.48252173],
                                             [1.92286191]])
-        np.testing.assert_array_almost_equal(self.fee.b_1, layer_1_biases_expected)
+        np.testing.assert_array_almost_equal(self.fee.b_1, layer_1_biases_expected, decimal=4)
 
 
 if __name__ == '__main__':

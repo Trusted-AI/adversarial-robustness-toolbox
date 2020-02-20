@@ -84,8 +84,9 @@ class Scanner:
         return best_score, image_sub, node_sub, optimal_alpha
 
     @staticmethod
-    def fgss_for_nets(pvalues, a_max=0.5, restarts=10, image_to_node_init=False,
-                      score_function=ScoringFunctions.get_score_bj_fast):
+    def fgss_for_nets(
+        pvalues, a_max=0.5, restarts=10, image_to_node_init=False, score_function=ScoringFunctions.get_score_bj_fast
+    ):
         """
         Finds the highest scoring subset of records and attribute. Return the subsets, the score, and the alpha that
         maximizes the score iterates between images and nodes, each time performing NPSS efficient maximization.
@@ -118,9 +119,12 @@ class Scanner:
                     # all 1's for number of cols
                     indices_of_seeds = np.arange(pvalues.shape[1])
 
-                (best_score_from_restart, best_image_sub_from_restart, best_node_sub_from_restart,
-                 best_alpha_from_restart) = ScanningOps.single_restart(pvalues, a_max, indices_of_seeds, image_to_node,
-                                                                       score_function)
+                (
+                    best_score_from_restart,
+                    best_image_sub_from_restart,
+                    best_node_sub_from_restart,
+                    best_alpha_from_restart,
+                ) = ScanningOps.single_restart(pvalues, a_max, indices_of_seeds, image_to_node, score_function)
 
                 if best_score_from_restart > best_score:
                     best_score = best_score_from_restart
@@ -134,26 +138,33 @@ class Scanner:
                 # some some randomizing and only leave in a random number of rows of pvalues TODO
                 prob = np.random.uniform(0, 1)
                 if image_to_node:
-                    indices_of_seeds = np.random.choice(np.arange(pvalues.shape[0]), int(pvalues.shape[0] * prob),
-                                                        replace=False)
+                    indices_of_seeds = np.random.choice(
+                        np.arange(pvalues.shape[0]), int(pvalues.shape[0] * prob), replace=False
+                    )
                 else:
-                    indices_of_seeds = np.random.choice(np.arange(pvalues.shape[1]), int(pvalues.shape[1] * prob),
-                                                        replace=False)
+                    indices_of_seeds = np.random.choice(
+                        np.arange(pvalues.shape[1]), int(pvalues.shape[1] * prob), replace=False
+                    )
                 while indices_of_seeds.size == 0:
                     # eventually will make non zero
                     prob = np.random.uniform(0, 1)
                     if image_to_node:
-                        indices_of_seeds = np.random.choice(np.arange(pvalues.shape[0]), int(pvalues.shape[0] * prob),
-                                                            replace=False)
+                        indices_of_seeds = np.random.choice(
+                            np.arange(pvalues.shape[0]), int(pvalues.shape[0] * prob), replace=False
+                        )
                     else:
-                        indices_of_seeds = np.random.choice(np.arange(pvalues.shape[1]), int(pvalues.shape[1] * prob),
-                                                            replace=False)
+                        indices_of_seeds = np.random.choice(
+                            np.arange(pvalues.shape[1]), int(pvalues.shape[1] * prob), replace=False
+                        )
 
                 indices_of_seeds.astype(int)
                 # process a random subset of rows of pvalues array
-                (best_score_from_restart, best_image_sub_from_restart, best_node_sub_from_restart,
-                 best_alpha_from_restart) = ScanningOps.single_restart(pvalues, a_max, indices_of_seeds, image_to_node,
-                                                                       score_function)
+                (
+                    best_score_from_restart,
+                    best_image_sub_from_restart,
+                    best_node_sub_from_restart,
+                    best_alpha_from_restart,
+                ) = ScanningOps.single_restart(pvalues, a_max, indices_of_seeds, image_to_node, score_function)
 
                 if best_score_from_restart > best_score:
                     best_score = best_score_from_restart

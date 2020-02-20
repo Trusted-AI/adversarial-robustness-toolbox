@@ -28,7 +28,8 @@ import numpy as np
 from keras.preprocessing.image import ImageDataGenerator
 
 from art.data_generators import KerasDataGenerator, PyTorchDataGenerator, MXDataGenerator, TFDataGenerator
-from art.utils import master_seed
+
+from tests.utils import master_seed
 
 logger = logging.getLogger(__name__)
 
@@ -36,7 +37,7 @@ logger = logging.getLogger(__name__)
 class TestKerasDataGenerator(unittest.TestCase):
     def setUp(self):
         import keras
-        master_seed(42)
+        master_seed(seed=42)
 
         class DummySequence(keras.utils.Sequence):
             def __init__(self):
@@ -160,7 +161,7 @@ class TestPyTorchGenerator(unittest.TestCase):
     def setUp(self):
         import torch
         from torch.utils.data import DataLoader
-        master_seed(42)
+        master_seed(seed=42)
 
         class DummyDataset(torch.utils.data.Dataset):
             def __init__(self):
@@ -207,7 +208,7 @@ class TestPyTorchGenerator(unittest.TestCase):
 class TestMXGenerator(unittest.TestCase):
     def setUp(self):
         import mxnet as mx
-        master_seed(42)
+        master_seed(seed=42, set_mxnet=True)
 
         x = mx.random.uniform(shape=(10, 1, 5, 5))
         y = mx.random.uniform(shape=10)
@@ -242,9 +243,9 @@ class TestMXGenerator(unittest.TestCase):
         self.assertEqual(y.shape, (5,))
 
 
-class TestTFDataGenerator(unittest.TestCase):
+class TestTensorFlowDataGenerator(unittest.TestCase):
     def setUp(self):
-        master_seed(42)
+        master_seed(seed=42)
 
         def generator(batch_size=5):
             while True:
@@ -258,7 +259,7 @@ class TestTFDataGenerator(unittest.TestCase):
         self.sess.close()
 
     def test_init(self):
-        iter_ = self.dataset.make_initializable_iterator()
+        iter_ = tf.compat.v1.data.make_initializable_iterator(self.dataset)
         data_gen = TFDataGenerator(sess=self.sess, iterator=iter_, iterator_type='initializable',
                                    iterator_arg={}, size=10, batch_size=5)
         x, y = data_gen.get_batch()
@@ -272,7 +273,8 @@ class TestTFDataGenerator(unittest.TestCase):
         self.assertEqual(y.shape, (5, 10))
 
     def test_reinit(self):
-        iter_ = tf.data.Iterator.from_structure(self.dataset.output_types, self.dataset.output_shapes)
+        iter_ = tf.data.Iterator.from_structure(tf.compat.v1.data.get_output_types(self.dataset),
+                                                tf.compat.v1.data.get_output_shapes(self.dataset))
         init_op = iter_.make_initializer(self.dataset)
         data_gen = TFDataGenerator(sess=self.sess, iterator=iter_, iterator_type='reinitializable',
                                    iterator_arg=init_op, size=10, batch_size=5)
@@ -288,8 +290,9 @@ class TestTFDataGenerator(unittest.TestCase):
 
     def test_feedable(self):
         handle = tf.placeholder(tf.string, shape=[])
-        iter_ = tf.data.Iterator.from_string_handle(handle, self.dataset.output_types, self.dataset.output_shapes)
-        feed_iterator = self.dataset.make_initializable_iterator()
+        iter_ = tf.data.Iterator.from_string_handle(handle, tf.compat.v1.data.get_output_types(self.dataset),
+                                                    tf.compat.v1.data.get_output_shapes(self.dataset))
+        feed_iterator = tf.compat.v1.data.make_initializable_iterator(self.dataset)
         feed_handle = self.sess.run(feed_iterator.string_handle())
         data_gen = TFDataGenerator(sess=self.sess, iterator=iter_, iterator_type='feedable',
                                    iterator_arg=(feed_iterator, {handle: feed_handle}), size=10, batch_size=5)

@@ -36,8 +36,19 @@ class PyTorchClassifier(ClassifierNeuralNetwork, ClassifierGradients, Classifier
     This class implements a classifier with the PyTorch framework.
     """
 
-    def __init__(self, model, loss, optimizer, input_shape, nb_classes, channel_index=1, clip_values=None,
-                 defences=None, preprocessing=(0, 1)):
+    def __init__(
+        self,
+        model,
+        loss,
+        optimizer,
+        input_shape,
+        nb_classes,
+        channel_index=1,
+        clip_values=None,
+        preprocessing_defences=None,
+        postprocessing_defences=None,
+        preprocessing=(0, 1),
+    ):
         """
         Initialization specifically for the PyTorch-based implementation.
 
@@ -54,22 +65,28 @@ class PyTorchClassifier(ClassifierNeuralNetwork, ClassifierGradients, Classifier
         :param nb_classes: The number of classes of the model.
         :type nb_classes: `int`
         :param channel_index: Index of the axis in data containing the color channels or features.
-        :param channel_index: Index of the axis in data containing the color channels or features.
         :type channel_index: `int`
         :param clip_values: Tuple of the form `(min, max)` of floats or `np.ndarray` representing the minimum and
                maximum values allowed for features. If floats are provided, these will be used as the range of all
                features. If arrays are provided, each value will be considered the bound for a feature, thus
                the shape of clip values needs to match the total number of features.
         :type clip_values: `tuple`
-        :param defences: Defences to be activated with the classifier.
-        :type defences: `str` or `list(str)`
+        :param preprocessing_defences: Preprocessing defence(s) to be applied by the classifier.
+        :type preprocessing_defences: :class:`.Preprocessor` or `list(Preprocessor)` instances
+        :param postprocessing_defences: Postprocessing defence(s) to be applied by the classifier.
+        :type postprocessing_defences: :class:`.Postprocessor` or `list(Postprocessor)` instances
         :param preprocessing: Tuple of the form `(subtractor, divider)` of floats or `np.ndarray` of values to be
                used for data preprocessing. The first value will be subtracted from the input. The input will then
                be divided by the second one.
         :type preprocessing: `tuple`
         """
-        super(PyTorchClassifier, self).__init__(clip_values=clip_values, channel_index=channel_index, defences=defences,
-                                                preprocessing=preprocessing)
+        super(PyTorchClassifier, self).__init__(
+            clip_values=clip_values,
+            channel_index=channel_index,
+            preprocessing_defences=preprocessing_defences,
+            postprocessing_defences=postprocessing_defences,
+            preprocessing=preprocessing,
+        )
 
         self._nb_classes = nb_classes
         self._input_shape = input_shape
@@ -83,6 +100,7 @@ class PyTorchClassifier(ClassifierNeuralNetwork, ClassifierGradients, Classifier
 
         # Use GPU if possible
         import torch
+
         self._device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
         self._model.to(self._device)
 
@@ -116,7 +134,10 @@ class PyTorchClassifier(ClassifierNeuralNetwork, ClassifierGradients, Classifier
             output = model_outputs[-1]
             results[begin:end] = output.detach().cpu().numpy()
 
-        return results
+        # Apply postprocessing
+        predictions = self._apply_postprocessing(preds=results, fit=False)
+
+        return predictions
 
     def fit(self, x, y, batch_size=128, nb_epochs=10, **kwargs):
         """
@@ -152,15 +173,19 @@ class PyTorchClassifier(ClassifierNeuralNetwork, ClassifierGradients, Classifier
 
             # Train for one epoch
             for m in range(num_batch):
-                i_batch = torch.from_numpy(x_preprocessed[ind[m * batch_size:(m + 1) * batch_size]]).to(self._device)
-                o_batch = torch.from_numpy(y_preprocessed[ind[m * batch_size:(m + 1) * batch_size]]).to(self._device)
+                i_batch = torch.from_numpy(x_preprocessed[ind[m * batch_size : (m + 1) * batch_size]]).to(self._device)
+                o_batch = torch.from_numpy(y_preprocessed[ind[m * batch_size : (m + 1) * batch_size]]).to(self._device)
 
                 # Zero the parameter gradients
                 self._optimizer.zero_grad()
 
-                # Actual training
+                # Perform prediction
                 model_outputs = self._model(i_batch)
+
+                # Form the loss function
                 loss = self._loss(model_outputs[-1], o_batch)
+
+                # Actual training
                 loss.backward()
                 self._optimizer.step()
 
@@ -181,8 +206,9 @@ class PyTorchClassifier(ClassifierNeuralNetwork, ClassifierGradients, Classifier
         from art.data_generators import PyTorchDataGenerator
 
         # Train directly in PyTorch
-        if isinstance(generator, PyTorchDataGenerator) and \
-                not (hasattr(self, 'label_smooth') or hasattr(self, 'feature_squeeze')):
+        if isinstance(generator, PyTorchDataGenerator) and not (
+            hasattr(self, "label_smooth") or hasattr(self, "feature_squeeze")
+        ):
             for _ in range(nb_epochs):
                 for i_batch, o_batch in generator.data_loader:
                     if isinstance(i_batch, np.ndarray):
@@ -198,9 +224,13 @@ class PyTorchClassifier(ClassifierNeuralNetwork, ClassifierGradients, Classifier
                     # Zero the parameter gradients
                     self._optimizer.zero_grad()
 
-                    # Actual training
+                    # Perform prediction
                     model_outputs = self._model(i_batch)
+
+                    # Form the loss function
                     loss = self._loss(model_outputs[-1], o_batch)
+
+                    # Actual training
                     loss.backward()
                     self._optimizer.step()
         else:
@@ -225,10 +255,17 @@ class PyTorchClassifier(ClassifierNeuralNetwork, ClassifierGradients, Classifier
         """
         import torch
 
-        if not ((label is None) or (isinstance(label, (int, np.integer)) and label in range(self._nb_classes))
-                or (isinstance(label, np.ndarray) and len(label.shape) == 1 and (label < self._nb_classes).all()
-                    and label.shape[0] == x.shape[0])):
-            raise ValueError('Label %s is out of range.' % label)
+        if not (
+            (label is None)
+            or (isinstance(label, (int, np.integer)) and label in range(self._nb_classes))
+            or (
+                isinstance(label, np.ndarray)
+                and len(label.shape) == 1
+                and (label < self._nb_classes).all()
+                and label.shape[0] == x.shape[0]
+            )
+        ):
+            raise ValueError("Label %s is out of range." % label)
 
         # Apply preprocessing
         x_preprocessed, _ = self._apply_preprocessing(x, y=None, fit=False)
@@ -265,17 +302,20 @@ class PyTorchClassifier(ClassifierNeuralNetwork, ClassifierGradients, Classifier
         self._model.zero_grad()
         if label is None:
             for i in range(self.nb_classes()):
-                torch.autograd.backward(preds[:, i], torch.Tensor([1.] * len(preds[:, 0])).to(self._device),
-                                        retain_graph=True)
+                torch.autograd.backward(
+                    preds[:, i], torch.Tensor([1.0] * len(preds[:, 0])).to(self._device), retain_graph=True
+                )
 
         elif isinstance(label, (int, np.integer)):
-            torch.autograd.backward(preds[:, label], torch.Tensor([1.] * len(preds[:, 0])).to(self._device),
-                                    retain_graph=True)
+            torch.autograd.backward(
+                preds[:, label], torch.Tensor([1.0] * len(preds[:, 0])).to(self._device), retain_graph=True
+            )
         else:
             unique_label = list(np.unique(label))
             for i in unique_label:
-                torch.autograd.backward(preds[:, i], torch.Tensor([1.] * len(preds[:, 0])).to(self._device),
-                                        retain_graph=True)
+                torch.autograd.backward(
+                    preds[:, i], torch.Tensor([1.0] * len(preds[:, 0])).to(self._device), retain_graph=True
+                )
 
             grads = np.swapaxes(np.array(grads), 0, 1)
             lst = [unique_label.index(i) for i in label]
@@ -426,6 +466,7 @@ class PyTorchClassifier(ClassifierNeuralNetwork, ClassifierGradients, Classifier
 
         if path is None:
             from art.config import ART_DATA_PATH
+
             full_path = os.path.join(ART_DATA_PATH, filename)
         else:
             full_path = os.path.join(path, filename)
@@ -435,10 +476,10 @@ class PyTorchClassifier(ClassifierNeuralNetwork, ClassifierGradients, Classifier
 
         # pylint: disable=W0212
         # disable pylint because access to _modules required
-        torch.save(self._model._model.state_dict(), full_path + '.model')
-        torch.save(self._optimizer.state_dict(), full_path + '.optimizer')
-        logger.info("Model state dict saved in path: %s.", full_path + '.model')
-        logger.info("Optimizer state dict saved in path: %s.", full_path + '.optimizer')
+        torch.save(self._model._model.state_dict(), full_path + ".model")
+        torch.save(self._optimizer.state_dict(), full_path + ".optimizer")
+        logger.info("Model state dict saved in path: %s.", full_path + ".model")
+        logger.info("Optimizer state dict saved in path: %s.", full_path + ".optimizer")
 
     def __getstate__(self):
         """
@@ -453,15 +494,15 @@ class PyTorchClassifier(ClassifierNeuralNetwork, ClassifierGradients, Classifier
         # pylint: disable=W0212
         # disable pylint because access to _model required
         state = self.__dict__.copy()
-        state['inner_model'] = copy.copy(state['_model']._model)
+        state["inner_model"] = copy.copy(state["_model"]._model)
 
         # Remove the unpicklable entries
-        del state['_model_wrapper']
-        del state['_device']
-        del state['_model']
+        del state["_model_wrapper"]
+        del state["_device"]
+        del state["_model"]
 
         model_name = str(time.time())
-        state['model_name'] = model_name
+        state["model_name"] = model_name
         self.save(model_name)
 
         return state
@@ -481,9 +522,9 @@ class PyTorchClassifier(ClassifierNeuralNetwork, ClassifierGradients, Classifier
         from art.config import ART_DATA_PATH
 
         # Recover model
-        full_path = os.path.join(ART_DATA_PATH, state['model_name'])
-        model = state['inner_model']
-        model.load_state_dict(torch.load(str(full_path) + '.model'))
+        full_path = os.path.join(ART_DATA_PATH, state["model_name"])
+        model = state["inner_model"]
+        model.load_state_dict(torch.load(str(full_path) + ".model"))
         model.eval()
         self._model = self._make_model_wrapper(model)
 
@@ -492,17 +533,29 @@ class PyTorchClassifier(ClassifierNeuralNetwork, ClassifierGradients, Classifier
         self._model.to(self._device)
 
         # Recover optimizer
-        self._optimizer.load_state_dict(torch.load(str(full_path) + '.optimizer'))
+        self._optimizer.load_state_dict(torch.load(str(full_path) + ".optimizer"))
 
-        self.__dict__.pop('model_name', None)
-        self.__dict__.pop('inner_model', None)
+        self.__dict__.pop("model_name", None)
+        self.__dict__.pop("inner_model", None)
 
     def __repr__(self):
-        repr_ = "%s(model=%r, loss=%r, optimizer=%r, input_shape=%r, nb_classes=%r, " \
-                "channel_index=%r, clip_values=%r, defences=%r, preprocessing=%r)" \
-                % (self.__module__ + '.' + self.__class__.__name__,
-                   self._model, self._loss, self._optimizer, self._input_shape, self.nb_classes(),
-                   self.channel_index, self.clip_values, self.defences, self.preprocessing)
+        repr_ = (
+            "%s(model=%r, loss=%r, optimizer=%r, input_shape=%r, nb_classes=%r, channel_index=%r, "
+            "clip_values=%r, preprocessing_defences=%r, postprocessing_defences=%r, preprocessing=%r)"
+            % (
+                self.__module__ + "." + self.__class__.__name__,
+                self._model,
+                self._loss,
+                self._optimizer,
+                self._input_shape,
+                self.nb_classes(),
+                self.channel_index,
+                self.clip_values,
+                self.preprocessing_defences,
+                self.postprocessing_defences,
+                self.preprocessing,
+            )
+        )
 
         return repr_
 
@@ -512,7 +565,7 @@ class PyTorchClassifier(ClassifierNeuralNetwork, ClassifierGradients, Classifier
             import torch.nn as nn
 
             # Define model wrapping class only if not defined before
-            if not hasattr(self, '_model_wrapper'):
+            if not hasattr(self, "_model_wrapper"):
 
                 class ModelWrapper(nn.Module):
                     """
@@ -588,7 +641,7 @@ class PyTorchClassifier(ClassifierNeuralNetwork, ClassifierGradients, Classifier
 
                         else:
                             raise TypeError("The input model must inherit from `nn.Module`.")
-                        logger.info('Inferred %i hidden layers on PyTorch classifier.', len(result))
+                        logger.info("Inferred %i hidden layers on PyTorch classifier.", len(result))
 
                         return result
 
@@ -599,4 +652,4 @@ class PyTorchClassifier(ClassifierNeuralNetwork, ClassifierGradients, Classifier
             return self._model_wrapper(model)
 
         except ImportError:
-            raise ImportError('Could not find PyTorch (`torch`) installation.')
+            raise ImportError("Could not find PyTorch (`torch`) installation.")

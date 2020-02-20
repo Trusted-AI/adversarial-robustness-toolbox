@@ -74,7 +74,7 @@ class RandomizedSmoothing(ClassifierWrapper, ClassifierGradients, Classifier):
         """
         from scipy.stats import binom_test
 
-        logger.info('Applying randomized smoothing.')
+        logger.info("Applying randomized smoothing.")
         n_abstained = 0
         prediction = []
         for x_i in x:
@@ -94,7 +94,7 @@ class RandomizedSmoothing(ClassifierWrapper, ClassifierGradients, Classifier):
 
             prediction.append(smooth_prediction)
         if n_abstained > 0:
-            print('%s prediction(s) abstained.' % n_abstained)
+            print("%s prediction(s) abstained." % n_abstained)
         return np.array(prediction)
 
     def loss_gradient(self, x, y, **kwargs):
@@ -108,7 +108,7 @@ class RandomizedSmoothing(ClassifierWrapper, ClassifierGradients, Classifier):
         :return: Array of gradients of the same shape as `x`.
         :rtype: `np.ndarray`
         """
-        logger.info('Applying randomized smoothing.')
+        logger.info("Applying randomized smoothing.")
         return self.classifier.loss_gradient(x, y)
 
     def class_gradient(self, x, label=None, **kwargs):
@@ -127,7 +127,7 @@ class RandomizedSmoothing(ClassifierWrapper, ClassifierGradients, Classifier):
                  `(batch_size, 1, input_shape)` when `label` parameter is specified.
         :rtype: `np.ndarray`
         """
-        logger.info('Apply randomized smoothing.')
+        logger.info("Apply randomized smoothing.")
         return self.classifier.class_gradient(x, label)
 
     def certify(self, x, n):

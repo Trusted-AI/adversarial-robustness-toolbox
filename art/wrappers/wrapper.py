@@ -25,7 +25,8 @@ class ClassifierWrapper:
     """
     Wrapper class for any classifier instance.
     """
-    attack_params = ['classifier']
+
+    attack_params = ["classifier"]
 
     def __init__(self, classifier):
         """
@@ -46,7 +47,7 @@ class ClassifierWrapper:
         """
         A generic grab-bag for the classifier instance. This makes the wrapped class look like a subclass.
         """
-        if attr == 'classifier':
+        if attr == "classifier":
             object.__setattr__(self, attr, value)
         else:
             setattr(self.classifier, attr, value)

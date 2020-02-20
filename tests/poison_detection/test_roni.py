@@ -27,11 +27,13 @@ from art.attacks import PoisoningAttackSVM
 from art.classifiers import SklearnClassifier
 from art.classifiers.scikitlearn import ScikitlearnSVC
 from art.poison_detection.roni import RONIDefense
-from art.utils import load_mnist, master_seed
+from art.utils import load_mnist
+
+from tests.utils import master_seed
 
 logger = logging.getLogger(__name__)
 
-NB_TRAIN, NB_POISON, NB_VALID, NB_TRUSTED = 40, 5, 40, 25
+NB_TRAIN, NB_POISON, NB_VALID, NB_TRUSTED = 40, 5, 40, 15
 kernel = 'linear'
 
 
@@ -39,7 +41,7 @@ class TestRONI(unittest.TestCase):
 
     @classmethod
     def setUpClass(cls):
-        master_seed(301)
+        master_seed(seed=1234)
         (x_train, y_train), (x_test, y_test), min_, max_ = load_mnist()
         y_train = np.argmax(y_train, axis=1)
         y_test = np.argmax(y_test, axis=1)
@@ -78,7 +80,7 @@ class TestRONI(unittest.TestCase):
         x_test = x_test[NB_VALID:]
         y_test = y_test[NB_VALID:]
 
-        no_defense = ScikitlearnSVC(model=SVC(kernel=kernel), clip_values=(min_, max_))
+        no_defense = ScikitlearnSVC(model=SVC(kernel=kernel, gamma='auto'), clip_values=(min_, max_))
         no_defense.fit(x=x_train, y=y_train)
         poison_points = np.random.randint(no_defense._model.support_vectors_.shape[0], size=NB_POISON)
         all_poison_init = np.copy(no_defense._model.support_vectors_[poison_points])
@@ -93,7 +95,7 @@ class TestRONI(unittest.TestCase):
         all_data = np.vstack([x_train, poisoned_data])
         all_labels = np.vstack([y_train, poison_labels])
 
-        model = SVC(kernel=kernel)
+        model = SVC(kernel=kernel, gamma='auto')
         cls.mnist = (all_data, all_labels), (x_test, y_test), (trusted_data, trusted_labels), \
                     (valid_data, valid_labels), (min_, max_)
         cls.classifier = SklearnClassifier(model=model, clip_values=(min_, max_))
@@ -105,8 +107,7 @@ class TestRONI(unittest.TestCase):
                                          calibrated=False)
 
     def setUp(self):
-        # Set master seed
-        master_seed(301)
+        master_seed(seed=1234)
 
     def test_wrong_parameters_1(self):
         self.assertRaises(ValueError, self.defence_no_cal.set_params, eps=-2.0)

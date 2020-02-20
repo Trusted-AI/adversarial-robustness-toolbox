@@ -34,7 +34,7 @@ logger = logging.getLogger(__name__)
 if sys.version_info >= (3, 4):
     ABC = abc.ABC
 else:
-    ABC = abc.ABCMeta(str('ABC'), (), {})
+    ABC = abc.ABCMeta(str("ABC"), (), {})
 
 
 class DataGenerator(ABC):
@@ -134,7 +134,7 @@ class PyTorchDataGenerator(DataGenerator):
         from torch.utils.data import DataLoader
 
         if not isinstance(data_loader, DataLoader):
-            raise TypeError('Expected instance of PyTorch `DataLoader, received %s instead.`' % str(type(data_loader)))
+            raise TypeError("Expected instance of PyTorch `DataLoader, received %s instead.`" % str(type(data_loader)))
 
         self.data_loader = data_loader
 
@@ -176,7 +176,7 @@ class MXDataGenerator(DataGenerator):
         from mxnet.gluon.data import DataLoader
 
         if not isinstance(data_loader, DataLoader):
-            raise TypeError('Expected instance of Gluon `DataLoader, received %s instead.`' % str(type(data_loader)))
+            raise TypeError("Expected instance of Gluon `DataLoader, received %s instead.`" % str(type(data_loader)))
 
         self.data_loader = data_loader
 
@@ -223,8 +223,10 @@ class TFDataGenerator(DataGenerator):
         """
         # pylint: disable=E0401
         import tensorflow as tf
-        if tf.__version__[0] == '2':
+
+        if tf.__version__[0] == "2":
             import tensorflow.compat.v1 as tf
+
             tf.disable_eager_execution()
 
         super(TFDataGenerator, self).__init__(size=size, batch_size=batch_size)
@@ -236,13 +238,13 @@ class TFDataGenerator(DataGenerator):
         if not isinstance(iterator, tf.data.Iterator):
             raise TypeError("Only support object tf.data.Iterator")
 
-        if iterator_type == 'initializable':
+        if iterator_type == "initializable":
             if not isinstance(iterator_arg, dict):
                 raise TypeError("Need to pass a dictionary for iterator type %s" % iterator_type)
-        elif iterator_type == 'reinitializable':
+        elif iterator_type == "reinitializable":
             if not isinstance(iterator_arg, tf.Operation):
-                raise TypeError("Need to pass a tensorflow operation for iterator type %s" % iterator_type)
-        elif iterator_type == 'feedable':
+                raise TypeError("Need to pass a TensorFlow operation for iterator type %s" % iterator_type)
+        elif iterator_type == "feedable":
             if not isinstance(iterator_arg, tuple):
                 raise TypeError("Need to pass a tuple for iterator type %s" % iterator_type)
         else:
@@ -264,15 +266,15 @@ class TFDataGenerator(DataGenerator):
 
         # Process to get the batch
         try:
-            if self.iterator_type in ('initializable', 'reinitializable'):
+            if self.iterator_type in ("initializable", "reinitializable"):
                 return self.sess.run(next_batch)
             return self.sess.run(next_batch, feed_dict=self.iterator_arg[1])
         except (tf.errors.FailedPreconditionError, tf.errors.OutOfRangeError):
-            if self.iterator_type == 'initializable':
+            if self.iterator_type == "initializable":
                 self.sess.run(self.iterator.initializer, feed_dict=self.iterator_arg)
                 return self.sess.run(next_batch)
 
-            if self.iterator_type == 'reinitializable':
+            if self.iterator_type == "reinitializable":
                 self.sess.run(self.iterator_arg)
                 return self.sess.run(next_batch)
 
