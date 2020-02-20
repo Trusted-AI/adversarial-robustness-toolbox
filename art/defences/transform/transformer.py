@@ -33,6 +33,9 @@ class Transformer(abc.ABC):
     def __init__(self, classifier):
         """
         Create a transformation object.
+
+        :param classifier: A trained classifier.
+        :type classifier: :class:`.Classifier`
         """
         self.classifier = classifier
         self._is_fitted = False
