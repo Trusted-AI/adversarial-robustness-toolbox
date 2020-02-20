@@ -100,7 +100,6 @@ class PixelThreshold(EvasionAttack):
             self.img_cols = self.classifier.input_shape[-2]
             self.img_channels = self.classifier.input_shape[-1]
 
-
     def set_params(self, **kwargs):
         """
         Take in a dictionary of parameters and applies attack-specific checks
