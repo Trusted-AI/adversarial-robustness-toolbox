@@ -25,14 +25,14 @@ import numpy as np
 from art.attacks import FastGradientMethod, DeepFool
 from art.data_generators import DataGenerator
 from art.defences import AdversarialTrainer
-<<<<<<< HEAD
-from art.utils import load_mnist, master_seed
-from tests.utils_test import get_image_classifier_tf
-=======
+
+from art.utils import load_mnist
+from tests.utils_test import get_image_classifier_tf, master_seed
+
 from art.utils import load_mnist
 
-from tests.utils_test import master_seed, get_classifier_tf
->>>>>>> dev_1.2.0
+from tests.utils_test import master_seed
+
 
 logger = logging.getLogger(__name__)
 

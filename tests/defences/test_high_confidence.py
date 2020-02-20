@@ -20,15 +20,13 @@ import unittest
 
 import numpy as np
 
-<<<<<<< HEAD:tests/wrappers/test_output_high_confidence.py
-from art.utils import load_dataset, master_seed
-from tests.utils_test import get_image_classifier_kr_tf, get_image_classifier_kr_tf_binary
-from art.wrappers.output_high_confidence import OutputHighConfidence
-=======
+
+from art.utils import load_dataset
+from tests.utils_test import get_image_classifier_kr_tf, get_image_classifier_kr_tf_binary, master_seed
 from art.defences import HighConfidence
 from art.utils import load_dataset
 from tests.utils_test import master_seed, get_classifier_kr_tf, get_classifier_kr_tf_binary
->>>>>>> dev_1.2.0:tests/defences/test_high_confidence.py
+
 
 logger = logging.getLogger(__name__)
 
@@ -51,15 +49,12 @@ class TestHighConfidence(unittest.TestCase):
         Test with cutoff of 0.1.
         """
         (_, _), (x_test, _) = self.mnist
-<<<<<<< HEAD:tests/wrappers/test_output_high_confidence.py
+
         classifier = get_image_classifier_kr_tf()
-        wrapped_classifier = OutputHighConfidence(classifier=classifier, cutoff=0.1)
-=======
-        classifier = get_classifier_kr_tf()
         preds = classifier.predict(x_test[0:1])
         postprocessor = HighConfidence(cutoff=0.1)
         post_preds = postprocessor(preds=preds)
->>>>>>> dev_1.2.0:tests/defences/test_high_confidence.py
+
 
         classifier_prediction_expected = np.asarray([[0.12109935, 0.0498215, 0.0993958, 0.06410096, 0.11366928,
                                                       0.04645343, 0.06419807, 0.30685693, 0.07616714, 0.05823757]],
@@ -75,15 +70,12 @@ class TestHighConfidence(unittest.TestCase):
         Test with cutoff of 0.2.
         """
         (_, _), (x_test, _) = self.mnist
-<<<<<<< HEAD:tests/wrappers/test_output_high_confidence.py
+
         classifier = get_image_classifier_kr_tf()
-        wrapped_classifier = OutputHighConfidence(classifier=classifier, cutoff=0.2)
-=======
-        classifier = get_classifier_kr_tf()
         preds = classifier.predict(x_test[0:1])
         postprocessor = HighConfidence(cutoff=0.2)
         post_preds = postprocessor(preds=preds)
->>>>>>> dev_1.2.0:tests/defences/test_high_confidence.py
+
 
         classifier_prediction_expected = np.asarray([[0.12109935, 0.0498215, 0.0993958, 0.06410096, 0.11366928,
                                                       0.04645343, 0.06419807, 0.30685693, 0.07616714, 0.05823757]],
@@ -99,15 +91,12 @@ class TestHighConfidence(unittest.TestCase):
         Test with cutoff of 0.5 for binary classifier.
         """
         (_, _), (x_test, _) = self.mnist
-<<<<<<< HEAD:tests/wrappers/test_output_high_confidence.py
+
         classifier = get_image_classifier_kr_tf_binary()
-        wrapped_classifier = OutputHighConfidence(classifier=classifier, cutoff=0.5)
-=======
-        classifier = get_classifier_kr_tf_binary()
         preds = classifier.predict(x_test[0:1])
         postprocessor = HighConfidence(cutoff=0.5)
         post_preds = postprocessor(preds=preds)
->>>>>>> dev_1.2.0:tests/defences/test_high_confidence.py
+
 
         classifier_prediction_expected = np.asarray([[0.5301345]], dtype=np.float32)
         post_classifier_prediction_expected = np.asarray([[0.5301345]], dtype=np.float32)
@@ -120,15 +109,11 @@ class TestHighConfidence(unittest.TestCase):
         Test with cutoff of 0.6 for binary classifier.
         """
         (_, _), (x_test, _) = self.mnist
-<<<<<<< HEAD:tests/wrappers/test_output_high_confidence.py
+
         classifier = get_image_classifier_kr_tf_binary()
-        wrapped_classifier = OutputHighConfidence(classifier=classifier, cutoff=0.6)
-=======
-        classifier = get_classifier_kr_tf_binary()
         preds = classifier.predict(x_test[0:1])
         postprocessor = HighConfidence(cutoff=0.6)
         post_preds = postprocessor(preds=preds)
->>>>>>> dev_1.2.0:tests/defences/test_high_confidence.py
 
         classifier_prediction_expected = np.asarray([[0.5301345]], dtype=np.float32)
         post_classifier_prediction_expected = np.asarray([[0.0]], dtype=np.float32)

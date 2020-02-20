@@ -26,15 +26,14 @@ import numpy as np
 from art.attacks.evasion.fast_gradient import FastGradientMethod
 from art.classifiers import KerasClassifier
 from art.defences import FeatureSqueezing
-<<<<<<< HEAD
-from art.utils import load_dataset, get_labels_np_array, master_seed
-from tests.utils_test import get_image_classifier_kr, get_tabular_classifier_kr
-=======
+
+from tests.utils_test import get_image_classifier_kr, get_tabular_classifier_kr, master_seed
+
 from art.utils import load_dataset, get_labels_np_array
->>>>>>> dev_1.2.0
+
 from art.wrappers.query_efficient_bb import QueryEfficientBBGradientEstimation
 
-from tests.utils_test import master_seed, get_classifier_kr, get_iris_classifier_kr
+from tests.utils_test import master_seed
 
 logger = logging.getLogger(__name__)
 

@@ -20,15 +20,13 @@ import unittest
 
 import numpy as np
 
-<<<<<<< HEAD:tests/wrappers/test_output_class_labels.py
-from art.utils import load_dataset, master_seed
+
 from tests.utils_test import get_image_classifier_kr_tf, get_image_classifier_kr_tf_binary
-from art.wrappers.output_class_labels import OutputClassLabels
-=======
+
 from art.utils import load_dataset
 from art.defences import ClassLabels
-from tests.utils_test import master_seed, get_classifier_kr_tf, get_classifier_kr_tf_binary
->>>>>>> dev_1.2.0:tests/defences/test_class_labels.py
+from tests.utils_test import master_seed
+
 
 logger = logging.getLogger(__name__)
 
@@ -51,15 +49,12 @@ class TestClassLabels(unittest.TestCase):
         Test class labels.
         """
         (_, _), (x_test, _) = self.mnist
-<<<<<<< HEAD:tests/wrappers/test_output_class_labels.py
+
         classifier = get_image_classifier_kr_tf()
-        wrapped_classifier = OutputClassLabels(classifier=classifier)
-=======
-        classifier = get_classifier_kr_tf()
         preds = classifier.predict(x_test[0:1])
         postprocessor = ClassLabels()
         post_preds = postprocessor(preds=preds)
->>>>>>> dev_1.2.0:tests/defences/test_class_labels.py
+
 
         classifier_prediction_expected = np.asarray([[0.12109935, 0.0498215, 0.0993958, 0.06410096, 0.11366928,
                                                       0.04645343, 0.06419807, 0.30685693, 0.07616714, 0.05823757]],
@@ -75,15 +70,12 @@ class TestClassLabels(unittest.TestCase):
         Test class labels for binary classifier.
         """
         (_, _), (x_test, _) = self.mnist
-<<<<<<< HEAD:tests/wrappers/test_output_class_labels.py
+
         classifier = get_image_classifier_kr_tf_binary()
-        wrapped_classifier = OutputClassLabels(classifier=classifier)
-=======
-        classifier = get_classifier_kr_tf_binary()
         preds = classifier.predict(x_test[0:1])
         postprocessor = ClassLabels()
         post_preds = postprocessor(preds=preds)
->>>>>>> dev_1.2.0:tests/defences/test_class_labels.py
+
 
         classifier_prediction_expected = np.asarray([[0.5301345]], dtype=np.float32)
         post_classifier_prediction_expected = np.asarray([[1.0]], dtype=np.float32)

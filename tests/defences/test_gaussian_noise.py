@@ -20,15 +20,14 @@ import unittest
 
 import numpy as np
 
-<<<<<<< HEAD:tests/wrappers/test_output_add_random_noise.py
-from art.utils import load_dataset, master_seed
+
+from art.utils import load_dataset
 from tests.utils_test import get_image_classifier_kr_tf, get_image_classifier_kr_tf_binary
-from art.wrappers.output_add_random_noise import OutputRandomNoise
-=======
+
 from art.defences.postprocess import GaussianNoise
 from art.utils import load_dataset
-from tests.utils_test import master_seed, get_classifier_kr_tf, get_classifier_kr_tf_binary
->>>>>>> dev_1.2.0:tests/defences/test_gaussian_noise.py
+from tests.utils_test import master_seed
+
 
 logger = logging.getLogger(__name__)
 
@@ -51,15 +50,12 @@ class TestGaussianNoise(unittest.TestCase):
         Test Gaussian noise.
         """
         (_, _), (x_test, _) = self.mnist
-<<<<<<< HEAD:tests/wrappers/test_output_add_random_noise.py
+
         classifier = get_image_classifier_kr_tf()
-        wrapped_classifier = OutputRandomNoise(classifier=classifier, scale=0.1)
-=======
-        classifier = get_classifier_kr_tf()
         preds = classifier.predict(x_test[0:1])
         postprocessor = GaussianNoise(scale=0.1)
         post_preds = postprocessor(preds=preds)
->>>>>>> dev_1.2.0:tests/defences/test_gaussian_noise.py
+
 
         classifier_prediction_expected = np.asarray([[0.12109935, 0.0498215, 0.0993958, 0.06410096, 0.11366928,
                                                       0.04645343, 0.06419807, 0.30685693, 0.07616714, 0.05823757]],
@@ -76,15 +72,12 @@ class TestGaussianNoise(unittest.TestCase):
         Test Gaussian noise for binary classifier.
         """
         (_, _), (x_test, _) = self.mnist
-<<<<<<< HEAD:tests/wrappers/test_output_add_random_noise.py
+
         classifier = get_image_classifier_kr_tf_binary()
-        wrapped_classifier = OutputRandomNoise(classifier=classifier, scale=0.1)
-=======
-        classifier = get_classifier_kr_tf_binary()
         preds = classifier.predict(x_test[0:1])
         postprocessor = GaussianNoise(scale=0.1)
         post_preds = postprocessor(preds=preds)
->>>>>>> dev_1.2.0:tests/defences/test_gaussian_noise.py
+
 
         classifier_prediction_expected = np.asarray([[0.5301345]], dtype=np.float32)
         post_classifier_prediction_expected = np.asarray([[0.577278]], dtype=np.float32)

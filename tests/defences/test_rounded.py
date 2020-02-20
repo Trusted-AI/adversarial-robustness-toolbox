@@ -20,15 +20,12 @@ import unittest
 
 import numpy as np
 
-<<<<<<< HEAD:tests/wrappers/test_output_rounded.py
-from art.utils import load_dataset, master_seed
 from tests.utils_test import get_image_classifier_kr
-from art.wrappers.output_rounded import OutputRounded
-=======
+
 from art.defences import Rounded
 from art.utils import load_dataset
-from tests.utils_test import master_seed, get_classifier_kr
->>>>>>> dev_1.2.0:tests/defences/test_rounded.py
+from tests.utils_test import master_seed
+
 
 logger = logging.getLogger(__name__)
 
