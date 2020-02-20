@@ -28,6 +28,7 @@ from __future__ import absolute_import, division, print_function, unicode_litera
 import logging
 
 import numpy as np
+from scipy.stats import truncnorm
 
 from art.config import ART_NUMPY_DTYPE
 from art.classifiers.classifier import ClassifierGradients
@@ -46,10 +47,21 @@ class ProjectedGradientDescent(FastGradientMethod):
 
     | Paper link: https://arxiv.org/abs/1706.06083
     """
-    attack_params = FastGradientMethod.attack_params + ['max_iter']
 
-    def __init__(self, classifier, norm=np.inf, eps=0.3, eps_step=0.1, max_iter=100, targeted=False, num_random_init=0,
-                 batch_size=1):
+    attack_params = FastGradientMethod.attack_params + ["max_iter", "random_eps"]
+
+    def __init__(
+        self,
+        classifier,
+        norm=np.inf,
+        eps=0.3,
+        eps_step=0.1,
+        max_iter=100,
+        targeted=False,
+        num_random_init=0,
+        batch_size=1,
+        random_eps=False,
+    ):
         """
         Create a :class:`.ProjectedGradientDescent` instance.
 
@@ -61,6 +73,11 @@ class ProjectedGradientDescent(FastGradientMethod):
         :type eps: `float`
         :param eps_step: Attack step size (input variation) at each iteration.
         :type eps_step: `float`
+        :param random_eps: When True, epsilon is drawn randomly from truncated normal distribution. The literature
+                           suggests this for FGSM based training to generalize across different epsilons. eps_step
+                           is modified to preserve the ratio of eps / eps_step. The effectiveness of this
+                           method with PGD is untested (https://arxiv.org/pdf/1611.01236.pdf).
+        :type random_eps: `bool`
         :param max_iter: The maximum number of iterations.
         :type max_iter: `int`
         :param targeted: Indicates whether the attack is targeted (True) or untargeted (False)
@@ -71,17 +88,34 @@ class ProjectedGradientDescent(FastGradientMethod):
         :param batch_size: Size of the batch on which adversarial samples are generated.
         :type batch_size: `int`
         """
-        super(ProjectedGradientDescent, self).__init__(classifier, norm=norm, eps=eps, eps_step=eps_step,
-                                                       targeted=targeted, num_random_init=num_random_init,
-                                                       batch_size=batch_size, minimal=False)
+        super(ProjectedGradientDescent, self).__init__(
+            classifier,
+            norm=norm,
+            eps=eps,
+            eps_step=eps_step,
+            targeted=targeted,
+            num_random_init=num_random_init,
+            batch_size=batch_size,
+            minimal=False,
+        )
         if not isinstance(classifier, ClassifierGradients):
-            raise (TypeError('For `' + self.__class__.__name__ + '` classifier must be an instance of '
-                             '`art.classifiers.classifier.ClassifierGradients`, the provided classifier is instance of '
-                             + str(classifier.__class__.__bases__) + '. '
-                             ' The classifier needs to provide gradients.'))
+            raise (
+                TypeError(
+                    "For `" + self.__class__.__name__ + "` classifier must be an instance of "
+                    "`art.classifiers.classifier.ClassifierGradients`, the provided classifier is instance of "
+                    + str(classifier.__class__.__bases__)
+                    + ". "
+                    " The classifier needs to provide gradients."
+                )
+            )
 
-        kwargs = {'max_iter': max_iter}
+        kwargs = {"max_iter": max_iter, "random_eps": random_eps}
         ProjectedGradientDescent.set_params(self, **kwargs)
+
+        if self.random_eps:
+            lower, upper = 0, eps
+            mu, sigma = 0, (eps / 2)
+            self.norm_dist = truncnorm((lower - mu) / sigma, (upper - mu) / sigma, loc=mu, scale=sigma)
 
         self._project = True
 
@@ -104,7 +138,7 @@ class ProjectedGradientDescent(FastGradientMethod):
         if y is None:
             # Throw error if attack is targeted, but no targets are provided
             if self.targeted:
-                raise ValueError('Target labels `y` need to be provided for a targeted attack.')
+                raise ValueError("Target labels `y` need to be provided for a targeted attack.")
 
             # Use model predictions as correct outputs
             targets = get_labels_np_array(self.classifier.predict(x, batch_size=self.batch_size))
@@ -114,24 +148,41 @@ class ProjectedGradientDescent(FastGradientMethod):
         adv_x_best = None
         rate_best = None
 
+        if self.random_eps:
+            ratio = self.eps_step / self.eps
+            self.eps = np.round(self.norm_dist.rvs(1)[0], 10)
+            self.eps_step = ratio * self.eps
+
         for _ in range(max(1, self.num_random_init)):
             adv_x = x.astype(ART_NUMPY_DTYPE)
 
             for i_max_iter in range(self.max_iter):
-                adv_x = self._compute(adv_x, x, targets, self.eps, self.eps_step, self._project,
-                                      self.num_random_init > 0 and i_max_iter == 0)
+                adv_x = self._compute(
+                    adv_x,
+                    x,
+                    targets,
+                    self.eps,
+                    self.eps_step,
+                    self._project,
+                    self.num_random_init > 0 and i_max_iter == 0,
+                )
 
             if self.num_random_init > 1:
-                rate = 100 * compute_success(self.classifier, x, targets, adv_x,
-                                             self.targeted, batch_size=self.batch_size)
+                rate = 100 * compute_success(
+                    self.classifier, x, targets, adv_x, self.targeted, batch_size=self.batch_size
+                )
                 if rate_best is None or rate > rate_best or adv_x_best is None:
                     rate_best = rate
                     adv_x_best = adv_x
             else:
                 adv_x_best = adv_x
 
-        logger.info('Success rate of attack: %.2f%%', rate_best if rate_best is not None else
-                    100 * compute_success(self.classifier, x, y, adv_x_best, self.targeted, batch_size=self.batch_size))
+        logger.info(
+            "Success rate of attack: %.2f%%",
+            rate_best
+            if rate_best is not None
+            else 100 * compute_success(self.classifier, x, y, adv_x_best, self.targeted, batch_size=self.batch_size),
+        )
 
         return adv_x_best
 
@@ -155,9 +206,9 @@ class ProjectedGradientDescent(FastGradientMethod):
         super(ProjectedGradientDescent, self).set_params(**kwargs)
 
         if self.eps_step > self.eps:
-            raise ValueError('The iteration step `eps_step` has to be smaller than the total attack `eps`.')
+            raise ValueError("The iteration step `eps_step` has to be smaller than the total attack `eps`.")
 
         if self.max_iter <= 0:
-            raise ValueError('The number of iterations `max_iter` has to be a positive integer.')
+            raise ValueError("The number of iterations `max_iter` has to be a positive integer.")
 
         return True

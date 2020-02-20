@@ -43,10 +43,10 @@ def create_sprite(images):
     shape = np.shape(images)
 
     if len(shape) < 3 or len(shape) > 4:
-        raise ValueError('Images provided for sprite have wrong dimensions ' + str(len(shape)))
+        raise ValueError("Images provided for sprite have wrong dimensions " + str(len(shape)))
 
     if len(shape) == 3:
-        # Check to see if it's mnist type of images and add axis to show image is gray-scale
+        # Check to see if it's MNIST type of images and add axis to show image is gray-scale
         images = np.expand_dims(images, axis=3)
         shape = np.shape(images)
 
@@ -56,7 +56,7 @@ def create_sprite(images):
 
     n = int(np.ceil(np.sqrt(images.shape[0])))
     padding = ((0, n ** 2 - images.shape[0]), (0, 0), (0, 0)) + ((0, 0),) * (images.ndim - 3)
-    images = np.pad(images, padding, mode='constant', constant_values=0)
+    images = np.pad(images, padding, mode="constant", constant_values=0)
 
     # Tile the individual thumbnails into an image
     images = images.reshape((n, n) + images.shape[1:]).transpose((0, 2, 1, 3) + tuple(range(4, images.ndim + 1)))
@@ -78,7 +78,7 @@ def convert_to_rgb(images):
     """
     dims = np.shape(images)
     if not ((len(dims) == 4 and dims[-1] == 1) or len(dims) == 3):
-        raise ValueError('Unexpected shape for grayscale images:' + str(dims))
+        raise ValueError("Unexpected shape for grayscale images:" + str(dims))
 
     if dims[-1] == 1:
         # Squeeze channel axis if it exists
@@ -106,12 +106,13 @@ def save_image(image_array, f_name):
         os.makedirs(folder)
 
     from PIL import Image
+
     image = Image.fromarray(image_array)
     image.save(file_name)
-    logger.info('Image saved to %s.', file_name)
+    logger.info("Image saved to %s.", file_name)
 
 
-def plot_3d(points, labels, colors=None, save=True, f_name=''):
+def plot_3d(points, labels, colors=None, save=True, f_name=""):
     """
     Generates a 3-D plot in of the provided points where the labels define the color that will be used to color each
     data point. Concretely, the color of points[i] is defined by colors(labels[i]). Thus, there should be as many labels
@@ -142,28 +143,28 @@ def plot_3d(points, labels, colors=None, save=True, f_name=''):
         if colors is None:
             colors = []
             for i in range(len(np.unique(labels))):
-                colors.append('C' + str(i))
+                colors.append("C" + str(i))
         else:
             if len(colors) != len(np.unique(labels)):
-                raise ValueError('The amount of provided colors should match the number of labels in the 3pd plot.')
+                raise ValueError("The amount of provided colors should match the number of labels in the 3pd plot.")
 
         fig = plt.figure()
-        axis = plt.axes(projection='3d')
+        axis = plt.axes(projection="3d")
 
         for i, coord in enumerate(points):
             try:
                 color_point = labels[i]
                 axis.scatter3D(coord[0], coord[1], coord[2], color=colors[color_point])
             except IndexError:
-                raise ValueError('Labels outside the range. Should start from zero and be sequential there after')
+                raise ValueError("Labels outside the range. Should start from zero and be sequential there after")
         if save:
             file_name = os.path.realpath(os.path.join(ART_DATA_PATH, f_name))
             folder = os.path.split(file_name)[0]
 
             if not os.path.exists(folder):
                 os.makedirs(folder)
-            fig.savefig(file_name, bbox_inches='tight')
-            logger.info('3d-plot saved to %s.', file_name)
+            fig.savefig(file_name, bbox_inches="tight")
+            logger.info("3d-plot saved to %s.", file_name)
 
         return fig
     except ImportError:

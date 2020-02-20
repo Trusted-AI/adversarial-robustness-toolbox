@@ -23,15 +23,15 @@ import unittest
 import numpy as np
 
 from art.defences import LabelSmoothing
-from art.utils import master_seed
+
+from tests.utils import master_seed
 
 logger = logging.getLogger(__name__)
 
 
 class TestLabelSmoothing(unittest.TestCase):
     def setUp(self):
-        # Set master seed
-        master_seed(1234)
+        master_seed(seed=1234)
 
     def test_default(self):
         m, n = 1000, 20
