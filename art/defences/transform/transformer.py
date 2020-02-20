@@ -28,7 +28,7 @@ class Transformer(abc.ABC):
     Abstract base class for transformation defences.
     """
 
-    params = ["batch_size", "nb_epochs"]
+    params = list()
 
     def __init__(self, classifier):
         """
@@ -64,15 +64,15 @@ class Transformer(abc.ABC):
     @abc.abstractmethod
     def fit(self, x, y=None, **kwargs):
         """
-        Fit the parameters of the data preprocessor if it has any.
+        Fit the parameters of the transformer if it has any.
 
-        :param x: Training set to fit the preprocessor.
+        :param x: Training set to fit the transformer.
         :type x: `np.ndarray`
         :param y: Labels for the training set.
         :type y: `np.ndarray`
         :param kwargs: Other parameters.
         :type kwargs: `dict`
-        :return: None
+        :return: None.
         """
         raise NotImplementedError
 
@@ -80,7 +80,7 @@ class Transformer(abc.ABC):
         """
         Take in a dictionary of parameters and apply checks before saving them as attributes.
 
-        :return: `True` when parsing was successful
+        :return: `True` when parsing was successful.
         """
         for key, value in kwargs.items():
             if key in self.params:
