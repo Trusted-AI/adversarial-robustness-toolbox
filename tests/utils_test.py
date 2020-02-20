@@ -210,6 +210,7 @@ def deprecated_get_image_classifiers(defended=False):
         else:
             return [classifier]
 
+
     elif os.environ["mlFramework"] == "tensorflow":
         classifier, sess = get_image_classifier_tf()
         return None if defended else [classifier]
