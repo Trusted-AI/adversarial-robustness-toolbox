@@ -27,6 +27,7 @@ import logging
 import numpy as np
 
 from art.defences.transform.transformer import Transformer
+from art.utils import is_probability
 
 logger = logging.getLogger(__name__)
 
@@ -54,14 +55,46 @@ class Distillation(Transformer):
         """
         super(Distillation, self).__init__(classifier=classifier)
 
+        self._is_fitted = True
+
         kwargs = {
             "batch_size": batch_size,
             "nb_epochs": nb_epochs,
         }
         self.set_params(**kwargs)
 
+    def __call__(self, x, modified_classifier):
+        """
+        Perform the transformation defence and return a robust classifier.
 
+        :param x: Dataset for training the modified classifier.
+        :type x: `np.ndarray`
+        :param modified_classifier: A classifier to be modified for robustness. Note that, the objective loss function
+        used for fitting inside the input modified_classifier must support soft labels, i.e. probability labels.
+        :type modified_classifier: :class:`.Classifier`
+        :return: The modified classifier.
+        :rtype: :class:`.Classifier`
+        """
+        # Check if the trained classifier produces probability outputs
+        preds = self.classifier.predict(x=x, batch_size=self.batch_size)
+        are_probability = [is_probability(y) for y in preds]
+        all_probability = np.sum(are_probability) == preds.shape[0]
 
+        if not all_probability:
+            raise ValueError("The input trained classifier do not produce probability outputs.")
+
+        # Check if the modified classifier produces probability outputs
+        modified_preds = modified_classifier.predict(x=x, batch_size=self.batch_size)
+        are_probability = [is_probability(y) for y in modified_preds]
+        all_probability = np.sum(are_probability) == modified_preds.shape[0]
+
+        if not all_probability:
+            raise ValueError("The input modified classifier do not produce probability outputs.")
+
+        # Train the modified classifier with soft labels
+        modified_classifier.fit(x=x, y=preds, batch_size=self.batch_size, nb_epochs=self.nb_epochs)
+
+        return modified_classifier
 
     def set_params(self, **kwargs):
         """
