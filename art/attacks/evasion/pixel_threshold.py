@@ -409,13 +409,13 @@ class ThresholdAttack(PixelThreshold):
         """
         if x.ndim < 2:
             x = np.array([x])
-        imgs = np.tile(img, [len(x)] + [1] * (x.ndim + 1))	
+        imgs = np.tile(img, [len(x)] + [1] * (x.ndim + 1))
         x = x.astype(int)
         for adv, image in zip(x, imgs):
-            for count, (i, j, k) in enumerate(	
-                    product(range(image.shape[-3]), range(image.shape[-2]),	
-                            range(image.shape[-1]))):	
-                image[i, j, k] = adv[count]	
+            for count, (i, j, k) in enumerate(
+                    product(range(image.shape[-3]), range(image.shape[-2]),
+                            range(image.shape[-1]))):
+                image[i, j, k] = adv[count]
         return imgs
 
     def _get_bounds(self, img, limit):
@@ -436,8 +436,8 @@ class ThresholdAttack(PixelThreshold):
 
         minbounds, maxbounds, bounds, initial = [], [], [], []
 
-        for i, j, k in product(range(image.shape[-3]), range(image.shape[-2]),
-                               range(image.shape[-1])):
+        for i, j, k in product(range(img.shape[-3]), range(img.shape[-2]),
+                               range(img.shape[-1])):
             temp = img[i, j, k]
             initial += [temp]
             bound = bound_limit(temp)
