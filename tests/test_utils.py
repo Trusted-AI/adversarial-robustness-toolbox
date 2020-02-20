@@ -28,6 +28,7 @@ from art.utils import load_iris, load_mnist
 from art.utils import second_most_likely_class, random_targets, get_label_conf, get_labels_np_array, preprocess
 from art.utils import segment_by_class, performance_diff
 from art.utils import is_probability
+from art.utils import check_pytorch_loss_param
 
 from tests.utils import master_seed
 logger = logging.getLogger(__name__)
@@ -367,6 +368,15 @@ class TestUtils(unittest.TestCase):
 
         self.assertFalse(is_probability(-x))
         self.assertFalse(is_probability(y))
+
+    def test_check_pytorch_loss_param(self):
+        import torch.nn as nn
+
+        loss = nn.CrossEntropyLoss()
+        self.assertFalse(check_pytorch_loss_param(loss))
+
+        loss = nn.PoissonNLLLoss()
+        self.assertTrue(check_pytorch_loss_param(loss))
 
 
 if __name__ == '__main__':
