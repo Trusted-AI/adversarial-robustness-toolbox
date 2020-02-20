@@ -19,20 +19,13 @@ from __future__ import absolute_import, division, print_function, unicode_litera
 
 import logging
 import unittest
-
 import numpy as np
-
 from art.attacks import FastGradientMethod
 from art.classifiers import KerasClassifier
-<<<<<<< HEAD
-from art.utils import load_dataset, random_targets, master_seed
 from tests.utils_test import get_image_classifier_kr, get_tabular_classifier_kr
-=======
 from art.utils import load_dataset, random_targets
->>>>>>> dev_1.2.0
 from art.wrappers.expectation import ExpectationOverTransformations
-
-from tests.utils_test import master_seed, get_classifier_kr, get_iris_classifier_kr
+from tests.utils_test import master_seed
 
 logger = logging.getLogger(__name__)
 
