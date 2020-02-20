@@ -158,10 +158,14 @@ class PyTorchClassifier(ClassifierNeuralNetwork, ClassifierGradients, Classifier
         :return: `None`
         """
         import torch
+        from art.utils import check_pytorch_loss_param
 
         # Apply preprocessing
         x_preprocessed, y_preprocessed = self._apply_preprocessing(x, y, fit=True)
-        y_preprocessed = np.argmax(y_preprocessed, axis=1)
+
+        # Check label shape
+        if not check_pytorch_loss_param(self._loss):
+            y_preprocessed = np.argmax(y_preprocessed, axis=1)
 
         num_batch = int(np.ceil(len(x_preprocessed) / float(batch_size)))
         ind = np.arange(len(x_preprocessed))
