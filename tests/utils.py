@@ -182,7 +182,7 @@ def get_classifier_tf_v1(from_logits=False, load_init=True, sess=None):
 
     # Define input and output placeholders
     input_ph = tf.placeholder(tf.float32, shape=[None, 28, 28, 1])
-    output_ph = tf.placeholder(tf.int32, shape=[None, 10])
+    output_ph = tf.placeholder(tf.float32, shape=[None, 10])
 
     # Define the TensorFlow graph
     if load_init:

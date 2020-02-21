@@ -18,6 +18,7 @@
 from __future__ import absolute_import, division, print_function, unicode_literals
 
 import logging
+import unittest
 
 import numpy as np
 
@@ -273,7 +274,7 @@ class TestDistillationVectors(TestBase):
         trained_classifier = get_iris_classifier_kr()
 
         # Create the modified classifier
-        modified_classifier, _ = get_iris_classifier_kr(load_init=False)
+        modified_classifier = get_iris_classifier_kr(load_init=False)
 
         # Create distillation transformer
         transformer = Distillation(
@@ -283,13 +284,32 @@ class TestDistillationVectors(TestBase):
         )
 
         # Perform the transformation
-        with self.assertRaises(ValueError) as context:
-            modified_classifier = transformer(
-                x=self.x_train_iris,
-                modified_classifier=modified_classifier
-            )
+        modified_classifier = transformer(
+            x=self.x_train_iris,
+            modified_classifier=modified_classifier
+        )
 
-        self.assertIn('The input trained classifier do not produce probability outputs.', str(context.exception))
+        # Compare the 2 outputs
+        preds1 = trained_classifier.predict(
+            x=self.x_train_iris,
+            batch_size=BATCH_SIZE
+        )
+
+        preds2 = modified_classifier.predict(
+            x=self.x_train_iris,
+            batch_size=BATCH_SIZE
+        )
+
+        preds1 = np.argmax(preds1, axis=1)
+        preds2 = np.argmax(preds2, axis=1)
+        acc = np.sum(preds1 == preds2) / len(preds1)
+
+        self.assertGreater(acc, 0.2)
+
+        ce = cross_entropy(preds1, preds2)
+
+        self.assertLess(ce, 20)
+        self.assertGreaterEqual(ce, 0)
 
     def test_pytorch_iris(self):
         """
@@ -300,7 +320,7 @@ class TestDistillationVectors(TestBase):
         trained_classifier = get_iris_classifier_pt()
 
         # Create the modified classifier
-        modified_classifier, _ = get_iris_classifier_pt(load_init=False)
+        modified_classifier = get_iris_classifier_pt(load_init=False)
 
         # Create distillation transformer
         transformer = Distillation(
@@ -317,3 +337,7 @@ class TestDistillationVectors(TestBase):
             )
 
         self.assertIn('The input trained classifier do not produce probability outputs.', str(context.exception))
+
+
+if __name__ == '__main__':
+    unittest.main()
