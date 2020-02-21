@@ -19,7 +19,7 @@ from __future__ import absolute_import, division, print_function, unicode_litera
 
 import logging
 import unittest
-
+from tests.attacks import utils_attack
 import keras.backend as k
 import numpy as np
 
@@ -253,17 +253,8 @@ class TestHopSkipJump(TestBase):
         # Check that x_test has not been modified by attack and classifier
         self.assertAlmostEqual(float(np.max(np.abs(x_test_original - x_test))), 0.0, delta=0.00001)
 
-    def test_classifier_type_check_fail_classifier(self):
-        # Use a useless test classifier to test basic classifier properties
-        class ClassifierNoAPI:
-            pass
-
-        classifier = ClassifierNoAPI
-        with self.assertRaises(TypeError) as context:
-            _ = HopSkipJump(classifier=classifier)
-
-        self.assertIn('For `HopSkipJump` classifier must be an instance of `art.classifiers.classifier.Classifier`, the'
-                      ' provided classifier is instance of (<class \'object\'>,).', str(context.exception))
+    def test_classifier_type_check_fail(self):
+        utils_attack.backend_test_classifier_type_check_fail(HopSkipJump)
 
     def test_pytorch_resume(self):
         x_test = np.reshape(self.x_test_mnist, (self.x_test_mnist.shape[0], 1, 28, 28)).astype(np.float32)
