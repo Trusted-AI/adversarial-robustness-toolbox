@@ -22,7 +22,8 @@ import unittest
 
 import keras
 import numpy as np
-
+from art import utils
+from art.classifiers.classifier import ClassifierNeuralNetwork, ClassifierGradients, Classifier
 from art.attacks import DeepFool
 from art.classifiers import KerasClassifier
 from art.utils import get_labels_np_array
@@ -188,12 +189,11 @@ class TestDeepFool(TestBase):
             pass
 
         classifier = ClassifierNoAPI
-        with self.assertRaises(TypeError) as context:
+        with self.assertRaises(utils.WrongClassifier) as context:
             _ = DeepFool(classifier=classifier)
 
-        self.assertIn('For `DeepFool` classifier must be an instance of '
-                      '`art.classifiers.classifier.Classifier`, the provided classifier is instance of '
-                      '(<class \'object\'>,).', str(context.exception))
+        assert Classifier in context.exception.class_expected_list
+
 
     def test_classifier_type_check_fail_gradients(self):
         # Use a test classifier not providing gradients required by white-box attack
@@ -201,12 +201,10 @@ class TestDeepFool(TestBase):
         from sklearn.tree import DecisionTreeClassifier
 
         classifier = ScikitlearnDecisionTreeClassifier(model=DecisionTreeClassifier())
-        with self.assertRaises(TypeError) as context:
+        with self.assertRaises(utils.WrongClassifier) as context:
             _ = DeepFool(classifier=classifier)
 
-        self.assertIn('For `DeepFool` classifier must be an instance of '
-                      '`art.classifiers.classifier.ClassifierGradients`, the provided classifier is instance of '
-                      '(<class \'art.classifiers.scikitlearn.ScikitlearnClassifier\'>,).', str(context.exception))
+        assert ClassifierGradients in context.exception.class_expected_list
 
     def test_keras_iris_clipped(self):
         classifier = get_tabular_classifier_kr()
