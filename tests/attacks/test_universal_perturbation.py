@@ -25,6 +25,7 @@ from art.attacks import UniversalPerturbation
 from art.classifiers import KerasClassifier
 from art.classifiers.classifier import Classifier
 from tests.utils_test import TestBase
+from art.classifiers.classifier import ClassifierNeuralNetwork, ClassifierGradients
 from tests.utils_test import get_image_classifier_tf, get_image_classifier_kr, get_image_classifier_pt
 from tests.utils_test import get_tabular_classifier_tf, get_tabular_classifier_kr, get_tabular_classifier_pt
 
@@ -137,7 +138,7 @@ class TestUniversalPerturbation(TestBase):
         with self.assertRaises(utils.WrongClassifier) as context:
             _ = UniversalPerturbation(classifier=classifier)
 
-        assert context.exception.class_expected == Classifier
+        assert context.exception.class_expected_list == Classifier
 
     def test_classifier_type_check_fail_gradients(self):
         # Use a test classifier not providing gradients required by white-box attack
@@ -145,13 +146,13 @@ class TestUniversalPerturbation(TestBase):
         from sklearn.tree import DecisionTreeClassifier
 
         classifier = ScikitlearnDecisionTreeClassifier(model=DecisionTreeClassifier())
-        with self.assertRaises(TypeError) as context:
+
+        with self.assertRaises(utils.WrongClassifier) as context:
             _ = UniversalPerturbation(classifier=classifier)
 
-        self.assertIn('For `UniversalPerturbation` classifier must be an instance of '
-                      '`art.classifiers.classifier.ClassifierNeuralNetwork` and '
-                      '`art.classifiers.classifier.ClassifierGradients`, the provided classifier is instance of '
-                      '(<class \'art.classifiers.scikitlearn.ScikitlearnClassifier\'>,).', str(context.exception))
+        assert ClassifierNeuralNetwork in context.exception.class_expected_list
+        assert ClassifierGradients in context.exception.class_expected_list
+
 
     def test_keras_iris_clipped(self):
         classifier = get_tabular_classifier_kr()

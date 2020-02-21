@@ -58,4 +58,4 @@ def test_classifier_type_check_fail_classifier():
     with pytest.raises(utils.WrongClassifier) as exception:
         _ = BoundaryAttack(classifier=classifier)
 
-    assert exception.value.class_expected == Classifier
+    assert exception.value.class_expected_list == Classifier
