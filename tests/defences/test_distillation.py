@@ -25,6 +25,7 @@ from art.defences import Distillation
 
 from tests.utils import TestBase, master_seed
 from tests.utils import get_classifier_tf, get_classifier_pt, get_classifier_kr
+from tests.utils import get_iris_classifier_tf, get_iris_classifier_kr, get_iris_classifier_pt
 
 logger = logging.getLogger(__name__)
 
@@ -54,7 +55,7 @@ def cross_entropy(prob1, prob2, eps=1e-10):
 
 class TestDistillation(TestBase):
     """
-    A unittest class for testing the Distillation transformer.
+    A unittest class for testing the Distillation transformer on image data.
     """
 
     @classmethod
@@ -213,3 +214,52 @@ class TestDistillation(TestBase):
 
         self.assertLess(ce, 10)
         self.assertGreaterEqual(ce, 0)
+
+
+class TestDistillationVectors(TestBase):
+    """
+    A unittest class for testing the Distillation transformer on vector data.
+    """
+
+    @classmethod
+    def setUpClass(cls):
+        master_seed(seed=1234, set_tensorflow=True)
+        super().setUpClass()
+
+    def setUp(self):
+        master_seed(seed=1234, set_tensorflow=True)
+        super().setUp()
+
+    def test_tensorflow_iris(self):
+        """
+        First test for TensorFlow.
+        :return:
+        """
+        # Create the trained classifier
+        trained_classifier, sess = get_iris_classifier_tf()
+
+        # Create the modified classifier
+        modified_classifier, _ = get_iris_classifier_tf(
+            load_init=False,
+            sess=sess
+        )
+
+        # Create distillation transformer
+        transformer = Distillation(
+            classifier=trained_classifier,
+            batch_size=BATCH_SIZE,
+            nb_epochs=NB_EPOCHS
+        )
+
+        # Perform the transformation
+        with self.assertRaises(ValueError) as context:
+            modified_classifier = transformer(
+                x=self.x_train_iris,
+                modified_classifier=modified_classifier
+            )
+
+        self.assertIn('The input trained classifier do not produce probability outputs.', str(context.exception))
+
+        # Clean-up session
+        if sess is not None:
+            sess.close()
