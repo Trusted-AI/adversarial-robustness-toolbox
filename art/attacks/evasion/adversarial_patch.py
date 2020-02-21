@@ -24,7 +24,7 @@ can be printed into the physical world with a common printer. The patch can be u
 from __future__ import absolute_import, division, print_function, unicode_literals
 
 import logging
-
+from art import utils
 import random
 import numpy as np
 from scipy.ndimage import rotate, shift, zoom
@@ -94,16 +94,8 @@ class AdversarialPatch(EvasionAttack):
         """
         super(AdversarialPatch, self).__init__(classifier=classifier)
         if not isinstance(classifier, ClassifierNeuralNetwork) or not isinstance(classifier, ClassifierGradients):
-            raise (
-                TypeError(
-                    "For `" + self.__class__.__name__ + "` classifier must be an instance of "
-                    "`art.classifiers.classifier.ClassifierNeuralNetwork` and "
-                    "`art.classifiers.classifier.ClassifierGradients`, the provided classifier is instance of "
-                    + str(classifier.__class__.__bases__)
-                    + ". "
-                    " The classifier needs to be a Neural Network and provide gradients."
-                )
-            )
+            raise utils.WrongClassifier(self.__class__, [ClassifierNeuralNetwork, ClassifierGradients], classifier)
+
 
         kwargs = {
             "target": target,

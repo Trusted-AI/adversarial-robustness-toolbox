@@ -19,14 +19,12 @@ from __future__ import absolute_import, division, print_function, unicode_litera
 
 import logging
 import unittest
-
+from art.classifiers.classifier import ClassifierNeuralNetwork, ClassifierGradients, Classifier
 import numpy as np
 from sklearn.tree import DecisionTreeClassifier
-
+from art import utils
 from art.attacks import AdversarialPatch
 from art.classifiers.scikitlearn import ScikitlearnDecisionTreeClassifier
-
-
 from tests.utils_test import TestBase, master_seed
 from tests.utils_test import get_image_classifier_tf, get_image_classifier_kr, get_image_classifier_pt, get_tabular_classifier_kr
 
@@ -127,23 +125,22 @@ class TestAdversarialPatch(TestBase):
             pass
 
         classifier = ClassifierNoAPI
-        with self.assertRaises(TypeError) as context:
+        with self.assertRaises(utils.WrongClassifier) as context:
             _ = AdversarialPatch(classifier=classifier)
 
-        self.assertIn('For `AdversarialPatch` classifier must be an instance of '
-                      '`art.classifiers.classifier.Classifier`, the provided classifier is instance of '
-                      '(<class \'object\'>,).', str(context.exception))
+        assert Classifier in context.exception.class_expected_list
+
+
 
     def test_classifier_type_check_fail_gradients(self):
         # Use a test classifier not providing gradients required by white-box attack
         classifier = ScikitlearnDecisionTreeClassifier(model=DecisionTreeClassifier())
-        with self.assertRaises(TypeError) as context:
+        with self.assertRaises(utils.WrongClassifier) as context:
             _ = AdversarialPatch(classifier=classifier)
 
-        self.assertIn('For `AdversarialPatch` classifier must be an instance of '
-                      '`art.classifiers.classifier.ClassifierNeuralNetwork` and '
-                      '`art.classifiers.classifier.ClassifierGradients`, the provided classifier is instance of '
-                      '(<class \'art.classifiers.scikitlearn.ScikitlearnClassifier\'>,).', str(context.exception))
+        assert ClassifierNeuralNetwork in context.exception.class_expected_list
+        assert ClassifierGradients in context.exception.class_expected_list
+
 
 
 if __name__ == '__main__':
