@@ -25,7 +25,6 @@ import numpy as np
 
 from art.attacks import SpatialTransformation
 
-
 from tests.utils_test import TestBase
 from tests.utils_test import get_image_classifier_tf, get_image_classifier_kr, get_image_classifier_pt, get_tabular_classifier_kr
 
