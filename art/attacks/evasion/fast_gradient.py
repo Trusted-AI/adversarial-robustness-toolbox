@@ -90,13 +90,8 @@ class FastGradientMethod(EvasionAttack):
         super(FastGradientMethod, self).__init__(classifier)
 
         if self.is_valid_classifier_type(classifier) is False:
-        # if not isinstance(classifier, ClassifierGradients):
-            # raise utils.WrongClassifer(self.__class__, Classifier, classifier)
-            raise utils.WrongClassifier(self.__class__, ClassifierGradients, classifier)
-            # raise (TypeError('For `' + self.__class__.__name__ + '` classifier must be an instance of '
-            #                  '`art.classifiers.classifier.ClassifierGradients`, the provided classifier is instance of '
-            #                  + str(classifier.__class__.__bases__) + '. '
-            #                  ' The classifier needs to provide gradients.'))
+            raise utils.WrongClassifier(self.__class__, [ClassifierGradients], classifier)
+
 
         kwargs = {'norm': norm, 'eps': eps, 'eps_step': eps_step, 'targeted': targeted,
                   'num_random_init': num_random_init, 'batch_size': batch_size, 'minimal': minimal}

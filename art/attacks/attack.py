@@ -93,7 +93,7 @@ class Attack(abc.ABC, metaclass=input_filter):
         :type classifier: :class:`.Classifier`
         """
         if not isinstance(classifier, Classifier):
-            raise utils.WrongClassifier(self.__class__, Classifier, classifier)
+            raise utils.WrongClassifier(self.__class__, [Classifier], classifier)
 
         self.classifier = classifier
 

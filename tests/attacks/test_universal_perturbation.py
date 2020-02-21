@@ -138,7 +138,7 @@ class TestUniversalPerturbation(TestBase):
         with self.assertRaises(utils.WrongClassifier) as context:
             _ = UniversalPerturbation(classifier=classifier)
 
-        assert context.exception.class_expected_list == Classifier
+        assert Classifier in context.exception.class_expected_list
 
     def test_classifier_type_check_fail_gradients(self):
         # Use a test classifier not providing gradients required by white-box attack

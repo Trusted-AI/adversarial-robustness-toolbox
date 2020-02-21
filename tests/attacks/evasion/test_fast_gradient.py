@@ -158,7 +158,7 @@ def test_classifier_type_check_fail_gradients():
     with pytest.raises(utils.WrongClassifier) as exception:
         _ = FastGradientMethod(classifier=classifier)
 
-    assert exception.value.class_expected_list == ClassifierGradients
+    assert ClassifierGradients in exception.value.class_expected_list
 
 
 def test_classifier_type_check_fail_classifier():
@@ -171,7 +171,7 @@ def test_classifier_type_check_fail_classifier():
     with pytest.raises(utils.WrongClassifier) as exception:
         _ = FastGradientMethod(classifier=classifier)
 
-    assert exception.value.class_expected_list == Classifier
+    assert Classifier in exception.value.class_expected_list
 
 
 if __name__ == '__main__':
