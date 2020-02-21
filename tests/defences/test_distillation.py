@@ -291,3 +291,29 @@ class TestDistillationVectors(TestBase):
 
         self.assertIn('The input trained classifier do not produce probability outputs.', str(context.exception))
 
+    def test_pytorch_iris(self):
+        """
+        Third test for Pytorch.
+        :return:
+        """
+        # Create the trained classifier
+        trained_classifier = get_iris_classifier_pt()
+
+        # Create the modified classifier
+        modified_classifier, _ = get_iris_classifier_pt(load_init=False)
+
+        # Create distillation transformer
+        transformer = Distillation(
+            classifier=trained_classifier,
+            batch_size=BATCH_SIZE,
+            nb_epochs=NB_EPOCHS
+        )
+
+        # Perform the transformation
+        with self.assertRaises(ValueError) as context:
+            modified_classifier = transformer(
+                x=self.x_train_iris,
+                modified_classifier=modified_classifier
+            )
+
+        self.assertIn('The input trained classifier do not produce probability outputs.', str(context.exception))
