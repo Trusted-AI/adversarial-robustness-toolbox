@@ -34,7 +34,7 @@ from art.config import ART_DATA_PATH
 from art.data_generators import PyTorchDataGenerator
 from art.classifiers import PyTorchClassifier
 
-from tests.utils_test import TestBase, get_image_classifier_pt
+from tests.utils_test import TestBase, get_image_classifier_pt, master_seed
 
 
 logger = logging.getLogger(__name__)

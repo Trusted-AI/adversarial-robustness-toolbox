@@ -22,7 +22,7 @@ import numpy as np
 
 from art.utils import load_dataset
 from art.defences import ReverseSigmoid
-from tests.utils_test import master_seed, get_classifier_kr_tf, get_classifier_kr_tf_binary
+from tests.utils_test import master_seed
 
 logger = logging.getLogger(__name__)
 
