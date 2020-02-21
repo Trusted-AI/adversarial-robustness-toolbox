@@ -24,7 +24,7 @@ import numpy as np
 from art.defences import Distillation
 
 from tests.utils import TestBase, master_seed
-from tests.utils import get_classifier_tf, get_classifier_pt
+from tests.utils import get_classifier_tf, get_classifier_pt, get_classifier_kr
 
 logger = logging.getLogger(__name__)
 
@@ -168,3 +168,48 @@ class TestDistillation(TestBase):
 
         self.x_train_mnist = np.reshape(self.x_train_mnist, (self.x_train_mnist.shape[0], 28, 28, 1)).astype(np.float32)
 
+    def test_keras_classifier(self):
+        """
+        Third test with the KerasClassifier.
+        :return:
+        """
+        # Create the trained classifier
+        trained_classifier = get_classifier_kr()
+
+        # Create the modified classifier
+        modified_classifier = get_classifier_kr(load_init=False)
+
+        # Create distillation transformer
+        transformer = Distillation(
+            classifier=trained_classifier,
+            batch_size=BATCH_SIZE,
+            nb_epochs=NB_EPOCHS
+        )
+
+        # Perform the transformation
+        modified_classifier = transformer(
+            x=self.x_train_mnist,
+            modified_classifier=modified_classifier
+        )
+
+        # Compare the 2 outputs
+        preds1 = trained_classifier.predict(
+            x=self.x_train_mnist,
+            batch_size=BATCH_SIZE
+        )
+
+        preds2 = modified_classifier.predict(
+            x=self.x_train_mnist,
+            batch_size=BATCH_SIZE
+        )
+
+        preds1 = np.argmax(preds1, axis=1)
+        preds2 = np.argmax(preds2, axis=1)
+        acc = np.sum(preds1 == preds2) / len(preds1)
+
+        self.assertGreater(acc, 0.5)
+
+        ce = cross_entropy(preds1, preds2)
+
+        self.assertLess(ce, 10)
+        self.assertGreaterEqual(ce, 0)
