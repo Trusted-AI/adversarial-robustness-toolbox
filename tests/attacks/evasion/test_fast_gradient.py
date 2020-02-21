@@ -25,6 +25,7 @@ from tests.attacks import utils_attack
 import pytest
 from art import utils
 from art.classifiers.classifier import Classifier, ClassifierGradients
+from art.classifiers.classifier import ClassifierNeuralNetwork, ClassifierGradients, Classifier
 from art.classifiers.scikitlearn import ScikitlearnDecisionTreeClassifier
 from sklearn.tree import DecisionTreeClassifier
 
@@ -152,26 +153,8 @@ def test_tabular(get_tabular_classifier_list, get_mlFramework, get_iris_dataset,
             utils_attack.backend_untargeted_tabular(attack, get_iris_dataset, clipped=clipped)
 
 
-def test_classifier_type_check_fail_gradients():
-    # Use a test classifier not providing gradients required by white-box attack
-    classifier = ScikitlearnDecisionTreeClassifier(model=DecisionTreeClassifier())
-    with pytest.raises(utils.WrongClassifier) as exception:
-        _ = FastGradientMethod(classifier=classifier)
-
-    assert ClassifierGradients in exception.value.class_expected_list
-
-
-def test_classifier_type_check_fail_classifier():
-    # Use a useless test classifier to test basic classifier properties
-    class ClassifierNoAPI:
-        pass
-
-    classifier = ClassifierNoAPI
-
-    with pytest.raises(utils.WrongClassifier) as exception:
-        _ = FastGradientMethod(classifier=classifier)
-
-    assert Classifier in exception.value.class_expected_list
+def test_classifier_type_check_fail():
+    utils_attack.backend_test_classifier_type_check_fail(FastGradientMethod, [ClassifierGradients])
 
 
 if __name__ == '__main__':

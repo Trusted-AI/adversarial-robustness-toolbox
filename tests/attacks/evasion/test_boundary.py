@@ -48,14 +48,5 @@ def test_images(fix_get_mnist_subset, get_image_classifier_list_for_attack, get_
             utils_attack.back_end_untargeted_images(attack, fix_get_mnist_subset, get_mlFramework)
 
 
-def test_classifier_type_check_fail_classifier():
-    # Use a useless test classifier to test basic classifier properties
-    class ClassifierNoAPI:
-        pass
-
-    classifier = ClassifierNoAPI
-
-    with pytest.raises(utils.WrongClassifier) as exception:
-        _ = BoundaryAttack(classifier=classifier)
-
-    assert Classifier in exception.value.class_expected_list
+def test_classifier_type_check_fail():
+    utils_attack.backend_test_classifier_type_check_fail(BoundaryAttack)

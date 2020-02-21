@@ -5,6 +5,11 @@ from art import utils
 from tests import utils_test
 import keras.backend as k
 from tests.utils_test import ExpectedValue
+from art import utils
+from art.classifiers.classifier import Classifier, ClassifierGradients
+from art.classifiers.classifier import ClassifierNeuralNetwork, ClassifierGradients, Classifier
+from art.classifiers.scikitlearn import ScikitlearnDecisionTreeClassifier
+from sklearn.tree import DecisionTreeClassifier
 
 logger = logging.getLogger(__name__)
 
@@ -68,6 +73,32 @@ def backend_check_adverse_values(attack, mnist_dataset, expected_values):
     if "y_test_pred_adv_expected" in expected_values:
         np.testing.assert_array_equal(y_test_pred_adv, expected_values["y_test_pred_adv_expected"].value)
 
+def backend_test_classifier_type_check_fail(attack, classifier_expected_list=[], classifier=None):
+    # Use a useless test classifier to test basic classifier properties
+    class ClassifierNoAPI:
+        pass
+
+    noAPIClassifier = ClassifierNoAPI
+    _backend_test_classifier_list_type_check_fail(attack, noAPIClassifier, [Classifier])
+
+    if len(classifier_expected_list) > 0:
+        #Testing additional types of classifiers expected
+        if classifier is None:
+            if ClassifierGradients in classifier_expected_list or ClassifierNeuralNetwork in classifier_expected_list:
+                # Use a test classifier not providing gradients required by white-box attack
+                classifier = ScikitlearnDecisionTreeClassifier(model=DecisionTreeClassifier())
+            else:
+                raise Exception("a test classifier must be provided if classifiers other than ClassifierGradients and ClassifierNeuralNetwork are expected")
+
+        _backend_test_classifier_list_type_check_fail(attack, classifier, classifier_expected_list)
+
+
+def _backend_test_classifier_list_type_check_fail(attack, classifier, classifier_expected_list):
+    with pytest.raises(utils.WrongClassifier) as exception:
+        _ = attack(classifier=classifier)
+
+    for classifier_expected in classifier_expected_list:
+        assert classifier_expected in exception.value.class_expected_list
 
 def backend_targeted_tabular(attack, fix_get_iris):
     (x_train_iris, y_train_iris), (x_test_iris, y_test_iris) = fix_get_iris
