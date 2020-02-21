@@ -24,7 +24,7 @@ from art.classifiers.classifier import ClassifierNeuralNetwork, ClassifierGradie
 import keras
 import keras.backend as k
 import numpy as np
-
+from tests.attacks import utils_attack
 from art.attacks import CarliniL2Method, CarliniLInfMethod
 from art.classifiers import KerasClassifier
 from art.utils import random_targets, to_categorical
@@ -478,31 +478,9 @@ class TestCarlini(TestBase):
         y_pred_adv = np.argmax(ptc.predict(x_test_adv), axis=1)
         self.assertTrue((target != y_pred_adv).any())
 
-    def test_classifier_type_check_fail_classifier_LInf(self):
-        # Use a useless test classifier to test basic classifier properties
-        class ClassifierNoAPI:
-            pass
 
-        classifier = ClassifierNoAPI
-        with self.assertRaises(TypeError) as context:
-            _ = CarliniLInfMethod(classifier=classifier)
-
-        self.assertIn('For `CarliniLInfMethod` classifier must be an instance of '
-                      '`art.classifiers.classifier.Classifier`, the provided classifier is instance of '
-                      '(<class \'object\'>,).', str(context.exception))
-
-    def test_classifier_type_check_fail_gradients_LInf(self):
-        # Use a test classifier not providing gradients required by white-box attack
-        from art.classifiers.scikitlearn import ScikitlearnDecisionTreeClassifier
-        from sklearn.tree import DecisionTreeClassifier
-
-        classifier = ScikitlearnDecisionTreeClassifier(model=DecisionTreeClassifier())
-        with self.assertRaises(TypeError) as context:
-            _ = CarliniLInfMethod(classifier=classifier)
-
-        self.assertIn('For `CarliniLInfMethod` classifier must be an instance of '
-                      '`art.classifiers.classifier.ClassifierGradients`, the provided classifier is instance of '
-                      '(<class \'art.classifiers.scikitlearn.ScikitlearnClassifier\'>,).', str(context.exception))
+    def test_classifier_type_check_fail(self):
+        utils_attack.backend_test_classifier_type_check_fail(CarliniLInfMethod, [ClassifierGradients])
 
     def test_keras_iris_clipped_LInf(self):
         classifier = get_tabular_classifier_kr()
