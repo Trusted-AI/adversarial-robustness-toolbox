@@ -27,7 +27,7 @@ from art.attacks import AdversarialPatch
 from art.classifiers.scikitlearn import ScikitlearnDecisionTreeClassifier
 from tests.utils_test import TestBase, master_seed
 from tests.utils_test import get_image_classifier_tf, get_image_classifier_kr, get_image_classifier_pt, get_tabular_classifier_kr
-
+from tests.attacks import utils_attack
 
 logger = logging.getLogger(__name__)
 
@@ -119,27 +119,9 @@ class TestAdversarialPatch(TestBase):
 
         self.assertIn('Feature vectors detected.', str(context.exception))
 
-    def test_classifier_type_check_fail_classifier(self):
-        # Use a useless test classifier to test basic classifier properties
-        class ClassifierNoAPI:
-            pass
+    def test_classifier_type_check_fail(self):
+        utils_attack.backend_test_classifier_type_check_fail(AdversarialPatch, [ClassifierNeuralNetwork, ClassifierGradients])
 
-        classifier = ClassifierNoAPI
-        with self.assertRaises(utils.WrongClassifier) as context:
-            _ = AdversarialPatch(classifier=classifier)
-
-        assert Classifier in context.exception.class_expected_list
-
-
-
-    def test_classifier_type_check_fail_gradients(self):
-        # Use a test classifier not providing gradients required by white-box attack
-        classifier = ScikitlearnDecisionTreeClassifier(model=DecisionTreeClassifier())
-        with self.assertRaises(utils.WrongClassifier) as context:
-            _ = AdversarialPatch(classifier=classifier)
-
-        assert ClassifierNeuralNetwork in context.exception.class_expected_list
-        assert ClassifierGradients in context.exception.class_expected_list
 
 
 
