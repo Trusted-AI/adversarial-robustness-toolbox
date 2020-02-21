@@ -206,30 +206,8 @@ class TestCarlini(TestBase):
         # Check that x_test has not been modified by attack and classifier
         self.assertAlmostEqual(float(np.max(np.abs(x_test_original - x_test))), 0.0, delta=0.00001)
 
-    def test_classifier_type_check_fail_classifier_L2(self):
-        # Use a useless test classifier to test basic classifier properties
-        class ClassifierNoAPI:
-            pass
-
-        classifier = ClassifierNoAPI
-        with self.assertRaises(utils.WrongClassifier) as context:
-            _ = CarliniL2Method(classifier=classifier)
-
-        assert Classifier in context.exception.class_expected_list
-
-
-    def test_classifier_type_check_fail_gradients_L2(self):
-        # Use a test classifier not providing gradients required by white-box attack
-        from art.classifiers.scikitlearn import ScikitlearnDecisionTreeClassifier
-        from sklearn.tree import DecisionTreeClassifier
-
-        classifier = ScikitlearnDecisionTreeClassifier(model=DecisionTreeClassifier())
-        with self.assertRaises(utils.WrongClassifier) as context:
-            _ = CarliniL2Method(classifier=classifier)
-
-        assert ClassifierGradients in context.exception.class_expected_list
-
-
+    def test_classifier_type_check_fail(self):
+        utils_attack.backend_test_classifier_type_check_fail(CarliniL2Method, [ClassifierGradients])
 
     def test_keras_iris_clipped_L2(self):
         classifier = get_tabular_classifier_kr()
