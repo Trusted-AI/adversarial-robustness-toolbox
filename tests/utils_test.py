@@ -258,7 +258,7 @@ def _tf_weights_loader(dataset, weights_type, layer='DENSE', tf_version=1):
     if tf_version == 1:
         def _tf_initializer(_, dtype, partition_info):
             import tensorflow as tf
-            weights = np.load(os.path.join(os.path.dirname(os.path.dirname(__file__)),'resouresourcrces/models', filename))
+            weights = np.load(os.path.join(os.path.dirname(os.path.dirname(__file__)),'resources/models', filename))
             return tf.constant(weights, dtype)
 
     elif tf_version == 2:
