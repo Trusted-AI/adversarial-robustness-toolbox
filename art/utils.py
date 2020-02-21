@@ -417,7 +417,7 @@ def load_cifar10(raw=False):
     return (x_train, y_train), (x_test, y_test), min_, max_
 
 
-class WrongClassifer(TypeError):
+class WrongClassifier(TypeError):
 
     def __init__(self, this_class, class_expected, classifier_given):
         self.this_class = this_class

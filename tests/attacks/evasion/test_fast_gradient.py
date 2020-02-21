@@ -155,7 +155,7 @@ def test_tabular(get_tabular_classifier_list, get_mlFramework, get_iris_dataset,
 def test_classifier_type_check_fail_gradients():
     # Use a test classifier not providing gradients required by white-box attack
     classifier = ScikitlearnDecisionTreeClassifier(model=DecisionTreeClassifier())
-    with pytest.raises(utils.WrongClassifer) as exception:
+    with pytest.raises(utils.WrongClassifier) as exception:
         _ = FastGradientMethod(classifier=classifier)
 
     assert exception.value.class_expected == ClassifierGradients
@@ -168,7 +168,7 @@ def test_classifier_type_check_fail_classifier():
 
     classifier = ClassifierNoAPI
 
-    with pytest.raises(utils.WrongClassifer) as exception:
+    with pytest.raises(utils.WrongClassifier) as exception:
         _ = FastGradientMethod(classifier=classifier)
 
     assert exception.value.class_expected == Classifier
