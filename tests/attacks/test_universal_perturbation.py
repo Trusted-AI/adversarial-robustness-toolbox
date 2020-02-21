@@ -21,6 +21,7 @@ import logging
 import unittest
 from art import utils
 import numpy as np
+from tests.attacks import utils_attack
 from art.attacks import UniversalPerturbation
 from art.classifiers import KerasClassifier
 from art.classifiers.classifier import Classifier
@@ -129,30 +130,9 @@ class TestUniversalPerturbation(TestBase):
         # Check that x_test has not been modified by attack and classifier
         self.assertAlmostEqual(float(np.max(np.abs(x_test_original - x_test_mnist))), 0.0, delta=0.00001)
 
-    def test_classifier_type_check_fail_classifier(self):
-        # Use a useless test classifier to test basic classifier properties
-        class ClassifierNoAPI:
-            pass
-
-        classifier = ClassifierNoAPI
-        with self.assertRaises(utils.WrongClassifier) as context:
-            _ = UniversalPerturbation(classifier=classifier)
-
-        assert Classifier in context.exception.class_expected_list
-
-    def test_classifier_type_check_fail_gradients(self):
-        # Use a test classifier not providing gradients required by white-box attack
-        from art.classifiers.scikitlearn import ScikitlearnDecisionTreeClassifier
-        from sklearn.tree import DecisionTreeClassifier
-
-        classifier = ScikitlearnDecisionTreeClassifier(model=DecisionTreeClassifier())
-
-        with self.assertRaises(utils.WrongClassifier) as context:
-            _ = UniversalPerturbation(classifier=classifier)
-
-        assert ClassifierNeuralNetwork in context.exception.class_expected_list
-        assert ClassifierGradients in context.exception.class_expected_list
-
+    def test_classifier_type_check_fail(self):
+        utils_attack.backend_test_classifier_type_check_fail(UniversalPerturbation,
+                                                             [ClassifierNeuralNetwork, ClassifierGradients])
 
     def test_keras_iris_clipped(self):
         classifier = get_tabular_classifier_kr()
