@@ -50,6 +50,15 @@ class Transformer(abc.ABC):
         """
         return self._is_fitted
 
+    def get_classifier(self):
+        """
+        Get the internal classifier.
+
+        :return: The internal classifier.
+        :rtype: :class:`.Classifier`
+        """
+        return self.classifier
+
     @abc.abstractmethod
     def __call__(self, x, modified_classifier):
         """
