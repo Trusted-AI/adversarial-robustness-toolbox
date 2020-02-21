@@ -24,12 +24,32 @@ import numpy as np
 from art.defences import Distillation
 
 from tests.utils import TestBase, master_seed
-from tests.utils import get_classifier_tf
+from tests.utils import get_classifier_tf, get_classifier_pt
 
 logger = logging.getLogger(__name__)
 
 BATCH_SIZE = 100
 NB_EPOCHS = 10
+
+
+def cross_entropy(prob1, prob2, eps=1e-10):
+    """
+    Compute cross-entropy between two probability distributions.
+
+    :param prob1: First probability distribution.
+    :type prob1: `np.ndarray`
+    :param prob2: Second probability distribution.
+    :type prob2: `np.ndarray`
+    :param eps: A small amount to avoid the possibility of having a log of zero.
+    :type eps: `float`
+    :return: Cross entropy.
+    :rtype: `float`
+    """
+    prob1 = np.clip(prob1, eps, 1. - eps)
+    size = prob1.shape[0]
+    result = -np.sum(prob2 * np.log(prob1 + eps)) / size
+
+    return result
 
 
 class TestDistillation(TestBase):
@@ -98,16 +118,52 @@ class TestDistillation(TestBase):
         if sess is not None:
             sess.close()
 
+    def test_pytorch_classifier(self):
+        """
+        Second test with the PyTorchClassifier.
+        :return:
+        """
+        self.x_train_mnist = np.reshape(self.x_train_mnist, (self.x_train_mnist.shape[0], 1, 28, 28)).astype(np.float32)
 
-def cross_entropy(predictions, targets, epsilon=1e-20):
-    """
-    Computes cross entropy between targets (encoded as one-hot vectors)
-    and predictions.
-    Input: predictions (N, k) ndarray
-           targets (N, k) ndarray
-    Returns: scalar
-    """
-    predictions = np.clip(predictions, epsilon, 1. - epsilon)
-    N = predictions.shape[0]
-    ce = -np.mean(targets*np.log(predictions+1e-20))/N
-    return ce
+        # Create the trained classifier
+        trained_classifier = get_classifier_pt()
+
+        # Create the modified classifier
+        modified_classifier = get_classifier_pt(load_init=False)
+
+        # Create distillation transformer
+        transformer = Distillation(
+            classifier=trained_classifier,
+            batch_size=BATCH_SIZE,
+            nb_epochs=NB_EPOCHS
+        )
+
+        # Perform the transformation
+        modified_classifier = transformer(
+            x=self.x_train_mnist[:1],
+            modified_classifier=modified_classifier
+        )
+
+        # Compare the 2 outputs
+        preds1 = trained_classifier.predict(
+            x=self.x_train_mnist,
+            batch_size=BATCH_SIZE
+        )
+
+        preds2 = modified_classifier.predict(
+            x=self.x_train_mnist,
+            batch_size=BATCH_SIZE
+        )
+
+        preds1 = np.argmax(preds1, axis=1)
+        preds2 = np.argmax(preds2, axis=1)
+        acc = np.sum(preds1 == preds2) / len(preds1)
+
+        self.assertGreater(acc, 0.5)
+
+        ce = cross_entropy(preds1, preds2)
+
+        self.assertLess(ce, 0.1)
+        self.assertGreaterEqual(ce, 0)
+
+
