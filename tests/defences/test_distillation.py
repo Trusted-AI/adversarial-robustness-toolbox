@@ -89,3 +89,25 @@ class TestDistillation(TestBase):
 
         self.assertGreater(acc, 0.5)
 
+        ce = cross_entropy(preds1, preds2)
+
+        self.assertLess(ce, 0.1)
+        self.assertGreaterEqual(ce, 0)
+
+        # Clean-up session
+        if sess is not None:
+            sess.close()
+
+
+def cross_entropy(predictions, targets, epsilon=1e-20):
+    """
+    Computes cross entropy between targets (encoded as one-hot vectors)
+    and predictions.
+    Input: predictions (N, k) ndarray
+           targets (N, k) ndarray
+    Returns: scalar
+    """
+    predictions = np.clip(predictions, epsilon, 1. - epsilon)
+    N = predictions.shape[0]
+    ce = -np.mean(targets*np.log(predictions+1e-20))/N
+    return ce
