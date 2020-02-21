@@ -19,7 +19,8 @@ from __future__ import absolute_import, division, print_function, unicode_litera
 
 import logging
 import unittest
-
+from tests.attacks import utils_attack
+from art.classifiers.classifier import ClassifierNeuralNetwork, ClassifierGradients
 import numpy as np
 
 from art.attacks import VirtualAdversarialMethod
@@ -104,32 +105,9 @@ class TestVirtualAdversarial(TestBase):
         # Check that x_test has not been modified by attack and classifier
         self.assertAlmostEqual(float(np.max(np.abs(x_test_original - x_test))), 0.0, delta=0.00001)
 
-    def test_classifier_type_check_fail_classifier(self):
-        # Use a useless test classifier to test basic classifier properties
-        class ClassifierNoAPI:
-            pass
-
-        classifier = ClassifierNoAPI
-        with self.assertRaises(TypeError) as context:
-            _ = VirtualAdversarialMethod(classifier=classifier)
-
-        self.assertIn('For `VirtualAdversarialMethod` classifier must be an instance of '
-                      '`art.classifiers.classifier.Classifier`, the provided classifier is instance of '
-                      '(<class \'object\'>,).', str(context.exception))
-
-    def test_classifier_type_check_fail_gradients(self):
-        # Use a test classifier not providing gradients required by white-box attack
-        from art.classifiers.scikitlearn import ScikitlearnDecisionTreeClassifier
-        from sklearn.tree import DecisionTreeClassifier
-
-        classifier = ScikitlearnDecisionTreeClassifier(model=DecisionTreeClassifier())
-        with self.assertRaises(TypeError) as context:
-            _ = VirtualAdversarialMethod(classifier=classifier)
-
-        self.assertIn('For `VirtualAdversarialMethod` classifier must be an instance of '
-                      '`art.classifiers.classifier.ClassifierNeuralNetwork` and '
-                      '`art.classifiers.classifier.ClassifierGradients`, the provided classifier is instance of '
-                      '(<class \'art.classifiers.scikitlearn.ScikitlearnClassifier\'>,).', str(context.exception))
+    def test_classifier_type_check_fail(self):
+        utils_attack.backend_test_classifier_type_check_fail(VirtualAdversarialMethod,
+                                                             [ClassifierNeuralNetwork, ClassifierGradients])
 
     def test_keras_iris_clipped(self):
         classifier = get_tabular_classifier_kr()
