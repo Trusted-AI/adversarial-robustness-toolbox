@@ -19,7 +19,8 @@ from __future__ import absolute_import, division, print_function, unicode_litera
 
 import logging
 import unittest
-
+from art import utils
+from art.classifiers.classifier import ClassifierNeuralNetwork, ClassifierGradients, Classifier
 import keras
 import keras.backend as k
 import numpy as np
@@ -211,11 +212,11 @@ class TestCarlini(TestBase):
             pass
 
         classifier = ClassifierNoAPI
-        with self.assertRaises(TypeError) as context:
+        with self.assertRaises(utils.WrongClassifier) as context:
             _ = CarliniL2Method(classifier=classifier)
 
-        self.assertIn('For `CarliniL2Method` classifier must be an instance of `art.classifiers.classifier.Classifier`,'
-                      ' the provided classifier is instance of (<class \'object\'>,).', str(context.exception))
+        assert Classifier in context.exception.class_expected_list
+
 
     def test_classifier_type_check_fail_gradients_L2(self):
         # Use a test classifier not providing gradients required by white-box attack
@@ -223,12 +224,12 @@ class TestCarlini(TestBase):
         from sklearn.tree import DecisionTreeClassifier
 
         classifier = ScikitlearnDecisionTreeClassifier(model=DecisionTreeClassifier())
-        with self.assertRaises(TypeError) as context:
+        with self.assertRaises(utils.WrongClassifier) as context:
             _ = CarliniL2Method(classifier=classifier)
 
-        self.assertIn('For `CarliniL2Method` classifier must be an instance of '
-                      '`art.classifiers.classifier.ClassifierGradients`, the provided classifier is instance of '
-                      '(<class \'art.classifiers.scikitlearn.ScikitlearnClassifier\'>,).', str(context.exception))
+        assert ClassifierGradients in context.exception.class_expected_list
+
+
 
     def test_keras_iris_clipped_L2(self):
         classifier = get_tabular_classifier_kr()
