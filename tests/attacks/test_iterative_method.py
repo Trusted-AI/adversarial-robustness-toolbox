@@ -16,7 +16,8 @@ from __future__ import absolute_import, division, print_function, unicode_litera
 
 import logging
 import unittest
-
+from tests.attacks import utils_attack
+from art.classifiers.classifier import ClassifierGradients
 import numpy as np
 
 from art.attacks import BasicIterativeMethod
@@ -147,31 +148,9 @@ class TestIterativeAttack(TestBase):
         x_test = np.swapaxes(self.x_test_mnist, 1, 3).astype(np.float32)
         self._test_mnist_targeted(classifier, x_test)
 
-    def test_classifier_type_check_fail_classifier(self):
-        # Use a useless test classifier to test basic classifier properties
-        class ClassifierNoAPI:
-            pass
 
-        classifier = ClassifierNoAPI
-        with self.assertRaises(TypeError) as context:
-            _ = BasicIterativeMethod(classifier=classifier)
-
-        self.assertIn('For `BasicIterativeMethod` classifier must be an instance of '
-                      '`art.classifiers.classifier.Classifier`, the provided classifier is instance of '
-                      '(<class \'object\'>,).', str(context.exception))
-
-    def test_classifier_type_check_fail_gradients(self):
-        # Use a test classifier not providing gradients required by white-box attack
-        from art.classifiers.scikitlearn import ScikitlearnDecisionTreeClassifier
-        from sklearn.tree import DecisionTreeClassifier
-
-        classifier = ScikitlearnDecisionTreeClassifier(model=DecisionTreeClassifier())
-        with self.assertRaises(TypeError) as context:
-            _ = BasicIterativeMethod(classifier=classifier)
-
-        self.assertIn('For `BasicIterativeMethod` classifier must be an instance of '
-                      '`art.classifiers.classifier.ClassifierGradients`, the provided classifier is instance of '
-                      '(<class \'art.classifiers.scikitlearn.ScikitlearnClassifier\'>,).', str(context.exception))
+    def test_classifier_type_check_fail(self):
+        utils_attack.backend_test_classifier_type_check_fail(BasicIterativeMethod, [ClassifierGradients])
 
     def test_keras_iris_clipped(self):
         classifier = get_tabular_classifier_kr()
