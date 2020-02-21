@@ -21,7 +21,7 @@ This module implements the elastic net attack `ElasticNet`. This is a white-box 
 | Paper link: https://arxiv.org/abs/1709.04114
 """
 from __future__ import absolute_import, division, print_function, unicode_literals
-
+from art import utils
 import logging
 
 import numpy as np
@@ -97,15 +97,7 @@ class ElasticNet(EvasionAttack):
         """
         super(ElasticNet, self).__init__(classifier)
         if not isinstance(classifier, ClassifierGradients):
-            raise (
-                TypeError(
-                    "For `" + self.__class__.__name__ + "` classifier must be an instance of "
-                    "`art.classifiers.classifier.ClassifierGradients`, the provided classifier is instance of "
-                    + str(classifier.__class__.__bases__)
-                    + ". "
-                    " The classifier needs to provide gradients."
-                )
-            )
+            raise utils.WrongClassifier(self.__class__, [ClassifierGradients], classifier)
 
         kwargs = {
             "confidence": confidence,
