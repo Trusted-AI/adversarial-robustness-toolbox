@@ -19,7 +19,7 @@ from __future__ import absolute_import, division, print_function, unicode_litera
 
 import logging
 import unittest
-
+from tests.attacks import utils_attack
 import keras
 import numpy as np
 from art import utils
@@ -183,28 +183,10 @@ class TestDeepFool(TestBase):
             self.y_test_mnist.shape[0]
         logger.info('Accuracy on adversarial test examples: %.2f%%', (accuracy * 100))
 
-    def test_classifier_type_check_fail_classifier(self):
-        # Use a useless test classifier to test basic classifier properties
-        class ClassifierNoAPI:
-            pass
 
-        classifier = ClassifierNoAPI
-        with self.assertRaises(utils.WrongClassifier) as context:
-            _ = DeepFool(classifier=classifier)
+    def test_classifier_type_check_fail(self):
+        utils_attack.backend_test_classifier_type_check_fail(DeepFool,[ClassifierGradients])
 
-        assert Classifier in context.exception.class_expected_list
-
-
-    def test_classifier_type_check_fail_gradients(self):
-        # Use a test classifier not providing gradients required by white-box attack
-        from art.classifiers.scikitlearn import ScikitlearnDecisionTreeClassifier
-        from sklearn.tree import DecisionTreeClassifier
-
-        classifier = ScikitlearnDecisionTreeClassifier(model=DecisionTreeClassifier())
-        with self.assertRaises(utils.WrongClassifier) as context:
-            _ = DeepFool(classifier=classifier)
-
-        assert ClassifierGradients in context.exception.class_expected_list
 
     def test_keras_iris_clipped(self):
         classifier = get_tabular_classifier_kr()
