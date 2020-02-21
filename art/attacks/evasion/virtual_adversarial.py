@@ -40,9 +40,10 @@ class VirtualAdversarialMethod(EvasionAttack):
 
     | Paper link: https://arxiv.org/abs/1507.00677
     """
-    attack_params = EvasionAttack.attack_params + ['eps', 'finite_diff', 'max_iter', 'batch_size']
 
-    def __init__(self, classifier, max_iter=10, finite_diff=1e-6, eps=.1, batch_size=1):
+    attack_params = EvasionAttack.attack_params + ["eps", "finite_diff", "max_iter", "batch_size"]
+
+    def __init__(self, classifier, max_iter=10, finite_diff=1e-6, eps=0.1, batch_size=1):
         """
         Create a VirtualAdversarialMethod instance.
 
@@ -59,15 +60,17 @@ class VirtualAdversarialMethod(EvasionAttack):
         """
         super(VirtualAdversarialMethod, self).__init__(classifier)
         if not isinstance(classifier, ClassifierNeuralNetwork) or not isinstance(classifier, ClassifierGradients):
-            raise (TypeError('For `' + self.__class__.__name__ + '` classifier must be an instance of '
-                             '`art.classifiers.classifier.ClassifierNeuralNetwork` and '
-                             '`art.classifiers.classifier.ClassifierGradients`, the provided classifier is instance of '
-                             + str(classifier.__class__.__bases__) + '. '
-                             ' The classifier needs to be a Neural Network and provide gradients.'))
-        kwargs = {'finite_diff': finite_diff,
-                  'eps': eps,
-                  'max_iter': max_iter,
-                  'batch_size': batch_size}
+            raise (
+                TypeError(
+                    "For `" + self.__class__.__name__ + "` classifier must be an instance of "
+                    "`art.classifiers.classifier.ClassifierNeuralNetwork` and "
+                    "`art.classifiers.classifier.ClassifierGradients`, the provided classifier is instance of "
+                    + str(classifier.__class__.__bases__)
+                    + ". "
+                    " The classifier needs to be a Neural Network and provide gradients."
+                )
+            )
+        kwargs = {"finite_diff": finite_diff, "eps": eps, "max_iter": max_iter, "batch_size": batch_size}
         self.set_params(**kwargs)
 
     def generate(self, x, y=None, **kwargs):
@@ -84,8 +87,10 @@ class VirtualAdversarialMethod(EvasionAttack):
         x_adv = x.astype(ART_NUMPY_DTYPE)
         preds = self.classifier.predict(x_adv, batch_size=self.batch_size)
         if (preds < 0.0).any() or (preds > 1.0).any():
-            raise TypeError('This attack requires a classifier predicting probabilities in the range [0, 1] as output.'
-                            'Values smaller than 0.0 or larger than 1.0 have been detected.')
+            raise TypeError(
+                "This attack requires a classifier predicting probabilities in the range [0, 1] as output."
+                "Values smaller than 0.0 or larger than 1.0 have been detected."
+            )
         # preds_rescaled = self._rescale(preds) # Rescaling needs more testing
         preds_rescaled = preds
 
@@ -103,43 +108,53 @@ class VirtualAdversarialMethod(EvasionAttack):
                 var_d = self._normalize(var_d)
                 preds_new = self.classifier.predict((batch + var_d).reshape((-1,) + self.classifier.input_shape))
                 if (preds_new < 0.0).any() or (preds_new > 1.0).any():
-                    raise TypeError('This attack requires a classifier predicting probabilities in the range [0, 1] as '
-                                    'output. Values smaller than 0.0 or larger than 1.0 have been detected.')
+                    raise TypeError(
+                        "This attack requires a classifier predicting probabilities in the range [0, 1] as "
+                        "output. Values smaller than 0.0 or larger than 1.0 have been detected."
+                    )
                 # preds_new_rescaled = self._rescale(preds_new) # Rescaling needs more testing
                 preds_new_rescaled = preds_new
 
                 from scipy.stats import entropy
-                kl_div1 = entropy(np.transpose(preds_rescaled[batch_index_1:batch_index_2]),
-                                  np.transpose(preds_new_rescaled))
+
+                kl_div1 = entropy(
+                    np.transpose(preds_rescaled[batch_index_1:batch_index_2]), np.transpose(preds_new_rescaled)
+                )
 
                 var_d_new = np.zeros(var_d.shape).astype(ART_NUMPY_DTYPE)
                 for current_index in range(var_d.shape[1]):
                     var_d[:, current_index] += self.finite_diff
                     preds_new = self.classifier.predict((batch + var_d).reshape((-1,) + self.classifier.input_shape))
                     if (preds_new < 0.0).any() or (preds_new > 1.0).any():
-                        raise TypeError('This attack requires a classifier predicting probabilities in the range [0, 1]'
-                                        'as output. Values smaller than 0.0 or larger than 1.0 have been detected.')
+                        raise TypeError(
+                            "This attack requires a classifier predicting probabilities in the range [0, 1]"
+                            "as output. Values smaller than 0.0 or larger than 1.0 have been detected."
+                        )
                     # preds_new_rescaled = self._rescale(preds_new) # Rescaling needs more testing
                     preds_new_rescaled = preds_new
 
-                    kl_div2 = entropy(np.transpose(preds_rescaled[batch_index_1:batch_index_2]),
-                                      np.transpose(preds_new_rescaled))
+                    kl_div2 = entropy(
+                        np.transpose(preds_rescaled[batch_index_1:batch_index_2]), np.transpose(preds_new_rescaled)
+                    )
                     var_d_new[:, current_index] = (kl_div2 - kl_div1) / self.finite_diff
                     var_d[:, current_index] -= self.finite_diff
                 var_d = var_d_new
 
             # Apply perturbation and clip
-            if hasattr(self.classifier, 'clip_values') and self.classifier.clip_values is not None:
+            if hasattr(self.classifier, "clip_values") and self.classifier.clip_values is not None:
                 clip_min, clip_max = self.classifier.clip_values
-                x_adv[batch_index_1:batch_index_2] = \
-                    np.clip(batch + self.eps * self._normalize(var_d), clip_min, clip_max) \
-                    .reshape((-1,) + self.classifier.input_shape)
+                x_adv[batch_index_1:batch_index_2] = np.clip(
+                    batch + self.eps * self._normalize(var_d), clip_min, clip_max
+                ).reshape((-1,) + self.classifier.input_shape)
             else:
-                x_adv[batch_index_1:batch_index_2] = (batch + self.eps * self._normalize(var_d)) \
-                    .reshape((-1,) + self.classifier.input_shape)
+                x_adv[batch_index_1:batch_index_2] = (batch + self.eps * self._normalize(var_d)).reshape(
+                    (-1,) + self.classifier.input_shape
+                )
 
-        logger.info('Success rate of virtual adversarial attack: %.2f%%',
-                    100 * compute_success(self.classifier, x, y, x_adv, batch_size=self.batch_size))
+        logger.info(
+            "Success rate of virtual adversarial attack: %.2f%%",
+            100 * compute_success(self.classifier, x, y, x_adv, batch_size=self.batch_size),
+        )
 
         return x_adv
 
@@ -203,6 +218,6 @@ class VirtualAdversarialMethod(EvasionAttack):
             raise ValueError("The finite difference parameter must be a positive float.")
 
         if self.batch_size <= 0:
-            raise ValueError('The batch size `batch_size` has to be positive.')
+            raise ValueError("The batch size `batch_size` has to be positive.")
 
         return True

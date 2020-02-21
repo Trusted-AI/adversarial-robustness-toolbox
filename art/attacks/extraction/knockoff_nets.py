@@ -41,11 +41,26 @@ class KnockoffNets(ExtractionAttack):
 
     | Paper link: https://arxiv.org/abs/1812.02766
     """
-    attack_params = ExtractionAttack.attack_params + ['batch_size_fit', 'batch_size_query', 'nb_epochs',
-                                                      'nb_stolen', 'sampling_strategy', 'reward']
 
-    def __init__(self, classifier, batch_size_fit=1, batch_size_query=1, nb_epochs=10, nb_stolen=1,
-                 sampling_strategy='random', reward='all'):
+    attack_params = ExtractionAttack.attack_params + [
+        "batch_size_fit",
+        "batch_size_query",
+        "nb_epochs",
+        "nb_stolen",
+        "sampling_strategy",
+        "reward",
+    ]
+
+    def __init__(
+        self,
+        classifier,
+        batch_size_fit=1,
+        batch_size_query=1,
+        nb_epochs=10,
+        nb_stolen=1,
+        sampling_strategy="random",
+        reward="all",
+    ):
         """
         Create a KnockoffNets attack instance. Note, it is assumed that both the victim classifier and the thieved
         classifier produce logit outputs.
@@ -67,12 +82,14 @@ class KnockoffNets(ExtractionAttack):
         """
         super(KnockoffNets, self).__init__(classifier=classifier)
 
-        params = {'batch_size_fit': batch_size_fit,
-                  'batch_size_query': batch_size_query,
-                  'nb_epochs': nb_epochs,
-                  'nb_stolen': nb_stolen,
-                  'sampling_strategy': sampling_strategy,
-                  'reward': reward}
+        params = {
+            "batch_size_fit": batch_size_fit,
+            "batch_size_query": batch_size_query,
+            "nb_epochs": nb_epochs,
+            "nb_stolen": nb_stolen,
+            "sampling_strategy": sampling_strategy,
+            "reward": reward,
+        }
         self.set_params(**params)
 
     def extract(self, x, y=None, **kwargs):
@@ -90,25 +107,27 @@ class KnockoffNets(ExtractionAttack):
         :rtype: :class:`.Classifier`
         """
         # Check prerequisite for random strategy
-        if self.sampling_strategy == 'random' and y is not None:
+        if self.sampling_strategy == "random" and y is not None:
             logger.warning("This attack with random sampling strategy does not use the provided label y.")
 
         # Check prerequisite for adaptive strategy
-        if self.sampling_strategy == 'adaptive' and y is None:
+        if self.sampling_strategy == "adaptive" and y is None:
             raise ValueError("This attack with adaptive sampling strategy needs label y.")
 
         # Check the size of the source input vs nb_stolen
         if x.shape[0] < self.nb_stolen:
-            logger.warning("The size of the source input is smaller than the expected number of queries submitted "
-                           "to the victim classifier.")
+            logger.warning(
+                "The size of the source input is smaller than the expected number of queries submitted "
+                "to the victim classifier."
+            )
 
         # Check if there is a thieved classifier provided for training
-        thieved_classifier = kwargs.get('thieved_classifier')
+        thieved_classifier = kwargs.get("thieved_classifier")
         if thieved_classifier is None or not isinstance(thieved_classifier, Classifier):
-            raise ValueError('A thieved classifier is needed.')
+            raise ValueError("A thieved classifier is needed.")
 
         # Implement model extractions
-        if self.sampling_strategy == 'random':
+        if self.sampling_strategy == "random":
             thieved_classifier = self._random_extraction(x, thieved_classifier)
         else:
             thieved_classifier = self._adaptive_extraction(x, y, thieved_classifier)
@@ -133,8 +152,9 @@ class KnockoffNets(ExtractionAttack):
         fake_labels = self._query_label(selected_x)
 
         # Train the thieved classifier
-        thieved_classifier.fit(x=selected_x, y=fake_labels, batch_size=self.batch_size_fit, nb_epochs=self.nb_epochs,
-                               verbose=0)
+        thieved_classifier.fit(
+            x=selected_x, y=fake_labels, batch_size=self.batch_size_fit, nb_epochs=self.nb_epochs, verbose=0
+        )
 
         return thieved_classifier
 
@@ -187,14 +207,14 @@ class KnockoffNets(ExtractionAttack):
         elif len(y.shape) == 1:
             nb_actions = len(np.unique(y))
         else:
-            raise ValueError('Target values `y` has a wrong shape.')
+            raise ValueError("Target values `y` has a wrong shape.")
 
         # We need to keep an average version of the victim output
-        if self.reward == 'div' or self.reward == 'all':
+        if self.reward == "div" or self.reward == "all":
             self.y_avg = np.zeros(self.classifier.nb_classes())
 
         # We need to keep an average and variance version of rewards
-        if self.reward == 'all':
+        if self.reward == "all":
             self.reward_avg = np.zeros(3)
             self.reward_var = np.zeros(3)
 
@@ -221,8 +241,9 @@ class KnockoffNets(ExtractionAttack):
             queried_labels.append(fake_label[0])
 
             # Train the thieved classifier
-            thieved_classifier.fit(x=np.array([sampled_x]), y=fake_label, batch_size=self.batch_size_fit, nb_epochs=1,
-                                   verbose=0)
+            thieved_classifier.fit(
+                x=np.array([sampled_x]), y=fake_label, batch_size=self.batch_size_fit, nb_epochs=1, verbose=0
+            )
 
             # Test new labels
             y_hat = thieved_classifier.predict(x=np.array([sampled_x]), batch_size=self.batch_size_query)
@@ -246,8 +267,9 @@ class KnockoffNets(ExtractionAttack):
             probs = aux_exp / np.sum(aux_exp)
 
         # Train the thieved classifier the final time
-        thieved_classifier.fit(x=np.array(selected_x), y=np.array(queried_labels), batch_size=self.batch_size_fit,
-                               nb_epochs=self.nb_epochs)
+        thieved_classifier.fit(
+            x=np.array(selected_x), y=np.array(queried_labels), batch_size=self.batch_size_fit, nb_epochs=self.nb_epochs
+        )
 
         return thieved_classifier
 
@@ -289,11 +311,11 @@ class KnockoffNets(ExtractionAttack):
         :return: Reward value.
         :rtype: `float`
         """
-        if self.reward == 'cert':
+        if self.reward == "cert":
             return self._reward_cert(y_output)
-        elif self.reward == 'div':
+        elif self.reward == "div":
             return self._reward_div(y_output, n)
-        elif self.reward == 'loss':
+        elif self.reward == "loss":
             return self._reward_loss(y_output, y_hat)
         else:
             return self._reward_all(y_output, y_hat, n)
@@ -378,7 +400,7 @@ class KnockoffNets(ExtractionAttack):
         reward_loss = self._reward_loss(y_output, y_hat)
         reward = [reward_cert, reward_div, reward_loss]
         self.reward_avg = self.reward_avg + (1.0 / n) * (reward - self.reward_avg)
-        self.reward_var = self.reward_var + (1.0 / n) * ((reward - self.reward_avg)**2 - self.reward_var)
+        self.reward_var = self.reward_var + (1.0 / n) * ((reward - self.reward_avg) ** 2 - self.reward_var)
 
         # Normalize rewards
         if n > 1:
@@ -420,10 +442,10 @@ class KnockoffNets(ExtractionAttack):
         if not isinstance(self.nb_stolen, (int, np.int)) or self.nb_stolen <= 0:
             raise ValueError("The number of queries submitted to the victim classifier must be a positive integer.")
 
-        if self.sampling_strategy not in ['random', 'adaptive']:
+        if self.sampling_strategy not in ["random", "adaptive"]:
             raise ValueError("Sampling strategy must be either `random` or `adaptive`.")
 
-        if self.reward not in ['cert', 'div', 'loss', 'all']:
+        if self.reward not in ["cert", "div", "loss", "all"]:
             raise ValueError("Reward type must be in ['cert', 'div', 'loss', 'all'].")
 
         return True

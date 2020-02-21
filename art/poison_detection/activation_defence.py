@@ -50,10 +50,11 @@ class ActivationDefence(PoisonFilteringDefence):
     defence, see https://arxiv.org/abs/1905.13409 . For details on how to evaluate classifier security
     in general, see https://arxiv.org/abs/1902.06705
     """
-    defence_params = ['nb_clusters', 'clustering_method', 'nb_dims', 'reduce', 'cluster_analysis']
-    valid_clustering = ['KMeans']
-    valid_reduce = ['PCA', 'FastICA', 'TSNE']
-    valid_analysis = ['smaller', 'distance', 'relative-size', 'silhouette-scores']
+
+    defence_params = ["nb_clusters", "clustering_method", "nb_dims", "reduce", "cluster_analysis"]
+    valid_clustering = ["KMeans"]
+    valid_reduce = ["PCA", "FastICA", "TSNE"]
+    valid_analysis = ["smaller", "distance", "relative-size", "silhouette-scores"]
 
     TOO_SMALL_ACTIVATIONS = 32  # Threshold used to print a warning when activations are not enough
 
@@ -69,8 +70,13 @@ class ActivationDefence(PoisonFilteringDefence):
         :type y_train: `np.ndarray`
         """
         super(ActivationDefence, self).__init__(classifier, x_train, y_train)
-        kwargs = {'nb_clusters': 2, 'clustering_method': "KMeans", 'nb_dims': 10, 'reduce': 'PCA',
-                  'cluster_analysis': "smaller"}
+        kwargs = {
+            "nb_clusters": 2,
+            "clustering_method": "KMeans",
+            "nb_dims": 10,
+            "reduce": "PCA",
+            "cluster_analysis": "smaller",
+        }
         self.set_params(**kwargs)
         self.activations_by_class = []
         self.clusters_by_class = []
@@ -109,8 +115,9 @@ class ActivationDefence(PoisonFilteringDefence):
 
         # Now check ground truth:
         self.is_clean_by_class = self._segment_by_class(is_clean, self.y_train)
-        self.errors_by_class, conf_matrix_json = self.evaluator.analyze_correctness(self.assigned_clean_by_class,
-                                                                                    self.is_clean_by_class)
+        self.errors_by_class, conf_matrix_json = self.evaluator.analyze_correctness(
+            self.assigned_clean_by_class, self.is_clean_by_class
+        )
         return conf_matrix_json
 
     # pylint: disable=W0221
@@ -182,7 +189,8 @@ class ActivationDefence(PoisonFilteringDefence):
             nb_clusters=self.nb_clusters,
             nb_dims=self.nb_dims,
             reduce=self.reduce,
-            clustering_method=self.clustering_method)
+            clustering_method=self.clustering_method,
+        )
 
         return self.clusters_by_class, self.red_activations_by_class
 
@@ -203,23 +211,24 @@ class ActivationDefence(PoisonFilteringDefence):
 
         analyzer = ClusteringAnalyzer()
 
-        if self.cluster_analysis == 'smaller':
-            self.assigned_clean_by_class, self.poisonous_clusters, report \
-                = analyzer.analyze_by_size(self.clusters_by_class)
-        elif self.cluster_analysis == 'relative-size':
-            self.assigned_clean_by_class, self.poisonous_clusters, report \
-                = analyzer.analyze_by_relative_size(self.clusters_by_class)
-        elif self.cluster_analysis == 'distance':
-            self.assigned_clean_by_class, self.poisonous_clusters, report \
-                = analyzer.analyze_by_distance(self.clusters_by_class,
-                                               separated_activations=self.red_activations_by_class)
-        elif self.cluster_analysis == 'silhouette-scores':
-            self.assigned_clean_by_class, self.poisonous_clusters, report \
-                = analyzer.analyze_by_silhouette_score(self.clusters_by_class,
-                                                       reduced_activations_by_class=self.red_activations_by_class)
+        if self.cluster_analysis == "smaller":
+            self.assigned_clean_by_class, self.poisonous_clusters, report = analyzer.analyze_by_size(
+                self.clusters_by_class
+            )
+        elif self.cluster_analysis == "relative-size":
+            self.assigned_clean_by_class, self.poisonous_clusters, report = analyzer.analyze_by_relative_size(
+                self.clusters_by_class
+            )
+        elif self.cluster_analysis == "distance":
+            self.assigned_clean_by_class, self.poisonous_clusters, report = analyzer.analyze_by_distance(
+                self.clusters_by_class, separated_activations=self.red_activations_by_class
+            )
+        elif self.cluster_analysis == "silhouette-scores":
+            self.assigned_clean_by_class, self.poisonous_clusters, report = analyzer.analyze_by_silhouette_score(
+                self.clusters_by_class, reduced_activations_by_class=self.red_activations_by_class
+            )
         else:
-            raise ValueError(
-                "Unsupported cluster analysis technique " + self.cluster_analysis)
+            raise ValueError("Unsupported cluster analysis technique " + self.cluster_analysis)
 
         # Add to the report current parameters used to run the defence and the analysis summary
         report = dict(list(report.items()) + list(self.get_params().items()))
@@ -227,8 +236,9 @@ class ActivationDefence(PoisonFilteringDefence):
         return report, self.assigned_clean_by_class
 
     @staticmethod
-    def relabel_poison_ground_truth(classifier, x, y_fix, test_set_split=0.7, tolerable_backdoor=0.01,
-                                    max_epochs=50, batch_epochs=10):
+    def relabel_poison_ground_truth(
+        classifier, x, y_fix, test_set_split=0.7, tolerable_backdoor=0.01, max_epochs=50, batch_epochs=10
+    ):
         """
         Revert poison attack by continue training the current classifier with `x`, `y_fix`. `test_set_split` determines
         the percentage in x that will be used as training set, while `1-test_set_split` determines how many data points
@@ -258,13 +268,21 @@ class ActivationDefence(PoisonFilteringDefence):
         y_train, y_test = y_fix[:n_train], y_fix[n_train:]
 
         import time
-        filename = 'original_classifier' + str(time.time()) + '.p'
+
+        filename = "original_classifier" + str(time.time()) + ".p"
         ActivationDefence._pickle_classifier(classifier, filename)
 
         # Now train using y_fix:
-        improve_factor, _ = train_remove_backdoor(classifier, x_train, y_train, x_test, y_test,
-                                                  tolerable_backdoor=tolerable_backdoor, max_epochs=max_epochs,
-                                                  batch_epochs=batch_epochs)
+        improve_factor, _ = train_remove_backdoor(
+            classifier,
+            x_train,
+            y_train,
+            x_test,
+            y_test,
+            tolerable_backdoor=tolerable_backdoor,
+            max_epochs=max_epochs,
+            batch_epochs=batch_epochs,
+        )
 
         # Only update classifier if there was an improvement:
         if improve_factor < 0:
@@ -275,8 +293,9 @@ class ActivationDefence(PoisonFilteringDefence):
         return improve_factor, classifier
 
     @staticmethod
-    def relabel_poison_cross_validation(classifier, x, y_fix, n_splits=10, tolerable_backdoor=0.01,
-                                        max_epochs=50, batch_epochs=10):
+    def relabel_poison_cross_validation(
+        classifier, x, y_fix, n_splits=10, tolerable_backdoor=0.01, max_epochs=50, batch_epochs=10
+    ):
         """
         Revert poison attack by continue training the current classifier with `x`, `y_fix`. `n_splits` determines the
         number of cross validation splits.
@@ -301,11 +320,13 @@ class ActivationDefence(PoisonFilteringDefence):
         # pylint: disable=E0001
         # Train using cross validation
         from sklearn.model_selection import KFold
+
         k_fold = KFold(n_splits=n_splits)
         KFold(n_splits=n_splits, random_state=None, shuffle=True)
 
         import time
-        filename = 'original_classifier' + str(time.time()) + '.p'
+
+        filename = "original_classifier" + str(time.time()) + ".p"
         ActivationDefence._pickle_classifier(classifier, filename)
         curr_improvement = 0
 
@@ -316,15 +337,20 @@ class ActivationDefence(PoisonFilteringDefence):
             # Unpickle original model:
             curr_classifier = ActivationDefence._unpickle_classifier(filename)
 
-            new_improvement, fixed_classifier = train_remove_backdoor(curr_classifier, x_train, y_train, x_test,
-                                                                      y_test,
-                                                                      tolerable_backdoor=tolerable_backdoor,
-                                                                      max_epochs=max_epochs,
-                                                                      batch_epochs=batch_epochs)
+            new_improvement, fixed_classifier = train_remove_backdoor(
+                curr_classifier,
+                x_train,
+                y_train,
+                x_test,
+                y_test,
+                tolerable_backdoor=tolerable_backdoor,
+                max_epochs=max_epochs,
+                batch_epochs=batch_epochs,
+            )
             if curr_improvement < new_improvement and new_improvement > 0:
                 curr_improvement = new_improvement
                 classifier = fixed_classifier
-                logger.info('Selected as best model so far: %s', curr_improvement)
+                logger.info("Selected as best model so far: %s", curr_improvement)
 
         ActivationDefence._remove_pickle(filename)
         return curr_improvement, classifier
@@ -341,12 +367,13 @@ class ActivationDefence(PoisonFilteringDefence):
         """
         import pickle
         from art.config import ART_DATA_PATH
+
         full_path = os.path.join(ART_DATA_PATH, file_name)
         folder = os.path.split(full_path)[0]
         if not os.path.exists(folder):
             os.makedirs(folder)
 
-        with open(full_path, 'wb') as f_classifier:
+        with open(full_path, "wb") as f_classifier:
             pickle.dump(classifier, f_classifier)
 
     @staticmethod
@@ -361,8 +388,8 @@ class ActivationDefence(PoisonFilteringDefence):
         import pickle
 
         full_path = os.path.join(ART_DATA_PATH, file_name)
-        logger.info('Loading classifier from %s', full_path)
-        with open(full_path, 'rb') as f_classifier:
+        logger.info("Loading classifier from %s", full_path)
+        with open(full_path, "rb") as f_classifier:
             loaded_classifier = pickle.load(f_classifier)
             return loaded_classifier
 
@@ -375,10 +402,11 @@ class ActivationDefence(PoisonFilteringDefence):
         :return: None
         """
         from art.config import ART_DATA_PATH
+
         full_path = os.path.join(ART_DATA_PATH, file_name)
         os.remove(full_path)
 
-    def visualize_clusters(self, x_raw, save=True, folder='.', **kwargs):
+    def visualize_clusters(self, x_raw, save=True, folder=".", **kwargs):
         """
         This function creates the sprite/mosaic visualization for clusters. When save=True,
         it also stores a sprite (mosaic) per cluster in ART_DATA_PATH.
@@ -412,8 +440,8 @@ class ActivationDefence(PoisonFilteringDefence):
         sprites_by_class = [[[] for _ in range(self.nb_clusters)] for y in range(self.classifier.nb_classes())]
         for i, class_i in enumerate(x_raw_by_cluster):
             for j, images_cluster in enumerate(class_i):
-                title = 'Class_' + str(i) + '_cluster_' + str(j) + '_clusterSize_' + str(len(images_cluster))
-                f_name = title + '.png'
+                title = "Class_" + str(i) + "_cluster_" + str(j) + "_clusterSize_" + str(len(images_cluster))
+                f_name = title + ".png"
                 f_name = os.path.join(folder, f_name)
                 sprite = create_sprite(images_cluster)
                 if save:
@@ -422,7 +450,7 @@ class ActivationDefence(PoisonFilteringDefence):
 
         return sprites_by_class
 
-    def plot_clusters(self, save=True, folder='.', **kwargs):
+    def plot_clusters(self, save=True, folder=".", **kwargs):
         """
         Creates a 3D-plot to visualize each cluster each cluster is assigned a different color in the plot. When
         save=True, it also stores the 3D-plot per cluster in ART_DATA_PATH.
@@ -448,9 +476,9 @@ class ActivationDefence(PoisonFilteringDefence):
 
         # For each class generate a plot:
         for class_id, (labels, coordinates) in enumerate(zip(self.clusters_by_class, separated_reduced_activations)):
-            f_name = ''
+            f_name = ""
             if save:
-                f_name = os.path.join(folder, 'plot_class_' + str(class_id) + '.png')
+                f_name = os.path.join(folder, "plot_class_" + str(class_id) + ".png")
             plot_3d(coordinates, labels, save=save, f_name=f_name)
 
     def set_params(self, **kwargs):
@@ -474,7 +502,8 @@ class ActivationDefence(PoisonFilteringDefence):
 
         if self.nb_clusters <= 1:
             raise ValueError(
-                "Wrong number of clusters, should be greater or equal to 2. Provided: " + str(self.nb_clusters))
+                "Wrong number of clusters, should be greater or equal to 2. Provided: " + str(self.nb_clusters)
+            )
         if self.nb_dims <= 0:
             raise ValueError("Wrong number of dimensions ")
         if self.clustering_method not in self.valid_clustering:
@@ -490,7 +519,7 @@ class ActivationDefence(PoisonFilteringDefence):
         """
         Find activations from :class:`.Classifier`.
         """
-        logger.info('Getting activations')
+        logger.info("Getting activations")
 
         nb_layers = len(self.classifier.layer_names)
         activations = self.classifier.get_activations(self.x_train, layer=nb_layers - 1, batch_size=128)
@@ -499,8 +528,10 @@ class ActivationDefence(PoisonFilteringDefence):
         nodes_last_layer = np.shape(activations)[1]
 
         if nodes_last_layer <= self.TOO_SMALL_ACTIVATIONS:
-            logger.warning("Number of activations in last hidden layer is too small. Method may not work properly. "
-                           "Size: %s", str(nodes_last_layer))
+            logger.warning(
+                "Number of activations in last hidden layer is too small. Method may not work properly. " "Size: %s",
+                str(nodes_last_layer),
+            )
         return activations
 
     def _segment_by_class(self, data, features):
@@ -534,8 +565,7 @@ def measure_misclassification(classifier, x_test, y_test):
     return 1 - np.sum(predictions == np.argmax(y_test, axis=1)) / y_test.shape[0]
 
 
-def train_remove_backdoor(classifier, x_train, y_train, x_test, y_test, tolerable_backdoor,
-                          max_epochs, batch_epochs):
+def train_remove_backdoor(classifier, x_train, y_train, x_test, y_test, tolerable_backdoor, max_epochs, batch_epochs):
     """
     Trains the provider classifier until the tolerance or number of maximum epochs are reached.
 
@@ -567,14 +597,14 @@ def train_remove_backdoor(classifier, x_train, y_train, x_test, y_test, tolerabl
         classifier.fit(x_train, y_train, nb_epochs=batch_epochs)
         curr_epochs += batch_epochs
         curr_missed = measure_misclassification(classifier, x_test, y_test)
-        logger.info('Current epoch: %s', curr_epochs)
-        logger.info('Misclassifications: %s', curr_missed)
+        logger.info("Current epoch: %s", curr_epochs)
+        logger.info("Misclassifications: %s", curr_missed)
 
     improve_factor = initial_missed - curr_missed
     return improve_factor, classifier
 
 
-def cluster_activations(separated_activations, nb_clusters=2, nb_dims=10, reduce='FastICA', clustering_method='KMeans'):
+def cluster_activations(separated_activations, nb_clusters=2, nb_dims=10, reduce="FastICA", clustering_method="KMeans"):
     """
     Clusters activations and returns two arrays.
     1) separated_clusters: where separated_clusters[i] is a 1D array indicating which cluster each datapoint
@@ -601,7 +631,7 @@ def cluster_activations(separated_activations, nb_clusters=2, nb_dims=10, reduce
     separated_clusters = []
     separated_reduced_activations = []
 
-    if clustering_method == 'KMeans':
+    if clustering_method == "KMeans":
         clusterer = KMeans(n_clusters=nb_clusters)
     else:
         raise ValueError(clustering_method + " clustering method not supported.")
@@ -612,8 +642,11 @@ def cluster_activations(separated_activations, nb_clusters=2, nb_dims=10, reduce
         if nb_activations > nb_dims:
             reduced_activations = reduce_dimensionality(activation, nb_dims=nb_dims, reduce=reduce)
         else:
-            logger.info("Dimensionality of activations = %i less than nb_dims = %i. Not applying dimensionality "
-                        "reduction.", nb_activations, nb_dims)
+            logger.info(
+                "Dimensionality of activations = %i less than nb_dims = %i. Not applying dimensionality " "reduction.",
+                nb_activations,
+                nb_dims,
+            )
             reduced_activations = activation
         separated_reduced_activations.append(reduced_activations)
 
@@ -624,7 +657,7 @@ def cluster_activations(separated_activations, nb_clusters=2, nb_dims=10, reduce
     return separated_clusters, separated_reduced_activations
 
 
-def reduce_dimensionality(activations, nb_dims=10, reduce='FastICA'):
+def reduce_dimensionality(activations, nb_dims=10, reduce="FastICA"):
     """
     Reduces dimensionality of the activations provided using the specified number of dimensions and reduction technique.
 
@@ -639,9 +672,10 @@ def reduce_dimensionality(activations, nb_dims=10, reduce='FastICA'):
     """
     # pylint: disable=E0001
     from sklearn.decomposition import FastICA, PCA
-    if reduce == 'FastICA':
+
+    if reduce == "FastICA":
         projector = FastICA(n_components=nb_dims, max_iter=1000, tol=0.005)
-    elif reduce == 'PCA':
+    elif reduce == "PCA":
         projector = PCA(n_components=nb_dims)
     else:
         raise ValueError(reduce + " dimensionality reduction method not supported.")

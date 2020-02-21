@@ -38,9 +38,10 @@ class BasicIterativeMethod(ProjectedGradientDescent):
 
     | Paper link: https://arxiv.org/abs/1607.02533
     """
+
     attack_params = ProjectedGradientDescent.attack_params
 
-    def __init__(self, classifier, eps=.3, eps_step=0.1, max_iter=100, targeted=False, batch_size=1):
+    def __init__(self, classifier, eps=0.3, eps_step=0.1, max_iter=100, targeted=False, batch_size=1):
         """
         Create a :class:`.ProjectedGradientDescent` instance.
 
@@ -57,6 +58,13 @@ class BasicIterativeMethod(ProjectedGradientDescent):
         :param batch_size: Size of the batch on which adversarial samples are generated.
         :type batch_size: `int`
         """
-        super(BasicIterativeMethod, self).__init__(classifier, norm=np.inf, eps=eps, eps_step=eps_step,
-                                                   max_iter=max_iter, targeted=targeted, num_random_init=0,
-                                                   batch_size=batch_size)
+        super(BasicIterativeMethod, self).__init__(
+            classifier,
+            norm=np.inf,
+            eps=eps,
+            eps_step=eps_step,
+            max_iter=max_iter,
+            targeted=targeted,
+            num_random_init=0,
+            batch_size=batch_size,
+        )

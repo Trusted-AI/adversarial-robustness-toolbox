@@ -1,6 +1,6 @@
 # MIT License
 #
-# Copyright (C) IBM Corporation 2019
+# Copyright (C) IBM Corporation 2020
 #
 # Permission is hereby granted, free of charge, to any person obtaining a copy of this software and associated
 # documentation files (the "Software"), to deal in the Software without restriction, including without limitation the
@@ -15,24 +15,21 @@
 # AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT,
 # TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 # SOFTWARE.
-from __future__ import absolute_import, division, print_function, unicode_literals
-
 import logging
 import unittest
 
 import numpy as np
 
+from art.defences import HighConfidence
 from art.utils import load_dataset
-from art.wrappers.output_high_confidence import OutputHighConfidence
-
 from tests.utils import master_seed, get_classifier_kr_tf, get_classifier_kr_tf_binary
 
 logger = logging.getLogger(__name__)
 
 
-class TestOutputHighConfidence(unittest.TestCase):
+class TestHighConfidence(unittest.TestCase):
     """
-    A unittest class for testing the High Confidence Output wrapper.
+    A unittest class for testing the HighConfidence postprocessor.
     """
 
     @classmethod
@@ -49,17 +46,18 @@ class TestOutputHighConfidence(unittest.TestCase):
         """
         (_, _), (x_test, _) = self.mnist
         classifier = get_classifier_kr_tf()
-        wrapped_classifier = OutputHighConfidence(classifier=classifier, cutoff=0.1)
+        preds = classifier.predict(x_test[0:1])
+        postprocessor = HighConfidence(cutoff=0.1)
+        post_preds = postprocessor(preds=preds)
 
         classifier_prediction_expected = np.asarray([[0.12109935, 0.0498215, 0.0993958, 0.06410096, 0.11366928,
                                                       0.04645343, 0.06419807, 0.30685693, 0.07616714, 0.05823757]],
                                                     dtype=np.float32)
-        wrapped_classifier_prediction_expected = np.asarray([[0.12109935, 0.0, 0.0, 0.0, 0.11366928, 0.0, 0.0,
-                                                              0.30685693, 0.0, 0.0]], dtype=np.float32)
+        post_classifier_prediction_expected = np.asarray([[0.12109935, 0.0, 0.0, 0.0, 0.11366928, 0.0, 0.0,
+                                                           0.30685693, 0.0, 0.0]], dtype=np.float32)
 
-        np.testing.assert_array_almost_equal(classifier.predict(x_test[0:1]), classifier_prediction_expected, decimal=4)
-        np.testing.assert_array_almost_equal(wrapped_classifier.predict(x_test[0:1]),
-                                             wrapped_classifier_prediction_expected, decimal=4)
+        np.testing.assert_array_almost_equal(preds, classifier_prediction_expected, decimal=4)
+        np.testing.assert_array_almost_equal(post_preds, post_classifier_prediction_expected, decimal=4)
 
     def test_decimals_0_2(self):
         """
@@ -67,17 +65,18 @@ class TestOutputHighConfidence(unittest.TestCase):
         """
         (_, _), (x_test, _) = self.mnist
         classifier = get_classifier_kr_tf()
-        wrapped_classifier = OutputHighConfidence(classifier=classifier, cutoff=0.2)
+        preds = classifier.predict(x_test[0:1])
+        postprocessor = HighConfidence(cutoff=0.2)
+        post_preds = postprocessor(preds=preds)
 
         classifier_prediction_expected = np.asarray([[0.12109935, 0.0498215, 0.0993958, 0.06410096, 0.11366928,
                                                       0.04645343, 0.06419807, 0.30685693, 0.07616714, 0.05823757]],
                                                     dtype=np.float32)
-        wrapped_classifier_prediction_expected = np.asarray([[0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.30685693, 0.0, 0.0]],
-                                                            dtype=np.float32)
+        post_classifier_prediction_expected = np.asarray([[0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.30685693, 0.0, 0.0]],
+                                                         dtype=np.float32)
 
-        np.testing.assert_array_almost_equal(classifier.predict(x_test[0:1]), classifier_prediction_expected, decimal=4)
-        np.testing.assert_array_almost_equal(wrapped_classifier.predict(x_test[0:1]),
-                                             wrapped_classifier_prediction_expected, decimal=4)
+        np.testing.assert_array_almost_equal(preds, classifier_prediction_expected, decimal=4)
+        np.testing.assert_array_almost_equal(post_preds, post_classifier_prediction_expected, decimal=4)
 
     def test_binary_decimals_0_5(self):
         """
@@ -85,14 +84,15 @@ class TestOutputHighConfidence(unittest.TestCase):
         """
         (_, _), (x_test, _) = self.mnist
         classifier = get_classifier_kr_tf_binary()
-        wrapped_classifier = OutputHighConfidence(classifier=classifier, cutoff=0.5)
+        preds = classifier.predict(x_test[0:1])
+        postprocessor = HighConfidence(cutoff=0.5)
+        post_preds = postprocessor(preds=preds)
 
         classifier_prediction_expected = np.asarray([[0.5301345]], dtype=np.float32)
-        wrapped_classifier_prediction_expected = np.asarray([[0.5301345]], dtype=np.float32)
+        post_classifier_prediction_expected = np.asarray([[0.5301345]], dtype=np.float32)
 
-        np.testing.assert_array_almost_equal(classifier.predict(x_test[0:1]), classifier_prediction_expected, decimal=4)
-        np.testing.assert_array_almost_equal(wrapped_classifier.predict(x_test[0:1]),
-                                             wrapped_classifier_prediction_expected, decimal=4)
+        np.testing.assert_array_almost_equal(preds, classifier_prediction_expected, decimal=4)
+        np.testing.assert_array_almost_equal(post_preds, post_classifier_prediction_expected, decimal=4)
 
     def test_binary_decimals_0_6(self):
         """
@@ -100,14 +100,15 @@ class TestOutputHighConfidence(unittest.TestCase):
         """
         (_, _), (x_test, _) = self.mnist
         classifier = get_classifier_kr_tf_binary()
-        wrapped_classifier = OutputHighConfidence(classifier=classifier, cutoff=0.6)
+        preds = classifier.predict(x_test[0:1])
+        postprocessor = HighConfidence(cutoff=0.6)
+        post_preds = postprocessor(preds=preds)
 
         classifier_prediction_expected = np.asarray([[0.5301345]], dtype=np.float32)
-        wrapped_classifier_prediction_expected = np.asarray([[0.0]], dtype=np.float32)
+        post_classifier_prediction_expected = np.asarray([[0.0]], dtype=np.float32)
 
-        np.testing.assert_array_almost_equal(classifier.predict(x_test[0:1]), classifier_prediction_expected, decimal=4)
-        np.testing.assert_array_almost_equal(wrapped_classifier.predict(x_test[0:1]),
-                                             wrapped_classifier_prediction_expected, decimal=4)
+        np.testing.assert_array_almost_equal(preds, classifier_prediction_expected, decimal=4)
+        np.testing.assert_array_almost_equal(post_preds, post_classifier_prediction_expected, decimal=4)
 
 
 if __name__ == '__main__':

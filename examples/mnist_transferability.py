@@ -37,21 +37,23 @@ def cnn_mnist_tf(input_shape):
     sess = tf.Session()
     sess.run(tf.global_variables_initializer())
 
-    classifier = TensorFlowClassifier(clip_values=(0, 1), input_ph=inputs_tf, output=logits, loss=loss, train=train_tf,
-                                      labels_ph=labels_tf, sess=sess)
+    classifier = TensorFlowClassifier(
+        clip_values=(0, 1), input_ph=inputs_tf, output=logits, loss=loss, train=train_tf, labels_ph=labels_tf, sess=sess
+    )
     return classifier
 
 
 def cnn_mnist_k(input_shape):
     # Create simple CNN
     model = Sequential()
-    model.add(Conv2D(4, kernel_size=(5, 5), activation='relu', input_shape=input_shape))
+    model.add(Conv2D(4, kernel_size=(5, 5), activation="relu", input_shape=input_shape))
     model.add(MaxPooling2D(pool_size=(2, 2)))
     model.add(Flatten())
-    model.add(Dense(10, activation='softmax'))
+    model.add(Dense(10, activation="softmax"))
 
-    model.compile(loss=keras.losses.categorical_crossentropy, optimizer=keras.optimizers.Adam(lr=0.01),
-                  metrics=['accuracy'])
+    model.compile(
+        loss=keras.losses.categorical_crossentropy, optimizer=keras.optimizers.Adam(lr=0.01), metrics=["accuracy"]
+    )
 
     classifier = KerasClassifier(model=model, clip_values=(0, 1))
     return classifier

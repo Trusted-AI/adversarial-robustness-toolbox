@@ -43,10 +43,23 @@ class RONIDefense(PoisonFilteringDefence):
 
     | Textbook link: https://people.eecs.berkeley.edu/~adj/publications/paper-files/EECS-2010-140.pdf
     """
-    defence_params = ['classifier', 'x_train', 'y_train', 'x_val', 'y_val', 'perf_func', 'calibrated', 'eps']
 
-    def __init__(self, classifier, x_train, y_train, x_val, y_val, perf_func='accuracy', pp_cal=0.2, pp_quiz=0.2,
-                 calibrated=True, eps=0.1, **kwargs):
+    defence_params = ["classifier", "x_train", "y_train", "x_val", "y_val", "perf_func", "calibrated", "eps"]
+
+    def __init__(
+        self,
+        classifier,
+        x_train,
+        y_train,
+        x_val,
+        y_val,
+        perf_func="accuracy",
+        pp_cal=0.2,
+        pp_quiz=0.2,
+        calibrated=True,
+        eps=0.1,
+        **kwargs
+    ):
         """
         Create an :class:`.ActivationDefence` object with the provided classifier.
 
@@ -140,8 +153,9 @@ class RONIDefense(PoisonFilteringDefence):
 
             after_classifier = deepcopy(before_classifier)
             after_classifier.fit(x=np.vstack([x_trusted, x_i]), y=np.vstack([y_trusted, y_i]))
-            acc_shift = performance_diff(before_classifier, after_classifier, self.x_quiz, self.y_quiz,
-                                         perf_function=self.perf_func)
+            acc_shift = performance_diff(
+                before_classifier, after_classifier, self.x_quiz, self.y_quiz, perf_function=self.perf_func
+            )
             # print(acc_shift, median, std_dev)
             if self.is_suspicious(before_classifier, acc_shift):
                 self.is_clean_lst[idx] = 0
@@ -185,8 +199,11 @@ class RONIDefense(PoisonFilteringDefence):
         for x_c, y_c in zip(self.x_cal, self.y_cal):
             after_classifier = deepcopy(before_classifier)
             after_classifier.fit(x=np.vstack([self.x_val, x_c]), y=np.vstack([self.y_val, y_c]))
-            accs.append(performance_diff(before_classifier, after_classifier, self.x_quiz, self.y_quiz,
-                                         perf_function=self.perf_func))
+            accs.append(
+                performance_diff(
+                    before_classifier, after_classifier, self.x_quiz, self.y_quiz, perf_function=self.perf_func
+                )
+            )
 
         return np.median(accs), np.std(accs)
 

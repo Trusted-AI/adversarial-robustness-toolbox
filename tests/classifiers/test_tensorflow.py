@@ -229,7 +229,8 @@ class TestTensorFlowClassifier(TestBase):
             self.assertIn('sess=<tensorflow.python.client.session.Session object', repr_classifier)
             self.assertIn('TensorFlowClassifier', repr_classifier)
 
-        self.assertIn('channel_index=3, clip_values=(0, 1), defences=None, preprocessing=(0, 1))', repr_classifier)
+        self.assertIn('channel_index=3, clip_values=(0, 1), preprocessing_defences=None, postprocessing_defences=None, '
+                      'preprocessing=(0, 1))', repr_classifier)
 
     # Commented because of problems with multiple classifiers in the same test module
     # def test_pickle(self):
