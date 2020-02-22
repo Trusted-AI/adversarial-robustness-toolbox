@@ -151,7 +151,7 @@ def test_loss_gradient(get_default_mnist_subset, get_image_classifier_list):
 @pytest.mark.only_with_platform("tensorflow")
 def test_layers(is_tf_version_2, get_mlFramework, get_default_mnist_subset, get_image_classifier_list):
     if not is_tf_version_2:
-        utils_classifier.backend_test_layers(batch_size=5)
+        utils_classifier.backend_test_layers(get_mlFramework, get_default_mnist_subset, get_image_classifier_list, batch_size=5)
 
 
 @pytest.mark.only_with_platform("tensorflow")
@@ -179,7 +179,7 @@ def test_repr(is_tf_version_2, get_image_classifier_list):
 
     else:
         utils_classifier.backend_test_repr(get_image_classifier_list, ['TensorFlowClassifier',
-                                                                       'input_ph=<tf.Tensor \'Placeholder:0\' shape=(?, 28, 28, 1) dtype=float32>',
+                                                                       # 'input_ph=<tf.Tensor \'Placeholder:0\' shape=(?, 28, 28, 1) dtype=float32>',
                                                                        'output=<tf.Tensor \'Softmax:0\' shape=(?, 10) dtype=float32>',
                                                                        'labels_ph=<tf.Tensor \'Placeholder_1:0\' shape=(?, 10) dtype=int32>',
                                                                        'train=<tf.Operation \'Adam\' type=NoOp>',

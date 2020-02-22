@@ -175,7 +175,7 @@ class TestKerasClassifierTensorFlow(TestBase):
         smooth = SpatialSmoothing()
 
         classifier_ = get_image_classifier_kr_tf()
-        classifier = KerasClassifier(clip_values=clip_values, model=classifier_._model, defences=[fs, jpeg, smooth])
+        classifier = KerasClassifier(clip_values=clip_values, model=classifier_._model, preprocessing_defences=[fs, jpeg, smooth])
         self.assertEqual(len(classifier.defences), 3)
 
         predictions_classifier = classifier.predict(self.x_test_mnist)
