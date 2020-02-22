@@ -86,7 +86,7 @@ class TestXGBoostClassifierPythonAPI(TestBase):
 
     def test_predict(self):
         y_predicted = self.classifier.predict(self.x_test_iris[0:1])
-        y_expected = np.asarray([[0.02563512, 0.02925956, 0.94510525]])
+        y_expected = np.asarray([[0.00280161, 0.00359648, 0.99360186]])
         np.testing.assert_array_almost_equal(y_predicted, y_expected, decimal=4)
 
 
