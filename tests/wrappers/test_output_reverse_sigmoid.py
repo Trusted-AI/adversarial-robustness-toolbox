@@ -22,8 +22,8 @@ import unittest
 
 import numpy as np
 
-from art.utils import load_dataset, master_seed
-from tests.utils_test import get_image_classifier_kr_tf, get_image_classifier_kr_tf_binary
+from art.utils import load_dataset
+from tests.utils_test import get_image_classifier_kr_tf, get_image_classifier_kr_tf_binary, master_seed
 from art.wrappers.output_reverse_sigmoid import OutputReverseSigmoid
 
 logger = logging.getLogger(__name__)
