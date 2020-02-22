@@ -19,6 +19,7 @@ import logging
 import unittest
 
 import numpy as np
+from tests.utils_test import get_image_classifier_kr_tf, get_image_classifier_kr_tf_binary
 
 from art.utils import load_dataset
 from art.defences import ReverseSigmoid
@@ -45,7 +46,7 @@ class TestReverseSigmoid(unittest.TestCase):
         Test reverse sigmoid.
         """
         (_, _), (x_test, _) = self.mnist
-        classifier = get_classifier_kr_tf()
+        classifier = get_image_classifier_kr_tf()
         preds = classifier.predict(x_test[0:1])
         postprocessor = ReverseSigmoid(beta=1.0, gamma=0.1)
         post_preds = postprocessor(preds=preds)
@@ -65,7 +66,7 @@ class TestReverseSigmoid(unittest.TestCase):
         Test reverse sigmoid parameter beta.
         """
         (_, _), (x_test, _) = self.mnist
-        classifier = get_classifier_kr_tf()
+        classifier = get_image_classifier_kr_tf()
         preds = classifier.predict(x_test[0:1])
         postprocessor = ReverseSigmoid(beta=0.75, gamma=0.1)
         post_preds = postprocessor(preds=preds)
@@ -85,7 +86,7 @@ class TestReverseSigmoid(unittest.TestCase):
         Test reverse sigmoid parameter gamma.
         """
         (_, _), (x_test, _) = self.mnist
-        classifier = get_classifier_kr_tf()
+        classifier = get_image_classifier_kr_tf()
         preds = classifier.predict(x_test[0:1])
         postprocessor = ReverseSigmoid(beta=1.0, gamma=0.5)
         post_preds = postprocessor(preds=preds)
@@ -105,7 +106,7 @@ class TestReverseSigmoid(unittest.TestCase):
         Test reverse sigmoid for binary classifier.
         """
         (_, _), (x_test, _) = self.mnist
-        classifier = get_classifier_kr_tf_binary()
+        classifier = get_image_classifier_kr_tf_binary()
         preds = classifier.predict(x_test[0:1])
         postprocessor = ReverseSigmoid(beta=1.0, gamma=0.1)
         post_preds = postprocessor(preds=preds)
@@ -121,7 +122,7 @@ class TestReverseSigmoid(unittest.TestCase):
         Test reverse sigmoid parameter beta for binary classifier
         """
         (_, _), (x_test, _) = self.mnist
-        classifier = get_classifier_kr_tf_binary()
+        classifier = get_image_classifier_kr_tf_binary()
         preds = classifier.predict(x_test[0:1])
         postprocessor = ReverseSigmoid(beta=0.75, gamma=0.1)
         post_preds = postprocessor(preds=preds)
@@ -137,7 +138,7 @@ class TestReverseSigmoid(unittest.TestCase):
         Test reverse sigmoid parameter gamma for binary classifier
         """
         (_, _), (x_test, _) = self.mnist
-        classifier = get_classifier_kr_tf_binary()
+        classifier = get_image_classifier_kr_tf_binary()
         preds = classifier.predict(x_test[0:1])
         postprocessor = ReverseSigmoid(beta=1.0, gamma=0.5)
         post_preds = postprocessor(preds=preds)
