@@ -6,9 +6,9 @@ from tests.utils_test import ExpectedValue
 logger = logging.getLogger(__name__)
 
 
-def backend_test_layers(get_mlFramework, get_default_mnist_subset, get_image_classifier_list, batch_size, layer_count=None):
+def backend_test_layers(get_mlFramework, get_default_mnist_subset, classifier, batch_size, layer_count=None):
     (x_train_mnist, y_train_mnist), (x_test_mnist, y_test_mnist) = get_default_mnist_subset
-    classifier, _ = get_image_classifier_list(one_classifier=True)
+    # classifier, _ = get_image_classifier_list(one_classifier=True)
     if layer_count is not None:
         assert len(classifier.layer_names) == layer_count
 
@@ -18,11 +18,15 @@ def backend_test_layers(get_mlFramework, get_default_mnist_subset, get_image_cla
         np.testing.assert_array_equal(activation_name, activation_i)
 
 
-def backend_test_repr(get_image_classifier_list, message_list):
-    classifier, _ = get_image_classifier_list(one_classifier=True)
+def backend_test_repr(classifier, message_list):
+    # classifier, _ = get_image_classifier_list(one_classifier=True)
     repr_ = repr(classifier)
-    for message in message_list:
-        assert message in repr_, "{0}: was not contained within repr".format(message)
+    try:
+        for message in message_list:
+            assert message in repr_, "{0}: was not contained within repr".format(message)
+    except:
+        print(repr_)
+        tmp = ""
 
 
 def backend_test_class_gradient(get_default_mnist_subset, classifier, expected_values, labels):

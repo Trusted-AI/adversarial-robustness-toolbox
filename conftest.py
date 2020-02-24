@@ -24,6 +24,49 @@ def pytest_addoption(parser):
     )
 
 
+# @pytest.fixture(scope="module")
+# def get_image_classifier_list_test_not_from_logits(get_mlFramework):
+#     # def _get_image_classifier_list(one_classifier=False, defended=False, from_logits=False):
+#     #
+#     #
+#     # return _get_image_classifier_list
+#
+#     sess = None
+#
+#     if get_mlFramework == "tensorflow":
+#         classifier, sess = utils_test.get_image_classifier_tf(from_logits=False)
+#         classifier_list = [classifier]
+#
+#     if classifier_list is None:
+#         return None, None
+#
+#
+#     return classifier_list[0], sess
+#
+#     # return classifier_list, sess
+#
+# @pytest.fixture(scope="module")
+# def get_image_classifier_list_test_from_logits(get_mlFramework):
+#     # def _get_image_classifier_list(one_classifier=False, defended=False, from_logits=False):
+#     #
+#     #
+#     # return _get_image_classifier_list
+#
+#     sess = None
+#
+#     if get_mlFramework == "tensorflow":
+#         classifier, sess = utils_test.get_image_classifier_tf(from_logits=True)
+#         classifier_list = [classifier]
+#
+#     if classifier_list is None:
+#         return None, None
+#
+#
+#     return classifier_list[0], sess
+
+    # return classifier_list, sess
+
+# @pytest.fixture(scope="module")
 @pytest.fixture
 def get_image_classifier_list(get_mlFramework):
     def _get_image_classifier_list(one_classifier=False, defended=False, from_logits=False):
@@ -115,7 +158,7 @@ def create_test_image(create_test_dir):
 
     yield os.path.join(test_dir, 'test.jpg')
 
-@pytest.fixture
+@pytest.fixture(scope="session")
 def get_mlFramework(request):
     mlFramework = request.config.getoption("--mlFramework")
     if mlFramework not in art_supported_frameworks:
