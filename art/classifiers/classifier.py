@@ -109,8 +109,8 @@ class Classifier(abc.ABC, metaclass=input_filter):
                be divided by the second one.
         :type preprocessing: `tuple`
         """
-        from art.defences.preprocess.preprocessor import Preprocessor
-        from art.defences.postprocess.postprocessor import Postprocessor
+        from art.defences.preprocessor.preprocessor import Preprocessor
+        from art.defences.postprocessor.postprocessor import Postprocessor
 
         self._clip_values = clip_values
         if clip_values is not None:
