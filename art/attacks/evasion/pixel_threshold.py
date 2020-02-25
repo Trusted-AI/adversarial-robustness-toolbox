@@ -228,7 +228,10 @@ class PixelThreshold(EvasionAttack):
 
             try:
                 strategy.optimize(
-                    predict_fn, maxfun=max(1, 400 // len(bounds)) * len(bounds) * 100, callback=callback_fn, iterations=1
+                    predict_fn,
+                    maxfun=max(1, 400 // len(bounds)) * len(bounds) * 100,
+                    callback=callback_fn,
+                    iterations=1,
                 )
             except Exception as exception:
                 if self.verbose:
@@ -376,7 +379,7 @@ class ThresholdAttack(PixelThreshold):
         x = x.astype(int)
         for adv, image in zip(x, imgs):
             for count, (i, j, k) in enumerate(
-                    product(range(image.shape[-3]), range(image.shape[-2]), range(image.shape[-1]))
+                product(range(image.shape[-3]), range(image.shape[-2]), range(image.shape[-1]))
             ):
                 image[i, j, k] = adv[count]
         return imgs
@@ -544,21 +547,21 @@ _MACHEPS = np.finfo(np.float64).eps
 
 
 def differential_evolution(
-        func,
-        bounds,
-        args=(),
-        strategy="best1bin",
-        maxiter=1000,
-        popsize=15,
-        tol=0.01,
-        mutation=(0.5, 1),
-        recombination=0.7,
-        seed=None,
-        callback=None,
-        disp=False,
-        polish=True,
-        init="latinhypercube",
-        atol=0,
+    func,
+    bounds,
+    args=(),
+    strategy="best1bin",
+    maxiter=1000,
+    popsize=15,
+    tol=0.01,
+    mutation=(0.5, 1),
+    recombination=0.7,
+    seed=None,
+    callback=None,
+    disp=False,
+    polish=True,
+    init="latinhypercube",
+    atol=0,
 ):
     """Finds the global minimum of a multivariate function.
     Differential Evolution is stochastic in nature (does not use gradient
@@ -887,23 +890,23 @@ class DifferentialEvolutionSolver:
     )
 
     def __init__(
-            self,
-            func,
-            bounds,
-            args=(),
-            strategy="best1bin",
-            maxiter=1000,
-            popsize=15,
-            tol=0.01,
-            mutation=(0.5, 1),
-            recombination=0.7,
-            seed=None,
-            maxfun=np.inf,
-            callback=None,
-            disp=False,
-            polish=True,
-            init="latinhypercube",
-            atol=0,
+        self,
+        func,
+        bounds,
+        args=(),
+        strategy="best1bin",
+        maxiter=1000,
+        popsize=15,
+        tol=0.01,
+        mutation=(0.5, 1),
+        recombination=0.7,
+        seed=None,
+        maxfun=np.inf,
+        callback=None,
+        disp=False,
+        polish=True,
+        init="latinhypercube",
+        atol=0,
     ):
 
         if strategy in self._binomial:
@@ -1005,10 +1008,10 @@ class DifferentialEvolutionSolver:
         # Within each segment we sample from a uniform random distribution.
         # We need to do this sampling for each parameter.
         samples = (
-                segsize * rng.random_sample(self.population_shape)
-                # Offset each segment to cover the entire parameter range
-                # [0, 1)
-                + np.linspace(0.0, 1.0, self.num_population_members, endpoint=False)[:, np.newaxis]
+            segsize * rng.random_sample(self.population_shape)
+            # Offset each segment to cover the entire parameter range
+            # [0, 1)
+            + np.linspace(0.0, 1.0, self.num_population_members, endpoint=False)[:, np.newaxis]
         )
 
         # Create an array for population of candidate solutions.
@@ -1130,9 +1133,9 @@ class DifferentialEvolutionSolver:
             convergence = self.convergence
 
             if (
-                    self.callback
-                    and self.callback(self._scale_parameters(self.population[0]), convergence=self.tol / convergence)
-                    is True
+                self.callback
+                and self.callback(self._scale_parameters(self.population[0]), convergence=self.tol / convergence)
+                is True
             ):
                 warning_flag = True
                 status_message = "callback function requested stop early " "by returning True"
@@ -1386,7 +1389,7 @@ class DifferentialEvolutionSolver:
         """
         r0, r1 = samples[:2]
         bprime = self.population[candidate] + self.scale * (
-                self.population[0] - self.population[candidate] + self.population[r0] - self.population[r1]
+            self.population[0] - self.population[candidate] + self.population[r0] - self.population[r1]
         )
         return bprime
 
@@ -1396,7 +1399,7 @@ class DifferentialEvolutionSolver:
         """
         r0, r1, r2, r3 = samples[:4]
         bprime = self.population[0] + self.scale * (
-                self.population[r0] + self.population[r1] - self.population[r2] - self.population[r3]
+            self.population[r0] + self.population[r1] - self.population[r2] - self.population[r3]
         )
 
         return bprime
@@ -1407,7 +1410,7 @@ class DifferentialEvolutionSolver:
         """
         r0, r1, r2, r3, r4 = samples
         bprime = self.population[r0] + self.scale * (
-                self.population[r1] + self.population[r2] - self.population[r3] - self.population[r4]
+            self.population[r1] + self.population[r2] - self.population[r3] - self.population[r4]
         )
 
         return bprime
