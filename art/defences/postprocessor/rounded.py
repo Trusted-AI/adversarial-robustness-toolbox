@@ -16,41 +16,40 @@
 # TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 # SOFTWARE.
 """
-This module implements Gaussian noise added to the classifier output.
+This module implements a rounding to the classifier output.
 """
 import logging
 
 import numpy as np
 
-from art.defences.postprocess.postprocessor import Postprocessor
-from art.utils import is_probability
+from art.defences.postprocessor.postprocessor import Postprocessor
 
 logger = logging.getLogger(__name__)
 
 
-class GaussianNoise(Postprocessor):
+class Rounded(Postprocessor):
     """
-    Implementation of a postprocessor based on adding Gaussian noise to classifier output.
+    Implementation of a postprocessor based on rounding classifier output.
     """
 
-    params = ["scale"]
+    params = ["decimals"]
 
-    def __init__(self, scale=0.2, apply_fit=False, apply_predict=True):
+    def __init__(self, decimals=3, apply_fit=False, apply_predict=True):
         """
-        Create a GaussianNoise postprocessor.
+        Create a Rounded postprocessor.
 
-        :param scale: Standard deviation of the distribution.
-        :type scale: `float`
+        :param decimals: Number of decimal places after the decimal point.
+        :type decimals: `int`
         :param apply_fit: True if applied during fitting/training.
         :type apply_fit: `bool`
         :param apply_predict: True if applied during predicting.
         :type apply_predict: `bool`
         """
-        super(GaussianNoise, self).__init__()
+        super(Rounded, self).__init__()
         self._is_fitted = True
         self._apply_fit = apply_fit
         self._apply_predict = apply_predict
-        self.set_params(scale=scale)
+        self.set_params(decimals=decimals)
 
     @property
     def apply_fit(self):
@@ -69,27 +68,7 @@ class GaussianNoise(Postprocessor):
         :return: Postprocessed model output.
         :rtype: `np.ndarray`
         """
-        # Generate random noise
-        noise = np.random.normal(loc=0.0, scale=self.scale, size=preds.shape)
-
-        # Add noise to model output
-        post_preds = preds.copy()
-        post_preds += noise
-
-        if preds.shape[1] > 1:
-            # Check if model output is logit or probability
-            are_probability = [is_probability(x) for x in preds]
-            all_probability = np.sum(are_probability) == preds.shape[0]
-
-            # Finally normalize probability output
-            if all_probability:
-                post_preds[post_preds < 0.0] = 0.0
-                sums = np.sum(post_preds, axis=1)
-                post_preds /= sums
-        else:
-            post_preds[post_preds < 0.0] = 0.0
-
-        return post_preds
+        return np.around(preds, decimals=self.decimals)
 
     def fit(self, preds, **kwargs):
         """
@@ -101,14 +80,14 @@ class GaussianNoise(Postprocessor):
         """
         Take in a dictionary of parameters and apply checks before saving them as attributes.
 
-        :param scale: Standard deviation of the distribution.
-        :type scale: `float`
+        :param decimals: Number of decimal places after the decimal point.
+        :type decimals: `int`
         :return: `True` when parsing was successful
         """
         # Save defence-specific parameters
-        super(GaussianNoise, self).set_params(**kwargs)
+        super(Rounded, self).set_params(**kwargs)
 
-        if self.scale <= 0:
-            raise ValueError("Standard deviation must be positive.")
+        if not isinstance(self.decimals, (int, np.int)) or self.decimals <= 0:
+            raise ValueError("Number of decimal places must be a positive integer.")
 
         return True
