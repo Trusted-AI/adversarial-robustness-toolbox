@@ -27,7 +27,9 @@ declare -a attacks=("tests/attacks/test_adversarial_patch.py" \
                     "tests/attacks/test_spatial_transformation.py" \
                     "tests/attacks/test_universal_perturbation.py" \
                     "tests/attacks/test_virtual_adversarial.py" \
-                    "tests/attacks/test_zoo.py" )
+                    "tests/attacks/test_zoo.py" \
+                    "tests/attacks/test_pixel_attack.py" \
+                    "tests/attacks/test_threshold_attack.py" )
 
 declare -a classifiers=("tests/classifiers/test_blackbox.py" \
                         "tests/classifiers/test_catboost.py" \
@@ -46,6 +48,7 @@ declare -a classifiers=("tests/classifiers/test_blackbox.py" \
                         "tests/classifiers/test_xgboost.py" )
 
 declare -a defences=("tests/defences/test_adversarial_trainer.py" \
+                     "tests/defences/test_adversarial_trainer_madry_pgd.py" \
                      "tests/defences/test_class_labels.py" \
                      "tests/defences/test_feature_squeezing.py" \
                      "tests/defences/test_gaussian_augmentation.py" \

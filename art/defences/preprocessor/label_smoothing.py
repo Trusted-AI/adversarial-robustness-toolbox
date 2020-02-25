@@ -28,7 +28,7 @@ from __future__ import absolute_import, division, print_function, unicode_litera
 
 import logging
 
-from art.defences.preprocess.preprocessor import Preprocessor
+from art.defences.preprocessor.preprocessor import Preprocessor
 
 logger = logging.getLogger(__name__)
 

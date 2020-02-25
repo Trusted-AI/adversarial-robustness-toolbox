@@ -20,7 +20,7 @@ This module implements confidence added to the classifier output.
 """
 import logging
 
-from art.defences.postprocess.postprocessor import Postprocessor
+from art.defences.postprocessor.postprocessor import Postprocessor
 
 logger = logging.getLogger(__name__)
 
