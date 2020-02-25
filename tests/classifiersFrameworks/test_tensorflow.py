@@ -30,11 +30,11 @@ logger = logging.getLogger(__name__)
 
 
 @pytest.mark.only_with_platform("tensorflow")
-def test_predict(get_image_classifier_list_test_not_from_logits, get_default_mnist_subset):
+def test_predict(get_image_classifier_list, get_default_mnist_subset):
     (x_train_mnist, y_train_mnist), (x_test_mnist, y_test_mnist) = get_default_mnist_subset
 
-    classifier, sess = get_image_classifier_list_test_not_from_logits
-    # classifier, _ = get_image_classifier_list(one_classifier=True)
+    # classifier, sess = get_image_classifier_list_test_not_from_logits
+    classifier, _ = get_image_classifier_list(one_classifier=True)
 
     y_predicted = classifier.predict(x_test_mnist[0:1])
     y_expected = np.asarray([[0.12109935, 0.0498215, 0.0993958, 0.06410097, 0.11366927, 0.04645343, 0.06419806,

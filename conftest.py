@@ -66,6 +66,30 @@ def pytest_addoption(parser):
 
     # return classifier_list, sess
 
+
+@pytest.fixture(autouse=True)
+def setup_tear_down_framework(get_mlFramework):
+    if get_mlFramework == "keras":
+        pass
+    if get_mlFramework == "tensorflow":
+        pass
+    if get_mlFramework == "pytorch":
+        pass
+    if get_mlFramework == "scikitlearn":
+        pass
+    yield "tmp"
+
+    if get_mlFramework == "keras":
+        pass
+    if get_mlFramework == "tensorflow":
+        pass
+    if get_mlFramework == "pytorch":
+        pass
+    if get_mlFramework == "scikitlearn":
+        pass
+
+
+
 # @pytest.fixture(scope="module")
 @pytest.fixture
 def get_image_classifier_list(get_mlFramework):
