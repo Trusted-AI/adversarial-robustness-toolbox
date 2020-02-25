@@ -51,7 +51,7 @@ def setup_tear_down_framework(get_mlFramework):
 
 @pytest.fixture
 def get_image_classifier_list(get_mlFramework):
-    def _get_image_classifier_list(one_classifier=False, defended=False, from_logits=False):
+    def _get_image_classifier_list(one_classifier=False, defended=False, **kwargs):
         sess = None
         if get_mlFramework == "keras":
             if defended:
@@ -60,13 +60,13 @@ def get_image_classifier_list(get_mlFramework):
                 fs = FeatureSqueezing(bit_depth=1, clip_values=(0, 1))
                 classifier_list = [KerasClassifier(model=classifier._model, clip_values=(0, 1), preprocessing_defences=fs)]
             else:
-                classifier_list = [utils_test.get_image_classifier_kr()]
+                classifier_list = [utils_test.get_image_classifier_kr(**kwargs)]
         if get_mlFramework == "tensorflow":
             if defended:
                 logging.warning("{0} doesn't have a defended image classifier defined yet".format(get_mlFramework))
                 classifier_list = None
             else:
-                classifier, sess = utils_test.get_image_classifier_tf(from_logits=from_logits)
+                classifier, sess = utils_test.get_image_classifier_tf(**kwargs)
                 classifier_list = [classifier]
         if get_mlFramework == "pytorch":
             if defended:

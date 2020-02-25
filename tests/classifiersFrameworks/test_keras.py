@@ -28,13 +28,12 @@ from keras.preprocessing.image import ImageDataGenerator
 from keras.callbacks import LearningRateScheduler
 from keras.applications.resnet50 import ResNet50, decode_predictions
 from keras.preprocessing.image import load_img, img_to_array
-from tests.utils_test import ExpectedValue, master_seed
+from tests.utils_test import ExpectedValue
 # from art.config import ART_DATA_PATH
 from art.classifiers import KerasClassifier
 from art.classifiers.keras import generator_fit
 from art.defences import FeatureSqueezing, JpegCompression, SpatialSmoothing
 from art.data_generators import KerasDataGenerator
-from tests.utils_test import TestBase, get_image_classifier_kr
 from tests.classifiersFrameworks import utils_classifier
 import pytest
 
@@ -207,7 +206,8 @@ def test_defences_predict(get_default_mnist_subset, get_image_classifier_list):
     x_test_defense, _ = fs(x_test_defense, y_test_mnist)
     x_test_defense, _ = jpeg(x_test_defense, y_test_mnist)
     x_test_defense, _ = smooth(x_test_defense, y_test_mnist)
-    classifier = get_image_classifier_kr()
+    classifier, _ = get_image_classifier_list(one_classifier=True)
+
     predictions_check = classifier._model.predict(x_test_defense)
 
     # Check that the prediction results match
@@ -282,7 +282,7 @@ def test_learning_phase(get_image_classifier_list):
 def test_save(get_image_classifier_list):
     path = 'tmp'
     filename = 'model.h5'
-    # classifier = get_image_classifier_kr()
+
     classifier, _ = get_image_classifier_list(one_classifier=True)
     classifier.save(filename, path=path)
     assert os.path.isfile(os.path.join(path, filename))
@@ -381,7 +381,7 @@ def test_repr(get_image_classifier_list):
 
 
 @pytest.mark.only_with_platform("keras")
-def test_loss_functions(get_default_mnist_subset):
+def test_loss_functions(get_default_mnist_subset, get_image_classifier_list):
     (x_train_mnist, y_train_mnist), (x_test_mnist, y_test_mnist) = get_default_mnist_subset
 
     # prediction and class_gradient should be independent of logits/probabilities and of loss function
@@ -408,8 +408,8 @@ def test_loss_functions(get_default_mnist_subset):
 
     def _run_tests(_loss_name, _loss_type, _y_test_pred_expected, _class_gradient_probabilities_expected,
                    _loss_gradient_expected, _from_logits):
-        master_seed(1234)
-        classifier = get_image_classifier_kr(loss_name=_loss_name, loss_type=_loss_type, from_logits=_from_logits)
+
+        classifier, _ = get_image_classifier_list(one_classifier=True, defended=False, loss_name=_loss_name, loss_type=_loss_type, from_logits=_from_logits)
 
         y_test_pred = np.argmax(classifier.predict(x=x_test_mnist), axis=1)
         np.testing.assert_array_equal(y_test_pred, _y_test_pred_expected)
