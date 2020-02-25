@@ -92,8 +92,8 @@ class PoisoningAttackSVM(PoisoningAttackWhiteBox):
         :param x: An array with the points that initialize attack points.
         :type x: `np.ndarray`
         :param y: The target labels for
-        :return: An array holding the adversarial examples.
-        :rtype: `np.ndarray`
+        :return: An tuple holding the (poisoning examples, poisoning labels).
+        :rtype: `(np.ndarray, np.ndarray)`
         """
 
         if y is None:
