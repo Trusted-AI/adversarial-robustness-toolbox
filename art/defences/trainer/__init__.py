@@ -1,4 +1,4 @@
 """
 Module implementing train-based defences against adversarial attacks.
 """
-from art.defences.train.adversarial_trainer import AdversarialTrainer
+from art.defences.trainer.adversarial_trainer import AdversarialTrainer

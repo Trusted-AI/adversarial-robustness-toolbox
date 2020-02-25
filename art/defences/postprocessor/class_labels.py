@@ -16,40 +16,35 @@
 # TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 # SOFTWARE.
 """
-This module implements a rounding to the classifier output.
+This module implements class labels added to the classifier output.
 """
 import logging
 
 import numpy as np
 
-from art.defences.postprocess.postprocessor import Postprocessor
+from art.defences.postprocessor.postprocessor import Postprocessor
 
 logger = logging.getLogger(__name__)
 
 
-class Rounded(Postprocessor):
+class ClassLabels(Postprocessor):
     """
-    Implementation of a postprocessor based on rounding classifier output.
+    Implementation of a postprocessor based on adding class labels to classifier output.
     """
 
-    params = ["decimals"]
-
-    def __init__(self, decimals=3, apply_fit=False, apply_predict=True):
+    def __init__(self, apply_fit=False, apply_predict=True):
         """
-        Create a Rounded postprocessor.
+        Create a ClassLabels postprocessor.
 
-        :param decimals: Number of decimal places after the decimal point.
-        :type decimals: `int`
         :param apply_fit: True if applied during fitting/training.
         :type apply_fit: `bool`
         :param apply_predict: True if applied during predicting.
         :type apply_predict: `bool`
         """
-        super(Rounded, self).__init__()
+        super(ClassLabels, self).__init__()
         self._is_fitted = True
         self._apply_fit = apply_fit
         self._apply_predict = apply_predict
-        self.set_params(decimals=decimals)
 
     @property
     def apply_fit(self):
@@ -68,26 +63,17 @@ class Rounded(Postprocessor):
         :return: Postprocessed model output.
         :rtype: `np.ndarray`
         """
-        return np.around(preds, decimals=self.decimals)
+        class_labels = np.zeros_like(preds)
+        if preds.shape[1] > 1:
+            index_labels = np.argmax(preds, axis=1)
+            class_labels[:, index_labels] = 1
+        else:
+            class_labels[preds > 0.5] = 1
+
+        return class_labels
 
     def fit(self, preds, **kwargs):
         """
         No parameters to learn for this method; do nothing.
         """
         pass
-
-    def set_params(self, **kwargs):
-        """
-        Take in a dictionary of parameters and apply checks before saving them as attributes.
-
-        :param decimals: Number of decimal places after the decimal point.
-        :type decimals: `int`
-        :return: `True` when parsing was successful
-        """
-        # Save defence-specific parameters
-        super(Rounded, self).set_params(**kwargs)
-
-        if not isinstance(self.decimals, (int, np.int)) or self.decimals <= 0:
-            raise ValueError("Number of decimal places must be a positive integer.")
-
-        return True
