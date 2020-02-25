@@ -33,7 +33,6 @@ logger = logging.getLogger(__name__)
 def test_predict(get_image_classifier_list, get_default_mnist_subset):
     (x_train_mnist, y_train_mnist), (x_test_mnist, y_test_mnist) = get_default_mnist_subset
 
-    # classifier, sess = get_image_classifier_list_test_not_from_logits
     classifier, _ = get_image_classifier_list(one_classifier=True)
 
     y_predicted = classifier.predict(x_test_mnist[0:1])
@@ -47,10 +46,7 @@ def test_fit_generator(is_tf_version_2, get_default_mnist_subset, get_image_clas
     (x_train_mnist, y_train_mnist), (x_test_mnist, y_test_mnist) = get_default_mnist_subset
 
     if not is_tf_version_2:
-        # classifier, sess = get_image_classifier_list_test_not_from_logits
         classifier, sess = get_image_classifier_list(one_classifier=True)
-        # classifier_list, sess = get_image_classifier_list()
-        # classifier = classifier_list[0]
 
         # Create TensorFlow data generator
         x_tensor = tf.convert_to_tensor(x_train_mnist.reshape(10, 100, 28, 28, 1))
@@ -81,11 +77,7 @@ def test_input_shape(get_image_classifier_list):
 def test_class_gradient(get_image_classifier_list, get_default_mnist_subset):
     (x_train_mnist, y_train_mnist), (x_test_mnist, y_test_mnist) = get_default_mnist_subset
 
-    # classifier_logits, _ = get_image_classifier_list_test_from_logits
     classifier_logits, _ = get_image_classifier_list(one_classifier=True, from_logits=True)
-
-    # classifier_list, _ = get_image_classifier_list(from_logits=True)
-    # classifier_logits = classifier_list[0]
 
     expected_values = {"expected_gradients_1_all_labels": ExpectedValue(
         np.asarray([-0.03347399, -0.03195872, -0.02650188, 0.04111874, 0.08676253, 0.03339913,
@@ -154,7 +146,6 @@ def test_loss_gradient(get_default_mnist_subset, get_image_classifier_list):
 @pytest.mark.only_with_platform("tensorflow")
 def test_layers(is_tf_version_2, get_mlFramework, get_default_mnist_subset, get_image_classifier_list):
     if not is_tf_version_2:
-        # classifier, _ = get_image_classifier_list
         utils_classifier.backend_test_layers(get_mlFramework, get_default_mnist_subset, get_image_classifier_list, batch_size=5)
 
 
@@ -194,8 +185,3 @@ def test_repr(is_tf_version_2, get_image_classifier_list):
                                                                        'sess=<tensorflow.python.client.session.Session object',
                                                                        'TensorFlowClassifier',
                                                                        'channel_index=3, clip_values=(0, 1), preprocessing_defences=None, postprocessing_defences=None, preprocessing=(0, 1))'])
-
-
-                                                  # input_ph=<tf.Tensor 'Placeholder:0' shape=(?, 28, 28, 1) dtype=float32>:
-# art.classifiers.tensorflow.TensorFlowClassifier(input_ph=<tf.Tensor 'Placeholder:0' shape=(?, 28, 28, 1) dtype=float32>, output=<tf.Tensor 'Softmax:0' shape=(?, 10) dtype=float32>, labels_ph=<tf.Tensor 'Placeholder_1:0' shape=(?, 10) dtype=int32>, train=<tf.Operation 'Adam' type=NoOp>, loss=<tf.Tensor 'Mean:0' shape=() dtype=float32>, learning=None, sess=<tensorflow.python.client.session.Session object at 0x149134fd0>, channel_index=3, clip_values=(0, 1), preprocessing_defences=None, postprocessing_defences=None, preprocessing=(0, 1))
-# art.classifiers.tensorflow.TensorFlowClassifier(input_ph=<tf.Tensor 'Placeholder:0' shape=(?, 28, 28, 1) dtype=float32>, output=<tf.Tensor 'Softmax:0' shape=(?, 10) dtype=float32>, labels_ph=<tf.Tensor 'Placeholder_1:0' shape=(?, 10) dtype=int32>, train=<tf.Operation 'Adam' type=NoOp>, loss=<tf.Tensor 'Mean:0' shape=() dtype=float32>, learning=None, sess=<tensorflow.python.client.session.Session object at 0x14d65d4a8>, channel_index=3, clip_values=(0, 1), preprocessing_defences=None, postprocessing_defences=None, preprocessing=(0, 1))
