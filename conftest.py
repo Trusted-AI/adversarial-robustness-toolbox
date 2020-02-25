@@ -5,6 +5,7 @@ from tests import utils_test
 import numpy as np
 from art.classifiers import KerasClassifier
 import tensorflow as tf
+import keras
 import os
 import requests
 import tempfile
@@ -69,18 +70,20 @@ def pytest_addoption(parser):
 
 @pytest.fixture(autouse=True)
 def setup_tear_down_framework(get_mlFramework):
+    #Ran before each test
     if get_mlFramework == "keras":
         pass
     if get_mlFramework == "tensorflow":
-        pass
+        tf.reset_default_graph()
     if get_mlFramework == "pytorch":
         pass
     if get_mlFramework == "scikitlearn":
         pass
-    yield "tmp"
+    yield True
 
+    # Ran after each test
     if get_mlFramework == "keras":
-        pass
+        keras.backend.clear_session()
     if get_mlFramework == "tensorflow":
         pass
     if get_mlFramework == "pytorch":
@@ -128,7 +131,7 @@ def get_image_classifier_list(get_mlFramework):
             return None, None
 
         if one_classifier:
-            return classifier_list[0], None
+            return classifier_list[0], sess
 
         return classifier_list, sess
 

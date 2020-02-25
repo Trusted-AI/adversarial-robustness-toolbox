@@ -43,13 +43,12 @@ def test_predict(get_image_classifier_list, get_default_mnist_subset):
 
 
 @pytest.mark.only_with_platform("tensorflow")
-def test_fit_generator(is_tf_version_2, get_default_mnist_subset,
-                       get_image_classifier_list_test_not_from_logits):
+def test_fit_generator(is_tf_version_2, get_default_mnist_subset, get_image_classifier_list):
     (x_train_mnist, y_train_mnist), (x_test_mnist, y_test_mnist) = get_default_mnist_subset
 
     if not is_tf_version_2:
-        classifier, sess = get_image_classifier_list_test_not_from_logits
-        # classifier, sess = get_image_classifier_list(one_classifier=True)
+        # classifier, sess = get_image_classifier_list_test_not_from_logits
+        classifier, sess = get_image_classifier_list(one_classifier=True)
         # classifier_list, sess = get_image_classifier_list()
         # classifier = classifier_list[0]
 
@@ -79,11 +78,11 @@ def test_input_shape(get_image_classifier_list):
 
 
 @pytest.mark.only_with_platform("tensorflow")
-def test_class_gradient(get_image_classifier_list_test_from_logits, get_default_mnist_subset):
+def test_class_gradient(get_image_classifier_list, get_default_mnist_subset):
     (x_train_mnist, y_train_mnist), (x_test_mnist, y_test_mnist) = get_default_mnist_subset
 
-    classifier_logits, _ = get_image_classifier_list_test_from_logits
-    # classifier_logits, _ = get_image_classifier_list(one_classifier=True, from_logits=True)
+    # classifier_logits, _ = get_image_classifier_list_test_from_logits
+    classifier_logits, _ = get_image_classifier_list(one_classifier=True, from_logits=True)
 
     # classifier_list, _ = get_image_classifier_list(from_logits=True)
     # classifier_logits = classifier_list[0]
@@ -153,10 +152,10 @@ def test_loss_gradient(get_default_mnist_subset, get_image_classifier_list):
 
 
 @pytest.mark.only_with_platform("tensorflow")
-def test_layers(is_tf_version_2, get_mlFramework, get_default_mnist_subset, get_image_classifier_list_test_not_from_logits):
+def test_layers(is_tf_version_2, get_mlFramework, get_default_mnist_subset, get_image_classifier_list):
     if not is_tf_version_2:
-        classifier, _ = get_image_classifier_list_test_not_from_logits
-        utils_classifier.backend_test_layers(get_mlFramework, get_default_mnist_subset, classifier, batch_size=5)
+        # classifier, _ = get_image_classifier_list
+        utils_classifier.backend_test_layers(get_mlFramework, get_default_mnist_subset, get_image_classifier_list, batch_size=5)
 
 
 @pytest.mark.only_with_platform("tensorflow")
@@ -172,8 +171,8 @@ def test_set_learning(is_tf_version_2, get_image_classifier_list):
 
 
 @pytest.mark.only_with_platform("tensorflow")
-def test_repr(is_tf_version_2, get_image_classifier_list_test_not_from_logits):
-    classifier, _ = get_image_classifier_list_test_not_from_logits
+def test_repr(is_tf_version_2, get_image_classifier_list):
+    classifier, _ = get_image_classifier_list(one_classifier=True)
     if is_tf_version_2:
         utils_classifier.backend_test_repr(classifier, ['TensorFlowV2Classifier',
                                                                        'model=',
