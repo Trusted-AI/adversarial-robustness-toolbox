@@ -1,6 +1,6 @@
 # MIT License
 #
-# Copyright (C) IBM Corporation 2018
+# Copyright (C) IBM Corporation 2020
 #
 # Permission is hereby granted, free of charge, to any person obtaining a copy
 # of this software and associated documentation files (the "Software"), to deal
@@ -61,9 +61,6 @@ class TestPixelAttack(TestBase):
 
     @classmethod
     def setUpClass(cls):
-        """
-        TODO: Write Comment
-        """
         super().setUpClass()
 
         cls.n_test = 2
@@ -72,31 +69,23 @@ class TestPixelAttack(TestBase):
 
     def test_keras_mnist(self):
         """
-        Test with the KerasClassifier. (Untargetted Attack)
+        Test with the KerasClassifier. (Untargeted Attack)
         :return:
         """
         classifier = get_classifier_kr()
-        self._test_attack(
-            classifier,
-            self.x_test_mnist,
-            self.y_test_mnist,
-            False)
+        self._test_attack(classifier, self.x_test_mnist, self.y_test_mnist, False)
 
     def test_tensorflow_mnist(self):
         """
-        Test with the TensorFlowClassifier. (Untargetted Attack)
+        Test with the TensorFlowClassifier. (Untargeted Attack)
         :return:
         """
         classifier, sess = get_classifier_tf()
-        self._test_attack(
-            classifier,
-            self.x_test_mnist,
-            self.y_test_mnist,
-            False)
+        self._test_attack(classifier, self.x_test_mnist, self.y_test_mnist, False)
 
     def test_pytorch_mnist(self):
         """
-        Test with the PyTorchClassifier. (Untargetted Attack)
+        Test with the PyTorchClassifier. (Untargeted Attack)
         :return:
         """
         x_test = np.reshape(self.x_test_mnist, (self.x_test_mnist.shape[0], 1, 28, 28)).astype(np.float32)
@@ -105,31 +94,23 @@ class TestPixelAttack(TestBase):
 
     def test_keras_mnist_targeted(self):
         """
-        Test with the KerasClassifier. (Targetted Attack)
+        Test with the KerasClassifier. (Targeted Attack)
         :return:
         """
         classifier = get_classifier_kr()
-        self._test_attack(
-            classifier,
-            self.x_test_mnist,
-            self.y_test_mnist,
-            True)
+        self._test_attack(classifier, self.x_test_mnist, self.y_test_mnist, True)
 
     def test_tensorflow_mnist_targeted(self):
         """
-        Test with the TensorFlowClassifier. (Targetted Attack)
+        Test with the TensorFlowClassifier. (Targeted Attack)
         :return:
         """
         classifier, sess = get_classifier_tf()
-        self._test_attack(
-            classifier,
-            self.x_test_mnist,
-            self.y_test_mnist,
-            True)
+        self._test_attack(classifier, self.x_test_mnist, self.y_test_mnist, True)
 
     def test_pytorch_mnist_targeted(self):
         """
-        Test with the PyTorchClassifier. (Targetted Attack)
+        Test with the PyTorchClassifier. (Targeted Attack)
         :return:
         """
         x_test = np.reshape(self.x_test_mnist, (self.x_test_mnist.shape[0], 1, 28, 28)).astype(np.float32)
@@ -155,7 +136,6 @@ class TestPixelAttack(TestBase):
             targets = y_test
 
         for es in [0, 1]:
-
             df = PixelAttack(classifier, th=64, es=es, targeted=targeted)
             x_test_adv = df.generate(x_test_original, targets)
 
@@ -165,25 +145,13 @@ class TestPixelAttack(TestBase):
             y_pred = get_labels_np_array(classifier.predict(x_test_adv))
             self.assertFalse((y_test == y_pred).all())
 
-            accuracy = np.sum(
-                np.argmax(
-                    y_pred,
-                    axis=1) == np.argmax(
-                        self.y_test_mnist,
-                        axis=1)) / self.n_test
+            accuracy = np.sum(np.argmax(y_pred, axis=1) == np.argmax(self.y_test_mnist, axis=1)) / self.n_test
             logger.info(
                 'Accuracy on adversarial examples: %.2f%%',
                 (accuracy * 100))
 
         # Check that x_test has not been modified by attack and classifier
-        self.assertAlmostEqual(
-            float(
-                np.max(
-                    np.abs(
-                        x_test_original -
-                        x_test))),
-            0.0,
-            delta=0.00001)
+        self.assertAlmostEqual(float(np.max(np.abs(x_test_original - x_test))), 0.0, delta=0.00001)
 
 
 if __name__ == '__main__':
