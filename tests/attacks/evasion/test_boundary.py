@@ -7,6 +7,7 @@ from art.classifiers.classifier import Classifier
 
 logger = logging.getLogger(__name__)
 
+
 @pytest.fixture()
 def fix_get_mnist_subset(get_mnist_dataset):
     (x_train_mnist, y_train_mnist), (x_test_mnist, y_test_mnist) = get_mnist_dataset
@@ -17,7 +18,6 @@ def fix_get_mnist_subset(get_mnist_dataset):
 
 @pytest.mark.parametrize("clipped_classifier, targeted", [(True, True), (True, False), (False, True), (False, False)])
 def test_tabular(get_tabular_classifier_list, framework, get_iris_dataset, clipped_classifier, targeted):
-
     classifier_list = get_tabular_classifier_list(BoundaryAttack, clipped=clipped_classifier)
     if classifier_list is None:
         logging.warning("Couldn't perform  this test because no classifier is defined")

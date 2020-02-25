@@ -65,7 +65,6 @@ def test_random_initialisation_images(fix_get_mnist_subset, get_image_classifier
         utils_attack.backend_test_random_initialisation_images(attack, fix_get_mnist_subset)
 
 
-
 def test_targeted_images(fix_get_mnist_subset, get_image_classifier_list_for_attack):
     classifier_list = get_image_classifier_list_for_attack(FastGradientMethod)
     # TODO this if statement must be removed once we have a classifier for both image and tabular data
@@ -138,7 +137,6 @@ def test_norm_images(norm, fix_get_mnist_subset, get_image_classifier_list_for_a
 @pytest.mark.skipMlFramework("scikitlearn")  # temporarily skipping for scikitlearn until find bug fix in bounded test
 @pytest.mark.parametrize("targeted, clipped", [(True, True), (True, False), (False, True), (False, False)])
 def test_tabular(get_tabular_classifier_list, framework, get_iris_dataset, targeted, clipped):
-
     classifier_list = get_tabular_classifier_list(FastGradientMethod, clipped=clipped)
 
     if classifier_list is None:
