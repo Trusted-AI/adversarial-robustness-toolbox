@@ -26,9 +26,7 @@ from art.defences import Rounded
 from art.utils import load_dataset
 from tests.utils_test import master_seed
 
-
 logger = logging.getLogger(__name__)
-
 
 
 class TestRounded(unittest.TestCase):

@@ -20,13 +20,11 @@ import unittest
 
 import numpy as np
 
-
 from tests.utils_test import get_image_classifier_kr_tf, get_image_classifier_kr_tf_binary
 
 from art.utils import load_dataset
 from art.defences import ClassLabels
 from tests.utils_test import master_seed
-
 
 logger = logging.getLogger(__name__)
 
@@ -55,7 +53,6 @@ class TestClassLabels(unittest.TestCase):
         postprocessor = ClassLabels()
         post_preds = postprocessor(preds=preds)
 
-
         classifier_prediction_expected = np.asarray([[0.12109935, 0.0498215, 0.0993958, 0.06410096, 0.11366928,
                                                       0.04645343, 0.06419807, 0.30685693, 0.07616714, 0.05823757]],
                                                     dtype=np.float32)
@@ -75,7 +72,6 @@ class TestClassLabels(unittest.TestCase):
         preds = classifier.predict(x_test[0:1])
         postprocessor = ClassLabels()
         post_preds = postprocessor(preds=preds)
-
 
         classifier_prediction_expected = np.asarray([[0.5301345]], dtype=np.float32)
         post_classifier_prediction_expected = np.asarray([[1.0]], dtype=np.float32)
