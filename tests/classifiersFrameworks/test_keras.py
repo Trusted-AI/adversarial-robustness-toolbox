@@ -409,7 +409,7 @@ def test_loss_functions(get_default_mnist_subset, get_image_classifier_list):
     def _run_tests(_loss_name, _loss_type, _y_test_pred_expected, _class_gradient_probabilities_expected,
                    _loss_gradient_expected, _from_logits):
 
-        classifier, _ = get_image_classifier_list(one_classifier=True, defended=False, loss_name=_loss_name, loss_type=_loss_type, from_logits=_from_logits)
+        classifier, _ = get_image_classifier_list(one_classifier=True, loss_name=_loss_name, loss_type=_loss_type, from_logits=_from_logits)
 
         y_test_pred = np.argmax(classifier.predict(x=x_test_mnist), axis=1)
         np.testing.assert_array_equal(y_test_pred, _y_test_pred_expected)
