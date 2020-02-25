@@ -32,6 +32,7 @@ from art.classifiers.classifier import ClassifierGradients
 from art.attacks.attack import EvasionAttack
 from art.utils import compute_success, get_labels_np_array, random_sphere, projection, check_and_transform_label_format
 from art import utils
+
 logger = logging.getLogger(__name__)
 
 
@@ -55,15 +56,15 @@ class FastGradientMethod(EvasionAttack):
     ]
 
     def __init__(
-        self,
-        classifier,
-        norm=np.inf,
-        eps=0.3,
-        eps_step=0.1,
-        targeted=False,
-        num_random_init=0,
-        batch_size=1,
-        minimal=False,
+            self,
+            classifier,
+            norm=np.inf,
+            eps=0.3,
+            eps_step=0.1,
+            targeted=False,
+            num_random_init=0,
+            batch_size=1,
+            minimal=False,
     ):
         """
         Create a :class:`.FastGradientMethod` instance.
@@ -91,7 +92,6 @@ class FastGradientMethod(EvasionAttack):
 
         if self.is_valid_classifier_type(classifier) is False:
             raise utils.WrongClassifier(self.__class__, [ClassifierGradients], classifier)
-
 
         kwargs = {'norm': norm, 'eps': eps, 'eps_step': eps_step, 'targeted': targeted,
                   'num_random_init': num_random_init, 'batch_size': batch_size, 'minimal': minimal}

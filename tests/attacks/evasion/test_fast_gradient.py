@@ -137,7 +137,7 @@ def test_norm_images(norm, fix_get_mnist_subset, get_image_classifier_list_for_a
 
 @pytest.mark.skipMlFramework("scikitlearn")  # temporarily skipping for scikitlearn until find bug fix in bounded test
 @pytest.mark.parametrize("targeted, clipped", [(True, True), (True, False), (False, True), (False, False)])
-def test_tabular(get_tabular_classifier_list, get_mlFramework, get_iris_dataset, targeted, clipped):
+def test_tabular(get_tabular_classifier_list, framework, get_iris_dataset, targeted, clipped):
 
     classifier_list = get_tabular_classifier_list(FastGradientMethod, clipped=clipped)
 

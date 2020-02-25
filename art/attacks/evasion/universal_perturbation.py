@@ -32,6 +32,7 @@ from art.classifiers.classifier import ClassifierNeuralNetwork, ClassifierGradie
 from art.attacks.attack import EvasionAttack
 from art.utils import projection
 from art import utils
+
 logger = logging.getLogger(__name__)
 
 
@@ -58,7 +59,7 @@ class UniversalPerturbation(EvasionAttack):
     attack_params = EvasionAttack.attack_params + ["attacker", "attacker_params", "delta", "max_iter", "eps", "norm"]
 
     def __init__(
-        self, classifier, attacker="deepfool", attacker_params=None, delta=0.2, max_iter=20, eps=10.0, norm=np.inf
+            self, classifier, attacker="deepfool", attacker_params=None, delta=0.2, max_iter=20, eps=10.0, norm=np.inf
     ):
         """
         :param classifier: A trained classifier.
@@ -81,7 +82,6 @@ class UniversalPerturbation(EvasionAttack):
         super(UniversalPerturbation, self).__init__(classifier)
         if not isinstance(classifier, ClassifierNeuralNetwork) or not isinstance(classifier, ClassifierGradients):
             raise utils.WrongClassifier(self.__class__, [ClassifierNeuralNetwork, ClassifierGradients], classifier)
-
 
         kwargs = {
             "attacker": attacker,

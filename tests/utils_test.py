@@ -33,6 +33,7 @@ from art.classifiers import KerasClassifier
 from art.classifiers.scikitlearn import SklearnClassifier
 from sklearn.linear_model import LogisticRegression
 from sklearn.svm import SVC, LinearSVC
+
 # from tests.test_utils import master_seed
 
 
@@ -46,13 +47,10 @@ try:
 except ImportError:
     logger.info('Could not import PyTorch in utilities.')
 
-
 from art.config import ART_NUMPY_DTYPE
 from art.utils import load_dataset
 
 logger = logging.getLogger(__name__)
-
-
 
 # ----------------------------------------------------------------------------------------------------- TEST BASE CLASS
 art_supported_frameworks = ["keras", "tensorflow", "pytorch", "scikitlearn"]
@@ -68,19 +66,11 @@ class TestBase(unittest.TestCase):
 
         master_seed(1234)
 
-        # if "mlFramework" not in os.environ:
-        #     raise Exception(
-        #         "ART tests require you to set the environment variable mlFramework. See readme file for further instructions")
-        #
-        # is_valid_framework(os.environ["mlFramework"])
-
-
         cls.n_train = 1000
         cls.n_test = 100
         cls.batch_size = 16
 
         cls.create_image_dataset(n_train=cls.n_train, n_test=cls.n_test)
-
 
         (x_train_iris, y_train_iris), (x_test_iris, y_test_iris), _, _ = load_dataset('iris')
 
@@ -176,7 +166,7 @@ def check_adverse_example_x(x_adv, x_original, max=1.0, min=0.0, bounded=True):
     :param bounded:
     :return:
     '''
-    assert (x_original == x_adv).all() == False, "x_test_adv should have been different from x_test"
+    assert (x_original == x_adv).all() is False, "x_test_adv should have been different from x_test"
 
     if bounded:
         assert np.amax(x_adv) <= max, "x_test_adv values should have all been below {0}".format(max)
@@ -187,7 +177,7 @@ def check_adverse_example_x(x_adv, x_original, max=1.0, min=0.0, bounded=True):
 
 
 def check_adverse_predicted_sample_y(y_pred_adv, y_non_adv):
-    assert (y_non_adv == y_pred_adv).all() == False, "Adverse predicted sample was not what was expected"
+    assert (y_non_adv == y_pred_adv).all() is False, "Adverse predicted sample was not what was expected"
 
 
 def is_valid_framework(framework):
@@ -255,14 +245,14 @@ def _tf_weights_loader(dataset, weights_type, layer='DENSE', tf_version=1):
     if tf_version == 1:
         def _tf_initializer(_, dtype, partition_info):
             import tensorflow as tf
-            weights = np.load(os.path.join(os.path.dirname(os.path.dirname(__file__)),'resources/models', filename))
+            weights = np.load(os.path.join(os.path.dirname(os.path.dirname(__file__)), 'resources/models', filename))
             return tf.constant(weights, dtype)
 
     elif tf_version == 2:
         def _tf_initializer(_, dtype):
             import tensorflow as tf
 
-            weights = np.load(os.path.join(os.path.dirname(os.path.dirname(__file__)),'resources/models', filename))
+            weights = np.load(os.path.join(os.path.dirname(os.path.dirname(__file__)), 'resources/models', filename))
             return tf.constant(weights, dtype)
 
     else:
@@ -276,7 +266,7 @@ def _kr_weights_loader(dataset, weights_type, layer='DENSE'):
     filename = str(weights_type) + '_' + str(layer) + '_' + str(dataset) + '.npy'
 
     def _kr_initializer(_, dtype=None):
-        weights = np.load(os.path.join(os.path.dirname(os.path.dirname(__file__)),'resources/models', filename))
+        weights = np.load(os.path.join(os.path.dirname(os.path.dirname(__file__)), 'resources/models', filename))
         return k.variable(value=weights, dtype=dtype)
 
     return _kr_initializer
@@ -284,7 +274,7 @@ def _kr_weights_loader(dataset, weights_type, layer='DENSE'):
 
 def _kr_tf_weights_loader(dataset, weights_type, layer='DENSE'):
     filename = str(weights_type) + '_' + str(layer) + '_' + str(dataset) + '.npy'
-    weights = np.load(os.path.join(os.path.dirname(os.path.dirname(__file__)),'resources/models', filename))
+    weights = np.load(os.path.join(os.path.dirname(os.path.dirname(__file__)), 'resources/models', filename))
     return weights
 
 

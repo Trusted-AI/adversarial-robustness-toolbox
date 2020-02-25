@@ -28,8 +28,8 @@ from art.classifiers import KerasClassifier
 
 from art.utils import load_dataset, get_labels_np_array, random_targets
 from tests.utils_test import get_image_classifier_tf, get_image_classifier_kr, get_image_classifier_pt
-from tests.utils_test import get_tabular_classifier_tf, get_tabular_classifier_kr, get_tabular_classifier_pt, master_seed
-
+from tests.utils_test import get_tabular_classifier_tf, get_tabular_classifier_kr
+from tests.utils_test import get_tabular_classifier_pt, master_seed
 
 logger = logging.getLogger(__name__)
 
@@ -43,6 +43,7 @@ class TestInputFilter(unittest.TestCase):
     A unittest class for testing the input filtering using
     PGD tests.
     """
+
     @classmethod
     def setUpClass(cls):
         # MNIST
@@ -238,6 +239,7 @@ class TestInputFilter(unittest.TestCase):
             acc = np.sum(preds_adv == np.argmax(np.array(y_test), axis=1)) / len(y_test)
             logger.info('Accuracy of ' + classifier.__class__.__name__ + ' on Iris with PGD adversarial examples: '
                                                                          '%.2f%%', (acc * 100))
+
 
 if __name__ == '__main__':
     unittest.main()

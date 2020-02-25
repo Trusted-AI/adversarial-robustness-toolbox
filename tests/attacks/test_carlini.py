@@ -29,7 +29,6 @@ from art.attacks import CarliniL2Method, CarliniLInfMethod
 from art.classifiers import KerasClassifier
 from art.utils import random_targets, to_categorical
 
-
 from tests.utils_test import TestBase, master_seed
 from tests.utils_test import get_image_classifier_tf, get_image_classifier_kr, get_image_classifier_pt
 from tests.utils_test import get_tabular_classifier_tf, get_tabular_classifier_kr, get_tabular_classifier_pt
@@ -93,7 +92,6 @@ class TestCarlini(TestBase):
         # Build TensorFlowClassifier
 
         tfc, sess = get_image_classifier_tf(from_logits=True)
-
 
         # First attack
         cl2m = CarliniL2Method(classifier=tfc, targeted=True, max_iter=10)
@@ -455,7 +453,6 @@ class TestCarlini(TestBase):
         target = np.argmax(params['y'], axis=1)
         y_pred_adv = np.argmax(ptc.predict(x_test_adv), axis=1)
         self.assertTrue((target != y_pred_adv).any())
-
 
     def test_classifier_type_check_fail(self):
         utils_attack.backend_test_classifier_type_check_fail(CarliniLInfMethod, [ClassifierGradients])

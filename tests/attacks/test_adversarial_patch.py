@@ -26,7 +26,8 @@ from art import utils
 from art.attacks import AdversarialPatch
 from art.classifiers.scikitlearn import ScikitlearnDecisionTreeClassifier
 from tests.utils_test import TestBase, master_seed
-from tests.utils_test import get_image_classifier_tf, get_image_classifier_kr, get_image_classifier_pt, get_tabular_classifier_kr
+from tests.utils_test import get_image_classifier_tf, get_image_classifier_kr
+from tests.utils_test import get_tabular_classifier_kr, get_image_classifier_pt
 from tests.attacks import utils_attack
 
 logger = logging.getLogger(__name__)
@@ -120,9 +121,8 @@ class TestAdversarialPatch(TestBase):
         self.assertIn('Feature vectors detected.', str(context.exception))
 
     def test_classifier_type_check_fail(self):
-        utils_attack.backend_test_classifier_type_check_fail(AdversarialPatch, [ClassifierNeuralNetwork, ClassifierGradients])
-
-
+        utils_attack.backend_test_classifier_type_check_fail(AdversarialPatch,
+                                                             [ClassifierNeuralNetwork, ClassifierGradients])
 
 
 if __name__ == '__main__':

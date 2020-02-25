@@ -198,7 +198,6 @@ class TestSaliencyMap(TestBase):
         # Check that x_test has not been modified by attack and classifier
         self.assertAlmostEqual(float(np.max(np.abs(x_test_original - x_test_mnist))), 0.0, delta=0.00001)
 
-
     def test_classifier_type_check_fail(self):
         utils_attack.backend_test_classifier_type_check_fail(SaliencyMapMethod, [ClassifierGradients])
 

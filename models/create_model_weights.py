@@ -33,7 +33,6 @@ import numpy as np
 from art.utils import load_dataset
 
 
-
 def main_mnist_binary():
     master_seed(1234)
 
@@ -56,42 +55,46 @@ def main_mnist_binary():
     w_0, b_0 = model.layers[0].get_weights()
     w_3, b_3 = model.layers[3].get_weights()
 
-    np.save(os.path.join(os.path.dirname(os.path.dirname(__file__)), "resources/models/scikit/",'W_CONV2D_MNIST_BINARY'), w_0)
-    np.save(os.path.join(os.path.dirname(os.path.dirname(__file__)), "resources/models/scikit/"'B_CONV2D_MNIST_BINARY'), b_0)
-    np.save(os.path.join(os.path.dirname(os.path.dirname(__file__)), "resources/models/scikit/"'W_DENSE_MNIST_BINARY'), w_3)
-    np.save(os.path.join(os.path.dirname(os.path.dirname(__file__)), "resources/models/scikit/"'B_DENSE_MNIST_BINARY'), b_3)
+    np.save(
+        os.path.join(os.path.dirname(os.path.dirname(__file__)), "resources/models/scikit/", 'W_CONV2D_MNIST_BINARY'),
+        w_0)
+    np.save(os.path.join(os.path.dirname(os.path.dirname(__file__)), "resources/models/scikit/"'B_CONV2D_MNIST_BINARY'),
+            b_0)
+    np.save(os.path.join(os.path.dirname(os.path.dirname(__file__)), "resources/models/scikit/"'W_DENSE_MNIST_BINARY'),
+            w_3)
+    np.save(os.path.join(os.path.dirname(os.path.dirname(__file__)), "resources/models/scikit/"'B_DENSE_MNIST_BINARY'),
+            b_3)
+
 
 def create_scikit_model_weights():
     master_seed(1234)
 
     model_list = {"decisionTreeClassifier": DecisionTreeClassifier(),
-            "extraTreeClassifier":ExtraTreeClassifier(),
-            "adaBoostClassifier":AdaBoostClassifier(),
-            "baggingClassifier":BaggingClassifier(),
-            "extraTreesClassifier":ExtraTreesClassifier(n_estimators=10),
-            "gradientBoostingClassifier":GradientBoostingClassifier(n_estimators=10),
-            "randomForestClassifier":RandomForestClassifier(n_estimators=10),
-            "logisticRegression":LogisticRegression(solver='lbfgs', multi_class='auto'),
-            "svc":SVC(gamma='auto'),
-            "linearSVC":LinearSVC()}
+                  "extraTreeClassifier": ExtraTreeClassifier(),
+                  "adaBoostClassifier": AdaBoostClassifier(),
+                  "baggingClassifier": BaggingClassifier(),
+                  "extraTreesClassifier": ExtraTreesClassifier(n_estimators=10),
+                  "gradientBoostingClassifier": GradientBoostingClassifier(n_estimators=10),
+                  "randomForestClassifier": RandomForestClassifier(n_estimators=10),
+                  "logisticRegression": LogisticRegression(solver='lbfgs', multi_class='auto'),
+                  "svc": SVC(gamma='auto'),
+                  "linearSVC": LinearSVC()}
 
-
-
-
-    clipped_models = {model_name: SklearnClassifier(model=model, clip_values=(0, 1)) for model_name, model in model_list.items()}
-    unclipped_models = {model_name:SklearnClassifier(model=model) for model_name, model in model_list.items()}
+    clipped_models = {model_name: SklearnClassifier(model=model, clip_values=(0, 1)) for model_name, model in
+                      model_list.items()}
+    unclipped_models = {model_name: SklearnClassifier(model=model) for model_name, model in model_list.items()}
 
     (x_train_iris, y_train_iris), (x_test_iris, y_test_iris), _, _ = utils.load_dataset('iris')
 
     for model_name, model in clipped_models.items():
         model.fit(x=x_train_iris, y=y_train_iris)
-        pickle.dump(model, open(os.path.join(os.path.dirname(os.path.dirname(__file__)), "resources/models/scikit/", model_name+"iris_clipped.sav"), 'wb'))
-
+        pickle.dump(model, open(os.path.join(os.path.dirname(os.path.dirname(__file__)), "resources/models/scikit/",
+                                             model_name + "iris_clipped.sav"), 'wb'))
 
     for model_name, model in unclipped_models.items():
         model.fit(x=x_train_iris, y=y_train_iris)
-        pickle.dump(model, open(os.path.join(os.path.dirname(os.path.dirname(__file__)), "resources/models/scikit/", model_name+"iris_unclipped.sav"), 'wb'))
-
+        pickle.dump(model, open(os.path.join(os.path.dirname(os.path.dirname(__file__)), "resources/models/scikit/",
+                                             model_name + "iris_unclipped.sav"), 'wb'))
 
 
 if __name__ == '__main__':

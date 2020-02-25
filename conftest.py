@@ -19,53 +19,53 @@ art_supported_frameworks = ["keras", "tensorflow", "pytorch", "scikitlearn"]
 
 utils_test.master_seed(1234)
 
-def pytest_addoption(parser):
+
+def pytest_adoption(parser):
     parser.addoption(
-        "--mlFramework", action="store", default="tensorflow", help="ART tests allow you to specify which mlFramework to use. The default mlFramework used is tensorflow. Other options available are {0}".format(art_supported_frameworks)
+        "--mlFramework", action="store", default="tensorflow",
+        help="ART tests allow you to specify which mlFramework to use. The default mlFramework used is tensorflow. "
+             "Other options available are {0}".format(art_supported_frameworks)
     )
 
 
 @pytest.fixture(autouse=True)
-def setup_tear_down_framework(get_mlFramework):
-    #Ran before each test
-    if get_mlFramework == "keras":
+def setup_tear_down_framework(framework):
+    # Ran before each test
+    if framework == "keras":
         pass
-    if get_mlFramework == "tensorflow":
+    if framework == "tensorflow":
         if tf.__version__[0] == '2':
             tf.reset_default_graph()
-    if get_mlFramework == "pytorch":
+    if framework == "pytorch":
         pass
-    if get_mlFramework == "scikitlearn":
+    if framework == "scikitlearn":
         pass
     yield True
 
     # Ran after each test
-    if get_mlFramework == "keras":
+    if framework == "keras":
         keras.backend.clear_session()
-    if get_mlFramework == "tensorflow":
+    if framework == "tensorflow":
         pass
-    if get_mlFramework == "pytorch":
+    if framework == "pytorch":
         pass
-    if get_mlFramework == "scikitlearn":
+    if framework == "scikitlearn":
         pass
-
-
-
 
 
 @pytest.fixture
-def get_image_classifier_list(get_mlFramework):
+def get_image_classifier_list(framework):
     def _get_image_classifier_list(one_classifier=False, **kwargs):
         sess = None
-        if get_mlFramework == "keras":
+        if framework == "keras":
             classifier_list = [utils_test.get_image_classifier_kr(**kwargs)]
-        if get_mlFramework == "tensorflow":
+        if framework == "tensorflow":
             classifier, sess = utils_test.get_image_classifier_tf(**kwargs)
             classifier_list = [classifier]
-        if get_mlFramework == "pytorch":
+        if framework == "pytorch":
             classifier_list = [utils_test.get_image_classifier_pt()]
-        if get_mlFramework == "scikitlearn":
-            logging.warning("{0} doesn't have an image classifier defined yet".format(get_mlFramework))
+        if framework == "scikitlearn":
+            logging.warning("{0} doesn't have an image classifier defined yet".format(framework))
             classifier_list = None
 
         if classifier_list is None:
@@ -80,37 +80,37 @@ def get_image_classifier_list(get_mlFramework):
 
 
 @pytest.fixture
-def get_tabular_classifier_list(get_mlFramework):
-
-    def _get_tabular_classifier_list(clipped = True):
-        if get_mlFramework == "keras":
+def get_tabular_classifier_list(framework):
+    def _get_tabular_classifier_list(clipped=True):
+        if framework == "keras":
             if clipped:
                 classifier_list = [utils_test.get_tabular_classifier_kr()]
             else:
                 classifier = utils_test.get_tabular_classifier_kr()
                 classifier_list = [KerasClassifier(model=classifier._model, use_logits=False, channel_index=1)]
 
-        if get_mlFramework == "tensorflow":
+        if framework == "tensorflow":
             if clipped:
                 classifier, _ = utils_test.get_tabular_classifier_tf()
                 classifier_list = [classifier]
             else:
-                logging.warning("{0} doesn't have an uncliped classifier defined yet".format(get_mlFramework))
+                logging.warning("{0} doesn't have an uncliped classifier defined yet".format(framework))
                 classifier_list = None
 
-        if get_mlFramework == "pytorch":
+        if framework == "pytorch":
             if clipped:
                 classifier_list = [utils_test.get_tabular_classifier_pt()]
             else:
-                logging.warning("{0} doesn't have an uncliped classifier defined yet".format(get_mlFramework))
+                logging.warning("{0} doesn't have an uncliped classifier defined yet".format(framework))
                 classifier_list = None
 
-        if get_mlFramework == "scikitlearn":
+        if framework == "scikitlearn":
             return utils_test.get_tabular_classifier_scikit_list(clipped=False)
 
         return classifier_list
 
     return _get_tabular_classifier_list
+
 
 @pytest.fixture(scope="function")
 def create_test_image(create_test_dir):
@@ -126,20 +126,23 @@ def create_test_image(create_test_dir):
 
     yield os.path.join(test_dir, 'test.jpg')
 
+
 @pytest.fixture(scope="session")
-def get_mlFramework(request):
+def framework(request):
     mlFramework = request.config.getoption("--mlFramework")
     if mlFramework not in art_supported_frameworks:
         raise Exception("mlFramework value {0} is unsupported. Please use one of these valid values: {1}".format(
             mlFramework, " ".join(art_supported_frameworks)))
     # if utils_test.is_valid_framework(mlFramework):
-    #     raise Exception("The mlFramework specified was incorrect. Valid options available are {0}".format(art_supported_frameworks))
+    #     raise Exception("The mlFramework specified was incorrect.
+    #     Valid options available are {0}".format(art_supported_frameworks))
     return mlFramework
 
 
 @pytest.fixture(scope="session")
 def default_batch_size():
     yield 16
+
 
 @pytest.fixture(scope="session")
 def is_tf_version_2():
@@ -148,6 +151,7 @@ def is_tf_version_2():
     else:
         yield False
 
+
 @pytest.fixture(scope="session")
 def load_iris_dataset():
     logging.info("Loading Iris dataset")
@@ -155,8 +159,9 @@ def load_iris_dataset():
 
     yield (x_train_iris, y_train_iris), (x_test_iris, y_test_iris)
 
+
 @pytest.fixture(scope="function")
-def get_iris_dataset(load_iris_dataset, get_mlFramework):
+def get_iris_dataset(load_iris_dataset, framework):
     (x_train_iris, y_train_iris), (x_test_iris, y_test_iris) = load_iris_dataset
 
     x_train_iris_original = x_train_iris.copy()
@@ -178,6 +183,7 @@ def default_dataset_subset_sizes():
     n_test = 100
     yield n_train, n_test
 
+
 @pytest.fixture()
 def get_default_mnist_subset(get_mnist_dataset, default_dataset_subset_sizes):
     (x_train_mnist, y_train_mnist), (x_test_mnist, y_test_mnist) = get_mnist_dataset
@@ -185,11 +191,13 @@ def get_default_mnist_subset(get_mnist_dataset, default_dataset_subset_sizes):
 
     yield (x_train_mnist[:n_train], y_train_mnist[:n_train]), (x_test_mnist[:n_test], y_test_mnist[:n_test])
 
+
 @pytest.fixture(scope="session")
 def load_mnist_dataset():
     logging.info("Loading mnist")
     (x_train_mnist, y_train_mnist), (x_test_mnist, y_test_mnist), _, _ = utils.load_dataset('mnist')
     yield (x_train_mnist, y_train_mnist), (x_test_mnist, y_test_mnist)
+
 
 @pytest.fixture(scope="function")
 def create_test_dir():
@@ -199,10 +207,10 @@ def create_test_dir():
 
 
 @pytest.fixture(scope="function")
-def get_mnist_dataset(load_mnist_dataset, get_mlFramework):
+def get_mnist_dataset(load_mnist_dataset, framework):
     (x_train_mnist, y_train_mnist), (x_test_mnist, y_test_mnist) = load_mnist_dataset
 
-    if get_mlFramework == "pytorch":
+    if framework == "pytorch":
         x_test_mnist = np.reshape(x_test_mnist, (x_test_mnist.shape[0], 1, 28, 28)).astype(np.float32)
 
     x_train_mnist_original = x_train_mnist.copy()
@@ -219,23 +227,23 @@ def get_mnist_dataset(load_mnist_dataset, get_mlFramework):
     np.testing.assert_array_almost_equal(y_test_mnist_original, y_test_mnist, decimal=3)
 
 
-
-
 # ART test fixture to skip test for specific mlFramework values
 # eg: @pytest.mark.only_with_platform("tensorflow")
 @pytest.fixture(autouse=True)
-def only_with_platform(request, get_mlFramework):
+def only_with_platform(request, framework):
     if request.node.get_closest_marker('only_with_platform'):
-        if get_mlFramework not in request.node.get_closest_marker('only_with_platform').args:
-            pytest.skip('skipped on this platform: {}'.format(get_mlFramework))
+        if framework not in request.node.get_closest_marker('only_with_platform').args:
+            pytest.skip('skipped on this platform: {}'.format(framework))
+
 
 # ART test fixture to skip test for specific mlFramework values
 # eg: @pytest.mark.skipMlFramework("tensorflow","scikitlearn")
 @pytest.fixture(autouse=True)
-def skip_by_platform(request, get_mlFramework):
+def skip_by_platform(request, framework):
     if request.node.get_closest_marker('skipMlFramework'):
-        if get_mlFramework in request.node.get_closest_marker('skipMlFramework').args:
-            pytest.skip('skipped on this platform: {}'.format(get_mlFramework))
+        if framework in request.node.get_closest_marker('skipMlFramework').args:
+            pytest.skip('skipped on this platform: {}'.format(framework))
+
 
 @pytest.fixture
 def make_customer_record():
@@ -243,5 +251,3 @@ def make_customer_record():
         return {"name": name, "orders": []}
 
     return _make_customer_record
-
-

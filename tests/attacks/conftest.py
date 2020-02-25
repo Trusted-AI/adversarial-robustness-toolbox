@@ -8,25 +8,25 @@ logger = logging.getLogger(__name__)
 
 
 @pytest.fixture
-def get_image_classifier_list_defended(get_mlFramework):
+def get_image_classifier_list_defended(framework):
     def _get_image_classifier_list_defended(one_classifier=False, **kwargs):
         sess = None
         classifier_list = None
-        if get_mlFramework == "keras":
+        if framework == "keras":
             classifier = utils_test.get_image_classifier_kr()
             # Get the ready-trained Keras model
             fs = FeatureSqueezing(bit_depth=1, clip_values=(0, 1))
             classifier_list = [
                 KerasClassifier(model=classifier._model, clip_values=(0, 1), preprocessing_defences=fs)]
 
-        if get_mlFramework == "tensorflow":
-            logging.warning("{0} doesn't have a defended image classifier defined yet".format(get_mlFramework))
+        if framework == "tensorflow":
+            logging.warning("{0} doesn't have a defended image classifier defined yet".format(framework))
 
-        if get_mlFramework == "pytorch":
-            logging.warning("{0} doesn't have a defended image classifier defined yet".format(get_mlFramework))
+        if framework == "pytorch":
+            logging.warning("{0} doesn't have a defended image classifier defined yet".format(framework))
 
-        if get_mlFramework == "scikitlearn":
-            logging.warning("{0} doesn't have a defended image classifier defined yet".format(get_mlFramework))
+        if framework == "scikitlearn":
+            logging.warning("{0} doesn't have a defended image classifier defined yet".format(framework))
 
         if classifier_list is None:
             return None, None
@@ -37,6 +37,7 @@ def get_image_classifier_list_defended(get_mlFramework):
         return classifier_list, sess
 
     return _get_image_classifier_list_defended
+
 
 @pytest.fixture
 def get_image_classifier_list_for_attack(get_image_classifier_list, get_image_classifier_list_defended):
@@ -50,8 +51,8 @@ def get_image_classifier_list_for_attack(get_image_classifier_list, get_image_cl
 
         return [potential_classier for potential_classier in classifier_list if
                 attack.is_valid_classifier_type(potential_classier)]
-    return get_image_classifier_list_for_attack
 
+    return get_image_classifier_list_for_attack
 
 
 @pytest.fixture
@@ -61,8 +62,7 @@ def get_tabular_classifier_list(get_tabular_classifier_list):
         if classifier_list is None:
             return None
 
-        return [potential_classier for potential_classier in classifier_list if attack.is_valid_classifier_type(potential_classier)]
-
+        return [potential_classier for potential_classier in classifier_list if
+                attack.is_valid_classifier_type(potential_classier)]
 
     return _tabular_classifier_list
-

@@ -396,8 +396,8 @@ def load_cifar10(raw=False):
     for i in range(1, 6):
         fpath = os.path.join(path, "data_batch_" + str(i))
         data, labels = load_batch(fpath)
-        x_train[(i - 1) * 10000 : i * 10000, :, :, :] = data
-        y_train[(i - 1) * 10000 : i * 10000] = labels
+        x_train[(i - 1) * 10000: i * 10000, :, :, :] = data
+        y_train[(i - 1) * 10000: i * 10000] = labels
 
     fpath = os.path.join(path, "test_batch")
     x_test, y_test = load_batch(fpath)
@@ -431,9 +431,9 @@ class WrongClassifier(TypeError):
             else:
                 classes_expected_message += " and {0}".format(class_expected)
 
-
-        self.message = "For {0} classifier must be an instance of {1}, the provided classifier is instance of {2}.".format(
-            this_class.__name__, classes_expected_message, classifier_given)
+        self.message = "For {0} classifier must be an instance of {1}, " \
+                       "the provided classifier is instance of {2}.".format(this_class.__name__,
+                                                                            classes_expected_message, classifier_given)
 
 
 def load_mnist(raw=False):
@@ -547,15 +547,15 @@ def load_iris(raw=False, test_set=0.3):
 
     # Split training and test sets
     split_index = int((1 - test_set) * len(data) / 3)
-    x_train = np.vstack((data[:split_index], data[50 : 50 + split_index], data[100 : 100 + split_index]))
-    y_train = np.vstack((labels[:split_index], labels[50 : 50 + split_index], labels[100 : 100 + split_index]))
+    x_train = np.vstack((data[:split_index], data[50: 50 + split_index], data[100: 100 + split_index]))
+    y_train = np.vstack((labels[:split_index], labels[50: 50 + split_index], labels[100: 100 + split_index]))
 
     if split_index >= 49:
         x_test, y_test = None, None
     else:
 
-        x_test = np.vstack((data[split_index:50], data[50 + split_index : 100], data[100 + split_index :]))
-        y_test = np.vstack((labels[split_index:50], labels[50 + split_index : 100], labels[100 + split_index :]))
+        x_test = np.vstack((data[split_index:50], data[50 + split_index: 100], data[100 + split_index:]))
+        y_test = np.vstack((labels[split_index:50], labels[50 + split_index: 100], labels[100 + split_index:]))
         assert len(x_train) + len(x_test) == 150
 
         # Shuffle test set

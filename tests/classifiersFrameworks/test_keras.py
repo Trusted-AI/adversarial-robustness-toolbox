@@ -245,8 +245,8 @@ def test_functional_model(get_functional_model):
 
 
 @pytest.mark.only_with_platform("keras")
-def test_layers(get_default_mnist_subset, get_mlFramework, get_image_classifier_list):
-    utils_classifier.backend_test_layers(get_mlFramework, get_default_mnist_subset, get_image_classifier_list,
+def test_layers(get_default_mnist_subset, framework, get_image_classifier_list):
+    utils_classifier.backend_test_layers(framework, get_default_mnist_subset, get_image_classifier_list,
                                          batch_size=128, layer_count=3)
 
 
