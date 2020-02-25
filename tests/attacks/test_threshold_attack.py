@@ -18,7 +18,7 @@
 """
 This module tests the Threshold Attack.
 
-| Threshold Attack Paper link:
+| Paper link:
     https://arxiv.org/abs/1906.06026
 """
 from __future__ import absolute_import, division, print_function, unicode_literals
@@ -28,11 +28,11 @@ import unittest
 
 import numpy as np
 
-from tests.utils import TestBase
-from tests.utils import get_classifier_tf, get_classifier_kr, get_classifier_pt
-
 from art.attacks import ThresholdAttack
 from art.utils import get_labels_np_array
+
+from tests.utils import TestBase
+from tests.utils import get_classifier_tf, get_classifier_kr, get_classifier_pt
 
 logger = logging.getLogger(__name__)
 
@@ -43,7 +43,7 @@ class TestThresholdAttack(TestBase):
 
     This module tests the Threshold Attack.
 
-    | Threshold Attack Paper link:
+    | Paper link:
         https://arxiv.org/abs/1906.06026
     """
 
@@ -125,7 +125,7 @@ class TestThresholdAttack(TestBase):
 
         for es in [0, 1]:
             df = ThresholdAttack(classifier, th=64, es=es, targeted=targeted)
-            x_test_adv = df.generate(x_test_original, targets)
+            x_test_adv = df.generate(x_test_original, targets, maxiter=1)
 
             self.assertFalse((x_test == x_test_adv).all())
             self.assertFalse((0.0 == x_test_adv).all())

@@ -32,11 +32,11 @@ import unittest
 
 import numpy as np
 
-from tests.utils import TestBase
-from tests.utils import get_classifier_tf, get_classifier_kr, get_classifier_pt
-
 from art.attacks import PixelAttack
 from art.utils import get_labels_np_array
+
+from tests.utils import TestBase
+from tests.utils import get_classifier_tf, get_classifier_kr, get_classifier_pt
 
 logger = logging.getLogger(__name__)
 
@@ -133,7 +133,7 @@ class TestPixelAttack(TestBase):
 
         for es in [0, 1]:
             df = PixelAttack(classifier, th=64, es=es, targeted=targeted)
-            x_test_adv = df.generate(x_test_original, targets)
+            x_test_adv = df.generate(x_test_original, targets, maxiter=1)
 
             self.assertFalse((x_test == x_test_adv).all())
             self.assertFalse((0.0 == x_test_adv).all())
@@ -142,9 +142,7 @@ class TestPixelAttack(TestBase):
             self.assertFalse((y_test == y_pred).all())
 
             accuracy = np.sum(np.argmax(y_pred, axis=1) == np.argmax(self.y_test_mnist, axis=1)) / self.n_test
-            logger.info(
-                'Accuracy on adversarial examples: %.2f%%',
-                (accuracy * 100))
+            logger.info('Accuracy on adversarial examples: %.2f%%', (accuracy * 100))
 
         # Check that x_test has not been modified by attack and classifier
         self.assertAlmostEqual(float(np.max(np.abs(x_test_original - x_test))), 0.0, delta=0.00001)

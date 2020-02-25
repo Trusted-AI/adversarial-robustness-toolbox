@@ -70,7 +70,7 @@ class PixelThreshold(EvasionAttack):
         :type  classifier: :class:`.Classifier`
         :param th: threshold value of the Pixel/ Threshold attack. th=None indicates finding a minimum threshold.
         :type  th: `int` or `none`
-        :param es: Indicates whether the attack uses CMAES (0) or  DE (1) as Evolutionary Strategy
+        :param es: Indicates whether the attack uses CMAES (0) or DE (1) as Evolutionary Strategy
         :type  es: `int`
         :param targeted: Indicates whether the attack is targeted (True) or untargeted (False)
         :type  targeted: `bool`
@@ -110,21 +110,19 @@ class PixelThreshold(EvasionAttack):
 
         return True
 
-    def generate(self, x, y=None, **kwargs):
+    def generate(self, x, y=None, maxiter=100, **kwargs):
         """
         Generate adversarial samples and return them in an array.
 
         :param x: An array with the original inputs.
         :type x: `np.ndarray`
-        :param y: Target values (class labels) one-hot-encoded of shape
-                  (nb_samples, nb_classes) or indices of shape (nb_samples,).
-                  Only provide this parameter if you'd like to use true labels
-                  when crafting adversarial samples. Otherwise, model
-                  predictions are used as labels to avoid the "label leaking"
-                  effect
-                  (explained in this paper: https://arxiv.org/abs/1611.01236).
-                  Default is `None`.
+        :param y: Target values (class labels) one-hot-encoded of shape (nb_samples, nb_classes) or indices of shape
+                  (nb_samples,). Only provide this parameter if you'd like to use true labels when crafting adversarial
+                  samples. Otherwise, model predictions are used as labels to avoid the "label leaking" effect
+                  (explained in this paper: https://arxiv.org/abs/1611.01236). Default is `None`.
         :type y: `np.ndarray`
+        :param maxiter: Maximum number of optimisation iterations.
+        :param maxiter: `int`
         :return: An array holding the adversarial examples.
         :rtype: `np.ndarray`
         """
@@ -152,7 +150,7 @@ class PixelThreshold(EvasionAttack):
                 while True:
                     image_result = []
                     threshold = (start + end) // 2
-                    success, trial_image_result = self._attack(image, target_class, threshold)
+                    success, trial_image_result = self._attack(image, target_class, threshold, maxiter)
                     if image_result or success:
                         image_result = trial_image_result
                     if success:
@@ -164,7 +162,7 @@ class PixelThreshold(EvasionAttack):
                     if end < start:
                         break
             else:
-                success, image_result = self._attack(image, target_class, self.th)
+                success, image_result = self._attack(image, target_class, self.th, maxiter)
             adv_x_best += [image_result]
 
         adv_x_best = np.array(adv_x_best)
@@ -190,7 +188,7 @@ class PixelThreshold(EvasionAttack):
             or (not self.targeted and predicted_class != target_class)
         )
 
-    def _attack(self, image, target_class, limit):
+    def _attack(self, image, target_class, limit, maxiter=100):
         """
         Attack the given image `image` with the threshold `limit` for the `target_class` which is true label for
         untargeted attack and targeted label for targeted attack.
@@ -230,7 +228,7 @@ class PixelThreshold(EvasionAttack):
 
             try:
                 strategy.optimize(
-                    predict_fn, maxfun=max(1, 400 // len(bounds)) * len(bounds) * 100, callback=callback_fn
+                    predict_fn, maxfun=max(1, 400 // len(bounds)) * len(bounds) * 100, callback=callback_fn, iterations=1
                 )
             except Exception as exception:
                 if self.verbose:
@@ -245,7 +243,7 @@ class PixelThreshold(EvasionAttack):
                 predict_fn,
                 bounds,
                 disp=self.verbose,
-                maxiter=100,
+                maxiter=1,
                 popsize=max(1, 400 // len(bounds)),
                 recombination=1,
                 atol=-1,
@@ -280,7 +278,7 @@ class PixelAttack(PixelThreshold):
         :type  classifier: :class:`.Classifier`
         :param th: threshold value of the Pixel/ Threshold attack. th=None indicates finding a minimum threshold.
         :type  th: `int` or `none`
-        :param es: Indicates whether the attack uses CMAES (0) or  DE (1) as Evolutionary Strategy
+        :param es: Indicates whether the attack uses CMAES (0) or DE (1) as Evolutionary Strategy
         :type  es: `int`
         :param targeted: Indicates whether the attack is targeted (True) or untargeted (False)
         :type  targeted: `bool`
@@ -358,7 +356,7 @@ class ThresholdAttack(PixelThreshold):
         :type  classifier: :class:`.Classifier`
         :param th: threshold value of the Pixel/ Threshold attack. th=None indicates finding a minimum threshold.
         :type  th: `int` or `none`
-        :param es: Indicates whether the attack uses CMAES (0) or  DE (1) as Evolutionary Strategy
+        :param es: Indicates whether the attack uses CMAES (0) or DE (1) as Evolutionary Strategy
         :type  es: `int`
         :param targeted: Indicates whether the attack is targeted (True) or untargeted (False)
         :type  targeted: `bool`
@@ -378,7 +376,7 @@ class ThresholdAttack(PixelThreshold):
         x = x.astype(int)
         for adv, image in zip(x, imgs):
             for count, (i, j, k) in enumerate(
-                product(range(image.shape[-3]), range(image.shape[-2]), range(image.shape[-1]))
+                    product(range(image.shape[-3]), range(image.shape[-2]), range(image.shape[-1]))
             ):
                 image[i, j, k] = adv[count]
         return imgs
@@ -395,7 +393,7 @@ class ThresholdAttack(PixelThreshold):
 
         for i, j, k in product(range(img.shape[-3]), range(img.shape[-2]), range(img.shape[-1])):
             temp = img[i, j, k]
-            initial += [ThresholdAttacktemp]
+            initial += [temp]
             bound = bound_limit(temp)
             if self.es == 0:
                 minbounds += [bound[0]]
@@ -546,21 +544,21 @@ _MACHEPS = np.finfo(np.float64).eps
 
 
 def differential_evolution(
-    func,
-    bounds,
-    args=(),
-    strategy="best1bin",
-    maxiter=1000,
-    popsize=15,
-    tol=0.01,
-    mutation=(0.5, 1),
-    recombination=0.7,
-    seed=None,
-    callback=None,
-    disp=False,
-    polish=True,
-    init="latinhypercube",
-    atol=0,
+        func,
+        bounds,
+        args=(),
+        strategy="best1bin",
+        maxiter=1000,
+        popsize=15,
+        tol=0.01,
+        mutation=(0.5, 1),
+        recombination=0.7,
+        seed=None,
+        callback=None,
+        disp=False,
+        polish=True,
+        init="latinhypercube",
+        atol=0,
 ):
     """Finds the global minimum of a multivariate function.
     Differential Evolution is stochastic in nature (does not use gradient
@@ -889,23 +887,23 @@ class DifferentialEvolutionSolver:
     )
 
     def __init__(
-        self,
-        func,
-        bounds,
-        args=(),
-        strategy="best1bin",
-        maxiter=1000,
-        popsize=15,
-        tol=0.01,
-        mutation=(0.5, 1),
-        recombination=0.7,
-        seed=None,
-        maxfun=np.inf,
-        callback=None,
-        disp=False,
-        polish=True,
-        init="latinhypercube",
-        atol=0,
+            self,
+            func,
+            bounds,
+            args=(),
+            strategy="best1bin",
+            maxiter=1000,
+            popsize=15,
+            tol=0.01,
+            mutation=(0.5, 1),
+            recombination=0.7,
+            seed=None,
+            maxfun=np.inf,
+            callback=None,
+            disp=False,
+            polish=True,
+            init="latinhypercube",
+            atol=0,
     ):
 
         if strategy in self._binomial:
@@ -1007,10 +1005,10 @@ class DifferentialEvolutionSolver:
         # Within each segment we sample from a uniform random distribution.
         # We need to do this sampling for each parameter.
         samples = (
-            segsize * rng.random_sample(self.population_shape)
-            # Offset each segment to cover the entire parameter range
-            # [0, 1)
-            + np.linspace(0.0, 1.0, self.num_population_members, endpoint=False)[:, np.newaxis]
+                segsize * rng.random_sample(self.population_shape)
+                # Offset each segment to cover the entire parameter range
+                # [0, 1)
+                + np.linspace(0.0, 1.0, self.num_population_members, endpoint=False)[:, np.newaxis]
         )
 
         # Create an array for population of candidate solutions.
@@ -1132,9 +1130,9 @@ class DifferentialEvolutionSolver:
             convergence = self.convergence
 
             if (
-                self.callback
-                and self.callback(self._scale_parameters(self.population[0]), convergence=self.tol / convergence)
-                is True
+                    self.callback
+                    and self.callback(self._scale_parameters(self.population[0]), convergence=self.tol / convergence)
+                    is True
             ):
                 warning_flag = True
                 status_message = "callback function requested stop early " "by returning True"
@@ -1388,7 +1386,7 @@ class DifferentialEvolutionSolver:
         """
         r0, r1 = samples[:2]
         bprime = self.population[candidate] + self.scale * (
-            self.population[0] - self.population[candidate] + self.population[r0] - self.population[r1]
+                self.population[0] - self.population[candidate] + self.population[r0] - self.population[r1]
         )
         return bprime
 
@@ -1398,7 +1396,7 @@ class DifferentialEvolutionSolver:
         """
         r0, r1, r2, r3 = samples[:4]
         bprime = self.population[0] + self.scale * (
-            self.population[r0] + self.population[r1] - self.population[r2] - self.population[r3]
+                self.population[r0] + self.population[r1] - self.population[r2] - self.population[r3]
         )
 
         return bprime
@@ -1409,7 +1407,7 @@ class DifferentialEvolutionSolver:
         """
         r0, r1, r2, r3, r4 = samples
         bprime = self.population[r0] + self.scale * (
-            self.population[r1] + self.population[r2] - self.population[r3] - self.population[r4]
+                self.population[r1] + self.population[r2] - self.population[r3] - self.population[r4]
         )
 
         return bprime
