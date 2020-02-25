@@ -196,7 +196,8 @@ def test_defences_predict(get_default_mnist_subset, get_image_classifier_list):
     jpeg = JpegCompression(clip_values=clip_values, apply_predict=True)
     smooth = SpatialSmoothing()
     classifier_, _ = get_image_classifier_list(one_classifier=True)
-    classifier = KerasClassifier(clip_values=clip_values, model=classifier_._model, preprocessing_defences=[fs, jpeg, smooth])
+    classifier = KerasClassifier(clip_values=clip_values, model=classifier_._model,
+                                 preprocessing_defences=[fs, jpeg, smooth])
     assert len(classifier.preprocessing_defences) == 3
 
     predictions_classifier = classifier.predict(x_test_mnist)
@@ -376,7 +377,8 @@ def test_class_gradient(get_default_mnist_subset, get_image_classifier_list):
 def test_repr(get_image_classifier_list):
     utils_classifier.backend_test_repr(get_image_classifier_list, ['art.classifiers.keras.KerasClassifier',
                                                                    'use_logits=False, channel_index=3',
-                                                                   'clip_values=(0, 1), preprocessing_defences=None, postprocessing_defences=None, preprocessing=(0, 1)',
+                                                                   'clip_values=(0, 1), preprocessing_defences=None, '
+                                                                   'postprocessing_defences=None, preprocessing=(0, 1)',
                                                                    'input_layer=0, output_layer=0'])
 
 
@@ -409,7 +411,8 @@ def test_loss_functions(get_default_mnist_subset, get_image_classifier_list):
     def _run_tests(_loss_name, _loss_type, _y_test_pred_expected, _class_gradient_probabilities_expected,
                    _loss_gradient_expected, _from_logits):
 
-        classifier, _ = get_image_classifier_list(one_classifier=True, loss_name=_loss_name, loss_type=_loss_type, from_logits=_from_logits)
+        classifier, _ = get_image_classifier_list(one_classifier=True, loss_name=_loss_name, loss_type=_loss_type,
+                                                  from_logits=_from_logits)
 
         y_test_pred = np.argmax(classifier.predict(x=x_test_mnist), axis=1)
         np.testing.assert_array_equal(y_test_pred, _y_test_pred_expected)
