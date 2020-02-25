@@ -50,6 +50,40 @@ def setup_tear_down_framework(get_mlFramework):
 
 
 @pytest.fixture
+def get_image_classifier_list_defended(get_mlFramework):
+    def _get_image_classifier_list_defended(one_classifier=False, **kwargs):
+        sess = None
+        if get_mlFramework == "keras":
+            classifier = utils_test.get_image_classifier_kr()
+            # Get the ready-trained Keras model
+            fs = FeatureSqueezing(bit_depth=1, clip_values=(0, 1))
+            classifier_list = [
+                KerasClassifier(model=classifier._model, clip_values=(0, 1), preprocessing_defences=fs)]
+
+        if get_mlFramework == "tensorflow":
+            logging.warning("{0} doesn't have a defended image classifier defined yet".format(get_mlFramework))
+            classifier_list = None
+
+        if get_mlFramework == "pytorch":
+            logging.warning("{0} doesn't have a defended image classifier defined yet".format(get_mlFramework))
+            classifier_list = None
+
+        if get_mlFramework == "scikitlearn":
+            logging.warning("{0} doesn't have a defended image classifier defined yet".format(get_mlFramework))
+            classifier_list = None
+
+        if classifier_list is None:
+            return None, None
+
+        if one_classifier:
+            return classifier_list[0], sess
+
+        return classifier_list, sess
+
+    return _get_image_classifier_list_defended
+
+
+@pytest.fixture
 def get_image_classifier_list(get_mlFramework):
     def _get_image_classifier_list(one_classifier=False, defended=False, **kwargs):
         sess = None

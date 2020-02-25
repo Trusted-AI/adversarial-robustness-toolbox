@@ -9,9 +9,12 @@ logger = logging.getLogger(__name__)
 
 
 @pytest.fixture
-def get_image_classifier_list_for_attack(get_image_classifier_list):
-    def get_image_classifier_list_for_attack(attack, defended=False):
-        classifier_list, _ = get_image_classifier_list(defended=defended)
+def get_image_classifier_list_for_attack(get_image_classifier_list, get_image_classifier_list_defended):
+    def get_image_classifier_list_for_attack(attack, defended=False, **kwargs):
+        if defended:
+            classifier_list, _ = get_image_classifier_list_defended(kwargs)
+        else:
+            classifier_list, _ = get_image_classifier_list(defended=False)
         if classifier_list is None:
             return None
 
