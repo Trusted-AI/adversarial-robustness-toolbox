@@ -31,7 +31,8 @@ def setup_tear_down_framework(get_mlFramework):
     if get_mlFramework == "keras":
         pass
     if get_mlFramework == "tensorflow":
-        tf.reset_default_graph()
+        if tf.__version__[0] == '2':
+            tf.reset_default_graph()
     if get_mlFramework == "pytorch":
         pass
     if get_mlFramework == "scikitlearn":
