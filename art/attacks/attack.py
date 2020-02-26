@@ -147,7 +147,7 @@ class EvasionAttack(Attack):
 
 class PoisoningAttackBlackBox(Attack):
     """
-    Abstract base class for poisoning attack classes.
+    Abstract base class for poisoning attack classes that have no access to the model (classifier object)
     """
 
     def __init__(self):
