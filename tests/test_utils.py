@@ -29,7 +29,9 @@ from art.utils import second_most_likely_class, random_targets, get_label_conf, 
 from art.utils import segment_by_class, performance_diff
 from art.utils import is_probability
 
+
 from tests.utils_test import master_seed
+
 logger = logging.getLogger(__name__)
 
 BATCH_SIZE = 10
@@ -350,23 +352,20 @@ class TestUtils(unittest.TestCase):
                          -1.0 / 3)
 
     def test_is_probability(self):
-        x = np.array([0.1, 0.3, 0.5999])
-        y = np.array([0.1, 0.3, 0.599])
+        probabilities = np.array([0.1, 0.3, 0.6])
+        self.assertTrue(is_probability(probabilities))
 
-        self.assertTrue(is_probability(x))
-        self.assertFalse(is_probability(y))
+        not_probabilities = np.array([0.1, 0.3, 0.8])
+        self.assertFalse(is_probability(not_probabilities))
 
-        x = np.array([0.1, 0.3, 0.6001])
-        y = np.array([0.1, 0.3, 0.6011])
+        not_probabilities = np.array([0.1, 0.3, 1.8])
+        self.assertFalse(is_probability(not_probabilities))
 
-        self.assertTrue(is_probability(x))
-        self.assertFalse(is_probability(y))
+        not_probabilities = np.array([-1.1, 0.3, 1.8])
+        self.assertFalse(is_probability(not_probabilities))
 
-        x = np.array([0.1, 0.3, 0.5999])
-        y = np.array([0.1, 0.3, -0.599])
-
-        self.assertFalse(is_probability(-x))
-        self.assertFalse(is_probability(y))
+        not_probabilities = np.array([-1.1, 0.3, 0.7])
+        self.assertFalse(is_probability(not_probabilities))
 
 
 if __name__ == '__main__':
