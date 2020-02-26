@@ -20,7 +20,7 @@ art_supported_frameworks = ["keras", "tensorflow", "pytorch", "scikitlearn"]
 utils_test.master_seed(1234)
 
 
-def pytest_adoption(parser):
+def pytest_addoption(parser):
     parser.addoption(
         "--mlFramework", action="store", default="tensorflow",
         help="ART tests allow you to specify which mlFramework to use. The default mlFramework used is tensorflow. "
@@ -134,8 +134,8 @@ def framework(request):
         raise Exception("mlFramework value {0} is unsupported. Please use one of these valid values: {1}".format(
             mlFramework, " ".join(art_supported_frameworks)))
     # if utils_test.is_valid_framework(mlFramework):
-    #     raise Exception("The mlFramework specified was incorrect.
-    #     Valid options available are {0}".format(art_supported_frameworks))
+    #     raise Exception("The mlFramework specified was incorrect. Valid options available
+    #     are {0}".format(art_supported_frameworks))
     return mlFramework
 
 
