@@ -12,7 +12,7 @@ from keras.layers import Dense, Flatten, Conv2D, MaxPooling2D, Activation, Dropo
 import numpy as np
 
 from art.attacks import DeepFool
-from art.classifiers import KerasClassifier
+from art.estimators.classifiers import KerasClassifier
 from art.utils import load_dataset
 
 # Configure a logger to capture ART outputs; these are printed in console and the level of detail is set to INFO

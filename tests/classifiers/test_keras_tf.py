@@ -34,8 +34,8 @@ from tensorflow.keras.callbacks import LearningRateScheduler
 import numpy as np
 
 from art.config import ART_DATA_PATH
-from art.classifiers import KerasClassifier
-from art.classifiers.keras import generator_fit
+from art.estimators.classifiers import KerasClassifier
+from art.estimators.classifiers.keras import generator_fit
 from art.defences import FeatureSqueezing, JpegCompression, SpatialSmoothing
 from art.data_generators import KerasDataGenerator
 

@@ -147,6 +147,13 @@ class Classifier(abc.ABC, metaclass=input_filter):
 
         :param x: Features in array of shape (nb_samples, nb_features) or (nb_samples, nb_pixels_1, nb_pixels_2,
                   nb_channels) or (nb_samples, nb_channels, nb_pixels_1, nb_pixels_2)
+
+                  # The first dimension corresponds to the samples whereas all other dimensions
+                  # correspond to the shape of a single sample. For example for feature vectors the shape of `x` is
+                  # (nb_samples, nb_features), for images the shape is (nb_samples, nb_pixels_height, nb_pixels_width,
+                  # nb_channels) in format NHWC or (nb_samples, nb_channels, nb_pixels_height, nb_pixels_width) in format
+                  # NCHW. Any shape compatible with the model is accepted.
+
         :type x: `np.ndarray`
         :return: Array of predictions of shape `(nb_inputs, nb_classes)`.
         :rtype: `np.ndarray`

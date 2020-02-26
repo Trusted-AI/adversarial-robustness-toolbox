@@ -323,7 +323,7 @@ class TestUtils(unittest.TestCase):
         self.assertEqual(len(segments), num_classes)
 
     def test_performance_diff(self):
-        from art.classifiers.scikitlearn import SklearnClassifier
+        from art.estimators.classifiers import SklearnClassifier
         from sklearn.svm import SVC
 
         (x_train, y_train), (x_test, y_test), min_, max_ = load_iris()

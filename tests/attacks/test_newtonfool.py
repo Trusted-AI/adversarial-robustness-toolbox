@@ -23,7 +23,7 @@ import unittest
 import numpy as np
 
 from art.attacks import NewtonFool
-from art.classifiers import KerasClassifier
+from art.estimators.classifiers import KerasClassifier
 
 from tests.utils import TestBase
 from tests.utils import get_classifier_tf, get_classifier_kr, get_classifier_pt
@@ -180,7 +180,7 @@ class TestNewtonFool(TestBase):
         from sklearn.linear_model import LogisticRegression
         from sklearn.svm import SVC, LinearSVC
 
-        from art.classifiers.scikitlearn import SklearnClassifier
+        from art.estimators.classifiers import SklearnClassifier
 
         scikitlearn_test_cases = [LogisticRegression(solver='lbfgs', multi_class='auto'),
                                   SVC(gamma='auto'),

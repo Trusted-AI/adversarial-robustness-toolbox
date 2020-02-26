@@ -32,7 +32,7 @@ from torch.utils.data import DataLoader
 
 from art.config import ART_DATA_PATH
 from art.data_generators import PyTorchDataGenerator
-from art.classifiers import PyTorchClassifier
+from art.estimators.classifiers import PyTorchClassifier
 
 from tests.utils import TestBase, master_seed, get_classifier_pt
 

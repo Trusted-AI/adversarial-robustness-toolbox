@@ -26,7 +26,7 @@ import numpy as np
 from scipy.stats import entropy
 
 from art.wrappers.wrapper import ClassifierWrapper
-from art.classifiers.classifier import Classifier, ClassifierGradients
+from art.estimators.classifiers import Classifier, ClassifierGradients
 from art.utils import clip_and_round
 
 logger = logging.getLogger(__name__)

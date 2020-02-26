@@ -24,7 +24,7 @@ import keras.backend as k
 import numpy as np
 
 from art.attacks import BoundaryAttack
-from art.classifiers import KerasClassifier
+from art.estimators.classifiers import KerasClassifier
 from art.utils import random_targets
 
 from tests.utils import TestBase
@@ -280,7 +280,7 @@ class TestBoundary(TestBase):
         from sklearn.ensemble import AdaBoostClassifier, BaggingClassifier, ExtraTreesClassifier
         from sklearn.ensemble import GradientBoostingClassifier, RandomForestClassifier
 
-        from art.classifiers.scikitlearn import SklearnClassifier
+        from art.estimators.classifiers import SklearnClassifier
 
         scikitlearn_test_cases = [DecisionTreeClassifier(),
                                   ExtraTreeClassifier(),

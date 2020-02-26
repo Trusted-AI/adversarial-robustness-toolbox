@@ -28,7 +28,7 @@ import numpy as np
 
 from art.config import ART_NUMPY_DTYPE
 from art.attacks.attack import ExtractionAttack
-from art.classifiers.classifier import Classifier
+from art.estimators.classifiers import Classifier
 from art.utils import to_categorical
 
 

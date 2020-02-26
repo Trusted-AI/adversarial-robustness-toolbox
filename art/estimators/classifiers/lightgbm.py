@@ -16,21 +16,22 @@
 # TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 # SOFTWARE.
 """
-This module implements the classifier `XGBoostClassifier` for XGBoost models.
+This module implements the classifier `LightGBMClassifier` for LightGBM models.
 """
 from __future__ import absolute_import, division, print_function, unicode_literals
 
 import logging
+
 import numpy as np
 
-from art.classifiers.classifier import Classifier, ClassifierDecisionTree
+from art.estimators.classifiers import Classifier, ClassifierDecisionTree
 
 logger = logging.getLogger(__name__)
 
 
-class XGBoostClassifier(Classifier, ClassifierDecisionTree):
+class LightGBMClassifier(Classifier, ClassifierDecisionTree):
     """
-    Wrapper class for importing XGBoost models.
+    Wrapper class for importing LightGBM models.
     """
 
     def __init__(
@@ -40,14 +41,12 @@ class XGBoostClassifier(Classifier, ClassifierDecisionTree):
         preprocessing_defences=None,
         postprocessing_defences=None,
         preprocessing=None,
-        nb_features=None,
-        nb_classes=None,
     ):
         """
-        Create a `Classifier` instance from a XGBoost model.
+        Create a `Classifier` instance from a LightGBM model.
 
-        :param model: XGBoost model.
-        :type model: `xgboost.Booster` or `xgboost.XGBClassifier`
+        :param model: LightGBM model.
+        :type model: `lightgbm.Booster`
         :param clip_values: Tuple of the form `(min, max)` representing the minimum and maximum values allowed
                for features.
         :type clip_values: `tuple`
@@ -59,26 +58,21 @@ class XGBoostClassifier(Classifier, ClassifierDecisionTree):
                used for data preprocessing. The first value will be subtracted from the input. The input will then
                be divided by the second one.
         :type preprocessing: `tuple`
-        :param nb_features: The number of features in the training data. Only used if it cannot be extracted from
-                             model.
-        :type nb_features: `int` or `None`
-        :param nb_classes: The number of classes in the training data. Only used if it cannot be extracted from model.
-        :type nb_classes: `int` or `None`
         """
-        from xgboost import Booster, XGBClassifier
+        from lightgbm import Booster
 
-        if not isinstance(model, Booster) and not isinstance(model, XGBClassifier):
-            raise TypeError("Model must be of type xgboost.Booster or xgboost.XGBClassifier.")
+        if not isinstance(model, Booster):
+            raise TypeError("Model must be of type lightgbm.Booster")
 
-        super(XGBoostClassifier, self).__init__(
+        super(LightGBMClassifier, self).__init__(
             clip_values=clip_values,
             preprocessing_defences=preprocessing_defences,
             postprocessing_defences=postprocessing_defences,
             preprocessing=preprocessing,
         )
+
         self._model = model
-        self._input_shape = (nb_features,)
-        self._nb_classes = nb_classes
+        self._input_shape = (self._model.num_feature(),)
 
     def fit(self, x, y, **kwargs):
         """
@@ -90,10 +84,10 @@ class XGBoostClassifier(Classifier, ClassifierDecisionTree):
                   (nb_samples,).
         :type y: `np.ndarray`
         :param kwargs: Dictionary of framework-specific arguments. These should be parameters supported by the
-                       `fit` function in `xgboost.Booster` or `xgboost.XGBClassifier` and will be passed to this
-                       function as such.
+               `fit` function in `lightgbm.Booster` and will be passed to this function as such.
         :type kwargs: `dict`
         :raises: `NotImplementedException`
+        :return: `None`
         """
         raise NotImplementedError
 
@@ -106,27 +100,16 @@ class XGBoostClassifier(Classifier, ClassifierDecisionTree):
         :return: Array of predictions of shape `(nb_inputs, nb_classes)`.
         :rtype: `np.ndarray`
         """
-        from xgboost import Booster, XGBClassifier
-        from art.utils import to_categorical
-
         # Apply preprocessing
         x_preprocessed, _ = self._apply_preprocessing(x, y=None, fit=False)
 
-        if isinstance(self._model, Booster):
-            from xgboost import DMatrix
-
-            train_data = DMatrix(x_preprocessed, label=None)
-            predictions = self._model.predict(train_data)
-            y_prediction = np.asarray([line for line in predictions])
-            if len(y_prediction.shape) == 1:
-                y_prediction = to_categorical(labels=y_prediction, nb_classes=self.nb_classes())
-        elif isinstance(self._model, XGBClassifier):
-            y_prediction = self._model.predict_proba(x_preprocessed)
+        # Perform prediction
+        predictions = self._model.predict(x_preprocessed)
 
         # Apply postprocessing
-        y_prediction = self._apply_postprocessing(preds=y_prediction, fit=False)
+        predictions = self._apply_postprocessing(preds=predictions, fit=False)
 
-        return y_prediction
+        return predictions
 
     def nb_classes(self):
         """
@@ -135,29 +118,14 @@ class XGBoostClassifier(Classifier, ClassifierDecisionTree):
         :return: Number of classes in the data.
         :rtype: `int`
         """
-        from xgboost import Booster, XGBClassifier
-
-        if isinstance(self._model, Booster):
-            try:
-                return int(len(self._model.get_dump(dump_format="json")) / self._model.n_estimators)
-            except AttributeError:
-                if self._nb_classes is not None:
-                    return self._nb_classes
-                raise NotImplementedError(
-                    "Number of classes cannot be determined automatically. "
-                    + "Please manually set argument nb_classes in XGBoostClassifier."
-                )
-
-        if isinstance(self._model, XGBClassifier):
-            return self._model.n_classes_
-
-        return None
+        # pylint: disable=W0212
+        return self._model._Booster__num_class
 
     def save(self, filename, path=None):
         import pickle
 
         with open(filename + ".pickle", "wb") as file_pickle:
-            pickle.dump(self.model, file=file_pickle)
+            pickle.dump(self._model, file=file_pickle)
 
     def get_trees(self):
         """
@@ -166,24 +134,25 @@ class XGBoostClassifier(Classifier, ClassifierDecisionTree):
         :return: A list of decision trees.
         :rtype: `[Tree]`
         """
-
-        import json
         from art.metrics.verification_decisions_trees import Box, Tree
 
-        booster_dump = self._model.get_booster().get_dump(dump_format="json")
+        booster_dump = self._model.dump_model()["tree_info"]
         trees = list()
 
         for i_tree, tree_dump in enumerate(booster_dump):
             box = Box()
 
-            if self._model.n_classes_ == 2:
+            # pylint: disable=W0212
+            if self._model._Booster__num_class == 2:
                 class_label = -1
             else:
-                class_label = i_tree % self._model.n_classes_
+                class_label = i_tree % self._model._Booster__num_class
 
-            tree_json = json.loads(tree_dump)
             trees.append(
-                Tree(class_id=class_label, leaf_nodes=self._get_leaf_nodes(tree_json, i_tree, class_label, box))
+                Tree(
+                    class_id=class_label,
+                    leaf_nodes=self._get_leaf_nodes(tree_dump["tree_structure"], i_tree, class_label, box),
+                )
             )
 
         return trees
@@ -194,22 +163,16 @@ class XGBoostClassifier(Classifier, ClassifierDecisionTree):
 
         leaf_nodes = list()
 
-        if "children" in node:
-            if node["children"][0]["nodeid"] == node["yes"] and node["children"][1]["nodeid"] == node["no"]:
-                node_left = node["children"][0]
-                node_right = node["children"][1]
-            elif node["children"][1]["nodeid"] == node["yes"] and node["children"][0]["nodeid"] == node["no"]:
-                node_left = node["children"][1]
-                node_right = node["children"][0]
-            else:
-                raise ValueError
+        if "split_index" in node:
+            node_left = node["left_child"]
+            node_right = node["right_child"]
 
             box_left = deepcopy(box)
             box_right = deepcopy(box)
 
-            feature = int(node["split"][1:])
-            box_split_left = Box(intervals={feature: Interval(-np.inf, node["split_condition"])})
-            box_split_right = Box(intervals={feature: Interval(node["split_condition"], np.inf)})
+            feature = node["split_feature"]
+            box_split_left = Box(intervals={feature: Interval(-np.inf, node["threshold"])})
+            box_split_right = Box(intervals={feature: Interval(node["threshold"], np.inf)})
 
             if box.intervals:
                 box_left.intersect_with_box(box_split_left)
@@ -221,9 +184,15 @@ class XGBoostClassifier(Classifier, ClassifierDecisionTree):
             leaf_nodes += self._get_leaf_nodes(node_left, i_tree, class_label, box_left)
             leaf_nodes += self._get_leaf_nodes(node_right, i_tree, class_label, box_right)
 
-        if "leaf" in node:
+        if "leaf_index" in node:
             leaf_nodes.append(
-                LeafNode(tree_id=i_tree, class_label=class_label, node_id=node["nodeid"], box=box, value=node["leaf"])
+                LeafNode(
+                    tree_id=i_tree,
+                    class_label=class_label,
+                    node_id=node["leaf_index"],
+                    box=box,
+                    value=node["leaf_value"],
+                )
             )
 
         return leaf_nodes

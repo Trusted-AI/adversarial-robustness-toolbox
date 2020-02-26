@@ -32,8 +32,8 @@ import torch.optim as optim
 
 from art.attacks.extraction.copycat_cnn import CopycatCNN
 from art.classifiers import TensorFlowClassifier
-from art.classifiers import KerasClassifier
-from art.classifiers import PyTorchClassifier
+from art.estimators.classifiers import KerasClassifier
+from art.estimators.classifiers import PyTorchClassifier
 
 from tests.utils import TestBase, master_seed
 from tests.utils import get_classifier_tf, get_classifier_kr, get_classifier_pt

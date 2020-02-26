@@ -24,7 +24,7 @@ import keras.backend as k
 import numpy as np
 
 from art.attacks.evasion.fast_gradient import FastGradientMethod
-from art.classifiers import KerasClassifier
+from art.estimators.classifiers import KerasClassifier
 from art.defences import FeatureSqueezing
 from art.utils import load_dataset, get_labels_np_array
 from art.wrappers.query_efficient_bb import QueryEfficientBBGradientEstimation

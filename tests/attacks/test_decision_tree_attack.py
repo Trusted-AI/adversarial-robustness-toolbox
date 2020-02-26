@@ -25,7 +25,7 @@ from sklearn.datasets import load_digits
 import numpy as np
 
 from art.attacks import DecisionTreeAttack
-from art.classifiers import SklearnClassifier
+from art.estimators.classifiers import SklearnClassifier
 
 from tests.utils import TestBase, master_seed
 

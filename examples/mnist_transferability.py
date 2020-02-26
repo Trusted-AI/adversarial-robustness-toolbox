@@ -13,7 +13,7 @@ import numpy as np
 import tensorflow as tf
 
 from art.attacks import DeepFool
-from art.classifiers import KerasClassifier, TensorFlowClassifier
+from art.estimators.classifiers import KerasClassifier, TensorFlowClassifier
 from art.utils import load_mnist
 
 

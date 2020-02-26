@@ -25,7 +25,7 @@ import importlib
 
 import numpy as np
 
-from art.classifiers.classifier import Classifier, ClassifierGradients, ClassifierDecisionTree
+from art.estimators.classifiers import Classifier, ClassifierGradients, ClassifierDecisionTree
 from art.utils import to_categorical
 
 logger = logging.getLogger(__name__)

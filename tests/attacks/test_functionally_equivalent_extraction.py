@@ -29,7 +29,7 @@ tf.compat.v1.disable_eager_execution()
 from tensorflow.keras.models import load_model
 
 from art.attacks import FunctionallyEquivalentExtraction
-from art.classifiers import KerasClassifier
+from art.estimators.classifiers import KerasClassifier
 
 from tests.utils import TestBase, master_seed
 

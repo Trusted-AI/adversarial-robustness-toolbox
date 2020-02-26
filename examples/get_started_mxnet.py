@@ -9,7 +9,7 @@ from mxnet.gluon.nn import Conv2D, MaxPool2D, Flatten, Dense
 import numpy as np
 
 from art.attacks import FastGradientMethod
-from art.classifiers import MXClassifier
+from art.estimators.classifiers import MXClassifier
 from art.utils import load_mnist
 
 # Step 1: Load the MNIST dataset
