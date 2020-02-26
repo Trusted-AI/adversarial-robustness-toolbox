@@ -74,7 +74,7 @@ class TestDeepFool(TestBase):
         self.assertFalse((self.y_test_mnist == test_y_pred).all())
 
         sum = np.sum(np.argmax(train_y_pred, axis=1) == np.argmax(self.y_train_mnist, axis=1))
-        accuracy =  sum / self.y_train_mnist.shape[0]
+        accuracy = sum / self.y_train_mnist.shape[0]
         logger.info('Accuracy on adversarial train examples: %.2f%%', (accuracy * 100))
 
         sum1 = np.sum(np.argmax(test_y_pred, axis=1) == np.argmax(self.y_test_mnist, axis=1))
