@@ -24,7 +24,7 @@ import numpy as np
 from sklearn.svm import LinearSVC, NuSVC, SVC
 
 from art.attacks import PoisoningAttackSVM
-from art.classifiers import SklearnClassifier
+from art.estimators.classifiers import SklearnClassifier
 from art.utils import load_iris
 
 from tests.utils import master_seed

@@ -8,7 +8,7 @@ import lightgbm as lgb
 import numpy as np
 
 from art.attacks import ZooAttack
-from art.classifiers import LightGBMClassifier
+from art.estimators.classifiers import LightGBMClassifier
 from art.utils import load_mnist
 
 # Step 1: Load the MNIST dataset

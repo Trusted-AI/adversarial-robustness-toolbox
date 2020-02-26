@@ -8,7 +8,7 @@ from sklearn.svm import SVC
 import numpy as np
 
 from art.attacks import FastGradientMethod
-from art.classifiers import SklearnClassifier
+from art.estimators.classifiers import SklearnClassifier
 from art.utils import load_mnist
 
 # Step 1: Load the MNIST dataset

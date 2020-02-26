@@ -24,8 +24,8 @@ import numpy as np
 from sklearn.svm import SVC
 
 from art.attacks import PoisoningAttackSVM
-from art.classifiers import SklearnClassifier
-from art.classifiers.scikitlearn import ScikitlearnSVC
+from art.estimators.classifiers import SklearnClassifier
+from art.estimators.classifiers import ScikitlearnSVC
 from art.poison_detection.roni import RONIDefense
 from art.utils import load_mnist
 

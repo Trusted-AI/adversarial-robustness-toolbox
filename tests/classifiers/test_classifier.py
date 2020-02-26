@@ -22,7 +22,7 @@ import unittest
 
 import numpy as np
 
-from art.classifiers import Classifier, ClassifierNeuralNetwork, ClassifierGradients
+from art.estimators.classifiers import Classifier, ClassifierNeuralNetwork, ClassifierGradients
 
 from tests.utils import TestBase, master_seed
 

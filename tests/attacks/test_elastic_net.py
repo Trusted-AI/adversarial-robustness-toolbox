@@ -24,7 +24,7 @@ import keras.backend as k
 import numpy as np
 
 from art.attacks import ElasticNet
-from art.classifiers import KerasClassifier
+from art.estimators.classifiers import KerasClassifier
 from art.utils import random_targets, to_categorical
 
 from tests.utils import TestBase, master_seed
@@ -277,7 +277,7 @@ class TestElasticNet(TestBase):
 
     def test_classifier_type_check_fail_gradients(self):
         # Use a test classifier not providing gradients required by white-box attack
-        from art.classifiers.scikitlearn import ScikitlearnDecisionTreeClassifier
+        from art.estimators.classifiers import ScikitlearnDecisionTreeClassifier
         from sklearn.tree import DecisionTreeClassifier
 
         classifier = ScikitlearnDecisionTreeClassifier(model=DecisionTreeClassifier())
@@ -375,7 +375,7 @@ class TestElasticNet(TestBase):
         from sklearn.linear_model import LogisticRegression
         from sklearn.svm import SVC, LinearSVC
 
-        from art.classifiers.scikitlearn import SklearnClassifier
+        from art.estimators.classifiers.scikitlearn import SklearnClassifier
 
         scikitlearn_test_cases = [LogisticRegression(solver='lbfgs', multi_class='auto'),
                                   SVC(gamma='auto'),

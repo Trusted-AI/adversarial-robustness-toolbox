@@ -23,7 +23,7 @@ import unittest
 import numpy as np
 
 from art.attacks import UniversalPerturbation
-from art.classifiers import KerasClassifier
+from art.estimators.classifiers import KerasClassifier
 
 from tests.utils import TestBase
 from tests.utils import get_classifier_tf, get_classifier_kr, get_classifier_pt
@@ -143,7 +143,7 @@ class TestUniversalPerturbation(TestBase):
 
     def test_classifier_type_check_fail_gradients(self):
         # Use a test classifier not providing gradients required by white-box attack
-        from art.classifiers.scikitlearn import ScikitlearnDecisionTreeClassifier
+        from art.estimators.classifiers import ScikitlearnDecisionTreeClassifier
         from sklearn.tree import DecisionTreeClassifier
 
         classifier = ScikitlearnDecisionTreeClassifier(model=DecisionTreeClassifier())

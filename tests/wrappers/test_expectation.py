@@ -23,7 +23,7 @@ import unittest
 import numpy as np
 
 from art.attacks import FastGradientMethod
-from art.classifiers import KerasClassifier
+from art.estimators.classifiers import KerasClassifier
 from art.utils import load_dataset, random_targets
 from art.wrappers.expectation import ExpectationOverTransformations
 

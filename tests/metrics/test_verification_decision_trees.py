@@ -25,7 +25,7 @@ import lightgbm
 import numpy as np
 from sklearn.ensemble import ExtraTreesClassifier, RandomForestClassifier, GradientBoostingClassifier
 
-from art.classifiers import XGBoostClassifier, LightGBMClassifier, SklearnClassifier
+from art.estimators.classifiers import XGBoostClassifier, LightGBMClassifier, SklearnClassifier
 from art.utils import load_dataset
 from art.metrics import RobustnessVerificationTreeModelsCliqueMethod
 

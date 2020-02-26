@@ -29,7 +29,7 @@ import torch.nn as nn
 import torch.nn.functional as f
 import torch.optim as optim
 
-from art.classifiers import KerasClassifier, PyTorchClassifier, TensorFlowClassifier
+from art.estimators.classifiers import KerasClassifier, PyTorchClassifier, TensorFlowClassifier
 from art.metrics.metrics import empirical_robustness, clever_t, clever_u, clever, loss_sensitivity
 from art.utils import load_mnist
 

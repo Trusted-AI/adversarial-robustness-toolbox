@@ -27,7 +27,7 @@ from keras.models import Sequential
 import numpy as np
 
 from art.attacks import FastGradientMethod
-from art.classifiers import KerasClassifier
+from art.estimators.classifiers import KerasClassifier
 from art.detection import BinaryInputDetector, BinaryActivationDetector
 from art.utils import load_mnist
 

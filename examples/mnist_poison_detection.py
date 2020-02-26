@@ -7,7 +7,7 @@ from keras.models import Sequential
 from keras.layers import Dense, Flatten, Conv2D, MaxPooling2D, Dropout
 import numpy as np
 
-from art.classifiers import KerasClassifier
+from art.estimators.classifiers import KerasClassifier
 from art.utils import load_mnist, preprocess
 from art.poison_detection import ActivationDefence
 import pprint

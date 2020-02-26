@@ -24,7 +24,7 @@ import logging
 
 import numpy as np
 
-from art.classifiers.classifier import Classifier, ClassifierGradients
+from art.estimators.classifiers import Classifier, ClassifierGradients
 
 logger = logging.getLogger(__name__)
 

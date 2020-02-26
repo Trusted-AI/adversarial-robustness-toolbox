@@ -8,7 +8,7 @@ import xgboost as xgb
 import numpy as np
 
 from art.attacks import ZooAttack
-from art.classifiers import XGBoostClassifier
+from art.estimators.classifiers import XGBoostClassifier
 from art.utils import load_mnist
 
 # Step 1: Load the MNIST dataset

@@ -26,7 +26,7 @@ import numpy as np
 import six
 
 from art.config import ART_NUMPY_DTYPE
-from art.classifiers.classifier import Classifier, ClassifierNeuralNetwork, ClassifierGradients
+from art.estimators.classifiers import Classifier, ClassifierNeuralNetwork, ClassifierGradients
 
 logger = logging.getLogger(__name__)
 
