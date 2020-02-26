@@ -68,7 +68,6 @@ class TestThresholdAttack(TestBase):
             self.y_test_mnist,
             False)
 
-
     def test_tensorflow_mnist(self):
         """
         Test with the TensorFlowClassifier. (Untargeted Attack)
@@ -81,7 +80,6 @@ class TestThresholdAttack(TestBase):
             self.x_test_mnist,
             self.y_test_mnist,
             False)
-
 
     def test_pytorch_mnist(self):
         """
@@ -105,7 +103,6 @@ class TestThresholdAttack(TestBase):
             self.y_test_mnist,
             True)
 
-
     def test_tensorflow_mnist_targeted(self):
         """
         Test with the TensorFlowClassifier. (Targeted Attack)
@@ -118,7 +115,6 @@ class TestThresholdAttack(TestBase):
             self.x_test_mnist,
             self.y_test_mnist,
             True)
-
 
     def test_pytorch_mnist_targeted(self):
         """

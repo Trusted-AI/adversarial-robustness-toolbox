@@ -175,7 +175,8 @@ class TestKerasClassifierTensorFlow(TestBase):
         smooth = SpatialSmoothing()
 
         classifier_ = get_image_classifier_kr_tf()
-        classifier = KerasClassifier(clip_values=clip_values, model=classifier_._model, preprocessing_defences=[fs, jpeg, smooth])
+        classifier = KerasClassifier(clip_values=clip_values, model=classifier_._model,
+                                     preprocessing_defences=[fs, jpeg, smooth])
         self.assertEqual(len(classifier.preprocessing_defences), 3)
 
         predictions_classifier = classifier.predict(self.x_test_mnist)
@@ -385,8 +386,8 @@ class TestKerasClassifierTensorFlow(TestBase):
                        _loss_gradient_expected, _from_logits):
 
             master_seed(1234)
-            classifier = get_image_classifier_kr_tf(loss_name=_loss_name, loss_type=_loss_type, from_logits=_from_logits)
-
+            classifier = get_image_classifier_kr_tf(loss_name=_loss_name, loss_type=_loss_type,
+                                                    from_logits=_from_logits)
 
             y_test_pred = np.argmax(classifier.predict(x=self.x_test_mnist), axis=1)
             np.testing.assert_array_equal(y_test_pred, _y_test_pred_expected)

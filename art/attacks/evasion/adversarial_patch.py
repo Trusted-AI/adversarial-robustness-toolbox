@@ -277,10 +277,8 @@ class AdversarialPatch(EvasionAttack):
 
             inverted_patch_mask_transformed = 1 - patch_mask_transformed
 
-            patched_image = (
-                    images[i_image, :, :,
-                    :] * inverted_patch_mask_transformed + patch_transformed * patch_mask_transformed
-            )
+            patched_image = (images[i_image, :, :,
+                             :] * inverted_patch_mask_transformed + patch_transformed * patch_mask_transformed)
             patched_image = np.expand_dims(patched_image, axis=0)
             patched_images.append(patched_image)
 
