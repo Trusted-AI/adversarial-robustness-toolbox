@@ -37,6 +37,8 @@ ART正在不断发展中。 我们欢迎您的反馈，错误报告和对ART建�
 ## ART中实施的攻击，防御，检测，指标，认证和验证
 
 **逃避攻击：**
+* Threshold Attack ([Vargas et al., 2019](https://arxiv.org/abs/1906.06026))
+* Pixel Attack ([Vargas et al., 2019](https://arxiv.org/abs/1906.06026), and [Su et al., 2019](https://ieeexplore.ieee.org/abstract/document/8601309/citations#citations)) 
 * HopSkipJump攻击 ([Chen et al., 2019](https://arxiv.org/abs/1904.02144))
 * 高可信度低不确定性对抗性例子 ([Grosse et al., 2018](https://arxiv.org/abs/1812.02606))
 * 预计梯度下降 ([Madry et al., 2017](https://arxiv.org/abs/1706.06083))

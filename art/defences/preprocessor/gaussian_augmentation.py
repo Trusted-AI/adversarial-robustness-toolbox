@@ -24,7 +24,7 @@ import logging
 
 import numpy as np
 
-from art.defences.preprocess.preprocessor import Preprocessor
+from art.defences.preprocessor.preprocessor import Preprocessor
 
 logger = logging.getLogger(__name__)
 

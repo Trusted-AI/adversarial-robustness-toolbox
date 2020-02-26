@@ -20,7 +20,7 @@ import unittest
 
 import numpy as np
 
-from art.defences.postprocess import GaussianNoise
+from art.defences.postprocessor import GaussianNoise
 from art.utils import load_dataset
 from tests.utils import master_seed, get_classifier_kr_tf, get_classifier_kr_tf_binary
 

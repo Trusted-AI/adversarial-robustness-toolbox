@@ -16,35 +16,41 @@
 # TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 # SOFTWARE.
 """
-This module implements class labels added to the classifier output.
+This module implements Gaussian noise added to the classifier output.
 """
 import logging
 
 import numpy as np
 
-from art.defences.postprocess.postprocessor import Postprocessor
+from art.defences.postprocessor.postprocessor import Postprocessor
+from art.utils import is_probability
 
 logger = logging.getLogger(__name__)
 
 
-class ClassLabels(Postprocessor):
+class GaussianNoise(Postprocessor):
     """
-    Implementation of a postprocessor based on adding class labels to classifier output.
+    Implementation of a postprocessor based on adding Gaussian noise to classifier output.
     """
 
-    def __init__(self, apply_fit=False, apply_predict=True):
+    params = ["scale"]
+
+    def __init__(self, scale=0.2, apply_fit=False, apply_predict=True):
         """
-        Create a ClassLabels postprocessor.
+        Create a GaussianNoise postprocessor.
 
+        :param scale: Standard deviation of the distribution.
+        :type scale: `float`
         :param apply_fit: True if applied during fitting/training.
         :type apply_fit: `bool`
         :param apply_predict: True if applied during predicting.
         :type apply_predict: `bool`
         """
-        super(ClassLabels, self).__init__()
+        super(GaussianNoise, self).__init__()
         self._is_fitted = True
         self._apply_fit = apply_fit
         self._apply_predict = apply_predict
+        self.set_params(scale=scale)
 
     @property
     def apply_fit(self):
@@ -63,17 +69,46 @@ class ClassLabels(Postprocessor):
         :return: Postprocessed model output.
         :rtype: `np.ndarray`
         """
-        class_labels = np.zeros_like(preds)
-        if preds.shape[1] > 1:
-            index_labels = np.argmax(preds, axis=1)
-            class_labels[:, index_labels] = 1
-        else:
-            class_labels[preds > 0.5] = 1
+        # Generate random noise
+        noise = np.random.normal(loc=0.0, scale=self.scale, size=preds.shape)
 
-        return class_labels
+        # Add noise to model output
+        post_preds = preds.copy()
+        post_preds += noise
+
+        if preds.shape[1] > 1:
+            # Check if model output is logit or probability
+            are_probability = [is_probability(x) for x in preds]
+            all_probability = np.sum(are_probability) == preds.shape[0]
+
+            # Finally normalize probability output
+            if all_probability:
+                post_preds[post_preds < 0.0] = 0.0
+                sums = np.sum(post_preds, axis=1)
+                post_preds /= sums
+        else:
+            post_preds[post_preds < 0.0] = 0.0
+
+        return post_preds
 
     def fit(self, preds, **kwargs):
         """
         No parameters to learn for this method; do nothing.
         """
         pass
+
+    def set_params(self, **kwargs):
+        """
+        Take in a dictionary of parameters and apply checks before saving them as attributes.
+
+        :param scale: Standard deviation of the distribution.
+        :type scale: `float`
+        :return: `True` when parsing was successful
+        """
+        # Save defence-specific parameters
+        super(GaussianNoise, self).set_params(**kwargs)
+
+        if self.scale <= 0:
+            raise ValueError("Standard deviation must be positive.")
+
+        return True
