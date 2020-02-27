@@ -315,6 +315,10 @@ class TensorFlowClassifier(ClassifierNeuralNetwork, ClassifierGradients, Classif
         if not hasattr(self, "_loss_grads") or self._loss_grads is None or self._labels_ph is None:
             raise ValueError("Need the loss function and the labels placeholder to compute the loss gradient.")
 
+        # Check label shape
+        if len(self._labels_ph.shape) == 1:
+            y_preprocessed = np.argmax(y_preprocessed, axis=1)
+
         # Create feed_dict
         feed_dict = {self._input_ph: x_preprocessed, self._labels_ph: y_preprocessed}
         feed_dict.update(self._feed_dict)
@@ -769,6 +773,10 @@ class TensorFlowV2Classifier(ClassifierNeuralNetwork, ClassifierGradients, Class
 
         # Apply preprocessing
         x_preprocessed, y_preprocessed = self._apply_preprocessing(x, y, fit=True)
+
+        # Check label shape
+        if isinstance(self._loss_object, tf.keras.losses.SparseCategoricalCrossentropy):
+            y_preprocessed = np.argmax(y_preprocessed, axis=1)
 
         train_ds = tf.data.Dataset.from_tensor_slices((x_preprocessed, y_preprocessed)).shuffle(10000).batch(batch_size)
 
