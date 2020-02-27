@@ -25,7 +25,7 @@ from sklearn.svm import SVC
 
 from art.attacks import PoisoningAttackSVM
 from art.estimators.classifiers import SklearnClassifier
-from art.estimators.classifiers import ScikitlearnSVC
+from art.estimators.classifiers.scikitlearn import ScikitlearnSVC
 from art.poison_detection.provenance_defense import ProvenanceDefense
 from art.utils import load_mnist
 
