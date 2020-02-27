@@ -93,7 +93,9 @@ class AdversarialPatch(EvasionAttack):
         :type batch_size: `int`
         """
         super(AdversarialPatch, self).__init__(classifier=classifier)
-        if not isinstance(classifier, ClassifierNeuralNetworkMixin) or not isinstance(classifier, ClassifierGradientsMixin):
+        if not isinstance(classifier, ClassifierNeuralNetworkMixin) or not isinstance(
+            classifier, ClassifierGradientsMixin
+        ):
             raise (
                 TypeError(
                     "For `" + self.__class__.__name__ + "` classifier must be an instance of "
