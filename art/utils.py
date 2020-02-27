@@ -22,6 +22,7 @@ from __future__ import absolute_import, division, print_function, unicode_litera
 
 import os
 import logging
+import math
 
 import numpy as np
 
@@ -810,6 +811,8 @@ def is_probability(vector):
     :return: True if it is a probability vector.
     :rtype: `bool`
     """
-    import math
+    is_sum_1 = math.isclose(np.sum(vector), 1.0, rel_tol=1e-03)
+    is_smaller_1 = np.amax(vector) <= 1.0
+    is_larger_0 = np.amin(vector) >= 0.0
 
-    return math.isclose(np.sum(vector), 1.0, rel_tol=1e-03)
+    return is_sum_1 and is_smaller_1 and is_larger_0
