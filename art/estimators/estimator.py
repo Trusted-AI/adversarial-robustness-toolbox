@@ -92,12 +92,12 @@ class BaseEstimator(ABC, metaclass=InputFilter):
     estimator_params = ["model", "clip_values", "preprocessing_defences", "postprocessing_defences", "preprocessing"]
 
     def __init__(
-            self,
-            model=None,
-            clip_values=None,
-            preprocessing_defences=None,
-            postprocessing_defences=None,
-            preprocessing=None,
+        self,
+        model=None,
+        clip_values=None,
+        preprocessing_defences=None,
+        postprocessing_defences=None,
+        preprocessing=None,
     ):
         """
         Initialize a `Estimator` object.

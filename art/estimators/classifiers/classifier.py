@@ -89,8 +89,7 @@ class Classifier(ABC, metaclass=InputFilter):
     """
 
     def __init__(
-            self, clip_values=None, preprocessing_defences=None, postprocessing_defences=None, preprocessing=None,
-            **kwargs
+        self, clip_values=None, preprocessing_defences=None, postprocessing_defences=None, preprocessing=None, **kwargs
     ):
         """
         Initialize a `Classifier` object.
@@ -151,8 +150,8 @@ class Classifier(ABC, metaclass=InputFilter):
                   # The first dimension corresponds to the samples whereas all other dimensions
                   # correspond to the shape of a single sample. For example for feature vectors the shape of `x` is
                   # (nb_samples, nb_features), for images the shape is (nb_samples, nb_pixels_height, nb_pixels_width,
-                  # nb_channels) in format NHWC or (nb_samples, nb_channels, nb_pixels_height, nb_pixels_width) in format
-                  # NCHW. Any shape compatible with the model is accepted.
+                  # nb_channels) in format NHWC or (nb_samples, nb_channels, nb_pixels_height, nb_pixels_width) in
+                  # format NCHW. Any shape compatible with the model is accepted.
 
         :type x: `np.ndarray`
         :return: Array of predictions of shape `(nb_inputs, nb_classes)`.

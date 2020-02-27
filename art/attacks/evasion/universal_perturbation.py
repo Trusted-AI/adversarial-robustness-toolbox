@@ -79,7 +79,9 @@ class UniversalPerturbation(EvasionAttack):
         :type norm: `int`
         """
         super(UniversalPerturbation, self).__init__(classifier)
-        if not isinstance(classifier, ClassifierNeuralNetworkMixin) or not isinstance(classifier, ClassifierGradientsMixin):
+        if not isinstance(classifier, ClassifierNeuralNetworkMixin) or not isinstance(
+            classifier, ClassifierGradientsMixin
+        ):
             raise (
                 TypeError(
                     "For `" + self.__class__.__name__ + "` classifier must be an instance of "

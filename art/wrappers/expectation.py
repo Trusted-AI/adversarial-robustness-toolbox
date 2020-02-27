@@ -30,7 +30,9 @@ from art.estimators.classifiers.classifier import Classifier, ClassifierNeuralNe
 logger = logging.getLogger(__name__)
 
 
-class ExpectationOverTransformations(ClassifierWrapper, ClassifierGradientsMixin, ClassifierNeuralNetworkMixin, Classifier):
+class ExpectationOverTransformations(
+    ClassifierWrapper, ClassifierGradientsMixin, ClassifierNeuralNetworkMixin, Classifier
+):
     """
     Implementation of Expectation Over Transformations applied to classifier predictions and gradients, as introduced
     in Athalye et al. (2017).
