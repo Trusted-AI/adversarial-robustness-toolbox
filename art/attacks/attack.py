@@ -24,7 +24,7 @@ import logging
 import abc
 import numpy as np
 
-from art.estimators.classifiers import Classifier
+from art.estimators.classifiers.classifier import Classifier
 
 logger = logging.getLogger(__name__)
 

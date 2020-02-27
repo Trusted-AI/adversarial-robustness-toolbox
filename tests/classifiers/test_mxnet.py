@@ -191,7 +191,7 @@ class TestMXClassifier(TestBase):
 
     def test_repr(self):
         repr_ = repr(self.classifier)
-        self.assertIn('art.classifiers.mxnet.MXClassifier', repr_)
+        self.assertIn('art.estimators.classifiers.mxnet.MXClassifier', repr_)
         self.assertIn('input_shape=(1, 28, 28), nb_classes=10', repr_)
         self.assertIn('channel_index=1, clip_values=(0, 1)', repr_)
         self.assertIn('defences=None, preprocessing=(0, 1)', repr_)

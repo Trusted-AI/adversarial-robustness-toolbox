@@ -15,20 +15,13 @@
 # AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT,
 # TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 # SOFTWARE.
-from __future__ import absolute_import, division, print_function, unicode_literals
 
 import logging
 import unittest
 
 import numpy as np
-import tensorflow as tf
 
-if tf.__version__[0] == '2':
-    tf.compat.v1.disable_eager_execution()
-
-from art.utils import load_dataset
-
-from tests.utils import master_seed, get_classifier_kr_tf
+from tests.utils import TestBase, master_seed, get_classifier_kr_tf
 
 logger = logging.getLogger(__name__)
 
@@ -37,42 +30,39 @@ NB_TRAIN = 500
 NB_TEST = 100
 
 
-class TestInputFilter(unittest.TestCase):
+class TestInputFilter(TestBase):
 
     @classmethod
     def setUpClass(cls):
-        (x_train, y_train), (x_test, y_test), _, _ = load_dataset('mnist')
-
-        cls.x_train = list(x_train[:NB_TRAIN])
-        cls.y_train = list(y_train[:NB_TRAIN])
-        cls.x_test = list(x_test[:NB_TEST])
-        cls.y_test = list(y_test[:NB_TEST])
+        master_seed(seed=1234)
+        super().setUpClass()
 
     def setUp(self):
         master_seed(1234)
+        super().setUp()
 
     def test_fit(self):
-        labels = np.argmax(self.y_test, axis=1)
+        labels = np.argmax(self.y_test_mnist, axis=1)
         classifier = get_classifier_kr_tf()
 
-        acc = np.sum(np.argmax(classifier.predict(self.x_test), axis=1) == labels) / NB_TEST
+        acc = np.sum(np.argmax(classifier.predict(self.x_test_mnist), axis=1) == labels) / NB_TEST
         logger.info('Accuracy: %.2f%%', (acc * 100))
 
-        classifier.fit(self.x_train, self.y_train, batch_size=BATCH_SIZE, nb_epochs=2)
-        acc2 = np.sum(np.argmax(classifier.predict(self.x_test), axis=1) == labels) / NB_TEST
+        classifier.fit(self.x_train_mnist, self.y_train_mnist, batch_size=BATCH_SIZE, nb_epochs=2)
+        acc2 = np.sum(np.argmax(classifier.predict(self.x_test_mnist), axis=1) == labels) / NB_TEST
         logger.info('Accuracy: %.2f%%', (acc2 * 100))
 
         self.assertEqual(acc, 0.32)
         self.assertEqual(acc2, 0.73)
 
-        classifier.fit(self.x_train, y=self.y_train, batch_size=BATCH_SIZE, nb_epochs=2)
-        classifier.fit(x=self.x_train, y=self.y_train, batch_size=BATCH_SIZE, nb_epochs=2)
+        classifier.fit(self.x_train_mnist, y=self.y_train_mnist, batch_size=BATCH_SIZE, nb_epochs=2)
+        classifier.fit(x=self.x_train_mnist, y=self.y_train_mnist, batch_size=BATCH_SIZE, nb_epochs=2)
 
     def test_class_gradient(self):
         classifier = get_classifier_kr_tf()
 
         # Test all gradients label
-        gradients = classifier.class_gradient(self.x_test)
+        gradients = classifier.class_gradient(self.x_test_mnist)
 
         self.assertTrue(gradients.shape == (NB_TEST, 10, 28, 28, 1))
 
@@ -93,7 +83,7 @@ class TestInputFilter(unittest.TestCase):
         np.testing.assert_array_almost_equal(gradients[0, 5, :, 14, 0], expected_gradients_2, decimal=4)
 
         # Test 1 gradient label = 5
-        gradients = classifier.class_gradient(self.x_test, label=5)
+        gradients = classifier.class_gradient(self.x_test_mnist, label=5)
 
         self.assertTrue(gradients.shape == (NB_TEST, 1, 28, 28, 1))
 
@@ -115,7 +105,7 @@ class TestInputFilter(unittest.TestCase):
 
         # Test a set of gradients label = array
         label = np.random.randint(5, size=NB_TEST)
-        gradients = classifier.class_gradient(self.x_test, label=label)
+        gradients = classifier.class_gradient(self.x_test_mnist, label=label)
 
         self.assertTrue(gradients.shape == (NB_TEST, 1, 28, 28, 1))
 
@@ -139,9 +129,9 @@ class TestInputFilter(unittest.TestCase):
         classifier = get_classifier_kr_tf()
 
         # Test gradient
-        gradients = classifier.loss_gradient(self.x_test, self.y_test)
-        gradients = classifier.loss_gradient(self.x_test, y=self.y_test)
-        gradients = classifier.loss_gradient(x=self.x_test, y=self.y_test)
+        gradients = classifier.loss_gradient(self.x_test_mnist, self.y_test_mnist)
+        gradients = classifier.loss_gradient(self.x_test_mnist, y=self.y_test_mnist)
+        gradients = classifier.loss_gradient(x=self.x_test_mnist, y=self.y_test_mnist)
 
         self.assertTrue(gradients.shape == (NB_TEST, 28, 28, 1))
 
@@ -165,8 +155,8 @@ class TestInputFilter(unittest.TestCase):
 
         layer_names = classifier.layer_names
         for i, name in enumerate(layer_names):
-            act_i = classifier.get_activations(self.x_test, i, batch_size=128)
-            act_name = classifier.get_activations(self.x_test, name, batch_size=128)
+            act_i = classifier.get_activations(self.x_test_mnist, i, batch_size=128)
+            act_name = classifier.get_activations(self.x_test_mnist, name, batch_size=128)
             np.testing.assert_array_equal(act_name, act_i)
 
 

@@ -22,7 +22,7 @@ from __future__ import absolute_import, division, print_function, unicode_litera
 
 import logging
 
-from art.estimators.classifiers import Classifier
+from art.estimators.classifiers.classifier import Classifier
 
 logger = logging.getLogger(__name__)
 

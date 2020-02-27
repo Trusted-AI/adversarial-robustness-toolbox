@@ -27,7 +27,7 @@ import logging
 import numpy as np
 
 from art.config import ART_NUMPY_DTYPE
-from art.estimators.classifiers import ClassifierNeuralNetworkMixin, ClassifierGradientsMixin
+from art.estimators.classifiers.classifier import ClassifierNeuralNetworkMixin, ClassifierGradientsMixin
 from art.attacks.attack import EvasionAttack
 from art.utils import compute_success
 
