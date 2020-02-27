@@ -89,7 +89,7 @@ class TestRONI(unittest.TestCase):
         svm_attack = PoisoningAttackSVM(classifier=no_defense, x_train=x_train, y_train=y_train,
                                         step=0.1, eps=1.0, x_val=valid_data, y_val=valid_labels, max_iters=200)
 
-        poisoned_data = svm_attack.generate(all_poison_init, y=poison_labels)
+        poisoned_data, _ = svm_attack.poison(all_poison_init, y=poison_labels)
 
         # Stack on poison to data and add provenance of bad actor
         all_data = np.vstack([x_train, poisoned_data])
