@@ -31,7 +31,7 @@ import torch.nn as nn
 import torch.optim as optim
 
 from art.attacks.extraction.copycat_cnn import CopycatCNN
-from art.classifiers import TensorFlowClassifier
+from art.estimators.classifiers import TensorFlowClassifier
 from art.estimators.classifiers import KerasClassifier
 from art.estimators.classifiers import PyTorchClassifier
 
