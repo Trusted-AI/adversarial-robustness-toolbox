@@ -147,7 +147,7 @@ class TestPGD(TestBase):
 
     def test_classifier_type_check_fail_gradients(self):
         # Use a test classifier not providing gradients required by white-box attack
-        from art.estimators.classifiers import ScikitlearnDecisionTreeClassifier
+        from art.estimators.classifiers.scikitlearn import ScikitlearnDecisionTreeClassifier
         from sklearn.tree import DecisionTreeClassifier
 
         classifier = ScikitlearnDecisionTreeClassifier(model=DecisionTreeClassifier())
