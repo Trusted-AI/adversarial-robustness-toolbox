@@ -24,7 +24,7 @@ import logging
 
 import numpy as np
 
-from art.estimators.classifiers import Classifier, ClassifierNeuralNetworkMixin, ClassifierGradientsMixin
+from art.estimators.classifiers.classifier import Classifier, ClassifierNeuralNetworkMixin, ClassifierGradientsMixin
 
 logger = logging.getLogger(__name__)
 
@@ -88,7 +88,7 @@ class EnsembleClassifier(ClassifierNeuralNetworkMixin, ClassifierGradientsMixin,
 
         # Assert all classifiers are the right shape(s)
         for classifier in classifiers:
-            if not isinstance(classifier, ClassifierNeuralNetwork):
+            if not isinstance(classifier, ClassifierNeuralNetworkMixin):
                 raise TypeError("Expected type `Classifier`, found %s instead." % type(classifier))
 
             if clip_values != classifier.clip_values:

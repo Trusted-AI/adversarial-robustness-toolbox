@@ -348,7 +348,7 @@ class TestKerasClassifierTensorFlow(TestBase):
     def test_repr(self):
         classifier = get_classifier_kr_tf()
         repr_ = repr(classifier)
-        self.assertIn('art.classifiers.keras.KerasClassifier', repr_)
+        self.assertIn('art.estimators.classifiers.keras.KerasClassifier', repr_)
         self.assertIn('use_logits=False, channel_index=3', repr_)
         self.assertIn('clip_values=(0, 1), preprocessing_defences=None, postprocessing_defences=None, '
                       'preprocessing=(0, 1)', repr_)

@@ -25,7 +25,7 @@ import logging
 import numpy as np
 
 from art.attacks.attack import EvasionAttack
-from art.estimators.classifiers import ScikitlearnDecisionTreeClassifier
+from art.estimators.classifiers.scikitlearn import ScikitlearnDecisionTreeClassifier
 from art.utils import check_and_transform_label_format, compute_success
 
 logger = logging.getLogger(__name__)

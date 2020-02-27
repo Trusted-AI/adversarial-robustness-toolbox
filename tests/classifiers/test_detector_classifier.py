@@ -167,7 +167,7 @@ class TestDetectorClassifier(TestBase):
 
     def test_repr(self):
         repr_ = repr(self.detector_classifier)
-        self.assertIn('art.classifiers.detector_classifier.DetectorClassifier', repr_)
+        self.assertIn('art.estimators.classifiers.detector_classifier.DetectorClassifier', repr_)
         self.assertIn('preprocessing=(0, 1)', repr_)
 
 

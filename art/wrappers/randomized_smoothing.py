@@ -27,7 +27,7 @@ import logging
 import numpy as np
 
 from art.wrappers.wrapper import ClassifierWrapper
-from art.estimators.classifiers import Classifier, ClassifierGradientsMixin
+from art.estimators.classifiers.classifier import Classifier, ClassifierGradientsMixin
 
 logger = logging.getLogger(__name__)
 

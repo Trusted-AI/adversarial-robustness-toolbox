@@ -23,7 +23,7 @@ from __future__ import absolute_import, division, print_function, unicode_litera
 import logging
 import numpy as np
 
-from art.estimators.classifiers import Classifier, ClassifierDecisionTreeMixin
+from art.estimators.classifiers.classifier import Classifier, ClassifierDecisionTreeMixin
 
 logger = logging.getLogger(__name__)
 

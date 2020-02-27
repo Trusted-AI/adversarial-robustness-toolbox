@@ -28,7 +28,7 @@ import random
 
 import numpy as np
 
-from art.estimators.classifiers import ClassifierNeuralNetworkMixin, ClassifierGradientsMixin
+from art.estimators.classifiers.classifier import ClassifierNeuralNetworkMixin, ClassifierGradientsMixin
 from art.attacks.attack import EvasionAttack
 from art.utils import projection
 
