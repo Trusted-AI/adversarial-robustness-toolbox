@@ -24,12 +24,12 @@ import logging
 
 import numpy as np
 
-from art.estimators.classifiers import Classifier, ClassifierDecisionTree
+from art.estimators.classifiers import Classifier, ClassifierDecisionTreeMixin
 
 logger = logging.getLogger(__name__)
 
 
-class LightGBMClassifier(Classifier, ClassifierDecisionTree):
+class LightGBMClassifier(Classifier, ClassifierDecisionTreeMixin):
     """
     Wrapper class for importing LightGBM models.
     """

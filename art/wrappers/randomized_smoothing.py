@@ -27,12 +27,12 @@ import logging
 import numpy as np
 
 from art.wrappers.wrapper import ClassifierWrapper
-from art.estimators.classifiers import Classifier, ClassifierGradients
+from art.estimators.classifiers import Classifier, ClassifierGradientsMixin
 
 logger = logging.getLogger(__name__)
 
 
-class RandomizedSmoothing(ClassifierWrapper, ClassifierGradients, Classifier):
+class RandomizedSmoothing(ClassifierWrapper, ClassifierGradientsMixin, Classifier):
     """
     Implementation of Randomized Smoothing applied to classifier predictions and gradients, as introduced
     in Cohen et al. (2019).

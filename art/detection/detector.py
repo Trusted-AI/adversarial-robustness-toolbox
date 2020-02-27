@@ -25,12 +25,12 @@ import logging
 
 import six
 
-from art.estimators.classifiers import Classifier, ClassifierNeuralNetwork, ClassifierGradients
+from art.estimators.classifiers import Classifier, ClassifierNeuralNetworkMixin, ClassifierGradientsMixin
 
 logger = logging.getLogger(__name__)
 
 
-class BinaryInputDetector(ClassifierNeuralNetwork, ClassifierGradients, Classifier):
+class BinaryInputDetector(ClassifierNeuralNetworkMixin, ClassifierGradientsMixin, Classifier):
     """
     Binary detector of adversarial samples coming from evasion attacks. The detector uses an architecture provided by
     the user and trains it on data labeled as clean (label 0) or adversarial (label 1).
@@ -134,7 +134,7 @@ class BinaryInputDetector(ClassifierNeuralNetwork, ClassifierGradients, Classifi
         self.detector.save(filename, path)
 
 
-class BinaryActivationDetector(ClassifierNeuralNetwork, ClassifierGradients, Classifier):
+class BinaryActivationDetector(ClassifierNeuralNetworkMixin, ClassifierGradientsMixin, Classifier):
     """
     Binary detector of adversarial samples coming from evasion attacks. The detector uses an architecture provided by
     the user and is trained on the values of the activations of a classifier at a given layer.

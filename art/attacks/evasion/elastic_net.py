@@ -28,7 +28,7 @@ import numpy as np
 import six
 
 from art.config import ART_NUMPY_DTYPE
-from art.estimators.classifiers import ClassifierGradients
+from art.estimators.classifiers import ClassifierGradientsMixin
 from art.attacks.attack import EvasionAttack
 from art.utils import compute_success, get_labels_np_array, check_and_transform_label_format
 
@@ -96,11 +96,11 @@ class ElasticNet(EvasionAttack):
         :type decision_rule: `string`
         """
         super(ElasticNet, self).__init__(classifier)
-        if not isinstance(classifier, ClassifierGradients):
+        if not isinstance(classifier, ClassifierGradientsMixin):
             raise (
                 TypeError(
                     "For `" + self.__class__.__name__ + "` classifier must be an instance of "
-                    "`art.classifiers.classifier.ClassifierGradients`, the provided classifier is instance of "
+                    "`art.classifiers.classifier.ClassifierGradientsMixin`, the provided classifier is instance of "
                     + str(classifier.__class__.__bases__)
                     + ". "
                     " The classifier needs to provide gradients."

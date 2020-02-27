@@ -26,13 +26,13 @@ import numpy as np
 from scipy.stats import entropy
 
 from art.wrappers.wrapper import ClassifierWrapper
-from art.estimators.classifiers import Classifier, ClassifierGradients
+from art.estimators.classifiers import Classifier, ClassifierGradientsMixin
 from art.utils import clip_and_round
 
 logger = logging.getLogger(__name__)
 
 
-class QueryEfficientBBGradientEstimation(ClassifierWrapper, ClassifierGradients, Classifier):
+class QueryEfficientBBGradientEstimation(ClassifierWrapper, ClassifierGradientsMixin, Classifier):
     """
     Implementation of Query-Efficient Black-box Adversarial Examples. The attack approximates the gradient by
     maximizing the loss function over samples drawn from random Gaussian noise around the input.

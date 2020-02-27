@@ -27,12 +27,12 @@ import logging
 
 import numpy as np
 
-from art.estimators.classifiers import Classifier, ClassifierNeuralNetwork, ClassifierGradients
+from art.estimators.classifiers import Classifier, ClassifierNeuralNetworkMixin, ClassifierGradientsMixin
 
 logger = logging.getLogger(__name__)
 
 
-class DetectorClassifier(ClassifierNeuralNetwork, ClassifierGradients, Classifier):
+class DetectorClassifier(ClassifierNeuralNetworkMixin, ClassifierGradientsMixin, Classifier):
     """
     This class implements a Classifier extension that wraps a classifier and a detector.
     More details in https://arxiv.org/abs/1705.07263

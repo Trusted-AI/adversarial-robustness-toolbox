@@ -40,7 +40,7 @@ class RobustnessVerificationTreeModelsCliqueMethod:
         Create robustness verification for a decision-tree-based classifier.
 
         :param classifier: A trained decision-tree-based classifier.
-        :type classifier: `art.classifiers.ClassifierDecisionTree`
+        :type classifier: `art.classifiers.ClassifierDecisionTreeMixin`
         """
         self._classifier = classifier
         self._trees = self._classifier.get_trees()

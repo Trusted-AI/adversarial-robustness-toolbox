@@ -18,79 +18,23 @@
 """
 This module implements abstract base classes defining to properties for all classifiers.
 """
-from __future__ import absolute_import, division, print_function, unicode_literals
 
-import abc
+from abc import ABC, abstractmethod
 
 import numpy as np
 
 from art.utils import check_and_transform_label_format
 
 
-class input_filter(abc.ABCMeta):
-    """
-    Metaclass to ensure that inputs are ndarray for all of the subclass generate and extract calls.
-    """
-
-    def __init__(cls, name, bases, clsdict):
-        """
-        This function overrides any existing generate or extract methods with a new method that
-        ensures the input is an ndarray. There is an assumption that the input object has implemented
-        __array__ with np.array calls.
-        """
-
-        def make_replacement(fdict, func_name, has_y):
-            """
-            This function overrides creates replacement functions dynamically.
-            """
-
-            def replacement_function(self, *args, **kwargs):
-                if len(args) > 0:
-                    lst = list(args)
-
-                if "x" in kwargs:
-                    if not isinstance(kwargs["x"], np.ndarray):
-                        kwargs["x"] = np.array(kwargs["x"])
-                else:
-                    if not isinstance(args[0], np.ndarray):
-                        lst[0] = np.array(args[0])
-
-                if "y" in kwargs:
-                    if kwargs["y"] is not None and not isinstance(kwargs["y"], np.ndarray):
-                        kwargs["y"] = np.array(kwargs["y"])
-                elif has_y:
-                    if not isinstance(args[1], np.ndarray):
-                        lst[1] = np.array(args[1])
-
-                if len(args) > 0:
-                    args = tuple(lst)
-                return fdict[func_name](self, *args, **kwargs)
-
-            replacement_function.__doc__ = fdict[func_name].__doc__
-            replacement_function.__name__ = "new_" + func_name
-            return replacement_function
-
-        replacement_list_no_y = ["predict", "get_activations", "class_gradient"]
-        replacement_list_has_y = ["fit", "loss_gradient"]
-
-        for item in replacement_list_no_y:
-            if item in clsdict:
-                new_function = make_replacement(clsdict, item, False)
-                setattr(cls, item, new_function)
-        for item in replacement_list_has_y:
-            if item in clsdict:
-                new_function = make_replacement(clsdict, item, True)
-                setattr(cls, item, new_function)
-
-
-class Classifier(abc.ABC, metaclass=input_filter):
+class Classifier(ABC):
     """
     Base class defining the minimum classifier functionality and is required for all classifiers. A classifier of this
     type can be combined with black-box attacks.
     """
 
     def __init__(
-        self, clip_values=None, preprocessing_defences=None, postprocessing_defences=None, preprocessing=None, **kwargs
+            self, clip_values=None, preprocessing_defences=None, postprocessing_defences=None, preprocessing=None,
+            **kwargs
     ):
         """
         Initialize a `Classifier` object.
@@ -140,7 +84,7 @@ class Classifier(abc.ABC, metaclass=input_filter):
 
         super().__init__(**kwargs)
 
-    @abc.abstractmethod
+    @abstractmethod
     def predict(self, x, **kwargs):  # lgtm [py/inheritance/incorrect-overridden-signature]
         """
         Perform prediction of the classifier for input `x`.
@@ -160,7 +104,7 @@ class Classifier(abc.ABC, metaclass=input_filter):
         """
         raise NotImplementedError
 
-    @abc.abstractmethod
+    @abstractmethod
     def fit(self, x, y, **kwargs):  # lgtm [py/inheritance/incorrect-overridden-signature]
         """
         Fit the classifier using the training data `(x, y)`.
@@ -178,6 +122,7 @@ class Classifier(abc.ABC, metaclass=input_filter):
         raise NotImplementedError
 
     @property
+    @abstractmethod
     def clip_values(self):
         """
         :return: Tuple of form `(min, max)` containing the minimum and maximum values allowed for the input features.
@@ -186,6 +131,7 @@ class Classifier(abc.ABC, metaclass=input_filter):
         return self._clip_values
 
     @property
+    @abstractmethod
     def input_shape(self):
         """
         Return the shape of one input.
@@ -195,7 +141,8 @@ class Classifier(abc.ABC, metaclass=input_filter):
         """
         return self._input_shape
 
-    @abc.abstractmethod
+    @property
+    @abstractmethod
     def nb_classes(self):
         """
         Return the number of output classes.
@@ -205,7 +152,7 @@ class Classifier(abc.ABC, metaclass=input_filter):
         """
         raise NotImplementedError
 
-    @abc.abstractmethod
+    @abstractmethod
     def save(self, filename, path=None):
         """
         Save a model to file specific to the backend framework.
@@ -325,7 +272,7 @@ class Classifier(abc.ABC, metaclass=input_filter):
         return repr_string
 
 
-class ClassifierNeuralNetwork(abc.ABC, metaclass=input_filter):
+class ClassifierNeuralNetworkMixin(ABC):
     """
     Base class defining additional classifier functionality required for neural network classifiers. This base class
     has to be mixed in with class `Classifier` to extend the minimum classifier functionality.
@@ -341,7 +288,7 @@ class ClassifierNeuralNetwork(abc.ABC, metaclass=input_filter):
         self._channel_index = channel_index
         super().__init__(**kwargs)
 
-    @abc.abstractmethod
+    @abstractmethod
     def predict(self, x, batch_size=128, **kwargs):
         """
         Perform prediction of the classifier for input `x`.
@@ -356,7 +303,7 @@ class ClassifierNeuralNetwork(abc.ABC, metaclass=input_filter):
         """
         raise NotImplementedError
 
-    @abc.abstractmethod
+    @abstractmethod
     def fit(self, x, y, batch_size=128, nb_epochs=20, **kwargs):
         """
         Fit the classifier on the training set `(x, y)`.
@@ -407,6 +354,7 @@ class ClassifierNeuralNetwork(abc.ABC, metaclass=input_filter):
             self.fit(x_preprocessed, y_preprocessed, nb_epochs=1, batch_size=len(x), **kwargs)
 
     @property
+    @abstractmethod
     def channel_index(self):
         """
         :return: Index of the axis in input data containing the color channels.
@@ -415,6 +363,7 @@ class ClassifierNeuralNetwork(abc.ABC, metaclass=input_filter):
         return self._channel_index
 
     @property
+    @abstractmethod
     def learning_phase(self):
         """
         Return the learning phase set by the user for the current classifier. Possible values are `True` for training,
@@ -429,6 +378,7 @@ class ClassifierNeuralNetwork(abc.ABC, metaclass=input_filter):
         return self._learning_phase if hasattr(self, "_learning_phase") else None
 
     @property
+    @abstractmethod
     def layer_names(self):
         """
         Return the hidden layers in the model, if applicable.
@@ -443,7 +393,7 @@ class ClassifierNeuralNetwork(abc.ABC, metaclass=input_filter):
         """
         raise NotImplementedError
 
-    @abc.abstractmethod
+    @abstractmethod
     def get_activations(self, x, layer, batch_size):
         """
         Return the output of the specified layer for input `x`. `layer` is specified by layer index (between 0 and
@@ -461,7 +411,7 @@ class ClassifierNeuralNetwork(abc.ABC, metaclass=input_filter):
         """
         raise NotImplementedError
 
-    @abc.abstractmethod
+    @abstractmethod
     def set_learning_phase(self, train):
         """
         Set the learning phase for the backend framework.
@@ -481,14 +431,14 @@ class ClassifierNeuralNetwork(abc.ABC, metaclass=input_filter):
         return repr_
 
 
-class ClassifierGradients(abc.ABC, metaclass=input_filter):
+class ClassifierGradientsMixin(ABC):
     """
     Base class defining additional classifier functionality for classifiers providing access to loss and class
     gradients. A classifier of this type can be combined with white-box attacks. This base class has to be mixed in with
     class `Classifier` and optionally class `ClassifierNeuralNetwork` to extend the minimum classifier functionality.
     """
 
-    @abc.abstractmethod
+    @abstractmethod
     def class_gradient(self, x, label=None, **kwargs):
         """
         Compute per-class derivatives w.r.t. `x`.
@@ -507,7 +457,7 @@ class ClassifierGradients(abc.ABC, metaclass=input_filter):
         """
         raise NotImplementedError
 
-    @abc.abstractmethod
+    @abstractmethod
     def loss_gradient(self, x, y, **kwargs):
         """
         Compute the gradient of the loss function w.r.t. `x`.
@@ -585,13 +535,13 @@ class ClassifierGradients(abc.ABC, metaclass=input_filter):
         return res
 
 
-class ClassifierDecisionTree(abc.ABC):
+class ClassifierDecisionTreeMixin(ABC):
     """
     Base class defining additional classifier functionality for decision-tree-based classifiers This base class has to
     be mixed in with class `Classifier` to extend the minimum classifier functionality.
     """
 
-    @abc.abstractmethod
+    @abstractmethod
     def get_trees(self):
         """
         Get the decision trees.
