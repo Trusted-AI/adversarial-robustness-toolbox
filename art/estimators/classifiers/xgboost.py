@@ -23,12 +23,12 @@ from __future__ import absolute_import, division, print_function, unicode_litera
 import logging
 import numpy as np
 
-from art.estimators.classifiers import Classifier, ClassifierDecisionTree
+from art.estimators.classifiers import Classifier, ClassifierDecisionTreeMixin
 
 logger = logging.getLogger(__name__)
 
 
-class XGBoostClassifier(Classifier, ClassifierDecisionTree):
+class XGBoostClassifier(Classifier, ClassifierDecisionTreeMixin):
     """
     Wrapper class for importing XGBoost models.
     """

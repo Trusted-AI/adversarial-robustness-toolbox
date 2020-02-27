@@ -24,13 +24,13 @@ import logging
 
 import numpy as np
 
-from art.estimators.classifiers import Classifier, ClassifierGradients
+from art.estimators.classifiers import Classifier, ClassifierGradientsMixin
 
 logger = logging.getLogger(__name__)
 
 
 # pylint: disable=C0103
-class GPyGaussianProcessClassifier(Classifier, ClassifierGradients):
+class GPyGaussianProcessClassifier(Classifier, ClassifierGradientsMixin):
     """
     Wrapper class for GPy Gaussian Process classification models.
     """

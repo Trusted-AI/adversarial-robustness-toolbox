@@ -27,13 +27,13 @@ import logging
 import numpy as np
 import six
 
-from art.estimators.classifiers import Classifier, ClassifierNeuralNetwork, ClassifierGradients
+from art.estimators.classifiers import Classifier, ClassifierNeuralNetworkMixin, ClassifierGradientsMixin
 from art.detection.subsetscanning.scanner import Scanner
 
 logger = logging.getLogger(__name__)
 
 
-class SubsetScanningDetector(ClassifierNeuralNetwork, ClassifierGradients, Classifier):
+class SubsetScanningDetector(ClassifierNeuralNetworkMixin, ClassifierGradientsMixin, Classifier):
     """
     Fast generalized subset scan based detector by McFowland, E., Speakman, S., and Neill, D. B. (2013).
 

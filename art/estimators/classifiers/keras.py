@@ -25,12 +25,12 @@ import logging
 import numpy as np
 import six
 
-from art.estimators.classifiers.classifier import Classifier, ClassifierNeuralNetwork, ClassifierGradients
+from art.estimators.classifiers.classifier import Classifier, ClassifierNeuralNetworkMixin, ClassifierGradientsMixin
 
 logger = logging.getLogger(__name__)
 
 
-class KerasClassifier(ClassifierNeuralNetwork, ClassifierGradients, Classifier):
+class KerasClassifier(ClassifierNeuralNetworkMixin, ClassifierGradientsMixin, Classifier):
     """
     Wrapper class for importing Keras models. The supported backends for Keras are TensorFlow and Theano.
     """

@@ -26,12 +26,12 @@ import random
 import numpy as np
 import six
 
-from art.estimators.classifiers import Classifier, ClassifierNeuralNetwork, ClassifierGradients
+from art.estimators.classifiers import Classifier, ClassifierNeuralNetworkMixin, ClassifierGradientsMixin
 
 logger = logging.getLogger(__name__)
 
 
-class TensorFlowClassifier(ClassifierNeuralNetwork, ClassifierGradients, Classifier):
+class TensorFlowClassifier(ClassifierNeuralNetworkMixin, ClassifierGradientsMixin, Classifier):
     """
     This class implements a classifier with the TensorFlow framework.
     """

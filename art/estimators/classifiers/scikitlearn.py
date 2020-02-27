@@ -25,7 +25,7 @@ import importlib
 
 import numpy as np
 
-from art.estimators.classifiers import Classifier, ClassifierGradients, ClassifierDecisionTree
+from art.estimators.classifiers import Classifier, ClassifierGradientsMixin, ClassifierDecisionTreeMixin
 from art.utils import to_categorical
 
 logger = logging.getLogger(__name__)
@@ -564,7 +564,7 @@ class ScikitlearnBaggingClassifier(ScikitlearnClassifier):
         self._model = model
 
 
-class ScikitlearnExtraTreesClassifier(ScikitlearnClassifier, ClassifierDecisionTree):
+class ScikitlearnExtraTreesClassifier(ScikitlearnClassifier, ClassifierDecisionTreeMixin):
     """
     Wrapper class for scikit-learn Extra Trees Classifier models.
     """
@@ -639,7 +639,7 @@ class ScikitlearnExtraTreesClassifier(ScikitlearnClassifier, ClassifierDecisionT
         return trees
 
 
-class ScikitlearnGradientBoostingClassifier(ScikitlearnClassifier, ClassifierDecisionTree):
+class ScikitlearnGradientBoostingClassifier(ScikitlearnClassifier, ClassifierDecisionTreeMixin):
     """
     Wrapper class for scikit-learn Gradient Boosting Classifier models.
     """
@@ -790,7 +790,7 @@ class ScikitlearnRandomForestClassifier(ScikitlearnClassifier):
         return trees
 
 
-class ScikitlearnLogisticRegression(ScikitlearnClassifier, ClassifierGradients):
+class ScikitlearnLogisticRegression(ScikitlearnClassifier, ClassifierGradientsMixin):
     """
     Wrapper class for scikit-learn Logistic Regression models.
     """
@@ -992,7 +992,7 @@ class ScikitlearnLogisticRegression(ScikitlearnClassifier, ClassifierGradients):
         return gradients
 
 
-class ScikitlearnSVC(ScikitlearnClassifier, ClassifierGradients):
+class ScikitlearnSVC(ScikitlearnClassifier, ClassifierGradientsMixin):
     """
     Wrapper class for scikit-learn C-Support Vector Classification models.
     """

@@ -28,7 +28,7 @@ import logging
 import numpy as np
 
 from art.config import ART_NUMPY_DTYPE
-from art.estimators.classifiers import ClassifierGradients
+from art.estimators.classifiers import ClassifierGradientsMixin
 from art.attacks.attack import EvasionAttack
 from art.utils import compute_success, get_labels_np_array, random_sphere, projection, check_and_transform_label_format
 
@@ -88,11 +88,11 @@ class FastGradientMethod(EvasionAttack):
         :type minimal: `bool`
         """
         super(FastGradientMethod, self).__init__(classifier)
-        if not isinstance(classifier, ClassifierGradients):
+        if not isinstance(classifier, ClassifierGradientsMixin):
             raise (
                 TypeError(
                     "For `" + self.__class__.__name__ + "` classifier must be an instance of "
-                    "`art.classifiers.classifier.ClassifierGradients`, the provided classifier is instance of "
+                    "`art.classifiers.classifier.ClassifierGradientsMixin`, the provided classifier is instance of "
                     + str(classifier.__class__.__bases__)
                     + ". "
                     " The classifier needs to provide gradients."

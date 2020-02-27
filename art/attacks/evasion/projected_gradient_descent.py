@@ -31,7 +31,7 @@ import numpy as np
 from scipy.stats import truncnorm
 
 from art.config import ART_NUMPY_DTYPE
-from art.estimators.classifiers import ClassifierGradients
+from art.estimators.classifiers import ClassifierGradientsMixin
 from art.attacks.evasion.fast_gradient import FastGradientMethod
 from art.utils import compute_success, get_labels_np_array, check_and_transform_label_format
 
@@ -98,11 +98,11 @@ class ProjectedGradientDescent(FastGradientMethod):
             batch_size=batch_size,
             minimal=False,
         )
-        if not isinstance(classifier, ClassifierGradients):
+        if not isinstance(classifier, ClassifierGradientsMixin):
             raise (
                 TypeError(
                     "For `" + self.__class__.__name__ + "` classifier must be an instance of "
-                    "`art.classifiers.classifier.ClassifierGradients`, the provided classifier is instance of "
+                    "`art.classifiers.classifier.ClassifierGradientsMixin`, the provided classifier is instance of "
                     + str(classifier.__class__.__bases__)
                     + ". "
                     " The classifier needs to provide gradients."
