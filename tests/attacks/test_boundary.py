@@ -202,8 +202,9 @@ class TestBoundary(TestBase):
         with self.assertRaises(TypeError) as context:
             _ = BoundaryAttack(classifier=classifier)
 
-        self.assertIn('For `BoundaryAttack` classifier must be an instance of `art.classifiers.classifier.Classifier`, '
-                      'the provided classifier is instance of (<class \'object\'>,).', str(context.exception))
+        self.assertIn('For `BoundaryAttack` classifier must be an instance of '
+                      '`art.estimators.classifiers.classifier.Classifier`, the provided classifier is instance of '
+                      '(<class \'object\'>,).', str(context.exception))
 
     def test_keras_iris_clipped(self):
         classifier = get_iris_classifier_kr()
