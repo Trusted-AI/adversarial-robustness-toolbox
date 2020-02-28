@@ -91,7 +91,7 @@ class TestDeepFool(TestBase):
 
         scores = get_labels_np_array(classifier.predict(self.x_train_mnist))
         accuracy = np.sum(np.argmax(scores, axis=1) == np.argmax(self.y_train_mnist, axis=1)) / \
-                self.y_train_mnist.shape[0]
+            self.y_train_mnist.shape[0]
         logger.info('[TF, MNIST] Accuracy on training set: %.2f%%', (accuracy * 100))
 
         scores = get_labels_np_array(classifier.predict(self.x_test_mnist))
