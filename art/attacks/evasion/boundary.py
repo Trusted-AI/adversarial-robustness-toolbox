@@ -300,7 +300,7 @@ class BoundaryAttack(EvasionAttack):
         :rtype: `np.ndarray`
         """
         # Generate perturbation randomly
-        perturb = np.random.randn(*current_sample.shape).astype(ART_NUMPY_DTYPE)
+        perturb = np.random.randn(*self.classifier.input_shape).astype(ART_NUMPY_DTYPE)
 
         # Rescale the perturbation
         perturb /= np.linalg.norm(perturb)
