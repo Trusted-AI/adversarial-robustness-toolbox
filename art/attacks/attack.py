@@ -95,7 +95,7 @@ class Attack(abc.ABC, metaclass=input_filter):
             raise (
                 TypeError(
                     "For `" + self.__class__.__name__ + "` classifier must be an instance of "
-                    "`art.classifiers.classifier.Classifier`, the provided classifier is instance of "
+                    "`art.estimators.classifiers.classifier.Classifier`, the provided classifier is instance of "
                     + str(classifier.__class__.__bases__)
                     + "."
                 )

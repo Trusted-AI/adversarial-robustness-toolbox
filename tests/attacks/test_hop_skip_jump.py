@@ -261,8 +261,9 @@ class TestHopSkipJump(TestBase):
         with self.assertRaises(TypeError) as context:
             _ = HopSkipJump(classifier=classifier)
 
-        self.assertIn('For `HopSkipJump` classifier must be an instance of `art.classifiers.classifier.Classifier`, the'
-                      ' provided classifier is instance of (<class \'object\'>,).', str(context.exception))
+        self.assertIn('For `HopSkipJump` classifier must be an instance of '
+                      '`art.estimators.classifiers.classifier.Classifier`, the '
+                      'provided classifier is instance of (<class \'object\'>,).', str(context.exception))
 
     def test_pytorch_resume(self):
         x_test = np.reshape(self.x_test_mnist, (self.x_test_mnist.shape[0], 1, 28, 28)).astype(np.float32)
