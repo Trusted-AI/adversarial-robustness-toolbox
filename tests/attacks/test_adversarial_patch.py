@@ -129,7 +129,7 @@ class TestAdversarialPatch(TestBase):
             _ = AdversarialPatch(classifier=classifier)
 
         self.assertIn('For `AdversarialPatch` classifier must be an instance of '
-                      '`art.classifiers.classifier.Classifier`, the provided classifier is instance of '
+                      '`art.estimators.classifiers.classifier.Classifier`, the provided classifier is instance of '
                       '(<class \'object\'>,).', str(context.exception))
 
     def test_classifier_type_check_fail_gradients(self):
@@ -139,9 +139,10 @@ class TestAdversarialPatch(TestBase):
             _ = AdversarialPatch(classifier=classifier)
 
         self.assertIn('For `AdversarialPatch` classifier must be an instance of '
-                      '`art.classifiers.classifier.ClassifierNeuralNetwork` and '
-                      '`art.classifiers.classifier.ClassifierGradients`, the provided classifier is instance of '
-                      '(<class \'art.classifiers.scikitlearn.ScikitlearnClassifier\'>,).', str(context.exception))
+                      '`art.classifiers.classifier.ClassifierNeuralNetworkMixin` and '
+                      '`art.classifiers.classifier.ClassifierGradientsMixin`, the provided classifier is instance of '
+                      '(<class \'art.estimators.classifiers.scikitlearn.ScikitlearnClassifier\'>,).',
+                      str(context.exception))
 
 
 if __name__ == '__main__':

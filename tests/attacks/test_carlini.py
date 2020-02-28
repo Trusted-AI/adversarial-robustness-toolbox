@@ -212,7 +212,8 @@ class TestCarlini(TestBase):
         with self.assertRaises(TypeError) as context:
             _ = CarliniL2Method(classifier=classifier)
 
-        self.assertIn('For `CarliniL2Method` classifier must be an instance of `art.classifiers.classifier.Classifier`,'
+        self.assertIn('For `CarliniL2Method` classifier must be an instance of '
+                      '`art.estimators.classifiers.classifier.Classifier`,'
                       ' the provided classifier is instance of (<class \'object\'>,).', str(context.exception))
 
     def test_classifier_type_check_fail_gradients_L2(self):
@@ -225,8 +226,9 @@ class TestCarlini(TestBase):
             _ = CarliniL2Method(classifier=classifier)
 
         self.assertIn('For `CarliniL2Method` classifier must be an instance of '
-                      '`art.classifiers.classifier.ClassifierGradients`, the provided classifier is instance of '
-                      '(<class \'art.classifiers.scikitlearn.ScikitlearnClassifier\'>,).', str(context.exception))
+                      '`art.estimators.classifiers.classifier.ClassifierGradientsMixin`, the provided classifier is '
+                      'instance of (<class \'art.estimators.classifiers.scikitlearn.ScikitlearnClassifier\'>,).',
+                      str(context.exception))
 
     def test_keras_iris_clipped_L2(self):
         classifier = get_iris_classifier_kr()
@@ -484,8 +486,10 @@ class TestCarlini(TestBase):
         with self.assertRaises(TypeError) as context:
             _ = CarliniLInfMethod(classifier=classifier)
 
+        print(context.exception)
+
         self.assertIn('For `CarliniLInfMethod` classifier must be an instance of '
-                      '`art.classifiers.classifier.Classifier`, the provided classifier is instance of '
+                      '`art.estimators.classifiers.classifier.Classifier`, the provided classifier is instance of '
                       '(<class \'object\'>,).', str(context.exception))
 
     def test_classifier_type_check_fail_gradients_LInf(self):
@@ -498,8 +502,9 @@ class TestCarlini(TestBase):
             _ = CarliniLInfMethod(classifier=classifier)
 
         self.assertIn('For `CarliniLInfMethod` classifier must be an instance of '
-                      '`art.classifiers.classifier.ClassifierGradients`, the provided classifier is instance of '
-                      '(<class \'art.classifiers.scikitlearn.ScikitlearnClassifier\'>,).', str(context.exception))
+                      '`art.estimators.classifiers.classifier.ClassifierGradientsMixin`, the provided classifier is '
+                      'instance of (<class \'art.estimators.classifiers.scikitlearn.ScikitlearnClassifier\'>,).',
+                      str(context.exception))
 
     def test_keras_iris_clipped_LInf(self):
         classifier = get_iris_classifier_kr()

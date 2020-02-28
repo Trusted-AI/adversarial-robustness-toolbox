@@ -164,7 +164,7 @@ class TestSpatialTransformation(TestBase):
             _ = SpatialTransformation(classifier=classifier)
 
         self.assertIn('For `SpatialTransformation` classifier must be an instance of '
-                      '`art.classifiers.classifier.Classifier`, the provided classifier is instance of '
+                      '`art.estimators.classifiers.classifier.Classifier`, the provided classifier is instance of '
                       '(<class \'object\'>,).', str(context.exception))
 
 

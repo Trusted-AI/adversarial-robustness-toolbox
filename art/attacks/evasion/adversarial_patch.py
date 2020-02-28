@@ -99,7 +99,7 @@ class AdversarialPatch(EvasionAttack):
             raise (
                 TypeError(
                     "For `" + self.__class__.__name__ + "` classifier must be an instance of "
-                    "`art.classifiers.classifier.ClassifierNeuralNetwork` and "
+                    "`art.classifiers.classifier.ClassifierNeuralNetworkMixin` and "
                     "`art.classifiers.classifier.ClassifierGradientsMixin`, the provided classifier is instance of "
                     + str(classifier.__class__.__bases__)
                     + ". "

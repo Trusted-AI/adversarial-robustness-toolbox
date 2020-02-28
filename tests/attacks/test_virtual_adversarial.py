@@ -112,7 +112,7 @@ class TestVirtualAdversarial(TestBase):
             _ = VirtualAdversarialMethod(classifier=classifier)
 
         self.assertIn('For `VirtualAdversarialMethod` classifier must be an instance of '
-                      '`art.classifiers.classifier.Classifier`, the provided classifier is instance of '
+                      '`art.estimators.classifiers.classifier.Classifier`, the provided classifier is instance of '
                       '(<class \'object\'>,).', str(context.exception))
 
     def test_classifier_type_check_fail_gradients(self):
@@ -125,9 +125,10 @@ class TestVirtualAdversarial(TestBase):
             _ = VirtualAdversarialMethod(classifier=classifier)
 
         self.assertIn('For `VirtualAdversarialMethod` classifier must be an instance of '
-                      '`art.classifiers.classifier.ClassifierNeuralNetwork` and '
-                      '`art.classifiers.classifier.ClassifierGradients`, the provided classifier is instance of '
-                      '(<class \'art.classifiers.scikitlearn.ScikitlearnClassifier\'>,).', str(context.exception))
+                      '`art.estimators.classifiers.classifier.ClassifierNeuralNetworkMixin` and '
+                      '`art.estimators.classifiers.classifier.ClassifierGradientsMixin`, the provided classifier is '
+                      'instance of (<class \'art.estimators.classifiers.scikitlearn.ScikitlearnClassifier\'>,).',
+                      str(context.exception))
 
     def test_keras_iris_clipped(self):
         classifier = get_iris_classifier_kr()

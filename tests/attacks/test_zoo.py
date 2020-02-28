@@ -218,7 +218,8 @@ class TestZooAttack(TestBase):
         with self.assertRaises(TypeError) as context:
             _ = ZooAttack(classifier=classifier)
 
-        self.assertIn('For `ZooAttack` classifier must be an instance of `art.classifiers.classifier.Classifier`, the '
+        self.assertIn('For `ZooAttack` classifier must be an instance of '
+                      '`art.estimators.classifiers.classifier.Classifier`, the '
                       'provided classifier is instance of (<class \'object\'>,).', str(context.exception))
 
 
