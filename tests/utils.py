@@ -290,7 +290,7 @@ def get_classifier_tf_v2(from_logits=False):
     def train_step(images, labels):
         with tf.GradientTape() as tape:
             predictions = model(images, training=True)
-            loss = loss_object(np.argmax(labels, axis=1), predictions)
+            loss = loss_object(labels, predictions)
         gradients = tape.gradient(loss, model.trainable_variables)
         optimizer.apply_gradients(zip(gradients, model.trainable_variables))
 
@@ -894,7 +894,7 @@ def get_iris_classifier_tf_v2():
     def train_step(images, labels):
         with tf.GradientTape() as tape:
             predictions = model(images, training=True)
-            loss = loss_object(np.argmax(labels, axis=1), predictions)
+            loss = loss_object(labels, predictions)
         gradients = tape.gradient(loss, model.trainable_variables)
         optimizer.apply_gradients(zip(gradients, model.trainable_variables))
 
