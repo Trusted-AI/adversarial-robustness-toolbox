@@ -1,5 +1,14 @@
 # Adversarial Robustness Toolbox notebooks
 
+## Audio
+
+[adversarial_audio_examples.ipynb](adversarial_audio_examples.ipynb) [[on nbviewer](https://nbviewer.jupyter.org/github/IBM/adversarial-robustness-toolbox/blob/master/notebooks/adversarial_audio_examples.ipynb)]
+show how to use ART to employ adversarial attacks on audio data.
+
+<p align="center">
+  <img src="../data/images/adversarial_audio_waveform.png?raw=true" width="200" title="adversarial_audio_waveform">
+</p>
+
 ## Adversarial training
 
 [adversarial_retraining.ipynb](adversarial_retraining.ipynb) [[on nbviewer](https://nbviewer.jupyter.org/github/IBM/adversarial-robustness-toolbox/blob/master/notebooks/adversarial_retraining.ipynb)]
