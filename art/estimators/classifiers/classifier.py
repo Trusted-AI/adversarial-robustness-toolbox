@@ -429,7 +429,6 @@ class ClassifierNeuralNetworkMixin(ABC):
         return self._learning_phase if hasattr(self, "_learning_phase") else None
 
     @property
-    @abstractmethod
     def layer_names(self):
         """
         Return the hidden layers in the model, if applicable.
