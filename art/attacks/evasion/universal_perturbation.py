@@ -34,6 +34,19 @@ from art.utils import projection
 
 logger = logging.getLogger(__name__)
 
+#####
+import numpy as np
+import matplotlib
+matplotlib.use("Agg")
+import matplotlib.pyplot as plt
+import japanize_matplotlib
+
+import torch
+import logging
+import os.path
+
+import numpy as np
+
 
 class UniversalPerturbation(EvasionAttack):
     """
@@ -46,6 +59,7 @@ class UniversalPerturbation(EvasionAttack):
                     'carlini_inf': 'art.attacks.evasion.carlini.CarliniLInfMethod',
                     'deepfool': 'art.attacks.evasion.deepfool.DeepFool',
                     'simba_px': 'art.attacks.evasion.simba_pixel.SimBA_pixel',
+                    'simba_dct': 'art.attacks.evasion.simba_dct.SimBA_dct',
                     'ead': 'art.attacks.evasion.elastic_net.ElasticNet',
                     'fgsm': 'art.attacks.evasion.fast_gradient.FastGradientMethod',
                     'bim': 'art.attacks.evasion.iterative_method.BasicIterativeMethod',
@@ -54,10 +68,10 @@ class UniversalPerturbation(EvasionAttack):
                     'jsma': 'art.attacks.evasion.saliency_map.SaliencyMapMethod',
                     'vat': 'art.attacks.evasion.virtual_adversarial.VirtualAdversarialMethod'
                     }
-    attack_params = EvasionAttack.attack_params + ['attacker', 'attacker_params', 'delta', 'max_iter', 'eps', 'norm']
+    attack_params = EvasionAttack.attack_params + ['attacker', 'attacker_params', 'delta', 'max_iter', 'eps', 'norm', 'batch_size']
 
     def __init__(self, classifier, attacker='deepfool', attacker_params=None, delta=0.2, max_iter=20, eps=10.0,
-                 norm=np.inf):
+                 norm=np.inf, batch_size=1):
         """
         :param classifier: A trained classifier.
         :type classifier: :class:`.Classifier`
@@ -89,7 +103,8 @@ class UniversalPerturbation(EvasionAttack):
                   'delta': delta,
                   'max_iter': max_iter,
                   'eps': eps,
-                  'norm': norm
+                  'norm': norm,
+                  'batch_size': batch_size
                   }
         self.set_params(**kwargs)
 
@@ -155,6 +170,13 @@ class UniversalPerturbation(EvasionAttack):
             # Compute the error rate
             y_adv = np.argmax(self.classifier.predict(x_adv, batch_size=1), axis=1)
             fooling_rate = np.sum(pred_y_max != y_adv) / nb_instances
+
+            random_noise = np.random.permutation(noise.reshape(-1)).reshape(noise.shape)
+            x_adv_random = x + random_noise
+            y_adv_random = np.argmax(self.classifier.predict(x_adv_random, batch_size=1), axis=1)
+            fooling_rate_random = np.sum(pred_y_max != y_adv_random) / nb_instances
+
+            logger.info(f"iteration: {nb_iter}, norm_size: {np.linalg.norm(noise.flatten(), ord=2)}, fooling_rate: {fooling_rate}, random_fooling_rate:{fooling_rate_random}")
 
         self.fooling_rate = fooling_rate
         self.converged = nb_iter < self.max_iter

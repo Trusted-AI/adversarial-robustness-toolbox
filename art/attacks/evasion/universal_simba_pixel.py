@@ -115,6 +115,8 @@ class Universal_SimBA_pixel(EvasionAttack):
                     x = np.clip(x + diff.reshape(x[0][None, ...].shape), clip_min, clip_max)
                     last_probs = right_probs
                     current_labels = np.argmax(right_preds, axis=1)
+
+            noise = projection(noise, self.eps, self.norm)
             
             # Compute the error rate
             fooling_rate = np.sum(original_labels != current_labels) / nb_instances
@@ -126,7 +128,6 @@ class Universal_SimBA_pixel(EvasionAttack):
 
         logger.info('Final fooling rate of Universal SimBA (pixel) attack: %.2f%%', 100 * fooling_rate)
         return x
-
 
     def set_params(self, **kwargs):
         """
@@ -157,3 +158,23 @@ class Universal_SimBA_pixel(EvasionAttack):
             raise ValueError('The batch size `batch_size` has to be positive.')
 
         return True
+
+def projection(values, eps, norm_p):
+
+    # Pick a small scalar to avoid division by 0
+    tol = 10e-8
+    values_tmp = values.reshape((values.shape[0], -1)).numpy()
+
+    if norm_p == 2:
+        values_tmp = values_tmp * np.expand_dims(np.minimum(1., eps / (np.linalg.norm(values_tmp, axis=1) + tol)),
+                                                 axis=1)
+    elif norm_p == 1:
+        values_tmp = values_tmp * np.expand_dims(
+            np.minimum(1., eps / (np.linalg.norm(values_tmp, axis=1, ord=1) + tol)), axis=1)
+    elif norm_p == np.inf:
+        values_tmp = np.sign(values_tmp) * np.minimum(abs(values_tmp), eps)
+    else:
+        raise NotImplementedError('Values of `norm_p` different from 1, 2 and `np.inf` are currently not supported.')
+
+    values = torch.from_numpy(values_tmp.reshape(values.shape))
+    return values
