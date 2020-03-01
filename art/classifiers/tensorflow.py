@@ -50,6 +50,7 @@ class TensorFlowClassifier(ClassifierNeuralNetwork, ClassifierGradients, Classif
         preprocessing_defences=None,
         postprocessing_defences=None,
         preprocessing=(0, 1),
+        feed_dict={},
     ):
         """
         Initialization specific to TensorFlow models implementation.
@@ -87,6 +88,9 @@ class TensorFlowClassifier(ClassifierNeuralNetwork, ClassifierGradients, Classif
                used for data preprocessing. The first value will be subtracted from the input. The input will then
                be divided by the second one.
         :type preprocessing: `tuple`
+        :param feed_dict: A feed dictionary for the session run evaluating the classifier. This dictionary includes all
+                          additionally required placeholders except the placeholders defined in this class.
+        :type feed_dict: `dictionary`
         """
         # pylint: disable=E0401
         import tensorflow as tf
@@ -106,7 +110,7 @@ class TensorFlowClassifier(ClassifierNeuralNetwork, ClassifierGradients, Classif
         self._train = train
         self._loss = loss
         self._learning = learning
-        self._feed_dict = {}
+        self._feed_dict = feed_dict
 
         # Assign session
         if sess is None:
