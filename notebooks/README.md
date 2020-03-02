@@ -3,7 +3,7 @@
 ## Audio
 
 [adversarial_audio_examples.ipynb](adversarial_audio_examples.ipynb) [[on nbviewer](https://nbviewer.jupyter.org/github/IBM/adversarial-robustness-toolbox/blob/master/notebooks/adversarial_audio_examples.ipynb)]
-show how to use ART to employ adversarial attacks on audio data.
+shows how to create adversarial examples of audio data with ART. Experiments in this notebook show how the waveform of a spoken digit of the AudioMNIST dataset can be modified with almost imperceptible changes so that the waveform gets mis-classified as different digit.
 
 <p align="center">
   <img src="../data/images/adversarial_audio_waveform.png?raw=true" width="200" title="adversarial_audio_waveform">
