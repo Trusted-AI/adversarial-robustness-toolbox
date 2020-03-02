@@ -35,9 +35,9 @@ logger = logging.getLogger(__name__)
 
 
 class SimBA_pixel(EvasionAttack):
-    attack_params = EvasionAttack.attack_params + ['max_iter', 'epsilon', 'batch_size']
+    attack_params = EvasionAttack.attack_params + ['max_iter', 'epsilon', 'order', 'batch_size']
 
-    def __init__(self, classifier, max_iter=3000, epsilon=0.1, batch_size=1):
+    def __init__(self, classifier, max_iter=3000, epsilon=0.1, order='random', batch_size=1):
         """
         Create a SimBA (pixel) attack instance.
 
@@ -57,7 +57,7 @@ class SimBA_pixel(EvasionAttack):
                              + str(classifier.__class__.__bases__) + '. '
                              ' The classifier needs to be a Neural Network and provide gradients.'))
 
-        params = {'max_iter': max_iter, 'epsilon': epsilon, 'batch_size': batch_size}
+        params = {'max_iter': max_iter, 'epsilon': epsilon, 'order': order, 'batch_size': batch_size}
         self.set_params(**params)
 
     def generate(self, x, y=None, **kwargs):
@@ -81,6 +81,11 @@ class SimBA_pixel(EvasionAttack):
 
         n_dims = np.prod(x.shape)
 
+        if self.order == "diag":
+            indices = self.diagonal_order(x.shape[2], 3)[:self.max_iter]
+        elif self.order == "perm":
+            indices = np.random.permutation(n_dims)
+
         clip_min = -np.inf
         clip_max = np.inf 
         if hasattr(self.classifier, 'clip_values') and self.classifier.clip_values is not None:
@@ -89,7 +94,12 @@ class SimBA_pixel(EvasionAttack):
         nb_iter = 0
         while original_label == current_label and nb_iter < self.max_iter:
             diff = np.zeros(n_dims)
-            diff[np.random.choice(range(n_dims))] = self.epsilon
+            if self.order == "random":
+                diff[np.random.choice(range(n_dims))] = self.epsilon
+            elif self.order == "diag":
+                diff[indices[nb_iter]] = self.epsilon
+            elif self.order == "perm":
+                diff[indices[nb_iter]] = self.epsilon
 
             left_preds = self.classifier.predict(np.clip(x - diff.reshape(x.shape), clip_min, clip_max), batch_size=self.batch_size)
             left_prob = left_preds.reshape(-1)[original_label]
@@ -121,7 +131,6 @@ class SimBA_pixel(EvasionAttack):
 
         return x
 
-
     def set_params(self, **kwargs):
         """
         Take in a dictionary of parameters and applies attack-specific checks before saving them as attributes.
@@ -146,3 +155,18 @@ class SimBA_pixel(EvasionAttack):
             raise ValueError('The batch size `batch_size` has to be positive.')
 
         return True
+
+    def diagonal_order(self, image_size, channels):
+        x = np.arange(0, image_size).cumsum()
+        order = np.zeros((image_size, image_size))
+        for i in range(image_size):
+            order[i, :(image_size - i)] = i + x[i:]
+        for i in range(1, image_size):
+            reverse = order[image_size - i - 1].take([i for i in range(i-1, -1, -1)])
+            order[i, (image_size - i):] = image_size * image_size - 1 - reverse
+        if channels > 1:
+            order_2d = order
+            order = np.zeros((channels, image_size, image_size))
+            for i in range(channels):
+                order[i, :, :] = 3 * order_2d + i
+        return order.reshape(1, -1).squeeze().argsort()
