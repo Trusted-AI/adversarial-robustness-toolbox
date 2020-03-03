@@ -125,27 +125,7 @@ class TestBase(unittest.TestCase):
         np.testing.assert_array_almost_equal(self._x_test_iris_original, self.x_test_iris, decimal=3)
         np.testing.assert_array_almost_equal(self._y_test_iris_original, self.y_test_iris, decimal=3)
 
-    def deprecated_check_adverse_example(self, x_adv, x_original, max=1.0, min=0.0, bounded=True):
-        '''
-        Performs basic checks on generated adversarial inputs (whether x_test or x_train)
-        :param x_adv:
-        :param x_original:
-        :param max:
-        :param min:
-        :param bounded:
-        :return:
-        '''
-        self.assertFalse((x_original == x_adv).all(), "x_test_adv should have been different from x_test")
 
-        if bounded:
-            self.assertLessEqual(np.amax(x_adv), max, "x_test_adv values should have all been below {0}".format(max))
-            self.assertGreaterEqual(np.amin(x_adv), min, "x_test_adv values should have all been above {0}".format(min))
-        else:
-            self.assertTrue((x_adv > max).any(), "some x_test_adv values should been above 1".format(max))
-            self.assertTrue((x_adv < min).any(), " some x_test_adv values should have all been below {0}".format(min))
-
-    def deprecated_check_adverse_predicted_sample(self, y_pred_adv, y_expected):
-        self.assertFalse((y_expected == y_pred_adv).all())
 
 
 class ExpectedValue():
@@ -185,55 +165,6 @@ def is_valid_framework(framework):
         raise Exception("mlFramework value {0} is unsupported. Please use one of these valid values: {1}".format(
             framework, " ".join(art_supported_frameworks)))
     return True
-
-
-def deprecated_get_image_classifiers(defended=False):
-    if os.environ["mlFramework"] == "keras":
-        classifier = get_image_classifier_kr()
-        if defended:
-            # Get the ready-trained Keras model
-            fs = FeatureSqueezing(bit_depth=1, clip_values=(0, 1))
-            return [KerasClassifier(model=classifier._model, clip_values=(0, 1), defences=fs)]
-        else:
-            return [classifier]
-
-    elif os.environ["mlFramework"] == "tensorflow":
-        classifier, sess = get_image_classifier_tf()
-        return None if defended else [classifier]
-    elif os.environ["mlFramework"] == "pytorch":
-        return None if defended else [get_image_classifier_pt()]
-    elif os.environ["mlFramework"] == "scikitlearn":
-        logging.warning("{0} doesn't have an image classifier defined yet".format(os.environ["mlFramework"]))
-        return None
-    elif is_valid_framework(os.environ["mlFramework"]):
-        raise Exception(
-            "A classifier factory method needs to be implemented for framework {0}".format(os.environ["mlFramework"]))
-
-
-def deprecated_get_tabular_classifiers(clipped=True):
-    if os.environ["mlFramework"] == "keras":
-        classifier = get_tabular_classifier_kr()
-        if clipped:
-            return [classifier]
-        else:
-            return [KerasClassifier(model=classifier._model, use_logits=False, channel_index=1)]
-
-    elif os.environ["mlFramework"] == "tensorflow":
-        classifier, _ = get_tabular_classifier_tf()
-        return [classifier] if clipped else None
-    elif os.environ["mlFramework"] == "pytorch":
-        return [get_tabular_classifier_pt()] if clipped else None
-    elif os.environ["mlFramework"] == "scikitlearn":
-        model_list = [LogisticRegression(solver='lbfgs', multi_class='auto'),
-                      SVC(gamma='auto'),
-                      LinearSVC()]
-        if clipped is False:
-            return [SklearnClassifier(model=model) for model in model_list]
-        else:
-            return [SklearnClassifier(model=model, clip_values=(0, 1)) for model in model_list]
-    elif is_valid_framework(os.environ["mlFramework"]):
-        raise Exception(
-            "A classifier factory method needs to be implemented for framework {0}".format(os.environ["mlFramework"]))
 
 
 def _tf_weights_loader(dataset, weights_type, layer='DENSE', tf_version=1):
