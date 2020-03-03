@@ -375,7 +375,7 @@ def test_class_gradient(get_default_mnist_subset, get_image_classifier_list):
 
 @pytest.mark.only_with_platform("keras")
 def test_repr(get_image_classifier_list):
-    utils_classifier.backend_test_repr(get_image_classifier_list, ['art.classifiers.keras.KerasClassifier',
+    backend_test_repr(get_image_classifier_list, ['art.classifiers.keras.KerasClassifier',
                                                                    'use_logits=False, channel_index=3',
                                                                    'clip_values=(0, 1), preprocessing_defences=None, '
                                                                    'postprocessing_defences=None, preprocessing=(0, 1)',
