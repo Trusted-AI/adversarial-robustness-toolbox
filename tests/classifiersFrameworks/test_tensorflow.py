@@ -166,7 +166,7 @@ def test_set_learning(is_tf_version_2, get_image_classifier_list):
 def test_repr(is_tf_version_2, get_image_classifier_list):
     classifier, _ = get_image_classifier_list(one_classifier=True)
     if is_tf_version_2:
-        utils_classifier.backend_test_repr(classifier, ['TensorFlowV2Classifier',
+        backend_test_repr(classifier, ['TensorFlowV2Classifier',
                                                         'model=',
                                                         'nb_classes=10',
                                                         'input_shape=(28, 28, 1)',
