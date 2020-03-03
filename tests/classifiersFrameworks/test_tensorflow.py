@@ -139,14 +139,14 @@ def test_loss_gradient(get_default_mnist_subset, get_image_classifier_list):
                         -2.86467184e-06, -5.58885862e-04, 1.47416518e-04, 0.00000000e+00,
                         0.00000000e+00, 0.00000000e+00, 0.00000000e+00, 0.00000000e+00]), 4)}
 
-    utils_classifier.backend_test_loss_gradient(get_default_mnist_subset, get_image_classifier_list,
+    backend_test_loss_gradient(get_default_mnist_subset, get_image_classifier_list,
                                                 expected_values)
 
 
 @pytest.mark.only_with_platform("tensorflow")
 def test_layers(is_tf_version_2, framework, get_default_mnist_subset, get_image_classifier_list):
     if not is_tf_version_2:
-        utils_classifier.backend_test_layers(framework, get_default_mnist_subset, get_image_classifier_list,
+        backend_test_layers(framework, get_default_mnist_subset, get_image_classifier_list,
                                              batch_size=5)
 
 
@@ -166,7 +166,7 @@ def test_set_learning(is_tf_version_2, get_image_classifier_list):
 def test_repr(is_tf_version_2, get_image_classifier_list):
     classifier, _ = get_image_classifier_list(one_classifier=True)
     if is_tf_version_2:
-        utils_classifier.backend_test_repr(classifier, ['TensorFlowV2Classifier',
+        backend_test_repr(classifier, ['TensorFlowV2Classifier',
                                                         'model=',
                                                         'nb_classes=10',
                                                         'input_shape=(28, 28, 1)',
@@ -179,7 +179,7 @@ def test_repr(is_tf_version_2, get_image_classifier_list):
 
     else:
 
-        utils_classifier.backend_test_repr(classifier, ['TensorFlowClassifier',
+        backend_test_repr(classifier, ['TensorFlowClassifier',
                                                         'input_ph=<tf.Tensor \'Placeholder:0\' shape=(?, 28, 28, 1) '
                                                         'dtype=float32>',
                                                         'output=<tf.Tensor \'Softmax:0\' shape=(?, 10) dtype=float32>',

@@ -15,10 +15,10 @@
 # AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT,
 # TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 # SOFTWARE.
-from __future__ import absolute_import, division, print_function, unicode_literals
-
 import os
 import logging
+
+import pytest
 import numpy as np
 import keras
 import keras.backend as k
@@ -28,14 +28,14 @@ from keras.preprocessing.image import ImageDataGenerator
 from keras.callbacks import LearningRateScheduler
 from keras.applications.resnet50 import ResNet50, decode_predictions
 from keras.preprocessing.image import load_img, img_to_array
-from tests.utils_test import ExpectedValue
-# from art.config import ART_DATA_PATH
+
 from art.classifiers import KerasClassifier
 from art.classifiers.keras import generator_fit
 from art.defences import FeatureSqueezing, JpegCompression, SpatialSmoothing
 from art.data_generators import KerasDataGenerator
-from tests.classifiersFrameworks import utils_classifier
-import pytest
+
+from tests.utils_test import ExpectedValue
+from tests.classifiersFrameworks.utils import backend_test_nb_classes, backend_test_input_shape, backend_test_fit_generator, backend_test_loss_gradient, backend_test_layers, backend_test_class_gradient, backend_test_repr
 
 logger = logging.getLogger(__name__)
 
@@ -86,12 +86,12 @@ def get_functional_model(get_default_mnist_subset):
 
 @pytest.mark.only_with_platform("keras")
 def test_nb_classes(get_image_classifier_list):
-    utils_classifier.backend_test_nb_classes(get_image_classifier_list)
+    backend_test_nb_classes(get_image_classifier_list)
 
 
 @pytest.mark.only_with_platform("keras")
 def test_input_shape(get_image_classifier_list):
-    utils_classifier.backend_test_input_shape(get_image_classifier_list)
+    backend_test_input_shape(get_image_classifier_list)
 
 
 @pytest.mark.only_with_platform("keras")
@@ -123,7 +123,7 @@ def test_fit_generator(get_default_mnist_subset, default_batch_size, get_image_c
     expected_values = {"pre_fit_accuracy": ExpectedValue(0.32, 0.06),
                        "post_fit_accuracy": ExpectedValue(0.36, 0.06)}
 
-    utils_classifier.backend_test_fit_generator(expected_values, classifier, data_gen, get_default_mnist_subset,
+    backend_test_fit_generator(expected_values, classifier, data_gen, get_default_mnist_subset,
                                                 nb_epochs=3)
 
 
@@ -230,7 +230,7 @@ def test_loss_gradient(get_default_mnist_subset, get_image_classifier_list):
                         0.10032021, 0.01681096, -0.00028647, -0.05588859, 0.01474165, 0.0,
                         0.0, 0.0, 0.0, 0.0]), 4)}
 
-    utils_classifier.backend_test_loss_gradient(get_default_mnist_subset, get_image_classifier_list, expected_values)
+    backend_test_loss_gradient(get_default_mnist_subset, get_image_classifier_list, expected_values)
 
 
 @pytest.mark.only_with_platform("keras")
@@ -370,12 +370,12 @@ def test_class_gradient(get_default_mnist_subset, get_image_classifier_list):
                          3, 1, 2, 2, 4, 3, 4, 2, 2, 4, 4, 2, 1, 3, 2, 1, 4, 1, 0, 1, 2, 1, 2, 1, 2, 1, 1, 4, 1, 2, 4,
                          0, 4, 1, 2, 1, 1, 3])
 
-    utils_classifier.backend_test_class_gradient(get_default_mnist_subset, classifier, expected_values, labels)
+    backend_test_class_gradient(get_default_mnist_subset, classifier, expected_values, labels)
 
 
 @pytest.mark.only_with_platform("keras")
 def test_repr(get_image_classifier_list):
-    utils_classifier.backend_test_repr(get_image_classifier_list, ['art.classifiers.keras.KerasClassifier',
+    backend_test_repr(get_image_classifier_list, ['art.classifiers.keras.KerasClassifier',
                                                                    'use_logits=False, channel_index=3',
                                                                    'clip_values=(0, 1), preprocessing_defences=None, '
                                                                    'postprocessing_defences=None, preprocessing=(0, 1)',

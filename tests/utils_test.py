@@ -26,26 +26,20 @@ import json
 import time
 import pickle
 import unittest
-from art.defences import FeatureSqueezing
+from sklearn.linear_model import LogisticRegression
+from sklearn.svm import SVC, LinearSVC
+import torch
 import numpy as np
 
 from art.classifiers import KerasClassifier
 from art.classifiers.scikitlearn import SklearnClassifier
-from sklearn.linear_model import LogisticRegression
-from sklearn.svm import SVC, LinearSVC
+from art.defences import FeatureSqueezing
 
 # from tests.test_utils import master_seed
 
 
 logger = logging.getLogger(__name__)
 
-try:
-    # Conditional import of `torch` to avoid segmentation fault errors this framework generates at import
-    import torch
-    import torch.nn as nn
-    import torch.optim as optim
-except ImportError:
-    logger.info('Could not import PyTorch in utilities.')
 
 from art.config import ART_NUMPY_DTYPE
 from art.utils import load_dataset

@@ -96,7 +96,7 @@ def test_minimal_perturbations_images(fix_get_mnist_subset, get_image_classifier
                            "x_test_min": ExpectedValue(-0.30000000, 0.00001),
                            "x_test_max": ExpectedValue(0.30000000, 0.00001),
                            "y_test_pred_adv_expected": ExpectedValue(np.asarray([4, 2, 4, 7, 0, 4, 7, 2, 0, 7, 0]), 2)}
-        utils_attack.backend_check_adverse_values(attack, fix_get_mnist_subset, expected_values)
+        backend_check_adverse_values(attack, fix_get_mnist_subset, expected_values)
 
 
 @pytest.mark.parametrize("norm", [np.inf, 1, 2])
@@ -145,14 +145,14 @@ def test_tabular(get_tabular_classifier_list, framework, get_iris_dataset, targe
     for classifier in classifier_list:
         if targeted:
             attack = FastGradientMethod(classifier, targeted=True, eps=.1, batch_size=128)
-            utils_attack.backend_targeted_tabular(attack, get_iris_dataset)
+            backend_targeted_tabular(attack, get_iris_dataset)
         else:
             attack = FastGradientMethod(classifier, eps=.1)
-            utils_attack.backend_untargeted_tabular(attack, get_iris_dataset, clipped=clipped)
+            backend_untargeted_tabular(attack, get_iris_dataset, clipped=clipped)
 
 
 def test_classifier_type_check_fail():
-    utils_attack.backend_test_classifier_type_check_fail(FastGradientMethod, [ClassifierGradients])
+    backend_test_classifier_type_check_fail(FastGradientMethod, [ClassifierGradients])
 
 
 if __name__ == '__main__':
