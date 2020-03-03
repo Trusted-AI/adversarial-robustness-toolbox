@@ -1,8 +1,11 @@
 # NOTE
-In this repository, we are modifying Adversarial Robustness 360 Toolbox (ART) v1.1.
+In this repository, kztakemoto and [nquntan](https://github.com/nquntan) are modifying Adversarial Robustness 360 Toolbox (ART) v1.1.
 
 * Targeted universal adversarial perturbation ([Hirano and Takemoto, 2019](https://arxiv.org/abs/1911.06502)) added.
-* Simple blackbox attack (SimBA based on pixel attacks; [Guo et al., 2019](https://arxiv.org/abs/1905.07121)) added.
+* Simple blackbox attack (SimBA) based on pixel attacks; [Guo et al., 2019](https://arxiv.org/abs/1905.07121)) added.
+  * Random attack (``random``) version implmented. 
+  * 2 attack types (``diag`` and ``perm``) added by [nquntan](https://github.com/nquntan)
+* SimBA based on discrete cosine transform (DCT) added by [nquntan](https://github.com/nquntan)
 
 
 # Adversarial Robustness 360 Toolbox (ART) v1.1
