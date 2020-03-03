@@ -91,7 +91,7 @@ def test_nb_classes(get_image_classifier_list):
 
 @pytest.mark.only_with_platform("keras")
 def test_input_shape(get_image_classifier_list):
-    utils_classifier.backend_test_input_shape(get_image_classifier_list)
+    backend_test_input_shape(get_image_classifier_list)
 
 
 @pytest.mark.only_with_platform("keras")
