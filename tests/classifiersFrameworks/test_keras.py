@@ -370,7 +370,7 @@ def test_class_gradient(get_default_mnist_subset, get_image_classifier_list):
                          3, 1, 2, 2, 4, 3, 4, 2, 2, 4, 4, 2, 1, 3, 2, 1, 4, 1, 0, 1, 2, 1, 2, 1, 2, 1, 1, 4, 1, 2, 4,
                          0, 4, 1, 2, 1, 1, 3])
 
-    utils_classifier.backend_test_class_gradient(get_default_mnist_subset, classifier, expected_values, labels)
+    backend_test_class_gradient(get_default_mnist_subset, classifier, expected_values, labels)
 
 
 @pytest.mark.only_with_platform("keras")
