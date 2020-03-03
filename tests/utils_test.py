@@ -26,7 +26,9 @@ import json
 import time
 import pickle
 import unittest
-from art.defences import FeatureSqueezing
+from sklearn.linear_model import LogisticRegression
+from sklearn.svm import SVC, LinearSVC
+import torch
 import numpy as np
 
 from art.classifiers import KerasClassifier
