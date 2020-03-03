@@ -96,7 +96,7 @@ def test_minimal_perturbations_images(fix_get_mnist_subset, get_image_classifier
                            "x_test_min": ExpectedValue(-0.30000000, 0.00001),
                            "x_test_max": ExpectedValue(0.30000000, 0.00001),
                            "y_test_pred_adv_expected": ExpectedValue(np.asarray([4, 2, 4, 7, 0, 4, 7, 2, 0, 7, 0]), 2)}
-        utils_attack.backend_check_adverse_values(attack, fix_get_mnist_subset, expected_values)
+        backend_check_adverse_values(attack, fix_get_mnist_subset, expected_values)
 
 
 @pytest.mark.parametrize("norm", [np.inf, 1, 2])
