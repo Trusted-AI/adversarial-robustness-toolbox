@@ -86,7 +86,7 @@ def get_functional_model(get_default_mnist_subset):
 
 @pytest.mark.only_with_platform("keras")
 def test_nb_classes(get_image_classifier_list):
-    utils_classifier.backend_test_nb_classes(get_image_classifier_list)
+    backend_test_nb_classes(get_image_classifier_list)
 
 
 @pytest.mark.only_with_platform("keras")
