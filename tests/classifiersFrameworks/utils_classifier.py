@@ -17,10 +17,7 @@
 # SOFTWARE.
 import logging
 
-import pytest
 import numpy as np
-
-from tests.utils import ExpectedValue
 
 logger = logging.getLogger(__name__)
 

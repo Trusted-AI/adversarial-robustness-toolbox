@@ -21,10 +21,11 @@ import logging
 import tensorflow as tf
 import numpy as np
 from art.data_generators import TFDataGenerator
-from tests import utils_test
 from tests.classifiersFrameworks import utils_classifier
+from tests.classifiersFrameworks.utils_classifier import backend_test_layers
 from tests.utils_test import ExpectedValue
 import os
+
 
 logger = logging.getLogger(__name__)
 
