@@ -40,7 +40,6 @@ from art.defences import FeatureSqueezing
 
 logger = logging.getLogger(__name__)
 
-
 from art.config import ART_NUMPY_DTYPE
 from art.utils import load_dataset
 
@@ -57,7 +56,6 @@ class TestBase(unittest.TestCase):
 
     @classmethod
     def setUpClass(cls):
-
         master_seed(1234)
 
         cls.n_train = 1000
@@ -118,8 +116,6 @@ class TestBase(unittest.TestCase):
         np.testing.assert_array_almost_equal(self._y_train_iris_original, self.y_train_iris, decimal=3)
         np.testing.assert_array_almost_equal(self._x_test_iris_original, self.x_test_iris, decimal=3)
         np.testing.assert_array_almost_equal(self._y_test_iris_original, self.y_test_iris, decimal=3)
-
-
 
 
 class ExpectedValue():

@@ -35,7 +35,9 @@ from art.defences import FeatureSqueezing, JpegCompression, SpatialSmoothing
 from art.data_generators import KerasDataGenerator
 
 from tests.utils_test import ExpectedValue
-from tests.classifiersFrameworks.utils_classifier import backend_test_nb_classes, backend_test_input_shape, backend_test_fit_generator, backend_test_loss_gradient, backend_test_layers, backend_test_class_gradient, backend_test_repr
+from tests.classifiersFrameworks.utils_classifier import backend_test_nb_classes, backend_test_input_shape, \
+    backend_test_fit_generator, backend_test_loss_gradient, backend_test_layers, backend_test_class_gradient, \
+    backend_test_repr
 
 logger = logging.getLogger(__name__)
 
@@ -124,7 +126,7 @@ def test_fit_generator(get_default_mnist_subset, default_batch_size, get_image_c
                        "post_fit_accuracy": ExpectedValue(0.36, 0.06)}
 
     backend_test_fit_generator(expected_values, classifier, data_gen, get_default_mnist_subset,
-                                                nb_epochs=3)
+                               nb_epochs=3)
 
 
 @pytest.mark.only_with_platform("keras")
@@ -247,8 +249,8 @@ def test_functional_model(get_functional_model):
 
 @pytest.mark.only_with_platform("keras")
 def test_layers(get_default_mnist_subset, framework, get_image_classifier_list):
-    utils_classifier.backend_test_layers(framework, get_default_mnist_subset, get_image_classifier_list,
-                                         batch_size=128, layer_count=3)
+    backend_test_layers(framework, get_default_mnist_subset, get_image_classifier_list,
+                        batch_size=128, layer_count=3)
 
 
 @pytest.mark.only_with_platform("keras")
@@ -376,10 +378,10 @@ def test_class_gradient(get_default_mnist_subset, get_image_classifier_list):
 @pytest.mark.only_with_platform("keras")
 def test_repr(get_image_classifier_list):
     backend_test_repr(get_image_classifier_list, ['art.classifiers.keras.KerasClassifier',
-                                                                   'use_logits=False, channel_index=3',
-                                                                   'clip_values=(0, 1), preprocessing_defences=None, '
-                                                                   'postprocessing_defences=None, preprocessing=(0, 1)',
-                                                                   'input_layer=0, output_layer=0'])
+                                                  'use_logits=False, channel_index=3',
+                                                  'clip_values=(0, 1), preprocessing_defences=None, '
+                                                  'postprocessing_defences=None, preprocessing=(0, 1)',
+                                                  'input_layer=0, output_layer=0'])
 
 
 @pytest.mark.only_with_platform("keras")
