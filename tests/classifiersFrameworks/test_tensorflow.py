@@ -139,7 +139,7 @@ def test_loss_gradient(get_default_mnist_subset, get_image_classifier_list):
                         -2.86467184e-06, -5.58885862e-04, 1.47416518e-04, 0.00000000e+00,
                         0.00000000e+00, 0.00000000e+00, 0.00000000e+00, 0.00000000e+00]), 4)}
 
-    utils_classifier.backend_test_loss_gradient(get_default_mnist_subset, get_image_classifier_list,
+    backend_test_loss_gradient(get_default_mnist_subset, get_image_classifier_list,
                                                 expected_values)
 
 
