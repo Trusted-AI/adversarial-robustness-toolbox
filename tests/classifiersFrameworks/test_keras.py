@@ -123,7 +123,7 @@ def test_fit_generator(get_default_mnist_subset, default_batch_size, get_image_c
     expected_values = {"pre_fit_accuracy": ExpectedValue(0.32, 0.06),
                        "post_fit_accuracy": ExpectedValue(0.36, 0.06)}
 
-    utils_classifier.backend_test_fit_generator(expected_values, classifier, data_gen, get_default_mnist_subset,
+    backend_test_fit_generator(expected_values, classifier, data_gen, get_default_mnist_subset,
                                                 nb_epochs=3)
 
 
