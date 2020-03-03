@@ -230,7 +230,7 @@ def test_loss_gradient(get_default_mnist_subset, get_image_classifier_list):
                         0.10032021, 0.01681096, -0.00028647, -0.05588859, 0.01474165, 0.0,
                         0.0, 0.0, 0.0, 0.0]), 4)}
 
-    utils_classifier.backend_test_loss_gradient(get_default_mnist_subset, get_image_classifier_list, expected_values)
+    backend_test_loss_gradient(get_default_mnist_subset, get_image_classifier_list, expected_values)
 
 
 @pytest.mark.only_with_platform("keras")
