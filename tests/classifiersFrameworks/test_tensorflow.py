@@ -179,7 +179,7 @@ def test_repr(is_tf_version_2, get_image_classifier_list):
 
     else:
 
-        utils_classifier.backend_test_repr(classifier, ['TensorFlowClassifier',
+        backend_test_repr(classifier, ['TensorFlowClassifier',
                                                         'input_ph=<tf.Tensor \'Placeholder:0\' shape=(?, 28, 28, 1) '
                                                         'dtype=float32>',
                                                         'output=<tf.Tensor \'Softmax:0\' shape=(?, 10) dtype=float32>',
