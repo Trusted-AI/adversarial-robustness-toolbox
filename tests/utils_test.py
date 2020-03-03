@@ -33,8 +33,7 @@ import numpy as np
 
 from art.classifiers import KerasClassifier
 from art.classifiers.scikitlearn import SklearnClassifier
-from sklearn.linear_model import LogisticRegression
-from sklearn.svm import SVC, LinearSVC
+from art.defences import FeatureSqueezing
 
 # from tests.test_utils import master_seed
 
