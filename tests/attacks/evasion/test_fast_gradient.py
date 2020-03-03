@@ -145,14 +145,14 @@ def test_tabular(get_tabular_classifier_list, framework, get_iris_dataset, targe
     for classifier in classifier_list:
         if targeted:
             attack = FastGradientMethod(classifier, targeted=True, eps=.1, batch_size=128)
-            utils_attack.backend_targeted_tabular(attack, get_iris_dataset)
+            backend_targeted_tabular(attack, get_iris_dataset)
         else:
             attack = FastGradientMethod(classifier, eps=.1)
-            utils_attack.backend_untargeted_tabular(attack, get_iris_dataset, clipped=clipped)
+            backend_untargeted_tabular(attack, get_iris_dataset, clipped=clipped)
 
 
 def test_classifier_type_check_fail():
-    utils_attack.backend_test_classifier_type_check_fail(FastGradientMethod, [ClassifierGradients])
+    backend_test_classifier_type_check_fail(FastGradientMethod, [ClassifierGradients])
 
 
 if __name__ == '__main__':
