@@ -15,10 +15,10 @@
 # AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT,
 # TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 # SOFTWARE.
-from __future__ import absolute_import, division, print_function, unicode_literals
-
 import os
 import logging
+
+import pytest
 import numpy as np
 import keras
 import keras.backend as k
@@ -28,14 +28,14 @@ from keras.preprocessing.image import ImageDataGenerator
 from keras.callbacks import LearningRateScheduler
 from keras.applications.resnet50 import ResNet50, decode_predictions
 from keras.preprocessing.image import load_img, img_to_array
-from tests.utils_test import ExpectedValue
-# from art.config import ART_DATA_PATH
+
 from art.classifiers import KerasClassifier
 from art.classifiers.keras import generator_fit
 from art.defences import FeatureSqueezing, JpegCompression, SpatialSmoothing
 from art.data_generators import KerasDataGenerator
-from tests.classifiersFrameworks import utils_classifier
-import pytest
+
+from tests.utils_test import ExpectedValue
+from tests.classifiersFrameworks.utils import backend_test_nb_classes, backend_test_input_shape, backend_test_fit_generator, backend_test_loss_gradient, backend_test_layers, backend_test_class_gradient, backend_test_repr
 
 logger = logging.getLogger(__name__)
 
