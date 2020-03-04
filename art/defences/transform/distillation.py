@@ -62,7 +62,7 @@ class DefensiveDistillation(Transformer):
         }
         self.set_params(**kwargs)
 
-    def __call__(self, x, modified_classifier):
+    def __call__(self, x, transformed_classifier):
         """
         Perform the defensive distillation defence mechanism and return a robuster classifier.
 
