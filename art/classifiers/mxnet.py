@@ -187,10 +187,8 @@ class MXClassifier(ClassifierNeuralNetwork, ClassifierGradients, Classifier):
 
         train_mode = self._learning_phase if hasattr(self, "_learning_phase") else True
 
-        # TODO fix fit_generator w.r.t. defenses
-        if isinstance(generator, MXDataGenerator) and not (
-            hasattr(self, "label_smooth") or hasattr(self, "feature_squeeze")
-        ):
+        if isinstance(generator, MXDataGenerator) and self.preprocessing_defences is None \
+                and self.preprocessing == (0, 1):
             # Train directly in MXNet
             for _ in range(nb_epochs):
                 for x_batch, y_batch in generator.data_loader:
