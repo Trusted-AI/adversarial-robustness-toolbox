@@ -34,8 +34,7 @@ logger = logging.getLogger(__name__)
 
 class DefensiveDistillation(Transformer):
     """
-    This module implements the distillation defence `Distillation`.
-    Implement the distillation defence approach.
+    Implement the defensive distillation mechanism.
 
     | Paper link: https://arxiv.org/abs/1511.04508
     """
