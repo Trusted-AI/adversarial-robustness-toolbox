@@ -60,7 +60,7 @@ class Transformer(abc.ABC):
         return self.classifier
 
     @abc.abstractmethod
-    def __call__(self, x, modified_classifier):
+    def __call__(self, x, transformed_classifier):
         """
         Perform the transformation defence and return a robuster classifier.
 
