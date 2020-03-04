@@ -120,6 +120,12 @@ class TensorFlowClassifier(ClassifierNeuralNetwork, ClassifierGradients, Classif
         if self._loss is not None:
             self._loss_grads = tf.gradients(self._loss, self._input_ph)[0]
 
+        # Check if the loss function requires as input index labels instead of one-hot-encoded labels
+        if len(self._labels_ph.shape) == 1:
+            self._reduce_labels = True
+        else:
+            self._reduce_labels = False
+
     def predict(self, x, batch_size=128, **kwargs):
         """
         Perform prediction for a batch of inputs.
@@ -179,7 +185,7 @@ class TensorFlowClassifier(ClassifierNeuralNetwork, ClassifierGradients, Classif
         x_preprocessed, y_preprocessed = self._apply_preprocessing(x, y, fit=True)
 
         # Check label shape
-        if len(self._labels_ph.shape) == 1:
+        if self._reduce_labels:
             y_preprocessed = np.argmax(y_preprocessed, axis=1)
 
         num_batch = int(np.ceil(len(x_preprocessed) / float(batch_size)))
@@ -316,7 +322,7 @@ class TensorFlowClassifier(ClassifierNeuralNetwork, ClassifierGradients, Classif
             raise ValueError("Need the loss function and the labels placeholder to compute the loss gradient.")
 
         # Check label shape
-        if len(self._labels_ph.shape) == 1:
+        if self._reduce_labels:
             y_preprocessed = np.argmax(y_preprocessed, axis=1)
 
         # Create feed_dict
@@ -706,6 +712,8 @@ class TensorFlowV2Classifier(ClassifierNeuralNetwork, ClassifierGradients, Class
                be divided by the second one.
         :type preprocessing: `tuple`
         """
+        import tensorflow as tf
+
         super(TensorFlowV2Classifier, self).__init__(
             clip_values=clip_values,
             channel_index=channel_index,
@@ -713,11 +721,18 @@ class TensorFlowV2Classifier(ClassifierNeuralNetwork, ClassifierGradients, Class
             postprocessing_defences=postprocessing_defences,
             preprocessing=preprocessing,
         )
+
         self._model = model
         self._nb_classes = nb_classes
         self._input_shape = input_shape
         self._loss_object = loss_object
         self._train_step = train_step
+
+        # Check if the loss function requires as input index labels instead of one-hot-encoded labels
+        if isinstance(self._loss_object, tf.keras.losses.SparseCategoricalCrossentropy):
+            self._reduce_labels = True
+        else:
+            self._reduce_labels = False
 
     def predict(self, x, batch_size=128, **kwargs):
         """
@@ -775,7 +790,7 @@ class TensorFlowV2Classifier(ClassifierNeuralNetwork, ClassifierGradients, Class
         x_preprocessed, y_preprocessed = self._apply_preprocessing(x, y, fit=True)
 
         # Check label shape
-        if isinstance(self._loss_object, tf.keras.losses.SparseCategoricalCrossentropy):
+        if self._reduce_labels:
             y_preprocessed = np.argmax(y_preprocessed, axis=1)
 
         train_ds = tf.data.Dataset.from_tensor_slices((x_preprocessed, y_preprocessed)).shuffle(10000).batch(batch_size)
@@ -897,7 +912,7 @@ class TensorFlowV2Classifier(ClassifierNeuralNetwork, ClassifierGradients, Class
                 x_preprocessed_tf = tf.convert_to_tensor(x_preprocessed)
                 tape.watch(x_preprocessed_tf)
                 predictions = self._model(x_preprocessed_tf)
-                if isinstance(self._loss_object, tf.keras.losses.SparseCategoricalCrossentropy):
+                if self._reduce_labels:
                     loss = self._loss_object(np.argmax(y, axis=1), predictions)
                 else:
                     loss = self._loss_object(y, predictions)

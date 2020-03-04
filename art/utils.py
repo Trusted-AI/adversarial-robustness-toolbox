@@ -816,26 +816,3 @@ def is_probability(vector):
     is_larger_0 = np.amin(vector) >= 0.0
 
     return is_sum_1 and is_smaller_1 and is_larger_0
-
-
-def check_pytorch_loss_param(loss):
-    """
-    Test if a Pytorch loss function receives labels with shape `(nb_samples, nb_classes)`.
-
-    :param loss: Pytorch loss function.
-    :type loss: `torch.nn.modules.loss._Loss`
-    :return: True if the loss function is with shape `(nb_samples, nb_classes)`.
-    :rtype: `bool`
-    """
-    import torch
-
-    x = torch.Tensor(np.array([[1, 2, 3], [4, 5, 6]]))
-    y = torch.Tensor(np.array([[1, 2, 3], [4, 5, 6]]))
-
-    try:
-        loss(x, y)
-        result = True
-    except RuntimeError:
-        result = False
-
-    return result

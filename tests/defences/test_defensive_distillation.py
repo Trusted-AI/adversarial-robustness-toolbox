@@ -22,7 +22,7 @@ import unittest
 
 import numpy as np
 
-from art.defences import Distillation
+from art.defences import DefensiveDistillation
 
 from tests.utils import TestBase, master_seed
 from tests.utils import get_classifier_tf, get_classifier_pt, get_classifier_kr
@@ -54,9 +54,9 @@ def cross_entropy(prob1, prob2, eps=1e-10):
     return result
 
 
-class TestDistillation(TestBase):
+class TestDefensiveDistillation(TestBase):
     """
-    A unittest class for testing the Distillation transformer on image data.
+    A unittest class for testing the DefensiveDistillation transformer on image data.
     """
 
     @classmethod
@@ -76,22 +76,22 @@ class TestDistillation(TestBase):
         trained_classifier, sess = get_classifier_tf()
 
         # Create the modified classifier
-        modified_classifier, _ = get_classifier_tf(
+        transformed_classifier, _ = get_classifier_tf(
             load_init=False,
             sess=sess
         )
 
-        # Create distillation transformer
-        transformer = Distillation(
+        # Create defensive distillation transformer
+        transformer = DefensiveDistillation(
             classifier=trained_classifier,
             batch_size=BATCH_SIZE,
             nb_epochs=NB_EPOCHS
         )
 
         # Perform the transformation
-        modified_classifier = transformer(
+        transformed_classifier = transformer(
             x=self.x_train_mnist,
-            modified_classifier=modified_classifier
+            transformed_classifier=transformed_classifier
         )
 
         # Compare the 2 outputs
@@ -100,7 +100,7 @@ class TestDistillation(TestBase):
             batch_size=BATCH_SIZE
         )
 
-        preds2 = modified_classifier.predict(
+        preds2 = transformed_classifier.predict(
             x=self.x_train_mnist,
             batch_size=BATCH_SIZE
         )
@@ -131,19 +131,19 @@ class TestDistillation(TestBase):
         trained_classifier = get_classifier_pt()
 
         # Create the modified classifier
-        modified_classifier = get_classifier_pt(load_init=False)
+        transformed_classifier = get_classifier_pt(load_init=False)
 
-        # Create distillation transformer
-        transformer = Distillation(
+        # Create defensive distillation transformer
+        transformer = DefensiveDistillation(
             classifier=trained_classifier,
             batch_size=BATCH_SIZE,
             nb_epochs=NB_EPOCHS
         )
 
         # Perform the transformation
-        modified_classifier = transformer(
+        transformed_classifier = transformer(
             x=self.x_train_mnist,
-            modified_classifier=modified_classifier
+            transformed_classifier=transformed_classifier
         )
 
         # Compare the 2 outputs
@@ -152,7 +152,7 @@ class TestDistillation(TestBase):
             batch_size=BATCH_SIZE
         )
 
-        preds2 = modified_classifier.predict(
+        preds2 = transformed_classifier.predict(
             x=self.x_train_mnist,
             batch_size=BATCH_SIZE
         )
@@ -179,19 +179,19 @@ class TestDistillation(TestBase):
         trained_classifier = get_classifier_kr()
 
         # Create the modified classifier
-        modified_classifier = get_classifier_kr(load_init=False)
+        transformed_classifier = get_classifier_kr(load_init=False)
 
-        # Create distillation transformer
-        transformer = Distillation(
+        # Create defensive distillation transformer
+        transformer = DefensiveDistillation(
             classifier=trained_classifier,
             batch_size=BATCH_SIZE,
             nb_epochs=NB_EPOCHS
         )
 
         # Perform the transformation
-        modified_classifier = transformer(
+        transformed_classifier = transformer(
             x=self.x_train_mnist,
-            modified_classifier=modified_classifier
+            transformed_classifier=transformed_classifier
         )
 
         # Compare the 2 outputs
@@ -200,7 +200,7 @@ class TestDistillation(TestBase):
             batch_size=BATCH_SIZE
         )
 
-        preds2 = modified_classifier.predict(
+        preds2 = transformed_classifier.predict(
             x=self.x_train_mnist,
             batch_size=BATCH_SIZE
         )
@@ -217,9 +217,9 @@ class TestDistillation(TestBase):
         self.assertGreaterEqual(ce, 0)
 
 
-class TestDistillationVectors(TestBase):
+class TestDefensiveDistillationVectors(TestBase):
     """
-    A unittest class for testing the Distillation transformer on vector data.
+    A unittest class for testing the DefensiveDistillation transformer on vector data.
     """
 
     @classmethod
@@ -240,13 +240,13 @@ class TestDistillationVectors(TestBase):
         trained_classifier, sess = get_iris_classifier_tf()
 
         # Create the modified classifier
-        modified_classifier, _ = get_iris_classifier_tf(
+        transformed_classifier, _ = get_iris_classifier_tf(
             load_init=False,
             sess=sess
         )
 
-        # Create distillation transformer
-        transformer = Distillation(
+        # Create defensive distillation transformer
+        transformer = DefensiveDistillation(
             classifier=trained_classifier,
             batch_size=BATCH_SIZE,
             nb_epochs=NB_EPOCHS
@@ -254,9 +254,9 @@ class TestDistillationVectors(TestBase):
 
         # Perform the transformation
         with self.assertRaises(ValueError) as context:
-            modified_classifier = transformer(
+            transformed_classifier = transformer(
                 x=self.x_train_iris,
-                modified_classifier=modified_classifier
+                transformed_classifier=transformed_classifier
             )
 
         self.assertIn('The input trained classifier do not produce probability outputs.', str(context.exception))
@@ -274,19 +274,19 @@ class TestDistillationVectors(TestBase):
         trained_classifier = get_iris_classifier_kr()
 
         # Create the modified classifier
-        modified_classifier = get_iris_classifier_kr(load_init=False)
+        transformed_classifier = get_iris_classifier_kr(load_init=False)
 
-        # Create distillation transformer
-        transformer = Distillation(
+        # Create defensive distillation transformer
+        transformer = DefensiveDistillation(
             classifier=trained_classifier,
             batch_size=BATCH_SIZE,
             nb_epochs=NB_EPOCHS
         )
 
         # Perform the transformation
-        modified_classifier = transformer(
+        transformed_classifier = transformer(
             x=self.x_train_iris,
-            modified_classifier=modified_classifier
+            transformed_classifier=transformed_classifier
         )
 
         # Compare the 2 outputs
@@ -295,7 +295,7 @@ class TestDistillationVectors(TestBase):
             batch_size=BATCH_SIZE
         )
 
-        preds2 = modified_classifier.predict(
+        preds2 = transformed_classifier.predict(
             x=self.x_train_iris,
             batch_size=BATCH_SIZE
         )
@@ -320,10 +320,10 @@ class TestDistillationVectors(TestBase):
         trained_classifier = get_iris_classifier_pt()
 
         # Create the modified classifier
-        modified_classifier = get_iris_classifier_pt(load_init=False)
+        transformed_classifier = get_iris_classifier_pt(load_init=False)
 
-        # Create distillation transformer
-        transformer = Distillation(
+        # Create defensive distillation transformer
+        transformer = DefensiveDistillation(
             classifier=trained_classifier,
             batch_size=BATCH_SIZE,
             nb_epochs=NB_EPOCHS
@@ -331,9 +331,9 @@ class TestDistillationVectors(TestBase):
 
         # Perform the transformation
         with self.assertRaises(ValueError) as context:
-            modified_classifier = transformer(
+            transformed_classifier = transformer(
                 x=self.x_train_iris,
-                modified_classifier=modified_classifier
+                transformed_classifier=transformed_classifier
             )
 
         self.assertIn('The input trained classifier do not produce probability outputs.', str(context.exception))

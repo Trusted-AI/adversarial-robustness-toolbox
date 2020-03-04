@@ -68,9 +68,10 @@ class DefensiveDistillation(Transformer):
 
         :param x: Dataset for training the transformed classifier.
         :type x: `np.ndarray`
-        :param modified_classifier: A classifier to be transformed for increased robustness. Note that, the objective loss function
-        used for fitting inside the input transformed_classifier must support soft labels, i.e. probability labels.
-        :type modified_classifier: :class:`.Classifier`
+        :param transformed_classifier: A classifier to be transformed for increased robustness. Note that, the
+        objective loss function used for fitting inside the input transformed_classifier must support soft labels,
+        i.e. probability labels.
+        :type transformed_classifier: :class:`.Classifier`
         :return: The transformed classifier.
         :rtype: :class:`.Classifier`
         """
@@ -83,12 +84,12 @@ class DefensiveDistillation(Transformer):
             raise ValueError("The input trained classifier do not produce probability outputs.")
 
         # Check if the transformed classifier produces probability outputs
-        transformed_preds = modified_classifier.predict(x=x, batch_size=self.batch_size)
-        are_probability = [is_probability(y) for y in modified_preds]
-        all_probability = np.sum(are_probability) == modified_preds.shape[0]
+        transformed_preds = transformed_classifier.predict(x=x, batch_size=self.batch_size)
+        are_probability = [is_probability(y) for y in transformed_preds]
+        all_probability = np.sum(are_probability) == transformed_preds.shape[0]
 
         if not all_probability:
-            raise ValueError("The input modified classifier do not produce probability outputs.")
+            raise ValueError("The input transformed classifier do not produce probability outputs.")
 
         # Train the transformed classifier with soft labels
         transformed_classifier.fit(x=x, y=preds, batch_size=self.batch_size, nb_epochs=self.nb_epochs)
