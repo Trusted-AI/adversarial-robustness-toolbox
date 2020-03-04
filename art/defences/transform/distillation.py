@@ -68,10 +68,10 @@ class DefensiveDistillation(Transformer):
 
         :param x: Dataset for training the transformed classifier.
         :type x: `np.ndarray`
-        :param modified_classifier: A classifier to be modified for robustness. Note that, the objective loss function
-        used for fitting inside the input modified_classifier must support soft labels, i.e. probability labels.
+        :param modified_classifier: A classifier to be transformed for increased robustness. Note that, the objective loss function
+        used for fitting inside the input transformed_classifier must support soft labels, i.e. probability labels.
         :type modified_classifier: :class:`.Classifier`
-        :return: The modified classifier.
+        :return: The transformed classifier.
         :rtype: :class:`.Classifier`
         """
         # Check if the trained classifier produces probability outputs
@@ -82,18 +82,18 @@ class DefensiveDistillation(Transformer):
         if not all_probability:
             raise ValueError("The input trained classifier do not produce probability outputs.")
 
-        # Check if the modified classifier produces probability outputs
-        modified_preds = modified_classifier.predict(x=x, batch_size=self.batch_size)
+        # Check if the transformed classifier produces probability outputs
+        transformed_preds = modified_classifier.predict(x=x, batch_size=self.batch_size)
         are_probability = [is_probability(y) for y in modified_preds]
         all_probability = np.sum(are_probability) == modified_preds.shape[0]
 
         if not all_probability:
             raise ValueError("The input modified classifier do not produce probability outputs.")
 
-        # Train the modified classifier with soft labels
-        modified_classifier.fit(x=x, y=preds, batch_size=self.batch_size, nb_epochs=self.nb_epochs)
+        # Train the transformed classifier with soft labels
+        transformed_classifier.fit(x=x, y=preds, batch_size=self.batch_size, nb_epochs=self.nb_epochs)
 
-        return modified_classifier
+        return transformed_classifier
 
     def fit(self, x, y=None, **kwargs):
         """
