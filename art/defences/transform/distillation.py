@@ -66,7 +66,7 @@ class DefensiveDistillation(Transformer):
         """
         Perform the transformation defence and return a robust classifier.
 
-        :param x: Dataset for training the modified classifier.
+        :param x: Dataset for training the transformed classifier.
         :type x: `np.ndarray`
         :param modified_classifier: A classifier to be modified for robustness. Note that, the objective loss function
         used for fitting inside the input modified_classifier must support soft labels, i.e. probability labels.
