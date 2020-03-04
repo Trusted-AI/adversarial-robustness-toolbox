@@ -222,12 +222,15 @@ class TensorFlowClassifier(ClassifierNeuralNetwork, ClassifierGradients, Classif
                 for _ in range(int(generator.size / generator.batch_size)):
                     i_batch, o_batch = generator.get_batch()
 
+                    i_batch, o_batch = self._apply_preprocessing(x=i_batch, y=o_batch, fit=True)
+
                     # Create feed_dict
                     feed_dict = {self._input_ph: i_batch, self._labels_ph: o_batch}
                     feed_dict.update(self._feed_dict)
 
                     # Run train step
                     self._sess.run(self._train, feed_dict=feed_dict)
+        else:
             super(TensorFlowClassifier, self).fit_generator(generator, nb_epochs=nb_epochs, **kwargs)
 
     def class_gradient(self, x, label=None, **kwargs):
