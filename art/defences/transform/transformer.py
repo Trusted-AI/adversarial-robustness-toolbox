@@ -62,13 +62,13 @@ class Transformer(abc.ABC):
     @abc.abstractmethod
     def __call__(self, x, modified_classifier):
         """
-        Perform the transformation defence and return a robust classifier.
+        Perform the transformation defence and return a robuster classifier.
 
-        :param x: Dataset for training the modified classifier.
+        :param x: Dataset for training the transformed classifier.
         :type x: `np.ndarray`
-        :param modified_classifier: A classifier to be modified for robustness.
-        :type modified_classifier: :class:`.Classifier`
-        :return: The modified classifier.
+        :param transformed_classifier: A classifier to be transformed for increased robustness.
+        :type transformed_classifier: :class:`.Classifier`
+        :return: The transformed classifier.
         :rtype: :class:`.Classifier`
         """
         raise NotImplementedError
