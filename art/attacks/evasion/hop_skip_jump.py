@@ -85,7 +85,7 @@ class HopSkipJump(EvasionAttack):
         }
         self.set_params(**params)
 
-        self.curr_iter = None
+        self.curr_iter = 0
 
         # Set binary search threshold
         if norm == 2:
