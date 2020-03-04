@@ -16,7 +16,7 @@
 # TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 # SOFTWARE.
 """
-This module implements the abstract base class for defences that transform one classifier to a more robust classifier.
+This module implements the abstract base class for defences that transform a classifier into a more robust classifier.
 """
 from __future__ import absolute_import, division, print_function, unicode_literals
 
