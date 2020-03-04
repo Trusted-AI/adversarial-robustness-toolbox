@@ -52,7 +52,7 @@ class DefensiveDistillation(Transformer):
         :param nb_epochs: Number of epochs to use for training.
         :type nb_epochs: `int`
         """
-        super(Distillation, self).__init__(classifier=classifier)
+        super().__init__(classifier=classifier)
 
         self._is_fitted = True
 
