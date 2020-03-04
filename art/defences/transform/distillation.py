@@ -32,7 +32,7 @@ from art.utils import is_probability
 logger = logging.getLogger(__name__)
 
 
-class Distillation(Transformer):
+class DefensiveDistillation(Transformer):
     """
     This module implements the distillation defence `Distillation`.
     Implement the distillation defence approach.
