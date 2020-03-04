@@ -24,6 +24,7 @@ import logging
 import abc
 import numpy as np
 
+from art.classifiers import BlackBoxClassifier
 from art.classifiers.classifier import Classifier
 
 logger = logging.getLogger(__name__)
@@ -154,7 +155,8 @@ class PoisoningAttackBlackBox(Attack):
         """
         Initializes black-box data poisoning attack
         """
-        super().__init__(None)
+        empty_black_box = BlackBoxClassifier(None, None, 0)
+        super().__init__(empty_black_box)
 
     @abc.abstractmethod
     def poison(self, x, y=None, **kwargs):
