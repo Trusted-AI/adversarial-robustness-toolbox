@@ -64,7 +64,7 @@ class DefensiveDistillation(Transformer):
 
     def __call__(self, x, modified_classifier):
         """
-        Perform the transformation defence and return a robust classifier.
+        Perform the defensive distillation defence mechanism and return a robuster classifier.
 
         :param x: Dataset for training the transformed classifier.
         :type x: `np.ndarray`
