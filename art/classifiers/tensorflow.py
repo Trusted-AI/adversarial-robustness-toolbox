@@ -212,12 +212,11 @@ class TensorFlowClassifier(ClassifierNeuralNetwork, ClassifierGradients, Classif
         :type kwargs: `dict`
         :return: `None`
         """
-        from art.data_generators import TFDataGenerator
+        from art.data_generators import TensorFlowDataGenerator
 
         # Train directly in TensorFlow
-        if isinstance(generator, TFDataGenerator) and not (
-            hasattr(self, "label_smooth") or hasattr(self, "feature_squeeze")
-        ):
+        if isinstance(generator, TensorFlowDataGenerator) and self.preprocessing_defences is None \
+                and self.preprocessing == (0, 1):
             for _ in range(nb_epochs):
                 for _ in range(int(generator.size / generator.batch_size)):
                     i_batch, o_batch = generator.get_batch()

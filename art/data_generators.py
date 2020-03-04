@@ -197,7 +197,7 @@ class MXDataGenerator(DataGenerator):
         return tuple(batch)
 
 
-class TFDataGenerator(DataGenerator):
+class TensorFlowDataGenerator(DataGenerator):
     """
     Wrapper class on top of the TensorFlow native iterators :class:`tf.data.Iterator`.
     """
@@ -229,7 +229,7 @@ class TFDataGenerator(DataGenerator):
 
             tf.disable_eager_execution()
 
-        super(TFDataGenerator, self).__init__(size=size, batch_size=batch_size)
+        super(TensorFlowDataGenerator, self).__init__(size=size, batch_size=batch_size)
         self.sess = sess
         self.iterator = iterator
         self.iterator_type = iterator_type

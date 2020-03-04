@@ -23,7 +23,7 @@ import unittest
 import tensorflow as tf
 import numpy as np
 
-from art.data_generators import TFDataGenerator
+from art.data_generators import TensorFlowDataGenerator
 
 from tests.utils import TestBase, master_seed, get_classifier_tf
 
@@ -66,7 +66,7 @@ class TestTensorFlowClassifier(TestBase):
             y_tensor = tf.convert_to_tensor(self.y_train_mnist.reshape(10, 100, 10))
             dataset = tf.data.Dataset.from_tensor_slices((x_tensor, y_tensor))
             iterator = dataset.make_initializable_iterator()
-            data_gen = TFDataGenerator(sess=sess, iterator=iterator, iterator_type='initializable', iterator_arg={},
+            data_gen = TensorFlowDataGenerator(sess=sess, iterator=iterator, iterator_type='initializable', iterator_arg={},
                                        size=1000, batch_size=100)
 
             # Test fit and predict
