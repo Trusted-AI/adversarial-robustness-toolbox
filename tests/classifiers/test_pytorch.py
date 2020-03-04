@@ -141,7 +141,7 @@ class TestPyTorchClassifier(TestBase):
         logger.info('Accuracy: %.2f%%', (accuracy_2 * 100))
 
         self.assertEqual(accuracy, 0.32)
-        self.assertAlmostEqual(accuracy_2, 0.75, delta=0.2)
+        self.assertAlmostEqual(accuracy_2, 0.75, delta=0.1)
 
     def test_nb_classes(self):
         classifier = get_image_classifier_pt()
