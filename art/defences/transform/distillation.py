@@ -43,7 +43,7 @@ class DefensiveDistillation(Transformer):
 
     def __init__(self, classifier, batch_size=128, nb_epochs=10):
         """
-        Create an instance of the distillation defence.
+        Create an instance of the defensive distillation defence.
 
         :param classifier: A trained classifier.
         :type classifier: :class:`.Classifier`
