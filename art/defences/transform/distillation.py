@@ -111,7 +111,7 @@ class DefensiveDistillation(Transformer):
         :type nb_epochs: `int`
         """
         # Save defence-specific parameters
-        super(Distillation, self).set_params(**kwargs)
+        super().set_params(**kwargs)
 
         if not isinstance(self.batch_size, (int, np.int)) or self.batch_size <= 0:
             raise ValueError("The size of batches must be a positive integer.")
