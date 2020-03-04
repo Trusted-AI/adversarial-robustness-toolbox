@@ -107,7 +107,7 @@ class PyTorchClassifier(ClassifierNeuralNetwork, ClassifierGradients, Classifier
         # Index of layer at which the class gradients should be calculated
         self._layer_idx_gradients = -1
 
-        # Check the loss function for dimension reducing of labels
+        # Check if the loss function requires as input index labels instead of one-hot-encoded labels
         if isinstance(loss, (torch.nn.CrossEntropyLoss, torch.nn.NLLLoss, torch.nn.MultiMarginLoss)):
             self._reduce_labels = True
         else:
