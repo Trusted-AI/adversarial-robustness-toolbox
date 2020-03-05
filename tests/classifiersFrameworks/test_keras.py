@@ -21,7 +21,6 @@ import logging
 import pytest
 import numpy as np
 import keras
-import keras.backend as k
 from keras.layers import Dense, Conv2D, MaxPooling2D, Dropout, Input, Flatten
 from keras.models import Model
 from keras.preprocessing.image import ImageDataGenerator

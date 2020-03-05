@@ -1,9 +1,8 @@
 import pytest
 import logging
 from art.attacks import BoundaryAttack
-from art import utils
+
 from tests.attacks import utils_attack
-from art.classifiers.classifier import Classifier
 
 logger = logging.getLogger(__name__)
 

@@ -1,12 +1,10 @@
 import pytest
 import numpy as np
 import logging
-from art import utils
+
 from tests import utils_test
 import keras.backend as k
-from tests.utils_test import ExpectedValue
 from art import utils
-from art.classifiers.classifier import Classifier, ClassifierGradients
 from art.classifiers.classifier import ClassifierNeuralNetwork, ClassifierGradients, Classifier
 from art.classifiers.scikitlearn import ScikitlearnDecisionTreeClassifier
 from sklearn.tree import DecisionTreeClassifier

@@ -19,15 +19,15 @@ from __future__ import absolute_import, division, print_function, unicode_litera
 import logging
 import unittest
 import numpy as np
-from art.attacks import FastGradientMethod
-from tests.utils_test import ExpectedValue
-from tests.attacks import utils_attack
 import pytest
-from art import utils
-from art.classifiers.classifier import Classifier, ClassifierGradients
-from art.classifiers.classifier import ClassifierNeuralNetwork, ClassifierGradients, Classifier
-from art.classifiers.scikitlearn import ScikitlearnDecisionTreeClassifier
-from sklearn.tree import DecisionTreeClassifier
+
+from art.attacks import FastGradientMethod
+from art.classifiers.classifier import ClassifierGradients
+from tests.utils_test import ExpectedValue
+from tests.attacks.utils_attack import backend_check_adverse_values, backend_test_defended_images
+from tests.attacks.utils_attack import backend_test_random_initialisation_images, backend_targeted_images
+from tests.attacks.utils_attack import backend_targeted_tabular, backend_untargeted_tabular
+from tests.attacks.utils_attack import backend_test_classifier_type_check_fail
 
 logger = logging.getLogger(__name__)
 
@@ -50,7 +50,7 @@ def test_classifier_defended_images(fix_get_mnist_subset, get_image_classifier_l
 
     for classifier in classifier_list:
         attack = FastGradientMethod(classifier, eps=1, batch_size=128)
-        utils_attack.backend_test_defended_images(attack, fix_get_mnist_subset)
+        backend_test_defended_images(attack, fix_get_mnist_subset)
 
 
 def test_random_initialisation_images(fix_get_mnist_subset, get_image_classifier_list_for_attack):
@@ -62,7 +62,7 @@ def test_random_initialisation_images(fix_get_mnist_subset, get_image_classifier
 
     for classifier in classifier_list:
         attack = FastGradientMethod(classifier, num_random_init=3)
-        utils_attack.backend_test_random_initialisation_images(attack, fix_get_mnist_subset)
+        backend_test_random_initialisation_images(attack, fix_get_mnist_subset)
 
 
 def test_targeted_images(fix_get_mnist_subset, get_image_classifier_list_for_attack):
@@ -77,7 +77,7 @@ def test_targeted_images(fix_get_mnist_subset, get_image_classifier_list_for_att
         attack_params = {"minimal": True, "eps_step": 0.01, "eps": 1.0}
         attack.set_params(**attack_params)
 
-        utils_attack.backend_targeted_images(attack, fix_get_mnist_subset)
+        backend_targeted_images(attack, fix_get_mnist_subset)
 
 
 def test_minimal_perturbations_images(fix_get_mnist_subset, get_image_classifier_list_for_attack):
@@ -131,7 +131,7 @@ def test_norm_images(norm, fix_get_mnist_subset, get_image_classifier_list_for_a
     for classifier in classifier_list:
         attack = FastGradientMethod(classifier, eps=1, norm=norm, batch_size=128)
 
-        utils_attack.backend_check_adverse_values(attack, fix_get_mnist_subset, expected_values)
+        backend_check_adverse_values(attack, fix_get_mnist_subset, expected_values)
 
 
 @pytest.mark.skipMlFramework("scikitlearn")  # temporarily skipping for scikitlearn until find bug fix in bounded test

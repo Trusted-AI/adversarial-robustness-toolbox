@@ -72,10 +72,10 @@ class TestDefensiveDistillation(TestBase):
         :return:
         """
         # Create the trained classifier
-        trained_classifier, sess = get_classifier_tf()
+        trained_classifier, sess = get_image_classifier_tf()
 
         # Create the modified classifier
-        transformed_classifier, _ = get_classifier_tf(
+        transformed_classifier, _ = get_image_classifier_tf(
             load_init=False,
             sess=sess
         )

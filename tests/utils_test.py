@@ -26,21 +26,10 @@ import json
 import time
 import pickle
 import unittest
-from sklearn.linear_model import LogisticRegression
-from sklearn.svm import SVC, LinearSVC
-import torch
 import numpy as np
-
-from art.classifiers import KerasClassifier
-from art.classifiers.scikitlearn import SklearnClassifier
-from art.defences import FeatureSqueezing
-
-# from tests.test_utils import master_seed
-
 
 logger = logging.getLogger(__name__)
 
-from art.config import ART_NUMPY_DTYPE
 from art.utils import load_dataset
 
 logger = logging.getLogger(__name__)

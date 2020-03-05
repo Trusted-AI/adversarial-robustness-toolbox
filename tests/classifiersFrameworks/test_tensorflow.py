@@ -25,7 +25,6 @@ from tests.classifiersFrameworks import utils_classifier
 from tests.classifiersFrameworks.utils_classifier import backend_test_layers, backend_test_repr
 from tests.classifiersFrameworks.utils_classifier import backend_test_loss_gradient
 from tests.utils_test import ExpectedValue
-import os
 
 logger = logging.getLogger(__name__)
 
