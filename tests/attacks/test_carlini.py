@@ -19,12 +19,10 @@ from __future__ import absolute_import, division, print_function, unicode_litera
 
 import logging
 import unittest
-from art import utils
-from art.classifiers.classifier import ClassifierNeuralNetwork, ClassifierGradients, Classifier
 import keras
 import keras.backend as k
 import numpy as np
-from tests.attacks import utils_attack
+from art.classifiers.classifier import ClassifierNeuralNetwork, ClassifierGradients, Classifier
 from art.attacks import CarliniL2Method, CarliniLInfMethod
 from art.classifiers import KerasClassifier
 from art.utils import random_targets, to_categorical
@@ -90,7 +88,6 @@ class TestCarlini(TestBase):
         x_test_original = self.x_test_mnist.copy()
 
         # Build TensorFlowClassifier
-
         tfc, sess = get_image_classifier_tf(from_logits=True)
 
         # First attack

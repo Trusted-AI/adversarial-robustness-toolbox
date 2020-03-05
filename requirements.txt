@@ -4,21 +4,4 @@ scipy
 six==1.13.0
 scikit-learn==0.22.1
 
-#### Extra packages for Unit Testing Purposes
-pytest-pep8
-codecov
-h5py
-Pillow
-requests
-keras
-mxnet
-#torch>=1.2.0
-tensorflow
-xgboost
-lightgbm
-# Comment out because of compatibility issues with numpy versions
-# catboost
-GPy
-statsmodels
-
 
