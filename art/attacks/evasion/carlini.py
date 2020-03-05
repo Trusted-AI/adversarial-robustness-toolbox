@@ -562,7 +562,7 @@ class CarliniLInfMethod(EvasionAttack):
         """
         super(CarliniLInfMethod, self).__init__(classifier)
         if not isinstance(classifier, ClassifierGradients):
-            raise utils.WrongClassifier(self.__class__, [ClassifierGradients], classifier)
+            raise WrongClassifier(self.__class__, [ClassifierGradients], classifier)
 
         kwargs = {
             "confidence": confidence,
