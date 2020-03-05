@@ -25,7 +25,7 @@ import keras.backend as k
 
 from art.classifiers import EnsembleClassifier
 
-from tests.utils_test import TestBase, get_image_classifier_kr
+from tests.utils import TestBase, get_image_classifier_kr
 
 
 logger = logging.getLogger(__name__)

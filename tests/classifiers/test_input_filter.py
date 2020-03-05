@@ -28,8 +28,7 @@ if tf.__version__[0] == '2':
 
 from art.utils import load_dataset
 
-from art.utils import load_dataset
-from tests.utils_test import get_image_classifier_kr_tf, master_seed
+from tests.utils import get_image_classifier_kr_tf, master_seed
 
 
 logger = logging.getLogger(__name__)

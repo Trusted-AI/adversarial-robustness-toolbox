@@ -29,7 +29,7 @@ import torch.optim as optim
 
 from art.classifiers import PyTorchClassifier, DetectorClassifier
 
-from tests.utils_test import TestBase, get_image_classifier_pt
+from tests.utils import TestBase, get_image_classifier_pt
 
 
 logger = logging.getLogger(__name__)
