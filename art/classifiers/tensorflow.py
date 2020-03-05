@@ -817,7 +817,19 @@ class TensorFlowV2Classifier(ClassifierNeuralNetwork, ClassifierGradients, Class
                TensorFlow and providing it takes no effect.
         :type kwargs: `dict`
         """
-        raise NotImplementedError
+        from art.data_generators import TensorFlowV2DataGenerator
+
+        # Train directly in TensorFlow
+        if isinstance(generator, TensorFlowV2DataGenerator) and self.preprocessing_defences is None \
+                and self.preprocessing == (0, 1):
+            for _ in range(nb_epochs):
+                for i_batch, o_batch in generator.dataset:
+                    if self._reduce_labels:
+                        o_batch = np.argmax(o_batch, axis=1)
+                    self._train_step(i_batch, o_batch)
+        else:
+            # Fit a generic data generator through the API
+            super(TensorFlowV2DataGenerator, self).fit_generator(generator, nb_epochs=nb_epochs)
 
     def class_gradient(self, x, label=None, **kwargs):
         """

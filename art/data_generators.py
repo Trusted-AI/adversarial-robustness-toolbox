@@ -280,3 +280,41 @@ class TensorFlowDataGenerator(DataGenerator):
 
             self.sess.run(self.iterator_arg[0].initializer)
             return self.sess.run(next_batch, feed_dict=self.iterator_arg[1])
+
+class TensorFlowV2DataGenerator(DataGenerator):
+    """
+    Wrapper class on top of the TensorFlow v2 native iterators :class:`tf.data.Iterator`.
+    """
+
+    def __init__(self, dataset, size, batch_size):
+        """
+        Create a data generator wrapper for TensorFlow. Supported iterators: initializable, reinitializable, feedable.
+
+        :param dataset: TensorFlow Dataset.
+        :type dataset: `tensorflow.data.Dataset`
+        :param size: Total size of the dataset.
+        :type size: `int`
+        :param batch_size: Size of the minibatches.
+        :type batch_size: `int`
+        :raises: `TypeError`, `ValueError`
+        """
+        # pylint: disable=E0401
+        import tensorflow as tf
+
+        super(TensorFlowV2DataGenerator, self).__init__(size=size, batch_size=batch_size)
+        self.dataset = dataset
+
+        if not isinstance(dataset, tf.data.Dataset):
+            raise TypeError("Only support object tf.data.Dataset")
+
+    def get_batch(self):
+        """
+        Provide the next batch for training in the form of a tuple `(x, y)`. The generator should loop over the data
+        indefinitely.
+
+        :return: A tuple containing a batch of data `(x, y)`.
+        :rtype: `tuple`
+        :raises: `ValueError` if the iterator has reached the end.
+        """
+        # Get next batch
+        return next(self.dataset)
