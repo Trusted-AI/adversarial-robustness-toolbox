@@ -21,7 +21,7 @@ This module implements the elastic net attack `ElasticNet`. This is a white-box 
 | Paper link: https://arxiv.org/abs/1709.04114
 """
 from __future__ import absolute_import, division, print_function, unicode_literals
-from art import utils
+from art.utils import WrongClassifier
 import logging
 
 import numpy as np
