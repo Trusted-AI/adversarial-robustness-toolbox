@@ -66,8 +66,8 @@ class TestTensorFlowClassifier(TestBase):
             y_tensor = tf.convert_to_tensor(self.y_train_mnist.reshape(10, 100, 10))
             dataset = tf.data.Dataset.from_tensor_slices((x_tensor, y_tensor))
             iterator = dataset.make_initializable_iterator()
-            data_gen = TensorFlowDataGenerator(sess=sess, iterator=iterator, iterator_type='initializable', iterator_arg={},
-                                       size=1000, batch_size=100)
+            data_gen = TensorFlowDataGenerator(sess=sess, iterator=iterator, iterator_type='initializable',
+                                               iterator_arg={}, size=1000, batch_size=100)
 
             # Test fit and predict
             classifier.fit_generator(data_gen, nb_epochs=2)
