@@ -640,7 +640,7 @@ def get_classifier_pt(from_logits=False, load_init=True):
     """
     import torch
 
-    from art.estimators.classifiers import PyTorchClassifier
+    from art.estimators.classifiers.pytorch import PyTorchClassifier
 
     class Model(torch.nn.Module):
         """

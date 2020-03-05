@@ -31,21 +31,21 @@ declare -a attacks=("tests/attacks/test_adversarial_patch.py" \
                     "tests/attacks/test_pixel_attack.py" \
                     "tests/attacks/test_threshold_attack.py" )
 
-declare -a classifiers=("tests/classifiers/test_blackbox.py" \
-                        "tests/classifiers/test_catboost.py" \
-                        "tests/classifiers/test_classifier.py" \
-                        "tests/classifiers/test_detector_classifier.py" \
-                        "tests/classifiers/test_ensemble.py" \
-                        "tests/classifiers/test_GPy.py" \
-                        "tests/classifiers/test_input_filter.py" \
-                        "tests/classifiers/test_keras.py" \
-                        "tests/classifiers/test_keras_tf.py" \
-                        "tests/classifiers/test_lightgbm.py" \
-                        "tests/classifiers/test_mxnet.py" \
-                        "tests/classifiers/test_pytorch.py" \
-                        "tests/classifiers/test_scikitlearn.py" \
-                        "tests/classifiers/test_tensorflow.py" \
-                        "tests/classifiers/test_xgboost.py" )
+declare -a classifiers=("tests/estimators/classifiers/test_blackbox.py" \
+                        "tests/estimators/classifiers/test_catboost.py" \
+                        "tests/estimators/classifiers/test_classifier.py" \
+                        "tests/estimators/classifiers/test_detector_classifier.py" \
+                        "tests/estimators/classifiers/test_ensemble.py" \
+                        "tests/estimators/classifiers/test_GPy.py" \
+                        "tests/estimators/classifiers/test_input_filter.py" \
+                        "tests/estimators/classifiers/test_keras.py" \
+                        "tests/estimators/classifiers/test_keras_tf.py" \
+                        "tests/estimators/classifiers/test_lightgbm.py" \
+                        "tests/estimators/classifiers/test_mxnet.py" \
+                        "tests/estimators/classifiers/test_pytorch.py" \
+                        "tests/estimators/classifiers/test_scikitlearn.py" \
+                        "tests/estimators/classifiers/test_tensorflow.py" \
+                        "tests/estimators/classifiers/test_xgboost.py" )
 
 declare -a defences=("tests/defences/test_adversarial_trainer.py" \
                      "tests/defences/test_adversarial_trainer_madry_pgd.py" \
