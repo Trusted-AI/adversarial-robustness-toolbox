@@ -19,7 +19,6 @@ from __future__ import absolute_import, division, print_function, unicode_litera
 
 import logging
 import unittest
-from tests.attacks import utils_attack
 from art.classifiers.classifier import ClassifierNeuralNetwork, ClassifierGradients
 import numpy as np
 

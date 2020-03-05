@@ -156,7 +156,7 @@ class TestSpatialTransformation(TestBase):
         self.assertIn('Feature vectors detected.', str(context.exception))
 
     def test_classifier_type_check_fail(self):
-        utils_attack.backend_test_classifier_type_check_fail(SpatialTransformation)
+        backend_test_classifier_type_check_fail(SpatialTransformation)
 
 
 if __name__ == '__main__':
