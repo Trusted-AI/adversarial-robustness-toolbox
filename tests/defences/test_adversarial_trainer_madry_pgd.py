@@ -25,7 +25,7 @@ import numpy as np
 from art.defences import AdversarialTrainerMadryPGD
 from art.utils import load_mnist
 
-from tests.utils_test import master_seed, get_image_classifier_tf
+from tests.utils import master_seed, get_image_classifier_tf
 
 logger = logging.getLogger(__name__)
 

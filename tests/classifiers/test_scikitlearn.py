@@ -36,7 +36,7 @@ from art.classifiers.scikitlearn import ScikitlearnDecisionTreeClassifier, Sciki
     ScikitlearnSVC
 from art.classifiers import SklearnClassifier
 
-from tests.utils_test import TestBase, master_seed
+from tests.utils import TestBase, master_seed
 
 logger = logging.getLogger(__name__)
 
