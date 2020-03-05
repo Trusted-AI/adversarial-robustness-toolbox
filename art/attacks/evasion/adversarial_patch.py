@@ -24,7 +24,7 @@ can be printed into the physical world with a common printer. The patch can be u
 from __future__ import absolute_import, division, print_function, unicode_literals
 
 import logging
-from art import utils
+from art.utils import WrongClassifier
 import random
 import numpy as np
 from scipy.ndimage import rotate, shift, zoom
