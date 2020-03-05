@@ -29,7 +29,7 @@ def add_single_bd(x, distance=2, pixel_value=1):
         width, height = x.shape
         x[width - distance, height - distance] = pixel_value
     else:
-        raise ValueError("Do not support numpy arrays of shape " + str(shape))
+        raise ValueError("Invalid array shape: " + str(shape))
     return x
 
 
@@ -61,7 +61,7 @@ def add_pattern_bd(x, distance=2, pixel_value=1):
         x[width - distance, height - distance - 2] = pixel_value
         x[width - distance - 2, height - distance] = pixel_value
     else:
-        raise ValueError("Do not support numpy arrays of shape " + str(shape))
+        raise ValueError("Invalid array shape: " + str(shape))
     return x
 
 
@@ -86,6 +86,8 @@ def insert_image(x, backdoor_path='data/backdoors/post_it.png', random=True, x_s
     """
     if len(x.shape) == 3:
         return np.array([insert_image(single_img, backdoor_path, random, x_shift, y_shift, size) for single_img in x])
+    elif len(x.shape) != 2:
+        raise ValueError("Invalid array shape " + str(x.shape))
 
     backdoor = Image.open(backdoor_path).convert(mode=mode)
     backdoored_input = Image.fromarray(np.copy(x), mode=mode)
