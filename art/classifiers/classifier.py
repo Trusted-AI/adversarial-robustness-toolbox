@@ -393,7 +393,6 @@ class ClassifierNeuralNetwork(abc.ABC, metaclass=input_filter):
         for _ in range(nb_epochs):
             for _ in range(int(generator.size / generator.batch_size)):
                 x, y = generator.get_batch()
-                print(x.shape)
 
                 # Apply preprocessing and defences
                 x_preprocessed, y_preprocessed = self._apply_preprocessing(x, y, fit=True)

@@ -233,6 +233,9 @@ class TensorFlowClassifier(ClassifierNeuralNetwork, ClassifierGradients, Classif
 
                     i_batch, o_batch = self._apply_preprocessing(x=i_batch, y=o_batch, fit=True)
 
+                    if self._reduce_labels:
+                        o_batch = np.argmax(o_batch, axis=1)
+
                     # Create feed_dict
                     feed_dict = {self._input_ph: i_batch, self._labels_ph: o_batch}
                     feed_dict.update(self._feed_dict)
