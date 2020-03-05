@@ -26,12 +26,13 @@ import random
 import numpy as np
 import six
 
-from art.estimators.classifiers.classifier import Classifier, ClassifierNeuralNetworkMixin, ClassifierGradientsMixin
+from art.estimators.tensorflow import TensorFlowEstimator, TensorFlowV2Estimator
+from art.estimators.classifiers.classifier import ClassifierMixin, ClassGradientsMixin
 
 logger = logging.getLogger(__name__)
 
 
-class TensorFlowClassifier(ClassifierNeuralNetworkMixin, ClassifierGradientsMixin, Classifier):
+class TensorFlowClassifier(ClassGradientsMixin, ClassifierMixin, TensorFlowEstimator):
     """
     This class implements a classifier with the TensorFlow framework.
     """
@@ -388,21 +389,6 @@ class TensorFlowClassifier(ClassifierNeuralNetworkMixin, ClassifierGradientsMixi
 
         return result
 
-    @property
-    def layer_names(self):
-        """
-        Return the hidden layers in the model, if applicable.
-
-        :return: The hidden layers in the model, input and output layers excluded.
-        :rtype: `list`
-
-        .. warning:: `layer_names` tries to infer the internal structure of the model.
-                     This feature comes with no guarantees on the correctness of the result.
-                     The intended order of the layers tries to match their order in the model, but this is not
-                     guaranteed either.
-        """
-        return self._layer_names
-
     def get_activations(self, x, layer, batch_size=128):
         """
         Return the output of the specified layer for input `x`. `layer` is specified by layer index (between 0 and
@@ -468,15 +454,6 @@ class TensorFlowClassifier(ClassifierNeuralNetworkMixin, ClassifierGradientsMixi
         if isinstance(train, bool):
             self._learning_phase = train
             self._feed_dict[self._learning] = train
-
-    def nb_classes(self):
-        """
-        Return the number of output classes.
-
-        :return: Number of classes in the data.
-        :rtype: `int`
-        """
-        return self._nb_classes
 
     def save(self, filename, path=None):
         """
@@ -650,7 +627,7 @@ class TensorFlowClassifier(ClassifierNeuralNetworkMixin, ClassifierGradientsMixi
 TFClassifier = TensorFlowClassifier
 
 
-class TensorFlowV2Classifier(ClassifierNeuralNetworkMixin, ClassifierGradientsMixin, Classifier):
+class TensorFlowV2Classifier(ClassGradientsMixin, ClassifierMixin, TensorFlowV2Estimator):
     """
     This class implements a classifier with the TensorFlow v2 framework.
     """
@@ -908,21 +885,6 @@ class TensorFlowV2Classifier(ClassifierNeuralNetworkMixin, ClassifierGradientsMi
         """
         raise NotImplementedError
 
-    @property
-    def layer_names(self):
-        """
-        Return the hidden layers in the model, if applicable.
-
-        :return: The hidden layers in the model, input and output layers excluded.
-        :rtype: `list`
-
-        .. warning:: `layer_names` tries to infer the internal structure of the model.
-                     This feature comes with no guarantees on the correctness of the result.
-                     The intended order of the layers tries to match their order in the model, but this is not
-                     guaranteed either.
-        """
-        raise NotImplementedError
-
     def get_activations(self, x, layer, batch_size=128):
         """
         Return the output of the specified layer for input `x`. `layer` is specified by layer index (between 0 and
@@ -948,15 +910,6 @@ class TensorFlowV2Classifier(ClassifierNeuralNetworkMixin, ClassifierGradientsMi
         :type train: `bool`
         """
         raise NotImplementedError
-
-    def nb_classes(self):
-        """
-        Return the number of output classes.
-
-        :return: Number of classes in the data.
-        :rtype: `int`
-        """
-        return self._nb_classes
 
     def save(self, filename, path=None):
         """
