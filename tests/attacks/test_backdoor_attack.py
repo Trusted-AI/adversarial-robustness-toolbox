@@ -48,8 +48,8 @@ class TestBackdoorAttack(TestBase):
         (cls.x_train_mnist_raw, cls.y_train_mnist_raw), (cls.x_test_mnist_raw, cls.y_test_mnist_raw), \
             cls._min, cls._max = load_mnist(raw=True)
 
-        cls.n_train_raw = 7500
-        cls.n_test_raw = 7500
+        cls.n_train_raw = 5000
+        cls.n_test_raw = 5000
         cls.x_train_mnist_raw = cls.x_train_mnist_raw[0:cls.n_train_raw]
         cls.y_train_mnist_raw = cls.y_train_mnist_raw[0:cls.n_train_raw]
         cls.x_test_mnist_raw = cls.x_test_mnist_raw[0:cls.n_test_raw]
@@ -347,7 +347,7 @@ class TestBackdoorAttack(TestBase):
 
         backdoor_attack = PoisoningAttackBackdoor(self.poison_func_5)
         with self.assertRaises(ValueError) as context:
-            backdoor_attack.poison(self.x_train_mnist_raw[0], y=self.y_train_mnist_raw[0]+1)
+            backdoor_attack.poison(self.x_train_mnist_raw[0], y=self.y_train_mnist_raw[0] + 1)
 
         self.assertIn('Backdoor does not fit inside original image', str(context.exception))
 
