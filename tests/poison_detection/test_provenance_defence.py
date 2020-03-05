@@ -29,7 +29,7 @@ from art.classifiers.scikitlearn import ScikitlearnSVC
 from art.poison_detection.provenance_defense import ProvenanceDefense
 from art.utils import load_mnist
 
-from tests.utils_test import master_seed
+from tests.utils import master_seed
 
 logger = logging.getLogger(__name__)
 

@@ -33,7 +33,7 @@ from art.classifiers import KerasClassifier, PyTorchClassifier, TensorFlowClassi
 from art.metrics.metrics import empirical_robustness, clever_t, clever_u, clever, loss_sensitivity
 from art.utils import load_mnist
 
-from tests.utils_test import master_seed
+from tests.utils import master_seed
 
 logger = logging.getLogger(__name__)
 
