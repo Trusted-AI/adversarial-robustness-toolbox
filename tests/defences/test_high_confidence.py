@@ -98,7 +98,6 @@ class TestHighConfidence(unittest.TestCase):
         Test with cutoff of 0.6 for binary classifier.
         """
         (_, _), (x_test, _) = self.mnist
-
         classifier = get_image_classifier_kr_tf_binary()
         preds = classifier.predict(x_test[0:1])
         postprocessor = HighConfidence(cutoff=0.6)
