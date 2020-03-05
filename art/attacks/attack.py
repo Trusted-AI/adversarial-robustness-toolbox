@@ -23,7 +23,7 @@ from __future__ import absolute_import, division, print_function, unicode_litera
 import logging
 import abc
 import numpy as np
-from art import utils
+from art.utils import WrongClassifier
 from art.classifiers.classifier import Classifier
 
 logger = logging.getLogger(__name__)
