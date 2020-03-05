@@ -25,18 +25,13 @@ import keras.backend as k
 
 from art.attacks.extraction.knockoff_nets import KnockoffNets
 
-from art.utils import load_dataset
-from tests.utils_test import get_image_classifier_tf
-from tests.utils_test import get_image_classifier_kr
-from tests.utils_test import get_image_classifier_pt
-from tests.utils_test import get_tabular_classifier_tf
-from tests.utils_test import get_tabular_classifier_kr
-from tests.utils_test import get_tabular_classifier_pt
 from art.config import ART_NUMPY_DTYPE
+from art.utils import load_dataset
 
-
-from tests.utils_test import TestBase, master_seed
-
+from tests.utils import TestBase, master_seed
+from tests.utils import get_image_classifier_tf, get_image_classifier_kr
+from tests.utils import get_image_classifier_pt, get_tabular_classifier_tf
+from tests.utils import get_tabular_classifier_kr, get_tabular_classifier_pt
 
 logger = logging.getLogger(__name__)
 
