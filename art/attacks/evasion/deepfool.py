@@ -61,7 +61,7 @@ class DeepFool(EvasionAttack):
         """
         super(DeepFool, self).__init__(classifier=classifier)
         if not isinstance(classifier, ClassifierGradients):
-            raise utils.WrongClassifier(self.__class__, [ClassifierGradients], classifier)
+            raise WrongClassifier(self.__class__, [ClassifierGradients], classifier)
 
         params = {"max_iter": max_iter, "epsilon": epsilon, "nb_grads": nb_grads, "batch_size": batch_size}
         self.set_params(**params)
