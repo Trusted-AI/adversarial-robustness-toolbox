@@ -29,8 +29,7 @@ from art.utils import second_most_likely_class, random_targets, get_label_conf, 
 from art.utils import segment_by_class, performance_diff
 from art.utils import is_probability
 
-
-from tests.utils_test import master_seed
+from tests.utils import master_seed
 
 logger = logging.getLogger(__name__)
 
