@@ -27,7 +27,7 @@ import numpy as np
 from art.attacks import DecisionTreeAttack
 from art.classifiers import SklearnClassifier
 
-from tests.utils_test import TestBase, master_seed
+from tests.utils import TestBase, master_seed
 
 logger = logging.getLogger(__name__)
 

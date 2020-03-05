@@ -48,4 +48,4 @@ def test_images(fix_get_mnist_subset, get_image_classifier_list_for_attack, fram
 
 
 def test_classifier_type_check_fail():
-    utils_attack.backend_test_classifier_type_check_fail(BoundaryAttack)
+    backend_test_classifier_type_check_fail(BoundaryAttack)

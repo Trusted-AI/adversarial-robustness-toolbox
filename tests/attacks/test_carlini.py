@@ -202,7 +202,7 @@ class TestCarlini(TestBase):
         self.assertAlmostEqual(float(np.max(np.abs(x_test_original - x_test))), 0.0, delta=0.00001)
 
     def test_classifier_type_check_fail(self):
-        utils_attack.backend_test_classifier_type_check_fail(CarliniL2Method, [ClassifierGradients])
+        backend_test_classifier_type_check_fail(CarliniL2Method, [ClassifierGradients])
 
     def test_keras_iris_clipped_L2(self):
         classifier = get_tabular_classifier_kr()
@@ -452,7 +452,7 @@ class TestCarlini(TestBase):
         self.assertTrue((target != y_pred_adv).any())
 
     def test_classifier_type_check_fail(self):
-        utils_attack.backend_test_classifier_type_check_fail(CarliniLInfMethod, [ClassifierGradients])
+        backend_test_classifier_type_check_fail(CarliniLInfMethod, [ClassifierGradients])
 
     def test_keras_iris_clipped_LInf(self):
         classifier = get_tabular_classifier_kr()

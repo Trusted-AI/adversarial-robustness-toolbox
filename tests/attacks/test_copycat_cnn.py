@@ -35,11 +35,9 @@ from art.classifiers import TensorFlowClassifier
 from art.classifiers import KerasClassifier
 from art.classifiers import PyTorchClassifier
 
-
-from tests.utils_test import TestBase, master_seed
-from tests.utils_test import get_image_classifier_tf, get_image_classifier_kr, get_image_classifier_pt
-from tests.utils_test import get_tabular_classifier_tf, get_tabular_classifier_kr, get_tabular_classifier_pt
-
+from tests.utils import TestBase, master_seed
+from tests.utils import get_image_classifier_tf, get_image_classifier_kr, get_image_classifier_pt
+from tests.utils import get_tabular_classifier_tf, get_tabular_classifier_kr, get_tabular_classifier_pt
 
 logger = logging.getLogger(__name__)
 
