@@ -26,28 +26,29 @@ import random
 import numpy as np
 import six
 
-from art.estimators.classifiers.classifier import Classifier, ClassifierNeuralNetworkMixin, ClassifierGradientsMixin
+from art.estimators.pytorch import PyTorchEstimator
+from art.estimators.classifiers.classifier import ClassifierMixin, ClassGradientsMixin
 
 logger = logging.getLogger(__name__)
 
 
-class PyTorchClassifier(ClassifierNeuralNetworkMixin, ClassifierGradientsMixin, Classifier):
+class PyTorchClassifier(ClassGradientsMixin, ClassifierMixin, PyTorchEstimator):
     """
     This class implements a classifier with the PyTorch framework.
     """
 
     def __init__(
-        self,
-        model,
-        loss,
-        optimizer,
-        input_shape,
-        nb_classes,
-        channel_index=1,
-        clip_values=None,
-        preprocessing_defences=None,
-        postprocessing_defences=None,
-        preprocessing=(0, 1),
+            self,
+            model,
+            loss,
+            input_shape,
+            nb_classes,
+            optimizer=None,
+            channel_index=1,
+            clip_values=None,
+            preprocessing_defences=None,
+            postprocessing_defences=None,
+            preprocessing=(0, 1),
     ):
         """
         Initialization specifically for the PyTorch-based implementation.
@@ -58,12 +59,12 @@ class PyTorchClassifier(ClassifierNeuralNetworkMixin, ClassifierGradientsMixin, 
         :param loss: The loss function for which to compute gradients for training. The target label must be raw
                categorical, i.e. not converted to one-hot encoding.
         :type loss: `torch.nn.modules.loss._Loss`
-        :param optimizer: The optimizer used to train the classifier.
-        :type optimizer: `torch.optim.Optimizer`
         :param input_shape: The shape of one input instance.
         :type input_shape: `tuple`
         :param nb_classes: The number of classes of the model.
         :type nb_classes: `int`
+        :param optimizer: The optimizer used to train the classifier.
+        :type optimizer: `torch.optim.Optimizer`
         :param channel_index: Index of the axis in data containing the color channels or features.
         :type channel_index: `int`
         :param clip_values: Tuple of the form `(min, max)` of floats or `np.ndarray` representing the minimum and
@@ -80,7 +81,7 @@ class PyTorchClassifier(ClassifierNeuralNetworkMixin, ClassifierGradientsMixin, 
                be divided by the second one.
         :type preprocessing: `tuple`
         """
-        super(PyTorchClassifier, self).__init__(
+        super().__init__(
             clip_values=clip_values,
             channel_index=channel_index,
             preprocessing_defences=preprocessing_defences,
@@ -124,7 +125,7 @@ class PyTorchClassifier(ClassifierNeuralNetworkMixin, ClassifierGradientsMixin, 
         x_preprocessed, _ = self._apply_preprocessing(x, y=None, fit=False)
 
         # Run prediction with batch processing
-        results = np.zeros((x_preprocessed.shape[0], self.nb_classes()), dtype=np.float32)
+        results = np.zeros((x_preprocessed.shape[0], self.nb_classes), dtype=np.float32)
         num_batch = int(np.ceil(len(x_preprocessed) / float(batch_size)))
         for m in range(num_batch):
             # Batch indexes
@@ -301,7 +302,7 @@ class PyTorchClassifier(ClassifierNeuralNetworkMixin, ClassifierGradientsMixin, 
 
         self._model.zero_grad()
         if label is None:
-            for i in range(self.nb_classes()):
+            for i in range(self.nb_classes):
                 torch.autograd.backward(
                     preds[:, i], torch.Tensor([1.0] * len(preds[:, 0])).to(self._device), retain_graph=True
                 )
@@ -367,22 +368,6 @@ class PyTorchClassifier(ClassifierNeuralNetworkMixin, ClassifierGradientsMixin, 
 
         return grads
 
-    @property
-    def layer_names(self):
-        """
-        Return the hidden layers in the model, if applicable.
-
-        :return: The hidden layers in the model, input and output layers excluded.
-        :rtype: `list`
-
-        .. warning:: `layer_names` tries to infer the internal structure of the model.
-                     This feature comes with no guarantees on the correctness of the result.
-                     The intended order of the layers tries to match their order in the model, but this is not
-                     guaranteed either. In addition, the function can only infer the internal layers if the input
-                     model is of type `nn.Sequential`, otherwise, it will only return the logit layer.
-        """
-        return self._layer_names
-
     def get_activations(self, x, layer, batch_size=128):
         """
         Return the output of the specified layer for input `x`. `layer` is specified by layer index (between 0 and
@@ -440,15 +425,6 @@ class PyTorchClassifier(ClassifierNeuralNetworkMixin, ClassifierGradientsMixin, 
         if isinstance(train, bool):
             self._learning_phase = train
             self._model.train(train)
-
-    def nb_classes(self):
-        """
-        Return the number of output classes.
-
-        :return: Number of classes in the data.
-        :rtype: `int`
-        """
-        return self._nb_classes
 
     def save(self, filename, path=None):
         """
@@ -540,21 +516,21 @@ class PyTorchClassifier(ClassifierNeuralNetworkMixin, ClassifierGradientsMixin, 
 
     def __repr__(self):
         repr_ = (
-            "%s(model=%r, loss=%r, optimizer=%r, input_shape=%r, nb_classes=%r, channel_index=%r, "
-            "clip_values=%r, preprocessing_defences=%r, postprocessing_defences=%r, preprocessing=%r)"
-            % (
-                self.__module__ + "." + self.__class__.__name__,
-                self._model,
-                self._loss,
-                self._optimizer,
-                self._input_shape,
-                self.nb_classes(),
-                self.channel_index,
-                self.clip_values,
-                self.preprocessing_defences,
-                self.postprocessing_defences,
-                self.preprocessing,
-            )
+                "%s(model=%r, loss=%r, optimizer=%r, input_shape=%r, nb_classes=%r, channel_index=%r, "
+                "clip_values=%r, preprocessing_defences=%r, postprocessing_defences=%r, preprocessing=%r)"
+                % (
+                    self.__module__ + "." + self.__class__.__name__,
+                    self._model,
+                    self._loss,
+                    self._optimizer,
+                    self._input_shape,
+                    self.nb_classes,
+                    self.channel_index,
+                    self.clip_values,
+                    self.preprocessing_defences,
+                    self.postprocessing_defences,
+                    self.preprocessing,
+                )
         )
 
         return repr_
