@@ -115,7 +115,7 @@ class TestKerasClassifierTensorFlow(TestBase):
         logger.info('Accuracy: %.2f%%', (acc2 * 100))
 
         self.assertEqual(acc, 0.32)
-        self.assertEqual(acc2, 0.37)
+        self.assertAlmostEqual(acc2, 0.70, delta=0.05)
 
     def test_fit_image_generator(self):
         labels_test = np.argmax(self.y_test_mnist, axis=1)
@@ -134,7 +134,7 @@ class TestKerasClassifierTensorFlow(TestBase):
         logger.info('Accuracy: %.2f%%', (acc2 * 100))
 
         self.assertEqual(acc, 0.32)
-        self.assertAlmostEqual(acc2, 0.35, delta=0.02)
+        self.assertAlmostEqual(acc2, 0.69, delta=0.02)
 
     def test_fit_kwargs(self):
 

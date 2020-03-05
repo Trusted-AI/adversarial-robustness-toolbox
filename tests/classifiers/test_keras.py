@@ -115,7 +115,7 @@ class TestKerasClassifier(TestBase):
         logger.info('Accuracy: %.2f%%', (accuracy_2 * 100))
 
         self.assertEqual(accuracy, 0.32)
-        self.assertAlmostEqual(accuracy_2, 0.36, delta=0.06)
+        self.assertAlmostEqual(accuracy_2, 0.73, delta=0.06)
 
     def test_fit_image_generator(self):
         classifier = get_classifier_kr()
@@ -134,7 +134,7 @@ class TestKerasClassifier(TestBase):
         logger.info('Accuracy: %.2f%%', (accuracy_2 * 100))
 
         self.assertEqual(accuracy, 0.32)
-        self.assertAlmostEqual(accuracy_2, 0.35, delta=0.06)
+        self.assertAlmostEqual(accuracy_2, 0.74, delta=0.06)
 
     def test_fit_kwargs(self):
 
