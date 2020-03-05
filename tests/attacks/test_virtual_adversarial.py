@@ -26,11 +26,10 @@ from art.attacks import VirtualAdversarialMethod
 from art.classifiers import KerasClassifier
 from art.utils import get_labels_np_array
 
-
-from tests.utils_test import TestBase
-from tests.utils_test import get_image_classifier_tf, get_image_classifier_kr, get_image_classifier_pt
-from tests.utils_test import get_tabular_classifier_tf, get_tabular_classifier_kr, get_tabular_classifier_pt
-
+from tests.utils import TestBase
+from tests.utils import get_image_classifier_tf, get_image_classifier_kr, get_image_classifier_pt
+from tests.utils import get_tabular_classifier_tf, get_tabular_classifier_kr, get_tabular_classifier_pt
+from tests.attacks.utils import backend_test_classifier_type_check_fail
 
 logger = logging.getLogger(__name__)
 
@@ -105,7 +104,7 @@ class TestVirtualAdversarial(TestBase):
         self.assertAlmostEqual(float(np.max(np.abs(x_test_original - x_test))), 0.0, delta=0.00001)
 
     def test_classifier_type_check_fail(self):
-        utils_attack.backend_test_classifier_type_check_fail(VirtualAdversarialMethod,
+        backend_test_classifier_type_check_fail(VirtualAdversarialMethod,
                                                              [ClassifierNeuralNetwork, ClassifierGradients])
 
     def test_keras_iris_clipped(self):
