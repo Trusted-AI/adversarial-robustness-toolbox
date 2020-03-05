@@ -25,14 +25,10 @@ import numpy as np
 
 from art.attacks import FastGradientMethod
 from art.classifiers import KerasClassifier
-
-from tests.utils_test import get_image_classifier_kr, get_tabular_classifier_kr
-
 from art.utils import load_dataset, random_targets, compute_accuracy
-
 from art.wrappers.randomized_smoothing import RandomizedSmoothing
 
-from tests.utils_test import master_seed
+from tests.utils import master_seed, get_image_classifier_kr, get_tabular_classifier_kr
 
 os.environ['KMP_DUPLICATE_LIB_OK'] = 'True'
 logger = logging.getLogger(__name__)
