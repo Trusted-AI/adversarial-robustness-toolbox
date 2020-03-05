@@ -26,7 +26,7 @@ al. for adversarial training.
 from __future__ import absolute_import, division, print_function, unicode_literals
 
 import logging
-from art import utils
+from art.utils import WrongClassifier
 import numpy as np
 from scipy.stats import truncnorm
 
@@ -99,7 +99,7 @@ class ProjectedGradientDescent(FastGradientMethod):
             minimal=False,
         )
         if not isinstance(classifier, ClassifierGradients):
-            raise utils.WrongClassifier(self.__class__, [ClassifierGradients], classifier)
+            raise WrongClassifier(self.__class__, [ClassifierGradients], classifier)
 
         kwargs = {"max_iter": max_iter, "random_eps": random_eps}
         ProjectedGradientDescent.set_params(self, **kwargs)

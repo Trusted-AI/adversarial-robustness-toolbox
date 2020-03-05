@@ -16,13 +16,10 @@
 # TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 # SOFTWARE.
 import tensorflow as tf
-from art import utils
-from tests.utils_test import master_seed
 import os
 import pickle
 from tensorflow.keras.models import Sequential
 from tensorflow.keras.layers import Dense, Flatten, Conv2D, MaxPooling2D
-from art.classifiers.scikitlearn import SklearnClassifier
 from sklearn.linear_model import LogisticRegression
 from sklearn.svm import SVC, LinearSVC
 from sklearn.tree import DecisionTreeClassifier, ExtraTreeClassifier
@@ -30,7 +27,7 @@ from sklearn.ensemble import AdaBoostClassifier, BaggingClassifier, ExtraTreesCl
 from sklearn.ensemble import GradientBoostingClassifier, RandomForestClassifier
 import numpy as np
 
-from art.utils import load_dataset
+from art.utils import load_dataset, master_seed
 
 
 def main_mnist_binary():
