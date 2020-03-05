@@ -26,7 +26,6 @@ import logging
 
 import numpy as np
 from art import utils
-from art.classifiers.classifier import ClassifierNeuralNetwork, ClassifierGradients, Classifier
 from art.config import ART_NUMPY_DTYPE
 from art.classifiers.classifier import ClassifierGradients
 from art.attacks.attack import EvasionAttack

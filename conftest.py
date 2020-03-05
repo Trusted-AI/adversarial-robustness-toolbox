@@ -1,9 +1,7 @@
 import logging
 import pytest
 from art import utils
-from tests import utils_test
 import numpy as np
-from art.classifiers import KerasClassifier
 import tensorflow as tf
 import keras
 import os
@@ -11,7 +9,6 @@ import requests
 import tempfile
 import shutil
 from tests import utils_test
-from art.defences import FeatureSqueezing
 from art.classifiers import KerasClassifier
 
 logger = logging.getLogger(__name__)

@@ -25,7 +25,6 @@ import abc
 import numpy as np
 from art import utils
 from art.classifiers.classifier import Classifier
-from art import classifiers
 
 logger = logging.getLogger(__name__)
 
