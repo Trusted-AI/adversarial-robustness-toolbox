@@ -309,7 +309,6 @@ class BoundaryAttack(EvasionAttack):
         :rtype: `np.ndarray`
         """
         # Generate perturbation randomly
-        # input_shape = current_sample.shape
         perturb = np.random.randn(*self.classifier.input_shape).astype(ART_NUMPY_DTYPE)
 
         # Rescale the perturbation
@@ -324,7 +323,8 @@ class BoundaryAttack(EvasionAttack):
             direction = np.swapaxes(direction, 0, self.classifier.channel_index - 1)
             for i in range(direction.shape[0]):
                 direction[i] /= np.linalg.norm(direction[i])
-                perturb[i] -= np.dot(perturb[i], direction[i]) * direction[i]
+                perturb[i] -= np.dot(np.dot(perturb[i], direction[i].T), direction[i])
+
             perturb = np.swapaxes(perturb, 0, self.classifier.channel_index - 1)
         elif len(self.classifier.input_shape) == 1:
             direction /= np.linalg.norm(direction)

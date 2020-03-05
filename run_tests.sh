@@ -58,6 +58,7 @@ declare -a classifiers=("tests/classifiers/test_blackbox.py" \
 declare -a defences=("tests/defences/test_adversarial_trainer.py" \
                      "tests/defences/test_adversarial_trainer_madry_pgd.py" \
                      "tests/defences/test_class_labels.py" \
+                     "tests/defences/test_defensive_distillation.py" \
                      "tests/defences/test_feature_squeezing.py" \
                      "tests/defences/test_gaussian_augmentation.py" \
                      "tests/defences/test_gaussian_noise.py" \

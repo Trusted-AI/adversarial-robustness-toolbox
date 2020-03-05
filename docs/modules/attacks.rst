@@ -14,7 +14,8 @@ Base Class Evasion Attacks
 
 Base Class Poisoning Attacks
 ----------------------------
-.. autoclass:: PoisoningAttack
+.. autoclass:: PoisoningAttackBlackBox
+.. autoclass:: PoisoningAttackWhiteBox
    :members:
 
 Base Class Extraction Attacks

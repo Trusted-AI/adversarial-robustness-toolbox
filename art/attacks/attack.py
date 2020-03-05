@@ -140,20 +140,46 @@ class EvasionAttack(Attack):
         raise NotImplementedError
 
 
-class PoisoningAttack(Attack):
+class PoisoningAttackBlackBox(Attack):
     """
-    Abstract base class for poisoning attack classes.
+    Abstract base class for poisoning attack classes that have no access to the model (classifier object)
     """
 
+    def __init__(self):
+        """
+        Initializes black-box data poisoning attack
+        """
+        super().__init__(None)
+
+    @abc.abstractmethod
+    def poison(self, x, y=None, **kwargs):
+        """
+        Generate poisoning examples and return them as an array. This method should be overridden by all concrete
+        poisoning attack implementations.
+
+        :param x: An array with the original inputs to be attacked.
+        :type x: `np.ndarray`
+        :param y:  Target labels for `x`. Untargeted attacks set this value to None.
+        :type y: `np.ndarray`
+        :return: An tuple holding the (poisoning examples, poisoning labels).
+        :rtype: `(np.ndarray, np.ndarray)`
+        """
+        raise NotImplementedError
+
+
+class PoisoningAttackWhiteBox(PoisoningAttackBlackBox):
+    """
+    Abstract base class for poisoning attack classes that have white-box access to the model (classifier object)
+    """
     def __init__(self, classifier):
         """
         :param classifier: A trained classifier.
         :type classifier: :class:`.Classifier`
         """
-        super().__init__(classifier)
+        super(PoisoningAttackBlackBox, self).__init__(classifier)
 
     @abc.abstractmethod
-    def generate(self, x, y=None, **kwargs):
+    def poison(self, x, y=None, **kwargs):
         """
         Generate poisoning examples and return them as an array. This method should be overridden by all concrete
         poisoning attack implementations.
@@ -163,8 +189,8 @@ class PoisoningAttack(Attack):
         :param y: Correct labels or target labels for `x`, depending if the attack is targeted
                or not. This parameter is only used by some of the attacks.
         :type y: `np.ndarray`
-        :return: An array holding the poisoning examples.
-        :rtype: `np.ndarray`
+        :return: An tuple holding the (poisoning examples, poisoning labels).
+        :rtype: `(np.ndarray, np.ndarray)`
         """
         raise NotImplementedError
 

@@ -39,7 +39,7 @@ NB_TEST = 10
 
 class TestSVMAttack(unittest.TestCase):
     """
-    A unittest class for testing Adversarial Patch attack.
+    A unittest class for testing Poisoning Attack on SVMs.
     """
 
     @classmethod
@@ -113,7 +113,8 @@ class TestSVMAttack(unittest.TestCase):
         poison = SklearnClassifier(model=LinearSVC(), clip_values=clip_values)
         poison.fit(x_train, y_train)
         attack = PoisoningAttackSVM(poison, 0.01, 1.0, x_train, y_train, x_test, y_test, 100)
-        attack_point = attack.generate(np.array([x_train[0]]))
+        attack_y = np.array([1, 1]) - y_train[0]
+        attack_point, _ = attack.poison(np.array([x_train[0]]), y=np.array([attack_y]))
         poison.fit(x=np.vstack([x_train, attack_point]), y=np.vstack([y_train, np.copy(y_train[0].reshape((1, 2)))]))
 
         acc = np.average(np.all(clean.predict(x_test) == y_test, axis=1)) * 100
@@ -156,7 +157,8 @@ class TestSVMAttack(unittest.TestCase):
             poison = SklearnClassifier(model=SVC(kernel=kernel, gamma='auto'), clip_values=clip_values)
             poison.fit(x_train, y_train)
             attack = PoisoningAttackSVM(poison, 0.01, 1.0, x_train, y_train, x_test, y_test, 100)
-            attack_point = attack.generate(np.array([x_train[0]]))
+            attack_y = np.array([1, 1]) - y_train[0]
+            attack_point, _ = attack.poison(np.array([x_train[0]]), y=np.array([attack_y]))
             poison.fit(x=np.vstack([x_train, attack_point]),
                        y=np.vstack([y_train, np.array([1, 1]) - np.copy(y_train[0].reshape((1, 2)))]))
 
