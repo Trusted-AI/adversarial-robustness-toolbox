@@ -118,6 +118,7 @@ class TestKerasClassifierTensorFlow(TestBase):
         self.assertAlmostEqual(acc2, 0.70, delta=0.05)
 
     def test_fit_image_generator(self):
+        master_seed(seed=1234)
         labels_test = np.argmax(self.y_test_mnist, axis=1)
         classifier = get_classifier_kr_tf()
         acc = np.sum(np.argmax(classifier.predict(self.x_test_mnist), axis=1) == labels_test) / self.n_test
