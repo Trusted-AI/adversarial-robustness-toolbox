@@ -281,6 +281,7 @@ class TensorFlowDataGenerator(DataGenerator):
             self.sess.run(self.iterator_arg[0].initializer)
             return self.sess.run(next_batch, feed_dict=self.iterator_arg[1])
 
+
 class TensorFlowV2DataGenerator(DataGenerator):
     """
     Wrapper class on top of the TensorFlow v2 native iterators :class:`tf.data.Iterator`.
