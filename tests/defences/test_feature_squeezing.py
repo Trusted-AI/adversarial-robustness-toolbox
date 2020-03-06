@@ -22,7 +22,7 @@ import unittest
 
 import numpy as np
 
-from art.defences import FeatureSqueezing
+from art.defences.preprocessor import FeatureSqueezing
 
 from tests.utils import master_seed
 

@@ -22,7 +22,7 @@ import unittest
 
 import numpy as np
 
-from art.defences import ThermometerEncoding
+from art.defences.preprocessor import ThermometerEncoding
 
 from tests.utils import master_seed
 

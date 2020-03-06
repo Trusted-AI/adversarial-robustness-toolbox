@@ -22,9 +22,10 @@ import unittest
 
 import numpy as np
 
-from art.attacks import FastGradientMethod, DeepFool
+from art.attacks.evasion.fast_gradient import FastGradientMethod
+from art.attacks.evasion.deepfool import DeepFool
 from art.data_generators import DataGenerator
-from art.defences import AdversarialTrainer
+from art.defences.trainer.adversarial_trainer import AdversarialTrainer
 from art.utils import load_mnist
 
 from tests.utils import master_seed, get_classifier_tf
