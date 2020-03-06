@@ -59,7 +59,7 @@ def test_fit_generator(is_tf_version_2, get_default_mnist_subset, get_image_clas
 
         expected_values = {"post_fit_accuracy": ExpectedValue(0.65, 0.02)}
 
-        utils_classifier.backend_test_fit_generator(expected_values, classifier, data_gen,
+        backend_test_fit_generator(expected_values, classifier, data_gen,
                                                     get_default_mnist_subset, nb_epochs=2)
 
 
