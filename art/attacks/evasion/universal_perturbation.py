@@ -86,9 +86,7 @@ class UniversalPerturbation(EvasionAttack):
                     "For `" + self.__class__.__name__ + "` classifier must be an instance of "
                     "`art.estimators.classifiers.classifier.ClassifierNeuralNetworkMixin` and "
                     "`art.estimators.classifiers.classifier.ClassifierGradientsMixin`, the provided classifier is "
-                    "instance of "
-                    + str(classifier.__class__.__bases__)
-                    + ". "
+                    "instance of " + str(classifier.__class__.__bases__) + ". "
                     " The classifier needs to be a Neural Network and provide gradients."
                 )
             )

@@ -38,17 +38,17 @@ class PyTorchClassifier(ClassGradientsMixin, ClassifierMixin, PyTorchEstimator):
     """
 
     def __init__(
-            self,
-            model,
-            loss,
-            input_shape,
-            nb_classes,
-            optimizer=None,
-            channel_index=1,
-            clip_values=None,
-            preprocessing_defences=None,
-            postprocessing_defences=None,
-            preprocessing=(0, 1),
+        self,
+        model,
+        loss,
+        input_shape,
+        nb_classes,
+        optimizer=None,
+        channel_index=1,
+        clip_values=None,
+        preprocessing_defences=None,
+        postprocessing_defences=None,
+        preprocessing=(0, 1),
     ):
         """
         Initialization specifically for the PyTorch-based implementation.
@@ -516,21 +516,21 @@ class PyTorchClassifier(ClassGradientsMixin, ClassifierMixin, PyTorchEstimator):
 
     def __repr__(self):
         repr_ = (
-                "%s(model=%r, loss=%r, optimizer=%r, input_shape=%r, nb_classes=%r, channel_index=%r, "
-                "clip_values=%r, preprocessing_defences=%r, postprocessing_defences=%r, preprocessing=%r)"
-                % (
-                    self.__module__ + "." + self.__class__.__name__,
-                    self._model,
-                    self._loss,
-                    self._optimizer,
-                    self._input_shape,
-                    self.nb_classes,
-                    self.channel_index,
-                    self.clip_values,
-                    self.preprocessing_defences,
-                    self.postprocessing_defences,
-                    self.preprocessing,
-                )
+            "%s(model=%r, loss=%r, optimizer=%r, input_shape=%r, nb_classes=%r, channel_index=%r, "
+            "clip_values=%r, preprocessing_defences=%r, postprocessing_defences=%r, preprocessing=%r)"
+            % (
+                self.__module__ + "." + self.__class__.__name__,
+                self._model,
+                self._loss,
+                self._optimizer,
+                self._input_shape,
+                self.nb_classes,
+                self.channel_index,
+                self.clip_values,
+                self.preprocessing_defences,
+                self.postprocessing_defences,
+                self.preprocessing,
+            )
         )
 
         return repr_

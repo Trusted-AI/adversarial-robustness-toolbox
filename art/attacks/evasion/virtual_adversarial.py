@@ -60,16 +60,13 @@ class VirtualAdversarialMethod(EvasionAttack):
         :type batch_size: `int`
         """
         super(VirtualAdversarialMethod, self).__init__(classifier)
-        if not isinstance(classifier, NeuralNetworkMixin) or not isinstance(classifier, ClassGradientsMixin
-        ):
+        if not isinstance(classifier, NeuralNetworkMixin) or not isinstance(classifier, ClassGradientsMixin):
             raise (
                 TypeError(
                     "For `" + self.__class__.__name__ + "` classifier must be an instance of "
                     "`art.estimators.classifiers.classifier.ClassifierNeuralNetworkMixin` and "
                     "`art.estimators.classifiers.classifier.ClassifierGradientsMixin`, the provided classifier is "
-                    "instance of "
-                    + str(classifier.__class__.__bases__)
-                    + ". "
+                    "instance of " + str(classifier.__class__.__bases__) + ". "
                     " The classifier needs to be a Neural Network and provide gradients."
                 )
             )

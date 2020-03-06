@@ -36,12 +36,12 @@ class BaseEstimator(ABC):
     estimator_params = ["model", "clip_values", "preprocessing_defences", "postprocessing_defences", "preprocessing"]
 
     def __init__(
-            self,
-            model=None,
-            clip_values=None,
-            preprocessing_defences=None,
-            postprocessing_defences=None,
-            preprocessing=None,
+        self,
+        model=None,
+        clip_values=None,
+        preprocessing_defences=None,
+        postprocessing_defences=None,
+        preprocessing=None,
     ):
         """
         Initialize a `Estimator` object.
@@ -81,7 +81,7 @@ class BaseEstimator(ABC):
         for key, value in kwargs.items():
             if key in self.estimator_params:
                 if hasattr(BaseEstimator, key) and isinstance(getattr(BaseEstimator, key), property):
-                    setattr(self, '_' + key, value)
+                    setattr(self, "_" + key, value)
                 else:
                     setattr(self, key, value)
             else:

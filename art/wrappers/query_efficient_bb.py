@@ -34,7 +34,9 @@ from art.utils import clip_and_round
 logger = logging.getLogger(__name__)
 
 
-class QueryEfficientBBGradientEstimation(ClassifierWrapper, ClassGradientsMixin, ClassifierMixin, LossGradientsMixin, NeuralNetworkMixin, BaseEstimator):
+class QueryEfficientBBGradientEstimation(
+    ClassifierWrapper, ClassGradientsMixin, ClassifierMixin, LossGradientsMixin, NeuralNetworkMixin, BaseEstimator
+):
     """
     Implementation of Query-Efficient Black-box Adversarial Examples. The attack approximates the gradient by
     maximizing the loss function over samples drawn from random Gaussian noise around the input.
