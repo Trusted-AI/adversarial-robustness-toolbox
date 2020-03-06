@@ -73,7 +73,7 @@ class AdversarialTrainer(Trainer):
                       Setting this value to 1 allows to train only on adversarial samples.
         :type ratio: `float`
         """
-        from art.attacks import EvasionAttack
+        from art.attacks.attack import EvasionAttack
 
         self.classifier = classifier
         if isinstance(attacks, EvasionAttack):
