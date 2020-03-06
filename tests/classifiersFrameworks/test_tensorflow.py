@@ -65,7 +65,7 @@ def test_fit_generator(is_tf_version_2, get_default_mnist_subset, get_image_clas
 
 @pytest.mark.only_with_platform("tensorflow")
 def test_nb_classes(get_image_classifier_list):
-    utils_classifier.backend_test_nb_classes(get_image_classifier_list)
+    backend_test_nb_classes(get_image_classifier_list)
 
 
 @pytest.mark.only_with_platform("tensorflow")
