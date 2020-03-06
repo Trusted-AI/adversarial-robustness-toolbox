@@ -185,9 +185,8 @@ class ElasticNet(EvasionAttack):
         :return: The decayed learning rate
         :rtype: `float`
         """
-        decayed_learning_rate = (self.learning_rate - end_learning_rate) * (
-                1 - global_step / decay_steps
-        ) ** 2 + end_learning_rate
+        learn_rate = (self.learning_rate - end_learning_rate)
+        decayed_learning_rate = learn_rate * (1 - global_step / decay_steps) ** 2 + end_learning_rate
 
         return decayed_learning_rate
 
