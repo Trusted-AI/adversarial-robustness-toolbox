@@ -23,8 +23,8 @@ import unittest
 
 import numpy as np
 
-from art.attacks import FastGradientMethod
-from art.estimators.classifiers import KerasClassifier
+from art.attacks.evasion.fast_gradient import FastGradientMethod
+from art.estimators.classifiers.keras import KerasClassifier
 from art.utils import load_dataset, random_targets, compute_accuracy
 from art.wrappers.randomized_smoothing import RandomizedSmoothing
 
@@ -67,7 +67,7 @@ class TestRandomizedSmoothing(unittest.TestCase):
 
         # First FGSM attack:
         fgsm = FastGradientMethod(classifier=krc, targeted=True)
-        params = {'y': random_targets(y_test, krc.nb_classes())}
+        params = {'y': random_targets(y_test, krc.nb_classes)}
         x_test_adv = fgsm.generate(x_test, **params)
 
         # Initialize RS object and attack with FGSM
