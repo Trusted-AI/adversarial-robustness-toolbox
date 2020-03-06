@@ -179,7 +179,7 @@ class TestBackdoorAttack(TestBase):
         Test the backdoor attack with a pixel-based perturbation
         """
 
-        tfc = self.get_keras_model()
+        krc = self.get_keras_model()
         (is_poison_train, x_poisoned_raw, y_poisoned_raw) = self.poison_dataset(self.x_train_mnist_raw,
                                                                                 self.y_train_mnist_raw,
                                                                                 PP_POISON, self.poison_func_2)
@@ -202,12 +202,12 @@ class TestBackdoorAttack(TestBase):
         x_train = x_train[shuffled_indices]
         y_train = y_train[shuffled_indices]
 
-        tfc.fit(x_train, y_train, nb_epochs=5, batch_size=128)
+        krc.fit(x_train, y_train, nb_epochs=5, batch_size=128)
 
         clean_x_test = x_test[is_poison_test == 0]
         clean_y_test = y_test[is_poison_test == 0]
 
-        clean_preds = np.argmax(tfc.predict(clean_x_test), axis=1)
+        clean_preds = np.argmax(krc.predict(clean_x_test), axis=1)
         clean_correct = np.sum(clean_preds == np.argmax(clean_y_test, axis=1))
         clean_total = clean_y_test.shape[0]
 
@@ -219,7 +219,7 @@ class TestBackdoorAttack(TestBase):
         poison_x_test = x_test[is_poison_test]
         poison_y_test = y_test[is_poison_test]
 
-        poison_preds = np.argmax(tfc.predict(poison_x_test), axis=1)
+        poison_preds = np.argmax(krc.predict(poison_x_test), axis=1)
         poison_correct = np.sum(poison_preds == np.argmax(poison_y_test, axis=1))
         poison_total = poison_y_test.shape[0]
 
@@ -232,7 +232,7 @@ class TestBackdoorAttack(TestBase):
         """
         Test the backdoor attack with a image-based perturbation
         """
-        tfc = self.get_keras_model()
+        krc = self.get_keras_model()
         (is_poison_train, x_poisoned_raw, y_poisoned_raw) = self.poison_dataset(self.x_train_mnist_raw,
                                                                                 self.y_train_mnist_raw,
                                                                                 PP_POISON, self.poison_func_3)
@@ -255,12 +255,12 @@ class TestBackdoorAttack(TestBase):
         x_train = x_train[shuffled_indices]
         y_train = y_train[shuffled_indices]
 
-        tfc.fit(x_train, y_train, nb_epochs=5, batch_size=128)
+        krc.fit(x_train, y_train, nb_epochs=5, batch_size=128)
 
         clean_x_test = x_test[is_poison_test == 0]
         clean_y_test = y_test[is_poison_test == 0]
 
-        clean_preds = np.argmax(tfc.predict(clean_x_test), axis=1)
+        clean_preds = np.argmax(krc.predict(clean_x_test), axis=1)
         clean_correct = np.sum(clean_preds == np.argmax(clean_y_test, axis=1))
         clean_total = clean_y_test.shape[0]
 
@@ -272,7 +272,7 @@ class TestBackdoorAttack(TestBase):
         poison_x_test = x_test[is_poison_test]
         poison_y_test = y_test[is_poison_test]
 
-        poison_preds = np.argmax(tfc.predict(poison_x_test), axis=1)
+        poison_preds = np.argmax(krc.predict(poison_x_test), axis=1)
         poison_correct = np.sum(poison_preds == np.argmax(poison_y_test, axis=1))
         poison_total = poison_y_test.shape[0]
 
@@ -286,7 +286,7 @@ class TestBackdoorAttack(TestBase):
         Test using multiple perturbation functions in the same attack
         """
 
-        tfc = self.get_keras_model()
+        krc = self.get_keras_model()
         (is_poison_train, x_poisoned_raw, y_poisoned_raw) = self.poison_dataset(self.x_train_mnist_raw,
                                                                                 self.y_train_mnist_raw,
                                                                                 PP_POISON, [self.poison_func_4,
@@ -314,12 +314,12 @@ class TestBackdoorAttack(TestBase):
         x_train = x_train[shuffled_indices]
         y_train = y_train[shuffled_indices]
 
-        tfc.fit(x_train, y_train, nb_epochs=5, batch_size=128)
+        krc.fit(x_train, y_train, nb_epochs=5, batch_size=128)
 
         clean_x_test = x_test[is_poison_test == 0]
         clean_y_test = y_test[is_poison_test == 0]
 
-        clean_preds = np.argmax(tfc.predict(clean_x_test), axis=1)
+        clean_preds = np.argmax(krc.predict(clean_x_test), axis=1)
         clean_correct = np.sum(clean_preds == np.argmax(clean_y_test, axis=1))
         clean_total = clean_y_test.shape[0]
 
@@ -331,7 +331,7 @@ class TestBackdoorAttack(TestBase):
         poison_x_test = x_test[is_poison_test]
         poison_y_test = y_test[is_poison_test]
 
-        poison_preds = np.argmax(tfc.predict(poison_x_test), axis=1)
+        poison_preds = np.argmax(krc.predict(poison_x_test), axis=1)
         poison_correct = np.sum(poison_preds == np.argmax(poison_y_test, axis=1))
         poison_total = poison_y_test.shape[0]
 
