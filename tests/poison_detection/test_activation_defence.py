@@ -55,7 +55,7 @@ class TestActivationDefence(unittest.TestCase):
 
         model.compile(loss='categorical_crossentropy', optimizer='adam', metrics=['accuracy'])
 
-        from art.estimators.classifiers import KerasClassifier
+        from art.estimators.classifiers.keras import KerasClassifier
         cls.classifier = KerasClassifier(model=model, clip_values=(min_, max_))
 
         cls.classifier.fit(x_train, y_train, nb_epochs=1, batch_size=128)
@@ -91,7 +91,7 @@ class TestActivationDefence(unittest.TestCase):
         # Get MNIST
         (x_train, _), (_, _), (_, _) = self.mnist
 
-        n_classes = self.classifier.nb_classes()
+        n_classes = self.classifier.nb_classes
         for nb_clusters in range(2, 5):
             clusters_by_class, _ = self.defence.cluster_activations(nb_clusters=nb_clusters)
 
@@ -158,7 +158,7 @@ class TestActivationDefence(unittest.TestCase):
         self.defence.analyze_clusters(cluster_analysis='silhouette-scores')
 
         report, dist_clean_by_class = self.defence.analyze_clusters(cluster_analysis='distance')
-        n_classes = self.classifier.nb_classes()
+        n_classes = self.classifier.nb_classes
         self.assertEqual(n_classes, len(dist_clean_by_class))
 
         # Check right amount of data
@@ -168,7 +168,7 @@ class TestActivationDefence(unittest.TestCase):
         self.assertEqual(len(x_train), n_dp)
 
         report, sz_clean_by_class = self.defence.analyze_clusters(cluster_analysis='smaller')
-        n_classes = self.classifier.nb_classes()
+        n_classes = self.classifier.nb_classes
         self.assertEqual(n_classes, len(sz_clean_by_class))
 
         # Check right amount of data
