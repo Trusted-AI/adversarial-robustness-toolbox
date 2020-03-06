@@ -1392,4 +1392,5 @@ class ScikitlearnSVC(ClassGradientsMixin, LossGradientsMixin, ScikitlearnClassif
 
         return y_pred
 
+
 ScikitlearnLinearSVC = ScikitlearnSVC

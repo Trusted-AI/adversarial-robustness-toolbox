@@ -33,7 +33,9 @@ from art.estimators.classifiers.classifier import ClassifierMixin, ClassGradient
 logger = logging.getLogger(__name__)
 
 
-class RandomizedSmoothing(ClassifierWrapper, ClassGradientsMixin, ClassifierMixin, LossGradientsMixin, NeuralNetworkMixin, BaseEstimator):
+class RandomizedSmoothing(
+    ClassifierWrapper, ClassGradientsMixin, ClassifierMixin, LossGradientsMixin, NeuralNetworkMixin, BaseEstimator
+):
     """
     Implementation of Randomized Smoothing applied to classifier predictions and gradients, as introduced
     in Cohen et al. (2019).

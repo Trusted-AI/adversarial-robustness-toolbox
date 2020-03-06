@@ -135,7 +135,9 @@ class BinaryInputDetector(ClassGradientsMixin, ClassifierMixin, LossGradientsMix
         self.detector.save(filename, path)
 
 
-class BinaryActivationDetector(ClassGradientsMixin, ClassifierMixin, LossGradientsMixin, NeuralNetworkMixin, BaseEstimator):
+class BinaryActivationDetector(
+    ClassGradientsMixin, ClassifierMixin, LossGradientsMixin, NeuralNetworkMixin, BaseEstimator
+):
     """
     Binary detector of adversarial samples coming from evasion attacks. The detector uses an architecture provided by
     the user and is trained on the values of the activations of a classifier at a given layer.
