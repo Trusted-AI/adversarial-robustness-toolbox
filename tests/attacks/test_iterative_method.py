@@ -16,7 +16,6 @@ from __future__ import absolute_import, division, print_function, unicode_litera
 
 import logging
 import unittest
-from tests.attacks import utils_attack
 from art.classifiers.classifier import ClassifierGradients
 import numpy as np
 
@@ -27,6 +26,7 @@ from art.utils import get_labels_np_array, random_targets
 from tests.utils_test import TestBase
 from tests.utils_test import get_image_classifier_tf, get_image_classifier_kr, get_image_classifier_pt
 from tests.utils_test import get_tabular_classifier_tf, get_tabular_classifier_kr, get_tabular_classifier_pt
+from tests.attacks.utils_attack import backend_test_classifier_type_check_fail
 
 logger = logging.getLogger(__name__)
 
@@ -147,7 +147,7 @@ class TestIterativeAttack(TestBase):
         self._test_mnist_targeted(classifier, x_test)
 
     def test_classifier_type_check_fail(self):
-        utils_attack.backend_test_classifier_type_check_fail(BasicIterativeMethod, [ClassifierGradients])
+        backend_test_classifier_type_check_fail(BasicIterativeMethod, [ClassifierGradients])
 
     def test_keras_iris_clipped(self):
         classifier = get_tabular_classifier_kr()

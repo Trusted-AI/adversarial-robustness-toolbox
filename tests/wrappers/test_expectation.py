@@ -22,10 +22,9 @@ import unittest
 import numpy as np
 from art.attacks import FastGradientMethod
 from art.classifiers import KerasClassifier
-from tests.utils_test import get_image_classifier_kr, get_tabular_classifier_kr
 from art.utils import load_dataset, random_targets
 from art.wrappers.expectation import ExpectationOverTransformations
-from tests.utils_test import master_seed
+from tests.utils_test import master_seed, get_image_classifier_kr, get_tabular_classifier_kr
 
 logger = logging.getLogger(__name__)
 

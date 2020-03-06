@@ -26,7 +26,6 @@ from __future__ import absolute_import, division, print_function, unicode_litera
 import logging
 
 import numpy as np
-from art.classifiers.classifier import Classifier
 from art.config import ART_NUMPY_DTYPE
 from art.attacks.attack import EvasionAttack
 from art.utils import compute_success, to_categorical, check_and_transform_label_format
@@ -55,16 +54,16 @@ class BoundaryAttack(EvasionAttack):
     ]
 
     def __init__(
-        self,
-        classifier,
-        targeted=True,
-        delta=0.01,
-        epsilon=0.01,
-        step_adapt=0.667,
-        max_iter=5000,
-        num_trial=25,
-        sample_size=20,
-        init_size=100,
+            self,
+            classifier,
+            targeted=True,
+            delta=0.01,
+            epsilon=0.01,
+            step_adapt=0.667,
+            max_iter=5000,
+            num_trial=25,
+            sample_size=20,
+            init_size=100,
     ):
         """
         Create a boundary attack instance.
@@ -102,15 +101,6 @@ class BoundaryAttack(EvasionAttack):
             "batch_size": 1,
         }
         self.set_params(**params)
-
-    @classmethod
-    def is_valid_classifier_type(cls, classifier):
-        """
-        Checks whether the classifier provided is a classifer which this class can perform an attack on
-        :param classifier:
-        :return:
-        """
-        return True if isinstance(classifier, Classifier) else False
 
     def generate(self, x, y=None, **kwargs):
         """

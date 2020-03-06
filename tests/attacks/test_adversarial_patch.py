@@ -19,16 +19,15 @@ from __future__ import absolute_import, division, print_function, unicode_litera
 
 import logging
 import unittest
-from art.classifiers.classifier import ClassifierNeuralNetwork, ClassifierGradients, Classifier
 import numpy as np
-from sklearn.tree import DecisionTreeClassifier
-from art import utils
+
 from art.attacks import AdversarialPatch
-from art.classifiers.scikitlearn import ScikitlearnDecisionTreeClassifier
+from art.classifiers.classifier import ClassifierNeuralNetwork, ClassifierGradients
+
 from tests.utils_test import TestBase, master_seed
 from tests.utils_test import get_image_classifier_tf, get_image_classifier_kr
 from tests.utils_test import get_tabular_classifier_kr, get_image_classifier_pt
-from tests.attacks import utils_attack
+from tests.attacks.utils_attack import backend_test_classifier_type_check_fail
 
 logger = logging.getLogger(__name__)
 
@@ -121,8 +120,8 @@ class TestAdversarialPatch(TestBase):
         self.assertIn('Feature vectors detected.', str(context.exception))
 
     def test_classifier_type_check_fail(self):
-        utils_attack.backend_test_classifier_type_check_fail(AdversarialPatch,
-                                                             [ClassifierNeuralNetwork, ClassifierGradients])
+        backend_test_classifier_type_check_fail(AdversarialPatch,
+                                                [ClassifierNeuralNetwork, ClassifierGradients])
 
 
 if __name__ == '__main__':

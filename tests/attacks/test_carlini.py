@@ -19,12 +19,10 @@ from __future__ import absolute_import, division, print_function, unicode_litera
 
 import logging
 import unittest
-from art import utils
-from art.classifiers.classifier import ClassifierNeuralNetwork, ClassifierGradients, Classifier
 import keras
 import keras.backend as k
 import numpy as np
-from tests.attacks import utils_attack
+from art.classifiers.classifier import ClassifierNeuralNetwork, ClassifierGradients, Classifier
 from art.attacks import CarliniL2Method, CarliniLInfMethod
 from art.classifiers import KerasClassifier
 from art.utils import random_targets, to_categorical
@@ -32,6 +30,7 @@ from art.utils import random_targets, to_categorical
 from tests.utils_test import TestBase, master_seed
 from tests.utils_test import get_image_classifier_tf, get_image_classifier_kr, get_image_classifier_pt
 from tests.utils_test import get_tabular_classifier_tf, get_tabular_classifier_kr, get_tabular_classifier_pt
+from tests.attacks.utils_attack import backend_test_classifier_type_check_fail
 
 logger = logging.getLogger(__name__)
 
@@ -90,7 +89,6 @@ class TestCarlini(TestBase):
         x_test_original = self.x_test_mnist.copy()
 
         # Build TensorFlowClassifier
-
         tfc, sess = get_image_classifier_tf(from_logits=True)
 
         # First attack
@@ -205,7 +203,7 @@ class TestCarlini(TestBase):
         self.assertAlmostEqual(float(np.max(np.abs(x_test_original - x_test))), 0.0, delta=0.00001)
 
     def test_classifier_type_check_fail(self):
-        utils_attack.backend_test_classifier_type_check_fail(CarliniL2Method, [ClassifierGradients])
+        backend_test_classifier_type_check_fail(CarliniL2Method, [ClassifierGradients])
 
     def test_keras_iris_clipped_L2(self):
         classifier = get_tabular_classifier_kr()
@@ -455,7 +453,7 @@ class TestCarlini(TestBase):
         self.assertTrue((target != y_pred_adv).any())
 
     def test_classifier_type_check_fail(self):
-        utils_attack.backend_test_classifier_type_check_fail(CarliniLInfMethod, [ClassifierGradients])
+        backend_test_classifier_type_check_fail(CarliniLInfMethod, [ClassifierGradients])
 
     def test_keras_iris_clipped_LInf(self):
         classifier = get_tabular_classifier_kr()

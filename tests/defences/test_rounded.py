@@ -20,11 +20,9 @@ import unittest
 
 import numpy as np
 
-from tests.utils_test import get_image_classifier_kr
-
 from art.defences import Rounded
 from art.utils import load_dataset
-from tests.utils_test import master_seed
+from tests.utils_test import master_seed, get_image_classifier_kr
 
 logger = logging.getLogger(__name__)
 

@@ -20,11 +20,9 @@ import unittest
 
 import numpy as np
 
-from tests.utils_test import get_image_classifier_kr_tf, get_image_classifier_kr_tf_binary
-
 from art.utils import load_dataset
 from art.defences import ClassLabels
-from tests.utils_test import master_seed
+from tests.utils_test import master_seed, get_image_classifier_kr_tf, get_image_classifier_kr_tf_binary
 
 logger = logging.getLogger(__name__)
 
@@ -47,7 +45,6 @@ class TestClassLabels(unittest.TestCase):
         Test class labels.
         """
         (_, _), (x_test, _) = self.mnist
-
         classifier = get_image_classifier_kr_tf()
         preds = classifier.predict(x_test[0:1])
         postprocessor = ClassLabels()
@@ -67,7 +64,6 @@ class TestClassLabels(unittest.TestCase):
         Test class labels for binary classifier.
         """
         (_, _), (x_test, _) = self.mnist
-
         classifier = get_image_classifier_kr_tf_binary()
         preds = classifier.predict(x_test[0:1])
         postprocessor = ClassLabels()

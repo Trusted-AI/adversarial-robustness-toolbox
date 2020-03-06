@@ -81,13 +81,8 @@ class TestPixelAttack(TestBase):
         Test with the TensorFlowClassifier. (Untargeted Attack)
         :return:
         """
-
         classifier, sess = get_image_classifier_tf()
-        self._test_attack(
-            classifier,
-            self.x_test_mnist,
-            self.y_test_mnist,
-            False)
+        self._test_attack(classifier, self.x_test_mnist, self.y_test_mnist, False)
 
     def test_pytorch_mnist(self):
         """
@@ -103,26 +98,16 @@ class TestPixelAttack(TestBase):
         Test with the KerasClassifier. (Targeted Attack)
         :return:
         """
-
         classifier = get_image_classifier_kr()
-        self._test_attack(
-            classifier,
-            self.x_test_mnist,
-            self.y_test_mnist,
-            True)
+        self._test_attack(classifier, self.x_test_mnist, self.y_test_mnist, True)
 
     def test_tensorflow_mnist_targeted(self):
         """
         Test with the TensorFlowClassifier. (Targeted Attack)
         :return:
         """
-
         classifier, sess = get_image_classifier_tf()
-        self._test_attack(
-            classifier,
-            self.x_test_mnist,
-            self.y_test_mnist,
-            True)
+        self._test_attack(classifier, self.x_test_mnist, self.y_test_mnist, True)
 
     def test_pytorch_mnist_targeted(self):
         """

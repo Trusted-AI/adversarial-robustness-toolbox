@@ -2,7 +2,8 @@ import pytest
 import logging
 from art.attacks import BoundaryAttack
 
-from tests.attacks import utils_attack
+from tests.attacks.utils_attack import backend_targeted_tabular, backend_untargeted_tabular, backend_targeted_images
+from tests.attacks.utils_attack import back_end_untargeted_images, backend_test_classifier_type_check_fail
 
 logger = logging.getLogger(__name__)
 
@@ -26,9 +27,9 @@ def test_tabular(get_tabular_classifier_list, framework, get_iris_dataset, clipp
 
         attack = BoundaryAttack(classifier, targeted=targeted, max_iter=10)
         if targeted:
-            utils_attack.backend_targeted_tabular(attack, get_iris_dataset)
+            backend_targeted_tabular(attack, get_iris_dataset)
         else:
-            utils_attack.backend_untargeted_tabular(attack, get_iris_dataset, clipped=clipped_classifier)
+            backend_untargeted_tabular(attack, get_iris_dataset, clipped=clipped_classifier)
 
 
 @pytest.mark.parametrize("targeted", [True, False])
@@ -42,10 +43,10 @@ def test_images(fix_get_mnist_subset, get_image_classifier_list_for_attack, fram
 
         attack = BoundaryAttack(classifier=classifier, targeted=targeted, max_iter=20)
         if targeted:
-            utils_attack.backend_targeted_images(attack, fix_get_mnist_subset)
+            backend_targeted_images(attack, fix_get_mnist_subset)
         else:
-            utils_attack.back_end_untargeted_images(attack, fix_get_mnist_subset, framework)
+            back_end_untargeted_images(attack, fix_get_mnist_subset, framework)
 
 
 def test_classifier_type_check_fail():
-    utils_attack.backend_test_classifier_type_check_fail(BoundaryAttack)
+    backend_test_classifier_type_check_fail(BoundaryAttack)

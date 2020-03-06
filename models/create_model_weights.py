@@ -16,21 +16,19 @@
 # TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 # SOFTWARE.
 import tensorflow as tf
-from art import utils
-from tests.utils_test import master_seed
 import os
 import pickle
 from tensorflow.keras.models import Sequential
 from tensorflow.keras.layers import Dense, Flatten, Conv2D, MaxPooling2D
-from art.classifiers.scikitlearn import SklearnClassifier
 from sklearn.linear_model import LogisticRegression
+from art.classifiers import SklearnClassifier
 from sklearn.svm import SVC, LinearSVC
 from sklearn.tree import DecisionTreeClassifier, ExtraTreeClassifier
 from sklearn.ensemble import AdaBoostClassifier, BaggingClassifier, ExtraTreesClassifier
 from sklearn.ensemble import GradientBoostingClassifier, RandomForestClassifier
 import numpy as np
 
-from art.utils import load_dataset
+from tests.utils_test import load_dataset, master_seed
 
 
 def main_mnist_binary():
@@ -84,7 +82,7 @@ def create_scikit_model_weights():
                       model_list.items()}
     unclipped_models = {model_name: SklearnClassifier(model=model) for model_name, model in model_list.items()}
 
-    (x_train_iris, y_train_iris), (x_test_iris, y_test_iris), _, _ = utils.load_dataset('iris')
+    (x_train_iris, y_train_iris), (x_test_iris, y_test_iris), _, _ = load_dataset('iris')
 
     for model_name, model in clipped_models.items():
         model.fit(x=x_train_iris, y=y_train_iris)
