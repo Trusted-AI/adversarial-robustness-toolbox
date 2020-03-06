@@ -104,9 +104,5 @@ def insert_image(x, backdoor_path='data/backdoors/post_it.png', random=True, x_s
     if random:
         x_shift = np.random.randint(orig_width - backdoor_width)
         y_shift = np.random.randint(orig_height - backdoor_height)
-    # print('bg: ' + str(backdoored_input))
-    # print('bd: ' + str(backdoor))
     backdoored_input.paste(backdoor, box=(x_shift, y_shift))
-    # print('bg: ' + str(backdoored_input))
-    # print("new input shape: " + str(backdoored_input.size))
     return np.array(backdoored_input)
