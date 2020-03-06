@@ -772,9 +772,8 @@ class CarliniLInfMethod(EvasionAttack):
                     for _ in range(len(x.shape) - 1):
                         lr_mult = lr_mult[:, np.newaxis]
 
-                    new_x_adv_batch_tanh = (
-                            x_adv_batch_tanh[active_and_do_doubling] + lr_mult * perturbation_tanh[do_doubling]
-                    )
+                    x_adv15 = x_adv_batch_tanh[active_and_do_doubling]
+                    new_x_adv_batch_tanh = (x_adv15 + lr_mult * perturbation_tanh[do_doubling])
                     new_x_adv_batch = tanh_to_original(
                         new_x_adv_batch_tanh, clip_min[active_and_do_doubling], clip_max[active_and_do_doubling]
                     )
