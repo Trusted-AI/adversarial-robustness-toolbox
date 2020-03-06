@@ -111,7 +111,7 @@ class DecisionTreeAttack(EvasionAttack):
         :return: An array holding the adversarial examples.
         :rtype: `np.ndarray`
         """
-        y = check_and_transform_label_format(y, self.classifier.nb_classes(), return_one_hot=False)
+        y = check_and_transform_label_format(y, self.classifier.nb_classes, return_one_hot=False)
         x_adv = x.copy()
 
         for index in range(np.shape(x_adv)[0]):

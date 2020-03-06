@@ -211,7 +211,7 @@ class ZooAttack(EvasionAttack):
         :return: An array holding the adversarial examples.
         :rtype: `np.ndarray`
         """
-        y = check_and_transform_label_format(y, self.classifier.nb_classes())
+        y = check_and_transform_label_format(y, self.classifier.nb_classes)
 
         # Check that `y` is provided for targeted attacks
         if self.targeted and y is None:

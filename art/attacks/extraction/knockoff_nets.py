@@ -28,7 +28,7 @@ import numpy as np
 
 from art.config import ART_NUMPY_DTYPE
 from art.attacks.attack import ExtractionAttack
-from art.estimators.classifiers.classifier import Classifier
+from art.estimators.classifiers.classifier import ClassifierMixin
 from art.utils import to_categorical
 
 
@@ -123,7 +123,7 @@ class KnockoffNets(ExtractionAttack):
 
         # Check if there is a thieved classifier provided for training
         thieved_classifier = kwargs.get("thieved_classifier")
-        if thieved_classifier is None or not isinstance(thieved_classifier, Classifier):
+        if thieved_classifier is None or not isinstance(thieved_classifier, ClassifierMixin):
             raise ValueError("A thieved classifier is needed.")
 
         # Implement model extractions
@@ -183,7 +183,7 @@ class KnockoffNets(ExtractionAttack):
         """
         labels = self.classifier.predict(x=x, batch_size=self.batch_size_query)
         labels = np.argmax(labels, axis=1)
-        labels = to_categorical(labels=labels, nb_classes=self.classifier.nb_classes())
+        labels = to_categorical(labels=labels, nb_classes=self.classifier.nb_classes)
 
         return labels
 
@@ -211,7 +211,7 @@ class KnockoffNets(ExtractionAttack):
 
         # We need to keep an average version of the victim output
         if self.reward == "div" or self.reward == "all":
-            self.y_avg = np.zeros(self.classifier.nb_classes())
+            self.y_avg = np.zeros(self.classifier.nb_classes)
 
         # We need to keep an average and variance version of rewards
         if self.reward == "all":
@@ -237,7 +237,7 @@ class KnockoffNets(ExtractionAttack):
             # Query the victim classifier
             y_output = self.classifier.predict(x=np.array([sampled_x]), batch_size=self.batch_size_query)
             fake_label = np.argmax(y_output, axis=1)
-            fake_label = to_categorical(labels=fake_label, nb_classes=self.classifier.nb_classes())
+            fake_label = to_categorical(labels=fake_label, nb_classes=self.classifier.nb_classes)
             queried_labels.append(fake_label[0])
 
             # Train the thieved classifier
@@ -351,7 +351,7 @@ class KnockoffNets(ExtractionAttack):
 
         # Then compute reward
         reward = 0
-        for k in range(self.classifier.nb_classes()):
+        for k in range(self.classifier.nb_classes):
             reward += np.maximum(0, y_output[0][k] - self.y_avg[k])
 
         return reward
@@ -377,7 +377,7 @@ class KnockoffNets(ExtractionAttack):
 
         # Compute reward
         reward = 0
-        for k in range(self.classifier.nb_classes()):
+        for k in range(self.classifier.nb_classes):
             reward += -probs_output[k] * np.log(probs_hat[k])
 
         return reward

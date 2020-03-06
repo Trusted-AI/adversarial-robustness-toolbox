@@ -126,7 +126,7 @@ class PixelThreshold(EvasionAttack):
         :return: An array holding the adversarial examples.
         :rtype: `np.ndarray`
         """
-        y = check_and_transform_label_format(y, self.classifier.nb_classes(), return_one_hot=False)
+        y = check_and_transform_label_format(y, self.classifier.nb_classes, return_one_hot=False)
 
         if y is None:
             if self.targeted:
@@ -171,7 +171,7 @@ class PixelThreshold(EvasionAttack):
             x = x / 255.0
 
         if y is not None:
-            y = to_categorical(y, self.classifier.nb_classes())
+            y = to_categorical(y, self.classifier.nb_classes)
 
         logger.info(
             "Success rate of Attack: %.2f%%", 100 * compute_success(self.classifier, x, y, adv_x_best, self.targeted, 1)
