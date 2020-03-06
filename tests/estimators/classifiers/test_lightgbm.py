@@ -23,7 +23,7 @@ import unittest
 import lightgbm as lgb
 import numpy as np
 
-from art.estimators.classifiers import LightGBMClassifier
+from art.estimators.classifiers.lightgbm import LightGBMClassifier
 
 from tests.utils import TestBase, master_seed
 

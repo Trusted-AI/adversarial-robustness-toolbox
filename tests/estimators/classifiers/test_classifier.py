@@ -22,14 +22,15 @@ import unittest
 
 import numpy as np
 
-from art.estimators.classifiers.classifier import Classifier, ClassifierNeuralNetworkMixin, ClassifierGradientsMixin
+from art.estimators.estimator import BaseEstimator, LossGradientsMixin, NeuralNetworkMixin
+from art.estimators.classifiers.classifier import ClassifierMixin, ClassGradientsMixin
 
 from tests.utils import TestBase, master_seed
 
 logger = logging.getLogger(__name__)
 
 
-class ClassifierInstance(Classifier):
+class ClassifierInstance(ClassifierMixin, BaseEstimator):
     def __init__(self):
         super(ClassifierInstance, self).__init__()
 
@@ -46,7 +47,8 @@ class ClassifierInstance(Classifier):
         pass
 
 
-class ClassifierNeuralNetworkInstance(ClassifierNeuralNetworkMixin, ClassifierGradientsMixin, Classifier):
+class ClassifierNeuralNetworkInstance(ClassGradientsMixin, ClassifierMixin, NeuralNetworkMixin, LossGradientsMixin,
+                                      BaseEstimator):
     def __init__(self, clip_values, channel_index=1):
         super(ClassifierNeuralNetworkInstance, self).__init__(clip_values=clip_values, channel_index=channel_index)
 

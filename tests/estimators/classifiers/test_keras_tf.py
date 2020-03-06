@@ -34,9 +34,8 @@ from tensorflow.keras.callbacks import LearningRateScheduler
 import numpy as np
 
 from art.config import ART_DATA_PATH
-from art.estimators.classifiers import KerasClassifier
-from art.estimators.classifiers.keras import generator_fit
-from art.defences import FeatureSqueezing, JpegCompression, SpatialSmoothing
+from art.estimators.classifiers.keras import KerasClassifier, generator_fit
+from art.defences.preprocessor import FeatureSqueezing, JpegCompression, SpatialSmoothing
 from art.data_generators import KerasDataGenerator
 
 from tests.utils import TestBase, master_seed, get_classifier_kr_tf
@@ -159,7 +158,7 @@ class TestKerasClassifierTensorFlow(TestBase):
         predictions = classifier.predict(self.x_test_mnist)
         self.assertEqual(predictions.shape, self.y_test_mnist.shape)
 
-        self.assertEqual(classifier.nb_classes(), 10)
+        self.assertEqual(classifier.nb_classes, 10)
 
         class_gradients = classifier.class_gradient(self.x_test_mnist[:11])
         self.assertEqual(class_gradients.shape, tuple([11, 10] + list(self.x_test_mnist[1].shape)))

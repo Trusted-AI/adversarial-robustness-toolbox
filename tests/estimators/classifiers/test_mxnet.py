@@ -26,7 +26,7 @@ import numpy as np
 from mxnet import init, gluon
 from mxnet.gluon import nn
 
-from art.estimators.classifiers import MXClassifier
+from art.estimators.classifiers.mxnet import MXClassifier
 
 from tests.utils import TestBase, master_seed
 

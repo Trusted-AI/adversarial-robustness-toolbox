@@ -34,7 +34,7 @@ from art.estimators.classifiers.scikitlearn import ScikitlearnDecisionTreeClassi
     ScikitlearnAdaBoostClassifier, ScikitlearnBaggingClassifier, ScikitlearnExtraTreesClassifier, \
     ScikitlearnGradientBoostingClassifier, ScikitlearnRandomForestClassifier, ScikitlearnLogisticRegression, \
     ScikitlearnSVC
-from art.estimators.classifiers import SklearnClassifier
+from art.estimators.classifiers.scikitlearn import SklearnClassifier
 
 from tests.utils import TestBase, master_seed
 
