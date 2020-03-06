@@ -245,7 +245,7 @@ def get_classifier_tf_v2(from_logits=False):
     import tensorflow as tf
     from tensorflow.keras import Model
     from tensorflow.keras.layers import Dense, Flatten, Conv2D, MaxPool2D
-    from art.estimators.classifiers import TensorFlowV2Classifier
+    from art.estimators.classifiers.tensorflow import TensorFlowV2Classifier
 
     if tf.__version__[0] != '2':
         raise ImportError('This function requires TensorFlow v2.')
@@ -327,7 +327,7 @@ def get_classifier_kr(loss_name='categorical_crossentropy', loss_type='function_
     from keras.models import Sequential
     from keras.layers import Dense, Flatten, Conv2D, MaxPooling2D
 
-    from art.estimators.classifiers import KerasClassifier
+    from art.estimators.classifiers.keras import KerasClassifier
 
     # Create simple CNN
     model = Sequential()
@@ -460,7 +460,7 @@ def get_classifier_kr_tf(loss_name='categorical_crossentropy', loss_type='functi
     from tensorflow.keras.models import Sequential
     from tensorflow.keras.layers import Dense, Flatten, Conv2D, MaxPooling2D
 
-    from art.estimators.classifiers import KerasClassifier
+    from art.estimators.classifiers.keras import KerasClassifier
 
     # Create simple CNN
     model = Sequential()
@@ -606,7 +606,7 @@ def get_classifier_kr_tf_binary():
     from tensorflow.keras.models import Sequential
     from tensorflow.keras.layers import Dense, Flatten, Conv2D, MaxPooling2D
 
-    from art.estimators.classifiers import KerasClassifier
+    from art.estimators.classifiers.keras import KerasClassifier
 
     # Create simple CNN
     model = Sequential()
@@ -710,7 +710,7 @@ def get_classifier_bb(defences=None):
 
     :return: BlackBoxClassifier
     """
-    from art.estimators.classifiers import BlackBoxClassifier
+    from art.estimators.classifiers.blackbox import BlackBoxClassifier
     from art.utils import to_categorical
 
     # define blackbox classifier
@@ -855,7 +855,7 @@ def get_iris_classifier_tf_v2():
     import tensorflow as tf
     from tensorflow.keras import Model
     from tensorflow.keras.layers import Dense
-    from art.estimators.classifiers import TensorFlowV2Classifier
+    from art.estimators.classifiers.tensorflow import TensorFlowV2Classifier
 
     if tf.__version__[0] != '2':
         raise ImportError('This function requires TensorFlow v2.')
@@ -922,7 +922,7 @@ def get_iris_classifier_kr(load_init=True):
     from keras.models import Sequential
     from keras.layers import Dense
 
-    from art.estimators.classifiers import KerasClassifier
+    from art.estimators.classifiers.keras import KerasClassifier
 
     # Create simple CNN
     model = Sequential()
@@ -959,7 +959,7 @@ def get_iris_classifier_pt(load_init=True):
     """
     import torch
 
-    from art.estimators.classifiers import PyTorchClassifier
+    from art.estimators.classifiers.pytorch import PyTorchClassifier
 
     class Model(torch.nn.Module):
         """
