@@ -25,7 +25,9 @@ import importlib
 
 import numpy as np
 
-from art.estimators.classifiers.classifier import Classifier, ClassifierGradientsMixin, ClassifierDecisionTreeMixin
+from art.estimators.estimator import DecisionTreeMixin, LossGradientsMixin
+from art.estimators.classifiers.classifier import ClassifierMixin, ClassGradientsMixin
+from art.estimators.scikitlearn import ScikitlearnEstimator
 from art.utils import to_categorical
 
 logger = logging.getLogger(__name__)
@@ -71,7 +73,7 @@ def SklearnClassifier(
     return ScikitlearnClassifier(model, clip_values, preprocessing_defences, postprocessing_defences, preprocessing)
 
 
-class ScikitlearnClassifier(Classifier):
+class ScikitlearnClassifier(ClassifierMixin, ScikitlearnEstimator):
     """
     Wrapper class for scikit-learn classifier models.
     """
@@ -151,19 +153,6 @@ class ScikitlearnClassifier(Classifier):
         predictions = self._apply_postprocessing(preds=y_pred, fit=False)
 
         return predictions
-
-    def nb_classes(self):
-        """
-        Return the number of output classes.
-
-        :return: Number of classes in the data.
-        :rtype: `int` or `None`
-        """
-        if hasattr(self._model, "n_classes_"):
-            _nb_classes = self._model.n_classes_
-        else:
-            _nb_classes = None
-        return _nb_classes
 
     def save(self, filename, path=None):
         import pickle
@@ -564,7 +553,7 @@ class ScikitlearnBaggingClassifier(ScikitlearnClassifier):
         self._model = model
 
 
-class ScikitlearnExtraTreesClassifier(ScikitlearnClassifier, ClassifierDecisionTreeMixin):
+class ScikitlearnExtraTreesClassifier(ScikitlearnClassifier, DecisionTreeMixin):
     """
     Wrapper class for scikit-learn Extra Trees Classifier models.
     """
@@ -639,7 +628,7 @@ class ScikitlearnExtraTreesClassifier(ScikitlearnClassifier, ClassifierDecisionT
         return trees
 
 
-class ScikitlearnGradientBoostingClassifier(ScikitlearnClassifier, ClassifierDecisionTreeMixin):
+class ScikitlearnGradientBoostingClassifier(ScikitlearnClassifier, DecisionTreeMixin):
     """
     Wrapper class for scikit-learn Gradient Boosting Classifier models.
     """
@@ -790,7 +779,7 @@ class ScikitlearnRandomForestClassifier(ScikitlearnClassifier):
         return trees
 
 
-class ScikitlearnLogisticRegression(ScikitlearnClassifier, ClassifierGradientsMixin):
+class ScikitlearnLogisticRegression(ClassGradientsMixin, LossGradientsMixin, ScikitlearnClassifier):
     """
     Wrapper class for scikit-learn Logistic Regression models.
     """
@@ -823,19 +812,6 @@ class ScikitlearnLogisticRegression(ScikitlearnClassifier, ClassifierGradientsMi
             preprocessing=preprocessing,
         )
         self._model = model
-
-    def nb_classes(self):
-        """
-        Return the number of output classes.
-
-        :return: Number of classes in the data.
-        :rtype: `int` or `None`
-        """
-        if hasattr(self._model, "coef_"):
-            _nb_classes = self._model.classes_.shape[0]
-        else:
-            _nb_classes = None
-        return _nb_classes
 
     def class_gradient(self, x, label=None, **kwargs):
         """
@@ -870,11 +846,11 @@ class ScikitlearnLogisticRegression(ScikitlearnClassifier, ClassifierGradientsMi
         y_pred = self._model.predict_proba(X=x_preprocessed)
         weights = self._model.coef_
 
-        if self.nb_classes() > 2:
+        if self.nb_classes > 2:
             w_weighted = np.matmul(y_pred, weights)
 
         def _f_class_gradient(i_class, i_sample):
-            if self.nb_classes() == 2:
+            if self.nb_classes == 2:
                 return (-1.0) ** (i_class + 1.0) * y_pred[i_sample, 0] * y_pred[i_sample, 1] * weights[0, :]
 
             return weights[i_class, :] - w_weighted[i_sample, :]
@@ -883,7 +859,7 @@ class ScikitlearnLogisticRegression(ScikitlearnClassifier, ClassifierGradientsMi
             # Compute the gradients w.r.t. all classes
             class_gradients = list()
 
-            for i_class in range(self.nb_classes()):
+            for i_class in range(self.nb_classes):
                 class_gradient = np.zeros(x.shape)
                 for i_sample in range(nb_samples):
                     class_gradient[i_sample, :] += _f_class_gradient(i_class, i_sample)
@@ -960,7 +936,7 @@ class ScikitlearnLogisticRegression(ScikitlearnClassifier, ClassifierGradientsMi
 
         y_index = np.argmax(y_preprocessed, axis=1)
         if self._model.class_weight is None or self._model.class_weight == "balanced":
-            class_weight = np.ones(self.nb_classes())
+            class_weight = np.ones(self.nb_classes)
         else:
             class_weight = compute_class_weight(
                 class_weight=self._model.class_weight, classes=self._model.classes_, y=y_index
@@ -970,7 +946,7 @@ class ScikitlearnLogisticRegression(ScikitlearnClassifier, ClassifierGradientsMi
         weights = self._model.coef_
 
         # Consider the special case of a binary logistic regression model:
-        if self.nb_classes() == 2:
+        if self.nb_classes == 2:
             for i_sample in range(num_samples):
                 gradients[i_sample, :] += (
                     class_weight[1] * (1.0 - y_preprocessed[i_sample, 1])
@@ -980,7 +956,7 @@ class ScikitlearnLogisticRegression(ScikitlearnClassifier, ClassifierGradientsMi
             w_weighted = np.matmul(y_pred, weights)
 
             for i_sample in range(num_samples):
-                for i_class in range(self.nb_classes()):
+                for i_class in range(self.nb_classes):
                     gradients[i_sample, :] += (
                         class_weight[i_class]
                         * (1.0 - y_preprocessed[i_sample, i_class])
@@ -992,7 +968,7 @@ class ScikitlearnLogisticRegression(ScikitlearnClassifier, ClassifierGradientsMi
         return gradients
 
 
-class ScikitlearnSVC(ScikitlearnClassifier, ClassifierGradientsMixin):
+class ScikitlearnSVC(ClassGradientsMixin, LossGradientsMixin, ScikitlearnClassifier):
     """
     Wrapper class for scikit-learn C-Support Vector Classification models.
     """
@@ -1065,17 +1041,17 @@ class ScikitlearnSVC(ScikitlearnClassifier, ClassifierGradientsMixin):
 
             support_indices = [0] + list(np.cumsum(self._model.n_support_))
 
-            if self.nb_classes() == 2:
+            if self.nb_classes == 2:
                 sign_multiplier = -1
             else:
                 sign_multiplier = 1
 
             if label is None:
-                gradients = np.zeros((x_preprocessed.shape[0], self.nb_classes(), x_preprocessed.shape[1]))
+                gradients = np.zeros((x_preprocessed.shape[0], self.nb_classes, x_preprocessed.shape[1]))
 
-                for i_label in range(self.nb_classes()):
+                for i_label in range(self.nb_classes):
                     for i_sample in range(num_samples):
-                        for not_label in range(self.nb_classes()):
+                        for not_label in range(self.nb_classes):
                             if i_label != not_label:
                                 if not_label < i_label:
                                     label_multiplier = -1
@@ -1100,7 +1076,7 @@ class ScikitlearnSVC(ScikitlearnClassifier, ClassifierGradientsMixin):
                 gradients = np.zeros((x_preprocessed.shape[0], 1, x_preprocessed.shape[1]))
 
                 for i_sample in range(num_samples):
-                    for not_label in range(self.nb_classes()):
+                    for not_label in range(self.nb_classes):
                         if label != not_label:
                             if not_label < label:
                                 label_multiplier = -1
@@ -1129,7 +1105,7 @@ class ScikitlearnSVC(ScikitlearnClassifier, ClassifierGradientsMixin):
                 gradients = np.zeros((x_preprocessed.shape[0], 1, x_preprocessed.shape[1]))
 
                 for i_sample in range(num_samples):
-                    for not_label in range(self.nb_classes()):
+                    for not_label in range(self.nb_classes):
                         if label[i_sample] != not_label:
                             if not_label < label[i_sample]:
                                 label_multiplier = -1
@@ -1160,11 +1136,11 @@ class ScikitlearnSVC(ScikitlearnClassifier, ClassifierGradientsMixin):
 
         elif isinstance(self._model, LinearSVC):
             if label is None:
-                gradients = np.zeros((x_preprocessed.shape[0], self.nb_classes(), x_preprocessed.shape[1]))
+                gradients = np.zeros((x_preprocessed.shape[0], self.nb_classes, x_preprocessed.shape[1]))
 
-                for i in range(self.nb_classes()):
+                for i in range(self.nb_classes):
                     for i_sample in range(num_samples):
-                        if self.nb_classes() == 2:
+                        if self.nb_classes == 2:
                             gradients[i_sample, i] = self._model.coef_[0] * (2 * i - 1)
                         else:
                             gradients[i_sample, i] = self._model.coef_[i]
@@ -1173,7 +1149,7 @@ class ScikitlearnSVC(ScikitlearnClassifier, ClassifierGradientsMixin):
                 gradients = np.zeros((x_preprocessed.shape[0], 1, x_preprocessed.shape[1]))
 
                 for i_sample in range(num_samples):
-                    if self.nb_classes() == 2:
+                    if self.nb_classes == 2:
                         gradients[i_sample, 0] = self._model.coef_[0] * (2 * label - 1)
                     else:
                         gradients[i_sample, 0] = self._model.coef_[label]
@@ -1186,7 +1162,7 @@ class ScikitlearnSVC(ScikitlearnClassifier, ClassifierGradientsMixin):
                 gradients = np.zeros((x_preprocessed.shape[0], 1, x_preprocessed.shape[1]))
 
                 for i_sample in range(num_samples):
-                    if self.nb_classes() == 2:
+                    if self.nb_classes == 2:
                         gradients[i_sample, 0] = self._model.coef_[0] * (2 * label[i_sample] - 1)
                     else:
                         gradients[i_sample, 0] = self._model.coef_[label[i_sample]]
@@ -1291,7 +1267,7 @@ class ScikitlearnSVC(ScikitlearnClassifier, ClassifierGradientsMixin):
 
                 i_label = y_index[i_sample]
 
-                for i_not_label in range(self.nb_classes()):
+                for i_not_label in range(self.nb_classes):
 
                     if i_label != i_not_label:
 
@@ -1317,7 +1293,7 @@ class ScikitlearnSVC(ScikitlearnClassifier, ClassifierGradientsMixin):
             for i_sample in range(num_samples):
 
                 i_label = y_index[i_sample]
-                if self.nb_classes() == 2:
+                if self.nb_classes == 2:
                     i_label_i = 0
                     if i_label == 0:
                         label_multiplier = 1
@@ -1411,23 +1387,9 @@ class ScikitlearnSVC(ScikitlearnClassifier, ClassifierGradientsMixin):
         else:
             y_pred_label = self._model.predict(X=x_preprocessed)
             targets = np.array(y_pred_label).reshape(-1)
-            one_hot_targets = np.eye(self.nb_classes())[targets]
+            one_hot_targets = np.eye(self.nb_classes)[targets]
             y_pred = one_hot_targets
 
         return y_pred
-
-    def nb_classes(self):
-        """
-        Return the number of output classes.
-
-        :return: Number of classes in the data.
-        :rtype: `int` or `None`
-        """
-        if hasattr(self._model, "classes_"):
-            _nb_classes = len(self._model.classes_)
-        else:
-            _nb_classes = None
-        return _nb_classes
-
 
 ScikitlearnLinearSVC = ScikitlearnSVC

@@ -25,12 +25,13 @@ import logging
 import numpy as np
 import six
 
-from art.estimators.classifiers.classifier import Classifier, ClassifierNeuralNetworkMixin, ClassifierGradientsMixin
+from art.estimators.keras import KerasEstimator
+from art.estimators.classifiers.classifier import ClassifierMixin, ClassGradientsMixin
 
 logger = logging.getLogger(__name__)
 
 
-class KerasClassifier(ClassifierNeuralNetworkMixin, ClassifierGradientsMixin, Classifier):
+class KerasClassifier(ClassGradientsMixin, ClassifierMixin, KerasEstimator):
     """
     Wrapper class for importing Keras models. The supported backends for Keras are TensorFlow and Theano.
     """
@@ -143,7 +144,7 @@ class KerasClassifier(ClassifierNeuralNetworkMixin, ClassifierGradientsMixin, Cl
         _, self._nb_classes = k.int_shape(self._output)
         self._input_shape = k.int_shape(self._input)[1:]
         logger.debug(
-            "Inferred %i classes and %s as input shape for Keras classifier.", self.nb_classes(), str(self.input_shape)
+            "Inferred %i classes and %s as input shape for Keras classifier.", self.nb_classes, str(self.input_shape)
         )
 
         self._use_logits = use_logits
@@ -309,11 +310,11 @@ class KerasClassifier(ClassifierNeuralNetworkMixin, ClassifierGradientsMixin, Cl
         # Check value of label for computing gradients
         if not (
             label is None
-            or (isinstance(label, (int, np.integer)) and label in range(self.nb_classes()))
+            or (isinstance(label, (int, np.integer)) and label in range(self.nb_classes))
             or (
                 isinstance(label, np.ndarray)
                 and len(label.shape) == 1
-                and (label < self.nb_classes()).all()
+                and (label < self.nb_classes).all()
                 and label.shape[0] == x.shape[0]
             )
         ):
@@ -370,7 +371,7 @@ class KerasClassifier(ClassifierNeuralNetworkMixin, ClassifierGradientsMixin, Cl
         x_preprocessed, _ = self._apply_preprocessing(x, y=None, fit=False)
 
         # Run predictions with batching
-        predictions = np.zeros((x_preprocessed.shape[0], self.nb_classes()), dtype=ART_NUMPY_DTYPE)
+        predictions = np.zeros((x_preprocessed.shape[0], self.nb_classes), dtype=ART_NUMPY_DTYPE)
         for batch_index in range(int(np.ceil(x_preprocessed.shape[0] / float(batch_size)))):
             begin, end = batch_index * batch_size, min((batch_index + 1) * batch_size, x_preprocessed.shape[0])
             predictions[begin:end] = self._model.predict([x_preprocessed[begin:end]])
@@ -436,21 +437,6 @@ class KerasClassifier(ClassifierNeuralNetworkMixin, ClassifierGradientsMixin, Cl
     #             super(KerasClassifier, self).fit_generator(generator, nb_epochs=nb_epochs, **kwargs)
     #     else:
     #         super(KerasClassifier, self).fit_generator(generator, nb_epochs=nb_epochs, **kwargs)
-
-    @property
-    def layer_names(self):
-        """
-        Return the hidden layers in the model, if applicable.
-
-        :return: The hidden layers in the model, input and output layers excluded.
-        :rtype: `list`
-
-        .. warning:: `layer_names` tries to infer the internal structure of the model.
-                     This feature comes with no guarantees on the correctness of the result.
-                     The intended order of the layers tries to match their order in the model, but this is not
-                     guaranteed either.
-        """
-        return self._layer_names
 
     def get_activations(self, x, layer, batch_size):
         """
@@ -522,7 +508,7 @@ class KerasClassifier(ClassifierNeuralNetworkMixin, ClassifierGradientsMixin, Cl
             raise ValueError("Unexpected output shape for classification in Keras model.")
 
         if label is None:
-            logger.debug("Computing class gradients for all %i classes.", self.nb_classes())
+            logger.debug("Computing class gradients for all %i classes.", self.nb_classes)
             if not hasattr(self, "_class_gradients"):
                 class_gradients = [k.gradients(self._predictions_op[:, i], self._input)[0] for i in range(nb_outputs)]
                 self._class_gradients = k.function([self._input], class_gradients)
@@ -576,15 +562,6 @@ class KerasClassifier(ClassifierNeuralNetworkMixin, ClassifierGradientsMixin, Cl
         if isinstance(train, bool):
             self._learning_phase = train
             k.set_learning_phase(int(train))
-
-    def nb_classes(self):
-        """
-        Return the number of output classes.
-
-        :return: Number of classes in the data.
-        :rtype: `int`
-        """
-        return self._nb_classes
 
     def save(self, filename, path=None):
         """
