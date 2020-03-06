@@ -24,8 +24,8 @@ from sklearn.tree import DecisionTreeClassifier
 from sklearn.datasets import load_digits
 import numpy as np
 
-from art.attacks import DecisionTreeAttack
-from art.estimators.classifiers import SklearnClassifier
+from art.attacks.evasion.decision_tree_attack import DecisionTreeAttack
+from art.estimators.classifiers.scikitlearn import SklearnClassifier
 
 from tests.utils import TestBase, master_seed
 

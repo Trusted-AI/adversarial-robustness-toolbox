@@ -23,8 +23,8 @@ import unittest
 import numpy as np
 from sklearn.svm import LinearSVC, NuSVC, SVC
 
-from art.attacks import PoisoningAttackSVM
-from art.estimators.classifiers import SklearnClassifier
+from art.attacks.poisoning import PoisoningAttackSVM
+from art.estimators.classifiers.scikitlearn import SklearnClassifier
 from art.utils import load_iris
 
 from tests.utils import master_seed
