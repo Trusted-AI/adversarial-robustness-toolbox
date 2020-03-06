@@ -23,7 +23,7 @@ import unittest
 
 import numpy as np
 
-from art.defences import FeatureSqueezing, JpegCompression, SpatialSmoothing
+from art.defences.preprocessor import FeatureSqueezing, JpegCompression, SpatialSmoothing
 
 from tests.utils import TestBase, get_classifier_bb
 

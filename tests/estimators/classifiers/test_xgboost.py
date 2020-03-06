@@ -23,7 +23,7 @@ import unittest
 import xgboost as xgb
 import numpy as np
 
-from art.estimators.classifiers import XGBoostClassifier
+from art.estimators.classifiers.xgboost import XGBoostClassifier
 
 from tests.utils import TestBase, master_seed
 

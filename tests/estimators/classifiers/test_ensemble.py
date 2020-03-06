@@ -23,7 +23,7 @@ import unittest
 import numpy as np
 import keras.backend as k
 
-from art.estimators.classifiers import EnsembleClassifier
+from art.estimators.classifiers.ensemble import EnsembleClassifier
 
 from tests.utils import TestBase, get_classifier_kr
 

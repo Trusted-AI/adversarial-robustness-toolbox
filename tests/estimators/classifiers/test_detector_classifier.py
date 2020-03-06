@@ -27,7 +27,8 @@ import torch
 import torch.nn as nn
 import torch.optim as optim
 
-from art.estimators.classifiers import PyTorchClassifier, DetectorClassifier
+from art.estimators.classifiers.pytorch import PyTorchClassifier
+from art.estimators.classifiers.detector_classifier import DetectorClassifier
 
 from tests.utils import TestBase, get_classifier_pt
 

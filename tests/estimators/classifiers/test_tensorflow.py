@@ -80,7 +80,7 @@ class TestTensorFlowClassifier(TestBase):
             self.assertAlmostEqual(accuracy, 0.65, delta=0.02)
 
     def test_nb_classes(self):
-        self.assertEqual(self.classifier.nb_classes(), 10)
+        self.assertEqual(self.classifier.nb_classes, 10)
 
     def test_input_shape(self):
         self.assertEqual(self.classifier.input_shape, (28, 28, 1))
