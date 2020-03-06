@@ -26,7 +26,7 @@ import unittest
 import keras.backend as k
 import numpy as np
 
-from art.attacks import FastGradientMethod
+from art.attacks.evasion.fast_gradient import FastGradientMethod
 from art.detection import SubsetScanningDetector
 from art.utils import load_dataset
 
