@@ -29,8 +29,8 @@ import numpy.linalg as la
 from scipy.optimize import fmin as scipy_optimizer
 from scipy.stats import weibull_min
 
-from art.attacks import FastGradientMethod
-from art.attacks import HopSkipJump
+from art.attacks.evasion.fast_gradient import FastGradientMethod
+from art.attacks.evasion.hop_skip_jump import HopSkipJump
 from art.utils import random_sphere
 from art.config import ART_NUMPY_DTYPE
 
@@ -211,7 +211,7 @@ def clever(
         if target_sort:
             target_classes = np.argsort(y_pred)[0][:-1]
         else:
-            target_classes = [i for i in range(classifier.nb_classes()) if i != pred_class]
+            target_classes = [i for i in range(classifier.nb_classes) if i != pred_class]
     elif isinstance(target, (int, np.integer)):
         target_classes = [target]
     else:
@@ -255,7 +255,7 @@ def clever_u(classifier, x, nb_batches, batch_size, radius, norm, c_init=1, pool
     # Get a list of untargeted classes
     y_pred = classifier.predict(np.array([x]))
     pred_class = np.argmax(y_pred, axis=1)[0]
-    untarget_classes = [i for i in range(classifier.nb_classes()) if i != pred_class]
+    untarget_classes = [i for i in range(classifier.nb_classes) if i != pred_class]
 
     # Compute CLEVER score for each untargeted class
     score_list = []
