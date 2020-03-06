@@ -30,7 +30,8 @@ import numpy as np
 from scipy.ndimage import rotate, shift, zoom
 
 from art.config import ART_NUMPY_DTYPE
-from art.estimators.classifiers.classifier import ClassifierNeuralNetworkMixin, ClassifierGradientsMixin
+from art.estimators.estimator import NeuralNetworkMixin
+from art.estimators.classifiers.classifier import ClassGradientsMixin
 from art.attacks.attack import EvasionAttack
 from art.utils import check_and_transform_label_format
 
@@ -93,17 +94,14 @@ class AdversarialPatch(EvasionAttack):
         :type batch_size: `int`
         """
         super(AdversarialPatch, self).__init__(classifier=classifier)
-        if not isinstance(classifier, ClassifierNeuralNetworkMixin) or not isinstance(
-            classifier, ClassifierGradientsMixin
-        ):
+        if not isinstance(classifier, NeuralNetworkMixin) or not isinstance(classifier, ClassGradientsMixin):
             raise (
                 TypeError(
                     "For `" + self.__class__.__name__ + "` classifier must be an instance of "
-                    "`art.classifiers.classifier.ClassifierNeuralNetworkMixin` and "
-                    "`art.classifiers.classifier.ClassifierGradientsMixin`, the provided classifier is instance of "
+                    "`art.classifiers.classifier.NeuralNetworkMixin` and "
+                    "`art.classifiers.classifier.ClassGradientsMixin`, the provided classifier is instance of "
                     + str(classifier.__class__.__bases__)
-                    + ". "
-                    " The classifier needs to be a Neural Network and provide gradients."
+                    + ". The classifier needs to be a Neural Network and provide gradients."
                 )
             )
 
@@ -142,7 +140,7 @@ class AdversarialPatch(EvasionAttack):
         self.patch = ((np.random.standard_normal(size=self.classifier.input_shape)) * 20.0).astype(ART_NUMPY_DTYPE)
 
         y_target = check_and_transform_label_format(
-            labels=np.broadcast_to(np.array(self.target), x.shape[0]), nb_classes=self.classifier.nb_classes()
+            labels=np.broadcast_to(np.array(self.target), x.shape[0]), nb_classes=self.classifier.nb_classes
         )
 
         for i_step in range(self.max_iter):

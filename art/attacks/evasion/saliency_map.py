@@ -27,7 +27,7 @@ import logging
 import numpy as np
 
 from art.config import ART_NUMPY_DTYPE
-from art.estimators.classifiers.classifier import ClassifierGradientsMixin
+from art.estimators.classifiers.classifier import ClassGradientsMixin
 from art.attacks.attack import EvasionAttack
 from art.utils import check_and_transform_label_format, compute_success
 
@@ -57,7 +57,7 @@ class SaliencyMapMethod(EvasionAttack):
         :type batch_size: `int`
         """
         super(SaliencyMapMethod, self).__init__(classifier)
-        if not isinstance(classifier, ClassifierGradientsMixin):
+        if not isinstance(classifier, ClassGradientsMixin):
             raise (
                 TypeError(
                     "For `" + self.__class__.__name__ + "` classifier must be an instance of "
@@ -84,7 +84,7 @@ class SaliencyMapMethod(EvasionAttack):
         :return: An array holding the adversarial examples.
         :rtype: `np.ndarray`
         """
-        y = check_and_transform_label_format(y, self.classifier.nb_classes())
+        y = check_and_transform_label_format(y, self.classifier.nb_classes)
 
         # Initialize variables
         dims = list(x.shape[1:])
@@ -97,7 +97,7 @@ class SaliencyMapMethod(EvasionAttack):
             # Randomly choose target from the incorrect classes for each sample
             from art.utils import random_targets
 
-            targets = np.argmax(random_targets(preds, self.classifier.nb_classes()), axis=1)
+            targets = np.argmax(random_targets(preds, self.classifier.nb_classes), axis=1)
         else:
             targets = np.argmax(y, axis=1)
 

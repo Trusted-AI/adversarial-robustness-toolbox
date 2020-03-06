@@ -31,7 +31,7 @@ import numpy as np
 from scipy.stats import truncnorm
 
 from art.config import ART_NUMPY_DTYPE
-from art.estimators.classifiers.classifier import ClassifierGradientsMixin
+from art.estimators.classifiers.classifier import ClassGradientsMixin
 from art.attacks.evasion.fast_gradient import FastGradientMethod
 from art.utils import compute_success, get_labels_np_array, check_and_transform_label_format
 
@@ -98,7 +98,7 @@ class ProjectedGradientDescent(FastGradientMethod):
             batch_size=batch_size,
             minimal=False,
         )
-        if not isinstance(classifier, ClassifierGradientsMixin):
+        if not isinstance(classifier, ClassGradientsMixin):
             raise (
                 TypeError(
                     "For `" + self.__class__.__name__ + "` classifier must be an instance of "
@@ -133,7 +133,7 @@ class ProjectedGradientDescent(FastGradientMethod):
         :return: An array holding the adversarial examples.
         :rtype: `np.ndarray`
         """
-        y = check_and_transform_label_format(y, self.classifier.nb_classes())
+        y = check_and_transform_label_format(y, self.classifier.nb_classes)
 
         if y is None:
             # Throw error if attack is targeted, but no targets are provided

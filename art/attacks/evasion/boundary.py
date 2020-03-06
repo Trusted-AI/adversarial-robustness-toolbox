@@ -117,7 +117,7 @@ class BoundaryAttack(EvasionAttack):
         :return: An array holding the adversarial examples.
         :rtype: `np.ndarray`
         """
-        y = check_and_transform_label_format(y, self.classifier.nb_classes(), return_one_hot=False)
+        y = check_and_transform_label_format(y, self.classifier.nb_classes, return_one_hot=False)
 
         # Get clip_min and clip_max from the classifier or infer them from data
         if hasattr(self.classifier, "clip_values") and self.classifier.clip_values is not None:
@@ -168,7 +168,7 @@ class BoundaryAttack(EvasionAttack):
                 )
 
         if y is not None:
-            y = to_categorical(y, self.classifier.nb_classes())
+            y = to_categorical(y, self.classifier.nb_classes)
 
         logger.info(
             "Success rate of Boundary attack: %.2f%%",

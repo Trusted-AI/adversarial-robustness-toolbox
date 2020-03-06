@@ -24,7 +24,7 @@ import logging
 import abc
 import numpy as np
 
-from art.estimators.classifiers.classifier import Classifier
+from art.estimators.classifiers.classifier import ClassifierMixin
 
 logger = logging.getLogger(__name__)
 
@@ -91,11 +91,11 @@ class Attack(abc.ABC, metaclass=input_filter):
         :param classifier: A trained classifier.
         :type classifier: :class:`.Classifier`
         """
-        if not isinstance(classifier, Classifier):
+        if not isinstance(classifier, ClassifierMixin):
             raise (
                 TypeError(
                     "For `" + self.__class__.__name__ + "` classifier must be an instance of "
-                    "`art.estimators.classifiers.classifier.Classifier`, the provided classifier is instance of "
+                    "`art.estimators.classifiers.classifier.ClassifierMixin`, the provided classifier is instance of "
                     + str(classifier.__class__.__bases__)
                     + "."
                 )

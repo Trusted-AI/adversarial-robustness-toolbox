@@ -34,7 +34,8 @@ import numpy as np
 from scipy.optimize import least_squares
 
 from art.attacks.attack import ExtractionAttack
-from art.estimators.classifiers import KerasClassifier, BlackBoxClassifier
+from art.estimators.classifiers.keras import KerasClassifier
+from art.estimators.classifiers.blackbox import BlackBoxClassifier
 
 NUMPY_DTYPE = np.float64
 
@@ -60,7 +61,7 @@ class FunctionallyEquivalentExtraction(ExtractionAttack):
         """
         super().__init__(classifier)
         self.num_neurons = num_neurons
-        self.num_classes = classifier.nb_classes()
+        self.num_classes = classifier.nb_classes
         self.num_features = int(np.prod(classifier.input_shape))
 
         self.vector_u = np.random.normal(0, 1, (1, self.num_features)).astype(dtype=NUMPY_DTYPE)

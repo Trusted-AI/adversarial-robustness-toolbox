@@ -27,7 +27,7 @@ import logging
 import numpy as np
 
 from art.config import ART_NUMPY_DTYPE
-from art.estimators.classifiers.classifier import ClassifierGradientsMixin
+from art.estimators.classifiers.classifier import ClassGradientsMixin
 from art.attacks.attack import EvasionAttack
 from art.utils import compute_success
 
@@ -60,7 +60,7 @@ class DeepFool(EvasionAttack):
         :type batch_size: `int`
         """
         super(DeepFool, self).__init__(classifier=classifier)
-        if not isinstance(classifier, ClassifierGradientsMixin):
+        if not isinstance(classifier, ClassGradientsMixin):
             raise (
                 TypeError(
                     "For `" + self.__class__.__name__ + "` classifier must be an instance of "
@@ -90,13 +90,13 @@ class DeepFool(EvasionAttack):
         preds = self.classifier.predict(x, batch_size=self.batch_size)
 
         # Determine the class labels for which to compute the gradients
-        use_grads_subset = self.nb_grads < self.classifier.nb_classes()
+        use_grads_subset = self.nb_grads < self.classifier.nb_classes
         if use_grads_subset:
             # TODO compute set of unique labels per batch
             grad_labels = np.argsort(-preds, axis=1)[:, : self.nb_grads]
             labels_set = np.unique(grad_labels)
         else:
-            labels_set = np.arange(self.classifier.nb_classes())
+            labels_set = np.arange(self.classifier.nb_classes)
         sorter = np.arange(len(labels_set))
 
         # Pick a small scalar to avoid division by 0

@@ -109,7 +109,7 @@ class HopSkipJump(EvasionAttack):
         :return: An array holding the adversarial examples.
         :rtype: `np.ndarray`
         """
-        y = check_and_transform_label_format(y, self.classifier.nb_classes())
+        y = check_and_transform_label_format(y, self.classifier.nb_classes)
 
         # Check whether users need a stateful attack
         resume = kwargs.get("resume")
@@ -172,7 +172,7 @@ class HopSkipJump(EvasionAttack):
                 )
 
         if y is not None:
-            y = to_categorical(y, self.classifier.nb_classes())
+            y = to_categorical(y, self.classifier.nb_classes)
 
         logger.info(
             "Success rate of HopSkipJump attack: %.2f%%",

@@ -27,7 +27,8 @@ import logging
 import numpy as np
 
 from art.config import ART_NUMPY_DTYPE
-from art.estimators.classifiers.classifier import ClassifierNeuralNetworkMixin, ClassifierGradientsMixin
+from art.estimators.estimator import NeuralNetworkMixin
+from art.estimators.classifiers.classifier import ClassGradientsMixin
 from art.attacks.attack import EvasionAttack
 from art.utils import compute_success
 
@@ -59,8 +60,7 @@ class VirtualAdversarialMethod(EvasionAttack):
         :type batch_size: `int`
         """
         super(VirtualAdversarialMethod, self).__init__(classifier)
-        if not isinstance(classifier, ClassifierNeuralNetworkMixin) or not isinstance(
-            classifier, ClassifierGradientsMixin
+        if not isinstance(classifier, NeuralNetworkMixin) or not isinstance(classifier, ClassGradientsMixin
         ):
             raise (
                 TypeError(

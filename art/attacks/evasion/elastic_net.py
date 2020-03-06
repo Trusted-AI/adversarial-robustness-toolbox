@@ -28,7 +28,7 @@ import numpy as np
 import six
 
 from art.config import ART_NUMPY_DTYPE
-from art.estimators.classifiers.classifier import ClassifierGradientsMixin
+from art.estimators.classifiers.classifier import ClassGradientsMixin
 from art.attacks.attack import EvasionAttack
 from art.utils import compute_success, get_labels_np_array, check_and_transform_label_format
 
@@ -96,7 +96,7 @@ class ElasticNet(EvasionAttack):
         :type decision_rule: `string`
         """
         super(ElasticNet, self).__init__(classifier)
-        if not isinstance(classifier, ClassifierGradientsMixin):
+        if not isinstance(classifier, ClassGradientsMixin):
             raise (
                 TypeError(
                     "For `" + self.__class__.__name__ + "` classifier must be an instance of "
@@ -213,7 +213,7 @@ class ElasticNet(EvasionAttack):
         :return: An array holding the adversarial examples.
         :rtype: `np.ndarray`
         """
-        y = check_and_transform_label_format(y, self.classifier.nb_classes())
+        y = check_and_transform_label_format(y, self.classifier.nb_classes)
         x_adv = x.astype(ART_NUMPY_DTYPE)
 
         # Assert that, if attack is targeted, y is provided:

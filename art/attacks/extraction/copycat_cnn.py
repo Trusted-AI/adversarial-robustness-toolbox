@@ -28,7 +28,7 @@ import numpy as np
 
 from art.config import ART_NUMPY_DTYPE
 from art.attacks.attack import ExtractionAttack
-from art.estimators.classifiers.classifier import Classifier
+from art.estimators.classifiers.classifier import ClassifierMixin
 from art.utils import to_categorical
 
 
@@ -96,7 +96,7 @@ class CopycatCNN(ExtractionAttack):
 
         # Check if there is a thieved classifier provided for training
         thieved_classifier = kwargs.get("thieved_classifier")
-        if thieved_classifier is None or not isinstance(thieved_classifier, Classifier):
+        if thieved_classifier is None or not isinstance(thieved_classifier, ClassifierMixin):
             raise ValueError("A thieved classifier is needed.")
 
         # Select data to attack
@@ -135,7 +135,7 @@ class CopycatCNN(ExtractionAttack):
         """
         labels = self.classifier.predict(x=x, batch_size=self.batch_size_query)
         labels = np.argmax(labels, axis=1)
-        labels = to_categorical(labels=labels, nb_classes=self.classifier.nb_classes())
+        labels = to_categorical(labels=labels, nb_classes=self.classifier.nb_classes)
 
         return labels
 

@@ -27,7 +27,7 @@ import logging
 import numpy as np
 
 from art.config import ART_NUMPY_DTYPE
-from art.estimators.classifiers.classifier import ClassifierGradientsMixin
+from art.estimators.classifiers.classifier import ClassGradientsMixin
 from art.attacks.attack import EvasionAttack
 from art.utils import to_categorical, compute_success
 
@@ -57,7 +57,7 @@ class NewtonFool(EvasionAttack):
         :type batch_size: `int`
         """
         super(NewtonFool, self).__init__(classifier)
-        if not isinstance(classifier, ClassifierGradientsMixin):
+        if not isinstance(classifier, ClassGradientsMixin):
             raise (
                 TypeError(
                     "For `" + self.__class__.__name__ + "` classifier must be an instance of "
@@ -96,7 +96,7 @@ class NewtonFool(EvasionAttack):
             # Main algorithm for each batch
             norm_batch = np.linalg.norm(np.reshape(batch, (batch.shape[0], -1)), axis=1)
             l_batch = pred_class[batch_index_1:batch_index_2]
-            l_b = to_categorical(l_batch, self.classifier.nb_classes()).astype(bool)
+            l_b = to_categorical(l_batch, self.classifier.nb_classes).astype(bool)
 
             # Main loop of the algorithm
             for _ in range(self.max_iter):
@@ -170,7 +170,7 @@ class NewtonFool(EvasionAttack):
         :rtype: `np.ndarray`
         """
         equ1 = self.eta * norm_batch * norm_grad
-        equ2 = score - 1.0 / self.classifier.nb_classes()
+        equ2 = score - 1.0 / self.classifier.nb_classes
         result = np.minimum.reduce([equ1, equ2])
 
         return result

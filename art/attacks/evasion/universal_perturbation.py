@@ -28,7 +28,8 @@ import random
 
 import numpy as np
 
-from art.estimators.classifiers.classifier import ClassifierNeuralNetworkMixin, ClassifierGradientsMixin
+from art.estimators.estimator import NeuralNetworkMixin
+from art.estimators.classifiers.classifier import ClassGradientsMixin
 from art.attacks.attack import EvasionAttack
 from art.utils import projection
 
@@ -79,9 +80,7 @@ class UniversalPerturbation(EvasionAttack):
         :type norm: `int`
         """
         super(UniversalPerturbation, self).__init__(classifier)
-        if not isinstance(classifier, ClassifierNeuralNetworkMixin) or not isinstance(
-            classifier, ClassifierGradientsMixin
-        ):
+        if not isinstance(classifier, NeuralNetworkMixin) or not isinstance(classifier, ClassGradientsMixin):
             raise (
                 TypeError(
                     "For `" + self.__class__.__name__ + "` classifier must be an instance of "
