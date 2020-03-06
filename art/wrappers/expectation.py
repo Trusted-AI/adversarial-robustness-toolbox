@@ -25,13 +25,14 @@ from __future__ import absolute_import, division, print_function, unicode_litera
 import logging
 
 from art.wrappers.wrapper import ClassifierWrapper
-from art.estimators.classifiers.classifier import Classifier, ClassifierNeuralNetworkMixin, ClassifierGradientsMixin
+from art.estimators.estimator import BaseEstimator, NeuralNetworkMixin, LossGradientsMixin
+from art.estimators.classifiers.classifier import ClassifierMixin, ClassGradientsMixin
 
 logger = logging.getLogger(__name__)
 
 
 class ExpectationOverTransformations(
-    ClassifierWrapper, ClassifierGradientsMixin, ClassifierNeuralNetworkMixin, Classifier
+    ClassifierWrapper, ClassGradientsMixin, ClassifierMixin, LossGradientsMixin, NeuralNetworkMixin, BaseEstimator
 ):
     """
     Implementation of Expectation Over Transformations applied to classifier predictions and gradients, as introduced

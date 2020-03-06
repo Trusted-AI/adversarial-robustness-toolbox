@@ -27,12 +27,13 @@ import logging
 import numpy as np
 
 from art.wrappers.wrapper import ClassifierWrapper
-from art.estimators.classifiers.classifier import Classifier, ClassifierGradientsMixin
+from art.estimators.estimator import BaseEstimator, NeuralNetworkMixin, LossGradientsMixin
+from art.estimators.classifiers.classifier import ClassifierMixin, ClassGradientsMixin
 
 logger = logging.getLogger(__name__)
 
 
-class RandomizedSmoothing(ClassifierWrapper, ClassifierGradientsMixin, Classifier):
+class RandomizedSmoothing(ClassifierWrapper, ClassGradientsMixin, ClassifierMixin, LossGradientsMixin, NeuralNetworkMixin, BaseEstimator):
     """
     Implementation of Randomized Smoothing applied to classifier predictions and gradients, as introduced
     in Cohen et al. (2019).
@@ -57,6 +58,7 @@ class RandomizedSmoothing(ClassifierWrapper, ClassifierGradientsMixin, Classifie
         self.sample_size = sample_size
         self.scale = scale
         self.alpha = alpha
+        self._nb_classes = classifier.nb_classes
 
     # pylint: disable=W0221
     def predict(self, x, batch_size=128, is_abstain=True, **kwargs):
@@ -244,15 +246,31 @@ class RandomizedSmoothing(ClassifierWrapper, ClassifierGradientsMixin, Classifie
         """
         raise NotImplementedError
 
-    def nb_classes(self):
+    def get_activations(self, x, layer, batch_size):
         """
-        Return the number of output classes.
+        Return the output of the specified layer for input `x`. `layer` is specified by layer index (between 0 and
+        `nb_layers - 1`) or by name. The number of layers can be determined by counting the results returned by
+        calling `layer_names`.
 
-        :return: Number of classes in the data.
-        :rtype: `int`
+        :param x: Input for computing the activations.
+        :type x: `np.ndarray`
+        :param layer: Layer for computing the activations
+        :type layer: `int` or `str`
+        :param batch_size: Size of batches.
+        :type batch_size: `int`
+        :return: The output of `layer`, where the first dimension is the batch size corresponding to `x`.
+        :rtype: `np.ndarray`
         """
-        # pylint: disable=W0212
-        return self.classifier.nb_classes()
+        raise NotImplementedError
+
+    def set_learning_phase(self, train):
+        """
+        Set the learning phase for the backend framework.
+
+        :param train: `True` if the learning phase is training, `False` if learning phase is not training.
+        :type train: `bool`
+        """
+        raise NotImplementedError
 
     def save(self, filename, path=None):
         """
