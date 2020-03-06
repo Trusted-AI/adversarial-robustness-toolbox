@@ -22,7 +22,7 @@ import unittest
 
 import numpy as np
 
-from art.defences import AdversarialTrainerMadryPGD
+from art.defences.trainer.adversarial_trainer_madry_pgd import AdversarialTrainerMadryPGD
 from art.utils import load_mnist
 
 from tests.utils import master_seed, get_classifier_tf

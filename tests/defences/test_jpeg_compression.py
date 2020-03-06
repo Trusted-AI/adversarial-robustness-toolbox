@@ -23,7 +23,7 @@ import unittest
 from keras.datasets import cifar10
 import numpy as np
 
-from art.defences import JpegCompression
+from art.defences.preprocessor import JpegCompression
 from art.utils import load_mnist
 
 from tests.utils import master_seed
