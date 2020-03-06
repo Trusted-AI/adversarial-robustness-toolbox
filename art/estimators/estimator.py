@@ -127,22 +127,6 @@ class BaseEstimator(ABC):
         """
         raise NotImplementedError
 
-    @abstractmethod
-    def fit_generator(self, generator, nb_epochs=20, **kwargs):  # lgtm [py/inheritance/incorrect-overridden-signature]
-        """
-        Fit the classifier using the generator that yields batches as specified.
-
-        :param generator: Batch generator providing `(x, y)` for each epoch.
-        :type generator: :class:`.DataGenerator`
-        :param nb_epochs: Number of epochs to use for training.
-        :type nb_epochs: `int`
-        :param kwargs: Dictionary of framework-specific arguments. This parameter is not currently supported for PyTorch
-               and providing it takes no effect.
-        :type kwargs: `dict`
-        :return: `None`
-        """
-        raise NotImplementedError
-
     @property
     def input_shape(self):
         """
