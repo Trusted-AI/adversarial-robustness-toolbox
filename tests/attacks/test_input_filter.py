@@ -25,7 +25,6 @@ import pandas as pd
 from art.classifiers.classifier import ClassifierGradients
 from art.attacks import ProjectedGradientDescent
 from art.classifiers import KerasClassifier
-
 from art.utils import load_dataset, get_labels_np_array, random_targets
 from tests.utils_test import get_image_classifier_tf, get_image_classifier_kr, get_image_classifier_pt
 from tests.utils_test import get_tabular_classifier_tf, get_tabular_classifier_kr

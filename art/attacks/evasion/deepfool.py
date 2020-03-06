@@ -25,11 +25,11 @@ from __future__ import absolute_import, division, print_function, unicode_litera
 import logging
 
 import numpy as np
-from art import utils
+
 from art.config import ART_NUMPY_DTYPE
 from art.classifiers.classifier import ClassifierGradients
 from art.attacks.attack import EvasionAttack
-from art.utils import compute_success
+from art.utils import compute_success, WrongClassifier
 
 logger = logging.getLogger(__name__)
 
@@ -61,7 +61,7 @@ class DeepFool(EvasionAttack):
         """
         super(DeepFool, self).__init__(classifier=classifier)
         if not isinstance(classifier, ClassifierGradients):
-            raise utils.WrongClassifier(self.__class__, [ClassifierGradients], classifier)
+            raise WrongClassifier(self.__class__, [ClassifierGradients], classifier)
 
         params = {"max_iter": max_iter, "epsilon": epsilon, "nb_grads": nb_grads, "batch_size": batch_size}
         self.set_params(**params)
@@ -124,11 +124,12 @@ class DeepFool(EvasionAttack):
                 value[np.arange(len(value)), labels_indices] = np.inf
                 l_var = np.argmin(value, axis=1)
                 r_var = abs(f_diff[np.arange(len(f_diff)), l_var]) / (
-                    pow(
-                        np.linalg.norm(grad_diff[np.arange(len(grad_diff)), l_var].reshape(len(grad_diff), -1), axis=1),
-                        2,
-                    )
-                    + tol
+                        pow(
+                            np.linalg.norm(grad_diff[np.arange(len(grad_diff)), l_var].reshape(len(grad_diff), -1),
+                                           axis=1),
+                            2,
+                        )
+                        + tol
                 )
                 r_var = r_var.reshape((-1,) + (1,) * (len(x.shape) - 1))
                 r_var = r_var * grad_diff[np.arange(len(grad_diff)), l_var]
@@ -163,7 +164,7 @@ class DeepFool(EvasionAttack):
 
             # Apply overshoot parameter
             x_adv[batch_index_1:batch_index_2] = x_adv[batch_index_1:batch_index_2] + (1 + self.epsilon) * (
-                batch - x_adv[batch_index_1:batch_index_2]
+                    batch - x_adv[batch_index_1:batch_index_2]
             )
             if hasattr(self.classifier, "clip_values") and self.classifier.clip_values is not None:
                 np.clip(

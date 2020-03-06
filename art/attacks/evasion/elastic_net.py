@@ -21,7 +21,7 @@ This module implements the elastic net attack `ElasticNet`. This is a white-box 
 | Paper link: https://arxiv.org/abs/1709.04114
 """
 from __future__ import absolute_import, division, print_function, unicode_literals
-from art import utils
+
 import logging
 
 import numpy as np
@@ -30,7 +30,7 @@ import six
 from art.config import ART_NUMPY_DTYPE
 from art.classifiers.classifier import ClassifierGradients
 from art.attacks.attack import EvasionAttack
-from art.utils import compute_success, get_labels_np_array, check_and_transform_label_format
+from art.utils import compute_success, get_labels_np_array, check_and_transform_label_format, WrongClassifier
 
 logger = logging.getLogger(__name__)
 
@@ -55,17 +55,17 @@ class ElasticNet(EvasionAttack):
     ]
 
     def __init__(
-        self,
-        classifier,
-        confidence=0.0,
-        targeted=False,
-        learning_rate=1e-2,
-        binary_search_steps=9,
-        max_iter=100,
-        beta=1e-3,
-        initial_const=1e-3,
-        batch_size=1,
-        decision_rule="EN",
+            self,
+            classifier,
+            confidence=0.0,
+            targeted=False,
+            learning_rate=1e-2,
+            binary_search_steps=9,
+            max_iter=100,
+            beta=1e-3,
+            initial_const=1e-3,
+            batch_size=1,
+            decision_rule="EN",
     ):
         """
         Create an ElasticNet attack instance.
@@ -97,7 +97,7 @@ class ElasticNet(EvasionAttack):
         """
         super(ElasticNet, self).__init__(classifier)
         if not isinstance(classifier, ClassifierGradients):
-            raise utils.WrongClassifier(self.__class__, [ClassifierGradients], classifier)
+            raise WrongClassifier(self.__class__, [ClassifierGradients], classifier)
 
         kwargs = {
             "confidence": confidence,
@@ -186,7 +186,7 @@ class ElasticNet(EvasionAttack):
         :rtype: `float`
         """
         decayed_learning_rate = (self.learning_rate - end_learning_rate) * (
-            1 - global_step / decay_steps
+                1 - global_step / decay_steps
         ) ** 2 + end_learning_rate
 
         return decayed_learning_rate

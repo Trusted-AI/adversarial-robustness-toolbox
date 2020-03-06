@@ -23,7 +23,8 @@ from __future__ import absolute_import, division, print_function, unicode_litera
 import logging
 import abc
 import numpy as np
-from art import utils
+
+from art.utils import WrongClassifier
 from art.classifiers.classifier import Classifier
 
 logger = logging.getLogger(__name__)
@@ -92,7 +93,7 @@ class Attack(abc.ABC, metaclass=input_filter):
         :type classifier: :class:`.Classifier`
         """
         if not isinstance(classifier, Classifier):
-            raise utils.WrongClassifier(self.__class__, [Classifier], classifier)
+            raise WrongClassifier(self.__class__, [Classifier], classifier)
 
         self.classifier = classifier
 
@@ -170,6 +171,7 @@ class PoisoningAttackWhiteBox(PoisoningAttackBlackBox):
     """
     Abstract base class for poisoning attack classes that have white-box access to the model (classifier object)
     """
+
     def __init__(self, classifier):
         """
         :param classifier: A trained classifier.

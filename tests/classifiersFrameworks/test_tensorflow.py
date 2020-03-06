@@ -21,10 +21,12 @@ import logging
 import tensorflow as tf
 import numpy as np
 from art.data_generators import TFDataGenerator
-from tests.classifiersFrameworks import utils_classifier
-from tests.classifiersFrameworks.utils_classifier import backend_test_layers, backend_test_repr
-from tests.classifiersFrameworks.utils_classifier import backend_test_loss_gradient
+
 from tests.utils_test import ExpectedValue
+from tests.classifiersFrameworks.utils_classifier import backend_test_layers, backend_test_repr
+from tests.classifiersFrameworks.utils_classifier import backend_test_loss_gradient, backend_test_class_gradient
+from tests.classifiersFrameworks.utils_classifier import backend_test_fit_generator, backend_test_nb_classes
+from tests.classifiersFrameworks.utils_classifier import backend_test_input_shape
 
 logger = logging.getLogger(__name__)
 
@@ -59,18 +61,17 @@ def test_fit_generator(is_tf_version_2, get_default_mnist_subset, get_image_clas
 
         expected_values = {"post_fit_accuracy": ExpectedValue(0.65, 0.02)}
 
-        utils_classifier.backend_test_fit_generator(expected_values, classifier, data_gen,
-                                                    get_default_mnist_subset, nb_epochs=2)
+        backend_test_fit_generator(expected_values, classifier, data_gen, get_default_mnist_subset, nb_epochs=2)
 
 
 @pytest.mark.only_with_platform("tensorflow")
 def test_nb_classes(get_image_classifier_list):
-    utils_classifier.backend_test_nb_classes(get_image_classifier_list)
+    backend_test_nb_classes(get_image_classifier_list)
 
 
 @pytest.mark.only_with_platform("tensorflow")
 def test_input_shape(get_image_classifier_list):
-    utils_classifier.backend_test_input_shape(get_image_classifier_list)
+    backend_test_input_shape(get_image_classifier_list)
 
 
 @pytest.mark.only_with_platform("tensorflow")
@@ -117,7 +118,7 @@ def test_class_gradient(get_image_classifier_list, get_default_mnist_subset):
     }
 
     labels = np.random.randint(5, size=x_test_mnist.shape[0])
-    utils_classifier.backend_test_class_gradient(get_default_mnist_subset, classifier_logits, expected_values, labels)
+    backend_test_class_gradient(get_default_mnist_subset, classifier_logits, expected_values, labels)
 
 
 @pytest.mark.only_with_platform("tensorflow")

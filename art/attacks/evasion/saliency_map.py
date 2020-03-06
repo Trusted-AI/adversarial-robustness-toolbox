@@ -23,13 +23,13 @@ This module implements the Jacobian-based Saliency Map attack `SaliencyMapMethod
 from __future__ import absolute_import, division, print_function, unicode_literals
 
 import logging
-from art import utils
+
 import numpy as np
 
 from art.config import ART_NUMPY_DTYPE
 from art.classifiers.classifier import ClassifierGradients
 from art.attacks.attack import EvasionAttack
-from art.utils import check_and_transform_label_format, compute_success
+from art.utils import check_and_transform_label_format, compute_success, WrongClassifier
 
 logger = logging.getLogger(__name__)
 
@@ -58,7 +58,7 @@ class SaliencyMapMethod(EvasionAttack):
         """
         super(SaliencyMapMethod, self).__init__(classifier)
         if not isinstance(classifier, ClassifierGradients):
-            raise utils.WrongClassifier(self.__class__, [ClassifierGradients], classifier)
+            raise WrongClassifier(self.__class__, [ClassifierGradients], classifier)
 
         kwargs = {"theta": theta, "gamma": gamma, "batch_size": batch_size}
         self.set_params(**kwargs)

@@ -24,7 +24,7 @@ can be printed into the physical world with a common printer. The patch can be u
 from __future__ import absolute_import, division, print_function, unicode_literals
 
 import logging
-from art import utils
+
 import random
 import numpy as np
 from scipy.ndimage import rotate, shift, zoom
@@ -32,7 +32,7 @@ from scipy.ndimage import rotate, shift, zoom
 from art.config import ART_NUMPY_DTYPE
 from art.classifiers.classifier import ClassifierNeuralNetwork, ClassifierGradients
 from art.attacks.attack import EvasionAttack
-from art.utils import check_and_transform_label_format
+from art.utils import check_and_transform_label_format, WrongClassifier
 
 logger = logging.getLogger(__name__)
 
@@ -94,7 +94,7 @@ class AdversarialPatch(EvasionAttack):
         """
         super(AdversarialPatch, self).__init__(classifier=classifier)
         if not isinstance(classifier, ClassifierNeuralNetwork) or not isinstance(classifier, ClassifierGradients):
-            raise utils.WrongClassifier(self.__class__, [ClassifierNeuralNetwork, ClassifierGradients], classifier)
+            raise WrongClassifier(self.__class__, [ClassifierNeuralNetwork, ClassifierGradients], classifier)
 
         kwargs = {
             "target": target,

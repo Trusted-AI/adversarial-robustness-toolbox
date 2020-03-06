@@ -27,13 +27,13 @@ attack objective.
 from __future__ import absolute_import, division, print_function, unicode_literals
 
 import logging
-from art import utils
+
 import numpy as np
 
 from art.config import ART_NUMPY_DTYPE
 from art.classifiers.classifier import ClassifierGradients
 from art.attacks.attack import EvasionAttack
-from art.utils import compute_success, get_labels_np_array, tanh_to_original, original_to_tanh
+from art.utils import compute_success, get_labels_np_array, tanh_to_original, original_to_tanh, WrongClassifier
 from art.utils import check_and_transform_label_format
 
 logger = logging.getLogger(__name__)
@@ -62,17 +62,17 @@ class CarliniL2Method(EvasionAttack):
     ]
 
     def __init__(
-        self,
-        classifier,
-        confidence=0.0,
-        targeted=False,
-        learning_rate=0.01,
-        binary_search_steps=10,
-        max_iter=10,
-        initial_const=0.01,
-        max_halving=5,
-        max_doubling=5,
-        batch_size=1,
+            self,
+            classifier,
+            confidence=0.0,
+            targeted=False,
+            learning_rate=0.01,
+            binary_search_steps=10,
+            max_iter=10,
+            initial_const=0.01,
+            max_halving=5,
+            max_doubling=5,
+            batch_size=1,
     ):
         """
         Create a Carlini L_2 attack instance.
@@ -107,7 +107,7 @@ class CarliniL2Method(EvasionAttack):
         """
         super(CarliniL2Method, self).__init__(classifier)
         if not isinstance(classifier, ClassifierGradients):
-            raise utils.WrongClassifier(self.__class__, [ClassifierGradients], classifier)
+            raise WrongClassifier(self.__class__, [ClassifierGradients], classifier)
 
         kwargs = {
             "confidence": confidence,
@@ -344,7 +344,7 @@ class CarliniL2Method(EvasionAttack):
                             lr_mult = lr_mult[:, np.newaxis]
 
                         new_x_adv_batch_tanh = (
-                            x_adv_batch_tanh[active_and_do_halving] + lr_mult * perturbation_tanh[do_halving]
+                                x_adv_batch_tanh[active_and_do_halving] + lr_mult * perturbation_tanh[do_halving]
                         )
                         new_x_adv_batch = tanh_to_original(
                             new_x_adv_batch_tanh, clip_min, clip_max, self._tanh_smoother
@@ -383,7 +383,7 @@ class CarliniL2Method(EvasionAttack):
                             lr_mult = lr_mult[:, np.newaxis]
 
                         new_x_adv_batch_tanh = (
-                            x_adv_batch_tanh[active_and_do_doubling] + lr_mult * perturbation_tanh[do_doubling]
+                                x_adv_batch_tanh[active_and_do_doubling] + lr_mult * perturbation_tanh[do_doubling]
                         )
                         new_x_adv_batch = tanh_to_original(
                             new_x_adv_batch_tanh, clip_min, clip_max, self._tanh_smoother
@@ -412,7 +412,7 @@ class CarliniL2Method(EvasionAttack):
                         for _ in range(len(x.shape) - 1):
                             best_lr_mult = best_lr_mult[:, np.newaxis]
                         x_adv_batch_tanh[active_and_update_adv] = (
-                            x_adv_batch_tanh[active_and_update_adv] + best_lr_mult * perturbation_tanh[update_adv]
+                                x_adv_batch_tanh[active_and_update_adv] + best_lr_mult * perturbation_tanh[update_adv]
                         )
                         x_adv_batch[active_and_update_adv] = tanh_to_original(
                             x_adv_batch_tanh[active_and_update_adv], clip_min, clip_max, self._tanh_smoother
@@ -444,8 +444,8 @@ class CarliniL2Method(EvasionAttack):
                 c_old = c_current
                 c_current[~overall_attack_success & c_double] *= 2
                 c_current[~overall_attack_success & ~c_double] += (c_current - c_lower_bound)[
-                    ~overall_attack_success & ~c_double
-                ] / 2
+                                                                      ~overall_attack_success & ~c_double
+                                                                      ] / 2
                 c_lower_bound[~overall_attack_success] = c_old[~overall_attack_success]
 
             x_adv[batch_index_1:batch_index_2] = best_x_adv_batch
@@ -522,16 +522,16 @@ class CarliniLInfMethod(EvasionAttack):
     ]
 
     def __init__(
-        self,
-        classifier,
-        confidence=0.0,
-        targeted=False,
-        learning_rate=0.01,
-        max_iter=10,
-        max_halving=5,
-        max_doubling=5,
-        eps=0.3,
-        batch_size=128,
+            self,
+            classifier,
+            confidence=0.0,
+            targeted=False,
+            learning_rate=0.01,
+            max_iter=10,
+            max_halving=5,
+            max_doubling=5,
+            eps=0.3,
+            batch_size=128,
     ):
         """
         Create a Carlini L_Inf attack instance.
@@ -562,7 +562,7 @@ class CarliniLInfMethod(EvasionAttack):
         """
         super(CarliniLInfMethod, self).__init__(classifier)
         if not isinstance(classifier, ClassifierGradients):
-            raise utils.WrongClassifier(self.__class__, [ClassifierGradients], classifier)
+            raise WrongClassifier(self.__class__, [ClassifierGradients], classifier)
 
         kwargs = {
             "confidence": confidence,
@@ -737,7 +737,7 @@ class CarliniLInfMethod(EvasionAttack):
                         lr_mult = lr_mult[:, np.newaxis]
 
                     new_x_adv_batch_tanh = (
-                        x_adv_batch_tanh[active_and_do_halving] + lr_mult * perturbation_tanh[do_halving]
+                            x_adv_batch_tanh[active_and_do_halving] + lr_mult * perturbation_tanh[do_halving]
                     )
                     new_x_adv_batch = tanh_to_original(
                         new_x_adv_batch_tanh, clip_min[active_and_do_halving], clip_max[active_and_do_halving]
@@ -771,7 +771,7 @@ class CarliniLInfMethod(EvasionAttack):
                         lr_mult = lr_mult[:, np.newaxis]
 
                     new_x_adv_batch_tanh = (
-                        x_adv_batch_tanh[active_and_do_doubling] + lr_mult * perturbation_tanh[do_doubling]
+                            x_adv_batch_tanh[active_and_do_doubling] + lr_mult * perturbation_tanh[do_doubling]
                     )
                     new_x_adv_batch = tanh_to_original(
                         new_x_adv_batch_tanh, clip_min[active_and_do_doubling], clip_max[active_and_do_doubling]
@@ -794,7 +794,7 @@ class CarliniLInfMethod(EvasionAttack):
                         best_lr_mult = best_lr_mult[:, np.newaxis]
 
                     x_adv_batch_tanh[active_and_update_adv] = (
-                        x_adv_batch_tanh[active_and_update_adv] + best_lr_mult * perturbation_tanh[update_adv]
+                            x_adv_batch_tanh[active_and_update_adv] + best_lr_mult * perturbation_tanh[update_adv]
                     )
                     x_adv_batch[active_and_update_adv] = tanh_to_original(
                         x_adv_batch_tanh[active_and_update_adv],

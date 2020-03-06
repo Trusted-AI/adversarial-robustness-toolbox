@@ -23,13 +23,13 @@ This module implements the virtual adversarial attack. It was originally was use
 from __future__ import absolute_import, division, print_function, unicode_literals
 
 import logging
-from art import utils
+
 import numpy as np
 
 from art.config import ART_NUMPY_DTYPE
 from art.classifiers.classifier import ClassifierNeuralNetwork, ClassifierGradients
 from art.attacks.attack import EvasionAttack
-from art.utils import compute_success
+from art.utils import compute_success, WrongClassifier
 
 logger = logging.getLogger(__name__)
 
@@ -60,7 +60,7 @@ class VirtualAdversarialMethod(EvasionAttack):
         """
         super(VirtualAdversarialMethod, self).__init__(classifier)
         if not isinstance(classifier, ClassifierNeuralNetwork) or not isinstance(classifier, ClassifierGradients):
-            raise utils.WrongClassifier(self.__class__, [ClassifierGradients, ClassifierNeuralNetwork], classifier)
+            raise WrongClassifier(self.__class__, [ClassifierGradients, ClassifierNeuralNetwork], classifier)
 
         kwargs = {"finite_diff": finite_diff, "eps": eps, "max_iter": max_iter, "batch_size": batch_size}
         self.set_params(**kwargs)
