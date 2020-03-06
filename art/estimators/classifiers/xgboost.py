@@ -23,12 +23,13 @@ from __future__ import absolute_import, division, print_function, unicode_litera
 import logging
 import numpy as np
 
-from art.estimators.classifiers.classifier import Classifier, ClassifierDecisionTreeMixin
+from art.estimators.estimator import BaseEstimator, DecisionTreeMixin
+from art.estimators.classifiers.classifier import ClassifierMixin
 
 logger = logging.getLogger(__name__)
 
 
-class XGBoostClassifier(Classifier, ClassifierDecisionTreeMixin):
+class XGBoostClassifier(DecisionTreeMixin, ClassifierMixin, BaseEstimator):
     """
     Wrapper class for importing XGBoost models.
     """
@@ -78,7 +79,10 @@ class XGBoostClassifier(Classifier, ClassifierDecisionTreeMixin):
         )
         self._model = model
         self._input_shape = (nb_features,)
-        self._nb_classes = nb_classes
+        if self._get_nb_classes() is not None:
+            self._nb_classes = self._get_nb_classes()
+        else:
+            self._nb_classes = nb_classes
 
     def fit(self, x, y, **kwargs):
         """
@@ -128,7 +132,7 @@ class XGBoostClassifier(Classifier, ClassifierDecisionTreeMixin):
 
         return y_prediction
 
-    def nb_classes(self):
+    def _get_nb_classes(self):
         """
         Return the number of output classes.
 

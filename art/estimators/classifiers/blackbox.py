@@ -24,12 +24,13 @@ import logging
 
 import numpy as np
 
-from art.estimators.classifiers.classifier import Classifier
+from art.estimators.estimator import BaseEstimator
+from art.estimators.classifiers.classifier import ClassifierMixin
 
 logger = logging.getLogger(__name__)
 
 
-class BlackBoxClassifier(Classifier):
+class BlackBoxClassifier(ClassifierMixin, BaseEstimator):
     """
     Wrapper class for black-box classifiers.
     """

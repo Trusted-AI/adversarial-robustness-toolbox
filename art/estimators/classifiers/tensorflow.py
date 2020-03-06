@@ -703,7 +703,7 @@ class TensorFlowV2Classifier(ClassGradientsMixin, ClassifierMixin, TensorFlowV2E
         x_preprocessed, _ = self._apply_preprocessing(x, y=None, fit=False)
 
         # Run prediction with batch processing
-        results = np.zeros((x_preprocessed.shape[0], self.nb_classes()), dtype=np.float32)
+        results = np.zeros((x_preprocessed.shape[0], self.nb_classes), dtype=np.float32)
         num_batch = int(np.ceil(len(x_preprocessed) / float(batch_size)))
         for m in range(num_batch):
             # Batch indexes
@@ -791,7 +791,7 @@ class TensorFlowV2Classifier(ClassGradientsMixin, ClassifierMixin, TensorFlowV2E
                 # Compute the gradients w.r.t. all classes
                 class_gradients = list()
 
-                for i in range(self.nb_classes()):
+                for i in range(self.nb_classes):
                     with tf.GradientTape() as tape:
                         x_preprocessed_tf = tf.convert_to_tensor(x_preprocessed)
                         tape.watch(x_preprocessed_tf)

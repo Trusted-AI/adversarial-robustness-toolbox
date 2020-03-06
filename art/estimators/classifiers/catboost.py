@@ -22,12 +22,13 @@ from __future__ import absolute_import, division, print_function, unicode_litera
 
 import logging
 
-from art.estimators.classifiers.classifier import Classifier
+from art.estimators.estimator import BaseEstimator, DecisionTreeMixin
+from art.estimators.classifiers.classifier import ClassifierMixin
 
 logger = logging.getLogger(__name__)
 
 
-class CatBoostARTClassifier(Classifier):
+class CatBoostARTClassifier(ClassifierMixin, DecisionTreeMixin, BaseEstimator):
     """
     Wrapper class for importing CatBoost models.
     """
@@ -75,6 +76,7 @@ class CatBoostARTClassifier(Classifier):
 
         self._model = model
         self._input_shape = (nb_features,)
+        self._nb_classes = self._get_nb_classes()
 
     def fit(self, x, y, **kwargs):
         """
@@ -94,6 +96,7 @@ class CatBoostARTClassifier(Classifier):
         x_preprocessed, y_preprocessed = self._apply_preprocessing(x, y, fit=True)
 
         self._model.fit(x_preprocessed, y_preprocessed, **kwargs)
+        self._nb_classes = self._get_nb_classes()
 
     def predict(self, x, **kwargs):
         """
@@ -115,17 +118,23 @@ class CatBoostARTClassifier(Classifier):
 
         return predictions
 
-    def nb_classes(self):
+    def _get_nb_classes(self):
         """
         Return the number of output classes.
 
         :return: Number of classes in the data.
         :rtype: `int`
         """
-        return len(self._model.classes_)
+        if self._model.classes_ is not None:
+            return len(self._model.classes_)
+
+        return None
 
     def save(self, filename, path=None):
         import pickle
 
         with open(filename + ".pickle", "wb") as file_pickle:
             pickle.dump(self._model, file=file_pickle)
+
+    def get_trees(self):
+        raise NotImplementedError

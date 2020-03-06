@@ -24,12 +24,13 @@ import logging
 
 import numpy as np
 
-from art.estimators.classifiers.classifier import Classifier, ClassifierNeuralNetworkMixin, ClassifierGradientsMixin
+from art.estimators.estimator import BaseEstimator, NeuralNetworkMixin, LossGradientsMixin
+from art.estimators.classifiers.classifier import ClassifierMixin, ClassGradientsMixin
 
 logger = logging.getLogger(__name__)
 
 
-class EnsembleClassifier(ClassifierNeuralNetworkMixin, ClassifierGradientsMixin, Classifier):
+class EnsembleClassifier(ClassGradientsMixin, ClassifierMixin, LossGradientsMixin, NeuralNetworkMixin, BaseEstimator):
     """
     Class allowing to aggregate multiple classifiers as an ensemble. The individual classifiers are expected to be
     trained when the ensemble is created and no training procedures are provided through this class.
@@ -88,7 +89,7 @@ class EnsembleClassifier(ClassifierNeuralNetworkMixin, ClassifierGradientsMixin,
 
         # Assert all classifiers are the right shape(s)
         for classifier in classifiers:
-            if not isinstance(classifier, ClassifierNeuralNetworkMixin):
+            if not isinstance(classifier, NeuralNetworkMixin):
                 raise TypeError("Expected type `Classifier`, found %s instead." % type(classifier))
 
             if clip_values != classifier.clip_values:
@@ -97,10 +98,10 @@ class EnsembleClassifier(ClassifierNeuralNetworkMixin, ClassifierGradientsMixin,
                     % (str(clip_values), str(classifier.clip_values))
                 )
 
-            if classifier.nb_classes() != classifiers[0].nb_classes():
+            if classifier.nb_classes != classifiers[0].nb_classes:
                 raise ValueError(
                     "Incompatible output shapes between classifiers in the ensemble. Found %s and %s."
-                    % (str(classifier.nb_classes()), str(classifiers[0].nb_classes()))
+                    % (str(classifier.nb_classes), str(classifiers[0].nb_classes))
                 )
 
             if classifier.input_shape != classifiers[0].input_shape:
@@ -110,7 +111,7 @@ class EnsembleClassifier(ClassifierNeuralNetworkMixin, ClassifierGradientsMixin,
                 )
 
         self._input_shape = classifiers[0].input_shape
-        self._nb_classes = classifiers[0].nb_classes()
+        self._nb_classes = classifiers[0].nb_classes
 
         # Set weights for classifiers
         if classifier_weights is None:

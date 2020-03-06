@@ -24,12 +24,13 @@ import logging
 
 import numpy as np
 
-from art.estimators.classifiers.classifier import Classifier, ClassifierDecisionTreeMixin
+from art.estimators.estimator import BaseEstimator, DecisionTreeMixin
+from art.estimators.classifiers.classifier import ClassifierMixin
 
 logger = logging.getLogger(__name__)
 
 
-class LightGBMClassifier(Classifier, ClassifierDecisionTreeMixin):
+class LightGBMClassifier(ClassifierMixin, DecisionTreeMixin, BaseEstimator):
     """
     Wrapper class for importing LightGBM models.
     """
@@ -73,6 +74,7 @@ class LightGBMClassifier(Classifier, ClassifierDecisionTreeMixin):
 
         self._model = model
         self._input_shape = (self._model.num_feature(),)
+        self._nb_classes = self._get_nb_classes()
 
     def fit(self, x, y, **kwargs):
         """
@@ -111,7 +113,7 @@ class LightGBMClassifier(Classifier, ClassifierDecisionTreeMixin):
 
         return predictions
 
-    def nb_classes(self):
+    def _get_nb_classes(self):
         """
         Return the number of output classes.
 
