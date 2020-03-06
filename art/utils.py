@@ -240,7 +240,7 @@ def least_likely_class(x, classifier):
     :return: Least-likely class predicted by `classifier` for sample `x` in one-hot encoding.
     :rtype: `np.ndarray`
     """
-    return to_categorical(np.argmin(classifier.predict(x), axis=1), nb_classes=classifier.nb_classes())
+    return to_categorical(np.argmin(classifier.predict(x), axis=1), nb_classes=classifier.nb_classes)
 
 
 def second_most_likely_class(x, classifier):
@@ -255,7 +255,7 @@ def second_most_likely_class(x, classifier):
     :return: Second most likely class predicted by `classifier` for sample `x` in one-hot encoding.
     :rtype: `np.ndarray`
     """
-    return to_categorical(np.argpartition(classifier.predict(x), -2, axis=1)[:, -2], nb_classes=classifier.nb_classes())
+    return to_categorical(np.argpartition(classifier.predict(x), -2, axis=1)[:, -2], nb_classes=classifier.nb_classes)
 
 
 def get_label_conf(y_vec):
