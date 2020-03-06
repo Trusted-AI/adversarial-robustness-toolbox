@@ -32,7 +32,7 @@ import unittest
 
 import numpy as np
 
-from art.attacks import PixelAttack
+from art.attacks.evasion.pixel_threshold import PixelAttack
 from art.utils import get_labels_np_array
 
 from tests.utils import TestBase

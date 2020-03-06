@@ -23,8 +23,8 @@ import unittest
 import numpy as np
 import GPy
 
-from art.attacks import HighConfidenceLowUncertainty
-from art.estimators.classifiers import GPyGaussianProcessClassifier
+from art.attacks.evasion.hclu import HighConfidenceLowUncertainty
+from art.estimators.classifiers.GPy import GPyGaussianProcessClassifier
 
 from tests.utils import TestBase
 
