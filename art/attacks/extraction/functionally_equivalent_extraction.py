@@ -152,7 +152,7 @@ class FunctionallyEquivalentExtraction(ExtractionAttack):
         extracted_classifier = BlackBoxClassifier(
             predict,
             input_shape=self.classifier.input_shape,
-            nb_classes=self.classifier.nb_classes(),
+            nb_classes=self.classifier.nb_classes,
             clip_values=self.classifier.clip_values,
             preprocessing_defences=self.classifier.preprocessing_defences,
             preprocessing=self.classifier.preprocessing,
