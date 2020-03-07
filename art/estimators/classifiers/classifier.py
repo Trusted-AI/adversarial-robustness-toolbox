@@ -87,143 +87,143 @@ class ClassifierMixin(ABC, metaclass=InputFilter):
     Base class defining additional estimator functionality for classifiers.
     """
 
-    #     def predict(self, x, **kwargs):  # lgtm [py/inheritance/incorrect-overridden-signature]
-    #         """
-    #         Perform prediction of the classifier for input `x`.
-    #
-    #         :param x: Features in array of shape (nb_samples, nb_features) or (nb_samples, nb_pixels_1, nb_pixels_2,
-    #                   nb_channels) or (nb_samples, nb_channels, nb_pixels_1, nb_pixels_2)
-    #
-    #                   # The first dimension corresponds to the samples whereas all other dimensions
-    #                   # correspond to the shape of a single sample. For example for feature vectors the shape of `x` is
-    #                   # (nb_samples, nb_features), for images the shape is (nb_samples, nb_pixels_height, nb_pixels_width,
-    #                   # nb_channels) in format NHWC or (nb_samples, nb_channels, nb_pixels_height, nb_pixels_width) in
-    #                   # format NCHW. Any shape compatible with the model is accepted.
-    #
-    #         :type x: `np.ndarray`
-    #         :return: Array of predictions of shape `(nb_inputs, nb_classes)`.
-    #         :rtype: `np.ndarray`
-    #         """
-    #         raise NotImplementedError
-    #
-    #     @abstractmethod
-    #     def fit(self, x, y, **kwargs):  # lgtm [py/inheritance/incorrect-overridden-signature]
-    #         """
-    #         Fit the classifier using the training data `(x, y)`.
-    #
-    #         :param x: Features in array of shape (nb_samples, nb_features) or (nb_samples, nb_pixels_1, nb_pixels_2,
-    #                   nb_channels) or (nb_samples, nb_channels, nb_pixels_1, nb_pixels_2)
-    #         :type x: `np.ndarray`
-    #         :param y: Target values (class labels) one-hot-encoded of shape (nb_samples, nb_classes) or indices of shape
-    #                   (nb_samples,).
-    #         :type y: `np.ndarray`
-    #         :param kwargs: Dictionary of framework-specific arguments.
-    #         :type kwargs: `dict`
-    #         :return: `None`
-    #         """
-    #         raise NotImplementedError
-    #
+#     def predict(self, x, **kwargs):  # lgtm [py/inheritance/incorrect-overridden-signature]
+#         """
+#         Perform prediction of the classifier for input `x`.
+#
+#         :param x: Features in array of shape (nb_samples, nb_features) or (nb_samples, nb_pixels_1, nb_pixels_2,
+#                   nb_channels) or (nb_samples, nb_channels, nb_pixels_1, nb_pixels_2)
+#
+#                   # The first dimension corresponds to the samples whereas all other dimensions
+#                   # correspond to the shape of a single sample. For example for feature vectors the shape of `x` is
+#                   # (nb_samples, nb_features), for images the shape is (nb_samples, nb_pixels_height, nb_pixels_width,
+#                   # nb_channels) in format NHWC or (nb_samples, nb_channels, nb_pixels_height, nb_pixels_width) in
+#                   # format NCHW. Any shape compatible with the model is accepted.
+#
+#         :type x: `np.ndarray`
+#         :return: Array of predictions of shape `(nb_inputs, nb_classes)`.
+#         :rtype: `np.ndarray`
+#         """
+#         raise NotImplementedError
+#
+#     @abstractmethod
+#     def fit(self, x, y, **kwargs):  # lgtm [py/inheritance/incorrect-overridden-signature]
+#         """
+#         Fit the classifier using the training data `(x, y)`.
+#
+#         :param x: Features in array of shape (nb_samples, nb_features) or (nb_samples, nb_pixels_1, nb_pixels_2,
+#                   nb_channels) or (nb_samples, nb_channels, nb_pixels_1, nb_pixels_2)
+#         :type x: `np.ndarray`
+#         :param y: Target values (class labels) one-hot-encoded of shape (nb_samples, nb_classes) or indices of shape
+#                   (nb_samples,).
+#         :type y: `np.ndarray`
+#         :param kwargs: Dictionary of framework-specific arguments.
+#         :type kwargs: `dict`
+#         :return: `None`
+#         """
+#         raise NotImplementedError
+#
 
-    #
-    #
-    #     def _apply_preprocessing(self, x, y, fit):
-    #         """
-    #         Apply all defences and preprocessing operations on the inputs `(x, y)`. This function has to be applied to all
-    #         raw inputs (x, y) provided to the classifier.
-    #
-    #         :param x: Features, where first dimension is the number of samples.
-    #         :type x: `np.ndarray`
-    #         :param y: Target values (class labels), where first dimension is the number of samples.
-    #         :type y: `np.ndarray` or `None`
-    #         :param fit: `True` if the defences are applied during training.
-    #         :type fit: `bool`
-    #         :return: Value of the data after applying the defences.
-    #         :rtype: `np.ndarray`
-    #         """
-    #         y = check_and_transform_label_format(y, self.nb_classes)
-    #         x_preprocessed, y_preprocessed = self._apply_preprocessing_defences(x, y, fit=fit)
-    #         x_preprocessed = self._apply_preprocessing_standardisation(x_preprocessed)
-    #         return x_preprocessed, y_preprocessed
-    #
-    #     def _apply_preprocessing_defences(self, x, y, fit=False):
-    #         """
-    #         Apply all preprocessing defences of the classifier on the raw inputs `(x, y)`. This function is intended to
-    #         only be called from function `_apply_preprocessing`.
-    #
-    #         :param x: Features, where first dimension is the number of samples.
-    #         :type x: `np.ndarray`
-    #         :param y: Target values (class labels), where first dimension is the number of samples.
-    #         :type y: `np.ndarray`
-    #         :param fit: `True` if the function is call before fit/training and `False` if the function is called before a
-    #                     predict operation.
-    #         :type fit: `bool`
-    #         :return: Arrays for `x` and `y` after applying the defences.
-    #         :rtype: `np.ndarray`
-    #         """
-    #         if self.preprocessing_defences is not None:
-    #             for defence in self.preprocessing_defences:
-    #                 if fit:
-    #                     if defence.apply_fit:
-    #                         x, y = defence(x, y)
-    #                 else:
-    #                     if defence.apply_predict:
-    #                         x, y = defence(x, y)
-    #
-    #         return x, y
-    #
-    #     def _apply_preprocessing_standardisation(self, x):
-    #         """
-    #         Apply standardisation to input data `x`.
-    #
-    #         :param x: Input data, where first dimension is the number of samples.
-    #         :type x: `np.ndarray`
-    #         :return: Array for `x` with the standardized data.
-    #         :rtype: `np.ndarray`
-    #         :raises: `TypeError`
-    #         """
-    #         if x.dtype in [np.uint8, np.uint16, np.uint32, np.uint64]:
-    #             raise TypeError(
-    #                 "The data type of input data `x` is {} and cannot represent negative values. Consider "
-    #                 "changing the data type of the input data `x` to a type that supports negative values e.g. "
-    #                 "np.float32.".format(x.dtype)
-    #             )
-    #
-    #         if self.preprocessing is not None:
-    #             sub, div = self.preprocessing
-    #             sub = np.asarray(sub, dtype=x.dtype)
-    #             div = np.asarray(div, dtype=x.dtype)
-    #
-    #             res = x - sub
-    #             res = res / div
-    #
-    #         else:
-    #             res = x
-    #
-    #         return res
-    #
-    #     def _apply_postprocessing(self, preds, fit):
-    #         """
-    #         Apply all defences operations on model output.
-    #
-    #         :param preds: model output to be postprocessed.
-    #         :type preds: `np.ndarray`
-    #         :param fit: `True` if the defences are applied during training.
-    #         :type fit: `bool`
-    #         :return: Postprocessed model output.
-    #         :rtype: `np.ndarray`
-    #         """
-    #         post_preds = preds.copy()
-    #         if self.postprocessing_defences is not None:
-    #             for defence in self.postprocessing_defences:
-    #                 if fit:
-    #                     if defence.apply_fit:
-    #                         post_preds = defence(post_preds)
-    #                 else:
-    #                     if defence.apply_predict:
-    #                         post_preds = defence(post_preds)
-    #
-    #         return post_preds
-    #
+#
+#
+#     def _apply_preprocessing(self, x, y, fit):
+#         """
+#         Apply all defences and preprocessing operations on the inputs `(x, y)`. This function has to be applied to all
+#         raw inputs (x, y) provided to the classifier.
+#
+#         :param x: Features, where first dimension is the number of samples.
+#         :type x: `np.ndarray`
+#         :param y: Target values (class labels), where first dimension is the number of samples.
+#         :type y: `np.ndarray` or `None`
+#         :param fit: `True` if the defences are applied during training.
+#         :type fit: `bool`
+#         :return: Value of the data after applying the defences.
+#         :rtype: `np.ndarray`
+#         """
+#         y = check_and_transform_label_format(y, self.nb_classes)
+#         x_preprocessed, y_preprocessed = self._apply_preprocessing_defences(x, y, fit=fit)
+#         x_preprocessed = self._apply_preprocessing_standardisation(x_preprocessed)
+#         return x_preprocessed, y_preprocessed
+#
+#     def _apply_preprocessing_defences(self, x, y, fit=False):
+#         """
+#         Apply all preprocessing defences of the classifier on the raw inputs `(x, y)`. This function is intended to
+#         only be called from function `_apply_preprocessing`.
+#
+#         :param x: Features, where first dimension is the number of samples.
+#         :type x: `np.ndarray`
+#         :param y: Target values (class labels), where first dimension is the number of samples.
+#         :type y: `np.ndarray`
+#         :param fit: `True` if the function is call before fit/training and `False` if the function is called before a
+#                     predict operation.
+#         :type fit: `bool`
+#         :return: Arrays for `x` and `y` after applying the defences.
+#         :rtype: `np.ndarray`
+#         """
+#         if self.preprocessing_defences is not None:
+#             for defence in self.preprocessing_defences:
+#                 if fit:
+#                     if defence.apply_fit:
+#                         x, y = defence(x, y)
+#                 else:
+#                     if defence.apply_predict:
+#                         x, y = defence(x, y)
+#
+#         return x, y
+#
+#     def _apply_preprocessing_standardisation(self, x):
+#         """
+#         Apply standardisation to input data `x`.
+#
+#         :param x: Input data, where first dimension is the number of samples.
+#         :type x: `np.ndarray`
+#         :return: Array for `x` with the standardized data.
+#         :rtype: `np.ndarray`
+#         :raises: `TypeError`
+#         """
+#         if x.dtype in [np.uint8, np.uint16, np.uint32, np.uint64]:
+#             raise TypeError(
+#                 "The data type of input data `x` is {} and cannot represent negative values. Consider "
+#                 "changing the data type of the input data `x` to a type that supports negative values e.g. "
+#                 "np.float32.".format(x.dtype)
+#             )
+#
+#         if self.preprocessing is not None:
+#             sub, div = self.preprocessing
+#             sub = np.asarray(sub, dtype=x.dtype)
+#             div = np.asarray(div, dtype=x.dtype)
+#
+#             res = x - sub
+#             res = res / div
+#
+#         else:
+#             res = x
+#
+#         return res
+#
+#     def _apply_postprocessing(self, preds, fit):
+#         """
+#         Apply all defences operations on model output.
+#
+#         :param preds: model output to be postprocessed.
+#         :type preds: `np.ndarray`
+#         :param fit: `True` if the defences are applied during training.
+#         :type fit: `bool`
+#         :return: Postprocessed model output.
+#         :rtype: `np.ndarray`
+#         """
+#         post_preds = preds.copy()
+#         if self.postprocessing_defences is not None:
+#             for defence in self.postprocessing_defences:
+#                 if fit:
+#                     if defence.apply_fit:
+#                         post_preds = defence(post_preds)
+#                 else:
+#                     if defence.apply_predict:
+#                         post_preds = defence(post_preds)
+#
+#         return post_preds
+#
 
     @property
     def nb_classes(self):
