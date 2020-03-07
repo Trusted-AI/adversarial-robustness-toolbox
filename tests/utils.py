@@ -178,7 +178,7 @@ def get_classifier_tf_v1(from_logits=False, load_init=True, sess=None):
     if tf.__version__[0] == '2':
         import tensorflow.compat.v1 as tf
         tf.disable_eager_execution()
-    from art.estimators.classifiers import TensorFlowClassifier
+    from art.estimators.classifiers.tensorflow import TensorFlowClassifier
 
     # Define input and output placeholders
     input_ph = tf.placeholder(tf.float32, shape=[None, 28, 28, 1])
@@ -796,7 +796,7 @@ def get_iris_classifier_tf_v1(load_init=True, sess=None):
         # pylint: disable=E0401
         import tensorflow.compat.v1 as tf
         tf.disable_eager_execution()
-    from art.estimators.classifiers import TensorFlowClassifier
+    from art.estimators.classifiers.tensorflow import TensorFlowClassifier
 
     # Define input and output placeholders
     input_ph = tf.placeholder(tf.float32, shape=[None, 4])
