@@ -1,11 +1,10 @@
 import cv2
 import matplotlib.pyplot as plt
 
-
 from art.estimators.object_detectors.PyTorchFasterRCNN import PyTorchFasterRCNN
 
-def main():
 
+def main():
     frcnn = PyTorchFasterRCNN()
 
     # For training
