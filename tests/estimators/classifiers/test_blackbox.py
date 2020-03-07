@@ -50,7 +50,7 @@ class TestBlackBoxClassifier(TestBase):
         classifier = get_classifier_bb()
         predictions = classifier.predict(self.x_test_mnist)
         self.assertEqual(predictions.shape, self.y_test_mnist.shape)
-        self.assertEqual(classifier.nb_classes(), 10)
+        self.assertEqual(classifier.nb_classes, 10)
         self.assertEqual(predictions.shape, self.y_test_mnist.shape)
 
     def test_defences_predict(self):

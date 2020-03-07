@@ -140,7 +140,7 @@ class ClassifierMixin(ABC, metaclass=InputFilter):
     #         :return: Value of the data after applying the defences.
     #         :rtype: `np.ndarray`
     #         """
-    #         y = check_and_transform_label_format(y, self.nb_classes())
+    #         y = check_and_transform_label_format(y, self.nb_classes)
     #         x_preprocessed, y_preprocessed = self._apply_preprocessing_defences(x, y, fit=fit)
     #         x_preprocessed = self._apply_preprocessing_standardisation(x_preprocessed)
     #         return x_preprocessed, y_preprocessed

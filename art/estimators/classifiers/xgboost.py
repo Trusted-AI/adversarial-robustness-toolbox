@@ -79,10 +79,7 @@ class XGBoostClassifier(DecisionTreeMixin, ClassifierMixin, BaseEstimator):
         )
         self._model = model
         self._input_shape = (nb_features,)
-        if self._get_nb_classes() is not None:
-            self._nb_classes = self._get_nb_classes()
-        else:
-            self._nb_classes = nb_classes
+        self._nb_classes = self._get_nb_classes(nb_classes)
 
     def fit(self, x, y, **kwargs):
         """
@@ -123,7 +120,7 @@ class XGBoostClassifier(DecisionTreeMixin, ClassifierMixin, BaseEstimator):
             predictions = self._model.predict(train_data)
             y_prediction = np.asarray([line for line in predictions])
             if len(y_prediction.shape) == 1:
-                y_prediction = to_categorical(labels=y_prediction, nb_classes=self.nb_classes())
+                y_prediction = to_categorical(labels=y_prediction, nb_classes=self.nb_classes)
         elif isinstance(self._model, XGBClassifier):
             y_prediction = self._model.predict_proba(x_preprocessed)
 
@@ -132,7 +129,7 @@ class XGBoostClassifier(DecisionTreeMixin, ClassifierMixin, BaseEstimator):
 
         return y_prediction
 
-    def _get_nb_classes(self):
+    def _get_nb_classes(self, nb_classes):
         """
         Return the number of output classes.
 
@@ -145,8 +142,8 @@ class XGBoostClassifier(DecisionTreeMixin, ClassifierMixin, BaseEstimator):
             try:
                 return int(len(self._model.get_dump(dump_format="json")) / self._model.n_estimators)
             except AttributeError:
-                if self._nb_classes is not None:
-                    return self._nb_classes
+                if nb_classes is not None:
+                    return nb_classes
                 raise NotImplementedError(
                     "Number of classes cannot be determined automatically. "
                     + "Please manually set argument nb_classes in XGBoostClassifier."

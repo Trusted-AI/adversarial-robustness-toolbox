@@ -125,7 +125,7 @@ class TestZooAttack(TestBase):
 
         # Targeted attack
         # zoo = ZooAttack(classifier=krc, targeted=True, batch_size=5)
-        # params = {'y': random_targets(self.y_test, krc.nb_classes())}
+        # params = {'y': random_targets(self.y_test, krc.nb_classes)}
         # x_test_adv = zoo.generate(self.x_test, **params)
         #
         # self.assertFalse((self.x_test == x_test_adv).all())
@@ -183,7 +183,7 @@ class TestZooAttack(TestBase):
 
         # First attack
         # zoo = ZooAttack(classifier=ptc, targeted=True, max_iter=10, binary_search_steps=10)
-        # params = {'y': random_targets(self.y_test, ptc.nb_classes())}
+        # params = {'y': random_targets(self.y_test, ptc.nb_classes)}
         # x_test_adv = zoo.generate(x_test, **params)
         # self.assertFalse((x_test == x_test_adv).all())
         # self.assertLessEqual(np.amax(x_test_adv), 1.0)
